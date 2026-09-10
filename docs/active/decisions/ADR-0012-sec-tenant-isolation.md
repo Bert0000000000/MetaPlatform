@@ -17,6 +17,7 @@ Mate Platform v3.0 是多租户（multi-tenant）平台。SEC-IAM-01 把 Keycloa
 读写跨租户数据。
 
 §13 硬规则第 3 条明确规定：
+
 > 没有 tenant 上下文，不访问 repository。
 
 本 ADR 锁定 SEC-TENANT-01 的 5 层隔离策略 + 跨租户 admin 通道。
@@ -25,17 +26,18 @@ Mate Platform v3.0 是多租户（multi-tenant）平台。SEC-IAM-01 把 Keycloa
 
 ### 2.1 5 层隔离
 
-| 层 | 机制 | 实现位置 |
-|---|---|---|
-| 1. HTTP | 每个入站请求的 `RequestContext.tenant_id` 由 AuthMiddleware 强制填充；任何 repository 入口必须先校验 `ctx.tenant_id` 非空。| `mate-platform/tenancy/guards.py` |
-| 2. DB | SQLAlchemy event listener 拦截所有 SELECT / UPDATE / DELETE，强制注入 `tenant_id = :tenant_id` 谓词；带 `cross_tenant_admin` scope 的会话可绕过并触发审计。| `mate-platform/tenancy/db_filter.py` |
-| 3. Kafka | Topic 命名约定 `metaplatform.<domain>.<tenant-id>.<event>`；producer 强制使用 `RequestContext.tenant_id` 拼前缀；consumer 必须验证消息的 tenant 与当前 session tenant 一致。| `mate-platform/messaging/kafka_tenant.py` |
-| 4. Redis | 所有 key 强制前缀 `t:<tenant-id>:`；ACL Client 拒绝跨前缀读写。| `mate-clients/redis/keys.py` |
-| 5. MinIO | 每租户独立 bucket `metaplatform-<tenant-id>`；通过 STS 临时凭证 + IAM policy 限制访问范围。| `mate-clients/minio/buckets.py` |
+| 层       | 机制                                                                                                                                                                         | 实现位置                                  |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| 1. HTTP  | 每个入站请求的 `RequestContext.tenant_id` 由 AuthMiddleware 强制填充；任何 repository 入口必须先校验 `ctx.tenant_id` 非空。                                                  | `mate-platform/tenancy/guards.py`         |
+| 2. DB    | SQLAlchemy event listener 拦截所有 SELECT / UPDATE / DELETE，强制注入 `tenant_id = :tenant_id` 谓词；带 `cross_tenant_admin` scope 的会话可绕过并触发审计。                  | `mate-platform/tenancy/db_filter.py`      |
+| 3. Kafka | Topic 命名约定 `metaplatform.<domain>.<tenant-id>.<event>`；producer 强制使用 `RequestContext.tenant_id` 拼前缀；consumer 必须验证消息的 tenant 与当前 session tenant 一致。 | `mate-platform/messaging/kafka_tenant.py` |
+| 4. Redis | 所有 key 强制前缀 `t:<tenant-id>:`；ACL Client 拒绝跨前缀读写。                                                                                                              | `mate-clients/redis/keys.py`              |
+| 5. MinIO | 每租户独立 bucket `metaplatform-<tenant-id>`；通过 STS 临时凭证 + IAM policy 限制访问范围。                                                                                  | `mate-clients/minio/buckets.py`           |
 
 ### 2.2 跨租户 admin 通道
 
 `cross_tenant_admin` 作用域开启时：
+
 - DB 谓词注入被跳过，session 进入"跨租户模式"。
 - 每次读写触发 `audit.cross_tenant_access` 事件，payload 含 actor、target tenant、operation、query 摘要。
 - 仅 `realm_access.roles` 含 `cross_tenant_admin` 的用户可启用；不通过 client_credentials 颁发。
@@ -78,6 +80,7 @@ docs/ADR → contract → failing tests → feature → infrastructure → deplo
 ```
 
 每个 PR 必须包含：
+
 - ADR-0012 引用
 - operationId 引用
 - 跨租户 negative test 引用
@@ -139,15 +142,15 @@ docs/ADR → contract → failing tests → feature → infrastructure → deplo
 dev → local → contract → integration → staging → pre-production → production
 ```
 
-| 阶段 | 动作 | 验证 |
-|---|---|---|
-| dev | DB filter 旁路（`BYPASS_TENANT_FILTER=1`），SQLite 单租户跑通 | 单测全绿 |
-| local | DB filter 启用，PG 16 跑 17 域端到端 | 跨租户 negative tests |
-| contract | helm chart 升级 NetworkPolicy 允许 tenant filter 旁路 | helm template 0 错 |
-| integration | Kafka + Redis + MinIO 全部启用 tenant prefix | 集成测试 |
-| staging | 完整 5 层隔离 + cross_tenant_admin 通道 | DR + 越权矩阵 |
-| pre-production | 真实数据 + 灰度 | 监控 + alert |
-| production | GA 切流 | 13 硬规则 + SLO 达标 |
+| 阶段           | 动作                                                          | 验证                  |
+| -------------- | ------------------------------------------------------------- | --------------------- |
+| dev            | DB filter 旁路（`BYPASS_TENANT_FILTER=1`），SQLite 单租户跑通 | 单测全绿              |
+| local          | DB filter 启用，PG 16 跑 17 域端到端                          | 跨租户 negative tests |
+| contract       | helm chart 升级 NetworkPolicy 允许 tenant filter 旁路         | helm template 0 错    |
+| integration    | Kafka + Redis + MinIO 全部启用 tenant prefix                  | 集成测试              |
+| staging        | 完整 5 层隔离 + cross_tenant_admin 通道                       | DR + 越权矩阵         |
+| pre-production | 真实数据 + 灰度                                               | 监控 + alert          |
+| production     | GA 切流                                                       | 13 硬规则 + SLO 达标  |
 
 ## 6. Verification
 

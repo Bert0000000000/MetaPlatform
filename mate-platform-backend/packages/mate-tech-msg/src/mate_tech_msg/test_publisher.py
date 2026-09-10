@@ -1,4 +1,5 @@
 """Publisher tests (ST-5.1.4)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock
@@ -28,7 +29,9 @@ def publisher(kafka_client_with_mock_producer: KafkaClient, mock_dedup: DedupSto
 
 
 @pytest.mark.asyncio
-async def test_publish_simple(publisher: Publisher, mock_dedup: DedupStore, kafka_client_with_mock_producer: KafkaClient) -> None:
+async def test_publish_simple(
+    publisher: Publisher, mock_dedup: DedupStore, kafka_client_with_mock_producer: KafkaClient
+) -> None:
     """无 idempotency: 直接发 Kafka."""
     mock_dedup._redis.set = AsyncMock(return_value=True)  # pyright: ignore[reportPrivateUsage]
     req = PublishRequest(topic="t", payload={"x": 1})
@@ -53,7 +56,9 @@ async def test_publish_with_partition_key(publisher: Publisher, mock_dedup: Dedu
 @pytest.mark.asyncio
 async def test_publish_idempotency_hit(publisher: Publisher, mock_dedup: DedupStore) -> None:
     """同 key 第二次 → idempotency_hit=True，不发 Kafka."""
-    mock_dedup._redis.set = AsyncMock(return_value=None)  # 已存在  # pyright: ignore[reportPrivateUsage]
+    mock_dedup._redis.set = AsyncMock(
+        return_value=None
+    )  # 已存在  # pyright: ignore[reportPrivateUsage]
     mock_dedup._redis.get = AsyncMock(return_value="prev-payload")  # pyright: ignore[reportPrivateUsage]
     req = PublishRequest(
         topic="t",
@@ -66,7 +71,9 @@ async def test_publish_idempotency_hit(publisher: Publisher, mock_dedup: DedupSt
 
 
 @pytest.mark.asyncio
-async def test_publish_default_partition_key_from_tenant(publisher: Publisher, mock_dedup: DedupStore, kafka_client_with_mock_producer: KafkaClient) -> None:
+async def test_publish_default_partition_key_from_tenant(
+    publisher: Publisher, mock_dedup: DedupStore, kafka_client_with_mock_producer: KafkaClient
+) -> None:
     """无 partition_key → payload.tenant_id 自动."""
     mock_dedup._redis.set = AsyncMock(return_value=True)  # pyright: ignore[reportPrivateUsage]
     req = PublishRequest(

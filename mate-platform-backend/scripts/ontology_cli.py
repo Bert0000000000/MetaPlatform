@@ -11,6 +11,7 @@
 tenant-default）、--token（缺省自动用 admin/admin123 走 iam login）。
 仅依赖标准库（urllib），可在任意装有 Python 的机器上直接运行。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -169,7 +170,11 @@ def cmd_export(args: argparse.Namespace) -> int:
         tenant=args.tenant,
     )
     _raise_on_status(status, f"export {args.rid}")
-    raw = json.dumps(body, ensure_ascii=False, indent=2).encode() if not isinstance(body, bytes) else body
+    raw = (
+        json.dumps(body, ensure_ascii=False, indent=2).encode()
+        if not isinstance(body, bytes)
+        else body
+    )
     if args.out:
         with open(args.out, "wb") as fh:
             fh.write(raw)
@@ -204,7 +209,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_query = sub.add_parser("query", help="POST /ont/v2/object-query")
     p_query.add_argument("--source", required=True, help="本体类型 rid")
     p_query.add_argument("--limit", type=int, default=10)
-    p_query.add_argument("--body", default="", help="完整 ObjectQueryV2 JSON（覆盖 --source/--limit）")
+    p_query.add_argument(
+        "--body", default="", help="完整 ObjectQueryV2 JSON（覆盖 --source/--limit）"
+    )
     p_query.set_defaults(func=cmd_query)
 
     p_export = sub.add_parser("export", help="GET /ont/v2/object-types/{rid}/export")

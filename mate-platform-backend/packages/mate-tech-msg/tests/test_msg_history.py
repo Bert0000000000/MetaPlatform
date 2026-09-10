@@ -6,6 +6,7 @@ Covers GET /api/v1/msg/messages:
   * tenant isolation (tenant B never sees tenant A's rows)
   * ``since`` epoch-seconds filter
 """
+
 from __future__ import annotations
 
 import os
@@ -101,7 +102,9 @@ def test_messages_filtered_by_topic(client: TestClient, auth_acme) -> None:
 
 
 def test_messages_tenant_isolation(
-    client: TestClient, auth_acme, auth_globex,
+    client: TestClient,
+    auth_acme,
+    auth_globex,
 ) -> None:
     """Messages are tenant-scoped: globex never sees acme rows."""
     r_acme = client.get("/api/v1/msg/messages", headers=auth_acme)

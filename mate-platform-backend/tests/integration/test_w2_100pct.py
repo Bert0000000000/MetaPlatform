@@ -5,6 +5,7 @@ docker is unavailable. Tests that require docker pass trivially in
 environments without docker; CI runs the real testcontainer version
 in a dedicated job.
 """
+
 from __future__ import annotations
 
 import shutil

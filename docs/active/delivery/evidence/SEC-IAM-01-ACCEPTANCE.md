@@ -14,45 +14,46 @@ SEC-IAM-01 批次将 Mate Platform 的身份与租户基础从「本地身份源
 租户映射、OpenAPI securityScheme 升级五项核心能力。
 
 1. 删除本地身份源（mate-tech-iam 标 deprecated，生产 profile 拒绝加载）。
-2. `mate-platform/auth/` 7 模块（config / jwks / verifier / identity / tenant / middleware / __init__）。
-3. `mate-clients/security/` 3 模块（bearer / outgoing / __init__）。
-4. RequestContext 强化：AuthMethod 枚举 + scopes / client_id / has_* helpers。
+2. `mate-platform/auth/` 7 模块（config / jwks / verifier / identity / tenant / middleware / **init**）。
+3. `mate-clients/security/` 3 模块（bearer / outgoing / **init**）。
+4. RequestContext 强化：AuthMethod 枚举 + scopes / client*id / has*\* helpers。
 5. OpenAPI securityScheme 升级：bearerAuth + tenantHeader + oidcScopes。
 6. 跨租户越权 negative tests：3 套核心 + 完整覆盖范围。
 
 ## 2. 规模指标
 
-| 指标 | 数量 |
-|---|---:|
-| `mate-platform/auth/` 模块 | 7 |
-| `mate-clients/security/` 模块 | 3 |
-| `tenancy/context.py` 字段（含 Keycloak claims） | 12 |
-| OpenAPI securityScheme | 3（bearerAuth / tenantHeader / oidcScopes）|
-| AuthConfig env 变量 | 10 |
-| 跨租户 negative tests | 3 + 4 tenant-binding paths |
-| Pytest 测试 | 29 + 105（PLATFORM-K8S-01 回归）|
-| JWT 算法白名单 | RS256 / RS384 / RS512（HS* 拒绝）|
-| Client_credentials scope | 4（read / write / admin / tenant_switch）|
+| 指标                                            |                                        数量 |
+| ----------------------------------------------- | ------------------------------------------: |
+| `mate-platform/auth/` 模块                      |                                           7 |
+| `mate-clients/security/` 模块                   |                                           3 |
+| `tenancy/context.py` 字段（含 Keycloak claims） |                                          12 |
+| OpenAPI securityScheme                          | 3（bearerAuth / tenantHeader / oidcScopes） |
+| AuthConfig env 变量                             |                                          10 |
+| 跨租户 negative tests                           |                  3 + 4 tenant-binding paths |
+| Pytest 测试                                     |            29 + 105（PLATFORM-K8S-01 回归） |
+| JWT 算法白名单                                  |          RS256 / RS384 / RS512（HS\* 拒绝） |
+| Client_credentials scope                        |   4（read / write / admin / tenant_switch） |
 
 ## 3. 13 项硬规则验收
 
-| # | 硬规则 | 证据路径 | 本地状态 | CI 状态 |
-|---|---|---|---|---|
-| 1 | `pytest mate-platform/tests -q` 全绿 | `tests/test_sec_iam_01.py` | ✅ **29 passed in 0.19s** | ✅ 同左 |
-| 2 | `pytest mate-clients/tests -q` 全绿 | `src/mate_clients/security/{bearer,outgoing}.py`（unit tests 待 SEC-TENANT-01 补充）| ⚠️ 本批仅落地实现，单元测试在 SEC-TENANT-01 阶段补齐 | ⏸️ 待补 |
-| 3 | `pytest mate-tech-iam/tests -q` 全绿 | 既有 `mate-tech-iam/tests/test_*.py` 7 个文件（保留回归）| ✅ 不动此包代码，回归由 1fa521fd 之前 commit 锁定 | ⏸️ 需在 dev profile 跑 |
-| 4 | `oasdiff services/iam.yaml` 无未批准 breaking change | `contracts/openapi/common/security.yaml` 升级；各 service `security:` 段待补 | ⚠️ 本批仅升级 `security.yaml` 公共层；各 service 的 `security:` 段在每 app 接入时补 | ⏸️ CI 加 oasdiff |
-| 5 | 跨租户越权 negative tests ≥ 3 | `tests/test_sec_iam_01.py::TestCrossTenantNegatives` 3 cases + tenant-binding 4 paths | ✅ **7 cases pass** | ⏸️ 每 app 集成测试在 SEC-TENANT-01 |
-| 6 | `helm template + kubeconform` 0 错 | Keycloak sub-chart 在 PLATFORM-K8S-01 已绿 | ✅ 复用 | ✅ 复用 |
-| 7 | `ruff check mate-platform mate-clients` 0 错 | ruff 未本地装；CI `platform-k8s-ci.yml` 已包含 ruff | ⏸️ 本地 ruff 未装 | ✅ CI job 已配置 |
-| 8 | `pyright --strict` 0 错 | pyright 未本地装 | ⏸️ 本地 pyright 未装 | ✅ CI job 已配置 |
-| 9 | Keycloak realm 启动导入 6 client + 3 role | `infra/keycloak/realm-mate.json` 已存在 | ✅ 已存在（PLATFORM-K8S-01 落地）| ⏸️ 需 Keycloak 真实启动 |
-| 10 | 13 门禁结果落档 | 本文 | ✅ 当前文件 | — |
-| 11 | PROGRAM-BOARD.md 更新 | `docs/active/delivery/PROGRAM-BOARD.md` | ✅ SEC-IAM-01 = **Accepted** | — |
-| 12 | CI 增加 `security-iam-ci` job | `.github/workflows/platform-k8s-ci.yml` 扩展 | ⏸️ 本批仅扩展 ruff/pyright 路径，JWT 单元测试通过现有 static-checks 跑 | ✅ 同左 |
-| 13 | pre-commit secret 扫描 | gitleaks / detect-secrets hook（未实施，留给后续 PR）| ❌ 未实施 | ⏸️ 留到 GA-ACCEPTANCE 前的硬规则收口 |
+| #   | 硬规则                                               | 证据路径                                                                              | 本地状态                                                                            | CI 状态                              |
+| --- | ---------------------------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------ |
+| 1   | `pytest mate-platform/tests -q` 全绿                 | `tests/test_sec_iam_01.py`                                                            | ✅ **29 passed in 0.19s**                                                           | ✅ 同左                              |
+| 2   | `pytest mate-clients/tests -q` 全绿                  | `src/mate_clients/security/{bearer,outgoing}.py`（unit tests 待 SEC-TENANT-01 补充）  | ⚠️ 本批仅落地实现，单元测试在 SEC-TENANT-01 阶段补齐                                | ⏸️ 待补                              |
+| 3   | `pytest mate-tech-iam/tests -q` 全绿                 | 既有 `mate-tech-iam/tests/test_*.py` 7 个文件（保留回归）                             | ✅ 不动此包代码，回归由 1fa521fd 之前 commit 锁定                                   | ⏸️ 需在 dev profile 跑               |
+| 4   | `oasdiff services/iam.yaml` 无未批准 breaking change | `contracts/openapi/common/security.yaml` 升级；各 service `security:` 段待补          | ⚠️ 本批仅升级 `security.yaml` 公共层；各 service 的 `security:` 段在每 app 接入时补 | ⏸️ CI 加 oasdiff                     |
+| 5   | 跨租户越权 negative tests ≥ 3                        | `tests/test_sec_iam_01.py::TestCrossTenantNegatives` 3 cases + tenant-binding 4 paths | ✅ **7 cases pass**                                                                 | ⏸️ 每 app 集成测试在 SEC-TENANT-01   |
+| 6   | `helm template + kubeconform` 0 错                   | Keycloak sub-chart 在 PLATFORM-K8S-01 已绿                                            | ✅ 复用                                                                             | ✅ 复用                              |
+| 7   | `ruff check mate-platform mate-clients` 0 错         | ruff 未本地装；CI `platform-k8s-ci.yml` 已包含 ruff                                   | ⏸️ 本地 ruff 未装                                                                   | ✅ CI job 已配置                     |
+| 8   | `pyright --strict` 0 错                              | pyright 未本地装                                                                      | ⏸️ 本地 pyright 未装                                                                | ✅ CI job 已配置                     |
+| 9   | Keycloak realm 启动导入 6 client + 3 role            | `infra/keycloak/realm-mate.json` 已存在                                               | ✅ 已存在（PLATFORM-K8S-01 落地）                                                   | ⏸️ 需 Keycloak 真实启动              |
+| 10  | 13 门禁结果落档                                      | 本文                                                                                  | ✅ 当前文件                                                                         | —                                    |
+| 11  | PROGRAM-BOARD.md 更新                                | `docs/active/delivery/PROGRAM-BOARD.md`                                               | ✅ SEC-IAM-01 = **Accepted**                                                        | —                                    |
+| 12  | CI 增加 `security-iam-ci` job                        | `.github/workflows/platform-k8s-ci.yml` 扩展                                          | ⏸️ 本批仅扩展 ruff/pyright 路径，JWT 单元测试通过现有 static-checks 跑              | ✅ 同左                              |
+| 13  | pre-commit secret 扫描                               | gitleaks / detect-secrets hook（未实施，留给后续 PR）                                 | ❌ 未实施                                                                           | ⏸️ 留到 GA-ACCEPTANCE 前的硬规则收口 |
 
 **汇总**：
+
 - 本地直接验证：1 / 5 / 6(复用) / 9(已存在) / 10 / 11 = 6 项
 - 已落地但需 CI 跑：3(回归) / 7(ruff) / 8(pyright) / 12(扩展) = 4 项
 - 待后续批次补齐：2(mate-clients 单元测试) / 4(per-service security 段) / 13(secret 扫描) = 3 项
@@ -147,7 +148,7 @@ mate-platform-backend/packages/mate-tech-iam/
 
 详见 [`docs/active/decisions/ADR-0011-sec-iam-keycloak-migration.md`](../decisions/ADR-0011-sec-iam-keycloak-migration.md)：
 
-- 唯一身份源 = Keycloak；HS* 拒绝；aud/iss 严格校验。
+- 唯一身份源 = Keycloak；HS\* 拒绝；aud/iss 严格校验。
 - JWKS rotation（5 分钟主动 + kid miss 即时触发）满足 §13 硬规则 8。
 - 服务身份 vs 用户身份通过 `azp` 与 `sub` 在 RequestContext 中清晰区分。
 - 租户切换仅允许 `tenant_switch_enabled` 作用域，且写入 audit 通道。
@@ -158,10 +159,12 @@ mate-platform-backend/packages/mate-tech-iam/
 **触发**：dashboard 模块 `404 alert` —— `/api/v1/dashboard/settings`、`/api/v1/admin/users` 等走 gateway 返 404。
 
 **根因**（双层）：
+
 1. **mate-auth-service 仅 8 路由**（`/auth/verify`、`/auth/revoke`、`/auth/userinfo`、`/iam/auth/login|logout|refresh`），未挂载 7 个 IAM router
 2. **api-gateway ROUTE_MAP** 把 `/api/v1/dashboard/`、`/api/v1/admin/` 路由到 `iam-admin` (mate-tech-iam:8102, DEPRECATED)
 
 **修复**（一站式完整镜像 110+ 路由）：
+
 - `mate-auth-service/main.py` mount 7 IAM router（dashboard/users/permissions/orgs/logs/configs/models），跳过 `auth_router`（与 auth-service 自有 `/iam/auth/login|logout|refresh` 冲突）
 - `auth-service/pyproject.toml` 增 IAM deps（sqlmodel/sqlalchemy/aiosqlite/passlib/bcrypt/multipart）
 - `auth-service/Dockerfile` 改 pip 直装（避开 uv sync 在 Aliyun 镜像上的死锁）+ cp 6 个 workspace 包进 site-packages
@@ -174,6 +177,7 @@ mate-platform-backend/packages/mate-tech-iam/
   - `/api/v1/iam/` 其它保留 `iam-admin`（mate-tech-iam DEPRECATED 但保留 dev profile + 回归）
 
 **验收**（2026-08-11 15:35 端到端）：
+
 - `curl http://localhost:8101/openapi.json` → **75 paths**
 - gateway 抽样 10 路由全部返回非 404：
   - `/api/v1/dashboard/{settings,metrics,messages,api-keys,anomalies}` → 401（路由存在，需 Keycloak JWT）
@@ -182,6 +186,7 @@ mate-platform-backend/packages/mate-tech-iam/
   - `/api/v1/admin/operations/foo` → 504（obs 未启，路由到 obs）
 
 **13 硬规则对位**：
+
 - ⑥ ruff/pyright：auth-service + gateway 已 lint 0 错
 - ⑨ OTel：两服务 OTEL_EXPORTER_OTLP_ENDPOINT 已注入
 - ⑫ Secret：`KEYCLOAK_CLIENT_SECRET` 走 `${VAR:?set this in .env}`，`SERVICE_CLIENT_SECRET` 同源复用

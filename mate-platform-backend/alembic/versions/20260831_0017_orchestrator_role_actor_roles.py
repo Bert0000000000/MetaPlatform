@@ -5,6 +5,7 @@ Older developer and deployed databases have ``orchestrator_roles`` without
 for restart-safe local Docker upgrades; this migration remains the canonical
 production schema change.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence

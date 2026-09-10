@@ -4,21 +4,21 @@ on:
   workflow_dispatch:
     inputs:
       batch:
-        description: 'Batch ID (e.g. MP-V6-FOUNDATION-01)'
+        description: "Batch ID (e.g. MP-V6-FOUNDATION-01)"
         required: true
       branch_base:
-        description: 'Base branch to branch from'
+        description: "Base branch to branch from"
         required: false
-        default: 'main'
+        default: "main"
       loop_mode:
-        description: 'Loop mode'
+        description: "Loop mode"
         type: choice
         required: false
-        default: 'single'
+        default: "single"
         options:
-          - single    # 执行单个 Batch
-          - next      # 执行下一个 Batch
-          - chain     # 链式执行直到 evidence 缺失
+          - single # 执行单个 Batch
+          - next # 执行下一个 Batch
+          - chain # 链式执行直到 evidence 缺失
 
 env:
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -28,7 +28,7 @@ jobs:
   claude-loop:
     name: Run Claude Code Loop
     runs-on: ubuntu-latest
-    timeout-minutes: 1440  # 24 小时上限
+    timeout-minutes: 1440 # 24 小时上限
 
     steps:
       - uses: actions/checkout@v4

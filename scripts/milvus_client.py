@@ -1,4 +1,5 @@
-﻿"""MilvusHybridClient: real Milvus v2.5+ connection for FACTUAL retrieval."""
+"""MilvusHybridClient: real Milvus v2.5+ connection for FACTUAL retrieval."""
+
 from __future__ import annotations
 
 import contextlib
@@ -30,7 +31,9 @@ class MilvusHybridClient:
     def __init__(self, host=None, port=None, collection_name=None, dim=384):
         self._host = host or os.environ.get("MILVUS_HOST", "localhost")
         self._port = int(port or os.environ.get("MILVUS_PORT", "19530"))
-        self._collection = collection_name or os.environ.get("MILVUS_COLLECTION", self.DEFAULT_COLLECTION)
+        self._collection = collection_name or os.environ.get(
+            "MILVUS_COLLECTION", self.DEFAULT_COLLECTION
+        )
         self._dim = dim
         self._client = None
         self._lock = threading.Lock()
@@ -63,7 +66,15 @@ class MilvusHybridClient:
         with self._lock:
             self._client.insert(
                 self._collection,
-                data=[{"id": chunk_id, "document_id": document_id, "text": text, "embedding": list(vector), "metadata": str(metadata or {})}],
+                data=[
+                    {
+                        "id": chunk_id,
+                        "document_id": document_id,
+                        "text": text,
+                        "embedding": list(vector),
+                        "metadata": str(metadata or {}),
+                    }
+                ],
             )
         return chunk_id
 

@@ -2,6 +2,7 @@
 
 stdio (本地) + sse (远端) 双 transport。
 """
+
 from __future__ import annotations
 
 import os
@@ -20,9 +21,7 @@ async def run_stdio(server: Any) -> None:
     async def arun() -> None:
         actual = await server._ensure_server()
         async with stdio_server() as (read_stream, write_stream):
-            await actual.run(
-                read_stream, write_stream, actual.create_initialization_options()
-            )
+            await actual.run(read_stream, write_stream, actual.create_initialization_options())
 
     logger.info("mcp.transport.stdio.start")
     await arun()
@@ -35,6 +34,7 @@ async def stream_sse(server: Any) -> AsyncIterator[str]:
         SSE 格式事件
     """
     import json
+
     async for event in server._event_stream():
         yield "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
 

@@ -1,4 +1,5 @@
 """PRD-01 M1 — 会话级能力热进化单测（fiber 反应式 + 快照还原 + TTL + 跨租户）。"""
+
 from __future__ import annotations
 
 import asyncio
@@ -6,8 +7,14 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-for _p in ("mate-kernel", "mate-common", "mate-platform", "mate-clients",
-           "mate-tech-db", "mate-app-a2a"):
+for _p in (
+    "mate-kernel",
+    "mate-common",
+    "mate-platform",
+    "mate-clients",
+    "mate-tech-db",
+    "mate-app-a2a",
+):
     _d = os.path.join(os.path.dirname(__file__), "..", "..", _p, "src")
     if os.path.isdir(_d) and _d not in sys.path:
         sys.path.insert(0, _d)
@@ -32,9 +39,12 @@ def _fresh_registry():
     reg = RoleRegistry()
     set_role_registry(reg)
     reg.register(
-        tenant_id="t-a", role="ontology", name="ontology",
-        capabilities=[CapabilityBinding(name="list_classes", worker_kind="mcp",
-                                        ref="ont_list_classes")],
+        tenant_id="t-a",
+        role="ontology",
+        name="ontology",
+        capabilities=[
+            CapabilityBinding(name="list_classes", worker_kind="mcp", ref="ont_list_classes")
+        ],
     )
     return reg
 
@@ -111,6 +121,7 @@ class TestTtlAndGate:
         evo = SessionEvolution()
         run(evo.open_session("s6", "t-a", ttl_s=0))
         import time as _t
+
         _t.sleep(0.05)
         assert evo.get("s6") is None
         assert evo.dispatch_runtime("s6") is None
@@ -140,6 +151,7 @@ class TestSweep:
     def test_sweep_expired(self) -> None:
         import asyncio as _a
         import time as _t
+
         _fresh_registry()
         evo = SessionEvolution()
         _a.run(evo.open_session("old", "t-a", ttl_s=0))

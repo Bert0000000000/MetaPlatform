@@ -5,6 +5,7 @@ store calls must pass ``request.state.ctx``; the global tenant guard
 in ``main._enforce_tenant_per_request`` guarantees a ctx is present
 before reaching these handlers.
 """
+
 from __future__ import annotations
 
 import dataclasses
@@ -54,9 +55,7 @@ def _ctx(request: Request):
 
 
 @router.post("", response_model=InstanceResponse)
-async def create_instance_endpoint(
-    payload: InstanceCreate, request: Request
-) -> InstanceResponse:
+async def create_instance_endpoint(payload: InstanceCreate, request: Request) -> InstanceResponse:
     inst = store.create_instance(
         _ctx(request), payload.class_id, payload.properties, payload.namespace
     )
@@ -72,9 +71,7 @@ async def list_instances_endpoint(
 
 
 @router.post("/relations", response_model=RelationResponse)
-async def create_relation_endpoint(
-    payload: RelationCreate, request: Request
-) -> RelationResponse:
+async def create_relation_endpoint(payload: RelationCreate, request: Request) -> RelationResponse:
     try:
         rel = store.create_relation(
             _ctx(request), payload.type, payload.src_id, payload.dst_id, payload.properties
@@ -86,10 +83,7 @@ async def create_relation_endpoint(
 
 @router.get("/relations", response_model=list[RelationResponse])
 async def list_relations_endpoint(request: Request) -> list[RelationResponse]:
-    return [
-        RelationResponse(**dataclasses.asdict(r))
-        for r in store.list_relations(_ctx(request))
-    ]
+    return [RelationResponse(**dataclasses.asdict(r)) for r in store.list_relations(_ctx(request))]
 
 
 # Static-path routes registered before wildcard routes so the

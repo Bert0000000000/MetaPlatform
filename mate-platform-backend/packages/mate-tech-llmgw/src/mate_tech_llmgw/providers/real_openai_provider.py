@@ -16,6 +16,7 @@ P3-W7: this provider wraps the real OpenAI Chat Completions API via
 The provider implements the same ``chat`` signature as the existing
 ``OpenAIChatProvider`` so it can be swapped in via the router.
 """
+
 from __future__ import annotations
 
 import json
@@ -67,9 +68,8 @@ class RealOpenAIProvider:
         self._api_key = api_key
         self._base_url = base_url or os.getenv("OPENAI_BASE_URL", _OPENAI_BASE_URL)
         self._timeout = timeout
-        self._allow_fallback = (
-            not is_production_profile()
-            and (True if allow_fallback is None else allow_fallback)
+        self._allow_fallback = not is_production_profile() and (
+            True if allow_fallback is None else allow_fallback
         )
         self._client: httpx.AsyncClient | None = None
 
@@ -162,9 +162,7 @@ class RealOpenAIProvider:
                 model=self.model,
             )
             if not self._fallback_enabled():
-                raise RuntimeError(
-                    "OpenAI provider unavailable: request timed out"
-                ) from None
+                raise RuntimeError("OpenAI provider unavailable: request timed out") from None
             return _stub_response(self.model, messages)
         except httpx.HTTPStatusError as e:
             # P2: keep the upstream status (4xx vs 5xx) for retry/fallback
@@ -198,9 +196,7 @@ class RealOpenAIProvider:
         return ChatResponse(
             content=message.get("content", "") or "",
             model=data.get("model", self.model),
-            reasoning_content=(
-                message.get("reasoning_content") or message.get("reasoning") or ""
-            ),
+            reasoning_content=(message.get("reasoning_content") or message.get("reasoning") or ""),
             finish_reason=choice.get("finish_reason"),
             tool_calls=message.get("tool_calls", []) or [],
             usage={
@@ -292,10 +288,13 @@ class RealOpenAIProvider:
                     for tc in delta.get("tool_calls") or []:
                         idx = tc.get("index", 0)
                         while len(tool_calls) <= idx:
-                            tool_calls.append({
-                                "id": None, "type": "function",
-                                "function": {"name": None, "arguments": ""},
-                            })
+                            tool_calls.append(
+                                {
+                                    "id": None,
+                                    "type": "function",
+                                    "function": {"name": None, "arguments": ""},
+                                }
+                            )
                         entry = tool_calls[idx]
                         if tc.get("id"):
                             entry["id"] = tc["id"]
@@ -319,9 +318,7 @@ class RealOpenAIProvider:
                 model=self.model,
             )
             if not self._fallback_enabled():
-                raise RuntimeError(
-                    "OpenAI provider unavailable: request timed out"
-                ) from None
+                raise RuntimeError("OpenAI provider unavailable: request timed out") from None
             yield self._done_event(_stub_response(self.model, messages))
             return
         except httpx.HTTPStatusError as e:

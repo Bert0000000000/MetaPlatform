@@ -5,6 +5,7 @@ W3C A2A message to ``mate-app-a2a`` ``POST /api/v1/a2a/messages``
 (task-based) and polling ``GET /api/v1/a2a/tasks/{task_id}``. The
 envelope field names are the W3C wire names (camelCase).
 """
+
 from __future__ import annotations
 
 from typing import Any

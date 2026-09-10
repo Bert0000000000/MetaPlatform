@@ -14,6 +14,7 @@ APPHUB-RUNTIME-01 phase B. Two implementations live side by side:
 ``APPHUB_EXECUTOR_MODE`` env var; default is ``real`` so production
 deployments get the real integrations unless the operator opts out.
 """
+
 from __future__ import annotations
 
 import os
@@ -32,7 +33,9 @@ from .schema import ActionResult, RuntimeAction, RuntimeContext
 # test surface continues to work without external services.
 # ---------------------------------------------------------------------------
 async def execute_action(
-    ctx: RuntimeContext, action: RuntimeAction, payload: dict,
+    ctx: RuntimeContext,
+    action: RuntimeAction,
+    payload: dict,
 ) -> ActionResult:
     """Execute via the legacy mock dispatch (kept for backward-compat)."""
     reject_production_fallback("mock AppHub action execution")
@@ -78,7 +81,10 @@ class MockExecutor:
     """Marker for the legacy mock executor (same callable shape)."""
 
     async def dispatch(
-        self, ctx: RuntimeContext, action: RuntimeAction, payload: dict,
+        self,
+        ctx: RuntimeContext,
+        action: RuntimeAction,
+        payload: dict,
     ) -> ActionResult:
         return await execute_action(ctx, action, payload)
 
@@ -97,7 +103,10 @@ class RealExecutor:
         self._forms = forms
 
     async def submit_form(
-        self, ctx: RuntimeContext, action: RuntimeAction, payload: dict,
+        self,
+        ctx: RuntimeContext,
+        action: RuntimeAction,
+        payload: dict,
     ) -> ActionResult:
         """submit_form → FormsClient.submit"""
         with get_tracer().start_as_current_span("apphub.runtime.submit_form") as span:
@@ -117,7 +126,10 @@ class RealExecutor:
             )
 
     async def trigger_flow(
-        self, ctx: RuntimeContext, action: RuntimeAction, payload: dict,
+        self,
+        ctx: RuntimeContext,
+        action: RuntimeAction,
+        payload: dict,
     ) -> ActionResult:
         """trigger_flow → FlowableClient.start_process"""
         with get_tracer().start_as_current_span("apphub.runtime.trigger_flow") as span:
@@ -137,7 +149,10 @@ class RealExecutor:
             )
 
     async def call_api(
-        self, ctx: RuntimeContext, action: RuntimeAction, payload: dict,
+        self,
+        ctx: RuntimeContext,
+        action: RuntimeAction,
+        payload: dict,
     ) -> ActionResult:
         """call_api → APIGatewayClient.invoke"""
         with get_tracer().start_as_current_span("apphub.runtime.call_api") as span:
@@ -156,7 +171,10 @@ class RealExecutor:
             )
 
     async def navigate(
-        self, ctx: RuntimeContext, action: RuntimeAction, payload: dict,
+        self,
+        ctx: RuntimeContext,
+        action: RuntimeAction,
+        payload: dict,
     ) -> ActionResult:
         """navigate → 仅返回跳转目标 (no external service)."""
         with get_tracer().start_as_current_span("apphub.runtime.navigate") as span:
@@ -169,7 +187,10 @@ class RealExecutor:
             )
 
     async def dispatch(
-        self, ctx: RuntimeContext, action: RuntimeAction, payload: dict,
+        self,
+        ctx: RuntimeContext,
+        action: RuntimeAction,
+        payload: dict,
     ) -> ActionResult:
         """Dispatch by action_type — selects one of the 4 handlers."""
         match action.action_type:

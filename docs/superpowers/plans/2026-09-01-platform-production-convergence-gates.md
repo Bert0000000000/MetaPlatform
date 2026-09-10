@@ -25,6 +25,7 @@
 ### Task 1: 建立统一 Gate 证据格式和 CI 门
 
 **Files:**
+
 - Create: `acceptance/gates/schema.json`
 - Create: `acceptance/gates/environment-schema.json`
 - Create: `acceptance/gates/component-matrix.yaml`
@@ -39,6 +40,7 @@
 - Modify: `.github/workflows/ga-acceptance.yml`
 
 **Interfaces:**
+
 - Produces: `verify_gate(path: Path) -> GateResult`; matrix key `(gate_id, component, version, image_digest, config_digest)`; exception-safe `test-production-gate.ps1 -Gate <allowlisted-id>` live runner.
 
 - [ ] **Step 1: Write a failing incomplete-evidence test**
@@ -87,6 +89,7 @@ git commit -m "test(platform): require production gate evidence"
 ### Task 2: 验证并迁移 Supabase Auth → Keycloak 身份链
 
 **Files:**
+
 - Create: `infra/helm/charts/supabase-auth/Chart.yaml`
 - Create: `infra/helm/charts/supabase-auth/values.yaml`
 - Modify: `infra/helm/charts/keycloak/Chart.yaml`
@@ -100,6 +103,7 @@ git commit -m "test(platform): require production gate evidence"
 - Create: `acceptance/gates/identity-supabase-keycloak.yaml`
 
 **Interfaces:**
+
 - Consumes: Supabase OAuth/OIDC discovery/JWKS and a current security-supported, Digest-pinned Keycloak patch (2026-09-01 validation baseline: 26.7.3) for OIDC Identity Brokering/Token Exchange. JWT Authorization Grant is a separate conditional noninteractive sub-gate.
 - Produces: short runtime token with the exact claims defined in Architecture §7.1 and an external-identity mapping `(supabase_iss, sub) -> keycloak_link -> platform_user_id`.
 
@@ -149,6 +153,7 @@ git commit -m "feat(identity): broker supabase users into runtime tokens"
 ### Task 3: 准入 LiteLLM Model/MCP/A2A 开源路径
 
 **Files:**
+
 - Create: `infra/helm/charts/litellm/Chart.yaml`
 - Create: `infra/helm/charts/litellm/values.yaml`
 - Create: `infra/images/litellm/Dockerfile`
@@ -161,6 +166,7 @@ git commit -m "feat(identity): broker supabase users into runtime tokens"
 - Create: `acceptance/gates/litellm-open-source.yaml`
 
 **Interfaces:**
+
 - Produces: independent logical endpoints for Model, MCP and A2A with a shared pinned image only when import/license and fault-domain requirements pass.
 
 - [ ] **Step 1: Write protocol and no-enterprise-import tests**
@@ -202,6 +208,7 @@ git commit -m "infra(gateway): gate litellm open-source roles"
 ### Task 4: 先准入 SeaweedFS，再准入 RAGFlow、MemoryCore 和 Jena
 
 **Files:**
+
 - Create: `infra/helm/charts/seaweedfs/Chart.yaml`
 - Create: `infra/helm/charts/seaweedfs/values.yaml`
 - Create: `infra/helm/charts/seaweedfs/templates/object-lock-policy.yaml`
@@ -221,6 +228,7 @@ git commit -m "infra(gateway): gate litellm open-source roles"
 - Create: `acceptance/gates/knowledge-memory-ontology.yaml`
 
 **Interfaces:**
+
 - Produces: security-fixed SeaweedFS S3/object-lock profile and Artifact Object API first; then pinned RAGFlow PostgreSQL/external-Valkey/Infinity/SeaweedFS profile, pinned MemoryCore L0-L3-only profile and Jena immutable version projection profile.
 
 - [ ] **Step 1: Write a target-topology inventory test**
@@ -279,6 +287,7 @@ git commit -m "infra(knowledge): gate pinned rag memory and ontology stack"
 ### Task 5: 准入外部 Iceberg 发布契约、Polaris、Trino 和 PostgreSQL 备份链
 
 **Files:**
+
 - Create: `infra/helm/charts/polaris/Chart.yaml`
 - Create: `infra/helm/charts/polaris/values.yaml`
 - Create: `infra/helm/charts/polaris/templates/postgresql-jdbc-config.yaml`
@@ -322,6 +331,7 @@ git commit -m "infra(knowledge): gate pinned rag memory and ontology stack"
 - Create: `acceptance/gates/storage-catalog-backup.yaml`
 
 **Interfaces:**
+
 - Consumes: Task 4 approved SeaweedFS object authority and externally governed Iceberg publishers.
 - Produces: PostgreSQL/JDBC-backed Polaris as sole Iceberg Catalog, Trino read-only connector, deployable guarded external-publication ingress plus one-time commit-authorization contract; independent `cnpg-barman-backup` Gate; parent `storage-catalog-backup` Gate. MetaPlatform does not write Iceberg data/metadata files in this baseline.
 
@@ -374,6 +384,7 @@ git commit -m "infra(storage): gate object catalog and backup stack"
 ### Task 6: 强化审计、供应链和敏感可观测数据
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-platform/src/mate_platform/audit/hash_chain.py`
 - Create: `mate-platform-backend/packages/mate-platform/src/mate_platform/observability/redaction.py`
 - Create: `infra/helm/charts/openbao/Chart.yaml`
@@ -397,6 +408,7 @@ git commit -m "infra(storage): gate object catalog and backup stack"
 - Create: `acceptance/gates/registry-trust.yaml`
 
 **Interfaces:**
+
 - Produces: OpenBao HA/Raft, seal/bootstrap, PKI, dynamic database credentials and signing service; `append_audit(record) -> SignedAuditRecord`; `redact_span(span, policy) -> ExportableSpan`; WORM archive receipt; independent `registry-trust` Gate for OCI storage, signature/admission, revocation, backup and restore.
 
 - [ ] **Step 1: Write tamper and secret-leak tests**
@@ -452,6 +464,7 @@ git commit -m "feat(audit): add tamper evidence and safe telemetry"
 ### Task 7: 准入集群级 PlatformFoundation
 
 **Files:**
+
 - Create: `infra/helm/charts/platform-foundation/Chart.yaml`
 - Create: `infra/helm/charts/platform-foundation/values.yaml`
 - Create: `infra/helm/charts/envoy-gateway/Chart.yaml`
@@ -470,6 +483,7 @@ git commit -m "feat(audit): add tamper evidence and safe telemetry"
 - Create: `acceptance/gates/platform-foundation.yaml`
 
 **Interfaces:**
+
 - Consumes: Task 5 `cnpg-barman-backup` Gate with the exact operator/Barman Cloud Plugin/cert-manager compatibility evidence.
 - Produces: cluster-scoped CRDs/controllers and versioned API contract for Cilium, Envoy Gateway, CloudNativePG operator, Barman Cloud Plugin, cert-manager, External Secrets Operator, Gatekeeper/Sigstore Policy Controller and Flux. It owns no tenant workload or business data.
 
@@ -497,6 +511,7 @@ git commit -m "infra(foundation): gate cluster controllers and crds"
 ### Task 8: 准入 Namespaced TenantRuntime 生产集成面
 
 **Files:**
+
 - Create: `infra/helm/charts/tenant-runtime/Chart.yaml`
 - Create: `infra/helm/charts/tenant-runtime/values.yaml`
 - Create: `infra/helm/charts/tenant-runtime/templates/gateway.yaml`
@@ -520,6 +535,7 @@ git commit -m "infra(foundation): gate cluster controllers and crds"
 - Create: `acceptance/gates/tenant-runtime-composition.yaml`
 
 **Interfaces:**
+
 - Consumes: Task 7 `platform-foundation` API contract, Task 6 independent `registry-trust`, plus individually passed identity, authorization, database, object, secret/PKI, messaging/workflow, observability, tenant-employee-runtime and business-service Gate IDs.
 - Produces: one purely namespaced `TenantRuntime` Helm package and connected Kustomize/Flux profile; it does not install CRDs/controllers or turn any failed child component into PASS.
 
@@ -563,6 +579,7 @@ git commit -m "infra(runtime): gate connected tenant composition"
 ### Task 9: 交付 Disconnected Cell 和完整宿主兼容门
 
 **Files:**
+
 - Create: `infra/disconnected-cell/kustomization.yaml`
 - Create: `infra/disconnected-cell/identity-broker.yaml`
 - Create: `infra/disconnected-cell/local-supabase-auth.yaml`
@@ -582,6 +599,7 @@ git commit -m "infra(runtime): gate connected tenant composition"
 - Create: `acceptance/gates/disconnected-cell-hosts.yaml`
 
 **Interfaces:**
+
 - Consumes: Task 7 passed PlatformFoundation、Task 8 passed connected TenantRuntime and every component selected for the Cell.
 - Produces: signed `DeploymentBundle` containing pinned images, governance packages, local identity/bootstrap/policy/OCI/GitOps/secrets sources, revocation watermarks and offline expiry; four-host Capability Contract.
 

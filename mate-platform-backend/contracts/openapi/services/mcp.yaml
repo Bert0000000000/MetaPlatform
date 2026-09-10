@@ -8,12 +8,12 @@ info:
     name: Mate Platform API Governance
     email: api-governance@metaplatform.local
 servers:
-- url: /
+  - url: /
 tags:
-- name: mcp
-  description: mcp domain operations
-- name: federation
-  description: MCP federation (external MCP server registry & cross-server tool routing)
+  - name: mcp
+    description: mcp domain operations
+  - name: federation
+    description: MCP federation (external MCP server registry & cross-server tool routing)
 security:
   - bearerAuth: []
     tenantHeader: []
@@ -22,152 +22,152 @@ paths:
   /healthz:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
+        - bearerAuth: []
+          tenantHeader: []
       summary: 健康检查
       tags:
-      - mcp
+        - mcp
       responses:
-        '200':
+        "200":
           description: OK
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: mcpGetHealthz
       description: 健康检查
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.get
       x-mate-requirements:
-      - FR-MCP-MCPGETHEALTHZ
+        - FR-MCP-MCPGETHEALTHZ
       x-mate-implementation-status: implemented
   /api/v1/mcp/tool-categories:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: 列出所有工具分类
       tags:
-      - mcp
+        - mcp
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ToolCategory'
+                  $ref: "#/components/schemas/ToolCategory"
       operationId: mcpGetMcpToolCategories
       description: 列出所有工具分类（工具注册中心的分类树数据源）
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.get
       x-mate-requirements:
-      - FR-MCP-MCPGETMCPTOOLCATEGORIES
+        - FR-MCP-MCPGETMCPTOOLCATEGORIES
       x-mate-implementation-status: implemented
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 创建工具分类
       tags:
-      - mcp
+        - mcp
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ToolCategoryCreate'
+              $ref: "#/components/schemas/ToolCategoryCreate"
       responses:
-        '201':
+        "201":
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToolCategory'
-        '400':
+                $ref: "#/components/schemas/ToolCategory"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: mcpPostMcpToolCategory
       description: 创建工具分类（code 重复返回 400）
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.post
       x-mate-requirements:
-      - FR-MCP-MCPPOSTMCPTOOLCATEGORY
+        - FR-MCP-MCPPOSTMCPTOOLCATEGORY
       x-mate-implementation-status: implemented
   /api/v1/mcp/tool-categories/{category_id}:
     put:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 更新工具分类
       tags:
-      - mcp
+        - mcp
       parameters:
-      - name: category_id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ToolCategoryCreate'
+              $ref: "#/components/schemas/ToolCategoryCreate"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToolCategory'
-        '404':
+                $ref: "#/components/schemas/ToolCategory"
+        "404":
           $ref: ../common/errors.yaml#/components/responses/Error404
       operationId: mcpPutMcpToolCategory
       description: 更新工具分类的名称/描述/排序
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.post
       x-mate-requirements:
-      - FR-MCP-MCPPUTMCPTOOLCATEGORY
+        - FR-MCP-MCPPUTMCPTOOLCATEGORY
       x-mate-implementation-status: implemented
     delete:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 删除工具分类
       tags:
-      - mcp
+        - mcp
       parameters:
-      - name: category_id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '204':
+        "204":
           description: No Content
-        '404':
+        "404":
           $ref: ../common/errors.yaml#/components/responses/Error404
       operationId: mcpDeleteMcpToolCategory
       description: 删除工具分类（无工具引用时）
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.post
       x-mate-requirements:
-      - FR-MCP-MCPDELETEMCPTOOLCATEGORY
+        - FR-MCP-MCPDELETEMCPTOOLCATEGORY
       x-mate-implementation-status: implemented
   /api/v1/mcp/tools:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: 列出所有已注册工具
       tags:
-      - mcp
+        - mcp
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -177,63 +177,63 @@ paths:
                   tools:
                     type: array
                     items:
-                      $ref: '#/components/schemas/ToolSpec'
-        '400':
+                      $ref: "#/components/schemas/ToolSpec"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: mcpGetMcpTools
       description: 列出所有已注册工具
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.get
       x-mate-requirements:
-      - FR-MCP-MCPGETMCPTOOLS
+        - FR-MCP-MCPGETMCPTOOLS
       x-mate-implementation-status: implemented
     post:
       summary: 动态注册工具（W2 服务中心）
       tags:
-      - mcp
+        - mcp
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterToolRequest'
+              $ref: "#/components/schemas/RegisterToolRequest"
       responses:
-        '201':
+        "201":
           description: 注册成功
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DynamicTool'
-        '401':
+                $ref: "#/components/schemas/DynamicTool"
+        "401":
           description: 缺少或无效 JWT
-        '422':
+        "422":
           description: 请求体校验失败
       operationId: mcpPostMcpTools
       description: 动态注册工具（数字员工 / 外部 worker 能力，带转发 endpoint）
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.post
       x-mate-requirements:
-      - FR-MCP-MCPPOSTMCPTOOLS
+        - FR-MCP-MCPPOSTMCPTOOLS
       x-mate-implementation-status: implemented
   /api/v1/mcp/tools/{name}:
     post:
       summary: HTTP 桥接 — 调工具
       tags:
-      - mcp
+        - mcp
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       parameters:
-      - name: name
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -244,7 +244,7 @@ paths:
                 arguments:
                   type: object
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -254,73 +254,73 @@ paths:
                   tool:
                     type: string
                   result: {}
-        '401':
+        "401":
           description: 缺少或无效 JWT
-        '404':
+        "404":
           description: 工具不存在
-        '429':
+        "429":
           description: 触发限流
       operationId: mcpPostMcpToolsName
       description: HTTP 桥接 — 调工具
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.post
       x-mate-requirements:
-      - FR-MCP-MCPPOSTMCPTOOLSNAME
+        - FR-MCP-MCPPOSTMCPTOOLSNAME
       x-mate-implementation-status: implemented
     put:
       summary: 更新动态工具（W2）
       tags:
-      - mcp
+        - mcp
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       parameters:
-      - name: name
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateToolRequest'
+              $ref: "#/components/schemas/UpdateToolRequest"
       responses:
-        '200':
+        "200":
           description: 更新成功
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DynamicTool'
-        '401':
+                $ref: "#/components/schemas/DynamicTool"
+        "401":
           description: 缺少或无效 JWT
-        '404':
+        "404":
           description: 工具不存在
       operationId: mcpPutMcpToolsName
       description: 更新动态工具（endpoint / description / enabled）
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.put
       x-mate-requirements:
-      - FR-MCP-MCPPUTMCPTOOLSNAME
+        - FR-MCP-MCPPUTMCPTOOLSNAME
       x-mate-implementation-status: implemented
     delete:
       summary: 注销动态工具（W2）
       tags:
-      - mcp
+        - mcp
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       parameters:
-      - name: name
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: 注销成功
           content:
             application/json:
@@ -329,74 +329,74 @@ paths:
                 properties:
                   deleted:
                     type: string
-        '401':
+        "401":
           description: 缺少或无效 JWT
-        '404':
+        "404":
           description: 工具不存在
       operationId: mcpDeleteMcpToolsName
       description: 注销动态工具
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.delete
       x-mate-requirements:
-      - FR-MCP-MCPDELETEMCPTOOLSNAME
+        - FR-MCP-MCPDELETEMCPTOOLSNAME
       x-mate-implementation-status: implemented
   /api/v1/mcp/resources:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: 列出资源
       tags:
-      - mcp
+        - mcp
       responses:
-        '200':
+        "200":
           description: OK
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: mcpGetMcpResources
       description: 列出资源
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.get
       x-mate-requirements:
-      - FR-MCP-MCPGETMCPRESOURCES
+        - FR-MCP-MCPGETMCPRESOURCES
       x-mate-implementation-status: implemented
   /api/v1/mcp/prompts:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: 列出 prompt 模板
       tags:
-      - mcp
+        - mcp
       responses:
-        '200':
+        "200":
           description: OK
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: mcpGetMcpPrompts
       description: 列出 prompt 模板
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.get
       x-mate-requirements:
-      - FR-MCP-MCPGETMCPPROMPTS
+        - FR-MCP-MCPGETMCPPROMPTS
       x-mate-implementation-status: implemented
   /api/v1/mcp/prompts/{name}:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 渲染 prompt 模板
       tags:
-      - mcp
+        - mcp
       parameters:
-      - name: name
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -404,16 +404,16 @@ paths:
             schema:
               type: object
       responses:
-        '200':
+        "200":
           description: OK
-        '404':
+        "404":
           description: prompt 不存在
       operationId: mcpPostMcpPromptsName
       description: 渲染 prompt 模板
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.post
       x-mate-requirements:
-      - FR-MCP-MCPPOSTMCPPROMPTSNAME
+        - FR-MCP-MCPPOSTMCPPROMPTSNAME
       x-mate-implementation-status: implemented
   # ---- MCP Federation (backlog §3.8): external MCP server registry ----
   # Field names / response wrappers / status enum mirror the actual
@@ -422,20 +422,20 @@ paths:
   /api/v1/mcp/federation/servers:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 注册外部 MCP server
       tags:
-      - federation
+        - federation
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterFederationServerRequest'
+              $ref: "#/components/schemas/RegisterFederationServerRequest"
       responses:
-        '201':
+        "201":
           description: Created
           content:
             application/json:
@@ -443,33 +443,33 @@ paths:
                 type: object
                 properties:
                   server:
-                    $ref: '#/components/schemas/FederatedServer'
-        '400':
+                    $ref: "#/components/schemas/FederatedServer"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: mcpPostMcpFederationServers
       description: 注册外部 MCP server(租户隔离)
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.post
       x-mate-requirements:
-      - FR-MCP-FEDERATION-REGISTER
+        - FR-MCP-FEDERATION-REGISTER
       x-mate-implementation-status: implemented
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: 列出已注册的联邦 server
       tags:
-      - federation
+        - federation
       parameters:
-      - name: status
-        in: query
-        required: false
-        schema:
-          type: string
-          enum: [active, disabled, deleted]
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [active, disabled, deleted]
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -479,35 +479,35 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/FederatedServer'
+                      $ref: "#/components/schemas/FederatedServer"
                   total:
                     type: integer
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: mcpGetMcpFederationServers
       description: 列出已注册的联邦 server(按 status 过滤)
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.get
       x-mate-requirements:
-      - FR-MCP-FEDERATION-LIST
+        - FR-MCP-FEDERATION-LIST
       x-mate-implementation-status: implemented
   /api/v1/mcp/federation/servers/{server_id}:
     parameters:
-    - name: server_id
-      in: path
-      required: true
-      schema:
-        type: string
+      - name: server_id
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: 获取单个联邦 server 详情
       tags:
-      - federation
+        - federation
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -515,32 +515,32 @@ paths:
                 type: object
                 properties:
                   server:
-                    $ref: '#/components/schemas/FederatedServer'
-        '404':
+                    $ref: "#/components/schemas/FederatedServer"
+        "404":
           description: federated server not found
       operationId: mcpGetMcpFederationServersServerId
       description: 获取单个联邦 server 详情
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.get
       x-mate-requirements:
-      - FR-MCP-FEDERATION-GET
+        - FR-MCP-FEDERATION-GET
       x-mate-implementation-status: implemented
     put:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 更新联邦 server(transport_url / auth_token_ref / status / tools)
       tags:
-      - federation
+        - federation
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateFederationServerRequest'
+              $ref: "#/components/schemas/UpdateFederationServerRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -548,28 +548,28 @@ paths:
                 type: object
                 properties:
                   server:
-                    $ref: '#/components/schemas/FederatedServer'
-        '400':
+                    $ref: "#/components/schemas/FederatedServer"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
-        '404':
+        "404":
           description: federated server not found
       operationId: mcpPutMcpFederationServersServerId
       description: 更新联邦 server
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.post
       x-mate-requirements:
-      - FR-MCP-FEDERATION-UPDATE
+        - FR-MCP-FEDERATION-UPDATE
       x-mate-implementation-status: implemented
     delete:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 注销联邦 server(软删除 → status=deleted)
       tags:
-      - federation
+        - federation
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -580,26 +580,26 @@ paths:
                     type: boolean
                   server_id:
                     type: string
-        '404':
+        "404":
           description: federated server not found
       operationId: mcpDeleteMcpFederationServersServerId
       description: 注销联邦 server
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.post
       x-mate-requirements:
-      - FR-MCP-FEDERATION-DELETE
+        - FR-MCP-FEDERATION-DELETE
       x-mate-implementation-status: implemented
   /api/v1/mcp/federation/tools:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: 列出所有联邦 server 暴露的远程工具(聚合)
       tags:
-      - federation
+        - federation
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -609,7 +609,7 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/FederatedTool'
+                      $ref: "#/components/schemas/FederatedTool"
                   total:
                     type: integer
       operationId: mcpGetMcpFederationTools
@@ -617,31 +617,31 @@ paths:
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.get
       x-mate-requirements:
-      - FR-MCP-FEDERATION-TOOLS
+        - FR-MCP-FEDERATION-TOOLS
       x-mate-implementation-status: implemented
   /api/v1/mcp/federation/tools/{tool_name}/invoke:
     parameters:
-    - name: tool_name
-      in: path
-      required: true
-      schema:
-        type: string
+      - name: tool_name
+        in: path
+        required: true
+        schema:
+          type: string
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 路由调用联邦工具
       tags:
-      - federation
+        - federation
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InvokeRemoteToolRequest'
+              $ref: "#/components/schemas/InvokeRemoteToolRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -655,54 +655,54 @@ paths:
                   server_name:
                     type: string
                   result: {}
-        '404':
+        "404":
           description: tool not found in any federated server
-        '502':
+        "502":
           description: remote MCP server unreachable
       operationId: mcpPostMcpFederationToolsToolNameInvoke
       description: 路由调用联邦工具(按 tool_name 找到暴露它的 server)
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.post
       x-mate-requirements:
-      - FR-MCP-FEDERATION-INVOKE
+        - FR-MCP-FEDERATION-INVOKE
       x-mate-implementation-status: implemented
   /api/v1/mcp/protocol/mcp:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: MCP streamable-http SSE 流（W4 外部 MCP 客户端）
       description: MCP 协议标准端点 — initialize / tools/list / tools/call 经 streamable HTTP (JSON-RPC + SSE)。
       tags: [mcp]
       responses:
-        '200':
+        "200":
           description: SSE 事件流
       operationId: mcpGetMcpProtocol
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.read
       x-mate-requirements:
-      - FR-MCP-PROTOCOL-GET
+        - FR-MCP-PROTOCOL-GET
       x-mate-implementation-status: implemented
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-required-scopes: [platform.write]
       summary: MCP streamable-http JSON-RPC 端点（W4）
       description: MCP 协议标准端点 — 外部 MCP 客户端（Claude Desktop / Cursor 等）经此发现与调用服务中心工具。
       tags: [mcp]
       responses:
-        '200':
+        "200":
           description: MCP JSON-RPC 响应或 SSE 流
-        '401':
+        "401":
           description: 缺少或无效 JWT
       operationId: mcpPostMcpProtocol
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.write
       x-mate-requirements:
-      - FR-MCP-PROTOCOL-POST
+        - FR-MCP-PROTOCOL-POST
       x-mate-implementation-status: implemented
 components:
   securitySchemes:
@@ -739,8 +739,8 @@ components:
     RegisterToolRequest:
       type: object
       required:
-      - name
-      - endpoint
+        - name
+        - endpoint
       properties:
         name:
           type: string

@@ -49,35 +49,31 @@ class ResourceLimits:
 
     上下限对位 K8s LimitRange / ResourceQuota 经验值（生产通常 1 节点 ≤ 16 CPU / 64Gi）。
     """
-    cpu_millicores: int = 500      # 0.5 CPU
+
+    cpu_millicores: int = 500  # 0.5 CPU
     memory_mb: int = 512
     timeout_seconds: int = 60
     ephemeral_storage_mb: int = 256
 
-    _CPU_MIN = 50          # 0.05 CPU
-    _CPU_MAX = 16000       # 16 CPU
-    _MEM_MIN = 64          # 64 Mi
-    _MEM_MAX = 65536       # 64 Gi
+    _CPU_MIN = 50  # 0.05 CPU
+    _CPU_MAX = 16000  # 16 CPU
+    _MEM_MIN = 64  # 64 Mi
+    _MEM_MAX = 65536  # 64 Gi
     _TIME_MIN = 1
-    _TIME_MAX = 3600       # 1h
+    _TIME_MAX = 3600  # 1h
     _STORAGE_MIN = 64
-    _STORAGE_MAX = 10240   # 10 Gi
+    _STORAGE_MAX = 10240  # 10 Gi
 
     def __post_init__(self) -> None:
         if not (self._CPU_MIN <= self.cpu_millicores <= self._CPU_MAX):
             raise ValueError(
-                f"cpu_millicores={self.cpu_millicores} 越界 "
-                f"[{self._CPU_MIN}, {self._CPU_MAX}]"
+                f"cpu_millicores={self.cpu_millicores} 越界 [{self._CPU_MIN}, {self._CPU_MAX}]"
             )
         if not (self._MEM_MIN <= self.memory_mb <= self._MEM_MAX):
-            raise ValueError(
-                f"memory_mb={self.memory_mb} 越界 "
-                f"[{self._MEM_MIN}, {self._MEM_MAX}]"
-            )
+            raise ValueError(f"memory_mb={self.memory_mb} 越界 [{self._MEM_MIN}, {self._MEM_MAX}]")
         if not (self._TIME_MIN <= self.timeout_seconds <= self._TIME_MAX):
             raise ValueError(
-                f"timeout_seconds={self.timeout_seconds} 越界 "
-                f"[{self._TIME_MIN}, {self._TIME_MAX}]"
+                f"timeout_seconds={self.timeout_seconds} 越界 [{self._TIME_MIN}, {self._TIME_MAX}]"
             )
         if not (self._STORAGE_MIN <= self.ephemeral_storage_mb <= self._STORAGE_MAX):
             raise ValueError(
@@ -89,13 +85,15 @@ class ResourceLimits:
 @dataclass(frozen=True, slots=True)
 class NetworkPolicy:
     """NetworkPolicy 声明 —— 缺省 deny-egress。"""
+
     egress_allow_cidrs: tuple[str, ...] = ()  # 空 = 全拒绝
-    ingress_allowed: bool = False             # 默认禁止入站
+    ingress_allowed: bool = False  # 默认禁止入站
 
 
 @dataclass(frozen=True, slots=True)
 class K8sSandboxSpec:
     """完整 K8s Job 声明。"""
+
     function_ref: str  # ont.<tenant>.fn.<slug>.v<n>
     function_source: str  # Python 源码
     arguments: tuple[Any, ...]
@@ -189,11 +187,13 @@ class SubprocessExecutor:
 
             preexec_fn = None
             if sys.platform != "win32":
+
                 def _set_limits() -> None:
                     resource.setrlimit(
                         resource.RLIMIT_AS,
                         (self._memory_mb * 1024 * 1024, self._memory_mb * 1024 * 1024),
                     )
+
                 preexec_fn = _set_limits
 
             try:
@@ -268,25 +268,29 @@ class K8sJobExecutor:
                         "annotations": {
                             # NetworkPolicy 声明留给集群 default-deny 策略（硬规则 13）；
                             # egress 白名单以注解携带，由 NetPol 控制器对齐。
-                            "mate.metaplatform/egress-allow": ",".join(spec.network_policy.egress_allow_cidrs),
+                            "mate.metaplatform/egress-allow": ",".join(
+                                spec.network_policy.egress_allow_cidrs
+                            ),
                         },
                     },
                     "spec": {
                         "restartPolicy": "Never",
                         "serviceAccountName": spec.service_account,
-                        "containers": [{
-                            "name": "fn",
-                            "image": spec.image,
-                            "command": ["python", "-c", driver],
-                            "args": [json.dumps(list(spec.arguments), default=str)],
-                            "resources": {
-                                "limits": {
-                                    "cpu": f"{limits.cpu_millicores}m",
-                                    "memory": f"{limits.memory_mb}Mi",
-                                    "ephemeral-storage": f"{limits.ephemeral_storage_mb}Mi",
+                        "containers": [
+                            {
+                                "name": "fn",
+                                "image": spec.image,
+                                "command": ["python", "-c", driver],
+                                "args": [json.dumps(list(spec.arguments), default=str)],
+                                "resources": {
+                                    "limits": {
+                                        "cpu": f"{limits.cpu_millicores}m",
+                                        "memory": f"{limits.memory_mb}Mi",
+                                        "ephemeral-storage": f"{limits.ephemeral_storage_mb}Mi",
+                                    },
                                 },
-                            },
-                        }],
+                            }
+                        ],
                     },
                 },
             },
@@ -295,7 +299,9 @@ class K8sJobExecutor:
     def execute(self, source: str, args: tuple[Any, ...]) -> tuple[int, str, str]:
         """FunctionExecutor 协议入口：完整 Job 生命周期（apply→wait→logs→delete）。"""
         spec = K8sSandboxSpec(
-            function_ref="fn.exec", function_source=source, arguments=args,
+            function_ref="fn.exec",
+            function_source=source,
+            arguments=args,
             resource_limits=ResourceLimits(),
             network_policy=NetworkPolicy(),
         )
@@ -304,24 +310,40 @@ class K8sJobExecutor:
         try:
             applied = self._run(
                 [self._kubectl, "-n", self._namespace, "apply", "-f", "-"],
-                input=json.dumps(manifest), capture_output=True, text=True, timeout=30,
+                input=json.dumps(manifest),
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
             if applied.returncode != 0:
                 return (1, "", f"kubectl apply failed: {applied.stderr}")
             waited = self._run(
-                [self._kubectl, "-n", self._namespace, "wait", f"job/{job_name}",
-                 "--for=condition=complete", f"--timeout={spec.resource_limits.timeout_seconds}s"],
-                capture_output=True, text=True, timeout=spec.resource_limits.timeout_seconds + 30,
+                [
+                    self._kubectl,
+                    "-n",
+                    self._namespace,
+                    "wait",
+                    f"job/{job_name}",
+                    "--for=condition=complete",
+                    f"--timeout={spec.resource_limits.timeout_seconds}s",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=spec.resource_limits.timeout_seconds + 30,
             )
             if waited.returncode != 0:
                 logs = self._run(
                     [self._kubectl, "-n", self._namespace, "logs", f"job/{job_name}"],
-                    capture_output=True, text=True, timeout=30,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
                 )
                 return (1, logs.stdout or "", f"job failed: {waited.stderr or 'condition not met'}")
             logs = self._run(
                 [self._kubectl, "-n", self._namespace, "logs", f"job/{job_name}"],
-                capture_output=True, text=True, timeout=30,
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
             return (0, logs.stdout, logs.stderr)
         except Exception as e:
@@ -329,9 +351,18 @@ class K8sJobExecutor:
         finally:
             with contextlib.suppress(Exception):
                 self._run(
-                    [self._kubectl, "-n", self._namespace, "delete", "job", job_name,
-                     "--ignore-not-found"],
-                    capture_output=True, text=True, timeout=30,
+                    [
+                        self._kubectl,
+                        "-n",
+                        self._namespace,
+                        "delete",
+                        "job",
+                        job_name,
+                        "--ignore-not-found",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
                 )
 
 

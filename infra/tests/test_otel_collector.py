@@ -3,15 +3,14 @@
 These checks work on the raw template text (since the files contain Helm
 template directives that are not valid YAML until rendered by helm).
 """
+
 from __future__ import annotations
 
 from pathlib import Path
 
 import yaml
 
-OTEL_DIR = (
-    Path(__file__).resolve().parents[1] / "helm" / "charts" / "otel-collector"
-)
+OTEL_DIR = Path(__file__).resolve().parents[1] / "helm" / "charts" / "otel-collector"
 
 
 def _read(name: str) -> str:

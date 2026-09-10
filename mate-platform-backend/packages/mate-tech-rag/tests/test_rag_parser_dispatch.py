@@ -6,6 +6,7 @@ fallback. Real DeepDoc (PDF/DOCX/PPT) parsers are P1.6 work; this
 test suite covers the architecture wiring and the built-in markdown
 parser.
 """
+
 from __future__ import annotations
 
 import sys
@@ -44,9 +45,11 @@ class TestParserRegistryDefaults:
     def test_explicit_registry_overrides(self):
         """Caller-supplied registry overrides the class default entirely."""
         sentinel: list[str] = []
+
         def fake(_b: bytes, _d: str, _f: str, _m, **_kw) -> list[str]:
             sentinel.append("called")
             return ["from-fake"]
+
         client = InMemoryRAGFlowClient(parser_registry={".foo": fake})
         out = client.parse_bytes(b"hello", "doc", filename="x.foo")
         assert out == ["from-fake"]
@@ -118,7 +121,9 @@ class TestTextFallbackPath:
     def test_txt_uses_text_fallback(self):
         """.txt has no registered parser → falls through to text fallback."""
         client = InMemoryRAGFlowClient()
-        chunks = client.parse_bytes(b"Hello world.\n\nSecond paragraph.", "doc-txt", filename="notes.txt")
+        chunks = client.parse_bytes(
+            b"Hello world.\n\nSecond paragraph.", "doc-txt", filename="notes.txt"
+        )
         assert len(chunks) >= 1
         assert any("Hello world" in c for c in chunks)
 
@@ -157,8 +162,10 @@ class TestTextFallbackPath:
 class TestParserFailures:
     def test_registry_parser_exception_degrades_to_fallback(self):
         """If a registry parser raises, parse_bytes falls back to text decoder."""
+
         def boom(*_a, **_kw):
             raise RuntimeError("decoder exploded")
+
         client = InMemoryRAGFlowClient(parser_registry={".md": boom})
         chunks = client.parse_bytes(b"# Title\n\nbody", "doc", filename="x.md")
         # Fallback should still produce something (UTF-8 decodes fine).
@@ -190,6 +197,7 @@ class TestUploadEndpointMarkdown:
             "SERVICE_CLIENT_SECRET": "test-secret",
         }
         import os
+
         for k, v in os_setup.items():
             os.environ.setdefault(k, v)
 

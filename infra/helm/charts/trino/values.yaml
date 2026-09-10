@@ -12,7 +12,7 @@
 # the coordinator consistently.
 fullnameOverride: trino
 
-replicaCount: 1  # coordinator; workers scale via replicas below
+replicaCount: 1 # coordinator; workers scale via replicas below
 
 image:
   repository: trinodb/trino
@@ -30,7 +30,7 @@ catalogs:
     enabled: true
     endpoint: "http://paimon:8081"
   system:
-    enabled: true  # connector for information_schema / system tables
+    enabled: true # connector for information_schema / system tables
 
 resources:
   coordinator:

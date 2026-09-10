@@ -6,6 +6,7 @@ JSON-serialised to TEXT.
 The DAG graph (``get_dag``) is computed at runtime from task
 dependencies and is not persisted here — it stays in in_memory.
 """
+
 from __future__ import annotations
 
 import json
@@ -58,14 +59,13 @@ def _orm_to_scheduler_task(row: models.SchedulerTaskORM) -> SchedulerTask:
 # Read API
 # ---------------------------------------------------------------------------
 def list_scheduler_tasks(
-    tenant_id: str, status: str | None = None,
+    tenant_id: str,
+    status: str | None = None,
 ) -> list[SchedulerTask]:
     if not tenant_id:
         return []
     s = _session()
-    stmt = select(models.SchedulerTaskORM).where(
-        models.SchedulerTaskORM.tenant_id == tenant_id
-    )
+    stmt = select(models.SchedulerTaskORM).where(models.SchedulerTaskORM.tenant_id == tenant_id)
     if status:
         stmt = stmt.where(models.SchedulerTaskORM.status == status)
     rows = s.execute(stmt.order_by(models.SchedulerTaskORM.id)).scalars().all()
@@ -102,12 +102,19 @@ def put_scheduler_task(tenant_id: str, task: SchedulerTask) -> SchedulerTask:
         existing.updated_at = task.updated_at
         existing.last_run_at = task.last_run_at
     else:
-        s.add(models.SchedulerTaskORM(
-            id=task.id, tenant_id=tenant_id, name=task.name,
-            cron_expression=task.cron_expression, status=task.status,
-            config=config_str, created_at=task.created_at,
-            updated_at=task.updated_at, last_run_at=task.last_run_at,
-        ))
+        s.add(
+            models.SchedulerTaskORM(
+                id=task.id,
+                tenant_id=tenant_id,
+                name=task.name,
+                cron_expression=task.cron_expression,
+                status=task.status,
+                config=config_str,
+                created_at=task.created_at,
+                updated_at=task.updated_at,
+                last_run_at=task.last_run_at,
+            )
+        )
     s.commit()
     return task
 
@@ -130,7 +137,9 @@ def delete_scheduler_task(tenant_id: str, task_id: str) -> bool:
 
 
 def set_scheduler_task_status(
-    tenant_id: str, task_id: str, status: str,
+    tenant_id: str,
+    task_id: str,
+    status: str,
     *,
     last_run_at: str | None = None,
 ) -> SchedulerTask | None:
@@ -165,7 +174,6 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
 
     counts: dict[str, int] = {}
     counts["scheduler_tasks"] = len(
-        [put_scheduler_task(tenant_id, t)
-         for t in mem.list_scheduler_tasks(tenant_id)]
+        [put_scheduler_task(tenant_id, t) for t in mem.list_scheduler_tasks(tenant_id)]
     )
     return counts

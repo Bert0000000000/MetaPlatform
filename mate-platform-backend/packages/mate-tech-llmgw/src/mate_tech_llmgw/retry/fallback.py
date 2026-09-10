@@ -7,6 +7,7 @@ P2 fix (LiteLLM semantics): non-retryable 4xx client errors (400/401/403/
 surface to the caller with the upstream status, because retrying a bad
 request cannot succeed and masks caller bugs.
 """
+
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
@@ -81,9 +82,7 @@ async def chat_with_fallback(
                     status=e.status_code,
                     error=str(e),
                 )
-                raise HTTPException(
-                    status_code=e.status_code or 400, detail=str(e)
-                ) from e
+                raise HTTPException(status_code=e.status_code or 400, detail=str(e)) from e
             last_error = e
             _log_fallback_failure(model, e, chain)
             continue

@@ -1,4 +1,5 @@
-﻿"""RAGFlowClient — real httpx client for infiniflow/ragflow HTTP API."""
+"""RAGFlowClient — real httpx client for infiniflow/ragflow HTTP API."""
+
 from __future__ import annotations
 
 import logging
@@ -46,7 +47,9 @@ class HttpxRAGFlowClient:
 
     def _check(self):
         try:
-            r = self._client.get(f"{self._base_url}/api/v1/datasets", headers=self._headers(), timeout=5.0)
+            r = self._client.get(
+                f"{self._base_url}/api/v1/datasets", headers=self._headers(), timeout=5.0
+            )
             self._available = r.status_code in (200, 401)  # 401 = no auth but server up
             if self._available:
                 _log.info("RAGFlow ACTIVE at %s (status %d)", self._base_url, r.status_code)
@@ -91,7 +94,11 @@ class HttpxRAGFlowClient:
         if not self._available:
             return 0
         try:
-            r = self._client.get(f"{self._base_url}/api/v1/datasets/{self._dataset_id}/documents", headers=self._headers(), timeout=5.0)
+            r = self._client.get(
+                f"{self._base_url}/api/v1/datasets/{self._dataset_id}/documents",
+                headers=self._headers(),
+                timeout=5.0,
+            )
             if r.status_code == 200:
                 data = r.json()
                 return len(data.get("data", {}).get("docs", []))

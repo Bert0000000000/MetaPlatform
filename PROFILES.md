@@ -9,24 +9,24 @@
 
 ## Profiles 一览
 
-| Profile | 包含服务 | 典型场景 | 预估内存 |
-|---|---|---|---|
-| `infra` | postgres, redis, minio, milvus, neo4j, traefik | 任何后端开发的基础 | ~3G |
-| `iam` | + keycloak, mate-tech-iam, mate-auth-service | 改鉴权/SSO | +1.5G |
-| `events` | + kafka, rabbitmq, nacos | 改消息总线/事件流 | +1.5G |
-| `ai` | + ragflow | 文档解析/GraphRAG | +2.3G |
-| `research` | + deerflow-engine | 深度调研 Agent | +2G |
-| `obs` | + loki, prometheus, grafana, otel-collector | 调试可观测性 | +1.5G |
-| `workflow` | + flowable, kie-server | 改 BPMN/规则引擎 | +1.5G |
-| `rag` | infra + mate-tech-rag | 改 RAG 检索 | +0.5G |
-| `agent` | infra + mate-tech-agent | 改 Agent 编排 | +0.5G |
-| `kb` | infra + mate-app-kb | 改 KB 业务 | +0.5G |
-| `llmgw` | infra + mate-tech-llmgw | 改 LLM 网关 | +0.5G |
-| `ont` | infra(graph) + mate-tech-ont | 改 Ontology | +0.5G |
-| `msg` | infra + events + mate-tech-msg | 改消息中心 | +0.5G |
-| `mcp` | infra + mate-tech-mcp | 改 MCP 协议 | +0.5G |
-| `gateway` | infra + mate-api-gateway | 改 API 网关 | +0.5G |
-| `full` | **所有服务** | CI / 冒烟测试 | ~14G+ |
+| Profile    | 包含服务                                       | 典型场景           | 预估内存 |
+| ---------- | ---------------------------------------------- | ------------------ | -------- |
+| `infra`    | postgres, redis, minio, milvus, neo4j, traefik | 任何后端开发的基础 | ~3G      |
+| `iam`      | + keycloak, mate-tech-iam, mate-auth-service   | 改鉴权/SSO         | +1.5G    |
+| `events`   | + kafka, rabbitmq, nacos                       | 改消息总线/事件流  | +1.5G    |
+| `ai`       | + ragflow                                      | 文档解析/GraphRAG  | +2.3G    |
+| `research` | + deerflow-engine                              | 深度调研 Agent     | +2G      |
+| `obs`      | + loki, prometheus, grafana, otel-collector    | 调试可观测性       | +1.5G    |
+| `workflow` | + flowable, kie-server                         | 改 BPMN/规则引擎   | +1.5G    |
+| `rag`      | infra + mate-tech-rag                          | 改 RAG 检索        | +0.5G    |
+| `agent`    | infra + mate-tech-agent                        | 改 Agent 编排      | +0.5G    |
+| `kb`       | infra + mate-app-kb                            | 改 KB 业务         | +0.5G    |
+| `llmgw`    | infra + mate-tech-llmgw                        | 改 LLM 网关        | +0.5G    |
+| `ont`      | infra(graph) + mate-tech-ont                   | 改 Ontology        | +0.5G    |
+| `msg`      | infra + events + mate-tech-msg                 | 改消息中心         | +0.5G    |
+| `mcp`      | infra + mate-tech-mcp                          | 改 MCP 协议        | +0.5G    |
+| `gateway`  | infra + mate-api-gateway                       | 改 API 网关        | +0.5G    |
+| `full`     | **所有服务**                                   | CI / 冒烟测试      | ~14G+    |
 
 > 每个 Python 服务（`rag/agent/kb/...`）都有同名 profile，可以单独起。
 

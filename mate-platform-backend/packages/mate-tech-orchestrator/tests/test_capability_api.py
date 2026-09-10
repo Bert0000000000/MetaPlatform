@@ -1,4 +1,5 @@
 """MP-COMP-01 pilot: capability endpoints + dispatch gate (ADR-0042)."""
+
 from __future__ import annotations
 
 import time
@@ -69,7 +70,8 @@ def test_capability_endpoint_drives_reactivity() -> None:
 
         # Tool unregisters → role fiber deactivates reactively.
         resp = client.delete(
-            "/api/v1/orchestrator/capabilities/search_skill", headers=_headers(),
+            "/api/v1/orchestrator/capabilities/search_skill",
+            headers=_headers(),
         )
         assert resp.status_code == 200, resp.text
         roles = resp.json()["snapshot"]["roles"]
@@ -97,7 +99,8 @@ def test_dispatch_rejects_deactivated_capability() -> None:
         assert resp.status_code == 201
 
         client.delete(
-            "/api/v1/orchestrator/capabilities/search_skill", headers=_headers(),
+            "/api/v1/orchestrator/capabilities/search_skill",
+            headers=_headers(),
         )
         # The stale binding still exists in the registry, but the overlay
         # refuses dispatch before a doomed MCP call is made.

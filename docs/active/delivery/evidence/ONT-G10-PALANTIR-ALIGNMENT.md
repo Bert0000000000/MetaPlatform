@@ -4,22 +4,22 @@
 
 ## 1. Semantic Layer（语义层）— [x]
 
-| Palantir 概念 | Mate Platform 实现 | 证据 |
-|---|---|---|
-| Ontology 类型（Object/Link Types） | ObjectType / LinkType（12 基元，PG 持久化）| SPRINT3-ACCEPTANCE §3（G6 12/12）|
-| 属性与关系 | Property / LinkInstance | kernel types/* |
-| 推理（Axiom） | Axiom 注册中心 + reasoning engine（R1/R2/R3）| ONT-G16-G13-REASONING-ACCEPTANCE |
-| 数据集线（Datasets） | Dataset/DataProduct/DataJob CRD + lineage/quality | infra/helm/charts/datahub + SPRINT5-ACCEPTANCE §7 |
-| 数据质量与谱系 | quality rules 执行落 PG + lineage 子图 | SPRINT5-ACCEPTANCE §7 |
+| Palantir 概念                      | Mate Platform 实现                                | 证据                                              |
+| ---------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
+| Ontology 类型（Object/Link Types） | ObjectType / LinkType（12 基元，PG 持久化）       | SPRINT3-ACCEPTANCE §3（G6 12/12）                 |
+| 属性与关系                         | Property / LinkInstance                           | kernel types/\*                                   |
+| 推理（Axiom）                      | Axiom 注册中心 + reasoning engine（R1/R2/R3）     | ONT-G16-G13-REASONING-ACCEPTANCE                  |
+| 数据集线（Datasets）               | Dataset/DataProduct/DataJob CRD + lineage/quality | infra/helm/charts/datahub + SPRINT5-ACCEPTANCE §7 |
+| 数据质量与谱系                     | quality rules 执行落 PG + lineage 子图            | SPRINT5-ACCEPTANCE §7                             |
 
 ## 2. Kinetic Layer（行动层）— [x]
 
-| Palantir 概念 | Mate Platform 实现 | 证据 |
-|---|---|---|
-| Action Types（受控写回） | ActionType + proposal 状态机（pending→confirmed→executed→reverted）| MP-ACTION-CONFIRM-01 |
-| Functions（派生计算） | Function 注册面 + kernel function_resolver（执行语义增量 PRD-30 FR-RSN-004）| SPRINT5-ACCEPTANCE §1 |
-| 写回一致性 | kernel writeback 校验门（SAL §5 措施）| writeback.py + 6 单测 |
-| 运行时拦截 | composition PolicyEngine deny-first | composition/policy.py |
+| Palantir 概念            | Mate Platform 实现                                                           | 证据                  |
+| ------------------------ | ---------------------------------------------------------------------------- | --------------------- |
+| Action Types（受控写回） | ActionType + proposal 状态机（pending→confirmed→executed→reverted）          | MP-ACTION-CONFIRM-01  |
+| Functions（派生计算）    | Function 注册面 + kernel function_resolver（执行语义增量 PRD-30 FR-RSN-004） | SPRINT5-ACCEPTANCE §1 |
+| 写回一致性               | kernel writeback 校验门（SAL §5 措施）                                       | writeback.py + 6 单测 |
+| 运行时拦截               | composition PolicyEngine deny-first                                          | composition/policy.py |
 
 ## 3. Dynamic Layer（动态层）— [~]（ONT-G22 留尾）
 

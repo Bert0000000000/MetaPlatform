@@ -32,12 +32,7 @@ def test_subprocess_exception_caught() -> None:
 
 def test_subprocess_timeout() -> None:
     exe = SubprocessExecutor(timeout_seconds=1)
-    source = (
-        "import time\n"
-        "def handler():\n"
-        "    time.sleep(5)\n"
-        "    return 'should not reach'\n"
-    )
+    source = "import time\ndef handler():\n    time.sleep(5)\n    return 'should not reach'\n"
     code, _, err = exe.execute(source, ())
     # POSIX 下 subprocess.TimeoutExpired → returncode=124；Windows 下 Popen 被强杀 → 1
     assert code in (124, 1)
@@ -46,6 +41,7 @@ def test_subprocess_timeout() -> None:
 
 def test_k8s_runner_uses_subprocess_by_default() -> None:
     from mate_kernel.sandbox.k8s import K8sSandboxRunner
+
     runner = K8sSandboxRunner()
     # 显式不传 SANDBOX_BACKEND 时用 subprocess
     assert runner.backend in ("subprocess", os.getenv("SANDBOX_BACKEND", "subprocess").lower())
@@ -53,5 +49,6 @@ def test_k8s_runner_uses_subprocess_by_default() -> None:
 
 def test_k8s_runner_explicit_memory_uses_simple_executor() -> None:
     from mate_kernel.sandbox.k8s import K8sSandboxRunner, _SimplePythonExecutor
+
     runner = K8sSandboxRunner(backend="memory")
     assert isinstance(runner.executor, _SimplePythonExecutor)

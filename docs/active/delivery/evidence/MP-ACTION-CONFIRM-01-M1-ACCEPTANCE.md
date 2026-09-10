@@ -5,24 +5,24 @@
 
 ## 1. 交付
 
-| # | 项 | 落点 | 状态 |
-|---|---|---|---|
-| 1 | `ProposalStatus.WITHDRAWN / REVERTED` + 转移守卫 | mate-kernel `action/engine.py`（main + prd 双源） | ✅ |
-| 2 | `withdraw_proposal` / `revert_proposal`（PG：状态回写 + 事件流 + 补偿 + 执行记录覆盖） | prd worktree `v2_kernel/pg_repo.py` | ✅ |
-| 3 | REST：`POST /proposals/{id}/withdraw` · `/revert`（revert 带幂等键） | `v2_kernel/api.py`（ontWithdrawV2Proposal / ontRevertV2Proposal） | ✅ |
-| 4 | I1 ≃ 等价判定（create→删实例→查消失→equivalent；否则 partial） | pg_repo.revert_proposal | ✅ |
-| 5 | 7 天回滚窗口（超窗 ValueError→409） | 同上 `_REVERT_WINDOW_DAYS` | ✅ |
-| 6 | 单测 9/9（转移守卫/终态/枚举面） | mate-kernel tests（双源同步） | ✅ |
+| #   | 项                                                                                     | 落点                                                              | 状态 |
+| --- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ---- |
+| 1   | `ProposalStatus.WITHDRAWN / REVERTED` + 转移守卫                                       | mate-kernel `action/engine.py`（main + prd 双源）                 | ✅   |
+| 2   | `withdraw_proposal` / `revert_proposal`（PG：状态回写 + 事件流 + 补偿 + 执行记录覆盖） | prd worktree `v2_kernel/pg_repo.py`                               | ✅   |
+| 3   | REST：`POST /proposals/{id}/withdraw` · `/revert`（revert 带幂等键）                   | `v2_kernel/api.py`（ontWithdrawV2Proposal / ontRevertV2Proposal） | ✅   |
+| 4   | I1 ≃ 等价判定（create→删实例→查消失→equivalent；否则 partial）                         | pg_repo.revert_proposal                                           | ✅   |
+| 5   | 7 天回滚窗口（超窗 ValueError→409）                                                    | 同上 `_REVERT_WINDOW_DAYS`                                        | ✅   |
+| 6   | 单测 9/9（转移守卫/终态/枚举面）                                                       | mate-kernel tests（双源同步）                                     | ✅   |
 
 ## 2. live 实机验证（mate-tech-ont 容器 · 真 PG）
 
-| # | 路径 | 结果 |
-|---|---|---|
-| 1 | propose → **withdraw** | `{"status":"withdrawn"}` ✓ |
-| 2 | propose→confirm→execute(建实例)→**revert** | `{"status":"reverted","equivalence":"equivalent","compensation":{"deleted_individual":"…ind.employee.rv-eq-2","rows":1}}` ✓ 实例消失 |
-| 3 | action 类（order-review-confirm，decision=confirm）execute→**revert** | `{"equivalence":"partial"}` ✓ audit-only 降级 |
-| 4 | 已 reverted 再 revert | 409 `revert requires executed` ✓ |
-| 5 | withdrawn 后 execute | 409 `withdrawn; execute requires confirmed` ✓ |
+| #   | 路径                                                                  | 结果                                                                                                                                 |
+| --- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | propose → **withdraw**                                                | `{"status":"withdrawn"}` ✓                                                                                                           |
+| 2   | propose→confirm→execute(建实例)→**revert**                            | `{"status":"reverted","equivalence":"equivalent","compensation":{"deleted_individual":"…ind.employee.rv-eq-2","rows":1}}` ✓ 实例消失 |
+| 3   | action 类（order-review-confirm，decision=confirm）execute→**revert** | `{"equivalence":"partial"}` ✓ audit-only 降级                                                                                        |
+| 4   | 已 reverted 再 revert                                                 | 409 `revert requires executed` ✓                                                                                                     |
+| 5   | withdrawn 后 execute                                                  | 409 `withdrawn; execute requires confirmed` ✓                                                                                        |
 
 ## 3. 出范围（M2/M3，见 PRD-02 里程碑）
 
@@ -38,7 +38,7 @@
   含 actor_id）；propose/reject 同表覆盖 → FR-ACT-CONFIRM-005 以**审计表**为权威落档
   （api 层 structlog 钩子同步布点；stdout 受级别过滤）。
 - **7 天窗口 live**：`UPDATE applied_at = now()-8d` → revert `409
-  "revert window (7d) exceeded: applied 8d ago"`（FR-ACT-CONFIRM-006）。
+"revert window (7d) exceeded: applied 8d ago"`（FR-ACT-CONFIRM-006）。
 - **HITL 对称闸**：by-design —— withdraw/revert 与 confirm 同为用户侧端点
   （非 LLM 工具面），满足 FR-ACT-CONFIRM-003 的「人审」语义。
 

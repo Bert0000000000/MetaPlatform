@@ -1,4 +1,5 @@
 """Permission catalog and role-permission binding for the permission matrix."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -20,10 +21,16 @@ class Permission(SQLModel, table=True):
     tenant_id: str = Field(index=True, max_length=64)
     code: str = Field(max_length=128, description="权限编码 (e.g. user:create)")
     name: str = Field(max_length=128, description="权限显示名")
-    resource_type: str = Field(max_length=64, index=True, description="资源类型 (user/role/org/...)")
-    actions: str = Field(default="", max_length=512, description="逗号分隔动作 (create,read,update,delete,...)")
+    resource_type: str = Field(
+        max_length=64, index=True, description="资源类型 (user/role/org/...)"
+    )
+    actions: str = Field(
+        default="", max_length=512, description="逗号分隔动作 (create,read,update,delete,...)"
+    )
     description: str | None = Field(default=None, max_length=512)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))
+    )
 
 
 class RolePermission(SQLModel, table=True):
@@ -39,4 +46,6 @@ class RolePermission(SQLModel, table=True):
     role_id: int = Field(foreign_key="iam_role.id", index=True)
     permission_id: int = Field(foreign_key="iam_permission.id", index=True)
     effect: str = Field(default="ALLOW", max_length=16, description="ALLOW / DENY")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))
+    )

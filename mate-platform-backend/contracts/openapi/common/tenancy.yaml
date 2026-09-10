@@ -2,4 +2,4 @@ components:
   headers:
     TenantId:
       description: Tenant resolved from a verified identity; informational response header only.
-      schema: {type: string, minLength: 1, maxLength: 64}
+      schema: { type: string, minLength: 1, maxLength: 64 }

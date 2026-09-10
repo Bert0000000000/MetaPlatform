@@ -23,7 +23,7 @@
   ],
   "expiringIn45Days": ["CONTRACT-2025-018"],
   "renewalPipeline": [
-    { "stage": "Initial Discussion", "probability": 0.20 },
+    { "stage": "Initial Discussion", "probability": 0.2 },
     { "stage": "Terms Negotiation", "probability": 0.35 },
     { "stage": "Proposal Review", "probability": 0.55 },
     { "stage": "Final Approval", "probability": 0.75 },

@@ -1,4 +1,5 @@
 """SPARQL tests (ST-5.4.4 + ST-5.4.5)."""
+
 from __future__ import annotations
 
 from mate_tech_ont.sparql.cypher import (
@@ -62,5 +63,6 @@ def test_limit_in_cypher() -> None:
 
 def test_parsed_query_dataclass() -> None:
     from mate_tech_ont.sparql.cypher import ParsedQuery
+
     p = ParsedQuery(query_type="SELECT", variables=["x"], triples=[])
     assert p.query_type == "SELECT"

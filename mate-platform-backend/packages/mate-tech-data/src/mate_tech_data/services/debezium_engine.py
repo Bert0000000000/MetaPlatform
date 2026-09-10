@@ -23,6 +23,7 @@ Configuration (all from environment variables):
     KAFKA_CONNECT_USER    — basic auth username (optional)
     KAFKA_CONNECT_PASSWORD — basic auth password (optional)
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -40,8 +41,11 @@ class DebeziumEngineError(Exception):
     """Raised when a Kafka Connect REST API call fails."""
 
     def __init__(
-        self, message: str, *,
-        status_code: int = 0, response_body: str = "",
+        self,
+        message: str,
+        *,
+        status_code: int = 0,
+        response_body: str = "",
     ) -> None:
         super().__init__(message)
         self.status_code = status_code
@@ -96,7 +100,8 @@ class DebeziumEngine:
         """Build an engine from environment variables."""
         return cls(
             base_url=os.environ.get(
-                "KAFKA_CONNECT_URL", "http://localhost:8083",
+                "KAFKA_CONNECT_URL",
+                "http://localhost:8083",
             ),
             username=os.environ.get("KAFKA_CONNECT_USER", ""),
             password=os.environ.get("KAFKA_CONNECT_PASSWORD", ""),
@@ -168,7 +173,9 @@ class DebeziumEngine:
         )
 
     async def stop_cdc_task(
-        self, task_id: str, connector_name: str,
+        self,
+        task_id: str,
+        connector_name: str,
     ) -> CdcTaskResult:
         """Delete (stop) a Debezium connector.
 
@@ -183,14 +190,17 @@ class DebeziumEngine:
         )
 
     async def pause_cdc_task(
-        self, task_id: str, connector_name: str,
+        self,
+        task_id: str,
+        connector_name: str,
     ) -> CdcTaskResult:
         """Pause a Debezium connector.
 
         PUT /connectors/{name}/pause
         """
         resp = await self._request(
-            "PUT", f"/connectors/{connector_name}/pause",
+            "PUT",
+            f"/connectors/{connector_name}/pause",
         )
         return CdcTaskResult(
             task_id=task_id,
@@ -200,14 +210,17 @@ class DebeziumEngine:
         )
 
     async def resume_cdc_task(
-        self, task_id: str, connector_name: str,
+        self,
+        task_id: str,
+        connector_name: str,
     ) -> CdcTaskResult:
         """Resume a paused Debezium connector.
 
         PUT /connectors/{name}/resume
         """
         resp = await self._request(
-            "PUT", f"/connectors/{connector_name}/resume",
+            "PUT",
+            f"/connectors/{connector_name}/resume",
         )
         return CdcTaskResult(
             task_id=task_id,
@@ -217,14 +230,17 @@ class DebeziumEngine:
         )
 
     async def restart_cdc_task(
-        self, task_id: str, connector_name: str,
+        self,
+        task_id: str,
+        connector_name: str,
     ) -> CdcTaskResult:
         """Restart a Debezium connector.
 
         POST /connectors/{name}/restart
         """
         resp = await self._request(
-            "POST", f"/connectors/{connector_name}/restart",
+            "POST",
+            f"/connectors/{connector_name}/restart",
         )
         return CdcTaskResult(
             task_id=task_id,
@@ -234,14 +250,17 @@ class DebeziumEngine:
         )
 
     async def get_status(
-        self, task_id: str, connector_name: str,
+        self,
+        task_id: str,
+        connector_name: str,
     ) -> CdcTaskResult:
         """Get the status of a Debezium connector.
 
         GET /connectors/{name}/status
         """
         resp = await self._request(
-            "GET", f"/connectors/{connector_name}/status",
+            "GET",
+            f"/connectors/{connector_name}/status",
         )
         status = self._parse_status(resp)
         return CdcTaskResult(
@@ -293,7 +312,9 @@ class DebeziumEngine:
                 await self.stop_cdc_task(task_id, connector_name)
 
     async def discover_source_schema(
-        self, task_id: str, connector_name: str,
+        self,
+        task_id: str,
+        connector_name: str,
     ) -> dict[str, Any]:
         """Discover the schema of a source via the connector's config.
 
@@ -304,9 +325,7 @@ class DebeziumEngine:
         resp = await self._request("GET", f"/connectors/{connector_name}")
         config = resp.get("config", {})
         tables = config.get("table.whitelist", config.get("table.include.list", ""))
-        table_list = [
-            t.strip() for t in tables.split(",") if t.strip()
-        ] if tables else []
+        table_list = [t.strip() for t in tables.split(",") if t.strip()] if tables else []
         return {
             "source_id": connector_name,
             "tables": [
@@ -340,7 +359,10 @@ class DebeziumEngine:
         for attempt in range(self._max_retries + 1):
             try:
                 resp = await client.request(
-                    method, path, json=json, params=params,
+                    method,
+                    path,
+                    json=json,
+                    params=params,
                 )
                 if resp.status_code >= 500 and attempt < self._max_retries:
                     last_exc = DebeziumEngineError(
@@ -380,9 +402,7 @@ class DebeziumEngine:
 
     def _parse_status(self, resp: dict[str, Any]) -> str:
         """Parse the connector status from the status response."""
-        connector_state = str(
-            resp.get("connector", {}).get("state", "UNKNOWN")
-        ).upper()
+        connector_state = str(resp.get("connector", {}).get("state", "UNKNOWN")).upper()
         tasks = resp.get("tasks", [])
         if not tasks:
             # No tasks yet — use connector state
@@ -395,9 +415,7 @@ class DebeziumEngine:
             }
             return state_map.get(connector_state, "unknown")
         # Check all task states
-        task_states = [
-            str(t.get("state", "UNKNOWN")).upper() for t in tasks
-        ]
+        task_states = [str(t.get("state", "UNKNOWN")).upper() for t in tasks]
         if all(s == "RUNNING" for s in task_states):
             return "running"
         if all(s == "PAUSED" for s in task_states):

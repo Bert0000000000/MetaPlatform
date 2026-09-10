@@ -1,4 +1,5 @@
 """AppHub must not expose mock execution in a production profile."""
+
 from __future__ import annotations
 
 import asyncio
@@ -35,7 +36,5 @@ def test_production_rejects_direct_mock_action_execution(
 
     with pytest.raises(RuntimeError, match="mock AppHub action execution"):
         asyncio.run(
-            execute_action(
-                RuntimeContext(app_id="app-1", tenant_id="tenant-1"), action, {}
-            )
+            execute_action(RuntimeContext(app_id="app-1", tenant_id="tenant-1"), action, {})
         )

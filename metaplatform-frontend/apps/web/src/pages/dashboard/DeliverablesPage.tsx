@@ -56,7 +56,7 @@ const SkeletonLine: React.FC<{ width?: string; height?: string; style?: React.CS
 );
 
 export default function DeliverablesPage() {
-  
+
   // 数据状态
   const [deliverables, setDeliverables] = useState<DeliverableItem[]>(FALLBACK_DELIVERABLES);
   const [timeline, setTimeline] = useState<DeliverableTimelineItem[]>(FALLBACK_TIMELINE_ITEMS);

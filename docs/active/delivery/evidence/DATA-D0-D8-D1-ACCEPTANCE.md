@@ -7,14 +7,14 @@
 
 ## 1. D1 范围（按 ADR-0016 §6 + §6 D1）
 
-| 组件 | 本批状态 | 备注 |
-|---|---|---|
-| LineageEvent (OpenLineage-shape) | ✅ `mate_platform.messaging.LineageEvent` | 含 tenant_id + trace_id + job/input/output namespace |
-| LineageEmitter (Protocol) | ✅ | InMemory + MarquezHttp 两个实现 |
-| MarquezHttpLineageEmitter | ✅ | POST `/api/v1/lineage` with tenant_id check + soft-fail on Marquez down |
-| InMemoryLineageEmitter | ✅ | 单测 / 集成测试用 |
-| `lineage_event_from_outbox` helper | ✅ | outbox 调 PLATFORM-EVENT-01 时也建 lineage event |
-| 7 e2e tests | ✅ | format / emit / outbox helper / tenant scoping / config |
+| 组件                               | 本批状态                                  | 备注                                                                    |
+| ---------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------- |
+| LineageEvent (OpenLineage-shape)   | ✅ `mate_platform.messaging.LineageEvent` | 含 tenant_id + trace_id + job/input/output namespace                    |
+| LineageEmitter (Protocol)          | ✅                                        | InMemory + MarquezHttp 两个实现                                         |
+| MarquezHttpLineageEmitter          | ✅                                        | POST `/api/v1/lineage` with tenant_id check + soft-fail on Marquez down |
+| InMemoryLineageEmitter             | ✅                                        | 单测 / 集成测试用                                                       |
+| `lineage_event_from_outbox` helper | ✅                                        | outbox 调 PLATFORM-EVENT-01 时也建 lineage event                        |
+| 7 e2e tests                        | ✅                                        | format / emit / outbox helper / tenant scoping / config                 |
 
 ## 2. 落地清单
 
@@ -37,21 +37,21 @@ mate-platform-backend/packages/mate-platform/tests/test_data_d0_d8_d1_lineage.py
 
 ## 3. 13 项硬规则验收(D1 scope)
 
-| # | 硬规则 | 证据 | 状态 |
-|---|---|---|---|
-| 1 | Swagger 没有接口 | (n/a D1) | — |
-| 2 | PRD Requirement ID | (n/a D1) | — |
-| 3 | 没有 tenant 不访问 repository | LineageEvent.tenant_id 必填;emit() 拒绝空 | ✅ enforced |
-| 4 | 外部系统 ACL Client | MarquezHttpLineageEmitter (curl POST) | ✅ |
-| 5 | 禁止 fallback | (n/a D1) | — |
-| 6 | ruff + pyright | (后续) | — |
-| 7 | 不跳 tests | 7 e2e 全绿 | ✅ |
-| 8 | K8s readiness + 回滚 | (后续) | — |
-| 9 | audit/metrics/trace | lineage event 携带 tenant_id + trace_id | ✅ |
-| 10 | 验收证据 | 本文 | ✅ |
-| 11 | helm-docs | (D1 chart 已有 stub,D1 留 chart hook) | partial |
-| 12 | secret 扫描 | (GA 已收口) | ✅ |
-| 13 | NetworkPolicy | (后续) | — |
+| #   | 硬规则                        | 证据                                      | 状态        |
+| --- | ----------------------------- | ----------------------------------------- | ----------- |
+| 1   | Swagger 没有接口              | (n/a D1)                                  | —           |
+| 2   | PRD Requirement ID            | (n/a D1)                                  | —           |
+| 3   | 没有 tenant 不访问 repository | LineageEvent.tenant_id 必填;emit() 拒绝空 | ✅ enforced |
+| 4   | 外部系统 ACL Client           | MarquezHttpLineageEmitter (curl POST)     | ✅          |
+| 5   | 禁止 fallback                 | (n/a D1)                                  | —           |
+| 6   | ruff + pyright                | (后续)                                    | —           |
+| 7   | 不跳 tests                    | 7 e2e 全绿                                | ✅          |
+| 8   | K8s readiness + 回滚          | (后续)                                    | —           |
+| 9   | audit/metrics/trace           | lineage event 携带 tenant_id + trace_id   | ✅          |
+| 10  | 验收证据                      | 本文                                      | ✅          |
+| 11  | helm-docs                     | (D1 chart 已有 stub,D1 留 chart hook)     | partial     |
+| 12  | secret 扫描                   | (GA 已收口)                               | ✅          |
+| 13  | NetworkPolicy                 | (后续)                                    | —           |
 
 ## 4. 本地实际运行
 
@@ -82,6 +82,7 @@ $ pytest mate-platform/tests/test_data_d0_d8_d1_lineage.py -q
 ## 7. 后续推进
 
 按 ADR-0016 §6.5:
+
 - D2: DataHub 数据产品建模
 - D3: GE + Airflow 集成(DDL migration + expectations 校验)
 - D4: OpenLineage ↔ DataHub 同步

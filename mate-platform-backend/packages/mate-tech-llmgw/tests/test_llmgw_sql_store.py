@@ -3,6 +3,7 @@
 Uses SQLite in-memory + Base.metadata.create_all to verify the SQL
 store's CRUD + tenant isolation + JSON serialisation (config dict).
 """
+
 from __future__ import annotations
 
 import pytest
@@ -32,9 +33,13 @@ _TENANT_B = "tenant-bigo"
 # ---------------------------------------------------------------------------
 def test_put_and_get_provider() -> None:
     prov = mem.LlmProvider(
-        id="prov-1", tenant_id=_TENANT_A, name="OpenAI",
-        provider_type="openai", base_url="https://api.openai.com/v1",
-        enabled=True, config={"timeout": 30, "max_retries": 3},
+        id="prov-1",
+        tenant_id=_TENANT_A,
+        name="OpenAI",
+        provider_type="openai",
+        base_url="https://api.openai.com/v1",
+        enabled=True,
+        config={"timeout": 30, "max_retries": 3},
         created_at="2026-08-01T00:00:00Z",
         updated_at="2026-08-01T00:00:00Z",
     )
@@ -51,14 +56,21 @@ def test_put_and_get_provider() -> None:
 
 def test_put_provider_upsert() -> None:
     prov = mem.LlmProvider(
-        id="prov-2", tenant_id=_TENANT_A, name="Old",
-        provider_type="anthropic", config={"timeout": 10},
+        id="prov-2",
+        tenant_id=_TENANT_A,
+        name="Old",
+        provider_type="anthropic",
+        config={"timeout": 10},
     )
     sql.put_provider(_TENANT_A, prov)
     prov = mem.LlmProvider(
-        id="prov-2", tenant_id=_TENANT_A, name="New",
-        provider_type="anthropic", base_url="https://api.anthropic.com",
-        enabled=False, config={"timeout": 60, "max_retries": 5},
+        id="prov-2",
+        tenant_id=_TENANT_A,
+        name="New",
+        provider_type="anthropic",
+        base_url="https://api.anthropic.com",
+        enabled=False,
+        config={"timeout": 60, "max_retries": 5},
     )
     sql.put_provider(_TENANT_A, prov)
 
@@ -88,9 +100,14 @@ def test_delete_provider_rejects_cross_tenant() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_model() -> None:
     model = mem.LlmModel(
-        id="model-1", tenant_id=_TENANT_A, model_id="gpt-4o",
-        display_name="GPT-4o", provider="openai", modality="text",
-        max_tokens=4096, enabled=True,
+        id="model-1",
+        tenant_id=_TENANT_A,
+        model_id="gpt-4o",
+        display_name="GPT-4o",
+        provider="openai",
+        modality="text",
+        max_tokens=4096,
+        enabled=True,
         config={"temperature": 0.7, "top_p": 0.9},
         created_at="2026-08-01T00:00:00Z",
         updated_at="2026-08-01T00:00:00Z",
@@ -110,14 +127,22 @@ def test_put_and_get_model() -> None:
 
 def test_put_model_upsert() -> None:
     model = mem.LlmModel(
-        id="model-2", tenant_id=_TENANT_A, model_id="qwen-max",
-        display_name="Old", provider="qwen",
+        id="model-2",
+        tenant_id=_TENANT_A,
+        model_id="qwen-max",
+        display_name="Old",
+        provider="qwen",
     )
     sql.put_model(_TENANT_A, model)
     model = mem.LlmModel(
-        id="model-2", tenant_id=_TENANT_A, model_id="qwen-max",
-        display_name="New", provider="qwen", max_tokens=8192,
-        enabled=False, config={"temperature": 0.5},
+        id="model-2",
+        tenant_id=_TENANT_A,
+        model_id="qwen-max",
+        display_name="New",
+        provider="qwen",
+        max_tokens=8192,
+        enabled=False,
+        config={"temperature": 0.5},
     )
     sql.put_model(_TENANT_A, model)
 
@@ -145,8 +170,12 @@ def test_delete_model_rejects_cross_tenant() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_route_rule() -> None:
     rule = mem.LlmRouteRule(
-        id="route-1", tenant_id=_TENANT_A, model_pattern="gpt-*",
-        provider="openai", priority=10, enabled=True,
+        id="route-1",
+        tenant_id=_TENANT_A,
+        model_pattern="gpt-*",
+        provider="openai",
+        priority=10,
+        enabled=True,
         created_at="2026-08-01T00:00:00Z",
         updated_at="2026-08-01T00:00:00Z",
     )
@@ -162,13 +191,20 @@ def test_put_and_get_route_rule() -> None:
 
 def test_put_route_rule_upsert() -> None:
     rule = mem.LlmRouteRule(
-        id="route-2", tenant_id=_TENANT_A, model_pattern="claude-*",
-        provider="anthropic", priority=5,
+        id="route-2",
+        tenant_id=_TENANT_A,
+        model_pattern="claude-*",
+        provider="anthropic",
+        priority=5,
     )
     sql.put_route_rule(_TENANT_A, rule)
     rule = mem.LlmRouteRule(
-        id="route-2", tenant_id=_TENANT_A, model_pattern="claude-*",
-        provider="anthropic", priority=20, enabled=False,
+        id="route-2",
+        tenant_id=_TENANT_A,
+        model_pattern="claude-*",
+        provider="anthropic",
+        priority=20,
+        enabled=False,
     )
     sql.put_route_rule(_TENANT_A, rule)
 
@@ -179,7 +215,9 @@ def test_put_route_rule_upsert() -> None:
 
 
 def test_delete_route_rule() -> None:
-    sql.put_route_rule(_TENANT_A, mem.LlmRouteRule(id="route-del", tenant_id=_TENANT_A, provider="x"))
+    sql.put_route_rule(
+        _TENANT_A, mem.LlmRouteRule(id="route-del", tenant_id=_TENANT_A, provider="x")
+    )
     assert sql.delete_route_rule(_TENANT_A, "route-del") is True
     assert sql.get_route_rule(_TENANT_A, "route-del") is None
 

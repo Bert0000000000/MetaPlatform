@@ -5,16 +5,16 @@
 
 ## 1. 交付清单
 
-| # | 项 | 落点 | 状态 |
-|---|---|---|---|
-| 1 | **REST 双轨开关**（`?engine=temporal`，env `WORKFLOW_ENGINE`；参数>环境>legacy） | `temporal_rest.py` + `api/app.py` submit/status/review/execute 四端点接线（main + prd worktree 双源同步） | ✅ live |
-| 2 | **正式 worker 镜像**（无源码挂载、HEALTHCHECK NONE、自含 temporalio） | `mate-temporal-worker:1.0`（基 mate-tech-orchestrator:dev 烘焙 + wheels；CMD `python -m ...temporal_worker`） | ✅ 容器常驻 |
-| 3 | **gRPC 长轮询自愈**（30s get_system_info 探活 ×3 失败 → 退出由 restart 拉起） | `temporal_worker._selfheal_watcher` | ✅ 代码+部署（本机病灶=VM 静默掐断长连接；自愈把「僵死」转成「秒级重启」） |
-| 4 | **plan 镜像表 + 对账** | `alembic/versions/0028_plan_mirror.sql` + `scripts/loop/reconcile_plan_mirror.py`（live 跑通：twf-* upsert，status=completed 落表） | ✅ live |
-| 5 | **CI 守门** `check_temporal_grammar.py`（命名/前缀/retry_policy 注册一致性/selfheal 存在性，AST 级） | `scripts/ci/`（PASS） | ✅ |
-| 6 | **双轨对比报告** | `evidence/DUAL-RAIL-COMPARISON.md`（API 对照 + live 实测矩阵 + 切流建议） | ✅ |
-| 7 | **Sprint 1 PRD-01/02 立稿** | `docs/active/prd/APP-DW/PRD-01…` / `APP-WFE/PRD-02…`（状态 Not Started） | ✅ 文档 |
-| 8 | 单测：REST 双轨 9/9（fake 网关；engine 选择/前缀路由/legacy 不回归/execute 409） | `tests/test_temporal_rest_dualrail.py` | ✅ |
+| #   | 项                                                                                                   | 落点                                                                                                                                 | 状态                                                                       |
+| --- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| 1   | **REST 双轨开关**（`?engine=temporal`，env `WORKFLOW_ENGINE`；参数>环境>legacy）                     | `temporal_rest.py` + `api/app.py` submit/status/review/execute 四端点接线（main + prd worktree 双源同步）                            | ✅ live                                                                    |
+| 2   | **正式 worker 镜像**（无源码挂载、HEALTHCHECK NONE、自含 temporalio）                                | `mate-temporal-worker:1.0`（基 mate-tech-orchestrator:dev 烘焙 + wheels；CMD `python -m ...temporal_worker`）                        | ✅ 容器常驻                                                                |
+| 3   | **gRPC 长轮询自愈**（30s get_system_info 探活 ×3 失败 → 退出由 restart 拉起）                        | `temporal_worker._selfheal_watcher`                                                                                                  | ✅ 代码+部署（本机病灶=VM 静默掐断长连接；自愈把「僵死」转成「秒级重启」） |
+| 4   | **plan 镜像表 + 对账**                                                                               | `alembic/versions/0028_plan_mirror.sql` + `scripts/loop/reconcile_plan_mirror.py`（live 跑通：twf-\* upsert，status=completed 落表） | ✅ live                                                                    |
+| 5   | **CI 守门** `check_temporal_grammar.py`（命名/前缀/retry_policy 注册一致性/selfheal 存在性，AST 级） | `scripts/ci/`（PASS）                                                                                                                | ✅                                                                         |
+| 6   | **双轨对比报告**                                                                                     | `evidence/DUAL-RAIL-COMPARISON.md`（API 对照 + live 实测矩阵 + 切流建议）                                                            | ✅                                                                         |
+| 7   | **Sprint 1 PRD-01/02 立稿**                                                                          | `docs/active/prd/APP-DW/PRD-01…` / `APP-WFE/PRD-02…`（状态 Not Started）                                                             | ✅ 文档                                                                    |
+| 8   | 单测：REST 双轨 9/9（fake 网关；engine 选择/前缀路由/legacy 不回归/execute 409）                     | `tests/test_temporal_rest_dualrail.py`                                                                                               | ✅                                                                         |
 
 ## 2. live 实机验证（REST 双轨全环 ×2 轮）
 

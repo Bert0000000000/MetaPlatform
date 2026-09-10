@@ -27,7 +27,7 @@ postgresql:
   fullnameOverride: postgresql
   replicaCount: 1
   persistence:
-    enabled: false   # emptyDir for local dev — data is ephemeral
+    enabled: false # emptyDir for local dev — data is ephemeral
   resources:
     requests:
       cpu: 100m
@@ -53,7 +53,7 @@ kafka:
     clusterId: "metaplatform-kraft-cluster-local"
   replicaCount: 1
   persistence:
-    enabled: false   # emptyDir for local dev — data is ephemeral
+    enabled: false # emptyDir for local dev — data is ephemeral
   resources:
     requests:
       cpu: 100m
@@ -62,7 +62,7 @@ kafka:
       cpu: 500m
       memory: 512Mi
   config:
-    auto.create.topics.enable: "true"   # convenient for local dev
+    auto.create.topics.enable: "true" # convenient for local dev
     default.replication.factor: "1"
     num.partitions: "3"
     log.retention.hours: "24"

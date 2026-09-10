@@ -1,4 +1,5 @@
 """P3-W9 ONT 业务深化测试 — SPARQL 真实化 + 推理引擎 + 版本管理 API."""
+
 from __future__ import annotations
 
 import pytest
@@ -21,6 +22,7 @@ from mate_tech_ont.sparql.cypher import execute_sparql
 @pytest.fixture
 def client() -> TestClient:
     from mate_tech_ont.main import app
+
     return TestClient(app)
 
 
@@ -125,9 +127,7 @@ class TestInferenceTransitivity:
         instance_store.create_relation(_ctx_for(TENANT), "related_to", b.id, c.id)
 
         engine = InferenceEngine(instance_store)
-        result = engine.apply_rules(
-            TENANT, [TransitivityRule(rel_type="related_to")]
-        )
+        result = engine.apply_rules(TENANT, [TransitivityRule(rel_type="related_to")])
 
         # Should infer A→C (skip existing A→B and B→C)
         inferred_pairs = {(r.src_id, r.dst_id) for r in result.inferred_relations}
@@ -200,9 +200,7 @@ class TestGetNeighbors:
 
 
 class TestVersionApi:
-    def test_version_create_and_get(
-        self, client: TestClient, auth_headers: dict[str, str]
-    ) -> None:
+    def test_version_create_and_get(self, client: TestClient, auth_headers: dict[str, str]) -> None:
         """POST creates version, GET /{id} retrieves it."""
         resp = client.post(
             "/api/v1/ont/versions",
@@ -225,9 +223,7 @@ class TestVersionApi:
         assert resp2.status_code == 200
         assert resp2.json()["version_id"] == vid
 
-    def test_version_list(
-        self, client: TestClient, auth_headers: dict[str, str]
-    ) -> None:
+    def test_version_list(self, client: TestClient, auth_headers: dict[str, str]) -> None:
         """GET list returns all versions; filter by ontology_id works."""
         client.post(
             "/api/v1/ont/versions",
@@ -251,15 +247,11 @@ class TestVersionApi:
         assert len(resp.json()) == 3
 
         # Filter by ontology_id
-        resp2 = client.get(
-            "/api/v1/ont/versions?ontology_id=ont-a", headers=auth_headers
-        )
+        resp2 = client.get("/api/v1/ont/versions?ontology_id=ont-a", headers=auth_headers)
         assert resp2.status_code == 200
         assert len(resp2.json()) == 2
 
-    def test_version_delete(
-        self, client: TestClient, auth_headers: dict[str, str]
-    ) -> None:
+    def test_version_delete(self, client: TestClient, auth_headers: dict[str, str]) -> None:
         """DELETE removes the version; subsequent GET returns 404."""
         resp = client.post(
             "/api/v1/ont/versions",
@@ -283,9 +275,7 @@ class TestVersionApi:
         """Duplicate (ontology_id, version) → 409."""
         payload = {"ontology_id": "ont-x", "version": "v1.0.0"}
         client.post("/api/v1/ont/versions", json=payload, headers=auth_headers)
-        resp = client.post(
-            "/api/v1/ont/versions", json=payload, headers=auth_headers
-        )
+        resp = client.post("/api/v1/ont/versions", json=payload, headers=auth_headers)
         assert resp.status_code == 409
 
 
@@ -365,9 +355,7 @@ class TestTenantIsolationInference:
         assert neighbors == {a2.id}
 
         # bob transitivity: b1→b2, b2→b3 ⟹ b1→b3
-        result = engine.apply_rules(
-            "bob", [TransitivityRule(rel_type="related_to")]
-        )
+        result = engine.apply_rules("bob", [TransitivityRule(rel_type="related_to")])
         inferred = {(r.src_id, r.dst_id) for r in result.inferred_relations}
         assert (b1.id, b3.id) in inferred
         # acme relation should not appear in bob results

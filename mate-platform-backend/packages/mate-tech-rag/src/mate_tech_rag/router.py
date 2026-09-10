@@ -6,6 +6,7 @@ Routes query to one of 3 strategies:
 - THEMATIC -> ThematicStrategy (LightRAG Neo4j lrag-graph)
 - AUTO     -> heuristic (PascalCase -> ENTITY, long desc -> THEMATIC, else FACTUAL)
 """
+
 from __future__ import annotations
 
 import re

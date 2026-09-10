@@ -6,24 +6,24 @@
 
 ## 1. 改动清单(K1 4 commit + K2 收口 + K3 4 commit + 治理 1)
 
-| 阶段 | Commit | 文件 | 关键能力 |
-|---|---|---|---|
-| K1-A 契约 | dadd68bf | apphub.yaml + Alembic 0013 | 19 operation + apphub_shortlinks 表 + App 3 列 |
-| K1-B runtime | 53c5c71b | runtime/ 7 模块 + 3 endpoint + 35 tests | loader/renderer/executor/binding/authz |
-| K1-C shortlink | bb12d860 | shortlink/ 4 模块 + 3 endpoint + 24 tests | generator/repository/resolver/service |
-| K1-D 前端 | e3d924d3 | runtime.ts + shortlink.ts + AppRuntimePage + 路由 | 短链入口 + 发布按钮 + 短链分享 |
-| K2-P0-1 | (本批) | require_evidence.py | 拼写 bug 修复 |
-| K2-P0-2 | f859165d | openapi.json | 231 paths / 282 operations 聚合 |
-| K2-P0-3 | bb87bc94 | apphub.yaml 6 operation 字段补齐 | FR ID + permission + responses + 4 schema |
-| K2 治理 | 8e69f1eb | PROGRAM-BOARD | 变更记录 + 头部时间戳 |
-| K2.1-A 契约 | aafa7775 | apphub.yaml | 强类型 schema + required-tenant + 409/422 |
-| K2.1-B 前端 | df6b22e6 / 10c986ff | MyTemplates/TemplateSubmit | marketplace API + QR Code 本地化 |
-| K2.1-C+D | 4ef716fe | tsc 日志 | exit 0 提交 |
-| **K3-3 租户双轨** | **4dddf302** | api/app.py + test_apphub_runtime_01.py | 删 _runtime_tenant_id + 6 端点切 _tenant_id + 5 negative tests |
-| **K3-2 OTel** | **ea5f8b42** | pyproject.toml + telemetry.py + 4 spans + tests | 4 关键路径加 span + 4 tests via InMemorySpanExporter |
-| **K3-1 SQL 持久化** | **b5250c01** | sql_models.py + sql_store.py + service.py + tests | ApphubShortlinkORM + 6 helpers + expires_at + 9 SQL tests |
-| **K3-4 executor 真实化** | **2b5aa99f** | executor.py + mate_clients/{wfe,api_gateway,forms} + tests | RealExecutor + mate_clients stubs + 9 集成 tests |
-| **硬规则 6 治理** | **5632dbc4** | api/app.py + telemetry.py + sql_store.py + pyrightconfig + 9 test files | ruff 0 errors + pyright 0 errors + 134 test fixture 类型注解 |
+| 阶段                     | Commit              | 文件                                                                    | 关键能力                                                         |
+| ------------------------ | ------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| K1-A 契约                | dadd68bf            | apphub.yaml + Alembic 0013                                              | 19 operation + apphub_shortlinks 表 + App 3 列                   |
+| K1-B runtime             | 53c5c71b            | runtime/ 7 模块 + 3 endpoint + 35 tests                                 | loader/renderer/executor/binding/authz                           |
+| K1-C shortlink           | bb12d860            | shortlink/ 4 模块 + 3 endpoint + 24 tests                               | generator/repository/resolver/service                            |
+| K1-D 前端                | e3d924d3            | runtime.ts + shortlink.ts + AppRuntimePage + 路由                       | 短链入口 + 发布按钮 + 短链分享                                   |
+| K2-P0-1                  | (本批)              | require_evidence.py                                                     | 拼写 bug 修复                                                    |
+| K2-P0-2                  | f859165d            | openapi.json                                                            | 231 paths / 282 operations 聚合                                  |
+| K2-P0-3                  | bb87bc94            | apphub.yaml 6 operation 字段补齐                                        | FR ID + permission + responses + 4 schema                        |
+| K2 治理                  | 8e69f1eb            | PROGRAM-BOARD                                                           | 变更记录 + 头部时间戳                                            |
+| K2.1-A 契约              | aafa7775            | apphub.yaml                                                             | 强类型 schema + required-tenant + 409/422                        |
+| K2.1-B 前端              | df6b22e6 / 10c986ff | MyTemplates/TemplateSubmit                                              | marketplace API + QR Code 本地化                                 |
+| K2.1-C+D                 | 4ef716fe            | tsc 日志                                                                | exit 0 提交                                                      |
+| **K3-3 租户双轨**        | **4dddf302**        | api/app.py + test_apphub_runtime_01.py                                  | 删 \_runtime_tenant_id + 6 端点切 \_tenant_id + 5 negative tests |
+| **K3-2 OTel**            | **ea5f8b42**        | pyproject.toml + telemetry.py + 4 spans + tests                         | 4 关键路径加 span + 4 tests via InMemorySpanExporter             |
+| **K3-1 SQL 持久化**      | **b5250c01**        | sql_models.py + sql_store.py + service.py + tests                       | ApphubShortlinkORM + 6 helpers + expires_at + 9 SQL tests        |
+| **K3-4 executor 真实化** | **2b5aa99f**        | executor.py + mate_clients/{wfe,api_gateway,forms} + tests              | RealExecutor + mate_clients stubs + 9 集成 tests                 |
+| **硬规则 6 治理**        | **5632dbc4**        | api/app.py + telemetry.py + sql_store.py + pyrightconfig + 9 test files | ruff 0 errors + pyright 0 errors + 134 test fixture 类型注解     |
 
 ## 2. 测试结果
 
@@ -39,21 +39,21 @@
 
 ## 3. 13 硬规则验收（实测）
 
-| # | 硬规则 | 状态 | 证据 |
-|---|---|:---:|---|
-| 1 | Swagger 没有接口不写 route | ✅ | apphub.yaml 19 operation + openapi.json 231 paths |
-| 2 | PRD 没有 Requirement ID | ✅ | 6 新 operation 含 x-mate-requirements FR-APPHUB-RUNTIME-001~006 |
-| 3 | 没有 tenant 上下文不访问 repository | ✅ | _tenant_id(request) 统一守门 + 5 negative tests (K3-3 commit 4dddf302) |
-| 4 | 外部系统没有 ACL Client | ✅ | RealExecutor + mate_clients {wfe, api_gateway, forms} stubs (K3-4 commit 2b5aa99f) |
-| 5 | Production profile 禁止 fallback | ✅ | require_evidence.py 拼写 bug 已修；K3-3 移除 X-Tenant-Id HTTP 头回退 |
-| 6 | 静态检查失败不合并 | ✅ | ruff 0 errors + pyright 0 errors (commit 5632dbc4) |
-| 7 | 契约或集成测试跳过不标 Accepted | ✅ | 134 tests 0 skip；forbid_skip_tests.py exit=0 |
-| 8 | 没有 K8s readiness + 回滚 | N/A | 走 platform-native 路由 |
-| 9 | 没有审计/指标/trace | ✅ | K3-2 OTel 4 关键路径 span (apphub.runtime.load / execute / submit_form / trigger_flow / call_api / navigate / shortlink.resolve / shortlink.create) + InMemorySpanExporter 4 tests |
-| 10 | 所有状态以验收证据为准 | ✅ | 本文件存在 |
-| 11 | helm-docs 同步 | N/A | 平台 K8s 范畴 |
-| 12 | Secret 不进 git | ✅ | 无新增 secret |
-| 13 | NetworkPolicy 缺失 | N/A | 平台 K8s 范畴 |
+| #   | 硬规则                              | 状态 | 证据                                                                                                                                                                               |
+| --- | ----------------------------------- | :--: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Swagger 没有接口不写 route          |  ✅  | apphub.yaml 19 operation + openapi.json 231 paths                                                                                                                                  |
+| 2   | PRD 没有 Requirement ID             |  ✅  | 6 新 operation 含 x-mate-requirements FR-APPHUB-RUNTIME-001~006                                                                                                                    |
+| 3   | 没有 tenant 上下文不访问 repository |  ✅  | \_tenant_id(request) 统一守门 + 5 negative tests (K3-3 commit 4dddf302)                                                                                                            |
+| 4   | 外部系统没有 ACL Client             |  ✅  | RealExecutor + mate_clients {wfe, api_gateway, forms} stubs (K3-4 commit 2b5aa99f)                                                                                                 |
+| 5   | Production profile 禁止 fallback    |  ✅  | require_evidence.py 拼写 bug 已修；K3-3 移除 X-Tenant-Id HTTP 头回退                                                                                                               |
+| 6   | 静态检查失败不合并                  |  ✅  | ruff 0 errors + pyright 0 errors (commit 5632dbc4)                                                                                                                                 |
+| 7   | 契约或集成测试跳过不标 Accepted     |  ✅  | 134 tests 0 skip；forbid_skip_tests.py exit=0                                                                                                                                      |
+| 8   | 没有 K8s readiness + 回滚           | N/A  | 走 platform-native 路由                                                                                                                                                            |
+| 9   | 没有审计/指标/trace                 |  ✅  | K3-2 OTel 4 关键路径 span (apphub.runtime.load / execute / submit_form / trigger_flow / call_api / navigate / shortlink.resolve / shortlink.create) + InMemorySpanExporter 4 tests |
+| 10  | 所有状态以验收证据为准              |  ✅  | 本文件存在                                                                                                                                                                         |
+| 11  | helm-docs 同步                      | N/A  | 平台 K8s 范畴                                                                                                                                                                      |
+| 12  | Secret 不进 git                     |  ✅  | 无新增 secret                                                                                                                                                                      |
+| 13  | NetworkPolicy 缺失                  | N/A  | 平台 K8s 范畴                                                                                                                                                                      |
 
 **总计 10 ✅ / 0 🟡 / 3 N/A**
 
@@ -68,24 +68,24 @@ K1 4 + K2 5 + 8e69f1eb + K2.1 3 + K3 4 + 治理 1 = **17 commits**
 
 ## 5. K2.1 6 处硬证据补齐(2026-08-02)
 
-| # | 瑕疵 | 修复证据 |
-|---|---|---|
-| A-1 | 6 op 强类型 schema | apphub.yaml 200/201 响应 → AppRuntime/ActionResult/Shortlink |
-| A-2 | x-mate-required-tenant: true | apphub.yaml grep 6 命中 |
-| A-3 | 409/422 错误响应 | POST op 补 409+422 / GET op 补 422 |
-| B-1 | MyTemplates/TemplateSubmit | 切 marketplace API + TODO 移除 |
-| B-2 | QR Code 本地化 | qrcode.react 替换 api.qrserver.com |
-| C-1 | tsc 日志 | tsc-out.log / tsc-err.log 提交(exit 0) |
+| #   | 瑕疵                         | 修复证据                                                     |
+| --- | ---------------------------- | ------------------------------------------------------------ |
+| A-1 | 6 op 强类型 schema           | apphub.yaml 200/201 响应 → AppRuntime/ActionResult/Shortlink |
+| A-2 | x-mate-required-tenant: true | apphub.yaml grep 6 命中                                      |
+| A-3 | 409/422 错误响应             | POST op 补 409+422 / GET op 补 422                           |
+| B-1 | MyTemplates/TemplateSubmit   | 切 marketplace API + TODO 移除                               |
+| B-2 | QR Code 本地化               | qrcode.react 替换 api.qrserver.com                           |
+| C-1 | tsc 日志                     | tsc-out.log / tsc-err.log 提交(exit 0)                       |
 
 ## 6. K3 后端硬化 4 件 (2026-08-02)
 
-| 子项 | Commit | 落地证据 |
-|---|---|---|
-| K3-1 SQL 持久化 | b5250c01 | ApphubShortlinkORM + 6 sql_store helpers + service.create_shortlink(expires_at) + 9 SQL tests |
-| K3-2 OTel | ea5f8b42 | telemetry.py get_tracer + 4 spans + 4 tests via InMemorySpanExporter |
-| K3-3 租户双轨清理 | 4dddf302 | _runtime_tenant_id 删除 + 6 端点切 _tenant_id + 5 negative tests 401/403 |
+| 子项                 | Commit   | 落地证据                                                                                         |
+| -------------------- | -------- | ------------------------------------------------------------------------------------------------ |
+| K3-1 SQL 持久化      | b5250c01 | ApphubShortlinkORM + 6 sql_store helpers + service.create_shortlink(expires_at) + 9 SQL tests    |
+| K3-2 OTel            | ea5f8b42 | telemetry.py get_tracer + 4 spans + 4 tests via InMemorySpanExporter                             |
+| K3-3 租户双轨清理    | 4dddf302 | \_runtime_tenant_id 删除 + 6 端点切 \_tenant_id + 5 negative tests 401/403                       |
 | K3-4 executor 真实化 | 2b5aa99f | mate_clients/{wfe, api_gateway, forms} stubs + RealExecutor + get_executor() 工厂 + 9 集成 tests |
-| 硬规则 6 治理 | 5632dbc4 | ruff 0 + pyright 0 + 134 test fixture 类型注解 |
+| 硬规则 6 治理        | 5632dbc4 | ruff 0 + pyright 0 + 134 test fixture 类型注解                                                   |
 
 ## 7. 提交链
 

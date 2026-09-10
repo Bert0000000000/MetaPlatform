@@ -13,6 +13,7 @@ dynamic/federation layers uses the ``default`` tenant (the MCP protocol
 carries no tenant header; the outer ``install_auth`` middleware gates
 the mount path).
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -97,7 +98,9 @@ class MateStreamableHttpServer(FastMCP):
         # 3. federation fallback
         try:
             remote = await federation_router.route(
-                tenant_id=self._tenant, tool_name=name, arguments=args,
+                tenant_id=self._tenant,
+                tool_name=name,
+                arguments=args,
             )
             if remote is not None:
                 return remote
@@ -132,7 +135,9 @@ class MateStreamableHttpServer(FastMCP):
         ]
 
     async def get_prompt(
-        self, name: str, arguments: dict[str, Any] | None = None,
+        self,
+        name: str,
+        arguments: dict[str, Any] | None = None,
     ) -> GetPromptResult:
         try:
             rendered = render_prompt(name, **(arguments or {}))

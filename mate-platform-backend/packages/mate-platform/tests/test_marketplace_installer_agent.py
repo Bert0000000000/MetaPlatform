@@ -6,6 +6,7 @@ Exercises the full installer loop:
   3. hard-rule #14: registered_digest == manifest.digest
   4. quarantine.commit on success / rollback on digest mismatch
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -56,9 +57,7 @@ def test_agent_installer_happy_path(quarantine_root):
     stub = _StubClient()
     installer = AgentInstaller(agent_client=stub)
 
-    result = asyncio.run(
-        installer.run(install_id="install-001", manifest=manifest, blob=blob)
-    )
+    result = asyncio.run(installer.run(install_id="install-001", manifest=manifest, blob=blob))
 
     assert result["agent_id"] == "agt-001"
     assert result["registered_digest"] == manifest["digest"]["sha256"]
@@ -93,14 +92,10 @@ def test_agent_installer_digest_mismatch_rolls_back(quarantine_root):
     installer = AgentInstaller(agent_client=_StubClient())
 
     with pytest.raises(DigestMismatch):
-        asyncio.run(
-            installer.run(install_id="install-002", manifest=manifest, blob=blob)
-        )
+        asyncio.run(installer.run(install_id="install-002", manifest=manifest, blob=blob))
 
     assert not (quarantine.QUARANTINE / "install-002").exists()
-    assert not (
-        quarantine.INSTALLED / "agent" / manifest["id"] / manifest["version"]
-    ).exists()
+    assert not (quarantine.INSTALLED / "agent" / manifest["id"] / manifest["version"]).exists()
 
 
 def test_agent_installer_hard_rule_14_rolls_back(quarantine_root):
@@ -123,9 +118,7 @@ def test_agent_installer_hard_rule_14_rolls_back(quarantine_root):
     installer = AgentInstaller(agent_client=_StubClient())
 
     with pytest.raises(DigestMismatch):
-        asyncio.run(
-            installer.run(install_id="install-003", manifest=manifest, blob=blob)
-        )
+        asyncio.run(installer.run(install_id="install-003", manifest=manifest, blob=blob))
 
     assert not (quarantine.QUARANTINE / "install-003").exists()
 
@@ -161,9 +154,7 @@ def test_agent_installer_real_client_returns_envelope(quarantine_root):
     client._client = httpx.AsyncClient(transport=transport)
 
     installer = AgentInstaller(agent_client=client)
-    result = asyncio.run(
-        installer.run(install_id="install-004", manifest=manifest, blob=blob)
-    )
+    result = asyncio.run(installer.run(install_id="install-004", manifest=manifest, blob=blob))
     assert result["agent_id"] == "agt-real"
     assert result["registered_digest"] == manifest["digest"]["sha256"]
     assert (

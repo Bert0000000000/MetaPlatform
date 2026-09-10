@@ -10,6 +10,7 @@ Business code never imports the underlying Kafka client directly
 (hard rule 4: external system without ACL client, business code does
 not connect directly).
 """
+
 from __future__ import annotations
 
 import json
@@ -28,11 +29,11 @@ class ProducerError(Exception):
 class UnderlyingProducer(Protocol):
     """The actual Kafka client (confluent-kafka, aiokafka, etc.)."""
 
-    def produce(self, topic: str, *, key: bytes, value: bytes, headers: list[tuple[str, bytes]]) -> None:
-        ...
+    def produce(
+        self, topic: str, *, key: bytes, value: bytes, headers: list[tuple[str, bytes]]
+    ) -> None: ...
 
-    def flush(self, timeout_seconds: float = 5.0) -> int:
-        ...
+    def flush(self, timeout_seconds: float = 5.0) -> int: ...
 
 
 class KafkaProducer:
@@ -63,6 +64,4 @@ class KafkaProducer:
 
     @staticmethod
     def serialize_event(event: Event) -> bytes:
-        return json.dumps(
-            event.to_dict(), separators=(",", ":"), sort_keys=True
-        ).encode("utf-8")
+        return json.dumps(event.to_dict(), separators=(",", ":"), sort_keys=True).encode("utf-8")

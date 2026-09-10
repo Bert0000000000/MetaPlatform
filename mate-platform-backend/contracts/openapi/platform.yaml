@@ -11,47 +11,47 @@ info:
     identifier: LicenseRef-Proprietary
   x-mate-owner: architecture-api-governance
 servers:
-- url: /
-  description: Gateway-relative production endpoint
+  - url: /
+    description: Gateway-relative production endpoint
 tags:
-- name: iam
-  description: iam domain operations
-- name: dashboard
-  description: dashboard domain operations
-- name: msg
-  description: msg domain operations
-- name: obs
-  description: obs domain operations
-- name: mcp
-  description: mcp domain operations
-- name: llmgw
-  description: llmgw domain operations
-- name: ont
-  description: ont domain operations
-- name: rag
-  description: rag domain operations
-- name: agent
-  description: agent domain operations
-- name: data
-  description: data domain operations
-- name: kb
-  description: kb domain operations
-- name: copilot
-  description: copilot domain operations
-- name: dw
-  description: dw domain operations
-- name: apphub
-  description: apphub domain operations
-- name: arch
-  description: arch domain operations
-- name: wfe
-  description: wfe domain operations
-- name: a2a
-  description: a2a domain operations
-- name: marketplace
-  description: marketplace domain operations
+  - name: iam
+    description: iam domain operations
+  - name: dashboard
+    description: dashboard domain operations
+  - name: msg
+    description: msg domain operations
+  - name: obs
+    description: obs domain operations
+  - name: mcp
+    description: mcp domain operations
+  - name: llmgw
+    description: llmgw domain operations
+  - name: ont
+    description: ont domain operations
+  - name: rag
+    description: rag domain operations
+  - name: agent
+    description: agent domain operations
+  - name: data
+    description: data domain operations
+  - name: kb
+    description: kb domain operations
+  - name: copilot
+    description: copilot domain operations
+  - name: dw
+    description: dw domain operations
+  - name: apphub
+    description: apphub domain operations
+  - name: arch
+    description: arch domain operations
+  - name: wfe
+    description: wfe domain operations
+  - name: a2a
+    description: a2a domain operations
+  - name: marketplace
+    description: marketplace domain operations
 security:
-- bearerAuth: []
+  - bearerAuth: []
 paths:
   /api/v1/a2a/agent-cards/search:
     $ref: ./services/a2a.yaml#/paths/~1api~1v1~1a2a~1agent-cards~1search

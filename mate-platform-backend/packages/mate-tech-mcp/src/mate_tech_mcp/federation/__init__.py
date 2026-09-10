@@ -32,6 +32,7 @@ The registry is tenant-scoped: every method takes ``tenant_id`` from
 the request context (never from the body / path) and refuses
 cross-tenant reads (SEC-TENANT-01 hard rule 3).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -114,9 +115,7 @@ class FederationRegistry:
                 existing_tools.update(srv.tools)
         collisions = set(tools) & existing_tools
         if collisions:
-            raise ValueError(
-                f"tool name collision: {sorted(collisions)} already registered"
-            )
+            raise ValueError(f"tool name collision: {sorted(collisions)} already registered")
         server_id = self._next_id()
         srv = FederatedServer(
             id=server_id,
@@ -171,9 +170,7 @@ class FederationRegistry:
                     existing_tools.update(srv.tools)
             collisions = set(new_tools) & existing_tools
             if collisions:
-                raise ValueError(
-                    f"tool name collision: {sorted(collisions)} already registered"
-                )
+                raise ValueError(f"tool name collision: {sorted(collisions)} already registered")
         updated = FederatedServer(
             id=existing.id,
             tenant_id=existing.tenant_id,
@@ -235,9 +232,7 @@ class FederationRegistry:
     def get_server(self, *, tenant_id: str, server_id: str) -> FederatedServer | None:
         return self._servers.get(tenant_id, {}).get(server_id)
 
-    def get_server_by_name(
-        self, *, tenant_id: str, name: str
-    ) -> FederatedServer | None:
+    def get_server_by_name(self, *, tenant_id: str, name: str) -> FederatedServer | None:
         for srv in self._servers.get(tenant_id, {}).values():
             if srv.name == name and srv.status != "deleted":
                 return srv
@@ -351,9 +346,7 @@ class ExternalMcpClient:
                 tool=tool_name,
                 error=str(e),
             )
-            raise RuntimeError(
-                f"remote tool {tool_name!r} on {server.name!r} failed: {e}"
-            ) from e
+            raise RuntimeError(f"remote tool {tool_name!r} on {server.name!r} failed: {e}") from e
 
     async def aclose(self) -> None:
         if self._client is not None:

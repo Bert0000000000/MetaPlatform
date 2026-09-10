@@ -5,6 +5,7 @@ message and running it synchronously via ``POST /api/v1/a2a/execute``
 (returns the real worker outcome) — not the legacy fire-and-forget
 ``/messages`` path which leaves the task in ``submitted`` forever.
 """
+
 from __future__ import annotations
 
 import os

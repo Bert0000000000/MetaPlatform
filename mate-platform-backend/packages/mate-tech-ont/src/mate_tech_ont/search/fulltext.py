@@ -2,6 +2,7 @@
 
 实例 / 类名支持中文 + 英文模糊搜索（PG tsvector 占位）。
 """
+
 from __future__ import annotations
 
 import re
@@ -32,7 +33,7 @@ def _tokenize(text: str) -> list[str]:
     for match in _CH_NGRAM_RE.findall(text):
         for n in (2, 3):
             for i in range(len(match) - n + 1):
-                tokens.append(match[i:i + n])
+                tokens.append(match[i : i + n])
     return tokens
 
 

@@ -7,6 +7,7 @@
 4. 层级联动：父类行策略约束子类实例（EXP-01 × SEC-12）；
 5. PG 同语义（策略表 CRUD + 过滤）。
 """
+
 from __future__ import annotations
 
 import os
@@ -37,37 +38,67 @@ P_LEVEL = f"ont.{T}.prop.elevel.v1"
 
 def _mk() -> InMemoryOntologyRepository:
     r = InMemoryOntologyRepository()
-    r.upsert_object_type(ObjectType(
-        rid=ClassRef(OBJ), primary_key=(ClassRef(P_ID),),
-        properties=(
-            Property(rid=ClassRef(P_ID), type_id="string", nullable=False,
-                     primary_key=True, title="id", format=PropertyFormat.STRING),
-            Property(rid=ClassRef(P_SAL), type_id="double", nullable=True,
-                     primary_key=False, title="salary", format=PropertyFormat.DOUBLE),
-            Property(rid=ClassRef(P_LEVEL), type_id="string", nullable=True,
-                     primary_key=False, title="level", format=PropertyFormat.STRING),
-        ),
-        display_name="employee",
-    ))
+    r.upsert_object_type(
+        ObjectType(
+            rid=ClassRef(OBJ),
+            primary_key=(ClassRef(P_ID),),
+            properties=(
+                Property(
+                    rid=ClassRef(P_ID),
+                    type_id="string",
+                    nullable=False,
+                    primary_key=True,
+                    title="id",
+                    format=PropertyFormat.STRING,
+                ),
+                Property(
+                    rid=ClassRef(P_SAL),
+                    type_id="double",
+                    nullable=True,
+                    primary_key=False,
+                    title="salary",
+                    format=PropertyFormat.DOUBLE,
+                ),
+                Property(
+                    rid=ClassRef(P_LEVEL),
+                    type_id="string",
+                    nullable=True,
+                    primary_key=False,
+                    title="level",
+                    format=PropertyFormat.STRING,
+                ),
+            ),
+            display_name="employee",
+        )
+    )
     for pk, sal, level in [("e1", 100.0, "junior"), ("e2", 900.0, "exec")]:
-        r.create_individual(Individual(
-            rid=f"ont.{T}.ind.employee.{pk}", class_rid=ClassRef(OBJ),
-            props=((ClassRef(P_ID), pk), (ClassRef(P_SAL), sal),
-                   (ClassRef(P_LEVEL), level)),
-            primary_key=pk, tenant_id=T,
-            created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
-        ))
+        r.create_individual(
+            Individual(
+                rid=f"ont.{T}.ind.employee.{pk}",
+                class_rid=ClassRef(OBJ),
+                props=((ClassRef(P_ID), pk), (ClassRef(P_SAL), sal), (ClassRef(P_LEVEL), level)),
+                primary_key=pk,
+                tenant_id=T,
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+        )
     return r
 
 
 class TestRowPolicies:
     def test_row_filter_and_bypass(self) -> None:
         r = _mk()
-        r.upsert_security_policy({
-            "kind": "row", "class_rid": OBJ,
-            "field": "elevel", "op": "ne", "value": "exec",
-            "bypass_markings": ["hr-privileged"],
-        })
+        r.upsert_security_policy(
+            {
+                "kind": "row",
+                "class_rid": OBJ,
+                "field": "elevel",
+                "op": "ne",
+                "value": "exec",
+                "bypass_markings": ["hr-privileged"],
+            }
+        )
         visible = r.enforce_read_policies(r.list_individuals(None), [])
         assert {i.primary_key for i in visible} == {"e1"}
         allv = r.enforce_read_policies(r.list_individuals(None), ["hr-privileged"])
@@ -75,26 +106,52 @@ class TestRowPolicies:
 
     def test_parent_policy_constrains_descendant(self) -> None:
         r = _mk()
-        r.upsert_object_type(ObjectType(
-            rid=ClassRef(OBJ_MGR), primary_key=(ClassRef(P_ID),),
-            properties=(
-                Property(rid=ClassRef(P_ID), type_id="string", nullable=False,
-                         primary_key=True, title="id", format=PropertyFormat.STRING),
-                Property(rid=ClassRef(P_LEVEL), type_id="string", nullable=True,
-                         primary_key=False, title="level", format=PropertyFormat.STRING),
-            ),
-            display_name="manager", parent_class=ClassRef(OBJ),
-        ))
-        r.create_individual(Individual(
-            rid=f"ont.{T}.ind.manager.m1", class_rid=ClassRef(OBJ_MGR),
-            props=((ClassRef(P_ID), "m1"), (ClassRef(P_LEVEL), "exec")),
-            primary_key="m1", tenant_id=T,
-            created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
-        ))
-        r.upsert_security_policy({
-            "kind": "row", "class_rid": OBJ,
-            "field": "elevel", "op": "ne", "value": "exec",
-        })
+        r.upsert_object_type(
+            ObjectType(
+                rid=ClassRef(OBJ_MGR),
+                primary_key=(ClassRef(P_ID),),
+                properties=(
+                    Property(
+                        rid=ClassRef(P_ID),
+                        type_id="string",
+                        nullable=False,
+                        primary_key=True,
+                        title="id",
+                        format=PropertyFormat.STRING,
+                    ),
+                    Property(
+                        rid=ClassRef(P_LEVEL),
+                        type_id="string",
+                        nullable=True,
+                        primary_key=False,
+                        title="level",
+                        format=PropertyFormat.STRING,
+                    ),
+                ),
+                display_name="manager",
+                parent_class=ClassRef(OBJ),
+            )
+        )
+        r.create_individual(
+            Individual(
+                rid=f"ont.{T}.ind.manager.m1",
+                class_rid=ClassRef(OBJ_MGR),
+                props=((ClassRef(P_ID), "m1"), (ClassRef(P_LEVEL), "exec")),
+                primary_key="m1",
+                tenant_id=T,
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+        )
+        r.upsert_security_policy(
+            {
+                "kind": "row",
+                "class_rid": OBJ,
+                "field": "elevel",
+                "op": "ne",
+                "value": "exec",
+            }
+        )
         visible = r.enforce_read_policies(r.list_individuals(None), [])
         assert "m1" not in {i.primary_key for i in visible}
 
@@ -102,10 +159,13 @@ class TestRowPolicies:
 class TestColumnPolicies:
     def test_mask_and_hold(self) -> None:
         r = _mk()
-        r.upsert_security_policy({
-            "kind": "column", "property_rid": P_SAL,
-            "required_markings": ["finance"],
-        })
+        r.upsert_security_policy(
+            {
+                "kind": "column",
+                "property_rid": P_SAL,
+                "required_markings": ["finance"],
+            }
+        )
         rows = [{"eid": "e1", "salary": 100.0}, {"eid": "e2", "salary": 900.0}]
         masked = r.mask_rows([dict(x) for x in rows], [])
         assert all(x["salary"] is None for x in masked)
@@ -115,27 +175,31 @@ class TestColumnPolicies:
     def test_cell_level_semantics(self) -> None:
         """行过滤 + 列脱敏组合 = 单元格级（可见对象但敏感列置空）。"""
         r = _mk()
-        r.upsert_security_policy({
-            "kind": "row", "class_rid": OBJ,
-            "field": "elevel", "op": "ne", "value": "exec",
-            "bypass_markings": ["hr-privileged"],
-        })
-        r.upsert_security_policy({
-            "kind": "column", "property_rid": P_SAL,
-            "required_markings": ["finance"],
-        })
+        r.upsert_security_policy(
+            {
+                "kind": "row",
+                "class_rid": OBJ,
+                "field": "elevel",
+                "op": "ne",
+                "value": "exec",
+                "bypass_markings": ["hr-privileged"],
+            }
+        )
+        r.upsert_security_policy(
+            {
+                "kind": "column",
+                "property_rid": P_SAL,
+                "required_markings": ["finance"],
+            }
+        )
         vis = r.enforce_read_policies(r.list_individuals(None), ["hr-privileged"])
         assert {i.primary_key for i in vis} == {"e1", "e2"}
-        rows = [
-            {"eid": i.primary_key,
-             "salary": i.get(ClassRef(P_SAL))} for i in vis]
+        rows = [{"eid": i.primary_key, "salary": i.get(ClassRef(P_SAL))} for i in vis]
         masked = r.mask_rows(rows, ["hr-privileged"])
         assert all(x["salary"] is None for x in masked)
 
 
-PG_DSN = os.environ.get(
-    "SEC12_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"
-)
+PG_DSN = os.environ.get("SEC12_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
 
 
 class TestPgSameSemantics:
@@ -157,16 +221,20 @@ class TestPgSameSemantics:
                 r.upsert_object_type(mem.get_object_type(ClassRef(OBJ)))
                 for i in mem.list_individuals(None):
                     r.create_individual(i)
-                r.upsert_security_policy({
-                    "kind": "row", "class_rid": OBJ,
-                    "field": "elevel", "op": "ne", "value": "exec",
-                    "markings": ["hr-privileged"], "tenant_id": T,
-                })
-                vis = r.enforce_read_policies(
-                    r.list_individuals(ClassRef(OBJ)), [])
+                r.upsert_security_policy(
+                    {
+                        "kind": "row",
+                        "class_rid": OBJ,
+                        "field": "elevel",
+                        "op": "ne",
+                        "value": "exec",
+                        "markings": ["hr-privileged"],
+                        "tenant_id": T,
+                    }
+                )
+                vis = r.enforce_read_policies(r.list_individuals(ClassRef(OBJ)), [])
                 assert {i.primary_key for i in vis} == {"e1"}
-                allv = r.enforce_read_policies(
-                    r.list_individuals(ClassRef(OBJ)), ["hr-privileged"])
+                allv = r.enforce_read_policies(r.list_individuals(ClassRef(OBJ)), ["hr-privileged"])
                 assert {i.primary_key for i in allv} == {"e1", "e2"}
                 assert len(r.list_security_policies()) >= 1
         finally:

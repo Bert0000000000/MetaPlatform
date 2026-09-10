@@ -16,6 +16,7 @@ The tests intentionally avoid the FastAPI app stack — they go straight
 at the unit surface so the wiring is verifiable without standing up
 Keycloak / IAM / dev_server.
 """
+
 from __future__ import annotations
 
 import sys
@@ -124,12 +125,10 @@ class TestInMemoryRAGFlowChunkingOverride:
         client.parse("alpha.", "doc-a", chunker_strategy="markdown")
         client.parse("beta.", "doc-b", chunker_strategy="markdown")
         # Cache key includes the override triple; markdown@512@64 is one key.
-        assert (("markdown", 512, 64) in client._chunker_cache), (
-            list(client._chunker_cache.keys()),
-        )
+        assert ("markdown", 512, 64) in client._chunker_cache, (list(client._chunker_cache.keys()),)
         # A different strategy produces a different cache key.
         client.parse("gamma.", "doc-c", chunker_strategy="sliding")
-        assert (("sliding", 512, 64) in client._chunker_cache)
+        assert ("sliding", 512, 64) in client._chunker_cache
 
 
 # ---------------------------------------------------------------------------
@@ -212,11 +211,13 @@ class TestRetrieveSimilarityThreshold:
 
         # Seed three chunks with different base scores; HybridClient search
         # ranks them by cosine similarity (descending).
-        ids = _seed_hybrid([
-            ("high", "doc-1", "machine learning is great", 0.95),
-            ("mid",  "doc-2", "deep learning models", 0.70),
-            ("low",  "doc-3", "something unrelated", 0.10),
-        ])
+        ids = _seed_hybrid(
+            [
+                ("high", "doc-1", "machine learning is great", 0.95),
+                ("mid", "doc-2", "deep learning models", 0.70),
+                ("low", "doc-3", "something unrelated", 0.10),
+            ]
+        )
         # Query anything — the InMemory store ranks by stored vector, not by
         # query text. Threshold 0.5 should keep the high + mid chunks.
         resp = retrieve_with_config(
@@ -234,10 +235,12 @@ class TestRetrieveSimilarityThreshold:
         """threshold = 0.0 (default) keeps every hit."""
         from mate_tech_rag.api.retrieval import retrieve_with_config
 
-        ids = _seed_hybrid([
-            ("h", "doc-1", "machine learning basics", 0.95),
-            ("l", "doc-2", "something off topic", 0.10),
-        ])
+        ids = _seed_hybrid(
+            [
+                ("h", "doc-1", "machine learning basics", 0.95),
+                ("l", "doc-2", "something off topic", 0.10),
+            ]
+        )
         resp = retrieve_with_config(_req("anything", top_k=5), similarity_threshold=0.0)
         surviving = {h.chunk_id for h in resp.hits}
         assert ids["h"] in surviving and ids["l"] in surviving, resp.hits
@@ -248,11 +251,13 @@ class TestRetrieveVectorKeywordWeights:
         """vector_weight=0.9 keeps the vector-best chunk at the top."""
         from mate_tech_rag.api.retrieval import retrieve_with_config
 
-        ids = _seed_hybrid([
-            ("vhigh", "doc-1", "machine learning is great", 0.95),
-            ("vmid",  "doc-2", "deep learning models", 0.70),
-            ("vlow",  "doc-3", "totally unrelated", 0.10),
-        ])
+        ids = _seed_hybrid(
+            [
+                ("vhigh", "doc-1", "machine learning is great", 0.95),
+                ("vmid", "doc-2", "deep learning models", 0.70),
+                ("vlow", "doc-3", "totally unrelated", 0.10),
+            ]
+        )
         resp = retrieve_with_config(
             _req("anything", top_k=3),
             vector_weight=0.9,
@@ -273,12 +278,14 @@ class TestRetrieveVectorKeywordWeights:
         """
         from mate_tech_rag.api.retrieval import retrieve_with_config
 
-        ids = _seed_hybrid([
-            # All three start at the same vector score; only the keyword
-            # overlap (via the new fusion) breaks the tie.
-            ("match", "doc-1", "订单审批流程包含三个步骤", 0.5),
-            ("other", "doc-2", "今天天气真好适合户外运动", 0.5),
-        ])
+        ids = _seed_hybrid(
+            [
+                # All three start at the same vector score; only the keyword
+                # overlap (via the new fusion) breaks the tie.
+                ("match", "doc-1", "订单审批流程包含三个步骤", 0.5),
+                ("other", "doc-2", "今天天气真好适合户外运动", 0.5),
+            ]
+        )
         resp = retrieve_with_config(
             _req("订单审批流程", top_k=2),
             vector_weight=0.1,
@@ -295,11 +302,13 @@ class TestRetrieveKbIdFilter:
         """When kb_id is set, hits outside the allow-list are dropped."""
         from mate_tech_rag.api.retrieval import retrieve_with_config
 
-        ids = _seed_hybrid([
-            ("a", "doc-a", "alpha", 0.95),
-            ("b", "doc-b", "beta", 0.85),
-            ("c", "doc-c", "gamma", 0.75),
-        ])
+        ids = _seed_hybrid(
+            [
+                ("a", "doc-a", "alpha", 0.95),
+                ("b", "doc-b", "beta", 0.85),
+                ("c", "doc-c", "gamma", 0.75),
+            ]
+        )
         # Tenant kb-1 owns only doc-a and doc-b; search scoped to kb-1.
         resp = retrieve_with_config(
             _req("anything", top_k=5, kb_id="kb-1"),
@@ -315,10 +324,12 @@ class TestRetrieveKbIdFilter:
         """An empty allow-list with a non-empty kb_id blocks every hit."""
         from mate_tech_rag.api.retrieval import retrieve_with_config
 
-        _seed_hybrid([
-            ("x", "doc-x", "delta", 0.9),
-            ("y", "doc-y", "epsilon", 0.7),
-        ])
+        _seed_hybrid(
+            [
+                ("x", "doc-x", "delta", 0.9),
+                ("y", "doc-y", "epsilon", 0.7),
+            ]
+        )
         resp = retrieve_with_config(
             _req("anything", top_k=5, kb_id="kb-empty"),
             kb_doc_ids=set(),  # no document belongs to this kb
@@ -330,10 +341,12 @@ class TestRetrieveKbIdFilter:
         """Without kb_id, the filter is a no-op even when kb_doc_ids is set."""
         from mate_tech_rag.api.retrieval import retrieve_with_config
 
-        ids = _seed_hybrid([
-            ("x", "doc-x", "delta", 0.9),
-            ("y", "doc-y", "epsilon", 0.7),
-        ])
+        ids = _seed_hybrid(
+            [
+                ("x", "doc-x", "delta", 0.9),
+                ("y", "doc-y", "epsilon", 0.7),
+            ]
+        )
         resp = retrieve_with_config(
             _req("anything", top_k=5),  # kb_id omitted
             kb_doc_ids={"doc-z"},  # unrelated allow-list

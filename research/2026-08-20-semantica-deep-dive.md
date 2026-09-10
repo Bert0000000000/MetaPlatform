@@ -16,14 +16,14 @@ Semantica（**The Open Source Palantir for AI Agents**）是一个 Python 单体
 
 ## 1. 项目立项动机与自我定位
 
-| 维度 | 描述 |
-|---|---|
-| **Logo slogan** | "Graph-Native Infrastructure for Context and Accountable AI Systems" |
-| **副标题** | "The Open Source Palantir for AI Agents" |
-| **5 大卖点** | Decision Intelligence · Context Management · Deterministic Reasoning · Ontology Management · Knowledge Modeling · End-to-End Traceability |
-| **5 大承诺** | Open Source · Self-Hostable · Auditable · Governed · Zero Vendor Lock-In |
-| **技术承诺** | Polyglot Graph Storage · RDF + LPG · W3C Standards · Interoperable |
-| **目标场景** | "Built for High-Stakes, Regulated Domains"（金融、医疗、政务、合规场景） |
+| 维度              | 描述                                                                                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Logo slogan**   | "Graph-Native Infrastructure for Context and Accountable AI Systems"                                                                                                                       |
+| **副标题**        | "The Open Source Palantir for AI Agents"                                                                                                                                                   |
+| **5 大卖点**      | Decision Intelligence · Context Management · Deterministic Reasoning · Ontology Management · Knowledge Modeling · End-to-End Traceability                                                  |
+| **5 大承诺**      | Open Source · Self-Hostable · Auditable · Governed · Zero Vendor Lock-In                                                                                                                   |
+| **技术承诺**      | Polyglot Graph Storage · RDF + LPG · W3C Standards · Interoperable                                                                                                                         |
+| **目标场景**      | "Built for High-Stakes, Regulated Domains"（金融、医疗、政务、合规场景）                                                                                                                   |
 | **GitHub Topics** | agent-memory, ai-governance, context-engineering, context-graphs, decision-intelligence, explainable-ai, graph-rag, knowledge-graph, llm, ontology, provenance, reasoning, semantic-search |
 
 读 self-positioning：核心命题是 **"AI 必须可解释 / 可审计 / 可追责"**，对标 Palantir Foundry 的开放化版本，强调 "PALANTIR OVERVIEW 原文" 的复刻。
@@ -34,16 +34,16 @@ Semantica（**The Open Source Palantir for AI Agents**）是一个 Python 单体
 
 ## 2. 仓库健康度（2026-08-19 数据）
 
-| 指标 | 值 | 解读 |
-|---|---|---|
-| Stargazers | 9,446 | 健康的中型开源，**比 LangChain/LlamaIndex 低 1 个数量级**，但比多数垂直 KG 项目高 |
-| Forks | 985 | **fork/星 = 10.4%**，偏高，说明很多人拿去二次开发/自托管 |
-| Open Issues | 129 | 活跃维护 |
-| Watchers | 51 (subscribers) | vs. Stars 9446 → 比例 0.5%，**说明关注者 < 使用者**，典型"工具型"项目 |
-| License | MIT | ✅ 商用 friendly，与 MetaPlatform 一致 |
-| Repo size | 53 MB | 内置 static/ 前端 + static/assets + ontology/vocabulary/*.ttl |
-| Created | 2025-06-25 | **项目实际年龄仅 14 个月**；能在 14 个月拿到 9.4k stars 是异常值 |
-| Last push | 2026-08-19 | 持续维护 |
+| 指标        | 值               | 解读                                                                              |
+| ----------- | ---------------- | --------------------------------------------------------------------------------- |
+| Stargazers  | 9,446            | 健康的中型开源，**比 LangChain/LlamaIndex 低 1 个数量级**，但比多数垂直 KG 项目高 |
+| Forks       | 985              | **fork/星 = 10.4%**，偏高，说明很多人拿去二次开发/自托管                          |
+| Open Issues | 129              | 活跃维护                                                                          |
+| Watchers    | 51 (subscribers) | vs. Stars 9446 → 比例 0.5%，**说明关注者 < 使用者**，典型"工具型"项目             |
+| License     | MIT              | ✅ 商用 friendly，与 MetaPlatform 一致                                            |
+| Repo size   | 53 MB            | 内置 static/ 前端 + static/assets + ontology/vocabulary/\*.ttl                    |
+| Created     | 2025-06-25       | **项目实际年龄仅 14 个月**；能在 14 个月拿到 9.4k stars 是异常值                  |
+| Last push   | 2026-08-19       | 持续维护                                                                          |
 
 > **14 个月涨 9k stars 不正常**——很可能有早期 Growth Hacking（README 里挂了 Trendshift 双徽章，且视觉 polished）。**需把"社区真实活跃度"和"市场声量"分开看**。
 
@@ -189,19 +189,19 @@ semantica/
 
 ### 核心依赖（默认安装即有）
 
-| 类别 | 关键库 | 版本下限 |
-|---|---|---|
-| 数值 / ML | numpy, pandas, scipy, scikit-learn, umap-learn | numpy ≥2.0.2, sklearn ≥1.7.2 |
-| NLP | spacy ≥3.4, transformers ≥4.20, torch ≥1.13 | LLM 推理基本款 |
-| 嵌入 | sentence-transformers ≥2.2, fastembed ≥0.2 | 双轨 |
-| 图算法 | networkx ≥2.8 | 纯 Python 图算法 |
-| RDF | rdflib ≥6.2 | Python RDF 标准 |
-| 向量检索 | faiss-cpu ≥1.7 | 兜底本地向量 |
-| 推理 | onnxruntime ≥1.20, tokenizers ≥0.15 | ONNX 推理加速 |
-| 数据 IO | pydantic ≥2.13, click, rich, tqdm, structlog, loguru | Python 工程标配 |
-| 网络 / 解析 | requests, GitPython, beautifulsoup4, lxml, python-docx, openpyxl, pillow | 全文档格式 |
-| 多模态 | librosa, opencv-python | 音频 + 图像 |
-| 序列化 | protobuf, grpcio | gRPC 钩子 |
+| 类别        | 关键库                                                                   | 版本下限                     |
+| ----------- | ------------------------------------------------------------------------ | ---------------------------- |
+| 数值 / ML   | numpy, pandas, scipy, scikit-learn, umap-learn                           | numpy ≥2.0.2, sklearn ≥1.7.2 |
+| NLP         | spacy ≥3.4, transformers ≥4.20, torch ≥1.13                              | LLM 推理基本款               |
+| 嵌入        | sentence-transformers ≥2.2, fastembed ≥0.2                               | 双轨                         |
+| 图算法      | networkx ≥2.8                                                            | 纯 Python 图算法             |
+| RDF         | rdflib ≥6.2                                                              | Python RDF 标准              |
+| 向量检索    | faiss-cpu ≥1.7                                                           | 兜底本地向量                 |
+| 推理        | onnxruntime ≥1.20, tokenizers ≥0.15                                      | ONNX 推理加速                |
+| 数据 IO     | pydantic ≥2.13, click, rich, tqdm, structlog, loguru                     | Python 工程标配              |
+| 网络 / 解析 | requests, GitPython, beautifulsoup4, lxml, python-docx, openpyxl, pillow | 全文档格式                   |
+| 多模态      | librosa, opencv-python                                                   | 音频 + 图像                  |
+| 序列化      | protobuf, grpcio                                                         | gRPC 钩子                    |
 
 ### Optional Extras（按需）
 
@@ -256,19 +256,19 @@ semantica-mcp    = "semantica.mcp_server:main" # MCP stdio
 
 `semantica/mcp_server/__init__.py` 是 **24719 字节的自实现 MCP JSON-RPC**，没依赖 mcp / fastmcp 库。提供 **11 个 tools + 3 个 resources**，协议版本 `2024-11-05`：
 
-| Tool | 入参 | 用途 |
-|---|---|---|
-| `extract_entities` | text | NER |
-| `extract_relations` | text | 关系 + 三元组抽取 |
-| `record_decision` | category/scenario/reasoning/outcome/confidence (+ valid_from/until) | **落决策** |
-| `query_decisions` | query/category/limit | 决策语义检索 |
-| `find_precedents` | scenario/max_results | 历史先例检索 |
-| `get_causal_chain` | decision_id/direction/max_depth | **因果链上下游追溯** |
-| `add_entity` / `add_relationship` | id/label/type 或 source/target/type | 写图 |
-| `run_reasoning` | facts/rules | forward-chaining |
-| `get_graph_analytics` | — | PageRank + community + node/edge count |
-| `export_graph` | format (ttl/nt/xml/json-ld/json) | 导出 |
-| `get_graph_summary` | — | 图状态 |
+| Tool                              | 入参                                                                | 用途                                   |
+| --------------------------------- | ------------------------------------------------------------------- | -------------------------------------- |
+| `extract_entities`                | text                                                                | NER                                    |
+| `extract_relations`               | text                                                                | 关系 + 三元组抽取                      |
+| `record_decision`                 | category/scenario/reasoning/outcome/confidence (+ valid_from/until) | **落决策**                             |
+| `query_decisions`                 | query/category/limit                                                | 决策语义检索                           |
+| `find_precedents`                 | scenario/max_results                                                | 历史先例检索                           |
+| `get_causal_chain`                | decision_id/direction/max_depth                                     | **因果链上下游追溯**                   |
+| `add_entity` / `add_relationship` | id/label/type 或 source/target/type                                 | 写图                                   |
+| `run_reasoning`                   | facts/rules                                                         | forward-chaining                       |
+| `get_graph_analytics`             | —                                                                   | PageRank + community + node/edge count |
+| `export_graph`                    | format (ttl/nt/xml/json-ld/json)                                    | 导出                                   |
+| `get_graph_summary`               | —                                                                   | 图状态                                 |
 
 Resources：`semantica://graph/summary` · `semantica://decisions/list` · `semantica://schema/info`。
 
@@ -277,6 +277,7 @@ Resources：`semantica://graph/summary` · `semantica://decisions/list` · `sema
 ### 6.2 Provenance（W3C PROV-O 完整对齐）
 
 `semantica/provenance/` 6 个文件：
+
 - `manager.py` (61KB) — **ProvenanceManager** 主导
 - `bridge_axiom.py` — **Bridge axiom**（跨域 provenance 衔接，公理化）
 - `integrity.py` — **provenance 完整性证明**（hash 链）
@@ -292,15 +293,16 @@ CHANGELOG 早期重点修复：**RDF/JSON-LD export 必须使用声明过的 voc
 
 5 步：`Record → Link → Query → Govern → Audit`，每步都有对应 module：
 
-| Step | Module | API |
-|---|---|---|
-| Record | `context/decision_recorder.py` (24KB) | `graph.record_decision(...)` |
-| Link | `context/causal_analyzer.py` (31KB) | `add_causal_relationship(triggers/enables/causes/precedes)` |
-| Query | `context/decision_query.py` (56KB) + `agent_memory.py` (81KB) | `find_similar_decisions`, `trace_decision_chain`, `analyze_decision_impact` |
-| Govern | `context/policy_engine.py` (42KB) | `check_decision_rules` |
-| Audit | `provenance/manager.py` | W3C PROV-O + CSV/JSON |
+| Step   | Module                                                        | API                                                                         |
+| ------ | ------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Record | `context/decision_recorder.py` (24KB)                         | `graph.record_decision(...)`                                                |
+| Link   | `context/causal_analyzer.py` (31KB)                           | `add_causal_relationship(triggers/enables/causes/precedes)`                 |
+| Query  | `context/decision_query.py` (56KB) + `agent_memory.py` (81KB) | `find_similar_decisions`, `trace_decision_chain`, `analyze_decision_impact` |
+| Govern | `context/policy_engine.py` (42KB)                             | `check_decision_rules`                                                      |
+| Audit  | `provenance/manager.py`                                       | W3C PROV-O + CSV/JSON                                                       |
 
 > **与 MetaPlatform HITL 的关键区别**：
+>
 > - Semantica：decision 是 KG 里一个 node（typed "decision"），通过 provenance + policy 治理。**面向 "事后审计"**。
 > - MetaPlatform：ActionType 是 schema-level 的 mutation primitive，**写库前 HITL confirm**（ADR-0043 已升格）。**面向 "事前拦截"**。
 >
@@ -320,6 +322,7 @@ CHANGELOG 早期重点修复：**RDF/JSON-LD export 必须使用声明过的 voc
 - **变更管理**：generate_change_report（嵌套在 kg.graph_validator）
 
 > **可借鉴点**：MetaPlatform MP-ONT-KERNEL-01 当前是 12 Protocol/dataclass 基元 + 60 tests（admission 阶段）。**Semantica 的 ontology 给了"完整 OO 法规模板"作为参照**——特别是：
+>
 > - **SHACL 而非自定义 constraint language**（schema-driven validation）
 > - **Version Manager with impact analysis**（这是 MP-EMP-EVOLVE-01 的关键依赖）
 > - **Reuse Manager 对齐 FOAF/DC/Schema.org**（MP-EMP-EVOLVE-01 的语义对齐基础）
@@ -328,6 +331,7 @@ CHANGELOG 早期重点修复：**RDF/JSON-LD export 必须使用声明过的 voc
 ### 6.5 Reasoning（三引擎并存）
 
 `semantica/reasoning/` 8 个文件：
+
 - **ReteEngine** (13KB) — 前向链规则引擎（生产式）
 - **DatalogReasoner** (16KB) — Datalog 演绎
 - **SPARQLReasoner** (14KB) — SPARQL 推理
@@ -352,30 +356,30 @@ CHANGELOG 早期重点修复：**RDF/JSON-LD export 必须使用声明过的 voc
 
 ### 7.1 Introduction（21 个基础 + 3 个示例文件）
 
-| # | Notebook | 覆盖 |
-|---|---|---|
-| 01 | Welcome to Semantica | 项目哲学 / QuickStart |
-| 02 | Data Ingestion | 6 类数据源接入 |
-| 03 | Document Parsing | 多格式解析 |
-| 04 | Data Normalization | 文本/实体/日期/数字归一 |
-| 05 | Entity Extraction | NER |
-| 06 | Relation Extraction | 关系 + 三元组 |
-| 07 | Building Knowledge Graphs | KG 构造 |
-| 08 | Your First Knowledge Graph | hello-world KG |
-| 09 | Graph Store | 4 图后端选型 |
-| 10 | Graph Analytics | PageRank + Community |
-| 11 | Chunking and Splitting | 5 种切分策略 |
-| 12 | Embedding Generation | 多模型嵌入 |
-| 13 | Vector Store | 6 向量库 + RRF |
-| 14 | Ontology | SHACL/SKOS/OWL |
-| 15 | Export | 11 种导出格式 |
-| 16 | Visualization | 4 类可视化 |
-| 17 | Conflict Detection | 冲突检测 + 解决 |
-| 18 | Deduplication | 实体去重 + 合并 |
-| 19 | Context Module | ContextGraph + AgentMemory |
-| 20 | Triplet Store | RDF 三元组存储 |
-| 21 | Amazon Neptune Store | Neptune 实操 |
-| — | `config.yaml` `corporate_ontology.ttl` `neptune-setup.yaml` | 示例资源 |
+| #   | Notebook                                                    | 覆盖                       |
+| --- | ----------------------------------------------------------- | -------------------------- |
+| 01  | Welcome to Semantica                                        | 项目哲学 / QuickStart      |
+| 02  | Data Ingestion                                              | 6 类数据源接入             |
+| 03  | Document Parsing                                            | 多格式解析                 |
+| 04  | Data Normalization                                          | 文本/实体/日期/数字归一    |
+| 05  | Entity Extraction                                           | NER                        |
+| 06  | Relation Extraction                                         | 关系 + 三元组              |
+| 07  | Building Knowledge Graphs                                   | KG 构造                    |
+| 08  | Your First Knowledge Graph                                  | hello-world KG             |
+| 09  | Graph Store                                                 | 4 图后端选型               |
+| 10  | Graph Analytics                                             | PageRank + Community       |
+| 11  | Chunking and Splitting                                      | 5 种切分策略               |
+| 12  | Embedding Generation                                        | 多模型嵌入                 |
+| 13  | Vector Store                                                | 6 向量库 + RRF             |
+| 14  | Ontology                                                    | SHACL/SKOS/OWL             |
+| 15  | Export                                                      | 11 种导出格式              |
+| 16  | Visualization                                               | 4 类可视化                 |
+| 17  | Conflict Detection                                          | 冲突检测 + 解决            |
+| 18  | Deduplication                                               | 实体去重 + 合并            |
+| 19  | Context Module                                              | ContextGraph + AgentMemory |
+| 20  | Triplet Store                                               | RDF 三元组存储             |
+| 21  | Amazon Neptune Store                                        | Neptune 实操               |
+| —   | `config.yaml` `corporate_ontology.ttl` `neptune-setup.yaml` | 示例资源                   |
 
 ### 7.2 Advanced（13 个）
 
@@ -400,37 +404,37 @@ Advanced_Vector_Store_and_Search
 
 ### 8.1 12 Ontology 基元对照
 
-| MetaPlatform (MP-ONT-KERNEL-01, ADR-0021) | Semantica 对位 |
-|---|---|
-| `ClassRef` | 没独立的 class ref 类型；用 rdflib.URIRef |
-| `Version` | ✅ VersionManager + `get_ontology_version_dict` + `compare_versions`（直接可借鉴） |
-| `Property` | ✅ property_generator.infer_properties + Domain/Range Inference |
-| `ObjectType` | 🟡 `OntologyGenerator.generate_ontology` 6-Stage Pipeline 中的"概念定义"，但不如 ADR-0021 严格 |
-| `LinkType` | 🟡 Relationship 类型有但语义弱（直接 triple） |
-| `ActionType` / `ActionType.apply` | ❌ **没有原生对应**——这是 MetaPlatform 独一无二的 write-side schema primitive |
-| `Interface` | 🟡 ModuleManager + DomainOntologies |
-| `Individual` | ✅ KG node（`add_node` / `find_nodes`） |
-| `LinkInstance` | ✅ KG edge（`add_edge`） |
-| `Axiom` | ✅ SHACLConstraint + Integrity 中类似概念 |
-| `Function` | 🟡 SPARQL/Datalog 中有等价表达，但不是头等公民 |
-| `ObjectSet` | ✅ ContextGraph + AgentContext 的查询能力 |
+| MetaPlatform (MP-ONT-KERNEL-01, ADR-0021) | Semantica 对位                                                                                 |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `ClassRef`                                | 没独立的 class ref 类型；用 rdflib.URIRef                                                      |
+| `Version`                                 | ✅ VersionManager + `get_ontology_version_dict` + `compare_versions`（直接可借鉴）             |
+| `Property`                                | ✅ property_generator.infer_properties + Domain/Range Inference                                |
+| `ObjectType`                              | 🟡 `OntologyGenerator.generate_ontology` 6-Stage Pipeline 中的"概念定义"，但不如 ADR-0021 严格 |
+| `LinkType`                                | 🟡 Relationship 类型有但语义弱（直接 triple）                                                  |
+| `ActionType` / `ActionType.apply`         | ❌ **没有原生对应**——这是 MetaPlatform 独一无二的 write-side schema primitive                  |
+| `Interface`                               | 🟡 ModuleManager + DomainOntologies                                                            |
+| `Individual`                              | ✅ KG node（`add_node` / `find_nodes`）                                                        |
+| `LinkInstance`                            | ✅ KG edge（`add_edge`）                                                                       |
+| `Axiom`                                   | ✅ SHACLConstraint + Integrity 中类似概念                                                      |
+| `Function`                                | 🟡 SPARQL/Datalog 中有等价表达，但不是头等公民                                                 |
+| `ObjectSet`                               | ✅ ContextGraph + AgentContext 的查询能力                                                      |
 
 ### 8.2 v3.1 20 Batch 路线对位
 
-| MP Batch | Semantica 对位 | 借鉴度 |
-|---|---|---|
-| MP-ONT-KERNEL-01 (12 基元) | semantica/ontology（OWL/SHACL/SKOS） | 🟡 **借鉴协议形式 + 复用 owl/skos，主体仍是自建 12 基元** |
-| MP-MODEL-02 | semantica/embeddings + models-huggingface | ✅ 直接复用 fastembed / sentence-transformers |
-| MP-SANDBOX-01 (B1 Function L2+第三方 L3) | ❌ 无沙箱概念 | 无 |
-| MP-SESSION-01 (B2 会话级 token) | 🟡 context/agent_memory.py（agent 级 memory，非 session） | 借鉴 memory 模型 |
-| MP-AIP-GATEWAY-01 | llms/ 8 provider adapter | ✅ **可参考 llm_extras 设计** |
-| MP-AGENT-ORCH-01 | mcp_server/ + integrations/agno (3 cookbooks) | ✅ **MCP server 直接能 pip 安装当本地 gateway** |
-| MP-ACTION-03 | ❌ ActionType.apply 写库前 HITL 是独家 | 无 |
-| MP-OBJECTSET-04 | context/context_graph.py + GraphBuilder | 🟡 借鉴 query 范式 |
-| MP-MANAGER-05 | change_management/ | 🟡 借鉴 diff + version 概念 |
-| MP-AGENT-ONT-01 | semantica/ontology/OntologyEngine | ✅ 直接资源 |
-| MP-RAG-ONT-01 | cookbook/advanced/12_Unstructured_to_Ontology | ✅ **直击 MP-SAL 痛点**，可作 MP-SAL-02 输入 |
-| MP-AGENT-EXT-01 | mcp_server + integrations/ | ✅ |
+| MP Batch                                 | Semantica 对位                                            | 借鉴度                                                    |
+| ---------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------- |
+| MP-ONT-KERNEL-01 (12 基元)               | semantica/ontology（OWL/SHACL/SKOS）                      | 🟡 **借鉴协议形式 + 复用 owl/skos，主体仍是自建 12 基元** |
+| MP-MODEL-02                              | semantica/embeddings + models-huggingface                 | ✅ 直接复用 fastembed / sentence-transformers             |
+| MP-SANDBOX-01 (B1 Function L2+第三方 L3) | ❌ 无沙箱概念                                             | 无                                                        |
+| MP-SESSION-01 (B2 会话级 token)          | 🟡 context/agent_memory.py（agent 级 memory，非 session） | 借鉴 memory 模型                                          |
+| MP-AIP-GATEWAY-01                        | llms/ 8 provider adapter                                  | ✅ **可参考 llm_extras 设计**                             |
+| MP-AGENT-ORCH-01                         | mcp_server/ + integrations/agno (3 cookbooks)             | ✅ **MCP server 直接能 pip 安装当本地 gateway**           |
+| MP-ACTION-03                             | ❌ ActionType.apply 写库前 HITL 是独家                    | 无                                                        |
+| MP-OBJECTSET-04                          | context/context_graph.py + GraphBuilder                   | 🟡 借鉴 query 范式                                        |
+| MP-MANAGER-05                            | change_management/                                        | 🟡 借鉴 diff + version 概念                               |
+| MP-AGENT-ONT-01                          | semantica/ontology/OntologyEngine                         | ✅ 直接资源                                               |
+| MP-RAG-ONT-01                            | cookbook/advanced/12_Unstructured_to_Ontology             | ✅ **直击 MP-SAL 痛点**，可作 MP-SAL-02 输入              |
+| MP-AGENT-EXT-01                          | mcp_server + integrations/                                | ✅                                                        |
 
 ### 8.3 MP-SAL（语义层 AI 落地规划）对位
 
@@ -446,18 +450,18 @@ MP-SAL 五大差距 + 路线已在 MEMORY 索引。Semantica 直接命中的：
 
 ## 9. 风险与局限
 
-| 风险 | 详情 | 影响 |
-|---|---|---|
-| **14 个月涨 9k stars** | 极不寻常，可能有 Growth Hacking / Reddit 推送 | 项目活跃度 vs 市场声量需分开评估；fork/星比 10.4% 偏高是验证 |
-| **context_graph.py 168KB 单类** | 反模式，难测、难多租 | 复杂业务会撞墙；MetaPlatform 坚持 ADR 13 硬规则是对的 |
-| **worker.py 还是占位 loop** | `time.sleep(5)` + signal handling；没有真正接 Celery/Kafka | 不适合生产；要自己接 |
-| **`crewai` extra CVE-2026-45829** | pyproject 自己注释："chromadb 携带 pre-auth 代码注入" | 攻击面；本项目选 `agno` 作为旗舰是及时止损 |
-| **CLI 174KB（50+ commands）+ 4 router×100 endpoints 都是声称** | 没有看到完整 contract 验证 | 集成时要先实测 |
-| **OpenTelemetry 依赖被限定 `<2.0.0` / `<0.65`** | 与 v2 → v2 升级锁定，可能拖累长期升级 | 监控栈兼容性 |
-| **没看到多租户隔离** | 13 硬规则 #3 "没有 tenant 上下文不访问 repository" Semantica 没有 | 与 MetaPlatform 强约束差距大 |
-| **REST 只绑 127.0.0.1** | "expose via reverse proxy only"——是产品定位而非缺陷 | 但需要前置 proxy |
-| **`record_decision` 完全同步写图，无 HITL 闸门** | 与 MP-ACTION-CONFIRM-01 直接对立 | 这是范式差异，不能合并 |
-| **`PyTorch ≥1.13` 进 core deps** | 即便用户只想用 graph capabilities 也要拉 torch | 安装包 ~600MB+ 是 RAG 工具常见诟病 |
+| 风险                                                           | 详情                                                              | 影响                                                         |
+| -------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------ |
+| **14 个月涨 9k stars**                                         | 极不寻常，可能有 Growth Hacking / Reddit 推送                     | 项目活跃度 vs 市场声量需分开评估；fork/星比 10.4% 偏高是验证 |
+| **context_graph.py 168KB 单类**                                | 反模式，难测、难多租                                              | 复杂业务会撞墙；MetaPlatform 坚持 ADR 13 硬规则是对的        |
+| **worker.py 还是占位 loop**                                    | `time.sleep(5)` + signal handling；没有真正接 Celery/Kafka        | 不适合生产；要自己接                                         |
+| **`crewai` extra CVE-2026-45829**                              | pyproject 自己注释："chromadb 携带 pre-auth 代码注入"             | 攻击面；本项目选 `agno` 作为旗舰是及时止损                   |
+| **CLI 174KB（50+ commands）+ 4 router×100 endpoints 都是声称** | 没有看到完整 contract 验证                                        | 集成时要先实测                                               |
+| **OpenTelemetry 依赖被限定 `<2.0.0` / `<0.65`**                | 与 v2 → v2 升级锁定，可能拖累长期升级                             | 监控栈兼容性                                                 |
+| **没看到多租户隔离**                                           | 13 硬规则 #3 "没有 tenant 上下文不访问 repository" Semantica 没有 | 与 MetaPlatform 强约束差距大                                 |
+| **REST 只绑 127.0.0.1**                                        | "expose via reverse proxy only"——是产品定位而非缺陷               | 但需要前置 proxy                                             |
+| **`record_decision` 完全同步写图，无 HITL 闸门**               | 与 MP-ACTION-CONFIRM-01 直接对立                                  | 这是范式差异，不能合并                                       |
+| **`PyTorch ≥1.13` 进 core deps**                               | 即便用户只想用 graph capabilities 也要拉 torch                    | 安装包 ~600MB+ 是 RAG 工具常见诟病                           |
 
 ---
 
@@ -494,7 +498,7 @@ MP-SAL 五大差距 + 路线已在 MEMORY 索引。Semantica 直接命中的：
 
 1. `pyproject.toml` (8.8KB) — 完整 deps + extras + entrypoints
 2. `ARCHITECTURE.md` — 双图（pipeline + decision lifecycle）
-3. `semantica/__init__.py` — 懒加载 _ModuleProxy
+3. `semantica/__init__.py` — 懒加载 \_ModuleProxy
 4. `semantica/server.py` (9.3KB) — FastAPI loopback + 11 router
 5. `semantica/mcp_server/__init__.py` (24.7KB) — 11 MCP tools 完全实现
 6. `semantica/ontology/engine.py` (28.5KB) — OntologyEngine 完整 API（OWL/SHACL/SKOS/Version/Align/Search/Validate）
@@ -506,23 +510,23 @@ MP-SAL 五大差距 + 路线已在 MEMORY 索引。Semantica 直接命中的：
 
 ## 附录 B — 关键数字
 
-| 指标 | 值 |
-|---|---|
-| 模块数 (Python 包) | 22 + static SPA |
-| Cookbook Notebook | 37 (21 + 13 + 3) |
-| GitHub Stars | 9,446 |
-| Forks | 985 |
-| License | MIT |
-| Repo size | ~53 MB |
-| PyPI version | 0.6.5 (项目 0.6.0) |
-| Python | ≥3.8 |
-| Core deps | 38 个 |
-| Optional extras | 23 类 |
-| MCP tools | 11 |
-| CLI commands | 50+ |
-| REST endpoints | 100+ (声称) |
-| Graph backends | 4 (Neo4j, FalkorDB, Neptune, Apache AGE) |
-| Vector backends | 6 (FAISS, Qdrant, Weaviate, Milvus, Pinecone, PgVector, sqlite-vec) |
-| Triplet backends | 2 (rdflib in-memory, Oxigraph) |
-| Reasoning engines | 4 (Rete, Datalog, SPARQL, Abductive) |
-| LLM providers | 8 (OpenAI, Groq, Gemini, Anthropic, Ollama, DeepSeek, LiteLLM, Instructor) |
+| 指标               | 值                                                                         |
+| ------------------ | -------------------------------------------------------------------------- |
+| 模块数 (Python 包) | 22 + static SPA                                                            |
+| Cookbook Notebook  | 37 (21 + 13 + 3)                                                           |
+| GitHub Stars       | 9,446                                                                      |
+| Forks              | 985                                                                        |
+| License            | MIT                                                                        |
+| Repo size          | ~53 MB                                                                     |
+| PyPI version       | 0.6.5 (项目 0.6.0)                                                         |
+| Python             | ≥3.8                                                                       |
+| Core deps          | 38 个                                                                      |
+| Optional extras    | 23 类                                                                      |
+| MCP tools          | 11                                                                         |
+| CLI commands       | 50+                                                                        |
+| REST endpoints     | 100+ (声称)                                                                |
+| Graph backends     | 4 (Neo4j, FalkorDB, Neptune, Apache AGE)                                   |
+| Vector backends    | 6 (FAISS, Qdrant, Weaviate, Milvus, Pinecone, PgVector, sqlite-vec)        |
+| Triplet backends   | 2 (rdflib in-memory, Oxigraph)                                             |
+| Reasoning engines  | 4 (Rete, Datalog, SPARQL, Abductive)                                       |
+| LLM providers      | 8 (OpenAI, Groq, Gemini, Anthropic, Ollama, DeepSeek, LiteLLM, Instructor) |

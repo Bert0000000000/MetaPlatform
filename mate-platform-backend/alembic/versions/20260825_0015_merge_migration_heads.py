@@ -5,6 +5,7 @@ the platform/data migrations continued through ``0012`` → ``0013`` → ``0014`
 Both branches are valid and must be preserved; this revision only makes the
 Alembic graph single-headed so ``upgrade head`` is deterministic.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence

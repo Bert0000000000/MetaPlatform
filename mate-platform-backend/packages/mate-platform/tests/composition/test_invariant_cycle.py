@@ -3,6 +3,7 @@
 A dependency cycle never becomes ACTIVE (satisfaction is unreachable),
 is detected and reported at use() time, and cannot deadlock the runtime.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -20,8 +21,11 @@ from mate_platform.composition import Component, CycleError, FiberState, create_
 def _cyclic(name: str, provide_key: str, inject_key: str):
     async def apply(fctx):
         fctx.set(provide_key, f"{name}-v")
+
     return Component(
-        name=name, inject=frozenset({inject_key}), provide=frozenset({provide_key}),
+        name=name,
+        inject=frozenset({inject_key}),
+        provide=frozenset({provide_key}),
         apply=apply,
     )
 

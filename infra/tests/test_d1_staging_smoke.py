@@ -9,14 +9,13 @@ shaped correctly.
 The check is intentionally lightweight so it runs on every CI
 machine (Linux / macOS / Windows) without a real cluster.
 """
+
 from __future__ import annotations
 
 import os
 import sys
-from pathlib import Path
 
 import pytest
-
 from conftest import REPO_ROOT
 
 SMOKE_SCRIPT_PATH = REPO_ROOT / "scripts" / "ci" / "d1_staging_smoke.sh"
@@ -61,22 +60,20 @@ class TestD1StagingSmokeScript:
 
     def test_smoke_script_has_lineage_assertions(self) -> None:
         body = SMOKE_SCRIPT_PATH.read_text(encoding="utf-8")
-        assert "expect-events" in body or "expect_datasets" in body or (
-            "events" in body and "datasets" in body
+        assert (
+            "expect-events" in body
+            or "expect_datasets" in body
+            or ("events" in body and "datasets" in body)
         ), "smoke must run lineage assertions"
 
 
 class TestD1StagingValues:
     def test_values_staging_file_exists(self) -> None:
-        assert VALUES_STAGING_PATH.is_file(), (
-            f"missing values-staging: {VALUES_STAGING_PATH}"
-        )
+        assert VALUES_STAGING_PATH.is_file(), f"missing values-staging: {VALUES_STAGING_PATH}"
 
     def test_values_staging_uses_independent_storage(self) -> None:
         body = VALUES_STAGING_PATH.read_text(encoding="utf-8")
         # Staging must use isolated storage (ADR-0015 §5):
         # prefixed bucket / database / topic names so dev data does
         # not bleed into staging.
-        assert "stg" in body.lower(), (
-            "values-staging must use an isolated storage prefix"
-        )
+        assert "stg" in body.lower(), "values-staging must use an isolated storage prefix"

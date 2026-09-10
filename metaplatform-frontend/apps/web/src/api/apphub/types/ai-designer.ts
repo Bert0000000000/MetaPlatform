@@ -67,4 +67,3 @@ export interface AIGeneratedApp {
   updatedAt: string;
   modules: AIGeneratedModule[];
 }
-

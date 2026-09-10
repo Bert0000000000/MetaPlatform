@@ -4,6 +4,7 @@ Uses SQLite for in-process testing; the PG-specific behavior
 (production guard, DSN resolution) is the same since PgClient wraps
 SQLAlchemy which abstracts the dialect.
 """
+
 from __future__ import annotations
 
 import os

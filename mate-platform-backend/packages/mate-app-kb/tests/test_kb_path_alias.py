@@ -11,6 +11,7 @@ and must:
   - go through `install_auth` + `require_tenant` like the canonical
     path (no security regression in either direction)
 """
+
 from __future__ import annotations
 
 import os
@@ -74,8 +75,7 @@ def client():
     # We stub require_tenant to always pass when an authenticated
     # ctx is present; the path-alignment tests don't exercise the
     # tenant guard (that is covered in test_app_kb_tenant_integration).
-    with patch("mate_app_kb.api.app.install_auth"), \
-         patch("mate_app_kb.api.app.require_tenant"):
+    with patch("mate_app_kb.api.app.install_auth"), patch("mate_app_kb.api.app.require_tenant"):
         app = create_app(rag=fake_rag, agent=fake_agent)
         # inject a fake auth ctx into request.state for every call
         from mate_platform.tenancy import (
@@ -185,8 +185,11 @@ class TestBothPrefixesCovered:
             canon = client.get(f"{CANONICAL_PREFIX}/{endpoint}")
             legacy = client.get(f"{LEGACY_PREFIX}/{endpoint}")
         else:
-            payload = {"query": "hi", "top_k": 1, "mode": "AUTO"} if endpoint == "search" \
+            payload = (
+                {"query": "hi", "top_k": 1, "mode": "AUTO"}
+                if endpoint == "search"
                 else {"message": "ping", "scenario": "S1"}
+            )
             canon = client.post(f"{CANONICAL_PREFIX}/{endpoint}", json=payload)
             legacy = client.post(f"{LEGACY_PREFIX}/{endpoint}", json=payload)
         assert canon.status_code == 200, (endpoint, canon.text)

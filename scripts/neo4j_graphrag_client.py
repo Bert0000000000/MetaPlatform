@@ -1,4 +1,5 @@
-﻿"""Neo4jGraphRAGClient: real Neo4j connection for ENTITY retrieval."""
+"""Neo4jGraphRAGClient: real Neo4j connection for ENTITY retrieval."""
+
 from __future__ import annotations
 
 import logging
@@ -48,7 +49,9 @@ class Neo4jGraphRAGClient:
             with self._driver.session(database="system") as sys_sess:
                 sys_sess.run(f"CREATE DATABASE `{self._database}` IF NOT EXISTS").consume()
             with self._driver.session(database=self._database) as sess:
-                sess.run("CREATE CONSTRAINT entity_name IF NOT EXISTS FOR (e:Entity) REQUIRE e.name IS UNIQUE").consume()
+                sess.run(
+                    "CREATE CONSTRAINT entity_name IF NOT EXISTS FOR (e:Entity) REQUIRE e.name IS UNIQUE"
+                ).consume()
             _log.info("Connected to Neo4j at %s/%s", self._uri, self._database)
         except Exception as exc:
             _log.warning("Neo4j connect failed (%s): %s", self._uri, exc)
@@ -72,7 +75,12 @@ class Neo4jGraphRAGClient:
                     "WITH c UNWIND $ents AS e_name "
                     "MERGE (e:Entity {name: e_name}) ON CREATE SET e.freq=1 ON MATCH SET e.freq=e.freq+1 "
                     "MERGE (e)-[:MENTIONED_IN]->(c)",
-                    cid=chunk_id, did=document_id, snip=snippet, text=text[:1000], meta=meta_str, ents=list(entities) or ["__empty__"],
+                    cid=chunk_id,
+                    did=document_id,
+                    snip=snippet,
+                    text=text[:1000],
+                    meta=meta_str,
+                    ents=list(entities) or ["__empty__"],
                 ).consume()
         return chunk_id
 

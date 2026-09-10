@@ -2,6 +2,7 @@
 
 硬规则 #4:外部系统必须走 ACL client(bearer + tenantHeader)。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -32,9 +33,7 @@ async def test_oci_pull_streams_and_verifies_digest():
     # stream() 返回 context manager(非 awaitable)
     transport.stream = MagicMock(return_value=stream_ctx)
 
-    puller = OCIPuller(
-        transport=transport, default_registry="https://reg"
-    )
+    puller = OCIPuller(transport=transport, default_registry="https://reg")
     out = []
     async for chunk in puller.stream_blob(
         kind="mcp",
@@ -56,9 +55,7 @@ async def test_oci_pull_rejects_digest_mismatch():
     transport.get = AsyncMock(return_value=token_resp)
     transport.stream = MagicMock(return_value=stream_ctx)
 
-    puller = OCIPuller(
-        transport=transport, default_registry="https://reg"
-    )
+    puller = OCIPuller(transport=transport, default_registry="https://reg")
 
     with pytest.raises(DigestMismatch):
         async for _ in puller.stream_blob(
@@ -75,9 +72,7 @@ async def test_marketplace_client_passes_bearer_and_tenant():
     auth = MarketplaceAuth(bearer="t0k3n", tenant_id="tn-1")
     transport = AsyncMock()
     transport.get = AsyncMock(
-        return_value=_MockResp(
-            json_data={"items": [], "total": 0, "page": 1}
-        )
+        return_value=_MockResp(json_data={"items": [], "total": 0, "page": 1})
     )
 
     client = MarketplaceClient(

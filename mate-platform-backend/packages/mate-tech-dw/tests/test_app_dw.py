@@ -23,6 +23,7 @@ behaviour. All success-path responses use the standard
 `{code, message, data: {...}}` wrapper — assertions read from
 `body["data"]` rather than `body` directly.
 """
+
 from __future__ import annotations
 
 
@@ -104,13 +105,19 @@ def test_upload_ingests_to_rag(client, auth_headers_acme, monkeypatch) -> None:
 
     captured: dict = {}
 
-    def fake_upload(self, file_content, filename, document_id, content_type="text/plain", *, kb_id=None):
+    def fake_upload(
+        self, file_content, filename, document_id, content_type="text/plain", *, kb_id=None
+    ):
         captured["document_id"] = document_id
         captured["filename"] = filename
         captured["size"] = len(file_content)
         captured["content_type"] = content_type
         captured["kb_id"] = kb_id
-        return {"document_id": document_id, "chunk_count": 7, "indexed_in": ["hybrid", "graph", "lightrag"]}
+        return {
+            "document_id": document_id,
+            "chunk_count": 7,
+            "indexed_in": ["hybrid", "graph", "lightrag"],
+        }
 
     monkeypatch.setattr(dw_clients.RAGClient, "upload", fake_upload)
 
@@ -142,8 +149,13 @@ def test_list_employees(client, auth_headers_acme) -> None:
     assert data["total"] >= 6, data
     role_categories = {item["roleCategory"] for item in data["items"]}
     assert {
-        "ONTOLOGY", "WORKFLOW", "APP", "DATA_PRODUCT",
-        "OBS", "SECURITY", "KNOWLEDGE",
+        "ONTOLOGY",
+        "WORKFLOW",
+        "APP",
+        "DATA_PRODUCT",
+        "OBS",
+        "SECURITY",
+        "KNOWLEDGE",
     }.issubset(role_categories), role_categories
 
 
@@ -281,7 +293,8 @@ def test_all_15_endpoints_respond(client, auth_headers_acme) -> None:
             r = client.get(path, headers=auth_headers_acme)
         else:
             r = client.post(
-                path, headers=auth_headers_acme,
+                path,
+                headers=auth_headers_acme,
                 files={"file": ("smoke.pdf", b"%PDF-1.4", "application/pdf")},
                 data={"employee_id": "dw-kb-1"},
             )

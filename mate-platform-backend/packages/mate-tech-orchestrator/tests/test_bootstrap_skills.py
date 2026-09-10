@@ -1,4 +1,5 @@
 """orchestrator bootstrap — 默认角色 skill 能力 seed 测试。"""
+
 from __future__ import annotations
 
 import pytest

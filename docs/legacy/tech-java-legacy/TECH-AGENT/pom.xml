@@ -59,7 +59,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-        
+
             <dependency>
                 <groupId>io.fabric8</groupId>
                 <artifactId>kubernetes-client-api</artifactId>
@@ -179,7 +179,7 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-    
+
         <dependency>
             <groupId>io.fabric8</groupId>
             <artifactId>kubernetes-client</artifactId>

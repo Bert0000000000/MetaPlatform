@@ -1,4 +1,5 @@
 """API Schemas for mate-tech-agent."""
+
 from __future__ import annotations
 
 from typing import Annotated, Literal
@@ -32,6 +33,7 @@ class HealthResponse(BaseModel):
 
 class HumanReviewRequest(BaseModel):
     """Human-in-the-loop review (S3): provide feedback or approval."""
+
     model_config = ConfigDict(strict=True)
     thread_id: Annotated[str, Field(min_length=1, description="thread id")]
     approved: Annotated[bool, Field(description="True to resume and complete, False to abort")]
@@ -40,13 +42,16 @@ class HumanReviewRequest(BaseModel):
 
 class HumanReviewResponse(BaseModel):
     """S3 review result."""
+
     model_config = ConfigDict(strict=True, frozen=True)
     thread_id: Annotated[str, Field()]
     status: Annotated[str, Field(description="approved | aborted | no_pending")]
     message: Annotated[str, Field()]
 
+
 class BpmnProcessState(BaseModel):
     """BPMN process state (S4)."""
+
     model_config = ConfigDict(strict=True, frozen=True)
     process_key: Annotated[str, Field()]
     deployment_id: Annotated[str, Field(default="")]

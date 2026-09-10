@@ -1,4 +1,5 @@
 """End-to-end integration tests for mate-tech-msg (ST-5.1.12.2)."""
+
 from __future__ import annotations
 
 import dataclasses
@@ -37,6 +38,7 @@ def test_publish_endpoint_idempotency(
     class FakeDedup:
         async def check_and_store(self, key, payload_id):
             from mate_tech_msg.dedup import DedupResult
+
             return DedupResult(hit=False, stored=True)
 
     # Publisher captures dedup at __init__ (module import time),

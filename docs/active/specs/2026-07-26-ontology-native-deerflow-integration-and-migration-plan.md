@@ -1,8 +1,8 @@
 ﻿# Ontology-Native DeerFlow：集成与改造落地方案
 
-> 版本：v1.0 · 2026-07-26  
-> 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform  
-> 状态：草案（已通过讨论、待正式评审）  
+> 版本：v1.0 · 2026-07-26
+> 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
+> 状态：草案（已通过讨论、待正式评审）
 > 配套文档：`CLAUDE.md`、`docs/superpowers/specs/2026-07-25-metaflow-three-scenario-architecture.md`、`TECH-AGENT/README.md`、`TECH-ONT/README.md`（待补）
 
 ## 目录
@@ -31,31 +31,31 @@
 
 MetaPlatform 已经明确以下事实：
 
-- 后端统一为 Java 25 + Spring AI Alibaba（SAA），禁止新增 Python 业务后端；  
-- Ontology 是企业业务世界的唯一真相源，AI 编排围绕 Ontology 展开；  
-- `TECH-AGENT` 提供数字员工运行时、单 Agent 定义、A2A 协作与评估；  
-- `TECH-MCP` 治理 MCP 服务，`TECH-ACTION` 治理业务动作，`TECH-WFE` 承载审批/等待/补偿；  
+- 后端统一为 Java 25 + Spring AI Alibaba（SAA），禁止新增 Python 业务后端；
+- Ontology 是企业业务世界的唯一真相源，AI 编排围绕 Ontology 展开；
+- `TECH-AGENT` 提供数字员工运行时、单 Agent 定义、A2A 协作与评估；
+- `TECH-MCP` 治理 MCP 服务，`TECH-ACTION` 治理业务动作，`TECH-WFE` 承载审批/等待/补偿；
 - MetaFlow DSL → FlowGram.AI 设计器 → SAA Graph 是当前 AI 编排路线。
 
 外部观察到的诉求：
 
-- DeerFlow 2.0 是一款能力完整的 Super Agent Harness（Sub-Agents、Memory、Sandbox、Skills、Scheduled Tasks、MCP、文件工作区、Artifact），与 MetaPlatform 的产品目标高度契合；  
-- 但 DeerFlow 是 Python + LangGraph，不能直接合并进现有 Java/SAA 体系；  
+- DeerFlow 2.0 是一款能力完整的 Super Agent Harness（Sub-Agents、Memory、Sandbox、Skills、Scheduled Tasks、MCP、文件工作区、Artifact），与 MetaPlatform 的产品目标高度契合；
+- 但 DeerFlow 是 Python + LangGraph，不能直接合并进现有 Java/SAA 体系；
 - 同时，MetaPlatform 的 AI 体验需要一个统一认知引擎，让用户在任何页面、对话或业务事件中都能获得“懂企业语义、懂对象关系、懂行动空间”的 AI 协作。
 
 ### 1.2 目标
 
-1. **把 Ontology 升级为 DeerFlow 的世界模型**：让 Ontology 成为 Agent 推理的语义上下文来源、对象真相源、行动空间和权限边界。  
-2. **保持 MetaPlatform 现有架构基线**：不引入新的长期技术栈，不破坏 Java/SAA 路线；DeerFlow 作为外部 Runtime Adapter 接入。  
-3. **统一 SuperAI 体验**：用户在任何入口（页面、对话、事件）都能调用同一套 Ontology-Native Agent Runtime。  
-4. **建立 Ontology Authoring 治理边界**：明确“LLM 只能产生 Candidate Fact，不能直接写入 Ontology”。  
+1. **把 Ontology 升级为 DeerFlow 的世界模型**：让 Ontology 成为 Agent 推理的语义上下文来源、对象真相源、行动空间和权限边界。
+2. **保持 MetaPlatform 现有架构基线**：不引入新的长期技术栈，不破坏 Java/SAA 路线；DeerFlow 作为外部 Runtime Adapter 接入。
+3. **统一 SuperAI 体验**：用户在任何入口（页面、对话、事件）都能调用同一套 Ontology-Native Agent Runtime。
+4. **建立 Ontology Authoring 治理边界**：明确“LLM 只能产生 Candidate Fact，不能直接写入 Ontology”。
 5. **分阶段落地、可回滚**：第一期只做只读分析与证据链；后续逐步开放受控 Action、事件驱动与自动写入草稿。
 
 ### 1.3 非目标
 
-- 不在第一期引入新的长期语言栈。  
-- 不修改 `CLAUDE.md` 关于“后端统一 Java”的核心约束。  
-- 不做 DeerFlow 源码级 Fork 合并。  
+- 不在第一期引入新的长期语言栈。
+- 不修改 `CLAUDE.md` 关于“后端统一 Java”的核心约束。
+- 不做 DeerFlow 源码级 Fork 合并。
 - 不在第一期开放 Ontology 自动写入。
 
 ---
@@ -193,10 +193,10 @@ flowchart TB
 
 ### 3.2 一次完整 Run 的五个阶段
 
-1. **用户上下文解析**：前端携带 `InteractionContext` 与 `Subject` 调用 SuperAI。  
-2. **Ontology Context 构建**：`Ontology Context Service` 组装权限过滤后的 `OntologyContextEnvelope`。  
-3. **DeerFlow 推理与规划**：在 Ontology Middleware Chain 守护下执行理解、规划、Sub-Agent 调用。  
-4. **Action 安全执行**：所有副作用经过 `Ontology Action Guard` → `TECH-ACTION` → `TECH-WFE`（必要时审批）。  
+1. **用户上下文解析**：前端携带 `InteractionContext` 与 `Subject` 调用 SuperAI。
+2. **Ontology Context 构建**：`Ontology Context Service` 组装权限过滤后的 `OntologyContextEnvelope`。
+3. **DeerFlow 推理与规划**：在 Ontology Middleware Chain 守护下执行理解、规划、Sub-Agent 调用。
+4. **Action 安全执行**：所有副作用经过 `Ontology Action Guard` → `TECH-ACTION` → `TECH-WFE`（必要时审批）。
 5. **证据与状态回写**：`Evidence Service` 绑定事实来源，`Ontology Event` 触发后续 Agent。
 
 ### 3.3 SuperAI 内部路由
@@ -505,27 +505,27 @@ OntologyCommit {
 
 ### 6.1 OntologyContextMiddleware
 
-- 读取 `OntologyContextEnvelope`（来自 `TECH-AGENT`）；  
-- 写入 Thread 本地只读上下文，模型不可修改；  
+- 读取 `OntologyContextEnvelope`（来自 `TECH-AGENT`）；
+- 写入 Thread 本地只读上下文，模型不可修改；
 - 在每次 Tool Call 前重新校验 `expiresAt` 与 `permissionSnapshotId`。
 
 ### 6.2 OntologyGroundingMiddleware
 
-- 将自然语言映射到 Concept / Object / Metric；  
-- 输出 Grounded Intent（intents, concepts, filters, metrics, candidateActions）；  
+- 将自然语言映射到 Concept / Object / Metric；
+- 输出 Grounded Intent（intents, concepts, filters, metrics, candidateActions）；
 - 当置信度 < 阈值时进入 Clarification 流程。
 
 ### 6.3 OntologyPermissionMiddleware
 
-- 字段级权限：未授权字段在数据返回模型前脱敏；  
-- 对象级权限：过滤返回对象；  
-- 关系级权限：限制 `get_related_objects` 范围；  
+- 字段级权限：未授权字段在数据返回模型前脱敏；
+- 对象级权限：过滤返回对象；
+- 关系级权限：限制 `get_related_objects` 范围；
 - Action 级权限：仅返回 `allowedActions` 中的 Action。
 
 ### 6.4 OntologyEvidenceMiddleware
 
-- 对每个 Claim 强制绑定至少一个 Evidence；  
-- 证据类型：`ONTOLOGY_OBJECT` / `ONTOLOGY_METRIC` / `DOCUMENT` / `EXTERNAL`；  
+- 对每个 Claim 强制绑定至少一个 Evidence；
+- 证据类型：`ONTOLOGY_OBJECT` / `ONTOLOGY_METRIC` / `DOCUMENT` / `EXTERNAL`；
 - 写入 `RunEvent.CLAIM_PRODUCED` 与 `RunEvent.EVIDENCE_ATTACHED`。
 
 ### 6.5 OntologyActionGuardMiddleware
@@ -629,18 +629,18 @@ flowchart TB
 
 ### 8.2 Extraction Service
 
-- 调 DeerFlow 的 Extraction Sub-Agents（合同 / 联系人 / 风险 / 时间线）；  
-- 将结果转写为 `CandidateFact` 列表；  
+- 调 DeerFlow 的 Extraction Sub-Agents（合同 / 联系人 / 风险 / 时间线）；
+- 将结果转写为 `CandidateFact` 列表；
 - 调用 Validator 进行 Schema/冲突/规则校验。
 
 ### 8.3 Validator
 
 职责：
 
-- Schema 校验（属性存在性、类型、唯一性）；  
-- 业务规则校验（如 `startDate < endDate`）；  
-- 冲突检测（覆盖 vs 补充）；  
-- 置信度评估（多源一致性、来源类型、历史准确率）；  
+- Schema 校验（属性存在性、类型、唯一性）；
+- 业务规则校验（如 `startDate < endDate`）；
+- 冲突检测（覆盖 vs 补充）；
+- 置信度评估（多源一致性、来源类型、历史准确率）；
 - 影响范围分析（影响哪些 Agent/规则/查询）。
 
 ### 8.4 Commit Service
@@ -885,29 +885,29 @@ sequenceDiagram
 
 ### 10.2 Prompt Injection 防护
 
-- `OntologyContextEnvelope` 不可被模型修改；  
-- Tool 返回值在写入 Memory 前进行结构化校验；  
-- 用户上传内容视为不可信输入，需脱敏、隔离；  
+- `OntologyContextEnvelope` 不可被模型修改；
+- Tool 返回值在写入 Memory 前进行结构化校验；
+- 用户上传内容视为不可信输入，需脱敏、隔离；
 - 高风险 Action 必须二次确认。
 
 ### 10.3 Sandbox 边界
 
-- 每个 Thread 独立 Pod；  
-- 禁止挂载 Docker Socket；  
-- 禁止访问宿主目录；  
-- 出网域名白名单；  
-- 任务结束销毁；  
+- 每个 Thread 独立 Pod；
+- 禁止挂载 Docker Socket；
+- 禁止访问宿主目录；
+- 出网域名白名单；
+- 任务结束销毁；
 - Secret 通过 broker 临时注入。
 
 ### 10.4 审计
 
 `TECH-OBS` 必须记录：
 
-- `RunEvent` 全链路；  
-- Tool Call 与参数；  
-- `Claim` 与 `Evidence` 绑定；  
-- `ActionProposal` 与决策；  
-- `OntologyCommit` 与版本 diff；  
+- `RunEvent` 全链路；
+- Tool Call 与参数；
+- `Claim` 与 `Evidence` 绑定；
+- `ActionProposal` 与决策；
+- `OntologyCommit` 与版本 diff；
 - `Ontology Event` 与下游触发。
 
 ---
@@ -936,71 +936,71 @@ sequenceDiagram
 
 ### Phase 0：统一契约（1 个迭代）
 
-- 定义 `InteractionContext`、`OntologyContextEnvelope`、`AgentRun`、`RunEvent`、`Claim`、`Evidence`、`ActionProposal`、`OntologyDraft`、`OntologyCommit`；  
-- 在 `TECH-AGENT` 建立统一 AgentRun / RunEvent 服务；  
+- 定义 `InteractionContext`、`OntologyContextEnvelope`、`AgentRun`、`RunEvent`、`Claim`、`Evidence`、`ActionProposal`、`OntologyDraft`、`OntologyCommit`；
+- 在 `TECH-AGENT` 建立统一 AgentRun / RunEvent 服务；
 - 不动 UI。
 
 **验收**：契约文档评审通过；TECH-AGENT 提供模拟事件流。
 
 ### Phase 1：Ontology Query MVP（1～2 个迭代）
 
-- `OntologyContextService` 上线；  
-- DeerFlow 接入 Ontology 工具集（Schema/Object/Query）；  
-- 客户详情页 Object Copilot（只读分析）；  
-- Claim/Evidence 渲染；  
-- SSE 全链路；  
+- `OntologyContextService` 上线；
+- DeerFlow 接入 Ontology 工具集（Schema/Object/Query）；
+- 客户详情页 Object Copilot（只读分析）；
+- Claim/Evidence 渲染；
+- SSE 全链路；
 - 暂不开放 Action 执行。
 
 **首个验收场景**：客户详情页 → SuperAI → “分析最近情况” → 返回带证据的分析与建议。
 
 ### Phase 2：Ontology Grounding + Sub-Agents（1～2 个迭代）
 
-- `OntologyGroundingMiddleware` 上线；  
-- Fast Query 与 Deep Task 路由；  
-- 多 Sub-Agent 跨域分析；  
+- `OntologyGroundingMiddleware` 上线；
+- Fast Query 与 Deep Task 路由；
+- 多 Sub-Agent 跨域分析；
 - 跨对象查询（销售/客户/服务）。
 
 **首个验收场景**：SuperAI 输入 “分析华东区销售下降原因” → 自动拆分 Sub-Agent → 给出含证据的跨域报告。
 
 ### Phase 3：Action 闭环（1～2 个迭代）
 
-- `OntologyActionGuardMiddleware` 上线；  
-- `ActionProposal` + Policy + Approval；  
-- 低风险 Action 自动执行；  
-- 中高风险进入 Temporal/WFE 审批；  
+- `OntologyActionGuardMiddleware` 上线；
+- `ActionProposal` + Policy + Approval；
+- 低风险 Action 自动执行；
+- 中高风险进入 Temporal/WFE 审批；
 - Ontology Event 回写。
 
 **首个验收场景**：风险客户分析 → 创建跟进任务 + 申请优惠审批。
 
 ### Phase 4：事件驱动数字员工（1 个迭代）
 
-- Ontology Event Trigger；  
-- 定时 + 事件 + 规则触发；  
-- 并发与预算控制；  
+- Ontology Event Trigger；
+- 定时 + 事件 + 规则触发；
+- 并发与预算控制；
 - 主动通知。
 
 **首个验收场景**：合同到期前自动分析续约风险。
 
 ### Phase 5：Ontology Authoring（1～2 个迭代）
 
-- Extraction / Validator / Commit Service 上线；  
-- 文档上传 → CandidateFact → Draft → 审批 → Commit；  
-- 低风险自动写入；  
+- Extraction / Validator / Commit Service 上线；
+- 文档上传 → CandidateFact → Draft → 审批 → Commit；
+- 低风险自动写入；
 - 高风险多签审批。
 
 **首个验收场景**：客户页上传合同/纪要 → 自动生成 Ontology 草案 → 用户审核 → 写入。
 
 ### Phase 6：企业长期记忆（1 个迭代）
 
-- Working / Episodic / Semantic / Organizational 四层；  
-- Candidate Fact 自动审核与回写；  
-- 知识库同步；  
+- Working / Episodic / Semantic / Organizational 四层；
+- Candidate Fact 自动审核与回写；
+- 知识库同步；
 - 用户可查看/删除。
 
 ### Phase 7：原生吸收（长期）
 
-- 将 DeerFlow 优秀模式（Middleware、Sub-Agent 隔离、Skill Registry、Scheduled Agent Run）抽象为 Java/SAA 实现；  
-- 形成可脱离 DeerFlow 的原生 `Ontology Agent Runtime`；  
+- 将 DeerFlow 优秀模式（Middleware、Sub-Agent 隔离、Skill Registry、Scheduled Agent Run）抽象为 Java/SAA 实现；
+- 形成可脱离 DeerFlow 的原生 `Ontology Agent Runtime`；
 - DeerFlow 演进为可选高级研究执行器。
 
 ---
@@ -1009,69 +1009,69 @@ sequenceDiagram
 
 ### 13.1 范围
 
-- 客户详情页 Object Copilot；  
-- Ontology Context Service；  
-- DeerFlow Middleware 集成的最小集合（Context、Grounding、Permission、Evidence、Observation）；  
-- Ontology Query 工具集；  
-- Claim/Evidence 渲染；  
-- SSE 流式事件；  
-- 暂不开放 Action 执行；  
-- 暂不接入事件触发；  
+- 客户详情页 Object Copilot；
+- Ontology Context Service；
+- DeerFlow Middleware 集成的最小集合（Context、Grounding、Permission、Evidence、Observation）；
+- Ontology Query 工具集；
+- Claim/Evidence 渲染；
+- SSE 流式事件；
+- 暂不开放 Action 执行；
+- 暂不接入事件触发；
 - 暂不接入 Ontology Authoring。
 
 ### 13.2 验收标准
 
 #### 功能
 
-- SuperAI 自动获取当前对象上下文，无需用户重复输入；  
-- Agent 正确理解 Concept、属性、关系；  
-- Agent 使用 Ontology Metric 而不是自行计算；  
-- 回答区分 Fact / Inference / Recommendation；  
-- 每个重要结论都有 Evidence；  
-- 无权限字段不会进入模型上下文；  
-- SSE 展示分析过程；  
+- SuperAI 自动获取当前对象上下文，无需用户重复输入；
+- Agent 正确理解 Concept、属性、关系；
+- Agent 使用 Ontology Metric 而不是自行计算；
+- 回答区分 Fact / Inference / Recommendation；
+- 每个重要结论都有 Evidence；
+- 无权限字段不会进入模型上下文；
+- SSE 展示分析过程；
 - 同一对象重复问题可复用 Envelope。
 
 #### 质量
 
-- 准备 30～50 个业务问题对比三套方案（普通 RAG、Ontology Tool、Ontology-Native DeerFlow）；  
+- 准备 30～50 个业务问题对比三套方案（普通 RAG、Ontology Tool、Ontology-Native DeerFlow）；
 - 指标：对象识别准确率、Metric 使用准确率、关系推理准确率、幻觉率、引用完整率、任务完成率、平均 Token 成本、首响应与总耗时。
 
 #### 安全
 
-- 字段级权限阻断；  
-- 对象越权访问阻断；  
-- 用户上传内容隔离；  
-- Envelope 签名与过期校验；  
+- 字段级权限阻断；
+- 对象越权访问阻断；
+- 用户上传内容隔离；
+- Envelope 签名与过期校验；
 - RunEvent 全量审计。
 
 #### 体验
 
-- 首事件延迟 < 1.5s；  
-- 流式事件稳定；  
-- 引用可点击跳转；  
+- 首事件延迟 < 1.5s；
+- 流式事件稳定；
+- 引用可点击跳转；
 - 证据可展开溯源。
 
 ---
 
 ## 14. 风险与治理原则
 
-1. **LLM 不写 Ontology**：任何 Ontology 写入必须经过 Commit Service；  
-2. **DeerFlow 不可绕过 Action Guard**：所有副作用走 `TECH-ACTION`；  
-3. **DeerFlow 不持有长期凭据**：Secret 通过 broker 临时注入；  
-4. **DeerFlow 默认不暴露公网**：仅在内网被 MetaPlatform 调用；  
-5. **多租户隔离优先**：Envelope、Permission、Action 全部按租户校验；  
-6. **观测先行**：在引入 DeerFlow 之前先打通 `TECH-OBS` 统一事件；  
-7. **小步快跑**：先只读分析，再受控 Action，最后自动抽取；  
+1. **LLM 不写 Ontology**：任何 Ontology 写入必须经过 Commit Service；
+2. **DeerFlow 不可绕过 Action Guard**：所有副作用走 `TECH-ACTION`；
+3. **DeerFlow 不持有长期凭据**：Secret 通过 broker 临时注入；
+4. **DeerFlow 默认不暴露公网**：仅在内网被 MetaPlatform 调用；
+5. **多租户隔离优先**：Envelope、Permission、Action 全部按租户校验；
+6. **观测先行**：在引入 DeerFlow 之前先打通 `TECH-OBS` 统一事件；
+7. **小步快跑**：先只读分析，再受控 Action，最后自动抽取；
 8. **可回滚**：所有 Ontology 变更可回滚到任意历史版本。
 
 ---
 
 ## 15. 后续工作
 
-- [ ] 在 `docs/superpowers/specs/` 下补充 Ontology Context / DeerFlow Adapter / Ontology Authoring 三份细化设计。  
-- [ ] 在 `CLAUDE.md` 中补充 “Ontology-Native DeerFlow” 章节并链接本设计。  
-- [ ] 在 `TECH-AGENT/README.md` 增加 “DeerFlow Adapter” 段落。  
-- [ ] 新建 `TECH-ONT/drafts/` 与 `TECH-ONT/commits/` 数据模型与 Flyway 迁移脚本。  
-- [ ] 在 `APP-COPILOT` 增加 `InteractionContext` Provider 组件与 Claim/Evidence/Artifact 渲染组件。  
+- [ ] 在 `docs/superpowers/specs/` 下补充 Ontology Context / DeerFlow Adapter / Ontology Authoring 三份细化设计。
+- [ ] 在 `CLAUDE.md` 中补充 “Ontology-Native DeerFlow” 章节并链接本设计。
+- [ ] 在 `TECH-AGENT/README.md` 增加 “DeerFlow Adapter” 段落。
+- [ ] 新建 `TECH-ONT/drafts/` 与 `TECH-ONT/commits/` 数据模型与 Flyway 迁移脚本。
+- [ ] 在 `APP-COPILOT` 增加 `InteractionContext` Provider 组件与 Claim/Evidence/Artifact 渲染组件。
 - [ ] 评审本设计后启动 Phase 0 实施。

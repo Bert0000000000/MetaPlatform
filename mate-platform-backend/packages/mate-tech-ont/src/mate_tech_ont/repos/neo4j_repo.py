@@ -9,6 +9,7 @@ the ``legacy-ont`` compose profile. The methods below emit a
 ``DeprecationWarning`` on every call so production traffic is visible
 during the Sunset window (2026-12-31).
 """
+
 from __future__ import annotations
 
 import os
@@ -74,9 +75,7 @@ class Neo4jGraphRepository:
     async def connect(self) -> None:
         if self._driver is not None:
             return
-        self._driver = AsyncGraphDatabase.driver(
-            self._uri, auth=(self._user, self._password)
-        )
+        self._driver = AsyncGraphDatabase.driver(self._uri, auth=(self._user, self._password))
         logger.info("neo4j.connected", uri=self._uri)
 
     async def close(self) -> None:
@@ -141,17 +140,16 @@ class Neo4jGraphRepository:
             )
             records = [r.data() async for r in result]
             edge_id = str(records[0]["id"]) if records else ""
-        logger.info(
-            "neo4j.edge.created", type=type_, src=src_id, dst=dst_id, id=edge_id
-        )
+        logger.info("neo4j.edge.created", type=type_, src=src_id, dst=dst_id, id=edge_id)
         return GraphEdge(
-            id=edge_id, type=type_, src_id=src_id, dst_id=dst_id,
+            id=edge_id,
+            type=type_,
+            src_id=src_id,
+            dst_id=dst_id,
             properties=properties or {},
         )
 
-    async def find_path(
-        self, src_id: str, dst_id: str, *, max_depth: int = 5
-    ) -> list[list[str]]:
+    async def find_path(self, src_id: str, dst_id: str, *, max_depth: int = 5) -> list[list[str]]:
         _deprecated_neo4j_method("find_path")
         async with await self._session() as session:
             result = await session.run(

@@ -23,13 +23,13 @@
 
 ### 3.1 Temporal Cluster
 
-|组件 | 验证 |
-|---|---|
-| Temporal Server | gRPC `:7233` 可访问 |
-| Temporal Web UI | `:8233` 可访问 |
-| Persistence | 复用 Supabase Postgres（schema `temporal`） |
-| Visibility | 复用 Supabase Postgres |
-| Namespace | `mp-platform`（默认） |
+| 组件            | 验证                                        |
+| --------------- | ------------------------------------------- |
+| Temporal Server | gRPC `:7233` 可访问                         |
+| Temporal Web UI | `:8233` 可访问                              |
+| Persistence     | 复用 Supabase Postgres（schema `temporal`） |
+| Visibility      | 复用 Supabase Postgres                      |
+| Namespace       | `mp-platform`（默认）                       |
 
 ### 3.2 PostgreSQL 准备
 
@@ -40,11 +40,11 @@
 
 ### 3.3 worker Namespace 隔离
 
-| Namespace | 用途 |
-|---|---|
+| Namespace     | 用途         |
+| ------------- | ------------ |
 | `mp-platform` | 默认命名空间 |
-| `mp-staging` | staging 环境 |
-| `dev` | 开发环境 |
+| `mp-staging`  | staging 环境 |
+| `dev`         | 开发环境     |
 
 ### 3.4 集成验证
 
@@ -85,10 +85,10 @@
 
 ## 5. 关键依赖
 
-|依赖 | 来源 |
-|---|---|
+| 依赖                | 来源                                                               |
+| ------------------- | ------------------------------------------------------------------ |
 | Temporal Helm chart | [`temporalio/temporal`](https://github.com/temporalio/helm-charts) |
-| Supabase PG | MP-V6-FOUNDATION-01 |
+| Supabase PG         | MP-V6-FOUNDATION-01                                                |
 
 ## 6. 验收标准（AC）
 
@@ -105,16 +105,17 @@
 
 ## 7. 风险与缓解
 
-|风险 | 缓解 |
-|---|---|
+| 风险                          | 缓解                               |
+| ----------------------------- | ---------------------------------- |
 | Temporal 与 PG 共用，资源争抢 | Temporal 用专用 schema + 专用 user |
-| 长任务 history 膨胀 | enable `continue-as-new` 策略 |
-| Temporal 版本升级 breaking | pin 版本 + staging 验证 |
-| Worker 任务堆积 | K8s HPA + concurrency limit |
+| 长任务 history 膨胀           | enable `continue-as-new` 策略      |
+| Temporal 版本升级 breaking    | pin 版本 + staging 验证            |
+| Worker 任务堆积               | K8s HPA + concurrency limit        |
 
 ## 8. 下游依赖
 
 本 Batch 完成后可启动：
+
 - MP-V6-TEMPORAL-TS-01（Temporal worker Node SDK）
 - MP-V6-HITL-HUB-01（HITL Hub）
 - MP-V6-APPROVAL-01（审批 SaaS 适配）

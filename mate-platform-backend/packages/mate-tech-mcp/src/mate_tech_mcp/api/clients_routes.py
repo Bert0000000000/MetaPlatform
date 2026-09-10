@@ -12,6 +12,7 @@ Manages external MCP server connections from the MCP center UI:
 
 Tenant-scoped via ``require_tenant`` (ADR-0014 step 2).
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -105,7 +106,9 @@ def _normalize_endpoint(req: McpClientCreate | McpClientUpdate) -> str:
 
 
 @router.get("/clients")
-async def list_clients_ep(request: Request, page: int = Query(1, ge=1), size: int = Query(100, ge=1, le=500)) -> dict[str, Any]:
+async def list_clients_ep(
+    request: Request, page: int = Query(1, ge=1), size: int = Query(100, ge=1, le=500)
+) -> dict[str, Any]:
     tid = _tid(request)
     items = list_clients(tid)
     start = (page - 1) * size
@@ -150,8 +153,17 @@ async def get_client_ep(request: Request, cid: str) -> dict[str, Any]:
 async def update_client_ep(request: Request, cid: str, req: McpClientUpdate) -> dict[str, Any]:
     tid = _tid(request)
     fields: dict[str, Any] = {}
-    for f in ("name", "client_type", "transport_type", "auth_type", "timeout_ms",
-              "headers", "server_ids", "config", "status"):
+    for f in (
+        "name",
+        "client_type",
+        "transport_type",
+        "auth_type",
+        "timeout_ms",
+        "headers",
+        "server_ids",
+        "config",
+        "status",
+    ):
         v = getattr(req, f, None)
         if v is not None:
             fields[f] = v

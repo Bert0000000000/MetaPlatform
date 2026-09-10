@@ -13,6 +13,7 @@ Covers the three new federation pieces added in W1
 The httpx transport is mocked by injecting a fake ``AsyncClient`` so
 the tests are fully offline.
 """
+
 from __future__ import annotations
 
 import os
@@ -156,9 +157,7 @@ class TestMcpRemoteClient:
 
     @pytest.mark.asyncio
     async def test_remote_client_timeout_raises_unavailable(self) -> None:
-        mock_client = _mock_httpx_client(
-            get_side_effect=httpx.TimeoutException("read timed out")
-        )
+        mock_client = _mock_httpx_client(get_side_effect=httpx.TimeoutException("read timed out"))
         client = McpRemoteClient(httpx_client=mock_client)
 
         with pytest.raises(RemoteUnavailableError, match="timed out"):
@@ -166,9 +165,7 @@ class TestMcpRemoteClient:
 
     @pytest.mark.asyncio
     async def test_remote_client_other_error_raises_remote_error(self) -> None:
-        mock_client = _mock_httpx_client(
-            get_return=_response(500, json_data={}, text="internal")
-        )
+        mock_client = _mock_httpx_client(get_return=_response(500, json_data={}, text="internal"))
         client = McpRemoteClient(httpx_client=mock_client)
 
         with pytest.raises(RemoteError, match="500"):
@@ -177,9 +174,7 @@ class TestMcpRemoteClient:
     @pytest.mark.asyncio
     async def test_remote_client_health_check_false_on_503(self) -> None:
         # health_check must NEVER raise — a 503 maps to False.
-        mock_client = _mock_httpx_client(
-            get_return=_response(503, json_data={}, text="overloaded")
-        )
+        mock_client = _mock_httpx_client(get_return=_response(503, json_data={}, text="overloaded"))
         client = McpRemoteClient(httpx_client=mock_client)
 
         ok = await client.health_check(ENDPOINT, TOKEN)
@@ -189,9 +184,7 @@ class TestMcpRemoteClient:
     @pytest.mark.asyncio
     async def test_remote_client_health_check_false_on_timeout(self) -> None:
         # A transport-level failure also maps to False (never raises).
-        mock_client = _mock_httpx_client(
-            get_side_effect=httpx.ConnectError("connection refused")
-        )
+        mock_client = _mock_httpx_client(get_side_effect=httpx.ConnectError("connection refused"))
         client = McpRemoteClient(httpx_client=mock_client)
 
         ok = await client.health_check(ENDPOINT, TOKEN)
@@ -233,12 +226,8 @@ class TestHealthChecker:
         assert results[healthy.id] == "active"
         assert results[dead.id] == "inactive"
         # Registry persisted the dead one as disabled (its status vocabulary).
-        assert (
-            registry.get_server(tenant_id="t1", server_id=dead.id).status == "disabled"
-        )
-        assert (
-            registry.get_server(tenant_id="t1", server_id=healthy.id).status == "active"
-        )
+        assert registry.get_server(tenant_id="t1", server_id=dead.id).status == "disabled"
+        assert registry.get_server(tenant_id="t1", server_id=healthy.id).status == "active"
         # A disabled server should not be routable.
         assert registry.find_tool(tenant_id="t1", tool_name="tool.b") is None
 
@@ -260,9 +249,7 @@ class TestHealthChecker:
             tools=("tool.b",),
         )
         # Flip one to disabled before the run.
-        registry.update_server(
-            tenant_id="t1", server_id=already_down.id, status="disabled"
-        )
+        registry.update_server(tenant_id="t1", server_id=already_down.id, status="disabled")
 
         call_count = 0
 
@@ -304,9 +291,7 @@ class TestHealthChecker:
 
         # The heartbeat swallows the exception and still flips the server.
         assert results[srv.id] == "inactive"
-        assert (
-            registry.get_server(tenant_id="t1", server_id=srv.id).status == "disabled"
-        )
+        assert registry.get_server(tenant_id="t1", server_id=srv.id).status == "disabled"
 
 
 # ---------------------------------------------------------------------------

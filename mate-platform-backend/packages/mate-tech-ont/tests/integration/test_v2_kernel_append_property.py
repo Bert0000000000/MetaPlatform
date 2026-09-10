@@ -57,6 +57,7 @@ def client_with_ctx(monkeypatch):
 
     monkeypatch.setattr(auth_mw.AuthMiddleware, "dispatch", fake_dispatch)
     from mate_tech_ont.main import app as _app
+
     saved_stack = _app.middleware_stack
     _app.middleware_stack = None
     try:
@@ -121,7 +122,8 @@ class TestAppendObjectTypeProperty:
         assert r2.status_code == 409, r2.text
 
     def test_append_property_to_missing_object_type_returns_404(
-        self, client_with_ctx,
+        self,
+        client_with_ctx,
     ) -> None:
         c, _ = client_with_ctx
         seed_demo(app.state.kernel_repo, TENANT)
@@ -134,7 +136,8 @@ class TestAppendObjectTypeProperty:
         assert r.status_code == 404, r.text
 
     def test_append_property_preserves_existing_properties(
-        self, client_with_ctx,
+        self,
+        client_with_ctx,
     ) -> None:
         """追加不应丢失既有 property（13 硬规则 §1 不变：幂式 upsert）。"""
         c, _ = client_with_ctx

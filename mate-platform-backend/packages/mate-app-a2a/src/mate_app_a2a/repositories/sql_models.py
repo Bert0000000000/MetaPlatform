@@ -8,6 +8,7 @@ Dict fields (input_schema / output_schema / context / result) are
 stored as JSON-encoded Text. The `capabilities` tuple is stored as a
 comma-separated Text column, matching the copilot sql_models pattern.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import String, Text

@@ -14,6 +14,7 @@ token and overlap-based scoring (KeywordReranker) or similarity-based
 splitting (SemanticChunker) becomes a no-op. This module fixes that while
 leaving Latin text tokenized exactly as before.
 """
+
 from __future__ import annotations
 
 import re

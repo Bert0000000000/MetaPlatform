@@ -11,8 +11,7 @@ No shared auth context, shared A2A package, or non-Copilot files were changed.
 ## Root cause
 
 `POST /api/v1/copilot/a2a/delegate` delegated immediately via the default
-`InMemoryA2AClient` and only translated downstream `E_AGENT_NOT_FOUND` into a
-404. The adversarial `case6` test was false-green because it called the
+`InMemoryA2AClient` and only translated downstream `E_AGENT_NOT_FOUND` into a 404. The adversarial `case6` test was false-green because it called the
 nonexistent `/api/v1/copilot/a2a/invoke` route and accepted 404, so it never
 proved target authorization on the real handler.
 
@@ -122,4 +121,4 @@ Results:
 - Pytest emitted pre-existing JWT insecure HMAC key length warnings from test
   fixtures.
 - `git diff --check` printed line-ending warnings (`LF will be replaced by
-  CRLF`) for touched files, but reported no diff-check errors.
+CRLF`) for touched files, but reported no diff-check errors.

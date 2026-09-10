@@ -3,6 +3,7 @@
 §5.3:license_check → fetch_manifest → version_check → fetch_blob+verify_digest
      → dispatch by kind → write instance (硬规则 #14) → state=installed。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -122,7 +123,4 @@ async def test_digest_mismatch_marks_failed():
         for call in calls
     )
     # failure_reason 是 str
-    assert any(
-        isinstance(call.kwargs.get("failure_reason"), str)
-        for call in calls
-    )
+    assert any(isinstance(call.kwargs.get("failure_reason"), str) for call in calls)

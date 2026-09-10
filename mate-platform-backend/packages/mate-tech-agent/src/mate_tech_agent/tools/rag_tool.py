@@ -1,4 +1,5 @@
 """RAG HTTP tool (calls mate-tech-rag /api/v1/rag/search)."""
+
 from __future__ import annotations
 
 import logging

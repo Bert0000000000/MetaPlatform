@@ -18,6 +18,7 @@ LLM gateway. The OpenAI-Vision types model full content-part arrays;
 the v3.2 W2 engine offers a simpler entry point for callers that only
 need text + image + audio references → text output.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

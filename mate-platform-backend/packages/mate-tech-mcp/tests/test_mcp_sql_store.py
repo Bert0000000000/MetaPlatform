@@ -4,6 +4,7 @@ Uses SQLite in-memory + Base.metadata.create_all to verify the SQL
 store's CRUD + tenant isolation + JSON/text serialisation
 (input_schema dict, arguments tuple).
 """
+
 from __future__ import annotations
 
 import sys
@@ -42,7 +43,9 @@ _TENANT_B = "tenant-bigo"
 # ---------------------------------------------------------------------------
 def test_put_and_get_tool() -> None:
     tool = mem.McpTool(
-        id="tool-1", tenant_id=_TENANT_A, name="kb_search",
+        id="tool-1",
+        tenant_id=_TENANT_A,
+        name="kb_search",
         description="Search the knowledge base",
         input_schema={"type": "object", "properties": {"query": {"type": "string"}}},
         enabled=True,
@@ -61,12 +64,16 @@ def test_put_and_get_tool() -> None:
 
 def test_put_tool_upsert() -> None:
     tool = mem.McpTool(
-        id="tool-2", tenant_id=_TENANT_A, name="old_tool",
+        id="tool-2",
+        tenant_id=_TENANT_A,
+        name="old_tool",
         input_schema={"type": "object"},
     )
     sql.put_tool(_TENANT_A, tool)
     tool = mem.McpTool(
-        id="tool-2", tenant_id=_TENANT_A, name="new_tool",
+        id="tool-2",
+        tenant_id=_TENANT_A,
+        name="new_tool",
         input_schema={"type": "object", "properties": {"q": {"type": "string"}}},
         enabled=False,
     )
@@ -97,8 +104,11 @@ def test_delete_tool_rejects_cross_tenant() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_resource() -> None:
     res = mem.McpResource(
-        id="res-1", tenant_id=_TENANT_A, uri="ont://default",
-        name="Ontology", description="The default ontology",
+        id="res-1",
+        tenant_id=_TENANT_A,
+        uri="ont://default",
+        name="Ontology",
+        description="The default ontology",
         mime_type="application/json",
         created_at="2026-08-01T00:00:00Z",
     )
@@ -128,7 +138,9 @@ def test_delete_resource_rejects_cross_tenant() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_prompt() -> None:
     prompt = mem.McpPrompt(
-        id="prompt-1", tenant_id=_TENANT_A, name="sales_assistant",
+        id="prompt-1",
+        tenant_id=_TENANT_A,
+        name="sales_assistant",
         description="Sales assistant prompt",
         template="You are a sales assistant.",
         arguments=("product", "region"),
@@ -147,13 +159,19 @@ def test_put_and_get_prompt() -> None:
 
 def test_put_prompt_upsert() -> None:
     prompt = mem.McpPrompt(
-        id="prompt-2", tenant_id=_TENANT_A, name="old",
-        template="Old template", arguments=("a",),
+        id="prompt-2",
+        tenant_id=_TENANT_A,
+        name="old",
+        template="Old template",
+        arguments=("a",),
     )
     sql.put_prompt(_TENANT_A, prompt)
     prompt = mem.McpPrompt(
-        id="prompt-2", tenant_id=_TENANT_A, name="new",
-        template="New template", arguments=("a", "b", "c"),
+        id="prompt-2",
+        tenant_id=_TENANT_A,
+        name="new",
+        template="New template",
+        arguments=("a", "b", "c"),
     )
     sql.put_prompt(_TENANT_A, prompt)
 

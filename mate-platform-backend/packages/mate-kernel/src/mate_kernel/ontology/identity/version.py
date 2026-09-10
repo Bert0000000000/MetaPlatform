@@ -11,9 +11,7 @@ from datetime import datetime
 
 from .class_ref import ClassRef
 
-_RID_RE = __import__("re").compile(
-    r"^ont\.[a-z0-9_-]{1,64}\.ver\.[A-Za-z0-9_:-]{1,200}\.v\d+$"
-)
+_RID_RE = __import__("re").compile(r"^ont\.[a-z0-9_-]{1,64}\.ver\.[A-Za-z0-9_:-]{1,200}\.v\d+$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,9 +25,7 @@ class Version:
 
     def __post_init__(self) -> None:
         if not _RID_RE.match(self.rid):
-            raise ValueError(
-                f"Version.rid must match {_RID_RE.pattern}, got {self.rid!r}"
-            )
+            raise ValueError(f"Version.rid must match {_RID_RE.pattern}, got {self.rid!r}")
         if self.parent_rid is not None and not _RID_RE.match(self.parent_rid):
             raise ValueError(
                 f"Version.parent_rid must match pattern or be None, got {self.parent_rid!r}"

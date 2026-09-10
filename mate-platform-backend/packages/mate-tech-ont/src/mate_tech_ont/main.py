@@ -13,6 +13,7 @@ During the transition window, v1 endpoints respond with three headers:
 v2_kernel routes pass through unchanged. See
 ``evidence/MP-ONT-V1-SUNSET-NOTICE.md``.
 """
+
 from __future__ import annotations
 
 import os
@@ -75,9 +76,11 @@ def _inject_function_executor(repo: object) -> None:
     require_real_dependency("FUNCTION_BACKEND", backend != "memory")
     if backend == "memory":
         from mate_kernel.sandbox.k8s import _SimplePythonExecutor
+
         repo.set_function_executor(_SimplePythonExecutor())  # type: ignore[attr-defined]
     elif backend in ("subprocess", "k8s"):
         from mate_kernel.sandbox.k8s import SubprocessExecutor
+
         repo.set_function_executor(  # type: ignore[attr-defined]
             SubprocessExecutor(
                 memory_mb=int(os.getenv("FUNCTION_MEM_MB", "256")),
@@ -95,9 +98,7 @@ def _validate_production_configuration() -> None:
         return
     kernel_backend = os.getenv("KERNEL_BACKEND", "memory").lower()
     require_real_dependency("KERNEL_BACKEND=pg", kernel_backend == "pg")
-    require_real_dependency(
-        "ONT_SEED_DEMO=0", os.getenv("ONT_SEED_DEMO", "0") != "1"
-    )
+    require_real_dependency("ONT_SEED_DEMO=0", os.getenv("ONT_SEED_DEMO", "0") != "1")
 
 
 def create_app() -> FastAPI:
@@ -126,7 +127,7 @@ def create_app() -> FastAPI:
     # via add_middleware, which prepends to position 0) becomes the
     # outermost middleware and runs first — populating request.state.ctx
     # before this guard checks it.
-    @app.middleware('http')
+    @app.middleware("http")
     async def _enforce_tenant_per_request(  # pyright: ignore[reportUnusedFunction]
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
@@ -136,26 +137,27 @@ def create_app() -> FastAPI:
         # the OpenAPI browser surface; these endpoints must remain reachable
         # without an authenticated tenant context so that operators can read
         # the contract during the v1 → v2 transition window.
-        if (
-            path in _TENANT_WHITELIST_EXACT
-            or any(path.startswith(p) for p in _TENANT_WHITELIST_PREFIXES)
+        if path in _TENANT_WHITELIST_EXACT or any(
+            path.startswith(p) for p in _TENANT_WHITELIST_PREFIXES
         ):
             return await call_next(request)
-        ctx = getattr(request.state, 'ctx', None)
+        ctx = getattr(request.state, "ctx", None)
         if ctx is None:
             from fastapi.responses import JSONResponse
-            return JSONResponse(status_code=401, content={'detail': 'no auth context'})
+
+            return JSONResponse(status_code=401, content={"detail": "no auth context"})
         try:
             require_tenant(ctx)
         except TenantAccessError as exc:
             from fastapi.responses import JSONResponse
-            return JSONResponse(status_code=403, content={'detail': str(exc)})
+
+            return JSONResponse(status_code=403, content={"detail": str(exc)})
         return await call_next(request)
 
     # Hook 1 of 5: install auth middleware (SEC-IAM-01).
     install_auth(app)
 
-    @app.middleware('http')
+    @app.middleware("http")
     async def _deprecation_headers(  # pyright: ignore[reportUnusedFunction]
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
@@ -176,9 +178,9 @@ def create_app() -> FastAPI:
 
     def _require_ctx(request: Request):  # pyright: ignore[reportUnusedFunction]
         # Defence in depth: install_auth populates ctx or returns 401.
-        ctx = getattr(request.state, 'ctx', None)
+        ctx = getattr(request.state, "ctx", None)
         if ctx is None:
-            raise HTTPException(status_code=401, detail='no auth context')
+            raise HTTPException(status_code=401, detail="no auth context")
         return ctx
 
     app.include_router(ontology_router)
@@ -234,10 +236,12 @@ def create_app() -> FastAPI:
         backend = os.getenv("KERNEL_BACKEND", "memory").lower()
         if backend == "memory":
             from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
+
             app.state.kernel_repo = InMemoryOntologyRepository()
             logger.info("kernel_repo.initialized", backend="memory")
         elif backend == "pg":
             from .v2_kernel.pg_repo import PgOntologyRepository
+
             dsn = os.getenv("KERNEL_PG_DSN", "postgresql://localhost/ontology")
             app.state.kernel_repo = PgOntologyRepository(dsn=dsn)
             logger.info("kernel_repo.initialized", backend="pg")
@@ -251,6 +255,7 @@ def create_app() -> FastAPI:
                 seed_demo,
                 seed_hr_it_finance_orchestrator,
             )
+
             created = seed_demo(app.state.kernel_repo)
             logger.info("kernel_seed.demo", created=created)
             # GOVERN-11: 7+1 数字员工本体（HR/IT/FINANCE/SALES + SuperAI orchestrator）

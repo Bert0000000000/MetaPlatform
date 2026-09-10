@@ -14,6 +14,7 @@ unless explicitly opted in.
 The policy is consistent with the existing llmgw/security/
 pii_mask.py implementation: same patterns, same redaction labels.
 """
+
 from __future__ import annotations
 
 import re
@@ -81,6 +82,7 @@ def redact_pii(text: str, *, reversible: bool = False) -> PIIRedactionResult:
                 # field structure for downstream schema validation).
                 def _token(_m: re.Match[str], _kind: str = kind) -> str:
                     return f"[PII-{_kind}-{len(_m.group(0)):04d}]"
+
                 redacted = pat.sub(_token, redacted)
             else:
                 redacted = pat.sub(f"[REDACTED_{kind.upper()}]", redacted)

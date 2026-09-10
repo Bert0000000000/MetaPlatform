@@ -1,4 +1,5 @@
 """版本管理 API (ST-5.4.8)."""
+
 from __future__ import annotations
 
 import dataclasses

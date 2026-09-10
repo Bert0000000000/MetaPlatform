@@ -3,6 +3,7 @@
 Mirrors the digital-employee role dataclasses. Composite PK
 ``(tenant_id, role)``; capabilities stored as JSON-encoded Text.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import Boolean, String, Text

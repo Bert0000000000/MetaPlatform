@@ -15,45 +15,45 @@ TECH-WFE 是 Mate Platform 的工作流引擎服务，提供基于 BPMN 2.0 规�
 
 ### 1.2 技术栈
 
-| 层次 | 技术选型 | 说明 |
-|---|---|---|
-| 语言/框架 | Java 21 + Spring Boot 3.4 | 基础运行时 |
+| 层次         | 技术选型                   | 说明                                         |
+| ------------ | -------------------------- | -------------------------------------------- |
+| 语言/框架    | Java 21 + Spring Boot 3.4  | 基础运行时                                   |
 | 流程引擎内核 | FlowEngine（自研轻量内核） | 基于 BPMN 2.0 语义，支持 fixed-layout 审批流 |
-| 持久化 | PostgreSQL 17 | 流程定义、实例、任务、历史持久化 |
-| 缓存 | Redis 7.4 | 流程定义缓存、任务分配缓存、分布式锁 |
-| 消息队列 | Kafka 3.9 | 流程事件发布（Outbox 模式） |
-| 可观测性 | OpenTelemetry 1.45 | trace_id 全链路传播 |
-| 前端对接 | FlowGram.AI | fixed-layout 审批流设计器 |
+| 持久化       | PostgreSQL 17              | 流程定义、实例、任务、历史持久化             |
+| 缓存         | Redis 7.4                  | 流程定义缓存、任务分配缓存、分布式锁         |
+| 消息队列     | Kafka 3.9                  | 流程事件发布（Outbox 模式）                  |
+| 可观测性     | OpenTelemetry 1.45         | trace_id 全链路传播                          |
+| 前端对接     | FlowGram.AI                | fixed-layout 审批流设计器                    |
 
 ### 1.3 上游依赖
 
-| 上游服务 | 依赖关系 | 说明 |
-|---|---|---|
-| TECH-ONT | 强依赖 | 流程变量绑定本体业务对象；流程发起前校验业务对象存在性与权限 |
-| TECH-RULE | 强依赖 | 网关排他路由条件通过规则引擎求值；动态审批人通过规则引擎决策 |
-| TECH-IAM | 强依赖 | 用户/角色/组织架构信息，用于审批人解析与权限校验 |
-| TECH-MSG | 弱依赖 | Kafka 消息基础设施 |
+| 上游服务  | 依赖关系 | 说明                                                         |
+| --------- | -------- | ------------------------------------------------------------ |
+| TECH-ONT  | 强依赖   | 流程变量绑定本体业务对象；流程发起前校验业务对象存在性与权限 |
+| TECH-RULE | 强依赖   | 网关排他路由条件通过规则引擎求值；动态审批人通过规则引擎决策 |
+| TECH-IAM  | 强依赖   | 用户/角色/组织架构信息，用于审批人解析与权限校验             |
+| TECH-MSG  | 弱依赖   | Kafka 消息基础设施                                           |
 
 ### 1.4 下游消费
 
-| 下游服务/应用 | 消费方式 | 说明 |
-|---|---|---|
-| APP-APPHUB | REST API | 低代码应用平台调用 WFE 部署流程定义、发起流程、查询任务 |
-| APP-DASHBOARD | REST API | 仪表盘展示流程运行统计、SLA 预警 |
-| APP-DW | REST API | 数字员工代理人工审批任务 |
-| TECH-ACTION | REST API | Action Engine 在自动化流程中触发流程实例 |
-| TECH-A2A | REST API | A2A 协议适配将外部委托任务转为内部工作流执行 |
+| 下游服务/应用 | 消费方式 | 说明                                                    |
+| ------------- | -------- | ------------------------------------------------------- |
+| APP-APPHUB    | REST API | 低代码应用平台调用 WFE 部署流程定义、发起流程、查询任务 |
+| APP-DASHBOARD | REST API | 仪表盘展示流程运行统计、SLA 预警                        |
+| APP-DW        | REST API | 数字员工代理人工审批任务                                |
+| TECH-ACTION   | REST API | Action Engine 在自动化流程中触发流程实例                |
+| TECH-A2A      | REST API | A2A 协议适配将外部委托任务转为内部工作流执行            |
 
 ### 1.5 核心能力清单
 
-| 能力域 | 说明 |
-|---|---|
-| 流程定义管理 | 流程定义的部署、版本管理、查询、挂起/激活、删除 |
-| 流程实例管理 | 发起流程、查询实例、终止实例、挂起/恢复 |
-| 任务管理 | 用户任务查询、审批（同意/拒绝/转交/退回/加签）、委派、催办 |
-| 流程历史 | 历史实例查询、历史任务查询、历史活动查询 |
-| 流程监控 | 运行中实例统计、SLA 预警、瓶颈分析 |
-| 事件订阅 | 流程事件回调（流程启动/完成/任务创建/任务完成） |
+| 能力域       | 说明                                                       |
+| ------------ | ---------------------------------------------------------- |
+| 流程定义管理 | 流程定义的部署、版本管理、查询、挂起/激活、删除            |
+| 流程实例管理 | 发起流程、查询实例、终止实例、挂起/恢复                    |
+| 任务管理     | 用户任务查询、审批（同意/拒绝/转交/退回/加签）、委派、催办 |
+| 流程历史     | 历史实例查询、历史任务查询、历史活动查询                   |
+| 流程监控     | 运行中实例统计、SLA 预警、瓶颈分析                         |
+| 事件订阅     | 流程事件回调（流程启动/完成/任务创建/任务完成）            |
 
 ---
 
@@ -71,17 +71,17 @@ TECH-WFE 是 Mate Platform 的工作流引擎服务，提供基于 BPMN 2.0 规�
 {
   "code": 0,
   "message": "success",
-  "data": { },
+  "data": {},
   "traceId": "a1b2c3d4e5f6"
 }
 ```
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| code | int | 业务状态码，0 表示成功，非 0 表示失败 |
-| message | string | 状态描述信息 |
-| data | object/array/null | 业务数据载体 |
-| traceId | string | 全链路追踪 ID，与请求头 `X-Trace-Id` 一致 |
+| 字段    | 类型              | 说明                                      |
+| ------- | ----------------- | ----------------------------------------- |
+| code    | int               | 业务状态码，0 表示成功，非 0 表示失败     |
+| message | string            | 状态描述信息                              |
+| data    | object/array/null | 业务数据载体                              |
+| traceId | string            | 全链路追踪 ID，与请求头 `X-Trace-Id` 一致 |
 
 ### 2.3 认证
 
@@ -92,40 +92,40 @@ TECH-WFE 是 Mate Platform 的工作流引擎服务，提供基于 BPMN 2.0 规�
 
 ### 2.4 请求头约定
 
-| 请求头 | 必填 | 说明 |
-|---|---|---|
-| Authorization | 是 | Bearer Token |
-| X-Trace-Id | 否 | 链路追踪 ID，未传则服务端自动生成 |
-| X-Tenant-Id | 是 | 租户 ID |
-| X-Request-Id | 否 | 请求唯一标识，用于幂等控制 |
-| Content-Type | 是 | `application/json;charset=UTF-8` |
+| 请求头        | 必填 | 说明                              |
+| ------------- | ---- | --------------------------------- |
+| Authorization | 是   | Bearer Token                      |
+| X-Trace-Id    | 否   | 链路追踪 ID，未传则服务端自动生成 |
+| X-Tenant-Id   | 是   | 租户 ID                           |
+| X-Request-Id  | 否   | 请求唯一标识，用于幂等控制        |
+| Content-Type  | 是   | `application/json;charset=UTF-8`  |
 
 ### 2.5 错误码
 
-| 错误码 | HTTP Status | 含义 | 典型场景 |
-|---|---|---|---|
-| 0 | 200 | 成功 | 正常请求 |
-| 40001 | 400 | 参数校验失败 | 必填字段缺失、格式错误 |
-| 40002 | 400 | 参数值非法 | 枚举值不匹配、数值越界 |
-| 40101 | 401 | 未认证 | Token 缺失或过期 |
-| 40301 | 403 | 无权限 | 用户无权操作该资源 |
-| 40401 | 404 | 资源不存在 | 流程定义/实例/任务不存在 |
-| 40901 | 409 | 状态冲突 | 操作与当前资源状态不兼容（如已完成任务再次审批） |
-| 40902 | 409 | 版本冲突 | 并发更新导致乐观锁冲突 |
-| 42201 | 422 | 业务规则校验失败 | 流程定义 XML 解析失败、审批人无法解析 |
-| 42901 | 429 | 请求过于频繁 | 触发限流 |
-| 50001 | 500 | 服务内部错误 | 未捕获异常 |
-| 50002 | 500 | 依赖服务不可用 | TECH-ONT/TECH-RULE/TECH-IAM 不可达 |
-| 50003 | 500 | 流程执行异常 | 引擎内部状态机错误 |
+| 错误码 | HTTP Status | 含义             | 典型场景                                         |
+| ------ | ----------- | ---------------- | ------------------------------------------------ |
+| 0      | 200         | 成功             | 正常请求                                         |
+| 40001  | 400         | 参数校验失败     | 必填字段缺失、格式错误                           |
+| 40002  | 400         | 参数值非法       | 枚举值不匹配、数值越界                           |
+| 40101  | 401         | 未认证           | Token 缺失或过期                                 |
+| 40301  | 403         | 无权限           | 用户无权操作该资源                               |
+| 40401  | 404         | 资源不存在       | 流程定义/实例/任务不存在                         |
+| 40901  | 409         | 状态冲突         | 操作与当前资源状态不兼容（如已完成任务再次审批） |
+| 40902  | 409         | 版本冲突         | 并发更新导致乐观锁冲突                           |
+| 42201  | 422         | 业务规则校验失败 | 流程定义 XML 解析失败、审批人无法解析            |
+| 42901  | 429         | 请求过于频繁     | 触发限流                                         |
+| 50001  | 500         | 服务内部错误     | 未捕获异常                                       |
+| 50002  | 500         | 依赖服务不可用   | TECH-ONT/TECH-RULE/TECH-IAM 不可达               |
+| 50003  | 500         | 流程执行异常     | 引擎内部状态机错误                               |
 
 ### 2.6 分页约定
 
 分页查询接口统一参数：
 
-| 参数 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| page | int | 1 | 页码，从 1 开始 |
-| size | int | 20 | 每页条数，最大 100 |
+| 参数 | 类型   | 默认值     | 说明                       |
+| ---- | ------ | ---------- | -------------------------- |
+| page | int    | 1          | 页码，从 1 开始            |
+| size | int    | 20         | 每页条数，最大 100         |
 | sort | string | -createdAt | 排序字段，`-` 前缀表示降序 |
 
 分页响应结构：
@@ -135,7 +135,7 @@ TECH-WFE 是 Mate Platform 的工作流引擎服务，提供基于 BPMN 2.0 规�
   "code": 0,
   "message": "success",
   "data": {
-    "items": [ ],
+    "items": [],
     "total": 156,
     "page": 1,
     "size": 20,
@@ -177,17 +177,17 @@ POST /api/v1/wfe/definitions
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| definitionKey | string | 是 | 流程定义唯一标识（业务 key） |
-| name | string | 是 | 流程定义名称 |
-| category | string | 否 | 流程分类（如：审批流、业务流） |
-| bpmnXml | string | 是 | BPMN 2.0 XML 内容 |
-| description | string | 否 | 流程定义描述 |
-| version | string | 否 | 自定义版本号，不传则自动递增 |
-| ontologyBindings | array | 否 | 本体绑定配置 |
-| ontologyBindings[].conceptCode | string | 否 | 绑定的本体概念编码 |
-| ontologyBindings[].variableMapping | object | 否 | 本体属性与流程变量映射 |
+| 字段                               | 类型   | 必填 | 说明                           |
+| ---------------------------------- | ------ | ---- | ------------------------------ |
+| definitionKey                      | string | 是   | 流程定义唯一标识（业务 key）   |
+| name                               | string | 是   | 流程定义名称                   |
+| category                           | string | 否   | 流程分类（如：审批流、业务流） |
+| bpmnXml                            | string | 是   | BPMN 2.0 XML 内容              |
+| description                        | string | 否   | 流程定义描述                   |
+| version                            | string | 否   | 自定义版本号，不传则自动递增   |
+| ontologyBindings                   | array  | 否   | 本体绑定配置                   |
+| ontologyBindings[].conceptCode     | string | 否   | 绑定的本体概念编码             |
+| ontologyBindings[].variableMapping | object | 否   | 本体属性与流程变量映射         |
 
 **请求示例**
 
@@ -232,12 +232,12 @@ POST /api/v1/wfe/definitions
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | bpmnXml 为空或格式不合法 |
-| 42201 | BPMN XML 解析失败：缺少开始事件、网关条件缺失 |
-| 40901 | definitionKey 已存在且不允许覆盖（状态为 LOCKED） |
-| 50002 | 本体绑定校验失败：conceptCode 在 TECH-ONT 中不存在 |
+| 错误码 | 场景                                               |
+| ------ | -------------------------------------------------- |
+| 40001  | bpmnXml 为空或格式不合法                           |
+| 42201  | BPMN XML 解析失败：缺少开始事件、网关条件缺失      |
+| 40901  | definitionKey 已存在且不允许覆盖（状态为 LOCKED）  |
+| 50002  | 本体绑定校验失败：conceptCode 在 TECH-ONT 中不存在 |
 
 ---
 
@@ -251,18 +251,18 @@ GET /api/v1/wfe/definitions
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| definitionKey | string | 否 | 流程定义 key，支持模糊匹配 |
-| name | string | 否 | 流程名称，支持模糊匹配 |
-| category | string | 否 | 流程分类 |
-| status | string | 否 | 状态：`ACTIVE` / `SUSPENDED` / `DEPRECATED` |
-| deployedAfter | string | 否 | 部署时间下界，ISO-8601 |
-| deployedBefore | string | 否 | 部署时间上界，ISO-8601 |
-| latestOnly | boolean | 否 | 是否只返回每个 key 的最新版本，默认 true |
-| page | int | 否 | 页码，默认 1 |
-| size | int | 否 | 每页条数，默认 20 |
-| sort | string | 否 | 排序字段，默认 `-deployedAt` |
+| 参数           | 类型    | 必填 | 说明                                        |
+| -------------- | ------- | ---- | ------------------------------------------- |
+| definitionKey  | string  | 否   | 流程定义 key，支持模糊匹配                  |
+| name           | string  | 否   | 流程名称，支持模糊匹配                      |
+| category       | string  | 否   | 流程分类                                    |
+| status         | string  | 否   | 状态：`ACTIVE` / `SUSPENDED` / `DEPRECATED` |
+| deployedAfter  | string  | 否   | 部署时间下界，ISO-8601                      |
+| deployedBefore | string  | 否   | 部署时间上界，ISO-8601                      |
+| latestOnly     | boolean | 否   | 是否只返回每个 key 的最新版本，默认 true    |
+| page           | int     | 否   | 页码，默认 1                                |
+| size           | int     | 否   | 每页条数，默认 20                           |
+| sort           | string  | 否   | 排序字段，默认 `-deployedAt`                |
 
 **响应示例**
 
@@ -296,10 +296,10 @@ GET /api/v1/wfe/definitions
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 分页参数不合法（page < 1 或 size > 100） |
-| 40301 | 用户无权查看该租户的流程定义 |
+| 错误码 | 场景                                     |
+| ------ | ---------------------------------------- |
+| 40001  | 分页参数不合法（page < 1 或 size > 100） |
+| 40301  | 用户无权查看该租户的流程定义             |
 
 ---
 
@@ -313,8 +313,8 @@ GET /api/v1/wfe/definitions/{definitionId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数         | 类型   | 说明        |
+| ------------ | ------ | ----------- |
 | definitionId | string | 流程定义 ID |
 
 **响应示例**
@@ -356,10 +356,10 @@ GET /api/v1/wfe/definitions/{definitionId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 流程定义不存在 |
-| 40301 | 用户无权查看该流程定义 |
+| 错误码 | 场景                   |
+| ------ | ---------------------- |
+| 40401  | 流程定义不存在         |
+| 40301  | 用户无权查看该流程定义 |
 
 ---
 
@@ -373,15 +373,15 @@ GET /api/v1/wfe/definitions/{definitionId}/content
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数         | 类型   | 说明        |
+| ------------ | ------ | ----------- |
 | definitionId | string | 流程定义 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| format | string | 否 | 返回格式：`xml`（默认）/ `json` |
+| 参数   | 类型   | 必填 | 说明                            |
+| ------ | ------ | ---- | ------------------------------- |
+| format | string | 否   | 返回格式：`xml`（默认）/ `json` |
 
 **响应示例（format=xml）**
 
@@ -415,9 +415,7 @@ GET /api/v1/wfe/definitions/{definitionId}/content
       "id": "PurchaseApprovalProcess",
       "name": "采购审批流程",
       "isExecutable": true,
-      "startEvents": [
-        { "id": "startEvent_1", "name": "发起采购申请" }
-      ],
+      "startEvents": [{ "id": "startEvent_1", "name": "发起采购申请" }],
       "userTasks": [
         {
           "id": "task_manager_approval",
@@ -439,8 +437,14 @@ GET /api/v1/wfe/definitions/{definitionId}/content
           "id": "gw_amount_route",
           "name": "金额路由",
           "conditions": [
-            { "condition": "${amount > 100000}", "targetRef": "task_vp_approval" },
-            { "condition": "${amount <= 100000}", "targetRef": "task_auto_approve" }
+            {
+              "condition": "${amount > 100000}",
+              "targetRef": "task_vp_approval"
+            },
+            {
+              "condition": "${amount <= 100000}",
+              "targetRef": "task_auto_approve"
+            }
           ]
         }
       ],
@@ -449,8 +453,16 @@ GET /api/v1/wfe/definitions/{definitionId}/content
         { "id": "endEvent_rejected", "name": "审批驳回" }
       ],
       "sequenceFlows": [
-        { "id": "flow_1", "sourceRef": "startEvent_1", "targetRef": "task_manager_approval" },
-        { "id": "flow_2", "sourceRef": "task_manager_approval", "targetRef": "gw_amount_route" }
+        {
+          "id": "flow_1",
+          "sourceRef": "startEvent_1",
+          "targetRef": "task_manager_approval"
+        },
+        {
+          "id": "flow_2",
+          "sourceRef": "task_manager_approval",
+          "targetRef": "gw_amount_route"
+        }
       ]
     }
   },
@@ -460,10 +472,10 @@ GET /api/v1/wfe/definitions/{definitionId}/content
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 流程定义不存在 |
-| 40002 | format 参数值不合法 |
+| 错误码 | 场景                |
+| ------ | ------------------- |
+| 40401  | 流程定义不存在      |
+| 40002  | format 参数值不合法 |
 
 ---
 
@@ -477,16 +489,16 @@ PUT /api/v1/wfe/definitions/{definitionId}/state
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数         | 类型   | 说明        |
+| ------------ | ------ | ----------- |
 | definitionId | string | 流程定义 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| action | string | 是 | `SUSPEND`（挂起）或 `ACTIVATE`（激活） |
-| cascade | boolean | 否 | 是否级联挂起/激活所有运行中实例，默认 false |
+| 字段    | 类型    | 必填 | 说明                                        |
+| ------- | ------- | ---- | ------------------------------------------- |
+| action  | string  | 是   | `SUSPEND`（挂起）或 `ACTIVATE`（激活）      |
+| cascade | boolean | 否   | 是否级联挂起/激活所有运行中实例，默认 false |
 
 **请求示例**
 
@@ -514,11 +526,11 @@ PUT /api/v1/wfe/definitions/{definitionId}/state
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 流程定义不存在 |
-| 40901 | 当前状态不允许执行该操作（如已挂起再次挂起） |
-| 40301 | 用户无权修改流程定义状态 |
+| 错误码 | 场景                                         |
+| ------ | -------------------------------------------- |
+| 40401  | 流程定义不存在                               |
+| 40901  | 当前状态不允许执行该操作（如已挂起再次挂起） |
+| 40301  | 用户无权修改流程定义状态                     |
 
 ---
 
@@ -532,16 +544,16 @@ DELETE /api/v1/wfe/definitions/{definitionId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数         | 类型   | 说明        |
+| ------------ | ------ | ----------- |
 | definitionId | string | 流程定义 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| cascade | boolean | 否 | 是否级联删除历史实例，默认 false |
-| reason | string | 否 | 删除原因 |
+| 参数    | 类型    | 必填 | 说明                             |
+| ------- | ------- | ---- | -------------------------------- |
+| cascade | boolean | 否   | 是否级联删除历史实例，默认 false |
+| reason  | string  | 否   | 删除原因                         |
 
 **响应示例**
 
@@ -560,11 +572,11 @@ DELETE /api/v1/wfe/definitions/{definitionId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 流程定义不存在 |
-| 40901 | 存在运行中实例且 cascade=false |
-| 40301 | 用户无权删除流程定义 |
+| 错误码 | 场景                           |
+| ------ | ------------------------------ |
+| 40401  | 流程定义不存在                 |
+| 40901  | 存在运行中实例且 cascade=false |
+| 40301  | 用户无权删除流程定义           |
 
 ---
 
@@ -580,19 +592,19 @@ POST /api/v1/wfe/instances
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| definitionKey | string | 是 | 流程定义 key |
-| version | int | 否 | 流程定义版本，不传则使用最新版本 |
-| businessKey | string | 否 | 业务标识（如采购单号） |
-| title | string | 是 | 流程实例标题 |
-| variables | object | 否 | 流程变量初始值 |
-| ontologyRef | object | 否 | 关联的本体业务对象引用 |
-| ontologyRef.conceptCode | string | 否 | 本体概念编码 |
-| ontologyRef.objectId | string | 否 | 本体对象 ID |
-| startUserId | string | 否 | 发起人 ID，默认取当前登录用户 |
-| priority | int | 否 | 优先级：1（低）/2（中）/3（高），默认 2 |
-| dueDate | string | 否 | 期望完成时间，ISO-8601 |
+| 字段                    | 类型   | 必填 | 说明                                    |
+| ----------------------- | ------ | ---- | --------------------------------------- |
+| definitionKey           | string | 是   | 流程定义 key                            |
+| version                 | int    | 否   | 流程定义版本，不传则使用最新版本        |
+| businessKey             | string | 否   | 业务标识（如采购单号）                  |
+| title                   | string | 是   | 流程实例标题                            |
+| variables               | object | 否   | 流程变量初始值                          |
+| ontologyRef             | object | 否   | 关联的本体业务对象引用                  |
+| ontologyRef.conceptCode | string | 否   | 本体概念编码                            |
+| ontologyRef.objectId    | string | 否   | 本体对象 ID                             |
+| startUserId             | string | 否   | 发起人 ID，默认取当前登录用户           |
+| priority                | int    | 否   | 优先级：1（低）/2（中）/3（高），默认 2 |
+| dueDate                 | string | 否   | 期望完成时间，ISO-8601                  |
 
 **请求示例**
 
@@ -653,13 +665,13 @@ POST /api/v1/wfe/instances
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 流程定义不存在 |
-| 40901 | 流程定义已挂起，不允许发起新实例 |
-| 42201 | 流程变量缺少必填项 |
-| 50002 | 本体业务对象校验失败：conceptCode 不存在或 objectId 无效 |
-| 50003 | 流程启动异常：开始事件无匹配的序列流 |
+| 错误码 | 场景                                                     |
+| ------ | -------------------------------------------------------- |
+| 40401  | 流程定义不存在                                           |
+| 40901  | 流程定义已挂起，不允许发起新实例                         |
+| 42201  | 流程变量缺少必填项                                       |
+| 50002  | 本体业务对象校验失败：conceptCode 不存在或 objectId 无效 |
+| 50003  | 流程启动异常：开始事件无匹配的序列流                     |
 
 ---
 
@@ -673,23 +685,23 @@ GET /api/v1/wfe/instances
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| definitionKey | string | 否 | 流程定义 key |
-| businessKey | string | 否 | 业务标识 |
-| status | string | 否 | 实例状态：`RUNNING` / `COMPLETED` / `TERMINATED` / `SUSPENDED` |
-| startedBy | string | 否 | 发起人 ID |
-| startedAfter | string | 否 | 发起时间下界 |
-| startedBefore | string | 否 | 发起时间上界 |
-| completedAfter | string | 否 | 完成时间下界 |
-| completedBefore | string | 否 | 完成时间上界 |
-| ontologyConceptCode | string | 否 | 关联本体概念编码 |
-| ontologyObjectId | string | 否 | 关联本体对象 ID |
-| involvedUser | string | 否 | 参与人 ID（发起人或曾参与审批） |
-| priority | int | 否 | 优先级 |
-| page | int | 否 | 页码 |
-| size | int | 否 | 每页条数 |
-| sort | string | 否 | 排序字段 |
+| 参数                | 类型   | 必填 | 说明                                                           |
+| ------------------- | ------ | ---- | -------------------------------------------------------------- |
+| definitionKey       | string | 否   | 流程定义 key                                                   |
+| businessKey         | string | 否   | 业务标识                                                       |
+| status              | string | 否   | 实例状态：`RUNNING` / `COMPLETED` / `TERMINATED` / `SUSPENDED` |
+| startedBy           | string | 否   | 发起人 ID                                                      |
+| startedAfter        | string | 否   | 发起时间下界                                                   |
+| startedBefore       | string | 否   | 发起时间上界                                                   |
+| completedAfter      | string | 否   | 完成时间下界                                                   |
+| completedBefore     | string | 否   | 完成时间上界                                                   |
+| ontologyConceptCode | string | 否   | 关联本体概念编码                                               |
+| ontologyObjectId    | string | 否   | 关联本体对象 ID                                                |
+| involvedUser        | string | 否   | 参与人 ID（发起人或曾参与审批）                                |
+| priority            | int    | 否   | 优先级                                                         |
+| page                | int    | 否   | 页码                                                           |
+| size                | int    | 否   | 每页条数                                                       |
+| sort                | string | 否   | 排序字段                                                       |
 
 **响应示例**
 
@@ -732,10 +744,10 @@ GET /api/v1/wfe/instances
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 分页参数不合法 |
-| 40301 | 用户无权查询该范围数据 |
+| 错误码 | 场景                   |
+| ------ | ---------------------- |
+| 40001  | 分页参数不合法         |
+| 40301  | 用户无权查询该范围数据 |
 
 ---
 
@@ -749,16 +761,16 @@ GET /api/v1/wfe/instances/{instanceId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数       | 类型   | 说明        |
+| ---------- | ------ | ----------- |
 | instanceId | string | 流程实例 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| includeVariables | boolean | 否 | 是否包含流程变量，默认 true |
-| includeActivityPath | boolean | 否 | 是否包含已执行活动路径，默认 true |
+| 参数                | 类型    | 必填 | 说明                              |
+| ------------------- | ------- | ---- | --------------------------------- |
+| includeVariables    | boolean | 否   | 是否包含流程变量，默认 true       |
+| includeActivityPath | boolean | 否   | 是否包含已执行活动路径，默认 true |
 
 **响应示例**
 
@@ -845,10 +857,10 @@ GET /api/v1/wfe/instances/{instanceId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 流程实例不存在 |
-| 40301 | 用户无权查看该实例 |
+| 错误码 | 场景               |
+| ------ | ------------------ |
+| 40401  | 流程实例不存在     |
+| 40301  | 用户无权查看该实例 |
 
 ---
 
@@ -862,16 +874,16 @@ DELETE /api/v1/wfe/instances/{instanceId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数       | 类型   | 说明        |
+| ---------- | ------ | ----------- |
 | instanceId | string | 流程实例 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| reason | string | 是 | 终止原因 |
-| terminateActiveTasks | boolean | 否 | 是否终止所有活动任务，默认 true |
+| 字段                 | 类型    | 必填 | 说明                            |
+| -------------------- | ------- | ---- | ------------------------------- |
+| reason               | string  | 是   | 终止原因                        |
+| terminateActiveTasks | boolean | 否   | 是否终止所有活动任务，默认 true |
 
 **请求示例**
 
@@ -901,11 +913,11 @@ DELETE /api/v1/wfe/instances/{instanceId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 流程实例不存在 |
-| 40901 | 实例已结束（COMPLETED/TERMINATED），不可终止 |
-| 40301 | 用户无权终止该实例 |
+| 错误码 | 场景                                         |
+| ------ | -------------------------------------------- |
+| 40401  | 流程实例不存在                               |
+| 40901  | 实例已结束（COMPLETED/TERMINATED），不可终止 |
+| 40301  | 用户无权终止该实例                           |
 
 ---
 
@@ -919,16 +931,16 @@ PUT /api/v1/wfe/instances/{instanceId}/state
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数       | 类型   | 说明        |
+| ---------- | ------ | ----------- |
 | instanceId | string | 流程实例 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| action | string | 是 | `SUSPEND`（挂起）或 `RESUME`（恢复） |
-| reason | string | 否 | 操作原因 |
+| 字段   | 类型   | 必填 | 说明                                 |
+| ------ | ------ | ---- | ------------------------------------ |
+| action | string | 是   | `SUSPEND`（挂起）或 `RESUME`（恢复） |
+| reason | string | 否   | 操作原因                             |
 
 **请求示例**
 
@@ -957,11 +969,11 @@ PUT /api/v1/wfe/instances/{instanceId}/state
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 流程实例不存在 |
-| 40901 | 实例状态不允许该操作（如已终止） |
-| 40301 | 用户无权操作该实例 |
+| 错误码 | 场景                             |
+| ------ | -------------------------------- |
+| 40401  | 流程实例不存在                   |
+| 40901  | 实例状态不允许该操作（如已终止） |
+| 40301  | 用户无权操作该实例               |
 
 ---
 
@@ -975,16 +987,16 @@ PUT /api/v1/wfe/instances/{instanceId}/variables
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数       | 类型   | 说明        |
+| ---------- | ------ | ----------- |
 | instanceId | string | 流程实例 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| variables | object | 是 | 变量键值对 |
-| reason | string | 否 | 修改原因 |
+| 字段      | 类型   | 必填 | 说明       |
+| --------- | ------ | ---- | ---------- |
+| variables | object | 是   | 变量键值对 |
+| reason    | string | 否   | 修改原因   |
 
 **请求示例**
 
@@ -1015,11 +1027,11 @@ PUT /api/v1/wfe/instances/{instanceId}/variables
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 流程实例不存在 |
-| 40901 | 实例非运行状态，不可更新变量 |
-| 42201 | 变量类型与定义不匹配 |
+| 错误码 | 场景                         |
+| ------ | ---------------------------- |
+| 40401  | 流程实例不存在               |
+| 40901  | 实例非运行状态，不可更新变量 |
+| 42201  | 变量类型与定义不匹配         |
 
 ---
 
@@ -1035,18 +1047,18 @@ GET /api/v1/wfe/tasks/todo
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| userId | string | 否 | 用户 ID，默认取当前登录用户 |
-| definitionKey | string | 否 | 流程定义 key 筛选 |
-| category | string | 否 | 流程分类筛选 |
-| priority | int | 否 | 优先级筛选 |
-| dueBefore | string | 否 | 截止时间上界，用于筛选即将逾期任务 |
-| businessKey | string | 否 | 业务标识筛选 |
-| keyword | string | 否 | 标题关键词模糊搜索 |
-| page | int | 否 | 页码 |
-| size | int | 否 | 每页条数 |
-| sort | string | 否 | 排序字段，默认 `-createdAt`（也可用 `dueDate` / `priority`） |
+| 参数          | 类型   | 必填 | 说明                                                         |
+| ------------- | ------ | ---- | ------------------------------------------------------------ |
+| userId        | string | 否   | 用户 ID，默认取当前登录用户                                  |
+| definitionKey | string | 否   | 流程定义 key 筛选                                            |
+| category      | string | 否   | 流程分类筛选                                                 |
+| priority      | int    | 否   | 优先级筛选                                                   |
+| dueBefore     | string | 否   | 截止时间上界，用于筛选即将逾期任务                           |
+| businessKey   | string | 否   | 业务标识筛选                                                 |
+| keyword       | string | 否   | 标题关键词模糊搜索                                           |
+| page          | int    | 否   | 页码                                                         |
+| size          | int    | 否   | 每页条数                                                     |
+| sort          | string | 否   | 排序字段，默认 `-createdAt`（也可用 `dueDate` / `priority`） |
 
 **响应示例**
 
@@ -1096,10 +1108,10 @@ GET /api/v1/wfe/tasks/todo
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 分页参数不合法 |
-| 40301 | 用户无权查询他人待办 |
+| 错误码 | 场景                 |
+| ------ | -------------------- |
+| 40001  | 分页参数不合法       |
+| 40301  | 用户无权查询他人待办 |
 
 ---
 
@@ -1113,17 +1125,17 @@ GET /api/v1/wfe/tasks/done
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| userId | string | 否 | 用户 ID，默认取当前登录用户 |
-| definitionKey | string | 否 | 流程定义 key |
-| outcome | string | 否 | 处理结果：`APPROVED` / `REJECTED` / `TRANSFERRED` / `RETURNED` / `DELEGATED` |
-| completedAfter | string | 否 | 完成时间下界 |
-| completedBefore | string | 否 | 完成时间上界 |
-| businessKey | string | 否 | 业务标识 |
-| page | int | 否 | 页码 |
-| size | int | 否 | 每页条数 |
-| sort | string | 否 | 排序字段，默认 `-completedAt` |
+| 参数            | 类型   | 必填 | 说明                                                                         |
+| --------------- | ------ | ---- | ---------------------------------------------------------------------------- |
+| userId          | string | 否   | 用户 ID，默认取当前登录用户                                                  |
+| definitionKey   | string | 否   | 流程定义 key                                                                 |
+| outcome         | string | 否   | 处理结果：`APPROVED` / `REJECTED` / `TRANSFERRED` / `RETURNED` / `DELEGATED` |
+| completedAfter  | string | 否   | 完成时间下界                                                                 |
+| completedBefore | string | 否   | 完成时间上界                                                                 |
+| businessKey     | string | 否   | 业务标识                                                                     |
+| page            | int    | 否   | 页码                                                                         |
+| size            | int    | 否   | 每页条数                                                                     |
+| sort            | string | 否   | 排序字段，默认 `-completedAt`                                                |
 
 **响应示例**
 
@@ -1172,10 +1184,10 @@ GET /api/v1/wfe/tasks/done
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 分页参数不合法 |
-| 40002 | outcome 枚举值不合法 |
+| 错误码 | 场景                 |
+| ------ | -------------------- |
+| 40001  | 分页参数不合法       |
+| 40002  | outcome 枚举值不合法 |
 
 ---
 
@@ -1189,20 +1201,20 @@ POST /api/v1/wfe/tasks/{taskId}/approve
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | taskId | string | 任务 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| comment | string | 否 | 审批意见 |
-| variables | object | 否 | 审批时设置的流程变量（可影响后续路由） |
-| attachments | array | 否 | 附件列表 |
-| attachments[].name | string | 否 | 附件名称 |
-| attachments[].url | string | 否 | 附件 URL |
-| attachments[].size | int | 否 | 附件大小（字节） |
+| 字段               | 类型   | 必填 | 说明                                   |
+| ------------------ | ------ | ---- | -------------------------------------- |
+| comment            | string | 否   | 审批意见                               |
+| variables          | object | 否   | 审批时设置的流程变量（可影响后续路由） |
+| attachments        | array  | 否   | 附件列表                               |
+| attachments[].name | string | 否   | 附件名称                               |
+| attachments[].url  | string | 否   | 附件 URL                               |
+| attachments[].size | int    | 否   | 附件大小（字节）                       |
 
 **请求示例**
 
@@ -1251,13 +1263,13 @@ POST /api/v1/wfe/tasks/{taskId}/approve
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 任务不存在 |
-| 40901 | 任务已完成或已挂起 |
-| 40301 | 当前用户无权审批该任务 |
-| 42201 | 审批意见为必填但未提供 |
-| 50003 | 流程流转异常：下一节点无法解析审批人 |
+| 错误码 | 场景                                 |
+| ------ | ------------------------------------ |
+| 40401  | 任务不存在                           |
+| 40901  | 任务已完成或已挂起                   |
+| 40301  | 当前用户无权审批该任务               |
+| 42201  | 审批意见为必填但未提供               |
+| 50003  | 流程流转异常：下一节点无法解析审批人 |
 
 ---
 
@@ -1271,18 +1283,18 @@ POST /api/v1/wfe/tasks/{taskId}/reject
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | taskId | string | 任务 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| comment | string | 是 | 拒绝理由（必填） |
-| rejectMode | string | 否 | 拒绝模式：`TERMINATE`（终止流程，默认）/ `RETURN_TO_START`（退回发起人）/ `RETURN_TO_PREVIOUS`（退回上一节点） |
-| variables | object | 否 | 附加流程变量 |
-| attachments | array | 否 | 附件列表 |
+| 字段        | 类型   | 必填 | 说明                                                                                                           |
+| ----------- | ------ | ---- | -------------------------------------------------------------------------------------------------------------- |
+| comment     | string | 是   | 拒绝理由（必填）                                                                                               |
+| rejectMode  | string | 否   | 拒绝模式：`TERMINATE`（终止流程，默认）/ `RETURN_TO_START`（退回发起人）/ `RETURN_TO_PREVIOUS`（退回上一节点） |
+| variables   | object | 否   | 附加流程变量                                                                                                   |
+| attachments | array  | 否   | 附件列表                                                                                                       |
 
 **请求示例**
 
@@ -1315,13 +1327,13 @@ POST /api/v1/wfe/tasks/{taskId}/reject
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 任务不存在 |
-| 40901 | 任务已完成或已挂起 |
-| 40301 | 当前用户无权审批该任务 |
-| 40001 | comment（拒绝理由）为空 |
-| 40002 | rejectMode 枚举值不合法 |
+| 错误码 | 场景                    |
+| ------ | ----------------------- |
+| 40401  | 任务不存在              |
+| 40901  | 任务已完成或已挂起      |
+| 40301  | 当前用户无权审批该任务  |
+| 40001  | comment（拒绝理由）为空 |
+| 40002  | rejectMode 枚举值不合法 |
 
 ---
 
@@ -1335,17 +1347,17 @@ POST /api/v1/wfe/tasks/{taskId}/transfer
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | taskId | string | 任务 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| transferTo | string | 是 | 转交目标用户 ID |
-| comment | string | 否 | 转交说明 |
-| reason | string | 否 | 转交原因 |
+| 字段       | 类型   | 必填 | 说明            |
+| ---------- | ------ | ---- | --------------- |
+| transferTo | string | 是   | 转交目标用户 ID |
+| comment    | string | 否   | 转交说明        |
+| reason     | string | 否   | 转交原因        |
 
 **请求示例**
 
@@ -1379,13 +1391,13 @@ POST /api/v1/wfe/tasks/{taskId}/transfer
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 任务不存在 |
-| 40901 | 任务已完成或已挂起 |
-| 40301 | 当前用户无权转交该任务 |
-| 40401 | 转交目标用户不存在（TECH-IAM 校验失败） |
-| 42201 | 转交目标用户与当前用户相同 |
+| 错误码 | 场景                                    |
+| ------ | --------------------------------------- |
+| 40401  | 任务不存在                              |
+| 40901  | 任务已完成或已挂起                      |
+| 40301  | 当前用户无权转交该任务                  |
+| 40401  | 转交目标用户不存在（TECH-IAM 校验失败） |
+| 42201  | 转交目标用户与当前用户相同              |
 
 ---
 
@@ -1399,17 +1411,17 @@ POST /api/v1/wfe/tasks/{taskId}/return
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | taskId | string | 任务 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| returnToActivityId | string | 否 | 退回目标节点 ID，不传则退回上一用户任务节点 |
-| comment | string | 是 | 退回理由（必填） |
-| variables | object | 否 | 附加流程变量 |
+| 字段               | 类型   | 必填 | 说明                                        |
+| ------------------ | ------ | ---- | ------------------------------------------- |
+| returnToActivityId | string | 否   | 退回目标节点 ID，不传则退回上一用户任务节点 |
+| comment            | string | 是   | 退回理由（必填）                            |
+| variables          | object | 否   | 附加流程变量                                |
 
 **请求示例**
 
@@ -1443,13 +1455,13 @@ POST /api/v1/wfe/tasks/{taskId}/return
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 任务不存在 |
-| 40901 | 任务已完成或已挂起 |
-| 40301 | 当前用户无权退回该任务 |
-| 40001 | comment（退回理由）为空 |
-| 42201 | returnToActivityId 不是有效的历史节点 / 不允许退回（如退回到开始事件） |
+| 错误码 | 场景                                                                   |
+| ------ | ---------------------------------------------------------------------- |
+| 40401  | 任务不存在                                                             |
+| 40901  | 任务已完成或已挂起                                                     |
+| 40301  | 当前用户无权退回该任务                                                 |
+| 40001  | comment（退回理由）为空                                                |
+| 42201  | returnToActivityId 不是有效的历史节点 / 不允许退回（如退回到开始事件） |
 
 ---
 
@@ -1463,20 +1475,20 @@ POST /api/v1/wfe/tasks/{taskId}/add-signer
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | taskId | string | 任务 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| signers | array | 是 | 加签人列表 |
-| signers[].userId | string | 是 | 加签用户 ID |
-| signers[].userName | string | 否 | 加签用户名称 |
-| addSignMode | string | 否 | 加签模式：`BEFORE`（前加签，默认）/ `AFTER`（后加签）/ `PARALLEL`（并行加签） |
-| comment | string | 否 | 加签说明 |
-| sequence | string | 否 | 多人加签时审批顺序：`SEQUENTIAL`（顺序，默认）/ `PARALLEL`（并行） |
+| 字段               | 类型   | 必填 | 说明                                                                          |
+| ------------------ | ------ | ---- | ----------------------------------------------------------------------------- |
+| signers            | array  | 是   | 加签人列表                                                                    |
+| signers[].userId   | string | 是   | 加签用户 ID                                                                   |
+| signers[].userName | string | 否   | 加签用户名称                                                                  |
+| addSignMode        | string | 否   | 加签模式：`BEFORE`（前加签，默认）/ `AFTER`（后加签）/ `PARALLEL`（并行加签） |
+| comment            | string | 否   | 加签说明                                                                      |
+| sequence           | string | 否   | 多人加签时审批顺序：`SEQUENTIAL`（顺序，默认）/ `PARALLEL`（并行）            |
 
 **请求示例**
 
@@ -1518,13 +1530,13 @@ POST /api/v1/wfe/tasks/{taskId}/add-signer
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 任务不存在 |
-| 40901 | 任务已完成或已挂起 |
-| 40301 | 当前用户无权加签 |
-| 40401 | 加签用户不存在（TECH-IAM 校验失败） |
-| 42201 | 加签用户列表为空 / 加签用户包含当前审批人自身 |
+| 错误码 | 场景                                          |
+| ------ | --------------------------------------------- |
+| 40401  | 任务不存在                                    |
+| 40901  | 任务已完成或已挂起                            |
+| 40301  | 当前用户无权加签                              |
+| 40401  | 加签用户不存在（TECH-IAM 校验失败）           |
+| 42201  | 加签用户列表为空 / 加签用户包含当前审批人自身 |
 
 ---
 
@@ -1538,16 +1550,16 @@ POST /api/v1/wfe/tasks/{taskId}/delegate
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | taskId | string | 任务 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| delegateTo | string | 是 | 委派目标用户 ID |
-| comment | string | 否 | 委派说明 |
+| 字段       | 类型   | 必填 | 说明            |
+| ---------- | ------ | ---- | --------------- |
+| delegateTo | string | 是   | 委派目标用户 ID |
+| comment    | string | 否   | 委派说明        |
 
 **请求示例**
 
@@ -1579,13 +1591,13 @@ POST /api/v1/wfe/tasks/{taskId}/delegate
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 任务不存在 |
-| 40901 | 任务已完成或已挂起 |
-| 40301 | 当前用户无权委派该任务 |
-| 40401 | 委派目标用户不存在 |
-| 42201 | 委派目标用户与当前审批人相同 / 任务已被委派（不允许二次委派） |
+| 错误码 | 场景                                                          |
+| ------ | ------------------------------------------------------------- |
+| 40401  | 任务不存在                                                    |
+| 40901  | 任务已完成或已挂起                                            |
+| 40301  | 当前用户无权委派该任务                                        |
+| 40401  | 委派目标用户不存在                                            |
+| 42201  | 委派目标用户与当前审批人相同 / 任务已被委派（不允许二次委派） |
 
 ---
 
@@ -1599,16 +1611,16 @@ POST /api/v1/wfe/tasks/{taskId}/urge
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | taskId | string | 任务 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| message | string | 否 | 催办留言 |
-| channels | array | 否 | 通知渠道：`IN_APP` / `SMS` / `EMAIL` / `IM`，默认 `["IN_APP"]` |
+| 字段     | 类型   | 必填 | 说明                                                           |
+| -------- | ------ | ---- | -------------------------------------------------------------- |
+| message  | string | 否   | 催办留言                                                       |
+| channels | array  | 否   | 通知渠道：`IN_APP` / `SMS` / `EMAIL` / `IM`，默认 `["IN_APP"]` |
 
 **请求示例**
 
@@ -1639,12 +1651,12 @@ POST /api/v1/wfe/tasks/{taskId}/urge
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 任务不存在 |
-| 40901 | 任务已完成或已挂起 |
-| 40301 | 当前用户无权催办（仅发起人或管理员可催办） |
-| 42901 | 催办频率超限（同一任务 1 小时内最多催办 3 次） |
+| 错误码 | 场景                                           |
+| ------ | ---------------------------------------------- |
+| 40401  | 任务不存在                                     |
+| 40901  | 任务已完成或已挂起                             |
+| 40301  | 当前用户无权催办（仅发起人或管理员可催办）     |
+| 42901  | 催办频率超限（同一任务 1 小时内最多催办 3 次） |
 
 ---
 
@@ -1658,17 +1670,17 @@ GET /api/v1/wfe/tasks/{taskId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | taskId | string | 任务 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| includeForm | boolean | 否 | 是否包含表单定义，默认 true |
-| includeVariables | boolean | 否 | 是否包含流程变量，默认 true |
-| includeHistory | boolean | 否 | 是否包含审批历史，默认 true |
+| 参数             | 类型    | 必填 | 说明                        |
+| ---------------- | ------- | ---- | --------------------------- |
+| includeForm      | boolean | 否   | 是否包含表单定义，默认 true |
+| includeVariables | boolean | 否   | 是否包含流程变量，默认 true |
+| includeHistory   | boolean | 否   | 是否包含审批历史，默认 true |
 
 **响应示例**
 
@@ -1760,10 +1772,10 @@ GET /api/v1/wfe/tasks/{taskId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 任务不存在 |
-| 40301 | 用户无权查看该任务 |
+| 错误码 | 场景               |
+| ------ | ------------------ |
+| 40401  | 任务不存在         |
+| 40301  | 用户无权查看该任务 |
 
 ---
 
@@ -1779,21 +1791,21 @@ GET /api/v1/wfe/history/instances
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| definitionKey | string | 否 | 流程定义 key |
-| businessKey | string | 否 | 业务标识 |
-| status | string | 否 | 最终状态：`COMPLETED` / `TERMINATED` |
-| startedBy | string | 否 | 发起人 ID |
-| startedAfter | string | 否 | 发起时间下界 |
-| startedBefore | string | 否 | 发起时间上界 |
-| completedAfter | string | 否 | 完成时间下界 |
-| completedBefore | string | 否 | 完成时间上界 |
-| durationMin | int | 否 | 最小耗时（毫秒） |
-| durationMax | int | 否 | 最大耗时（毫秒） |
-| page | int | 否 | 页码 |
-| size | int | 否 | 每页条数 |
-| sort | string | 否 | 排序字段，默认 `-completedAt` |
+| 参数            | 类型   | 必填 | 说明                                 |
+| --------------- | ------ | ---- | ------------------------------------ |
+| definitionKey   | string | 否   | 流程定义 key                         |
+| businessKey     | string | 否   | 业务标识                             |
+| status          | string | 否   | 最终状态：`COMPLETED` / `TERMINATED` |
+| startedBy       | string | 否   | 发起人 ID                            |
+| startedAfter    | string | 否   | 发起时间下界                         |
+| startedBefore   | string | 否   | 发起时间上界                         |
+| completedAfter  | string | 否   | 完成时间下界                         |
+| completedBefore | string | 否   | 完成时间上界                         |
+| durationMin     | int    | 否   | 最小耗时（毫秒）                     |
+| durationMax     | int    | 否   | 最大耗时（毫秒）                     |
+| page            | int    | 否   | 页码                                 |
+| size            | int    | 否   | 每页条数                             |
+| sort            | string | 否   | 排序字段，默认 `-completedAt`        |
 
 **响应示例**
 
@@ -1836,10 +1848,10 @@ GET /api/v1/wfe/history/instances
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 分页参数不合法 |
-| 40301 | 用户无权查询该范围历史数据 |
+| 错误码 | 场景                       |
+| ------ | -------------------------- |
+| 40001  | 分页参数不合法             |
+| 40301  | 用户无权查询该范围历史数据 |
 
 ---
 
@@ -1853,18 +1865,18 @@ GET /api/v1/wfe/history/tasks
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| instanceId | string | 否 | 流程实例 ID |
-| definitionKey | string | 否 | 流程定义 key |
-| assignee | string | 否 | 处理人 ID |
-| outcome | string | 否 | 处理结果 |
-| activityName | string | 否 | 活动节点名称 |
-| completedAfter | string | 否 | 完成时间下界 |
-| completedBefore | string | 否 | 完成时间上界 |
-| page | int | 否 | 页码 |
-| size | int | 否 | 每页条数 |
-| sort | string | 否 | 排序字段，默认 `-completedAt` |
+| 参数            | 类型   | 必填 | 说明                          |
+| --------------- | ------ | ---- | ----------------------------- |
+| instanceId      | string | 否   | 流程实例 ID                   |
+| definitionKey   | string | 否   | 流程定义 key                  |
+| assignee        | string | 否   | 处理人 ID                     |
+| outcome         | string | 否   | 处理结果                      |
+| activityName    | string | 否   | 活动节点名称                  |
+| completedAfter  | string | 否   | 完成时间下界                  |
+| completedBefore | string | 否   | 完成时间上界                  |
+| page            | int    | 否   | 页码                          |
+| size            | int    | 否   | 每页条数                      |
+| sort            | string | 否   | 排序字段，默认 `-completedAt` |
 
 **响应示例**
 
@@ -1917,10 +1929,10 @@ GET /api/v1/wfe/history/tasks
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 分页参数不合法 |
-| 40301 | 用户无权查询该范围历史数据 |
+| 错误码 | 场景                       |
+| ------ | -------------------------- |
+| 40001  | 分页参数不合法             |
+| 40301  | 用户无权查询该范围历史数据 |
 
 ---
 
@@ -1934,17 +1946,17 @@ GET /api/v1/wfe/history/activities
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| instanceId | string | 否 | 流程实例 ID |
-| definitionKey | string | 否 | 流程定义 key |
-| activityType | string | 否 | 活动类型：`USER_TASK` / `SERVICE_TASK` / `EXCLUSIVE_GATEWAY` / `PARALLEL_GATEWAY` / `START_EVENT` / `END_EVENT` / `INTERMEDIATE_EVENT` |
-| activityName | string | 否 | 活动节点名称 |
-| startedAfter | string | 否 | 开始时间下界 |
-| startedBefore | string | 否 | 开始时间上界 |
-| page | int | 否 | 页码 |
-| size | int | 否 | 每页条数 |
-| sort | string | 否 | 排序字段，默认 `startedAt`（正序） |
+| 参数          | 类型   | 必填 | 说明                                                                                                                                   |
+| ------------- | ------ | ---- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| instanceId    | string | 否   | 流程实例 ID                                                                                                                            |
+| definitionKey | string | 否   | 流程定义 key                                                                                                                           |
+| activityType  | string | 否   | 活动类型：`USER_TASK` / `SERVICE_TASK` / `EXCLUSIVE_GATEWAY` / `PARALLEL_GATEWAY` / `START_EVENT` / `END_EVENT` / `INTERMEDIATE_EVENT` |
+| activityName  | string | 否   | 活动节点名称                                                                                                                           |
+| startedAfter  | string | 否   | 开始时间下界                                                                                                                           |
+| startedBefore | string | 否   | 开始时间上界                                                                                                                           |
+| page          | int    | 否   | 页码                                                                                                                                   |
+| size          | int    | 否   | 每页条数                                                                                                                               |
+| sort          | string | 否   | 排序字段，默认 `startedAt`（正序）                                                                                                     |
 
 **响应示例**
 
@@ -2007,11 +2019,11 @@ GET /api/v1/wfe/history/activities
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 分页参数不合法 |
-| 40002 | activityType 枚举值不合法 |
-| 40301 | 用户无权查询该实例历史 |
+| 错误码 | 场景                      |
+| ------ | ------------------------- |
+| 40001  | 分页参数不合法            |
+| 40002  | activityType 枚举值不合法 |
+| 40301  | 用户无权查询该实例历史    |
 
 ---
 
@@ -2027,11 +2039,11 @@ GET /api/v1/wfe/monitor/statistics
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| definitionKey | string | 否 | 按流程定义筛选 |
-| groupBy | string | 否 | 分组维度：`DEFINITION`（默认）/ `CATEGORY` / `DEPARTMENT` / `ASSIGNEE` |
-| timeRange | string | 否 | 时间范围：`TODAY` / `WEEK` / `MONTH`（默认 `TODAY`） |
+| 参数          | 类型   | 必填 | 说明                                                                   |
+| ------------- | ------ | ---- | ---------------------------------------------------------------------- |
+| definitionKey | string | 否   | 按流程定义筛选                                                         |
+| groupBy       | string | 否   | 分组维度：`DEFINITION`（默认）/ `CATEGORY` / `DEPARTMENT` / `ASSIGNEE` |
+| timeRange     | string | 否   | 时间范围：`TODAY` / `WEEK` / `MONTH`（默认 `TODAY`）                   |
 
 **响应示例**
 
@@ -2082,10 +2094,10 @@ GET /api/v1/wfe/monitor/statistics
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40002 | groupBy 或 timeRange 枚举值不合法 |
-| 40301 | 用户无权查看监控数据 |
+| 错误码 | 场景                              |
+| ------ | --------------------------------- |
+| 40002  | groupBy 或 timeRange 枚举值不合法 |
+| 40301  | 用户无权查看监控数据              |
 
 ---
 
@@ -2099,14 +2111,14 @@ GET /api/v1/wfe/monitor/sla-warnings
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| definitionKey | string | 否 | 按流程定义筛选 |
-| slaStatus | string | 否 | SLA 状态：`WARNING`（即将逾期）/ `OVERDUE`（已逾期）/ `ALL`（默认） |
-| warningThreshold | int | 否 | 预警阈值（小时），距截止时间 N 小时内显示为 WARNING，默认 24 |
-| assignee | string | 否 | 按处理人筛选 |
-| page | int | 否 | 页码 |
-| size | int | 否 | 每页条数 |
+| 参数             | 类型   | 必填 | 说明                                                                |
+| ---------------- | ------ | ---- | ------------------------------------------------------------------- |
+| definitionKey    | string | 否   | 按流程定义筛选                                                      |
+| slaStatus        | string | 否   | SLA 状态：`WARNING`（即将逾期）/ `OVERDUE`（已逾期）/ `ALL`（默认） |
+| warningThreshold | int    | 否   | 预警阈值（小时），距截止时间 N 小时内显示为 WARNING，默认 24        |
+| assignee         | string | 否   | 按处理人筛选                                                        |
+| page             | int    | 否   | 页码                                                                |
+| size             | int    | 否   | 每页条数                                                            |
 
 **响应示例**
 
@@ -2174,10 +2186,10 @@ GET /api/v1/wfe/monitor/sla-warnings
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40002 | slaStatus 枚举值不合法 |
-| 40301 | 用户无权查看监控数据 |
+| 错误码 | 场景                   |
+| ------ | ---------------------- |
+| 40002  | slaStatus 枚举值不合法 |
+| 40301  | 用户无权查看监控数据   |
 
 ---
 
@@ -2191,12 +2203,12 @@ GET /api/v1/wfe/monitor/bottlenecks
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| definitionKey | string | 是 | 流程定义 key |
-| startedAfter | string | 否 | 统计起始时间，默认近 30 天 |
-| startedBefore | string | 否 | 统计截止时间，默认当前时间 |
-| minInstances | int | 否 | 最小样本数，低于此数不返回统计，默认 5 |
+| 参数          | 类型   | 必填 | 说明                                   |
+| ------------- | ------ | ---- | -------------------------------------- |
+| definitionKey | string | 是   | 流程定义 key                           |
+| startedAfter  | string | 否   | 统计起始时间，默认近 30 天             |
+| startedBefore | string | 否   | 统计截止时间，默认当前时间             |
+| minInstances  | int    | 否   | 最小样本数，低于此数不返回统计，默认 5 |
 
 **响应示例**
 
@@ -2271,12 +2283,12 @@ GET /api/v1/wfe/monitor/bottlenecks
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | definitionKey 为空 |
-| 40401 | 流程定义不存在 |
-| 42201 | 样本数不足（低于 minInstances） |
-| 40301 | 用户无权查看监控数据 |
+| 错误码 | 场景                            |
+| ------ | ------------------------------- |
+| 40001  | definitionKey 为空              |
+| 40401  | 流程定义不存在                  |
+| 42201  | 样本数不足（低于 minInstances） |
+| 40301  | 用户无权查看监控数据            |
 
 ---
 
@@ -2292,20 +2304,20 @@ POST /api/v1/wfe/events/subscriptions
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 是 | 订阅名称 |
-| eventTypes | array | 是 | 订阅事件类型列表，见 5.1 事件类型定义 |
-| definitionKey | string | 否 | 限定流程定义 key，不传则订阅所有流程 |
-| callbackUrl | string | 是 | 回调通知 URL |
-| callbackMethod | string | 否 | 回调 HTTP 方法，默认 `POST` |
-| headers | object | 否 | 回调请求自定义请求头 |
-| secret | string | 否 | 签名密钥，用于回调请求签名验证 |
-| retryPolicy | object | 否 | 重试策略 |
-| retryPolicy.maxRetries | int | 否 | 最大重试次数，默认 3 |
-| retryPolicy.retryInterval | int | 否 | 重试间隔（秒），默认 30 |
-| retryPolicy.backoffMultiplier | double | 否 | 退避系数，默认 2.0 |
-| active | boolean | 否 | 是否启用，默认 true |
+| 字段                          | 类型    | 必填 | 说明                                  |
+| ----------------------------- | ------- | ---- | ------------------------------------- |
+| name                          | string  | 是   | 订阅名称                              |
+| eventTypes                    | array   | 是   | 订阅事件类型列表，见 5.1 事件类型定义 |
+| definitionKey                 | string  | 否   | 限定流程定义 key，不传则订阅所有流程  |
+| callbackUrl                   | string  | 是   | 回调通知 URL                          |
+| callbackMethod                | string  | 否   | 回调 HTTP 方法，默认 `POST`           |
+| headers                       | object  | 否   | 回调请求自定义请求头                  |
+| secret                        | string  | 否   | 签名密钥，用于回调请求签名验证        |
+| retryPolicy                   | object  | 否   | 重试策略                              |
+| retryPolicy.maxRetries        | int     | 否   | 最大重试次数，默认 3                  |
+| retryPolicy.retryInterval     | int     | 否   | 重试间隔（秒），默认 30               |
+| retryPolicy.backoffMultiplier | double  | 否   | 退避系数，默认 2.0                    |
+| active                        | boolean | 否   | 是否启用，默认 true                   |
 
 **请求示例**
 
@@ -2361,11 +2373,11 @@ POST /api/v1/wfe/events/subscriptions
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | callbackUrl 为空或格式不合法 |
-| 40002 | eventTypes 包含不合法的事件类型 |
-| 42201 | eventTypes 为空数组 |
+| 错误码 | 场景                            |
+| ------ | ------------------------------- |
+| 40001  | callbackUrl 为空或格式不合法    |
+| 40002  | eventTypes 包含不合法的事件类型 |
+| 42201  | eventTypes 为空数组             |
 
 ---
 
@@ -2379,12 +2391,12 @@ GET /api/v1/wfe/events/subscriptions
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| definitionKey | string | 否 | 按流程定义筛选 |
-| active | boolean | 否 | 按启用状态筛选 |
-| page | int | 否 | 页码 |
-| size | int | 否 | 每页条数 |
+| 参数          | 类型    | 必填 | 说明           |
+| ------------- | ------- | ---- | -------------- |
+| definitionKey | string  | 否   | 按流程定义筛选 |
+| active        | boolean | 否   | 按启用状态筛选 |
+| page          | int     | 否   | 页码           |
+| size          | int     | 否   | 每页条数       |
 
 **响应示例**
 
@@ -2434,21 +2446,21 @@ PUT /api/v1/wfe/events/subscriptions/{subscriptionId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数           | 类型   | 说明    |
+| -------------- | ------ | ------- |
 | subscriptionId | string | 订阅 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 否 | 订阅名称 |
-| eventTypes | array | 否 | 事件类型列表 |
-| callbackUrl | string | 否 | 回调 URL |
-| headers | object | 否 | 自定义请求头 |
-| secret | string | 否 | 签名密钥 |
-| retryPolicy | object | 否 | 重试策略 |
-| active | boolean | 否 | 是否启用 |
+| 字段        | 类型    | 必填 | 说明         |
+| ----------- | ------- | ---- | ------------ |
+| name        | string  | 否   | 订阅名称     |
+| eventTypes  | array   | 否   | 事件类型列表 |
+| callbackUrl | string  | 否   | 回调 URL     |
+| headers     | object  | 否   | 自定义请求头 |
+| secret      | string  | 否   | 签名密钥     |
+| retryPolicy | object  | 否   | 重试策略     |
+| active      | boolean | 否   | 是否启用     |
 
 **响应示例**
 
@@ -2468,10 +2480,10 @@ PUT /api/v1/wfe/events/subscriptions/{subscriptionId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 订阅不存在 |
-| 40301 | 用户无权修改该订阅 |
+| 错误码 | 场景               |
+| ------ | ------------------ |
+| 40401  | 订阅不存在         |
+| 40301  | 用户无权修改该订阅 |
 
 ---
 
@@ -2485,8 +2497,8 @@ DELETE /api/v1/wfe/events/subscriptions/{subscriptionId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数           | 类型   | 说明    |
+| -------------- | ------ | ------- |
 | subscriptionId | string | 订阅 ID |
 
 **响应示例**
@@ -2505,10 +2517,10 @@ DELETE /api/v1/wfe/events/subscriptions/{subscriptionId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 订阅不存在 |
-| 40301 | 用户无权删除该订阅 |
+| 错误码 | 场景               |
+| ------ | ------------------ |
+| 40401  | 订阅不存在         |
+| 40301  | 用户无权删除该订阅 |
 
 ---
 
@@ -2522,15 +2534,15 @@ POST {callbackUrl}
 
 **回调请求头**
 
-| 请求头 | 说明 |
-|---|---|
-| X-WFE-Event-Type | 事件类型 |
-| X-WFE-Subscription-Id | 订阅 ID |
-| X-WFE-Event-Id | 事件唯一 ID（用于幂等） |
-| X-WFE-Event-Timestamp | 事件发生时间 |
-| X-WFE-Signature | HMAC-SHA256 签名（使用订阅时设置的 secret） |
-| X-Trace-Id | 链路追踪 ID |
-| Content-Type | application/json;charset=UTF-8 |
+| 请求头                | 说明                                        |
+| --------------------- | ------------------------------------------- |
+| X-WFE-Event-Type      | 事件类型                                    |
+| X-WFE-Subscription-Id | 订阅 ID                                     |
+| X-WFE-Event-Id        | 事件唯一 ID（用于幂等）                     |
+| X-WFE-Event-Timestamp | 事件发生时间                                |
+| X-WFE-Signature       | HMAC-SHA256 签名（使用订阅时设置的 secret） |
+| X-Trace-Id            | 链路追踪 ID                                 |
+| Content-Type          | application/json;charset=UTF-8              |
 
 **回调请求体**
 
@@ -2566,12 +2578,12 @@ POST {callbackUrl}
 
 **回调响应要求**
 
-| HTTP Status | 含义 | WFE 行为 |
-|---|---|---|
-| 200 | 处理成功 | 标记事件投递成功 |
+| HTTP Status                    | 含义       | WFE 行为                     |
+| ------------------------------ | ---------- | ---------------------------- |
+| 200                            | 处理成功   | 标记事件投递成功             |
 | 200 + body `{"accept": false}` | 订阅方拒绝 | 标记事件投递成功（不再重试） |
-| 4xx | 客户端错误 | 不重试，记录失败日志 |
-| 5xx | 服务端错误 | 按重试策略重试 |
+| 4xx                            | 客户端错误 | 不重试，记录失败日志         |
+| 5xx                            | 服务端错误 | 按重试策略重试               |
 
 **签名验证**
 
@@ -2589,22 +2601,22 @@ signature = HMAC-SHA256(secret, requestBody)
 
 ### 4.1 PostgreSQL 表结构总览
 
-| 表名 | 说明 |
-|---|---|
-| wfe_process_definition | 流程定义表 |
-| wfe_process_definition_ontology_binding | 流程定义本体绑定表 |
-| wfe_process_instance | 流程实例表 |
-| wfe_execution | 执行实例表（流程执行上下文） |
-| wfe_variable | 流程变量表 |
-| wfe_task | 用户任务表 |
-| wfe_task_identity_link | 任务身份关联表（审批人/候选组/委派关系） |
-| wfe_task_attachment | 任务附件表 |
-| wfe_task_action | 任务操作记录表（审批/转交/退回/加签等） |
-| wfe_activity_instance | 活动实例表（历史活动记录） |
-| wfe_event_subscription | 事件订阅表 |
-| wfe_event_delivery_log | 事件投递日志表 |
-| wfe_outbox | Outbox 事件表（Kafka 事务消息） |
-| wfe_idempotent_request | 幂等请求记录表 |
+| 表名                                    | 说明                                     |
+| --------------------------------------- | ---------------------------------------- |
+| wfe_process_definition                  | 流程定义表                               |
+| wfe_process_definition_ontology_binding | 流程定义本体绑定表                       |
+| wfe_process_instance                    | 流程实例表                               |
+| wfe_execution                           | 执行实例表（流程执行上下文）             |
+| wfe_variable                            | 流程变量表                               |
+| wfe_task                                | 用户任务表                               |
+| wfe_task_identity_link                  | 任务身份关联表（审批人/候选组/委派关系） |
+| wfe_task_attachment                     | 任务附件表                               |
+| wfe_task_action                         | 任务操作记录表（审批/转交/退回/加签等）  |
+| wfe_activity_instance                   | 活动实例表（历史活动记录）               |
+| wfe_event_subscription                  | 事件订阅表                               |
+| wfe_event_delivery_log                  | 事件投递日志表                           |
+| wfe_outbox                              | Outbox 事件表（Kafka 事务消息）          |
+| wfe_idempotent_request                  | 幂等请求记录表                           |
 
 ### 4.2 wfe_process_definition（流程定义表）
 
@@ -3012,33 +3024,33 @@ CREATE INDEX idx_idempotent_expires ON wfe_idempotent_request (expires_at);
 
 ### 5.1 事件类型
 
-| 事件类型 | 说明 | 触发时机 |
-|---|---|---|
-| PROCESS_STARTED | 流程启动事件 | 流程实例发起成功后 |
-| PROCESS_COMPLETED | 流程完成事件 | 流程实例正常到达结束事件 |
-| PROCESS_TERMINATED | 流程终止事件 | 流程实例被强制终止 |
-| PROCESS_SUSPENDED | 流程挂起事件 | 流程实例被挂起 |
-| PROCESS_RESUMED | 流程恢复事件 | 流程实例从挂起恢复 |
-| TASK_CREATED | 任务创建事件 | 用户任务节点被激活，任务创建 |
-| TASK_ASSIGNED | 任务分配事件 | 任务被分配给指定用户 |
-| TASK_CLAIMED | 任务签收事件 | 候选人签收任务 |
-| TASK_COMPLETED | 任务完成事件 | 用户任务被审批处理完成 |
-| TASK_CANCELLED | 任务取消事件 | 任务因流程终止/退回被取消 |
-| TASK_DELEGATED | 任务委派事件 | 任务被委派给其他用户 |
-| TASK_TRANSFERRED | 任务转交事件 | 任务被转交给其他用户 |
-| TASK_RETURNED | 任务退回事件 | 任务被退回至历史节点 |
-| TASK_SIGNER_ADDED | 任务加签事件 | 任务被加签追加审批人 |
-| TASK_OVERDUE | 任务逾期事件 | 任务超过截止时间未处理 |
-| VARIABLE_CHANGED | 变量变更事件 | 流程变量被修改 |
+| 事件类型           | 说明         | 触发时机                     |
+| ------------------ | ------------ | ---------------------------- |
+| PROCESS_STARTED    | 流程启动事件 | 流程实例发起成功后           |
+| PROCESS_COMPLETED  | 流程完成事件 | 流程实例正常到达结束事件     |
+| PROCESS_TERMINATED | 流程终止事件 | 流程实例被强制终止           |
+| PROCESS_SUSPENDED  | 流程挂起事件 | 流程实例被挂起               |
+| PROCESS_RESUMED    | 流程恢复事件 | 流程实例从挂起恢复           |
+| TASK_CREATED       | 任务创建事件 | 用户任务节点被激活，任务创建 |
+| TASK_ASSIGNED      | 任务分配事件 | 任务被分配给指定用户         |
+| TASK_CLAIMED       | 任务签收事件 | 候选人签收任务               |
+| TASK_COMPLETED     | 任务完成事件 | 用户任务被审批处理完成       |
+| TASK_CANCELLED     | 任务取消事件 | 任务因流程终止/退回被取消    |
+| TASK_DELEGATED     | 任务委派事件 | 任务被委派给其他用户         |
+| TASK_TRANSFERRED   | 任务转交事件 | 任务被转交给其他用户         |
+| TASK_RETURNED      | 任务退回事件 | 任务被退回至历史节点         |
+| TASK_SIGNER_ADDED  | 任务加签事件 | 任务被加签追加审批人         |
+| TASK_OVERDUE       | 任务逾期事件 | 任务超过截止时间未处理       |
+| VARIABLE_CHANGED   | 变量变更事件 | 流程变量被修改               |
 
 ### 5.2 Kafka Topic 定义
 
-| Topic | 说明 | 分区策略 |
-|---|---|---|
+| Topic                | 说明                 | 分区策略                 |
+| -------------------- | -------------------- | ------------------------ |
 | `wfe.process.events` | 流程实例生命周期事件 | 按 `instanceId` 哈希分区 |
-| `wfe.task.events` | 任务生命周期事件 | 按 `taskId` 哈希分区 |
-| `wfe.sla.events` | SLA 预警事件 | 按 `instanceId` 哈希分区 |
-| `wfe.dlq` | 死信队列 | 消费失败的事件 |
+| `wfe.task.events`    | 任务生命周期事件     | 按 `taskId` 哈希分区     |
+| `wfe.sla.events`     | SLA 预警事件         | 按 `instanceId` 哈希分区 |
+| `wfe.dlq`            | 死信队列             | 消费失败的事件           |
 
 ### 5.3 Kafka 消息结构
 
@@ -3055,19 +3067,19 @@ CREATE INDEX idx_idempotent_expires ON wfe_idempotent_request (expires_at);
   "traceId": "a1b2c3d4e5f6",
   "source": "TECH-WFE",
   "version": "1.0",
-  "payload": { }
+  "payload": {}
 }
 ```
 
 **Kafka 消息头**
 
-| 消息头 | 说明 |
-|---|---|
-| X-Trace-Id | 链路追踪 ID（与消息体 traceId 一致） |
-| X-Event-Type | 事件类型 |
-| X-Event-Id | 事件唯一 ID |
-| X-Tenant-Id | 租户 ID |
-| Content-Type | application/json |
+| 消息头       | 说明                                 |
+| ------------ | ------------------------------------ |
+| X-Trace-Id   | 链路追踪 ID（与消息体 traceId 一致） |
+| X-Event-Type | 事件类型                             |
+| X-Event-Id   | 事件唯一 ID                          |
+| X-Tenant-Id  | 租户 ID                              |
+| Content-Type | application/json                     |
 
 ### 5.4 各事件 Payload 定义
 
@@ -3258,13 +3270,13 @@ CREATE INDEX idx_idempotent_expires ON wfe_idempotent_request (expires_at);
 
 ### 5.6 事件消费方指南
 
-| 消费方 | 订阅 Topic | 处理逻辑 |
-|---|---|---|
-| APP-APPHUB | wfe.process.events, wfe.task.events | 更新应用内流程状态展示、触发页面刷新通知 |
-| APP-DASHBOARD | wfe.process.events, wfe.sla.events | 更新仪表盘统计数据、SLA 预警展示 |
-| TECH-ONT | wfe.process.events | 流程完成后更新本体业务对象状态（如 PurchaseRequest.status = APPROVED） |
-| TECH-ACTION | wfe.task.events | 监听 TASK_COMPLETED 触发后续 Action 自动化 |
-| TECH-MSG | 所有 | 统一消息推送（站内信/邮件/IM 通知） |
+| 消费方        | 订阅 Topic                          | 处理逻辑                                                               |
+| ------------- | ----------------------------------- | ---------------------------------------------------------------------- |
+| APP-APPHUB    | wfe.process.events, wfe.task.events | 更新应用内流程状态展示、触发页面刷新通知                               |
+| APP-DASHBOARD | wfe.process.events, wfe.sla.events  | 更新仪表盘统计数据、SLA 预警展示                                       |
+| TECH-ONT      | wfe.process.events                  | 流程完成后更新本体业务对象状态（如 PurchaseRequest.status = APPROVED） |
+| TECH-ACTION   | wfe.task.events                     | 监听 TASK_COMPLETED 触发后续 Action 自动化                             |
+| TECH-MSG      | 所有                                | 统一消息推送（站内信/邮件/IM 通知）                                    |
 
 **消费方幂等处理**
 
@@ -3291,21 +3303,21 @@ public void onTaskEvent(TaskEvent event) {
 
 **目标**：完成流程定义部署、查询和流程实例发起的基础能力。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 流程定义部署 | POST /api/v1/wfe/definitions | 支持 BPMN XML 解析、版本管理 |
-| 流程定义列表查询 | GET /api/v1/wfe/definitions | 分页查询、条件筛选 |
-| 流程定义详情 | GET /api/v1/wfe/definitions/{id} | 含本体绑定信息 |
-| 流程定义内容 | GET /api/v1/wfe/definitions/{id}/content | XML/JSON 双格式 |
-| 流程定义状态管理 | PUT /api/v1/wfe/definitions/{id}/state | 挂起/激活 |
-| 流程定义删除 | DELETE /api/v1/wfe/definitions/{id} | 级联删除支持 |
-| 流程实例发起 | POST /api/v1/wfe/instances | 含本体校验、变量初始化 |
-| 流程实例列表 | GET /api/v1/wfe/instances | 多维度筛选 |
-| 流程实例详情 | GET /api/v1/wfe/instances/{id} | 含活动路径 |
-| 流程实例终止 | DELETE /api/v1/wfe/instances/{id} | 含活动任务终止 |
-| 流程实例挂起/恢复 | PUT /api/v1/wfe/instances/{id}/state | - |
-| 数据表 | 全部 DDL | wfe_process_definition 等核心表 |
-| 基础设施 | Kafka Outbox | Outbox 写入 + Publisher 基础版 |
+| 交付项            | API                                      | 说明                            |
+| ----------------- | ---------------------------------------- | ------------------------------- |
+| 流程定义部署      | POST /api/v1/wfe/definitions             | 支持 BPMN XML 解析、版本管理    |
+| 流程定义列表查询  | GET /api/v1/wfe/definitions              | 分页查询、条件筛选              |
+| 流程定义详情      | GET /api/v1/wfe/definitions/{id}         | 含本体绑定信息                  |
+| 流程定义内容      | GET /api/v1/wfe/definitions/{id}/content | XML/JSON 双格式                 |
+| 流程定义状态管理  | PUT /api/v1/wfe/definitions/{id}/state   | 挂起/激活                       |
+| 流程定义删除      | DELETE /api/v1/wfe/definitions/{id}      | 级联删除支持                    |
+| 流程实例发起      | POST /api/v1/wfe/instances               | 含本体校验、变量初始化          |
+| 流程实例列表      | GET /api/v1/wfe/instances                | 多维度筛选                      |
+| 流程实例详情      | GET /api/v1/wfe/instances/{id}           | 含活动路径                      |
+| 流程实例终止      | DELETE /api/v1/wfe/instances/{id}        | 含活动任务终止                  |
+| 流程实例挂起/恢复 | PUT /api/v1/wfe/instances/{id}/state     | -                               |
+| 数据表            | 全部 DDL                                 | wfe_process_definition 等核心表 |
+| 基础设施          | Kafka Outbox                             | Outbox 写入 + Publisher 基础版  |
 
 **验收标准**：能部署 BPMN 流程定义，发起流程实例，流程自动流转至第一个用户任务节点。
 
@@ -3315,22 +3327,22 @@ public void onTaskEvent(TaskEvent event) {
 
 **目标**：完成用户任务的完整审批能力，覆盖企业审批场景。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 待办任务查询 | GET /api/v1/wfe/tasks/todo | 含 SLA 状态计算 |
-| 已办任务查询 | GET /api/v1/wfe/tasks/done | - |
-| 任务详情 | GET /api/v1/wfe/tasks/{id} | 含表单定义、审批历史 |
-| 审批同意 | POST /api/v1/wfe/tasks/{id}/approve | 含变量设置 |
-| 审批拒绝 | POST /api/v1/wfe/tasks/{id}/reject | 三种拒绝模式 |
-| 任务转交 | POST /api/v1/wfe/tasks/{id}/transfer | - |
-| 任务退回 | POST /api/v1/wfe/tasks/{id}/return | 退回指定历史节点 |
-| 任务加签 | POST /api/v1/wfe/tasks/{id}/add-signer | 前加签/后加签/并行加签 |
-| 任务委派 | POST /api/v1/wfe/tasks/{id}/delegate | - |
-| 任务催办 | POST /api/v1/wfe/tasks/{id}/urge | 多渠道通知 |
-| 流程变量更新 | PUT /api/v1/wfe/instances/{id}/variables | - |
-| 事件发布 | Kafka TASK_CREATED / TASK_COMPLETED | Outbox 完整版 |
-| TECH-IAM 集成 | 用户/角色解析 | 审批人候选组解析 |
-| TECH-RULE 集成 | 网关路由求值 | 排他网关条件评估 |
+| 交付项         | API                                      | 说明                   |
+| -------------- | ---------------------------------------- | ---------------------- |
+| 待办任务查询   | GET /api/v1/wfe/tasks/todo               | 含 SLA 状态计算        |
+| 已办任务查询   | GET /api/v1/wfe/tasks/done               | -                      |
+| 任务详情       | GET /api/v1/wfe/tasks/{id}               | 含表单定义、审批历史   |
+| 审批同意       | POST /api/v1/wfe/tasks/{id}/approve      | 含变量设置             |
+| 审批拒绝       | POST /api/v1/wfe/tasks/{id}/reject       | 三种拒绝模式           |
+| 任务转交       | POST /api/v1/wfe/tasks/{id}/transfer     | -                      |
+| 任务退回       | POST /api/v1/wfe/tasks/{id}/return       | 退回指定历史节点       |
+| 任务加签       | POST /api/v1/wfe/tasks/{id}/add-signer   | 前加签/后加签/并行加签 |
+| 任务委派       | POST /api/v1/wfe/tasks/{id}/delegate     | -                      |
+| 任务催办       | POST /api/v1/wfe/tasks/{id}/urge         | 多渠道通知             |
+| 流程变量更新   | PUT /api/v1/wfe/instances/{id}/variables | -                      |
+| 事件发布       | Kafka TASK_CREATED / TASK_COMPLETED      | Outbox 完整版          |
+| TECH-IAM 集成  | 用户/角色解析                            | 审批人候选组解析       |
+| TECH-RULE 集成 | 网关路由求值                             | 排他网关条件评估       |
 
 **验收标准**：完整审批流程可走通（发起 -> 经理审批 -> VP审批 -> 完成），支持同意/拒绝/转交/退回/加签/委派全部操作。
 
@@ -3340,16 +3352,16 @@ public void onTaskEvent(TaskEvent event) {
 
 **目标**：完成历史数据归档查询和流程运行监控能力。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 历史实例查询 | GET /api/v1/wfe/history/instances | 含耗时统计 |
-| 历史任务查询 | GET /api/v1/wfe/history/tasks | 含逾期标记 |
-| 历史活动查询 | GET /api/v1/wfe/history/activities | 完整执行路径 |
-| 运行中统计 | GET /api/v1/wfe/monitor/statistics | 多维度分组统计 |
-| SLA 预警 | GET /api/v1/wfe/monitor/sla-warnings | 实时逾期检测 |
-| 瓶颈分析 | GET /api/v1/wfe/monitor/bottlenecks | 节点耗时分布分析 |
-| SLA 逾期事件 | Kafka TASK_OVERDUE | 定时巡检 + 事件发布 |
-| 数据归档 | 定时任务 | 历史数据分区归档 |
+| 交付项       | API                                  | 说明                |
+| ------------ | ------------------------------------ | ------------------- |
+| 历史实例查询 | GET /api/v1/wfe/history/instances    | 含耗时统计          |
+| 历史任务查询 | GET /api/v1/wfe/history/tasks        | 含逾期标记          |
+| 历史活动查询 | GET /api/v1/wfe/history/activities   | 完整执行路径        |
+| 运行中统计   | GET /api/v1/wfe/monitor/statistics   | 多维度分组统计      |
+| SLA 预警     | GET /api/v1/wfe/monitor/sla-warnings | 实时逾期检测        |
+| 瓶颈分析     | GET /api/v1/wfe/monitor/bottlenecks  | 节点耗时分布分析    |
+| SLA 逾期事件 | Kafka TASK_OVERDUE                   | 定时巡检 + 事件发布 |
+| 数据归档     | 定时任务                             | 历史数据分区归档    |
 
 **验收标准**：能查询完整流程历史，仪表盘能展示实时运行统计、SLA 预警列表、瓶颈分析报告。
 
@@ -3359,16 +3371,16 @@ public void onTaskEvent(TaskEvent event) {
 
 **目标**：完成事件回调订阅机制，支持外部系统接收流程事件。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 事件订阅注册 | POST /api/v1/wfe/events/subscriptions | 含重试策略配置 |
-| 事件订阅列表 | GET /api/v1/wfe/events/subscriptions | - |
-| 事件订阅更新 | PUT /api/v1/wfe/events/subscriptions/{id} | - |
-| 事件订阅删除 | DELETE /api/v1/wfe/events/subscriptions/{id} | - |
-| 事件回调投递 | POST {callbackUrl} | HMAC-SHA256 签名 |
-| 事件投递日志 | wfe_event_delivery_log | 投递状态追踪 |
-| DLQ 处理 | wfe.dlq topic | 超时重试 + 死信队列 |
-| 事件重放 | 管理接口 | 手动重投失败事件 |
+| 交付项       | API                                          | 说明                |
+| ------------ | -------------------------------------------- | ------------------- |
+| 事件订阅注册 | POST /api/v1/wfe/events/subscriptions        | 含重试策略配置      |
+| 事件订阅列表 | GET /api/v1/wfe/events/subscriptions         | -                   |
+| 事件订阅更新 | PUT /api/v1/wfe/events/subscriptions/{id}    | -                   |
+| 事件订阅删除 | DELETE /api/v1/wfe/events/subscriptions/{id} | -                   |
+| 事件回调投递 | POST {callbackUrl}                           | HMAC-SHA256 签名    |
+| 事件投递日志 | wfe_event_delivery_log                       | 投递状态追踪        |
+| DLQ 处理     | wfe.dlq topic                                | 超时重试 + 死信队列 |
+| 事件重放     | 管理接口                                     | 手动重投失败事件    |
 
 **验收标准**：外部系统可注册事件订阅，流程事件实时回调通知，支持签名验证、失败重试、死信处理。
 
@@ -3378,18 +3390,18 @@ public void onTaskEvent(TaskEvent event) {
 
 **目标**：性能优化、并发处理、高级特性。
 
-| 交付项 | 说明 |
-|---|---|
+| 交付项       | 说明                             |
+| ------------ | -------------------------------- |
 | 流程定义缓存 | Redis 缓存流程定义，减少 DB 查询 |
-| 任务分配缓存 | Redis 缓存用户待办计数 |
-| 分布式锁 | Redis 分布式锁防止任务并发审批 |
-| 批处理优化 | 批量查询待办、批量完成任务 |
-| 并行网关 | 支持并行网关多分支同时执行 |
-| 定时器事件 | 支持定时器中间事件（延迟执行） |
-| 子流程 | 支持嵌入式子流程与调用活动 |
-| 多实例任务 | 支持会签（多人并行/顺序审批） |
-| 租户隔离 | 完善多租户数据隔离 |
-| 性能压测 | 全链路压测，目标 1000 TPS |
+| 任务分配缓存 | Redis 缓存用户待办计数           |
+| 分布式锁     | Redis 分布式锁防止任务并发审批   |
+| 批处理优化   | 批量查询待办、批量完成任务       |
+| 并行网关     | 支持并行网关多分支同时执行       |
+| 定时器事件   | 支持定时器中间事件（延迟执行）   |
+| 子流程       | 支持嵌入式子流程与调用活动       |
+| 多实例任务   | 支持会签（多人并行/顺序审批）    |
+| 租户隔离     | 完善多租户数据隔离               |
+| 性能压测     | 全链路压测，目标 1000 TPS        |
 
 **验收标准**：通过全链路性能压测，支持并行网关、定时器、子流程等高级 BPMN 特性，多租户隔离正确。
 
@@ -3397,61 +3409,61 @@ public void onTaskEvent(TaskEvent event) {
 
 ## 附录 A：枚举值速查表
 
-| 枚举 | 值 | 说明 |
-|---|---|---|
-| ProcessDefinitionStatus | ACTIVE / SUSPENDED / DEPRECATED | 流程定义状态 |
-| ProcessInstanceStatus | RUNNING / COMPLETED / TERMINATED / SUSPENDED | 流程实例状态 |
-| TaskStatus | CREATED / ASSIGNED / CLAIMED / DELEGATED / COMPLETED / CANCELLED | 任务状态 |
-| TaskOutcome | APPROVED / REJECTED / TRANSFERRED / RETURNED / DELEGATED / ADD_SIGNER | 任务处理结果 |
-| RejectMode | TERMINATE / RETURN_TO_START / RETURN_TO_PREVIOUS | 拒绝模式 |
-| AddSignMode | BEFORE / AFTER / PARALLEL | 加签模式 |
-| SlaStatus | NORMAL / WARNING / OVERDUE | SLA 状态 |
-| BottleneckLevel | NONE / LOW / MEDIUM / HIGH | 瓶颈等级 |
-| ActivityType | START_EVENT / END_EVENT / USER_TASK / SERVICE_TASK / EXCLUSIVE_GATEWAY / PARALLEL_GATEWAY / INCLUSIVE_GATEWAY / INTERMEDIATE_EVENT / CALL_ACTIVITY / SUB_PROCESS | 活动类型 |
-| IdentityLinkType | ASSIGNEE / CANDIDATE_USER / CANDIDATE_GROUP / OWNER / DELEGATE | 身份关联类型 |
-| EventType | PROCESS_STARTED / PROCESS_COMPLETED / PROCESS_TERMINATED / PROCESS_SUSPENDED / PROCESS_RESUMED / TASK_CREATED / TASK_ASSIGNED / TASK_CLAIMED / TASK_COMPLETED / TASK_CANCELLED / TASK_DELEGATED / TASK_TRANSFERRED / TASK_RETURNED / TASK_SIGNER_ADDED / TASK_OVERDUE / VARIABLE_CHANGED | 事件类型 |
-| VariableType | STRING / INTEGER / LONG / DOUBLE / BOOLEAN / DATE / JSON / OBJECT | 变量类型 |
-| OutboxStatus | PENDING / SENT / FAILED | Outbox 状态 |
-| DeliveryStatus | PENDING / SUCCESS / FAILED / DEAD_LETTER | 投递状态 |
-| Priority | 1 (LOW) / 2 (MEDIUM) / 3 (HIGH) | 优先级 |
+| 枚举                    | 值                                                                                                                                                                                                                                                                                       | 说明         |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| ProcessDefinitionStatus | ACTIVE / SUSPENDED / DEPRECATED                                                                                                                                                                                                                                                          | 流程定义状态 |
+| ProcessInstanceStatus   | RUNNING / COMPLETED / TERMINATED / SUSPENDED                                                                                                                                                                                                                                             | 流程实例状态 |
+| TaskStatus              | CREATED / ASSIGNED / CLAIMED / DELEGATED / COMPLETED / CANCELLED                                                                                                                                                                                                                         | 任务状态     |
+| TaskOutcome             | APPROVED / REJECTED / TRANSFERRED / RETURNED / DELEGATED / ADD_SIGNER                                                                                                                                                                                                                    | 任务处理结果 |
+| RejectMode              | TERMINATE / RETURN_TO_START / RETURN_TO_PREVIOUS                                                                                                                                                                                                                                         | 拒绝模式     |
+| AddSignMode             | BEFORE / AFTER / PARALLEL                                                                                                                                                                                                                                                                | 加签模式     |
+| SlaStatus               | NORMAL / WARNING / OVERDUE                                                                                                                                                                                                                                                               | SLA 状态     |
+| BottleneckLevel         | NONE / LOW / MEDIUM / HIGH                                                                                                                                                                                                                                                               | 瓶颈等级     |
+| ActivityType            | START_EVENT / END_EVENT / USER_TASK / SERVICE_TASK / EXCLUSIVE_GATEWAY / PARALLEL_GATEWAY / INCLUSIVE_GATEWAY / INTERMEDIATE_EVENT / CALL_ACTIVITY / SUB_PROCESS                                                                                                                         | 活动类型     |
+| IdentityLinkType        | ASSIGNEE / CANDIDATE_USER / CANDIDATE_GROUP / OWNER / DELEGATE                                                                                                                                                                                                                           | 身份关联类型 |
+| EventType               | PROCESS_STARTED / PROCESS_COMPLETED / PROCESS_TERMINATED / PROCESS_SUSPENDED / PROCESS_RESUMED / TASK_CREATED / TASK_ASSIGNED / TASK_CLAIMED / TASK_COMPLETED / TASK_CANCELLED / TASK_DELEGATED / TASK_TRANSFERRED / TASK_RETURNED / TASK_SIGNER_ADDED / TASK_OVERDUE / VARIABLE_CHANGED | 事件类型     |
+| VariableType            | STRING / INTEGER / LONG / DOUBLE / BOOLEAN / DATE / JSON / OBJECT                                                                                                                                                                                                                        | 变量类型     |
+| OutboxStatus            | PENDING / SENT / FAILED                                                                                                                                                                                                                                                                  | Outbox 状态  |
+| DeliveryStatus          | PENDING / SUCCESS / FAILED / DEAD_LETTER                                                                                                                                                                                                                                                 | 投递状态     |
+| Priority                | 1 (LOW) / 2 (MEDIUM) / 3 (HIGH)                                                                                                                                                                                                                                                          | 优先级       |
 
 ## 附录 B：API 速查表
 
-| 方法 | 路径 | 说明 | Sprint |
-|---|---|---|---|
-| POST | /api/v1/wfe/definitions | 部署流程定义 | M1 |
-| GET | /api/v1/wfe/definitions | 查询流程定义列表 | M1 |
-| GET | /api/v1/wfe/definitions/{definitionId} | 获取流程定义详情 | M1 |
-| GET | /api/v1/wfe/definitions/{definitionId}/content | 获取流程定义 XML/JSON | M1 |
-| PUT | /api/v1/wfe/definitions/{definitionId}/state | 挂起/激活流程定义 | M1 |
-| DELETE | /api/v1/wfe/definitions/{definitionId} | 删除流程定义 | M1 |
-| POST | /api/v1/wfe/instances | 发起流程 | M1 |
-| GET | /api/v1/wfe/instances | 查询流程实例列表 | M1 |
-| GET | /api/v1/wfe/instances/{instanceId} | 获取流程实例详情 | M1 |
-| DELETE | /api/v1/wfe/instances/{instanceId} | 终止流程实例 | M1 |
-| PUT | /api/v1/wfe/instances/{instanceId}/state | 挂起/恢复流程实例 | M1 |
-| PUT | /api/v1/wfe/instances/{instanceId}/variables | 更新流程变量 | M2 |
-| GET | /api/v1/wfe/tasks/todo | 查询待办任务 | M2 |
-| GET | /api/v1/wfe/tasks/done | 查询已办任务 | M2 |
-| GET | /api/v1/wfe/tasks/{taskId} | 获取任务详情 | M2 |
-| POST | /api/v1/wfe/tasks/{taskId}/approve | 审批同意 | M2 |
-| POST | /api/v1/wfe/tasks/{taskId}/reject | 审批拒绝 | M2 |
-| POST | /api/v1/wfe/tasks/{taskId}/transfer | 任务转交 | M2 |
-| POST | /api/v1/wfe/tasks/{taskId}/return | 任务退回 | M2 |
-| POST | /api/v1/wfe/tasks/{taskId}/add-signer | 任务加签 | M2 |
-| POST | /api/v1/wfe/tasks/{taskId}/delegate | 任务委派 | M2 |
-| POST | /api/v1/wfe/tasks/{taskId}/urge | 任务催办 | M2 |
-| GET | /api/v1/wfe/history/instances | 历史实例查询 | M3 |
-| GET | /api/v1/wfe/history/tasks | 历史任务查询 | M3 |
-| GET | /api/v1/wfe/history/activities | 历史活动查询 | M3 |
-| GET | /api/v1/wfe/monitor/statistics | 运行中统计 | M3 |
-| GET | /api/v1/wfe/monitor/sla-warnings | SLA 预警 | M3 |
-| GET | /api/v1/wfe/monitor/bottlenecks | 瓶颈分析 | M3 |
-| POST | /api/v1/wfe/events/subscriptions | 事件订阅注册 | M4 |
-| GET | /api/v1/wfe/events/subscriptions | 查询事件订阅列表 | M4 |
-| PUT | /api/v1/wfe/events/subscriptions/{subscriptionId} | 更新事件订阅 | M4 |
-| DELETE | /api/v1/wfe/events/subscriptions/{subscriptionId} | 删除事件订阅 | M4 |
-| POST | {callbackUrl} | 事件回调通知（WFE 调用订阅方） | M4 |
+| 方法   | 路径                                              | 说明                           | Sprint |
+| ------ | ------------------------------------------------- | ------------------------------ | ------ |
+| POST   | /api/v1/wfe/definitions                           | 部署流程定义                   | M1     |
+| GET    | /api/v1/wfe/definitions                           | 查询流程定义列表               | M1     |
+| GET    | /api/v1/wfe/definitions/{definitionId}            | 获取流程定义详情               | M1     |
+| GET    | /api/v1/wfe/definitions/{definitionId}/content    | 获取流程定义 XML/JSON          | M1     |
+| PUT    | /api/v1/wfe/definitions/{definitionId}/state      | 挂起/激活流程定义              | M1     |
+| DELETE | /api/v1/wfe/definitions/{definitionId}            | 删除流程定义                   | M1     |
+| POST   | /api/v1/wfe/instances                             | 发起流程                       | M1     |
+| GET    | /api/v1/wfe/instances                             | 查询流程实例列表               | M1     |
+| GET    | /api/v1/wfe/instances/{instanceId}                | 获取流程实例详情               | M1     |
+| DELETE | /api/v1/wfe/instances/{instanceId}                | 终止流程实例                   | M1     |
+| PUT    | /api/v1/wfe/instances/{instanceId}/state          | 挂起/恢复流程实例              | M1     |
+| PUT    | /api/v1/wfe/instances/{instanceId}/variables      | 更新流程变量                   | M2     |
+| GET    | /api/v1/wfe/tasks/todo                            | 查询待办任务                   | M2     |
+| GET    | /api/v1/wfe/tasks/done                            | 查询已办任务                   | M2     |
+| GET    | /api/v1/wfe/tasks/{taskId}                        | 获取任务详情                   | M2     |
+| POST   | /api/v1/wfe/tasks/{taskId}/approve                | 审批同意                       | M2     |
+| POST   | /api/v1/wfe/tasks/{taskId}/reject                 | 审批拒绝                       | M2     |
+| POST   | /api/v1/wfe/tasks/{taskId}/transfer               | 任务转交                       | M2     |
+| POST   | /api/v1/wfe/tasks/{taskId}/return                 | 任务退回                       | M2     |
+| POST   | /api/v1/wfe/tasks/{taskId}/add-signer             | 任务加签                       | M2     |
+| POST   | /api/v1/wfe/tasks/{taskId}/delegate               | 任务委派                       | M2     |
+| POST   | /api/v1/wfe/tasks/{taskId}/urge                   | 任务催办                       | M2     |
+| GET    | /api/v1/wfe/history/instances                     | 历史实例查询                   | M3     |
+| GET    | /api/v1/wfe/history/tasks                         | 历史任务查询                   | M3     |
+| GET    | /api/v1/wfe/history/activities                    | 历史活动查询                   | M3     |
+| GET    | /api/v1/wfe/monitor/statistics                    | 运行中统计                     | M3     |
+| GET    | /api/v1/wfe/monitor/sla-warnings                  | SLA 预警                       | M3     |
+| GET    | /api/v1/wfe/monitor/bottlenecks                   | 瓶颈分析                       | M3     |
+| POST   | /api/v1/wfe/events/subscriptions                  | 事件订阅注册                   | M4     |
+| GET    | /api/v1/wfe/events/subscriptions                  | 查询事件订阅列表               | M4     |
+| PUT    | /api/v1/wfe/events/subscriptions/{subscriptionId} | 更新事件订阅                   | M4     |
+| DELETE | /api/v1/wfe/events/subscriptions/{subscriptionId} | 删除事件订阅                   | M4     |
+| POST   | {callbackUrl}                                     | 事件回调通知（WFE 调用订阅方） | M4     |
 
 ---
 

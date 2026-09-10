@@ -8,6 +8,7 @@ Verifies the Python-side DataProduct lifecycle:
   - CRD-shape parity with helm template (infra/helm/charts/datahub)
   - domain filtering
 """
+
 from __future__ import annotations
 
 import pytest
@@ -46,12 +47,16 @@ def product() -> DataProduct:
 
 
 class TestRegisterAndGet:
-    def test_register_returns_version(self, client: InMemoryDataHubClient, product: DataProduct) -> None:
+    def test_register_returns_version(
+        self, client: InMemoryDataHubClient, product: DataProduct
+    ) -> None:
         v = client.register(product)
         assert isinstance(v, DataProductVersion)
         assert v.product.id == "iam.users"
 
-    def test_get_returns_registered_product(self, client: InMemoryDataHubClient, product: DataProduct) -> None:
+    def test_get_returns_registered_product(
+        self, client: InMemoryDataHubClient, product: DataProduct
+    ) -> None:
         client.register(product)
         got = client.get("tenant-acme", "iam.users")
         assert got.id == product.id
@@ -59,7 +64,9 @@ class TestRegisterAndGet:
 
     def test_get_pinned_version(self, client: InMemoryDataHubClient, product: DataProduct) -> None:
         client.register(product)
-        client.register(DataProduct(**{**product.__dict__, "version": "1.1.0", "description": "v1.1"}))  # type: ignore[arg-type]
+        client.register(
+            DataProduct(**{**product.__dict__, "version": "1.1.0", "description": "v1.1"})
+        )  # type: ignore[arg-type]
         latest = client.get("tenant-acme", "iam.users")
         assert latest.version == "1.1.0"
         v1 = client.get("tenant-acme", "iam.users", version="1.0.0")
@@ -71,12 +78,16 @@ class TestRegisterAndGet:
 
 
 class TestTenantIsolation:
-    def test_cross_tenant_get_raises(self, client: InMemoryDataHubClient, product: DataProduct) -> None:
+    def test_cross_tenant_get_raises(
+        self, client: InMemoryDataHubClient, product: DataProduct
+    ) -> None:
         client.register(product)
         with pytest.raises(DataProductNotFoundError):
             client.get("tenant-globex", "iam.users")
 
-    def test_cross_tenant_list_excludes(self, client: InMemoryDataHubClient, product: DataProduct) -> None:
+    def test_cross_tenant_list_excludes(
+        self, client: InMemoryDataHubClient, product: DataProduct
+    ) -> None:
         client.register(product)
         other = DataProduct(
             id="msg.topics",
@@ -90,7 +101,9 @@ class TestTenantIsolation:
         assert len(acme_products) == 1
         assert acme_products[0].tenant_id == "tenant-acme"
 
-    def test_cross_tenant_delete_zero(self, client: InMemoryDataHubClient, product: DataProduct) -> None:
+    def test_cross_tenant_delete_zero(
+        self, client: InMemoryDataHubClient, product: DataProduct
+    ) -> None:
         client.register(product)
         n = client.delete("tenant-globex", "iam.users")
         assert n == 0
@@ -99,18 +112,24 @@ class TestTenantIsolation:
 
 
 class TestSemverVersioning:
-    def test_invalid_version_rejected(self, client: InMemoryDataHubClient, product: DataProduct) -> None:
+    def test_invalid_version_rejected(
+        self, client: InMemoryDataHubClient, product: DataProduct
+    ) -> None:
         bad = DataProduct(**{**product.__dict__, "version": "bad"})  # type: ignore[arg-type]
         with pytest.raises(DataHubError):
             client.register(bad)
 
-    def test_version_history_ordered(self, client: InMemoryDataHubClient, product: DataProduct) -> None:
+    def test_version_history_ordered(
+        self, client: InMemoryDataHubClient, product: DataProduct
+    ) -> None:
         for v in ("1.0.0", "1.1.0", "2.0.0"):
             client.register(DataProduct(**{**product.__dict__, "version": v}))  # type: ignore[arg-type]
         history = client.list_versions("tenant-acme", "iam.users")
         assert [h.product.version for h in history] == ["1.0.0", "1.1.0", "2.0.0"]
 
-    def test_latest_version_picked_on_list(self, client: InMemoryDataHubClient, product: DataProduct) -> None:
+    def test_latest_version_picked_on_list(
+        self, client: InMemoryDataHubClient, product: DataProduct
+    ) -> None:
         for v in ("1.0.0", "1.2.0", "1.1.0"):
             client.register(DataProduct(**{**product.__dict__, "version": v}))  # type: ignore[arg-type]
         products = client.list_products("tenant-acme")
@@ -118,7 +137,9 @@ class TestSemverVersioning:
 
 
 class TestLineageHints:
-    def test_lineage_hints_carried_through(self, client: InMemoryDataHubClient, product: DataProduct) -> None:
+    def test_lineage_hints_carried_through(
+        self, client: InMemoryDataHubClient, product: DataProduct
+    ) -> None:
         hints = LineageHints(
             tenant_id="tenant-acme",
             correlation_id="trace-abc",
@@ -136,15 +157,23 @@ class TestLineageHints:
 
 class TestDomainFiltering:
     def test_list_by_domain(self, client: InMemoryDataHubClient) -> None:
-        client.register(DataProduct(id="a", tenant_id="t1", domain="iam", owner="o", version="1.0.0"))
-        client.register(DataProduct(id="b", tenant_id="t1", domain="msg", owner="o", version="1.0.0"))
-        client.register(DataProduct(id="c", tenant_id="t1", domain="iam", owner="o", version="1.0.0"))
+        client.register(
+            DataProduct(id="a", tenant_id="t1", domain="iam", owner="o", version="1.0.0")
+        )
+        client.register(
+            DataProduct(id="b", tenant_id="t1", domain="msg", owner="o", version="1.0.0")
+        )
+        client.register(
+            DataProduct(id="c", tenant_id="t1", domain="iam", owner="o", version="1.0.0")
+        )
         iam = client.list_products("t1", domain="iam")
         assert {p.id for p in iam} == {"a", "c"}
 
 
 class TestDelete:
-    def test_delete_removes_all_versions(self, client: InMemoryDataHubClient, product: DataProduct) -> None:
+    def test_delete_removes_all_versions(
+        self, client: InMemoryDataHubClient, product: DataProduct
+    ) -> None:
         for v in ("1.0.0", "2.0.0"):
             client.register(DataProduct(**{**product.__dict__, "version": v}))  # type: ignore[arg-type]
         n = client.delete("tenant-acme", "iam.users")

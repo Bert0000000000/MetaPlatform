@@ -18,12 +18,12 @@ Excluded paths:
     blobs which are intentionally committed encrypted)
   - ``Chart.yaml`` / ``_helpers.tpl``
 """
+
 from __future__ import annotations
 
 import re
 import sys
 from pathlib import Path
-
 
 # Keys whose literal value, when present, must not be committed.
 SECRET_KEY_PATTERN = re.compile(

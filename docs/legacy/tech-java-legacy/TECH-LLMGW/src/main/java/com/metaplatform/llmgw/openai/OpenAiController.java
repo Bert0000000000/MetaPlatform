@@ -154,4 +154,3 @@ public class OpenAiController {
         return result;
     }
 }
-

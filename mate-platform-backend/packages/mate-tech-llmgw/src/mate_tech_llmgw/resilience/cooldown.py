@@ -19,6 +19,7 @@ Semantics — ported from LiteLLM ``deployment_callback_on_failure``:
 - Redis unavailable: every call is a logged no-op; the gateway serves
   without circuit breaking rather than failing closed.
 """
+
 from __future__ import annotations
 
 import time
@@ -118,15 +119,11 @@ class CooldownManager:
     async def record_success(self, provider: str) -> None:
         """Reset the failure window on success (LiteLLM semantics)."""
         try:
-            await self._redis.delete(
-                f"llmgw:cd:{provider}:fails", f"llmgw:cd:{provider}:fails:ts"
-            )
+            await self._redis.delete(f"llmgw:cd:{provider}:fails", f"llmgw:cd:{provider}:fails:ts")
         except Exception as exc:
             logger.warning("llmgw.cooldown.reset_failed", provider=provider, error=str(exc))
 
-    def _cooldown_duration(
-        self, retry_after_hint: int | None, explicit: float | None
-    ) -> float:
+    def _cooldown_duration(self, retry_after_hint: int | None, explicit: float | None) -> float:
         # Priority: explicit config > upstream Retry-After > default.
         if explicit is not None and explicit >= 0:
             return float(explicit)

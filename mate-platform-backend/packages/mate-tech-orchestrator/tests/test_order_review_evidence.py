@@ -201,7 +201,9 @@ def test_build_creates_complete_bundle_for_tenant_default_order() -> None:
     assert "¥2,500.00" in bundle["recommendation"]["reason"]
     assert "contract" not in bundle["ontology"]
     assert "snapshot" not in bundle["data"]
-    assert all("from" not in edge and "to" not in edge for edge in bundle["ontology"]["graph"]["edges"])
+    assert all(
+        "from" not in edge and "to" not in edge for edge in bundle["ontology"]["graph"]["edges"]
+    )
     assert all("refs" not in item for item in bundle["derivation"])
 
 
@@ -236,7 +238,9 @@ def test_amount_threshold_is_inclusive(amount_cents: int, should_pass: bool) -> 
         )
 
 
-def test_custom_threshold_controls_eligibility_and_derivation_without_changing_amount_fact() -> None:
+def test_custom_threshold_controls_eligibility_and_derivation_without_changing_amount_fact() -> (
+    None
+):
     builder = OrderReviewEvidenceBuilder(threshold_cents=200_000)
     now = datetime(2026, 8, 26, 12, 30, tzinfo=UTC)
 
@@ -256,7 +260,9 @@ def test_custom_threshold_controls_eligibility_and_derivation_without_changing_a
     )
 
     threshold = next(item for item in bundle["derivation"] if item["id"] == "threshold")
-    amount_fact = next(item for item in bundle["data"]["facts"] if item["id"] == "fact.amount_cents")
+    amount_fact = next(
+        item for item in bundle["data"]["facts"] if item["id"] == "fact.amount_cents"
+    )
     assert threshold == {
         "id": "threshold",
         "label": "订单金额 ≥ ¥2,000.00",

@@ -1,4 +1,5 @@
 """Tests for v0.7: memory + LLM + S2."""
+
 from __future__ import annotations
 
 import sys
@@ -34,9 +35,27 @@ class FakeRAGTool:
 @pytest.fixture
 def rag_with_chunks():
     chunks = [
-        {"chunk_id": "c1", "document_id": "d1", "score": 0.9, "text": "Python FastAPI is the backend framework.", "metadata": {}},
-        {"chunk_id": "c2", "document_id": "d1", "score": 0.7, "text": "MatePlatform uses LangChain.", "metadata": {}},
-        {"chunk_id": "c3", "document_id": "d2", "score": 0.5, "text": "External AI engines include LightRAG and Flowable.", "metadata": {}},
+        {
+            "chunk_id": "c1",
+            "document_id": "d1",
+            "score": 0.9,
+            "text": "Python FastAPI is the backend framework.",
+            "metadata": {},
+        },
+        {
+            "chunk_id": "c2",
+            "document_id": "d1",
+            "score": 0.7,
+            "text": "MatePlatform uses LangChain.",
+            "metadata": {},
+        },
+        {
+            "chunk_id": "c3",
+            "document_id": "d2",
+            "score": 0.5,
+            "text": "External AI engines include LightRAG and Flowable.",
+            "metadata": {},
+        },
     ]
     set_rag_tool(FakeRAGTool(chunks))
     return chunks
@@ -50,6 +69,7 @@ def client(rag_with_chunks):
 # memory tests
 def test_memory_save_load_roundtrip(tmp_path, monkeypatch):
     from mate_tech_agent import memory
+
     monkeypatch.setattr(memory, "_STORAGE_DIR", tmp_path)
     save_state("t-1", {"messages": [{"role": "user", "content": "hi"}], "answer": "hello"})
     loaded = load_state("t-1")
@@ -59,12 +79,14 @@ def test_memory_save_load_roundtrip(tmp_path, monkeypatch):
 
 def test_memory_load_missing_returns_none(tmp_path, monkeypatch):
     from mate_tech_agent import memory
+
     monkeypatch.setattr(memory, "_STORAGE_DIR", tmp_path)
     assert load_state("nonexistent") is None
 
 
 def test_memory_delete(tmp_path, monkeypatch):
     from mate_tech_agent import memory
+
     monkeypatch.setattr(memory, "_STORAGE_DIR", tmp_path)
     save_state("t-2", {"x": 1})
     assert delete_state("t-2") is True
@@ -136,6 +158,7 @@ def test_chat_s3_returns_200(client):
 
 def test_state_get_after_chat(client, tmp_path, monkeypatch):
     from mate_tech_agent import memory
+
     monkeypatch.setattr(memory, "_STORAGE_DIR", tmp_path)
     r = client.post(
         "/api/v1/agent/chat",
@@ -155,6 +178,7 @@ def test_state_get_404(client):
 
 def test_state_delete_endpoint(client, tmp_path, monkeypatch):
     from mate_tech_agent import memory
+
     monkeypatch.setattr(memory, "_STORAGE_DIR", tmp_path)
     client.post(
         "/api/v1/agent/chat",
@@ -168,7 +192,9 @@ def test_state_delete_endpoint(client, tmp_path, monkeypatch):
 
 
 def test_sse_stream_s2(client):
-    r = client.post("/api/v1/agent/chat/stream", json={"message": "What is FastAPI?", "scenario": "S2"})
+    r = client.post(
+        "/api/v1/agent/chat/stream", json={"message": "What is FastAPI?", "scenario": "S2"}
+    )
     assert r.status_code == 200
     assert "text/event-stream" in r.headers["content-type"]
     body = r.text
@@ -177,6 +203,7 @@ def test_sse_stream_s2(client):
 
 def test_thread_id_persists_across_calls(client, tmp_path, monkeypatch):
     from mate_tech_agent import memory
+
     monkeypatch.setattr(memory, "_STORAGE_DIR", tmp_path)
     r1 = client.post(
         "/api/v1/agent/chat",

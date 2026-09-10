@@ -3,6 +3,7 @@
 Uses SQLite in-memory to verify the ORM models, CRUD operations,
 and seed_from_inmemory bootstrap work correctly.
 """
+
 from __future__ import annotations
 
 # Import models so their tables register on Base.metadata before create_all
@@ -89,12 +90,22 @@ def test_put_and_list_conversation(sql_backend: None) -> None:
 
 def test_tenant_isolation(sql_backend: None) -> None:
     """Verify tenant A cannot see tenant B's data."""
-    put_conversation("tenant-acme", Conversation(
-        id="c-acme", tenant_id="tenant-acme", title="Acme Chat",
-    ))
-    put_conversation("tenant-globex", Conversation(
-        id="c-globex", tenant_id="tenant-globex", title="Globex Chat",
-    ))
+    put_conversation(
+        "tenant-acme",
+        Conversation(
+            id="c-acme",
+            tenant_id="tenant-acme",
+            title="Acme Chat",
+        ),
+    )
+    put_conversation(
+        "tenant-globex",
+        Conversation(
+            id="c-globex",
+            tenant_id="tenant-globex",
+            title="Globex Chat",
+        ),
+    )
 
     acme = list_conversations("tenant-acme")
     globex = list_conversations("tenant-globex")

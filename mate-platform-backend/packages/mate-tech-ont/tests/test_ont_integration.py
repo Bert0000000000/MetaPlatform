@@ -2,6 +2,7 @@
 
 覆盖核心端到端流程：OWL import → SPARQL → instance → version。
 """
+
 from __future__ import annotations
 
 import pytest

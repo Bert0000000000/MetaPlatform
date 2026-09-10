@@ -4,6 +4,7 @@ Covers the provider resolution order (request override > env > dev stub),
 the engine→OpenAI-Vision message bridge, and the endpoint using the real
 provider path end-to-end (provider call mocked, no network).
 """
+
 from __future__ import annotations
 
 import os
@@ -49,8 +50,11 @@ def test_resolve_provider_prefers_request_override(monkeypatch) -> None:
     monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     req = MultimodalApiRequest(
-        prompt="看图", images=["https://x/y.png"],
-        model="vision-x", base_url="https://ark.example/api/plan/v3", api_key="k-1",
+        prompt="看图",
+        images=["https://x/y.png"],
+        model="vision-x",
+        base_url="https://ark.example/api/plan/v3",
+        api_key="k-1",
     )
     provider, model = _resolve_multimodal_provider(req)
     assert provider is not None
@@ -116,10 +120,12 @@ def test_bridge_routes_through_openai_multimodal_chat(monkeypatch) -> None:
     }
     import asyncio
 
-    out = asyncio.run(bridge.chat(
-        [{"role": "user", "content": [{"type": "text", "text": "hi"}]}],
-        "fake-vision-model",
-    ))
+    out = asyncio.run(
+        bridge.chat(
+            [{"role": "user", "content": [{"type": "text", "text": "hi"}]}],
+            "fake-vision-model",
+        )
+    )
     assert out["content"] == "图里是一只猫"
     assert out["model"] == "fake-vision-model"
     assert out["usage"] == {"total_tokens": 42}

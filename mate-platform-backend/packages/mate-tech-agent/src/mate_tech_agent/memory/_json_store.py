@@ -9,6 +9,7 @@ The PG saver is left untouched (another subagent owns SQL); tenant
 isolation on the PG path is achieved with a composite key
 ``<tenant>:<thread>`` passed as the ``thread_id`` column value.
 """
+
 from __future__ import annotations
 
 import json
@@ -47,6 +48,7 @@ def _pg_saver():
     """Lazy-init PGSaver (returns None if PG unavailable)."""
     try:
         from mate_tech_agent.memory.pg_saver import PGSaver
+
         global _pg_instance
         if "_pg_instance" not in globals():
             _pg_instance = PGSaver()

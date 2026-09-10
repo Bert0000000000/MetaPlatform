@@ -1,4 +1,5 @@
-﻿"""RAG tool bridge (debug version)."""
+"""RAG tool bridge (debug version)."""
+
 from __future__ import annotations
 
 import logging
@@ -17,7 +18,9 @@ class RAGTool:
         url = base_url or env_url or self.DEFAULT_URL
         self._base_url = url.rstrip("/")
         self._client = httpx.Client(timeout=timeout)
-        _log.info("RAGTool init: RAG_URL env=%r base_url=%r -> %r", env_url, base_url, self._base_url)
+        _log.info(
+            "RAGTool init: RAG_URL env=%r base_url=%r -> %r", env_url, base_url, self._base_url
+        )
 
     def search(self, query, top_k=5, mode="AUTO"):
         url = f"{self._base_url}/api/v1/rag/search"

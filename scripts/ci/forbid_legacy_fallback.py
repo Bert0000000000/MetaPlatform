@@ -12,6 +12,7 @@ Exclusions:
     fixtures to verify the production guard rejects it.
   - The hook script itself.
 """
+
 from __future__ import annotations
 
 import re

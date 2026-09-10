@@ -5,22 +5,22 @@
 
 ## 1. 交付物
 
-| 交付 | 位置 | 规模 |
-|---|---|---|
-| 组合内核 | `mate-platform-backend/packages/mate-platform/src/mate_platform/composition/`（errors / effect / fiber / context / __init__） | 674 行，零 I/O、零新依赖 |
-| 内核不变量测试 | `packages/mate-platform/tests/composition/`（6 文件） | 19 tests |
-| orchestrator 试点 | `scheduler/capability_runtime.py` + `api/capabilities.py` + `main.py` lifespan + `dispatcher.py` overlay + `api/app.py` attach/detach 钩子 + `role_registry.iter_all()` | ~330 行 |
-| 试点测试 | `tests/test_capability_runtime.py` + `tests/test_capability_api.py` | 9 tests |
-| OpenAPI 契约 | `contracts/openapi/services/orchestrator.yaml`（capabilities 3 端点 + TrackCapabilityRequest schema） | 硬规则① |
+| 交付              | 位置                                                                                                                                                                    | 规模                     |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| 组合内核          | `mate-platform-backend/packages/mate-platform/src/mate_platform/composition/`（errors / effect / fiber / context / **init**）                                           | 674 行，零 I/O、零新依赖 |
+| 内核不变量测试    | `packages/mate-platform/tests/composition/`（6 文件）                                                                                                                   | 19 tests                 |
+| orchestrator 试点 | `scheduler/capability_runtime.py` + `api/capabilities.py` + `main.py` lifespan + `dispatcher.py` overlay + `api/app.py` attach/detach 钩子 + `role_registry.iter_all()` | ~330 行                  |
+| 试点测试          | `tests/test_capability_runtime.py` + `tests/test_capability_api.py`                                                                                                     | 9 tests                  |
+| OpenAPI 契约      | `contracts/openapi/services/orchestrator.yaml`（capabilities 3 端点 + TrackCapabilityRequest schema）                                                                   | 硬规则①                  |
 
 ## 2. 四条形式化不变量 → 测试对位（论文定理）
 
-| ID | 不变量 | 论文 | 测试 |
-|---|---|---|---|
-| I1 | load→unload 后 coeffect store 回到观测等价态 | Thm 7（up to ≃） | `test_invariant_recovery.py`（2） |
-| I2 | provider 卸载时依赖者全部先达终态 | Thm 63 / Alg 5 L25 | `test_invariant_ordering.py`（3，含级联孙-子-provider、async 逆） |
-| I3 | 依赖环永不 ACTIVE、use() 时报告、无死锁 | Thm 66 / §6.5 | `test_invariant_cycle.py`（2，wait_for 兜底） |
-| I4 | 转换中 target 翻转正确链式、无双发 | §4.3.3 | `test_invariant_inertia.py`（4，含 provider 身份变更） |
+| ID  | 不变量                                       | 论文               | 测试                                                              |
+| --- | -------------------------------------------- | ------------------ | ----------------------------------------------------------------- |
+| I1  | load→unload 后 coeffect store 回到观测等价态 | Thm 7（up to ≃）   | `test_invariant_recovery.py`（2）                                 |
+| I2  | provider 卸载时依赖者全部先达终态            | Thm 63 / Alg 5 L25 | `test_invariant_ordering.py`（3，含级联孙-子-provider、async 逆） |
+| I3  | 依赖环永不 ACTIVE、use() 时报告、无死锁      | Thm 66 / §6.5      | `test_invariant_cycle.py`（2，wait_for 兜底）                     |
+| I4  | 转换中 target 翻转正确链式、无双发           | §4.3.3             | `test_invariant_inertia.py`（4，含 provider 身份变更）            |
 
 另：effect scope 4（LIFO / async 逆序 / guard 边界中断 / apply 抛错部分逆）、coeffects 4（set 通知回退 / isolate / 父链穿透 / 身份-值区分）。
 
@@ -45,13 +45,13 @@ ruff check（两包）                                          → 干净（S10
 
 ## 5. 提交链
 
-| Commit | 内容 |
-|---|---|
-| 16cfa90c | docs(adr): ADR-0042 composition kernel |
-| 47933149 | test(composition): I1-I4 invariant red tests |
+| Commit   | 内容                                                               |
+| -------- | ------------------------------------------------------------------ |
+| 16cfa90c | docs(adr): ADR-0042 composition kernel                             |
+| 47933149 | test(composition): I1-I4 invariant red tests                       |
 | 6770a174 | test(composition): align guard/cycle/mid-load semantics with paper |
-| 2abb491c | feat(composition): effect scopes, coeffects, inertial fibers |
-| 7baa6ab1 | feat(orchestrator): reactive capability runtime pilot |
+| 2abb491c | feat(composition): effect scopes, coeffects, inertial fibers       |
+| 7baa6ab1 | feat(orchestrator): reactive capability runtime pilot              |
 
 ## 6. 后续项（出 Batch 范围，ADR-0042 §6 记账）
 

@@ -27,6 +27,7 @@ Exemptions (``security: []`` or health probes):
 Related: 13 硬规则 §1 (oasdiff gate), ADR-0011 (SEC-IAM-01),
 ``test_g5_security_coverage.py``, ``test_service_security_segments.py``.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -76,7 +77,9 @@ def _is_exempt(path: str) -> bool:
     return path in EXEMPT_EXACT_PATHS
 
 
-def _effective_security(op: dict[str, Any], service_security: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _effective_security(
+    op: dict[str, Any], service_security: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
     return op.get("security", service_security)
 
 
@@ -116,25 +119,21 @@ SECURED_ENDPOINTS = [
     ids=[_ep_id(*e) for e in SECURED_ENDPOINTS],
 )
 def test_secured_endpoints_have_three_part_security(
-    fname: str, method: str, path: str, op: dict[str, Any], service_security: list[dict[str, Any]],
+    fname: str,
+    method: str,
+    path: str,
+    op: dict[str, Any],
+    service_security: list[dict[str, Any]],
 ) -> None:
     """Each non-exempt operation with explicit ``security:`` must declare all
     three schemes: ``bearerAuth``, ``tenantHeader``, ``oidcScopes``."""
     sec = _effective_security(op, service_security)
     assert sec, f"{fname} {method} {path} has empty security — expected three-part"
     req = sec[0]
-    assert isinstance(req, dict), (
-        f"{fname} {method} {path} security entry is not a dict"
-    )
-    assert "bearerAuth" in req, (
-        f"{fname} {method} {path} missing bearerAuth in security"
-    )
-    assert "tenantHeader" in req, (
-        f"{fname} {method} {path} missing tenantHeader in security"
-    )
-    assert "oidcScopes" in req, (
-        f"{fname} {method} {path} missing oidcScopes in security"
-    )
+    assert isinstance(req, dict), f"{fname} {method} {path} security entry is not a dict"
+    assert "bearerAuth" in req, f"{fname} {method} {path} missing bearerAuth in security"
+    assert "tenantHeader" in req, f"{fname} {method} {path} missing tenantHeader in security"
+    assert "oidcScopes" in req, f"{fname} {method} {path} missing oidcScopes in security"
 
 
 # ---------------------------------------------------------------------------
@@ -146,18 +145,18 @@ def test_secured_endpoints_have_three_part_security(
     ids=[_ep_id(*e) for e in SECURED_ENDPOINTS],
 )
 def test_oidc_scopes_valid_and_appropriate(
-    fname: str, method: str, path: str, op: dict[str, Any], service_security: list[dict[str, Any]],
+    fname: str,
+    method: str,
+    path: str,
+    op: dict[str, Any],
+    service_security: list[dict[str, Any]],
 ) -> None:
     """``oidcScopes`` must use canonical scope names and match effective scope."""
     req = _effective_security(op, service_security)[0]
     scopes = req["oidcScopes"]
-    assert isinstance(scopes, list), (
-        f"{fname} {method} {path} oidcScopes is not a list"
-    )
+    assert isinstance(scopes, list), f"{fname} {method} {path} oidcScopes is not a list"
     for s in scopes:
-        assert s in VALID_SCOPES, (
-            f"{fname} {method} {path} has invalid scope '{s}'"
-        )
+        assert s in VALID_SCOPES, f"{fname} {method} {path} has invalid scope '{s}'"
 
     declared = op.get("x-required-scopes")
     if declared is not None:
@@ -198,13 +197,16 @@ WRITE_SECURED = [
     ids=[_ep_id(*e) for e in WRITE_SECURED],
 )
 def test_write_endpoints_not_read_only(
-    fname: str, method: str, path: str, op: dict[str, Any], service_security: list[dict[str, Any]],
+    fname: str,
+    method: str,
+    path: str,
+    op: dict[str, Any],
+    service_security: list[dict[str, Any]],
 ) -> None:
     """Mutating (non-admin) operations must include ``platform.write``."""
     scopes = _effective_security(op, service_security)[0]["oidcScopes"]
     assert "platform.write" in scopes, (
-        f"{fname} {method} {path} is a write operation but "
-        f"oidcScopes={scopes} lacks platform.write"
+        f"{fname} {method} {path} is a write operation but oidcScopes={scopes} lacks platform.write"
     )
 
 
@@ -224,13 +226,16 @@ ADMIN_SECURED = [
     ids=[_ep_id(*e) for e in ADMIN_SECURED],
 )
 def test_admin_endpoints_use_admin_scope(
-    fname: str, method: str, path: str, op: dict[str, Any], service_security: list[dict[str, Any]],
+    fname: str,
+    method: str,
+    path: str,
+    op: dict[str, Any],
+    service_security: list[dict[str, Any]],
 ) -> None:
     """Paths under ``/admin/`` must require ``platform.admin``."""
     scopes = _effective_security(op, service_security)[0]["oidcScopes"]
     assert "platform.admin" in scopes, (
-        f"{fname} {method} {path} is an admin endpoint but "
-        f"oidcScopes={scopes} lacks platform.admin"
+        f"{fname} {method} {path} is an admin endpoint but oidcScopes={scopes} lacks platform.admin"
     )
 
 
@@ -250,7 +255,10 @@ HEALTH_ENDPOINTS = [
     ids=[_ep_id(*e) for e in HEALTH_ENDPOINTS],
 )
 def test_health_endpoints_exempt_from_oidc(
-    fname: str, method: str, path: str, op: dict,
+    fname: str,
+    method: str,
+    path: str,
+    op: dict,
 ) -> None:
     """``/healthz``, ``/readyz``, ``/health``, ``/metrics`` must not
     require ``oidcScopes``."""
@@ -280,8 +288,7 @@ def _endpoints_by_id() -> dict[str, tuple[str, str, str, dict[str, Any], list[di
 
 
 REQUIRED_READ_POST_ENDPOINTS_DATA = [
-    _endpoints_by_id()[endpoint_id]
-    for endpoint_id in sorted(REQUIRED_READ_POST_ENDPOINT_IDS)
+    _endpoints_by_id()[endpoint_id] for endpoint_id in sorted(REQUIRED_READ_POST_ENDPOINT_IDS)
 ]
 
 
@@ -300,7 +307,11 @@ READ_POST_ENDPOINTS = REQUIRED_READ_POST_ENDPOINTS_DATA
     ids=[_ep_id(*e) for e in READ_POST_ENDPOINTS],
 )
 def test_read_post_endpoints_declare_x_required_scopes(
-    fname: str, method: str, path: str, op: dict[str, Any], service_security: list[dict[str, Any]],
+    fname: str,
+    method: str,
+    path: str,
+    op: dict[str, Any],
+    service_security: list[dict[str, Any]],
 ) -> None:
     """POST reads must opt into ``platform.read`` via ``x-required-scopes``."""
     assert service_security is not None
@@ -326,8 +337,26 @@ def test_all_twenty_one_services_present() -> None:
     """The gate inventory is the canonical 21-service OpenAPI contract set."""
     names = {p.stem for p in SERVICES_DIR.glob("*.yaml")}
     expected = {
-        "a2a", "agent", "analytics", "apphub", "arch", "copilot", "dashboard",
-        "data", "deep-research", "dw", "iam", "kb", "llmgw", "marketplace",
-        "mcp", "msg", "obs", "ont", "orchestrator", "rag", "wfe",
+        "a2a",
+        "agent",
+        "analytics",
+        "apphub",
+        "arch",
+        "copilot",
+        "dashboard",
+        "data",
+        "deep-research",
+        "dw",
+        "iam",
+        "kb",
+        "llmgw",
+        "marketplace",
+        "mcp",
+        "msg",
+        "obs",
+        "ont",
+        "orchestrator",
+        "rag",
+        "wfe",
     }
     assert names == expected, f"service contract set drifted: {names ^ expected}"

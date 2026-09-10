@@ -1,4 +1,5 @@
 """User management endpoints (FR-DASH-006-01)."""
+
 from __future__ import annotations
 
 import csv
@@ -59,7 +60,9 @@ class UserCreate(BaseModel):
     phone: str | None = Field(default=None, max_length=32)
     department: str | None = Field(default=None, max_length=128)
     position: str | None = Field(default=None, max_length=128)
-    password: str | None = Field(default=None, min_length=8, max_length=128, description="缺省自动生成")
+    password: str | None = Field(
+        default=None, min_length=8, max_length=128, description="缺省自动生成"
+    )
     status: UserStatus = UserStatus.ACTIVE
     is_super_admin: bool = False
     role_ids: list[int] = Field(default_factory=list)
@@ -163,9 +166,7 @@ async def list_users(
     if department:
         base = base.where(User.department == department)
     if role_id:
-        base = base.where(
-            User.id.in_(select(UserRole.user_id).where(UserRole.role_id == role_id))
-        )
+        base = base.where(User.id.in_(select(UserRole.user_id).where(UserRole.role_id == role_id)))
 
     total_stmt = select(func.count()).select_from(base.subquery())
     total = (await session.execute(total_stmt)).scalar_one()
@@ -174,10 +175,7 @@ async def list_users(
     users = (await session.execute(stmt)).scalars().all()
     role_map = await _resolve_roles(session, [u.id for u in users if u.id is not None])
 
-    items = [
-        _user_to_out(u, *role_map.get(u.id, ([], []))).model_dump(mode="json")
-        for u in users
-    ]
+    items = [_user_to_out(u, *role_map.get(u.id, ([], []))).model_dump(mode="json") for u in users]
     return page(items=items, total=total, page=page_num, page_size=page_size)
 
 
@@ -247,7 +245,10 @@ async def import_users(
     caller: AdminDep,
     session: SessionDep,
     request: Request,
-    file: UploadFile = File(..., description="CSV 文件 (username,real_name,email,phone,department,position,password,status)"),
+    file: UploadFile = File(
+        ...,
+        description="CSV 文件 (username,real_name,email,phone,department,position,password,status)",
+    ),
 ) -> dict[str, Any]:
     raw = await file.read()
     text = raw.decode("utf-8-sig", errors="replace")
@@ -305,37 +306,58 @@ async def import_users(
     await session.commit()
     return ok({"created": created, "skipped": skipped, "errors": errors})
 
+
 @router.get("/export")
 async def export_users(
     caller: AdminDep,
     session: SessionDep,
 ) -> StreamingResponse:
     rows = (
-        await session.execute(
-            select(User).where(User.tenant_id == caller.tenant_id).order_by(User.created_at.desc())
+        (
+            await session.execute(
+                select(User)
+                .where(User.tenant_id == caller.tenant_id)
+                .order_by(User.created_at.desc())
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["username", "real_name", "email", "phone", "department", "position", "status", "created_at"])
+    writer.writerow(
+        [
+            "username",
+            "real_name",
+            "email",
+            "phone",
+            "department",
+            "position",
+            "status",
+            "created_at",
+        ]
+    )
     for u in rows:
-        writer.writerow([
-            u.username,
-            u.real_name or "",
-            u.email or "",
-            u.phone or "",
-            u.department or "",
-            u.position or "",
-            u.status.value if u.status else "",
-            u.created_at.isoformat(),
-        ])
+        writer.writerow(
+            [
+                u.username,
+                u.real_name or "",
+                u.email or "",
+                u.phone or "",
+                u.department or "",
+                u.position or "",
+                u.status.value if u.status else "",
+                u.created_at.isoformat(),
+            ]
+        )
     buffer.seek(0)
     return StreamingResponse(
         iter([buffer.getvalue()]),
         media_type="text/csv",
         headers={"Content-Disposition": 'attachment; filename="users.csv"'},
     )
+
 
 @router.get("/{user_id}")
 async def get_user(
@@ -345,7 +367,9 @@ async def get_user(
 ) -> dict[str, Any]:
     user = await _load_user(session, user_id, caller.tenant_id)
     if not user:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"}
+        )
     role_map = await _resolve_roles(session, [user.id])
     return ok(_user_to_out(user, *role_map.get(user.id, ([], []))).model_dump(mode="json"))
 
@@ -360,7 +384,9 @@ async def update_user(
 ) -> dict[str, Any]:
     user = await _load_user(session, user_id, caller.tenant_id)
     if not user:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"}
+        )
 
     before = {
         "real_name": user.real_name,
@@ -387,8 +413,10 @@ async def update_user(
     if payload.role_ids is not None:
         # 替换角色
         existing = (
-            await session.execute(select(UserRole).where(UserRole.user_id == user.id))
-        ).scalars().all()
+            (await session.execute(select(UserRole).where(UserRole.user_id == user.id)))
+            .scalars()
+            .all()
+        )
         for ur in existing:
             await session.delete(ur)
         for rid in payload.role_ids:
@@ -431,7 +459,9 @@ async def delete_user(
 ) -> dict[str, Any]:
     user = await _load_user(session, user_id, caller.tenant_id)
     if not user:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"}
+        )
     if user.is_super_admin and not caller.is_super_admin:
         raise HTTPException(
             status_code=403,
@@ -440,8 +470,8 @@ async def delete_user(
     username = user.username
     # 删除关联角色绑定
     rels = (
-        await session.execute(select(UserRole).where(UserRole.user_id == user.id))
-    ).scalars().all()
+        (await session.execute(select(UserRole).where(UserRole.user_id == user.id))).scalars().all()
+    )
     for rel in rels:
         await session.delete(rel)
     await session.delete(user)
@@ -469,7 +499,9 @@ async def reset_password(
 ) -> dict[str, Any]:
     user = await _load_user(session, user_id, caller.tenant_id)
     if not user:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"}
+        )
     new_pw = generate_random_password()
     user.password_hash = hash_password(new_pw)
     user.updated_at = datetime.now(UTC)
@@ -498,7 +530,9 @@ async def set_status(
 ) -> dict[str, Any]:
     user = await _load_user(session, user_id, caller.tenant_id)
     if not user:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"}
+        )
     if user.is_super_admin and payload.status != UserStatus.ACTIVE and not caller.is_super_admin:
         raise HTTPException(
             status_code=403,
@@ -530,8 +564,11 @@ async def verify_user_password(
 ) -> dict[str, Any]:
     user = await _load_user(session, user_id, caller.tenant_id)
     if not user or not user.password_hash:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在或未设置密码"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在或未设置密码"}
+        )
     return ok({"matched": verify_password(payload.password, user.password_hash)})
+
 
 @router.get("/{user_id}/login-logs")
 async def list_user_login_logs(
@@ -544,13 +581,19 @@ async def list_user_login_logs(
     """最近登录日志 (FR-DASH-006-01)."""
     user = await _load_user(session, user_id, caller.tenant_id)
     if not user:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"}
+        )
 
     base = select(LoginLog).where(
         and_(LoginLog.tenant_id == caller.tenant_id, LoginLog.username == user.username)
     )
     total = (await session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
-    stmt = base.order_by(LoginLog.occurred_at.desc()).offset((page_num - 1) * page_size).limit(page_size)
+    stmt = (
+        base.order_by(LoginLog.occurred_at.desc())
+        .offset((page_num - 1) * page_size)
+        .limit(page_size)
+    )
     items = [
         {
             "id": log.id,

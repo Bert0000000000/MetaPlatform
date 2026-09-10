@@ -4,6 +4,7 @@ Plain dataclasses (per task spec) — the router serialises them via
 ``dataclasses.asdict``. The DeerFlow client also constructs these
 from upstream JSON.
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field

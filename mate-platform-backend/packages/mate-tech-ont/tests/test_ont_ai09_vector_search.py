@@ -7,6 +7,7 @@
 4. hybrid：关键词 + 向量双路命中融合（RRF），legs 携带两路排名；
 5. InMemory hybrid 同语义。
 """
+
 from __future__ import annotations
 
 import os
@@ -38,10 +39,22 @@ def _ot() -> ObjectType:
         rid=ClassRef(OBJ_CUST),
         primary_key=(ClassRef(P_NAME),),
         properties=(
-            Property(rid=ClassRef(P_NAME), type_id="string", nullable=False,
-                     primary_key=True, title="name", format=PropertyFormat.STRING),
-            Property(rid=ClassRef(P_CITY), type_id="string", nullable=True,
-                     primary_key=False, title="city", format=PropertyFormat.STRING),
+            Property(
+                rid=ClassRef(P_NAME),
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="name",
+                format=PropertyFormat.STRING,
+            ),
+            Property(
+                rid=ClassRef(P_CITY),
+                type_id="string",
+                nullable=True,
+                primary_key=False,
+                title="city",
+                format=PropertyFormat.STRING,
+            ),
         ),
         display_name="customer",
     )
@@ -49,10 +62,13 @@ def _ot() -> ObjectType:
 
 def _ind(pk: str, name: str, city: str) -> Individual:
     return Individual(
-        rid=f"ont.{T}.ind.customer.{pk}", class_rid=ClassRef(OBJ_CUST),
+        rid=f"ont.{T}.ind.customer.{pk}",
+        class_rid=ClassRef(OBJ_CUST),
         props=((ClassRef(P_NAME), name), (ClassRef(P_CITY), city)),
-        primary_key=pk, tenant_id=T,
-        created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
+        primary_key=pk,
+        tenant_id=T,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
 
@@ -85,9 +101,7 @@ class TestInMemoryHybrid:
         assert cards and cards[0]["individual_rid"].endswith("c1")
 
 
-PG_DSN = os.environ.get(
-    "AI09_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"
-)
+PG_DSN = os.environ.get("AI09_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
 
 
 class TestPgVector:
@@ -130,7 +144,9 @@ class TestPgVector:
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT COUNT(*) FROM ont_object_embedding "
-                "WHERE tenant_id=%s AND embedding_vec IS NOT NULL", (T,))
+                "WHERE tenant_id=%s AND embedding_vec IS NOT NULL",
+                (T,),
+            )
             assert cur.fetchone()[0] >= 2, "embedding_vec should be populated"
         conn.commit()
         conn.close()

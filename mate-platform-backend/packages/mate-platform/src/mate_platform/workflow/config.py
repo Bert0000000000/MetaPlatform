@@ -1,4 +1,5 @@
 """Workflow backend configuration and production safety checks."""
+
 from __future__ import annotations
 
 import os
@@ -37,8 +38,7 @@ class WorkflowSettings:
             backend = WorkflowBackend(raw_backend)
         except ValueError as exc:
             raise RuntimeError(
-                f"unsupported MATE_WORKFLOW_BACKEND {raw_backend!r}; "
-                "expected 'temporal' or 'local'"
+                f"unsupported MATE_WORKFLOW_BACKEND {raw_backend!r}; expected 'temporal' or 'local'"
             ) from exc
 
         address = os.getenv("TEMPORAL_ADDRESS", "").strip()
@@ -47,8 +47,7 @@ class WorkflowSettings:
             backend=backend,
             temporal_address=address,
             namespace=os.getenv("TEMPORAL_NAMESPACE", "default").strip() or "default",
-            task_queue=os.getenv("TEMPORAL_TASK_QUEUE", "mate-platform").strip()
-            or "mate-platform",
+            task_queue=os.getenv("TEMPORAL_TASK_QUEUE", "mate-platform").strip() or "mate-platform",
         )
         settings.validate()
         return settings

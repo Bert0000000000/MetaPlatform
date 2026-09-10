@@ -25,12 +25,12 @@
 
 ### 2.2 决策点收口
 
-| 决策点 | 选项 | 落地 |
-|---|---|---|
-| C1 | 默认 30 分钟，可配 24h | `session.ttl_seconds` 字段，30 min / 24h / 自定义 |
-| C2 | opt-in | `session.preferences.cross_session: enabled` 默认 false |
-| C3 | 默认不保留，可 opt-in 7 天 | `session.retention_policy: discard \| keep_7d`，默认 `discard` |
-| C4 | 同步 | 多设备共用 plan + history，写走 outbox + Redis Stream 广播 |
+| 决策点 | 选项                       | 落地                                                           |
+| ------ | -------------------------- | -------------------------------------------------------------- |
+| C1     | 默认 30 分钟，可配 24h     | `session.ttl_seconds` 字段，30 min / 24h / 自定义              |
+| C2     | opt-in                     | `session.preferences.cross_session: enabled` 默认 false        |
+| C3     | 默认不保留，可 opt-in 7 天 | `session.retention_policy: discard \| keep_7d`，默认 `discard` |
+| C4     | 同步                       | 多设备共用 plan + history，写走 outbox + Redis Stream 广播     |
 
 ### 2.3 凭证流
 
@@ -67,32 +67,32 @@ planning → awaiting_user → running → completed
 
 ### 2.6 OWASP LLM Top 10 对位
 
-| 风险 | Session 承担 |
-|---|---|
-| LLM01 Prompt Injection | session 入口对用户输入做长度/编码/敏感词清洗；prompt 模板与用户内容结构上隔离 |
-| LLM06 Excessive Agency | 每会话 `tools[]` 白名单来自该用户角色（不是 Agent 默认值） |
-| LLM07 System Prompt Leakage | 错误日志禁记 user 文本，只记 hash + 长度 + session_id |
+| 风险                        | Session 承担                                                                  |
+| --------------------------- | ----------------------------------------------------------------------------- |
+| LLM01 Prompt Injection      | session 入口对用户输入做长度/编码/敏感词清洗；prompt 模板与用户内容结构上隔离 |
+| LLM06 Excessive Agency      | 每会话 `tools[]` 白名单来自该用户角色（不是 Agent 默认值）                    |
+| LLM07 System Prompt Leakage | 错误日志禁记 user 文本，只记 hash + 长度 + session_id                         |
 
 ## 3. 跟 ADR-0040 的关系
 
-| 维度 | Session Sandbox | Function Sandbox |
-|---|---|---|
-| 隔离对象 | 对话上下文、Plan、素材、用户偏好 | 代码进程、网络、文件 I/O、密钥 |
-| 生命周期 | 30 分钟到 24 小时 | 几秒到几分钟 |
-| 凭证 | 会话 token（用户→session） | service-to-service（session→function） |
-| 等级 | L2 容器 | L2 容器 / L3 MicroVM |
-| 持久化 | Redis 加密 + PG `session_plans` | 无（关掉即丢） |
+| 维度     | Session Sandbox                  | Function Sandbox                       |
+| -------- | -------------------------------- | -------------------------------------- |
+| 隔离对象 | 对话上下文、Plan、素材、用户偏好 | 代码进程、网络、文件 I/O、密钥         |
+| 生命周期 | 30 分钟到 24 小时                | 几秒到几分钟                           |
+| 凭证     | 会话 token（用户→session）       | service-to-service（session→function） |
+| 等级     | L2 容器                          | L2 容器 / L3 MicroVM                   |
+| 持久化   | Redis 加密 + PG `session_plans`  | 无（关掉即丢）                         |
 
 **关键不变量**：Function Sandbox 永远拿不到原始 JWT；只能拿 session 颁发的派生 token。
 
 ## 4. 跟 13 硬规则对位
 
-| 硬规则 | Session 承担 |
-|---|---|
-| ③ 没有 tenant 不访问 repo | session_token 含 tenant_id；Function 入口校验 |
-| ⑨ 没有审计/指标/trace | OTel span `session.start / session.step / session.end` + ADS 事件 |
-| ⑫ Secret 不进 git | DEK 不进日志 / 不进 outbox 事件体 |
-| ⑬ NetworkPolicy default-deny | 沙箱专用 NetworkProfile |
+| 硬规则                       | Session 承担                                                      |
+| ---------------------------- | ----------------------------------------------------------------- |
+| ③ 没有 tenant 不访问 repo    | session_token 含 tenant_id；Function 入口校验                     |
+| ⑨ 没有审计/指标/trace        | OTel span `session.start / session.step / session.end` + ADS 事件 |
+| ⑫ Secret 不进 git            | DEK 不进日志 / 不进 outbox 事件体                                 |
+| ⑬ NetworkPolicy default-deny | 沙箱专用 NetworkProfile                                           |
 
 ## 5. 验收
 

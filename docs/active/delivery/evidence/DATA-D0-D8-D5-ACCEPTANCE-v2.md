@@ -8,6 +8,7 @@
 ## 1. 范围
 
 D5 实现跨租户数据访问的审计事件:
+
 - 任何 actor_tenant != target_tenant 的访问自动 emit `audit.cross_tenant_data_access`
 - 同租户访问不触发审计(避免噪音)
 - 审计事件持久化到 PostgreSQL `audit_log` 表(供安全团队查询)
@@ -16,9 +17,11 @@ D5 实现跨租户数据访问的审计事件:
 ## 2. 改动清单
 
 ### 2.1 既有基础(原 D5 v1)
+
 - `mate-platform/src/mate_platform/auth/audit.py` — `CrossTenantDataAccess` + `emit_cross_tenant_data_access` + Sink 协议
 
 ### 2.2 本批次新增(D5 v2)
+
 - `mate-platform/src/mate_platform/auth/audit_middleware.py` — **新增**:FastAPI 中间件,自动在 cross_tenant_admin 请求时触发审计
 - `mate-platform/src/mate_platform/auth/__init__.py` — 导出 `install_cross_tenant_audit_middleware` / `make_test_sink`
 - `mate-platform-backend/alembic/versions/20260801_0009_audit_log.py` — **新增**:Alembic 0009 audit_log 表
@@ -37,11 +40,11 @@ test_data_d0_d8_d5.py: 7 passed
 
 ## 4. 13 硬规则映射
 
-| 规则 | D5 落地 |
-|---|---|
-| 3 | 跨租户访问强制审计(每条 cross-tenant 都有结构化事件) |
-| 9 | 审计事件持久化到 audit_log 表 + OTel 通道双重保障 |
-| 4 | 跨租户 admin 角色(`cross_tenant_admin`)是唯一合法通道 |
+| 规则 | D5 落地                                               |
+| ---- | ----------------------------------------------------- |
+| 3    | 跨租户访问强制审计(每条 cross-tenant 都有结构化事件)  |
+| 9    | 审计事件持久化到 audit_log 表 + OTel 通道双重保障     |
+| 4    | 跨租户 admin 角色(`cross_tenant_admin`)是唯一合法通道 |
 
 ## 5. 中间件行为
 

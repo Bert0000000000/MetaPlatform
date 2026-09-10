@@ -10,14 +10,13 @@ declares them as conditional dependencies.
 The check is intentionally lightweight so it runs on every CI
 machine (Linux / macOS / Windows) without a real cluster.
 """
+
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import pytest
 import yaml
-
 from conftest import REPO_ROOT
 
 ICEBERG_CHART = REPO_ROOT / "infra" / "helm" / "charts" / "iceberg"
@@ -55,17 +54,13 @@ class TestIcebergChart:
         assert "metaplatform" in values["networkPolicy"]["allowedIngressNamespaces"]
 
     def test_statefulset_uses_configmap_probes(self) -> None:
-        ss = (ICEBERG_CHART / "templates" / "statefulset.yaml").read_text(
-            encoding="utf-8"
-        )
+        ss = (ICEBERG_CHART / "templates" / "statefulset.yaml").read_text(encoding="utf-8")
         assert "configMapKeyRef" in ss, "StatefulSet must wire catalog mode via CM"
         assert "readinessProbe" in ss
         assert "livenessProbe" in ss
 
     def test_networkpolicy_default_deny(self) -> None:
-        np = (ICEBERG_CHART / "templates" / "networkpolicy.yaml").read_text(
-            encoding="utf-8"
-        )
+        np = (ICEBERG_CHART / "templates" / "networkpolicy.yaml").read_text(encoding="utf-8")
         assert "policyTypes" in np
         assert "Ingress" in np and "Egress" in np
         # hard rule 13 — DNS egress only
@@ -108,9 +103,7 @@ class TestTrinoChart:
         assert values["worker"]["replicaCount"] >= 1
 
     def test_coordinator_deployment_renders_configmap(self) -> None:
-        coord = (TRINO_CHART / "templates" / "coordinator.yaml").read_text(
-            encoding="utf-8"
-        )
+        coord = (TRINO_CHART / "templates" / "coordinator.yaml").read_text(encoding="utf-8")
         assert "configMapKeyRef" in coord
         # The init command writes per-catalog properties files.
         assert "connector.name=iceberg" in coord
@@ -118,17 +111,13 @@ class TestTrinoChart:
         assert "connector.name=system" in coord
 
     def test_worker_deployment_uses_coordinator_discovery(self) -> None:
-        worker = (TRINO_CHART / "templates" / "worker.yaml").read_text(
-            encoding="utf-8"
-        )
+        worker = (TRINO_CHART / "templates" / "worker.yaml").read_text(encoding="utf-8")
         assert "discovery.uri" in worker
         assert "coordinator" in worker.lower()
         assert "coordinator=false" in worker
 
     def test_service_exposes_http_and_thrift(self) -> None:
-        svc = (TRINO_CHART / "templates" / "service.yaml").read_text(
-            encoding="utf-8"
-        )
+        svc = (TRINO_CHART / "templates" / "service.yaml").read_text(encoding="utf-8")
         assert "http" in svc
         assert "thrift" in svc
         # Port values are templated against values.yaml.
@@ -139,9 +128,7 @@ class TestTrinoChart:
         assert values["service"]["httpPort"] == 8080
 
     def test_networkpolicy_default_deny(self) -> None:
-        np = (TRINO_CHART / "templates" / "networkpolicy.yaml").read_text(
-            encoding="utf-8"
-        )
+        np = (TRINO_CHART / "templates" / "networkpolicy.yaml").read_text(encoding="utf-8")
         assert "policyTypes" in np
         assert "Ingress" in np and "Egress" in np
         assert "kube-system" in np
@@ -178,6 +165,4 @@ class TestUmbrellaChartDeclaresIcebergTrino:
     def test_all_dependencies_have_condition(self) -> None:
         chart = _load_yaml(UMBRELLA_CHART)
         for d in chart["dependencies"]:
-            assert "condition" in d, (
-                f"umbrella dep {d['name']!r} must declare a condition toggle"
-            )
+            assert "condition" in d, f"umbrella dep {d['name']!r} must declare a condition toggle"

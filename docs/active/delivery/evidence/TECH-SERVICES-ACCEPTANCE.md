@@ -16,36 +16,37 @@ TECH-SERVICES 批次把 SEC-IAM-01 / SEC-TENANT-01 / PLATFORM-EVENT-01 的能力
 
 ## 2. 规模指标
 
-| 指标 | 数量 |
-|---|---:|
-| 17 域 OpenAPI 安全升级 | 17 / 17 ✅ |
-| Canonical reference 完成 | 1（mate-app-kb）|
-| Per-app 5 步 checklist | 1 doc |
-| mate-app-kb 跨租户 negative tests | 3（每 app 最小）|
-| mate-app-kb tests total | 12 |
-| 全文 mate-platform tests | 117 |
-| 全文 PLATFORM-K8S-01 tests | 105 |
-| 总 tests（含回归）| 234 |
+| 指标                              |             数量 |
+| --------------------------------- | ---------------: |
+| 17 域 OpenAPI 安全升级            |       17 / 17 ✅ |
+| Canonical reference 完成          | 1（mate-app-kb） |
+| Per-app 5 步 checklist            |            1 doc |
+| mate-app-kb 跨租户 negative tests | 3（每 app 最小） |
+| mate-app-kb tests total           |               12 |
+| 全文 mate-platform tests          |              117 |
+| 全文 PLATFORM-K8S-01 tests        |              105 |
+| 总 tests（含回归）                |              234 |
 
 ## 3. 13 项硬规则验收
 
-| # | 硬规则 | 证据路径 | 本地状态 | CI / 后续 |
-|---|---|---|---|---|
-| 1 | `pytest mate-app-kb/tests -q` 全绿 | `tests/test_tenant_integration.py` | ✅ **12 passed in 1.54s** | ✅ 同左 |
-| 2 | `pytest mate-platform/tests -q` 全绿 | `tests/` (29 + 54 + 32 + 2 prior) | ✅ **117 passed** | ✅ 同左 |
-| 3 | `pytest app-*/tests -q`（每 app ≥ 3 跨租户 negative）| mate-app-kb 已 3 / 其他 16 域未做 | ⚠️ **1 / 17 app 完成** | ⏸️ P0/P1/P2 后续 |
-| 4 | `oasdiff` 无未批准 breaking change | 17 域 `security:` 段新增 + 非破坏 | ✅ 三段式升级 | ⏸️ oasdiff 在 CI 配 |
-| 5 | 跨租户越权 tests ≥ 3 per layer | mate-app-kb 3 + checklist 5 步 | ✅ **3 cases pass** | ⏸️ 其他 app 接力 |
-| 6 | `helm template + kubeconform` 0 错 | PLATFORM-K8S-01 baseline 已绿 | ✅ 复用 | ✅ 复用 |
-| 7 | `ruff check` 0 错 | ruff 未本地装 | ⏸️ 本地 ruff 未装 | ✅ CI 跑 |
-| 8 | `pyright --strict` 0 错 | pyright 未本地装 | ⏸️ 本地 pyright 未装 | ✅ CI 跑 |
-| 9 | KB 域端到端：JWT → tenant → outbox | 单元层覆盖；端到端在 integration env | ⚠️ 单测覆盖 | ⏸️ staging 集群 |
-| 10 | 13 门禁结果落档 | 本文 | ✅ 当前文件 | — |
-| 11 | PROGRAM-BOARD.md 更新 | `docs/active/delivery/PROGRAM-BOARD.md` | ✅ TECH-SERVICES = **Accepted** | — |
-| 12 | CI `tech-services-ci` job | platform-k8s-ci.yml 扩展 ruff/pyright 路径 | ⏸️ 本批仅扩展路径 | ✅ 已有 ruff/pyright |
-| 13 | pre-commit raw-SQL + secret 扫描 | gitleaks / detect-secrets / raw-SQL | ❌ 未实施 | ⏸️ 推迟到 GA-ACCEPTANCE 前的硬规则收口 |
+| #   | 硬规则                                                | 证据路径                                   | 本地状态                        | CI / 后续                              |
+| --- | ----------------------------------------------------- | ------------------------------------------ | ------------------------------- | -------------------------------------- |
+| 1   | `pytest mate-app-kb/tests -q` 全绿                    | `tests/test_tenant_integration.py`         | ✅ **12 passed in 1.54s**       | ✅ 同左                                |
+| 2   | `pytest mate-platform/tests -q` 全绿                  | `tests/` (29 + 54 + 32 + 2 prior)          | ✅ **117 passed**               | ✅ 同左                                |
+| 3   | `pytest app-*/tests -q`（每 app ≥ 3 跨租户 negative） | mate-app-kb 已 3 / 其他 16 域未做          | ⚠️ **1 / 17 app 完成**          | ⏸️ P0/P1/P2 后续                       |
+| 4   | `oasdiff` 无未批准 breaking change                    | 17 域 `security:` 段新增 + 非破坏          | ✅ 三段式升级                   | ⏸️ oasdiff 在 CI 配                    |
+| 5   | 跨租户越权 tests ≥ 3 per layer                        | mate-app-kb 3 + checklist 5 步             | ✅ **3 cases pass**             | ⏸️ 其他 app 接力                       |
+| 6   | `helm template + kubeconform` 0 错                    | PLATFORM-K8S-01 baseline 已绿              | ✅ 复用                         | ✅ 复用                                |
+| 7   | `ruff check` 0 错                                     | ruff 未本地装                              | ⏸️ 本地 ruff 未装               | ✅ CI 跑                               |
+| 8   | `pyright --strict` 0 错                               | pyright 未本地装                           | ⏸️ 本地 pyright 未装            | ✅ CI 跑                               |
+| 9   | KB 域端到端：JWT → tenant → outbox                    | 单元层覆盖；端到端在 integration env       | ⚠️ 单测覆盖                     | ⏸️ staging 集群                        |
+| 10  | 13 门禁结果落档                                       | 本文                                       | ✅ 当前文件                     | —                                      |
+| 11  | PROGRAM-BOARD.md 更新                                 | `docs/active/delivery/PROGRAM-BOARD.md`    | ✅ TECH-SERVICES = **Accepted** | —                                      |
+| 12  | CI `tech-services-ci` job                             | platform-k8s-ci.yml 扩展 ruff/pyright 路径 | ⏸️ 本批仅扩展路径               | ✅ 已有 ruff/pyright                   |
+| 13  | pre-commit raw-SQL + secret 扫描                      | gitleaks / detect-secrets / raw-SQL        | ❌ 未实施                       | ⏸️ 推迟到 GA-ACCEPTANCE 前的硬规则收口 |
 
 **汇总**：
+
 - 本地直接验证：1 / 2 / 4 / 5 / 6 / 10 / 11 = 7 项
 - 已落地但需 CI 跑：7 / 8 / 12 = 3 项
 - 真实集群：9 = 1 项

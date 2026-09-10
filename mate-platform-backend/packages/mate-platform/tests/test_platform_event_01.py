@@ -9,6 +9,7 @@ Tests cover:
   - IdempotentConsumer: dedup, retry, DLQ paths.
   - Cross-tenant negative cases.
 """
+
 from __future__ import annotations
 
 import json
@@ -148,15 +149,11 @@ class TestSchemaRegistry:
             validate_event_type("Order.placed")
 
     def test_schema_id_for(self) -> None:
-        assert schema_id_for("order.placed.created") == (
-            "metaplatform.order.placed.created.v1"
-        )
+        assert schema_id_for("order.placed.created") == ("metaplatform.order.placed.created.v1")
 
     def test_in_memory_registry(self) -> None:
         reg: SchemaRegistry = InMemorySchemaRegistry()
-        sid = reg.register(
-            "iam.user.created", {"type": "object", "properties": {}}
-        )
+        sid = reg.register("iam.user.created", {"type": "object", "properties": {}})
         assert sid == "metaplatform.iam.user.created.v1"
         schema = reg.fetch(sid)
         assert schema["type"] == "object"
@@ -221,9 +218,7 @@ class FakeProducer:
     def send(self, *, topic: str, key: str, value: bytes, headers: dict[str, str]) -> None:
         if self.fail:
             raise RuntimeError("simulated kafka failure")
-        self.sent.append(
-            {"topic": topic, "key": key, "value": value, "headers": dict(headers)}
-        )
+        self.sent.append({"topic": topic, "key": key, "value": value, "headers": dict(headers)})
 
 
 class TestOutboxRelay:
@@ -432,9 +427,7 @@ class TestCrossTenantNegatives:
 
     def test_event_invalid_type_rejected(self) -> None:
         with pytest.raises(ValueError):
-            Event.create(
-                type="bad", tenant_id="t1", aggregate_id="u", payload={}
-            )
+            Event.create(type="bad", tenant_id="t1", aggregate_id="u", payload={})
 
     def test_schema_invalid_type_rejected(self) -> None:
         with pytest.raises(SchemaError):

@@ -6,6 +6,7 @@
   R2 same_as 合并      —— 对称闭包（a≈b ∧ b≈c ⟹ a≈b≈c）
   R3 transitive_property —— xRy ∧ yRz ⟹ xRz
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -87,16 +88,17 @@ def run_inference(
         inferred = set()
         for c in classes:
             inferred |= ancestors.get(c, set())
-        classification[ind] = {"asserted": sorted(asserted),
-                               "inferred": sorted(inferred - asserted)}
+        classification[ind] = {
+            "asserted": sorted(asserted),
+            "inferred": sorted(inferred - asserted),
+        }
 
     # R2: same_as 合并
     clusters = _same_as_clusters(same_as_pairs)
     merged: dict[str, list[str]] = {}
     for ind, rep in clusters.items():
         merged.setdefault(rep, []).append(ind)
-    same_as_clusters = {rep: sorted(members)
-                        for rep, members in merged.items() if len(members) > 1}
+    same_as_clusters = {rep: sorted(members) for rep, members in merged.items() if len(members) > 1}
 
     # R3: 传递属性闭包
     transitive_set = set(transitive_axioms)
@@ -125,8 +127,7 @@ def run_inference(
             direct = adj[src]
             for dst, depth in seen.items():
                 if depth >= 1 and dst not in direct:
-                    transitive_inferred.append(
-                        {"property": prop, "src": src, "dst": dst})
+                    transitive_inferred.append({"property": prop, "src": src, "dst": dst})
 
     inferred_by_rule = (
         sum(1 for v in classification.values() for _ in v["inferred"])

@@ -5,6 +5,7 @@ These checks combine two sources:
   - The values.yaml (for the actual port numbers / target names referenced
     from the templates via {{ .Values... }})
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -12,8 +13,12 @@ from pathlib import Path
 import pytest
 import yaml
 
-NP_TEMPLATES = Path(__file__).resolve().parents[1] / "helm" / "charts" / "network-policies" / "templates"
-NP_VALUES = Path(__file__).resolve().parents[1] / "helm" / "charts" / "network-policies" / "values.yaml"
+NP_TEMPLATES = (
+    Path(__file__).resolve().parents[1] / "helm" / "charts" / "network-policies" / "templates"
+)
+NP_VALUES = (
+    Path(__file__).resolve().parents[1] / "helm" / "charts" / "network-policies" / "values.yaml"
+)
 
 
 def _read_template(name: str) -> str:
@@ -106,14 +111,17 @@ class TestAnnotationPolicy:
     """All NetworkPolicies should carry a policy.description annotation so
     reviewers can scan the rendered output and understand the rule intent."""
 
-    @pytest.mark.parametrize("template_name", [
-        "default-deny.yaml",
-        "allow-dns.yaml",
-        "allow-dataplane.yaml",
-        "allow-keycloak.yaml",
-        "allow-otel.yaml",
-        "allow-ingress.yaml",
-    ])
+    @pytest.mark.parametrize(
+        "template_name",
+        [
+            "default-deny.yaml",
+            "allow-dns.yaml",
+            "allow-dataplane.yaml",
+            "allow-keycloak.yaml",
+            "allow-otel.yaml",
+            "allow-ingress.yaml",
+        ],
+    )
     def test_has_policy_description(self, template_name: str) -> None:
         text = _read_template(template_name)
         assert "policy.description" in text, (

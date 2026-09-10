@@ -25,8 +25,6 @@ class LinkInstance:
 
     def __post_init__(self) -> None:
         if not self.rid.startswith(f"ont.{self.tenant_id}.lnk."):
-            raise ValueError(
-                f"LinkInstance.rid must start with ont.{self.tenant_id}.lnk."
-            )
+            raise ValueError(f"LinkInstance.rid must start with ont.{self.tenant_id}.lnk.")
         if self.src == self.dst:
             raise ValueError("LinkInstance.src and dst must differ")

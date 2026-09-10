@@ -27,29 +27,30 @@
 
 ## Delivery Object Matrix
 
-| Context | 必须交付的管理对象 | 首发生命周期 |
-|---|---|---|
-| Consumed host evidence | HostType/HostVersion、HostCapabilityContract、ConnectorDefinition/Version、ConnectorInstance | 只读验证、引用和证据过期；对象/API/迁移权威属于 runtime-employee-host 计划，本计划不得重建 |
-| Environment | RuntimeEnvironment、TenantRuntime、可选 DisconnectedCell | 创建、预检、查询、扩缩、升级、停用、导出、销毁 |
-| Supply/deploy | PackageRegistryEntry、DeploymentBundle、DeploymentPlan、DeploymentExecution、DriftFinding/Reconciliation | 注册、验证、组合、Diff、审批、执行、暂停/继续、回滚、撤销、调和 |
-| Observability | Dashboard/SavedQuery、Metric/SLODefinition、Log/Trace/SearchView | 创建、查询、修改视图、版本化 SLO、归档和保留清理 |
-| Audit/incident | AuditEvent、InvestigationCase、AlertRule/Route、Incident | 追加、查询/导出、确认、升级、调查、解决、关闭、法律冻结 |
-| Quality/cost/security | EvaluationDataset/Suite、EvaluationRun/Comparison、UsageCostRecord/Budget、SecurityFinding/SBOM/License | 创建、版本化、执行、比较、预算/阈值、修复、限时例外、撤销、归档 |
-| Gates/recovery | GateDefinition/Evidence、BackupPolicy/Job、RestoreDrill、DLQ/ReplayPlan | 定义、执行、失效、备份、校验、恢复演练、重放审批、对账、归档 |
+| Context                | 必须交付的管理对象                                                                                       | 首发生命周期                                                                               |
+| ---------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Consumed host evidence | HostType/HostVersion、HostCapabilityContract、ConnectorDefinition/Version、ConnectorInstance             | 只读验证、引用和证据过期；对象/API/迁移权威属于 runtime-employee-host 计划，本计划不得重建 |
+| Environment            | RuntimeEnvironment、TenantRuntime、可选 DisconnectedCell                                                 | 创建、预检、查询、扩缩、升级、停用、导出、销毁                                             |
+| Supply/deploy          | PackageRegistryEntry、DeploymentBundle、DeploymentPlan、DeploymentExecution、DriftFinding/Reconciliation | 注册、验证、组合、Diff、审批、执行、暂停/继续、回滚、撤销、调和                            |
+| Observability          | Dashboard/SavedQuery、Metric/SLODefinition、Log/Trace/SearchView                                         | 创建、查询、修改视图、版本化 SLO、归档和保留清理                                           |
+| Audit/incident         | AuditEvent、InvestigationCase、AlertRule/Route、Incident                                                 | 追加、查询/导出、确认、升级、调查、解决、关闭、法律冻结                                    |
+| Quality/cost/security  | EvaluationDataset/Suite、EvaluationRun/Comparison、UsageCostRecord/Budget、SecurityFinding/SBOM/License  | 创建、版本化、执行、比较、预算/阈值、修复、限时例外、撤销、归档                            |
+| Gates/recovery         | GateDefinition/Evidence、BackupPolicy/Job、RestoreDrill、DLQ/ReplayPlan                                  | 定义、执行、失效、备份、校验、恢复演练、重放审批、对账、归档                               |
 
 ## Required Interface Surfaces
 
-| Surface | 首发接口 |
-|---|---|
+| Surface      | 首发接口                                                                                                                                                                                                                                           |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | REST/OpenAPI | /hosts、/connectors、/environments、/tenant-runtimes、/packages、/bundles、/deployments、/drift、/dashboards、/slos、/audit、/alerts、/incidents、/evaluations、/budgets、/security-findings、/gates、/backups、/restore-drills、/dlq/replay-plans |
-| MCP | get_capability_availability、get_deployment_status、query_operational_evidence；只读且按用户/员工/租户/Run 授权 |
-| Events | EnvironmentChanged、DeploymentChanged、DriftDetected、SLOBreached、AlertRaised、IncidentChanged、GateEvidenceChanged、RestoreDrillCompleted、CapabilityAvailabilityChanged |
-| UI | 环境/租户运行面、制品/Bundle、发布/回滚、漂移、观测/审计、告警/事件、评测/预算、安全供应链、Gate、备份恢复、DLQ，以及用户故障降级视图 |
-| Delivery | Helm values schema、Flux manifests、signed OCI artifacts、production-profile、Gate evidence、runbook 和 notification contract |
+| MCP          | get_capability_availability、get_deployment_status、query_operational_evidence；只读且按用户/员工/租户/Run 授权                                                                                                                                    |
+| Events       | EnvironmentChanged、DeploymentChanged、DriftDetected、SLOBreached、AlertRaised、IncidentChanged、GateEvidenceChanged、RestoreDrillCompleted、CapabilityAvailabilityChanged                                                                         |
+| UI           | 环境/租户运行面、制品/Bundle、发布/回滚、漂移、观测/审计、告警/事件、评测/预算、安全供应链、Gate、备份恢复、DLQ，以及用户故障降级视图                                                                                                              |
+| Delivery     | Helm values schema、Flux manifests、signed OCI artifacts、production-profile、Gate evidence、runbook 和 notification contract                                                                                                                      |
 
 ### Task 1: Freeze operations contracts and authority
 
 **Files:**
+
 - Create: mate-platform-backend/packages/mate-kernel/src/mate_kernel/deployment/contracts.py
 - Create: mate-platform-backend/packages/mate-kernel/src/mate_kernel/operations/contracts.py
 - Create: mate-platform-backend/packages/mate-kernel/tests/test_deployment_operations_contracts.py
@@ -61,6 +62,7 @@
 - Modify: acceptance/release/v1/production-profile.yaml
 
 **Interfaces:**
+
 - Produces EnvironmentIdentity, TenantRuntimeRef, PackageDigest, DeploymentExecutionId, GateEvidenceRef, RestoreDrillRef and CapabilityAvailabilityProjection.
 - Consumes TenantId, HostCapabilityContractRef, ConfigReleaseDigest, ApplicationPackageDigest and Runtime/Artifact/Identity recovery checkpoints.
 - Every mutable command requires tenant, human/service subject, expected_version, idempotency_key and correlation_id.
@@ -75,6 +77,7 @@
 ### Task 2: Deliver environment, package and deployment lifecycle
 
 **Files:**
+
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/deployment/domain.py
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/deployment/repository.py
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/deployment/service.py
@@ -89,6 +92,7 @@
 - Create: metaplatform-frontend/apps/web/tests/e2e/deployment-lifecycle.spec.ts
 
 **Interfaces:**
+
 - REST: RuntimeEnvironment/TenantRuntime CRUD and lifecycle; PackageRegistry read/register/revoke; Bundle draft/validate/release/revoke; DeploymentPlan create/read/update-before-approval/cancel; Execution approve/start/pause/resume/cancel/rollback; Drift list/accept-until/reconcile.
 - Events: TenantRuntimeChanged, PackageRevoked, DeploymentChanged and DriftDetected.
 - GitOps: every execution records desired-state commit, chart/config/image/policy/migration Digests and actual cluster identity.
@@ -103,6 +107,7 @@
 ### Task 3: Deliver observability, audit, incident and evaluation products
 
 **Files:**
+
 - Create: mate-platform-backend/packages/mate-tech-obs/src/mate_tech_obs/operations/domain.py
 - Create: mate-platform-backend/packages/mate-tech-obs/src/mate_tech_obs/operations/service.py
 - Create: mate-platform-backend/packages/mate-tech-obs/src/mate_tech_obs/api/operations.py
@@ -116,6 +121,7 @@
 - Create: metaplatform-frontend/apps/web/tests/e2e/operations-audit.spec.ts
 
 **Interfaces:**
+
 - REST: Dashboard/SavedQuery CRUD; SLO draft/release/retire; audit query/export/legal-hold; investigation create/update/close; alert rule/route CRUD/silence-with-expiry; incident acknowledge/escalate/resolve/close; evaluation dataset/suite/run/compare; budget/rule/forecast.
 - Events: SLOBreached, AlertRaised, IncidentChanged, EvaluationCompleted and BudgetThresholdReached.
 - Correlation keys: tenant_id, user_id, employee_version, session_id, run_id, subrun_id, tool_id, workflow_execution_id and deployment_id.
@@ -130,6 +136,7 @@
 ### Task 4: Deliver supply-chain policy and production Gates
 
 **Files:**
+
 - Create: acceptance/gates/schemas/security-supply-chain-v1.schema.json
 - Modify: acceptance/gates/component-matrix.yaml
 - Modify: acceptance/gates/gate-dependency-dag.yaml
@@ -140,6 +147,7 @@
 - Create: metaplatform-frontend/apps/web/tests/e2e/security-gate.spec.ts
 
 **Interfaces:**
+
 - Produces SecurityFinding, SBOMRef, LicenseDecision, ExceptionApproval and GateEvidence.
 - Gate states are PASSED, FAILED and NOT_EXERCISED; capability states cannot replace them.
 - Every exception requires severity, owner, approver, compensating control, expires_at and remediation SLA.
@@ -154,6 +162,7 @@
 ### Task 5: Deliver backup, restore, DLQ replay and user degradation
 
 **Files:**
+
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/resilience/backup_service.py
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/resilience/replay_service.py
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/resilience/availability_projection.py
@@ -165,6 +174,7 @@
 - Create: metaplatform-frontend/apps/web/tests/e2e/recovery-degradation.spec.ts
 
 **Interfaces:**
+
 - REST: BackupPolicy CRUD; BackupJob read/cancel; RestoreDrill create/read/reconcile/sign; DLQ query; ReplayPlan create/update-before-approval/approve/cancel/reconcile; capability availability read/subscribe.
 - MCP: get_capability_availability returns user-readable status and permitted alternatives, not secrets or hidden capabilities.
 - Events: BackupCompleted, RestoreDrillCompleted, ReplayPlanChanged, CapabilityAvailabilityChanged and RecoveryCompleted.
@@ -179,6 +189,7 @@
 ### Task 6: Validate hybrid operations and release interfaces
 
 **Files:**
+
 - Create: acceptance/release/v1/evidence/deployment-operations-cloud.yaml
 - Create: acceptance/release/v1/evidence/deployment-operations-connected-private.yaml
 - Create: mate-platform-backend/tests/contract/test_deployment_operations_consumers.py
@@ -189,6 +200,7 @@
 - Modify: acceptance/release/v1/production-profile.yaml
 
 **Interfaces:**
+
 - Consumes current final-candidate package, schema, interface registry and four independent HostCapabilityContract evidence records.
 - Produces environment-specific promotion, observation, rollback, recovery, SLO and provider/consumer contract evidence.
 

@@ -1,11 +1,18 @@
 """W6 + W7 深度 15 ST (端到端 + 集成)."""
+
 from __future__ import annotations
 
 
 # W6 深度 (10)
 def test_portal_sso_flow() -> None:
     """portal SSO 完整流程."""
-    steps = ["redirect /login", "keycloak auth", "callback /auth/callback", "set cookie", "redirect /"]
+    steps = [
+        "redirect /login",
+        "keycloak auth",
+        "callback /auth/callback",
+        "set cookie",
+        "redirect /",
+    ]
     assert len(steps) == 5
 
 

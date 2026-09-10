@@ -9,6 +9,7 @@ The engine reads its configuration from environment variables
 ``timeout_seconds``) is preserved from the P2-W6 reserved interface;
 new engine methods are additive.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -63,28 +64,36 @@ class AsyncDataClient:
         )
 
     async def stop_cdc_task(
-        self, task_id: str, connector_name: str,
+        self,
+        task_id: str,
+        connector_name: str,
     ) -> CdcTaskResult:
         """Delete (stop) a Debezium CDC connector."""
         assert self.debezium_engine is not None
         return await self.debezium_engine.stop_cdc_task(task_id, connector_name)
 
     async def pause_cdc_task(
-        self, task_id: str, connector_name: str,
+        self,
+        task_id: str,
+        connector_name: str,
     ) -> CdcTaskResult:
         """Pause a Debezium CDC connector."""
         assert self.debezium_engine is not None
         return await self.debezium_engine.pause_cdc_task(task_id, connector_name)
 
     async def resume_cdc_task(
-        self, task_id: str, connector_name: str,
+        self,
+        task_id: str,
+        connector_name: str,
     ) -> CdcTaskResult:
         """Resume a paused Debezium CDC connector."""
         assert self.debezium_engine is not None
         return await self.debezium_engine.resume_cdc_task(task_id, connector_name)
 
     async def get_cdc_status(
-        self, task_id: str, connector_name: str,
+        self,
+        task_id: str,
+        connector_name: str,
     ) -> CdcTaskResult:
         """Get the status of a Debezium CDC connector."""
         assert self.debezium_engine is not None
@@ -109,12 +118,15 @@ class AsyncDataClient:
         )
 
     async def discover_source_schema(
-        self, task_id: str, connector_name: str,
+        self,
+        task_id: str,
+        connector_name: str,
     ) -> dict[str, Any]:
         """Discover the schema of a source via its connector config."""
         assert self.debezium_engine is not None
         return await self.debezium_engine.discover_source_schema(
-            task_id, connector_name,
+            task_id,
+            connector_name,
         )
 
     async def close(self) -> None:

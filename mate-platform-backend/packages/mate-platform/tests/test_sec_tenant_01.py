@@ -10,6 +10,7 @@ Tests cover:
   - Cross-tenant admin audit emission.
   - Cross-tenant negative cases (3+ per layer per ADR-0012 §6.5).
 """
+
 from __future__ import annotations
 
 import os
@@ -250,9 +251,7 @@ class TestMinioBucket:
 
     def test_object_key(self) -> None:
         ctx = make_ctx(tenant="t1")
-        assert object_key(ctx, "uploads", "2026", "07", "doc.pdf") == (
-            "uploads/2026/07/doc.pdf"
-        )
+        assert object_key(ctx, "uploads", "2026", "07", "doc.pdf") == ("uploads/2026/07/doc.pdf")
 
 
 # -----------------------------------------------------------------------------

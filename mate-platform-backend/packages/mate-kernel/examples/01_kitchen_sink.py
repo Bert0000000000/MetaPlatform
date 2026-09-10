@@ -139,6 +139,7 @@ def main() -> None:
             updated_at=datetime.now(UTC),
             tenant_id=tenant,
         )
+
     inds = [
         _ind("1", "open", 2000.0, "rush"),
         _ind("2", "closed", 100.0, "normal"),
@@ -161,35 +162,42 @@ def main() -> None:
     # ───── 3) Security 员工：跨租户 + Marking ─────
     banner("3. Security 员工：决策")
     sec = SecurityAgent()
-    d1 = sec.decide(SecurityRequest(
-        requester=UserMarkings(user_id=user, tenant_id=tenant, markings=("confidential",)),
-        target_tenant=tenant,
-        required=MarkingRequirement(required_markings=("confidential",)),
-        resource_rid=f"ont.{tenant}.act.approve",
-    ))
+    d1 = sec.decide(
+        SecurityRequest(
+            requester=UserMarkings(user_id=user, tenant_id=tenant, markings=("confidential",)),
+            target_tenant=tenant,
+            required=MarkingRequirement(required_markings=("confidential",)),
+            resource_rid=f"ont.{tenant}.act.approve",
+        )
+    )
     print(f"  same-tenant + marking OK: {d1.decision.value} ({d1.rule_id})")
-    d2 = sec.decide(SecurityRequest(
-        requester=UserMarkings(user_id=user, tenant_id=tenant),
-        target_tenant="evil",
-        required=MarkingRequirement(()),
-        resource_rid=f"ont.{tenant}.act.approve",
-    ))
+    d2 = sec.decide(
+        SecurityRequest(
+            requester=UserMarkings(user_id=user, tenant_id=tenant),
+            target_tenant="evil",
+            required=MarkingRequirement(()),
+            resource_rid=f"ont.{tenant}.act.approve",
+        )
+    )
     print(f"  cross-tenant: {d2.decision.value} ({d2.rule_id})")
 
     # ───── 4) Data Product 员工 ─────
     banner("4. Data Product 员工")
     dp = DataProductAgent()
-    dp.register(DataProduct(
-        product_rid=f"data.{tenant}.product.order-summary.v1",
-        name="Order Summary",
-        kind=DataProductKind.MATERIALIZED_VIEW,
-        bound_class_rid=cls_order,
-        source_uri="pg://dw/order_summary",
-        quality=(
-            QualitySummary(dimension=QualityDimension.COMPLETENESS, value=0.99),
-            QualitySummary(dimension=QualityDimension.FRESHNESS_SECONDS, value=60.0),
+    dp.register(
+        DataProduct(
+            product_rid=f"data.{tenant}.product.order-summary.v1",
+            name="Order Summary",
+            kind=DataProductKind.MATERIALIZED_VIEW,
+            bound_class_rid=cls_order,
+            source_uri="pg://dw/order_summary",
+            quality=(
+                QualitySummary(dimension=QualityDimension.COMPLETENESS, value=0.99),
+                QualitySummary(dimension=QualityDimension.FRESHNESS_SECONDS, value=60.0),
+            ),
         ),
-    ), mgr)
+        mgr,
+    )
     products = dp.for_class(cls_order)
     print(f"  bound to Order: {[p.product_rid for p in products]}")
     print(f"  alerts (default thresholds): {len(dp.quality_alerts())}")
@@ -216,12 +224,15 @@ def main() -> None:
     # ───── 6) KB + RAG：联合检索 ─────
     banner("6. KB + RAG：联合检索")
     kb = KnowledgeLibraryAgent(rag=RagIndex())
-    kb.add_document(KbDocument(
-        doc_rid=f"kb.{tenant}.doc.order-policy.v1",
-        title="Order Policy",
-        body_markdown="rush order 优先级最高，需 24h 内处理",
-        linked_class_rids=(cls_order.rid,),
-    ), mgr)
+    kb.add_document(
+        KbDocument(
+            doc_rid=f"kb.{tenant}.doc.order-policy.v1",
+            title="Order Policy",
+            body_markdown="rush order 优先级最高，需 24h 内处理",
+            linked_class_rids=(cls_order.rid,),
+        ),
+        mgr,
+    )
     kb.rag.add_individual(inds[0])
     rag_hits, kb_hits = kb.combined_retrieve(
         rag_query=RagQuery(
@@ -232,7 +243,9 @@ def main() -> None:
         kb_query="rush order",
     )
     print(f"  RAG hits: {len(rag_hits)}")
-    print(f"  KB hits: {len(kb_hits)}, via_class={kb_hits[0].matched_via_class if kb_hits else None}")
+    print(
+        f"  KB hits: {len(kb_hits)}, via_class={kb_hits[0].matched_via_class if kb_hits else None}"
+    )
 
     # ───── 7) App 员工：CRUD 生成器 ─────
     banner("7. App 员工：CRUD 三页")
@@ -253,8 +266,9 @@ def main() -> None:
         flow_rid=f"wfe.{tenant}.flow.order-approve.v1",
         nodes=(
             FlowNode(node_id="s", kind=NodeKind.START, next="a"),
-            FlowNode(node_id="a", kind=NodeKind.ACTION,
-                     action_rid=f"ont.{tenant}.act.approve", next="w"),
+            FlowNode(
+                node_id="a", kind=NodeKind.ACTION, action_rid=f"ont.{tenant}.act.approve", next="w"
+            ),
             FlowNode(node_id="w", kind=NodeKind.WAIT_USER),
         ),
         start_node_id="s",
@@ -269,7 +283,10 @@ def main() -> None:
     action_svc.register_function(f"ont.{tenant}.act.cancel", lambda t, p: "cancelled")
     ctx_sub = SubmissionContext(actor=user, sandbox_id="demo", tenant_id=tenant)
     sec_d = check_action_apply(
-        sec, ctx, target_tenant=tenant, target_rid=f"ont.{tenant}.act.cancel",
+        sec,
+        ctx,
+        target_tenant=tenant,
+        target_rid=f"ont.{tenant}.act.cancel",
     )
     print(f"  Security: {sec_d.decision.value}")
     if sec_d.decision.value == "allow":
@@ -289,15 +306,17 @@ def main() -> None:
     banner("10. External Agent：Marketplace L3")
     reg = ExtAgentRegistry(runner=MockMicroVMRunner())
     reg.runner.register("translate", lambda p: f"translated: {p['text']}")
-    reg.register(ExtAgentManifest(
-        agent_rid=f"ext.{tenant}.agent.translator.v1",
-        name="Translator",
-        vendor="acme-mkt",
-        protocol=ExtProtocol.HTTP,
-        endpoint="http://mkt.example.com/translator",
-        capabilities=(Capability(name="translate", description="EN↔ZH"),),
-        sandbox=SandboxTier.L3_MICROVM,
-    ))
+    reg.register(
+        ExtAgentManifest(
+            agent_rid=f"ext.{tenant}.agent.translator.v1",
+            name="Translator",
+            vendor="acme-mkt",
+            protocol=ExtProtocol.HTTP,
+            endpoint="http://mkt.example.com/translator",
+            capabilities=(Capability(name="translate", description="EN↔ZH"),),
+            sandbox=SandboxTier.L3_MICROVM,
+        )
+    )
     inv = reg.invoke(f"ext.{tenant}.agent.translator.v1", "translate", {"text": "hello"})
     print(f"  status: {inv.status}, sandbox: {inv.sandbox_id}")
     print(f"  output: {inv.output}")
@@ -329,20 +348,26 @@ def main() -> None:
     tools = agent_tool_schemas([ot_order], [], [])
     print(f"  tools: {[t['function']['name'] for t in tools]}")
     qe = InMemoryQueryExecutor(
-        individuals=inds, links=[], object_types=[ot_order],
+        individuals=inds,
+        links=[],
+        object_types=[ot_order],
     )
-    objects_res = qe.execute(ObjectSetQuery(
-        source=ot_order.rid,
-        filters=(Condition("status", QueryOp.EQ, "open"),),
-    ))
+    objects_res = qe.execute(
+        ObjectSetQuery(
+            source=ot_order.rid,
+            filters=(Condition("status", QueryOp.EQ, "open"),),
+        )
+    )
     print(f"  objects rows: {[(r['status'], r['amount']) for r in objects_res.rows]}")
-    agg_res = qe.execute(ObjectSetQuery(
-        source=ot_order.rid,
-        aggregation=Aggregation(
-            group_by=("status",),
-            metrics=(MetricSpec(fn="sum", field="amount"), MetricSpec(fn="count")),
-        ),
-    ))
+    agg_res = qe.execute(
+        ObjectSetQuery(
+            source=ot_order.rid,
+            aggregation=Aggregation(
+                group_by=("status",),
+                metrics=(MetricSpec(fn="sum", field="amount"), MetricSpec(fn="count")),
+            ),
+        )
+    )
     print(f"  aggregates rows: {agg_res.rows[0]}")
     assert objects_res.rows and agg_res.rows
 

@@ -60,13 +60,14 @@ class ProposalStatus(StrEnum):
     REJECTED = "rejected"
     EXECUTED = "executed"
     # PRD-02（MP-ACTION-CONFIRM-01，2026-09-08）：撤销语义新增两终态
-    WITHDRAWN = "withdrawn"   # pending → withdrawn（作者确认前撤回）
-    REVERTED = "reverted"     # executed → reverted（人审撤销 + 补偿执行）
+    WITHDRAWN = "withdrawn"  # pending → withdrawn（作者确认前撤回）
+    REVERTED = "reverted"  # executed → reverted（人审撤销 + 补偿执行）
 
 
 @dataclass(frozen=True, slots=True)
 class SubmissionContext:
     """apply 时的来源信息（13 硬规则 #9 审计）。"""
+
     actor: str  # user_id 或 service-account
     sandbox_id: str | None = None
     hitl_token: str | None = None
@@ -84,8 +85,10 @@ class ApplyOutcome:
     rolled_back: bool = False
     function_result: Any = None
     proposal_id: str | None = None  # 证据链：本次 apply 对应的 HITL proposal
-    hitl_token: str | None = None   # 证据链：用户确认所用 token（校验后记录）
-    side_effect_events: list[tuple[str, str]] = field(default_factory=list)  # (event_type, event_id)
+    hitl_token: str | None = None  # 证据链：用户确认所用 token（校验后记录）
+    side_effect_events: list[tuple[str, str]] = field(
+        default_factory=list
+    )  # (event_type, event_id)
 
 
 # ─────────────────── 规则表达式 ───────────────────
@@ -95,7 +98,9 @@ class ApplyOutcome:
 class RuleEvaluator(Protocol):
     """submission_criteria 规则求值器 —— M2 简化实现。"""
 
-    def evaluate(self, expr: str, parameters: dict[str, Any], target_props: dict[str, Any]) -> bool: ...
+    def evaluate(
+        self, expr: str, parameters: dict[str, Any], target_props: dict[str, Any]
+    ) -> bool: ...
 
 
 class SimpleRuleEvaluator:
@@ -106,6 +111,7 @@ class SimpleRuleEvaluator:
         e = expr.strip()
         # field in (a, b, c)
         import re
+
         in_match = re.match(r"^(\w+)\s+in\s+\((.*)\)\s*$", e)
         if in_match:
             field, vals = in_match.group(1), in_match.group(2)
@@ -145,7 +151,9 @@ class ActionProposal:
     """proposal 模型 —— HITL 流程前置产物（pending→confirmed→executed / rejected）。"""
 
     proposal_id: str
-    action_rid: str  # subject rid：kind=action→ActionType；create_instance→class；model_type→新类型 rid
+    action_rid: (
+        str  # subject rid：kind=action→ActionType；create_instance→class；model_type→新类型 rid
+    )
     target_iid: str | None
     parameters: dict[str, Any]
     impact_summary: str  # 人类可读的"将做什么"
@@ -205,6 +213,7 @@ class ActionService:
         kind: str = "action",
     ) -> ActionProposal:
         import uuid
+
         prop = ActionProposal(
             proposal_id=f"prop-{uuid.uuid4().hex[:8]}",
             action_rid=action_rid,
@@ -226,7 +235,11 @@ class ActionService:
         return p
 
     def _transition_proposal(
-        self, proposal_id: str, to_status: ProposalStatus, *, by: str | None,
+        self,
+        proposal_id: str,
+        to_status: ProposalStatus,
+        *,
+        by: str | None,
     ) -> ActionProposal:
         p = self.get_proposal(proposal_id)
         if p.status is not ProposalStatus.PENDING:
@@ -238,7 +251,9 @@ class ActionService:
             p,
             status=to_status,
             confirmed_by=by,
-            confirmed_at=datetime.now(UTC) if to_status is ProposalStatus.CONFIRMED else p.confirmed_at,
+            confirmed_at=datetime.now(UTC)
+            if to_status is ProposalStatus.CONFIRMED
+            else p.confirmed_at,
         )
         self._proposals[proposal_id] = updated
         return updated
@@ -346,6 +361,7 @@ class ActionService:
         if executor is not None and self._resolver is not None:
             try:
                 from ..ontology.identity import ClassRef as _ClassRef
+
                 lang, source = self._resolver.resolve(_ClassRef(function_ref))
                 rc, out, err = executor.execute(source, (target_iid or "", parameters))
                 if rc != 0:
@@ -356,7 +372,9 @@ class ActionService:
                     import json as _json
 
                     parsed = _json.loads(out) if out else None
-                    function_result = parsed.get("result", parsed) if isinstance(parsed, dict) else parsed
+                    function_result = (
+                        parsed.get("result", parsed) if isinstance(parsed, dict) else parsed
+                    )
                 except Exception:
                     function_result = None
             except FunctionTimeout:
@@ -418,7 +436,8 @@ class ActionService:
         if proposal_id is not None:
             try:
                 self._proposals[proposal_id] = replace(
-                    self.get_proposal(proposal_id), status=ProposalStatus.EXECUTED,
+                    self.get_proposal(proposal_id),
+                    status=ProposalStatus.EXECUTED,
                 )
             except KeyError:
                 pass

@@ -41,7 +41,9 @@ def test_main_returns_uv_sync_failure(monkeypatch: pytest.MonkeyPatch, tmp_path:
     ]
 
 
-def test_main_runs_pytest_after_python_preflight(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_main_runs_pytest_after_python_preflight(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     calls: list[list[str]] = []
 
     monkeypatch.setattr("run_backend_tests.find_uv", lambda: tmp_path / "uv.exe")

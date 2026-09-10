@@ -1,4 +1,5 @@
 """Guard the quality-check shell script exists with the expected commands."""
+
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]

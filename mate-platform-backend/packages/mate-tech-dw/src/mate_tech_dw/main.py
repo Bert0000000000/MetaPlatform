@@ -7,6 +7,7 @@
 P2-W3: in-memory repository only. Persistent storage and
 cross-service aggregation land in P2-W5 (TD-6).
 """
+
 from __future__ import annotations
 
 from fastapi import FastAPI, Response
@@ -23,8 +24,7 @@ def create_app() -> FastAPI:
         title="mate-tech-dw",
         version="0.1.0",
         description=(
-            "Mate Platform - TECH-DW digital workforce aggregation "
-            "query (FR-DW-001..015)."
+            "Mate Platform - TECH-DW digital workforce aggregation query (FR-DW-001..015)."
         ),
     )
     # Step 1 of ADR-0014 5-step pattern: install bearer-token auth

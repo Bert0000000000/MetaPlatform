@@ -9,6 +9,7 @@ Covers the P0 business logic added in the deep implementation:
     unknown threads, EXPIRED after TTL
   * AUTO scenario resolution -> S1
 """
+
 from __future__ import annotations
 
 import os
@@ -84,8 +85,10 @@ def outbox() -> InMemoryOutboxWriter:
 def client(outbox: InMemoryOutboxWriter) -> Iterator[TestClient]:
     # Clear in-memory review state between tests.
     from mate_tech_agent.api.app import _REVIEWS
+
     _REVIEWS.clear()
     from mate_tech_agent.api import app as _app_module
+
     _app_module.app.state.outbox_writer = outbox
     yield TestClient(_app_module.app)
     _REVIEWS.clear()
@@ -396,19 +399,21 @@ class TestPlanExecute:
         assert ev.payload["status"] == "completed"
 
     def test_plan_execute_tenant_isolation(
-        self, client, auth_acme, auth_globex, outbox,
+        self,
+        client,
+        auth_acme,
+        auth_globex,
+        outbox,
     ):
         """Each tenant's plan execution is bound to its own tenant_id."""
         client.post(
             "/api/v1/agent/plan/execute",
-            json={"plan_id": "plan-acme", "steps": [
-                {"agent_id": "agent-s1", "action": "do"}]},
+            json={"plan_id": "plan-acme", "steps": [{"agent_id": "agent-s1", "action": "do"}]},
             headers=auth_acme,
         )
         client.post(
             "/api/v1/agent/plan/execute",
-            json={"plan_id": "plan-globex", "steps": [
-                {"agent_id": "agent-s1", "action": "do"}]},
+            json={"plan_id": "plan-globex", "steps": [{"agent_id": "agent-s1", "action": "do"}]},
             headers=auth_globex,
         )
         events = [rec.event for rec in outbox.all_records()]

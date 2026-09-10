@@ -11,6 +11,7 @@ The hard-delete is eventually consistent: it's the calling
 service's responsibility to perform the actual row deletion in
 the business tables, using the tenant_id we record here.
 """
+
 from __future__ import annotations
 
 import logging
@@ -101,7 +102,11 @@ class InMemoryRetentionStore:
 
     def list_pending(self) -> list[SoftDeleteRecord]:
         with self._lock:
-            return [r for r in self._records.values() if r.hard_delete_at > datetime.now(UTC).isoformat()]
+            return [
+                r
+                for r in self._records.values()
+                if r.hard_delete_at > datetime.now(UTC).isoformat()
+            ]
 
     def is_soft_deleted(self, tenant_id: str) -> bool:
         with self._lock:

@@ -7,6 +7,7 @@ isolation, and is wired into the umbrella chart dependencies.
 Static text checks (no helm / kubectl required) — mirrors the pattern
 in test_data_subcharts.py. The real helm lint / kubeconform runs in CI.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -41,9 +42,7 @@ class TestG1KafkaChart:
         assert "KAFKA_CFG_PROCESS_ROLES" in text, (
             "StatefulSet must set process.roles for KRaft mode"
         )
-        assert "controller,broker" in text, (
-            "KRaft requires combined controller+broker role"
-        )
+        assert "controller,broker" in text, "KRaft requires combined controller+broker role"
         assert "KAFKA_CFG_CONTROLLER_QUORUM_VOTERS" in text, (
             "KRaft requires controller quorum voters"
         )
@@ -54,9 +53,7 @@ class TestG1KafkaChart:
         """values.yaml must declare persistence (enabled by default)."""
         text = _read(KAFKA / "values.yaml")
         assert "persistence:" in text
-        assert "enabled: true" in text, (
-            "G1 default persistence must be enabled"
-        )
+        assert "enabled: true" in text, "G1 default persistence must be enabled"
         assert "50Gi" in text, "G1 persistence size must be 50Gi"
 
     def test_kafka_chart_has_networkpolicy(self) -> None:
@@ -72,9 +69,7 @@ class TestG1KafkaChart:
     def test_kafka_chart_has_tenant_isolation(self) -> None:
         """values.yaml must declare tenantIsolation (per-tenant topic prefix)."""
         text = _read(KAFKA / "values.yaml")
-        assert "tenantIsolation:" in text, (
-            "values.yaml must have tenantIsolation section"
-        )
+        assert "tenantIsolation:" in text, "values.yaml must have tenantIsolation section"
         assert "tenantIsolation.enabled" in text or (
             "tenantIsolation:" in text and "enabled: true" in text
         ), "tenantIsolation.enabled must be present"

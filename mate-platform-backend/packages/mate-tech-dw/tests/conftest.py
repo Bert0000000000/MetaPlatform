@@ -1,4 +1,5 @@
 """Shared pytest fixtures for mate-tech-dw tests."""
+
 from __future__ import annotations
 
 import os
@@ -101,14 +102,18 @@ def acme_emp_id() -> callable:
     reference `dw-emp-1` (slot) instead of `dw-emp-acme-1` (concrete
     tenant-scoped id).
     """
+
     def _resolve(n: int) -> str:
         return f"dw-emp-acme-{n}"
+
     return _resolve
 
 
 @pytest.fixture
 def globex_emp_id() -> callable:
     """Same as `acme_emp_id` but for the globex tenant."""
+
     def _resolve(n: int) -> str:
         return f"dw-emp-globex-{n}"
+
     return _resolve

@@ -16,6 +16,7 @@ Per candidate (provider name + call factory):
 
 All candidates exhausted (or all cooling) → RuntimeError → 503 upstream.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -99,14 +100,10 @@ async def call_with_resilience(
                     provider=provider_name,
                     status=e.status_code,
                 )
-                raise HTTPException(
-                    status_code=e.status_code or 400, detail=str(e)
-                ) from e
+                raise HTTPException(status_code=e.status_code or 400, detail=str(e)) from e
             last_error = e
             if cooldown is not None:
-                await cooldown.record_failure(
-                    provider_name, retry_after_hint=e.retry_after
-                )
+                await cooldown.record_failure(provider_name, retry_after_hint=e.retry_after)
             continue
         except Exception as e:
             import httpx

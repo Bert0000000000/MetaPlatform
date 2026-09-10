@@ -7,14 +7,14 @@
 >
 > **平台运行环境（2026-09-09 实测）**：
 >
-> | 服务 | 地址 | 认证 |
-> |---|---|---|
-> | 前端 UI | http://localhost:9250 | admin/admin123 |
-> | API Gateway | http://localhost:8100 | Bearer JWT（RS256）|
-> | 登录 | `POST http://localhost:8100/api/v1/iam/auth/login` | `{"username":"admin","password":"admin123"}` |
-> | Keycloak | http://localhost:8080 (realm: metaplatform) | RS256 JWKS |
-> | MinIO | http://localhost:9000 (console: 9001) | meta/metasecretkey123 |
-> | Trino | http://localhost:8088（需 `docker start mate-trino`）| 无认证（内网）|
+> | 服务        | 地址                                                  | 认证                                         |
+> | ----------- | ----------------------------------------------------- | -------------------------------------------- |
+> | 前端 UI     | http://localhost:9250                                 | admin/admin123                               |
+> | API Gateway | http://localhost:8100                                 | Bearer JWT（RS256）                          |
+> | 登录        | `POST http://localhost:8100/api/v1/iam/auth/login`    | `{"username":"admin","password":"admin123"}` |
+> | Keycloak    | http://localhost:8080 (realm: metaplatform)           | RS256 JWKS                                   |
+> | MinIO       | http://localhost:9000 (console: 9001)                 | meta/metasecretkey123                        |
+> | Trino       | http://localhost:8088（需 `docker start mate-trino`） | 无认证（内网）                               |
 >
 > **安全基线**：`LEGACY_LOGIN_COMPAT=false` + `INSECURE_SKIP_SIGNATURE=false`（全 19+ 服务）。
 > LLM 通道：ARK Plan custom provider（`/api/plan/v3` + glm-5.3-flash，IAM admin configs 配置）。
@@ -29,16 +29,16 @@ CI jobs + 测试覆盖三层保障闭环。251 / 251 tests pass。
 
 ### 已完成批次
 
-| Batch | Commit | 关键能力 |
-|---|---|---|
-| API-GOV-01 | 1fa521fd | OpenAPI 单一契约源 |
-| ARCH-CORE-01 | eeaab5c5 | mate-kernel / mate-platform / mate-clients / app-* 四层结构 |
-| PLATFORM-K8S-01 | 4d0b73d6 | K8s / Helm / Keycloak / OTel / NetworkPolicy |
-| SEC-IAM-01 | 4d3d894e | Keycloak JWT 验证 + 服务身份 |
-| SEC-TENANT-01 | 026ce4a8 | 5 层隔离 + cross_tenant_admin |
-| PLATFORM-EVENT-01 | 95b35e43 | Outbox + 幂等消费者 + DLQ |
-| TECH-SERVICES | 7fa52dc8 | 17 域 5 步接入 + canonical reference |
-| GA-ACCEPTANCE | 87f589be | 13 硬规则收口 + pre-commit + GA CI |
+| Batch             | Commit   | 关键能力                                                     |
+| ----------------- | -------- | ------------------------------------------------------------ |
+| API-GOV-01        | 1fa521fd | OpenAPI 单一契约源                                           |
+| ARCH-CORE-01      | eeaab5c5 | mate-kernel / mate-platform / mate-clients / app-\* 四层结构 |
+| PLATFORM-K8S-01   | 4d0b73d6 | K8s / Helm / Keycloak / OTel / NetworkPolicy                 |
+| SEC-IAM-01        | 4d3d894e | Keycloak JWT 验证 + 服务身份                                 |
+| SEC-TENANT-01     | 026ce4a8 | 5 层隔离 + cross_tenant_admin                                |
+| PLATFORM-EVENT-01 | 95b35e43 | Outbox + 幂等消费者 + DLQ                                    |
+| TECH-SERVICES     | 7fa52dc8 | 17 域 5 步接入 + canonical reference                         |
+| GA-ACCEPTANCE     | 87f589be | 13 硬规则收口 + pre-commit + GA CI                           |
 
 ### 后续增量（v3.1）
 
@@ -66,6 +66,7 @@ CI jobs + 测试覆盖三层保障闭环。251 / 251 tests pass。
 **Mate Platform** 是基于 Ontology 本体引擎 + Polyglot Microservice 的企业级 AI 平台。
 
 ### 核心能力
+
 - **Ontology 本体引擎**：统一语义建模与推理
 - **低代码应用构建**：FlowGram/PlanSpec 可视化与 DSL + Temporal 可靠执行；LangGraph/AgentLoop 保留内部推理
 - **数字员工**：AI 驱动的自动化
@@ -84,18 +85,18 @@ CI jobs + 测试覆盖三层保障闭环。251 / 251 tests pass。
 
 ## 当前 Delivery Batch 接力（refactor/monorepo-shrink-phase-2 视角）
 
-| Batch | 状态 | Commit | 关键 ADR | AI Launch Prompt |
-|---|---|---|---|---|
-| API-GOV-01 | **Accepted** | 1fa521fd | — | `ai-launch-prompt.md`（batch A） |
-| ARCH-CORE-01 | **Accepted** | eeaab5c5 | — | `ai-launch-prompt-batchB.md` |
-| PLATFORM-K8S-01 | **Accepted** | 4d0b73d6 | ADR-0010 | `2026-07-30-ai-launch-prompt-batchC-platform-k8s.md` |
-| SEC-IAM-01 | **Accepted** | 4d3d894e | ADR-0011 | `2026-07-30-ai-launch-prompt-batchD-sec-iam-01.md` |
-| SEC-TENANT-01 | **Accepted** | 026ce4a8 | ADR-0012 | `2026-07-30-ai-launch-prompt-batchE-sec-tenant-01.md` |
+| Batch             | 状态         | Commit   | 关键 ADR | AI Launch Prompt                                          |
+| ----------------- | ------------ | -------- | -------- | --------------------------------------------------------- |
+| API-GOV-01        | **Accepted** | 1fa521fd | —        | `ai-launch-prompt.md`（batch A）                          |
+| ARCH-CORE-01      | **Accepted** | eeaab5c5 | —        | `ai-launch-prompt-batchB.md`                              |
+| PLATFORM-K8S-01   | **Accepted** | 4d0b73d6 | ADR-0010 | `2026-07-30-ai-launch-prompt-batchC-platform-k8s.md`      |
+| SEC-IAM-01        | **Accepted** | 4d3d894e | ADR-0011 | `2026-07-30-ai-launch-prompt-batchD-sec-iam-01.md`        |
+| SEC-TENANT-01     | **Accepted** | 026ce4a8 | ADR-0012 | `2026-07-30-ai-launch-prompt-batchE-sec-tenant-01.md`     |
 | PLATFORM-EVENT-01 | **Accepted** | 95b35e43 | ADR-0013 | `2026-07-30-ai-launch-prompt-batchF-platform-event-01.md` |
-| TECH-SERVICES | **Accepted** | 7fa52dc8 | ADR-0014 | `2026-07-30-ai-launch-prompt-batchG-tech-services.md` |
-| GA-ACCEPTANCE | **Accepted** | 87f589be | ADR-0015 | `2026-07-30-ai-launch-prompt-batchH-ga-acceptance.md` |
-| BUSINESS-SLICES | In Progress | — | ADR-0016 | `2026-07-30-ai-launch-prompt-batchI-business-slices.md` |
-| DATA-D0-D8 | In Progress | — | ADR-0017 | `2026-07-30-ai-launch-prompt-batchJ-data-d0-d8.md` |
+| TECH-SERVICES     | **Accepted** | 7fa52dc8 | ADR-0014 | `2026-07-30-ai-launch-prompt-batchG-tech-services.md`     |
+| GA-ACCEPTANCE     | **Accepted** | 87f589be | ADR-0015 | `2026-07-30-ai-launch-prompt-batchH-ga-acceptance.md`     |
+| BUSINESS-SLICES   | In Progress  | —        | ADR-0016 | `2026-07-30-ai-launch-prompt-batchI-business-slices.md`   |
+| DATA-D0-D8        | In Progress  | —        | ADR-0017 | `2026-07-30-ai-launch-prompt-batchJ-data-d0-d8.md`        |
 
 > 详细 13 门禁证据见 `docs/active/delivery/evidence/<BATCH>-ACCEPTANCE.md`。
 > 全部批次跟踪表见 `docs/active/delivery/PROGRAM-BOARD.md`。
@@ -103,6 +104,7 @@ CI jobs + 测试覆盖三层保障闭环。251 / 251 tests pass。
 ## 已落地的基础设施（PLATFORM-K8S-01 / SEC-IAM-01 / SEC-TENANT-01）
 
 ### 运行时（PLATFORM-K8S-01）
+
 - `infra/helm/` umbrella chart + 4 sub-charts（otel-collector / keycloak /
   network-policies / service-templates）。
 - 5 套环境 values（默认 `values.yaml` + `values-local.yaml` + `values-staging.yaml` + `values-production.yaml` + `.helmignore`）。GOVERN-09 修订原文「6 套」错记。
@@ -111,15 +113,17 @@ CI jobs + 测试覆盖三层保障闭环。251 / 251 tests pass。
 - `infra/tests/` 105 pytest 静态校验。
 
 ### 身份（SEC-IAM-01）
+
 - `mate-platform/auth/` 7 模块：config / jwks / verifier / identity /
-  tenant / middleware / __init__。
+  tenant / middleware / **init**。
 - `mate-clients/security/` 3 模块：BearerAuth / OutgoingAuthMiddleware /
-  __init__。
+  **init**。
 - `tests/test_sec_iam_01.py` 29 tests pass。
 - 旧 `mate-tech-iam` 标 deprecated（生产 profile 拒绝加载）。
 - OpenAPI securityScheme 升级：bearerAuth + tenantHeader + oidcScopes。
 
 ### 租户（SEC-TENANT-01）
+
 - `mate-platform/tenancy/` 4 模块：repository / guards / db_filter / audit。
 - `mate-platform/messaging/kafka_tenant.py`：topic 命名约定 +
   assert_message_tenant 消费端校验。
@@ -138,21 +142,21 @@ docs/ADR → contract → failing tests → feature → infrastructure → deplo
 
 完整对位矩阵（13 × 9 workflow × owner × 状态）见 `docs/active/governance/HARD-RULES-MATRIX.md`。
 
-| # | 硬规则 | 守门 | 收口证据 | 状态 |
-|---|---|---|---|---|
-| 1 | Swagger 没有接口，不写 route | oasdiff | `ga-001-openapi` CI job | ✅ |
-| 2 | PRD 没有 Requirement ID | 17 service contracts | `ga-002-requirement-ids` | ✅ |
-| 3 | **没有 tenant 上下文，不访问 repository** | `forbid_raw_sql` | `mate-platform/tenancy/db_filter.py` + 19 tests | ✅ |
-| 4 | **外部系统没有 ACL Client** | `forbid_bare_httpx` | `mate-clients/{kafka,redis,minio}` + BearerAuth | ✅ |
-| 5 | **Production profile 禁止 fallback** | `forbid_legacy_fallback` | SEC-IAM-01 startup guard | ✅ |
-| 6 | **静态检查失败不合并** | `pyright-strict` | ruff + pyright in `ga-006-static` | ✅ |
-| 7 | **契约或集成测试跳过不标记 Accepted** | `forbid_skip_tests` | `ga-007-skip-tests` | ✅ |
-| 8 | **没有 K8s readiness + 回滚** | helm/kubeconform | `ga-008-helm` + default-deny NetworkPolicy | ✅ |
-| 9 | **没有审计、指标、trace** | OTel collector | tenant.id 注入 + 17 OTel tests | ✅ |
-| 10 | **所有状态以验收证据为准** | `require_evidence` | Program Board evidence column + `ga-010-evidence` | ✅ |
-| 11 | **helm-docs 同步每个子 chart 的 README** | `helm-docs-sync` | `ga-011-helm-docs` | ✅ |
-| 12 | **Secret 不进 git** | gitleaks | `ga-012-secret-scan` + SealedSecret/ExternalSecret | ✅ |
-| 13 | **NetworkPolicy 缺失 = prod 不通过** | namespace + per-service default-deny | `ga-013-networkpolicy` inventory/rendered coverage | ✅ |
+| #   | 硬规则                                    | 守门                                 | 收口证据                                           | 状态 |
+| --- | ----------------------------------------- | ------------------------------------ | -------------------------------------------------- | ---- |
+| 1   | Swagger 没有接口，不写 route              | oasdiff                              | `ga-001-openapi` CI job                            | ✅   |
+| 2   | PRD 没有 Requirement ID                   | 17 service contracts                 | `ga-002-requirement-ids`                           | ✅   |
+| 3   | **没有 tenant 上下文，不访问 repository** | `forbid_raw_sql`                     | `mate-platform/tenancy/db_filter.py` + 19 tests    | ✅   |
+| 4   | **外部系统没有 ACL Client**               | `forbid_bare_httpx`                  | `mate-clients/{kafka,redis,minio}` + BearerAuth    | ✅   |
+| 5   | **Production profile 禁止 fallback**      | `forbid_legacy_fallback`             | SEC-IAM-01 startup guard                           | ✅   |
+| 6   | **静态检查失败不合并**                    | `pyright-strict`                     | ruff + pyright in `ga-006-static`                  | ✅   |
+| 7   | **契约或集成测试跳过不标记 Accepted**     | `forbid_skip_tests`                  | `ga-007-skip-tests`                                | ✅   |
+| 8   | **没有 K8s readiness + 回滚**             | helm/kubeconform                     | `ga-008-helm` + default-deny NetworkPolicy         | ✅   |
+| 9   | **没有审计、指标、trace**                 | OTel collector                       | tenant.id 注入 + 17 OTel tests                     | ✅   |
+| 10  | **所有状态以验收证据为准**                | `require_evidence`                   | Program Board evidence column + `ga-010-evidence`  | ✅   |
+| 11  | **helm-docs 同步每个子 chart 的 README**  | `helm-docs-sync`                     | `ga-011-helm-docs`                                 | ✅   |
+| 12  | **Secret 不进 git**                       | gitleaks                             | `ga-012-secret-scan` + SealedSecret/ExternalSecret | ✅   |
+| 13  | **NetworkPolicy 缺失 = prod 不通过**      | namespace + per-service default-deny | `ga-013-networkpolicy` inventory/rendered coverage | ✅   |
 
 ## 新 Codex / AI 会话接力
 
@@ -179,13 +183,13 @@ docs/ADR → contract → failing tests → feature → infrastructure → deplo
 
 ### 12 Kernel 基元（MP-ONT-KERNEL-01 交付，ADR-0021 冻结）
 
-| 层 | 基元 |
-|---|---|
-| 标识 | `ClassRef` / `Version` |
+| 层   | 基元                                                                |
+| ---- | ------------------------------------------------------------------- |
+| 标识 | `ClassRef` / `Version`                                              |
 | 类型 | `Property` / `ObjectType` / `LinkType` / `ActionType` / `Interface` |
-| 实例 | `Individual` / `LinkInstance` |
-| 推理 | `Axiom` / `Function` |
-| 查询 | `ObjectSet` |
+| 实例 | `Individual` / `LinkInstance`                                       |
+| 推理 | `Axiom` / `Function`                                                |
+| 查询 | `ObjectSet`                                                         |
 
 `rid` 形如 `ont.<tenant>.<kind>.<slug>.<version>`。
 

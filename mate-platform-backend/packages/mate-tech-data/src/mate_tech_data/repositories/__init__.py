@@ -6,6 +6,7 @@ products persist in PostgreSQL. The dynamic helpers (``get_source_schema`` /
 ``test_source_connection``) and the ``*_to_dict`` serializers always come from
 ``in_memory`` because they operate on the same domain dataclasses.
 """
+
 from __future__ import annotations
 
 import os

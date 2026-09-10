@@ -23,6 +23,7 @@
 ### 3.1 Dockerfile（多阶段）
 
 3 个阶段：
+
 - **deps**：装依赖（Node 22.19 + pnpm 10）
 - **build**：构建（pnpm build）
 - **runtime**：运行时（最小化镜像 + tini + 非 root 用户）
@@ -66,11 +67,11 @@
 
 ## 5. 关键依赖
 
-|依赖 | 来源 |
-|---|---|
-| dsh 源码 | [`deepseek-ai/deepseek-harness`](https://github.com/deepseek-ai/deepseek-harness) |
-| Harbor | 内部镜像仓库 |
-| Node.js 22.19+ | 基础镜像 |
+| 依赖           | 来源                                                                              |
+| -------------- | --------------------------------------------------------------------------------- |
+| dsh 源码       | [`deepseek-ai/deepseek-harness`](https://github.com/deepseek-ai/deepseek-harness) |
+| Harbor         | 内部镜像仓库                                                                      |
+| Node.js 22.19+ | 基础镜像                                                                          |
 
 ## 6. 验收标准
 
@@ -85,8 +86,8 @@
 
 ## 7. 风险与缓解
 
-|风险 | 缓解 |
-|---|---|
-| 镜像体积过大 | 多阶段 + alpine + 仅 production deps |
-| 漏洞扫描失败 | 锁版本 + 定期重 build |
-| Harbor 不可用 | 备选推 Docker Hub 或 GHCR |
+| 风险          | 缓解                                 |
+| ------------- | ------------------------------------ |
+| 镜像体积过大  | 多阶段 + alpine + 仅 production deps |
+| 漏洞扫描失败  | 锁版本 + 定期重 build                |
+| Harbor 不可用 | 备选推 Docker Hub 或 GHCR            |

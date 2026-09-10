@@ -29,6 +29,7 @@ falling back to the text-encoding fallback path. Real DeepDoc parsers
 (PDF/Word/PPT) will be added in P1.6 by extending ``parser_registry``;
 the wiring + fallback path is in place and unit-tested.
 """
+
 from __future__ import annotations
 
 import os
@@ -41,8 +42,17 @@ from mate_tech_rag.chunking import Chunker, create_chunker
 
 
 class RAGFlowClient(Protocol):
-    def parse(self, content: str, document_id: str, *, metadata: dict[str, str] | None = None) -> list[str]: ...
-    def parse_bytes(self, raw: bytes, document_id: str, *, filename: str = "", metadata: dict[str, str] | None = None) -> list[str]: ...
+    def parse(
+        self, content: str, document_id: str, *, metadata: dict[str, str] | None = None
+    ) -> list[str]: ...
+    def parse_bytes(
+        self,
+        raw: bytes,
+        document_id: str,
+        *,
+        filename: str = "",
+        metadata: dict[str, str] | None = None,
+    ) -> list[str]: ...
     def count(self) -> int: ...
 
 
@@ -158,7 +168,9 @@ class InMemoryRAGFlowClient:
     ) -> tuple[Chunker, int, int]:
         """Return the cached chunker + effective (chunk_size, overlap)."""
         eff_strategy, eff_size, eff_overlap = self._resolve_chunk_config(
-            chunker_strategy, chunk_size, overlap,
+            chunker_strategy,
+            chunk_size,
+            overlap,
         )
         key = (eff_strategy, eff_size, eff_overlap)
         cached = self._chunker_cache.get(key)
@@ -196,7 +208,9 @@ class InMemoryRAGFlowClient:
         if not content.strip():
             return []
         chunker, eff_size, eff_overlap = self._resolve_chunker(
-            chunker_strategy, chunk_size, overlap,
+            chunker_strategy,
+            chunk_size,
+            overlap,
         )
         chunks = chunker.chunk(content, chunk_size=eff_size, overlap=eff_overlap)
         # Assign chunk ids
@@ -237,14 +251,19 @@ class InMemoryRAGFlowClient:
             meta["filename"] = filename
 
         eff_strategy, eff_size, eff_overlap = self._resolve_chunk_config(
-            chunker_strategy, chunk_size, overlap,
+            chunker_strategy,
+            chunk_size,
+            overlap,
         )
 
         chunks: list[str] | None = None
         if parser is not None:
             try:
                 chunks = parser(
-                    raw, document_id, filename, meta,
+                    raw,
+                    document_id,
+                    filename,
+                    meta,
                     chunk_size=eff_size,
                     overlap=eff_overlap,
                 )
@@ -256,7 +275,9 @@ class InMemoryRAGFlowClient:
             # No registry hit (or registry parser failed): text fallback
             # honours the per-call chunking override.
             return self._text_fallback_decode(
-                raw, document_id, meta,
+                raw,
+                document_id,
+                meta,
                 chunker_strategy=eff_strategy,
                 chunk_size=eff_size,
                 overlap=eff_overlap,

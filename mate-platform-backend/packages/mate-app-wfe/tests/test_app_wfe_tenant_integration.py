@@ -9,6 +9,7 @@ These tests exercise the auth + tenancy contract end-to-end:
   - test_no_tenant_400: token with empty tenant_id is rejected by
     require_tenant (TenantAccessError -> 400 E_TENANT_REQUIRED).
 """
+
 from __future__ import annotations
 
 import time
@@ -50,8 +51,8 @@ _VALID_BPMN = (
     '<bpmn:process id="proc-1" isExecutable="true">'
     '<bpmn:startEvent id="start-1"/>'
     '<bpmn:endEvent id="end-1"/>'
-    '</bpmn:process>'
-    '</bpmn:definitions>'
+    "</bpmn:process>"
+    "</bpmn:definitions>"
 )
 
 

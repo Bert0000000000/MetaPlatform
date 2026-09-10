@@ -19,13 +19,13 @@ GOVERN-06 = 4 个子 spec；当前进度：✅ 子 spec-00（本文）。剩余 
 
 ## 子 Spec 列表
 
-| ID | 子 Spec | 范围 | 前置 | 状态 | 估计影响 tests |
-|---|---|---|---|---|---:|
-| ✅ 06-00 | 实施规格文档（本文） | `evidence/GOVERN-06-SUBSPEC.md` | GOVERN-04/-05 | **Accepted** | 0 |
-| 06-01 | PG RLS FORCE POLICY 落地（Alembic 0013 + pg_repo psycopg2 桥） | `alembic/versions/20260802_0014_ont_kernel_rls.py` + `pg_repo.py:_connect/_execute` | 06-00 | Planned | ~10 |
-| 06-02 | Helm postgresql row_security=on + API 层字符串前缀复测 | `infra/helm/charts/postgresql/templates/configmap.yaml` + `statefulset.yaml` + `v2_kernel/api.py`（已有，仅补注释） | 06-01 | Planned | 0 |
-| 06-03 | test_tenant_isolation_hard.py ≥6 跨租户攻击向量 | `packages/mate-tech-ont/tests/security/` | 06-01 | Planned | ≥6 |
-| 06-04 | commit + PROGRAM-BOARD 刷新 | git + `delivery/PROGRAM-BOARD.md` | 06-03 | Planned | 0 |
+| ID       | 子 Spec                                                        | 范围                                                                                                                | 前置          | 状态         | 估计影响 tests |
+| -------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------- | ------------ | -------------: |
+| ✅ 06-00 | 实施规格文档（本文）                                           | `evidence/GOVERN-06-SUBSPEC.md`                                                                                     | GOVERN-04/-05 | **Accepted** |              0 |
+| 06-01    | PG RLS FORCE POLICY 落地（Alembic 0013 + pg_repo psycopg2 桥） | `alembic/versions/20260802_0014_ont_kernel_rls.py` + `pg_repo.py:_connect/_execute`                                 | 06-00         | Planned      |            ~10 |
+| 06-02    | Helm postgresql row_security=on + API 层字符串前缀复测         | `infra/helm/charts/postgresql/templates/configmap.yaml` + `statefulset.yaml` + `v2_kernel/api.py`（已有，仅补注释） | 06-01         | Planned      |              0 |
+| 06-03    | test_tenant_isolation_hard.py ≥6 跨租户攻击向量                | `packages/mate-tech-ont/tests/security/`                                                                            | 06-01         | Planned      |             ≥6 |
+| 06-04    | commit + PROGRAM-BOARD 刷新                                    | git + `delivery/PROGRAM-BOARD.md`                                                                                   | 06-03         | Planned      |              0 |
 
 ## 子 Spec 06-01 详细（PG RLS FORCE POLICY 落地）
 
@@ -192,16 +192,16 @@ Alembic 0013 是**数据库对象级**的策略（PG 角色启用 RLS）；Helm 
 
 ### 6+ 跨租户攻击向量
 
-| ID | 攻击 | 期望 |
-|---|---|---|
-| T1 | `acme` 用户 SELECT 全表 `ont_individual` | 仅见 acme 的 row；其他租户行 0 |
-| T2 | `acme` 用户构造 `rid="ont.other.ind.po.0"` 调 `create_individual` | raise TenantAccessError（API 层字符串前缀兜底） |
-| T3 | `acme` 用户调 `apply_action(target_iid="ont.other.ind.po.0")` | raise TenantAccessError |
-| T4 | `acme` 用户调 `upsert_object_type(rid="ont.other.obj.evil.v1")` | raise TenantAccessError |
-| T5 | 跨租户 `link_instance` 操作（src 在 other / dst 在 acme） | raise TenantAccessError |
-| T6 | 直接绕过 API 层用 `repo.tenant_scope("acme")` 写 `tenant_id='other'` 的 row | PG RLS WITH CHECK 拦截，raise psycopg2.errors.InsufficientPrivilege（或 PolicyViolation） |
-| T7 | `tenant_scope("acme")` 内 SELECT 其他租户的 row | 0 行（policy USING 拦截） |
-| T8 | `tenant_scope("acme")` 内 UPDATE 别人的 row | 0 行受影响（policy WITH CHECK 拦截） |
+| ID  | 攻击                                                                        | 期望                                                                                      |
+| --- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| T1  | `acme` 用户 SELECT 全表 `ont_individual`                                    | 仅见 acme 的 row；其他租户行 0                                                            |
+| T2  | `acme` 用户构造 `rid="ont.other.ind.po.0"` 调 `create_individual`           | raise TenantAccessError（API 层字符串前缀兜底）                                           |
+| T3  | `acme` 用户调 `apply_action(target_iid="ont.other.ind.po.0")`               | raise TenantAccessError                                                                   |
+| T4  | `acme` 用户调 `upsert_object_type(rid="ont.other.obj.evil.v1")`             | raise TenantAccessError                                                                   |
+| T5  | 跨租户 `link_instance` 操作（src 在 other / dst 在 acme）                   | raise TenantAccessError                                                                   |
+| T6  | 直接绕过 API 层用 `repo.tenant_scope("acme")` 写 `tenant_id='other'` 的 row | PG RLS WITH CHECK 拦截，raise psycopg2.errors.InsufficientPrivilege（或 PolicyViolation） |
+| T7  | `tenant_scope("acme")` 内 SELECT 其他租户的 row                             | 0 行（policy USING 拦截）                                                                 |
+| T8  | `tenant_scope("acme")` 内 UPDATE 别人的 row                                 | 0 行受影响（policy WITH CHECK 拦截）                                                      |
 
 ### 验收
 
@@ -217,13 +217,13 @@ ADR-0012 §实施层（PG RLS 八表全量）+ `SEC-TENANT-01-ACCEPTANCE.md` §3
 
 ## 风险与缓解
 
-| 风险 | 触发 | 缓解 |
-|---|---|---|
-| Alembic revision 号冲突 | 与 `20260802_0013_apphub_runtime_shortlink.py` 同号 | 实施前 `alembic heads`；改名 apphub → `0014` 或本 spec 用 `20260807_0013_ont_kernel_rls.py`（日期后缀） |
-| `_install_rls` 注入 vs `_escape_pg_string` 已有 | f-string 拼接到 `SET LOCAL` 旧实现可被 SQL 截断 | 本 spec 强制改用 psycopg2 参数化 `%s`（顺带硬化 0008） |
-| `tenant_scope` 上下文管理器嵌套 | 多层 API 调用内部再开 repo | 单实例 + 线程局部 `threading.local()` 兜底（实施时若测出并发问题再加） |
-| dev profile 关 RLS 致 T6-T8 失败 | `values-local.yaml` 关 `row_security` | tests `skipif(not _pg_available())`；dev 用 InMemory repo（已有）规避 |
-| `psycopg2.errors.InsufficientPrivilege` import 路径 | 不同 psycopg2 版本 | `from psycopg2 import errors as pg_errors` 后 `pg_errors.InsufficientPrivilege` |
+| 风险                                                | 触发                                                | 缓解                                                                                                    |
+| --------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Alembic revision 号冲突                             | 与 `20260802_0013_apphub_runtime_shortlink.py` 同号 | 实施前 `alembic heads`；改名 apphub → `0014` 或本 spec 用 `20260807_0013_ont_kernel_rls.py`（日期后缀） |
+| `_install_rls` 注入 vs `_escape_pg_string` 已有     | f-string 拼接到 `SET LOCAL` 旧实现可被 SQL 截断     | 本 spec 强制改用 psycopg2 参数化 `%s`（顺带硬化 0008）                                                  |
+| `tenant_scope` 上下文管理器嵌套                     | 多层 API 调用内部再开 repo                          | 单实例 + 线程局部 `threading.local()` 兜底（实施时若测出并发问题再加）                                  |
+| dev profile 关 RLS 致 T6-T8 失败                    | `values-local.yaml` 关 `row_security`               | tests `skipif(not _pg_available())`；dev 用 InMemory repo（已有）规避                                   |
+| `psycopg2.errors.InsufficientPrivilege` import 路径 | 不同 psycopg2 版本                                  | `from psycopg2 import errors as pg_errors` 后 `pg_errors.InsufficientPrivilege`                         |
 
 ## 关联 ADR / Board / Acceptance
 

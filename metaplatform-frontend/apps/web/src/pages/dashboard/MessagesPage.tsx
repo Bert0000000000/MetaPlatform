@@ -88,7 +88,7 @@ const SkeletonLine: React.FC<{ width?: string; height?: string; style?: React.CS
 );
 
 export default function MessagesPage() {
-  
+
   // 数据状态
   const [messages, setMessages] = useState<MessageItem[]>(FALLBACK_MESSAGES);
   const [detailMessage, setDetailMessage] = useState<MessageItem | null>(null);

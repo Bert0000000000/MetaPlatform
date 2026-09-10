@@ -10,6 +10,7 @@ Covers all 9 endpoints under ``/api/v1/data/products``:
 This mirrors ``test_app_data.py`` for CDC tasks + data sources,
 satisfying FR-DATA-016..024.
 """
+
 from __future__ import annotations
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
@@ -46,7 +47,9 @@ def test_list_data_products_with_status_filter(client, auth_headers_acme) -> Non
     draft_id = create.json()["id"]
 
     r = client.get(
-        "/api/v1/data/products", params={"status": "draft"}, headers=auth_headers_acme,
+        "/api/v1/data/products",
+        params={"status": "draft"},
+        headers=auth_headers_acme,
     )
     assert r.status_code == 200, r.text
     body = r.json()
@@ -81,7 +84,9 @@ def test_list_data_products_with_modality_filter(client, auth_headers_acme) -> N
 
 
 def test_create_data_product(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """POST /products → 200, defaults: status=draft, version=1, modality=structured."""
     r = client.post(
@@ -114,7 +119,8 @@ def test_create_data_product(
 
 def test_get_data_product(client, auth_headers_acme) -> None:
     products = client.get(
-        "/api/v1/data/products", headers=auth_headers_acme,
+        "/api/v1/data/products",
+        headers=auth_headers_acme,
     ).json()["items"]
     pid = products[0]["id"]
 
@@ -131,7 +137,9 @@ def test_get_data_product_404(client, auth_headers_acme) -> None:
 
 
 def test_update_data_product(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """PUT /products/{id} → mutable fields patched; outbox emitted."""
     create = client.post(
@@ -170,7 +178,9 @@ def test_update_data_product(
 
 
 def test_delete_data_product(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     create = client.post(
         "/api/v1/data/products",
@@ -201,7 +211,9 @@ def test_delete_data_product(
 # Lifecycle transitions
 # ---------------------------------------------------------------------------
 def test_publish_data_product_bumps_version(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """POST /publish sets status=published + version += 1, emits event."""
     create = client.post(
@@ -219,7 +231,8 @@ def test_publish_data_product_bumps_version(
     outbox._records.clear()
 
     r = client.post(
-        f"/api/v1/data/products/{pid}/publish", headers=auth_headers_acme,
+        f"/api/v1/data/products/{pid}/publish",
+        headers=auth_headers_acme,
     )
     assert r.status_code == 200, r.text
     body = r.json()
@@ -246,13 +259,16 @@ def test_certify_requires_owner(client, auth_headers_acme) -> None:
     pid = create.json()["id"]
 
     r = client.post(
-        f"/api/v1/data/products/{pid}/certify", headers=auth_headers_acme,
+        f"/api/v1/data/products/{pid}/certify",
+        headers=auth_headers_acme,
     )
     assert r.status_code == 409, r.text
 
 
 def test_certify_with_owner_emits_event(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """POST /certify with non-empty owner → status=certified + outbox event."""
     create = client.post(
@@ -269,7 +285,8 @@ def test_certify_with_owner_emits_event(
     outbox._records.clear()
 
     r = client.post(
-        f"/api/v1/data/products/{pid}/certify", headers=auth_headers_acme,
+        f"/api/v1/data/products/{pid}/certify",
+        headers=auth_headers_acme,
     )
     assert r.status_code == 200, r.text
     body = r.json()
@@ -281,7 +298,9 @@ def test_certify_with_owner_emits_event(
 
 
 def test_suspend_data_product(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """POST /suspend sets status=suspended; no version bump; emits event."""
     create = client.post(
@@ -298,7 +317,8 @@ def test_suspend_data_product(
     outbox._records.clear()
 
     r = client.post(
-        f"/api/v1/data/products/{pid}/suspend", headers=auth_headers_acme,
+        f"/api/v1/data/products/{pid}/suspend",
+        headers=auth_headers_acme,
     )
     assert r.status_code == 200, r.text
     body = r.json()
@@ -323,7 +343,8 @@ def test_data_product_versions_lists_history(client, auth_headers_acme) -> None:
     pid = create.json()["id"]
 
     r = client.get(
-        f"/api/v1/data/products/{pid}/versions", headers=auth_headers_acme,
+        f"/api/v1/data/products/{pid}/versions",
+        headers=auth_headers_acme,
     )
     assert r.status_code == 200, r.text
     body = r.json()
@@ -340,7 +361,8 @@ def test_data_product_versions_lists_history(client, auth_headers_acme) -> None:
 # Pagination + tenant isolation
 # ---------------------------------------------------------------------------
 def test_list_data_products_pagination(
-    client, auth_headers_acme,
+    client,
+    auth_headers_acme,
 ) -> None:
     """Pagination metadata is correct for small page sizes."""
     # Use size=1 -> expect 3 pages from a 3+ seed catalog
@@ -359,7 +381,9 @@ def test_list_data_products_pagination(
 
 
 def test_data_product_tenant_isolation(
-    client, auth_headers_acme, auth_headers_globex,
+    client,
+    auth_headers_acme,
+    auth_headers_globex,
 ) -> None:
     """Cross-tenant: globex cannot read or delete acme's product → 404."""
     # acme creates a product
@@ -378,25 +402,29 @@ def test_data_product_tenant_isolation(
 
     # globex cannot see it
     r = client.get(
-        f"/api/v1/data/products/{pid}", headers=auth_headers_globex,
+        f"/api/v1/data/products/{pid}",
+        headers=auth_headers_globex,
     )
     assert r.status_code == 404, r.text
 
     # ...and cannot delete it
     r2 = client.delete(
-        f"/api/v1/data/products/{pid}", headers=auth_headers_globex,
+        f"/api/v1/data/products/{pid}",
+        headers=auth_headers_globex,
     )
     assert r2.status_code == 404, r2.text
 
     # ...and cannot publish it
     r3 = client.post(
-        f"/api/v1/data/products/{pid}/publish", headers=auth_headers_globex,
+        f"/api/v1/data/products/{pid}/publish",
+        headers=auth_headers_globex,
     )
     assert r3.status_code == 404, r3.text
 
     # Confirm the product is still owned by acme and visible to acme
     still = client.get(
-        f"/api/v1/data/products/{pid}", headers=auth_headers_acme,
+        f"/api/v1/data/products/{pid}",
+        headers=auth_headers_acme,
     )
     assert still.status_code == 200, still.text
     assert still.json()["tenant_id"] == "tenant-acme"

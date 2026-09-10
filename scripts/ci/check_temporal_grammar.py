@@ -10,14 +10,20 @@
   5. signal 处理器不得有副作用 IO（只改状态 + wait_condition）。
 退出码：0 通过 / 1 违例（CI 用）。
 """
+
 from __future__ import annotations
 
 import ast
 import sys
 from pathlib import Path
 
-ROOT = (Path(__file__).resolve().parents[2] / "mate-platform-backend" / "packages"
-        / "mate-tech-orchestrator" / "src")
+ROOT = (
+    Path(__file__).resolve().parents[2]
+    / "mate-platform-backend"
+    / "packages"
+    / "mate-tech-orchestrator"
+    / "src"
+)
 FILES = [
     ROOT / "mate_tech_orchestrator" / "temporal_workflow.py",
     ROOT / "mate_tech_orchestrator" / "temporal_worker.py",
@@ -51,16 +57,12 @@ for path in FILES:
             dump = " ".join(ast.dump(d) for d in node.decorator_list)
             if "defn" in dump and "workflow" in dump.lower():
                 if not node.name.endswith("Workflow"):
-                    violations.append(
-                        f"{path.name}: workflow class {node.name} 缺 Workflow 后缀"
-                    )
+                    violations.append(f"{path.name}: workflow class {node.name} 缺 Workflow 后缀")
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             dump = " ".join(ast.dump(d) for d in node.decorator_list)
             if "defn" in dump and "activity" in dump:
                 if not node.name.startswith("orch_"):
-                    violations.append(
-                        f"{path.name}: activity {node.name} 缺 orch_ 前缀"
-                    )
+                    violations.append(f"{path.name}: activity {node.name} 缺 orch_ 前缀")
 
 # execute_activity 必须 retry_policy（workflow 文件）
 wf_src = FILES[0].read_text(encoding="utf-8") if FILES[0].exists() else ""
@@ -88,5 +90,4 @@ if violations:
     for v in violations:
         print(f"  - {v}")
     sys.exit(1)
-print("TEMPORAL GRAMMAR PASS "
-      f"(workflows/activities 命名 + retry_policy + 注册一致 + selfheal)")
+print("TEMPORAL GRAMMAR PASS (workflows/activities 命名 + retry_policy + 注册一致 + selfheal)")

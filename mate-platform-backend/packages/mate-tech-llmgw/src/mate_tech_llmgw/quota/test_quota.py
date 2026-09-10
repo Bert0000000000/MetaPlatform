@@ -1,4 +1,5 @@
 """Quota tests (ST-5.5.4.3)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -37,9 +38,7 @@ def _make_redis_mock_exceeded(req_count: int, tok_count: int, reason_idx: int):
     """Redis mock whose Lua call reports a specific limit breach."""
     mock_redis = AsyncMock()
     mock_redis.pipeline = MagicMock()
-    mock_redis.eval = AsyncMock(
-        return_value=[0, req_count, tok_count, 30, reason_idx]
-    )
+    mock_redis.eval = AsyncMock(return_value=[0, req_count, tok_count, 30, reason_idx])
     return mock_redis
 
 
@@ -67,9 +66,7 @@ async def test_quota_tpm_exceeded() -> None:
 async def test_quota_within_limit() -> None:
     """未超限 -> 成功."""
     cfg = QuotaConfig(rpm_limit=10, tpm_limit=10_000, window_sec=60)
-    mock_redis = _make_redis_mock(
-        execute_return=[1, True, 100, True]
-    )
+    mock_redis = _make_redis_mock(execute_return=[1, True, 100, True])
     bucket = RedisTokenBucket(redis_client=mock_redis, config=cfg)
     await bucket.acquire(tenant_id="acme", estimated_tokens=100)
 
@@ -78,9 +75,7 @@ async def test_quota_within_limit() -> None:
 async def test_with_quota_decorator_passes() -> None:
     """ST-5.5.4.2: 装饰器正常路径."""
     cfg = QuotaConfig(rpm_limit=10, tpm_limit=10_000)
-    mock_redis = _make_redis_mock(
-        execute_return=[1, True, 100, True]
-    )
+    mock_redis = _make_redis_mock(execute_return=[1, True, 100, True])
     bucket = RedisTokenBucket(redis_client=mock_redis, config=cfg)
 
     @with_quota(bucket=bucket, config=cfg, queue_timeout=0.1, poll_interval=0.05)

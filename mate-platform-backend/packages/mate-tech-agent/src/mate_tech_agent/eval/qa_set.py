@@ -4,6 +4,7 @@
 - expected_mode: AUTO/FACTUAL/ENTITY
 - expected_keywords: 答案应含关键词
 """
+
 from __future__ import annotations
 
 from typing import TypedDict

@@ -2,6 +2,7 @@
 
 泛型消息：payload + headers + traceId + tenantId + key + timestamp.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

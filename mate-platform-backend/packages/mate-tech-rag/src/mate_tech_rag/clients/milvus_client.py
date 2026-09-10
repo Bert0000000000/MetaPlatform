@@ -1,4 +1,5 @@
 """MilvusHybridClient: real Milvus v2.5+ connection for FACTUAL retrieval."""
+
 from __future__ import annotations
 
 import contextlib
@@ -15,7 +16,13 @@ _log = logging.getLogger(__name__)
 
 class HybridClient(Protocol):
     def search(self, query: str, query_vector: list[float], top_k: int = 10) -> list[ChunkHit]: ...
-    def add(self, document_id: str, text: str, vector: list[float], metadata: dict[str, str] | None = None) -> str: ...
+    def add(
+        self,
+        document_id: str,
+        text: str,
+        vector: list[float],
+        metadata: dict[str, str] | None = None,
+    ) -> str: ...
     def count(self) -> int: ...
 
 
@@ -27,10 +34,18 @@ class MilvusHybridClient:
 
     DEFAULT_COLLECTION = "mate_kb_chunks"
 
-    def __init__(self, host: str | None = None, port: str | int | None = None, collection_name: str | None = None, dim: int = 384) -> None:
+    def __init__(
+        self,
+        host: str | None = None,
+        port: str | int | None = None,
+        collection_name: str | None = None,
+        dim: int = 384,
+    ) -> None:
         self._host = host or os.environ.get("MILVUS_HOST", "localhost")
         self._port = int(port or os.environ.get("MILVUS_PORT", "19530"))
-        self._collection = collection_name or os.environ.get("MILVUS_COLLECTION", self.DEFAULT_COLLECTION)
+        self._collection = collection_name or os.environ.get(
+            "MILVUS_COLLECTION", self.DEFAULT_COLLECTION
+        )
         self._dim = dim
         self._client: Any = None
         self._lock = threading.Lock()
@@ -56,14 +71,28 @@ class MilvusHybridClient:
             _log.warning("Milvus connect failed (%s:%d): %s", self._host, self._port, exc)
             self._client = None
 
-    def add(self, document_id: str, text: str, vector: list[float], metadata: dict[str, str] | None = None) -> str:
+    def add(
+        self,
+        document_id: str,
+        text: str,
+        vector: list[float],
+        metadata: dict[str, str] | None = None,
+    ) -> str:
         chunk_id = str(uuid.uuid4())
         if self._client is None:
             return chunk_id
         with self._lock:
             self._client.insert(
                 self._collection,
-                data=[{"id": chunk_id, "document_id": document_id, "text": text, "embedding": list(vector), "metadata": str(metadata or {})}],
+                data=[
+                    {
+                        "id": chunk_id,
+                        "document_id": document_id,
+                        "text": text,
+                        "embedding": list(vector),
+                        "metadata": str(metadata or {}),
+                    }
+                ],
             )
         return chunk_id
 

@@ -4,6 +4,7 @@ Entities: McpTool, McpResource, McpPrompt.
 These capture the registry state of the MCP server (tools, resources,
 prompt templates) so it can be persisted to SQL.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -58,8 +59,12 @@ def _seed_tools(tenant_id: str) -> dict[str, McpTool]:
     ]
     return {
         tid: McpTool(
-            id=tid, tenant_id=tenant_id, name=name, description=desc,
-            enabled=en, input_schema={"type": "object"},
+            id=tid,
+            tenant_id=tenant_id,
+            name=name,
+            description=desc,
+            enabled=en,
+            input_schema={"type": "object"},
             created_at="2026-08-01T00:00:00Z",
             updated_at="2026-08-01T00:00:00Z",
         )
@@ -74,8 +79,12 @@ def _seed_resources(tenant_id: str) -> dict[str, McpResource]:
     ]
     return {
         rid: McpResource(
-            id=rid, tenant_id=tenant_id, uri=uri, name=name,
-            description=desc, mime_type=mt,
+            id=rid,
+            tenant_id=tenant_id,
+            uri=uri,
+            name=name,
+            description=desc,
+            mime_type=mt,
             created_at="2026-08-01T00:00:00Z",
         )
         for rid, uri, name, desc, mt in catalog
@@ -84,15 +93,29 @@ def _seed_resources(tenant_id: str) -> dict[str, McpResource]:
 
 def _seed_prompts(tenant_id: str) -> dict[str, McpPrompt]:
     catalog = [
-        ("prompt-sales", "sales_assistant", "Sales assistant prompt",
-         "You are a sales assistant.", ("product", "region")),
-        ("prompt-research", "research_bot", "Research bot prompt",
-         "You are a research bot.", ("topic",)),
+        (
+            "prompt-sales",
+            "sales_assistant",
+            "Sales assistant prompt",
+            "You are a sales assistant.",
+            ("product", "region"),
+        ),
+        (
+            "prompt-research",
+            "research_bot",
+            "Research bot prompt",
+            "You are a research bot.",
+            ("topic",),
+        ),
     ]
     return {
         pid: McpPrompt(
-            id=pid, tenant_id=tenant_id, name=name, description=desc,
-            template=tpl, arguments=args,
+            id=pid,
+            tenant_id=tenant_id,
+            name=name,
+            description=desc,
+            template=tpl,
+            arguments=args,
             created_at="2026-08-01T00:00:00Z",
             updated_at="2026-08-01T00:00:00Z",
         )
@@ -196,13 +219,20 @@ def get_tool_by_name(tenant_id: str, name: str) -> McpTool | None:
     return next((t for t in _TOOLS[tenant_id].values() if t.name == name), None)
 
 
-def register_tool(tenant_id: str, name: str, *, description: str = "", input_schema: dict[str, Any] | None = None, endpoint: str = "") -> McpTool:
+def register_tool(
+    tenant_id: str,
+    name: str,
+    *,
+    description: str = "",
+    input_schema: dict[str, Any] | None = None,
+    endpoint: str = "",
+) -> McpTool:
     """Register (or upsert) a dynamic tool for a tenant. Idempotent by name."""
     if not tenant_id:
         raise ValueError("tenant_id is required")
     _ensure_tenant(tenant_id)
     existing = get_tool_by_name(tenant_id, name)
-    tid = existing.id if existing else f"dyn-{name}-{id(name) & 0xffff:x}"
+    tid = existing.id if existing else f"dyn-{name}-{id(name) & 0xFFFF:x}"
     tool = McpTool(
         id=tid,
         tenant_id=tenant_id,
@@ -218,7 +248,15 @@ def register_tool(tenant_id: str, name: str, *, description: str = "", input_sch
     return tool
 
 
-def update_tool(tenant_id: str, name: str, *, description: str | None = None, input_schema: dict[str, Any] | None = None, endpoint: str | None = None, enabled: bool | None = None) -> McpTool | None:
+def update_tool(
+    tenant_id: str,
+    name: str,
+    *,
+    description: str | None = None,
+    input_schema: dict[str, Any] | None = None,
+    endpoint: str | None = None,
+    enabled: bool | None = None,
+) -> McpTool | None:
     """Update fields of a dynamic tool (by name). Returns None if unknown."""
     if not tenant_id:
         return None

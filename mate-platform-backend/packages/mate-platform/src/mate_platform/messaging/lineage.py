@@ -24,6 +24,7 @@ the OpenLineage event's job.namespace (per-tenant) and
 run.facets.debugMessage (trace_id) so the Marquez graph is
 naturally per-tenant.
 """
+
 from __future__ import annotations
 
 import logging
@@ -126,6 +127,7 @@ class MarquezHttpLineageEmitter:
             raise ValueError("LineageEvent.tenant_id is required (SEC-TENANT-01)")
         try:
             import httpx
+
             payload = event.to_openlineage_dict()
             r = httpx.post(
                 f"{self._config.marquez_url}/api/v1/lineage",

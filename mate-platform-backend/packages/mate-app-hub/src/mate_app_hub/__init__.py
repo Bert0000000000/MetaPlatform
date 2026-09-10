@@ -8,6 +8,7 @@ Five read-only GET endpoints live under `/api/v1/apphub/*`
 Backend storage is in-memory for the P2-W2 batch; persistent
 storage (Paimon / Postgres) lands in v3.2.
 """
+
 from __future__ import annotations
 
 __version__ = "0.1.0"

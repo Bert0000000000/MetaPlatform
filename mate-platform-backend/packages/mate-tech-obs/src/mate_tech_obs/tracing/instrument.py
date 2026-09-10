@@ -1,4 +1,5 @@
 """自动 instrument (ST-5.2.2)."""
+
 from __future__ import annotations
 
 import structlog
@@ -14,6 +15,7 @@ def auto_instrument(app: object | None = None) -> dict[str, bool]:
             from opentelemetry.instrumentation.fastapi import (  # pyright: ignore[reportMissingImports]
                 FastAPIInstrumentor,
             )
+
             FastAPIInstrumentor.instrument_app(app)
             results["fastapi"] = True
         except Exception as e:
@@ -24,6 +26,7 @@ def auto_instrument(app: object | None = None) -> dict[str, bool]:
         from opentelemetry.instrumentation.httpx import (  # pyright: ignore[reportMissingImports]
             HTTPXClientInstrumentor,
         )
+
         HTTPXClientInstrumentor().instrument()
         results["httpx"] = True
     except Exception as e:
@@ -34,6 +37,7 @@ def auto_instrument(app: object | None = None) -> dict[str, bool]:
         from opentelemetry.instrumentation.aiokafka import (  # pyright: ignore[reportMissingImports]
             AIOKafkaInstrumentor,
         )
+
         AIOKafkaInstrumentor().instrument()
         results["aiokafka"] = True
     except Exception as e:

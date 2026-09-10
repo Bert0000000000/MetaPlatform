@@ -2,6 +2,7 @@
 
 支持 Claude 3.5 / Claude 3 系列。
 """
+
 from __future__ import annotations
 
 import os

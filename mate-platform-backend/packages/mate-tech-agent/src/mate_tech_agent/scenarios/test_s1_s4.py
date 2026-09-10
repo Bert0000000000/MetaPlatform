@@ -1,4 +1,5 @@
 """Scenario factory tests (ST-5.7.5/6/7/8)."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock

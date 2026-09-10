@@ -12,6 +12,7 @@ These tests exercise the auth + tenancy contract end-to-end:
   - test_tenant_isolation_ok: two tenants querying the same
     endpoint see disjoint catalogs.
 """
+
 from __future__ import annotations
 
 import time
@@ -54,7 +55,7 @@ def fresh_app() -> TestClient:
     return TestClient(create_app(), raise_server_exceptions=False)
 
 
-def test_wrong_tenant_403(fresh_app: TestClient)-> None:
+def test_wrong_tenant_403(fresh_app: TestClient) -> None:
     token_a = _token(tenant_id="tenant-acme")
     r = fresh_app.get(
         "/api/v1/apphub/apps",
@@ -67,7 +68,7 @@ def test_wrong_tenant_403(fresh_app: TestClient)-> None:
     assert "tenant" in r.text.lower()
 
 
-def test_missing_scope_403(fresh_app: TestClient)-> None:
+def test_missing_scope_403(fresh_app: TestClient) -> None:
     """Token without `platform.read` still reaches the handler today.
 
     Step 4 (per-scope ACL wiring via mate_clients.security.BearerAuth)
@@ -82,7 +83,7 @@ def test_missing_scope_403(fresh_app: TestClient)-> None:
     assert r.status_code == 200, r.text
 
 
-def test_no_tenant_400(fresh_app: TestClient)-> None:
+def test_no_tenant_400(fresh_app: TestClient) -> None:
     token = _token(tenant_id="")
     r = fresh_app.get(
         "/api/v1/apphub/apps",
@@ -94,7 +95,7 @@ def test_no_tenant_400(fresh_app: TestClient)-> None:
     assert r.json()["code"] == "E_TENANT_REQUIRED"
 
 
-def test_tenant_isolation_ok(fresh_app: TestClient)-> None:
+def test_tenant_isolation_ok(fresh_app: TestClient) -> None:
     """Acme and globex must see disjoint catalogs.
 
     This is the strongest isolation guarantee: same endpoint,
@@ -121,9 +122,5 @@ def test_tenant_isolation_ok(fresh_app: TestClient)-> None:
     # tenant keys. Each response must carry its own tenant_id and
     # never return rows for the other tenant.
     assert ids1 == ids2, "in-memory seed IDs should be stable across tenants"
-    assert all(
-        item["tenant_id"] == "tenant-acme" for item in r1.json()["items"]
-    )
-    assert all(
-        item["tenant_id"] == "tenant-globex" for item in r2.json()["items"]
-    )
+    assert all(item["tenant_id"] == "tenant-acme" for item in r1.json()["items"])
+    assert all(item["tenant_id"] == "tenant-globex" for item in r2.json()["items"])

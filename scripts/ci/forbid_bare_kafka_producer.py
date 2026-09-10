@@ -10,12 +10,12 @@ Excluded locations:
   - ``mate-clients/`` (the ACL client itself)
   - ``tests/`` (fixtures may construct producers directly)
 """
+
 from __future__ import annotations
 
 import re
 import sys
 from pathlib import Path
-
 
 PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("KafkaProducer(...)", re.compile(r"\bKafkaProducer\s*\(")),

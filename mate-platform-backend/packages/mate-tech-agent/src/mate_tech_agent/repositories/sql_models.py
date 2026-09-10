@@ -2,6 +2,7 @@
 
 Table names are prefixed with ``agent_``.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import String, Text

@@ -13,6 +13,7 @@ The auth middleware in mate_platform.auth already whitelists
 AuthMiddleware level (see ADR-0011 §2.4 + the existing
 ANONYMOUS_PATHS constant).
 """
+
 from __future__ import annotations
 
 import os

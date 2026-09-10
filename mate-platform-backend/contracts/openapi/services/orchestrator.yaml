@@ -7,9 +7,9 @@ info:
   contact:
     name: Mate Platform Team
 security:
-- bearerAuth: []
-  tenantHeader: []
-  oidcScopes: [platform.read]
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
 components:
   securitySchemes:
     bearerAuth:
@@ -33,8 +33,8 @@ components:
     CapabilityBinding:
       type: object
       required:
-      - name
-      - worker_kind
+        - name
+        - worker_kind
       properties:
         name:
           type: string
@@ -47,7 +47,7 @@ components:
     RegisterRoleRequest:
       type: object
       required:
-      - role
+        - role
       properties:
         role:
           type: string
@@ -58,7 +58,7 @@ components:
         capabilities:
           type: array
           items:
-            $ref: '#/components/schemas/CapabilityBinding'
+            $ref: "#/components/schemas/CapabilityBinding"
     Role:
       type: object
       properties:
@@ -69,7 +69,7 @@ components:
         capabilities:
           type: array
           items:
-            $ref: '#/components/schemas/CapabilityBinding'
+            $ref: "#/components/schemas/CapabilityBinding"
         enabled:
           type: boolean
     DispatchRequest:
@@ -105,8 +105,8 @@ components:
     PlanStepRequest:
       type: object
       required:
-      - step_id
-      - target
+        - step_id
+        - target
       properties:
         step_id:
           type: string
@@ -126,7 +126,7 @@ components:
     SubmitPlanRequest:
       type: object
       required:
-      - steps
+        - steps
       properties:
         author_user_id:
           type: string
@@ -135,15 +135,19 @@ components:
           type: array
           minItems: 1
           items:
-            $ref: '#/components/schemas/PlanStepRequest'
+            $ref: "#/components/schemas/PlanStepRequest"
     PlanGraph:
       type: object
       additionalProperties: false
       required: [plan_id, status, nodes, edges]
       properties:
-        plan_id: {type: string}
-        status: {type: string, enum: [running, hitl_waiting, completed, aborted, failed]}
-        current_step_id: {type: [string, 'null']}
+        plan_id: { type: string }
+        status:
+          {
+            type: string,
+            enum: [running, hitl_waiting, completed, aborted, failed],
+          }
+        current_step_id: { type: [string, "null"] }
         nodes:
           type: array
           items:
@@ -151,14 +155,37 @@ components:
             additionalProperties: false
             required: [id, kind, target, hitl, status]
             properties:
-              id: {type: string}
-              kind: {type: string, enum: [call_agent, apply_action, propose, run_function, evaluate_object_set]}
-              target: {type: string}
-              hitl: {type: boolean}
-              status: {type: string, enum: [pending, running, completed, failed, hitl_waiting, skipped]}
-              proposal_id: {type: [string, 'null']}
-              expected_diff: {type: object, additionalProperties: true}
-              impact_summary: {type: string}
+              id: { type: string }
+              kind:
+                {
+                  type: string,
+                  enum:
+                    [
+                      call_agent,
+                      apply_action,
+                      propose,
+                      run_function,
+                      evaluate_object_set,
+                    ],
+                }
+              target: { type: string }
+              hitl: { type: boolean }
+              status:
+                {
+                  type: string,
+                  enum:
+                    [
+                      pending,
+                      running,
+                      completed,
+                      failed,
+                      hitl_waiting,
+                      skipped,
+                    ],
+                }
+              proposal_id: { type: [string, "null"] }
+              expected_diff: { type: object, additionalProperties: true }
+              impact_summary: { type: string }
         edges:
           type: array
           items:
@@ -166,9 +193,9 @@ components:
             additionalProperties: false
             required: [from_step, to_step]
             properties:
-              from_step: {type: string}
-              to_step: {type: string}
-              data_refs: {type: array, items: {type: string}}
+              from_step: { type: string }
+              to_step: { type: string }
+              data_refs: { type: array, items: { type: string } }
     PlanStatus:
       type: object
       properties:
@@ -199,7 +226,7 @@ components:
     ReviewRequest:
       type: object
       required:
-      - approved
+        - approved
       properties:
         approved:
           type: boolean
@@ -209,8 +236,8 @@ components:
     TrackCapabilityRequest:
       type: object
       required:
-      - name
-      - ref
+        - name
+        - ref
       properties:
         name:
           type: string
@@ -222,28 +249,36 @@ components:
           description: worker 引用（如 MCP 工具 ref）
     Order:
       type: object
-      required: [tenant_id, order_id, amount_cents, payment_status, review_status, version]
+      required:
+        [
+          tenant_id,
+          order_id,
+          amount_cents,
+          payment_status,
+          review_status,
+          version,
+        ]
       properties:
-        tenant_id: {type: string}
-        order_id: {type: string}
-        amount_cents: {type: integer, minimum: 1}
-        payment_status: {type: string, enum: [unpaid, paid]}
-        review_status: {type: string, enum: [pending, approved]}
-        version: {type: integer, minimum: 1}
-        updated_at: {type: string, format: date-time}
+        tenant_id: { type: string }
+        order_id: { type: string }
+        amount_cents: { type: integer, minimum: 1 }
+        payment_status: { type: string, enum: [unpaid, paid] }
+        review_status: { type: string, enum: [pending, approved] }
+        version: { type: integer, minimum: 1 }
+        updated_at: { type: string, format: date-time }
     CreateOrderRequest:
       type: object
       required: [order_id, amount_cents]
       properties:
-        order_id: {type: string, minLength: 1}
-        amount_cents: {type: integer, minimum: 1}
-        payment_status: {type: string, enum: [unpaid, paid], default: unpaid}
+        order_id: { type: string, minLength: 1 }
+        amount_cents: { type: integer, minimum: 1 }
+        payment_status: { type: string, enum: [unpaid, paid], default: unpaid }
     HighValueUnpaidResponse:
       type: object
       required: [items, total, threshold_cents]
       properties:
-        items: {type: array, items: {$ref: '#/components/schemas/Order'}}
-        total: {type: integer, minimum: 0}
+        items: { type: array, items: { $ref: "#/components/schemas/Order" } }
+        total: { type: integer, minimum: 0 }
         threshold_cents:
           type: integer
           minimum: 1
@@ -252,37 +287,39 @@ components:
       type: object
       required: [order_id, suggestion]
       properties:
-        order_id: {type: string, minLength: 1}
-        suggestion: {type: object, additionalProperties: true}
-        source_refs: {type: array, items: {type: string}}
+        order_id: { type: string, minLength: 1 }
+        suggestion: { type: object, additionalProperties: true }
+        source_refs: { type: array, items: { type: string } }
     CreateReviewCaseResponse:
       type: object
-      required: [review_case_id, proposal_id, status, expected_order_version, evidence]
+      required:
+        [review_case_id, proposal_id, status, expected_order_version, evidence]
       properties:
-        review_case_id: {type: string}
-        proposal_id: {type: string}
-        status: {type: string, enum: [pending]}
-        expected_order_version: {type: integer}
+        review_case_id: { type: string }
+        proposal_id: { type: string }
+        status: { type: string, enum: [pending] }
+        expected_order_version: { type: integer }
         evidence:
-          $ref: '#/components/schemas/EvidenceBundle'
+          $ref: "#/components/schemas/EvidenceBundle"
     EvidenceGraphNode:
       type: object
       additionalProperties: false
       required: [id, label, type, properties]
       properties:
-        id: {type: string}
-        label: {type: string}
-        type: {type: string, enum: [transaction_anchor, object_type, action_type]}
-        properties: {type: object, additionalProperties: true}
+        id: { type: string }
+        label: { type: string }
+        type:
+          { type: string, enum: [transaction_anchor, object_type, action_type] }
+        properties: { type: object, additionalProperties: true }
     EvidenceGraphEdge:
       type: object
       additionalProperties: false
       required: [id, source, target, label]
       properties:
-        id: {type: string}
-        source: {type: string}
-        target: {type: string}
-        label: {type: string}
+        id: { type: string }
+        source: { type: string }
+        target: { type: string }
+        label: { type: string }
     EvidenceGraph:
       type: object
       additionalProperties: false
@@ -291,187 +328,187 @@ components:
         nodes:
           type: array
           items:
-            $ref: '#/components/schemas/EvidenceGraphNode'
+            $ref: "#/components/schemas/EvidenceGraphNode"
         edges:
           type: array
           items:
-            $ref: '#/components/schemas/EvidenceGraphEdge'
+            $ref: "#/components/schemas/EvidenceGraphEdge"
     EvidenceLegend:
       type: object
       additionalProperties: false
       required: [transaction_anchor, object_type, action_type]
       properties:
-        transaction_anchor: {type: string}
-        object_type: {type: string}
-        action_type: {type: string}
+        transaction_anchor: { type: string }
+        object_type: { type: string }
+        action_type: { type: string }
     OntologyEvidence:
       type: object
       additionalProperties: false
       required: [source, model_rid, action_rid, graph, legend]
       properties:
-        source: {type: string, enum: [ontology_kernel]}
-        model_rid: {type: string}
-        action_rid: {type: string}
+        source: { type: string, enum: [ontology_kernel] }
+        model_rid: { type: string }
+        action_rid: { type: string }
         graph:
-          $ref: '#/components/schemas/EvidenceGraph'
+          $ref: "#/components/schemas/EvidenceGraph"
         legend:
-          $ref: '#/components/schemas/EvidenceLegend'
+          $ref: "#/components/schemas/EvidenceLegend"
     EvidenceFact:
       type: object
       additionalProperties: false
       required: [id, field, label, value, display_value, source]
       properties:
-        id: {type: string}
-        field: {type: string}
-        label: {type: string}
+        id: { type: string }
+        field: { type: string }
+        label: { type: string }
         value: {}
-        display_value: {type: string}
-        source: {type: string}
+        display_value: { type: string }
+        source: { type: string }
     EvidenceData:
       type: object
       additionalProperties: false
       required: [source, captured_at, facts]
       properties:
-        source: {type: string, enum: [order_review_orders]}
-        captured_at: {type: string, format: date-time}
+        source: { type: string, enum: [order_review_orders] }
+        captured_at: { type: string, format: date-time }
         facts:
           type: array
           items:
-            $ref: '#/components/schemas/EvidenceFact'
+            $ref: "#/components/schemas/EvidenceFact"
     EvidenceDerivation:
       type: object
       additionalProperties: false
       required: [id, label, passed, fact_refs]
       properties:
-        id: {type: string}
-        label: {type: string}
-        passed: {type: boolean}
+        id: { type: string }
+        label: { type: string }
+        passed: { type: boolean }
         fact_refs:
           type: array
-          items: {type: string}
+          items: { type: string }
         details:
           anyOf:
-          - {type: object, additionalProperties: true}
-          - {type: 'null'}
+            - { type: object, additionalProperties: true }
+            - { type: "null" }
     EvidenceRecommendation:
       type: object
       additionalProperties: false
       required:
-      - action
-      - title
-      - reason
-      - requires_confirmation
-      - derivation_refs
-      - source_refs
+        - action
+        - title
+        - reason
+        - requires_confirmation
+        - derivation_refs
+        - source_refs
       properties:
-        action: {type: string}
-        title: {type: string}
-        reason: {type: string}
-        requires_confirmation: {type: boolean}
+        action: { type: string }
+        title: { type: string }
+        reason: { type: string }
+        requires_confirmation: { type: boolean }
         derivation_refs:
           type: array
-          items: {type: string}
+          items: { type: string }
         source_refs:
           type: array
-          items: {type: string}
-        confidence: {type: [number, 'null']}
+          items: { type: string }
+        confidence: { type: [number, "null"] }
     EvidenceBundle:
       type: object
       additionalProperties: false
       required:
-      - schema_version
-      - status
-      - proposal_id
-      - order_id
-      - tenant_id
-      - order_version
-      - captured_at
-      - ontology
-      - data
-      - derivation
-      - recommendation
+        - schema_version
+        - status
+        - proposal_id
+        - order_id
+        - tenant_id
+        - order_version
+        - captured_at
+        - ontology
+        - data
+        - derivation
+        - recommendation
       properties:
-        schema_version: {type: string, enum: [order-review-evidence.v1]}
-        status: {type: string, enum: [complete, unavailable]}
-        proposal_id: {type: string}
-        order_id: {type: string}
-        tenant_id: {type: string}
-        order_version: {type: integer}
-        captured_at: {type: string, format: date-time}
+        schema_version: { type: string, enum: [order-review-evidence.v1] }
+        status: { type: string, enum: [complete, unavailable] }
+        proposal_id: { type: string }
+        order_id: { type: string }
+        tenant_id: { type: string }
+        order_version: { type: integer }
+        captured_at: { type: string, format: date-time }
         ontology:
-          $ref: '#/components/schemas/OntologyEvidence'
+          $ref: "#/components/schemas/OntologyEvidence"
         data:
-          $ref: '#/components/schemas/EvidenceData'
+          $ref: "#/components/schemas/EvidenceData"
         derivation:
           type: array
           items:
-            $ref: '#/components/schemas/EvidenceDerivation'
+            $ref: "#/components/schemas/EvidenceDerivation"
         recommendation:
-          $ref: '#/components/schemas/EvidenceRecommendation'
+          $ref: "#/components/schemas/EvidenceRecommendation"
     ActionProposal:
       type: object
       required:
-      - tenant_id
-      - proposal_id
-      - review_case_id
-      - order_id
-      - action_type
-      - status
-      - expected_order_version
-      - suggestion
-      - source_refs
-      - parameters
-      - expires_at
-      - created_at
+        - tenant_id
+        - proposal_id
+        - review_case_id
+        - order_id
+        - action_type
+        - status
+        - expected_order_version
+        - suggestion
+        - source_refs
+        - parameters
+        - expires_at
+        - created_at
       properties:
-        tenant_id: {type: string}
-        proposal_id: {type: string}
-        review_case_id: {type: string}
-        order_id: {type: string}
-        action_type: {type: string, enum: [order_review_confirm]}
-        status: {type: string, enum: [pending, confirmed, rejected, expired]}
-        expected_order_version: {type: integer}
-        suggestion: {type: object, additionalProperties: true}
-        source_refs: {type: array, items: {type: string}}
-        parameters: {type: object, additionalProperties: true}
+        tenant_id: { type: string }
+        proposal_id: { type: string }
+        review_case_id: { type: string }
+        order_id: { type: string }
+        action_type: { type: string, enum: [order_review_confirm] }
+        status: { type: string, enum: [pending, confirmed, rejected, expired] }
+        expected_order_version: { type: integer }
+        suggestion: { type: object, additionalProperties: true }
+        source_refs: { type: array, items: { type: string } }
+        parameters: { type: object, additionalProperties: true }
         evidence:
           anyOf:
-          - $ref: '#/components/schemas/EvidenceBundle'
-          - {type: 'null'}
-        expires_at: {type: string, format: date-time}
-        created_at: {type: string, format: date-time}
+            - $ref: "#/components/schemas/EvidenceBundle"
+            - { type: "null" }
+        expires_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
         resolved_at:
           anyOf:
-          - {type: string, format: date-time}
-          - {type: 'null'}
+            - { type: string, format: date-time }
+            - { type: "null" }
     ConfirmActionProposalRequest:
       type: object
       properties:
-        actor_id: {type: string, default: system}
+        actor_id: { type: string, default: system }
     RejectActionProposalRequest:
       type: object
       properties:
-        actor_id: {type: string, default: system}
-        reason: {type: string, default: ""}
+        actor_id: { type: string, default: system }
+        reason: { type: string, default: "" }
     ActionResult:
       type: object
       required: [proposal_id, order_id, status]
       properties:
-        proposal_id: {type: string}
-        order_id: {type: string}
-        status: {type: string, enum: [confirmed, rejected]}
+        proposal_id: { type: string }
+        order_id: { type: string }
+        status: { type: string, enum: [confirmed, rejected] }
         order_version:
           anyOf:
-          - {type: integer, minimum: 1}
-          - {type: 'null'}
+            - { type: integer, minimum: 1 }
+            - { type: "null" }
         follow_up_task_id:
           anyOf:
-          - {type: string}
-          - {type: 'null'}
+            - { type: string }
+            - { type: "null" }
         reason:
           anyOf:
-          - {type: string}
-          - {type: 'null'}
+            - { type: string }
+            - { type: "null" }
 paths:
   /healthz:
     get:
@@ -479,7 +516,7 @@ paths:
       summary: liveness
       tags: [orchestrator]
       responses:
-        '200':
+        "200":
           description: OK
       operationId: orchestratorGetHealthz
       x-mate-owner: orchestrator
@@ -489,9 +526,9 @@ paths:
   /api/v1/orchestrator/roles:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 注册数字员工角色
       tags: [orchestrator]
       requestBody:
@@ -499,17 +536,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRoleRequest'
+              $ref: "#/components/schemas/RegisterRoleRequest"
       responses:
-        '201':
+        "201":
           description: 注册成功
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Role'
-        '401':
+                $ref: "#/components/schemas/Role"
+        "401":
           description: 缺少或无效 JWT
-        '422':
+        "422":
           description: 未知角色 / worker_kind / 缺 tenant
       operationId: orchestratorPostRoles
       x-mate-owner: orchestrator
@@ -518,13 +555,13 @@ paths:
       x-mate-implementation-status: implemented
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: 列出数字员工角色
       tags: [orchestrator]
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -534,7 +571,7 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Role'
+                      $ref: "#/components/schemas/Role"
                   total:
                     type: integer
       operationId: orchestratorGetRoles
@@ -545,19 +582,19 @@ paths:
   /api/v1/orchestrator/roles/{role}:
     delete:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 注销数字员工角色
       tags: [orchestrator]
       parameters:
-      - name: role
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: role
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -566,7 +603,7 @@ paths:
                 properties:
                   deleted:
                     type: string
-        '404':
+        "404":
           description: 角色未注册
       operationId: orchestratorDeleteRolesRole
       x-mate-owner: orchestrator
@@ -576,9 +613,9 @@ paths:
   /api/v1/orchestrator/capabilities:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 能力上线（MCP 工具注册通知，MP-COMP-01）
       tags: [orchestrator]
       requestBody:
@@ -586,13 +623,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TrackCapabilityRequest'
+              $ref: "#/components/schemas/TrackCapabilityRequest"
       responses:
-        '201':
+        "201":
           description: 已跟踪（返回 fiber 快照）
-        '401':
+        "401":
           description: 缺少或无效 JWT
-        '503':
+        "503":
           description: capability runtime 未启动（lifespan 未运行）
       operationId: orchestratorPostCapabilities
       x-mate-owner: orchestrator
@@ -601,15 +638,15 @@ paths:
       x-mate-implementation-status: implemented
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: 能力/角色 fiber 状态快照
       tags: [orchestrator]
       responses:
-        '200':
+        "200":
           description: "OK — {capabilities: {key: state}, roles: {key: state}}"
-        '503':
+        "503":
           description: capability runtime 未启动
       operationId: orchestratorGetCapabilities
       x-mate-owner: orchestrator
@@ -619,23 +656,23 @@ paths:
   /api/v1/orchestrator/capabilities/{name}:
     delete:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 能力下线（依赖角色 fiber 反应式失活，MP-COMP-01）
       tags: [orchestrator]
       parameters:
-      - name: name
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: 已撤销（返回 fiber 快照）
-        '404':
+        "404":
           description: 能力未跟踪
-        '503':
+        "503":
           description: capability runtime 未启动
       operationId: orchestratorDeleteCapabilitiesName
       x-mate-owner: orchestrator
@@ -645,9 +682,9 @@ paths:
   /api/v1/orchestrator/dispatch:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 单任务多角色派发
       tags: [orchestrator]
       requestBody:
@@ -655,19 +692,19 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DispatchRequest'
+              $ref: "#/components/schemas/DispatchRequest"
       responses:
-        '200':
+        "200":
           description: 派发结果
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DispatchResponse'
-        '401':
+                $ref: "#/components/schemas/DispatchResponse"
+        "401":
           description: 缺少或无效 JWT
-        '404':
+        "404":
           description: 无角色可服务该任务
-        '422':
+        "422":
           description: worker_kind 不支持
       operationId: orchestratorPostDispatch
       x-mate-owner: orchestrator
@@ -677,9 +714,9 @@ paths:
   /api/v1/orchestrator/plans:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 提交计划（≥1 HITL 步，决策 B3）
       tags: [orchestrator]
       requestBody:
@@ -687,9 +724,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SubmitPlanRequest'
+              $ref: "#/components/schemas/SubmitPlanRequest"
       responses:
-        '201':
+        "201":
           description: 已提交
           content:
             application/json:
@@ -702,7 +739,7 @@ paths:
                     type: string
                   step_count:
                     type: integer
-        '422':
+        "422":
           description: 计划无 HITL 步
       operationId: orchestratorPostPlans
       x-mate-owner: orchestrator
@@ -712,25 +749,25 @@ paths:
   /api/v1/orchestrator/plans/{plan_id}:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: 计划状态
       tags: [orchestrator]
       parameters:
-      - name: plan_id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: plan_id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PlanStatus'
-        '404':
+                $ref: "#/components/schemas/PlanStatus"
+        "404":
           description: 计划不存在
       operationId: orchestratorGetPlansPlanId
       x-mate-owner: orchestrator
@@ -740,25 +777,25 @@ paths:
   /api/v1/orchestrator/plans/{plan_id}/graph:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: 计划流程图模型（SAL-05 可视化：节点状态 + proposal 关联 + 数据流边）
       tags: [orchestrator]
       parameters:
-      - name: plan_id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: plan_id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PlanGraph'
-        '404':
+                $ref: "#/components/schemas/PlanGraph"
+        "404":
           description: 计划不存在
       operationId: orchestratorGetPlansPlanIdGraph
       x-mate-owner: orchestrator
@@ -768,19 +805,19 @@ paths:
   /api/v1/orchestrator/plans/{plan_id}/execute:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 执行计划（HITL 步暂停）
       tags: [orchestrator]
       parameters:
-      - name: plan_id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: plan_id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: 执行结果
           content:
             application/json:
@@ -798,7 +835,7 @@ paths:
                     type: array
                     items:
                       type: object
-        '404':
+        "404":
           description: 计划不存在
       operationId: orchestratorPostPlansPlanIdExecute
       x-mate-owner: orchestrator
@@ -808,30 +845,30 @@ paths:
   /api/v1/orchestrator/plans/{plan_id}/steps/{step_id}/review:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: HITL 审批（approve 继续 / reject 中止）
       tags: [orchestrator]
       parameters:
-      - name: plan_id
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: step_id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: plan_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: step_id
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReviewRequest'
+              $ref: "#/components/schemas/ReviewRequest"
       responses:
-        '200':
+        "200":
           description: 审批结果
           content:
             application/json:
@@ -847,7 +884,7 @@ paths:
                     nullable: true
                   results:
                     type: array
-        '404':
+        "404":
           description: 计划不存在
       operationId: orchestratorPostPlansPlanIdStepsStepIdReview
       x-mate-owner: orchestrator
@@ -858,9 +895,9 @@ paths:
   /api/v1/orchestrator/scheduling/intent/detect:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 意图识别（text → intent）
       tags: [orchestrator]
       requestBody:
@@ -872,7 +909,7 @@ paths:
               properties:
                 text: { type: string }
       responses:
-        '200':
+        "200":
           description: 意图
       operationId: orchestratorPostSchedulingIntentDetect
       x-mate-owner: orchestrator
@@ -882,9 +919,9 @@ paths:
   /api/v1/orchestrator/scheduling/employees/match:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 数字员工匹配（intent → candidates）
       tags: [orchestrator]
       requestBody:
@@ -896,7 +933,7 @@ paths:
               properties:
                 intent: { type: string }
       responses:
-        '200':
+        "200":
           description: 候选员工列表
       operationId: orchestratorPostSchedulingEmployeesMatch
       x-mate-owner: orchestrator
@@ -906,9 +943,9 @@ paths:
   /api/v1/orchestrator/scheduling/plan/generate:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 计划生成（intent_id → ExecutionPlan）
       tags: [orchestrator]
       requestBody:
@@ -920,7 +957,7 @@ paths:
               properties:
                 intent_id: { type: string }
       responses:
-        '200':
+        "200":
           description: 执行计划
       operationId: orchestratorPostSchedulingPlanGenerate
       x-mate-owner: orchestrator
@@ -930,9 +967,9 @@ paths:
   /api/v1/orchestrator/scheduling/execution/start:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 执行计划（plan_id → execution）
       tags: [orchestrator]
       requestBody:
@@ -944,9 +981,9 @@ paths:
               properties:
                 plan_id: { type: string }
       responses:
-        '200':
+        "200":
           description: 执行状态
-        '404':
+        "404":
           description: 计划不存在
       operationId: orchestratorPostSchedulingExecutionStart
       x-mate-owner: orchestrator
@@ -958,12 +995,12 @@ paths:
       summary: 执行报告
       tags: [orchestrator]
       parameters:
-      - name: execution_id
-        in: path
-        required: true
-        schema: { type: string }
+        - name: execution_id
+          in: path
+          required: true
+          schema: { type: string }
       responses:
-        '200':
+        "200":
           description: 报告文本
       operationId: orchestratorGetSchedulingExecutionReport
       x-mate-owner: orchestrator
@@ -975,7 +1012,7 @@ paths:
       summary: 意图历史
       tags: [orchestrator]
       responses:
-        '200':
+        "200":
           description: 意图列表
       operationId: orchestratorGetSchedulingIntents
       x-mate-owner: orchestrator
@@ -987,7 +1024,7 @@ paths:
       summary: 调度模板
       tags: [orchestrator]
       responses:
-        '200':
+        "200":
           description: 模板列表
       operationId: orchestratorGetSchedulingTemplates
       x-mate-owner: orchestrator
@@ -996,9 +1033,9 @@ paths:
       x-mate-implementation-status: implemented
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 创建调度模板
       tags: [orchestrator]
       requestBody:
@@ -1011,7 +1048,7 @@ paths:
                 name: { type: string }
                 description: { type: string }
       responses:
-        '200':
+        "200":
           description: 模板
       operationId: orchestratorPostSchedulingTemplates
       x-mate-owner: orchestrator
@@ -1022,9 +1059,9 @@ paths:
   /api/v1/orders:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 创建参考订单（本地验收入口）
       tags: [order-review]
       requestBody:
@@ -1032,15 +1069,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateOrderRequest'
+              $ref: "#/components/schemas/CreateOrderRequest"
       responses:
-        '201':
+        "201":
           description: 创建成功
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Order'
-        '409': {description: 订单已存在}
+                $ref: "#/components/schemas/Order"
+        "409": { description: 订单已存在 }
       operationId: orderReviewPostOrders
       x-mate-owner: orchestrator
       x-mate-permission: order.write
@@ -1049,24 +1086,24 @@ paths:
   /api/v1/orders/high-value-unpaid:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: 查询高价值未支付订单
       tags: [order-review]
       parameters:
-      - name: min_amount_cents
-        in: query
-        required: false
-        description: 可选的更高用户筛选；省略时使用服务端 ORDER_REVIEW_THRESHOLD_CENTS 配置。
-        schema: {type: integer, minimum: 1}
+        - name: min_amount_cents
+          in: query
+          required: false
+          description: 可选的更高用户筛选；省略时使用服务端 ORDER_REVIEW_THRESHOLD_CENTS 配置。
+          schema: { type: integer, minimum: 1 }
       responses:
-        '200':
+        "200":
           description: 订单列表
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HighValueUnpaidResponse'
+                $ref: "#/components/schemas/HighValueUnpaidResponse"
       operationId: orderReviewGetHighValueUnpaidOrders
       x-mate-owner: orchestrator
       x-mate-permission: order.read
@@ -1075,9 +1112,9 @@ paths:
   /api/v1/review-cases:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 创建订单复核案例和 Action Proposal
       tags: [order-review]
       requestBody:
@@ -1085,22 +1122,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateReviewCaseRequest'
+              $ref: "#/components/schemas/CreateReviewCaseRequest"
       responses:
-        '201':
+        "201":
           description: Proposal 已创建，等待人工确认
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateReviewCaseResponse'
-        '404': {description: 订单不存在}
-        '409': {description: 订单状态冲突}
-        '503':
+                $ref: "#/components/schemas/CreateReviewCaseResponse"
+        "404": { description: 订单不存在 }
+        "409": { description: 订单状态冲突 }
+        "503":
           description: Evidence unavailable
           headers:
             X-Error-Code:
               description: Application error code.
-              schema: {type: string, enum: [evidence_unavailable]}
+              schema: { type: string, enum: [evidence_unavailable] }
       operationId: orderReviewPostReviewCases
       x-mate-owner: orchestrator
       x-mate-permission: order.write
@@ -1109,24 +1146,24 @@ paths:
   /api/v1/action-proposals/{proposal_id}:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: 查看 Action Proposal
       tags: [order-review]
       parameters:
-      - name: proposal_id
-        in: path
-        required: true
-        schema: {type: string}
+        - name: proposal_id
+          in: path
+          required: true
+          schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Proposal
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionProposal'
-        '404': {description: Proposal 不存在或不属于当前租户}
+                $ref: "#/components/schemas/ActionProposal"
+        "404": { description: Proposal 不存在或不属于当前租户 }
       operationId: orderReviewGetActionProposal
       x-mate-owner: orchestrator
       x-mate-permission: order.read
@@ -1135,47 +1172,53 @@ paths:
   /api/v1/action-proposals/{proposal_id}:confirm:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 确认 Action Proposal 并创建跟进单
       tags: [order-review]
       parameters:
-      - name: proposal_id
-        in: path
-        required: true
-        schema: {type: string}
-      - name: Idempotency-Key
-        in: header
-        required: true
-        schema: {type: string, minLength: 1}
+        - name: proposal_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 1 }
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ConfirmActionProposalRequest'
+              $ref: "#/components/schemas/ConfirmActionProposalRequest"
       responses:
-        '200':
+        "200":
           description: 已确认，订单、跟进单、幂等记录和 Outbox 同事务提交
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionResult'
-        '409':
+                $ref: "#/components/schemas/ActionResult"
+        "409":
           description: 版本冲突、重复处理、幂等键冲突或 evidence required
           headers:
             X-Error-Code:
               description: Application error code.
               schema:
                 type: string
-                enum: [version_conflict, idempotency_conflict, already_resolved, evidence_required]
-        '503':
+                enum:
+                  [
+                    version_conflict,
+                    idempotency_conflict,
+                    already_resolved,
+                    evidence_required,
+                  ]
+        "503":
           description: Evidence unavailable
           headers:
             X-Error-Code:
               description: Application error code.
-              schema: {type: string, enum: [evidence_unavailable]}
+              schema: { type: string, enum: [evidence_unavailable] }
       operationId: orderReviewPostActionProposalConfirm
       x-mate-owner: orchestrator
       x-mate-permission: order.write
@@ -1184,34 +1227,34 @@ paths:
   /api/v1/action-proposals/{proposal_id}:reject:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 拒绝 Action Proposal
       tags: [order-review]
       parameters:
-      - name: proposal_id
-        in: path
-        required: true
-        schema: {type: string}
-      - name: Idempotency-Key
-        in: header
-        required: true
-        schema: {type: string, minLength: 1}
+        - name: proposal_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 1 }
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RejectActionProposalRequest'
+              $ref: "#/components/schemas/RejectActionProposalRequest"
       responses:
-        '200':
+        "200":
           description: 已拒绝并写入审计 Outbox
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionResult'
-        '409': {description: 重复处理或幂等键冲突}
+                $ref: "#/components/schemas/ActionResult"
+        "409": { description: 重复处理或幂等键冲突 }
       operationId: orderReviewPostActionProposalReject
       x-mate-owner: orchestrator
       x-mate-permission: order.write

@@ -14,15 +14,15 @@ KERNEL-01 的写入入口与数字员工之间的桥梁。
 
 ## 2. 6 Batch 交付清单
 
-| Batch | 状态 | tests | 关键交付 |
-|---|---|---|---|
-| **ACTION-03** | ✅ Accepted | 14 | ActionType.apply 协议（submission_criteria / side_effects / 审计 / rollback hook / register_function） |
-| **OBJECTSET-04** | ✅ Accepted | 31 | ObjectSet DSL 编译器（== / > / < / >= / startswith / contains / AND / OR / NOT / 括号 / 优先级） + InMemory executor + SQL 占位 |
-| **MANAGER-05** | ✅ Accepted | 17 | Manager 协议（缓存 ClassRef/Version / 变更追踪 ChangeSink / 租户断言 / drain） |
-| **AGENT-ONT-01** | ✅ Accepted | 11 | Ontology 数字员工（自然语言 → ObjectSet + 解释生成 + Manager 追踪） |
-| **AGENT-SEC-01** | ✅ Accepted | 11 | Security 数字员工（跨租户 deny / Marking 校验 / 决策审计 R-TENANT-001 / R-MARK-001 / R-ALLOW-000） |
-| **RAG-ONT-01** | ✅ Accepted | 9 | RAG-on-Ontology（按 Property 类型分权重索引 + ObjectSet 过滤 + token overlap 检索） |
-| **合计** | **6/6 Accepted** | **93/93 pass** | — |
+| Batch            | 状态             | tests          | 关键交付                                                                                                                        |
+| ---------------- | ---------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **ACTION-03**    | ✅ Accepted      | 14             | ActionType.apply 协议（submission_criteria / side_effects / 审计 / rollback hook / register_function）                          |
+| **OBJECTSET-04** | ✅ Accepted      | 31             | ObjectSet DSL 编译器（== / > / < / >= / startswith / contains / AND / OR / NOT / 括号 / 优先级） + InMemory executor + SQL 占位 |
+| **MANAGER-05**   | ✅ Accepted      | 17             | Manager 协议（缓存 ClassRef/Version / 变更追踪 ChangeSink / 租户断言 / drain）                                                  |
+| **AGENT-ONT-01** | ✅ Accepted      | 11             | Ontology 数字员工（自然语言 → ObjectSet + 解释生成 + Manager 追踪）                                                             |
+| **AGENT-SEC-01** | ✅ Accepted      | 11             | Security 数字员工（跨租户 deny / Marking 校验 / 决策审计 R-TENANT-001 / R-MARK-001 / R-ALLOW-000）                              |
+| **RAG-ONT-01**   | ✅ Accepted      | 9              | RAG-on-Ontology（按 Property 类型分权重索引 + ObjectSet 过滤 + token overlap 检索）                                             |
+| **合计**         | **6/6 Accepted** | **93/93 pass** | —                                                                                                                               |
 
 累计 M1 + M2 = **267/267 tests pass**。
 
@@ -51,21 +51,21 @@ mate-kernel/src/mate_kernel/
 
 ## 4. 13 硬规则对位（M2 全 Batch）
 
-| # | 硬规则 | 实施收口 |
-|---|---|---|
-| 1 | Swagger 没有接口，不写 route | M2 仅 library（M3 runtime 阶段补 OpenAPI） |
-| 2 | PRD 没有 Requirement ID | 内部 API operationId 各挂 FR-ONT-M2-*（库内不暴露 HTTP） |
-| 3 | **没有 tenant 上下文，不访问 repository** | MANAGER-05 assert_same_tenant + 17 tests |
-| 4 | 外部系统没有 ACL Client | M2 全部 in-memory，无外部访问 |
-| 5 | Production profile 禁止 fallback | runtime 显式标注（NullChangeSink / InMemoryRagIndex） |
-| 6 | 静态检查失败不合并 | stdlib + dataclass + enum，零 type 错误 |
-| 7 | **契约或集成测试跳过不标记 Accepted** | **267/267 tests pass，0 skip** |
-| 8 | 没有 K8s readiness + 回滚 | M2 仅 library |
-| 9 | 没有审计、指标、trace | MANAGER-05 ChangeSink + AGENT-SEC-01 SecurityDecision.decided_at |
-| 10 | 所有状态以验收证据为准 | 本 ACCEPTANCE.md + M1 ACCEPTANCE.md + KERNEL-01 ACCEPTANCE.md |
-| 11 | helm-docs 同步 | N/A（M2 无 helm chart） |
-| 12 | Secret 不进 git | 代码无 secret |
-| 13 | NetworkPolicy 缺失 = prod 不通过 | N/A（M2 仅 library） |
+| #   | 硬规则                                    | 实施收口                                                         |
+| --- | ----------------------------------------- | ---------------------------------------------------------------- |
+| 1   | Swagger 没有接口，不写 route              | M2 仅 library（M3 runtime 阶段补 OpenAPI）                       |
+| 2   | PRD 没有 Requirement ID                   | 内部 API operationId 各挂 FR-ONT-M2-\*（库内不暴露 HTTP）        |
+| 3   | **没有 tenant 上下文，不访问 repository** | MANAGER-05 assert_same_tenant + 17 tests                         |
+| 4   | 外部系统没有 ACL Client                   | M2 全部 in-memory，无外部访问                                    |
+| 5   | Production profile 禁止 fallback          | runtime 显式标注（NullChangeSink / InMemoryRagIndex）            |
+| 6   | 静态检查失败不合并                        | stdlib + dataclass + enum，零 type 错误                          |
+| 7   | **契约或集成测试跳过不标记 Accepted**     | **267/267 tests pass，0 skip**                                   |
+| 8   | 没有 K8s readiness + 回滚                 | M2 仅 library                                                    |
+| 9   | 没有审计、指标、trace                     | MANAGER-05 ChangeSink + AGENT-SEC-01 SecurityDecision.decided_at |
+| 10  | 所有状态以验收证据为准                    | 本 ACCEPTANCE.md + M1 ACCEPTANCE.md + KERNEL-01 ACCEPTANCE.md    |
+| 11  | helm-docs 同步                            | N/A（M2 无 helm chart）                                          |
+| 12  | Secret 不进 git                           | 代码无 secret                                                    |
+| 13  | NetworkPolicy 缺失 = prod 不通过          | N/A（M2 仅 library）                                             |
 
 ## 5. 串联验证（M1 → M2 数据流）
 
@@ -89,14 +89,14 @@ python -m pytest tests/ -v
 # 267 passed in ~4s
 ```
 
-| 测试文件 | tests | 覆盖 |
-|---|---|---|
-| test_action_engine.py | 14 | RuleEvaluator + ActionService.apply/propose/rollback/audit |
-| test_objectset_compiler.py | 31 | FilterCompiler DSL + FilterEvaluator + InMemory executor + SQL 占位 |
-| test_manager_protocol.py | 17 | Manager 缓存/追踪/租户断言/drain/limit |
-| test_agent_ontology.py | 11 | 自然语言→ObjectSet + 解释 + 经理追踪 |
-| test_agent_security.py | 11 | 跨租户 + Marking + 审计 + check_action_apply 封装 |
-| test_rag_ontology.py | 9 | 索引 / 类型权重 / ObjectSet 过滤 / token overlap / top_k |
+| 测试文件                   | tests | 覆盖                                                                |
+| -------------------------- | ----- | ------------------------------------------------------------------- |
+| test_action_engine.py      | 14    | RuleEvaluator + ActionService.apply/propose/rollback/audit          |
+| test_objectset_compiler.py | 31    | FilterCompiler DSL + FilterEvaluator + InMemory executor + SQL 占位 |
+| test_manager_protocol.py   | 17    | Manager 缓存/追踪/租户断言/drain/limit                              |
+| test_agent_ontology.py     | 11    | 自然语言→ObjectSet + 解释 + 经理追踪                                |
+| test_agent_security.py     | 11    | 跨租户 + Marking + 审计 + check_action_apply 封装                   |
+| test_rag_ontology.py       | 9     | 索引 / 类型权重 / ObjectSet 过滤 / token overlap / top_k            |
 
 ## 7. M3 接力
 

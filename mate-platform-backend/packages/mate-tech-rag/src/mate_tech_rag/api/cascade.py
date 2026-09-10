@@ -20,6 +20,7 @@ The cascade deletion drops chunks from each store, removes the catalog
 row, and removes the lifecycle record so the next search returns 0 hits
 even if any single store was unavailable.
 """
+
 from __future__ import annotations
 
 import logging

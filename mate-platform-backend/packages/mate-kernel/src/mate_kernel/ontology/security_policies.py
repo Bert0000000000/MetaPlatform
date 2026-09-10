@@ -70,13 +70,13 @@ class SecurityPolicySet:
     column_policies: tuple[ColumnPolicy, ...] = field(default_factory=tuple)
 
 
-def _viewer_holds(viewer_markings: tuple[str, ...] | list[str],
-                  required: tuple[str, ...]) -> bool:
+def _viewer_holds(viewer_markings: tuple[str, ...] | list[str], required: tuple[str, ...]) -> bool:
     return set(required) <= set(viewer_markings)
 
 
 def policy_applies(
-    policy: RowPolicy, class_rid: str,
+    policy: RowPolicy,
+    class_rid: str,
     include_descendants_of: frozenset[str] = frozenset(),
 ) -> bool:
     """行策略是否作用于该类（精确类或其祖先类 —— 层级继承可见性约束）。"""
@@ -119,8 +119,7 @@ def filter_visible_individuals(
             if p.bypass_markings and _viewer_holds(viewer_markings, p.bypass_markings):
                 continue
             cond = Condition(field=p.field, op=p.op, value=p.value)
-            ok = evaluate_rule_group(
-                cond, lambda f, _ind=ind: _ind_resolve(_ind, f))
+            ok = evaluate_rule_group(cond, lambda f, _ind=ind: _ind_resolve(_ind, f))
             # 行语义：满足 condition 才可见
             if not ok:
                 visible = False
@@ -144,8 +143,9 @@ def filter_by_markings(
     class_marking_of 缺省（None）→ 只查实例级。
     """
     if class_marking_of is None:
-        return [i for i in individuals
-                if set(getattr(i, "marking", ()) or ()) <= set(viewer_markings)]
+        return [
+            i for i in individuals if set(getattr(i, "marking", ()) or ()) <= set(viewer_markings)
+        ]
     out: list[Any] = []
     for i in individuals:
         if not set(getattr(i, "marking", ()) or ()) <= set(viewer_markings):

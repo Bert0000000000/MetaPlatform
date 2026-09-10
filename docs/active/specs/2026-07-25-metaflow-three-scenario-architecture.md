@@ -1,8 +1,8 @@
 ﻿# MetaPlatform 三类流程编排实现方案（基于 FlowGram.AI）
 
-> 日期：2026-07-25  
-> 状态：架构探索 / 建议方案  
-> FlowGram.AI 研究基线：[`5afd287`](https://github.com/bytedance/flowgram.ai/commit/5afd287a989ac71d5ae9625cc4e0e015744b23f1)（2026-07-07）  
+> 日期：2026-07-25
+> 状态：架构探索 / 建议方案
+> FlowGram.AI 研究基线：[`5afd287`](https://github.com/bytedance/flowgram.ai/commit/5afd287a989ac71d5ae9625cc4e0e015744b23f1)（2026-07-07）
 > 本地依赖基线：`@flowgram.ai/* 1.0.12`
 
 ## 1. 结论

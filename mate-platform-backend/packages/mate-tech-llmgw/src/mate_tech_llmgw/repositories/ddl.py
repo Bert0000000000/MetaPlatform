@@ -10,6 +10,7 @@ P0 先落明细表 ``llm_usage``（含 user_id/api_key_id/provider/duration_ms/
 cache_hit/status 列，P1/P5 复用，避免后续 ALTER）与月度配额表
 ``llmgw_tenant_quota``（列名与 cost/ceiling.py 现有 INSERT 逐字对齐）。
 """
+
 from __future__ import annotations
 
 from typing import Any

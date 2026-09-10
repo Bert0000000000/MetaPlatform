@@ -14,6 +14,7 @@ P3 changes:
   without a redeploy. Rejected requests still consume the window slot
   (documented semantics — rolling back the INCR would race).
 """
+
 from __future__ import annotations
 
 import os
@@ -31,8 +32,8 @@ logger = structlog.get_logger(__name__)
 class QuotaConfig:
     """每租户的配额配置."""
 
-    rpm_limit: int = 100       # requests per minute
-    tpm_limit: int = 100_000   # tokens per minute
+    rpm_limit: int = 100  # requests per minute
+    tpm_limit: int = 100_000  # tokens per minute
     window_sec: int = 60
 
 
@@ -74,7 +75,7 @@ class Decision:
     """Pure window decision (unit-testable without Redis)."""
 
     allowed: bool
-    reason: str = ""            # "" | "rpm" | "tpm"
+    reason: str = ""  # "" | "rpm" | "tpm"
     req_count: int = 0
     tok_count: int = 0
     retry_after: int = 0
@@ -249,7 +250,11 @@ class RedisTokenBucket:
             return
 
         allowed, req_count, tok_count, retry_after, reason_idx = (
-            int(result[0]), int(result[1]), int(result[2]), int(result[3]), int(result[4])
+            int(result[0]),
+            int(result[1]),
+            int(result[2]),
+            int(result[3]),
+            int(result[4]),
         )
         if not allowed:
             reason = "rpm" if reason_idx == 1 else "tpm"

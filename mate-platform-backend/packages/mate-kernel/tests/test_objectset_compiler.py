@@ -33,7 +33,8 @@ def _ind(pk: str, props: dict[str, object]) -> Individual:
         rid=f"ont.acme.ind.order.{pk}",
         class_rid=cls,
         props=tuple(
-            (_prop(name), value) for name, value in props.items()  # type: ignore[arg-type]
+            (_prop(name), value)
+            for name, value in props.items()  # type: ignore[arg-type]
         ),
         primary_key=pk,
         created_at=datetime.now(UTC),
@@ -202,17 +203,23 @@ class TestInMemoryExecutor:
         cls_inv = _cls("invoice")
         orders = [
             Individual(
-                rid="ont.acme.ind.order.1", class_rid=cls_order,
-                props=((cls_order, "1"),), primary_key="1",
-                created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
+                rid="ont.acme.ind.order.1",
+                class_rid=cls_order,
+                props=((cls_order, "1"),),
+                primary_key="1",
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
                 tenant_id="acme",
             )
         ]
         invs = [
             Individual(
-                rid="ont.acme.ind.invoice.1", class_rid=cls_inv,
-                props=((cls_inv, "1"),), primary_key="1",
-                created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
+                rid="ont.acme.ind.invoice.1",
+                class_rid=cls_inv,
+                props=((cls_inv, "1"),),
+                primary_key="1",
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
                 tenant_id="acme",
             )
         ]
@@ -326,25 +333,41 @@ class TestRepoEvaluateFilterRegression:
         cls = _cls("po")
         prop_pk = Property(
             rid=ClassRef(rid="ont.acme.prop.po-id.v1"),
-            type_id="string", nullable=False, primary_key=True,
-            title="id", format=PropertyFormat.STRING,
+            type_id="string",
+            nullable=False,
+            primary_key=True,
+            title="id",
+            format=PropertyFormat.STRING,
         )
         prop_qty = Property(
             rid=ClassRef(rid="ont.acme.prop.po-qty.v1"),
-            type_id="integer", nullable=False, primary_key=False,
-            title="qty", format=PropertyFormat.INTEGER,
+            type_id="integer",
+            nullable=False,
+            primary_key=False,
+            title="qty",
+            format=PropertyFormat.INTEGER,
         )
-        repo.upsert_object_type(ObjectType(
-            rid=cls, primary_key=(prop_pk.rid,),
-            properties=(prop_pk, prop_qty), display_name="PO",
-        ))
+        repo.upsert_object_type(
+            ObjectType(
+                rid=cls,
+                primary_key=(prop_pk.rid,),
+                properties=(prop_pk, prop_qty),
+                display_name="PO",
+            )
+        )
         now = datetime.now(UTC)
         for i, q in enumerate([5, 10, 15, 20, 25]):
-            repo.create_individual(Individual(
-                rid=f"ont.acme.ind.po.{i}", class_rid=cls,
-                props=((prop_qty.rid, q),), primary_key=str(i),
-                created_at=now, updated_at=now, tenant_id="acme",
-            ))
+            repo.create_individual(
+                Individual(
+                    rid=f"ont.acme.ind.po.{i}",
+                    class_rid=cls,
+                    props=((prop_qty.rid, q),),
+                    primary_key=str(i),
+                    created_at=now,
+                    updated_at=now,
+                    tenant_id="acme",
+                )
+            )
         return repo, cls
 
     def test_filter_expr_now_consumed(self) -> None:
@@ -354,14 +377,23 @@ class TestRepoEvaluateFilterRegression:
 
     def test_sort_desc(self) -> None:
         repo, cls = self._seed()
-        res = repo.evaluate_object_set(ObjectSet(
-            class_rid=cls, filter_expr="po-qty >= 10", sort=("-po-qty",),
-        ))
+        res = repo.evaluate_object_set(
+            ObjectSet(
+                class_rid=cls,
+                filter_expr="po-qty >= 10",
+                sort=("-po-qty",),
+            )
+        )
         assert [i.primary_key for i in res] == ["4", "3", "2", "1"]
 
     def test_paging(self) -> None:
         repo, cls = self._seed()
-        res = repo.evaluate_object_set(ObjectSet(
-            class_rid=cls, filter_expr="po-qty >= 5", paging_limit=2, paging_offset=1,
-        ))
+        res = repo.evaluate_object_set(
+            ObjectSet(
+                class_rid=cls,
+                filter_expr="po-qty >= 5",
+                paging_limit=2,
+                paging_offset=1,
+            )
+        )
         assert len(res) == 2

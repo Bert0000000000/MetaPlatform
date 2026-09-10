@@ -9,6 +9,7 @@ Table names are prefixed with ``wfe_``. Tuple fields
 dict fields (``FlowTestRun.output``) are stored as JSON TEXT. Both
 are re-hydrated by the ``_orm_to_*`` helpers in sql_store.py.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import JSON, Boolean, Integer, String, Text

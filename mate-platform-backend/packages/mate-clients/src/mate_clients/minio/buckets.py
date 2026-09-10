@@ -7,6 +7,7 @@ the IAM policy attached to the per-tenant STS role enforces the
 same constraint server-side, so even a misbehaving client cannot
 cross the boundary.
 """
+
 from __future__ import annotations
 
 import re

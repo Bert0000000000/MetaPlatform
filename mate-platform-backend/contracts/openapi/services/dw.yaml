@@ -8,12 +8,11 @@ info:
     name: Mate Platform API Governance
     email: api-governance@metaplatform.local
 servers:
-- url: /
+  - url: /
 tags:
-- name: dw
-  description: dw domain operations
+  - name: dw
+    description: dw domain operations
 security:
-
   - bearerAuth: []
 
     tenantHeader: []
@@ -24,155 +23,155 @@ paths:
   /api/v1/dw/auth/login:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       tags:
-      - dw
+        - dw
       summary: /v1/dw/auth/login
       operationId: dwGetDwAuthLogin
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/dw/auth/login
       x-mate-owner: digital-workforce
       x-mate-permission: dw.get
       x-mate-requirements:
-      - FR-DW-DWGETDWAUTHLOGIN
+        - FR-DW-DWGETDWAUTHLOGIN
       x-mate-implementation-status: implemented
   /api/v1/dw/collaborations:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       tags:
-      - dw
+        - dw
       summary: /v1/dw/collaborations
       operationId: dwGetDwCollaborations
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/dw/collaborations
       x-mate-owner: digital-workforce
       x-mate-permission: dw.get
       x-mate-requirements:
-      - FR-DW-DWGETDWCOLLABORATIONS
+        - FR-DW-DWGETDWCOLLABORATIONS
       x-mate-implementation-status: implemented
   /api/v1/dw/commit:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       tags:
-      - dw
+        - dw
       summary: /v1/dw/commit
       operationId: dwGetDwCommit
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/dw/commit
       x-mate-owner: digital-workforce
       x-mate-permission: dw.get
       x-mate-requirements:
-      - FR-DW-DWGETDWCOMMIT
+        - FR-DW-DWGETDWCOMMIT
       x-mate-implementation-status: implemented
   /api/v1/dw/documents:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       tags:
-      - dw
+        - dw
       summary: /v1/dw/documents
       operationId: dwGetDwDocuments
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/dw/documents
       x-mate-owner: digital-workforce
       x-mate-permission: dw.get
       x-mate-requirements:
-      - FR-DW-DWGETDWDOCUMENTS
+        - FR-DW-DWGETDWDOCUMENTS
       x-mate-implementation-status: implemented
   /api/v1/dw/documents/upload:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       tags:
-      - dw
+        - dw
       summary: /v1/dw/documents/upload
       operationId: dwPostDwDocumentsUpload
       parameters: []
@@ -181,389 +180,389 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/dw/documents/upload
       x-mate-owner: digital-workforce
       x-mate-permission: dw.post
       x-mate-requirements:
-      - FR-DW-DWPOSTDWDOCUMENTSUPLOAD
+        - FR-DW-DWPOSTDWDOCUMENTSUPLOAD
       x-mate-implementation-status: implemented
   /api/v1/dw/employees:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       tags:
-      - dw
+        - dw
       summary: /v1/dw/employees
       operationId: dwGetDwEmployees
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/dw/employees
       x-mate-owner: digital-workforce
       x-mate-permission: dw.get
       x-mate-requirements:
-      - FR-DW-DWGETDWEMPLOYEES
+        - FR-DW-DWGETDWEMPLOYEES
       x-mate-implementation-status: implemented
   /api/v1/dw/employees/tasks:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       tags:
-      - dw
+        - dw
       summary: /v1/dw/employees/tasks
       operationId: dwGetDwEmployeesTasks
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/dw/employees/tasks
       x-mate-owner: digital-workforce
       x-mate-permission: dw.get
       x-mate-requirements:
-      - FR-DW-DWGETDWEMPLOYEESTASKS
+        - FR-DW-DWGETDWEMPLOYEESTASKS
       x-mate-implementation-status: implemented
   /api/v1/dw/evaluations:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       tags:
-      - dw
+        - dw
       summary: /v1/dw/evaluations
       operationId: dwGetDwEvaluations
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/dw/evaluations
       x-mate-owner: digital-workforce
       x-mate-permission: dw.get
       x-mate-requirements:
-      - FR-DW-DWGETDWEVALUATIONS
+        - FR-DW-DWGETDWEVALUATIONS
       x-mate-implementation-status: implemented
   /api/v1/dw/extract:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       tags:
-      - dw
+        - dw
       summary: /v1/dw/extract
       operationId: dwGetDwExtract
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/dw/extract
       x-mate-owner: digital-workforce
       x-mate-permission: dw.get
       x-mate-requirements:
-      - FR-DW-DWGETDWEXTRACT
+        - FR-DW-DWGETDWEXTRACT
       x-mate-implementation-status: implemented
   /api/v1/dw/knowledge-bases:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       tags:
-      - dw
+        - dw
       summary: /v1/dw/knowledge-bases
       operationId: dwGetDwKnowledgeBases
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/dw/knowledge-bases
       x-mate-owner: digital-workforce
       x-mate-permission: dw.get
       x-mate-requirements:
-      - FR-DW-DWGETDWKNOWLEDGEBASES
+        - FR-DW-DWGETDWKNOWLEDGEBASES
       x-mate-implementation-status: implemented
   /api/v1/dw/learning/extract:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       tags:
-      - dw
+        - dw
       summary: /v1/dw/learning/extract
       operationId: dwGetDwLearningExtract
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/dw/learning/extract
       x-mate-owner: digital-workforce
       x-mate-permission: dw.get
       x-mate-requirements:
-      - FR-DW-DWGETDWLEARNINGEXTRACT
+        - FR-DW-DWGETDWLEARNINGEXTRACT
       x-mate-implementation-status: implemented
   /api/v1/dw/learning/feedback:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       tags:
-      - dw
+        - dw
       summary: /v1/dw/learning/feedback
       operationId: dwGetDwLearningFeedback
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/dw/learning/feedback
       x-mate-owner: digital-workforce
       x-mate-permission: dw.get
       x-mate-requirements:
-      - FR-DW-DWGETDWLEARNINGFEEDBACK
+        - FR-DW-DWGETDWLEARNINGFEEDBACK
       x-mate-implementation-status: implemented
   /api/v1/dw/models:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       tags:
-      - dw
+        - dw
       summary: /v1/dw/models
       operationId: dwGetDwModels
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/dw/models
       x-mate-owner: digital-workforce
       x-mate-permission: dw.get
       x-mate-requirements:
-      - FR-DW-DWGETDWMODELS
+        - FR-DW-DWGETDWMODELS
       x-mate-implementation-status: implemented
   /api/v1/dw/tools:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       tags:
-      - dw
+        - dw
       summary: /v1/dw/tools
       operationId: dwGetDwTools
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/dw/tools
       x-mate-owner: digital-workforce
       x-mate-permission: dw.get
       x-mate-requirements:
-      - FR-DW-DWGETDWTOOLS
+        - FR-DW-DWGETDWTOOLS
       x-mate-implementation-status: implemented
   /api/v1/dw/traces:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       tags:
-      - dw
+        - dw
       summary: /v1/dw/traces
       operationId: dwGetDwTraces
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/dw/traces
       x-mate-owner: digital-workforce
       x-mate-permission: dw.get
       x-mate-requirements:
-      - FR-DW-DWGETDWTRACES
+        - FR-DW-DWGETDWTRACES
       x-mate-implementation-status: implemented
 components:
   securitySchemes:
@@ -622,37 +621,37 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     Forbidden:
       description: 无权限
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     NotFound:
       description: 资源不存在
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     BadRequest:
       description: 参数错误
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     ServerError:
       description: 服务器错误
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
   schemas:
     ErrorResponse:
       type: object
       required:
-      - code
-      - message
+        - code
+        - message
       properties:
         code:
           type: integer
@@ -663,14 +662,14 @@ components:
     ApiResponse:
       type: object
       required:
-      - code
-      - message
-      - data
+        - code
+        - message
+        - data
       properties:
         code:
           type: integer
           enum:
-          - 0
+            - 0
         message:
           type: string
         data: {}
@@ -679,11 +678,11 @@ components:
     PageResponse:
       type: object
       required:
-      - items
-      - total
-      - page
-      - size
-      - pages
+        - items
+        - total
+        - page
+        - size
+        - pages
       properties:
         items:
           type: array
@@ -699,13 +698,13 @@ components:
     BigDataSource:
       type: object
       required:
-      - sourceId
-      - name
-      - sourceType
-      - host
-      - port
-      - authType
-      - status
+        - sourceId
+        - name
+        - sourceType
+        - host
+        - port
+        - authType
+        - status
       properties:
         sourceId:
           type: string
@@ -717,19 +716,19 @@ components:
         sourceType:
           type: string
           enum:
-          - HIVE
-          - HBASE
-          - CLICKHOUSE
-          - DORIS
-          - STARROCKS
-          - ICEBERG
-          - HUDI
-          - DELTA
-          - PRESTO
-          - TRINO
-          - KAFKA
-          - PULSAR
-          - HDFS
+            - HIVE
+            - HBASE
+            - CLICKHOUSE
+            - DORIS
+            - STARROCKS
+            - ICEBERG
+            - HUDI
+            - DELTA
+            - PRESTO
+            - TRINO
+            - KAFKA
+            - PULSAR
+            - HDFS
         host:
           type: string
         port:
@@ -743,10 +742,10 @@ components:
         authType:
           type: string
           enum:
-          - NONE
-          - USER_PASSWORD
-          - KERBERY
-          - LDAP
+            - NONE
+            - USER_PASSWORD
+            - KERBERY
+            - LDAP
           default: NONE
         sslEnabled:
           type: boolean
@@ -757,21 +756,21 @@ components:
         status:
           type: string
           enum:
-          - DRAFT
-          - ACTIVE
-          - INACTIVE
-          - ERROR
-          - DELETED
+            - DRAFT
+            - ACTIVE
+            - INACTIVE
+            - ERROR
+            - DELETED
     CDCTask:
       type: object
       required:
-      - taskId
-      - name
-      - sourceId
-      - syncMode
-      - targetType
-      - targetName
-      - status
+        - taskId
+        - name
+        - sourceId
+        - syncMode
+        - targetType
+        - targetName
+        - status
       properties:
         taskId:
           type: string
@@ -782,27 +781,27 @@ components:
         syncMode:
           type: string
           enum:
-          - FULL_INCREMENTAL
-          - INCREMENTAL_ONLY
-          - SNAPSHOT_ONLY
+            - FULL_INCREMENTAL
+            - INCREMENTAL_ONLY
+            - SNAPSHOT_ONLY
         targetType:
           type: string
           enum:
-          - KAFKA
-          - CLICKHOUSE
-          - HUDI
-          - ICEBERG
+            - KAFKA
+            - CLICKHOUSE
+            - HUDI
+            - ICEBERG
         targetName:
           type: string
         status:
           type: string
           enum:
-          - PENDING
-          - SNAPSHOTTING
-          - RUNNING
-          - PAUSED
-          - FAILED
-          - STOPPED
+            - PENDING
+            - SNAPSHOTTING
+            - RUNNING
+            - PAUSED
+            - FAILED
+            - STOPPED
         lagMs:
           type: integer
         totalRecords:
@@ -811,14 +810,14 @@ components:
     ETLTask:
       type: object
       required:
-      - taskId
-      - name
-      - mode
-      - sourceIds
-      - targetType
-      - targetTable
-      - writeMode
-      - status
+        - taskId
+        - name
+        - mode
+        - sourceIds
+        - targetType
+        - targetTable
+        - writeMode
+        - status
       properties:
         taskId:
           type: string
@@ -827,18 +826,18 @@ components:
         mode:
           type: string
           enum:
-          - BATCH_SPARK
-          - BATCH_FLINK
-          - STREAMING_FLINK
-          - STREAMING_SPARK
-          - SQL_TRANSFORM
+            - BATCH_SPARK
+            - BATCH_FLINK
+            - STREAMING_FLINK
+            - STREAMING_SPARK
+            - SQL_TRANSFORM
         priority:
           type: string
           enum:
-          - LOW
-          - NORMAL
-          - HIGH
-          - URGENT
+            - LOW
+            - NORMAL
+            - HIGH
+            - URGENT
         sourceIds:
           type: array
           items:
@@ -850,40 +849,40 @@ components:
         targetType:
           type: string
           enum:
-          - HIVE
-          - CLICKHOUSE
-          - ICEBERG
-          - HUDI
-          - DELTA
-          - DORIS
+            - HIVE
+            - CLICKHOUSE
+            - ICEBERG
+            - HUDI
+            - DELTA
+            - DORIS
         targetTable:
           type: string
         writeMode:
           type: string
           enum:
-          - OVERWRITE
-          - APPEND
-          - UPSERT
-          - MERGE
+            - OVERWRITE
+            - APPEND
+            - UPSERT
+            - MERGE
         status:
           type: string
           enum:
-          - DRAFT
-          - READY
-          - RUNNING
-          - SUCCESS
-          - FAILED
-          - CANCELLED
-          - TIMEOUT
+            - DRAFT
+            - READY
+            - RUNNING
+            - SUCCESS
+            - FAILED
+            - CANCELLED
+            - TIMEOUT
     SchedulerTask:
       type: object
       required:
-      - schedulerId
-      - name
-      - taskType
-      - taskId
-      - triggerType
-      - status
+        - schedulerId
+        - name
+        - taskType
+        - taskId
+        - triggerType
+        - status
       properties:
         schedulerId:
           type: string
@@ -892,41 +891,41 @@ components:
         taskType:
           type: string
           enum:
-          - ETL_TASK
-          - CDC_TASK
-          - QUALITY_CHECK
-          - CUSTOM_ACTION
+            - ETL_TASK
+            - CDC_TASK
+            - QUALITY_CHECK
+            - CUSTOM_ACTION
         taskId:
           type: string
         triggerType:
           type: string
           enum:
-          - CRON
-          - EVENT
-          - MANUAL
-          - DEPENDENCY
+            - CRON
+            - EVENT
+            - MANUAL
+            - DEPENDENCY
         cron:
           type: string
         status:
           type: string
           enum:
-          - ACTIVE
-          - PAUSED
-          - EXPIRED
-          - DELETED
+            - ACTIVE
+            - PAUSED
+            - EXPIRED
+            - DELETED
     Metric:
       type: object
       required:
-      - metricId
-      - name
-      - code
-      - type
-      - sourceId
-      - sourceTable
-      - sourceField
-      - aggregation
-      - calculationFrequency
-      - status
+        - metricId
+        - name
+        - code
+        - type
+        - sourceId
+        - sourceTable
+        - sourceField
+        - aggregation
+        - calculationFrequency
+        - status
       properties:
         metricId:
           type: string
@@ -937,10 +936,10 @@ components:
         type:
           type: string
           enum:
-          - ATOMIC
-          - DERIVED
-          - COMPOSITE
-          - REALTIME
+            - ATOMIC
+            - DERIVED
+            - COMPOSITE
+            - REALTIME
         sourceId:
           type: string
         sourceTable:
@@ -950,23 +949,23 @@ components:
         aggregation:
           type: string
           enum:
-          - SUM
-          - AVG
-          - COUNT
-          - MAX
-          - MIN
-          - LAST
+            - SUM
+            - AVG
+            - COUNT
+            - MAX
+            - MIN
+            - LAST
         calculationFrequency:
           type: string
           enum:
-          - REALTIME
-          - MINUTELY
-          - HOURLY
-          - DAILY
+            - REALTIME
+            - MINUTELY
+            - HOURLY
+            - DAILY
         status:
           type: string
           enum:
-          - DRAFT
-          - ACTIVE
-          - INACTIVE
-          - ERROR
+            - DRAFT
+            - ACTIVE
+            - INACTIVE
+            - ERROR

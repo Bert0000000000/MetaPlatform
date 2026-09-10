@@ -5,6 +5,7 @@ Mirrors the frozen dataclasses in in_memory.py. Dict fields
 
 Table names are prefixed with ``ont_``.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import String, Text

@@ -1,4 +1,5 @@
 """Cross-tenant integration tests (ST-5.4.11)."""
+
 from __future__ import annotations
 
 import pytest
@@ -71,9 +72,7 @@ def test_instance_deletion_cascades_relations() -> None:
     assert len(instance_store.list_relations(acme)) == 0
 
 
-def test_relation_to_missing_src_raises(
-    client: TestClient, auth_headers: dict[str, str]
-) -> None:
+def test_relation_to_missing_src_raises(client: TestClient, auth_headers: dict[str, str]) -> None:
     """关系指向不存在的源实例 → 403 (GOVERN-03: 不可见 = 403).
 
     The previous behaviour returned 400 because the store raised a

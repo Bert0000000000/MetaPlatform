@@ -3,6 +3,7 @@
 Uses SQLite in-memory to verify the ORM models, CRUD operations,
 tenant isolation, and seed_from_inmemory bootstrap work correctly.
 """
+
 from __future__ import annotations
 
 # Import models so their tables register on Base.metadata before create_all
@@ -115,9 +116,7 @@ def test_delegation_update_result(sql_backend: None) -> None:
     )
     put_delegation("tenant-acme", task)
 
-    updated = update_delegation_result(
-        "tenant-acme", "task-upd", {"rows": 10}, "completed"
-    )
+    updated = update_delegation_result("tenant-acme", "task-upd", {"rows": 10}, "completed")
     assert updated is not None
     assert updated.status == "completed"
     assert updated.result == {"rows": 10}
@@ -149,14 +148,26 @@ def test_capability_dict_schema_round_trip(sql_backend: None) -> None:
 
 def test_list_capabilities_filtered_by_agent(sql_backend: None) -> None:
     """list_capabilities agent_id filter works on the SQL backend."""
-    put_capability("tenant-acme", AgentCapability(
-        id="cap-a1", tenant_id="tenant-acme", agent_id="agent-1",
-        name="c1", description="d1",
-    ))
-    put_capability("tenant-acme", AgentCapability(
-        id="cap-a2", tenant_id="tenant-acme", agent_id="agent-2",
-        name="c2", description="d2",
-    ))
+    put_capability(
+        "tenant-acme",
+        AgentCapability(
+            id="cap-a1",
+            tenant_id="tenant-acme",
+            agent_id="agent-1",
+            name="c1",
+            description="d1",
+        ),
+    )
+    put_capability(
+        "tenant-acme",
+        AgentCapability(
+            id="cap-a2",
+            tenant_id="tenant-acme",
+            agent_id="agent-2",
+            name="c2",
+            description="d2",
+        ),
+    )
 
     all_caps = list_capabilities("tenant-acme")
     assert len(all_caps) == 2
@@ -200,9 +211,7 @@ def test_register_external_agent_creates_row(sql_backend: None) -> None:
 
 def test_create_delegation_generates_id(sql_backend: None) -> None:
     """create_delegation returns a task with a generated id, persisted."""
-    task = create_delegation(
-        "tenant-acme", "agent-recon", "do work", {"k": "v"}
-    )
+    task = create_delegation("tenant-acme", "agent-recon", "do work", {"k": "v"})
     assert task.id.startswith("task-")
     assert task.status == "pending"
 
@@ -214,14 +223,24 @@ def test_create_delegation_generates_id(sql_backend: None) -> None:
 
 def test_tenant_isolation(sql_backend: None) -> None:
     """Verify tenant A cannot see tenant B's data."""
-    put_agent("tenant-acme", Agent(
-        id="a-acme", tenant_id="tenant-acme", name="Acme Agent",
-        description="d",
-    ))
-    put_agent("tenant-globex", Agent(
-        id="a-globex", tenant_id="tenant-globex", name="Globex Agent",
-        description="d",
-    ))
+    put_agent(
+        "tenant-acme",
+        Agent(
+            id="a-acme",
+            tenant_id="tenant-acme",
+            name="Acme Agent",
+            description="d",
+        ),
+    )
+    put_agent(
+        "tenant-globex",
+        Agent(
+            id="a-globex",
+            tenant_id="tenant-globex",
+            name="Globex Agent",
+            description="d",
+        ),
+    )
 
     acme = list_agents("tenant-acme")
     globex = list_agents("tenant-globex")

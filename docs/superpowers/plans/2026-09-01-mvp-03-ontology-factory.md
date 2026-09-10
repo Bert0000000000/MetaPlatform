@@ -32,11 +32,13 @@
 ### Task 1: 定义统一语义抽取与本体提案契约
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/proposal_contracts.py`
 - Modify: `mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/__init__.py`
 - Test: `mate-platform-backend/packages/mate-kernel/tests/test_ontology_proposal_contracts.py`
 
 **Interfaces:**
+
 - Consumes: MVP1 `RunContext`, Artifact Digest and ModelReceipt reference.
 - Produces: `SourceAnchor`, `EntityCandidate`, `RelationCandidate`, `ConstraintCandidate`, `ActionCandidate`, `SemanticExtractionResult`, `OntologyProposal`, `ValidationReport`.
 
@@ -79,6 +81,7 @@ git commit -m "feat(ontology): define evidence-backed proposal contracts"
 ### Task 2: 建立统一对话/材料输入与候选提取服务
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-app-ontology-factory/pyproject.toml`
 - Create: `mate-platform-backend/packages/mate-app-ontology-factory/src/mate_app_ontology_factory/__init__.py`
 - Create: `mate-platform-backend/packages/mate-app-ontology-factory/src/mate_app_ontology_factory/api.py`
@@ -103,6 +106,7 @@ git commit -m "feat(ontology): define evidence-backed proposal contracts"
 - Test: `mate-platform-backend/contracts/tests/test_ontology_factory_runtime.py`
 
 **Interfaces:**
+
 - Consumes: Task 1 contracts, shared MVP2 `GovernedSourceDocument`/RAG snapshots, and server-authorized `DialogueSourceSnapshot` Digests.
 - Produces: `extract_from_dialogue(run, snapshot_digest) -> SemanticExtractionResult`; `extract_from_document(run, source_document_digest) -> SemanticExtractionResult`; runnable `mate_app_ontology_factory.main:app`; source/candidate/proposal/approval/release-ledger tables under migration `0018`; HTTP lifecycle `/api/v1/ontology-factory/sources/dialogues`, `/sources/documents`, `/extractions`, `/proposals`, `/proposals/{id}/validate`, `/proposals/{id}/approval`, `/proposals/{id}/publish` and `/releases/{id}`.
 
@@ -153,6 +157,7 @@ git commit -m "feat(ontology): extract shared candidates from dialogue and mater
 ### Task 3: 实现受限 A2A SubRun 委托
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-app-ontology-factory/src/mate_app_ontology_factory/delegation.py`
 - Modify: `mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/runtime/service.py`
 - Modify: `mate-platform-backend/packages/mate-clients/src/mate_clients/a2a/messages.py`
@@ -163,6 +168,7 @@ git commit -m "feat(ontology): extract shared candidates from dialogue and mater
 - Test: `mate-platform-backend/tests/security/test_a2a_delegation.py`
 
 **Interfaces:**
+
 - Consumes: parent Run/Lease, A2A capability client and employee assignment/policy.
 - Produces: `delegate(parent_run, employee_id, objective, budget, deadline) -> SubRun`; `complete_subrun(subrun_id, result_digest) -> EmployeeRun`.
 
@@ -209,6 +215,7 @@ git commit -m "feat(ontology): add bounded a2a subrun delegation"
 ### Task 4: 建立候选去重、冲突、SHACL 和影响分析
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-app-ontology-factory/src/mate_app_ontology_factory/proposal_service.py`
 - Create: `mate-platform-backend/packages/mate-app-ontology-factory/src/mate_app_ontology_factory/validation.py`
 - Modify: `mate-platform-backend/packages/mate-app-ontology-factory/src/mate_app_ontology_factory/api.py`
@@ -219,6 +226,7 @@ git commit -m "feat(ontology): add bounded a2a subrun delegation"
 - Test: `mate-platform-backend/packages/mate-app-ontology-factory/tests/test_proposal_validation.py`
 
 **Interfaces:**
+
 - Consumes: SemanticExtractionResult(s), base ontology snapshot and governed data-product mappings.
 - Produces: `merge_candidates(base_digest, results) -> OntologyProposal`; `validate_proposal(proposal) -> ValidationReport`.
 
@@ -261,6 +269,7 @@ git commit -m "feat(ontology): validate and deconflict proposals"
 ### Task 5: 通过 Release Ledger 发布签名 OntologyPackage 并收敛 Jena 投影
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-clients/src/mate_clients/jena.py`
 - Create: `mate-platform-backend/packages/mate-app-ontology-factory/src/mate_app_ontology_factory/package.py`
 - Create: `mate-platform-backend/packages/mate-app-ontology-factory/src/mate_app_ontology_factory/approval_service.py`
@@ -278,6 +287,7 @@ git commit -m "feat(ontology): validate and deconflict proposals"
 - Create: `mate-platform-backend/tests/integration/test_jena_version_projection.py`
 
 **Interfaces:**
+
 - Consumes: validated proposal, ValidationReport, Run/Lease/current dual-principal authorization, OCI/ORAS/Cosign client, PostgreSQL Ontology Release Ledger authority and Jena client.
 - Produces: `approve_proposal(run_context, proposal_digest, validation_digest, approver) -> ApprovalRecord`; `publish(run_context, lease_token, auth_context, proposal_digest, approval_digest) -> OntologyReleaseReceipt`; immutable graph URI `urn:metaplatform:ontology:{digest}` and a repairable Jena `current` projection.
 
@@ -335,6 +345,7 @@ git commit -m "feat(ontology): publish signed versioned projections"
 ### Task 6: 交付本体工厂工作台、金标和端到端验收
 
 **Files:**
+
 - Create: `metaplatform-frontend/apps/web/src/pages/ontology/OntologyFactoryPage.tsx`
 - Create: `metaplatform-frontend/apps/web/src/pages/ontology/OntologyFactoryPage.test.tsx`
 - Create: `metaplatform-frontend/apps/web/src/api/ontology/factory.ts`
@@ -350,6 +361,7 @@ git commit -m "feat(ontology): publish signed versioned projections"
 - Create: `mate-platform-backend/packages/mate-app-ontology-factory/tests/conformance.py`
 
 **Interfaces:**
+
 - Consumes: Tasks 2-5 APIs and shared Artifact Renderer.
 - Produces: source-linked candidate list, Cytoscape diff, conflict/validation panels, reviewer approval and release receipt.
 
@@ -361,7 +373,12 @@ Include one dialogue snapshot and one governed material expressing overlapping e
 
 ```tsx
 it("prevents the extractor from approving its own proposal", () => {
-  render(<OntologyFactoryPage proposal={proposalBy("employee:extractor")} viewer={"employee:extractor"} />);
+  render(
+    <OntologyFactoryPage
+      proposal={proposalBy("employee:extractor")}
+      viewer={"employee:extractor"}
+    />,
+  );
   expect(screen.getByRole("button", { name: "批准发布" })).toBeDisabled();
   expect(screen.getByText("提取者不能批准自己的提案")).toBeVisible();
 });

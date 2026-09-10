@@ -1,4 +1,5 @@
 """Tests for mate-tech-llmgw (ST-5.5.2.3 + ST-5.5.3.4 + ST-5.5.3.2)."""
+
 from __future__ import annotations
 
 import pytest
@@ -100,7 +101,13 @@ async def test_qwen_chat_mock() -> None:
             200,
             json={
                 "model": "qwen-turbo",
-                "choices": [{"index": 0, "message": {"role": "assistant", "content": "你好"}, "finish_reason": "stop"}],
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": "你好"},
+                        "finish_reason": "stop",
+                    }
+                ],
                 "usage": {"prompt_tokens": 3, "completion_tokens": 2, "total_tokens": 5},
             },
         )

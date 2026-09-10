@@ -32,6 +32,7 @@ ADR-0014 5-step pattern
 5. Cross-tenant negative tests: see
    ``tests/test_mcp_federation.py``.
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -102,9 +103,7 @@ def _tenant_id(request: Request) -> str:
         return str(require_tenant(ctx))
     header_tenant = request.headers.get("X-Tenant-Id", "default")
     if not header_tenant:
-        raise HTTPException(
-            status_code=400, detail="missing tenant context (no ctx / X-Tenant-Id)"
-        )
+        raise HTTPException(status_code=400, detail="missing tenant context (no ctx / X-Tenant-Id)")
     return str(header_tenant)
 
 

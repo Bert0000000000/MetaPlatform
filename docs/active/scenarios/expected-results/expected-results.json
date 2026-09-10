@@ -34,7 +34,11 @@
       "id": "B_cross_domain_analysis",
       "name": "跨域深度分析",
       "acceptanceCriteria": {
-        "must_trigger_subagents": ["sales-analyst", "customer-analyst", "service-analyst"],
+        "must_trigger_subagents": [
+          "sales-analyst",
+          "customer-analyst",
+          "service-analyst"
+        ],
         "must_call_grounding": true,
         "must_call_metrics": ["sales.revenue_total", "customer.churn_rate"],
         "must_aggregate_claims_with_evidence": true,

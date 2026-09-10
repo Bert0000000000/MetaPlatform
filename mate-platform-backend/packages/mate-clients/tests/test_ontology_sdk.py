@@ -1,4 +1,5 @@
 """ontology-sdk 单测：typed client 的路径/头/错误/幂等语义（MockTransport）。"""
+
 from __future__ import annotations
 
 import json
@@ -15,8 +16,7 @@ TOKEN = "tok-123"
 def _sdk(handler) -> OntologySDK:
     transport = httpx.MockTransport(handler)
     sdk = OntologySDK(base_url="http://gw.test", token=TOKEN, tenant_id=TENANT)
-    sdk._client = httpx.Client(transport=transport,
-                               headers={"X-Tenant-Id": TENANT})
+    sdk._client = httpx.Client(transport=transport, headers={"X-Tenant-Id": TENANT})
     return sdk
 
 
@@ -92,9 +92,11 @@ def test_validate_shacl_passes_axioms():
         return httpx.Response(200, json={"conforms": True})
 
     sdk = _sdk(h)
-    sdk.validate_shacl("ont.t.obj.a.v1",
-                       property_shapes=[{"path": "p", "min_count": 1}],
-                       subclass_axioms=[("ont.t.obj.b.v1", "ont.t.obj.a.v1")])
+    sdk.validate_shacl(
+        "ont.t.obj.a.v1",
+        property_shapes=[{"path": "p", "min_count": 1}],
+        subclass_axioms=[("ont.t.obj.b.v1", "ont.t.obj.a.v1")],
+    )
     assert seen["body"]["subclass_axioms"] == [["ont.t.obj.b.v1", "ont.t.obj.a.v1"]]
     assert seen["body"]["property_shapes"] == [{"path": "p", "min_count": 1}]
 
@@ -107,9 +109,13 @@ def test_reasoning_run_defaults():
         return httpx.Response(200, json={})
 
     _sdk(h).reasoning_run(individuals={"i1": ["a"]})
-    assert seen["body"] == {"subclass_axioms": [], "individuals": {"i1": ["a"]},
-                            "same_as_pairs": [], "transitive_axioms": [],
-                            "property_edges": []}
+    assert seen["body"] == {
+        "subclass_axioms": [],
+        "individuals": {"i1": ["a"]},
+        "same_as_pairs": [],
+        "transitive_axioms": [],
+        "property_edges": [],
+    }
 
 
 def test_align_individuals_shape():
@@ -119,7 +125,9 @@ def test_align_individuals_shape():
         seen["body"] = json.loads(req.content)
         return httpx.Response(200, json={"clusters": {}})
 
-    _sdk(h).align_individuals([{"rid": "a"}], [{"rid": "b"}],
-                              explicit_pairs=[("a", "b")])
-    assert seen["body"] == {"left": [{"rid": "a"}], "right": [{"rid": "b"}],
-                            "explicit_pairs": [["a", "b"]]}
+    _sdk(h).align_individuals([{"rid": "a"}], [{"rid": "b"}], explicit_pairs=[("a", "b")])
+    assert seen["body"] == {
+        "left": [{"rid": "a"}],
+        "right": [{"rid": "b"}],
+        "explicit_pairs": [["a", "b"]],
+    }

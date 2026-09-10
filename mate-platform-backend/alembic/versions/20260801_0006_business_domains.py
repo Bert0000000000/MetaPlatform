@@ -16,6 +16,7 @@ Revision ID: 0006_business_domains
 Revises: 0005_tech_dw
 Create Date: 2026-08-01
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence

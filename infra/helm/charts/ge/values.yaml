@@ -35,7 +35,7 @@ db:
   port: 5432
   database: great_expectations
   user: ge
-  existingSecret: ge-db  # SealedSecret / ExternalSecret
+  existingSecret: ge-db # SealedSecret / ExternalSecret
   existingSecretKey: "password"
 
 # Per-tenant scoping (SEC-TENANT-01 inheritance).
@@ -83,7 +83,7 @@ checkpoints:
 # The runner polls the expectation store and re-validates datasets
 # on a fixed cadence; DDL migrations trigger an immediate run.
 schedule:
-  cron: "0 */6 * * *"   # every 6 hours
+  cron: "0 */6 * * *" # every 6 hours
 
 # Airflow integration: GE server pushes expectation results to
 # Airflow's metadata DB so DAGs can reference them. In v3.1, GE is

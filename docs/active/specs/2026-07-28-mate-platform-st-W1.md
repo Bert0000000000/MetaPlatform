@@ -1037,7 +1037,7 @@
 
 **改动清单**：
 1. 写 ADR-0002：4A 鉴权 / 4B 业务 / 4C 参数 / 5X 系统
-2. grep paths，把 inline error schema 替换为 
+2. grep paths，把 inline error schema 替换为
 
 **DoD**：
 - [ ] ADR-0002 合并 + grep 无 inline error

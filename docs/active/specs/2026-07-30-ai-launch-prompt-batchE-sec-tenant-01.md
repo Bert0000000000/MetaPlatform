@@ -73,7 +73,7 @@ PLATFORM-EVENT-01 / TECH-SERVICES 集成 / 真实集群 e2e。
   机械执行点：mate-platform/tenancy/guards.py:require_tenant
   + mate-platform/tenancy/db_filter.py:event listener。
 - §13 第 4 条：外部系统没有 ACL Client，业务代码不直连。
-  出站 Redis / MinIO / Kafka 全部走 mate-clients/{redis,minio}/ + 
+  出站 Redis / MinIO / Kafka 全部走 mate-clients/{redis,minio}/ +
   mate-platform/messaging/kafka_tenant.py。
 
 ## 启动方式

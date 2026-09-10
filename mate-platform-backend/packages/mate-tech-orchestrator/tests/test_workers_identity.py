@@ -1,4 +1,5 @@
 """orchestrator worker identity — dev legacy token fallback tests."""
+
 from __future__ import annotations
 
 import jwt

@@ -1,4 +1,5 @@
 """Tests for the server-owned Plan graph validator."""
+
 from __future__ import annotations
 
 from mate_app_wfe.plan_validation import validate_plan
@@ -40,7 +41,9 @@ def test_validator_returns_actionable_issues_for_unknown_action_and_input() -> N
     }
     result = validate_plan(plan)
     assert result.valid is False
-    assert any(issue.node_id == "review" and issue.code == "unknown_action_type" for issue in result.issues)
+    assert any(
+        issue.node_id == "review" and issue.code == "unknown_action_type" for issue in result.issues
+    )
 
 
 def test_validator_rejects_duplicate_and_dangling_graph_nodes() -> None:

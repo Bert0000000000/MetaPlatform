@@ -1,4 +1,5 @@
 """Mate Platform - TECH-IAM main entry."""
+
 from __future__ import annotations
 
 import os
@@ -37,7 +38,9 @@ async def lifespan(app: FastAPI):
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.JSONRenderer(),
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(getattr(__import__("logging"), log_level)),
+        wrapper_class=structlog.make_filtering_bound_logger(
+            getattr(__import__("logging"), log_level)
+        ),
     )
     logger.info("mate-tech-iam.startup", port=os.getenv("PORT", "8102"))
     await init_db()
@@ -123,6 +126,7 @@ app.include_router(dashboard_router)
 # In dev mode, dev_server.py mounts it separately; in Docker, we mount it here to avoid a separate container.
 try:
     from mate_tech_dw.api import router as dw_router
+
     app.include_router(dw_router)
     logger.info("Mounted dw router (%d routes)", len(dw_router.routes))
 except Exception as e:
@@ -144,7 +148,7 @@ class _PortalIamAliasMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: _ASGIApp):
         super().__init__(app)
         # Only rewrite admin-style paths, not auth/sso-providers
-                # Portal admin pages call /api/v1/iam/<svc>/<rest>; rewrite to
+        # Portal admin pages call /api/v1/iam/<svc>/<rest>; rewrite to
         # /api/v1/admin/<svc>/<rest>. The portal also uses legacy service
         # names the new admin router exposes under different prefixes
         # (e.g. audit-logs -> logs/audit, departments -> orgs/tree); the
@@ -191,7 +195,7 @@ class _PortalIamAliasMiddleware(BaseHTTPMiddleware):
             "permissions": "permissions",
             "logs": "logs/audit",
             "operations": "operations",
-            "logs/audit": "logs/audit",          # identity (alias already has trailing segment)
+            "logs/audit": "logs/audit",  # identity (alias already has trailing segment)
             "logs/modules": "logs/modules",
             "logs/audit/export": "logs/audit/export",
             "api-keys": "api-keys",
@@ -216,7 +220,7 @@ class _PortalIamAliasMiddleware(BaseHTTPMiddleware):
                 break
         if alias_key is not None:
             admin_prefix = self._svc_aliases[alias_key]
-            remainder = legacy_svc[len(alias_key):]
+            remainder = legacy_svc[len(alias_key) :]
             new_path = "/api/v1/admin/" + admin_prefix + remainder + tail
         else:
             # No alias matched: keep the legacy segment as-is.
@@ -234,12 +238,22 @@ class _PortalIamAliasMiddleware(BaseHTTPMiddleware):
 
     async def _forward_to_obs(self, request: _StRequest, new_path: str):
         import httpx
+
         obs_base = "http://127.0.0.1:8083"
         target_url = obs_base + new_path
         body = await request.body()
-        skip = {"host", "content-length", "connection", "keep-alive",
-                "proxy-authenticate", "proxy-authorization", "te", "trailers",
-                "transfer-encoding", "upgrade"}
+        skip = {
+            "host",
+            "content-length",
+            "connection",
+            "keep-alive",
+            "proxy-authenticate",
+            "proxy-authorization",
+            "te",
+            "trailers",
+            "transfer-encoding",
+            "upgrade",
+        }
         headers = {k: v for k, v in request.headers.items() if k.lower() not in skip}
         async with httpx.AsyncClient(timeout=30.0) as client:
             try:
@@ -261,6 +275,7 @@ class _PortalIamAliasMiddleware(BaseHTTPMiddleware):
             headers={k: v for k, v in upstream.headers.items() if k.lower() not in skip},
         )
 
+
 app.add_middleware(_PortalIamAliasMiddleware)
 
 
@@ -268,4 +283,3 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8102")))
-

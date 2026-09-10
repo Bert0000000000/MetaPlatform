@@ -9,6 +9,7 @@ Tests:
   - test_cross_tenant_delete_404: tenant B cannot delete tenant A's task.
   - test_health_anonymous_ok: health is reachable without a bearer token.
 """
+
 from __future__ import annotations
 
 import time

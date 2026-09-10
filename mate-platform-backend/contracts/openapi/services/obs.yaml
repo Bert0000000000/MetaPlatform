@@ -8,208 +8,208 @@ info:
     name: Mate Platform API Governance
     email: api-governance@metaplatform.local
 servers:
-- url: /
+  - url: /
 tags:
-- name: obs
-  description: obs domain operations
-security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+  - name: obs
+    description: obs domain operations
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
 paths:
   /healthz:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
+        - bearerAuth: []
+          tenantHeader: []
       summary: Liveness probe
       tags:
-      - obs
+        - obs
       responses:
-        '200':
+        "200":
           description: OK
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetHealthz
       description: Liveness probe
       x-mate-owner: platform-observability
       x-mate-permission: obs.get
       x-mate-requirements:
-      - FR-OBS-OBSGETHEALTHZ
+        - FR-OBS-OBSGETHEALTHZ
       x-mate-implementation-status: placeholder
   /metrics:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
+        - bearerAuth: []
+          tenantHeader: []
       summary: Prometheus metrics (text/plain)
       tags:
-      - obs
+        - obs
       responses:
-        '200':
+        "200":
           description: text/plain exposition format
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetMetrics
       description: Prometheus metrics (text/plain)
       x-mate-owner: platform-observability
       x-mate-permission: obs.get
       x-mate-requirements:
-      - FR-OBS-OBSGETMETRICS
+        - FR-OBS-OBSGETMETRICS
       x-mate-implementation-status: placeholder
   /api/v1/obs/health:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: Aggregated health (9 apps + 7 infra)
       tags:
-      - obs
+        - obs
       responses:
-        '200':
+        "200":
           description: OK
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetObsHealth
       description: Aggregated health (9 apps + 7 infra)
       x-mate-owner: platform-observability
       x-mate-permission: obs.get
       x-mate-requirements:
-      - FR-OBS-OBSGETOBSHEALTH
+        - FR-OBS-OBSGETOBSHEALTH
       x-mate-implementation-status: placeholder
   /api/v1/obs/instrument:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: Auto-instrument status
       tags:
-      - obs
+        - obs
       responses:
-        '200':
+        "200":
           description: OK
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetObsInstrument
       description: Auto-instrument status
       x-mate-owner: platform-observability
       x-mate-permission: obs.get
       x-mate-requirements:
-      - FR-OBS-OBSGETOBSINSTRUMENT
+        - FR-OBS-OBSGETOBSINSTRUMENT
       x-mate-implementation-status: placeholder
   /api/v1/admin/operations/health:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.admin]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.admin]
       summary: Operations health (per service)
       tags:
-      - obs
+        - obs
       responses:
-        '200':
+        "200":
           description: OK
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetAdminOperationsHealth
       description: Operations health (per service)
       x-mate-owner: platform-observability
       x-mate-permission: obs.get
       x-mate-requirements:
-      - FR-OBS-OBSGETADMINOPERATIONSHEALTH
+        - FR-OBS-OBSGETADMINOPERATIONSHEALTH
       x-mate-implementation-status: placeholder
   /api/v1/admin/operations/metrics/self:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.admin]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.admin]
       summary: Self process metrics snapshot
       tags:
-      - obs
+        - obs
       responses:
-        '200':
+        "200":
           description: OK
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetAdminOperationsMetricsSelf
       description: Self process metrics snapshot
       x-mate-owner: platform-observability
       x-mate-permission: obs.get
       x-mate-requirements:
-      - FR-OBS-OBSGETADMINOPERATIONSMETRICSSELF
+        - FR-OBS-OBSGETADMINOPERATIONSMETRICSSELF
       x-mate-implementation-status: placeholder
   /api/v1/admin/operations/alerts/rules:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.admin]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.admin]
       summary: List alert rules
       tags:
-      - obs
+        - obs
       responses:
-        '200':
+        "200":
           description: OK
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetAdminOperationsAlertsRules
       description: List alert rules
       x-mate-owner: platform-observability
       x-mate-permission: obs.get
       x-mate-requirements:
-      - FR-OBS-OBSGETADMINOPERATIONSALERTSRULES
+        - FR-OBS-OBSGETADMINOPERATIONSALERTSRULES
       x-mate-implementation-status: placeholder
   /api/v1/admin/operations/prometheus/query:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.admin]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.admin]
       summary: Prometheus passthrough (best-effort)
       tags:
-      - obs
+        - obs
       parameters:
-      - in: query
-        name: query
-        required: true
-        schema:
-          type: string
-        description: PromQL expression
+        - in: query
+          name: query
+          required: true
+          schema:
+            type: string
+          description: PromQL expression
       responses:
-        '200':
+        "200":
           description: OK
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetAdminOperationsPrometheusQuery
       description: Prometheus passthrough (best-effort)
       x-mate-owner: platform-observability
       x-mate-permission: obs.get
       x-mate-requirements:
-      - FR-OBS-OBSGETADMINOPERATIONSPROMETHEUSQUERY
+        - FR-OBS-OBSGETADMINOPERATIONSPROMETHEUSQUERY
       x-mate-implementation-status: placeholder
   /api/v1/admin/operations/capacity:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.admin]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.admin]
       summary: Capacity snapshot
       tags:
-      - obs
+        - obs
       responses:
-        '200':
+        "200":
           description: OK
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetAdminOperationsCapacity
       description: Capacity snapshot
       x-mate-owner: platform-observability
       x-mate-permission: obs.get
       x-mate-requirements:
-      - FR-OBS-OBSGETADMINOPERATIONSCAPACITY
+        - FR-OBS-OBSGETADMINOPERATIONSCAPACITY
       x-mate-implementation-status: placeholder
 components:
   securitySchemes:

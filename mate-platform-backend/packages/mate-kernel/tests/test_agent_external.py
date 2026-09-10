@@ -68,14 +68,18 @@ class TestExtAgentRegistry:
         runner.register("translate", lambda p: f"translated: {p['text']}")
         runner.register("ocr", lambda p: f"ocr: {p['image_url']}")
         reg.runner = runner
-        reg.register(_manifest(
-            rid="ext.acme.agent.translator.v1",
-            caps=(Capability(name="translate", description="EN↔ZH"),),
-        ))
-        reg.register(_manifest(
-            rid="ext.acme.agent.ocr.v1",
-            caps=(Capability(name="ocr", description="image to text"),),
-        ))
+        reg.register(
+            _manifest(
+                rid="ext.acme.agent.translator.v1",
+                caps=(Capability(name="translate", description="EN↔ZH"),),
+            )
+        )
+        reg.register(
+            _manifest(
+                rid="ext.acme.agent.ocr.v1",
+                caps=(Capability(name="ocr", description="image to text"),),
+            )
+        )
         return reg
 
     def test_register_and_get(self) -> None:

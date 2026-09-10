@@ -1,4 +1,5 @@
 """SAL-06 — Markings 联动：工具可见性(schema_gen) × agent 访问强制(security)。"""
+
 from __future__ import annotations
 
 import os
@@ -18,12 +19,21 @@ def _ot(rid, marking):
 
     pk = ClassRef(f"ont.t-sal06.prop.{rid}-id.v1")
     return ObjectType(
-        rid=ClassRef(f"ont.t-sal06.obj.{rid}.v1"), display_name=rid,
+        rid=ClassRef(f"ont.t-sal06.obj.{rid}.v1"),
+        display_name=rid,
         primary_key=(pk,),
-        properties=(Property(rid=pk, type_id="string", nullable=False,
-                             primary_key=True, title="id",
-                             format=PropertyFormat.STRING),),
-        marking=tuple(marking))
+        properties=(
+            Property(
+                rid=pk,
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="id",
+                format=PropertyFormat.STRING,
+            ),
+        ),
+        marking=tuple(marking),
+    )
 
 
 class TestToolVisibility:
@@ -44,11 +54,11 @@ class TestAgentEnforcement:
     def _mk(self, req_markings, held):
         from mate_kernel.agent.security import SecurityAgent, SecurityRequest
 
-        requester = type("P", (), {"markings": tuple(held), "user_id": "u",
-                                   "tenant_id": "t"})()
+        requester = type("P", (), {"markings": tuple(held), "user_id": "u", "tenant_id": "t"})()
         required = type("R", (), {"required_markings": tuple(req_markings)})()
-        req = SecurityRequest(requester=requester, required=required,
-                              target_tenant="t", resource_rid="r")
+        req = SecurityRequest(
+            requester=requester, required=required, target_tenant="t", resource_rid="r"
+        )
         return SecurityAgent().decide(req)
 
     def test_missing_marking_denied(self):

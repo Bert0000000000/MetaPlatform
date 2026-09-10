@@ -3,6 +3,7 @@
 The in-memory implementation seeds per-tenant dicts; the upcoming
 Paimon / Postgres adapter (v3.2) will reuse the same dataclasses.
 """
+
 from __future__ import annotations
 
 from .in_memory import (

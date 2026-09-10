@@ -1,4 +1,5 @@
 """SAL-07 — 富属性格式 + Interface conformance。"""
+
 from __future__ import annotations
 
 import os
@@ -18,8 +19,14 @@ from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 
 
 def _prop(rid: str, fmt=PropertyFormat.STRING, pk=False):
-    return Property(rid=ClassRef(rid), type_id="string", nullable=False,
-                    primary_key=pk, title=rid.split(".")[-2], format=fmt)
+    return Property(
+        rid=ClassRef(rid),
+        type_id="string",
+        nullable=False,
+        primary_key=pk,
+        title=rid.split(".")[-2],
+        format=fmt,
+    )
 
 
 class TestRichFormats:
@@ -41,17 +48,18 @@ class TestInterfaceConformance:
 
     def test_conforming(self):
         ot = ObjectType(
-            rid=ClassRef("ont.t.obj.thing.v1"), display_name="thing",
+            rid=ClassRef("ont.t.obj.thing.v1"),
+            display_name="thing",
             primary_key=(ClassRef("ont.t.prop.id.v1"),),
-            properties=(_prop("ont.t.prop.id.v1", pk=True),
-                        _prop("ont.t.prop.name.v1")),
+            properties=(_prop("ont.t.prop.id.v1", pk=True), _prop("ont.t.prop.name.v1")),
             interfaces=(ClassRef("ont.t.if.identifiable.v1"),),
         )
         assert implements_interface(ot, self._ifc()) is True
 
     def test_missing_property_fails(self):
         ot = ObjectType(
-            rid=ClassRef("ont.t.obj.bare.v1"), display_name="bare",
+            rid=ClassRef("ont.t.obj.bare.v1"),
+            display_name="bare",
             primary_key=(ClassRef("ont.t.prop.k.v1"),),
             properties=(_prop("ont.t.prop.k.v1", pk=True),),
         )

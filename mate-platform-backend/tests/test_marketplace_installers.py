@@ -4,6 +4,7 @@
 故使用 AsyncMock 模拟 mcp_client.register_server(...)。Task 5-7 期间继续,
 待 mate-tech-mcp 提交后改走真实 client。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -61,9 +62,7 @@ async def test_mcp_installer_calls_register_endpoint(bundle, manifest):
     mcp_client.register_server = AsyncMock(return_value=payload)
 
     installer = McpInstaller(mcp_client=mcp_client)
-    result = await installer.run(
-        install_id=uuid.uuid4(), manifest=manifest, blob=bundle
-    )
+    result = await installer.run(install_id=uuid.uuid4(), manifest=manifest, blob=bundle)
 
     assert result["instance_uid"] == "mcp-srv-1"
     mcp_client.register_server.assert_awaited_once()

@@ -1,4 +1,5 @@
 """Versioned Plan definition and durable workflow-run HTTP contract."""
+
 from __future__ import annotations
 
 import os
@@ -57,8 +58,14 @@ def _executor(request: Request) -> WorkflowExecutor:
 def _definitions(request: Request):
     """Use SQL storage in deployed profiles; tests retain explicit memory storage."""
     settings = getattr(request.app.state, "workflow_settings", None)
-    has_database = bool(os.getenv("MATE_DB_URL", "").strip() or os.getenv("DATABASE_URL", "").strip())
-    return sql_store if has_database or (settings is not None and settings.is_deployed_profile) else memory_repository
+    has_database = bool(
+        os.getenv("MATE_DB_URL", "").strip() or os.getenv("DATABASE_URL", "").strip()
+    )
+    return (
+        sql_store
+        if has_database or (settings is not None and settings.is_deployed_profile)
+        else memory_repository
+    )
 
 
 def _status_url(run_id: str) -> str:
@@ -78,20 +85,26 @@ def _definition_payload(definition: Any) -> dict[str, Any]:
     }
 
 
-def _emit(request: Request, event_type: str, aggregate_id: str, payload: dict[str, Any], tenant_id: str) -> None:
+def _emit(
+    request: Request, event_type: str, aggregate_id: str, payload: dict[str, Any], tenant_id: str
+) -> None:
     writer: InMemoryOutboxWriter | None = getattr(request.app.state, "outbox_writer", None)
     if writer is None:
         return
-    writer.append(Event.create(
-        type=event_type,
-        tenant_id=TenantId(tenant_id),
-        aggregate_id=aggregate_id,
-        payload=payload,
-        trace_id=getattr(request.state.ctx, "trace_id", ""),
-    ))
+    writer.append(
+        Event.create(
+            type=event_type,
+            tenant_id=TenantId(tenant_id),
+            aggregate_id=aggregate_id,
+            payload=payload,
+            trace_id=getattr(request.state.ctx, "trace_id", ""),
+        )
+    )
 
 
-def _build_plan(definition_id: str, tenant_id: str, revision: Any, body: WorkflowStartRequest, trace_id: str) -> Plan:
+def _build_plan(
+    definition_id: str, tenant_id: str, revision: Any, body: WorkflowStartRequest, trace_id: str
+) -> Plan:
     validation = plan_validation.validate_plan(revision.plan)
     if not validation.valid:
         raise ValueError("published workflow definition is invalid")
@@ -103,12 +116,14 @@ def _build_plan(definition_id: str, tenant_id: str, revision: Any, body: Workflo
         current = outgoing[current]
         node = by_id[current]
         if node.get("type") == "action":
-            steps.append(PlanStep(
-                id=current,
-                action_type=str(node["action_type"]),
-                input=dict(node.get("input") or {}),
-                requires_confirmation=bool(node.get("requires_confirmation")),
-            ))
+            steps.append(
+                PlanStep(
+                    id=current,
+                    action_type=str(node["action_type"]),
+                    input=dict(node.get("input") or {}),
+                    requires_confirmation=bool(node.get("requires_confirmation")),
+                )
+            )
     return Plan(
         definition_id=definition_id,
         version=str(revision.version),
@@ -127,7 +142,9 @@ async def get_node_registry(request: Request) -> dict[str, Any]:
 
 
 @router.get("/workflow-definitions/{definition_id}")
-async def get_workflow_definition(request: Request, definition_id: str = Path(min_length=1)) -> dict[str, Any]:
+async def get_workflow_definition(
+    request: Request, definition_id: str = Path(min_length=1)
+) -> dict[str, Any]:
     definition = _definitions(request).get_workflow_definition(_tenant_id(request), definition_id)
     if definition is None:
         raise HTTPException(status_code=404, detail="workflow definition not found")
@@ -151,10 +168,13 @@ async def save_workflow_definition(
             expected_version=body.version,
         )
     except memory_repository.WorkflowDefinitionConflict as exc:
-        raise HTTPException(status_code=409, detail={
-            "code": "version_conflict",
-            "current": exc.current.summary(),
-        }) from exc
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "version_conflict",
+                "current": exc.current.summary(),
+            },
+        ) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     payload = _definition_payload(definition)
@@ -179,12 +199,20 @@ async def publish_workflow_definition(
     if not validation.valid:
         raise HTTPException(status_code=422, detail=validation.to_dict())
     published, revision = repository.publish_workflow_definition(
-        tenant_id, definition_id, actor_id=_actor_id(request),
+        tenant_id,
+        definition_id,
+        actor_id=_actor_id(request),
     )
-    _emit(request, "workflow_definition.published", definition_id, {
-        "definition_version": revision.version,
-        "idempotency_key": idempotency_key.strip(),
-    }, tenant_id)
+    _emit(
+        request,
+        "workflow_definition.published",
+        definition_id,
+        {
+            "definition_version": revision.version,
+            "idempotency_key": idempotency_key.strip(),
+        },
+        tenant_id,
+    )
     return {
         **_definition_payload(published),
         "revision": {"version": revision.version, "published_at": revision.published_at},
@@ -218,11 +246,17 @@ async def start_workflow(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except (OSError, RuntimeError) as exc:
         raise HTTPException(status_code=503, detail="workflow backend unavailable") from exc
-    _emit(request, "workflow_run.started", run.run_id, {
-        "definition_id": definition_id,
-        "definition_version": revision.version,
-        "correlation_id": body.correlation_id,
-    }, tenant_id)
+    _emit(
+        request,
+        "workflow_run.started",
+        run.run_id,
+        {
+            "definition_id": definition_id,
+            "definition_version": revision.version,
+            "correlation_id": body.correlation_id,
+        },
+        tenant_id,
+    )
     return {
         "run_id": run.run_id,
         "status": run.status.value,

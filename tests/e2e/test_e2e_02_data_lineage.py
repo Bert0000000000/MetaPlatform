@@ -41,14 +41,17 @@ async def test_e2e_02_data_lineage_full_flow(
     # 10 类节点类型齐全
     types = {n["type"] for n in data["nodes"]}
     expected_types = {
-        "datasource", "table", "mapping", "concept", "action", "output",
+        "datasource",
+        "table",
+        "mapping",
+        "concept",
+        "action",
+        "output",
     }
     assert expected_types.issubset(types), f"missing types: {expected_types - types}"
 
     # 2. 按 scope=customer 过滤
-    scope_resp = await data_client.get(
-        f"{DATA_BASE}?scope=customer", headers=tenant_headers
-    )
+    scope_resp = await data_client.get(f"{DATA_BASE}?scope=customer", headers=tenant_headers)
     assert scope_resp.status_code == 200
     assert scope_resp.json()["traceId"] == trace_id
     scoped = scope_resp.json()["data"]
@@ -63,9 +66,7 @@ async def test_e2e_02_data_lineage_full_flow(
     assert scoped["rootId"] is not None
 
     # 3. 查看节点子树（map-cust 为根）
-    subtree_resp = await data_client.get(
-        f"{DATA_BASE}/map-cust", headers=tenant_headers
-    )
+    subtree_resp = await data_client.get(f"{DATA_BASE}/map-cust", headers=tenant_headers)
     assert subtree_resp.status_code == 200
     assert subtree_resp.json()["traceId"] == trace_id
     subtree = subtree_resp.json()["data"]
@@ -117,9 +118,7 @@ async def test_e2e_02_data_lineage_node_not_found(
     tenant_headers: dict[str, str],
 ):
     """节点不存在时返回空图。"""
-    resp = await data_client.get(
-        f"{DATA_BASE}/nonexistent-node", headers=tenant_headers
-    )
+    resp = await data_client.get(f"{DATA_BASE}/nonexistent-node", headers=tenant_headers)
     assert resp.status_code == 200
     data = resp.json()["data"]
     assert data["nodes"] == []

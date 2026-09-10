@@ -1,4 +1,5 @@
 """网关请求体大小限制单测（安全测试组发现 1MB body → 上游 504 的修复）。"""
+
 from __future__ import annotations
 
 import httpx
@@ -35,9 +36,12 @@ def test_oversized_body_rejected_413(proxy_client):
     big = "x" * (2 * 1024 * 1024)  # > 1MB limit
     r = proxy_client.post(
         "/api/v1/marketplace/install",
-        json={"name": big, "kind": "mcp",
-              "artifact_id": "00000000-0000-0000-0000-000000000000",
-              "version": "1.0.0"},
+        json={
+            "name": big,
+            "kind": "mcp",
+            "artifact_id": "00000000-0000-0000-0000-000000000000",
+            "version": "1.0.0",
+        },
     )
     assert r.status_code == 413
     assert r.json()["code"] == "E413_PAYLOAD_TOO_LARGE"

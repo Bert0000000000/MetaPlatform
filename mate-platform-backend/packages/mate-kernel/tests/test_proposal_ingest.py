@@ -31,8 +31,11 @@ class TestProposalKind:
 
     def test_create_instance_kind_carries_class_rid_as_subject(self) -> None:
         p = _svc().propose(
-            "ont.t.obj.supplier.v1", {"props": {"name": "华信科技"}},
-            None, "新建供应商", kind="create_instance",
+            "ont.t.obj.supplier.v1",
+            {"props": {"name": "华信科技"}},
+            None,
+            "新建供应商",
+            kind="create_instance",
         )
         assert p.kind == "create_instance"
         assert p.action_rid == "ont.t.obj.supplier.v1"

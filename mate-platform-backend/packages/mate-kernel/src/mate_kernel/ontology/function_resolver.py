@@ -8,6 +8,7 @@ dev 默认 ``InMemoryFunctionResolver``（registry in-process）。生产可替�
 ``GitFunctionResolver`` / ``OCIImageResolver``（SANDBOX-02 / AGENT-EXT-01
 后续，本批仅留接口）。
 """
+
 from __future__ import annotations
 
 from typing import Protocol

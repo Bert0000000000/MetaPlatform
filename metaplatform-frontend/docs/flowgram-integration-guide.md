@@ -15,7 +15,7 @@ pnpm add @flowgram.ai/free-layout-editor
 CSS **必须**显式导入（否则基础样式全无）：
 
 ```ts
-import '@flowgram.ai/free-layout-editor/index.css';
+import "@flowgram.ai/free-layout-editor/index.css";
 ```
 
 ### 1.2 最小可运行模板
@@ -27,16 +27,16 @@ import {
   useNodeRender,
   type WorkflowJSON,
   type WorkflowNodeRegistry,
-} from '@flowgram.ai/free-layout-editor';
-import '@flowgram.ai/free-layout-editor/index.css';
+} from "@flowgram.ai/free-layout-editor";
+import "@flowgram.ai/free-layout-editor/index.css";
 
 const initialData: WorkflowJSON = {
-  nodes: [{ id: 'n1', type: 'custom', meta: { position: { x: 0, y: 0 } } }],
+  nodes: [{ id: "n1", type: "custom", meta: { position: { x: 0, y: 0 } } }],
   edges: [],
 };
 
 const nodeRegistries: WorkflowNodeRegistry[] = [
-  { type: 'custom', meta: { size: { width: 220, height: 80 } } },
+  { type: "custom", meta: { size: { width: 220, height: 80 } } },
 ];
 
 function MyNode() {
@@ -44,7 +44,7 @@ function MyNode() {
   return (
     <div
       ref={nodeRef as unknown as React.RefObject<HTMLDivElement>}
-      style={{ width: '100%', height: '100%', background: '#111' }}
+      style={{ width: "100%", height: "100%", background: "#111" }}
     >
       {node.toJSON().id}
     </div>
@@ -59,7 +59,7 @@ export default function Canvas() {
       materials={{ renderDefaultNode: MyNode }}
       onAllLayersRendered={(ctx) => ctx.tools.fitView(false)}
     >
-      <EditorRenderer style={{ width: '100%', height: '100%' }} />
+      <EditorRenderer style={{ width: "100%", height: "100%" }} />
     </FreeLayoutEditorProvider>
   );
 }
@@ -77,11 +77,11 @@ export default function Canvas() {
 
 ### 2.2 节点类型名映射
 
-| 数据流 | 名称 | 说明 |
-|---|---|---|
-| `WorkflowNodeJSON.type` / `nodeRegistries[].type` | `flow-input` 等 | 完整名（业务自定义） |
-| `n.type` 在 `useNodeRender` 内部 | **可能是 `flow-input` 也可能没有** | 在 `materials.renderDefaultNode` 路径下不可靠 |
-| `n.id`（DOM `data-node-id`） | `input` 等 | **唯一可靠**，用它做 id→type 查表 |
+| 数据流                                            | 名称                               | 说明                                          |
+| ------------------------------------------------- | ---------------------------------- | --------------------------------------------- |
+| `WorkflowNodeJSON.type` / `nodeRegistries[].type` | `flow-input` 等                    | 完整名（业务自定义）                          |
+| `n.type` 在 `useNodeRender` 内部                  | **可能是 `flow-input` 也可能没有** | 在 `materials.renderDefaultNode` 路径下不可靠 |
+| `n.id`（DOM `data-node-id`）                      | `input` 等                         | **唯一可靠**，用它做 id→type 查表             |
 
 **结论**：在自定义 node renderer 里通过 `n.id` 查表确定类型，**不要信 `n.type`**。
 
@@ -121,7 +121,11 @@ function MyNode() {
 ```tsx
 function MyNode() {
   const { nodeRef } = useNodeRender();
-  return <div ref={nodeRef} style={{ width: '100%', height: '100%' }}>...</div>;
+  return (
+    <div ref={nodeRef} style={{ width: "100%", height: "100%" }}>
+      ...
+    </div>
+  );
 }
 ```
 
@@ -198,17 +202,18 @@ lineColor={{
 
 **核心原则**：UI 黑色 → 节点**黑底** + 浅边框 + 浅色文字；类型色仅用于 icon / pill / 选中态。
 
-| 元素 | 颜色 |
-|---|---|
-| 节点背景（深色 UI） | `#000000` |
-| 节点边框（未选中） | `#e4e4e7` 浅灰 |
-| 节点文字 | `#fafafa` |
-| 节点类型 pill 背景 | `rgba(<typeColor>, 0.15)` |
-| 节点类型 pill 文字 | 类型色（亮版） |
-| 选中态边框 | 类型色（取代浅灰） |
-| 选中态 boxShadow | `0 0 0 3px <tColor>, 0 0 0 6px <tColor>40, 0 8px 24px <tColor>80` |
+| 元素                | 颜色                                                              |
+| ------------------- | ----------------------------------------------------------------- |
+| 节点背景（深色 UI） | `#000000`                                                         |
+| 节点边框（未选中）  | `#e4e4e7` 浅灰                                                    |
+| 节点文字            | `#fafafa`                                                         |
+| 节点类型 pill 背景  | `rgba(<typeColor>, 0.15)`                                         |
+| 节点类型 pill 文字  | 类型色（亮版）                                                    |
+| 选中态边框          | 类型色（取代浅灰）                                                |
+| 选中态 boxShadow    | `0 0 0 3px <tColor>, 0 0 0 6px <tColor>40, 0 8px 24px <tColor>80` |
 
 类型色推荐（400-500 级，在深底上饱和度合适）：
+
 - input/output: `#3b82f6`（蓝）
 - llm: `#8b5cf6`（紫）
 - condition: `#eab308`（黄）
@@ -230,15 +235,15 @@ import {
   useClientContext,
   type WorkflowJSON,
   type WorkflowNodeRegistry,
-} from '@flowgram.ai/free-layout-editor';
+} from "@flowgram.ai/free-layout-editor";
 ```
 
 ### 4.2 `WorkflowJSON` 形状
 
 ```ts
 type WorkflowJSON = {
-  nodes: WorkflowNodeJSON[];  // { id, type, meta: { position: {x,y} }, data, blocks? }
-  edges: WorkflowEdgeJSON[];  // { sourceNodeID, targetNodeID, sourcePortID?, targetPortID? }
+  nodes: WorkflowNodeJSON[]; // { id, type, meta: { position: {x,y} }, data, blocks? }
+  edges: WorkflowEdgeJSON[]; // { sourceNodeID, targetNodeID, sourcePortID?, targetPortID? }
 };
 ```
 
@@ -250,7 +255,7 @@ type WorkflowJSON = {
 interface NodeRenderReturnType {
   id: string;
   node: WorkflowNodeEntity;
-  data: any;          // ← materials 路径下是 undefined
+  data: any; // ← materials 路径下是 undefined
   updateData: (newData: any) => void;
   selected: boolean;
   activated: boolean;
@@ -264,7 +269,7 @@ interface NodeRenderReturnType {
   nodeRef: React.MutableRefObject<HTMLDivElement | null>;
   onFocus: () => void;
   onBlur: () => void;
-  form?: { render: () => ReactNode; values: any };  // ← 需 nodeEngine.enable
+  form?: { render: () => ReactNode; values: any }; // ← 需 nodeEngine.enable
 }
 ```
 
@@ -277,7 +282,7 @@ interface FreeLayoutPluginContext {
   selection: SelectionService;
   operation: WorkflowOperationService;
   history: HistoryService;
-  tools: { autoLayout, fitView };
+  tools: { autoLayout; fitView };
   playground: EditorPlayground;
 }
 ```
@@ -296,19 +301,19 @@ document.addNode(data): FlowNodeEntity;
 
 ### 4.6 `FreeLayoutEditorProvider` 关键 props
 
-| Prop | 类型 | 说明 |
-|---|---|---|
-| `initialData` | `WorkflowJSON` | 初始数据 |
-| `nodeRegistries` | `WorkflowNodeRegistry[]` | 节点类型注册 |
-| `materials.renderDefaultNode` | `React.ComponentType` | **推荐**自定义节点渲染器（替代 formMeta） |
-| `nodeEngine` | `{ enable: boolean }` | 启用 form 引擎（不推荐在 materials 路径下使用） |
-| `background` | `boolean` | 显示网格点 |
-| `lineColor` | `LineColor` | 连线配色 |
-| `playground.preventGlobalGesture` | `boolean` | 禁用全局手势（避免与外层冲突） |
-| `readonly` | `boolean` | 只读模式 |
-| `canDeleteNode` / `canDeleteLine` | `(ctx, ...) => boolean` | 是否允许删除 |
-| `onAllLayersRendered` | `(ctx) => void` | 画布初始化完成后回调（在 ctx.tools.fitView(false) 处调用） |
-| `history.enable` | `boolean` | 启用撤销/重做 |
+| Prop                              | 类型                     | 说明                                                       |
+| --------------------------------- | ------------------------ | ---------------------------------------------------------- |
+| `initialData`                     | `WorkflowJSON`           | 初始数据                                                   |
+| `nodeRegistries`                  | `WorkflowNodeRegistry[]` | 节点类型注册                                               |
+| `materials.renderDefaultNode`     | `React.ComponentType`    | **推荐**自定义节点渲染器（替代 formMeta）                  |
+| `nodeEngine`                      | `{ enable: boolean }`    | 启用 form 引擎（不推荐在 materials 路径下使用）            |
+| `background`                      | `boolean`                | 显示网格点                                                 |
+| `lineColor`                       | `LineColor`              | 连线配色                                                   |
+| `playground.preventGlobalGesture` | `boolean`                | 禁用全局手势（避免与外层冲突）                             |
+| `readonly`                        | `boolean`                | 只读模式                                                   |
+| `canDeleteNode` / `canDeleteLine` | `(ctx, ...) => boolean`  | 是否允许删除                                               |
+| `onAllLayersRendered`             | `(ctx) => void`          | 画布初始化完成后回调（在 ctx.tools.fitView(false) 处调用） |
+| `history.enable`                  | `boolean`                | 启用撤销/重做                                              |
 
 ---
 
@@ -325,8 +330,10 @@ document.addNode(data): FlowNodeEntity;
 ```ts
 // drop 时
 const rect = dropEl.getBoundingClientRect();
-const renderLayer = dropEl.querySelector('.gedit-playground-layer') as HTMLElement;
-const transform = renderLayer?.style?.transform || '';
+const renderLayer = dropEl.querySelector(
+  ".gedit-playground-layer",
+) as HTMLElement;
+const transform = renderLayer?.style?.transform || "";
 
 // 解析 "translate(Xpx, Ypx) scale(Z)"
 const scaleMatch = transform.match(/scale\(([\d.]+)\)/);
@@ -350,17 +357,19 @@ function NodeLibrary({ onDragStart }) {
         <div
           draggable
           onDragStart={(e) => {
-            e.dataTransfer.setData('application/flowgram-node', n.type);
-            e.dataTransfer.effectAllowed = 'copy';
+            e.dataTransfer.setData("application/flowgram-node", n.type);
+            e.dataTransfer.effectAllowed = "copy";
             // 自定义 drag image
-            const ghost = document.createElement('div');
+            const ghost = document.createElement("div");
             ghost.textContent = n.title;
-            ghost.style.cssText = 'position:fixed;top:-1000px;left:-1000px;...';
+            ghost.style.cssText = "position:fixed;top:-1000px;left:-1000px;...";
             document.body.appendChild(ghost);
             e.dataTransfer.setDragImage(ghost, 0, 0);
             setTimeout(() => document.body.removeChild(ghost), 0);
           }}
-        >{n.title}</div>
+        >
+          {n.title}
+        </div>
       ))}
     </div>
   );
@@ -373,19 +382,21 @@ function CanvasDropZone({ children, onAddNode }) {
     <div
       ref={ref}
       onDragOver={(e) => {
-        if (e.dataTransfer.types.includes('application/flowgram-node')) {
+        if (e.dataTransfer.types.includes("application/flowgram-node")) {
           e.preventDefault();
-          e.dataTransfer.dropEffect = 'copy';
+          e.dataTransfer.dropEffect = "copy";
         }
       }}
       onDrop={(e) => {
         e.preventDefault();
-        const nodeType = e.dataTransfer.getData('application/flowgram-node');
+        const nodeType = e.dataTransfer.getData("application/flowgram-node");
         if (!nodeType || !ref.current) return;
         const { x, y } = clientToCanvas(e, ref.current);
         onAddNode(nodeType, x, y);
       }}
-    >{children}</div>
+    >
+      {children}
+    </div>
   );
 }
 
@@ -395,10 +406,12 @@ function Editor({ onAddNode }) {
     <FreeLayoutEditorProvider
       onAllLayersRendered={(ctx) => {
         // 暴露 addNode 给外部
-        ctx.document;  // WorkflowDocument
+        ctx.document; // WorkflowDocument
         // 保存到 ref / context 供外部调用
       }}
-    >...</FreeLayoutEditorProvider>
+    >
+      ...
+    </FreeLayoutEditorProvider>
   );
 }
 ```
@@ -429,8 +442,14 @@ function BaseNode({ onSelect }) {
   return (
     <div
       ref={nodeRender.nodeRef}
-      onClick={(e) => { e.stopPropagation(); onSelect?.(nodeRender.node.id); nodeRender.selectNode(e); }}
-    >...</div>
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect?.(nodeRender.node.id);
+        nodeRender.selectNode(e);
+      }}
+    >
+      ...
+    </div>
   );
 }
 ```
@@ -500,24 +519,24 @@ const palette = themeMode === 'dark'
 
 ## 9. 已知问题 / 限制
 
-| 问题 | 原因 | 缓解 |
-|---|---|---|
-| `materials.renderDefaultNode` 路径下 `form` / `data` 是 undefined | FlowGram 1.0.x 限制 | 用 `n.id` 查静态表 |
-| 网格点 `stroke="#eceeef"` hardcoded | FlowGram SVG pattern 模板内联 | CSS `!important` 覆盖 |
-| 节点默认 80x40 | FlowGram `DEFAULT_SIZE` | CSS `!important` 覆盖 |
-| 拖拽不触发 addNode | FlowGram 内部 child 拦截 dragover | React 包装层 onDrop |
-| React.StrictMode 双 mount | InversifyJS DI 重复注册 | 移除 StrictMode |
-| 节点拖动到画布时 React 不响应新节点 | 内部有 watch 机制 | 调用 `ctx.tools.fitView(false)` 触发重新 layout |
-| 删除节点用 keyboard 后数据未清 | workflow data 与 node entity 不同步 | 调用 `document.deleteNode(id)` |
+| 问题                                                              | 原因                                | 缓解                                            |
+| ----------------------------------------------------------------- | ----------------------------------- | ----------------------------------------------- |
+| `materials.renderDefaultNode` 路径下 `form` / `data` 是 undefined | FlowGram 1.0.x 限制                 | 用 `n.id` 查静态表                              |
+| 网格点 `stroke="#eceeef"` hardcoded                               | FlowGram SVG pattern 模板内联       | CSS `!important` 覆盖                           |
+| 节点默认 80x40                                                    | FlowGram `DEFAULT_SIZE`             | CSS `!important` 覆盖                           |
+| 拖拽不触发 addNode                                                | FlowGram 内部 child 拦截 dragover   | React 包装层 onDrop                             |
+| React.StrictMode 双 mount                                         | InversifyJS DI 重复注册             | 移除 StrictMode                                 |
+| 节点拖动到画布时 React 不响应新节点                               | 内部有 watch 机制                   | 调用 `ctx.tools.fitView(false)` 触发重新 layout |
+| 删除节点用 keyboard 后数据未清                                    | workflow data 与 node entity 不同步 | 调用 `document.deleteNode(id)`                  |
 
 ---
 
 ## 10. 模板文件清单
 
-| 文件 | 作用 |
-|---|---|
-| `apps/web/src/pages/ontology/OntologyActionPage.tsx` | 完整示例：子 tab + 全屏 + 拖拽 + 主题色 |
-| `apps/web/src/App.css` | FlowGram 暗色覆盖 CSS（`.gedit-*` 选择器） |
+| 文件                                                 | 作用                                       |
+| ---------------------------------------------------- | ------------------------------------------ |
+| `apps/web/src/pages/ontology/OntologyActionPage.tsx` | 完整示例：子 tab + 全屏 + 拖拽 + 主题色    |
+| `apps/web/src/App.css`                               | FlowGram 暗色覆盖 CSS（`.gedit-*` 选择器） |
 
 ---
 
@@ -527,14 +546,14 @@ const palette = themeMode === 'dark'
 // 在浏览器控制台
 
 // 1. 找 FlowGram playground
-document.querySelectorAll('.gedit-playground').length
+document.querySelectorAll(".gedit-playground").length;
 // 多个实例（子 tab + 全屏）应该 ≥ 1
 
 // 2. 检查节点
-document.querySelectorAll('.gedit-flow-activity-node').length
+document.querySelectorAll(".gedit-flow-activity-node").length;
 
 // 3. 检查连线
-document.querySelectorAll('.gedit-flow-activity-edge').length
+document.querySelectorAll(".gedit-flow-activity-edge").length;
 
 // 4. 强制重新 fitView（画布 fit 到所有节点）
 // 需先拿到 ctx → 调 ctx.tools.fitView(false)

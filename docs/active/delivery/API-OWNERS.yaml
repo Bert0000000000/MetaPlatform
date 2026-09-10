@@ -2,48 +2,48 @@ version: 1
 owners:
   agent-experience:
     domains:
-    - copilot
+      - copilot
   agent-platform:
     domains:
-    - agent
+      - agent
   ai-protocols:
     domains:
-    - mcp
-    - a2a
+      - mcp
+      - a2a
   ai-runtime:
     domains:
-    - llmgw
+      - llmgw
   application-platform:
     domains:
-    - apphub
+      - apphub
   business-workbench:
     domains:
-    - dashboard
+      - dashboard
   data-platform:
     domains:
-    - data
+      - data
   digital-workforce:
     domains:
-    - dw
+      - dw
   enterprise-architecture:
     domains:
-    - arch
+      - arch
   knowledge-platform:
     domains:
-    - rag
-    - kb
+      - rag
+      - kb
   ontology-platform:
     domains:
-    - ont
+      - ont
   platform-messaging:
     domains:
-    - msg
+      - msg
   platform-observability:
     domains:
-    - obs
+      - obs
   security-iam:
     domains:
-    - iam
+      - iam
   workflow-platform:
     domains:
-    - wfe
+      - wfe

@@ -165,4 +165,3 @@ export class CustomComponentRegistry {
 }
 
 export const customRegistry = new CustomComponentRegistry();
-

@@ -3,6 +3,7 @@
 TestClient e2e（InMemory repo）：试改不落主库；view 带 _sandbox_ 标记；
 merge 走 apply-edit-set 审计管道落库；discard 主库原样。
 """
+
 from __future__ import annotations
 
 import os
@@ -37,29 +38,61 @@ ACT = f"ont.{T}.act.crm.advance-deal.v1"
 @pytest.fixture()
 def client() -> TestClient:
     r = InMemoryOntologyRepository()
-    r.upsert_object_type(ObjectType(
-        rid=ClassRef(OBJ), primary_key=(ClassRef(P_ID),),
-        properties=(
-            Property(rid=ClassRef(P_ID), type_id="string", nullable=False,
-                     primary_key=True, title="id", format=PropertyFormat.STRING),
-            Property(rid=ClassRef(P_STAGE), type_id="string", nullable=True,
-                     primary_key=False, title="stage", format=PropertyFormat.STRING),
-        ),
-        display_name="deal",
-    ))
-    r.upsert_action_type(ActionType(
-        rid=ClassRef(ACT), parameters=(), submission_criteria=(),
-        side_effects=(), function_ref=ClassRef(f"ont.{T}.fn.x.v1"),
-        on=(ClassRef(OBJ),), title="Advance Deal",
-        declarative_edits=({"op": "set_property", "target": "$target",
-                            "property_rid": P_STAGE, "value": "$param.stage"},),
-    ))
-    r.create_individual(Individual(
-        rid=f"ont.{T}.ind.deal.dd1", class_rid=ClassRef(OBJ),
-        props=((ClassRef(P_ID), "dd1"), (ClassRef(P_STAGE), "open")),
-        primary_key="dd1", tenant_id=T,
-        created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
-    ))
+    r.upsert_object_type(
+        ObjectType(
+            rid=ClassRef(OBJ),
+            primary_key=(ClassRef(P_ID),),
+            properties=(
+                Property(
+                    rid=ClassRef(P_ID),
+                    type_id="string",
+                    nullable=False,
+                    primary_key=True,
+                    title="id",
+                    format=PropertyFormat.STRING,
+                ),
+                Property(
+                    rid=ClassRef(P_STAGE),
+                    type_id="string",
+                    nullable=True,
+                    primary_key=False,
+                    title="stage",
+                    format=PropertyFormat.STRING,
+                ),
+            ),
+            display_name="deal",
+        )
+    )
+    r.upsert_action_type(
+        ActionType(
+            rid=ClassRef(ACT),
+            parameters=(),
+            submission_criteria=(),
+            side_effects=(),
+            function_ref=ClassRef(f"ont.{T}.fn.x.v1"),
+            on=(ClassRef(OBJ),),
+            title="Advance Deal",
+            declarative_edits=(
+                {
+                    "op": "set_property",
+                    "target": "$target",
+                    "property_rid": P_STAGE,
+                    "value": "$param.stage",
+                },
+            ),
+        )
+    )
+    r.create_individual(
+        Individual(
+            rid=f"ont.{T}.ind.deal.dd1",
+            class_rid=ClassRef(OBJ),
+            props=((ClassRef(P_ID), "dd1"), (ClassRef(P_STAGE), "open")),
+            primary_key="dd1",
+            tenant_id=T,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+    )
     ont_api._SCENARIOS.clear()
     app = FastAPI()
 
@@ -73,11 +106,14 @@ def client() -> TestClient:
         )
 
         request.state.ctx = RequestContext(
-            request_id="g44-req", trace_id="g44-trace",
-            tenant_id=TenantId(T), user_id=UserId("tester"),
+            request_id="g44-req",
+            trace_id="g44-trace",
+            tenant_id=TenantId(T),
+            user_id=UserId("tester"),
             roles=frozenset({"editor"}),
             permissions=frozenset({"ont.read", "ont.write"}),
-            scopes=frozenset(), auth_method=AuthMethod.USER,
+            scopes=frozenset(),
+            auth_method=AuthMethod.USER,
         )
         return await call_next(request)
 
@@ -96,21 +132,28 @@ class TestScenarioSession:
         assert resp.status_code == 200
         sid = resp.json()["scenario_id"]
         # 2) 试改（set_property）+ 新建
-        e1 = client.post(f"{BASE}/scenarios/{sid}/edits", json={
-            "op": "set_property",
-            "target": f"ont.{T}.ind.deal.dd1",
-            "property_rid": P_STAGE, "value": "won",
-        })
+        e1 = client.post(
+            f"{BASE}/scenarios/{sid}/edits",
+            json={
+                "op": "set_property",
+                "target": f"ont.{T}.ind.deal.dd1",
+                "property_rid": P_STAGE,
+                "value": "won",
+            },
+        )
         assert e1.status_code == 200, e1.text
-        e2 = client.post(f"{BASE}/scenarios/{sid}/edits", json={
-            "op": "create_object", "class_rid": OBJ,
-            "primary_key": "dd2", "props": {P_ID: "dd2", P_STAGE: "new"},
-        })
+        e2 = client.post(
+            f"{BASE}/scenarios/{sid}/edits",
+            json={
+                "op": "create_object",
+                "class_rid": OBJ,
+                "primary_key": "dd2",
+                "props": {P_ID: "dd2", P_STAGE: "new"},
+            },
+        )
         assert e2.status_code == 200, e2.text
         # 3) 视图：合并视图带 _sandbox_ 标记
-        view = client.get(
-            f"{BASE}/scenarios/{sid}/view",
-            params={"class_rid": OBJ})
+        view = client.get(f"{BASE}/scenarios/{sid}/view", params={"class_rid": OBJ})
         assert view.status_code == 200
         rows = {r["deal-id"]: r for r in view.json()["rows"]}
         assert rows["dd1"]["stage"] == "won"
@@ -121,34 +164,42 @@ class TestScenarioSession:
         base_ind = app_repo.get_individual(f"ont.{T}.ind.deal.dd1")
         assert base_ind.get(ClassRef(P_STAGE)) == "open"
         # 4) 合并（审计管道）
-        m = client.post(f"{BASE}/scenarios/{sid}/merge", json={
-            "action_rid": ACT, "actor": "ceo-1"})
+        m = client.post(f"{BASE}/scenarios/{sid}/merge", json={"action_rid": ACT, "actor": "ceo-1"})
         assert m.status_code == 200, m.text
         assert m.json()["merged"] is True
         # 主库生效
-        assert app_repo.get_individual(
-            f"ont.{T}.ind.deal.dd1").get(ClassRef(P_STAGE)) == "won"
-        assert app_repo.get_individual(
-            f"ont.{T}.ind.deal.dd2").get(ClassRef(P_STAGE)) == "new"
+        assert app_repo.get_individual(f"ont.{T}.ind.deal.dd1").get(ClassRef(P_STAGE)) == "won"
+        assert app_repo.get_individual(f"ont.{T}.ind.deal.dd2").get(ClassRef(P_STAGE)) == "new"
         # 会话已清
         assert client.get(f"{BASE}/scenarios").json() == []
 
     def test_discard_keeps_base(self, client: TestClient) -> None:
         sid = client.post(f"{BASE}/scenarios", json={}).json()["scenario_id"]
-        client.post(f"{BASE}/scenarios/{sid}/edits", json={
-            "op": "set_property", "target": f"ont.{T}.ind.deal.dd1",
-            "property_rid": P_STAGE, "value": "lost"})
+        client.post(
+            f"{BASE}/scenarios/{sid}/edits",
+            json={
+                "op": "set_property",
+                "target": f"ont.{T}.ind.deal.dd1",
+                "property_rid": P_STAGE,
+                "value": "lost",
+            },
+        )
         d = client.delete(f"{BASE}/scenarios/{sid}")
         assert d.status_code == 200 and d.json()["discarded"] is True
         app_repo = client.app.state.kernel_repo
-        assert app_repo.get_individual(
-            f"ont.{T}.ind.deal.dd1").get(ClassRef(P_STAGE)) == "open"
+        assert app_repo.get_individual(f"ont.{T}.ind.deal.dd1").get(ClassRef(P_STAGE)) == "open"
 
     def test_bad_edit_rejected(self, client: TestClient) -> None:
         sid = client.post(f"{BASE}/scenarios", json={}).json()["scenario_id"]
-        bad = client.post(f"{BASE}/scenarios/{sid}/edits", json={
-            "op": "set_property", "target": "ont.g44.ind.deal.ghost",
-            "property_rid": P_STAGE, "value": "x"})
+        bad = client.post(
+            f"{BASE}/scenarios/{sid}/edits",
+            json={
+                "op": "set_property",
+                "target": "ont.g44.ind.deal.ghost",
+                "property_rid": P_STAGE,
+                "value": "x",
+            },
+        )
         assert bad.status_code == 422
 
     def test_unknown_scenario_404(self, client: TestClient) -> None:

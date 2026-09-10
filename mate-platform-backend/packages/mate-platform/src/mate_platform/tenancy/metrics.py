@@ -5,6 +5,7 @@ Exposes ``mate_platform.tenancy.cross_tenant_attempt`` counter
 The counter is lazy-initialized so unit tests that don't pull in
 prometheus_client can still import this module.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

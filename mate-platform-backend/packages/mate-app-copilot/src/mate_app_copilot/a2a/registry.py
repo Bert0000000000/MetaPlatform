@@ -10,6 +10,7 @@ method takes a tenant_id and refuses to return cards belonging to a
 different tenant. Empty tenant_id returns empty results — the same
 behaviour as ``mate_app_a2a.repositories.in_memory``.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -88,9 +89,7 @@ class AgentCardRegistry:
         self._ensure_tenant(tenant_id)
         return sorted(self._cards[tenant_id].values(), key=lambda c: c.id)
 
-    def filter_by_capability(
-        self, tenant_id: str, capability: str
-    ) -> list[AgentCard]:
+    def filter_by_capability(self, tenant_id: str, capability: str) -> list[AgentCard]:
         """Return cards whose capabilities tuple contains ``capability``.
 
         Matching is case-insensitive. An empty ``capability`` returns

@@ -2,8 +2,7 @@
 
 > **用途**：内部 review 场景的 talking points，可口头/聊天/邮件直接复用
 > **更新日期**：2026-08-18（含 HITL 场景冻结）
-> **关联决策**：项目记忆 `mp-workflow-path-c` + `mp-workflow-hitl-scenarios`
-> **完整规划**：`2026-08-18-workflow-master-synthesis.md`（单一源文档，本文件为其速查版）
+> **关联决策**：项目记忆 `mp-workflow-path-c` + `mp-workflow-hitl-scenarios` > **完整规划**：`2026-08-18-workflow-master-synthesis.md`（单一源文档，本文件为其速查版）
 
 ---
 
@@ -13,12 +12,12 @@
 
 ### 4 个 HITL 场景（已冻结）
 
-| # | 场景 | 关键点 | 阶段 |
-|---|---|---|---|
-| 1 | **UserTask**（任务分发池） | 待办池 + claim/delegate/加签 + **默认 or-approve** | **M0/M1** |
-| 2 | **UserApproved**（审批节点） | 审批人固定 + approve/reject/modify + **强制 audit log** | **M1** |
-| 3 | **AI HITL Confirm**（Agent 半路问人） | 3 模式：simple / editable / discard+revert | **M2** |
-| 4 | **In-loop AI confirm** vs **Formal Approved** | 前者 Agent loop 内轻量 / 后者 Workflow 一等节点 | **M2** |
+| #   | 场景                                          | 关键点                                                  | 阶段      |
+| --- | --------------------------------------------- | ------------------------------------------------------- | --------- |
+| 1   | **UserTask**（任务分发池）                    | 待办池 + claim/delegate/加签 + **默认 or-approve**      | **M0/M1** |
+| 2   | **UserApproved**（审批节点）                  | 审批人固定 + approve/reject/modify + **强制 audit log** | **M1**    |
+| 3   | **AI HITL Confirm**（Agent 半路问人）         | 3 模式：simple / editable / discard+revert              | **M2**    |
+| 4   | **In-loop AI confirm** vs **Formal Approved** | 前者 Agent loop 内轻量 / 后者 Workflow 一等节点         | **M2**    |
 
 ### HITL 决定架构硬约束
 
@@ -65,17 +64,17 @@
 
 ## 能力对位表（让团队秒懂）
 
-| 想要的能力 | Path C 怎么做 | 优先级 |
-|---|---|---|
-| **HITL（核心）** | Event Sourcing + Interrupt + UserTask + UserApproved + AI HITL Confirm | **P0** |
-| **n8n 集成能力** | 17 域 Ontology Function（业务更对口，非 400+ 通用） | P2 |
-| **n8n 编排** | xyflow v12 前端 + 自研 Python 编排内核 | P0 |
-| **n8n 表达式** | 自研 ast + Jinja2（不抄 `$node["x"].json`） | P2 |
-| **n8n 凭据** | 复用 Keycloak + SEC-IAM-01（不重做） | P1 |
-| **Flowable 审批** | **不重写 BPMN**，只借鉴 UserTask 概念 + Interrupt 协议 | P0 |
-| **Flowable 多租户** | 复用 SEC-TENANT-01 + Namespace 模型 | P1 |
-| **flowgram UI** | xyflow + 借鉴 variable/form 设计 | P1 |
-| **BPMN 兼容** | 不在核心，最后做一个转化层即可 | P3 |
+| 想要的能力          | Path C 怎么做                                                          | 优先级 |
+| ------------------- | ---------------------------------------------------------------------- | ------ |
+| **HITL（核心）**    | Event Sourcing + Interrupt + UserTask + UserApproved + AI HITL Confirm | **P0** |
+| **n8n 集成能力**    | 17 域 Ontology Function（业务更对口，非 400+ 通用）                    | P2     |
+| **n8n 编排**        | xyflow v12 前端 + 自研 Python 编排内核                                 | P0     |
+| **n8n 表达式**      | 自研 ast + Jinja2（不抄 `$node["x"].json`）                            | P2     |
+| **n8n 凭据**        | 复用 Keycloak + SEC-IAM-01（不重做）                                   | P1     |
+| **Flowable 审批**   | **不重写 BPMN**，只借鉴 UserTask 概念 + Interrupt 协议                 | P0     |
+| **Flowable 多租户** | 复用 SEC-TENANT-01 + Namespace 模型                                    | P1     |
+| **flowgram UI**     | xyflow + 借鉴 variable/form 设计                                       | P1     |
+| **BPMN 兼容**       | 不在核心，最后做一个转化层即可                                         | P3     |
 
 ---
 
@@ -120,12 +119,12 @@
 
 ## 4 个里程碑（建立预期）
 
-| 阶段 | 时长 | 交付 | HITL 验收点 |
-|---|---|---|---|
-| **M0 PoC** | 2 周 | 最小可执行 workflow + PostgreSQL 持久化 | **必须跑通 UserTask → 人 approve → 继续** |
-| **M1 内核** | 8 周 | DSL + 编排 + 持久化 + UserTask + UserApproved 节点 | 两个一等 HITL 节点 + 完整 audit log |
-| **M2 节点** | 10 周 | 17 域节点 + Agent + 沙箱 + AI HITL Confirm（3 模式）+ in-loop | AI 半路问人 + editable + discard+revert |
-| **M3 生产化** | 12 周 | 多租户 + 可观测 + 13 硬规则 + ACCEPTANCE + all_approve/majority + BPMN 转化层 | 多签模式 + 转化层 |
+| 阶段          | 时长  | 交付                                                                          | HITL 验收点                               |
+| ------------- | ----- | ----------------------------------------------------------------------------- | ----------------------------------------- |
+| **M0 PoC**    | 2 周  | 最小可执行 workflow + PostgreSQL 持久化                                       | **必须跑通 UserTask → 人 approve → 继续** |
+| **M1 内核**   | 8 周  | DSL + 编排 + 持久化 + UserTask + UserApproved 节点                            | 两个一等 HITL 节点 + 完整 audit log       |
+| **M2 节点**   | 10 周 | 17 域节点 + Agent + 沙箱 + AI HITL Confirm（3 模式）+ in-loop                 | AI 半路问人 + editable + discard+revert   |
+| **M3 生产化** | 12 周 | 多租户 + 可观测 + 13 硬规则 + ACCEPTANCE + all_approve/majority + BPMN 转化层 | 多签模式 + 转化层                         |
 
 ---
 

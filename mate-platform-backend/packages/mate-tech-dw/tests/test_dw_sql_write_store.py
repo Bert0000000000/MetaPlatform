@@ -15,6 +15,7 @@ suite. The default test run keeps DW_STORE unset (memory mode), so this
 file exercises sql_store directly and reloads the repositories package
 under DW_STORE=sql for the routing check.
 """
+
 from __future__ import annotations
 
 import importlib
@@ -48,13 +49,23 @@ ACME_E1 = "dw-emp-acme-1"
 # ---------------------------------------------------------------------------
 def test_create_employee_persists_capability_fields() -> None:
     emp = mem.DwEmployee(
-        id="dw-emp-crud-1", tenant_id=_TENANT_A, name="定制员工",
-        code="EMP-X-0001", role="CUSTOM", status="active",
-        model_id="model-doubao", kb_ids=("dw-kb-1", "dw-kb-2"),
-        system_prompt="你是定制数字员工", tools=("kb-search", "sql-exec"),
+        id="dw-emp-crud-1",
+        tenant_id=_TENANT_A,
+        name="定制员工",
+        code="EMP-X-0001",
+        role="CUSTOM",
+        status="active",
+        model_id="model-doubao",
+        kb_ids=("dw-kb-1", "dw-kb-2"),
+        system_prompt="你是定制数字员工",
+        tools=("kb-search", "sql-exec"),
         action_rids=("ont.acme.actionType.ping.v1",),
-        temperature=0.3, max_tokens=2048, top_p=0.8,
-        retrieval_method="vector", top_k=8, rerank=False,
+        temperature=0.3,
+        max_tokens=2048,
+        top_p=0.8,
+        retrieval_method="vector",
+        top_k=8,
+        rerank=False,
     )
     created = sql.create_employee(_TENANT_A, emp)
     assert created.id == "dw-emp-crud-1"
@@ -78,8 +89,13 @@ def test_create_employee_persists_capability_fields() -> None:
 
 def test_create_employee_requires_tenant() -> None:
     emp = mem.DwEmployee(
-        id="dw-emp-crud-2", tenant_id="", name="x", code="EMP-X-0002",
-        role="CUSTOM", status="active", model_id="model-openai",
+        id="dw-emp-crud-2",
+        tenant_id="",
+        name="x",
+        code="EMP-X-0002",
+        role="CUSTOM",
+        status="active",
+        model_id="model-openai",
     )
     with pytest.raises(ValueError):
         sql.create_employee("", emp)
@@ -87,17 +103,28 @@ def test_create_employee_requires_tenant() -> None:
 
 def test_update_employee_partial_patch() -> None:
     emp = mem.DwEmployee(
-        id="dw-emp-crud-3", tenant_id=_TENANT_A, name="Before",
-        code="EMP-X-0003", role="workflow", status="active",
-        model_id="model-openai", kb_ids=("dw-kb-1",),
-        system_prompt="old prompt", temperature=0.7,
+        id="dw-emp-crud-3",
+        tenant_id=_TENANT_A,
+        name="Before",
+        code="EMP-X-0003",
+        role="workflow",
+        status="active",
+        model_id="model-openai",
+        kb_ids=("dw-kb-1",),
+        system_prompt="old prompt",
+        temperature=0.7,
     )
     sql.create_employee(_TENANT_A, emp)
 
     updated = sql.update_employee(
-        _TENANT_A, "dw-emp-crud-3",
-        name="After", status="idle", system_prompt="new prompt",
-        tools=("mail-send",), temperature=0.1, rerank=False,
+        _TENANT_A,
+        "dw-emp-crud-3",
+        name="After",
+        status="idle",
+        system_prompt="new prompt",
+        tools=("mail-send",),
+        temperature=0.1,
+        rerank=False,
     )
     assert updated is not None
     assert updated.name == "After"
@@ -123,26 +150,50 @@ def test_update_employee_missing_returns_none() -> None:
     assert sql.update_employee(_TENANT_A, "dw-emp-nope", name="x") is None
     assert sql.update_employee("", "dw-emp-crud-3", name="x") is None
     # Cross-tenant update is invisible (tenant-scoped lookup).
-    sql.create_employee(_TENANT_A, mem.DwEmployee(
-        id="dw-emp-crud-4", tenant_id=_TENANT_A, name="A", code="EMP-X-0004",
-        role="app", status="active", model_id="model-openai",
-    ))
+    sql.create_employee(
+        _TENANT_A,
+        mem.DwEmployee(
+            id="dw-emp-crud-4",
+            tenant_id=_TENANT_A,
+            name="A",
+            code="EMP-X-0004",
+            role="app",
+            status="active",
+            model_id="model-openai",
+        ),
+    )
     assert sql.update_employee(_TENANT_B, "dw-emp-crud-4", name="stolen") is None
 
 
 def test_delete_employee() -> None:
-    sql.create_employee(_TENANT_A, mem.DwEmployee(
-        id="dw-emp-crud-5", tenant_id=_TENANT_A, name="Doomed",
-        code="EMP-X-0005", role="obs", status="active", model_id="model-qwen",
-    ))
+    sql.create_employee(
+        _TENANT_A,
+        mem.DwEmployee(
+            id="dw-emp-crud-5",
+            tenant_id=_TENANT_A,
+            name="Doomed",
+            code="EMP-X-0005",
+            role="obs",
+            status="active",
+            model_id="model-qwen",
+        ),
+    )
     assert sql.delete_employee(_TENANT_A, "dw-emp-crud-5") is True
     assert sql.get_employee(_TENANT_A, "dw-emp-crud-5") is None
     assert sql.delete_employee(_TENANT_A, "dw-emp-crud-5") is False
     # Cross-tenant delete cannot remove another tenant's row.
-    sql.create_employee(_TENANT_A, mem.DwEmployee(
-        id="dw-emp-crud-6", tenant_id=_TENANT_A, name="Keep",
-        code="EMP-X-0006", role="obs", status="active", model_id="model-qwen",
-    ))
+    sql.create_employee(
+        _TENANT_A,
+        mem.DwEmployee(
+            id="dw-emp-crud-6",
+            tenant_id=_TENANT_A,
+            name="Keep",
+            code="EMP-X-0006",
+            role="obs",
+            status="active",
+            model_id="model-qwen",
+        ),
+    )
     assert sql.delete_employee(_TENANT_B, "dw-emp-crud-6") is False
     assert sql.get_employee(_TENANT_A, "dw-emp-crud-6") is not None
 
@@ -152,10 +203,16 @@ def test_delete_employee() -> None:
 # ---------------------------------------------------------------------------
 def test_append_and_delete_document() -> None:
     doc = mem.DwDocument(
-        id="dw-doc-crud-1", tenant_id=_TENANT_A, name="上传手册.pdf",
-        kind="pdf", size_bytes=2048, uploaded_by=ACME_E1,
-        uploaded_at="2026-08-16T09:00:00Z", kb_id="dw-kb-1",
-        document_id="rag-doc-1", chunk_count=3,
+        id="dw-doc-crud-1",
+        tenant_id=_TENANT_A,
+        name="上传手册.pdf",
+        kind="pdf",
+        size_bytes=2048,
+        uploaded_by=ACME_E1,
+        uploaded_at="2026-08-16T09:00:00Z",
+        kb_id="dw-kb-1",
+        document_id="rag-doc-1",
+        chunk_count=3,
     )
     appended = sql.append_document(_TENANT_A, doc)
     assert appended.id == "dw-doc-crud-1"
@@ -169,21 +226,38 @@ def test_append_and_delete_document() -> None:
     assert sql.delete_document(_TENANT_A, "dw-doc-crud-1") is False
 
     # Cross-tenant delete cannot touch another tenant's document.
-    sql.append_document(_TENANT_A, mem.DwDocument(
-        id="dw-doc-crud-2", tenant_id=_TENANT_A, name="keep.md",
-        kind="md", size_bytes=10, uploaded_by=ACME_E1,
-        uploaded_at="2026-08-16T09:05:00Z", kb_id="dw-kb-1",
-    ))
+    sql.append_document(
+        _TENANT_A,
+        mem.DwDocument(
+            id="dw-doc-crud-2",
+            tenant_id=_TENANT_A,
+            name="keep.md",
+            kind="md",
+            size_bytes=10,
+            uploaded_by=ACME_E1,
+            uploaded_at="2026-08-16T09:05:00Z",
+            kb_id="dw-kb-1",
+        ),
+    )
     assert sql.delete_document(_TENANT_B, "dw-doc-crud-2") is False
     assert [d.id for d in sql.list_documents(_TENANT_A)] == ["dw-doc-crud-2"]
 
 
 def test_append_document_requires_tenant() -> None:
     with pytest.raises(ValueError):
-        sql.append_document("", mem.DwDocument(
-            id="dw-doc-x", tenant_id="", name="x", kind="md",
-            size_bytes=1, uploaded_by="u", uploaded_at="t", kb_id="k",
-        ))
+        sql.append_document(
+            "",
+            mem.DwDocument(
+                id="dw-doc-x",
+                tenant_id="",
+                name="x",
+                kind="md",
+                size_bytes=1,
+                uploaded_by="u",
+                uploaded_at="t",
+                kb_id="k",
+            ),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -191,8 +265,12 @@ def test_append_document_requires_tenant() -> None:
 # ---------------------------------------------------------------------------
 def test_learning_feedback_promote_writeback() -> None:
     fb = mem.DwLearningFeedback(
-        id="dw-learn-fb-crud-1", tenant_id=_TENANT_A, employee_id=ACME_E1,
-        scenario="cs-refund", rating=5, comment="处理准确",
+        id="dw-learn-fb-crud-1",
+        tenant_id=_TENANT_A,
+        employee_id=ACME_E1,
+        scenario="cs-refund",
+        rating=5,
+        comment="处理准确",
         feedback_at="2026-08-16T10:00:00Z",
     )
     sql.append_learning_feedback(_TENANT_A, fb)
@@ -203,7 +281,8 @@ def test_learning_feedback_promote_writeback() -> None:
 
     # P2.10 promote write-back: promoted_document_id + promoted_at persist.
     updated = sql.update_learning_feedback(
-        _TENANT_A, "dw-learn-fb-crud-1",
+        _TENANT_A,
+        "dw-learn-fb-crud-1",
         promoted_document_id="dw-fb-tenant-acme-dw-learn-fb-crud-1",
         promoted_at="2026-08-16T10:05:00Z",
     )
@@ -230,10 +309,18 @@ def test_update_learning_feedback_missing_returns_none() -> None:
 
 def test_append_learning_feedback_requires_tenant() -> None:
     with pytest.raises(ValueError):
-        sql.append_learning_feedback("", mem.DwLearningFeedback(
-            id="dw-learn-fb-x", tenant_id="", employee_id="e",
-            scenario="s", rating=3, comment="", feedback_at="t",
-        ))
+        sql.append_learning_feedback(
+            "",
+            mem.DwLearningFeedback(
+                id="dw-learn-fb-x",
+                tenant_id="",
+                employee_id="e",
+                scenario="s",
+                rating=3,
+                comment="",
+                feedback_at="t",
+            ),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -241,17 +328,27 @@ def test_append_learning_feedback_requires_tenant() -> None:
 # ---------------------------------------------------------------------------
 def _conv(conv_id: str) -> mem.DwEmployeeConversation:
     return mem.DwEmployeeConversation(
-        id=conv_id, tenant_id=_TENANT_A, user_id="u-1",
-        employee_id=ACME_E1, title="会话",
-        created_at="2026-08-16T11:00:00Z", updated_at="2026-08-16T11:00:00Z",
+        id=conv_id,
+        tenant_id=_TENANT_A,
+        user_id="u-1",
+        employee_id=ACME_E1,
+        title="会话",
+        created_at="2026-08-16T11:00:00Z",
+        updated_at="2026-08-16T11:00:00Z",
     )
 
 
 def _msg(msg_id: str, conv_id: str, sequence: int, created_at: str) -> mem.DwEmployeeMessage:
     return mem.DwEmployeeMessage(
-        id=msg_id, tenant_id=_TENANT_A, conversation_id=conv_id,
-        role="user", content="你好", status="completed",
-        model="model-doubao", sequence=sequence, created_at=created_at,
+        id=msg_id,
+        tenant_id=_TENANT_A,
+        conversation_id=conv_id,
+        role="user",
+        content="你好",
+        status="completed",
+        model="model-doubao",
+        sequence=sequence,
+        created_at=created_at,
     )
 
 
@@ -263,9 +360,13 @@ def test_conversation_message_sequence_flow() -> None:
     assert sql.next_employee_message_sequence(_TENANT_A, "dwe-conv-unknown") == 1
 
     seq1 = sql.next_employee_message_sequence(_TENANT_A, "dwe-conv-1")
-    sql.put_employee_message(_TENANT_A, _msg("dwe-msg-1", "dwe-conv-1", seq1, "2026-08-16T11:01:00Z"))
+    sql.put_employee_message(
+        _TENANT_A, _msg("dwe-msg-1", "dwe-conv-1", seq1, "2026-08-16T11:01:00Z")
+    )
     seq2 = sql.next_employee_message_sequence(_TENANT_A, "dwe-conv-1")
-    sql.put_employee_message(_TENANT_A, _msg("dwe-msg-2", "dwe-conv-1", seq2, "2026-08-16T11:02:00Z"))
+    sql.put_employee_message(
+        _TENANT_A, _msg("dwe-msg-2", "dwe-conv-1", seq2, "2026-08-16T11:02:00Z")
+    )
     assert (seq1, seq2) == (1, 2)
 
     # Strictly increasing, ordered by sequence.
@@ -292,8 +393,12 @@ def test_conversation_message_sequence_flow() -> None:
 # ---------------------------------------------------------------------------
 def test_append_employee_task_and_update() -> None:
     task = mem.DwEmployeeTask(
-        id="dw-task-crud-1", tenant_id=_TENANT_A, employee_id=ACME_E1,
-        title="巡检任务", status="pending", started_at="2026-08-16T12:00:00Z",
+        id="dw-task-crud-1",
+        tenant_id=_TENANT_A,
+        employee_id=ACME_E1,
+        title="巡检任务",
+        status="pending",
+        started_at="2026-08-16T12:00:00Z",
     )
     sql.append_employee_task(_TENANT_A, task)
 
@@ -306,8 +411,11 @@ def test_append_employee_task_and_update() -> None:
 
     # running -> success sets finished_at + duration.
     done = sql.update_employee_task(
-        _TENANT_A, "dw-task-crud-1", status="success",
-        finished_at="2026-08-16T12:05:00Z", duration_ms=300_000,
+        _TENANT_A,
+        "dw-task-crud-1",
+        status="success",
+        finished_at="2026-08-16T12:05:00Z",
+        duration_ms=300_000,
     )
     assert done is not None
     assert done.status == "success"
@@ -323,8 +431,12 @@ def test_append_employee_task_and_update() -> None:
 
 def test_append_evaluation_persists() -> None:
     ev = mem.DwEvaluation(
-        id="dw-eval-crud-1", tenant_id=_TENANT_A, employee_id=ACME_E1,
-        qa_set_id="qa-cs-1", score=92.5, passed=True,
+        id="dw-eval-crud-1",
+        tenant_id=_TENANT_A,
+        employee_id=ACME_E1,
+        qa_set_id="qa-cs-1",
+        score=92.5,
+        passed=True,
         evaluated_at="2026-08-16T13:00:00Z",
     )
     sql.append_evaluation(_TENANT_A, ev)
@@ -336,9 +448,13 @@ def test_append_evaluation_persists() -> None:
 
 def test_append_collaboration_persists() -> None:
     collab = mem.DwCollaboration(
-        id="dw-collab-crud-1", tenant_id=_TENANT_A, employee_id=ACME_E1,
-        peer_employee_id="dw-emp-acme-2", session_id="sess-crud-1",
-        started_at="2026-08-16T14:00:00Z", duration_ms=60_000,
+        id="dw-collab-crud-1",
+        tenant_id=_TENANT_A,
+        employee_id=ACME_E1,
+        peer_employee_id="dw-emp-acme-2",
+        session_id="sess-crud-1",
+        started_at="2026-08-16T14:00:00Z",
+        duration_ms=60_000,
     )
     sql.append_collaboration(_TENANT_A, collab)
     assert [c.id for c in sql.list_collaborations(_TENANT_A)] == ["dw-collab-crud-1"]
@@ -363,15 +479,17 @@ def test_dw_store_sql_routes_repositories_to_sql_store(
         assert reloaded.append_document is sql.append_document
         assert reloaded.delete_document is sql.delete_document
         assert reloaded.update_learning_feedback is sql.update_learning_feedback
-        assert reloaded.next_employee_message_sequence is (
-            sql.next_employee_message_sequence
-        )
+        assert reloaded.next_employee_message_sequence is (sql.next_employee_message_sequence)
         assert callable(reloaded.seed_from_inmemory)
 
         # End-to-end through the selection layer (sqlite engine from fixture).
         emp = mem.DwEmployee(
-            id="dw-emp-route-1", tenant_id=_TENANT_A, name="路由验证",
-            code="EMP-X-0007", role="CUSTOM", status="active",
+            id="dw-emp-route-1",
+            tenant_id=_TENANT_A,
+            name="路由验证",
+            code="EMP-X-0007",
+            role="CUSTOM",
+            status="active",
             model_id="model-openai",
         )
         assert reloaded.create_employee(_TENANT_A, emp).id == "dw-emp-route-1"

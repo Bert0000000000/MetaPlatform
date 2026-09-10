@@ -14,6 +14,7 @@ These tests exercise the auth + tenancy contract end-to-end:
   - test_upload_isolated: documents uploaded by tenant A are
     not visible to tenant B.
 """
+
 from __future__ import annotations
 
 import time

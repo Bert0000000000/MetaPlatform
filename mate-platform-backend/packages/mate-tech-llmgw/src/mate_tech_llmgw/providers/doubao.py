@@ -2,6 +2,7 @@
 
 字节跳动豆包系列(火山方舟 ARK),OpenAI 兼容 API。
 """
+
 from __future__ import annotations
 
 import os

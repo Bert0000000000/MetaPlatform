@@ -11,15 +11,14 @@ pod-readiness + NetworkPolicy default-deny steps, and that the script is
 executable. It runs without kind / helm / kubectl so it is safe in CI
 and on developer machines.
 """
+
 from __future__ import annotations
 
 import os
 import sys
-from pathlib import Path
 
 import pytest
 import yaml
-
 from conftest import REPO_ROOT
 
 WORKFLOW_PATH = REPO_ROOT / ".github" / "workflows" / "g4-kind-e2e.yml"
@@ -53,9 +52,7 @@ class TestG4KindWorkflow:
         # pod readiness wait
         assert "condition=ready" in joined, "workflow must wait for pod Ready"
         assert "app.kubernetes.io/name=keycloak" in joined, "must wait on keycloak pod"
-        assert "app.kubernetes.io/name=otel-collector" in joined, (
-            "must wait on otel-collector pod"
-        )
+        assert "app.kubernetes.io/name=otel-collector" in joined, "must wait on otel-collector pod"
         # NetworkPolicy default-deny check
         assert "networkpolicy" in joined, "workflow must verify NetworkPolicy"
         assert "default-deny" in joined, "workflow must check default-deny NetworkPolicy"
@@ -98,6 +95,7 @@ class TestG4SmokeScript:
 
 
 # --- helpers -----------------------------------------------------------------
+
 
 def _flatten_step_names(workflow: dict) -> list[str]:
     """Return the list of step descriptors across all jobs.

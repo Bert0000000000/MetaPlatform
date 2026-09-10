@@ -1,4 +1,5 @@
 """Health aggregator edge cases (ST-5.2.9)."""
+
 from __future__ import annotations
 
 import pytest

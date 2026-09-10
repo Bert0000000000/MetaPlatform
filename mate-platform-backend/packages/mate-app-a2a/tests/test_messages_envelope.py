@@ -3,13 +3,15 @@
 Covers the new canonical `POST /api/v1/a2a/messages` endpoint and the
 deprecation signalling on the legacy `POST /api/v1/a2a/delegate`.
 """
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
 
 def test_messages_envelope_accepts_w3c_schema(
-    client: TestClient, auth_headers_acme: dict[str, str],
+    client: TestClient,
+    auth_headers_acme: dict[str, str],
 ) -> None:
     """A well-formed W3C message returns a W3C Task object."""
     payload = {
@@ -22,7 +24,9 @@ def test_messages_envelope_accepts_w3c_schema(
         "contextId": "ctx-001",
     }
     r = client.post(
-        "/api/v1/a2a/messages", json=payload, headers=auth_headers_acme,
+        "/api/v1/a2a/messages",
+        json=payload,
+        headers=auth_headers_acme,
     )
     assert r.status_code == 200, r.text
     body = r.json()
@@ -37,7 +41,8 @@ def test_messages_envelope_accepts_w3c_schema(
     # The task is persisted and readable through the existing task API,
     # now aligned to the canonical W3C A2A Task shape (W1 contract-drift fix).
     task = client.get(
-        f"/api/v1/a2a/tasks/{body['id']}", headers=auth_headers_acme,
+        f"/api/v1/a2a/tasks/{body['id']}",
+        headers=auth_headers_acme,
     )
     assert task.status_code == 200
     t = task.json()
@@ -49,18 +54,22 @@ def test_messages_envelope_accepts_w3c_schema(
 
 
 def test_messages_missing_messageId_422(
-    client: TestClient, auth_headers_acme: dict[str, str],
+    client: TestClient,
+    auth_headers_acme: dict[str, str],
 ) -> None:
     """A message without `messageId` is rejected by schema validation."""
     payload = {"role": "user", "parts": [{"kind": "text", "text": "hi"}]}
     r = client.post(
-        "/api/v1/a2a/messages", json=payload, headers=auth_headers_acme,
+        "/api/v1/a2a/messages",
+        json=payload,
+        headers=auth_headers_acme,
     )
     assert r.status_code == 422, r.text
 
 
 def test_delegate_deprecation_header_present(
-    client: TestClient, auth_headers_acme: dict[str, str],
+    client: TestClient,
+    auth_headers_acme: dict[str, str],
 ) -> None:
     """The legacy `/delegate` endpoint advertises its sunset."""
     r = client.post(

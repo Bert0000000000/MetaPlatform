@@ -23,10 +23,12 @@
 ### Task 1: Protocol-aware runtime smoke
 
 **Files:**
+
 - Modify: `metaplatform-frontend/tests/e2e/runtime-mvp-02-smoke.spec.ts`
 - Modify: `scripts/task5-verify.sh`
 
 **Interfaces:**
+
 - Produces one runtime probe per public service plus TCP readiness checks for PostgreSQL, Redis and Kafka.
 - Keeps service-specific endpoints identical to Docker healthchecks: Data `/api/v1/data/health`, DW `/healthz`, A2A `/api/v1/a2a/health`, MinIO `/minio/health/live`, Keycloak `/realms/metaplatform/.well-known/openid-configuration`.
 
@@ -52,6 +54,7 @@
 ### Task 2: Package and run the external A2A service
 
 **Files:**
+
 - Create: `mate-platform-backend/services/a2a-external-agent/pyproject.toml`
 - Modify: `mate-platform-backend/pyproject.toml`
 - Modify: `docker-compose.task5.yml`
@@ -60,6 +63,7 @@
 - Test: `mate-platform-backend/packages/mate-tech-orchestrator/tests/test_a2a_external_agent_docker.py`
 
 **Interfaces:**
+
 - The package exports `mate_a2a_external_agent.server:app` and remains compatible with the existing test imports.
 - The Task5 service listens on container port `8701` and host port `8702`, avoiding the existing Data service on host port `8701`.
 - The external service exposes `GET /healthz`, `GET /.well-known/agent-card.json`, and A2A JSON-RPC `POST /`.
@@ -92,12 +96,14 @@
 ### Task 3: Non-privileged PostgreSQL RLS acceptance database
 
 **Files:**
+
 - Create: `scripts/ci/prepare_ont_rls_test_db.py`
 - Modify: `mate-platform-backend/packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py`
 - Modify: `.github/workflows/ga-acceptance.yml`
 - Modify: `scripts/task5-verify.sh`
 
 **Interfaces:**
+
 - The preparation script is idempotent and accepts `--admin-dsn`, `--test-dsn`, and `--role-password` or their environment equivalents.
 - The test suite defaults to `postgresql://mate_ont_test:mate_ont_test@localhost:5432/metaplatform_ont_test` and still honors `PG_DSN`.
 - The role is `NOSUPERUSER NOBYPASSRLS`; no production database or application role is altered.
@@ -129,6 +135,7 @@
 ### Task 4: Evidence and regression closure
 
 **Files:**
+
 - Modify: `docs/active/governance/FOLLOW-UP-BOARD.md` if its status rows are stale
 - Modify: `docs/README.md` only where current local acceptance evidence is explicitly documented
 

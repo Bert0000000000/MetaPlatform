@@ -1,4 +1,5 @@
 """Unit tests for scripts/ci/forbid_bare_kafka_producer.py (G2 rule 4)."""
+
 from __future__ import annotations
 
 import tempfile
@@ -30,9 +31,7 @@ def test_allows_mate_clients_dir() -> None:
     with tempfile.TemporaryDirectory() as d:
         f = Path(d) / "mate-clients" / "kafka" / "producer.py"
         f.parent.mkdir(parents=True)
-        f.write_text(
-            "p = KafkaProducer(bootstrap_servers=brokers)\n", encoding="utf-8"
-        )
+        f.write_text("p = KafkaProducer(bootstrap_servers=brokers)\n", encoding="utf-8")
         assert check_file(f) == []
 
 
@@ -40,9 +39,7 @@ def test_allows_tests_dir() -> None:
     with tempfile.TemporaryDirectory() as d:
         f = Path(d) / "tests" / "test_msg.py"
         f.parent.mkdir(parents=True)
-        f.write_text(
-            "p = KafkaProducer(bootstrap_servers=brokers)\n", encoding="utf-8"
-        )
+        f.write_text("p = KafkaProducer(bootstrap_servers=brokers)\n", encoding="utf-8")
         assert check_file(f) == []
 
 

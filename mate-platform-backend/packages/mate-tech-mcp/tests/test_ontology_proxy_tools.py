@@ -24,9 +24,12 @@ ONT_BASE = "http://mock-tech-ont:8007"
 @respx.mock
 def test_list_classes_proxies_agent_tools_endpoint() -> None:
     route = respx.get(f"{ONT_BASE}/api/v1/ont/v2/agent-tools").mock(
-        return_value=httpx.Response(200, json=[
-            {"name": "query_order", "class_rid": "ont.t.obj.order.v1"},
-        ]),
+        return_value=httpx.Response(
+            200,
+            json=[
+                {"name": "query_order", "class_rid": "ont.t.obj.order.v1"},
+            ],
+        ),
     )
 
     async def run() -> dict:
@@ -63,11 +66,14 @@ def test_inspect_class_proxies_inspect_endpoint() -> None:
 @respx.mock
 def test_object_query_proxies_ir_endpoint() -> None:
     route = respx.post(f"{ONT_BASE}/api/v1/ont/v2/object-query").mock(
-        return_value=httpx.Response(200, json={
-            "kind": "aggregates",
-            "rows": [{"region": "north", "sum_amount": 450.0}],
-            "result_schema": {"sum_amount": {"fn": "sum"}},
-        }),
+        return_value=httpx.Response(
+            200,
+            json={
+                "kind": "aggregates",
+                "rows": [{"region": "north", "sum_amount": 450.0}],
+                "result_schema": {"sum_amount": {"fn": "sum"}},
+            },
+        ),
     )
 
     async def run() -> dict:
@@ -87,6 +93,7 @@ def test_object_query_proxies_ir_endpoint() -> None:
     out = asyncio.run(run())
     assert route.called
     import json as _json
+
     body = _json.loads(route.calls.last.request.content)
     assert body["source"] == "ont.t.obj.order.v1"
     assert body["aggregation"]["metrics"][0]["fn"] == "sum"
@@ -94,7 +101,8 @@ def test_object_query_proxies_ir_endpoint() -> None:
 
 
 @pytest.mark.parametrize(
-    "tool_cls", [OntListClassesTool, OntInspectClassTool, OntObjectQueryTool],
+    "tool_cls",
+    [OntListClassesTool, OntInspectClassTool, OntObjectQueryTool],
 )
 def test_proxy_tools_carry_schema_and_description(tool_cls: type) -> None:
     tool = tool_cls(base_url=ONT_BASE)

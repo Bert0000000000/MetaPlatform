@@ -10,6 +10,7 @@
 7. get_type_hierarchy 树正确嵌套；
 8. （PG 可达时）同语义真库验证。
 """
+
 from __future__ import annotations
 
 import os
@@ -44,8 +45,12 @@ PROP_NAME = f"ont.{T}.prop.shared-name.v1"
 
 def _prop() -> Property:
     return Property(
-        rid=ClassRef(PROP_NAME), type_id="string", nullable=False,
-        primary_key=True, title="name", format=PropertyFormat.STRING,
+        rid=ClassRef(PROP_NAME),
+        type_id="string",
+        nullable=False,
+        primary_key=True,
+        title="name",
+        format=PropertyFormat.STRING,
     )
 
 
@@ -62,10 +67,13 @@ def _type(rid: str, parent: str | None = None, interfaces: tuple = ()) -> Object
 
 def _ind(rid: str, class_rid: str, name: str) -> Individual:
     return Individual(
-        rid=rid, class_rid=ClassRef(class_rid),
+        rid=rid,
+        class_rid=ClassRef(class_rid),
         props=((ClassRef(PROP_NAME), name),),
-        primary_key=name, tenant_id=T,
-        created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
+        primary_key=name,
+        tenant_id=T,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
 
@@ -75,10 +83,12 @@ def repo() -> InMemoryOntologyRepository:
     r.upsert_object_type(_type(OBJ_BASE))
     r.upsert_object_type(_type(OBJ_CHILD, parent=OBJ_BASE))
     # Interface trackable：共享属性 name；两个实现类型
-    r.upsert_interface(Interface(
-        rid=ClassRef(IFC),
-        properties=(_prop(),),
-    ))
+    r.upsert_interface(
+        Interface(
+            rid=ClassRef(IFC),
+            properties=(_prop(),),
+        )
+    )
     r.upsert_object_type(_type(IFC_IMPL_A, interfaces=(ClassRef(IFC),)))
     r.upsert_object_type(_type(IFC_IMPL_B, interfaces=(ClassRef(IFC),)))
     r.create_individual(_ind(f"ont.{T}.ind.base-entity.root1", OBJ_BASE, "root1"))
@@ -96,7 +106,9 @@ class TestParentClassAxiomSync:
     def test_ancestor_query_hits_descendant(self, repo) -> None:
         names = {
             i.primary_key
-            for i in repo.evaluate_object_set(ObjectSet(filter_expr="", class_rid=ClassRef(OBJ_BASE)))
+            for i in repo.evaluate_object_set(
+                ObjectSet(filter_expr="", class_rid=ClassRef(OBJ_BASE))
+            )
         }
         assert names == {"root1", "leaf1"}
 
@@ -105,7 +117,9 @@ class TestParentClassAxiomSync:
         assert (OBJ_CHILD, OBJ_BASE) not in repo._subclass_pairs()
         names = {
             i.primary_key
-            for i in repo.evaluate_object_set(ObjectSet(filter_expr="", class_rid=ClassRef(OBJ_BASE)))
+            for i in repo.evaluate_object_set(
+                ObjectSet(filter_expr="", class_rid=ClassRef(OBJ_BASE))
+            )
         }
         assert names == {"root1"}
 
@@ -130,7 +144,8 @@ class TestInterfacePolymorphicSource:
         result = repo.execute_object_query(ObjectSetQuery(source=IFC))
         assert result.kind == "objects"
         assert {r["__rid__"] for r in result.rows} == {
-            f"ont.{T}.ind.customer.c1", f"ont.{T}.ind.supplier.s1",
+            f"ont.{T}.ind.customer.c1",
+            f"ont.{T}.ind.supplier.s1",
         }
 
     def test_interface_implementations_listing(self, repo) -> None:
@@ -142,8 +157,9 @@ class TestInterfacePolymorphicSource:
     def test_interface_source_with_descendants(self, repo) -> None:
         # customer 实现接口并挂一个子类 → 查接口也要命中子类实例
         OBJ_SUB_CUSTOMER = f"ont.{T}.obj.crm.vip-customer.v1"
-        repo.upsert_object_type(_type(OBJ_SUB_CUSTOMER, parent=IFC_IMPL_A,
-                                      interfaces=(ClassRef(IFC),)))
+        repo.upsert_object_type(
+            _type(OBJ_SUB_CUSTOMER, parent=IFC_IMPL_A, interfaces=(ClassRef(IFC),))
+        )
         repo.create_individual(_ind(f"ont.{T}.ind.vip-customer.v1x", OBJ_SUB_CUSTOMER, "v1x"))
         names = {
             i.primary_key
@@ -156,20 +172,32 @@ class TestInterfaceConstraints:
     def test_registered_interface_missing_property_rejected(self, repo) -> None:
         OTHER_PK = ClassRef(f"ont.{T}.prop.other.pk.v1")
         with pytest.raises(ValueError, match="requires property"):
-            repo.upsert_object_type(ObjectType(
-                rid=ClassRef(f"ont.{T}.obj.crm.bad-impl.v1"),
-                primary_key=(OTHER_PK,),
-                properties=(Property(rid=OTHER_PK, type_id="string",
-                                     nullable=False, primary_key=True,
-                                     title="pk", format=PropertyFormat.STRING),),
-                interfaces=(ClassRef(IFC),),  # 缺接口要求的 name 属性
-            ))
+            repo.upsert_object_type(
+                ObjectType(
+                    rid=ClassRef(f"ont.{T}.obj.crm.bad-impl.v1"),
+                    primary_key=(OTHER_PK,),
+                    properties=(
+                        Property(
+                            rid=OTHER_PK,
+                            type_id="string",
+                            nullable=False,
+                            primary_key=True,
+                            title="pk",
+                            format=PropertyFormat.STRING,
+                        ),
+                    ),
+                    interfaces=(ClassRef(IFC),),  # 缺接口要求的 name 属性
+                )
+            )
 
     def test_unregistered_interface_stays_lenient(self, repo) -> None:
         UNKNOWN_IFC = f"ont.{T}.if.core.ghost.v1"
-        repo.upsert_object_type(_type(
-            f"ont.{T}.obj.crm.ghost-impl.v1", interfaces=(ClassRef(UNKNOWN_IFC),),
-        ))
+        repo.upsert_object_type(
+            _type(
+                f"ont.{T}.obj.crm.ghost-impl.v1",
+                interfaces=(ClassRef(UNKNOWN_IFC),),
+            )
+        )
 
 
 class TestHierarchyTree:
@@ -185,9 +213,7 @@ class TestHierarchyTree:
 
 # ─────────────────── PG 真库同语义（可达时）───────────────────
 
-PG_DSN = os.environ.get(
-    "EXP01_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"
-)
+PG_DSN = os.environ.get("EXP01_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
 
 
 class TestPgSameSemantics:
@@ -234,13 +260,15 @@ class TestPgSameSemantics:
             names = {
                 i.primary_key
                 for i in pg_repo.evaluate_object_set(
-                    ObjectSet(filter_expr="", class_rid=ClassRef(OBJ_BASE)))
+                    ObjectSet(filter_expr="", class_rid=ClassRef(OBJ_BASE))
+                )
             }
             assert names == {"proot", "pleaf"}
             iface_names = {
                 i.primary_key
                 for i in pg_repo.evaluate_object_set(
-                    ObjectSet(filter_expr="", class_rid=ClassRef(IFC)))
+                    ObjectSet(filter_expr="", class_rid=ClassRef(IFC))
+                )
             }
             assert iface_names == {"pc1", "ps1"}
             tree = pg_repo.get_type_hierarchy()

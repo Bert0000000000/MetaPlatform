@@ -1,4 +1,5 @@
 """BUSINESS-SLICES P1 wave 2 cross-tenant tests for mate-tech-llmgw."""
+
 from __future__ import annotations
 
 import os
@@ -38,10 +39,15 @@ class TestRequireTenantEnforced:
             UserId,
             require_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId(""),
-            user_id=UserId("u"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.USER,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId(""),
+            user_id=UserId("u"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.USER,
         )
         with pytest.raises(TenantAccessError, match="missing tenant"):
             require_tenant(ctx)
@@ -55,10 +61,15 @@ class TestRequireTenantEnforced:
             UserId,
             require_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId("t1"),
-            user_id=UserId("anon"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.ANONYMOUS,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId("t1"),
+            user_id=UserId("anon"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.ANONYMOUS,
         )
         with pytest.raises(TenantAccessError, match="anonymous"):
             require_tenant(ctx)
@@ -71,10 +82,15 @@ class TestRequireTenantEnforced:
             UserId,
             require_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId("acme"),
-            user_id=UserId("u"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.SERVICE,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId("acme"),
+            user_id=UserId("u"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.SERVICE,
         )
         assert require_tenant(ctx) == "acme"
 
@@ -89,10 +105,15 @@ class TestCrossTenantNegatives:
             UserId,
             require_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId(""),
-            user_id=UserId("u"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.USER,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId(""),
+            user_id=UserId("u"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.USER,
         )
         with pytest.raises(TenantAccessError, match="missing tenant"):
             require_tenant(ctx)
@@ -106,10 +127,15 @@ class TestCrossTenantNegatives:
             UserId,
             require_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId("t1"),
-            user_id=UserId("anon"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.ANONYMOUS,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId("t1"),
+            user_id=UserId("anon"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.ANONYMOUS,
         )
         with pytest.raises(TenantAccessError, match="anonymous"):
             require_tenant(ctx)
@@ -123,10 +149,15 @@ class TestCrossTenantNegatives:
             UserId,
             assert_same_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId("t1"),
-            user_id=UserId("u"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.USER,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId("t1"),
+            user_id=UserId("u"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.USER,
         )
         with pytest.raises(TenantAccessError, match="does not match"):
             assert_same_tenant(TenantId("t2"), ctx)

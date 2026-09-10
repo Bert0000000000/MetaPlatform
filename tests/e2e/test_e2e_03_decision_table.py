@@ -45,9 +45,7 @@ async def test_e2e_03_decision_table_full_flow(
             {"id": "col-out-1", "name": "level", "type": "OUTPUT", "dataType": "string"},
         ],
     }
-    resp = await rule_client.post(
-        f"{RULE_BASE}", json=create_body, headers=tenant_headers
-    )
+    resp = await rule_client.post(f"{RULE_BASE}", json=create_body, headers=tenant_headers)
     assert resp.status_code == 200, resp.text
     table_data = resp.json()["data"]
     assert table_data["id"] == "dt-mock-001"
@@ -90,9 +88,7 @@ async def test_e2e_03_decision_table_full_flow(
     assert batch_resp.json()["traceId"] == trace_id
 
     # 4. 查询决策表详情（应包含 rows 字段）
-    get_resp = await rule_client.get(
-        f"{RULE_BASE}/{table_id}", headers=tenant_headers
-    )
+    get_resp = await rule_client.get(f"{RULE_BASE}/{table_id}", headers=tenant_headers)
     assert get_resp.status_code == 200
     fetched = get_resp.json()["data"]
     assert fetched["id"] == table_id
@@ -128,12 +124,12 @@ async def test_e2e_03_decision_table_full_flow(
 
     # 7. 验证 Mock 调用顺序符合业务链路定义
     expected_paths = [
-        f"{RULE_BASE}",                       # POST 创建
-        f"{RULE_BASE}/{table_id}/rows",       # POST 添加行
-        f"{RULE_BASE}/{table_id}/rows/batch", # POST 批量导入
-        f"{RULE_BASE}/{table_id}",            # GET 详情
-        f"{RULE_BASE}/{table_id}/execute",    # POST 执行（命中）
-        f"{RULE_BASE}/{table_id}/execute",    # POST 执行（未命中）
+        f"{RULE_BASE}",  # POST 创建
+        f"{RULE_BASE}/{table_id}/rows",  # POST 添加行
+        f"{RULE_BASE}/{table_id}/rows/batch",  # POST 批量导入
+        f"{RULE_BASE}/{table_id}",  # GET 详情
+        f"{RULE_BASE}/{table_id}/execute",  # POST 执行（命中）
+        f"{RULE_BASE}/{table_id}/execute",  # POST 执行（未命中）
     ]
     assert mock_call_log.paths == expected_paths, (
         f"调用顺序不符: 期望 {expected_paths}, 实际 {mock_call_log.paths}"

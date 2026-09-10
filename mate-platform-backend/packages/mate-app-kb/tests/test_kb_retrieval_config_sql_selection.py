@@ -16,6 +16,7 @@ Coverage:
   * Default (no KB_STORE): the selection layer keeps binding the
     in-memory implementations — memory-mode behaviour unchanged.
 """
+
 from __future__ import annotations
 
 import os
@@ -31,6 +32,7 @@ _PKGS = Path(__file__).resolve().parents[2]
 _SUBPROCESS_PATH_SUBS = ("mate-app-kb", "mate-tech-db")
 
 _TENANT = "tenant-acme"
+
 
 # ---------------------------------------------------------------------------
 # Subprocess driver
@@ -49,7 +51,11 @@ def _run_py(script: str, db_url: str | None = None, kb_store: str | None = None)
         env["MATE_DB_URL"] = db_url
     return subprocess.run(
         [sys.executable, "-c", script],
-        capture_output=True, text=True, env=env, timeout=180, check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=180,
+        check=False,
     )
 
 

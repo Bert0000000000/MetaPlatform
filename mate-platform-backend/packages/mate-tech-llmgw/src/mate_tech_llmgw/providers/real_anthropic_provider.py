@@ -13,6 +13,7 @@ Messages API. Key differences:
 Tenant-scoped key resolution + stub fallback work identically to the
 OpenAI provider.
 """
+
 from __future__ import annotations
 
 import os
@@ -67,9 +68,8 @@ class RealAnthropicProvider:
         self._base_url = base_url or os.getenv("ANTHROPIC_BASE_URL", _ANTHROPIC_BASE_URL)
         self._timeout = timeout
         self._max_tokens = max_tokens
-        self._allow_fallback = (
-            not is_production_profile()
-            and (True if allow_fallback is None else allow_fallback)
+        self._allow_fallback = not is_production_profile() and (
+            True if allow_fallback is None else allow_fallback
         )
         self._client: httpx.AsyncClient | None = None
 
@@ -158,9 +158,7 @@ class RealAnthropicProvider:
                 model=self.model,
             )
             if not self._fallback_enabled():
-                raise RuntimeError(
-                    "Anthropic provider unavailable: request timed out"
-                ) from None
+                raise RuntimeError("Anthropic provider unavailable: request timed out") from None
             return _stub_response(self.model, messages)
         except httpx.HTTPStatusError as e:
             # P2: surface upstream status for retry/cooldown classification.

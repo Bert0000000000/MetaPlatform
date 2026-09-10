@@ -4,7 +4,7 @@
 
 **Goal:** Deliver the first-release personal, organization/identity/authorization, and tenant/configuration control plane as versioned, tenant-isolated, auditable product APIs and management surfaces.
 
-**Architecture:** `mate-tech-iam` remains the policy and administrative API boundary; Supabase Auth is the connected-deployment human identity authority, Keycloak issues runtime tokens, and OpenFGA/OPA/RLS make the final authorization decision.  The control plane owns user declarations, organization/role/policy facts and tenant configuration, but only emits minimum, TTL-bound projections for the Runtime and approved Host Connector.  It never owns a Run, Lease, Artifact, Approval, or host-private conversation.
+**Architecture:** `mate-tech-iam` remains the policy and administrative API boundary; Supabase Auth is the connected-deployment human identity authority, Keycloak issues runtime tokens, and OpenFGA/OPA/RLS make the final authorization decision. The control plane owns user declarations, organization/role/policy facts and tenant configuration, but only emits minimum, TTL-bound projections for the Runtime and approved Host Connector. It never owns a Run, Lease, Artifact, Approval, or host-private conversation.
 
 **Tech Stack:** Python 3.12, FastAPI, Pydantic 2, SQLAlchemy, PostgreSQL 16, Alembic, Supabase Auth, Keycloak, OpenFGA, OPA, RFC 8785 JSON canonicalization, CloudEvents 1.0, React 18, Vite, TypeScript, Ant Design, Vitest, Playwright, OpenTelemetry.
 
@@ -27,12 +27,12 @@
 
 ## First-Release Surface Matrix
 
-| Product area and lifecycle objects | REST/OpenAPI v1 surface | Event contract | UI surface | Host/MCP surface | Required acceptance |
-|---|---|---|---|---|---|
-| UserProfile, UserPreferenceSet, PreferenceCandidate, SavedView | `/api/v1/control/me`, `/me/preferences`, `/me/preference-candidates`, `/me/views` | `control.user-context.changed.v1` | `/workbench/profile` | `platform.bootstrap` returns only effective context | User changes language/output preference; another tenant cannot read it; projection digest changes once |
-| HumanUser, OrganizationUnit, IdentityLink | `/api/v1/control/users`, `/org-units`, `/identity-links` | `control.identity.changed.v1` | `/admin/identity/users`, `/admin/identity/organizations` | no direct host write | SCIM/Supabase-linked user is disabled and all old projections are rejected |
-| DynamicRole, PermissionDefinition, RelationshipTuple, Policy, SoDRule, DelegationGrant, ServicePrincipal, AccessReviewCampaign | `/roles`, `/permissions`, `/relationships`, `/policies`, `/sod-rules`, `/delegations`, `/service-principals`, `/access-reviews` | `control.authorization.changed.v1` | `/admin/access/*` | bootstrap denies stale or over-scoped context | role publish, SoD failure, delegation expiry and access-review revoke are audited and fail closed |
-| Tenant, TenantDomain, ConfigValue, FeatureFlag, Quota, Dictionary, NotificationChannel, RetentionPolicy | `/tenants`, `/domains`, `/configs`, `/feature-flags`, `/quotas`, `/dictionaries`, `/notification-channels`, `/retention-policies` | `control.tenant-config.changed.v1` | `/admin/tenants/*` | bootstrap includes only effective tenant/config capability watermarks | config release/rollback, quota downgrade, webhook rotation and retention deletion propagation are verified |
+| Product area and lifecycle objects                                                                                             | REST/OpenAPI v1 surface                                                                                                           | Event contract                     | UI surface                                               | Host/MCP surface                                                      | Required acceptance                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| UserProfile, UserPreferenceSet, PreferenceCandidate, SavedView                                                                 | `/api/v1/control/me`, `/me/preferences`, `/me/preference-candidates`, `/me/views`                                                 | `control.user-context.changed.v1`  | `/workbench/profile`                                     | `platform.bootstrap` returns only effective context                   | User changes language/output preference; another tenant cannot read it; projection digest changes once     |
+| HumanUser, OrganizationUnit, IdentityLink                                                                                      | `/api/v1/control/users`, `/org-units`, `/identity-links`                                                                          | `control.identity.changed.v1`      | `/admin/identity/users`, `/admin/identity/organizations` | no direct host write                                                  | SCIM/Supabase-linked user is disabled and all old projections are rejected                                 |
+| DynamicRole, PermissionDefinition, RelationshipTuple, Policy, SoDRule, DelegationGrant, ServicePrincipal, AccessReviewCampaign | `/roles`, `/permissions`, `/relationships`, `/policies`, `/sod-rules`, `/delegations`, `/service-principals`, `/access-reviews`   | `control.authorization.changed.v1` | `/admin/access/*`                                        | bootstrap denies stale or over-scoped context                         | role publish, SoD failure, delegation expiry and access-review revoke are audited and fail closed          |
+| Tenant, TenantDomain, ConfigValue, FeatureFlag, Quota, Dictionary, NotificationChannel, RetentionPolicy                        | `/tenants`, `/domains`, `/configs`, `/feature-flags`, `/quotas`, `/dictionaries`, `/notification-channels`, `/retention-policies` | `control.tenant-config.changed.v1` | `/admin/tenants/*`                                       | bootstrap includes only effective tenant/config capability watermarks | config release/rollback, quota downgrade, webhook rotation and retention deletion propagation are verified |
 
 All collection routes support only cursor pagination, explicit `tenant_id` derived from the verified principal, stable filtering/sorting allowlists and `If-Match` for mutable draft/config resources. Every mutable route returns `{id, version, digest, status, audit_id}`. Every retire/revoke/delete request first returns an immutable `ImpactReport`; a changed dependency set invalidates its confirmation.
 
@@ -55,12 +55,14 @@ All collection routes support only cursor pagination, explicit `tenant_id` deriv
 ### Task 1: Define versioned control-plane contracts and interface catalog
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-kernel/src/mate_kernel/control_plane/contracts.py`
 - Create: `mate-platform-backend/packages/mate-kernel/tests/test_control_plane_contracts.py`
 - Create: `mate-platform-backend/contracts/events/control-plane.v1.schema.json`
 - Modify: `mate-platform-backend/contracts/openapi/services/iam.yaml`
 
 **Interfaces:**
+
 - Produces: `UserContextProjection.issue(subject: BootstrapSubject, effective: EffectiveContext, expires_at: datetime) -> UserContextProjection`.
 - Produces: `LifecycleCommand(resource_id: UUID, expected_version: int, action: Literal["publish", "retire", "revoke", "archive"], impact_digest: str | None)`.
 - Produces: `ControlPlaneEvent[T] { id, type, tenant_id, subject_id, aggregate_id, aggregate_version, data_digest, data }` for `control.user-context.changed.v1`, `control.authorization.changed.v1`, and `control.tenant-config.changed.v1`.
@@ -132,6 +134,7 @@ git commit -m "feat(control): define versioned control-plane contracts"
 ### Task 2: Create RLS-protected lifecycle storage and migration safety
 
 **Files:**
+
 - Create: `mate-platform-backend/alembic/versions/20260901_0021_control_plane_v1.py`
 - Modify: `mate-platform-backend/alembic/env.py`
 - Create: `mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/domain/control_plane.py`
@@ -139,6 +142,7 @@ git commit -m "feat(control): define versioned control-plane contracts"
 - Modify: `mate-platform-backend/packages/mate-tech-db/tests/test_db_migrations.py`
 
 **Interfaces:**
+
 - Produces: `ControlPlaneRepository.create_draft(resource: DraftResource, actor: Principal) -> VersionedResource`, `publish(command: LifecycleCommand, actor: Principal) -> VersionedResource`, and `impact(resource: ResourceRef, actor: Principal) -> ImpactReport`.
 - Produces tables `user_preferences`, `preference_candidates`, `saved_views`, `organization_units`, `dynamic_roles`, `permission_definitions`, `relationship_tuples`, `policy_versions`, `sod_rules`, `delegation_grants`, `service_principals`, `access_review_campaigns`, `tenant_configs`, `config_releases`, `feature_flags`, `quotas`, `notification_channels`, `retention_policies`, `control_plane_outbox`.
 - Consumes: `app.tenant_id`, `app.principal_id`, and `app.correlation_id` set with `SET LOCAL` for every transaction.
@@ -188,6 +192,7 @@ git commit -m "feat(control): add tenant-isolated lifecycle storage"
 ### Task 3: Implement authorization, tenant configuration, projection and event APIs
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/control_plane.py`
 - Modify: `mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/main.py`
 - Modify: `mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services/security.py`
@@ -196,6 +201,7 @@ git commit -m "feat(control): add tenant-isolated lifecycle storage"
 - Create: `mate-platform-backend/packages/mate-tech-iam/tests/test_control_plane_events.py`
 
 **Interfaces:**
+
 - Produces `GET /api/v1/control/me/context?audience={codex|claude-code|deepseek-harness|hermes}`; it accepts a verified connector credential and returns `UserContextProjection` only. `DSH` is a UI alias and is normalized before validation; stored contracts use `deepseek-harness`.
 - Produces create/read/update-draft/impact/publish/retire routes for all matrix resource collections; `POST /{collection}/{id}:impact`, `POST /{collection}/{id}:publish`, `POST /{collection}/{id}:retire` share the lifecycle contract.
 - Produces `POST /api/v1/control/access-reviews/{id}:close` and `POST /api/v1/control/config-releases/{id}:activate|rollback` with policy/SoD re-evaluation in the same transaction.
@@ -244,6 +250,7 @@ git commit -m "feat(control): expose governed control-plane APIs"
 ### Task 4: Deliver management and personal-workbench interfaces
 
 **Files:**
+
 - Create: `metaplatform-frontend/apps/web/src/api/control-plane.ts`
 - Create: `metaplatform-frontend/apps/web/src/pages/workbench/ProfilePage.tsx`
 - Create: `metaplatform-frontend/apps/web/src/pages/admin/access/AccessControlPage.tsx`
@@ -254,6 +261,7 @@ git commit -m "feat(control): expose governed control-plane APIs"
 - Create: `metaplatform-frontend/apps/web/src/pages/admin/access/AccessControlPage.test.tsx`
 
 **Interfaces:**
+
 - Consumes the generated typed API client; frontend receives `PermissionDecision { allowed, reason_code, policy_watermark }` only for presentation and rechecks server responses.
 - Produces profile preference update/reset/candidate-confirm UI, dynamic-role draft/publish/SoD-impact UI, and tenant config release/rollback UI.
 - Produces no generic chat page and no direct write to OpenFGA, OPA, Supabase, Keycloak, or PostgreSQL.
@@ -262,10 +270,13 @@ git commit -m "feat(control): expose governed control-plane APIs"
 
 ```tsx
 it("shows an impact report before publishing a role and never treats a hidden button as authorization", async () => {
-  mockControlPlaneApi.impactRole.mockResolvedValue({ digest: "a".repeat(64), blockers: ["SOD_CONFLICT"] });
+  mockControlPlaneApi.impactRole.mockResolvedValue({
+    digest: "a".repeat(64),
+    blockers: ["SOD_CONFLICT"],
+  });
   render(<AccessControlPage />);
   await userEvent.click(screen.getByRole("button", { name: "发布角色" }));
-  expect(await screen.findByText("职责冲突" )).toBeVisible();
+  expect(await screen.findByText("职责冲突")).toBeVisible();
   expect(mockControlPlaneApi.publishRole).not.toHaveBeenCalled();
 });
 ```
@@ -298,6 +309,7 @@ git commit -m "feat(control): add profile access and tenant workbenches"
 ### Task 5: Prove real identity, authorization, rollback and recovery behavior
 
 **Files:**
+
 - Create: `scripts/test-control-plane-e2e.ps1`
 - Create: `acceptance/e2e/control-plane-environment.lock.yaml`
 - Create: `metaplatform-frontend/tests/e2e/control-plane.spec.ts`
@@ -305,6 +317,7 @@ git commit -m "feat(control): add profile access and tenant workbenches"
 - Modify: `mate-platform-backend/contracts/tests/test_openapi_ci.py`
 
 **Interfaces:**
+
 - Consumes pinned image/config Digests for PostgreSQL, Supabase-compatible auth test issuer, Keycloak, IAM, OpenFGA and OPA.
 - Produces E2E evidence for profile bootstrap, SoD, delegation expiry, config rollback, projection revocation, independent restore and audit correlation.
 

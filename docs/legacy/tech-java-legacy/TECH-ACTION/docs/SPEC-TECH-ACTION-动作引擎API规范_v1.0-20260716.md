@@ -1,9 +1,9 @@
 # SPEC - Action Engine 服务 API 规范（TECH-ACTION）
 
-> 文档版本：v1.0  
-> 日期：2026-07-16  
-> 模块：TECH-ACTION  
-> 包名：`com.metaplatform.action`  
+> 文档版本：v1.0
+> 日期：2026-07-16
+> 模块：TECH-ACTION
+> 包名：`com.metaplatform.action`
 > API 路径前缀：`/api/v1/action`
 
 ---
@@ -32,24 +32,24 @@ TECH-ACTION 是 Mate Platform 的 **Action Engine（动作引擎）服务**，�
 
 ### 1.2 核心职责
 
-| 职责 | 说明 |
-|---|---|
+| 职责            | 说明                                                                           |
+| --------------- | ------------------------------------------------------------------------------ |
 | Action 定义管理 | Action 的 CRUD，配置输入/输出 Schema、执行逻辑（HTTP/Script/Lambda）、补偿逻辑 |
-| 服务编排 | 将多个 Action 组合为复合服务，支持串行/并行/条件/循环编排模式 |
-| 触发规则配置 | 事件驱动（Kafka 事件触发）、定时（Cron）、手动触发 |
-| 执行引擎 | Action 执行、状态追踪、超时处理、重试机制 |
-| 执行监控与审计 | 执行记录、耗时统计、错误追踪、补偿执行 |
+| 服务编排        | 将多个 Action 组合为复合服务，支持串行/并行/条件/循环编排模式                  |
+| 触发规则配置    | 事件驱动（Kafka 事件触发）、定时（Cron）、手动触发                             |
+| 执行引擎        | Action 执行、状态追踪、超时处理、重试机制                                      |
+| 执行监控与审计  | 执行记录、耗时统计、错误追踪、补偿执行                                         |
 
 ### 1.3 技术栈
 
-| 层级 | 技术 |
-|---|---|
-| 语言 | Java 21 |
-| 框架 | Spring Boot 3.4 + Spring AI 1.0 |
-| 数据库 | PostgreSQL 17 |
-| 消息队列 | Kafka 3.9 |
-| 缓存 | Redis 7.4 |
-| 脚本引擎 | GraalVM Polyglot（JS/Python） |
+| 层级     | 技术                                |
+| -------- | ----------------------------------- |
+| 语言     | Java 21                             |
+| 框架     | Spring Boot 3.4 + Spring AI 1.0     |
+| 数据库   | PostgreSQL 17                       |
+| 消息队列 | Kafka 3.9                           |
+| 缓存     | Redis 7.4                           |
+| 脚本引擎 | GraalVM Polyglot（JS/Python）       |
 | 可观测性 | OpenTelemetry 1.45 + Prometheus 3.x |
 
 ### 1.4 上下游依赖
@@ -89,24 +89,24 @@ TECH-ACTION 是 Mate Platform 的 **Action Engine（动作引擎）服务**，�
 {
   "code": 0,
   "message": "success",
-  "data": { },
+  "data": {},
   "traceId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 }
 ```
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| code | int | 业务码。`0` 表示成功，非 `0` 表示业务错误 |
-| message | string | 提示信息 |
-| data | object / array / null | 业务数据，失败时为 `null` |
-| traceId | string | 全链路追踪 ID，与请求头 `X-Trace-Id` 一致 |
+| 字段    | 类型                  | 说明                                      |
+| ------- | --------------------- | ----------------------------------------- |
+| code    | int                   | 业务码。`0` 表示成功，非 `0` 表示业务错误 |
+| message | string                | 提示信息                                  |
+| data    | object / array / null | 业务数据，失败时为 `null`                 |
+| traceId | string                | 全链路追踪 ID，与请求头 `X-Trace-Id` 一致 |
 
 ### 2.3 认证
 
-| 方式 | 说明 |
-|---|---|
-| Bearer Token | 请求头携带 `Authorization: Bearer <JWT>`，由 TECH-IAM 签发 |
-| API Key | 内部服务间调用可使用 `X-API-Key: <key>`，适用于 MCP/A2A 场景 |
+| 方式         | 说明                                                         |
+| ------------ | ------------------------------------------------------------ |
+| Bearer Token | 请求头携带 `Authorization: Bearer <JWT>`，由 TECH-IAM 签发   |
+| API Key      | 内部服务间调用可使用 `X-API-Key: <key>`，适用于 MCP/A2A 场景 |
 
 请求头示例：
 
@@ -119,33 +119,33 @@ Content-Type: application/json
 
 ### 2.4 错误码
 
-| code | HTTP Status | 说明 |
-|---|---|---|
-| 0 | 200 | 成功 |
-| 40001 | 400 | 请求参数校验失败 |
-| 40002 | 400 | 请求体 JSON 格式错误 |
-| 40101 | 401 | 未认证或 Token 过期 |
-| 40301 | 403 | 无权限访问该资源 |
-| 40401 | 404 | 资源不存在 |
-| 40901 | 409 | 资源冲突（如名称重复） |
-| 40902 | 409 | 状态非法（如 Action 已禁用不可执行） |
-| 42201 | 422 | 业务校验失败（如 Schema 不匹配） |
-| 42901 | 429 | 请求过于频繁，限流触发 |
-| 50001 | 500 | 服务内部错误 |
-| 50002 | 500 | Action 执行超时 |
-| 50003 | 500 | Action 执行失败（Script/HTTP/Lambda 错误） |
-| 50004 | 500 | 补偿执行失败 |
-| 50301 | 503 | 下游依赖不可用（TECH-ONT/WFE/RULE） |
+| code  | HTTP Status | 说明                                       |
+| ----- | ----------- | ------------------------------------------ |
+| 0     | 200         | 成功                                       |
+| 40001 | 400         | 请求参数校验失败                           |
+| 40002 | 400         | 请求体 JSON 格式错误                       |
+| 40101 | 401         | 未认证或 Token 过期                        |
+| 40301 | 403         | 无权限访问该资源                           |
+| 40401 | 404         | 资源不存在                                 |
+| 40901 | 409         | 资源冲突（如名称重复）                     |
+| 40902 | 409         | 状态非法（如 Action 已禁用不可执行）       |
+| 42201 | 422         | 业务校验失败（如 Schema 不匹配）           |
+| 42901 | 429         | 请求过于频繁，限流触发                     |
+| 50001 | 500         | 服务内部错误                               |
+| 50002 | 500         | Action 执行超时                            |
+| 50003 | 500         | Action 执行失败（Script/HTTP/Lambda 错误） |
+| 50004 | 500         | 补偿执行失败                               |
+| 50301 | 503         | 下游依赖不可用（TECH-ONT/WFE/RULE）        |
 
 ### 2.5 分页约定
 
 列表类接口统一使用游标分页 + 偏移分页双模式：
 
-| 参数 | 类型 | 默认 | 说明 |
-|---|---|---|---|
-| page | int | 1 | 页码，从 1 开始 |
-| pageSize | int | 20 | 每页条数，最大 100 |
-| cursor | string | null | 游标，提供时优先使用游标分页 |
+| 参数     | 类型   | 默认 | 说明                         |
+| -------- | ------ | ---- | ---------------------------- |
+| page     | int    | 1    | 页码，从 1 开始              |
+| pageSize | int    | 20   | 每页条数，最大 100           |
+| cursor   | string | null | 游标，提供时优先使用游标分页 |
 
 分页响应：
 
@@ -154,7 +154,7 @@ Content-Type: application/json
   "code": 0,
   "message": "success",
   "data": {
-    "items": [ ],
+    "items": [],
     "total": 150,
     "page": 1,
     "pageSize": 20,
@@ -186,37 +186,37 @@ Content-Type: application/json
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 是 | Action 名称，租户内唯一 |
-| displayName | string | 是 | 显示名称 |
-| description | string | 否 | 描述 |
-| category | string | 否 | 分类标签，如 `data`、`integration`、`ai` |
-| ontologyRef | object | 否 | 关联的本体引用（conceptId / actionTypeId） |
-| ontologyRef.conceptId | string | 否 | 关联的本体概念 ID |
-| ontologyRef.actionTypeId | string | 否 | 关联的本体 ActionType ID |
-| inputSchema | object | 是 | 输入参数 JSON Schema |
-| outputSchema | object | 是 | 输出参数 JSON Schema |
-| execution | object | 是 | 执行逻辑配置 |
-| execution.type | string | 是 | 执行类型：`HTTP`、`SCRIPT`、`LAMBDA` |
-| execution.config | object | 是 | 执行配置，结构取决于 type |
-| compensation | object | 否 | 补偿逻辑配置 |
-| compensation.enabled | boolean | 否 | 是否启用补偿，默认 false |
-| compensation.config | object | 否 | 补偿执行配置，结构同 execution.config |
-| timeout | int | 否 | 超时时间（毫秒），默认 30000 |
-| retryPolicy | object | 否 | 重试策略 |
-| retryPolicy.maxAttempts | int | 否 | 最大重试次数，默认 3 |
-| retryPolicy.backoff | string | 否 | 退避策略：`FIXED`、`LINEAR`、`EXPONENTIAL` |
-| retryPolicy.interval | int | 否 | 重试间隔（毫秒），默认 1000 |
-| tags | string[] | 否 | 标签列表 |
+| 字段                     | 类型     | 必填 | 说明                                       |
+| ------------------------ | -------- | ---- | ------------------------------------------ |
+| name                     | string   | 是   | Action 名称，租户内唯一                    |
+| displayName              | string   | 是   | 显示名称                                   |
+| description              | string   | 否   | 描述                                       |
+| category                 | string   | 否   | 分类标签，如 `data`、`integration`、`ai`   |
+| ontologyRef              | object   | 否   | 关联的本体引用（conceptId / actionTypeId） |
+| ontologyRef.conceptId    | string   | 否   | 关联的本体概念 ID                          |
+| ontologyRef.actionTypeId | string   | 否   | 关联的本体 ActionType ID                   |
+| inputSchema              | object   | 是   | 输入参数 JSON Schema                       |
+| outputSchema             | object   | 是   | 输出参数 JSON Schema                       |
+| execution                | object   | 是   | 执行逻辑配置                               |
+| execution.type           | string   | 是   | 执行类型：`HTTP`、`SCRIPT`、`LAMBDA`       |
+| execution.config         | object   | 是   | 执行配置，结构取决于 type                  |
+| compensation             | object   | 否   | 补偿逻辑配置                               |
+| compensation.enabled     | boolean  | 否   | 是否启用补偿，默认 false                   |
+| compensation.config      | object   | 否   | 补偿执行配置，结构同 execution.config      |
+| timeout                  | int      | 否   | 超时时间（毫秒），默认 30000               |
+| retryPolicy              | object   | 否   | 重试策略                                   |
+| retryPolicy.maxAttempts  | int      | 否   | 最大重试次数，默认 3                       |
+| retryPolicy.backoff      | string   | 否   | 退避策略：`FIXED`、`LINEAR`、`EXPONENTIAL` |
+| retryPolicy.interval     | int      | 否   | 重试间隔（毫秒），默认 1000                |
+| tags                     | string[] | 否   | 标签列表                                   |
 
 **execution.config 结构**
 
-| type | config 字段 |
-|---|---|
-| HTTP | `method`、`url`、`headers`、`bodyTemplate`、`authType`、`authConfig` |
-| SCRIPT | `engine`（`JS`/`PYTHON`）、`source`、`entryFunction` |
-| LAMBDA | `functionName`、`runtime`、`handler`、`packageUrl` |
+| type   | config 字段                                                          |
+| ------ | -------------------------------------------------------------------- |
+| HTTP   | `method`、`url`、`headers`、`bodyTemplate`、`authType`、`authConfig` |
+| SCRIPT | `engine`（`JS`/`PYTHON`）、`source`、`entryFunction`                 |
+| LAMBDA | `functionName`、`runtime`、`handler`、`packageUrl`                   |
 
 **请求示例**
 
@@ -254,7 +254,10 @@ Content-Type: application/json
       "headers": { "Content-Type": "application/json" },
       "bodyTemplate": "{\"channel\":\"${input.channel}\",\"to\":\"${input.recipient}\",\"text\":\"${input.message}\"}",
       "authType": "API_KEY",
-      "authConfig": { "headerName": "X-API-Key", "secretRef": "secret-notify-key" }
+      "authConfig": {
+        "headerName": "X-API-Key",
+        "secretRef": "secret-notify-key"
+      }
     }
   },
   "compensation": {
@@ -294,15 +297,15 @@ Content-Type: application/json
       "conceptId": "concept-notification",
       "actionTypeId": "actiontype-send"
     },
-    "inputSchema": { },
-    "outputSchema": { },
+    "inputSchema": {},
+    "outputSchema": {},
     "execution": {
       "type": "HTTP",
-      "config": { }
+      "config": {}
     },
     "compensation": {
       "enabled": true,
-      "config": { }
+      "config": {}
     },
     "timeout": 10000,
     "retryPolicy": {
@@ -321,13 +324,13 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| name 为空 | 40001 | 参数校验失败 |
-| name 重复 | 40901 | Action 名称已存在 |
-| inputSchema 非法 JSON Schema | 42201 | 输入 Schema 格式错误 |
-| execution.config 缺失必填字段 | 40001 | 执行配置不完整 |
-| 本体引用不存在 | 40401 | ontologyRef 引用的 conceptId 不存在 |
+| 场景                          | code  | 说明                                |
+| ----------------------------- | ----- | ----------------------------------- |
+| name 为空                     | 40001 | 参数校验失败                        |
+| name 重复                     | 40901 | Action 名称已存在                   |
+| inputSchema 非法 JSON Schema  | 42201 | 输入 Schema 格式错误                |
+| execution.config 缺失必填字段 | 40001 | 执行配置不完整                      |
+| 本体引用不存在                | 40401 | ontologyRef 引用的 conceptId 不存在 |
 
 ---
 
@@ -337,15 +340,15 @@ Content-Type: application/json
 
 **查询参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 否 | 名称模糊匹配 |
-| category | string | 否 | 分类过滤 |
-| status | string | 否 | 状态过滤：`DRAFT`、`PUBLISHED`、`DISABLED` |
-| tag | string | 否 | 标签过滤，可多次传 |
-| ontologyConceptId | string | 否 | 按本体概念过滤 |
-| page | int | 否 | 页码，默认 1 |
-| pageSize | int | 否 | 每页条数，默认 20 |
+| 参数              | 类型   | 必填 | 说明                                       |
+| ----------------- | ------ | ---- | ------------------------------------------ |
+| name              | string | 否   | 名称模糊匹配                               |
+| category          | string | 否   | 分类过滤                                   |
+| status            | string | 否   | 状态过滤：`DRAFT`、`PUBLISHED`、`DISABLED` |
+| tag               | string | 否   | 标签过滤，可多次传                         |
+| ontologyConceptId | string | 否   | 按本体概念过滤                             |
+| page              | int    | 否   | 页码，默认 1                               |
+| pageSize          | int    | 否   | 每页条数，默认 20                          |
 
 **响应示例**
 
@@ -381,8 +384,8 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
+| 场景              | code  | 说明         |
+| ----------------- | ----- | ------------ |
 | pageSize 超过 100 | 40001 | 参数校验失败 |
 
 ---
@@ -393,8 +396,8 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明      |
+| -------- | ------ | --------- |
 | actionId | string | Action ID |
 
 **响应示例**
@@ -439,7 +442,10 @@ Content-Type: application/json
         "headers": { "Content-Type": "application/json" },
         "bodyTemplate": "{\"channel\":\"${input.channel}\",\"to\":\"${input.recipient}\",\"text\":\"${input.message}\"}",
         "authType": "API_KEY",
-        "authConfig": { "headerName": "X-API-Key", "secretRef": "secret-notify-key" }
+        "authConfig": {
+          "headerName": "X-API-Key",
+          "secretRef": "secret-notify-key"
+        }
       }
     },
     "compensation": {
@@ -469,8 +475,8 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
+| 场景            | code  | 说明              |
+| --------------- | ----- | ----------------- |
 | actionId 不存在 | 40401 | Action 定义不存在 |
 
 ---
@@ -483,8 +489,8 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明      |
+| -------- | ------ | --------- |
 | actionId | string | Action ID |
 
 **请求参数（Body）**
@@ -525,11 +531,11 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| actionId 不存在 | 40401 | Action 定义不存在 |
+| 场景                    | code  | 说明                        |
+| ----------------------- | ----- | --------------------------- |
+| actionId 不存在         | 40401 | Action 定义不存在           |
 | Action 状态为 EXECUTING | 40902 | Action 正在执行中，不可更新 |
-| inputSchema 非法 | 42201 | 输入 Schema 格式错误 |
+| inputSchema 非法        | 42201 | 输入 Schema 格式错误        |
 
 ---
 
@@ -541,8 +547,8 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明      |
+| -------- | ------ | --------- |
 | actionId | string | Action ID |
 
 **响应示例**
@@ -562,11 +568,11 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| actionId 不存在 | 40401 | Action 定义不存在 |
-| 被编排引用 | 40901 | Action 被服务编排引用，不可删除 |
-| 存在执行中实例 | 40902 | 存在执行中的 Action 实例 |
+| 场景            | code  | 说明                            |
+| --------------- | ----- | ------------------------------- |
+| actionId 不存在 | 40401 | Action 定义不存在               |
+| 被编排引用      | 40901 | Action 被服务编排引用，不可删除 |
+| 存在执行中实例  | 40902 | 存在执行中的 Action 实例        |
 
 ---
 
@@ -578,16 +584,16 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明      |
+| -------- | ------ | --------- |
 | actionId | string | Action ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| status | string | 是 | 目标状态：`PUBLISHED`、`DISABLED` |
-| reason | string | 否 | 变更原因（禁用时建议填写） |
+| 字段   | 类型   | 必填 | 说明                              |
+| ------ | ------ | ---- | --------------------------------- |
+| status | string | 是   | 目标状态：`PUBLISHED`、`DISABLED` |
+| reason | string | 否   | 变更原因（禁用时建议填写）        |
 
 **请求示例**
 
@@ -616,9 +622,9 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| DRAFT 直接禁用 | 40902 | DRAFT 状态不可禁用，需先发布 |
+| 场景                    | code  | 说明                         |
+| ----------------------- | ----- | ---------------------------- |
+| DRAFT 直接禁用          | 40902 | DRAFT 状态不可禁用，需先发布 |
 | execution.config 不完整 | 42201 | 发布前校验执行配置完整性失败 |
 
 ---
@@ -631,16 +637,16 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明      |
+| -------- | ------ | --------- |
 | actionId | string | Action ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| input | object | 是 | 待验证的输入数据 |
-| version | int | 否 | 指定版本，默认最新 |
+| 字段    | 类型   | 必填 | 说明               |
+| ------- | ------ | ---- | ------------------ |
+| input   | object | 是   | 待验证的输入数据   |
+| version | int    | 否   | 指定版本，默认最新 |
 
 **请求示例**
 
@@ -696,8 +702,8 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
+| 场景            | code  | 说明              |
+| --------------- | ----- | ----------------- |
 | actionId 不存在 | 40401 | Action 定义不存在 |
 
 ---
@@ -708,8 +714,8 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明      |
+| -------- | ------ | --------- |
 | actionId | string | Action ID |
 
 **响应示例**
@@ -750,8 +756,8 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
+| 场景            | code  | 说明              |
+| --------------- | ----- | ----------------- |
 | actionId 不存在 | 40401 | Action 定义不存在 |
 
 ---
@@ -766,18 +772,18 @@ Content-Type: application/json
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 是 | 编排名称，租户内唯一 |
-| displayName | string | 是 | 显示名称 |
-| description | string | 否 | 描述 |
-| inputSchema | object | 否 | 编排级别的输入 Schema |
-| outputSchema | object | 否 | 编排级别的输出 Schema |
-| nodes | array | 否 | 节点列表（可后续添加） |
-| edges | array | 否 | 边列表（可后续添加） |
-| variables | object | 否 | 编排级变量定义 |
-| timeout | int | 否 | 编排总超时（毫秒），默认 300000 |
-| retryPolicy | object | 否 | 重试策略，同 Action 定义 |
+| 字段         | 类型   | 必填 | 说明                            |
+| ------------ | ------ | ---- | ------------------------------- |
+| name         | string | 是   | 编排名称，租户内唯一            |
+| displayName  | string | 是   | 显示名称                        |
+| description  | string | 否   | 描述                            |
+| inputSchema  | object | 否   | 编排级别的输入 Schema           |
+| outputSchema | object | 否   | 编排级别的输出 Schema           |
+| nodes        | array  | 否   | 节点列表（可后续添加）          |
+| edges        | array  | 否   | 边列表（可后续添加）            |
+| variables    | object | 否   | 编排级变量定义                  |
+| timeout      | int    | 否   | 编排总超时（毫秒），默认 300000 |
+| retryPolicy  | object | 否   | 重试策略，同 Action 定义        |
 
 **请求示例**
 
@@ -842,8 +848,16 @@ Content-Type: application/json
   ],
   "edges": [
     { "from": "node-validate", "to": "node-inventory" },
-    { "from": "node-inventory", "to": "node-payment", "condition": "${node-inventory.output.inStock == true}" },
-    { "from": "node-payment", "to": "node-ship", "condition": "${node-payment.output.status == 'success'}" }
+    {
+      "from": "node-inventory",
+      "to": "node-payment",
+      "condition": "${node-inventory.output.inStock == true}"
+    },
+    {
+      "from": "node-payment",
+      "to": "node-ship",
+      "condition": "${node-payment.output.status == 'success'}"
+    }
   ],
   "variables": {
     "discountRate": { "type": "number", "default": 0.1 }
@@ -875,12 +889,12 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| name 重复 | 40901 | 编排名称已存在 |
-| 引用的 actionRef 不存在 | 40401 | 引用的 Action 不存在 |
-| 边引用的 nodeId 不存在 | 42201 | 边的 from/to 节点不存在 |
-| 存在环路 | 42201 | 编排图中检测到环路 |
+| 场景                    | code  | 说明                    |
+| ----------------------- | ----- | ----------------------- |
+| name 重复               | 40901 | 编排名称已存在          |
+| 引用的 actionRef 不存在 | 40401 | 引用的 Action 不存在    |
+| 边引用的 nodeId 不存在  | 42201 | 边的 from/to 节点不存在 |
+| 存在环路                | 42201 | 编排图中检测到环路      |
 
 ---
 
@@ -890,8 +904,8 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数            | 类型   | 说明    |
+| --------------- | ------ | ------- |
 | orchestrationId | string | 编排 ID |
 
 **响应示例**
@@ -907,15 +921,15 @@ Content-Type: application/json
     "description": "从下单到发货的完整编排",
     "version": 1,
     "status": "PUBLISHED",
-    "inputSchema": { },
-    "outputSchema": { },
+    "inputSchema": {},
+    "outputSchema": {},
     "nodes": [
       {
         "nodeId": "node-validate",
         "type": "ACTION",
         "actionRef": "act-validate-order",
         "actionVersion": 2,
-        "inputMapping": { },
+        "inputMapping": {},
         "retryPolicy": null,
         "timeout": null
       }
@@ -929,7 +943,7 @@ Content-Type: application/json
         "priority": 0
       }
     ],
-    "variables": { },
+    "variables": {},
     "timeout": 600000,
     "retryPolicy": null,
     "createdBy": "user-001",
@@ -942,8 +956,8 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
+| 场景                   | code  | 说明       |
+| ---------------------- | ----- | ---------- |
 | orchestrationId 不存在 | 40401 | 编排不存在 |
 
 ---
@@ -956,8 +970,8 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数            | 类型   | 说明    |
+| --------------- | ------ | ------- |
 | orchestrationId | string | 编排 ID |
 
 **请求参数（Body）**
@@ -983,10 +997,10 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| orchestrationId 不存在 | 40401 | 编排不存在 |
-| 编排正在执行 | 40902 | 存在执行中的编排实例 |
+| 场景                   | code  | 说明                 |
+| ---------------------- | ----- | -------------------- |
+| orchestrationId 不存在 | 40401 | 编排不存在           |
+| 编排正在执行           | 40902 | 存在执行中的编排实例 |
 
 ---
 
@@ -998,54 +1012,54 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数            | 类型   | 说明    |
+| --------------- | ------ | ------- |
 | orchestrationId | string | 编排 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| nodeId | string | 是 | 节点 ID，编排内唯一 |
-| type | string | 是 | 节点类型：`ACTION`、`WORKFLOW`、`RULE`、`PARALLEL`、`CONDITION`、`LOOP`、`DELAY` |
-| actionRef | string | 条件必填 | 当 type=ACTION 时，引用的 actionId |
-| actionVersion | int | 否 | 指定 Action 版本 |
-| workflowRef | string | 条件必填 | 当 type=WORKFLOW 时，引用的 TECH-WFE 工作流 ID |
-| ruleRef | string | 条件必填 | 当 type=RULE 时，引用的 TECH-RULE 规则集 ID |
-| inputMapping | object | 否 | 输入映射，支持变量表达式 |
-| parallelBranches | array | 条件必填 | 当 type=PARALLEL 时，并行分支配置 |
-| condition | object | 条件必填 | 当 type=CONDITION 时，条件配置 |
-| loop | object | 条件必填 | 当 type=LOOP 时，循环配置 |
-| delay | int | 条件必填 | 当 type=DELAY 时，延迟毫秒数 |
-| retryPolicy | object | 否 | 节点级重试策略 |
-| timeout | int | 否 | 节点级超时（毫秒） |
+| 字段             | 类型   | 必填     | 说明                                                                             |
+| ---------------- | ------ | -------- | -------------------------------------------------------------------------------- |
+| nodeId           | string | 是       | 节点 ID，编排内唯一                                                              |
+| type             | string | 是       | 节点类型：`ACTION`、`WORKFLOW`、`RULE`、`PARALLEL`、`CONDITION`、`LOOP`、`DELAY` |
+| actionRef        | string | 条件必填 | 当 type=ACTION 时，引用的 actionId                                               |
+| actionVersion    | int    | 否       | 指定 Action 版本                                                                 |
+| workflowRef      | string | 条件必填 | 当 type=WORKFLOW 时，引用的 TECH-WFE 工作流 ID                                   |
+| ruleRef          | string | 条件必填 | 当 type=RULE 时，引用的 TECH-RULE 规则集 ID                                      |
+| inputMapping     | object | 否       | 输入映射，支持变量表达式                                                         |
+| parallelBranches | array  | 条件必填 | 当 type=PARALLEL 时，并行分支配置                                                |
+| condition        | object | 条件必填 | 当 type=CONDITION 时，条件配置                                                   |
+| loop             | object | 条件必填 | 当 type=LOOP 时，循环配置                                                        |
+| delay            | int    | 条件必填 | 当 type=DELAY 时，延迟毫秒数                                                     |
+| retryPolicy      | object | 否       | 节点级重试策略                                                                   |
+| timeout          | int    | 否       | 节点级超时（毫秒）                                                               |
 
 **PARALLEL 节点 parallelBranches 结构**
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| branchId | string | 分支 ID |
-| nodes | array | 分支内节点列表 |
+| 字段         | 类型   | 说明                                                               |
+| ------------ | ------ | ------------------------------------------------------------------ |
+| branchId     | string | 分支 ID                                                            |
+| nodes        | array  | 分支内节点列表                                                     |
 | joinStrategy | string | 汇合策略：`ALL`（全部完成）、`ANY`（任一完成）、`RACE`（首个完成） |
 
 **CONDITION 节点 condition 结构**
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| expression | string | 条件表达式 |
-| trueBranch | array | 条件为真时的节点列表 |
-| falseBranch | array | 条件为假时的节点列表 |
+| 字段        | 类型   | 说明                 |
+| ----------- | ------ | -------------------- |
+| expression  | string | 条件表达式           |
+| trueBranch  | array  | 条件为真时的节点列表 |
+| falseBranch | array  | 条件为假时的节点列表 |
 
 **LOOP 节点 loop 结构**
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| type | string | 循环类型：`FOR`、`WHILE`、`FOREACH` |
-| iterate | string | FOREACH 迭代源表达式 |
-| condition | string | WHILE 条件表达式 |
-| count | int | FOR 循环次数 |
-| body | array | 循环体内节点列表 |
-| maxIterations | int | 最大迭代次数，默认 1000 |
+| 字段          | 类型   | 说明                                |
+| ------------- | ------ | ----------------------------------- |
+| type          | string | 循环类型：`FOR`、`WHILE`、`FOREACH` |
+| iterate       | string | FOREACH 迭代源表达式                |
+| condition     | string | WHILE 条件表达式                    |
+| count         | int    | FOR 循环次数                        |
+| body          | array  | 循环体内节点列表                    |
+| maxIterations | int    | 最大迭代次数，默认 1000             |
 
 **请求示例（添加并行节点）**
 
@@ -1105,12 +1119,12 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| nodeId 重复 | 40901 | 节点 ID 已存在 |
-| actionRef 不存在 | 40401 | 引用的 Action 不存在 |
-| type 与配置不匹配 | 42201 | 节点类型与配置字段不匹配 |
-| 编排已发布 | 40902 | 已发布的编排不可直接修改，需创建新版本 |
+| 场景              | code  | 说明                                   |
+| ----------------- | ----- | -------------------------------------- |
+| nodeId 重复       | 40901 | 节点 ID 已存在                         |
+| actionRef 不存在  | 40401 | 引用的 Action 不存在                   |
+| type 与配置不匹配 | 42201 | 节点类型与配置字段不匹配               |
+| 编排已发布        | 40902 | 已发布的编排不可直接修改，需创建新版本 |
 
 ---
 
@@ -1122,24 +1136,24 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数            | 类型   | 说明    |
+| --------------- | ------ | ------- |
 | orchestrationId | string | 编排 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| edges | array | 是 | 边列表 |
+| 字段  | 类型  | 必填 | 说明   |
+| ----- | ----- | ---- | ------ |
+| edges | array | 是   | 边列表 |
 
 **edges 数组元素**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| from | string | 是 | 源节点 ID |
-| to | string | 是 | 目标节点 ID |
-| condition | string | 否 | 条件表达式，为空表示无条件流转 |
-| priority | int | 否 | 优先级，同源多边时按优先级评估，默认 0 |
+| 字段      | 类型   | 必填 | 说明                                   |
+| --------- | ------ | ---- | -------------------------------------- |
+| from      | string | 是   | 源节点 ID                              |
+| to        | string | 是   | 目标节点 ID                            |
+| condition | string | 否   | 条件表达式，为空表示无条件流转         |
+| priority  | int    | 否   | 优先级，同源多边时按优先级评估，默认 0 |
 
 **请求示例**
 
@@ -1186,11 +1200,11 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
+| 场景               | code  | 说明               |
+| ------------------ | ----- | ------------------ |
 | from/to 节点不存在 | 42201 | 边引用的节点不存在 |
-| 添加后产生环路 | 42201 | 检测到环路 |
-| 编排已发布 | 40902 | 已发布编排不可修改 |
+| 添加后产生环路     | 42201 | 检测到环路         |
+| 编排已发布         | 40902 | 已发布编排不可修改 |
 
 ---
 
@@ -1202,8 +1216,8 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数            | 类型   | 说明    |
+| --------------- | ------ | ------- |
 | orchestrationId | string | 编排 ID |
 
 **响应示例（校验通过）**
@@ -1260,8 +1274,8 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
+| 场景                   | code  | 说明       |
+| ---------------------- | ----- | ---------- |
 | orchestrationId 不存在 | 40401 | 编排不存在 |
 
 ---
@@ -1272,16 +1286,16 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数            | 类型   | 说明    |
+| --------------- | ------ | ------- |
 | orchestrationId | string | 编排 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| status | string | 是 | 目标状态：`PUBLISHED`、`DISABLED` |
-| reason | string | 否 | 变更原因 |
+| 字段   | 类型   | 必填 | 说明                              |
+| ------ | ------ | ---- | --------------------------------- |
+| status | string | 是   | 目标状态：`PUBLISHED`、`DISABLED` |
+| reason | string | 否   | 变更原因                          |
 
 **请求示例**
 
@@ -1310,10 +1324,10 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
+| 场景           | code  | 说明                 |
+| -------------- | ----- | -------------------- |
 | 编排校验未通过 | 42201 | 存在未解决的校验错误 |
-| 编排无节点 | 42201 | 编排没有定义任何节点 |
+| 编排无节点     | 42201 | 编排没有定义任何节点 |
 
 ---
 
@@ -1327,37 +1341,37 @@ Content-Type: application/json
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 是 | 触发规则名称 |
-| displayName | string | 是 | 显示名称 |
-| description | string | 否 | 描述 |
-| targetType | string | 是 | 触发目标类型：`ACTION`、`ORCHESTRATION` |
-| targetId | string | 是 | 目标 ID（actionId 或 orchestrationId） |
-| targetVersion | int | 否 | 目标版本，默认最新 |
-| triggerType | string | 是 | 触发类型：`EVENT`、`CRON`、`MANUAL` |
-| eventConfig | object | 条件必填 | 当 triggerType=EVENT 时 |
-| cronConfig | object | 条件必填 | 当 triggerType=CRON 时 |
-| inputMapping | object | 否 | 触发时的输入映射，将事件/上下文映射为目标输入 |
-| enabled | boolean | 否 | 是否启用，默认 true |
+| 字段          | 类型    | 必填     | 说明                                          |
+| ------------- | ------- | -------- | --------------------------------------------- |
+| name          | string  | 是       | 触发规则名称                                  |
+| displayName   | string  | 是       | 显示名称                                      |
+| description   | string  | 否       | 描述                                          |
+| targetType    | string  | 是       | 触发目标类型：`ACTION`、`ORCHESTRATION`       |
+| targetId      | string  | 是       | 目标 ID（actionId 或 orchestrationId）        |
+| targetVersion | int     | 否       | 目标版本，默认最新                            |
+| triggerType   | string  | 是       | 触发类型：`EVENT`、`CRON`、`MANUAL`           |
+| eventConfig   | object  | 条件必填 | 当 triggerType=EVENT 时                       |
+| cronConfig    | object  | 条件必填 | 当 triggerType=CRON 时                        |
+| inputMapping  | object  | 否       | 触发时的输入映射，将事件/上下文映射为目标输入 |
+| enabled       | boolean | 否       | 是否启用，默认 true                           |
 
 **eventConfig 结构**
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| topic | string | Kafka Topic 名称 |
-| eventType | string | 事件类型过滤 |
-| filter | string | 事件过滤条件表达式 |
+| 字段          | 类型   | 说明                   |
+| ------------- | ------ | ---------------------- |
+| topic         | string | Kafka Topic 名称       |
+| eventType     | string | 事件类型过滤           |
+| filter        | string | 事件过滤条件表达式     |
 | consumerGroup | string | 消费者组，默认自动生成 |
 
 **cronConfig 结构**
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
+| 字段       | 类型   | 说明                            |
+| ---------- | ------ | ------------------------------- |
 | expression | string | Cron 表达式（5 字段 Unix 格式） |
-| timezone | string | 时区，如 `Asia/Shanghai` |
-| startDate | string | 生效起始时间（ISO 8601） |
-| endDate | string | 生效结束时间（ISO 8601） |
+| timezone   | string | 时区，如 `Asia/Shanghai`        |
+| startDate  | string | 生效起始时间（ISO 8601）        |
+| endDate    | string | 生效结束时间（ISO 8601）        |
 
 **请求示例（事件触发）**
 
@@ -1427,12 +1441,12 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| targetId 不存在 | 40401 | 目标 Action/编排不存在 |
-| targetId 状态非 PUBLISHED | 40902 | 目标未发布 |
-| Cron 表达式非法 | 40001 | Cron 表达式格式错误 |
-| topic 无权限 | 40301 | 无权限消费该 Kafka Topic |
+| 场景                      | code  | 说明                     |
+| ------------------------- | ----- | ------------------------ |
+| targetId 不存在           | 40401 | 目标 Action/编排不存在   |
+| targetId 状态非 PUBLISHED | 40902 | 目标未发布               |
+| Cron 表达式非法           | 40001 | Cron 表达式格式错误      |
+| topic 无权限              | 40301 | 无权限消费该 Kafka Topic |
 
 ---
 
@@ -1442,14 +1456,14 @@ Content-Type: application/json
 
 **查询参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| targetType | string | 否 | 目标类型过滤 |
-| targetId | string | 否 | 目标 ID 过滤 |
-| triggerType | string | 否 | 触发类型过滤 |
-| enabled | boolean | 否 | 启用状态过滤 |
-| page | int | 否 | 页码 |
-| pageSize | int | 否 | 每页条数 |
+| 参数        | 类型    | 必填 | 说明         |
+| ----------- | ------- | ---- | ------------ |
+| targetType  | string  | 否   | 目标类型过滤 |
+| targetId    | string  | 否   | 目标 ID 过滤 |
+| triggerType | string  | 否   | 触发类型过滤 |
+| enabled     | boolean | 否   | 启用状态过滤 |
+| page        | int     | 否   | 页码         |
+| pageSize    | int     | 否   | 每页条数     |
 
 **响应示例**
 
@@ -1495,8 +1509,8 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数      | 类型   | 说明        |
+| --------- | ------ | ----------- |
 | triggerId | string | 触发规则 ID |
 
 **请求参数（Body）**
@@ -1521,9 +1535,9 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| triggerId 不存在 | 40401 | 触发规则不存在 |
+| 场景                   | code  | 说明                   |
+| ---------------------- | ----- | ---------------------- |
+| triggerId 不存在       | 40401 | 触发规则不存在         |
 | 更新时 targetId 不存在 | 40401 | 目标 Action/编排不存在 |
 
 ---
@@ -1534,15 +1548,15 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数      | 类型   | 说明        |
+| --------- | ------ | ----------- |
 | triggerId | string | 触发规则 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| enabled | boolean | 是 | 启用或禁用 |
+| 字段    | 类型    | 必填 | 说明       |
+| ------- | ------- | ---- | ---------- |
+| enabled | boolean | 是   | 启用或禁用 |
 
 **请求示例**
 
@@ -1570,8 +1584,8 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
+| 场景             | code  | 说明           |
+| ---------------- | ----- | -------------- |
 | triggerId 不存在 | 40401 | 触发规则不存在 |
 
 ---
@@ -1582,8 +1596,8 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数      | 类型   | 说明        |
+| --------- | ------ | ----------- |
 | triggerId | string | 触发规则 ID |
 
 **响应示例**
@@ -1603,8 +1617,8 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
+| 场景             | code  | 说明           |
+| ---------------- | ----- | -------------- |
 | triggerId 不存在 | 40401 | 触发规则不存在 |
 
 ---
@@ -1617,17 +1631,17 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数      | 类型   | 说明        |
+| --------- | ------ | ----------- |
 | triggerId | string | 触发规则 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| input | object | 否 | 手动传入的输入数据，覆盖 inputMapping |
-| async | boolean | 否 | 是否异步执行，默认 true |
-| priority | string | 否 | 执行优先级：`LOW`、`NORMAL`、`HIGH`，默认 NORMAL |
+| 字段     | 类型    | 必填 | 说明                                             |
+| -------- | ------- | ---- | ------------------------------------------------ |
+| input    | object  | 否   | 手动传入的输入数据，覆盖 inputMapping            |
+| async    | boolean | 否   | 是否异步执行，默认 true                          |
+| priority | string  | 否   | 执行优先级：`LOW`、`NORMAL`、`HIGH`，默认 NORMAL |
 
 **请求示例**
 
@@ -1686,12 +1700,12 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| triggerId 不存在 | 40401 | 触发规则不存在 |
-| 触发规则已禁用 | 40902 | 触发规则未启用 |
+| 场景                   | code  | 说明                         |
+| ---------------------- | ----- | ---------------------------- |
+| triggerId 不存在       | 40401 | 触发规则不存在               |
+| 触发规则已禁用         | 40902 | 触发规则未启用               |
 | 目标 Action/编排未发布 | 40902 | 目标处于 DRAFT/DISABLED 状态 |
-| 输入校验失败 | 42201 | input 不符合目标 inputSchema |
+| 输入校验失败           | 42201 | input 不符合目标 inputSchema |
 
 ---
 
@@ -1705,19 +1719,19 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明      |
+| -------- | ------ | --------- |
 | actionId | string | Action ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| input | object | 是 | Action 输入参数，需符合 inputSchema |
-| version | int | 否 | 指定执行版本，默认最新 PUBLISHED 版本 |
-| async | boolean | 否 | 是否异步执行，默认 false |
-| timeout | int | 否 | 覆盖 Action 定义的超时时间（毫秒） |
-| executionContext | object | 否 | 执行上下文，透传给下游 |
+| 字段             | 类型    | 必填 | 说明                                  |
+| ---------------- | ------- | ---- | ------------------------------------- |
+| input            | object  | 是   | Action 输入参数，需符合 inputSchema   |
+| version          | int     | 否   | 指定执行版本，默认最新 PUBLISHED 版本 |
+| async            | boolean | 否   | 是否异步执行，默认 false              |
+| timeout          | int     | 否   | 覆盖 Action 定义的超时时间（毫秒）    |
+| executionContext | object  | 否   | 执行上下文，透传给下游                |
 
 **请求示例**
 
@@ -1781,14 +1795,14 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| actionId 不存在 | 40401 | Action 定义不存在 |
-| Action 未发布 | 40902 | Action 状态为 DRAFT/DISABLED |
-| input 校验失败 | 42201 | 输入不符合 inputSchema |
-| 执行超时 | 50002 | Action 执行超过 timeout |
-| 执行失败 | 50003 | HTTP/Script/Lambda 执行错误 |
-| 超过重试上限 | 50003 | 重试 maxAttempts 后仍失败 |
+| 场景            | code  | 说明                         |
+| --------------- | ----- | ---------------------------- |
+| actionId 不存在 | 40401 | Action 定义不存在            |
+| Action 未发布   | 40902 | Action 状态为 DRAFT/DISABLED |
+| input 校验失败  | 42201 | 输入不符合 inputSchema       |
+| 执行超时        | 50002 | Action 执行超过 timeout      |
+| 执行失败        | 50003 | HTTP/Script/Lambda 执行错误  |
+| 超过重试上限    | 50003 | 重试 maxAttempts 后仍失败    |
 
 ---
 
@@ -1800,19 +1814,19 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数            | 类型   | 说明    |
+| --------------- | ------ | ------- |
 | orchestrationId | string | 编排 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| input | object | 否 | 编排输入参数，需符合编排 inputSchema |
-| version | int | 否 | 指定执行版本 |
-| async | boolean | 否 | 是否异步执行，默认 true（编排通常耗时较长） |
-| executionContext | object | 否 | 执行上下文 |
-| dryRun | boolean | 否 | 试运行模式，只校验不实际执行，默认 false |
+| 字段             | 类型    | 必填 | 说明                                        |
+| ---------------- | ------- | ---- | ------------------------------------------- |
+| input            | object  | 否   | 编排输入参数，需符合编排 inputSchema        |
+| version          | int     | 否   | 指定执行版本                                |
+| async            | boolean | 否   | 是否异步执行，默认 true（编排通常耗时较长） |
+| executionContext | object  | 否   | 执行上下文                                  |
+| dryRun           | boolean | 否   | 试运行模式，只校验不实际执行，默认 false    |
 
 **请求示例**
 
@@ -1878,9 +1892,24 @@ Content-Type: application/json
     "valid": true,
     "executionPlan": [
       { "step": 1, "nodeId": "node-validate", "type": "ACTION" },
-      { "step": 2, "nodeId": "node-parallel-check", "type": "PARALLEL", "branches": 2 },
-      { "step": 3, "nodeId": "node-payment", "type": "ACTION", "condition": "${...}" },
-      { "step": 4, "nodeId": "node-ship", "type": "ACTION", "condition": "${...}" }
+      {
+        "step": 2,
+        "nodeId": "node-parallel-check",
+        "type": "PARALLEL",
+        "branches": 2
+      },
+      {
+        "step": 3,
+        "nodeId": "node-payment",
+        "type": "ACTION",
+        "condition": "${...}"
+      },
+      {
+        "step": 4,
+        "nodeId": "node-ship",
+        "type": "ACTION",
+        "condition": "${...}"
+      }
     ],
     "warnings": []
   },
@@ -1890,12 +1919,12 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| orchestrationId 不存在 | 40401 | 编排不存在 |
-| 编排未发布 | 40902 | 编排状态非 PUBLISHED |
-| dryRun 校验失败 | 42201 | 试运行校验未通过 |
-| 编排总超时 | 50002 | 编排执行超过总超时时间 |
+| 场景                   | code  | 说明                   |
+| ---------------------- | ----- | ---------------------- |
+| orchestrationId 不存在 | 40401 | 编排不存在             |
+| 编排未发布             | 40902 | 编排状态非 PUBLISHED   |
+| dryRun 校验失败        | 42201 | 试运行校验未通过       |
+| 编排总超时             | 50002 | 编排执行超过总超时时间 |
 
 ---
 
@@ -1907,16 +1936,16 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明    |
+| ----------- | ------ | ------- |
 | executionId | string | 执行 ID |
 
 **查询参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| includeNodeDetails | boolean | 否 | 是否包含编排节点执行详情，默认 false |
-| includeLogs | boolean | 否 | 是否包含执行日志，默认 false |
+| 参数               | 类型    | 必填 | 说明                                 |
+| ------------------ | ------- | ---- | ------------------------------------ |
+| includeNodeDetails | boolean | 否   | 是否包含编排节点执行详情，默认 false |
+| includeLogs        | boolean | 否   | 是否包含执行日志，默认 false         |
 
 **响应示例（Action 执行）**
 
@@ -2031,21 +2060,21 @@ Content-Type: application/json
 
 **执行状态枚举**
 
-| 状态 | 说明 |
-|---|---|
-| PENDING | 已提交，等待调度 |
-| RUNNING | 执行中 |
-| COMPLETED | 执行成功 |
-| FAILED | 执行失败 |
-| TIMEOUT | 执行超时 |
-| CANCELLED | 已取消 |
-| COMPENSATING | 补偿执行中 |
-| COMPENSATED | 补偿完成 |
+| 状态         | 说明             |
+| ------------ | ---------------- |
+| PENDING      | 已提交，等待调度 |
+| RUNNING      | 执行中           |
+| COMPLETED    | 执行成功         |
+| FAILED       | 执行失败         |
+| TIMEOUT      | 执行超时         |
+| CANCELLED    | 已取消           |
+| COMPENSATING | 补偿执行中       |
+| COMPENSATED  | 补偿完成         |
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
+| 场景               | code  | 说明           |
+| ------------------ | ----- | -------------- |
 | executionId 不存在 | 40401 | 执行记录不存在 |
 
 ---
@@ -2058,16 +2087,16 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明    |
+| ----------- | ------ | ------- |
 | executionId | string | 执行 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| reason | string | 否 | 取消原因 |
-| compensate | boolean | 否 | 是否触发补偿，默认 true |
+| 字段       | 类型    | 必填 | 说明                    |
+| ---------- | ------- | ---- | ----------------------- |
+| reason     | string  | 否   | 取消原因                |
+| compensate | boolean | 否   | 是否触发补偿，默认 true |
 
 **请求示例**
 
@@ -2098,10 +2127,10 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| executionId 不存在 | 40401 | 执行记录不存在 |
-| 执行已结束 | 40902 | 执行已 COMPLETED/FAILED，不可取消 |
+| 场景               | code  | 说明                              |
+| ------------------ | ----- | --------------------------------- |
+| executionId 不存在 | 40401 | 执行记录不存在                    |
+| 执行已结束         | 40902 | 执行已 COMPLETED/FAILED，不可取消 |
 
 ---
 
@@ -2113,17 +2142,17 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明      |
+| ----------- | ------ | --------- |
 | executionId | string | 原执行 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| strategy | string | 否 | 重试策略：`FROM_START`（从头）、`FROM_FAILED`（从失败节点恢复），默认 FROM_FAILED |
-| input | object | 否 | 覆盖输入参数（仅 FROM_START 有效） |
-| reason | string | 否 | 重试原因 |
+| 字段     | 类型   | 必填 | 说明                                                                              |
+| -------- | ------ | ---- | --------------------------------------------------------------------------------- |
+| strategy | string | 否   | 重试策略：`FROM_START`（从头）、`FROM_FAILED`（从失败节点恢复），默认 FROM_FAILED |
+| input    | object | 否   | 覆盖输入参数（仅 FROM_START 有效）                                                |
+| reason   | string | 否   | 重试原因                                                                          |
 
 **请求示例**
 
@@ -2154,11 +2183,11 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| executionId 不存在 | 40401 | 执行记录不存在 |
-| 原执行未失败 | 40902 | 原执行状态非 FAILED/TIMEOUT，不可重试 |
-| FROM_FAILED 无可恢复点 | 42201 | 无法确定恢复节点 |
+| 场景                   | code  | 说明                                  |
+| ---------------------- | ----- | ------------------------------------- |
+| executionId 不存在     | 40401 | 执行记录不存在                        |
+| 原执行未失败           | 40902 | 原执行状态非 FAILED/TIMEOUT，不可重试 |
+| FROM_FAILED 无可恢复点 | 42201 | 无法确定恢复节点                      |
 
 ---
 
@@ -2172,20 +2201,20 @@ Content-Type: application/json
 
 **查询参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| executionType | string | 否 | ACTION / ORCHESTRATION |
-| targetId | string | 否 | 目标 ID 过滤 |
-| status | string | 否 | 状态过滤 |
-| triggerSource | string | 否 | 触发来源：`MANUAL`、`EVENT`、`CRON` |
-| triggerId | string | 否 | 触发规则 ID |
-| startedAfter | string | 否 | 开始时间下限（ISO 8601） |
-| startedBefore | string | 否 | 开始时间上限（ISO 8601） |
-| traceId | string | 否 | 按 traceId 过滤 |
-| page | int | 否 | 页码 |
-| pageSize | int | 否 | 每页条数 |
-| sortBy | string | 否 | 排序字段：`startedAt`、`duration`，默认 startedAt |
-| sortOrder | string | 否 | 排序方向：`ASC`、`DESC`，默认 DESC |
+| 参数          | 类型   | 必填 | 说明                                              |
+| ------------- | ------ | ---- | ------------------------------------------------- |
+| executionType | string | 否   | ACTION / ORCHESTRATION                            |
+| targetId      | string | 否   | 目标 ID 过滤                                      |
+| status        | string | 否   | 状态过滤                                          |
+| triggerSource | string | 否   | 触发来源：`MANUAL`、`EVENT`、`CRON`               |
+| triggerId     | string | 否   | 触发规则 ID                                       |
+| startedAfter  | string | 否   | 开始时间下限（ISO 8601）                          |
+| startedBefore | string | 否   | 开始时间上限（ISO 8601）                          |
+| traceId       | string | 否   | 按 traceId 过滤                                   |
+| page          | int    | 否   | 页码                                              |
+| pageSize      | int    | 否   | 每页条数                                          |
+| sortBy        | string | 否   | 排序字段：`startedAt`、`duration`，默认 startedAt |
+| sortOrder     | string | 否   | 排序方向：`ASC`、`DESC`，默认 DESC                |
 
 **响应示例**
 
@@ -2235,8 +2264,8 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
+| 场景         | code  | 说明                         |
+| ------------ | ----- | ---------------------------- |
 | 时间范围非法 | 40001 | startedAfter > startedBefore |
 
 ---
@@ -2249,16 +2278,16 @@ Content-Type: application/json
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明    |
+| ----------- | ------ | ------- |
 | executionId | string | 执行 ID |
 
 **查询参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| includeLogs | boolean | 否 | 是否包含执行日志，默认 true |
-| includeCompensation | boolean | 否 | 是否包含补偿执行详情，默认 true |
+| 参数                | 类型    | 必填 | 说明                            |
+| ------------------- | ------- | ---- | ------------------------------- |
+| includeLogs         | boolean | 否   | 是否包含执行日志，默认 true     |
+| includeCompensation | boolean | 否   | 是否包含补偿执行详情，默认 true |
 
 **响应示例**
 
@@ -2347,7 +2376,10 @@ Content-Type: application/json
         "actionRef": "act-create-shipment",
         "status": "COMPLETED",
         "input": { "orderId": "ORD-2026-0001" },
-        "output": { "shipmentId": "SHP-2026-0001", "trackingNo": "TRK-12345678" },
+        "output": {
+          "shipmentId": "SHP-2026-0001",
+          "trackingNo": "TRK-12345678"
+        },
         "retryCount": 0,
         "startedAt": "2026-07-16T20:00:10Z",
         "completedAt": "2026-07-16T20:00:25Z",
@@ -2400,8 +2432,8 @@ Content-Type: application/json
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
+| 场景               | code  | 说明           |
+| ------------------ | ----- | -------------- |
 | executionId 不存在 | 40401 | 执行记录不存在 |
 
 ---
@@ -2414,13 +2446,13 @@ Content-Type: application/json
 
 **查询参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| targetType | string | 否 | ACTION / ORCHESTRATION |
-| targetId | string | 否 | 目标 ID |
-| groupBy | string | 否 | 分组维度：`target`、`day`、`hour`，默认 target |
-| startedAfter | string | 是 | 统计开始时间 |
-| startedBefore | string | 是 | 统计结束时间 |
+| 参数          | 类型   | 必填 | 说明                                           |
+| ------------- | ------ | ---- | ---------------------------------------------- |
+| targetType    | string | 否   | ACTION / ORCHESTRATION                         |
+| targetId      | string | 否   | 目标 ID                                        |
+| groupBy       | string | 否   | 分组维度：`target`、`day`、`hour`，默认 target |
+| startedAfter  | string | 是   | 统计开始时间                                   |
+| startedBefore | string | 是   | 统计结束时间                                   |
 
 **请求示例**
 
@@ -2488,10 +2520,10 @@ GET /api/v1/action/executions/statistics?targetType=ORCHESTRATION&groupBy=target
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| 时间范围缺失 | 40001 | startedAfter / startedBefore 为必填 |
-| 时间范围超过 90 天 | 40001 | 统计时间范围不可超过 90 天 |
+| 场景               | code  | 说明                                |
+| ------------------ | ----- | ----------------------------------- |
+| 时间范围缺失       | 40001 | startedAfter / startedBefore 为必填 |
+| 时间范围超过 90 天 | 40001 | 统计时间范围不可超过 90 天          |
 
 ---
 
@@ -2503,8 +2535,8 @@ GET /api/v1/action/executions/statistics?targetType=ORCHESTRATION&groupBy=target
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明    |
+| ----------- | ------ | ------- |
 | executionId | string | 执行 ID |
 
 **响应示例**
@@ -2624,10 +2656,10 @@ GET /api/v1/action/executions/statistics?targetType=ORCHESTRATION&groupBy=target
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| executionId 不存在 | 40401 | 执行记录不存在 |
-| 执行未产生错误 | 40401 | 该执行无错误记录 |
+| 场景               | code  | 说明             |
+| ------------------ | ----- | ---------------- |
+| executionId 不存在 | 40401 | 执行记录不存在   |
+| 执行未产生错误     | 40401 | 该执行无错误记录 |
 
 ---
 
@@ -2639,17 +2671,17 @@ GET /api/v1/action/executions/statistics?targetType=ORCHESTRATION&groupBy=target
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明    |
+| ----------- | ------ | ------- |
 | executionId | string | 执行 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| reason | string | 否 | 补偿原因 |
-| nodeIds | string[] | 否 | 指定补偿的节点 ID 列表，为空则补偿所有已执行节点 |
-| async | boolean | 否 | 是否异步执行，默认 true |
+| 字段    | 类型     | 必填 | 说明                                             |
+| ------- | -------- | ---- | ------------------------------------------------ |
+| reason  | string   | 否   | 补偿原因                                         |
+| nodeIds | string[] | 否   | 指定补偿的节点 ID 列表，为空则补偿所有已执行节点 |
+| async   | boolean  | 否   | 是否异步执行，默认 true                          |
 
 **请求示例**
 
@@ -2697,14 +2729,20 @@ GET /api/v1/action/executions/statistics?targetType=ORCHESTRATION&groupBy=target
         "nodeId": "node-ship",
         "order": 1,
         "status": "COMPLETED",
-        "compensationOutput": { "cancelled": true, "shipmentId": "SHP-2026-0001" },
+        "compensationOutput": {
+          "cancelled": true,
+          "shipmentId": "SHP-2026-0001"
+        },
         "duration": 2000
       },
       {
         "nodeId": "node-payment",
         "order": 2,
         "status": "COMPLETED",
-        "compensationOutput": { "refunded": true, "transactionId": "TXN-2026-0001" },
+        "compensationOutput": {
+          "refunded": true,
+          "transactionId": "TXN-2026-0001"
+        },
         "duration": 3000
       }
     ],
@@ -2719,11 +2757,11 @@ GET /api/v1/action/executions/statistics?targetType=ORCHESTRATION&groupBy=target
 
 **错误场景**
 
-| 场景 | code | 说明 |
-|---|---|---|
-| executionId 不存在 | 40401 | 执行记录不存在 |
-| 节点无补偿配置 | 42201 | 指定节点未配置补偿逻辑 |
-| 补偿执行失败 | 50004 | 补偿执行过程中出错 |
+| 场景               | code  | 说明                        |
+| ------------------ | ----- | --------------------------- |
+| executionId 不存在 | 40401 | 执行记录不存在              |
+| 节点无补偿配置     | 42201 | 指定节点未配置补偿逻辑      |
+| 补偿执行失败       | 50004 | 补偿执行过程中出错          |
 | 执行状态不允许补偿 | 40902 | 执行状态非 COMPLETED/FAILED |
 
 ---
@@ -3059,12 +3097,12 @@ executions         1───* execution_outbox
 
 ### 5.1 Kafka Topic 规划
 
-| Topic | 说明 | 生产者 | 消费者 |
-|---|---|---|---|
-| `metaplatform.action.execution.events` | Action 执行生命周期事件 | TECH-ACTION | TECH-OBS, APP-SUPERAI, APP-ONTSTUDIO |
-| `metaplatform.action.trigger.events` | 触发规则事件 | TECH-ACTION | TECH-OBS |
-| `metaplatform.action.compensation.events` | 补偿执行事件 | TECH-ACTION | TECH-OBS |
-| `metaplatform.action.dlq` | 死信队列 | TECH-ACTION (消费失败时) | TECH-OBS / 运维 |
+| Topic                                     | 说明                    | 生产者                   | 消费者                               |
+| ----------------------------------------- | ----------------------- | ------------------------ | ------------------------------------ |
+| `metaplatform.action.execution.events`    | Action 执行生命周期事件 | TECH-ACTION              | TECH-OBS, APP-SUPERAI, APP-ONTSTUDIO |
+| `metaplatform.action.trigger.events`      | 触发规则事件            | TECH-ACTION              | TECH-OBS                             |
+| `metaplatform.action.compensation.events` | 补偿执行事件            | TECH-ACTION              | TECH-OBS                             |
+| `metaplatform.action.dlq`                 | 死信队列                | TECH-ACTION (消费失败时) | TECH-OBS / 运维                      |
 
 ### 5.2 事件类型定义
 
@@ -3424,7 +3462,7 @@ X-Aggregate-Id: exec-c1d2e3f4-a5b6-7890-abcd-ef1234567890
   "originalTopic": "metaplatform.action.execution.events",
   "originalEventType": "ActionExecutionCompleted",
   "originalEventId": "evt-002",
-  "originalPayload": { },
+  "originalPayload": {},
   "headers": {
     "X-Trace-Id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "X-Tenant-Id": "tenant-001"
@@ -3450,13 +3488,13 @@ X-Aggregate-Id: exec-c1d2e3f4-a5b6-7890-abcd-ef1234567890
 
 ### 6.1 里程碑总览
 
-| 里程碑 | 范围 | 预计周期 |
-|---|---|---|
-| M1 | Action 定义管理 + 执行引擎（基础） | 第 1-3 周 |
-| M2 | 服务编排（串行/并行/条件） | 第 4-6 周 |
-| M3 | 触发规则（事件 + Cron） + Outbox | 第 7-8 周 |
-| M4 | 执行监控 + 补偿机制 + 循环节点 | 第 9-11 周 |
-| M5 | 性能优化 + 多租户 + MCP 暴露 | 第 12-14 周 |
+| 里程碑 | 范围                               | 预计周期    |
+| ------ | ---------------------------------- | ----------- |
+| M1     | Action 定义管理 + 执行引擎（基础） | 第 1-3 周   |
+| M2     | 服务编排（串行/并行/条件）         | 第 4-6 周   |
+| M3     | 触发规则（事件 + Cron） + Outbox   | 第 7-8 周   |
+| M4     | 执行监控 + 补偿机制 + 循环节点     | 第 9-11 周  |
+| M5     | 性能优化 + 多租户 + MCP 暴露       | 第 12-14 周 |
 
 ### 6.2 M1：Action 定义管理 + 基础执行引擎（第 1-3 周）
 
@@ -3598,39 +3636,39 @@ X-Aggregate-Id: exec-c1d2e3f4-a5b6-7890-abcd-ef1234567890
 
 编排中支持变量表达式，使用 `${}` 语法：
 
-| 表达式 | 说明 |
-|---|---|
-| `${orchestration.input.fieldName}` | 编排输入字段 |
-| `${node-nodeId.output.fieldName}` | 指定节点的输出字段 |
-| `${orchestration.variables.varName}` | 编排变量 |
-| `${event.payload.fieldName}` | 触发事件的 payload 字段 |
-| `${context.executionDate}` | 执行日期（Cron 触发时可用） |
-| `${context.traceId}` | 当前执行的 traceId |
+| 表达式                               | 说明                        |
+| ------------------------------------ | --------------------------- |
+| `${orchestration.input.fieldName}`   | 编排输入字段                |
+| `${node-nodeId.output.fieldName}`    | 指定节点的输出字段          |
+| `${orchestration.variables.varName}` | 编排变量                    |
+| `${event.payload.fieldName}`         | 触发事件的 payload 字段     |
+| `${context.executionDate}`           | 执行日期（Cron 触发时可用） |
+| `${context.traceId}`                 | 当前执行的 traceId          |
 
 表达式支持运算符：`==`、`!=`、`>`、`<`、`>=`、`<=`、`&&`、`||`、`!`。
 
 ### C. 重试退避策略
 
-| 策略 | 说明 | 示例（interval=1000ms, maxAttempts=3） |
-|---|---|---|
-| FIXED | 固定间隔 | 第1次重试等 1s，第2次等 1s，第3次等 1s |
-| LINEAR | 线性递增 | 第1次等 1s，第2次等 2s，第3次等 3s |
-| EXPONENTIAL | 指数退避 | 第1次等 1s，第2次等 2s，第3次等 4s |
+| 策略        | 说明     | 示例（interval=1000ms, maxAttempts=3） |
+| ----------- | -------- | -------------------------------------- |
+| FIXED       | 固定间隔 | 第1次重试等 1s，第2次等 1s，第3次等 1s |
+| LINEAR      | 线性递增 | 第1次等 1s，第2次等 2s，第3次等 3s     |
+| EXPONENTIAL | 指数退避 | 第1次等 1s，第2次等 2s，第3次等 4s     |
 
 ### D. MCP Tool 暴露（规划）
 
 TECH-ACTION 计划通过 TECH-MCP 将以下能力暴露为 MCP Tool：
 
-| Tool 名称 | 说明 |
-|---|---|
-| `action.execute` | 执行指定 Action |
-| `action.list` | 列出可用 Action |
-| `action.getStatus` | 查询执行状态 |
-| `orchestration.execute` | 执行指定编排 |
-| `orchestration.list` | 列出可用编排 |
+| Tool 名称               | 说明            |
+| ----------------------- | --------------- |
+| `action.execute`        | 执行指定 Action |
+| `action.list`           | 列出可用 Action |
+| `action.getStatus`      | 查询执行状态    |
+| `orchestration.execute` | 执行指定编排    |
+| `orchestration.list`    | 列出可用编排    |
 
 ### E. 版本历史
 
-| 版本 | 日期 | 变更说明 |
-|---|---|---|
+| 版本 | 日期       | 变更说明                                                                            |
+| ---- | ---------- | ----------------------------------------------------------------------------------- |
 | v1.0 | 2026-07-16 | 初始版本，包含 Action 定义管理、服务编排、触发规则、执行引擎、执行监控全部 API 规范 |

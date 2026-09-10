@@ -25,9 +25,7 @@ class Individual:
 
     def __post_init__(self) -> None:
         if not self.rid.startswith(f"ont.{self.tenant_id}.ind."):
-            raise ValueError(
-                f"Individual.rid must start with ont.{self.tenant_id}.ind."
-            )
+            raise ValueError(f"Individual.rid must start with ont.{self.tenant_id}.ind.")
         if not self.primary_key:
             raise ValueError("Individual.primary_key must be non-empty")
 

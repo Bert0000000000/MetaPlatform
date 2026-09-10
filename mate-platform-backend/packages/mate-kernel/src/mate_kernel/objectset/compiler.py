@@ -31,6 +31,7 @@ from mate_kernel.ontology.query.object_set import ObjectSet
 @dataclass(frozen=True, slots=True)
 class CompiledFilter:
     """编译结果 —— 求值器接受 row dict，返回 bool。"""
+
     kind: str  # "always" / "compare_eq" / "compare_gt" / "logical_and" / "logical_or" / "negate" / "startswith" / "contains"
     field_name: str | None = None
     value: object = None
@@ -77,9 +78,9 @@ class FilterCompiler:
                 depth += 1
             elif ch == ")":
                 depth -= 1
-            elif depth == 0 and expr[i:i + len(sep)] == sep:
+            elif depth == 0 and expr[i : i + len(sep)] == sep:
                 out.append(expr[:i])
-                expr = expr[i + len(sep):]
+                expr = expr[i + len(sep) :]
                 i = 0
                 continue
             i += 1
@@ -124,7 +125,9 @@ class FilterCompiler:
         # >= number
         m = re.match(rf"^({FIELD})\s*>=\s*(-?\d+(?:\.\d+)?)$", atom)
         if m:
-            return CompiledFilter(kind="compare_gte", field_name=m.group(1), value=float(m.group(2)))
+            return CompiledFilter(
+                kind="compare_gte", field_name=m.group(1), value=float(m.group(2))
+            )
         # < number
         m = re.match(rf"^({FIELD})\s*<\s*(-?\d+(?:\.\d+)?)$", atom)
         if m:
@@ -132,7 +135,9 @@ class FilterCompiler:
         # <= number
         m = re.match(rf"^({FIELD})\s*<=\s*(-?\d+(?:\.\d+)?)$", atom)
         if m:
-            return CompiledFilter(kind="compare_lte", field_name=m.group(1), value=float(m.group(2)))
+            return CompiledFilter(
+                kind="compare_lte", field_name=m.group(1), value=float(m.group(2))
+            )
         # != literal
         m = re.match(rf"^({FIELD})\s*!=\s*['\"](.+?)['\"]$", atom)
         if m:
@@ -213,7 +218,9 @@ class InMemoryObjectSetExecutor:
         self.source = source
 
     def execute(
-        self, plan: ObjectSet, extra_classes: frozenset[str] | None = None,
+        self,
+        plan: ObjectSet,
+        extra_classes: frozenset[str] | None = None,
     ) -> list[Individual]:
         """执行 ObjectSet。
 
@@ -224,10 +231,7 @@ class InMemoryObjectSetExecutor:
         compiler = FilterCompiler()
         compiled = compiler.compile(plan.filter_expr)
         ev = FilterEvaluator()
-        allowed = (
-            None if extra_classes is None
-            else frozenset({plan.class_rid.rid, *extra_classes})
-        )
+        allowed = None if extra_classes is None else frozenset({plan.class_rid.rid, *extra_classes})
         out: list[Individual] = []
         for ind in self.source:
             if allowed is not None:

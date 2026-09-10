@@ -1,4 +1,5 @@
 """Organization management endpoints (FR-DASH-006-03)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -111,9 +112,7 @@ OrgTreeNode.model_rebuild()
 # ---- helpers ----
 async def _load_org(session: AsyncSession, org_id: int, tenant_id: str) -> Org | None:
     return (
-        await session.execute(
-            select(Org).where(and_(Org.id == org_id, Org.tenant_id == tenant_id))
-        )
+        await session.execute(select(Org).where(and_(Org.id == org_id, Org.tenant_id == tenant_id)))
     ).scalar_one_or_none()
 
 
@@ -123,16 +122,20 @@ async def _member_counts(session: AsyncSession, org_ids: list[int]) -> dict[int,
     rows = (
         await session.execute(
             select(EmployeePosition.position_id, func.count(EmployeePosition.id))
-            .where(EmployeePosition.position_id.in_(
-                select(Position.id).where(Position.org_id.in_(org_ids))
-            ))
+            .where(
+                EmployeePosition.position_id.in_(
+                    select(Position.id).where(Position.org_id.in_(org_ids))
+                )
+            )
             .group_by(EmployeePosition.position_id)
         )
     ).all()
     pos_to_org = dict(
-        (await session.execute(
-            select(Position.id, Position.org_id).where(Position.org_id.in_(org_ids))
-        )).all()
+        (
+            await session.execute(
+                select(Position.id, Position.org_id).where(Position.org_id.in_(org_ids))
+            )
+        ).all()
     )
     result: dict[int, int] = dict.fromkeys(org_ids, 0)
     for pos_id, count in rows:
@@ -163,19 +166,29 @@ async def get_org_tree(
 ) -> dict[str, Any]:
     """组织树 (FR-DASH-006-03 主视图)."""
     orgs = (
-        await session.execute(
-            select(Org).where(Org.tenant_id == caller.tenant_id).order_by(Org.sort_order, Org.id)
+        (
+            await session.execute(
+                select(Org)
+                .where(Org.tenant_id == caller.tenant_id)
+                .order_by(Org.sort_order, Org.id)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     if not orgs:
         return ok([])
 
     members = await _member_counts(session, [o.id for o in orgs if o.id is not None])
-    dict((
-            await session.execute(select(User.id, User.real_name).where(
-                User.id.in_({o.leader_id for o in orgs if o.leader_id is not None})
-            ))
-        ).all())
+    dict(
+        (
+            await session.execute(
+                select(User.id, User.real_name).where(
+                    User.id.in_({o.leader_id for o in orgs if o.leader_id is not None})
+                )
+            )
+        ).all()
+    )
 
     by_parent: dict[int | None, list[Org]] = {}
     for o in orgs:
@@ -221,9 +234,17 @@ async def list_orgs(
     members = await _member_counts(session, org_ids)
     pos_counts = await _position_counts(session, org_ids)
     leader_ids = {o.leader_id for o in items if o.leader_id is not None}
-    leaders = dict((
-            await session.execute(select(User.id, User.real_name).where(User.id.in_(leader_ids)))
-        ).all()) if leader_ids else {}
+    leaders = (
+        dict(
+            (
+                await session.execute(
+                    select(User.id, User.real_name).where(User.id.in_(leader_ids))
+                )
+            ).all()
+        )
+        if leader_ids
+        else {}
+    )
 
     out = []
     for o in items:
@@ -257,7 +278,9 @@ async def create_org(
     if payload.parent_id is not None:
         parent = await _load_org(session, payload.parent_id, caller.tenant_id)
         if not parent:
-            raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "父组织不存在"})
+            raise HTTPException(
+                status_code=404, detail={"code": "E404_NOT_FOUND", "message": "父组织不存在"}
+            )
 
     existing = (
         await session.execute(
@@ -265,7 +288,10 @@ async def create_org(
         )
     ).scalar_one_or_none()
     if existing:
-        raise HTTPException(status_code=409, detail={"code": "E409_CONFLICT", "message": f"组织编码 '{payload.code}' 已存在"})
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "E409_CONFLICT", "message": f"组织编码 '{payload.code}' 已存在"},
+        )
 
     org = Org(
         tenant_id=caller.tenant_id,
@@ -306,7 +332,9 @@ async def update_org(
 ) -> dict[str, Any]:
     org = await _load_org(session, org_id, caller.tenant_id)
     if not org:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "组织不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "组织不存在"}
+        )
     before = {
         "name": org.name,
         "type": org.type.value,
@@ -360,15 +388,18 @@ async def delete_org(
 ) -> dict[str, Any]:
     org = await _load_org(session, org_id, caller.tenant_id)
     if not org:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "组织不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "组织不存在"}
+        )
 
-    children = (
-        await session.execute(select(Org).where(Org.parent_id == org.id))
-    ).scalars().all()
+    children = (await session.execute(select(Org).where(Org.parent_id == org.id))).scalars().all()
     if children:
         raise HTTPException(
             status_code=409,
-            detail={"code": "E409_CONFLICT", "message": f"组织 '{org.name}' 下仍有 {len(children)} 个子组织"},
+            detail={
+                "code": "E409_CONFLICT",
+                "message": f"组织 '{org.name}' 下仍有 {len(children)} 个子组织",
+            },
         )
 
     name = org.name
@@ -406,13 +437,23 @@ async def list_positions(
         base = base.where(or_(Position.name.like(like), Position.code.like(like)))
 
     total = (await session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
-    stmt = base.order_by(Position.org_id, Position.code).offset((page_num - 1) * page_size).limit(page_size)
+    stmt = (
+        base.order_by(Position.org_id, Position.code)
+        .offset((page_num - 1) * page_size)
+        .limit(page_size)
+    )
     items = (await session.execute(stmt)).scalars().all()
-    org_map = dict(
-        (await session.execute(
-            select(Org.id, Org.name).where(Org.id.in_({p.org_id for p in items}))
-        )).all()
-    ) if items else {}
+    org_map = (
+        dict(
+            (
+                await session.execute(
+                    select(Org.id, Org.name).where(Org.id.in_({p.org_id for p in items}))
+                )
+            ).all()
+        )
+        if items
+        else {}
+    )
 
     holders = {}
     if items:
@@ -451,7 +492,9 @@ async def create_position(
 ) -> dict[str, Any]:
     org = await _load_org(session, payload.org_id, caller.tenant_id)
     if not org:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "组织不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "组织不存在"}
+        )
 
     position = Position(
         tenant_id=caller.tenant_id,
@@ -489,11 +532,15 @@ async def update_position(
 ) -> dict[str, Any]:
     pos = (
         await session.execute(
-            select(Position).where(and_(Position.id == position_id, Position.tenant_id == caller.tenant_id))
+            select(Position).where(
+                and_(Position.id == position_id, Position.tenant_id == caller.tenant_id)
+            )
         )
     ).scalar_one_or_none()
     if not pos:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "岗位不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "岗位不存在"}
+        )
     if payload.name is not None:
         pos.name = payload.name
     if payload.level is not None:
@@ -526,15 +573,25 @@ async def delete_position(
 ) -> dict[str, Any]:
     pos = (
         await session.execute(
-            select(Position).where(and_(Position.id == position_id, Position.tenant_id == caller.tenant_id))
+            select(Position).where(
+                and_(Position.id == position_id, Position.tenant_id == caller.tenant_id)
+            )
         )
     ).scalar_one_or_none()
     if not pos:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "岗位不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "岗位不存在"}
+        )
     name = pos.name
     rels = (
-        await session.execute(select(EmployeePosition).where(EmployeePosition.position_id == pos.id))
-    ).scalars().all()
+        (
+            await session.execute(
+                select(EmployeePosition).where(EmployeePosition.position_id == pos.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
     if rels:
         raise HTTPException(
             status_code=409,
@@ -571,19 +628,27 @@ async def transfer(
         )
     ).scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"}
+        )
     org = await _load_org(session, payload.target_org_id, caller.tenant_id)
     if not org:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "目标组织不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "目标组织不存在"}
+        )
 
     # 关闭当前主岗
     existing = (
-        await session.execute(
-            select(EmployeePosition).where(
-                and_(EmployeePosition.user_id == user.id, EmployeePosition.is_primary == True)  # noqa: E712
+        (
+            await session.execute(
+                select(EmployeePosition).where(
+                    and_(EmployeePosition.user_id == user.id, EmployeePosition.is_primary == True)  # noqa: E712
+                )
             )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     now = datetime.now(UTC)
     for ep in existing:
         ep.is_primary = False
@@ -594,14 +659,21 @@ async def transfer(
     if position_id is None:
         # 自动取目标组织下的第一个岗位
         first_pos = (
-            await session.execute(
-                select(Position).where(Position.org_id == org.id).order_by(Position.id)
+            (
+                await session.execute(
+                    select(Position).where(Position.org_id == org.id).order_by(Position.id)
+                )
             )
-        ).scalars().first()
+            .scalars()
+            .first()
+        )
         if not first_pos:
             raise HTTPException(
                 status_code=409,
-                detail={"code": "E409_CONFLICT", "message": f"目标组织 '{org.name}' 暂无岗位，请先创建"},
+                detail={
+                    "code": "E409_CONFLICT",
+                    "message": f"目标组织 '{org.name}' 暂无岗位，请先创建",
+                },
             )
         position_id = first_pos.id
 

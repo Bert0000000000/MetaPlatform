@@ -15,13 +15,14 @@ MetaPlatform v3.0 已有 5 层隔离 + RLS + OTel，但**没有针对 Function/A
 
 ### 2.1 三级沙箱分级
 
-| 等级 | 实现 | 适用 |
-|---|---|---|
-| **L1 进程** | Python subprocess + seccomp/AppArmor + 命名空间 | 简单只读 Agent（OBS / Knowledge） |
-| **L2 容器** | K8s Job/Pod + sidecar 注入租户身份 + NetworkPolicy | Function Runtime、6 类内置 Agent、SuperAI |
-| **L3 MicroVM** | Firecracker / gVisor / Kata | Marketplace 第三方 Agent（不信任） |
+| 等级           | 实现                                               | 适用                                      |
+| -------------- | -------------------------------------------------- | ----------------------------------------- |
+| **L1 进程**    | Python subprocess + seccomp/AppArmor + 命名空间    | 简单只读 Agent（OBS / Knowledge）         |
+| **L2 容器**    | K8s Job/Pod + sidecar 注入租户身份 + NetworkPolicy | Function Runtime、6 类内置 Agent、SuperAI |
+| **L3 MicroVM** | Firecracker / gVisor / Kata                        | Marketplace 第三方 Agent（不信任）        |
 
 **默认映射**（决策点 B1）：
+
 - Function Runtime → L2
 - 6 类内置 Agent → L2
 - SuperAI → L2（独占 Pod）
@@ -70,15 +71,15 @@ Orchestrator 每次 multi-step plan **必须 ≥1 个 HITL 暂停点**：
 
 > 适用版本：v4 RUNTIME-MVP-02 已落地（`evidence/RUNTIME-MVP-02-ACCEPTANCE.md`）。本条与 §2.5 配套，但区分 dev / prod 两套实现。
 
-| 维度 | dev profile（默认） | prod profile（lock） |
-|---|---|---|
-| Function Runtime 后端 | `subprocess` + `win32` JobObject 资源守卫 | K8s Job/Pod（**唯一允许**） |
-| 配置开关 | `SANDBOX_BACKEND=subprocess` 默认 | `SANDBOX_BACKEND=k8s` 强制 |
-| 适用环境 | `infra/helm/values/{dev,smoke}.yaml` | `infra/helm/values/{staging,production}.yaml` |
-| NetworkPolicy | `infra/helm/charts/network-policies/templates/default-deny.yaml` + allow-list | 同上，且 `function-runtime` sub-chart 默认 deny-egress |
-| 资源配额 | CPU/Mem/Time 三元组 `FunctionResourceLimits`，超时即 kill | 同左；外加 OTel `function.apply` span 强制 |
-| 风险 | **subprocess ≠ 容器**，无 cgroup/namespace 隔离 | K8s Job/Pod 全部 13 硬规则对位 |
-| 何时降级 | dev / smoke / 本地 pytest | **绝不降级**；CI 在 prod profile 下断言 `SANDBOX_BACKEND=k8s` |
+| 维度                  | dev profile（默认）                                                           | prod profile（lock）                                          |
+| --------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Function Runtime 后端 | `subprocess` + `win32` JobObject 资源守卫                                     | K8s Job/Pod（**唯一允许**）                                   |
+| 配置开关              | `SANDBOX_BACKEND=subprocess` 默认                                             | `SANDBOX_BACKEND=k8s` 强制                                    |
+| 适用环境              | `infra/helm/values/{dev,smoke}.yaml`                                          | `infra/helm/values/{staging,production}.yaml`                 |
+| NetworkPolicy         | `infra/helm/charts/network-policies/templates/default-deny.yaml` + allow-list | 同上，且 `function-runtime` sub-chart 默认 deny-egress        |
+| 资源配额              | CPU/Mem/Time 三元组 `FunctionResourceLimits`，超时即 kill                     | 同左；外加 OTel `function.apply` span 强制                    |
+| 风险                  | **subprocess ≠ 容器**，无 cgroup/namespace 隔离                               | K8s Job/Pod 全部 13 硬规则对位                                |
+| 何时降级              | dev / smoke / 本地 pytest                                                     | **绝不降级**；CI 在 prod profile 下断言 `SANDBOX_BACKEND=k8s` |
 
 **升级路径**：dev profile 仅用于 `infra/helm/values/{dev,smoke}.yaml` 与本地 pytest；production 部署必须显式 `SANDBOX_BACKEND=k8s` 并由 GOVERN-09 的 `infra/tests/test_subcharts_required.py` 与 `scripts/ci/check_otl_np_coverage.py` 守门。
 
@@ -92,21 +93,21 @@ Orchestrator 每次 multi-step plan **必须 ≥1 个 HITL 暂停点**：
 
 ## 3. 跟 OWASP LLM Top 10 对位
 
-| 风险 | 沙箱承担 |
-|---|---|
-| LLM01 Prompt Injection | Function 入参 schema 校验，LLM 文本不绕过 Property 类型 |
-| LLM02 Insecure Output | ActionType `submission_criteria` 显式校验 LLM 输出 |
-| LLM06 Excessive Agency | 每 Agent `tools[]` 来自 Interface 白名单 |
-| LLM07 System Prompt Leakage | 日志禁记 system prompt 全文，只记 hash + 长度 |
+| 风险                        | 沙箱承担                                                |
+| --------------------------- | ------------------------------------------------------- |
+| LLM01 Prompt Injection      | Function 入参 schema 校验，LLM 文本不绕过 Property 类型 |
+| LLM02 Insecure Output       | ActionType `submission_criteria` 显式校验 LLM 输出      |
+| LLM06 Excessive Agency      | 每 Agent `tools[]` 来自 Interface 白名单                |
+| LLM07 System Prompt Leakage | 日志禁记 system prompt 全文，只记 hash + 长度           |
 
 ## 4. 跟 13 硬规则对位
 
-| 硬规则 | 沙箱承担 |
-|---|---|
-| ④ 外部系统没有 ACL Client | 沙箱内禁裸 httpx；只走 `mate-clients.*` |
-| ⑨ 没有审计/指标/trace | sandbox span 全 OTel |
-| ⑫ Secret 不进 git | 沙箱禁读明文 env secret；只走 `mate-platform.kms` |
-| ⑬ NetworkPolicy default-deny | 沙箱专用 NetworkProfile |
+| 硬规则                       | 沙箱承担                                          |
+| ---------------------------- | ------------------------------------------------- |
+| ④ 外部系统没有 ACL Client    | 沙箱内禁裸 httpx；只走 `mate-clients.*`           |
+| ⑨ 没有审计/指标/trace        | sandbox span 全 OTel                              |
+| ⑫ Secret 不进 git            | 沙箱禁读明文 env secret；只走 `mate-platform.kms` |
+| ⑬ NetworkPolicy default-deny | 沙箱专用 NetworkProfile                           |
 
 ## 5. 验收
 

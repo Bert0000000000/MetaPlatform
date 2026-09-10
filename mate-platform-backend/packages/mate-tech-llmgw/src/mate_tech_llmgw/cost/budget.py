@@ -8,6 +8,7 @@ Both limits are read from ``llmgw_tenant_config`` (60s in-process cache) and
 evaluated against ``UsageStore.window_spend`` — the daily rollup only, never
 the detail table. Everything here is a soft dependency: no pool → no-op.
 """
+
 from __future__ import annotations
 
 import time
@@ -28,9 +29,7 @@ class BudgetExceededError(Exception):
     """Tenant hard budget exceeded."""
 
     def __init__(self, *, tenant_id: str, spent_usd: float, max_usd: float) -> None:
-        super().__init__(
-            f"tenant {tenant_id} budget exceeded: ${spent_usd:.2f} / ${max_usd:.2f}"
-        )
+        super().__init__(f"tenant {tenant_id} budget exceeded: ${spent_usd:.2f} / ${max_usd:.2f}")
         self.tenant_id = tenant_id
         self.spent_usd = spent_usd
         self.max_usd = max_usd
@@ -82,10 +81,7 @@ class TenantBudgetGuard:
                 tenant_id=tenant_id, spent_usd=projected, max_usd=budget.max_budget_usd
             )
 
-        if (
-            budget.soft_budget_usd is not None
-            and projected > budget.soft_budget_usd
-        ):
+        if budget.soft_budget_usd is not None and projected > budget.soft_budget_usd:
             alert_key = f"{tenant_id}:{datetime.now(UTC).date().isoformat()}"
             if alert_key not in self._soft_alerted:
                 self._soft_alerted.add(alert_key)
@@ -124,14 +120,10 @@ class TenantBudgetGuard:
             return _NO_BUDGET
         return TenantBudget(
             soft_budget_usd=(
-                float(row["soft_budget_usd"])
-                if row["soft_budget_usd"] is not None
-                else None
+                float(row["soft_budget_usd"]) if row["soft_budget_usd"] is not None else None
             ),
             max_budget_usd=(
-                float(row["max_budget_usd"])
-                if row["max_budget_usd"] is not None
-                else None
+                float(row["max_budget_usd"]) if row["max_budget_usd"] is not None else None
             ),
         )
 
@@ -141,9 +133,7 @@ def _increment_soft_budget_counter(tenant_id: str) -> None:
     try:
         from opentelemetry import metrics
 
-        counter = metrics.get_meter("mate.llmgw").create_counter(
-            "llmgw_budget_soft_exceeded_total"
-        )
+        counter = metrics.get_meter("mate.llmgw").create_counter("llmgw_budget_soft_exceeded_total")
         counter.add(1, {"tenant_id": tenant_id})
     except Exception:
         pass

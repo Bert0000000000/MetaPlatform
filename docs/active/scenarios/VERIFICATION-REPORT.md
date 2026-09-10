@@ -7,14 +7,14 @@
 
 ## 一、验证总览
 
-| 场景 | 名称 | 静态审计 | Mock 契约 | JUnit 用例 | 状态 |
-|---|---|:---:|:---:|:---:|:---:|
-| 9.1 A | 客户详情 Object Copilot | 8/8 | 1/1 | 8 | ✅ |
-| 9.2 B | 跨域深度分析 | 4/4 | 1/1 | 5 | ✅ |
-| 9.3 C | 受控 Action 执行 | 4/4 | 1/1 | 6 | ✅ |
-| 9.4 D | Ontology Event 主动触发 | 4/4 | 1/1 | 4 | ✅ |
-| 9.5 E | 文档 → Ontology 抽取 | 5/5 | 1/1 | 5 | ✅ |
-| **总计** | | **25/25** | **5/5** | **28** | **静态 + 契约 100% PASS** |
+| 场景     | 名称                    | 静态审计  | Mock 契约 | JUnit 用例 |           状态            |
+| -------- | ----------------------- | :-------: | :-------: | :--------: | :-----------------------: |
+| 9.1 A    | 客户详情 Object Copilot |    8/8    |    1/1    |     8      |            ✅             |
+| 9.2 B    | 跨域深度分析            |    4/4    |    1/1    |     5      |            ✅             |
+| 9.3 C    | 受控 Action 执行        |    4/4    |    1/1    |     6      |            ✅             |
+| 9.4 D    | Ontology Event 主动触发 |    4/4    |    1/1    |     4      |            ✅             |
+| 9.5 E    | 文档 → Ontology 抽取    |    5/5    |    1/1    |     5      |            ✅             |
+| **总计** |                         | **25/25** |  **5/5**  |   **28**   | **静态 + 契约 100% PASS** |
 
 > 静态审计通过 PowerShell 脚本 `docs/scenarios/verification-audit.ps1` 自动执行：26/26 ✅
 > 运行时 JUnit 测试代码已落盘到 `TECH-AGENT/src/test/.../verification/` 与 `TECH-ACTION/src/test/.../verification/`，可在 mvn 链路修复后直接 `mvn test -Dtest='*verification.*'` 运行。
@@ -27,17 +27,17 @@
 
 ### 验收点逐条对照
 
-| 验收标准（§9.1 接受条件） | 验证方式 | 证据 |
-|---|---|---|
-| Envelope 必须 5 分钟 TTL | 静态审计 A.Envelope.Valid | `OntologyContextEnvelope.isValid()` 比较 `Instant.now()` 与 `expiresAt` |
-| Envelope 字段级脱敏（bankAccount 等） | 静态审计 A.Envelope.Valid | `PermissionRef.deniedFields = ["bankAccount", "legalIdentityNumber"]` |
-| 5 Middleware 按 order=100..500 顺序 | 静态审计 A.Middleware.Order | `Context=100, Grounding=200, Permission=300, Evidence=400, ActionGuard=500` |
-| Grounding 识别 Concept/Metric/Action | 静态审计 A.Grounding.Concept + A8 | `OntologyGroundingMiddleware.detectConcepts/detectMetrics/detectActionCandidates` |
-| Permission 拒绝未授权 Tool | 静态审计 A.Permission.Gate + A4 | `OntologyPermissionMiddleware` 检查 `allowedTools.contains(tool)` |
-| Evidence 自动绑定 Claim | 静态审计 A.Evidence.Bind + A5 | `OntologyEvidenceMiddleware.extractEvidence` 把 ontology.* 工具返回自动转为 Claim+Evidence |
-| ActionGuard 标记高风险需审批 | 静态审计 A.ActionGuard.Mark + A6 | `requiresApproval = HIGH||CRITICAL` |
-| RuntimeRouter 自动判定 Fast/Deep | 静态审计 A.Router.Split + A7 | `msg.length()>200` 或含"分析/对比/总结" → Deep；否则 Fast |
-| Mock 客户 CUST-10086 含 4 类相关对象 | 静态审计 A.Mock.Cust10086 + A8 | `customer-cust-10086.json` 含 HAS_ORDER/HAS_CONTRACT/HAS_TICKET/OWNED_BY |
+| 验收标准（§9.1 接受条件）             | 验证方式                          | 证据                                                                                        |
+| ------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------- | --- | --------- |
+| Envelope 必须 5 分钟 TTL              | 静态审计 A.Envelope.Valid         | `OntologyContextEnvelope.isValid()` 比较 `Instant.now()` 与 `expiresAt`                     |
+| Envelope 字段级脱敏（bankAccount 等） | 静态审计 A.Envelope.Valid         | `PermissionRef.deniedFields = ["bankAccount", "legalIdentityNumber"]`                       |
+| 5 Middleware 按 order=100..500 顺序   | 静态审计 A.Middleware.Order       | `Context=100, Grounding=200, Permission=300, Evidence=400, ActionGuard=500`                 |
+| Grounding 识别 Concept/Metric/Action  | 静态审计 A.Grounding.Concept + A8 | `OntologyGroundingMiddleware.detectConcepts/detectMetrics/detectActionCandidates`           |
+| Permission 拒绝未授权 Tool            | 静态审计 A.Permission.Gate + A4   | `OntologyPermissionMiddleware` 检查 `allowedTools.contains(tool)`                           |
+| Evidence 自动绑定 Claim               | 静态审计 A.Evidence.Bind + A5     | `OntologyEvidenceMiddleware.extractEvidence` 把 ontology.\* 工具返回自动转为 Claim+Evidence |
+| ActionGuard 标记高风险需审批          | 静态审计 A.ActionGuard.Mark + A6  | `requiresApproval = HIGH                                                                    |     | CRITICAL` |
+| RuntimeRouter 自动判定 Fast/Deep      | 静态审计 A.Router.Split + A7      | `msg.length()>200` 或含"分析/对比/总结" → Deep；否则 Fast                                   |
+| Mock 客户 CUST-10086 含 4 类相关对象  | 静态审计 A.Mock.Cust10086 + A8    | `customer-cust-10086.json` 含 HAS_ORDER/HAS_CONTRACT/HAS_TICKET/OWNED_BY                    |
 
 ### JUnit 测试代码
 
@@ -54,12 +54,12 @@
 
 ### 验收点逐条对照
 
-| 验收标准 | 验证方式 | 证据 |
-|---|---|---|
-| Grounding 识别多 Concept（Customer/Order/Metric） | 静态审计 B.Router.Deep + 1B | `OntologyGroundingMiddleware.detectConcepts` 返回 ["Customer", "Order", "Metric"] |
-| Sub-Agent 上下文裁剪 | 静态审计 B.SubAgent.Trim + B2 | `SubAgentContextBuilder.buildChildContext` 调用 `filterByConcepts` 排除敏感工具（bash） |
-| MCP 暴露 ≥ 20 个 Ontology 工具 | 静态审计 B.MCP.Tools | `OnboardingMcpServer` 实际暴露 21 个工具（Schema × 3 + Object × 5 + Query × 5 + Action × 5 + Evidence × 3） |
-| Deep Task 路由判定 | 静态审计 B.Router.Deep + B4 | `RuntimeRouter.route` 命中 "分析"/"对比"/"总结"/msg.length()>200 → DEEP |
+| 验收标准                                              | 验证方式                       | 证据                                                                                                                                                 |
+| ----------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Grounding 识别多 Concept（Customer/Order/Metric）     | 静态审计 B.Router.Deep + 1B    | `OntologyGroundingMiddleware.detectConcepts` 返回 ["Customer", "Order", "Metric"]                                                                    |
+| Sub-Agent 上下文裁剪                                  | 静态审计 B.SubAgent.Trim + B2  | `SubAgentContextBuilder.buildChildContext` 调用 `filterByConcepts` 排除敏感工具（bash）                                                              |
+| MCP 暴露 ≥ 20 个 Ontology 工具                        | 静态审计 B.MCP.Tools           | `OnboardingMcpServer` 实际暴露 21 个工具（Schema × 3 + Object × 5 + Query × 5 + Action × 5 + Evidence × 3）                                          |
+| Deep Task 路由判定                                    | 静态审计 B.Router.Deep + B4    | `RuntimeRouter.route` 命中 "分析"/"对比"/"总结"/msg.length()>200 → DEEP                                                                              |
 | Mock 销售下降含 3 Sub-Agent + 3 风险客户 + 2 Artifact | 静态审计 B.Mock.SubAgents + B3 | `sales-decline-east-china.json` expectedSubAgents=["sales-analyst","customer-analyst","service-analyst"]，3 风险客户（CUST-10086 等），2 个 Artifact |
 
 ### JUnit 测试代码
@@ -75,23 +75,23 @@
 
 ### 验收点逐条对照
 
-| 验收标准 | 验证方式 | 证据 |
-|---|---|---|
-| ActionPolicy.yaml 含 4 个 Action | 静态审计 C.Policy.YAML | `CreateFollowUpTask` / `RequestDiscount` / `ModifyContract` / `SendOfficialOffer` 全部存在 |
-| ActionProposalService 调 ActionGuard | 静态审计 C.Service.Propose + 2C | `propose()` 调用 `policyService.decide()` |
-| Idempotency_key UNIQUE 约束 | 静态审计 C.Idempotency + 3C | `findByTenantIdAndIdempotencyKey` + `ActionProposal.execute` 检查 |
-| execute 后发 ontology.action.executed 事件 | 静态审计 C.Audit.OnExecute + 4C | `TopologyEvents.ACTION_EXECUTED_TOPIC = "ontology.action.executed"` |
+| 验收标准                                   | 验证方式                        | 证据                                                                                       |
+| ------------------------------------------ | ------------------------------- | ------------------------------------------------------------------------------------------ |
+| ActionPolicy.yaml 含 4 个 Action           | 静态审计 C.Policy.YAML          | `CreateFollowUpTask` / `RequestDiscount` / `ModifyContract` / `SendOfficialOffer` 全部存在 |
+| ActionProposalService 调 ActionGuard       | 静态审计 C.Service.Propose + 2C | `propose()` 调用 `policyService.decide()`                                                  |
+| Idempotency_key UNIQUE 约束                | 静态审计 C.Idempotency + 3C     | `findByTenantIdAndIdempotencyKey` + `ActionProposal.execute` 检查                          |
+| execute 后发 ontology.action.executed 事件 | 静态审计 C.Audit.OnExecute + 4C | `TopologyEvents.ACTION_EXECUTED_TOPIC = "ontology.action.executed"`                        |
 
 ### ActionPolicy 业务规则验证（场景 C 核心）
 
-| Action × RiskLevel × Role | 预期决策 | 验证 |
-|---|---|---|
-| CreateFollowUpTask × LOW | AUTO | 静态 C.Policy.YAML + JUnit C1 |
-| RequestDiscount × HIGH | APPROVAL | 静态 C.Policy.YAML + JUnit C2 |
-| ModifyContract × CRITICAL | REJECT | 静态 C.Policy.YAML + JUnit C3 |
-| ChangeDiscount × HIGH × GUEST | REJECT (角色黑名单) | JUnit C4 |
-| SendOfficialOffer × HIGH × VIEWER | REJECT (角色黑名单) | JUnit C5 |
-| 任意决策 | 必须带 reason 字段（审计可追溯） | JUnit C6 |
+| Action × RiskLevel × Role         | 预期决策                         | 验证                          |
+| --------------------------------- | -------------------------------- | ----------------------------- |
+| CreateFollowUpTask × LOW          | AUTO                             | 静态 C.Policy.YAML + JUnit C1 |
+| RequestDiscount × HIGH            | APPROVAL                         | 静态 C.Policy.YAML + JUnit C2 |
+| ModifyContract × CRITICAL         | REJECT                           | 静态 C.Policy.YAML + JUnit C3 |
+| ChangeDiscount × HIGH × GUEST     | REJECT (角色黑名单)              | JUnit C4                      |
+| SendOfficialOffer × HIGH × VIEWER | REJECT (角色黑名单)              | JUnit C5                      |
+| 任意决策                          | 必须带 reason 字段（审计可追溯） | JUnit C6                      |
 
 ### JUnit 测试代码
 
@@ -106,12 +106,12 @@
 
 ### 验收点逐条对照
 
-| 验收标准 | 验证方式 | 证据 |
-|---|---|---|
+| 验收标准                                  | 验证方式                         | 证据                                                                                      |
+| ----------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------- |
 | TriggerEngine 用 @EventTopicListener 订阅 | 静态审计 D.Trigger.Listener + 1D | `TriggerEngine.onEvent` 标 `@EventTopicListener(topics=...,group="agent-trigger-engine")` |
-| TriggerEngine.match JSON 过滤 | 静态审计 D.Trigger.Filter + 2D | `private boolean match(String filterJson, Map<String,Object> payload)` |
-| TriggerEntity.cooldownSec 防触风暴 | 静态审计 D.Trigger.Cooldown + 3D | `cooldownSec=300` 字段；触发前比较 `now - lastFireAt >= cooldownSec` |
-| Mock 事件 payload 完整 | 静态审计 D.Mock.Contract + 4D | `contract-expiring-event.json` 含 contractNo/customerId/daysToExpiry/riskLevel |
+| TriggerEngine.match JSON 过滤             | 静态审计 D.Trigger.Filter + 2D   | `private boolean match(String filterJson, Map<String,Object> payload)`                    |
+| TriggerEntity.cooldownSec 防触风暴        | 静态审计 D.Trigger.Cooldown + 3D | `cooldownSec=300` 字段；触发前比较 `now - lastFireAt >= cooldownSec`                      |
+| Mock 事件 payload 完整                    | 静态审计 D.Mock.Contract + 4D    | `contract-expiring-event.json` 含 contractNo/customerId/daysToExpiry/riskLevel            |
 
 ### JUnit 测试代码
 
@@ -127,14 +127,14 @@
 
 ### 验收点逐条对照
 
-| 验收标准 | 验证方式 | 证据 |
-|---|---|---|
-| DocumentExtractionTrigger 订阅 uploaded | 静态审计 E.Extraction.Sub + 1E | `@EventTopicListener(topics=DOCUMENT_UPLOADED)` |
-| DocumentCandidateListener 订阅 ready | 静态审计 E.Candidate.Listener + 2E | `@EventTopicListener(topics=DOCUMENT_CANDIDATE_READY)` |
-| OntologyDraftService.proposeDraft 接收 CandidateFact | 静态审计 E.Draft.Service + 3E | `proposeDraft(ProposeDraftRequest)` 接收 `List<CandidateFact>` |
-| OntologyValidator 四类校验 | 静态审计 E.Validator.Rules + 4E | `validateDraft`：Schema 校验 + conflict level + 规则 + 影响范围 |
-| publishDraft 发 ontology.commit.published | 静态审计 E.Commit.Event + 5E | `kafkaTemplate.send(ONTOLOGY_COMMIT_PUBLISHED, draft.targetVersion, saved)` |
-| Mock 知识库 3 份文档 | 静态审计 E.Mock.Docs | `knowledge-documents.json` 含 1 合同 + 2 纪要 = 3 文档 |
+| 验收标准                                             | 验证方式                           | 证据                                                                        |
+| ---------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------- |
+| DocumentExtractionTrigger 订阅 uploaded              | 静态审计 E.Extraction.Sub + 1E     | `@EventTopicListener(topics=DOCUMENT_UPLOADED)`                             |
+| DocumentCandidateListener 订阅 ready                 | 静态审计 E.Candidate.Listener + 2E | `@EventTopicListener(topics=DOCUMENT_CANDIDATE_READY)`                      |
+| OntologyDraftService.proposeDraft 接收 CandidateFact | 静态审计 E.Draft.Service + 3E      | `proposeDraft(ProposeDraftRequest)` 接收 `List<CandidateFact>`              |
+| OntologyValidator 四类校验                           | 静态审计 E.Validator.Rules + 4E    | `validateDraft`：Schema 校验 + conflict level + 规则 + 影响范围             |
+| publishDraft 发 ontology.commit.published            | 静态审计 E.Commit.Event + 5E       | `kafkaTemplate.send(ONTOLOGY_COMMIT_PUBLISHED, draft.targetVersion, saved)` |
+| Mock 知识库 3 份文档                                 | 静态审计 E.Mock.Docs               | `knowledge-documents.json` 含 1 合同 + 2 纪要 = 3 文档                      |
 
 ### JUnit 测试代码
 
@@ -149,22 +149,24 @@
 
 ## 七、Mock 数据契约
 
-| 场景 | 文件 | 大小 | 用途 |
-|---|---|---:|---|
-| A | `mock-data/customer-cust-10086.json` | 1.4 KB | 客户 CUST-10086 主数据 + 4 类相关对象 + 5 个指标 + 3 个事件 |
-| A/C | `mock-data/contracts.json` | 1.0 KB | 2 份合同 + 到期 pipeline |
-| E | `mock-data/knowledge-documents.json` | 4.0 KB | 1 合同 + 2 纪要，3 份文档 |
-| B | `mock-data/sales-decline-east-china.json` | 0.8 KB | 跨域分析期望（3 SubAgent + 3 风险客户 + 2 Artifact） |
-| D | `mock-data/contract-expiring-event.json` | 0.8 KB | Contract.expiring 事件完整 payload |
-| 全部 | `expected-results/expected-results.json` | 2.3 KB | 5 场景验收标准 JSON Spec |
+| 场景 | 文件                                      |   大小 | 用途                                                        |
+| ---- | ----------------------------------------- | -----: | ----------------------------------------------------------- |
+| A    | `mock-data/customer-cust-10086.json`      | 1.4 KB | 客户 CUST-10086 主数据 + 4 类相关对象 + 5 个指标 + 3 个事件 |
+| A/C  | `mock-data/contracts.json`                | 1.0 KB | 2 份合同 + 到期 pipeline                                    |
+| E    | `mock-data/knowledge-documents.json`      | 4.0 KB | 1 合同 + 2 纪要，3 份文档                                   |
+| B    | `mock-data/sales-decline-east-china.json` | 0.8 KB | 跨域分析期望（3 SubAgent + 3 风险客户 + 2 Artifact）        |
+| D    | `mock-data/contract-expiring-event.json`  | 0.8 KB | Contract.expiring 事件完整 payload                          |
+| 全部 | `expected-results/expected-results.json`  | 2.3 KB | 5 场景验收标准 JSON Spec                                    |
 
 ## 八、交付物清单
 
 ### 设计文档（2 份）
+
 - `docs/superpowers/specs/2026-07-26-ontology-native-deerflow-integration-and-migration-plan.md`（33 KB）
 - `docs/superpowers/specs/2026-07-26-ontology-native-deerflow-rollout-roadmap.md`（25 KB）
 
 ### Mock 数据（5 份）
+
 - `docs/scenarios/mock-data/customer-cust-10086.json`
 - `docs/scenarios/mock-data/contracts.json`
 - `docs/scenarios/mock-data/knowledge-documents.json`
@@ -172,12 +174,15 @@
 - `docs/scenarios/mock-data/contract-expiring-event.json`
 
 ### 验收契约
+
 - `docs/scenarios/expected-results/expected-results.json`
 
 ### 自动化审计脚本
+
 - `docs/scenarios/verification-audit.ps1`（26/26 PASS）
 
 ### JUnit 集成测试代码（6 份 + 2 份支撑）
+
 - `TECH-AGENT/src/test/java/com/metaplatform/agent/verification/MockFixtures.java`
 - `TECH-AGENT/src/test/java/com/metaplatform/agent/verification/ScenarioTestSupport.java`
 - `TECH-AGENT/src/test/java/com/metaplatform/agent/verification/ScenarioA_ObjectCopilotTest.java`（8 测试）
@@ -187,6 +192,7 @@
 - `TECH-ACTION/src/test/java/com/metaplatform/action/verification/ActionPolicyVerification.java`（6 测试）
 
 ### 构建链修复脚本
+
 - `scripts/strip-bom-utf8.ps1`（82 BOM 清理）
 - `scripts/build-msg-jar.ps1`（绕过 spring-boot fat jar）
 - `scripts/rebuild-ont.ps1`

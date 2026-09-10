@@ -5,4 +5,5 @@ centers: roles register their capabilities, tasks are dispatched to the
 right role via the kernel ``AgentSelector`` / capability matching, and
 plans run step-by-step with HITL gating (decision B3).
 """
+
 __version__ = "0.1.0"

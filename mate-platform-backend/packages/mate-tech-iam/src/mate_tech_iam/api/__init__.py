@@ -1,4 +1,5 @@
-﻿"""HTTP API routers for IAM (auth + admin)."""
+"""HTTP API routers for IAM (auth + admin)."""
+
 from .auth import router as auth_router
 from .configs import router as configs_router
 from .dashboard import router as dashboard_router
@@ -18,4 +19,3 @@ __all__ = [
     "permissions_router",
     "users_router",
 ]
-

@@ -123,10 +123,10 @@ router = APIRouter()
 async def invoke_deep_research(request: Request, body: dict) -> dict:
     ctx = request.state.ctx
     require_tenant(ctx)
-    
+
     capability_id = body.get("capability_id")
     input_data = body.get("input", {})
-    
+
     if capability_id == "web-research":
         req = ResearchRequest(
             query=input_data["query"],
@@ -142,7 +142,7 @@ async def invoke_deep_research(request: Request, body: dict) -> dict:
                 "code": "E_DEERFLOW_UNAVAILABLE",
                 "message": str(exc),
             })
-        
+
         outbox: OutboxWriter = request.app.state.outbox_writer
         outbox.append(Event.create(
             type="deep.research.completed",
@@ -157,7 +157,7 @@ async def invoke_deep_research(request: Request, body: dict) -> dict:
             },
             trace_id=ctx.trace_id,
         ))
-        
+
         return {
             "capability_id": capability_id,
             "report": result.report,
@@ -553,7 +553,7 @@ from .complexity import is_deep_research_query
 async def dispatch(query: str, llmgw_client, ctx) -> dict:
     """Dispatch query to llmgw or DeerFlow via A2A based on complexity."""
     require_tenant(ctx)
-    
+
     if is_deep_research_query(query):
         # 深度调研: delegate to DeerFlow via A2A
         async with httpx.AsyncClient() as client:
@@ -710,12 +710,12 @@ async def test_deep_research_e2e(monkeypatch):
     # 1. Mock DeerFlow Engine
     async def mock_research(*args, **kwargs):
         return DEERFLOW_MOCK_RESPONSE
-    
+
     monkeypatch.setattr(
         "mate_tech_deep_research.deerflow.client.DeerFlowClient.research",
         mock_research
     )
-    
+
     # 2. 用户发深度调研请求到 copilot
     r = httpx.post(
         "http://localhost:8004/api/v1/copilot/chat",
@@ -727,14 +727,14 @@ async def test_deep_research_e2e(monkeypatch):
     )
     assert r.status_code == 200
     data = r.json()
-    
+
     # 3. 验证返回(report + sources + duration_ms)
     assert "report" in data
     assert data["report"].startswith("# ")
     assert len(data["sources"]) >= 2
     assert data["duration_ms"] > 0
     assert data["duration_ms"] < 300_000  # 5 min
-    
+
     # 4. 验证 sources 包含 URL
     for source in data["sources"]:
         assert "url" in source
@@ -753,7 +753,7 @@ async def test_simple_query_does_not_use_deerflow(monkeypatch):
         "mate_tech_deep_research.deerflow.client.DeerFlowClient.research",
         mock_research
     )
-    
+
     r = httpx.post(
         "http://localhost:8004/api/v1/copilot/chat",
         headers={"Authorization": "Bearer $JWT", "X-Tenant-Id": "tenant-a"},

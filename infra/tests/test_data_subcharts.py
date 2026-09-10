@@ -12,6 +12,7 @@ These checks run without helm / kubectl and act as a static smoke
 test on the template text. The real helm lint / kubeconform /
 helm-unittest runs in CI.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -119,9 +120,7 @@ class TestMarquezSubchart:
             "marquez StatefulSet must reference PostgreSQL backend env vars"
         )
         values_text = _read_values("marquez")
-        assert "postgresql" in values_text, (
-            "marquez values must point to postgresql backend"
-        )
+        assert "postgresql" in values_text, "marquez values must point to postgresql backend"
 
     def test_marquez_has_configmap(self) -> None:
         path = _template_path("marquez", "configmap.yaml")
@@ -253,12 +252,8 @@ class TestAllDataSubcharts:
         assert workload is not None, f"{chart} has no Deployment/StatefulSet"
         text = workload.read_text(encoding="utf-8")
         # Pod-level securityContext.
-        assert "securityContext:" in text, (
-            f"{chart} workload missing securityContext"
-        )
-        assert "runAsNonRoot: true" in text, (
-            f"{chart} must set runAsNonRoot: true"
-        )
+        assert "securityContext:" in text, f"{chart} workload missing securityContext"
+        assert "runAsNonRoot: true" in text, f"{chart} must set runAsNonRoot: true"
         # Container-level hardening.
         assert "allowPrivilegeEscalation: false" in text, (
             f"{chart} must set allowPrivilegeEscalation: false"
@@ -266,9 +261,7 @@ class TestAllDataSubcharts:
         assert "readOnlyRootFilesystem: true" in text, (
             f"{chart} must set readOnlyRootFilesystem: true"
         )
-        assert "drop:" in text and "ALL" in text, (
-            f"{chart} must drop ALL capabilities"
-        )
+        assert "drop:" in text and "ALL" in text, f"{chart} must drop ALL capabilities"
 
     @pytest.mark.parametrize("chart", DATA_SUBCHARTS)
     def test_all_subcharts_have_resources(self, chart: str) -> None:
@@ -283,9 +276,7 @@ class TestAllDataSubcharts:
             if p.is_file():
                 workload_found = True
                 text = p.read_text(encoding="utf-8")
-                assert "resources:" in text, (
-                    f"{chart}/{candidate} missing resources block"
-                )
+                assert "resources:" in text, f"{chart}/{candidate} missing resources block"
                 assert ".Values.resources" in text, (
                     f"{chart}/{candidate} must reference .Values.resources"
                 )

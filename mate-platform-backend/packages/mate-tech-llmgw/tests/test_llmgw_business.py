@@ -10,6 +10,7 @@ Tests:
   7. test_usage_endpoint
   8. test_cache_miss_when_different_tenant (tenant 隔离)
 """
+
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -85,6 +86,7 @@ def _make_mock_quota_bucket(
     bucket._config = cfg
 
     if exceed:
+
         async def _acquire_exceed(*, tenant_id: str, estimated_tokens: int = 0):
             raise QuotaExceededError(f"req:{tenant_id}:0", retry_after=60)
 
@@ -323,9 +325,7 @@ def test_cache_clear_endpoint(management_client: TestClient) -> None:
     cache._stored["llmgw:cache:other:xyz"] = "{}"
     router_mod.set_cache(cache)
 
-    r = management_client.delete(
-        "/api/v1/llmgw/cache/acme", headers={"x-test-tenant-id": "acme"}
-    )
+    r = management_client.delete("/api/v1/llmgw/cache/acme", headers={"x-test-tenant-id": "acme"})
     assert r.status_code == 200
     body = r.json()
     assert body["cleared"] == 2
@@ -339,9 +339,7 @@ def test_quota_status_endpoint(management_client: TestClient) -> None:
     bucket = _make_mock_quota_bucket()
     router_mod.set_quota_bucket(bucket)
 
-    r = management_client.get(
-        "/api/v1/llmgw/quota/acme", headers={"x-test-tenant-id": "acme"}
-    )
+    r = management_client.get("/api/v1/llmgw/quota/acme", headers={"x-test-tenant-id": "acme"})
     assert r.status_code == 200
     body = r.json()
     assert body["tenant_id"] == "acme"
@@ -353,9 +351,7 @@ def test_quota_status_endpoint(management_client: TestClient) -> None:
 
 def test_quota_status_endpoint_no_bucket(management_client: TestClient) -> None:
     """GET /quota/{tenant_id} 无 bucket 时返回默认值."""
-    r = management_client.get(
-        "/api/v1/llmgw/quota/acme", headers={"x-test-tenant-id": "acme"}
-    )
+    r = management_client.get("/api/v1/llmgw/quota/acme", headers={"x-test-tenant-id": "acme"})
     assert r.status_code == 200
     body = r.json()
     assert body["enabled"] is False
@@ -377,9 +373,7 @@ def test_usage_endpoint(management_client: TestClient) -> None:
         )
     )
 
-    r = management_client.get(
-        "/api/v1/llmgw/usage/acme", headers={"x-test-tenant-id": "acme"}
-    )
+    r = management_client.get("/api/v1/llmgw/usage/acme", headers={"x-test-tenant-id": "acme"})
     assert r.status_code == 200
     body = r.json()
     assert body["tenant_id"] == "acme"
@@ -390,9 +384,7 @@ def test_usage_endpoint(management_client: TestClient) -> None:
 
 def test_usage_endpoint_no_recorder(management_client: TestClient) -> None:
     """GET /usage/{tenant_id} 无 recorder 时返回默认值."""
-    r = management_client.get(
-        "/api/v1/llmgw/usage/acme", headers={"x-test-tenant-id": "acme"}
-    )
+    r = management_client.get("/api/v1/llmgw/usage/acme", headers={"x-test-tenant-id": "acme"})
     assert r.status_code == 200
     body = r.json()
     assert body["total_tokens"] == 0
@@ -408,7 +400,9 @@ def test_usage_endpoint_no_recorder(management_client: TestClient) -> None:
     ],
 )
 def test_management_routes_reject_cross_tenant_before_lookup(
-    management_client: TestClient, method: str, path: str,
+    management_client: TestClient,
+    method: str,
+    path: str,
 ) -> None:
     """Cross-tenant management calls fail before quota/usage/cache lookups run."""
     bucket = SimpleNamespace(status=AsyncMock(return_value={"tenant_id": "acme"}))
@@ -418,9 +412,7 @@ def test_management_routes_reject_cross_tenant_before_lookup(
     router_mod.set_cost_recorder(recorder)
     router_mod.set_cache(cache)
 
-    response = getattr(management_client, method)(
-        path, headers={"x-test-tenant-id": "globex"}
-    )
+    response = getattr(management_client, method)(path, headers={"x-test-tenant-id": "globex"})
 
     assert response.status_code == 403
     assert response.json() == {"detail": "tenant access denied"}
@@ -472,9 +464,7 @@ def test_management_routes_allow_same_tenant_lookup(
         )
     setter(target)
 
-    response = getattr(management_client, method)(
-        path, headers={"x-test-tenant-id": "acme"}
-    )
+    response = getattr(management_client, method)(path, headers={"x-test-tenant-id": "acme"})
 
     assert response.status_code == 200
     getattr(target, attr_name).assert_called_once_with("acme")
@@ -489,7 +479,9 @@ def test_management_routes_allow_same_tenant_lookup(
     ],
 )
 def test_management_routes_deny_cross_tenant_admin_before_lookup(
-    management_client: TestClient, method: str, path: str,
+    management_client: TestClient,
+    method: str,
+    path: str,
 ) -> None:
     """cross_tenant_admin must still be denied on these Task 4 routes."""
     bucket = SimpleNamespace(status=AsyncMock(return_value={"tenant_id": "acme"}))
@@ -564,7 +556,5 @@ def test_chat_http_same_tenant_under_quota_returns_200(
 
     assert response.status_code == 200
     assert response.json()["content"] == "tenant-ok"
-    bucket.acquire.assert_awaited_once_with(
-        tenant_id="tenant-acme", estimated_tokens=4
-    )
+    bucket.acquire.assert_awaited_once_with(tenant_id="tenant-acme", estimated_tokens=4)
     assert stub._call_count["n"] == 1

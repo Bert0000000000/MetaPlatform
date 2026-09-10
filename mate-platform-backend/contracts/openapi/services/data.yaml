@@ -8,1349 +8,1349 @@ info:
     name: Mate Platform API Governance
     email: api-governance@metaplatform.local
 servers:
-- url: /
+  - url: /
 tags:
-- name: data
-  description: data domain operations
+  - name: data
+    description: data domain operations
 security:
-- bearerAuth: []
-  tenantHeader: []
-  oidcScopes:
-  - platform.read
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes:
+      - platform.read
 paths:
   /api/v1/data/sources:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 列表 大数据源
       operationId: dataGetDataSources
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 列表 大数据源
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETDATASOURCES
+        - FR-DATA-DATAGETDATASOURCES
       x-mate-implementation-status: implemented
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 新建 大数据源
       operationId: dataPostDataSources
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 新建 大数据源
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-DATAPOSTDATASOURCES
+        - FR-DATA-DATAPOSTDATASOURCES
       x-mate-implementation-status: implemented
   /api/v1/data/sources/{id}:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 详情 大数据源
       operationId: dataGetDataSourcesId
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 详情 大数据源
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETDATASOURCESID
+        - FR-DATA-DATAGETDATASOURCESID
       x-mate-implementation-status: implemented
     put:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 更新 大数据源
       operationId: dataPutDataSourcesId
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 更新 大数据源
       x-mate-owner: data-platform
       x-mate-permission: data.put
       x-mate-requirements:
-      - FR-DATA-DATAPUTDATASOURCESID
+        - FR-DATA-DATAPUTDATASOURCESID
       x-mate-implementation-status: implemented
     delete:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 删除 大数据源
       operationId: dataDeleteDataSourcesId
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 删除 大数据源
       x-mate-owner: data-platform
       x-mate-permission: data.delete
       x-mate-requirements:
-      - FR-DATA-DATADELETEDATASOURCESID
+        - FR-DATA-DATADELETEDATASOURCESID
       x-mate-implementation-status: implemented
   /api/v1/data/sources/{id}/test:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 测试 测试连接
       operationId: dataPostDataSourcesIdTest
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 测试 测试连接
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-DATAPOSTDATASOURCESIDTEST
+        - FR-DATA-DATAPOSTDATASOURCESIDTEST
       x-mate-implementation-status: implemented
   /api/v1/data/sources/{id}/schema:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 发现 发现schema
       operationId: dataGetDataSourcesIdSchema
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 发现 发现schema
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETDATASOURCESIDSCHEMA
+        - FR-DATA-DATAGETDATASOURCESIDSCHEMA
       x-mate-implementation-status: implemented
   /api/v1/data/cdc-tasks:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 列表 CDC任务
       operationId: dataGetDataCdcTasks
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 列表 CDC任务
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETDATACDCTASKS
+        - FR-DATA-DATAGETDATACDCTASKS
       x-mate-implementation-status: implemented
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 新建 CDC任务
       operationId: dataPostDataCdcTasks
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 新建 CDC任务
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-DATAPOSTDATACDCTASKS
+        - FR-DATA-DATAPOSTDATACDCTASKS
       x-mate-implementation-status: implemented
   /api/v1/data/cdc-tasks/{id}:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 详情 CDC任务
       operationId: dataGetDataCdcTasksId
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 详情 CDC任务
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETDATACDCTASKSID
+        - FR-DATA-DATAGETDATACDCTASKSID
       x-mate-implementation-status: implemented
     put:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 更新 CDC任务
       operationId: dataPutDataCdcTasksId
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 更新 CDC任务
       x-mate-owner: data-platform
       x-mate-permission: data.put
       x-mate-requirements:
-      - FR-DATA-DATAPUTDATACDCTASKSID
+        - FR-DATA-DATAPUTDATACDCTASKSID
       x-mate-implementation-status: implemented
     delete:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 删除 CDC任务
       operationId: dataDeleteDataCdcTasksId
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 删除 CDC任务
       x-mate-owner: data-platform
       x-mate-permission: data.delete
       x-mate-requirements:
-      - FR-DATA-DATADELETEDATACDCTASKSID
+        - FR-DATA-DATADELETEDATACDCTASKSID
       x-mate-implementation-status: implemented
   /api/v1/data/cdc-tasks/{id}/status:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 状态 CDC状态
       operationId: dataGetDataCdcTasksIdStatus
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 状态 CDC状态
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETDATACDCTASKSIDSTATUS
+        - FR-DATA-DATAGETDATACDCTASKSIDSTATUS
       x-mate-implementation-status: implemented
   /api/v1/data/cdc-tasks/{id}/pause:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 暂停 暂停CDC
       operationId: dataPostDataCdcTasksIdPause
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 暂停 暂停CDC
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-DATAPOSTDATACDCTASKSIDPAUSE
+        - FR-DATA-DATAPOSTDATACDCTASKSIDPAUSE
       x-mate-implementation-status: implemented
   /api/v1/data/cdc-tasks/{id}/resume:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 恢复 恢复CDC
       operationId: dataPostDataCdcTasksIdResume
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 恢复 恢复CDC
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-DATAPOSTDATACDCTASKSIDRESUME
+        - FR-DATA-DATAPOSTDATACDCTASKSIDRESUME
       x-mate-implementation-status: implemented
   /api/v1/etl/tasks:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 列表 ETL任务
       operationId: dataGetEtlTasks
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 列表 ETL任务
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETETLTASKS
+        - FR-DATA-DATAGETETLTASKS
       x-mate-implementation-status: planned
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 新建 ETL任务
       operationId: dataPostEtlTasks
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 新建 ETL任务
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-DATAPOSTETLTASKS
+        - FR-DATA-DATAPOSTETLTASKS
       x-mate-implementation-status: planned
   /api/v1/etl/tasks/{id}:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 详情 ETL任务
       operationId: dataGetEtlTasksId
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 详情 ETL任务
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETETLTASKSID
+        - FR-DATA-DATAGETETLTASKSID
       x-mate-implementation-status: planned
     put:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 更新 ETL任务
       operationId: dataPutEtlTasksId
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 更新 ETL任务
       x-mate-owner: data-platform
       x-mate-permission: data.put
       x-mate-requirements:
-      - FR-DATA-DATAPUTETLTASKSID
+        - FR-DATA-DATAPUTETLTASKSID
       x-mate-implementation-status: planned
     delete:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 删除 ETL任务
       operationId: dataDeleteEtlTasksId
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 删除 ETL任务
       x-mate-owner: data-platform
       x-mate-permission: data.delete
       x-mate-requirements:
-      - FR-DATA-DATADELETEETLTASKSID
+        - FR-DATA-DATADELETEETLTASKSID
       x-mate-implementation-status: planned
   /api/v1/etl/tasks/{id}/run:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 运行 运行ETL
       operationId: dataPostEtlTasksIdRun
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 运行 运行ETL
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-DATAPOSTETLTASKSIDRUN
+        - FR-DATA-DATAPOSTETLTASKSIDRUN
       x-mate-implementation-status: planned
   /api/v1/etl/tasks/{id}/stop:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 停止 停止ETL
       operationId: dataPostEtlTasksIdStop
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 停止 停止ETL
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-DATAPOSTETLTASKSIDSTOP
+        - FR-DATA-DATAPOSTETLTASKSIDSTOP
       x-mate-implementation-status: planned
   /api/v1/etl/tasks/{id}/status:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 状态 ETL状态
       operationId: dataGetEtlTasksIdStatus
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 状态 ETL状态
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETETLTASKSIDSTATUS
+        - FR-DATA-DATAGETETLTASKSIDSTATUS
       x-mate-implementation-status: planned
   /api/v1/scheduler/tasks:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 列表 调度任务
       operationId: dataGetSchedulerTasks
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 列表 调度任务
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETSCHEDULERTASKS
+        - FR-DATA-DATAGETSCHEDULERTASKS
       x-mate-implementation-status: planned
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 新建 调度任务
       operationId: dataPostSchedulerTasks
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 新建 调度任务
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-DATAPOSTSCHEDULERTASKS
+        - FR-DATA-DATAPOSTSCHEDULERTASKS
       x-mate-implementation-status: planned
   /api/v1/scheduler/tasks/{id}:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 详情 调度任务
       operationId: dataGetSchedulerTasksId
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 详情 调度任务
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETSCHEDULERTASKSID
+        - FR-DATA-DATAGETSCHEDULERTASKSID
       x-mate-implementation-status: planned
     put:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 更新 调度任务
       operationId: dataPutSchedulerTasksId
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 更新 调度任务
       x-mate-owner: data-platform
       x-mate-permission: data.put
       x-mate-requirements:
-      - FR-DATA-DATAPUTSCHEDULERTASKSID
+        - FR-DATA-DATAPUTSCHEDULERTASKSID
       x-mate-implementation-status: planned
     delete:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 删除 调度任务
       operationId: dataDeleteSchedulerTasksId
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 删除 调度任务
       x-mate-owner: data-platform
       x-mate-permission: data.delete
       x-mate-requirements:
-      - FR-DATA-DATADELETESCHEDULERTASKSID
+        - FR-DATA-DATADELETESCHEDULERTASKSID
       x-mate-implementation-status: planned
   /api/v1/scheduler/tasks/{id}/trigger:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 触发 触发调度
       operationId: dataPostSchedulerTasksIdTrigger
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 触发 触发调度
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-DATAPOSTSCHEDULERTASKSIDTRIGGER
+        - FR-DATA-DATAPOSTSCHEDULERTASKSIDTRIGGER
       x-mate-implementation-status: planned
   /api/v1/scheduler/tasks/{id}/pause:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 暂停 暂停调度
       operationId: dataPostSchedulerTasksIdPause
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 暂停 暂停调度
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-DATAPOSTSCHEDULERTASKSIDPAUSE
+        - FR-DATA-DATAPOSTSCHEDULERTASKSIDPAUSE
       x-mate-implementation-status: planned
   /api/v1/scheduler/dag:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: DAG 调度DAG
       operationId: dataGetSchedulerDag
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: DAG 调度DAG
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETSCHEDULERDAG
+        - FR-DATA-DATAGETSCHEDULERDAG
       x-mate-implementation-status: planned
   /api/v1/metrics:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 列表 数据指标
       operationId: dataGetMetrics
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 列表 数据指标
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETMETRICS
+        - FR-DATA-DATAGETMETRICS
       x-mate-implementation-status: planned
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 新建 数据指标
       operationId: dataPostMetrics
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 新建 数据指标
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-DATAPOSTMETRICS
+        - FR-DATA-DATAPOSTMETRICS
       x-mate-implementation-status: planned
   /api/v1/metrics/{id}:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 详情 数据指标
       operationId: dataGetMetricsId
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 详情 数据指标
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETMETRICSID
+        - FR-DATA-DATAGETMETRICSID
       x-mate-implementation-status: planned
     put:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 更新 数据指标
       operationId: dataPutMetricsId
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 更新 数据指标
       x-mate-owner: data-platform
       x-mate-permission: data.put
       x-mate-requirements:
-      - FR-DATA-DATAPUTMETRICSID
+        - FR-DATA-DATAPUTMETRICSID
       x-mate-implementation-status: planned
     delete:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 删除 数据指标
       operationId: dataDeleteMetricsId
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 删除 数据指标
       x-mate-owner: data-platform
       x-mate-permission: data.delete
       x-mate-requirements:
-      - FR-DATA-DATADELETEMETRICSID
+        - FR-DATA-DATADELETEMETRICSID
       x-mate-implementation-status: planned
   /api/v1/metrics/{id}/values:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 值 指标值
       operationId: dataGetMetricsIdValues
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 值 指标值
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETMETRICSIDVALUES
+        - FR-DATA-DATAGETMETRICSIDVALUES
       x-mate-implementation-status: planned
   /api/v1/metrics/{id}/lineage:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 血缘 指标血缘
       operationId: dataGetMetricsIdLineage
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 血缘 指标血缘
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-DATAGETMETRICSIDLINEAGE
+        - FR-DATA-DATAGETMETRICSIDLINEAGE
       x-mate-implementation-status: planned
   /api/v1/metrics/{id}/compute:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 计算 手动计算
       operationId: dataPostMetricsIdCompute
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: 计算 手动计算
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-DATAPOSTMETRICSIDCOMPUTE
+        - FR-DATA-DATAPOSTMETRICSIDCOMPUTE
       x-mate-implementation-status: planned
 components:
   securitySchemes:
@@ -1409,37 +1409,37 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     Forbidden:
       description: 无权限
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     NotFound:
       description: 资源不存在
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     BadRequest:
       description: 参数错误
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     ServerError:
       description: 服务器错误
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
   schemas:
     ErrorResponse:
       type: object
       required:
-      - code
-      - message
+        - code
+        - message
       properties:
         code:
           type: integer
@@ -1450,14 +1450,14 @@ components:
     ApiResponse:
       type: object
       required:
-      - code
-      - message
-      - data
+        - code
+        - message
+        - data
       properties:
         code:
           type: integer
           enum:
-          - 0
+            - 0
         message:
           type: string
         data: {}
@@ -1466,11 +1466,11 @@ components:
     PageResponse:
       type: object
       required:
-      - items
-      - total
-      - page
-      - size
-      - pages
+        - items
+        - total
+        - page
+        - size
+        - pages
       properties:
         items:
           type: array
@@ -1486,13 +1486,13 @@ components:
     BigDataSource:
       type: object
       required:
-      - sourceId
-      - name
-      - sourceType
-      - host
-      - port
-      - authType
-      - status
+        - sourceId
+        - name
+        - sourceType
+        - host
+        - port
+        - authType
+        - status
       properties:
         sourceId:
           type: string
@@ -1504,19 +1504,19 @@ components:
         sourceType:
           type: string
           enum:
-          - HIVE
-          - HBASE
-          - CLICKHOUSE
-          - DORIS
-          - STARROCKS
-          - ICEBERG
-          - HUDI
-          - DELTA
-          - PRESTO
-          - TRINO
-          - KAFKA
-          - PULSAR
-          - HDFS
+            - HIVE
+            - HBASE
+            - CLICKHOUSE
+            - DORIS
+            - STARROCKS
+            - ICEBERG
+            - HUDI
+            - DELTA
+            - PRESTO
+            - TRINO
+            - KAFKA
+            - PULSAR
+            - HDFS
         host:
           type: string
         port:
@@ -1530,10 +1530,10 @@ components:
         authType:
           type: string
           enum:
-          - NONE
-          - USER_PASSWORD
-          - KERBERY
-          - LDAP
+            - NONE
+            - USER_PASSWORD
+            - KERBERY
+            - LDAP
           default: NONE
         sslEnabled:
           type: boolean
@@ -1544,21 +1544,21 @@ components:
         status:
           type: string
           enum:
-          - DRAFT
-          - ACTIVE
-          - INACTIVE
-          - ERROR
-          - DELETED
+            - DRAFT
+            - ACTIVE
+            - INACTIVE
+            - ERROR
+            - DELETED
     CDCTask:
       type: object
       required:
-      - taskId
-      - name
-      - sourceId
-      - syncMode
-      - targetType
-      - targetName
-      - status
+        - taskId
+        - name
+        - sourceId
+        - syncMode
+        - targetType
+        - targetName
+        - status
       properties:
         taskId:
           type: string
@@ -1569,27 +1569,27 @@ components:
         syncMode:
           type: string
           enum:
-          - FULL_INCREMENTAL
-          - INCREMENTAL_ONLY
-          - SNAPSHOT_ONLY
+            - FULL_INCREMENTAL
+            - INCREMENTAL_ONLY
+            - SNAPSHOT_ONLY
         targetType:
           type: string
           enum:
-          - KAFKA
-          - CLICKHOUSE
-          - HUDI
-          - ICEBERG
+            - KAFKA
+            - CLICKHOUSE
+            - HUDI
+            - ICEBERG
         targetName:
           type: string
         status:
           type: string
           enum:
-          - PENDING
-          - SNAPSHOTTING
-          - RUNNING
-          - PAUSED
-          - FAILED
-          - STOPPED
+            - PENDING
+            - SNAPSHOTTING
+            - RUNNING
+            - PAUSED
+            - FAILED
+            - STOPPED
         lagMs:
           type: integer
         totalRecords:
@@ -1598,14 +1598,14 @@ components:
     ETLTask:
       type: object
       required:
-      - taskId
-      - name
-      - mode
-      - sourceIds
-      - targetType
-      - targetTable
-      - writeMode
-      - status
+        - taskId
+        - name
+        - mode
+        - sourceIds
+        - targetType
+        - targetTable
+        - writeMode
+        - status
       properties:
         taskId:
           type: string
@@ -1614,18 +1614,18 @@ components:
         mode:
           type: string
           enum:
-          - BATCH_SPARK
-          - BATCH_FLINK
-          - STREAMING_FLINK
-          - STREAMING_SPARK
-          - SQL_TRANSFORM
+            - BATCH_SPARK
+            - BATCH_FLINK
+            - STREAMING_FLINK
+            - STREAMING_SPARK
+            - SQL_TRANSFORM
         priority:
           type: string
           enum:
-          - LOW
-          - NORMAL
-          - HIGH
-          - URGENT
+            - LOW
+            - NORMAL
+            - HIGH
+            - URGENT
         sourceIds:
           type: array
           items:
@@ -1637,40 +1637,40 @@ components:
         targetType:
           type: string
           enum:
-          - HIVE
-          - CLICKHOUSE
-          - ICEBERG
-          - HUDI
-          - DELTA
-          - DORIS
+            - HIVE
+            - CLICKHOUSE
+            - ICEBERG
+            - HUDI
+            - DELTA
+            - DORIS
         targetTable:
           type: string
         writeMode:
           type: string
           enum:
-          - OVERWRITE
-          - APPEND
-          - UPSERT
-          - MERGE
+            - OVERWRITE
+            - APPEND
+            - UPSERT
+            - MERGE
         status:
           type: string
           enum:
-          - DRAFT
-          - READY
-          - RUNNING
-          - SUCCESS
-          - FAILED
-          - CANCELLED
-          - TIMEOUT
+            - DRAFT
+            - READY
+            - RUNNING
+            - SUCCESS
+            - FAILED
+            - CANCELLED
+            - TIMEOUT
     SchedulerTask:
       type: object
       required:
-      - schedulerId
-      - name
-      - taskType
-      - taskId
-      - triggerType
-      - status
+        - schedulerId
+        - name
+        - taskType
+        - taskId
+        - triggerType
+        - status
       properties:
         schedulerId:
           type: string
@@ -1679,41 +1679,41 @@ components:
         taskType:
           type: string
           enum:
-          - ETL_TASK
-          - CDC_TASK
-          - QUALITY_CHECK
-          - CUSTOM_ACTION
+            - ETL_TASK
+            - CDC_TASK
+            - QUALITY_CHECK
+            - CUSTOM_ACTION
         taskId:
           type: string
         triggerType:
           type: string
           enum:
-          - CRON
-          - EVENT
-          - MANUAL
-          - DEPENDENCY
+            - CRON
+            - EVENT
+            - MANUAL
+            - DEPENDENCY
         cron:
           type: string
         status:
           type: string
           enum:
-          - ACTIVE
-          - PAUSED
-          - EXPIRED
-          - DELETED
+            - ACTIVE
+            - PAUSED
+            - EXPIRED
+            - DELETED
     Metric:
       type: object
       required:
-      - metricId
-      - name
-      - code
-      - type
-      - sourceId
-      - sourceTable
-      - sourceField
-      - aggregation
-      - calculationFrequency
-      - status
+        - metricId
+        - name
+        - code
+        - type
+        - sourceId
+        - sourceTable
+        - sourceField
+        - aggregation
+        - calculationFrequency
+        - status
       properties:
         metricId:
           type: string
@@ -1724,10 +1724,10 @@ components:
         type:
           type: string
           enum:
-          - ATOMIC
-          - DERIVED
-          - COMPOSITE
-          - REALTIME
+            - ATOMIC
+            - DERIVED
+            - COMPOSITE
+            - REALTIME
         sourceId:
           type: string
         sourceTable:
@@ -1737,205 +1737,205 @@ components:
         aggregation:
           type: string
           enum:
-          - SUM
-          - AVG
-          - COUNT
-          - MAX
-          - MIN
-          - LAST
+            - SUM
+            - AVG
+            - COUNT
+            - MAX
+            - MIN
+            - LAST
         calculationFrequency:
           type: string
           enum:
-          - REALTIME
-          - MINUTELY
-          - HOURLY
-          - DAILY
+            - REALTIME
+            - MINUTELY
+            - HOURLY
+            - DAILY
         status:
           type: string
           enum:
-          - DRAFT
-          - ACTIVE
-          - INACTIVE
-          - ERROR
+            - DRAFT
+            - ACTIVE
+            - INACTIVE
+            - ERROR
   /api/v1/data/lineage/edges:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 登记 lineage 依赖边（DATA-D6）
       operationId: dataPostDataLineageEdges
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
       description: 登记 lineage 依赖边
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-D6-LINEAGE
+        - FR-DATA-D6-LINEAGE
       x-mate-implementation-status: implemented
   /api/v1/data/lineage/graph:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: lineage 依赖图（DATA-D6）
       operationId: dataGetDataLineageGraph
       parameters:
-      - in: query
-        name: entity
-        required: false
-        schema: {type: string}
+        - in: query
+          name: entity
+          required: false
+          schema: { type: string }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
       description: lineage 依赖图
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-D6-LINEAGE
+        - FR-DATA-D6-LINEAGE
       x-mate-implementation-status: implemented
   /api/v1/data/quality/rules:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: quality 规则列表（DATA-D7）
       operationId: dataGetDataQualityRules
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
       description: quality 规则列表
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-D7-QUALITY
+        - FR-DATA-D7-QUALITY
       x-mate-implementation-status: implemented
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 登记 quality 规则（DATA-D7）
       operationId: dataPostDataQualityRules
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
       description: 登记 quality 规则
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-D7-QUALITY
+        - FR-DATA-D7-QUALITY
       x-mate-implementation-status: implemented
   /api/v1/data/quality/run:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - data
+        - data
       summary: 执行本租户全部 enabled 规则，结果落库（DATA-D7）
       operationId: dataPostDataQualityRun
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
       description: 执行 quality 规则
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-      - FR-DATA-D7-QUALITY
+        - FR-DATA-D7-QUALITY
       x-mate-implementation-status: implemented
   /api/v1/data/quality/results:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: quality 执行结果列表（DATA-D7）
       operationId: dataGetDataQualityResults
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
       description: quality 执行结果列表
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-D7-QUALITY
+        - FR-DATA-D7-QUALITY
       x-mate-implementation-status: implemented
   /api/v1/data/catalog/search:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - data
+        - data
       summary: 跨 sources + data products 检索（catalog 面）
       operationId: dataGetDataCatalogSearch
       parameters:
-      - in: query
-        name: q
-        required: true
-        schema: {type: string}
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
       description: catalog 检索
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-      - FR-DATA-D6-CATALOG
+        - FR-DATA-D6-CATALOG
       x-mate-implementation-status: implemented

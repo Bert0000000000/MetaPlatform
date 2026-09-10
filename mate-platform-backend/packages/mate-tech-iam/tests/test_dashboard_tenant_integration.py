@@ -8,6 +8,7 @@ bearer-token middleware directly via the helper from conftest.
 Refs: ADR-0014 5-step pattern; see
 `docs/active/specs/2026-07-30-p2-wave-2-spec.md` §4.5.
 """
+
 from __future__ import annotations
 
 import time
@@ -182,15 +183,11 @@ def test_settings_put_emits_outbox_event() -> None:
     pending = outbox.fetch_pending()
     assert pending, "outbox is empty after PUT /settings"
 
-    settings_event = next(
-        r for r in pending if r.event.type == "dashboard.settings.updated"
-    )
+    settings_event = next(r for r in pending if r.event.type == "dashboard.settings.updated")
     # The event's tenant_id must match the JWT binding — no leakage.
     assert settings_event.event.tenant_id == "tenant-default"
     # Every other event in this call must also carry the same tenant.
-    assert all(
-        record.event.tenant_id == "tenant-default" for record in pending
-    )
+    assert all(record.event.tenant_id == "tenant-default" for record in pending)
     # Event id is auto-generated and unique.
     ids = [record.event.id for record in pending]
     assert len(set(ids)) == len(ids), "duplicate event ids in outbox"

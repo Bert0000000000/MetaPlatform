@@ -9,6 +9,7 @@ Table names are prefixed with ``dw_``. The tuple fields
 newline-separated TEXT and re-hydrated by the ``_orm_to_*`` helpers
 in sql_store.py.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import Boolean, Float, Integer, String, Text

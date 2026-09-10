@@ -22,6 +22,7 @@ Seed data:
     Tests rely on these minima; bumping them is allowed but tests
     assert `>= N` rather than equality.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -256,8 +257,12 @@ def _seed_auth_logins(tenant_id: str) -> dict[str, DwAuthLogin]:
     ]
     return {
         rid: DwAuthLogin(
-            id=rid, tenant_id=tenant_id, employee_id=emp,
-            login_at=ts, ip=ip, status=st,
+            id=rid,
+            tenant_id=tenant_id,
+            employee_id=emp,
+            login_at=ts,
+            ip=ip,
+            status=st,
         )
         for rid, emp, ts, ip, st in rows
     }
@@ -273,9 +278,13 @@ def _seed_collaborations(tenant_id: str) -> dict[str, DwCollaboration]:
     ]
     return {
         rid: DwCollaboration(
-            id=rid, tenant_id=tenant_id, employee_id=emp,
-            peer_employee_id=peer, session_id=sess,
-            started_at=ts, duration_ms=dur,
+            id=rid,
+            tenant_id=tenant_id,
+            employee_id=emp,
+            peer_employee_id=peer,
+            session_id=sess,
+            started_at=ts,
+            duration_ms=dur,
         )
         for rid, emp, peer, sess, ts, dur in rows
     }
@@ -292,8 +301,13 @@ def _seed_commits(tenant_id: str) -> dict[str, DwCommit]:
     ]
     return {
         rid: DwCommit(
-            id=rid, tenant_id=tenant_id, employee_id=emp,
-            scope=scope, target_id=tid, summary=sm, committed_at=ts,
+            id=rid,
+            tenant_id=tenant_id,
+            employee_id=emp,
+            scope=scope,
+            target_id=tid,
+            summary=sm,
+            committed_at=ts,
         )
         for rid, emp, scope, tid, sm, ts in rows
     }
@@ -313,8 +327,14 @@ def _seed_documents(tenant_id: str) -> dict[str, DwDocument]:
     ]
     return {
         rid: DwDocument(
-            id=rid, tenant_id=tenant_id, name=name, kind=kind,
-            size_bytes=size, uploaded_by=up, uploaded_at=ts, kb_id=kb,
+            id=rid,
+            tenant_id=tenant_id,
+            name=name,
+            kind=kind,
+            size_bytes=size,
+            uploaded_by=up,
+            uploaded_at=ts,
+            kb_id=kb,
         )
         for rid, name, kind, size, up, ts, kb in rows
     }
@@ -326,18 +346,88 @@ def _seed_employees(tenant_id: str) -> dict[str, DwEmployee]:
     # role 字段即 kernel AgentRole slug；system prompt 由 app.py 从 kernel SYSTEM_PROMPTS 取。
     # 员工 id 带 tenant 前缀（_emp_id），保证不同 tenant 不共享同一份员工数据。
     rows = [
-        (_emp_id(tenant_id, 1), "本体建模师", "EMP-ONT-001", "ontology", "active", "model-doubao", ("dw-kb-1",), True),
-        (_emp_id(tenant_id, 2), "流程工程师", "EMP-WF-001", "workflow", "active", "model-openai", ("dw-kb-2",), True),
-        (_emp_id(tenant_id, 3), "应用构建师", "EMP-APP-001", "app", "idle", "model-openai", ("dw-kb-3",), True),
-        (_emp_id(tenant_id, 4), "数据产品师", "EMP-DATA-001", "data_product", "active", "model-qwen", ("dw-kb-1", "dw-kb-2"), True),
-        (_emp_id(tenant_id, 5), "可观测工程师", "EMP-OBS-001", "obs", "offline", "model-qwen", ("dw-kb-3",), True),
-        (_emp_id(tenant_id, 6), "安全合规官", "EMP-SEC-001", "security", "active", "model-anthropic", ("dw-kb-2",), True),
-        (_emp_id(tenant_id, 7), "知识管理员", "EMP-KB-001", "knowledge", "active", "model-doubao", ("dw-kb-4",), True),
+        (
+            _emp_id(tenant_id, 1),
+            "本体建模师",
+            "EMP-ONT-001",
+            "ontology",
+            "active",
+            "model-doubao",
+            ("dw-kb-1",),
+            True,
+        ),
+        (
+            _emp_id(tenant_id, 2),
+            "流程工程师",
+            "EMP-WF-001",
+            "workflow",
+            "active",
+            "model-openai",
+            ("dw-kb-2",),
+            True,
+        ),
+        (
+            _emp_id(tenant_id, 3),
+            "应用构建师",
+            "EMP-APP-001",
+            "app",
+            "idle",
+            "model-openai",
+            ("dw-kb-3",),
+            True,
+        ),
+        (
+            _emp_id(tenant_id, 4),
+            "数据产品师",
+            "EMP-DATA-001",
+            "data_product",
+            "active",
+            "model-qwen",
+            ("dw-kb-1", "dw-kb-2"),
+            True,
+        ),
+        (
+            _emp_id(tenant_id, 5),
+            "可观测工程师",
+            "EMP-OBS-001",
+            "obs",
+            "offline",
+            "model-qwen",
+            ("dw-kb-3",),
+            True,
+        ),
+        (
+            _emp_id(tenant_id, 6),
+            "安全合规官",
+            "EMP-SEC-001",
+            "security",
+            "active",
+            "model-anthropic",
+            ("dw-kb-2",),
+            True,
+        ),
+        (
+            _emp_id(tenant_id, 7),
+            "知识管理员",
+            "EMP-KB-001",
+            "knowledge",
+            "active",
+            "model-doubao",
+            ("dw-kb-4",),
+            True,
+        ),
     ]
     return {
         rid: DwEmployee(
-            id=rid, tenant_id=tenant_id, name=name, code=code,
-            role=role, status=st, model_id=mid, kb_ids=kbs, is_builtin=builtin,
+            id=rid,
+            tenant_id=tenant_id,
+            name=name,
+            code=code,
+            role=role,
+            status=st,
+            model_id=mid,
+            kb_ids=kbs,
+            is_builtin=builtin,
         )
         for rid, name, code, role, st, mid, kbs, builtin in rows
     }
@@ -346,24 +436,101 @@ def _seed_employees(tenant_id: str) -> dict[str, DwEmployee]:
 def _seed_employee_tasks(tenant_id: str) -> dict[str, DwEmployeeTask]:
     e1, e2, e3, e4 = (_emp_id(tenant_id, n) for n in (1, 2, 3, 4))
     base = [
-        ("dw-task-1", e1, "回复客户咨询", "success", "2026-07-30T10:00:00Z", "2026-07-30T10:02:00Z", 120_000),
-        ("dw-task-2", e1, "处理退款", "success", "2026-07-30T10:30:00Z", "2026-07-30T10:35:00Z", 300_000),
-        ("dw-task-3", e2, "发送报价", "success", "2026-07-30T11:00:00Z", "2026-07-30T11:01:00Z", 60_000),
+        (
+            "dw-task-1",
+            e1,
+            "回复客户咨询",
+            "success",
+            "2026-07-30T10:00:00Z",
+            "2026-07-30T10:02:00Z",
+            120_000,
+        ),
+        (
+            "dw-task-2",
+            e1,
+            "处理退款",
+            "success",
+            "2026-07-30T10:30:00Z",
+            "2026-07-30T10:35:00Z",
+            300_000,
+        ),
+        (
+            "dw-task-3",
+            e2,
+            "发送报价",
+            "success",
+            "2026-07-30T11:00:00Z",
+            "2026-07-30T11:01:00Z",
+            60_000,
+        ),
         ("dw-task-4", e2, "跟进意向", "running", "2026-07-30T11:30:00Z", "", 0),
-        ("dw-task-5", e3, "生成日报", "success", "2026-07-30T12:00:00Z", "2026-07-30T12:05:00Z", 300_000),
-        ("dw-task-6", e3, "异常分析", "failed", "2026-07-30T12:30:00Z", "2026-07-30T12:31:00Z", 60_000),
-        ("dw-task-7", e4, "巡检任务", "success", "2026-07-30T13:00:00Z", "2026-07-30T13:10:00Z", 600_000),
-        ("dw-task-8", e4, "告警处理", "success", "2026-07-30T13:30:00Z", "2026-07-30T13:32:00Z", 120_000),
+        (
+            "dw-task-5",
+            e3,
+            "生成日报",
+            "success",
+            "2026-07-30T12:00:00Z",
+            "2026-07-30T12:05:00Z",
+            300_000,
+        ),
+        (
+            "dw-task-6",
+            e3,
+            "异常分析",
+            "failed",
+            "2026-07-30T12:30:00Z",
+            "2026-07-30T12:31:00Z",
+            60_000,
+        ),
+        (
+            "dw-task-7",
+            e4,
+            "巡检任务",
+            "success",
+            "2026-07-30T13:00:00Z",
+            "2026-07-30T13:10:00Z",
+            600_000,
+        ),
+        (
+            "dw-task-8",
+            e4,
+            "告警处理",
+            "success",
+            "2026-07-30T13:30:00Z",
+            "2026-07-30T13:32:00Z",
+            120_000,
+        ),
         ("dw-task-9", e1, "知识整理", "pending", "2026-07-30T14:00:00Z", "", 0),
-        ("dw-task-10", e2, "客户回访", "success", "2026-07-30T14:30:00Z", "2026-07-30T14:33:00Z", 180_000),
+        (
+            "dw-task-10",
+            e2,
+            "客户回访",
+            "success",
+            "2026-07-30T14:30:00Z",
+            "2026-07-30T14:33:00Z",
+            180_000,
+        ),
         ("dw-task-11", e3, "指标监控", "running", "2026-07-30T15:00:00Z", "", 0),
-        ("dw-task-12", e4, "故障恢复", "failed", "2026-07-30T15:30:00Z", "2026-07-30T15:31:00Z", 60_000),
+        (
+            "dw-task-12",
+            e4,
+            "故障恢复",
+            "failed",
+            "2026-07-30T15:30:00Z",
+            "2026-07-30T15:31:00Z",
+            60_000,
+        ),
     ]
     return {
         rid: DwEmployeeTask(
-            id=rid, tenant_id=tenant_id, employee_id=emp,
-            title=title, status=st, started_at=ts,
-            finished_at=ft if ft else None, duration_ms=dur,
+            id=rid,
+            tenant_id=tenant_id,
+            employee_id=emp,
+            title=title,
+            status=st,
+            started_at=ts,
+            finished_at=ft if ft else None,
+            duration_ms=dur,
         )
         for rid, emp, title, st, ts, ft, dur in base
     }
@@ -379,8 +546,13 @@ def _seed_evaluations(tenant_id: str) -> dict[str, DwEvaluation]:
     ]
     return {
         rid: DwEvaluation(
-            id=rid, tenant_id=tenant_id, employee_id=emp,
-            qa_set_id=qa, score=score, passed=passed, evaluated_at=ts,
+            id=rid,
+            tenant_id=tenant_id,
+            employee_id=emp,
+            qa_set_id=qa,
+            score=score,
+            passed=passed,
+            evaluated_at=ts,
         )
         for rid, emp, qa, score, passed, ts in rows
     }
@@ -397,8 +569,13 @@ def _seed_extracts(tenant_id: str) -> dict[str, DwExtract]:
     ]
     return {
         rid: DwExtract(
-            id=rid, tenant_id=tenant_id, employee_id=emp,
-            source=src, source_id=sid, extracted_facts=n, extracted_at=ts,
+            id=rid,
+            tenant_id=tenant_id,
+            employee_id=emp,
+            source=src,
+            source_id=sid,
+            extracted_facts=n,
+            extracted_at=ts,
         )
         for rid, emp, src, sid, n, ts in rows
     }
@@ -415,8 +592,14 @@ def _seed_knowledge_bases(tenant_id: str) -> dict[str, DwKnowledgeBase]:
     ]
     return {
         rid: DwKnowledgeBase(
-            id=rid, tenant_id=tenant_id, name=name, code=code,
-            docs=docs, vectors=vecs, owner=owner, updated_at=ts,
+            id=rid,
+            tenant_id=tenant_id,
+            name=name,
+            code=code,
+            docs=docs,
+            vectors=vecs,
+            owner=owner,
+            updated_at=ts,
         )
         for rid, name, code, docs, vecs, owner, ts in rows
     }
@@ -434,8 +617,12 @@ def _seed_learning_extracts(tenant_id: str) -> dict[str, DwLearningExtract]:
     ]
     return {
         rid: DwLearningExtract(
-            id=rid, tenant_id=tenant_id, employee_id=emp,
-            scenario=sc, extracted_at=ts, facts=n,
+            id=rid,
+            tenant_id=tenant_id,
+            employee_id=emp,
+            scenario=sc,
+            extracted_at=ts,
+            facts=n,
         )
         for rid, emp, sc, ts, n in rows
     }
@@ -453,8 +640,13 @@ def _seed_learning_feedback(tenant_id: str) -> dict[str, DwLearningFeedback]:
     ]
     return {
         rid: DwLearningFeedback(
-            id=rid, tenant_id=tenant_id, employee_id=emp,
-            scenario=sc, rating=rating, comment=cm, feedback_at=ts,
+            id=rid,
+            tenant_id=tenant_id,
+            employee_id=emp,
+            scenario=sc,
+            rating=rating,
+            comment=cm,
+            feedback_at=ts,
         )
         for rid, emp, sc, rating, cm, ts in rows
     }
@@ -470,8 +662,13 @@ def _seed_models(tenant_id: str) -> dict[str, DwModel]:
     ]
     return {
         rid: DwModel(
-            id=rid, tenant_id=tenant_id, provider=p,
-            model_id=mid, display_name=dn, modality=m, enabled=en,
+            id=rid,
+            tenant_id=tenant_id,
+            provider=p,
+            model_id=mid,
+            display_name=dn,
+            modality=m,
+            enabled=en,
         )
         for rid, p, mid, dn, m, en in rows
     }
@@ -490,8 +687,13 @@ def _seed_tools(tenant_id: str) -> dict[str, DwTool]:
     ]
     return {
         rid: DwTool(
-            id=rid, tenant_id=tenant_id, name=name, code=code,
-            kind=kind, enabled=en, invocations=inv,
+            id=rid,
+            tenant_id=tenant_id,
+            name=name,
+            code=code,
+            kind=kind,
+            enabled=en,
+            invocations=inv,
         )
         for rid, name, code, kind, en, inv in rows
     }
@@ -513,9 +715,14 @@ def _seed_traces(tenant_id: str) -> dict[str, DwTrace]:
     ]
     return {
         rid: DwTrace(
-            id=rid, tenant_id=tenant_id, employee_id=emp,
-            trace_id=tid, span_count=sc, status=st,
-            duration_ms=dur, started_at=ts,
+            id=rid,
+            tenant_id=tenant_id,
+            employee_id=emp,
+            trace_id=tid,
+            span_count=sc,
+            status=st,
+            duration_ms=dur,
+            started_at=ts,
         )
         for rid, emp, tid, sc, st, dur, ts in rows
     }
@@ -661,14 +868,24 @@ def update_employee(tenant_id: str, employee_id: str, **kwargs) -> DwEmployee | 
         return None
     # Build updated employee (DwEmployee is frozen=True, so create new)
     data = {
-        'id': emp.id, 'tenant_id': emp.tenant_id, 'name': emp.name,
-        'code': emp.code, 'role': emp.role, 'status': emp.status,
-        'model_id': emp.model_id, 'kb_ids': emp.kb_ids,
-        'is_builtin': emp.is_builtin, 'system_prompt': emp.system_prompt,
-        'tools': emp.tools, 'action_rids': emp.action_rids,
-        'temperature': emp.temperature, 'max_tokens': emp.max_tokens,
-        'top_p': emp.top_p, 'retrieval_method': emp.retrieval_method,
-        'top_k': emp.top_k, 'rerank': emp.rerank,
+        "id": emp.id,
+        "tenant_id": emp.tenant_id,
+        "name": emp.name,
+        "code": emp.code,
+        "role": emp.role,
+        "status": emp.status,
+        "model_id": emp.model_id,
+        "kb_ids": emp.kb_ids,
+        "is_builtin": emp.is_builtin,
+        "system_prompt": emp.system_prompt,
+        "tools": emp.tools,
+        "action_rids": emp.action_rids,
+        "temperature": emp.temperature,
+        "max_tokens": emp.max_tokens,
+        "top_p": emp.top_p,
+        "retrieval_method": emp.retrieval_method,
+        "top_k": emp.top_k,
+        "rerank": emp.rerank,
     }
     data.update(kwargs)
     updated = DwEmployee(**data)
@@ -688,7 +905,8 @@ def delete_employee(tenant_id: str, employee_id: str) -> bool:
 
 
 def append_employee_task(
-    tenant_id: str, task: DwEmployeeTask,
+    tenant_id: str,
+    task: DwEmployeeTask,
 ) -> DwEmployeeTask:
     """Persist a new employee task. Used by POST /employees/{id}/tasks."""
     if not tenant_id:
@@ -699,7 +917,8 @@ def append_employee_task(
 
 
 def get_employee_task(
-    tenant_id: str, task_id: str,
+    tenant_id: str,
+    task_id: str,
 ) -> DwEmployeeTask | None:
     """Return a single employee task by id, or None."""
     if not tenant_id:
@@ -709,7 +928,11 @@ def get_employee_task(
 
 
 def update_employee_task(
-    tenant_id: str, task_id: str, *, status: str, finished_at: str | None = None,
+    tenant_id: str,
+    task_id: str,
+    *,
+    status: str,
+    finished_at: str | None = None,
     duration_ms: int | None = None,
 ) -> DwEmployeeTask | None:
     """Update an employee task's status. Returns the updated task or None."""
@@ -720,8 +943,12 @@ def update_employee_task(
     if task is None:
         return None
     updated = DwEmployeeTask(
-        id=task.id, tenant_id=task.tenant_id, employee_id=task.employee_id,
-        title=task.title, status=status, started_at=task.started_at,
+        id=task.id,
+        tenant_id=task.tenant_id,
+        employee_id=task.employee_id,
+        title=task.title,
+        status=status,
+        started_at=task.started_at,
         finished_at=finished_at if finished_at is not None else task.finished_at,
         duration_ms=duration_ms if duration_ms is not None else task.duration_ms,
     )
@@ -730,7 +957,8 @@ def update_employee_task(
 
 
 def append_evaluation(
-    tenant_id: str, evaluation: DwEvaluation,
+    tenant_id: str,
+    evaluation: DwEvaluation,
 ) -> DwEvaluation:
     """Persist a new evaluation. Used by POST /employees/{id}/evaluations."""
     if not tenant_id:
@@ -741,7 +969,8 @@ def append_evaluation(
 
 
 def append_learning_feedback(
-    tenant_id: str, feedback: DwLearningFeedback,
+    tenant_id: str,
+    feedback: DwLearningFeedback,
 ) -> DwLearningFeedback:
     """Persist learning feedback. Used by POST /learning/feedback."""
     if not tenant_id:
@@ -752,7 +981,8 @@ def append_learning_feedback(
 
 
 def get_learning_feedback(
-    tenant_id: str, feedback_id: str,
+    tenant_id: str,
+    feedback_id: str,
 ) -> DwLearningFeedback | None:
     """Return a single learning-feedback record by id, or None."""
     if not tenant_id or not feedback_id:
@@ -762,7 +992,9 @@ def get_learning_feedback(
 
 
 def update_learning_feedback(
-    tenant_id: str, feedback_id: str, **kwargs,
+    tenant_id: str,
+    feedback_id: str,
+    **kwargs,
 ) -> DwLearningFeedback | None:
     """Update a learning feedback record. Returns updated or None if missing.
 
@@ -779,8 +1011,12 @@ def update_learning_feedback(
     if fb is None:
         return None
     data = {
-        "id": fb.id, "tenant_id": fb.tenant_id, "employee_id": fb.employee_id,
-        "scenario": fb.scenario, "rating": fb.rating, "comment": fb.comment,
+        "id": fb.id,
+        "tenant_id": fb.tenant_id,
+        "employee_id": fb.employee_id,
+        "scenario": fb.scenario,
+        "rating": fb.rating,
+        "comment": fb.comment,
         "feedback_at": fb.feedback_at,
         "promoted_document_id": fb.promoted_document_id,
         "promoted_at": fb.promoted_at,
@@ -794,7 +1030,8 @@ def update_learning_feedback(
 
 
 def append_collaboration(
-    tenant_id: str, collab: DwCollaboration,
+    tenant_id: str,
+    collab: DwCollaboration,
 ) -> DwCollaboration:
     """Persist a collaboration session. Used by POST /collaborations."""
     if not tenant_id:
@@ -887,21 +1124,25 @@ def _ensure_conv_buckets(tenant_id: str) -> None:
 
 
 def list_employee_conversations(
-    tenant_id: str, user_id: str, employee_id: str,
+    tenant_id: str,
+    user_id: str,
+    employee_id: str,
 ) -> list[DwEmployeeConversation]:
     if not tenant_id or not user_id or not employee_id:
         return []
     _ensure_tenant(tenant_id)
     _ensure_conv_buckets(tenant_id)
     out = [
-        c for c in _EMPLOYEE_CONVERSATIONS[tenant_id].values()
+        c
+        for c in _EMPLOYEE_CONVERSATIONS[tenant_id].values()
         if c.user_id == user_id and c.employee_id == employee_id
     ]
     return sorted(out, key=lambda c: c.updated_at, reverse=True)
 
 
 def get_employee_conversation(
-    tenant_id: str, conversation_id: str,
+    tenant_id: str,
+    conversation_id: str,
 ) -> DwEmployeeConversation | None:
     if not tenant_id or not conversation_id:
         return None
@@ -914,7 +1155,8 @@ def get_employee_conversation(
 
 
 def put_employee_conversation(
-    tenant_id: str, entity: DwEmployeeConversation,
+    tenant_id: str,
+    entity: DwEmployeeConversation,
 ) -> DwEmployeeConversation:
     if not tenant_id:
         return entity
@@ -925,21 +1167,22 @@ def put_employee_conversation(
 
 
 def list_employee_messages(
-    tenant_id: str, conversation_id: str,
+    tenant_id: str,
+    conversation_id: str,
 ) -> list[DwEmployeeMessage]:
     if not tenant_id or not conversation_id:
         return []
     _ensure_tenant(tenant_id)
     _ensure_conv_buckets(tenant_id)
     msgs = [
-        m for m in _EMPLOYEE_MESSAGES[tenant_id].values()
-        if m.conversation_id == conversation_id
+        m for m in _EMPLOYEE_MESSAGES[tenant_id].values() if m.conversation_id == conversation_id
     ]
     return sorted(msgs, key=lambda m: m.sequence)
 
 
 def put_employee_message(
-    tenant_id: str, entity: DwEmployeeMessage,
+    tenant_id: str,
+    entity: DwEmployeeMessage,
 ) -> DwEmployeeMessage:
     if not tenant_id:
         return entity
@@ -950,19 +1193,24 @@ def put_employee_message(
     conv = _EMPLOYEE_CONVERSATIONS[tenant_id].get(entity.conversation_id)
     if conv is not None:
         _EMPLOYEE_CONVERSATIONS[tenant_id][entity.conversation_id] = DwEmployeeConversation(
-            id=conv.id, tenant_id=conv.tenant_id, user_id=conv.user_id,
-            employee_id=conv.employee_id, title=conv.title,
-            created_at=conv.created_at, updated_at=entity.created_at,
+            id=conv.id,
+            tenant_id=conv.tenant_id,
+            user_id=conv.user_id,
+            employee_id=conv.employee_id,
+            title=conv.title,
+            created_at=conv.created_at,
+            updated_at=entity.created_at,
         )
     return entity
 
 
 def next_employee_message_sequence(
-    tenant_id: str, conversation_id: str,
+    tenant_id: str,
+    conversation_id: str,
 ) -> int:
     """返回 conversation 内下一条消息 sequence（已存在 + 1）。"""
     msgs = list_employee_messages(tenant_id, conversation_id)
-    return (max((m.sequence for m in msgs), default=0) + 1)
+    return max((m.sequence for m in msgs), default=0) + 1
 
 
 # ---------------------------------------------------------------------------

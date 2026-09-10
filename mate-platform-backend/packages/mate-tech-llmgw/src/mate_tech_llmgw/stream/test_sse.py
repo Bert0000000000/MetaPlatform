@@ -1,4 +1,5 @@
 """SSE tests (ST-5.5.7.2)."""
+
 from __future__ import annotations
 
 import pytest
@@ -37,6 +38,7 @@ async def test_sse_stream_emits_events() -> None:
 @pytest.mark.asyncio
 async def test_sse_stream_empty() -> None:
     """无事件 → 空流."""
+
     async def fake_chat_stream(**kwargs: object):
         if False:
             yield

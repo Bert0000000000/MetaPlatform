@@ -10,11 +10,11 @@
 
 ## 2. 改动清单
 
-| 文件 | 改动 |
-|---|---|
-| `packages/shared/src/config/platformMenu.ts` | `PlatformMenuItem` 加 `group` 字段；mcphub 17 项归组 skill / mcp / a2a |
-| `apps/web/src/pages/mcp/McpCenterLayout.tsx` | **新增** 三 tab 布局（antd Tabs + Outlet），按 pathname 反查激活 tab，切换跳组默认页 |
-| `apps/web/src/App.tsx` | mcp 路由改为 `<Route path="mcp" element={<McpCenterLayout />}>` 嵌套；`/mcp` 重定向到 `/mcp/overview` |
+| 文件                                         | 改动                                                                                                  |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `packages/shared/src/config/platformMenu.ts` | `PlatformMenuItem` 加 `group` 字段；mcphub 17 项归组 skill / mcp / a2a                                |
+| `apps/web/src/pages/mcp/McpCenterLayout.tsx` | **新增** 三 tab 布局（antd Tabs + Outlet），按 pathname 反查激活 tab，切换跳组默认页                  |
+| `apps/web/src/App.tsx`                       | mcp 路由改为 `<Route path="mcp" element={<McpCenterLayout />}>` 嵌套；`/mcp` 重定向到 `/mcp/overview` |
 
 ## 3. 归组
 

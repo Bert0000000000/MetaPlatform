@@ -1,4 +1,5 @@
-﻿"""Tests for /api/v1/admin/permissions endpoints (FR-DASH-006-02)."""
+"""Tests for /api/v1/admin/permissions endpoints (FR-DASH-006-02)."""
+
 from __future__ import annotations
 
 import pytest

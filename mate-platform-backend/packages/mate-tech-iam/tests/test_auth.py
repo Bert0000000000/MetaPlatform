@@ -1,4 +1,5 @@
 """Tests for /api/v1/iam/auth/* (FR-DASH-006 auth flows)."""
+
 from __future__ import annotations
 
 import pytest

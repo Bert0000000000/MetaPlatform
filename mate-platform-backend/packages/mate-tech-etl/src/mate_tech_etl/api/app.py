@@ -18,6 +18,7 @@ double-check the tenant — the guard is the source of truth.
 Write handlers emit `etl.<aggregate>.<verb>` outbox events via
 `app.state.outbox_writer` (ADR-0014 step 3).
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -61,9 +62,7 @@ def _emit(
     tenant_id: str,
 ) -> None:
     """Append an outbox event if a writer is configured (no-op otherwise)."""
-    writer: InMemoryOutboxWriter | None = getattr(
-        request.app.state, "outbox_writer", None
-    )
+    writer: InMemoryOutboxWriter | None = getattr(request.app.state, "outbox_writer", None)
     if writer is None:
         return
     writer.append(
@@ -144,7 +143,8 @@ async def list_etl_tasks_endpoint(
 # ---------------------------------------------------------------------------
 @router.post("/tasks")
 async def create_etl_task_endpoint(
-    request: Request, body: EtlTaskCreate,
+    request: Request,
+    body: EtlTaskCreate,
 ) -> dict[str, Any]:
     """Create an ETL task (FR-DATA-DATAPOSTETLTASKS)."""
     tid = _tid(request)
@@ -170,7 +170,8 @@ async def create_etl_task_endpoint(
 # ---------------------------------------------------------------------------
 @router.get("/tasks/{task_id}")
 async def get_etl_task_endpoint(
-    request: Request, task_id: str,
+    request: Request,
+    task_id: str,
 ) -> dict[str, Any]:
     """Get an ETL task by id (FR-DATA-DATAGETETLTASKSID)."""
     tid = _tid(request)
@@ -185,7 +186,9 @@ async def get_etl_task_endpoint(
 # ---------------------------------------------------------------------------
 @router.put("/tasks/{task_id}")
 async def update_etl_task_endpoint(
-    request: Request, task_id: str, body: EtlTaskUpdate,
+    request: Request,
+    task_id: str,
+    body: EtlTaskUpdate,
 ) -> dict[str, Any]:
     """Update an ETL task (FR-DATA-DATAPUTETLTASKSID)."""
     tid = _tid(request)
@@ -214,7 +217,8 @@ async def update_etl_task_endpoint(
 # ---------------------------------------------------------------------------
 @router.delete("/tasks/{task_id}")
 async def delete_etl_task_endpoint(
-    request: Request, task_id: str,
+    request: Request,
+    task_id: str,
 ) -> dict[str, Any]:
     """Delete an ETL task (FR-DATA-DATADELETEETLTASKSID)."""
     tid = _tid(request)
@@ -235,7 +239,8 @@ async def delete_etl_task_endpoint(
 # ---------------------------------------------------------------------------
 @router.post("/tasks/{task_id}/run")
 async def run_etl_task_endpoint(
-    request: Request, task_id: str,
+    request: Request,
+    task_id: str,
 ) -> dict[str, Any]:
     """Run an ETL task (FR-DATA-DATAPOSTETLTASKSIDRUN)."""
     tid = _tid(request)
@@ -257,7 +262,8 @@ async def run_etl_task_endpoint(
 # ---------------------------------------------------------------------------
 @router.get("/tasks/{task_id}/status")
 async def get_etl_task_status_endpoint(
-    request: Request, task_id: str,
+    request: Request,
+    task_id: str,
 ) -> dict[str, Any]:
     """Get the status of an ETL task (FR-DATA-DATAGETETLTASKSIDSTATUS)."""
     tid = _tid(request)
@@ -277,7 +283,8 @@ async def get_etl_task_status_endpoint(
 # ---------------------------------------------------------------------------
 @router.post("/tasks/{task_id}/stop")
 async def stop_etl_task_endpoint(
-    request: Request, task_id: str,
+    request: Request,
+    task_id: str,
 ) -> dict[str, Any]:
     """Stop an ETL task (FR-DATA-DATAPOSTETLTASKSIDSTOP)."""
     tid = _tid(request)

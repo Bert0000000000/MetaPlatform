@@ -5,6 +5,7 @@ characters) **and** contains at least one research-oriented keyword.
 Short queries — even with keywords — are handled by the lightweight
 llmgw chat path to avoid unnecessary latency.
 """
+
 from __future__ import annotations
 
 import re

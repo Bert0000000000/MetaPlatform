@@ -13,6 +13,7 @@ same call sites will switch to llmgw over HTTP in v3.1.
 `ont_apply_action` 是 copilot → kernel 的唯一合法写桥，指向契约路径
 POST /api/v1/ont/v2/action-types/{rid}/apply。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -32,6 +33,7 @@ class AsyncCopilotClient:
     `mate_app_copilot.llm.stub_provider`. P2-W5 / v3.1 will
     swap it for an httpx-based remote llmgw adapter.
     """
+
     base_url: str
     auth: BearerAuth
     provider: Any
@@ -42,9 +44,7 @@ class AsyncCopilotClient:
             raise ValueError("base_url is required")
         for name in ("embeddings", "chat", "generate_sql"):
             if not hasattr(self.provider, name):
-                raise ValueError(
-                    f"provider {self.provider!r} missing {name!r} method"
-                )
+                raise ValueError(f"provider {self.provider!r} missing {name!r} method")
 
     def _middleware(self, tenant_id: str) -> OutgoingAuthMiddleware:
         """Build an httpx auth middleware for a specific tenant."""
@@ -104,10 +104,7 @@ class AsyncCopilotClient:
         """
         import httpx
 
-        url = (
-            f"{self.ont_url()}/v2/action-types/"
-            f"{rid.replace('/', '%2F')}/apply"
-        )
+        url = f"{self.ont_url()}/v2/action-types/{rid.replace('/', '%2F')}/apply"
         payload: dict[str, Any] = {
             "parameters": parameters or {},
             "target_iid": target_iid,
@@ -230,7 +227,7 @@ class AsyncCopilotClient:
             key = str(cfg.get("key", ""))
             if not key.startswith(prefix):
                 continue
-            suffix = key[len(prefix):]
+            suffix = key[len(prefix) :]
             val = str(cfg.get("value") or "")
             if suffix == "base_url":
                 result["base_url"] = val

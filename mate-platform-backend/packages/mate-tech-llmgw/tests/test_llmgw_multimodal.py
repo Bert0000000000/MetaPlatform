@@ -10,6 +10,7 @@ Covers:
   * FastAPI endpoint /api/v1/llmgw/chat/multimodal (happy path +
     validation error path).
 """
+
 from __future__ import annotations
 
 import os
@@ -133,9 +134,7 @@ class TestOpenAIPayloadAssembly:
                 role="user",
                 content=[
                     MultimodalContentPart(type="text", text="what is this?"),
-                    MultimodalContentPart(
-                        type="image_url", url="https://x.com/a.png"
-                    ),
+                    MultimodalContentPart(type="image_url", url="https://x.com/a.png"),
                 ],
             ),
         ]
@@ -245,9 +244,7 @@ class TestMultimodalRouterDispatch:
                 role="user",
                 content=[
                     MultimodalContentPart(type="text", text="what is this?"),
-                    MultimodalContentPart(
-                        type="image_url", url="https://x.com/cat.png"
-                    ),
+                    MultimodalContentPart(type="image_url", url="https://x.com/cat.png"),
                 ],
             )
         ]

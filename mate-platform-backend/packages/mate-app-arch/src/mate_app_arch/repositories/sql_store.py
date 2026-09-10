@@ -7,6 +7,7 @@ entities fall through to in_memory.
 Tuple fields (e.g. ``DataEntity.fields``) are serialised as
 newline-separated TEXT on write and re-hydrated to tuples on read.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -133,11 +134,15 @@ def list_applications(tenant_id: str) -> list[Application]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.ApplicationORM)
-        .where(models.ApplicationORM.tenant_id == tenant_id)
-        .order_by(models.ApplicationORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.ApplicationORM)
+            .where(models.ApplicationORM.tenant_id == tenant_id)
+            .order_by(models.ApplicationORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_application(r) for r in rows]
 
 
@@ -146,11 +151,15 @@ def list_capabilities(tenant_id: str) -> list[Capability]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.CapabilityORM)
-        .where(models.CapabilityORM.tenant_id == tenant_id)
-        .order_by(models.CapabilityORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.CapabilityORM)
+            .where(models.CapabilityORM.tenant_id == tenant_id)
+            .order_by(models.CapabilityORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_capability(r) for r in rows]
 
 
@@ -181,11 +190,15 @@ def list_data_assets(tenant_id: str) -> list[DataAsset]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DataAssetORM)
-        .where(models.DataAssetORM.tenant_id == tenant_id)
-        .order_by(models.DataAssetORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DataAssetORM)
+            .where(models.DataAssetORM.tenant_id == tenant_id)
+            .order_by(models.DataAssetORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_data_asset(r) for r in rows]
 
 
@@ -193,11 +206,15 @@ def list_data_entities(tenant_id: str) -> list[DataEntity]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DataEntityORM)
-        .where(models.DataEntityORM.tenant_id == tenant_id)
-        .order_by(models.DataEntityORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DataEntityORM)
+            .where(models.DataEntityORM.tenant_id == tenant_id)
+            .order_by(models.DataEntityORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_data_entity(r) for r in rows]
 
 
@@ -205,11 +222,15 @@ def list_data_flows(tenant_id: str) -> list[DataFlow]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DataFlowORM)
-        .where(models.DataFlowORM.tenant_id == tenant_id)
-        .order_by(models.DataFlowORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DataFlowORM)
+            .where(models.DataFlowORM.tenant_id == tenant_id)
+            .order_by(models.DataFlowORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_data_flow(r) for r in rows]
 
 
@@ -228,11 +249,18 @@ def put_application(tenant_id: str, app: Application) -> Application:
         existing.status = app.status
         existing.description = app.description
     else:
-        s.add(models.ApplicationORM(
-            id=app.id, tenant_id=tenant_id, name=app.name, code=app.code,
-            category=app.category, owner=app.owner, status=app.status,
-            description=app.description,
-        ))
+        s.add(
+            models.ApplicationORM(
+                id=app.id,
+                tenant_id=tenant_id,
+                name=app.name,
+                code=app.code,
+                category=app.category,
+                owner=app.owner,
+                status=app.status,
+                description=app.description,
+            )
+        )
     s.commit()
     return app
 
@@ -248,10 +276,17 @@ def put_capability(tenant_id: str, cap: Capability) -> Capability:
         existing.level = cap.level
         existing.description = cap.description
     else:
-        s.add(models.CapabilityORM(
-            id=cap.id, tenant_id=tenant_id, name=cap.name, code=cap.code,
-            parent_id=cap.parent_id, level=cap.level, description=cap.description,
-        ))
+        s.add(
+            models.CapabilityORM(
+                id=cap.id,
+                tenant_id=tenant_id,
+                name=cap.name,
+                code=cap.code,
+                parent_id=cap.parent_id,
+                level=cap.level,
+                description=cap.description,
+            )
+        )
     s.commit()
     return cap
 
@@ -268,11 +303,18 @@ def put_data_asset(tenant_id: str, asset: DataAsset) -> DataAsset:
         existing.owner = asset.owner
         existing.status = asset.status
     else:
-        s.add(models.DataAssetORM(
-            id=asset.id, tenant_id=tenant_id, name=asset.name, code=asset.code,
-            layer=asset.layer, domain=asset.domain, owner=asset.owner,
-            status=asset.status,
-        ))
+        s.add(
+            models.DataAssetORM(
+                id=asset.id,
+                tenant_id=tenant_id,
+                name=asset.name,
+                code=asset.code,
+                layer=asset.layer,
+                domain=asset.domain,
+                owner=asset.owner,
+                status=asset.status,
+            )
+        )
     s.commit()
     return asset
 
@@ -288,10 +330,16 @@ def put_data_entity(tenant_id: str, entity: DataEntity) -> DataEntity:
         existing.data_asset_id = entity.data_asset_id
         existing.fields = fields_str
     else:
-        s.add(models.DataEntityORM(
-            id=entity.id, tenant_id=tenant_id, name=entity.name, code=entity.code,
-            data_asset_id=entity.data_asset_id, fields=fields_str,
-        ))
+        s.add(
+            models.DataEntityORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                name=entity.name,
+                code=entity.code,
+                data_asset_id=entity.data_asset_id,
+                fields=fields_str,
+            )
+        )
     s.commit()
     return entity
 
@@ -307,12 +355,17 @@ def put_data_flow(tenant_id: str, flow: DataFlow) -> DataFlow:
         existing.target_entity_id = flow.target_entity_id
         existing.pipeline_spec = flow.pipeline_spec
     else:
-        s.add(models.DataFlowORM(
-            id=flow.id, tenant_id=tenant_id, name=flow.name, code=flow.code,
-            source_entity_id=flow.source_entity_id,
-            target_entity_id=flow.target_entity_id,
-            pipeline_spec=flow.pipeline_spec,
-        ))
+        s.add(
+            models.DataFlowORM(
+                id=flow.id,
+                tenant_id=tenant_id,
+                name=flow.name,
+                code=flow.code,
+                source_entity_id=flow.source_entity_id,
+                target_entity_id=flow.target_entity_id,
+                pipeline_spec=flow.pipeline_spec,
+            )
+        )
     s.commit()
     return flow
 
@@ -546,11 +599,15 @@ def list_business_processes(tenant_id: str) -> list[BusinessProcess]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.BusinessProcessORM)
-        .where(models.BusinessProcessORM.tenant_id == tenant_id)
-        .order_by(models.BusinessProcessORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.BusinessProcessORM)
+            .where(models.BusinessProcessORM.tenant_id == tenant_id)
+            .order_by(models.BusinessProcessORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_business_process(r) for r in rows]
 
 
@@ -558,11 +615,15 @@ def list_data_domains(tenant_id: str) -> list[DataDomain]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DataDomainORM)
-        .where(models.DataDomainORM.tenant_id == tenant_id)
-        .order_by(models.DataDomainORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DataDomainORM)
+            .where(models.DataDomainORM.tenant_id == tenant_id)
+            .order_by(models.DataDomainORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_data_domain(r) for r in rows]
 
 
@@ -570,11 +631,15 @@ def list_data_standards(tenant_id: str) -> list[DataStandard]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DataStandardORM)
-        .where(models.DataStandardORM.tenant_id == tenant_id)
-        .order_by(models.DataStandardORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DataStandardORM)
+            .where(models.DataStandardORM.tenant_id == tenant_id)
+            .order_by(models.DataStandardORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_data_standard(r) for r in rows]
 
 
@@ -582,11 +647,15 @@ def list_deployments(tenant_id: str) -> list[Deployment]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DeploymentORM)
-        .where(models.DeploymentORM.tenant_id == tenant_id)
-        .order_by(models.DeploymentORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DeploymentORM)
+            .where(models.DeploymentORM.tenant_id == tenant_id)
+            .order_by(models.DeploymentORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_deployment(r) for r in rows]
 
 
@@ -594,11 +663,15 @@ def list_infrastructures(tenant_id: str) -> list[Infrastructure]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.InfrastructureORM)
-        .where(models.InfrastructureORM.tenant_id == tenant_id)
-        .order_by(models.InfrastructureORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.InfrastructureORM)
+            .where(models.InfrastructureORM.tenant_id == tenant_id)
+            .order_by(models.InfrastructureORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_infrastructure(r) for r in rows]
 
 
@@ -606,11 +679,15 @@ def list_governance_principles(tenant_id: str) -> list[GovernancePrinciple]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.GovernancePrincipleORM)
-        .where(models.GovernancePrincipleORM.tenant_id == tenant_id)
-        .order_by(models.GovernancePrincipleORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.GovernancePrincipleORM)
+            .where(models.GovernancePrincipleORM.tenant_id == tenant_id)
+            .order_by(models.GovernancePrincipleORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_governance_principle(r) for r in rows]
 
 
@@ -620,11 +697,15 @@ def list_governance_principle_categories(
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.GovernancePrincipleCategoryORM)
-        .where(models.GovernancePrincipleCategoryORM.tenant_id == tenant_id)
-        .order_by(models.GovernancePrincipleCategoryORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.GovernancePrincipleCategoryORM)
+            .where(models.GovernancePrincipleCategoryORM.tenant_id == tenant_id)
+            .order_by(models.GovernancePrincipleCategoryORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_governance_principle_category(r) for r in rows]
 
 
@@ -632,11 +713,15 @@ def list_review_templates(tenant_id: str) -> list[ReviewTemplate]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.ReviewTemplateORM)
-        .where(models.ReviewTemplateORM.tenant_id == tenant_id)
-        .order_by(models.ReviewTemplateORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.ReviewTemplateORM)
+            .where(models.ReviewTemplateORM.tenant_id == tenant_id)
+            .order_by(models.ReviewTemplateORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_review_template(r) for r in rows]
 
 
@@ -644,11 +729,15 @@ def list_review_tickets(tenant_id: str) -> list[ReviewTicket]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.ReviewTicketORM)
-        .where(models.ReviewTicketORM.tenant_id == tenant_id)
-        .order_by(models.ReviewTicketORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.ReviewTicketORM)
+            .where(models.ReviewTicketORM.tenant_id == tenant_id)
+            .order_by(models.ReviewTicketORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_review_ticket(r) for r in rows]
 
 
@@ -656,11 +745,15 @@ def list_tech_debts(tenant_id: str) -> list[TechDebt]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.TechDebtORM)
-        .where(models.TechDebtORM.tenant_id == tenant_id)
-        .order_by(models.TechDebtORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.TechDebtORM)
+            .where(models.TechDebtORM.tenant_id == tenant_id)
+            .order_by(models.TechDebtORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_tech_debt(r) for r in rows]
 
 
@@ -668,10 +761,15 @@ def list_impact_analysis(tenant_id: str, node_id: str) -> list[ImpactAnalysisRes
     if not node_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.ImpactAnalysisResultORM)
-        .where(models.ImpactAnalysisResultORM.node_id == node_id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.ImpactAnalysisResultORM).where(
+                models.ImpactAnalysisResultORM.node_id == node_id
+            )
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_impact_analysis(r) for r in rows]
 
 
@@ -679,11 +777,15 @@ def list_ontology_mapping_rules(tenant_id: str) -> list[OntologyMappingRule]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.OntologyMappingRuleORM)
-        .where(models.OntologyMappingRuleORM.tenant_id == tenant_id)
-        .order_by(models.OntologyMappingRuleORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.OntologyMappingRuleORM)
+            .where(models.OntologyMappingRuleORM.tenant_id == tenant_id)
+            .order_by(models.OntologyMappingRuleORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_ontology_mapping_rule(r) for r in rows]
 
 
@@ -691,11 +793,15 @@ def list_ontology_mapping_changes(tenant_id: str) -> list[OntologyMappingChange]
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.OntologyMappingChangeORM)
-        .where(models.OntologyMappingChangeORM.tenant_id == tenant_id)
-        .order_by(models.OntologyMappingChangeORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.OntologyMappingChangeORM)
+            .where(models.OntologyMappingChangeORM.tenant_id == tenant_id)
+            .order_by(models.OntologyMappingChangeORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_ontology_mapping_change(r) for r in rows]
 
 
@@ -703,11 +809,15 @@ def list_orgs(tenant_id: str) -> list[Org]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.OrgORM)
-        .where(models.OrgORM.tenant_id == tenant_id)
-        .order_by(models.OrgORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.OrgORM)
+            .where(models.OrgORM.tenant_id == tenant_id)
+            .order_by(models.OrgORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_org(r) for r in rows]
 
 
@@ -715,11 +825,15 @@ def list_org_roles(tenant_id: str) -> list[Role]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.RoleORM)
-        .where(models.RoleORM.tenant_id == tenant_id)
-        .order_by(models.RoleORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.RoleORM)
+            .where(models.RoleORM.tenant_id == tenant_id)
+            .order_by(models.RoleORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_role(r) for r in rows]
 
 
@@ -727,11 +841,15 @@ def list_tech_stacks(tenant_id: str) -> list[TechStack]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.TechStackORM)
-        .where(models.TechStackORM.tenant_id == tenant_id)
-        .order_by(models.TechStackORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.TechStackORM)
+            .where(models.TechStackORM.tenant_id == tenant_id)
+            .order_by(models.TechStackORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_tech_stack(r) for r in rows]
 
 
@@ -739,11 +857,15 @@ def list_technology_components(tenant_id: str) -> list[TechnologyComponent]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.TechnologyComponentORM)
-        .where(models.TechnologyComponentORM.tenant_id == tenant_id)
-        .order_by(models.TechnologyComponentORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.TechnologyComponentORM)
+            .where(models.TechnologyComponentORM.tenant_id == tenant_id)
+            .order_by(models.TechnologyComponentORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_technology_component(r) for r in rows]
 
 
@@ -751,11 +873,15 @@ def list_technology_radar(tenant_id: str) -> list[TechnologyRadarEntry]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.TechnologyRadarEntryORM)
-        .where(models.TechnologyRadarEntryORM.tenant_id == tenant_id)
-        .order_by(models.TechnologyRadarEntryORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.TechnologyRadarEntryORM)
+            .where(models.TechnologyRadarEntryORM.tenant_id == tenant_id)
+            .order_by(models.TechnologyRadarEntryORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_technology_radar_entry(r) for r in rows]
 
 
@@ -763,11 +889,15 @@ def list_technology_stacks(tenant_id: str) -> list[TechnologyStack]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.TechnologyStackORM)
-        .where(models.TechnologyStackORM.tenant_id == tenant_id)
-        .order_by(models.TechnologyStackORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.TechnologyStackORM)
+            .where(models.TechnologyStackORM.tenant_id == tenant_id)
+            .order_by(models.TechnologyStackORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_technology_stack(r) for r in rows]
 
 
@@ -775,11 +905,15 @@ def list_value_streams(tenant_id: str) -> list[ValueStream]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.ValueStreamORM)
-        .where(models.ValueStreamORM.tenant_id == tenant_id)
-        .order_by(models.ValueStreamORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.ValueStreamORM)
+            .where(models.ValueStreamORM.tenant_id == tenant_id)
+            .order_by(models.ValueStreamORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_value_stream(r) for r in rows]
 
 
@@ -796,10 +930,16 @@ def put_business_process(tenant_id: str, bp: BusinessProcess) -> BusinessProcess
         existing.application_id = bp.application_id
         existing.description = bp.description
     else:
-        s.add(models.BusinessProcessORM(
-            id=bp.id, tenant_id=tenant_id, name=bp.name, code=bp.code,
-            application_id=bp.application_id, description=bp.description,
-        ))
+        s.add(
+            models.BusinessProcessORM(
+                id=bp.id,
+                tenant_id=tenant_id,
+                name=bp.name,
+                code=bp.code,
+                application_id=bp.application_id,
+                description=bp.description,
+            )
+        )
     s.commit()
     return bp
 
@@ -813,10 +953,15 @@ def put_data_domain(tenant_id: str, domain: DataDomain) -> DataDomain:
         existing.name = domain.name
         existing.parent_id = domain.parent_id
     else:
-        s.add(models.DataDomainORM(
-            id=domain.id, tenant_id=tenant_id, name=domain.name, code=domain.code,
-            parent_id=domain.parent_id,
-        ))
+        s.add(
+            models.DataDomainORM(
+                id=domain.id,
+                tenant_id=tenant_id,
+                name=domain.name,
+                code=domain.code,
+                parent_id=domain.parent_id,
+            )
+        )
     s.commit()
     return domain
 
@@ -831,10 +976,16 @@ def put_data_standard(tenant_id: str, std: DataStandard) -> DataStandard:
         existing.domain = std.domain
         existing.description = std.description
     else:
-        s.add(models.DataStandardORM(
-            id=std.id, tenant_id=tenant_id, name=std.name, code=std.code,
-            domain=std.domain, description=std.description,
-        ))
+        s.add(
+            models.DataStandardORM(
+                id=std.id,
+                tenant_id=tenant_id,
+                name=std.name,
+                code=std.code,
+                domain=std.domain,
+                description=std.description,
+            )
+        )
     s.commit()
     return std
 
@@ -850,11 +1001,17 @@ def put_deployment(tenant_id: str, dep: Deployment) -> Deployment:
         existing.environment = dep.environment
         existing.cluster = dep.cluster
     else:
-        s.add(models.DeploymentORM(
-            id=dep.id, tenant_id=tenant_id, name=dep.name, code=dep.code,
-            application_id=dep.application_id, environment=dep.environment,
-            cluster=dep.cluster,
-        ))
+        s.add(
+            models.DeploymentORM(
+                id=dep.id,
+                tenant_id=tenant_id,
+                name=dep.name,
+                code=dep.code,
+                application_id=dep.application_id,
+                environment=dep.environment,
+                cluster=dep.cluster,
+            )
+        )
     s.commit()
     return dep
 
@@ -869,16 +1026,23 @@ def put_infrastructure(tenant_id: str, infra: Infrastructure) -> Infrastructure:
         existing.kind = infra.kind
         existing.region = infra.region
     else:
-        s.add(models.InfrastructureORM(
-            id=infra.id, tenant_id=tenant_id, name=infra.name, code=infra.code,
-            kind=infra.kind, region=infra.region,
-        ))
+        s.add(
+            models.InfrastructureORM(
+                id=infra.id,
+                tenant_id=tenant_id,
+                name=infra.name,
+                code=infra.code,
+                kind=infra.kind,
+                region=infra.region,
+            )
+        )
     s.commit()
     return infra
 
 
 def put_governance_principle(
-    tenant_id: str, principle: GovernancePrinciple,
+    tenant_id: str,
+    principle: GovernancePrinciple,
 ) -> GovernancePrinciple:
     if not tenant_id:
         return principle
@@ -889,17 +1053,23 @@ def put_governance_principle(
         existing.category_id = principle.category_id
         existing.description = principle.description
     else:
-        s.add(models.GovernancePrincipleORM(
-            id=principle.id, tenant_id=tenant_id, name=principle.name,
-            code=principle.code, category_id=principle.category_id,
-            description=principle.description,
-        ))
+        s.add(
+            models.GovernancePrincipleORM(
+                id=principle.id,
+                tenant_id=tenant_id,
+                name=principle.name,
+                code=principle.code,
+                category_id=principle.category_id,
+                description=principle.description,
+            )
+        )
     s.commit()
     return principle
 
 
 def put_governance_principle_category(
-    tenant_id: str, cat: GovernancePrincipleCategory,
+    tenant_id: str,
+    cat: GovernancePrincipleCategory,
 ) -> GovernancePrincipleCategory:
     if not tenant_id:
         return cat
@@ -909,10 +1079,15 @@ def put_governance_principle_category(
         existing.name = cat.name
         existing.sort_order = cat.sort_order
     else:
-        s.add(models.GovernancePrincipleCategoryORM(
-            id=cat.id, tenant_id=tenant_id, name=cat.name, code=cat.code,
-            sort_order=cat.sort_order,
-        ))
+        s.add(
+            models.GovernancePrincipleCategoryORM(
+                id=cat.id,
+                tenant_id=tenant_id,
+                name=cat.name,
+                code=cat.code,
+                sort_order=cat.sort_order,
+            )
+        )
     s.commit()
     return cat
 
@@ -928,10 +1103,16 @@ def put_review_template(tenant_id: str, tpl: ReviewTemplate) -> ReviewTemplate:
         existing.category = tpl.category
         existing.checklist = checklist_str
     else:
-        s.add(models.ReviewTemplateORM(
-            id=tpl.id, tenant_id=tenant_id, name=tpl.name, code=tpl.code,
-            category=tpl.category, checklist=checklist_str,
-        ))
+        s.add(
+            models.ReviewTemplateORM(
+                id=tpl.id,
+                tenant_id=tenant_id,
+                name=tpl.name,
+                code=tpl.code,
+                category=tpl.category,
+                checklist=checklist_str,
+            )
+        )
     s.commit()
     return tpl
 
@@ -947,11 +1128,16 @@ def put_review_ticket(tenant_id: str, ticket: ReviewTicket) -> ReviewTicket:
         existing.template_id = ticket.template_id
         existing.status = ticket.status
     else:
-        s.add(models.ReviewTicketORM(
-            id=ticket.id, tenant_id=tenant_id, title=ticket.title,
-            application_id=ticket.application_id, template_id=ticket.template_id,
-            status=ticket.status,
-        ))
+        s.add(
+            models.ReviewTicketORM(
+                id=ticket.id,
+                tenant_id=tenant_id,
+                title=ticket.title,
+                application_id=ticket.application_id,
+                template_id=ticket.template_id,
+                status=ticket.status,
+            )
+        )
     s.commit()
     return ticket
 
@@ -967,11 +1153,16 @@ def put_tech_debt(tenant_id: str, debt: TechDebt) -> TechDebt:
         existing.severity = debt.severity
         existing.status = debt.status
     else:
-        s.add(models.TechDebtORM(
-            id=debt.id, tenant_id=tenant_id, title=debt.title,
-            application_id=debt.application_id, severity=debt.severity,
-            status=debt.status,
-        ))
+        s.add(
+            models.TechDebtORM(
+                id=debt.id,
+                tenant_id=tenant_id,
+                title=debt.title,
+                application_id=debt.application_id,
+                severity=debt.severity,
+                status=debt.status,
+            )
+        )
     s.commit()
     return debt
 
@@ -984,17 +1175,20 @@ def put_impact_analysis(result: ImpactAnalysisResult) -> ImpactAnalysisResult:
         existing.node_type = result.node_type
         existing.impacted_ids = impacted_str
     else:
-        s.add(models.ImpactAnalysisResultORM(
-            node_id=result.node_id,
-            node_type=result.node_type,
-            impacted_ids=impacted_str,
-        ))
+        s.add(
+            models.ImpactAnalysisResultORM(
+                node_id=result.node_id,
+                node_type=result.node_type,
+                impacted_ids=impacted_str,
+            )
+        )
     s.commit()
     return result
 
 
 def put_ontology_mapping_rule(
-    tenant_id: str, rule: OntologyMappingRule,
+    tenant_id: str,
+    rule: OntologyMappingRule,
 ) -> OntologyMappingRule:
     if not tenant_id:
         return rule
@@ -1005,16 +1199,23 @@ def put_ontology_mapping_rule(
         existing.source_concept = rule.source_concept
         existing.target_concept = rule.target_concept
     else:
-        s.add(models.OntologyMappingRuleORM(
-            id=rule.id, tenant_id=tenant_id, name=rule.name, code=rule.code,
-            source_concept=rule.source_concept, target_concept=rule.target_concept,
-        ))
+        s.add(
+            models.OntologyMappingRuleORM(
+                id=rule.id,
+                tenant_id=tenant_id,
+                name=rule.name,
+                code=rule.code,
+                source_concept=rule.source_concept,
+                target_concept=rule.target_concept,
+            )
+        )
     s.commit()
     return rule
 
 
 def put_ontology_mapping_change(
-    tenant_id: str, change: OntologyMappingChange,
+    tenant_id: str,
+    change: OntologyMappingChange,
 ) -> OntologyMappingChange:
     if not tenant_id:
         return change
@@ -1025,10 +1226,15 @@ def put_ontology_mapping_change(
         existing.change_type = change.change_type
         existing.description = change.description
     else:
-        s.add(models.OntologyMappingChangeORM(
-            id=change.id, tenant_id=tenant_id, rule_id=change.rule_id,
-            change_type=change.change_type, description=change.description,
-        ))
+        s.add(
+            models.OntologyMappingChangeORM(
+                id=change.id,
+                tenant_id=tenant_id,
+                rule_id=change.rule_id,
+                change_type=change.change_type,
+                description=change.description,
+            )
+        )
     s.commit()
     return change
 
@@ -1043,10 +1249,16 @@ def put_org(tenant_id: str, org: Org) -> Org:
         existing.parent_id = org.parent_id
         existing.level = org.level
     else:
-        s.add(models.OrgORM(
-            id=org.id, tenant_id=tenant_id, name=org.name, code=org.code,
-            parent_id=org.parent_id, level=org.level,
-        ))
+        s.add(
+            models.OrgORM(
+                id=org.id,
+                tenant_id=tenant_id,
+                name=org.name,
+                code=org.code,
+                parent_id=org.parent_id,
+                level=org.level,
+            )
+        )
     s.commit()
     return org
 
@@ -1060,10 +1272,15 @@ def put_role(tenant_id: str, role: Role) -> Role:
         existing.name = role.name
         existing.org_id = role.org_id
     else:
-        s.add(models.RoleORM(
-            id=role.id, tenant_id=tenant_id, name=role.name, code=role.code,
-            org_id=role.org_id,
-        ))
+        s.add(
+            models.RoleORM(
+                id=role.id,
+                tenant_id=tenant_id,
+                name=role.name,
+                code=role.code,
+                org_id=role.org_id,
+            )
+        )
     s.commit()
     return role
 
@@ -1077,16 +1294,22 @@ def put_tech_stack(tenant_id: str, stack: TechStack) -> TechStack:
         existing.name = stack.name
         existing.category = stack.category
     else:
-        s.add(models.TechStackORM(
-            id=stack.id, tenant_id=tenant_id, name=stack.name, code=stack.code,
-            category=stack.category,
-        ))
+        s.add(
+            models.TechStackORM(
+                id=stack.id,
+                tenant_id=tenant_id,
+                name=stack.name,
+                code=stack.code,
+                category=stack.category,
+            )
+        )
     s.commit()
     return stack
 
 
 def put_technology_component(
-    tenant_id: str, comp: TechnologyComponent,
+    tenant_id: str,
+    comp: TechnologyComponent,
 ) -> TechnologyComponent:
     if not tenant_id:
         return comp
@@ -1097,16 +1320,23 @@ def put_technology_component(
         existing.category = comp.category
         existing.vendor = comp.vendor
     else:
-        s.add(models.TechnologyComponentORM(
-            id=comp.id, tenant_id=tenant_id, name=comp.name, code=comp.code,
-            category=comp.category, vendor=comp.vendor,
-        ))
+        s.add(
+            models.TechnologyComponentORM(
+                id=comp.id,
+                tenant_id=tenant_id,
+                name=comp.name,
+                code=comp.code,
+                category=comp.category,
+                vendor=comp.vendor,
+            )
+        )
     s.commit()
     return comp
 
 
 def put_technology_radar_entry(
-    tenant_id: str, entry: TechnologyRadarEntry,
+    tenant_id: str,
+    entry: TechnologyRadarEntry,
 ) -> TechnologyRadarEntry:
     if not tenant_id:
         return entry
@@ -1117,10 +1347,16 @@ def put_technology_radar_entry(
         existing.quadrant = entry.quadrant
         existing.ring = entry.ring
     else:
-        s.add(models.TechnologyRadarEntryORM(
-            id=entry.id, tenant_id=tenant_id, name=entry.name, code=entry.code,
-            quadrant=entry.quadrant, ring=entry.ring,
-        ))
+        s.add(
+            models.TechnologyRadarEntryORM(
+                id=entry.id,
+                tenant_id=tenant_id,
+                name=entry.name,
+                code=entry.code,
+                quadrant=entry.quadrant,
+                ring=entry.ring,
+            )
+        )
     s.commit()
     return entry
 
@@ -1136,10 +1372,16 @@ def put_technology_stack(tenant_id: str, stack: TechnologyStack) -> TechnologySt
         existing.application_id = stack.application_id
         existing.component_ids = comp_str
     else:
-        s.add(models.TechnologyStackORM(
-            id=stack.id, tenant_id=tenant_id, name=stack.name, code=stack.code,
-            application_id=stack.application_id, component_ids=comp_str,
-        ))
+        s.add(
+            models.TechnologyStackORM(
+                id=stack.id,
+                tenant_id=tenant_id,
+                name=stack.name,
+                code=stack.code,
+                application_id=stack.application_id,
+                component_ids=comp_str,
+            )
+        )
     s.commit()
     return stack
 
@@ -1155,10 +1397,16 @@ def put_value_stream(tenant_id: str, vs: ValueStream) -> ValueStream:
         existing.stages = stages_str
         existing.description = vs.description
     else:
-        s.add(models.ValueStreamORM(
-            id=vs.id, tenant_id=tenant_id, name=vs.name, code=vs.code,
-            stages=stages_str, description=vs.description,
-        ))
+        s.add(
+            models.ValueStreamORM(
+                id=vs.id,
+                tenant_id=tenant_id,
+                name=vs.name,
+                code=vs.code,
+                stages=stages_str,
+                description=vs.description,
+            )
+        )
     s.commit()
     return vs
 
@@ -1205,12 +1453,13 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
         [put_infrastructure(tenant_id, i) for i in mem.list_infrastructures(tenant_id)]
     )
     counts["governance_principle_categories"] = len(
-        [put_governance_principle_category(tenant_id, c)
-         for c in mem.list_governance_principle_categories(tenant_id)]
+        [
+            put_governance_principle_category(tenant_id, c)
+            for c in mem.list_governance_principle_categories(tenant_id)
+        ]
     )
     counts["governance_principles"] = len(
-        [put_governance_principle(tenant_id, p)
-         for p in mem.list_governance_principles(tenant_id)]
+        [put_governance_principle(tenant_id, p) for p in mem.list_governance_principles(tenant_id)]
     )
     counts["review_templates"] = len(
         [put_review_template(tenant_id, t) for t in mem.list_review_templates(tenant_id)]
@@ -1222,33 +1471,30 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
         [put_tech_debt(tenant_id, d) for d in mem.list_tech_debts(tenant_id)]
     )
     counts["ontology_mapping_rules"] = len(
-        [put_ontology_mapping_rule(tenant_id, r)
-         for r in mem.list_ontology_mapping_rules(tenant_id)]
+        [
+            put_ontology_mapping_rule(tenant_id, r)
+            for r in mem.list_ontology_mapping_rules(tenant_id)
+        ]
     )
     counts["ontology_mapping_changes"] = len(
-        [put_ontology_mapping_change(tenant_id, c)
-         for c in mem.list_ontology_mapping_changes(tenant_id)]
+        [
+            put_ontology_mapping_change(tenant_id, c)
+            for c in mem.list_ontology_mapping_changes(tenant_id)
+        ]
     )
-    counts["orgs"] = len(
-        [put_org(tenant_id, o) for o in _mem_orgs(tenant_id)]
-    )
-    counts["roles"] = len(
-        [put_role(tenant_id, r) for r in mem.list_org_roles(tenant_id)]
-    )
+    counts["orgs"] = len([put_org(tenant_id, o) for o in _mem_orgs(tenant_id)])
+    counts["roles"] = len([put_role(tenant_id, r) for r in mem.list_org_roles(tenant_id)])
     counts["tech_stacks"] = len(
         [put_tech_stack(tenant_id, t) for t in mem.list_tech_stacks(tenant_id)]
     )
     counts["technology_components"] = len(
-        [put_technology_component(tenant_id, c)
-         for c in mem.list_technology_components(tenant_id)]
+        [put_technology_component(tenant_id, c) for c in mem.list_technology_components(tenant_id)]
     )
     counts["technology_radar"] = len(
-        [put_technology_radar_entry(tenant_id, r)
-         for r in mem.list_technology_radar(tenant_id)]
+        [put_technology_radar_entry(tenant_id, r) for r in mem.list_technology_radar(tenant_id)]
     )
     counts["technology_stacks"] = len(
-        [put_technology_stack(tenant_id, t)
-         for t in mem.list_technology_stacks(tenant_id)]
+        [put_technology_stack(tenant_id, t) for t in mem.list_technology_stacks(tenant_id)]
     )
     counts["value_streams"] = len(
         [put_value_stream(tenant_id, v) for v in mem.list_value_streams(tenant_id)]
@@ -1272,14 +1518,16 @@ def _mem_capabilities(tenant_id: str) -> list[Capability]:
 
     def _walk(nodes: list[dict[str, Any]], parent_code: str = "") -> None:
         for node in nodes:
-            result.append(Capability(
-                id=node["id"],
-                tenant_id=tenant_id,
-                name=node["name"],
-                code=node["code"],
-                parent_id=parent_code,
-                level=node.get("level", 1),
-            ))
+            result.append(
+                Capability(
+                    id=node["id"],
+                    tenant_id=tenant_id,
+                    name=node["name"],
+                    code=node["code"],
+                    parent_id=parent_code,
+                    level=node.get("level", 1),
+                )
+            )
             _walk(node.get("children", []), node["code"])
 
     _walk(mem.list_capability_tree(tenant_id))
@@ -1298,14 +1546,16 @@ def _mem_orgs(tenant_id: str) -> list[Org]:
 
     def _walk(nodes: list[dict[str, Any]], parent_code: str = "") -> None:
         for node in nodes:
-            result.append(Org(
-                id=node["id"],
-                tenant_id=tenant_id,
-                name=node["name"],
-                code=node["code"],
-                parent_id=parent_code,
-                level=node.get("level", 1),
-            ))
+            result.append(
+                Org(
+                    id=node["id"],
+                    tenant_id=tenant_id,
+                    name=node["name"],
+                    code=node["code"],
+                    parent_id=parent_code,
+                    level=node.get("level", 1),
+                )
+            )
             _walk(node.get("children", []), node["code"])
 
     _walk(mem.list_org_tree(tenant_id))

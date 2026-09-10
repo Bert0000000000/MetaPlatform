@@ -3,6 +3,7 @@
 Uses SQLite in-memory + Base.metadata.create_all to verify the SQL
 store's CRUD + tenant isolation.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -31,9 +32,13 @@ _TENANT_B = "tenant-bigo"
 # ---------------------------------------------------------------------------
 def test_put_and_get_document() -> None:
     doc = mem.RagDocument(
-        id="doc-1", tenant_id=_TENANT_A, document_id="doc-1",
-        filename="manual.md", chunk_count=12,
-        metadata={"source": "upload"}, status="indexed",
+        id="doc-1",
+        tenant_id=_TENANT_A,
+        document_id="doc-1",
+        filename="manual.md",
+        chunk_count=12,
+        metadata={"source": "upload"},
+        status="indexed",
         created_at="2026-08-01T00:00:00Z",
         updated_at="2026-08-01T00:00:00Z",
     )
@@ -51,13 +56,20 @@ def test_put_and_get_document() -> None:
 
 def test_put_document_upsert() -> None:
     doc = mem.RagDocument(
-        id="doc-2", tenant_id=_TENANT_A, document_id="doc-2",
-        filename="old.md", chunk_count=5,
+        id="doc-2",
+        tenant_id=_TENANT_A,
+        document_id="doc-2",
+        filename="old.md",
+        chunk_count=5,
     )
     sql.put_document(_TENANT_A, doc)
     doc = mem.RagDocument(
-        id="doc-2", tenant_id=_TENANT_A, document_id="doc-2",
-        filename="new.md", chunk_count=10, status="failed",
+        id="doc-2",
+        tenant_id=_TENANT_A,
+        document_id="doc-2",
+        filename="new.md",
+        chunk_count=10,
+        status="failed",
         metadata={"error": "parse"},
     )
     sql.put_document(_TENANT_A, doc)
@@ -71,18 +83,28 @@ def test_put_document_upsert() -> None:
 
 
 def test_delete_document() -> None:
-    sql.put_document(_TENANT_A, mem.RagDocument(
-        id="doc-del", tenant_id=_TENANT_A, document_id="doc-del",
-    ))
+    sql.put_document(
+        _TENANT_A,
+        mem.RagDocument(
+            id="doc-del",
+            tenant_id=_TENANT_A,
+            document_id="doc-del",
+        ),
+    )
     assert sql.delete_document(_TENANT_A, "doc-del") is True
     assert sql.get_document(_TENANT_A, "doc-del") is None
     assert sql.delete_document(_TENANT_A, "doc-del") is False
 
 
 def test_delete_document_rejects_cross_tenant() -> None:
-    sql.put_document(_TENANT_A, mem.RagDocument(
-        id="doc-x", tenant_id=_TENANT_A, document_id="doc-x",
-    ))
+    sql.put_document(
+        _TENANT_A,
+        mem.RagDocument(
+            id="doc-x",
+            tenant_id=_TENANT_A,
+            document_id="doc-x",
+        ),
+    )
     assert sql.delete_document(_TENANT_B, "doc-x") is False
     assert sql.get_document(_TENANT_A, "doc-x") is not None
 
@@ -92,8 +114,12 @@ def test_delete_document_rejects_cross_tenant() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_index() -> None:
     idx = mem.RagIndex(
-        id="idx-1", tenant_id=_TENANT_A, name="hybrid",
-        backend="milvus", chunk_count=100, status="active",
+        id="idx-1",
+        tenant_id=_TENANT_A,
+        name="hybrid",
+        backend="milvus",
+        chunk_count=100,
+        status="active",
     )
     sql.put_index(_TENANT_A, idx)
 
@@ -106,9 +132,14 @@ def test_put_and_get_index() -> None:
 
 
 def test_delete_index() -> None:
-    sql.put_index(_TENANT_A, mem.RagIndex(
-        id="idx-del", tenant_id=_TENANT_A, name="temp",
-    ))
+    sql.put_index(
+        _TENANT_A,
+        mem.RagIndex(
+            id="idx-del",
+            tenant_id=_TENANT_A,
+            name="temp",
+        ),
+    )
     assert sql.delete_index(_TENANT_A, "idx-del") is True
     assert sql.get_index(_TENANT_A, "idx-del") is None
 
@@ -117,12 +148,22 @@ def test_delete_index() -> None:
 # Tenant isolation
 # ---------------------------------------------------------------------------
 def test_tenant_isolation() -> None:
-    sql.put_document(_TENANT_A, mem.RagDocument(
-        id="doc-a", tenant_id=_TENANT_A, document_id="doc-a",
-    ))
-    sql.put_document(_TENANT_B, mem.RagDocument(
-        id="doc-b", tenant_id=_TENANT_B, document_id="doc-b",
-    ))
+    sql.put_document(
+        _TENANT_A,
+        mem.RagDocument(
+            id="doc-a",
+            tenant_id=_TENANT_A,
+            document_id="doc-a",
+        ),
+    )
+    sql.put_document(
+        _TENANT_B,
+        mem.RagDocument(
+            id="doc-b",
+            tenant_id=_TENANT_B,
+            document_id="doc-b",
+        ),
+    )
 
     a_docs = sql.list_documents(_TENANT_A)
     assert [d.id for d in a_docs] == ["doc-a"]

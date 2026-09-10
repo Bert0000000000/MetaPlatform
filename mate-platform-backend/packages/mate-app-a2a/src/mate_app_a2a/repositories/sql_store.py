@@ -8,6 +8,7 @@ Dict fields are JSON-encoded into Text columns; the `capabilities`
 tuple is stored comma-separated, matching the copilot sql_store
 convention.
 """
+
 from __future__ import annotations
 
 import json
@@ -113,11 +114,15 @@ def list_agents(tenant_id: str) -> list[Agent]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.AgentORM)
-        .where(models.AgentORM.tenant_id == tenant_id)
-        .order_by(models.AgentORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.AgentORM)
+            .where(models.AgentORM.tenant_id == tenant_id)
+            .order_by(models.AgentORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_agent(r) for r in rows]
 
 
@@ -131,9 +136,7 @@ def get_agent(tenant_id: str, agent_id: str) -> Agent | None:
     return _orm_to_agent(row)
 
 
-def list_capabilities(
-    tenant_id: str, agent_id: str | None = None
-) -> list[AgentCapability]:
+def list_capabilities(tenant_id: str, agent_id: str | None = None) -> list[AgentCapability]:
     if not tenant_id:
         return []
     s = _session()
@@ -152,11 +155,15 @@ def list_external_agents(tenant_id: str) -> list[ExternalAgent]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.ExternalAgentORM)
-        .where(models.ExternalAgentORM.tenant_id == tenant_id)
-        .order_by(models.ExternalAgentORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.ExternalAgentORM)
+            .where(models.ExternalAgentORM.tenant_id == tenant_id)
+            .order_by(models.ExternalAgentORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_external(r) for r in rows]
 
 
@@ -164,11 +171,15 @@ def list_delegations(tenant_id: str) -> list[DelegationTask]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DelegationTaskORM)
-        .where(models.DelegationTaskORM.tenant_id == tenant_id)
-        .order_by(models.DelegationTaskORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DelegationTaskORM)
+            .where(models.DelegationTaskORM.tenant_id == tenant_id)
+            .order_by(models.DelegationTaskORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_delegation(r) for r in rows]
 
 
@@ -196,11 +207,16 @@ def put_agent(tenant_id: str, agent: Agent) -> Agent:
         existing.endpoint = agent.endpoint
         existing.status = agent.status
     else:
-        s.add(models.AgentORM(
-            id=agent.id, tenant_id=tenant_id, name=agent.name,
-            description=agent.description, endpoint=agent.endpoint,
-            status=agent.status,
-        ))
+        s.add(
+            models.AgentORM(
+                id=agent.id,
+                tenant_id=tenant_id,
+                name=agent.name,
+                description=agent.description,
+                endpoint=agent.endpoint,
+                status=agent.status,
+            )
+        )
     s.commit()
     return agent
 
@@ -217,12 +233,17 @@ def put_capability(tenant_id: str, cap: AgentCapability) -> AgentCapability:
         existing.input_schema = _dump(cap.input_schema)
         existing.output_schema = _dump(cap.output_schema)
     else:
-        s.add(models.AgentCapabilityORM(
-            id=cap.id, tenant_id=tenant_id, agent_id=cap.agent_id,
-            name=cap.name, description=cap.description,
-            input_schema=_dump(cap.input_schema),
-            output_schema=_dump(cap.output_schema),
-        ))
+        s.add(
+            models.AgentCapabilityORM(
+                id=cap.id,
+                tenant_id=tenant_id,
+                agent_id=cap.agent_id,
+                name=cap.name,
+                description=cap.description,
+                input_schema=_dump(cap.input_schema),
+                output_schema=_dump(cap.output_schema),
+            )
+        )
     s.commit()
     return cap
 
@@ -240,12 +261,18 @@ def put_delegation(tenant_id: str, task: DelegationTask) -> DelegationTask:
         existing.result = _dump(task.result)
         existing.created_at = task.created_at
     else:
-        s.add(models.DelegationTaskORM(
-            id=task.id, tenant_id=tenant_id,
-            target_agent_id=task.target_agent_id, message=task.message,
-            context=_dump(task.context), status=task.status,
-            result=_dump(task.result), created_at=task.created_at,
-        ))
+        s.add(
+            models.DelegationTaskORM(
+                id=task.id,
+                tenant_id=tenant_id,
+                target_agent_id=task.target_agent_id,
+                message=task.message,
+                context=_dump(task.context),
+                status=task.status,
+                result=_dump(task.result),
+                created_at=task.created_at,
+            )
+        )
     s.commit()
     return task
 
@@ -261,18 +288,21 @@ def put_external_agent(tenant_id: str, agent: ExternalAgent) -> ExternalAgent:
         existing.capabilities = _dump_tuple(agent.capabilities)
         existing.status = agent.status
     else:
-        s.add(models.ExternalAgentORM(
-            id=agent.id, tenant_id=tenant_id, name=agent.name,
-            endpoint=agent.endpoint, capabilities=_dump_tuple(agent.capabilities),
-            status=agent.status,
-        ))
+        s.add(
+            models.ExternalAgentORM(
+                id=agent.id,
+                tenant_id=tenant_id,
+                name=agent.name,
+                endpoint=agent.endpoint,
+                capabilities=_dump_tuple(agent.capabilities),
+                status=agent.status,
+            )
+        )
     s.commit()
     return agent
 
 
-def put_task_result(
-    tenant_id: str, task_id: str, result: dict[str, Any], status: str
-) -> None:
+def put_task_result(tenant_id: str, task_id: str, result: dict[str, Any], status: str) -> None:
     if not tenant_id:
         return
     s = _session()
@@ -281,10 +311,14 @@ def put_task_result(
         existing.result = _dump(result)
         existing.status = status
     else:
-        s.add(models.TaskResultORM(
-            task_id=task_id, tenant_id=tenant_id,
-            result=_dump(result), status=status,
-        ))
+        s.add(
+            models.TaskResultORM(
+                task_id=task_id,
+                tenant_id=tenant_id,
+                result=_dump(result),
+                status=status,
+            )
+        )
     s.commit()
 
 

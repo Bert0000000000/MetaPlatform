@@ -43,19 +43,24 @@ ONT_BASE = "http://mock-tech-ont:8007"
 def test_propose_model_type_returns_proposal_id() -> None:
     route = respx.post(
         f"{ONT_BASE}/api/v1/ont/v2/object-types/propose",
-    ).mock(return_value=httpx.Response(200, json={
-        "proposal_id": "prop-abc-123",
-        "kind": "model_type",
-        "status": "pending",
-        "action_rid": "ont.t.obj.foo.v1",
-        "target_iid": None,
-        "parameters": {"primary_key": ["id"]},
-        "expected_diff": {"primary_key": ["id"]},
-        "impact_summary": "新建 Foo 类型",
-        "confirmed_by": None,
-        "created_at": "2026-08-19T00:00:00+00:00",
-        "confirmed_at": None,
-    }))
+    ).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "proposal_id": "prop-abc-123",
+                "kind": "model_type",
+                "status": "pending",
+                "action_rid": "ont.t.obj.foo.v1",
+                "target_iid": None,
+                "parameters": {"primary_key": ["id"]},
+                "expected_diff": {"primary_key": ["id"]},
+                "impact_summary": "新建 Foo 类型",
+                "confirmed_by": None,
+                "created_at": "2026-08-19T00:00:00+00:00",
+                "confirmed_at": None,
+            },
+        )
+    )
 
     async def run() -> dict:
         tool = OntProposeModelTypeTool(base_url=ONT_BASE)
@@ -89,13 +94,24 @@ def test_propose_model_type_optional_args() -> None:
     """只传必填字段；properties / primary_key / domain 缺省也走得通。"""
     route = respx.post(
         f"{ONT_BASE}/api/v1/ont/v2/object-types/propose",
-    ).mock(return_value=httpx.Response(200, json={
-        "proposal_id": "prop-min", "kind": "model_type",
-        "status": "pending", "action_rid": "", "target_iid": None,
-        "parameters": {}, "expected_diff": {},
-        "impact_summary": "min", "confirmed_by": None,
-        "created_at": "", "confirmed_at": None,
-    }))
+    ).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "proposal_id": "prop-min",
+                "kind": "model_type",
+                "status": "pending",
+                "action_rid": "",
+                "target_iid": None,
+                "parameters": {},
+                "expected_diff": {},
+                "impact_summary": "min",
+                "confirmed_by": None,
+                "created_at": "",
+                "confirmed_at": None,
+            },
+        )
+    )
 
     async def run() -> dict:
         tool = OntProposeModelTypeTool(base_url=ONT_BASE)
@@ -118,18 +134,24 @@ def test_propose_model_type_optional_args() -> None:
 def test_propose_instance_forwards_to_class_route() -> None:
     route = respx.post(
         f"{ONT_BASE}/api/v1/ont/v2/classes/ont.t.obj.order.v1/propose-instance",
-    ).mock(return_value=httpx.Response(200, json={
-        "proposal_id": "prop-inst-1",
-        "kind": "create_instance",
-        "status": "pending",
-        "action_rid": "ont.t.obj.order.v1",
-        "target_iid": None,
-        "parameters": {"props": {"status": "open", "amount": 100}},
-        "expected_diff": {"status": "open"},
-        "impact_summary": "新建订单",
-        "confirmed_by": None,
-        "created_at": "", "confirmed_at": None,
-    }))
+    ).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "proposal_id": "prop-inst-1",
+                "kind": "create_instance",
+                "status": "pending",
+                "action_rid": "ont.t.obj.order.v1",
+                "target_iid": None,
+                "parameters": {"props": {"status": "open", "amount": 100}},
+                "expected_diff": {"status": "open"},
+                "impact_summary": "新建订单",
+                "confirmed_by": None,
+                "created_at": "",
+                "confirmed_at": None,
+            },
+        )
+    )
 
     async def run() -> dict:
         tool = OntProposeInstanceTool(base_url=ONT_BASE)
@@ -158,23 +180,29 @@ def test_propose_instance_forwards_to_class_route() -> None:
 def test_merge_objects_proposes_merge_suggestion() -> None:
     route = respx.post(
         f"{ONT_BASE}/api/v1/ont/v2/object-types/propose-merge",
-    ).mock(return_value=httpx.Response(200, json={
-        "proposal_id": "prop-merge-1",
-        "kind": "merge_suggestion",
-        "status": "pending",
-        "action_rid": "ont.t.obj.order.v1",
-        "target_iid": None,
-        "parameters": {
-            "source_rid": "ont.t.obj.order_old.v1",
-            "target_rid": "ont.t.obj.order.v1",
-            "similarity": 0.92,
-            "mapping": {"amount_old": "amount"},
-        },
-        "expected_diff": {"affected_individuals": 12},
-        "impact_summary": "合并 order_old → order",
-        "confirmed_by": None,
-        "created_at": "", "confirmed_at": None,
-    }))
+    ).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "proposal_id": "prop-merge-1",
+                "kind": "merge_suggestion",
+                "status": "pending",
+                "action_rid": "ont.t.obj.order.v1",
+                "target_iid": None,
+                "parameters": {
+                    "source_rid": "ont.t.obj.order_old.v1",
+                    "target_rid": "ont.t.obj.order.v1",
+                    "similarity": 0.92,
+                    "mapping": {"amount_old": "amount"},
+                },
+                "expected_diff": {"affected_individuals": 12},
+                "impact_summary": "合并 order_old → order",
+                "confirmed_by": None,
+                "created_at": "",
+                "confirmed_at": None,
+            },
+        )
+    )
 
     async def run() -> dict:
         tool = OntMergeObjectsTool(base_url=ONT_BASE)
@@ -206,22 +234,27 @@ def test_merge_objects_proposes_merge_suggestion() -> None:
 def test_preview_proposal_returns_impact_summary() -> None:
     route = respx.get(
         f"{ONT_BASE}/api/v1/ont/v2/proposals/prop-merge-1/preview",
-    ).mock(return_value=httpx.Response(200, json={
-        "proposal_id": "prop-merge-1",
-        "kind": "merge_suggestion",
-        "action_type": "execute",
-        "target_rid": "ont.t.obj.order.v1",
-        "status": "pending",
-        "parameters": {"source_rid": "ont.t.obj.order_old.v1"},
-        "expected_diff": {},
-        "impact_summary": "合并 order_old → order",
-        "merge_source_rid": "ont.t.obj.order_old.v1",
-        "merge_target_rid": "ont.t.obj.order.v1",
-        "merge_mapping": {"amount_old": "amount"},
-        "merge_property_overlap": {"amount": {"shared": True}},
-        "confirmed_by": None,
-        "confirmed_at": None,
-    }))
+    ).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "proposal_id": "prop-merge-1",
+                "kind": "merge_suggestion",
+                "action_type": "execute",
+                "target_rid": "ont.t.obj.order.v1",
+                "status": "pending",
+                "parameters": {"source_rid": "ont.t.obj.order_old.v1"},
+                "expected_diff": {},
+                "impact_summary": "合并 order_old → order",
+                "merge_source_rid": "ont.t.obj.order_old.v1",
+                "merge_target_rid": "ont.t.obj.order.v1",
+                "merge_mapping": {"amount_old": "amount"},
+                "merge_property_overlap": {"amount": {"shared": True}},
+                "confirmed_by": None,
+                "confirmed_at": None,
+            },
+        )
+    )
 
     async def run() -> dict:
         tool = OntPreviewProposalTool(base_url=ONT_BASE)
@@ -272,13 +305,24 @@ def test_confirm_proposal_allows_user_caller() -> None:
     """显式 __caller__="user" 可走通，转发到 tech-ont。"""
     route = respx.post(
         f"{ONT_BASE}/api/v1/ont/v2/proposals/prop-1/confirm",
-    ).mock(return_value=httpx.Response(200, json={
-        "proposal_id": "prop-1", "kind": "model_type",
-        "status": "confirmed", "action_rid": "", "target_iid": None,
-        "parameters": {}, "expected_diff": {},
-        "impact_summary": "", "confirmed_by": "u-1",
-        "created_at": "", "confirmed_at": "2026-08-19T00:00:00",
-    }))
+    ).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "proposal_id": "prop-1",
+                "kind": "model_type",
+                "status": "confirmed",
+                "action_rid": "",
+                "target_iid": None,
+                "parameters": {},
+                "expected_diff": {},
+                "impact_summary": "",
+                "confirmed_by": "u-1",
+                "created_at": "",
+                "confirmed_at": "2026-08-19T00:00:00",
+            },
+        )
+    )
     server: MCPServer = create_server(name="test-hitl-user")
     tool = OntConfirmProposalTool(base_url=ONT_BASE)
     server.register_tool(tool)
@@ -334,16 +378,23 @@ def test_propose_model_type_cross_tenant_403() -> None:
     """tech-ont v2 抛 403（cross-tenant propose denied）应被工具透传。"""
     respx.post(
         f"{ONT_BASE}/api/v1/ont/v2/object-types/propose",
-    ).mock(return_value=httpx.Response(403, json={
-        "detail": "cross-tenant propose denied",
-    }))
+    ).mock(
+        return_value=httpx.Response(
+            403,
+            json={
+                "detail": "cross-tenant propose denied",
+            },
+        )
+    )
 
     async def run() -> None:
         tool = OntProposeModelTypeTool(base_url=ONT_BASE)
         try:
             with pytest.raises(httpx.HTTPStatusError) as ei:
                 await tool(
-                    name="X", slug="x", impact_summary="other-tenant",
+                    name="X",
+                    slug="x",
+                    impact_summary="other-tenant",
                 )
             assert ei.value.response.status_code == 403
         finally:
@@ -356,9 +407,14 @@ def test_propose_model_type_cross_tenant_403() -> None:
 def test_merge_objects_cross_tenant_403() -> None:
     respx.post(
         f"{ONT_BASE}/api/v1/ont/v2/object-types/propose-merge",
-    ).mock(return_value=httpx.Response(403, json={
-        "detail": "cross-tenant propose denied",
-    }))
+    ).mock(
+        return_value=httpx.Response(
+            403,
+            json={
+                "detail": "cross-tenant propose denied",
+            },
+        )
+    )
 
     async def run() -> None:
         tool = OntMergeObjectsTool(base_url=ONT_BASE)
@@ -407,7 +463,9 @@ def test_write_tools_carry_metadata(tool_cls: type) -> None:
     assert tool.input_schema["type"] == "object"
     # HITL 边界：confirm / reject / execute
     if tool_cls in (
-        OntConfirmProposalTool, OntRejectProposalTool, OntExecuteProposalTool,
+        OntConfirmProposalTool,
+        OntRejectProposalTool,
+        OntExecuteProposalTool,
     ):
         assert tool.agent_invokable is False
         assert tool.readonly_by_user is True
@@ -421,10 +479,15 @@ def test_build_factory_returns_all_tools() -> None:
     tools = build_ontology_proxy_tools()
     names = {t.name for t in tools}
     expected = {
-        "ont_list_classes", "ont_inspect_class", "ont_object_query",
-        "ont_propose_model_type", "ont_propose_instance",
-        "ont_merge_objects", "ont_preview_proposal",
-        "ont_confirm_proposal", "ont_reject_proposal",
+        "ont_list_classes",
+        "ont_inspect_class",
+        "ont_object_query",
+        "ont_propose_model_type",
+        "ont_propose_instance",
+        "ont_merge_objects",
+        "ont_preview_proposal",
+        "ont_confirm_proposal",
+        "ont_reject_proposal",
         "ont_execute_proposal",
     }
     assert names == expected

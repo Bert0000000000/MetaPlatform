@@ -68,24 +68,24 @@ class ObjectSetQuery:
 
 ## 3. 跟既有决策的关系
 
-| 决策 | 关系 |
-|---|---|
-| ADR-0021（12 基元） | `ObjectSet` 基元自身演进为结构化 IR；rid 体系与其余 11 基元不动 |
-| ADR-0025~0027（MCP 注册） | 生成器喂给既有 MCP 注册面；per-tenant rate limiter / federation 直接复用 |
-| G7 markings（spec v0.2 审计逆转） | 本 ADR 将其从对象级上抬到类型级，成为工具治理基座 |
-| ADR-0042（组合内核） | 无直接耦合；工具清单虚拟化不触发 capability fiber（fiber 跟踪的是 MCP 注销事件，本批无 push） |
-| 自建原则 v0.4 | 沿用：对标 Palantir 机制，全部自建 |
+| 决策                              | 关系                                                                                          |
+| --------------------------------- | --------------------------------------------------------------------------------------------- |
+| ADR-0021（12 基元）               | `ObjectSet` 基元自身演进为结构化 IR；rid 体系与其余 11 基元不动                               |
+| ADR-0025~0027（MCP 注册）         | 生成器喂给既有 MCP 注册面；per-tenant rate limiter / federation 直接复用                      |
+| G7 markings（spec v0.2 审计逆转） | 本 ADR 将其从对象级上抬到类型级，成为工具治理基座                                             |
+| ADR-0042（组合内核）              | 无直接耦合；工具清单虚拟化不触发 capability fiber（fiber 跟踪的是 MCP 注销事件，本批无 push） |
+| 自建原则 v0.4                     | 沿用：对标 Palantir 机制，全部自建                                                            |
 
 ## 4. 跟 13 硬规则对位
 
-| 硬规则 | 承担 |
-|---|---|
+| 硬规则                       | 承担                                                                                   |
+| ---------------------------- | -------------------------------------------------------------------------------------- |
 | ① Swagger 没有接口不写 route | 新端点（object_query v2 / inspect / 工具清单）进 `contracts/openapi/services/ont.yaml` |
-| ③ tenant 上下文 | 查询/工具清单全链路 tenant 透传，PG 侧走既有 db_filter |
-| ④ 外部系统 ACL Client | MCP center 转调 tech-ont 走 mate-clients BearerAuth 封装（forbid_bare_httpx 覆盖） |
-| ⑥ 静态检查 | 新文件 pyright-strict + ruff 干净 |
-| ⑦ 跳过测试不 Accepted | 双后端算子单测 + e2e 全绿为验收前提 |
-| ⑩ 验收证据 | 独立 `MP-SAL-01-ACCEPTANCE.md`（spec §5.5：不合并档） |
+| ③ tenant 上下文              | 查询/工具清单全链路 tenant 透传，PG 侧走既有 db_filter                                 |
+| ④ 外部系统 ACL Client        | MCP center 转调 tech-ont 走 mate-clients BearerAuth 封装（forbid_bare_httpx 覆盖）     |
+| ⑥ 静态检查                   | 新文件 pyright-strict + ruff 干净                                                      |
+| ⑦ 跳过测试不 Accepted        | 双后端算子单测 + e2e 全绿为验收前提                                                    |
+| ⑩ 验收证据                   | 独立 `MP-SAL-01-ACCEPTANCE.md`（spec §5.5：不合并档）                                  |
 
 ## 5. 验收
 
@@ -96,8 +96,8 @@ class ObjectSetQuery:
 
 ## 6. 风险与对冲
 
-| 风险 | 对冲 |
-|---|---|
-| 工具数随类型线性增长（17 域接入后爆炸） | 三重对冲已内置：IR 内核不重复实现 / 虚拟注册表零同步 / markings 域级批量可见性控制。接入纪律：每域只对 AI 暴露「热」类型 |
-| Palantir 尚有属性级可见与 retrieval context 配对 | 前者机制已在（PropertyFormat.MARKING）将来细化；后者 = MP-SAL-02（OAG）紧随本批 |
-| filter_expr 糖与 IR 的能力差 | 糖只降级不删除；新算子仅 IR 可表达（文档明示），前端页面逐步迁移 |
+| 风险                                             | 对冲                                                                                                                     |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| 工具数随类型线性增长（17 域接入后爆炸）          | 三重对冲已内置：IR 内核不重复实现 / 虚拟注册表零同步 / markings 域级批量可见性控制。接入纪律：每域只对 AI 暴露「热」类型 |
+| Palantir 尚有属性级可见与 retrieval context 配对 | 前者机制已在（PropertyFormat.MARKING）将来细化；后者 = MP-SAL-02（OAG）紧随本批                                          |
+| filter_expr 糖与 IR 的能力差                     | 糖只降级不删除；新算子仅 IR 可表达（文档明示），前端页面逐步迁移                                                         |

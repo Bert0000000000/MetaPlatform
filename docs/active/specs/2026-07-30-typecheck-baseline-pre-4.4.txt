@@ -83,11 +83,11 @@ src/pages/agents/components/DimensionScoreChart.tsx(4,15): error TS2305: Module 
 er 'DimensionScore'.
 src/pages/agents/components/DimensionScoreChart.tsx(4,31): error TS2305: Module '"@/api/dw/types"' has no exported memb
 er 'EvaluationDimension'.
-src/pages/agents/components/EvaluationReport.tsx(12,3): error TS2305: Module '"@/api/dw/types"' has no exported member 
+src/pages/agents/components/EvaluationReport.tsx(12,3): error TS2305: Module '"@/api/dw/types"' has no exported member
 'DIMENSION_META'.
-src/pages/agents/components/EvaluationReport.tsx(13,3): error TS2305: Module '"@/api/dw/types"' has no exported member 
+src/pages/agents/components/EvaluationReport.tsx(13,3): error TS2305: Module '"@/api/dw/types"' has no exported member
 'SUGGESTION_CATEGORY_META'.
-src/pages/agents/components/EvaluationReport.tsx(14,3): error TS2305: Module '"@/api/dw/types"' has no exported member 
+src/pages/agents/components/EvaluationReport.tsx(14,3): error TS2305: Module '"@/api/dw/types"' has no exported member
 'SUGGESTION_PRIORITY_META'.
 src/pages/agents/components/EvaluationReport.tsx(16,15): error TS2305: Module '"@/api/dw/types"' has no exported member
  'EvaluationReportDetail'.
@@ -112,20 +112,20 @@ src/pages/agents/components/OptimizationSuggestionsCard.tsx(131,44): error TS700
 ' type.
 src/pages/dashboard/admin/ConfigsPage.tsx(21,8): error TS2307: Cannot find module '@/api/admin/configs' or its correspo
 nding type declarations.
-src/pages/dashboard/admin/ConfigsPage.tsx(22,56): error TS2307: Cannot find module '@/types' or its corresponding type 
+src/pages/dashboard/admin/ConfigsPage.tsx(22,56): error TS2307: Cannot find module '@/types' or its corresponding type
 declarations.
 src/pages/dashboard/admin/ConfigsPage.tsx(23,29): error TS2307: Cannot find module './__AdminLayout' or its correspondi
 ng type declarations.
 src/pages/dashboard/admin/ConfigsPage.tsx(24,32): error TS2307: Cannot find module '@/utils/datetime' or its correspond
 ing type declarations.
-src/pages/dashboard/admin/ConfigsPage.tsx(25,29): error TS2307: Cannot find module '@/contexts/SettingsContext' or its 
+src/pages/dashboard/admin/ConfigsPage.tsx(25,29): error TS2307: Cannot find module '@/contexts/SettingsContext' or its
 corresponding type declarations.
 src/pages/dashboard/admin/ConfigsPage.tsx(171,122): error TS7006: Parameter 'o' implicitly has an 'any' type.
-src/pages/dashboard/admin/LogsPage.tsx(21,8): error TS2307: Cannot find module '@/api/admin/logs' or its corresponding 
+src/pages/dashboard/admin/LogsPage.tsx(21,8): error TS2307: Cannot find module '@/api/admin/logs' or its corresponding
 type declarations.
 src/pages/dashboard/admin/LogsPage.tsx(22,49): error TS2307: Cannot find module '@/types' or its corresponding type dec
 larations.
-src/pages/dashboard/admin/LogsPage.tsx(23,29): error TS2307: Cannot find module './__AdminLayout' or its corresponding 
+src/pages/dashboard/admin/LogsPage.tsx(23,29): error TS2307: Cannot find module './__AdminLayout' or its corresponding
 type declarations.
 src/pages/dashboard/admin/LogsPage.tsx(24,32): error TS2307: Cannot find module '@/utils/datetime' or its corresponding
  type declarations.
@@ -139,13 +139,13 @@ src/pages/dashboard/admin/OperationsPage.tsx(11,89): error TS2307: Cannot find m
 pe declarations.
 src/pages/dashboard/admin/OperationsPage.tsx(12,29): error TS2307: Cannot find module './__AdminLayout' or its correspo
 nding type declarations.
-src/pages/dashboard/admin/OrgsPage.tsx(34,8): error TS2307: Cannot find module '@/api/admin/orgs' or its corresponding 
+src/pages/dashboard/admin/OrgsPage.tsx(34,8): error TS2307: Cannot find module '@/api/admin/orgs' or its corresponding
 type declarations.
 src/pages/dashboard/admin/OrgsPage.tsx(40,8): error TS2307: Cannot find module '@/types' or its corresponding type decl
 arations.
-src/pages/dashboard/admin/OrgsPage.tsx(41,29): error TS2307: Cannot find module './__AdminLayout' or its corresponding 
+src/pages/dashboard/admin/OrgsPage.tsx(41,29): error TS2307: Cannot find module './__AdminLayout' or its corresponding
 type declarations.
-src/pages/dashboard/admin/OverviewPage.tsx(12,27): error TS2307: Cannot find module '@/api/admin' or its corresponding 
+src/pages/dashboard/admin/OverviewPage.tsx(12,27): error TS2307: Cannot find module '@/api/admin' or its corresponding
 type declarations.
 src/pages/dashboard/admin/OverviewPage.tsx(13,27): error TS2307: Cannot find module '@/api/admin/permissions' or its co
 rresponding type declarations.
@@ -155,7 +155,7 @@ src/pages/dashboard/admin/OverviewPage.tsx(15,31): error TS2307: Cannot find mod
 ding type declarations.
 src/pages/dashboard/admin/OverviewPage.tsx(16,29): error TS2307: Cannot find module './__AdminLayout' or its correspond
 ing type declarations.
-src/pages/dashboard/admin/PermissionsPage.tsx(34,8): error TS2307: Cannot find module '@/api/admin/permissions' or its 
+src/pages/dashboard/admin/PermissionsPage.tsx(34,8): error TS2307: Cannot find module '@/api/admin/permissions' or its
 corresponding type declarations.
 src/pages/dashboard/admin/PermissionsPage.tsx(40,8): error TS2307: Cannot find module '@/types' or its corresponding ty
 pe declarations.
@@ -163,7 +163,7 @@ src/pages/dashboard/admin/PermissionsPage.tsx(41,29): error TS2307: Cannot find 
 onding type declarations.
 src/pages/dashboard/admin/PermissionsPage.tsx(42,32): error TS2307: Cannot find module '@/utils/datetime' or its corres
 ponding type declarations.
-src/pages/dashboard/admin/PermissionsPage.tsx(43,29): error TS2307: Cannot find module '@/contexts/SettingsContext' or 
+src/pages/dashboard/admin/PermissionsPage.tsx(43,29): error TS2307: Cannot find module '@/contexts/SettingsContext' or
 its corresponding type declarations.
 src/pages/dashboard/admin/PermissionsPage.tsx(129,51): error TS7006: Parameter 'p' implicitly has an 'any' type.
 src/pages/dashboard/admin/PermissionsPage.tsx(416,50): error TS7006: Parameter 'p' implicitly has an 'any' type.
@@ -202,7 +202,7 @@ src/pages/dashboard/NotificationsPage.tsx(11,8): error TS2307: Cannot find modul
 nding type declarations.
 src/pages/dashboard/NotificationsPage.tsx(12,103): error TS2307: Cannot find module '@/types' or its corresponding type
  declarations.
-src/pages/dashboard/NotificationsPage.tsx(13,29): error TS2307: Cannot find module '@/contexts/SettingsContext' or its 
+src/pages/dashboard/NotificationsPage.tsx(13,29): error TS2307: Cannot find module '@/contexts/SettingsContext' or its
 corresponding type declarations.
 src/pages/dashboard/NotificationsPage.tsx(14,26): error TS2307: Cannot find module '@/hooks/useAsync' or its correspond
 ing type declarations.
@@ -234,7 +234,7 @@ ardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; 
 src/pages/ontology/components/BigDataSourceView.tsx(156,28): error TS7053: Element implicitly has an 'any' type because
  expression of type 'any' can't be used to index type 'Record<SourceType, { label: string; color: string; icon: string;
  }>'.
-src/pages/ontology/components/BigDataSourceView.tsx(229,30): error TS7031: Binding element 'onClose' implicitly has an 
+src/pages/ontology/components/BigDataSourceView.tsx(229,30): error TS7031: Binding element 'onClose' implicitly has an
 'any' type.
 src/pages/ontology/components/BigDataSourceView.tsx(229,39): error TS7031: Binding element 'onSuccess' implicitly has a
 n 'any' type.
@@ -269,11 +269,11 @@ ties, and 'database' does not exist in type 'SetStateAction<{ sourceType: string
 ; poolSize: number; queryTimeout: number; batchSize: number; }>'.
 src/pages/ontology/components/BigDataSourceView.tsx(284,14): error TS2741: Property 'required' is missing in type '{ ch
 ildren: Element; label: string; }' but required in type '{ label: any; children: any; required: any; }'.
-src/pages/ontology/components/BigDataSourceView.tsx(285,34): error TS2339: Property 'schema' does not exist on type '{ 
+src/pages/ontology/components/BigDataSourceView.tsx(285,34): error TS2339: Property 'schema' does not exist on type '{
 sourceType: string; authType: string; sslEnabled: boolean; poolSize: number; queryTimeout: number; batchSize: number; }
 '.
 src/pages/ontology/components/BigDataSourceView.tsx(285,84): error TS2353: Object literal may only specify known proper
-ties, and 'schema' does not exist in type 'SetStateAction<{ sourceType: string; authType: string; sslEnabled: boolean; 
+ties, and 'schema' does not exist in type 'SetStateAction<{ sourceType: string; authType: string; sslEnabled: boolean;
 poolSize: number; queryTimeout: number; batchSize: number; }>'.
 src/pages/ontology/components/BigDataSourceView.tsx(288,12): error TS2741: Property 'required' is missing in type '{ ch
 ildren: Element; label: string; }' but required in type '{ label: any; children: any; required: any; }'.
@@ -323,15 +323,15 @@ src/pages/ontology/components/CDCView.tsx(210,42): error TS7006: Parameter 's' i
 src/pages/ontology/components/CDCView.tsx(221,32): error TS2339: Property 'name' does not exist on type '{ syncMode: st
 ring; startPosition: string; targetType: string; schemaEvolution: string; concurrency: number; batchSize: number; retry
 Count: number; retryInterval: number; tables: never[]; }'.
-src/pages/ontology/components/CDCView.tsx(221,80): error TS2353: Object literal may only specify known properties, and 
+src/pages/ontology/components/CDCView.tsx(221,80): error TS2353: Object literal may only specify known properties, and
 'name' does not exist in type 'SetStateAction<{ syncMode: string; startPosition: string; targetType: string; schemaEvol
 ution: string; concurrency: number; batchSize: number; retryCount: number; retryInterval: number; tables: never[]; }>'.
 src/pages/ontology/components/CDCView.tsx(224,33): error TS2339: Property 'sourceId' does not exist on type '{ syncMode
 : string; startPosition: string; targetType: string; schemaEvolution: string; concurrency: number; batchSize: number; r
 etryCount: number; retryInterval: number; tables: never[]; }'.
-src/pages/ontology/components/CDCView.tsx(224,85): error TS2353: Object literal may only specify known properties, and 
+src/pages/ontology/components/CDCView.tsx(224,85): error TS2353: Object literal may only specify known properties, and
 'sourceId' does not exist in type 'SetStateAction<{ syncMode: string; startPosition: string; targetType: string; schema
-Evolution: string; concurrency: number; batchSize: number; retryCount: number; retryInterval: number; tables: never[]; 
+Evolution: string; concurrency: number; batchSize: number; retryCount: number; retryInterval: number; tables: never[];
 }>'.
 src/pages/ontology/components/CDCView.tsx(226,36): error TS7006: Parameter 's' implicitly has an 'any' type.
 src/pages/ontology/components/CDCView.tsx(238,14): error TS2741: Property 'required' is missing in type '{ children: El
@@ -339,7 +339,7 @@ ement; label: string; }' but required in type '{ label: any; children: any; requ
 src/pages/ontology/components/CDCView.tsx(256,34): error TS2339: Property 'targetName' does not exist on type '{ syncMo
 de: string; startPosition: string; targetType: string; schemaEvolution: string; concurrency: number; batchSize: number;
  retryCount: number; retryInterval: number; tables: never[]; }'.
-src/pages/ontology/components/CDCView.tsx(256,88): error TS2353: Object literal may only specify known properties, and 
+src/pages/ontology/components/CDCView.tsx(256,88): error TS2353: Object literal may only specify known properties, and
 'targetName' does not exist in type 'SetStateAction<{ syncMode: string; startPosition: string; targetType: string; sche
 maEvolution: string; concurrency: number; batchSize: number; retryCount: number; retryInterval: number; tables: never[]
 ; }>'.
@@ -373,7 +373,7 @@ n of type 'any' can't be used to index type 'Record<ETLMode, { label: string; co
 src/pages/ontology/components/ETLView.tsx(112,44): error TS2339: Property 'mode' does not exist on type 'never'.
 src/pages/ontology/components/ETLView.tsx(112,64): error TS2339: Property 'mode' does not exist on type 'never'.
 src/pages/ontology/components/ETLView.tsx(113,28): error TS7053: Element implicitly has an 'any' type because expressio
-n of type 'any' can't be used to index type '{ LOW: { label: string; color: string; }; NORMAL: { label: string; color: 
+n of type 'any' can't be used to index type '{ LOW: { label: string; color: string; }; NORMAL: { label: string; color:
 string; }; HIGH: { label: string; color: string; }; URGENT: { label: string; color: string; }; }'.
 src/pages/ontology/components/ETLView.tsx(113,44): error TS2339: Property 'priority' does not exist on type 'never'.
 src/pages/ontology/components/ETLView.tsx(115,30): error TS2339: Property 'taskId' does not exist on type 'never'.
@@ -416,7 +416,7 @@ ory: number; driverMemory: number; queue: string; retryCount: number; timeout: n
 src/pages/ontology/components/ETLView.tsx(204,34): error TS2339: Property 'name' does not exist on type '{ mode: string
 ; priority: string; triggerType: string; writeMode: string; targetType: string; executorNum: number; executorMemory: nu
 mber; driverMemory: number; queue: string; retryCount: number; timeout: number; alertOnFailure: boolean; }'.
-src/pages/ontology/components/ETLView.tsx(204,82): error TS2353: Object literal may only specify known properties, and 
+src/pages/ontology/components/ETLView.tsx(204,82): error TS2353: Object literal may only specify known properties, and
 'name' does not exist in type 'SetStateAction<{ mode: string; priority: string; triggerType: string; writeMode: string;
  targetType: string; executorNum: number; executorMemory: number; driverMemory: number; queue: string; retryCount: numb
 er; timeout: number; alertOnFailure: boolean; }>'.
@@ -427,7 +427,7 @@ ement; label: string; }' but required in type '{ label: any; children: any; requ
 src/pages/ontology/components/ETLView.tsx(225,33): error TS2339: Property 'targetSourceId' does not exist on type '{ mo
 de: string; priority: string; triggerType: string; writeMode: string; targetType: string; executorNum: number; executor
 Memory: number; driverMemory: number; queue: string; retryCount: number; timeout: number; alertOnFailure: boolean; }'.
-src/pages/ontology/components/ETLView.tsx(225,91): error TS2353: Object literal may only specify known properties, and 
+src/pages/ontology/components/ETLView.tsx(225,91): error TS2353: Object literal may only specify known properties, and
 'targetSourceId' does not exist in type 'SetStateAction<{ mode: string; priority: string; triggerType: string; writeMod
 e: string; targetType: string; executorNum: number; executorMemory: number; driverMemory: number; queue: string; retryC
 ount: number; timeout: number; alertOnFailure: boolean; }>'.
@@ -435,8 +435,8 @@ src/pages/ontology/components/ETLView.tsx(227,28): error TS7006: Parameter 's' i
 src/pages/ontology/components/ETLView.tsx(231,32): error TS2339: Property 'targetTable' does not exist on type '{ mode:
  string; priority: string; triggerType: string; writeMode: string; targetType: string; executorNum: number; executorMem
 ory: number; driverMemory: number; queue: string; retryCount: number; timeout: number; alertOnFailure: boolean; }'.
-src/pages/ontology/components/ETLView.tsx(231,87): error TS2353: Object literal may only specify known properties, and 
-'targetTable' does not exist in type 'SetStateAction<{ mode: string; priority: string; triggerType: string; writeMode: 
+src/pages/ontology/components/ETLView.tsx(231,87): error TS2353: Object literal may only specify known properties, and
+'targetTable' does not exist in type 'SetStateAction<{ mode: string; priority: string; triggerType: string; writeMode:
 string; targetType: string; executorNum: number; executorMemory: number; driverMemory: number; queue: string; retryCoun
 t: number; timeout: number; alertOnFailure: boolean; }>'.
 src/pages/ontology/components/ETLView.tsx(234,14): error TS2741: Property 'required' is missing in type '{ children: El
@@ -520,7 +520,7 @@ tring; ads: string; metric: string; }'.
 src/pages/ontology/components/LineageFullView.tsx(363,67): error TS7006: Parameter 'e' implicitly has an 'any' type.
 src/pages/ontology/components/LineageFullView.tsx(379,68): error TS2339: Property 'id' does not exist on type 'never'.
 src/pages/ontology/components/LineageFullView.tsx(379,96): error TS2339: Property 'id' does not exist on type 'never'.
-src/pages/ontology/components/LineageFullView.tsx(389,105): error TS7053: Element implicitly has an 'any' type because 
+src/pages/ontology/components/LineageFullView.tsx(389,105): error TS7053: Element implicitly has an 'any' type because
 expression of type 'string' can't be used to index type '{ source: { label: string; color: string; }; cdc: { label: str
 ing; color: string; }; ods: { label: string; color: string; }; dwd: { label: string; color: string; }; dws: { label: st
 ring; color: string; }; ads: { label: string; color: string; }; metric: { ...; }; }'.
@@ -531,17 +531,17 @@ src/pages/ontology/components/LineageFullView.tsx(403,3): error TS7031: Binding 
  type.
 src/pages/ontology/components/LineageFullView.tsx(403,10): error TS7031: Binding element 'edges' implicitly has an 'any
 ' type.
-src/pages/ontology/components/LineageFullView.tsx(403,17): error TS7031: Binding element 'positions' implicitly has an 
+src/pages/ontology/components/LineageFullView.tsx(403,17): error TS7031: Binding element 'positions' implicitly has an
 'any' type.
 src/pages/ontology/components/LineageFullView.tsx(403,28): error TS7031: Binding element 'zoom' implicitly has an 'any'
  type.
-src/pages/ontology/components/LineageFullView.tsx(403,34): error TS7031: Binding element 'pan' implicitly has an 'any' 
+src/pages/ontology/components/LineageFullView.tsx(403,34): error TS7031: Binding element 'pan' implicitly has an 'any'
 type.
 src/pages/ontology/components/LineageFullView.tsx(403,39): error TS7031: Binding element 'expanded' implicitly has an '
 any' type.
-src/pages/ontology/components/LineageFullView.tsx(403,49): error TS7031: Binding element 'toggleExpand' implicitly has 
+src/pages/ontology/components/LineageFullView.tsx(403,49): error TS7031: Binding element 'toggleExpand' implicitly has
 an 'any' type.
-src/pages/ontology/components/LineageFullView.tsx(403,63): error TS7031: Binding element 'selectedNode' implicitly has 
+src/pages/ontology/components/LineageFullView.tsx(403,63): error TS7031: Binding element 'selectedNode' implicitly has
 an 'any' type.
 src/pages/ontology/components/LineageFullView.tsx(403,77): error TS7031: Binding element 'setSelectedNode' implicitly h
 as an 'any' type.
@@ -549,7 +549,7 @@ src/pages/ontology/components/LineageFullView.tsx(404,3): error TS7031: Binding 
 ' type.
 src/pages/ontology/components/LineageFullView.tsx(404,11): error TS7031: Binding element 'canvasWidth' implicitly has a
 n 'any' type.
-src/pages/ontology/components/LineageFullView.tsx(404,24): error TS7031: Binding element 'canvasHeight' implicitly has 
+src/pages/ontology/components/LineageFullView.tsx(404,24): error TS7031: Binding element 'canvasHeight' implicitly has
 an 'any' type.
 src/pages/ontology/components/LineageFullView.tsx(404,38): error TS7031: Binding element 'setCanvasSize' implicitly has
  an 'any' type.
@@ -557,7 +557,7 @@ src/pages/ontology/components/LineageFullView.tsx(404,53): error TS7031: Binding
  'any' type.
 src/pages/ontology/components/LineageFullView.tsx(404,65): error TS7031: Binding element 'onSvgMouseMove' implicitly ha
 s an 'any' type.
-src/pages/ontology/components/LineageFullView.tsx(404,81): error TS7031: Binding element 'onSvgMouseUp' implicitly has 
+src/pages/ontology/components/LineageFullView.tsx(404,81): error TS7031: Binding element 'onSvgMouseUp' implicitly has
 an 'any' type.
 src/pages/ontology/components/LineageFullView.tsx(421,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
 src/pages/ontology/components/LineageFullView.tsx(421,35): error TS7006: Parameter 'i' implicitly has an 'any' type.
@@ -634,7 +634,7 @@ er'.
 src/pages/ontology/components/MetricView.tsx(105,137): error TS7053: Element implicitly has an 'any' type because expre
 ssion of type 'any' can't be used to index type '{ REALTIME: string; MINUTELY: string; HOURLY: string; DAILY: string; }
 '.
-src/pages/ontology/components/MetricView.tsx(105,149): error TS2339: Property 'calculationFrequency' does not exist on 
+src/pages/ontology/components/MetricView.tsx(105,149): error TS2339: Property 'calculationFrequency' does not exist on
 type 'never'.
 src/pages/ontology/components/MetricView.tsx(112,60): error TS2339: Property 'metricId' does not exist on type 'never'.
 src/pages/ontology/components/MetricView.tsx(112,101): error TS2339: Property 'metricId' does not exist on type 'never'
@@ -704,9 +704,9 @@ src/pages/ontology/components/MetricView.tsx(227,34): error TS7031: Binding elem
 ype.
 src/pages/ontology/components/MetricView.tsx(251,16): error TS7031: Binding element 'label' implicitly has an 'any' typ
 e.
-src/pages/ontology/components/MetricView.tsx(251,23): error TS7031: Binding element 'children' implicitly has an 'any' 
+src/pages/ontology/components/MetricView.tsx(251,23): error TS7031: Binding element 'children' implicitly has an 'any'
 type.
-src/pages/ontology/components/MetricView.tsx(251,33): error TS7031: Binding element 'required' implicitly has an 'any' 
+src/pages/ontology/components/MetricView.tsx(251,33): error TS7031: Binding element 'required' implicitly has an 'any'
 type.
 src/pages/ontology/components/SchedulerView.tsx(8,3): error TS2459: Module '"../../../api/ontology-bigdata"' declares '
 SchedulerTask' locally, but it is not exported.
@@ -759,15 +759,15 @@ src/pages/ontology/components/SchedulerView.tsx(133,44): error TS2339: Property 
 ever'.
 src/pages/ontology/components/SchedulerView.tsx(138,20): error TS2339: Property 'cron' does not exist on type 'never'.
 src/pages/ontology/components/SchedulerView.tsx(140,24): error TS2339: Property 'cron' does not exist on type 'never'.
-src/pages/ontology/components/SchedulerView.tsx(147,89): error TS2339: Property 'totalTriggers' does not exist on type 
+src/pages/ontology/components/SchedulerView.tsx(147,89): error TS2339: Property 'totalTriggers' does not exist on type
 'never'.
-src/pages/ontology/components/SchedulerView.tsx(151,107): error TS2339: Property 'totalSuccess' does not exist on type 
+src/pages/ontology/components/SchedulerView.tsx(151,107): error TS2339: Property 'totalSuccess' does not exist on type
 'never'.
-src/pages/ontology/components/SchedulerView.tsx(155,107): error TS2339: Property 'totalFailure' does not exist on type 
+src/pages/ontology/components/SchedulerView.tsx(155,107): error TS2339: Property 'totalFailure' does not exist on type
 'never'.
-src/pages/ontology/components/SchedulerView.tsx(160,48): error TS2339: Property 'lastTriggerAt' does not exist on type 
+src/pages/ontology/components/SchedulerView.tsx(160,48): error TS2339: Property 'lastTriggerAt' does not exist on type
 'never'.
-src/pages/ontology/components/SchedulerView.tsx(161,48): error TS2339: Property 'nextTriggerAt' does not exist on type 
+src/pages/ontology/components/SchedulerView.tsx(161,48): error TS2339: Property 'nextTriggerAt' does not exist on type
 'never'.
 src/pages/ontology/OntologyDatacenterPage.tsx(97,21): error TS7006: Parameter 'type' implicitly has an 'any' type.
 src/pages/ontology/OntologyDatacenterPage.tsx(114,18): error TS7006: Parameter 'node' implicitly has an 'any' type.
@@ -775,5 +775,3 @@ src/pages/ontology/OntologyDatacenterPage.tsx(150,35): error TS2322: Type '{ ass
  string; }' is not assignable to type 'IntrinsicAttributes & AIAssistantTriggerProps'.
 src/pages/ontology/OntologyDatacenterPage.tsx(298,29): error TS7031: Binding element 'name' implicitly has an 'any' typ
 e.
-
-

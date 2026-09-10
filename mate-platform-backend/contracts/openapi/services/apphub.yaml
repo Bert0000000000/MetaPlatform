@@ -8,67 +8,67 @@ info:
     name: Mate Platform API Governance
     email: api-governance@metaplatform.local
 servers:
-- url: /
+  - url: /
 tags:
-- name: apphub
-  description: apphub domain operations
-- name: runtime
-  description: app runtime lifecycle operations
-- name: publish
-  description: app publish operations
-- name: shortlink
-  description: shortlink operations
+  - name: apphub
+    description: apphub domain operations
+  - name: runtime
+    description: app runtime lifecycle operations
+  - name: publish
+    description: app publish operations
+  - name: shortlink
+    description: shortlink operations
 security:
-- bearerAuth: []
-  tenantHeader: []
-  oidcScopes:
-  - platform.read
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes:
+      - platform.read
 paths:
   /api/v1/apphub/apps:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - apphub
+        - apphub
       summary: /v1/apphub/apps
       operationId: apphubGetApphubApps
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/apphub/apps
       x-mate-owner: application-platform
       x-mate-permission: apphub.get
       x-mate-requirements:
-      - FR-APPHUB-APPHUBGETAPPHUBAPPS
+        - FR-APPHUB-APPHUBGETAPPHUBAPPS
       x-mate-implementation-status: implemented
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - apphub
+        - apphub
       summary: Create application
       operationId: apphubPostApphubApps
       requestBody:
@@ -76,114 +76,114 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '201':
+        "201":
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/ServerError'
-        '422':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/ServerError"
+        "422":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: Register a new application.
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - FR-APPHUB-APPHUBPOSTAPPHUBAPPS
+        - FR-APPHUB-APPHUBPOSTAPPHUBAPPS
       x-mate-implementation-status: implemented
   /api/v1/apphub/apps/groups:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - apphub
+        - apphub
       summary: /v1/apphub/apps/groups
       operationId: apphubGetApphubAppsGroups
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/apphub/apps/groups
       x-mate-owner: application-platform
       x-mate-permission: apphub.get
       x-mate-requirements:
-      - FR-APPHUB-APPHUBGETAPPHUBAPPSGROUPS
+        - FR-APPHUB-APPHUBGETAPPHUBAPPSGROUPS
       x-mate-implementation-status: implemented
   /api/v1/apphub/modules:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - apphub
+        - apphub
       summary: /v1/apphub/modules
       operationId: apphubGetApphubModules
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/apphub/modules
       x-mate-owner: application-platform
       x-mate-permission: apphub.get
       x-mate-requirements:
-      - FR-APPHUB-APPHUBGETAPPHUBMODULES
+        - FR-APPHUB-APPHUBGETAPPHUBMODULES
       x-mate-implementation-status: implemented
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - apphub
+        - apphub
       summary: Create business module
       operationId: apphubPostApphubModules
       requestBody:
@@ -191,77 +191,77 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '201':
+        "201":
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/ServerError'
-        '422':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/ServerError"
+        "422":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: Create a new business module.
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - FR-APPHUB-APPHUBPOSTAPPHUBMODULES
+        - FR-APPHUB-APPHUBPOSTAPPHUBMODULES
       x-mate-implementation-status: implemented
   /api/v1/apphub/pages:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - apphub
+        - apphub
       summary: /v1/apphub/pages
       operationId: apphubGetApphubPages
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/apphub/pages
       x-mate-owner: application-platform
       x-mate-permission: apphub.get
       x-mate-requirements:
-      - FR-APPHUB-APPHUBGETAPPHUBPAGES
+        - FR-APPHUB-APPHUBGETAPPHUBPAGES
       x-mate-implementation-status: implemented
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - apphub
+        - apphub
       summary: Create page template
       operationId: apphubPostApphubPages
       requestBody:
@@ -269,75 +269,75 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '201':
+        "201":
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '422':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: Create a new page template.
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - FR-APPHUB-APPHUBPOSTAPPHUBPAGES
+        - FR-APPHUB-APPHUBPOSTAPPHUBPAGES
       x-mate-implementation-status: implemented
   /api/v1/apphub/templates:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - apphub
+        - apphub
       summary: /v1/apphub/templates
       operationId: apphubGetApphubTemplates
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/apphub/templates
       x-mate-owner: application-platform
       x-mate-permission: apphub.get
       x-mate-requirements:
-      - FR-APPHUB-APPHUBGETAPPHUBTEMPLATES
+        - FR-APPHUB-APPHUBGETAPPHUBTEMPLATES
       x-mate-implementation-status: implemented
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - apphub
+        - apphub
       summary: Create workflow / form / approval template
       operationId: apphubPostApphubTemplates
       requestBody:
@@ -345,128 +345,128 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '201':
+        "201":
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/ServerError'
-        '422':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/ServerError"
+        "422":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: Create a new workflow / form / approval template.
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - FR-APPHUB-APPHUBPOSTAPPHUBTEMPLATES
+        - FR-APPHUB-APPHUBPOSTAPPHUBTEMPLATES
       x-mate-implementation-status: implemented
   /api/v1/apphub/apps/{code}:
     patch:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - apphub
+        - apphub
       summary: Update application metadata
       operationId: apphubPatchApphubAppsCode
       parameters:
-      - name: code
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/ServerError'
-        '422':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/ServerError"
+        "422":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: Update an application's metadata (version bumps follow semver).
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - FR-APPHUB-APPHUBPATCHAPPHUBAPPSCODE
+        - FR-APPHUB-APPHUBPATCHAPPHUBAPPSCODE
       x-mate-implementation-status: implemented
     delete:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - apphub
+        - apphub
       summary: Delete application
       operationId: apphubDeleteApphubAppsCode
       parameters:
-      - name: code
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: Delete an application by code.
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - FR-APPHUB-APPHUBDELETEAPPHUBAPPSCODE
+        - FR-APPHUB-APPHUBDELETEAPPHUBAPPSCODE
       x-mate-implementation-status: implemented
   /api/v1/apphub/groups:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - apphub
+        - apphub
       summary: Create application group
       operationId: apphubPostApphubGroups
       requestBody:
@@ -474,251 +474,251 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '201':
+        "201":
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: Create a new application group.
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-implementation-status: implemented
       x-mate-requirements:
-      - FR-APP-HUB
+        - FR-APP-HUB
   /api/v1/apphub/groups/{code}:
     delete:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - apphub
+        - apphub
       summary: Delete application group
       operationId: apphubDeleteApphubGroupsCode
       parameters:
-      - name: code
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
       description: Delete a group (blocked if apps reference its category).
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-implementation-status: implemented
       x-mate-requirements:
-      - FR-APP-HUB
+        - FR-APP-HUB
   /api/v1/apphub/apps/{appId}/runtime:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - runtime
+        - runtime
       summary: Get app runtime status
       operationId: apphubGetAppRuntime
       parameters:
-      - name: appId
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppRuntime'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
+                $ref: "#/components/schemas/AppRuntime"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
           description: Unprocessable Entity (validation error)
-        '500':
-          $ref: '#/components/responses/ServerError'
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: Get the runtime status of an application.
       x-mate-owner: application-platform
       x-mate-permission: apphub.get
       x-mate-required-tenant: true
       x-mate-requirements:
-      - FR-APPHUB-RUNTIME-001
+        - FR-APPHUB-RUNTIME-001
       x-mate-implementation-status: implemented
   /api/v1/apphub/apps/{appId}/runtime/execute:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - runtime
+        - runtime
       summary: Execute app runtime action
       operationId: apphubPostAppRuntimeExecute
       parameters:
-      - name: appId
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
+                $ref: "#/components/schemas/ActionResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
           description: Conflict (resource already exists or state conflict)
-        '422':
+        "422":
           description: Unprocessable Entity (validation error)
-        '500':
-          $ref: '#/components/responses/ServerError'
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: Execute a runtime action for an application.
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-required-tenant: true
       x-mate-requirements:
-      - FR-APPHUB-RUNTIME-002
+        - FR-APPHUB-RUNTIME-002
       x-mate-implementation-status: implemented
   /api/v1/apphub/apps/{appId}/publish:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - publish
+        - publish
       summary: Publish application version
       operationId: apphubPostAppPublish
       parameters:
-      - name: appId
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppRuntime'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
+                $ref: "#/components/schemas/AppRuntime"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
           description: Conflict (resource already exists or state conflict)
-        '422':
+        "422":
           description: Unprocessable Entity (validation error)
-        '500':
-          $ref: '#/components/responses/ServerError'
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: Publish a new version of an application.
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-required-tenant: true
       x-mate-requirements:
-      - FR-APPHUB-RUNTIME-003
+        - FR-APPHUB-RUNTIME-003
       x-mate-implementation-status: implemented
   /api/v1/apphub/shortlinks:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - shortlink
+        - shortlink
       summary: List shortlinks
       operationId: apphubListShortlinks
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Shortlink'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                  $ref: "#/components/schemas/Shortlink"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: List shortlinks for the current tenant.
       x-mate-owner: application-platform
       x-mate-permission: apphub.get
       x-mate-required-tenant: true
       x-mate-requirements:
-      - FR-APPHUB-RUNTIME-006
+        - FR-APPHUB-RUNTIME-006
       x-mate-implementation-status: implemented
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - shortlink
+        - shortlink
       summary: Create shortlink
       operationId: apphubPostShortlink
       requestBody:
@@ -726,77 +726,77 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '201':
+        "201":
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Shortlink'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
+                $ref: "#/components/schemas/Shortlink"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
           description: Conflict (resource already exists or state conflict)
-        '422':
+        "422":
           description: Unprocessable Entity (validation error)
-        '500':
-          $ref: '#/components/responses/ServerError'
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: Create a new shortlink for an application.
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-required-tenant: true
       x-mate-requirements:
-      - FR-APPHUB-RUNTIME-005
+        - FR-APPHUB-RUNTIME-005
       x-mate-implementation-status: implemented
   /api/v1/apphub/shortlinks/{code}:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - shortlink
+        - shortlink
       summary: Resolve shortlink
       operationId: apphubGetShortlink
       parameters:
-      - name: code
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Shortlink'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
+                $ref: "#/components/schemas/Shortlink"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
           description: Unprocessable Entity (validation error)
-        '500':
-          $ref: '#/components/responses/ServerError'
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: Resolve a shortlink by code.
       x-mate-owner: application-platform
       x-mate-permission: apphub.get
       x-mate-required-tenant: true
       x-mate-requirements:
-      - FR-APPHUB-RUNTIME-004
+        - FR-APPHUB-RUNTIME-004
       x-mate-implementation-status: implemented
 components:
   securitySchemes:
@@ -855,37 +855,37 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     Forbidden:
       description: 无权限
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     NotFound:
       description: 资源不存在
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     BadRequest:
       description: 参数错误
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     ServerError:
       description: 服务器错误
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
   schemas:
     ErrorResponse:
       type: object
       required:
-      - code
-      - message
+        - code
+        - message
       properties:
         code:
           type: integer
@@ -896,14 +896,14 @@ components:
     ApiResponse:
       type: object
       required:
-      - code
-      - message
-      - data
+        - code
+        - message
+        - data
       properties:
         code:
           type: integer
           enum:
-          - 0
+            - 0
         message:
           type: string
         data: {}
@@ -912,11 +912,11 @@ components:
     PageResponse:
       type: object
       required:
-      - items
-      - total
-      - page
-      - size
-      - pages
+        - items
+        - total
+        - page
+        - size
+        - pages
       properties:
         items:
           type: array
@@ -932,13 +932,13 @@ components:
     BigDataSource:
       type: object
       required:
-      - sourceId
-      - name
-      - sourceType
-      - host
-      - port
-      - authType
-      - status
+        - sourceId
+        - name
+        - sourceType
+        - host
+        - port
+        - authType
+        - status
       properties:
         sourceId:
           type: string
@@ -950,19 +950,19 @@ components:
         sourceType:
           type: string
           enum:
-          - HIVE
-          - HBASE
-          - CLICKHOUSE
-          - DORIS
-          - STARROCKS
-          - ICEBERG
-          - HUDI
-          - DELTA
-          - PRESTO
-          - TRINO
-          - KAFKA
-          - PULSAR
-          - HDFS
+            - HIVE
+            - HBASE
+            - CLICKHOUSE
+            - DORIS
+            - STARROCKS
+            - ICEBERG
+            - HUDI
+            - DELTA
+            - PRESTO
+            - TRINO
+            - KAFKA
+            - PULSAR
+            - HDFS
         host:
           type: string
         port:
@@ -976,10 +976,10 @@ components:
         authType:
           type: string
           enum:
-          - NONE
-          - USER_PASSWORD
-          - KERBERY
-          - LDAP
+            - NONE
+            - USER_PASSWORD
+            - KERBERY
+            - LDAP
           default: NONE
         sslEnabled:
           type: boolean
@@ -990,21 +990,21 @@ components:
         status:
           type: string
           enum:
-          - DRAFT
-          - ACTIVE
-          - INACTIVE
-          - ERROR
-          - DELETED
+            - DRAFT
+            - ACTIVE
+            - INACTIVE
+            - ERROR
+            - DELETED
     CDCTask:
       type: object
       required:
-      - taskId
-      - name
-      - sourceId
-      - syncMode
-      - targetType
-      - targetName
-      - status
+        - taskId
+        - name
+        - sourceId
+        - syncMode
+        - targetType
+        - targetName
+        - status
       properties:
         taskId:
           type: string
@@ -1015,27 +1015,27 @@ components:
         syncMode:
           type: string
           enum:
-          - FULL_INCREMENTAL
-          - INCREMENTAL_ONLY
-          - SNAPSHOT_ONLY
+            - FULL_INCREMENTAL
+            - INCREMENTAL_ONLY
+            - SNAPSHOT_ONLY
         targetType:
           type: string
           enum:
-          - KAFKA
-          - CLICKHOUSE
-          - HUDI
-          - ICEBERG
+            - KAFKA
+            - CLICKHOUSE
+            - HUDI
+            - ICEBERG
         targetName:
           type: string
         status:
           type: string
           enum:
-          - PENDING
-          - SNAPSHOTTING
-          - RUNNING
-          - PAUSED
-          - FAILED
-          - STOPPED
+            - PENDING
+            - SNAPSHOTTING
+            - RUNNING
+            - PAUSED
+            - FAILED
+            - STOPPED
         lagMs:
           type: integer
         totalRecords:
@@ -1044,14 +1044,14 @@ components:
     ETLTask:
       type: object
       required:
-      - taskId
-      - name
-      - mode
-      - sourceIds
-      - targetType
-      - targetTable
-      - writeMode
-      - status
+        - taskId
+        - name
+        - mode
+        - sourceIds
+        - targetType
+        - targetTable
+        - writeMode
+        - status
       properties:
         taskId:
           type: string
@@ -1060,18 +1060,18 @@ components:
         mode:
           type: string
           enum:
-          - BATCH_SPARK
-          - BATCH_FLINK
-          - STREAMING_FLINK
-          - STREAMING_SPARK
-          - SQL_TRANSFORM
+            - BATCH_SPARK
+            - BATCH_FLINK
+            - STREAMING_FLINK
+            - STREAMING_SPARK
+            - SQL_TRANSFORM
         priority:
           type: string
           enum:
-          - LOW
-          - NORMAL
-          - HIGH
-          - URGENT
+            - LOW
+            - NORMAL
+            - HIGH
+            - URGENT
         sourceIds:
           type: array
           items:
@@ -1083,40 +1083,40 @@ components:
         targetType:
           type: string
           enum:
-          - HIVE
-          - CLICKHOUSE
-          - ICEBERG
-          - HUDI
-          - DELTA
-          - DORIS
+            - HIVE
+            - CLICKHOUSE
+            - ICEBERG
+            - HUDI
+            - DELTA
+            - DORIS
         targetTable:
           type: string
         writeMode:
           type: string
           enum:
-          - OVERWRITE
-          - APPEND
-          - UPSERT
-          - MERGE
+            - OVERWRITE
+            - APPEND
+            - UPSERT
+            - MERGE
         status:
           type: string
           enum:
-          - DRAFT
-          - READY
-          - RUNNING
-          - SUCCESS
-          - FAILED
-          - CANCELLED
-          - TIMEOUT
+            - DRAFT
+            - READY
+            - RUNNING
+            - SUCCESS
+            - FAILED
+            - CANCELLED
+            - TIMEOUT
     SchedulerTask:
       type: object
       required:
-      - schedulerId
-      - name
-      - taskType
-      - taskId
-      - triggerType
-      - status
+        - schedulerId
+        - name
+        - taskType
+        - taskId
+        - triggerType
+        - status
       properties:
         schedulerId:
           type: string
@@ -1125,41 +1125,41 @@ components:
         taskType:
           type: string
           enum:
-          - ETL_TASK
-          - CDC_TASK
-          - QUALITY_CHECK
-          - CUSTOM_ACTION
+            - ETL_TASK
+            - CDC_TASK
+            - QUALITY_CHECK
+            - CUSTOM_ACTION
         taskId:
           type: string
         triggerType:
           type: string
           enum:
-          - CRON
-          - EVENT
-          - MANUAL
-          - DEPENDENCY
+            - CRON
+            - EVENT
+            - MANUAL
+            - DEPENDENCY
         cron:
           type: string
         status:
           type: string
           enum:
-          - ACTIVE
-          - PAUSED
-          - EXPIRED
-          - DELETED
+            - ACTIVE
+            - PAUSED
+            - EXPIRED
+            - DELETED
     Metric:
       type: object
       required:
-      - metricId
-      - name
-      - code
-      - type
-      - sourceId
-      - sourceTable
-      - sourceField
-      - aggregation
-      - calculationFrequency
-      - status
+        - metricId
+        - name
+        - code
+        - type
+        - sourceId
+        - sourceTable
+        - sourceField
+        - aggregation
+        - calculationFrequency
+        - status
       properties:
         metricId:
           type: string
@@ -1170,10 +1170,10 @@ components:
         type:
           type: string
           enum:
-          - ATOMIC
-          - DERIVED
-          - COMPOSITE
-          - REALTIME
+            - ATOMIC
+            - DERIVED
+            - COMPOSITE
+            - REALTIME
         sourceId:
           type: string
         sourceTable:
@@ -1183,33 +1183,33 @@ components:
         aggregation:
           type: string
           enum:
-          - SUM
-          - AVG
-          - COUNT
-          - MAX
-          - MIN
-          - LAST
+            - SUM
+            - AVG
+            - COUNT
+            - MAX
+            - MIN
+            - LAST
         calculationFrequency:
           type: string
           enum:
-          - REALTIME
-          - MINUTELY
-          - HOURLY
-          - DAILY
+            - REALTIME
+            - MINUTELY
+            - HOURLY
+            - DAILY
         status:
           type: string
           enum:
-          - DRAFT
-          - ACTIVE
-          - INACTIVE
-          - ERROR
+            - DRAFT
+            - ACTIVE
+            - INACTIVE
+            - ERROR
     AppRuntime:
       type: object
       required:
-      - app_id
-      - version
-      - modules
-      - render_tree
+        - app_id
+        - version
+        - modules
+        - render_tree
       properties:
         app_id:
           type: string
@@ -1220,16 +1220,16 @@ components:
           items:
             type: string
         render_tree:
-          $ref: '#/components/schemas/RenderNode'
+          $ref: "#/components/schemas/RenderNode"
     Shortlink:
       type: object
       required:
-      - code
-      - app_id
-      - tenant_id
-      - role
-      - expires_at
-      - created_at
+        - code
+        - app_id
+        - tenant_id
+        - role
+        - expires_at
+        - created_at
       properties:
         code:
           type: string
@@ -1248,11 +1248,11 @@ components:
     RenderNode:
       type: object
       required:
-      - node_type
-      - title
-      - layout
-      - children
-      - config
+        - node_type
+        - title
+        - layout
+        - children
+        - config
       properties:
         node_type:
           type: string
@@ -1263,14 +1263,14 @@ components:
         children:
           type: array
           items:
-            $ref: '#/components/schemas/RenderNode'
+            $ref: "#/components/schemas/RenderNode"
         config:
           type: object
     ActionResult:
       type: object
       required:
-      - action_id
-      - success
+        - action_id
+        - success
       properties:
         action_id:
           type: string

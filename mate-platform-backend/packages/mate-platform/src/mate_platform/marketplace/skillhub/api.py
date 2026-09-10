@@ -9,6 +9,7 @@ Endpoints (mounted under ``/api/v1/marketplace`` in mate-app-hub):
   - POST   /skills/{id}/install  — install a public skill
   - DELETE /skills/{id}       — delete own skill
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -62,7 +63,9 @@ async def upload_skill(request: Request, body: UploadSkillRequest) -> dict[str, 
     _require_scope(user, "platform.marketplace.write")
     tenant = _tenant(request)
     if not tenant:
-        raise HTTPException(status_code=400, detail={"code": "E_TENANT_REQUIRED", "message": "tenant required"})
+        raise HTTPException(
+            status_code=400, detail={"code": "E_TENANT_REQUIRED", "message": "tenant required"}
+        )
     import uuid
 
     skill = _store(request).create(

@@ -11,6 +11,7 @@ Env vars:
     OPENAI_BASE_URL   — optional, defaults to https://api.openai.com/v1
     OPENAI_MODEL      — optional, defaults to gpt-4o-mini
 """
+
 from __future__ import annotations
 
 import json
@@ -41,13 +42,9 @@ class OpenAIProvider:
         timeout: float | None = None,
     ) -> None:
         self._api_key = api_key or os.getenv("OPENAI_API_KEY", "")
-        self._base_url = (
-            base_url or os.getenv("OPENAI_BASE_URL", DEFAULT_BASE_URL)
-        ).rstrip("/")
+        self._base_url = (base_url or os.getenv("OPENAI_BASE_URL", DEFAULT_BASE_URL)).rstrip("/")
         self.model = model or os.getenv("OPENAI_MODEL", DEFAULT_MODEL)
-        self._timeout = (
-            timeout if timeout is not None else DEFAULT_TIMEOUT
-        )
+        self._timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
         self._client = httpx.AsyncClient(
             base_url=self._base_url,
             timeout=self._timeout,
@@ -107,9 +104,7 @@ class OpenAIProvider:
             "stream": True,
         }
         payload.update(kwargs)
-        async with self._client.stream(
-            "POST", "/chat/completions", json=payload
-        ) as resp:
+        async with self._client.stream("POST", "/chat/completions", json=payload) as resp:
             resp.raise_for_status()
             async for line in resp.aiter_lines():
                 if not line.startswith("data: "):

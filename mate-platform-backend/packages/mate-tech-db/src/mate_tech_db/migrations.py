@@ -4,6 +4,7 @@ In v3.2 we use raw SQL (not Alembic) to keep dependencies minimal.
 Tables are also auto-created by SQLAlchemy create_all() when models
 are defined with mapped columns.
 """
+
 from __future__ import annotations
 
 from typing import Any

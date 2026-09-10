@@ -30,12 +30,14 @@
 ### Task 1: 注册订单复核的规范 Ontology 动作并接通 Docker 服务发现
 
 **Files:**
+
 - Modify: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/seed.py
 - Modify: mate-platform-backend/packages/mate-tech-ont/tests/integration/test_v2_kernel_seed.py
 - Modify: docker-compose.yml
 - Modify: docker-compose.task5.yml
 
 **Interfaces:**
+
 - Produces ObjectType ont.{tenant_id}.obj.crm.order.v1 and ActionType ont.{tenant_id}.act.order-review-confirm.v1.
 - Produces action metadata with on=[ont.{tenant_id}.obj.crm.order.v1], title=订单复核确认, a decision parameter, and side effects update_order, create_follow_up_task, audit_log.
 - Makes mate-tech-orchestrator call http://mate-tech-ont:8007 through ONT_HTTP_BASE and wait for the healthy Ontology service.
@@ -44,7 +46,7 @@
 
 Extend TestSeedDemo.test_seed_populates_scenario:
 
-~~~python
+```python
 assert created == 18
 object_types = {item["rid"]: item for item in c.get("/api/v1/ont/v2/object-types").json()}
 order_rid = "ont.tenant-default.obj.crm.order.v1"
@@ -56,15 +58,15 @@ assert action_types[action_rid]["title"] == "订单复核确认"
 assert action_types[action_rid]["side_effects"] == [
     "update_order", "create_follow_up_task", "audit_log",
 ]
-~~~
+```
 
 - [ ] **Step 2: Run the seed test and verify it fails**
 
 Run from mate-platform-backend:
 
-~~~powershell
+```powershell
 uv run pytest packages/mate-tech-ont/tests/integration/test_v2_kernel_seed.py::TestSeedDemo::test_seed_populates_scenario -q
-~~~
+```
 
 Expected: FAIL because the current seed count is 16 and the order review ActionType is absent.
 
@@ -72,7 +74,7 @@ Expected: FAIL because the current seed count is 16 and the order review ActionT
 
 In seed_demo, use the existing idempotent repository methods:
 
-~~~python
+```python
 order_rid = ClassRef("ont." + t + ".obj.crm.order.v1")
 action_rid = ClassRef("ont." + t + ".act.order-review-confirm.v1")
 repo.upsert_action_type(ActionType(
@@ -87,7 +89,7 @@ repo.upsert_action_type(ActionType(
 ))
 repo.upsert_function(_function_placeholder(t, "order-review-confirm.v1"))
 created += 2
-~~~
+```
 
 Do not create an Order Individual here; v1 uses the transaction anchor defined by the evidence contract.
 
@@ -99,33 +101,35 @@ Run uv run pytest packages/mate-tech-ont/tests/integration/test_v2_kernel_seed.p
 
 Add the following mapping to mate-tech-orchestrator in both Compose files, retaining existing dependencies:
 
-~~~yaml
+```yaml
 environment:
   ONT_HTTP_BASE: http://mate-tech-ont:8007
 depends_on:
   mate-tech-ont:
     condition: service_healthy
-~~~
+```
 
 Run docker compose -f docker-compose.yml -f docker-compose.task5.yml config, git diff --check, then commit only the four listed paths with git commit -m "feat: register order review ontology action".
 
 ### Task 2: Build the deterministic order-review evidence domain
 
 **Files:**
-- Create: mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/order_review/__init__.py
+
+- Create: mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/order_review/**init**.py
 - Create: mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/order_review/evidence.py
 - Create: mate-platform-backend/packages/mate-tech-orchestrator/tests/test_order_review_evidence.py
 
 **Interfaces:**
+
 - Produces OrderReviewFacts, OntologyContract, OrderReviewEvidenceBuilder, EvidenceUnavailable and EVIDENCE_SCHEMA_VERSION.
-- OrderReviewEvidenceBuilder.build(*, facts: OrderReviewFacts, contract: OntologyContract, requested_suggestion: dict[str, Any], now: datetime) -> dict[str, Any] returns the JSON-serializable EvidenceBundle.
+- OrderReviewEvidenceBuilder.build(\*, facts: OrderReviewFacts, contract: OntologyContract, requested_suggestion: dict[str, Any], now: datetime) -> dict[str, Any] returns the JSON-serializable EvidenceBundle.
 - The builder accepts only a fact snapshot and a verified Ontology contract; it never reads browser state or calls the generic Copilot graph endpoint.
 
 - [ ] **Step 1: Write failing builder tests**
 
 Use a tenant-default order with amount 250000, payment unpaid, review status pending, version 1, and the two canonical RIDs. Assert:
 
-~~~python
+```python
 bundle = builder.build(facts=facts, contract=contract, requested_suggestion={}, now=now)
 assert bundle["schema_version"] == "order-review-evidence.v1"
 assert bundle["status"] == "complete"
@@ -140,7 +144,7 @@ assert {fact["id"] for fact in bundle["data"]["facts"]} == {
 }
 assert all(item["passed"] for item in bundle["derivation"])
 assert bundle["recommendation"]["action"] == "follow_up_payment"
-~~~
+```
 
 - [ ] **Step 2: Run the test and verify it fails**
 
@@ -150,7 +154,7 @@ Run uv run pytest packages/mate-tech-orchestrator/tests/test_order_review_eviden
 
 Implement in evidence.py:
 
-~~~python
+```python
 EVIDENCE_SCHEMA_VERSION = "order-review-evidence.v1"
 
 @dataclass(frozen=True)
@@ -170,7 +174,7 @@ class OntologyContract:
 
 class EvidenceUnavailable(RuntimeError):
     pass
-~~~
+```
 
 Require exact tenant-scoped ObjectType and ActionType RIDs, action on containing the ObjectType RID, and a non-empty action title. Raise EvidenceUnavailable for malformed or mismatched contracts.
 
@@ -180,7 +184,7 @@ Emit facts with integer value, formatted display_value, and database source. Emi
 
 Use the following recommendation shape only when eligible passes:
 
-~~~python
+```python
 {
     "action": "follow_up_payment",
     "title": "创建回款跟进单",
@@ -193,7 +197,7 @@ Use the following recommendation shape only when eligible passes:
         "policy://payment-follow-up-policy",
     ],
 }
-~~~
+```
 
 Do not use the requested suggestion to select an action or overwrite facts. Copy a supplied numeric confidence only as explanatory metadata when it is between 0 and 1; it must not affect eligibility.
 
@@ -204,16 +208,18 @@ Test amounts 99999, 100000, and 100001, both payment states, both review states,
 ### Task 3: Connect tech-ont, persist the snapshot, and protect confirmation
 
 **Files:**
+
 - Create: mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/order_review/ontology_catalog.py
 - Create: mate-platform-backend/packages/mate-tech-orchestrator/tests/test_order_review_ontology_catalog.py
 - Modify: mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/repositories/order_review.py
 - Modify: mate-platform-backend/packages/mate-tech-orchestrator/tests/test_order_review.py
 
 **Interfaces:**
-- OrderReviewOntologyCatalog.get_contract(*, tenant_id: str, token: str) -> OntologyContract performs authenticated GETs against canonical ObjectType and ActionType paths.
-- OrderReviewService.__init__(..., evidence_builder: OrderReviewEvidenceBuilder | None = None, ontology_catalog: OrderReviewOntologyCatalog | None = None) keeps injection seams for SQLite tests and uses the HTTP catalog by default.
+
+- OrderReviewOntologyCatalog.get_contract(\*, tenant_id: str, token: str) -> OntologyContract performs authenticated GETs against canonical ObjectType and ActionType paths.
+- OrderReviewService.**init**(..., evidence_builder: OrderReviewEvidenceBuilder | None = None, ontology_catalog: OrderReviewOntologyCatalog | None = None) keeps injection seams for SQLite tests and uses the HTTP catalog by default.
 - OrderReviewService.create_review_case(..., auth_token: str = "") creates a proposal only after a complete bundle is built.
-- _proposal_dict returns evidence from persisted suggestion.evidence_bundle.
+- \_proposal_dict returns evidence from persisted suggestion.evidence_bundle.
 
 - [ ] **Step 1: Write failing catalog tests**
 
@@ -229,12 +235,12 @@ Implement a sync httpx.Client using ONT_HTTP_BASE with default http://localhost:
 
 Inject a fake catalog into OrderReviewService, create an order and case, then assert:
 
-~~~python
+```python
 proposal = service.get_proposal(tenant_id="tenant-acme", proposal_id=proposal_id)
 assert proposal["evidence"]["status"] == "complete"
 assert proposal["evidence"]["order_version"] == 1
 assert proposal["suggestion"]["evidence_bundle"] == proposal["evidence"]
-~~~
+```
 
 Add tests that catalog failure creates no case/proposal, an old proposal without evidence_bundle raises EvidenceRequired from confirmation, and no follow-up or extra Outbox event is created.
 
@@ -253,12 +259,14 @@ Run the catalog and order-review test files plus Ruff and git diff --check; comm
 ### Task 4: Expose the evidence contract through FastAPI and OpenAPI
 
 **Files:**
+
 - Modify: mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/api/order_review.py
 - Modify: mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/api/schemas.py
 - Modify: mate-platform-backend/packages/mate-tech-orchestrator/tests/test_order_review.py
 - Modify: mate-platform-backend/contracts/openapi/services/orchestrator.yaml
 
 **Interfaces:**
+
 - ReviewCase creation forwards the current Bearer token and returns evidence.
 - Proposal detail returns ActionProposal.evidence with the design schema.
 - EvidenceUnavailable maps to HTTP 503 and X-Error-Code: evidence_unavailable; EvidenceRequired maps to HTTP 409 and X-Error-Code: evidence_required.
@@ -276,7 +284,7 @@ Extract only the Bearer credential from Request, pass it to the service, and add
 
 Add Pydantic models in schemas.py with Literal status/type fields. The model shape must be equivalent to:
 
-~~~python
+```python
 class EvidenceFact(BaseModel):
     id: str
     field: str
@@ -297,7 +305,7 @@ class EvidenceBundle(BaseModel):
     data: dict[str, Any]
     derivation: list[dict[str, Any]]
     recommendation: dict[str, Any]
-~~~
+```
 
 Update orchestrator.yaml with the same names and required fields. The EvidenceBundle schema must require schema_version, status, proposal_id, order_id, tenant_id, order_version, captured_at, ontology, data, derivation and recommendation. Document the 503 creation response and evidence-required 409 confirmation response.
 
@@ -308,12 +316,14 @@ Run the order-review pytest file, contracts/tests/test_docs_compose.py, Ruff for
 ### Task 5: Extend the React order-review evidence experience
 
 **Files:**
+
 - Create: metaplatform-frontend/apps/web/src/pages/superai/components/OrderReviewEvidence.tsx
 - Modify: metaplatform-frontend/apps/web/src/api/superai/orderReview.ts
 - Modify: metaplatform-frontend/apps/web/src/pages/superai/OrderReviewPage.tsx
 - Modify: metaplatform-frontend/tests/e2e/order-review.spec.ts
 
 **Interfaces:**
+
 - OrderReviewEvidence consumes ActionProposal.evidence and never fetches data.
 - ActionProposal exposes evidence?: EvidenceBundle; old proposals remain viewable but cannot be confirmed.
 - Required test IDs are review-evidence, ontology-node-order-model, ontology-node-review-action, ontology-edge-order-model, review-fact-amount, review-fact-payment-status, review-derivation-threshold, review-derivation-eligible and review-recommendation.
@@ -322,7 +332,7 @@ Run the order-review pytest file, contracts/tests/test_docs_compose.py, Ruff for
 
 Add TypeScript interfaces matching OpenAPI. The core types must have this shape:
 
-~~~ts
+```ts
 export interface EvidenceFact {
   id: string;
   field: string;
@@ -333,19 +343,42 @@ export interface EvidenceFact {
 }
 
 export interface EvidenceBundle {
-  schema_version: 'order-review-evidence.v1';
-  status: 'complete' | 'unavailable';
+  schema_version: "order-review-evidence.v1";
+  status: "complete" | "unavailable";
   proposal_id: string;
   order_id: string;
   tenant_id: string;
   order_version: number;
   captured_at: string;
-  ontology: { source: string; model_rid: string; action_rid: string; graph: { nodes: Array<Record<string, unknown>>; edges: Array<Record<string, unknown>> }; legend: Record<string, string> };
+  ontology: {
+    source: string;
+    model_rid: string;
+    action_rid: string;
+    graph: {
+      nodes: Array<Record<string, unknown>>;
+      edges: Array<Record<string, unknown>>;
+    };
+    legend: Record<string, string>;
+  };
   data: { source: string; captured_at: string; facts: EvidenceFact[] };
-  derivation: Array<{ id: string; label: string; passed: boolean; fact_refs?: string[]; details?: Record<string, unknown> }>;
-  recommendation: { action: string; title: string; reason: string; confidence?: number; requires_confirmation: boolean; derivation_refs: string[]; source_refs: string[] };
+  derivation: Array<{
+    id: string;
+    label: string;
+    passed: boolean;
+    fact_refs?: string[];
+    details?: Record<string, unknown>;
+  }>;
+  recommendation: {
+    action: string;
+    title: string;
+    reason: string;
+    confidence?: number;
+    requires_confirmation: boolean;
+    derivation_refs: string[];
+    source_refs: string[];
+  };
 }
-~~~
+```
 
 Add golden-path assertions for the evidence wrapper, order model, action, 支持动作, ¥2,500.00, 未支付, both passing derivations and 创建回款跟进单. Run the test and verify it fails because the response type and DOM regions do not exist.
 
@@ -361,12 +394,12 @@ In OrderReviewPage.tsx, render the component, remove page-generated reason/confi
 
 Run from metaplatform-frontend:
 
-~~~powershell
+```powershell
 $env:E2E_GATEWAY_URL = 'http://127.0.0.1:8100/api/v1'
 pnpm exec playwright test tests/e2e/order-review.spec.ts --project=web
 pnpm --filter @mate/web typecheck
 pnpm --filter @mate/web build
-~~~
+```
 
 Expected: the real Docker-backed order-review path and all frontend checks pass.
 
@@ -377,6 +410,7 @@ Add route fixtures for a proposal without evidence and one with status="unavaila
 ### Task 6: Run system-level acceptance in the local Docker environment
 
 **Files:**
+
 - Modify: none unless a directly related verification failure identifies a defect.
 - Test: mate-platform-backend/packages/mate-tech-ont/tests/integration/test_v2_kernel_seed.py
 - Test: mate-platform-backend/packages/mate-tech-orchestrator/tests/test_order_review_evidence.py
@@ -398,11 +432,11 @@ With an authenticated tenant-default request, GET the canonical ObjectType and A
 
 Run from mate-platform-backend:
 
-~~~powershell
+```powershell
 uv run pytest packages/mate-tech-ont/tests/integration/test_v2_kernel_seed.py packages/mate-tech-orchestrator/tests/test_order_review_evidence.py packages/mate-tech-orchestrator/tests/test_order_review_ontology_catalog.py packages/mate-tech-orchestrator/tests/test_order_review.py -q
 uv run pytest tests/architecture tests/entrypoints -q
 uv lock --check
-~~~
+```
 
 Expected: all targeted backend, architecture, entrypoint and lock checks pass.
 
@@ -410,9 +444,9 @@ Expected: all targeted backend, architecture, entrypoint and lock checks pass.
 
 Run from metaplatform-frontend with E2E_GATEWAY_URL=http://127.0.0.1:8100/api/v1:
 
-~~~powershell
+```powershell
 pnpm exec playwright test tests/e2e/order-review.spec.ts --project=web
-~~~
+```
 
 Expected: AppHub entry, graph, facts, derivation, recommendation, confirmation, order version, follow-up task and no-API-failure assertions pass.
 

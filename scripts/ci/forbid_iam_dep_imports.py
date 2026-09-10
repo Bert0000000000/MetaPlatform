@@ -12,6 +12,7 @@ Allowed escape hatches:
 Exit code 0  ⇒ clean.
 Exit code 1 ⇒ at least one offender printed with relative path.
 """
+
 from __future__ import annotations
 
 import re

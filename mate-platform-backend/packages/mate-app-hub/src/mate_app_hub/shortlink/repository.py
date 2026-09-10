@@ -10,6 +10,7 @@ and rejects entries that don't belong to that tenant. This is the
 layer at which the ADR-0014 cross-tenant rule is enforced (mirrors
 ``repositories.in_memory``).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -6,49 +6,49 @@
 
 ## 签字追踪（GOVERN-01 治理收口）
 
-| ADR | 主题 | 当前状态 | 升版日期 | 纸质签字位 | 关联 GOVERN |
-|---|---|---|---|---|---|
+| ADR      | 主题                        | 当前状态          | 升版日期   | 纸质签字位                      | 关联 GOVERN           |
+| -------- | --------------------------- | ----------------- | ---------- | ------------------------------- | --------------------- |
 | ADR-0021 | Ontology Kernel 12 基元冻结 | **Accepted v1.0** | 2026-08-07 | `__/__________`（纸质档填写位） | GOVERN-03 / -04 / -05 |
-| ADR-0040 | 数字员工/SuperAI 沙箱架构 | **Accepted v1.0** | 2026-08-07 | `__/__________`（纸质档填写位） | GOVERN-05 |
-| ADR-0041 | Session Sandbox（用户级） | **Accepted v1.0** | 2026-08-07 | `__/__________`（纸质档填写位） | — |
+| ADR-0040 | 数字员工/SuperAI 沙箱架构   | **Accepted v1.0** | 2026-08-07 | `__/__________`（纸质档填写位） | GOVERN-05             |
+| ADR-0041 | Session Sandbox（用户级）   | **Accepted v1.0** | 2026-08-07 | `__/__________`（纸质档填写位） | —                     |
 
 > 决策人授权：MatePlatform Architecture Council（v3.1 Ontology 子计划启动会决议，2026-08-06）。
 > 纸质签字位由会议主席在纸档上填写；电子档保留 `__/__________` 占位，便于审计对账。
 
 ## A 组 · 顶层设计
 
-| # | 决策点 | 选择 | 落地 |
-|---|---|---|---|
-| A1 | AI 训练 | **b** RAG + 规则 + 偶发微调 | MP-RAG-ONT-01 主导本体语料 RAG；微调走 OntologyManager 变更管理 + 回归测试 |
-| A2 | Agent 数量 | **7 + N** | 7 内置 + Marketplace 第三方注册表 |
-| A3 | 多 Agent 编排 | **b** 新建 `mate-tech-orchestrator` | 新包独立于 LangGraph，吸收 `mate-app-copilot` 主入口 |
-| A4 | 数字员工归属 | **c** 混合 | 内置 7 共享 + Marketplace 租户级订阅 |
+| #   | 决策点        | 选择                                | 落地                                                                       |
+| --- | ------------- | ----------------------------------- | -------------------------------------------------------------------------- |
+| A1  | AI 训练       | **b** RAG + 规则 + 偶发微调         | MP-RAG-ONT-01 主导本体语料 RAG；微调走 OntologyManager 变更管理 + 回归测试 |
+| A2  | Agent 数量    | **7 + N**                           | 7 内置 + Marketplace 第三方注册表                                          |
+| A3  | 多 Agent 编排 | **b** 新建 `mate-tech-orchestrator` | 新包独立于 LangGraph，吸收 `mate-app-copilot` 主入口                       |
+| A4  | 数字员工归属  | **c** 混合                          | 内置 7 共享 + Marketplace 租户级订阅                                       |
 
 ## B 组 · 沙箱设计
 
-| # | 决策点 | 选择 | 落地 |
-|---|---|---|---|
-| B1 | 默认沙箱等级 | **b** Function L2 + 第三方 L3 | Function Runtime K8s Pod；Marketplace 强制 MicroVM |
-| B2 | 凭证模型 | **b** 会话级短期 token | `auth/session.py` 颁发，Function 拿 service-to-service 凭证 |
-| B3 | HITL 强制 | **a** 每次 ≥1 暂停 | Orchestrator 状态机强校验 |
-| B4 | SANDBOX-01 进 M1 | **a** 是 | 跟 KERNEL-01 并行 |
+| #   | 决策点           | 选择                          | 落地                                                        |
+| --- | ---------------- | ----------------------------- | ----------------------------------------------------------- |
+| B1  | 默认沙箱等级     | **b** Function L2 + 第三方 L3 | Function Runtime K8s Pod；Marketplace 强制 MicroVM          |
+| B2  | 凭证模型         | **b** 会话级短期 token        | `auth/session.py` 颁发，Function 拿 service-to-service 凭证 |
+| B3  | HITL 强制        | **a** 每次 ≥1 暂停            | Orchestrator 状态机强校验                                   |
+| B4  | SANDBOX-01 进 M1 | **a** 是                      | 跟 KERNEL-01 并行                                           |
 
 ## C 组 · 会话沙箱
 
-| # | 决策点 | 选择 | 落地 |
-|---|---|---|---|
-| C1 | 会话默认时长 | **c** 可配置 | 默认 30 分钟，可配 24h |
-| C2 | 跨会话偏好 | **b** opt-in | 默认不加载，UI 显式选择 |
-| C3 | 素材 GC | **c** 默认不保留 | 默认 discard，可 opt-in keep_7d |
-| C4 | 多设备同会话 | **a** 同步 | 多设备共用 plan + history |
+| #   | 决策点       | 选择             | 落地                            |
+| --- | ------------ | ---------------- | ------------------------------- |
+| C1  | 会话默认时长 | **c** 可配置     | 默认 30 分钟，可配 24h          |
+| C2  | 跨会话偏好   | **b** opt-in     | 默认不加载，UI 显式选择         |
+| C3  | 素材 GC      | **c** 默认不保留 | 默认 discard，可 opt-in keep_7d |
+| C4  | 多设备同会话 | **a** 同步       | 多设备共用 plan + history       |
 
 ## 锁死问题
 
-| # | 问题 | 选择 | 落地 |
-|---|---|---|---|
-| L1 | OWL 兼容层 | **b** 直接迁移 v2 | 一次性数据迁移 + 旧表 deprecate，owl/io.py 保留导入导出 |
-| L2 | Function Runtime 宿主 | **K8s Job/Pod**（最佳实践） | Function Runtime 默认 K8s Job；拒绝 Python 进程池 |
-| L3 | OntologyManager 存储 | **a** PG 表 | `ont_versions` + `ont_proposals` + `ont_branches` |
+| #   | 问题                  | 选择                        | 落地                                                    |
+| --- | --------------------- | --------------------------- | ------------------------------------------------------- |
+| L1  | OWL 兼容层            | **b** 直接迁移 v2           | 一次性数据迁移 + 旧表 deprecate，owl/io.py 保留导入导出 |
+| L2  | Function Runtime 宿主 | **K8s Job/Pod**（最佳实践） | Function Runtime 默认 K8s Job；拒绝 Python 进程池       |
+| L3  | OntologyManager 存储  | **a** PG 表                 | `ont_versions` + `ont_proposals` + `ont_branches`       |
 
 ## 决策一致性自检
 

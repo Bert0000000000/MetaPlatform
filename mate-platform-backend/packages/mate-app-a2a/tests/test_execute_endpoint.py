@@ -6,6 +6,7 @@ result payload) instead of a dangling ``submitted`` task. These tests
 verify the endpoint runs an internal agent inline and exposes the result
 through the task read surface.
 """
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
@@ -24,11 +25,14 @@ def _execute_payload(message: str = "Reconcile Q3 ledger") -> dict:
 
 
 def test_execute_runs_internal_agent_synchronously(
-    client: TestClient, auth_headers_acme: dict[str, str],
+    client: TestClient,
+    auth_headers_acme: dict[str, str],
 ) -> None:
     """An internal agent executes inline → completed with a result payload."""
     r = client.post(
-        "/api/v1/a2a/execute", json=_execute_payload(), headers=auth_headers_acme,
+        "/api/v1/a2a/execute",
+        json=_execute_payload(),
+        headers=auth_headers_acme,
     )
     assert r.status_code == 200, r.text
     body = r.json()
@@ -41,7 +45,8 @@ def test_execute_runs_internal_agent_synchronously(
 
     # The task is persisted and now exposes its result via GET /tasks/{id}.
     task = client.get(
-        f"/api/v1/a2a/tasks/{body['task_id']}", headers=auth_headers_acme,
+        f"/api/v1/a2a/tasks/{body['task_id']}",
+        headers=auth_headers_acme,
     )
     assert task.status_code == 200
     t = task.json()
@@ -53,13 +58,16 @@ def test_execute_runs_internal_agent_synchronously(
 
 
 def test_execute_unknown_agent_404(
-    client: TestClient, auth_headers_acme: dict[str, str],
+    client: TestClient,
+    auth_headers_acme: dict[str, str],
 ) -> None:
     """An unregistered target agent → 404 (E_AGENT_NOT_FOUND)."""
     payload = _execute_payload()
     payload["parts"][1]["data"]["target_agent_id"] = "ghost-agent"
     r = client.post(
-        "/api/v1/a2a/execute", json=payload, headers=auth_headers_acme,
+        "/api/v1/a2a/execute",
+        json=payload,
+        headers=auth_headers_acme,
     )
     assert r.status_code == 404, r.text
     assert "ghost-agent" in r.text

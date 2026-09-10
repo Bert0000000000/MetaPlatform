@@ -8,6 +8,7 @@ Verifies:
   * Calling without a tenant context raises (hard rule 3).
   * Calling with ``outbox=None`` is a no-op (returns None).
 """
+
 from __future__ import annotations
 
 from dataclasses import replace

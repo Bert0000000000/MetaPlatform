@@ -520,9 +520,7 @@ def _props_to_dict(p: tuple[tuple[ClassRef, object], ...]) -> dict[str, Any]:
 _SAFE_JSON_KEY = re.compile(r"^[A-Za-z0-9_.:\-]+$")
 
 # Property.type_id → 数值排序白名单（其余按 text 字典序排）。
-_NUMERIC_TYPE_IDS = frozenset(
-    {"integer", "int", "long", "number", "decimal", "float", "double"}
-)
+_NUMERIC_TYPE_IDS = frozenset({"integer", "int", "long", "number", "decimal", "float", "double"})
 
 
 class _RepoSQLCompiler(SQLCompiler):
@@ -543,9 +541,7 @@ class _RepoSQLCompiler(SQLCompiler):
         return super()._render(cf, params)
 
 
-def _rewrite_filter_fields(
-    cf: CompiledFilter, slug_to_rid: dict[str, str]
-) -> CompiledFilter:
+def _rewrite_filter_fields(cf: CompiledFilter, slug_to_rid: dict[str, str]) -> CompiledFilter:
     """把 CompiledFilter 里的简写 slug 字段名归一化为完整 Property rid。
 
     InMemory 执行器（``individual_to_row``）用 rid 第 4 段作 row key，因此
@@ -556,9 +552,7 @@ def _rewrite_filter_fields(
 
     field = cf.field_name
     new_field = slug_to_rid.get(field, field) if field is not None else None
-    new_children = tuple(
-        _rewrite_filter_fields(c, slug_to_rid) for c in cf.children
-    )
+    new_children = tuple(_rewrite_filter_fields(c, slug_to_rid) for c in cf.children)
     if new_field == field and new_children == cf.children:
         return cf
     return _dc_replace(cf, field_name=new_field, children=new_children)
@@ -648,15 +642,11 @@ def _row_to_ot(row: dict[str, Any]) -> ObjectType:
         interfaces=tuple(ClassRef(i) for i in row["interfaces"]),
         display_name=row["display_name"],
         marking=tuple(row.get("marking") or ()),
-        parent_class=(
-            ClassRef(row["parent_class"]) if row.get("parent_class") else None
-        ),
+        parent_class=(ClassRef(row["parent_class"]) if row.get("parent_class") else None),
         description=row.get("description", "") or "",
         status=row.get("status", "") or "active",
         type_group=row.get("type_group", "") or "",
-        render_hints=tuple(
-            tuple(kv) for kv in (row.get("render_hints") or [])
-        ),
+        render_hints=tuple(tuple(kv) for kv in (row.get("render_hints") or [])),
     )
 
 
@@ -708,24 +698,35 @@ def _row_to_at(row: dict[str, Any]) -> ActionType:
     params: list[Property] = []
     for p in row.get("parameters") or []:
         if isinstance(p, str):
-            params.append(Property(
-                rid=ClassRef(p), type_id="string", nullable=True,
-                primary_key=False, title="", format=PropertyFormat.STRING,
-            ))
+            params.append(
+                Property(
+                    rid=ClassRef(p),
+                    type_id="string",
+                    nullable=True,
+                    primary_key=False,
+                    title="",
+                    format=PropertyFormat.STRING,
+                )
+            )
         elif isinstance(p, dict):
-            params.append(Property(
-                rid=ClassRef(p["rid"]), type_id=p["type_id"],
-                nullable=bool(p.get("nullable", True)),
-                primary_key=bool(p.get("primary_key", False)),
-                title=p.get("title", ""),
-                format=PropertyFormat(p.get("format", "string")),
-            ))
+            params.append(
+                Property(
+                    rid=ClassRef(p["rid"]),
+                    type_id=p["type_id"],
+                    nullable=bool(p.get("nullable", True)),
+                    primary_key=bool(p.get("primary_key", False)),
+                    title=p.get("title", ""),
+                    format=PropertyFormat(p.get("format", "string")),
+                )
+            )
     return ActionType(
         rid=ClassRef(row["rid"]),
         parameters=tuple(params),
         submission_criteria=tuple(row.get("submission_criteria") or []),
         side_effects=tuple(row.get("side_effects") or []),
-        function_ref=ClassRef(row["function_ref"]) if row.get("function_ref") else ClassRef("ont.system.fn.noop.v1"),
+        function_ref=ClassRef(row["function_ref"])
+        if row.get("function_ref")
+        else ClassRef("ont.system.fn.noop.v1"),
         on=tuple(ClassRef(r) for r in row.get("target_object_types") or []),
         title=row.get("title") or "",
         description=row.get("description") or "",
@@ -792,9 +793,7 @@ def _row_to_if(row: dict[str, Any]) -> Interface:
             for p in row["properties"]
         ),
         required_links=tuple(ClassRef(r) for r in row.get("required_links") or []),
-        polymorphic_action_constraints=tuple(
-            row.get("polymorphic_action_constraints") or []
-        ),
+        polymorphic_action_constraints=tuple(row.get("polymorphic_action_constraints") or []),
     )
 
 
@@ -812,9 +811,9 @@ def _prop_to_json(p: Property) -> dict[str, Any]:
         "array": p.array,
         "reducer": p.reducer,
         "derived": (
-            {"fn": p.derived.fn, "over_link": p.derived.over_link,
-             "field": p.derived.field}
-            if p.derived is not None else None
+            {"fn": p.derived.fn, "over_link": p.derived.over_link, "field": p.derived.field}
+            if p.derived is not None
+            else None
         ),
         "shared": p.shared,
     }
@@ -832,9 +831,7 @@ def _json_to_prop(d: dict[str, Any]) -> Property:
         title=d["title"],
         format=PropertyFormat(d["format"]),
         description=d.get("description", ""),
-        struct_fields=tuple(
-            _json_to_prop(sf) for sf in d.get("struct_fields") or ()
-        ),
+        struct_fields=tuple(_json_to_prop(sf) for sf in d.get("struct_fields") or ()),
         array=bool(d.get("array", False)),
         reducer=d.get("reducer"),
         derived=(
@@ -843,7 +840,8 @@ def _json_to_prop(d: dict[str, Any]) -> Property:
                 over_link=derived_raw["over_link"],
                 field=derived_raw.get("field"),
             )
-            if derived_raw else None
+            if derived_raw
+            else None
         ),
         shared=bool(d.get("shared", False)),
     )
@@ -969,20 +967,21 @@ class PgOntologyRepository(OntologyRepository):
         # （便于一次性脚本 / 迁移场景）。生产请求必须经 tenant_scope() 注入。
         self._tenant_local = threading.local()
         from mate_kernel.action.engine import ActionService
+
         self._action_service = ActionService()
         # GOVERN-05: FunctionResolver + FunctionExecutor 注入
         from mate_kernel.ontology.function_resolver import InMemoryFunctionResolver
+
         self._function_resolver: InMemoryFunctionResolver = InMemoryFunctionResolver()
         self._function_executor: object | None = None
         # MP-SAL-02: 对象语义检索 embedder（env 未配置时为 None → 索引跳过）
         from .object_search import build_env_embedder
+
         self._embedder: object | None = build_env_embedder()
         # The database transaction outbox is always available. Integrations can
         # replace this ID allocator with a publisher adapter, but a normal
         # service must never downgrade an approved action to an unaudited path.
-        self._outbox_writer: Any = lambda _event_type, _tenant_id, _payload: (
-            f"outbox-{uuid4()}"
-        )
+        self._outbox_writer: Any = lambda _event_type, _tenant_id, _payload: f"outbox-{uuid4()}"
 
         # GOVERN-12-02: 构造即 bootstrap DDL。任何路径（启动 / 测试 fixture /
         # 迁移脚本）拿到 PgOntologyRepository 实例即可用；不需要启动序列先
@@ -992,8 +991,10 @@ class PgOntologyRepository(OntologyRepository):
             self._ensure_schema()
         except Exception as exc:  # bootstrap 失败降级
             import logging
+
             logging.getLogger(__name__).warning(
-                "pg_schema_bootstrap_failed", extra={"dsn": dsn, "error": str(exc)},
+                "pg_schema_bootstrap_failed",
+                extra={"dsn": dsn, "error": str(exc)},
             )
 
     def _current_tenant(self) -> str | None:
@@ -1034,6 +1035,7 @@ class PgOntologyRepository(OntologyRepository):
         """
         import psycopg2  # type: ignore
         import psycopg2.extras  # type: ignore
+
         conn = psycopg2.connect(self._dsn)
         conn.autocommit = False
         psycopg2.extras.register_default_jsonb(conn_or_curs=conn, loads=json.loads)
@@ -1058,6 +1060,7 @@ class PgOntologyRepository(OntologyRepository):
             GUC_TENANT_ID,
             _escape_pg_string,
         )
+
         safe = _escape_pg_string(tenant_id)
         with conn.cursor() as cur:
             cur.execute(f"SET LOCAL {GUC_TENANT_ID} = %s", (safe,))
@@ -1110,7 +1113,9 @@ class PgOntologyRepository(OntologyRepository):
                 "WHERE table_name='ont_object_embedding' "
                 "AND column_name='embedding_vec' "
                 "AND (udt_name <> '" + vec_type + "' "
-                "     OR COALESCE(character_maximum_length::text, '') <> '" + str(vec_dim) + "')) THEN "
+                "     OR COALESCE(character_maximum_length::text, '') <> '"
+                + str(vec_dim)
+                + "')) THEN "
                 "ALTER TABLE ont_object_embedding DROP COLUMN embedding_vec; "
                 "END IF; "
                 "END $do$"
@@ -1136,6 +1141,7 @@ class PgOntologyRepository(OntologyRepository):
     def _cursor(self, conn):
         """返回 RealDictCursor —— 永远走 dict 路径。"""
         import psycopg2.extras  # type: ignore
+
         return conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     # ───── identity ─────
@@ -1274,16 +1280,21 @@ class PgOntologyRepository(OntologyRepository):
                 ax_rid = f"{_head}.{_t}.ax.parent.{_rest}"
                 if row["parent_class"]:
                     self.upsert_axiom_record(
-                        ax_rid, "subclass",
+                        ax_rid,
+                        "subclass",
                         [row["rid"], row["parent_class"]],
                         rule_ref="parent_class",
-                        tenant_id=row["tenant_id"], enabled=True,
+                        tenant_id=row["tenant_id"],
+                        enabled=True,
                     )
                 else:
                     self.upsert_axiom_record(
-                        ax_rid, "subclass", [row["rid"], ""],
+                        ax_rid,
+                        "subclass",
+                        [row["rid"], ""],
                         rule_ref="parent_class",
-                        tenant_id=row["tenant_id"], enabled=False,
+                        tenant_id=row["tenant_id"],
+                        enabled=False,
                     )
             except Exception:
                 # 公理同步失败不阻断类型落库（G21 查询自然退化为精确匹配）
@@ -1326,10 +1337,7 @@ class PgOntologyRepository(OntologyRepository):
             parent_ot = self.get_object_type(ClassRef(parent))
         except KeyError:
             return  # parent 未注册（允许先声明后注册）
-        next_parent = (
-            parent_ot.parent_class.rid
-            if parent_ot.parent_class is not None else ""
-        )
+        next_parent = parent_ot.parent_class.rid if parent_ot.parent_class is not None else ""
         if next_parent:
             self._assert_parent_acyclic(rid, next_parent, _depth + 1)
 
@@ -1355,9 +1363,7 @@ class PgOntologyRepository(OntologyRepository):
             return {
                 "rid": rid,
                 "display_name": ot.display_name,
-                "parent_class": (
-                    ot.parent_class.rid if ot.parent_class is not None else ""
-                ),
+                "parent_class": (ot.parent_class.rid if ot.parent_class is not None else ""),
                 "children": [_node(c) for c in children_of.get(rid, [])],
             }
 
@@ -1365,9 +1371,16 @@ class PgOntologyRepository(OntologyRepository):
 
     # ─────────── ONT-G18：Axiom 注册中心 ───────────
 
-    def upsert_axiom_record(self, rid: str, kind: str, operands: list[str],
-                            rule_ref: str = "builtin", *,
-                            tenant_id: str = "", enabled: bool = True) -> dict:
+    def upsert_axiom_record(
+        self,
+        rid: str,
+        kind: str,
+        operands: list[str],
+        rule_ref: str = "builtin",
+        *,
+        tenant_id: str = "",
+        enabled: bool = True,
+    ) -> dict:
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
@@ -1377,13 +1390,25 @@ class PgOntologyRepository(OntologyRepository):
                        ON CONFLICT (rid) DO UPDATE SET kind=EXCLUDED.kind,
                          operands=EXCLUDED.operands, rule_ref=EXCLUDED.rule_ref,
                          enabled=EXCLUDED.enabled""",
-                    (rid, tenant_id or self._current_tenant() or "tenant-default",
-                     kind, list(operands), rule_ref, enabled))
+                    (
+                        rid,
+                        tenant_id or self._current_tenant() or "tenant-default",
+                        kind,
+                        list(operands),
+                        rule_ref,
+                        enabled,
+                    ),
+                )
             conn.commit()
         finally:
             conn.close()
-        return {"rid": rid, "kind": kind, "operands": list(operands),
-                "rule_ref": rule_ref, "enabled": enabled}
+        return {
+            "rid": rid,
+            "kind": kind,
+            "operands": list(operands),
+            "rule_ref": rule_ref,
+            "enabled": enabled,
+        }
 
     def list_axiom_records(self, tenant_id: str = "", *, enabled_only: bool = False) -> list[dict]:
         conn, _ = self._connect()
@@ -1400,12 +1425,25 @@ class PgOntologyRepository(OntologyRepository):
         out = []
         for r in rows:
             if isinstance(r, dict):
-                out.append({"rid": r["rid"], "kind": r["kind"],
-                            "operands": list(r["operands"]),
-                            "rule_ref": r["rule_ref"], "enabled": r["enabled"]})
+                out.append(
+                    {
+                        "rid": r["rid"],
+                        "kind": r["kind"],
+                        "operands": list(r["operands"]),
+                        "rule_ref": r["rule_ref"],
+                        "enabled": r["enabled"],
+                    }
+                )
             else:
-                out.append({"rid": r[0], "kind": r[1], "operands": list(r[2]),
-                            "rule_ref": r[3], "enabled": r[4]})
+                out.append(
+                    {
+                        "rid": r[0],
+                        "kind": r[1],
+                        "operands": list(r[2]),
+                        "rule_ref": r[3],
+                        "enabled": r[4],
+                    }
+                )
         return out
 
     def delete_axiom_record(self, rid: str) -> bool:
@@ -1422,7 +1460,11 @@ class PgOntologyRepository(OntologyRepository):
     # ─────────── ONT-G8/G19：branch / diff / rollback ───────────
 
     def branch_object_type(
-        self, rid: ClassRef, new_rid: ClassRef, *, note: str = "",
+        self,
+        rid: ClassRef,
+        new_rid: ClassRef,
+        *,
+        note: str = "",
     ) -> ObjectType:
         """以当前定义复制出 new_rid（如 ...v2），记录 lineage。"""
         ot = self.get_object_type(rid)
@@ -1487,7 +1529,10 @@ class PgOntologyRepository(OntologyRepository):
             conn.close()
 
     def list_object_types(
-        self, limit: int, offset: int, tenant_id: str | None = None,
+        self,
+        limit: int,
+        offset: int,
+        tenant_id: str | None = None,
     ) -> list[ObjectType]:
         self._ensure_schema()
         tenant = tenant_id or self._current_tenant()
@@ -1605,22 +1650,23 @@ class PgOntologyRepository(OntologyRepository):
                     "updated_at = now() "
                     "WHERE class_rid = %s AND tenant_id = %s",
                     (
-                        src_ind_prefix, tgt_ind_prefix,
-                        src_ind_prefix, tgt_ind_prefix,
-                        target_rid, tenant_id,
+                        src_ind_prefix,
+                        tgt_ind_prefix,
+                        src_ind_prefix,
+                        tgt_ind_prefix,
+                        target_rid,
+                        tenant_id,
                     ),
                 )
 
                 # 3) LinkInstance.src / dst 重写（Individual rid 同步替换）
                 cur.execute(
-                    "UPDATE ont_link_instance SET src = REPLACE(src, %s, %s) "
-                    "WHERE src LIKE %s",
+                    "UPDATE ont_link_instance SET src = REPLACE(src, %s, %s) WHERE src LIKE %s",
                     (src_ind_prefix, tgt_ind_prefix, f"{src_ind_prefix}%"),
                 )
                 src_updates = cur.rowcount
                 cur.execute(
-                    "UPDATE ont_link_instance SET dst = REPLACE(dst, %s, %s) "
-                    "WHERE dst LIKE %s",
+                    "UPDATE ont_link_instance SET dst = REPLACE(dst, %s, %s) WHERE dst LIKE %s",
                     (src_ind_prefix, tgt_ind_prefix, f"{src_ind_prefix}%"),
                 )
                 dst_updates = cur.rowcount
@@ -1644,8 +1690,7 @@ class PgOntologyRepository(OntologyRepository):
                 # 5) 软删 source ObjectType（archived = TRUE）
                 #    archived 行从 UNIQUE INDEX 排除 → 同 slug 重新可用
                 cur.execute(
-                    "UPDATE ont_object_type SET archived = TRUE, updated_at = now() "
-                    "WHERE rid = %s",
+                    "UPDATE ont_object_type SET archived = TRUE, updated_at = now() WHERE rid = %s",
                     (source_rid,),
                 )
                 source_archived = cur.rowcount > 0
@@ -1687,8 +1732,10 @@ class PgOntologyRepository(OntologyRepository):
         # subject 用 target rid（merge 写入端），便于 API 层定位 ObjectType
         return self.propose_action(
             ClassRef(target_rid),
-            parameters, None,
-            impact_summary, expected_diff,
+            parameters,
+            None,
+            impact_summary,
+            expected_diff,
             kind="merge_suggestion",
         )
 
@@ -1758,14 +1805,19 @@ class PgOntologyRepository(OntologyRepository):
                     (
                         at.rid.rid,
                         tenant,
-                        json.dumps([
-                            {
-                                "rid": p.rid.rid, "type_id": p.type_id,
-                                "nullable": p.nullable, "primary_key": p.primary_key,
-                                "title": p.title, "format": p.format.value,
-                            }
-                            for p in at.parameters
-                        ]),
+                        json.dumps(
+                            [
+                                {
+                                    "rid": p.rid.rid,
+                                    "type_id": p.type_id,
+                                    "nullable": p.nullable,
+                                    "primary_key": p.primary_key,
+                                    "title": p.title,
+                                    "format": p.format.value,
+                                }
+                                for p in at.parameters
+                            ]
+                        ),
                         json.dumps(list(at.submission_criteria)),
                         json.dumps(list(at.side_effects)),
                         at.function_ref.rid,
@@ -1888,7 +1940,8 @@ class PgOntologyRepository(OntologyRepository):
         return [
             {"rid": rid, "shared": len(users) > 1, "used_by": users}
             for rid, users in sorted(
-                usage.items(), key=lambda kv: (-len(kv[1]), kv[0]),
+                usage.items(),
+                key=lambda kv: (-len(kv[1]), kv[0]),
             )
             if users
         ]
@@ -2054,7 +2107,11 @@ class PgOntologyRepository(OntologyRepository):
             conn.close()
 
     def _check_link_cardinality(
-        self, link_type_rid: str, src: str, dst: str, exclude_rid: str = "",
+        self,
+        link_type_rid: str,
+        src: str,
+        dst: str,
+        exclude_rid: str = "",
     ) -> None:
         """EXP-03：注册 LinkType 的基数约束（见 kernel check_cardinality）。"""
         from mate_kernel.ontology.types.link_type import check_cardinality
@@ -2081,9 +2138,7 @@ class PgOntologyRepository(OntologyRepository):
             conn.close()
         violation = check_cardinality(lt.cardinality, src_out, dst_in)
         if violation:
-            raise ValueError(
-                f"{violation} (link_type={link_type_rid}, src={src}, dst={dst})"
-            )
+            raise ValueError(f"{violation} (link_type={link_type_rid}, src={src}, dst={dst})")
 
     def search_around(self, rid: str, limit: int = 100) -> list[dict[str, Any]]:
         """EXP-03：一跳关系遍历（Object Explorer Search Around 同语义）。
@@ -2097,16 +2152,15 @@ class PgOntologyRepository(OntologyRepository):
         try:
             with self._cursor(conn) as cur:
                 cur.execute(
-                    "SELECT * FROM ont_link_instance WHERE src = %s OR dst = %s "
-                    "LIMIT %s",
+                    "SELECT * FROM ont_link_instance WHERE src = %s OR dst = %s LIMIT %s",
                     (rid, rid, limit),
                 )
                 links = cur.fetchall()
                 if not links:
                     return []
-                peer_rids = list({
-                    (l["dst"] if l["src"] == rid else l["src"]) for l in links
-                })[:limit]
+                peer_rids = list({(l["dst"] if l["src"] == rid else l["src"]) for l in links})[
+                    :limit
+                ]
                 cur.execute(
                     "SELECT * FROM ont_individual WHERE rid = ANY(%s)",
                     (peer_rids,),
@@ -2121,16 +2175,19 @@ class PgOntologyRepository(OntologyRepository):
             outgoing = l["src"] == rid
             peer_rid = l["dst"] if outgoing else l["src"]
             key = (l["link_type_rid"], "out" if outgoing else "in")
-            entry = grouped.setdefault(key, {
-                "link_type_rid": l["link_type_rid"],
-                "link_display": (
-                    (lt.src_display_name if lt else "") or _slug_of(l["link_type_rid"])
-                    if outgoing else
-                    (lt.dst_display_name if lt else "") or _slug_of(l["link_type_rid"])
-                ),
-                "direction": key[1],
-                "peers": [],
-            })
+            entry = grouped.setdefault(
+                key,
+                {
+                    "link_type_rid": l["link_type_rid"],
+                    "link_display": (
+                        (lt.src_display_name if lt else "") or _slug_of(l["link_type_rid"])
+                        if outgoing
+                        else (lt.dst_display_name if lt else "") or _slug_of(l["link_type_rid"])
+                    ),
+                    "direction": key[1],
+                    "peers": [],
+                },
+            )
             ind = ind_rows.get(peer_rid)
             if ind is not None:
                 entry["peers"].append(individual_to_row(ind))
@@ -2200,8 +2257,9 @@ class PgOntologyRepository(OntologyRepository):
             try:
                 with self._cursor(conn_v) as cur:
                     cur.execute(
-                        "SELECT version, language, source_ref FROM ont_function "
-                        "WHERE rid = %s", (f.rid.rid,))
+                        "SELECT version, language, source_ref FROM ont_function WHERE rid = %s",
+                        (f.rid.rid,),
+                    )
                     old = cur.fetchone()
                 if old is not None:
                     with self._cursor(conn_v) as cur:
@@ -2210,8 +2268,8 @@ class PgOntologyRepository(OntologyRepository):
                                (function_rid, version, language, source_ref)
                                VALUES (%s,%s,%s,%s)
                                ON CONFLICT (function_rid, version) DO NOTHING""",
-                            (f.rid.rid, int(old["version"]), old["language"],
-                             old["source_ref"]))
+                            (f.rid.rid, int(old["version"]), old["language"], old["source_ref"]),
+                        )
                 conn_v.commit()
             finally:
                 conn_v.close()
@@ -2282,8 +2340,8 @@ class PgOntologyRepository(OntologyRepository):
                        VALUES (%s,%s,%s)
                        ON CONFLICT (alias) DO UPDATE SET
                          function_rid = EXCLUDED.function_rid""",
-                    (alias, function_rid,
-                     self._current_tenant() or "tenant-default"))
+                    (alias, function_rid, self._current_tenant() or "tenant-default"),
+                )
             conn.commit()
             return {"alias": alias, "function_rid": function_rid}
         finally:
@@ -2294,8 +2352,8 @@ class PgOntologyRepository(OntologyRepository):
         try:
             with self._cursor(conn) as cur:
                 cur.execute(
-                    "SELECT function_rid FROM ont_function_alias WHERE alias = %s",
-                    (alias,))
+                    "SELECT function_rid FROM ont_function_alias WHERE alias = %s", (alias,)
+                )
                 row = cur.fetchone()
             if row is None:
                 raise KeyError(f"alias not found: {alias}")
@@ -2310,13 +2368,14 @@ class PgOntologyRepository(OntologyRepository):
             with self._cursor(conn) as cur:
                 cur.execute(
                     "SELECT * FROM ont_function_version WHERE function_rid = %s "
-                    "ORDER BY version DESC", (function_rid,))
+                    "ORDER BY version DESC",
+                    (function_rid,),
+                )
                 return [dict(r) for r in cur.fetchall()]
         finally:
             conn.close()
 
-    def invoke_function(self, function_rid: str,
-                        parameters: dict[str, Any]) -> dict[str, Any]:
+    def invoke_function(self, function_rid: str, parameters: dict[str, Any]) -> dict[str, Any]:
         """调用已注册 Function（invoker/executor 优先，缺位报 422 语义错误）。"""
         action_rid = function_rid
         invoker = self._action_service._invokers.get(function_rid)
@@ -2339,7 +2398,8 @@ class PgOntologyRepository(OntologyRepository):
             return {"function_rid": function_rid, "result": result}
         raise KeyError(
             f"function {function_rid!r} has no registered invoker/executor "
-            "(G23 invoke 需先 set_function_executor 或 register_function)")
+            "(G23 invoke 需先 set_function_executor 或 register_function)"
+        )
 
     # ───── query / apply ─────
 
@@ -2373,13 +2433,15 @@ class PgOntologyRepository(OntologyRepository):
                 ifcs = []
             target = os_.class_rid.rid
             ifc = next(
-                (i for i in ifcs if i.rid.rid == target), None,
+                (i for i in ifcs if i.rid.rid == target),
+                None,
             )
             if ifc is not None:
                 from mate_kernel.ontology.types.interface import interface_source_rids
 
                 interface_source = interface_source_rids(
-                    target, self.list_object_types(limit=10000, offset=0),
+                    target,
+                    self.list_object_types(limit=10000, offset=0),
                 )
                 for p in ifc.properties:
                     slug_to_rid[_prop_slug(p.rid.rid)] = p.rid.rid
@@ -2402,11 +2464,7 @@ class PgOntologyRepository(OntologyRepository):
             key = slug_to_rid.get(field_name, field_name)
             if not _SAFE_JSON_KEY.match(key):
                 raise ValueError(f"unsafe sort field {field_name!r}")
-            cast = (
-                "::numeric"
-                if rid_type.get(key) in _NUMERIC_TYPE_IDS
-                else "::text"
-            )
+            cast = "::numeric" if rid_type.get(key) in _NUMERIC_TYPE_IDS else "::text"
             direction = "DESC" if reverse else "ASC"
             order_by = f" ORDER BY (props ->> '{key}'){cast} {direction}"
 
@@ -2426,7 +2484,8 @@ class PgOntologyRepository(OntologyRepository):
                     with self._cursor(conn_t) as cur:
                         cur.execute(
                             "SELECT rid FROM ont_object_type WHERE rid LIKE %s",
-                            (f"ont.{axiom_tenant}.obj.%.%",))
+                            (f"ont.{axiom_tenant}.obj.%.%",),
+                        )
                         for row in cur.fetchall():
                             type_rid = row["rid"] if isinstance(row, dict) else row[0]
                             t_parts = type_rid.split(".")
@@ -2484,12 +2543,7 @@ class PgOntologyRepository(OntologyRepository):
 
         # where_sql comes from SQLCompiler (not user input); order_by is a
         # controlled sort spec. Safe to compose via f-string.
-        sql = (
-            f"SELECT * FROM ont_individual "
-            f"WHERE {where_sql}"
-            f"{order_by} "
-            f"LIMIT %s OFFSET %s"
-        )
+        sql = f"SELECT * FROM ont_individual WHERE {where_sql}{order_by} LIMIT %s OFFSET %s"
         params_all: list[Any] = [*params, os_.paging_limit, os_.paging_offset]
 
         conn, _ = self._connect()
@@ -2508,7 +2562,7 @@ class PgOntologyRepository(OntologyRepository):
         self._ensure_schema()
         if q.aggregation is not None and q.sort:
             raise ValueError("sort with aggregation is not supported")
-        for m in (q.aggregation.metrics if q.aggregation else ()):
+        for m in q.aggregation.metrics if q.aggregation else ():
             if m.fn not in ("sum", "count", "avg", "min", "max"):
                 raise ValueError(f"unknown metric fn {m.fn!r}")
             if m.fn != "count" and m.field is None:
@@ -2542,7 +2596,8 @@ class PgOntologyRepository(OntologyRepository):
                     slug_to_rid[_prop_slug(p.rid.rid)] = p.rid.rid
                     rid_type[p.rid.rid] = p.type_id
                 impl = interface_source_rids(
-                    q.source, self.list_object_types(limit=10000, offset=0),
+                    q.source,
+                    self.list_object_types(limit=10000, offset=0),
                 )
                 if not impl:
                     return QueryResult(kind="objects", rows=(), result_schema=None)
@@ -2558,8 +2613,10 @@ class PgOntologyRepository(OntologyRepository):
         # （先 KNN 后 filters：filters 作用于最终行集）
         if q.nearest is not None and self._embedder is not None:
             inner, params_inner = self._nearest_inner_sql(
-                q.nearest, source_rids=impl if (ot is None and impl) else [q.source],
-                fallback_classes=[q.source])
+                q.nearest,
+                source_rids=impl if (ot is None and impl) else [q.source],
+                fallback_classes=[q.source],
+            )
         params: list[Any] = list(params_inner)
         where_sql, where_params = _ir_where(q.filters, slug_to_rid)
         if where_sql:
@@ -2626,7 +2683,10 @@ class PgOntologyRepository(OntologyRepository):
         )
 
     def _nearest_inner_sql(
-        self, spec: Any, source_rids: list[str], fallback_classes: list[str],
+        self,
+        spec: Any,
+        source_rids: list[str],
+        fallback_classes: list[str],
     ) -> tuple[str, list[Any]]:
         """G13：nearest 的 inner SQL（embedding_vec KNN，HNSW 加速）。
 
@@ -2638,8 +2698,7 @@ class PgOntologyRepository(OntologyRepository):
         conn0, _ = self._connect()
         try:
             with self._cursor(conn0) as cur:
-                cur.execute("SELECT rid FROM ont_object_type WHERE rid LIKE %s",
-                            ("ont.%.obj.%.%",))
+                cur.execute("SELECT rid FROM ont_object_type WHERE rid LIKE %s", ("ont.%.obj.%.%",))
                 for row in cur.fetchall():
                     parts = row["rid"].split(".")
                     if len(parts) >= 6:
@@ -2693,7 +2752,9 @@ class PgOntologyRepository(OntologyRepository):
                     row[slug] = reduce_array_value(row[slug], p.reducer)
 
     def _attach_derived_pg(
-        self, ot: ObjectType, rows: list[dict[str, Any]],
+        self,
+        ot: ObjectType,
+        rows: list[dict[str, Any]],
     ) -> None:
         """派生属性批量计算：每个 DerivedSpec 一条聚合 SQL，结果映射回行。
 
@@ -2749,8 +2810,9 @@ class PgOntologyRepository(OntologyRepository):
                 with self._cursor(conn) as cur:
                     cur.execute(cur_sql, q_params)
                     mapping = {
-                        (r["rid"] if isinstance(r, dict) else r[0]):
-                            (r["v"] if isinstance(r, dict) else r[1])
+                        (r["rid"] if isinstance(r, dict) else r[0]): (
+                            r["v"] if isinstance(r, dict) else r[1]
+                        )
                         for r in cur.fetchall()
                     }
                 for row in rows:
@@ -2784,19 +2846,18 @@ class PgOntologyRepository(OntologyRepository):
         for m in agg.metrics:
             name = m.output_name()
             if m.fn == "count" and m.field is None:
-                select_parts.append(f"COUNT(*) AS \"{name}\"")
+                select_parts.append(f'COUNT(*) AS "{name}"')
                 continue
             assert m.field is not None
             key = slug_to_rid.get(m.field, m.field)
             if not _SAFE_JSON_KEY.match(key):
                 raise ValueError(f"unsafe metric field {m.field!r}")
-            fn_sql = {"sum": "SUM", "count": "COUNT", "avg": "AVG", "min": "MIN", "max": "MAX"}[m.fn]
+            fn_sql = {"sum": "SUM", "count": "COUNT", "avg": "AVG", "min": "MIN", "max": "MAX"}[
+                m.fn
+            ]
             select_parts.append(f"{fn_sql}((props ->> '{key}')::numeric) AS \"{name}\"")
 
-        sql = (
-            f"SELECT {', '.join(select_parts)} FROM ont_individual "
-            f"WHERE rid IN ({inner})"
-        )
+        sql = f"SELECT {', '.join(select_parts)} FROM ont_individual WHERE rid IN ({inner})"
         if group_parts:
             sql += " GROUP BY " + ", ".join(group_parts)
 
@@ -2833,7 +2894,8 @@ class PgOntologyRepository(OntologyRepository):
         self._embedder = embedder
 
     def _embed_chunks(
-        self, ind: Individual,
+        self,
+        ind: Individual,
     ) -> list[tuple[str, str, str, str, str, list[float]]]:
         """Individual → [(chunk_id, individual_rid, class_rid, property_rid, value_text, vec)]。"""
         if self._embedder is None:
@@ -2842,14 +2904,16 @@ class PgOntologyRepository(OntologyRepository):
         for prop_ref, value in ind.props:
             slug = _prop_slug(prop_ref.rid)
             text = f"{slug} {value}"
-            out.append((
-                f"{ind.rid}#{prop_ref.rid}",
-                ind.rid,
-                ind.class_rid.rid,
-                prop_ref.rid,
-                str(value),
-                self._embedder.embed(text),
-            ))
+            out.append(
+                (
+                    f"{ind.rid}#{prop_ref.rid}",
+                    ind.rid,
+                    ind.class_rid.rid,
+                    prop_ref.rid,
+                    str(value),
+                    self._embedder.embed(text),
+                )
+            )
         return out
 
     def _index_individual_embeddings(self, conn: Any, ind: Individual) -> None:
@@ -2885,8 +2949,13 @@ class PgOntologyRepository(OntologyRepository):
                                     created_at = now()
                                 """,
                                 (
-                                    chunk_id, individual_rid, class_rid, property_rid,
-                                    value_text, json.dumps(vec), vec_literal,
+                                    chunk_id,
+                                    individual_rid,
+                                    class_rid,
+                                    property_rid,
+                                    value_text,
+                                    json.dumps(vec),
+                                    vec_literal,
                                     ind.tenant_id,
                                 ),
                             )
@@ -2906,20 +2975,28 @@ class PgOntologyRepository(OntologyRepository):
                                 created_at = now()
                             """,
                             (
-                                chunk_id, individual_rid, class_rid, property_rid,
-                                value_text, json.dumps(vec), ind.tenant_id,
+                                chunk_id,
+                                individual_rid,
+                                class_rid,
+                                property_rid,
+                                value_text,
+                                json.dumps(vec),
+                                ind.tenant_id,
                             ),
                         )
         except Exception:  # 索引失败不影响主路径
             import logging
+
             logging.getLogger(__name__).warning(
-                "object_embedding_index_failed", extra={"rid": ind.rid},
+                "object_embedding_index_failed",
+                extra={"rid": ind.rid},
             )
 
     # ───── G33：schema WIP 暂存 ─────
 
-    def save_schema_wip(self, rid: str, payload: dict[str, Any],
-                        author: str = "") -> dict[str, Any]:
+    def save_schema_wip(
+        self, rid: str, payload: dict[str, Any], author: str = ""
+    ) -> dict[str, Any]:
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
@@ -2929,8 +3006,13 @@ class PgOntologyRepository(OntologyRepository):
                        ON CONFLICT (rid) DO UPDATE SET
                          payload = EXCLUDED.payload, author = EXCLUDED.author,
                          created_at = now()""",
-                    (rid, self._current_tenant() or "tenant-default",
-                     author, json.dumps(payload, default=str)))
+                    (
+                        rid,
+                        self._current_tenant() or "tenant-default",
+                        author,
+                        json.dumps(payload, default=str),
+                    ),
+                )
             conn.commit()
             return {"rid": rid, "status": "staged"}
         finally:
@@ -2943,7 +3025,8 @@ class PgOntologyRepository(OntologyRepository):
             with self._cursor(conn) as cur:
                 cur.execute(
                     "SELECT rid, author, payload, created_at FROM ont_schema_wip "
-                    "ORDER BY created_at DESC")
+                    "ORDER BY created_at DESC"
+                )
                 return [dict(r) for r in cur.fetchall()]
         finally:
             conn.close()
@@ -2953,8 +3036,7 @@ class PgOntologyRepository(OntologyRepository):
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute(
-                    "SELECT * FROM ont_schema_wip WHERE rid = %s", (rid,))
+                cur.execute("SELECT * FROM ont_schema_wip WHERE rid = %s", (rid,))
                 row = cur.fetchone()
             if row is None:
                 raise KeyError(f"wip not found: {rid}")
@@ -2977,7 +3059,10 @@ class PgOntologyRepository(OntologyRepository):
 
     def upsert_webhook_subscription(self, decl: dict[str, Any]) -> dict[str, Any]:
         rid = decl.get("rid") or (
-            "ont." + (decl.get("tenant_id") or "t") + ".wh." + decl["url"].split("//")[-1].replace("/", "_")[:40]
+            "ont."
+            + (decl.get("tenant_id") or "t")
+            + ".wh."
+            + decl["url"].split("//")[-1].replace("/", "_")[:40]
         )
         conn, _ = self._connect()
         try:
@@ -2989,9 +3074,15 @@ class PgOntologyRepository(OntologyRepository):
                        ON CONFLICT (rid) DO UPDATE SET
                          event_type=EXCLUDED.event_type, url=EXCLUDED.url,
                          secret=EXCLUDED.secret, active=EXCLUDED.active""",
-                    (rid, decl.get("tenant_id") or self._current_tenant() or "tenant-default",
-                     decl.get("event_type", "*"), decl["url"],
-                     decl.get("secret", ""), bool(decl.get("active", True))))
+                    (
+                        rid,
+                        decl.get("tenant_id") or self._current_tenant() or "tenant-default",
+                        decl.get("event_type", "*"),
+                        decl["url"],
+                        decl.get("secret", ""),
+                        bool(decl.get("active", True)),
+                    ),
+                )
             conn.commit()
             return {"rid": rid}
         finally:
@@ -3007,9 +3098,16 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
-    def record_webhook_delivery(self, *, event_id: str, subscription_rid: str,
-                                status: str, attempts: int, last_error: str,
-                                tenant_id: str = "") -> None:
+    def record_webhook_delivery(
+        self,
+        *,
+        event_id: str,
+        subscription_rid: str,
+        status: str,
+        attempts: int,
+        last_error: str,
+        tenant_id: str = "",
+    ) -> None:
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
@@ -3017,8 +3115,8 @@ class PgOntologyRepository(OntologyRepository):
                     """INSERT INTO ont_webhook_delivery
                        (event_id, subscription_rid, status, attempts, last_error, tenant_id)
                        VALUES (%s,%s,%s,%s,%s,%s)""",
-                    (event_id, subscription_rid, status, attempts,
-                     last_error, tenant_id))
+                    (event_id, subscription_rid, status, attempts, last_error, tenant_id),
+                )
             conn.commit()
         finally:
             conn.close()
@@ -3030,7 +3128,8 @@ class PgOntologyRepository(OntologyRepository):
                 cur.execute(
                     "SELECT 1 FROM ont_webhook_delivery WHERE event_id=%s "
                     "AND subscription_rid=%s AND status='delivered' LIMIT 1",
-                    (event_id, subscription_rid))
+                    (event_id, subscription_rid),
+                )
                 return cur.fetchone() is not None
         finally:
             conn.close()
@@ -3043,16 +3142,17 @@ class PgOntologyRepository(OntologyRepository):
         try:
             with self._cursor(conn) as cur:
                 cur.execute(
-                    "SELECT * FROM ont_outbox_event ORDER BY created_at DESC LIMIT %s",
-                    (limit,))
+                    "SELECT * FROM ont_outbox_event ORDER BY created_at DESC LIMIT %s", (limit,)
+                )
                 return [dict(r) for r in cur.fetchall()]
         finally:
             conn.close()
 
     # ───── GOV-16~19：治理四件套 ─────
 
-    def list_action_audit(self, limit: int = 100,
-                          action_rid: str | None = None) -> list[dict[str, Any]]:
+    def list_action_audit(
+        self, limit: int = 100, action_rid: str | None = None
+    ) -> list[dict[str, Any]]:
         """UI-04：执行历史查询（audit 行倒序；action_rid 过滤可选）。"""
         self._ensure_schema()
         conds = ""
@@ -3064,12 +3164,12 @@ class PgOntologyRepository(OntologyRepository):
         try:
             with self._cursor(conn) as cur:
                 cur.execute(
-                    "SELECT * FROM ont_action_audit" + conds +
-                    " ORDER BY created_at DESC LIMIT %s", (*params, limit))
+                    "SELECT * FROM ont_action_audit" + conds + " ORDER BY created_at DESC LIMIT %s",
+                    (*params, limit),
+                )
                 return [dict(r) for r in cur.fetchall()]
         finally:
             conn.close()
-
 
     def record_usage(self, class_rid: str, op: str, count: int = 1) -> None:
         """GOV-16：使用量打点（read/write；UPSERT 日聚合）。best-effort。"""
@@ -3084,7 +3184,8 @@ class PgOntologyRepository(OntologyRepository):
                            VALUES (%s,%s,%s,CURRENT_DATE,%s)
                            ON CONFLICT (tenant_id, class_rid, op, day)
                            DO UPDATE SET count = ont_usage_metric.count + EXCLUDED.count""",
-                        (tenant, class_rid, op, count))
+                        (tenant, class_rid, op, count),
+                    )
                 conn.commit()
             finally:
                 conn.close()
@@ -3105,13 +3206,13 @@ class PgOntologyRepository(OntologyRepository):
                        FROM ont_usage_metric
                        WHERE day > CURRENT_DATE - %s::int
                        GROUP BY class_rid ORDER BY SUM(count) DESC""",
-                    (days,))
+                    (days,),
+                )
                 return [dict(r) for r in cur.fetchall()]
         finally:
             conn.close()
 
-    def apply_lifecycle(self, class_rid: str, action: str,
-                        actor: str = "") -> dict[str, Any]:
+    def apply_lifecycle(self, class_rid: str, action: str, actor: str = "") -> dict[str, Any]:
         """GOV-17：Snooze/Deprecate/Delete 三级处置 + 删除保护。
 
         删除保护：近 30 天有 read 使用量的类型拒绝 delete（先 Deprecate）。
@@ -3124,9 +3225,11 @@ class PgOntologyRepository(OntologyRepository):
             raise ValueError(f"action must be snooze|deprecate|delete: {action!r}")
         ot = self.get_object_type(ClassRef(class_rid))
         if action == "delete":
-            usage = [u for u in self.usage_summary(30)
-                     if u["class_rid"] == class_rid
-                     and (u.get("reads") or 0) > 0]
+            usage = [
+                u
+                for u in self.usage_summary(30)
+                if u["class_rid"] == class_rid and (u.get("reads") or 0) > 0
+            ]
             if usage:
                 raise ValueError(
                     f"delete protection: {class_rid} has "
@@ -3137,26 +3240,25 @@ class PgOntologyRepository(OntologyRepository):
         if action == "deprecate":
             updated = _replace(ot, status="deprecated")
             self.upsert_object_type(updated)
-            return {"class_rid": class_rid, "action": action,
-                    "status": "deprecated"}
+            return {"class_rid": class_rid, "action": action, "status": "deprecated"}
         if action == "snooze":
             # snooze 是个人队列语义（v1 记审计事件即可）
-            return {"class_rid": class_rid, "action": action,
-                    "status": ot.status}
+            return {"class_rid": class_rid, "action": action, "status": ot.status}
         # delete：软删（archived）—— 与 MP-DEDUP-01 merge 同口径
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
                 cur.execute(
-                    "UPDATE ont_object_type SET archived = TRUE "
-                    "WHERE rid = %s", (class_rid,))
+                    "UPDATE ont_object_type SET archived = TRUE WHERE rid = %s", (class_rid,)
+                )
             conn.commit()
         finally:
             conn.close()
         return {"class_rid": class_rid, "action": action, "archived": True}
 
-    def append_timeseries(self, series_rid: str, points: list[dict[str, Any]],
-                          tenant_id: str | None = None) -> int:
+    def append_timeseries(
+        self, series_rid: str, points: list[dict[str, Any]], tenant_id: str | None = None
+    ) -> int:
         """GOV-19：追加时序点 [{ts, value, attrs?}]（UPSERT on (series, ts)）。"""
         tenant = tenant_id or self._current_tenant() or "tenant-default"
         conn, _ = self._connect()
@@ -3169,16 +3271,22 @@ class PgOntologyRepository(OntologyRepository):
                            VALUES (%s,%s,%s,%s,%s::jsonb)
                            ON CONFLICT (series_rid, ts) DO UPDATE SET
                              value = EXCLUDED.value, attrs = EXCLUDED.attrs""",
-                        (series_rid, tenant, p["ts"], float(p["value"]),
-                         json.dumps(p.get("attrs") or {})))
+                        (
+                            series_rid,
+                            tenant,
+                            p["ts"],
+                            float(p["value"]),
+                            json.dumps(p.get("attrs") or {}),
+                        ),
+                    )
             conn.commit()
             return len(points)
         finally:
             conn.close()
 
-    def query_timeseries(self, series_rid: str,
-                         start: str | None = None, end: str | None = None,
-                         limit: int = 10000) -> list[dict[str, Any]]:
+    def query_timeseries(
+        self, series_rid: str, start: str | None = None, end: str | None = None, limit: int = 10000
+    ) -> list[dict[str, Any]]:
         """GOV-19：窗口查询（ts 升序）。"""
         self._ensure_schema()
         conds = ["series_rid = %s"]
@@ -3194,8 +3302,10 @@ class PgOntologyRepository(OntologyRepository):
             with self._cursor(conn) as cur:
                 cur.execute(
                     "SELECT ts, value, attrs FROM ont_timeseries_point WHERE "
-                    + " AND ".join(conds) + " ORDER BY ts ASC LIMIT %s",
-                    (*params, limit))
+                    + " AND ".join(conds)
+                    + " ORDER BY ts ASC LIMIT %s",
+                    (*params, limit),
+                )
                 return [dict(r) for r in cur.fetchall()]
         finally:
             conn.close()
@@ -3222,11 +3332,18 @@ class PgOntologyRepository(OntologyRepository):
                          pk_column=EXCLUDED.pk_column,
                          field_mapping=EXCLUDED.field_mapping,
                          priority=EXCLUDED.priority, updated_at=now()""",
-                    (rid, decl.get("tenant_id") or self._current_tenant() or "tenant-default",
-                     decl["class_rid"], decl["name"], decl.get("kind", "pg_table"),
-                     decl.get("dsn_env", "ONT_SOURCE_DSN"), decl["table"],
-                     decl["pk_column"], json.dumps(decl.get("field_mapping") or {}),
-                     int(decl.get("priority", 100))),
+                    (
+                        rid,
+                        decl.get("tenant_id") or self._current_tenant() or "tenant-default",
+                        decl["class_rid"],
+                        decl["name"],
+                        decl.get("kind", "pg_table"),
+                        decl.get("dsn_env", "ONT_SOURCE_DSN"),
+                        decl["table"],
+                        decl["pk_column"],
+                        json.dumps(decl.get("field_mapping") or {}),
+                        int(decl.get("priority", 100)),
+                    ),
                 )
             conn.commit()
             return {"rid": rid, "name": decl["name"]}
@@ -3242,7 +3359,8 @@ class PgOntologyRepository(OntologyRepository):
                 cur.execute(
                     "SELECT individual_rid, property_rid FROM ont_edit_overlay "
                     "WHERE individual_rid LIKE %s",
-                    (f"ont.{tenant}.ind.{cls_slug}.%",))
+                    (f"ont.{tenant}.ind.{cls_slug}.%",),
+                )
                 out: dict[str, set[str]] = {}
                 for r in cur.fetchall():
                     out.setdefault(r["individual_rid"], set()).add(r["property_rid"])
@@ -3257,11 +3375,8 @@ class PgOntologyRepository(OntologyRepository):
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute(
-                    "DELETE FROM ont_link_instance WHERE src = %s OR dst = %s",
-                    (rid, rid))
-                cur.execute(
-                    "DELETE FROM ont_edit_overlay WHERE individual_rid = %s", (rid,))
+                cur.execute("DELETE FROM ont_link_instance WHERE src = %s OR dst = %s", (rid, rid))
+                cur.execute("DELETE FROM ont_edit_overlay WHERE individual_rid = %s", (rid,))
                 cur.execute("DELETE FROM ont_individual WHERE rid = %s", (rid,))
                 deleted = cur.rowcount == 1
             conn.commit()
@@ -3277,16 +3392,16 @@ class PgOntologyRepository(OntologyRepository):
                 if class_rid:
                     cur.execute(
                         "SELECT * FROM ont_backing_datasource "
-                        "WHERE class_rid = %s ORDER BY priority, name", (class_rid,))
+                        "WHERE class_rid = %s ORDER BY priority, name",
+                        (class_rid,),
+                    )
                 else:
-                    cur.execute(
-                        "SELECT * FROM ont_backing_datasource ORDER BY priority, name")
+                    cur.execute("SELECT * FROM ont_backing_datasource ORDER BY priority, name")
                 return [dict(r) for r in cur.fetchall()]
         finally:
             conn.close()
 
-    def sync_backing_datasources(self, class_rid: str,
-                                 incremental: bool = False) -> dict[str, Any]:
+    def sync_backing_datasources(self, class_rid: str, incremental: bool = False) -> dict[str, Any]:
         """DATA-14/CDC：批量或增量同步（声明按 priority 序）。
 
         incremental=True：按 ts_column > last_synced_at 过滤（水位随同步推进）；
@@ -3304,18 +3419,26 @@ class PgOntologyRepository(OntologyRepository):
         overlay = self._edit_overlay_for_class(tenant, cls_slug)
         sources = [
             BackingDatasource(
-                name=d["name"], kind=d["kind"], dsn_env=d["dsn_env"],
-                table=d["table_name"], pk_column=d["pk_column"],
+                name=d["name"],
+                kind=d["kind"],
+                dsn_env=d["dsn_env"],
+                table=d["table_name"],
+                pk_column=d["pk_column"],
                 field_mapping=dict((d.get("field_mapping") or {}).items()),
                 priority=int(d.get("priority", 100)),
             )
             for d in decls
         ]
         stats = sync_backing_datasource(
-            self, ot, sources, incremental=incremental, overlay_props=overlay,
-            watermarks={d["name"]: (
-                d["last_synced_at"].isoformat()
-                if d.get("last_synced_at") else None) for d in decls},
+            self,
+            ot,
+            sources,
+            incremental=incremental,
+            overlay_props=overlay,
+            watermarks={
+                d["name"]: (d["last_synced_at"].isoformat() if d.get("last_synced_at") else None)
+                for d in decls
+            },
             ts_columns={d["name"]: d.get("ts_column") or "updated_at" for d in decls},
         )
         if incremental:
@@ -3326,14 +3449,14 @@ class PgOntologyRepository(OntologyRepository):
                         cur.execute(
                             "UPDATE ont_backing_datasource SET last_synced_at = now() "
                             "WHERE class_rid = %s AND name = %s",
-                            (class_rid, d["name"]))
+                            (class_rid, d["name"]),
+                        )
                 conn.commit()
             finally:
                 conn.close()
         return stats
 
-    def apply_cdc_changes(self, class_rid: str,
-                          changes: list[dict[str, Any]]) -> dict[str, int]:
+    def apply_cdc_changes(self, class_rid: str, changes: list[dict[str, Any]]) -> dict[str, int]:
         """CDC 流式绑定入口（debezium / mate-tech-etl 变更事件）。
 
         mapping 缺省取 priority 最高声明的 field_mapping；upsert 尊重
@@ -3351,7 +3474,9 @@ class PgOntologyRepository(OntologyRepository):
         overlay = self._edit_overlay_for_class(tenant, cls_slug)
         top = decls[0]
         return _apply(
-            self, ot, changes,
+            self,
+            ot,
+            changes,
             pk_column=top["pk_column"],
             field_mapping=dict((top.get("field_mapping") or {}).items()),
             overlay_props=overlay,
@@ -3370,7 +3495,10 @@ class PgOntologyRepository(OntologyRepository):
         field/op/value/markings（row: bypass_markings；column: required_markings）。"""
         import uuid as _uuid
 
-        rid = policy.get("rid") or f"ont.{policy.get('tenant_id', 't')}.secpol.{_uuid.uuid4().hex[:8]}"
+        rid = (
+            policy.get("rid")
+            or f"ont.{policy.get('tenant_id', 't')}.secpol.{_uuid.uuid4().hex[:8]}"
+        )
         tenant = policy.get("tenant_id") or self._current_tenant() or "tenant-default"
         kind = policy["kind"]
         if kind not in ("row", "column"):
@@ -3388,13 +3516,19 @@ class PgOntologyRepository(OntologyRepository):
                          property_rid=EXCLUDED.property_rid, field=EXCLUDED.field,
                          op=EXCLUDED.op, value=EXCLUDED.value,
                          markings=EXCLUDED.markings, updated_at=now()""",
-                    (rid, tenant, kind, policy.get("class_rid", ""),
-                     policy.get("property_rid", ""), policy.get("field", ""),
-                     policy.get("op", ""),
-                     json.dumps(policy.get("value"), default=str),
-                     list(policy.get("markings", ())) or
-                     list(policy.get("bypass_markings", ())) or
-                     list(policy.get("required_markings", ()))),
+                    (
+                        rid,
+                        tenant,
+                        kind,
+                        policy.get("class_rid", ""),
+                        policy.get("property_rid", ""),
+                        policy.get("field", ""),
+                        policy.get("op", ""),
+                        json.dumps(policy.get("value"), default=str),
+                        list(policy.get("markings", ()))
+                        or list(policy.get("bypass_markings", ()))
+                        or list(policy.get("required_markings", ())),
+                    ),
                 )
             conn.commit()
             return {"rid": rid, "kind": kind, "tenant_id": tenant}
@@ -3434,16 +3568,20 @@ class PgOntologyRepository(OntologyRepository):
         for r in self.list_security_policies():
             markings = tuple(r.get("markings") or ())
             if r["kind"] == "row":
-                rows_.append(RowPolicy(
-                    class_rid=r.get("class_rid", ""), field=r.get("field", ""),
-                    op=r.get("op", ""), value=r.get("value"),
-                    bypass_markings=markings))
+                rows_.append(
+                    RowPolicy(
+                        class_rid=r.get("class_rid", ""),
+                        field=r.get("field", ""),
+                        op=r.get("op", ""),
+                        value=r.get("value"),
+                        bypass_markings=markings,
+                    )
+                )
             else:
-                cols_.append(ColumnPolicy(
-                    property_rid=r.get("property_rid", ""),
-                    required_markings=markings))
-        return SecurityPolicySet(row_policies=tuple(rows_),
-                                 column_policies=tuple(cols_))
+                cols_.append(
+                    ColumnPolicy(property_rid=r.get("property_rid", ""), required_markings=markings)
+                )
+        return SecurityPolicySet(row_policies=tuple(rows_), column_policies=tuple(cols_))
 
     def _ancestors_of_class(self, class_rid: str) -> frozenset[str]:
         """类的全部祖先（subclass 公理闭包，EXP-01 联动）。"""
@@ -3451,8 +3589,7 @@ class PgOntologyRepository(OntologyRepository):
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute("SELECT rid FROM ont_object_type WHERE rid LIKE %s",
-                            ("ont.%.obj.%.%",))
+                cur.execute("SELECT rid FROM ont_object_type WHERE rid LIKE %s", ("ont.%.obj.%.%",))
                 for row in cur.fetchall():
                     parts = row["rid"].split(".")
                     if len(parts) >= 6:
@@ -3485,8 +3622,8 @@ class PgOntologyRepository(OntologyRepository):
         try:
             with self._cursor(conn) as cur:
                 cur.execute(
-                    "SELECT marking FROM ont_object_type WHERE rid = ANY(%s)",
-                    (sorted(anc),))
+                    "SELECT marking FROM ont_object_type WHERE rid = ANY(%s)", (sorted(anc),)
+                )
                 for row in cur.fetchall():
                     out.update(row.get("marking") or [])
         finally:
@@ -3494,7 +3631,9 @@ class PgOntologyRepository(OntologyRepository):
         return tuple(out)
 
     def enforce_read_policies(
-        self, individuals: list[Any], viewer_markings: list[str] | tuple[str, ...],
+        self,
+        individuals: list[Any],
+        viewer_markings: list[str] | tuple[str, ...],
     ) -> list[Any]:
         """行策略 + G6 marking 门（读端点调用；分页前）。"""
         from mate_kernel.ontology.security_policies import (
@@ -3505,15 +3644,20 @@ class PgOntologyRepository(OntologyRepository):
         ps = self._policy_set()
         if ps.row_policies:
             individuals = filter_visible_individuals(
-                individuals, ps, viewer_markings,
+                individuals,
+                ps,
+                viewer_markings,
                 ancestor_classes_of=self._ancestors_of_class,
             )
         # G6：实例 marking ⊆ viewer ∧ 类型 marking（含祖先）⊆ viewer
         return filter_by_markings(
-            individuals, viewer_markings, class_marking_of=self._class_markings_of)
+            individuals, viewer_markings, class_marking_of=self._class_markings_of
+        )
 
     def mask_rows(
-        self, rows: list[dict[str, Any]], viewer_markings: list[str] | tuple[str, ...],
+        self,
+        rows: list[dict[str, Any]],
+        viewer_markings: list[str] | tuple[str, ...],
     ) -> list[dict[str, Any]]:
         """列策略脱敏（值置 None，对象仍可见）。"""
         from mate_kernel.ontology.security_policies import mask_property_values
@@ -3525,8 +3669,9 @@ class PgOntologyRepository(OntologyRepository):
             mask_property_values(r, ps, viewer_markings)
         return rows
 
-    def _marking_visible_rids(self, rids: list[str],
-                              viewer_markings: tuple[str, ...] | list[str]) -> set[str]:
+    def _marking_visible_rids(
+        self, rids: list[str], viewer_markings: tuple[str, ...] | list[str]
+    ) -> set[str]:
         """G6：卡片按实例/类型 marking 过滤后可见的 rid 集。"""
         if not rids:
             return set()
@@ -3539,11 +3684,18 @@ class PgOntologyRepository(OntologyRepository):
                 inds = [_row_to_individual(r) for r in cur.fetchall()]
         finally:
             conn.close()
-        return {i.rid for i in filter_by_markings(
-            inds, viewer_markings, class_marking_of=self._class_markings_of)}
+        return {
+            i.rid
+            for i in filter_by_markings(
+                inds, viewer_markings, class_marking_of=self._class_markings_of
+            )
+        }
 
     def search_objects(
-        self, text: str, class_rid: str | None = None, top_k: int = 5,
+        self,
+        text: str,
+        class_rid: str | None = None,
+        top_k: int = 5,
         tenant_id: str | None = None,
         viewer_markings: tuple[str, ...] | list[str] | None = None,
     ) -> list[dict[str, Any]]:
@@ -3593,21 +3745,23 @@ class PgOntologyRepository(OntologyRepository):
                 if score <= 0.0:
                     continue
                 class_of[r["individual_rid"]] = r["class_rid"]
-                per_individual.setdefault(r["individual_rid"], []).append({
-                    "property_rid": r["property_rid"],
-                    "value_text": r["value_text"],
-                    "score": score,
-                })
+                per_individual.setdefault(r["individual_rid"], []).append(
+                    {
+                        "property_rid": r["property_rid"],
+                        "value_text": r["value_text"],
+                        "score": score,
+                    }
+                )
             cards = []
             for individual_rid, matched in per_individual.items():
                 matched.sort(key=lambda m: m["score"], reverse=True)
-                cards.append(
-                    build_card(individual_rid, class_of[individual_rid], matched[:3]))
+                cards.append(build_card(individual_rid, class_of[individual_rid], matched[:3]))
             cards.sort(key=lambda c: c["score"], reverse=True)
             cards = cards[:top_k]
             if viewer_markings:
                 visible = self._marking_visible_rids(
-                    [c["individual_rid"] for c in cards], viewer_markings)
+                    [c["individual_rid"] for c in cards], viewer_markings
+                )
                 cards = [c for c in cards if c["individual_rid"] in visible]
             return cards
 
@@ -3641,28 +3795,33 @@ class PgOntologyRepository(OntologyRepository):
             if score <= 0.0:
                 continue
             class_of[r["individual_rid"]] = r["class_rid"]
-            per_individual.setdefault(r["individual_rid"], []).append({
-                "property_rid": r["property_rid"],
-                "value_text": r["value_text"],
-                "score": score,
-            })
+            per_individual.setdefault(r["individual_rid"], []).append(
+                {
+                    "property_rid": r["property_rid"],
+                    "value_text": r["value_text"],
+                    "score": score,
+                }
+            )
         cards: list[dict[str, Any]] = []
         for individual_rid, matched in per_individual.items():
             matched.sort(key=lambda m: m["score"], reverse=True)
-            cards.append(
-                build_card(individual_rid, class_of[individual_rid], matched[:3])
-            )
+            cards.append(build_card(individual_rid, class_of[individual_rid], matched[:3]))
         cards.sort(key=lambda c: c["score"], reverse=True)
         cards = cards[:top_k]
         if viewer_markings:
             visible = self._marking_visible_rids(
-                [c["individual_rid"] for c in cards], viewer_markings)
+                [c["individual_rid"] for c in cards], viewer_markings
+            )
             cards = [c for c in cards if c["individual_rid"] in visible]
         return cards
 
     def search_objects_hybrid(
-        self, text: str, class_rid: str | None = None, top_k: int = 5,
-        tenant_id: str | None = None, k_rrf: int = 60,
+        self,
+        text: str,
+        class_rid: str | None = None,
+        top_k: int = 5,
+        tenant_id: str | None = None,
+        k_rrf: int = 60,
         viewer_markings: tuple[str, ...] | list[str] | None = None,
     ) -> list[dict[str, Any]]:
         """AI-09：混合检索（关键词 + 向量 + RRF 融合，调研材料 03 §OAG）。
@@ -3674,9 +3833,7 @@ class PgOntologyRepository(OntologyRepository):
 
         tenant = tenant_id or self._current_tenant()
         self._ensure_schema()
-        tokens = [
-            t for t in _re.split(r"\s+", text.strip()) if len(t) >= 2
-        ][:8] or [text.strip()]
+        tokens = [t for t in _re.split(r"\s+", text.strip()) if len(t) >= 2][:8] or [text.strip()]
         conds: list[str] = []
         params: list[Any] = []
         if tenant:
@@ -3685,12 +3842,11 @@ class PgOntologyRepository(OntologyRepository):
         if class_rid:
             conds.append("class_rid = %s")
             params.append(class_rid)
-        like_clauses = " OR ".join(
-            "value_text ILIKE %s" for _ in tokens
-        )
+        like_clauses = " OR ".join("value_text ILIKE %s" for _ in tokens)
         sql = (
             "SELECT * FROM ont_object_embedding WHERE ("
-            + like_clauses + ")"
+            + like_clauses
+            + ")"
             + (" AND " + " AND ".join(conds) if conds else "")
             + " ORDER BY created_at DESC LIMIT %s"
         )
@@ -3714,10 +3870,10 @@ class PgOntologyRepository(OntologyRepository):
                 kw_meta[irid] = r
 
         # 向量路（G6 marking 透传）
-        vec_cards = self.search_objects(text, class_rid, top_k * 3, tenant_id,
-                                        viewer_markings=viewer_markings)
-        vec_rank: dict[str, int] = {c["individual_rid"]: i + 1
-                                    for i, c in enumerate(vec_cards)}
+        vec_cards = self.search_objects(
+            text, class_rid, top_k * 3, tenant_id, viewer_markings=viewer_markings
+        )
+        vec_rank: dict[str, int] = {c["individual_rid"]: i + 1 for i, c in enumerate(vec_cards)}
 
         all_rids = set(kw_rank) | set(vec_rank)
         class_of = {c["individual_rid"]: c["class_rid"] for c in vec_cards}
@@ -3739,22 +3895,26 @@ class PgOntologyRepository(OntologyRepository):
         cards: list[dict[str, Any]] = []
         for irid in fused:
             kw_hit = kw_meta.get(irid)
-            matched = [{
-                "property_rid": kw_hit["property_rid"] if kw_hit else "",
-                "value_text": kw_hit["value_text"] if kw_hit else "",
-                "score": _rrf(irid),
-            }]
-            cards.append({
-                "individual_rid": irid,
-                "class_rid": class_of.get(irid, ""),
-                "score": _rrf(irid),
-                "matched": matched,
-                "card_text": f"{irid}:\n- {matched[0]['value_text']}",
-                "legs": {
-                    "keyword_rank": kw_rank.get(irid),
-                    "vector_rank": vec_rank.get(irid),
-                },
-            })
+            matched = [
+                {
+                    "property_rid": kw_hit["property_rid"] if kw_hit else "",
+                    "value_text": kw_hit["value_text"] if kw_hit else "",
+                    "score": _rrf(irid),
+                }
+            ]
+            cards.append(
+                {
+                    "individual_rid": irid,
+                    "class_rid": class_of.get(irid, ""),
+                    "score": _rrf(irid),
+                    "matched": matched,
+                    "card_text": f"{irid}:\n- {matched[0]['value_text']}",
+                    "legs": {
+                        "keyword_rank": kw_rank.get(irid),
+                        "vector_rank": vec_rank.get(irid),
+                    },
+                }
+            )
         return cards
 
     def reindex_object_embeddings(self, tenant_id: str | None = None) -> int:
@@ -3766,7 +3926,8 @@ class PgOntologyRepository(OntologyRepository):
             with self._cursor(conn) as cur:
                 if tenant:
                     cur.execute(
-                        "SELECT * FROM ont_individual WHERE tenant_id = %s", (tenant,),
+                        "SELECT * FROM ont_individual WHERE tenant_id = %s",
+                        (tenant,),
                     )
                 else:
                     cur.execute("SELECT * FROM ont_individual")
@@ -3813,7 +3974,10 @@ class PgOntologyRepository(OntologyRepository):
 
     @staticmethod
     def _proposal_request_fingerprint(
-        *, operation: str, proposal_id: str, actor_id: str | None,
+        *,
+        operation: str,
+        proposal_id: str,
+        actor_id: str | None,
     ) -> str:
         payload = json.dumps(
             {"operation": operation, "proposal_id": proposal_id, "actor_id": actor_id or ""},
@@ -3920,24 +4084,37 @@ class PgOntologyRepository(OntologyRepository):
             conn.close()
 
     def propose_create_instance(
-        self, class_rid: str, props: dict[str, Any],
-        impact_summary: str, expected_diff: dict[str, Any] | None = None,
+        self,
+        class_rid: str,
+        props: dict[str, Any],
+        impact_summary: str,
+        expected_diff: dict[str, Any] | None = None,
     ) -> Any:
         """MP-SAL-04b：文本抽取字段 → 新建实例提议（subject=class rid）。"""
         return self.propose_action(
-            ClassRef(class_rid), {"props": dict(props)}, None,
-            impact_summary, expected_diff, kind="create_instance",
+            ClassRef(class_rid),
+            {"props": dict(props)},
+            None,
+            impact_summary,
+            expected_diff,
+            kind="create_instance",
         )
 
     def propose_model_type(
-        self, type_def: dict[str, Any], impact_summary: str,
+        self,
+        type_def: dict[str, Any],
+        impact_summary: str,
     ) -> Any:
         """MP-SAL-04b：文本→新类型定义提议（subject=新类型 rid）。"""
         if not isinstance(type_def, dict) or "rid" not in type_def:
             raise ValueError("type_def must carry 'rid'")
         return self.propose_action(
-            ClassRef(str(type_def["rid"])), {"type_def": type_def}, None,
-            impact_summary, {"+type": type_def["rid"]}, kind="model_type",
+            ClassRef(str(type_def["rid"])),
+            {"type_def": type_def},
+            None,
+            impact_summary,
+            {"+type": type_def["rid"]},
+            kind="model_type",
         )
 
     def get_proposal(self, proposal_id: str) -> Any:
@@ -3946,7 +4123,8 @@ class PgOntologyRepository(OntologyRepository):
         try:
             with self._cursor(conn) as cur:
                 cur.execute(
-                    "SELECT * FROM ont_proposal WHERE proposal_id = %s", (proposal_id,),
+                    "SELECT * FROM ont_proposal WHERE proposal_id = %s",
+                    (proposal_id,),
                 )
                 row = cur.fetchone()
         finally:
@@ -4002,9 +4180,11 @@ class PgOntologyRepository(OntologyRepository):
                     (proposal_id,),
                 )
                 self._append_proposal_event(
-                    cur, proposal_id=proposal_id,
+                    cur,
+                    proposal_id=proposal_id,
                     tenant_id=self._proposal_tenant_id(p.action_rid),
-                    from_status="pending", to_status="withdrawn",
+                    from_status="pending",
+                    to_status="withdrawn",
                     actor_id=actor_id or None,
                 )
             conn.commit()
@@ -4013,7 +4193,10 @@ class PgOntologyRepository(OntologyRepository):
         return {"proposal_id": proposal_id, "status": "withdrawn"}
 
     def revert_proposal(
-        self, proposal_id: str, *, actor_id: str = "",
+        self,
+        proposal_id: str,
+        *,
+        actor_id: str = "",
         idempotency_key: str | None = None,
     ) -> dict[str, Any]:
         """executed → reverted（人审撤销 + 补偿；FR-ACT-CONFIRM-002..004/006）。
@@ -4065,7 +4248,8 @@ class PgOntologyRepository(OntologyRepository):
                 try:
                     with self._cursor(conn) as cur:
                         cur.execute(
-                            "DELETE FROM ont_individual WHERE rid=%s", (ind_rid,),
+                            "DELETE FROM ont_individual WHERE rid=%s",
+                            (ind_rid,),
                         )
                         deleted = cur.rowcount
                     conn.commit()
@@ -4087,7 +4271,10 @@ class PgOntologyRepository(OntologyRepository):
             non_inv = list(execution.get("non_invertible") or [])
             if inverse_edits:
                 comp = self.apply_edit_set_now(
-                    p.action_rid, p.target_iid, {}, inverse_edits,
+                    p.action_rid,
+                    p.target_iid,
+                    {},
+                    inverse_edits,
                     actor=actor_id or "revert",
                     impact_summary=f"revert compensation for {proposal_id}",
                 )
@@ -4098,8 +4285,7 @@ class PgOntologyRepository(OntologyRepository):
                     "non_invertible": non_inv,
                 }
             else:
-                compensated = {"note": "nothing invertible",
-                               "non_invertible": non_inv}
+                compensated = {"note": "nothing invertible", "non_invertible": non_inv}
 
         self._action_service.mark_reverted(proposal_id)
         conn, _ = self._connect()
@@ -4110,17 +4296,21 @@ class PgOntologyRepository(OntologyRepository):
                     (proposal_id,),
                 )
                 self._append_proposal_event(
-                    cur, proposal_id=proposal_id,
+                    cur,
+                    proposal_id=proposal_id,
                     tenant_id=self._proposal_tenant_id(p.action_rid),
-                    from_status="executed", to_status="reverted",
+                    from_status="executed",
+                    to_status="reverted",
                     actor_id=actor_id or None,
                 )
             conn.commit()
         finally:
             conn.close()
         result = {
-            "proposal_id": proposal_id, "status": "reverted",
-            "kind": p.kind, "equivalence": equivalence,
+            "proposal_id": proposal_id,
+            "status": "reverted",
+            "kind": p.kind,
+            "equivalence": equivalence,
             "compensation": compensated,
         }
         conn, _ = self._connect()
@@ -4130,8 +4320,11 @@ class PgOntologyRepository(OntologyRepository):
                     """INSERT INTO ont_proposal_execution (proposal_id, tenant_id, result)
                        VALUES (%s, %s, %s::jsonb)
                        ON CONFLICT (proposal_id) DO UPDATE SET result = EXCLUDED.result""",
-                    (proposal_id, self._proposal_tenant_id(p.action_rid),
-                     __import__("json").dumps({"revert": result}, default=str)),
+                    (
+                        proposal_id,
+                        self._proposal_tenant_id(p.action_rid),
+                        __import__("json").dumps({"revert": result}, default=str),
+                    ),
                 )
             conn.commit()
         finally:
@@ -4204,8 +4397,11 @@ class PgOntologyRepository(OntologyRepository):
                     WHERE proposal_id = %s
                     """,
                     (
-                        prop.status.value, prop.confirmed_by, prop.confirmed_at,
-                        prop.status.value, prop.proposal_id,
+                        prop.status.value,
+                        prop.confirmed_by,
+                        prop.confirmed_at,
+                        prop.status.value,
+                        prop.proposal_id,
                     ),
                 )
                 self._append_proposal_event(
@@ -4224,8 +4420,11 @@ class PgOntologyRepository(OntologyRepository):
                         VALUES (%s, %s, %s, %s, %s)
                         """,
                         (
-                            self._proposal_tenant_id(prop.action_rid), operation,
-                            idempotency_key, prop.proposal_id, request_fingerprint,
+                            self._proposal_tenant_id(prop.action_rid),
+                            operation,
+                            idempotency_key,
+                            prop.proposal_id,
+                            request_fingerprint,
                         ),
                     )
                 if execution_result is not None:
@@ -4246,12 +4445,17 @@ class PgOntologyRepository(OntologyRepository):
             conn.close()
 
     def confirm_proposal(
-        self, proposal_id: str, confirmed_by: str = "", idempotency_key: str | None = None,
+        self,
+        proposal_id: str,
+        confirmed_by: str = "",
+        idempotency_key: str | None = None,
     ) -> Any:
         key = (idempotency_key or "").strip() or None
         current = self.get_proposal(proposal_id)
         fingerprint = self._proposal_request_fingerprint(
-            operation="confirm", proposal_id=proposal_id, actor_id=confirmed_by or None,
+            operation="confirm",
+            proposal_id=proposal_id,
+            actor_id=confirmed_by or None,
         )
         replayed = self._replay_idempotent_proposal(
             tenant_id=self._proposal_tenant_id(current.action_rid),
@@ -4274,12 +4478,17 @@ class PgOntologyRepository(OntologyRepository):
         return prop
 
     def reject_proposal(
-        self, proposal_id: str, confirmed_by: str = "", idempotency_key: str | None = None,
+        self,
+        proposal_id: str,
+        confirmed_by: str = "",
+        idempotency_key: str | None = None,
     ) -> Any:
         key = (idempotency_key or "").strip() or None
         current = self.get_proposal(proposal_id)
         fingerprint = self._proposal_request_fingerprint(
-            operation="reject", proposal_id=proposal_id, actor_id=confirmed_by or None,
+            operation="reject",
+            proposal_id=proposal_id,
+            actor_id=confirmed_by or None,
         )
         replayed = self._replay_idempotent_proposal(
             tenant_id=self._proposal_tenant_id(current.action_rid),
@@ -4501,7 +4710,6 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
-
     # ───── ACT-05：声明式 edit-set（propose / apply-now / 事务执行）─────
 
     def propose_edit_set(
@@ -4515,7 +4723,11 @@ class PgOntologyRepository(OntologyRepository):
         """AI/HITL 流程的 edit-set 提案（pending → 用户 confirm → execute）。"""
 
         return self._propose_edit_set_pg(
-            action_rid, target_iid, parameters, edit_templates, impact_summary,
+            action_rid,
+            target_iid,
+            parameters,
+            edit_templates,
+            impact_summary,
         )
 
     def _propose_edit_set_pg(
@@ -4538,16 +4750,21 @@ class PgOntologyRepository(OntologyRepository):
         except KeyError:
             at = None
         if at is not None:
-            violations = validate_referenced_parameters(
-                at.parameters, parameters, edit_templates)
+            violations = validate_referenced_parameters(at.parameters, parameters, edit_templates)
             if violations:
                 raise ValueError("; ".join(violations))
 
         ops = resolve_edit_templates(
-            edit_templates, target_iid=target_iid, parameters=parameters,
+            edit_templates,
+            target_iid=target_iid,
+            parameters=parameters,
         )
         proposal_id = f"prop-{_uuid.uuid4().hex[:12]}"
-        tenant_id = self._current_tenant() or action_rid.split(".")[1] if "." in action_rid else "tenant-default"
+        tenant_id = (
+            self._current_tenant() or action_rid.split(".")[1]
+            if "." in action_rid
+            else "tenant-default"
+        )
         expected_diff = {
             "~ops": len(ops),
             "ops": [e.op for e in ops],
@@ -4562,11 +4779,17 @@ class PgOntologyRepository(OntologyRepository):
                         created_by, created_at, updated_at)
                        VALUES (%s,%s,%s,%s,%s::jsonb,%s,%s,'pending','edit_set',%s::jsonb,%s,now(),now())
                        ON CONFLICT (proposal_id) DO NOTHING""",
-                    (proposal_id, tenant_id, action_rid, target_iid,
-                     json.dumps({"edits": list(edit_templates),
-                                 "parameters": dict(parameters)}),
-                     impact_summary, True, json.dumps(expected_diff, default=str),
-                     "ai-agent"),
+                    (
+                        proposal_id,
+                        tenant_id,
+                        action_rid,
+                        target_iid,
+                        json.dumps({"edits": list(edit_templates), "parameters": dict(parameters)}),
+                        impact_summary,
+                        True,
+                        json.dumps(expected_diff, default=str),
+                        "ai-agent",
+                    ),
                 )
             conn.commit()
         finally:
@@ -4584,18 +4807,26 @@ class PgOntologyRepository(OntologyRepository):
     ) -> dict[str, Any]:
         """D7「预览即确认」：即时 proposal（confirmed）+ 事务执行 + 审计。"""
         prop = self._propose_edit_set_pg(
-            action_rid, target_iid, parameters, edit_templates,
+            action_rid,
+            target_iid,
+            parameters,
+            edit_templates,
             impact_summary or f"edit-set by {actor}",
         )
         self.confirm_proposal(prop.proposal_id, confirmed_by=actor)
         return self.execute_proposal(
-            prop.proposal_id, actor_id=actor,
+            prop.proposal_id,
+            actor_id=actor,
             idempotency_key=f"editset-{prop.proposal_id}",
         )
 
     def _execute_edit_set_proposal(
-        self, p: Any, *, actor_id: str,
-        idempotency_key: str | None, request_fingerprint: str | None,
+        self,
+        p: Any,
+        *,
+        actor_id: str,
+        idempotency_key: str | None,
+        request_fingerprint: str | None,
     ) -> dict[str, Any]:
         """kind=edit_set 的事务执行：编辑集 + 审计 + outbox 单事务。"""
         import uuid as _uuid
@@ -4615,7 +4846,9 @@ class PgOntologyRepository(OntologyRepository):
         if len(templates) > EDIT_BATCH_LIMIT:
             raise EditSetError(f"edit-set exceeds batch limit {EDIT_BATCH_LIMIT}")
         ops = resolve_edit_templates(
-            templates, target_iid=p.target_iid, parameters=params,
+            templates,
+            target_iid=p.target_iid,
+            parameters=params,
             now_iso=_dt.now(_UTC).isoformat(),
         )
         applied: list[Any] = []
@@ -4631,21 +4864,21 @@ class PgOntologyRepository(OntologyRepository):
                 for e in ops:
                     if e.op == "set_property":
                         cur.execute(
-                            "SELECT props FROM ont_individual WHERE rid = %s "
-                            "FOR UPDATE", (e.target,))
+                            "SELECT props FROM ont_individual WHERE rid = %s FOR UPDATE",
+                            (e.target,),
+                        )
                         row = cur.fetchone()
                         if row is None:
-                            raise EditSetError(
-                                f"set_property target not found: {e.target}")
+                            raise EditSetError(f"set_property target not found: {e.target}")
                         old_props = row["props"] if isinstance(row["props"], dict) else {}
-                        old_values[f"{e.target}#{e.property_rid}"] = old_props.get(
-                            e.property_rid)
+                        old_values[f"{e.target}#{e.property_rid}"] = old_props.get(e.property_rid)
                         new_props = dict(old_props)
                         new_props[e.property_rid] = e.value
                         cur.execute(
                             "UPDATE ont_individual SET props = %s::jsonb, "
                             "updated_at = now() WHERE rid = %s",
-                            (json.dumps(new_props, default=str), e.target))
+                            (json.dumps(new_props, default=str), e.target),
+                        )
                         # writeback 双流合并：记覆盖层（管道同步不覆盖该属性）
                         cur.execute(
                             """INSERT INTO ont_edit_overlay
@@ -4653,7 +4886,8 @@ class PgOntologyRepository(OntologyRepository):
                                VALUES (%s, %s, %s, now())
                                ON CONFLICT (individual_rid, property_rid)
                                DO UPDATE SET updated_at = now()""",
-                            (e.target, e.property_rid, tenant_id))
+                            (e.target, e.property_rid, tenant_id),
+                        )
                     elif e.op == "create_object":
                         parts = e.class_rid.split(".")
                         tenant = parts[1]
@@ -4670,54 +4904,66 @@ class PgOntologyRepository(OntologyRepository):
                                  props = EXCLUDED.props,
                                  primary_key = EXCLUDED.primary_key,
                                  updated_at = now()""",
-                            (rid, tenant, e.class_rid,
-                             json.dumps(e.props, default=str),
-                             str(e.primary_key), inherited))
+                            (
+                                rid,
+                                tenant,
+                                e.class_rid,
+                                json.dumps(e.props, default=str),
+                                str(e.primary_key),
+                                inherited,
+                            ),
+                        )
                         created_rids.append(rid)
                     elif e.op == "delete_object":
                         cur.execute(
                             "DELETE FROM ont_link_instance WHERE src = %s OR dst = %s",
-                            (e.target, e.target))
-                        cur.execute(
-                            "DELETE FROM ont_individual WHERE rid = %s", (e.target,))
+                            (e.target, e.target),
+                        )
+                        cur.execute("DELETE FROM ont_individual WHERE rid = %s", (e.target,))
                         if cur.rowcount != 1:
-                            raise EditSetError(
-                                f"delete_object target not found: {e.target}")
+                            raise EditSetError(f"delete_object target not found: {e.target}")
                     elif e.op == "add_link":
                         lt_parts = e.link_type_rid.split(".")
-                        lt_slug = (lt_parts[-2]
-                                   if lt_parts[-1].startswith("v") else lt_parts[-1])
-                        li_rid = (f"ont.{e.src.split('.')[1] if '.' in e.src else tenant_id}"
-                                  f".lnk.{lt_slug}.{_uuid.uuid4().hex[:10]}")
+                        lt_slug = lt_parts[-2] if lt_parts[-1].startswith("v") else lt_parts[-1]
+                        li_rid = (
+                            f"ont.{e.src.split('.')[1] if '.' in e.src else tenant_id}"
+                            f".lnk.{lt_slug}.{_uuid.uuid4().hex[:10]}"
+                        )
                         cur.execute(
                             """INSERT INTO ont_link_instance
                                (rid, tenant_id, link_type_rid, src, dst, props,
                                 marking, created_at, updated_at)
                                VALUES (%s, %s, %s, %s, %s, '{}'::jsonb, '{}',
                                        now(), now())""",
-                            (li_rid, tenant_id, e.link_type_rid, e.src, e.dst))
+                            (li_rid, tenant_id, e.link_type_rid, e.src, e.dst),
+                        )
                         e = _replace(e, link_instance_rid=li_rid)
                     elif e.op == "remove_link":
                         cur.execute(
-                            "SELECT * FROM ont_link_instance WHERE rid = %s "
-                            "FOR UPDATE", (e.link_instance_rid,))
+                            "SELECT * FROM ont_link_instance WHERE rid = %s FOR UPDATE",
+                            (e.link_instance_rid,),
+                        )
                         row = cur.fetchone()
                         if row is None:
-                            raise EditSetError(
-                                f"remove_link not found: {e.link_instance_rid}")
-                        removed_links.append({
-                            "rid": row["rid"],
-                            "link_type_rid": row["link_type_rid"],
-                            "src": row["src"], "dst": row["dst"],
-                            "props": row.get("props") or {},
-                        })
+                            raise EditSetError(f"remove_link not found: {e.link_instance_rid}")
+                        removed_links.append(
+                            {
+                                "rid": row["rid"],
+                                "link_type_rid": row["link_type_rid"],
+                                "src": row["src"],
+                                "dst": row["dst"],
+                                "props": row.get("props") or {},
+                            }
+                        )
                         cur.execute(
-                            "DELETE FROM ont_link_instance WHERE rid = %s",
-                            (e.link_instance_rid,))
+                            "DELETE FROM ont_link_instance WHERE rid = %s", (e.link_instance_rid,)
+                        )
                     applied.append(e)
 
                 inverse, non_invertible = invert_edits(
-                    applied, old_values=old_values, created_rids=created_rids,
+                    applied,
+                    old_values=old_values,
+                    created_rids=created_rids,
                     removed_links=removed_links,
                 )
                 result = {
@@ -4729,12 +4975,19 @@ class PgOntologyRepository(OntologyRepository):
                     "created_rids": created_rids,
                     "non_invertible": list(non_invertible),
                     "inverse": [
-                        {"op": i.op, "target": i.target,
-                         "property_rid": i.property_rid, "value": i.value,
-                         "class_rid": i.class_rid, "primary_key": i.primary_key,
-                         "props": i.props, "link_type_rid": i.link_type_rid,
-                         "src": i.src, "dst": i.dst,
-                         "link_instance_rid": i.link_instance_rid}
+                        {
+                            "op": i.op,
+                            "target": i.target,
+                            "property_rid": i.property_rid,
+                            "value": i.value,
+                            "class_rid": i.class_rid,
+                            "primary_key": i.primary_key,
+                            "props": i.props,
+                            "link_type_rid": i.link_type_rid,
+                            "src": i.src,
+                            "dst": i.dst,
+                            "link_instance_rid": i.link_instance_rid,
+                        }
                         for i in inverse
                     ],
                 }
@@ -4743,19 +4996,30 @@ class PgOntologyRepository(OntologyRepository):
                        (audit_id, tenant_id, proposal_id, action_rid, target_iid,
                         actor_id, result)
                        VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)""",
-                    (audit_id, tenant_id, p.proposal_id, p.action_rid,
-                     p.target_iid or "", actor_id or "system",
-                     json.dumps(result, default=str)),
+                    (
+                        audit_id,
+                        tenant_id,
+                        p.proposal_id,
+                        p.action_rid,
+                        p.target_iid or "",
+                        actor_id or "system",
+                        json.dumps(result, default=str),
+                    ),
                 )
                 event_id = f"evt-{_uuid.uuid4().hex[:12]}"
                 cur.execute(
                     """INSERT INTO ont_outbox_event
                        (event_id, tenant_id, proposal_id, event_type, payload)
                        VALUES (%s, %s, %s, %s, %s::jsonb)""",
-                    (event_id, tenant_id, p.proposal_id, "edit_set.applied",
-                     json.dumps({"action_rid": p.action_rid,
-                                 "applied_count": len(applied)},
-                                default=str)),
+                    (
+                        event_id,
+                        tenant_id,
+                        p.proposal_id,
+                        "edit_set.applied",
+                        json.dumps(
+                            {"action_rid": p.action_rid, "applied_count": len(applied)}, default=str
+                        ),
+                    ),
                 )
                 cur.execute(
                     "UPDATE ont_proposal SET status = 'executed', "
@@ -4769,8 +5033,7 @@ class PgOntologyRepository(OntologyRepository):
                        ON CONFLICT (proposal_id) DO UPDATE SET
                          executed_at = now(), result = EXCLUDED.result,
                          audit_id = EXCLUDED.audit_id""",
-                    (p.proposal_id, tenant_id,
-                     json.dumps(result, default=str), audit_id),
+                    (p.proposal_id, tenant_id, json.dumps(result, default=str), audit_id),
                 )
             conn.commit()
         except Exception:
@@ -4798,7 +5061,9 @@ class PgOntologyRepository(OntologyRepository):
         key = (idempotency_key or "").strip() or None
         p = self.get_proposal(proposal_id)  # 行存在 + 镜像回填
         fingerprint = self._proposal_request_fingerprint(
-            operation="execute", proposal_id=proposal_id, actor_id=actor_id or None,
+            operation="execute",
+            proposal_id=proposal_id,
+            actor_id=actor_id or None,
         )
         replayed = self._replay_idempotent_proposal(
             tenant_id=self._proposal_tenant_id(p.action_rid),
@@ -4822,8 +5087,10 @@ class PgOntologyRepository(OntologyRepository):
             )
         if p.kind == "edit_set":
             result = self._execute_edit_set_proposal(
-                p, actor_id=actor_id,
-                idempotency_key=key, request_fingerprint=fingerprint,
+                p,
+                actor_id=actor_id,
+                idempotency_key=key,
+                request_fingerprint=fingerprint,
             )
             return result
         if p.kind == "create_instance":
@@ -4878,7 +5145,8 @@ class PgOntologyRepository(OntologyRepository):
                 primary_key=tuple(ClassRef(pk) for pk in type_def["primary_key"]),
                 properties=tuple(
                     Property(
-                        rid=ClassRef(pd["rid"]), type_id=pd.get("type_id", "string"),
+                        rid=ClassRef(pd["rid"]),
+                        type_id=pd.get("type_id", "string"),
                         nullable=pd.get("nullable", True),
                         primary_key=pd.get("primary_key", False),
                         title=pd.get("title", ""),
@@ -4907,9 +5175,7 @@ class PgOntologyRepository(OntologyRepository):
             source_rid = p.parameters.get("source_rid")
             target_rid = p.parameters.get("target_rid")
             if not source_rid or not target_rid:
-                raise ValueError(
-                    "merge_suggestion proposal requires source_rid + target_rid"
-                )
+                raise ValueError("merge_suggestion proposal requires source_rid + target_rid")
             mapping = p.parameters.get("mapping") or {}
             result = dict(self.merge_object_types(source_rid, target_rid, mapping))
             result["kind"] = "merge_suggestion"
@@ -4944,13 +5210,19 @@ class PgOntologyRepository(OntologyRepository):
             raise KeyError(f"flow definition not found: {action_rid.rid}")
         return {
             "action_rid": row["action_rid"],
-            "flow_json": row["flow_json"] if isinstance(row["flow_json"], dict) else json.loads(row["flow_json"]),
-            "config": row["config"] if isinstance(row["config"], dict) else json.loads(row["config"]),
+            "flow_json": row["flow_json"]
+            if isinstance(row["flow_json"], dict)
+            else json.loads(row["flow_json"]),
+            "config": row["config"]
+            if isinstance(row["config"], dict)
+            else json.loads(row["config"]),
             "updated_at": row["updated_at"],
         }
 
     def put_flow_definition(
-        self, action_rid: ClassRef, flow_json: dict[str, Any],
+        self,
+        action_rid: ClassRef,
+        flow_json: dict[str, Any],
         config: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """持久化 ActionType 的流程编排定义（upsert）。"""
@@ -4970,7 +5242,8 @@ class PgOntologyRepository(OntologyRepository):
                         updated_at = now()
                     """,
                     (
-                        action_rid.rid, tenant_id,
+                        action_rid.rid,
+                        tenant_id,
                         json.dumps(flow_json, default=str),
                         json.dumps(config or {}, default=str),
                     ),
@@ -5008,11 +5281,28 @@ class PgOntologyRepository(OntologyRepository):
                 self.get_proposal(proposal_id)  # 跨进程场景：行 → 引擎镜像回填
         emitter = None
         if self._outbox_writer is not None:
-            def emitter(se: str, *, _w=self._outbox_writer, _t=ind.tenant_id, _a=at.rid.rid, _g=target_iid, _p=proposal_id) -> str | None:
+
+            def emitter(
+                se: str,
+                *,
+                _w=self._outbox_writer,
+                _t=ind.tenant_id,
+                _a=at.rid.rid,
+                _g=target_iid,
+                _p=proposal_id,
+            ) -> str | None:
                 try:
-                    return str(_w(se, _t, {
-                        "action_rid": _a, "target_iid": _g, "proposal_id": _p,
-                    }))
+                    return str(
+                        _w(
+                            se,
+                            _t,
+                            {
+                                "action_rid": _a,
+                                "target_iid": _g,
+                                "proposal_id": _p,
+                            },
+                        )
+                    )
                 except Exception:  # outbox 失败不阻断 apply（审计留 None）
                     return None
 

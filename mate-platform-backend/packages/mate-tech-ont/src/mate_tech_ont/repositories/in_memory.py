@@ -5,6 +5,7 @@ OntologyRelation, OntologyVersion.
 
 All stores are tenant-scoped.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -76,8 +77,12 @@ def _seed_ontologies(tenant_id: str) -> dict[str, Ontology]:
     ]
     return {
         oid: Ontology(
-            id=oid, tenant_id=tenant_id, namespace=ns, description=desc,
-            created_at="2026-08-01T00:00:00Z", updated_at="2026-08-01T00:00:00Z",
+            id=oid,
+            tenant_id=tenant_id,
+            namespace=ns,
+            description=desc,
+            created_at="2026-08-01T00:00:00Z",
+            updated_at="2026-08-01T00:00:00Z",
         )
         for oid, ns, desc in catalog
     }
@@ -91,8 +96,12 @@ def _seed_classes(tenant_id: str) -> dict[str, OntologyClass]:
     ]
     return {
         cid: OntologyClass(
-            id=cid, tenant_id=tenant_id, ontology_id=oid, label=label,
-            parent=parent, properties=props,
+            id=cid,
+            tenant_id=tenant_id,
+            ontology_id=oid,
+            label=label,
+            parent=parent,
+            properties=props,
             created_at="2026-08-01T00:00:00Z",
         )
         for cid, oid, label, parent, props in catalog
@@ -107,7 +116,10 @@ def _seed_instances(tenant_id: str) -> dict[str, OntologyInstance]:
     ]
     return {
         iid: OntologyInstance(
-            id=iid, tenant_id=tenant_id, class_id=cid, properties=props,
+            id=iid,
+            tenant_id=tenant_id,
+            class_id=cid,
+            properties=props,
             created_at="2026-08-01T00:00:00Z",
         )
         for iid, cid, props in catalog
@@ -121,8 +133,13 @@ def _seed_relations(tenant_id: str) -> dict[str, OntologyRelation]:
     ]
     return {
         rid: OntologyRelation(
-            id=rid, tenant_id=tenant_id, type=t, src_id=s, dst_id=d,
-            properties=props, created_at="2026-08-01T00:00:00Z",
+            id=rid,
+            tenant_id=tenant_id,
+            type=t,
+            src_id=s,
+            dst_id=d,
+            properties=props,
+            created_at="2026-08-01T00:00:00Z",
         )
         for rid, t, s, d, props in catalog
     }
@@ -135,8 +152,12 @@ def _seed_versions(tenant_id: str) -> dict[str, OntologyVersion]:
     ]
     return {
         vid: OntologyVersion(
-            id=vid, tenant_id=tenant_id, ontology_id=oid, version=ver,
-            parent=parent, metadata=meta,
+            id=vid,
+            tenant_id=tenant_id,
+            ontology_id=oid,
+            version=ver,
+            parent=parent,
+            metadata=meta,
             created_at="2026-08-01T00:00:00Z",
         )
         for vid, oid, ver, parent, meta in catalog

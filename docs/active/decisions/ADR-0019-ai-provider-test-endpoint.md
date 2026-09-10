@@ -58,13 +58,13 @@ server 端发起 HEAD/GET 请求并返回：
 
 ### 2.1 端点契约
 
-| 字段 | 必填 | 说明 |
-|---|---|---|
-| `provider` | ✓ | `openai` / `azure` / `ollama` / `custom` |
-| `base_url` | ✓ | 完整 URL（含 scheme） |
-| `api_key` | ✗ | 不发表示无鉴权；server 端立即清零，**不持久化** |
-| `api_version` | ✗ | Azure 才用 |
-| `timeout_sec` | ✗ | 默认 10，上限 30 |
+| 字段          | 必填 | 说明                                            |
+| ------------- | ---- | ----------------------------------------------- |
+| `provider`    | ✓    | `openai` / `azure` / `ollama` / `custom`        |
+| `base_url`    | ✓    | 完整 URL（含 scheme）                           |
+| `api_key`     | ✗    | 不发表示无鉴权；server 端立即清零，**不持久化** |
+| `api_version` | ✗    | Azure 才用                                      |
+| `timeout_sec` | ✗    | 默认 10，上限 30                                |
 
 ### 2.2 server 端实现要点
 
@@ -84,31 +84,31 @@ server 端发起 HEAD/GET 请求并返回：
 
 ### 2.4 配套改动
 
-| 项 | 范围 | 状态 |
-|---|---|---|
-| ADR-0018 §2.3 SLO 接线 | 扩成"测试连接延迟 < 500ms" 子 SLO | New |
-| Mate-check 测试 | 第三方 API 不可用时 mock server 返回 200 | LLMGW tests |
-| OpenAPI | `swagger/specs/admin/ai-providers.yaml` 新增 POST | OpenAPI CI |
-| docs/active/runbooks/llmgw.md | "AI Provider 测试连接失败" 排查 | New |
+| 项                            | 范围                                              | 状态        |
+| ----------------------------- | ------------------------------------------------- | ----------- |
+| ADR-0018 §2.3 SLO 接线        | 扩成"测试连接延迟 < 500ms" 子 SLO                 | New         |
+| Mate-check 测试               | 第三方 API 不可用时 mock server 返回 200          | LLMGW tests |
+| OpenAPI                       | `swagger/specs/admin/ai-providers.yaml` 新增 POST | OpenAPI CI  |
+| docs/active/runbooks/llmgw.md | "AI Provider 测试连接失败" 排查                   | New         |
 
 ## 3. Decision Drivers
 
-| Driver | Priority | Evidence | Tradeoff |
-|---|---|---|---|
-| CORS 不可绕过 | P0 | 浏览器安全模型硬约束 | 必须 server-side 代理 |
-| API Key 不进浏览器 | P0 | hard rule 12 强约束 | 必须 server-side 持有 |
-| 测试连接应反映真实时延 | P1 | 浏览器 SDK 时延不可信 | server 与 LLM 上游直连 |
-| 灰度风险 | P1 | 后端新代码 + 新 spec | feature flag / 默认走 mock |
-| 全平台 4 个 provider | P1 | 兼容性覆盖 | 路由表与 LLMGW 复用 |
+| Driver                 | Priority | Evidence              | Tradeoff                   |
+| ---------------------- | -------- | --------------------- | -------------------------- |
+| CORS 不可绕过          | P0       | 浏览器安全模型硬约束  | 必须 server-side 代理      |
+| API Key 不进浏览器     | P0       | hard rule 12 强约束   | 必须 server-side 持有      |
+| 测试连接应反映真实时延 | P1       | 浏览器 SDK 时延不可信 | server 与 LLM 上游直连     |
+| 灰度风险               | P1       | 后端新代码 + 新 spec  | feature flag / 默认走 mock |
+| 全平台 4 个 provider   | P1       | 兼容性覆盖            | 路由表与 LLMGW 复用        |
 
 ## 4. Options Considered
 
-| Option | Benefits | Costs | Risks | Selected Because |
-|---|---|---|---|---|
-| A. **保留浏览器直连 + 关 CORS** | 改动最小 | 不可行（第三方不允许） | 必须 reject | ❌ |
-| B. **保留浏览器直连 + `mode: 'no-cors'`** | 不报 ERR_FAILED | opaque response 拿不到 status，无法判断 OK/fail | 假阳性 | ❌ |
-| C. **Server-side 代理 (本 ADR)** | 正确路径、与现有 LLMGW 复用 | 需后端 + spec + 前端切换 | 多 1-2 天 | ✅ |
-| D. **第三方 oauth proxy 模式** | 一劳永逸 | 需每个 provider 单独 OAuth | 跨平台差异大 | rejected（成本>收益） |
+| Option                                    | Benefits                    | Costs                                           | Risks        | Selected Because      |
+| ----------------------------------------- | --------------------------- | ----------------------------------------------- | ------------ | --------------------- |
+| A. **保留浏览器直连 + 关 CORS**           | 改动最小                    | 不可行（第三方不允许）                          | 必须 reject  | ❌                    |
+| B. **保留浏览器直连 + `mode: 'no-cors'`** | 不报 ERR_FAILED             | opaque response 拿不到 status，无法判断 OK/fail | 假阳性       | ❌                    |
+| C. **Server-side 代理 (本 ADR)**          | 正确路径、与现有 LLMGW 复用 | 需后端 + spec + 前端切换                        | 多 1-2 天    | ✅                    |
+| D. **第三方 oauth proxy 模式**            | 一劳永逸                    | 需每个 provider 单独 OAuth                      | 跨平台差异大 | rejected（成本>收益） |
 
 ## 5. Status
 
@@ -121,29 +121,29 @@ server 端发起 HEAD/GET 请求并返回：
 
 ## 6. Bounded Context Map
 
-| Context | Responsibility | Owner | Upstream | Downstream |
-|---|---|---|---|---|
-| `AIProvidersPage` (web) | UI 表单 + 触发测试 | Frontend | admin BFF | 后端代理 |
-| admin BFF | API 网关层转发 | Gateway | web | LLMGW |
-| `llmgw/providers/test` | 服务端连通性探测 | LLMGW | admin BFF | upstream provider |
-| `ProviderRegistry` | 路径生成（OpenAI/Azure/Ollama） | LLMGW | existing | test handler |
+| Context                 | Responsibility                  | Owner    | Upstream  | Downstream        |
+| ----------------------- | ------------------------------- | -------- | --------- | ----------------- |
+| `AIProvidersPage` (web) | UI 表单 + 触发测试              | Frontend | admin BFF | 后端代理          |
+| admin BFF               | API 网关层转发                  | Gateway  | web       | LLMGW             |
+| `llmgw/providers/test`  | 服务端连通性探测                | LLMGW    | admin BFF | upstream provider |
+| `ProviderRegistry`      | 路径生成（OpenAI/Azure/Ollama） | LLMGW    | existing  | test handler      |
 
 ## 7. Runtime Dependency Adoption
 
-| Dependency | Failure Mode | Timeout/Retry/Fallback | Adoption Criteria |
-|---|---|---|---|
-| outbound HTTPS | 网络/防火墙阻断 | 10s timeout；只 1 次重试 | 503 always |
-| LLMGW MCP provider | 缺 adapter | 返回 501 + 该 provider 标记 unset | 不 5xx |
-| AK holder | 缺失 | 返回 401（无须自己处理） | 现状 401/403 |
+| Dependency         | Failure Mode    | Timeout/Retry/Fallback            | Adoption Criteria |
+| ------------------ | --------------- | --------------------------------- | ----------------- |
+| outbound HTTPS     | 网络/防火墙阻断 | 10s timeout；只 1 次重试          | 503 always        |
+| LLMGW MCP provider | 缺 adapter      | 返回 501 + 该 provider 标记 unset | 不 5xx            |
+| AK holder          | 缺失            | 返回 401（无须自己处理）          | 现状 401/403      |
 
 ## 8. Risk Register
 
-| Risk | Likelihood | Impact | Mitigation | Owner |
-|---|---|---|---|---|
-| 触碰第三方 API 频率触发限流 | Medium | 用户体验降级 | per-tenant 60/hour | LLMGW |
-| AK 泄漏到日志 | Low | 严重安全事故 | survey log 截断 | LLMGW |
-| Provider 路径变化（OpenAI 改 endpoint）| Medium | 测试失真 | 路径表集中 + 监控 | LLMGW |
-| 灰度引入回归 | Low | 联调失败 | feature flag + mock 默认 | Frontend |
+| Risk                                    | Likelihood | Impact       | Mitigation               | Owner    |
+| --------------------------------------- | ---------- | ------------ | ------------------------ | -------- |
+| 触碰第三方 API 频率触发限流             | Medium     | 用户体验降级 | per-tenant 60/hour       | LLMGW    |
+| AK 泄漏到日志                           | Low        | 严重安全事故 | survey log 截断          | LLMGW    |
+| Provider 路径变化（OpenAI 改 endpoint） | Medium     | 测试失真     | 路径表集中 + 监控        | LLMGW    |
+| 灰度引入回归                            | Low        | 联调失败     | feature flag + mock 默认 | Frontend |
 
 ## 9. Consequences
 

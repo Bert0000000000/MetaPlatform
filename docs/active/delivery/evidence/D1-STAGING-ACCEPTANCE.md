@@ -17,30 +17,30 @@ v3.2-α W3 D1 接力 prompt 要求把 mate-platform helm chart + kafka + debeziu
 
 6 步骤：
 
-| 步骤 | 动作 |
-|---|---|
-| 1 | kind cluster 创建（image kindest/node:v1.29.2） |
-| 2 | helm install umbrella chart (values-staging.yaml) |
-| 3 | 等 4 组件 Ready (debezium / marquez / datahub / ge) |
-| 4 | 跑 lineage staging_smoke (--tenant-id --expect-events --expect-datasets) |
-| 5 | 清理 cluster |
+| 步骤 | 动作                                                                     |
+| ---- | ------------------------------------------------------------------------ |
+| 1    | kind cluster 创建（image kindest/node:v1.29.2）                          |
+| 2    | helm install umbrella chart (values-staging.yaml)                        |
+| 3    | 等 4 组件 Ready (debezium / marquez / datahub / ge)                      |
+| 4    | 跑 lineage staging_smoke (--tenant-id --expect-events --expect-datasets) |
+| 5    | 清理 cluster                                                             |
 
 可调参数：`CLUSTER_NAME` / `NAMESPACE` / `VALUES_FILE` / `TENANT_ID`。缺省 `data_staging_t1` 与 `values-staging.yaml` 的 `stg_` 前缀对齐。
 
 ### 2.2 新增 `infra/tests/test_d1_staging_smoke.py` (10 tests)
 
-| 测试 | 验证 |
-|---|---|
-| `test_smoke_script_exists` | 文件存在 |
-| `test_smoke_script_has_shebang` | `#!/usr/bin/env bash` |
-| `test_smoke_script_executable` | git 0755 (windows skip) |
-| `test_smoke_script_runs_helm_install` | 含 `helm install` + `values-staging.yaml` |
-| `test_smoke_script_waits_for_lineage_stack` | 4 组件 (debezium/marquez/datahub/ge) |
-| `test_smoke_script_uses_kind` | create + delete |
-| `test_smoke_script_pins_tenant_id` | `TENANT_ID` 默认 `data_staging_t1` |
-| `test_smoke_script_has_lineage_assertions` | `expect-events` / `expect-datasets` |
-| `test_values_staging_file_exists` | values-staging.yaml 存在 |
-| `test_values_staging_uses_independent_storage` | 含 `stg_` 前缀 (ADR-0015 §5) |
+| 测试                                           | 验证                                      |
+| ---------------------------------------------- | ----------------------------------------- |
+| `test_smoke_script_exists`                     | 文件存在                                  |
+| `test_smoke_script_has_shebang`                | `#!/usr/bin/env bash`                     |
+| `test_smoke_script_executable`                 | git 0755 (windows skip)                   |
+| `test_smoke_script_runs_helm_install`          | 含 `helm install` + `values-staging.yaml` |
+| `test_smoke_script_waits_for_lineage_stack`    | 4 组件 (debezium/marquez/datahub/ge)      |
+| `test_smoke_script_uses_kind`                  | create + delete                           |
+| `test_smoke_script_pins_tenant_id`             | `TENANT_ID` 默认 `data_staging_t1`        |
+| `test_smoke_script_has_lineage_assertions`     | `expect-events` / `expect-datasets`       |
+| `test_values_staging_file_exists`              | values-staging.yaml 存在                  |
+| `test_values_staging_uses_independent_storage` | 含 `stg_` 前缀 (ADR-0015 §5)              |
 
 模式与 `test_g4_kind_workflow.py` 同源（CI 上每个 PR 都跑）。
 
@@ -61,11 +61,11 @@ $ pytest packages -q
 
 ## 4. 13 硬规则映射
 
-| # | 硬规则 | D1 staging |
-|---|---|---|
-| 8 | K8s readiness | ✅ smoke 等 4 组件 Ready (debezium/marquez/datahub/ge) |
-| 10 | 验收证据 | ✅ 本文档 + 10 tests |
-| 13 | NetworkPolicy | ✅ 继承 G4 default-deny 验证 |
+| #   | 硬规则        | D1 staging                                             |
+| --- | ------------- | ------------------------------------------------------ |
+| 8   | K8s readiness | ✅ smoke 等 4 组件 Ready (debezium/marquez/datahub/ge) |
+| 10  | 验收证据      | ✅ 本文档 + 10 tests                                   |
+| 13  | NetworkPolicy | ✅ 继承 G4 default-deny 验证                           |
 
 ## 5. 后续工作
 

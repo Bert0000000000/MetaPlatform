@@ -1,4 +1,5 @@
-﻿"""Test that __init__.py re-exports the documented public surface."""
+"""Test that __init__.py re-exports the documented public surface."""
+
 from __future__ import annotations
 
 import mate_common

@@ -47,16 +47,19 @@ Claude Code ──写──> outbox/TASK-YYYYMMDD-NNN-<slug>-result.md
 ## 角色职责
 
 ### Cowork（方案侧）
+
 - 只写 `inbox/`
 - 必须按 [`TASK-TEMPLATE.md`](./TASK-TEMPLATE.md) 模板写
 - 不写代码、不改业务文件
 
 ### Claude Code（实现侧）
+
 - 只读 `inbox/`，只写 `outbox/` 与业务代码
 - 实现后必须按 [`RESULT-TEMPLATE.md`](./RESULT-TEMPLATE.md) 写回执
 - commit 必须在 `outbox/result` 里用 SHA 引用
 
 ### 用户（中介）
+
 - 把 Cowork 输出复制到 `inbox/`
 - 把 Claude Code 输出复制回 Cowork
 - 解决两边对同一文件的冲突（不该发生，约定里禁止）

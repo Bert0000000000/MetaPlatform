@@ -226,9 +226,7 @@ def _build_agent_app() -> FastAPI:
     task_repo = InMemoryTaskRepository()
     task_service = TaskService(task_repo)
     conversation_repo = InMemoryConversationRepository()
-    conversation_service = ConversationService(
-        conversation_repo, agent_service, execution_service
-    )
+    conversation_service = ConversationService(conversation_repo, agent_service, execution_service)
     tool_repo = InMemoryToolRepository()
     tool_service = ToolService(tool_repo, action_client, rag_client)
     step_repo = InMemoryStepRepository()
@@ -418,6 +416,7 @@ def _build_java_mock_app(
         if body_bytes:
             try:
                 import json
+
                 parsed_body = json.loads(body_bytes.decode("utf-8"))
             except Exception:
                 parsed_body = body_bytes.decode("utf-8", errors="replace")
@@ -452,72 +451,85 @@ def _ok(data: Any, trace_id: str | None = None) -> dict[str, Any]:
 
 def _register_rule_routes(app: FastAPI) -> None:
     """TECH-RULE 决策表 Mock 路由。"""
-    from fastapi import Request
 
     @app.post("/api/v1/rule/decision-tables")
     async def _create(request: Request):
         body = await request.json()
-        return _ok({
-            "id": "dt-mock-001",
-            "name": body.get("name", "mock-table"),
-            "hitPolicy": body.get("hitPolicy", "FIRST"),
-            "columns": body.get("columns", []),
-            "rows": [],
-            "status": "DRAFT",
-        }, request.headers.get("X-Trace-Id"))
+        return _ok(
+            {
+                "id": "dt-mock-001",
+                "name": body.get("name", "mock-table"),
+                "hitPolicy": body.get("hitPolicy", "FIRST"),
+                "columns": body.get("columns", []),
+                "rows": [],
+                "status": "DRAFT",
+            },
+            request.headers.get("X-Trace-Id"),
+        )
 
     @app.get("/api/v1/rule/decision-tables")
     async def _list():
-        return _ok({
-            "items": [],
-            "total": 0,
-            "page": 1,
-            "pageSize": 20,
-        })
+        return _ok(
+            {
+                "items": [],
+                "total": 0,
+                "page": 1,
+                "pageSize": 20,
+            }
+        )
 
     @app.get("/api/v1/rule/decision-tables/{table_id}")
     async def _get(table_id: str, request: Request):
-        return _ok({
-            "id": table_id,
-            "name": "mock-table",
-            "hitPolicy": "FIRST",
-            "columns": [
-                {"id": "col-in-1", "name": "age", "type": "INPUT", "dataType": "number"},
-                {"id": "col-out-1", "name": "level", "type": "OUTPUT", "dataType": "string"},
-            ],
-            "rows": [
-                {
-                    "id": "row-1",
-                    "inputs": {"age": 30},
-                    "outputs": {"level": "adult"},
-                    "enabled": True,
-                },
-            ],
-        }, request.headers.get("X-Trace-Id"))
+        return _ok(
+            {
+                "id": table_id,
+                "name": "mock-table",
+                "hitPolicy": "FIRST",
+                "columns": [
+                    {"id": "col-in-1", "name": "age", "type": "INPUT", "dataType": "number"},
+                    {"id": "col-out-1", "name": "level", "type": "OUTPUT", "dataType": "string"},
+                ],
+                "rows": [
+                    {
+                        "id": "row-1",
+                        "inputs": {"age": 30},
+                        "outputs": {"level": "adult"},
+                        "enabled": True,
+                    },
+                ],
+            },
+            request.headers.get("X-Trace-Id"),
+        )
 
     @app.post("/api/v1/rule/decision-tables/{table_id}/rows")
     async def _add_row(table_id: str, request: Request):
         body = await request.json()
-        return _ok({
-            "id": "row-mock-001",
-            "inputs": body.get("inputs", {}),
-            "outputs": body.get("outputs", {}),
-            "enabled": body.get("enabled", True),
-        }, request.headers.get("X-Trace-Id"))
+        return _ok(
+            {
+                "id": "row-mock-001",
+                "inputs": body.get("inputs", {}),
+                "outputs": body.get("outputs", {}),
+                "enabled": body.get("enabled", True),
+            },
+            request.headers.get("X-Trace-Id"),
+        )
 
     @app.post("/api/v1/rule/decision-tables/{table_id}/rows/batch")
     async def _batch_rows(table_id: str, request: Request):
         body = await request.json()
         rows = body.get("rows", [])
-        return _ok([
-            {
-                "id": f"row-batch-{i}",
-                "inputs": r.get("inputs", {}),
-                "outputs": r.get("outputs", {}),
-                "enabled": True,
-            }
-            for i, r in enumerate(rows)
-        ], request.headers.get("X-Trace-Id"))
+        return _ok(
+            [
+                {
+                    "id": f"row-batch-{i}",
+                    "inputs": r.get("inputs", {}),
+                    "outputs": r.get("outputs", {}),
+                    "enabled": True,
+                }
+                for i, r in enumerate(rows)
+            ],
+            request.headers.get("X-Trace-Id"),
+        )
 
     @app.post("/api/v1/rule/decision-tables/{table_id}/execute")
     async def _execute(table_id: str, request: Request):
@@ -525,104 +537,126 @@ def _register_rule_routes(app: FastAPI) -> None:
         input_data = body.get("inputData", {})
         # 简单匹配：如果 age==30 命中 row-1
         if input_data.get("age") == 30:
-            matched = [{
-                "id": "row-1",
-                "inputs": {"age": 30},
-                "outputs": {"level": "adult"},
-                "enabled": True,
-            }]
+            matched = [
+                {
+                    "id": "row-1",
+                    "inputs": {"age": 30},
+                    "outputs": {"level": "adult"},
+                    "enabled": True,
+                }
+            ]
             outputs = [{"level": "adult"}]
         else:
             matched = []
             outputs = []
-        return _ok({
-            "matchedRows": matched,
-            "outputs": outputs,
-            "executionTimeMs": 3,
-        }, request.headers.get("X-Trace-Id"))
+        return _ok(
+            {
+                "matchedRows": matched,
+                "outputs": outputs,
+                "executionTimeMs": 3,
+            },
+            request.headers.get("X-Trace-Id"),
+        )
 
     @app.post("/api/v1/rule/decision-tables/{table_id}/test")
     async def _test(table_id: str, request: Request):
         body = await request.json()
-        return _ok({
-            "tableId": table_id,
-            "inputData": body.get("inputData", {}),
-            "matchedRows": [],
-            "outputs": [],
-            "executionTimeMs": 2,
-            "success": True,
-        }, request.headers.get("X-Trace-Id"))
+        return _ok(
+            {
+                "tableId": table_id,
+                "inputData": body.get("inputData", {}),
+                "matchedRows": [],
+                "outputs": [],
+                "executionTimeMs": 2,
+                "success": True,
+            },
+            request.headers.get("X-Trace-Id"),
+        )
 
 
 def _register_wfe_routes(app: FastAPI) -> None:
     """TECH-WFE apphub Mock 路由。"""
-    from fastapi import Request
 
     @app.get("/api/v1/apphub/apps/{app_id}/versions")
     async def _list_versions(app_id: str, request: Request):
-        return _ok({
-            "items": [
-                {
-                    "versionId": "v-mock-1",
-                    "appId": app_id,
-                    "version": "v1",
-                    "snapshot": "{}",
-                    "status": "PUBLISHED",
-                },
-                {
-                    "versionId": "v-mock-2",
-                    "appId": app_id,
-                    "version": "v2",
-                    "snapshot": "{}",
-                    "status": "DRAFT",
-                },
-            ],
-            "total": 2,
-            "page": 1,
-            "pageSize": 20,
-        }, request.headers.get("X-Trace-Id"))
+        return _ok(
+            {
+                "items": [
+                    {
+                        "versionId": "v-mock-1",
+                        "appId": app_id,
+                        "version": "v1",
+                        "snapshot": "{}",
+                        "status": "PUBLISHED",
+                    },
+                    {
+                        "versionId": "v-mock-2",
+                        "appId": app_id,
+                        "version": "v2",
+                        "snapshot": "{}",
+                        "status": "DRAFT",
+                    },
+                ],
+                "total": 2,
+                "page": 1,
+                "pageSize": 20,
+            },
+            request.headers.get("X-Trace-Id"),
+        )
 
     @app.post("/api/v1/apphub/apps/{app_id}/versions")
     async def _create_version(app_id: str, request: Request):
         body = await request.json()
-        return _ok({
-            "versionId": f"v-new-{app_id}",
-            "appId": app_id,
-            "version": body.get("version", "v-new"),
-            "snapshot": body.get("snapshot", "{}"),
-            "status": "DRAFT",
-        }, request.headers.get("X-Trace-Id"))
+        return _ok(
+            {
+                "versionId": f"v-new-{app_id}",
+                "appId": app_id,
+                "version": body.get("version", "v-new"),
+                "snapshot": body.get("snapshot", "{}"),
+                "status": "DRAFT",
+            },
+            request.headers.get("X-Trace-Id"),
+        )
 
     @app.get("/api/v1/apphub/versions/{version_id}")
     async def _get_version(version_id: str, request: Request):
-        return _ok({
-            "versionId": version_id,
-            "appId": "app-mock-001",
-            "version": "v1",
-            "snapshot": "{}",
-            "status": "PUBLISHED",
-        }, request.headers.get("X-Trace-Id"))
+        return _ok(
+            {
+                "versionId": version_id,
+                "appId": "app-mock-001",
+                "version": "v1",
+                "snapshot": "{}",
+                "status": "PUBLISHED",
+            },
+            request.headers.get("X-Trace-Id"),
+        )
 
     @app.post("/api/v1/apphub/versions/{version_id}/rollback")
     async def _rollback(version_id: str, request: Request):
-        return _ok({
-            "versionId": f"v-rollback-from-{version_id}",
-            "appId": "app-mock-001",
-            "version": "v-rollback",
-            "snapshot": "{}",
-            "status": "ROLLBACK",
-            "rolledBackAt": "2026-07-20T10:00:00Z",
-        }, request.headers.get("X-Trace-Id"))
+        return _ok(
+            {
+                "versionId": f"v-rollback-from-{version_id}",
+                "appId": "app-mock-001",
+                "version": "v-rollback",
+                "snapshot": "{}",
+                "status": "ROLLBACK",
+                "rolledBackAt": "2026-07-20T10:00:00Z",
+            },
+            request.headers.get("X-Trace-Id"),
+        )
 
     @app.post("/api/v1/apphub/versions/{version_id}/publish")
     async def _publish(version_id: str, request: Request):
-        return _ok({
-            "versionId": version_id,
-            "appId": "app-mock-001",
-            "version": "v1",
-            "snapshot": "{}",
-            "status": "PUBLISHED",
-        }, request.headers.get("X-Trace-Id"))
+        return _ok(
+            {
+                "versionId": version_id,
+                "appId": "app-mock-001",
+                "version": "v1",
+                "snapshot": "{}",
+                "status": "PUBLISHED",
+            },
+            request.headers.get("X-Trace-Id"),
+        )
 
     @app.delete("/api/v1/apphub/versions/{version_id}")
     async def _delete(version_id: str, request: Request):
@@ -630,100 +664,120 @@ def _register_wfe_routes(app: FastAPI) -> None:
 
     @app.get("/api/v1/apphub/templates")
     async def _list_templates(request: Request):
-        return _ok([
+        return _ok(
+            [
+                {
+                    "id": "tpl-mock-001",
+                    "name": "客服机器人模板",
+                    "category": "service",
+                    "summary": "面向客服场景的机器人模板",
+                    "installs": 120,
+                    "rating": 4.7,
+                    "tags": ["客服", "机器人"],
+                },
+                {
+                    "id": "tpl-mock-002",
+                    "name": "数据分析助手模板",
+                    "category": "analytics",
+                    "summary": "面向数据分析的助手模板",
+                    "installs": 88,
+                    "rating": 4.5,
+                    "tags": ["数据", "分析"],
+                },
+            ],
+            request.headers.get("X-Trace-Id"),
+        )
+
+    @app.get("/api/v1/apphub/templates/{template_id}")
+    async def _get_template(template_id: str, request: Request):
+        return _ok(
             {
-                "id": "tpl-mock-001",
+                "id": template_id,
                 "name": "客服机器人模板",
                 "category": "service",
                 "summary": "面向客服场景的机器人模板",
                 "installs": 120,
                 "rating": 4.7,
                 "tags": ["客服", "机器人"],
+                "config": {"model": "doubao-pro", "tools": ["rag"]},
             },
-            {
-                "id": "tpl-mock-002",
-                "name": "数据分析助手模板",
-                "category": "analytics",
-                "summary": "面向数据分析的助手模板",
-                "installs": 88,
-                "rating": 4.5,
-                "tags": ["数据", "分析"],
-            },
-        ], request.headers.get("X-Trace-Id"))
-
-    @app.get("/api/v1/apphub/templates/{template_id}")
-    async def _get_template(template_id: str, request: Request):
-        return _ok({
-            "id": template_id,
-            "name": "客服机器人模板",
-            "category": "service",
-            "summary": "面向客服场景的机器人模板",
-            "installs": 120,
-            "rating": 4.7,
-            "tags": ["客服", "机器人"],
-            "config": {"model": "doubao-pro", "tools": ["rag"]},
-        }, request.headers.get("X-Trace-Id"))
+            request.headers.get("X-Trace-Id"),
+        )
 
     @app.post("/api/v1/apphub/templates/{template_id}/install")
     async def _install_template(template_id: str, request: Request):
-        return _ok({
-            "installId": f"ins-{template_id}",
-            "templateId": template_id,
-            "appId": f"app-from-{template_id}",
-            "status": "INSTALLED",
-            "installedAt": "2026-07-20T10:00:00Z",
-        }, request.headers.get("X-Trace-Id"))
+        return _ok(
+            {
+                "installId": f"ins-{template_id}",
+                "templateId": template_id,
+                "appId": f"app-from-{template_id}",
+                "status": "INSTALLED",
+                "installedAt": "2026-07-20T10:00:00Z",
+            },
+            request.headers.get("X-Trace-Id"),
+        )
 
     @app.post("/api/v1/apphub/templates/{template_id}/comments")
     async def _add_comment(template_id: str, request: Request):
         body = await request.json()
-        return _ok({
-            "id": "cmt-mock-001",
-            "templateId": template_id,
-            "userId": body.get("userId", "user-e2e"),
-            "rating": body.get("rating", 5),
-            "content": body.get("content", ""),
-            "createdAt": "2026-07-20T10:00:00Z",
-        }, request.headers.get("X-Trace-Id"))
-
-    @app.get("/api/v1/apphub/templates/{template_id}/comments")
-    async def _list_comments(template_id: str, request: Request):
-        return _ok([
+        return _ok(
             {
                 "id": "cmt-mock-001",
                 "templateId": template_id,
-                "userId": "user-e2e",
-                "rating": 5,
-                "content": "very good",
+                "userId": body.get("userId", "user-e2e"),
+                "rating": body.get("rating", 5),
+                "content": body.get("content", ""),
                 "createdAt": "2026-07-20T10:00:00Z",
-            }
-        ], request.headers.get("X-Trace-Id"))
+            },
+            request.headers.get("X-Trace-Id"),
+        )
+
+    @app.get("/api/v1/apphub/templates/{template_id}/comments")
+    async def _list_comments(template_id: str, request: Request):
+        return _ok(
+            [
+                {
+                    "id": "cmt-mock-001",
+                    "templateId": template_id,
+                    "userId": "user-e2e",
+                    "rating": 5,
+                    "content": "very good",
+                    "createdAt": "2026-07-20T10:00:00Z",
+                }
+            ],
+            request.headers.get("X-Trace-Id"),
+        )
 
 
 def _register_ea_routes(app: FastAPI) -> None:
     """TECH-EA mapping Mock 路由。"""
-    from fastapi import Request
 
     @app.get("/api/v1/ea/capability-mappings")
     async def _list_mappings(request: Request):
-        return _ok([
-            {
-                "id": "map-mock-001",
-                "capabilityId": "cap-001",
-                "conceptId": "concept-customer",
-                "mappingType": "MANUAL",
-                "status": "ACTIVE",
-            }
-        ], request.headers.get("X-Trace-Id"))
+        return _ok(
+            [
+                {
+                    "id": "map-mock-001",
+                    "capabilityId": "cap-001",
+                    "conceptId": "concept-customer",
+                    "mappingType": "MANUAL",
+                    "status": "ACTIVE",
+                }
+            ],
+            request.headers.get("X-Trace-Id"),
+        )
 
     @app.get("/api/v1/ea/capability-mappings/consistency")
     async def _consistency(request: Request):
-        return _ok({
-            "total": 1,
-            "consistent": 1,
-            "inconsistent": 0,
-            "details": [],
-        }, request.headers.get("X-Trace-Id"))
+        return _ok(
+            {
+                "total": 1,
+                "consistent": 1,
+                "inconsistent": 0,
+                "details": [],
+            },
+            request.headers.get("X-Trace-Id"),
+        )
 
 
 @pytest.fixture

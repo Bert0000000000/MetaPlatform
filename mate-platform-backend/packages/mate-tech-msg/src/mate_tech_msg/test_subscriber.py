@@ -1,4 +1,5 @@
 """Subscriber tests (ST-5.1.5)."""
+
 from __future__ import annotations
 
 from typing import Any

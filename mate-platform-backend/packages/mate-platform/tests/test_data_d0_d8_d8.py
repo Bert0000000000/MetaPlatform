@@ -10,6 +10,7 @@ Verifies:
   - TenantQueryResult carries error + duration
   - Alembic 0012 schema valid
 """
+
 from __future__ import annotations
 
 import pytest
@@ -101,12 +102,18 @@ class TestFederationQuery:
     ) -> None:
         client = FederationClient(adapter, audit_sink=audit_sink)
         r1 = client.execute(
-            actor_user_id="u", actor_tenant_id="t", target_tenants=["t1", "t2"],
-            query="SELECT 1", trace_id="t",
+            actor_user_id="u",
+            actor_tenant_id="t",
+            target_tenants=["t1", "t2"],
+            query="SELECT 1",
+            trace_id="t",
         )
         r2 = client.execute(
-            actor_user_id="u", actor_tenant_id="t", target_tenants=["t1", "t2"],
-            query="SELECT 1", trace_id="t",
+            actor_user_id="u",
+            actor_tenant_id="t",
+            target_tenants=["t1", "t2"],
+            query="SELECT 1",
+            trace_id="t",
         )
         assert r1.query_id != r2.query_id
 
@@ -121,8 +128,11 @@ class TestErrorHandling:
 
         client = FederationClient(_PartialAdapter(), audit_sink=audit_sink)  # type: ignore[arg-type]
         result = client.execute(
-            actor_user_id="u", actor_tenant_id="t",
-            target_tenants=["good", "bad"], query="SELECT 1", trace_id="t",
+            actor_user_id="u",
+            actor_tenant_id="t",
+            target_tenants=["good", "bad"],
+            query="SELECT 1",
+            trace_id="t",
         )
         assert result.status == "partial"
         assert result.total_rows == 1
@@ -137,21 +147,25 @@ class TestErrorHandling:
 
         client = FederationClient(_FailAdapter(), audit_sink=audit_sink)  # type: ignore[arg-type]
         result = client.execute(
-            actor_user_id="u", actor_tenant_id="t",
-            target_tenants=["a", "b"], query="SELECT 1", trace_id="t",
+            actor_user_id="u",
+            actor_tenant_id="t",
+            target_tenants=["a", "b"],
+            query="SELECT 1",
+            trace_id="t",
         )
         assert result.status == "failed"
         assert result.total_rows == 0
 
-    def test_empty_tenant_returns_zero_rows(
-        self, audit_sink: InMemoryCrossDomainSink
-    ) -> None:
+    def test_empty_tenant_returns_zero_rows(self, audit_sink: InMemoryCrossDomainSink) -> None:
         adapter = InMemoryDataSourceAdapter()
         adapter.seed("t1", [])  # no rows
         client = FederationClient(adapter, audit_sink=audit_sink)
         result = client.execute(
-            actor_user_id="u", actor_tenant_id="t1",
-            target_tenants=["t1", "t2"], query="SELECT 1", trace_id="t",
+            actor_user_id="u",
+            actor_tenant_id="t1",
+            target_tenants=["t1", "t2"],
+            query="SELECT 1",
+            trace_id="t",
         )
         assert result.status == "completed"
         assert result.total_rows == 0

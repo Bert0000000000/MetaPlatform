@@ -26,12 +26,14 @@ class Decision(StrEnum):
 @dataclass(frozen=True, slots=True)
 class MarkingRequirement:
     """资源侧要求：用户必须具备这些 marking 之一才能访问。"""
+
     required_markings: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)
 class UserMarkings:
     """用户当前会话具备的 marking。"""
+
     user_id: str
     tenant_id: str
     markings: tuple[str, ...] = ()
@@ -48,6 +50,7 @@ class SecurityDecision:
 @dataclass(frozen=True, slots=True)
 class SecurityRequest:
     """Security 员工接到的请求。"""
+
     requester: UserMarkings
     target_tenant: str
     required: MarkingRequirement

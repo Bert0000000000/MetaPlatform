@@ -46,9 +46,7 @@ from .types import (
 
 _LEGACY_TENANT = "legacy"
 
-_TRIPLE_RE = re.compile(
-    r"^\s*<(?P<s>[^>]+)>\s+<(?P<p>[^>]+)>\s+(?P<o><[^>]+>|\"[^\"]*\")\s*\.\s*$"
-)
+_TRIPLE_RE = re.compile(r"^\s*<(?P<s>[^>]+)>\s+<(?P<p>[^>]+)>\s+(?P<o><[^>]+>|\"[^\"]*\")\s*\.\s*$")
 
 
 def _strip_brackets(s: str) -> str:
@@ -102,6 +100,7 @@ def migrate(triples: list[tuple[str, str, str]]) -> dict[str, list[Any]]:
     # Pass 1: properties & link types & axioms (no class deps)
     for s, props in by_s.items():
         types = props.get("http://www.w3.org/1999/02/22-rdf-syntax-ns#type", [])
+
         def _is(t: str, suffix: str) -> bool:
             inner = _strip_brackets(t)
             return inner.endswith(suffix)
@@ -122,17 +121,17 @@ def migrate(triples: list[tuple[str, str, str]]) -> dict[str, list[Any]]:
             properties[prop.rid.rid] = prop
 
         if is_obj_prop:
-            domains = props.get(
-                "http://www.w3.org/2000/01/rdf-schema#domain", []
+            domains = props.get("http://www.w3.org/2000/01/rdf-schema#domain", [])
+            ranges = props.get("http://www.w3.org/2000/01/rdf-schema#range", [])
+            src = (
+                ClassRef(_make_rid("obj", domains[0]))
+                if domains
+                else ClassRef(_make_rid("obj", "Unknown"))
             )
-            ranges = props.get(
-                "http://www.w3.org/2000/01/rdf-schema#range", []
-            )
-            src = ClassRef(_make_rid("obj", domains[0])) if domains else ClassRef(
-                _make_rid("obj", "Unknown")
-            )
-            dst = ClassRef(_make_rid("obj", ranges[0])) if ranges else ClassRef(
-                _make_rid("obj", "Unknown")
+            dst = (
+                ClassRef(_make_rid("obj", ranges[0]))
+                if ranges
+                else ClassRef(_make_rid("obj", "Unknown"))
             )
             lt = LinkType(
                 rid=ClassRef(_make_rid("link", s)),
@@ -161,6 +160,7 @@ def migrate(triples: list[tuple[str, str, str]]) -> dict[str, list[Any]]:
     # Pass 2: object types (now properties are populated)
     for s, props in by_s.items():
         types = props.get("http://www.w3.org/1999/02/22-rdf-syntax-ns#type", [])
+
         def _is2(t: str, suffix: str) -> bool:
             inner = _strip_brackets(t)
             return inner.endswith(suffix)
@@ -213,10 +213,7 @@ def main(argv: list[str]) -> int:
     triples = parse_ntriples(text)
     result = migrate(triples)
     dst.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(
-        f"migrated {len(triples)} triples → "
-        f"{sum(len(v) for v in result.values())} v2 records"
-    )
+    print(f"migrated {len(triples)} triples → {sum(len(v) for v in result.values())} v2 records")
     return 0
 
 

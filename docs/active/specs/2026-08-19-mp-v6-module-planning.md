@@ -1,9 +1,9 @@
 # MetaPlatform v6.0 模块规划
 
-> **版本**：v6.0（阈值与实时触发补充）  
-> **日期**：2026-08-19  
-> **状态**：**草案**（待评审）  
-> **作者**：Claude (MiniMax-M3) + 用户协作  
+> **版本**：v6.0（阈值与实时触发补充）
+> **日期**：2026-08-19
+> **状态**：**草案**（待评审）
+> **作者**：Claude (MiniMax-M3) + 用户协作
 > **配套文档**：
 > - [v6.0 技术架构 spec](./2026-08-19-mp-v6-architecture.md) - 技术栈
 > - [v6.0 应用架构 spec](./2026-08-19-mp-v6-application-architecture.md) - 应用层
@@ -147,17 +147,17 @@ CREATE TABLE quality_thresholds (
     comparator TEXT NOT NULL,                   -- 'gt' / 'lt' / 'gte' / 'lte'
     threshold_value NUMERIC NOT NULL,
     severity TEXT NOT NULL DEFAULT 'warning',    -- 'info' / 'warning' / 'critical'
-    
+
     -- 实时 vs 定时
     trigger_mode TEXT DEFAULT 'both',            -- 'realtime' / 'scheduled' / 'both'
     trigger_events TEXT[],                      -- ['order_created', 'workflow_completed']
-    
+
     -- action 策略（不达标时立即做什么）
     notify_channels TEXT[],                     -- ['realtime_ws', 'email', 'dingtalk']
     action_policy TEXT NOT NULL DEFAULT 'alert_only',  -- 'alert_only' / 'auto_fix' / 'hitl_required' / 'auto_workflow'
     action_config JSONB,                        -- 具体 action 配置
     cooldown_minutes INT DEFAULT60,             -- 重复告警冷却
-    
+
     -- 元数据
     description TEXT,
     enabled BOOLEAN DEFAULT true,
@@ -550,5 +550,5 @@ M50 Marketplace（可选扩展）
 
 ---
 
-*MetaPlatform v6.0 模块规划完毕。*  
+*MetaPlatform v6.0 模块规划完毕。*
 *配套文档：技术架构 spec（讲技术）+ 应用架构 spec（讲应用组织）+ 模块规划（本 spec，讲模块演进）。*

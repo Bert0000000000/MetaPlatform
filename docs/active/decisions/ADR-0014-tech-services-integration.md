@@ -12,6 +12,7 @@
 ## 1. Context
 
 前 6 个 Delivery Batch 已完成：
+
 - API-GOV-01（OpenAPI 单一契约源）
 - ARCH-CORE-01（四层结构）
 - PLATFORM-K8S-01（K8s 运行时 + Keycloak + OTel + NetworkPolicy）
@@ -31,6 +32,7 @@ TECH-SERVICES 锁定 17 域的统一接入模式。
 
 `mate-app-kb` 是最干净的参考实现（4 src files，零既有 auth 集成）。
 本批落地时一次性完成：
+
 - 接入 `mate_platform.auth.install_auth(app)` 安装 AuthMiddleware。
 - 客户端改用 `mate_clients.security.BearerAuth` + `OutgoingAuthMiddleware`。
 - 写至少 3 个跨租户 negative test。
@@ -42,11 +44,11 @@ TECH-SERVICES 锁定 17 域的统一接入模式。
 
 每 app 接入 `mate-platform` 提供的三层能力：
 
-| 层 | 入口 | 典型调用 |
-|---|---|---|
-| Auth | `mate_platform.auth.install_auth(app)` | `app = FastAPI(); install_auth(app)` |
-| Tenant | `mate_platform.tenancy.guards.require_tenant(ctx)` | 在每个 handler 第一行调用 |
-| Event | `mate_platform.messaging.OutboxWriter.append(Event)` | 业务事务同事务插入 |
+| 层     | 入口                                                 | 典型调用                             |
+| ------ | ---------------------------------------------------- | ------------------------------------ |
+| Auth   | `mate_platform.auth.install_auth(app)`               | `app = FastAPI(); install_auth(app)` |
+| Tenant | `mate_platform.tenancy.guards.require_tenant(ctx)`   | 在每个 handler 第一行调用            |
+| Event  | `mate_platform.messaging.OutboxWriter.append(Event)` | 业务事务同事务插入                   |
 
 App 不直接导入 `jwt` / `pydantic` 之外的库做 auth / tenant / event 路由。
 **所有 17 域的入口都遵循这个铁律**：auth + tenant + event 三个 hook 缺一不可。
@@ -89,15 +91,15 @@ security:
 
 ### 2.5 17 域接入优先级
 
-| 优先级 | 域 | 原因 |
-|---|---|---|
-| P0（canonical）| `kb` | ARCH-CORE-01 第一个 app，最干净 |
-| P0 | `iam` | deprecated，但 route 仍存在；可作 canonical secondary |
-| P1 | `msg` `obs` | 已被 PLATFORM-EVENT-01 / PLATFORM-K8S-01 引用 |
-| P1 | `agent` `rag` `llmgw` | 17 域中数据流最重 |
-| P2 | `apphub` `arch` `copilot` `dashboard` `dw` `data` | 业务侧 |
-| P2 | `a2a` `mcp` `ont` `wfe` | 协议 / 引擎侧 |
-| P3 | 18-19 域（如有）| 未来 |
+| 优先级          | 域                                                | 原因                                                  |
+| --------------- | ------------------------------------------------- | ----------------------------------------------------- |
+| P0（canonical） | `kb`                                              | ARCH-CORE-01 第一个 app，最干净                       |
+| P0              | `iam`                                             | deprecated，但 route 仍存在；可作 canonical secondary |
+| P1              | `msg` `obs`                                       | 已被 PLATFORM-EVENT-01 / PLATFORM-K8S-01 引用         |
+| P1              | `agent` `rag` `llmgw`                             | 17 域中数据流最重                                     |
+| P2              | `apphub` `arch` `copilot` `dashboard` `dw` `data` | 业务侧                                                |
+| P2              | `a2a` `mcp` `ont` `wfe`                           | 协议 / 引擎侧                                         |
+| P3              | 18-19 域（如有）                                  | 未来                                                  |
 
 每 P 阶段的 app 在同 PR 落地。
 
@@ -145,12 +147,12 @@ security:
 
 按优先级 P0 → P1 → P2 推进：
 
-| 阶段 | 范围 | 验证 |
-|---|---|---|
-| P0 | `kb`（canonical 完整） + `iam`（route 清理） | KB 域 3 跨租户 negative pass |
-| P1 | `msg` `obs` `agent` `rag` `llmgw` | 5 域各 1 集成 smoke |
-| P2 | `apphub` `arch` `copilot` `dashboard` `dw` `data` | 6 域 checklist 落地 |
-| P2 | `a2a` `mcp` `ont` `wfe` | 4 域 checklist 落地 |
+| 阶段 | 范围                                              | 验证                         |
+| ---- | ------------------------------------------------- | ---------------------------- |
+| P0   | `kb`（canonical 完整） + `iam`（route 清理）      | KB 域 3 跨租户 negative pass |
+| P1   | `msg` `obs` `agent` `rag` `llmgw`                 | 5 域各 1 集成 smoke          |
+| P2   | `apphub` `arch` `copilot` `dashboard` `dw` `data` | 6 域 checklist 落地          |
+| P2   | `a2a` `mcp` `ont` `wfe`                           | 4 域 checklist 落地          |
 
 每 P 阶段在独立 PR + commit；TECH-SERVICES = Accepted 标志"模式就位"，
 并不要求 17 域 100% 接入。

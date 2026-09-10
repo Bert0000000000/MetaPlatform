@@ -1,4 +1,5 @@
 """Prometheus metrics tests."""
+
 from __future__ import annotations
 
 from mate_tech_obs.metrics.prom import (

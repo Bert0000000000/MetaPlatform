@@ -12,6 +12,7 @@ The service is the message bus (Kafka producer/consumer + idempotency
 + retry). The `/healthz` endpoint is anonymous; all other endpoints
 require an authenticated tenant.
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -143,9 +144,7 @@ def _paginate(items: list, page: int, size: int) -> dict:
 async def list_messages_endpoint(
     request: Request,
     topic: str | None = Query(default=None, description="exact topic filter"),
-    since: float | None = Query(
-        default=None, description="epoch-seconds lower bound (inclusive)"
-    ),
+    since: float | None = Query(default=None, description="epoch-seconds lower bound (inclusive)"),
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> dict:

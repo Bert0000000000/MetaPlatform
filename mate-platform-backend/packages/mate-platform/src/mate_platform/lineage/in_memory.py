@@ -5,6 +5,7 @@ deterministic lineage graph without talking to Marquez. Mirrors the
 public surface of the (future) Marquez HTTP client so swapping
 implementations is a one-line change.
 """
+
 from __future__ import annotations
 
 import threading
@@ -106,9 +107,7 @@ class InMemoryLineageClient:
     # ------------------------------------------------------------------
     # Read side
     # ------------------------------------------------------------------
-    def query(
-        self, *, tenant_id: str, correlation_id: str
-    ) -> LineageQueryResult:
+    def query(self, *, tenant_id: str, correlation_id: str) -> LineageQueryResult:
         if not tenant_id:
             raise TenantIsolationError(
                 "LineageClient.query requires tenant_id (SEC-TENANT-01 hard rule 3)"

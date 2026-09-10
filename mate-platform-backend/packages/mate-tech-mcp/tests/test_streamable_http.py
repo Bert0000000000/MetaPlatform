@@ -6,6 +6,7 @@ Covers:
   - integration: a real streamable-http round-trip via the official MCP
     client (initialize -> list_tools -> call_tool)
 """
+
 from __future__ import annotations
 
 import asyncio

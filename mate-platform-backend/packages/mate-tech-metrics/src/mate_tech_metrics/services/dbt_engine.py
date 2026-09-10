@@ -22,6 +22,7 @@ Configuration (all from environment variables):
     DBT_TARGET      — dbt target name
                       (default: ``prod``)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -39,7 +40,9 @@ class DbtMetricsError(Exception):
     """Raised when a dbt CLI invocation fails."""
 
     def __init__(
-        self, message: str, *,
+        self,
+        message: str,
+        *,
         returncode: int = -1,
         stdout: str = "",
         stderr: str = "",
@@ -137,7 +140,9 @@ class DbtMetricsEngine:
         if rc != 0:
             raise DbtMetricsError(
                 f"dbt run failed for metric {metric_id}: {stderr[:500]}",
-                returncode=rc, stdout=stdout, stderr=stderr,
+                returncode=rc,
+                stdout=stdout,
+                stderr=stderr,
             )
 
         return DbtResult(
@@ -149,7 +154,10 @@ class DbtMetricsEngine:
         )
 
     async def get_lineage(
-        self, metric_id: str, *, select: str | None = None,
+        self,
+        metric_id: str,
+        *,
+        select: str | None = None,
     ) -> DbtResult:
         """Run ``dbt list`` to discover model lineage.
 
@@ -167,7 +175,9 @@ class DbtMetricsEngine:
         if rc != 0:
             raise DbtMetricsError(
                 f"dbt list failed for metric {metric_id}: {stderr[:500]}",
-                returncode=rc, stdout=stdout, stderr=stderr,
+                returncode=rc,
+                stdout=stdout,
+                stderr=stderr,
             )
 
         lineage = self._parse_jsonl(stdout)
@@ -193,17 +203,27 @@ class DbtMetricsEngine:
         returns the result as a JSON array.
         """
         cmd = self._base_cmd("run-operation")
-        cmd.extend(["get_metric_values", "--args", json.dumps({
-            "expression": expression,
-            "limit": limit,
-        })])
+        cmd.extend(
+            [
+                "get_metric_values",
+                "--args",
+                json.dumps(
+                    {
+                        "expression": expression,
+                        "limit": limit,
+                    }
+                ),
+            ]
+        )
 
         stdout, stderr, rc = await self._exec(cmd, metric_id)
 
         if rc != 0:
             raise DbtMetricsError(
                 f"dbt run-operation failed for metric {metric_id}: {stderr[:500]}",
-                returncode=rc, stdout=stdout, stderr=stderr,
+                returncode=rc,
+                stdout=stdout,
+                stderr=stderr,
             )
 
         values = self._parse_values_block(stdout)
@@ -217,7 +237,10 @@ class DbtMetricsEngine:
         )
 
     async def test_metric(
-        self, metric_id: str, *, select: str | None = None,
+        self,
+        metric_id: str,
+        *,
+        select: str | None = None,
     ) -> DbtResult:
         """Run ``dbt test`` to validate metric models."""
         cmd = self._base_cmd("test")
@@ -241,14 +264,20 @@ class DbtMetricsEngine:
     def _base_cmd(self, subcommand: str) -> list[str]:
         """Build the base dbt command with global flags."""
         return [
-            self._dbt_bin, subcommand,
-            "--project-dir", self._project_dir,
-            "--profiles-dir", self._profiles_dir,
-            "--target", self._target,
+            self._dbt_bin,
+            subcommand,
+            "--project-dir",
+            self._project_dir,
+            "--profiles-dir",
+            self._profiles_dir,
+            "--target",
+            self._target,
         ]
 
     async def _exec(
-        self, cmd: list[str], metric_id: str,
+        self,
+        cmd: list[str],
+        metric_id: str,
     ) -> tuple[str, str, int]:
         """Execute a dbt command and return (stdout, stderr, returncode)."""
         proc = await asyncio.create_subprocess_exec(
@@ -258,7 +287,8 @@ class DbtMetricsEngine:
         )
         try:
             stdout_b, stderr_b = await asyncio.wait_for(
-                proc.communicate(), timeout=self._timeout,
+                proc.communicate(),
+                timeout=self._timeout,
             )
         except TimeoutError as exc:
             proc.kill()

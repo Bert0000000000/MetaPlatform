@@ -5,6 +5,7 @@ Covers:
   * metadata_filter logic (single / empty / multiple conditions)
   * Endpoint integration (search with rerank + metadata_filter via TestClient)
 """
+
 from __future__ import annotations
 
 import os
@@ -100,6 +101,7 @@ def outbox() -> InMemoryOutboxWriter:
 def client(outbox: InMemoryOutboxWriter) -> Iterator[TestClient]:
     _reset_rag_state()
     from mate_tech_rag.api import app as _app_module
+
     _app_module.app.state.outbox_writer = outbox
     yield TestClient(_app_module.app)
     _reset_rag_state()
@@ -129,8 +131,7 @@ class TestIdentityReranker:
     def test_identity_reranker_top_k(self) -> None:
         """IdentityReranker respects top_k truncation."""
         candidates = [
-            RerankCandidate(chunk_id=str(i), text=f"t{i}", score=i / 10.0)
-            for i in range(5)
+            RerankCandidate(chunk_id=str(i), text=f"t{i}", score=i / 10.0) for i in range(5)
         ]
         result = IdentityReranker().rerank("q", candidates, top_k=3)
         assert len(result) == 3, len(result)
@@ -145,11 +146,13 @@ class TestKeywordReranker:
         query = "machine learning"
         candidates = [
             RerankCandidate(
-                chunk_id="match", text="machine learning is powerful",
+                chunk_id="match",
+                text="machine learning is powerful",
                 score=0.5,
             ),
             RerankCandidate(
-                chunk_id="nomatch", text="cooking pasta recipes",
+                chunk_id="nomatch",
+                text="cooking pasta recipes",
                 score=0.5,
             ),
         ]
@@ -160,7 +163,10 @@ class TestKeywordReranker:
         # Matching chunk score should increase from original 0.5
         assert match_score > original_scores["match"], (match_score, original_scores["match"])
         # Non-matching chunk score should stay at 0.5 * 0.7 = 0.35
-        assert nomatch_score < original_scores["nomatch"], (nomatch_score, original_scores["nomatch"])
+        assert nomatch_score < original_scores["nomatch"], (
+            nomatch_score,
+            original_scores["nomatch"],
+        )
         # Matching chunk should rank first
         assert result[0].chunk_id == "match"
 
@@ -264,7 +270,8 @@ class TestCreateReranker:
         assert isinstance(create_reranker("cross_encoder"), HeuristicCrossEncoderReranker)
 
     def test_create_reranker_real_cross_falls_back_without_env(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """real_cross_encoder without ST_CROSS_ENCODER_MODEL falls back to heuristic.
 
@@ -287,15 +294,20 @@ class TestMetadataFilter:
         from mate_tech_rag.api.schemas import ChunkHit
 
         hits = [
-            ChunkHit(chunk_id="1", document_id="d1", score=0.9, text="a",
-                     metadata={"category": "tech"}),
-            ChunkHit(chunk_id="2", document_id="d2", score=0.8, text="b",
-                     metadata={"category": "finance"}),
+            ChunkHit(
+                chunk_id="1", document_id="d1", score=0.9, text="a", metadata={"category": "tech"}
+            ),
+            ChunkHit(
+                chunk_id="2",
+                document_id="d2",
+                score=0.8,
+                text="b",
+                metadata={"category": "finance"},
+            ),
         ]
         metadata_filter = {"category": "tech"}
         filtered = [
-            h for h in hits
-            if all(h.metadata.get(k) == v for k, v in metadata_filter.items())
+            h for h in hits if all(h.metadata.get(k) == v for k, v in metadata_filter.items())
         ]
         assert len(filtered) == 1
         assert filtered[0].chunk_id == "1"
@@ -305,16 +317,21 @@ class TestMetadataFilter:
         from mate_tech_rag.api.schemas import ChunkHit
 
         hits = [
-            ChunkHit(chunk_id="1", document_id="d1", score=0.9, text="a",
-                     metadata={"category": "tech"}),
-            ChunkHit(chunk_id="2", document_id="d2", score=0.8, text="b",
-                     metadata={"category": "finance"}),
+            ChunkHit(
+                chunk_id="1", document_id="d1", score=0.9, text="a", metadata={"category": "tech"}
+            ),
+            ChunkHit(
+                chunk_id="2",
+                document_id="d2",
+                score=0.8,
+                text="b",
+                metadata={"category": "finance"},
+            ),
         ]
         metadata_filter = None
         if metadata_filter:
             filtered = [
-                h for h in hits
-                if all(h.metadata.get(k) == v for k, v in metadata_filter.items())
+                h for h in hits if all(h.metadata.get(k) == v for k, v in metadata_filter.items())
             ]
         else:
             filtered = list(hits)
@@ -325,17 +342,31 @@ class TestMetadataFilter:
         from mate_tech_rag.api.schemas import ChunkHit
 
         hits = [
-            ChunkHit(chunk_id="1", document_id="d1", score=0.9, text="a",
-                     metadata={"category": "tech", "lang": "en"}),
-            ChunkHit(chunk_id="2", document_id="d2", score=0.8, text="b",
-                     metadata={"category": "tech", "lang": "zh"}),
-            ChunkHit(chunk_id="3", document_id="d3", score=0.7, text="c",
-                     metadata={"category": "finance", "lang": "en"}),
+            ChunkHit(
+                chunk_id="1",
+                document_id="d1",
+                score=0.9,
+                text="a",
+                metadata={"category": "tech", "lang": "en"},
+            ),
+            ChunkHit(
+                chunk_id="2",
+                document_id="d2",
+                score=0.8,
+                text="b",
+                metadata={"category": "tech", "lang": "zh"},
+            ),
+            ChunkHit(
+                chunk_id="3",
+                document_id="d3",
+                score=0.7,
+                text="c",
+                metadata={"category": "finance", "lang": "en"},
+            ),
         ]
         metadata_filter = {"category": "tech", "lang": "en"}
         filtered = [
-            h for h in hits
-            if all(h.metadata.get(k) == v for k, v in metadata_filter.items())
+            h for h in hits if all(h.metadata.get(k) == v for k, v in metadata_filter.items())
         ]
         assert len(filtered) == 1
         assert filtered[0].chunk_id == "1"
@@ -505,9 +536,7 @@ class TestHeuristicCrossEncoderReranker:
     def test_heuristic_cross_positional_bias(self) -> None:
         """Query term appearing earlier in the chunk should rank above the same term late."""
         query = "alpha beta gamma"
-        early_text = "alpha beta gamma is a useful introduction to the topic " + (
-            "filler " * 30
-        )
+        early_text = "alpha beta gamma is a useful introduction to the topic " + ("filler " * 30)
         late_text = ("filler " * 30) + "alpha beta gamma is buried at the tail"
         candidates = [
             RerankCandidate(chunk_id="early", text=early_text, score=0.5),
@@ -534,7 +563,9 @@ class TestHeuristicCrossEncoderReranker:
     def test_heuristic_cross_empty_candidates(self) -> None:
         """Empty input → empty output (no crash)."""
         result = HeuristicCrossEncoderReranker().rerank(
-            "anything", [], top_k=10,
+            "anything",
+            [],
+            top_k=10,
         )
         assert result == []
 
@@ -554,8 +585,7 @@ class TestHeuristicCrossEncoderReranker:
         """top_k truncates the final ranking (regardless of pre-rerank order)."""
         query = "matching term"
         candidates = [
-            RerankCandidate(chunk_id=str(i), text=f"matching term {i}", score=0.1)
-            for i in range(5)
+            RerankCandidate(chunk_id=str(i), text=f"matching term {i}", score=0.1) for i in range(5)
         ]
         result = HeuristicCrossEncoderReranker().rerank(query, candidates, top_k=3)
         assert len(result) == 3
@@ -590,5 +620,6 @@ class TestHeuristicCrossEncoderReranker:
         assert heuristic_top.chunk_id == "correct_low_score", heuristic_top
         # Top-1 scores must therefore differ (the two rerankers disagree).
         assert identity_top.score != heuristic_top.score, (
-            identity_top.score, heuristic_top.score,
+            identity_top.score,
+            heuristic_top.score,
         )

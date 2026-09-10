@@ -7,6 +7,7 @@ returns a deterministic synthetic ``form_submission_id`` so callers
 and integration tests can assert on a stable shape without requiring
 a running forms service.
 """
+
 from __future__ import annotations
 
 
@@ -31,9 +32,7 @@ class FormsClient:
     ) -> dict:
         """Submit a form. Returns ``{form_submission_id, app_id, form_id}``."""
         return {
-            "form_submission_id": (
-                f"fs-{app_id}-{form_id}-{hash((form_id, tenant_id)) % 10000}"
-            ),
+            "form_submission_id": (f"fs-{app_id}-{form_id}-{hash((form_id, tenant_id)) % 10000}"),
             "app_id": app_id,
             "form_id": form_id,
             "received_payload": payload,

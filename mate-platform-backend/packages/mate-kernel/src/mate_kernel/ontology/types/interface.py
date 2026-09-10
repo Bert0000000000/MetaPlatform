@@ -37,10 +37,7 @@ def implements_interface(ot: ObjectType, ifc: Interface) -> bool:
         if p.rid.rid not in ot_prop_rids:
             return False
     if ifc.required_links:
-        declared = {
-            i.rid.rid if hasattr(i.rid, "rid") else str(i)
-            for i in ot.interfaces
-        }
+        declared = {i.rid.rid if hasattr(i.rid, "rid") else str(i) for i in ot.interfaces}
         for lr in ifc.required_links:
             lrid = lr.rid if hasattr(lr, "rid") else str(lr)
             if lrid not in declared and lrid not in ot_prop_rids:
@@ -62,10 +59,7 @@ def interface_source_rids(
     return [
         ot.rid.rid
         for ot in object_types
-        if any(
-            (i.rid.rid if hasattr(i.rid, "rid") else str(i)) == target
-            for i in ot.interfaces
-        )
+        if any((i.rid.rid if hasattr(i.rid, "rid") else str(i)) == target for i in ot.interfaces)
     ]
 
 
@@ -90,8 +84,7 @@ def validate_interface_constraints(
     for p in ifc.properties:
         if p.rid.rid not in ot_prop_rids:
             violations.append(
-                f"interface {ifc.rid.rid} requires property {p.rid.rid} "
-                f"missing on {ot.rid.rid}"
+                f"interface {ifc.rid.rid} requires property {p.rid.rid} missing on {ot.rid.rid}"
             )
     if link_type_endpoint_pairs is not None:
         for lr in ifc.required_links:
@@ -99,13 +92,11 @@ def validate_interface_constraints(
             endpoints = [pair for pair in link_type_endpoint_pairs if pair[0] == lrid]
             if not endpoints:
                 violations.append(
-                    f"interface {ifc.rid.rid} requires link {lrid} "
-                    f"but no such LinkType registered"
+                    f"interface {ifc.rid.rid} requires link {lrid} but no such LinkType registered"
                 )
                 continue
             if not any(ot.rid.rid in pair[1] for pair in endpoints):
                 violations.append(
-                    f"interface {ifc.rid.rid} requires link {lrid} "
-                    f"to touch {ot.rid.rid}"
+                    f"interface {ifc.rid.rid} requires link {lrid} to touch {ot.rid.rid}"
                 )
     return violations

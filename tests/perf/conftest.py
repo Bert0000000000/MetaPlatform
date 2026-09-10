@@ -44,9 +44,7 @@ def _load_e2e_conftest():
     The file is normally not importable because conftest.py is not a package
     module. We load it explicitly by file path.
     """
-    spec = importlib.util.spec_from_file_location(
-        "metaplatform_e2e_conftest", str(_E2E_CONFTEST)
-    )
+    spec = importlib.util.spec_from_file_location("metaplatform_e2e_conftest", str(_E2E_CONFTEST))
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     # Insert into sys.modules so any ``from metaplatform_e2e_conftest import x``

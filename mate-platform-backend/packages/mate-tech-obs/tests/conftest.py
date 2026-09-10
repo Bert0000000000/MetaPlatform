@@ -1,4 +1,5 @@
 """Conftest for mate-tech-obs (ST-5.2.10)."""
+
 from __future__ import annotations
 
 # install_auth() reads these env vars at app-import time. Set them

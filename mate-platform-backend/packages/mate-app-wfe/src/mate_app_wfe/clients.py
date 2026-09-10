@@ -15,6 +15,7 @@ In the FastAPI handler the auth is read from ``app.state.bearer_auth``
 and the tenant_id from ``request.state.ctx.tenant_id`` (set by the
 auth middleware).
 """
+
 from __future__ import annotations
 
 import os
@@ -52,9 +53,7 @@ class FlowableClient:
         auth: BearerAuth | None = None,
         tenant_id: str = "",
     ) -> None:
-        resolved = base_url if base_url is not None else os.environ.get(
-            "FLOWABLE_BASE_URL", ""
-        )
+        resolved = base_url if base_url is not None else os.environ.get("FLOWABLE_BASE_URL", "")
         self.base_url = (resolved or "").strip().rstrip("/")
         require_real_dependency("Flowable", bool(self.base_url))
         self.timeout = timeout
@@ -87,8 +86,7 @@ class FlowableClient:
         if not self.base_url:
             if is_production_profile():
                 raise RuntimeError(
-                    "Flowable is unavailable in production; "
-                    "in-memory deployment is disabled"
+                    "Flowable is unavailable in production; in-memory deployment is disabled"
                 )
             return self._in_memory_deploy()
 
@@ -110,8 +108,7 @@ class FlowableClient:
             # Engine unreachable / bad response -> degrade to in-memory.
             if is_production_profile():
                 raise RuntimeError(
-                    "Flowable is unavailable in production; "
-                    "in-memory deployment is disabled"
+                    "Flowable is unavailable in production; in-memory deployment is disabled"
                 ) from None
             dep = self._in_memory_deploy()
             dep["status"] = "fallback"

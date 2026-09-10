@@ -795,18 +795,18 @@
 所有 5 个大数据 View 的 "新建 X" 按钮都触发相同的 Modal 流程:
 
 ```
-步骤 1: 用户点击 "新建 X" 
+步骤 1: 用户点击 "新建 X"
    -> setShowCreate(true)
    -> <CreateXDialog onClose onSuccess />
 步骤 2: 用户填写表单
    -> 必填字段: 实时校验 (红框 + tooltip)
    -> 选填字段: 默认值
-步骤 3: 用户点击 "创建" 
+步骤 3: 用户点击 "创建"
    -> handleSubmit() 异步
    -> 校验必填字段
 步骤 4: 提交中状态
    -> 按钮 disabled + 显示 "创建中..."
-   -> try await createX(form) 
+   -> try await createX(form)
    -> catch fallback 到 mock.push(mockX)
 步骤 5: 成功
    -> onSuccess() -> setShowCreate(false) + load()

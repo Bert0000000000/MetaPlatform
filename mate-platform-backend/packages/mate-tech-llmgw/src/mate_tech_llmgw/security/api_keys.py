@@ -10,6 +10,7 @@ The verifier is handed to ``mate_platform.auth.install_auth`` as the
 optional ``api_key_verifier`` hook: JWT stays the primary path, and a
 ``sk-llmgw-*`` bearer falls through to this verifier.
 """
+
 from __future__ import annotations
 
 import fnmatch
@@ -108,22 +109,41 @@ class ApiKeyStore:
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
                         FALSE, $13, $14)
                 """,
-                key_id, tenant_id, key_name, key_hash, key_prefix,
-                json.dumps(list(models)), max_budget_usd, soft_budget_usd,
-                budget_duration, reset_at, tpm_limit, rpm_limit,
-                expires_at, created_by,
+                key_id,
+                tenant_id,
+                key_name,
+                key_hash,
+                key_prefix,
+                json.dumps(list(models)),
+                max_budget_usd,
+                soft_budget_usd,
+                budget_duration,
+                reset_at,
+                tpm_limit,
+                rpm_limit,
+                expires_at,
+                created_by,
             )
         record = await self._get_by_hash(key_hash)
         # (record may be None only if the row vanished immediately; the
         # caller still receives the plaintext + a reconstructed record.)
         if record is None:
             record = ApiKeyRecord(
-                key_id=key_id, tenant_id=tenant_id, key_name=key_name,
-                key_prefix=key_prefix, models=tuple(models),
-                max_budget_usd=max_budget_usd, soft_budget_usd=soft_budget_usd,
-                budget_duration=budget_duration, budget_reset_at=reset_at,
-                tpm_limit=tpm_limit, rpm_limit=rpm_limit, spend_usd=0.0,
-                blocked=False, expires_at=expires_at, last_active_at=None,
+                key_id=key_id,
+                tenant_id=tenant_id,
+                key_name=key_name,
+                key_prefix=key_prefix,
+                models=tuple(models),
+                max_budget_usd=max_budget_usd,
+                soft_budget_usd=soft_budget_usd,
+                budget_duration=budget_duration,
+                budget_reset_at=reset_at,
+                tpm_limit=tpm_limit,
+                rpm_limit=rpm_limit,
+                spend_usd=0.0,
+                blocked=False,
+                expires_at=expires_at,
+                last_active_at=None,
             )
         return record, plaintext
 
@@ -162,7 +182,8 @@ class ApiKeyStore:
                 UPDATE llmgw_api_keys SET blocked = TRUE
                 WHERE key_id = $1 AND tenant_id = $2
                 """,
-                key_id, tenant_id,
+                key_id,
+                tenant_id,
             )
         return "UPDATE 1" in str(row)
 
@@ -185,7 +206,10 @@ class ApiKeyStore:
                        last_active_at = NULL
                  WHERE key_id = $1 AND tenant_id = $2
                 """,
-                key_id, tenant_id, key_hash, key_prefix,
+                key_id,
+                tenant_id,
+                key_hash,
+                key_prefix,
             )
             if "UPDATE 1" not in str(row):
                 return None
@@ -232,7 +256,9 @@ class ApiKeyStore:
                    SET budget_reset_at = $3, spend_usd = 0
                  WHERE key_id = $1 AND budget_reset_at = $2
                 """,
-                record.key_id, record.budget_reset_at, new_reset,
+                record.key_id,
+                record.budget_reset_at,
+                new_reset,
             )
         from dataclasses import replace
 
@@ -254,12 +280,8 @@ def _row_to_record(row: Any) -> ApiKeyRecord:
         ),
         budget_duration=row["budget_duration"],
         budget_reset_at=row["budget_reset_at"],
-        tpm_limit=(
-            int(row["tpm_limit"]) if row["tpm_limit"] is not None else None
-        ),
-        rpm_limit=(
-            int(row["rpm_limit"]) if row["rpm_limit"] is not None else None
-        ),
+        tpm_limit=(int(row["tpm_limit"]) if row["tpm_limit"] is not None else None),
+        rpm_limit=(int(row["rpm_limit"]) if row["rpm_limit"] is not None else None),
         spend_usd=float(row["spend_usd"] or 0.0),
         blocked=bool(row["blocked"]),
         expires_at=row["expires_at"],
@@ -273,9 +295,7 @@ class ApiKeyCache:
     def __init__(self, redis_client: Any | None = None) -> None:
         self._redis = redis_client
 
-    async def get_or_load(
-        self, key_hash: str, loader: Any
-    ) -> ApiKeyRecord | None:
+    async def get_or_load(self, key_hash: str, loader: Any) -> ApiKeyRecord | None:
         cache_key = f"llmgw:key:{key_hash}"
         if self._redis is not None:
             try:
@@ -336,20 +356,15 @@ def _record_from_json(data: dict[str, Any]) -> ApiKeyRecord:
         soft_budget_usd=data.get("soft_budget_usd"),
         budget_duration=data.get("budget_duration"),
         budget_reset_at=(
-            datetime.fromisoformat(data["budget_reset_at"])
-            if data.get("budget_reset_at") else None
+            datetime.fromisoformat(data["budget_reset_at"]) if data.get("budget_reset_at") else None
         ),
         tpm_limit=data.get("tpm_limit"),
         rpm_limit=data.get("rpm_limit"),
         spend_usd=float(data.get("spend_usd", 0.0)),
         blocked=bool(data.get("blocked", False)),
-        expires_at=(
-            datetime.fromisoformat(data["expires_at"])
-            if data.get("expires_at") else None
-        ),
+        expires_at=(datetime.fromisoformat(data["expires_at"]) if data.get("expires_at") else None),
         last_active_at=(
-            datetime.fromisoformat(data["last_active_at"])
-            if data.get("last_active_at") else None
+            datetime.fromisoformat(data["last_active_at"]) if data.get("last_active_at") else None
         ),
     )
 
@@ -399,9 +414,7 @@ async def enforce_key_limits(
     return record
 
 
-async def _key_rate_limit(
-    record: ApiKeyRecord, redis_client: Any, estimated_tokens: int
-) -> None:
+async def _key_rate_limit(record: ApiKeyRecord, redis_client: Any, estimated_tokens: int) -> None:
 
     from ..quota.bucket import _RATELIMIT_LUA, QuotaExceededError
 
@@ -410,9 +423,15 @@ async def _key_rate_limit(
     tok_key = f"llmgw:ratelimit:key:{record.key_id}:tok:{minute}"
     try:
         result = await redis_client.eval(
-            _RATELIMIT_LUA, 2, req_key, tok_key,
-            record.rpm_limit or 10**9, record.tpm_limit or 10**12,
-            max(int(estimated_tokens), 0), 60, int(time.time()),
+            _RATELIMIT_LUA,
+            2,
+            req_key,
+            tok_key,
+            record.rpm_limit or 10**9,
+            record.tpm_limit or 10**12,
+            max(int(estimated_tokens), 0),
+            60,
+            int(time.time()),
         )
     except Exception as exc:
         logger.warning("llmgw.apikey.ratelimit_degraded", error=str(exc))
@@ -493,5 +512,5 @@ def key_id_from_ctx(ctx: Any) -> str | None:
     """Parse the key id encoded in an API_KEY ctx's user_id."""
     user_id = str(getattr(ctx, "user_id", "") or "")
     if user_id.startswith("apikey:"):
-        return user_id[len("apikey:"):]
+        return user_id[len("apikey:") :]
     return None

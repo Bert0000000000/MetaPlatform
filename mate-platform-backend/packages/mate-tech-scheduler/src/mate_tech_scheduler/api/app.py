@@ -18,6 +18,7 @@ double-check the tenant — the guard is the source of truth.
 Write handlers emit `scheduler.<aggregate>.<verb>` outbox events via
 `app.state.outbox_writer` (ADR-0014 step 3).
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -62,9 +63,7 @@ def _emit(
     tenant_id: str,
 ) -> None:
     """Append an outbox event if a writer is configured (no-op otherwise)."""
-    writer: InMemoryOutboxWriter | None = getattr(
-        request.app.state, "outbox_writer", None
-    )
+    writer: InMemoryOutboxWriter | None = getattr(request.app.state, "outbox_writer", None)
     if writer is None:
         return
     writer.append(
@@ -143,7 +142,8 @@ async def list_scheduler_tasks_endpoint(
 # ---------------------------------------------------------------------------
 @router.post("/tasks")
 async def create_scheduler_task_endpoint(
-    request: Request, body: SchedulerTaskCreate,
+    request: Request,
+    body: SchedulerTaskCreate,
 ) -> dict[str, Any]:
     """Create a scheduler task (FR-DATA-DATAPOSTSCHEDULERTASKS)."""
     tid = _tid(request)
@@ -168,7 +168,8 @@ async def create_scheduler_task_endpoint(
 # ---------------------------------------------------------------------------
 @router.get("/tasks/{task_id}")
 async def get_scheduler_task_endpoint(
-    request: Request, task_id: str,
+    request: Request,
+    task_id: str,
 ) -> dict[str, Any]:
     """Get a scheduler task by id (FR-DATA-DATAGETSCHEDULERTASKSID)."""
     tid = _tid(request)
@@ -183,7 +184,9 @@ async def get_scheduler_task_endpoint(
 # ---------------------------------------------------------------------------
 @router.put("/tasks/{task_id}")
 async def update_scheduler_task_endpoint(
-    request: Request, task_id: str, body: SchedulerTaskUpdate,
+    request: Request,
+    task_id: str,
+    body: SchedulerTaskUpdate,
 ) -> dict[str, Any]:
     """Update a scheduler task (FR-DATA-DATAPUTSCHEDULERTASKSID)."""
     tid = _tid(request)
@@ -211,7 +214,8 @@ async def update_scheduler_task_endpoint(
 # ---------------------------------------------------------------------------
 @router.delete("/tasks/{task_id}")
 async def delete_scheduler_task_endpoint(
-    request: Request, task_id: str,
+    request: Request,
+    task_id: str,
 ) -> dict[str, Any]:
     """Delete a scheduler task (FR-DATA-DATADELETESCHEDULERTASKSID)."""
     tid = _tid(request)
@@ -232,7 +236,8 @@ async def delete_scheduler_task_endpoint(
 # ---------------------------------------------------------------------------
 @router.post("/tasks/{task_id}/pause")
 async def pause_scheduler_task_endpoint(
-    request: Request, task_id: str,
+    request: Request,
+    task_id: str,
 ) -> dict[str, Any]:
     """Pause a scheduler task (FR-DATA-DATAPOSTSCHEDULERTASKSIDPAUSE)."""
     tid = _tid(request)
@@ -254,7 +259,8 @@ async def pause_scheduler_task_endpoint(
 # ---------------------------------------------------------------------------
 @router.post("/tasks/{task_id}/trigger")
 async def trigger_scheduler_task_endpoint(
-    request: Request, task_id: str,
+    request: Request,
+    task_id: str,
 ) -> dict[str, Any]:
     """Trigger a scheduler task (FR-DATA-DATAPOSTSCHEDULERTASKSIDTRIGGER)."""
     tid = _tid(request)

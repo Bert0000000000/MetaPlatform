@@ -7,6 +7,7 @@ v3.0 Plan D: LightRAG provides "thematic" dimension retrieval.
 
 Current: InMemory placeholder (Jaccard similarity on token sets).
 """
+
 from __future__ import annotations
 
 import threading
@@ -17,7 +18,9 @@ from mate_tech_rag.api.schemas import ChunkHit
 
 class LightRAGClient(Protocol):
     def query(self, query: str, top_k: int = 10) -> list[ChunkHit]: ...
-    def insert(self, text: str, document_id: str, metadata: dict[str, str] | None = None) -> str: ...
+    def insert(
+        self, text: str, document_id: str, metadata: dict[str, str] | None = None
+    ) -> str: ...
     def count(self) -> int: ...
     def delete_by_document(self, document_id: str) -> int: ...
 

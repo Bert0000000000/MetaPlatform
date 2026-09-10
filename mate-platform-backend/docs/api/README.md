@@ -5,8 +5,8 @@ MetaPlatform app packages' FastAPI routers into a single document.
 
 ## Files
 
-| File | Description |
-|------|-------------|
+| File           | Description                                           |
+| -------------- | ----------------------------------------------------- |
 | `openapi.json` | Generated unified OpenAPI spec (do not edit manually) |
 
 ## Regenerating the spec
@@ -49,16 +49,16 @@ ReDoc at `/redoc` when running.
 
 ## API structure (tags → packages)
 
-| Tag(s) | Package | Prefix |
-|--------|---------|--------|
-| `copilot` | `mate-app-copilot` | `/api/v1/copilot` |
-| `a2a` | `mate-app-a2a` | `/api/v1/a2a` |
-| `arch` | `mate-app-arch` | `/api/v1/arch` |
-| `apphub` | `mate-app-hub` | `/api/v1/apphub` |
-| `kb`, `kb-deprecated` | `mate-app-kb` | `/api/v1/kb`, `/api/v1/app-kb` |
-| `iam-auth` | `mate-tech-iam` | `/api/v1/iam` |
-| `dashboard` | `mate-tech-iam` | `/api/v1/dashboard` |
-| `admin-users`, `admin-orgs`, `admin-permissions`, `admin-logs`, `admin-configs` | `mate-tech-iam` | `/api/v1/admin/*` |
+| Tag(s)                                                                          | Package            | Prefix                         |
+| ------------------------------------------------------------------------------- | ------------------ | ------------------------------ |
+| `copilot`                                                                       | `mate-app-copilot` | `/api/v1/copilot`              |
+| `a2a`                                                                           | `mate-app-a2a`     | `/api/v1/a2a`                  |
+| `arch`                                                                          | `mate-app-arch`    | `/api/v1/arch`                 |
+| `apphub`                                                                        | `mate-app-hub`     | `/api/v1/apphub`               |
+| `kb`, `kb-deprecated`                                                           | `mate-app-kb`      | `/api/v1/kb`, `/api/v1/app-kb` |
+| `iam-auth`                                                                      | `mate-tech-iam`    | `/api/v1/iam`                  |
+| `dashboard`                                                                     | `mate-tech-iam`    | `/api/v1/dashboard`            |
+| `admin-users`, `admin-orgs`, `admin-permissions`, `admin-logs`, `admin-configs` | `mate-tech-iam`    | `/api/v1/admin/*`              |
 
 ## Notes
 

@@ -1,4 +1,5 @@
-﻿"""MCP server tests."""
+"""MCP server tests."""
+
 from __future__ import annotations
 
 import pytest
@@ -24,6 +25,7 @@ def test_register_tool(mcp_server: MCPServer) -> None:
         name = "fake"
         description = "test"
         input_schema = {}
+
         def handler():
             return "ok"
 
@@ -68,6 +70,7 @@ async def test_call_tool(mcp_server: MCPServer) -> None:
         name = "add"
         description = ""
         input_schema = {}
+
         def handler(self, a, b):
             return a + b
 

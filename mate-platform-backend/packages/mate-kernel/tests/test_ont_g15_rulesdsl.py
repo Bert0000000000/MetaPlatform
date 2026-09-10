@@ -1,4 +1,5 @@
 """ONT-G15 Rule DSL 最小闭环单测（解析 + 正向链 + 幂等 + 错误面）。"""
+
 from __future__ import annotations
 
 import os
@@ -25,30 +26,34 @@ def test_parse_rules_with_error_report():
     rules, errors = parse_rules(TEXT)
     assert len(rules) == 2 and len(errors) == 1
     assert rules[0].name == "senior-rule"
-    assert (rules[0].body[0].predicate, rules[0].head.predicate) == \
-        ("employee", "senior")
+    assert (rules[0].body[0].predicate, rules[0].head.predicate) == ("employee", "senior")
 
 
 def test_forward_chain_single_step():
     rules, errors = parse_rules(TEXT)
     assert errors[:1]
-    r = run_rules(rules, {
-        "employee": {"e1", "e2"},
-        "project_lead": {"e1"},
-        "manages_budget": set(),
-    })
+    r = run_rules(
+        rules,
+        {
+            "employee": {"e1", "e2"},
+            "project_lead": {"e1"},
+            "manages_budget": set(),
+        },
+    )
     assert r.facts["senior"] == {"e1"}
-    assert r.derived == [{"rule": "senior-rule", "predicate": "senior",
-                          "id": "e1"}]
+    assert r.derived == [{"rule": "senior-rule", "predicate": "senior", "id": "e1"}]
 
 
 def test_forward_chain_transitive_two_rules():
     rules, _ = parse_rules(TEXT)
-    r = run_rules(rules, {
-        "employee": {"e1"},
-        "project_lead": {"e1"},
-        "manages_budget": {"e1"},
-    })
+    r = run_rules(
+        rules,
+        {
+            "employee": {"e1"},
+            "project_lead": {"e1"},
+            "manages_budget": {"e1"},
+        },
+    )
     # e1 → senior → manager（链式推导）
     assert r.facts["senior"] == {"e1"}
     assert r.facts["manager"] == {"e1"}
@@ -56,8 +61,7 @@ def test_forward_chain_transitive_two_rules():
 
 def test_idempotent_rerun_no_new_facts():
     rules, _ = parse_rules(TEXT)
-    facts = {"employee": {"e1"}, "project_lead": {"e1"},
-             "manages_budget": {"e1"}}
+    facts = {"employee": {"e1"}, "project_lead": {"e1"}, "manages_budget": {"e1"}}
     first = run_rules(rules, facts)
     before = {p: set(v) for p, v in first.facts.items()}
     second = run_rules(rules, first.facts)
@@ -66,8 +70,7 @@ def test_idempotent_rerun_no_new_facts():
 
 
 def test_join_on_shared_variable():
-    rules, _ = parse_rules(
-        "pair: IF employee(?x) AND employee(?y) THEN pair(?x)")
+    rules, _ = parse_rules("pair: IF employee(?x) AND employee(?y) THEN pair(?x)")
     r = run_rules(rules, {"employee": {"a", "b"}})
     assert r.facts["pair"] == {"a", "b"}
 

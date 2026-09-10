@@ -5,14 +5,14 @@
 
 ## 走查链路与截图（tests/e2e/screenshots/）
 
-| 站点 | 截图 | 内容 |
-|---|---|---|
-| 1 登录 | northstar-01-login.png | 平台登录页 |
-| 2 工作台 | northstar-02-workbench.png | 真实 token 注入后 dashboard |
-| 3 SuperAI 对话 | northstar-03-superai-loaded.png | /superai/chat 加载 |
-| 4 SuperAI 回答 | northstar-04-superai-answer.png | 真实对话流（RAG 引用卡片「Mate Platform 介绍·核心能力」+ 会话历史；LLM 通道 = ARK Plan GLM-5.3-flash，stub-fallback 已消除——API 层真实返回证据见 scripts/smoke_sprint_final_batch1.py 邻接测试与 SPRINT 记录）|
-| 5 本体引擎 | northstar-05-ontology.png | **48 概念 / 97 属性 / 8 关系**；一级本体侧栏可见当日 live 核销脚本创建的类型（batch1/dedup-*/diag-*），数据真实闭环 |
-| 6 数据资产目录 | northstar-06-data-assets.png | /arch/data/assets 目录页 |
+| 站点           | 截图                            | 内容                                                                                                                                                                                                           |
+| -------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 登录         | northstar-01-login.png          | 平台登录页                                                                                                                                                                                                     |
+| 2 工作台       | northstar-02-workbench.png      | 真实 token 注入后 dashboard                                                                                                                                                                                    |
+| 3 SuperAI 对话 | northstar-03-superai-loaded.png | /superai/chat 加载                                                                                                                                                                                             |
+| 4 SuperAI 回答 | northstar-04-superai-answer.png | 真实对话流（RAG 引用卡片「Mate Platform 介绍·核心能力」+ 会话历史；LLM 通道 = ARK Plan GLM-5.3-flash，stub-fallback 已消除——API 层真实返回证据见 scripts/smoke_sprint_final_batch1.py 邻接测试与 SPRINT 记录） |
+| 5 本体引擎     | northstar-05-ontology.png       | **48 概念 / 97 属性 / 8 关系**；一级本体侧栏可见当日 live 核销脚本创建的类型（batch1/dedup-_/diag-_），数据真实闭环                                                                                            |
+| 6 数据资产目录 | northstar-06-data-assets.png    | /arch/data/assets 目录页                                                                                                                                                                                       |
 
 ## 结论
 

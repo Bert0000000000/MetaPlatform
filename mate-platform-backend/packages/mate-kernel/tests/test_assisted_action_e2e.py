@@ -26,41 +26,64 @@ ACT = f"ont.{_T}.act.flag-review.v1"
 def _setup_repo() -> InMemoryOntologyRepository:
     repo = InMemoryOntologyRepository()
     prop_status = Property(
-        rid=ClassRef(f"ont.{_T}.prop.status.v1"), type_id="string",
-        nullable=True, primary_key=False, title="status", format=PropertyFormat.STRING,
+        rid=ClassRef(f"ont.{_T}.prop.status.v1"),
+        type_id="string",
+        nullable=True,
+        primary_key=False,
+        title="status",
+        format=PropertyFormat.STRING,
     )
     prop_reason = Property(
-        rid=ClassRef(f"ont.{_T}.prop.reason.v1"), type_id="string",
-        nullable=True, primary_key=False, title="reason", format=PropertyFormat.STRING,
+        rid=ClassRef(f"ont.{_T}.prop.reason.v1"),
+        type_id="string",
+        nullable=True,
+        primary_key=False,
+        title="reason",
+        format=PropertyFormat.STRING,
     )
-    repo.upsert_object_type(ObjectType(
-        rid=ClassRef(f"ont.{_T}.obj.order.v1"),
-        primary_key=(ClassRef(f"ont.{_T}.prop.oid.v1"),),
-        properties=(
-            Property(rid=ClassRef(f"ont.{_T}.prop.oid.v1"), type_id="string",
-                     nullable=False, primary_key=True, title="oid",
-                     format=PropertyFormat.STRING),
-            prop_status,
-        ),
-        display_name="order",
-    ))
-    repo.create_individual(Individual(
-        rid=f"ont.{_T}.ind.order.o1",
-        class_rid=ClassRef(f"ont.{_T}.obj.order.v1"),
-        props=(
-            (ClassRef(f"ont.{_T}.prop.oid.v1"), "o1"),
-            (prop_status.rid, "open"),
-        ),
-        primary_key="o1", created_at=_NOW, updated_at=_NOW, tenant_id=_T, marking=(),
-    ))
-    repo.upsert_action_type(ActionType(
-        rid=ClassRef(ACT),
-        parameters=(prop_reason,),
-        submission_criteria=(),
-        side_effects=("notify_user",),
-        function_ref=ClassRef(f"ont.{_T}.fn.flag.v1"),
-        on=(ClassRef(f"ont.{_T}.obj.order.v1"),),
-    ))
+    repo.upsert_object_type(
+        ObjectType(
+            rid=ClassRef(f"ont.{_T}.obj.order.v1"),
+            primary_key=(ClassRef(f"ont.{_T}.prop.oid.v1"),),
+            properties=(
+                Property(
+                    rid=ClassRef(f"ont.{_T}.prop.oid.v1"),
+                    type_id="string",
+                    nullable=False,
+                    primary_key=True,
+                    title="oid",
+                    format=PropertyFormat.STRING,
+                ),
+                prop_status,
+            ),
+            display_name="order",
+        )
+    )
+    repo.create_individual(
+        Individual(
+            rid=f"ont.{_T}.ind.order.o1",
+            class_rid=ClassRef(f"ont.{_T}.obj.order.v1"),
+            props=(
+                (ClassRef(f"ont.{_T}.prop.oid.v1"), "o1"),
+                (prop_status.rid, "open"),
+            ),
+            primary_key="o1",
+            created_at=_NOW,
+            updated_at=_NOW,
+            tenant_id=_T,
+            marking=(),
+        )
+    )
+    repo.upsert_action_type(
+        ActionType(
+            rid=ClassRef(ACT),
+            parameters=(prop_reason,),
+            submission_criteria=(),
+            side_effects=("notify_user",),
+            function_ref=ClassRef(f"ont.{_T}.fn.flag.v1"),
+            on=(ClassRef(f"ont.{_T}.obj.order.v1"),),
+        )
+    )
     return repo
 
 
@@ -110,11 +133,16 @@ class TestAssistedActionE2E:
     def test_unconfirmed_proposal_never_writes(self) -> None:
         repo = _setup_repo()
         prop = repo.propose_action(
-            ClassRef(ACT), {"reason": "x"}, f"ont.{_T}.ind.order.o1", "impact",
+            ClassRef(ACT),
+            {"reason": "x"},
+            f"ont.{_T}.ind.order.o1",
+            "impact",
         )
         with pytest.raises(ProposalNotConfirmed):
             repo.apply_action(
-                ClassRef(ACT), f"ont.{_T}.ind.order.o1", {"reason": "x"},
+                ClassRef(ACT),
+                f"ont.{_T}.ind.order.o1",
+                {"reason": "x"},
                 {"actor": "ai", "proposal_id": prop.proposal_id},
             )
         # 数据零变化
@@ -124,12 +152,17 @@ class TestAssistedActionE2E:
     def test_rejected_proposal_never_writes(self) -> None:
         repo = _setup_repo()
         prop = repo.propose_action(
-            ClassRef(ACT), {"reason": "x"}, f"ont.{_T}.ind.order.o1", "impact",
+            ClassRef(ACT),
+            {"reason": "x"},
+            f"ont.{_T}.ind.order.o1",
+            "impact",
         )
         repo.reject_proposal(prop.proposal_id, confirmed_by="alice")
         with pytest.raises(ProposalNotConfirmed):
             repo.apply_action(
-                ClassRef(ACT), f"ont.{_T}.ind.order.o1", {"reason": "x"},
+                ClassRef(ACT),
+                f"ont.{_T}.ind.order.o1",
+                {"reason": "x"},
                 {"actor": "ai", "proposal_id": prop.proposal_id},
             )
         assert repo.get_proposal(prop.proposal_id).status.value == "rejected"

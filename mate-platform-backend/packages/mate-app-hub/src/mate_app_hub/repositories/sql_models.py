@@ -9,6 +9,7 @@ are stored as newline-separated TEXT; dict fields (``content``) are
 stored as JSON TEXT. Re-hydration is done by the ``_orm_to_*``
 helpers in sql_store.py.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import DateTime, Index, Integer, String, Text, func
@@ -94,7 +95,9 @@ class ApphubShortlinkORM(Base):
     role: Mapped[str | None] = mapped_column(String(64), nullable=True)
     expires_at: Mapped[str | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[str] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(),
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
     )
 
     __table_args__ = (

@@ -7,6 +7,7 @@ factory and verify:
   - the A2A message text reaches the SDK client
   - timeout / HTTP errors propagate so the delegator maps them
 """
+
 from __future__ import annotations
 
 import types

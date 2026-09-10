@@ -19,7 +19,7 @@
 ## 前置批次（已 Accepted）
 
 - API-GOV-01（commit 1fa521fd）：OpenAPI 单一契约源
-- ARCH-CORE-01（commit eeaab5c5）：mate-kernel / mate-platform / 
+- ARCH-CORE-01（commit eeaab5c5）：mate-kernel / mate-platform /
   mate-clients / app-* 四层结构
 - PLATFORM-K8S-01（commit 4d0b73d6）：K8s 运行时 + Keycloak + OTel
 - SEC-IAM-01（commit 4d3d894e）：Keycloak 身份迁移 + JWKS

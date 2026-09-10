@@ -9,6 +9,7 @@ Covers:
     list-remote-tools / invoke-remote-tool.
   * Cross-tenant negative cases (ADR-0014 step 5).
 """
+
 from __future__ import annotations
 
 import os
@@ -259,9 +260,7 @@ class TestFederationRegistryTenantIsolation:
         # t1's server is still there.
         assert fresh_registry.get_server(tenant_id="t1", server_id=srv.id) is not None
 
-    def test_cross_tenant_find_tool_returns_none(
-        self, fresh_registry: FederationRegistry
-    ) -> None:
+    def test_cross_tenant_find_tool_returns_none(self, fresh_registry: FederationRegistry) -> None:
         fresh_registry.register_server(
             tenant_id="t1",
             name="srv",
@@ -586,9 +585,7 @@ class TestFederationEndpoints:
         assert r2.json()["server"]["status"] == "deleted"
 
     def test_list_remote_tools_endpoint(self, client, auth_headers) -> None:
-        self._register_server(
-            client, auth_headers, name="srv-a", tools=["tool1", "tool2"]
-        )
+        self._register_server(client, auth_headers, name="srv-a", tools=["tool1", "tool2"])
         self._register_server(
             client,
             auth_headers,
@@ -617,9 +614,7 @@ class TestFederationEndpoints:
         assert body["server_id"] == srv["id"]
         assert body["result"] == {"hits": [{"id": "h1"}]}
 
-    def test_invoke_remote_tool_returns_404_for_unknown(
-        self, client, auth_headers
-    ) -> None:
+    def test_invoke_remote_tool_returns_404_for_unknown(self, client, auth_headers) -> None:
         r = client.post(
             "/api/v1/mcp/federation/tools/nope/invoke",
             json={"arguments": {}},

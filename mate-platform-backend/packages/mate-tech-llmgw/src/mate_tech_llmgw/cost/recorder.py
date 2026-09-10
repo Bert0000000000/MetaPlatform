@@ -10,6 +10,7 @@ Usage:
     async with CostRecorder(pg_pool) as rec:
         await rec.record(model="gpt-4o", usage={"prompt_tokens": 100, "completion_tokens": 50})
 """
+
 from __future__ import annotations
 
 import os
@@ -82,9 +83,7 @@ def estimate_cost_cached(
     price = get_pricing().get(model)
     if price is None:
         return 0.0
-    return round(
-        price.cost_cached(cached_prompt_tokens, prompt_tokens, completion_tokens), 6
-    )
+    return round(price.cost_cached(cached_prompt_tokens, prompt_tokens, completion_tokens), 6)
 
 
 class CostRecorder:
@@ -252,9 +251,7 @@ class CostRecorder:
         total_cost = sum(r.cost_usd for r in tenant_records)
         by_model: dict[str, dict[str, Any]] = {}
         for r in tenant_records:
-            entry = by_model.setdefault(
-                r.model, {"tokens": 0, "cost": 0.0, "calls": 0}
-            )
+            entry = by_model.setdefault(r.model, {"tokens": 0, "cost": 0.0, "calls": 0})
             entry["tokens"] += r.prompt_tokens + r.completion_tokens
             entry["cost"] = round(entry["cost"] + r.cost_usd, 6)
             entry["calls"] += 1

@@ -39,6 +39,7 @@ double-check the tenant — the guard is the source of truth.
 Write handlers emit `data.<aggregate>.<verb>` outbox events via
 `app.state.outbox_writer` (ADR-0014 step 3).
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -103,9 +104,7 @@ def _emit(
     tenant_id: str,
 ) -> None:
     """Append an outbox event if a writer is configured (no-op otherwise)."""
-    writer: InMemoryOutboxWriter | None = getattr(
-        request.app.state, "outbox_writer", None
-    )
+    writer: InMemoryOutboxWriter | None = getattr(request.app.state, "outbox_writer", None)
     if writer is None:
         return
     writer.append(
@@ -227,7 +226,8 @@ async def list_cdc_tasks_endpoint(
 
 @router.post("/cdc-tasks")
 async def create_cdc_task_endpoint(
-    request: Request, body: CdcTaskCreate,
+    request: Request,
+    body: CdcTaskCreate,
 ) -> dict[str, Any]:
     """Create a CDC task (FR-DATA-DATAPOSTDATACDCTASKS)."""
     tid = _tid(request)
@@ -250,7 +250,8 @@ async def create_cdc_task_endpoint(
 
 @router.get("/cdc-tasks/{task_id}")
 async def get_cdc_task_endpoint(
-    request: Request, task_id: str,
+    request: Request,
+    task_id: str,
 ) -> dict[str, Any]:
     """Get a CDC task by id (FR-DATA-DATAGETDATACDCTASKSID)."""
     tid = _tid(request)
@@ -262,7 +263,9 @@ async def get_cdc_task_endpoint(
 
 @router.put("/cdc-tasks/{task_id}")
 async def update_cdc_task_endpoint(
-    request: Request, task_id: str, body: CdcTaskUpdate,
+    request: Request,
+    task_id: str,
+    body: CdcTaskUpdate,
 ) -> dict[str, Any]:
     """Update a CDC task (FR-DATA-DATAPUTDATACDCTASKSID)."""
     tid = _tid(request)
@@ -288,7 +291,8 @@ async def update_cdc_task_endpoint(
 
 @router.delete("/cdc-tasks/{task_id}")
 async def delete_cdc_task_endpoint(
-    request: Request, task_id: str,
+    request: Request,
+    task_id: str,
 ) -> dict[str, Any]:
     """Delete a CDC task (FR-DATA-DATADELETEDATACDCTASKSID)."""
     tid = _tid(request)
@@ -307,7 +311,8 @@ async def delete_cdc_task_endpoint(
 
 @router.post("/cdc-tasks/{task_id}/pause")
 async def pause_cdc_task_endpoint(
-    request: Request, task_id: str,
+    request: Request,
+    task_id: str,
 ) -> dict[str, Any]:
     """Pause a CDC task (FR-DATA-DATAPOSTDATACDCTASKSIDPAUSE)."""
     tid = _tid(request)
@@ -326,7 +331,8 @@ async def pause_cdc_task_endpoint(
 
 @router.post("/cdc-tasks/{task_id}/resume")
 async def resume_cdc_task_endpoint(
-    request: Request, task_id: str,
+    request: Request,
+    task_id: str,
 ) -> dict[str, Any]:
     """Resume a CDC task (FR-DATA-DATAPOSTDATACDCTASKSIDRESUME)."""
     tid = _tid(request)
@@ -345,7 +351,8 @@ async def resume_cdc_task_endpoint(
 
 @router.get("/cdc-tasks/{task_id}/status")
 async def cdc_task_status_endpoint(
-    request: Request, task_id: str,
+    request: Request,
+    task_id: str,
 ) -> dict[str, Any]:
     """Get CDC task status (FR-DATA-DATAGETDATACDCTASKSIDSTATUS)."""
     tid = _tid(request)
@@ -374,7 +381,8 @@ async def list_sources_endpoint(
 
 @router.post("/sources")
 async def create_source_endpoint(
-    request: Request, body: SourceCreate,
+    request: Request,
+    body: SourceCreate,
 ) -> dict[str, Any]:
     """Create a data source (FR-DATA-DATAPOSTDATASOURCES)."""
     tid = _tid(request)
@@ -396,7 +404,8 @@ async def create_source_endpoint(
 
 @router.get("/sources/{source_id}")
 async def get_source_endpoint(
-    request: Request, source_id: str,
+    request: Request,
+    source_id: str,
 ) -> dict[str, Any]:
     """Get a data source by id (FR-DATA-DATAGETDATASOURCESID)."""
     tid = _tid(request)
@@ -408,7 +417,9 @@ async def get_source_endpoint(
 
 @router.put("/sources/{source_id}")
 async def update_source_endpoint(
-    request: Request, source_id: str, body: SourceUpdate,
+    request: Request,
+    source_id: str,
+    body: SourceUpdate,
 ) -> dict[str, Any]:
     """Update a data source (FR-DATA-DATAPUTDATASOURCESID)."""
     tid = _tid(request)
@@ -433,7 +444,8 @@ async def update_source_endpoint(
 
 @router.delete("/sources/{source_id}")
 async def delete_source_endpoint(
-    request: Request, source_id: str,
+    request: Request,
+    source_id: str,
 ) -> dict[str, Any]:
     """Delete a data source (FR-DATA-DATADELETEDATASOURCESID)."""
     tid = _tid(request)
@@ -452,7 +464,8 @@ async def delete_source_endpoint(
 
 @router.get("/sources/{source_id}/schema")
 async def source_schema_endpoint(
-    request: Request, source_id: str,
+    request: Request,
+    source_id: str,
 ) -> dict[str, Any]:
     """Discover schema for a data source (FR-DATA-DATAGETDATASOURCESIDSCHEMA)."""
     tid = _tid(request)
@@ -464,7 +477,8 @@ async def source_schema_endpoint(
 
 @router.post("/sources/{source_id}/test")
 async def test_source_endpoint(
-    request: Request, source_id: str,
+    request: Request,
+    source_id: str,
 ) -> dict[str, Any]:
     """Test a data source connection (FR-DATA-DATAPOSTDATASOURCESIDTEST)."""
     tid = _tid(request)
@@ -504,7 +518,8 @@ async def list_data_products_endpoint(
 
 @router.post("/products")
 async def create_data_product_endpoint(
-    request: Request, body: DataProductCreate,
+    request: Request,
+    body: DataProductCreate,
 ) -> dict[str, Any]:
     """Create a data product (FR-DATA-DATAPOSTDATAPRODUCTS)."""
     tid = _tid(request)
@@ -536,7 +551,8 @@ async def create_data_product_endpoint(
 
 @router.get("/products/{product_id}")
 async def get_data_product_endpoint(
-    request: Request, product_id: str,
+    request: Request,
+    product_id: str,
 ) -> dict[str, Any]:
     """Get a data product by id (FR-DATA-DATAGETDATAPRODUCTSID)."""
     tid = _tid(request)
@@ -548,7 +564,9 @@ async def get_data_product_endpoint(
 
 @router.put("/products/{product_id}")
 async def update_data_product_endpoint(
-    request: Request, product_id: str, body: DataProductUpdate,
+    request: Request,
+    product_id: str,
+    body: DataProductUpdate,
 ) -> dict[str, Any]:
     """Update a data product (FR-DATA-DATAPUTDATAPRODUCTSID).
 
@@ -587,7 +605,8 @@ async def update_data_product_endpoint(
 
 @router.delete("/products/{product_id}")
 async def delete_data_product_endpoint(
-    request: Request, product_id: str,
+    request: Request,
+    product_id: str,
 ) -> dict[str, Any]:
     """Delete a data product (FR-DATA-DATADELETEDATAPRODUCTSID)."""
     tid = _tid(request)
@@ -606,7 +625,8 @@ async def delete_data_product_endpoint(
 
 @router.post("/products/{product_id}/publish")
 async def publish_data_product_endpoint(
-    request: Request, product_id: str,
+    request: Request,
+    product_id: str,
 ) -> dict[str, Any]:
     """Publish a data product (FR-DATA-DATAPOSTDATAPRODUCTSIDPUBLISH).
 
@@ -614,7 +634,10 @@ async def publish_data_product_endpoint(
     """
     tid = _tid(request)
     product = set_data_product_status(
-        tid, product_id, "published", bump_version=True,
+        tid,
+        product_id,
+        "published",
+        bump_version=True,
     )
     if product is None:
         raise HTTPException(status_code=404, detail="data product not found")
@@ -638,7 +661,8 @@ async def publish_data_product_endpoint(
 
 @router.post("/products/{product_id}/certify")
 async def certify_data_product_endpoint(
-    request: Request, product_id: str,
+    request: Request,
+    product_id: str,
 ) -> dict[str, Any]:
     """Certify a data product (FR-DATA-DATAPOSTDATAPRODUCTSIDCERTIFY).
 
@@ -655,7 +679,10 @@ async def certify_data_product_endpoint(
             detail="data product has no owner; certification requires owner",
         )
     product = set_data_product_status(
-        tid, product_id, "certified", require_owner=True,
+        tid,
+        product_id,
+        "certified",
+        require_owner=True,
     )
     if product is None:
         raise HTTPException(status_code=404, detail="data product not found")
@@ -679,7 +706,8 @@ async def certify_data_product_endpoint(
 
 @router.post("/products/{product_id}/suspend")
 async def suspend_data_product_endpoint(
-    request: Request, product_id: str,
+    request: Request,
+    product_id: str,
 ) -> dict[str, Any]:
     """Suspend a data product (FR-DATA-DATAPOSTDATAPRODUCTSIDSUSPEND).
 
@@ -708,7 +736,8 @@ async def suspend_data_product_endpoint(
 
 @router.get("/products/{product_id}/versions")
 async def data_product_versions_endpoint(
-    request: Request, product_id: str,
+    request: Request,
+    product_id: str,
 ) -> dict[str, Any]:
     """List past versions of a data product (FR-DATA-DATAGETDATAPRODUCTSIDVERSIONS).
 
@@ -741,17 +770,23 @@ async def create_lineage_edge_endpoint(request: Request, body: dict) -> dict:
     target_entity = str(body.get("target_entity") or "")
     if not source_entity or not target_entity:
         raise HTTPException(status_code=422, detail="source_entity/target_entity required")
-    edge = create_lineage_edge(tid, source_entity, target_entity,
-                               str(body.get("edge_type") or "derived_from"))
-    _emit(request, "data.lineage.edge.created", edge.id,
-          {"edge_id": edge.id, "source_entity": source_entity,
-           "target_entity": target_entity}, tid)
+    edge = create_lineage_edge(
+        tid, source_entity, target_entity, str(body.get("edge_type") or "derived_from")
+    )
+    _emit(
+        request,
+        "data.lineage.edge.created",
+        edge.id,
+        {"edge_id": edge.id, "source_entity": source_entity, "target_entity": target_entity},
+        tid,
+    )
     return _asdict(edge)
 
 
 @router.get("/lineage/graph")
-async def lineage_graph_endpoint(request: Request,
-                                 entity: str | None = Query(default=None)) -> dict:
+async def lineage_graph_endpoint(
+    request: Request, entity: str | None = Query(default=None)
+) -> dict:
     """返回 {nodes, edges} 依赖图；entity 给定时只保留相连子图（DATA-D6）。"""
     tid = _tid(request)
     return lineage_graph(tid, entity)
@@ -768,17 +803,21 @@ async def create_quality_rule_endpoint(request: Request, body: dict) -> dict:
         raise HTTPException(status_code=422, detail="rule_type must be required|type")
     if not entity_id or not field:
         raise HTTPException(status_code=422, detail="entity_id/field required")
-    rule = create_quality_rule(tid, entity_id, field, rule_type,
-                               body.get("params") or {})
-    _emit(request, "data.quality.rule.created", rule.id,
-          {"rule_id": rule.id, "entity_id": entity_id,
-           "field": field, "rule_type": rule_type}, tid)
+    rule = create_quality_rule(tid, entity_id, field, rule_type, body.get("params") or {})
+    _emit(
+        request,
+        "data.quality.rule.created",
+        rule.id,
+        {"rule_id": rule.id, "entity_id": entity_id, "field": field, "rule_type": rule_type},
+        tid,
+    )
     return _asdict(rule)
 
 
 @router.get("/quality/rules")
-async def list_quality_rules_endpoint(request: Request,
-                                      entity_id: str | None = Query(default=None)) -> dict:
+async def list_quality_rules_endpoint(
+    request: Request, entity_id: str | None = Query(default=None)
+) -> dict:
     tid = _tid(request)
     rules = list_quality_rules(tid, entity_id)
     return {"items": [_asdict(r) for r in rules], "total": len(rules)}
@@ -790,15 +829,24 @@ async def run_quality_endpoint(request: Request, body: dict | None = None) -> di
     tid = _tid(request)
     summary = run_quality_rules(tid)
     summary["results"] = [_asdict(r) for r in summary["results"]]
-    _emit(request, "data.quality.run.completed", f"{tid}",
-          {"rules_executed": summary["rules_executed"],
-           "passed": summary["passed"], "failed": summary["failed"]}, tid)
+    _emit(
+        request,
+        "data.quality.run.completed",
+        f"{tid}",
+        {
+            "rules_executed": summary["rules_executed"],
+            "passed": summary["passed"],
+            "failed": summary["failed"],
+        },
+        tid,
+    )
     return summary
 
 
 @router.get("/quality/results")
-async def list_quality_results_endpoint(request: Request,
-                                        limit: int = Query(default=50, le=200)) -> dict:
+async def list_quality_results_endpoint(
+    request: Request, limit: int = Query(default=50, le=200)
+) -> dict:
     tid = _tid(request)
     results = list_quality_results(tid, limit)
     return {"items": [_asdict(r) for r in results], "total": len(results)}

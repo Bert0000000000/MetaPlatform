@@ -19,6 +19,7 @@ Revision ID: 0007_outbox_event
 Revises: 0006_business_domains
 Create Date: 2026-08-01
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -63,18 +64,10 @@ def upgrade() -> None:
     )
 
     # Single-column indexes (named per task spec for deterministic DDL)
-    op.create_index(
-        "ix_outbox_event_tenant_id", "outbox_event", ["tenant_id"]
-    )
-    op.create_index(
-        "ix_outbox_event_event_type", "outbox_event", ["event_type"]
-    )
-    op.create_index(
-        "ix_outbox_event_created_at", "outbox_event", ["created_at"]
-    )
-    op.create_index(
-        "ix_outbox_event_status", "outbox_event", ["status"]
-    )
+    op.create_index("ix_outbox_event_tenant_id", "outbox_event", ["tenant_id"])
+    op.create_index("ix_outbox_event_event_type", "outbox_event", ["event_type"])
+    op.create_index("ix_outbox_event_created_at", "outbox_event", ["created_at"])
+    op.create_index("ix_outbox_event_status", "outbox_event", ["status"])
     # Composite index: relay queries ``WHERE tenant_id=? AND status='pending'``
     op.create_index(
         "ix_outbox_event_tenant_status",

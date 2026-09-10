@@ -3,6 +3,7 @@
 Covers: each of the 5 endpoints, the `days` query param, cross-tenant
 isolation, require_tenant guard (no tenant -> 400), and auth enforcement.
 """
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
@@ -23,7 +24,13 @@ class TestOverview:
         r = client.get("/api/v1/analytics/overview", headers=auth_headers)
         assert r.status_code == 200, r.text
         body = r.json()
-        assert {"total_users", "total_apps", "total_requests", "active_tenants", "period_days"} <= set(body)
+        assert {
+            "total_users",
+            "total_apps",
+            "total_requests",
+            "active_tenants",
+            "period_days",
+        } <= set(body)
         for key in ("total_users", "total_apps", "total_requests", "active_tenants", "period_days"):
             assert isinstance(body[key], int)
 
@@ -53,8 +60,13 @@ class TestOverview:
         self, client: TestClient, auth_headers: dict[str, str]
     ) -> None:
         # ge=1 / le=30 -> 0 and 31 must be rejected with 422.
-        assert client.get("/api/v1/analytics/overview?days=0", headers=auth_headers).status_code == 422
-        assert client.get("/api/v1/analytics/overview?days=31", headers=auth_headers).status_code == 422
+        assert (
+            client.get("/api/v1/analytics/overview?days=0", headers=auth_headers).status_code == 422
+        )
+        assert (
+            client.get("/api/v1/analytics/overview?days=31", headers=auth_headers).status_code
+            == 422
+        )
 
 
 class TestUsage:
@@ -92,9 +104,7 @@ class TestUsage:
 
 
 class TestUsers:
-    def test_get_users_returns_dau(
-        self, client: TestClient, auth_headers: dict[str, str]
-    ) -> None:
+    def test_get_users_returns_dau(self, client: TestClient, auth_headers: dict[str, str]) -> None:
         r = client.get("/api/v1/analytics/users", headers=auth_headers)
         assert r.status_code == 200, r.text
         body = r.json()
@@ -102,9 +112,7 @@ class TestUsers:
         assert len(body["points"]) == 7  # default 7 days
         assert {"date", "dau", "new_users"} <= set(body["points"][0])
 
-    def test_get_users_returns_mau(
-        self, client: TestClient, auth_headers: dict[str, str]
-    ) -> None:
+    def test_get_users_returns_mau(self, client: TestClient, auth_headers: dict[str, str]) -> None:
         r = client.get("/api/v1/analytics/users", headers=auth_headers)
         body = r.json()
         assert isinstance(body["mau"], int)
@@ -152,9 +160,7 @@ class TestTrends:
         assert first["requests"] > 0
         assert first["storage_gb"] >= 0.0
 
-    def test_get_trends_period_days(
-        self, client: TestClient, auth_headers: dict[str, str]
-    ) -> None:
+    def test_get_trends_period_days(self, client: TestClient, auth_headers: dict[str, str]) -> None:
         for d in (1, 7, 30):
             r = client.get(f"/api/v1/analytics/trends?days={d}", headers=auth_headers)
             body = r.json()
@@ -177,7 +183,9 @@ class TestTenantGuard:
         r = client.get("/api/v1/analytics/overview", headers=no_tenant_headers)
         assert r.status_code == 400, r.text
         body = r.json()
-        assert body.get("code") == "E_TENANT_REQUIRED" or body.get("error") == "TENANT_ACCESS_DENIED"
+        assert (
+            body.get("code") == "E_TENANT_REQUIRED" or body.get("error") == "TENANT_ACCESS_DENIED"
+        )
 
     def test_all_endpoints_require_tenant(
         self, client: TestClient, no_tenant_headers: dict[str, str]
@@ -188,9 +196,7 @@ class TestTenantGuard:
 
 
 class TestAuth:
-    def test_all_endpoints_have_auth_headers(
-        self, client: TestClient
-    ) -> None:
+    def test_all_endpoints_have_auth_headers(self, client: TestClient) -> None:
         # No Authorization header at all -> middleware rejects with 401.
         for ep in ENDPOINTS:
             r = client.get(ep)

@@ -15,6 +15,7 @@ A fiber whose apply raised stays FAILED until an explicit ``reload()``
 or a target change — the loop never retries a failed load against the
 same target.
 """
+
 # Context and Fiber are cooperating kernel classes: their underscore
 # hooks are the kernel-internal protocol between the two.
 # pyright: reportPrivateUsage=false
@@ -57,9 +58,7 @@ class Component:
     def __post_init__(self) -> None:
         overlap = self.inject & self.provide
         if overlap:
-            raise ValueError(
-                f"component {self.name!r} injects its own keys: {sorted(overlap)}"
-            )
+            raise ValueError(f"component {self.name!r} injects its own keys: {sorted(overlap)}")
 
 
 class Fiber:
@@ -114,10 +113,7 @@ class Fiber:
             if self._loaded_for is None:
                 if desired is None:
                     return  # inactive: awaiting satisfaction
-                if (
-                    self.state is FiberState.FAILED
-                    and desired == self._failed_for
-                ):
+                if self.state is FiberState.FAILED and desired == self._failed_for:
                     return  # already failed against this exact target
                 await self._load(desired)
             else:

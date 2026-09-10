@@ -32,6 +32,7 @@ PG_DSN = os.getenv("PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform
 def _pg_available() -> bool:
     try:
         import psycopg2  # type: ignore
+
         conn = psycopg2.connect(PG_DSN, connect_timeout=2)
         conn.close()
         return True
@@ -48,6 +49,7 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture
 def repo() -> object:
     from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+
     return PgOntologyRepository(dsn=PG_DSN)
 
 
@@ -56,6 +58,7 @@ def _clean_pg(repo) -> None:
     """每个测试前清表：先确保 schema 存在再 DELETE。"""
     repo._ensure_schema()
     import psycopg2  # type: ignore
+
     conn = psycopg2.connect(PG_DSN)
     try:
         with conn.cursor() as cur:
@@ -145,12 +148,7 @@ def test_evaluate_object_set_runs_real_pg_filter(repo) -> None:
         paging_limit=100,
     )
     results = repo.evaluate_object_set(os_)
-    qtys = sorted(
-        v
-        for ind in results
-        for k, v in ind.props
-        if k.rid == "ont.acme.prop.po-qty.v1"
-    )
+    qtys = sorted(v for ind in results for k, v in ind.props if k.rid == "ont.acme.prop.po-qty.v1")
     assert qtys == [15, 20, 25], f"got {qtys}"
 
 

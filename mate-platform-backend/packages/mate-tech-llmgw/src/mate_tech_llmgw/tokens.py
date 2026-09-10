@@ -4,6 +4,7 @@
 estimated-token site (quota, budgets, api-key limits). One day this can
 grow a tiktoken-backed mode; the call sites won't change.
 """
+
 from __future__ import annotations
 
 from typing import Any

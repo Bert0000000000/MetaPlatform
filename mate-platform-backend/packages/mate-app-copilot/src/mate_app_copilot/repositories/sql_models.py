@@ -8,6 +8,7 @@ v3.2 proof-of-concept: implements 5 of the 10 tables (Conversation,
 QueryLog, Plan, Intent, Action). The remaining 5 follow the same
 pattern and will be added incrementally.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -34,7 +35,10 @@ class OutboxEventORM(Base):
     occurred_at: Mapped[str] = mapped_column(String(64), nullable=False)
     trace_id: Mapped[str] = mapped_column(String(128), nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), index=True,
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        index=True,
     )
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     retry_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

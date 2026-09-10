@@ -1,4 +1,5 @@
 """mate-app-kb tests (business aggregation facade)."""
+
 from __future__ import annotations
 
 import sys

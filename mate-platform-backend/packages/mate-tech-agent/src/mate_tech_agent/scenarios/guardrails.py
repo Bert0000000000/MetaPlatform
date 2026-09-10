@@ -2,6 +2,7 @@
 
 输入检查（prompt injection）+ 输出检查（PII）。
 """
+
 from __future__ import annotations
 
 import re

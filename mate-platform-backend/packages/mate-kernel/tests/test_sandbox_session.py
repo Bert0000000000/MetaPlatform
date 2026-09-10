@@ -91,6 +91,7 @@ class TestToken:
         )
         # 构造过期 token
         from mate_kernel.sandbox.session import SessionToken
+
         expired = SessionToken(
             token="x",
             session_id=s.session_id,

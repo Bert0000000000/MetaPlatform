@@ -5,6 +5,7 @@ skills are discoverable by any tenant; a tenant's private skills are
 visible only to the owning tenant. Storage is SQL (``skillhub_skills``)
 with an in-memory fallback when no DSN is configured (dev/test).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -68,7 +69,11 @@ class _MemoryStore:
         return skill
 
     def list(self, tenant_id: str) -> list[Skill]:
-        return [s for s in self._rows.values() if s.visibility == "public" or s.author_tenant == tenant_id]
+        return [
+            s
+            for s in self._rows.values()
+            if s.visibility == "public" or s.author_tenant == tenant_id
+        ]
 
     def get(self, skill_id: str) -> Skill | None:
         return self._rows.get(skill_id)
@@ -77,9 +82,15 @@ class _MemoryStore:
         if skill_id in self._rows:
             s = self._rows[skill_id]
             self._rows[skill_id] = Skill(
-                id=s.id, name=s.name, description=s.description, version=s.version,
-                author_tenant=s.author_tenant, visibility=s.visibility,
-                content=s.content, installs=count, created_at=s.created_at,
+                id=s.id,
+                name=s.name,
+                description=s.description,
+                version=s.version,
+                author_tenant=s.author_tenant,
+                visibility=s.visibility,
+                content=s.content,
+                installs=count,
+                created_at=s.created_at,
             )
 
     def record_install(self, tenant_id: str, skill_id: str) -> None:
@@ -114,10 +125,15 @@ class SkillHubStore:
             return self._mem.create(skill)
         with self._session() as session:
             orm = SkillORM(
-                id=skill.id, name=skill.name, description=skill.description,
-                version=skill.version, author_tenant=skill.author_tenant,
-                visibility=skill.visibility, content=skill.content,
-                installs=skill.installs, created_at=skill.created_at,
+                id=skill.id,
+                name=skill.name,
+                description=skill.description,
+                version=skill.version,
+                author_tenant=skill.author_tenant,
+                visibility=skill.visibility,
+                content=skill.content,
+                installs=skill.installs,
+                created_at=skill.created_at,
             )
             session.merge(orm)
             session.commit()
@@ -127,11 +143,15 @@ class SkillHubStore:
         if not self._use_sql():
             return self._mem.list(tenant_id)
         with self._session() as session:
-            rows = session.execute(
-                select(SkillORM).where(
-                    (SkillORM.visibility == "public") | (SkillORM.author_tenant == tenant_id)
+            rows = (
+                session.execute(
+                    select(SkillORM).where(
+                        (SkillORM.visibility == "public") | (SkillORM.author_tenant == tenant_id)
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
         return [self._row(s) for s in rows]
 
     def get(self, skill_id: str) -> Skill | None:
@@ -181,9 +201,13 @@ class SkillHubStore:
         if not self._use_sql():
             return self._mem.installed_skill_ids(tenant_id)
         with self._session() as session:
-            rows = session.execute(
-                select(SkillInstallORM.skill_id).where(SkillInstallORM.tenant_id == tenant_id)
-            ).scalars().all()
+            rows = (
+                session.execute(
+                    select(SkillInstallORM.skill_id).where(SkillInstallORM.tenant_id == tenant_id)
+                )
+                .scalars()
+                .all()
+            )
         return set(rows)
 
     def is_installed(self, tenant_id: str, skill_id: str) -> bool:
@@ -200,8 +224,16 @@ class SkillHubStore:
             session.commit()
         return True
 
-    def update(self, skill_id: str, *, name: str | None = None, description: str | None = None,
-               version: str | None = None, visibility: str | None = None, content: str | None = None) -> Skill | None:
+    def update(
+        self,
+        skill_id: str,
+        *,
+        name: str | None = None,
+        description: str | None = None,
+        version: str | None = None,
+        visibility: str | None = None,
+        content: str | None = None,
+    ) -> Skill | None:
         """Update an existing skill; returns the updated skill or None."""
         existing = self.get(skill_id)
         if existing is None:
@@ -259,10 +291,15 @@ class SkillHubStore:
     @staticmethod
     def _row(orm: Any) -> Skill:
         return Skill(
-            id=orm.id, name=orm.name, description=orm.description,
-            version=orm.version, author_tenant=orm.author_tenant,
-            visibility=orm.visibility, content=orm.content,
-            installs=orm.installs, created_at=orm.created_at,
+            id=orm.id,
+            name=orm.name,
+            description=orm.description,
+            version=orm.version,
+            author_tenant=orm.author_tenant,
+            visibility=orm.visibility,
+            content=orm.content,
+            installs=orm.installs,
+            created_at=orm.created_at,
         )
 
 

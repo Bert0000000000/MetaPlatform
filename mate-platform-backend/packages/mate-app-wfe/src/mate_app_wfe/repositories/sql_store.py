@@ -8,6 +8,7 @@ JSON-serialised to TEXT.
 The ``validate_bpmn`` structural check stays in ``in_memory`` because it
 is a pure function that does not touch persistence.
 """
+
 from __future__ import annotations
 
 import json
@@ -134,11 +135,15 @@ def list_flows(tenant_id: str) -> list[FlowDefinition]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.FlowDefinitionORM)
-        .where(models.FlowDefinitionORM.tenant_id == tenant_id)
-        .order_by(models.FlowDefinitionORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.FlowDefinitionORM)
+            .where(models.FlowDefinitionORM.tenant_id == tenant_id)
+            .order_by(models.FlowDefinitionORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_flow_definition(r) for r in rows]
 
 
@@ -162,11 +167,15 @@ def list_validations(tenant_id: str) -> list[FlowValidation]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.FlowValidationORM)
-        .where(models.FlowValidationORM.tenant_id == tenant_id)
-        .order_by(models.FlowValidationORM.validated_at)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.FlowValidationORM)
+            .where(models.FlowValidationORM.tenant_id == tenant_id)
+            .order_by(models.FlowValidationORM.validated_at)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_flow_validation(r) for r in rows]
 
 
@@ -190,11 +199,15 @@ def list_test_runs(tenant_id: str) -> list[FlowTestRun]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.FlowTestRunORM)
-        .where(models.FlowTestRunORM.tenant_id == tenant_id)
-        .order_by(models.FlowTestRunORM.started_at)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.FlowTestRunORM)
+            .where(models.FlowTestRunORM.tenant_id == tenant_id)
+            .order_by(models.FlowTestRunORM.started_at)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_flow_test_run(r) for r in rows]
 
 
@@ -225,10 +238,16 @@ def put_flow(tenant_id: str, flow: FlowDefinition) -> FlowDefinition:
         existing.version = flow.version
         existing.status = flow.status
     else:
-        s.add(models.FlowDefinitionORM(
-            id=flow.id, tenant_id=tenant_id, name=flow.name,
-            bpmn_xml=flow.bpmn_xml, version=flow.version, status=flow.status,
-        ))
+        s.add(
+            models.FlowDefinitionORM(
+                id=flow.id,
+                tenant_id=tenant_id,
+                name=flow.name,
+                bpmn_xml=flow.bpmn_xml,
+                version=flow.version,
+                status=flow.status,
+            )
+        )
     s.commit()
     return flow
 
@@ -239,12 +258,16 @@ def put_flow(tenant_id: str, flow: FlowDefinition) -> FlowDefinition:
 def get_workflow_definition(tenant_id: str, definition_id: str) -> WorkflowDefinition | None:
     if not tenant_id:
         return None
-    row = _session().execute(
-        select(models.WorkflowDefinitionORM).where(
-            models.WorkflowDefinitionORM.tenant_id == tenant_id,
-            models.WorkflowDefinitionORM.id == definition_id,
+    row = (
+        _session()
+        .execute(
+            select(models.WorkflowDefinitionORM).where(
+                models.WorkflowDefinitionORM.tenant_id == tenant_id,
+                models.WorkflowDefinitionORM.id == definition_id,
+            )
         )
-    ).scalar_one_or_none()
+        .scalar_one_or_none()
+    )
     return _orm_to_workflow_definition(row) if row else None
 
 
@@ -288,7 +311,10 @@ def save_workflow_definition(
 
 
 def publish_workflow_definition(
-    tenant_id: str, definition_id: str, *, actor_id: str,
+    tenant_id: str,
+    definition_id: str,
+    *,
+    actor_id: str,
 ) -> tuple[WorkflowDefinition, WorkflowDefinitionRevision]:
     import time
 
@@ -327,7 +353,8 @@ def publish_workflow_definition(
 
 
 def resolve_published_workflow_definition(
-    tenant_id: str, definition_id: str,
+    tenant_id: str,
+    definition_id: str,
 ) -> WorkflowDefinitionRevision | None:
     session = _session()
     definition = session.execute(
@@ -363,10 +390,16 @@ def put_validation(tenant_id: str, val: FlowValidation) -> FlowValidation:
         existing.issues = issues_str
         existing.validated_at = val.validated_at
     else:
-        s.add(models.FlowValidationORM(
-            id=val.id, tenant_id=tenant_id, flow_id=val.flow_id,
-            valid=val.valid, issues=issues_str, validated_at=val.validated_at,
-        ))
+        s.add(
+            models.FlowValidationORM(
+                id=val.id,
+                tenant_id=tenant_id,
+                flow_id=val.flow_id,
+                valid=val.valid,
+                issues=issues_str,
+                validated_at=val.validated_at,
+            )
+        )
     s.commit()
     return val
 
@@ -388,12 +421,18 @@ def put_test_run(tenant_id: str, run: FlowTestRun) -> FlowTestRun:
         existing.duration_ms = run.duration_ms
         existing.output = output_str
     else:
-        s.add(models.FlowTestRunORM(
-            id=run.id, tenant_id=tenant_id, flow_id=run.flow_id,
-            status=run.status, started_at=run.started_at,
-            finished_at=run.finished_at, duration_ms=run.duration_ms,
-            output=output_str,
-        ))
+        s.add(
+            models.FlowTestRunORM(
+                id=run.id,
+                tenant_id=tenant_id,
+                flow_id=run.flow_id,
+                status=run.status,
+                started_at=run.started_at,
+                finished_at=run.finished_at,
+                duration_ms=run.duration_ms,
+                output=output_str,
+            )
+        )
     s.commit()
     return run
 
@@ -409,13 +448,9 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     from . import in_memory as mem
 
     counts: dict[str, int] = {}
-    counts["flows"] = len(
-        [put_flow(tenant_id, f) for f in mem.list_flows(tenant_id)]
-    )
+    counts["flows"] = len([put_flow(tenant_id, f) for f in mem.list_flows(tenant_id)])
     counts["validations"] = len(
         [put_validation(tenant_id, v) for v in mem.list_validations(tenant_id)]
     )
-    counts["test_runs"] = len(
-        [put_test_run(tenant_id, r) for r in mem.list_test_runs(tenant_id)]
-    )
+    counts["test_runs"] = len([put_test_run(tenant_id, r) for r in mem.list_test_runs(tenant_id)])
     return counts

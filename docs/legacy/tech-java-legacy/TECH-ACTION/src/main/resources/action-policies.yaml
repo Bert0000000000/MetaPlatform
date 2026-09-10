@@ -6,10 +6,10 @@
 # =============================================================================
 
 defaultPolicy:
-  low: auto          # LOW 直接执行
-  medium: approval   # MEDIUM 默认需审批
-  high: approval     # HIGH 强制审批
-  critical: reject   # CRITICAL 默认拒绝
+  low: auto # LOW 直接执行
+  medium: approval # MEDIUM 默认需审批
+  high: approval # HIGH 强制审批
+  critical: reject # CRITICAL 默认拒绝
 
 # 显式覆盖（按 ActionCode 优先匹配）
 overrides:

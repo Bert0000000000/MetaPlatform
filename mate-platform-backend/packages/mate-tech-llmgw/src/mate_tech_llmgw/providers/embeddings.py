@@ -20,6 +20,7 @@ Embeddings API + 确定性 hash fallback) + ``LocalEmbeddingProvider``
 故在 ``scripts/ci/forbid_bare_httpx.py`` 的 EXCLUDE_FILES 中豁免，
 与 ``openai.py`` / ``doubao.py`` / ``real_openai_provider.py`` 同理。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -59,14 +60,11 @@ def _hash_embedding(text: str, dim: int = _DEFAULT_DIM) -> list[float]:
     blocks: list[bytes] = []
     counter = 0
     while len(blocks) * 32 < dim * 4:
-        blocks.append(
-            hashlib.sha256(f"{counter}:{text}".encode()).digest()
-        )
+        blocks.append(hashlib.sha256(f"{counter}:{text}".encode()).digest())
         counter += 1
     raw = b"".join(blocks)
     vals = [
-        int.from_bytes(raw[i * 4 : (i + 1) * 4], "big") / 0xFFFFFFFF * 2 - 1
-        for i in range(dim)
+        int.from_bytes(raw[i * 4 : (i + 1) * 4], "big") / 0xFFFFFFFF * 2 - 1 for i in range(dim)
     ]
     norm = math.sqrt(sum(v * v for v in vals)) or 1.0
     return [v / norm for v in vals]
@@ -126,9 +124,8 @@ class OpenAIEmbeddingProvider:
         self._base_url = base_url or os.getenv("OPENAI_BASE_URL", _OPENAI_BASE_URL)
         self._timeout = timeout
         self._dim = dim
-        self._allow_fallback = (
-            not is_production_profile()
-            and (True if allow_fallback is None else allow_fallback)
+        self._allow_fallback = not is_production_profile() and (
+            True if allow_fallback is None else allow_fallback
         )
         self._client: httpx.AsyncClient | None = None
 
@@ -178,9 +175,7 @@ class OpenAIEmbeddingProvider:
                 model=target_model,
             )
             if not self._fallback_enabled():
-                raise RuntimeError(
-                    "embedding provider unavailable: API key is not configured"
-                )
+                raise RuntimeError("embedding provider unavailable: API key is not configured")
             return EmbeddingResult(
                 embedding=_hash_embedding(text, self._dim),
                 model=target_model,
@@ -200,9 +195,7 @@ class OpenAIEmbeddingProvider:
                 model=target_model,
             )
             if not self._fallback_enabled():
-                raise RuntimeError(
-                    "embedding provider unavailable: request timed out"
-                ) from None
+                raise RuntimeError("embedding provider unavailable: request timed out") from None
             return EmbeddingResult(
                 embedding=_hash_embedding(text, self._dim),
                 model=target_model,
@@ -216,9 +209,7 @@ class OpenAIEmbeddingProvider:
                 error=str(e),
             )
             if not self._fallback_enabled():
-                raise RuntimeError(
-                    "embedding provider unavailable: upstream request failed"
-                ) from e
+                raise RuntimeError("embedding provider unavailable: upstream request failed") from e
             return EmbeddingResult(
                 embedding=_hash_embedding(text, self._dim),
                 model=target_model,
@@ -226,9 +217,7 @@ class OpenAIEmbeddingProvider:
             )
 
         try:
-            embedding: list[float] = [
-                float(x) for x in data["data"][0]["embedding"]
-            ]
+            embedding: list[float] = [float(x) for x in data["data"][0]["embedding"]]
         except (KeyError, IndexError, TypeError, ValueError) as e:
             logger.warning(
                 "llmgw.embedding.openai.bad_payload",

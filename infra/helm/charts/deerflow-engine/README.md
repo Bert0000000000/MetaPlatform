@@ -13,8 +13,8 @@ config) + NetworkPolicy (default-deny, hard rule 13).
 
 ## Maintainers
 
-| Name | Email |
-|------|-------|
+| Name                        | Email                       |
+| --------------------------- | --------------------------- |
 | MetaPlatform Platform Owner | platform@metaplatform.local |
 
 ## TL;DR
@@ -50,32 +50,32 @@ helm lint . -f values.yaml
 
 ## Values
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| fullnameOverride | string | `"deerflow-engine"` | Forces service DNS name |
-| image.registry | string | `"docker.io"` | Image registry |
-| image.repository | string | `"bytedance/deer-flow"` | Image repository |
-| image.tag | string | `"latest"` | Image tag |
-| image.pullPolicy | string | `"IfNotPresent"` | Image pull policy |
-| replicaCount | int | `1` | Number of replicas |
-| resources.requests.cpu | string | `"500m"` | CPU request |
-| resources.requests.memory | string | `"1Gi"` | Memory request |
-| resources.limits.cpu | string | `"1"` | CPU limit |
-| resources.limits.memory | string | `"2Gi"` | Memory limit |
-| autoScaling.enabled | bool | `false` | HPA toggle |
-| llm.baseUrl | string | `"https://api.openai.com/v1"` | LLM endpoint (non-secret) |
-| llm.model | string | `"gpt-4o"` | LLM model |
-| search.provider | string | `"tavily"` | Search provider |
-| secretRef.name | string | `"deerflow-engine-secret"` | Secret with LLM_API_KEY + SEARCH_API_KEY |
-| service.type | string | `"ClusterIP"` | Service type |
-| service.port | int | `8001` | HTTP port |
-| healthcheck.enabled | bool | `true` | Enable startup/readiness/liveness probes |
-| healthcheck.path | string | `"/healthz"` | Probe path |
-| healthcheck.port | int | `8001` | Probe port |
-| persistence.enabled | bool | `false` | PVC toggle (emptyDir when false) |
-| persistence.size | string | `"5Gi"` | PVC size |
-| networkPolicy.enabled | bool | `true` | Enable default-deny NetworkPolicy |
-| networkPolicy.allowedIngressNamespaces | list | `["metaplatform","api-gateway"]` | Namespaces allowed to reach 8001 |
+| Key                                    | Type   | Default                          | Description                              |
+| -------------------------------------- | ------ | -------------------------------- | ---------------------------------------- |
+| fullnameOverride                       | string | `"deerflow-engine"`              | Forces service DNS name                  |
+| image.registry                         | string | `"docker.io"`                    | Image registry                           |
+| image.repository                       | string | `"bytedance/deer-flow"`          | Image repository                         |
+| image.tag                              | string | `"latest"`                       | Image tag                                |
+| image.pullPolicy                       | string | `"IfNotPresent"`                 | Image pull policy                        |
+| replicaCount                           | int    | `1`                              | Number of replicas                       |
+| resources.requests.cpu                 | string | `"500m"`                         | CPU request                              |
+| resources.requests.memory              | string | `"1Gi"`                          | Memory request                           |
+| resources.limits.cpu                   | string | `"1"`                            | CPU limit                                |
+| resources.limits.memory                | string | `"2Gi"`                          | Memory limit                             |
+| autoScaling.enabled                    | bool   | `false`                          | HPA toggle                               |
+| llm.baseUrl                            | string | `"https://api.openai.com/v1"`    | LLM endpoint (non-secret)                |
+| llm.model                              | string | `"gpt-4o"`                       | LLM model                                |
+| search.provider                        | string | `"tavily"`                       | Search provider                          |
+| secretRef.name                         | string | `"deerflow-engine-secret"`       | Secret with LLM_API_KEY + SEARCH_API_KEY |
+| service.type                           | string | `"ClusterIP"`                    | Service type                             |
+| service.port                           | int    | `8001`                           | HTTP port                                |
+| healthcheck.enabled                    | bool   | `true`                           | Enable startup/readiness/liveness probes |
+| healthcheck.path                       | string | `"/healthz"`                     | Probe path                               |
+| healthcheck.port                       | int    | `8001`                           | Probe port                               |
+| persistence.enabled                    | bool   | `false`                          | PVC toggle (emptyDir when false)         |
+| persistence.size                       | string | `"5Gi"`                          | PVC size                                 |
+| networkPolicy.enabled                  | bool   | `true`                           | Enable default-deny NetworkPolicy        |
+| networkPolicy.allowedIngressNamespaces | list   | `["metaplatform","api-gateway"]` | Namespaces allowed to reach 8001         |
 
 ## Hard Rules Enforced
 
@@ -86,7 +86,7 @@ helm lint . -f values.yaml
   `SEARCH_API_KEY` are injected from a Secret (`secretRef.name`);
   no secret values are embedded in the chart.
 - **§13 rule 13** (NetworkPolicy default-deny): `policyTypes:
-  [Ingress, Egress]` with ingress restricted to `metaplatform` and
+[Ingress, Egress]` with ingress restricted to `metaplatform` and
   `api-gateway` namespaces on port 8001; egress restricted to DNS
   (kube-system:53) + HTTPS (:443) for external LLM/search providers.
 - **§13 rule 11** (helm-docs sync): This README is kept in sync

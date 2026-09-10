@@ -2,6 +2,7 @@
 
 production profile 下必须 SaaS 可达;dev/test 跳过。
 """
+
 from __future__ import annotations
 
 import pytest
@@ -18,9 +19,7 @@ def test_startup_fails_when_saas_unreachable(monkeypatch, production):
     monkeypatch.setattr(startup_guard, "_probe_saas", lambda url: False)
 
     with pytest.raises(RuntimeError, match="SaaS unreachable"):
-        startup_guard.assert_saas_reachable_or_exit(
-            "https://market.example"
-        )
+        startup_guard.assert_saas_reachable_or_exit("https://market.example")
 
 
 def test_startup_ok_when_saas_reachable(monkeypatch, production):

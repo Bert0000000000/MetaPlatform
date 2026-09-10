@@ -7,6 +7,7 @@ returns a deterministic synthetic response so callers and integration
 tests can assert on a stable shape without requiring a running API
 gateway.
 """
+
 from __future__ import annotations
 
 

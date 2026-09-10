@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g. v6.0.0)'
+        description: "Version tag (e.g. v6.0.0)"
         required: true
       dry_run:
-        description: 'Dry run (no actual deploy)'
+        description: "Dry run (no actual deploy)"
         required: false
-        default: 'true'
+        default: "true"
         type: boolean
 
 # 必须由 SRE Lead 手动触发（双重审批）

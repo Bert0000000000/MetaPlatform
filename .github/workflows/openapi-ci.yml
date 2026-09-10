@@ -20,11 +20,16 @@ on:
 jobs:
   lint-and-bundle:
     runs-on: ubuntu-latest
-    defaults: {run: {working-directory: mate-platform-backend/contracts}}
+    defaults: { run: { working-directory: mate-platform-backend/contracts } }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: {node-version: "22", cache: npm, cache-dependency-path: mate-platform-backend/contracts/package-lock.json}
+        with:
+          {
+            node-version: "22",
+            cache: npm,
+            cache-dependency-path: mate-platform-backend/contracts/package-lock.json,
+          }
       - run: npm ci
       - run: npm run check
       - name: Verify generated bundle is committed
@@ -33,11 +38,11 @@ jobs:
 
   traceability:
     runs-on: ubuntu-latest
-    defaults: {run: {working-directory: mate-platform-backend}}
+    defaults: { run: { working-directory: mate-platform-backend } }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: {python-version: "3.12"}
+        with: { python-version: "3.12" }
       - run: pip install pytest PyYAML
       - run: python contracts/scripts/validate_contracts.py
       - run: python contracts/scripts/validate_traceability.py
@@ -56,7 +61,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: {python-version: "3.12"}
+        with: { python-version: "3.12" }
       - name: Install backend deps
         run: |
           pip install -r mate-platform-backend/requirements.txt
@@ -74,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with: { fetch-depth: 0 }
       - name: Compare base and head with oasdiff
         shell: bash
         run: |

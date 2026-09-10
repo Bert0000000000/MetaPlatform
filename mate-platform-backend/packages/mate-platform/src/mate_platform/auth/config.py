@@ -5,6 +5,7 @@ works in dev, contract, integration, staging, and production. The
 production profile refuses to start if KEYCLOAK_URL is unset, per the
 hard-rule-5 no-local-fallback-in-production rule.
 """
+
 from __future__ import annotations
 
 import os

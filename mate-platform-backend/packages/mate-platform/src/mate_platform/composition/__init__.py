@@ -5,6 +5,7 @@ Programming Paradigm for Spatiotemporal Composability"): revertible
 effects + reactive coeffects + inertial fibers. Zero I/O, zero
 external dependencies. See ``docs/active/decisions/ADR-0042``.
 """
+
 from __future__ import annotations
 
 from .context import DEFAULT_REALM, ROOT_OWNER, Binding, Context, create_context

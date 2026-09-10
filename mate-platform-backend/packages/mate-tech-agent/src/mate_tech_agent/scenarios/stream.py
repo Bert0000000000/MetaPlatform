@@ -2,6 +2,7 @@
 
 `/api/v1/agent/chat/stream` 输出 token + tool_call + final 三类事件。
 """
+
 from __future__ import annotations
 
 import json
@@ -27,7 +28,10 @@ async def sse_stream(
         data: {"type": "final", "answer": "...", "metadata": {...}}\\n\\n
     """
     import time
+
     started_at = time.time()
     async for event in agent_stream_fn(user_input=user_input, session_id=session_id):
         yield "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
-    logger.info("agent.stream.completed", session=session_id, duration_ms=(time.time() - started_at) * 1000)
+    logger.info(
+        "agent.stream.completed", session=session_id, duration_ms=(time.time() - started_at) * 1000
+    )

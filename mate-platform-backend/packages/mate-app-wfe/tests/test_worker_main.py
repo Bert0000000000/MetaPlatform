@@ -1,4 +1,5 @@
 """Tests for the production Temporal worker composition root."""
+
 from __future__ import annotations
 
 import pytest

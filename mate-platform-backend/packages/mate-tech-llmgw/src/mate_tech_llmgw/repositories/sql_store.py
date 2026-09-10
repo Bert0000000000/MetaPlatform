@@ -3,6 +3,7 @@
 Provides read + write for ``LlmProvider``, ``LlmModel``, and ``LlmRouteRule``.
 Dict fields (``config``) are JSON-serialised to TEXT.
 """
+
 from __future__ import annotations
 
 import json
@@ -89,11 +90,15 @@ def list_providers(tenant_id: str) -> list[LlmProvider]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.LlmProviderORM)
-        .where(models.LlmProviderORM.tenant_id == tenant_id)
-        .order_by(models.LlmProviderORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.LlmProviderORM)
+            .where(models.LlmProviderORM.tenant_id == tenant_id)
+            .order_by(models.LlmProviderORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_provider(r) for r in rows]
 
 
@@ -117,11 +122,15 @@ def list_models(tenant_id: str) -> list[LlmModel]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.LlmModelORM)
-        .where(models.LlmModelORM.tenant_id == tenant_id)
-        .order_by(models.LlmModelORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.LlmModelORM)
+            .where(models.LlmModelORM.tenant_id == tenant_id)
+            .order_by(models.LlmModelORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_model(r) for r in rows]
 
 
@@ -145,11 +154,15 @@ def list_route_rules(tenant_id: str) -> list[LlmRouteRule]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.LlmRouteRuleORM)
-        .where(models.LlmRouteRuleORM.tenant_id == tenant_id)
-        .order_by(models.LlmRouteRuleORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.LlmRouteRuleORM)
+            .where(models.LlmRouteRuleORM.tenant_id == tenant_id)
+            .order_by(models.LlmRouteRuleORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_route_rule(r) for r in rows]
 
 
@@ -183,12 +196,19 @@ def put_provider(tenant_id: str, prov: LlmProvider) -> LlmProvider:
         existing.config = config_str
         existing.updated_at = prov.updated_at
     else:
-        s.add(models.LlmProviderORM(
-            id=prov.id, tenant_id=tenant_id, name=prov.name,
-            provider_type=prov.provider_type, base_url=prov.base_url,
-            enabled=prov.enabled, config=config_str,
-            created_at=prov.created_at, updated_at=prov.updated_at,
-        ))
+        s.add(
+            models.LlmProviderORM(
+                id=prov.id,
+                tenant_id=tenant_id,
+                name=prov.name,
+                provider_type=prov.provider_type,
+                base_url=prov.base_url,
+                enabled=prov.enabled,
+                config=config_str,
+                created_at=prov.created_at,
+                updated_at=prov.updated_at,
+            )
+        )
     s.commit()
     return prov
 
@@ -229,13 +249,21 @@ def put_model(tenant_id: str, model: LlmModel) -> LlmModel:
         existing.config = config_str
         existing.updated_at = model.updated_at
     else:
-        s.add(models.LlmModelORM(
-            id=model.id, tenant_id=tenant_id, model_id=model.model_id,
-            display_name=model.display_name, provider=model.provider,
-            modality=model.modality, max_tokens=model.max_tokens,
-            enabled=model.enabled, config=config_str,
-            created_at=model.created_at, updated_at=model.updated_at,
-        ))
+        s.add(
+            models.LlmModelORM(
+                id=model.id,
+                tenant_id=tenant_id,
+                model_id=model.model_id,
+                display_name=model.display_name,
+                provider=model.provider,
+                modality=model.modality,
+                max_tokens=model.max_tokens,
+                enabled=model.enabled,
+                config=config_str,
+                created_at=model.created_at,
+                updated_at=model.updated_at,
+            )
+        )
     s.commit()
     return model
 
@@ -272,12 +300,18 @@ def put_route_rule(tenant_id: str, rule: LlmRouteRule) -> LlmRouteRule:
         existing.enabled = rule.enabled
         existing.updated_at = rule.updated_at
     else:
-        s.add(models.LlmRouteRuleORM(
-            id=rule.id, tenant_id=tenant_id, model_pattern=rule.model_pattern,
-            provider=rule.provider, priority=rule.priority,
-            enabled=rule.enabled, created_at=rule.created_at,
-            updated_at=rule.updated_at,
-        ))
+        s.add(
+            models.LlmRouteRuleORM(
+                id=rule.id,
+                tenant_id=tenant_id,
+                model_pattern=rule.model_pattern,
+                provider=rule.provider,
+                priority=rule.priority,
+                enabled=rule.enabled,
+                created_at=rule.created_at,
+                updated_at=rule.updated_at,
+            )
+        )
     s.commit()
     return rule
 
@@ -306,12 +340,8 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     from . import in_memory as mem
 
     counts: dict[str, int] = {}
-    counts["providers"] = len(
-        [put_provider(tenant_id, p) for p in mem.list_providers(tenant_id)]
-    )
-    counts["models"] = len(
-        [put_model(tenant_id, m) for m in mem.list_models(tenant_id)]
-    )
+    counts["providers"] = len([put_provider(tenant_id, p) for p in mem.list_providers(tenant_id)])
+    counts["models"] = len([put_model(tenant_id, m) for m in mem.list_models(tenant_id)])
     counts["route_rules"] = len(
         [put_route_rule(tenant_id, r) for r in mem.list_route_rules(tenant_id)]
     )

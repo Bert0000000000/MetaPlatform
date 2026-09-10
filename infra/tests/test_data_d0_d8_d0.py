@@ -6,6 +6,7 @@ Per ADR-0016 D0: Debezium (CDC) + Marquez (lineage) + DataHub
 ready to enable. Catalog and quality are stubbed; their
 production-ready chart is in the D1+ sub-batches.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

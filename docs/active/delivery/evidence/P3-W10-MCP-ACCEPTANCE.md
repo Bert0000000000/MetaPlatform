@@ -11,22 +11,22 @@
 
 ## 1. 改动清单
 
-| 文件 | 改动 | 关键能力 |
-|---|---|---|
-| `contracts/openapi/services/mcp.yaml` | 5 处 | 5 个原 endpoint `x-mate-implementation-status: placeholder` → `implemented`（healthz 保持 placeholder） |
-| `mate-tech-mcp/.../federation_routes.py` | 1 处 | `_tenant_id` 增加 fallback：`request.state.ctx` 不存在时回退到 `X-Tenant-Id` header（测试 / 无 middleware 环境兼容） |
-| `mate-tech-mcp/tests/test_mcp_http_endpoints.py` | 新增 11 tests | federation HTTP e2e（7 endpoint + 跨租户 negative + fallback guard） |
+| 文件                                             | 改动          | 关键能力                                                                                                             |
+| ------------------------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `contracts/openapi/services/mcp.yaml`            | 5 处          | 5 个原 endpoint `x-mate-implementation-status: placeholder` → `implemented`（healthz 保持 placeholder）              |
+| `mate-tech-mcp/.../federation_routes.py`         | 1 处          | `_tenant_id` 增加 fallback：`request.state.ctx` 不存在时回退到 `X-Tenant-Id` header（测试 / 无 middleware 环境兼容） |
+| `mate-tech-mcp/tests/test_mcp_http_endpoints.py` | 新增 11 tests | federation HTTP e2e（7 endpoint + 跨租户 negative + fallback guard）                                                 |
 
 ---
 
 ## 2. mcp.yaml placeholder → implemented（5 endpoint）
 
-| Endpoint | operationId | FR-ID | 状态 |
-|---|---|---|---|
-| GET /api/v1/mcp/tools | mcpGetMcpTools | FR-MCP-MCPGETMCPTOOLS | ✅ implemented |
-| POST /api/v1/mcp/tools/{name} | mcpPostMcpToolsName | FR-MCP-MCPPOSTMCPTOOLSNAME | ✅ implemented |
-| GET /api/v1/mcp/resources | mcpGetMcpResources | FR-MCP-MCPGETMCPRESOURCES | ✅ implemented |
-| GET /api/v1/mcp/prompts | mcpGetMcpPrompts | FR-MCP-MCPGETMCPPROMPTS | ✅ implemented |
+| Endpoint                        | operationId           | FR-ID                        | 状态           |
+| ------------------------------- | --------------------- | ---------------------------- | -------------- |
+| GET /api/v1/mcp/tools           | mcpGetMcpTools        | FR-MCP-MCPGETMCPTOOLS        | ✅ implemented |
+| POST /api/v1/mcp/tools/{name}   | mcpPostMcpToolsName   | FR-MCP-MCPPOSTMCPTOOLSNAME   | ✅ implemented |
+| GET /api/v1/mcp/resources       | mcpGetMcpResources    | FR-MCP-MCPGETMCPRESOURCES    | ✅ implemented |
+| GET /api/v1/mcp/prompts         | mcpGetMcpPrompts      | FR-MCP-MCPGETMCPPROMPTS      | ✅ implemented |
 | POST /api/v1/mcp/prompts/{name} | mcpPostMcpPromptsName | FR-MCP-MCPPOSTMCPPROMPTSNAME | ✅ implemented |
 
 > `/healthz` 保持 `placeholder`（非业务 endpoint，不在本批范围）。
@@ -61,19 +61,19 @@ def _tenant_id(request: Request) -> str:
 
 新增 `TestMcpFederationHttpE2E` 类，11 个测试（bare app + 仅 federation router，无 auth middleware，直接验证 fallback 路径）：
 
-| # | 测试 | 覆盖 |
-|---|---|---|
-| 1 | test_federation_register_server_returns_201 | POST /servers |
-| 2 | test_federation_list_servers_returns_200 | GET /servers |
-| 3 | test_federation_get_server_returns_200 | GET /servers/{id} |
-| 4 | test_federation_update_server_returns_200 | PUT /servers/{id} |
-| 5 | test_federation_delete_server_returns_200 | DELETE /servers/{id} |
-| 6 | test_federation_list_tools_returns_200 | GET /tools |
-| 7 | test_federation_invoke_tool_returns_200 | POST /tools/{name}/invoke（respx mock） |
-| 8 | test_cross_tenant_federation_get_returns_404 | 跨租户读隔离 |
-| 9 | test_cross_tenant_federation_delete_returns_404 | 跨租户删隔离 |
-| 10 | test_federation_empty_tenant_header_returns_400 | fallback guard（空 tenant） |
-| 11 | test_federation_no_header_defaults_tenant | fallback 默认 tenant |
+| #   | 测试                                            | 覆盖                                    |
+| --- | ----------------------------------------------- | --------------------------------------- |
+| 1   | test_federation_register_server_returns_201     | POST /servers                           |
+| 2   | test_federation_list_servers_returns_200        | GET /servers                            |
+| 3   | test_federation_get_server_returns_200          | GET /servers/{id}                       |
+| 4   | test_federation_update_server_returns_200       | PUT /servers/{id}                       |
+| 5   | test_federation_delete_server_returns_200       | DELETE /servers/{id}                    |
+| 6   | test_federation_list_tools_returns_200          | GET /tools                              |
+| 7   | test_federation_invoke_tool_returns_200         | POST /tools/{name}/invoke（respx mock） |
+| 8   | test_cross_tenant_federation_get_returns_404    | 跨租户读隔离                            |
+| 9   | test_cross_tenant_federation_delete_returns_404 | 跨租户删隔离                            |
+| 10  | test_federation_empty_tenant_header_returns_400 | fallback guard（空 tenant）             |
+| 11  | test_federation_no_header_defaults_tenant       | fallback 默认 tenant                    |
 
 文件合计 17 tests（原 6 + 新增 11），满足 ≥14 HTTP e2e 要求。
 
@@ -98,6 +98,7 @@ mate-platform-backend/packages/mate-tech-mcp/tests
 - SPEC 命中：**209/214 → 214/214**(mcp domain 5 个原 endpoint 从 placeholder 收口 + 5 router 真正挂载)。
 
 > ✅ **8/2 真实验证**(Fix-1 完成):`packages/mate-tech-mcp/src/mate_tech_mcp/api/origin_routes.py` 真正实现 5 个原 endpoint router:
+>
 > - `@router.get("/tools")`(line 69)
 > - `@router.get("/resources")`(line 76)
 > - `@router.get("/prompts")`(line 83)
@@ -110,12 +111,12 @@ mate-platform-backend/packages/mate-tech-mcp/tests
 
 ## 7. 13 硬规则合规
 
-| # | 硬规则 | 本批合规 |
-|---|---|---|
-| 1 | Swagger 没有接口不写 route | ✅ 5 endpoint contract ↔ route 全部对齐(spec + code) |
-| 3 | 没有 tenant 上下文不访问 repository | ✅ 生产路径 `require_tenant(ctx)` 不变；fallback 仅测试可用 |
-| 7 | 契约/集成测试不跳过 | ✅ 95+ passed，0 skip |
-| 10 | 所有状态以验收证据为准 | ✅ 本 ACCEPTANCE.md + 真实代码 grep 验证 |
+| #   | 硬规则                              | 本批合规                                                    |
+| --- | ----------------------------------- | ----------------------------------------------------------- |
+| 1   | Swagger 没有接口不写 route          | ✅ 5 endpoint contract ↔ route 全部对齐(spec + code)       |
+| 3   | 没有 tenant 上下文不访问 repository | ✅ 生产路径 `require_tenant(ctx)` 不变；fallback 仅测试可用 |
+| 7   | 契约/集成测试不跳过                 | ✅ 95+ passed，0 skip                                       |
+| 10  | 所有状态以验收证据为准              | ✅ 本 ACCEPTANCE.md + 真实代码 grep 验证                    |
 
 ---
 

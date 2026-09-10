@@ -41,12 +41,12 @@ class BackingDatasource:
     """对象类型的背挂数据源（v1: 同实例 PG 表）。"""
 
     name: str
-    kind: str = "pg_table"           # v1 仅 pg_table（csv/cdc 走 apply_cdc_changes）
+    kind: str = "pg_table"  # v1 仅 pg_table（csv/cdc 走 apply_cdc_changes）
     dsn_env: str = "ONT_SOURCE_DSN"  # 源库 DSN 环境变量名（secret 不进 git）
     table: str = ""
     pk_column: str = ""
     field_mapping: dict[str, str] = field(default_factory=dict)  # prop_rid → 列
-    priority: int = 100              # 小 = 优先（MDO 字段合并序）
+    priority: int = 100  # 小 = 优先（MDO 字段合并序）
 
     def __post_init__(self) -> None:
         if self.kind != "pg_table":
@@ -126,10 +126,13 @@ def sync_backing_datasource(
                         cur.execute(
                             f"SELECT * FROM {ds.table} "
                             f"WHERE {ts_col} > %s ORDER BY {ts_col} LIMIT %s",
-                            (wm, batch_limit,))
+                            (
+                                wm,
+                                batch_limit,
+                            ),
+                        )
                     else:
-                        cur.execute(
-                            f"SELECT * FROM {ds.table} LIMIT %s", (batch_limit,))
+                        cur.execute(f"SELECT * FROM {ds.table} LIMIT %s", (batch_limit,))
                 else:
                     cur.execute(f"SELECT * FROM {ds.table} LIMIT %s", (batch_limit,))
                 rows = cur.fetchall()
@@ -155,13 +158,17 @@ def sync_backing_datasource(
             if pk_props not in merged:
                 merged[pk_props] = pk
             try:
-                repo.create_individual(Individual(
-                    rid=f"ont.{tenant}.ind.{cls_slug}.{pk}",
-                    class_rid=ot.rid,
-                    props=tuple((ClassRef(k), v) for k, v in merged.items()),
-                    primary_key=pk, created_at=now, updated_at=now,
-                    tenant_id=tenant,
-                ))
+                repo.create_individual(
+                    Individual(
+                        rid=f"ont.{tenant}.ind.{cls_slug}.{pk}",
+                        class_rid=ot.rid,
+                        props=tuple((ClassRef(k), v) for k, v in merged.items()),
+                        primary_key=pk,
+                        created_at=now,
+                        updated_at=now,
+                        tenant_id=tenant,
+                    )
+                )
                 synced += 1
             except Exception:
                 # 主键冲突且 repo 无 upsert 语义 → 跳过（幂等重跑安全）
@@ -214,11 +221,17 @@ def apply_cdc_changes(
                 continue
             if column in data and data[column] is not None:
                 props[prop_rid] = data[column]
-        repo.create_individual(Individual(
-            rid=rid_now, class_rid=ot.rid,
-            props=tuple((ClassRef(k), v) for k, v in props.items()),
-            primary_key=pk, created_at=now, updated_at=now, tenant_id=tenant,
-        ))
+        repo.create_individual(
+            Individual(
+                rid=rid_now,
+                class_rid=ot.rid,
+                props=tuple((ClassRef(k), v) for k, v in props.items()),
+                primary_key=pk,
+                created_at=now,
+                updated_at=now,
+                tenant_id=tenant,
+            )
+        )
         upserted += 1
     return {"upserted": upserted, "deleted": deleted}
 
@@ -235,11 +248,19 @@ def materialize_object_type(repo: Any, class_rid: str, *, limit: int = 10000) ->
     inds = repo.list_individuals(ClassRef(class_rid))[:limit]
     rows = [individual_to_row(i) for i in inds]
     schema = {
-        p.rid.rid: {"slug": p.rid.rid.split(".")[3] if len(p.rid.rid.split(".")) >= 5
-                    else p.rid.rid.split(".")[-1],
-                    "type_id": p.type_id, "format": p.format.value}
+        p.rid.rid: {
+            "slug": p.rid.rid.split(".")[3]
+            if len(p.rid.rid.split(".")) >= 5
+            else p.rid.rid.split(".")[-1],
+            "type_id": p.type_id,
+            "format": p.format.value,
+        }
         for p in ot.properties
     }
-    return {"class_rid": class_rid, "count": len(rows),
-            "rows": rows, "schema": schema,
-            "generated_at": datetime.now(UTC).isoformat()}
+    return {
+        "class_rid": class_rid,
+        "count": len(rows),
+        "rows": rows,
+        "schema": schema,
+        "generated_at": datetime.now(UTC).isoformat(),
+    }

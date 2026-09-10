@@ -10,6 +10,7 @@ Selection via EMBEDDER_PROVIDER env:
 - "local"  -> LocalTinyEmbedder (default, no deps)
 - "hash"   -> HashEmbedder (legacy, 16-dim)
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -60,9 +61,7 @@ class OpenAIEmbedder:
     ) -> None:
         self._api_key = api_key or os.environ.get("OPENAI_API_KEY", "")
         if not self._api_key:
-            raise ValueError(
-                "OpenAIEmbedder requires OPENAI_API_KEY (env or constructor)"
-            )
+            raise ValueError("OpenAIEmbedder requires OPENAI_API_KEY (env or constructor)")
         self._base_url = base_url.rstrip("/") or "https://api.openai.com"
         self._model = model or os.environ.get("OPENAI_EMBED_MODEL", self.DEFAULT_MODEL)
         self._dim = self.DEFAULT_DIM
@@ -190,9 +189,9 @@ class LlmgwEmbedder:
         provider: str = "doubao",
         timeout: float = 30.0,
     ) -> None:
-        self._base_url = (
-            base_url or os.environ.get("LLMGW_URL", "http://localhost:8100")
-        ).rstrip("/")
+        self._base_url = (base_url or os.environ.get("LLMGW_URL", "http://localhost:8100")).rstrip(
+            "/"
+        )
         self._model = model or os.environ.get("LLMGW_EMBED_MODEL", self.DEFAULT_MODEL)
         self._provider = provider
         self._tenant_id = os.environ.get("LLMGW_TENANT_ID", "tenant-default")
@@ -211,17 +210,10 @@ class LlmgwEmbedder:
             try:
                 from mate_clients.security import BearerAuth
 
-                keycloak = os.environ.get(
-                    "KEYCLOAK_URL", "http://keycloak:8080"
-                ).rstrip("/")
+                keycloak = os.environ.get("KEYCLOAK_URL", "http://keycloak:8080").rstrip("/")
                 self._bearer = BearerAuth(
-                    token_uri=(
-                        f"{keycloak}/realms/metaplatform"
-                        "/protocol/openid-connect/token"
-                    ),
-                    client_id=os.environ.get(
-                        "SERVICE_CLIENT_ID", "metaplatform-backend"
-                    ),
+                    token_uri=(f"{keycloak}/realms/metaplatform/protocol/openid-connect/token"),
+                    client_id=os.environ.get("SERVICE_CLIENT_ID", "metaplatform-backend"),
                     client_secret=os.environ["SERVICE_CLIENT_SECRET"],
                 )
             except Exception:
@@ -276,9 +268,7 @@ class LlmgwEmbedder:
         vec = [float(x) for x in body["data"][0]["embedding"]]
         # Self-correct dim if the live model disagrees with the configured default.
         if len(vec) != self._dim:
-            _log.warning(
-                "LlmgwEmbedder dim override: configured %d, live %d", self._dim, len(vec)
-            )
+            _log.warning("LlmgwEmbedder dim override: configured %d, live %d", self._dim, len(vec))
             self._dim = len(vec)
         return vec
 

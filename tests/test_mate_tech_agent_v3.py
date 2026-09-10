@@ -1,4 +1,5 @@
 """v0.8 tests: LLM streaming + S3 HITL."""
+
 from __future__ import annotations
 
 import sys
@@ -33,8 +34,20 @@ class FakeRAGTool:
 @pytest.fixture
 def rag_with_chunks():
     chunks = [
-        {"chunk_id": "c1", "document_id": "d1", "score": 0.9, "text": "Python FastAPI is the backend framework.", "metadata": {}},
-        {"chunk_id": "c2", "document_id": "d1", "score": 0.7, "text": "MatePlatform uses LangChain.", "metadata": {}},
+        {
+            "chunk_id": "c1",
+            "document_id": "d1",
+            "score": 0.9,
+            "text": "Python FastAPI is the backend framework.",
+            "metadata": {},
+        },
+        {
+            "chunk_id": "c2",
+            "document_id": "d1",
+            "score": 0.7,
+            "text": "MatePlatform uses LangChain.",
+            "metadata": {},
+        },
     ]
     set_rag_tool(FakeRAGTool(chunks))
     return chunks

@@ -5,6 +5,7 @@ rpm+tpm/max_budget enforced; revoke invalidates the cache immediately;
 the install_auth api_key_verifier hook is opt-in (other services
 unchanged — covered by the mate-platform auth regression suite).
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -52,14 +53,22 @@ class _KeyConn:
     async def execute(self, sql: str, *args: Any) -> str:
         if "INSERT INTO llmgw_api_keys" in sql:
             row = {
-                "key_id": args[0], "tenant_id": args[1], "key_name": args[2],
-                "key_hash": args[3], "key_prefix": args[4],
+                "key_id": args[0],
+                "tenant_id": args[1],
+                "key_name": args[2],
+                "key_hash": args[3],
+                "key_prefix": args[4],
                 "models": args[5],
-                "max_budget_usd": args[6], "soft_budget_usd": args[7],
-                "budget_duration": args[8], "budget_reset_at": args[9],
-                "tpm_limit": args[10], "rpm_limit": args[11],
-                "spend_usd": 0.0, "blocked": False,
-                "expires_at": args[12], "last_active_at": None,
+                "max_budget_usd": args[6],
+                "soft_budget_usd": args[7],
+                "budget_duration": args[8],
+                "budget_reset_at": args[9],
+                "tpm_limit": args[10],
+                "rpm_limit": args[11],
+                "spend_usd": 0.0,
+                "blocked": False,
+                "expires_at": args[12],
+                "last_active_at": None,
             }
             self.rows[row["key_hash"]] = row
             return "INSERT 1"
@@ -146,8 +155,11 @@ async def test_create_stores_only_hash_and_returns_plaintext_once(
 ) -> None:
     store = ApiKeyStore(key_pool)
     record, plaintext = await store.create(
-        tenant_id="acme", key_name="ci", models=("gpt-4o*",),
-        max_budget_usd=10.0, budget_duration="30d",
+        tenant_id="acme",
+        key_name="ci",
+        models=("gpt-4o*",),
+        max_budget_usd=10.0,
+        budget_duration="30d",
     )
     assert plaintext.startswith("sk-llmgw-")
     stored = key_pool.conn.rows[hash_key(plaintext)]
@@ -199,9 +211,7 @@ async def test_rotate_invalidates_old_plaintext(key_pool: _KeyPool) -> None:
 @pytest.mark.asyncio
 async def test_budget_window_lazy_advance(key_pool: _KeyPool) -> None:
     store = ApiKeyStore(key_pool)
-    record, _ = await store.create(
-        tenant_id="acme", max_budget_usd=5.0, budget_duration="1d"
-    )
+    record, _ = await store.create(tenant_id="acme", max_budget_usd=5.0, budget_duration="1d")
     # Force an expired window + spent budget.
     from dataclasses import replace
 
@@ -217,11 +227,21 @@ async def test_budget_window_lazy_advance(key_pool: _KeyPool) -> None:
 
 def test_model_allowed_whitelist() -> None:
     record = ApiKeyRecord(
-        key_id="k", tenant_id="t", key_name="", key_prefix="sk-llmgw-",
-        models=("gpt-4o*", "qwen-plus"), max_budget_usd=None,
-        soft_budget_usd=None, budget_duration=None, budget_reset_at=None,
-        tpm_limit=None, rpm_limit=None, spend_usd=0.0, blocked=False,
-        expires_at=None, last_active_at=None,
+        key_id="k",
+        tenant_id="t",
+        key_name="",
+        key_prefix="sk-llmgw-",
+        models=("gpt-4o*", "qwen-plus"),
+        max_budget_usd=None,
+        soft_budget_usd=None,
+        budget_duration=None,
+        budget_reset_at=None,
+        tpm_limit=None,
+        rpm_limit=None,
+        spend_usd=0.0,
+        blocked=False,
+        expires_at=None,
+        last_active_at=None,
     )
     assert model_allowed(record, "gpt-4o-mini")
     assert model_allowed(record, "qwen-plus")
@@ -275,9 +295,7 @@ def test_api_key_auth_flow_end_to_end(key_pool: _KeyPool) -> None:
 
 def test_unknown_key_rejected_401(key_pool: _KeyPool) -> None:
     client = _make_key_app(key_pool)
-    resp = client.post(
-        "/probe", headers={"Authorization": "Bearer sk-llmgw-nope"}
-    )
+    resp = client.post("/probe", headers={"Authorization": "Bearer sk-llmgw-nope"})
     assert resp.status_code == 401
 
 
@@ -299,9 +317,7 @@ def test_disabled_runtime_rejects_keys(key_pool: _KeyPool) -> None:
 
     install_auth(app, api_key_verifier=llmgw_api_key_verifier)
     # runtime left unset (None store)
-    resp = TestClient(app).post(
-        "/probe", headers={"Authorization": "Bearer sk-llmgw-anything"}
-    )
+    resp = TestClient(app).post("/probe", headers={"Authorization": "Bearer sk-llmgw-anything"})
     assert resp.status_code == 401
 
 
@@ -321,19 +337,19 @@ async def test_enforce_key_limits_budget_429(key_pool: _KeyPool) -> None:
 
     store = ApiKeyStore(key_pool)
     record, _ = await store.create(
-        tenant_id="acme", max_budget_usd=1.0, budget_duration="30d",
+        tenant_id="acme",
+        max_budget_usd=1.0,
+        budget_duration="30d",
         models=("gpt-4o*",),
     )
     from dataclasses import replace
 
     spent = replace(record, spend_usd=1.0)
     with pytest.raises(HTTPException) as exc_info:
-        await enforce_key_limits(spent, model="gpt-4o", estimated_tokens=10,
-                                 redis_client=None)
+        await enforce_key_limits(spent, model="gpt-4o", estimated_tokens=10, redis_client=None)
     assert exc_info.value.status_code == 429
 
     with pytest.raises(HTTPException) as exc_info:
         bad_model = replace(record, models=("qwen-*",))
-        await enforce_key_limits(bad_model, model="gpt-4o",
-                                 estimated_tokens=10, redis_client=None)
+        await enforce_key_limits(bad_model, model="gpt-4o", estimated_tokens=10, redis_client=None)
     assert exc_info.value.status_code == 403

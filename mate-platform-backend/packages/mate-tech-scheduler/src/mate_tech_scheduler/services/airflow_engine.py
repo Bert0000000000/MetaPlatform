@@ -22,6 +22,7 @@ Configuration (all from environment variables):
     AIRFLOW_USERNAME     — basic auth username (alternative to token)
     AIRFLOW_PASSWORD     — basic auth password
 """
+
 from __future__ import annotations
 
 import os
@@ -38,8 +39,11 @@ class AirflowEngineError(Exception):
     """Raised when an Airflow REST API call fails."""
 
     def __init__(
-        self, message: str, *,
-        status_code: int = 0, response_body: str = "",
+        self,
+        message: str,
+        *,
+        status_code: int = 0,
+        response_body: str = "",
     ) -> None:
         super().__init__(message)
         self.status_code = status_code
@@ -132,11 +136,14 @@ class AirflowEngine:
     # Public API
     # -----------------------------------------------------------------
     async def pause_task(
-        self, task_id: str, dag_id: str,
+        self,
+        task_id: str,
+        dag_id: str,
     ) -> AirflowTaskResult:
         """Pause a DAG via PATCH /dags/{dag_id} with is_paused=true."""
         resp = await self._request(
-            "PATCH", f"/api/v1/dags/{dag_id}",
+            "PATCH",
+            f"/api/v1/dags/{dag_id}",
             json={"is_paused": True},
         )
         is_paused = resp.get("is_paused", True)
@@ -158,7 +165,9 @@ class AirflowEngine:
         """Trigger a DAG run via POST /dags/{dag_id}/dagRuns."""
         body: dict[str, Any] = {"conf": conf or {}}
         resp = await self._request(
-            "POST", f"/api/v1/dags/{dag_id}/dagRuns", json=body,
+            "POST",
+            f"/api/v1/dags/{dag_id}/dagRuns",
+            json=body,
         )
         run_id = resp.get("dag_run_id", "")
         state = str(resp.get("state", "running")).lower()
@@ -171,7 +180,9 @@ class AirflowEngine:
         )
 
     async def get_dag(
-        self, task_id: str, dag_id: str,
+        self,
+        task_id: str,
+        dag_id: str,
     ) -> AirflowTaskResult:
         """Get DAG detail via GET /dags/{dag_id}."""
         resp = await self._request("GET", f"/api/v1/dags/{dag_id}")
@@ -191,11 +202,15 @@ class AirflowEngine:
         )
 
     async def get_dag_run_status(
-        self, task_id: str, dag_id: str, run_id: str,
+        self,
+        task_id: str,
+        dag_id: str,
+        run_id: str,
     ) -> AirflowTaskResult:
         """Get the status of a specific DAG run."""
         resp = await self._request(
-            "GET", f"/api/v1/dags/{dag_id}/dagRuns/{run_id}",
+            "GET",
+            f"/api/v1/dags/{dag_id}/dagRuns/{run_id}",
         )
         state = str(resp.get("state", "unknown")).lower()
         return AirflowTaskResult(
@@ -228,7 +243,10 @@ class AirflowEngine:
         for attempt in range(self._max_retries + 1):
             try:
                 resp = await client.request(
-                    method, path, json=json, params=params,
+                    method,
+                    path,
+                    json=json,
+                    params=params,
                 )
                 if resp.status_code >= 500 and attempt < self._max_retries:
                     last_exc = AirflowEngineError(

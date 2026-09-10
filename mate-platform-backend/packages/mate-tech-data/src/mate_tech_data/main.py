@@ -8,6 +8,7 @@ The `/api/v1/data/health` endpoint is widened into the anonymous set
 so liveness probes can reach it without a bearer token; all other
 endpoints read tenant-bound state via `require_tenant`.
 """
+
 from __future__ import annotations
 
 import os
@@ -26,6 +27,7 @@ def _bootstrap_sql() -> None:
     from mate_tech_db.base import create_all
 
     from .repositories.sql_store import seed_from_inmemory
+
     create_all()
     for tenant in ("tenant-default",):
         seed_from_inmemory(tenant)

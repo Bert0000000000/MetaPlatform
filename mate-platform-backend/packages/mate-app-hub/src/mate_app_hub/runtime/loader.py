@@ -2,6 +2,7 @@
 
 APPHUB-RUNTIME-01 phase B.
 """
+
 from __future__ import annotations
 
 from ..repositories import (
@@ -15,7 +16,9 @@ from .schema import RuntimeContext
 
 
 def load_app_runtime(
-    tenant_id: str, app_id: str, version: str = "latest",
+    tenant_id: str,
+    app_id: str,
+    version: str = "latest",
 ) -> RuntimeContext:
     """Load the full runtime context for an app.
 

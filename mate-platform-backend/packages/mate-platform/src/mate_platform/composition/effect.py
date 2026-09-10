@@ -12,6 +12,7 @@ An in-flight ``await`` inside the callback cannot be cancelled — the
 callback author must eventually yield or return (same property as the
 cordis reference implementation).
 """
+
 from __future__ import annotations
 
 import inspect

@@ -20,7 +20,7 @@
 ## 2. ONT-G17 本体验证 → [x]
 
 - kernel `validation_ops.py`：`validate_model`（PK 完整性 / rid 形制 / slug 重复 / PK 引用）
-  + `validate_instance`（必填 / 未知属性 / 类型 / PK 缺值，slug+rid 双键）。
+  - `validate_instance`（必填 / 未知属性 / 类型 / PK 缺值，slug+rid 双键）。
 - REST `ontValidateV2Model` / `ontValidateV2Data`；构造器 ValueError 转验证结果。
 - Live：坏 PK → `valid:false`（错误清单）；合法类型 → `valid:true`；实例缺必填+未知+错型 →
   5 条 errors 逐条输出 ✅。单测 8/8。
@@ -45,12 +45,12 @@ RevertWorkflow → `reverted / equivalence=partial`（action 审计型正确降�
 
 ## 5. in-flight 清账
 
-| 批次 | 复验证据 | 状态 |
-|---|---|---|
-| MP-ONT-PROPOSAL-01 | 今日全生命周期 live 数十次（propose/confirm/execute/reject/withdraw/revert/409 negatives）| [x] |
-| MP-DEDUP-01 | 同 PK 重复 execute 实探（幂等覆盖路径确认）+ 8-31 local acceptance | [x] |
-| action-orchestration v1.7 | 今日 Temporal 路径 5 StepKind + HITL + graph 全 live（v1.7 动态 schema/连线语义被 Temporal 执行面完整复用）| [x] |
-| MP-SR-01 | **边界**：semantic_router 为 LLM 预筛，依赖 llmgw 后台 AI Provider 指向 MiniMax（显式 base_url 覆盖未被旧 chat 路由消费）→ 保持 [~]，随真实 LLM 接入批转 [x] | [~] |
+| 批次                      | 复验证据                                                                                                                                                     | 状态 |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---- |
+| MP-ONT-PROPOSAL-01        | 今日全生命周期 live 数十次（propose/confirm/execute/reject/withdraw/revert/409 negatives）                                                                   | [x]  |
+| MP-DEDUP-01               | 同 PK 重复 execute 实探（幂等覆盖路径确认）+ 8-31 local acceptance                                                                                           | [x]  |
+| action-orchestration v1.7 | 今日 Temporal 路径 5 StepKind + HITL + graph 全 live（v1.7 动态 schema/连线语义被 Temporal 执行面完整复用）                                                  | [x]  |
+| MP-SR-01                  | **边界**：semantic_router 为 LLM 预筛，依赖 llmgw 后台 AI Provider 指向 MiniMax（显式 base_url 覆盖未被旧 chat 路由消费）→ 保持 [~]，随真实 LLM 接入批转 [x] | [~]  |
 
 ## 6. 真实 LLM（边界，如实）
 

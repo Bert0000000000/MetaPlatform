@@ -23,7 +23,7 @@ paths:
       tags:
         - meta
       responses:
-        '200':
+        "200":
           description: OK
   /api/v1/ont/ontologies:
     post:
@@ -35,15 +35,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OntologyCreate'
+              $ref: "#/components/schemas/OntologyCreate"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Ontology'
-        '409':
+                $ref: "#/components/schemas/Ontology"
+        "409":
           description: Ontology already exists
   /api/v1/ont/ontologies/{ontology_id}:
     parameters:
@@ -57,13 +57,13 @@ paths:
       tags:
         - ontology
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Ontology'
-        '404':
+                $ref: "#/components/schemas/Ontology"
+        "404":
           description: not found
   /api/v1/ont/classes:
     post:
@@ -75,15 +75,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ClassCreate'
+              $ref: "#/components/schemas/ClassCreate"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClassResponse'
-        '409':
+                $ref: "#/components/schemas/ClassResponse"
+        "409":
           description: Class already exists
   /api/v1/ont/classes/{class_id}:
     parameters:
@@ -97,13 +97,13 @@ paths:
       tags:
         - ontology
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClassResponse'
-        '404':
+                $ref: "#/components/schemas/ClassResponse"
+        "404":
           description: not found
   /api/v1/ont/instances:
     get:
@@ -116,14 +116,14 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/InstanceResponse'
+                  $ref: "#/components/schemas/InstanceResponse"
     post:
       summary: Create instance
       tags:
@@ -133,14 +133,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InstanceCreate'
+              $ref: "#/components/schemas/InstanceCreate"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceResponse'
+                $ref: "#/components/schemas/InstanceResponse"
   /api/v1/ont/instances/{iid}:
     parameters:
       - in: path
@@ -153,20 +153,20 @@ paths:
       tags:
         - instances
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceResponse'
-        '404':
+                $ref: "#/components/schemas/InstanceResponse"
+        "404":
           description: not found
     delete:
       summary: Delete instance
       tags:
         - instances
       responses:
-        '200':
+        "200":
           description: OK
   /api/v1/ont/instances/relations:
     get:
@@ -174,14 +174,14 @@ paths:
       tags:
         - instances
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/RelationResponse'
+                  $ref: "#/components/schemas/RelationResponse"
     post:
       summary: Create relation
       tags:
@@ -191,15 +191,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RelationCreate'
+              $ref: "#/components/schemas/RelationCreate"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RelationResponse'
-        '400':
+                $ref: "#/components/schemas/RelationResponse"
+        "400":
           description: Bad payload
   /api/v1/ont/sparql:
     post:
@@ -211,15 +211,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SparqlRequest'
+              $ref: "#/components/schemas/SparqlRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SparqlResponse'
-        '400':
+                $ref: "#/components/schemas/SparqlResponse"
+        "400":
           description: SPARQL parse / transpile failure
   /api/v1/ont/explain:
     post:
@@ -238,7 +238,7 @@ paths:
                 query:
                   type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:

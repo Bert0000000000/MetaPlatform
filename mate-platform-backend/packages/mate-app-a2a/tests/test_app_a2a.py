@@ -4,6 +4,7 @@ Tests exercise the read endpoints (agents, capabilities, external
 agents, tasks) and the write endpoints (delegate, submit-result,
 register) including outbox event emission.
 """
+
 from __future__ import annotations
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
@@ -38,7 +39,9 @@ def test_list_external_agents(client, auth_headers_acme) -> None:
 
 
 def test_delegate_creates_task(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     r = client.post(
         "/api/v1/a2a/delegate",
@@ -61,7 +64,9 @@ def test_delegate_creates_task(
 
 
 def test_submit_task_result(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     # First create a task to submit a result for.
     create = client.post(
@@ -95,7 +100,9 @@ def test_submit_task_result(
 
 
 def test_register_external_agent(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     r = client.post(
         "/api/v1/a2a/register",

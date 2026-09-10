@@ -50,6 +50,7 @@ def client_with_ctx(monkeypatch):
     # GOVERN-10: save+restore around the test so subsequent tests don't see
     # a stale middleware_stack that lost its install_auth binding.
     from mate_tech_ont.main import app as _app
+
     saved_stack = _app.middleware_stack
     _app.middleware_stack = None
     try:
@@ -72,24 +73,27 @@ class TestSeedDemo:
         assert "ont.tenant-default.obj.ticket.v1" in object_types
         assert "ont.tenant-default.obj.employee.v1" in object_types
 
-        r = c.get("/api/v1/ont/v2/individuals", params={
-            "class_rid": "ont.tenant-default.obj.leave-request.v1",
-        })
+        r = c.get(
+            "/api/v1/ont/v2/individuals",
+            params={
+                "class_rid": "ont.tenant-default.obj.leave-request.v1",
+            },
+        )
         leaves = r.json()
         assert len(leaves) == 3
         assert {x["primary_key"] for x in leaves} == {
-            "LR-2026-001", "LR-2026-002", "LR-2026-003",
+            "LR-2026-001",
+            "LR-2026-002",
+            "LR-2026-003",
         }
-        assert all(
-            x["props"]["ont.tenant-default.prop.status.v1"] == "pending"
-            for x in leaves
-        )
+        assert all(x["props"]["ont.tenant-default.prop.status.v1"] == "pending" for x in leaves)
 
         r = c.get("/api/v1/ont/v2/action-types")
         acts = {item["rid"]: item for item in r.json()}
         assert "ont.tenant-default.act.approve-leave.v1" in acts
         assert acts["ont.tenant-default.act.approve-leave.v1"]["side_effects"] == [
-            "notify_email", "audit_log",
+            "notify_email",
+            "audit_log",
         ]
         assert "ont.tenant-default.act.close-ticket.v1" in acts
         action_rid = "ont.tenant-default.act.order-review-confirm.v1"
@@ -97,7 +101,9 @@ class TestSeedDemo:
         assert acts[action_rid]["on"] == [order_rid]
         assert acts[action_rid]["title"] == "订单复核确认"
         assert acts[action_rid]["side_effects"] == [
-            "update_order", "create_follow_up_task", "audit_log",
+            "update_order",
+            "create_follow_up_task",
+            "audit_log",
         ]
 
         r = c.get("/api/v1/ont/v2/link-types")
@@ -129,9 +135,12 @@ class TestSeedDemo:
         # 已 seed 过（同 repo 模块级共享），再次调用返回 0
         assert seed_demo(app.state.kernel_repo, TENANT) == 0
         c = client_with_ctx
-        r = c.get("/api/v1/ont/v2/individuals", params={
-            "class_rid": "ont.tenant-default.obj.leave-request.v1",
-        })
+        r = c.get(
+            "/api/v1/ont/v2/individuals",
+            params={
+                "class_rid": "ont.tenant-default.obj.leave-request.v1",
+            },
+        )
         assert len(r.json()) == 3  # 未重复注入
 
     def test_seed_direct_apply_path_is_retired(self, client_with_ctx):

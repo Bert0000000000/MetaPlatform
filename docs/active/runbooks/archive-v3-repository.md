@@ -24,6 +24,7 @@ Type "archive this repository"
 ```
 
 **效果**：
+
 - 仓库标记为 archived
 - 加 banner "ARCHIVED - read-only"
 - 仓库仍可访问 + 搜索 + clone（只读）
@@ -38,11 +39,12 @@ Type "archive this repository"
 # v3.0 仓库 .github/workflows/*.yml（所有 CI workflow）
 # 把以下改为：
 on:
-  workflow_dispatch:  # 仅 manual 触发
+  workflow_dispatch: # 仅 manual 触发
   # 删除 schedule / pull_request / push 自动触发
 ```
 
 **操作**：
+
 ```bash
 # 在 v3.0 仓库
 cd v3.0-monorepo
@@ -76,7 +78,7 @@ git push origin main  # 最后一次 push（archived 后不可 push）
 > ⚠️ **v3.0 已停止新功能开发，仅维护 P0 漏洞**
 > 新开发请使用 [MetaPlatform-v6](https://github.com/your-org/MetaPlatform-v6)
 > 退役时间表：2028-Q1（v6.0 GA + 6 个月观察期后）
-> 
+>
 > 归档日期：2026-09-XX
 ```
 
@@ -154,16 +156,16 @@ ls .pre-commit-config.yaml  # 应该 "No such file"
 - [ ] 用户无投诉
 - [ ] 数据完整性最终验证
 - [ ] v3.0 K8s namespace 删除：
-  kubectl delete namespace mp-v3-prod
-  kubectl delete namespace mp-v3-staging
-  kubectl delete namespace mp-v3-dev
+      kubectl delete namespace mp-v3-prod
+      kubectl delete namespace mp-v3-staging
+      kubectl delete namespace mp-v3-dev
 - [ ] v3.0 Helm releases 卸载：
-  helm uninstall v3-keycloak v3-flowable v3-ragflow
+      helm uninstall v3-keycloak v3-flowable v3-ragflow
 - [ ] v3.0 数据库最后备份：
-  pg_dump v3_production > /backup/v3_final_2028_XX_XX.sql
-  aws s3 cp /backup/v3_final_2028_XX_XX.sql s3://mp-cold-storage/v3-archive/
+      pg_dump v3_production > /backup/v3_final_2028_XX_XX.sql
+      aws s3 cp /backup/v3_final_2028_XX_XX.sql s3://mp-cold-storage/v3-archive/
 - [ ] v3.0 数据库 DROP（保留 90 天观察期）：
-  DROP DATABASE v3_production;
+      DROP DATABASE v3_production;
 - [ ] 90 天后 v3.0 备份从冷存储彻底删除
 - [ ] v3.0 文档标记 "ARCHIVED - REMOVED"
 ```
@@ -183,6 +185,7 @@ ls .pre-commit-config.yaml  # 应该 "No such file"
 ### Q3：v3.0 业务数据怎么导出？
 
 → 由 **MP-V6-MIGRATION-01 Batch** 处理（Sprint 3 末）：
+
 - 4 类数据：用户 / 租户 / 17 域 / 审计日志
 - 一次性 ETL → 导入 v6.0
 
@@ -198,4 +201,4 @@ ls .pre-commit-config.yaml  # 应该 "No such file"
 
 ---
 
-*v3.0 Archive Runbook完毕。*
+_v3.0 Archive Runbook完毕。_

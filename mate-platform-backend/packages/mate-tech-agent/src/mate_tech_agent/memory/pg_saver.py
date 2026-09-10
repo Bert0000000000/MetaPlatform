@@ -1,4 +1,5 @@
 """PostgresSaver: state persistence via psycopg (TC-5.7.4)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -45,7 +46,10 @@ class PGSaver:
     def _connect(self) -> None:
         try:
             from psycopg_pool import ConnectionPool  # pyright: ignore[reportMissingImports]
-            self._pool = ConnectionPool(conninfo=self._dsn, min_size=self._min_size, max_size=self._max_size, timeout=5.0)
+
+            self._pool = ConnectionPool(
+                conninfo=self._dsn, min_size=self._min_size, max_size=self._max_size, timeout=5.0
+            )
             with self._pool.connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(self._init_schema_sql)

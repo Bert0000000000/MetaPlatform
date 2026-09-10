@@ -1,4 +1,5 @@
 """license_service — 激活 license + KMS 加密入库。"""
+
 from __future__ import annotations
 
 import uuid
@@ -45,9 +46,7 @@ async def activate_license(
         license_payload=resp,
         purchased_at=datetime.now(UTC),
         expires_at=(
-            datetime.fromisoformat(
-                resp["expires_at"].replace("Z", "+00:00")
-            )
+            datetime.fromisoformat(resp["expires_at"].replace("Z", "+00:00"))
             if resp.get("expires_at")
             else None
         ),

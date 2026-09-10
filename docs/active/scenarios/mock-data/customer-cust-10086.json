@@ -26,8 +26,23 @@
     "customer.churn_risk_score": 0.78
   },
   "recentEvents": [
-    { "date": "2026-07-15", "type": "Order.cancelled", "ref": "ORD-2026-Q3-0115", "amount": 1200000 },
-    { "date": "2026-07-10", "type": "Ticket.escalated", "ref": "TKT-2026-0612", "reason": "未解决的售后投诉" },
-    { "date": "2026-07-02", "type": "Contract.renewal_pending", "ref": "CONTRACT-2025-018", "dueInDays": 42 }
+    {
+      "date": "2026-07-15",
+      "type": "Order.cancelled",
+      "ref": "ORD-2026-Q3-0115",
+      "amount": 1200000
+    },
+    {
+      "date": "2026-07-10",
+      "type": "Ticket.escalated",
+      "ref": "TKT-2026-0612",
+      "reason": "未解决的售后投诉"
+    },
+    {
+      "date": "2026-07-02",
+      "type": "Contract.renewal_pending",
+      "ref": "CONTRACT-2025-018",
+      "dueInDays": 42
+    }
   ]
 }

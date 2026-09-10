@@ -26,6 +26,7 @@ The router is mounted by `mate_tech_dw.main.create_app()` after
 `install_auth(app)` so the bearer-token middleware populates
 `request.state.ctx` before any handler runs.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -159,13 +160,15 @@ def _paginate(items: list, page: int, size: int) -> dict:
     pages = (total + size - 1) // size if size > 0 else 0
     start = (page - 1) * size
     end = start + size
-    return _ok({
-        "items": items[start:end],
-        "total": total,
-        "page": page,
-        "pageSize": size,
-        "totalPages": pages,
-    })
+    return _ok(
+        {
+            "items": items[start:end],
+            "total": total,
+            "page": page,
+            "pageSize": size,
+            "totalPages": pages,
+        }
+    )
 
 
 def _ok(data: Any) -> dict:
@@ -181,9 +184,7 @@ def _emit(
     tenant_id: str,
 ) -> None:
     """Append an outbox event if a writer is configured (ADR-0014 step 3)."""
-    writer: InMemoryOutboxWriter | None = getattr(
-        request.app.state, "outbox_writer", None
-    )
+    writer: InMemoryOutboxWriter | None = getattr(request.app.state, "outbox_writer", None)
     if writer is None:
         return
     writer.append(
@@ -272,8 +273,13 @@ async def dw_get_documents(
 # 5. POST /documents/upload — real multipart upload → mate-tech-rag ingest
 # ---------------------------------------------------------------------------
 _KIND_BY_EXT = {
-    "pdf": "pdf", "doc": "docx", "docx": "docx",
-    "md": "md", "markdown": "md", "txt": "txt", "html": "html",
+    "pdf": "pdf",
+    "doc": "docx",
+    "docx": "docx",
+    "md": "md",
+    "markdown": "md",
+    "txt": "txt",
+    "html": "html",
 }
 
 
@@ -335,7 +341,10 @@ async def dw_post_documents_upload(
             # Offload the blocking httpx upload (sync → in-process rag /upload)
             # to a worker thread to avoid deadlocking the event loop.
             data = await asyncio.to_thread(
-                rag.upload, raw, filename, document_id,
+                rag.upload,
+                raw,
+                filename,
+                document_id,
                 file.content_type or "text/plain",
                 kb_id=kb_id,
             )
@@ -396,14 +405,16 @@ async def dw_get_employees(
     if keyword:
         kw = keyword.lower()
         emps = [
-            e for e in emps
+            e
+            for e in emps
             if kw in e.name.lower() or kw in e.code.lower() or kw in (e.role or "").lower()
         ]
     # 角色分类：前端大写（ONTOLOGY）→ 匹配 role（kernel slug）或 role 大写
     if roleCategory:
         rc = roleCategory.upper()
         emps = [
-            e for e in emps
+            e
+            for e in emps
             if e.role.upper() == rc or (e.role in _KERNEL_ROLE_SLUGS and e.role.upper() == rc)
         ]
     items = [_serialize_employee(emp) for emp in emps]
@@ -452,6 +463,7 @@ class EvaluationCollectionCreateRequest(BaseModel):
     migration). The caller may override `passed`; if omitted, it is
     derived from `score` using the same `_EVAL_PASS_THRESHOLD` rule.
     """
+
     employee_id: Annotated[str, Field(min_length=1, max_length=256)]
     score: Annotated[float, Field(ge=0, le=100)]
     passed: bool | None = None
@@ -461,7 +473,8 @@ class EvaluationCollectionCreateRequest(BaseModel):
 
 @router.post("/evaluations", status_code=201)
 async def create_evaluation_collection(
-    request: Request, body: EvaluationCollectionCreateRequest,
+    request: Request,
+    body: EvaluationCollectionCreateRequest,
 ) -> dict:
     """GOVERN-12-05: collection-level POST /evaluations.
 
@@ -489,10 +502,16 @@ async def create_evaluation_collection(
     append_evaluation(tid, evaluation)
     grade = _compute_grade(body.score)
     _emit(
-        request, "dw.evaluation.submitted", evaluation.id,
-        {"employee_id": body.employee_id, "score": body.score,
-         "passed": evaluation.passed, "grade": grade,
-         "source": "collection"},
+        request,
+        "dw.evaluation.submitted",
+        evaluation.id,
+        {
+            "employee_id": body.employee_id,
+            "score": body.score,
+            "passed": evaluation.passed,
+            "grade": grade,
+            "source": "collection",
+        },
         tid,
     )
     payload = asdict(evaluation)
@@ -504,6 +523,7 @@ async def create_evaluation_collection(
 # ---------------------------------------------------------------------------
 # 8b. Evaluation conversations / reports / rubrics / suggestions
 # ---------------------------------------------------------------------------
+
 
 @router.get("/evaluations/conversations")
 async def dw_list_conversations(
@@ -517,8 +537,18 @@ async def dw_list_conversations(
             "employeeId": emp.id,
             "taskId": f"task-{i}",
             "messages": [
-                {"id": f"msg-{i}-1", "role": "user", "content": f"问题 {i}", "timestamp": "2026-07-30T10:00:00Z"},
-                {"id": f"msg-{i}-2", "role": "assistant", "content": f"回答 {i}", "timestamp": "2026-07-30T10:01:00Z"},
+                {
+                    "id": f"msg-{i}-1",
+                    "role": "user",
+                    "content": f"问题 {i}",
+                    "timestamp": "2026-07-30T10:00:00Z",
+                },
+                {
+                    "id": f"msg-{i}-2",
+                    "role": "assistant",
+                    "content": f"回答 {i}",
+                    "timestamp": "2026-07-30T10:01:00Z",
+                },
             ],
             "qualityScore": 8 + i % 2,
             "evaluatedBy": "admin",
@@ -530,82 +560,111 @@ async def dw_list_conversations(
     ]
     return _ok(convs)
 
+
 @router.get("/evaluations/conversations/{conv_id}")
 async def dw_get_conversation(request: Request, conv_id: str) -> dict:
-    return _ok({
-        "conversationId": conv_id,
-        "employeeId": "dw-emp-1",
-        "taskId": "task-0",
-        "messages": [
-            {"id": "m1", "role": "user", "content": "你好", "timestamp": "2026-07-30T10:00:00Z"},
-            {"id": "m2", "role": "assistant", "content": "您好，有什么可以帮您？", "timestamp": "2026-07-30T10:01:00Z"},
-        ],
-        "qualityScore": 9,
-        "evaluatedBy": "admin",
-        "evaluatedAt": "2026-07-30T12:00:00Z",
-        "createdAt": "2026-07-30T10:00:00Z",
-    })
+    return _ok(
+        {
+            "conversationId": conv_id,
+            "employeeId": "dw-emp-1",
+            "taskId": "task-0",
+            "messages": [
+                {
+                    "id": "m1",
+                    "role": "user",
+                    "content": "你好",
+                    "timestamp": "2026-07-30T10:00:00Z",
+                },
+                {
+                    "id": "m2",
+                    "role": "assistant",
+                    "content": "您好，有什么可以帮您？",
+                    "timestamp": "2026-07-30T10:01:00Z",
+                },
+            ],
+            "qualityScore": 9,
+            "evaluatedBy": "admin",
+            "evaluatedAt": "2026-07-30T12:00:00Z",
+            "createdAt": "2026-07-30T10:00:00Z",
+        }
+    )
+
 
 class ScoreBody(BaseModel):
     score: float
     evaluatedBy: str = "admin"
 
+
 @router.post("/evaluations/conversations/{conv_id}/score")
 async def dw_score_conversation(conv_id: str, body: ScoreBody) -> dict:
-    return _ok({
-        "conversationId": conv_id,
-        "qualityScore": body.score,
-        "evaluatedBy": body.evaluatedBy,
-        "evaluatedAt": "2026-07-30T12:00:00Z",
-    })
+    return _ok(
+        {
+            "conversationId": conv_id,
+            "qualityScore": body.score,
+            "evaluatedBy": body.evaluatedBy,
+            "evaluatedAt": "2026-07-30T12:00:00Z",
+        }
+    )
+
 
 @router.post("/evaluations/conversations")
 async def dw_save_conversation(body: dict) -> dict:
     return _ok({"saved": True, "conversationId": body.get("conversationId", "new")})
 
+
 class AutoScoreBody(BaseModel):
     rubricId: str | None = None
 
+
 @router.post("/evaluations/conversations/{conv_id}/auto-score")
 async def dw_auto_score(conv_id: str, body: AutoScoreBody) -> dict:
-    return _ok({
-        "conversationId": conv_id,
-        "overallScore": 8.5,
-        "dimensions": [
-            {"name": "准确性", "score": 9.0, "maxScore": 10},
-            {"name": "完整性", "score": 8.0, "maxScore": 10},
-            {"name": "语气", "score": 8.5, "maxScore": 10},
-        ],
-        "suggestions": ["回答可以更简洁"],
-    })
+    return _ok(
+        {
+            "conversationId": conv_id,
+            "overallScore": 8.5,
+            "dimensions": [
+                {"name": "准确性", "score": 9.0, "maxScore": 10},
+                {"name": "完整性", "score": 8.0, "maxScore": 10},
+                {"name": "语气", "score": 8.5, "maxScore": 10},
+            ],
+            "suggestions": ["回答可以更简洁"],
+        }
+    )
+
 
 class BatchAutoScoreBody(BaseModel):
     employeeId: str
     period: str | None = None
     limit: int | None = None
 
+
 @router.post("/evaluations/conversations/batch-auto-score")
 async def dw_batch_auto_score(body: BatchAutoScoreBody) -> dict:
     return _ok({"total": 5, "scored": 5, "results": []})
+
 
 class ReportGenerateBody(BaseModel):
     employeeId: str
     period: str = "30d"
 
+
 @router.post("/evaluations/reports/generate")
 async def dw_generate_report(body: ReportGenerateBody) -> dict:
-    return _ok({
-        "reportId": f"rpt-{uuid.uuid4().hex[:8]}",
-        "employeeId": body.employeeId,
-        "period": body.period,
-        "totalTasks": 42,
-        "avgQualityScore": 8.3,
-        "successRate": 0.92,
-        "avgDuration": 35,
-        "highlights": ["任务完成率高", "响应时间短"],
-        "issues": ["复杂问题处理能力需提升"],
-        "createdAt": "2026-07-30T12:00:00Z",
-    })
+    return _ok(
+        {
+            "reportId": f"rpt-{uuid.uuid4().hex[:8]}",
+            "employeeId": body.employeeId,
+            "period": body.period,
+            "totalTasks": 42,
+            "avgQualityScore": 8.3,
+            "successRate": 0.92,
+            "avgDuration": 35,
+            "highlights": ["任务完成率高", "响应时间短"],
+            "issues": ["复杂问题处理能力需提升"],
+            "createdAt": "2026-07-30T12:00:00Z",
+        }
+    )
+
 
 @router.get("/evaluations/reports")
 async def dw_list_reports(employeeId: str | None = None) -> dict:
@@ -626,98 +685,152 @@ async def dw_list_reports(employeeId: str | None = None) -> dict:
     ]
     return _ok(reports)
 
+
 @router.get("/evaluations/reports/quality-trend")
 async def dw_quality_trend(employeeId: str) -> dict:
-    return _ok([
-        {"date": "2026-07-24", "score": 7.8},
-        {"date": "2026-07-25", "score": 8.0},
-        {"date": "2026-07-26", "score": 8.2},
-        {"date": "2026-07-27", "score": 8.1},
-        {"date": "2026-07-28", "score": 8.5},
-        {"date": "2026-07-29", "score": 8.3},
-        {"date": "2026-07-30", "score": 8.7},
-    ])
+    return _ok(
+        [
+            {"date": "2026-07-24", "score": 7.8},
+            {"date": "2026-07-25", "score": 8.0},
+            {"date": "2026-07-26", "score": 8.2},
+            {"date": "2026-07-27", "score": 8.1},
+            {"date": "2026-07-28", "score": 8.5},
+            {"date": "2026-07-29", "score": 8.3},
+            {"date": "2026-07-30", "score": 8.7},
+        ]
+    )
+
 
 @router.get("/evaluations/reports/{report_id}")
 async def dw_get_report_detail(report_id: str) -> dict:
-    return _ok({
-        "reportId": report_id,
-        "employeeId": "dw-emp-1",
-        "period": "30d",
-        "totalTasks": 42,
-        "avgQualityScore": 8.3,
-        "successRate": 0.92,
-        "avgDuration": 35,
-        "dimensions": [
-            {"name": "准确性", "score": 9.0, "maxScore": 10},
-            {"name": "完整性", "score": 8.0, "maxScore": 10},
-            {"name": "效率", "score": 8.5, "maxScore": 10},
-        ],
-        "suggestions": [
-            {"type": "prompt", "title": "优化系统提示词", "description": "增加角色约束", "priority": "high"},
-        ],
-        "highlights": ["任务完成率高"],
-        "issues": ["复杂问题处理能力需提升"],
-        "createdAt": "2026-07-30T12:00:00Z",
-    })
+    return _ok(
+        {
+            "reportId": report_id,
+            "employeeId": "dw-emp-1",
+            "period": "30d",
+            "totalTasks": 42,
+            "avgQualityScore": 8.3,
+            "successRate": 0.92,
+            "avgDuration": 35,
+            "dimensions": [
+                {"name": "准确性", "score": 9.0, "maxScore": 10},
+                {"name": "完整性", "score": 8.0, "maxScore": 10},
+                {"name": "效率", "score": 8.5, "maxScore": 10},
+            ],
+            "suggestions": [
+                {
+                    "type": "prompt",
+                    "title": "优化系统提示词",
+                    "description": "增加角色约束",
+                    "priority": "high",
+                },
+            ],
+            "highlights": ["任务完成率高"],
+            "issues": ["复杂问题处理能力需提升"],
+            "createdAt": "2026-07-30T12:00:00Z",
+        }
+    )
+
 
 class GenSuggestionsBody(BaseModel):
     employeeId: str
     period: str | None = None
 
+
 @router.post("/evaluations/suggestions/generate")
 async def dw_generate_suggestions(body: GenSuggestionsBody) -> dict:
-    return _ok({
-        "suggestions": [
-            {"id": "sug-1", "type": "prompt", "title": "增加角色约束", "description": "在系统提示词中增加角色限制", "priority": "high"},
-            {"id": "sug-2", "type": "parameter", "title": "调低 temperature", "description": "将 temperature 从 0.7 降到 0.5", "priority": "medium"},
-        ],
-    })
+    return _ok(
+        {
+            "suggestions": [
+                {
+                    "id": "sug-1",
+                    "type": "prompt",
+                    "title": "增加角色约束",
+                    "description": "在系统提示词中增加角色限制",
+                    "priority": "high",
+                },
+                {
+                    "id": "sug-2",
+                    "type": "parameter",
+                    "title": "调低 temperature",
+                    "description": "将 temperature 从 0.7 降到 0.5",
+                    "priority": "medium",
+                },
+            ],
+        }
+    )
+
 
 @router.get("/evaluations/suggestions")
 async def dw_list_suggestions(employeeId: str, period: str | None = None) -> dict:
-    return _ok([
-        {"id": "sug-1", "type": "prompt", "title": "增加角色约束", "description": "在系统提示词中增加角色限制", "priority": "high"},
-        {"id": "sug-2", "type": "parameter", "title": "调低 temperature", "description": "将 temperature 从 0.7 降到 0.5", "priority": "medium"},
-    ])
+    return _ok(
+        [
+            {
+                "id": "sug-1",
+                "type": "prompt",
+                "title": "增加角色约束",
+                "description": "在系统提示词中增加角色限制",
+                "priority": "high",
+            },
+            {
+                "id": "sug-2",
+                "type": "parameter",
+                "title": "调低 temperature",
+                "description": "将 temperature 从 0.7 降到 0.5",
+                "priority": "medium",
+            },
+        ]
+    )
+
 
 @router.get("/evaluations/rubrics")
 async def dw_list_rubrics() -> dict:
-    return _ok([
-        {"id": "rubric-1", "name": "默认评分规则", "dimensions": [
-            {"name": "准确性", "weight": 0.4, "maxScore": 10},
-            {"name": "完整性", "weight": 0.3, "maxScore": 10},
-            {"name": "语气", "weight": 0.3, "maxScore": 10},
-        ]},
-    ])
+    return _ok(
+        [
+            {
+                "id": "rubric-1",
+                "name": "默认评分规则",
+                "dimensions": [
+                    {"name": "准确性", "weight": 0.4, "maxScore": 10},
+                    {"name": "完整性", "weight": 0.3, "maxScore": 10},
+                    {"name": "语气", "weight": 0.3, "maxScore": 10},
+                ],
+            },
+        ]
+    )
+
 
 @router.post("/evaluations/rubrics")
 async def dw_save_rubric(body: dict) -> dict:
     return _ok(body)
+
 
 class AggregateReportBody(BaseModel):
     collaborationId: str | None = None
     employeeIds: list[str]
     period: str | None = None
 
+
 @router.post("/evaluations/aggregate-report")
 async def dw_aggregate_report(body: AggregateReportBody) -> dict:
-    return _ok({
-        "collaborationId": body.collaborationId,
-        "employeeIds": body.employeeIds,
-        "totalEmployees": len(body.employeeIds),
-        "totalConversations": 15,
-        "avgQualityScore": 8.4,
-        "successRate": 0.91,
-        "dimensions": [
-            {"name": "准确性", "score": 8.8, "maxScore": 10},
-            {"name": "完整性", "score": 8.2, "maxScore": 10},
-        ],
-        "highlights": ["团队协作流畅"],
-        "issues": ["信息传递偶尔遗漏"],
-        "report": "## 协作报告\n\n整体表现良好，平均质量评分 8.4。",
-        "generatedAt": "2026-07-30T12:00:00Z",
-    })
+    return _ok(
+        {
+            "collaborationId": body.collaborationId,
+            "employeeIds": body.employeeIds,
+            "totalEmployees": len(body.employeeIds),
+            "totalConversations": 15,
+            "avgQualityScore": 8.4,
+            "successRate": 0.91,
+            "dimensions": [
+                {"name": "准确性", "score": 8.8, "maxScore": 10},
+                {"name": "完整性", "score": 8.2, "maxScore": 10},
+            ],
+            "highlights": ["团队协作流畅"],
+            "issues": ["信息传递偶尔遗漏"],
+            "report": "## 协作报告\n\n整体表现良好，平均质量评分 8.4。",
+            "generatedAt": "2026-07-30T12:00:00Z",
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -830,18 +943,22 @@ async def dw_get_traces(
 # ---------------------------------------------------------------------------
 class TaskCreateRequest(BaseModel):
     """Body schema for POST /employees/{id}/tasks."""
+
     title: Annotated[str, Field(min_length=1, max_length=512)]
 
 
 class TaskStatusRequest(BaseModel):
     """Body schema for PATCH /employees/{id}/tasks/{task_id}/status."""
+
     status: str  # running / success / failed
     duration_ms: int | None = None
 
 
 @router.post("/employees/{employee_id}/tasks", status_code=201)
 async def create_employee_task(
-    request: Request, employee_id: str, body: TaskCreateRequest,
+    request: Request,
+    employee_id: str,
+    body: TaskCreateRequest,
 ) -> dict:
     """Create a new task for a digital employee (pending state).
 
@@ -856,18 +973,25 @@ async def create_employee_task(
         raise HTTPException(status_code=404, detail="employee not found")
     if emp.status == "offline":
         raise HTTPException(
-            status_code=409, detail="offline employee cannot accept tasks",
+            status_code=409,
+            detail="offline employee cannot accept tasks",
         )
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     task = DwEmployeeTask(
         id=f"dw-task-{uuid.uuid4().hex[:8]}",
-        tenant_id=tid, employee_id=employee_id,
-        title=body.title, status="pending",
-        started_at=now, finished_at=None, duration_ms=0,
+        tenant_id=tid,
+        employee_id=employee_id,
+        title=body.title,
+        status="pending",
+        started_at=now,
+        finished_at=None,
+        duration_ms=0,
     )
     append_employee_task(tid, task)
     _emit(
-        request, "dw.task.created", task.id,
+        request,
+        "dw.task.created",
+        task.id,
         {"task_id": task.id, "employee_id": employee_id, "title": body.title},
         tid,
     )
@@ -876,7 +1000,10 @@ async def create_employee_task(
 
 @router.patch("/employees/{employee_id}/tasks/{task_id}/status")
 async def transition_task_status(
-    request: Request, employee_id: str, task_id: str, body: TaskStatusRequest,
+    request: Request,
+    employee_id: str,
+    task_id: str,
+    body: TaskStatusRequest,
 ) -> dict:
     """Transition a task's lifecycle status.
 
@@ -905,11 +1032,16 @@ async def transition_task_status(
         if duration is None:
             duration = 0
     updated = update_employee_task(
-        tid, task_id, status=body.status,
-        finished_at=finished_at, duration_ms=duration,
+        tid,
+        task_id,
+        status=body.status,
+        finished_at=finished_at,
+        duration_ms=duration,
     )
     _emit(
-        request, "dw.task.status_changed", task_id,
+        request,
+        "dw.task.status_changed",
+        task_id,
         {"task_id": task_id, "from": current, "to": body.status},
         tid,
     )
@@ -921,13 +1053,16 @@ async def transition_task_status(
 # ---------------------------------------------------------------------------
 class EvaluationCreateRequest(BaseModel):
     """Body schema for POST /employees/{id}/evaluations."""
+
     qa_set_id: Annotated[str, Field(min_length=1, max_length=256)]
     score: Annotated[float, Field(ge=0, le=100)]
 
 
 @router.post("/employees/{employee_id}/evaluations", status_code=201)
 async def create_evaluation(
-    request: Request, employee_id: str, body: EvaluationCreateRequest,
+    request: Request,
+    employee_id: str,
+    body: EvaluationCreateRequest,
 ) -> dict:
     """Submit an evaluation for a digital employee.
 
@@ -947,15 +1082,19 @@ async def create_evaluation(
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     evaluation = DwEvaluation(
         id=f"dw-eval-{uuid.uuid4().hex[:8]}",
-        tenant_id=tid, employee_id=employee_id,
-        qa_set_id=body.qa_set_id, score=body.score,
-        passed=passed, evaluated_at=now,
+        tenant_id=tid,
+        employee_id=employee_id,
+        qa_set_id=body.qa_set_id,
+        score=body.score,
+        passed=passed,
+        evaluated_at=now,
     )
     append_evaluation(tid, evaluation)
     _emit(
-        request, "dw.evaluation.submitted", evaluation.id,
-        {"employee_id": employee_id, "score": body.score,
-         "passed": passed, "grade": grade},
+        request,
+        "dw.evaluation.submitted",
+        evaluation.id,
+        {"employee_id": employee_id, "score": body.score, "passed": passed, "grade": grade},
         tid,
     )
     return {**asdict(evaluation), "grade": grade}
@@ -966,6 +1105,7 @@ async def create_evaluation(
 # ---------------------------------------------------------------------------
 class LearningFeedbackRequest(BaseModel):
     """Body schema for POST /learning/feedback."""
+
     employee_id: Annotated[str, Field(min_length=1, max_length=256)]
     scenario: Annotated[str, Field(min_length=1, max_length=256)]
     rating: Annotated[int, Field(ge=1, le=5)]
@@ -974,7 +1114,8 @@ class LearningFeedbackRequest(BaseModel):
 
 @router.post("/learning/feedback", status_code=201)
 async def submit_learning_feedback(
-    request: Request, body: LearningFeedbackRequest,
+    request: Request,
+    body: LearningFeedbackRequest,
 ) -> dict:
     """Submit learning feedback closing the learning loop.
 
@@ -990,16 +1131,25 @@ async def submit_learning_feedback(
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     feedback = DwLearningFeedback(
         id=f"dw-learn-fb-{uuid.uuid4().hex[:8]}",
-        tenant_id=tid, employee_id=body.employee_id,
-        scenario=body.scenario, rating=body.rating,
-        comment=body.comment, feedback_at=now,
+        tenant_id=tid,
+        employee_id=body.employee_id,
+        scenario=body.scenario,
+        rating=body.rating,
+        comment=body.comment,
+        feedback_at=now,
     )
     append_learning_feedback(tid, feedback)
     needs_retrain = body.rating <= 2
     _emit(
-        request, "dw.feedback.submitted", feedback.id,
-        {"employee_id": body.employee_id, "scenario": body.scenario,
-         "rating": body.rating, "needs_retrain": needs_retrain},
+        request,
+        "dw.feedback.submitted",
+        feedback.id,
+        {
+            "employee_id": body.employee_id,
+            "scenario": body.scenario,
+            "rating": body.rating,
+            "needs_retrain": needs_retrain,
+        },
         tid,
     )
     return {**asdict(feedback), "needs_retrain": needs_retrain}
@@ -1019,7 +1169,8 @@ async def submit_learning_feedback(
 # so cross-tenant feedback cannot leak into another tenant's KB.
 @router.post("/learning/feedback/{feedback_id}/promote", status_code=201)
 async def promote_learning_feedback_to_kb(
-    request: Request, feedback_id: str,
+    request: Request,
+    feedback_id: str,
 ) -> dict:
     """Promote a learning feedback snippet into the RAG knowledge base.
 
@@ -1050,7 +1201,10 @@ async def promote_learning_feedback_to_kb(
         rag = _rag_client(request, tid)
         try:
             data = await asyncio.to_thread(
-                rag.ingest, document_id, [snippet], metadata,
+                rag.ingest,
+                document_id,
+                [snippet],
+                metadata,
             )
             chunk_count = int(data.get("chunk_count", 0) or 0)
         finally:
@@ -1058,7 +1212,8 @@ async def promote_learning_feedback_to_kb(
     except Exception as exc:
         _log.warning(
             "dw.learning.promote.rag_failed feedback=%s error=%s",
-            feedback_id, exc,
+            feedback_id,
+            exc,
         )
         raise HTTPException(
             status_code=502,
@@ -1067,12 +1222,15 @@ async def promote_learning_feedback_to_kb(
 
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     updated = update_learning_feedback(
-        tid, feedback_id,
+        tid,
+        feedback_id,
         promoted_document_id=document_id,
         promoted_at=now,
     )
     _emit(
-        request, "dw.feedback.promoted", feedback_id,
+        request,
+        "dw.feedback.promoted",
+        feedback_id,
         {
             "feedback_id": feedback_id,
             "employee_id": feedback.employee_id,
@@ -1082,14 +1240,16 @@ async def promote_learning_feedback_to_kb(
         },
         tid,
     )
-    return _ok({
-        "feedback_id": feedback_id,
-        "promoted_document_id": document_id,
-        "promoted_at": now,
-        "chunk_count": chunk_count,
-        "snippet": snippet,
-        "feedback": asdict(updated) if updated else None,
-    })
+    return _ok(
+        {
+            "feedback_id": feedback_id,
+            "promoted_document_id": document_id,
+            "promoted_at": now,
+            "chunk_count": chunk_count,
+            "snippet": snippet,
+            "feedback": asdict(updated) if updated else None,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1097,6 +1257,7 @@ async def promote_learning_feedback_to_kb(
 # ---------------------------------------------------------------------------
 class CollaborationCreateRequest(BaseModel):
     """Body schema for POST /collaborations."""
+
     employee_id: Annotated[str, Field(min_length=1, max_length=256)]
     peer_employee_id: Annotated[str, Field(min_length=1, max_length=256)]
     duration_ms: Annotated[int, Field(ge=0)]
@@ -1104,7 +1265,8 @@ class CollaborationCreateRequest(BaseModel):
 
 @router.post("/collaborations", status_code=201)
 async def start_collaboration(
-    request: Request, body: CollaborationCreateRequest,
+    request: Request,
+    body: CollaborationCreateRequest,
 ) -> dict:
     """Start a peer collaboration session.
 
@@ -1116,7 +1278,8 @@ async def start_collaboration(
     tid = _tenant_id(request)
     if body.employee_id == body.peer_employee_id:
         raise HTTPException(
-            status_code=422, detail="self-collaboration is not allowed",
+            status_code=422,
+            detail="self-collaboration is not allowed",
         )
     emp1 = get_employee(tid, body.employee_id)
     emp2 = get_employee(tid, body.peer_employee_id)
@@ -1133,16 +1296,23 @@ async def start_collaboration(
     session_id = f"sess-{uuid.uuid4().hex[:8]}"
     collab = DwCollaboration(
         id=f"dw-collab-{uuid.uuid4().hex[:8]}",
-        tenant_id=tid, employee_id=body.employee_id,
+        tenant_id=tid,
+        employee_id=body.employee_id,
         peer_employee_id=body.peer_employee_id,
-        session_id=session_id, started_at=now,
+        session_id=session_id,
+        started_at=now,
         duration_ms=body.duration_ms,
     )
     append_collaboration(tid, collab)
     _emit(
-        request, "dw.collaboration.started", collab.id,
-        {"session_id": session_id, "employee_id": body.employee_id,
-         "peer_employee_id": body.peer_employee_id},
+        request,
+        "dw.collaboration.started",
+        collab.id,
+        {
+            "session_id": session_id,
+            "employee_id": body.employee_id,
+            "peer_employee_id": body.peer_employee_id,
+        },
         tid,
     )
     return asdict(collab)
@@ -1168,6 +1338,7 @@ def _serialize_employee(emp) -> dict:
     # role 字段即 kernel AgentRole slug（ontology/workflow/app/data_product/obs/security/knowledge）；
     # roleCategory 统一为大写形式，与前端 RoleCategory 对齐。未知 role → CUSTOM。
     import time as _t
+
     role_category = emp.role.upper() if emp.role in _KERNEL_ROLE_SLUGS else "CUSTOM"
     return {
         "employeeId": emp.id,
@@ -1295,8 +1466,12 @@ async def dw_create_employee(request: Request, body: EmployeeCreateBody) -> dict
     code = body.code or _gen_employee_code(body.roleCategory)
     cap = body.capability
     emp = DwEmployee(
-        id=emp_id, tenant_id=tid, name=body.name, code=code,
-        role=body.roleIdentity or "CUSTOM", status="active",
+        id=emp_id,
+        tenant_id=tid,
+        name=body.name,
+        code=code,
+        role=body.roleIdentity or "CUSTOM",
+        status="active",
         model_id=_capability_field(cap, "model", "model-openai"),
         kb_ids=tuple(_capability_field(cap, "ragKnowledgeBaseIds", ())),
         system_prompt=_capability_field(cap, "systemPrompt", ""),
@@ -1372,7 +1547,9 @@ class EmployeeStatusBody(BaseModel):
 
 
 @router.put("/employees/{employee_id}/status")
-async def dw_set_employee_status(request: Request, employee_id: str, body: EmployeeStatusBody) -> dict:
+async def dw_set_employee_status(
+    request: Request, employee_id: str, body: EmployeeStatusBody
+) -> dict:
     tid = _tenant_id(request)
     emp = _get_employee_by_id_or_code(tid, employee_id)
     if emp is None:
@@ -1391,11 +1568,14 @@ async def dw_clone_employee(request: Request, employee_id: str, body: dict) -> d
         raise HTTPException(status_code=404, detail="employee not found")
     new_id = f"dw-emp-{uuid.uuid4().hex[:8]}"
     cloned = DwEmployee(
-        id=new_id, tenant_id=tid,
+        id=new_id,
+        tenant_id=tid,
         name=body.get("name", f"{emp.name} (副本)"),
         code=_gen_employee_code("CUSTOM"),  # 克隆时自动生成新 code
-        role=emp.role, status="idle",
-        model_id=emp.model_id, kb_ids=emp.kb_ids,
+        role=emp.role,
+        status="idle",
+        model_id=emp.model_id,
+        kb_ids=emp.kb_ids,
     )
     create_employee(tid, cloned)
     return _ok(_serialize_employee(cloned))
@@ -1411,7 +1591,9 @@ async def dw_get_employee_versions(request: Request, employee_id: str) -> dict:
         {"version": "1.0.0", "timestamp": "2026-07-01T00:00:00Z", "changeLog": "初始版本"},
         {"version": "1.1.0", "timestamp": "2026-07-15T00:00:00Z", "changeLog": "优化提示词"},
     ]
-    return _ok({"items": versions, "total": len(versions), "page": 1, "pageSize": 20, "totalPages": 1})
+    return _ok(
+        {"items": versions, "total": len(versions), "page": 1, "pageSize": 20, "totalPages": 1}
+    )
 
 
 @router.get("/employees/{employee_id}/logs")
@@ -1421,10 +1603,22 @@ async def dw_get_employee_logs(request: Request, employee_id: str) -> dict:
     if emp is None:
         raise HTTPException(status_code=404, detail="employee not found")
     logs = [
-        {"id": f"log-{uuid.uuid4().hex[:8]}", "actor": "admin", "action": "update",
-         "resource": employee_id, "timestamp": "2026-07-30T10:00:00Z", "status": "success"},
-        {"id": f"log-{uuid.uuid4().hex[:8]}", "actor": "admin", "action": "create",
-         "resource": employee_id, "timestamp": "2026-07-01T00:00:00Z", "status": "success"},
+        {
+            "id": f"log-{uuid.uuid4().hex[:8]}",
+            "actor": "admin",
+            "action": "update",
+            "resource": employee_id,
+            "timestamp": "2026-07-30T10:00:00Z",
+            "status": "success",
+        },
+        {
+            "id": f"log-{uuid.uuid4().hex[:8]}",
+            "actor": "admin",
+            "action": "create",
+            "resource": employee_id,
+            "timestamp": "2026-07-01T00:00:00Z",
+            "status": "success",
+        },
     ]
     return _ok({"items": logs, "total": len(logs), "page": 1, "pageSize": 20, "totalPages": 1})
 
@@ -1473,7 +1667,9 @@ async def dw_delete_document(request: Request, doc_id: str) -> dict:
         )
 
     _emit(
-        request, "dw.document.deleted", doc_id,
+        request,
+        "dw.document.deleted",
+        doc_id,
         {
             "document_id": doc_id,
             "rag_deleted": bool(cascade.get("deleted")),
@@ -1498,40 +1694,69 @@ class ExtractBody(BaseModel):
     documentId: str | None = None
     employeeId: str | None = None
 
+
 @router.post("/extract")
 async def dw_post_extract(body: ExtractBody) -> dict:
     """Trigger AI extraction. Returns ExtractionResult with items array."""
     items = [
-        {"id": f"ext-{uuid.uuid4().hex[:8]}", "documentId": body.documentId or "doc-1",
-         "employeeId": body.employeeId or "dw-emp-1", "type": "concept",
-         "name": "客户满意度", "description": "衡量客户对服务的满意程度",
-         "confidence": 92, "status": "pending", "extractedAt": "2026-07-30T12:00:00Z"},
-        {"id": f"ext-{uuid.uuid4().hex[:8]}", "documentId": body.documentId or "doc-1",
-         "employeeId": body.employeeId or "dw-emp-1", "type": "entity",
-         "name": "VIP客户", "description": "高价值客户分类",
-         "confidence": 88, "status": "pending", "extractedAt": "2026-07-30T12:00:00Z"},
-        {"id": f"ext-{uuid.uuid4().hex[:8]}", "documentId": body.documentId or "doc-1",
-         "employeeId": body.employeeId or "dw-emp-1", "type": "rule",
-         "name": "退款规则", "description": "7 天内全额退款",
-         "confidence": 95, "status": "pending", "extractedAt": "2026-07-30T12:00:00Z"},
+        {
+            "id": f"ext-{uuid.uuid4().hex[:8]}",
+            "documentId": body.documentId or "doc-1",
+            "employeeId": body.employeeId or "dw-emp-1",
+            "type": "concept",
+            "name": "客户满意度",
+            "description": "衡量客户对服务的满意程度",
+            "confidence": 92,
+            "status": "pending",
+            "extractedAt": "2026-07-30T12:00:00Z",
+        },
+        {
+            "id": f"ext-{uuid.uuid4().hex[:8]}",
+            "documentId": body.documentId or "doc-1",
+            "employeeId": body.employeeId or "dw-emp-1",
+            "type": "entity",
+            "name": "VIP客户",
+            "description": "高价值客户分类",
+            "confidence": 88,
+            "status": "pending",
+            "extractedAt": "2026-07-30T12:00:00Z",
+        },
+        {
+            "id": f"ext-{uuid.uuid4().hex[:8]}",
+            "documentId": body.documentId or "doc-1",
+            "employeeId": body.employeeId or "dw-emp-1",
+            "type": "rule",
+            "name": "退款规则",
+            "description": "7 天内全额退款",
+            "confidence": 95,
+            "status": "pending",
+            "extractedAt": "2026-07-30T12:00:00Z",
+        },
     ]
-    return _ok({
-        "documentId": body.documentId or "doc-1",
-        "items": items,
-        "totalConcepts": sum(1 for i in items if i["type"] == "concept"),
-        "totalEntities": sum(1 for i in items if i["type"] == "entity"),
-        "totalRules": sum(1 for i in items if i["type"] == "rule"),
-        "totalActions": sum(1 for i in items if i["type"] == "action"),
-    })
+    return _ok(
+        {
+            "documentId": body.documentId or "doc-1",
+            "items": items,
+            "totalConcepts": sum(1 for i in items if i["type"] == "concept"),
+            "totalEntities": sum(1 for i in items if i["type"] == "entity"),
+            "totalRules": sum(1 for i in items if i["type"] == "rule"),
+            "totalActions": sum(1 for i in items if i["type"] == "action"),
+        }
+    )
 
 
 @router.get("/extract/{document_id}")
 async def dw_get_extract_results(document_id: str) -> dict:
-    return _ok({
-        "documentId": document_id,
-        "items": [],
-        "totalConcepts": 0, "totalEntities": 0, "totalRules": 0, "totalActions": 0,
-    })
+    return _ok(
+        {
+            "documentId": document_id,
+            "items": [],
+            "totalConcepts": 0,
+            "totalEntities": 0,
+            "totalRules": 0,
+            "totalActions": 0,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1540,13 +1765,16 @@ async def dw_get_extract_results(document_id: str) -> dict:
 class ExtractionReviewBody(BaseModel):
     status: str  # approved / rejected
 
+
 @router.put("/extract/items/{item_id}")
 async def dw_review_extraction_item(item_id: str, body: ExtractionReviewBody) -> dict:
-    return _ok({
-        "id": item_id,
-        "status": body.status,
-        "reviewedAt": "2026-07-30T12:00:00Z",
-    })
+    return _ok(
+        {
+            "id": item_id,
+            "status": body.status,
+            "reviewedAt": "2026-07-30T12:00:00Z",
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1555,10 +1783,18 @@ async def dw_review_extraction_item(item_id: str, body: ExtractionReviewBody) ->
 class CommitBody(BaseModel):
     itemIds: list[str]
 
+
 @router.post("/commit")
 async def dw_commit_to_ontology(body: CommitBody) -> dict:
     results = [
-        {"id": iid, "commitResult": {"success": True, "message": "已写入本体引擎", "ontId": f"ont-{uuid.uuid4().hex[:8]}"}}
+        {
+            "id": iid,
+            "commitResult": {
+                "success": True,
+                "message": "已写入本体引擎",
+                "ontId": f"ont-{uuid.uuid4().hex[:8]}",
+            },
+        }
         for iid in body.itemIds
     ]
     return _ok(results)
@@ -1570,52 +1806,76 @@ async def dw_commit_to_ontology(body: CommitBody) -> dict:
 @router.get("/learning/employees/{employee_id}/knowledge")
 async def dw_get_employee_knowledge(employee_id: str, syncedOnly: bool = False) -> dict:
     knowledge = [
-        {"knowledgeId": f"kn-{i}", "employeeId": employee_id,
-         "knowledgeType": "prompt_fragment", "title": f"知识片段 {i}",
-         "content": f"这是从反馈中提炼的知识 {i}", "sourceFeedbackIds": ["fb-1"],
-         "taskPattern": "客服对话", "tags": ["高频问题", "退款"], "confidence": 0.9,
-         "syncedToKb": i % 2 == 0, "kbDocumentId": f"kb-doc-{i}" if i % 2 == 0 else None,
-         "createdAt": "2026-07-30T12:00:00Z", "updatedAt": "2026-07-30T12:00:00Z"}
+        {
+            "knowledgeId": f"kn-{i}",
+            "employeeId": employee_id,
+            "knowledgeType": "prompt_fragment",
+            "title": f"知识片段 {i}",
+            "content": f"这是从反馈中提炼的知识 {i}",
+            "sourceFeedbackIds": ["fb-1"],
+            "taskPattern": "客服对话",
+            "tags": ["高频问题", "退款"],
+            "confidence": 0.9,
+            "syncedToKb": i % 2 == 0,
+            "kbDocumentId": f"kb-doc-{i}" if i % 2 == 0 else None,
+            "createdAt": "2026-07-30T12:00:00Z",
+            "updatedAt": "2026-07-30T12:00:00Z",
+        }
         for i in range(1, 4)
     ]
     if syncedOnly:
         knowledge = [k for k in knowledge if k["syncedToKb"]]
-    return _ok({"items": knowledge, "total": len(knowledge), "page": 1, "pageSize": 20, "totalPages": 1})
+    return _ok(
+        {"items": knowledge, "total": len(knowledge), "page": 1, "pageSize": 20, "totalPages": 1}
+    )
 
 
 @router.get("/learning/employees/{employee_id}/stats")
 async def dw_get_employee_learning_stats(employee_id: str) -> dict:
-    return _ok({
-        "employeeId": employee_id,
-        "totalFeedback": 10,
-        "thumbUp": 7,
-        "thumbDown": 2,
-        "suggestions": 1,
-        "knowledgeFragments": 3,
-        "syncedFragments": 2,
-        "successRate": 0.85,
-        "topTags": ["高频问题", "退款", "服务态度"],
-    })
+    return _ok(
+        {
+            "employeeId": employee_id,
+            "totalFeedback": 10,
+            "thumbUp": 7,
+            "thumbDown": 2,
+            "suggestions": 1,
+            "knowledgeFragments": 3,
+            "syncedFragments": 2,
+            "successRate": 0.85,
+            "topTags": ["高频问题", "退款", "服务态度"],
+        }
+    )
 
 
 @router.post("/learning/employees/{employee_id}/sync-to-kb")
 async def dw_sync_employee_knowledge(employee_id: str) -> dict:
-    return _ok({
-        "employeeId": employee_id,
-        "syncedCount": 2,
-        "documentIds": ["kb-doc-1", "kb-doc-2"],
-    })
+    return _ok(
+        {
+            "employeeId": employee_id,
+            "syncedCount": 2,
+            "documentIds": ["kb-doc-1", "kb-doc-2"],
+        }
+    )
 
 
 @router.post("/learning/extract")
 async def dw_post_extract_knowledge(body: dict) -> dict:
     employee_id = body.get("employee_id", "dw-emp-1")
     knowledge = [
-        {"knowledgeId": "kn-new-1", "employeeId": employee_id,
-         "knowledgeType": "tool_rule", "title": "新增知识片段",
-         "content": "从反馈中提炼的新规则", "sourceFeedbackIds": ["fb-1"],
-         "taskPattern": "客服对话", "tags": ["新发现"], "confidence": 0.88,
-         "syncedToKb": False, "createdAt": "2026-07-30T12:30:00Z", "updatedAt": "2026-07-30T12:30:00Z"}
+        {
+            "knowledgeId": "kn-new-1",
+            "employeeId": employee_id,
+            "knowledgeType": "tool_rule",
+            "title": "新增知识片段",
+            "content": "从反馈中提炼的新规则",
+            "sourceFeedbackIds": ["fb-1"],
+            "taskPattern": "客服对话",
+            "tags": ["新发现"],
+            "confidence": 0.88,
+            "syncedToKb": False,
+            "createdAt": "2026-07-30T12:30:00Z",
+            "updatedAt": "2026-07-30T12:30:00Z",
+        }
     ]
     return _ok({"knowledge": knowledge})
 
@@ -1683,10 +1943,12 @@ async def dw_list_employee_conversations(
     tid = _tenant_id(request)
     uid = _user_id(request)
     convs = list_employee_conversations(tid, uid, employee_id)
-    return _ok({
-        "items": [_serialize_conversation(c) for c in convs],
-        "total": len(convs),
-    })
+    return _ok(
+        {
+            "items": [_serialize_conversation(c) for c in convs],
+            "total": len(convs),
+        }
+    )
 
 
 @router.post("/employees/{employee_id}/conversations", status_code=201)
@@ -1701,8 +1963,12 @@ async def dw_create_employee_conversation(
     now = _now_iso()
     conv = DwEmployeeConversation(
         id=f"dwe-conv-{uuid.uuid4().hex[:24]}",
-        tenant_id=tid, user_id=uid, employee_id=employee_id,
-        title=body.title or "", created_at=now, updated_at=now,
+        tenant_id=tid,
+        user_id=uid,
+        employee_id=employee_id,
+        title=body.title or "",
+        created_at=now,
+        updated_at=now,
     )
     put_employee_conversation(tid, conv)
     return _ok(_serialize_conversation(conv))
@@ -1724,10 +1990,12 @@ async def dw_list_employee_conversation_messages(
     if conv.user_id != uid or conv.employee_id != employee_id:
         raise HTTPException(status_code=403, detail="cross-user/employee access denied")
     msgs = list_employee_messages(tid, conversation_id)
-    return _ok({
-        "items": [_serialize_message(m) for m in msgs],
-        "total": len(msgs),
-    })
+    return _ok(
+        {
+            "items": [_serialize_message(m) for m in msgs],
+            "total": len(msgs),
+        }
+    )
 
 
 @router.post(
@@ -1757,18 +2025,27 @@ async def dw_append_employee_message(
     sequence = next_employee_message_sequence(tid, conversation_id)
     msg = DwEmployeeMessage(
         id=f"dwe-msg-{uuid.uuid4().hex[:24]}",
-        tenant_id=tid, conversation_id=conversation_id,
-        role=body.role, content=body.content, status=body.status,
-        model=body.model, sequence=sequence, created_at=now,
+        tenant_id=tid,
+        conversation_id=conversation_id,
+        role=body.role,
+        content=body.content,
+        status=body.status,
+        model=body.model,
+        sequence=sequence,
+        created_at=now,
     )
     put_employee_message(tid, msg)
     # 触达会话 updated_at（put_employee_message 也会更新，这里冗余写一次保证）
     put_employee_conversation(
         tid,
         DwEmployeeConversation(
-            id=conv.id, tenant_id=conv.tenant_id, user_id=conv.user_id,
-            employee_id=conv.employee_id, title=conv.title,
-            created_at=conv.created_at, updated_at=now,
+            id=conv.id,
+            tenant_id=conv.tenant_id,
+            user_id=conv.user_id,
+            employee_id=conv.employee_id,
+            title=conv.title,
+            created_at=conv.created_at,
+            updated_at=now,
         ),
     )
     return _ok(_serialize_message(msg))
@@ -1776,4 +2053,5 @@ async def dw_append_employee_message(
 
 def _now_iso() -> str:
     import time as _t
+
     return _t.strftime("%Y-%m-%dT%H:%M:%S", _t.gmtime()) + "Z"

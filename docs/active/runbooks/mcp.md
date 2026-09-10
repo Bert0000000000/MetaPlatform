@@ -16,14 +16,14 @@ MCP_TRANSPORT=sse uv run --package mate-tech-mcp python -m mate_tech_mcp.main  #
 
 ## 端点
 
-| Method | Path | 说明 |
-|---|---|---|
-| GET | /healthz | 健康检查（含 tool 数） |
-| GET | /api/v1/mcp/tools | 工具列表 |
-| GET | /api/v1/mcp/resources | 资源列表 |
-| GET | /api/v1/mcp/prompts | 提示模板列表 |
-| POST | /api/v1/mcp/prompts/{name} | 渲染 prompt |
-| POST | /api/v1/mcp/tools/{name} | HTTP 桥接调工具 |
+| Method | Path                       | 说明                   |
+| ------ | -------------------------- | ---------------------- |
+| GET    | /healthz                   | 健康检查（含 tool 数） |
+| GET    | /api/v1/mcp/tools          | 工具列表               |
+| GET    | /api/v1/mcp/resources      | 资源列表               |
+| GET    | /api/v1/mcp/prompts        | 提示模板列表           |
+| POST   | /api/v1/mcp/prompts/{name} | 渲染 prompt            |
+| POST   | /api/v1/mcp/tools/{name}   | HTTP 桥接调工具        |
 
 ## 内置工具
 
@@ -51,12 +51,12 @@ MCP_TRANSPORT=sse uv run --package mate-tech-mcp python -m mate_tech_mcp.main  #
 
 ## 故障排查
 
-| 现象 | 排查 |
-|---|---|
+| 现象     | 排查                                       |
+| -------- | ------------------------------------------ |
 | 工具 404 | 检查 `mcp_server.register_tool()` 是否调用 |
-| 401 | 检查 JWT 是否有效 + 过期 |
-| 429 | 检查 `ToolRateLimiter` 配置 |
-| 资源 404 | 检查 ontology 服务连接 |
+| 401      | 检查 JWT 是否有效 + 过期                   |
+| 429      | 检查 `ToolRateLimiter` 配置                |
+| 资源 404 | 检查 ontology 服务连接                     |
 
 ## SLO 越线（ADR-0018 §2.1）
 

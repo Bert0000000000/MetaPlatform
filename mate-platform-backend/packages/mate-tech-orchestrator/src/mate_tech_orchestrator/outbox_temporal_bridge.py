@@ -13,6 +13,7 @@ Temporal workflow；两者可并存（Kafka 广播 + Temporal 编排）。
   幂等由 workflow id 模板保证：``outbox-{event_id}`` 重复启动同 id 会被
   Temporal 拒绝，等效去重）。
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -30,8 +31,13 @@ class WorkflowStarter(Protocol):
     """Temporal 侧启动器（由 temporalio Client 适配）。"""
 
     async def start_plan(
-        self, *, workflow_id: str, steps: list[dict[str, Any]],
-        tenant_id: str, author_user_id: str, token: str = "",
+        self,
+        *,
+        workflow_id: str,
+        steps: list[dict[str, Any]],
+        tenant_id: str,
+        author_user_id: str,
+        token: str = "",
     ) -> str:
         """启动 PlanWorkflow，返回 workflow id。"""
         ...
@@ -47,8 +53,7 @@ TRIGGER_RULES: dict[str, tuple[dict[str, Any], ...]] = {
             "target": "ont.tenant-default.obj.employee.v1",
             "payload": {
                 "action_kind": "create_instance",
-                "props": {"emp-id": "{payload.order_id}",
-                          "name": "auto-review", "dept": "auto"},
+                "props": {"emp-id": "{payload.order_id}", "name": "auto-review", "dept": "auto"},
             },
         },
     ),
@@ -107,13 +112,16 @@ class OutboxTemporalBridge:
                 self._outbox.mark_attempt_failed(event.id, str(exc))
                 logger.warning(
                     "outbox.temporal.start_failed",
-                    event_id=event.id, event_type=event.type, error=str(exc),
+                    event_id=event.id,
+                    event_type=event.type,
+                    error=str(exc),
                 )
                 continue
             self._outbox.mark_published(event.id)
             started += 1
             logger.info(
                 "outbox.temporal.started",
-                event_id=event.id, event_type=event.type,
+                event_id=event.id,
+                event_type=event.type,
             )
         return {"started": started, "skipped": skipped, "failed": failed}

@@ -17,8 +17,8 @@
 fe:
   fullnameOverride: starrocks-fe
   replicaCount: 1
-  queryPort: 9030        # MySQL protocol — JDBC clients
-  httpPort: 8040         # web UI + REST
+  queryPort: 9030 # MySQL protocol — JDBC clients
+  httpPort: 8040 # web UI + REST
   image:
     repository: starrocks/fe-ubuntu
     tag: "3.3"
@@ -27,9 +27,9 @@ fe:
 be:
   fullnameOverride: starrocks-be
   replicaCount: 3
-  heartbeatPort: 9050    # BE → FE heartbeats
-  bePort: 9060           # BE → BE data exchange
-  webserverPort: 8040    # BE web UI
+  heartbeatPort: 9050 # BE → FE heartbeats
+  bePort: 9060 # BE → BE data exchange
+  webserverPort: 8040 # BE web UI
   image:
     repository: starrocks/be-ubuntu
     tag: "3.3"
@@ -71,10 +71,10 @@ persistence:
 externalCatalogs:
   iceberg:
     enabled: true
-    catalogEndpoint: "http://iceberg:8181"   # sibling sub-chart REST
+    catalogEndpoint: "http://iceberg:8181" # sibling sub-chart REST
   paimon:
     enabled: true
-    catalogEndpoint: "http://paimon:8081"    # sibling sub-chart REST
+    catalogEndpoint: "http://paimon:8081" # sibling sub-chart REST
 
 # Tenant isolation — every StarRocks database is created under
 # the tenant_<tenant_id> prefix so cross-tenant reports stay

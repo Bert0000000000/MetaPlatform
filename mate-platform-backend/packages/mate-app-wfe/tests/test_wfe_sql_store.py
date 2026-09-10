@@ -4,6 +4,7 @@ Uses SQLite in-memory + Base.metadata.create_all to verify the SQL
 store's CRUD + tenant isolation. The structural ``validate_bpmn`` check
 stays in in_memory and is not exercised here.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -33,8 +34,12 @@ _TENANT_B = "tenant-bigo"
 # ---------------------------------------------------------------------------
 def test_put_and_get_flow() -> None:
     flow = mem.FlowDefinition(
-        id="flow-1", tenant_id=_TENANT_A, name="Approval Flow",
-        bpmn_xml="<bpmn:definitions/>", version="2.0", status="active",
+        id="flow-1",
+        tenant_id=_TENANT_A,
+        name="Approval Flow",
+        bpmn_xml="<bpmn:definitions/>",
+        version="2.0",
+        status="active",
     )
     sql.put_flow(_TENANT_A, flow)
 
@@ -49,14 +54,22 @@ def test_put_and_get_flow() -> None:
 
 def test_put_flow_upsert() -> None:
     flow = mem.FlowDefinition(
-        id="flow-2", tenant_id=_TENANT_A, name="Old Name",
-        bpmn_xml="", version="1.0", status="draft",
+        id="flow-2",
+        tenant_id=_TENANT_A,
+        name="Old Name",
+        bpmn_xml="",
+        version="1.0",
+        status="draft",
     )
     sql.put_flow(_TENANT_A, flow)
     # Update in place
     flow = mem.FlowDefinition(
-        id="flow-2", tenant_id=_TENANT_A, name="New Name",
-        bpmn_xml="<bpmn:definitions/>", version="1.1", status="active",
+        id="flow-2",
+        tenant_id=_TENANT_A,
+        name="New Name",
+        bpmn_xml="<bpmn:definitions/>",
+        version="1.1",
+        status="active",
     )
     sql.put_flow(_TENANT_A, flow)
 
@@ -78,7 +91,9 @@ def test_versioned_plan_definition_publishes_an_immutable_sql_revision() -> None
         expected_version=0,
     )
     published, revision = sql.publish_workflow_definition(
-        _TENANT_A, "order-review", actor_id="u-1",
+        _TENANT_A,
+        "order-review",
+        actor_id="u-1",
     )
     assert published.published_version == created.version
     assert revision.plan == plan
@@ -102,7 +117,9 @@ def test_versioned_plan_definition_publishes_an_immutable_sql_revision() -> None
 # ---------------------------------------------------------------------------
 def test_put_and_get_validation() -> None:
     val = mem.FlowValidation(
-        id="val-1", tenant_id=_TENANT_A, flow_id="flow-1",
+        id="val-1",
+        tenant_id=_TENANT_A,
+        flow_id="flow-1",
         valid=False,
         issues=("missing <definitions>", "missing <process>"),
         validated_at="2026-08-01T00:00:00Z",
@@ -122,9 +139,13 @@ def test_put_and_get_validation() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_test_run() -> None:
     run = mem.FlowTestRun(
-        id="run-1", tenant_id=_TENANT_A, flow_id="flow-1",
-        status="success", started_at="2026-08-01T00:00:00Z",
-        finished_at="2026-08-01T00:00:05Z", duration_ms=5000,
+        id="run-1",
+        tenant_id=_TENANT_A,
+        flow_id="flow-1",
+        status="success",
+        started_at="2026-08-01T00:00:00Z",
+        finished_at="2026-08-01T00:00:05Z",
+        duration_ms=5000,
         output={"steps": 3, "passed": 3},
     )
     sql.put_test_run(_TENANT_A, run)
@@ -143,12 +164,24 @@ def test_put_and_get_test_run() -> None:
 # Tenant isolation
 # ---------------------------------------------------------------------------
 def test_tenant_isolation() -> None:
-    sql.put_flow(_TENANT_A, mem.FlowDefinition(
-        id="flow-a", tenant_id=_TENANT_A, name="A Flow", bpmn_xml="",
-    ))
-    sql.put_flow(_TENANT_B, mem.FlowDefinition(
-        id="flow-b", tenant_id=_TENANT_B, name="B Flow", bpmn_xml="",
-    ))
+    sql.put_flow(
+        _TENANT_A,
+        mem.FlowDefinition(
+            id="flow-a",
+            tenant_id=_TENANT_A,
+            name="A Flow",
+            bpmn_xml="",
+        ),
+    )
+    sql.put_flow(
+        _TENANT_B,
+        mem.FlowDefinition(
+            id="flow-b",
+            tenant_id=_TENANT_B,
+            name="B Flow",
+            bpmn_xml="",
+        ),
+    )
 
     a_flows = sql.list_flows(_TENANT_A)
     assert [f.id for f in a_flows] == ["flow-a"]

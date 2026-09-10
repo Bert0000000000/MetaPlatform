@@ -1,4 +1,5 @@
 """W3 tests: cross-tenant isolation negatives (ADR-0014 step 2)."""
+
 from __future__ import annotations
 
 import pytest
@@ -21,7 +22,9 @@ def setup(client: TestClient):
     get_role_registry().reset()
 
 
-def test_cross_tenant_role_invisible(client: TestClient, auth_headers_acme, auth_headers_globex, setup) -> None:
+def test_cross_tenant_role_invisible(
+    client: TestClient, auth_headers_acme, auth_headers_globex, setup
+) -> None:
     lst = client.get("/api/v1/orchestrator/roles", headers=auth_headers_globex)
     assert lst.json()["total"] == 0
     lst_acme = client.get("/api/v1/orchestrator/roles", headers=auth_headers_acme)
@@ -40,5 +43,7 @@ def test_cross_tenant_dispatch_404(client: TestClient, auth_headers_globex, setu
 
 def test_tenant_guard_required(client: TestClient, setup) -> None:
     # No token → install_auth rejects before the handler (401).
-    r = client.post("/api/v1/orchestrator/dispatch", json={"capability": "kb_search", "arguments": {}})
+    r = client.post(
+        "/api/v1/orchestrator/dispatch", json={"capability": "kb_search", "arguments": {}}
+    )
     assert r.status_code in (400, 401), r.text

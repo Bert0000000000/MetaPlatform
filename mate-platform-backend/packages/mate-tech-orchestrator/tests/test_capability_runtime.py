@@ -1,4 +1,5 @@
 """MP-COMP-01 pilot: reactive capability runtime unit tests (ADR-0042)."""
+
 from __future__ import annotations
 
 import pytest
@@ -16,7 +17,10 @@ TENANT = "tenant-acme"
 
 def _role(*caps: CapabilityBinding) -> DigitalEmployeeRole:
     return DigitalEmployeeRole(
-        role="app", tenant_id=TENANT, name="App", capabilities=caps,
+        role="app",
+        tenant_id=TENANT,
+        name="App",
+        capabilities=caps,
     )
 
 

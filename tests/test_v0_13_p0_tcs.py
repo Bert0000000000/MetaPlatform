@@ -1,4 +1,5 @@
-﻿"""v0.13 tests: PGSaver (TC-5.7.4) + Guard (TC-5.7.11) + Eval set (TC-5.7.12)."""
+"""v0.13 tests: PGSaver (TC-5.7.4) + Guard (TC-5.7.11) + Eval set (TC-5.7.12)."""
+
 from __future__ import annotations
 
 import sys
@@ -85,12 +86,21 @@ def test_guard_redacts_ssn():
 # --- TC-5.7.12 Eval set ---
 def test_qa_set_has_10_items():
     from mate_tech_agent.eval.qa_set import QA_SET
+
     assert len(QA_SET) == 10
 
 
 def test_qa_set_items_have_required_keys():
     from mate_tech_agent.eval.qa_set import QA_SET
-    required = {"id", "query", "scenario", "expected_mode", "expected_keywords", "expected_chunk_count_min"}
+
+    required = {
+        "id",
+        "query",
+        "scenario",
+        "expected_mode",
+        "expected_keywords",
+        "expected_chunk_count_min",
+    }
     for item in QA_SET:
         assert required.issubset(item.keys()), f"Missing keys in {item['id']}"
         assert item["scenario"] == "S1"
@@ -101,5 +111,6 @@ def test_qa_set_items_have_required_keys():
 
 def test_qa_set_unique_ids():
     from mate_tech_agent.eval.qa_set import QA_SET
+
     ids = [item["id"] for item in QA_SET]
     assert len(ids) == len(set(ids)), "QA_SET ids must be unique"

@@ -431,4 +431,3 @@ Batch 口径：后端 20/20 + UI 5/6 + 二轮 4/4 + 三轮 7 项（G7/G12/G13/G2
 3. link upsert 同 rid 被基数校验误杀
 4. create_individual ON CONFLICT 整包替换 props（清掉覆盖层保护属性）
 5. append-property 重建 ObjectType 丢 EXP-04 字段（agent 核查发现）
-

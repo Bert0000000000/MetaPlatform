@@ -5,6 +5,7 @@ that the existing `from mate_tech_llmgw.X import Y` and
 `from mate_platform.X import Y` imports work, even when pytest is
 invoked from the package directory without `pip install -e .`.
 """
+
 from __future__ import annotations
 
 import os

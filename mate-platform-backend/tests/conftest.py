@@ -1,4 +1,5 @@
 """pytest fixtures shared across all tests."""
+
 from __future__ import annotations
 
 import sys

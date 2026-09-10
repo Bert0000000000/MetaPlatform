@@ -124,9 +124,7 @@ def _question_from_dict(d: dict[str, Any]) -> EvaluationQuestion:
             tags=tuple(d.get("tags", ())),
         )
     except (KeyError, TypeError) as exc:
-        raise ValueError(
-            f"题目 JSON 不符合 schema（{SUITE_SCHEMA}）: {d!r}"
-        ) from exc
+        raise ValueError(f"题目 JSON 不符合 schema（{SUITE_SCHEMA}）: {d!r}") from exc
 
 
 def _run_to_dict(r: RunRecord) -> dict[str, Any]:
@@ -213,8 +211,7 @@ def run_suite(
         record = runner(q)
         if record.question_id != q.id:
             raise ValueError(
-                f"runner 返回的 question_id={record.question_id!r} "
-                f"与题目 id={q.id!r} 不一致"
+                f"runner 返回的 question_id={record.question_id!r} 与题目 id={q.id!r} 不一致"
             )
         records.append(record)
     return records

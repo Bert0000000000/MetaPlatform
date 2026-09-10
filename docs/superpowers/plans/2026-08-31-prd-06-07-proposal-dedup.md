@@ -24,6 +24,7 @@
 ## Task 1: Freeze the public lifecycle and execution receipt contract
 
 **Files:**
+
 - Modify: `mate-platform-backend/packages/mate-kernel/src/mate_kernel/action/engine.py`
 - Modify: `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py`
 - Modify: `metaplatform-frontend/apps/web/src/api/ont/kernel.ts`
@@ -42,6 +43,7 @@
 ## Task 2: Add transactional proposal events, idempotency, and migration
 
 **Files:**
+
 - Modify: `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py`
 - Modify: `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/main.py` only if startup migration registration is required
 - Create: `mate-platform-backend/packages/mate-tech-ont/tests/integration/test_v2_kernel_proposal_persistence.py`
@@ -64,6 +66,7 @@
 ## Task 3: Bind approval actions to OIDC identity and tenant authorization
 
 **Files:**
+
 - Modify: `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py`
 - Modify: `mate-platform-backend/packages/mate-tech-ont/tests/integration/test_v2_kernel_proposal_preview.py`
 - Modify: `mate-platform-backend/packages/mate-tech-ont/tests/integration/test_v2_kernel_dedup_http.py`
@@ -81,6 +84,7 @@
 ## Task 4: Complete ActionType execution and outbox/audit evidence
 
 **Files:**
+
 - Modify: `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py`
 - Modify: `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py`
 - Modify: `mate-platform-backend/packages/mate-tech-ont/tests/integration/test_v2_kernel_proposal_persistence.py`
@@ -99,6 +103,7 @@
 ## Task 5: Make the confirmation drawer display authoritative outcomes
 
 **Files:**
+
 - Modify: `metaplatform-frontend/apps/web/src/api/ont/kernel.ts`
 - Modify: `metaplatform-frontend/apps/web/src/pages/ontology/components/ProposalConfirmDrawer.tsx`
 - Modify: `metaplatform-frontend/apps/web/src/pages/ontology/hooks/useOntologyAssistant.ts`
@@ -117,6 +122,7 @@
 ## Task 6: Prove the real local acceptance journey
 
 **Files:**
+
 - Create: `metaplatform-frontend/apps/web/tests/e2e/ontology-proposal-dedup.spec.ts`
 - Modify: `docker-compose.task5.yml`
 - Modify: `docs/active/prd/APP-ONTSTUDIO/PRD-06-Ontology-Proposal_v1.0-20260831.md`

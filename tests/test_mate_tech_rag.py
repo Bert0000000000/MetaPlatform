@@ -1,4 +1,5 @@
 """mate-tech-rag full tests (v0.4): health + 3 strategies + RAGFlow parse + upload + embedder + status."""
+
 from __future__ import annotations
 
 import sys
@@ -58,7 +59,10 @@ def test_ingest_fanout_to_three_clients(client: TestClient) -> None:
         "/api/v1/rag/ingest",
         json={
             "document_id": "doc-1",
-            "chunks": ["Python backend uses FastAPI for RAG service", "MatePlatform uses LangChain"],
+            "chunks": [
+                "Python backend uses FastAPI for RAG service",
+                "MatePlatform uses LangChain",
+            ],
             "metadata": {"source": "unit-test"},
         },
     )
@@ -66,14 +70,26 @@ def test_ingest_fanout_to_three_clients(client: TestClient) -> None:
     body = r.json()
     assert body["chunk_count"] == 2
     from mate_tech_rag.api.retrieval import get_graph, get_hybrid, get_lightrag
+
     assert get_hybrid().count() == 2
     assert get_graph().count() > 0
     assert get_lightrag().count() == 2
 
 
 def test_factual_mode_returns_hybrid_results(client: TestClient) -> None:
-    client.post("/api/v1/rag/ingest", json={"document_id": "doc-f", "chunks": ["Python FastAPI is an async web framework", "Java Spring is a sync blocking framework"]})
-    r = client.post("/api/v1/rag/search", json={"query": "Python FastAPI", "top_k": 2, "mode": "FACTUAL"})
+    client.post(
+        "/api/v1/rag/ingest",
+        json={
+            "document_id": "doc-f",
+            "chunks": [
+                "Python FastAPI is an async web framework",
+                "Java Spring is a sync blocking framework",
+            ],
+        },
+    )
+    r = client.post(
+        "/api/v1/rag/search", json={"query": "Python FastAPI", "top_k": 2, "mode": "FACTUAL"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["mode"] == "FACTUAL"
@@ -82,8 +98,16 @@ def test_factual_mode_returns_hybrid_results(client: TestClient) -> None:
 
 
 def test_entity_mode_returns_graph_results(client: TestClient) -> None:
-    client.post("/api/v1/rag/ingest", json={"document_id": "doc-e", "chunks": ["MatePlatform uses FastAPI framework", "Flowable provides BPMN engine"]})
-    r = client.post("/api/v1/rag/search", json={"query": "FastAPI author", "top_k": 5, "mode": "ENTITY"})
+    client.post(
+        "/api/v1/rag/ingest",
+        json={
+            "document_id": "doc-e",
+            "chunks": ["MatePlatform uses FastAPI framework", "Flowable provides BPMN engine"],
+        },
+    )
+    r = client.post(
+        "/api/v1/rag/search", json={"query": "FastAPI author", "top_k": 5, "mode": "ENTITY"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["mode"] == "ENTITY"
@@ -92,8 +116,20 @@ def test_entity_mode_returns_graph_results(client: TestClient) -> None:
 
 
 def test_thematic_mode_returns_lightrag_results(client: TestClient) -> None:
-    client.post("/api/v1/rag/ingest", json={"document_id": "doc-t", "chunks": ["MatePlatform is a meta platform foundation", "MatePlatform supports multi-tenant"]})
-    r = client.post("/api/v1/rag/search", json={"query": "MatePlatform multi-tenant", "top_k": 5, "mode": "THEMATIC"})
+    client.post(
+        "/api/v1/rag/ingest",
+        json={
+            "document_id": "doc-t",
+            "chunks": [
+                "MatePlatform is a meta platform foundation",
+                "MatePlatform supports multi-tenant",
+            ],
+        },
+    )
+    r = client.post(
+        "/api/v1/rag/search",
+        json={"query": "MatePlatform multi-tenant", "top_k": 5, "mode": "THEMATIC"},
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["mode"] == "THEMATIC"
@@ -104,7 +140,9 @@ def test_thematic_mode_returns_lightrag_results(client: TestClient) -> None:
 def test_auto_mode_routes_by_pascalcase(client: TestClient) -> None:
     r1 = client.post("/api/v1/rag/search", json={"query": "FastAPI", "top_k": 3, "mode": "AUTO"})
     assert r1.json()["mode"] == "ENTITY"
-    r2 = client.post("/api/v1/rag/search", json={"query": "python backend", "top_k": 3, "mode": "AUTO"})
+    r2 = client.post(
+        "/api/v1/rag/search", json={"query": "python backend", "top_k": 3, "mode": "AUTO"}
+    )
     assert r2.json()["mode"] in ("FACTUAL", "THEMATIC")
 
 
@@ -120,6 +158,7 @@ def test_ingest_validation_no_chunks(client: TestClient) -> None:
 
 def test_mate_common_error_typed() -> None:
     from mate_common import NotFoundError
+
     with pytest.raises(NotFoundError) as exc:
         raise NotFoundError("kb not found", details={"kb_id": "x"})
     assert exc.value.http_status == 404
@@ -137,7 +176,14 @@ def test_fake_chunk_factory() -> None:
 
 
 def test_ragflow_parse_paragraphs(client: TestClient) -> None:
-    r = client.post("/api/v1/rag/parse", json={"document_id": "doc-parse", "content": "Para 1 about Python FastAPI.\n\nPara 2 about MatePlatform.\n\nPara 3 about LightRAG.", "metadata": {"src": "rf"}})
+    r = client.post(
+        "/api/v1/rag/parse",
+        json={
+            "document_id": "doc-parse",
+            "content": "Para 1 about Python FastAPI.\n\nPara 2 about MatePlatform.\n\nPara 3 about LightRAG.",
+            "metadata": {"src": "rf"},
+        },
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["chunk_count"] == 1  # InMemoryRAGFlow puts short content in 1 chunk
@@ -161,7 +207,11 @@ def test_ragflow_parse_validation_empty_content(client: TestClient) -> None:
 
 def test_upload_text_file_fanout(client: TestClient) -> None:
     text_content = b"First section about Python FastAPI.\n\nSecond section about MatePlatform.\n\nThird section about LightRAG."
-    r = client.post("/api/v1/rag/upload", files={"file": ("doc.txt", text_content, "text/plain")}, params={"document_id": "upload-test-1"})
+    r = client.post(
+        "/api/v1/rag/upload",
+        files={"file": ("doc.txt", text_content, "text/plain")},
+        params={"document_id": "upload-test-1"},
+    )
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["chunk_count"] >= 1
@@ -170,7 +220,9 @@ def test_upload_text_file_fanout(client: TestClient) -> None:
 
 def test_upload_markdown_file(client: TestClient) -> None:
     md_content = b"# Heading\n\n## Section A\n\nText about MatePlatform.\n\n## Section B\n\nMore about LightRAG."
-    r = client.post("/api/v1/rag/upload", files={"file": ("readme.md", md_content, "text/markdown")})
+    r = client.post(
+        "/api/v1/rag/upload", files={"file": ("readme.md", md_content, "text/markdown")}
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["chunk_count"] >= 1
@@ -184,6 +236,7 @@ def test_upload_empty_file_400(client: TestClient) -> None:
 
 def test_embedder_factory_default() -> None:
     from mate_tech_rag.embedder import LocalTinyEmbedder, create_embedder
+
     e = create_embedder("local")
     assert isinstance(e, LocalTinyEmbedder)
     assert e.dim == 384
@@ -191,6 +244,7 @@ def test_embedder_factory_default() -> None:
 
 def test_embedder_factory_hash_legacy() -> None:
     from mate_tech_rag.embedder import HashEmbedder, create_embedder
+
     e = create_embedder("hash")
     assert isinstance(e, HashEmbedder)
     assert e.dim == 16
@@ -198,12 +252,14 @@ def test_embedder_factory_hash_legacy() -> None:
 
 def test_embedder_factory_unknown_raises() -> None:
     from mate_tech_rag.embedder import create_embedder
+
     with pytest.raises(ValueError, match="Unknown embedder provider"):
         create_embedder("not-a-provider")
 
 
 def test_local_tiny_embedder_normalized() -> None:
     from mate_tech_rag.embedder import LocalTinyEmbedder
+
     e = LocalTinyEmbedder()
     v = e.embed("hello world this is a test")
     assert len(v) == 384
@@ -213,6 +269,7 @@ def test_local_tiny_embedder_normalized() -> None:
 
 def test_local_tiny_embedder_empty_returns_zeros() -> None:
     from mate_tech_rag.embedder import LocalTinyEmbedder
+
     e = LocalTinyEmbedder()
     v = e.embed("")
     assert all(x == 0.0 for x in v)
@@ -220,20 +277,24 @@ def test_local_tiny_embedder_empty_returns_zeros() -> None:
 
 def test_local_tiny_embedder_similar_texts_close() -> None:
     from mate_tech_rag.embedder import LocalTinyEmbedder
+
     e = LocalTinyEmbedder()
     v1 = e.embed("Python FastAPI web framework backend")
     v2 = e.embed("FastAPI Python backend web framework")
     v3 = e.embed("Completely unrelated topic about cooking recipes")
+
     def cos(a, b):
         dot = sum(x * y for x, y in zip(a, b, strict=False))
         na = sum(x * x for x in a) ** 0.5
         nb = sum(x * x for x in b) ** 0.5
         return dot / (na * nb) if na and nb else 0.0
+
     assert cos(v1, v2) > cos(v1, v3)
 
 
 def test_openai_embedder_requires_api_key() -> None:
     from mate_tech_rag.embedder import OpenAIEmbedder
+
     with pytest.raises(ValueError, match="OPENAI_API_KEY"):
         OpenAIEmbedder(api_key="")
 
@@ -242,8 +303,13 @@ def test_openai_embedder_calls_api(respx_mock) -> None:
     import respx
 
     from mate_tech_rag.embedder import OpenAIEmbedder
+
     fake_vector = [0.1] * 1536
-    respx_mock.post("https://api.openai.com/v1/embeddings").mock(return_value=respx.MockResponse(200, json={"data": [{"embedding": fake_vector, "index": 0, "object": "embedding"}]}))
+    respx_mock.post("https://api.openai.com/v1/embeddings").mock(
+        return_value=respx.MockResponse(
+            200, json={"data": [{"embedding": fake_vector, "index": 0, "object": "embedding"}]}
+        )
+    )
     e = OpenAIEmbedder(api_key="sk-test", base_url="https://api.openai.com")
     v = e.embed("hello world")
     assert v == fake_vector

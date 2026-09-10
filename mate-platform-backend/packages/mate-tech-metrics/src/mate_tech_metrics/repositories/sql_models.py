@@ -7,6 +7,7 @@ Lineage and computed values stay in in_memory because they are
 dynamic (recomputed per run) and not part of the persistence
 contract.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import String, Text

@@ -6,6 +6,7 @@ Covers:
   * wfe.flow.deployed outbox event emission
   * cross-tenant isolation for deployments
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -23,8 +24,8 @@ _VALID_BPMN = (
     '<bpmn:process id="proc-1" isExecutable="true">'
     '<bpmn:startEvent id="start-1"/>'
     '<bpmn:endEvent id="end-1"/>'
-    '</bpmn:process>'
-    '</bpmn:definitions>'
+    "</bpmn:process>"
+    "</bpmn:definitions>"
 )
 
 
@@ -60,9 +61,9 @@ def test_flowable_client_fallback_to_inmemory() -> None:
     c2 = FlowableClient(base_url="http://flowable.local:8080")
     assert c2.mode == "flowable"
     with respx.mock:
-        respx.post(
-            "http://flowable.local:8080/process-engine/repository/deployments"
-        ).mock(side_effect=httpx.ConnectError("no route to host"))
+        respx.post("http://flowable.local:8080/process-engine/repository/deployments").mock(
+            side_effect=httpx.ConnectError("no route to host")
+        )
         res2 = asyncio.run(c2.deploy("My Flow", _VALID_BPMN))
     assert res2["engine"] == "in-memory"
     assert res2["status"] == "fallback"
@@ -88,7 +89,9 @@ def test_deploy_flow_happy_path(client, auth_headers_acme) -> None:
 
 
 def test_deploy_flow_emits_outbox(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """POST /flows/deploy emits a wfe.flow.deployed outbox event."""
     client.post(
@@ -105,7 +108,10 @@ def test_deploy_flow_emits_outbox(
 
 
 def test_deploy_flow_tenant_isolation(
-    client, auth_headers_acme, auth_headers_globex, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    auth_headers_globex,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """Deployments are tenant-scoped: each tenant's records + events are isolated."""
     client.post(
@@ -161,9 +167,9 @@ def test_flowable_client_injects_bearer_and_tenant_header(monkeypatch) -> None:
     auth = _StaticAuth()
     client = FlowableClient(auth=auth, tenant_id="tenant-acme")
     with respx.mock:
-        route = respx.post(
-            "http://flowable:8080/process-engine/repository/deployments"
-        ).mock(side_effect=_handler)
+        route = respx.post("http://flowable:8080/process-engine/repository/deployments").mock(
+            side_effect=_handler
+        )
         result = asyncio.run(client.deploy("ACL Test", _VALID_BPMN))
     asyncio.run(client.aclose())
 

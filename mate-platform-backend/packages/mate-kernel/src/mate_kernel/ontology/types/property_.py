@@ -28,15 +28,15 @@ class PropertyFormat(StrEnum):
     TIMESTAMP = "timestamp"
     MARKING = "marking"  # 安全标记
     # SAL-07（2026-09-08）：富属性一等格式（时序/地理/媒体）
-    GEOJSON = "geojson"          # 地理（GeoJSON geometry）
-    LATLON = "latlon"            # 地理（纬,经 二元组）
-    TIMESERIES = "timeseries"    # 时序引用（series rid）
-    IMAGE = "image"              # 媒体：图片（Storage rid/URI）
-    AUDIO = "audio"              # 媒体：音频
-    VIDEO = "video"              # 媒体：视频
+    GEOJSON = "geojson"  # 地理（GeoJSON geometry）
+    LATLON = "latlon"  # 地理（纬,经 二元组）
+    TIMESERIES = "timeseries"  # 时序引用（series rid）
+    IMAGE = "image"  # 媒体：图片（Storage rid/URI）
+    AUDIO = "audio"  # 媒体：音频
+    VIDEO = "video"  # 媒体：视频
     # EXP-02（2026-09-10）：结构化嵌套 + 向量（AI-09 接 pgvector/算子）
-    STRUCT = "struct"            # 嵌套 struct（struct_fields 定义形状）
-    VECTOR = "vector"            # embedding 向量（dims 由 value-type 声明）
+    STRUCT = "struct"  # 嵌套 struct（struct_fields 定义形状）
+    VECTOR = "vector"  # embedding 向量（dims 由 value-type 声明）
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,9 +55,7 @@ class DerivedSpec:
 
     def __post_init__(self) -> None:
         if self.fn not in ("count", "sum", "avg"):
-            raise ValueError(
-                f"DerivedSpec.fn must be count/sum/avg (v1), got {self.fn!r}"
-            )
+            raise ValueError(f"DerivedSpec.fn must be count/sum/avg (v1), got {self.fn!r}")
         if self.fn in ("sum", "avg") and not self.field:
             raise ValueError(f"DerivedSpec.fn={self.fn!r} requires field")
         if not self.over_link:
@@ -82,15 +80,11 @@ class Property:
 
     def __post_init__(self) -> None:
         if self.reducer is not None and self.reducer not in ("first", "latest"):
-            raise ValueError(
-                f"Property.reducer must be first/latest/None, got {self.reducer!r}"
-            )
+            raise ValueError(f"Property.reducer must be first/latest/None, got {self.reducer!r}")
         if self.derived is not None and self.primary_key:
             raise ValueError("derived property cannot be a primary key")
         if self.format is PropertyFormat.STRUCT and not self.struct_fields:
-            raise ValueError(
-                "STRUCT property requires struct_fields (non-empty)"
-            )
+            raise ValueError("STRUCT property requires struct_fields (non-empty)")
 
 
 def ai_metadata_struct(rid: ClassRef) -> Property:
@@ -113,21 +107,31 @@ def ai_metadata_struct(rid: ClassRef) -> Property:
         struct_fields=(
             Property(
                 rid=ClassRef(f"{stem}.confidence.v1"),
-                type_id="double", nullable=True, primary_key=False,
-                title="llmConfidence", format=PropertyFormat.DOUBLE,
+                type_id="double",
+                nullable=True,
+                primary_key=False,
+                title="llmConfidence",
+                format=PropertyFormat.DOUBLE,
             ),
             Property(
                 rid=ClassRef(f"{stem}.reasoning.v1"),
-                type_id="string", nullable=True, primary_key=False,
-                title="llmReasoning", format=PropertyFormat.STRING,
+                type_id="string",
+                nullable=True,
+                primary_key=False,
+                title="llmReasoning",
+                format=PropertyFormat.STRING,
             ),
             Property(
                 rid=ClassRef(f"{stem}.source.v1"),
-                type_id="string", nullable=True, primary_key=False,
-                title="source", format=PropertyFormat.STRING,
+                type_id="string",
+                nullable=True,
+                primary_key=False,
+                title="source",
+                format=PropertyFormat.STRING,
             ),
         ),
     )
+
 
 def reduce_array_value(value: object, reducer: str | None) -> object:
     """G12：数组属性查询时归约（first -> 首元素；latest -> 末元素）。

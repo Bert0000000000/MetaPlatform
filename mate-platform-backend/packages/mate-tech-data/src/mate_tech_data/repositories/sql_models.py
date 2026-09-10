@@ -10,6 +10,7 @@ package. Schema discovery results (``get_source_schema``) stay in
 in-memory because they are dynamic and per-source; this SQL layer
 only persists the three core entities.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import Integer, String, Text
@@ -60,9 +61,7 @@ class DataProductORM(Base):
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     source_paimon_table: Mapped[str] = mapped_column(String(256), nullable=False)
     target_iceberg_table: Mapped[str] = mapped_column(String(256), nullable=False)
-    modality: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="structured"
-    )
+    modality: Mapped[str] = mapped_column(String(32), nullable=False, default="structured")
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")
     owner: Mapped[str] = mapped_column(String(128), nullable=False, default="")
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")

@@ -7,6 +7,7 @@ Covers the 5-step integration checklist from ADR-0014:
   4. BearerAuth + OutgoingAuthMiddleware used for outbound calls
   5. >=3 cross-tenant negative tests
 """
+
 from __future__ import annotations
 
 import os

@@ -4,6 +4,7 @@ All Kafka access in the platform goes through this module; no
 business code imports the raw Kafka client (hard rule 4: external
 system without ACL client, business code does not connect directly).
 """
+
 from .consumer import (
     ConsumerError,
     DlqEntry,

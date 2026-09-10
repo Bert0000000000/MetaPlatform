@@ -7,6 +7,7 @@ Covers the P0 business logic added in the second batch:
   - Outbox event emission (wfe.flow.created / status_changed / deleted)
   - Cross-tenant isolation (tenant A's flows invisible to tenant B)
 """
+
 from __future__ import annotations
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
@@ -17,8 +18,8 @@ _VALID_BPMN = (
     '<bpmn:process id="proc-1" isExecutable="true">'
     '<bpmn:startEvent id="start-1"/>'
     '<bpmn:endEvent id="end-1"/>'
-    '</bpmn:process>'
-    '</bpmn:definitions>'
+    "</bpmn:process>"
+    "</bpmn:definitions>"
 )
 
 _INVALID_BPMN = "<not-bpmn>hello</not-bpmn>"
@@ -77,7 +78,9 @@ def test_create_flow_missing_bpmn(client, auth_headers_acme) -> None:
 
 
 def test_create_flow_emits_outbox_event(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """POST /flows emits a wfe.flow.created outbox event."""
     client.post(
@@ -201,7 +204,9 @@ def test_transition_unknown_flow(client, auth_headers_acme) -> None:
 
 
 def test_transition_emits_outbox_event(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """PATCH /flows/{fid}/status emits wfe.flow.status_changed."""
     client.patch(
@@ -222,7 +227,8 @@ def test_transition_emits_outbox_event(
 def test_delete_draft_flow_succeeds(client, auth_headers_acme) -> None:
     """DELETE /flows/{fid} succeeds for a draft flow."""
     r = client.delete(
-        "/api/v1/wfe/flows/flow-reimbursement", headers=auth_headers_acme,
+        "/api/v1/wfe/flows/flow-reimbursement",
+        headers=auth_headers_acme,
     )
     assert r.status_code == 200, r.text
     assert r.json()["deleted"] == "flow-reimbursement"
@@ -231,7 +237,8 @@ def test_delete_draft_flow_succeeds(client, auth_headers_acme) -> None:
 def test_delete_active_flow_rejected(client, auth_headers_acme) -> None:
     """DELETE /flows/{fid} rejected (409) for an active flow."""
     r = client.delete(
-        "/api/v1/wfe/flows/flow-approval", headers=auth_headers_acme,
+        "/api/v1/wfe/flows/flow-approval",
+        headers=auth_headers_acme,
     )
     assert r.status_code == 409, r.text
     assert "active" in r.json()["detail"]
@@ -240,17 +247,21 @@ def test_delete_active_flow_rejected(client, auth_headers_acme) -> None:
 def test_delete_flow_not_found(client, auth_headers_acme) -> None:
     """DELETE /flows/{fid} with unknown id -> 404."""
     r = client.delete(
-        "/api/v1/wfe/flows/flow-nope", headers=auth_headers_acme,
+        "/api/v1/wfe/flows/flow-nope",
+        headers=auth_headers_acme,
     )
     assert r.status_code == 404, r.text
 
 
 def test_delete_emits_outbox_event(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """DELETE /flows/{fid} emits wfe.flow.deleted."""
     client.delete(
-        "/api/v1/wfe/flows/flow-reimbursement", headers=auth_headers_acme,
+        "/api/v1/wfe/flows/flow-reimbursement",
+        headers=auth_headers_acme,
     )
     events = [rec.event for rec in outbox.all_records()]
     deleted = [e for e in events if e.type == "wfe.flow.deleted"]
@@ -273,13 +284,16 @@ def test_flow_tenant_isolation(client, auth_headers_acme, auth_headers_globex) -
 
     # Tenant globex cannot see it.
     r_globex = client.get(
-        f"/api/v1/wfe/flows/{acme_fid}", headers=auth_headers_globex,
+        f"/api/v1/wfe/flows/{acme_fid}",
+        headers=auth_headers_globex,
     )
     assert r_globex.status_code == 404
 
 
 def test_transition_tenant_isolation(
-    client, auth_headers_acme, auth_headers_globex,
+    client,
+    auth_headers_acme,
+    auth_headers_globex,
 ) -> None:
     """Tenant B cannot transition tenant A's flow."""
     r_acme = client.post(
@@ -298,7 +312,9 @@ def test_transition_tenant_isolation(
 
 
 def test_delete_tenant_isolation(
-    client, auth_headers_acme, auth_headers_globex,
+    client,
+    auth_headers_acme,
+    auth_headers_globex,
 ) -> None:
     """Tenant B cannot delete tenant A's flow."""
     r_acme = client.post(
@@ -309,12 +325,14 @@ def test_delete_tenant_isolation(
     fid = r_acme.json()["flow"]["id"]
 
     r_globex = client.delete(
-        f"/api/v1/wfe/flows/{fid}", headers=auth_headers_globex,
+        f"/api/v1/wfe/flows/{fid}",
+        headers=auth_headers_globex,
     )
     assert r_globex.status_code == 404
 
     # Acme can still see it.
     r_acme_check = client.get(
-        f"/api/v1/wfe/flows/{fid}", headers=auth_headers_acme,
+        f"/api/v1/wfe/flows/{fid}",
+        headers=auth_headers_acme,
     )
     assert r_acme_check.status_code == 200

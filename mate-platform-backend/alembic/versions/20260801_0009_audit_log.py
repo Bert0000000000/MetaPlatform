@@ -8,6 +8,7 @@ structured audit row so the security team can review per-tenant
 data exposure. The table is write-mostly; reads go through the
 admin dashboard (mate-tech-iam).
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa

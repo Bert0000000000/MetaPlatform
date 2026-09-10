@@ -6,6 +6,7 @@ the canonical Keycloak path, and require_tenant for per-request
 isolation. The legacy path is left for dev profile only
 (LEGACY_LOGIN_COMPAT=true).
 """
+
 from __future__ import annotations
 
 import os
@@ -35,10 +36,15 @@ class TestRequireTenantEnforced:
             UserId,
             require_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId(""),
-            user_id=UserId("u"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.USER,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId(""),
+            user_id=UserId("u"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.USER,
         )
         with pytest.raises(TenantAccessError, match="missing tenant"):
             require_tenant(ctx)
@@ -52,10 +58,15 @@ class TestRequireTenantEnforced:
             UserId,
             require_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId("t1"),
-            user_id=UserId("anon"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.ANONYMOUS,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId("t1"),
+            user_id=UserId("anon"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.ANONYMOUS,
         )
         with pytest.raises(TenantAccessError, match="anonymous"):
             require_tenant(ctx)
@@ -68,10 +79,15 @@ class TestRequireTenantEnforced:
             UserId,
             require_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId("acme"),
-            user_id=UserId("u"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.SERVICE,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId("acme"),
+            user_id=UserId("u"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.SERVICE,
         )
         assert require_tenant(ctx) == "acme"
 
@@ -86,10 +102,15 @@ class TestCrossTenantNegatives:
             UserId,
             require_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId(""),
-            user_id=UserId("u"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.USER,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId(""),
+            user_id=UserId("u"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.USER,
         )
         with pytest.raises(TenantAccessError, match="missing tenant"):
             require_tenant(ctx)
@@ -103,10 +124,15 @@ class TestCrossTenantNegatives:
             UserId,
             require_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId("t1"),
-            user_id=UserId("anon"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.ANONYMOUS,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId("t1"),
+            user_id=UserId("anon"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.ANONYMOUS,
         )
         with pytest.raises(TenantAccessError, match="anonymous"):
             require_tenant(ctx)
@@ -120,10 +146,15 @@ class TestCrossTenantNegatives:
             UserId,
             assert_same_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId("t1"),
-            user_id=UserId("u"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.USER,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId("t1"),
+            user_id=UserId("u"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.USER,
         )
         with pytest.raises(TenantAccessError, match="does not match"):
             assert_same_tenant(TenantId("t2"), ctx)
@@ -135,10 +166,12 @@ class TestMcpMainHasInstallAuth:
     def test_mcp_main_calls_install_auth(self) -> None:
         main_py = (
             Path(__file__).resolve().parents[3]
-            / "packages" / "mate-tech-mcp" / "src" / "mate_tech_mcp" / "main.py"
+            / "packages"
+            / "mate-tech-mcp"
+            / "src"
+            / "mate_tech_mcp"
+            / "main.py"
         )
         text = main_py.read_text(encoding="utf-8")
-        assert "install_auth(app)" in text, (
-            "install_auth not wired in mcp main.py"
-        )
+        assert "install_auth(app)" in text, "install_auth not wired in mcp main.py"
         assert "from mate_platform.auth import install_auth" in text

@@ -1,4 +1,5 @@
 """SSE 安装事件通道测试。"""
+
 from __future__ import annotations
 
 import uuid
@@ -18,9 +19,7 @@ def test_sse_payload_format():
 
 
 def test_sse_payload_includes_failure_reason():
-    payload = installer_to_sse_payload(
-        uuid.uuid4(), "failed", error="digest mismatch"
-    )
+    payload = installer_to_sse_payload(uuid.uuid4(), "failed", error="digest mismatch")
     assert "failed" in payload
     assert "digest mismatch" in payload
 

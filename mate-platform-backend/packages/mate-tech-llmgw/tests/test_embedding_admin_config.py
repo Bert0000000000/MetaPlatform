@@ -5,6 +5,7 @@ from IAM → llmgw builds a provider with the resolved base_url/api_key/model.
 Fallback path (disabled / IAM unreachable) returns {} so the request/env
 provider is used.
 """
+
 from __future__ import annotations
 
 import os
@@ -60,12 +61,20 @@ class TestResolveEffectiveEmbedding:
     @pytest.mark.asyncio
     async def test_resolves_provider_config(self) -> None:
         respx.get(url__startswith=f"{IAM}/api/v1/admin/configs").mock(
-            return_value=Response(200, json=_configs([
-                {"key": "ai.embedding.default_provider", "value": "custom_ark"},
-                {"key": "ai.provider.custom_ark.base_url", "value": ARK},
-                {"key": "ai.provider.custom_ark.api_key", "value": "ark-key-123"},
-                {"key": "ai.provider.custom_ark.embedding_model", "value": "doubao-embedding-text-240715"},
-            ]))
+            return_value=Response(
+                200,
+                json=_configs(
+                    [
+                        {"key": "ai.embedding.default_provider", "value": "custom_ark"},
+                        {"key": "ai.provider.custom_ark.base_url", "value": ARK},
+                        {"key": "ai.provider.custom_ark.api_key", "value": "ark-key-123"},
+                        {
+                            "key": "ai.provider.custom_ark.embedding_model",
+                            "value": "doubao-embedding-text-240715",
+                        },
+                    ]
+                ),
+            )
         )
         resolved = await resolve_effective_embedding(_fake_request(), "tenant-default")
         assert resolved == {
@@ -79,18 +88,21 @@ class TestResolveEffectiveEmbedding:
     @pytest.mark.asyncio
     async def test_disabled_returns_empty(self) -> None:
         respx.get(url__startswith=f"{IAM}/api/v1/admin/configs").mock(
-            return_value=Response(200, json=_configs([
-                {"key": "ai.embedding.default_provider", "value": "disabled"},
-            ]))
+            return_value=Response(
+                200,
+                json=_configs(
+                    [
+                        {"key": "ai.embedding.default_provider", "value": "disabled"},
+                    ]
+                ),
+            )
         )
         assert await resolve_effective_embedding(_fake_request(), "t1") == {}
 
     @respx.mock
     @pytest.mark.asyncio
     async def test_iam_unreachable_returns_empty(self) -> None:
-        respx.get(url__startswith=f"{IAM}/api/v1/admin/configs").mock(
-            return_value=Response(500)
-        )
+        respx.get(url__startswith=f"{IAM}/api/v1/admin/configs").mock(return_value=Response(500))
         # Must not raise; returns {} so the fallback path runs.
         assert await resolve_effective_embedding(_fake_request(), "t1") == {}
 
@@ -98,10 +110,15 @@ class TestResolveEffectiveEmbedding:
     @pytest.mark.asyncio
     async def test_missing_base_url_returns_empty(self) -> None:
         respx.get(url__startswith=f"{IAM}/api/v1/admin/configs").mock(
-            return_value=Response(200, json=_configs([
-                {"key": "ai.embedding.default_provider", "value": "openai"},
-                # no base_url configured → cannot use
-            ]))
+            return_value=Response(
+                200,
+                json=_configs(
+                    [
+                        {"key": "ai.embedding.default_provider", "value": "openai"},
+                        # no base_url configured → cannot use
+                    ]
+                ),
+            )
         )
         assert await resolve_effective_embedding(_fake_request(), "t1") == {}
 
@@ -125,20 +142,31 @@ class TestRunEmbeddingsUsesAdminConfig:
     async def test_run_embeddings_threads_resolved_config_to_upstream(self) -> None:
         # IAM returns an enabled embedding provider config.
         respx.get(url__startswith=f"{IAM}/api/v1/admin/configs").mock(
-            return_value=Response(200, json=_configs([
-                {"key": "ai.embedding.default_provider", "value": "custom_ark"},
-                {"key": "ai.provider.custom_ark.base_url", "value": ARK},
-                {"key": "ai.provider.custom_ark.api_key", "value": "ark-key-123"},
-                {"key": "ai.provider.custom_ark.embedding_model", "value": "doubao-embedding-text-240715"},
-            ]))
+            return_value=Response(
+                200,
+                json=_configs(
+                    [
+                        {"key": "ai.embedding.default_provider", "value": "custom_ark"},
+                        {"key": "ai.provider.custom_ark.base_url", "value": ARK},
+                        {"key": "ai.provider.custom_ark.api_key", "value": "ark-key-123"},
+                        {
+                            "key": "ai.provider.custom_ark.embedding_model",
+                            "value": "doubao-embedding-text-240715",
+                        },
+                    ]
+                ),
+            )
         )
         # The upstream ARK /embeddings call must be hit with the configured model.
         upstream = respx.post(f"{ARK}/embeddings").mock(
-            return_value=Response(200, json={
-                "model": "doubao-embedding-text-240715",
-                "data": [{"index": 0, "embedding": [0.1] * 8}],
-                "usage": {"prompt_tokens": 3},
-            })
+            return_value=Response(
+                200,
+                json={
+                    "model": "doubao-embedding-text-240715",
+                    "data": [{"index": 0, "embedding": [0.1] * 8}],
+                    "usage": {"prompt_tokens": 3},
+                },
+            )
         )
 
         req = EmbeddingRequest(input=["订单审批"], model="text-embedding-3-small", tenant_id="t1")

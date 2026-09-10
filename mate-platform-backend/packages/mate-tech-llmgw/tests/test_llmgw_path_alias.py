@@ -10,6 +10,7 @@ must:
   - emit the RFC 8594 `Deprecation` response header
   - be flagged deprecated=True in the OpenAPI schema
 """
+
 from __future__ import annotations
 
 import os
@@ -52,6 +53,7 @@ def client():
             tool_calls=[],
             usage={"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
         )
+
         # ChatResponse is a frozen dataclass with __slots__, so
         # __dict__ is unavailable; expose asdict() via a small
         # wrapper that carries __dict__ for the existing route
@@ -62,8 +64,10 @@ def client():
 
         return _WithDict(asdict(resp))
 
-    with patch("mate_platform.auth.install_auth") as mock_install, \
-         patch("mate_tech_llmgw.api.routes.router_chat", side_effect=fake_chat):
+    with (
+        patch("mate_platform.auth.install_auth") as mock_install,
+        patch("mate_tech_llmgw.api.routes.router_chat", side_effect=fake_chat),
+    ):
         mock_install.return_value = None
         # Build a fresh FastAPI app mirroring the production wiring
         # without re-importing the main module (which would evict
@@ -79,8 +83,10 @@ def client():
         from fastapi import FastAPI
 
         from mate_tech_llmgw.api.routes import legacy_router, router
+
         if "mate_tech_llmgw.main" in sys.modules:
             from mate_tech_llmgw import main as _main_mod_pre
+
             _original_app = _main_mod_pre.app
             del sys.modules["mate_tech_llmgw.main"]
         from mate_tech_llmgw import main as _main_mod
@@ -179,13 +185,15 @@ class TestLegacyPrefixStillWorks:
 
 class TestBothPrefixesCovered:
     @pytest.mark.parametrize("endpoint", ["chat", "embeddings"])
-    def test_both_prefixes_return_same_body(
-        self, client: TestClient, endpoint: str
-    ) -> None:
-        payload = _chat_payload() if endpoint == "chat" else {
-            "model": "text-embedding-3-small",
-            "input": ["hi"],
-        }
+    def test_both_prefixes_return_same_body(self, client: TestClient, endpoint: str) -> None:
+        payload = (
+            _chat_payload()
+            if endpoint == "chat"
+            else {
+                "model": "text-embedding-3-small",
+                "input": ["hi"],
+            }
+        )
         canon = client.post(f"{CANONICAL_PREFIX}/{endpoint}", json=payload)
         legacy = client.post(f"{LEGACY_PREFIX}/{endpoint}", json=payload)
         assert canon.status_code == 200, (endpoint, canon.text)

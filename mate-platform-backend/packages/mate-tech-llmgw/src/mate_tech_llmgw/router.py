@@ -3,6 +3,7 @@
 根据 model 字段路由到 openai / anthropic / qwen / doubao。
 P3-W9: chat() 主路径接入 cache + quota + cost 三大模块。
 """
+
 from __future__ import annotations
 
 import os
@@ -38,10 +39,7 @@ SUPPORTED_PROVIDERS: dict[str, str] = {
     "moonshot": "Moonshot Kimi",
 }
 
-UNSUPPORTED_ERROR_MSG = (
-    "Provider '{name}' is not supported. "
-    "Supported providers: {supported}."
-)
+UNSUPPORTED_ERROR_MSG = "Provider '{name}' is not supported. Supported providers: {supported}."
 
 # OpenAI 兼容 provider 的 base_url
 DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
@@ -228,9 +226,7 @@ def get_provider(model: str) -> ChatProvider:
         provider = LocalStubProvider(model=model)
     else:
         raise ValueError(
-            UNSUPPORTED_ERROR_MSG.format(
-                name=name, supported=", ".join(SUPPORTED_PROVIDERS.keys())
-            )
+            UNSUPPORTED_ERROR_MSG.format(name=name, supported=", ".join(SUPPORTED_PROVIDERS.keys()))
         )
     _providers[name] = provider
     logger.info("llmgw.provider.initialized", name=name, model=model)
@@ -258,9 +254,7 @@ async def chat(
 
         estimated_tokens = estimate_messages_tokens(messages)
         try:
-            await _quota_bucket.acquire(
-                tenant_id=tenant_id, estimated_tokens=estimated_tokens
-            )
+            await _quota_bucket.acquire(tenant_id=tenant_id, estimated_tokens=estimated_tokens)
         except QuotaExceededError as e:
             raise HTTPException(
                 status_code=429,
@@ -273,9 +267,7 @@ async def chat(
     # --- 2. Cache check (命中则跳过 provider; P1: 命中也计量,cache-read 计价) ---
     ckey: str | None = None
     if _cache is not None:
-        ckey = cache_key(
-            messages, model=model, temperature=temperature, tenant_id=tenant_id
-        )
+        ckey = cache_key(messages, model=model, temperature=temperature, tenant_id=tenant_id)
         try:
             cached = await _cache.get(ckey)
             if cached is not None:
@@ -333,9 +325,7 @@ async def chat(
     # --- 5. Cost record (记录 token 用量) ---
     if _cost_recorder is not None:
         try:
-            await _cost_recorder.record(
-                model=model, tenant_id=tenant_id, usage=resp.usage
-            )
+            await _cost_recorder.record(model=model, tenant_id=tenant_id, usage=resp.usage)
         except Exception as e:
             logger.warning("llmgw.cost.record_failed", error=str(e))
 

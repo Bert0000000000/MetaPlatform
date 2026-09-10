@@ -8,189 +8,189 @@ info:
     name: Mate Platform API Governance
     email: api-governance@metaplatform.local
 servers:
-- url: /
+  - url: /
 tags:
-- name: rag
-  description: rag domain operations
-security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+  - name: rag
+    description: rag domain operations
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
 paths:
   /healthz:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
+        - bearerAuth: []
+          tenantHeader: []
       summary: Liveness probe
       tags:
-      - rag
+        - rag
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthResponse'
-        '400':
+                $ref: "#/components/schemas/HealthResponse"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: ragGetHealthz
       description: Liveness probe
       x-mate-owner: knowledge-platform
       x-mate-permission: rag.get
       x-mate-requirements:
-      - FR-RAG-RAGGETHEALTHZ
+        - FR-RAG-RAGGETHEALTHZ
       x-mate-implementation-status: implemented
   /api/v1/rag/status:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: System status (embedder + index backends)
       tags:
-      - rag
+        - rag
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SystemStatus'
-        '400':
+                $ref: "#/components/schemas/SystemStatus"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: ragGetRagStatus
       description: System status (embedder + index backends)
       x-mate-owner: knowledge-platform
       x-mate-permission: rag.get
       x-mate-requirements:
-      - FR-RAG-RAGGETRAGSTATUS
+        - FR-RAG-RAGGETRAGSTATUS
       x-mate-implementation-status: implemented
   /api/v1/rag/stats:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: Indexed chunk count + embedder dim
       tags:
-      - rag
+        - rag
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatsResponse'
-        '400':
+                $ref: "#/components/schemas/StatsResponse"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: ragGetRagStats
       description: Indexed chunk count + embedder dim
       x-mate-owner: knowledge-platform
       x-mate-permission: rag.get
       x-mate-requirements:
-      - FR-RAG-RAGGETRAGSTATS
+        - FR-RAG-RAGGETRAGSTATS
       x-mate-implementation-status: placeholder
   /api/v1/rag/admin/pg-stats:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.admin]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.admin]
       summary: PostgreSQL store diagnostics
       tags:
-      - rag
+        - rag
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PgStatsResponse'
-        '400':
+                $ref: "#/components/schemas/PgStatsResponse"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: ragGetRagAdminPgStats
       description: PostgreSQL store diagnostics
       x-mate-owner: knowledge-platform
       x-mate-permission: rag.get
       x-mate-requirements:
-      - FR-RAG-RAGGETRAGADMINPGSTATS
+        - FR-RAG-RAGGETRAGADMINPGSTATS
       x-mate-implementation-status: placeholder
   /api/v1/rag/parse:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: Parse raw text via RAGFlow and fan out to 3 indexes
       tags:
-      - rag
+        - rag
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ParseRequest'
+              $ref: "#/components/schemas/ParseRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParseResponse'
-        '500':
+                $ref: "#/components/schemas/ParseResponse"
+        "500":
           description: Parse / index failure
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: ragPostRagParse
       description: Parse raw text via RAGFlow and fan out to 3 indexes
       x-mate-owner: knowledge-platform
       x-mate-permission: rag.post
       x-mate-requirements:
-      - FR-RAG-RAGPOSTRAGPARSE
+        - FR-RAG-RAGPOSTRAGPARSE
       x-mate-implementation-status: placeholder
   /api/v1/rag/ingest:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: Ingest pre-chunked text into all 3 indexes
       tags:
-      - rag
+        - rag
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IngestRequest'
+              $ref: "#/components/schemas/IngestRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IngestResponse'
-        '500':
+                $ref: "#/components/schemas/IngestResponse"
+        "500":
           description: Ingest failure
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: ragPostRagIngest
       description: Ingest pre-chunked text into all 3 indexes
       x-mate-owner: knowledge-platform
       x-mate-permission: rag.post
       x-mate-requirements:
-      - FR-RAG-RAGPOSTRAGINGEST
+        - FR-RAG-RAGPOSTRAGINGEST
       x-mate-implementation-status: placeholder
   /api/v1/rag/upload:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: Multipart upload (text/markdown) -> parse + 3-index fan-out
       tags:
-      - rag
+        - rag
       requestBody:
         required: true
         content:
@@ -206,55 +206,55 @@ paths:
                   type: string
                   description: optional client-supplied document id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UploadResponse'
-        '400':
+                $ref: "#/components/schemas/UploadResponse"
+        "400":
           description: Empty file
-        '500':
+        "500":
           description: Parse / index failure
       operationId: ragPostRagUpload
       description: Multipart upload (text/markdown) -> parse + 3-index fan-out
       x-mate-owner: knowledge-platform
       x-mate-permission: rag.post
       x-mate-requirements:
-      - FR-RAG-RAGPOSTRAGUPLOAD
+        - FR-RAG-RAGPOSTRAGUPLOAD
       x-mate-implementation-status: placeholder
   /api/v1/rag/search:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 3-strategy retrieval (auto / factual / entity / thematic)
       tags:
-      - rag
+        - rag
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RetrievalRequest'
+              $ref: "#/components/schemas/RetrievalRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RetrievalResponse'
-        '500':
+                $ref: "#/components/schemas/RetrievalResponse"
+        "500":
           description: Retrieval failure
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: ragPostRagSearch
       description: 3-strategy retrieval (auto / factual / entity / thematic)
       x-mate-owner: knowledge-platform
       x-mate-permission: rag.post
       x-mate-requirements:
-      - FR-RAG-RAGPOSTRAGSEARCH
+        - FR-RAG-RAGPOSTRAGSEARCH
       x-mate-implementation-status: implemented
 components:
   securitySchemes:
@@ -280,9 +280,9 @@ components:
     HealthResponse:
       type: object
       required:
-      - status
-      - service
-      - version
+        - status
+        - service
+        - version
       properties:
         status:
           type: string
@@ -293,8 +293,8 @@ components:
     EmbedderInfo:
       type: object
       required:
-      - provider
-      - dim
+        - provider
+        - dim
       properties:
         provider:
           type: string
@@ -307,16 +307,16 @@ components:
     IndexStatus:
       type: object
       required:
-      - name
-      - backend
-      - chunk_count
+        - name
+        - backend
+        - chunk_count
       properties:
         name:
           type: string
           enum:
-          - hybrid
-          - graph
-          - lightrag
+            - hybrid
+            - graph
+            - lightrag
         backend:
           type: string
           description: memory | milvus | neo4j | lightrag | lightrag-http
@@ -326,11 +326,11 @@ components:
     SystemStatus:
       type: object
       required:
-      - status
-      - service
-      - version
-      - embedder
-      - indexes
+        - status
+        - service
+        - version
+        - embedder
+        - indexes
       properties:
         status:
           type: string
@@ -339,16 +339,16 @@ components:
         version:
           type: string
         embedder:
-          $ref: '#/components/schemas/EmbedderInfo'
+          $ref: "#/components/schemas/EmbedderInfo"
         indexes:
           type: array
           items:
-            $ref: '#/components/schemas/IndexStatus'
+            $ref: "#/components/schemas/IndexStatus"
     StatsResponse:
       type: object
       required:
-      - total_chunks
-      - embedder_dim
+        - total_chunks
+        - embedder_dim
       properties:
         total_chunks:
           type: integer
@@ -359,8 +359,8 @@ components:
     PgStatsResponse:
       type: object
       required:
-      - available
-      - chunks_count
+        - available
+        - chunks_count
       properties:
         available:
           type: boolean
@@ -372,8 +372,8 @@ components:
     ParseRequest:
       type: object
       required:
-      - document_id
-      - content
+        - document_id
+        - content
       properties:
         document_id:
           type: string
@@ -390,10 +390,10 @@ components:
     ParseResponse:
       type: object
       required:
-      - document_id
-      - chunk_count
-      - ragflow_parsed
-      - indexed_in
+        - document_id
+        - chunk_count
+        - ragflow_parsed
+        - indexed_in
       properties:
         document_id:
           type: string
@@ -410,8 +410,8 @@ components:
     IngestRequest:
       type: object
       required:
-      - document_id
-      - chunks
+        - document_id
+        - chunks
       properties:
         document_id:
           type: string
@@ -430,9 +430,9 @@ components:
     IngestResponse:
       type: object
       required:
-      - document_id
-      - chunk_count
-      - total_chunks
+        - document_id
+        - chunk_count
+        - total_chunks
       properties:
         document_id:
           type: string
@@ -445,11 +445,11 @@ components:
     UploadResponse:
       type: object
       required:
-      - document_id
-      - filename
-      - size_bytes
-      - chunk_count
-      - indexed_in
+        - document_id
+        - filename
+        - size_bytes
+        - chunk_count
+        - indexed_in
       properties:
         document_id:
           type: string
@@ -468,10 +468,10 @@ components:
     ChunkHit:
       type: object
       required:
-      - chunk_id
-      - document_id
-      - score
-      - text
+        - chunk_id
+        - document_id
+        - score
+        - text
       properties:
         chunk_id:
           type: string
@@ -490,7 +490,7 @@ components:
     RetrievalRequest:
       type: object
       required:
-      - query
+        - query
       properties:
         query:
           type: string
@@ -504,10 +504,10 @@ components:
         mode:
           type: string
           enum:
-          - AUTO
-          - FACTUAL
-          - ENTITY
-          - THEMATIC
+            - AUTO
+            - FACTUAL
+            - ENTITY
+            - THEMATIC
           default: AUTO
         metadata_filter:
           type: object
@@ -516,17 +516,17 @@ components:
         rerank_strategy:
           type: string
           enum:
-          - identity
-          - keyword
-          - length
+            - identity
+            - keyword
+            - length
           default: identity
           description: Reranker strategy for second-pass reordering
     RerankCandidate:
       type: object
       required:
-      - chunk_id
-      - text
-      - score
+        - chunk_id
+        - text
+        - score
       properties:
         chunk_id:
           type: string
@@ -541,18 +541,18 @@ components:
     RetrievalResponse:
       type: object
       required:
-      - query
-      - hits
-      - total
-      - latency_ms
-      - mode
+        - query
+        - hits
+        - total
+        - latency_ms
+        - mode
       properties:
         query:
           type: string
         hits:
           type: array
           items:
-            $ref: '#/components/schemas/ChunkHit'
+            $ref: "#/components/schemas/ChunkHit"
         total:
           type: integer
           minimum: 0
@@ -562,6 +562,6 @@ components:
         mode:
           type: string
           enum:
-          - FACTUAL
-          - ENTITY
-          - THEMATIC
+            - FACTUAL
+            - ENTITY
+            - THEMATIC

@@ -56,9 +56,7 @@ class PlanSpec:
             raise ValueError("PlanSpec.steps must be non-empty")
         # B3 ≥1 HITL（决策点）
         if not any(s.requires_hitl for s in self.steps):
-            raise ValueError(
-                "PlanSpec must include at least one HITL step (decision B3)"
-            )
+            raise ValueError("PlanSpec must include at least one HITL step (decision B3)")
 
 
 class StepStatus(StrEnum):
@@ -127,11 +125,13 @@ class SuperAIOrchestrator:
     def abort(self, plan_id: str, reason: str = "") -> PlanState:
         s = self.get(plan_id)
         s.aborted = True
-        s.history.append(StepResult(
-            step_id="",
-            status=StepStatus.FAILED,
-            error=f"aborted: {reason}",
-        ))
+        s.history.append(
+            StepResult(
+                step_id="",
+                status=StepStatus.FAILED,
+                error=f"aborted: {reason}",
+            )
+        )
         return s
 
     @staticmethod

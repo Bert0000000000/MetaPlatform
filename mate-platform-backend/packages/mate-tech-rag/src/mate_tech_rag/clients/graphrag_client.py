@@ -3,6 +3,7 @@
 v3.0 Plan D: graph retrieval returns "entities" rather than chunks.
 Current: InMemory simulation (regex-based entity extraction).
 """
+
 from __future__ import annotations
 
 import re
@@ -17,7 +18,9 @@ _ENTITY_RE = re.compile(r"[\u4e00-\u9fff]{2,4}|[A-Z][A-Za-z0-9_]{2,}")
 
 class GraphRAGClient(Protocol):
     def query(self, query: str, top_k: int = 10) -> list[ChunkHit]: ...
-    def insert(self, text: str, document_id: str, metadata: dict[str, str] | None = None) -> str: ...
+    def insert(
+        self, text: str, document_id: str, metadata: dict[str, str] | None = None
+    ) -> str: ...
     def count(self) -> int: ...
     def delete_by_document(self, document_id: str) -> int: ...
 

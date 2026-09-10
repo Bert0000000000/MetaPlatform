@@ -1,4 +1,5 @@
 """Agent loop unit tests: FC decision → dispatch → feed-back → events."""
+
 from __future__ import annotations
 
 import asyncio
@@ -15,10 +16,16 @@ from mate_app_copilot.clients.llmgw_stream import LlmgwStreamError
 from mate_app_copilot.clients.orchestrator_client import OrchestratorClientError
 
 ROLES = [
-    {"role": "workflow", "name": "Workflow Employee",
-     "capabilities": [{"name": "delegate_run", "worker_kind": "a2a", "ref": "agent-recon"}]},
-    {"role": "knowledge", "name": "Knowledge Employee",
-     "capabilities": [{"name": "kb_search", "worker_kind": "local", "ref": ""}]},
+    {
+        "role": "workflow",
+        "name": "Workflow Employee",
+        "capabilities": [{"name": "delegate_run", "worker_kind": "a2a", "ref": "agent-recon"}],
+    },
+    {
+        "role": "knowledge",
+        "name": "Knowledge Employee",
+        "capabilities": [{"name": "kb_search", "worker_kind": "local", "ref": ""}],
+    },
 ]
 
 
@@ -53,23 +60,29 @@ class FakeStreamLlm:
             yield ev
 
 
-def _stream_for_decision(content: str = "", reasoning: str = "", tool_calls: list[dict] | None = None) -> list[dict]:
+def _stream_for_decision(
+    content: str = "", reasoning: str = "", tool_calls: list[dict] | None = None
+) -> list[dict]:
     events: list[dict] = []
     if reasoning:
-        events.append({
-            "type": "token",
-            "content": "",
+        events.append(
+            {
+                "type": "token",
+                "content": "",
+                "reasoning_content": reasoning,
+                "tool_calls": [],
+            }
+        )
+    events.append(
+        {
+            "type": "done",
+            "content": content,
             "reasoning_content": reasoning,
-            "tool_calls": [],
-        })
-    events.append({
-        "type": "done",
-        "content": content,
-        "reasoning_content": reasoning,
-        "tool_calls": tool_calls or [],
-        "finish_reason": "stop",
-        "usage": {},
-    })
+            "tool_calls": tool_calls or [],
+            "finish_reason": "stop",
+            "usage": {},
+        }
+    )
     return events
 
 
@@ -82,15 +95,20 @@ class FakeOrch:
     async def list_roles(self, *, tenant_id, fallback_token=None):
         return ROLES
 
-    async def dispatch(self, *, tenant_id, target_rid, action="", arguments=None, fallback_token=None):
+    async def dispatch(
+        self, *, tenant_id, target_rid, action="", arguments=None, fallback_token=None
+    ):
         self.calls.append({"target_rid": target_rid, "arguments": arguments})
         return {
             "task_id": f"orch-{target_rid}-1",
             "role": target_rid,
             "capability": "delegate_run",
             "worker_kind": "a2a",
-            "result": {"id": "task-a2a-1", "status": {"state": "submitted"},
-                       "target_agent_id": "agent-recon"},
+            "result": {
+                "id": "task-a2a-1",
+                "status": {"state": "submitted"},
+                "target_agent_id": "agent-recon",
+            },
             "status": "completed",
         }
 
@@ -102,12 +120,16 @@ class FakeOrch:
 def _tool_call_decision(target: str, message: str, call_id: str = "call-1") -> dict:
     return {
         "content": "我来调度 workflow 员工处理。",
-        "tool_calls": [{
-            "id": call_id,
-            "type": "function",
-            "function": {"name": "dispatch_employee",
-                         "arguments": f'{{"target_rid": "{target}", "message": "{message}"}}'},
-        }],
+        "tool_calls": [
+            {
+                "id": call_id,
+                "type": "function",
+                "function": {
+                    "name": "dispatch_employee",
+                    "arguments": f'{{"target_rid": "{target}", "message": "{message}"}}',
+                },
+            }
+        ],
     }
 
 
@@ -122,21 +144,26 @@ def _collect(events) -> list[dict]:
 @pytest.mark.asyncio
 async def test_loop_dispatch_then_final() -> None:
     """reasoning placeholder → tool_call → dispatch → tool_result → final text."""
-    llm = FakeLlm([
-        _tool_call_decision("workflow", "处理对账单", "call-abc"),
-        _plain_decision("已调度 workflow 处理对账单，任务 task-a2a-1 已提交。"),
-    ])
+    llm = FakeLlm(
+        [
+            _tool_call_decision("workflow", "处理对账单", "call-abc"),
+            _plain_decision("已调度 workflow 处理对账单，任务 task-a2a-1 已提交。"),
+        ]
+    )
     orch = FakeOrch()
-    events = _collect([
-        e async for e in run_agent_loop(
-            llmgw_client=llm,
-            orchestrator_client=orch,
-            messages=[{"role": "user", "content": "帮我调度 workflow 处理对账单"}],
-            model="doubao-pro-32k",
-            roles=ROLES,
-            tenant_id="tenant-acme",
-        )
-    ])
+    events = _collect(
+        [
+            e
+            async for e in run_agent_loop(
+                llmgw_client=llm,
+                orchestrator_client=orch,
+                messages=[{"role": "user", "content": "帮我调度 workflow 处理对账单"}],
+                model="doubao-pro-32k",
+                roles=ROLES,
+                tenant_id="tenant-acme",
+            )
+        ]
+    )
     types = [e["type"] for e in events]
     assert types[0] == "routing_decision"
     # first reasoning event has the placeholder text
@@ -160,29 +187,39 @@ async def test_loop_dispatch_then_final() -> None:
 @pytest.mark.asyncio
 async def test_loop_streaming_reasoning_and_decision() -> None:
     """Streaming decision turn surfaces reasoning tokens live, then dispatches."""
-    llm = FakeStreamLlm([
-        _stream_for_decision(
-            content="我来调度 workflow 员工处理。",
-            reasoning="用户在要求调度对账任务，workflow 员工最合适。",
-            tool_calls=[{
-                "id": "call-s1", "type": "function",
-                "function": {"name": "dispatch_employee",
-                             "arguments": '{"target_rid": "workflow", "message": "处理对账单"}'},
-            }],
-        ),
-        _stream_for_decision(content="已调度完成。", reasoning=""),
-    ])
+    llm = FakeStreamLlm(
+        [
+            _stream_for_decision(
+                content="我来调度 workflow 员工处理。",
+                reasoning="用户在要求调度对账任务，workflow 员工最合适。",
+                tool_calls=[
+                    {
+                        "id": "call-s1",
+                        "type": "function",
+                        "function": {
+                            "name": "dispatch_employee",
+                            "arguments": '{"target_rid": "workflow", "message": "处理对账单"}',
+                        },
+                    }
+                ],
+            ),
+            _stream_for_decision(content="已调度完成。", reasoning=""),
+        ]
+    )
     orch = FakeOrch()
-    events = _collect([
-        e async for e in run_agent_loop(
-            llmgw_client=llm,
-            orchestrator_client=orch,
-            messages=[{"role": "user", "content": "帮我调度 workflow 处理对账单"}],
-            model="doubao-pro-32k",
-            roles=ROLES,
-            tenant_id="tenant-acme",
-        )
-    ])
+    events = _collect(
+        [
+            e
+            async for e in run_agent_loop(
+                llmgw_client=llm,
+                orchestrator_client=orch,
+                messages=[{"role": "user", "content": "帮我调度 workflow 处理对账单"}],
+                model="doubao-pro-32k",
+                roles=ROLES,
+                tenant_id="tenant-acme",
+            )
+        ]
+    )
     reasoning = [e for e in events if e["type"] == "reasoning"]
     assert reasoning[0]["text"] == "正在分析任务并选择数字员工…"
     assert any("workflow 员工最合适" in e["text"] for e in reasoning)
@@ -197,26 +234,39 @@ async def test_loop_parallel_dispatch() -> None:
     decision = {
         "content": "并行调度两个员工。",
         "tool_calls": [
-            {"id": "c1", "type": "function",
-             "function": {"name": "dispatch_employee",
-                          "arguments": '{"target_rid": "workflow", "message": "处理对账"}'}},
-            {"id": "c2", "type": "function",
-             "function": {"name": "dispatch_employee",
-                          "arguments": '{"target_rid": "knowledge", "message": "检索资料"}'}},
+            {
+                "id": "c1",
+                "type": "function",
+                "function": {
+                    "name": "dispatch_employee",
+                    "arguments": '{"target_rid": "workflow", "message": "处理对账"}',
+                },
+            },
+            {
+                "id": "c2",
+                "type": "function",
+                "function": {
+                    "name": "dispatch_employee",
+                    "arguments": '{"target_rid": "knowledge", "message": "检索资料"}',
+                },
+            },
         ],
     }
     llm = FakeLlm([decision, _plain_decision("两个员工都调度完成。")])
     orch = FakeOrch()
-    events = _collect([
-        e async for e in run_agent_loop(
-            llmgw_client=llm,
-            orchestrator_client=orch,
-            messages=[{"role": "user", "content": "同时调度 workflow 和 knowledge"}],
-            model="doubao-pro-32k",
-            roles=ROLES,
-            tenant_id="tenant-acme",
-        )
-    ])
+    events = _collect(
+        [
+            e
+            async for e in run_agent_loop(
+                llmgw_client=llm,
+                orchestrator_client=orch,
+                messages=[{"role": "user", "content": "同时调度 workflow 和 knowledge"}],
+                model="doubao-pro-32k",
+                roles=ROLES,
+                tenant_id="tenant-acme",
+            )
+        ]
+    )
     tool_calls = [e for e in events if e["type"] == "tool_call"]
     tool_results = [e for e in events if e["type"] == "tool_result"]
     assert len(tool_calls) == 2
@@ -235,29 +285,36 @@ async def test_loop_invalid_target_rid_no_network() -> None:
     """An unknown target must become a final denial before any dispatch."""
     decision = {
         "content": "调度一个不存在的员工。",
-        "tool_calls": [{
-            "id": "c-bad", "type": "function",
-            "function": {"name": "dispatch_employee",
-                         "arguments": '{"target_rid": "ghost", "message": "随便"}'},
-        }],
+        "tool_calls": [
+            {
+                "id": "c-bad",
+                "type": "function",
+                "function": {
+                    "name": "dispatch_employee",
+                    "arguments": '{"target_rid": "ghost", "message": "随便"}',
+                },
+            }
+        ],
     }
     llm = FakeLlm([decision, _plain_decision("无法调度。")])
     orch = FakeOrch()
-    events = _collect([
-        e async for e in run_agent_loop(
-            llmgw_client=llm,
-            orchestrator_client=orch,
-            messages=[{"role": "user", "content": "调度 ghost 员工"}],
-            model="doubao-pro-32k",
-            roles=ROLES,
-            tenant_id="tenant-acme",
-        )
-    ])
+    events = _collect(
+        [
+            e
+            async for e in run_agent_loop(
+                llmgw_client=llm,
+                orchestrator_client=orch,
+                messages=[{"role": "user", "content": "调度 ghost 员工"}],
+                model="doubao-pro-32k",
+                roles=ROLES,
+                tenant_id="tenant-acme",
+            )
+        ]
+    )
     denied = next(
         event
         for event in events
-        if event.get("type") == "routing_decision"
-        and event.get("stage") == "final"
+        if event.get("type") == "routing_decision" and event.get("stage") == "final"
     )
     assert denied["outcome"] == "denied"
     assert denied["reason_code"] == "target_not_authorized"
@@ -276,21 +333,26 @@ async def test_loop_dispatch_timeout() -> None:
             await asyncio.sleep(5)
             return {"status": "completed"}
 
-    llm = FakeLlm([
-        _tool_call_decision("workflow", "任务", "call-t"),
-        _plain_decision("调度超时，请稍后重试。"),
-    ])
-    events = _collect([
-        e async for e in run_agent_loop(
-            llmgw_client=llm,
-            orchestrator_client=SlowOrch(),
-            messages=[{"role": "user", "content": "调度 workflow"}],
-            model="doubao-pro-32k",
-            roles=ROLES,
-            tenant_id="tenant-acme",
-            dispatch_timeout=0.05,
-        )
-    ])
+    llm = FakeLlm(
+        [
+            _tool_call_decision("workflow", "任务", "call-t"),
+            _plain_decision("调度超时，请稍后重试。"),
+        ]
+    )
+    events = _collect(
+        [
+            e
+            async for e in run_agent_loop(
+                llmgw_client=llm,
+                orchestrator_client=SlowOrch(),
+                messages=[{"role": "user", "content": "调度 workflow"}],
+                model="doubao-pro-32k",
+                roles=ROLES,
+                tenant_id="tenant-acme",
+                dispatch_timeout=0.05,
+            )
+        ]
+    )
     tr = next(e for e in events if e["type"] == "tool_result")
     assert tr["status"] == "error"
     assert "timeout" in tr["result"]["error"]
@@ -306,34 +368,42 @@ async def test_loop_polls_async_task() -> None:
             self.polls = 0
 
         async def dispatch(self, **kwargs):
-            return {"task_id": "task-abc", "status": "submitted",
-                    "worker_kind": "a2a"}
+            return {"task_id": "task-abc", "status": "submitted", "worker_kind": "a2a"}
 
         async def get_task_status(self, **kwargs):
             self.polls += 1
             if self.polls >= 2:
-                return {"id": "task-abc", "status": {"state": "completed"},
-                        "artifacts": [{"parts": [{"kind": "data",
-                                                  "data": {"result": {"out": "done"}}}]}]}
+                return {
+                    "id": "task-abc",
+                    "status": {"state": "completed"},
+                    "artifacts": [
+                        {"parts": [{"kind": "data", "data": {"result": {"out": "done"}}}]}
+                    ],
+                }
             return {"id": "task-abc", "status": {"state": "working"}}
 
-    llm = FakeLlm([
-        _tool_call_decision("workflow", "异步任务", "call-p"),
-        _plain_decision("任务已完成。"),
-    ])
+    llm = FakeLlm(
+        [
+            _tool_call_decision("workflow", "异步任务", "call-p"),
+            _plain_decision("任务已完成。"),
+        ]
+    )
     orch = AsyncOrch()
-    events = _collect([
-        e async for e in run_agent_loop(
-            llmgw_client=llm,
-            orchestrator_client=orch,
-            messages=[{"role": "user", "content": "调度 workflow 异步任务"}],
-            model="doubao-pro-32k",
-            roles=ROLES,
-            tenant_id="tenant-acme",
-            poll_timeout=5,
-            poll_interval=0.01,
-        )
-    ])
+    events = _collect(
+        [
+            e
+            async for e in run_agent_loop(
+                llmgw_client=llm,
+                orchestrator_client=orch,
+                messages=[{"role": "user", "content": "调度 workflow 异步任务"}],
+                model="doubao-pro-32k",
+                roles=ROLES,
+                tenant_id="tenant-acme",
+                poll_timeout=5,
+                poll_interval=0.01,
+            )
+        ]
+    )
     tr = next(e for e in events if e["type"] == "tool_result")
     assert tr["status"] == "success"
     assert tr["result"]["status"] == "completed"
@@ -344,10 +414,12 @@ async def test_loop_polls_async_task() -> None:
 @pytest.mark.asyncio
 async def test_loop_poll_timeout_truthful() -> None:
     """A task that never reaches terminal state → polled_state timeout, no fake success."""
-    llm = FakeLlm([
-        _tool_call_decision("workflow", "挂起的任务", "call-h"),
-        _plain_decision("任务仍在处理中。"),
-    ])
+    llm = FakeLlm(
+        [
+            _tool_call_decision("workflow", "挂起的任务", "call-h"),
+            _plain_decision("任务仍在处理中。"),
+        ]
+    )
 
     class PendingOrch(FakeOrch):
         async def dispatch(self, **kwargs):
@@ -356,18 +428,21 @@ async def test_loop_poll_timeout_truthful() -> None:
         async def get_task_status(self, **kwargs):
             return {"id": "task-xyz", "status": {"state": "submitted"}}
 
-    events = _collect([
-        e async for e in run_agent_loop(
-            llmgw_client=llm,
-            orchestrator_client=PendingOrch(),
-            messages=[{"role": "user", "content": "调度 workflow"}],
-            model="doubao-pro-32k",
-            roles=ROLES,
-            tenant_id="tenant-acme",
-            poll_timeout=0.02,
-            poll_interval=0.005,
-        )
-    ])
+    events = _collect(
+        [
+            e
+            async for e in run_agent_loop(
+                llmgw_client=llm,
+                orchestrator_client=PendingOrch(),
+                messages=[{"role": "user", "content": "调度 workflow"}],
+                model="doubao-pro-32k",
+                roles=ROLES,
+                tenant_id="tenant-acme",
+                poll_timeout=0.02,
+                poll_interval=0.005,
+            )
+        ]
+    )
     tr = next(e for e in events if e["type"] == "tool_result")
     assert tr["status"] == "success"
     assert tr["result"]["polled_state"] == "timeout"
@@ -376,23 +451,28 @@ async def test_loop_poll_timeout_truthful() -> None:
 @pytest.mark.asyncio
 async def test_loop_cap_structured_summary() -> None:
     """Hitting the iteration cap → structured summary listing dispatched employees."""
-    llm = FakeLlm([
-        _tool_call_decision("workflow", "任务1", "call-a"),
-        _tool_call_decision("knowledge", "任务2", "call-b"),
-        _plain_decision("不需要了。"),
-    ])
+    llm = FakeLlm(
+        [
+            _tool_call_decision("workflow", "任务1", "call-a"),
+            _tool_call_decision("knowledge", "任务2", "call-b"),
+            _plain_decision("不需要了。"),
+        ]
+    )
     orch = FakeOrch()
-    events = _collect([
-        e async for e in run_agent_loop(
-            llmgw_client=llm,
-            orchestrator_client=orch,
-            messages=[{"role": "user", "content": "调度多个员工"}],
-            model="doubao-pro-32k",
-            roles=ROLES,
-            tenant_id="tenant-acme",
-            max_iterations=2,
-        )
-    ])
+    events = _collect(
+        [
+            e
+            async for e in run_agent_loop(
+                llmgw_client=llm,
+                orchestrator_client=orch,
+                messages=[{"role": "user", "content": "调度多个员工"}],
+                model="doubao-pro-32k",
+                roles=ROLES,
+                tenant_id="tenant-acme",
+                max_iterations=2,
+            )
+        ]
+    )
     final = events[-1]
     assert final["type"] == "final"
     assert "workflow" in final["content"]
@@ -405,16 +485,19 @@ async def test_loop_plain_text_no_dispatch() -> None:
     """Plain LLM text cannot become an implicit routing decision."""
     llm = FakeLlm([_plain_decision("好的，还有什么可以帮你？")])
     orch = FakeOrch()
-    events = _collect([
-        e async for e in run_agent_loop(
-            llmgw_client=llm,
-            orchestrator_client=orch,
-            messages=[{"role": "user", "content": "你好"}],
-            model="doubao-pro-32k",
-            roles=ROLES,
-            tenant_id="tenant-acme",
-        )
-    ])
+    events = _collect(
+        [
+            e
+            async for e in run_agent_loop(
+                llmgw_client=llm,
+                orchestrator_client=orch,
+                messages=[{"role": "user", "content": "你好"}],
+                model="doubao-pro-32k",
+                roles=ROLES,
+                tenant_id="tenant-acme",
+            )
+        ]
+    )
     denied = events[-1]
     assert denied["type"] == "routing_decision"
     assert denied["stage"] == "final"
@@ -436,16 +519,19 @@ async def test_loop_no_roles_no_tools() -> None:
             return self._decisions.pop(0)
 
     llm2 = NoToolLlm([_plain_decision("没有可用的数字员工。")])
-    events = _collect([
-        e async for e in run_agent_loop(
-            llmgw_client=llm2,
-            orchestrator_client=FakeOrch(),
-            messages=[{"role": "user", "content": "hi"}],
-            model="doubao-pro-32k",
-            roles=[],
-            tenant_id="tenant-acme",
-        )
-    ])
+    events = _collect(
+        [
+            e
+            async for e in run_agent_loop(
+                llmgw_client=llm2,
+                orchestrator_client=FakeOrch(),
+                messages=[{"role": "user", "content": "hi"}],
+                model="doubao-pro-32k",
+                roles=[],
+                tenant_id="tenant-acme",
+            )
+        ]
+    )
     denied = events[-1]
     assert denied["type"] == "routing_decision"
     assert denied["stage"] == "final"
@@ -464,16 +550,19 @@ async def test_loop_llm_down_denies_without_keyword_dispatch() -> None:
             raise LlmgwStreamError("provider unavailable")
 
     orch = FakeOrch()
-    events = _collect([
-        event async for event in run_agent_loop(
-            llmgw_client=DownLlm([]),
-            orchestrator_client=orch,
-            messages=[{"role": "user", "content": "请调度 workflow 处理对账单"}],
-            model="doubao-pro-32k",
-            roles=ROLES,
-            tenant_id="tenant-acme",
-        )
-    ])
+    events = _collect(
+        [
+            event
+            async for event in run_agent_loop(
+                llmgw_client=DownLlm([]),
+                orchestrator_client=orch,
+                messages=[{"role": "user", "content": "请调度 workflow 处理对账单"}],
+                model="doubao-pro-32k",
+                roles=ROLES,
+                tenant_id="tenant-acme",
+            )
+        ]
+    )
 
     denied = events[-1]
     assert denied["type"] == "routing_decision"
@@ -488,25 +577,30 @@ async def test_loop_llm_down_denies_without_keyword_dispatch() -> None:
 @pytest.mark.asyncio
 async def test_loop_dispatch_error_reported() -> None:
     """orchestrator dispatch failure → tool_result error event → loop continues."""
-    llm = FakeLlm([
-        _tool_call_decision("workflow", "任务", "call-x"),
-        _plain_decision("调度失败，请检查。"),
-    ])
+    llm = FakeLlm(
+        [
+            _tool_call_decision("workflow", "任务", "call-x"),
+            _plain_decision("调度失败，请检查。"),
+        ]
+    )
 
     class FailingOrch(FakeOrch):
         async def dispatch(self, **kwargs):
             raise OrchestratorClientError("role not registered")
 
-    events = _collect([
-        e async for e in run_agent_loop(
-            llmgw_client=llm,
-            orchestrator_client=FailingOrch(),
-            messages=[{"role": "user", "content": "调度 workflow"}],
-            model="doubao-pro-32k",
-            roles=ROLES,
-            tenant_id="tenant-acme",
-        )
-    ])
+    events = _collect(
+        [
+            e
+            async for e in run_agent_loop(
+                llmgw_client=llm,
+                orchestrator_client=FailingOrch(),
+                messages=[{"role": "user", "content": "调度 workflow"}],
+                model="doubao-pro-32k",
+                roles=ROLES,
+                tenant_id="tenant-acme",
+            )
+        ]
+    )
     tr = next(e for e in events if e["type"] == "tool_result")
     assert tr["status"] == "error"
     assert "role not registered" in tr["result"]["error"]
@@ -532,7 +626,12 @@ async def test_await_task_result_returns_early_when_terminal() -> None:
     orch = FakeOrch()
     result = {"task_id": "t1", "status": "completed"}
     out = await _await_task_result(
-        orch, result, tenant_id="t", fallback_token="", timeout=5, interval=0.01,
+        orch,
+        result,
+        tenant_id="t",
+        fallback_token="",
+        timeout=5,
+        interval=0.01,
     )
     assert out == result
     assert not orch.status_calls

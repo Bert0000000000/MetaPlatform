@@ -20,6 +20,7 @@ The router is mounted by `mate_app_hub.main.create_app()` after
 `install_auth(app)` so the bearer-token middleware populates
 `request.state.ctx` before any handler runs.
 """
+
 from __future__ import annotations
 
 import re
@@ -115,9 +116,7 @@ def _emit(
     tenant_id: str,
 ) -> None:
     """Append an outbox event if a writer is configured (ADR-0014 step 3)."""
-    writer: InMemoryOutboxWriter | None = getattr(
-        request.app.state, "outbox_writer", None
-    )
+    writer: InMemoryOutboxWriter | None = getattr(request.app.state, "outbox_writer", None)
     if writer is None:
         return
     writer.append(
@@ -141,10 +140,7 @@ async def list_registered_apps(
     items = _serialize(list_apps(tenant_id))
     if keyword:
         kw = keyword.lower()
-        items = [
-            a for a in items
-            if kw in a["name"].lower() or kw in a["code"].lower()
-        ]
+        items = [a for a in items if kw in a["name"].lower() or kw in a["code"].lower()]
     if category:
         items = [a for a in items if a["category"] == category]
     return {"items": items, "total": len(items)}
@@ -226,6 +222,7 @@ async def list_workflow_templates(
 # ---------------------------------------------------------------------------
 class AppRegisterRequest(BaseModel):
     """Body schema for POST /apps."""
+
     name: Annotated[str, Field(min_length=1, max_length=256)]
     code: Annotated[str, Field(min_length=1, max_length=64)]
     category: Annotated[str, Field(min_length=1, max_length=64)]
@@ -237,6 +234,7 @@ class AppRegisterRequest(BaseModel):
 
 class AppUpdateRequest(BaseModel):
     """Body schema for PATCH /apps/{code}."""
+
     name: Annotated[str | None, Field(default=None, max_length=256)]
     description: Annotated[str | None, Field(default=None, max_length=2048)]
     version: Annotated[str | None, Field(default=None)]
@@ -245,7 +243,8 @@ class AppUpdateRequest(BaseModel):
 
 @router.post("/apps", status_code=201)
 async def register_app(
-    request: Request, body: AppRegisterRequest,
+    request: Request,
+    body: AppRegisterRequest,
 ) -> dict:
     """Register a new application.
 
@@ -278,14 +277,21 @@ async def register_app(
             detail=f"app '{body.code}' already registered",
         )
     app = ApphubApp(
-        id=f"app-{body.code}", tenant_id=tid,
-        name=body.name, code=body.code, category=body.category,
-        description=body.description, version=body.version,
-        owner=body.owner, tags=tuple(body.tags),
+        id=f"app-{body.code}",
+        tenant_id=tid,
+        name=body.name,
+        code=body.code,
+        category=body.category,
+        description=body.description,
+        version=body.version,
+        owner=body.owner,
+        tags=tuple(body.tags),
     )
     put_app(tid, app)
     _emit(
-        request, "apphub.app.registered", body.code,
+        request,
+        "apphub.app.registered",
+        body.code,
         {"code": body.code, "name": body.name, "version": body.version},
         tid,
     )
@@ -294,7 +300,9 @@ async def register_app(
 
 @router.patch("/apps/{code}")
 async def update_app(
-    request: Request, code: str, body: AppUpdateRequest,
+    request: Request,
+    code: str,
+    body: AppUpdateRequest,
 ) -> dict:
     """Update an application's metadata.
 
@@ -317,9 +325,11 @@ async def update_app(
             detail="new version must differ from current version",
         )
     updated = ApphubApp(
-        id=app.id, tenant_id=tid,
+        id=app.id,
+        tenant_id=tid,
         name=body.name if body.name is not None else app.name,
-        code=app.code, category=app.category,
+        code=app.code,
+        category=app.category,
         description=body.description if body.description is not None else app.description,
         version=new_version,
         owner=body.owner if body.owner is not None else app.owner,
@@ -327,8 +337,11 @@ async def update_app(
     )
     put_app(tid, updated)
     _emit(
-        request, "apphub.app.updated", code,
-        {"code": code, "version": new_version}, tid,
+        request,
+        "apphub.app.updated",
+        code,
+        {"code": code, "version": new_version},
+        tid,
     )
     return asdict(updated)
 
@@ -357,21 +370,28 @@ class GroupCreateRequest(BaseModel):
 
 @router.post("/groups", status_code=201)
 async def create_group(
-    request: Request, body: GroupCreateRequest,
+    request: Request,
+    body: GroupCreateRequest,
 ) -> dict:
     """Create a new application group."""
     tid = _tenant_id(request)
     if get_group(tid, body.code) is not None:
         raise HTTPException(status_code=409, detail=f"group '{body.code}' already exists")
     group = ApphubGroup(
-        id=f"grp-{body.code}", tenant_id=tid,
-        name=body.name, code=body.code,
-        icon=body.icon, sort_order=body.sort_order,
+        id=f"grp-{body.code}",
+        tenant_id=tid,
+        name=body.name,
+        code=body.code,
+        icon=body.icon,
+        sort_order=body.sort_order,
     )
     put_group(tid, group)
     _emit(
-        request, "apphub.group.created", body.code,
-        {"code": body.code, "name": body.name}, tid,
+        request,
+        "apphub.group.created",
+        body.code,
+        {"code": body.code, "name": body.name},
+        tid,
     )
     return asdict(group)
 
@@ -408,7 +428,8 @@ class ModuleCreateRequest(BaseModel):
 
 @router.post("/modules", status_code=201)
 async def create_module(
-    request: Request, body: ModuleCreateRequest,
+    request: Request,
+    body: ModuleCreateRequest,
 ) -> dict:
     """Create a new business module.
 
@@ -417,21 +438,30 @@ async def create_module(
     tid = _tenant_id(request)
     if get_app(tid, body.app_code) is None:
         raise HTTPException(
-            status_code=422, detail=f"app '{body.app_code}' not found",
+            status_code=422,
+            detail=f"app '{body.app_code}' not found",
         )
     if get_module(tid, body.code) is not None:
         raise HTTPException(
-            status_code=409, detail=f"module '{body.code}' already exists",
+            status_code=409,
+            detail=f"module '{body.code}' already exists",
         )
     module = ApphubModule(
-        id=f"mod-{body.code}", tenant_id=tid,
-        name=body.name, code=body.code, app_code=body.app_code,
-        description=body.description, entry_path=body.entry_path,
+        id=f"mod-{body.code}",
+        tenant_id=tid,
+        name=body.name,
+        code=body.code,
+        app_code=body.app_code,
+        description=body.description,
+        entry_path=body.entry_path,
     )
     put_module(tid, module)
     _emit(
-        request, "apphub.module.created", body.code,
-        {"code": body.code, "app_code": body.app_code}, tid,
+        request,
+        "apphub.module.created",
+        body.code,
+        {"code": body.code, "app_code": body.app_code},
+        tid,
     )
     return asdict(module)
 
@@ -449,7 +479,8 @@ class PageCreateRequest(BaseModel):
 
 @router.post("/pages", status_code=201)
 async def create_page(
-    request: Request, body: PageCreateRequest,
+    request: Request,
+    body: PageCreateRequest,
 ) -> dict:
     """Create a new page template.
 
@@ -458,18 +489,25 @@ async def create_page(
     tid = _tenant_id(request)
     if get_module(tid, body.module_code) is None:
         raise HTTPException(
-            status_code=422, detail=f"module '{body.module_code}' not found",
+            status_code=422,
+            detail=f"module '{body.module_code}' not found",
         )
     page = ApphubPage(
-        id=f"page-{body.code}", tenant_id=tid,
-        name=body.name, code=body.code,
-        module_code=body.module_code, layout=body.layout,
+        id=f"page-{body.code}",
+        tenant_id=tid,
+        name=body.name,
+        code=body.code,
+        module_code=body.module_code,
+        layout=body.layout,
         schema_version=body.schema_version,
     )
     put_page(tid, page)
     _emit(
-        request, "apphub.page.created", body.code,
-        {"code": body.code, "module_code": body.module_code}, tid,
+        request,
+        "apphub.page.created",
+        body.code,
+        {"code": body.code, "module_code": body.module_code},
+        tid,
     )
     return asdict(page)
 
@@ -487,7 +525,8 @@ class TemplateCreateRequest(BaseModel):
 
 @router.post("/templates", status_code=201)
 async def create_template(
-    request: Request, body: TemplateCreateRequest,
+    request: Request,
+    body: TemplateCreateRequest,
 ) -> dict:
     """Create a new workflow / form / approval template.
 
@@ -501,18 +540,25 @@ async def create_template(
         )
     if get_template(tid, body.code) is not None:
         raise HTTPException(
-            status_code=409, detail=f"template '{body.code}' already exists",
+            status_code=409,
+            detail=f"template '{body.code}' already exists",
         )
     template = ApphubTemplate(
-        id=f"tpl-{body.code}", tenant_id=tid,
-        name=body.name, code=body.code,
+        id=f"tpl-{body.code}",
+        tenant_id=tid,
+        name=body.name,
+        code=body.code,
         template_type=body.template_type,
-        description=body.description, content=body.content,
+        description=body.description,
+        content=body.content,
     )
     put_template(tid, template)
     _emit(
-        request, "apphub.template.created", body.code,
-        {"code": body.code, "template_type": body.template_type}, tid,
+        request,
+        "apphub.template.created",
+        body.code,
+        {"code": body.code, "template_type": body.template_type},
+        tid,
     )
     return asdict(template)
 
@@ -568,15 +614,23 @@ async def publish_app(app_id: str, request: Request) -> dict:
     if app is None:
         raise HTTPException(status_code=404, detail="app not found")
     published = ApphubApp(
-        id=app.id, tenant_id=app.tenant_id,
-        name=app.name, code=app.code, category=app.category,
-        description=app.description, version="1.0.0",
-        owner=app.owner, tags=app.tags,
+        id=app.id,
+        tenant_id=app.tenant_id,
+        name=app.name,
+        code=app.code,
+        category=app.category,
+        description=app.description,
+        version="1.0.0",
+        owner=app.owner,
+        tags=app.tags,
     )
     put_app(tenant_id, published)
     _emit(
-        request, "apphub.app.published", app_id,
-        {"version": "1.0.0", "status": "PUBLISHED"}, tenant_id,
+        request,
+        "apphub.app.published",
+        app_id,
+        {"version": "1.0.0", "status": "PUBLISHED"},
+        tenant_id,
     )
     return {"app_id": app_id, "status": "PUBLISHED", "version": "1.0.0"}
 
@@ -605,12 +659,18 @@ async def create_shortlink_endpoint(request: Request) -> dict:
     if expires_at_raw:
         expires_at_dt = datetime.fromisoformat(expires_at_raw)
     entry = create_shortlink(
-        get_default_store(), tenant_id, body["app_id"],
-        body.get("role"), expires_at_dt,
+        get_default_store(),
+        tenant_id,
+        body["app_id"],
+        body.get("role"),
+        expires_at_dt,
     )
     _emit(
-        request, "apphub.shortlink.created", entry.code,
-        {"app_id": body["app_id"]}, tenant_id,
+        request,
+        "apphub.shortlink.created",
+        entry.code,
+        {"app_id": body["app_id"]},
+        tenant_id,
     )
     return {
         "code": entry.code,
@@ -626,8 +686,7 @@ async def list_shortlinks_endpoint(request: Request) -> dict:
     entries = list_shortlinks(get_default_store(), tenant_id)
     return {
         "items": [
-            {"code": e.code, "app_id": e.app_id, "created_at": e.created_at}
-            for e in entries
+            {"code": e.code, "app_id": e.app_id, "created_at": e.created_at} for e in entries
         ],
     }
 
@@ -644,7 +703,16 @@ async def get_form_definition(request: Request, form_id: str) -> dict:
     key = f"{tid}:{form_id}"
     form = _FORMS.get(key)
     if form is None:
-        form = {"formId": form_id, "appId": "", "globalSettings": {}, "linkageRules": [], "scripts": {}, "fields": [], "createdAt": "", "updatedAt": ""}
+        form = {
+            "formId": form_id,
+            "appId": "",
+            "globalSettings": {},
+            "linkageRules": [],
+            "scripts": {},
+            "fields": [],
+            "createdAt": "",
+            "updatedAt": "",
+        }
         _FORMS[key] = form
     return form
 
@@ -733,9 +801,16 @@ async def test_flow(request: Request) -> dict:
     body = await request.json()
     nodes = body.get("nodes", [])
     steps = [
-        {"stepIndex": i + 1, "nodeId": n.get("id", ""), "nodeName": n.get("name", ""),
-         "nodeType": n.get("type", "start"), "action": "complete", "actionLabel": "模拟执行",
-         "timestamp": _now_iso(), "status": "completed"}
+        {
+            "stepIndex": i + 1,
+            "nodeId": n.get("id", ""),
+            "nodeName": n.get("name", ""),
+            "nodeType": n.get("type", "start"),
+            "action": "complete",
+            "actionLabel": "模拟执行",
+            "timestamp": _now_iso(),
+            "status": "completed",
+        }
         for i, n in enumerate(nodes[:3])
     ]
     return {"steps": steps, "finalStatus": "approved", "duration": 0}
@@ -862,7 +937,7 @@ async def list_app_releases(
     key = _release_key(tid, app_id)
     records = _RELEASES.get(key, [])
     start = (page - 1) * size
-    return {"items": records[start:start + size], "total": len(records)}
+    return {"items": records[start : start + size], "total": len(records)}
 
 
 @router.post("/apps/{app_id}/releases", status_code=201)
@@ -897,14 +972,16 @@ async def create_app_release(request: Request, app_id: str) -> dict:
         "createdAt": now,
     }
     _RELEASES.setdefault(key, []).insert(0, record)
-    _RELEASE_LOGS[release_id] = [{
-        "logId": f"log-{uuid.uuid4().hex[:12]}",
-        "releaseId": release_id,
-        "action": "提交发布申请",
-        "operator": record["createdBy"],
-        "remark": record["releaseNotes"],
-        "createdAt": now,
-    }]
+    _RELEASE_LOGS[release_id] = [
+        {
+            "logId": f"log-{uuid.uuid4().hex[:12]}",
+            "releaseId": release_id,
+            "action": "提交发布申请",
+            "operator": record["createdBy"],
+            "remark": record["releaseNotes"],
+            "createdAt": now,
+        }
+    ]
     _RELEASE_TASKS[process_id] = [
         {
             "id": f"task-{uuid.uuid4().hex[:12]}",
@@ -947,7 +1024,9 @@ async def list_release_tasks(request: Request, process_instance_id: str) -> list
 
 @router.post("/v1/wfe/release-approval/{process_instance_id}/tasks/{task_id}/complete")
 async def complete_release_task(
-    request: Request, process_instance_id: str, task_id: str,
+    request: Request,
+    process_instance_id: str,
+    task_id: str,
 ) -> dict[str, Any]:
     tid = _tenant_id(request)
     body = await request.json()
@@ -963,8 +1042,12 @@ async def complete_release_task(
     task["status"] = "COMPLETED"
     task["endTime"] = _now_iso()
     record = next(
-        (item for records in _RELEASES.values() for item in records
-         if item.get("processInstanceId") == process_instance_id),
+        (
+            item
+            for records in _RELEASES.values()
+            for item in records
+            if item.get("processInstanceId") == process_instance_id
+        ),
         None,
     )
     if record is None:
@@ -980,14 +1063,16 @@ async def complete_release_task(
     else:
         action = "审批通过"
     release_id = record["releaseId"]
-    _RELEASE_LOGS.setdefault(release_id, []).append({
-        "logId": f"log-{uuid.uuid4().hex[:12]}",
-        "releaseId": release_id,
-        "action": action,
-        "operator": str(getattr(request.state.ctx, "user_id", "")),
-        "remark": str(body.get("comment", "")),
-        "createdAt": _now_iso(),
-    })
+    _RELEASE_LOGS.setdefault(release_id, []).append(
+        {
+            "logId": f"log-{uuid.uuid4().hex[:12]}",
+            "releaseId": release_id,
+            "action": action,
+            "operator": str(getattr(request.state.ctx, "user_id", "")),
+            "remark": str(body.get("comment", "")),
+            "createdAt": _now_iso(),
+        }
+    )
     _emit(request, "apphub.release.updated", release_id, {"status": record["status"]}, tid)
     return {"taskId": task_id, "action": action, "status": task["status"], "message": action}
 

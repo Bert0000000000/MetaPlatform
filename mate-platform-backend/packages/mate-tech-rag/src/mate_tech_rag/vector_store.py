@@ -3,6 +3,7 @@
 TC-5.6.3 will replace with Milvus collection adapter.
 Current: dict[doc_id -> list[Chunk]] + cosine similarity brute-force.
 """
+
 from __future__ import annotations
 
 import math
@@ -24,8 +25,16 @@ class StoredChunk:
 
 
 class VectorStore(Protocol):
-    def add(self, document_id: str, text: str, vector: list[float], metadata: dict[str, str] | None = None) -> str: ...
-    def search(self, query_vector: list[float], top_k: int = 10) -> list[tuple[StoredChunk, float]]: ...
+    def add(
+        self,
+        document_id: str,
+        text: str,
+        vector: list[float],
+        metadata: dict[str, str] | None = None,
+    ) -> str: ...
+    def search(
+        self, query_vector: list[float], top_k: int = 10
+    ) -> list[tuple[StoredChunk, float]]: ...
     def count(self) -> int: ...
     def delete_by_document(self, document_id: str) -> int: ...
 
@@ -48,7 +57,13 @@ class InMemoryVectorStore:
         self._chunks: dict[str, StoredChunk] = {}
         self._lock = threading.Lock()
 
-    def add(self, document_id: str, text: str, vector: list[float], metadata: dict[str, str] | None = None) -> str:
+    def add(
+        self,
+        document_id: str,
+        text: str,
+        vector: list[float],
+        metadata: dict[str, str] | None = None,
+    ) -> str:
         chunk_id = str(uuid.uuid4())
         with self._lock:
             self._chunks[chunk_id] = StoredChunk(

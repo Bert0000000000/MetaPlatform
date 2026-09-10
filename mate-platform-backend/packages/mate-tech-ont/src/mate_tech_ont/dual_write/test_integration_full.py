@@ -1,4 +1,5 @@
 """Dual write with real PG mock (ST-5.4.9 enhanced)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock

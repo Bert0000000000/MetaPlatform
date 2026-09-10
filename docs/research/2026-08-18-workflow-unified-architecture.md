@@ -11,15 +11,15 @@
 
 ## 1. 两种模式的核心差异
 
-| 维度 | Mirror Mode（场景 A） | Builder Mode（场景 B） |
-|---|---|---|
-| **驱动力** | 业务系统驱动 | Workflow 驱动 |
-| **节点执行** | 业务系统跑完 → Kafka 通知 → Workflow 镜像 | Workflow 调 Activity 自己执行 |
-| **业务节点** | 镜像（混合：观察 / 订阅 / 偶尔调 API） | 真正执行（自定义 Activity / Python 函数） |
-| **审批节点** | Flowable 独立 → Kafka 回调 → Workflow 镜像 | Flowable 独立 → Kafka 回调（流程推进）|
-| **Agent 节点** | Agent 独立 loop → 事件回流 | Workflow 跑 loop（in-loop HITL）|
-| **Conformance** | 设计 vs 实际 = 主要价值 | 仍然适用（防止自定义 Activity 跑偏）|
-| **快速搭建** | N/A | **核心能力**（低代码 + 流程 + Form）|
+| 维度            | Mirror Mode（场景 A）                      | Builder Mode（场景 B）                    |
+| --------------- | ------------------------------------------ | ----------------------------------------- |
+| **驱动力**      | 业务系统驱动                               | Workflow 驱动                             |
+| **节点执行**    | 业务系统跑完 → Kafka 通知 → Workflow 镜像  | Workflow 调 Activity 自己执行             |
+| **业务节点**    | 镜像（混合：观察 / 订阅 / 偶尔调 API）     | 真正执行（自定义 Activity / Python 函数） |
+| **审批节点**    | Flowable 独立 → Kafka 回调 → Workflow 镜像 | Flowable 独立 → Kafka 回调（流程推进）    |
+| **Agent 节点**  | Agent 独立 loop → 事件回流                 | Workflow 跑 loop（in-loop HITL）          |
+| **Conformance** | 设计 vs 实际 = 主要价值                    | 仍然适用（防止自定义 Activity 跑偏）      |
+| **快速搭建**    | N/A                                        | **核心能力**（低代码 + 流程 + Form）      |
 
 ---
 
@@ -59,14 +59,14 @@
 
 ## 3. 节点类型 → 模式对位
 
-| 节点类型 | Mirror Mode | Builder Mode |
-|---|---|---|
-| **业务状态节点** | 镜像（观察业务系统事件）| 自执行（调自定义 Activity）|
-| **审批节点** | Flowable 独立 → 镜像 | Flowable 独立 → 流程推进 |
-| **Agent 节点** | Agent loop 独立 → 镜像 | Workflow 跑 in-loop HITL |
-| **Form 节点** | 显示外部业务系统的状态 | 自定义表单收集用户输入 |
-| **Timer 节点** | 镜像外部系统的定时事件 | 自执行延时 |
-| **Conformance 节点** | 检查是否符合设计流程 | 检查自定义 Activity 是否跑偏 |
+| 节点类型             | Mirror Mode              | Builder Mode                 |
+| -------------------- | ------------------------ | ---------------------------- |
+| **业务状态节点**     | 镜像（观察业务系统事件） | 自执行（调自定义 Activity）  |
+| **审批节点**         | Flowable 独立 → 镜像     | Flowable 独立 → 流程推进     |
+| **Agent 节点**       | Agent loop 独立 → 镜像   | Workflow 跑 in-loop HITL     |
+| **Form 节点**        | 显示外部业务系统的状态   | 自定义表单收集用户输入       |
+| **Timer 节点**       | 镜像外部系统的定时事件   | 自执行延时                   |
+| **Conformance 节点** | 检查是否符合设计流程     | 检查自定义 Activity 是否跑偏 |
 
 ---
 
@@ -112,6 +112,7 @@
 ### 决策 1：DSL 统一还是分裂？
 
 **统一**（推荐）：Mirror 和 Builder 用同一套 DSL
+
 - 节点类型相同（业务状态、审批、Agent、Form、Timer）
 - 区别在 runtime 行为：镜像 vs 自执行
 - 通过节点属性 `execution_mode: "mirror" | "builder"` 区分
@@ -143,30 +144,30 @@
 
 ## 6. 优先级重排
 
-| 优先级 | 内容 | 阶段 |
-|---|---|---|
-| **P0** | 共享层：DSL + UI + 持久化 | M0-M1 |
+| 优先级 | 内容                                                   | 阶段  |
+| ------ | ------------------------------------------------------ | ----- |
+| **P0** | 共享层：DSL + UI + 持久化                              | M0-M1 |
 | **P0** | Mirror Mode：Event Ingest + State Mirror + Conformance | M1-M2 |
-| **P0** | Conformance 算法（PM4Py / 自研）| M1-M2 |
-| **P1** | Builder Mode：基础 Activity + Form | M2-M3 |
-| **P1** | 审批节点（Flowable + Kafka） | M2 |
-| **P1** | Agent Loop（Mirror 模式）| M2 |
-| **P2** | Builder Mode：高级 UI 渲染 + 复杂应用 | M3+ |
-| **P2** | Agent Loop（Builder 模式 in-loop）| M3 |
-| **P3** | BPMN 转化层 | v3.3+ |
+| **P0** | Conformance 算法（PM4Py / 自研）                       | M1-M2 |
+| **P1** | Builder Mode：基础 Activity + Form                     | M2-M3 |
+| **P1** | 审批节点（Flowable + Kafka）                           | M2    |
+| **P1** | Agent Loop（Mirror 模式）                              | M2    |
+| **P2** | Builder Mode：高级 UI 渲染 + 复杂应用                  | M3+   |
+| **P2** | Agent Loop（Builder 模式 in-loop）                     | M3    |
+| **P3** | BPMN 转化层                                            | v3.3+ |
 
 ---
 
 ## 7. 借鉴清单（按模式分层）
 
-| 借鉴 | Mirror Mode | Builder Mode |
-|---|---|---|
-| **Temporal Event Sourcing** | P0（核心）| P0（核心）|
-| **Process Mining (PM4Py)** | **P0（核心）** | P2（参考）|
-| **LangGraph BSP / Interrupt** | P2（Agent 镜像）| P0（in-loop HITL）|
-| **xstate FSM** | P2（局部状态机）| P1（Builder 内部状态）|
-| **flowgram 变量/物料** | P1（DSL 复用）| P0（Builder 表单引擎）|
-| **xyflow 画布** | P0（共享）| P0（共享）|
+| 借鉴                          | Mirror Mode      | Builder Mode           |
+| ----------------------------- | ---------------- | ---------------------- |
+| **Temporal Event Sourcing**   | P0（核心）       | P0（核心）             |
+| **Process Mining (PM4Py)**    | **P0（核心）**   | P2（参考）             |
+| **LangGraph BSP / Interrupt** | P2（Agent 镜像） | P0（in-loop HITL）     |
+| **xstate FSM**                | P2（局部状态机） | P1（Builder 内部状态） |
+| **flowgram 变量/物料**        | P1（DSL 复用）   | P0（Builder 表单引擎） |
+| **xyflow 画布**               | P0（共享）       | P0（共享）             |
 
 ---
 

@@ -1,4 +1,5 @@
 """Regression coverage for fail-closed semantic-routing outbox evidence."""
+
 from __future__ import annotations
 
 import json
@@ -119,9 +120,7 @@ class _TwoDispatchLlm:
                         "type": "function",
                         "function": {
                             "name": "dispatch_employee",
-                            "arguments": (
-                                '{"target_rid":"workflow","message":"发起审批"}'
-                            ),
+                            "arguments": ('{"target_rid":"workflow","message":"发起审批"}'),
                         },
                     },
                     {
@@ -129,9 +128,7 @@ class _TwoDispatchLlm:
                         "type": "function",
                         "function": {
                             "name": "dispatch_employee",
-                            "arguments": (
-                                '{"target_rid":"knowledge","message":"检索政策"}'
-                            ),
+                            "arguments": ('{"target_rid":"knowledge","message":"检索政策"}'),
                         },
                     },
                 ],
@@ -159,9 +156,7 @@ class _TwoDispatchSnapshotClient:
             "actor_roles_digest": "roles-sha256-abc",
         }
 
-    async def dispatch(
-        self, *, target_rid: str, **kwargs: Any
-    ) -> dict[str, Any]:
+    async def dispatch(self, *, target_rid: str, **kwargs: Any) -> dict[str, Any]:
         type(self).dispatched_rids.append(target_rid)
         return {"task_id": f"task-{target_rid}", "status": "completed"}
 
@@ -179,13 +174,15 @@ def _post_agent_stream(client, headers: dict[str, str]):
 
 def _routing_records(outbox) -> list:
     return [
-        record.event for record in outbox.all_records()
+        record.event
+        for record in outbox.all_records()
         if record.event.type.startswith("copilot.routing.")
     ]
 
 
 def test_create_app_persists_routing_audit_to_the_database(
-    tmp_path, monkeypatch,
+    tmp_path,
+    monkeypatch,
 ) -> None:
     """Removing the durable Writer or its table must fail this audit boundary."""
     from mate_app_copilot.main import create_app
@@ -211,13 +208,17 @@ def test_create_app_persists_routing_audit_to_the_database(
             )
         )
         with get_engine().connect() as connection:
-            row = connection.execute(
-                text(
-                    "SELECT tenant_id, event_type, aggregate_id, payload, status "
-                    "FROM outbox_event WHERE id = :event_id"
-                ),
-                {"event_id": "routing-audit-persistent-1"},
-            ).mappings().one()
+            row = (
+                connection.execute(
+                    text(
+                        "SELECT tenant_id, event_type, aggregate_id, payload, status "
+                        "FROM outbox_event WHERE id = :event_id"
+                    ),
+                    {"event_id": "routing-audit-persistent-1"},
+                )
+                .mappings()
+                .one()
+            )
         persisted = dict(row)
         persisted["payload"] = json.loads(persisted["payload"])
         assert persisted == {
@@ -237,7 +238,10 @@ def test_create_app_persists_routing_audit_to_the_database(
 
 
 def test_selected_decision_writes_one_minimal_outbox_event(
-    client, outbox, auth_headers_acme, monkeypatch,
+    client,
+    outbox,
+    auth_headers_acme,
+    monkeypatch,
 ) -> None:
     """Removing the final-decision audit must make this selected path fail."""
     from mate_app_copilot.api import app as copilot_app
@@ -278,7 +282,10 @@ def test_selected_decision_writes_one_minimal_outbox_event(
 
 
 def test_selected_decision_audits_a_rid_not_legacy_selected_object(
-    client, outbox, auth_headers_acme, monkeypatch,
+    client,
+    outbox,
+    auth_headers_acme,
+    monkeypatch,
 ) -> None:
     """A legacy selected object must be normalized before the audit boundary."""
     from mate_app_copilot.api import app as copilot_app
@@ -295,7 +302,10 @@ def test_selected_decision_audits_a_rid_not_legacy_selected_object(
 
 
 def test_denied_decision_writes_one_minimal_outbox_event(
-    client, outbox, auth_headers_acme, monkeypatch,
+    client,
+    outbox,
+    auth_headers_acme,
+    monkeypatch,
 ) -> None:
     """A final denial is auditable once, with no selected RID."""
     from mate_app_copilot.api import app as copilot_app
@@ -326,7 +336,9 @@ def test_denied_decision_writes_one_minimal_outbox_event(
 
 
 def test_denied_decision_persists_conversation_evidence_without_llm_content(
-    client, auth_headers_acme, monkeypatch,
+    client,
+    auth_headers_acme,
+    monkeypatch,
 ) -> None:
     """A fail-closed turn remains reviewable after the browser reloads."""
     from mate_app_copilot.api import app as copilot_app
@@ -376,7 +388,10 @@ def test_denied_decision_persists_conversation_evidence_without_llm_content(
 
 
 def test_snapshot_failure_writes_a_denied_outbox_event(
-    client, outbox, auth_headers_acme, monkeypatch,
+    client,
+    outbox,
+    auth_headers_acme,
+    monkeypatch,
 ) -> None:
     """Authorization snapshot failures deny and persist their safe evidence."""
     from mate_app_copilot.api import app as copilot_app
@@ -400,13 +415,18 @@ def test_snapshot_failure_writes_a_denied_outbox_event(
 
 
 def test_unexpected_snapshot_failure_writes_a_denied_outbox_event(
-    client, outbox, auth_headers_acme, monkeypatch,
+    client,
+    outbox,
+    auth_headers_acme,
+    monkeypatch,
 ) -> None:
     """A parsing failure must use the same audited fail-closed boundary."""
     from mate_app_copilot.api import app as copilot_app
 
     monkeypatch.setattr(
-        copilot_app, "OrchestratorClient", _UnexpectedSnapshotFailureClient,
+        copilot_app,
+        "OrchestratorClient",
+        _UnexpectedSnapshotFailureClient,
     )
 
     response = _post_agent_stream(client, auth_headers_acme)
@@ -421,7 +441,10 @@ def test_unexpected_snapshot_failure_writes_a_denied_outbox_event(
 
 
 def test_malformed_snapshot_writes_a_denied_outbox_event(
-    client, outbox, auth_headers_acme, monkeypatch,
+    client,
+    outbox,
+    auth_headers_acme,
+    monkeypatch,
 ) -> None:
     """Invalid snapshot structure must be denied before entering routing."""
     from mate_app_copilot.api import app as copilot_app
@@ -440,14 +463,19 @@ def test_malformed_snapshot_writes_a_denied_outbox_event(
 
 
 def test_multi_dispatch_audits_one_event_per_final_selected_role(
-    client, outbox, auth_headers_acme, monkeypatch,
+    client,
+    outbox,
+    auth_headers_acme,
+    monkeypatch,
 ) -> None:
     """One real two-dispatch turn produces two selected-role audit records."""
     from mate_app_copilot.api import app as copilot_app
 
     _TwoDispatchSnapshotClient.dispatched_rids = []
     monkeypatch.setattr(
-        copilot_app, "OrchestratorClient", _TwoDispatchSnapshotClient,
+        copilot_app,
+        "OrchestratorClient",
+        _TwoDispatchSnapshotClient,
     )
     monkeypatch.setattr(copilot_app, "LlmgwStreamClient", _TwoDispatchLlm)
 
@@ -461,13 +489,16 @@ def test_multi_dispatch_audits_one_event_per_final_selected_role(
         "copilot.routing.decided",
     ]
     assert [record.payload["selected_rid"] for record in records] == [
-        "workflow", "knowledge",
+        "workflow",
+        "knowledge",
     ]
     assert _TwoDispatchSnapshotClient.dispatched_rids == ["workflow", "knowledge"]
 
 
 def test_snapshot_audit_writer_failure_terminates_the_stream(
-    client, auth_headers_acme, monkeypatch,
+    client,
+    auth_headers_acme,
+    monkeypatch,
 ) -> None:
     """An unauditable snapshot denial must end without a completed stream."""
     from mate_app_copilot.api import app as copilot_app
@@ -477,7 +508,9 @@ def test_snapshot_audit_writer_failure_terminates_the_stream(
             raise RuntimeError("outbox unavailable")
 
     monkeypatch.setattr(
-        copilot_app, "OrchestratorClient", _UnexpectedSnapshotFailureClient,
+        copilot_app,
+        "OrchestratorClient",
+        _UnexpectedSnapshotFailureClient,
     )
     client.app.state.outbox_writer = _FailingWriter()
 
@@ -490,7 +523,10 @@ def test_snapshot_audit_writer_failure_terminates_the_stream(
 
 @pytest.mark.parametrize("writer_mode", ["missing", "failing"])
 def test_audit_writer_failure_stops_before_dispatch(
-    client, auth_headers_acme, monkeypatch, writer_mode: str,
+    client,
+    auth_headers_acme,
+    monkeypatch,
+    writer_mode: str,
 ) -> None:
     """A missing or failed outbox append must not advance into dispatch."""
     from mate_app_copilot.api import app as copilot_app

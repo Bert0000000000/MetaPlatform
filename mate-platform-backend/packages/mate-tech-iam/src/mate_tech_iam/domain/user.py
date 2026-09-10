@@ -1,4 +1,5 @@
 """User model for IAM admin."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -36,5 +37,9 @@ class User(SQLModel, table=True):
     password_hash: str | None = Field(default=None, max_length=256, description="密码哈希")
     last_login_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))
     last_login_ip: str | None = Field(default=None, max_length=64)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))
+    )

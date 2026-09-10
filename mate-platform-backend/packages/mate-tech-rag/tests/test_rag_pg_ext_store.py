@@ -15,6 +15,7 @@ PG is faked at the pool boundary (FakePool/FakeDb execute the handful of
 statements the stores issue) so no server is needed; the memory-mode
 behaviour is asserted to be completely unchanged.
 """
+
 from __future__ import annotations
 
 import json
@@ -135,7 +136,10 @@ class FakeDb:
             ]
             scored.sort(key=lambda t: t[0], reverse=True)
             return (
-                [(r["id"], r["document_id"], r["text"], r["metadata"], ov) for ov, r in scored[:limit]],
+                [
+                    (r["id"], r["document_id"], r["text"], r["metadata"], ov)
+                    for ov, r in scored[:limit]
+                ],
                 len(scored),
             )
 
@@ -175,7 +179,10 @@ class FakeDb:
             return [], 1
         if u.startswith("SELECT ENDPOINT"):
             return (
-                [(ep, v[0], v[1], v[2], "2026-08-16T00:00:00+00:00") for ep, v in self.metrics.items()],
+                [
+                    (ep, v[0], v[1], v[2], "2026-08-16T00:00:00+00:00")
+                    for ep, v in self.metrics.items()
+                ],
                 0,
             )
         if u.startswith("DELETE FROM RAG_METRICS"):
@@ -586,20 +593,29 @@ class FakePGClientForWiring:
 class TestCreateClientsPgWiring:
     def _restore(self, retrieval, saved) -> None:
         (
-            retrieval._hybrid, retrieval._graph, retrieval._lightrag,
-            retrieval._pg_client, retrieval._pg_store, retrieval._pg_mode,
+            retrieval._hybrid,
+            retrieval._graph,
+            retrieval._lightrag,
+            retrieval._pg_client,
+            retrieval._pg_store,
+            retrieval._pg_mode,
         ) = saved
 
     def test_pg_mode_wires_graph_and_lightrag(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         from mate_tech_rag.api import retrieval
         from mate_tech_rag.storage import pg_ext_store
         from mate_tech_rag.storage.pg_ext_store import PgGraphRAGClient, PgLightRAGClient
 
         saved = (
-            retrieval._hybrid, retrieval._graph, retrieval._lightrag,
-            retrieval._pg_client, retrieval._pg_store, retrieval._pg_mode,
+            retrieval._hybrid,
+            retrieval._graph,
+            retrieval._lightrag,
+            retrieval._pg_client,
+            retrieval._pg_store,
+            retrieval._pg_mode,
         )
         pool = FakePool()
         monkeypatch.setattr(retrieval, "PGClient", FakePGClientForWiring)
@@ -624,8 +640,12 @@ class TestCreateClientsPgWiring:
         from mate_tech_rag.api import retrieval
 
         saved = (
-            retrieval._hybrid, retrieval._graph, retrieval._lightrag,
-            retrieval._pg_client, retrieval._pg_store, retrieval._pg_mode,
+            retrieval._hybrid,
+            retrieval._graph,
+            retrieval._lightrag,
+            retrieval._pg_client,
+            retrieval._pg_store,
+            retrieval._pg_mode,
         )
         monkeypatch.setattr(retrieval, "PGClient", FakePGClientForWiring)
         monkeypatch.setenv("PG_DSN", "postgresql://fake:fake@localhost:5432/fakedb")
@@ -638,13 +658,18 @@ class TestCreateClientsPgWiring:
             self._restore(retrieval, saved)
 
     def test_memory_mode_leaves_pg_mode_flag_false(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         from mate_tech_rag.api import retrieval
 
         saved = (
-            retrieval._hybrid, retrieval._graph, retrieval._lightrag,
-            retrieval._pg_client, retrieval._pg_store, retrieval._pg_mode,
+            retrieval._hybrid,
+            retrieval._graph,
+            retrieval._lightrag,
+            retrieval._pg_client,
+            retrieval._pg_store,
+            retrieval._pg_mode,
         )
         monkeypatch.delenv("PG_DSN", raising=False)
         monkeypatch.delenv("RAG_MODE", raising=False)
@@ -731,7 +756,9 @@ class TestAppKbRegistryRouting:
             # The module-level dict must not have been touched by the pg path.
             assert "kb-p" not in app_module._kb_documents
 
-    def test_pg_mode_pg_failure_does_not_touch_memory(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_pg_mode_pg_failure_does_not_touch_memory(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         import mate_tech_rag.api.app as app_module
 
         class ExplodingStore(FakeKbStore):
@@ -766,7 +793,9 @@ class TestMetricsEndpointPgMerge:
         app_module.app.state.metrics = make_default_buckets()
 
     def test_metrics_endpoint_merges_pg_totals(
-        self, rag_client: TestClient, monkeypatch: pytest.MonkeyPatch,
+        self,
+        rag_client: TestClient,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         import mate_tech_rag.api.app as app_module
 
@@ -812,7 +841,9 @@ class TestPoolResurrection:
         pools = [good]
         monkeypatch.setattr(pg_ext_store, "_POOLS", {"dsn-x": DeadPool()})
         monkeypatch.setattr(
-            pg_ext_store, "get_shared_pool", lambda dsn=None: pools.pop(0),
+            pg_ext_store,
+            "get_shared_pool",
+            lambda dsn=None: pools.pop(0),
         )
         client = pg_ext_store.PgGraphRAGClient(dsn="dsn-x")
         assert client.is_available()
@@ -829,7 +860,9 @@ class TestPoolResurrection:
 
         monkeypatch.setattr(pg_ext_store, "_POOLS", {})
         monkeypatch.setattr(
-            pg_ext_store, "get_shared_pool", lambda dsn=None: FakePool(),
+            pg_ext_store,
+            "get_shared_pool",
+            lambda dsn=None: FakePool(),
         )
         store = pg_ext_store.get_kb_document_store()
         assert pg_ext_store._kb_store is store
@@ -841,7 +874,8 @@ class TestPoolResurrection:
 
 class TestCascadeKbCleanup:
     def test_cascade_deletes_kb_membership_rows(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         from mate_tech_rag.api import retrieval
         from mate_tech_rag.api.cascade import delete_document_cascade
@@ -856,7 +890,8 @@ class TestCascadeKbCleanup:
         assert fake.list_documents("kb-1") == []
 
     def test_cascade_skips_kb_cleanup_in_memory_mode(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         from mate_tech_rag.api import retrieval
         from mate_tech_rag.api.cascade import delete_document_cascade

@@ -11,6 +11,7 @@ security adapters here guarantee that:
 No business code may call Keycloak directly (hard rule 4); it must
 go through `BearerAuth` and `OutgoingAuthMiddleware`.
 """
+
 from .bearer import BearerAuth, BearerAuthError, CachedToken
 from .outgoing import OutgoingAuthMiddleware
 from .pii_mask import (

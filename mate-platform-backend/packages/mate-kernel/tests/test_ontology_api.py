@@ -64,15 +64,32 @@ class TestProtocol:
 
     def test_protocol_has_all_methods(self) -> None:
         required = {
-            "resolve_class_ref", "snapshot_version", "list_versions",
-            "upsert_property", "upsert_object_type", "upsert_link_type",
-            "upsert_action_type", "upsert_interface",
-            "list_object_types", "list_link_types", "list_action_types",
-            "list_interfaces", "get_object_type", "get_link_type", "get_action_type",
-            "create_individual", "get_individual", "list_individuals",
-            "create_link_instance", "list_link_instances",
-            "upsert_axiom", "list_axioms", "upsert_function", "list_functions",
-            "evaluate_object_set", "apply_action",
+            "resolve_class_ref",
+            "snapshot_version",
+            "list_versions",
+            "upsert_property",
+            "upsert_object_type",
+            "upsert_link_type",
+            "upsert_action_type",
+            "upsert_interface",
+            "list_object_types",
+            "list_link_types",
+            "list_action_types",
+            "list_interfaces",
+            "get_object_type",
+            "get_link_type",
+            "get_action_type",
+            "create_individual",
+            "get_individual",
+            "list_individuals",
+            "create_link_instance",
+            "list_link_instances",
+            "upsert_axiom",
+            "list_axioms",
+            "upsert_function",
+            "list_functions",
+            "evaluate_object_set",
+            "apply_action",
         }
         for name in required:
             assert hasattr(OntologyRepository, name), f"missing {name}"
@@ -263,15 +280,17 @@ class TestQueryAndApply:
         )
         repo.upsert_action_type(at)
         # ACTION-03：apply 需要目标 individual 存在
-        repo.create_individual(Individual(
-            rid="ont.acme.ind.order.1",
-            class_rid=ClassRef("ont.acme.obj.order"),
-            props=(),
-            primary_key="1",
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-            tenant_id="acme",
-        ))
+        repo.create_individual(
+            Individual(
+                rid="ont.acme.ind.order.1",
+                class_rid=ClassRef("ont.acme.obj.order"),
+                props=(),
+                primary_key="1",
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+                tenant_id="acme",
+            )
+        )
         now, se = repo.apply_action(
             ClassRef("ont.acme.act.notify"),
             target_iid="ont.acme.ind.order.1",

@@ -138,7 +138,7 @@ export const MOCK_TEMPLATES: TemplateItem[] = [
 @RequestMapping("/api/v1/{prefix}")
 public class TemplateController {
     private final TemplateService service;
-    
+
     @GetMapping("/templates")
     public ApiResponse<List<TemplateItem>> list(
         @RequestParam(required = false) String keyword,
@@ -216,7 +216,7 @@ public class TemplateController {
 @SpringBootTest
 public class ApphubTemplateContractTest {
     @LocalServerPort int port;
-    
+
     @Test
     public void testListTemplatesContract() {
         // 验证响应结构与 API-CONTRACT 一致

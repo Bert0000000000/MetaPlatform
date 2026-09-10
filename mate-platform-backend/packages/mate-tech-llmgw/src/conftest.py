@@ -1,4 +1,5 @@
 """Conftest that ensures src/ is on the Python path for tests."""
+
 import sys
 from pathlib import Path
 

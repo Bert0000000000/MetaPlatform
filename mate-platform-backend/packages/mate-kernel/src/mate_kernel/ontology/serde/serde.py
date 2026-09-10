@@ -136,9 +136,7 @@ def link_type_from_dict(d: dict[str, Any]) -> LinkType:
         dst=ClassRef(d["dst"]),
         cardinality=Cardinality(d["cardinality"]),
         directionality=Directionality(d["directionality"]),
-        link_properties=tuple(
-            property_from_dict(p) for p in d.get("link_properties", [])
-        ),
+        link_properties=tuple(property_from_dict(p) for p in d.get("link_properties", [])),
     )
 
 
@@ -182,9 +180,7 @@ def interface_from_dict(d: dict[str, Any]) -> Interface:
         rid=ClassRef(d["rid"]),
         properties=tuple(property_from_dict(p) for p in d.get("properties", [])),
         required_links=tuple(ClassRef(rl) for rl in d.get("required_links", [])),
-        polymorphic_action_constraints=tuple(
-            d.get("polymorphic_action_constraints", [])
-        ),
+        polymorphic_action_constraints=tuple(d.get("polymorphic_action_constraints", [])),
     )
 
 

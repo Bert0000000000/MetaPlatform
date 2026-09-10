@@ -6,6 +6,7 @@ Provides read + write for the 5 apphub entity types
 Tuple fields (``tags``) are serialised as newline-separated TEXT.
 Dict fields (``content``) are JSON-serialised to TEXT.
 """
+
 from __future__ import annotations
 
 import json
@@ -131,11 +132,15 @@ def list_apps(tenant_id: str) -> list[ApphubApp]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.ApphubAppORM)
-        .where(models.ApphubAppORM.tenant_id == tenant_id)
-        .order_by(models.ApphubAppORM.category, models.ApphubAppORM.name)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.ApphubAppORM)
+            .where(models.ApphubAppORM.tenant_id == tenant_id)
+            .order_by(models.ApphubAppORM.category, models.ApphubAppORM.name)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_app(r) for r in rows]
 
 
@@ -159,11 +164,15 @@ def list_groups(tenant_id: str) -> list[ApphubGroup]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.ApphubGroupORM)
-        .where(models.ApphubGroupORM.tenant_id == tenant_id)
-        .order_by(models.ApphubGroupORM.sort_order)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.ApphubGroupORM)
+            .where(models.ApphubGroupORM.tenant_id == tenant_id)
+            .order_by(models.ApphubGroupORM.sort_order)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_group(r) for r in rows]
 
 
@@ -187,11 +196,15 @@ def list_modules(tenant_id: str) -> list[ApphubModule]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.ApphubModuleORM)
-        .where(models.ApphubModuleORM.tenant_id == tenant_id)
-        .order_by(models.ApphubModuleORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.ApphubModuleORM)
+            .where(models.ApphubModuleORM.tenant_id == tenant_id)
+            .order_by(models.ApphubModuleORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_module(r) for r in rows]
 
 
@@ -215,11 +228,15 @@ def list_pages(tenant_id: str) -> list[ApphubPage]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.ApphubPageORM)
-        .where(models.ApphubPageORM.tenant_id == tenant_id)
-        .order_by(models.ApphubPageORM.code)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.ApphubPageORM)
+            .where(models.ApphubPageORM.tenant_id == tenant_id)
+            .order_by(models.ApphubPageORM.code)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_page(r) for r in rows]
 
 
@@ -243,14 +260,18 @@ def list_templates(tenant_id: str) -> list[ApphubTemplate]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.ApphubTemplateORM)
-        .where(models.ApphubTemplateORM.tenant_id == tenant_id)
-        .order_by(
-            models.ApphubTemplateORM.template_type,
-            models.ApphubTemplateORM.name,
+    rows = (
+        s.execute(
+            select(models.ApphubTemplateORM)
+            .where(models.ApphubTemplateORM.tenant_id == tenant_id)
+            .order_by(
+                models.ApphubTemplateORM.template_type,
+                models.ApphubTemplateORM.name,
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return [_orm_to_template(r) for r in rows]
 
 
@@ -284,11 +305,19 @@ def put_app(tenant_id: str, app: ApphubApp) -> ApphubApp:
         existing.owner = app.owner
         existing.tags = tags_str
     else:
-        s.add(models.ApphubAppORM(
-            id=app.id, tenant_id=tenant_id, name=app.name, code=app.code,
-            category=app.category, description=app.description,
-            version=app.version, owner=app.owner, tags=tags_str,
-        ))
+        s.add(
+            models.ApphubAppORM(
+                id=app.id,
+                tenant_id=tenant_id,
+                name=app.name,
+                code=app.code,
+                category=app.category,
+                description=app.description,
+                version=app.version,
+                owner=app.owner,
+                tags=tags_str,
+            )
+        )
     s.commit()
     return app
 
@@ -306,10 +335,16 @@ def put_group(tenant_id: str, group: ApphubGroup) -> ApphubGroup:
         existing.icon = group.icon
         existing.sort_order = group.sort_order
     else:
-        s.add(models.ApphubGroupORM(
-            id=group.id, tenant_id=tenant_id, name=group.name, code=group.code,
-            icon=group.icon, sort_order=group.sort_order,
-        ))
+        s.add(
+            models.ApphubGroupORM(
+                id=group.id,
+                tenant_id=tenant_id,
+                name=group.name,
+                code=group.code,
+                icon=group.icon,
+                sort_order=group.sort_order,
+            )
+        )
     s.commit()
     return group
 
@@ -328,11 +363,17 @@ def put_module(tenant_id: str, module: ApphubModule) -> ApphubModule:
         existing.description = module.description
         existing.entry_path = module.entry_path
     else:
-        s.add(models.ApphubModuleORM(
-            id=module.id, tenant_id=tenant_id, name=module.name,
-            code=module.code, app_code=module.app_code,
-            description=module.description, entry_path=module.entry_path,
-        ))
+        s.add(
+            models.ApphubModuleORM(
+                id=module.id,
+                tenant_id=tenant_id,
+                name=module.name,
+                code=module.code,
+                app_code=module.app_code,
+                description=module.description,
+                entry_path=module.entry_path,
+            )
+        )
     s.commit()
     return module
 
@@ -351,11 +392,17 @@ def put_page(tenant_id: str, page: ApphubPage) -> ApphubPage:
         existing.layout = page.layout
         existing.schema_version = page.schema_version
     else:
-        s.add(models.ApphubPageORM(
-            id=page.id, tenant_id=tenant_id, name=page.name, code=page.code,
-            module_code=page.module_code, layout=page.layout,
-            schema_version=page.schema_version,
-        ))
+        s.add(
+            models.ApphubPageORM(
+                id=page.id,
+                tenant_id=tenant_id,
+                name=page.name,
+                code=page.code,
+                module_code=page.module_code,
+                layout=page.layout,
+                schema_version=page.schema_version,
+            )
+        )
     s.commit()
     return page
 
@@ -375,11 +422,17 @@ def put_template(tenant_id: str, template: ApphubTemplate) -> ApphubTemplate:
         existing.description = template.description
         existing.content = content_str
     else:
-        s.add(models.ApphubTemplateORM(
-            id=template.id, tenant_id=tenant_id, name=template.name,
-            code=template.code, template_type=template.template_type,
-            description=template.description, content=content_str,
-        ))
+        s.add(
+            models.ApphubTemplateORM(
+                id=template.id,
+                tenant_id=tenant_id,
+                name=template.name,
+                code=template.code,
+                template_type=template.template_type,
+                description=template.description,
+                content=content_str,
+            )
+        )
     s.commit()
     return template
 
@@ -395,21 +448,11 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     from . import in_memory as mem
 
     counts: dict[str, int] = {}
-    counts["apps"] = len(
-        [put_app(tenant_id, a) for a in mem.list_apps(tenant_id)]
-    )
-    counts["groups"] = len(
-        [put_group(tenant_id, g) for g in mem.list_groups(tenant_id)]
-    )
-    counts["modules"] = len(
-        [put_module(tenant_id, m) for m in mem.list_modules(tenant_id)]
-    )
-    counts["pages"] = len(
-        [put_page(tenant_id, p) for p in mem.list_pages(tenant_id)]
-    )
-    counts["templates"] = len(
-        [put_template(tenant_id, t) for t in mem.list_templates(tenant_id)]
-    )
+    counts["apps"] = len([put_app(tenant_id, a) for a in mem.list_apps(tenant_id)])
+    counts["groups"] = len([put_group(tenant_id, g) for g in mem.list_groups(tenant_id)])
+    counts["modules"] = len([put_module(tenant_id, m) for m in mem.list_modules(tenant_id)])
+    counts["pages"] = len([put_page(tenant_id, p) for p in mem.list_pages(tenant_id)])
+    counts["templates"] = len([put_template(tenant_id, t) for t in mem.list_templates(tenant_id)])
     return counts
 
 
@@ -439,24 +482,18 @@ def put_shortlink(tenant_id: str, entry: ShortlinkEntry) -> object:
         existing.app_id = entry.app_id
         existing.code = entry.code
         existing.role = entry.role
-        existing.expires_at = (
-            datetime.fromisoformat(entry.expires_at)
-            if entry.expires_at
-            else None
-        )
+        existing.expires_at = datetime.fromisoformat(entry.expires_at) if entry.expires_at else None
     else:
-        s.add(models.ApphubShortlinkORM(
-            id=entry.id,
-            tenant_id=tenant_id,
-            app_id=entry.app_id,
-            code=entry.code,
-            role=entry.role,
-            expires_at=(
-                datetime.fromisoformat(entry.expires_at)
-                if entry.expires_at
-                else None
-            ),
-        ))
+        s.add(
+            models.ApphubShortlinkORM(
+                id=entry.id,
+                tenant_id=tenant_id,
+                app_id=entry.app_id,
+                code=entry.code,
+                role=entry.role,
+                expires_at=(datetime.fromisoformat(entry.expires_at) if entry.expires_at else None),
+            )
+        )
     s.commit()
     return entry
 
@@ -480,11 +517,15 @@ def list_shortlinks(tenant_id: str) -> list:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.ApphubShortlinkORM)
-        .where(models.ApphubShortlinkORM.tenant_id == tenant_id)
-        .order_by(models.ApphubShortlinkORM.created_at.desc())
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.ApphubShortlinkORM)
+            .where(models.ApphubShortlinkORM.tenant_id == tenant_id)
+            .order_by(models.ApphubShortlinkORM.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_shortlink(r) for r in rows]
 
 

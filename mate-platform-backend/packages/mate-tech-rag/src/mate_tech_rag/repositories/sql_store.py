@@ -3,6 +3,7 @@
 Provides read + write for ``RagDocument`` and ``RagIndex``. Dict fields
 (``RagDocument.metadata``) are JSON-serialised to TEXT.
 """
+
 from __future__ import annotations
 
 import json
@@ -73,11 +74,15 @@ def list_documents(tenant_id: str) -> list[RagDocument]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.RagDocumentORM)
-        .where(models.RagDocumentORM.tenant_id == tenant_id)
-        .order_by(models.RagDocumentORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.RagDocumentORM)
+            .where(models.RagDocumentORM.tenant_id == tenant_id)
+            .order_by(models.RagDocumentORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_document(r) for r in rows]
 
 
@@ -101,11 +106,15 @@ def list_indexes(tenant_id: str) -> list[RagIndex]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.RagIndexORM)
-        .where(models.RagIndexORM.tenant_id == tenant_id)
-        .order_by(models.RagIndexORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.RagIndexORM)
+            .where(models.RagIndexORM.tenant_id == tenant_id)
+            .order_by(models.RagIndexORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_index(r) for r in rows]
 
 
@@ -139,12 +148,19 @@ def put_document(tenant_id: str, doc: RagDocument) -> RagDocument:
         existing.status = doc.status
         existing.updated_at = doc.updated_at
     else:
-        s.add(models.RagDocumentORM(
-            id=doc.id, tenant_id=tenant_id, document_id=doc.document_id,
-            filename=doc.filename, chunk_count=doc.chunk_count,
-            meta=meta_str, status=doc.status,
-            created_at=doc.created_at, updated_at=doc.updated_at,
-        ))
+        s.add(
+            models.RagDocumentORM(
+                id=doc.id,
+                tenant_id=tenant_id,
+                document_id=doc.document_id,
+                filename=doc.filename,
+                chunk_count=doc.chunk_count,
+                meta=meta_str,
+                status=doc.status,
+                created_at=doc.created_at,
+                updated_at=doc.updated_at,
+            )
+        )
     s.commit()
     return doc
 
@@ -181,11 +197,17 @@ def put_index(tenant_id: str, idx: RagIndex) -> RagIndex:
         existing.status = idx.status
         existing.created_at = idx.created_at
     else:
-        s.add(models.RagIndexORM(
-            id=idx.id, tenant_id=tenant_id, name=idx.name,
-            backend=idx.backend, chunk_count=idx.chunk_count,
-            status=idx.status, created_at=idx.created_at,
-        ))
+        s.add(
+            models.RagIndexORM(
+                id=idx.id,
+                tenant_id=tenant_id,
+                name=idx.name,
+                backend=idx.backend,
+                chunk_count=idx.chunk_count,
+                status=idx.status,
+                created_at=idx.created_at,
+            )
+        )
     s.commit()
     return idx
 
@@ -214,10 +236,6 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     from . import in_memory as mem
 
     counts: dict[str, int] = {}
-    counts["documents"] = len(
-        [put_document(tenant_id, d) for d in mem.list_documents(tenant_id)]
-    )
-    counts["indexes"] = len(
-        [put_index(tenant_id, i) for i in mem.list_indexes(tenant_id)]
-    )
+    counts["documents"] = len([put_document(tenant_id, d) for d in mem.list_documents(tenant_id)])
+    counts["indexes"] = len([put_index(tenant_id, i) for i in mem.list_indexes(tenant_id)])
     return counts

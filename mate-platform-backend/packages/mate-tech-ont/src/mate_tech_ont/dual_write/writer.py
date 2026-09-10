@@ -2,6 +2,7 @@
 
 CRUD 同时写 PG 元数据 + Neo4j 关系，失败回滚。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

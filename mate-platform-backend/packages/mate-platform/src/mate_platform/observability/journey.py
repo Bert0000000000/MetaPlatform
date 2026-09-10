@@ -19,6 +19,7 @@ Usage:
                 span.set_attribute("outcome", "error")
                 raise
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterator

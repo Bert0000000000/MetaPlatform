@@ -4,6 +4,7 @@ Revision ID: 2026_08_05_marketplace_init
 Revises:
 Create Date: 2026-08-05
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -81,9 +82,7 @@ def upgrade() -> None:
         "marketplace_install",
         ["kind", "artifact_id", "version"],
         unique=True,
-        postgresql_where=sa.text(
-            "state IN ('downloading','verifying','installed')"
-        ),
+        postgresql_where=sa.text("state IN ('downloading','verifying','installed')"),
     )
 
     # marketplace_instance
@@ -116,12 +115,8 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_table("marketplace_instance")
-    op.drop_index(
-        "uq_marketplace_install_active", table_name="marketplace_install"
-    )
-    op.drop_index(
-        "ix_marketplace_install_kind_artifact", table_name="marketplace_install"
-    )
+    op.drop_index("uq_marketplace_install_active", table_name="marketplace_install")
+    op.drop_index("ix_marketplace_install_kind_artifact", table_name="marketplace_install")
     op.drop_table("marketplace_install")
     op.drop_index(
         "ix_marketplace_subscription_tenant",

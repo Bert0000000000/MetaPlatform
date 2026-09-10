@@ -6,6 +6,7 @@ ctx (JWT) tenant is the source of truth:
 - no ctx / anonymous ctx → body value kept (dev_server anonymous paths
   and the auth-less test apps keep working)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -80,9 +81,7 @@ def test_missing_body_tenant_backfilled_from_ctx(user_ctx: _Ctx) -> None:
 
     from mate_tech_llmgw.api.routes import ChatRequest, _apply_request_tenant
 
-    req = ChatRequest(
-        model="gpt-4o-mini", messages=[{"role": "user", "content": "hi"}]
-    )
+    req = ChatRequest(model="gpt-4o-mini", messages=[{"role": "user", "content": "hi"}])
     request = SimpleNamespace(state=SimpleNamespace(ctx=user_ctx))
     _apply_request_tenant(request, req)
     assert req.tenant_id == "tenant-a"  # backfilled over the "default" sentinel

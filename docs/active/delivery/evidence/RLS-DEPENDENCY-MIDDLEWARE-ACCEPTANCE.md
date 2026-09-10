@@ -8,10 +8,12 @@
 ## 1. 历史 ruff 错误收尾
 
 `mate-clients/src/mate_clients/pg.py` 修：
+
 - `UP035`: `from typing import Iterator` → `from collections.abc import Iterator`
 - `PLW0603` (×2): `_client` singleton `global` 语句 → ruff.toml 加 `PLW0603` ignore (与 `kafka/consumer.py` 同源 singleton 模式)
 
 `mate-clients/tests/test_pg_client.py` 修：
+
 - `F401`: `sqlalchemy.inspect` 未用 → 删除
 - `PTH110/PTH107`: `os.path.exists` + `os.remove` → `Path.unlink(missing_ok=True)`
 - `SIM117`: 嵌套 `with` → 合并 `with pytest.raises(...), client.session() as s:`
@@ -58,15 +60,15 @@ def list_items(session: SessionDep):
 
 ### 2.3 测试 (7 tests)
 
-| 测试 | 验证 |
-|---|---|
-| `TestRlsDbSession.test_binds_ctx_and_emits_set_local` | 真实 ctx 绑 + PG 上 `SET LOCAL app.tenant_id` |
-| `TestRlsDbSession.test_rejects_missing_ctx` | 缺 ctx raise TenantAccessError |
-| `TestRlsDbSession.test_rejects_anonymous_ctx` | ANONYMOUS raise TenantAccessError |
-| `TestRlsDbSession.test_sqlite_dialect_is_noop` | SQLite 上 SET LOCAL 跳过, ctx 仍绑 |
-| `TestRlsDbSessionFor.test_returns_callable_that_resolves_request_from_args` | args 传 Request |
-| `TestRlsDbSessionFor.test_returns_callable_that_resolves_request_from_kwargs` | kwargs 传 Request |
-| `TestRlsDbSessionFor.test_raises_when_no_request_argument` | 缺 Request raise |
+| 测试                                                                          | 验证                                          |
+| ----------------------------------------------------------------------------- | --------------------------------------------- |
+| `TestRlsDbSession.test_binds_ctx_and_emits_set_local`                         | 真实 ctx 绑 + PG 上 `SET LOCAL app.tenant_id` |
+| `TestRlsDbSession.test_rejects_missing_ctx`                                   | 缺 ctx raise TenantAccessError                |
+| `TestRlsDbSession.test_rejects_anonymous_ctx`                                 | ANONYMOUS raise TenantAccessError             |
+| `TestRlsDbSession.test_sqlite_dialect_is_noop`                                | SQLite 上 SET LOCAL 跳过, ctx 仍绑            |
+| `TestRlsDbSessionFor.test_returns_callable_that_resolves_request_from_args`   | args 传 Request                               |
+| `TestRlsDbSessionFor.test_returns_callable_that_resolves_request_from_kwargs` | kwargs 传 Request                             |
+| `TestRlsDbSessionFor.test_raises_when_no_request_argument`                    | 缺 Request raise                              |
 
 ## 3. BI 集成 (Trino + StarRocks)
 
@@ -78,17 +80,17 @@ def list_items(session: SessionDep):
 
 `infra/helm/charts/starrocks/` (7 文件)：
 
-| 文件 | 内容 |
-|---|---|
-| `Chart.yaml` | apiVersion v2 / version 0.1.0 / appVersion 3.3 |
-| `values.yaml` | FE + BE + 联邦 Iceberg/Paimon external catalogs + tenant prefix + NetworkPolicy + persistence (FE 50Gi / BE 200Gi) |
-| `templates/_helpers.tpl` | `starrocks.feFullname` + `beFullname` (硬编码 `starrocks-fe` / `starrocks-be`) |
-| `templates/fe-statefulset.yaml` | FE StatefulSet (1 副本) + 50Gi PVC + TCP probe on 9030 + 8040 |
-| `templates/be-statefulset.yaml` | BE StatefulSet (3 副本) + 200Gi PVC + FE discovery env |
-| `templates/services.yaml` | FE headless + ClusterIP + BE headless + ClusterIP |
-| `templates/external-catalog-configmap.yaml` | iceberg + paimon external catalog + tenant prefix |
-| `templates/networkpolicy.yaml` | FE + BE 各自 default-deny + DNS egress |
-| `templates/NOTES.txt` | JDBC URL + 验证命令 |
+| 文件                                        | 内容                                                                                                               |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `Chart.yaml`                                | apiVersion v2 / version 0.1.0 / appVersion 3.3                                                                     |
+| `values.yaml`                               | FE + BE + 联邦 Iceberg/Paimon external catalogs + tenant prefix + NetworkPolicy + persistence (FE 50Gi / BE 200Gi) |
+| `templates/_helpers.tpl`                    | `starrocks.feFullname` + `beFullname` (硬编码 `starrocks-fe` / `starrocks-be`)                                     |
+| `templates/fe-statefulset.yaml`             | FE StatefulSet (1 副本) + 50Gi PVC + TCP probe on 9030 + 8040                                                      |
+| `templates/be-statefulset.yaml`             | BE StatefulSet (3 副本) + 200Gi PVC + FE discovery env                                                             |
+| `templates/services.yaml`                   | FE headless + ClusterIP + BE headless + ClusterIP                                                                  |
+| `templates/external-catalog-configmap.yaml` | iceberg + paimon external catalog + tenant prefix                                                                  |
+| `templates/networkpolicy.yaml`              | FE + BE 各自 default-deny + DNS egress                                                                             |
+| `templates/NOTES.txt`                       | JDBC URL + 验证命令                                                                                                |
 
 **关键设计**：FE + BE StatefulSet 分离，独立伸缩（FE 1 副本 / BE 3 副本 production minimum）。BE → FE 用 `FE_SERVICE_NAME` 环境变量自动 join。
 
@@ -96,10 +98,10 @@ def list_items(session: SessionDep):
 
 ### 3.3 测试 (16 tests)
 
-| 测试类 | 覆盖 |
-|---|---|
-| `TestStarRocksChart` (13) | Chart.yaml / apiVersion / name / fe+be 端口 / 联邦 catalog endpoints / tenant isolation / NetworkPolicy / persistence / FE probes / BE probes+FE env / services query+http / external catalog CM / default-deny |
-| `TestUmbrellaChartDeclaresStarRocks` (3) | starrocks 注册 / condition / 排序在 trino 之后 |
+| 测试类                                   | 覆盖                                                                                                                                                                                                            |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TestStarRocksChart` (13)                | Chart.yaml / apiVersion / name / fe+be 端口 / 联邦 catalog endpoints / tenant isolation / NetworkPolicy / persistence / FE probes / BE probes+FE env / services query+http / external catalog CM / default-deny |
+| `TestUmbrellaChartDeclaresStarRocks` (3) | starrocks 注册 / condition / 排序在 trino 之后                                                                                                                                                                  |
 
 ### 3.4 umbrella 注册
 
@@ -128,25 +130,25 @@ $ pytest packages
 
 ## 5. 13 硬规则映射
 
-| # | 硬规则 | 三批次总览 |
-|---|---|---|
-| 3 | tenant 上下文 | ✅ rls_db_session 在 Depends 层强制 ctx 绑定 (硬规则 3) |
-| 5 | Production fallback | ✅ StarRocks + Iceberg + Trino values-staging 用独立 stg_ 前缀 |
-| 6 | 静态检查 | ✅ 0 ruff errors on new code (历史 7 个 ruff 收尾) |
-| 8 | K8s readiness | ✅ StarRocks FE + BE StatefulSet 探针 livenessProbe + readinessProbe |
-| 9 | 审计/指标/trace | ✅ StarRocks FE HTTP 8040 + BE webserver 8040 (out-of-scope chart) |
-| 10 | 验收证据 | ✅ 本文档 + 23 tests |
-| 13 | NetworkPolicy | ✅ StarRocks FE + BE 双 netpol default-deny + DNS egress |
+| #   | 硬规则              | 三批次总览                                                           |
+| --- | ------------------- | -------------------------------------------------------------------- |
+| 3   | tenant 上下文       | ✅ rls_db_session 在 Depends 层强制 ctx 绑定 (硬规则 3)              |
+| 5   | Production fallback | ✅ StarRocks + Iceberg + Trino values-staging 用独立 stg\_ 前缀      |
+| 6   | 静态检查            | ✅ 0 ruff errors on new code (历史 7 个 ruff 收尾)                   |
+| 8   | K8s readiness       | ✅ StarRocks FE + BE StatefulSet 探针 livenessProbe + readinessProbe |
+| 9   | 审计/指标/trace     | ✅ StarRocks FE HTTP 8040 + BE webserver 8040 (out-of-scope chart)   |
+| 10  | 验收证据            | ✅ 本文档 + 23 tests                                                 |
+| 13  | NetworkPolicy       | ✅ StarRocks FE + BE 双 netpol default-deny + DNS egress             |
 
 ## 6. 结论
 
 **3 项工作合并收口 Accepted** ✅
 
-| 项工作 | 改动 | 测试增量 | ruff 修复 |
-|---|---|---|---|
-| 历史 ruff 收尾 | pg.py + test_pg_client.py + ruff.toml | 0（既有） | -7 |
-| AuthMiddleware 集成 rls_session | rls_session.py + 新 rls_db_session / rls_db_session_for | +7 | 0 |
-| BI 集成 StarRocks sub-chart | infra/helm/charts/starrocks/ 7 文件 + umbrella + chart_structure | +16 | 0 |
-| **合计** | | **+23 tests** | **-7 ruff** |
+| 项工作                          | 改动                                                             | 测试增量      | ruff 修复   |
+| ------------------------------- | ---------------------------------------------------------------- | ------------- | ----------- |
+| 历史 ruff 收尾                  | pg.py + test_pg_client.py + ruff.toml                            | 0（既有）     | -7          |
+| AuthMiddleware 集成 rls_session | rls_session.py + 新 rls_db_session / rls_db_session_for          | +7            | 0           |
+| BI 集成 StarRocks sub-chart     | infra/helm/charts/starrocks/ 7 文件 + umbrella + chart_structure | +16           | 0           |
+| **合计**                        |                                                                  | **+23 tests** | **-7 ruff** |
 
 后续接力候选（按 roadmap）：真实云端 staging 演练 (v3.2-δ 2027-02-15)、多模态数据产品 Iceberg ADS (2 周)、v3.2-ε GA (2027-03-15)。

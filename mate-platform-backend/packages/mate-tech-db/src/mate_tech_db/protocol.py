@@ -4,6 +4,7 @@ Extended in P3-W1 (TD-5 持久化升级) to cover the full CRUD surface.
 Both in-memory and SQL backends implement this protocol so the API
 layer is agnostic to the storage choice.
 """
+
 from __future__ import annotations
 
 from typing import Any, Protocol, runtime_checkable

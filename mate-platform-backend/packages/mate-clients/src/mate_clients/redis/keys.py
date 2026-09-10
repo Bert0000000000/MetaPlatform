@@ -9,6 +9,7 @@ two layers of defense.
 Cross-tenant operations (admin scope) use a different key namespace
 `x:<admin-actor>:` to make cross-tenant reads easy to audit.
 """
+
 from __future__ import annotations
 
 import re

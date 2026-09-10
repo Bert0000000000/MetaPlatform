@@ -24,7 +24,7 @@ sequenceDiagram
     participant IAM as TECH-IAM
     participant GW as TECH-GW
     participant DB as PostgreSQL
-    
+
     BA->>APPHUB: 1. 点击「+ 新建应用」
     APPHUB->>IAM: 2. 校验权限 (app.create)
     IAM-->>APPHUB: 3. 权限通过
@@ -76,7 +76,7 @@ sequenceDiagram
     participant RAG as TECH-RAG
     participant TOOL as TECH-MCP
     participant TRACE as TECH-OBS
-    
+
     BU->>SUPERAI: 1. 输入需求
     SUPERAI->>DW: 2. POST /v1/copilot/scheduling/intent/detect
     DW-->>SUPERAI: 3. intentId, type=TASK
@@ -115,7 +115,7 @@ sequenceDiagram
     participant MCP as TECH-MCP
     participant IAM as TECH-IAM
     participant AUDIT as MATE-AGENT
-    
+
     DEV->>MCPHUB: 1. 注册 Server
     MCPHUB->>MCP: 2. POST /v1/mcp/servers
     MCP-->>MCPHUB: 3. serverId
@@ -154,7 +154,7 @@ sequenceDiagram
     participant RAG as TECH-RAG
     participant VDB as Milvus
     participant EMBED as Embedding Service
-    
+
     U->>KB: 1. 上传文档
     KB->>STORAGE: 2. PUT 文件
     STORAGE-->>KB: 3. fileUrl
@@ -192,7 +192,7 @@ sequenceDiagram
     participant RULE as TECH-RULE
     participant ACTION as TECH-ACTION
     participant NEO4J as Neo4j
-    
+
     OE->>ONT: 1. 创建概念「客户」
     ONT->>ONT_SVC: 2. POST /v1/ont/concepts
     ONT_SVC->>NEO4J: 3. 写入节点
@@ -277,22 +277,22 @@ apiClient.interceptors.response.use(
 ```java
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    
+
     @ExceptionHandler(BizException.class)
     public ResponseEntity<ApiResponse<?>> handleBiz(BizException e) {
         return ResponseEntity.ok(ApiResponse.error(e.getCode(), e.getMessage()));
     }
-    
+
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ApiResponse<?>> handleValidation(ValidationException e) {
         return ResponseEntity.ok(ApiResponse.error(1001, e.getMessage()));
     }
-    
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<?>> handleAccess(AccessDeniedException e) {
         return ResponseEntity.ok(ApiResponse.error(3001, "您没有权限"));
     }
-    
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<?>> handleAll(Exception e, HttpServletRequest req) {
         String traceId = (String) req.getAttribute("traceId");
@@ -344,12 +344,12 @@ stateDiagram-v2
     [*] --> DRAFT: 创建
     DRAFT --> PUBLISHED: 发布
     DRAFT --> DEPRECATED: 废弃
-    
+
     note right of DRAFT
         条件: 通过所有必填校验
         守卫: status == DRAFT
     end note
-    
+
     note right of PUBLISHED
         条件: 至少 1 个有效配置
         守卫: status == DRAFT

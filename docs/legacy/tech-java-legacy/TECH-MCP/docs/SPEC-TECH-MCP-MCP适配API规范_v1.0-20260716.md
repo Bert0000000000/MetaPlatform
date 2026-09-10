@@ -1,9 +1,9 @@
 # SPEC - MCP 协议适配服务 API 规范（TECH-MCP）
 
-> 文档版本：v1.0  
-> 日期：2026-07-16  
-> 模块：TECH-MCP  
-> 包名：`com.metaplatform.mcp`  
+> 文档版本：v1.0
+> 日期：2026-07-16
+> 模块：TECH-MCP
+> 包名：`com.metaplatform.mcp`
 > API 路径前缀：`/api/v1/mcp`
 
 ---
@@ -39,66 +39,66 @@ TECH-MCP 同时承担两个角色：
 
 核心职责：
 
-| 职责 | 说明 |
-|---|---|
-| MCP Server 管理 | MCP Server 实例的创建、配置、启停；管理每个 Server 暴露的 Tools / Resources / Prompts 清单 |
-| MCP Client 管理 | 连接第三方 MCP Server 的配置管理；连接建立、状态监控、自动重连、健康检查 |
-| Tool 注册中心 | 统一管理内部 Tool（平台原生能力）与外部 Tool（第三方 MCP Server 暴露的 Tool）；Tool 注册、Schema 定义、分类、搜索、路由 |
-| Tool 执行 | Tool 调用执行，支持同步/异步/批量模式；参数校验（JSON Schema）、超时控制、结果返回 |
-| Resource 管理 | Resource 的暴露与读取；支持文档、架构资产、本体实体等资源的 MCP 协议读取 |
-| Prompt 模板管理 | Prompt 模板的创建、管理、渲染；支持变量替换与角色模板 |
-| 调用审计 | MCP 调用全链路记录、Token 消耗统计、错误追踪、调用趋势分析 |
+| 职责            | 说明                                                                                                                    |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| MCP Server 管理 | MCP Server 实例的创建、配置、启停；管理每个 Server 暴露的 Tools / Resources / Prompts 清单                              |
+| MCP Client 管理 | 连接第三方 MCP Server 的配置管理；连接建立、状态监控、自动重连、健康检查                                                |
+| Tool 注册中心   | 统一管理内部 Tool（平台原生能力）与外部 Tool（第三方 MCP Server 暴露的 Tool）；Tool 注册、Schema 定义、分类、搜索、路由 |
+| Tool 执行       | Tool 调用执行，支持同步/异步/批量模式；参数校验（JSON Schema）、超时控制、结果返回                                      |
+| Resource 管理   | Resource 的暴露与读取；支持文档、架构资产、本体实体等资源的 MCP 协议读取                                                |
+| Prompt 模板管理 | Prompt 模板的创建、管理、渲染；支持变量替换与角色模板                                                                   |
+| 调用审计        | MCP 调用全链路记录、Token 消耗统计、错误追踪、调用趋势分析                                                              |
 
 ### 1.2 技术栈
 
-| 层级 | 技术 | 版本 | 用途 |
-|---|---|---|---|
-| 语言 | Java | 21 | 服务主体语言 |
-| 框架 | Spring Boot | 3.4 | Web 框架、依赖注入、配置管理 |
-| AI 框架 | Spring AI | 1.0 | AI 能力集成 |
-| MCP SDK | spring-ai-mcp-server-spring-boot-starter | 1.0 | MCP Server 实现（Java 端） |
-| MCP SDK | spring-ai-mcp-client-spring-boot-starter | 1.0 | MCP Client 实现（Java 端） |
-| 数据库 | PostgreSQL | 17 | Server/Client/Tool/Resource/Prompt 配置与审计数据持久化 |
-| 缓存 | Redis | 7.4 | Tool 注册缓存、Server 能力清单缓存、连接状态缓存 |
-| 消息队列 | Kafka | 3.9 | Tool 调用事件发布（Outbox 模式） |
-| 可观测性 | OpenTelemetry + Prometheus | 1.45 / 3.x | trace_id 传播、指标采集 |
-| JSON 处理 | Jackson | 2.17 | JSON-RPC 消息序列化/反序列化 |
-| Schema 校验 | networknt/json-schema-validator | 1.5 | Tool 参数 JSON Schema 校验 |
+| 层级        | 技术                                     | 版本       | 用途                                                    |
+| ----------- | ---------------------------------------- | ---------- | ------------------------------------------------------- |
+| 语言        | Java                                     | 21         | 服务主体语言                                            |
+| 框架        | Spring Boot                              | 3.4        | Web 框架、依赖注入、配置管理                            |
+| AI 框架     | Spring AI                                | 1.0        | AI 能力集成                                             |
+| MCP SDK     | spring-ai-mcp-server-spring-boot-starter | 1.0        | MCP Server 实现（Java 端）                              |
+| MCP SDK     | spring-ai-mcp-client-spring-boot-starter | 1.0        | MCP Client 实现（Java 端）                              |
+| 数据库      | PostgreSQL                               | 17         | Server/Client/Tool/Resource/Prompt 配置与审计数据持久化 |
+| 缓存        | Redis                                    | 7.4        | Tool 注册缓存、Server 能力清单缓存、连接状态缓存        |
+| 消息队列    | Kafka                                    | 3.9        | Tool 调用事件发布（Outbox 模式）                        |
+| 可观测性    | OpenTelemetry + Prometheus               | 1.45 / 3.x | trace_id 传播、指标采集                                 |
+| JSON 处理   | Jackson                                  | 2.17       | JSON-RPC 消息序列化/反序列化                            |
+| Schema 校验 | networknt/json-schema-validator          | 1.5        | Tool 参数 JSON Schema 校验                              |
 
 ### 1.3 上游依赖
 
-| 上游服务 | 依赖关系 | 说明 |
-|---|---|---|
-| TECH-ONT | 强依赖 | 本体引擎，提供概念查询、实体检索、知识图谱查询能力，作为 MCP Tool 暴露给外部 |
-| TECH-RAG | 强依赖 | RAG 引擎，提供知识库检索能力，作为 MCP Tool 暴露给外部 |
-| TECH-ACTION | 强依赖 | Action Engine，提供 Action 执行能力，作为 MCP Tool 暴露给外部 |
-| TECH-IAM | 强依赖 | 用户认证、租户隔离、API Key 管理、权限校验 |
-| TECH-LLMGW | 弱依赖 | Prompt 模板渲染时如需 LLM 辅助（如变量推理），通过 TECH-LLMGW 调用 |
-| TECH-MSG | 弱依赖 | Kafka 消息基础设施，用于 Tool 调用事件发布 |
+| 上游服务    | 依赖关系 | 说明                                                                         |
+| ----------- | -------- | ---------------------------------------------------------------------------- |
+| TECH-ONT    | 强依赖   | 本体引擎，提供概念查询、实体检索、知识图谱查询能力，作为 MCP Tool 暴露给外部 |
+| TECH-RAG    | 强依赖   | RAG 引擎，提供知识库检索能力，作为 MCP Tool 暴露给外部                       |
+| TECH-ACTION | 强依赖   | Action Engine，提供 Action 执行能力，作为 MCP Tool 暴露给外部                |
+| TECH-IAM    | 强依赖   | 用户认证、租户隔离、API Key 管理、权限校验                                   |
+| TECH-LLMGW  | 弱依赖   | Prompt 模板渲染时如需 LLM 辅助（如变量推理），通过 TECH-LLMGW 调用           |
+| TECH-MSG    | 弱依赖   | Kafka 消息基础设施，用于 Tool 调用事件发布                                   |
 
 ### 1.4 下游消费方
 
-| 下游服务/应用 | 消费方式 | 说明 |
-|---|---|---|
-| APP-MCPHUB | REST API | MCP 服务中心前端，MCP Server/Client 配置管理、Tool/Resource/Prompt 可视化管理 |
-| APP-SUPERAI | MCP 协议 | 超级 AI 作为 MCP Client 调用平台暴露的 Tools/Resources/Prompts |
-| APP-DW | REST API + MCP 协议 | 数字员工通过 MCP 协议调用外部工具，通过 REST API 管理工具配置 |
-| TECH-AGENT | REST API | Agent 框架从 Tool 注册中心获取可用 Tool 清单并执行 |
-| 外部 AI 工具 | MCP 协议 | Claude Desktop、Cursor 等外部工具通过 MCP 协议连接平台 Server |
-| 第三方 MCP Server | MCP 协议 | 平台作为 MCP Client 连接外部 MCP Server，发现并调用其 Tools |
-| APP-DASHBOARD | REST API | 仪表盘展示 MCP 调用统计、Token 消耗、Tool 使用排行 |
+| 下游服务/应用     | 消费方式            | 说明                                                                          |
+| ----------------- | ------------------- | ----------------------------------------------------------------------------- |
+| APP-MCPHUB        | REST API            | MCP 服务中心前端，MCP Server/Client 配置管理、Tool/Resource/Prompt 可视化管理 |
+| APP-SUPERAI       | MCP 协议            | 超级 AI 作为 MCP Client 调用平台暴露的 Tools/Resources/Prompts                |
+| APP-DW            | REST API + MCP 协议 | 数字员工通过 MCP 协议调用外部工具，通过 REST API 管理工具配置                 |
+| TECH-AGENT        | REST API            | Agent 框架从 Tool 注册中心获取可用 Tool 清单并执行                            |
+| 外部 AI 工具      | MCP 协议            | Claude Desktop、Cursor 等外部工具通过 MCP 协议连接平台 Server                 |
+| 第三方 MCP Server | MCP 协议            | 平台作为 MCP Client 连接外部 MCP Server，发现并调用其 Tools                   |
+| APP-DASHBOARD     | REST API            | 仪表盘展示 MCP 调用统计、Token 消耗、Tool 使用排行                            |
 
 ### 1.5 核心能力清单
 
-| 能力域 | 说明 |
-|---|---|
+| 能力域          | 说明                                                                                      |
+| --------------- | ----------------------------------------------------------------------------------------- |
 | MCP Server 管理 | Server 实例 CRUD、暴露能力配置（Tools/Resources/Prompts 绑定）、Server 启停、能力清单查询 |
-| MCP Client 管理 | 第三方 Server 连接配置 CRUD、连接测试、状态监控、自动重连、工具/资源/模板发现 |
-| Tool 注册中心 | 内部/外部 Tool 统一注册、JSON Schema 定义、分类管理、全文搜索、启用/禁用、路由策略 |
-| Tool 执行 | 同步执行、异步执行、批量执行、参数校验、超时控制、结果标准化返回 |
-| Resource 管理 | Resource CRUD、内容读取（文本/二进制）、Resource 搜索、自动同步（从 TECH-ONT/TECH-EA） |
-| Prompt 模板管理 | 模板 CRUD、变量定义、Mustache 渲染、角色模板、MCP prompts/get 端点 |
-| 调用审计 | 调用记录查询、Token 消耗统计、错误追踪、调用趋势分析、Top-N 工具排行 |
+| MCP Client 管理 | 第三方 Server 连接配置 CRUD、连接测试、状态监控、自动重连、工具/资源/模板发现             |
+| Tool 注册中心   | 内部/外部 Tool 统一注册、JSON Schema 定义、分类管理、全文搜索、启用/禁用、路由策略        |
+| Tool 执行       | 同步执行、异步执行、批量执行、参数校验、超时控制、结果标准化返回                          |
+| Resource 管理   | Resource CRUD、内容读取（文本/二进制）、Resource 搜索、自动同步（从 TECH-ONT/TECH-EA）    |
+| Prompt 模板管理 | 模板 CRUD、变量定义、Mustache 渲染、角色模板、MCP prompts/get 端点                        |
+| 调用审计        | 调用记录查询、Token 消耗统计、错误追踪、调用趋势分析、Top-N 工具排行                      |
 
 ### 1.6 架构约束
 
@@ -121,6 +121,7 @@ TECH-MCP 同时承担两个角色：
 所有 REST API 路径前缀为 `/api/v1/mcp`。
 
 完整路径示例：
+
 - `/api/v1/mcp/servers`（Server 管理）
 - `/api/v1/mcp/clients`（Client 管理）
 - `/api/v1/mcp/tools`（Tool 注册中心）
@@ -130,6 +131,7 @@ TECH-MCP 同时承担两个角色：
 - `/api/v1/mcp/audit/calls`（调用审计）
 
 MCP JSON-RPC 端点路径示例：
+
 - `/api/v1/mcp/servers/{serverId}/rpc`（Server JSON-RPC 入口）
 - `/api/v1/mcp/servers/{serverId}/sse`（Server SSE 流式端点）
 
@@ -137,11 +139,11 @@ MCP JSON-RPC 端点路径示例：
 
 MCP 协议基于 JSON-RPC 2.0，TECH-MCP 同时支持以下传输方式：
 
-| 传输方式 | 说明 | 适用场景 |
-|---|---|---|
-| stdio | 标准输入输出 | 本地进程间通信（如 Claude Desktop 连接本地 Server） |
-| HTTP+SSE | HTTP 请求 + Server-Sent Events 流 | 远程连接、Web 端 AI 工具 |
-| Streamable HTTP | HTTP 流式传输（MCP 2025-03 规范） | 远程连接，替代 HTTP+SSE |
+| 传输方式        | 说明                              | 适用场景                                            |
+| --------------- | --------------------------------- | --------------------------------------------------- |
+| stdio           | 标准输入输出                      | 本地进程间通信（如 Claude Desktop 连接本地 Server） |
+| HTTP+SSE        | HTTP 请求 + Server-Sent Events 流 | 远程连接、Web 端 AI 工具                            |
+| Streamable HTTP | HTTP 流式传输（MCP 2025-03 规范） | 远程连接，替代 HTTP+SSE                             |
 
 JSON-RPC 2.0 消息结构：
 
@@ -204,23 +206,23 @@ JSON-RPC 2.0 消息结构：
 
 MCP JSON-RPC 标准方法：
 
-| 方法 | 方向 | 说明 |
-|---|---|---|
-| `initialize` | Client -> Server | 初始化握手，协商协议版本与能力 |
-| `notifications/initialized` | Client -> Server | 初始化完成通知 |
-| `ping` | Client -> Server | 心跳检测 |
-| `tools/list` | Client -> Server | 列出 Server 暴露的所有 Tools |
-| `tools/call` | Client -> Server | 调用指定 Tool |
-| `resources/list` | Client -> Server | 列出 Server 暴露的所有 Resources |
-| `resources/read` | Client -> Server | 读取指定 Resource 内容 |
-| `resources/templates/list` | Client -> Server | 列出 Resource 模板（URI 模板） |
-| `prompts/list` | Client -> Server | 列出 Server 暴露的所有 Prompts |
-| `prompts/get` | Client -> Server | 获取指定 Prompt 渲染结果 |
-| `logging/setLevel` | Client -> Server | 设置日志级别 |
-| `notifications/tools/list_changed` | Server -> Client | Tool 列表变更通知 |
-| `notifications/resources/list_changed` | Server -> Client | Resource 列表变更通知 |
-| `notifications/resources/updated` | Server -> Client | Resource 内容更新通知 |
-| `notifications/prompts/list_changed` | Server -> Client | Prompt 列表变更通知 |
+| 方法                                   | 方向             | 说明                             |
+| -------------------------------------- | ---------------- | -------------------------------- |
+| `initialize`                           | Client -> Server | 初始化握手，协商协议版本与能力   |
+| `notifications/initialized`            | Client -> Server | 初始化完成通知                   |
+| `ping`                                 | Client -> Server | 心跳检测                         |
+| `tools/list`                           | Client -> Server | 列出 Server 暴露的所有 Tools     |
+| `tools/call`                           | Client -> Server | 调用指定 Tool                    |
+| `resources/list`                       | Client -> Server | 列出 Server 暴露的所有 Resources |
+| `resources/read`                       | Client -> Server | 读取指定 Resource 内容           |
+| `resources/templates/list`             | Client -> Server | 列出 Resource 模板（URI 模板）   |
+| `prompts/list`                         | Client -> Server | 列出 Server 暴露的所有 Prompts   |
+| `prompts/get`                          | Client -> Server | 获取指定 Prompt 渲染结果         |
+| `logging/setLevel`                     | Client -> Server | 设置日志级别                     |
+| `notifications/tools/list_changed`     | Server -> Client | Tool 列表变更通知                |
+| `notifications/resources/list_changed` | Server -> Client | Resource 列表变更通知            |
+| `notifications/resources/updated`      | Server -> Client | Resource 内容更新通知            |
+| `notifications/prompts/list_changed`   | Server -> Client | Prompt 列表变更通知              |
 
 ### 2.3 统一响应体
 
@@ -230,27 +232,27 @@ MCP JSON-RPC 标准方法：
 {
   "code": 0,
   "message": "success",
-  "data": { },
+  "data": {},
   "traceId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 }
 ```
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| code | int | 业务码。`0` 表示成功，非 `0` 表示业务错误 |
-| message | string | 提示信息 |
-| data | object / array / null | 业务数据，失败时为 `null` |
-| traceId | string | 全链路追踪 ID，与请求头 `X-Trace-Id` 一致 |
+| 字段    | 类型                  | 说明                                      |
+| ------- | --------------------- | ----------------------------------------- |
+| code    | int                   | 业务码。`0` 表示成功，非 `0` 表示业务错误 |
+| message | string                | 提示信息                                  |
+| data    | object / array / null | 业务数据，失败时为 `null`                 |
+| traceId | string                | 全链路追踪 ID，与请求头 `X-Trace-Id` 一致 |
 
 > **注意**：MCP JSON-RPC 端点（`/rpc`、`/sse`）不使用统一响应体，直接返回 JSON-RPC 2.0 标准格式。REST API 端点使用统一响应体。
 
 ### 2.4 认证
 
-| 方式 | 说明 | 适用场景 |
-|---|---|---|
-| Bearer Token | 请求头携带 `Authorization: Bearer <JWT>`，由 TECH-IAM 签发 | 平台内部服务调用、前端管理 API |
-| API Key | 请求头携带 `X-API-Key: <key>`，由 TECH-IAM 签发 | 外部 MCP Client 连接平台 Server、服务间调用 |
-| MCP Auth | MCP 协议 `initialize` 握手时携带 `x-api-key` 元数据 | MCP JSON-RPC 端点认证 |
+| 方式         | 说明                                                       | 适用场景                                    |
+| ------------ | ---------------------------------------------------------- | ------------------------------------------- |
+| Bearer Token | 请求头携带 `Authorization: Bearer <JWT>`，由 TECH-IAM 签发 | 平台内部服务调用、前端管理 API              |
+| API Key      | 请求头携带 `X-API-Key: <key>`，由 TECH-IAM 签发            | 外部 MCP Client 连接平台 Server、服务间调用 |
+| MCP Auth     | MCP 协议 `initialize` 握手时携带 `x-api-key` 元数据        | MCP JSON-RPC 端点认证                       |
 
 请求头示例：
 
@@ -289,63 +291,63 @@ MCP JSON-RPC 握手认证示例：
 
 #### 2.5.1 REST API 错误码
 
-| code | HTTP Status | 说明 |
-|---|---|---|
-| 0 | 200 | 成功 |
-| 40001 | 400 | 请求参数校验失败 |
-| 40002 | 400 | 请求体 JSON 格式错误 |
-| 40003 | 400 | JSON Schema 校验失败（Tool 参数不匹配） |
-| 40101 | 401 | 未认证或 Token 过期 |
-| 40102 | 401 | API Key 无效或已过期 |
-| 40301 | 403 | 无权限访问该资源 |
-| 40302 | 403 | 租户隔离校验失败 |
-| 40401 | 404 | 资源不存在 |
-| 40402 | 404 | MCP Server 不存在或已停止 |
-| 40403 | 404 | Tool 不存在或已禁用 |
-| 40404 | 404 | 第三方 MCP Server 连接不可用 |
-| 40901 | 409 | 资源冲突（如名称重复） |
-| 40902 | 409 | 状态非法（如 Server 已停止不可再次停止） |
-| 40903 | 409 | Tool 注册冲突（同名 Tool 已存在） |
-| 42201 | 422 | 业务校验失败（如 Schema 定义不合法） |
-| 42202 | 422 | MCP 协议版本不兼容 |
-| 42203 | 422 | Resource URI 格式不合法 |
-| 42901 | 429 | 请求过于频繁，限流触发 |
-| 50001 | 500 | 服务内部错误 |
-| 50002 | 500 | Tool 执行超时 |
-| 50003 | 500 | Tool 执行失败（下游服务错误） |
-| 50004 | 500 | 第三方 MCP Server 调用失败 |
-| 50005 | 500 | MCP Server 实例启动失败 |
-| 50301 | 503 | 下游依赖不可用（TECH-ONT/RAG/ACTION） |
-| 50302 | 503 | MCP Server 正在启动中，暂不可用 |
+| code  | HTTP Status | 说明                                     |
+| ----- | ----------- | ---------------------------------------- |
+| 0     | 200         | 成功                                     |
+| 40001 | 400         | 请求参数校验失败                         |
+| 40002 | 400         | 请求体 JSON 格式错误                     |
+| 40003 | 400         | JSON Schema 校验失败（Tool 参数不匹配）  |
+| 40101 | 401         | 未认证或 Token 过期                      |
+| 40102 | 401         | API Key 无效或已过期                     |
+| 40301 | 403         | 无权限访问该资源                         |
+| 40302 | 403         | 租户隔离校验失败                         |
+| 40401 | 404         | 资源不存在                               |
+| 40402 | 404         | MCP Server 不存在或已停止                |
+| 40403 | 404         | Tool 不存在或已禁用                      |
+| 40404 | 404         | 第三方 MCP Server 连接不可用             |
+| 40901 | 409         | 资源冲突（如名称重复）                   |
+| 40902 | 409         | 状态非法（如 Server 已停止不可再次停止） |
+| 40903 | 409         | Tool 注册冲突（同名 Tool 已存在）        |
+| 42201 | 422         | 业务校验失败（如 Schema 定义不合法）     |
+| 42202 | 422         | MCP 协议版本不兼容                       |
+| 42203 | 422         | Resource URI 格式不合法                  |
+| 42901 | 429         | 请求过于频繁，限流触发                   |
+| 50001 | 500         | 服务内部错误                             |
+| 50002 | 500         | Tool 执行超时                            |
+| 50003 | 500         | Tool 执行失败（下游服务错误）            |
+| 50004 | 500         | 第三方 MCP Server 调用失败               |
+| 50005 | 500         | MCP Server 实例启动失败                  |
+| 50301 | 503         | 下游依赖不可用（TECH-ONT/RAG/ACTION）    |
+| 50302 | 503         | MCP Server 正在启动中，暂不可用          |
 
 #### 2.5.2 MCP JSON-RPC 错误码
 
 JSON-RPC 端点使用标准 JSON-RPC 错误码：
 
-| code | 说明 | 对应场景 |
-|---|---|---|
-| -32700 | Parse error | JSON 解析失败 |
-| -32600 | Invalid Request | JSON-RPC 请求格式不合法 |
-| -32601 | Method not found | MCP 方法不支持 |
-| -32602 | Invalid params | 参数校验失败 |
-| -32603 | Internal error | 服务内部错误 |
-| -32000 | Server error | MCP Server 启动/运行错误 |
-| -32001 | Tool execution timeout | Tool 执行超时 |
-| -32002 | Tool not found | 请求的 Tool 不存在 |
-| -32003 | Resource not found | 请求的 Resource 不存在 |
-| -32004 | Prompt not found | 请求的 Prompt 不存在 |
-| -32005 | Authentication failed | API Key 认证失败 |
-| -32006 | Rate limit exceeded | 限流触发 |
+| code   | 说明                   | 对应场景                 |
+| ------ | ---------------------- | ------------------------ |
+| -32700 | Parse error            | JSON 解析失败            |
+| -32600 | Invalid Request        | JSON-RPC 请求格式不合法  |
+| -32601 | Method not found       | MCP 方法不支持           |
+| -32602 | Invalid params         | 参数校验失败             |
+| -32603 | Internal error         | 服务内部错误             |
+| -32000 | Server error           | MCP Server 启动/运行错误 |
+| -32001 | Tool execution timeout | Tool 执行超时            |
+| -32002 | Tool not found         | 请求的 Tool 不存在       |
+| -32003 | Resource not found     | 请求的 Resource 不存在   |
+| -32004 | Prompt not found       | 请求的 Prompt 不存在     |
+| -32005 | Authentication failed  | API Key 认证失败         |
+| -32006 | Rate limit exceeded    | 限流触发                 |
 
 ### 2.6 分页约定
 
 列表类接口统一使用游标分页 + 偏移分页双模式：
 
-| 参数 | 类型 | 默认 | 说明 |
-|---|---|---|---|
-| page | int | 1 | 页码，从 1 开始 |
-| pageSize | int | 20 | 每页条数，最大 100 |
-| cursor | string | null | 游标，提供时优先使用游标分页 |
+| 参数     | 类型   | 默认 | 说明                         |
+| -------- | ------ | ---- | ---------------------------- |
+| page     | int    | 1    | 页码，从 1 开始              |
+| pageSize | int    | 20   | 每页条数，最大 100           |
+| cursor   | string | null | 游标，提供时优先使用游标分页 |
 
 分页响应：
 
@@ -354,7 +356,7 @@ JSON-RPC 端点使用标准 JSON-RPC 错误码：
   "code": 0,
   "message": "success",
   "data": {
-    "items": [ ],
+    "items": [],
     "total": 150,
     "page": 1,
     "pageSize": 20,
@@ -376,13 +378,13 @@ JSON-RPC 端点使用标准 JSON-RPC 错误码：
 
 ### 2.8 命名约定
 
-| 对象 | 命名规则 | 示例 |
-|---|---|---|
-| MCP Server 实例名 | 小写字母 + 连字符，租户内唯一 | `ont-query-server` |
-| Tool 名称 | 小写字母 + 下划线，全局唯一 | `search_knowledge_base` |
-| Resource URI | `scheme://path` 格式 | `ont://concepts/CRM.Customer` |
-| Prompt 名称 | 小写字母 + 连字符 | `code-review-template` |
-| API Key | `mcpk_` 前缀 + 32位随机字符串 | `mcpk_a1b2c3d4e5f6g7h8` |
+| 对象              | 命名规则                      | 示例                          |
+| ----------------- | ----------------------------- | ----------------------------- |
+| MCP Server 实例名 | 小写字母 + 连字符，租户内唯一 | `ont-query-server`            |
+| Tool 名称         | 小写字母 + 下划线，全局唯一   | `search_knowledge_base`       |
+| Resource URI      | `scheme://path` 格式          | `ont://concepts/CRM.Customer` |
+| Prompt 名称       | 小写字母 + 连字符             | `code-review-template`        |
+| API Key           | `mcpk_` 前缀 + 32位随机字符串 | `mcpk_a1b2c3d4e5f6g7h8`       |
 
 ---
 
@@ -400,33 +402,33 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 是 | Server 实例名称，租户内唯一 |
-| displayName | string | 是 | 显示名称 |
-| description | string | 否 | 描述信息 |
-| transport | object | 是 | 传输配置 |
-| transport.type | string | 是 | 传输类型：`STDIO`、`HTTP_SSE`、`STREAMABLE_HTTP` |
-| transport.config | object | 是 | 传输配置详情，结构取决于 type |
-| protocolVersion | string | 否 | MCP 协议版本，默认 `2025-06-18` |
-| authConfig | object | 是 | 认证配置 |
-| authConfig.type | string | 是 | 认证类型：`API_KEY`、`BEARER_TOKEN`、`NONE` |
-| authConfig.apiKeys | string[] | 否 | API Key 列表（type=API_KEY 时必填） |
-| authConfig.tokenValidationEndpoint | string | 否 | Token 校验端点（type=BEARER_TOKEN 时必填） |
-| toolBindings | string[] | 否 | 绑定的 Tool ID 列表 |
-| resourceBindings | string[] | 否 | 绑定的 Resource ID 列表 |
-| promptBindings | string[] | 否 | 绑定的 Prompt 模板 ID 列表 |
-| rateLimit | object | 否 | 速率限制配置 |
-| rateLimit.maxRequestsPerMinute | int | 否 | 每分钟最大请求数，默认 100 |
-| rateLimit.maxRequestsPerHour | int | 否 | 每小时最大请求数，默认 6000 |
-| tags | string[] | 否 | 标签列表 |
+| 字段                               | 类型     | 必填 | 说明                                             |
+| ---------------------------------- | -------- | ---- | ------------------------------------------------ |
+| name                               | string   | 是   | Server 实例名称，租户内唯一                      |
+| displayName                        | string   | 是   | 显示名称                                         |
+| description                        | string   | 否   | 描述信息                                         |
+| transport                          | object   | 是   | 传输配置                                         |
+| transport.type                     | string   | 是   | 传输类型：`STDIO`、`HTTP_SSE`、`STREAMABLE_HTTP` |
+| transport.config                   | object   | 是   | 传输配置详情，结构取决于 type                    |
+| protocolVersion                    | string   | 否   | MCP 协议版本，默认 `2025-06-18`                  |
+| authConfig                         | object   | 是   | 认证配置                                         |
+| authConfig.type                    | string   | 是   | 认证类型：`API_KEY`、`BEARER_TOKEN`、`NONE`      |
+| authConfig.apiKeys                 | string[] | 否   | API Key 列表（type=API_KEY 时必填）              |
+| authConfig.tokenValidationEndpoint | string   | 否   | Token 校验端点（type=BEARER_TOKEN 时必填）       |
+| toolBindings                       | string[] | 否   | 绑定的 Tool ID 列表                              |
+| resourceBindings                   | string[] | 否   | 绑定的 Resource ID 列表                          |
+| promptBindings                     | string[] | 否   | 绑定的 Prompt 模板 ID 列表                       |
+| rateLimit                          | object   | 否   | 速率限制配置                                     |
+| rateLimit.maxRequestsPerMinute     | int      | 否   | 每分钟最大请求数，默认 100                       |
+| rateLimit.maxRequestsPerHour       | int      | 否   | 每小时最大请求数，默认 6000                      |
+| tags                               | string[] | 否   | 标签列表                                         |
 
 **transport.config 结构**
 
-| type | config 字段 |
-|---|---|
-| STDIO | `command`（启动命令）、`args`（命令参数）、`env`（环境变量） |
-| HTTP_SSE | `sseEndpoint`（SSE 端点路径）、`messageEndpoint`（消息端点路径）、`host`（监听地址）、`port`（监听端口） |
+| type            | config 字段                                                                                                |
+| --------------- | ---------------------------------------------------------------------------------------------------------- |
+| STDIO           | `command`（启动命令）、`args`（命令参数）、`env`（环境变量）                                               |
+| HTTP_SSE        | `sseEndpoint`（SSE 端点路径）、`messageEndpoint`（消息端点路径）、`host`（监听地址）、`port`（监听端口）   |
 | STREAMABLE_HTTP | `endpoint`（HTTP 端点路径）、`host`（监听地址）、`port`（监听端口）、`enableSSEFallback`（是否降级为 SSE） |
 
 **请求示例**
@@ -506,12 +508,12 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| 40001 | 必填字段缺失或格式错误 |
-| 40901 | Server 名称已存在 |
+| code  | 场景                             |
+| ----- | -------------------------------- |
+| 40001 | 必填字段缺失或格式错误           |
+| 40901 | Server 名称已存在                |
 | 42201 | 传输配置不合法（如端口已被占用） |
-| 42202 | 协议版本不支持 |
+| 42202 | 协议版本不支持                   |
 
 ---
 
@@ -523,14 +525,14 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | int | 否 | 页码，默认 1 |
-| pageSize | int | 否 | 每页条数，默认 20 |
-| status | string | 否 | 状态筛选：`CREATED`、`RUNNING`、`STOPPED`、`ERROR` |
-| transportType | string | 否 | 传输类型筛选 |
-| tag | string | 否 | 标签筛选 |
-| keyword | string | 否 | 名称/显示名称模糊搜索 |
+| 参数          | 类型   | 必填 | 说明                                               |
+| ------------- | ------ | ---- | -------------------------------------------------- |
+| page          | int    | 否   | 页码，默认 1                                       |
+| pageSize      | int    | 否   | 每页条数，默认 20                                  |
+| status        | string | 否   | 状态筛选：`CREATED`、`RUNNING`、`STOPPED`、`ERROR` |
+| transportType | string | 否   | 传输类型筛选                                       |
+| tag           | string | 否   | 标签筛选                                           |
+| keyword       | string | 否   | 名称/显示名称模糊搜索                              |
 
 **响应示例**
 
@@ -587,8 +589,8 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | serverId | string | Server 实例 ID |
 
 **响应示例**
@@ -667,9 +669,9 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| 40401 | Server 不存在 |
+| code  | 场景                    |
+| ----- | ----------------------- |
+| 40401 | Server 不存在           |
 | 40302 | 无权访问该租户的 Server |
 
 ---
@@ -682,20 +684,20 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | serverId | string | Server 实例 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| displayName | string | 否 | 显示名称 |
-| description | string | 否 | 描述信息 |
-| transport | object | 否 | 传输配置（修改传输类型需先停止 Server） |
-| authConfig | object | 否 | 认证配置 |
-| rateLimit | object | 否 | 速率限制配置 |
-| tags | string[] | 否 | 标签列表 |
+| 字段        | 类型     | 必填 | 说明                                    |
+| ----------- | -------- | ---- | --------------------------------------- |
+| displayName | string   | 否   | 显示名称                                |
+| description | string   | 否   | 描述信息                                |
+| transport   | object   | 否   | 传输配置（修改传输类型需先停止 Server） |
+| authConfig  | object   | 否   | 认证配置                                |
+| rateLimit   | object   | 否   | 速率限制配置                            |
+| tags        | string[] | 否   | 标签列表                                |
 
 **请求示例**
 
@@ -734,9 +736,9 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| 40401 | Server 不存在 |
+| code  | 场景                               |
+| ----- | ---------------------------------- |
+| 40401 | Server 不存在                      |
 | 40902 | 试图修改传输类型但 Server 仍在运行 |
 
 ---
@@ -749,15 +751,15 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | serverId | string | Server 实例 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| force | boolean | 否 | 是否强制删除（忽略运行中状态），默认 false |
+| 参数  | 类型    | 必填 | 说明                                       |
+| ----- | ------- | ---- | ------------------------------------------ |
+| force | boolean | 否   | 是否强制删除（忽略运行中状态），默认 false |
 
 **响应示例**
 
@@ -776,9 +778,9 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| 40401 | Server 不存在 |
+| code  | 场景                          |
+| ----- | ----------------------------- |
+| 40401 | Server 不存在                 |
 | 40902 | Server 正在运行且 force=false |
 
 ---
@@ -791,8 +793,8 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | serverId | string | Server 实例 ID |
 
 **响应示例**
@@ -814,12 +816,12 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| 40401 | Server 不存在 |
-| 40902 | Server 已在运行中 |
+| code  | 场景                                    |
+| ----- | --------------------------------------- |
+| 40401 | Server 不存在                           |
+| 40902 | Server 已在运行中                       |
 | 50005 | Server 启动失败（端口冲突、配置错误等） |
-| 50302 | Server 正在启动中 |
+| 50302 | Server 正在启动中                       |
 
 ---
 
@@ -831,16 +833,16 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | serverId | string | Server 实例 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| graceful | boolean | 否 | 是否优雅停止（等待活跃请求完成），默认 true |
-| timeoutMs | int | 否 | 优雅停止超时时间（毫秒），默认 30000 |
+| 参数      | 类型    | 必填 | 说明                                        |
+| --------- | ------- | ---- | ------------------------------------------- |
+| graceful  | boolean | 否   | 是否优雅停止（等待活跃请求完成），默认 true |
+| timeoutMs | int     | 否   | 优雅停止超时时间（毫秒），默认 30000        |
 
 **响应示例**
 
@@ -860,8 +862,8 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code  | 场景          |
+| ----- | ------------- |
 | 40401 | Server 不存在 |
 | 40902 | Server 已停止 |
 
@@ -875,16 +877,16 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | serverId | string | Server 实例 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| toolIds | string[] | 是 | Tool ID 列表（全量替换） |
-| mode | string | 否 | 更新模式：`REPLACE`（全量替换，默认）、`ADD`（增量添加）、`REMOVE`（移除） |
+| 字段    | 类型     | 必填 | 说明                                                                       |
+| ------- | -------- | ---- | -------------------------------------------------------------------------- |
+| toolIds | string[] | 是   | Tool ID 列表（全量替换）                                                   |
+| mode    | string   | 否   | 更新模式：`REPLACE`（全量替换，默认）、`ADD`（增量添加）、`REMOVE`（移除） |
 
 **请求示例**
 
@@ -914,9 +916,9 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| 40401 | Server 不存在 |
+| code  | 场景                          |
+| ----- | ----------------------------- |
+| 40401 | Server 不存在                 |
 | 40403 | 绑定的 Tool ID 不存在或已禁用 |
 
 ---
@@ -929,16 +931,16 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | serverId | string | Server 实例 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| resourceIds | string[] | 是 | Resource ID 列表 |
-| mode | string | 否 | 更新模式：`REPLACE`（默认）、`ADD`、`REMOVE` |
+| 字段        | 类型     | 必填 | 说明                                         |
+| ----------- | -------- | ---- | -------------------------------------------- |
+| resourceIds | string[] | 是   | Resource ID 列表                             |
+| mode        | string   | 否   | 更新模式：`REPLACE`（默认）、`ADD`、`REMOVE` |
 
 **请求示例**
 
@@ -976,16 +978,16 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | serverId | string | Server 实例 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| promptIds | string[] | 是 | Prompt 模板 ID 列表 |
-| mode | string | 否 | 更新模式：`REPLACE`（默认）、`ADD`、`REMOVE` |
+| 字段      | 类型     | 必填 | 说明                                         |
+| --------- | -------- | ---- | -------------------------------------------- |
+| promptIds | string[] | 是   | Prompt 模板 ID 列表                          |
+| mode      | string   | 否   | 更新模式：`REPLACE`（默认）、`ADD`、`REMOVE` |
 
 **请求示例**
 
@@ -1023,8 +1025,8 @@ MCP Server 是平台对外暴露 MCP 能力的服务实例。每个 Server 实�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | serverId | string | Server 实例 ID |
 
 **请求参数（JSON-RPC Body）**
@@ -1172,11 +1174,11 @@ tools/list 请求示例：
 
 **错误场景**
 
-| JSON-RPC code | 场景 |
-|---|---|
-| -32000 | Server 未运行 |
-| -32005 | 认证失败 |
-| -32601 | 方法不支持 |
+| JSON-RPC code | 场景          |
+| ------------- | ------------- |
+| -32000        | Server 未运行 |
+| -32005        | 认证失败      |
+| -32601        | 方法不支持    |
 
 ---
 
@@ -1188,8 +1190,8 @@ tools/list 请求示例：
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | serverId | string | Server 实例 ID |
 
 **响应示例**
@@ -1252,34 +1254,34 @@ MCP Client 用于连接第三方 MCP Server，发现并调用其暴露的 Tools 
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 是 | Client 连接名称，租户内唯一 |
-| displayName | string | 是 | 显示名称 |
-| description | string | 否 | 描述信息 |
-| serverConfig | object | 是 | 第三方 Server 连接配置 |
-| serverConfig.transportType | string | 是 | 传输类型：`STDIO`、`HTTP_SSE`、`STREAMABLE_HTTP` |
-| serverConfig.command | string | 否 | STDIO 模式下的启动命令 |
-| serverConfig.args | string[] | 否 | STDIO 模式下的命令参数 |
-| serverConfig.env | object | 否 | STDIO 模式下的环境变量 |
-| serverConfig.url | string | 否 | HTTP 模式下的 Server URL |
-| serverConfig.headers | object | 否 | HTTP 模式下的自定义请求头 |
-| serverConfig.sseEndpoint | string | 否 | SSE 端点路径 |
-| serverConfig.messageEndpoint | string | 否 | 消息端点路径 |
-| authConfig | object | 否 | 认证配置 |
-| authConfig.type | string | 否 | 认证类型：`API_KEY`、`BEARER_TOKEN`、`OAUTH2`、`NONE` |
-| authConfig.credentials | object | 否 | 凭证信息（加密存储） |
-| protocolVersion | string | 否 | 期望的 MCP 协议版本，默认 `2025-06-18` |
-| autoConnect | boolean | 否 | 创建后是否自动连接，默认 true |
-| autoReconnect | boolean | 否 | 连接断开后是否自动重连，默认 true |
-| reconnectConfig | object | 否 | 重连配置 |
-| reconnectConfig.maxAttempts | int | 否 | 最大重连次数，默认 5 |
-| reconnectConfig.interval | int | 否 | 重连间隔（毫秒），默认 5000 |
-| reconnectConfig.backoff | string | 否 | 退避策略：`FIXED`、`EXPONENTIAL` |
-| healthCheck | object | 否 | 健康检查配置 |
-| healthCheck.enabled | boolean | 否 | 是否启用健康检查，默认 true |
-| healthCheck.interval | int | 否 | 检查间隔（毫秒），默认 30000 |
-| tags | string[] | 否 | 标签列表 |
+| 字段                         | 类型     | 必填 | 说明                                                  |
+| ---------------------------- | -------- | ---- | ----------------------------------------------------- |
+| name                         | string   | 是   | Client 连接名称，租户内唯一                           |
+| displayName                  | string   | 是   | 显示名称                                              |
+| description                  | string   | 否   | 描述信息                                              |
+| serverConfig                 | object   | 是   | 第三方 Server 连接配置                                |
+| serverConfig.transportType   | string   | 是   | 传输类型：`STDIO`、`HTTP_SSE`、`STREAMABLE_HTTP`      |
+| serverConfig.command         | string   | 否   | STDIO 模式下的启动命令                                |
+| serverConfig.args            | string[] | 否   | STDIO 模式下的命令参数                                |
+| serverConfig.env             | object   | 否   | STDIO 模式下的环境变量                                |
+| serverConfig.url             | string   | 否   | HTTP 模式下的 Server URL                              |
+| serverConfig.headers         | object   | 否   | HTTP 模式下的自定义请求头                             |
+| serverConfig.sseEndpoint     | string   | 否   | SSE 端点路径                                          |
+| serverConfig.messageEndpoint | string   | 否   | 消息端点路径                                          |
+| authConfig                   | object   | 否   | 认证配置                                              |
+| authConfig.type              | string   | 否   | 认证类型：`API_KEY`、`BEARER_TOKEN`、`OAUTH2`、`NONE` |
+| authConfig.credentials       | object   | 否   | 凭证信息（加密存储）                                  |
+| protocolVersion              | string   | 否   | 期望的 MCP 协议版本，默认 `2025-06-18`                |
+| autoConnect                  | boolean  | 否   | 创建后是否自动连接，默认 true                         |
+| autoReconnect                | boolean  | 否   | 连接断开后是否自动重连，默认 true                     |
+| reconnectConfig              | object   | 否   | 重连配置                                              |
+| reconnectConfig.maxAttempts  | int      | 否   | 最大重连次数，默认 5                                  |
+| reconnectConfig.interval     | int      | 否   | 重连间隔（毫秒），默认 5000                           |
+| reconnectConfig.backoff      | string   | 否   | 退避策略：`FIXED`、`EXPONENTIAL`                      |
+| healthCheck                  | object   | 否   | 健康检查配置                                          |
+| healthCheck.enabled          | boolean  | 否   | 是否启用健康检查，默认 true                           |
+| healthCheck.interval         | int      | 否   | 检查间隔（毫秒），默认 30000                          |
+| tags                         | string[] | 否   | 标签列表                                              |
 
 **请求示例**
 
@@ -1357,11 +1359,11 @@ MCP Client 用于连接第三方 MCP Server，发现并调用其暴露的 Tools 
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| 40001 | 必填字段缺失 |
-| 40901 | 连接名称已存在 |
-| 40404 | 第三方 Server 不可达 |
+| code  | 场景                                       |
+| ----- | ------------------------------------------ |
+| 40001 | 必填字段缺失                               |
+| 40901 | 连接名称已存在                             |
+| 40404 | 第三方 Server 不可达                       |
 | 50004 | 连接握手失败（协议版本不兼容、认证失败等） |
 
 ---
@@ -1374,13 +1376,13 @@ MCP Client 用于连接第三方 MCP Server，发现并调用其暴露的 Tools 
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | int | 否 | 页码，默认 1 |
-| pageSize | int | 否 | 每页条数，默认 20 |
-| status | string | 否 | 状态筛选：`CONNECTED`、`DISCONNECTED`、`CONNECTING`、`ERROR` |
-| keyword | string | 否 | 名称模糊搜索 |
-| tag | string | 否 | 标签筛选 |
+| 参数     | 类型   | 必填 | 说明                                                         |
+| -------- | ------ | ---- | ------------------------------------------------------------ |
+| page     | int    | 否   | 页码，默认 1                                                 |
+| pageSize | int    | 否   | 每页条数，默认 20                                            |
+| status   | string | 否   | 状态筛选：`CONNECTED`、`DISCONNECTED`、`CONNECTING`、`ERROR` |
+| keyword  | string | 否   | 名称模糊搜索                                                 |
+| tag      | string | 否   | 标签筛选                                                     |
 
 **响应示例**
 
@@ -1430,8 +1432,8 @@ MCP Client 用于连接第三方 MCP Server，发现并调用其暴露的 Tools 
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | clientId | string | Client 连接 ID |
 
 **响应示例**
@@ -1503,22 +1505,22 @@ MCP Client 用于连接第三方 MCP Server，发现并调用其暴露的 Tools 
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | clientId | string | Client 连接 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| displayName | string | 否 | 显示名称 |
-| description | string | 否 | 描述信息 |
-| serverConfig | object | 否 | Server 连接配置 |
-| authConfig | object | 否 | 认证配置 |
-| autoReconnect | boolean | 否 | 是否自动重连 |
-| reconnectConfig | object | 否 | 重连配置 |
-| healthCheck | object | 否 | 健康检查配置 |
-| tags | string[] | 否 | 标签列表 |
+| 字段            | 类型     | 必填 | 说明            |
+| --------------- | -------- | ---- | --------------- |
+| displayName     | string   | 否   | 显示名称        |
+| description     | string   | 否   | 描述信息        |
+| serverConfig    | object   | 否   | Server 连接配置 |
+| authConfig      | object   | 否   | 认证配置        |
+| autoReconnect   | boolean  | 否   | 是否自动重连    |
+| reconnectConfig | object   | 否   | 重连配置        |
+| healthCheck     | object   | 否   | 健康检查配置    |
+| tags            | string[] | 否   | 标签列表        |
 
 **响应示例**
 
@@ -1547,8 +1549,8 @@ MCP Client 用于连接第三方 MCP Server，发现并调用其暴露的 Tools 
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | clientId | string | Client 连接 ID |
 
 **响应示例**
@@ -1562,8 +1564,16 @@ MCP Client 用于连接第三方 MCP Server，发现并调用其暴露的 Tools 
     "deleted": true,
     "disconnected": true,
     "affectedTools": [
-      { "toolId": "tool-ext-001", "name": "github_create_issue", "status": "UNAVAILABLE" },
-      { "toolId": "tool-ext-002", "name": "github_list_repos", "status": "UNAVAILABLE" }
+      {
+        "toolId": "tool-ext-001",
+        "name": "github_create_issue",
+        "status": "UNAVAILABLE"
+      },
+      {
+        "toolId": "tool-ext-002",
+        "name": "github_list_repos",
+        "status": "UNAVAILABLE"
+      }
     ]
   },
   "traceId": "xxx"
@@ -1580,8 +1590,8 @@ MCP Client 用于连接第三方 MCP Server，发现并调用其暴露的 Tools 
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | clientId | string | Client 连接 ID |
 
 **响应示例**
@@ -1612,12 +1622,12 @@ MCP Client 用于连接第三方 MCP Server，发现并调用其暴露的 Tools 
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| 40401 | Client 不存在 |
+| code  | 场景                 |
+| ----- | -------------------- |
+| 40401 | Client 不存在        |
 | 40404 | 第三方 Server 不可达 |
-| 50004 | 握手失败 |
-| 42202 | 协议版本不兼容 |
+| 50004 | 握手失败             |
+| 42202 | 协议版本不兼容       |
 
 ---
 
@@ -1629,8 +1639,8 @@ MCP Client 用于连接第三方 MCP Server，发现并调用其暴露的 Tools 
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | clientId | string | Client 连接 ID |
 
 **响应示例**
@@ -1674,16 +1684,16 @@ MCP Client 用于连接第三方 MCP Server，发现并调用其暴露的 Tools 
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | clientId | string | Client 连接 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| autoRegister | boolean | 否 | 是否自动注册到 Tool 注册中心，默认 true |
-| category | string | 否 | 注册时指定的分类 |
+| 参数         | 类型    | 必填 | 说明                                    |
+| ------------ | ------- | ---- | --------------------------------------- |
+| autoRegister | boolean | 否   | 是否自动注册到 Tool 注册中心，默认 true |
+| category     | string  | 否   | 注册时指定的分类                        |
 
 **响应示例**
 
@@ -1751,10 +1761,10 @@ MCP Client 用于连接第三方 MCP Server，发现并调用其暴露的 Tools 
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| 40401 | Client 不存在 |
-| 40404 | 连接已断开 |
+| code  | 场景                |
+| ----- | ------------------- |
+| 40401 | Client 不存在       |
+| 40404 | 连接已断开          |
 | 50004 | tools/list 请求失败 |
 
 ---
@@ -1767,15 +1777,15 @@ MCP Client 用于连接第三方 MCP Server，发现并调用其暴露的 Tools 
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | clientId | string | Client 连接 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| autoRegister | boolean | 否 | 是否自动注册到平台 Resource 注册中心，默认 true |
+| 参数         | 类型    | 必填 | 说明                                            |
+| ------------ | ------- | ---- | ----------------------------------------------- |
+| autoRegister | boolean | 否   | 是否自动注册到平台 Resource 注册中心，默认 true |
 
 **响应示例**
 
@@ -1813,15 +1823,15 @@ MCP Client 用于连接第三方 MCP Server，发现并调用其暴露的 Tools 
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | clientId | string | Client 连接 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| autoRegister | boolean | 否 | 是否自动注册到平台 Prompt 注册中心，默认 true |
+| 参数         | 类型    | 必填 | 说明                                          |
+| ------------ | ------- | ---- | --------------------------------------------- |
+| autoRegister | boolean | 否   | 是否自动注册到平台 Prompt 注册中心，默认 true |
 
 **响应示例**
 
@@ -1873,37 +1883,37 @@ Tool 注册中心是平台统一的 Tool 管理入口，管理内部 Tool（平�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 是 | Tool 名称，全局唯一，小写字母+下划线 |
-| displayName | string | 是 | 显示名称 |
-| description | string | 是 | Tool 描述，供 AI 理解 Tool 用途 |
-| source | string | 是 | Tool 来源：`INTERNAL`（平台原生）、`EXTERNAL`（第三方 MCP） |
-| clientId | string | 否 | 来源 Client ID（source=EXTERNAL 时必填） |
-| externalName | string | 否 | 第三方 Server 上的原始 Tool 名称（source=EXTERNAL 时必填） |
-| category | string | 否 | 分类：`ontology`、`rag`、`action`、`data`、`integration`、`ai`、`external` |
-| inputSchema | object | 是 | 输入参数 JSON Schema |
-| outputSchema | object | 否 | 输出参数 JSON Schema |
-| execution | object | 否 | 执行配置（source=INTERNAL 时必填） |
-| execution.type | string | 否 | 执行类型：`HTTP`、`BEAN`、`ACTION` |
-| execution.config | object | 否 | 执行配置详情 |
-| annotations | object | 否 | MCP Tool 注解 |
-| annotations.title | string | 否 | 人类可读标题 |
-| annotations.destructiveHint | boolean | 否 | 是否有破坏性副作用，默认 false |
-| annotations.idempotentHint | boolean | 否 | 是否幂等，默认 false |
-| annotations.openWorldHint | boolean | 否 | 是否与外部世界交互，默认 false |
-| annotations.readOnlyHint | boolean | 否 | 是否只读，默认 false |
-| timeout | int | 否 | 执行超时时间（毫秒），默认 30000 |
-| tags | string[] | 否 | 标签列表 |
-| enabled | boolean | 否 | 是否启用，默认 true |
+| 字段                        | 类型     | 必填 | 说明                                                                       |
+| --------------------------- | -------- | ---- | -------------------------------------------------------------------------- |
+| name                        | string   | 是   | Tool 名称，全局唯一，小写字母+下划线                                       |
+| displayName                 | string   | 是   | 显示名称                                                                   |
+| description                 | string   | 是   | Tool 描述，供 AI 理解 Tool 用途                                            |
+| source                      | string   | 是   | Tool 来源：`INTERNAL`（平台原生）、`EXTERNAL`（第三方 MCP）                |
+| clientId                    | string   | 否   | 来源 Client ID（source=EXTERNAL 时必填）                                   |
+| externalName                | string   | 否   | 第三方 Server 上的原始 Tool 名称（source=EXTERNAL 时必填）                 |
+| category                    | string   | 否   | 分类：`ontology`、`rag`、`action`、`data`、`integration`、`ai`、`external` |
+| inputSchema                 | object   | 是   | 输入参数 JSON Schema                                                       |
+| outputSchema                | object   | 否   | 输出参数 JSON Schema                                                       |
+| execution                   | object   | 否   | 执行配置（source=INTERNAL 时必填）                                         |
+| execution.type              | string   | 否   | 执行类型：`HTTP`、`BEAN`、`ACTION`                                         |
+| execution.config            | object   | 否   | 执行配置详情                                                               |
+| annotations                 | object   | 否   | MCP Tool 注解                                                              |
+| annotations.title           | string   | 否   | 人类可读标题                                                               |
+| annotations.destructiveHint | boolean  | 否   | 是否有破坏性副作用，默认 false                                             |
+| annotations.idempotentHint  | boolean  | 否   | 是否幂等，默认 false                                                       |
+| annotations.openWorldHint   | boolean  | 否   | 是否与外部世界交互，默认 false                                             |
+| annotations.readOnlyHint    | boolean  | 否   | 是否只读，默认 false                                                       |
+| timeout                     | int      | 否   | 执行超时时间（毫秒），默认 30000                                           |
+| tags                        | string[] | 否   | 标签列表                                                                   |
+| enabled                     | boolean  | 否   | 是否启用，默认 true                                                        |
 
 **execution.config 结构**
 
-| type | config 字段 |
-|---|---|
-| HTTP | `method`、`url`、`headers`、`bodyTemplate`（支持变量替换 `${arg.fieldName}`）、`authType`、`authConfig` |
-| BEAN | `beanName`（Spring Bean 名称）、`methodName`（调用方法） |
-| ACTION | `actionId`（TECH-ACTION 中的 Action ID） |
+| type   | config 字段                                                                                             |
+| ------ | ------------------------------------------------------------------------------------------------------- |
+| HTTP   | `method`、`url`、`headers`、`bodyTemplate`（支持变量替换 `${arg.fieldName}`）、`authType`、`authConfig` |
+| BEAN   | `beanName`（Spring Bean 名称）、`methodName`（调用方法）                                                |
+| ACTION | `actionId`（TECH-ACTION 中的 Action ID）                                                                |
 
 **请求示例**
 
@@ -2007,11 +2017,11 @@ Tool 注册中心是平台统一的 Tool 管理入口，管理内部 Tool（平�
     "description": "在指定知识库中进行语义检索...",
     "source": "INTERNAL",
     "category": "rag",
-    "inputSchema": { },
-    "outputSchema": { },
+    "inputSchema": {},
+    "outputSchema": {},
     "execution": {
       "type": "HTTP",
-      "config": { }
+      "config": {}
     },
     "annotations": {
       "title": "搜索知识库",
@@ -2034,11 +2044,11 @@ Tool 注册中心是平台统一的 Tool 管理入口，管理内部 Tool（平�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code  | 场景                                |
+| ----- | ----------------------------------- |
 | 40001 | 必填字段缺失或 JSON Schema 格式错误 |
-| 40903 | Tool 名称已存在 |
-| 42201 | 执行配置不合法（如 URL 格式错误） |
+| 40903 | Tool 名称已存在                     |
+| 42201 | 执行配置不合法（如 URL 格式错误）   |
 
 ---
 
@@ -2050,15 +2060,15 @@ Tool 注册中心是平台统一的 Tool 管理入口，管理内部 Tool（平�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | int | 否 | 页码，默认 1 |
-| pageSize | int | 否 | 每页条数，默认 20 |
-| source | string | 否 | 来源筛选：`INTERNAL`、`EXTERNAL` |
-| category | string | 否 | 分类筛选 |
-| enabled | boolean | 否 | 启用状态筛选 |
-| tag | string | 否 | 标签筛选 |
-| keyword | string | 否 | 名称/描述模糊搜索 |
+| 参数     | 类型    | 必填 | 说明                             |
+| -------- | ------- | ---- | -------------------------------- |
+| page     | int     | 否   | 页码，默认 1                     |
+| pageSize | int     | 否   | 每页条数，默认 20                |
+| source   | string  | 否   | 来源筛选：`INTERNAL`、`EXTERNAL` |
+| category | string  | 否   | 分类筛选                         |
+| enabled  | boolean | 否   | 启用状态筛选                     |
+| tag      | string  | 否   | 标签筛选                         |
+| keyword  | string  | 否   | 名称/描述模糊搜索                |
 
 **响应示例**
 
@@ -2120,8 +2130,8 @@ Tool 注册中心是平台统一的 Tool 管理入口，管理内部 Tool（平�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | toolId | string | Tool ID |
 
 **响应示例**
@@ -2142,20 +2152,29 @@ Tool 注册中心是平台统一的 Tool 管理入口，管理内部 Tool（平�
       "properties": {
         "kbId": { "type": "string", "description": "知识库 ID" },
         "query": { "type": "string", "description": "检索查询文本" },
-        "mode": { "type": "string", "enum": ["vector", "keyword", "hybrid"], "default": "hybrid" },
-        "topK": { "type": "integer", "default": 5, "minimum": 1, "maximum": 20 },
+        "mode": {
+          "type": "string",
+          "enum": ["vector", "keyword", "hybrid"],
+          "default": "hybrid"
+        },
+        "topK": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20
+        },
         "scoreThreshold": { "type": "number", "minimum": 0, "maximum": 1 }
       },
       "required": ["kbId", "query"]
     },
-    "outputSchema": { },
+    "outputSchema": {},
     "execution": {
       "type": "HTTP",
       "config": {
         "method": "POST",
         "url": "http://tech-rag:8080/api/v1/rag/retrieve/hybrid",
         "headers": { "Content-Type": "application/json" },
-        "bodyTemplate": { }
+        "bodyTemplate": {}
       }
     },
     "annotations": {
@@ -2177,7 +2196,10 @@ Tool 注册中心是平台统一的 Tool 管理入口，管理内部 Tool（平�
       "lastCallAt": "2026-07-16T20:30:00Z"
     },
     "serverBindings": [
-      { "serverId": "srv-a1b2c3d4-e5f6-7890-abcd-ef1234567891", "serverName": "rag-search-server" }
+      {
+        "serverId": "srv-a1b2c3d4-e5f6-7890-abcd-ef1234567891",
+        "serverName": "rag-search-server"
+      }
     ],
     "createdAt": "2026-07-16T20:15:00Z",
     "updatedAt": "2026-07-16T20:20:00Z"
@@ -2196,22 +2218,22 @@ Tool 注册中心是平台统一的 Tool 管理入口，管理内部 Tool（平�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | toolId | string | Tool ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| displayName | string | 否 | 显示名称 |
-| description | string | 否 | Tool 描述 |
-| inputSchema | object | 否 | 输入参数 JSON Schema |
-| outputSchema | object | 否 | 输出参数 JSON Schema |
-| execution | object | 否 | 执行配置（仅 INTERNAL Tool 可修改） |
-| annotations | object | 否 | MCP Tool 注解 |
-| timeout | int | 否 | 执行超时时间 |
-| tags | string[] | 否 | 标签列表 |
+| 字段         | 类型     | 必填 | 说明                                |
+| ------------ | -------- | ---- | ----------------------------------- |
+| displayName  | string   | 否   | 显示名称                            |
+| description  | string   | 否   | Tool 描述                           |
+| inputSchema  | object   | 否   | 输入参数 JSON Schema                |
+| outputSchema | object   | 否   | 输出参数 JSON Schema                |
+| execution    | object   | 否   | 执行配置（仅 INTERNAL Tool 可修改） |
+| annotations  | object   | 否   | MCP Tool 注解                       |
+| timeout      | int      | 否   | 执行超时时间                        |
+| tags         | string[] | 否   | 标签列表                            |
 
 **响应示例**
 
@@ -2231,9 +2253,9 @@ Tool 注册中心是平台统一的 Tool 管理入口，管理内部 Tool（平�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| 40403 | Tool 不存在 |
+| code  | 场景                   |
+| ----- | ---------------------- |
+| 40403 | Tool 不存在            |
 | 42201 | JSON Schema 定义不合法 |
 
 ---
@@ -2246,8 +2268,8 @@ Tool 注册中心是平台统一的 Tool 管理入口，管理内部 Tool（平�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | toolId | string | Tool ID |
 
 **响应示例**
@@ -2260,7 +2282,10 @@ Tool 注册中心是平台统一的 Tool 管理入口，管理内部 Tool（平�
     "toolId": "tool-9f3a2b1c-7d8e-4f5a-9b01-c2d3e4f5a6b7",
     "deleted": true,
     "unboundServers": [
-      { "serverId": "srv-a1b2c3d4-e5f6-7890-abcd-ef1234567891", "serverName": "rag-search-server" }
+      {
+        "serverId": "srv-a1b2c3d4-e5f6-7890-abcd-ef1234567891",
+        "serverName": "rag-search-server"
+      }
     ],
     "notificationsSent": 1
   },
@@ -2278,15 +2303,15 @@ Tool 注册中心是平台统一的 Tool 管理入口，管理内部 Tool（平�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | toolId | string | Tool ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| arguments | object | 是 | 待校验的参数对象 |
+| 字段      | 类型   | 必填 | 说明             |
+| --------- | ------ | ---- | ---------------- |
+| arguments | object | 是   | 待校验的参数对象 |
 
 **请求示例**
 
@@ -2399,16 +2424,16 @@ Tool 注册中心是平台统一的 Tool 管理入口，管理内部 Tool（平�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| query | string | 是 | 搜索关键词或自然语言描述 |
-| mode | string | 否 | 搜索模式：`KEYWORD`（关键词）、`SEMANTIC`（语义）、`HYBRID`（混合，默认） |
-| filters | object | 否 | 过滤条件 |
-| filters.source | string | 否 | 来源筛选 |
-| filters.category | string | 否 | 分类筛选 |
-| filters.enabled | boolean | 否 | 启用状态筛选 |
-| filters.tags | string[] | 否 | 标签筛选（OR 关系） |
-| limit | int | 否 | 返回数量上限，默认 10，最大 50 |
+| 字段             | 类型     | 必填 | 说明                                                                      |
+| ---------------- | -------- | ---- | ------------------------------------------------------------------------- |
+| query            | string   | 是   | 搜索关键词或自然语言描述                                                  |
+| mode             | string   | 否   | 搜索模式：`KEYWORD`（关键词）、`SEMANTIC`（语义）、`HYBRID`（混合，默认） |
+| filters          | object   | 否   | 过滤条件                                                                  |
+| filters.source   | string   | 否   | 来源筛选                                                                  |
+| filters.category | string   | 否   | 分类筛选                                                                  |
+| filters.enabled  | boolean  | 否   | 启用状态筛选                                                              |
+| filters.tags     | string[] | 否   | 标签筛选（OR 关系）                                                       |
+| limit            | int      | 否   | 返回数量上限，默认 10，最大 50                                            |
 
 **请求示例**
 
@@ -2470,15 +2495,15 @@ Tool 注册中心是平台统一的 Tool 管理入口，管理内部 Tool（平�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | toolId | string | Tool ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| enabled | boolean | 是 | 目标状态：true 启用、false 禁用 |
+| 字段    | 类型    | 必填 | 说明                            |
+| ------- | ------- | ---- | ------------------------------- |
+| enabled | boolean | 是   | 目标状态：true 启用、false 禁用 |
 
 **响应示例**
 
@@ -2511,13 +2536,13 @@ Tool 执行 API 提供 Tool 调用的统一入口，支持同步、异步、批�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| toolName | string | 是 | Tool 名称（或 toolId） |
-| arguments | object | 是 | Tool 输入参数，需符合 Tool 的 inputSchema |
-| serverId | string | 否 | 指定通过哪个 Server 执行（外部 Tool 时可指定路由） |
-| timeout | int | 否 | 执行超时覆盖（毫秒），不超过 Tool 配置的 timeout |
-| metadata | object | 否 | 调用元数据（调用方信息、会话 ID 等） |
+| 字段      | 类型   | 必填 | 说明                                               |
+| --------- | ------ | ---- | -------------------------------------------------- |
+| toolName  | string | 是   | Tool 名称（或 toolId）                             |
+| arguments | object | 是   | Tool 输入参数，需符合 Tool 的 inputSchema          |
+| serverId  | string | 否   | 指定通过哪个 Server 执行（外部 Tool 时可指定路由） |
+| timeout   | int    | 否   | 执行超时覆盖（毫秒），不超过 Tool 配置的 timeout   |
+| metadata  | object | 否   | 调用元数据（调用方信息、会话 ID 等）               |
 
 **请求示例**
 
@@ -2572,14 +2597,14 @@ Tool 执行 API 提供 Tool 调用的统一入口，支持同步、异步、批�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| 40003 | 参数不符合 inputSchema |
-| 40403 | Tool 不存在或已禁用 |
-| 50002 | 执行超时 |
-| 50003 | 内部 Tool 执行失败（下游服务错误） |
+| code  | 场景                                     |
+| ----- | ---------------------------------------- |
+| 40003 | 参数不符合 inputSchema                   |
+| 40403 | Tool 不存在或已禁用                      |
+| 50002 | 执行超时                                 |
+| 50003 | 内部 Tool 执行失败（下游服务错误）       |
 | 50004 | 外部 Tool 执行失败（第三方 Server 错误） |
-| 50301 | 下游依赖不可用 |
+| 50301 | 下游依赖不可用                           |
 
 ---
 
@@ -2591,15 +2616,15 @@ Tool 执行 API 提供 Tool 调用的统一入口，支持同步、异步、批�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| executions | array | 是 | 执行列表 |
-| executions[].toolName | string | 是 | Tool 名称 |
-| executions[].arguments | object | 是 | Tool 输入参数 |
-| executions[].executionId | string | 否 | 自定义执行 ID，用于结果关联 |
-| mode | string | 否 | 执行模式：`PARALLEL`（并行，默认）、`SEQUENTIAL`（串行） |
-| stopOnError | boolean | 否 | 串行模式下出错是否停止后续执行，默认 false |
-| metadata | object | 否 | 调用元数据 |
+| 字段                     | 类型    | 必填 | 说明                                                     |
+| ------------------------ | ------- | ---- | -------------------------------------------------------- |
+| executions               | array   | 是   | 执行列表                                                 |
+| executions[].toolName    | string  | 是   | Tool 名称                                                |
+| executions[].arguments   | object  | 是   | Tool 输入参数                                            |
+| executions[].executionId | string  | 否   | 自定义执行 ID，用于结果关联                              |
+| mode                     | string  | 否   | 执行模式：`PARALLEL`（并行，默认）、`SEQUENTIAL`（串行） |
+| stopOnError              | boolean | 否   | 串行模式下出错是否停止后续执行，默认 false               |
+| metadata                 | object  | 否   | 调用元数据                                               |
 
 **请求示例**
 
@@ -2654,9 +2679,7 @@ Tool 执行 API 提供 Tool 调用的统一入口，支持同步、异步、批�
         "toolName": "search_knowledge_base",
         "status": "SUCCESS",
         "result": {
-          "content": [
-            { "type": "text", "text": "{\"results\":[...]}" }
-          ],
+          "content": [{ "type": "text", "text": "{\"results\":[...]}" }],
           "isError": false
         },
         "durationMs": 1200
@@ -2666,9 +2689,7 @@ Tool 执行 API 提供 Tool 调用的统一入口，支持同步、异步、批�
         "toolName": "search_concepts",
         "status": "SUCCESS",
         "result": {
-          "content": [
-            { "type": "text", "text": "{\"concepts\":[...]}" }
-          ],
+          "content": [{ "type": "text", "text": "{\"concepts\":[...]}" }],
           "isError": false
         },
         "durationMs": 800
@@ -2701,12 +2722,12 @@ Tool 执行 API 提供 Tool 调用的统一入口，支持同步、异步、批�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| toolName | string | 是 | Tool 名称 |
-| arguments | object | 是 | Tool 输入参数 |
-| callbackUrl | string | 否 | 执行完成后的回调通知 URL |
-| metadata | object | 否 | 调用元数据 |
+| 字段        | 类型   | 必填 | 说明                     |
+| ----------- | ------ | ---- | ------------------------ |
+| toolName    | string | 是   | Tool 名称                |
+| arguments   | object | 是   | Tool 输入参数            |
+| callbackUrl | string | 否   | 执行完成后的回调通知 URL |
+| metadata    | object | 否   | 调用元数据               |
 
 **响应示例**
 
@@ -2732,9 +2753,7 @@ Tool 执行 API 提供 Tool 调用的统一入口，支持同步、异步、批�
   "toolName": "search_knowledge_base",
   "status": "SUCCESS",
   "result": {
-    "content": [
-      { "type": "text", "text": "..." }
-    ],
+    "content": [{ "type": "text", "text": "..." }],
     "isError": false
   },
   "durationMs": 2500,
@@ -2752,8 +2771,8 @@ Tool 执行 API 提供 Tool 调用的统一入口，支持同步、异步、批�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明    |
+| ----------- | ------ | ------- |
 | executionId | string | 执行 ID |
 
 **响应示例**
@@ -2804,8 +2823,8 @@ Tool 执行 API 提供 Tool 调用的统一入口，支持同步、异步、批�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | serverId | string | Server 实例 ID |
 
 **请求参数（JSON-RPC Body）**
@@ -2890,35 +2909,35 @@ Resource 是 MCP 协议中的"资源"概念，表示可被 AI 工具读取的内
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| uri | string | 是 | Resource URI，格式 `scheme://path`，租户内唯一 |
-| name | string | 是 | Resource 名称 |
-| description | string | 否 | 描述信息 |
-| mimeType | string | 否 | MIME 类型，如 `text/plain`、`application/json`、`text/markdown` |
-| source | string | 是 | 来源：`INTERNAL`（平台原生）、`EXTERNAL`（第三方 MCP） |
-| clientId | string | 否 | 来源 Client ID（source=EXTERNAL 时必填） |
-| externalUri | string | 否 | 第三方 Server 上的原始 URI（source=EXTERNAL 时必填） |
-| provider | object | 否 | 内容提供者配置（source=INTERNAL 时必填） |
-| provider.type | string | 否 | 提供者类型：`STATIC`（静态内容）、`HTTP`（HTTP 拉取）、`BEAN`（Bean 调用）、`ONT_ENTITY`（本体实体）、`DOC_ASSET`（文档资产） |
-| provider.config | object | 否 | 提供者配置详情 |
-| cacheConfig | object | 否 | 缓存配置 |
-| cacheConfig.enabled | boolean | 否 | 是否启用缓存，默认 true |
-| cacheConfig.ttl | int | 否 | 缓存有效期（秒），默认 300 |
-| subscription | object | 否 | 订阅配置（支持 MCP resources/subscribe） |
-| subscription.enabled | boolean | 否 | 是否允许订阅，默认 false |
-| subscription.pollInterval | int | 否 | 轮询检测间隔（秒），默认 60 |
-| tags | string[] | 否 | 标签列表 |
+| 字段                      | 类型     | 必填 | 说明                                                                                                                          |
+| ------------------------- | -------- | ---- | ----------------------------------------------------------------------------------------------------------------------------- |
+| uri                       | string   | 是   | Resource URI，格式 `scheme://path`，租户内唯一                                                                                |
+| name                      | string   | 是   | Resource 名称                                                                                                                 |
+| description               | string   | 否   | 描述信息                                                                                                                      |
+| mimeType                  | string   | 否   | MIME 类型，如 `text/plain`、`application/json`、`text/markdown`                                                               |
+| source                    | string   | 是   | 来源：`INTERNAL`（平台原生）、`EXTERNAL`（第三方 MCP）                                                                        |
+| clientId                  | string   | 否   | 来源 Client ID（source=EXTERNAL 时必填）                                                                                      |
+| externalUri               | string   | 否   | 第三方 Server 上的原始 URI（source=EXTERNAL 时必填）                                                                          |
+| provider                  | object   | 否   | 内容提供者配置（source=INTERNAL 时必填）                                                                                      |
+| provider.type             | string   | 否   | 提供者类型：`STATIC`（静态内容）、`HTTP`（HTTP 拉取）、`BEAN`（Bean 调用）、`ONT_ENTITY`（本体实体）、`DOC_ASSET`（文档资产） |
+| provider.config           | object   | 否   | 提供者配置详情                                                                                                                |
+| cacheConfig               | object   | 否   | 缓存配置                                                                                                                      |
+| cacheConfig.enabled       | boolean  | 否   | 是否启用缓存，默认 true                                                                                                       |
+| cacheConfig.ttl           | int      | 否   | 缓存有效期（秒），默认 300                                                                                                    |
+| subscription              | object   | 否   | 订阅配置（支持 MCP resources/subscribe）                                                                                      |
+| subscription.enabled      | boolean  | 否   | 是否允许订阅，默认 false                                                                                                      |
+| subscription.pollInterval | int      | 否   | 轮询检测间隔（秒），默认 60                                                                                                   |
+| tags                      | string[] | 否   | 标签列表                                                                                                                      |
 
 **provider.config 结构**
 
-| type | config 字段 |
-|---|---|
-| STATIC | `content`（静态内容文本）、`contentEncoding`（`utf-8`/`base64`） |
-| HTTP | `method`、`url`、`headers`、`bodyTemplate`、`responseType`（`TEXT`/`JSON`/`BINARY`） |
-| BEAN | `beanName`、`methodName`、`args` |
-| ONT_ENTITY | `conceptId`（本体概念 ID）、`entityId`（实体 ID，支持变量 `${uri.path.0}`） |
-| DOC_ASSET | `assetId`（架构资产 ID）、`format`（输出格式） |
+| type       | config 字段                                                                          |
+| ---------- | ------------------------------------------------------------------------------------ |
+| STATIC     | `content`（静态内容文本）、`contentEncoding`（`utf-8`/`base64`）                     |
+| HTTP       | `method`、`url`、`headers`、`bodyTemplate`、`responseType`（`TEXT`/`JSON`/`BINARY`） |
+| BEAN       | `beanName`、`methodName`、`args`                                                     |
+| ONT_ENTITY | `conceptId`（本体概念 ID）、`entityId`（实体 ID，支持变量 `${uri.path.0}`）          |
+| DOC_ASSET  | `assetId`（架构资产 ID）、`format`（输出格式）                                       |
 
 **请求示例**
 
@@ -2985,10 +3004,10 @@ Resource 是 MCP 协议中的"资源"概念，表示可被 AI 工具读取的内
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| 40001 | 必填字段缺失 |
-| 40901 | URI 已存在 |
+| code  | 场景           |
+| ----- | -------------- |
+| 40001 | 必填字段缺失   |
+| 40901 | URI 已存在     |
 | 42203 | URI 格式不合法 |
 
 ---
@@ -3001,14 +3020,14 @@ Resource 是 MCP 协议中的"资源"概念，表示可被 AI 工具读取的内
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | int | 否 | 页码，默认 1 |
-| pageSize | int | 否 | 每页条数，默认 20 |
-| source | string | 否 | 来源筛选 |
-| mimeType | string | 否 | MIME 类型筛选 |
-| tag | string | 否 | 标签筛选 |
-| keyword | string | 否 | 名称/描述模糊搜索 |
+| 参数     | 类型   | 必填 | 说明              |
+| -------- | ------ | ---- | ----------------- |
+| page     | int    | 否   | 页码，默认 1      |
+| pageSize | int    | 否   | 每页条数，默认 20 |
+| source   | string | 否   | 来源筛选          |
+| mimeType | string | 否   | MIME 类型筛选     |
+| tag      | string | 否   | 标签筛选          |
+| keyword  | string | 否   | 名称/描述模糊搜索 |
 
 **响应示例**
 
@@ -3062,8 +3081,8 @@ Resource 是 MCP 协议中的"资源"概念，表示可被 AI 工具读取的内
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数       | 类型   | 说明        |
+| ---------- | ------ | ----------- |
 | resourceId | string | Resource ID |
 
 **响应示例**
@@ -3104,7 +3123,10 @@ Resource 是 MCP 协议中的"资源"概念，表示可被 AI 工具读取的内
       "lastReadAt": "2026-07-16T21:10:00Z"
     },
     "serverBindings": [
-      { "serverId": "srv-9f3a2b1c-7d8e-4f5a-9b01-c2d3e4f5a6b7", "serverName": "ont-query-server" }
+      {
+        "serverId": "srv-9f3a2b1c-7d8e-4f5a-9b01-c2d3e4f5a6b7",
+        "serverName": "ont-query-server"
+      }
     ],
     "createdAt": "2026-07-16T21:00:00Z",
     "updatedAt": "2026-07-16T21:00:00Z"
@@ -3123,21 +3145,21 @@ Resource 是 MCP 协议中的"资源"概念，表示可被 AI 工具读取的内
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数       | 类型   | 说明        |
+| ---------- | ------ | ----------- |
 | resourceId | string | Resource ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 否 | Resource 名称 |
-| description | string | 否 | 描述信息 |
-| mimeType | string | 否 | MIME 类型 |
-| provider | object | 否 | 内容提供者配置 |
-| cacheConfig | object | 否 | 缓存配置 |
-| subscription | object | 否 | 订阅配置 |
-| tags | string[] | 否 | 标签列表 |
+| 字段         | 类型     | 必填 | 说明           |
+| ------------ | -------- | ---- | -------------- |
+| name         | string   | 否   | Resource 名称  |
+| description  | string   | 否   | 描述信息       |
+| mimeType     | string   | 否   | MIME 类型      |
+| provider     | object   | 否   | 内容提供者配置 |
+| cacheConfig  | object   | 否   | 缓存配置       |
+| subscription | object   | 否   | 订阅配置       |
+| tags         | string[] | 否   | 标签列表       |
 
 **响应示例**
 
@@ -3164,8 +3186,8 @@ Resource 是 MCP 协议中的"资源"概念，表示可被 AI 工具读取的内
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数       | 类型   | 说明        |
+| ---------- | ------ | ----------- |
 | resourceId | string | Resource ID |
 
 **响应示例**
@@ -3194,16 +3216,16 @@ Resource 是 MCP 协议中的"资源"概念，表示可被 AI 工具读取的内
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数       | 类型   | 说明        |
+| ---------- | ------ | ----------- |
 | resourceId | string | Resource ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| uri | string | 否 | 指定读取的 URI（用于 URI 模板场景，覆盖 resourceId 对应的 URI） |
-| useCache | boolean | 否 | 是否使用缓存，默认 true |
+| 字段     | 类型    | 必填 | 说明                                                            |
+| -------- | ------- | ---- | --------------------------------------------------------------- |
+| uri      | string  | 否   | 指定读取的 URI（用于 URI 模板场景，覆盖 resourceId 对应的 URI） |
+| useCache | boolean | 否   | 是否使用缓存，默认 true                                         |
 
 **响应示例**
 
@@ -3263,11 +3285,11 @@ Resource 是 MCP 协议中的"资源"概念，表示可被 AI 工具读取的内
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| 40401 | Resource 不存在 |
+| code  | 场景                               |
+| ----- | ---------------------------------- |
+| 40401 | Resource 不存在                    |
 | 50003 | 内容提供者调用失败（下游服务错误） |
-| 50301 | 下游依赖不可用 |
+| 50301 | 下游依赖不可用                     |
 
 ---
 
@@ -3279,14 +3301,14 @@ Resource 是 MCP 协议中的"资源"概念，表示可被 AI 工具读取的内
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| query | string | 是 | 搜索关键词 |
-| filters | object | 否 | 过滤条件 |
-| filters.source | string | 否 | 来源筛选 |
-| filters.mimeType | string | 否 | MIME 类型筛选 |
-| filters.tags | string[] | 否 | 标签筛选 |
-| limit | int | 否 | 返回数量上限，默认 10 |
+| 字段             | 类型     | 必填 | 说明                  |
+| ---------------- | -------- | ---- | --------------------- |
+| query            | string   | 是   | 搜索关键词            |
+| filters          | object   | 否   | 过滤条件              |
+| filters.source   | string   | 否   | 来源筛选              |
+| filters.mimeType | string   | 否   | MIME 类型筛选         |
+| filters.tags     | string[] | 否   | 标签筛选              |
+| limit            | int      | 否   | 返回数量上限，默认 10 |
 
 **响应示例**
 
@@ -3331,27 +3353,27 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 是 | 模板名称，租户内唯一，小写字母+连字符 |
-| displayName | string | 是 | 显示名称 |
-| description | string | 否 | 模板描述 |
-| source | string | 是 | 来源：`INTERNAL`、`EXTERNAL` |
-| clientId | string | 否 | 来源 Client ID（source=EXTERNAL 时必填） |
-| externalName | string | 否 | 第三方 Server 上的原始名称 |
-| messages | array | 是 | 消息列表（MCP Prompt 消息结构） |
-| messages[].role | string | 是 | 角色：`user`、`assistant`、`system` |
-| messages[].content | object | 是 | 消息内容 |
-| messages[].content.type | string | 是 | 内容类型：`text`、`image`、`resource` |
-| messages[].content.text | string | 否 | 文本内容（type=text 时），支持 Mustache 变量 `{{varName}}` |
-| messages[].content.resourceUri | string | 否 | 引用的 Resource URI（type=resource 时） |
-| arguments | array | 否 | 模板变量定义 |
-| arguments[].name | string | 是 | 变量名称 |
-| arguments[].description | string | 否 | 变量描述 |
-| arguments[].required | boolean | 否 | 是否必填，默认 false |
-| arguments[].default | string | 否 | 默认值 |
-| arguments[].enum | string[] | 否 | 可选值枚举 |
-| tags | string[] | 否 | 标签列表 |
+| 字段                           | 类型     | 必填 | 说明                                                       |
+| ------------------------------ | -------- | ---- | ---------------------------------------------------------- |
+| name                           | string   | 是   | 模板名称，租户内唯一，小写字母+连字符                      |
+| displayName                    | string   | 是   | 显示名称                                                   |
+| description                    | string   | 否   | 模板描述                                                   |
+| source                         | string   | 是   | 来源：`INTERNAL`、`EXTERNAL`                               |
+| clientId                       | string   | 否   | 来源 Client ID（source=EXTERNAL 时必填）                   |
+| externalName                   | string   | 否   | 第三方 Server 上的原始名称                                 |
+| messages                       | array    | 是   | 消息列表（MCP Prompt 消息结构）                            |
+| messages[].role                | string   | 是   | 角色：`user`、`assistant`、`system`                        |
+| messages[].content             | object   | 是   | 消息内容                                                   |
+| messages[].content.type        | string   | 是   | 内容类型：`text`、`image`、`resource`                      |
+| messages[].content.text        | string   | 否   | 文本内容（type=text 时），支持 Mustache 变量 `{{varName}}` |
+| messages[].content.resourceUri | string   | 否   | 引用的 Resource URI（type=resource 时）                    |
+| arguments                      | array    | 否   | 模板变量定义                                               |
+| arguments[].name               | string   | 是   | 变量名称                                                   |
+| arguments[].description        | string   | 否   | 变量描述                                                   |
+| arguments[].required           | boolean  | 否   | 是否必填，默认 false                                       |
+| arguments[].default            | string   | 否   | 默认值                                                     |
+| arguments[].enum               | string[] | 否   | 可选值枚举                                                 |
+| tags                           | string[] | 否   | 标签列表                                                   |
 
 **请求示例**
 
@@ -3407,8 +3429,8 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
     "displayName": "本体分析提示模板",
     "description": "用于分析本体概念结构与关系的提示模板",
     "source": "INTERNAL",
-    "messages": [ ],
-    "arguments": [ ],
+    "messages": [],
+    "arguments": [],
     "tags": ["ontology", "analysis", "template"],
     "version": 1,
     "createdAt": "2026-07-16T21:25:00Z",
@@ -3420,10 +3442,10 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| 40001 | 必填字段缺失 |
-| 40901 | 模板名称已存在 |
+| code  | 场景               |
+| ----- | ------------------ |
+| 40001 | 必填字段缺失       |
+| 40901 | 模板名称已存在     |
 | 42201 | 消息内容格式不合法 |
 
 ---
@@ -3436,13 +3458,13 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | int | 否 | 页码，默认 1 |
-| pageSize | int | 否 | 每页条数，默认 20 |
-| source | string | 否 | 来源筛选 |
-| tag | string | 否 | 标签筛选 |
-| keyword | string | 否 | 名称/描述模糊搜索 |
+| 参数     | 类型   | 必填 | 说明              |
+| -------- | ------ | ---- | ----------------- |
+| page     | int    | 否   | 页码，默认 1      |
+| pageSize | int    | 否   | 每页条数，默认 20 |
+| source   | string | 否   | 来源筛选          |
+| tag      | string | 否   | 标签筛选          |
+| keyword  | string | 否   | 名称/描述模糊搜索 |
 
 **响应示例**
 
@@ -3485,8 +3507,8 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | promptId | string | Prompt 模板 ID |
 
 **响应示例**
@@ -3539,7 +3561,10 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
       "lastRenderAt": "2026-07-16T21:30:00Z"
     },
     "serverBindings": [
-      { "serverId": "srv-9f3a2b1c-7d8e-4f5a-9b01-c2d3e4f5a6b7", "serverName": "ont-query-server" }
+      {
+        "serverId": "srv-9f3a2b1c-7d8e-4f5a-9b01-c2d3e4f5a6b7",
+        "serverName": "ont-query-server"
+      }
     ],
     "createdAt": "2026-07-16T21:25:00Z",
     "updatedAt": "2026-07-16T21:25:00Z"
@@ -3558,19 +3583,19 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | promptId | string | Prompt 模板 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| displayName | string | 否 | 显示名称 |
-| description | string | 否 | 描述信息 |
-| messages | array | 否 | 消息列表 |
-| arguments | array | 否 | 模板变量定义 |
-| tags | string[] | 否 | 标签列表 |
+| 字段        | 类型     | 必填 | 说明         |
+| ----------- | -------- | ---- | ------------ |
+| displayName | string   | 否   | 显示名称     |
+| description | string   | 否   | 描述信息     |
+| messages    | array    | 否   | 消息列表     |
+| arguments   | array    | 否   | 模板变量定义 |
+| tags        | string[] | 否   | 标签列表     |
 
 **响应示例**
 
@@ -3598,8 +3623,8 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | promptId | string | Prompt 模板 ID |
 
 **响应示例**
@@ -3628,15 +3653,15 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | promptId | string | Prompt 模板 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| arguments | object | 是 | 变量值映射，key 为变量名，value 为变量值 |
+| 字段      | 类型   | 必填 | 说明                                     |
+| --------- | ------ | ---- | ---------------------------------------- |
+| arguments | object | 是   | 变量值映射，key 为变量名，value 为变量值 |
 
 **请求示例**
 
@@ -3683,10 +3708,10 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code  | 场景              |
+| ----- | ----------------- |
 | 40401 | Prompt 模板不存在 |
-| 40001 | 必填变量未提供 |
+| 40001 | 必填变量未提供    |
 
 ---
 
@@ -3698,8 +3723,8 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | serverId | string | Server 实例 ID |
 
 **请求参数（JSON-RPC Body）**
@@ -3749,10 +3774,10 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 **错误场景**
 
-| JSON-RPC code | 场景 |
-|---|---|
-| -32004 | Prompt 不存在 |
-| -32602 | 必填变量未提供 |
+| JSON-RPC code | 场景           |
+| ------------- | -------------- |
+| -32004        | Prompt 不存在  |
+| -32602        | 必填变量未提供 |
 
 ---
 
@@ -3768,19 +3793,19 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | int | 否 | 页码，默认 1 |
-| pageSize | int | 否 | 每页条数，默认 20 |
-| startTime | string | 否 | 开始时间（ISO 8601） |
-| endTime | string | 否 | 结束时间（ISO 8601） |
-| serverId | string | 否 | Server ID 筛选 |
-| toolName | string | 否 | Tool 名称筛选 |
-| status | string | 否 | 状态筛选：`SUCCESS`、`FAILED`、`TIMEOUT` |
-| callerType | string | 否 | 调用方类型：`MCP_CLIENT`（外部 MCP Client）、`INTERNAL`（内部服务） |
-| traceId | string | 否 | 按 traceId 精确查找 |
-| sortBy | string | 否 | 排序字段，默认 `timestamp` |
-| sortOrder | string | 否 | 排序方向：`asc`、`desc`（默认） |
+| 参数       | 类型   | 必填 | 说明                                                                |
+| ---------- | ------ | ---- | ------------------------------------------------------------------- |
+| page       | int    | 否   | 页码，默认 1                                                        |
+| pageSize   | int    | 否   | 每页条数，默认 20                                                   |
+| startTime  | string | 否   | 开始时间（ISO 8601）                                                |
+| endTime    | string | 否   | 结束时间（ISO 8601）                                                |
+| serverId   | string | 否   | Server ID 筛选                                                      |
+| toolName   | string | 否   | Tool 名称筛选                                                       |
+| status     | string | 否   | 状态筛选：`SUCCESS`、`FAILED`、`TIMEOUT`                            |
+| callerType | string | 否   | 调用方类型：`MCP_CLIENT`（外部 MCP Client）、`INTERNAL`（内部服务） |
+| traceId    | string | 否   | 按 traceId 精确查找                                                 |
+| sortBy     | string | 否   | 排序字段，默认 `timestamp`                                          |
+| sortOrder  | string | 否   | 排序方向：`asc`、`desc`（默认）                                     |
 
 **响应示例**
 
@@ -3855,8 +3880,8 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明        |
+| ------ | ------ | ----------- |
 | callId | string | 调用记录 ID |
 
 **响应示例**
@@ -3908,12 +3933,36 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
       "totalTokens": 0
     },
     "executionPath": [
-      { "step": "MCP_RPC_RECEIVE", "timestamp": "2026-07-16T20:45:00.000Z", "durationMs": 5 },
-      { "step": "AUTH_VALIDATE", "timestamp": "2026-07-16T20:45:00.005Z", "durationMs": 10 },
-      { "step": "SCHEMA_VALIDATE", "timestamp": "2026-07-16T20:45:00.015Z", "durationMs": 5 },
-      { "step": "TOOL_ROUTE", "timestamp": "2026-07-16T20:45:00.020Z", "durationMs": 2 },
-      { "step": "HTTP_EXECUTE", "timestamp": "2026-07-16T20:45:00.022Z", "durationMs": 1150 },
-      { "step": "RESPONSE_BUILD", "timestamp": "2026-07-16T20:45:01.172Z", "durationMs": 8 }
+      {
+        "step": "MCP_RPC_RECEIVE",
+        "timestamp": "2026-07-16T20:45:00.000Z",
+        "durationMs": 5
+      },
+      {
+        "step": "AUTH_VALIDATE",
+        "timestamp": "2026-07-16T20:45:00.005Z",
+        "durationMs": 10
+      },
+      {
+        "step": "SCHEMA_VALIDATE",
+        "timestamp": "2026-07-16T20:45:00.015Z",
+        "durationMs": 5
+      },
+      {
+        "step": "TOOL_ROUTE",
+        "timestamp": "2026-07-16T20:45:00.020Z",
+        "durationMs": 2
+      },
+      {
+        "step": "HTTP_EXECUTE",
+        "timestamp": "2026-07-16T20:45:00.022Z",
+        "durationMs": 1150
+      },
+      {
+        "step": "RESPONSE_BUILD",
+        "timestamp": "2026-07-16T20:45:01.172Z",
+        "durationMs": 8
+      }
     ],
     "startedAt": "2026-07-16T20:45:00Z",
     "completedAt": "2026-07-16T20:45:01Z"
@@ -3932,13 +3981,13 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startTime | string | 是 | 开始时间（ISO 8601） |
-| endTime | string | 是 | 结束时间（ISO 8601） |
-| serverId | string | 否 | Server ID 筛选 |
-| toolName | string | 否 | Tool 名称筛选 |
-| groupBy | string | 否 | 聚合维度：`tool`（默认）、`server`、`caller`、`day`、`hour` |
+| 参数      | 类型   | 必填 | 说明                                                        |
+| --------- | ------ | ---- | ----------------------------------------------------------- |
+| startTime | string | 是   | 开始时间（ISO 8601）                                        |
+| endTime   | string | 是   | 结束时间（ISO 8601）                                        |
+| serverId  | string | 否   | Server ID 筛选                                              |
+| toolName  | string | 否   | Tool 名称筛选                                               |
+| groupBy   | string | 否   | 聚合维度：`tool`（默认）、`server`、`caller`、`day`、`hour` |
 
 **响应示例**
 
@@ -3987,15 +4036,15 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | int | 否 | 页码，默认 1 |
-| pageSize | int | 否 | 每页条数，默认 20 |
-| startTime | string | 否 | 开始时间 |
-| endTime | string | 否 | 结束时间 |
-| errorCode | string | 否 | 错误码筛选 |
-| toolName | string | 否 | Tool 名称筛选 |
-| serverId | string | 否 | Server ID 筛选 |
+| 参数      | 类型   | 必填 | 说明              |
+| --------- | ------ | ---- | ----------------- |
+| page      | int    | 否   | 页码，默认 1      |
+| pageSize  | int    | 否   | 每页条数，默认 20 |
+| startTime | string | 否   | 开始时间          |
+| endTime   | string | 否   | 结束时间          |
+| errorCode | string | 否   | 错误码筛选        |
+| toolName  | string | 否   | Tool 名称筛选     |
+| serverId  | string | 否   | Server ID 筛选    |
 
 **响应示例**
 
@@ -4044,14 +4093,14 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startTime | string | 是 | 开始时间 |
-| endTime | string | 是 | 结束时间 |
-| granularity | string | 否 | 时间粒度：`hour`、`day`（默认） |
-| serverId | string | 否 | Server ID 筛选 |
-| toolName | string | 否 | Tool 名称筛选 |
-| metric | string | 否 | 指标：`call_count`（默认）、`error_rate`、`latency`、`token_usage` |
+| 参数        | 类型   | 必填 | 说明                                                               |
+| ----------- | ------ | ---- | ------------------------------------------------------------------ |
+| startTime   | string | 是   | 开始时间                                                           |
+| endTime     | string | 是   | 结束时间                                                           |
+| granularity | string | 否   | 时间粒度：`hour`、`day`（默认）                                    |
+| serverId    | string | 否   | Server ID 筛选                                                     |
+| toolName    | string | 否   | Tool 名称筛选                                                      |
+| metric      | string | 否   | 指标：`call_count`（默认）、`error_rate`、`latency`、`token_usage` |
 
 **响应示例**
 
@@ -4084,22 +4133,22 @@ Prompt 模板是 MCP 协议中的"提示模板"概念，表示可被 AI 工具�
 
 ### 4.1 PostgreSQL 表设计总览
 
-| 表名 | 说明 |
-|---|---|
-| `mcp_servers` | MCP Server 实例配置 |
-| `mcp_server_tool_bindings` | Server 与 Tool 的绑定关系 |
+| 表名                           | 说明                          |
+| ------------------------------ | ----------------------------- |
+| `mcp_servers`                  | MCP Server 实例配置           |
+| `mcp_server_tool_bindings`     | Server 与 Tool 的绑定关系     |
 | `mcp_server_resource_bindings` | Server 与 Resource 的绑定关系 |
-| `mcp_server_prompt_bindings` | Server 与 Prompt 的绑定关系 |
-| `mcp_clients` | MCP Client 连接配置 |
-| `mcp_tools` | Tool 注册中心（内部 + 外部） |
-| `mcp_tool_versions` | Tool 版本历史 |
-| `mcp_resources` | Resource 配置 |
-| `mcp_prompts` | Prompt 模板配置 |
-| `mcp_prompt_versions` | Prompt 模板版本历史 |
-| `mcp_tool_executions` | Tool 执行记录 |
-| `mcp_call_audit_logs` | MCP 调用审计日志 |
-| `mcp_api_keys` | API Key 管理 |
-| `mcp_outbox` | Outbox 模式事件表 |
+| `mcp_server_prompt_bindings`   | Server 与 Prompt 的绑定关系   |
+| `mcp_clients`                  | MCP Client 连接配置           |
+| `mcp_tools`                    | Tool 注册中心（内部 + 外部）  |
+| `mcp_tool_versions`            | Tool 版本历史                 |
+| `mcp_resources`                | Resource 配置                 |
+| `mcp_prompts`                  | Prompt 模板配置               |
+| `mcp_prompt_versions`          | Prompt 模板版本历史           |
+| `mcp_tool_executions`          | Tool 执行记录                 |
+| `mcp_call_audit_logs`          | MCP 调用审计日志              |
+| `mcp_api_keys`                 | API Key 管理                  |
+| `mcp_outbox`                   | Outbox 模式事件表             |
 
 ### 4.2 mcp_servers
 
@@ -4404,14 +4453,14 @@ CREATE INDEX idx_outbox_aggregate ON mcp_outbox(aggregate_type, aggregate_id);
 
 ### 5.1 Kafka Topic 规划
 
-| Topic | 说明 | 生产者 | 消费者 |
-|---|---|---|---|
-| `metaplatform.mcp.tool.execution.events` | Tool 调用生命周期事件 | TECH-MCP | TECH-OBS, APP-SUPERAI, APP-DASHBOARD |
-| `metaplatform.mcp.server.lifecycle.events` | MCP Server 启停事件 | TECH-MCP | TECH-OBS, APP-MCPHUB |
-| `metaplatform.mcp.client.lifecycle.events` | MCP Client 连接状态事件 | TECH-MCP | TECH-OBS, APP-MCPHUB |
-| `metaplatform.mcp.tool.registry.events` | Tool 注册变更事件 | TECH-MCP | TECH-OBS, TECH-AGENT |
-| `metaplatform.mcp.audit.events` | 调用审计事件 | TECH-MCP | TECH-OBS |
-| `metaplatform.mcp.dlq` | 死信队列 | TECH-MCP (消费失败时) | TECH-OBS / 运维 |
+| Topic                                      | 说明                    | 生产者                | 消费者                               |
+| ------------------------------------------ | ----------------------- | --------------------- | ------------------------------------ |
+| `metaplatform.mcp.tool.execution.events`   | Tool 调用生命周期事件   | TECH-MCP              | TECH-OBS, APP-SUPERAI, APP-DASHBOARD |
+| `metaplatform.mcp.server.lifecycle.events` | MCP Server 启停事件     | TECH-MCP              | TECH-OBS, APP-MCPHUB                 |
+| `metaplatform.mcp.client.lifecycle.events` | MCP Client 连接状态事件 | TECH-MCP              | TECH-OBS, APP-MCPHUB                 |
+| `metaplatform.mcp.tool.registry.events`    | Tool 注册变更事件       | TECH-MCP              | TECH-OBS, TECH-AGENT                 |
+| `metaplatform.mcp.audit.events`            | 调用审计事件            | TECH-MCP              | TECH-OBS                             |
+| `metaplatform.mcp.dlq`                     | 死信队列                | TECH-MCP (消费失败时) | TECH-OBS / 运维                      |
 
 ### 5.2 事件类型定义
 
@@ -4673,13 +4722,13 @@ TECH-MCP 使用 Outbox 模式保证事件发布的可靠性：
 
 **Outbox Publisher 配置**
 
-| 参数 | 默认值 | 说明 |
-|---|---|---|
-| scanInterval | 5000ms | 扫描间隔 |
-| batchSize | 100 | 每批最大发送数量 |
-| maxRetries | 3 | 最大重试次数 |
-| retryBackoff | EXPONENTIAL | 退避策略 |
-| retryInterval | 1000ms | 初始重试间隔 |
+| 参数          | 默认值      | 说明             |
+| ------------- | ----------- | ---------------- |
+| scanInterval  | 5000ms      | 扫描间隔         |
+| batchSize     | 100         | 每批最大发送数量 |
+| maxRetries    | 3           | 最大重试次数     |
+| retryBackoff  | EXPONENTIAL | 退避策略         |
+| retryInterval | 1000ms      | 初始重试间隔     |
 
 ### 5.4 DLQ 处理
 
@@ -4688,7 +4737,7 @@ TECH-MCP 使用 Outbox 模式保证事件发布的可靠性：
 ```json
 {
   "originalTopic": "metaplatform.mcp.tool.execution.events",
-  "originalEvent": { },
+  "originalEvent": {},
   "failureReason": "Deserialization error",
   "failureTimestamp": "2026-07-16T21:00:00Z",
   "retryCount": 3,
@@ -4705,13 +4754,13 @@ DLQ 记录必须包含 `traceId` 字段用于故障诊断。
 
 ### 6.1 里程碑总览
 
-| 里程碑 | 范围 | 预计周期 |
-|---|---|---|
-| M1 | MCP Server 管理 + Tool 注册中心 + 基础执行 | 第 1-3 周 |
-| M2 | MCP Client 管理 + 外部 Tool 发现与路由 | 第 4-6 周 |
-| M3 | Resource 管理 + Prompt 模板管理 | 第 7-9 周 |
-| M4 | 调用审计 + Outbox 模式 + 事件发布 | 第 10-12 周 |
-| M5 | 性能优化 + 多租户 + 安全增强 + MCP 协议升级 | 第 13-15 周 |
+| 里程碑 | 范围                                        | 预计周期    |
+| ------ | ------------------------------------------- | ----------- |
+| M1     | MCP Server 管理 + Tool 注册中心 + 基础执行  | 第 1-3 周   |
+| M2     | MCP Client 管理 + 外部 Tool 发现与路由      | 第 4-6 周   |
+| M3     | Resource 管理 + Prompt 模板管理             | 第 7-9 周   |
+| M4     | 调用审计 + Outbox 模式 + 事件发布           | 第 10-12 周 |
+| M5     | 性能优化 + 多租户 + 安全增强 + MCP 协议升级 | 第 13-15 周 |
 
 ### 6.2 M1：MCP Server 管理 + Tool 注册中心 + 基础执行（第 1-3 周）
 

@@ -4,6 +4,7 @@ Uses SQLite in-memory + Base.metadata.create_all to verify the SQL
 store's CRUD + tenant isolation. Dynamic functions (schema discovery,
 connection probe) stay in in_memory and are not exercised here.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -33,9 +34,13 @@ _TENANT_B = "tenant-bigo"
 # ---------------------------------------------------------------------------
 def test_put_and_get_cdc_task() -> None:
     task = mem.CdcTask(
-        id="cdc-1", tenant_id=_TENANT_A, name="Orders Sync",
-        source_id="src-1", target_table="ods_orders",
-        status="running", config={"mode": "incremental"},
+        id="cdc-1",
+        tenant_id=_TENANT_A,
+        name="Orders Sync",
+        source_id="src-1",
+        target_table="ods_orders",
+        status="running",
+        config={"mode": "incremental"},
         created_at="2026-08-01T00:00:00Z",
         updated_at="2026-08-01T00:00:00Z",
     )
@@ -54,8 +59,11 @@ def test_put_and_get_cdc_task() -> None:
 
 def test_put_cdc_task_upsert() -> None:
     task = mem.CdcTask(
-        id="cdc-2", tenant_id=_TENANT_A, name="Users Sync",
-        source_id="src-2", target_table="ods_users",
+        id="cdc-2",
+        tenant_id=_TENANT_A,
+        name="Users Sync",
+        source_id="src-2",
+        target_table="ods_users",
     )
     sql.put_cdc_task(_TENANT_A, task)
     # Update
@@ -70,14 +78,26 @@ def test_put_cdc_task_upsert() -> None:
 
 
 def test_list_cdc_tasks_filters_by_tenant() -> None:
-    sql.put_cdc_task(_TENANT_A, mem.CdcTask(
-        id="cdc-a1", tenant_id=_TENANT_A, name="A1",
-        source_id="src-1", target_table="t1",
-    ))
-    sql.put_cdc_task(_TENANT_B, mem.CdcTask(
-        id="cdc-b1", tenant_id=_TENANT_B, name="B1",
-        source_id="src-1", target_table="t1",
-    ))
+    sql.put_cdc_task(
+        _TENANT_A,
+        mem.CdcTask(
+            id="cdc-a1",
+            tenant_id=_TENANT_A,
+            name="A1",
+            source_id="src-1",
+            target_table="t1",
+        ),
+    )
+    sql.put_cdc_task(
+        _TENANT_B,
+        mem.CdcTask(
+            id="cdc-b1",
+            tenant_id=_TENANT_B,
+            name="B1",
+            source_id="src-1",
+            target_table="t1",
+        ),
+    )
 
     a_tasks = sql.list_cdc_tasks(_TENANT_A)
     assert [t.id for t in a_tasks] == ["cdc-a1"]
@@ -87,24 +107,44 @@ def test_list_cdc_tasks_filters_by_tenant() -> None:
 
 
 def test_list_cdc_tasks_filters_by_status() -> None:
-    sql.put_cdc_task(_TENANT_A, mem.CdcTask(
-        id="cdc-running", tenant_id=_TENANT_A, name="R",
-        source_id="src-1", target_table="t1", status="running",
-    ))
-    sql.put_cdc_task(_TENANT_A, mem.CdcTask(
-        id="cdc-paused", tenant_id=_TENANT_A, name="P",
-        source_id="src-1", target_table="t1", status="paused",
-    ))
+    sql.put_cdc_task(
+        _TENANT_A,
+        mem.CdcTask(
+            id="cdc-running",
+            tenant_id=_TENANT_A,
+            name="R",
+            source_id="src-1",
+            target_table="t1",
+            status="running",
+        ),
+    )
+    sql.put_cdc_task(
+        _TENANT_A,
+        mem.CdcTask(
+            id="cdc-paused",
+            tenant_id=_TENANT_A,
+            name="P",
+            source_id="src-1",
+            target_table="t1",
+            status="paused",
+        ),
+    )
 
     running = sql.list_cdc_tasks(_TENANT_A, status="running")
     assert [t.id for t in running] == ["cdc-running"]
 
 
 def test_delete_cdc_task() -> None:
-    sql.put_cdc_task(_TENANT_A, mem.CdcTask(
-        id="cdc-del", tenant_id=_TENANT_A, name="Del",
-        source_id="src-1", target_table="t1",
-    ))
+    sql.put_cdc_task(
+        _TENANT_A,
+        mem.CdcTask(
+            id="cdc-del",
+            tenant_id=_TENANT_A,
+            name="Del",
+            source_id="src-1",
+            target_table="t1",
+        ),
+    )
     assert sql.delete_cdc_task(_TENANT_A, "cdc-del") is True
     assert sql.get_cdc_task(_TENANT_A, "cdc-del") is None
     # Idempotent
@@ -112,20 +152,33 @@ def test_delete_cdc_task() -> None:
 
 
 def test_delete_cdc_task_rejects_cross_tenant() -> None:
-    sql.put_cdc_task(_TENANT_A, mem.CdcTask(
-        id="cdc-x", tenant_id=_TENANT_A, name="X",
-        source_id="src-1", target_table="t1",
-    ))
+    sql.put_cdc_task(
+        _TENANT_A,
+        mem.CdcTask(
+            id="cdc-x",
+            tenant_id=_TENANT_A,
+            name="X",
+            source_id="src-1",
+            target_table="t1",
+        ),
+    )
     # Tenant B cannot delete tenant A's task
     assert sql.delete_cdc_task(_TENANT_B, "cdc-x") is False
     assert sql.get_cdc_task(_TENANT_A, "cdc-x") is not None
 
 
 def test_set_cdc_task_status() -> None:
-    sql.put_cdc_task(_TENANT_A, mem.CdcTask(
-        id="cdc-st", tenant_id=_TENANT_A, name="ST",
-        source_id="src-1", target_table="t1", status="running",
-    ))
+    sql.put_cdc_task(
+        _TENANT_A,
+        mem.CdcTask(
+            id="cdc-st",
+            tenant_id=_TENANT_A,
+            name="ST",
+            source_id="src-1",
+            target_table="t1",
+            status="running",
+        ),
+    )
     updated = sql.set_cdc_task_status(_TENANT_A, "cdc-st", "stopped")
     assert updated is not None
     assert updated.status == "stopped"
@@ -142,8 +195,11 @@ def test_get_cdc_task_anonymous_tenant_returns_none() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_source() -> None:
     src = mem.DataSource(
-        id="src-1", tenant_id=_TENANT_A, name="MySQL Orders",
-        type="mysql", connection_config={"host": "db.example.com", "port": 3306},
+        id="src-1",
+        tenant_id=_TENANT_A,
+        name="MySQL Orders",
+        type="mysql",
+        connection_config={"host": "db.example.com", "port": 3306},
         status="connected",
     )
     sql.put_source(_TENANT_A, src)
@@ -157,33 +213,53 @@ def test_put_and_get_source() -> None:
 
 
 def test_list_sources_filters_by_type() -> None:
-    sql.put_source(_TENANT_A, mem.DataSource(
-        id="src-mysql", tenant_id=_TENANT_A, name="MySQL",
-        type="mysql",
-    ))
-    sql.put_source(_TENANT_A, mem.DataSource(
-        id="src-kafka", tenant_id=_TENANT_A, name="Kafka",
-        type="kafka",
-    ))
+    sql.put_source(
+        _TENANT_A,
+        mem.DataSource(
+            id="src-mysql",
+            tenant_id=_TENANT_A,
+            name="MySQL",
+            type="mysql",
+        ),
+    )
+    sql.put_source(
+        _TENANT_A,
+        mem.DataSource(
+            id="src-kafka",
+            tenant_id=_TENANT_A,
+            name="Kafka",
+            type="kafka",
+        ),
+    )
 
     mysql_only = sql.list_sources(_TENANT_A, type_filter="mysql")
     assert [s.id for s in mysql_only] == ["src-mysql"]
 
 
 def test_delete_source() -> None:
-    sql.put_source(_TENANT_A, mem.DataSource(
-        id="src-del", tenant_id=_TENANT_A, name="Del",
-        type="mysql",
-    ))
+    sql.put_source(
+        _TENANT_A,
+        mem.DataSource(
+            id="src-del",
+            tenant_id=_TENANT_A,
+            name="Del",
+            type="mysql",
+        ),
+    )
     assert sql.delete_source(_TENANT_A, "src-del") is True
     assert sql.get_source(_TENANT_A, "src-del") is None
 
 
 def test_delete_source_rejects_cross_tenant() -> None:
-    sql.put_source(_TENANT_A, mem.DataSource(
-        id="src-x", tenant_id=_TENANT_A, name="X",
-        type="mysql",
-    ))
+    sql.put_source(
+        _TENANT_A,
+        mem.DataSource(
+            id="src-x",
+            tenant_id=_TENANT_A,
+            name="X",
+            type="mysql",
+        ),
+    )
     assert sql.delete_source(_TENANT_B, "src-x") is False
 
 

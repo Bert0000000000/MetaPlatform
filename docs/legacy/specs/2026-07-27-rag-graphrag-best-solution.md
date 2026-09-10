@@ -5,6 +5,7 @@
 > **核心决策**：以 RAGFlow（深度文档解析范式）与 Microsoft GraphRAG（实体抽取 + 社区检测 + 摘要 Map-Reduce 范式）为算法参考，在 Java 21 + Spring AI Alibaba 1.1.2 技术栈上**统一实现**，不引入任何 Python 运行时。
 >
 > **关联文档**：
+>
 > - 既有规范 `TECH-RAG/docs/SPEC-TECH-RAG-RAG引擎API规范_v1.0-20260716.md`（v1 基础）
 > - 既有 PRD `docs/prd/APP-KB/PRD-APP-KB-知识库_v1.1-20260722.md`（消费侧）
 > - 既有 PRD `docs/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.1-20260722.md`（架构资产侧）
@@ -13,16 +14,16 @@
 
 ## 0. 摘要（TL;DR）
 
-| 维度 | 决策 |
-|---|---|
-| 借鉴对象 | RAGFlow（DeepDoc 思路）+ Microsoft GraphRAG（社区检测 / 全局检索思路） |
-| 实现语言 | **Java 21 + Spring AI Alibaba 1.1.2**（守住 v1.2 决策，不引入 Python 运行时） |
-| 借鉴方式 | **算法级重写 + 设计思想借鉴**，不复制任何开源代码 |
-| 法律风险 | 🟢 低（仅算法/思想借鉴，开源代码零复制；AGPL-3.0 合规边界见 §1.3） |
-| 落点 | TECH-RAG 内部新增 `graphrag` / `parser-deep` / `eval` 子包；不动 TECH-ONT / TECH-IAM / TECH-OBS |
-| 差异化 | 与现有 Graph-Enhanced（基于 Ontology）**并列共存**，由检索路由层按问题类型分发 |
-| 工期 | MVP（Phase 0+1）2 个月；完整版（Phase 0~4）3~4 个月 |
-| 投入 | 2 名资深 Java + 1 名算法/数据工程师 + 0.5 名 Prompt/评测工程师 |
+| 维度     | 决策                                                                                            |
+| -------- | ----------------------------------------------------------------------------------------------- |
+| 借鉴对象 | RAGFlow（DeepDoc 思路）+ Microsoft GraphRAG（社区检测 / 全局检索思路）                          |
+| 实现语言 | **Java 21 + Spring AI Alibaba 1.1.2**（守住 v1.2 决策，不引入 Python 运行时）                   |
+| 借鉴方式 | **算法级重写 + 设计思想借鉴**，不复制任何开源代码                                               |
+| 法律风险 | 🟢 低（仅算法/思想借鉴，开源代码零复制；AGPL-3.0 合规边界见 §1.3）                              |
+| 落点     | TECH-RAG 内部新增 `graphrag` / `parser-deep` / `eval` 子包；不动 TECH-ONT / TECH-IAM / TECH-OBS |
+| 差异化   | 与现有 Graph-Enhanced（基于 Ontology）**并列共存**，由检索路由层按问题类型分发                  |
+| 工期     | MVP（Phase 0+1）2 个月；完整版（Phase 0~4）3~4 个月                                             |
+| 投入     | 2 名资深 Java + 1 名算法/数据工程师 + 0.5 名 Prompt/评测工程师                                  |
 
 ---
 
@@ -31,6 +32,7 @@
 ### 1.1 为什么"直接引用"是正确的选择
 
 Mate Platform 当前的 RAG 能力（详见既有 RAG 规范 §1.1、§3.4）已具备：
+
 - 向量检索（Milvus 2.5 + SAA VectorStore）
 - 关键词检索（BM25）
 - 混合检索 + Rerank
@@ -41,39 +43,39 @@ Mate Platform 当前的 RAG 能力（详见既有 RAG 规范 §1.1、§3.4）已
 
 ### 1.2 借鉴层级（红线与边界）
 
-| 借鉴层级 | 是否允许 | 用途 | 备注 |
-|---|---|---|---|
-| 算法思想 / 数据结构 / Prompt 模板设计 | ✅ 允许 | 直接借鉴，重写成 Java | 算法本身非版权保护客体 |
-| 数据模型 / Schema / 接口设计 | ✅ 借鉴 | 重写并适配本平台 | 字段命名 / 表结构可重新设计 |
-| 文档 / 论文 / 公开博客描述的方法 | ✅ 引用 | 标注来源 | 需在代码注释中写明 `References: ...` |
-| 复制开源项目的源代码 | ❌ 禁止 | 不得复制 | 触发对应开源协议 |
-| 服务级封装调用（HTTP/gRPC 调用 RAGFlow 实例） | ❌ 禁止 | 不得引入 | 触发 AGPL-3.0 传染 + 破 v1.2 决策 |
-| 使用 RAGFlow 自带的 UI / 前端 | ❌ 禁止 | 不得引入 | 与平台前端冲突 |
-| 直接 fork / vendor RAGFlow 子模块 | ❌ 禁止 | 不得引入 | 触发 AGPL-3.0 传染 |
+| 借鉴层级                                      | 是否允许 | 用途                  | 备注                                 |
+| --------------------------------------------- | -------- | --------------------- | ------------------------------------ |
+| 算法思想 / 数据结构 / Prompt 模板设计         | ✅ 允许  | 直接借鉴，重写成 Java | 算法本身非版权保护客体               |
+| 数据模型 / Schema / 接口设计                  | ✅ 借鉴  | 重写并适配本平台      | 字段命名 / 表结构可重新设计          |
+| 文档 / 论文 / 公开博客描述的方法              | ✅ 引用  | 标注来源              | 需在代码注释中写明 `References: ...` |
+| 复制开源项目的源代码                          | ❌ 禁止  | 不得复制              | 触发对应开源协议                     |
+| 服务级封装调用（HTTP/gRPC 调用 RAGFlow 实例） | ❌ 禁止  | 不得引入              | 触发 AGPL-3.0 传染 + 破 v1.2 决策    |
+| 使用 RAGFlow 自带的 UI / 前端                 | ❌ 禁止  | 不得引入              | 与平台前端冲突                       |
+| 直接 fork / vendor RAGFlow 子模块             | ❌ 禁止  | 不得引入              | 触发 AGPL-3.0 传染                   |
 
 ### 1.3 开源协议合规性
 
-| 借鉴对象 | 协议 | 我们的方式 | 合规性 |
-|---|---|---|---|
-| RAGFlow | AGPL-3.0 | 仅借鉴算法/设计，**不复制代码、不服务级包装、不引入二进制** | 🟢 合规 |
-| Microsoft GraphRAG | MIT | 仅借鉴算法/设计，**不复制代码** | 🟢 合规 |
-| Leiden 算法 | BSD / MIT（论文/实现） | 自研实现或使用 JGraphT（LGPL 2.1，仅动态链接） | 🟢 合规 |
-| PaddleOCR 模型权重 | Apache 2.0 | 模型权重可商用，**通过 onnxruntime-java 调用** | 🟢 合规 |
-| Apache PDFBox / Tika | Apache 2.0 | 直接使用 | 🟢 合规 |
-| JGraphT | LGPL 2.1 + EPL | 动态链接 + 引用声明 | 🟢 合规 |
+| 借鉴对象             | 协议                   | 我们的方式                                                  | 合规性  |
+| -------------------- | ---------------------- | ----------------------------------------------------------- | ------- |
+| RAGFlow              | AGPL-3.0               | 仅借鉴算法/设计，**不复制代码、不服务级包装、不引入二进制** | 🟢 合规 |
+| Microsoft GraphRAG   | MIT                    | 仅借鉴算法/设计，**不复制代码**                             | 🟢 合规 |
+| Leiden 算法          | BSD / MIT（论文/实现） | 自研实现或使用 JGraphT（LGPL 2.1，仅动态链接）              | 🟢 合规 |
+| PaddleOCR 模型权重   | Apache 2.0             | 模型权重可商用，**通过 onnxruntime-java 调用**              | 🟢 合规 |
+| Apache PDFBox / Tika | Apache 2.0             | 直接使用                                                    | 🟢 合规 |
+| JGraphT              | LGPL 2.1 + EPL         | 动态链接 + 引用声明                                         | 🟢 合规 |
 
 > **法律边界声明位**：本方案正式立项前需生成 `docs/legal/LEGAL_CLEARANCE-graphrag-ragflow-2026-07-27.md`，由法务签字。**该文件缺失则不得进入 Phase 1 开发**。
 
 ### 1.4 与既有决策的兼容性
 
-| 既有决策 | 兼容性 |
-|---|---|
-| v1.2：全量 Java + Spring AI Alibaba | ✅ 完全兼容，无 Python 运行时引入 |
-| v1.2：去 Python 化 | ✅ 守住 |
-| v1.3：R2 阶段 6 服务骨架 + Nacos | ✅ 本方案在 TECH-RAG 内部完成 |
-| v1.3：R3 阶段 Java + SAA 重写 | ✅ 与本方案并行推进 |
-| R4 阶段 MCP / A2A 协议层 | ✅ 新增 API 默认 MCP 暴露 + A2A Agent Card 描述 |
-| R5 阶段生产化 | ✅ 包含在 Phase 3 评估/可观测性中 |
+| 既有决策                            | 兼容性                                          |
+| ----------------------------------- | ----------------------------------------------- |
+| v1.2：全量 Java + Spring AI Alibaba | ✅ 完全兼容，无 Python 运行时引入               |
+| v1.2：去 Python 化                  | ✅ 守住                                         |
+| v1.3：R2 阶段 6 服务骨架 + Nacos    | ✅ 本方案在 TECH-RAG 内部完成                   |
+| v1.3：R3 阶段 Java + SAA 重写       | ✅ 与本方案并行推进                             |
+| R4 阶段 MCP / A2A 协议层            | ✅ 新增 API 默认 MCP 暴露 + A2A Agent Card 描述 |
+| R5 阶段生产化                       | ✅ 包含在 Phase 3 评估/可观测性中               |
 
 ---
 
@@ -81,25 +83,25 @@ Mate Platform 当前的 RAG 能力（详见既有 RAG 规范 §1.1、§3.4）已
 
 ### 2.1 平台核心场景清单
 
-| 场景 ID | 场景名称 | 主用户 | 典型问题 | 当前能力 | 增强后能力 |
-|---|---|---|---|---|---|
-| S1 | 数字员工知识库问答 | APP-DW 数字员工 | "劳动合同里关于试用期的条款是怎么说的？" | ✅ 混合检索 | ✅ + 跨文档主题 |
-| S2 | Copilot 跨域问答 | APP-COPILOT 终端用户 | "Q3 财报里主要的风险点是什么？" | 🟡 主题型问题召回差 | ✅ Global Search |
-| S3 | 架构中心资产问答 | APP-ARCH + SuperAI | "哪些应用系统依赖 PostgreSQL 17？" | ✅ Graph-Enhanced | ✅ 增强 |
-| S4 | 制度 / 合同比对 | 法务 / HR / 业务专家 | "对比 2024 与 2025 年合同模板的差异" | ❌ 需要跨文档主题归纳 | ✅ 主题归纳 + Diff |
-| S5 | 多模态文档（表格 / 扫描件）解析 | 业务专家 | "上传一份 PDF 财报自动抽取表格" | 🟠 Tika 基础解析 | ✅ 深度解析 |
-| S6 | 数字员工冷启动（新知识库） | 业务专家 | "我上传了 1000 份产品手册，能直接用吗？" | 🟠 需要预建 Ontology | ✅ 无需预建 Ontology |
+| 场景 ID | 场景名称                        | 主用户               | 典型问题                                 | 当前能力              | 增强后能力           |
+| ------- | ------------------------------- | -------------------- | ---------------------------------------- | --------------------- | -------------------- |
+| S1      | 数字员工知识库问答              | APP-DW 数字员工      | "劳动合同里关于试用期的条款是怎么说的？" | ✅ 混合检索           | ✅ + 跨文档主题      |
+| S2      | Copilot 跨域问答                | APP-COPILOT 终端用户 | "Q3 财报里主要的风险点是什么？"          | 🟡 主题型问题召回差   | ✅ Global Search     |
+| S3      | 架构中心资产问答                | APP-ARCH + SuperAI   | "哪些应用系统依赖 PostgreSQL 17？"       | ✅ Graph-Enhanced     | ✅ 增强              |
+| S4      | 制度 / 合同比对                 | 法务 / HR / 业务专家 | "对比 2024 与 2025 年合同模板的差异"     | ❌ 需要跨文档主题归纳 | ✅ 主题归纳 + Diff   |
+| S5      | 多模态文档（表格 / 扫描件）解析 | 业务专家             | "上传一份 PDF 财报自动抽取表格"          | 🟠 Tika 基础解析      | ✅ 深度解析          |
+| S6      | 数字员工冷启动（新知识库）      | 业务专家             | "我上传了 1000 份产品手册，能直接用吗？" | 🟠 需要预建 Ontology  | ✅ 无需预建 Ontology |
 
 ### 2.2 场景 → 方案模块映射
 
-| 场景 | 主要调用 | 关键模块 | 评估指标 |
-|---|---|---|---|
-| S1 | `/api/v1/rag/retrieve/hybrid` | HybridRetrieveService（已存在） | Recall@10, Answer-Relevance |
-| S2 | `/api/v1/rag/retrieve/global` | **GraphRAGService.globalSearch**（新建） | 主题召回率, 摘要质量 |
-| S3 | `/api/v1/rag/retrieve/graph` | GraphSearchService（已存在 + 增强） | 实体链接准确率, 扩展相关性 |
-| S4 | `/api/v1/rag/retrieve/global` + Diff API | **GraphRAGService + 对比 API** | 主题准确率 |
-| S5 | `DocumentIngest.deepParse` | **DeepParserService**（新建） | 表格抽取 F1, 阅读顺序准确率 |
-| S6 | 自动建图（无 Ontology 也能跑） | **GraphRAGService.graphBuilder** | 实体抽取 F1, 关系抽取 F1 |
+| 场景 | 主要调用                                 | 关键模块                                 | 评估指标                    |
+| ---- | ---------------------------------------- | ---------------------------------------- | --------------------------- |
+| S1   | `/api/v1/rag/retrieve/hybrid`            | HybridRetrieveService（已存在）          | Recall@10, Answer-Relevance |
+| S2   | `/api/v1/rag/retrieve/global`            | **GraphRAGService.globalSearch**（新建） | 主题召回率, 摘要质量        |
+| S3   | `/api/v1/rag/retrieve/graph`             | GraphSearchService（已存在 + 增强）      | 实体链接准确率, 扩展相关性  |
+| S4   | `/api/v1/rag/retrieve/global` + Diff API | **GraphRAGService + 对比 API**           | 主题准确率                  |
+| S5   | `DocumentIngest.deepParse`               | **DeepParserService**（新建）            | 表格抽取 F1, 阅读顺序准确率 |
+| S6   | 自动建图（无 Ontology 也能跑）           | **GraphRAGService.graphBuilder**         | 实体抽取 F1, 关系抽取 F1    |
 
 ---
 
@@ -155,14 +157,14 @@ Mate Platform 当前的 RAG 能力（详见既有 RAG 规范 §1.1、§3.4）已
 
 ### 3.2 子系统划分
 
-| 子系统 | 路径 | 状态 | 阶段 | 借鉴对象 |
-|---|---|---|---|---|
-| 既有 HybridRetrieve | `com.metaplatform.rag.hybrid` | ✅ 已实现 | - | - |
-| 既有 GraphSearch（Ontology 增强） | `com.metaplatform.rag.graph` | ✅ 已实现 | - | - |
-| **DeepParser（深度文档解析）** | `com.metaplatform.rag.parser.deep` | 🆕 新建 | Phase 1 | RAGFlow DeepDoc |
-| **GraphRAG（实体抽取+社区+全局）** | `com.metaplatform.rag.graphrag` | 🆕 新建 | Phase 1-3 | Microsoft GraphRAG |
-| **Citation 增强** | `com.metaplatform.rag.citations` | 🔄 增强 | Phase 2 | RAGFlow Citation |
-| **Eval（评估）** | `com.metaplatform.rag.eval` | 🆕 新建 | Phase 4 | 自研 + 公开数据集 |
+| 子系统                             | 路径                               | 状态      | 阶段      | 借鉴对象           |
+| ---------------------------------- | ---------------------------------- | --------- | --------- | ------------------ |
+| 既有 HybridRetrieve                | `com.metaplatform.rag.hybrid`      | ✅ 已实现 | -         | -                  |
+| 既有 GraphSearch（Ontology 增强）  | `com.metaplatform.rag.graph`       | ✅ 已实现 | -         | -                  |
+| **DeepParser（深度文档解析）**     | `com.metaplatform.rag.parser.deep` | 🆕 新建   | Phase 1   | RAGFlow DeepDoc    |
+| **GraphRAG（实体抽取+社区+全局）** | `com.metaplatform.rag.graphrag`    | 🆕 新建   | Phase 1-3 | Microsoft GraphRAG |
+| **Citation 增强**                  | `com.metaplatform.rag.citations`   | 🔄 增强   | Phase 2   | RAGFlow Citation   |
+| **Eval（评估）**                   | `com.metaplatform.rag.eval`        | 🆕 新建   | Phase 4   | 自研 + 公开数据集  |
 
 ### 3.3 检索路由（核心创新点）
 
@@ -177,7 +179,7 @@ public class DefaultRetrievalRouter implements RetrievalRouter {
     public RetrievalResult route(QueryRequest req) {
         // 1. 意图分类（cheap LLM call or rule-based）
         QueryType type = classify(req);  // FACTUAL / ENTITY / THEMATIC / MIXED
-        
+
         return switch (type) {
             case FACTUAL  -> hybridSearch(req);            // 现有能力
             case ENTITY   -> graphEnhancedSearch(req);     // 现有 Graph-Enhanced
@@ -193,6 +195,7 @@ public class DefaultRetrievalRouter implements RetrievalRouter {
 ```
 
 **路由策略**（按问题分类分发）：
+
 - **FACTUAL**（事实型："X 是什么"）→ HybridRetrieve
 - **ENTITY**（实体型："哪些应用依赖 X"）→ GraphEnhanced（基于 Ontology）
 - **THEMATIC**（主题型："Q3 主要讲了什么"）→ GraphRAG GlobalSearch
@@ -205,6 +208,7 @@ public class DefaultRetrievalRouter implements RetrievalRouter {
 ### 4.1 Phase 1：DeepParser（深度文档解析）
 
 **包结构**：
+
 ```
 com.metaplatform.rag.parser.deep/
 ├── DeepParserService.java            # 总入口
@@ -231,12 +235,14 @@ com.metaplatform.rag.parser.deep/
 ```
 
 **关键算法**（借鉴 RAGFlow DeepDoc 思想）：
+
 1. **版面分析**：基于文本块坐标 + 字号 + 加粗，启发式 + 规则识别标题层级
 2. **OCR**：onnxruntime-java 加载 PaddleOCR 检测+识别 ONNX 模型
 3. **表格识别**：TableStructureRecognizer（公开模型，如 PubTabNet）抽取表格结构
 4. **阅读顺序**：基于块坐标的中文版面排序（左→右、上→下、列优先/行优先自适应）
 
 **输出格式**（统一 ParsedDocument）：
+
 ```json
 {
   "docId": "uuid",
@@ -257,6 +263,7 @@ com.metaplatform.rag.parser.deep/
 ```
 
 **评估指标**：
+
 - 表格抽取 F1（对比 Gold Standard）
 - 阅读顺序准确率（人工标注 100 样本）
 - OCR 字符错误率 CER（仅扫描件场景）
@@ -265,6 +272,7 @@ com.metaplatform.rag.parser.deep/
 ### 4.2 Phase 1：GraphRAG 核心
 
 **包结构**：
+
 ```
 com.metaplatform.rag.graphrag/
 ├── GraphRAGService.java              # 总入口
@@ -327,6 +335,7 @@ CommunitySummarizer
 ### 4.3 Phase 2：Citation 增强
 
 **借鉴数据模型**（重写为 Java Record）：
+
 ```java
 public record Citation(
     String id,
@@ -353,6 +362,7 @@ public record Evidence(
 ### 4.4 Phase 4：Eval 评估子系统
 
 **评估框架**：
+
 ```
 com.metaplatform.rag.eval/
 ├── BenchmarkCorpus.java            # 内置对比语料（50~100 真实样本）
@@ -364,6 +374,7 @@ com.metaplatform.rag.eval/
 ```
 
 **内置语料**（MVP 范围）：
+
 - 50 份真实合同样本
 - 30 份制度文件
 - 20 份财务报表
@@ -377,24 +388,25 @@ com.metaplatform.rag.eval/
 
 **新节点类型**（与既有 Ontology 节点类型严格区分，加 `rag_` 前缀）：
 
-| 节点 Label | 字段 | 说明 |
-|---|---|---|
-| `rag_chunk` | id, doc_id, kb_id, content, position | 文档切片（图谱的最小单元） |
-| `rag_entity` | id, name, type, description, embedding | 自动抽取的实体 |
-| `rag_community` | id, level, parent_id, summary, summary_embedding | 社区（多层级） |
-| `rag_document` | id, kb_id, title, source | 文档元数据 |
+| 节点 Label      | 字段                                             | 说明                       |
+| --------------- | ------------------------------------------------ | -------------------------- |
+| `rag_chunk`     | id, doc_id, kb_id, content, position             | 文档切片（图谱的最小单元） |
+| `rag_entity`    | id, name, type, description, embedding           | 自动抽取的实体             |
+| `rag_community` | id, level, parent_id, summary, summary_embedding | 社区（多层级）             |
+| `rag_document`  | id, kb_id, title, source                         | 文档元数据                 |
 
 **新关系类型**：
 
-| 关系 Type | 起点 | 终点 | 字段 |
-|---|---|---|---|
-| `rag_mentions` | rag_chunk | rag_entity | weight, position |
-| `rag_related_to` | rag_entity | rag_entity | relation_type, description, weight |
-| `rag_belongs_to` | rag_chunk | rag_community | level |
-| `rag_contains` | rag_community | rag_community | level_diff |
-| `rag_part_of` | rag_chunk | rag_document | order |
+| 关系 Type        | 起点          | 终点          | 字段                               |
+| ---------------- | ------------- | ------------- | ---------------------------------- |
+| `rag_mentions`   | rag_chunk     | rag_entity    | weight, position                   |
+| `rag_related_to` | rag_entity    | rag_entity    | relation_type, description, weight |
+| `rag_belongs_to` | rag_chunk     | rag_community | level                              |
+| `rag_contains`   | rag_community | rag_community | level_diff                         |
+| `rag_part_of`    | rag_chunk     | rag_document  | order                              |
 
 **与既有 Ontology 图谱的关系**：
+
 - **严格隔离**：`rag_*` 节点 Label 永远不与 Ontology 概念/实体混用
 - **可选桥接**：通过 `kbId.ontologyConceptCode` 显式桥接（业务侧主动配置）
 - **不要试图合并**：自动抽取的实体 vs 人工建模的概念，**质量、口径、用途都不同**
@@ -444,10 +456,10 @@ CREATE TABLE rag_eval_result (
 
 ### 5.3 Milvus 新增 Collection
 
-| Collection | 字段 | 说明 |
-|---|---|---|
+| Collection                  | 字段                              | 说明                                    |
+| --------------------------- | --------------------------------- | --------------------------------------- |
 | `rag_community_summary_vec` | id, kb_id, level, embedding(1024) | 社区摘要向量（用于 Global Search 召回） |
-| `rag_entity_vec` | id, kb_id, embedding(1024) | 实体向量（用于 Local Search 召回） |
+| `rag_entity_vec`            | id, kb_id, embedding(1024)        | 实体向量（用于 Local Search 召回）      |
 
 ---
 
@@ -555,6 +567,7 @@ POST /api/v1/rag/retrieve
 ```
 
 **`mode: AUTO` 的路由策略**（见 §3.3）：
+
 - 意图分类（cheap LLM call）
 - 规则兜底：包含 "对比 / 总结 / 主要 / 主题" → THEMATIC
 - 包含 "哪些 / 谁 / 依赖 / 关系" → ENTITY
@@ -592,6 +605,7 @@ GET  /api/v1/rag/graphrag/communities/{kbId}  # 社区列表（用于可视化�
 ### 7.1 Leiden 社区检测
 
 **自研实现路径**（推荐）：
+
 - 输入：Neo4j 图（节点 + 边 + 边权重）
 - 步骤：LocalMoving → Refinement → Aggregation
 - 输出：层次化社区（多 level）
@@ -599,6 +613,7 @@ GET  /api/v1/rag/graphrag/communities/{kbId}  # 社区列表（用于可视化�
 - 依赖：JGraphT（LGPL 2.1，仅 dynamic-link）或自研（~500 行）
 
 **算法要点**（参考 Blondel et al. 2008 + Traag et al. 2019）：
+
 1. 节点局部移动到邻居社区（最大化模块度）
 2. 社区合并成超级节点
 3. 重复直到稳定
@@ -630,6 +645,7 @@ Return JSON format:
 ```
 
 **优化策略**：
+
 - Map-Reduce：长文档先分块抽取，再合并去重
 - 批量并发：每批 10~20 个 chunk 并发抽取
 - 缓存：相同 chunk 文本直接复用抽取结果（Redis TTL 7 天）
@@ -652,6 +668,7 @@ Answer + Citations
 ```
 
 **Token 控制**：
+
 - Map 阶段每个社区摘要 ≤ 500 token 输入
 - 候选社区数 ≤ 5（默认）
 - Reduce 阶段输入 ≤ 3000 token
@@ -666,6 +683,7 @@ Answer + Citations
 **目标**：用现有 RAG 跑出 Recall@K / Answer-Relevance 基线数字。
 
 **交付物**：
+
 - `eval/benchmark-corpus-v1.json`：50 份真实样本 + 标注
 - `eval/baseline-report.md`：现有能力的数字
 - `docs/legal/LEGAL_CLEARANCE-graphrag-ragflow-2026-07-27.md`（**Phase 1 启动前置条件**）
@@ -673,6 +691,7 @@ Answer + Citations
 **负责人**：1 名 Java + 0.5 Prompt 工程师
 
 **评估问题**：
+
 1. 在 S1~S6 场景上，现有 RAG 的 Recall@10 是多少？
 2. 在 S2（主题型）场景上，现有 RAG 是不是真的有明显缺陷？（用数据说话）
 3. Token 成本现状：每查询平均多少 LLM Token？
@@ -682,6 +701,7 @@ Answer + Citations
 **目标**：跑通"自动建图 + 全局检索"主链路，验证 S2 / S4 / S6 场景。
 
 **交付物**：
+
 - `parser.deep.DeepParserService`（仅 PDF + Word）
 - `graphrag.builder.GraphBuilder`（LLM 抽取 → Neo4j 写入）
 - `graphrag.community.LeidenAlgorithm`（自研实现 + 单测覆盖）
@@ -692,11 +712,13 @@ Answer + Citations
 - 单元测试 + 集成测试（覆盖 80%）
 
 **评估**：
+
 - S2 场景 Recall@10 提升 ≥ 20%
 - 文档解析准确率：表格抽取 F1 ≥ 0.85
 - 全局检索 P95 延迟 ≤ 5s
 
 **风险点**：
+
 - 摘要 Token 成本可能超预算 → 限制社区数 + 用便宜模型
 - Leiden 自研实现可能踩坑 → 准备 JGraphT 备选
 - LLM 抽取质量不稳 → 准备 prompt 迭代 A/B 框架
@@ -706,6 +728,7 @@ Answer + Citations
 **目标**：实现统一检索入口 + Local Search + 与 Ontology 协同。
 
 **交付物**：
+
 - `graphrag.search.LocalSearch`
 - `search.RetrievalRouter`（AUTO 模式路由）
 - `POST /api/v1/rag/retrieve` 统一 API
@@ -713,6 +736,7 @@ Answer + Citations
 - Citation 增强（多层 Evidence）
 
 **评估**：
+
 - S1 / S3 场景不能 regression（路由后 Recall@10 不能下降）
 - S4 场景支持主题归纳
 
@@ -721,12 +745,14 @@ Answer + Citations
 **目标**：支持文档新增/删除/更新时的局部重建。
 
 **交付物**：
+
 - `graphrag.incremental.IncrementalUpdater`
 - `graphrag.search.DriftSearch`
 - `POST /api/v1/rag/retrieve/drift` API
 - 重建任务调度（基于 Kafka / TECH-MSG）
 
 **评估**：
+
 - 增量重建延迟 ≤ 1 分钟/文档
 - DRIFT Search 在 S4 复杂问题上的表现
 
@@ -735,6 +761,7 @@ Answer + Citations
 **目标**：建立持续评估与回归防护。
 
 **交付物**：
+
 - `eval.RetrievalEvaluator`（Recall@K / MRR / NDCG）
 - `eval.AnswerRelevanceEvaluator`（LLM-as-judge）
 - 评估数据集 v1（50 样本）→ v2（200 样本）
@@ -744,33 +771,33 @@ Answer + Citations
 
 ## 9. 关键决策点（需用户/架构组确认）
 
-| 决策点 | 建议 | 影响 | 时机 |
-|---|---|---|---|
-| **D1**：借鉴 RAGFlow + Microsoft GraphRAG 算法 + Java 重写 | ✅ 推荐 | 决定一切 | 本方案确认前 |
-| **D2**：不引入 Python 运行时（守住 v1.2 决策） | ✅ 推荐 | 影响文档解析能力 | 本方案确认前 |
-| **D3**：法律合规边界（仅借鉴思想/算法，不复制代码） | ✅ 推荐 | 决定能否立项 | Phase 0 前 |
-| **D4**：Leiden 自研 vs JGraphT | 倾向 JGraphT（成熟） | 影响工期 | Phase 1 启动前 |
-| **D5**：摘要模型选 qwen-turbo | 性价比高 | 影响成本/质量 | Phase 1 启动前 |
-| **D6**：是否并行跑 Phase 0 + Phase 1 的部分设计 | 建议串行 | 影响工期 | Phase 0 启动前 |
-| **D7**：GraphRAG 与现有 Graph-Enhanced 的关系 | 并列共存，按路由分发 | 决定架构 | Phase 1 设计前 |
-| **D8**：是否在 R4 阶段把 GraphRAG 能力通过 MCP / A2A 暴露给外部 Agent | 建议默认暴露 | 决定 API 形态 | Phase 1 设计前 |
+| 决策点                                                                | 建议                 | 影响             | 时机           |
+| --------------------------------------------------------------------- | -------------------- | ---------------- | -------------- |
+| **D1**：借鉴 RAGFlow + Microsoft GraphRAG 算法 + Java 重写            | ✅ 推荐              | 决定一切         | 本方案确认前   |
+| **D2**：不引入 Python 运行时（守住 v1.2 决策）                        | ✅ 推荐              | 影响文档解析能力 | 本方案确认前   |
+| **D3**：法律合规边界（仅借鉴思想/算法，不复制代码）                   | ✅ 推荐              | 决定能否立项     | Phase 0 前     |
+| **D4**：Leiden 自研 vs JGraphT                                        | 倾向 JGraphT（成熟） | 影响工期         | Phase 1 启动前 |
+| **D5**：摘要模型选 qwen-turbo                                         | 性价比高             | 影响成本/质量    | Phase 1 启动前 |
+| **D6**：是否并行跑 Phase 0 + Phase 1 的部分设计                       | 建议串行             | 影响工期         | Phase 0 启动前 |
+| **D7**：GraphRAG 与现有 Graph-Enhanced 的关系                         | 并列共存，按路由分发 | 决定架构         | Phase 1 设计前 |
+| **D8**：是否在 R4 阶段把 GraphRAG 能力通过 MCP / A2A 暴露给外部 Agent | 建议默认暴露         | 决定 API 形态    | Phase 1 设计前 |
 
 ---
 
 ## 10. 风险与缓解
 
-| 风险 ID | 风险 | 等级 | 缓解 |
-|---|---|---|---|
-| R1 | LLM 抽取实体/关系质量不稳定 | 高 | 准备 prompt A/B 框架；准备 few-shot 模板库 |
-| R2 | 摘要 Token 成本超预算 | 高 | 限制社区数 + 用便宜模型 + 摘要分级缓存 |
-| R3 | Leiden 自研实现踩坑 | 中 | JGraphT 备选 + 详细单测 |
-| R4 | 与既有 Graph-Enhanced 重复建设 | 中 | 严格划分：Graph-Enhanced 走 Ontology 路线，GraphRAG 走自动建图路线 |
-| R5 | Neo4j GDS 社区版功能受限 | 中 | 用 JGraphT 替代 GDS 做 Leiden |
-| R6 | PaddleOCR 在 onnxruntime-java 下精度损失 | 中 | 模型权重公开，理论上无差异；如有损失，引入 python-bridge 仅做 OCR |
-| R7 | AGPL-3.0 法律风险 | 低 | 仅借鉴算法/设计，不复制代码；法务签字 |
-| R8 | Phase 1 工期内 v1.3 重构期冲突 | 中 | 与 R1~R3 主线错峰推进 |
-| R9 | 评估数据样本不足 | 中 | 50 真实样本起步，逐步扩到 200+ |
-| R10 | LLM 厂商变更影响 | 低 | 全部 LLM 调用走 TECH-LLMGW |
+| 风险 ID | 风险                                     | 等级 | 缓解                                                               |
+| ------- | ---------------------------------------- | ---- | ------------------------------------------------------------------ |
+| R1      | LLM 抽取实体/关系质量不稳定              | 高   | 准备 prompt A/B 框架；准备 few-shot 模板库                         |
+| R2      | 摘要 Token 成本超预算                    | 高   | 限制社区数 + 用便宜模型 + 摘要分级缓存                             |
+| R3      | Leiden 自研实现踩坑                      | 中   | JGraphT 备选 + 详细单测                                            |
+| R4      | 与既有 Graph-Enhanced 重复建设           | 中   | 严格划分：Graph-Enhanced 走 Ontology 路线，GraphRAG 走自动建图路线 |
+| R5      | Neo4j GDS 社区版功能受限                 | 中   | 用 JGraphT 替代 GDS 做 Leiden                                      |
+| R6      | PaddleOCR 在 onnxruntime-java 下精度损失 | 中   | 模型权重公开，理论上无差异；如有损失，引入 python-bridge 仅做 OCR  |
+| R7      | AGPL-3.0 法律风险                        | 低   | 仅借鉴算法/设计，不复制代码；法务签字                              |
+| R8      | Phase 1 工期内 v1.3 重构期冲突           | 中   | 与 R1~R3 主线错峰推进                                              |
+| R9      | 评估数据样本不足                         | 中   | 50 真实样本起步，逐步扩到 200+                                     |
+| R10     | LLM 厂商变更影响                         | 低   | 全部 LLM 调用走 TECH-LLMGW                                         |
 
 ---
 
@@ -778,31 +805,31 @@ Answer + Citations
 
 ### 11.1 质量指标
 
-| 指标 | 现状（基线） | Phase 1 目标 | Phase 4 目标 |
-|---|---|---|---|
-| S1 Recall@10 | TBD（Phase 0 测） | 不 regression | 不 regression |
-| S2 Recall@10（主题型） | 显著低 | ≥ +20% | ≥ +50% |
-| S3 实体链接准确率 | TBD | ≥ 0.90 | ≥ 0.95 |
-| S4 主题归纳准确率 | N/A | 人工评估 ≥ 0.80 | ≥ 0.90 |
-| S5 表格抽取 F1 | TBD | ≥ 0.85 | ≥ 0.92 |
+| 指标                   | 现状（基线）      | Phase 1 目标    | Phase 4 目标  |
+| ---------------------- | ----------------- | --------------- | ------------- |
+| S1 Recall@10           | TBD（Phase 0 测） | 不 regression   | 不 regression |
+| S2 Recall@10（主题型） | 显著低            | ≥ +20%          | ≥ +50%        |
+| S3 实体链接准确率      | TBD               | ≥ 0.90          | ≥ 0.95        |
+| S4 主题归纳准确率      | N/A               | 人工评估 ≥ 0.80 | ≥ 0.90        |
+| S5 表格抽取 F1         | TBD               | ≥ 0.85          | ≥ 0.92        |
 
 ### 11.2 性能指标
 
-| 指标 | 目标 |
-|---|---|
-| Local Search P95 | ≤ 1.5s |
-| Global Search P95 | ≤ 5s（5 社区场景） |
-| DRIFT Search P95 | ≤ 8s |
-| DeepParser（1MB PDF）P95 | ≤ 3s |
-| 增量重建（单文档） | ≤ 60s |
+| 指标                     | 目标               |
+| ------------------------ | ------------------ |
+| Local Search P95         | ≤ 1.5s             |
+| Global Search P95        | ≤ 5s（5 社区场景） |
+| DRIFT Search P95         | ≤ 8s               |
+| DeepParser（1MB PDF）P95 | ≤ 3s               |
+| 增量重建（单文档）       | ≤ 60s              |
 
 ### 11.3 成本指标
 
-| 指标 | 目标 |
-|---|---|
-| Global Search 单查询 LLM Token | ≤ 7000 |
-| 社区摘要生成（每 1000 文档） | ≤ 5M Token（一次性） |
-| 实体抽取（每 1000 文档） | ≤ 2M Token（一次性） |
+| 指标                           | 目标                 |
+| ------------------------------ | -------------------- |
+| Global Search 单查询 LLM Token | ≤ 7000               |
+| 社区摘要生成（每 1000 文档）   | ≤ 5M Token（一次性） |
+| 实体抽取（每 1000 文档）       | ≤ 2M Token（一次性） |
 
 ---
 
@@ -844,26 +871,26 @@ Answer + Citations
 
 ### 12.2 模型资源（合规可用）
 
-| 模型 | 用途 | 协议 |
-|---|---|---|
-| PaddleOCR (det/rec) | OCR | Apache 2.0 |
+| 模型                                 | 用途     | 协议       |
+| ------------------------------------ | -------- | ---------- |
+| PaddleOCR (det/rec)                  | OCR      | Apache 2.0 |
 | TableStructureRecognizer (PubTabNet) | 表格识别 | Apache 2.0 |
-| PaddleLayout（可选） | 版面分析 | Apache 2.0 |
+| PaddleLayout（可选）                 | 版面分析 | Apache 2.0 |
 
 ### 12.3 借鉴参考（不复制代码）
 
-| 参考 | 借鉴内容 | 协议 |
-|---|---|---|
-| Microsoft GraphRAG | Leiden + Map-reduce 摘要 + Local/Global/DRIFT 三模式 | MIT |
-| RAGFlow | DeepDoc 文档解析思路 | AGPL-3.0（仅参考） |
-| Leiden 算法论文 (Traag et al. 2019) | 算法实现 | 公开论文 |
+| 参考                                | 借鉴内容                                             | 协议               |
+| ----------------------------------- | ---------------------------------------------------- | ------------------ |
+| Microsoft GraphRAG                  | Leiden + Map-reduce 摘要 + Local/Global/DRIFT 三模式 | MIT                |
+| RAGFlow                             | DeepDoc 文档解析思路                                 | AGPL-3.0（仅参考） |
+| Leiden 算法论文 (Traag et al. 2019) | 算法实现                                             | 公开论文           |
 
 ---
 
 ## 13. 文档维护
 
-| 版本 | 日期 | 变更 |
-|---|---|---|
+| 版本 | 日期       | 变更         |
+| ---- | ---------- | ------------ |
 | v1.0 | 2026-07-27 | 初版方案定稿 |
 
 ---
@@ -878,6 +905,7 @@ Answer + Citations
 ---
 
 **相关 Review 入口**：
+
 - 法务：`docs/legal/LEGAL_CLEARANCE-graphrag-ragflow-2026-07-27.md`（待创建）
 - 架构组：本文件 §9 决策点 D1~D8
 - 项目 Owner：Phase 0/1 启动批准

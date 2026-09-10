@@ -9,6 +9,7 @@
 
 用法：.venv/Scripts/python scripts/smoke_sprint5_multimodal_ads.py
 """
+
 from __future__ import annotations
 
 import io
@@ -34,12 +35,15 @@ def _png(width: int, height: int, rgb: tuple[int, int, int]) -> bytes:
         return c + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
 
     ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
-            + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", ihdr)
+        + chunk(b"IDAT", zlib.compress(raw))
+        + chunk(b"IEND", b"")
+    )
 
 
-def http(method: str, url: str, body: dict | None = None,
-         token: str | None = None) -> dict:
+def http(method: str, url: str, body: dict | None = None, token: str | None = None) -> dict:
     req = urllib.request.Request(url, method=method)
     req.add_header("Content-Type", "application/json")
     if token:
@@ -52,72 +56,90 @@ def http(method: str, url: str, body: dict | None = None,
 
 def main() -> int:
     # 1. 登录
-    tok = http("POST", f"{GW}/api/v1/iam/auth/login",
-               {"username": "admin", "password": "admin123"})["accessToken"]
+    tok = http(
+        "POST", f"{GW}/api/v1/iam/auth/login", {"username": "admin", "password": "admin123"}
+    )["accessToken"]
     print("[1] login OK")
 
     # 2. 上传图像到 MinIO
     from minio import Minio
+
     mc = Minio(MINIO, access_key=ACCESS, secret_key=SECRET, secure=False)
     assert mc.bucket_exists(BUCKET), f"bucket {BUCKET} missing"
     images = []
-    for i, (title, rgb, wh) in enumerate([
-        ("red-square", (220, 40, 40), (64, 64)),
-        ("green-square", (40, 200, 60), (96, 48)),
-        ("blue-square", (40, 60, 220), (48, 96)),
-    ]):
+    for _i, (title, rgb, wh) in enumerate(
+        [
+            ("red-square", (220, 40, 40), (64, 64)),
+            ("green-square", (40, 200, 60), (96, 48)),
+            ("blue-square", (40, 60, 220), (48, 96)),
+        ]
+    ):
         key = f"multimodal/ads/{title}.png"
         payload = _png(*wh, rgb)
-        mc.put_object(BUCKET, key, io.BytesIO(payload), len(payload),
-                      content_type="image/png")
+        mc.put_object(BUCKET, key, io.BytesIO(payload), len(payload), content_type="image/png")
         stat = mc.stat_object(BUCKET, key)
-        images.append({"key": key, "title": title,
-                       "width": wh[0], "height": wh[1],
-                       "size_bytes": stat.size})
+        images.append(
+            {"key": key, "title": title, "width": wh[0], "height": wh[1], "size_bytes": stat.size}
+        )
     print(f"[2] minio images uploaded: {[im['key'] for im in images]}")
 
     # 3. iceberg 元数据表
     sys.path.insert(0, "scripts")
     from trino_query import query
+
     query("CREATE SCHEMA IF NOT EXISTS iceberg.multimodal")
     query("DROP TABLE IF EXISTS iceberg.multimodal.ads_image_catalog")
-    query("CREATE TABLE iceberg.multimodal.ads_image_catalog "
-          "(image_key varchar, title varchar, width integer, height integer, "
-          "size_bytes bigint)")
+    query(
+        "CREATE TABLE iceberg.multimodal.ads_image_catalog "
+        "(image_key varchar, title varchar, width integer, height integer, "
+        "size_bytes bigint)"
+    )
     for im in images:
-        query("INSERT INTO iceberg.multimodal.ads_image_catalog VALUES "
-              f"('{im['key']}', '{im['title']}', {im['width']}, "
-              f"{im['height']}, {im['size_bytes']})")
-    rows = query("SELECT image_key, title FROM "
-                 "iceberg.multimodal.ads_image_catalog ORDER BY title")
+        query(
+            "INSERT INTO iceberg.multimodal.ads_image_catalog VALUES "
+            f"('{im['key']}', '{im['title']}', {im['width']}, "
+            f"{im['height']}, {im['size_bytes']})"
+        )
+    rows = query("SELECT image_key, title FROM iceberg.multimodal.ads_image_catalog ORDER BY title")
     print(f"[3] iceberg rows: {rows['rows']}")
 
     # 4. 创建 modality=mixed 产品
-    prod = http("POST", f"{GW}/api/v1/data/products", {
-        "name": "multimodal-image-ads",
-        "source_paimon_table": "minio://mate-warehouse/multimodal/raw",
-        "target_iceberg_table": "iceberg.multimodal.ads_image_catalog",
-        "modality": "mixed",
-        "owner": "admin",
-        "description": "Sprint5 multimodal ADS: MinIO image object keys + "
-                       "iceberg metadata table",
-        "tags": ["sprint5", "multimodal", "ads"],
-    }, token=tok)
+    prod = http(
+        "POST",
+        f"{GW}/api/v1/data/products",
+        {
+            "name": "multimodal-image-ads",
+            "source_paimon_table": "minio://mate-warehouse/multimodal/raw",
+            "target_iceberg_table": "iceberg.multimodal.ads_image_catalog",
+            "modality": "mixed",
+            "owner": "admin",
+            "description": "Sprint5 multimodal ADS: MinIO image object keys + "
+            "iceberg metadata table",
+            "tags": ["sprint5", "multimodal", "ads"],
+        },
+        token=tok,
+    )
     pid = prod["id"]
-    print(f"[4] product created: id={pid} modality={prod['modality']} "
-          f"status={prod['status']}")
+    print(f"[4] product created: id={pid} modality={prod['modality']} status={prod['status']}")
 
     # 5. 发布
-    pub = http("POST", f"{GW}/api/v1/data/products/{pid}/publish", {},
-               token=tok)
+    pub = http("POST", f"{GW}/api/v1/data/products/{pid}/publish", {}, token=tok)
     print(f"[5] published: status={pub['status']} version={pub['version']}")
 
     detail = http("GET", f"{GW}/api/v1/data/products/{pid}", token=tok)
     assert detail["status"] == "published", detail
     assert detail["modality"] == "mixed", detail
     print("[PASS] multimodal Iceberg ADS product published")
-    print(json.dumps({"product_id": pid, "iceberg_rows": rows["rows"],
-                      "images": [im["key"] for im in images]}, indent=2))
+    print(
+        json.dumps(
+            {
+                "product_id": pid,
+                "iceberg_rows": rows["rows"],
+                "images": [im["key"] for im in images],
+            },
+            indent=2,
+        )
+    )
     return 0
 
 

@@ -4,6 +4,7 @@
 ``validate_write_back``：类可解析、PK 必填、目标不重复、租户前缀一致。
 返回结构化问题列表；空列表 = 可安全写回。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -47,24 +48,28 @@ def validate_write_back(
         ind = str(e.get("individual_rid") or "")
         props = e.get("props") or {}
         if cls not in known_classes:
-            issues.append(WriteBackIssue(
-                i, "unknown_class", f"class_rid {cls!r} not registered"))
+            issues.append(WriteBackIssue(i, "unknown_class", f"class_rid {cls!r} not registered"))
             continue
         if not ind.startswith(prefix):
-            issues.append(WriteBackIssue(
-                i, "tenant_mismatch",
-                f"individual_rid {ind!r} not in tenant {tenant_id!r}"))
+            issues.append(
+                WriteBackIssue(
+                    i, "tenant_mismatch", f"individual_rid {ind!r} not in tenant {tenant_id!r}"
+                )
+            )
         if ind in seen_targets:
-            issues.append(WriteBackIssue(
-                i, "duplicate_target",
-                f"individual_rid {ind!r} duplicates entry {seen_targets[ind]}"))
+            issues.append(
+                WriteBackIssue(
+                    i,
+                    "duplicate_target",
+                    f"individual_rid {ind!r} duplicates entry {seen_targets[ind]}",
+                )
+            )
         else:
             seen_targets[ind] = i
         pk_keys = _pk_slugs(known_classes[cls])
         pk_rids = known_classes[cls]
-        if pk_keys and not (any(k in props for k in pk_keys)
-                            or any(r in props for r in pk_rids)):
-            issues.append(WriteBackIssue(
-                i, "missing_pk",
-                f"primary key {sorted(pk_keys)} required"))
+        if pk_keys and not (any(k in props for k in pk_keys) or any(r in props for r in pk_rids)):
+            issues.append(
+                WriteBackIssue(i, "missing_pk", f"primary key {sorted(pk_keys)} required")
+            )
     return issues

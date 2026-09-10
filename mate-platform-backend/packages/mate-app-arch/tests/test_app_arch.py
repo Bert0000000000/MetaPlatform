@@ -4,6 +4,7 @@
   applications / capabilities-tree / data-assets / orgs-tree /
   impact-analysis.
 """
+
 from __future__ import annotations
 
 
@@ -167,7 +168,9 @@ def test_capability_mappings_returns_seed_data(client, auth_headers_acme) -> Non
         assert {"capability_code", "application_code", "business_process_code"} <= set(m)
 
 
-def test_capability_mappings_tenant_isolation(client, auth_headers_acme, auth_headers_globex) -> None:
+def test_capability_mappings_tenant_isolation(
+    client, auth_headers_acme, auth_headers_globex
+) -> None:
     """Capability mappings are independently seeded per tenant (store isolation)."""
     r_acme = client.get("/api/v1/arch/capability-mappings", headers=auth_headers_acme)
     r_globex = client.get("/api/v1/arch/capability-mappings", headers=auth_headers_globex)

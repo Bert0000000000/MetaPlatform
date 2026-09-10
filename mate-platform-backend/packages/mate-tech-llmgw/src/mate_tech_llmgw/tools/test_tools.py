@@ -1,4 +1,5 @@
 """Tools tests (ST-5.5.8.3)."""
+
 from __future__ import annotations
 
 from mate_tech_llmgw.tools.registry import (
@@ -106,6 +107,7 @@ def test_dispatch_unknown_tool() -> None:
         return await dispatch_tool_call(call, [])
 
     import asyncio
+
     result = asyncio.run(go())
     assert "error" in result
     assert "not found" in result["error"]

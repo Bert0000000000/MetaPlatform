@@ -13,6 +13,7 @@ Revision ID: 0002_data_platform
 Revises: 0001_baseline
 Create Date: 2026-08-01
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence

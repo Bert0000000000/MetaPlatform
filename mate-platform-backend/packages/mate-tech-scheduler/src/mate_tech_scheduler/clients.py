@@ -14,6 +14,7 @@ every outbound call is bounded by a timeout.
 The client shape (``base_url`` + ``timeout_seconds``) is preserved from
 the P2-W7 reserved interface; new engine methods are additive.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -73,9 +74,7 @@ class AsyncSchedulerClient:
             # the latest run instead.
             assert self.dagster_engine is not None
             return await self.dagster_engine.cancel_run(task_id, engine_dag_id)
-        raise ValueError(
-            f"Unknown scheduler engine '{engine}'. Supported: airflow, dagster."
-        )
+        raise ValueError(f"Unknown scheduler engine '{engine}'. Supported: airflow, dagster.")
 
     async def trigger_task(
         self,
@@ -91,16 +90,17 @@ class AsyncSchedulerClient:
         if engine_lower == "airflow":
             assert self.airflow_engine is not None
             return await self.airflow_engine.trigger_task(
-                task_id, engine_dag_id, conf=conf,
+                task_id,
+                engine_dag_id,
+                conf=conf,
             )
         if engine_lower == "dagster":
             assert self.dagster_engine is not None
             return await self.dagster_engine.trigger_task(
-                task_id, **kwargs,
+                task_id,
+                **kwargs,
             )
-        raise ValueError(
-            f"Unknown scheduler engine '{engine}'. Supported: airflow, dagster."
-        )
+        raise ValueError(f"Unknown scheduler engine '{engine}'. Supported: airflow, dagster.")
 
     async def get_dag(
         self,
@@ -117,9 +117,7 @@ class AsyncSchedulerClient:
         if engine_lower == "dagster":
             assert self.dagster_engine is not None
             return await self.dagster_engine.get_run_status(task_id, engine_dag_id)
-        raise ValueError(
-            f"Unknown scheduler engine '{engine}'. Supported: airflow, dagster."
-        )
+        raise ValueError(f"Unknown scheduler engine '{engine}'. Supported: airflow, dagster.")
 
     async def close(self) -> None:
         """Release resources held by the engine adapters."""

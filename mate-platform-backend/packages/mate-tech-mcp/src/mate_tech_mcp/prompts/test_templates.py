@@ -1,4 +1,5 @@
 """Prompt templates tests (ST-5.3.4)."""
+
 from __future__ import annotations
 
 import pytest

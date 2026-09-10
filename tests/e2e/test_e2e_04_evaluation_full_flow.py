@@ -124,9 +124,7 @@ async def test_e2e_04_evaluation_full_flow(
     report_id = report_data["reportId"]
 
     # 4. 查看报告详情
-    detail_resp = await agent_client.get(
-        f"{EVAL_BASE}/reports/{report_id}", headers=tenant_headers
-    )
+    detail_resp = await agent_client.get(f"{EVAL_BASE}/reports/{report_id}", headers=tenant_headers)
     assert detail_resp.status_code == 200
     detail = detail_resp.json()["data"]
     assert detail["reportId"] == report_id
@@ -212,9 +210,7 @@ async def test_e2e_04_evaluation_rubric_flow(
             {"dimension": "compliance", "weight": 0.6, "description": "合规"},
         ],
     }
-    save_resp = await agent_client.post(
-        f"{EVAL_BASE}/rubrics", json=custom, headers=tenant_headers
-    )
+    save_resp = await agent_client.post(f"{EVAL_BASE}/rubrics", json=custom, headers=tenant_headers)
     assert save_resp.status_code == 200
     assert save_resp.json()["data"]["id"] == "rubric-e2e-04"
 

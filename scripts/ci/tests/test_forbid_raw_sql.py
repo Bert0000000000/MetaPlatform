@@ -1,4 +1,5 @@
 """Unit tests for scripts/ci/forbid_raw_sql.py (G2 rule 3 guard)."""
+
 from __future__ import annotations
 
 import tempfile

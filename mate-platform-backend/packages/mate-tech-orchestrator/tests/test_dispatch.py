@@ -1,4 +1,5 @@
 """W3 tests: multi-role task dispatch to MCP / A2A workers (mocked)."""
+
 from __future__ import annotations
 
 import pytest
@@ -51,7 +52,9 @@ def mocked_dispatcher(client: TestClient):
 
 
 def test_dispatch_by_capability_to_mcp(
-    client: TestClient, auth_headers_acme, mocked_dispatcher,
+    client: TestClient,
+    auth_headers_acme,
+    mocked_dispatcher,
 ) -> None:
     mcp, a2a = mocked_dispatcher
     r = client.post(
@@ -69,7 +72,9 @@ def test_dispatch_by_capability_to_mcp(
 
 
 def test_dispatch_by_rid_to_a2a(
-    client: TestClient, auth_headers_acme, mocked_dispatcher,
+    client: TestClient,
+    auth_headers_acme,
+    mocked_dispatcher,
 ) -> None:
     _, a2a = mocked_dispatcher
     r = client.post(
@@ -91,7 +96,9 @@ def test_dispatch_by_rid_to_a2a(
 
 
 def test_dispatch_unknown_capability_404(
-    client: TestClient, auth_headers_acme, mocked_dispatcher,
+    client: TestClient,
+    auth_headers_acme,
+    mocked_dispatcher,
 ) -> None:
     r = client.post(
         "/api/v1/orchestrator/dispatch",
@@ -102,7 +109,9 @@ def test_dispatch_unknown_capability_404(
 
 
 def test_dispatch_unregistered_role_404(
-    client: TestClient, auth_headers_acme, mocked_dispatcher,
+    client: TestClient,
+    auth_headers_acme,
+    mocked_dispatcher,
 ) -> None:
     r = client.post(
         "/api/v1/orchestrator/dispatch",
@@ -113,7 +122,10 @@ def test_dispatch_unregistered_role_404(
 
 
 def test_dispatch_emits_outbox_event(
-    client: TestClient, auth_headers_acme, mocked_dispatcher, outbox: InMemoryOutboxWriter,
+    client: TestClient,
+    auth_headers_acme,
+    mocked_dispatcher,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     r = client.post(
         "/api/v1/orchestrator/dispatch",

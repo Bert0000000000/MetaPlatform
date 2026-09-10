@@ -5,6 +5,7 @@ Covers:
   * FastAPI endpoints: POST / GET / PUT.
   * Cross-tenant negative cases (ADR-0014 step 5).
 """
+
 from __future__ import annotations
 
 import os
@@ -128,9 +129,7 @@ class TestDashboardConfigStore:
         assert len(t2_configs) == 0
         assert fresh_store.get_dashboard_config(tenant_id="t2", config_id=entry.id) is None
 
-    def test_update_nonexistent_raises_keyerror(
-        self, fresh_store: DashboardConfigStore
-    ) -> None:
+    def test_update_nonexistent_raises_keyerror(self, fresh_store: DashboardConfigStore) -> None:
         with pytest.raises(KeyError):
             fresh_store.update_dashboard_config(
                 tenant_id="t1",
@@ -140,9 +139,7 @@ class TestDashboardConfigStore:
 
     def test_create_rejects_empty_name(self, fresh_store: DashboardConfigStore) -> None:
         with pytest.raises(ValueError, match="name required"):
-            fresh_store.create_dashboard_config(
-                tenant_id="t1", name="", config={}
-            )
+            fresh_store.create_dashboard_config(tenant_id="t1", name="", config={})
 
 
 # ---------------------------------------------------------------------------
@@ -214,9 +211,7 @@ class TestDashboardConfigEndpoints:
         assert r.status_code == 200
         assert r.json()["total"] == 2
 
-    def test_cross_tenant_isolation(
-        self, client, auth_headers, auth_headers_other_tenant
-    ) -> None:
+    def test_cross_tenant_isolation(self, client, auth_headers, auth_headers_other_tenant) -> None:
         # Tenant-acme creates a config
         r = client.post(
             "/api/v1/admin/operations/dashboard-configs",

@@ -1,4 +1,5 @@
-﻿"""Tests for admin router (FR-DASH-006-06 operations endpoints)."""
+"""Tests for admin router (FR-DASH-006-06 operations endpoints)."""
+
 from __future__ import annotations
 
 import os

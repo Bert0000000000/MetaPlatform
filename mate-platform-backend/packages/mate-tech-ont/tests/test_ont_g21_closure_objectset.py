@@ -10,6 +10,7 @@
 前置：本地 PG（mate-postgres，5432 meta/meta，库 metaplatform_ont）；
 PG 不可达 → skip（与 test_objectset_parity.py 同一约定）。
 """
+
 from __future__ import annotations
 
 import os
@@ -30,9 +31,7 @@ from mate_kernel.ontology.query.object_set import ObjectSet
 from mate_kernel.ontology.types.object_type import ObjectType
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 
-PG_DSN = os.environ.get(
-    "PARITY_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"
-)
+PG_DSN = os.environ.get("PARITY_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
 
 T = "t-g21"
 OBJ_P = f"ont.{T}.obj.person.v1"
@@ -48,19 +47,27 @@ def _type(rid: str, name: str) -> ObjectType:
         display_name=name,
         primary_key=(ClassRef(PROP_P),),
         properties=(
-            Property(rid=ClassRef(PROP_P), type_id="string", nullable=False,
-                     primary_key=True, title="name",
-                     format=PropertyFormat.STRING),
+            Property(
+                rid=ClassRef(PROP_P),
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="name",
+                format=PropertyFormat.STRING,
+            ),
         ),
     )
 
 
 def _ind(rid: str, class_rid: str, name: str) -> Individual:
     return Individual(
-        rid=rid, class_rid=ClassRef(class_rid),
+        rid=rid,
+        class_rid=ClassRef(class_rid),
         props=((ClassRef(PROP_P), name),),
-        primary_key=name, tenant_id=T,
-        created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
+        primary_key=name,
+        tenant_id=T,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
 
@@ -76,19 +83,26 @@ def repo():
         pytest.skip(f"PG unavailable: {e}")
 
     with r.tenant_scope(T):
-        for ot in (_type(OBJ_P, "person"), _type(OBJ_E, "employee"),
-                   _type(OBJ_M, "manager")):
+        for ot in (_type(OBJ_P, "person"), _type(OBJ_E, "employee"), _type(OBJ_M, "manager")):
             r.upsert_object_type(ot)
         r.create_individual(_ind(f"ont.{T}.ind.person.alice", OBJ_P, "alice"))
         r.create_individual(_ind(f"ont.{T}.ind.employee.bob", OBJ_E, "bob"))
         r.create_individual(_ind(f"ont.{T}.ind.manager.carol", OBJ_M, "carol"))
         # employee⊑person 用完整 rid；manager⊑employee 用 slug —— 两种写法
         r.upsert_axiom_record(
-            f"ont.{T}.ax.sub-employee-person.v1", "subclass",
-            [OBJ_E, OBJ_P], tenant_id=T, enabled=True)
+            f"ont.{T}.ax.sub-employee-person.v1",
+            "subclass",
+            [OBJ_E, OBJ_P],
+            tenant_id=T,
+            enabled=True,
+        )
         r.upsert_axiom_record(
-            f"ont.{T}.ax.sub-manager-employee.v1", "subclass",
-            ["manager", "employee"], tenant_id=T, enabled=True)
+            f"ont.{T}.ax.sub-manager-employee.v1",
+            "subclass",
+            ["manager", "employee"],
+            tenant_id=T,
+            enabled=True,
+        )
     yield r
     # 清理
     import psycopg2
@@ -97,8 +111,7 @@ def repo():
     with conn.cursor() as cur:
         cur.execute("DELETE FROM ont_individual WHERE tenant_id=%s", (T,))
         cur.execute("DELETE FROM ont_axiom WHERE tenant_id=%s", (T,))
-        cur.execute("DELETE FROM ont_object_type WHERE rid LIKE %s",
-                    (f"ont.{T}.obj.%",))
+        cur.execute("DELETE FROM ont_object_type WHERE rid LIKE %s", (f"ont.{T}.obj.%",))
     conn.commit()
     conn.close()
 
@@ -126,12 +139,20 @@ class TestInferredObjectSet:
         """禁用公理后祖先查询退回精确匹配（enabled_only 语义）。"""
         with repo.tenant_scope(T):
             repo.upsert_axiom_record(
-                f"ont.{T}.ax.sub-employee-person.v1", "subclass",
-                [OBJ_E, OBJ_P], tenant_id=T, enabled=False)
+                f"ont.{T}.ax.sub-employee-person.v1",
+                "subclass",
+                [OBJ_E, OBJ_P],
+                tenant_id=T,
+                enabled=False,
+            )
         try:
             assert _query(repo, OBJ_P) == {"alice"}
         finally:
             with repo.tenant_scope(T):
                 repo.upsert_axiom_record(
-                    f"ont.{T}.ax.sub-employee-person.v1", "subclass",
-                    [OBJ_E, OBJ_P], tenant_id=T, enabled=True)
+                    f"ont.{T}.ax.sub-employee-person.v1",
+                    "subclass",
+                    [OBJ_E, OBJ_P],
+                    tenant_id=T,
+                    enabled=True,
+                )

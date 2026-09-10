@@ -1,4 +1,5 @@
 """skill search/read MCP 工具测试。"""
+
 from __future__ import annotations
 
 import httpx
@@ -16,8 +17,19 @@ def test_search_skill_lists_matches() -> None:
                 200,
                 json={
                     "items": [
-                        {"id": "s1", "name": "platform-ui-components", "description": "组件清单", "version": "v1", "installs": 1},
-                        {"id": "s2", "name": "kb-extractor", "description": "KB 提取", "version": "v2"},
+                        {
+                            "id": "s1",
+                            "name": "platform-ui-components",
+                            "description": "组件清单",
+                            "version": "v1",
+                            "installs": 1,
+                        },
+                        {
+                            "id": "s2",
+                            "name": "kb-extractor",
+                            "description": "KB 提取",
+                            "version": "v2",
+                        },
                     ]
                 },
             )
@@ -35,7 +47,11 @@ def test_read_skill_returns_content() -> None:
         respx.get(f"{APPHUB}/api/v1/marketplace/skills/s1/download").mock(
             return_value=httpx.Response(
                 200,
-                json={"id": "s1", "name": "platform-ui-components", "content": "# 平台组件\n\n## PlatformButton"},
+                json={
+                    "id": "s1",
+                    "name": "platform-ui-components",
+                    "content": "# 平台组件\n\n## PlatformButton",
+                },
             )
         )
         tool = ReadSkillTool(base_url=APPHUB)

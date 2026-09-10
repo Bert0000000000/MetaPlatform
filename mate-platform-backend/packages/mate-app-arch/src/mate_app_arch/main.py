@@ -1,4 +1,5 @@
 """mate_app_arch.main — FastAPI application factory."""
+
 from __future__ import annotations
 
 from fastapi import FastAPI, Response

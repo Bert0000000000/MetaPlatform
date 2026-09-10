@@ -1,4 +1,5 @@
 """S4 BPMN (TC-5.7.8) tests."""
+
 from __future__ import annotations
 
 import sys
@@ -84,7 +85,12 @@ def test_bpmn_deploy_node(fake_flowable):
 
 
 def test_bpmn_start_node(fake_flowable):
-    state = {"messages": [{"role": "user", "content": "test"}], "thread_id": "t1", "process_key": "agent_qa", "deployment_id": "d1"}
+    state = {
+        "messages": [{"role": "user", "content": "test"}],
+        "thread_id": "t1",
+        "process_key": "agent_qa",
+        "deployment_id": "d1",
+    }
     out = bpmn_start_node(state)
     assert "process_instance_id" in out
     assert out["process_status"] == "running"

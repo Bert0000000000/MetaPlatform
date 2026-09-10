@@ -1,4 +1,5 @@
 """G23 —— Function 工程化：版本快照 / 别名 / FunctionStub / invoke。"""
+
 from __future__ import annotations
 
 import os
@@ -21,8 +22,11 @@ FN = f"ont.{T}.fn.approve.v1"
 
 def _fn(version: int = 1) -> Function:
     return Function(
-        rid=ClassRef(FN), language="python", version=version,
-        source_ref="inline://x", signatures=(),
+        rid=ClassRef(FN),
+        language="python",
+        version=version,
+        source_ref="inline://x",
+        signatures=(),
     )
 
 
@@ -67,8 +71,7 @@ class TestStubAndInvoke:
         assert stub.calls == [(None, {"amount": 42})]
 
     def test_stub_fail_first_n(self) -> None:
-        stub = FunctionStub(result="ok", error=RuntimeError("boom"),
-                            fail_first_n=1)
+        stub = FunctionStub(result="ok", error=RuntimeError("boom"), fail_first_n=1)
         r = _repo()
         r._action_service.register_function(FN, stub)
         try:
@@ -105,33 +108,58 @@ class TestWebSocketSubscription:
         P2 = f"ont.{T2}.prop.tid.v1"
         ACT2 = f"ont.{T2}.act.ops.close-task.v1"
         r = InMemoryOntologyRepository()
-        r.upsert_object_type(ObjectType(
-            rid=ClassRef(OBJ2), primary_key=(ClassRef(P2),),
-            properties=(Property(rid=ClassRef(P2), type_id="string",
-                                 nullable=False, primary_key=True,
-                                 title="id", format=PropertyFormat.STRING),),
-            display_name="task"))
-        r.upsert_action_type(ActionType(
-            rid=ClassRef(ACT2), parameters=(), submission_criteria=(),
-            side_effects=("task.closed",),
-            function_ref=ClassRef(f"ont.{T2}.fn.x.v1"),
-            on=(ClassRef(OBJ2),), title="Close Task"))
+        r.upsert_object_type(
+            ObjectType(
+                rid=ClassRef(OBJ2),
+                primary_key=(ClassRef(P2),),
+                properties=(
+                    Property(
+                        rid=ClassRef(P2),
+                        type_id="string",
+                        nullable=False,
+                        primary_key=True,
+                        title="id",
+                        format=PropertyFormat.STRING,
+                    ),
+                ),
+                display_name="task",
+            )
+        )
+        r.upsert_action_type(
+            ActionType(
+                rid=ClassRef(ACT2),
+                parameters=(),
+                submission_criteria=(),
+                side_effects=("task.closed",),
+                function_ref=ClassRef(f"ont.{T2}.fn.x.v1"),
+                on=(ClassRef(OBJ2),),
+                title="Close Task",
+            )
+        )
         r.set_outbox_writer(lambda et, tid, payload: f"evt-{et}-{tid}")
 
         app = FastAPI()
         app.state.kernel_repo = r
-        app.include_router(__import__(
-            "mate_tech_ont.v2_kernel.api", fromlist=["router"]).router)
+        app.include_router(__import__("mate_tech_ont.v2_kernel.api", fromlist=["router"]).router)
         client = TestClient(app)
         with client.websocket_connect("/api/v1/ont/v2/ws/object-changes") as ws:
             hello = ws.receive_json()
             assert hello["type"] == "subscribed"
             # 触发事件（同线程 —— InMemory 同步执行）
             r.apply_edit_set_now(
-                ACT2, None, {},
-                [{"op": "create_object", "class_rid": OBJ2,
-                  "primary_key": "t1", "props": {P2: "t1"}}],
-                actor="ops-1", impact_summary="",
+                ACT2,
+                None,
+                {},
+                [
+                    {
+                        "op": "create_object",
+                        "class_rid": OBJ2,
+                        "primary_key": "t1",
+                        "props": {P2: "t1"},
+                    }
+                ],
+                actor="ops-1",
+                impact_summary="",
             )
             import time
 

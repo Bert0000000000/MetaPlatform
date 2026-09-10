@@ -4,6 +4,7 @@ Refuses pytest.skip() / @pytest.mark.xfail() / @pytest.mark.skip()
 in tests/. The rule is "contract or integration tests skipped does
 not count as Accepted"; the hook keeps that discipline enforced.
 """
+
 from __future__ import annotations
 
 import re

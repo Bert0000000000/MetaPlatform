@@ -17,9 +17,14 @@ def _ot() -> ObjectType:
         rid=ClassRef(f"ont.{_T}.obj.order.v1"),
         primary_key=(ClassRef(f"ont.{_T}.prop.oid.v1"),),
         properties=(
-            Property(rid=ClassRef(f"ont.{_T}.prop.oid.v1"), type_id="string",
-                     nullable=False, primary_key=True, title="oid",
-                     format=PropertyFormat.STRING),
+            Property(
+                rid=ClassRef(f"ont.{_T}.prop.oid.v1"),
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="oid",
+                format=PropertyFormat.STRING,
+            ),
         ),
         display_name="order",
     )
@@ -39,24 +44,36 @@ class _FakeRepo:
         raise AssertionError
 
     def propose_action(
-        self, action_rid, parameters, target_iid, impact_summary, expected_diff=None,
+        self,
+        action_rid,
+        parameters,
+        target_iid,
+        impact_summary,
+        expected_diff=None,
     ):
         raise AssertionError("propose not under test here")
 
     def search_objects(
-        self, text: str, class_rid: str | None = None, top_k: int = 5,
+        self,
+        text: str,
+        class_rid: str | None = None,
+        top_k: int = 5,
     ) -> list[dict[str, Any]]:
-        return [{
-            "individual_rid": f"ont.{_T}.ind.order.o1",
-            "class_rid": f"ont.{_T}.obj.order.v1",
-            "score": 0.9,
-            "matched": [{
-                "property_rid": f"ont.{_T}.prop.memo.v1",
-                "value_text": "rush shipment",
+        return [
+            {
+                "individual_rid": f"ont.{_T}.ind.order.o1",
+                "class_rid": f"ont.{_T}.obj.order.v1",
                 "score": 0.9,
-            }],
-            "card_text": "order o1: rush shipment",
-        }]
+                "matched": [
+                    {
+                        "property_rid": f"ont.{_T}.prop.memo.v1",
+                        "value_text": "rush shipment",
+                        "score": 0.9,
+                    }
+                ],
+                "card_text": "order o1: rush shipment",
+            }
+        ]
 
 
 class TestSearchObjectsTool:
@@ -73,22 +90,31 @@ class TestSearchObjectsTool:
 
 class TestSystemPromptInjection:
     def test_cards_appended_with_rids(self) -> None:
-        cards = [{
-            "individual_rid": f"ont.{_T}.ind.order.o1",
-            "class_rid": f"ont.{_T}.obj.order.v1",
-            "score": 0.9,
-            "matched": [{"property_rid": f"ont.{_T}.prop.memo.v1",
-                         "value_text": "rush shipment", "score": 0.9}],
-            "card_text": "order o1: rush shipment",
-        }]
-        prompt = build_system_prompt([{"role": "workflow", "name": "W", "capabilities": []}],
-                                     object_cards=cards)
+        cards = [
+            {
+                "individual_rid": f"ont.{_T}.ind.order.o1",
+                "class_rid": f"ont.{_T}.obj.order.v1",
+                "score": 0.9,
+                "matched": [
+                    {
+                        "property_rid": f"ont.{_T}.prop.memo.v1",
+                        "value_text": "rush shipment",
+                        "score": 0.9,
+                    }
+                ],
+                "card_text": "order o1: rush shipment",
+            }
+        ]
+        prompt = build_system_prompt(
+            [{"role": "workflow", "name": "W", "capabilities": []}], object_cards=cards
+        )
         assert "相关对象上下文" in prompt
         assert f"ont.{_T}.ind.order.o1" in prompt  # rid 可追溯进上下文
 
     def test_no_cards_unchanged(self) -> None:
         base = build_system_prompt([{"role": "workflow", "name": "W", "capabilities": []}])
         no_cards = build_system_prompt(
-            [{"role": "workflow", "name": "W", "capabilities": []}], object_cards=[],
+            [{"role": "workflow", "name": "W", "capabilities": []}],
+            object_cards=[],
         )
         assert base == no_cards

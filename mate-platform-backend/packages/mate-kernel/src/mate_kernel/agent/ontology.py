@@ -50,7 +50,10 @@ class LlmDispatcher(Protocol):
     async def list_object_types(self, tenant_id: str, **kwargs: Any) -> list[dict[str, Any]]: ...
 
     async def inspect_class(
-        self, tenant_id: str, class_rid: str, **kwargs: Any,
+        self,
+        tenant_id: str,
+        class_rid: str,
+        **kwargs: Any,
     ) -> dict[str, Any]: ...
 
     async def search_objects(
@@ -204,14 +207,13 @@ def _build_property_rid(tenant_id: str, ot_slug: str, prop_slug: str, version: i
 
 
 def _propose_object_type_payload(
-    tenant_id: str, parameters: dict[str, Any],
+    tenant_id: str,
+    parameters: dict[str, Any],
 ) -> tuple[dict[str, Any], str]:
     """把 LLM 给的 propose_object_type 参数归一成 ObjectTypeDTO 兼容 dict + impact 文本。"""
     slug = str(parameters.get("slug") or parameters.get("name") or "type")
     rid = _build_object_type_rid(tenant_id, slug)
-    primary_key_prop = str(
-        parameters.get("primary_key") or "id"
-    ).strip() or "id"
+    primary_key_prop = str(parameters.get("primary_key") or "id").strip() or "id"
     raw_props = parameters.get("properties") or []
     if not isinstance(raw_props, list):
         raise ValueError("'properties' must be a list")
@@ -228,23 +230,28 @@ def _propose_object_type_payload(
         if type_id not in {"string", "int", "float", "bool", "datetime", "json"}:
             type_id = "string"
         is_pk = bool(p.get("primary_key")) or name == primary_key_prop
-        prop_dicts.append({
-            "rid": _build_property_rid(tenant_id, slug, name),
-            "type_id": type_id,
-            "nullable": bool(p.get("nullable", not is_pk)),
-            "primary_key": is_pk,
-            "title": str(p.get("title") or name),
-            "format": type_id,
-        })
+        prop_dicts.append(
+            {
+                "rid": _build_property_rid(tenant_id, slug, name),
+                "type_id": type_id,
+                "nullable": bool(p.get("nullable", not is_pk)),
+                "primary_key": is_pk,
+                "title": str(p.get("title") or name),
+                "format": type_id,
+            }
+        )
     if not any(p["primary_key"] for p in prop_dicts):
-        prop_dicts.insert(0, {
-            "rid": _build_property_rid(tenant_id, slug, primary_key_prop),
-            "type_id": "string",
-            "nullable": False,
-            "primary_key": True,
-            "title": primary_key_prop,
-            "format": "string",
-        })
+        prop_dicts.insert(
+            0,
+            {
+                "rid": _build_property_rid(tenant_id, slug, primary_key_prop),
+                "type_id": "string",
+                "nullable": False,
+                "primary_key": True,
+                "title": primary_key_prop,
+                "format": "string",
+            },
+        )
     pk_rid = next(p["rid"] for p in prop_dicts if p["primary_key"])
     type_def: dict[str, Any] = {
         "rid": rid,
@@ -267,6 +274,7 @@ def _propose_object_type_payload(
 @dataclass(frozen=True, slots=True)
 class OntologyAgentRequest:
     """自然语言请求 → Ontology 员工。"""
+
     user_query: str  # "所有状态=open 的订单"
     context_rids: tuple[str, ...] = ()  # 已 resolve 的 rid 集合
 
@@ -351,7 +359,9 @@ class OntologyAgent:
 
         # 3) 经理追踪
         manager.track(
-            kind=__import__("mate_kernel.manager.protocol", fromlist=["ChangeKind"]).ChangeKind.SNAPSHOT_VERSION,
+            kind=__import__(
+                "mate_kernel.manager.protocol", fromlist=["ChangeKind"]
+            ).ChangeKind.SNAPSHOT_VERSION,
             target_rid=os_.class_rid.rid,
             payload={"query": req.user_query, "filter": os_.filter_expr},
         )
@@ -417,10 +427,7 @@ class OntologyAgent:
                 error="empty_message",
             )
 
-        system_prompt = (
-            self._system_prompt_override
-            or SYSTEM_PROMPTS.get(AgentRole.ONTOLOGY, "")
-        )
+        system_prompt = self._system_prompt_override or SYSTEM_PROMPTS.get(AgentRole.ONTOLOGY, "")
         user_prompt = self._build_user_prompt(message, ctx, tenant_id)
         try:
             raw = await self._llm.chat(system_prompt, user_prompt)
@@ -457,7 +464,9 @@ class OntologyAgent:
         # 拒绝跨租户 rid / 兜底填充缺失字段
         try:
             action, parameters = self._sanitize_action(
-                action, parameters, tenant_id,
+                action,
+                parameters,
+                tenant_id,
             )
         except ValueError as e:
             return LlmDispatchResult(
@@ -471,7 +480,10 @@ class OntologyAgent:
         # 无 dispatcher（kernel-only 单元测试场景）—— 只校验 + 返回解析结果
         if self._dispatcher is None:
             return LlmDispatchResult(
-                action=action, parameters=parameters, reason=reason, raw_output=raw,
+                action=action,
+                parameters=parameters,
+                reason=reason,
+                raw_output=raw,
             )
 
         # Dispatch（只读 vs 提议类分两路；提议类必回 proposal_id）
@@ -479,7 +491,10 @@ class OntologyAgent:
             return await self._dispatch_action(action, parameters, reason, raw, tenant_id, ctx)
         except Exception as e:  # 真实调用任一段挂掉 —— graceful fallback
             return LlmDispatchResult(
-                action=action, parameters=parameters, reason=reason, raw_output=raw,
+                action=action,
+                parameters=parameters,
+                reason=reason,
+                raw_output=raw,
                 error=f"dispatch_failed: {type(e).__name__}: {e}",
             )
 
@@ -501,7 +516,9 @@ class OntologyAgent:
 
     @staticmethod
     def _sanitize_action(
-        action: str, parameters: dict[str, Any], tenant_id: str,
+        action: str,
+        parameters: dict[str, Any],
+        tenant_id: str,
     ) -> tuple[str, dict[str, Any]]:
         """拒绝跨租户 rid；为 propose_object_type 强制填充 rid；其它原样透传。"""
         if action in {"inspect", "propose_instance"}:
@@ -512,9 +529,7 @@ class OntologyAgent:
                 raise ValueError(f"{action} 缺少 rid/class_rid 参数")
             prefix = f"ont.{tenant_id}."
             if not rid_or_class.startswith(prefix):
-                raise ValueError(
-                    f"cross-tenant rid denied: {rid_or_class} (need {prefix}*)"
-                )
+                raise ValueError(f"cross-tenant rid denied: {rid_or_class} (need {prefix}*)")
         elif action == "merge_suggestion":
             src = str(parameters.get("source_rid") or "").strip()
             tgt = str(parameters.get("target_rid") or "").strip()
@@ -522,9 +537,7 @@ class OntologyAgent:
                 raise ValueError("merge_suggestion 需要 source_rid 与 target_rid")
             prefix = f"ont.{tenant_id}."
             if not src.startswith(prefix) or not tgt.startswith(prefix):
-                raise ValueError(
-                    f"cross-tenant merge denied: {src} → {tgt}"
-                )
+                raise ValueError(f"cross-tenant merge denied: {src} → {tgt}")
         elif action == "propose_object_type":
             params = dict(parameters)
             slug = str(params.get("slug") or params.get("name") or "").strip()
@@ -545,35 +558,52 @@ class OntologyAgent:
         if action == "list":
             items = await self._dispatcher.list_object_types(tenant_id)
             return LlmDispatchResult(
-                action=action, parameters=parameters, reason=reason, raw_output=raw,
+                action=action,
+                parameters=parameters,
+                reason=reason,
+                raw_output=raw,
                 extra={"items": items},
             )
         if action == "inspect":
             data = await self._dispatcher.inspect_class(
-                tenant_id, str(parameters["rid"]),
+                tenant_id,
+                str(parameters["rid"]),
             )
             return LlmDispatchResult(
-                action=action, parameters=parameters, reason=reason, raw_output=raw,
+                action=action,
+                parameters=parameters,
+                reason=reason,
+                raw_output=raw,
                 extra=data,
             )
         if action == "search":
             top_k = int(parameters.get("top_k") or ctx.get("precheck_top_k") or 5)
             class_rid = parameters.get("class_rid")
             cards = await self._dispatcher.search_objects(
-                tenant_id, str(parameters.get("text") or ""),
-                class_rid, top_k,
+                tenant_id,
+                str(parameters.get("text") or ""),
+                class_rid,
+                top_k,
             )
             return LlmDispatchResult(
-                action=action, parameters=parameters, reason=reason, raw_output=raw,
+                action=action,
+                parameters=parameters,
+                reason=reason,
+                raw_output=raw,
                 candidates=cards,
             )
         if action == "propose_object_type":
             type_def, impact = _propose_object_type_payload(tenant_id, parameters)
             proposal_id = await self._dispatcher.propose_object_type(
-                tenant_id, type_def, impact,
+                tenant_id,
+                type_def,
+                impact,
             )
             return LlmDispatchResult(
-                action=action, parameters=parameters, reason=reason, raw_output=raw,
+                action=action,
+                parameters=parameters,
+                reason=reason,
+                raw_output=raw,
                 proposal_id=proposal_id,
                 extra={"type_def": type_def, "impact_summary": impact},
             )
@@ -587,10 +617,16 @@ class OntologyAgent:
                 "随后进 proposal 状态机，待用户确认。"
             )
             proposal_id = await self._dispatcher.propose_instance(
-                tenant_id, class_rid, props, impact,
+                tenant_id,
+                class_rid,
+                props,
+                impact,
             )
             return LlmDispatchResult(
-                action=action, parameters=parameters, reason=reason, raw_output=raw,
+                action=action,
+                parameters=parameters,
+                reason=reason,
+                raw_output=raw,
                 proposal_id=proposal_id,
                 extra={"impact_summary": impact},
             )
@@ -611,16 +647,24 @@ class OntologyAgent:
                 tenant_id,
                 str(parameters["source_rid"]),
                 str(parameters["target_rid"]),
-                sim, impact, mapping,
+                sim,
+                impact,
+                mapping,
             )
             return LlmDispatchResult(
-                action=action, parameters=parameters, reason=reason, raw_output=raw,
+                action=action,
+                parameters=parameters,
+                reason=reason,
+                raw_output=raw,
                 proposal_id=proposal_id,
                 extra={"impact_summary": impact},
             )
         # 理论上 ``_normalize_action`` 已经过滤；这里兜底
         return LlmDispatchResult(
-            action=action, parameters=parameters, reason=reason, raw_output=raw,
+            action=action,
+            parameters=parameters,
+            reason=reason,
+            raw_output=raw,
             error="unknown_action_kind",
         )
 

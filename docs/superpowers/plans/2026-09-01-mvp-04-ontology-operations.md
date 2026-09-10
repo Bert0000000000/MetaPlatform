@@ -34,11 +34,13 @@
 ### Task 1: 定义运维事件、漂移和回归契约
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/operations_contracts.py`
 - Modify: `mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/__init__.py`
 - Test: `mate-platform-backend/packages/mate-kernel/tests/test_ontology_operations_contracts.py`
 
 **Interfaces:**
+
 - Consumes: MVP1 Run/Artifact and MVP3 OntologyProposal/OntologyReleaseReceipt.
 - Produces: `KnowledgeSliceChanged`, `DataSchemaChanged`, `DriftProposal`, `ImpactReport`, `RegressionReport`, `RollbackPlan`.
 
@@ -83,6 +85,7 @@ git commit -m "feat(ontology): define operations and drift contracts"
 ### Task 2: 建立 NATS Outbox/Inbox、去重、DLQ 和安全重放
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-platform/src/mate_platform/messaging/nats.py`
 - Create: `mate-platform-backend/packages/mate-platform/src/mate_platform/messaging/inbox.py`
 - Create: `mate-platform-backend/packages/mate-platform/src/mate_platform/messaging/replay.py`
@@ -103,6 +106,7 @@ git commit -m "feat(ontology): define operations and drift contracts"
 - Test: `mate-platform-backend/packages/mate-platform/tests/test_safe_replay.py`
 
 **Interfaces:**
+
 - Consumes: CloudEvents from Task 1 and Run Ledger authorization/Lease checks.
 - Produces: `publish_outbox(batch_size: int) -> PublishBatchResult`; `consume_once(event, handler) -> ConsumeResult`; `replay_dlq(event_id, expected_policy_watermark) -> ConsumeResult`.
 
@@ -147,6 +151,7 @@ git commit -m "feat(events): add nats inbox outbox and safe replay"
 ### Task 3: 从知识切片和 Schema 事件形成去重漂移提案
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-app-ontology-ops/pyproject.toml`
 - Create: `mate-platform-backend/packages/mate-app-ontology-ops/src/mate_app_ontology_ops/__init__.py`
 - Create: `mate-platform-backend/packages/mate-app-ontology-ops/src/mate_app_ontology_ops/api.py`
@@ -181,6 +186,7 @@ git commit -m "feat(events): add nats inbox outbox and safe replay"
 - Test: `mate-platform-backend/contracts/tests/test_ontology_ops_runtime.py`
 
 **Interfaces:**
+
 - Consumes: Task 1 events, RAGFlow slice snapshots, data product schemas and MVP3 proposal service.
 - Produces: RAG slice and data-schema transactional Outbox producers; `handle_knowledge_change(event) -> DriftProposal`; `handle_schema_change(event) -> DriftProposal`; uniqueness key `(tenant_id, base_digest, source_digest, detector_version)`; runnable HTTP `mate_app_ontology_ops.main:app` and JetStream consumer `mate_app_ontology_ops.consumer_main`; lifecycle routes `/api/v1/ontology-operations/drift-proposals`, `/drift-proposals/{id}`, `/drift-proposals/{id}/impact`, `/drift-proposals/{id}/regression`, `/drift-proposals/{id}/approval`, `/drift-proposals/{id}/publish` and `/releases/{id}/rollback`.
 
@@ -228,6 +234,7 @@ git commit -m "feat(ontology): derive deduplicated drift proposals"
 ### Task 4: 实现影响分析、金标回归和发布判定
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-app-ontology-ops/src/mate_app_ontology_ops/impact.py`
 - Create: `mate-platform-backend/packages/mate-app-ontology-ops/src/mate_app_ontology_ops/regression.py`
 - Create: `mate-platform-backend/packages/mate-app-ontology-ops/src/mate_app_ontology_ops/analysis_job_repository.py`
@@ -244,6 +251,7 @@ git commit -m "feat(ontology): derive deduplicated drift proposals"
 - Test: `mate-platform-backend/packages/mate-app-ontology-ops/tests/test_analysis_worker.py`
 
 **Interfaces:**
+
 - Consumes: DriftProposal, PostgreSQL ontology mappings, Jena version graph and governed data product metadata; Trino only when cross-source impact requires it.
 - Produces: `analyze_impact(proposal) -> ImpactReport`; `run_regression(proposal, suite_digest) -> RegressionReport`.
 
@@ -287,6 +295,7 @@ git commit -m "feat(ontology): gate drift with impact and regression"
 ### Task 5: 编排人工审批、发布和全链路回滚
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-app-ontology-ops/src/mate_app_ontology_ops/workflow.py`
 - Create: `mate-platform-backend/packages/mate-app-ontology-ops/src/mate_app_ontology_ops/approval_service.py`
 - Modify: `mate-platform-backend/packages/mate-app-ontology-ops/src/mate_app_ontology_ops/api.py`
@@ -305,6 +314,7 @@ git commit -m "feat(ontology): gate drift with impact and regression"
 - Create: `mate-platform-backend/tests/integration/test_ontology_rollback.py`
 
 **Interfaces:**
+
 - Consumes: publishable DriftProposal, ImpactReport, RegressionReport, independent ApprovalRecord and MVP3 publication service.
 - Produces: `OntologyMaintenanceWorkflow`; `publish_change(...) -> OntologyReleaseReceipt`; `rollback_release(plan, approval, lease) -> ExecutionReceipt`.
 
@@ -349,6 +359,7 @@ git commit -m "feat(ontology): orchestrate governed publish and rollback"
 ### Task 6: 对接受治理 MemoryCore 并验证记忆删除/污染撤销
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-clients/src/mate_clients/memory_core.py`
 - Create: `mate-platform-backend/packages/mate-app-ontology-ops/src/mate_app_ontology_ops/memory_adapter.py`
 - Create: `mate-platform-backend/packages/mate-app-ontology-ops/tests/test_memory_adapter.py`
@@ -357,6 +368,7 @@ git commit -m "feat(ontology): orchestrate governed publish and rollback"
 - Create: `scripts/test-memory-core-adapter.ps1`
 
 **Interfaces:**
+
 - Consumes: approved Artifact/ExecutionReceipt, authorization context and pinned MemoryCore L0-L3 HTTP API.
 - Produces: `submit_candidate(candidate, auth) -> MemoryCandidate`; `promote(candidate_id, approval) -> MemoryRecordRef`; `revoke_by_source(source_digest) -> RevocationResult`.
 
@@ -401,6 +413,7 @@ git commit -m "feat(memory): govern ontology operations experience"
 ### Task 7: 交付运维工作台、恢复矩阵与安全退役
 
 **Files:**
+
 - Create: `metaplatform-frontend/apps/web/src/pages/ontology/OntologyOperationsPage.tsx`
 - Create: `metaplatform-frontend/apps/web/src/pages/ontology/OntologyOperationsPage.test.tsx`
 - Create: `metaplatform-frontend/apps/web/src/api/ontology/operations.ts`
@@ -413,6 +426,7 @@ git commit -m "feat(memory): govern ontology operations experience"
 - Create: `mate-platform-backend/packages/mate-app-ontology-ops/tests/conformance.py`
 
 **Interfaces:**
+
 - Consumes: Tasks 2-6 APIs, workflow states and Artifact Renderer.
 - Produces: drift/impact/regression/approval/release/rollback UI, recovery evidence and exact legacy retirement inventory.
 
@@ -424,8 +438,12 @@ git commit -m "feat(memory): govern ontology operations experience"
 
 ```tsx
 it("does not expose publish when impact is incomplete", () => {
-  render(<OntologyOperationsPage proposal={proposal} impact={{ complete: false }} />);
-  expect(screen.queryByRole("button", { name: "批准发布" })).not.toBeInTheDocument();
+  render(
+    <OntologyOperationsPage proposal={proposal} impact={{ complete: false }} />,
+  );
+  expect(
+    screen.queryByRole("button", { name: "批准发布" }),
+  ).not.toBeInTheDocument();
   expect(screen.getByText("影响范围未知，发布已阻断")).toBeVisible();
 });
 ```

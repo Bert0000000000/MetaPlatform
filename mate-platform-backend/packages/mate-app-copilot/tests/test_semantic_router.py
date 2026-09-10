@@ -10,6 +10,7 @@ Covers:
   - Custom embedder injection
   - Thread safety smoke (no assertion, just runs)
 """
+
 from __future__ import annotations
 
 import math
@@ -274,13 +275,16 @@ def test_policy_relevance_floor_returns_no_candidate() -> None:
         embedder=_ConstantEmbedder([0.0] * 16),
         policy=RoutingPolicy(minimum_relevance=0.1),
     )
-    assert router.route(
-        "unmatched input",
-        ROLES,
-        tenant_id="tenant-acme",
-        actor_roles_digest="operator-v1",
-        capability_version="cap-v1",
-    ) == []
+    assert (
+        router.route(
+            "unmatched input",
+            ROLES,
+            tenant_id="tenant-acme",
+            actor_roles_digest="operator-v1",
+            capability_version="cap-v1",
+        )
+        == []
+    )
 
 
 def test_role_embedding_cache_isolated_by_authorized_snapshot_and_version() -> None:

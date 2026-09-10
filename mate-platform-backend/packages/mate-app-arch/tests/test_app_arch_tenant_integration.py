@@ -3,6 +3,7 @@
 4 tests: wrong-tenant 403, missing-scope pinned, no-tenant non-200,
 tenant-isolation ok.
 """
+
 from __future__ import annotations
 
 import time
@@ -91,12 +92,8 @@ def test_tenant_isolation_ok(fresh_app: TestClient) -> None:
     )
     assert r1.status_code == 200, r1.text
     assert r2.status_code == 200, r2.text
-    assert all(
-        a["tenant_id"] == "tenant-acme" for a in r1.json()["items"]
-    )
-    assert all(
-        a["tenant_id"] == "tenant-globex" for a in r2.json()["items"]
-    )
+    assert all(a["tenant_id"] == "tenant-acme" for a in r1.json()["items"])
+    assert all(a["tenant_id"] == "tenant-globex" for a in r2.json()["items"])
 
 
 def test_new_endpoints_tenant_isolation(fresh_app: TestClient) -> None:

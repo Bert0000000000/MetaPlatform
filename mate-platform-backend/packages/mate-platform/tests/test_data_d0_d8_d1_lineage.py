@@ -1,4 +1,5 @@
 """DATA-D0-D8 D1 lineage tests."""
+
 from __future__ import annotations
 
 import os
@@ -74,6 +75,7 @@ class TestInMemoryLineageEmitter:
         from mate_platform.messaging import MarquezHttpLineageEmitter
 
         m = MarquezHttpLineageEmitter()
+
         # Build a minimal event with empty tenant
         class EmptyTenantEvent:
             event_type = "x"
@@ -83,6 +85,7 @@ class TestInMemoryLineageEmitter:
             occurred_at = "x"
             event_id = "id"
             producer = "test"
+
             def to_openlineage_dict(self):
                 return {}
 
@@ -110,6 +113,7 @@ class TestLineageEventFromOutbox:
 class TestLineageConfigFromEnv:
     def test_default_marquez_url(self) -> None:
         from mate_platform.messaging import LineageConfig
+
         c = LineageConfig.from_env()
         assert "marquez" in c.marquez_url
         assert c.namespace_template == "metaplatform.<tenant>"

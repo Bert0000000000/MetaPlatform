@@ -1,4 +1,5 @@
 """RAGFlowClient — real httpx client for infiniflow/ragflow HTTP API."""
+
 from __future__ import annotations
 
 import logging
@@ -13,8 +14,17 @@ _log = logging.getLogger(__name__)
 
 
 class RAGFlowClient(Protocol):
-    def parse(self, content: str, document_id: str, *, metadata: dict[str, str] | None = None) -> list[str]: ...
-    def parse_bytes(self, raw: bytes, document_id: str, *, filename: str = "", metadata: dict[str, str] | None = None) -> list[str]: ...
+    def parse(
+        self, content: str, document_id: str, *, metadata: dict[str, str] | None = None
+    ) -> list[str]: ...
+    def parse_bytes(
+        self,
+        raw: bytes,
+        document_id: str,
+        *,
+        filename: str = "",
+        metadata: dict[str, str] | None = None,
+    ) -> list[str]: ...
     def count(self) -> int: ...
 
 
@@ -32,7 +42,13 @@ class HttpxRAGFlowClient:
     DEFAULT_URL = "http://localhost:9380"
     DEFAULT_DATASET = "mate-kb"
 
-    def __init__(self, base_url: str | None = None, api_key: str | None = None, dataset_id: str | None = None, timeout: float = 60.0) -> None:
+    def __init__(
+        self,
+        base_url: str | None = None,
+        api_key: str | None = None,
+        dataset_id: str | None = None,
+        timeout: float = 60.0,
+    ) -> None:
         self._base_url = (base_url or os.environ.get("RAGFLOW_URL", self.DEFAULT_URL)).rstrip("/")
         self._api_key = api_key or os.environ.get("RAGFLOW_API_KEY", "")
         self._dataset_id = dataset_id or os.environ.get("RAGFLOW_DATASET_ID", self.DEFAULT_DATASET)
@@ -48,7 +64,9 @@ class HttpxRAGFlowClient:
 
     def _check(self):
         try:
-            r = self._client.get(f"{self._base_url}/api/v1/datasets", headers=self._headers(), timeout=5.0)
+            r = self._client.get(
+                f"{self._base_url}/api/v1/datasets", headers=self._headers(), timeout=5.0
+            )
             self._available = r.status_code in (200, 401)  # 401 = no auth but server up
             if self._available:
                 _log.info("RAGFlow ACTIVE at %s (status %d)", self._base_url, r.status_code)
@@ -56,7 +74,9 @@ class HttpxRAGFlowClient:
             _log.info("RAGFlow unavailable at %s: %s", self._base_url, exc)
             self._available = False
 
-    def parse(self, content: str, document_id: str, *, metadata: dict[str, str] | None = None) -> list[str]:
+    def parse(
+        self, content: str, document_id: str, *, metadata: dict[str, str] | None = None
+    ) -> list[str]:
         if not content.strip():
             return []
         if not self._available:
@@ -75,7 +95,14 @@ class HttpxRAGFlowClient:
             _log.warning("RAGFlow parse failed: %s", exc)
             return [content]
 
-    def parse_bytes(self, raw: bytes, document_id: str, *, filename: str = "", metadata: dict[str, str] | None = None) -> list[str]:
+    def parse_bytes(
+        self,
+        raw: bytes,
+        document_id: str,
+        *,
+        filename: str = "",
+        metadata: dict[str, str] | None = None,
+    ) -> list[str]:
         if not raw:
             return []
         for enc in ("utf-8", "utf-8-sig", "gbk", "latin-1"):
@@ -93,7 +120,11 @@ class HttpxRAGFlowClient:
         if not self._available:
             return 0
         try:
-            r = self._client.get(f"{self._base_url}/api/v1/datasets/{self._dataset_id}/documents", headers=self._headers(), timeout=5.0)
+            r = self._client.get(
+                f"{self._base_url}/api/v1/datasets/{self._dataset_id}/documents",
+                headers=self._headers(),
+                timeout=5.0,
+            )
             if r.status_code == 200:
                 data = r.json()
                 return len(data.get("data", {}).get("docs", []))

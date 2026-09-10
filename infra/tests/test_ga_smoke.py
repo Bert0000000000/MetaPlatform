@@ -9,6 +9,7 @@ mate-clients.security) is internally consistent.
 It is intentionally a thin integration: each subsystem already
 has its own deep unit tests; here we just confirm they compose.
 """
+
 from __future__ import annotations
 
 import json
@@ -36,6 +37,7 @@ class TestWiring:
             load_auth_config,
             resolve_tenant,
         )
+
         assert callable(load_auth_config)
         assert callable(resolve_tenant)
         assert hasattr(JWKSCache, "refresh")
@@ -48,10 +50,12 @@ class TestWiring:
             emit_cross_tenant_access,
             require_tenant,
         )
+
         assert callable(require_tenant)
         assert callable(emit_cross_tenant_access)
         # RequestContext is a dataclass; check its fields.
         from dataclasses import fields
+
         names = {f.name for f in fields(RequestContext)}
         assert "tenant_id" in names
         assert "user_id" in names
@@ -67,6 +71,7 @@ class TestWiring:
             schema_id_for,
             validate_event_type,
         )
+
         assert callable(Event.create)
         assert callable(validate_event_type)
         assert callable(schema_id_for)
@@ -77,6 +82,7 @@ class TestWiring:
             IdempotentConsumer,
             KafkaProducer,
         )
+
         assert hasattr(IdempotentConsumer, "process")
         assert hasattr(KafkaProducer, "send")
 

@@ -6,6 +6,7 @@ Covers:
   * ``get_embedding_provider`` factory (singletons + routing)
   * ``POST /api/v1/llmgw/embeddings`` real provider wiring
 """
+
 from __future__ import annotations
 
 import math

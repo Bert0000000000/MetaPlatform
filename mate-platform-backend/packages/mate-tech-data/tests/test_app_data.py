@@ -3,6 +3,7 @@
 Exercises all 15 control-plane endpoints (8 CDC task + 7 data source)
 plus outbox event emission for every write operation.
 """
+
 from __future__ import annotations
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
@@ -26,9 +27,7 @@ def test_list_cdc_tasks_status_filter(client, auth_headers_acme) -> None:
     first_id = tasks[0]["id"]
     client.post(f"/api/v1/data/cdc-tasks/{first_id}/pause", headers=auth_headers_acme)
 
-    r = client.get(
-        "/api/v1/data/cdc-tasks", params={"status": "paused"}, headers=auth_headers_acme
-    )
+    r = client.get("/api/v1/data/cdc-tasks", params={"status": "paused"}, headers=auth_headers_acme)
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["total"] >= 1
@@ -36,7 +35,9 @@ def test_list_cdc_tasks_status_filter(client, auth_headers_acme) -> None:
 
 
 def test_create_cdc_task(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     r = client.post(
         "/api/v1/data/cdc-tasks",
@@ -76,7 +77,9 @@ def test_get_cdc_task_404(client, auth_headers_acme) -> None:
 
 
 def test_update_cdc_task(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     tasks = client.get("/api/v1/data/cdc-tasks", headers=auth_headers_acme).json()["items"]
     task_id = tasks[0]["id"]
@@ -96,7 +99,9 @@ def test_update_cdc_task(
 
 
 def test_delete_cdc_task(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     tasks = client.get("/api/v1/data/cdc-tasks", headers=auth_headers_acme).json()["items"]
     task_id = tasks[0]["id"]
@@ -114,7 +119,9 @@ def test_delete_cdc_task(
 
 
 def test_pause_cdc_task(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     tasks = client.get("/api/v1/data/cdc-tasks", headers=auth_headers_acme).json()["items"]
     task_id = tasks[0]["id"]
@@ -128,7 +135,9 @@ def test_pause_cdc_task(
 
 
 def test_resume_cdc_task(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     tasks = client.get("/api/v1/data/cdc-tasks", headers=auth_headers_acme).json()["items"]
     task_id = tasks[0]["id"]
@@ -168,9 +177,7 @@ def test_list_sources(client, auth_headers_acme) -> None:
 
 
 def test_list_sources_type_filter(client, auth_headers_acme) -> None:
-    r = client.get(
-        "/api/v1/data/sources", params={"type": "mysql"}, headers=auth_headers_acme
-    )
+    r = client.get("/api/v1/data/sources", params={"type": "mysql"}, headers=auth_headers_acme)
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["total"] >= 1
@@ -178,7 +185,9 @@ def test_list_sources_type_filter(client, auth_headers_acme) -> None:
 
 
 def test_create_source(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     r = client.post(
         "/api/v1/data/sources",
@@ -216,7 +225,9 @@ def test_get_source_404(client, auth_headers_acme) -> None:
 
 
 def test_update_source(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     sources = client.get("/api/v1/data/sources", headers=auth_headers_acme).json()["items"]
     source_id = sources[0]["id"]
@@ -234,7 +245,9 @@ def test_update_source(
 
 
 def test_delete_source(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     sources = client.get("/api/v1/data/sources", headers=auth_headers_acme).json()["items"]
     source_id = sources[0]["id"]
@@ -271,7 +284,9 @@ def test_source_schema_404(client, auth_headers_acme) -> None:
 
 
 def test_test_source_connection(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     sources = client.get("/api/v1/data/sources", headers=auth_headers_acme).json()["items"]
     source_id = sources[0]["id"]

@@ -5,6 +5,7 @@ accumulated provider-side into ``content`` / ``reasoning_content`` /
 ``tool_calls`` (per-index arguments joined), and the route forwards the
 ``token`` / ``done`` events as SSE lines.
 """
+
 from __future__ import annotations
 
 import json
@@ -34,26 +35,49 @@ from mate_tech_llmgw.providers.real_openai_provider import RealOpenAIProvider
 
 
 def _sse_body(chunks: list[dict]) -> bytes:
-    return (
-        "".join(f"data: {json.dumps(c)}\n\n" for c in chunks) + "data: [DONE]\n\n"
-    ).encode()
+    return ("".join(f"data: {json.dumps(c)}\n\n" for c in chunks) + "data: [DONE]\n\n").encode()
 
 
 def _decision_chunks() -> list[dict]:
     """A realistic OpenAI stream: reasoning → content → tool_call fragments."""
     return [
-        {"choices": [{"delta": {"role": "assistant", "reasoning_content": "让我想想 "}, "index": 0}]},
+        {
+            "choices": [
+                {"delta": {"role": "assistant", "reasoning_content": "让我想想 "}, "index": 0}
+            ]
+        },
         {"choices": [{"delta": {"reasoning_content": "选 workflow。"}, "index": 0}]},
-        {"choices": [{"delta": {
-            "content": "我来调度。",
-            "tool_calls": [{
-                "index": 0, "id": "call-1", "type": "function",
-                "function": {"name": "dispatch_employee", "arguments": '{"target_rid": "'},
-            }],
-        }, "index": 0}]},
-        {"choices": [{"delta": {
-            "tool_calls": [{"index": 0, "function": {"arguments": "workflow\"}"}}]},
-        "index": 0}]},
+        {
+            "choices": [
+                {
+                    "delta": {
+                        "content": "我来调度。",
+                        "tool_calls": [
+                            {
+                                "index": 0,
+                                "id": "call-1",
+                                "type": "function",
+                                "function": {
+                                    "name": "dispatch_employee",
+                                    "arguments": '{"target_rid": "',
+                                },
+                            }
+                        ],
+                    },
+                    "index": 0,
+                }
+            ]
+        },
+        {
+            "choices": [
+                {
+                    "delta": {
+                        "tool_calls": [{"index": 0, "function": {"arguments": 'workflow"}'}}]
+                    },
+                    "index": 0,
+                }
+            ]
+        },
         {"choices": [{"delta": {}, "finish_reason": "stop", "index": 0}]},
         {"usage": {"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30}},
     ]
@@ -71,9 +95,13 @@ async def test_stream_chat_accumulates_reasoning_content_and_tool_calls() -> Non
     )
     provider = RealOpenAIProvider(api_key="sk-test", model="gpt-4o-mini")
     try:
-        events = [ev async for ev in provider.stream_chat(
-            [ChatMessage(role="user", content="hi")], temperature=0.0,
-        )]
+        events = [
+            ev
+            async for ev in provider.stream_chat(
+                [ChatMessage(role="user", content="hi")],
+                temperature=0.0,
+            )
+        ]
     finally:
         await provider.aclose()
 
@@ -103,9 +131,13 @@ async def test_stream_chat_fallback_on_http_error() -> None:
     )
     provider = RealOpenAIProvider(api_key="sk-test", model="gpt-4o-mini")
     try:
-        events = [ev async for ev in provider.stream_chat(
-            [ChatMessage(role="user", content="hi")], temperature=0.0,
-        )]
+        events = [
+            ev
+            async for ev in provider.stream_chat(
+                [ChatMessage(role="user", content="hi")],
+                temperature=0.0,
+            )
+        ]
     finally:
         await provider.aclose()
     assert len(events) == 1
@@ -119,9 +151,13 @@ async def test_stream_chat_no_key_fallback() -> None:
     old_key = os.environ.pop("OPENAI_API_KEY", None)
     try:
         provider = RealOpenAIProvider(model="gpt-4o-mini")
-        events = [ev async for ev in provider.stream_chat(
-            [ChatMessage(role="user", content="hello")], tenant_id="tenant-test",
-        )]
+        events = [
+            ev
+            async for ev in provider.stream_chat(
+                [ChatMessage(role="user", content="hello")],
+                tenant_id="tenant-test",
+            )
+        ]
         await provider.aclose()
     finally:
         if old_key is not None:
@@ -145,11 +181,7 @@ def _make_client():
 
 
 def _sse_events(text: str) -> list[dict]:
-    return [
-        json.loads(line[6:])
-        for line in text.splitlines()
-        if line.startswith("data: ")
-    ]
+    return [json.loads(line[6:]) for line in text.splitlines() if line.startswith("data: ")]
 
 
 @respx.mock
@@ -166,7 +198,12 @@ def test_real_chat_stream_route_assembles_tool_calls(monkeypatch: pytest.MonkeyP
             "provider": "openai",
             "model": "gpt-4o-mini",
             "messages": [{"role": "user", "content": "调度 workflow"}],
-            "tools": [{"type": "function", "function": {"name": "dispatch_employee", "parameters": {"type": "object"}}}],
+            "tools": [
+                {
+                    "type": "function",
+                    "function": {"name": "dispatch_employee", "parameters": {"type": "object"}},
+                }
+            ],
         },
     )
     assert r.status_code == 200, r.text

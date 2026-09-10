@@ -1,4 +1,5 @@
 """W2 + W4 集成 edge cases (10 ST)."""
+
 from __future__ import annotations
 
 

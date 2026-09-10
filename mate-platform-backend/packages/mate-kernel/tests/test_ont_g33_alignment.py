@@ -4,6 +4,7 @@
 传递闭包聚类（复用 R2 并查集）；类型合并字段并集、冲突标记与策略消解、
 合并审计记录。
 """
+
 from __future__ import annotations
 
 import os
@@ -48,14 +49,28 @@ class TestAlignIndividuals:
 
     def test_structural_match_same_class_overlapping_paths(self):
         """同类 + 属性路径/值签名重叠 ≥ 阈值 = 结构对齐（label 不同）。"""
-        left = [_ind("a1", CLSA,
-                     **{"ont.t1.prop.name.v1": "alpha",
-                        "ont.t1.prop.email.v1": "shared@corp.io",
-                        "ont.t1.prop.phone.v1": "555-0001"})]
-        right = [_ind("b1", CLSB,
-                      **{"ont.t2.prop.title.v1": "zeta",
-                         "ont.t2.prop.email.v1": "shared@corp.io",
-                         "ont.t2.prop.phone.v1": "555-0001"})]
+        left = [
+            _ind(
+                "a1",
+                CLSA,
+                **{
+                    "ont.t1.prop.name.v1": "alpha",
+                    "ont.t1.prop.email.v1": "shared@corp.io",
+                    "ont.t1.prop.phone.v1": "555-0001",
+                },
+            )
+        ]
+        right = [
+            _ind(
+                "b1",
+                CLSB,
+                **{
+                    "ont.t2.prop.title.v1": "zeta",
+                    "ont.t2.prop.email.v1": "shared@corp.io",
+                    "ont.t2.prop.phone.v1": "555-0001",
+                },
+            )
+        ]
         r = align_individuals(left, right)
         evid = r["matched_pairs"][0]["evidence"]
         assert "structural" in evid
@@ -90,9 +105,15 @@ class TestAlignIndividuals:
 # merge_object_types
 # ---------------------------------------------------------------------------
 
-def _prop(slug: str, *, type_id: str = "ont.t1.vt.string",
-          nullable: bool = False, pk: bool = False,
-          fmt: PropertyFormat = PropertyFormat.STRING) -> Property:
+
+def _prop(
+    slug: str,
+    *,
+    type_id: str = "ont.t1.vt.string",
+    nullable: bool = False,
+    pk: bool = False,
+    fmt: PropertyFormat = PropertyFormat.STRING,
+) -> Property:
     return Property(
         rid=ClassRef(f"ont.t1.prop.{slug}.v1"),
         type_id=type_id,
@@ -119,37 +140,43 @@ class TestMergeObjectTypes:
         out = merge_object_types(a, b)
         merged = out["object_type"]
         assert {p.rid.rid for p in merged.properties} >= {
-            "ont.t1.prop.id.v1", "ont.t1.prop.name.v1", "ont.t1.prop.email.v1"}
+            "ont.t1.prop.id.v1",
+            "ont.t1.prop.name.v1",
+            "ont.t1.prop.email.v1",
+        }
         assert out["audit"]["added"] == ["ont.t1.prop.email.v1"]
         assert out["audit"]["conflicts"] == []
 
     def test_conflict_marked_and_resolved_keep_left(self):
-        a = _ot("customer", [
-            _prop("id", pk=True), _prop("age", type_id="ont.t1.vt.integer")],
-            ["id"])
-        b = _ot("customer", [
-            _prop("id", pk=True), _prop("age", type_id="ont.t1.vt.string")],
-            ["id"])
+        a = _ot(
+            "customer", [_prop("id", pk=True), _prop("age", type_id="ont.t1.vt.integer")], ["id"]
+        )
+        b = _ot(
+            "customer", [_prop("id", pk=True), _prop("age", type_id="ont.t1.vt.string")], ["id"]
+        )
         out = merge_object_types(a, b, strategy="keep_left")
         merged = out["object_type"]
         age = next(p for p in merged.properties if "age" in p.rid.rid)
         assert age.type_id == "ont.t1.vt.integer"
-        assert out["audit"]["conflicts"] == [{
-            "property_rid": "ont.t1.prop.age.v1", "field": "type_id",
-            "left": "ont.t1.vt.integer", "right": "ont.t1.vt.string",
-            "resolved": "ont.t1.vt.integer",
-        }]
+        assert out["audit"]["conflicts"] == [
+            {
+                "property_rid": "ont.t1.prop.age.v1",
+                "field": "type_id",
+                "left": "ont.t1.vt.integer",
+                "right": "ont.t1.vt.string",
+                "resolved": "ont.t1.vt.integer",
+            }
+        ]
 
     def test_strategy_keep_right_resolves_conflict(self):
-        a = _ot("customer", [
-            _prop("id", pk=True), _prop("age", type_id="ont.t1.vt.integer")],
-            ["id"])
-        b = _ot("customer", [
-            _prop("id", pk=True), _prop("age", type_id="ont.t1.vt.string")],
-            ["id"])
+        a = _ot(
+            "customer", [_prop("id", pk=True), _prop("age", type_id="ont.t1.vt.integer")], ["id"]
+        )
+        b = _ot(
+            "customer", [_prop("id", pk=True), _prop("age", type_id="ont.t1.vt.string")], ["id"]
+        )
         out = merge_object_types(a, b, strategy="keep_right")
-        age = next(p for p in out["object_type"].properties
-                   if "age" in p.rid.rid)
+        age = next(p for p in out["object_type"].properties if "age" in p.rid.rid)
         assert age.type_id == "ont.t1.vt.string"
 
     def test_merge_audit_and_pk_union(self):
@@ -157,8 +184,7 @@ class TestMergeObjectTypes:
         b = _ot("customer", [_prop("code", pk=True, nullable=False)], ["code"])
         out = merge_object_types(a, b)
         audit = out["audit"]
-        assert audit["merged_from"] == ["ont.t1.obj.customer.v1",
-                                        "ont.t1.obj.customer.v1"]
+        assert audit["merged_from"] == ["ont.t1.obj.customer.v1", "ont.t1.obj.customer.v1"]
         assert audit["into"] == "ont.t1.obj.customer.v1"
         assert audit["strategy"] == "keep_left"
         assert audit["properties_merged"] == 2

@@ -41,9 +41,7 @@ def _product(
 
 class TestDataProduct:
     def test_quality_of(self) -> None:
-        p = _product(quality=(
-            QualitySummary(dimension=QualityDimension.COMPLETENESS, value=0.98),
-        ))
+        p = _product(quality=(QualitySummary(dimension=QualityDimension.COMPLETENESS, value=0.98),))
         assert p.quality_of(QualityDimension.COMPLETENESS) is not None
         assert p.quality_of(QualityDimension.ROW_COUNT) is None
 
@@ -90,16 +88,20 @@ class TestDataProductAgent:
         a.register(_product("data.acme.product.raw.v1"), Manager(_ctx()))
         a.register(_product("data.acme.product.dw.v1"), Manager(_ctx()))
         a.register(_product("data.acme.product.dm.v1"), Manager(_ctx()))
-        a.add_lineage(LineageEdge(
-            upstream_rid="data.acme.product.raw.v1",
-            downstream_rid="data.acme.product.dw.v1",
-            transform="dbt.stg_orders",
-        ))
-        a.add_lineage(LineageEdge(
-            upstream_rid="data.acme.product.dw.v1",
-            downstream_rid="data.acme.product.dm.v1",
-            transform="dbt.dim_orders",
-        ))
+        a.add_lineage(
+            LineageEdge(
+                upstream_rid="data.acme.product.raw.v1",
+                downstream_rid="data.acme.product.dw.v1",
+                transform="dbt.stg_orders",
+            )
+        )
+        a.add_lineage(
+            LineageEdge(
+                upstream_rid="data.acme.product.dw.v1",
+                downstream_rid="data.acme.product.dm.v1",
+                transform="dbt.dim_orders",
+            )
+        )
         assert len(a.lineage_upstream("data.acme.product.dm.v1")) == 1
         assert len(a.lineage_downstream("data.acme.product.raw.v1")) == 1
 
@@ -107,22 +109,30 @@ class TestDataProductAgent:
         a = self._a()
         a.register(_product("data.acme.product.raw.v1"), Manager(_ctx()))
         with pytest.raises(KeyError, match="downstream"):
-            a.add_lineage(LineageEdge(
-                upstream_rid="data.acme.product.raw.v1",
-                downstream_rid="data.acme.product.missing.v1",
-                transform="x",
-            ))
+            a.add_lineage(
+                LineageEdge(
+                    upstream_rid="data.acme.product.raw.v1",
+                    downstream_rid="data.acme.product.missing.v1",
+                    transform="x",
+                )
+            )
 
     def test_quality_alerts(self) -> None:
         a = self._a()
-        good = _product("data.acme.product.good.v1", quality=(
-            QualitySummary(dimension=QualityDimension.COMPLETENESS, value=0.99),
-            QualitySummary(dimension=QualityDimension.FRESHNESS_SECONDS, value=60.0),
-        ))
-        bad = _product("data.acme.product.bad.v1", quality=(
-            QualitySummary(dimension=QualityDimension.COMPLETENESS, value=0.5),
-            QualitySummary(dimension=QualityDimension.FRESHNESS_SECONDS, value=7200.0),
-        ))
+        good = _product(
+            "data.acme.product.good.v1",
+            quality=(
+                QualitySummary(dimension=QualityDimension.COMPLETENESS, value=0.99),
+                QualitySummary(dimension=QualityDimension.FRESHNESS_SECONDS, value=60.0),
+            ),
+        )
+        bad = _product(
+            "data.acme.product.bad.v1",
+            quality=(
+                QualitySummary(dimension=QualityDimension.COMPLETENESS, value=0.5),
+                QualitySummary(dimension=QualityDimension.FRESHNESS_SECONDS, value=7200.0),
+            ),
+        )
         a.register(good, Manager(_ctx()))
         a.register(bad, Manager(_ctx()))
         alerts = a.quality_alerts(completeness_min=0.95, freshness_max_seconds=3600)
@@ -133,4 +143,5 @@ class TestDataProductAgent:
 class TestSelectorRoutedToData:
     def test_data_rid_routes_to_data_product(self) -> None:
         from mate_kernel.agent.orchestrator import AgentRole, AgentSelector
+
         assert AgentSelector().select("data.acme.product.orders.v1") == AgentRole.DATA_PRODUCT

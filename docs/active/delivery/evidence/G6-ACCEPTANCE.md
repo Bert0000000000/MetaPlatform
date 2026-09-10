@@ -26,28 +26,28 @@ PostgreSQL RLS 也会在引擎层强制 `tenant_id` 隔离。
 
 对全部 **58 张** `tenant_id` 表（0001-0007 全量）执行：
 
-| DDL | 作用 |
-|---|---|
-| `UPDATE <t> SET tenant_id='system' WHERE tenant_id IS NULL` | 既有 NULL 数据回填到 system tenant |
-| `ALTER TABLE <t> ENABLE ROW LEVEL SECURITY` | 启用 RLS |
-| `CREATE POLICY tenant_isolation ON <t> USING (tenant_id = current_setting('app.tenant_id')::text) WITH CHECK (...)` | 隔离策略 + INSERT 防护 |
-| `ALTER TABLE <t> FORCE ROW LEVEL SECURITY` | 强制 RLS（owner 也受策略约束，生产必须）|
+| DDL                                                                                                                 | 作用                                     |
+| ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `UPDATE <t> SET tenant_id='system' WHERE tenant_id IS NULL`                                                         | 既有 NULL 数据回填到 system tenant       |
+| `ALTER TABLE <t> ENABLE ROW LEVEL SECURITY`                                                                         | 启用 RLS                                 |
+| `CREATE POLICY tenant_isolation ON <t> USING (tenant_id = current_setting('app.tenant_id')::text) WITH CHECK (...)` | 隔离策略 + INSERT 防护                   |
+| `ALTER TABLE <t> FORCE ROW LEVEL SECURITY`                                                                          | 强制 RLS（owner 也受策略约束，生产必须） |
 
 Database-level default：`ALTER DATABASE "<db>" SET app.tenant_id = ''`
 （确保 `current_setting` 不报错；空值 → 谓词匹配不到行 → deny-by-default）。
 
 ### 2.2 覆盖的 58 张表
 
-| 来源 migration | 表数 | 域 |
-|---|---:|---|
-| 0001 baseline | 11 | arch(5) / copilot(4) / a2a(2) |
-| 0002 data_platform | 5 | data(2) / etl(1) / metrics(1) / scheduler(1) |
-| 0003 apphub | 5 | apphub(5) |
-| 0004 wfe | 3 | wfe(3) |
-| 0005 dw | 14 | dw(14) |
-| 0006 business_domains | 19 | rag(2) / ont(5) / agent(3) / mcp(3) / kb(3) / llmgw(3) |
-| 0007 outbox | 1 | outbox_event(1) |
-| **合计** | **58** | |
+| 来源 migration        |   表数 | 域                                                     |
+| --------------------- | -----: | ------------------------------------------------------ |
+| 0001 baseline         |     11 | arch(5) / copilot(4) / a2a(2)                          |
+| 0002 data_platform    |      5 | data(2) / etl(1) / metrics(1) / scheduler(1)           |
+| 0003 apphub           |      5 | apphub(5)                                              |
+| 0004 wfe              |      3 | wfe(3)                                                 |
+| 0005 dw               |     14 | dw(14)                                                 |
+| 0006 business_domains |     19 | rag(2) / ont(5) / agent(3) / mcp(3) / kb(3) / llmgw(3) |
+| 0007 outbox           |      1 | outbox_event(1)                                        |
+| **合计**              | **58** |                                                        |
 
 ### 2.3 测试
 
@@ -55,20 +55,20 @@ Database-level default：`ALTER DATABASE "<db>" SET app.tenant_id = ''`
 
 由于本地无 PostgreSQL，使用 mock dialect 验证 migration 发出的 DDL 语句结构：
 
-| 测试 | 验证内容 |
-|---|---|
-| `test_rls_enabled_on_outbox_event` | outbox_event 表有 ENABLE RLS |
-| `test_rls_forced_owner_cannot_bypass` | 58 表全部有 FORCE RLS（owner 不可绕过） |
-| `test_rls_cross_tenant_blocked` | 策略谓词使用 `current_setting('app.tenant_id')` + WITH CHECK |
-| `test_rls_set_tenant_id_session_function` | ALTER DATABASE SET app.tenant_id = '' |
-| `test_rls_disabled_in_sqlite` | SQLite 下 migration 是 no-op（0 次 op.execute） |
-| `test_rls_policy_created_for_each_table` | 58 表全部有 CREATE POLICY tenant_isolation |
+| 测试                                      | 验证内容                                                     |
+| ----------------------------------------- | ------------------------------------------------------------ |
+| `test_rls_enabled_on_outbox_event`        | outbox_event 表有 ENABLE RLS                                 |
+| `test_rls_forced_owner_cannot_bypass`     | 58 表全部有 FORCE RLS（owner 不可绕过）                      |
+| `test_rls_cross_tenant_blocked`           | 策略谓词使用 `current_setting('app.tenant_id')` + WITH CHECK |
+| `test_rls_set_tenant_id_session_function` | ALTER DATABASE SET app.tenant_id = ''                        |
+| `test_rls_disabled_in_sqlite`             | SQLite 下 migration 是 no-op（0 次 op.execute）              |
+| `test_rls_policy_created_for_each_table`  | 58 表全部有 CREATE POLICY tenant_isolation                   |
 
 ## 3. 13 硬规则映射
 
-| # | 硬规则 | G6 关联 |
-|---|---|---|
-| 3 | **没有 tenant 上下文，不访问 repository** | **DB 层双保险**：event listener（应用层）+ RLS（引擎层）|
+| #   | 硬规则                                    | G6 关联                                                  |
+| --- | ----------------------------------------- | -------------------------------------------------------- |
+| 3   | **没有 tenant 上下文，不访问 repository** | **DB 层双保险**：event listener（应用层）+ RLS（引擎层） |
 
 ## 4. 测试结果
 

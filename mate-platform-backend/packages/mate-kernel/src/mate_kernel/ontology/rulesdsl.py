@@ -10,14 +10,13 @@ SWRL 风格规则文本 → 解析 → 对推理事实执行。语法（一行�
 - 与 reasoning.engine 的输入输出同构（facts: {predicate: set[ids]}），
   可叠加在 R1/R2/R3 输出之上。
 """
+
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
 
-_RULE_RE = re.compile(
-    r"^(?P<name>[A-Za-z0-9_\-]+)\s*:\s*IF\s+(?P<body>.+?)\s+THEN\s+(?P<head>.+)$"
-)
+_RULE_RE = re.compile(r"^(?P<name>[A-Za-z0-9_\-]+)\s*:\s*IF\s+(?P<body>.+?)\s+THEN\s+(?P<head>.+)$")
 _ATOM_RE = re.compile(r"^(?P<pred>[A-Za-z0-9_\-]+)\(\?(?P<var>[A-Za-z0-9_\-]+)\)$")
 
 
@@ -68,11 +67,15 @@ def parse_rules(text: str) -> tuple[list[Rule], list[str]]:
             ok = False
             continue
         if ok and body:
-            rules.append(Rule(m.group("name"), tuple(body), Atom(hm.group("pred"), hm.group("var"))))
+            rules.append(
+                Rule(m.group("name"), tuple(body), Atom(hm.group("pred"), hm.group("var")))
+            )
     return rules, errors
 
 
-def _eval_atom(atom: Atom, binding: dict[str, str], facts: dict[str, set[str]]) -> list[dict[str, str]]:
+def _eval_atom(
+    atom: Atom, binding: dict[str, str], facts: dict[str, set[str]]
+) -> list[dict[str, str]]:
     """对单个体谓词在当前绑定下求可行绑定扩展。"""
     out: list[dict[str, str]] = []
     bound = binding.get(atom.var)
@@ -87,8 +90,7 @@ def _eval_atom(atom: Atom, binding: dict[str, str], facts: dict[str, set[str]]) 
     return out
 
 
-def run_rules(rules: list[Rule], facts: dict[str, set[str]],
-              max_iterations: int = 10) -> DslResult:
+def run_rules(rules: list[Rule], facts: dict[str, set[str]], max_iterations: int = 10) -> DslResult:
     """正向链执行：规则体全绑定满足 ⟹ 推导头部事实（幂等）。"""
     result = DslResult(facts={p: set(v) for p, v in facts.items()})
     for _ in range(max_iterations):
@@ -109,11 +111,13 @@ def run_rules(rules: list[Rule], facts: dict[str, set[str]],
                 bucket = result.facts.setdefault(rule.head.predicate, set())
                 if head_id not in bucket:
                     bucket.add(head_id)
-                    result.derived.append({
-                        "rule": rule.name,
-                        "predicate": rule.head.predicate,
-                        "id": head_id,
-                    })
+                    result.derived.append(
+                        {
+                            "rule": rule.name,
+                            "predicate": rule.head.predicate,
+                            "id": head_id,
+                        }
+                    )
                     added = True
         if not added:
             break

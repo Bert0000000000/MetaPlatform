@@ -14,6 +14,7 @@ MP-SAL-05（ADR-0045）action 编排与本体联动：
 - 流程实例本体化（通道③）：submit/状态变化同步 process-instance 对象，
   使 ``query_process_instance`` 自动上工具面（AI/前端可查）。
 """
+
 from __future__ import annotations
 
 import re
@@ -89,8 +90,7 @@ class PlanRunner:
         proposal 确认），计入 B3 满足条件。
         """
         hitl = any(
-            s.requires_hitl or s.kind in (StepKind.PROPOSE, StepKind.APPLY_ACTION)
-            for s in steps
+            s.requires_hitl or s.kind in (StepKind.PROPOSE, StepKind.APPLY_ACTION) for s in steps
         )
         if not hitl:
             raise NoHitlStepError(
@@ -100,10 +100,14 @@ class PlanRunner:
         # PROPOSE/APPLY_ACTION 步本质是 proposal 闸——自动置 requires_hitl
         # 以满足 kernel PlanSpec 的 B3 硬校验（执行时按 proposal 流程挂起）。
         steps = [
-            s if (s.requires_hitl or s.kind not in (StepKind.PROPOSE, StepKind.APPLY_ACTION))
+            s
+            if (s.requires_hitl or s.kind not in (StepKind.PROPOSE, StepKind.APPLY_ACTION))
             else PlanStep(
-                step_id=s.step_id, kind=s.kind, target=s.target,
-                payload=s.payload, requires_hitl=True,
+                step_id=s.step_id,
+                kind=s.kind,
+                target=s.target,
+                payload=s.payload,
+                requires_hitl=True,
             )
             for s in steps
         ]
@@ -142,21 +146,33 @@ class PlanRunner:
         return out
 
     async def _sync_pi(
-        self, tenant_id: str, token: str, plan_id: str, status: str,
-        current_step: str = "", proposal_id: str = "",
+        self,
+        tenant_id: str,
+        token: str,
+        plan_id: str,
+        status: str,
+        current_step: str = "",
+        proposal_id: str = "",
     ) -> None:
         """流程实例本体化（best-effort，失败不阻断编排）。"""
         if self._ont is None:
             return
         try:
             await self._ont.upsert_process_instance(
-                tenant_id, plan_id, status=status,
-                current_step=current_step, proposal_id=proposal_id, token=token,
+                tenant_id,
+                plan_id,
+                status=status,
+                current_step=current_step,
+                proposal_id=proposal_id,
+                token=token,
             )
         except Exception as e:
             import structlog
+
             structlog.get_logger(__name__).warning(
-                "plan.pi_sync_failed", plan_id=plan_id, error=str(e),
+                "plan.pi_sync_failed",
+                plan_id=plan_id,
+                error=str(e),
             )
 
     async def execute(self, *, plan_id: str, tenant_id: str, token: str = "") -> dict[str, Any]:
@@ -171,8 +187,9 @@ class PlanRunner:
         while True:
             step = state.current_step
             if step is None:
-                await self._sync_pi(tenant_id, token, plan_id,
-                                    "aborted" if state.aborted else "completed")
+                await self._sync_pi(
+                    tenant_id, token, plan_id, "aborted" if state.aborted else "completed"
+                )
                 return {
                     "plan_id": plan_id,
                     "status": "completed" if not state.aborted else "aborted",
@@ -239,8 +256,11 @@ class PlanRunner:
             # usable when the metadata side-channel is unavailable; actual
             # Ontology action steps still fail closed in _dispatch_step.
             import structlog
+
             structlog.get_logger(__name__).warning(
-                "plan.pi_type_sync_failed", tenant_id=tenant_id, error=str(exc),
+                "plan.pi_type_sync_failed",
+                tenant_id=tenant_id,
+                error=str(exc),
             )
 
     async def review(
@@ -261,8 +281,11 @@ class PlanRunner:
         """
         state = self.get(plan_id)
         waiting = next(
-            (h for h in reversed(state.history)
-             if h.step_id == step_id and h.status is StepStatus.HITL_WAITING),
+            (
+                h
+                for h in reversed(state.history)
+                if h.step_id == step_id and h.status is StepStatus.HITL_WAITING
+            ),
             None,
         )
         proposal_id = ""
@@ -271,7 +294,9 @@ class PlanRunner:
         if not approved:
             if proposal_id and self._ont is not None:
                 try:
-                    await self._ont.reject(tenant_id, proposal_id, confirmed_by="reviewer", token=token)
+                    await self._ont.reject(
+                        tenant_id, proposal_id, confirmed_by="reviewer", token=token
+                    )
                 except OntologyClientError:
                     pass
             self._orch.abort(plan_id, feedback or "rejected by reviewer")
@@ -285,7 +310,10 @@ class PlanRunner:
         executed: dict[str, Any] = {"feedback": feedback}
         if proposal_id and self._ont is not None:
             executed = await self._resolve_proposal(
-                tenant_id, proposal_id, waiting.output if waiting else {}, token,
+                tenant_id,
+                proposal_id,
+                waiting.output if waiting else {},
+                token,
             )
         self._orch.record(
             plan_id,
@@ -294,8 +322,11 @@ class PlanRunner:
         return await self.execute(plan_id=plan_id, tenant_id=tenant_id, token=token)
 
     async def _resolve_proposal(
-        self, tenant_id: str, proposal_id: str,
-        waiting_output: dict[str, Any], token: str = "",
+        self,
+        tenant_id: str,
+        proposal_id: str,
+        waiting_output: dict[str, Any],
+        token: str = "",
     ) -> dict[str, Any]:
         """HITL 合一核心：confirm + execute/apply。"""
         assert self._ont is not None
@@ -304,8 +335,12 @@ class PlanRunner:
         return {"proposal_id": proposal_id, "confirmed": True, "executed": out}
 
     async def _dispatch_step(
-        self, tenant_id: str, step: PlanStep, state: PlanState,
-        plan_id: str, token: str = "",
+        self,
+        tenant_id: str,
+        step: PlanStep,
+        state: PlanState,
+        plan_id: str,
+        token: str = "",
     ) -> Any:
         payload = self._resolve_payload(state, step)
         if step.kind is StepKind.CALL_AGENT:
@@ -327,17 +362,21 @@ class PlanRunner:
             action_kind = str(payload.get("action_kind") or "action")
             if action_kind == "create_instance":
                 prop = await self._ont.propose_instance(
-                    tenant_id, step.target,
+                    tenant_id,
+                    step.target,
                     props=dict(payload.get("props") or {}),
-                    impact_summary=str(payload.get("impact_summary", "")), token=token,
+                    impact_summary=str(payload.get("impact_summary", "")),
+                    token=token,
                 )
             else:
                 prop = await self._ont.propose_action(
-                    tenant_id, step.target,
+                    tenant_id,
+                    step.target,
                     parameters=dict(payload.get("parameters") or {}),
                     target_iid=str(payload.get("target_iid") or ""),
                     impact_summary=str(payload.get("impact_summary", "")),
-                    expected_diff=dict(payload.get("expected_diff") or {}), token=token,
+                    expected_diff=dict(payload.get("expected_diff") or {}),
+                    token=token,
                 )
             # 产出 proposal → 本步转为 HITL 挂起（record HITL_WAITING 由外层处理：
             # 直接抛专用信号让 execute 循环按 requires_hitl 分支记录）
@@ -347,7 +386,9 @@ class PlanRunner:
             if self._ont is None:
                 raise NoRoleForTaskError("ontology client not configured")
             return await self._ont.object_query(
-                tenant_id, {"source": step.target, **payload}, token=token,
+                tenant_id,
+                {"source": step.target, **payload},
+                token=token,
             )
         if step.kind is StepKind.RUN_FUNCTION:
             from mate_kernel.sandbox.k8s import SubprocessExecutor
@@ -365,8 +406,12 @@ class PlanRunner:
         )
 
     def _mark_propose_hitl(
-        self, plan_id: str, step: PlanStep, prop: dict[str, Any],
-        action_kind: str, resolved_payload: dict[str, Any],
+        self,
+        plan_id: str,
+        step: PlanStep,
+        prop: dict[str, Any],
+        action_kind: str,
+        resolved_payload: dict[str, Any],
     ) -> None:
         """PROPOSE/APPLY_ACTION 步执行结果记录为 HITL_WAITING（携带 proposal）。
 
@@ -375,19 +420,22 @@ class PlanRunner:
         """
         state = self._orch.get(plan_id)
         state.current_step_idx = state.current_step_idx  # 不推进：等待 review
-        self._orch.record(plan_id, StepResult(
-            step_id=step.step_id,
-            status=StepStatus.HITL_WAITING,
-            output={
-                "proposal_id": prop.get("proposal_id", ""),
-                "action_kind": action_kind,
-                "target": step.target,
-                "parameters": dict(resolved_payload.get("parameters") or {}),
-                "target_iid": str(resolved_payload.get("target_iid") or ""),
-                "impact_summary": prop.get("impact_summary", ""),
-                "expected_diff": prop.get("expected_diff", {}),
-            },
-        ))
+        self._orch.record(
+            plan_id,
+            StepResult(
+                step_id=step.step_id,
+                status=StepStatus.HITL_WAITING,
+                output={
+                    "proposal_id": prop.get("proposal_id", ""),
+                    "action_kind": action_kind,
+                    "target": step.target,
+                    "parameters": dict(resolved_payload.get("parameters") or {}),
+                    "target_iid": str(resolved_payload.get("target_iid") or ""),
+                    "impact_summary": prop.get("impact_summary", ""),
+                    "expected_diff": prop.get("expected_diff", {}),
+                },
+            ),
+        )
 
 
 class _ProposeWaiting(Exception):

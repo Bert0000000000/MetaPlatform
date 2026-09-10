@@ -1,4 +1,5 @@
 """Authentication & authorization facade for mate-platform."""
+
 from .audit import (
     CrossTenantAuditSink,
     CrossTenantDataAccess,

@@ -1,4 +1,5 @@
 """Retry + Fallback tests (ST-5.5.6.2)."""
+
 from __future__ import annotations
 
 import pytest
@@ -50,6 +51,7 @@ async def test_primary_fails_uses_fallback() -> None:
 @pytest.mark.asyncio
 async def test_all_fail_raises() -> None:
     """主 + 全 fallback 失败 → 抛 RuntimeError."""
+
     async def fake_chat(model: str, **kwargs: object) -> ChatResponse:
         raise RuntimeError(f"{model} down")
 

@@ -1,4 +1,5 @@
-﻿"""LangGraph S1 scenario: single Agent QA with RAG tool."""
+"""LangGraph S1 scenario: single Agent QA with RAG tool."""
+
 from __future__ import annotations
 
 import logging

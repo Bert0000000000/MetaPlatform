@@ -30,9 +30,9 @@ pnpm --filter @mate/mcphub dev     # 5177
 
 ## 故障排查
 
-| 现象 | 排查 |
-|---|---|
+| 现象                | 排查                     |
+| ------------------- | ------------------------ |
 | 5175/5176/5177 冲突 | 检查 vite.config.ts port |
-| 工具 401 | 检查 token / BFF |
-| SPARQL 400 | 检查 WHERE 语法 |
-| 全文检索 miss | 检查 token 切分 |
+| 工具 401            | 检查 token / BFF         |
+| SPARQL 400          | 检查 WHERE 语法          |
+| 全文检索 miss       | 检查 token 切分          |

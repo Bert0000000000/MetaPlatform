@@ -3,6 +3,7 @@
 > **状态**：2026-08-18 战略梳理完成 · **性质**：单一源文档（其他所有文件都是本文档的展开）
 >
 > **关联文档**：
+>
 > - 调研报告：`2026-08-18-workflow-engine-survey.md`
 > - Talking Points：`2026-08-18-workflow-path-c-talking-points.md`
 > - 借鉴清单（4 份）：Temporal / LangGraph / xstate / flowgram + xyflow（已落到 subagent outputs）
@@ -23,38 +24,40 @@
 
 ### 1.1 核心用户故事：**HITL，不是 BPMN**
 
-| | 用户故事 |
-|---|---|
-| ✅ **核心** | **HITL**（Human-in-the-Loop）—— Workflow 节点挂起、等人决策、继续 |
-| ❌ **非核心** | BPMN 标准兼容（最后做一个轻量转化层即可） |
+|               | 用户故事                                                          |
+| ------------- | ----------------------------------------------------------------- |
+| ✅ **核心**   | **HITL**（Human-in-the-Loop）—— Workflow 节点挂起、等人决策、继续 |
+| ❌ **非核心** | BPMN 标准兼容（最后做一个轻量转化层即可）                         |
 
 **Why**：MatePlatform 是企业级 AI 平台，**审批可见 + 强制 audit + 合规** 是硬需求；BPMN 在内部不强制，外部对接做转化层即可。
 
 **推论**：
+
 1. **Path C 必须有 Event Sourcing**——不是借鉴 Temporal，是 HITL 硬约束（不做 = 不能挂起 = HITL 不能用）
 2. **M0 PoC 必须包含 HITL 最小验证**（不是事后补）
 
 ### 1.2 Path C：Python-native 完全自研
 
-| 路线 | 选/不选 | 原因 |
-|---|---|---|
-| **Path A** Service-Oriented 集成现成引擎 | ❌ | 异构引擎污染主代码库 |
-| **Path B** 提炼算法内核 | ❌ | 工作量与 Path C 接近，价值小 |
-| **Path C** Python-native 完全自研 | ✅ | Python 一致性 + 借鉴设计 |
-| Path D 从零造引擎 | ❌ | NIH 反模式 |
+| 路线                                     | 选/不选 | 原因                         |
+| ---------------------------------------- | ------- | ---------------------------- |
+| **Path A** Service-Oriented 集成现成引擎 | ❌      | 异构引擎污染主代码库         |
+| **Path B** 提炼算法内核                  | ❌      | 工作量与 Path C 接近，价值小 |
+| **Path C** Python-native 完全自研        | ✅      | Python 一致性 + 借鉴设计     |
+| Path D 从零造引擎                        | ❌      | NIH 反模式                   |
 
 **约束**：3-4 人 / 6-12 月 / 团队有能力消化借鉴清单。
 
 ### 1.3 借鉴设计 ≠ 翻译代码
 
-| | 借鉴 | 翻译 |
-|---|---|---|
-| **读什么** | 设计文档 / ADR / Issue / Blog | 源代码 / API 签名 / 数据结构 |
-| **写什么** | Python 重写，理解"为什么" | 1:1 复刻，copy 后改 snake_case |
-| **结果** | 100% Python 自有、永久可演进 | 私有 fork、永远追上游、性能差 |
-| **License** | 全 MIT / Apache | n8n 触雷 |
+|             | 借鉴                          | 翻译                           |
+| ----------- | ----------------------------- | ------------------------------ |
+| **读什么**  | 设计文档 / ADR / Issue / Blog | 源代码 / API 签名 / 数据结构   |
+| **写什么**  | Python 重写，理解"为什么"     | 1:1 复刻，copy 后改 snake_case |
+| **结果**    | 100% Python 自有、永久可演进  | 私有 fork、永远追上游、性能差  |
+| **License** | 全 MIT / Apache               | n8n 触雷                       |
 
 **借鉴清单已 4 份完成**：
+
 - Temporal（确定性回放 / Event Sourcing / Signal-Query）
 - LangGraph（BSP / reducer / Interrupt）
 - xstate（statechart / Actor 模型）
@@ -62,18 +65,18 @@
 
 ### 1.4 与 n8n + Flowable + flowgram 的能力对位
 
-| 能力来源 | 想要的能力 | Path C 怎么做 | 阶段 |
-|---|---|---|---|
-| **HITL（核心）** | 任务派发、审批、Agent 确认 | Event Sourcing + Interrupt + UserTask + UserApproved + AI HITL Confirm | P0 |
-| n8n | 400+ 集成 | 17 域 Ontology Function（业务更对口） | P2 |
-| n8n | 可视化编排 | xyflow v12 前端 + 自研编排内核 | P0 |
-| n8n | 表达式引擎 | 自研 ast + Jinja2 | P2 |
-| n8n | 凭据管理 | 复用 Keycloak + SEC-IAM-01 | P1 |
-| Flowable | BPMN / UserTask | **不重写 BPMN**，只借鉴 UserTask 概念 + Interrupt | P0 |
-| Flowable | 多租户 | 复用 SEC-TENANT-01 + Namespace | P1 |
-| Flowable | Timer | PG Timer 表 + pg_cron | P0 |
-| flowgram | 友好 UI | xyflow + 借鉴 variable/form 设计 | P1 |
-| BPMN 兼容 | 外部对接 | v3.3+ 轻量转化层 | P3 |
+| 能力来源         | 想要的能力                 | Path C 怎么做                                                          | 阶段 |
+| ---------------- | -------------------------- | ---------------------------------------------------------------------- | ---- |
+| **HITL（核心）** | 任务派发、审批、Agent 确认 | Event Sourcing + Interrupt + UserTask + UserApproved + AI HITL Confirm | P0   |
+| n8n              | 400+ 集成                  | 17 域 Ontology Function（业务更对口）                                  | P2   |
+| n8n              | 可视化编排                 | xyflow v12 前端 + 自研编排内核                                         | P0   |
+| n8n              | 表达式引擎                 | 自研 ast + Jinja2                                                      | P2   |
+| n8n              | 凭据管理                   | 复用 Keycloak + SEC-IAM-01                                             | P1   |
+| Flowable         | BPMN / UserTask            | **不重写 BPMN**，只借鉴 UserTask 概念 + Interrupt                      | P0   |
+| Flowable         | 多租户                     | 复用 SEC-TENANT-01 + Namespace                                         | P1   |
+| Flowable         | Timer                      | PG Timer 表 + pg_cron                                                  | P0   |
+| flowgram         | 友好 UI                    | xyflow + 借鉴 variable/form 设计                                       | P1   |
+| BPMN 兼容        | 外部对接                   | v3.3+ 轻量转化层                                                       | P3   |
 
 ---
 
@@ -102,6 +105,7 @@ Workflow 结束
 ```
 
 **关键属性**：
+
 - **状态机**：pending → claimed → completed / cancelled / expired
 - **操作**：claim / delegate / 加签 / 决议
 - **默认决议模式**：**or-approve**（任何认领人决议即生效）
@@ -143,6 +147,7 @@ class UserTask:
 | 应用 | 通用审批 | 合规/审计/财务 |
 
 **典型 use case**：
+
 - 财务报销（金额 > 1万 需 CFO 审批）
 - 合同审批（法务固定审批人）
 - 数据导出（PII 数据需 DPO 审批）
@@ -174,6 +179,7 @@ class UserTask:
 ```
 
 **模式 1：Simple**（最轻量）
+
 ```python
 decision = await ctx.interrupt("approve this proposal?")
 if decision.action == "approve":
@@ -183,6 +189,7 @@ else:
 ```
 
 **模式 2：Editable**（人可改）
+
 ```python
 decision = await ctx.interrupt(proposal=my_proposal)
 # decision.modified_proposal 可能被改过
@@ -190,6 +197,7 @@ return decision.modified_proposal or my_proposal
 ```
 
 **模式 3：Discard + Revert**（整个 Workflow 回滚）
+
 ```python
 decision = await ctx.interrupt(proposal=my_proposal)
 if decision.action == "discard":
@@ -200,14 +208,14 @@ if decision.action == "discard":
 
 ### 2.4 场景 4：In-loop AI Confirm vs Formal Approved（用户加的细分）
 
-| | In-loop AI Confirm | Formal Approved |
-|---|---|---|
-| **位置** | Agent 代码内 | Workflow DSL 节点 |
-| **调用** | `human_confirm()` | `[Approved]` 节点 |
-| **Audit trail** | 无（默认） | **强制** |
-| **合规级** | 轻量 | 合规级 |
-| **可见性** | 仅 Agent 内部 | 全 Workflow 可见 |
-| **阶段** | M2 | **M1** |
+|                 | In-loop AI Confirm | Formal Approved   |
+| --------------- | ------------------ | ----------------- |
+| **位置**        | Agent 代码内       | Workflow DSL 节点 |
+| **调用**        | `human_confirm()`  | `[Approved]` 节点 |
+| **Audit trail** | 无（默认）         | **强制**          |
+| **合规级**      | 轻量               | 合规级            |
+| **可见性**      | 仅 Agent 内部      | 全 Workflow 可见  |
+| **阶段**        | M2                 | **M1**            |
 
 **Why 需要区分**：企业级软件需要"审批可见 + 可审计 + 合规"，但 AI 内部频繁询问不能都升级到 Workflow 节点（否则画布会爆炸）。所以两种模式必须共存。
 
@@ -276,22 +284,23 @@ sequenceDiagram
 ```
 
 **关键不变性**：
+
 - 任何时刻，Event Store 都包含 Workflow 完整历史
 - 重启时从 event 0 重放，不依赖内存快照
 - Signal/Query 不破坏确定性回放
 
 ### 3.3 借鉴清单 → 架构层映射
 
-| 架构层 | 主要借鉴 | 次要借鉴 | 不借鉴 |
-|---|---|---|---|
-| ① 画布 | xyflow（前端） | flowgram variable/form | flowgram runtime/nodejs |
-| ② DSL | flowgram variable-engine（AST 类型推断） | xstate FSM | - |
-| ③ 编排内核 | **Temporal Event Sourcing + Interrupt** | **LangGraph BSP** | Temporal Worker 进程模型 / Sticky Cache |
-| ④ 节点注册 | xstate Actor 模型（对位 capability fiber） | flowgram material 模式 | - |
-| ⑤ Agent | **LangGraph Pregel + reducer + Interrupt** | - | LangChain 强绑定 / MessagesState |
-| ⑥ 沙箱 | ADR-0040/-41（已有） | - | - |
-| ⑦ 持久化 | **Temporal Event History** | LangGraph Checkpointer | Temporal Visibility / ES |
-| ⑧ 集成 | composition cordis（已就绪） | - | - |
+| 架构层     | 主要借鉴                                   | 次要借鉴               | 不借鉴                                  |
+| ---------- | ------------------------------------------ | ---------------------- | --------------------------------------- |
+| ① 画布     | xyflow（前端）                             | flowgram variable/form | flowgram runtime/nodejs                 |
+| ② DSL      | flowgram variable-engine（AST 类型推断）   | xstate FSM             | -                                       |
+| ③ 编排内核 | **Temporal Event Sourcing + Interrupt**    | **LangGraph BSP**      | Temporal Worker 进程模型 / Sticky Cache |
+| ④ 节点注册 | xstate Actor 模型（对位 capability fiber） | flowgram material 模式 | -                                       |
+| ⑤ Agent    | **LangGraph Pregel + reducer + Interrupt** | -                      | LangChain 强绑定 / MessagesState        |
+| ⑥ 沙箱     | ADR-0040/-41（已有）                       | -                      | -                                       |
+| ⑦ 持久化   | **Temporal Event History**                 | LangGraph Checkpointer | Temporal Visibility / ES                |
+| ⑧ 集成     | composition cordis（已就绪）               | -                      | -                                       |
 
 ---
 
@@ -299,12 +308,12 @@ sequenceDiagram
 
 ### 4.1 总览
 
-| 阶段 | 时长 | 交付物 | HITL 验收点 |
-|---|---|---|---|
-| **M0 PoC** | 2 周 | 最小可执行 workflow + PG 持久化 | **UserTask → approve → 继续** |
-| **M1 内核** | 8 周 | DSL + 编排 + 持久化 + UserTask + UserApproved | 两个一等 HITL 节点 + 完整 audit log |
-| **M2 节点** | 10 周 | 17 域节点 + Agent + 沙箱 + AI HITL Confirm（3 模式）+ In-loop | AI 半路问人 + editable + discard+revert |
-| **M3 生产化** | 12 周 | 多租户 + 可观测 + 13 硬规则 + all_approve/majority + BPMN 转化层 | 多签模式 + 转化层 |
+| 阶段          | 时长  | 交付物                                                           | HITL 验收点                             |
+| ------------- | ----- | ---------------------------------------------------------------- | --------------------------------------- |
+| **M0 PoC**    | 2 周  | 最小可执行 workflow + PG 持久化                                  | **UserTask → approve → 继续**           |
+| **M1 内核**   | 8 周  | DSL + 编排 + 持久化 + UserTask + UserApproved                    | 两个一等 HITL 节点 + 完整 audit log     |
+| **M2 节点**   | 10 周 | 17 域节点 + Agent + 沙箱 + AI HITL Confirm（3 模式）+ In-loop    | AI 半路问人 + editable + discard+revert |
+| **M3 生产化** | 12 周 | 多租户 + 可观测 + 13 硬规则 + all_approve/majority + BPMN 转化层 | 多签模式 + 转化层                       |
 
 ### 4.2 M0 PoC 详细范围（2 周 / 1-2 人）
 
@@ -380,13 +389,13 @@ sequenceDiagram
 
 ## 五、风险与缓解
 
-| # | 风险 | 严重度 | 缓解 |
-|---|---|---|---|
-| 1 | 画布"自由+固定"双模式工作量大 | 高 | MVP 只做自由布局，固定布局走 Flowable |
-| 2 | Event Sourcing corner case 多 | 高 | M0 用最小场景验证，M1 持续打磨 |
-| 3 | LangGraph BSP 性能对标难 | 中 | M2 性能压测，不达标就降级为顺序执行 |
-| 4 | 永久维护成本 | 中 | 借鉴清单要求 100% Python 自有，可演进 |
-| 5 | 团队能力不足 | 中 | M0 PoC 是能力门槛，**跑不动降级 Path A** |
+| #   | 风险                          | 严重度 | 缓解                                     |
+| --- | ----------------------------- | ------ | ---------------------------------------- |
+| 1   | 画布"自由+固定"双模式工作量大 | 高     | MVP 只做自由布局，固定布局走 Flowable    |
+| 2   | Event Sourcing corner case 多 | 高     | M0 用最小场景验证，M1 持续打磨           |
+| 3   | LangGraph BSP 性能对标难      | 中     | M2 性能压测，不达标就降级为顺序执行      |
+| 4   | 永久维护成本                  | 中     | 借鉴清单要求 100% Python 自有，可演进    |
+| 5   | 团队能力不足                  | 中     | M0 PoC 是能力门槛，**跑不动降级 Path A** |
 
 **止损线**：M0 PoC 跑不动 → 立即降级到 Path A（集成现成引擎），不无限投入。
 
@@ -442,20 +451,20 @@ P1 HITL 节点设计：
 
 ### 8.1 文档
 
-| 文件 | 内容 |
-|---|---|
-| `2026-08-18-workflow-engine-survey.md` | 17 个 TOP 仓库调研 |
-| `2026-08-18-workflow-master-synthesis.md` | **本文档**（单一源） |
-| `2026-08-18-workflow-path-c-talking-points.md` | Review talking points |
-| 借鉴清单 4 份（subagent outputs） | Temporal / LangGraph / xstate / flowgram+xyflow |
+| 文件                                           | 内容                                            |
+| ---------------------------------------------- | ----------------------------------------------- |
+| `2026-08-18-workflow-engine-survey.md`         | 17 个 TOP 仓库调研                              |
+| `2026-08-18-workflow-master-synthesis.md`      | **本文档**（单一源）                            |
+| `2026-08-18-workflow-path-c-talking-points.md` | Review talking points                           |
+| 借鉴清单 4 份（subagent outputs）              | Temporal / LangGraph / xstate / flowgram+xyflow |
 
 ### 8.2 记忆
 
-| 记忆 | 类型 | 内容 |
-|---|---|---|
-| `mp-workflow-path-c` | project | Path C 决策 + 能力对位 |
-| `mp-workflow-hitl-scenarios` | project | 4 个 HITL 场景 + 3 个 AI 模式 |
-| `feedback-python-native-preference` | feedback | Python 一致性偏好 |
+| 记忆                                | 类型     | 内容                          |
+| ----------------------------------- | -------- | ----------------------------- |
+| `mp-workflow-path-c`                | project  | Path C 决策 + 能力对位        |
+| `mp-workflow-hitl-scenarios`        | project  | 4 个 HITL 场景 + 3 个 AI 模式 |
+| `feedback-python-native-preference` | feedback | Python 一致性偏好             |
 
 ### 8.3 任务
 

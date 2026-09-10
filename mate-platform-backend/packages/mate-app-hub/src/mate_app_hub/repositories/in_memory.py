@@ -18,6 +18,7 @@ Seed data:
     rely on these minima; bumping them is allowed but tests
     assert `>= N` rather than equality.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

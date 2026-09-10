@@ -1,4 +1,5 @@
 """Unit tests for scripts/ci/forbid_external_secret_plain.py (G2 rule 12)."""
+
 from __future__ import annotations
 
 import tempfile
@@ -42,15 +43,7 @@ def test_templates_dir_not_scanned() -> None:
     # SealedSecret encryptedData blobs live under templates/ and must
     # not be treated as inline plaintext secrets.
     with tempfile.TemporaryDirectory() as d:
-        f = (
-            Path(d)
-            / "infra"
-            / "helm"
-            / "charts"
-            / "pg"
-            / "templates"
-            / "sealedsecret.yaml"
-        )
+        f = Path(d) / "infra" / "helm" / "charts" / "pg" / "templates" / "sealedsecret.yaml"
         f.parent.mkdir(parents=True)
         f.write_text(
             "spec:\n  encryptedData:\n    password: AgBhAAAA\n",

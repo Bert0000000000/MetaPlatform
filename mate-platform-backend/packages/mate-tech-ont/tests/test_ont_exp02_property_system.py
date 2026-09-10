@@ -8,6 +8,7 @@
 5. 数组 + reducer 元数据校验（first/latest）；
 6. derived + primary_key 互斥拒绝。
 """
+
 from __future__ import annotations
 
 import os
@@ -47,16 +48,20 @@ T = "exp02"
 OBJ_DEPT = f"ont.{T}.obj.org.department.v1"
 OBJ_EMP = f"ont.{T}.obj.org.employee.v1"
 LINK = f"ont.{T}.link.org.dept-employees.v1"
-P_NAME = f"ont.{T}.prop.shared-name.v1"        # 共享属性：两类型同 rid
+P_NAME = f"ont.{T}.prop.shared-name.v1"  # 共享属性：两类型同 rid
 P_SALARY = f"ont.{T}.prop.salary.v1"
 P_HEADCOUNT = f"ont.{T}.prop.headcount.v1"  # derived count
-P_PAYROLL = f"ont.{T}.prop.payroll.v1"      # derived sum
+P_PAYROLL = f"ont.{T}.prop.payroll.v1"  # derived sum
 
 
 def _name_prop() -> Property:
     return Property(
-        rid=ClassRef(P_NAME), type_id="string", nullable=False,
-        primary_key=True, title="name", format=PropertyFormat.STRING,
+        rid=ClassRef(P_NAME),
+        type_id="string",
+        nullable=False,
+        primary_key=True,
+        title="name",
+        format=PropertyFormat.STRING,
         shared=True,
     )
 
@@ -68,8 +73,12 @@ def _emp_type() -> ObjectType:
         properties=(
             _name_prop(),
             Property(
-                rid=ClassRef(P_SALARY), type_id="double", nullable=True,
-                primary_key=False, title="salary", format=PropertyFormat.DOUBLE,
+                rid=ClassRef(P_SALARY),
+                type_id="double",
+                nullable=True,
+                primary_key=False,
+                title="salary",
+                format=PropertyFormat.DOUBLE,
             ),
         ),
         display_name="employee",
@@ -83,13 +92,21 @@ def _dept_type() -> ObjectType:
         properties=(
             _name_prop(),
             Property(
-                rid=ClassRef(P_HEADCOUNT), type_id="integer", nullable=True,
-                primary_key=False, title="headcount", format=PropertyFormat.INTEGER,
+                rid=ClassRef(P_HEADCOUNT),
+                type_id="integer",
+                nullable=True,
+                primary_key=False,
+                title="headcount",
+                format=PropertyFormat.INTEGER,
                 derived=DerivedSpec(fn="count", over_link=LINK),
             ),
             Property(
-                rid=ClassRef(P_PAYROLL), type_id="double", nullable=True,
-                primary_key=False, title="payroll", format=PropertyFormat.DOUBLE,
+                rid=ClassRef(P_PAYROLL),
+                type_id="double",
+                nullable=True,
+                primary_key=False,
+                title="payroll",
+                format=PropertyFormat.DOUBLE,
                 derived=DerivedSpec(fn="sum", over_link=LINK, field=P_SALARY),
             ),
         ),
@@ -99,7 +116,9 @@ def _dept_type() -> ObjectType:
 
 def _link_type() -> LinkType:
     return LinkType(
-        rid=ClassRef(LINK), src=ClassRef(OBJ_DEPT), dst=ClassRef(OBJ_EMP),
+        rid=ClassRef(LINK),
+        src=ClassRef(OBJ_DEPT),
+        dst=ClassRef(OBJ_EMP),
         cardinality=Cardinality.MANY_TO_MANY,
         directionality=Directionality.DIRECTED,
     )
@@ -110,9 +129,13 @@ def _ind(rid: str, class_rid: str, name: str, salary: float | None = None) -> In
     if salary is not None:
         props.append((ClassRef(P_SALARY), salary))
     return Individual(
-        rid=rid, class_rid=ClassRef(class_rid), props=tuple(props),
-        primary_key=name, tenant_id=T,
-        created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
+        rid=rid,
+        class_rid=ClassRef(class_rid),
+        props=tuple(props),
+        primary_key=name,
+        tenant_id=T,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
 
@@ -131,9 +154,13 @@ def repo() -> InMemoryOntologyRepository:
 
     def _li(src: str, dst: str, pk: str) -> LinkInstance:
         return LinkInstance(
-            rid=f"ont.{T}.lnk.{LINK.split('.')[-2]}.{pk}", link_type_rid=ClassRef(LINK),
-            src=src, dst=dst, props=(),
-            created_at=datetime.now(UTC), tenant_id=T,
+            rid=f"ont.{T}.lnk.{LINK.split('.')[-2]}.{pk}",
+            link_type_rid=ClassRef(LINK),
+            src=src,
+            dst=dst,
+            props=(),
+            created_at=datetime.now(UTC),
+            tenant_id=T,
         )
 
     r.create_link_instance(_li(f"ont.{T}.ind.department.eng", f"ont.{T}.ind.employee.alice", "l1"))
@@ -149,16 +176,22 @@ class TestValueTypes:
 
     def test_format_mismatch_violation(self) -> None:
         p = Property(
-            rid=ClassRef(f"ont.{T}.prop.test.bad.v1"), type_id="integer",
-            nullable=True, primary_key=False, title="bad",
+            rid=ClassRef(f"ont.{T}.prop.test.bad.v1"),
+            type_id="integer",
+            nullable=True,
+            primary_key=False,
+            title="bad",
             format=PropertyFormat.STRING,  # type_id=integer 但 format=string
         )
         assert validate_property(p), "expected format mismatch violation"
 
     def test_unregistered_type_id_reported_by_lint(self) -> None:
         p = Property(
-            rid=ClassRef(f"ont.{T}.prop.test.ghost.v1"), type_id="no-such-type",
-            nullable=True, primary_key=False, title="ghost",
+            rid=ClassRef(f"ont.{T}.prop.test.ghost.v1"),
+            type_id="no-such-type",
+            nullable=True,
+            primary_key=False,
+            title="ghost",
             format=PropertyFormat.STRING,
         )
         assert any("unregistered" in v for v in validate_property(p))
@@ -170,8 +203,11 @@ class TestValueTypes:
             properties=(
                 _name_prop(),
                 Property(
-                    rid=ClassRef(f"ont.{T}.prop.bad-amt.v1"), type_id="integer",
-                    nullable=True, primary_key=False, title="bad",
+                    rid=ClassRef(f"ont.{T}.prop.bad-amt.v1"),
+                    type_id="integer",
+                    nullable=True,
+                    primary_key=False,
+                    title="bad",
                     format=PropertyFormat.STRING,
                 ),
             ),
@@ -197,8 +233,11 @@ class TestDerivedProperties:
             properties=(
                 _name_prop(),
                 Property(
-                    rid=ClassRef(P_AVG), type_id="double", nullable=True,
-                    primary_key=False, title="avgSalary",
+                    rid=ClassRef(P_AVG),
+                    type_id="double",
+                    nullable=True,
+                    primary_key=False,
+                    title="avgSalary",
                     format=PropertyFormat.DOUBLE,
                     derived=DerivedSpec(fn="avg", over_link=LINK, field=P_SALARY),
                 ),
@@ -212,8 +251,11 @@ class TestDerivedProperties:
     def test_derived_cannot_be_pk(self) -> None:
         with pytest.raises(ValueError, match="primary key"):
             Property(
-                rid=ClassRef(f"ont.{T}.prop.org.bad-pk.v1"), type_id="integer",
-                nullable=True, primary_key=True, title="bad",
+                rid=ClassRef(f"ont.{T}.prop.org.bad-pk.v1"),
+                type_id="integer",
+                nullable=True,
+                primary_key=True,
+                title="bad",
                 format=PropertyFormat.INTEGER,
                 derived=DerivedSpec(fn="count", over_link=LINK),
             )
@@ -248,24 +290,30 @@ class TestStructAndArray:
         with pytest.raises(ValueError, match="struct_fields"):
             Property(
                 rid=ClassRef(f"ont.{T}.prop.test.empty-struct.v1"),
-                type_id="struct", nullable=True, primary_key=False,
-                title="empty", format=PropertyFormat.STRUCT,
+                type_id="struct",
+                nullable=True,
+                primary_key=False,
+                title="empty",
+                format=PropertyFormat.STRUCT,
             )
 
     def test_reducer_validation(self) -> None:
         with pytest.raises(ValueError, match="reducer"):
             Property(
-                rid=ClassRef(f"ont.{T}.prop.test.tags.v1"), type_id="string",
-                nullable=True, primary_key=False, title="tags",
-                format=PropertyFormat.STRING, array=True, reducer="bogus",
+                rid=ClassRef(f"ont.{T}.prop.test.tags.v1"),
+                type_id="string",
+                nullable=True,
+                primary_key=False,
+                title="tags",
+                format=PropertyFormat.STRING,
+                array=True,
+                reducer="bogus",
             )
 
 
 # ─────────────────── PG 真库同语义（可达时）───────────────────
 
-PG_DSN = os.environ.get(
-    "EXP02_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"
-)
+PG_DSN = os.environ.get("EXP02_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
 
 
 class TestPgSameSemantics:
@@ -288,23 +336,29 @@ class TestPgSameSemantics:
             r.create_individual(_ind(f"ont.{T}.ind.employee.p-bob", OBJ_EMP, "p-bob", 20.0))
             from mate_kernel.ontology.instances.link_instance import LinkInstance
 
-            for i, (s, d) in enumerate([
-                (f"ont.{T}.ind.department.p-eng", f"ont.{T}.ind.employee.p-alice"),
-                (f"ont.{T}.ind.department.p-eng", f"ont.{T}.ind.employee.p-bob"),
-            ]):
-                r.create_link_instance(LinkInstance(
-                    rid=f"ont.{T}.lnk.{LINK.split('.')[-2]}.pl{i}",
-                    link_type_rid=ClassRef(LINK),
-                    src=s, dst=d, props=(),
-                    created_at=datetime.now(UTC), tenant_id=T,
-                ))
+            for i, (s, d) in enumerate(
+                [
+                    (f"ont.{T}.ind.department.p-eng", f"ont.{T}.ind.employee.p-alice"),
+                    (f"ont.{T}.ind.department.p-eng", f"ont.{T}.ind.employee.p-bob"),
+                ]
+            ):
+                r.create_link_instance(
+                    LinkInstance(
+                        rid=f"ont.{T}.lnk.{LINK.split('.')[-2]}.pl{i}",
+                        link_type_rid=ClassRef(LINK),
+                        src=s,
+                        dst=d,
+                        props=(),
+                        created_at=datetime.now(UTC),
+                        tenant_id=T,
+                    )
+                )
         yield r
         import psycopg2
 
         conn = psycopg2.connect(PG_DSN)
         with conn.cursor() as cur:
-            for tbl in ("ont_individual", "ont_link_instance", "ont_object_type",
-                        "ont_link_type"):
+            for tbl in ("ont_individual", "ont_link_instance", "ont_object_type", "ont_link_type"):
                 cur.execute(f"DELETE FROM {tbl} WHERE tenant_id=%s", (T,))
         conn.commit()
         conn.close()
@@ -322,6 +376,7 @@ class TestPgSameSemantics:
             p = ai_metadata_struct(ClassRef(f"ont.{T}.prop.doc.p-extract.v1"))
             pg_repo.upsert_property(p)
             got = {x.rid.rid: x for x in pg_repo.list_properties()}[
-                f"ont.{T}.prop.doc.p-extract.v1"]
+                f"ont.{T}.prop.doc.p-extract.v1"
+            ]
             assert got.format is PropertyFormat.STRUCT
             assert len(got.struct_fields) == 3

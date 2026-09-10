@@ -15,6 +15,7 @@ Every handler enforces ``require_tenant`` (ADR-0014 step 2) before
 touching a repository, and write handlers emit
 ``orchestrator.<aggregate>.<verb>`` outbox events (step 3).
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -238,7 +239,9 @@ async def task_status(task_id: str, request: Request) -> dict[str, Any]:
 # --- Plans ------------------------------------------------------------------
 @router.post("/plans", status_code=201)
 async def submit_plan(
-    request: Request, body: SubmitPlanRequest, engine: str = "",
+    request: Request,
+    body: SubmitPlanRequest,
+    engine: str = "",
 ) -> dict[str, Any]:
     tid = _tid(request)
     from ..temporal_rest import engine_from, is_available, submit_and_run
@@ -250,7 +253,8 @@ async def submit_plan(
                 detail="temporal engine unavailable: temporalio not installed",
             )
         return await submit_and_run(
-            tenant_id=tid, token=_user_token(request),
+            tenant_id=tid,
+            token=_user_token(request),
             author_user_id=body.author_user_id,
             raw_steps=[s.model_dump() for s in body.steps],
         )
@@ -316,7 +320,10 @@ async def plan_execute(plan_id: str, request: Request) -> dict[str, Any]:
 
 @router.post("/plans/{plan_id}/steps/{step_id}/review")
 async def plan_review(
-    plan_id: str, step_id: str, request: Request, body: ReviewRequest,
+    plan_id: str,
+    step_id: str,
+    request: Request,
+    body: ReviewRequest,
 ) -> dict[str, Any]:
     tid = _tid(request)
     token = _user_token(request)
@@ -327,8 +334,10 @@ async def plan_review(
         if not is_available():
             raise HTTPException(status_code=503, detail="temporal engine unavailable")
         return await temporal_rest.review(
-            plan_id=plan_id, step_id=step_id,
-            approved=body.approved, feedback=body.feedback,
+            plan_id=plan_id,
+            step_id=step_id,
+            approved=body.approved,
+            feedback=body.feedback,
         )
     try:
         return await get_plan_runner().review(
@@ -368,16 +377,18 @@ async def plan_graph(plan_id: str, request: Request) -> PlanGraph:
         else:
             status = "pending"
         out = h.output if isinstance(h.output, dict) else {}
-        nodes.append(GraphNode(
-            id=s.step_id,
-            kind=s.kind.value,
-            target=s.target,
-            hitl=s.requires_hitl or s.kind.value in ("propose", "apply_action"),
-            status=status,
-            proposal_id=out.get("proposal_id"),
-            expected_diff=out.get("expected_diff"),
-            impact_summary=str(out.get("impact_summary") or ""),
-        ))
+        nodes.append(
+            GraphNode(
+                id=s.step_id,
+                kind=s.kind.value,
+                target=s.target,
+                hitl=s.requires_hitl or s.kind.value in ("propose", "apply_action"),
+                status=status,
+                proposal_id=out.get("proposal_id"),
+                expected_diff=out.get("expected_diff"),
+                impact_summary=str(out.get("impact_summary") or ""),
+            )
+        )
 
     import re as _re
 
@@ -385,13 +396,17 @@ async def plan_graph(plan_id: str, request: Request) -> PlanGraph:
     steps = state.plan.steps
     for a, b in zip(steps, steps[1:], strict=False):
         refs = [
-            v for _, v in dict(b.payload).items()
-            if isinstance(v, str)
-            and _re.search(r"\{\{steps\.[A-Za-z0-9_\-]+\.", v)
+            v
+            for _, v in dict(b.payload).items()
+            if isinstance(v, str) and _re.search(r"\{\{steps\.[A-Za-z0-9_\-]+\.", v)
         ]
-        edges.append(GraphEdge(
-            from_step=a.step_id, to_step=b.step_id, data_refs=refs,
-        ))
+        edges.append(
+            GraphEdge(
+                from_step=a.step_id,
+                to_step=b.step_id,
+                data_refs=refs,
+            )
+        )
 
     if state.aborted:
         status = "aborted"
@@ -402,8 +417,11 @@ async def plan_graph(plan_id: str, request: Request) -> PlanGraph:
     else:
         status = "running"
     return PlanGraph(
-        plan_id=plan_id, status=status, current_step_id=cur,
-        nodes=nodes, edges=edges,
+        plan_id=plan_id,
+        status=status,
+        current_step_id=cur,
+        nodes=nodes,
+        edges=edges,
     )
 
 
@@ -428,8 +446,7 @@ async def evolve_open(session_id: str, request: Request) -> dict[str, Any]:
 
 
 @router.post("/sessions/{session_id}/capabilities", status_code=201)
-async def evolve_mount(session_id: str, body: SessionMountBody,
-                       request: Request) -> dict[str, Any]:
+async def evolve_mount(session_id: str, body: SessionMountBody, request: Request) -> dict[str, Any]:
     from ..scheduler.session_evolution import get_session_evolution
 
     tid = _tid(request)
@@ -500,8 +517,9 @@ class EvolveProposeBody(BaseModel):
 
 
 @router.post("/sessions/{session_id}/evolve-proposals", status_code=201)
-async def evolve_propose(session_id: str, body: EvolveProposeBody,
-                         request: Request) -> dict[str, Any]:
+async def evolve_propose(
+    session_id: str, body: EvolveProposeBody, request: Request
+) -> dict[str, Any]:
     """PRD-01 M3：员工提议新能力（pending，人审前不生效）。"""
     from ..scheduler.session_evolution import get_session_evolution
 
@@ -557,8 +575,9 @@ async def outbox_append(body: OutboxEventBody, request: Request) -> dict[str, An
 
     tid = _tid(request)
     writer = request.app.state.outbox_writer
-    event = Event.create(type=body.type, tenant_id=tid,
-                         aggregate_id=body.aggregate_id, payload=body.payload)
+    event = Event.create(
+        type=body.type, tenant_id=tid, aggregate_id=body.aggregate_id, payload=body.payload
+    )
     writer.append(event)
     return {"event_id": event.id, "type": event.type, "status": "pending"}
 

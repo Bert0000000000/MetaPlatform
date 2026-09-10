@@ -1,4 +1,5 @@
 """LangGraph S1 + S2 scenarios with LLM + memory."""
+
 from __future__ import annotations
 
 import logging
@@ -51,7 +52,10 @@ def retrieve_node(state: dict[str, Any]) -> dict[str, Any]:
     return {
         **state,
         "retrieved_chunks": chunks,
-        "tool_calls": [*state.get("tool_calls", []), {"name": "rag_search", "args": {"query": query, "mode": mode, "hits": len(chunks)}}],
+        "tool_calls": [
+            *state.get("tool_calls", []),
+            {"name": "rag_search", "args": {"query": query, "mode": mode, "hits": len(chunks)}},
+        ],
     }
 
 
@@ -160,15 +164,19 @@ def build_s2_graph():
     g.add_node("synthesizer", synthesizer_node)
     g.add_node("persist", persist_node)
     g.add_edge(START, "planner")
-    g.add_conditional_edges("planner", should_continue_after_planner, {"worker": "worker", "__end__": END})
+    g.add_conditional_edges(
+        "planner", should_continue_after_planner, {"worker": "worker", "__end__": END}
+    )
     g.add_edge("worker", "synthesizer")
     g.add_edge("synthesizer", "persist")
     g.add_edge("persist", END)
     return g.compile()
 
+
 def answer_node_stream(state: dict[str, Any]) -> dict[str, Any]:
     """S1 stream variant: build answer via LLM, expose stream hook (no return)."""
     from mate_tech_agent.llm import get_llm, stream_answer
+
     chunks = state.get("retrieved_chunks", [])
     query = _extract_query(state)
     llm = get_llm()
@@ -183,11 +191,14 @@ def build_s1_stream_graph():
     g.add_node("answer", answer_node)
     g.add_node("persist", persist_node)
     g.add_edge(START, "retrieve")
-    g.add_conditional_edges("retrieve", should_continue_after_retrieve, {"answer": "answer", "__end__": END})
+    g.add_conditional_edges(
+        "retrieve", should_continue_after_retrieve, {"answer": "answer", "__end__": END}
+    )
     g.add_edge("retrieve", "answer")
     g.add_edge("answer", "persist")
     g.add_edge("persist", END)
     return g.compile()
+
 
 def human_review_node(state: dict[str, Any]) -> dict[str, Any]:
     """S3: pause for human review (returns pending_review state)."""
@@ -203,7 +214,11 @@ def post_review_node(state: dict[str, Any]) -> dict[str, Any]:
     approved = state.get("approved", True)
     feedback = state.get("feedback", "")
     if not approved:
-        return {**state, "answer": "[ABORTED] " + (state.get("answer", "") or "review aborted"), "pending_review": False}
+        return {
+            **state,
+            "answer": "[ABORTED] " + (state.get("answer", "") or "review aborted"),
+            "pending_review": False,
+        }
     base = state.get("answer", "")
     suffix = f"\n\n[REVIEWED] {feedback}" if feedback else "\n\n[REVIEWED]"
     return {**state, "answer": base + suffix, "pending_review": False, "reviewed": True}
@@ -224,7 +239,9 @@ def build_s3_graph():
     g.add_node("post_review", post_review_node)
     g.add_node("persist", persist_node)
     g.add_edge(START, "retrieve")
-    g.add_conditional_edges("retrieve", should_continue_after_retrieve, {"answer": "answer", "__end__": END})
+    g.add_conditional_edges(
+        "retrieve", should_continue_after_retrieve, {"answer": "answer", "__end__": END}
+    )
     g.add_edge("answer", "human_review")
     g.add_edge("human_review", "post_review")
     g.add_edge("post_review", "persist")
@@ -236,6 +253,7 @@ def build_s3_graph():
 def bpmn_deploy_node(state: dict[str, Any]) -> dict[str, Any]:
     """Deploy BPMN process definition to Flowable (TC-5.7.8)."""
     from mate_tech_agent.tools.flowable_tool import get_flowable_tool
+
     process_key = state.get("process_key", "agent_qa")
     bpmn_xml = _DEFAULT_BPMN_XML
     result = get_flowable_tool().deploy_bpmn(process_key, bpmn_xml, name=process_key)
@@ -245,6 +263,7 @@ def bpmn_deploy_node(state: dict[str, Any]) -> dict[str, Any]:
 def bpmn_start_node(state: dict[str, Any]) -> dict[str, Any]:
     """Start a process instance on Flowable."""
     from mate_tech_agent.tools.flowable_tool import get_flowable_tool
+
     variables = {
         "query": _extract_query(state),
         "thread_id": state.get("thread_id", ""),
@@ -256,11 +275,16 @@ def bpmn_start_node(state: dict[str, Any]) -> dict[str, Any]:
 def bpmn_monitor_node(state: dict[str, Any]) -> dict[str, Any]:
     """Poll process instance until completion (with timeout)."""
     from mate_tech_agent.tools.flowable_tool import get_flowable_tool
+
     inst_id = state.get("process_instance_id", "")
     if not inst_id:
         return {**state, "process_status": "failed", "error": "no instance id"}
     info = get_flowable_tool().get_process_state(inst_id)
-    return {**state, "process_status": info.get("status", "running"), "process_result": info.get("result", "")}
+    return {
+        **state,
+        "process_status": info.get("status", "running"),
+        "process_result": info.get("result", ""),
+    }
 
 
 def bpmn_complete_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -304,6 +328,7 @@ def build_s4_graph():
     g.add_edge("bpmn_complete", "persist")
     g.add_edge("persist", END)
     return g.compile()
+
 
 def guard_node(state: dict[str, Any]) -> dict[str, Any]:
     """Input safety check (TC-5.7.11): reject prompt injection + redact PII."""

@@ -3,6 +3,7 @@
 用法：python scripts/e2e_17_domains.py
 前置：docker 全栈运行中（mate-* 容器 Up + 网关 8100 + temporal 7233）。
 """
+
 from __future__ import annotations
 
 import json
@@ -19,10 +20,20 @@ TOKEN = ""
 TID = "tenant-default"
 
 DIRECT_HEALTH = [
-    ("ont", 8007), ("llmgw", 8008), ("mcp", 8081), ("copilot", 8601),
-    ("arch", 8321), ("apphub", 8301), ("orchestrator", 8505),
-    ("auth", 8101), ("agent", 8002), ("rag", 8001), ("dw", 8021),
-    ("msg", 8082), ("kb", 8003), ("a2a", 8502),
+    ("ont", 8007),
+    ("llmgw", 8008),
+    ("mcp", 8081),
+    ("copilot", 8601),
+    ("arch", 8321),
+    ("apphub", 8301),
+    ("orchestrator", 8505),
+    ("auth", 8101),
+    ("agent", 8002),
+    ("rag", 8001),
+    ("dw", 8021),
+    ("msg", 8082),
+    ("kb", 8003),
+    ("a2a", 8502),
 ]
 API_HEALTH = [
     ("data", 8701, "/api/v1/data/health"),
@@ -35,8 +46,11 @@ API_HEALTH = [
 def _login() -> str:
     data = json.dumps({"username": "admin", "password": "admin123"}).encode()
     req = urllib.request.Request(
-        GW + "/api/v1/iam/auth/login", data=data,
-        headers={"Content-Type": "application/json"}, method="POST")
+        GW + "/api/v1/iam/auth/login",
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     with urllib.request.urlopen(req, timeout=30) as r:
         return json.loads(r.read()).get("accessToken", "")
 
@@ -63,7 +77,8 @@ def main() -> int:
     global TOKEN
     TOKEN = _login()
     if not TOKEN:
-        print("FAIL: login"); return 1
+        print("FAIL: login")
+        return 1
     print(f"login OK (token {len(TOKEN)} chars)", flush=True)
 
     results: list[tuple[str, bool, str]] = []
@@ -84,8 +99,12 @@ def main() -> int:
         results.append(("temporal gRPC", False, str(e)[:40]))
 
     gw_tests = [
-        ("iam login", "POST", "/api/v1/iam/auth/login",
-         {"username": "admin", "password": "admin123"}),
+        (
+            "iam login",
+            "POST",
+            "/api/v1/iam/auth/login",
+            {"username": "admin", "password": "admin123"},
+        ),
         ("ont object-types", "GET", "/api/v1/ont/v2/object-types?limit=1", None),
         ("orchestrator roles", "GET", "/api/v1/orchestrator/roles", None),
         ("copilot agent-tools", "GET", "/api/v1/copilot/agent-tools", None),
@@ -97,11 +116,15 @@ def main() -> int:
         try:
             data = json.dumps(body).encode() if body else None
             req = urllib.request.Request(
-                GW + path, data=data,
-                headers={"Content-Type": "application/json",
-                         "Authorization": f"Bearer {TOKEN}",
-                         "X-Tenant-Id": TID},
-                method=method)
+                GW + path,
+                data=data,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {TOKEN}",
+                    "X-Tenant-Id": TID,
+                },
+                method=method,
+            )
             with urllib.request.urlopen(req, timeout=15) as r:
                 results.append((name, r.status == 200, f"HTTP {r.status}"))
         except Exception as e:

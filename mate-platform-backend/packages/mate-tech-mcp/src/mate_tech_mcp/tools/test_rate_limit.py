@@ -1,4 +1,5 @@
 """Rate limit tests (ST-5.3.7)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock

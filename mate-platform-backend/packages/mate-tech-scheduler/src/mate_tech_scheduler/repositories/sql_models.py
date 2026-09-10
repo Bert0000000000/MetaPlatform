@@ -6,6 +6,7 @@ Mirrors the ``SchedulerTask`` dataclass in in_memory.py. The
 The DAG graph (``DagNode``) is computed at runtime from task
 dependencies and is not persisted here — it stays in in_memory.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import String, Text

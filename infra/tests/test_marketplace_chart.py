@@ -3,6 +3,7 @@
 [Pending Verification: helm / kubeconform / docker 在本机不可用] —
 本测试仅做 YAML 静态解析 + NetworkPolicy/egress 白名单结构性检查。
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -42,9 +43,7 @@ def test_no_secrets_in_chart():
         text = f.read_text(encoding="utf-8")
         # 不允许 ENC[] 形式密文(数据库 connection string 也不会用 ENC[])
         if "ENC[" in text:
-            raise AssertionError(
-                f"chart file {f.name} 含 ENC[] 形式密文,违反硬规则 #12"
-            )
+            raise AssertionError(f"chart file {f.name} 含 ENC[] 形式密文,违反硬规则 #12")
         # 不允许 value: 形式裸 secret
         for line in text.splitlines():
             stripped = line.strip().lower()
@@ -53,15 +52,9 @@ def test_no_secrets_in_chart():
             # 跳过 helm 模板里的变量
             if "{{" in stripped or "}}" in stripped:
                 continue
-            if (
-                stripped.startswith("value:")
-                and any(
-                    tok in stripped
-                    for tok in ("password", "secret", "key=", "token")
-                )
+            if stripped.startswith("value:") and any(
+                tok in stripped for tok in ("password", "secret", "key=", "token")
             ):
                 # password / secret / api-key 等裸密文
                 if "ENC[" not in stripped and "encoded" not in stripped:
-                    raise AssertionError(
-                        f"chart file {f.name} 含裸 secret: {stripped!r}"
-                    )
+                    raise AssertionError(f"chart file {f.name} 含裸 secret: {stripped!r}")

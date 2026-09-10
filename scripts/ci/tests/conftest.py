@@ -4,6 +4,7 @@ Makes the sibling ``scripts/ci`` modules importable so each test file
 can ``import forbid_raw_sql`` / ``forbid_bare_kafka_producer`` /
 ``forbid_external_secret_plain`` directly.
 """
+
 from __future__ import annotations
 
 import sys

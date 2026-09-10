@@ -6,6 +6,7 @@
 3. search_around：按 (link_type, direction) 分组、对端实例行、limit 生效；
 4. 未注册 LinkType 的链接保持 legacy 宽松（不校验）。
 """
+
 from __future__ import annotations
 
 import os
@@ -45,8 +46,14 @@ def _ot(rid: str, name: str) -> ObjectType:
         rid=ClassRef(rid),
         primary_key=(ClassRef(P_NAME),),
         properties=(
-            Property(rid=ClassRef(P_NAME), type_id="string", nullable=False,
-                     primary_key=True, title="name", format=PropertyFormat.STRING),
+            Property(
+                rid=ClassRef(P_NAME),
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="name",
+                format=PropertyFormat.STRING,
+            ),
         ),
         display_name=name,
     )
@@ -54,26 +61,37 @@ def _ot(rid: str, name: str) -> ObjectType:
 
 def _lt(rid: str, card: Cardinality) -> LinkType:
     return LinkType(
-        rid=ClassRef(rid), src=ClassRef(OBJ_A), dst=ClassRef(OBJ_B),
-        cardinality=card, directionality=Directionality.DIRECTED,
-        src_display_name="betas", dst_display_name="alpha",
+        rid=ClassRef(rid),
+        src=ClassRef(OBJ_A),
+        dst=ClassRef(OBJ_B),
+        cardinality=card,
+        directionality=Directionality.DIRECTED,
+        src_display_name="betas",
+        dst_display_name="alpha",
     )
 
 
 def _ind(rid: str, class_rid: str, name: str) -> Individual:
     return Individual(
-        rid=rid, class_rid=ClassRef(class_rid),
+        rid=rid,
+        class_rid=ClassRef(class_rid),
         props=((ClassRef(P_NAME), name),),
-        primary_key=name, tenant_id=T,
-        created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
+        primary_key=name,
+        tenant_id=T,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
 
 def _li(n: int, lt_rid: str, src: str, dst: str) -> LinkInstance:
     return LinkInstance(
-        rid=f"ont.{T}.lnk.x{n}", link_type_rid=ClassRef(lt_rid),
-        src=src, dst=dst, props=(),
-        created_at=datetime.now(UTC), tenant_id=T,
+        rid=f"ont.{T}.lnk.x{n}",
+        link_type_rid=ClassRef(lt_rid),
+        src=src,
+        dst=dst,
+        props=(),
+        created_at=datetime.now(UTC),
+        tenant_id=T,
     )
 
 
@@ -94,12 +112,16 @@ class TestCardinalityEnforcement:
     def test_one_to_one_second_src_rejected(self, repo) -> None:
         repo.create_link_instance(_li(1, LINK_11, f"ont.{T}.ind.alpha.1", f"ont.{T}.ind.beta.3"))
         with pytest.raises(ValueError, match="1:1 violated: src"):
-            repo.create_link_instance(_li(2, LINK_11, f"ont.{T}.ind.alpha.1", f"ont.{T}.ind.beta.4"))
+            repo.create_link_instance(
+                _li(2, LINK_11, f"ont.{T}.ind.alpha.1", f"ont.{T}.ind.beta.4")
+            )
 
     def test_one_to_one_second_dst_rejected(self, repo) -> None:
         repo.create_link_instance(_li(1, LINK_11, f"ont.{T}.ind.alpha.1", f"ont.{T}.ind.beta.3"))
         with pytest.raises(ValueError, match="1:1 violated: dst"):
-            repo.create_link_instance(_li(2, LINK_11, f"ont.{T}.ind.alpha.2", f"ont.{T}.ind.beta.3"))
+            repo.create_link_instance(
+                _li(2, LINK_11, f"ont.{T}.ind.alpha.2", f"ont.{T}.ind.beta.3")
+            )
 
     def test_many_to_many_allows_all(self, repo) -> None:
         repo.create_link_instance(_li(1, LINK_NN, f"ont.{T}.ind.alpha.1", f"ont.{T}.ind.beta.3"))
@@ -162,9 +184,7 @@ class TestSearchAround:
 
 # ─────────────────── PG 真库同语义（可达时）───────────────────
 
-PG_DSN = os.environ.get(
-    "EXP03_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"
-)
+PG_DSN = os.environ.get("EXP03_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
 
 
 class TestPgSameSemantics:
@@ -191,8 +211,7 @@ class TestPgSameSemantics:
 
         conn = psycopg2.connect(PG_DSN)
         with conn.cursor() as cur:
-            for tbl in ("ont_individual", "ont_link_instance", "ont_object_type",
-                        "ont_link_type"):
+            for tbl in ("ont_individual", "ont_link_instance", "ont_object_type", "ont_link_type"):
                 cur.execute(f"DELETE FROM {tbl} WHERE tenant_id=%s", (T,))
         conn.commit()
         conn.close()
@@ -200,10 +219,12 @@ class TestPgSameSemantics:
     def test_pg_cardinality_and_around(self, pg_repo) -> None:
         with pg_repo.tenant_scope(T):
             pg_repo.create_link_instance(
-                _li(1, LINK_11, f"ont.{T}.ind.alpha.1", f"ont.{T}.ind.beta.3"))
+                _li(1, LINK_11, f"ont.{T}.ind.alpha.1", f"ont.{T}.ind.beta.3")
+            )
             with pytest.raises(ValueError, match="1:1 violated"):
                 pg_repo.create_link_instance(
-                    _li(2, LINK_11, f"ont.{T}.ind.alpha.1", f"ont.{T}.ind.beta.4"))
+                    _li(2, LINK_11, f"ont.{T}.ind.alpha.1", f"ont.{T}.ind.beta.4")
+                )
             lt = pg_repo.get_link_type(ClassRef(LINK_11))
             assert lt.src_display_name == "betas"
             around = pg_repo.search_around(f"ont.{T}.ind.alpha.1")

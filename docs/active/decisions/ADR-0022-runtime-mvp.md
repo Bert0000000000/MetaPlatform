@@ -3,6 +3,7 @@
 **状态**：Accepted（2026-08-06）
 **作者**：Codex（基于 v3.1 子计划收口 + 用户决策）
 **关联文档**：
+
 - v3.1 子计划 `docs/active/specs/2026-08-06-ontology-kernel-blueprint.md` v0.4
 - v4 BOARD `docs/active/delivery/V31-ONTOLOGY-BOARD.md` §6
 - KERNEL-01 ADR-0021（12 基元 Protocol）
@@ -13,6 +14,7 @@
 ## 背景
 
 v3.1 Ontology 子计划（M1+M2+M3 = 20/20 Batch）已收口，但全部是 **Python library**：
+
 - `mate_kernel/ontology/api.py:OntologyRepository` Protocol + `in_memory.py:InMemoryOntologyRepository` 实现
 - 12 基元 dataclass（`ObjectType` / `Individual` / `ActionType` / `ObjectSet` ...）
 - `ObjectSet` filter / sort 编译器（`objectset/compiler.py`，含 Bug A/B/C 修复）
@@ -25,21 +27,22 @@ v3.1 Ontology 子计划（M1+M2+M3 = 20/20 Batch）已收口，但全部是 **Py
 
 新增 `packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py`，把 KERNEL-01 Protocol 暴露为 5 核心 REST 端点：
 
-| 端点 | method | 用途 |
-|---|---|---|
-| `/api/v1/ont/v2/object-types` | POST | upsert ObjectType |
-| `/api/v1/ont/v2/object-types` | GET | list ObjectTypes (分页) |
-| `/api/v1/ont/v2/object-types/{rid:path}` | GET | get one |
-| `/api/v1/ont/v2/individuals` | POST | create Individual（rid prefix 强制等于 ctx.tenant） |
-| `/api/v1/ont/v2/individuals` | GET | list (class_rid 过滤) |
-| `/api/v1/ont/v2/object-sets:evaluate` | POST | 真消费 filter_expr + sort + paging |
-| `/api/v1/ont/v2/action-types:apply` | POST | ActionType.apply（单合法写路径） |
+| 端点                                     | method | 用途                                                |
+| ---------------------------------------- | ------ | --------------------------------------------------- |
+| `/api/v1/ont/v2/object-types`            | POST   | upsert ObjectType                                   |
+| `/api/v1/ont/v2/object-types`            | GET    | list ObjectTypes (分页)                             |
+| `/api/v1/ont/v2/object-types/{rid:path}` | GET    | get one                                             |
+| `/api/v1/ont/v2/individuals`             | POST   | create Individual（rid prefix 强制等于 ctx.tenant） |
+| `/api/v1/ont/v2/individuals`             | GET    | list (class_rid 过滤)                               |
+| `/api/v1/ont/v2/object-sets:evaluate`    | POST   | 真消费 filter_expr + sort + paging                  |
+| `/api/v1/ont/v2/action-types:apply`      | POST   | ActionType.apply（单合法写路径）                    |
 
 每个 handler 都走 `mate_platform.tenancy.guards.require_tenant(ctx)` —— 直接复用 v3.0 SEC-TENANT-01 的 13 硬规则 #3 守门。
 
 ### D2 — Repository 后端由 env 切换：InMemory（dev）vs PG（prod）
 
 `mate_tech_ont.main.on_startup` 读取 `KERNEL_BACKEND` env：
+
 - `memory`（默认 dev）→ `InMemoryOntologyRepository`（KERNEL-01 已就位）
 - `pg`（prod）→ `PgOntologyRepository`（RUNTIME-PG-03 新增，SQLAlchemy 2.x ORM）
 
@@ -50,6 +53,7 @@ v3.1 Ontology 子计划（M1+M2+M3 = 20/20 Batch）已收口，但全部是 **Py
 ### D4 — 复用既有 auth + tenant 中间件（0 新基础设施）
 
 `install_auth(app)` + `_enforce_tenant_per_request` 中间件（main.py 已就位）自动覆盖 v2_kernel 路由：
+
 - 401：未带 bearer token
 - 403：`require_tenant(ctx)` 失败（13 硬规则 #3）
 - 403（v2_kernel 层）：rid / class_rid prefix 与 ctx.tenant_id 不一致（额外防御层）
@@ -57,6 +61,7 @@ v3.1 Ontology 子计划（M1+M2+M3 = 20/20 Batch）已收口，但全部是 **Py
 ### D5 — 合并提速：原 RUNTIME-HTTP-01 + RUNTIME-PG-03 = 1 Batch
 
 v4 BOARD 计划 4 周 + 4 周 = 8 周。**用户决策**：合并 1 Batch，目标 = 业务可 `curl` 验收。代价：
+
 - 不实现 SQL DSL → SQL 编译（保留 InMemoryObjectSetExecutor 在 PG 后端做内存过滤）
 - 不开 23 全 v2 operationId（先 7 端点；其余 16 待 v4 full-scope）
 - 不接 Keycloak 真 JWT 验签（用 INSECURE_SKIP_SIGNATURE=1 dev profile；prod profile 由 IAM-COPILOT-04 跟进）

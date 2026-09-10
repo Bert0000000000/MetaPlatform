@@ -1,4 +1,5 @@
 """Sprint 1A M3 — REST 双轨开关单测（fake temporal 网关，无真 server）。"""
+
 from __future__ import annotations
 
 import asyncio
@@ -6,8 +7,14 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-for _p in ("mate-kernel", "mate-common", "mate-platform", "mate-clients",
-           "mate-tech-db", "mate-app-a2a"):
+for _p in (
+    "mate-kernel",
+    "mate-common",
+    "mate-platform",
+    "mate-clients",
+    "mate-tech-db",
+    "mate-app-a2a",
+):
     _d = os.path.join(os.path.dirname(__file__), "..", "..", _p, "src")
     if os.path.isdir(_d) and _d not in sys.path:
         sys.path.insert(0, _d)
@@ -32,12 +39,17 @@ def _headers() -> dict:
     import jwt
 
     tok = jwt.encode(
-        {"sub": "t", "tenant_id": "tenant-default",
-         "attributes": {"tenant_id": ["tenant-default"]},
-         "realm_access": {"roles": ["PLATFORM_SUPER_ADMIN"]},
-         "iss": "http://localhost:8080/realms/metaplatform",
-         "aud": "metaplatform-backend", "azp": "metaplatform-backend"},
-        "test-secret", algorithm="HS256",
+        {
+            "sub": "t",
+            "tenant_id": "tenant-default",
+            "attributes": {"tenant_id": ["tenant-default"]},
+            "realm_access": {"roles": ["PLATFORM_SUPER_ADMIN"]},
+            "iss": "http://localhost:8080/realms/metaplatform",
+            "aud": "metaplatform-backend",
+            "azp": "metaplatform-backend",
+        },
+        "test-secret",
+        algorithm="HS256",
     )
     return {"Authorization": f"Bearer {tok}", "X-Tenant-Id": "tenant-default"}
 
@@ -45,10 +57,19 @@ def _headers() -> dict:
 H = _headers()
 BODY = {
     "steps": [
-        {"step_id": "s1", "kind": "run_function", "target": "inline",
-         "payload": {"source": "print(1)"}},
-        {"step_id": "s2", "kind": "run_function", "target": "inline",
-         "payload": {"source": "print(2)"}, "requires_hitl": True},
+        {
+            "step_id": "s1",
+            "kind": "run_function",
+            "target": "inline",
+            "payload": {"source": "print(1)"},
+        },
+        {
+            "step_id": "s2",
+            "kind": "run_function",
+            "target": "inline",
+            "payload": {"source": "print(2)"},
+            "requires_hitl": True,
+        },
     ],
 }
 
@@ -80,14 +101,17 @@ class TestRestDualRail:
 
         async def fake_submit(**kw):
             captured.update(kw)
-            return {"plan_id": "twf-x1", "status": "hitl_waiting:s2",
-                    "engine": "temporal", "step_count": 2}
+            return {
+                "plan_id": "twf-x1",
+                "status": "hitl_waiting:s2",
+                "engine": "temporal",
+                "step_count": 2,
+            }
 
         monkeypatch.setattr(temporal_rest, "submit_and_run", fake_submit)
         monkeypatch.setattr(temporal_rest, "is_available", lambda: True)
         with _client() as c:
-            r = c.post("/api/v1/orchestrator/plans?engine=temporal",
-                       json=BODY, headers=H)
+            r = c.post("/api/v1/orchestrator/plans?engine=temporal", json=BODY, headers=H)
         assert r.status_code == 201, r.text
         data = r.json()
         assert data["plan_id"] == "twf-x1" and data["engine"] == "temporal"
@@ -96,23 +120,27 @@ class TestRestDualRail:
 
     def test_review_temporal_routes_to_gateway(self, monkeypatch) -> None:
         async def fake_review(**kw):
-            return {"plan_id": kw["plan_id"], "status": "completed",
-                    "engine": "temporal"}
+            return {"plan_id": kw["plan_id"], "status": "completed", "engine": "temporal"}
 
         monkeypatch.setattr(temporal_rest, "review", fake_review)
         monkeypatch.setattr(temporal_rest, "is_available", lambda: True)
         with _client() as c:
             r = c.post(
                 "/api/v1/orchestrator/plans/twf-x1/steps/s2/review",
-                json={"approved": True}, headers=H,
+                json={"approved": True},
+                headers=H,
             )
         assert r.status_code == 200, r.text
         assert r.json()["engine"] == "temporal"
 
     def test_status_temporal_routes_to_gateway(self, monkeypatch) -> None:
         async def fake_status(pid: str):
-            return {"plan_id": pid, "status": "hitl_waiting:s2",
-                    "current_step_id": "s2", "engine": "temporal"}
+            return {
+                "plan_id": pid,
+                "status": "hitl_waiting:s2",
+                "current_step_id": "s2",
+                "engine": "temporal",
+            }
 
         monkeypatch.setattr(temporal_rest, "status", fake_status)
         monkeypatch.setattr(temporal_rest, "is_available", lambda: True)

@@ -3,6 +3,7 @@
 Covers: happy path, missing capability_id, 503 mapping on unavailable,
 outbox event write, and the response shape contract.
 """
+
 from __future__ import annotations
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
@@ -50,7 +51,9 @@ def test_invoke_missing_capability_id(client, auth_headers_acme) -> None:
 
 
 def test_invoke_503_when_deerflow_unavailable(
-    client, auth_headers_acme, stub_client,
+    client,
+    auth_headers_acme,
+    stub_client,
 ) -> None:
     stub_client.raise_unavailable = True
     r = client.post(
@@ -63,7 +66,9 @@ def test_invoke_503_when_deerflow_unavailable(
 
 
 def test_invoke_writes_outbox_event(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     r = client.post(
         "/api/v1/a2a/agent/deep-research/invoke",
@@ -92,7 +97,9 @@ def test_invoke_response_includes_capability_id(client, auth_headers_acme) -> No
 
 
 def test_invoke_propagates_depth_and_max_sources_to_client(
-    client, auth_headers_acme, stub_client,
+    client,
+    auth_headers_acme,
+    stub_client,
 ) -> None:
     body = _body()
     body["input"]["depth"] = "shallow"

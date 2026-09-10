@@ -11,6 +11,7 @@ Provides:
   * ``client``         — TestClient with the outbox wired in.
   * ``auth_headers_*`` — Bearer tokens bound to tenant-acme / tenant-globex.
 """
+
 from __future__ import annotations
 
 import os
@@ -120,7 +121,8 @@ def outbox() -> InMemoryOutboxWriter:
 
 @pytest.fixture
 def client(
-    outbox: InMemoryOutboxWriter, stub_client: _StubDeerFlowClient,
+    outbox: InMemoryOutboxWriter,
+    stub_client: _StubDeerFlowClient,
 ) -> Iterator[TestClient]:
     """TestClient with a stub DeerFlow client + a fresh in-memory outbox."""
     app = create_app()

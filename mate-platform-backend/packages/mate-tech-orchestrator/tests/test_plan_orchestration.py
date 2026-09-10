@@ -1,4 +1,5 @@
 """W3 tests: plan submit → execute → HITL gate → review (decision B3)."""
+
 from __future__ import annotations
 
 import pytest
@@ -34,9 +35,22 @@ def orchestrated(client: TestClient):
 def _plan(steps=None) -> dict:
     return {
         "author_user_id": "u-1",
-        "steps": steps or [
-            {"step_id": "s1", "kind": "call_agent", "target": "kb.tenant.acme.doc.v1", "payload": {"action": "kb_search"}, "requires_hitl": False},
-            {"step_id": "s2", "kind": "call_agent", "target": "kb.tenant.acme.doc.v1", "payload": {"action": "kb_search"}, "requires_hitl": True},
+        "steps": steps
+        or [
+            {
+                "step_id": "s1",
+                "kind": "call_agent",
+                "target": "kb.tenant.acme.doc.v1",
+                "payload": {"action": "kb_search"},
+                "requires_hitl": False,
+            },
+            {
+                "step_id": "s2",
+                "kind": "call_agent",
+                "target": "kb.tenant.acme.doc.v1",
+                "payload": {"action": "kb_search"},
+                "requires_hitl": True,
+            },
         ],
     }
 
@@ -44,7 +58,17 @@ def _plan(steps=None) -> dict:
 def test_submit_plan_requires_hitl(client: TestClient, auth_headers_acme, orchestrated) -> None:
     r = client.post(
         "/api/v1/orchestrator/plans",
-        json=_plan(steps=[{"step_id": "s1", "kind": "call_agent", "target": "kb.x", "payload": {}, "requires_hitl": False}]),
+        json=_plan(
+            steps=[
+                {
+                    "step_id": "s1",
+                    "kind": "call_agent",
+                    "target": "kb.x",
+                    "payload": {},
+                    "requires_hitl": False,
+                }
+            ]
+        ),
         headers=auth_headers_acme,
     )
     assert r.status_code == 422, r.text
@@ -52,7 +76,9 @@ def test_submit_plan_requires_hitl(client: TestClient, auth_headers_acme, orches
 
 
 def test_plan_execute_stops_at_hitl_then_review_resumes(
-    client: TestClient, auth_headers_acme, orchestrated,
+    client: TestClient,
+    auth_headers_acme,
+    orchestrated,
 ) -> None:
     sub = client.post("/api/v1/orchestrator/plans", json=_plan(), headers=auth_headers_acme)
     assert sub.status_code == 201, sub.text
@@ -98,7 +124,9 @@ def test_plan_unknown_404(client: TestClient, auth_headers_acme, orchestrated) -
     assert r.status_code == 404, r.text
 
 
-def test_plan_submit_emits_outbox(client: TestClient, auth_headers_acme, orchestrated, outbox) -> None:
+def test_plan_submit_emits_outbox(
+    client: TestClient, auth_headers_acme, orchestrated, outbox
+) -> None:
     client.post("/api/v1/orchestrator/plans", json=_plan(), headers=auth_headers_acme)
     types = {rec.event.type for rec in outbox.all_records()}
     assert "orchestrator.plan.submitted" in types

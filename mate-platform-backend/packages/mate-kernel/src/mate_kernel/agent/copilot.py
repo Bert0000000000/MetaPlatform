@@ -36,8 +36,8 @@ from mate_kernel.manager.protocol import Manager, ManagerContext
 
 
 class RetentionPolicy(StrEnum):
-    DISCARD = "discard"           # C3 默认：不持久化
-    PERSIST_7D = "persist_7d"     # C3 opt-in：保留 7 天
+    DISCARD = "discard"  # C3 默认：不持久化
+    PERSIST_7D = "persist_7d"  # C3 opt-in：保留 7 天
 
 
 @dataclass(frozen=True, slots=True)
@@ -247,12 +247,17 @@ class SuperAICopilot:
         self.audit = AuditRetention(policy=self.config.retention)
 
     def submit_query(
-        self, query: str, ctx: ManagerContext, manager: Manager,
+        self,
+        query: str,
+        ctx: ManagerContext,
+        manager: Manager,
     ) -> tuple[PlanState, HitlToken]:
         plan_id = SuperAIOrchestrator.new_plan_id()
         spec = self.router.plan(query, author_user_id=ctx.user_id, plan_id=plan_id)
         manager.track(
-            kind=__import__("mate_kernel.manager.protocol", fromlist=["ChangeKind"]).ChangeKind.APPLY_ACTION,
+            kind=__import__(
+                "mate_kernel.manager.protocol", fromlist=["ChangeKind"]
+            ).ChangeKind.APPLY_ACTION,
             target_rid=f"superai.plan.{plan_id}",
             payload={"query": query, "role": self.router.route(query).value},
         )
@@ -285,7 +290,9 @@ class SuperAICopilot:
                 self.orchestrator.record(plan_id, self.invoker.invoke(step, ctx))
                 token = self.token_store.issue(ctx, plan_id, step.step_id)
                 manager.track(
-                    kind=__import__("mate_kernel.manager.protocol", fromlist=["ChangeKind"]).ChangeKind.APPLY_ACTION,
+                    kind=__import__(
+                        "mate_kernel.manager.protocol", fromlist=["ChangeKind"]
+                    ).ChangeKind.APPLY_ACTION,
                     target_rid=f"superai.plan.{plan_id}.step.{step.step_id}",
                     payload={"phase": "awaiting_hitl"},
                 )

@@ -1,4 +1,4 @@
-﻿"""FastAPI app for mate-app-kb (business aggregation facade).
+"""FastAPI app for mate-app-kb (business aggregation facade).
 
 Wires the three integration hooks per ADR-0014:
   1. install_auth(app) from mate_platform.auth (SEC-IAM-01).
@@ -17,6 +17,7 @@ Path alignment (P0 close-out, 2026-07-30):
     but emit a Deprecation response header. Consumers must migrate
     before the next minor release (see API-GOV-01 §6).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -197,9 +198,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         tenant_id: str,
     ) -> None:
         """Append an outbox event if a writer is configured (ADR-0014 step 3)."""
-        writer: InMemoryOutboxWriter | None = getattr(
-            request.app.state, "outbox_writer", None
-        )
+        writer: InMemoryOutboxWriter | None = getattr(request.app.state, "outbox_writer", None)
         if writer is None:
             return
         writer.append(
@@ -244,7 +243,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
                 raw_f = 0.0
             # Keyword overlap boost: if the chunk text contains query
             # terms, bump the normalised score.
-            text = (h.get("text", "") or h.get("content", ""))
+            text = h.get("text", "") or h.get("content", "")
             t_terms = _tokenize_for_match(text)
             overlap = len(q_terms & t_terms) if q_terms else 0
             overlap_boost = min(overlap * 0.05, 0.2)
@@ -312,9 +311,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
             if col_id:
                 col = get_collection(tid, col_id)
                 if col is None:
-                    raise HTTPException(
-                        status_code=404, detail=f"collection {col_id} not found"
-                    )
+                    raise HTTPException(status_code=404, detail=f"collection {col_id} not found")
             local_doc = KbDocument(
                 id=doc_id,
                 tenant_id=tid,
@@ -330,9 +327,15 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
             )
             put_document(tid, local_doc)
             _emit(
-                request, "kb.document.uploaded", doc_id,
-                {"document_id": doc_id, "filename": file.filename or "",
-                 "size_bytes": len(raw), "collection_id": col_id},
+                request,
+                "kb.document.uploaded",
+                doc_id,
+                {
+                    "document_id": doc_id,
+                    "filename": file.filename or "",
+                    "size_bytes": len(raw),
+                    "collection_id": col_id,
+                },
                 tid,
             )
             try:
@@ -340,33 +343,49 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
                 # worker thread to avoid deadlocking the event loop.
                 data = await asyncio.to_thread(
                     _rag(request).upload,
-                    raw, file.filename or "unknown", doc_id, file.content_type or "text/plain",
+                    raw,
+                    file.filename or "unknown",
+                    doc_id,
+                    file.content_type or "text/plain",
                     kb_id=col_id or None,
                 )
             except Exception:
                 # Mark the document as failed if the upstream errors.
                 failed_doc = KbDocument(
-                    id=doc_id, tenant_id=tid, collection_id=col_id,
-                    document_id=doc_id, filename=file.filename or "unknown",
-                    size_bytes=len(raw), chunk_count=0, status="failed",
+                    id=doc_id,
+                    tenant_id=tid,
+                    collection_id=col_id,
+                    document_id=doc_id,
+                    filename=file.filename or "unknown",
+                    size_bytes=len(raw),
+                    chunk_count=0,
+                    status="failed",
                     metadata={"source": "upload", "error": "upstream failure"},
-                    created_at=now, updated_at=_now_iso(),
+                    created_at=now,
+                    updated_at=_now_iso(),
                 )
                 put_document(tid, failed_doc)
                 raise
             chunk_count = data.get("chunk_count", 0)
             # Transition uploaded -> indexed on successful upstream ingest.
             indexed_doc = KbDocument(
-                id=doc_id, tenant_id=tid, collection_id=col_id,
-                document_id=doc_id, filename=file.filename or "unknown",
+                id=doc_id,
+                tenant_id=tid,
+                collection_id=col_id,
+                document_id=doc_id,
+                filename=file.filename or "unknown",
                 size_bytes=data.get("size_bytes", len(raw)),
-                chunk_count=chunk_count, status="indexed",
+                chunk_count=chunk_count,
+                status="indexed",
                 metadata={"source": "upload", "indexed_in": data.get("indexed_in", [])},
-                created_at=now, updated_at=_now_iso(),
+                created_at=now,
+                updated_at=_now_iso(),
             )
             put_document(tid, indexed_doc)
             _emit(
-                request, "kb.document.indexed", doc_id,
+                request,
+                "kb.document.indexed",
+                doc_id,
                 {"document_id": doc_id, "chunks": chunk_count, "status": "indexed"},
                 tid,
             )
@@ -394,7 +413,10 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         try:
             data = await asyncio.to_thread(
                 _rag(request).search,
-                req.query, top_k=req.top_k, mode=req.mode, rerank_strategy=rerank,
+                req.query,
+                top_k=req.top_k,
+                mode=req.mode,
+                rerank_strategy=rerank,
             )
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"upstream error: {exc}") from exc
@@ -404,15 +426,28 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         scored = _score_hits(raw_hits, req.query)
         # Write a search audit log entry (BUSINESS-SLICES deep).
         log_id = f"log-{uuid.uuid4().hex[:8]}"
-        put_search_log(tid, KbSearchLog(
-            id=log_id, tenant_id=tid, query=req.query[:200],
-            mode=req.mode, total_hits=len(scored), latency_ms=latency_ms,
-            created_at=_now_iso(),
-        ))
+        put_search_log(
+            tid,
+            KbSearchLog(
+                id=log_id,
+                tenant_id=tid,
+                query=req.query[:200],
+                mode=req.mode,
+                total_hits=len(scored),
+                latency_ms=latency_ms,
+                created_at=_now_iso(),
+            ),
+        )
         _emit(
-            request, "kb.search.executed", req.query[:64],
-            {"query": req.query[:200], "mode": req.mode, "hits": len(scored),
-             "latency_ms": latency_ms},
+            request,
+            "kb.search.executed",
+            req.query[:64],
+            {
+                "query": req.query[:200],
+                "mode": req.mode,
+                "hits": len(scored),
+                "latency_ms": latency_ms,
+            },
             tid,
         )
         return SearchResponse(
@@ -452,6 +487,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
                 req.message, scenario=req.scenario, thread_id=req.thread_id
             ):
                 yield line + "\n\n"
+
         return StreamingResponse(event_gen(), media_type="text/event-stream")
 
     @app.get("/api/v1/kb/stats", response_model=StatsResponse)
@@ -477,26 +513,37 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
 
     @app.post("/api/v1/kb/collections", response_model=CollectionResponse, status_code=201)
     async def create_col(  # pyright: ignore[reportUnusedFunction]
-        request: Request, req: CollectionCreateRequest,
+        request: Request,
+        req: CollectionCreateRequest,
     ) -> CollectionResponse:
         tid = _tid(request)
         cid = f"col-{uuid.uuid4().hex[:8]}"
         now = _now_iso()
         col = KbCollection(
-            id=cid, tenant_id=tid, name=req.name, description=req.description,
-            document_count=0, status="active", config=req.config,
-            created_at=now, updated_at=now,
+            id=cid,
+            tenant_id=tid,
+            name=req.name,
+            description=req.description,
+            document_count=0,
+            status="active",
+            config=req.config,
+            created_at=now,
+            updated_at=now,
         )
         put_collection(tid, col)
         _emit(
-            request, "kb.collection.created", cid,
-            {"collection_id": cid, "name": req.name}, tid,
+            request,
+            "kb.collection.created",
+            cid,
+            {"collection_id": cid, "name": req.name},
+            tid,
         )
         return CollectionResponse(**asdict(col))
 
     @app.get("/api/v1/kb/collections/{cid}", response_model=CollectionResponse)
     async def get_col(  # pyright: ignore[reportUnusedFunction]
-        request: Request, cid: str,
+        request: Request,
+        cid: str,
     ) -> CollectionResponse:
         tid = _tid(request)
         col = get_collection(tid, cid)
@@ -506,7 +553,8 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
 
     @app.delete("/api/v1/kb/collections/{cid}")
     async def delete_col(  # pyright: ignore[reportUnusedFunction]
-        request: Request, cid: str,
+        request: Request,
+        cid: str,
     ) -> dict:  # pyright: ignore[reportUnusedFunction]
         tid = _tid(request)
         col = get_collection(tid, cid)
@@ -514,8 +562,11 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
             raise HTTPException(status_code=404, detail="collection not found")
         delete_collection(tid, cid)
         _emit(
-            request, "kb.collection.deleted", cid,
-            {"collection_id": cid}, tid,
+            request,
+            "kb.collection.deleted",
+            cid,
+            {"collection_id": cid},
+            tid,
         )
         return {"deleted": cid}
 
@@ -532,7 +583,8 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
 
     @app.put("/api/v1/kb/retrieval-config", response_model=RetrievalConfigResponse)
     async def put_retrieval_cfg(  # pyright: ignore[reportUnusedFunction]
-        request: Request, req: RetrievalConfigUpdate,
+        request: Request,
+        req: RetrievalConfigUpdate,
     ) -> RetrievalConfigResponse:
         tid = _tid(request)
         existing = get_retrieval_config(tid)
@@ -587,10 +639,16 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         )
         put_retrieval_config(tid, cfg)
         _emit(
-            request, "kb.retrieval-config.updated", tid,
-            {"rerank_strategy": cfg.rerank_strategy, "mode": cfg.mode,
-             "top_k": cfg.top_k, "chunk_strategy": cfg.chunk_strategy,
-             "version": cfg.version},
+            request,
+            "kb.retrieval-config.updated",
+            tid,
+            {
+                "rerank_strategy": cfg.rerank_strategy,
+                "mode": cfg.mode,
+                "top_k": cfg.top_k,
+                "chunk_strategy": cfg.chunk_strategy,
+                "version": cfg.version,
+            },
             tid,
         )
         _ = existing  # retained for clarity: we replace the prior config
@@ -601,14 +659,19 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
     # ------------------------------------------------------------------
     @app.get("/api/v1/kb/retrieval-config/history", response_model=dict)
     async def list_retrieval_cfg_history(  # pyright: ignore[reportUnusedFunction]
-        request: Request, limit: int | None = None,
+        request: Request,
+        limit: int | None = None,
     ) -> dict:
         tid = _tid(request)
         snapshots = list_retrieval_config_snapshots(tid, limit=limit)
         # Wrap in the standard ApiResponse shape so the frontend
         # getRetrievalConfigHistory() (which reads data.items) works
         # uniformly with /api/v1/admin/configs and /api/v1/kb/collections.
-        return {"code": 0, "message": "ok", "data": {"items": [asdict(s) for s in snapshots], "total": len(snapshots)}}
+        return {
+            "code": 0,
+            "message": "ok",
+            "data": {"items": [asdict(s) for s in snapshots], "total": len(snapshots)},
+        }
 
     # ------------------------------------------------------------------
     # BUSINESS-SLICES deep: Document management + lifecycle
@@ -629,7 +692,8 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
 
     @app.get("/api/v1/kb/documents/{did}", response_model=DocumentResponse)
     async def get_doc(  # pyright: ignore[reportUnusedFunction]
-        request: Request, did: str,
+        request: Request,
+        did: str,
     ) -> DocumentResponse:
         tid = _tid(request)
         doc = get_document(tid, did)
@@ -639,7 +703,9 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
 
     @app.patch("/api/v1/kb/documents/{did}/status", response_model=DocumentResponse)
     async def transition_doc(  # pyright: ignore[reportUnusedFunction]
-        request: Request, did: str, req: DocumentTransitionRequest,
+        request: Request,
+        did: str,
+        req: DocumentTransitionRequest,
     ) -> DocumentResponse:
         tid = _tid(request)
         doc = get_document(tid, did)
@@ -657,23 +723,32 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         if req.error:
             meta["error"] = req.error
         updated = KbDocument(
-            id=doc.id, tenant_id=tid, collection_id=doc.collection_id,
-            document_id=doc.document_id, filename=doc.filename,
+            id=doc.id,
+            tenant_id=tid,
+            collection_id=doc.collection_id,
+            document_id=doc.document_id,
+            filename=doc.filename,
             size_bytes=doc.size_bytes,
             chunk_count=req.chunk_count if req.chunk_count is not None else doc.chunk_count,
-            status=req.status, metadata=meta,
-            created_at=doc.created_at, updated_at=now,
+            status=req.status,
+            metadata=meta,
+            created_at=doc.created_at,
+            updated_at=now,
         )
         put_document(tid, updated)
         _emit(
-            request, "kb.document.transitioned", did,
-            {"document_id": did, "from": current, "to": req.status}, tid,
+            request,
+            "kb.document.transitioned",
+            did,
+            {"document_id": did, "from": current, "to": req.status},
+            tid,
         )
         return DocumentResponse(**asdict(updated))
 
     @app.delete("/api/v1/kb/documents/{did}")
     async def delete_doc(  # pyright: ignore[reportUnusedFunction]
-        request: Request, did: str,
+        request: Request,
+        did: str,
     ) -> dict:  # pyright: ignore[reportUnusedFunction]
         """P1.7 RAG 增强: cascade-delete doc from KB catalog AND RAG.
 
@@ -717,9 +792,14 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
             rag_error = str(exc)
         delete_document(tid, did)
         _emit(
-            request, "kb.document.deleted", did,
-            {"document_id": did, "rag_deleted": bool(rag_outcome.get("deleted")),
-             "rag_error": rag_error},
+            request,
+            "kb.document.deleted",
+            did,
+            {
+                "document_id": did,
+                "rag_deleted": bool(rag_outcome.get("deleted")),
+                "rag_error": rag_error,
+            },
             tid,
         )
         return {"deleted": did, "rag": rag_outcome, "rag_error": rag_error}

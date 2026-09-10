@@ -11,14 +11,14 @@
 
 ## 交付物
 
-| # | 文件 | 状态 |
-|---|---|---|
-| 1 | `packages/mate-clients/src/mate_clients/marketplace/ontology.py` | NEW |
-| 2 | `packages/mate-clients/tests/test_marketplace_ontology_client.py` | NEW |
-| 3 | `packages/mate-platform/src/mate_platform/marketplace/jobs/installer_ontology.py` | M（去 blocked-on 标记）|
-| 4 | `packages/mate-platform/tests/test_marketplace_installer_ontology.py` | NEW |
-| 5 | `docs/active/decisions/ADR-0027-mp-ont-register-01.md` | NEW |
-| 6 | `docs/active/delivery/PROGRAM-BOARD.md` | M（更新 MP-ONT-REGISTER-01 状态）|
+| #   | 文件                                                                              | 状态                              |
+| --- | --------------------------------------------------------------------------------- | --------------------------------- |
+| 1   | `packages/mate-clients/src/mate_clients/marketplace/ontology.py`                  | NEW                               |
+| 2   | `packages/mate-clients/tests/test_marketplace_ontology_client.py`                 | NEW                               |
+| 3   | `packages/mate-platform/src/mate_platform/marketplace/jobs/installer_ontology.py` | M（去 blocked-on 标记）           |
+| 4   | `packages/mate-platform/tests/test_marketplace_installer_ontology.py`             | NEW                               |
+| 5   | `docs/active/decisions/ADR-0027-mp-ont-register-01.md`                            | NEW                               |
+| 6   | `docs/active/delivery/PROGRAM-BOARD.md`                                           | M（更新 MP-ONT-REGISTER-01 状态） |
 
 ## Canonical Endpoint
 
@@ -43,38 +43,38 @@
 
 ### mate-clients（OntologyMarketplaceClient）
 
-| Test | 验证 |
-|---|---|
-| `test_register_ontology_posts_to_canonical_endpoint` | URL + BearerAuth + `X-Tenant-Id` header + envelope |
-| `test_register_ontology_payload_shape` | 转发 `rid/primary_key/properties/display_name/interfaces` |
-| `test_register_ontology_digest_fallback` | 后端不回 `registered_digest` 时客户端兜底 `sha256(blob)` |
-| `test_set_tenant_rebinds_auth` | `set_tenant` 重新绑定 middleware，token 不变 |
-| `test_register_ontology_without_auth_sends_no_auth_headers` | dev profile no-auth 路径 |
-| `test_register_ontology_default_primary_key` | manifest 缺字段时默认 `primary_key=["id"]` |
+| Test                                                        | 验证                                                      |
+| ----------------------------------------------------------- | --------------------------------------------------------- |
+| `test_register_ontology_posts_to_canonical_endpoint`        | URL + BearerAuth + `X-Tenant-Id` header + envelope        |
+| `test_register_ontology_payload_shape`                      | 转发 `rid/primary_key/properties/display_name/interfaces` |
+| `test_register_ontology_digest_fallback`                    | 后端不回 `registered_digest` 时客户端兜底 `sha256(blob)`  |
+| `test_set_tenant_rebinds_auth`                              | `set_tenant` 重新绑定 middleware，token 不变              |
+| `test_register_ontology_without_auth_sends_no_auth_headers` | dev profile no-auth 路径                                  |
+| `test_register_ontology_default_primary_key`                | manifest 缺字段时默认 `primary_key=["id"]`                |
 
 **期望**：6 passed / 0 failed
 
 ### mate-platform（OntologyInstaller）
 
-| Test | 验证 |
-|---|---|
-| `test_ontology_installer_happy_path` | digest verify + register + commit + installed file |
-| `test_ontology_installer_digest_mismatch_rolls_back` | manifest.digest != sha256(blob) → DigestMismatch + rollback |
-| `test_ontology_installer_hard_rule_14_rolls_back` | 后端 registered_digest != manifest.digest → DigestMismatch + rollback |
-| `test_ontology_installer_real_client_returns_envelope` | 真实 OntologyMarketplaceClient + MockTransport 全链路 |
+| Test                                                   | 验证                                                                  |
+| ------------------------------------------------------ | --------------------------------------------------------------------- |
+| `test_ontology_installer_happy_path`                   | digest verify + register + commit + installed file                    |
+| `test_ontology_installer_digest_mismatch_rolls_back`   | manifest.digest != sha256(blob) → DigestMismatch + rollback           |
+| `test_ontology_installer_hard_rule_14_rolls_back`      | 后端 registered_digest != manifest.digest → DigestMismatch + rollback |
+| `test_ontology_installer_real_client_returns_envelope` | 真实 OntologyMarketplaceClient + MockTransport 全链路                 |
 
 **期望**：4 passed / 0 failed
 
 ## 13 硬规则对位
 
-| # | 规则 | 实施 |
-|---|---|---|
-| 3 | 没有 tenant 不访问 repository | dev profile 可无 auth；带 auth 必须 tenant_id |
-| 4 | 外部系统必须有 ACL Client | `BearerAuth` + `OutgoingAuthMiddleware(tenant_id=...)` |
-| 5 | Production profile 禁 fallback | digest 兜底仅 dev profile |
-| 6 | 静态检查 ruff | ruff 0 errors |
-| 12 | Secret 不进 git | 测试用 stub BearerAuth |
-| 14 | registered_digest == manifest.digest | `BaseInstaller.run` 硬规则校验 |
+| #   | 规则                                 | 实施                                                   |
+| --- | ------------------------------------ | ------------------------------------------------------ |
+| 3   | 没有 tenant 不访问 repository        | dev profile 可无 auth；带 auth 必须 tenant_id          |
+| 4   | 外部系统必须有 ACL Client            | `BearerAuth` + `OutgoingAuthMiddleware(tenant_id=...)` |
+| 5   | Production profile 禁 fallback       | digest 兜底仅 dev profile                              |
+| 6   | 静态检查 ruff                        | ruff 0 errors                                          |
+| 12  | Secret 不进 git                      | 测试用 stub BearerAuth                                 |
+| 14  | registered_digest == manifest.digest | `BaseInstaller.run` 硬规则校验                         |
 
 ## 验收运行（2026-08-07 实测）
 

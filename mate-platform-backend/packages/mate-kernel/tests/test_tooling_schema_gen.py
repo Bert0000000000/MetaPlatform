@@ -25,7 +25,9 @@ _T = "tooltest"
 _NOW = datetime.now(UTC)
 
 
-def _prop(slug: str, fmt: PropertyFormat = PropertyFormat.STRING, type_id: str = "string") -> Property:
+def _prop(
+    slug: str, fmt: PropertyFormat = PropertyFormat.STRING, type_id: str = "string"
+) -> Property:
     return Property(
         rid=ClassRef(f"ont.{_T}.prop.{slug}.v1"),
         type_id=type_id,
@@ -79,7 +81,9 @@ class TestObjectQueryToolSchema:
         schema = object_query_tool_schema(_ot("order"))
         filter_items = schema["function"]["parameters"]["properties"]["filters"]["items"]
         assert set(filter_items["properties"]["field"]["enum"]) == {
-            "order-id", "amount", "status",
+            "order-id",
+            "amount",
+            "status",
         }
         assert "eq" in filter_items["properties"]["op"]["enum"]
 
@@ -88,8 +92,12 @@ class TestObjectQueryToolSchema:
             LinkInstance(
                 rid=f"ont.{_T}.lnk.l1",
                 link_type_rid=ClassRef(f"ont.{_T}.link.owns.v1"),
-                src="x", dst="y",
-                props=(), created_at=_NOW, tenant_id=_T, marking=(),
+                src="x",
+                dst="y",
+                props=(),
+                created_at=_NOW,
+                tenant_id=_T,
+                marking=(),
             ),
         )
         schema = object_query_tool_schema(_ot("order"), links=links)

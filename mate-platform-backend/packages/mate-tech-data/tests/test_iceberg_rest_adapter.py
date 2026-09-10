@@ -4,6 +4,7 @@ Mirrors the ``test_debezium_engine.py`` style: real httpx
 ``AsyncClient`` instance with a ``MockTransport`` injecting
 deterministic responses. No real network calls.
 """
+
 from __future__ import annotations
 
 import httpx
@@ -40,7 +41,8 @@ async def test_create_namespace_happy_path() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         seen.append(request)
         return httpx.Response(
-            200, json={
+            200,
+            json={
                 "namespace": ["iceberg", "ads"],
                 "properties": {"owner": "tenant-acme"},
             },
@@ -64,6 +66,7 @@ async def test_create_namespace_happy_path() -> None:
 @pytest.mark.asyncio
 async def test_create_namespace_409_is_swallowed_by_caller() -> None:
     """409 (already exists) propagates as IcebergRestError so the caller can swallow it."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(409, text="Namespace already exists")
 
@@ -87,7 +90,8 @@ async def test_register_table_happy_path() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         seen.append(request)
         return httpx.Response(
-            200, json={
+            200,
+            json={
                 "name": "orders_summary",
                 "metadata_location": "paimon.ods.orders",
             },
@@ -118,9 +122,11 @@ async def test_register_table_happy_path() -> None:
 @pytest.mark.asyncio
 async def test_create_table_happy_path() -> None:
     """POST /v1/namespaces/{ns}/tables → returns the table metadata."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
-            200, json={
+            200,
+            json={
                 "name": "orders_summary",
                 "metadata": {"schema": {"fields": []}},
             },
@@ -144,6 +150,7 @@ async def test_create_table_happy_path() -> None:
 @pytest.mark.asyncio
 async def test_create_namespace_network_error_raises_iceberg_rest_error() -> None:
     """Transport error → IcebergRestError (no raw exception leaks)."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("connection refused")
 
@@ -159,6 +166,7 @@ async def test_create_namespace_network_error_raises_iceberg_rest_error() -> Non
 @pytest.mark.asyncio
 async def test_create_namespace_500_raises_iceberg_rest_error() -> None:
     """5xx → IcebergRestError with status_code preserved."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(500, text="Internal Server Error")
 
@@ -174,6 +182,7 @@ async def test_create_namespace_500_raises_iceberg_rest_error() -> None:
 @pytest.mark.asyncio
 async def test_register_table_404_raises_iceberg_rest_error() -> None:
     """404 on register → IcebergRestError with status_code=404."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(404, text="Namespace not found")
 
@@ -196,6 +205,7 @@ async def test_register_table_404_raises_iceberg_rest_error() -> None:
 @pytest.mark.asyncio
 async def test_register_table_invalid_json_raises_iceberg_rest_error() -> None:
     """Non-JSON response → IcebergRestError (parse failure wrapped)."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, text="<html>oops</html>")
 

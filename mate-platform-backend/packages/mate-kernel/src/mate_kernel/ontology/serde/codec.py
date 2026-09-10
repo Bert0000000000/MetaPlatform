@@ -6,8 +6,18 @@ import re
 from dataclasses import dataclass
 
 _VALID_KINDS = (
-    "cls", "ver", "prop", "obj", "link", "act", "if",
-    "ind", "lnk", "ax", "fn", "oset",
+    "cls",
+    "ver",
+    "prop",
+    "obj",
+    "link",
+    "act",
+    "if",
+    "ind",
+    "lnk",
+    "ax",
+    "fn",
+    "oset",
 )
 _SEGMENT_SAFE = re.compile(r"^[A-Za-z0-9_-]+$")
 _SPLIT_RE = re.compile(r"^ont\.([a-z0-9_-]{1,64})\.([a-z]+)\.(.+)$")
@@ -26,22 +36,12 @@ class RidParts:
 
 def encode_rid(rid: str) -> str:
     """URL/路径安全编码：: . - _ → %3A %2E %2D %5F。"""
-    return (
-        rid.replace(":", "%3A")
-        .replace(".", "%2E")
-        .replace("-", "%2D")
-        .replace("_", "%5F")
-    )
+    return rid.replace(":", "%3A").replace(".", "%2E").replace("-", "%2D").replace("_", "%5F")
 
 
 def decode_rid(encoded: str) -> str:
     """反向解码。"""
-    return (
-        encoded.replace("%3A", ":")
-        .replace("%2E", ".")
-        .replace("%2D", "-")
-        .replace("%5F", "_")
-    )
+    return encoded.replace("%3A", ":").replace("%2E", ".").replace("%2D", "-").replace("%5F", "_")
 
 
 def rid_split(rid: str) -> RidParts:

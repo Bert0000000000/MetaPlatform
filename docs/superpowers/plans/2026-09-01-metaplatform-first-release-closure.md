@@ -31,14 +31,14 @@
 
 首发承诺不是“4 个演示场景”，而是产品主规格的 15 个模块各有最小产品闭环。每个对象/操作必须具有适用的 REST/MCP/A2A/Event 契约；用户、管理员或宿主可见能力另具 UI 或 Host Surface；全部登记 Interface Registry，并具备角色/租户授权、审计、真实 E2E 与恢复/回退归属。
 
-| 模块组 | 首发最小闭环 | 不计入首发的扩展能力 |
-|---|---|---|
-| 个人、组织、身份、租户 | UserProfile、Preference、Consent、DynamicRole、SoD、AccessReview、Tenant、ConfigRelease、Quota 与 FeatureFlag | 商业订阅计费 |
-| Runtime、员工、宿主 | Employee Definition/Version/Assignment、Session、WorkItem、Run、Lease、Host/Connector 状态与退役 | 未经验证的新宿主类型 |
-| Artifact、审批、应用 | ArtifactSchema、OutputProfile、Markdown/HTML/PDF/DOCX 渲染、模板包、装配型应用、安装/升级/回滚 | 未通过 Gate 的可执行插件 |
-| 本体、技能、MCP | 本体建模/发布、Skill/Capability 生命周期、MCP Server/Tool Catalog、凭据与路由治理 | 未通过宿主和沙箱 Gate 的 MCP App UI 扩展 |
-| Action、数据、知识、记忆 | Action/Workflow 定义与审批、DataProduct/Pipeline/质量/血缘、RAG/图谱、本体运维、受治理跨宿主记忆 | 未经受控评审的自动记忆晋升 |
-| 环境、运营、质量 | Connected Runtime 部署、审计、SLO、告警、事件、评测、预算、备份恢复、发布与回退 | 完全断网 Cell，除非相应 Gate 通过并写入 profile |
+| 模块组                   | 首发最小闭环                                                                                                  | 不计入首发的扩展能力                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| 个人、组织、身份、租户   | UserProfile、Preference、Consent、DynamicRole、SoD、AccessReview、Tenant、ConfigRelease、Quota 与 FeatureFlag | 商业订阅计费                                    |
+| Runtime、员工、宿主      | Employee Definition/Version/Assignment、Session、WorkItem、Run、Lease、Host/Connector 状态与退役              | 未经验证的新宿主类型                            |
+| Artifact、审批、应用     | ArtifactSchema、OutputProfile、Markdown/HTML/PDF/DOCX 渲染、模板包、装配型应用、安装/升级/回滚                | 未通过 Gate 的可执行插件                        |
+| 本体、技能、MCP          | 本体建模/发布、Skill/Capability 生命周期、MCP Server/Tool Catalog、凭据与路由治理                             | 未通过宿主和沙箱 Gate 的 MCP App UI 扩展        |
+| Action、数据、知识、记忆 | Action/Workflow 定义与审批、DataProduct/Pipeline/质量/血缘、RAG/图谱、本体运维、受治理跨宿主记忆              | 未经受控评审的自动记忆晋升                      |
+| 环境、运营、质量         | Connected Runtime 部署、审计、SLO、告警、事件、评测、预算、备份恢复、发布与回退                               | 完全断网 Cell，除非相应 Gate 通过并写入 profile |
 
 ### 唯一上线判定
 
@@ -83,6 +83,7 @@ platform-ga 只能在下列全部条件同时成立时写入 PASSED：
 ### Task 1: 固定首发范围与逐项需求追踪
 
 **Files:**
+
 - Create: docs/superpowers/specs/2026-09-01-metaplatform-first-release-scope.md
 - Create: acceptance/release/v1/requirements.schema.json
 - Create: acceptance/release/v1/requirements.yaml
@@ -90,12 +91,13 @@ platform-ga 只能在下列全部条件同时成立时写入 PASSED：
 - Create: mate-platform-backend/tests/architecture/test_release_traceability.py
 
 **Interfaces:**
+
 - Produces: Requirement { id, module, title, release_status, implementation_plan, acceptance_evidence, recovery_evidence, gate_ids, owner, approver }.
 - Consumes: 15 module identifiers from the product spec and Gate evidence registered in acceptance/gates/component-matrix.yaml.
 
 - [ ] **Step 1: Write failing traceability tests**
 
-~~~python
+```python
 def test_each_first_release_module_has_a_closed_requirement() -> None:
     result = verify_requirements(REQUIREMENTS, GATE_MATRIX)
     assert result.errors == []
@@ -103,7 +105,7 @@ def test_each_first_release_module_has_a_closed_requirement() -> None:
 def test_enabled_requirement_rejects_missing_e2e_or_recovery_evidence() -> None:
     result = verify_requirement({"release_status": "IMPLEMENTED", "acceptance_evidence": []})
     assert result.codes == {"E2E_EVIDENCE_REQUIRED", "RECOVERY_EVIDENCE_REQUIRED"}
-~~~
+```
 
 - [ ] **Step 2: Implement the Schema and matrix entries**
 
@@ -117,14 +119,15 @@ Expected: PASS only when all 15 module groups are represented and no enabled req
 
 - [ ] **Step 4: Commit the release scope control**
 
-~~~bash
+```bash
 git add docs/superpowers/specs/2026-09-01-metaplatform-first-release-scope.md acceptance/release/v1/requirements.schema.json acceptance/release/v1/requirements.yaml scripts/verify-release-traceability.py mate-platform-backend/tests/architecture/test_release_traceability.py
 git commit -m "docs(release): lock first release scope and traceability"
-~~~
+```
 
 ### Task 2: 完成六组产品计划与两组上线安全计划并建立覆盖关系
 
 **Files:**
+
 - Create: docs/superpowers/plans/2026-09-01-metaplatform-control-plane-v1.md
 - Create: docs/superpowers/plans/2026-09-01-metaplatform-runtime-employee-host-v1.md
 - Create: docs/superpowers/plans/2026-09-01-metaplatform-artifact-application-output-v1.md
@@ -137,6 +140,7 @@ git commit -m "docs(release): lock first release scope and traceability"
 - Modify: acceptance/release/v1/requirements.yaml
 
 **Interfaces:**
+
 - Consumes: each product module's authority, lifecycle CRUD and acceptance requirements.
 - Produces: eight independently executable plans; each object/operation/interface Requirement maps to exactly one primary plan and may name dependencies on MVP1–MVP4.
 
@@ -160,14 +164,15 @@ Expected: every IMPLEMENTED or PLANNED first-release Requirement points to a sin
 
 - [ ] **Step 5: Commit plan-set closure**
 
-~~~bash
+```bash
 git add docs/superpowers/plans/2026-09-01-metaplatform-*-v1.md docs/superpowers/plans/2026-09-01-digital-employee-platform-mvp-roadmap.md acceptance/release/v1/requirements.yaml
 git commit -m "docs(release): complete first release implementation plan set"
-~~~
+```
 
 ### Task 3: 锁定生产 Profile、迁移权威与单一身份路径
 
 **Files:**
+
 - Create: acceptance/release/v1/production-profile.schema.json
 - Create: acceptance/release/v1/production-profile.yaml
 - Create: scripts/verify-production-profile.py
@@ -177,19 +182,20 @@ git commit -m "docs(release): complete first release implementation plan set"
 - Modify: docs/superpowers/plans/2026-09-01-platform-production-convergence-gates.md
 
 **Interfaces:**
+
 - Produces: EnabledComponent { component, version, image_digest, config_digest, gate_id, owner, rpo, rto, rollback } and one locked ProductionProfile.
 - Consumes: Gate DAG, signed container/package metadata and the Supabase→Keycloak runtime-token contract.
 
 - [ ] **Step 1: Write failing profile and authority tests**
 
-~~~python
+```python
 def test_profile_rejects_enabled_component_without_passing_gate() -> None:
     result = verify_profile(profile_with("ragflow", gate_status="NOT_EXERCISED"))
     assert result.codes == {"ENABLED_COMPONENT_GATE_NOT_PASSED"}
 
 def test_production_sources_cannot_create_schema_or_use_legacy_iam() -> None:
     assert production_source_violations() == []
-~~~
+```
 
 - [ ] **Step 2: Implement immutable profile validation**
 
@@ -207,14 +213,15 @@ Expected: an enabled component with NOT_EXERCISED, a mutable image tag, a legacy
 
 - [ ] **Step 5: Commit profile and safety controls**
 
-~~~bash
+```bash
 git add acceptance/release/v1/production-profile.schema.json acceptance/release/v1/production-profile.yaml scripts/verify-production-profile.py mate-platform-backend/tests/architecture/test_production_profile.py docs/superpowers/plans/2026-09-01-metaplatform-database-release-and-upgrade-safety.md acceptance/gates/component-matrix.yaml docs/superpowers/plans/2026-09-01-platform-production-convergence-gates.md
 git commit -m "feat(release): lock production profile and migration authority"
-~~~
+```
 
 ### Task 4: 建立可观测、SLO、应急与全链路恢复计划
 
 **Files:**
+
 - Create: docs/superpowers/plans/2026-09-01-metaplatform-tenant-deployment-operations-v1.md
 - Create: acceptance/release/v1/slo-catalog.yaml
 - Create: acceptance/release/v1/on-call-raci.yaml
@@ -224,6 +231,7 @@ git commit -m "feat(release): lock production profile and migration authority"
 - Modify: docs/superpowers/plans/2026-09-01-platform-production-convergence-gates.md
 
 **Interfaces:**
+
 - Produces: SLO { service, sli, objective, window, error_budget, alert_rule }, Runbook { alert_id, responder_role, diagnose, mitigate, recover, verify }, and a signed recovery drill result.
 - Consumes: OTel/OpenInference telemetry, Prometheus, Perses, Alertmanager, OpenSearch, CNPG/Object/Registry/Identity/Policy/Workflow backup evidence.
 
@@ -247,14 +255,15 @@ Expected: all production requirements reference numeric SLO/RPO/RTO, an alert ro
 
 - [ ] **Step 5: Commit operational readiness assets**
 
-~~~bash
+```bash
 git add docs/superpowers/plans/2026-09-01-metaplatform-tenant-deployment-operations-v1.md acceptance/release/v1/slo-catalog.yaml acceptance/release/v1/on-call-raci.yaml acceptance/release/v1/runbook-index.yaml acceptance/release/v1/recovery-drill.schema.json acceptance/release/v1/recovery-drill.yaml docs/superpowers/plans/2026-09-01-platform-production-convergence-gates.md
 git commit -m "docs(operations): define SLO incident and recovery readiness"
-~~~
+```
 
 ### Task 5: 实现最终 GA 聚合 Gate 与真实生产推广
 
 **Files:**
+
 - Create: acceptance/release/v1/platform-ga.schema.json
 - Create: acceptance/release/v1/platform-ga.yaml
 - Create: acceptance/release/v1/final-candidate.yaml
@@ -267,12 +276,13 @@ git commit -m "docs(operations): define SLO incident and recovery readiness"
 - Modify: .github/workflows/ga-acceptance.yml
 
 **Interfaces:**
+
 - Produces: PlatformGA { release_id, final_candidate_digest, production_profile_digest, requirement_matrix_digest, interface_registry_digest, parent_gates, business_e2e, host_evidence, recovery_drill, promotion, signatures, status }.
 - Consumes: all object/operation traceability, Interface Registry provider/consumer tests, four-host evidence, component Gate and production profile evidence.
 
 - [ ] **Step 1: Write failing aggregate-Gate tests**
 
-~~~python
+```python
 def test_platform_ga_requires_closed_requirements_and_passing_parents() -> None:
     result = validate_ga(ga_with(requirement_status="PLANNED", parent_status="PASSED"))
     assert result.codes == {"REQUIREMENT_NOT_IMPLEMENTED"}
@@ -280,7 +290,7 @@ def test_platform_ga_requires_closed_requirements_and_passing_parents() -> None:
 def test_platform_ga_rejects_mocked_business_e2e() -> None:
     result = validate_ga(ga_with(e2e_provenance="page.route"))
     assert result.codes == {"MOCKED_PRODUCTION_E2E_FORBIDDEN"}
-~~~
+```
 
 - [ ] **Step 2: Implement the platform-ga evidence schema**
 
@@ -300,14 +310,15 @@ Expected: missing stakeholder signature, failed child Gate, stale Digest, mock E
 
 - [ ] **Step 5: Commit GA release controls**
 
-~~~bash
+```bash
 git add acceptance/release/v1/platform-ga.schema.json acceptance/release/v1/platform-ga.yaml acceptance/release/v1/final-candidate.yaml acceptance/release/v1/promotion-plan.yaml acceptance/release/v1/promotion-evidence.yaml scripts/test-production-release-promotion.ps1 scripts/verify-platform-ga.py mate-platform-backend/tests/architecture/test_platform_ga_evidence.py docs/superpowers/plans/2026-09-01-metaplatform-ga-release-and-cutover.md .github/workflows/ga-acceptance.yml
 git commit -m "test(release): require platform GA promotion evidence"
-~~~
+```
 
 ### Task 6: 按波次实施、验证并宣告首发状态
 
 **Files:**
+
 - Modify: acceptance/release/v1/requirements.yaml
 - Modify: acceptance/release/v1/production-profile.yaml
 - Modify: acceptance/release/v1/platform-ga.yaml
@@ -315,6 +326,7 @@ git commit -m "test(release): require platform GA promotion evidence"
 - Create: acceptance/release/v1/release-readiness-report.md
 
 **Interfaces:**
+
 - Consumes: committed implementation plans, signed Gate evidence, real E2E and recovery/promotion evidence.
 - Produces: immutable release-readiness report with GO or NO-GO only.
 
@@ -336,10 +348,10 @@ The report lists every enabled requirement and Gate with exact evidence Digest, 
 
 - [ ] **Step 4: Commit release decision evidence**
 
-~~~bash
+```bash
 git add acceptance/release/v1/requirements.yaml acceptance/release/v1/production-profile.yaml acceptance/release/v1/platform-ga.yaml acceptance/gates/component-matrix.yaml acceptance/release/v1/release-readiness-report.md
 git commit -m "docs(release): record MetaPlatform first release decision"
-~~~
+```
 
 ## Self-Review
 

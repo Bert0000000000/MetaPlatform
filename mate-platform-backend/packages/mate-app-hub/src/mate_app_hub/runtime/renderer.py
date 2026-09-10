@@ -2,13 +2,15 @@
 
 APPHUB-RUNTIME-01 phase B.
 """
+
 from __future__ import annotations
 
 from .schema import RenderNode, RuntimeContext
 
 
 def render_page(
-    ctx: RuntimeContext, module_code: str | None = None,
+    ctx: RuntimeContext,
+    module_code: str | None = None,
 ) -> list[RenderNode]:
     """Render the page tree from the runtime context.
 

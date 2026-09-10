@@ -44,52 +44,52 @@
 
 架构任务分为三类门：
 
-| 门 | 含义 | 何时阻断 |
-|---|---|---|
-| 场景必需门 | 本场景若缺失就无法安全交付，例如订单迁移、ActionPlan 审批绑定、Lease fencing | 阻断该业务 MVP |
-| 生产准入门 | 受控环境可用兼容实现，但目标组件未经锁版、恢复或许可证验证 | 阻断生产声明，不阻断受控业务价值验证 |
-| 目标替换门 | 当前实现继续承载业务，待消费者、桥接、回滚和校验齐备后切换 | 阻断旧组件退役，不阻断前序 MVP |
+| 门         | 含义                                                                         | 何时阻断                             |
+| ---------- | ---------------------------------------------------------------------------- | ------------------------------------ |
+| 场景必需门 | 本场景若缺失就无法安全交付，例如订单迁移、ActionPlan 审批绑定、Lease fencing | 阻断该业务 MVP                       |
+| 生产准入门 | 受控环境可用兼容实现，但目标组件未经锁版、恢复或许可证验证                   | 阻断生产声明，不阻断受控业务价值验证 |
+| 目标替换门 | 当前实现继续承载业务，待消费者、桥接、回滚和校验齐备后切换                   | 阻断旧组件退役，不阻断前序 MVP       |
 
 跨宿主切换是架构验收，不是独立产品阶段。MVP1 先支持一个经验证的宿主入口；第二宿主在 Run/Lease 契约稳定后加入架构门。四宿主完整矩阵是生产准入条件，不是订单业务出口条件。
 
 ## 3. 当前实现证据与处理决定
 
-| 能力 | 当前证据 | 处理决定 |
-|---|---|---|
-| 订单事务闭环 | `mate-tech-orchestrator/.../repositories/order_review.py`；本轮 81 tests passed、3 PostgreSQL 并发 tests skipped | 复用领域逻辑；先补迁移、并发和真实数据验收 |
-| 订单表结构 | 运行时 `create_all()`，Alembic 无对应迁移 | MVP1 阻断项：补正式 migration、回填/回滚和 schema gate |
-| 订单建议 | `OrderReviewPage.tsx` 使用固定 `follow_up_payment` | 不包装成模型洞察；先由可审计规则生成，再引入有 ModelReceipt 的模型建议 |
-| 订单本体 | PostgreSQL ontology v2 代码存在 | MVP1 直接使用 PostgreSQL 权威；Jena 投影按本体场景拉动 |
-| 数字员工目录 | `mate-tech-dw` 同时有 SQL、in-memory 和演示 API | MVP1 把最小 EmployeeDefinition/Version/Instance/Assignment 权威前置到 `mate-platform`；`mate-tech-dw` 只作迁移来源/只读投影，不得成为 Employee 或 Run 权威 |
-| 身份 | 当前 Keycloak/JWT 可用；Supabase 人类身份链尚未实现 | MVP1 保留兼容入口；Supabase→Keycloak 为生产准入门 |
-| 授权 | JWT、tenant guard、部分 RLS；OpenFGA/OPA 缺失 | MVP1 实现订单最小双主体策略；通用模型逐场景扩展 |
-| MCP | `mate-tech-mcp` 有业务工具，也混入自研管理/联邦 | 保留业务工具；网关替换须经 LiteLLM MIT-only 与兼容门 |
-| 模型网关 | 自研 `mate-tech-llmgw` 存在 | 受控 MVP 可兼容；服务端模型迁移到 LiteLLM 后再退役 |
-| 工作流 | Temporal 抽象和 worker 边界存在 | 只有出现可靠等待/重试时启用；普通查询不进入 Temporal |
-| 事件 | Kafka/Outbox 为主 | MVP1 保留 Outbox；NATS 在事件型场景拉动并提供迁移桥 |
-| RAG | 客户端失败时整文 fallback，binary 仅文本 decode | 订单 MVP 不强制；合同 MVP 必须真实解析且失败关闭 |
-| 记忆 | MemoryCore 集成缺失 | 不阻断订单业务闭环；跨宿主连续性需要时接入受治理 Memory Adapter |
-| Artifact | EvidenceBundle 和 Viewer 存在，统一对象缺失 | MVP1 建 v1 不可变对象链并兼容历史 EvidenceBundle |
-| 数据联邦 | Trino/Iceberg Helm 资产存在，目标组合未验收 | 真实订单源需要跨源时才用 Trino；否则业务服务直读受治理数据源 |
-| 前端 | React/Vite，Semi/Recharts/自有组件混用 | 只迁移 MVP 触达页面；不在 MVP1 发起全站换栈 |
+| 能力         | 当前证据                                                                                                         | 处理决定                                                                                                                                                   |
+| ------------ | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 订单事务闭环 | `mate-tech-orchestrator/.../repositories/order_review.py`；本轮 81 tests passed、3 PostgreSQL 并发 tests skipped | 复用领域逻辑；先补迁移、并发和真实数据验收                                                                                                                 |
+| 订单表结构   | 运行时 `create_all()`，Alembic 无对应迁移                                                                        | MVP1 阻断项：补正式 migration、回填/回滚和 schema gate                                                                                                     |
+| 订单建议     | `OrderReviewPage.tsx` 使用固定 `follow_up_payment`                                                               | 不包装成模型洞察；先由可审计规则生成，再引入有 ModelReceipt 的模型建议                                                                                     |
+| 订单本体     | PostgreSQL ontology v2 代码存在                                                                                  | MVP1 直接使用 PostgreSQL 权威；Jena 投影按本体场景拉动                                                                                                     |
+| 数字员工目录 | `mate-tech-dw` 同时有 SQL、in-memory 和演示 API                                                                  | MVP1 把最小 EmployeeDefinition/Version/Instance/Assignment 权威前置到 `mate-platform`；`mate-tech-dw` 只作迁移来源/只读投影，不得成为 Employee 或 Run 权威 |
+| 身份         | 当前 Keycloak/JWT 可用；Supabase 人类身份链尚未实现                                                              | MVP1 保留兼容入口；Supabase→Keycloak 为生产准入门                                                                                                          |
+| 授权         | JWT、tenant guard、部分 RLS；OpenFGA/OPA 缺失                                                                    | MVP1 实现订单最小双主体策略；通用模型逐场景扩展                                                                                                            |
+| MCP          | `mate-tech-mcp` 有业务工具，也混入自研管理/联邦                                                                  | 保留业务工具；网关替换须经 LiteLLM MIT-only 与兼容门                                                                                                       |
+| 模型网关     | 自研 `mate-tech-llmgw` 存在                                                                                      | 受控 MVP 可兼容；服务端模型迁移到 LiteLLM 后再退役                                                                                                         |
+| 工作流       | Temporal 抽象和 worker 边界存在                                                                                  | 只有出现可靠等待/重试时启用；普通查询不进入 Temporal                                                                                                       |
+| 事件         | Kafka/Outbox 为主                                                                                                | MVP1 保留 Outbox；NATS 在事件型场景拉动并提供迁移桥                                                                                                        |
+| RAG          | 客户端失败时整文 fallback，binary 仅文本 decode                                                                  | 订单 MVP 不强制；合同 MVP 必须真实解析且失败关闭                                                                                                           |
+| 记忆         | MemoryCore 集成缺失                                                                                              | 不阻断订单业务闭环；跨宿主连续性需要时接入受治理 Memory Adapter                                                                                            |
+| Artifact     | EvidenceBundle 和 Viewer 存在，统一对象缺失                                                                      | MVP1 建 v1 不可变对象链并兼容历史 EvidenceBundle                                                                                                           |
+| 数据联邦     | Trino/Iceberg Helm 资产存在，目标组合未验收                                                                      | 真实订单源需要跨源时才用 Trino；否则业务服务直读受治理数据源                                                                                               |
+| 前端         | React/Vite，Semi/Recharts/自有组件混用                                                                           | 只迁移 MVP 触达页面；不在 MVP1 发起全站换栈                                                                                                                |
 
 ## 4. MVP 与目标组件拉动矩阵
 
-| 能力 | MVP1 订单 | MVP2 合同 | MVP3 本体构建 | MVP4 本体运维 |
-|---|---|---|---|---|
-| Employee/Session/Run/Lease | 最小权威内核 | 复用 | 增加 A2A SubRun | 增加事件 Run |
-| 宿主入口 | 一个稳定 Connector | 第二宿主作为架构门 | 增加协作能力矩阵 | 完成四宿主生产矩阵 |
-| 身份 | 现有 Keycloak 兼容链 | Supabase→Keycloak PoC 可并行 | 锁版后候选切换 | 完成迁移/撤销/离线演练 |
-| OpenFGA/OPA/RLS | 订单最小策略 | 合同资源和文件策略 | 本体职责分离 | 自动提案/发布策略 |
-| LiteLLM | 若使用服务端模型则先接 Model Gateway | Model + MCP 锁版路径 | A2A 仅在互操作通过后启用 | 完整预算/恢复门 |
-| RAGFlow/Infinity | 非必需 | 核心依赖，真实解析/证据 | 复用材料输入 | 切片复盘和漂移 |
-| MemoryCore | 非业务出口条件 | 可选案例经验 | 可选建模经验候选 | 可选运维经验晋升与删除；不阻断 MVP4 业务出口 |
-| Jena | 非必需 | 合同本体复杂查询时条件启用 | SHACL/版本投影核心 | 回归、切换、重建 |
-| Trino/Iceberg/Polaris | 仅真实跨源订单需要 | 可选元数据分析 | 影响分析读取 | 完成湖仓目标收口 |
-| Temporal | 仅跨时审批/外部等待 | 审批、超时、长解析 | 多员工评审发布 | 周期复盘、回归、回滚 |
-| NATS | 保留现有 Outbox | 可不启用 | 发布通知可启用 | Schema/切片/漂移事件核心 |
-| SeaweedFS | Artifact 对象需要时条件启用 | 文件与证据对象核心 | 复用 | 备份恢复和对象锁门 |
-| 前端收敛 | 订单页和 Artifact Renderer | 合同页 | 本体 diff/图 | 运维面板及触达页收口 |
+| 能力                       | MVP1 订单                            | MVP2 合同                    | MVP3 本体构建            | MVP4 本体运维                                |
+| -------------------------- | ------------------------------------ | ---------------------------- | ------------------------ | -------------------------------------------- |
+| Employee/Session/Run/Lease | 最小权威内核                         | 复用                         | 增加 A2A SubRun          | 增加事件 Run                                 |
+| 宿主入口                   | 一个稳定 Connector                   | 第二宿主作为架构门           | 增加协作能力矩阵         | 完成四宿主生产矩阵                           |
+| 身份                       | 现有 Keycloak 兼容链                 | Supabase→Keycloak PoC 可并行 | 锁版后候选切换           | 完成迁移/撤销/离线演练                       |
+| OpenFGA/OPA/RLS            | 订单最小策略                         | 合同资源和文件策略           | 本体职责分离             | 自动提案/发布策略                            |
+| LiteLLM                    | 若使用服务端模型则先接 Model Gateway | Model + MCP 锁版路径         | A2A 仅在互操作通过后启用 | 完整预算/恢复门                              |
+| RAGFlow/Infinity           | 非必需                               | 核心依赖，真实解析/证据      | 复用材料输入             | 切片复盘和漂移                               |
+| MemoryCore                 | 非业务出口条件                       | 可选案例经验                 | 可选建模经验候选         | 可选运维经验晋升与删除；不阻断 MVP4 业务出口 |
+| Jena                       | 非必需                               | 合同本体复杂查询时条件启用   | SHACL/版本投影核心       | 回归、切换、重建                             |
+| Trino/Iceberg/Polaris      | 仅真实跨源订单需要                   | 可选元数据分析               | 影响分析读取             | 完成湖仓目标收口                             |
+| Temporal                   | 仅跨时审批/外部等待                  | 审批、超时、长解析           | 多员工评审发布           | 周期复盘、回归、回滚                         |
+| NATS                       | 保留现有 Outbox                      | 可不启用                     | 发布通知可启用           | Schema/切片/漂移事件核心                     |
+| SeaweedFS                  | Artifact 对象需要时条件启用          | 文件与证据对象核心           | 复用                     | 备份恢复和对象锁门                           |
+| 前端收敛                   | 订单页和 Artifact Renderer           | 合同页                       | 本体 diff/图             | 运维面板及触达页收口                         |
 
 ## 5. MVP1 订单洞察与行动
 
@@ -205,11 +205,11 @@ RAG 切片或 Schema 事件 → 去重并建立 MaintenanceRun → 漂移候选 
 
 ### 11.1 多 Agent 交叉校验结论
 
-| 校验维度 | 最终结论 | 已闭合重点 |
-|---|---|---|
-| 架构 | 无剩余 P0/P1 | 权威对象、双主体授权、Run/Lease 生命周期、控制面与数据面、六类业务场景 |
-| 技术 | 无剩余 P0/P1 | 开源组件边界、身份链、许可证、部署拓扑、恢复要求、生产 Gate DAG |
-| 实施 | 无剩余 P0/P1 | 文件和依赖顺序、迁移链、后台 Worker、Temporal、真实 E2E、统一 live runner |
+| 校验维度 | 最终结论     | 已闭合重点                                                                |
+| -------- | ------------ | ------------------------------------------------------------------------- |
+| 架构     | 无剩余 P0/P1 | 权威对象、双主体授权、Run/Lease 生命周期、控制面与数据面、六类业务场景    |
+| 技术     | 无剩余 P0/P1 | 开源组件边界、身份链、许可证、部署拓扑、恢复要求、生产 Gate DAG           |
+| 实施     | 无剩余 P0/P1 | 文件和依赖顺序、迁移链、后台 Worker、Temporal、真实 E2E、统一 live runner |
 
 因此，本 Spec、总路线图、四份业务 MVP 计划和生产收敛计划共同构成**条件性实施基线**。这里的“通过”只表示架构和计划经静态交叉评审后完整、内部一致且可以按任务执行；所有任务复选框仍未执行，所有生产 Gate 初始仍为 `NOT_EXERCISED`。只有实际运行计划中的真实环境测试、恢复与故障注入，并形成符合 Schema 的证据后，才能逐项声明 `PASSED` 或生产完成。
 

@@ -95,5 +95,11 @@ def attach_derived_values(
             if row_rid is None:
                 continue
             row[key] = compute_derived_for_row(
-                row_rid, spec, class_rid, link_src, link_dst, pairs, value_of,
+                row_rid,
+                spec,
+                class_rid,
+                link_src,
+                link_dst,
+                pairs,
+                value_of,
             )

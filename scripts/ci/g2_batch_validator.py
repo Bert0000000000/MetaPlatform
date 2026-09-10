@@ -6,12 +6,11 @@ limits on Windows), and prints a summary.
 
 Exit non-zero if any hook fails.
 """
+
 from __future__ import annotations
 
-import fnmatch
 import re
 import subprocess
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -56,8 +55,7 @@ def collect(pattern: str | None, exclude_re: re.Pattern[str] | None) -> list[str
     files = [
         str(p).replace("\\", "/")
         for p in REPO_ROOT.glob(pattern)
-        if p.is_file()
-        and (exclude_re is None or not exclude_re.search(str(p)))
+        if p.is_file() and (exclude_re is None or not exclude_re.search(str(p)))
     ]
     return sorted(files)
 
@@ -85,7 +83,7 @@ def run_hook(hook: dict, files: list[str]) -> int:
                 print(r.stdout[-1500:])
             if r.stderr:
                 print(r.stderr[-800:])
-            print(f"chunk {i//CHUNK_SIZE + 1} exit: {r.returncode}")
+            print(f"chunk {i // CHUNK_SIZE + 1} exit: {r.returncode}")
             total_rc = r.returncode
             break  # fail fast
     if total_rc == 0:

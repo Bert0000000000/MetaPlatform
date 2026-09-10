@@ -1,4 +1,5 @@
 """Tests for mate_tech_metrics.repositories.sql_store — SQL persistence (P3-W2)."""
+
 from __future__ import annotations
 
 import pytest
@@ -24,9 +25,13 @@ _TENANT_B = "tenant-bigo"
 
 def test_put_and_get_metric() -> None:
     m = mem.Metric(
-        id="mtc-1", tenant_id=_TENANT_A, name="Daily Revenue",
-        expression="SUM(orders.amount)", status="active",
-        description="Revenue", config={"unit": "currency"},
+        id="mtc-1",
+        tenant_id=_TENANT_A,
+        name="Daily Revenue",
+        expression="SUM(orders.amount)",
+        status="active",
+        description="Revenue",
+        config={"unit": "currency"},
     )
     sql.put_metric(_TENANT_A, m)
 
@@ -39,7 +44,9 @@ def test_put_and_get_metric() -> None:
 
 def test_put_metric_upsert() -> None:
     m = mem.Metric(
-        id="mtc-2", tenant_id=_TENANT_A, name="Active Users",
+        id="mtc-2",
+        tenant_id=_TENANT_A,
+        name="Active Users",
         expression="COUNT(DISTINCT users.id)",
     )
     sql.put_metric(_TENANT_A, m)
@@ -54,46 +61,78 @@ def test_put_metric_upsert() -> None:
 
 
 def test_list_metrics_tenant_isolation() -> None:
-    sql.put_metric(_TENANT_A, mem.Metric(
-        id="mtc-a", tenant_id=_TENANT_A, name="A",
-        expression="1",
-    ))
-    sql.put_metric(_TENANT_B, mem.Metric(
-        id="mtc-b", tenant_id=_TENANT_B, name="B",
-        expression="1",
-    ))
+    sql.put_metric(
+        _TENANT_A,
+        mem.Metric(
+            id="mtc-a",
+            tenant_id=_TENANT_A,
+            name="A",
+            expression="1",
+        ),
+    )
+    sql.put_metric(
+        _TENANT_B,
+        mem.Metric(
+            id="mtc-b",
+            tenant_id=_TENANT_B,
+            name="B",
+            expression="1",
+        ),
+    )
     assert [m.id for m in sql.list_metrics(_TENANT_A)] == ["mtc-a"]
     assert [m.id for m in sql.list_metrics(_TENANT_B)] == ["mtc-b"]
 
 
 def test_list_metrics_status_filter() -> None:
-    sql.put_metric(_TENANT_A, mem.Metric(
-        id="mtc-active", tenant_id=_TENANT_A, name="A",
-        expression="1", status="active",
-    ))
-    sql.put_metric(_TENANT_A, mem.Metric(
-        id="mtc-draft", tenant_id=_TENANT_A, name="D",
-        expression="1", status="draft",
-    ))
+    sql.put_metric(
+        _TENANT_A,
+        mem.Metric(
+            id="mtc-active",
+            tenant_id=_TENANT_A,
+            name="A",
+            expression="1",
+            status="active",
+        ),
+    )
+    sql.put_metric(
+        _TENANT_A,
+        mem.Metric(
+            id="mtc-draft",
+            tenant_id=_TENANT_A,
+            name="D",
+            expression="1",
+            status="draft",
+        ),
+    )
     active = sql.list_metrics(_TENANT_A, status="active")
     assert [m.id for m in active] == ["mtc-active"]
 
 
 def test_delete_metric() -> None:
-    sql.put_metric(_TENANT_A, mem.Metric(
-        id="mtc-del", tenant_id=_TENANT_A, name="Del",
-        expression="1",
-    ))
+    sql.put_metric(
+        _TENANT_A,
+        mem.Metric(
+            id="mtc-del",
+            tenant_id=_TENANT_A,
+            name="Del",
+            expression="1",
+        ),
+    )
     assert sql.delete_metric(_TENANT_A, "mtc-del") is True
     assert sql.get_metric(_TENANT_A, "mtc-del") is None
     assert sql.delete_metric(_TENANT_A, "mtc-del") is False
 
 
 def test_delete_metric_rejects_cross_tenant() -> None:
-    sql.put_metric(_TENANT_A, mem.Metric(
-        id="mtc-x", tenant_id=_TENANT_A, name="X",
-        expression="1",
-    ))
+    sql.put_metric(
+        _TENANT_A,
+        mem.Metric(
+            id="mtc-x",
+            tenant_id=_TENANT_A,
+            name="X",
+            expression="1",
+        ),
+    )
     assert sql.delete_metric(_TENANT_B, "mtc-x") is False
 
 

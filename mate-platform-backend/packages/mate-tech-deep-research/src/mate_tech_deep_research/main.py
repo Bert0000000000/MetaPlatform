@@ -7,6 +7,7 @@ ADR-0014 5-step pattern:
   * Step 4: DeerFlow Engine outbound calls use BearerAuth (deerflow/client.py).
   * Step 5: cross-tenant negative tests in tests/test_tenant_integration.py.
 """
+
 from __future__ import annotations
 
 from fastapi import FastAPI

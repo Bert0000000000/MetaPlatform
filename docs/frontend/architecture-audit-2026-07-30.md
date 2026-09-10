@@ -9,24 +9,24 @@ review of `App.tsx`, `client.ts`, `package.json` files, and CI workflow.
 
 ## Inventory
 
-| Metric | Value |
-|---|---:|
+| Metric                        |                   Value |
+| ----------------------------- | ----------------------: |
 | Source files (`*.ts`/`*.tsx`) | 370 (128 .ts, 242 .tsx) |
-| Files under `pages/` | 250 |
-| Files under `api/` | 103 |
-| Mock files | 2 |
-| Routes in `App.tsx` | 109 |
-| `useState` calls | 444 |
-| `useEffect` calls | 192 |
-| `useCallback` calls | 92 |
-| `useMemo` calls | 80 |
-| `useReducer` calls | 4 |
-| `useRef` calls | 7 |
-| `useContext` calls | 14 |
-| Files importing `antd` | 211 |
-| `message.*` call sites | 426 |
-| `App.useApp()` call sites | 2 |
-| Direct `window.*` call sites | 3 |
+| Files under `pages/`          |                     250 |
+| Files under `api/`            |                     103 |
+| Mock files                    |                       2 |
+| Routes in `App.tsx`           |                     109 |
+| `useState` calls              |                     444 |
+| `useEffect` calls             |                     192 |
+| `useCallback` calls           |                      92 |
+| `useMemo` calls               |                      80 |
+| `useReducer` calls            |                       4 |
+| `useRef` calls                |                       7 |
+| `useContext` calls            |                      14 |
+| Files importing `antd`        |                     211 |
+| `message.*` call sites        |                     426 |
+| `App.useApp()` call sites     |                       2 |
+| Direct `window.*` call sites  |                       3 |
 
 ### Top-level directory layout
 
@@ -50,22 +50,22 @@ metaplatform-frontend/
 
 ### Largest files
 
-| File | Lines |
-|---|---:|
-| `pages/ontology/OntologyActionPage.tsx` | 1984 |
-| `pages/apphub/data/templates.ts` | 1074 |
-| `pages/superai/ChatPage.tsx` | 985 |
-| `pages/mcp/AuditStatisticsPage.tsx` | 956 |
-| `pages/apphub/AIDesignerPage.tsx` | 855 |
-| `pages/apphub/FlowDesignerPage.tsx` | 790 |
-| `pages/superai/components/CodeWorkspace.tsx` | 753 (18 useState) |
-| `pages/apphub/FormDesignerPage.tsx` | 738 |
-| `api/mcphub/types/index.ts` | 736 |
-| `pages/dashboard/SettingsPage.tsx` | 679 |
-| `pages/apphub/utils/safeScriptRunner.ts` | 644 |
-| `pages/dashboard/admin/UsersPage.tsx` | 637 |
+| File                                            |             Lines |
+| ----------------------------------------------- | ----------------: |
+| `pages/ontology/OntologyActionPage.tsx`         |              1984 |
+| `pages/apphub/data/templates.ts`                |              1074 |
+| `pages/superai/ChatPage.tsx`                    |               985 |
+| `pages/mcp/AuditStatisticsPage.tsx`             |               956 |
+| `pages/apphub/AIDesignerPage.tsx`               |               855 |
+| `pages/apphub/FlowDesignerPage.tsx`             |               790 |
+| `pages/superai/components/CodeWorkspace.tsx`    | 753 (18 useState) |
+| `pages/apphub/FormDesignerPage.tsx`             |               738 |
+| `api/mcphub/types/index.ts`                     |               736 |
+| `pages/dashboard/SettingsPage.tsx`              |               679 |
+| `pages/apphub/utils/safeScriptRunner.ts`        |               644 |
+| `pages/dashboard/admin/UsersPage.tsx`           |               637 |
 | `pages/ontology/components/LineageFullView.tsx` | 620 (10 useState) |
-| `pages/ontology/components/DataGraphView.tsx` | 570 |
+| `pages/ontology/components/DataGraphView.tsx`   |               570 |
 
 ## Findings (by severity)
 
@@ -138,6 +138,7 @@ metaplatform-frontend/
     current worst case. Settle on one.
 
 11. **`Window.location` is used 3 times**:
+
     - `api/client.ts:57` — login check (intentional).
     - `api/client.ts:65` — login redirect (intentional).
     - `OntologyDatacenterPage.tsx:147` — "刷新" button reloads the
@@ -161,7 +162,7 @@ metaplatform-frontend/
     has only one project. The benefit is `incremental` builds; the
     risk is the project references must be kept in sync.
 
-16. **The `metaplatform-frontend/scripts/audit/` directory only
+16. \*\*The `metaplatform-frontend/scripts/audit/` directory only
     contains the two audit scripts; CI calls one of them.
     `python` is not declared in the root `engines` or anywhere as a
     required tool. CI relies on the GitHub Actions default image
@@ -172,7 +173,7 @@ metaplatform-frontend/
     `src/api/superai`, `src/api/ontology-bigdata` are all exposed to
     the SPA bundle even when only a couple of pages import them.
     Vite tree-shakes by entry point, so the runtime bundle is OK,
-    but the *source* surface area is wide.
+    but the _source_ surface area is wide.
 
 ## Strengths
 
@@ -194,7 +195,7 @@ metaplatform-frontend/
 2. Route every page through the shared `createApiClient()` and
    remove the 100+ `axios.create({ baseURL: '/api/v1' })` calls in
    `src/api/*`. Replace with `import { apiClient, apiPath } from
-   '@mate/shared/api'`.
+'@mate/shared/api'`.
 3. Centralize error handling: an `ErrorBoundary` + a hook
    `useApiErrorBoundary(error, fallback)` that pipes `HttpError`/`BizError`
    into antd `message`, `notification`, or a `Result` component.
@@ -218,7 +219,7 @@ metaplatform-frontend/
 ### Phase 3 (later)
 
 9. Feature-folder migration: `src/features/{dashboard,ontology,kb,
-   apphub,superai,mcp,arch,agents}/` with `routes.tsx`,
+apphub,superai,mcp,arch,agents}/` with `routes.tsx`,
    `api/`, `components/`, `pages/`, `state/`, `types.ts`. Keep
    `@mate/shared` for cross-cutting only.
 10. Bundle budget: introduce `vite build --chunkSizeWarningLimit 600`
@@ -230,7 +231,7 @@ metaplatform-frontend/
     paint) and `/ontology/datacenter` (interactive, since it
     dynamically imports DataGraph / Lineage / CDC / Scheduler).
 
-## What is *not* a problem (intentionally)
+## What is _not_ a problem (intentionally)
 
 - The 109 routes in one file is large but mostly cosmetic; a split
   does not change runtime.
@@ -252,44 +253,45 @@ metaplatform-frontend/
 
 ## Phase 1 Progress (2026-07-30)
 
-| Item | Status | Evidence |
-|---|---|---|
-| 1. Split App.tsx into per-module routes | Done | `apps/web/src/routes/{dashboard,superai,arch,apphub,ontology,knowledge,mcp,agents}.tsx` + `App.tsx` reduced to composition. Each page wrapped in `ErrorBoundary moduleName=...`. |
-| 2. Unify axios on shared client | Done (with 3 baseURL carve-outs) | All 100+ API modules go through `createApiClient()` from `@mate/shared/api`. Only `client.ts` (env override), `ontology-bigdata.ts` (/api/v1), and `dashboard/workbench.ts` (10s timeout) keep dedicated `axios.create`. |
-| 3. Delete `mock/` and dead code | Done | `apps/web/src/mock/` removed. `MOCK_AGENTS` / `MOCK_ONTOLOGY_ENTITIES` / `MOCK_BIGDATA_*` imports stripped from `pages/agents/*`, `pages/ontology/*`, and `api/ontology-bigdata.ts`. Real API now in `api/agents/index.ts` and `api/ontology-bigdata.ts` (returns `[]` until backend lands). |
-| 4. Fix `window.location.reload` | Done | `pages/ontology/OntologyDatacenterPage.tsx:147` now uses `reloadKey` state to remount the active sub-tab instead of full-page reload. |
+| Item                                    | Status                           | Evidence                                                                                                                                                                                                                                                                                     |
+| --------------------------------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Split App.tsx into per-module routes | Done                             | `apps/web/src/routes/{dashboard,superai,arch,apphub,ontology,knowledge,mcp,agents}.tsx` + `App.tsx` reduced to composition. Each page wrapped in `ErrorBoundary moduleName=...`.                                                                                                             |
+| 2. Unify axios on shared client         | Done (with 3 baseURL carve-outs) | All 100+ API modules go through `createApiClient()` from `@mate/shared/api`. Only `client.ts` (env override), `ontology-bigdata.ts` (/api/v1), and `dashboard/workbench.ts` (10s timeout) keep dedicated `axios.create`.                                                                     |
+| 3. Delete `mock/` and dead code         | Done                             | `apps/web/src/mock/` removed. `MOCK_AGENTS` / `MOCK_ONTOLOGY_ENTITIES` / `MOCK_BIGDATA_*` imports stripped from `pages/agents/*`, `pages/ontology/*`, and `api/ontology-bigdata.ts`. Real API now in `api/agents/index.ts` and `api/ontology-bigdata.ts` (returns `[]` until backend lands). |
+| 4. Fix `window.location.reload`         | Done                             | `pages/ontology/OntologyDatacenterPage.tsx:147` now uses `reloadKey` state to remount the active sub-tab instead of full-page reload.                                                                                                                                                        |
 
 ### Verification after Phase 1
 
-| Check | Result |
-|---|---|
-| `pnpm --filter @mate/web typecheck` | 0 errors |
-| `pnpm --filter @mate/web build` | `built in 27.24s`, 0 errors |
-| E2E (`knowledge`, `portal`, `ontology-operations`, `silent-operations`) | 8/8 passed |
-| Operations audit | `silent catch = 0`, `alert/confirm = 1` (false positive), `window.location = 1` (login redirect, intentional) |
+| Check                                                                   | Result                                                                                                        |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `pnpm --filter @mate/web typecheck`                                     | 0 errors                                                                                                      |
+| `pnpm --filter @mate/web build`                                         | `built in 27.24s`, 0 errors                                                                                   |
+| E2E (`knowledge`, `portal`, `ontology-operations`, `silent-operations`) | 8/8 passed                                                                                                    |
+| Operations audit                                                        | `silent catch = 0`, `alert/confirm = 1` (false positive), `window.location = 1` (login redirect, intentional) |
 
 ### Next step (Phase 2)
 
 - Migrate `api/admin/*`, `api/dashboard/*`, `api/mcphub/*`, etc. off the small leftover `axios.create` and onto the shared client.
 - Introduce a `useApiErrorBoundary` hook for pages to centralize error→message wiring.
+
 ## Phase 2 Progress (2026-07-30)
 
-| Item | Status | Evidence |
-|---|---|---|
-| Centralize API error handling | Done | `packages/shared/src/hooks/useApiErrorBoundary.ts` (toast + 401 handling + confirm modal). `packages/shared/src/api/errors.ts` exposes `isApiError` / `isBizError` / `isHttpError` + class re-exports. |
-| Lightweight query cache | Done | `packages/shared/src/hooks/useCachedAsync.ts` — TTL + manual `invalidate()` + cross-component shared `Map` (no TanStack Query dep added). |
-| KB page migration | Done | `pages/knowledge/KnowledgeBasePage.tsx` uses `useCachedAsync(KB_LIST_KEY, listKb, { onChange: reloadTick })` + `useApiErrorBoundary().report(e)`. |
+| Item                                | Status  | Evidence                                                                                                                                                                                                                         |
+| ----------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Centralize API error handling       | Done    | `packages/shared/src/hooks/useApiErrorBoundary.ts` (toast + 401 handling + confirm modal). `packages/shared/src/api/errors.ts` exposes `isApiError` / `isBizError` / `isHttpError` + class re-exports.                           |
+| Lightweight query cache             | Done    | `packages/shared/src/hooks/useCachedAsync.ts` — TTL + manual `invalidate()` + cross-component shared `Map` (no TanStack Query dep added).                                                                                        |
+| KB page migration                   | Done    | `pages/knowledge/KnowledgeBasePage.tsx` uses `useCachedAsync(KB_LIST_KEY, listKb, { onChange: reloadTick })` + `useApiErrorBoundary().report(e)`.                                                                                |
 | OntologyActionPage controller split | Partial | `apps/web/src/pages/ontology/actions/seed.ts` extracts mock action data out of the 1984-line page; `OntologyActionPage.tsx` still contains the Flowgram editor body unchanged. Full Page+Controller split is staged for Phase 3. |
-| ArchitectureAuditReport | Updated | This report. |
+| ArchitectureAuditReport             | Updated | This report.                                                                                                                                                                                                                     |
 
 ### Verification after Phase 2
 
-| Check | Result |
-|---|---|
-| `pnpm --filter @mate/web typecheck` | 0 errors |
-| `pnpm --filter @mate/web build` | `built in 27.46s`, 0 errors |
-| E2E (`knowledge`, `portal`, `ontology-operations`, `silent-operations`) | 8/8 passed |
-| Operations audit | `silent catch = 0` |
+| Check                                                                   | Result                      |
+| ----------------------------------------------------------------------- | --------------------------- |
+| `pnpm --filter @mate/web typecheck`                                     | 0 errors                    |
+| `pnpm --filter @mate/web build`                                         | `built in 27.46s`, 0 errors |
+| E2E (`knowledge`, `portal`, `ontology-operations`, `silent-operations`) | 8/8 passed                  |
+| Operations audit                                                        | `silent catch = 0`          |
 
 ### Why not TanStack Query
 

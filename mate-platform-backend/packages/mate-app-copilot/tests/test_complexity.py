@@ -3,6 +3,7 @@
 Covers keyword matching, length gating, boundary conditions, and
 Chinese / English keyword variants.
 """
+
 from __future__ import annotations
 
 from mate_app_copilot.routing.complexity import is_deep_research_query
@@ -22,27 +23,21 @@ def test_long_query_without_keywords_not_deep_research() -> None:
 
 def test_long_query_with_research_keyword() -> None:
     """Long query containing 研究 → deep research."""
-    query = (
-        "请帮我做一个关于人工智能发展趋势的深入研究报告需要涵盖多个方面"
-    )
+    query = "请帮我做一个关于人工智能发展趋势的深入研究报告需要涵盖多个方面"
     assert len(query) >= 30
     assert is_deep_research_query(query) is True
 
 
 def test_long_query_with_analysis_keyword() -> None:
     """Long query containing 分析 → deep research."""
-    query = (
-        "我们需要对这份财务报表进行详细的财务分析包括资产负债和现金流"
-    )
+    query = "我们需要对这份财务报表进行详细的财务分析包括资产负债和现金流"
     assert len(query) >= 30
     assert is_deep_research_query(query) is True
 
 
 def test_long_query_with_industry_keyword() -> None:
     """Long query containing 行业 → deep research."""
-    query = (
-        "请调研新能源汽车行业的发展现状并对比主要厂商的市场份额和竞争力"
-    )
+    query = "请调研新能源汽车行业的发展现状并对比主要厂商的市场份额和竞争力"
     assert len(query) >= 30
     assert is_deep_research_query(query) is True
 

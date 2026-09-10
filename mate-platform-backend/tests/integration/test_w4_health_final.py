@@ -1,4 +1,5 @@
 """W4 边角最终 (ST-4.3.4 health check final)."""
+
 from __future__ import annotations
 
 

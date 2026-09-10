@@ -25,6 +25,7 @@ from mate_kernel.agent.ontology import (
 @dataclass
 class FakeLlm:
     """LLM client stub —— 按 prompt 顺序返回值，或单值覆盖。"""
+
     responses: list[str] = field(default_factory=list)
     calls: list[tuple[str, str]] = field(default_factory=list)
     fail_on_next: bool = False
@@ -42,18 +43,25 @@ class FakeLlm:
 @dataclass
 class FakeDispatcher:
     """tech-ont dispatcher stub —— 全部入参透传 + 返回值。"""
+
     list_calls: list[tuple[str, dict[str, Any]]] = field(default_factory=list)
     inspect_calls: list[tuple[str, str]] = field(default_factory=list)
     search_calls: list[tuple[str, str, str | None, int]] = field(default_factory=list)
     propose_type_calls: list[tuple[str, dict[str, Any], str]] = field(default_factory=list)
     propose_instance_calls: list[tuple[str, str, dict[str, Any], str]] = field(default_factory=list)
-    propose_merge_calls: list[tuple[str, str, str, float, str, dict[str, str]]] = field(default_factory=list)
+    propose_merge_calls: list[tuple[str, str, str, float, str, dict[str, str]]] = field(
+        default_factory=list
+    )
 
     next_type_pid: str = "pid-type-1"
     next_instance_pid: str = "pid-inst-1"
     next_merge_pid: str = "pid-merge-1"
-    list_payload: list[dict[str, Any]] = field(default_factory=lambda: [{"rid": "ont.acme.obj.order.v1"}])
-    inspect_payload: dict[str, Any] = field(default_factory=lambda: {"rid": "ont.acme.obj.order.v1", "props": []})
+    list_payload: list[dict[str, Any]] = field(
+        default_factory=lambda: [{"rid": "ont.acme.obj.order.v1"}]
+    )
+    inspect_payload: dict[str, Any] = field(
+        default_factory=lambda: {"rid": "ont.acme.obj.order.v1", "props": []}
+    )
     search_payload: list[dict[str, Any]] = field(default_factory=list)
 
     async def list_object_types(self, tenant_id: str, **kwargs: Any) -> list[dict[str, Any]]:
@@ -61,7 +69,10 @@ class FakeDispatcher:
         return list(self.list_payload)
 
     async def inspect_class(
-        self, tenant_id: str, class_rid: str, **kwargs: Any,
+        self,
+        tenant_id: str,
+        class_rid: str,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         self.inspect_calls.append((tenant_id, class_rid))
         return dict(self.inspect_payload)
@@ -165,15 +176,19 @@ def test_normalize_action_parameters_not_dict() -> None:
 
 
 def test_propose_object_type_payload_derives_rid_and_pk() -> None:
-    type_def, impact = _propose_object_type_payload("acme", {
-        "name": "Order", "slug": "order",
-        "primary_key": "order_id",
-        "properties": [
-            {"name": "order_id", "type_id": "string", "primary_key": True},
-            {"name": "amount", "type_id": "float"},
-            {"name": "status", "type_id": "string", "nullable": True},
-        ],
-    })
+    type_def, impact = _propose_object_type_payload(
+        "acme",
+        {
+            "name": "Order",
+            "slug": "order",
+            "primary_key": "order_id",
+            "properties": [
+                {"name": "order_id", "type_id": "string", "primary_key": True},
+                {"name": "amount", "type_id": "float"},
+                {"name": "status", "type_id": "string", "nullable": True},
+            ],
+        },
+    )
     assert type_def["rid"] == "ont.acme.obj.order.v1"
     assert type_def["display_name"] == "Order"
     pk = type_def["primary_key"]
@@ -184,10 +199,14 @@ def test_propose_object_type_payload_derives_rid_and_pk() -> None:
 
 
 def test_propose_object_type_payload_pk_inferred_when_missing() -> None:
-    type_def, _ = _propose_object_type_payload("acme", {
-        "slug": "customer", "properties": [{"name": "name", "type_id": "string"}],
-        "primary_key": "id",
-    })
+    type_def, _ = _propose_object_type_payload(
+        "acme",
+        {
+            "slug": "customer",
+            "properties": [{"name": "name", "type_id": "string"}],
+            "primary_key": "id",
+        },
+    )
     pks = [p for p in type_def["properties"] if p["primary_key"]]
     assert len(pks) == 1
     assert pks[0]["title"] == "id"
@@ -203,9 +222,17 @@ def _agent(llm: FakeLlm, disp: FakeDispatcher) -> OntologyAgent:
 @pytest.mark.asyncio
 async def test_handle_message_routes_to_list() -> None:
     disp = FakeDispatcher()
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "list", "parameters": {}, "reason": "show all",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "list",
+                    "parameters": {},
+                    "reason": "show all",
+                }
+            )
+        ]
+    )
     agent = _agent(llm, disp)
     result = await agent.handle_message("列出所有 ObjectType", {"tenant_id": "acme"})
     assert isinstance(result, LlmDispatchResult)
@@ -218,11 +245,17 @@ async def test_handle_message_routes_to_list() -> None:
 @pytest.mark.asyncio
 async def test_handle_message_routes_to_inspect() -> None:
     disp = FakeDispatcher()
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "inspect",
-        "parameters": {"rid": "ont.acme.obj.order.v1"},
-        "reason": "show order",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "inspect",
+                    "parameters": {"rid": "ont.acme.obj.order.v1"},
+                    "reason": "show order",
+                }
+            )
+        ]
+    )
     agent = _agent(llm, disp)
     result = await agent.handle_message("查看订单", {"tenant_id": "acme"})
     assert result.action == "inspect"
@@ -233,22 +266,29 @@ async def test_handle_message_routes_to_inspect() -> None:
 @pytest.mark.asyncio
 async def test_handle_message_routes_to_propose_object_type() -> None:
     disp = FakeDispatcher(next_type_pid="pid-ot-42")
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "propose_object_type",
-        "parameters": {
-            "name": "Order",
-            "slug": "order",
-            "primary_key": "order_id",
-            "properties": [
-                {"name": "order_id", "type_id": "string", "primary_key": True},
-                {"name": "amount", "type_id": "float"},
-            ],
-        },
-        "reason": "建新类型",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "propose_object_type",
+                    "parameters": {
+                        "name": "Order",
+                        "slug": "order",
+                        "primary_key": "order_id",
+                        "properties": [
+                            {"name": "order_id", "type_id": "string", "primary_key": True},
+                            {"name": "amount", "type_id": "float"},
+                        ],
+                    },
+                    "reason": "建新类型",
+                }
+            )
+        ]
+    )
     agent = _agent(llm, disp)
     result = await agent.handle_message(
-        "帮我建一个 Order", {"tenant_id": "acme"},
+        "帮我建一个 Order",
+        {"tenant_id": "acme"},
     )
     assert result.action == "propose_object_type"
     assert result.proposal_id == "pid-ot-42"
@@ -264,17 +304,23 @@ async def test_handle_message_routes_to_propose_object_type() -> None:
 @pytest.mark.asyncio
 async def test_handle_message_routes_to_propose_instance() -> None:
     disp = FakeDispatcher(next_instance_pid="pid-inst-7")
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "propose_instance",
-        "parameters": {
-            "class_rid": "ont.acme.obj.order.v1",
-            "props": {
-                "ont.acme.prop.order-order-id.v1": "ord-99",
-                "amount": 200,
-            },
-        },
-        "reason": "build",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "propose_instance",
+                    "parameters": {
+                        "class_rid": "ont.acme.obj.order.v1",
+                        "props": {
+                            "ont.acme.prop.order-order-id.v1": "ord-99",
+                            "amount": 200,
+                        },
+                    },
+                    "reason": "build",
+                }
+            )
+        ]
+    )
     agent = _agent(llm, disp)
     result = await agent.handle_message(
         "build order",
@@ -293,18 +339,24 @@ async def test_handle_message_routes_to_propose_instance() -> None:
 @pytest.mark.asyncio
 async def test_handle_message_routes_to_merge_suggestion() -> None:
     disp = FakeDispatcher(next_merge_pid="pid-merge-3")
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "merge_suggestion",
-        "parameters": {
-            "source_rid": "ont.acme.obj.sales-order.v1",
-            "target_rid": "ont.acme.obj.order.v1",
-            "similarity": 0.92,
-            "mapping": {
-                "ont.acme.prop.sales-order-amount.v1": "ont.acme.prop.order-amount.v1",
-            },
-        },
-        "reason": "这两个本质相同",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "merge_suggestion",
+                    "parameters": {
+                        "source_rid": "ont.acme.obj.sales-order.v1",
+                        "target_rid": "ont.acme.obj.order.v1",
+                        "similarity": 0.92,
+                        "mapping": {
+                            "ont.acme.prop.sales-order-amount.v1": "ont.acme.prop.order-amount.v1",
+                        },
+                    },
+                    "reason": "这两个本质相同",
+                }
+            )
+        ]
+    )
     agent = _agent(llm, disp)
     result = await agent.handle_message(
         "把 sales-order 合并到 order",
@@ -324,11 +376,17 @@ async def test_handle_message_routes_to_merge_suggestion() -> None:
 @pytest.mark.asyncio
 async def test_handle_message_routes_to_search() -> None:
     disp = FakeDispatcher(search_payload=[{"rid": "ont.acme.obj.order.v1", "score": 0.7}])
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "search",
-        "parameters": {"text": "订单", "top_k": 3},
-        "reason": "找订单类型",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "search",
+                    "parameters": {"text": "订单", "top_k": 3},
+                    "reason": "找订单类型",
+                }
+            )
+        ]
+    )
     agent = _agent(llm, disp)
     result = await agent.handle_message("搜索订单", {"tenant_id": "acme"})
     assert result.action == "search"
@@ -339,11 +397,19 @@ async def test_handle_message_routes_to_search() -> None:
 @pytest.mark.asyncio
 async def test_handle_message_accepts_markdown_fenced_json() -> None:
     disp = FakeDispatcher()
-    llm = FakeLlm(responses=[
-        "OK here\n```json\n" + json.dumps({
-            "action": "list", "parameters": {}, "reason": "",
-        }) + "\n```\n",
-    ])
+    llm = FakeLlm(
+        responses=[
+            "OK here\n```json\n"
+            + json.dumps(
+                {
+                    "action": "list",
+                    "parameters": {},
+                    "reason": "",
+                }
+            )
+            + "\n```\n",
+        ]
+    )
     agent = _agent(llm, disp)
     result = await agent.handle_message("list", {"tenant_id": "acme"})
     assert result.action == "list"
@@ -362,12 +428,21 @@ async def test_handle_message_accepts_prose_wrapped_json() -> None:
 
 @pytest.mark.asyncio
 async def test_handle_message_no_dispatcher_only_parses() -> None:
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "propose_object_type",
-        "parameters": {"slug": "order", "primary_key": "id",
-                       "properties": [{"name": "id", "type_id": "string"}]},
-        "reason": "",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "propose_object_type",
+                    "parameters": {
+                        "slug": "order",
+                        "primary_key": "id",
+                        "properties": [{"name": "id", "type_id": "string"}],
+                    },
+                    "reason": "",
+                }
+            )
+        ]
+    )
     agent = OntologyAgent(llm=llm, dispatcher=None)
     result = await agent.handle_message("建 order", {"tenant_id": "acme"})
     assert result.action == "propose_object_type"
@@ -399,6 +474,12 @@ async def test_handle_message_empty_returns_error() -> None:
 
 def test_action_kinds_complete() -> None:
     """ACTION_KINDS 与 prompt 文档保持同步。"""
-    expected = {"list", "inspect", "propose_object_type", "propose_instance",
-                "merge_suggestion", "search"}
+    expected = {
+        "list",
+        "inspect",
+        "propose_object_type",
+        "propose_instance",
+        "merge_suggestion",
+        "search",
+    }
     assert set(ACTION_KINDS) == expected

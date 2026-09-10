@@ -1,4 +1,5 @@
 """Idempotency via Redis SETNX (ST-5.1.8)."""
+
 from __future__ import annotations
 
 import os

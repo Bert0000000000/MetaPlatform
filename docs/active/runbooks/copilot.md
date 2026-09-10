@@ -14,10 +14,10 @@ uv run --package mate-app-copilot python -m mate_app_copilot.main
 
 ## SLO（ADR-0018 §2.1）
 
-| Journey | SLO | 当前基线 |
-|---|---|---|
-| Copilot chat 任务完成率 | ≥ 99% | dev 暂未统计 |
-| Tool execute 成功率 | ≥ 95% | 待 P3-W7 之后统计 |
+| Journey                 | SLO   | 当前基线          |
+| ----------------------- | ----- | ----------------- |
+| Copilot chat 任务完成率 | ≥ 99% | dev 暂未统计      |
+| Tool execute 成功率     | ≥ 95% | 待 P3-W7 之后统计 |
 
 ## SLO 越线（ADR-0018 §2.1）
 
@@ -28,9 +28,9 @@ uv run --package mate-app-copilot python -m mate_app_copilot.main
 1. Grafana `Copilot Outcome by Tenant` dashboard，按 `outcome=error` 切片。
 2. Tempo trace `service.name=mate-app-copilot`，筛选 `copilot.invoke` span。
 3. 子 span 异常定位：
-   * `llmgw.chat` → 看 provider API key（[llmgw runbook](llmgw.md#copilot-错误率越线)）
-   * `rag.retrieve` → 看 RAG TTFT 越线（[llmgw runbook](llmgw.md#rag-ttft-越线)）
-   * `tool.execute` → 看 MCP tool deny（[mcp runbook](mcp.md#tool-deny-spike)）
+   - `llmgw.chat` → 看 provider API key（[llmgw runbook](llmgw.md#copilot-错误率越线)）
+   - `rag.retrieve` → 看 RAG TTFT 越线（[llmgw runbook](llmgw.md#rag-ttft-越线)）
+   - `tool.execute` → 看 MCP tool deny（[mcp runbook](mcp.md#tool-deny-spike)）
 4. 必要时切到 `MATE_COPILOT_LLM_MODE=stub` 进入降级（ADR-0018 §2.4）。
 5. 升级路径：copilot oncall → platform oncall。
 
@@ -46,10 +46,10 @@ uv run --package mate-app-copilot python -m mate_app_copilot.main
 
 ## 故障排查
 
-| 现象 | 排查 |
-|---|---|
-| 401 | JWT iss/aud/tenant_id 校验 |
-| 403 | tenant_id 与 ctx 不一致；NL2SQL 越权 |
-| 5xx | llmgw 上游 + A2A federation |
-| SSE 流截断 | 检查 `MATE_LLMGW_HOST/PORT` env |
+| 现象         | 排查                                     |
+| ------------ | ---------------------------------------- |
+| 401          | JWT iss/aud/tenant_id 校验               |
+| 403          | tenant_id 与 ctx 不一致；NL2SQL 越权     |
+| 5xx          | llmgw 上游 + A2A federation              |
+| SSE 流截断   | 检查 `MATE_LLMGW_HOST/PORT` env          |
 | A2A 委派失败 | 看 federation registry 与 allowed_agents |

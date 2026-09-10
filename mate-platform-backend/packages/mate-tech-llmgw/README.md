@@ -15,18 +15,18 @@ Mate Platform LLM Gateway（自研；借鉴 LiteLLM 设计，不引入其组件�
 
 ## 环境变量
 
-| 变量 | 默认 | 说明 |
-|---|---|---|
-| `REDIS_URL` / `PG_DSN` | — | 软依赖；缺失自动降级不阻断。llmgw 表建在 PG_DSN 库（metaplatform_kb） |
-| `MATE_LLMGW_ENABLE_REDIS_QUOTA` | profile 判定 | 租户限流开关 |
-| `MATE_LLMGW_ENABLE_CACHE` / `_COST_PG` / `_MONTHLY_CEILING` / `_USER_DAILY_CAP` | true | 各子系统独立开关（单变量回滚） |
-| `MATE_LLMGW_ENABLE_COOLDOWN` | true | provider 冷却熔断 |
-| `MATE_LLMGW_ENABLE_KEYS` | true | virtual key 认证与管理端点 |
-| `LLMGW_FALLBACKS` | `{}` | JSON `{model: [fallback models]}` |
-| `LLMGW_COOLDOWN_ALLOWED_FAILS` / `LLMGW_COOLDOWN_SECONDS` | 2 / 60 | 冷却阈值与默认时长 |
-| `LLMGW_MODEL_ALIASES` | `{}` | JSON 模型名映射（**ARK ep-xxx 接入点 ID 的唯一登记处**） |
-| `LLMGW_PRICE_OVERRIDES` | `{}` | JSON 单价覆盖（协议价） |
-| `SERVICE_CLIENT_SECRET` | — | 服务身份 secret（生产必须注入，硬规则 12） |
+| 变量                                                                            | 默认         | 说明                                                                  |
+| ------------------------------------------------------------------------------- | ------------ | --------------------------------------------------------------------- |
+| `REDIS_URL` / `PG_DSN`                                                          | —            | 软依赖；缺失自动降级不阻断。llmgw 表建在 PG_DSN 库（metaplatform_kb） |
+| `MATE_LLMGW_ENABLE_REDIS_QUOTA`                                                 | profile 判定 | 租户限流开关                                                          |
+| `MATE_LLMGW_ENABLE_CACHE` / `_COST_PG` / `_MONTHLY_CEILING` / `_USER_DAILY_CAP` | true         | 各子系统独立开关（单变量回滚）                                        |
+| `MATE_LLMGW_ENABLE_COOLDOWN`                                                    | true         | provider 冷却熔断                                                     |
+| `MATE_LLMGW_ENABLE_KEYS`                                                        | true         | virtual key 认证与管理端点                                            |
+| `LLMGW_FALLBACKS`                                                               | `{}`         | JSON `{model: [fallback models]}`                                     |
+| `LLMGW_COOLDOWN_ALLOWED_FAILS` / `LLMGW_COOLDOWN_SECONDS`                       | 2 / 60       | 冷却阈值与默认时长                                                    |
+| `LLMGW_MODEL_ALIASES`                                                           | `{}`         | JSON 模型名映射（**ARK ep-xxx 接入点 ID 的唯一登记处**）              |
+| `LLMGW_PRICE_OVERRIDES`                                                         | `{}`         | JSON 单价覆盖（协议价）                                               |
+| `SERVICE_CLIENT_SECRET`                                                         | —            | 服务身份 secret（生产必须注入，硬规则 12）                            |
 
 ## 运维
 

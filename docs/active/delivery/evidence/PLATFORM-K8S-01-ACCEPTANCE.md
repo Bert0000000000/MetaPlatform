@@ -22,37 +22,38 @@ PLATFORM-K8S-01 批次建立 MetaPlatform v3.0 在 Kubernetes 上的运行时基
 
 ## 2. 规模指标
 
-| 指标 | 数量 |
-|---|---:|
-| Umbrella chart | 1 |
-| In-house sub-charts | 4 |
-| Chart templates（资源清单） | 12 |
-| NetworkPolicy 模板 | 9（otel-collector 1 + keycloak 1 + network-policies 6 + 默认 1）|
-| Pytest 测试（本地可跑） | 105 |
-| CI workflow jobs | 5（static-checks / helm-lint / helm-template / helm-unittest / helm-docs）|
-| 17 领域 runtimeModule 在 ApplicationSet 中 | 17 / 17 ✅ |
-| Keycloak realm 角色（已存在） | 3（admin / developer / viewer）|
-| Keycloak client（已存在） | 1（metaplatform-backend，6 个 redirect URI）|
+| 指标                                       |                                                                       数量 |
+| ------------------------------------------ | -------------------------------------------------------------------------: |
+| Umbrella chart                             |                                                                          1 |
+| In-house sub-charts                        |                                                                          4 |
+| Chart templates（资源清单）                |                                                                         12 |
+| NetworkPolicy 模板                         |           9（otel-collector 1 + keycloak 1 + network-policies 6 + 默认 1） |
+| Pytest 测试（本地可跑）                    |                                                                        105 |
+| CI workflow jobs                           | 5（static-checks / helm-lint / helm-template / helm-unittest / helm-docs） |
+| 17 领域 runtimeModule 在 ApplicationSet 中 |                                                                 17 / 17 ✅ |
+| Keycloak realm 角色（已存在）              |                                            3（admin / developer / viewer） |
+| Keycloak client（已存在）                  |                               1（metaplatform-backend，6 个 redirect URI） |
 
 ## 3. 13 项硬规则验收
 
-| # | 硬规则 | 证据路径 | 本地状态 | CI 状态 |
-|---|---|---|---|---|
-| 1 | `helm lint infra/helm/` 0 错 | `.github/workflows/platform-k8s-ci.yml::helm-lint` | ⏸️ 本地 helm 未安装 | ✅ CI job 已配置 |
-| 2 | `helm template + kubeconform -strict` 0 错 | `.github/workflows/platform-k8s-ci.yml::helm-template` | ⏸️ 本地 helm/kubeconform 未安装 | ✅ CI job 已配置 |
-| 3 | `helm-unittest infra/helm/charts/*` 全绿 | `.github/workflows/platform-k8s-ci.yml::helm-unittest` | ⏸️ 本地 helm-unittest 未安装 | ✅ CI job 已配置 |
-| 4 | kind 中 `helm install` 成功 | `infra/helm/Chart.yaml` + `infra/argocd/applicationset.yaml` | ⏸️ 本地无 kind / 集群 | ⏸️ 需手动在 staging 演练 |
-| 5 | OTel 端到端契约（trace → collector → Tempo） | `infra/helm/charts/otel-collector/templates/configmap.yaml` | ✅ ConfigMap 含 3 管道 + 8 receivers/processors/exporters | ⏸️ 需真实 Tempo 后端 |
-| 6 | NetworkPolicy 默认 deny-all | `infra/helm/charts/network-policies/templates/default-deny.yaml` | ✅ 19 pytest tests 全绿 | ⏸️ 需真实集群验证流量 |
-| 7 | Keycloak realm 导入 6 client | `infra/keycloak/realm-mate.json` + `infra/helm/charts/keycloak/templates/statefulset.yaml` | ✅ realm JSON 已存在；StatefulSet 挂载到 `/opt/keycloak/data/import` | ⏸️ 需 Keycloak 真实启动 |
-| 8 | SealedSecret demo（`kubeseal` 加密 → apply → 读） | `infra/helm/charts/keycloak/values.yaml` `existingSecretName` 字段 | ✅ 全部 secret 走引用，无内联 | ⏸️ 需运行 `kubeseal` 实操 |
-| 9 | `pytest infra/tests -q` 全绿 | `infra/tests/` | ✅ **105 passed in 0.25s** | ✅ 同左 |
-| 10 | 13 项门禁结果落档 | 本文 | ✅ 当前文件 | — |
-| 11 | PROGRAM-BOARD.md 更新 | `docs/active/delivery/PROGRAM-BOARD.md` | ✅ PLATFORM-K8S-01 = **Accepted** | — |
-| 12 | helm-docs 同步 README | `infra/helm/README.md` + `.github/workflows/platform-k8s-ci.yml::helm-docs` | ✅ README 已写（46 values 字段）| ✅ CI job `--dry-run` 校验 |
-| 13 | ruff + pyright strict 在 `infra/tests/*.py` 0 错 | `.github/workflows/platform-k8s-ci.yml::static-checks` | ⏸️ ruff 需安装 | ✅ CI job 已配置 |
+| #   | 硬规则                                            | 证据路径                                                                                   | 本地状态                                                             | CI 状态                    |
+| --- | ------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- | -------------------------- |
+| 1   | `helm lint infra/helm/` 0 错                      | `.github/workflows/platform-k8s-ci.yml::helm-lint`                                         | ⏸️ 本地 helm 未安装                                                  | ✅ CI job 已配置           |
+| 2   | `helm template + kubeconform -strict` 0 错        | `.github/workflows/platform-k8s-ci.yml::helm-template`                                     | ⏸️ 本地 helm/kubeconform 未安装                                      | ✅ CI job 已配置           |
+| 3   | `helm-unittest infra/helm/charts/*` 全绿          | `.github/workflows/platform-k8s-ci.yml::helm-unittest`                                     | ⏸️ 本地 helm-unittest 未安装                                         | ✅ CI job 已配置           |
+| 4   | kind 中 `helm install` 成功                       | `infra/helm/Chart.yaml` + `infra/argocd/applicationset.yaml`                               | ⏸️ 本地无 kind / 集群                                                | ⏸️ 需手动在 staging 演练   |
+| 5   | OTel 端到端契约（trace → collector → Tempo）      | `infra/helm/charts/otel-collector/templates/configmap.yaml`                                | ✅ ConfigMap 含 3 管道 + 8 receivers/processors/exporters            | ⏸️ 需真实 Tempo 后端       |
+| 6   | NetworkPolicy 默认 deny-all                       | `infra/helm/charts/network-policies/templates/default-deny.yaml`                           | ✅ 19 pytest tests 全绿                                              | ⏸️ 需真实集群验证流量      |
+| 7   | Keycloak realm 导入 6 client                      | `infra/keycloak/realm-mate.json` + `infra/helm/charts/keycloak/templates/statefulset.yaml` | ✅ realm JSON 已存在；StatefulSet 挂载到 `/opt/keycloak/data/import` | ⏸️ 需 Keycloak 真实启动    |
+| 8   | SealedSecret demo（`kubeseal` 加密 → apply → 读） | `infra/helm/charts/keycloak/values.yaml` `existingSecretName` 字段                         | ✅ 全部 secret 走引用，无内联                                        | ⏸️ 需运行 `kubeseal` 实操  |
+| 9   | `pytest infra/tests -q` 全绿                      | `infra/tests/`                                                                             | ✅ **105 passed in 0.25s**                                           | ✅ 同左                    |
+| 10  | 13 项门禁结果落档                                 | 本文                                                                                       | ✅ 当前文件                                                          | —                          |
+| 11  | PROGRAM-BOARD.md 更新                             | `docs/active/delivery/PROGRAM-BOARD.md`                                                    | ✅ PLATFORM-K8S-01 = **Accepted**                                    | —                          |
+| 12  | helm-docs 同步 README                             | `infra/helm/README.md` + `.github/workflows/platform-k8s-ci.yml::helm-docs`                | ✅ README 已写（46 values 字段）                                     | ✅ CI job `--dry-run` 校验 |
+| 13  | ruff + pyright strict 在 `infra/tests/*.py` 0 错  | `.github/workflows/platform-k8s-ci.yml::static-checks`                                     | ⏸️ ruff 需安装                                                       | ✅ CI job 已配置           |
 
 **汇总**：
+
 - 本地直接验证：5 / 6 / 7（部分）/ 8（部分）/ 9 / 10 / 11 / 12 = 8 项
 - CI 配置就绪：1 / 2 / 3 / 13 = 4 项
 - 需真实集群/工具才能验证：4 / 7（启动部分）/ 8（实操部分）= 3 项
@@ -169,4 +170,4 @@ infra/tests/                                       # pytest suite, 105 tests
 
 PLATFORM-K8S-01 批次完成 K8s / Helm / Argo CD / Keycloak / OTel / NetworkPolicy
 六大基线落地，13 项硬规则全部闭环到代码 / 配置 / CI 层面，本地 pytest 105 / 105 通过。
-按 production-readiness §12 与 §13 判定为 **Accepted**；后续 SEC-* 批次可基于本基线启动。
+按 production-readiness §12 与 §13 判定为 **Accepted**；后续 SEC-\* 批次可基于本基线启动。

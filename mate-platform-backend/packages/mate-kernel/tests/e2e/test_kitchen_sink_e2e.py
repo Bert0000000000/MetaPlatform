@@ -70,47 +70,74 @@ class TestObjectSetFilterE2E:
         cls = ClassRef(rid="ont.acme.cls.po.v1")
         prop_pk = Property(
             rid=ClassRef(rid="ont.acme.prop.po-id.v1"),
-            type_id="string", nullable=False, primary_key=True,
-            title="id", format=PropertyFormat.STRING,
+            type_id="string",
+            nullable=False,
+            primary_key=True,
+            title="id",
+            format=PropertyFormat.STRING,
         )
         prop_qty = Property(
             rid=ClassRef(rid="ont.acme.prop.po-qty.v1"),
-            type_id="integer", nullable=False, primary_key=False,
-            title="qty", format=PropertyFormat.INTEGER,
+            type_id="integer",
+            nullable=False,
+            primary_key=False,
+            title="qty",
+            format=PropertyFormat.INTEGER,
         )
-        repo.upsert_object_type(ObjectType(
-            rid=cls, primary_key=(prop_pk.rid,),
-            properties=(prop_pk, prop_qty), display_name="PO",
-        ))
+        repo.upsert_object_type(
+            ObjectType(
+                rid=cls,
+                primary_key=(prop_pk.rid,),
+                properties=(prop_pk, prop_qty),
+                display_name="PO",
+            )
+        )
         now = datetime.now(UTC)
         for i, q in enumerate([5, 10, 15, 20, 25]):
-            repo.create_individual(Individual(
-                rid=f"ont.acme.ind.po.{i}", class_rid=cls,
-                props=((prop_qty.rid, q),), primary_key=str(i),
-                created_at=now, updated_at=now, tenant_id="acme",
-            ))
+            repo.create_individual(
+                Individual(
+                    rid=f"ont.acme.ind.po.{i}",
+                    class_rid=cls,
+                    props=((prop_qty.rid, q),),
+                    primary_key=str(i),
+                    created_at=now,
+                    updated_at=now,
+                    tenant_id="acme",
+                )
+            )
         return repo, cls
 
     def test_range_filter_through_repo(self) -> None:
         repo, cls = self._seed()
-        res = repo.evaluate_object_set(ObjectSet(
-            class_rid=cls, filter_expr="po-qty >= 15",
-        ))
+        res = repo.evaluate_object_set(
+            ObjectSet(
+                class_rid=cls,
+                filter_expr="po-qty >= 15",
+            )
+        )
         assert {i.primary_key for i in res} == {"2", "3", "4"}
 
     def test_compound_and_through_repo(self) -> None:
         repo, cls = self._seed()
-        res = repo.evaluate_object_set(ObjectSet(
-            class_rid=cls, filter_expr="po-qty >= 10 AND po-qty < 25",
-        ))
+        res = repo.evaluate_object_set(
+            ObjectSet(
+                class_rid=cls,
+                filter_expr="po-qty >= 10 AND po-qty < 25",
+            )
+        )
         assert {i.primary_key for i in res} == {"1", "2", "3"}
 
     def test_sort_and_paging(self) -> None:
         repo, cls = self._seed()
-        res = repo.evaluate_object_set(ObjectSet(
-            class_rid=cls, filter_expr="po-qty >= 5",
-            sort=("-po-qty",), paging_limit=3, paging_offset=0,
-        ))
+        res = repo.evaluate_object_set(
+            ObjectSet(
+                class_rid=cls,
+                filter_expr="po-qty >= 5",
+                sort=("-po-qty",),
+                paging_limit=3,
+                paging_offset=0,
+            )
+        )
         assert [i.primary_key for i in res] == ["4", "3", "2"]
 
 
@@ -131,16 +158,21 @@ class TestSecurityActionE2E:
             lambda _t, p: audit_log.append(p) or "ok",
         )
 
-        d = check_action_apply(sec, ctx, target_tenant="acme",
-                               target_rid="ont.acme.act.approve")
+        d = check_action_apply(sec, ctx, target_tenant="acme", target_rid="ont.acme.act.approve")
         assert d.decision.value == "allow"
 
         outcome = svc.apply(
-            action_rid="ont.acme.act.approve", submission_criteria=(),
-            function_ref="ont.acme.act.approve", on_rid="ont.acme.obj.po",
-            target_iid="ont.acme.ind.po.0", parameters={"who": "alice"},
-            side_effects=("notify",), ctx=SubmissionContext(
-                actor="alice", sandbox_id="sb-1", tenant_id="acme",
+            action_rid="ont.acme.act.approve",
+            submission_criteria=(),
+            function_ref="ont.acme.act.approve",
+            on_rid="ont.acme.obj.po",
+            target_iid="ont.acme.ind.po.0",
+            parameters={"who": "alice"},
+            side_effects=("notify",),
+            ctx=SubmissionContext(
+                actor="alice",
+                sandbox_id="sb-1",
+                tenant_id="acme",
             ),
         )
         assert outcome.audit_id
@@ -150,19 +182,20 @@ class TestSecurityActionE2E:
     def test_cross_tenant_deny(self) -> None:
         ctx = self._ctx()
         sec = SecurityAgent()
-        d = check_action_apply(sec, ctx, target_tenant="evil",
-                               target_rid="ont.acme.act.approve")
+        d = check_action_apply(sec, ctx, target_tenant="evil", target_rid="ont.acme.act.approve")
         assert d.decision.value == "deny"
         assert d.rule_id == "R-TENANT-001"
 
     def test_marking_missing_deny(self) -> None:
         sec = SecurityAgent()
-        d = sec.decide(SecurityRequest(
-            requester=UserMarkings(user_id="alice", tenant_id="acme"),
-            target_tenant="acme",
-            required=MarkingRequirement(required_markings=("confidential",)),
-            resource_rid="ont.acme.act.approve",
-        ))
+        d = sec.decide(
+            SecurityRequest(
+                requester=UserMarkings(user_id="alice", tenant_id="acme"),
+                target_tenant="acme",
+                required=MarkingRequirement(required_markings=("confidential",)),
+                resource_rid="ont.acme.act.approve",
+            )
+        )
         assert d.decision.value == "deny"
         assert d.rule_id == "R-MARK-001"
 
@@ -211,13 +244,15 @@ class TestSuperAIHITLE2E:
 class TestK8sSandboxE2E:
     def test_handler_executes(self) -> None:
         runner = K8sSandboxRunner()
-        result = runner.submit(K8sSandboxSpec(
-            function_ref="ont.acme.fn.calc.v1",
-            function_source="def handler(x):\n    return x * 2\n",
-            arguments=(21,),
-            resource_limits=ResourceLimits(),
-            network_policy=NetworkPolicy(),
-        ))
+        result = runner.submit(
+            K8sSandboxSpec(
+                function_ref="ont.acme.fn.calc.v1",
+                function_source="def handler(x):\n    return x * 2\n",
+                arguments=(21,),
+                resource_limits=ResourceLimits(),
+                network_policy=NetworkPolicy(),
+            )
+        )
         assert result.phase == JobPhase.SUCCEEDED
         assert result.exit_code == 0
         # Subprocess executor prints with possible whitespace; check content
@@ -240,13 +275,15 @@ class TestK8sSandboxE2E:
 
     def test_failing_handler_returns_nonzero(self) -> None:
         runner = K8sSandboxRunner()
-        r = runner.submit(K8sSandboxSpec(
-            function_ref="ont.acme.fn.bad.v1",
-            function_source="def handler():\n    return 1/0\n",
-            arguments=(),
-            resource_limits=ResourceLimits(),
-            network_policy=NetworkPolicy(),
-        ))
+        r = runner.submit(
+            K8sSandboxSpec(
+                function_ref="ont.acme.fn.bad.v1",
+                function_source="def handler():\n    return 1/0\n",
+                arguments=(),
+                resource_limits=ResourceLimits(),
+                network_policy=NetworkPolicy(),
+            )
+        )
         assert r.phase == JobPhase.FAILED
         assert r.exit_code != 0
 
@@ -259,14 +296,17 @@ class TestExternalAgentE2E:
         runner = MockMicroVMRunner()
         runner.register("echo", lambda p: f"echoed: {p['msg']}")
         reg = ExtAgentRegistry(runner=runner)
-        reg.register(ExtAgentManifest(
-            agent_rid="ext.acme.agent.echo.v1",
-            name="Echo", vendor="mkt",
-            protocol=ExtProtocol.HTTP,
-            endpoint="http://mkt.example.com/echo",
-            capabilities=(Capability(name="echo", description="echo"),),
-            sandbox=SandboxTier.L3_MICROVM,
-        ))
+        reg.register(
+            ExtAgentManifest(
+                agent_rid="ext.acme.agent.echo.v1",
+                name="Echo",
+                vendor="mkt",
+                protocol=ExtProtocol.HTTP,
+                endpoint="http://mkt.example.com/echo",
+                capabilities=(Capability(name="echo", description="echo"),),
+                sandbox=SandboxTier.L3_MICROVM,
+            )
+        )
         inv = reg.invoke("ext.acme.agent.echo.v1", "echo", {"msg": "hi"})
         assert inv.status == "ok"
         assert inv.sandbox_id is not None
@@ -275,13 +315,17 @@ class TestExternalAgentE2E:
     def test_l2_register_rejected(self) -> None:
         reg = ExtAgentRegistry(runner=MockMicroVMRunner())
         with pytest.raises(ValueError, match="L3"):
-            reg.register(ExtAgentManifest(
-                agent_rid="ext.acme.agent.bad.v1",
-                name="Bad", vendor="mkt",
-                protocol=ExtProtocol.HTTP, endpoint="http://x",
-                capabilities=(Capability(name="x", description="x"),),
-                sandbox=SandboxTier.L2_CONTAINER,
-            ))
+            reg.register(
+                ExtAgentManifest(
+                    agent_rid="ext.acme.agent.bad.v1",
+                    name="Bad",
+                    vendor="mkt",
+                    protocol=ExtProtocol.HTTP,
+                    endpoint="http://x",
+                    capabilities=(Capability(name="x", description="x"),),
+                    sandbox=SandboxTier.L2_CONTAINER,
+                )
+            )
 
 
 # ─────────────────── 6) Kitchen sink 端到端 ───────────────────
@@ -291,9 +335,7 @@ class TestKitchenSinkE2E:
     """examples/01_kitchen_sink.py 必须 11 步全过。"""
 
     def test_main_runs_clean(self, capsys: pytest.CaptureFixture[str]) -> None:
-        example = (
-            Path(__file__).resolve().parents[2] / "examples" / "01_kitchen_sink.py"
-        )
+        example = Path(__file__).resolve().parents[2] / "examples" / "01_kitchen_sink.py"
         # runpy 把 stdout 灌到 capsys（不灌，因为 pytest 默认捕获）
         runpy.run_path(str(example), run_name="__main__")
         out = capsys.readouterr().out

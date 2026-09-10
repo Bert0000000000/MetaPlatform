@@ -9,6 +9,7 @@ Verifies the D5 audit surface:
   - emit_cross_tenant_data_access is a no-op when actor == target
   - Alembic 0009 audit_log table DDL is valid
 """
+
 from __future__ import annotations
 
 import pytest
@@ -142,9 +143,7 @@ class TestAlembic0009Schema:
             / "20260801_0009_audit_log.py"
         )
         assert migration_path.is_file(), "alembic 0009 file missing"
-        spec = importlib.util.spec_from_file_location(
-            "m0009", migration_path
-        )
+        spec = importlib.util.spec_from_file_location("m0009", migration_path)
         assert spec is not None and spec.loader is not None
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)

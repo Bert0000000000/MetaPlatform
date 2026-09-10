@@ -32,15 +32,15 @@ PLATFORM-K8S-01 采用以下技术栈与拓扑：
 
 ### 2.1 编排与发布
 
-| 组件 | 版本 | 角色 |
-|---|---|---|
-| Kubernetes | ≥ 1.29 | 运行时 |
-| Helm | 3.14+ | 模板与打包 |
-| Argo CD | 2.11+ | GitOps 持续交付 |
-| Argo CD ApplicationSet | 1.5+ | 多环境多 app 生成器 |
-| Kustomize | 5.x | 仅作 Helm 内的 overlay |
-| Helm Diff | 1.4+ | Argo CD 插件，PR 预览差异 |
-| helm-docs | 1.13+ | chart README 同步 |
+| 组件                   | 版本   | 角色                      |
+| ---------------------- | ------ | ------------------------- |
+| Kubernetes             | ≥ 1.29 | 运行时                    |
+| Helm                   | 3.14+  | 模板与打包                |
+| Argo CD                | 2.11+  | GitOps 持续交付           |
+| Argo CD ApplicationSet | 1.5+   | 多环境多 app 生成器       |
+| Kustomize              | 5.x    | 仅作 Helm 内的 overlay    |
+| Helm Diff              | 1.4+   | Argo CD 插件，PR 预览差异 |
+| helm-docs              | 1.13+  | chart README 同步         |
 
 仓库布局：
 
@@ -75,40 +75,42 @@ infra/
 
 ### 2.2 身份与密钥
 
-| 组件 | 版本 | 角色 |
-|---|---|---|
-| Keycloak | 24.x | 唯一身份源 |
-| PG（Keycloak 用） | 16 | Keycloak 持久化（与业务 PG 共享集群） |
-| Bitnami Sealed Secrets | 2.16+ | git-friendly Secret 封装 |
-| External Secrets Operator | 0.9+ | 对接 Vault / 云 KMS（production 强制） |
+| 组件                      | 版本  | 角色                                   |
+| ------------------------- | ----- | -------------------------------------- |
+| Keycloak                  | 24.x  | 唯一身份源                             |
+| PG（Keycloak 用）         | 16    | Keycloak 持久化（与业务 PG 共享集群）  |
+| Bitnami Sealed Secrets    | 2.16+ | git-friendly Secret 封装               |
+| External Secrets Operator | 0.9+  | 对接 Vault / 云 KMS（production 强制） |
 
 强制约束：
+
 - Keycloak **禁用 embedded H2**，staging 以上必须外接 PG。
 - 所有 Secret 走 SealedSecret（git）或 ExternalSecret（prod）。
 - raw Secret 在 git 仓库中由 pre-commit hook 拒绝。
 
 ### 2.3 数据与消息
 
-| 组件 | 版本 | 角色 |
-|---|---|---|
-| PostgreSQL | 16 | 业务主存储（与 R5 报告兼容） |
-| Redis | 7.2+ | 缓存 / 限流 / 队列 |
-| Kafka | 3.7+ | 事件流（Outbox、DLQ） |
-| Schema Registry | Confluent 7.6 | Kafka schema 治理 |
-| Zookeeper | ❌ 弃用 | 改用 KRaft 模式（Kafka 3.7+） |
+| 组件            | 版本          | 角色                          |
+| --------------- | ------------- | ----------------------------- |
+| PostgreSQL      | 16            | 业务主存储（与 R5 报告兼容）  |
+| Redis           | 7.2+          | 缓存 / 限流 / 队列            |
+| Kafka           | 3.7+          | 事件流（Outbox、DLQ）         |
+| Schema Registry | Confluent 7.6 | Kafka schema 治理             |
+| Zookeeper       | ❌ 弃用       | 改用 KRaft 模式（Kafka 3.7+） |
 
 ### 2.4 可观测
 
-| 组件 | 版本 | 角色 |
-|---|---|---|
-| OpenTelemetry Collector | 0.104+ | trace/metric/log 汇聚 |
-| OpenTelemetry Operator | 0.104+ | sidecar / daemonset 自动注入 |
-| Prometheus | 2.52+ | 指标存储 |
-| Loki | 3.0+ | 日志聚合 |
-| Tempo | 2.5+ | trace 存储（与 OTel 直连） |
-| Grafana | 11.x | 仪表盘 |
+| 组件                    | 版本   | 角色                         |
+| ----------------------- | ------ | ---------------------------- |
+| OpenTelemetry Collector | 0.104+ | trace/metric/log 汇聚        |
+| OpenTelemetry Operator  | 0.104+ | sidecar / daemonset 自动注入 |
+| Prometheus              | 2.52+  | 指标存储                     |
+| Loki                    | 3.0+   | 日志聚合                     |
+| Tempo                   | 2.5+   | trace 存储（与 OTel 直连）   |
+| Grafana                 | 11.x   | 仪表盘                       |
 
 OTel collector 接收：
+
 - `otlp`（HTTP + gRPC，应用侧）
 - `prometheus`（业务 / 主机指标）
 - `kafkametrics`（broker 侧）
@@ -123,6 +125,7 @@ OTel collector 接收：
 ### 2.5 网络
 
 NetworkPolicy 强制：
+
 - 默认 `deny-all` ingress + egress。
 - 显式 allow：
   - ingress：api-gateway namespace 内的所有 Service。
@@ -136,6 +139,7 @@ docs/ADR → contract → failing tests → feature → infrastructure → deplo
 ```
 
 每个 PR 必须包含：
+
 - ADR 引用（本文件 §X）
 - operationId 引用（API-GOV-01 bundled.yaml）
 - 验收证据链接（13 项门禁结果）
@@ -213,14 +217,14 @@ docs/ADR → contract → failing tests → feature → infrastructure → deplo
 local → contract → integration → staging → pre-production → production
 ```
 
-| 阶段 | 交付 | 验证 |
-|---|---|---|
-| local | docker compose + kind + Helm 本地 install | helm lint + kubectl get all |
-| contract | helm template snapshot 测试 | helm-unittest 全绿 |
-| integration | kind 集群 + Argo CD + Keycloak | 6 app 跑通 e2e smoke |
-| staging | 真实 K8s + Argo CD | 完整 E2E + 性能基线 |
-| pre-production | 真实 K8s + 真实数据 | DR 演练 + 备份恢复 |
-| production | GA 切流 | 全部 §13 门禁 + SLO 达标 |
+| 阶段           | 交付                                      | 验证                        |
+| -------------- | ----------------------------------------- | --------------------------- |
+| local          | docker compose + kind + Helm 本地 install | helm lint + kubectl get all |
+| contract       | helm template snapshot 测试               | helm-unittest 全绿          |
+| integration    | kind 集群 + Argo CD + Keycloak            | 6 app 跑通 e2e smoke        |
+| staging        | 真实 K8s + Argo CD                        | 完整 E2E + 性能基线         |
+| pre-production | 真实 K8s + 真实数据                       | DR 演练 + 备份恢复          |
+| production     | GA 切流                                   | 全部 §13 门禁 + SLO 达标    |
 
 Keycloak realm 迁移：先用 `realm-metaplatform.json` 导入，运行时通过
 Admin REST API 增量修改；任何 admin 改动通过 export → commit → apply 三步
@@ -235,7 +239,7 @@ PLATFORM-K8S-01 退出条件（与 ARCH-CORE-01 同结构，对应 §13 硬规�
    0 错。
 3. `helm-unittest infra/helm/charts/*` 全绿。
 4. kind 集群中 `helm install metaplatform infra/helm/` 成功；`kubectl get
-   all -n metaplatform` 显示 Keycloak / PG / Redis / Kafka / OTel collector
+all -n metaplatform` 显示 Keycloak / PG / Redis / Kafka / OTel collector
    5 个核心组件 Running。
 5. OTel 端到端契约：模拟一个 app 发 trace → collector → Tempo → Grafana
    可见（`infra/tests/test_otel_e2e.py`）。

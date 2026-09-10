@@ -1,4 +1,5 @@
 """Testcontainers-based integration test fixtures (ST-2.4.1)."""
+
 from __future__ import annotations
 
 import pytest

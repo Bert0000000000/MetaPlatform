@@ -2,6 +2,7 @@
 
 Default: JSON file store in /tmp/mate_agent_state/<thread_id>.json.
 """
+
 from __future__ import annotations
 
 import json
@@ -32,6 +33,7 @@ def get_pg_saver() -> Any:
     global _pg_saver
     if _pg_saver is None:
         from mate_tech_agent.memory.pg_saver import PGSaver
+
         _pg_saver = PGSaver()
     return _pg_saver
 

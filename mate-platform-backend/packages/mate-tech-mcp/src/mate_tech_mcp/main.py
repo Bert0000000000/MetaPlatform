@@ -25,6 +25,7 @@ P0 close-out (2026-07-30):
     now defined before include_router so they actually mount.
   - This PR verifies the 5 endpoints are reachable end-to-end.
 """
+
 from __future__ import annotations
 
 import os
@@ -169,9 +170,7 @@ def run_stdio() -> None:
     async def arun() -> None:
         server = await mcp_server._ensure_server()  # pyright: ignore[reportPrivateUsage]
         async with stdio_server() as (read_stream, write_stream):
-            await server.run(
-                read_stream, write_stream, server.create_initialization_options()
-            )
+            await server.run(read_stream, write_stream, server.create_initialization_options())
 
     asyncio.run(arun())
 

@@ -4,6 +4,7 @@ The legacy ``wfe_flow_definitions`` BPMN records remain untouched.  These
 tables own only server-validated Plan JSON and its immutable published
 revisions, which the new workflow-run API resolves before starting Temporal.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence

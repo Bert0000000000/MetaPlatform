@@ -30,6 +30,7 @@ Layered per ADR-0016 §3.1:
         LineageClient (query/list) --+
         (this module)
 """
+
 from .client import LineageClient, LineageEdge, LineageNode, LineageQueryResult
 from .hints import (
     LineageHints,

@@ -3,6 +3,7 @@
 consumer group = tech-msg，自动拉取 → 调本地 handler。
 失败 3 次 → DLQ topic (mate.msg.dlq).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -56,6 +57,7 @@ class Subscriber:
     async def start(self) -> None:
         """启动 consumer."""
         import os
+
         self._consumer = AIOKafkaConsumer(
             *self._topics,
             bootstrap_servers=self._bootstrap or os.getenv("KAFKA_BOOTSTRAP", "localhost:9092"),
@@ -91,6 +93,7 @@ class Subscriber:
                     headers = dict(msg.headers or [])
                     if hasattr(value, "decode"):
                         import json
+
                         value = json.loads(value.decode())
                     await self._handler(value, headers)
                 # 成功：提交 offset

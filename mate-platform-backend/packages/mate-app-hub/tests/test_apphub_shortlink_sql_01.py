@@ -14,6 +14,7 @@ ShortlinkStoreSQL functions (defined in
 Uses an in-memory SQLite engine via ``mate_tech_db.base.init_engine``
 (the same pattern as ``test_apphub_sql_store.py``).
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -63,8 +64,11 @@ def test_create_and_resolve_round_trip() -> None:
     """put_shortlink + get_shortlink_by_code round-trip preserves fields."""
     future = datetime.now(UTC) + timedelta(hours=1)
     _put(
-        tenant_id="tenant-a", code="ABC123",
-        app_id="app-1", role="editor", expires_at=future,
+        tenant_id="tenant-a",
+        code="ABC123",
+        app_id="app-1",
+        role="editor",
+        expires_at=future,
     )
     found = sql_store.get_shortlink_by_code("tenant-a", "ABC123")
     assert found is not None
@@ -86,8 +90,10 @@ def test_expires_at_filter() -> None:
     """A past expires_at makes resolve raise ValueError("shortlink expired")."""
     past = datetime.now(UTC) - timedelta(hours=1)
     entry = _put(
-        tenant_id="tenant-a", code="OLD01",
-        app_id="app-1", expires_at=past,
+        tenant_id="tenant-a",
+        code="OLD01",
+        app_id="app-1",
+        expires_at=past,
     )
     store = InMemoryShortlinkStore()
     store.put(entry)
@@ -126,8 +132,11 @@ def test_resolve_shortlink_helper() -> None:
     """service.resolve_shortlink delegates to resolver.resolve."""
     future = datetime.now(UTC) + timedelta(hours=1)
     entry = _put(
-        tenant_id="tenant-a", code="HLP01",
-        app_id="app-1", role="admin", expires_at=future,
+        tenant_id="tenant-a",
+        code="HLP01",
+        app_id="app-1",
+        role="admin",
+        expires_at=future,
     )
     store = InMemoryShortlinkStore()
     store.put(entry)

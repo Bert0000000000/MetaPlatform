@@ -4,6 +4,7 @@ Per ADR-0014 5-step checklist step 5, every app must have >=3
 cross-tenant negative tests. This file covers the 3 minimum for
 mate-tech-msg.
 """
+
 from __future__ import annotations
 
 import os
@@ -36,9 +37,7 @@ class TestInstallAuthWired:
 
         # Look for AuthMiddleware in the middleware stack (it adds
         # itself as BaseHTTPMiddleware).
-        middleware_classes = [
-            m.cls.__name__ for m in main.app.user_middleware
-        ]
+        middleware_classes = [m.cls.__name__ for m in main.app.user_middleware]
         assert "AuthMiddleware" in middleware_classes, (
             f"AuthMiddleware missing from stack: {middleware_classes}"
         )

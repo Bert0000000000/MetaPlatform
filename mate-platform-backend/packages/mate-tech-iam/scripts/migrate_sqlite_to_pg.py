@@ -10,6 +10,7 @@
     python scripts/migrate_sqlite_to_pg.py [sqlite_path]
 默认 sqlite_path = /data/mate_iam.db
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -63,9 +64,7 @@ async def _migrate_configs(sqlite_path: str) -> int:
 
     updated = 0
     async with AsyncSessionMaker() as session:
-        existing = (
-            await session.execute(select(SystemConfig))
-        ).scalars().all()
+        existing = (await session.execute(select(SystemConfig))).scalars().all()
         by_key = {c.key: c for c in existing}
         for r in rows:
             key = r["key"]

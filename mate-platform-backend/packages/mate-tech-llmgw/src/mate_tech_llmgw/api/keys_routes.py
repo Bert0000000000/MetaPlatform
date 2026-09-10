@@ -6,6 +6,7 @@ appears exactly once, in the create/rotate response; everything else
 exposes the prefix only. Revoke/rotate invalidate the Redis key cache
 immediately (otherwise revocation latency is bounded by the 30s TTL).
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -52,24 +53,20 @@ def _record_payload(record: Any) -> dict[str, Any]:
         "max_budget_usd": record.max_budget_usd,
         "soft_budget_usd": record.soft_budget_usd,
         "budget_duration": record.budget_duration,
-        "budget_reset_at": record.budget_reset_at.isoformat()
-        if record.budget_reset_at else None,
+        "budget_reset_at": record.budget_reset_at.isoformat() if record.budget_reset_at else None,
         "tpm_limit": record.tpm_limit,
         "rpm_limit": record.rpm_limit,
         "spend_usd": round(record.spend_usd, 6),
         "blocked": record.blocked,
         "expires_at": record.expires_at.isoformat() if record.expires_at else None,
-        "last_active_at": record.last_active_at.isoformat()
-        if record.last_active_at else None,
+        "last_active_at": record.last_active_at.isoformat() if record.last_active_at else None,
     }
 
 
 def _store_or_503() -> Any:
     store = get_api_key_store()
     if store is None:
-        raise HTTPException(
-            status_code=503, detail="api key management requires PG (disabled)"
-        )
+        raise HTTPException(status_code=503, detail="api key management requires PG (disabled)")
     return store
 
 
@@ -109,9 +106,7 @@ async def create_key(req: KeyCreateRequest, request: Request) -> KeyCreateRespon
         expires_at=expires_at,
         created_by=str(getattr(request.state.ctx, "user_id", "") or ""),
     )
-    logger.info(
-        "llmgw.apikey.created", key_id=record.key_id, tenant_id=tenant_id
-    )
+    logger.info("llmgw.apikey.created", key_id=record.key_id, tenant_id=tenant_id)
     return KeyCreateResponse(
         key_id=record.key_id,
         key=plaintext,

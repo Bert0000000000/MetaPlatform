@@ -1,4 +1,5 @@
 """Shared pytest fixtures for mate-tech-metrics tests."""
+
 from __future__ import annotations
 
 import os

@@ -9,6 +9,7 @@ captured and their SQL strings asserted.
 A separate test verifies that on SQLite the migration is a safe no-op
 (early return, zero DDL emitted).
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -52,9 +53,9 @@ def _run_upgrade_pg() -> list[str]:
 def test_rls_enabled_on_outbox_event():
     """outbox_event gets ENABLE ROW LEVEL SECURITY."""
     sqls = _run_upgrade_pg()
-    assert any(
-        "ALTER TABLE outbox_event ENABLE ROW LEVEL SECURITY" in s for s in sqls
-    ), "outbox_event missing ENABLE RLS"
+    assert any("ALTER TABLE outbox_event ENABLE ROW LEVEL SECURITY" in s for s in sqls), (
+        "outbox_event missing ENABLE RLS"
+    )
 
 
 def test_rls_forced_owner_cannot_bypass():

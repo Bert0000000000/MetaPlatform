@@ -1,8 +1,7 @@
-import io
 import sys
 
 path = sys.argv[1] if len(sys.argv) > 1 else "docs/active/V1.0-RELEASE-PLAN.md"
-lines = io.open(path, encoding="utf-8").read().split("\n")
+lines = open(path, encoding="utf-8").read().split("\n")
 BS = chr(92)
 PIPE = chr(124)
 

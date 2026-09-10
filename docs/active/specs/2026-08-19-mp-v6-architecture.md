@@ -1,10 +1,10 @@
 # MetaPlatform v6.0 架构 spec
 
-> **版本**：v6.0（最终版 + dsh Docker 部署补充）  
-> **日期**：2026-08-19  
-> **状态**：**草案**（待评审）  
-> **作者**：Claude (MiniMax-M3) + 用户协作  
-> **取代**：v3.0 GA + v3.1/v3.2 增量路径  
+> **版本**：v6.0（最终版 + dsh Docker 部署补充）
+> **日期**：2026-08-19
+> **状态**：**草案**（待评审）
+> **作者**：Claude (MiniMax-M3) + 用户协作
+> **取代**：v3.0 GA + v3.1/v3.2 增量路径
 > **配套 ADR**：ADR-0046 ~ ADR-0054（详见 §13）
 
 ---
@@ -420,27 +420,27 @@ dsh llm（pi-ai provider）生成最终答案
 
 ### 7.1 事件流：trigger + Webhook + pg_notify + Realtime
 
-**旧方案**：Kafka + Outbox + DLQ + Kafka Connect  
+**旧方案**：Kafka + Outbox + DLQ + Kafka Connect
 **新方案**：Postgres trigger + Database Webhook + pg_notify + Supabase Realtime
 
 ### 7.2 多租户：RLS 单一层
 
-**旧方案**：5 层隔离  
+**旧方案**：5 层隔离
 **新方案**：Postgres RLS，按 JWT tenant_id 自动过滤
 
 ### 7.3 审批流：第三方 SaaS API
 
-**旧方案**：Java Flowable BPMN 引擎  
+**旧方案**：Java Flowable BPMN 引擎
 **新方案**：调第三方 SaaS API（钉钉 / 飞书 / 企微）
 
 ### 7.4 LLM：dsh 自带 provider
 
-**旧方案**：自建 llmgw  
+**旧方案**：自建 llmgw
 **新方案**：dsh llm-pi-ai + llm-deepseek provider
 
 ### 7.5 RAG：RAGFlow + GraphRAG
 
-**旧方案**：RAGFlow + LightRAG  
+**旧方案**：RAGFlow + LightRAG
 **新方案**：RAGFlow（文档 RAG）+ Microsoft GraphRAG（KG RAG）
 
 ### 7.6 沙箱：dsh sandbox + MP-SANDBOX-01 双层
@@ -676,7 +676,7 @@ CREATE POLICY tenant_isolation ON dsh_session_headers
     USING (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
 CREATE POLICY tenant_isolation ON dsh_session_events
     USING (session_id IN (
-        SELECT id FROM dsh_session_headers 
+        SELECT id FROM dsh_session_headers
         WHERE tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
     ));
 ```
@@ -755,7 +755,7 @@ serve(async (req) => {
   )
   const auth = verifyJWT(req.headers.get('authorization'))
   const body = await req.json()
-  
+
   // 1. 创建订单（PostgREST 等价）
   const { data: order } = await supabase.from('orders').insert({
     tenant_id: auth.tenant_id,
@@ -763,14 +763,14 @@ serve(async (req) => {
     amount: body.amount,
     status: 'pending_approval',
   }).select().single()
-  
+
   // 2. 启动 Temporal workflow
   const temporal = new Client({ address: Deno.env.get('TEMPORAL_ADDRESS')! })
   await temporal.workflow.start('OrderApprovalWorkflow', {
     args: [order.id, auth.tenant_id],
     taskQueue: 'order-approval',
   })
-  
+
   return new Response(JSON.stringify({ order_id: order.id }), {
     headers: { 'Content-Type': 'application/json' },
   })
@@ -811,14 +811,14 @@ CREATE TABLE ontology_action_types (
 serve(async (req) => {
   const auth = verifyJWT(req.headers.get('authorization'))
   const { change_id } = await req.json()
-  
+
   // 事务性应用本体变更
   const { data, error } = await supabase.rpc('apply_ontology_change', {
     p_tenant_id: auth.tenant_id,
     p_change_id: change_id,
   })
   if (error) throw error
-  
+
   return new Response(JSON.stringify({ applied: true, ...data }))
 })
 ```
@@ -1349,6 +1349,6 @@ MP-V6-FOUNDATION-01（前置）
 
 ---
 
-*MetaPlatform v6.0 架构 spec 最终版完毕。*  
-*本文档整合了 dsh / Supabase / Temporal / HITL Hub / 长任务 / 状态机 / 沙箱 等所有讨论结论。*  
+*MetaPlatform v6.0 架构 spec 最终版完毕。*
+*本文档整合了 dsh / Supabase / Temporal / HITL Hub / 长任务 / 状态机 / 沙箱 等所有讨论结论。*
 *待评审后定稿。*

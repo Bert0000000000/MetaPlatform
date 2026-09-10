@@ -1284,7 +1284,7 @@ Java 服务 → 接收 traceID 写入 MDC
       <artifactId>flowable-spring-boot-starter</artifactId>
       <version>7.x</version>
     </dependency>
-    
+
     <!-- Spring Boot -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -1294,19 +1294,19 @@ Java 服务 → 接收 traceID 写入 MDC
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
-    
+
     <!-- PostgreSQL -->
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
     </dependency>
-    
+
     <!-- Nacos -->
     <dependency>
       <groupId>com.alibaba.nacos</groupId>
       <artifactId>nacos-client</artifactId>
     </dependency>
-    
+
     <!-- OpenTelemetry -->
     <dependency>
       <groupId>io.opentelemetry</groupId>
@@ -1372,7 +1372,7 @@ from typing import Any
 
 class FlowableClient:
     """Python client for Flowable Service"""
-    
+
     def __init__(self, base_url: str, auth_token: str):
         self.client = httpx.AsyncClient(
             base_url=base_url,
@@ -1380,7 +1380,7 @@ class FlowableClient:
             timeout=30.0,
             limits=httpx.Limits(max_keepalive_connections=20)
         )
-    
+
     async def deploy_bpmn(self, bpmn_xml: str, name: str) -> dict:
         """部署 BPMN 流程定义"""
         response = await self.client.post(
@@ -1389,10 +1389,10 @@ class FlowableClient:
         )
         response.raise_for_status()
         return response.json()
-    
+
     async def start_process(
-        self, 
-        process_key: str, 
+        self,
+        process_key: str,
         variables: dict
     ) -> dict:
         """启动流程实例"""
@@ -1402,7 +1402,7 @@ class FlowableClient:
         )
         response.raise_for_status()
         return response.json()
-    
+
     async def get_my_tasks(self, user_id: str) -> list[dict]:
         """获取用户任务"""
         response = await self.client.get(
@@ -1411,7 +1411,7 @@ class FlowableClient:
         )
         response.raise_for_status()
         return response.json()
-    
+
     async def complete_task(self, task_id: str, variables: dict = None) -> dict:
         """完成任务"""
         response = await self.client.post(
@@ -1473,7 +1473,7 @@ POST   /rulesets/{id}/rollback          # 回滚版本
 ```python
 class DroolsClient:
     """Python client for Drools Service - 阈值规则"""
-    
+
     async def evaluate_threshold(
         self,
         event_type: str,
@@ -1490,7 +1490,7 @@ class DroolsClient:
         )
         response.raise_for_status()
         return response.json()
-    
+
     # S5b 业务示例：合同金额超 100 万触发风险评估
     async def check_contract_risk(self, contract: dict) -> dict:
         result = await self.evaluate_threshold(
@@ -1666,16 +1666,16 @@ async def generate_workflow(
 ):
     # 1. LLM 生成 BPMN XML
     bpmn_xml = await llm_generate_bpmn(req.description)
-    
+
     # 2. 部署到 Flowable
     deployment = await flowable.deploy_bpmn(bpmn_xml, name=req.description)
-    
+
     # 3. 启动流程
     instance = await flowable.start_process(
         process_key=deployment["key"],
         variables=req.variables
     )
-    
+
     return {"deploymentId": deployment["id"], "instanceId": instance["id"]}
 
 # S5b: 阈值触发
@@ -1714,7 +1714,7 @@ from typing import Annotated, Literal
 # Pydantic v2 - 严格数据模型
 class DocumentMeta(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True)
-    
+
     id: Annotated[str, Field(min_length=1, max_length=64)]
     tenant_id: Annotated[str, Field(min_length=1, max_length=64)]
     title: Annotated[str, Field(min_length=1, max_length=255)]
@@ -1725,7 +1725,7 @@ class DocumentMeta(BaseModel):
 # SQLModel - 类型安全的 ORM
 class Document(SQLModel, table=True):
     __tablename__ = "documents"
-    
+
     id: str = SQLField(primary_key=True)
     tenant_id: str = SQLField(index=True)
     title: str
@@ -1766,17 +1766,17 @@ flowchart LR
     E --> F[KE 流水线<br/>Python]
     F --> G[人工审核<br/>Python]
     G --> H[Ontology Commit<br/>Python]
-    
+
     I[数据变更] --> J[CDC]
     J --> K[Kafka]
     K --> L[Drools Service<br/>Java]
     L -->|触发| M[AI Agent<br/>Python]
-    
+
     N[用户请求] --> O[FastAPI<br/>Python]
     O --> P[Flowable Service<br/>Java]
     P --> Q[执行 BPMN]
     Q --> O
-    
+
     style B fill:#e1f5ff
     style C fill:#e1f5ff
     style E fill:#e1f5ff

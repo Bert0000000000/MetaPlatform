@@ -4,6 +4,7 @@ Verifies the circuit-breaker fallback to ``stub_provider`` when the
 mate-tech-llmgw service is unreachable, and that both providers
 expose the same interface shapes.
 """
+
 from __future__ import annotations
 
 import os
@@ -63,8 +64,7 @@ def test_llmgw_provider_falls_back_on_connection_error() -> None:
         {
             "role": "system",
             "content": (
-                "Generate a SQL SELECT statement for the given tables "
-                "and prompt. Return only SQL."
+                "Generate a SQL SELECT statement for the given tables and prompt. Return only SQL."
             ),
         },
         {"role": "user", "content": f"Tables: {['orders']}\nPrompt: show orders"},

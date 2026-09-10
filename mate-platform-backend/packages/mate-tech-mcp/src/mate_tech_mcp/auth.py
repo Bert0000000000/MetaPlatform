@@ -2,6 +2,7 @@
 
 无 token / 过期 / 伪造 → 抛 AuthError → 401.
 """
+
 from __future__ import annotations
 
 import time
@@ -115,8 +116,8 @@ def make_test_token(
         "roles": roles or ["viewer"],
         "exp": int(time.time()) + expires_in,
     }
+
     def b64(d: dict[str, Any]) -> str:
-        return base64.urlsafe_b64encode(
-            json.dumps(d).encode()
-        ).rstrip(b"=").decode()
+        return base64.urlsafe_b64encode(json.dumps(d).encode()).rstrip(b"=").decode()
+
     return f"{b64(header)}.{b64(payload)}.unsigned"

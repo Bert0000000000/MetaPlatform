@@ -30,6 +30,7 @@ tenant 通过 require_tenant(ADR-0014) 强制隔离；
 所有 mutating 端点都是 stub（只回 echo），
 读端点返回合理空结构以便前端不再 404。
 """
+
 from __future__ import annotations
 
 import uuid
@@ -207,9 +208,7 @@ class CollaborationCreate(BaseModel):
 
 
 @router.post("/collaborations", status_code=201)
-async def create_collaboration(
-    request: Request, req: CollaborationCreate
-) -> dict[str, Any]:
+async def create_collaboration(request: Request, req: CollaborationCreate) -> dict[str, Any]:
     """Collaboration 写入 — stub 回显。"""
     _tid(request)
     return {
@@ -263,18 +262,14 @@ async def get_tool_version(request: Request, tid: str, vid: str) -> dict[str, An
 
 
 @router.post("/tools/{tid}/versions/{vid}/rollback")
-async def rollback_tool_version(
-    request: Request, tid: str, vid: str
-) -> dict[str, Any]:
+async def rollback_tool_version(request: Request, tid: str, vid: str) -> dict[str, Any]:
     """回滚到指定版本 — stub。"""
     _tid(request)
     raise HTTPException(status_code=404, detail="tool version not found")
 
 
 @router.post("/tools/{tid}/versions/{vid}/set-current")
-async def set_current_tool_version(
-    request: Request, tid: str, vid: str
-) -> dict[str, Any]:
+async def set_current_tool_version(request: Request, tid: str, vid: str) -> dict[str, Any]:
     """设为当前版本 — stub。"""
     _tid(request)
     raise HTTPException(status_code=404, detail="tool version not found")
@@ -419,9 +414,7 @@ class PermissionCreate(BaseModel):
 
 
 @router.post("/permissions", status_code=201)
-async def create_permission_alias(
-    request: Request, req: PermissionCreate
-) -> dict[str, Any]:
+async def create_permission_alias(request: Request, req: PermissionCreate) -> dict[str, Any]:
     """Create permission rule — alias for /iam/policies POST。"""
     from ..management_repo import Policy, put_policy
 

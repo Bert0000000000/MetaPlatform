@@ -6,6 +6,7 @@ by sql_store.py.
 
 Table names are prefixed with ``rag_``.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import Integer, String, Text

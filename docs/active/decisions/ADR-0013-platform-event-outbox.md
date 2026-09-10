@@ -28,12 +28,12 @@ PLATFORM-EVENT-01 采用 **Transactional Outbox + 幂等消费 + DLQ 死信** �
 
 ### 2.1 Outbox 模式（vs CDC / dual-write）
 
-| 方案 | 一致性 | 复杂度 | 选 / 弃 |
-|---|---|---|---|
-| **Transactional Outbox** | 强（业务事务同事务写 outbox）| 中 | ✅ 选 |
-| CDC（Debezium 等）| 强（基于 WAL）| 高（需 Debezium + Kafka Connect）| ❌ 弃，与 PG 强绑定 |
-| Dual-write | 弱 | 低 | ❌ 禁（§13 第 8 条禁止丢消息）|
-| Event sourcing | 强 | 极高 | ❌ 弃（重写所有业务）|
+| 方案                     | 一致性                        | 复杂度                            | 选 / 弃                        |
+| ------------------------ | ----------------------------- | --------------------------------- | ------------------------------ |
+| **Transactional Outbox** | 强（业务事务同事务写 outbox） | 中                                | ✅ 选                          |
+| CDC（Debezium 等）       | 强（基于 WAL）                | 高（需 Debezium + Kafka Connect） | ❌ 弃，与 PG 强绑定            |
+| Dual-write               | 弱                            | 低                                | ❌ 禁（§13 第 8 条禁止丢消息） |
+| Event sourcing           | 强                            | 极高                              | ❌ 弃（重写所有业务）          |
 
 Outbox 表 schema：
 
@@ -70,6 +70,7 @@ CREATE INDEX idx_outbox_unpublished ON outbox_event (occurred_at)
   Redis 锁只是"防重投递"，业务表上的约束是最后一道。
 
 为什么 24h TTL？
+
 - 默认 event 处理窗口 < 1h，24h 留 24 倍冗余足以覆盖 Kafka retention + consumer 重启。
 - 大于 24h 仍未消费成功的事件应进 DLQ；幂等键只防"正常重投"，DLQ 处理另算。
 
@@ -79,6 +80,7 @@ CREATE INDEX idx_outbox_unpublished ON outbox_event (occurred_at)
 `metaplatform.<domain>.<tenant>.dlq.<event>`。
 
 重试策略：
+
 - 第 1 次：消费失败，立即重试一次。
 - 第 2 次：等 1s 重试。
 - 第 3 次：等 5s 重试。
@@ -87,6 +89,7 @@ CREATE INDEX idx_outbox_unpublished ON outbox_event (occurred_at)
 - 第 6 次（max_retries=5 全部失败）：写入 DLQ + audit.log `event.dlq`。
 
 DLQ consumer 单独部署（operator 维护），处理：
+
 - 业务代码 bug 修复后重投。
 - 数据修复后跳过（手动 ack）。
 - 永久失败（schema 不兼容等）→ 数据归档到 S3 冷存 + 关闭。
@@ -105,6 +108,7 @@ docs/ADR → contract (events schema) → failing tests → feature → infrastr
 ```
 
 每个 PR 必须包含：
+
 - ADR-0013 引用
 - 业务 operationId 引用
 - event schema（Confluent Schema Registry 路径）引用
@@ -168,15 +172,15 @@ docs/ADR → contract (events schema) → failing tests → feature → infrastr
 dev → local → contract → integration → staging → pre-production → production
 ```
 
-| 阶段 | 动作 | 验证 |
-|---|---|---|
-| dev | 单实例 Relay，SQLite outbox | 单测全绿 |
-| local | PG outbox，2 实例 Relay，kafka KRaft 单 broker | 集成测试 |
-| contract | 幂等 + DLQ 契约 | contract CI 全绿 |
-| integration | 3 broker Kafka，2 Relay，CRDT 心跳 | 17 域端到端 |
-| staging | DLQ alert 接 PagerDuty | DR + 越权矩阵 |
-| pre-production | 灰度切流 | 监控 + alert |
-| production | GA 切流 | 13 硬规则 + SLO 达标 |
+| 阶段           | 动作                                           | 验证                 |
+| -------------- | ---------------------------------------------- | -------------------- |
+| dev            | 单实例 Relay，SQLite outbox                    | 单测全绿             |
+| local          | PG outbox，2 实例 Relay，kafka KRaft 单 broker | 集成测试             |
+| contract       | 幂等 + DLQ 契约                                | contract CI 全绿     |
+| integration    | 3 broker Kafka，2 Relay，CRDT 心跳             | 17 域端到端          |
+| staging        | DLQ alert 接 PagerDuty                         | DR + 越权矩阵        |
+| pre-production | 灰度切流                                       | 监控 + alert         |
+| production     | GA 切流                                        | 13 硬规则 + SLO 达标 |
 
 ## 6. Verification
 

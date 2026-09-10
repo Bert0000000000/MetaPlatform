@@ -3,6 +3,7 @@
 5 tests: wrong-tenant 403, missing-scope pinned, no-tenant non-200,
 tenant-isolation ok, a2a delegate proxies to mate-app-a2a.
 """
+
 from __future__ import annotations
 
 import os

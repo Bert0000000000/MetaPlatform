@@ -1,4 +1,5 @@
 """Coverage for the live SuperAI agent-loop tool registry endpoint."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -30,15 +31,13 @@ class _UnavailableSnapshotClient:
 
 
 def _ontology_tool_names(tools: list[dict[str, Any]]) -> list[str]:
-    return [
-        str(t.get("function", {}).get("name", ""))
-        for t in tools
-        if isinstance(t, dict)
-    ]
+    return [str(t.get("function", {}).get("name", "")) for t in tools if isinstance(t, dict)]
 
 
 def test_agent_tools_returns_dispatch_and_ontology_tools(
-    client, auth_headers_acme, monkeypatch,
+    client,
+    auth_headers_acme,
+    monkeypatch,
 ) -> None:
     """The registry mirrors the exact tool face run_agent_loop would use."""
     from mate_app_copilot.api import app as copilot_app
@@ -65,13 +64,16 @@ def test_agent_tools_returns_dispatch_and_ontology_tools(
     assert names[0] == "dispatch_employee"
     dispatch_schema = body["items"][0]["function"]
     assert dispatch_schema["parameters"]["properties"]["target_rid"]["enum"] == [
-        "workflow", "knowledge",
+        "workflow",
+        "knowledge",
     ]
     assert names[1:] == ["search_objects", "propose_action"]
 
 
 def test_agent_tools_degrades_when_orchestrator_unavailable(
-    client, auth_headers_acme, monkeypatch,
+    client,
+    auth_headers_acme,
+    monkeypatch,
 ) -> None:
     """A snapshot outage is reported per-source without failing the read."""
     from mate_app_copilot.api import app as copilot_app
@@ -96,7 +98,9 @@ def test_agent_tools_degrades_when_orchestrator_unavailable(
 
 
 def test_agent_tools_degrades_when_ontology_unavailable(
-    client, auth_headers_acme, monkeypatch,
+    client,
+    auth_headers_acme,
+    monkeypatch,
 ) -> None:
     """An ontology outage keeps the dispatch tool and reports the source."""
     from mate_app_copilot.api import app as copilot_app
@@ -118,7 +122,8 @@ def test_agent_tools_degrades_when_ontology_unavailable(
 
 
 def test_agent_tools_requires_tenant_context(
-    client, monkeypatch,
+    client,
+    monkeypatch,
 ) -> None:
     """The registry read enforces ADR-0014 step 2 like every other handler."""
     from mate_app_copilot.api import app as copilot_app

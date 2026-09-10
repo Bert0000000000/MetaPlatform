@@ -26,30 +26,31 @@
 
 ## Delivery Object Matrix
 
-| Context | 必须交付的管理对象 | 首发生命周期 |
-|---|---|---|
-| Action | ActionDefinition、ActionVersion、OntologyActionBinding、ActionImplementationBinding、ActionRiskPolicy、Pre/PostCondition、CompensationDefinition | 创建/复制、查询/Diff、修改草稿、评测、发布、撤销、回滚、归档 |
-| Intelligent orchestration | IntelligentOrchestrationDefinition/Version、OrchestrationPlan | 创建/版本化、查询路径与依据、重规划、约束、取消、终止、归档 |
-| Workflow | WorkflowDefinition/Version、WorkflowNode/Edge、Trigger/Schedule、WorkflowExecution、ActivityLedger/Inbox | 设计、校验、发布、触发、暂停/恢复/取消、信号、重试、补偿、封存 |
-| Data | DataSourceDefinition、DataConnection、DataAsset/Dataset、DataProduct、Field/SemanticMapping | 注册、发现、授权查询、Schema 快照、更新治理元数据、轮换、停用、废弃 |
-| Pipeline/quality | PipelineDefinition/Version、PipelineRun、DataQualityRule/Result | 设计、校验、发布、调度、暂停/恢复/取消、重跑/回填、阻断、归档 |
-| Knowledge | KnowledgeBase、GovernedSourceDocument、KnowledgeChunk、IndexSnapshot | 创建、上传/同步、解析、查询、重解析/重索引、来源撤回、删除传播、归档 |
-| Graph/query/lineage | KnowledgeGraphProjection、FederatedQueryTemplate、QueryExecution/Evidence、Lineage/ImpactView | 构建、查询、重建/切换、执行、订阅变更、影响分析、导出证据、回收 |
-| Memory | MemoryPolicy、MemoryCandidate、MemoryReview、MemoryItem、MemoryCollection/Scope、MemoryRetrievalRecord、MemoryConflict、MemoryCorrection/Revocation、MemoryDeletionRequest、MemorySnapshot/Restore | 创建、查询、审核、晋升、检索、反馈、冲突解决、撤销、删除传播、快照、恢复 |
+| Context                   | 必须交付的管理对象                                                                                                                                                                                 | 首发生命周期                                                             |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Action                    | ActionDefinition、ActionVersion、OntologyActionBinding、ActionImplementationBinding、ActionRiskPolicy、Pre/PostCondition、CompensationDefinition                                                   | 创建/复制、查询/Diff、修改草稿、评测、发布、撤销、回滚、归档             |
+| Intelligent orchestration | IntelligentOrchestrationDefinition/Version、OrchestrationPlan                                                                                                                                      | 创建/版本化、查询路径与依据、重规划、约束、取消、终止、归档              |
+| Workflow                  | WorkflowDefinition/Version、WorkflowNode/Edge、Trigger/Schedule、WorkflowExecution、ActivityLedger/Inbox                                                                                           | 设计、校验、发布、触发、暂停/恢复/取消、信号、重试、补偿、封存           |
+| Data                      | DataSourceDefinition、DataConnection、DataAsset/Dataset、DataProduct、Field/SemanticMapping                                                                                                        | 注册、发现、授权查询、Schema 快照、更新治理元数据、轮换、停用、废弃      |
+| Pipeline/quality          | PipelineDefinition/Version、PipelineRun、DataQualityRule/Result                                                                                                                                    | 设计、校验、发布、调度、暂停/恢复/取消、重跑/回填、阻断、归档            |
+| Knowledge                 | KnowledgeBase、GovernedSourceDocument、KnowledgeChunk、IndexSnapshot                                                                                                                               | 创建、上传/同步、解析、查询、重解析/重索引、来源撤回、删除传播、归档     |
+| Graph/query/lineage       | KnowledgeGraphProjection、FederatedQueryTemplate、QueryExecution/Evidence、Lineage/ImpactView                                                                                                      | 构建、查询、重建/切换、执行、订阅变更、影响分析、导出证据、回收          |
+| Memory                    | MemoryPolicy、MemoryCandidate、MemoryReview、MemoryItem、MemoryCollection/Scope、MemoryRetrievalRecord、MemoryConflict、MemoryCorrection/Revocation、MemoryDeletionRequest、MemorySnapshot/Restore | 创建、查询、审核、晋升、检索、反馈、冲突解决、撤销、删除传播、快照、恢复 |
 
 ## Required Interface Surfaces
 
-| Surface | 首发接口 |
-|---|---|
-| REST/OpenAPI | /actions、/orchestration-definitions、/orchestration-plans、/workflows、/workflow-executions、/data-sources、/data-connections、/data-assets、/data-products、/pipelines、/pipeline-runs、/quality-rules、/knowledge-bases、/documents、/indexes、/knowledge-graphs、/federated-queries、/lineage、/memory/* |
-| MCP | discover_data_products、query_data_product、search_knowledge、get_evidence、propose_action_plan、get_action_status、search_memory；MCP 只暴露已授权投影，不承担发布与审批 |
-| Events | ActionVersionReleased、WorkflowExecutionChanged、DataSchemaChanged、PipelineRunChanged、KnowledgeSnapshotReleased、SourceWithdrawn、MemoryCandidateCreated、MemoryRevoked、MemoryDeletionCompleted，均使用 CloudEvents/AsyncAPI |
-| UI | Action 库、工作流设计/运行、数据目录/连接/管道/质量、知识库/文档/索引/图谱/联邦查询、记忆策略/候选审核/冲突/删除/恢复 |
-| Consumer contracts | Employee Runtime、Ontology、Application、Artifact、MCP Gateway、四宿主 Connector、运营中心；每个消费者固定 Schema/version/Digest |
+| Surface            | 首发接口                                                                                                                                                                                                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| REST/OpenAPI       | /actions、/orchestration-definitions、/orchestration-plans、/workflows、/workflow-executions、/data-sources、/data-connections、/data-assets、/data-products、/pipelines、/pipeline-runs、/quality-rules、/knowledge-bases、/documents、/indexes、/knowledge-graphs、/federated-queries、/lineage、/memory/\* |
+| MCP                | discover_data_products、query_data_product、search_knowledge、get_evidence、propose_action_plan、get_action_status、search_memory；MCP 只暴露已授权投影，不承担发布与审批                                                                                                                                     |
+| Events             | ActionVersionReleased、WorkflowExecutionChanged、DataSchemaChanged、PipelineRunChanged、KnowledgeSnapshotReleased、SourceWithdrawn、MemoryCandidateCreated、MemoryRevoked、MemoryDeletionCompleted，均使用 CloudEvents/AsyncAPI                                                                               |
+| UI                 | Action 库、工作流设计/运行、数据目录/连接/管道/质量、知识库/文档/索引/图谱/联邦查询、记忆策略/候选审核/冲突/删除/恢复                                                                                                                                                                                         |
+| Consumer contracts | Employee Runtime、Ontology、Application、Artifact、MCP Gateway、四宿主 Connector、运营中心；每个消费者固定 Schema/version/Digest                                                                                                                                                                              |
 
 ### Task 1: Freeze contracts, authority and migrations
 
 **Files:**
+
 - Create: docs/adr/2026-09-01-intelligent-orchestration-engine.md
 - Create: mate-platform-backend/packages/mate-kernel/src/mate_kernel/action/contracts.py
 - Create: mate-platform-backend/packages/mate-kernel/src/mate_kernel/data_knowledge/contracts.py
@@ -62,6 +63,7 @@
 - Modify: acceptance/release/v1/ownership-matrix.yaml
 
 **Interfaces:**
+
 - Produces immutable identifiers and state machines for every object in the Delivery Object Matrix.
 - Consumes TenantId, HumanUserId, EmployeeVersionDigest, RunId, LeaseId, ArtifactDigest, OntologyReleaseDigest and PolicyDigest.
 - Event envelopes require event_id, tenant_id, subject, correlation_id, causation_id, schema_version, object_id, object_version and occurred_at.
@@ -76,6 +78,7 @@
 ### Task 2: Deliver Action library and deterministic execution boundary
 
 **Files:**
+
 - Create: mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/action/domain.py
 - Create: mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/action/repository.py
 - Create: mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/action/service.py
@@ -89,6 +92,7 @@
 - Create: metaplatform-frontend/apps/web/tests/e2e/action-library.spec.ts
 
 **Interfaces:**
+
 - REST: ActionDefinition CRUD; ActionVersion draft/evaluate/release/revoke/rollback; binding/risk/condition/compensation CRUD; dry-run/execute/status.
 - MCP: propose_action_plan and get_action_status return Artifact/Run references, never an untracked side effect.
 - Events: ActionVersionReleased, ActionExecutionRequested, ActionExecutionCompleted, ActionExecutionFailed.
@@ -103,6 +107,7 @@
 ### Task 3: Deliver intelligent orchestration and Temporal workflow
 
 **Files:**
+
 - Create: mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/intelligent/adapter.py
 - Create: mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/intelligent/langgraph_adapter.py
 - Create: mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/intelligent/service.py
@@ -115,6 +120,7 @@
 - Create: metaplatform-frontend/apps/web/tests/e2e/intelligent-workflow.spec.ts
 
 **Interfaces:**
+
 - REST: orchestration definition/version CRUD/release; plan create/read/replan/constrain/cancel; workflow definition/version CRUD/release; trigger/schedule CRUD/pause; execution start/read/signal/pause/resume/cancel.
 - A2A: OrchestrationPlan delegates only through Employee Runtime SubRun creation and returns task/artifact references.
 - Temporal: activities receive RunId, LeaseToken, ApprovalId, ActionVersionDigest and IdempotencyKey; they must reauthorize before effects.
@@ -129,6 +135,7 @@
 ### Task 4: Deliver data products, pipelines and governed query execution
 
 **Files:**
+
 - Create: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/catalog/domain.py
 - Create: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/catalog/service.py
 - Create: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/api/catalog.py
@@ -143,6 +150,7 @@
 - Create: metaplatform-frontend/apps/web/tests/e2e/data-product-query.spec.ts
 
 **Interfaces:**
+
 - REST: full lifecycle for DataSourceDefinition, DataConnection, DataAsset, DataProduct, SemanticMapping, PipelineDefinition/Run, QualityRule/Result, FederatedQueryTemplate, QueryExecution/Evidence and Lineage/ImpactView.
 - MCP: discover_data_products and query_data_product require purpose, allowed fields, data watermark, plan Digest and evidence receipt.
 - Events: DataSchemaChanged, DataProductReleased, PipelineRunChanged, DataQualityFailed and LineageChanged.
@@ -157,6 +165,7 @@
 ### Task 5: Deliver RAGFlow knowledge and graph projection
 
 **Files:**
+
 - Create: mate-platform-backend/packages/mate-app-kb/src/mate_app_kb/governance/domain.py
 - Create: mate-platform-backend/packages/mate-app-kb/src/mate_app_kb/governance/ragflow_adapter.py
 - Create: mate-platform-backend/packages/mate-app-kb/src/mate_app_kb/api/governed_knowledge.py
@@ -168,6 +177,7 @@
 - Create: metaplatform-frontend/apps/web/tests/e2e/governed-knowledge.spec.ts
 
 **Interfaces:**
+
 - REST: KnowledgeBase CRUD; document upload/sync/version/parse/delete/freeze; chunk/index snapshot read/rebuild/promote; graph projection build/read/switch/retire.
 - MCP: search_knowledge and get_evidence return source spans, document/index/model Digests and ACL watermark.
 - Events: GovernedDocumentVersioned, KnowledgeSnapshotReleased, SourceWithdrawn and KnowledgeGraphProjectionChanged.
@@ -181,6 +191,7 @@
 ### Task 6: Deliver governed MemoryCore lifecycle
 
 **Files:**
+
 - Create: mate-platform-backend/packages/mate-tech-agent/src/mate_tech_agent/memory/domain.py
 - Create: mate-platform-backend/packages/mate-tech-agent/src/mate_tech_agent/memory/repository.py
 - Create: mate-platform-backend/packages/mate-tech-agent/src/mate_tech_agent/memory/memorycore_adapter.py
@@ -193,6 +204,7 @@
 - Create: metaplatform-frontend/apps/web/tests/e2e/governed-memory.spec.ts
 
 **Interfaces:**
+
 - REST: policy/collection CRUD; candidate create/read/update-before-review/reject/withdraw/submit; review approve/reject/transfer; item read/correct/revoke/expire; retrieval/feedback; conflict resolve; deletion request/propagation; snapshot/restore.
 - MCP: search_memory returns only approved, in-scope, non-revoked Item Digests and reason codes.
 - Events: MemoryCandidateCreated, MemoryPromoted, MemoryConflictDetected, MemoryRevoked and MemoryDeletionCompleted.
@@ -207,6 +219,7 @@
 ### Task 7: Cross-context business validation and release evidence
 
 **Files:**
+
 - Create: mate-platform-backend/tests/e2e/test_order_query_plan_confirm_execute.py
 - Create: mate-platform-backend/tests/e2e/test_contract_evidence_report.py
 - Create: mate-platform-backend/tests/e2e/test_memory_cross_host_continuity.py
@@ -217,6 +230,7 @@
 - Modify: acceptance/release/v1/sprint-board.yaml
 
 **Interfaces:**
+
 - Consumes fixed Employee, Ontology, Skill, MCP, Artifact and UserContext projections.
 - Produces provider/consumer contract evidence, business E2E evidence, recovery evidence and release status for every enabled interface.
 

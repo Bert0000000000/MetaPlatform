@@ -3,6 +3,7 @@
 key = hash(prompt + temperature + model)
 temperature=0 强制命中检查
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -28,10 +29,7 @@ def cache_key(
         "model": model,
         "temperature": temperature,
         "tenant_id": tenant_id,
-        "messages": [
-            {"role": m.role, "content": m.content, "name": m.name}
-            for m in messages
-        ],
+        "messages": [{"role": m.role, "content": m.content, "name": m.name} for m in messages],
         "extra": extra or {},
     }
     raw = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")

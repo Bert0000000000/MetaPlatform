@@ -38,16 +38,12 @@ async def test_e2e_10_trace_id_propagation_tech_data(
 ):
     """TECH-DATA：trace_id 在响应中回传。"""
     # GET 端点
-    resp = await data_client.get(
-        f"{DATA_BASE}/quality/overview", headers=tenant_headers
-    )
+    resp = await data_client.get(f"{DATA_BASE}/quality/overview", headers=tenant_headers)
     assert resp.status_code == 200
     assert resp.json()["traceId"] == trace_id
 
     # POST 端点
-    resp = await data_client.get(
-        f"{DATA_BASE}/lineage", headers=tenant_headers
-    )
+    resp = await data_client.get(f"{DATA_BASE}/lineage", headers=tenant_headers)
     assert resp.status_code == 200
     assert resp.json()["traceId"] == trace_id
 
@@ -59,9 +55,7 @@ async def test_e2e_10_trace_id_propagation_tech_agent(
 ):
     """TECH-AGENT：trace_id 在响应中回传。"""
     # GET 端点（rubrics 不需要任何前置数据）
-    resp = await agent_client.get(
-        f"{AGENT_BASE}/evaluations/rubrics", headers=tenant_headers
-    )
+    resp = await agent_client.get(f"{AGENT_BASE}/evaluations/rubrics", headers=tenant_headers)
     assert resp.status_code == 200
     assert resp.json()["traceId"] == trace_id
 
@@ -118,9 +112,7 @@ async def test_e2e_10_trace_id_propagation_tech_ea(
     trace_id: str,
 ):
     """TECH-EA（Java Mock）：trace_id 在响应中回传。"""
-    resp = await ea_client.get(
-        f"{EA_BASE}/capability-mappings", headers=tenant_headers
-    )
+    resp = await ea_client.get(f"{EA_BASE}/capability-mappings", headers=tenant_headers)
     assert resp.status_code == 200
     assert resp.json()["traceId"] == trace_id
 
@@ -132,9 +124,7 @@ async def test_e2e_10_trace_id_auto_generated_when_missing_tech_data(
 ):
     """请求未携带 X-Trace-Id 时，TECH-DATA 应自动生成 UUID v4 并回传。"""
     headers = {"X-Tenant-Id": "tenant-e2e"}  # 故意不传 X-Trace-Id
-    resp = await data_client.get(
-        f"{DATA_BASE}/quality/overview", headers=headers
-    )
+    resp = await data_client.get(f"{DATA_BASE}/quality/overview", headers=headers)
     assert resp.status_code == 200
     trace_id = resp.json()["traceId"]
     assert trace_id is not None
@@ -183,9 +173,7 @@ async def test_e2e_10_trace_id_cross_service_consistency(
     }
 
     # 1. TECH-DATA 血缘查询
-    resp1 = await data_client.get(
-        f"{DATA_BASE}/lineage?scope=customer", headers=headers
-    )
+    resp1 = await data_client.get(f"{DATA_BASE}/lineage?scope=customer", headers=headers)
     assert resp1.status_code == 200
     assert resp1.json()["traceId"] == trace_id
 
@@ -223,9 +211,7 @@ async def test_e2e_10_trace_id_cross_service_consistency(
     assert resp4.json()["traceId"] == trace_id
 
     # 5. TECH-EA 查询 capability-mapping
-    resp5 = await ea_client.get(
-        f"{EA_BASE}/capability-mappings", headers=headers
-    )
+    resp5 = await ea_client.get(f"{EA_BASE}/capability-mappings", headers=headers)
     assert resp5.status_code == 200
     assert resp5.json()["traceId"] == trace_id
 
@@ -250,12 +236,8 @@ async def test_e2e_10_trace_id_per_request_isolation(
         "X-Trace-Id": "trace-request-2",
     }
 
-    resp1 = await data_client.get(
-        f"{DATA_BASE}/quality/overview", headers=headers1
-    )
-    resp2 = await agent_client.get(
-        f"{AGENT_BASE}/evaluations/rubrics", headers=headers2
-    )
+    resp1 = await data_client.get(f"{DATA_BASE}/quality/overview", headers=headers1)
+    resp2 = await agent_client.get(f"{AGENT_BASE}/evaluations/rubrics", headers=headers2)
 
     assert resp1.json()["traceId"] == "trace-request-1"
     assert resp2.json()["traceId"] == "trace-request-2"
@@ -272,9 +254,7 @@ async def test_e2e_10_trace_id_uuid_v4_format_validation(
     # 多次请求，每次都应生成不同的 UUID v4
     trace_ids = set()
     for _ in range(3):
-        resp = await data_client.get(
-            f"{DATA_BASE}/quality/overview", headers=headers
-        )
+        resp = await data_client.get(f"{DATA_BASE}/quality/overview", headers=headers)
         assert resp.status_code == 200
         tid = resp.json()["traceId"]
         assert _UUID_V4_RE.match(tid), f"trace_id 不是合法的 UUID v4: {tid}"

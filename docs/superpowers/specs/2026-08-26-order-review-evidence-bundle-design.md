@@ -253,14 +253,14 @@ Ontology 图应明确区分正式模型节点、动作契约节点和交易事�
       "label": "订单金额 ≥ ¥1,000.00",
       "passed": true,
       "fact_refs": ["fact.amount_cents"],
-      "details": {"operator": ">=", "expected_cents": 100000}
+      "details": { "operator": ">=", "expected_cents": 100000 }
     },
     {
       "id": "unpaid",
       "label": "支付状态 = 未支付",
       "passed": true,
       "fact_refs": ["fact.payment_status"],
-      "details": {"operator": "=", "expected": "unpaid"}
+      "details": { "operator": "=", "expected": "unpaid" }
     },
     {
       "id": "eligible",

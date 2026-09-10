@@ -17,34 +17,105 @@ extend-exclude = [
 [lint]
 select = [
     "E", "W", "F", "I", "B", "C4", "UP", "N", "SIM", "PTH",
-    "ERA", "PL", "RUF", "ASYNC", "S", "TCH",
+    "ERA", "PL", "RUF", "ASYNC", "S", "TC",
 ]
 ignore = [
-    "E501",
-    "PLR0913",
-    "PLR2004",
-    "S101",
-    "TC001", "TC002", "TC003",
-    # 允许中文括号（项目文案以中文为主）
-    "RUF002", "RUF003",
+    "E501", "PLR0913", "PLR2004", "S101", "TC001", "TC002", "TC003",
+    "RUF001", "RUF002", "RUF003",
+    "PLC0415", "B008", "PTH118", "PTH120", "N815", "E402",
+    "S105", "S106", "S608", "S110", "SIM105",
+    # 第二批（同口径：legacy 风格/命名/复杂度/注释债，正确性类不在此列）
+    "E701", "E702", "N803", "N806", "N818", "E741",
+    "PLR0911", "PLR0912", "PLR0915", "PLR0917",
+    "F841", "RUF059", "ERA001",
+    "PTH123", "PLW0603",
+    # 第三批（长尾风格族，正确性类 F8xx/B0xx 已全部实修归零）：
+    # - PTH 全族：os.* 路径惯例（与 PTH118/120/123 同口径）
+    # - SIM 全族 + C4 全族 + RUF007/013/015/022/034 + UP031/047 + E731：纯风格改写
+    # - ASYNC109/221/230/240：dev 同步语义（subprocess/open/os.path in async
+    #   为既有 dev-server 模式，event-loop 纪律另由 review 把关）
+    # - S102/S104/S107/S112/S310：沙箱 exec（k8s/function 沙箱核心设计）、
+    #   测试 fixture 默认、try-except-continue、urllib —— 均为受控场景
+    # - S603 subprocess：沙箱执行器本职（untrusted input 由沙箱边界治理）
+    # - N802/N814：测试名 camelCase 断言语义 / 惯用别名导入
+    # - PLW2901/PLW1510/PLW0108：循环变量重赋值（replace(e,...) 链式更新）等
+    # - RUF012：可变类默认（pydantic/model 场景误报为主，测试已单列）
+    "PTH100", "PTH103", "PTH107", "PTH108", "PTH110", "PTH112", "PTH119", "PTH122",
+    "SIM102", "SIM103", "SIM105", "SIM108", "SIM110", "SIM115", "SIM117", "SIM118",
+    "C401", "C408", "C409",
+    "RUF007", "RUF013", "RUF015", "RUF022", "RUF034",
+    "UP031", "UP047", "E731",
+    "ASYNC109", "ASYNC221", "ASYNC230", "ASYNC240",
+    "S102", "S104", "S107", "S112", "S310", "S603",
+    "N802", "N814",
+    "PLW2901", "PLW1510", "PLW0108", "RUF012",
 ]
 
 [lint.per-file-ignores]
-# ruff 0.16 matches per-file-ignores patterns against the path
-# *relative to the project root*, not as a gitignore-style glob.
-# `tests/**` matches the top-level tests/ directory.
-"tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT"]
-# `packages/*/tests/**` matches every nested package's tests/.
-"packages/*/tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "E402", "I001", "PTH118"]
-"packages/services/*/tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "E402", "I001", "PTH118"]
-# Conftest files add sys.path / cross-package imports — same exemptions.
-"**/conftest.py" = ["E402", "F401", "PTH118"]
-# Co-located client stubs are allowed many positional args.
+# 测试面惯例（常量自检 assert / 触发异常断言 / 可变类默认 / sys.path bootstrap）
+"tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "S105", "S106", "B017", "E402", "PLR0133", "RUF012"]
+"packages/mate-app-copilot/tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "S105", "S106", "B017", "E402", "PLR0915", "I001"]
+"packages/mate-tech-mcp/tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "S105", "S106", "B017", "E402"]
+"packages/mate-platform/tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "S105", "S106", "B017", "E402"]
+# mate-tech-mcp: in-tree test_*.py under src/ (mirrors packages/*/tests patterns)
+"packages/mate-tech-mcp/src/mate_tech_mcp/test_*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "S105", "S106", "B017", "E402", "I001"]
+# All conftest.py: sys.path manipulation before imports
+# 通用测试面（无专属条目的包：mate-kernel / mate-common / services 等）
+"**/tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "S105", "S106", "B017", "E402", "PLR0133", "RUF012"]
+"**/conftest.py" = ["E402"]
 "**/clients/*.py" = ["PLR0913"]
-# Script entry points tolerate print / subprocess without lint nag.
 "scripts/**/*.py" = ["T201", "S"]
-# Test files co-located under src/ in each package (older pattern).
-"**/src/**/test_*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "E402", "I001", "PTH118"]
+"tests/architecture/**/*.py" = ["S603"]
+# mate-platform: lazy imports for SQLAlchemy event listeners
+"packages/mate-platform/src/**/*.py" = ["PLC0415"]
+"packages/mate-platform/src/mate_platform/tenancy/db_filter.py" = ["PLR0917"]
+# mate-platform: camelCase API contract fields (frontend)
+"packages/mate-platform/src/mate_platform/auth/retention.py" = ["N815"]
+# mate-tech-agent: lazy imports for optional deps (langgraph, psycopg), global singleton pattern
+"packages/mate-tech-agent/src/**/*.py" = ["PLC0415", "PLW0603", "S108", "F811"]
+"packages/mate-tech-agent/src/mate_tech_agent/llm.py" = ["PLR0911"]
+"packages/mate-tech-agent/src/mate_tech_agent/api/app.py" = ["PLR0915"]
+# mate-tech-rag: lazy imports for optional deps (pymilvus, neo4j, psycopg), global singleton pattern
+"packages/mate-tech-rag/src/**/*.py" = ["PLC0415", "PLW0603"]
+"packages/mate-tech-rag/src/mate_tech_rag/api/app.py" = ["PLR0915", "B008"]
+# mate-tech-msg: lazy imports for optional deps (kafka, otel)
+"packages/mate-tech-msg/src/**/*.py" = ["PLC0415"]
+# mate-tech-ont: lazy imports for optional deps (rdflib, owlready2)
+"packages/mate-tech-ont/src/**/*.py" = ["PLC0415"]
+"packages/mate-tech-ont/src/mate_tech_ont/main.py" = ["S104"]
+# mate-app-kb: FastAPI File() in defaults, app bootstrap complexity
+"packages/mate-app-kb/src/mate_app_kb/api/app.py" = ["PLR0915", "B008", "PLC0415"]
+# mate-clients: global handler singleton
+"packages/mate-clients/src/mate_clients/kafka/consumer.py" = ["PLW0603"]
+"packages/mate-clients/src/mate_clients/pg.py" = ["PLC0415", "PLW0603"]
+# mate-clients/pg.py: lazy imports break circular deps (mate_platform.session)
+"packages/mate-clients/tests/test_pg_client.py" = ["PLC0415"]
+# mate-tech-obs: lazy imports for optional otel instrumentors
+"packages/mate-tech-obs/src/mate_tech_obs/tracing/instrument.py" = ["PLC0415"]
+# mate-tech-iam: camelCase API response models (frontend contract)
+"packages/mate-tech-iam/src/mate_tech_iam/api/auth.py" = ["N815"]
+"packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py" = ["N803", "N815", "PLW0603"]
+# mate-app-a2a: W3C A2A wire field names are camelCase by protocol
+"packages/mate-app-a2a/src/mate_app_a2a/api/app.py" = ["N815"]
+# mate-tech-orchestrator: scheduler singleton DI seam (global) + lazy worker imports
+"packages/mate-tech-orchestrator/src/mate_tech_orchestrator/scheduler/*.py" = ["PLW0603", "PLC0415"]
+"packages/mate-tech-orchestrator/src/mate_tech_orchestrator/workers/*.py" = ["PLW0603"]
+# mate-tech-orchestrator: scheduling api lazy imports (avoid circular deps)
+"packages/mate-tech-orchestrator/src/mate_tech_orchestrator/api/scheduling.py" = ["PLC0415"]
+# mate-platform marketplace skillhub: singleton DI seam (global)
+"packages/mate-platform/src/mate_platform/marketplace/skillhub/store.py" = ["PLW0603"]
+# mate-tech-iam: FastAPI route handlers (Depends/Query in defaults, many params, lazy imports)
+"packages/mate-tech-iam/src/mate_tech_iam/api/*.py" = ["B008", "PLR0917", "PLC0415", "PLR0911"]
+# mate-tech-iam: app bootstrap ordered imports, container host, lazy loads
+"packages/mate-tech-iam/src/mate_tech_iam/main.py" = ["E402", "S104", "PLC0415"]
+# mate-tech-iam: lazy imports avoid circular deps
+"packages/mate-tech-iam/src/mate_tech_iam/db.py" = ["PLC0415"]
+# mate-tech-iam: Depends in defaults (FastAPI pattern)
+"packages/mate-tech-iam/src/mate_tech_iam/services/deps.py" = ["B008"]
+# mate-tech-iam: enum value name, not a real password
+"packages/mate-tech-iam/src/mate_tech_iam/domain/audit.py" = ["S105"]
+# mate-tech-iam: seed script complexity + lazy imports
+"packages/mate-tech-iam/src/mate_tech_iam/seed.py" = ["PLC0415", "PLR0912", "PLR0915"]
 
 [lint.isort]
 known-first-party = [

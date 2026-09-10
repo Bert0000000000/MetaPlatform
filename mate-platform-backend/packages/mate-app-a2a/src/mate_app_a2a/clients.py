@@ -14,6 +14,7 @@ The client enforces:
     without a real network (mirrors the ``set_default_delegator`` DI
     pattern in ``delegate.py``).
 """
+
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
@@ -177,9 +178,7 @@ class ExternalAgentClient:
         except httpx.TimeoutException:
             raise
         except Exception as e:
-            raise httpx.HTTPError(
-                f"a2a client init failed for {endpoint}: {e}"
-            ) from e
+            raise httpx.HTTPError(f"a2a client init failed for {endpoint}: {e}") from e
         try:
             msg = new_text_message(message_text, role=Role.ROLE_USER)
             context = payload.get("context")

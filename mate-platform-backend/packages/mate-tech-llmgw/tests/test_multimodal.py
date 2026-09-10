@@ -8,6 +8,7 @@ Covers:
     missing-prompt 422, quota 429, cost recording, tenant isolation,
     data-URI and URL image references.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -64,9 +65,7 @@ class TestMultimodalEngine:
     async def test_multimodal_with_audio_returns_response(self) -> None:
         engine = MultimodalEngine()
         resp = await engine.chat(
-            MultimodalRequest(
-                prompt="transcribe", audio=["data:audio/wav;base64,AAAA"]
-            )
+            MultimodalRequest(prompt="transcribe", audio=["data:audio/wav;base64,AAAA"])
         )
         # audio does not bump the image counter
         assert "0 images" in resp.content
@@ -154,9 +153,7 @@ class TestMultimodalEndpoint:
 
         set_quota_bucket(FailBucket())
         try:
-            r = mm_client.post(
-                "/api/v1/llmgw/chat/multimodal", json={"prompt": "hi"}
-            )
+            r = mm_client.post("/api/v1/llmgw/chat/multimodal", json={"prompt": "hi"})
             assert r.status_code == 429
             assert "Retry-After" in r.headers
         finally:

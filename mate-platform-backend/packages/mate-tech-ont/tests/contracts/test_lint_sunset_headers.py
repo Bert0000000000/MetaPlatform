@@ -4,6 +4,7 @@ GOVERN-03 / 03-05: the lint script must flag every v1 ontology endpoint
 that is missing the sunset annotations, and must not flag v2 endpoints
 that are free of sunset headers.
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -96,11 +97,7 @@ def test_is_sunset_match_accepts_string_and_date() -> None:
 def test_ont_yaml_contract_passes() -> None:
     """The actual ont.yaml in the repo must satisfy the lint."""
     contract = (
-        Path(__file__).resolve().parents[4]
-        / "contracts"
-        / "openapi"
-        / "services"
-        / "ont.yaml"
+        Path(__file__).resolve().parents[4] / "contracts" / "openapi" / "services" / "ont.yaml"
     )
     if not contract.exists():
         pytest.skip("ont.yaml not found (tests likely run from a partial checkout)")

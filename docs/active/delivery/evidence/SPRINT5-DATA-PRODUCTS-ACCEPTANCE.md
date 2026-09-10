@@ -11,11 +11,11 @@
 
 **单测 26 passed**：
 
-| 套件 | 数 | 覆盖 |
-|---|---|---|
-| kernel `test_ont_g21_descendant_closure.py` | 6 | 直接/传递/多父/环/空/叶子 |
-| ont `test_ont_g21_closure_objectset.py`（真实 PG metaplatform_ont） | 4 | 祖先查询命中全部后代 / 中间层 / 叶子精确 / 禁用公理回退精确 |
-| 既有 `test_objectset_parity.py` + `integration/test_v2_kernel_pg_objectset.py` | 16 | 无回归 |
+| 套件                                                                           | 数  | 覆盖                                                        |
+| ------------------------------------------------------------------------------ | --- | ----------------------------------------------------------- |
+| kernel `test_ont_g21_descendant_closure.py`                                    | 6   | 直接/传递/多父/环/空/叶子                                   |
+| ont `test_ont_g21_closure_objectset.py`（真实 PG metaplatform_ont）            | 4   | 祖先查询命中全部后代 / 中间层 / 叶子精确 / 禁用公理回退精确 |
+| 既有 `test_objectset_parity.py` + `integration/test_v2_kernel_pg_objectset.py` | 16  | 无回归                                                      |
 
 **Live 15/15 PASS**（`scripts/smoke_ont_g21_reasoning_e2e.py`，网关全链无 mock）：
 
@@ -45,12 +45,12 @@ PRD-12（数据栈部署 [~]）/ PRD-16（本体迁移 [x]）/ PRD-17（ObjectSe
 
 ## 5. 边界汇总
 
-| 项 | 状态 | 解锁动作 |
-|---|---|---|
-| Trino 服务激活 | [~] 容器/配置/镜像就绪；启动期资源挤占需单独窗口 | VM 扩容或全栈低峰期启动；启动后跑 §2 两条 catalog 查询取证 |
-| Paimon 运行面 | [ ] | Flink 生态部署（重） |
-| StarRocks BI / staging 大规模演练 / SHACL 完整 / G33 对齐 | [ ] | 后续批次 |
-| Function 执行语义 | 注册面已通，执行引擎留增量 | PRD-30 FR-RSN-004 |
+| 项                                                        | 状态                                             | 解锁动作                                                   |
+| --------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
+| Trino 服务激活                                            | [~] 容器/配置/镜像就绪；启动期资源挤占需单独窗口 | VM 扩容或全栈低峰期启动；启动后跑 §2 两条 catalog 查询取证 |
+| Paimon 运行面                                             | [ ]                                              | Flink 生态部署（重）                                       |
+| StarRocks BI / staging 大规模演练 / SHACL 完整 / G33 对齐 | [ ]                                              | 后续批次                                                   |
+| Function 执行语义                                         | 注册面已通，执行引擎留增量                       | PRD-30 FR-RSN-004                                          |
 
 ---
 
@@ -63,7 +63,7 @@ PRD-12（数据栈部署 [~]）/ PRD-16（本体迁移 [x]）/ PRD-17（ObjectSe
 - 约束集：**minCount / maxCount / datatype / pattern / class（值节点类校验）/ closed**
   ；W3C 语义要点：pattern 仅作用于字符串值；closed 拒绝未声明属性。
 - 集成：ObjectType → NodeShape 合成（pk/非空 → minCount 1，type_id → datatype），
-  与 ontValidateV2* 类型语义对齐；REST `POST /api/v1/ont/v2/shacl/validate`
+  与 ontValidateV2\* 类型语义对齐；REST `POST /api/v1/ont/v2/shacl/validate`
   （operationId ontValidateV2Shacl，契约先行，stateless 与 repo 实例双路径）。
 - 单测：kernel `test_ont_g14_shacl.py` **16 passed**（每约束正反例 + 报告聚合 + 环保护语义）。
 - Live（网关）：① 集成路径——g21-employee 类型合成 shape + repo 实例 → conforms=true；
@@ -198,15 +198,15 @@ PRD-12（数据栈部署 [~]）/ PRD-16（本体迁移 [x]）/ PRD-17（ObjectSe
 
 ## 15. 残余与边界（第三批后）
 
-| 项 | 状态 | 说明 |
-|---|---|---|
-| Trino 联邦 + Iceberg Roundtrip | [x] | §10 |
-| 多模态 Iceberg ADS | [x] | §11（dp-a34ba0d4 published v2）|
-| SHACL PRD-23 | [x] | §12（未覆盖清单如实）|
-| G33 对齐/合并 | [~] | §13（modularization 留增量）|
-| Paimon 运行面 | [x] | §16（Flink 1.20 + Paimon 1.1.1 on MinIO）|
-| staging 演练 | [ ] 让位边界如实 | 见 §17（helm 渲染 101 manifests ✓ + kind 四节点 Ready ✓；install 窗口与 Trino/Paimon 激活挤占，apiserver TLS 超时让位）|
-| BI 集成（StarRocks） | [ ] | 后续批次（镜像/资源窗口同上）|
+| 项                             | 状态             | 说明                                                                                                                    |
+| ------------------------------ | ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Trino 联邦 + Iceberg Roundtrip | [x]              | §10                                                                                                                     |
+| 多模态 Iceberg ADS             | [x]              | §11（dp-a34ba0d4 published v2）                                                                                         |
+| SHACL PRD-23                   | [x]              | §12（未覆盖清单如实）                                                                                                   |
+| G33 对齐/合并                  | [~]              | §13（modularization 留增量）                                                                                            |
+| Paimon 运行面                  | [x]              | §16（Flink 1.20 + Paimon 1.1.1 on MinIO）                                                                               |
+| staging 演练                   | [ ] 让位边界如实 | 见 §17（helm 渲染 101 manifests ✓ + kind 四节点 Ready ✓；install 窗口与 Trino/Paimon 激活挤占，apiserver TLS 超时让位） |
+| BI 集成（StarRocks）           | [ ]              | 后续批次（镜像/资源窗口同上）                                                                                           |
 
 ## 17. staging 演练尝试与让位边界（如实）
 
@@ -229,7 +229,7 @@ PRD-12（数据栈部署 [~]）/ PRD-16（本体迁移 [x]）/ PRD-17（ObjectSe
   `paimon-flink-1.20-1.1.1.jar` + **`paimon-s3-1.1.1.jar`**（官方 S3 filesystem
   bundle，SDK v2，原生吃 catalog `'s3.*'` options）+ `flink-s3-fs-hadoop` +
   `hadoop-hdfs-client`（兜底 hadoop Configuration/HdfsConfiguration 类路径）
-  + `core-site.xml`（fs.s3a.* 兜底）。
+  - `core-site.xml`（fs.s3a.\* 兜底）。
 - **调试链（如实）**：① s3 插件只挂 plugins/ → paimon 不可见 hadoop 类
   （移 lib 解决）；② 缺 hadoop-hdfs-client（补 jar）；③ catalog `'s3.*'`
   options 走 s3a 签名 403（换 paimon-s3 bundle 解决——s3a 路径对 MinIO 的

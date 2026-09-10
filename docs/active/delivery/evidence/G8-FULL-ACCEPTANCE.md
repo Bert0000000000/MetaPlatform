@@ -7,20 +7,21 @@
 ## 1. 范围
 
 G8 FULL 承接 G8-ACCEPTANCE-FINAL(8/1 docker-compose 残留清理),扩展到:
+
 - 3 目录本体删除确认(infra/otel/ infra/lightrag/ infra/promtail/)
 - docs 引用清理(PROFILES.md)
 - PROGRAM-BOARD G8 状态确认 Accepted
 
 ## 2. 清理清单
 
-| 项目 | 状态 | 关联 commit |
-|---|---|---|
-| infra/otel/ 目录删除(文件 + 空目录) | ✅ 整目录已删 | P3-W6 wave + G8 FINAL |
-| infra/lightrag/ 目录删除(文件 + 空目录) | ✅ 整目录已删 | P3-W6 wave + G8 FINAL |
-| infra/promtail/ 目录删除 | ✅ 整目录已删 | P3-W6 wave |
-| docker-compose.yml 残留引用 | ✅ 4 处清除(lightrag/promtail/otel) | ef8c4105 |
-| PROFILES.md 引用清理 | ✅ 本批次 | e51b617d |
-| architecture-implementation.md | ✅ 无残留(grep 0 匹配) | N/A |
+| 项目                                    | 状态                                | 关联 commit           |
+| --------------------------------------- | ----------------------------------- | --------------------- |
+| infra/otel/ 目录删除(文件 + 空目录)     | ✅ 整目录已删                       | P3-W6 wave + G8 FINAL |
+| infra/lightrag/ 目录删除(文件 + 空目录) | ✅ 整目录已删                       | P3-W6 wave + G8 FINAL |
+| infra/promtail/ 目录删除                | ✅ 整目录已删                       | P3-W6 wave            |
+| docker-compose.yml 残留引用             | ✅ 4 处清除(lightrag/promtail/otel) | ef8c4105              |
+| PROFILES.md 引用清理                    | ✅ 本批次                           | e51b617d              |
+| architecture-implementation.md          | ✅ 无残留(grep 0 匹配)              | N/A                   |
 
 ## 3. grep 验证
 

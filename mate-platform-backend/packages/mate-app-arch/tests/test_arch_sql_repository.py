@@ -4,6 +4,7 @@ Uses SQLite in-memory to verify the ORM models, CRUD operations,
 tenant isolation, tuple round-tripping, and seed_from_inmemory
 bootstrap work correctly.
 """
+
 from __future__ import annotations
 
 # Import models so their tables register on Base.metadata before create_all
@@ -226,14 +227,28 @@ def test_data_asset_round_trip(sql_backend: None) -> None:
 
 def test_tenant_isolation(sql_backend: None) -> None:
     """Verify tenant A cannot see tenant B's data."""
-    put_application("tenant-acme", Application(
-        id="app-acme", tenant_id="tenant-acme", name="Acme App", code="acme",
-        category="platform", owner="a",
-    ))
-    put_application("tenant-globex", Application(
-        id="app-globex", tenant_id="tenant-globex", name="Globex App", code="globex",
-        category="data", owner="g",
-    ))
+    put_application(
+        "tenant-acme",
+        Application(
+            id="app-acme",
+            tenant_id="tenant-acme",
+            name="Acme App",
+            code="acme",
+            category="platform",
+            owner="a",
+        ),
+    )
+    put_application(
+        "tenant-globex",
+        Application(
+            id="app-globex",
+            tenant_id="tenant-globex",
+            name="Globex App",
+            code="globex",
+            category="data",
+            owner="g",
+        ),
+    )
 
     acme = list_applications("tenant-acme")
     globex = list_applications("tenant-globex")
@@ -252,9 +267,9 @@ def test_seed_from_inmemory(sql_backend: None) -> None:
     counts = seed_from_inmemory("tenant-acme")
     assert counts["applications"] >= 20  # in_memory seeds 20 apps
     assert counts["capabilities"] >= 15  # 15 capabilities
-    assert counts["data_assets"] >= 10   # 12 data assets
+    assert counts["data_assets"] >= 10  # 12 data assets
     assert counts["data_entities"] >= 5  # 5 data entities
-    assert counts["data_flows"] >= 3     # 3 data flows
+    assert counts["data_flows"] >= 3  # 3 data flows
 
     apps = list_applications("tenant-acme")
     assert len(apps) >= 20
@@ -267,16 +282,13 @@ def test_seed_from_inmemory(sql_backend: None) -> None:
 def test_all_25_tables_have_orm_models() -> None:
     """Verify all 25 ORM model classes exist and map to arch_ tables."""
     orm_classes = [
-        cls for cls in vars(models_mod).values()
+        cls
+        for cls in vars(models_mod).values()
         if isinstance(cls, type) and hasattr(cls, "__tablename__")
     ]
-    assert len(orm_classes) == 25, (
-        f"Expected 25 ORM models, found {len(orm_classes)}"
-    )
+    assert len(orm_classes) == 25, f"Expected 25 ORM models, found {len(orm_classes)}"
     for cls in orm_classes:
-        assert cls.__tablename__.startswith("arch_"), (
-            f"{cls.__name__} -> {cls.__tablename__}"
-        )
+        assert cls.__tablename__.startswith("arch_"), f"{cls.__name__} -> {cls.__tablename__}"
 
 
 def test_business_process_crud(sql_backend: None) -> None:

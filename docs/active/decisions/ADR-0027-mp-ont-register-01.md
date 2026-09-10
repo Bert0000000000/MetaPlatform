@@ -8,10 +8,10 @@
 
 MARKETPLACE-CONSUMER-01 中 3 类市场资产的注册客户端并行落地：
 
-| Sub-spec | 客户端 | 目标服务 | Endpoint |
-|---|---|---|---|
-| MP-MCP-REGISTER-01 | `McpMarketplaceClient` | `mate-tech-mcp` | `POST /api/v1/mcp/federation/servers` |
-| MP-AGENT-REGISTER-01 | `AgentMarketplaceClient` | `mate-tech-agent` | `POST /api/v1/agent/registry/agents` |
+| Sub-spec               | 客户端                          | 目标服务            | Endpoint                               |
+| ---------------------- | ------------------------------- | ------------------- | -------------------------------------- |
+| MP-MCP-REGISTER-01     | `McpMarketplaceClient`          | `mate-tech-mcp`     | `POST /api/v1/mcp/federation/servers`  |
+| MP-AGENT-REGISTER-01   | `AgentMarketplaceClient`        | `mate-tech-agent`   | `POST /api/v1/agent/registry/agents`   |
 | **MP-ONT-REGISTER-01** | **`OntologyMarketplaceClient`** | **`mate-tech-ont`** | **`POST /api/v1/ont/v2/object-types`** |
 
 `OntologyInstaller` 此前是占位 stub，标记 `[blocked-on: MP-ONT-REGISTER-01]`，所有 ontology 资产（object-type 定义、property schema、interface 绑定）的安装路径阻塞。
@@ -30,7 +30,7 @@ v4 RUNTIME-MVP-01 已在 `mate-tech-ont` 落地 `POST /api/v1/ont/v2/object-type
   {
     "rid": "ot.employee.1.0.0",
     "primary_key": ["employee_id"],
-    "properties": [{"name": "employee_id", "type": "string"}],
+    "properties": [{ "name": "employee_id", "type": "string" }],
     "display_name": "Employee",
     "interfaces": []
   }
@@ -49,13 +49,13 @@ v4 RUNTIME-MVP-01 已在 `mate-tech-ont` 落地 `POST /api/v1/ont/v2/object-type
 
 ### 13 硬规则对位
 
-| # | 规则 | 本 Batch 实施 |
-|---|---|---|
-| 4 | 外部系统必须有 ACL Client | `BearerAuth` + `OutgoingAuthMiddleware(tenant_id=...)` 注入 `Authorization` + `X-Tenant-Id` 双 header（与 MCP/Agent 严格同构） |
-| 3 | 没有 tenant 不访问 repository | dev profile 可不带 auth；带 auth 必须有 tenant_id；middleware 在 client init 时强制绑定 |
-| 5 | Production profile 禁 fallback | digest 兜底仅发生在 dev profile（与 MCP/Agent 一致） |
-| 12 | Secret 不进 git | 测试用 stub BearerAuth，不引用真实 token |
-| 6 | 静态检查 ruff + pyright | 新代码 ruff 0 errors |
+| #   | 规则                           | 本 Batch 实施                                                                                                                  |
+| --- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| 4   | 外部系统必须有 ACL Client      | `BearerAuth` + `OutgoingAuthMiddleware(tenant_id=...)` 注入 `Authorization` + `X-Tenant-Id` 双 header（与 MCP/Agent 严格同构） |
+| 3   | 没有 tenant 不访问 repository  | dev profile 可不带 auth；带 auth 必须有 tenant_id；middleware 在 client init 时强制绑定                                        |
+| 5   | Production profile 禁 fallback | digest 兜底仅发生在 dev profile（与 MCP/Agent 一致）                                                                           |
+| 12  | Secret 不进 git                | 测试用 stub BearerAuth，不引用真实 token                                                                                       |
+| 6   | 静态检查 ruff + pyright        | 新代码 ruff 0 errors                                                                                                           |
 
 ### set_tenant() 行为
 
@@ -64,6 +64,7 @@ v4 RUNTIME-MVP-01 已在 `mate-tech-ont` 落地 `POST /api/v1/ont/v2/object-type
 ### OntologyInstaller
 
 完全继承 `BaseInstaller`：
+
 - `kind = "ontology"`
 - `register_method = "register_ontology"`
 - `__init__(ontology_client=...)`（保留与 `mcp_client`/`agent_client` 平行命名）

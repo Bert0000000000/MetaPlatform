@@ -1,4 +1,5 @@
 """Neo4jGraphRAGClient: real Neo4j connection for ENTITY retrieval."""
+
 from __future__ import annotations
 
 import logging
@@ -16,7 +17,9 @@ _ENTITY_RE = re.compile(r"[\u4e00-\u9fff]{2,4}|[A-Z][A-Za-z0-9_]{2,}")
 
 class GraphRAGClient(Protocol):
     def query(self, query: str, top_k: int = 10) -> list[ChunkHit]: ...
-    def insert(self, text: str, document_id: str, metadata: dict[str, str] | None = None) -> str: ...
+    def insert(
+        self, text: str, document_id: str, metadata: dict[str, str] | None = None
+    ) -> str: ...
     def count(self) -> int: ...
 
 
@@ -29,7 +32,13 @@ class Neo4jGraphRAGClient:
     DEFAULT_DATABASE = "rag-graphrag"
     DEFAULT_URI = "bolt://localhost:7687"
 
-    def __init__(self, uri: str | None = None, user: str | None = None, password: str | None = None, database: str | None = None) -> None:
+    def __init__(
+        self,
+        uri: str | None = None,
+        user: str | None = None,
+        password: str | None = None,
+        database: str | None = None,
+    ) -> None:
         self._uri = uri or os.environ.get("NEO4J_URI", self.DEFAULT_URI)
         self._user = user or os.environ.get("NEO4J_USER", "neo4j")
         self._password = password or os.environ.get("NEO4J_PASSWORD", "mate-pass")
@@ -48,7 +57,9 @@ class Neo4jGraphRAGClient:
             with self._driver.session(database="system") as sys_sess:
                 sys_sess.run(f"CREATE DATABASE `{self._database}` IF NOT EXISTS").consume()
             with self._driver.session(database=self._database) as sess:
-                sess.run("CREATE CONSTRAINT entity_name IF NOT EXISTS FOR (e:Entity) REQUIRE e.name IS UNIQUE").consume()
+                sess.run(
+                    "CREATE CONSTRAINT entity_name IF NOT EXISTS FOR (e:Entity) REQUIRE e.name IS UNIQUE"
+                ).consume()
             _log.info("Connected to Neo4j at %s/%s", self._uri, self._database)
         except Exception as exc:
             _log.warning("Neo4j connect failed (%s): %s", self._uri, exc)
@@ -66,13 +77,18 @@ class Neo4jGraphRAGClient:
         snippet = text[:200]
         meta_str = str(metadata or {})
         with self._lock, self._driver.session(database=self._database) as sess:
-                sess.run(
-                    "MERGE (c:Chunk {id: $cid}) SET c.document_id=$did, c.snippet=$snip, c.text=$text, c.metadata=$meta "
-                    "WITH c UNWIND $ents AS e_name "
-                    "MERGE (e:Entity {name: e_name}) ON CREATE SET e.freq=1 ON MATCH SET e.freq=e.freq+1 "
-                    "MERGE (e)-[:MENTIONED_IN]->(c)",
-                    cid=chunk_id, did=document_id, snip=snippet, text=text[:1000], meta=meta_str, ents=list(entities) or ["__empty__"],
-                ).consume()
+            sess.run(
+                "MERGE (c:Chunk {id: $cid}) SET c.document_id=$did, c.snippet=$snip, c.text=$text, c.metadata=$meta "
+                "WITH c UNWIND $ents AS e_name "
+                "MERGE (e:Entity {name: e_name}) ON CREATE SET e.freq=1 ON MATCH SET e.freq=e.freq+1 "
+                "MERGE (e)-[:MENTIONED_IN]->(c)",
+                cid=chunk_id,
+                did=document_id,
+                snip=snippet,
+                text=text[:1000],
+                meta=meta_str,
+                ents=list(entities) or ["__empty__"],
+            ).consume()
         return chunk_id
 
     def query(self, query: str, top_k: int = 10) -> list[ChunkHit]:

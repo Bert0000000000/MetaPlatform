@@ -1,4 +1,5 @@
 """Shared API dependencies: caller identity (from headers / JWT) and audit log helper."""
+
 from __future__ import annotations
 
 import json
@@ -100,12 +101,7 @@ async def get_caller(
         if decoded:
             claims = decoded
 
-    user_id = (
-        claims.get("sub")
-        or claims.get("user_id")
-        or x_user
-        or "anonymous"
-    )
+    user_id = claims.get("sub") or claims.get("user_id") or x_user or "anonymous"
     username = claims.get("preferred_username") or claims.get("username") or x_user or user_id
     real_name = claims.get("name") or claims.get("real_name")
     tenant_id = (
@@ -212,4 +208,3 @@ async def write_audit(
     except Exception as exc:  # pragma: no cover - defensive
         logger.warning("iam.audit.flush_failed", error=str(exc))
     return entry
-

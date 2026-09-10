@@ -5,6 +5,7 @@ OWL 2 基础公理 → 引擎输入映射：
   owl:sameAs             → same_as_pairs (R2)
   传递属性 (owl:TransitiveProperty) → transitive_axioms (R3)
 """
+
 from __future__ import annotations
 
 import os
@@ -19,8 +20,12 @@ from mate_kernel.ontology.reasoning.engine import run_inference
 
 def _run(sub, ind, same, trans, edges):
     return run_inference(
-        subclass_axioms=sub, individuals=ind, same_as_pairs=same,
-        transitive_axioms=trans, property_edges=edges)
+        subclass_axioms=sub,
+        individuals=ind,
+        same_as_pairs=same,
+        transitive_axioms=trans,
+        property_edges=edges,
+    )
 
 
 def test_owl_subclassof_chain():
@@ -38,16 +43,13 @@ def test_owl_sameas_symmetry():
 
 def test_owl_transitive_property():
     """owl:TransitiveProperty：xRy ∧ yRz ⟹ xRz。"""
-    r = _run([], {}, [], ["part_of"],
-             [("part_of", "wheel", "car"), ("part_of", "car", "fleet")])
-    assert {"property": "part_of", "src": "wheel", "dst": "fleet"} \
-        in r["transitive_inferred"]
+    r = _run([], {}, [], ["part_of"], [("part_of", "wheel", "car"), ("part_of", "car", "fleet")])
+    assert {"property": "part_of", "src": "wheel", "dst": "fleet"} in r["transitive_inferred"]
 
 
 def test_owl_subclass_inheritance_instance():
     """实例断言子类 ⟹ 继承全部祖先（R1 分类）。"""
-    r = _run([("tomcat", "cat"), ("cat", "animal")], {"t1": ["tomcat"]},
-             [], [], [])
+    r = _run([("tomcat", "cat"), ("cat", "animal")], {"t1": ["tomcat"]}, [], [], [])
     cls = r["classification"]["t1"]
     assert cls["asserted"] == ["tomcat"]
     assert set(cls["inferred"]) == {"cat", "animal"}

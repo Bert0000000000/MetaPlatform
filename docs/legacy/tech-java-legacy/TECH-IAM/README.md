@@ -20,10 +20,10 @@
 
 ## PermissionSnapshot 关键 API
 
-| Method | Path | 用途 |
-|---|---|---|
-| POST | `/api/v1/iam/permission-snapshots/build` | 构建快照 |
-| GET  | `/api/v1/iam/permission-snapshots/{snapshotId}` | 读取并校验快照 |
+| Method | Path                                            | 用途           |
+| ------ | ----------------------------------------------- | -------------- |
+| POST   | `/api/v1/iam/permission-snapshots/build`        | 构建快照       |
+| GET    | `/api/v1/iam/permission-snapshots/{snapshotId}` | 读取并校验快照 |
 
 ### 请求体示例
 

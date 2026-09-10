@@ -3,6 +3,7 @@
 默认根:`/var/lib/mate-marketplace/{quarantine,installed}`,
 可用环境变量 ``MP_QUARANTINE_ROOT`` / ``MP_INSTALLED_ROOT`` 覆盖(便于本地开发/测试)。
 """
+
 from __future__ import annotations
 
 import os
@@ -11,12 +12,8 @@ from pathlib import Path
 
 _DEFAULT_ROOT = Path(os.environ.get("MP_MARKETPLACE_ROOT", "/var/lib/mate-marketplace"))
 
-QUARANTINE: Path = Path(
-    os.environ.get("MP_QUARANTINE_ROOT", str(_DEFAULT_ROOT / "quarantine"))
-)
-INSTALLED: Path = Path(
-    os.environ.get("MP_INSTALLED_ROOT", str(_DEFAULT_ROOT / "installed"))
-)
+QUARANTINE: Path = Path(os.environ.get("MP_QUARANTINE_ROOT", str(_DEFAULT_ROOT / "quarantine")))
+INSTALLED: Path = Path(os.environ.get("MP_INSTALLED_ROOT", str(_DEFAULT_ROOT / "installed")))
 
 
 def store(

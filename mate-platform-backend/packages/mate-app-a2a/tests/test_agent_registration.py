@@ -7,6 +7,7 @@ Covers:
   - register_deerflow_disabled_when_env_false: env gate works
   - register_deerflow_endpoint_configurable: DEERFLOW_RESEARCH_URL honoured
 """
+
 from __future__ import annotations
 
 import pytest
@@ -50,7 +51,8 @@ def test_register_deerflow_agent_has_web_research_capability() -> None:
     caps = agent["capabilities"]
     assert len(caps) >= 1
     web_research = next(
-        (c for c in caps if c["id"] == "web-research"), None,
+        (c for c in caps if c["id"] == "web-research"),
+        None,
     )
     assert web_research is not None, "web-research capability must be present"
     assert "input_schema" in web_research

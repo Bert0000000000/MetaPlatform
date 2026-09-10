@@ -22,6 +22,7 @@ Configuration (all from environment variables):
     FLINK_AUTH_TOKEN    — optional bearer token for the REST API
                           (default: empty = no auth)
 """
+
 from __future__ import annotations
 
 import os
@@ -38,8 +39,11 @@ class FlinkSubmitError(Exception):
     """Raised when a Flink REST API call fails."""
 
     def __init__(
-        self, message: str, *,
-        status_code: int = 0, response_body: str = "",
+        self,
+        message: str,
+        *,
+        status_code: int = 0,
+        response_body: str = "",
     ) -> None:
         super().__init__(message)
         self.status_code = status_code
@@ -89,7 +93,9 @@ class FlinkSubmitEngine:
 
     @classmethod
     def from_env(
-        cls, *, timeout_seconds: float = 30.0,
+        cls,
+        *,
+        timeout_seconds: float = 30.0,
     ) -> FlinkSubmitEngine:
         """Build an engine from environment variables."""
         return cls(
@@ -147,7 +153,9 @@ class FlinkSubmitEngine:
             body["savepointPath"] = savepoint_path
 
         resp = await self._request(
-            "POST", f"/jars/{jar_id}/run", json=body,
+            "POST",
+            f"/jars/{jar_id}/run",
+            json=body,
         )
         job_id = resp.get("jobid", "")
         if not job_id:
@@ -164,14 +172,17 @@ class FlinkSubmitEngine:
         )
 
     async def stop_task(
-        self, task_id: str, job_id: str,
+        self,
+        task_id: str,
+        job_id: str,
     ) -> FlinkJobResult:
         """Cancel a running Flink job.
 
         PATCH /jobs/:jobid with mode=CANCEL
         """
         resp = await self._request(
-            "PATCH", f"/jobs/{job_id}",
+            "PATCH",
+            f"/jobs/{job_id}",
             params={"mode": "cancel"},
         )
         return FlinkJobResult(
@@ -182,7 +193,9 @@ class FlinkSubmitEngine:
         )
 
     async def get_status(
-        self, task_id: str, job_id: str,
+        self,
+        task_id: str,
+        job_id: str,
     ) -> FlinkJobResult:
         """Query the status of a Flink job.
 
@@ -248,7 +261,11 @@ class FlinkSubmitEngine:
         for attempt in range(self._max_retries + 1):
             try:
                 resp = await client.request(
-                    method, path, json=json, params=params, files=files,
+                    method,
+                    path,
+                    json=json,
+                    params=params,
+                    files=files,
                 )
                 if resp.status_code >= 500 and attempt < self._max_retries:
                     # Retry on server errors

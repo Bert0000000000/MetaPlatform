@@ -10,6 +10,7 @@ The shapes follow `docs/active/specs/2026-07-31-prd-a2a-protocol.md`
 ``DelegationResult.lineage_hints`` dict carries the cross-service
 correlation metadata required by ADR-0016 §3.1 + §13 hard rule 9.
 """
+
 from __future__ import annotations
 
 from .client import A2AClient, InMemoryA2AClient, get_default_client, reset_default_client

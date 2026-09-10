@@ -1,4 +1,5 @@
 """Tests for mate_tech_db.protocol — Repository + WritableRepository protocols."""
+
 from __future__ import annotations
 
 from mate_tech_db.protocol import Repository, WritableRepository

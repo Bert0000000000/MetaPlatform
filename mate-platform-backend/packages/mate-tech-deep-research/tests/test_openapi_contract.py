@@ -6,6 +6,7 @@ Verifies the contract file:
   * Carries the ADR-0014 step-6 three-part security block.
   * Declares the FR-DEEP-RESEARCH-INVOKE requirement id.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

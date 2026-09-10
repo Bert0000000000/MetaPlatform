@@ -1,4 +1,5 @@
 """install service — 幂等创建 install + 触发 orchestrator。"""
+
 from __future__ import annotations
 
 import uuid
@@ -28,9 +29,7 @@ def create_install(
             Install.kind == kind,
             Install.artifact_id == artifact_id,
             Install.version == version,
-            Install.state.in_(
-                ("downloading", "verifying", "installed")
-            ),
+            Install.state.in_(("downloading", "verifying", "installed")),
         )
     )
     if existing is not None:
@@ -88,17 +87,21 @@ def transition_install(
         raise InstallNotFound(str(install_id))
     if install.state not in allowed:
         raise InvalidTransition(
-            f"install {install_id} is '{install.state}'; {action} requires "
-            f"one of {sorted(allowed)}"
+            f"install {install_id} is '{install.state}'; {action} requires one of {sorted(allowed)}"
         )
     from_status = install.state
     install.state = target
     if action == "retry":
         install.retry_count = (install.retry_count or 0) + 1
-    session.add(InstallAudit(
-        install_id=install.id, action=action, from_state=from_status,
-        to_state=target, actor=str(actor) if actor else "",
-        created_at=datetime.now(UTC),
-    ))
+    session.add(
+        InstallAudit(
+            install_id=install.id,
+            action=action,
+            from_state=from_status,
+            to_state=target,
+            actor=str(actor) if actor else "",
+            created_at=datetime.now(UTC),
+        )
+    )
     session.flush()
     return install

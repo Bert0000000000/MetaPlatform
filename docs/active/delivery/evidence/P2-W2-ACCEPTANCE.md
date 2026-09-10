@@ -18,36 +18,36 @@ endpoint（27 GET × 3 包 + 6 POST copilot + dashboard 34）。
 
 ## 2. 规模指标
 
-| 指标 | 数量 |
-|---|---:|
-| 新增域 | 4 |
-| 新增 endpoint | 99 |
-| 新增 Python 包 | 3（hub / arch / copilot）|
-| dashboard 既有 endpoint 增强 | 34 |
-| happy-path 测试 | 27（dashboard 6 + hub 5 + arch 5 + copilot 8 + outbox 3）|
-| tenant negative 测试 | 14（dashboard 5 + hub 4 + arch 4 + copilot 5，含 a2a 501）|
-| 跨 4 包 pytest 总计 | 93 passed, 0 failed |
-| 净增代码行 | ~6,200（4 commit 合计）|
+| 指标                         |                                                       数量 |
+| ---------------------------- | ---------------------------------------------------------: |
+| 新增域                       |                                                          4 |
+| 新增 endpoint                |                                                         99 |
+| 新增 Python 包               |                                  3（hub / arch / copilot） |
+| dashboard 既有 endpoint 增强 |                                                         34 |
+| happy-path 测试              |  27（dashboard 6 + hub 5 + arch 5 + copilot 8 + outbox 3） |
+| tenant negative 测试         | 14（dashboard 5 + hub 4 + arch 4 + copilot 5，含 a2a 501） |
+| 跨 4 包 pytest 总计          |                                        93 passed, 0 failed |
+| 净增代码行                   |                                    ~6,200（4 commit 合计） |
 
 ## 3. ADR-0014 5 步合规矩阵
 
-| 域 | Step 1 install_auth | Step 2 require_tenant | Step 3 outbox | Step 4 BearerAuth | Step 5 cross-tenant |
-|---|---|---|---|---|---|
-| dashboard | ✅ `install_auth(app, extra_anonymous_paths)` | ✅ handler 第一行 | ✅ `InMemoryOutboxWriter` 真实集成 | N/A（无外发）| ✅ 5 tests |
-| app-hub | ✅ `install_auth(app)` | ✅ `_tenant_id(request)` helper | N/A（全 GET 只读）| N/A | ✅ 4 tests |
-| app-arch | ✅ `install_auth(app)` | ✅ `_tid(request)` helper | N/A（全 GET 只读）| N/A | ✅ 4 tests |
-| app-copilot | ✅ `install_auth(app, extra_anonymous_paths={auth/login})` | ✅ `_tid(request)` helper | ✅ 6 POST handler emit outbox event | N/A（stub provider）| ✅ 5 tests（含 a2a 501）|
+| 域          | Step 1 install_auth                                        | Step 2 require_tenant           | Step 3 outbox                       | Step 4 BearerAuth    | Step 5 cross-tenant      |
+| ----------- | ---------------------------------------------------------- | ------------------------------- | ----------------------------------- | -------------------- | ------------------------ |
+| dashboard   | ✅ `install_auth(app, extra_anonymous_paths)`              | ✅ handler 第一行               | ✅ `InMemoryOutboxWriter` 真实集成  | N/A（无外发）        | ✅ 5 tests               |
+| app-hub     | ✅ `install_auth(app)`                                     | ✅ `_tenant_id(request)` helper | N/A（全 GET 只读）                  | N/A                  | ✅ 4 tests               |
+| app-arch    | ✅ `install_auth(app)`                                     | ✅ `_tid(request)` helper       | N/A（全 GET 只读）                  | N/A                  | ✅ 4 tests               |
+| app-copilot | ✅ `install_auth(app, extra_anonymous_paths={auth/login})` | ✅ `_tid(request)` helper       | ✅ 6 POST handler emit outbox event | N/A（stub provider） | ✅ 5 tests（含 a2a 501） |
 
 **5 步闭环**：4 / 4 域全部合规。
 
 ## 4. 13 项硬规则验收
 
-| # | 硬规则 | 证据 | 状态 |
-|---|---|---|---|
-| 3 | tenant 上下文不访问 repository | 4 包全部 `require_tenant(ctx)` 守卫 + 14 tenant negative tests | ✅ |
-| 4 | 外部系统 ACL Client | P2-W2 无 outbound（in-memory / stub）；P2-W3 落地 | ✅ n/a |
-| 5 | 禁止 fallback | `LEGACY_LOGIN_COMPAT=false`（startup guard 已 GA）| ✅ |
-| 7 | 不跳过 tests | 93 passed, 0 skipped | ✅ |
+| #   | 硬规则                         | 证据                                                           | 状态   |
+| --- | ------------------------------ | -------------------------------------------------------------- | ------ |
+| 3   | tenant 上下文不访问 repository | 4 包全部 `require_tenant(ctx)` 守卫 + 14 tenant negative tests | ✅     |
+| 4   | 外部系统 ACL Client            | P2-W2 无 outbound（in-memory / stub）；P2-W3 落地              | ✅ n/a |
+| 5   | 禁止 fallback                  | `LEGACY_LOGIN_COMPAT=false`（startup guard 已 GA）             | ✅     |
+| 7   | 不跳过 tests                   | 93 passed, 0 skipped                                           | ✅     |
 
 ## 5. 本地实际运行结果
 
@@ -84,14 +84,14 @@ All checks passed!
 
 ## 6. PR gate 门槛
 
-| 门槛 | 要求 | 实际 | 状态 |
-|---|---|---|---|
-| pytest ≥ 9 per package | hub 9 / arch 9 / copilot 13 | 9 / 9 / 13 | ✅ |
-| ruff net delta < 30 | PR#11: -5; PR#12-14: 0 (新包) | -5 cumulative | ✅ |
-| forbid_raw_sql | 0 | 0（in-memory 无 SQL）| ✅ |
-| forbid_bare_httpx | 0 | 0（无 outbound httpx）| ✅ |
-| forbid_legacy_fallback | 0 | 0（LEGACY_LOGIN_COMPAT=false）| ✅ |
-| forbid_skip_tests | 0 | 0 skipped | ✅ |
+| 门槛                   | 要求                          | 实际                           | 状态 |
+| ---------------------- | ----------------------------- | ------------------------------ | ---- |
+| pytest ≥ 9 per package | hub 9 / arch 9 / copilot 13   | 9 / 9 / 13                     | ✅   |
+| ruff net delta < 30    | PR#11: -5; PR#12-14: 0 (新包) | -5 cumulative                  | ✅   |
+| forbid_raw_sql         | 0                             | 0（in-memory 无 SQL）          | ✅   |
+| forbid_bare_httpx      | 0                             | 0（无 outbound httpx）         | ✅   |
+| forbid_legacy_fallback | 0                             | 0（LEGACY_LOGIN_COMPAT=false） | ✅   |
+| forbid_skip_tests      | 0                             | 0 skipped                      | ✅   |
 
 ## 7. commit 历史
 
@@ -107,15 +107,15 @@ af98cdfe docs(p2-wave-2): SPEC + checklist + tasks for apphub/arch/copilot/dashb
 
 ## 8. 已知技术债（deferred to P2-W3 / v3.2）
 
-| 编号 | 描述 | 目标批次 |
-|---|---|---|
-| TD-1 | `TenantAccessError` exception handler → 400（当前 500）| P2-W3 |
-| TD-2 | `Event.create` tenant_id 非空校验（当前依赖 OutboxWriter.append）| P2-W3 |
-| TD-3 | Step 4 BearerAuth + OutgoingAuthMiddleware（hub→arch, copilot→llmgw）| P2-W3 |
-| TD-4 | A2A `/a2a/delegate` + `/a2a/external` 真实实现（当前 501 stub）| P2-W3 |
-| TD-5 | in-memory → Paimon / Postgres 持久化 | v3.2 |
-| TD-6 | copilot LLM provider 真实路由（llmgw 接入）| P2-W5 |
-| TD-7 | pyright strict 模式通过 | P2-W3 |
+| 编号 | 描述                                                                  | 目标批次 |
+| ---- | --------------------------------------------------------------------- | -------- |
+| TD-1 | `TenantAccessError` exception handler → 400（当前 500）               | P2-W3    |
+| TD-2 | `Event.create` tenant_id 非空校验（当前依赖 OutboxWriter.append）     | P2-W3    |
+| TD-3 | Step 4 BearerAuth + OutgoingAuthMiddleware（hub→arch, copilot→llmgw） | P2-W3    |
+| TD-4 | A2A `/a2a/delegate` + `/a2a/external` 真实实现（当前 501 stub）       | P2-W3    |
+| TD-5 | in-memory → Paimon / Postgres 持久化                                  | v3.2     |
+| TD-6 | copilot LLM provider 真实路由（llmgw 接入）                           | P2-W5    |
+| TD-7 | pyright strict 模式通过                                               | P2-W3    |
 
 ## 9. 关联文档
 

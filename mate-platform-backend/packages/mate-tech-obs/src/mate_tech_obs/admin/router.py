@@ -8,6 +8,7 @@ Designed for the admin dashboard tab. Aggregates:
 
 Prometheus integration degrades gracefully when PROM_URL is not configured.
 """
+
 from __future__ import annotations
 
 import os
@@ -74,7 +75,11 @@ async def self_metrics():
         "httpRequestsTotal": _parse_value("http_requests_total"),
         "httpRequestDurationSecondsCount": _parse_value("http_request_duration_seconds_count"),
     }
-    return {"code": 0, "message": "success", "data": {"metrics": snapshot, "checkedAt": int(time.time())}}
+    return {
+        "code": 0,
+        "message": "success",
+        "data": {"metrics": snapshot, "checkedAt": int(time.time())},
+    }
 
 
 @router.get("/alerts/rules")
@@ -147,4 +152,3 @@ async def capacity_snapshot():
             "checkedAt": int(time.time()),
         },
     }
-

@@ -1,4 +1,5 @@
 """MP-MKT-INSTALL-01：transition_install 事务化 + 审计单测（sqlite 内存库）。"""
+
 from __future__ import annotations
 
 import uuid
@@ -35,8 +36,12 @@ def session():
 
 def _seed(session, state: str = "installed") -> uuid.UUID:
     iid, already = create_install(
-        session=session, kind="mcp", artifact_id=uuid.uuid4(),
-        version="1.0.0", installed_by=uuid.uuid4(), tenant_id=None,
+        session=session,
+        kind="mcp",
+        artifact_id=uuid.uuid4(),
+        version="1.0.0",
+        installed_by=uuid.uuid4(),
+        tenant_id=None,
     )
     if already:
         raise AssertionError("seed collision")
@@ -48,13 +53,17 @@ def _seed(session, state: str = "installed") -> uuid.UUID:
 
 def test_uninstall_from_installed_writes_audit(session):
     iid = _seed(session, "installed")
-    row = transition_install(session=session, install_id=iid, action="uninstall",
-                             actor=uuid.uuid4())
+    row = transition_install(
+        session=session, install_id=iid, action="uninstall", actor=uuid.uuid4()
+    )
     assert row.state == "uninstalling"
     audits = session.query(InstallAudit).filter_by(install_id=iid).all()
     assert len(audits) == 1
-    assert (audits[0].action, audits[0].from_state, audits[0].to_state) == \
-        ("uninstall", "installed", "uninstalling")
+    assert (audits[0].action, audits[0].from_state, audits[0].to_state) == (
+        "uninstall",
+        "installed",
+        "uninstalling",
+    )
     assert audits[0].actor != ""
 
 
@@ -76,5 +85,4 @@ def test_invalid_transition_rejected(session):
 
 def test_missing_install_raises_not_found(session):
     with pytest.raises(InstallNotFound):
-        transition_install(session=session, install_id=uuid.uuid4(),
-                           action="uninstall")
+        transition_install(session=session, install_id=uuid.uuid4(), action="uninstall")

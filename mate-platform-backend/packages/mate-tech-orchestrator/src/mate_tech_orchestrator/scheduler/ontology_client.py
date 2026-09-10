@@ -41,7 +41,9 @@ class OntologyActionClient:
     ) -> None:
         self._base = (base_url or os.getenv("ONT_HTTP_BASE", "http://localhost:8007")).rstrip("/")
         self._client = client or httpx.AsyncClient(
-            base_url=self._base, timeout=timeout, headers={"X-Tenant-Id": ""},
+            base_url=self._base,
+            timeout=timeout,
+            headers={"X-Tenant-Id": ""},
         )
 
     def _tenant(self, tenant_id: str, token: str = "") -> None:
@@ -51,7 +53,11 @@ class OntologyActionClient:
             self._client.headers["Authorization"] = f"Bearer {token}"
 
     async def _post(
-        self, tenant_id: str, path: str, payload: dict[str, Any], token: str = "",
+        self,
+        tenant_id: str,
+        path: str,
+        payload: dict[str, Any],
+        token: str = "",
         idempotency_key: str = "",
     ) -> Any:
         self._tenant(tenant_id, token)
@@ -66,76 +72,136 @@ class OntologyActionClient:
     # ───── 动作管线 ─────
 
     async def propose_action(
-        self, tenant_id: str, action_rid: str, *,
+        self,
+        tenant_id: str,
+        action_rid: str,
+        *,
         parameters: dict[str, Any] | None = None,
-        target_iid: str = "", impact_summary: str = "",
+        target_iid: str = "",
+        impact_summary: str = "",
         expected_diff: dict[str, Any] | None = None,
         token: str = "",
     ) -> dict[str, Any]:
-        return await self._post(tenant_id, f"/action-types/{action_rid}/propose", {
-            "parameters": parameters or {}, "target_iid": target_iid,
-            "impact_summary": impact_summary, "expected_diff": expected_diff or {},
-        }, token)
+        return await self._post(
+            tenant_id,
+            f"/action-types/{action_rid}/propose",
+            {
+                "parameters": parameters or {},
+                "target_iid": target_iid,
+                "impact_summary": impact_summary,
+                "expected_diff": expected_diff or {},
+            },
+            token,
+        )
 
     async def propose_instance(
-        self, tenant_id: str, class_rid: str, *,
+        self,
+        tenant_id: str,
+        class_rid: str,
+        *,
         props: dict[str, Any] | None = None,
-        impact_summary: str = "", token: str = "",
+        impact_summary: str = "",
+        token: str = "",
     ) -> dict[str, Any]:
-        return await self._post(tenant_id, f"/classes/{class_rid}/propose-instance", {
-            "props": props or {}, "impact_summary": impact_summary,
-        }, token)
+        return await self._post(
+            tenant_id,
+            f"/classes/{class_rid}/propose-instance",
+            {
+                "props": props or {},
+                "impact_summary": impact_summary,
+            },
+            token,
+        )
 
     async def confirm(
-        self, tenant_id: str, proposal_id: str,
-        confirmed_by: str = "", token: str = "",
+        self,
+        tenant_id: str,
+        proposal_id: str,
+        confirmed_by: str = "",
+        token: str = "",
     ) -> Any:
         return await self._post(
-            tenant_id, f"/proposals/{proposal_id}/confirm",
-            {"confirmed_by": confirmed_by}, token,
+            tenant_id,
+            f"/proposals/{proposal_id}/confirm",
+            {"confirmed_by": confirmed_by},
+            token,
             idempotency_key=f"confirm-{proposal_id}",
         )
 
     async def reject(
-        self, tenant_id: str, proposal_id: str,
-        confirmed_by: str = "", token: str = "",
+        self,
+        tenant_id: str,
+        proposal_id: str,
+        confirmed_by: str = "",
+        token: str = "",
     ) -> Any:
         return await self._post(
-            tenant_id, f"/proposals/{proposal_id}/reject",
-            {"confirmed_by": confirmed_by}, token,
+            tenant_id,
+            f"/proposals/{proposal_id}/reject",
+            {"confirmed_by": confirmed_by},
+            token,
             idempotency_key=f"reject-{proposal_id}",
         )
 
     async def apply(
-        self, tenant_id: str, action_rid: str, *,
+        self,
+        tenant_id: str,
+        action_rid: str,
+        *,
         parameters: dict[str, Any] | None = None,
-        target_iid: str = "", proposal_id: str = "", token: str = "",
+        target_iid: str = "",
+        proposal_id: str = "",
+        token: str = "",
     ) -> dict[str, Any]:
-        return await self._post(tenant_id, f"/action-types/{action_rid}/apply", {
-            "parameters": parameters or {}, "target_iid": target_iid,
-            "provenance": {"actor": "orchestrator", "tenant_id": tenant_id,
-                           "proposal_id": proposal_id},
-        }, token)
+        return await self._post(
+            tenant_id,
+            f"/action-types/{action_rid}/apply",
+            {
+                "parameters": parameters or {},
+                "target_iid": target_iid,
+                "provenance": {
+                    "actor": "orchestrator",
+                    "tenant_id": tenant_id,
+                    "proposal_id": proposal_id,
+                },
+            },
+            token,
+        )
 
     async def revert(
-        self, tenant_id: str, proposal_id: str, token: str = "",
+        self,
+        tenant_id: str,
+        proposal_id: str,
+        token: str = "",
     ) -> dict[str, Any]:
         """PRD-02 M3：撤销已执行 proposal（幂等键 = revert-{id}）。"""
         return await self._post(
-            tenant_id, f"/proposals/{proposal_id}/revert", {},
-            token, idempotency_key=f"revert-{proposal_id}",
+            tenant_id,
+            f"/proposals/{proposal_id}/revert",
+            {},
+            token,
+            idempotency_key=f"revert-{proposal_id}",
         )
 
     async def execute_proposal(
-        self, tenant_id: str, proposal_id: str, token: str = "",
+        self,
+        tenant_id: str,
+        proposal_id: str,
+        token: str = "",
     ) -> dict[str, Any]:
         return await self._post(
-            tenant_id, f"/proposals/{proposal_id}/execute", {}, token,
+            tenant_id,
+            f"/proposals/{proposal_id}/execute",
+            {},
+            token,
             idempotency_key=f"execute-{proposal_id}",
         )
 
     async def object_query(
-        self, tenant_id: str, payload: dict[str, Any], token: str = "",
+        self,
+        tenant_id: str,
+        payload: dict[str, Any],
+        token: str = "",
     ) -> dict[str, Any]:
         return await self._post(tenant_id, "/object-query", payload, token)
 
@@ -154,11 +220,16 @@ class OntologyActionClient:
         props = []
         for slug, title, _nullable in self._PI_PROPS:
             is_pk = slug == "pi-id"
-            props.append({
-                "rid": f"ont.{tenant_id}.prop.{slug}.v1",
-                "type_id": "string", "nullable": not is_pk, "primary_key": is_pk,
-                "title": title, "format": "string",
-            })
+            props.append(
+                {
+                    "rid": f"ont.{tenant_id}.prop.{slug}.v1",
+                    "type_id": "string",
+                    "nullable": not is_pk,
+                    "primary_key": is_pk,
+                    "title": title,
+                    "format": "string",
+                }
+            )
         td = {
             "rid": f"ont.{tenant_id}.obj.process-instance.v1",
             "primary_key": [f"ont.{tenant_id}.prop.pi-id.v1"],
@@ -168,8 +239,13 @@ class OntologyActionClient:
         return await self._post(tenant_id, "/object-types", td, token)
 
     async def upsert_process_instance(
-        self, tenant_id: str, plan_id: str, *,
-        status: str, current_step: str = "", proposal_id: str = "",
+        self,
+        tenant_id: str,
+        plan_id: str,
+        *,
+        status: str,
+        current_step: str = "",
+        proposal_id: str = "",
         token: str = "",
     ) -> dict[str, Any]:
         pi_rid = f"pi-{plan_id[:24]}"
@@ -185,15 +261,19 @@ class OntologyActionClient:
             "pi-proposal-id": proposal_id or "",
             "pi-updated-at": datetime.now(UTC).isoformat(timespec="seconds"),
         }
-        return await self._post(tenant_id, "/individuals", {
-            "rid": f"ont.{tenant_id}.ind.process-instance.{pi_rid}",
-            "class_rid": f"ont.{tenant_id}.obj.process-instance.v1",
-            "primary_key": pi_rid,
-            "props": {
-                f"ont.{tenant_id}.prop.{slug}.v1": _v(slug, val)
-                for slug, val in values.items()
+        return await self._post(
+            tenant_id,
+            "/individuals",
+            {
+                "rid": f"ont.{tenant_id}.ind.process-instance.{pi_rid}",
+                "class_rid": f"ont.{tenant_id}.obj.process-instance.v1",
+                "primary_key": pi_rid,
+                "props": {
+                    f"ont.{tenant_id}.prop.{slug}.v1": _v(slug, val) for slug, val in values.items()
+                },
             },
-        }, token)
+            token,
+        )
 
     async def aclose(self) -> None:
         await self._client.aclose()

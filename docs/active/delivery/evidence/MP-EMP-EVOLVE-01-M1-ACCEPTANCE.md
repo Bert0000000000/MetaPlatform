@@ -5,14 +5,14 @@
 
 ## 1. 交付
 
-| # | 项 | 落点 | 状态 |
-|---|---|---|---|
-| 1 | `SessionScope` / `SessionEvolution`（每会话独立 CapabilityRuntime + 快照 + TTL 30min） | `scheduler/session_evolution.py`（main + prd 双源） | ✅ |
-| 2 | 会话内 mount/unmount（FR-001/002）——fiber 反应式失活/复激活（内核语义复用） | 同上 | ✅ |
-| 3 | 快照还原（FR-006/007）：close 销毁会话域，全局注册表全程未被改动 | 同上 | ✅ |
-| 4 | REST 五端点：`POST /sessions/{id}/open` · `POST …/capabilities` · `DELETE …/capabilities/{name}` · `GET …/evolution` · `POST …/close`（跨租户 403） | `api/app.py`（双源） | ✅ |
-| 5 | dispatch 会话门（`_REQ_CTX.session_id` → 会话 runtime 优先，缺省全局） | `scheduler/dispatcher.py`（双源） | ✅ |
-| 6 | 单测 13/13（evolution 8 + capability_runtime 回归 5） | `tests/test_session_evolution.py`（双源） | ✅ |
+| #   | 项                                                                                                                                                  | 落点                                                | 状态 |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ---- |
+| 1   | `SessionScope` / `SessionEvolution`（每会话独立 CapabilityRuntime + 快照 + TTL 30min）                                                              | `scheduler/session_evolution.py`（main + prd 双源） | ✅   |
+| 2   | 会话内 mount/unmount（FR-001/002）——fiber 反应式失活/复激活（内核语义复用）                                                                         | 同上                                                | ✅   |
+| 3   | 快照还原（FR-006/007）：close 销毁会话域，全局注册表全程未被改动                                                                                    | 同上                                                | ✅   |
+| 4   | REST 五端点：`POST /sessions/{id}/open` · `POST …/capabilities` · `DELETE …/capabilities/{name}` · `GET …/evolution` · `POST …/close`（跨租户 403） | `api/app.py`（双源）                                | ✅   |
+| 5   | dispatch 会话门（`_REQ_CTX.session_id` → 会话 runtime 优先，缺省全局）                                                                              | `scheduler/dispatcher.py`（双源）                   | ✅   |
+| 6   | 单测 13/13（evolution 8 + capability_runtime 回归 5）                                                                                               | `tests/test_session_evolution.py`（双源）           | ✅   |
 
 ## 2. live 实机验证（mate-tech-orchestrator 容器）
 

@@ -13,6 +13,7 @@ Redis and Postgres are soft dependencies — either being unavailable logs a
 warning and degrades that subsystem to a no-op; startup never crashes and
 requests are never blocked by wiring failures.
 """
+
 from __future__ import annotations
 
 import os
@@ -237,15 +238,9 @@ async def lifespan(app: FastAPI):
 
     # --- Cost recorder (always injected; PG pool optional) ---
     try:
-        cost_pool = (
-            deps.pg_pool
-            if _env_flag("MATE_LLMGW_ENABLE_COST_PG", default=True)
-            else None
-        )
+        cost_pool = deps.pg_pool if _env_flag("MATE_LLMGW_ENABLE_COST_PG", default=True) else None
         set_cost_recorder(CostRecorder(pool=cost_pool))
-        logger.info(
-            "mate-tech-llmgw.cost.enabled", persistent=cost_pool is not None
-        )
+        logger.info("mate-tech-llmgw.cost.enabled", persistent=cost_pool is not None)
     except Exception as exc:
         logger.warning("mate-tech-llmgw.cost.degraded", error=str(exc))
 

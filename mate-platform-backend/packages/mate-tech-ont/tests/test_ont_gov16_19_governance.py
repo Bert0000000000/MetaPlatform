@@ -2,6 +2,7 @@
 
 真库门控（PG 表）+ lint 纯函数单测。
 """
+
 from __future__ import annotations
 
 import os
@@ -22,31 +23,40 @@ from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 from mate_tech_ont.v2_kernel.governance import lint_anti_patterns
 
 T = "gov"
-PG_DSN = os.environ.get(
-    "GOV_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"
-)
+PG_DSN = os.environ.get("GOV_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
 
 
 def _p(slug: str) -> Property:
     return Property(
-        rid=ClassRef(f"ont.{T}.prop.{slug}.v1"), type_id="string",
-        nullable=True, primary_key=False, title=slug,
-        format=PropertyFormat.STRING)
+        rid=ClassRef(f"ont.{T}.prop.{slug}.v1"),
+        type_id="string",
+        nullable=True,
+        primary_key=False,
+        title=slug,
+        format=PropertyFormat.STRING,
+    )
 
 
 def _ot(rid: str, props: list[Property]) -> ObjectType:
-    pk = Property(rid=ClassRef(f"ont.{T}.prop.pk-{rid.split('.')[-2]}.v1"),
-                  type_id="string", nullable=False, primary_key=True,
-                  title="pk", format=PropertyFormat.STRING)
+    pk = Property(
+        rid=ClassRef(f"ont.{T}.prop.pk-{rid.split('.')[-2]}.v1"),
+        type_id="string",
+        nullable=False,
+        primary_key=True,
+        title="pk",
+        format=PropertyFormat.STRING,
+    )
     return ObjectType(
-        rid=ClassRef(rid), primary_key=(pk.rid,),
-        properties=(pk, *props), display_name=rid.split(".")[-2])
+        rid=ClassRef(rid),
+        primary_key=(pk.rid,),
+        properties=(pk, *props),
+        display_name=rid.split(".")[-2],
+    )
 
 
 class TestLint:
     def test_kitchen_sink_and_misnomer(self) -> None:
-        ots = [_ot(f"ont.{T}.obj.crm.order.v1",
-                   [_p("dt_last_load"), _p("value")])]
+        ots = [_ot(f"ont.{T}.obj.crm.order.v1", [_p("dt_last_load"), _p("value")])]
         findings = lint_anti_patterns(ots)
         patterns = {f["pattern"] for f in findings}
         assert "kitchen_sink" in patterns
@@ -57,10 +67,13 @@ class TestLint:
         ats = [
             ActionType(
                 rid=ClassRef(f"ont.{T}.act.crm.a{i}.v1"),
-                parameters=(), submission_criteria=(), side_effects=(),
+                parameters=(),
+                submission_criteria=(),
+                side_effects=(),
                 function_ref=ClassRef(f"ont.{T}.fn.f{i}.v1"),
                 on=(ClassRef(ot.rid.rid),),
-            ) for i in range(12)
+            )
+            for i in range(12)
         ]
         findings = lint_anti_patterns([ot], ats)
         patterns = {f["pattern"] for f in findings}
@@ -86,20 +99,29 @@ class TestPgGovernance:
         OBJ = f"ont.{T}.obj.crm.gdoc.v1"
         P_ID = f"ont.{T}.prop.gid.v1"
         with r.tenant_scope(T):
-            r.upsert_object_type(ObjectType(
-                rid=ClassRef(OBJ), primary_key=(ClassRef(P_ID),),
-                properties=(Property(
-                    rid=ClassRef(P_ID), type_id="string", nullable=False,
-                    primary_key=True, title="id",
-                    format=PropertyFormat.STRING),),
-                display_name="gdoc"))
+            r.upsert_object_type(
+                ObjectType(
+                    rid=ClassRef(OBJ),
+                    primary_key=(ClassRef(P_ID),),
+                    properties=(
+                        Property(
+                            rid=ClassRef(P_ID),
+                            type_id="string",
+                            nullable=False,
+                            primary_key=True,
+                            title="id",
+                            format=PropertyFormat.STRING,
+                        ),
+                    ),
+                    display_name="gdoc",
+                )
+            )
         yield r
         import psycopg2
 
         conn = psycopg2.connect(PG_DSN)
         with conn.cursor() as cur:
-            for tbl in ("ont_usage_metric", "ont_timeseries_point",
-                        "ont_object_type", "ont_axiom"):
+            for tbl in ("ont_usage_metric", "ont_timeseries_point", "ont_object_type", "ont_axiom"):
                 cur.execute(f"DELETE FROM {tbl} WHERE tenant_id=%s", (T,))
         conn.commit()
         conn.close()
@@ -121,20 +143,24 @@ class TestPgGovernance:
     def test_timeseries_roundtrip(self, repo) -> None:
         with repo.tenant_scope(T):
             series = f"ont.{T}.ts.metrics.cpu.v1"
-            n = repo.append_timeseries(series, [
-                {"ts": "2026-09-01T00:00:00Z", "value": 1.5},
-                {"ts": "2026-09-02T00:00:00Z", "value": 2.5},
-                {"ts": "2026-09-03T00:00:00Z", "value": 3.5},
-            ], tenant_id=T)
+            n = repo.append_timeseries(
+                series,
+                [
+                    {"ts": "2026-09-01T00:00:00Z", "value": 1.5},
+                    {"ts": "2026-09-02T00:00:00Z", "value": 2.5},
+                    {"ts": "2026-09-03T00:00:00Z", "value": 3.5},
+                ],
+                tenant_id=T,
+            )
             assert n == 3
             pts = repo.query_timeseries(
-                series, start="2026-09-02T00:00:00Z",
-                end="2026-09-03T00:00:00Z")
+                series, start="2026-09-02T00:00:00Z", end="2026-09-03T00:00:00Z"
+            )
             assert [p["value"] for p in pts] == [2.5, 3.5]
             # 幂等 upsert
             repo.append_timeseries(
-                series, [{"ts": "2026-09-02T00:00:00Z", "value": 9.9}],
-                tenant_id=T)
+                series, [{"ts": "2026-09-02T00:00:00Z", "value": 9.9}], tenant_id=T
+            )
             pts2 = repo.query_timeseries(series)
             assert len(pts2) == 3
             assert any(p["value"] == 9.9 for p in pts2)

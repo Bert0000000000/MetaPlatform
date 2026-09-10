@@ -1,4 +1,5 @@
 """Permission management endpoints (FR-DASH-006-02)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -137,18 +138,22 @@ async def _role_stats(session: AsyncSession, role_ids: list[int]) -> dict[int, t
     if not role_ids:
         return {}
     perm_counts = dict(
-        (await session.execute(
-            select(RolePermission.role_id, func.count(RolePermission.id))
-            .where(RolePermission.role_id.in_(role_ids))
-            .group_by(RolePermission.role_id)
-        )).all()
+        (
+            await session.execute(
+                select(RolePermission.role_id, func.count(RolePermission.id))
+                .where(RolePermission.role_id.in_(role_ids))
+                .group_by(RolePermission.role_id)
+            )
+        ).all()
     )
     user_counts = dict(
-        (await session.execute(
-            select(UserRole.role_id, func.count(UserRole.id))
-            .where(UserRole.role_id.in_(role_ids))
-            .group_by(UserRole.role_id)
-        )).all()
+        (
+            await session.execute(
+                select(UserRole.role_id, func.count(UserRole.id))
+                .where(UserRole.role_id.in_(role_ids))
+                .group_by(UserRole.role_id)
+            )
+        ).all()
     )
     return {rid: (perm_counts.get(rid, 0), user_counts.get(rid, 0)) for rid in role_ids}
 
@@ -271,7 +276,9 @@ async def update_role(
 ) -> dict[str, Any]:
     role = await _load_role(session, role_id, caller.tenant_id)
     if not role:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "角色不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "角色不存在"}
+        )
     if role.is_builtin and not caller.is_super_admin:
         raise HTTPException(
             status_code=403,
@@ -288,8 +295,10 @@ async def update_role(
 
     if payload.permission_ids is not None:
         existing = (
-            await session.execute(select(RolePermission).where(RolePermission.role_id == role.id))
-        ).scalars().all()
+            (await session.execute(select(RolePermission).where(RolePermission.role_id == role.id)))
+            .scalars()
+            .all()
+        )
         for rp in existing:
             await session.delete(rp)
         for pid in payload.permission_ids:
@@ -306,7 +315,11 @@ async def update_role(
         summary=f"更新角色 {role.name}",
         detail={
             "before": before,
-            "after": {"name": role.name, "data_scope": role.data_scope, "description": role.description},
+            "after": {
+                "name": role.name,
+                "data_scope": role.data_scope,
+                "description": role.description,
+            },
             "permission_ids": payload.permission_ids,
         },
         request=request,
@@ -324,17 +337,25 @@ async def delete_role(
 ) -> dict[str, Any]:
     role = await _load_role(session, role_id, caller.tenant_id)
     if not role:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "角色不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "角色不存在"}
+        )
     if role.is_builtin:
         raise HTTPException(
             status_code=403,
             detail={"code": "E403_FORBIDDEN", "message": "内置角色不可删除"},
         )
 
-    rels = (await session.execute(select(UserRole).where(UserRole.role_id == role.id))).scalars().all()
+    rels = (
+        (await session.execute(select(UserRole).where(UserRole.role_id == role.id))).scalars().all()
+    )
     for r in rels:
         await session.delete(r)
-    perms = (await session.execute(select(RolePermission).where(RolePermission.role_id == role.id))).scalars().all()
+    perms = (
+        (await session.execute(select(RolePermission).where(RolePermission.role_id == role.id)))
+        .scalars()
+        .all()
+    )
     for r in perms:
         await session.delete(r)
     name = role.name
@@ -363,16 +384,26 @@ async def get_role_detail(
 ) -> dict[str, Any]:
     role = await _load_role(session, role_id, caller.tenant_id)
     if not role:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "角色不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "角色不存在"}
+        )
 
     perm_ids = (
-        await session.execute(select(RolePermission.permission_id).where(RolePermission.role_id == role.id))
-    ).scalars().all()
+        (
+            await session.execute(
+                select(RolePermission.permission_id).where(RolePermission.role_id == role.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
     perms = []
     if perm_ids:
         rows = (
-            await session.execute(select(Permission).where(Permission.id.in_(perm_ids)))
-        ).scalars().all()
+            (await session.execute(select(Permission).where(Permission.id.in_(perm_ids))))
+            .scalars()
+            .all()
+        )
         perms = [_permission_to_out(p).model_dump(mode="json") for p in rows]
 
     return ok(
@@ -406,7 +437,11 @@ async def list_catalog(
     base = select(Permission).where(Permission.tenant_id == caller.tenant_id)
     if resource_type:
         base = base.where(Permission.resource_type == resource_type)
-    perms = (await session.execute(base.order_by(Permission.resource_type, Permission.code))).scalars().all()
+    perms = (
+        (await session.execute(base.order_by(Permission.resource_type, Permission.code)))
+        .scalars()
+        .all()
+    )
     items = [_permission_to_out(p).model_dump(mode="json") for p in perms]
     return ok(items)
 
@@ -526,7 +561,9 @@ async def delete_catalog(
     # Prevent deletion if any role still references this permission
     refs = (
         await session.execute(
-            select(func.count()).select_from(RolePermission).where(RolePermission.permission_id == perm.id)
+            select(func.count())
+            .select_from(RolePermission)
+            .where(RolePermission.permission_id == perm.id)
         )
     ).scalar_one()
     if refs and refs > 0:
@@ -564,16 +601,22 @@ async def assign(
     if payload.type == "user":
         user = (
             await session.execute(
-                select(User).where(and_(User.id == payload.target_id, User.tenant_id == caller.tenant_id))
+                select(User).where(
+                    and_(User.id == payload.target_id, User.tenant_id == caller.tenant_id)
+                )
             )
         ).scalar_one_or_none()
         if not user:
-            raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"})
+            raise HTTPException(
+                status_code=404, detail={"code": "E404_NOT_FOUND", "message": "用户不存在"}
+            )
 
         if payload.role_ids is not None:
             existing = (
-                await session.execute(select(UserRole).where(UserRole.user_id == user.id))
-            ).scalars().all()
+                (await session.execute(select(UserRole).where(UserRole.user_id == user.id)))
+                .scalars()
+                .all()
+            )
             for ur in existing:
                 await session.delete(ur)
             for rid in payload.role_ids:
@@ -598,10 +641,14 @@ async def assign(
     elif payload.type == "role":
         role = await _load_role(session, payload.target_id, caller.tenant_id)
         if not role:
-            raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "角色不存在"})
+            raise HTTPException(
+                status_code=404, detail={"code": "E404_NOT_FOUND", "message": "角色不存在"}
+            )
         existing = (
-            await session.execute(select(RolePermission).where(RolePermission.role_id == role.id))
-        ).scalars().all()
+            (await session.execute(select(RolePermission).where(RolePermission.role_id == role.id)))
+            .scalars()
+            .all()
+        )
         for rp in existing:
             await session.delete(rp)
         for pid in payload.permission_ids:
@@ -636,27 +683,39 @@ async def permission_matrix(
 ) -> dict[str, Any]:
     """Returns roles × resources snapshot for the permission matrix UI."""
     roles = (
-        await session.execute(
-            select(Role).where(Role.tenant_id == caller.tenant_id).order_by(Role.code)
+        (
+            await session.execute(
+                select(Role).where(Role.tenant_id == caller.tenant_id).order_by(Role.code)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     perms = (
-        await session.execute(
-            select(Permission).where(Permission.tenant_id == caller.tenant_id).order_by(Permission.code)
+        (
+            await session.execute(
+                select(Permission)
+                .where(Permission.tenant_id == caller.tenant_id)
+                .order_by(Permission.code)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     rp_rows = (
         await session.execute(select(RolePermission.role_id, RolePermission.permission_id))
     ).all()
     {(r, p) for r, p in rp_rows}
 
-    return ok({
-        "roles": [
-            {"id": r.id, "code": r.code, "name": r.name, "is_builtin": r.is_builtin}
-            for r in roles
-        ],
-        "resources": sorted({p.resource_type for p in perms}),
-        "permissions": [_permission_to_out(p).model_dump(mode="json") for p in perms],
-        "matrix": [{"role_id": r, "permission_id": p, "granted": True} for r, p in rp_rows],
-    })
+    return ok(
+        {
+            "roles": [
+                {"id": r.id, "code": r.code, "name": r.name, "is_builtin": r.is_builtin}
+                for r in roles
+            ],
+            "resources": sorted({p.resource_type for p in perms}),
+            "permissions": [_permission_to_out(p).model_dump(mode="json") for p in perms],
+            "matrix": [{"role_id": r, "permission_id": p, "granted": True} for r, p in rp_rows],
+        }
+    )

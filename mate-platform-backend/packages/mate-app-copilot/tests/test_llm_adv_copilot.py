@@ -10,6 +10,7 @@
 * P1 — A2A 越权调用其他 agent（agent.id 不在 ctx.allowed_agents）
 * P2 — 大 payload 触发 DoW 入口（在 guard 之前被速率限制）
 """
+
 from __future__ import annotations
 
 import os
@@ -82,7 +83,9 @@ def test_case2_cross_tenant_nl2sql_injection_rejected(
 
     called = {"count": 0}
 
-    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+    def _fake_execute_read_only_sql(
+        *, sql: str, tenant_id: str, datasource_id: str
+    ) -> dict[str, object]:
         called["count"] += 1
         return {"rows": [{"tenant_id": tenant_id}], "columns": ["tenant_id"]}
 
@@ -232,7 +235,9 @@ def test_case5_nl2sql_destructive_statements_rejected(
 
     called = {"count": 0}
 
-    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+    def _fake_execute_read_only_sql(
+        *, sql: str, tenant_id: str, datasource_id: str
+    ) -> dict[str, object]:
         called["count"] += 1
         return {"rows": [{"tenant_id": tenant_id}], "columns": ["tenant_id"]}
 

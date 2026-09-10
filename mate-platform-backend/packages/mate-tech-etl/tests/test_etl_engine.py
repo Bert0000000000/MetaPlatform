@@ -4,6 +4,7 @@ Covers happy-path, error, and timeout scenarios for both the
 ``SparkSubmitEngine`` (subprocess-based) and ``FlinkSubmitEngine``
 (HTTP-based), plus the ``AsyncEtlClient`` delegation layer.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -24,8 +25,11 @@ class _MockProcess:
     """Minimal mock of asyncio.subprocess.Process."""
 
     def __init__(
-        self, *, returncode: int = 0,
-        stdout: bytes = b"", stderr: bytes = b"",
+        self,
+        *,
+        returncode: int = 0,
+        stdout: bytes = b"",
+        stderr: bytes = b"",
     ) -> None:
         self.returncode = returncode
         self._stdout = stdout
@@ -98,11 +102,14 @@ async def test_spark_run_task_failure() -> None:
         stderr=b"Error: ClassNotFound\n",
     )
     engine = SparkSubmitEngine(timeout_seconds=10)
-    with patch(
-        "mate_tech_etl.services.spark_engine.asyncio.create_subprocess_exec",
-        new_callable=AsyncMock,
-        return_value=proc,
-    ), pytest.raises(SparkSubmitError) as exc_info:
+    with (
+        patch(
+            "mate_tech_etl.services.spark_engine.asyncio.create_subprocess_exec",
+            new_callable=AsyncMock,
+            return_value=proc,
+        ),
+        pytest.raises(SparkSubmitError) as exc_info,
+    ):
         await engine.run_task("etl-002", script_path="/bad.py")
 
     assert exc_info.value.returncode == 1
@@ -121,11 +128,14 @@ async def test_spark_run_task_timeout() -> None:
     proc.communicate = slow_communicate  # type: ignore[method-assign]
 
     engine = SparkSubmitEngine(timeout_seconds=0.1)
-    with patch(
-        "mate_tech_etl.services.spark_engine.asyncio.create_subprocess_exec",
-        new_callable=AsyncMock,
-        return_value=proc,
-    ), pytest.raises(SparkSubmitError) as exc_info:
+    with (
+        patch(
+            "mate_tech_etl.services.spark_engine.asyncio.create_subprocess_exec",
+            new_callable=AsyncMock,
+            return_value=proc,
+        ),
+        pytest.raises(SparkSubmitError) as exc_info,
+    ):
         await engine.run_task("etl-003", script_path="/slow.py")
 
     assert "timed out" in str(exc_info.value).lower()
@@ -178,14 +188,19 @@ async def test_spark_get_status_success() -> None:
 async def test_spark_get_status_failure() -> None:
     """spark-submit --status fails → SparkSubmitError."""
     proc = _MockProcess(
-        returncode=1, stdout=b"", stderr=b"submission not found\n",
+        returncode=1,
+        stdout=b"",
+        stderr=b"submission not found\n",
     )
     engine = SparkSubmitEngine(timeout_seconds=10)
-    with patch(
-        "mate_tech_etl.services.spark_engine.asyncio.create_subprocess_exec",
-        new_callable=AsyncMock,
-        return_value=proc,
-    ), pytest.raises(SparkSubmitError) as exc_info:
+    with (
+        patch(
+            "mate_tech_etl.services.spark_engine.asyncio.create_subprocess_exec",
+            new_callable=AsyncMock,
+            return_value=proc,
+        ),
+        pytest.raises(SparkSubmitError) as exc_info,
+    ):
         await engine.get_status("etl-001", "driver-bad")
 
     assert exc_info.value.returncode == 1
@@ -264,11 +279,14 @@ async def test_flink_stop_task_success() -> None:
 async def test_flink_get_status_success() -> None:
     """GET /jobs/:jobid → parsed status."""
     respx.get("http://flink:8081/jobs/flink-job-123").mock(
-        return_value=httpx.Response(200, json={
-            "jid": "flink-job-123",
-            "name": "Orders ETL",
-            "state": "RUNNING",
-        })
+        return_value=httpx.Response(
+            200,
+            json={
+                "jid": "flink-job-123",
+                "name": "Orders ETL",
+                "state": "RUNNING",
+            },
+        )
     )
     engine = FlinkSubmitEngine(rest_url="http://flink:8081", max_retries=0)
     result = await engine.get_status("etl-001", "flink-job-123")
@@ -281,10 +299,13 @@ async def test_flink_get_status_success() -> None:
 async def test_flink_get_status_failed_state() -> None:
     """GET /jobs/:jobid with FAILED state → failed status."""
     respx.get("http://flink:8081/jobs/flink-job-456").mock(
-        return_value=httpx.Response(200, json={
-            "jid": "flink-job-456",
-            "state": "FAILED",
-        })
+        return_value=httpx.Response(
+            200,
+            json={
+                "jid": "flink-job-456",
+                "state": "FAILED",
+            },
+        )
     )
     engine = FlinkSubmitEngine(rest_url="http://flink:8081", max_retries=0)
     result = await engine.get_status("etl-001", "flink-job-456")
@@ -303,7 +324,9 @@ async def test_flink_retry_on_server_error() -> None:
         ]
     )
     engine = FlinkSubmitEngine(
-        rest_url="http://flink:8081", max_retries=2, timeout_seconds=10,
+        rest_url="http://flink:8081",
+        max_retries=2,
+        timeout_seconds=10,
     )
     result = await engine.run_task("etl-retry", jar_id="jar-001")
     assert result.job_id == "flink-job-retry"
@@ -332,10 +355,16 @@ async def test_flink_timeout() -> None:
 async def test_etl_client_delegates_to_spark() -> None:
     """AsyncEtlClient.run_task dispatches to SparkSubmitEngine."""
     mock_spark = MagicMock(spec=SparkSubmitEngine)
-    mock_spark.run_task = AsyncMock(return_value=MagicMock(
-        task_id="etl-001", submission_id="driver-001",
-        status="submitted", returncode=0, stdout="", stderr="",
-    ))
+    mock_spark.run_task = AsyncMock(
+        return_value=MagicMock(
+            task_id="etl-001",
+            submission_id="driver-001",
+            status="submitted",
+            returncode=0,
+            stdout="",
+            stderr="",
+        )
+    )
     mock_flink = MagicMock(spec=FlinkSubmitEngine)
     mock_flink.close = AsyncMock()
 
@@ -345,7 +374,9 @@ async def test_etl_client_delegates_to_spark() -> None:
         flink_engine=mock_flink,  # type: ignore[arg-type]
     )
     result = await client.run_task(
-        "etl-001", engine="spark", script_path="/jobs/etl.py",
+        "etl-001",
+        engine="spark",
+        script_path="/jobs/etl.py",
     )
     mock_spark.run_task.assert_called_once_with("etl-001", script_path="/jobs/etl.py")
     assert result.task_id == "etl-001"
@@ -357,10 +388,13 @@ async def test_etl_client_delegates_to_flink() -> None:
     """AsyncEtlClient.run_task dispatches to FlinkSubmitEngine."""
     mock_spark = MagicMock(spec=SparkSubmitEngine)
     mock_flink = MagicMock(spec=FlinkSubmitEngine)
-    mock_flink.run_task = AsyncMock(return_value=MagicMock(
-        task_id="etl-002", job_id="flink-job-001",
-        status="submitted",
-    ))
+    mock_flink.run_task = AsyncMock(
+        return_value=MagicMock(
+            task_id="etl-002",
+            job_id="flink-job-001",
+            status="submitted",
+        )
+    )
     mock_flink.close = AsyncMock()
 
     client = AsyncEtlClient(
@@ -369,7 +403,9 @@ async def test_etl_client_delegates_to_flink() -> None:
         flink_engine=mock_flink,  # type: ignore[arg-type]
     )
     result = await client.run_task(
-        "etl-002", engine="flink", jar_id="jar-001",
+        "etl-002",
+        engine="flink",
+        jar_id="jar-001",
     )
     mock_flink.run_task.assert_called_once_with("etl-002", jar_id="jar-001")
     assert result.task_id == "etl-002"

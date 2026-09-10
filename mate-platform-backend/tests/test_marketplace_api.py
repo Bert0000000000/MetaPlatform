@@ -1,4 +1,5 @@
 """marketplace API routes tests。"""
+
 from __future__ import annotations
 
 import uuid
@@ -52,16 +53,10 @@ async def test_install_returns_202_with_id(monkeypatch):
     def fake_create(*args, **kwargs):
         return fake_id, False
 
-    monkeypatch.setattr(
-        install_api_module, "create_install", fake_create
-    )
+    monkeypatch.setattr(install_api_module, "create_install", fake_create)
 
-    app = _build_app(
-        user_scopes=frozenset({"platform.marketplace.write"})
-    )
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    app = _build_app(user_scopes=frozenset({"platform.marketplace.write"}))
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post(
             "/api/v1/marketplace/install",
             json={
@@ -80,9 +75,7 @@ async def test_installed_requires_oauth_scope():
     """GET /installed 缺 scope → 401/403(此处我们让 user.scopes 空 → 401)。"""
     app = _build_app(user_scopes=frozenset())
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.get("/api/v1/marketplace/installed")
     # 不持有任何 scope,应被 401/403 拒
     assert resp.status_code in (401, 403)

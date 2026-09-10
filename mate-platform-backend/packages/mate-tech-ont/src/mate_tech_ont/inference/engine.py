@@ -3,6 +3,7 @@
 支持 subclass 属性继承、transitivity 传递闭包、
 BFS 最短路径查询和 K-hop 邻居发现。
 """
+
 from __future__ import annotations
 
 from collections import deque
@@ -106,9 +107,7 @@ class InferenceEngine:
             if isinstance(rule, SubclassRule):
                 result.inherited.extend(self._apply_subclass(tenant_id, rule))
             elif isinstance(rule, TransitivityRule):
-                result.inferred_relations.extend(
-                    self._apply_transitivity(tenant_id, rule)
-                )
+                result.inferred_relations.extend(self._apply_transitivity(tenant_id, rule))
             else:
                 logger.warning("inference.unknown_rule", rule=type(rule).__name__)
         logger.info(
@@ -228,9 +227,7 @@ class InferenceEngine:
             child = self._store.get_instance(ctx, rel.src_id)
             if parent is None or child is None:
                 continue
-            new_props = {
-                k: v for k, v in parent.properties.items() if k not in child.properties
-            }
+            new_props = {k: v for k, v in parent.properties.items() if k not in child.properties}
             if new_props:
                 inherited.append(
                     InheritedProperty(

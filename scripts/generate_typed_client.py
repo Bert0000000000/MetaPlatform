@@ -11,9 +11,8 @@ Python typed client（每个 operationId 一个方法）。
 query/body 以 kwargs 透传。鉴权/租户头由 GeneratedClient 基类注入
 （复用 OntologySDK 同款 GOVERN-06 双头语义）。
 """
-from __future__ import annotations
 
-import sys
+from __future__ import annotations
 
 import yaml
 
@@ -83,8 +82,11 @@ def generate(contract_path: str) -> str:
             count += 1
             name = sanitize(op_id)
             params = []
-            path_params = [p for p in (op.get("parameters") or [])
-                           if isinstance(p, dict) and p.get("in") == "path"]
+            path_params = [
+                p
+                for p in (op.get("parameters") or [])
+                if isinstance(p, dict) and p.get("in") == "path"
+            ]
             for p in path_params:
                 params.append(f", {sanitize(p['name'])}: str")
             # path 表达式：f-string 替换 {param}
@@ -100,11 +102,18 @@ def generate(contract_path: str) -> str:
             else:
                 params.append(", **params: Any")
                 kw = ", params=params"
-            summary = (op.get("summary") or op.get("description") or op_id)
+            summary = op.get("summary") or op.get("description") or op_id
             summary = str(summary).split("\n")[0][:110]
-            methods.append(METHOD.format(
-                name=name, params="".join(params), summary=summary,
-                path_expr=path_expr, method=method.upper(), kw_expr=kw))
+            methods.append(
+                METHOD.format(
+                    name=name,
+                    params="".join(params),
+                    summary=summary,
+                    path_expr=path_expr,
+                    method=method.upper(),
+                    kw_expr=kw,
+                )
+            )
     return HEADER.format(source=src, count=count) + "\n" + "\n".join(methods)
 
 
@@ -113,7 +122,8 @@ def _cli() -> int:
 
     ap = argparse.ArgumentParser(
         prog="generate_typed_client",
-        description="Generate a typed Python client from an OpenAPI contract.")
+        description="Generate a typed Python client from an OpenAPI contract.",
+    )
     ap.add_argument("contract", help="path to services/*.yaml")
     ap.add_argument("-o", "--out", required=True, help="output .py path")
     args = ap.parse_args()

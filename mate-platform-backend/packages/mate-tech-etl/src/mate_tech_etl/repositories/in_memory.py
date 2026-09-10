@@ -18,6 +18,7 @@ Seed data:
 ``EtlTask`` is mutable (not frozen) so that update / status-patch
 operations can mutate fields in place.
 """
+
 from __future__ import annotations
 
 import time
@@ -95,7 +96,8 @@ def _now() -> str:
 # Public read API
 # ---------------------------------------------------------------------------
 def list_etl_tasks(
-    tenant_id: str, status: str | None = None,
+    tenant_id: str,
+    status: str | None = None,
 ) -> list[EtlTask]:
     """Return the ETL tasks for a tenant, optionally filtered by status."""
     if not tenant_id:
@@ -201,7 +203,9 @@ def stop_etl_task(tenant_id: str, task_id: str) -> EtlTask | None:
 
 
 def set_etl_task_status(
-    tenant_id: str, task_id: str, status: str,
+    tenant_id: str,
+    task_id: str,
+    status: str,
 ) -> EtlTask | None:
     """Set the status of an ETL task. Returns None if missing."""
     _ensure_tenant(tenant_id)

@@ -2,6 +2,7 @@
 
 覆盖：dataclass 校验（status 枚举）、InMemory + PG round-trip、LinkType.description。
 """
+
 from __future__ import annotations
 
 import os
@@ -30,8 +31,14 @@ def _ot(**kw) -> ObjectType:
         "rid": ClassRef(OBJ),
         "primary_key": (ClassRef(P),),
         "properties": (
-            Property(rid=ClassRef(P), type_id="string", nullable=False,
-                     primary_key=True, title="name", format=PropertyFormat.STRING),
+            Property(
+                rid=ClassRef(P),
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="name",
+                format=PropertyFormat.STRING,
+            ),
         ),
         "display_name": "annotated",
     }
@@ -68,9 +75,7 @@ class TestMetadata:
         assert got.render_hints == ()
 
 
-PG_DSN = os.environ.get(
-    "EXP04_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"
-)
+PG_DSN = os.environ.get("EXP04_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
 
 
 class TestPgSameSemantics:
@@ -85,12 +90,14 @@ class TestPgSameSemantics:
             pytest.skip(f"PG unavailable: {e}")
         try:
             with r.tenant_scope(T):
-                r.upsert_object_type(_ot(
-                    description="pg annotated",
-                    status="deprecated",
-                    type_group="legacy",
-                    render_hints=(("unit", "CNY"),),
-                ))
+                r.upsert_object_type(
+                    _ot(
+                        description="pg annotated",
+                        status="deprecated",
+                        type_group="legacy",
+                        render_hints=(("unit", "CNY"),),
+                    )
+                )
                 got = r.get_object_type(ClassRef(OBJ))
                 assert got.description == "pg annotated"
                 assert got.status == "deprecated"
@@ -101,9 +108,7 @@ class TestPgSameSemantics:
 
             conn = psycopg2.connect(PG_DSN)
             with conn.cursor() as cur:
-                cur.execute(
-                    "DELETE FROM ont_object_type WHERE tenant_id=%s", (T,))
-                cur.execute(
-                    "DELETE FROM ont_axiom WHERE tenant_id=%s", (T,))
+                cur.execute("DELETE FROM ont_object_type WHERE tenant_id=%s", (T,))
+                cur.execute("DELETE FROM ont_axiom WHERE tenant_id=%s", (T,))
             conn.commit()
             conn.close()

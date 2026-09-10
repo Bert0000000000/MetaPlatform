@@ -9,11 +9,11 @@ groups:
           severity: critical
         annotations:
           summary: HTTP 5xx rate over 1% for 5 minutes
-          description: '5xx ratio exceeded threshold'
-          runbook: 'Check upstream services and logs'
+          description: "5xx ratio exceeded threshold"
+          runbook: "Check upstream services and logs"
 
       - alert: HttpP95Latency
-        expr: 'histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m]))) > 1'
+        expr: "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m]))) > 1"
         for: 5m
         labels:
           severity: warning
@@ -21,7 +21,7 @@ groups:
           summary: p95 latency > 1s for 5 minutes
 
       - alert: PgConnectionPoolFull
-        expr: 'pg_stat_activity_count / pg_settings_max_connections > 0.9'
+        expr: "pg_stat_activity_count / pg_settings_max_connections > 0.9"
         for: 2m
         labels:
           severity: critical
@@ -29,7 +29,7 @@ groups:
           summary: PG connection pool nearly exhausted
 
       - alert: MilvusP99Latency
-        expr: 'histogram_quantile(0.99, milvus_search_latency_seconds_bucket) > 0.1'
+        expr: "histogram_quantile(0.99, milvus_search_latency_seconds_bucket) > 0.1"
         for: 5m
         labels:
           severity: warning
@@ -37,7 +37,7 @@ groups:
           summary: Milvus search p99 over 100ms
 
       - alert: KafkaConsumerLag
-        expr: 'kafka_consumer_lag > 10000'
+        expr: "kafka_consumer_lag > 10000"
         for: 10m
         labels:
           severity: warning
@@ -61,7 +61,7 @@ groups:
           summary: LLM error rate over 5%
 
       - alert: RagRecallFailure
-        expr: 'sum(rate(rag_search_failed_total[10m])) > 0.1'
+        expr: "sum(rate(rag_search_failed_total[10m])) > 0.1"
         for: 10m
         labels:
           severity: warning
@@ -77,7 +77,7 @@ groups:
           summary: Disk space below 10%
 
       - alert: MemoryHigh
-        expr: '(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9'
+        expr: "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9"
         for: 5m
         labels:
           severity: warning

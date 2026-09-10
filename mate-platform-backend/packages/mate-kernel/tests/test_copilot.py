@@ -110,6 +110,7 @@ class TestAuditRetention:
             StepKind,
             StepResult,
         )
+
         spec = PlanSpec(
             plan_id="p1",
             author_user_id="alice",

@@ -1,10 +1,19 @@
 """W4 Traefik edge tests (ST-4.x edge)."""
+
 from __future__ import annotations
 
 
 def test_traefik_middlewares_count() -> None:
     """ST-4.2.2-5: 5 middlewares."""
-    middlewares = ["ratelimit-default", "cors", "compress", "retry-cb", "tenant-ratelimit", "auth-dashboard", "mirror-staging"]
+    middlewares = [
+        "ratelimit-default",
+        "cors",
+        "compress",
+        "retry-cb",
+        "tenant-ratelimit",
+        "auth-dashboard",
+        "mirror-staging",
+    ]
     assert len(middlewares) >= 5
 
 

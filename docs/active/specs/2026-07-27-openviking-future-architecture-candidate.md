@@ -1,8 +1,8 @@
 ﻿# MetaPlatform × OpenViking 未来架构候选方案
 
-> **状态：未来架构候选（Future Architecture Candidate）**  
-> **决策：当前不实施、不替换现有技术栈；待 Agent 上下文与长期记忆进入下一阶段时进行 POC 评估。**  
-> **记录日期：2026-07-27**  
+> **状态：未来架构候选（Future Architecture Candidate）**
+> **决策：当前不实施、不替换现有技术栈；待 Agent 上下文与长期记忆进入下一阶段时进行 POC 评估。**
+> **记录日期：2026-07-27**
 > **适用模块：TECH-AGENT、TECH-RAG、APP-KB、TECH-ONT、TECH-MCP、TECH-IAM、TECH-OBS**
 
 ## 1. 背景与结论

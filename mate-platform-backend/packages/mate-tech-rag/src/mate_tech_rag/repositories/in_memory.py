@@ -12,6 +12,7 @@ and lookups reject entities that don't belong to that tenant.
 Seed data:
     >= 3 documents, >= 3 indexes per tenant.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -56,8 +57,12 @@ def _seed_documents(tenant_id: str) -> dict[str, RagDocument]:
     ]
     return {
         did: RagDocument(
-            id=did, tenant_id=tenant_id, document_id=did_doc,
-            filename=fname, chunk_count=cc, status=st,
+            id=did,
+            tenant_id=tenant_id,
+            document_id=did_doc,
+            filename=fname,
+            chunk_count=cc,
+            status=st,
             metadata={"source": "seed"},
             created_at="2026-08-01T00:00:00Z",
             updated_at="2026-08-01T00:00:00Z",
@@ -74,8 +79,11 @@ def _seed_indexes(tenant_id: str) -> dict[str, RagIndex]:
     ]
     return {
         iid: RagIndex(
-            id=iid, tenant_id=tenant_id, name=name,
-            backend=backend, chunk_count=cc,
+            id=iid,
+            tenant_id=tenant_id,
+            name=name,
+            backend=backend,
+            chunk_count=cc,
             created_at="2026-08-01T00:00:00Z",
         )
         for iid, name, backend, cc in catalog

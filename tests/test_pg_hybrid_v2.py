@@ -1,4 +1,5 @@
 """PG + Hybrid v2 tests."""
+
 from __future__ import annotations
 
 import sys
@@ -46,6 +47,7 @@ class StubMilvus:
 
     def search(self, query, query_vector, top_k=10):
         from mate_tech_rag.api.schemas import ChunkHit
+
         return [
             ChunkHit(
                 chunk_id=f"chunk-{i}",
@@ -100,8 +102,20 @@ def test_hybrid_v2_search_fuses_vector_and_bm25():
     milvus = StubMilvus()
     pg = StubPG()
     pg.bm25_results = [
-        {"chunk_id": "chunk-0", "document_id": "d1", "text": "text 0", "metadata": {}, "score": 0.5},
-        {"chunk_id": "chunk-99", "document_id": "d2", "text": "bm25-only", "metadata": {}, "score": 0.8},
+        {
+            "chunk_id": "chunk-0",
+            "document_id": "d1",
+            "text": "text 0",
+            "metadata": {},
+            "score": 0.5,
+        },
+        {
+            "chunk_id": "chunk-99",
+            "document_id": "d2",
+            "text": "bm25-only",
+            "metadata": {},
+            "score": 0.8,
+        },
     ]
     h = HybridV2Client(milvus=milvus, pg=pg, vector_weight=0.5)
     hits = h.search("query", [0.1] * 384, top_k=5)

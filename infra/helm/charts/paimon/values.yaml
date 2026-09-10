@@ -22,9 +22,9 @@ image:
 # Paimon as a Flink/Spark table store. This deployment runs the
 # REST catalog server; the warehouse is S3-backed by default.
 catalog:
-  mode: filesystem    # filesystem | hive | jdbc
+  mode: filesystem # filesystem | hive | jdbc
   warehouse: "s3://mate-platform/data-lake"
-  hive_metastore: ""  # set when mode=hive (e.g. thrift://hive-metastore:9083)
+  hive_metastore: "" # set when mode=hive (e.g. thrift://hive-metastore:9083)
 
 resources:
   requests:
@@ -37,7 +37,7 @@ resources:
 persistence:
   enabled: true
   size: 100Gi
-  storageClass: ""     # "" = cluster default StorageClass
+  storageClass: "" # "" = cluster default StorageClass
 
 # Data lake table configuration.
 tables:

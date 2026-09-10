@@ -10,6 +10,7 @@ identical for the handler's purposes.
 Refs: ADR-0014 5-step pattern; see
 `docs/active/specs/2026-07-30-p2-wave-2-spec.md` §4.1.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -125,9 +126,7 @@ def test_put_settings_emits_outbox_event(
     types = [record.event.type for record in pending]
     assert "dashboard.settings.updated" in types, types
 
-    settings_event = next(
-        r for r in pending if r.event.type == "dashboard.settings.updated"
-    )
+    settings_event = next(r for r in pending if r.event.type == "dashboard.settings.updated")
     assert settings_event.event.tenant_id == "tenant-default"
     # The handler uses the caller user id as the aggregate id;
     # settings is per-user state, not a single canonical row.

@@ -27,54 +27,54 @@ TECH-RAG 与 TECH-ONT 本体引擎深度集成：通过 TECH-ONT 提供的实体
 
 ### 1.2 技术栈
 
-| 层级 | 技术 | 版本 | 用途 |
-|---|---|---|---|
-| 语言/框架 | Python + FastAPI | 3.13 / 0.115 | 服务主体，异步高性能 API |
-| AI 编排 | LangChain | 0.3 | 文档加载、分块、Embedding 编排 |
-| 向量数据库 | Milvus | 2.5 | 向量存储与 ANN 检索（RaBitQ 量化、GPU 索引） |
-| 关系数据库 | PostgreSQL | 17 | 知识库/文档/分块元数据、统计数据 |
-| 对象存储 | MinIO | - | 原始文档文件存储 |
-| 缓存 | Redis | 7.4 | 检索结果缓存、Embedding 缓存、热点知识缓存 |
-| 消息队列 | Kafka | 3.9 | 文档处理事件、检索事件（Outbox 模式） |
-| 可观测性 | OpenTelemetry + Prometheus | 1.45 / 3.x | trace_id 传播、指标采集 |
-| LLM 网关 | TECH-LLMGW | - | Embedding 生成、Rerank 模型调用 |
-| 任务编排 | Celery + Redis | 5.4 / 7.4 | 异步文档解析、批量向量化任务 |
+| 层级       | 技术                       | 版本         | 用途                                         |
+| ---------- | -------------------------- | ------------ | -------------------------------------------- |
+| 语言/框架  | Python + FastAPI           | 3.13 / 0.115 | 服务主体，异步高性能 API                     |
+| AI 编排    | LangChain                  | 0.3          | 文档加载、分块、Embedding 编排               |
+| 向量数据库 | Milvus                     | 2.5          | 向量存储与 ANN 检索（RaBitQ 量化、GPU 索引） |
+| 关系数据库 | PostgreSQL                 | 17           | 知识库/文档/分块元数据、统计数据             |
+| 对象存储   | MinIO                      | -            | 原始文档文件存储                             |
+| 缓存       | Redis                      | 7.4          | 检索结果缓存、Embedding 缓存、热点知识缓存   |
+| 消息队列   | Kafka                      | 3.9          | 文档处理事件、检索事件（Outbox 模式）        |
+| 可观测性   | OpenTelemetry + Prometheus | 1.45 / 3.x   | trace_id 传播、指标采集                      |
+| LLM 网关   | TECH-LLMGW                 | -            | Embedding 生成、Rerank 模型调用              |
+| 任务编排   | Celery + Redis             | 5.4 / 7.4    | 异步文档解析、批量向量化任务                 |
 
 ### 1.3 上游依赖
 
-| 上游服务 | 依赖关系 | 说明 |
-|---|---|---|
-| TECH-DATA | 强依赖 | 提供外部数据源接入，TECH-RAG 可从 TECH-DATA 同步的结构化/非结构化数据自动导入知识库 |
-| TECH-LLMGW | 强依赖 | 所有 Embedding 生成、Rerank 排序通过 TECH-LLMGW 统一调用，不直接访问模型 API |
-| TECH-ONT | 强依赖 | 基于本体语义进行实体链接、知识补全、图谱检索增强；知识库可绑定本体概念域 |
-| TECH-IAM | 强依赖 | 用户认证、租户隔离、权限校验 |
-| TECH-MSG | 弱依赖 | Kafka 消息基础设施 |
+| 上游服务   | 依赖关系 | 说明                                                                                |
+| ---------- | -------- | ----------------------------------------------------------------------------------- |
+| TECH-DATA  | 强依赖   | 提供外部数据源接入，TECH-RAG 可从 TECH-DATA 同步的结构化/非结构化数据自动导入知识库 |
+| TECH-LLMGW | 强依赖   | 所有 Embedding 生成、Rerank 排序通过 TECH-LLMGW 统一调用，不直接访问模型 API        |
+| TECH-ONT   | 强依赖   | 基于本体语义进行实体链接、知识补全、图谱检索增强；知识库可绑定本体概念域            |
+| TECH-IAM   | 强依赖   | 用户认证、租户隔离、权限校验                                                        |
+| TECH-MSG   | 弱依赖   | Kafka 消息基础设施                                                                  |
 
 ### 1.4 下游消费方
 
-| 下游服务/应用 | 消费方式 | 说明 |
-|---|---|---|
-| APP-SUPERAI | REST API | 超级 AI 对话中调用检索服务获取知识上下文，增强回答准确性 |
-| APP-DW | REST API | 数字员工执行知识检索任务，支持基于知识库的智能问答 |
-| TECH-MCP | REST API | MCP Server 暴露知识库检索作为 Tool，供外部 MCP Client 调用 |
-| TECH-AGENT | REST API | Agent 框架在推理过程中调用检索服务获取知识上下文 |
-| APP-ONTSTUDIO | REST API | 本体论引擎前端集成知识库管理，展示本体与知识库的关联 |
-| APP-APPHUB | REST API | 低代码应用中嵌入知识检索能力组件 |
-| APP-DASHBOARD | REST API | 仪表盘展示知识库统计、检索命中率、延迟分析 |
+| 下游服务/应用 | 消费方式 | 说明                                                       |
+| ------------- | -------- | ---------------------------------------------------------- |
+| APP-SUPERAI   | REST API | 超级 AI 对话中调用检索服务获取知识上下文，增强回答准确性   |
+| APP-DW        | REST API | 数字员工执行知识检索任务，支持基于知识库的智能问答         |
+| TECH-MCP      | REST API | MCP Server 暴露知识库检索作为 Tool，供外部 MCP Client 调用 |
+| TECH-AGENT    | REST API | Agent 框架在推理过程中调用检索服务获取知识上下文           |
+| APP-ONTSTUDIO | REST API | 本体论引擎前端集成知识库管理，展示本体与知识库的关联       |
+| APP-APPHUB    | REST API | 低代码应用中嵌入知识检索能力组件                           |
+| APP-DASHBOARD | REST API | 仪表盘展示知识库统计、检索命中率、延迟分析                 |
 
 ### 1.5 核心能力清单
 
-| 能力域 | 说明 |
-|---|---|
-| 知识库管理 | 知识库的创建、查询、更新、删除，分块策略与 Embedding 模型配置 |
-| 文档管理 | 文档上传、解析、分块、状态管理、重新解析、批量导入 |
-| Embedding 服务 | 单条/批量文本向量化，Embedding 模型列表与切换 |
-| 向量检索 | 基于 Milvus 的 ANN 向量相似度检索，支持余弦/内积/L2 距离 |
-| 关键词检索 | 基于 BM25 算法的全文关键词检索 |
-| 混合检索 | 多路召回（向量 + 关键词）+ Rerank 重排序，支持权重配置 |
-| 图谱增强检索 | 基于 Ontology 知识图谱的实体链接与关系扩展检索 |
-| 检索增强 | 实体链接、上下文组装、引用来源生成、知识补全 |
-| 知识库统计 | 文档/向量数量统计、检索命中率、检索延迟分布分析 |
+| 能力域         | 说明                                                          |
+| -------------- | ------------------------------------------------------------- |
+| 知识库管理     | 知识库的创建、查询、更新、删除，分块策略与 Embedding 模型配置 |
+| 文档管理       | 文档上传、解析、分块、状态管理、重新解析、批量导入            |
+| Embedding 服务 | 单条/批量文本向量化，Embedding 模型列表与切换                 |
+| 向量检索       | 基于 Milvus 的 ANN 向量相似度检索，支持余弦/内积/L2 距离      |
+| 关键词检索     | 基于 BM25 算法的全文关键词检索                                |
+| 混合检索       | 多路召回（向量 + 关键词）+ Rerank 重排序，支持权重配置        |
+| 图谱增强检索   | 基于 Ontology 知识图谱的实体链接与关系扩展检索                |
+| 检索增强       | 实体链接、上下文组装、引用来源生成、知识补全                  |
+| 知识库统计     | 文档/向量数量统计、检索命中率、检索延迟分布分析               |
 
 ---
 
@@ -106,17 +106,17 @@ TECH-RAG 与 TECH-ONT 本体引擎深度集成：通过 TECH-ONT 提供的实体
 {
   "code": 0,
   "message": "success",
-  "data": { },
+  "data": {},
   "traceId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 }
 ```
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| code | integer | 业务状态码，`0` 表示成功，非 `0` 表示业务错误 |
-| message | string | 状态描述信息 |
-| data | object \| array \| null | 业务数据载荷 |
-| traceId | string | 链路追踪 ID，全链路唯一，用于排障 |
+| 字段    | 类型                    | 说明                                          |
+| ------- | ----------------------- | --------------------------------------------- |
+| code    | integer                 | 业务状态码，`0` 表示成功，非 `0` 表示业务错误 |
+| message | string                  | 状态描述信息                                  |
+| data    | object \| array \| null | 业务数据载荷                                  |
+| traceId | string                  | 链路追踪 ID，全链路唯一，用于排障             |
 
 #### 2.2.3 分页响应结构
 
@@ -127,7 +127,7 @@ TECH-RAG 与 TECH-ONT 本体引擎深度集成：通过 TECH-ONT 提供的实体
   "code": 0,
   "message": "success",
   "data": {
-    "items": [ ],
+    "items": [],
     "total": 100,
     "page": 1,
     "pageSize": 20,
@@ -162,77 +162,77 @@ X-Tenant-Id: <tenant_id>
 
 ### 2.4 请求头约定
 
-| 请求头 | 必填 | 说明 |
-|---|---|---|
-| Authorization | 是 | Bearer Token（与 X-API-Key 二选一） |
-| X-API-Key | 否 | 服务间调用 API Key（与 Authorization 二选一） |
-| X-Trace-Id | 否 | 链路追踪 ID，未传则服务端自动生成 |
-| X-Tenant-Id | 是 | 租户 ID |
-| X-Request-Id | 否 | 请求唯一标识，用于幂等控制 |
-| Content-Type | 是 | `application/json;charset=UTF-8` 或 `multipart/form-data` |
+| 请求头        | 必填 | 说明                                                      |
+| ------------- | ---- | --------------------------------------------------------- |
+| Authorization | 是   | Bearer Token（与 X-API-Key 二选一）                       |
+| X-API-Key     | 否   | 服务间调用 API Key（与 Authorization 二选一）             |
+| X-Trace-Id    | 否   | 链路追踪 ID，未传则服务端自动生成                         |
+| X-Tenant-Id   | 是   | 租户 ID                                                   |
+| X-Request-Id  | 否   | 请求唯一标识，用于幂等控制                                |
+| Content-Type  | 是   | `application/json;charset=UTF-8` 或 `multipart/form-data` |
 
 ### 2.5 错误码定义
 
 #### 2.5.1 HTTP 状态码
 
-| HTTP 状态码 | 含义 | 使用场景 |
-|---|---|---|
-| 200 | OK | 请求成功 |
-| 201 | Created | 资源创建成功 |
-| 400 | Bad Request | 请求参数校验失败 |
-| 401 | Unauthorized | 未认证或认证失效 |
-| 403 | Forbidden | 权限不足 |
-| 404 | Not Found | 资源不存在 |
-| 409 | Conflict | 资源冲突（唯一性约束） |
-| 422 | Unprocessable Entity | 业务逻辑校验失败 |
-| 429 | Too Many Requests | 限流 |
-| 500 | Internal Server Error | 服务内部错误 |
-| 503 | Service Unavailable | 依赖服务不可用 |
+| HTTP 状态码 | 含义                  | 使用场景               |
+| ----------- | --------------------- | ---------------------- |
+| 200         | OK                    | 请求成功               |
+| 201         | Created               | 资源创建成功           |
+| 400         | Bad Request           | 请求参数校验失败       |
+| 401         | Unauthorized          | 未认证或认证失效       |
+| 403         | Forbidden             | 权限不足               |
+| 404         | Not Found             | 资源不存在             |
+| 409         | Conflict              | 资源冲突（唯一性约束） |
+| 422         | Unprocessable Entity  | 业务逻辑校验失败       |
+| 429         | Too Many Requests     | 限流                   |
+| 500         | Internal Server Error | 服务内部错误           |
+| 503         | Service Unavailable   | 依赖服务不可用         |
 
 #### 2.5.2 业务错误码
 
-| 错误码 | HTTP 状态码 | 错误标识 | 说明 |
-|---|---|---|---|
-| 0 | 200 | SUCCESS | 成功 |
-| 40001 | 400 | INVALID_PARAM | 请求参数校验失败 |
-| 40002 | 400 | INVALID_JSON | 请求体 JSON 格式错误 |
-| 40003 | 400 | MISSING_REQUIRED_FIELD | 缺少必填字段 |
-| 40004 | 400 | INVALID_FIELD_VALUE | 字段值不合法 |
-| 40005 | 400 | UNSUPPORTED_FILE_TYPE | 不支持的文件类型 |
-| 40006 | 400 | FILE_TOO_LARGE | 文件大小超过限制 |
-| 40101 | 401 | TOKEN_EXPIRED | Token 已过期 |
-| 40102 | 401 | TOKEN_INVALID | Token 无效 |
-| 40103 | 401 | API_KEY_INVALID | API Key 无效 |
-| 40301 | 403 | PERMISSION_DENIED | 权限不足 |
-| 40302 | 403 | TENANT_MISMATCH | 租户不匹配 |
-| 40401 | 404 | KB_NOT_FOUND | 知识库不存在 |
-| 40402 | 404 | DOCUMENT_NOT_FOUND | 文档不存在 |
-| 40403 | 404 | CHUNK_NOT_FOUND | 文档分块不存在 |
-| 40404 | 404 | EMBEDDING_MODEL_NOT_FOUND | Embedding 模型不存在 |
-| 40405 | 404 | TASK_NOT_FOUND | 异步任务不存在 |
-| 40901 | 409 | KB_ALREADY_EXISTS | 知识库名称已存在 |
-| 40902 | 409 | DOCUMENT_ALREADY_EXISTS | 文档已存在（文件哈希重复） |
-| 40903 | 409 | KB_NOT_EMPTY | 知识库非空，无法删除 |
-| 40904 | 409 | EMBEDDING_MODEL_IN_USE | Embedding 模型正在使用中，无法切换 |
-| 42201 | 422 | KB_NOT_READY | 知识库未就绪（无可用向量） |
-| 42202 | 422 | DOCUMENT_PARSE_FAILED | 文档解析失败 |
-| 42203 | 422 | EMBEDDING_FAILED | 向量化失败 |
-| 42204 | 422 | RETRIEVE_FAILED | 检索失败 |
-| 42205 | 422 | DOCUMENT_NOT_READY | 文档未就绪（未完成解析/向量化） |
-| 42206 | 422 | CHUNK_STRATEGY_INVALID | 分块策略参数不合法 |
-| 42207 | 422 | EMBEDDING_DIM_MISMATCH | 向量维度与知识库配置不匹配 |
-| 42208 | 422 | ONTOLOGY_LINK_FAILED | 本体实体链接失败 |
-| 42901 | 429 | RATE_LIMIT_EXCEEDED | 限流触发 |
-| 50001 | 500 | INTERNAL_ERROR | 服务内部错误 |
-| 50002 | 500 | DATABASE_ERROR | 数据库操作失败 |
-| 50003 | 500 | MILVUS_ERROR | 向量数据库操作失败 |
-| 50004 | 500 | MINIO_ERROR | 对象存储操作失败 |
-| 50005 | 500 | KAFKA_PUBLISH_FAILED | Kafka 消息发布失败 |
-| 50006 | 500 | LLMGW_ERROR | LLM 网关调用失败（Embedding/Rerank） |
-| 50007 | 500 | ONT_SERVICE_ERROR | 本体引擎服务调用失败 |
-| 50008 | 500 | CELERY_ERROR | 异步任务执行失败 |
-| 50301 | 503 | SERVICE_UNAVAILABLE | 服务暂不可用 |
-| 50302 | 503 | LLMGW_UNAVAILABLE | LLM 网关不可用 |
+| 错误码 | HTTP 状态码 | 错误标识                  | 说明                                 |
+| ------ | ----------- | ------------------------- | ------------------------------------ |
+| 0      | 200         | SUCCESS                   | 成功                                 |
+| 40001  | 400         | INVALID_PARAM             | 请求参数校验失败                     |
+| 40002  | 400         | INVALID_JSON              | 请求体 JSON 格式错误                 |
+| 40003  | 400         | MISSING_REQUIRED_FIELD    | 缺少必填字段                         |
+| 40004  | 400         | INVALID_FIELD_VALUE       | 字段值不合法                         |
+| 40005  | 400         | UNSUPPORTED_FILE_TYPE     | 不支持的文件类型                     |
+| 40006  | 400         | FILE_TOO_LARGE            | 文件大小超过限制                     |
+| 40101  | 401         | TOKEN_EXPIRED             | Token 已过期                         |
+| 40102  | 401         | TOKEN_INVALID             | Token 无效                           |
+| 40103  | 401         | API_KEY_INVALID           | API Key 无效                         |
+| 40301  | 403         | PERMISSION_DENIED         | 权限不足                             |
+| 40302  | 403         | TENANT_MISMATCH           | 租户不匹配                           |
+| 40401  | 404         | KB_NOT_FOUND              | 知识库不存在                         |
+| 40402  | 404         | DOCUMENT_NOT_FOUND        | 文档不存在                           |
+| 40403  | 404         | CHUNK_NOT_FOUND           | 文档分块不存在                       |
+| 40404  | 404         | EMBEDDING_MODEL_NOT_FOUND | Embedding 模型不存在                 |
+| 40405  | 404         | TASK_NOT_FOUND            | 异步任务不存在                       |
+| 40901  | 409         | KB_ALREADY_EXISTS         | 知识库名称已存在                     |
+| 40902  | 409         | DOCUMENT_ALREADY_EXISTS   | 文档已存在（文件哈希重复）           |
+| 40903  | 409         | KB_NOT_EMPTY              | 知识库非空，无法删除                 |
+| 40904  | 409         | EMBEDDING_MODEL_IN_USE    | Embedding 模型正在使用中，无法切换   |
+| 42201  | 422         | KB_NOT_READY              | 知识库未就绪（无可用向量）           |
+| 42202  | 422         | DOCUMENT_PARSE_FAILED     | 文档解析失败                         |
+| 42203  | 422         | EMBEDDING_FAILED          | 向量化失败                           |
+| 42204  | 422         | RETRIEVE_FAILED           | 检索失败                             |
+| 42205  | 422         | DOCUMENT_NOT_READY        | 文档未就绪（未完成解析/向量化）      |
+| 42206  | 422         | CHUNK_STRATEGY_INVALID    | 分块策略参数不合法                   |
+| 42207  | 422         | EMBEDDING_DIM_MISMATCH    | 向量维度与知识库配置不匹配           |
+| 42208  | 422         | ONTOLOGY_LINK_FAILED      | 本体实体链接失败                     |
+| 42901  | 429         | RATE_LIMIT_EXCEEDED       | 限流触发                             |
+| 50001  | 500         | INTERNAL_ERROR            | 服务内部错误                         |
+| 50002  | 500         | DATABASE_ERROR            | 数据库操作失败                       |
+| 50003  | 500         | MILVUS_ERROR              | 向量数据库操作失败                   |
+| 50004  | 500         | MINIO_ERROR               | 对象存储操作失败                     |
+| 50005  | 500         | KAFKA_PUBLISH_FAILED      | Kafka 消息发布失败                   |
+| 50006  | 500         | LLMGW_ERROR               | LLM 网关调用失败（Embedding/Rerank） |
+| 50007  | 500         | ONT_SERVICE_ERROR         | 本体引擎服务调用失败                 |
+| 50008  | 500         | CELERY_ERROR              | 异步任务执行失败                     |
+| 50301  | 503         | SERVICE_UNAVAILABLE       | 服务暂不可用                         |
+| 50302  | 503         | LLMGW_UNAVAILABLE         | LLM 网关不可用                       |
 
 **错误响应示例**：
 
@@ -249,12 +249,12 @@ X-Tenant-Id: <tenant_id>
 
 所有列表接口支持以下通用查询参数：
 
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|---|---|---|---|---|
-| page | integer | 否 | 1 | 页码，从 1 开始 |
-| pageSize | integer | 否 | 20 | 每页条数，最大 100 |
-| sort | string | 否 | createdAt:desc | 排序字段，格式 `field:asc\|desc`，支持多字段逗号分隔 |
-| keyword | string | 否 | - | 关键词搜索（模糊匹配名称/描述） |
+| 参数     | 类型    | 必填 | 默认值         | 说明                                                 |
+| -------- | ------- | ---- | -------------- | ---------------------------------------------------- |
+| page     | integer | 否   | 1              | 页码，从 1 开始                                      |
+| pageSize | integer | 否   | 20             | 每页条数，最大 100                                   |
+| sort     | string  | 否   | createdAt:desc | 排序字段，格式 `field:asc\|desc`，支持多字段逗号分隔 |
+| keyword  | string  | 否   | -              | 关键词搜索（模糊匹配名称/描述）                      |
 
 ### 2.7 trace_id 传播
 
@@ -291,19 +291,19 @@ X-Tenant-Id: <tenant_id>
 
 #### 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/v1/rag/knowledge-bases` | 创建知识库 |
-| GET | `/api/v1/rag/knowledge-bases` | 知识库列表（分页） |
-| GET | `/api/v1/rag/knowledge-bases/{kbId}` | 获取知识库详情 |
-| PUT | `/api/v1/rag/knowledge-bases/{kbId}` | 更新知识库 |
-| DELETE | `/api/v1/rag/knowledge-bases/{kbId}` | 删除知识库 |
-| PUT | `/api/v1/rag/knowledge-bases/{kbId}/chunk-strategy` | 配置分块策略 |
-| GET | `/api/v1/rag/knowledge-bases/{kbId}/chunk-strategy` | 获取分块策略 |
-| PUT | `/api/v1/rag/knowledge-bases/{kbId}/embedding-model` | 配置 Embedding 模型 |
-| GET | `/api/v1/rag/knowledge-bases/{kbId}/embedding-model` | 获取 Embedding 模型配置 |
-| PUT | `/api/v1/rag/knowledge-bases/{kbId}/retrieval-config` | 配置检索参数 |
-| GET | `/api/v1/rag/knowledge-bases/{kbId}/retrieval-config` | 获取检索参数配置 |
+| 方法   | 路径                                                  | 说明                    |
+| ------ | ----------------------------------------------------- | ----------------------- |
+| POST   | `/api/v1/rag/knowledge-bases`                         | 创建知识库              |
+| GET    | `/api/v1/rag/knowledge-bases`                         | 知识库列表（分页）      |
+| GET    | `/api/v1/rag/knowledge-bases/{kbId}`                  | 获取知识库详情          |
+| PUT    | `/api/v1/rag/knowledge-bases/{kbId}`                  | 更新知识库              |
+| DELETE | `/api/v1/rag/knowledge-bases/{kbId}`                  | 删除知识库              |
+| PUT    | `/api/v1/rag/knowledge-bases/{kbId}/chunk-strategy`   | 配置分块策略            |
+| GET    | `/api/v1/rag/knowledge-bases/{kbId}/chunk-strategy`   | 获取分块策略            |
+| PUT    | `/api/v1/rag/knowledge-bases/{kbId}/embedding-model`  | 配置 Embedding 模型     |
+| GET    | `/api/v1/rag/knowledge-bases/{kbId}/embedding-model`  | 获取 Embedding 模型配置 |
+| PUT    | `/api/v1/rag/knowledge-bases/{kbId}/retrieval-config` | 配置检索参数            |
+| GET    | `/api/v1/rag/knowledge-bases/{kbId}/retrieval-config` | 获取检索参数配置        |
 
 ---
 
@@ -315,23 +315,23 @@ X-Tenant-Id: <tenant_id>
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 是 | 知识库名称，租户内唯一，1-128 字符 |
-| description | string | 否 | 知识库描述，最长 1024 字符 |
-| embeddingModelId | string | 是 | Embedding 模型 ID（从 Embedding 模型列表中选择） |
-| chunkStrategy | object | 是 | 分块策略配置 |
-| chunkStrategy.type | string | 是 | 分块类型：`FIXED_SIZE`（固定大小）/ `RECURSIVE`（递归分块）/ `SENTENCE`（按句分块）/ `MARKDOWN`（Markdown 结构分块）/ `SEMANTIC`（语义分块） |
-| chunkStrategy.chunkSize | integer | 否 | 分块大小（字符数），默认 512，范围 100-4096 |
-| chunkStrategy.chunkOverlap | integer | 否 | 分块重叠（字符数），默认 50，范围 0-512 |
-| chunkStrategy.separator | string | 否 | 自定义分隔符（`RECURSIVE` 类型时有效），默认 `\n\n` |
-| chunkStrategy.metadata | object | 否 | 分块策略扩展参数 |
-| ontologyConceptCode | string | 否 | 绑定的本体概念编码，用于图谱增强检索 |
-| retrievalConfig | object | 否 | 检索参数配置（可选，后续可修改） |
-| retrievalConfig.metricType | string | 否 | 向量距离度量：`COSINE`（默认）/ `IP`（内积）/ `L2` |
-| retrievalConfig.topK | integer | 否 | 默认召回数量，默认 10，范围 1-100 |
-| retrievalConfig.scoreThreshold | number | 否 | 相似度分数阈值，默认 0.0，范围 0.0-1.0 |
-| metadata | object | 否 | 扩展元数据，key-value 结构 |
+| 字段                           | 类型    | 必填 | 说明                                                                                                                                         |
+| ------------------------------ | ------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| name                           | string  | 是   | 知识库名称，租户内唯一，1-128 字符                                                                                                           |
+| description                    | string  | 否   | 知识库描述，最长 1024 字符                                                                                                                   |
+| embeddingModelId               | string  | 是   | Embedding 模型 ID（从 Embedding 模型列表中选择）                                                                                             |
+| chunkStrategy                  | object  | 是   | 分块策略配置                                                                                                                                 |
+| chunkStrategy.type             | string  | 是   | 分块类型：`FIXED_SIZE`（固定大小）/ `RECURSIVE`（递归分块）/ `SENTENCE`（按句分块）/ `MARKDOWN`（Markdown 结构分块）/ `SEMANTIC`（语义分块） |
+| chunkStrategy.chunkSize        | integer | 否   | 分块大小（字符数），默认 512，范围 100-4096                                                                                                  |
+| chunkStrategy.chunkOverlap     | integer | 否   | 分块重叠（字符数），默认 50，范围 0-512                                                                                                      |
+| chunkStrategy.separator        | string  | 否   | 自定义分隔符（`RECURSIVE` 类型时有效），默认 `\n\n`                                                                                          |
+| chunkStrategy.metadata         | object  | 否   | 分块策略扩展参数                                                                                                                             |
+| ontologyConceptCode            | string  | 否   | 绑定的本体概念编码，用于图谱增强检索                                                                                                         |
+| retrievalConfig                | object  | 否   | 检索参数配置（可选，后续可修改）                                                                                                             |
+| retrievalConfig.metricType     | string  | 否   | 向量距离度量：`COSINE`（默认）/ `IP`（内积）/ `L2`                                                                                           |
+| retrievalConfig.topK           | integer | 否   | 默认召回数量，默认 10，范围 1-100                                                                                                            |
+| retrievalConfig.scoreThreshold | number  | 否   | 相似度分数阈值，默认 0.0，范围 0.0-1.0                                                                                                       |
+| metadata                       | object  | 否   | 扩展元数据，key-value 结构                                                                                                                   |
 
 **请求示例**
 
@@ -403,16 +403,16 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | name 为空或格式不合法 |
-| 40003 | embeddingModelId / chunkStrategy 缺失 |
-| 40404 | embeddingModelId 指向的模型不存在 |
-| 40901 | 知识库名称已存在 |
-| 42206 | 分块策略参数不合法（如 chunkSize 超出范围） |
-| 50003 | Milvus Collection 创建失败 |
-| 50006 | Embedding 模型校验调用 LLMGW 失败 |
-| 40301 | 无创建知识库权限 |
+| 错误码 | 场景                                        |
+| ------ | ------------------------------------------- |
+| 40001  | name 为空或格式不合法                       |
+| 40003  | embeddingModelId / chunkStrategy 缺失       |
+| 40404  | embeddingModelId 指向的模型不存在           |
+| 40901  | 知识库名称已存在                            |
+| 42206  | 分块策略参数不合法（如 chunkSize 超出范围） |
+| 50003  | Milvus Collection 创建失败                  |
+| 50006  | Embedding 模型校验调用 LLMGW 失败           |
+| 40301  | 无创建知识库权限                            |
 
 ---
 
@@ -422,15 +422,15 @@ X-Tenant-Id: <tenant_id>
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | integer | 否 | 页码，默认 1 |
-| pageSize | integer | 否 | 每页条数，默认 20 |
-| sort | string | 否 | 排序，默认 `createdAt:desc` |
-| keyword | string | 否 | 关键词搜索（匹配名称/描述） |
-| status | string | 否 | 按状态过滤：`ACTIVE` / `INACTIVE` |
-| embeddingModelId | string | 否 | 按 Embedding 模型过滤 |
-| ontologyConceptCode | string | 否 | 按绑定本体概念过滤 |
+| 参数                | 类型    | 必填 | 说明                              |
+| ------------------- | ------- | ---- | --------------------------------- |
+| page                | integer | 否   | 页码，默认 1                      |
+| pageSize            | integer | 否   | 每页条数，默认 20                 |
+| sort                | string  | 否   | 排序，默认 `createdAt:desc`       |
+| keyword             | string  | 否   | 关键词搜索（匹配名称/描述）       |
+| status              | string  | 否   | 按状态过滤：`ACTIVE` / `INACTIVE` |
+| embeddingModelId    | string  | 否   | 按 Embedding 模型过滤             |
+| ontologyConceptCode | string  | 否   | 按绑定本体概念过滤                |
 
 **响应示例**
 
@@ -469,10 +469,10 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 分页参数不合法 |
-| 40301 | 无权查看该租户的知识库 |
+| 错误码 | 场景                   |
+| ------ | ---------------------- |
+| 40001  | 分页参数不合法         |
+| 40301  | 无权查看该租户的知识库 |
 
 ---
 
@@ -482,9 +482,9 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
+| 参数 | 类型   | 必填 | 说明      |
+| ---- | ------ | ---- | --------- |
+| kbId | string | 是   | 知识库 ID |
 
 **响应示例**
 
@@ -532,10 +532,10 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 40301 | 无权查看该知识库 |
+| 错误码 | 场景             |
+| ------ | ---------------- |
+| 40401  | 知识库不存在     |
+| 40301  | 无权查看该知识库 |
 
 ---
 
@@ -547,19 +547,19 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
+| 参数 | 类型   | 必填 | 说明      |
+| ---- | ------ | ---- | --------- |
+| kbId | string | 是   | 知识库 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 否 | 知识库名称，租户内唯一 |
-| description | string | 否 | 知识库描述 |
-| status | string | 否 | 状态：`ACTIVE` / `INACTIVE` |
-| ontologyConceptCode | string | 否 | 绑定的本体概念编码 |
-| metadata | object | 否 | 扩展元数据 |
+| 字段                | 类型   | 必填 | 说明                        |
+| ------------------- | ------ | ---- | --------------------------- |
+| name                | string | 否   | 知识库名称，租户内唯一      |
+| description         | string | 否   | 知识库描述                  |
+| status              | string | 否   | 状态：`ACTIVE` / `INACTIVE` |
+| ontologyConceptCode | string | 否   | 绑定的本体概念编码          |
+| metadata            | object | 否   | 扩展元数据                  |
 
 **请求示例**
 
@@ -593,12 +593,12 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 40901 | 名称与其他知识库冲突 |
-| 42208 | ontologyConceptCode 在 TECH-ONT 中不存在 |
-| 40301 | 无权修改该知识库 |
+| 错误码 | 场景                                     |
+| ------ | ---------------------------------------- |
+| 40401  | 知识库不存在                             |
+| 40901  | 名称与其他知识库冲突                     |
+| 42208  | ontologyConceptCode 在 TECH-ONT 中不存在 |
+| 40301  | 无权修改该知识库                         |
 
 ---
 
@@ -610,15 +610,15 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
+| 参数 | 类型   | 必填 | 说明      |
+| ---- | ------ | ---- | --------- |
+| kbId | string | 是   | 知识库 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| force | boolean | 否 | 是否强制删除非空知识库，默认 false。false 时若知识库非空返回 40903 |
+| 参数  | 类型    | 必填 | 说明                                                               |
+| ----- | ------- | ---- | ------------------------------------------------------------------ |
+| force | boolean | 否   | 是否强制删除非空知识库，默认 false。false 时若知识库非空返回 40903 |
 
 **响应示例**
 
@@ -641,13 +641,13 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 40903 | 知识库非空且 force=false |
-| 50003 | Milvus Collection 删除失败 |
-| 50004 | MinIO 文件删除失败 |
-| 40301 | 无权删除该知识库 |
+| 错误码 | 场景                       |
+| ------ | -------------------------- |
+| 40401  | 知识库不存在               |
+| 40903  | 知识库非空且 force=false   |
+| 50003  | Milvus Collection 删除失败 |
+| 50004  | MinIO 文件删除失败         |
+| 40301  | 无权删除该知识库           |
 
 ---
 
@@ -659,19 +659,19 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
+| 参数 | 类型   | 必填 | 说明      |
+| ---- | ------ | ---- | --------- |
+| kbId | string | 是   | 知识库 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| type | string | 是 | 分块类型：`FIXED_SIZE` / `RECURSIVE` / `SENTENCE` / `MARKDOWN` / `SEMANTIC` |
-| chunkSize | integer | 否 | 分块大小（字符数），默认 512，范围 100-4096 |
-| chunkOverlap | integer | 否 | 分块重叠（字符数），默认 50，范围 0-512 |
-| separator | string | 否 | 自定义分隔符（`RECURSIVE` 类型有效） |
-| metadata | object | 否 | 分块策略扩展参数（如 `SEMANTIC` 类型的阈值等） |
+| 字段         | 类型    | 必填 | 说明                                                                        |
+| ------------ | ------- | ---- | --------------------------------------------------------------------------- |
+| type         | string  | 是   | 分块类型：`FIXED_SIZE` / `RECURSIVE` / `SENTENCE` / `MARKDOWN` / `SEMANTIC` |
+| chunkSize    | integer | 否   | 分块大小（字符数），默认 512，范围 100-4096                                 |
+| chunkOverlap | integer | 否   | 分块重叠（字符数），默认 50，范围 0-512                                     |
+| separator    | string  | 否   | 自定义分隔符（`RECURSIVE` 类型有效）                                        |
+| metadata     | object  | 否   | 分块策略扩展参数（如 `SEMANTIC` 类型的阈值等）                              |
 
 **请求示例**
 
@@ -707,11 +707,11 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 42206 | 分块策略参数不合法 |
-| 40301 | 无权修改该知识库配置 |
+| 错误码 | 场景                 |
+| ------ | -------------------- |
+| 40401  | 知识库不存在         |
+| 42206  | 分块策略参数不合法   |
+| 40301  | 无权修改该知识库配置 |
 
 ---
 
@@ -721,9 +721,9 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
+| 参数 | 类型   | 必填 | 说明      |
+| ---- | ------ | ---- | --------- |
+| kbId | string | 是   | 知识库 ID |
 
 **响应示例**
 
@@ -747,9 +747,9 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
+| 错误码 | 场景         |
+| ------ | ------------ |
+| 40401  | 知识库不存在 |
 
 ---
 
@@ -761,17 +761,17 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
+| 参数 | 类型   | 必填 | 说明      |
+| ---- | ------ | ---- | --------- |
+| kbId | string | 是   | 知识库 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| embeddingModelId | string | 是 | 目标 Embedding 模型 ID |
-| autoReembed | boolean | 否 | 是否自动重新向量化所有文档，默认 false |
-| reembedBatchSize | integer | 否 | 重新向量化批次大小，默认 100，范围 10-500 |
+| 字段             | 类型    | 必填 | 说明                                      |
+| ---------------- | ------- | ---- | ----------------------------------------- |
+| embeddingModelId | string  | 是   | 目标 Embedding 模型 ID                    |
+| autoReembed      | boolean | 否   | 是否自动重新向量化所有文档，默认 false    |
+| reembedBatchSize | integer | 否   | 重新向量化批次大小，默认 100，范围 10-500 |
 
 **请求示例**
 
@@ -808,13 +808,13 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 40404 | embeddingModelId 指向的模型不存在 |
-| 42207 | 向量维度不匹配且未启用 autoReembed |
-| 50006 | LLMGW 校验 Embedding 模型失败 |
-| 40301 | 无权修改该知识库配置 |
+| 错误码 | 场景                               |
+| ------ | ---------------------------------- |
+| 40401  | 知识库不存在                       |
+| 40404  | embeddingModelId 指向的模型不存在  |
+| 42207  | 向量维度不匹配且未启用 autoReembed |
+| 50006  | LLMGW 校验 Embedding 模型失败      |
+| 40301  | 无权修改该知识库配置               |
 
 ---
 
@@ -824,9 +824,9 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
+| 参数 | 类型   | 必填 | 说明      |
+| ---- | ------ | ---- | --------- |
+| kbId | string | 是   | 知识库 ID |
 
 **响应示例**
 
@@ -849,9 +849,9 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
+| 错误码 | 场景         |
+| ------ | ------------ |
+| 40401  | 知识库不存在 |
 
 ---
 
@@ -863,23 +863,23 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
+| 参数 | 类型   | 必填 | 说明      |
+| ---- | ------ | ---- | --------- |
+| kbId | string | 是   | 知识库 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| metricType | string | 否 | 向量距离度量：`COSINE` / `IP` / `L2` |
-| topK | integer | 否 | 默认召回数量，范围 1-100 |
-| scoreThreshold | number | 否 | 相似度分数阈值，范围 0.0-1.0 |
-| hybridWeights | object | 否 | 混合检索权重配置 |
-| hybridWeights.vectorWeight | number | 否 | 向量检索权重，范围 0.0-1.0，默认 0.7 |
-| hybridWeights.keywordWeight | number | 否 | 关键词检索权重，范围 0.0-1.0，默认 0.3 |
-| rerankEnabled | boolean | 否 | 是否启用 Rerank 重排序，默认 false |
-| rerankModelId | string | 否 | Rerank 模型 ID（rerankEnabled=true 时必填） |
-| rerankTopN | integer | 否 | Rerank 后返回的最终数量，默认等于 topK |
+| 字段                        | 类型    | 必填 | 说明                                        |
+| --------------------------- | ------- | ---- | ------------------------------------------- |
+| metricType                  | string  | 否   | 向量距离度量：`COSINE` / `IP` / `L2`        |
+| topK                        | integer | 否   | 默认召回数量，范围 1-100                    |
+| scoreThreshold              | number  | 否   | 相似度分数阈值，范围 0.0-1.0                |
+| hybridWeights               | object  | 否   | 混合检索权重配置                            |
+| hybridWeights.vectorWeight  | number  | 否   | 向量检索权重，范围 0.0-1.0，默认 0.7        |
+| hybridWeights.keywordWeight | number  | 否   | 关键词检索权重，范围 0.0-1.0，默认 0.3      |
+| rerankEnabled               | boolean | 否   | 是否启用 Rerank 重排序，默认 false          |
+| rerankModelId               | string  | 否   | Rerank 模型 ID（rerankEnabled=true 时必填） |
+| rerankTopN                  | integer | 否   | Rerank 后返回的最终数量，默认等于 topK      |
 
 **请求示例**
 
@@ -887,7 +887,7 @@ X-Tenant-Id: <tenant_id>
 {
   "metricType": "COSINE",
   "topK": 20,
-  "scoreThreshold": 0.70,
+  "scoreThreshold": 0.7,
   "hybridWeights": {
     "vectorWeight": 0.7,
     "keywordWeight": 0.3
@@ -909,7 +909,7 @@ X-Tenant-Id: <tenant_id>
     "retrievalConfig": {
       "metricType": "COSINE",
       "topK": 20,
-      "scoreThreshold": 0.70,
+      "scoreThreshold": 0.7,
       "hybridWeights": {
         "vectorWeight": 0.7,
         "keywordWeight": 0.3
@@ -926,13 +926,13 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 40001 | hybridWeights 权重之和不为 1.0 |
-| 42206 | rerankEnabled=true 但 rerankModelId 为空 |
-| 50006 | LLMGW 校验 Rerank 模型失败 |
-| 40301 | 无权修改该知识库配置 |
+| 错误码 | 场景                                     |
+| ------ | ---------------------------------------- |
+| 40401  | 知识库不存在                             |
+| 40001  | hybridWeights 权重之和不为 1.0           |
+| 42206  | rerankEnabled=true 但 rerankModelId 为空 |
+| 50006  | LLMGW 校验 Rerank 模型失败               |
+| 40301  | 无权修改该知识库配置                     |
 
 ---
 
@@ -942,9 +942,9 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
+| 参数 | 类型   | 必填 | 说明      |
+| ---- | ------ | ---- | --------- |
+| kbId | string | 是   | 知识库 ID |
 
 **响应示例**
 
@@ -957,7 +957,7 @@ X-Tenant-Id: <tenant_id>
     "retrievalConfig": {
       "metricType": "COSINE",
       "topK": 20,
-      "scoreThreshold": 0.70,
+      "scoreThreshold": 0.7,
       "hybridWeights": {
         "vectorWeight": 0.7,
         "keywordWeight": 0.3
@@ -973,9 +973,9 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
+| 错误码 | 场景         |
+| ------ | ------------ |
+| 40401  | 知识库不存在 |
 
 ---
 
@@ -983,17 +983,17 @@ X-Tenant-Id: <tenant_id>
 
 #### 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/v1/rag/knowledge-bases/{kbId}/documents/upload` | 上传文档 |
-| POST | `/api/v1/rag/knowledge-bases/{kbId}/documents/urls` | 通过 URL 导入文档 |
-| GET | `/api/v1/rag/knowledge-bases/{kbId}/documents` | 文档列表（分页） |
-| GET | `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}` | 获取文档详情 |
-| DELETE | `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}` | 删除文档 |
-| POST | `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}/reparse` | 重新解析文档 |
-| GET | `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}/chunks` | 获取文档分块列表 |
-| GET | `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}/status` | 获取文档处理状态 |
-| POST | `/api/v1/rag/knowledge-bases/{kbId}/documents/batch-upload` | 批量上传文档 |
+| 方法   | 路径                                                           | 说明              |
+| ------ | -------------------------------------------------------------- | ----------------- |
+| POST   | `/api/v1/rag/knowledge-bases/{kbId}/documents/upload`          | 上传文档          |
+| POST   | `/api/v1/rag/knowledge-bases/{kbId}/documents/urls`            | 通过 URL 导入文档 |
+| GET    | `/api/v1/rag/knowledge-bases/{kbId}/documents`                 | 文档列表（分页）  |
+| GET    | `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}`         | 获取文档详情      |
+| DELETE | `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}`         | 删除文档          |
+| POST   | `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}/reparse` | 重新解析文档      |
+| GET    | `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}/chunks`  | 获取文档分块列表  |
+| GET    | `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}/status`  | 获取文档处理状态  |
+| POST   | `/api/v1/rag/knowledge-bases/{kbId}/documents/batch-upload`    | 批量上传文档      |
 
 ---
 
@@ -1005,33 +1005,33 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
+| 参数 | 类型   | 必填 | 说明      |
+| ---- | ------ | ---- | --------- |
+| kbId | string | 是   | 知识库 ID |
 
 **请求参数（multipart/form-data）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| file | file | 是 | 文件二进制数据，单个文件最大 100MB |
-| title | string | 否 | 文档标题，默认使用文件名 |
-| description | string | 否 | 文档描述 |
-| metadata | string | 否 | JSON 字符串，文档扩展元数据 |
-| autoParse | boolean | 否 | 是否自动解析，默认 true |
-| autoEmbed | boolean | 否 | 解析后是否自动向量化，默认 true |
+| 字段        | 类型    | 必填 | 说明                               |
+| ----------- | ------- | ---- | ---------------------------------- |
+| file        | file    | 是   | 文件二进制数据，单个文件最大 100MB |
+| title       | string  | 否   | 文档标题，默认使用文件名           |
+| description | string  | 否   | 文档描述                           |
+| metadata    | string  | 否   | JSON 字符串，文档扩展元数据        |
+| autoParse   | boolean | 否   | 是否自动解析，默认 true            |
+| autoEmbed   | boolean | 否   | 解析后是否自动向量化，默认 true    |
 
 **支持的文件类型**
 
-| 类型 | 扩展名 | 说明 |
-|---|---|---|
-| PDF | .pdf | 含 OCR 支持（扫描件） |
-| Word | .doc, .docx | - |
-| PPT | .ppt, .pptx | - |
-| Excel | .xls, .xlsx, .csv | 按行解析为文本 |
-| 文本 | .txt, .md, .rst | - |
-| 网页 | .html, .htm | 提取正文内容 |
-| 音频 | .mp3, .wav, .m4a, .flac | 通过 ASR 转写 |
-| 视频 | .mp4, .avi, .mov, .mkv | 提取音轨后 ASR 转写 |
+| 类型  | 扩展名                  | 说明                  |
+| ----- | ----------------------- | --------------------- |
+| PDF   | .pdf                    | 含 OCR 支持（扫描件） |
+| Word  | .doc, .docx             | -                     |
+| PPT   | .ppt, .pptx             | -                     |
+| Excel | .xls, .xlsx, .csv       | 按行解析为文本        |
+| 文本  | .txt, .md, .rst         | -                     |
+| 网页  | .html, .htm             | 提取正文内容          |
+| 音频  | .mp3, .wav, .m4a, .flac | 通过 ASR 转写         |
+| 视频  | .mp4, .avi, .mov, .mkv  | 提取音轨后 ASR 转写   |
 
 **响应示例（201 Created）**
 
@@ -1065,15 +1065,15 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 40005 | 不支持的文件类型 |
-| 40006 | 文件大小超过 100MB 限制 |
-| 40902 | 文件哈希重复（文档已存在） |
-| 42201 | 知识库状态非 ACTIVE |
-| 50004 | MinIO 文件上传失败 |
-| 40301 | 无权上传文档至该知识库 |
+| 错误码 | 场景                       |
+| ------ | -------------------------- |
+| 40401  | 知识库不存在               |
+| 40005  | 不支持的文件类型           |
+| 40006  | 文件大小超过 100MB 限制    |
+| 40902  | 文件哈希重复（文档已存在） |
+| 42201  | 知识库状态非 ACTIVE        |
+| 50004  | MinIO 文件上传失败         |
+| 40301  | 无权上传文档至该知识库     |
 
 ---
 
@@ -1085,21 +1085,21 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
+| 参数 | 类型   | 必填 | 说明      |
+| ---- | ------ | ---- | --------- |
+| kbId | string | 是   | 知识库 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| url | string | 是 | 文档 URL（http/https） |
-| title | string | 否 | 文档标题，默认从页面提取 |
-| description | string | 否 | 文档描述 |
-| documentType | string | 否 | 文档类型：`WEB_PAGE` / `URL_PDF` / `URL_DOC`，默认自动检测 |
-| metadata | object | 否 | 扩展元数据 |
-| autoParse | boolean | 否 | 是否自动解析，默认 true |
-| autoEmbed | boolean | 否 | 解析后是否自动向量化，默认 true |
+| 字段         | 类型    | 必填 | 说明                                                       |
+| ------------ | ------- | ---- | ---------------------------------------------------------- |
+| url          | string  | 是   | 文档 URL（http/https）                                     |
+| title        | string  | 否   | 文档标题，默认从页面提取                                   |
+| description  | string  | 否   | 文档描述                                                   |
+| documentType | string  | 否   | 文档类型：`WEB_PAGE` / `URL_PDF` / `URL_DOC`，默认自动检测 |
+| metadata     | object  | 否   | 扩展元数据                                                 |
+| autoParse    | boolean | 否   | 是否自动解析，默认 true                                    |
+| autoEmbed    | boolean | 否   | 解析后是否自动向量化，默认 true                            |
 
 **请求示例**
 
@@ -1138,14 +1138,14 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 40001 | URL 格式不合法 |
-| 42202 | URL 下载失败（404/超时/权限拒绝） |
-| 40902 | URL 对应内容已导入（哈希重复） |
-| 42201 | 知识库状态非 ACTIVE |
-| 40301 | 无权导入文档 |
+| 错误码 | 场景                              |
+| ------ | --------------------------------- |
+| 40401  | 知识库不存在                      |
+| 40001  | URL 格式不合法                    |
+| 42202  | URL 下载失败（404/超时/权限拒绝） |
+| 40902  | URL 对应内容已导入（哈希重复）    |
+| 42201  | 知识库状态非 ACTIVE               |
+| 40301  | 无权导入文档                      |
 
 ---
 
@@ -1155,20 +1155,20 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
+| 参数 | 类型   | 必填 | 说明      |
+| ---- | ------ | ---- | --------- |
+| kbId | string | 是   | 知识库 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | integer | 否 | 页码，默认 1 |
-| pageSize | integer | 否 | 每页条数，默认 20 |
-| sort | string | 否 | 排序，默认 `createdAt:desc` |
-| keyword | string | 否 | 关键词搜索（匹配标题/文件名） |
-| status | string | 否 | 按状态过滤：`UPLOADED` / `PARSING` / `PARSED` / `EMBEDDING` / `READY` / `FAILED` |
-| fileType | string | 否 | 按文件类型过滤：`PDF` / `WORD` / `PPT` / `EXCEL` / `TEXT` / `MARKDOWN` / `HTML` / `AUDIO` / `VIDEO` |
+| 参数     | 类型    | 必填 | 说明                                                                                                |
+| -------- | ------- | ---- | --------------------------------------------------------------------------------------------------- |
+| page     | integer | 否   | 页码，默认 1                                                                                        |
+| pageSize | integer | 否   | 每页条数，默认 20                                                                                   |
+| sort     | string  | 否   | 排序，默认 `createdAt:desc`                                                                         |
+| keyword  | string  | 否   | 关键词搜索（匹配标题/文件名）                                                                       |
+| status   | string  | 否   | 按状态过滤：`UPLOADED` / `PARSING` / `PARSED` / `EMBEDDING` / `READY` / `FAILED`                    |
+| fileType | string  | 否   | 按文件类型过滤：`PDF` / `WORD` / `PPT` / `EXCEL` / `TEXT` / `MARKDOWN` / `HTML` / `AUDIO` / `VIDEO` |
 
 **响应示例**
 
@@ -1218,10 +1218,10 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 40301 | 无权查看该知识库文档 |
+| 错误码 | 场景                 |
+| ------ | -------------------- |
+| 40401  | 知识库不存在         |
+| 40301  | 无权查看该知识库文档 |
 
 ---
 
@@ -1231,10 +1231,10 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
-| docId | string | 是 | 文档 ID |
+| 参数  | 类型   | 必填 | 说明      |
+| ----- | ------ | ---- | --------- |
+| kbId  | string | 是   | 知识库 ID |
+| docId | string | 是   | 文档 ID   |
 
 **响应示例**
 
@@ -1275,11 +1275,11 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 40402 | 文档不存在 |
-| 40301 | 无权查看该文档 |
+| 错误码 | 场景           |
+| ------ | -------------- |
+| 40401  | 知识库不存在   |
+| 40402  | 文档不存在     |
+| 40301  | 无权查看该文档 |
 
 ---
 
@@ -1291,10 +1291,10 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
-| docId | string | 是 | 文档 ID |
+| 参数  | 类型   | 必填 | 说明      |
+| ----- | ------ | ---- | --------- |
+| kbId  | string | 是   | 知识库 ID |
+| docId | string | 是   | 文档 ID   |
 
 **响应示例**
 
@@ -1316,13 +1316,13 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 40402 | 文档不存在 |
-| 50003 | Milvus 向量删除失败 |
-| 50004 | MinIO 文件删除失败 |
-| 40301 | 无权删除该文档 |
+| 错误码 | 场景                |
+| ------ | ------------------- |
+| 40401  | 知识库不存在        |
+| 40402  | 文档不存在          |
+| 50003  | Milvus 向量删除失败 |
+| 50004  | MinIO 文件删除失败  |
+| 40301  | 无权删除该文档      |
 
 ---
 
@@ -1334,18 +1334,18 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
-| docId | string | 是 | 文档 ID |
+| 参数  | 类型   | 必填 | 说明      |
+| ----- | ------ | ---- | --------- |
+| kbId  | string | 是   | 知识库 ID |
+| docId | string | 是   | 文档 ID   |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| rechunk | boolean | 否 | 是否重新分块，默认 true |
-| reembed | boolean | 否 | 是否重新向量化，默认 true |
-| chunkStrategyOverride | object | 否 | 本次解析使用的分块策略覆盖（不修改知识库默认配置） |
+| 字段                  | 类型    | 必填 | 说明                                               |
+| --------------------- | ------- | ---- | -------------------------------------------------- |
+| rechunk               | boolean | 否   | 是否重新分块，默认 true                            |
+| reembed               | boolean | 否   | 是否重新向量化，默认 true                          |
+| chunkStrategyOverride | object  | 否   | 本次解析使用的分块策略覆盖（不修改知识库默认配置） |
 
 **请求示例**
 
@@ -1382,14 +1382,14 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 40402 | 文档不存在 |
-| 42205 | 文档正在处理中，无法重新解析 |
-| 42206 | chunkStrategyOverride 参数不合法 |
-| 50008 | 异步任务提交失败 |
-| 40301 | 无权操作该文档 |
+| 错误码 | 场景                             |
+| ------ | -------------------------------- |
+| 40401  | 知识库不存在                     |
+| 40402  | 文档不存在                       |
+| 42205  | 文档正在处理中，无法重新解析     |
+| 42206  | chunkStrategyOverride 参数不合法 |
+| 50008  | 异步任务提交失败                 |
+| 40301  | 无权操作该文档                   |
 
 ---
 
@@ -1401,19 +1401,19 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
-| docId | string | 是 | 文档 ID |
+| 参数  | 类型   | 必填 | 说明      |
+| ----- | ------ | ---- | --------- |
+| kbId  | string | 是   | 知识库 ID |
+| docId | string | 是   | 文档 ID   |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | integer | 否 | 页码，默认 1 |
-| pageSize | integer | 否 | 每页条数，默认 20 |
-| includeContent | boolean | 否 | 是否包含分块文本内容，默认 true |
-| includeEmbedding | boolean | 否 | 是否包含向量数据，默认 false |
+| 参数             | 类型    | 必填 | 说明                            |
+| ---------------- | ------- | ---- | ------------------------------- |
+| page             | integer | 否   | 页码，默认 1                    |
+| pageSize         | integer | 否   | 每页条数，默认 20               |
+| includeContent   | boolean | 否   | 是否包含分块文本内容，默认 true |
+| includeEmbedding | boolean | 否   | 是否包含向量数据，默认 false    |
 
 **响应示例**
 
@@ -1468,12 +1468,12 @@ X-Tenant-Id: <tenant_id>
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 40402 | 文档不存在 |
-| 42205 | 文档尚未完成解析 |
-| 40301 | 无权查看该文档 |
+| 错误码 | 场景             |
+| ------ | ---------------- |
+| 40401  | 知识库不存在     |
+| 40402  | 文档不存在       |
+| 42205  | 文档尚未完成解析 |
+| 40301  | 无权查看该文档   |
 
 ---
 
@@ -1485,10 +1485,10 @@ X-Tenant-Id: <tenant_id>
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
-| docId | string | 是 | 文档 ID |
+| 参数  | 类型   | 必填 | 说明      |
+| ----- | ------ | ---- | --------- |
+| kbId  | string | 是   | 知识库 ID |
+| docId | string | 是   | 文档 ID   |
 
 **响应示例**
 
@@ -1521,22 +1521,22 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
               FAILED     FAILED    FAILED
 ```
 
-| 状态 | 说明 |
-|---|---|
-| UPLOADED | 文件已上传，等待解析 |
-| DOWNLOADING | URL 导入文档下载中 |
-| PARSING | 文档解析与分块中 |
-| PARSED | 解析完成，等待向量化 |
-| EMBEDDING | 向量化中 |
-| READY | 文档就绪，可检索 |
-| FAILED | 处理失败（error 字段包含原因） |
+| 状态        | 说明                           |
+| ----------- | ------------------------------ |
+| UPLOADED    | 文件已上传，等待解析           |
+| DOWNLOADING | URL 导入文档下载中             |
+| PARSING     | 文档解析与分块中               |
+| PARSED      | 解析完成，等待向量化           |
+| EMBEDDING   | 向量化中                       |
+| READY       | 文档就绪，可检索               |
+| FAILED      | 处理失败（error 字段包含原因） |
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 40402 | 文档不存在 |
+| 错误码 | 场景         |
+| ------ | ------------ |
+| 40401  | 知识库不存在 |
+| 40402  | 文档不存在   |
 
 ---
 
@@ -1548,17 +1548,17 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
+| 参数 | 类型   | 必填 | 说明      |
+| ---- | ------ | ---- | --------- |
+| kbId | string | 是   | 知识库 ID |
 
 **请求参数（multipart/form-data）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| files | file[] | 是 | 多个文件二进制数据，最多 20 个文件，单文件最大 100MB |
-| autoParse | boolean | 否 | 是否自动解析，默认 true |
-| autoEmbed | boolean | 否 | 解析后是否自动向量化，默认 true |
+| 字段      | 类型    | 必填 | 说明                                                 |
+| --------- | ------- | ---- | ---------------------------------------------------- |
+| files     | file[]  | 是   | 多个文件二进制数据，最多 20 个文件，单文件最大 100MB |
+| autoParse | boolean | 否   | 是否自动解析，默认 true                              |
+| autoEmbed | boolean | 否   | 解析后是否自动向量化，默认 true                      |
 
 **响应示例（201 Created）**
 
@@ -1606,14 +1606,14 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 40005 | 包含不支持的文件类型 |
-| 40006 | 单个文件超过 100MB |
-| 40001 | 文件数量超过 20 个限制 |
-| 42201 | 知识库状态非 ACTIVE |
-| 40301 | 无权上传文档 |
+| 错误码 | 场景                   |
+| ------ | ---------------------- |
+| 40401  | 知识库不存在           |
+| 40005  | 包含不支持的文件类型   |
+| 40006  | 单个文件超过 100MB     |
+| 40001  | 文件数量超过 20 个限制 |
+| 42201  | 知识库状态非 ACTIVE    |
+| 40301  | 无权上传文档           |
 
 ---
 
@@ -1621,12 +1621,12 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 #### 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/v1/rag/embeddings` | 单条文本向量化 |
-| POST | `/api/v1/rag/embeddings/batch` | 批量文本向量化 |
-| GET | `/api/v1/rag/embeddings/models` | Embedding 模型列表 |
-| GET | `/api/v1/rag/embeddings/models/{modelId}` | Embedding 模型详情 |
+| 方法 | 路径                                      | 说明               |
+| ---- | ----------------------------------------- | ------------------ |
+| POST | `/api/v1/rag/embeddings`                  | 单条文本向量化     |
+| POST | `/api/v1/rag/embeddings/batch`            | 批量文本向量化     |
+| GET  | `/api/v1/rag/embeddings/models`           | Embedding 模型列表 |
+| GET  | `/api/v1/rag/embeddings/models/{modelId}` | Embedding 模型详情 |
 
 ---
 
@@ -1638,11 +1638,11 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| text | string | 是 | 待向量化的文本，最长 8192 tokens |
-| modelId | string | 否 | Embedding 模型 ID，不传则使用默认模型 |
-| normalize | boolean | 否 | 是否对向量进行 L2 归一化，默认 true |
+| 字段      | 类型    | 必填 | 说明                                  |
+| --------- | ------- | ---- | ------------------------------------- |
+| text      | string  | 是   | 待向量化的文本，最长 8192 tokens      |
+| modelId   | string  | 否   | Embedding 模型 ID，不传则使用默认模型 |
+| normalize | boolean | 否   | 是否对向量进行 L2 归一化，默认 true   |
 
 **请求示例**
 
@@ -1674,14 +1674,14 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | text 为空或超过 token 限制 |
-| 40404 | modelId 指向的模型不存在 |
-| 42203 | 向量化失败（模型内部错误） |
-| 50006 | LLMGW 调用失败 |
-| 50302 | LLMGW 服务不可用 |
-| 42901 | 限流触发 |
+| 错误码 | 场景                       |
+| ------ | -------------------------- |
+| 40001  | text 为空或超过 token 限制 |
+| 40404  | modelId 指向的模型不存在   |
+| 42203  | 向量化失败（模型内部错误） |
+| 50006  | LLMGW 调用失败             |
+| 50302  | LLMGW 服务不可用           |
+| 42901  | 限流触发                   |
 
 ---
 
@@ -1693,11 +1693,11 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| texts | array[string] | 是 | 待向量化的文本列表，最多 100 条，单条最长 8192 tokens |
-| modelId | string | 否 | Embedding 模型 ID，不传则使用默认模型 |
-| normalize | boolean | 否 | 是否对向量进行 L2 归一化，默认 true |
+| 字段      | 类型          | 必填 | 说明                                                  |
+| --------- | ------------- | ---- | ----------------------------------------------------- |
+| texts     | array[string] | 是   | 待向量化的文本列表，最多 100 条，单条最长 8192 tokens |
+| modelId   | string        | 否   | Embedding 模型 ID，不传则使用默认模型                 |
+| normalize | boolean       | 否   | 是否对向量进行 L2 归一化，默认 true                   |
 
 **请求示例**
 
@@ -1740,14 +1740,14 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | texts 为空或超过 100 条限制 |
-| 40404 | modelId 指向的模型不存在 |
-| 42203 | 部分文本向量化失败（failedCount > 0） |
-| 50006 | LLMGW 调用失败 |
-| 50302 | LLMGW 服务不可用 |
-| 42901 | 限流触发 |
+| 错误码 | 场景                                  |
+| ------ | ------------------------------------- |
+| 40001  | texts 为空或超过 100 条限制           |
+| 40404  | modelId 指向的模型不存在              |
+| 42203  | 部分文本向量化失败（failedCount > 0） |
+| 50006  | LLMGW 调用失败                        |
+| 50302  | LLMGW 服务不可用                      |
+| 42901  | 限流触发                              |
 
 ---
 
@@ -1759,10 +1759,10 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| provider | string | 否 | 按提供商过滤：`volcengine` / `openai` / `baidu` / `custom` |
-| status | string | 否 | 按状态过滤：`AVAILABLE` / `UNAVAILABLE` |
+| 参数     | 类型   | 必填 | 说明                                                       |
+| -------- | ------ | ---- | ---------------------------------------------------------- |
+| provider | string | 否   | 按提供商过滤：`volcengine` / `openai` / `baidu` / `custom` |
+| status   | string | 否   | 按状态过滤：`AVAILABLE` / `UNAVAILABLE`                    |
 
 **响应示例**
 
@@ -1811,10 +1811,10 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 50006 | LLMGW 获取模型列表失败 |
-| 50302 | LLMGW 服务不可用 |
+| 错误码 | 场景                   |
+| ------ | ---------------------- |
+| 50006  | LLMGW 获取模型列表失败 |
+| 50302  | LLMGW 服务不可用       |
 
 ---
 
@@ -1824,9 +1824,9 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| modelId | string | 是 | Embedding 模型 ID |
+| 参数    | 类型   | 必填 | 说明              |
+| ------- | ------ | ---- | ----------------- |
+| modelId | string | 是   | Embedding 模型 ID |
 
 **响应示例**
 
@@ -1862,10 +1862,10 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40404 | Embedding 模型不存在 |
-| 50006 | LLMGW 获取模型详情失败 |
+| 错误码 | 场景                   |
+| ------ | ---------------------- |
+| 40404  | Embedding 模型不存在   |
+| 50006  | LLMGW 获取模型详情失败 |
 
 ---
 
@@ -1873,13 +1873,13 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 #### 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/v1/rag/retrieve/vector` | 向量检索 |
-| POST | `/api/v1/rag/retrieve/keyword` | 关键词检索 |
-| POST | `/api/v1/rag/retrieve/hybrid` | 混合检索（多路召回+重排序） |
-| POST | `/api/v1/rag/retrieve/graph` | 图谱增强检索 |
-| POST | `/api/v1/rag/retrieve/multi-kb` | 跨知识库检索 |
+| 方法 | 路径                            | 说明                        |
+| ---- | ------------------------------- | --------------------------- |
+| POST | `/api/v1/rag/retrieve/vector`   | 向量检索                    |
+| POST | `/api/v1/rag/retrieve/keyword`  | 关键词检索                  |
+| POST | `/api/v1/rag/retrieve/hybrid`   | 混合检索（多路召回+重排序） |
+| POST | `/api/v1/rag/retrieve/graph`    | 图谱增强检索                |
+| POST | `/api/v1/rag/retrieve/multi-kb` | 跨知识库检索                |
 
 ---
 
@@ -1891,19 +1891,19 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
-| query | string | 是 | 查询文本 |
-| topK | integer | 否 | 返回结果数量，默认使用知识库配置 |
-| scoreThreshold | number | 否 | 相似度分数阈值，低于此值的结果过滤，默认使用知识库配置 |
-| metricType | string | 否 | 距离度量：`COSINE` / `IP` / `L2`，默认使用知识库配置 |
-| filter | object | 否 | 元数据过滤条件 |
-| filter.documentIds | array[string] | 否 | 限定文档范围 |
-| filter.fileTypes | array[string] | 否 | 限定文件类型 |
-| filter.metadata | object | 否 | 自定义元数据过滤（key-value 等值匹配） |
-| includeContent | boolean | 否 | 是否返回分块文本内容，默认 true |
-| includeMetadata | boolean | 否 | 是否返回分块元数据，默认 true |
+| 字段               | 类型          | 必填 | 说明                                                   |
+| ------------------ | ------------- | ---- | ------------------------------------------------------ |
+| kbId               | string        | 是   | 知识库 ID                                              |
+| query              | string        | 是   | 查询文本                                               |
+| topK               | integer       | 否   | 返回结果数量，默认使用知识库配置                       |
+| scoreThreshold     | number        | 否   | 相似度分数阈值，低于此值的结果过滤，默认使用知识库配置 |
+| metricType         | string        | 否   | 距离度量：`COSINE` / `IP` / `L2`，默认使用知识库配置   |
+| filter             | object        | 否   | 元数据过滤条件                                         |
+| filter.documentIds | array[string] | 否   | 限定文档范围                                           |
+| filter.fileTypes   | array[string] | 否   | 限定文件类型                                           |
+| filter.metadata    | object        | 否   | 自定义元数据过滤（key-value 等值匹配）                 |
+| includeContent     | boolean       | 否   | 是否返回分块文本内容，默认 true                        |
+| includeMetadata    | boolean       | 否   | 是否返回分块元数据，默认 true                          |
 
 **请求示例**
 
@@ -1976,14 +1976,14 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 42201 | 知识库未就绪（无可用向量） |
-| 42204 | 检索失败（Milvus 查询异常） |
-| 50003 | Milvus 操作失败 |
-| 50006 | Embedding 生成失败（LLMGW 调用异常） |
-| 42901 | 限流触发 |
+| 错误码 | 场景                                 |
+| ------ | ------------------------------------ |
+| 40401  | 知识库不存在                         |
+| 42201  | 知识库未就绪（无可用向量）           |
+| 42204  | 检索失败（Milvus 查询异常）          |
+| 50003  | Milvus 操作失败                      |
+| 50006  | Embedding 生成失败（LLMGW 调用异常） |
+| 42901  | 限流触发                             |
 
 ---
 
@@ -1995,17 +1995,17 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
-| query | string | 是 | 关键词查询文本 |
-| topK | integer | 否 | 返回结果数量，默认 10 |
-| scoreThreshold | number | 否 | BM25 分数阈值，默认 0.0 |
-| filter | object | 否 | 元数据过滤条件（同向量检索） |
-| includeContent | boolean | 否 | 是否返回分块文本内容，默认 true |
-| highlight | boolean | 否 | 是否高亮匹配关键词，默认 false |
-| highlightPreTag | string | 否 | 高亮前置标签，默认 `<em>` |
-| highlightPostTag | string | 否 | 高亮后置标签，默认 `</em>` |
+| 字段             | 类型    | 必填 | 说明                            |
+| ---------------- | ------- | ---- | ------------------------------- |
+| kbId             | string  | 是   | 知识库 ID                       |
+| query            | string  | 是   | 关键词查询文本                  |
+| topK             | integer | 否   | 返回结果数量，默认 10           |
+| scoreThreshold   | number  | 否   | BM25 分数阈值，默认 0.0         |
+| filter           | object  | 否   | 元数据过滤条件（同向量检索）    |
+| includeContent   | boolean | 否   | 是否返回分块文本内容，默认 true |
+| highlight        | boolean | 否   | 是否高亮匹配关键词，默认 false  |
+| highlightPreTag  | string  | 否   | 高亮前置标签，默认 `<em>`       |
+| highlightPostTag | string  | 否   | 高亮后置标签，默认 `</em>`      |
 
 **请求示例**
 
@@ -2057,13 +2057,13 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 42201 | 知识库未就绪 |
-| 42204 | 检索失败 |
-| 50003 | 检索引擎操作失败 |
-| 42901 | 限流触发 |
+| 错误码 | 场景             |
+| ------ | ---------------- |
+| 40401  | 知识库不存在     |
+| 42201  | 知识库未就绪     |
+| 42204  | 检索失败         |
+| 50003  | 检索引擎操作失败 |
+| 42901  | 限流触发         |
 
 ---
 
@@ -2075,22 +2075,22 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
-| query | string | 是 | 查询文本 |
-| topK | integer | 否 | 最终返回结果数量，默认使用知识库配置 |
-| vectorWeight | number | 否 | 向量检索权重，范围 0.0-1.0，默认使用知识库配置 |
-| keywordWeight | number | 否 | 关键词检索权重，范围 0.0-1.0，默认使用知识库配置 |
-| scoreThreshold | number | 否 | 融合后分数阈值 |
-| rerank | boolean | 否 | 是否启用 Rerank 重排序，默认使用知识库配置 |
-| rerankModelId | string | 否 | Rerank 模型 ID，默认使用知识库配置 |
-| rerankTopN | integer | 否 | Rerank 后返回数量，默认等于 topK |
-| candidateK | integer | 否 | 每路召回候选数量，默认 topK*3 |
-| filter | object | 否 | 元数据过滤条件（同向量检索） |
-| includeContent | boolean | 否 | 是否返回分块文本内容，默认 true |
-| includeMetadata | boolean | 否 | 是否返回分块元数据，默认 true |
-| highlight | boolean | 否 | 是否高亮关键词匹配，默认 false |
+| 字段            | 类型    | 必填 | 说明                                             |
+| --------------- | ------- | ---- | ------------------------------------------------ |
+| kbId            | string  | 是   | 知识库 ID                                        |
+| query           | string  | 是   | 查询文本                                         |
+| topK            | integer | 否   | 最终返回结果数量，默认使用知识库配置             |
+| vectorWeight    | number  | 否   | 向量检索权重，范围 0.0-1.0，默认使用知识库配置   |
+| keywordWeight   | number  | 否   | 关键词检索权重，范围 0.0-1.0，默认使用知识库配置 |
+| scoreThreshold  | number  | 否   | 融合后分数阈值                                   |
+| rerank          | boolean | 否   | 是否启用 Rerank 重排序，默认使用知识库配置       |
+| rerankModelId   | string  | 否   | Rerank 模型 ID，默认使用知识库配置               |
+| rerankTopN      | integer | 否   | Rerank 后返回数量，默认等于 topK                 |
+| candidateK      | integer | 否   | 每路召回候选数量，默认 topK\*3                   |
+| filter          | object  | 否   | 元数据过滤条件（同向量检索）                     |
+| includeContent  | boolean | 否   | 是否返回分块文本内容，默认 true                  |
+| includeMetadata | boolean | 否   | 是否返回分块元数据，默认 true                    |
+| highlight       | boolean | 否   | 是否高亮关键词匹配，默认 false                   |
 
 **请求示例**
 
@@ -2161,16 +2161,16 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 42201 | 知识库未就绪 |
-| 40001 | vectorWeight + keywordWeight 不等于 1.0 |
-| 42204 | 检索失败 |
-| 50003 | Milvus 操作失败 |
-| 50006 | Embedding/Rerank 调用 LLMGW 失败 |
-| 50302 | LLMGW 服务不可用 |
-| 42901 | 限流触发 |
+| 错误码 | 场景                                    |
+| ------ | --------------------------------------- |
+| 40401  | 知识库不存在                            |
+| 42201  | 知识库未就绪                            |
+| 40001  | vectorWeight + keywordWeight 不等于 1.0 |
+| 42204  | 检索失败                                |
+| 50003  | Milvus 操作失败                         |
+| 50006  | Embedding/Rerank 调用 LLMGW 失败        |
+| 50302  | LLMGW 服务不可用                        |
+| 42901  | 限流触发                                |
 
 ---
 
@@ -2182,18 +2182,18 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID（需已绑定本体概念编码） |
-| query | string | 是 | 查询文本 |
-| topK | integer | 否 | 返回结果数量，默认 10 |
-| expandDepth | integer | 否 | 图谱关系扩展深度，默认 1，范围 0-3 |
-| expandRelations | array[string] | 否 | 限定扩展的关系类型编码列表，不传则扩展所有关系 |
-| includeGraphContext | boolean | 否 | 是否返回图谱上下文（实体、关系），默认 true |
-| vectorWeight | number | 否 | 向量检索权重，默认 0.6 |
-| graphWeight | number | 否 | 图谱扩展权重，默认 0.4 |
-| filter | object | 否 | 元数据过滤条件（同向量检索） |
-| includeContent | boolean | 否 | 是否返回分块文本内容，默认 true |
+| 字段                | 类型          | 必填 | 说明                                           |
+| ------------------- | ------------- | ---- | ---------------------------------------------- |
+| kbId                | string        | 是   | 知识库 ID（需已绑定本体概念编码）              |
+| query               | string        | 是   | 查询文本                                       |
+| topK                | integer       | 否   | 返回结果数量，默认 10                          |
+| expandDepth         | integer       | 否   | 图谱关系扩展深度，默认 1，范围 0-3             |
+| expandRelations     | array[string] | 否   | 限定扩展的关系类型编码列表，不传则扩展所有关系 |
+| includeGraphContext | boolean       | 否   | 是否返回图谱上下文（实体、关系），默认 true    |
+| vectorWeight        | number        | 否   | 向量检索权重，默认 0.6                         |
+| graphWeight         | number        | 否   | 图谱扩展权重，默认 0.4                         |
+| filter              | object        | 否   | 元数据过滤条件（同向量检索）                   |
+| includeContent      | boolean       | 否   | 是否返回分块文本内容，默认 true                |
 
 **请求示例**
 
@@ -2287,15 +2287,15 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 42201 | 知识库未就绪 |
-| 42208 | 知识库未绑定本体概念，无法执行图谱检索 |
-| 50007 | TECH-ONT 服务调用失败（实体链接/图谱查询） |
-| 50302 | TECH-ONT 服务不可用 |
-| 42204 | 检索失败 |
-| 42901 | 限流触发 |
+| 错误码 | 场景                                       |
+| ------ | ------------------------------------------ |
+| 40401  | 知识库不存在                               |
+| 42201  | 知识库未就绪                               |
+| 42208  | 知识库未绑定本体概念，无法执行图谱检索     |
+| 50007  | TECH-ONT 服务调用失败（实体链接/图谱查询） |
+| 50302  | TECH-ONT 服务不可用                        |
+| 42204  | 检索失败                                   |
+| 42901  | 限流触发                                   |
 
 ---
 
@@ -2307,15 +2307,15 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbIds | array[string] | 是 | 知识库 ID 列表，最多 10 个 |
-| query | string | 是 | 查询文本 |
-| topK | integer | 否 | 每个知识库返回结果数量，默认 5 |
-| strategy | string | 否 | 合并策略：`MERGE`（合并后重排，默认）/ `ROUND_ROBIN`（轮询取Top） |
-| rerank | boolean | 否 | 合并后是否 Rerank 重排序，默认 false |
-| rerankModelId | string | 否 | Rerank 模型 ID |
-| includeContent | boolean | 否 | 是否返回分块文本内容，默认 true |
+| 字段           | 类型          | 必填 | 说明                                                              |
+| -------------- | ------------- | ---- | ----------------------------------------------------------------- |
+| kbIds          | array[string] | 是   | 知识库 ID 列表，最多 10 个                                        |
+| query          | string        | 是   | 查询文本                                                          |
+| topK           | integer       | 否   | 每个知识库返回结果数量，默认 5                                    |
+| strategy       | string        | 否   | 合并策略：`MERGE`（合并后重排，默认）/ `ROUND_ROBIN`（轮询取Top） |
+| rerank         | boolean       | 否   | 合并后是否 Rerank 重排序，默认 false                              |
+| rerankModelId  | string        | 否   | Rerank 模型 ID                                                    |
+| includeContent | boolean       | 否   | 是否返回分块文本内容，默认 true                                   |
 
 **请求示例**
 
@@ -2358,7 +2358,7 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
         "docTitle": "常见问题",
         "content": "Q: 如何创建知识库？ A: 在 APP-ONTSTUDIO 中选择知识库管理...",
         "score": 0.8765,
-        "rerankScore": 0.8890
+        "rerankScore": 0.889
       }
     ],
     "retrievalInfo": {
@@ -2375,13 +2375,13 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 其中一个或多个知识库不存在 |
-| 42201 | 其中一个或多个知识库未就绪 |
-| 40001 | kbIds 超过 10 个限制 |
-| 42204 | 检索失败 |
-| 42901 | 限流触发 |
+| 错误码 | 场景                       |
+| ------ | -------------------------- |
+| 40401  | 其中一个或多个知识库不存在 |
+| 42201  | 其中一个或多个知识库未就绪 |
+| 40001  | kbIds 超过 10 个限制       |
+| 42204  | 检索失败                   |
+| 42901  | 限流触发                   |
 
 ---
 
@@ -2389,11 +2389,11 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 #### 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/v1/rag/enhance/entity-linking` | 实体链接 |
-| POST | `/api/v1/rag/enhance/context-assembly` | 上下文组装 |
-| POST | `/api/v1/rag/enhance/citations` | 引用来源生成 |
+| 方法 | 路径                                   | 说明         |
+| ---- | -------------------------------------- | ------------ |
+| POST | `/api/v1/rag/enhance/entity-linking`   | 实体链接     |
+| POST | `/api/v1/rag/enhance/context-assembly` | 上下文组装   |
+| POST | `/api/v1/rag/enhance/citations`        | 引用来源生成 |
 
 ---
 
@@ -2405,13 +2405,13 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| text | string | 是 | 待实体链接的文本 |
-| kbId | string | 否 | 知识库 ID（提供时使用知识库绑定的本体概念域限定范围） |
-| conceptCodes | array[string] | 否 | 限定的本体概念编码列表 |
-| confidenceThreshold | number | 否 | 置信度阈值，低于此值的实体不返回，默认 0.5 |
-| maxEntities | integer | 否 | 最大返回实体数量，默认 20 |
+| 字段                | 类型          | 必填 | 说明                                                  |
+| ------------------- | ------------- | ---- | ----------------------------------------------------- |
+| text                | string        | 是   | 待实体链接的文本                                      |
+| kbId                | string        | 否   | 知识库 ID（提供时使用知识库绑定的本体概念域限定范围） |
+| conceptCodes        | array[string] | 否   | 限定的本体概念编码列表                                |
+| confidenceThreshold | number        | 否   | 置信度阈值，低于此值的实体不返回，默认 0.5            |
+| maxEntities         | integer       | 否   | 最大返回实体数量，默认 20                             |
 
 **请求示例**
 
@@ -2486,13 +2486,13 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | text 为空 |
-| 40401 | kbId 不存在 |
-| 42208 | 实体链接失败（本体引擎返回错误） |
-| 50007 | TECH-ONT 服务调用失败 |
-| 50302 | TECH-ONT 服务不可用 |
+| 错误码 | 场景                             |
+| ------ | -------------------------------- |
+| 40001  | text 为空                        |
+| 40401  | kbId 不存在                      |
+| 42208  | 实体链接失败（本体引擎返回错误） |
+| 50007  | TECH-ONT 服务调用失败            |
+| 50302  | TECH-ONT 服务不可用              |
 
 ---
 
@@ -2504,17 +2504,17 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| query | string | 是 | 用户查询文本 |
-| retrievalResults | array | 是 | 检索结果列表（来自检索 API 的 results） |
-| strategy | string | 否 | 组装策略：`CONCAT`（拼接，默认）/ `SUMMARIZE`（摘要）/ `STRUCTURED`（结构化） |
-| maxTokens | integer | 否 | 上下文最大 token 数，默认 4096 |
-| includeCitations | boolean | 否 | 是否包含引用编号，默认 true |
-| includeMetadata | boolean | 否 | 是否包含来源元数据，默认 true |
-| dedupEnabled | boolean | 否 | 是否去重（基于内容相似度），默认 true |
-| dedupThreshold | number | 否 | 去重相似度阈值，默认 0.85 |
-| template | string | 否 | 自定义上下文模板（支持变量：`{query}`、`{context}`、`{citations}`） |
+| 字段             | 类型    | 必填 | 说明                                                                          |
+| ---------------- | ------- | ---- | ----------------------------------------------------------------------------- |
+| query            | string  | 是   | 用户查询文本                                                                  |
+| retrievalResults | array   | 是   | 检索结果列表（来自检索 API 的 results）                                       |
+| strategy         | string  | 否   | 组装策略：`CONCAT`（拼接，默认）/ `SUMMARIZE`（摘要）/ `STRUCTURED`（结构化） |
+| maxTokens        | integer | 否   | 上下文最大 token 数，默认 4096                                                |
+| includeCitations | boolean | 否   | 是否包含引用编号，默认 true                                                   |
+| includeMetadata  | boolean | 否   | 是否包含来源元数据，默认 true                                                 |
+| dedupEnabled     | boolean | 否   | 是否去重（基于内容相似度），默认 true                                         |
+| dedupThreshold   | number  | 否   | 去重相似度阈值，默认 0.85                                                     |
+| template         | string  | 否   | 自定义上下文模板（支持变量：`{query}`、`{context}`、`{citations}`）           |
 
 **请求示例**
 
@@ -2583,12 +2583,12 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | query 或 retrievalResults 为空 |
-| 40001 | retrievalResults 超过 50 条限制 |
-| 42204 | 上下文组装失败 |
-| 50006 | SUMMARIZE 策略调用 LLMGW 失败 |
+| 错误码 | 场景                            |
+| ------ | ------------------------------- |
+| 40001  | query 或 retrievalResults 为空  |
+| 40001  | retrievalResults 超过 50 条限制 |
+| 42204  | 上下文组装失败                  |
+| 50006  | SUMMARIZE 策略调用 LLMGW 失败   |
 
 ---
 
@@ -2600,11 +2600,11 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| answer | string | 是 | LLM 生成的回答文本（包含引用标记如 [1]、[2]） |
-| retrievalResults | array | 是 | 对应的检索结果列表 |
-| format | string | 否 | 引用格式：`INLINE`（内联）/ `FOOTNOTE`（脚注，默认）/ `ENDNOTE`（尾注） |
+| 字段             | 类型   | 必填 | 说明                                                                    |
+| ---------------- | ------ | ---- | ----------------------------------------------------------------------- |
+| answer           | string | 是   | LLM 生成的回答文本（包含引用标记如 [1]、[2]）                           |
+| retrievalResults | array  | 是   | 对应的检索结果列表                                                      |
+| format           | string | 否   | 引用格式：`INLINE`（内联）/ `FOOTNOTE`（脚注，默认）/ `ENDNOTE`（尾注） |
 
 **请求示例**
 
@@ -2617,14 +2617,14 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
       "docId": "doc-001",
       "docTitle": "架构设计文档",
       "content": "基于规则与 OWL 推理机执行本体推理...",
-      "metadata": {"page": 2}
+      "metadata": { "page": 2 }
     },
     {
       "chunkId": "chunk-002",
       "docId": "doc-001",
       "docTitle": "架构设计文档",
       "content": "支持 HermiT 和 ELK 推理机...",
-      "metadata": {"page": 3}
+      "metadata": { "page": 3 }
     }
   ],
   "format": "FOOTNOTE"
@@ -2670,11 +2670,11 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | answer 或 retrievalResults 为空 |
-| 42204 | 引用解析失败 |
-| 42208 | 引用标记无法匹配到检索结果 |
+| 错误码 | 场景                            |
+| ------ | ------------------------------- |
+| 40001  | answer 或 retrievalResults 为空 |
+| 42204  | 引用解析失败                    |
+| 42208  | 引用标记无法匹配到检索结果      |
 
 ---
 
@@ -2682,13 +2682,13 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 #### 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/api/v1/rag/stats/overview` | 统计概览 |
-| GET | `/api/v1/rag/stats/kb/{kbId}` | 知识库统计详情 |
-| GET | `/api/v1/rag/stats/retrieval/hit-rate` | 检索命中率分析 |
-| GET | `/api/v1/rag/stats/retrieval/latency` | 检索延迟分析 |
-| GET | `/api/v1/rag/stats/retrieval/timeline` | 检索趋势时间线 |
+| 方法 | 路径                                   | 说明           |
+| ---- | -------------------------------------- | -------------- |
+| GET  | `/api/v1/rag/stats/overview`           | 统计概览       |
+| GET  | `/api/v1/rag/stats/kb/{kbId}`          | 知识库统计详情 |
+| GET  | `/api/v1/rag/stats/retrieval/hit-rate` | 检索命中率分析 |
+| GET  | `/api/v1/rag/stats/retrieval/latency`  | 检索延迟分析   |
+| GET  | `/api/v1/rag/stats/retrieval/timeline` | 检索趋势时间线 |
 
 ---
 
@@ -2700,10 +2700,10 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startDate | string | 否 | 统计开始日期，ISO 8601，默认 7 天前 |
-| endDate | string | 否 | 统计结束日期，ISO 8601，默认今天 |
+| 参数      | 类型   | 必填 | 说明                                |
+| --------- | ------ | ---- | ----------------------------------- |
+| startDate | string | 否   | 统计开始日期，ISO 8601，默认 7 天前 |
+| endDate   | string | 否   | 统计结束日期，ISO 8601，默认今天    |
 
 **响应示例**
 
@@ -2748,10 +2748,10 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 日期格式不合法 |
-| 40301 | 无权查看统计数据 |
+| 错误码 | 场景             |
+| ------ | ---------------- |
+| 40001  | 日期格式不合法   |
+| 40301  | 无权查看统计数据 |
 
 ---
 
@@ -2763,17 +2763,17 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **路径参数**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 是 | 知识库 ID |
+| 参数 | 类型   | 必填 | 说明      |
+| ---- | ------ | ---- | --------- |
+| kbId | string | 是   | 知识库 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startDate | string | 否 | 统计开始日期，默认 7 天前 |
-| endDate | string | 否 | 统计结束日期，默认今天 |
-| granularity | string | 否 | 时间粒度：`HOUR` / `DAY`（默认）/ `WEEK` |
+| 参数        | 类型   | 必填 | 说明                                     |
+| ----------- | ------ | ---- | ---------------------------------------- |
+| startDate   | string | 否   | 统计开始日期，默认 7 天前                |
+| endDate     | string | 否   | 统计结束日期，默认今天                   |
+| granularity | string | 否   | 时间粒度：`HOUR` / `DAY`（默认）/ `WEEK` |
 
 **响应示例**
 
@@ -2836,10 +2836,10 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 知识库不存在 |
-| 40301 | 无权查看该知识库统计 |
+| 错误码 | 场景                 |
+| ------ | -------------------- |
+| 40401  | 知识库不存在         |
+| 40301  | 无权查看该知识库统计 |
 
 ---
 
@@ -2851,13 +2851,13 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 否 | 知识库 ID，不传则统计所有知识库 |
-| retrievalType | string | 否 | 检索类型：`VECTOR` / `KEYWORD` / `HYBRID` / `GRAPH` |
-| startDate | string | 否 | 开始日期，默认 7 天前 |
-| endDate | string | 否 | 结束日期，默认今天 |
-| granularity | string | 否 | 时间粒度：`HOUR` / `DAY`（默认） |
+| 参数          | 类型   | 必填 | 说明                                                |
+| ------------- | ------ | ---- | --------------------------------------------------- |
+| kbId          | string | 否   | 知识库 ID，不传则统计所有知识库                     |
+| retrievalType | string | 否   | 检索类型：`VECTOR` / `KEYWORD` / `HYBRID` / `GRAPH` |
+| startDate     | string | 否   | 开始日期，默认 7 天前                               |
+| endDate       | string | 否   | 结束日期，默认今天                                  |
+| granularity   | string | 否   | 时间粒度：`HOUR` / `DAY`（默认）                    |
 
 **响应示例**
 
@@ -2915,11 +2915,11 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 日期格式不合法 |
-| 40401 | kbId 不存在 |
-| 40301 | 无权查看统计数据 |
+| 错误码 | 场景             |
+| ------ | ---------------- |
+| 40001  | 日期格式不合法   |
+| 40401  | kbId 不存在      |
+| 40301  | 无权查看统计数据 |
 
 ---
 
@@ -2931,13 +2931,13 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 否 | 知识库 ID |
-| retrievalType | string | 否 | 检索类型 |
-| startDate | string | 否 | 开始日期，默认 7 天前 |
-| endDate | string | 否 | 结束日期，默认今天 |
-| granularity | string | 否 | 时间粒度：`HOUR` / `DAY`（默认） |
+| 参数          | 类型   | 必填 | 说明                             |
+| ------------- | ------ | ---- | -------------------------------- |
+| kbId          | string | 否   | 知识库 ID                        |
+| retrievalType | string | 否   | 检索类型                         |
+| startDate     | string | 否   | 开始日期，默认 7 天前            |
+| endDate       | string | 否   | 结束日期，默认今天               |
+| granularity   | string | 否   | 时间粒度：`HOUR` / `DAY`（默认） |
 
 **响应示例**
 
@@ -3007,11 +3007,11 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 日期格式不合法 |
-| 40401 | kbId 不存在 |
-| 40301 | 无权查看统计数据 |
+| 错误码 | 场景             |
+| ------ | ---------------- |
+| 40001  | 日期格式不合法   |
+| 40401  | kbId 不存在      |
+| 40301  | 无权查看统计数据 |
 
 ---
 
@@ -3023,13 +3023,13 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| kbId | string | 否 | 知识库 ID |
-| startDate | string | 否 | 开始日期，默认 30 天前 |
-| endDate | string | 否 | 结束日期，默认今天 |
-| granularity | string | 否 | 时间粒度：`HOUR` / `DAY`（默认）/ `WEEK` |
-| metrics | array[string] | 否 | 返回的指标列表：`retrievals` / `hitRate` / `latency` / `tokens`，默认全部 |
+| 参数        | 类型          | 必填 | 说明                                                                      |
+| ----------- | ------------- | ---- | ------------------------------------------------------------------------- |
+| kbId        | string        | 否   | 知识库 ID                                                                 |
+| startDate   | string        | 否   | 开始日期，默认 30 天前                                                    |
+| endDate     | string        | 否   | 结束日期，默认今天                                                        |
+| granularity | string        | 否   | 时间粒度：`HOUR` / `DAY`（默认）/ `WEEK`                                  |
+| metrics     | array[string] | 否   | 返回的指标列表：`retrievals` / `hitRate` / `latency` / `tokens`，默认全部 |
 
 **响应示例**
 
@@ -3078,11 +3078,11 @@ UPLOADED → PARSING → PARSED → EMBEDDING → READY
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 日期格式不合法或范围过大 |
-| 40401 | kbId 不存在 |
-| 40301 | 无权查看统计数据 |
+| 错误码 | 场景                     |
+| ------ | ------------------------ |
+| 40001  | 日期格式不合法或范围过大 |
+| 40401  | kbId 不存在              |
+| 40301  | 无权查看统计数据         |
 
 ---
 
@@ -3184,7 +3184,7 @@ CREATE TABLE rag_chunks (
     metadata            JSONB         DEFAULT '{}',  -- page, section, bbox 等
     created_at          TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
     deleted_at          TIMESTAMPTZ,
-    
+
     UNIQUE(doc_id, chunk_index)
 );
 
@@ -3274,7 +3274,7 @@ CREATE TABLE rag_embedding_cache (
     token_count         INTEGER,
     created_at          TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
     expires_at          TIMESTAMPTZ,
-    
+
     UNIQUE(model_id, text_hash)
 );
 
@@ -3325,41 +3325,41 @@ def create_kb_collection_schema(dimension: int) -> CollectionSchema:
     fields = [
         # Milvus 主键
         FieldSchema(name="pk", dtype=DataType.INT64, is_primary=True, auto_id=True),
-        
+
         # PostgreSQL 中的 chunk_id，用于跨数据库关联
         FieldSchema(name="chunk_id", dtype=DataType.VARCHAR, max_length=64),
-        
+
         # 文档 ID
         FieldSchema(name="doc_id", dtype=DataType.VARCHAR, max_length=64),
-        
+
         # 知识库 ID
         FieldSchema(name="kb_id", dtype=DataType.VARCHAR, max_length=64),
-        
+
         # 租户 ID
         FieldSchema(name="tenant_id", dtype=DataType.VARCHAR, max_length=64),
-        
+
         # 向量字段
         FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=dimension),
-        
+
         # 分块文本内容（用于检索时直接返回，可选）
         FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=8192),
-        
+
         # 分块索引
         FieldSchema(name="chunk_index", dtype=DataType.INT32),
-        
+
         # 元数据 JSON 字符串
         FieldSchema(name="metadata", dtype=DataType.VARCHAR, max_length=4096),
-        
+
         # 文件类型（用于过滤）
         FieldSchema(name="file_type", dtype=DataType.VARCHAR, max_length=20),
-        
+
         # 文档 ID 列表（用于过滤，标量字段）
         FieldSchema(name="doc_ids", dtype=DataType.VARCHAR, max_length=4096),
-        
+
         # 创建时间戳
         FieldSchema(name="created_at", dtype=DataType.INT64),
     ]
-    
+
     return CollectionSchema(fields=fields, description="RAG Knowledge Base Collection")
 ```
 
@@ -3422,16 +3422,16 @@ collection.create_partition(partition_name=partition_name)
 
 ### 4.3 Redis 缓存结构
 
-| Key 模式 | 类型 | TTL | 说明 |
-|---|---|---|---|
-| `rag:kb:{kbId}:info` | Hash | 1h | 知识库基本信息缓存 |
-| `rag:kb:{kbId}:config` | Hash | 1h | 知识库检索配置缓存 |
-| `rag:emb:{modelId}:{textHash}` | String | 24h | Embedding 向量缓存 |
-| `rag:retrieve:{queryHash}:{kbId}` | String | 5m | 检索结果缓存 |
-| `rag:doc:{docId}:status` | String | 30s | 文档处理状态缓存（高频轮询） |
-| `rag:stats:{kbId}:daily` | Hash | 1h | 知识库每日统计缓存 |
-| `rag:task:{taskId}` | String | 1h | 异步任务状态缓存 |
-| `rag:rate:{tenantId}:retrieve` | String | 1m | 检索限流计数器 |
+| Key 模式                          | 类型   | TTL | 说明                         |
+| --------------------------------- | ------ | --- | ---------------------------- |
+| `rag:kb:{kbId}:info`              | Hash   | 1h  | 知识库基本信息缓存           |
+| `rag:kb:{kbId}:config`            | Hash   | 1h  | 知识库检索配置缓存           |
+| `rag:emb:{modelId}:{textHash}`    | String | 24h | Embedding 向量缓存           |
+| `rag:retrieve:{queryHash}:{kbId}` | String | 5m  | 检索结果缓存                 |
+| `rag:doc:{docId}:status`          | String | 30s | 文档处理状态缓存（高频轮询） |
+| `rag:stats:{kbId}:daily`          | Hash   | 1h  | 知识库每日统计缓存           |
+| `rag:task:{taskId}`               | String | 1h  | 异步任务状态缓存             |
+| `rag:rate:{tenantId}:retrieve`    | String | 1m  | 检索限流计数器               |
 
 ---
 
@@ -3441,13 +3441,13 @@ collection.create_partition(partition_name=partition_name)
 
 TECH-RAG 所有 Kafka 消息发布遵循 **Outbox 模式**：业务数据与事件写入同一 PostgreSQL 事务，由 Outbox Poller 异步投递至 Kafka。
 
-| Topic | 说明 | 分区数 | 保留时间 |
-|---|---|---|---|
-| `rag.document.events` | 文档处理生命周期事件 | 12 | 7 天 |
-| `rag.retrieval.events` | 检索事件 | 12 | 3 天 |
-| `rag.kb.events` | 知识库变更事件 | 6 | 7 天 |
-| `rag.embedding.events` | Embedding 服务事件 | 6 | 3 天 |
-| `rag.dlq` | 死信队列 | 3 | 30 天 |
+| Topic                  | 说明                 | 分区数 | 保留时间 |
+| ---------------------- | -------------------- | ------ | -------- |
+| `rag.document.events`  | 文档处理生命周期事件 | 12     | 7 天     |
+| `rag.retrieval.events` | 检索事件             | 12     | 3 天     |
+| `rag.kb.events`        | 知识库变更事件       | 6      | 7 天     |
+| `rag.embedding.events` | Embedding 服务事件   | 6      | 3 天     |
+| `rag.dlq`              | 死信队列             | 3      | 30 天    |
 
 ### 5.2 消息通用格式
 
@@ -3464,19 +3464,19 @@ TECH-RAG 所有 Kafka 消息发布遵循 **Outbox 模式**：业务数据与事�
   "timestamp": "2026-07-16T11:00:00.000+08:00",
   "version": "1.0",
   "source": "tech-rag",
-  "data": { }
+  "data": {}
 }
 ```
 
 Kafka 消息头：
 
-| Header | 说明 |
-|---|---|
-| `X-Trace-Id` | 链路追踪 ID |
-| `X-Tenant-Id` | 租户 ID |
-| `X-Event-Type` | 事件类型 |
-| `X-Event-Id` | 事件唯一 ID（幂等去重） |
-| `Content-Type` | `application/json` |
+| Header         | 说明                    |
+| -------------- | ----------------------- |
+| `X-Trace-Id`   | 链路追踪 ID             |
+| `X-Tenant-Id`  | 租户 ID                 |
+| `X-Event-Type` | 事件类型                |
+| `X-Event-Id`   | 事件唯一 ID（幂等去重） |
+| `Content-Type` | `application/json`      |
 
 ### 5.3 文档处理事件（rag.document.events）
 
@@ -3843,7 +3843,7 @@ Kafka 消息头：
     "failureReason": "Celery task timeout after 300s",
     "failureStage": "PARSE",
     "errorCode": "50008",
-    "originalMessage": { },
+    "originalMessage": {},
     "traceId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
   }
 }
@@ -3851,12 +3851,12 @@ Kafka 消息头：
 
 #### 5.6.2 重试策略
 
-| 参数 | 值 | 说明 |
-|---|---|---|
-| 最大重试次数 | 3 | 超过后进入 DLQ |
-| 重试间隔 | 指数退避：5s, 25s, 125s | 避免雪崩 |
-| DLQ 保留时间 | 30 天 | 超过后自动清理 |
-| DLQ 告警 | 超过 10 条/小时触发告警 | Prometheus alertmanager |
+| 参数         | 值                      | 说明                    |
+| ------------ | ----------------------- | ----------------------- |
+| 最大重试次数 | 3                       | 超过后进入 DLQ          |
+| 重试间隔     | 指数退避：5s, 25s, 125s | 避免雪崩                |
+| DLQ 保留时间 | 30 天                   | 超过后自动清理          |
+| DLQ 告警     | 超过 10 条/小时触发告警 | Prometheus alertmanager |
 
 ---
 
@@ -3864,13 +3864,13 @@ Kafka 消息头：
 
 ### 6.1 交付阶段总览
 
-| 阶段 | 名称 | 时间 | 范围 | 核心交付物 |
-|---|---|---|---|---|
-| P0 | MVP 基础检索 | W1-W2 | 知识库 CRUD + 文档上传/解析 + 向量检索 | 基础 RAG 检索能力闭环 |
-| P1 | 混合检索 | W3-W4 | 关键词检索 + 混合检索 + Rerank | 检索质量提升 |
-| P2 | 图谱增强 | W5-W6 | 图谱增强检索 + 实体链接 + 上下文组装 | 本体语义检索 |
-| P3 | 运营统计 | W7-W8 | 知识库统计 + 命中率分析 + 延迟分析 | 运营可观测性 |
-| P4 | 性能优化 | W9-W10 | Embedding 缓存 + 检索缓存 + 批量向量化 | 性能提升 |
+| 阶段 | 名称         | 时间   | 范围                                   | 核心交付物            |
+| ---- | ------------ | ------ | -------------------------------------- | --------------------- |
+| P0   | MVP 基础检索 | W1-W2  | 知识库 CRUD + 文档上传/解析 + 向量检索 | 基础 RAG 检索能力闭环 |
+| P1   | 混合检索     | W3-W4  | 关键词检索 + 混合检索 + Rerank         | 检索质量提升          |
+| P2   | 图谱增强     | W5-W6  | 图谱增强检索 + 实体链接 + 上下文组装   | 本体语义检索          |
+| P3   | 运营统计     | W7-W8  | 知识库统计 + 命中率分析 + 延迟分析     | 运营可观测性          |
+| P4   | 性能优化     | W9-W10 | Embedding 缓存 + 检索缓存 + 批量向量化 | 性能提升              |
 
 ### 6.2 P0 - MVP 基础检索（W1-W2）
 
@@ -3878,25 +3878,26 @@ Kafka 消息头：
 
 **交付 API**：
 
-| API | 说明 |
-|---|---|
-| POST `/api/v1/rag/knowledge-bases` | 创建知识库 |
-| GET `/api/v1/rag/knowledge-bases` | 知识库列表 |
-| GET `/api/v1/rag/knowledge-bases/{kbId}` | 知识库详情 |
-| PUT `/api/v1/rag/knowledge-bases/{kbId}` | 更新知识库 |
-| DELETE `/api/v1/rag/knowledge-bases/{kbId}` | 删除知识库 |
-| PUT `/api/v1/rag/knowledge-bases/{kbId}/chunk-strategy` | 配置分块策略 |
-| PUT `/api/v1/rag/knowledge-bases/{kbId}/embedding-model` | 配置 Embedding 模型 |
-| POST `/api/v1/rag/knowledge-bases/{kbId}/documents/upload` | 上传文档 |
-| GET `/api/v1/rag/knowledge-bases/{kbId}/documents` | 文档列表 |
-| GET `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}` | 文档详情 |
-| DELETE `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}` | 删除文档 |
-| GET `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}/status` | 文档状态 |
-| POST `/api/v1/rag/embeddings` | 单条向量化 |
-| GET `/api/v1/rag/embeddings/models` | 模型列表 |
-| POST `/api/v1/rag/retrieve/vector` | 向量检索 |
+| API                                                               | 说明                |
+| ----------------------------------------------------------------- | ------------------- |
+| POST `/api/v1/rag/knowledge-bases`                                | 创建知识库          |
+| GET `/api/v1/rag/knowledge-bases`                                 | 知识库列表          |
+| GET `/api/v1/rag/knowledge-bases/{kbId}`                          | 知识库详情          |
+| PUT `/api/v1/rag/knowledge-bases/{kbId}`                          | 更新知识库          |
+| DELETE `/api/v1/rag/knowledge-bases/{kbId}`                       | 删除知识库          |
+| PUT `/api/v1/rag/knowledge-bases/{kbId}/chunk-strategy`           | 配置分块策略        |
+| PUT `/api/v1/rag/knowledge-bases/{kbId}/embedding-model`          | 配置 Embedding 模型 |
+| POST `/api/v1/rag/knowledge-bases/{kbId}/documents/upload`        | 上传文档            |
+| GET `/api/v1/rag/knowledge-bases/{kbId}/documents`                | 文档列表            |
+| GET `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}`        | 文档详情            |
+| DELETE `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}`     | 删除文档            |
+| GET `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}/status` | 文档状态            |
+| POST `/api/v1/rag/embeddings`                                     | 单条向量化          |
+| GET `/api/v1/rag/embeddings/models`                               | 模型列表            |
+| POST `/api/v1/rag/retrieve/vector`                                | 向量检索            |
 
 **支撑能力**：
+
 - PostgreSQL 表：rag_knowledge_bases, rag_documents, rag_chunks, rag_tasks, rag_outbox_events
 - Milvus Collection 创建与向量写入
 - MinIO 文件上传与下载
@@ -3912,18 +3913,19 @@ Kafka 消息头：
 
 **新增 API**：
 
-| API | 说明 |
-|---|---|
-| POST `/api/v1/rag/retrieve/keyword` | 关键词检索 |
-| POST `/api/v1/rag/retrieve/hybrid` | 混合检索 |
-| GET `/api/v1/rag/knowledge-bases/{kbId}/retrieval-config` | 获取检索参数 |
-| PUT `/api/v1/rag/knowledge-bases/{kbId}/retrieval-config` | 配置检索参数 |
-| POST `/api/v1/rag/embeddings/batch` | 批量向量化 |
-| POST `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}/reparse` | 重新解析 |
-| POST `/api/v1/rag/knowledge-bases/{kbId}/documents/batch-upload` | 批量上传 |
-| POST `/api/v1/rag/knowledge-bases/{kbId}/documents/urls` | URL 导入 |
+| API                                                                 | 说明         |
+| ------------------------------------------------------------------- | ------------ |
+| POST `/api/v1/rag/retrieve/keyword`                                 | 关键词检索   |
+| POST `/api/v1/rag/retrieve/hybrid`                                  | 混合检索     |
+| GET `/api/v1/rag/knowledge-bases/{kbId}/retrieval-config`           | 获取检索参数 |
+| PUT `/api/v1/rag/knowledge-bases/{kbId}/retrieval-config`           | 配置检索参数 |
+| POST `/api/v1/rag/embeddings/batch`                                 | 批量向量化   |
+| POST `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}/reparse` | 重新解析     |
+| POST `/api/v1/rag/knowledge-bases/{kbId}/documents/batch-upload`    | 批量上传     |
+| POST `/api/v1/rag/knowledge-bases/{kbId}/documents/urls`            | URL 导入     |
 
 **支撑能力**：
+
 - BM25 关键词检索引擎（PostgreSQL全文索引或 Elasticsearch）
 - 混合检索融合算法（RRF / 加权融合）
 - Rerank 模型对接（TECH-LLMGW）
@@ -3937,15 +3939,16 @@ Kafka 消息头：
 
 **新增 API**：
 
-| API | 说明 |
-|---|---|
-| POST `/api/v1/rag/retrieve/graph` | 图谱增强检索 |
-| POST `/api/v1/rag/enhance/entity-linking` | 实体链接 |
-| POST `/api/v1/rag/enhance/context-assembly` | 上下文组装 |
-| POST `/api/v1/rag/enhance/citations` | 引用来源生成 |
-| POST `/api/v1/rag/retrieve/multi-kb` | 跨知识库检索 |
+| API                                         | 说明         |
+| ------------------------------------------- | ------------ |
+| POST `/api/v1/rag/retrieve/graph`           | 图谱增强检索 |
+| POST `/api/v1/rag/enhance/entity-linking`   | 实体链接     |
+| POST `/api/v1/rag/enhance/context-assembly` | 上下文组装   |
+| POST `/api/v1/rag/enhance/citations`        | 引用来源生成 |
+| POST `/api/v1/rag/retrieve/multi-kb`        | 跨知识库检索 |
 
 **支撑能力**：
+
 - TECH-ONT 实体链接对接
 - 知识图谱关系扩展查询（Neo4j / TECH-ONT API）
 - 上下文组装策略（CONCAT / SUMMARIZE / STRUCTURED）
@@ -3958,19 +3961,20 @@ Kafka 消息头：
 
 **新增 API**：
 
-| API | 说明 |
-|---|---|
-| GET `/api/v1/rag/stats/overview` | 统计概览 |
-| GET `/api/v1/rag/stats/kb/{kbId}` | 知识库统计详情 |
-| GET `/api/v1/rag/stats/retrieval/hit-rate` | 命中率分析 |
-| GET `/api/v1/rag/stats/retrieval/latency` | 延迟分析 |
-| GET `/api/v1/rag/stats/retrieval/timeline` | 趋势时间线 |
-| GET `/api/v1/rag/embeddings/models/{modelId}` | 模型详情 |
-| GET `/api/v1/rag/knowledge-bases/{kbId}/chunk-strategy` | 获取分块策略 |
-| GET `/api/v1/rag/knowledge-bases/{kbId}/embedding-model` | 获取 Embedding 模型配置 |
-| GET `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}/chunks` | 分块列表 |
+| API                                                               | 说明                    |
+| ----------------------------------------------------------------- | ----------------------- |
+| GET `/api/v1/rag/stats/overview`                                  | 统计概览                |
+| GET `/api/v1/rag/stats/kb/{kbId}`                                 | 知识库统计详情          |
+| GET `/api/v1/rag/stats/retrieval/hit-rate`                        | 命中率分析              |
+| GET `/api/v1/rag/stats/retrieval/latency`                         | 延迟分析                |
+| GET `/api/v1/rag/stats/retrieval/timeline`                        | 趋势时间线              |
+| GET `/api/v1/rag/embeddings/models/{modelId}`                     | 模型详情                |
+| GET `/api/v1/rag/knowledge-bases/{kbId}/chunk-strategy`           | 获取分块策略            |
+| GET `/api/v1/rag/knowledge-bases/{kbId}/embedding-model`          | 获取 Embedding 模型配置 |
+| GET `/api/v1/rag/knowledge-bases/{kbId}/documents/{docId}/chunks` | 分块列表                |
 
 **支撑能力**：
+
 - rag_retrieval_logs 检索日志采集与聚合
 - 统计数据 Redis 缓存
 - Prometheus 指标导出
@@ -3982,17 +3986,17 @@ Kafka 消息头：
 
 **优化项**：
 
-| 优化项 | 说明 |
-|---|---|
-| Embedding 缓存 | rag_embedding_cache 表 + Redis 双层缓存，避免重复向量化 |
-| 检索结果缓存 | Redis 缓存高频查询结果，TTL 5 分钟 |
-| Milvus 索引优化 | HNSW 参数调优、RaBitQ 量化 |
-| 批量向量化优化 | 批量大小动态调整、并行调用 LLMGW |
-| 文档解析并行化 | 大文档分页并行解析 |
-| 连接池优化 | PostgreSQL / Milvus / Redis 连接池配置 |
-| 限流策略 | 基于 Redis 的滑动窗口限流 |
-| DLQ 告警 | Prometheus alertmanager 集成 |
-| 水平扩容 | Celery worker 水平扩容、API 无状态部署 |
+| 优化项          | 说明                                                    |
+| --------------- | ------------------------------------------------------- |
+| Embedding 缓存  | rag_embedding_cache 表 + Redis 双层缓存，避免重复向量化 |
+| 检索结果缓存    | Redis 缓存高频查询结果，TTL 5 分钟                      |
+| Milvus 索引优化 | HNSW 参数调优、RaBitQ 量化                              |
+| 批量向量化优化  | 批量大小动态调整、并行调用 LLMGW                        |
+| 文档解析并行化  | 大文档分页并行解析                                      |
+| 连接池优化      | PostgreSQL / Milvus / Redis 连接池配置                  |
+| 限流策略        | 基于 Redis 的滑动窗口限流                               |
+| DLQ 告警        | Prometheus alertmanager 集成                            |
+| 水平扩容        | Celery worker 水平扩容、API 无状态部署                  |
 
 ---
 
@@ -4000,103 +4004,103 @@ Kafka 消息头：
 
 ### A.1 知识库状态（KnowledgeBaseStatus）
 
-| 值 | 说明 |
-|---|---|
-| ACTIVE | 活跃，可正常使用 |
-| INACTIVE | 停用，不可检索 |
+| 值       | 说明             |
+| -------- | ---------------- |
+| ACTIVE   | 活跃，可正常使用 |
+| INACTIVE | 停用，不可检索   |
 
 ### A.2 文档状态（DocumentStatus）
 
-| 值 | 说明 |
-|---|---|
-| UPLOADED | 已上传，等待解析 |
-| DOWNLOADING | URL 下载中 |
-| PARSING | 解析分块中 |
-| PARSED | 解析完成，等待向量化 |
-| EMBEDDING | 向量化中 |
-| READY | 就绪，可检索 |
-| FAILED | 处理失败 |
+| 值          | 说明                 |
+| ----------- | -------------------- |
+| UPLOADED    | 已上传，等待解析     |
+| DOWNLOADING | URL 下载中           |
+| PARSING     | 解析分块中           |
+| PARSED      | 解析完成，等待向量化 |
+| EMBEDDING   | 向量化中             |
+| READY       | 就绪，可检索         |
+| FAILED      | 处理失败             |
 
 ### A.3 文件类型（FileType）
 
-| 值 | 说明 | 扩展名 |
-|---|---|---|
-| PDF | PDF 文档 | .pdf |
-| WORD | Word 文档 | .doc, .docx |
-| PPT | PowerPoint | .ppt, .pptx |
-| EXCEL | Excel/CSV | .xls, .xlsx, .csv |
-| TEXT | 纯文本 | .txt, .rst |
-| MARKDOWN | Markdown | .md |
-| HTML | 网页 | .html, .htm |
-| AUDIO | 音频 | .mp3, .wav, .m4a, .flac |
-| VIDEO | 视频 | .mp4, .avi, .mov, .mkv |
+| 值       | 说明       | 扩展名                  |
+| -------- | ---------- | ----------------------- |
+| PDF      | PDF 文档   | .pdf                    |
+| WORD     | Word 文档  | .doc, .docx             |
+| PPT      | PowerPoint | .ppt, .pptx             |
+| EXCEL    | Excel/CSV  | .xls, .xlsx, .csv       |
+| TEXT     | 纯文本     | .txt, .rst              |
+| MARKDOWN | Markdown   | .md                     |
+| HTML     | 网页       | .html, .htm             |
+| AUDIO    | 音频       | .mp3, .wav, .m4a, .flac |
+| VIDEO    | 视频       | .mp4, .avi, .mov, .mkv  |
 
 ### A.4 分块策略类型（ChunkStrategyType）
 
-| 值 | 说明 | 适用场景 |
-|---|---|---|
-| FIXED_SIZE | 固定大小分块 | 通用场景 |
-| RECURSIVE | 递归分块 | 结构化文本 |
-| SENTENCE | 按句分块 | 对话/文章 |
-| MARKDOWN | Markdown 结构分块 | 技术文档 |
-| SEMANTIC | 语义分块 | 高质量检索 |
+| 值         | 说明              | 适用场景   |
+| ---------- | ----------------- | ---------- |
+| FIXED_SIZE | 固定大小分块      | 通用场景   |
+| RECURSIVE  | 递归分块          | 结构化文本 |
+| SENTENCE   | 按句分块          | 对话/文章  |
+| MARKDOWN   | Markdown 结构分块 | 技术文档   |
+| SEMANTIC   | 语义分块          | 高质量检索 |
 
 ### A.5 距离度量类型（MetricType）
 
-| 值 | 说明 | 公式 |
-|---|---|---|
+| 值     | 说明       | 公式          |
+| ------ | ---------- | ------------- | --- | ----- | --- | --- |
 | COSINE | 余弦相似度 | 1 - cos(a, b) |
-| IP | 内积 | dot(a, b) |
-| L2 | 欧氏距离 | ||a - b|| |
+| IP     | 内积       | dot(a, b)     |
+| L2     | 欧氏距离   |               |     | a - b |     |     |
 
 ### A.6 检索类型（RetrievalType）
 
-| 值 | 说明 |
-|---|---|
-| VECTOR | 向量检索 |
-| KEYWORD | 关键词检索 |
-| HYBRID | 混合检索 |
-| GRAPH | 图谱增强检索 |
+| 值       | 说明         |
+| -------- | ------------ |
+| VECTOR   | 向量检索     |
+| KEYWORD  | 关键词检索   |
+| HYBRID   | 混合检索     |
+| GRAPH    | 图谱增强检索 |
 | MULTI_KB | 跨知识库检索 |
 
 ### A.7 异步任务类型（TaskType）
 
-| 值 | 说明 |
-|---|---|
-| PARSE | 文档解析 |
-| EMBED | 文档向量化 |
-| REPARSE | 重新解析 |
-| REEMBED | 重新向量化 |
-| BATCH_UPLOAD | 批量上传 |
-| BATCH_EMBED | 批量向量化 |
-| DOWNLOAD | URL 下载 |
+| 值           | 说明       |
+| ------------ | ---------- |
+| PARSE        | 文档解析   |
+| EMBED        | 文档向量化 |
+| REPARSE      | 重新解析   |
+| REEMBED      | 重新向量化 |
+| BATCH_UPLOAD | 批量上传   |
+| BATCH_EMBED  | 批量向量化 |
+| DOWNLOAD     | URL 下载   |
 
 ### A.8 异步任务状态（TaskStatus）
 
-| 值 | 说明 |
-|---|---|
-| QUEUED | 排队中 |
-| RUNNING | 执行中 |
-| SUCCESS | 成功 |
-| FAILED | 失败 |
+| 值        | 说明   |
+| --------- | ------ |
+| QUEUED    | 排队中 |
+| RUNNING   | 执行中 |
+| SUCCESS   | 成功   |
+| FAILED    | 失败   |
 | CANCELLED | 已取消 |
 
 ### A.9 事件类型（EventType）
 
-| 值 | Topic | 说明 |
-|---|---|---|
-| DOCUMENT_UPLOADED | rag.document.events | 文档上传 |
-| DOCUMENT_PARSING_STARTED | rag.document.events | 开始解析 |
-| DOCUMENT_PARSED | rag.document.events | 解析完成 |
-| DOCUMENT_EMBEDDING_STARTED | rag.document.events | 开始向量化 |
-| DOCUMENT_READY | rag.document.events | 文档就绪 |
-| DOCUMENT_PARSE_FAILED | rag.document.events | 解析/向量化失败 |
-| DOCUMENT_DELETED | rag.document.events | 文档删除 |
-| RETRIEVAL_EXECUTED | rag.retrieval.events | 检索执行 |
-| RETRIEVAL_ZERO_RESULT | rag.retrieval.events | 检索零结果 |
-| KB_CREATED | rag.kb.events | 知识库创建 |
-| KB_EMBEDDING_MODEL_CHANGED | rag.kb.events | Embedding 模型变更 |
-| KB_DELETED | rag.kb.events | 知识库删除 |
+| 值                         | Topic                | 说明               |
+| -------------------------- | -------------------- | ------------------ |
+| DOCUMENT_UPLOADED          | rag.document.events  | 文档上传           |
+| DOCUMENT_PARSING_STARTED   | rag.document.events  | 开始解析           |
+| DOCUMENT_PARSED            | rag.document.events  | 解析完成           |
+| DOCUMENT_EMBEDDING_STARTED | rag.document.events  | 开始向量化         |
+| DOCUMENT_READY             | rag.document.events  | 文档就绪           |
+| DOCUMENT_PARSE_FAILED      | rag.document.events  | 解析/向量化失败    |
+| DOCUMENT_DELETED           | rag.document.events  | 文档删除           |
+| RETRIEVAL_EXECUTED         | rag.retrieval.events | 检索执行           |
+| RETRIEVAL_ZERO_RESULT      | rag.retrieval.events | 检索零结果         |
+| KB_CREATED                 | rag.kb.events        | 知识库创建         |
+| KB_EMBEDDING_MODEL_CHANGED | rag.kb.events        | Embedding 模型变更 |
+| KB_DELETED                 | rag.kb.events        | 知识库删除         |
 
 ---
 
@@ -4104,32 +4108,32 @@ Kafka 消息头：
 
 ### B.1 TECH-LLMGW 调用
 
-| 调用场景 | 接口 | 说明 |
-|---|---|---|
-| Embedding 生成 | `POST /api/v1/llmgw/embeddings` | 文本向量化 |
-| 批量 Embedding | `POST /api/v1/llmgw/embeddings/batch` | 批量向量化 |
-| Rerank | `POST /api/v1/llmgw/rerank` | 重排序 |
-| ASR 转写 | `POST /api/v1/llmgw/asr` | 音视频转文字 |
-| 模型列表 | `GET /api/v1/llmgw/models?type=embedding` | 获取可用模型 |
+| 调用场景       | 接口                                      | 说明         |
+| -------------- | ----------------------------------------- | ------------ |
+| Embedding 生成 | `POST /api/v1/llmgw/embeddings`           | 文本向量化   |
+| 批量 Embedding | `POST /api/v1/llmgw/embeddings/batch`     | 批量向量化   |
+| Rerank         | `POST /api/v1/llmgw/rerank`               | 重排序       |
+| ASR 转写       | `POST /api/v1/llmgw/asr`                  | 音视频转文字 |
+| 模型列表       | `GET /api/v1/llmgw/models?type=embedding` | 获取可用模型 |
 
 所有调用透传 `X-Trace-Id` 头。
 
 ### B.2 TECH-ONT 调用
 
-| 调用场景 | 接口 | 说明 |
-|---|---|---|
-| 实体链接 | `POST /api/v1/ont/entities/linking` | 文本实体识别与链接 |
-| 图谱查询 | `POST /api/v1/ont/graph/query` | 实体关系扩展查询 |
-| 概念查询 | `GET /api/v1/ont/concepts/{conceptCode}` | 概念详情 |
+| 调用场景 | 接口                                     | 说明               |
+| -------- | ---------------------------------------- | ------------------ |
+| 实体链接 | `POST /api/v1/ont/entities/linking`      | 文本实体识别与链接 |
+| 图谱查询 | `POST /api/v1/ont/graph/query`           | 实体关系扩展查询   |
+| 概念查询 | `GET /api/v1/ont/concepts/{conceptCode}` | 概念详情           |
 
 所有调用透传 `X-Trace-Id` 头。
 
 ### B.3 TECH-DATA 调用
 
-| 调用场景 | 接口 | 说明 |
-|---|---|---|
-| 数据源同步 | `GET /api/v1/data/sources/{sourceId}/sync` | 触发数据源同步 |
-| 结构化数据查询 | `POST /api/v1/data/query` | 查询结构化数据 |
+| 调用场景       | 接口                                       | 说明           |
+| -------------- | ------------------------------------------ | -------------- |
+| 数据源同步     | `GET /api/v1/data/sources/{sourceId}/sync` | 触发数据源同步 |
+| 结构化数据查询 | `POST /api/v1/data/query`                  | 查询结构化数据 |
 
 ---
 

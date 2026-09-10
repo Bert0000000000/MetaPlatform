@@ -9,6 +9,7 @@ The tuple fields (``DwEmployee.kb_ids`` / ``.tools`` / ``.action_rids``)
 are serialised as newline-separated TEXT on write and re-hydrated to a
 tuple on read.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import delete, func, select
@@ -251,11 +252,15 @@ def list_auth_logins(tenant_id: str) -> list[DwAuthLogin]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwAuthLoginORM)
-        .where(models.DwAuthLoginORM.tenant_id == tenant_id)
-        .order_by(models.DwAuthLoginORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DwAuthLoginORM)
+            .where(models.DwAuthLoginORM.tenant_id == tenant_id)
+            .order_by(models.DwAuthLoginORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_auth_login(r) for r in rows]
 
 
@@ -276,11 +281,15 @@ def list_collaborations(tenant_id: str) -> list[DwCollaboration]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwCollaborationORM)
-        .where(models.DwCollaborationORM.tenant_id == tenant_id)
-        .order_by(models.DwCollaborationORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DwCollaborationORM)
+            .where(models.DwCollaborationORM.tenant_id == tenant_id)
+            .order_by(models.DwCollaborationORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_collaboration(r) for r in rows]
 
 
@@ -301,11 +310,15 @@ def list_commits(tenant_id: str) -> list[DwCommit]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwCommitORM)
-        .where(models.DwCommitORM.tenant_id == tenant_id)
-        .order_by(models.DwCommitORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DwCommitORM)
+            .where(models.DwCommitORM.tenant_id == tenant_id)
+            .order_by(models.DwCommitORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_commit(r) for r in rows]
 
 
@@ -326,11 +339,15 @@ def list_documents(tenant_id: str) -> list[DwDocument]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwDocumentORM)
-        .where(models.DwDocumentORM.tenant_id == tenant_id)
-        .order_by(models.DwDocumentORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DwDocumentORM)
+            .where(models.DwDocumentORM.tenant_id == tenant_id)
+            .order_by(models.DwDocumentORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_document(r) for r in rows]
 
 
@@ -351,11 +368,15 @@ def list_employees(tenant_id: str) -> list[DwEmployee]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwEmployeeORM)
-        .where(models.DwEmployeeORM.tenant_id == tenant_id)
-        .order_by(models.DwEmployeeORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DwEmployeeORM)
+            .where(models.DwEmployeeORM.tenant_id == tenant_id)
+            .order_by(models.DwEmployeeORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_employee(r) for r in rows]
 
 
@@ -376,11 +397,15 @@ def list_employee_tasks(tenant_id: str) -> list[DwEmployeeTask]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwEmployeeTaskORM)
-        .where(models.DwEmployeeTaskORM.tenant_id == tenant_id)
-        .order_by(models.DwEmployeeTaskORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DwEmployeeTaskORM)
+            .where(models.DwEmployeeTaskORM.tenant_id == tenant_id)
+            .order_by(models.DwEmployeeTaskORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_employee_task(r) for r in rows]
 
 
@@ -401,11 +426,15 @@ def list_evaluations(tenant_id: str) -> list[DwEvaluation]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwEvaluationORM)
-        .where(models.DwEvaluationORM.tenant_id == tenant_id)
-        .order_by(models.DwEvaluationORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DwEvaluationORM)
+            .where(models.DwEvaluationORM.tenant_id == tenant_id)
+            .order_by(models.DwEvaluationORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_evaluation(r) for r in rows]
 
 
@@ -426,11 +455,15 @@ def list_extracts(tenant_id: str) -> list[DwExtract]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwExtractORM)
-        .where(models.DwExtractORM.tenant_id == tenant_id)
-        .order_by(models.DwExtractORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DwExtractORM)
+            .where(models.DwExtractORM.tenant_id == tenant_id)
+            .order_by(models.DwExtractORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_extract(r) for r in rows]
 
 
@@ -451,11 +484,15 @@ def list_knowledge_bases(tenant_id: str) -> list[DwKnowledgeBase]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwKnowledgeBaseORM)
-        .where(models.DwKnowledgeBaseORM.tenant_id == tenant_id)
-        .order_by(models.DwKnowledgeBaseORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DwKnowledgeBaseORM)
+            .where(models.DwKnowledgeBaseORM.tenant_id == tenant_id)
+            .order_by(models.DwKnowledgeBaseORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_knowledge_base(r) for r in rows]
 
 
@@ -476,11 +513,15 @@ def list_learning_extracts(tenant_id: str) -> list[DwLearningExtract]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwLearningExtractORM)
-        .where(models.DwLearningExtractORM.tenant_id == tenant_id)
-        .order_by(models.DwLearningExtractORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DwLearningExtractORM)
+            .where(models.DwLearningExtractORM.tenant_id == tenant_id)
+            .order_by(models.DwLearningExtractORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_learning_extract(r) for r in rows]
 
 
@@ -501,11 +542,15 @@ def list_learning_feedback(tenant_id: str) -> list[DwLearningFeedback]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwLearningFeedbackORM)
-        .where(models.DwLearningFeedbackORM.tenant_id == tenant_id)
-        .order_by(models.DwLearningFeedbackORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DwLearningFeedbackORM)
+            .where(models.DwLearningFeedbackORM.tenant_id == tenant_id)
+            .order_by(models.DwLearningFeedbackORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_learning_feedback(r) for r in rows]
 
 
@@ -526,11 +571,15 @@ def list_models(tenant_id: str) -> list[DwModel]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwModelORM)
-        .where(models.DwModelORM.tenant_id == tenant_id)
-        .order_by(models.DwModelORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DwModelORM)
+            .where(models.DwModelORM.tenant_id == tenant_id)
+            .order_by(models.DwModelORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_model(r) for r in rows]
 
 
@@ -551,11 +600,15 @@ def list_tools(tenant_id: str) -> list[DwTool]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwToolORM)
-        .where(models.DwToolORM.tenant_id == tenant_id)
-        .order_by(models.DwToolORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DwToolORM)
+            .where(models.DwToolORM.tenant_id == tenant_id)
+            .order_by(models.DwToolORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_tool(r) for r in rows]
 
 
@@ -576,11 +629,15 @@ def list_traces(tenant_id: str) -> list[DwTrace]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwTraceORM)
-        .where(models.DwTraceORM.tenant_id == tenant_id)
-        .order_by(models.DwTraceORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.DwTraceORM)
+            .where(models.DwTraceORM.tenant_id == tenant_id)
+            .order_by(models.DwTraceORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_trace(r) for r in rows]
 
 
@@ -611,11 +668,16 @@ def put_auth_login(tenant_id: str, entity: DwAuthLogin) -> DwAuthLogin:
         existing.ip = entity.ip
         existing.status = entity.status
     else:
-        s.add(models.DwAuthLoginORM(
-            id=entity.id, tenant_id=tenant_id,
-            employee_id=entity.employee_id, login_at=entity.login_at,
-            ip=entity.ip, status=entity.status,
-        ))
+        s.add(
+            models.DwAuthLoginORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                employee_id=entity.employee_id,
+                login_at=entity.login_at,
+                ip=entity.ip,
+                status=entity.status,
+            )
+        )
     s.commit()
     return entity
 
@@ -632,14 +694,17 @@ def put_collaboration(tenant_id: str, entity: DwCollaboration) -> DwCollaboratio
         existing.started_at = entity.started_at
         existing.duration_ms = entity.duration_ms
     else:
-        s.add(models.DwCollaborationORM(
-            id=entity.id, tenant_id=tenant_id,
-            employee_id=entity.employee_id,
-            peer_employee_id=entity.peer_employee_id,
-            session_id=entity.session_id,
-            started_at=entity.started_at,
-            duration_ms=entity.duration_ms,
-        ))
+        s.add(
+            models.DwCollaborationORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                employee_id=entity.employee_id,
+                peer_employee_id=entity.peer_employee_id,
+                session_id=entity.session_id,
+                started_at=entity.started_at,
+                duration_ms=entity.duration_ms,
+            )
+        )
     s.commit()
     return entity
 
@@ -656,12 +721,17 @@ def put_commit(tenant_id: str, entity: DwCommit) -> DwCommit:
         existing.summary = entity.summary
         existing.committed_at = entity.committed_at
     else:
-        s.add(models.DwCommitORM(
-            id=entity.id, tenant_id=tenant_id,
-            employee_id=entity.employee_id, scope=entity.scope,
-            target_id=entity.target_id, summary=entity.summary,
-            committed_at=entity.committed_at,
-        ))
+        s.add(
+            models.DwCommitORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                employee_id=entity.employee_id,
+                scope=entity.scope,
+                target_id=entity.target_id,
+                summary=entity.summary,
+                committed_at=entity.committed_at,
+            )
+        )
     s.commit()
     return entity
 
@@ -681,14 +751,20 @@ def put_document(tenant_id: str, entity: DwDocument) -> DwDocument:
         existing.document_id = entity.document_id
         existing.chunk_count = entity.chunk_count
     else:
-        s.add(models.DwDocumentORM(
-            id=entity.id, tenant_id=tenant_id,
-            name=entity.name, kind=entity.kind,
-            size_bytes=entity.size_bytes,
-            uploaded_by=entity.uploaded_by,
-            uploaded_at=entity.uploaded_at, kb_id=entity.kb_id,
-            document_id=entity.document_id, chunk_count=entity.chunk_count,
-        ))
+        s.add(
+            models.DwDocumentORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                name=entity.name,
+                kind=entity.kind,
+                size_bytes=entity.size_bytes,
+                uploaded_by=entity.uploaded_by,
+                uploaded_at=entity.uploaded_at,
+                kb_id=entity.kb_id,
+                document_id=entity.document_id,
+                chunk_count=entity.chunk_count,
+            )
+        )
     s.commit()
     return entity
 
@@ -719,18 +795,28 @@ def put_employee(tenant_id: str, entity: DwEmployee) -> DwEmployee:
         existing.top_k = entity.top_k
         existing.rerank = entity.rerank
     else:
-        s.add(models.DwEmployeeORM(
-            id=entity.id, tenant_id=tenant_id,
-            name=entity.name, code=entity.code,
-            role=entity.role, status=entity.status,
-            model_id=entity.model_id, kb_ids=kb_ids_str,
-            is_builtin=entity.is_builtin,
-            system_prompt=entity.system_prompt,
-            tools=tools_str, action_rids=action_rids_str,
-            temperature=entity.temperature, max_tokens=entity.max_tokens,
-            top_p=entity.top_p, retrieval_method=entity.retrieval_method,
-            top_k=entity.top_k, rerank=entity.rerank,
-        ))
+        s.add(
+            models.DwEmployeeORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                name=entity.name,
+                code=entity.code,
+                role=entity.role,
+                status=entity.status,
+                model_id=entity.model_id,
+                kb_ids=kb_ids_str,
+                is_builtin=entity.is_builtin,
+                system_prompt=entity.system_prompt,
+                tools=tools_str,
+                action_rids=action_rids_str,
+                temperature=entity.temperature,
+                max_tokens=entity.max_tokens,
+                top_p=entity.top_p,
+                retrieval_method=entity.retrieval_method,
+                top_k=entity.top_k,
+                rerank=entity.rerank,
+            )
+        )
     s.commit()
     return entity
 
@@ -748,13 +834,18 @@ def put_employee_task(tenant_id: str, entity: DwEmployeeTask) -> DwEmployeeTask:
         existing.finished_at = entity.finished_at
         existing.duration_ms = entity.duration_ms
     else:
-        s.add(models.DwEmployeeTaskORM(
-            id=entity.id, tenant_id=tenant_id,
-            employee_id=entity.employee_id, title=entity.title,
-            status=entity.status, started_at=entity.started_at,
-            finished_at=entity.finished_at,
-            duration_ms=entity.duration_ms,
-        ))
+        s.add(
+            models.DwEmployeeTaskORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                employee_id=entity.employee_id,
+                title=entity.title,
+                status=entity.status,
+                started_at=entity.started_at,
+                finished_at=entity.finished_at,
+                duration_ms=entity.duration_ms,
+            )
+        )
     s.commit()
     return entity
 
@@ -771,13 +862,17 @@ def put_evaluation(tenant_id: str, entity: DwEvaluation) -> DwEvaluation:
         existing.passed = entity.passed
         existing.evaluated_at = entity.evaluated_at
     else:
-        s.add(models.DwEvaluationORM(
-            id=entity.id, tenant_id=tenant_id,
-            employee_id=entity.employee_id,
-            qa_set_id=entity.qa_set_id,
-            score=entity.score, passed=entity.passed,
-            evaluated_at=entity.evaluated_at,
-        ))
+        s.add(
+            models.DwEvaluationORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                employee_id=entity.employee_id,
+                qa_set_id=entity.qa_set_id,
+                score=entity.score,
+                passed=entity.passed,
+                evaluated_at=entity.evaluated_at,
+            )
+        )
     s.commit()
     return entity
 
@@ -794,13 +889,17 @@ def put_extract(tenant_id: str, entity: DwExtract) -> DwExtract:
         existing.extracted_facts = entity.extracted_facts
         existing.extracted_at = entity.extracted_at
     else:
-        s.add(models.DwExtractORM(
-            id=entity.id, tenant_id=tenant_id,
-            employee_id=entity.employee_id,
-            source=entity.source, source_id=entity.source_id,
-            extracted_facts=entity.extracted_facts,
-            extracted_at=entity.extracted_at,
-        ))
+        s.add(
+            models.DwExtractORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                employee_id=entity.employee_id,
+                source=entity.source,
+                source_id=entity.source_id,
+                extracted_facts=entity.extracted_facts,
+                extracted_at=entity.extracted_at,
+            )
+        )
     s.commit()
     return entity
 
@@ -818,12 +917,18 @@ def put_knowledge_base(tenant_id: str, entity: DwKnowledgeBase) -> DwKnowledgeBa
         existing.owner = entity.owner
         existing.updated_at = entity.updated_at
     else:
-        s.add(models.DwKnowledgeBaseORM(
-            id=entity.id, tenant_id=tenant_id,
-            name=entity.name, code=entity.code,
-            docs=entity.docs, vectors=entity.vectors,
-            owner=entity.owner, updated_at=entity.updated_at,
-        ))
+        s.add(
+            models.DwKnowledgeBaseORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                name=entity.name,
+                code=entity.code,
+                docs=entity.docs,
+                vectors=entity.vectors,
+                owner=entity.owner,
+                updated_at=entity.updated_at,
+            )
+        )
     s.commit()
     return entity
 
@@ -839,12 +944,16 @@ def put_learning_extract(tenant_id: str, entity: DwLearningExtract) -> DwLearnin
         existing.extracted_at = entity.extracted_at
         existing.facts = entity.facts
     else:
-        s.add(models.DwLearningExtractORM(
-            id=entity.id, tenant_id=tenant_id,
-            employee_id=entity.employee_id,
-            scenario=entity.scenario,
-            extracted_at=entity.extracted_at, facts=entity.facts,
-        ))
+        s.add(
+            models.DwLearningExtractORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                employee_id=entity.employee_id,
+                scenario=entity.scenario,
+                extracted_at=entity.extracted_at,
+                facts=entity.facts,
+            )
+        )
     s.commit()
     return entity
 
@@ -863,14 +972,19 @@ def put_learning_feedback(tenant_id: str, entity: DwLearningFeedback) -> DwLearn
         existing.promoted_document_id = entity.promoted_document_id
         existing.promoted_at = entity.promoted_at
     else:
-        s.add(models.DwLearningFeedbackORM(
-            id=entity.id, tenant_id=tenant_id,
-            employee_id=entity.employee_id,
-            scenario=entity.scenario, rating=entity.rating,
-            comment=entity.comment, feedback_at=entity.feedback_at,
-            promoted_document_id=entity.promoted_document_id,
-            promoted_at=entity.promoted_at,
-        ))
+        s.add(
+            models.DwLearningFeedbackORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                employee_id=entity.employee_id,
+                scenario=entity.scenario,
+                rating=entity.rating,
+                comment=entity.comment,
+                feedback_at=entity.feedback_at,
+                promoted_document_id=entity.promoted_document_id,
+                promoted_at=entity.promoted_at,
+            )
+        )
     s.commit()
     return entity
 
@@ -887,12 +1001,17 @@ def put_model(tenant_id: str, entity: DwModel) -> DwModel:
         existing.modality = entity.modality
         existing.enabled = entity.enabled
     else:
-        s.add(models.DwModelORM(
-            id=entity.id, tenant_id=tenant_id,
-            provider=entity.provider, model_id=entity.model_id,
-            display_name=entity.display_name,
-            modality=entity.modality, enabled=entity.enabled,
-        ))
+        s.add(
+            models.DwModelORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                provider=entity.provider,
+                model_id=entity.model_id,
+                display_name=entity.display_name,
+                modality=entity.modality,
+                enabled=entity.enabled,
+            )
+        )
     s.commit()
     return entity
 
@@ -909,12 +1028,17 @@ def put_tool(tenant_id: str, entity: DwTool) -> DwTool:
         existing.enabled = entity.enabled
         existing.invocations = entity.invocations
     else:
-        s.add(models.DwToolORM(
-            id=entity.id, tenant_id=tenant_id,
-            name=entity.name, code=entity.code,
-            kind=entity.kind, enabled=entity.enabled,
-            invocations=entity.invocations,
-        ))
+        s.add(
+            models.DwToolORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                name=entity.name,
+                code=entity.code,
+                kind=entity.kind,
+                enabled=entity.enabled,
+                invocations=entity.invocations,
+            )
+        )
     s.commit()
     return entity
 
@@ -932,15 +1056,18 @@ def put_trace(tenant_id: str, entity: DwTrace) -> DwTrace:
         existing.duration_ms = entity.duration_ms
         existing.started_at = entity.started_at
     else:
-        s.add(models.DwTraceORM(
-            id=entity.id, tenant_id=tenant_id,
-            employee_id=entity.employee_id,
-            trace_id=entity.trace_id,
-            span_count=entity.span_count,
-            status=entity.status,
-            duration_ms=entity.duration_ms,
-            started_at=entity.started_at,
-        ))
+        s.add(
+            models.DwTraceORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                employee_id=entity.employee_id,
+                trace_id=entity.trace_id,
+                span_count=entity.span_count,
+                status=entity.status,
+                duration_ms=entity.duration_ms,
+                started_at=entity.started_at,
+            )
+        )
     s.commit()
     return entity
 
@@ -989,17 +1116,24 @@ def create_employee(tenant_id: str, employee: DwEmployee) -> DwEmployee:
 # DwEmployee dataclass field -> ORM column. Tuple fields are joined into
 # their newline-separated TEXT columns before being written.
 _EMPLOYEE_UPDATE_FIELDS: dict[str, str] = {
-    "name": "name", "code": "code", "role": "role", "status": "status",
-    "model_id": "model_id", "kb_ids": "kb_ids", "is_builtin": "is_builtin",
-    "system_prompt": "system_prompt", "tools": "tools",
-    "action_rids": "action_rids", "temperature": "temperature",
-    "max_tokens": "max_tokens", "top_p": "top_p",
-    "retrieval_method": "retrieval_method", "top_k": "top_k",
+    "name": "name",
+    "code": "code",
+    "role": "role",
+    "status": "status",
+    "model_id": "model_id",
+    "kb_ids": "kb_ids",
+    "is_builtin": "is_builtin",
+    "system_prompt": "system_prompt",
+    "tools": "tools",
+    "action_rids": "action_rids",
+    "temperature": "temperature",
+    "max_tokens": "max_tokens",
+    "top_p": "top_p",
+    "retrieval_method": "retrieval_method",
+    "top_k": "top_k",
     "rerank": "rerank",
 }
-_EMPLOYEE_TUPLE_FIELDS: frozenset[str] = frozenset(
-    {"kb_ids", "tools", "action_rids"}
-)
+_EMPLOYEE_TUPLE_FIELDS: frozenset[str] = frozenset({"kb_ids", "tools", "action_rids"})
 
 
 def update_employee(tenant_id: str, employee_id: str, **kwargs) -> DwEmployee | None:
@@ -1045,7 +1179,8 @@ def delete_employee(tenant_id: str, employee_id: str) -> bool:
 
 
 def append_employee_task(
-    tenant_id: str, task: DwEmployeeTask,
+    tenant_id: str,
+    task: DwEmployeeTask,
 ) -> DwEmployeeTask:
     """Persist a new employee task. Used by POST /employees/{id}/tasks."""
     if not tenant_id:
@@ -1054,7 +1189,11 @@ def append_employee_task(
 
 
 def update_employee_task(
-    tenant_id: str, task_id: str, *, status: str, finished_at: str | None = None,
+    tenant_id: str,
+    task_id: str,
+    *,
+    status: str,
+    finished_at: str | None = None,
     duration_ms: int | None = None,
 ) -> DwEmployeeTask | None:
     """Patch a task's status. Returns the updated task or None.
@@ -1083,7 +1222,8 @@ def update_employee_task(
 
 
 def append_evaluation(
-    tenant_id: str, evaluation: DwEvaluation,
+    tenant_id: str,
+    evaluation: DwEvaluation,
 ) -> DwEvaluation:
     """Persist a new evaluation. Used by POST /employees/{id}/evaluations."""
     if not tenant_id:
@@ -1092,7 +1232,8 @@ def append_evaluation(
 
 
 def append_learning_feedback(
-    tenant_id: str, feedback: DwLearningFeedback,
+    tenant_id: str,
+    feedback: DwLearningFeedback,
 ) -> DwLearningFeedback:
     """Persist learning feedback. Used by POST /learning/feedback."""
     if not tenant_id:
@@ -1100,14 +1241,23 @@ def append_learning_feedback(
     return put_learning_feedback(tenant_id, feedback)
 
 
-_FEEDBACK_UPDATE_FIELDS: frozenset[str] = frozenset({
-    "employee_id", "scenario", "rating", "comment", "feedback_at",
-    "promoted_document_id", "promoted_at",
-})
+_FEEDBACK_UPDATE_FIELDS: frozenset[str] = frozenset(
+    {
+        "employee_id",
+        "scenario",
+        "rating",
+        "comment",
+        "feedback_at",
+        "promoted_document_id",
+        "promoted_at",
+    }
+)
 
 
 def update_learning_feedback(
-    tenant_id: str, feedback_id: str, **kwargs,
+    tenant_id: str,
+    feedback_id: str,
+    **kwargs,
 ) -> DwLearningFeedback | None:
     """Patch a learning-feedback record. Returns updated or None if missing.
 
@@ -1135,7 +1285,8 @@ def update_learning_feedback(
 
 
 def append_collaboration(
-    tenant_id: str, collab: DwCollaboration,
+    tenant_id: str,
+    collab: DwCollaboration,
 ) -> DwCollaboration:
     """Persist a collaboration session. Used by POST /collaborations."""
     if not tenant_id:
@@ -1148,16 +1299,20 @@ def append_collaboration(
 # ---------------------------------------------------------------------------
 def _orm_to_employee_conversation(row: models.DwEmployeeConversationORM) -> DwEmployeeConversation:
     return DwEmployeeConversation(
-        id=row.id, tenant_id=row.tenant_id,
-        user_id=row.user_id or "", employee_id=row.employee_id or "",
+        id=row.id,
+        tenant_id=row.tenant_id,
+        user_id=row.user_id or "",
+        employee_id=row.employee_id or "",
         title=row.title or "",
-        created_at=row.created_at or "", updated_at=row.updated_at or "",
+        created_at=row.created_at or "",
+        updated_at=row.updated_at or "",
     )
 
 
 def _orm_to_employee_message(row: models.DwEmployeeMessageORM) -> DwEmployeeMessage:
     return DwEmployeeMessage(
-        id=row.id, tenant_id=row.tenant_id,
+        id=row.id,
+        tenant_id=row.tenant_id,
         conversation_id=row.conversation_id or "",
         role=row.role or "user",
         content=row.content or "",
@@ -1169,25 +1324,32 @@ def _orm_to_employee_message(row: models.DwEmployeeMessageORM) -> DwEmployeeMess
 
 
 def list_employee_conversations(
-    tenant_id: str, user_id: str, employee_id: str,
+    tenant_id: str,
+    user_id: str,
+    employee_id: str,
 ) -> list[DwEmployeeConversation]:
     if not tenant_id or not user_id or not employee_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwEmployeeConversationORM)
-        .where(
-            models.DwEmployeeConversationORM.tenant_id == tenant_id,
-            models.DwEmployeeConversationORM.user_id == user_id,
-            models.DwEmployeeConversationORM.employee_id == employee_id,
+    rows = (
+        s.execute(
+            select(models.DwEmployeeConversationORM)
+            .where(
+                models.DwEmployeeConversationORM.tenant_id == tenant_id,
+                models.DwEmployeeConversationORM.user_id == user_id,
+                models.DwEmployeeConversationORM.employee_id == employee_id,
+            )
+            .order_by(models.DwEmployeeConversationORM.updated_at.desc())
         )
-        .order_by(models.DwEmployeeConversationORM.updated_at.desc())
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return [_orm_to_employee_conversation(r) for r in rows]
 
 
 def get_employee_conversation(
-    tenant_id: str, conversation_id: str,
+    tenant_id: str,
+    conversation_id: str,
 ) -> DwEmployeeConversation | None:
     if not tenant_id or not conversation_id:
         return None
@@ -1199,7 +1361,8 @@ def get_employee_conversation(
 
 
 def put_employee_conversation(
-    tenant_id: str, entity: DwEmployeeConversation,
+    tenant_id: str,
+    entity: DwEmployeeConversation,
 ) -> DwEmployeeConversation:
     if not tenant_id:
         return entity
@@ -1212,35 +1375,46 @@ def put_employee_conversation(
         existing.created_at = entity.created_at
         existing.updated_at = entity.updated_at
     else:
-        s.add(models.DwEmployeeConversationORM(
-            id=entity.id, tenant_id=tenant_id,
-            user_id=entity.user_id, employee_id=entity.employee_id,
-            title=entity.title,
-            created_at=entity.created_at, updated_at=entity.updated_at,
-        ))
+        s.add(
+            models.DwEmployeeConversationORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                user_id=entity.user_id,
+                employee_id=entity.employee_id,
+                title=entity.title,
+                created_at=entity.created_at,
+                updated_at=entity.updated_at,
+            )
+        )
     s.commit()
     return entity
 
 
 def list_employee_messages(
-    tenant_id: str, conversation_id: str,
+    tenant_id: str,
+    conversation_id: str,
 ) -> list[DwEmployeeMessage]:
     if not tenant_id or not conversation_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.DwEmployeeMessageORM)
-        .where(
-            models.DwEmployeeMessageORM.tenant_id == tenant_id,
-            models.DwEmployeeMessageORM.conversation_id == conversation_id,
+    rows = (
+        s.execute(
+            select(models.DwEmployeeMessageORM)
+            .where(
+                models.DwEmployeeMessageORM.tenant_id == tenant_id,
+                models.DwEmployeeMessageORM.conversation_id == conversation_id,
+            )
+            .order_by(models.DwEmployeeMessageORM.sequence)
         )
-        .order_by(models.DwEmployeeMessageORM.sequence)
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return [_orm_to_employee_message(r) for r in rows]
 
 
 def put_employee_message(
-    tenant_id: str, entity: DwEmployeeMessage,
+    tenant_id: str,
+    entity: DwEmployeeMessage,
 ) -> DwEmployeeMessage:
     if not tenant_id:
         return entity
@@ -1254,13 +1428,19 @@ def put_employee_message(
         existing.sequence = entity.sequence
         existing.created_at = entity.created_at
     else:
-        s.add(models.DwEmployeeMessageORM(
-            id=entity.id, tenant_id=tenant_id,
-            conversation_id=entity.conversation_id,
-            role=entity.role, content=entity.content,
-            status=entity.status, model=entity.model,
-            sequence=entity.sequence, created_at=entity.created_at,
-        ))
+        s.add(
+            models.DwEmployeeMessageORM(
+                id=entity.id,
+                tenant_id=tenant_id,
+                conversation_id=entity.conversation_id,
+                role=entity.role,
+                content=entity.content,
+                status=entity.status,
+                model=entity.model,
+                sequence=entity.sequence,
+                created_at=entity.created_at,
+            )
+        )
     # 触达会话 updated_at（与 in_memory 语义一致：同事务回写，调用方
     # 传新 updated_at 即可；api 层的冗余 put_employee_conversation 仍兼容）。
     conv = s.get(models.DwEmployeeConversationORM, entity.conversation_id)
@@ -1271,7 +1451,8 @@ def put_employee_message(
 
 
 def next_employee_message_sequence(
-    tenant_id: str, conversation_id: str,
+    tenant_id: str,
+    conversation_id: str,
 ) -> int:
     """返回 conversation 内下一条消息 sequence（已存在 + 1）。
 
@@ -1282,9 +1463,7 @@ def next_employee_message_sequence(
     """
     s = _session()
     value = s.execute(
-        select(
-            func.coalesce(func.max(models.DwEmployeeMessageORM.sequence), 0) + 1
-        ).where(
+        select(func.coalesce(func.max(models.DwEmployeeMessageORM.sequence), 0) + 1).where(
             models.DwEmployeeMessageORM.tenant_id == tenant_id,
             models.DwEmployeeMessageORM.conversation_id == conversation_id,
         )
@@ -1309,24 +1488,16 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     counts["collaborations"] = len(
         [put_collaboration(tenant_id, e) for e in mem.list_collaborations(tenant_id)]
     )
-    counts["commits"] = len(
-        [put_commit(tenant_id, e) for e in mem.list_commits(tenant_id)]
-    )
-    counts["documents"] = len(
-        [put_document(tenant_id, e) for e in mem.list_documents(tenant_id)]
-    )
-    counts["employees"] = len(
-        [put_employee(tenant_id, e) for e in mem.list_employees(tenant_id)]
-    )
+    counts["commits"] = len([put_commit(tenant_id, e) for e in mem.list_commits(tenant_id)])
+    counts["documents"] = len([put_document(tenant_id, e) for e in mem.list_documents(tenant_id)])
+    counts["employees"] = len([put_employee(tenant_id, e) for e in mem.list_employees(tenant_id)])
     counts["employee_tasks"] = len(
         [put_employee_task(tenant_id, e) for e in mem.list_employee_tasks(tenant_id)]
     )
     counts["evaluations"] = len(
         [put_evaluation(tenant_id, e) for e in mem.list_evaluations(tenant_id)]
     )
-    counts["extracts"] = len(
-        [put_extract(tenant_id, e) for e in mem.list_extracts(tenant_id)]
-    )
+    counts["extracts"] = len([put_extract(tenant_id, e) for e in mem.list_extracts(tenant_id)])
     counts["knowledge_bases"] = len(
         [put_knowledge_base(tenant_id, e) for e in mem.list_knowledge_bases(tenant_id)]
     )
@@ -1336,13 +1507,7 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     counts["learning_feedback"] = len(
         [put_learning_feedback(tenant_id, e) for e in mem.list_learning_feedback(tenant_id)]
     )
-    counts["models"] = len(
-        [put_model(tenant_id, e) for e in mem.list_models(tenant_id)]
-    )
-    counts["tools"] = len(
-        [put_tool(tenant_id, e) for e in mem.list_tools(tenant_id)]
-    )
-    counts["traces"] = len(
-        [put_trace(tenant_id, e) for e in mem.list_traces(tenant_id)]
-    )
+    counts["models"] = len([put_model(tenant_id, e) for e in mem.list_models(tenant_id)])
+    counts["tools"] = len([put_tool(tenant_id, e) for e in mem.list_tools(tenant_id)])
+    counts["traces"] = len([put_trace(tenant_id, e) for e in mem.list_traces(tenant_id)])
     return counts

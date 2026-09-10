@@ -4,6 +4,7 @@ Every test exercises one endpoint end-to-end through the FastAPI
 TestClient, asserting the documented response shape + status code.
 Outbox events are captured via the shared `outbox` fixture.
 """
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
@@ -35,9 +36,7 @@ def test_list_etl_tasks(client: TestClient, auth_headers_acme: dict[str, str]) -
 def test_list_etl_tasks_status_filter(
     client: TestClient, auth_headers_acme: dict[str, str]
 ) -> None:
-    r = client.get(
-        "/api/v1/etl/tasks", params={"status": "idle"}, headers=auth_headers_acme
-    )
+    r = client.get("/api/v1/etl/tasks", params={"status": "idle"}, headers=auth_headers_acme)
     assert r.status_code == 200, r.text
     body = r.json()
     assert all(t["status"] == "idle" for t in body["items"])
@@ -74,9 +73,7 @@ def test_create_etl_task(
 # 3. GET /tasks/{id} — detail
 # ---------------------------------------------------------------------------
 def test_get_etl_task(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
-    tasks = client.get(
-        "/api/v1/etl/tasks", headers=auth_headers_acme
-    ).json()["items"]
+    tasks = client.get("/api/v1/etl/tasks", headers=auth_headers_acme).json()["items"]
     task_id = tasks[0]["id"]
 
     r = client.get(f"/api/v1/etl/tasks/{task_id}", headers=auth_headers_acme)
@@ -87,9 +84,7 @@ def test_get_etl_task(client: TestClient, auth_headers_acme: dict[str, str]) -> 
     assert "target_table" in body
 
 
-def test_get_etl_task_not_found(
-    client: TestClient, auth_headers_acme: dict[str, str]
-) -> None:
+def test_get_etl_task_not_found(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
     r = client.get("/api/v1/etl/tasks/nonexistent", headers=auth_headers_acme)
     assert r.status_code == 404, r.text
 
@@ -102,9 +97,7 @@ def test_update_etl_task(
     auth_headers_acme: dict[str, str],
     outbox: InMemoryOutboxWriter,
 ) -> None:
-    tasks = client.get(
-        "/api/v1/etl/tasks", headers=auth_headers_acme
-    ).json()["items"]
+    tasks = client.get("/api/v1/etl/tasks", headers=auth_headers_acme).json()["items"]
     task_id = tasks[0]["id"]
 
     r = client.put(
@@ -128,9 +121,7 @@ def test_delete_etl_task(
     auth_headers_acme: dict[str, str],
     outbox: InMemoryOutboxWriter,
 ) -> None:
-    tasks = client.get(
-        "/api/v1/etl/tasks", headers=auth_headers_acme
-    ).json()["items"]
+    tasks = client.get("/api/v1/etl/tasks", headers=auth_headers_acme).json()["items"]
     task_id = tasks[0]["id"]
 
     r = client.delete(f"/api/v1/etl/tasks/{task_id}", headers=auth_headers_acme)
@@ -153,9 +144,7 @@ def test_run_etl_task(
     auth_headers_acme: dict[str, str],
     outbox: InMemoryOutboxWriter,
 ) -> None:
-    tasks = client.get(
-        "/api/v1/etl/tasks", headers=auth_headers_acme
-    ).json()["items"]
+    tasks = client.get("/api/v1/etl/tasks", headers=auth_headers_acme).json()["items"]
     task_id = tasks[0]["id"]
 
     r = client.post(f"/api/v1/etl/tasks/{task_id}/run", headers=auth_headers_acme)
@@ -171,12 +160,8 @@ def test_run_etl_task(
 # ---------------------------------------------------------------------------
 # 7. GET /tasks/{id}/status — status
 # ---------------------------------------------------------------------------
-def test_get_etl_task_status(
-    client: TestClient, auth_headers_acme: dict[str, str]
-) -> None:
-    tasks = client.get(
-        "/api/v1/etl/tasks", headers=auth_headers_acme
-    ).json()["items"]
+def test_get_etl_task_status(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
+    tasks = client.get("/api/v1/etl/tasks", headers=auth_headers_acme).json()["items"]
     task_id = tasks[0]["id"]
 
     r = client.get(f"/api/v1/etl/tasks/{task_id}/status", headers=auth_headers_acme)
@@ -195,9 +180,7 @@ def test_stop_etl_task(
     auth_headers_acme: dict[str, str],
     outbox: InMemoryOutboxWriter,
 ) -> None:
-    tasks = client.get(
-        "/api/v1/etl/tasks", headers=auth_headers_acme
-    ).json()["items"]
+    tasks = client.get("/api/v1/etl/tasks", headers=auth_headers_acme).json()["items"]
     task_id = tasks[0]["id"]
 
     # Run first, then stop
@@ -215,9 +198,7 @@ def test_stop_etl_task(
 # ---------------------------------------------------------------------------
 # Pagination
 # ---------------------------------------------------------------------------
-def test_pagination(
-    client: TestClient, auth_headers_acme: dict[str, str]
-) -> None:
+def test_pagination(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
     r = client.get(
         "/api/v1/etl/tasks",
         params={"page": 1, "size": 2},

@@ -11,6 +11,7 @@ count as "endpoint reachable", because 401/403 prove the address
 resolves but credentials are wrong (which is exactly the
 distinction the UI wants to surface).
 """
+
 from __future__ import annotations
 
 import time

@@ -9,6 +9,7 @@ Production calls carry a service identity (client_credentials) so the
 center's ``install_auth`` accepts them; dev/test fall back to
 unauthenticated calls when no ``SERVICE_CLIENT_SECRET`` is configured.
 """
+
 from __future__ import annotations
 
 import os

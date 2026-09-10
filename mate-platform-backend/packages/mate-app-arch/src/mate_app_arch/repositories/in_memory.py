@@ -7,6 +7,7 @@ All entities are tenant-scoped. Seeds:
 Dataclasses are framework-agnostic so the v3.2 Paimon / Postgres
 adapter can reuse them without leaking FastAPI types.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -854,8 +855,10 @@ def list_business_processes(tenant_id: str) -> list[BusinessProcess]:
 def list_capability_tree(tenant_id: str) -> list[dict[str, Any]]:
     """Return capabilities as a nested tree structure."""
     caps = _list(tenant_id, "capabilities")
-    nodes = {c.code: {"id": c.id, "code": c.code, "name": c.name,
-                      "level": c.level, "children": []} for c in caps}
+    nodes = {
+        c.code: {"id": c.id, "code": c.code, "name": c.name, "level": c.level, "children": []}
+        for c in caps
+    }
     roots = []
     for c in caps:
         node = nodes[c.code]
@@ -938,8 +941,10 @@ def list_ontology_mapping_changes(tenant_id: str) -> list[OntologyMappingChange]
 def list_org_tree(tenant_id: str) -> list[dict[str, Any]]:
     """Return orgs as a nested tree structure."""
     orgs = _list(tenant_id, "orgs")
-    nodes = {o.code: {"id": o.id, "code": o.code, "name": o.name,
-                      "level": o.level, "children": []} for o in orgs}
+    nodes = {
+        o.code: {"id": o.id, "code": o.code, "name": o.name, "level": o.level, "children": []}
+        for o in orgs
+    }
     roots = []
     for o in orgs:
         node = nodes[o.code]
@@ -1046,9 +1051,7 @@ def store_create(tenant_id: str, key: str, item: Any) -> Any:
     return item
 
 
-def store_update(
-    tenant_id: str, key: str, item_id: str, changes: dict[str, Any]
-) -> Any | None:
+def store_update(tenant_id: str, key: str, item_id: str, changes: dict[str, Any]) -> Any | None:
     """Patch a frozen dataclass item in-place via ``dataclasses.replace``.
 
     ``None`` values in *changes* are ignored so callers can pass partial
@@ -1083,14 +1086,14 @@ def move_capability(tenant_id: str, cap_id: str, new_parent_id: str) -> Any | No
     parent = store_get(tenant_id, "capabilities", new_parent_id)
     new_level = (parent.level + 1) if parent else 1
     return store_update(
-        tenant_id, "capabilities", cap_id,
+        tenant_id,
+        "capabilities",
+        cap_id,
         {"parent_id": new_parent_id, "level": new_level},
     )
 
 
-def add_value_stream_stage(
-    tenant_id: str, vs_id: str, stage_name: str
-) -> Any | None:
+def add_value_stream_stage(tenant_id: str, vs_id: str, stage_name: str) -> Any | None:
     """Append a stage to a value stream."""
     vs = store_get(tenant_id, "value_streams", vs_id)
     if vs is None:
@@ -1106,15 +1109,11 @@ def update_value_stream_stage(
     vs = store_get(tenant_id, "value_streams", vs_id)
     if vs is None:
         return None
-    new_stages = tuple(
-        new_name if s == stage_id else s for s in vs.stages
-    )
+    new_stages = tuple(new_name if s == stage_id else s for s in vs.stages)
     return store_update(tenant_id, "value_streams", vs_id, {"stages": new_stages})
 
 
-def delete_value_stream_stage(
-    tenant_id: str, vs_id: str, stage_id: str
-) -> Any | None:
+def delete_value_stream_stage(tenant_id: str, vs_id: str, stage_id: str) -> Any | None:
     """Remove a stage from a value stream (matched by name)."""
     vs = store_get(tenant_id, "value_streams", vs_id)
     if vs is None:

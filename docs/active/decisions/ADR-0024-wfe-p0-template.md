@@ -17,13 +17,13 @@ event 中间件。`mate-app-kb` 是 canonical reference（已完整落地 5 步�
 `mate-app-wfe`（workflow engine center，BPMN 流程中心）状态盘点（2026-08-06
 联调审计）：
 
-| ADR-0014 步骤 | 已落地？ | 证据 |
-|---|---|---|
-| 1. `install_auth(app)` | ✅ | `main.py:38` 第一行调 `install_auth(app)` |
-| 2. `require_tenant(ctx)` 守卫 | ✅ | `api/app.py:_tid()` 每 handler 第一行调用 |
-| 3. 写 handler outbox 原子 | ✅ | `api/app.py:_emit()` 调 `Event.create(...).append(outbox)` |
-| 4. 出向 BearerAuth + OutgoingAuthMiddleware | ❌→✅ | **本 ADR 修复**：`clients.py` 用裸 `httpx.AsyncClient`，违反 13 硬规则 #4 |
-| 5. ≥3 cross-tenant negative | ✅ | `test_app_wfe_tenant_integration.py` 3 case |
+| ADR-0014 步骤                               | 已落地？ | 证据                                                                      |
+| ------------------------------------------- | -------- | ------------------------------------------------------------------------- |
+| 1. `install_auth(app)`                      | ✅       | `main.py:38` 第一行调 `install_auth(app)`                                 |
+| 2. `require_tenant(ctx)` 守卫               | ✅       | `api/app.py:_tid()` 每 handler 第一行调用                                 |
+| 3. 写 handler outbox 原子                   | ✅       | `api/app.py:_emit()` 调 `Event.create(...).append(outbox)`                |
+| 4. 出向 BearerAuth + OutgoingAuthMiddleware | ❌→✅    | **本 ADR 修复**：`clients.py` 用裸 `httpx.AsyncClient`，违反 13 硬规则 #4 |
+| 5. ≥3 cross-tenant negative                 | ✅       | `test_app_wfe_tenant_integration.py` 3 case                               |
 
 **问题**：步骤 4 是 13 硬规则 #4（"外部系统没有 ACL Client"）唯一未闭环项。
 `FlowableClient.deploy()` 直连 `http://flowable:8080/...`，无 Bearer / X-Tenant-Id
@@ -42,16 +42,16 @@ accepted"，把 BUSINESS-SLICES P0 模板 1 域设为 priority 2。
 
 ### 改动清单
 
-| 文件 | 改动 | 行数 |
-|---|---|---|
-| `clients.py` | `FlowableClient.__init__` 加 `auth: BearerAuth \| None` + `tenant_id: str` 参数；建长生命周期 `httpx.AsyncClient` 并挂 `OutgoingAuthMiddleware`；新增 `set_tenant()` + `aclose()` | ~40 行 |
-| `api/app.py` | `FlowableClient()` 实例化处改为 `FlowableClient(auth=app.state.bearer_auth, tenant_id=tid)`；`try/finally` 包 `aclose()` | ~6 行 |
-| `tests/test_wfe_flowable.py` | 新增 2 个 case：`test_flowable_client_injects_bearer_and_tenant_header`（respx mock 验 Authorization + X-Tenant-Id 头注入）+ `test_flowable_client_set_tenant_rebinds_auth` | ~40 行 |
+| 文件                         | 改动                                                                                                                                                                              | 行数   |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `clients.py`                 | `FlowableClient.__init__` 加 `auth: BearerAuth \| None` + `tenant_id: str` 参数；建长生命周期 `httpx.AsyncClient` 并挂 `OutgoingAuthMiddleware`；新增 `set_tenant()` + `aclose()` | ~40 行 |
+| `api/app.py`                 | `FlowableClient()` 实例化处改为 `FlowableClient(auth=app.state.bearer_auth, tenant_id=tid)`；`try/finally` 包 `aclose()`                                                          | ~6 行  |
+| `tests/test_wfe_flowable.py` | 新增 2 个 case：`test_flowable_client_injects_bearer_and_tenant_header`（respx mock 验 Authorization + X-Tenant-Id 头注入）+ `test_flowable_client_set_tenant_rebinds_auth`       | ~40 行 |
 
 ### 关键决策点
 
 1. **长生命周期 `AsyncClient` + `aclose()`** —— 取代原 per-call `async with
-   httpx.AsyncClient()`。理由：BearerAuth token 缓存复用，避免每次请求都换
+httpx.AsyncClient()`。理由：BearerAuth token 缓存复用，避免每次请求都换
    client；遵循 `mate-app-kb/RAGClient` 的同款模式。
 
 2. **`auth=None` / `tenant_id=""` 时不挂 OutgoingAuthMiddleware** —— 兼容

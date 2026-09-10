@@ -7,6 +7,7 @@
   4. 找 jsonb String 字段改成 JsonNode
   5. 修 DTO 把 Map<String,Object> 改成 JsonNode
 """
+
 import re
 import sys
 from pathlib import Path
@@ -27,6 +28,7 @@ ENUM_MAPPINGS = {
     },
 }
 
+
 def fix_status_enum_in_entity(entity_path, enum_name, field_name, column_name):
     """Change String field to enum type with @Enumerated."""
     txt = entity_path.read_text(encoding="utf-8")
@@ -39,7 +41,7 @@ def fix_status_enum_in_entity(entity_path, enum_name, field_name, column_name):
     new_field = (
         f"@Enumerated(EnumType.STRING)\n"
         f"    @JdbcTypeCode(SqlTypes.VARCHAR)\n"
-        f"    @Column(name = \"{column_name}\", nullable = false, length = 32)\n"
+        f'    @Column(name = "{column_name}", nullable = false, length = 32)\n'
         f"    private {enum_name} {field_name};"
     )
     txt2 = re.sub(pattern, new_field, txt, count=1, flags=re.MULTILINE)
@@ -48,13 +50,14 @@ def fix_status_enum_in_entity(entity_path, enum_name, field_name, column_name):
         return True
     return False
 
+
 def fix_jsonb_in_entity(entity_path):
     """Change String field to JsonNode for jsonb columns."""
     txt = entity_path.read_text(encoding="utf-8")
     # Find @Column(... jsonb ...) followed by private String xxx;
     pattern = re.compile(
         r"(@Lob\s+)?@JdbcTypeCode\(SqlTypes\.LONGVARCHAR\)\s+@Column\(([^)]*columnDefinition\s*=\s*[\"']jsonb[\"'][^)]*)\)\s*private\s+String\s+(\w+);",
-        re.MULTILINE
+        re.MULTILINE,
     )
     new_txt = txt
     count = 0
@@ -73,25 +76,28 @@ def fix_jsonb_in_entity(entity_path):
         new_txt = re.sub(
             r"@Lob\s+(@Column\([^)]*columnDefinition\s*=\s*[\"']jsonb[\"'][^)]*\)\s*\n\s*@JdbcTypeCode\(SqlTypes\.JSON\))",
             r"\1",
-            new_txt
+            new_txt,
         )
         # Add JsonNode import if needed
-        if "com.fasterxml.jackson.databind.JsonNode" in new_txt and "import com.fasterxml.jackson.databind.JsonNode" not in new_txt:
+        if (
+            "com.fasterxml.jackson.databind.JsonNode" in new_txt
+            and "import com.fasterxml.jackson.databind.JsonNode" not in new_txt
+        ):
             # Find package line and add import after
             new_txt = re.sub(
                 r"(package\s+[^;]+;)",
                 r"\1\n\nimport com.fasterxml.jackson.databind.JsonNode;",
-                new_txt, count=1
+                new_txt,
+                count=1,
             )
         entity_path.write_text(new_txt, encoding="utf-8")
     return count
 
+
 def fix_jsonb_in_dto(dto_path):
     """Change Map<String,Object> field to JsonNode for jsonb fields."""
     txt = dto_path.read_text(encoding="utf-8")
-    pattern = re.compile(
-        r"private\s+Map<String,\s*Object>\s+(\w+);"
-    )
+    pattern = re.compile(r"private\s+Map<String,\s*Object>\s+(\w+);")
     new_txt = txt
     count = 0
     for m in pattern.finditer(txt):
@@ -100,17 +106,22 @@ def fix_jsonb_in_dto(dto_path):
         count += 1
     if count > 0:
         # Add JsonNode import if needed
-        if "com.fasterxml.jackson.databind.JsonNode" in new_txt and "import com.fasterxml.jackson.databind.JsonNode" not in new_txt:
+        if (
+            "com.fasterxml.jackson.databind.JsonNode" in new_txt
+            and "import com.fasterxml.jackson.databind.JsonNode" not in new_txt
+        ):
             new_txt = re.sub(
                 r"(package\s+[^;]+;)",
                 r"\1\n\nimport com.fasterxml.jackson.databind.JsonNode;",
-                new_txt, count=1
+                new_txt,
+                count=1,
             )
         # Add Map import if not used
         if "Map<" not in new_txt and "import java.util.Map" in new_txt:
             new_txt = new_txt.replace("import java.util.Map;", "")
         dto_path.write_text(new_txt, encoding="utf-8")
     return count
+
 
 def main():
     for module in MODULES:
@@ -121,7 +132,9 @@ def main():
         enum_map = ENUM_MAPPINGS.get(module, {})
         for enum_name, (field_name, column_name) in enum_map.items():
             for p in module_path.rglob("*Entity.java"):
-                if enum_name.replace("Status", "").lower() in p.stem.lower() or p.stem.endswith("Entity"):
+                if enum_name.replace("Status", "").lower() in p.stem.lower() or p.stem.endswith(
+                    "Entity"
+                ):
                     if fix_status_enum_in_entity(p, enum_name, field_name, column_name):
                         print(f"  ✅ {p.name}: {field_name} -> {enum_name}")
                         break
@@ -139,6 +152,7 @@ def main():
             c = fix_jsonb_in_dto(p)
             dto_count += c
         print(f"  DTO fields fixed: {dto_count}")
+
 
 if __name__ == "__main__":
     main()

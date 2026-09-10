@@ -53,4 +53,3 @@ public interface ExecutionRepository extends JpaRepository<ExecutionEntity, UUID
 
     List<ExecutionEntity> findByTenantIdAndRetryOfOrderByCreatedAtDesc(String tenantId, String retryOf);
 }
-

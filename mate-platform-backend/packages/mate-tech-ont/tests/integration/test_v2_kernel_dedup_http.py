@@ -17,13 +17,15 @@ from mate_kernel.ontology.instances import Individual
 from mate_kernel.ontology.types import ActionType, ObjectType, Property, PropertyFormat
 
 PG_DSN = os.getenv(
-    "PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform_ont_test",
+    "PG_DSN",
+    "postgresql://meta:meta@localhost:5432/metaplatform_ont_test",
 )
 
 
 def _pg_available() -> bool:
     try:
         import psycopg2  # type: ignore
+
         conn = psycopg2.connect(PG_DSN, connect_timeout=2)
         conn.close()
         return True
@@ -51,6 +53,7 @@ def pg_repo() -> Any:
 @pytest.fixture(autouse=True)
 def _clean_pg(pg_repo) -> None:
     import psycopg2  # type: ignore
+
     conn = psycopg2.connect(PG_DSN)
     try:
         with conn.cursor() as cur:
@@ -77,8 +80,11 @@ def _ot(rid: str, display_name: str = "") -> ObjectType:
     slug = parts[4] if len(parts) >= 6 and ".obj." in rid else parts[3]
     pk_prop = Property(
         rid=ClassRef(f"ont.{tenant}.prop.{slug}-id.v1"),
-        type_id="string", nullable=False, primary_key=True,
-        title="id", format=PropertyFormat.STRING,
+        type_id="string",
+        nullable=False,
+        primary_key=True,
+        title="id",
+        format=PropertyFormat.STRING,
     )
     return ObjectType(
         rid=ClassRef(rid),
@@ -142,6 +148,7 @@ def client_with_ctx(monkeypatch):
     monkeypatch.setattr(auth_mw.AuthMiddleware, "dispatch", fake_dispatch)
 
     from mate_tech_ont.main import app as _app
+
     saved_stack = _app.middleware_stack
     _app.middleware_stack = None
     try:
@@ -160,13 +167,19 @@ class TestDedupHttpE2E:
         payload = {
             "rid": "ont.acme.obj.crm.customer.v2",
             "primary_key": ["ont.acme.prop.customer-id.v1"],
-            "properties": [{
-                "rid": "ont.acme.prop.customer-id.v1",
-                "type_id": "string", "nullable": False,
-                "primary_key": True, "title": "id", "format": "string",
-            }],
+            "properties": [
+                {
+                    "rid": "ont.acme.prop.customer-id.v1",
+                    "type_id": "string",
+                    "nullable": False,
+                    "primary_key": True,
+                    "title": "id",
+                    "format": "string",
+                }
+            ],
             "display_name": "Customer Dup",
-            "interfaces": [], "marking": [],
+            "interfaces": [],
+            "marking": [],
         }
         r = client_with_ctx.post("/api/v1/ont/v2/object-types", json=payload)
         assert r.status_code == 409, f"got {r.status_code}: {r.text}"
@@ -193,8 +206,12 @@ class TestDedupHttpE2E:
     def test_merge_endpoint_remaps_individuals(self, client_with_ctx, pg_repo):
         pg_repo.upsert_object_type(_ot("ont.acme.obj.crm.customer.v1", "Customer"))
         pg_repo.upsert_object_type(_ot("ont.acme.obj.crm.client.v1", "Client"))
-        pg_repo.create_individual(_ind("ont.acme.ind.customer.1", "ont.acme.obj.crm.customer.v1", "1"))
-        pg_repo.create_individual(_ind("ont.acme.ind.customer.2", "ont.acme.obj.crm.customer.v1", "2"))
+        pg_repo.create_individual(
+            _ind("ont.acme.ind.customer.1", "ont.acme.obj.crm.customer.v1", "1")
+        )
+        pg_repo.create_individual(
+            _ind("ont.acme.ind.customer.2", "ont.acme.obj.crm.customer.v1", "2")
+        )
 
         r = client_with_ctx.post(
             "/api/v1/ont/v2/object-types/merge",
@@ -217,7 +234,9 @@ class TestDedupHttpE2E:
     def test_propose_merge_lifecycle_via_api(self, client_with_ctx, pg_repo):
         pg_repo.upsert_object_type(_ot("ont.acme.obj.crm.customer.v1", "Customer"))
         pg_repo.upsert_object_type(_ot("ont.acme.obj.crm.client.v1", "Client"))
-        pg_repo.create_individual(_ind("ont.acme.ind.customer.1", "ont.acme.obj.crm.customer.v1", "1"))
+        pg_repo.create_individual(
+            _ind("ont.acme.ind.customer.1", "ont.acme.obj.crm.customer.v1", "1")
+        )
 
         # 1) propose
         r = client_with_ctx.post(
@@ -266,7 +285,9 @@ class TestDedupHttpE2E:
         assert r.json()["status"] == "executed"
 
     def test_confirm_requires_idempotency_key_and_replays_for_authenticated_actor(
-        self, client_with_ctx, pg_repo,
+        self,
+        client_with_ctx,
+        pg_repo,
     ):
         pg_repo.upsert_object_type(_ot("ont.acme.obj.crm.customer.v1", "Customer"))
         pg_repo.upsert_object_type(_ot("ont.acme.obj.crm.client.v1", "Client"))
@@ -301,12 +322,17 @@ class TestDedupHttpE2E:
         assert replayed.json()["proposal_id"] == confirmed.json()["proposal_id"]
         assert replayed.json()["status"] == "confirmed"
         assert replayed.json()["confirmed_by"] == "alice"
-        assert [event["to_status"] for event in pg_repo.list_proposal_events(proposal.proposal_id)] == [
-            "pending", "confirmed",
+        assert [
+            event["to_status"] for event in pg_repo.list_proposal_events(proposal.proposal_id)
+        ] == [
+            "pending",
+            "confirmed",
         ]
 
     def test_action_executes_only_through_confirmed_proposal_and_returns_evidence(
-        self, client_with_ctx, pg_repo,
+        self,
+        client_with_ctx,
+        pg_repo,
     ):
         object_rid = "ont.acme.obj.ops.order.v1"
         action_rid = "ont.acme.act.ops.review-order.v1"

@@ -1,4 +1,5 @@
 """Contract tests for the Temporal-only workflow boundary."""
+
 from __future__ import annotations
 
 import pytest

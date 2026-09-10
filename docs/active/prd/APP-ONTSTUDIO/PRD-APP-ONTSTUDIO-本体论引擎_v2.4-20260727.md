@@ -3021,7 +3021,7 @@ GROUP BY customer_id
 所有 5 个大数据 View 统一 Modal 流程：
 
 ```
-用户点击 "新建 X" 
+用户点击 "新建 X"
   -> setShowCreate(true)
   -> <CreateXDialog onClose onSuccess>
   -> 用户填写表单, 提交
@@ -3223,7 +3223,7 @@ export default function XxxView() {
 
 ---
 
-**v2.2 → v2.3 总结**: 
+**v2.2 → v2.3 总结**:
 - 新增 §12.6-§12.10 共 5 大节, 约 200+ 行
 - 反映 2026-07-28 前端实现 (9 SubTab + 5 View 组件 + ErrorBoundary)
 - 补充前后端契约对齐, 开发规范, P4 规划

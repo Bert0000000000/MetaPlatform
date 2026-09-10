@@ -10,6 +10,7 @@ Also patches the module-level ``_rate_limiter`` with a no-op fake so
 these tests do not require a live Redis (mirrors dev/CI environments
 where Redis is not started by default).
 """
+
 from __future__ import annotations
 
 import os

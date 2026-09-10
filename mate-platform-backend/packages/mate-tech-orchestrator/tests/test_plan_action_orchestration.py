@@ -35,8 +35,12 @@ class _FakeOntologyClient:
 
     async def propose_action(self, *a: Any, **kw: Any) -> dict:
         await self._rec("propose_action", *a, **kw)
-        return {"proposal_id": "prop-p1", "status": "pending",
-                "impact_summary": kw.get("impact_summary", ""), "kind": "action"}
+        return {
+            "proposal_id": "prop-p1",
+            "status": "pending",
+            "impact_summary": kw.get("impact_summary", ""),
+            "kind": "action",
+        }
 
     async def propose_instance(self, *a: Any, **kw: Any) -> dict:
         await self._rec("propose_instance", *a, **kw)
@@ -62,9 +66,13 @@ class _FakeOntologyClient:
 
     async def object_query(self, *a: Any, **kw: Any) -> dict:
         await self._rec("object_query", *a, **kw)
-        return {"kind": "objects", "rows": [
-            {"__rid__": "ont.t.ind.order.o1", "amount": 200000},
-        ], "result_schema": {}}
+        return {
+            "kind": "objects",
+            "rows": [
+                {"__rid__": "ont.t.ind.order.o1", "amount": 200000},
+            ],
+            "result_schema": {},
+        }
 
     async def ensure_process_type(self, *a: Any, **kw: Any) -> dict:
         await self._rec("ensure_process_type", *a, **kw)
@@ -84,10 +92,17 @@ class TestProposeFlow:
     @pytest.mark.asyncio
     async def test_propose_step_waits_with_proposal_id(self) -> None:
         runner, client = _runner()
-        spec = runner.submit(author_user_id="u1", steps=[
-            PlanStep(step_id="s1", kind=StepKind.PROPOSE, target="ont.t.act.flag.v1",
-                     payload=(("parameters", {"reason": "x"}), ("impact_summary", "标记"))),
-        ])
+        spec = runner.submit(
+            author_user_id="u1",
+            steps=[
+                PlanStep(
+                    step_id="s1",
+                    kind=StepKind.PROPOSE,
+                    target="ont.t.act.flag.v1",
+                    payload=(("parameters", {"reason": "x"}), ("impact_summary", "标记")),
+                ),
+            ],
+        )
         out = await runner.execute(plan_id=spec.plan_id, tenant_id="t")
         assert out["status"] == "hitl_waiting"
         assert out["current_step_id"] == "s1"
@@ -103,24 +118,38 @@ class TestProposeFlow:
     async def test_propose_counts_as_hitl(self) -> None:
         """PROPOSE 步自动满足 B3（≥1 HITL）——不需要额外 requires_hitl 标记。"""
         runner, _ = _runner()
-        spec = runner.submit(author_user_id="u1", steps=[
-            PlanStep(step_id="s1", kind=StepKind.PROPOSE, target="a",
-                     payload=(("parameters", {}),)),
-        ])
+        spec = runner.submit(
+            author_user_id="u1",
+            steps=[
+                PlanStep(
+                    step_id="s1", kind=StepKind.PROPOSE, target="a", payload=(("parameters", {}),)
+                ),
+            ],
+        )
         assert spec.steps[0].step_id == "s1"
 
     @pytest.mark.asyncio
     async def test_review_approve_confirms_and_executes_action_proposal(self) -> None:
         """HITL approval executes the confirmed action proposal, never direct apply."""
         runner, client = _runner()
-        spec = runner.submit(author_user_id="u1", steps=[
-            PlanStep(step_id="s1", kind=StepKind.PROPOSE, target="ont.t.act.flag.v1",
-                     payload=(("parameters", {"reason": "x"}), ("target_iid", "ont.t.ind.order.o1"))),
-        ])
+        spec = runner.submit(
+            author_user_id="u1",
+            steps=[
+                PlanStep(
+                    step_id="s1",
+                    kind=StepKind.PROPOSE,
+                    target="ont.t.act.flag.v1",
+                    payload=(("parameters", {"reason": "x"}), ("target_iid", "ont.t.ind.order.o1")),
+                ),
+            ],
+        )
         await runner.execute(plan_id=spec.plan_id, tenant_id="t")
         out = await runner.review(
-            plan_id=spec.plan_id, step_id="s1", approved=True,
-            feedback="", tenant_id="t",
+            plan_id=spec.plan_id,
+            step_id="s1",
+            approved=True,
+            feedback="",
+            tenant_id="t",
         )
         assert out["status"] == "completed"
         names = [c[0] for c in client.calls]
@@ -132,14 +161,21 @@ class TestProposeFlow:
     @pytest.mark.asyncio
     async def test_review_reject_rejects_proposal_and_aborts(self) -> None:
         runner, client = _runner()
-        spec = runner.submit(author_user_id="u1", steps=[
-            PlanStep(step_id="s1", kind=StepKind.PROPOSE, target="a",
-                     payload=(("parameters", {}),)),
-        ])
+        spec = runner.submit(
+            author_user_id="u1",
+            steps=[
+                PlanStep(
+                    step_id="s1", kind=StepKind.PROPOSE, target="a", payload=(("parameters", {}),)
+                ),
+            ],
+        )
         await runner.execute(plan_id=spec.plan_id, tenant_id="t")
         out = await runner.review(
-            plan_id=spec.plan_id, step_id="s1", approved=False,
-            feedback="no", tenant_id="t",
+            plan_id=spec.plan_id,
+            step_id="s1",
+            approved=False,
+            feedback="no",
+            tenant_id="t",
         )
         assert out["status"] == "aborted"
         assert any(c[0] == "reject" for c in client.calls)
@@ -148,15 +184,25 @@ class TestProposeFlow:
     async def test_propose_instance_kind_routes_to_execute(self) -> None:
         """create_instance 提议：approve → confirm + execute_proposal（非 apply）。"""
         runner, client = _runner()
-        spec = runner.submit(author_user_id="u1", steps=[
-            PlanStep(step_id="s1", kind=StepKind.PROPOSE, target="ont.t.obj.order.v1",
-                     payload=(("action_kind", "create_instance"),
-                              ("props", {"order-id": "new-9", "amount": 1}),
-                              ("impact_summary", "新建"))),
-        ])
+        spec = runner.submit(
+            author_user_id="u1",
+            steps=[
+                PlanStep(
+                    step_id="s1",
+                    kind=StepKind.PROPOSE,
+                    target="ont.t.obj.order.v1",
+                    payload=(
+                        ("action_kind", "create_instance"),
+                        ("props", {"order-id": "new-9", "amount": 1}),
+                        ("impact_summary", "新建"),
+                    ),
+                ),
+            ],
+        )
         await runner.execute(plan_id=spec.plan_id, tenant_id="t")
-        out = await runner.review(plan_id=spec.plan_id, step_id="s1", approved=True,
-                                  feedback="", tenant_id="t")
+        out = await runner.review(
+            plan_id=spec.plan_id, step_id="s1", approved=True, feedback="", tenant_id="t"
+        )
         assert out["status"] == "completed"
         names = [c[0] for c in client.calls]
         assert "propose_instance" in names and "execute_proposal" in names
@@ -167,14 +213,26 @@ class TestEvaluateAndDataflow:
     async def test_evaluate_feeds_next_step_via_template(self) -> None:
         """EVALUATE_OBJECTSET 输出经 {{steps.s1.rows.0.__rid__}} 注入 PROPOSE 步。"""
         runner, client = _runner()
-        spec = runner.submit(author_user_id="u1", steps=[
-            PlanStep(step_id="s1", kind=StepKind.EVALUATE_OBJECTSET,
-                     target="ont.t.obj.order.v1",
-                     payload=(("filters", [{"field": "amount", "op": "gt", "value": 100000}]),)),
-            PlanStep(step_id="s2", kind=StepKind.PROPOSE, target="ont.t.act.flag.v1",
-                     payload=(("parameters", {"reason": "big"}),
-                              ("target_iid", "{{steps.s1.rows.0.__rid__}}"))),
-        ])
+        spec = runner.submit(
+            author_user_id="u1",
+            steps=[
+                PlanStep(
+                    step_id="s1",
+                    kind=StepKind.EVALUATE_OBJECTSET,
+                    target="ont.t.obj.order.v1",
+                    payload=(("filters", [{"field": "amount", "op": "gt", "value": 100000}]),),
+                ),
+                PlanStep(
+                    step_id="s2",
+                    kind=StepKind.PROPOSE,
+                    target="ont.t.act.flag.v1",
+                    payload=(
+                        ("parameters", {"reason": "big"}),
+                        ("target_iid", "{{steps.s1.rows.0.__rid__}}"),
+                    ),
+                ),
+            ],
+        )
         out = await runner.execute(plan_id=spec.plan_id, tenant_id="t")
         assert out["status"] == "hitl_waiting" and out["current_step_id"] == "s2"
         # 模板已被真实查询结果替换
@@ -189,15 +247,22 @@ class TestApplyActionStep:
     async def test_apply_action_step_runs_same_pipeline(self) -> None:
         """ADR-0045：APPLY_ACTION ≡ PROPOSE（propose→HITL→confirm+execute）。"""
         runner, client = _runner()
-        spec = runner.submit(author_user_id="u1", steps=[
-            PlanStep(step_id="s1", kind=StepKind.APPLY_ACTION, target="ont.t.act.flag.v1",
-                     payload=(("parameters", {"reason": "y"}),
-                              ("target_iid", "ont.t.ind.order.o1"))),
-        ])
+        spec = runner.submit(
+            author_user_id="u1",
+            steps=[
+                PlanStep(
+                    step_id="s1",
+                    kind=StepKind.APPLY_ACTION,
+                    target="ont.t.act.flag.v1",
+                    payload=(("parameters", {"reason": "y"}), ("target_iid", "ont.t.ind.order.o1")),
+                ),
+            ],
+        )
         out = await runner.execute(plan_id=spec.plan_id, tenant_id="t")
         assert out["status"] == "hitl_waiting"
-        out2 = await runner.review(plan_id=spec.plan_id, step_id="s1", approved=True,
-                                   feedback="", tenant_id="t")
+        out2 = await runner.review(
+            plan_id=spec.plan_id, step_id="s1", approved=True, feedback="", tenant_id="t"
+        )
         assert out2["status"] == "completed"
         names = [c[0] for c in client.calls]
         assert "propose_action" in names and "confirm" in names and "execute_proposal" in names
@@ -208,30 +273,47 @@ class TestNoHitlStillEnforced:
     def test_plan_without_hitl_or_propose_rejected(self) -> None:
         runner, _ = _runner()
         with pytest.raises(NoHitlStepError):
-            runner.submit(author_user_id="u1", steps=[
-                PlanStep(step_id="s1", kind=StepKind.EVALUATE_OBJECTSET,
-                         target="x", payload=()),
-            ])
+            runner.submit(
+                author_user_id="u1",
+                steps=[
+                    PlanStep(
+                        step_id="s1", kind=StepKind.EVALUATE_OBJECTSET, target="x", payload=()
+                    ),
+                ],
+            )
 
 
 class TestGraphModel:
     @pytest.mark.asyncio
     async def test_graph_nodes_edges_and_status(self) -> None:
 
-
         runner, _ = _runner()
-        spec = runner.submit(author_user_id="u1", steps=[
-            PlanStep(step_id="s1", kind=StepKind.EVALUATE_OBJECTSET,
-                     target="ont.t.obj.order.v1", payload=(("filters", []),)),
-            PlanStep(step_id="s2", kind=StepKind.PROPOSE, target="ont.t.act.flag.v1",
-                     payload=(("parameters", {"reason": "big"}),
-                              ("target_iid", "{{steps.s1.rows.0.__rid__}}"))),
-        ])
+        spec = runner.submit(
+            author_user_id="u1",
+            steps=[
+                PlanStep(
+                    step_id="s1",
+                    kind=StepKind.EVALUATE_OBJECTSET,
+                    target="ont.t.obj.order.v1",
+                    payload=(("filters", []),),
+                ),
+                PlanStep(
+                    step_id="s2",
+                    kind=StepKind.PROPOSE,
+                    target="ont.t.act.flag.v1",
+                    payload=(
+                        ("parameters", {"reason": "big"}),
+                        ("target_iid", "{{steps.s1.rows.0.__rid__}}"),
+                    ),
+                ),
+            ],
+        )
         await runner.execute(plan_id=spec.plan_id, tenant_id="t")
 
         graph = runner.get(spec.plan_id)  # state ok
         # 直接走序列化函数（不启 HTTP 栈）：复用端点逻辑等价断言
         from fastapi import APIRouter as _AR
+
         _ = _AR
         # 经 PlanGraph 模型手工构造（端点逻辑同构，见 app.plan_graph）
         latest = {h.step_id: h for h in graph.history}

@@ -90,7 +90,9 @@ class ObservabilityAgent:
             raise ValueError(f"rule already registered: {rule.rule_rid}")
         self._rules[rule.rule_rid] = rule
         manager.track(
-            kind=__import__("mate_kernel.manager.protocol", fromlist=["ChangeKind"]).ChangeKind.REGISTER_CLASS,
+            kind=__import__(
+                "mate_kernel.manager.protocol", fromlist=["ChangeKind"]
+            ).ChangeKind.REGISTER_CLASS,
             target_rid=rule.rule_rid,
             payload={"severity": rule.severity.value, "metric": rule.metric_name},
         )

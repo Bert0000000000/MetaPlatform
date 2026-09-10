@@ -9,6 +9,7 @@ can scope calls to a specific tenant. In the FastAPI handler, the
 `tenant_id` is read from `request.state.ctx.tenant_id` (set by
 the auth middleware) and passed to the client.
 """
+
 from __future__ import annotations
 
 import os
@@ -28,7 +29,15 @@ class RAGClient:
 
     DEFAULT_URL = "http://localhost:8001"
 
-    def __init__(self, base_url: str | None = None, timeout: float = 60.0, *, auth: BearerAuth | None = None, tenant_id: str = "", static_token: str | None = None):
+    def __init__(
+        self,
+        base_url: str | None = None,
+        timeout: float = 60.0,
+        *,
+        auth: BearerAuth | None = None,
+        tenant_id: str = "",
+        static_token: str | None = None,
+    ):
         self._base_url = (base_url or os.environ.get("RAG_URL", self.DEFAULT_URL)).rstrip("/")
         self._client = httpx.Client(timeout=timeout)
         if tenant_id:
@@ -49,7 +58,14 @@ class RAGClient:
         if self._auth is not None and tenant_id:
             self._client.auth = OutgoingAuthMiddleware(self._auth, tenant_id=tenant_id)
 
-    def upload(self, file_content: bytes, filename: str, document_id: str, content_type: str = "text/plain", kb_id: str | None = None) -> dict[str, Any]:
+    def upload(
+        self,
+        file_content: bytes,
+        filename: str,
+        document_id: str,
+        content_type: str = "text/plain",
+        kb_id: str | None = None,
+    ) -> dict[str, Any]:
         files = {"file": (filename, file_content, content_type)}
         params: dict[str, str] = {"document_id": document_id}
         # Forward the collection id so RAG's kb-document registry
@@ -64,7 +80,9 @@ class RAGClient:
         r.raise_for_status()
         return r.json()
 
-    def parse(self, document_id: str, content: str, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+    def parse(
+        self, document_id: str, content: str, metadata: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         r = self._client.post(
             f"{self._base_url}/api/v1/rag/parse",
             json={"document_id": document_id, "content": content, "metadata": metadata or {}},
@@ -72,7 +90,9 @@ class RAGClient:
         r.raise_for_status()
         return r.json()
 
-    def search(self, query: str, top_k: int = 5, mode: str = "AUTO", rerank_strategy: str | None = None) -> dict[str, Any]:
+    def search(
+        self, query: str, top_k: int = 5, mode: str = "AUTO", rerank_strategy: str | None = None
+    ) -> dict[str, Any]:
         body: dict[str, Any] = {"query": query, "top_k": top_k, "mode": mode}
         if rerank_strategy:
             body["rerank_strategy"] = rerank_strategy
@@ -120,7 +140,14 @@ class AgentClient:
 
     DEFAULT_URL = "http://localhost:8002"
 
-    def __init__(self, base_url: str | None = None, timeout: float = 60.0, *, auth: BearerAuth | None = None, tenant_id: str = ""):
+    def __init__(
+        self,
+        base_url: str | None = None,
+        timeout: float = 60.0,
+        *,
+        auth: BearerAuth | None = None,
+        tenant_id: str = "",
+    ):
         self._base_url = (base_url or os.environ.get("AGENT_URL", self.DEFAULT_URL)).rstrip("/")
         self._client = httpx.Client(timeout=timeout)
         if auth is not None and tenant_id:
@@ -133,7 +160,9 @@ class AgentClient:
         if self._auth is not None and tenant_id:
             self._client.auth = OutgoingAuthMiddleware(self._auth, tenant_id=tenant_id)
 
-    def chat(self, message: str, scenario: str = "S1", thread_id: str | None = None) -> dict[str, Any]:
+    def chat(
+        self, message: str, scenario: str = "S1", thread_id: str | None = None
+    ) -> dict[str, Any]:
         body = {"message": message, "scenario": scenario}
         if thread_id:
             body["thread_id"] = thread_id

@@ -24,6 +24,7 @@ from mate_kernel.rag.ontology import RagHit, RagIndex, RagQuery, RagRetriever
 @dataclass(frozen=True, slots=True)
 class KbDocument:
     """kb.<tenant>.doc.<slug>.v<n>"""
+
     doc_rid: str
     title: str
     body_markdown: str
@@ -59,7 +60,9 @@ class KnowledgeLibraryAgent:
         for cls in doc.linked_class_rids:
             self._by_class.setdefault(cls, []).append(doc.doc_rid)
         manager.track(
-            kind=__import__("mate_kernel.manager.protocol", fromlist=["ChangeKind"]).ChangeKind.REGISTER_CLASS,
+            kind=__import__(
+                "mate_kernel.manager.protocol", fromlist=["ChangeKind"]
+            ).ChangeKind.REGISTER_CLASS,
             target_rid=doc.doc_rid,
             payload={"classes": list(doc.linked_class_rids)},
         )

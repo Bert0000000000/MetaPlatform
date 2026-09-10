@@ -9,6 +9,7 @@
 - plan_id 即 workflow id（加 ``twf-`` 前缀区分 legacy plan）。
 - submit 即 start（Temporal 语义里提交即持久执行），review 发 signal 后等终态。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -52,17 +53,22 @@ async def _get_client() -> Any:
         from temporalio.client import Client
         from temporalio.contrib.pydantic import pydantic_data_converter
 
-        _default = ("host.docker.internal:7233"
-                    if _pl.Path("/.dockerenv").exists() else "127.0.0.1:7233")
+        _default = (
+            "host.docker.internal:7233" if _pl.Path("/.dockerenv").exists() else "127.0.0.1:7233"
+        )
         host = os.environ.get("TEMPORAL_HOST", _default)
         _client = await Client.connect(
-            host, data_converter=pydantic_data_converter,
+            host,
+            data_converter=pydantic_data_converter,
         )
     return _client
 
 
 async def submit_and_run(
-    *, tenant_id: str, token: str, author_user_id: str,
+    *,
+    tenant_id: str,
+    token: str,
+    author_user_id: str,
     raw_steps: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """提交并启动 PlanWorkflow（执行到首个 HITL 闸或终态）。"""
@@ -71,21 +77,27 @@ async def submit_and_run(
     client = await _get_client()
     steps = [WorkflowStep.model_validate(s) for s in raw_steps]
     inp = workflow_input_from_steps(
-        tenant_id=tenant_id, steps=steps, author_user_id=author_user_id,
+        tenant_id=tenant_id,
+        steps=steps,
+        author_user_id=author_user_id,
         token=token,
     )
     import time as _t
 
     wf_id = f"{_ID_PREFIX}{int(_t.time() * 1000)}-{_t.time_ns() % 100000:03d}"
     handle = await client.start_workflow(
-        PlanWorkflow.run, inp.model_dump(mode="json"),
-        id=wf_id, task_queue=TASK_QUEUE,
+        PlanWorkflow.run,
+        inp.model_dump(mode="json"),
+        id=wf_id,
+        task_queue=TASK_QUEUE,
     )
     # 等到首个 HITL（或短平快直接终态）再返回，贴近 legacy submit+execute 语义
     for _ in range(60):
         st = await handle.query(PlanWorkflow.status)
         if str(st).startswith("hitl_waiting") or str(st) in (
-            "completed", "aborted", "failed",
+            "completed",
+            "aborted",
+            "failed",
         ):
             break
         await asyncio.sleep(0.5)
@@ -104,34 +116,56 @@ async def status(plan_id: str) -> dict[str, Any]:
     handle = client.get_workflow_handle(plan_id)
     desc = await handle.describe()
     # desc.status 为 proto int 枚举（1=RUNNING 2=COMPLETED 3=FAILED …）
-    _STATUSES = {1: "running", 2: "completed", 3: "failed", 4: "cancelled",
-                 5: "terminated", 6: "continued_as_new", 7: "timed_out"}
+    _STATUSES = {
+        1: "running",
+        2: "completed",
+        3: "failed",
+        4: "cancelled",
+        5: "terminated",
+        6: "continued_as_new",
+        7: "timed_out",
+    }
     raw = _STATUSES.get(int(getattr(desc, "status", 1)), "running")
     if raw != "running":
         return {"plan_id": plan_id, "status": raw, "engine": "temporal"}
     st = await handle.query(PlanWorkflow.status)
     cur = str(st).split(":", 1)[1] if ":" in str(st) else None
-    return {"plan_id": plan_id, "status": str(st), "current_step_id": cur,
-            "engine": "temporal"}
+    return {"plan_id": plan_id, "status": str(st), "current_step_id": cur, "engine": "temporal"}
 
 
 async def review(
-    *, plan_id: str, step_id: str, approved: bool, feedback: str,
+    *,
+    plan_id: str,
+    step_id: str,
+    approved: bool,
+    feedback: str,
     wait_timeout_s: float = 60.0,
 ) -> dict[str, Any]:
     from .temporal_workflow import PlanWorkflow
 
     client = await _get_client()
     handle = client.get_workflow_handle(plan_id)
-    await handle.signal(PlanWorkflow.review, ReviewSignal(
-        step_id=step_id, approved=approved, feedback=feedback, reviewer="rest",
-    ))
+    await handle.signal(
+        PlanWorkflow.review,
+        ReviewSignal(
+            step_id=step_id,
+            approved=approved,
+            feedback=feedback,
+            reviewer="rest",
+        ),
+    )
     try:
         result = await asyncio.wait_for(handle.result(), timeout=wait_timeout_s)
     except TimeoutError:
         st = await handle.query(PlanWorkflow.status)
-        return {"plan_id": plan_id, "status": str(st), "engine": "temporal",
-                "note": "review signaled; terminal state pending"}
-    return {"plan_id": plan_id, "engine": "temporal", **{
-        k: v for k, v in result.items() if k != "plan_id"
-    }}
+        return {
+            "plan_id": plan_id,
+            "status": str(st),
+            "engine": "temporal",
+            "note": "review signaled; terminal state pending",
+        }
+    return {
+        "plan_id": plan_id,
+        "engine": "temporal",
+        **{k: v for k, v in result.items() if k != "plan_id"},
+    }

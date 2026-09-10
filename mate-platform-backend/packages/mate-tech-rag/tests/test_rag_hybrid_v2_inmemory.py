@@ -8,6 +8,7 @@ Covers:
     different score distributions for the same query (fusion != addition)
   * Edge cases: empty index, only one side hits, constant scores.
 """
+
 from __future__ import annotations
 
 import sys
@@ -120,7 +121,7 @@ class TestHybridV2ScoreFusionMath:
         client = InMemoryHybridV2Client(vector_weight=0.7)
         # Two chunks: one closer in vector space, one closer in lexical.
         client.add("d1", "apple banana cherry", [1.0, 0.0, 0.0])
-        client.add("d2", "zebra yak xerus",      [0.0, 1.0, 0.0])
+        client.add("d2", "zebra yak xerus", [0.0, 1.0, 0.0])
         # Query: matches "apple banana" lexically (d1) but vector-closer to d2.
         vec = [1.0, 0.0, 0.0]
         hits = client.search("apple banana", vec, top_k=2)
@@ -154,7 +155,7 @@ class TestHybridV2ScoreFusionMath:
         """vector_weight=0.0 → pure BM25 side."""
         client = InMemoryHybridV2Client(vector_weight=0.0)
         client.add("d1", "apple banana", [1.0, 0.0])
-        client.add("d2", "zebra yak",    [0.0, 1.0])
+        client.add("d2", "zebra yak", [0.0, 1.0])
         hits = client.search("apple banana", [1.0, 0.0], top_k=2)
         # BM25: d1 matches strongly, d2 doesn't match "apple banana" at all.
         d1 = next(h for h in hits if h.document_id == "d1")
@@ -241,7 +242,7 @@ class TestHybridV2VsHybridDistribution:
         """A chunk that has BM25 match but no vector match still surfaces in v2."""
         client = InMemoryHybridV2Client(vector_weight=0.3)
         client.add("d-text", "explicit lexical match here", [1.0, 0.0])
-        client.add("d-vec",  "completely unrelated words", [0.0, 1.0])
+        client.add("d-vec", "completely unrelated words", [0.0, 1.0])
         # Query is a vector → d-text wins. Query that BM25-matches d-text only.
         hits = client.search("lexical", [1.0, 0.0], top_k=2)
         # Both chunks present (vector hits d-text, bm25 hits d-text).

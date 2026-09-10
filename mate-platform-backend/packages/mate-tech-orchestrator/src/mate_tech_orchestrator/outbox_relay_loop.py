@@ -9,6 +9,7 @@
 
 环境：``TEMPORAL_HOST``（容器内默认 temporal:7233）、``RELAY_INTERVAL_S``。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -28,8 +29,7 @@ logger = structlog.get_logger(__name__)
 
 
 def _default_host() -> str:
-    return ("host.docker.internal:7233"
-            if pathlib.Path("/.dockerenv").exists() else "127.0.0.1:7233")
+    return "host.docker.internal:7233" if pathlib.Path("/.dockerenv").exists() else "127.0.0.1:7233"
 
 
 class TemporalWorkflowStarter:
@@ -44,13 +44,17 @@ class TemporalWorkflowStarter:
             from temporalio.client import Client
             from temporalio.contrib.pydantic import pydantic_data_converter
 
-            self._client = await Client.connect(
-                self._host, data_converter=pydantic_data_converter)
+            self._client = await Client.connect(self._host, data_converter=pydantic_data_converter)
         return self._client
 
     async def start_plan(
-        self, *, workflow_id: str, steps: list[dict[str, Any]],
-        tenant_id: str, author_user_id: str, token: str = "",
+        self,
+        *,
+        workflow_id: str,
+        steps: list[dict[str, Any]],
+        tenant_id: str,
+        author_user_id: str,
+        token: str = "",
     ) -> str:
         from mate_tech_orchestrator.temporal_workflow import PlanWorkflow
 
@@ -58,11 +62,14 @@ class TemporalWorkflowStarter:
         inp = workflow_input_from_steps(
             tenant_id=tenant_id,
             steps=[WorkflowStep.model_validate(s) for s in steps],
-            author_user_id=author_user_id, token=token,
+            author_user_id=author_user_id,
+            token=token,
         )
         handle = await client.start_workflow(
-            PlanWorkflow.run, inp.model_dump(mode="json"),
-            id=workflow_id, task_queue=TASK_QUEUE,
+            PlanWorkflow.run,
+            inp.model_dump(mode="json"),
+            id=workflow_id,
+            task_queue=TASK_QUEUE,
         )
         return handle.id
 
@@ -72,8 +79,7 @@ class RelayLoop:
 
     def __init__(self, bridge: Any, interval_s: float | None = None) -> None:
         self._bridge = bridge
-        self._interval = float(
-            interval_s or os.environ.get("RELAY_INTERVAL_S", "10"))
+        self._interval = float(interval_s or os.environ.get("RELAY_INTERVAL_S", "10"))
         self._task: asyncio.Task | None = None
 
     async def _tick(self) -> None:

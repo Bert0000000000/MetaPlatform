@@ -21,6 +21,7 @@ This module defines:
 
 All paths carry tenant_id (SEC-TENANT-01 hard rule 3).
 """
+
 from __future__ import annotations
 
 import logging
@@ -100,9 +101,7 @@ class InMemoryOutboxWriter:
 
     def append(self, event: Event) -> None:
         if not event.tenant_id:
-            raise OutboxError(
-                "event has no tenant_id; refusing (SEC-TENANT-01 hard rule 3)"
-            )
+            raise OutboxError("event has no tenant_id; refusing (SEC-TENANT-01 hard rule 3)")
         self._records[event.id] = OutboxRecord.pending(event)
 
     def fetch_pending(self, *, limit: int = 100) -> list[OutboxRecord]:
@@ -127,8 +126,7 @@ class InMemoryOutboxWriter:
 class Producer(Protocol):
     """Minimal Producer Protocol that the relay uses."""
 
-    def send(self, *, topic: str, key: str, value: bytes, headers: dict[str, str]) -> None:
-        ...
+    def send(self, *, topic: str, key: str, value: bytes, headers: dict[str, str]) -> None: ...
 
 
 class OutboxRelay:
@@ -194,8 +192,7 @@ class OutboxRelay:
 class TopicResolver(Protocol):
     """Map an event to its Kafka topic, honouring SEC-TENANT-01 conventions."""
 
-    def topic_for(self, event: Event) -> str:
-        ...
+    def topic_for(self, event: Event) -> str: ...
 
 
 class EventTypeTopicResolver:
@@ -219,6 +216,4 @@ def _serialize_event(event: Event) -> bytes:
     """
     import json
 
-    return json.dumps(event.to_dict(), separators=(",", ":"), sort_keys=True).encode(
-        "utf-8"
-    )
+    return json.dumps(event.to_dict(), separators=(",", ":"), sort_keys=True).encode("utf-8")

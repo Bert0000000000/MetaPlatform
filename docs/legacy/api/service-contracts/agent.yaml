@@ -86,60 +86,60 @@ paths:
           description: Post-review execution failure
   /api/v1/agent/state/{thread_id}:
     parameters:
-      - {in: path, name: thread_id, required: true, schema: {type: string}}
+      - { in: path, name: thread_id, required: true, schema: { type: string } }
     get:
       summary: Read persisted thread state
       tags: [agent]
       responses:
-        "200": {description: OK}
-        "404": {description: thread not found}
+        "200": { description: OK }
+        "404": { description: thread not found }
     delete:
       summary: Delete persisted thread state
       tags: [agent]
       responses:
-        "200": {description: OK}
-        "404": {description: thread not found}
+        "200": { description: OK }
+        "404": { description: thread not found }
 components:
   schemas:
     HealthResponse:
       type: object
       required: [status, service, version]
       properties:
-        status: {type: string}
-        service: {type: string}
-        version: {type: string}
+        status: { type: string }
+        service: { type: string }
+        version: { type: string }
     ChatRequest:
       type: object
       required: [message]
       properties:
-        message: {type: string, minLength: 1, maxLength: 4096}
-        thread_id: {type: string, nullable: true}
-        scenario: {type: string, enum: [S1, S2, S3, S4], default: S1}
+        message: { type: string, minLength: 1, maxLength: 4096 }
+        thread_id: { type: string, nullable: true }
+        scenario: { type: string, enum: [S1, S2, S3, S4], default: S1 }
     ChatResponse:
       type: object
       required: [thread_id, scenario, answer, latency_ms]
       properties:
-        thread_id: {type: string}
-        scenario: {type: string}
-        answer: {type: string}
+        thread_id: { type: string }
+        scenario: { type: string }
+        answer: { type: string }
         retrieved_chunks:
           type: array
-          items: {type: object}
+          items: { type: object }
         tool_calls:
           type: array
-          items: {type: object}
-        latency_ms: {type: integer, minimum: 0}
+          items: { type: object }
+        latency_ms: { type: integer, minimum: 0 }
     HumanReviewRequest:
       type: object
       required: [thread_id, approved]
       properties:
-        thread_id: {type: string}
-        approved: {type: boolean}
-        feedback: {type: string, nullable: true}
+        thread_id: { type: string }
+        approved: { type: boolean }
+        feedback: { type: string, nullable: true }
     HumanReviewResponse:
       type: object
       required: [thread_id, status]
       properties:
-        thread_id: {type: string}
-        status: {type: string, enum: [approved, aborted, no_pending]}
-        message: {type: string, nullable: true}
+        thread_id: { type: string }
+        status: { type: string, enum: [approved, aborted, no_pending] }
+        message: { type: string, nullable: true }

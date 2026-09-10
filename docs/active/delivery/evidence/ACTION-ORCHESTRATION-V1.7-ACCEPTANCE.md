@@ -36,9 +36,10 @@
 
 本批未新增 v1.7 专项证据。原未闭环项（Temporal 持久运行 / Outbox 事务 /
 staging-prod 发布演练）中：
+
 - Temporal 平面已修复自愈探针崩溃循环（temporalio 1.32 签名兼容），
   worker 稳定运行，为持久运行核销铺平；
 - Temporal 持久运行 + Outbox 事务核销依赖 mate-app-wfe 服务纳入运行栈
   （当前栈未含），随最终冲刺批次三/四的 staging 演练与端到端 demo 一并
   核销。
-状态：`[~]`（条件不变）。
+  状态：`[~]`（条件不变）。

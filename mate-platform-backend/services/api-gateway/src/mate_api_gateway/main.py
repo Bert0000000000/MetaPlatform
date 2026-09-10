@@ -4,6 +4,7 @@ L7 路由: path 前缀匹配 -> 上游服务
 聚合: 多服务结果组合 (后续可加)
 限流: Redis 令牌桶 (per-tenant per-minute)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -22,27 +23,27 @@ logger = structlog.get_logger(__name__)
 
 # ---- Service registry (env-overridable) ----
 SERVICES: dict[str, str] = {
-    "rag":    os.getenv("RAG_URL",    "http://mate-tech-rag:8001"),
-    "agent":  os.getenv("AGENT_URL",  "http://mate-tech-agent:8002"),
+    "rag": os.getenv("RAG_URL", "http://mate-tech-rag:8001"),
+    "agent": os.getenv("AGENT_URL", "http://mate-tech-agent:8002"),
     "app-kb": os.getenv("APP_KB_URL", "http://mate-app-kb:8003"),
-    "llmgw":  os.getenv("LLMGW_URL",  "http://mate-tech-llmgw:8008"),
-    "ont":    os.getenv("ONT_URL",    "http://mate-tech-ont:8007"),
-    "mcp":    os.getenv("MCP_URL",    "http://mate-tech-mcp:8081"),
-    "iam":    os.getenv("IAM_URL",    "http://mate-auth-service:8101"),
+    "llmgw": os.getenv("LLMGW_URL", "http://mate-tech-llmgw:8008"),
+    "ont": os.getenv("ONT_URL", "http://mate-tech-ont:8007"),
+    "mcp": os.getenv("MCP_URL", "http://mate-tech-mcp:8081"),
+    "iam": os.getenv("IAM_URL", "http://mate-auth-service:8101"),
     "iam-admin": os.getenv("IAM_ADMIN_URL", "http://mate-tech-iam:8102"),
-    "obs":     os.getenv("OBS_URL",     "http://mate-tech-obs:8083"),
+    "obs": os.getenv("OBS_URL", "http://mate-tech-obs:8083"),
     "copilot": os.getenv("COPILOT_URL", "http://mate-app-copilot:8601"),
-    "arch":    os.getenv("ARCH_URL",    "http://mate-app-arch:8321"),
-    "dw":      os.getenv("DW_URL",      "http://mate-tech-dw:8021"),
-    "apphub":  os.getenv("APPHUB_URL",  "http://mate-app-hub:8301"),
-    "data":    os.getenv("DATA_URL",    "http://mate-tech-data:8701"),
-    "a2a":     os.getenv("A2A_URL",     "http://mate-app-a2a:8502"),
+    "arch": os.getenv("ARCH_URL", "http://mate-app-arch:8321"),
+    "dw": os.getenv("DW_URL", "http://mate-tech-dw:8021"),
+    "apphub": os.getenv("APPHUB_URL", "http://mate-app-hub:8301"),
+    "data": os.getenv("DATA_URL", "http://mate-tech-data:8701"),
+    "a2a": os.getenv("A2A_URL", "http://mate-app-a2a:8502"),
     "orchestrator": os.getenv("ORCH_URL", "http://mate-tech-orchestrator:8505"),
     # Task12: ETL / 调度 / 指标独立服务
-    "etl":      os.getenv("ETL_URL",      "http://mate-tech-etl:8022"),
+    "etl": os.getenv("ETL_URL", "http://mate-tech-etl:8022"),
     "scheduler": os.getenv("SCHEDULER_URL", "http://mate-tech-scheduler:8023"),
-    "metrics":  os.getenv("METRICS_URL",  "http://mate-tech-metrics:8024"),
-    "wfe":      os.getenv("WFE_URL",      "http://mate-app-wfe:8510"),
+    "metrics": os.getenv("METRICS_URL", "http://mate-tech-metrics:8024"),
+    "wfe": os.getenv("WFE_URL", "http://mate-app-wfe:8510"),
 }
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -53,31 +54,37 @@ MAX_BODY_BYTES = int(os.getenv("GATEWAY_MAX_BODY_BYTES", str(1024 * 1024)))
 
 # Path prefix -> upstream service name
 ROUTE_MAP: list[tuple[str, str]] = [
-    ("/api/v1/rag/",  "rag"),
+    ("/api/v1/rag/", "rag"),
     ("/api/v1/agent/", "agent"),
-    ("/api/v1/llm/",  "llmgw"),
+    ("/api/v1/llm/", "llmgw"),
     ("/api/v1/llmgw/", "llmgw"),
-    ("/api/v1/kb/",   "app-kb"),
-    ("/api/v1/ont/",  "ont"),
-    ("/api/v1/mcp/",  "mcp"),
-    ("/api/v1/dw/",   "dw"),        # DW (digital workforce) routes served by mate-tech-dw
-    ("/api/v1/dashboard/", "iam"),   # GOVERN-02-FIX: dashboard 41 routes on mate-auth-service
+    ("/api/v1/kb/", "app-kb"),
+    ("/api/v1/ont/", "ont"),
+    ("/api/v1/mcp/", "mcp"),
+    ("/api/v1/dw/", "dw"),  # DW (digital workforce) routes served by mate-tech-dw
+    ("/api/v1/dashboard/", "iam"),  # GOVERN-02-FIX: dashboard 41 routes on mate-auth-service
     ("/api/v1/admin/operations/", "obs"),
-    ("/api/v1/admin/", "iam"),       # GOVERN-02-FIX: admin users/orgs/permissions/logs/configs/models on mate-auth-service
-    ("/api/v1/iam/auth/login", "iam"),   # Keycloak password grant on mate-auth-service
+    (
+        "/api/v1/admin/",
+        "iam",
+    ),  # GOVERN-02-FIX: admin users/orgs/permissions/logs/configs/models on mate-auth-service
+    ("/api/v1/iam/auth/login", "iam"),  # Keycloak password grant on mate-auth-service
     ("/api/v1/iam/auth/refresh", "iam"),
     ("/api/v1/iam/auth/logout", "iam"),
-    ("/api/v1/iam/",  "iam-admin"),  # legacy /iam/* (sso, /me) still on deprecated mate-tech-iam until 2026-12-31 sunset
+    (
+        "/api/v1/iam/",
+        "iam-admin",
+    ),  # legacy /iam/* (sso, /me) still on deprecated mate-tech-iam until 2026-12-31 sunset
     ("/api/v1/copilot/", "copilot"),
     ("/api/v1/superai/", "copilot"),
     ("/api/v1/arch/", "arch"),
     ("/api/v1/apphub/", "apphub"),
     ("/api/v1/marketplace/", "apphub"),
     ("/api/v1/data/", "data"),
-    ("/api/v1/etl/", "etl"),          # Task12: 独立 ETL 服务
+    ("/api/v1/etl/", "etl"),  # Task12: 独立 ETL 服务
     ("/api/v1/scheduler/", "scheduler"),  # Task12: 独立调度服务
     ("/api/v1/metrics/", "metrics"),  # Task12: 独立指标服务
-    ("/api/v1/metrics", "metrics"),   # Task12: 裸 /metrics（list 端点无尾斜杠）
+    ("/api/v1/metrics", "metrics"),  # Task12: 裸 /metrics（list 端点无尾斜杠）
     ("/api/v1/a2a/", "a2a"),
     ("/api/v1/orchestrator/", "orchestrator"),
     ("/api/v1/workflow-definitions/", "wfe"),
@@ -113,6 +120,7 @@ async def lifespan(app: FastAPI):
     )
     try:
         import redis.asyncio as aioredis
+
         app.state.redis = aioredis.from_url(REDIS_URL, decode_responses=True)
         await app.state.redis.ping()
         logger.info("redis.connected", url=REDIS_URL)
@@ -169,9 +177,8 @@ async def rate_limit_middleware(request: Request, call_next):
     # (e.g. local dev without Redis). In that case it acts as a no-op pass-through.
     if getattr(app.state, "redis", None) is None or not request.url.path.startswith("/api/"):
         return await call_next(request)
-    tenant = (
-        request.headers.get("X-Tenant-Id")
-        or (request.client.host if request.client else "anon")
+    tenant = request.headers.get("X-Tenant-Id") or (
+        request.client.host if request.client else "anon"
     )
     minute_bucket = int(time.time()) // 60
     bucket_key = f"rl:{tenant}:{minute_bucket}"
@@ -228,9 +235,7 @@ async def proxy(path: str, request: Request) -> Response:
                 status_code=413,
                 content={
                     "code": "E413_PAYLOAD_TOO_LARGE",
-                    "message": (
-                        f"body exceeds gateway limit of {MAX_BODY_BYTES} bytes"
-                    ),
+                    "message": (f"body exceeds gateway limit of {MAX_BODY_BYTES} bytes"),
                 },
             )
     except ValueError:
@@ -254,9 +259,18 @@ async def proxy(path: str, request: Request) -> Response:
     target_url = _build_target_url(target_base, request.url.path)
 
     # Forward headers, drop hop-by-hop
-    skip = {"host", "content-length", "connection", "keep-alive",
-            "proxy-authenticate", "proxy-authorization", "te", "trailers",
-            "transfer-encoding", "upgrade"}
+    skip = {
+        "host",
+        "content-length",
+        "connection",
+        "keep-alive",
+        "proxy-authenticate",
+        "proxy-authorization",
+        "te",
+        "trailers",
+        "transfer-encoding",
+        "upgrade",
+    }
     headers = {k: v for k, v in request.headers.items() if k.lower() not in skip}
     headers["X-Forwarded-By"] = "mate-api-gateway"
     headers["X-Forwarded-Host"] = request.headers.get("host", "")
@@ -265,13 +279,14 @@ async def proxy(path: str, request: Request) -> Response:
     body = await request.body()
     start = time.perf_counter()
     # Build a client on-demand if lifespan did not run (tests / fresh import).
-    client = getattr(app.state, 'client', None)
+    client = getattr(app.state, "client", None)
     if client is None:
         client = httpx.AsyncClient(
             timeout=httpx.Timeout(UPSTREAM_TIMEOUT_SEC, connect=5.0),
             # C4：keepalive 30s 过期——上游容器重启后池内陈旧连接窗口收窄
-            limits=httpx.Limits(max_connections=200, max_keepalive_connections=50,
-                                keepalive_expiry=30.0),
+            limits=httpx.Limits(
+                max_connections=200, max_keepalive_connections=50, keepalive_expiry=30.0
+            ),
         )
     try:
         # C4：陈旧 keepalive 连接重试 —— 上游容器重启后池内死连接的两种表现：
@@ -279,8 +294,7 @@ async def proxy(path: str, request: Request) -> Response:
         # ② ReadTimeout（Windows docker-proxy 黑洞，请求写入无响应）——仅对
         #   幂等方法（GET/HEAD/OPTIONS）重试；POST 不重试（可能已被上游处理）。
         _idempotent = request.method.upper() in ("GET", "HEAD", "OPTIONS")
-        _retriable = (httpx.ConnectError, httpx.RemoteProtocolError,
-                      httpx.ReadTimeout)
+        _retriable = (httpx.ConnectError, httpx.RemoteProtocolError, httpx.ReadTimeout)
         upstream = None
         for _attempt in range(2):
             try:
@@ -299,7 +313,8 @@ async def proxy(path: str, request: Request) -> Response:
                     raise
                 logger.warning(
                     "proxy.stale_conn_retry",
-                    upstream=matched_service, url=target_url,
+                    upstream=matched_service,
+                    url=target_url,
                     error=type(_exc).__name__,
                 )
                 await asyncio.sleep(1.0)  # 连接失败重试退避（短闪断桥接）
@@ -313,10 +328,7 @@ async def proxy(path: str, request: Request) -> Response:
             latency_ms=latency_ms,
         )
         # Drop hop-by-hop from upstream response too
-        resp_headers = {
-            k: v for k, v in upstream.headers.items()
-            if k.lower() not in skip
-        }
+        resp_headers = {k: v for k, v in upstream.headers.items() if k.lower() not in skip}
         return Response(
             content=upstream.content,
             status_code=upstream.status_code,
@@ -332,13 +344,14 @@ async def proxy(path: str, request: Request) -> Response:
         logger.error("proxy.error", upstream=matched_service, url=target_url, error=str(exc))
         return JSONResponse(
             status_code=502,
-            content={"code": "E502_UPSTREAM", "message": f"Upstream {matched_service} error: {exc}"},
+            content={
+                "code": "E502_UPSTREAM",
+                "message": f"Upstream {matched_service} error: {exc}",
+            },
         )
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8100")))
-
-
-

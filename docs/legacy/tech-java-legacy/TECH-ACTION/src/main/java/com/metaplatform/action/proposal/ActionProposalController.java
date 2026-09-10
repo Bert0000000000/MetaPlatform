@@ -47,4 +47,3 @@ public class ActionProposalController {
         return ApiResponse.success(service.listByRun(runId));
     }
 }
-

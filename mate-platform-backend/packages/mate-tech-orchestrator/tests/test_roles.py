@@ -1,4 +1,5 @@
 """W3 tests: digital-employee role registry CRUD + tenant isolation."""
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
@@ -23,7 +24,9 @@ def test_register_role(client: TestClient, auth_headers_acme) -> None:
     body = r.json()
     assert body["role"] == "knowledge"
     assert body["capabilities"][0] == {
-        "name": "kb_search", "worker_kind": "mcp", "ref": "kb_search",
+        "name": "kb_search",
+        "worker_kind": "mcp",
+        "ref": "kb_search",
     }
 
     lst = client.get("/api/v1/orchestrator/roles", headers=auth_headers_acme)
@@ -45,7 +48,10 @@ def test_register_unknown_role_422(client: TestClient, auth_headers_acme) -> Non
 def test_register_unknown_worker_kind_422(client: TestClient, auth_headers_acme) -> None:
     r = client.post(
         "/api/v1/orchestrator/roles",
-        json={"role": "knowledge", "capabilities": [{"name": "x", "worker_kind": "k8s", "ref": ""}]},
+        json={
+            "role": "knowledge",
+            "capabilities": [{"name": "x", "worker_kind": "k8s", "ref": ""}],
+        },
         headers=auth_headers_acme,
     )
     assert r.status_code == 422, r.text
@@ -65,24 +71,30 @@ def test_tenant_isolation(client: TestClient, auth_headers_acme, auth_headers_gl
     assert lst.json()["total"] == 0
 
 
-def test_register_emits_outbox_event(client: TestClient, auth_headers_acme, outbox: InMemoryOutboxWriter) -> None:
+def test_register_emits_outbox_event(
+    client: TestClient, auth_headers_acme, outbox: InMemoryOutboxWriter
+) -> None:
     client.post("/api/v1/orchestrator/roles", json=_payload(), headers=auth_headers_acme)
     types = {rec.event.type for rec in outbox.all_records()}
     assert "orchestrator.role.registered" in types
 
 
 def test_authorized_snapshot_returns_only_actor_authorized_roles(
-    client: TestClient, auth_headers_acme,
+    client: TestClient,
+    auth_headers_acme,
 ) -> None:
     payload = _payload()
     payload["allowed_actor_roles"] = ["PLATFORM_SUPER_ADMIN"]
     created = client.post(
-        "/api/v1/orchestrator/roles", json=payload, headers=auth_headers_acme,
+        "/api/v1/orchestrator/roles",
+        json=payload,
+        headers=auth_headers_acme,
     )
     assert created.status_code == 201, created.text
 
     snapshot = client.get(
-        "/api/v1/orchestrator/roles/authorized-snapshot", headers=auth_headers_acme,
+        "/api/v1/orchestrator/roles/authorized-snapshot",
+        headers=auth_headers_acme,
     )
     assert snapshot.status_code == 200, snapshot.text
     body = snapshot.json()

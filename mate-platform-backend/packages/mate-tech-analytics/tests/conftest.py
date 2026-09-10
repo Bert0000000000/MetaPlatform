@@ -5,6 +5,7 @@ at app-import time, so they must be set BEFORE importing
 `mate_tech_analytics.main`. Cross-package source paths are injected so
 tests run without `pip install -e .`.
 """
+
 from __future__ import annotations
 
 import os

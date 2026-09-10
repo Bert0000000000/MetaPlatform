@@ -9,6 +9,7 @@
 
 每个用例描述威胁模型 + guard 契约，guard 实现随本批加深补齐。
 """
+
 from __future__ import annotations
 
 import time
@@ -130,9 +131,7 @@ def test_case3_monthly_cost_ceiling_returns_429() -> None:
     # 当前实现仅有 RedisTokenBucket (RPM/TPM)。本批加深后才会引入
     # MonthlyTokenBucket；这里 contract 锁定接口形状。
     err = QuotaExceededError(key="month:test", retry_after=42)
-    assert err.retry_after == 42, (
-        "QuotaExceededError must carry retry_after for HTTP 429 mapping"
-    )
+    assert err.retry_after == 42, "QuotaExceededError must carry retry_after for HTTP 429 mapping"
 
 
 # ---------------------------------------------------------------------------
@@ -150,13 +149,23 @@ def test_case4_denial_of_wallet_burst_detected() -> None:
     for i in range(9):
         rec._records.append(  # type: ignore[attr-defined]
             _record(
-                "gpt-4o", "tenant-a", "u-burst", 100, 100, base_time + i,
+                "gpt-4o",
+                "tenant-a",
+                "u-burst",
+                100,
+                100,
+                base_time + i,
                 cost=0.001,
             )
         )
     rec._records.append(  # type: ignore[attr-defined]
         _record(
-            "gpt-4o", "tenant-a", "u-burst", 100_000, 100_000, base_time + 7000,
+            "gpt-4o",
+            "tenant-a",
+            "u-burst",
+            100_000,
+            100_000,
+            base_time + 7000,
             cost=5.0,
         )
     )

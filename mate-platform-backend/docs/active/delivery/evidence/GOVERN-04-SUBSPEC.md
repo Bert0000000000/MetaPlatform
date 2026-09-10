@@ -17,31 +17,31 @@
 
 ### 1.1 已真接（不动）
 
-| 基元 | 方法 | 行号 | 状态 |
-|---|---|---|---|
-| ClassRef | `resolve_class_ref` | 199-200 | ✅ |
-| Version | `snapshot_version` / `list_versions` | 202-219 | ✅（versions 表归 MVP-02 后续） |
-| ObjectType | `upsert_object_type` / `get_object_type` / `list_object_types` | 223-280 | ✅ |
-| ActionType | `upsert_action_type` / `list_action_types` / `get_action_type` | 286-378 | ✅ |
-| Individual | `create_individual` / `get_individual` / `list_individuals` | 382-441 | ✅ |
-| ObjectSet | `evaluate_object_set` | 465-497 | ✅ |
+| 基元       | 方法                                                           | 行号    | 状态                            |
+| ---------- | -------------------------------------------------------------- | ------- | ------------------------------- |
+| ClassRef   | `resolve_class_ref`                                            | 199-200 | ✅                              |
+| Version    | `snapshot_version` / `list_versions`                           | 202-219 | ✅（versions 表归 MVP-02 后续） |
+| ObjectType | `upsert_object_type` / `get_object_type` / `list_object_types` | 223-280 | ✅                              |
+| ActionType | `upsert_action_type` / `list_action_types` / `get_action_type` | 286-378 | ✅                              |
+| Individual | `create_individual` / `get_individual` / `list_individuals`    | 382-441 | ✅                              |
+| ObjectSet  | `evaluate_object_set`                                          | 465-497 | ✅                              |
 
 ### 1.2 stub（必须真接，本批范围）
 
-| 基元 | 方法 | 行号 | 现状 | 目标 |
-|---|---|---|---|---|
-| LinkType | `upsert_link_type` | 282-284 | `return lt` | `INSERT … ON CONFLICT (rid) DO UPDATE` |
-| LinkType | `list_link_types` | 326-327 | `return []` | `SELECT` |
-| LinkType | `get_link_type` | 356-357 | `raise KeyError` | `SELECT WHERE rid` |
-| Interface | `upsert_interface` | 320-321 | `return i` | `INSERT … ON CONFLICT (rid) DO UPDATE` |
-| Interface | `list_interfaces` | 353-354 | `return []` | `SELECT` |
-| Property | `upsert_property` | 323-324 | `return p` | `INSERT … ON CONFLICT (rid) DO UPDATE`（拆出独立表，避免被 OT/LT/AT/IF 各自序列化时丢失） |
-| LinkInstance | `create_link_instance` | 443-444 | `return li` | `INSERT … ON CONFLICT (rid) DO UPDATE` |
-| LinkInstance | `list_link_instances` | 446-447 | `return []` | `SELECT WHERE tenant_id` |
-| Axiom | `upsert_axiom` | 451-452 | `return ax` | `INSERT … ON CONFLICT (rid) DO UPDATE` |
-| Axiom | `list_axioms` | 454-455 | `return []` | `SELECT` |
-| Function | `upsert_function` | 457-458 | `return f` | `INSERT … ON CONFLICT (rid) DO UPDATE` |
-| Function | `list_functions` | 460-461 | `return []` | `SELECT` |
+| 基元         | 方法                   | 行号    | 现状             | 目标                                                                                      |
+| ------------ | ---------------------- | ------- | ---------------- | ----------------------------------------------------------------------------------------- |
+| LinkType     | `upsert_link_type`     | 282-284 | `return lt`      | `INSERT … ON CONFLICT (rid) DO UPDATE`                                                    |
+| LinkType     | `list_link_types`      | 326-327 | `return []`      | `SELECT`                                                                                  |
+| LinkType     | `get_link_type`        | 356-357 | `raise KeyError` | `SELECT WHERE rid`                                                                        |
+| Interface    | `upsert_interface`     | 320-321 | `return i`       | `INSERT … ON CONFLICT (rid) DO UPDATE`                                                    |
+| Interface    | `list_interfaces`      | 353-354 | `return []`      | `SELECT`                                                                                  |
+| Property     | `upsert_property`      | 323-324 | `return p`       | `INSERT … ON CONFLICT (rid) DO UPDATE`（拆出独立表，避免被 OT/LT/AT/IF 各自序列化时丢失） |
+| LinkInstance | `create_link_instance` | 443-444 | `return li`      | `INSERT … ON CONFLICT (rid) DO UPDATE`                                                    |
+| LinkInstance | `list_link_instances`  | 446-447 | `return []`      | `SELECT WHERE tenant_id`                                                                  |
+| Axiom        | `upsert_axiom`         | 451-452 | `return ax`      | `INSERT … ON CONFLICT (rid) DO UPDATE`                                                    |
+| Axiom        | `list_axioms`          | 454-455 | `return []`      | `SELECT`                                                                                  |
+| Function     | `upsert_function`      | 457-458 | `return f`       | `INSERT … ON CONFLICT (rid) DO UPDATE`                                                    |
+| Function     | `list_functions`       | 460-461 | `return []`      | `SELECT`                                                                                  |
 
 ### 1.3 行为分叉（必须对齐，本批范围）
 
@@ -50,6 +50,7 @@
 `InMemoryOntologyRepository.apply_action` (160-205) 已走 ActionService（submission_criteria / Function / side_effects / 审计）。
 
 **目标**：PG 也走 ActionService。两条 path 必须语义一致：
+
 1. submission_criteria 全部通过（SimpleRuleEvaluator）— 失败 → `SubmissionCriteriaFailed`
 2. side_effects 发出（ActionService 记录到 outcome.side_effects_emitted）
 3. Function 落库（GOVERN-04 仅保留接口；GOVERN-05 接 register_function + 真 invoke）
@@ -135,7 +136,7 @@ CREATE INDEX IF NOT EXISTS ix_ont_fn_tenant ON ont_function (tenant_id);
 
 ## 3. 应用层映射
 
-### 3.1 _row_to_* helpers
+### 3.1 _row_to_\* helpers
 
 复用现有 `_ot_to_row` / `_row_to_ot` / `_row_to_individual` 模式，新增：
 
@@ -146,7 +147,7 @@ CREATE INDEX IF NOT EXISTS ix_ont_fn_tenant ON ont_function (tenant_id);
 - `_ax_to_row(ax: Axiom)` / `_row_to_ax(row)`
 - `_fn_to_row(f: Function)` / `_row_to_fn(row)`
 
-### 3.2 upsert_* 实现
+### 3.2 upsert\_\* 实现
 
 每个 `upsert_x` 模式：
 
@@ -171,7 +172,7 @@ def upsert_x(self, x: X) -> X:
         conn.close()
 ```
 
-### 3.3 list_* 实现
+### 3.3 list\_\* 实现
 
 每个 `list_x` 模式：
 
@@ -259,21 +260,21 @@ def apply_action(
 
 落在 `packages/mate-tech-ont/tests/integration/test_v2_kernel_pg_e2e.py`，复用现有 `repo` fixture + `_clean_pg`（扩 5 张新表）：
 
-| 基元 | 测试 | 断言 |
-|---|---|---|
-| LinkType | `test_upsert_link_type_round_trip` | upsert → get 字段全等 |
-| LinkType | `test_list_link_types_returns_seeded` | upsert 3 个 → list 长度 = 3 |
-| Interface | `test_upsert_interface_round_trip` | properties / required_links / polymorphic_action_constraints 全等 |
-| Property | `test_upsert_property_round_trip` | 独立表，OT 引用不到时仍可读 |
-| LinkInstance | `test_create_link_instance_round_trip` | rid + src/dst/marking 全等 |
+| 基元         | 测试                                                                                                                  | 断言                                                                                                     |
+| ------------ | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| LinkType     | `test_upsert_link_type_round_trip`                                                                                    | upsert → get 字段全等                                                                                    |
+| LinkType     | `test_list_link_types_returns_seeded`                                                                                 | upsert 3 个 → list 长度 = 3                                                                              |
+| Interface    | `test_upsert_interface_round_trip`                                                                                    | properties / required_links / polymorphic_action_constraints 全等                                        |
+| Property     | `test_upsert_property_round_trip`                                                                                     | 独立表，OT 引用不到时仍可读                                                                              |
+| LinkInstance | `test_create_link_instance_round_trip`                                                                                | rid + src/dst/marking 全等                                                                               |
 | LinkInstance | `test_list_link_instances_filters_by_tenant`（注：list 不带 tenant 过滤，但 RLS 由 GOVERN-06 加，本测只验证返回结构） |
-| Axiom | `test_upsert_axiom_round_trip` | kind / operands / metadata 全等 |
-| Axiom | `test_list_axioms_returns_seeded` | upsert 2 → list 长度 = 2 |
-| Function | `test_upsert_function_round_trip` | language / version / source_ref 全等 |
-| Function | `test_list_functions_returns_seeded` | upsert 2 → list 长度 = 2 |
-| apply_action | `test_apply_action_submission_criteria_failed` | submission_criteria 含 `status == 'pending'`，parameters 不传 status → SubmissionCriteriaFailed |
-| apply_action | `test_apply_action_side_effects_emitted` | upsert AT with side_effects=('emit.outbox.audit',) → outcome.side_effects_emitted 含 'emit.outbox.audit' |
-| apply_action | `test_apply_action_writes_props` | upsert AT with parameters 含 `decision` 短名 → individual.props 含 decision 参数 Property rid |
+| Axiom        | `test_upsert_axiom_round_trip`                                                                                        | kind / operands / metadata 全等                                                                          |
+| Axiom        | `test_list_axioms_returns_seeded`                                                                                     | upsert 2 → list 长度 = 2                                                                                 |
+| Function     | `test_upsert_function_round_trip`                                                                                     | language / version / source_ref 全等                                                                     |
+| Function     | `test_list_functions_returns_seeded`                                                                                  | upsert 2 → list 长度 = 2                                                                                 |
+| apply_action | `test_apply_action_submission_criteria_failed`                                                                        | submission_criteria 含 `status == 'pending'`，parameters 不传 status → SubmissionCriteriaFailed          |
+| apply_action | `test_apply_action_side_effects_emitted`                                                                              | upsert AT with side_effects=('emit.outbox.audit',) → outcome.side_effects_emitted 含 'emit.outbox.audit' |
+| apply_action | `test_apply_action_writes_props`                                                                                      | upsert AT with parameters 含 `decision` 短名 → individual.props 含 decision 参数 Property rid            |
 
 合计 13 个新测，加上原有 5 个 PG e2e = 18 个；加入 InMemory 5 个 = 23。
 
@@ -295,20 +296,20 @@ def apply_action(
 
 - 修改：`packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py`（+~200 行）
 - 修改：`packages/mate-tech-ont/tests/integration/test_v2_kernel_pg_e2e.py`（+~150 行；扩 `_clean_pg` + 13 新测）
-- 新建：`packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/_row_codecs.py`（拆出 _row_to_* 辅助，避免 pg_repo.py 单文件过 700 行；可选）
+- 新建：`packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/_row_codecs.py`（拆出 _row_to_\* 辅助，避免 pg_repo.py 单文件过 700 行；可选）
 
 ## 7. 风险
 
-| 风险 | 缓解 |
-|---|---|
-| psql 不可达时 13 个新测全 skip | 标 skip + reason；CI 必须有 PG sidecar 才跑全量 |
-| apply_action 重写与 InMemory 路径字段不一致 | 复用 InMemory 末尾的 parameters→props 合并逻辑（line 188-205），行为对位 |
-| 5 张新表 DDL 与已有 DDL 命名冲突 | `IF NOT EXISTS` + 字段名不冲突 |
-| LinkInstance.rid 校验已在 dataclass `__post_init__` 强制 `ont.<tenant>.lnk.` 前缀 | 落到 PG 时不重复校验（数据来源已校验） |
+| 风险                                                                              | 缓解                                                                     |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| psql 不可达时 13 个新测全 skip                                                    | 标 skip + reason；CI 必须有 PG sidecar 才跑全量                          |
+| apply_action 重写与 InMemory 路径字段不一致                                       | 复用 InMemory 末尾的 parameters→props 合并逻辑（line 188-205），行为对位 |
+| 5 张新表 DDL 与已有 DDL 命名冲突                                                  | `IF NOT EXISTS` + 字段名不冲突                                           |
+| LinkInstance.rid 校验已在 dataclass `__post_init__` 强制 `ont.<tenant>.lnk.` 前缀 | 落到 PG 时不重复校验（数据来源已校验）                                   |
 
 ## 8. 未尽事项
 
 - 11 基元 PG RLS FORCE POLICY（Alembic 0013 + ALTER TABLE … ENABLE/FORCE ROW LEVEL SECURITY）— GOVERN-06
 - Function.register_function 真接 + Function Sandbox execute — GOVERN-05
 - 3 个 pre-existing fixture leak 失败 — GOVERN-10
-- 8 CI workflow 与 13 ga-* job 对位矩阵 — GOVERN-10
+- 8 CI workflow 与 13 ga-\* job 对位矩阵 — GOVERN-10

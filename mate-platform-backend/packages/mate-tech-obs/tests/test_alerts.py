@@ -1,7 +1,8 @@
-﻿"""Move/refactor of src/.../alerts/test_rules.py -> tests/test_alerts.py
+"""Move/refactor of src/.../alerts/test_rules.py -> tests/test_alerts.py
 originally lived inside src/ which made pytest collect it twice; now it's
 the canonical location with full coverage of mate_tech_obs.alerts.rules.
 """
+
 from __future__ import annotations
 
 from dataclasses import FrozenInstanceError

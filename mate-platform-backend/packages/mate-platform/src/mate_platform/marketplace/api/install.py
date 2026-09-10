@@ -2,6 +2,7 @@
 
 鉴权 + tenant 由 SEC-IAM-01 中间件已注入到 request.state。
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -37,13 +38,14 @@ def _install_policy_engine():
     from ...composition.policy import PolicyEngine, PolicyRule
 
     engine = PolicyEngine()
-    denied = [k.strip() for k in
-              _os.getenv("MP_POLICY_DENY_KINDS", "").split(",") if k.strip()]
+    denied = [k.strip() for k in _os.getenv("MP_POLICY_DENY_KINDS", "").split(",") if k.strip()]
     for kind in denied:
-        engine.register(PolicyRule(
-            name=f"deny-kind:{kind}",
-            predicate=lambda ctx, _k=kind: ctx.get("kind") == _k,
-        ))
+        engine.register(
+            PolicyRule(
+                name=f"deny-kind:{kind}",
+                predicate=lambda ctx, _k=kind: ctx.get("kind") == _k,
+            )
+        )
     return engine
 
 
@@ -55,6 +57,7 @@ def _safe_uuid(value: str | None) -> UUID | None:
         return UUID(value)
     except ValueError:
         import hashlib
+
         digest = hashlib.sha256(value.encode()).digest()[:16]
         digest = bytearray(digest)
         digest[6] = (digest[6] & 0x0F) | 0x40  # version 4
@@ -143,17 +146,14 @@ async def uninstall(install_id: UUID, request: Request):
             await outbox.publish(
                 topic="marketplace.install.uninstalling",
                 key=str(install_id),
-                payload={"install_id": str(install_id),
-                         "state": install.state},
+                payload={"install_id": str(install_id), "state": install.state},
             )
         except Exception:
             pass
     return {"install_id": str(install_id), "state": install.state}
 
 
-@router.post(
-    "/install/{install_id}/retry", status_code=status.HTTP_202_ACCEPTED
-)
+@router.post("/install/{install_id}/retry", status_code=status.HTTP_202_ACCEPTED)
 async def retry_install(install_id: UUID, request: Request):
     user = getattr(request.state, "user", None)
     _require_scope(user, "platform.marketplace.write")
@@ -181,11 +181,16 @@ async def retry_install(install_id: UUID, request: Request):
             await outbox.publish(
                 topic="marketplace.install.retry",
                 key=str(install_id),
-                payload={"install_id": str(install_id),
-                         "state": install.state,
-                         "retry_count": install.retry_count},
+                payload={
+                    "install_id": str(install_id),
+                    "state": install.state,
+                    "retry_count": install.retry_count,
+                },
             )
         except Exception:
             pass
-    return {"install_id": str(install_id), "state": install.state,
-            "retry_count": install.retry_count}
+    return {
+        "install_id": str(install_id),
+        "state": install.state,
+        "retry_count": install.retry_count,
+    }

@@ -31,6 +31,7 @@ Strategies:
   ST_CROSS_ENCODER_MODEL    str, 启用真 sentence-transformers cross-encoder 的模型名;
                             未设置或加载失败 → fallback heuristic。
 """
+
 from __future__ import annotations
 
 import math
@@ -156,8 +157,7 @@ class HeuristicCrossEncoderReranker:
                 df[t] = df.get(t, 0) + 1
         n = len(candidates)
         idf_table: dict[str, float] = {
-            t: math.log((n + 1) / (df_t + 0.5)) + 1.0
-            for t, df_t in df.items()
+            t: math.log((n + 1) / (df_t + 0.5)) + 1.0 for t, df_t in df.items()
         }
         query_len = max(len(query), 1)
         for c, terms in zip(candidates, term_sets, strict=False):
@@ -172,9 +172,7 @@ class HeuristicCrossEncoderReranker:
             # 长度归一
             length_factor = self._length_factor(len(c.text), query_len)
             # IDF 加权:命中 query token 的平均 IDF
-            avg_idf = (
-                sum(idf_table.get(t, 1.0) for t in overlap) / len(overlap)
-            )
+            avg_idf = sum(idf_table.get(t, 1.0) for t in overlap) / len(overlap)
             idf_factor = 1.0 + self.IDF_BETA * (avg_idf - 1.0)
             cross_score = base_sim * pos_factor * length_factor * idf_factor
             # 与原始 retrieval score 融合:0.6 reranker + 0.4 原始
@@ -261,7 +259,9 @@ class RealCrossEncoderReranker:
         pairs = [(query, c.text) for c in candidates]
         try:
             scores = self._model.predict(  # type: ignore[attr-defined]
-                pairs, batch_size=self._batch_size, show_progress_bar=False,
+                pairs,
+                batch_size=self._batch_size,
+                show_progress_bar=False,
             )
         except Exception:
             # Last-resort safety net: keep the reranker non-fatal.

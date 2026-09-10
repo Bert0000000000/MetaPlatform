@@ -1,4 +1,5 @@
 """Workflow executor ports and concrete local/Temporal adapters."""
+
 from __future__ import annotations
 
 import hashlib
@@ -13,8 +14,10 @@ try:
     # selected in ``connect_workflow_executor``.
     from temporalio.exceptions import WorkflowAlreadyStartedError
 except ImportError:  # pragma: no cover - exercised by the slim runtime image
+
     class WorkflowAlreadyStartedError(Exception):
         """Fallback sentinel when the optional Temporal SDK is unavailable."""
+
 
 from .config import WorkflowBackend, WorkflowSettings
 from .contracts import Plan, WorkflowRun, WorkflowRunStatus
@@ -49,11 +52,9 @@ class TemporalClient(Protocol):
         *,
         id: str,
         task_queue: str,
-    ) -> Any:
-        ...
+    ) -> Any: ...
 
-    def get_workflow_handle(self, workflow_id: str) -> Any:
-        ...
+    def get_workflow_handle(self, workflow_id: str) -> Any: ...
 
 
 class InMemoryWorkflowExecutor:

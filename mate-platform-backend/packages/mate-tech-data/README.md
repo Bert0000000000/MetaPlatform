@@ -8,6 +8,7 @@ management (FR-DATA-001..015).
 15 endpoints under `/api/v1/data/*`:
 
 **CDC tasks (8):**
+
 - `GET /cdc-tasks` — list (paginated, optional `status` filter)
 - `POST /cdc-tasks` — create
 - `GET /cdc-tasks/{id}` — detail
@@ -18,6 +19,7 @@ management (FR-DATA-001..015).
 - `GET /cdc-tasks/{id}/status` — status
 
 **Data sources (7):**
+
 - `GET /sources` — list (paginated, optional `type` filter)
 - `POST /sources` — create
 - `GET /sources/{id}` — detail

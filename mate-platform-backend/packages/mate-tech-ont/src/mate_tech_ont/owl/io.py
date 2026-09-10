@@ -1,4 +1,5 @@
 """OWL 2 import/export (ST-5.4.6)."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

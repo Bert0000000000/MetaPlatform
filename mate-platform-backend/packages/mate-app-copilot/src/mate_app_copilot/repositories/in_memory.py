@@ -18,6 +18,7 @@ Seed data per tenant:
 Tests rely on these minima; bumping is allowed but tests assert
 ``>= N`` rather than equality.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -185,8 +186,8 @@ def _seed_queries(tenant_id: str) -> dict[str, QueryLog]:
         "SELECT country, users FROM geo WHERE users > 1000",
     ]
     return {
-        f"q-{i+1}": QueryLog(
-            id=f"q-{i+1}",
+        f"q-{i + 1}": QueryLog(
+            id=f"q-{i + 1}",
             tenant_id=tenant_id,
             sql=sql,
             datasource_id="ds-1",
@@ -198,16 +199,36 @@ def _seed_queries(tenant_id: str) -> dict[str, QueryLog]:
 
 def _seed_plans(tenant_id: str) -> dict[str, Plan]:
     rows = [
-        ("plan-1", "Monthly close", "Automate financial reconciliation",
-         ("Extract ledger", "Reconcile accounts", "Generate report")),
-        ("plan-2", "Customer onboarding", "Streamline new account setup",
-         ("Verify identity", "Create workspace", "Send welcome")),
-        ("plan-3", "Incident response", "Triage and resolve P1 incidents",
-         ("Classify severity", "Assign owner", "Escalate")),
-        ("plan-4", "Campaign launch", "Coordinate multi-channel rollout",
-         ("Brief creative", "Schedule posts", "Track metrics")),
-        ("plan-5", "Vendor renewal", "Review and renegotiate contracts",
-         ("Collect usage", "Score vendors", "Negotiate terms")),
+        (
+            "plan-1",
+            "Monthly close",
+            "Automate financial reconciliation",
+            ("Extract ledger", "Reconcile accounts", "Generate report"),
+        ),
+        (
+            "plan-2",
+            "Customer onboarding",
+            "Streamline new account setup",
+            ("Verify identity", "Create workspace", "Send welcome"),
+        ),
+        (
+            "plan-3",
+            "Incident response",
+            "Triage and resolve P1 incidents",
+            ("Classify severity", "Assign owner", "Escalate"),
+        ),
+        (
+            "plan-4",
+            "Campaign launch",
+            "Coordinate multi-channel rollout",
+            ("Brief creative", "Schedule posts", "Track metrics"),
+        ),
+        (
+            "plan-5",
+            "Vendor renewal",
+            "Review and renegotiate contracts",
+            ("Collect usage", "Score vendors", "Negotiate terms"),
+        ),
     ]
     return {
         rid: Plan(id=rid, tenant_id=tenant_id, name=name, goal=goal, steps=steps)
@@ -224,8 +245,7 @@ def _seed_intents(tenant_id: str) -> dict[str, Intent]:
         ("intent-approve", "approve", ("approve", "reject", "sign", "confirm")),
     ]
     return {
-        rid: Intent(id=rid, tenant_id=tenant_id, name=name, keywords=kw)
-        for rid, name, kw in rows
+        rid: Intent(id=rid, tenant_id=tenant_id, name=name, keywords=kw) for rid, name, kw in rows
     }
 
 
@@ -247,34 +267,133 @@ def _seed_actions(tenant_id: str) -> dict[str, Action]:
     # input_schema 与 kernel ActionType 参数对齐（ActionPanel 表单渲染）；
     # act-approve-leave / act-close-ticket 经 ont_apply_action 桥接 kernel。
     rows = [
-        ("act-create-order", "Create Order", "Place a new sales order", "sales", ("order", "create", "buy"), ()),
-        ("act-send-email", "Send Email", "Dispatch an email notification", "comms", ("email", "send", "notify"), ()),
-        ("act-approve-leave", "Approve Leave", "Approve an employee leave request", "hr", ("leave", "approve", "pto"), (
-            {"name": "decision", "label": "审批结论", "type": "select",
-             "required": True, "defaultValue": "approve", "options": [
-                 {"label": "通过", "value": "approve"}, {"label": "驳回", "value": "reject"}]},
-            {"name": "target_iid", "label": "目标请假单", "type": "string",
-             "required": True, "defaultValue": "ont.tenant-default.ind.leave-request.1",
-             "description": "待审批的请假单 rid（如 ont.tenant-default.ind.leave-request.1）"},
-        )),
-        ("act-run-report", "Run Report", "Execute a scheduled report job", "reporting", ("report", "run", "generate"), ()),
-        ("act-update-crm", "Update CRM", "Modify a customer record", "crm", ("customer", "update", "edit"), ()),
-        ("act-close-ticket", "Close Ticket", "Resolve a support ticket", "support", ("ticket", "close", "resolve"), (
-            {"name": "resolution", "label": "解决方案", "type": "string",
-             "required": True, "defaultValue": "fixed", "description": "工单关闭说明"},
-            {"name": "target_iid", "label": "目标工单", "type": "string",
-             "required": True, "defaultValue": "ont.tenant-default.ind.ticket.1",
-             "description": "待关闭的工单 rid（如 ont.tenant-default.ind.ticket.1）"},
-        )),
-        ("act-raise-invoice", "Raise Invoice", "Issue an invoice to a customer", "finance", ("invoice", "bill", "charge"), ()),
-        ("act-schedule-meeting", "Schedule Meeting", "Book a calendar meeting", "calendar", ("meeting", "schedule", "book"), ()),
-        ("act-export-data", "Export Data", "Download data as CSV/Excel", "data", ("export", "download", "csv"), ()),
-        ("act-onboard-employee", "Onboard Employee", "Provision a new employee account", "hr", ("onboard", "provision", "setup"), ()),
+        (
+            "act-create-order",
+            "Create Order",
+            "Place a new sales order",
+            "sales",
+            ("order", "create", "buy"),
+            (),
+        ),
+        (
+            "act-send-email",
+            "Send Email",
+            "Dispatch an email notification",
+            "comms",
+            ("email", "send", "notify"),
+            (),
+        ),
+        (
+            "act-approve-leave",
+            "Approve Leave",
+            "Approve an employee leave request",
+            "hr",
+            ("leave", "approve", "pto"),
+            (
+                {
+                    "name": "decision",
+                    "label": "审批结论",
+                    "type": "select",
+                    "required": True,
+                    "defaultValue": "approve",
+                    "options": [
+                        {"label": "通过", "value": "approve"},
+                        {"label": "驳回", "value": "reject"},
+                    ],
+                },
+                {
+                    "name": "target_iid",
+                    "label": "目标请假单",
+                    "type": "string",
+                    "required": True,
+                    "defaultValue": "ont.tenant-default.ind.leave-request.1",
+                    "description": "待审批的请假单 rid（如 ont.tenant-default.ind.leave-request.1）",
+                },
+            ),
+        ),
+        (
+            "act-run-report",
+            "Run Report",
+            "Execute a scheduled report job",
+            "reporting",
+            ("report", "run", "generate"),
+            (),
+        ),
+        (
+            "act-update-crm",
+            "Update CRM",
+            "Modify a customer record",
+            "crm",
+            ("customer", "update", "edit"),
+            (),
+        ),
+        (
+            "act-close-ticket",
+            "Close Ticket",
+            "Resolve a support ticket",
+            "support",
+            ("ticket", "close", "resolve"),
+            (
+                {
+                    "name": "resolution",
+                    "label": "解决方案",
+                    "type": "string",
+                    "required": True,
+                    "defaultValue": "fixed",
+                    "description": "工单关闭说明",
+                },
+                {
+                    "name": "target_iid",
+                    "label": "目标工单",
+                    "type": "string",
+                    "required": True,
+                    "defaultValue": "ont.tenant-default.ind.ticket.1",
+                    "description": "待关闭的工单 rid（如 ont.tenant-default.ind.ticket.1）",
+                },
+            ),
+        ),
+        (
+            "act-raise-invoice",
+            "Raise Invoice",
+            "Issue an invoice to a customer",
+            "finance",
+            ("invoice", "bill", "charge"),
+            (),
+        ),
+        (
+            "act-schedule-meeting",
+            "Schedule Meeting",
+            "Book a calendar meeting",
+            "calendar",
+            ("meeting", "schedule", "book"),
+            (),
+        ),
+        (
+            "act-export-data",
+            "Export Data",
+            "Download data as CSV/Excel",
+            "data",
+            ("export", "download", "csv"),
+            (),
+        ),
+        (
+            "act-onboard-employee",
+            "Onboard Employee",
+            "Provision a new employee account",
+            "hr",
+            ("onboard", "provision", "setup"),
+            (),
+        ),
     ]
     return {
         rid: Action(
-            id=rid, tenant_id=tenant_id, name=name, description=desc,
-            category=cat, keywords=kw, input_schema=schema,
+            id=rid,
+            tenant_id=tenant_id,
+            name=name,
+            description=desc,
+            category=cat,
+            keywords=kw,
+            input_schema=schema,
         )
         for rid, name, desc, cat, kw, schema in rows
     }

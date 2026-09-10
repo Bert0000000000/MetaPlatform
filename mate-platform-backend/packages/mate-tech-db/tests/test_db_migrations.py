@@ -1,4 +1,5 @@
 """Tests for mate_tech_db.migrations — initial schema tables + indexes."""
+
 from __future__ import annotations
 
 from sqlalchemy import inspect

@@ -1,4 +1,5 @@
 """W5-8 app-kb 收尾 (CRUD + 集成 + 覆盖率)."""
+
 from __future__ import annotations
 
 

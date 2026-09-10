@@ -41,15 +41,15 @@ Sprint 0 `[~]`，不得标记为 v1.0 GA Accepted。
 真实全栈（Keycloak OIDC RS256 + gateway 8100 + mate-tech-ont + 真实 PG
 metaplatform_ont）逐条核销原条件：
 
-| 原条件 | 证据 |
-|---|---|
-| 重复确认 | confirmed 上二次 confirm → 409 |
-| 版本冲突/非法转移 | executed 上再 confirm → 409；pending 直接 execute → 409 |
-| 越权 | 外租户前缀 rid propose → 403（API 前缀守门）|
-| 故障回滚 | create_instance executed → revert → 实例 404（I1 ≃ 等价删除）|
-| 重启恢复 | confirm 后重启 mate-tech-ont → 状态存活 → execute 成功 |
-| 真实 LLM provider | proposal/agent 通道走 ARK Plan GLM-5.3-flash（stub-fallback 已消除）|
-| 真实 PostgreSQL | 全部落库 metaplatform_ont（重启后状态存活即证）|
+| 原条件            | 证据                                                                 |
+| ----------------- | -------------------------------------------------------------------- |
+| 重复确认          | confirmed 上二次 confirm → 409                                       |
+| 版本冲突/非法转移 | executed 上再 confirm → 409；pending 直接 execute → 409              |
+| 越权              | 外租户前缀 rid propose → 403（API 前缀守门）                         |
+| 故障回滚          | create_instance executed → revert → 实例 404（I1 ≃ 等价删除）        |
+| 重启恢复          | confirm 后重启 mate-tech-ont → 状态存活 → execute 成功               |
+| 真实 LLM provider | proposal/agent 通道走 ARK Plan GLM-5.3-flash（stub-fallback 已消除） |
+| 真实 PostgreSQL   | 全部落库 metaplatform_ont（重启后状态存活即证）                      |
 
 脚本：`scripts/smoke_sprint_final_batch1.py`（16/16 PASS）。
 

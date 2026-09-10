@@ -25,9 +25,9 @@ class ObjectType:
     # 深层级按 Palantir "组合优于深层次级" 原则不建模，用 Interface 组合。
     parent_class: ClassRef | None = None
     # EXP-04（2026-09-10）：治理/展示元数据（G16 —— AI 可导航性 + 管理面分组）
-    description: str = ""            # 类型描述（喂 agent 工具与 OAG 检索）
-    status: str = "active"           # active / draft / deprecated（Cleanup 生命周期）
-    type_group: str = ""             # 管理面分组（type groups）
+    description: str = ""  # 类型描述（喂 agent 工具与 OAG 检索）
+    status: str = "active"  # active / draft / deprecated（Cleanup 生命周期）
+    type_group: str = ""  # 管理面分组（type groups）
     render_hints: tuple[tuple[str, str], ...] = ()  # 展示提示 kv（icon/color/单位）
 
     def __post_init__(self) -> None:
@@ -40,9 +40,7 @@ class ObjectType:
         prop_rids = {p.rid for p in self.properties}
         for pk in self.primary_key:
             if pk not in prop_rids:
-                raise ValueError(
-                    f"ObjectType.primary_key {pk} not in properties"
-                )
+                raise ValueError(f"ObjectType.primary_key {pk} not in properties")
         if self.parent_class is not None and self.parent_class == self.rid:
             raise ValueError("ObjectType.parent_class must not equal rid (self-parent)")
 
@@ -68,7 +66,8 @@ def detect_destructive_changes(old: ObjectType, new: ObjectType) -> list[str]:
         if old_props[rid].format is not new_props[rid].format:
             changes.append(
                 f"property format changed: {rid} "
-                f"{old_props[rid].format.value} -> {new_props[rid].format.value}")
+                f"{old_props[rid].format.value} -> {new_props[rid].format.value}"
+            )
     if {pk.rid for pk in old.primary_key} != {pk.rid for pk in new.primary_key}:
         changes.append("primary_key changed")
     old_parent = old.parent_class.rid if old.parent_class is not None else ""

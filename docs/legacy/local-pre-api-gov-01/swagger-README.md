@@ -26,23 +26,25 @@ npx http-server docs\swagger -p 8200 -c-1
 
 ## 入口
 
-| 路径 | 作用 |
-|---|---|
-| `/` | Swagger UI 聚合页（顶部下拉切服务） |
-| `/specs/<service>.yaml` | 单服务 OpenAPI 3.1 yaml |
-| `/specs/iam.yaml` | mate-tech-iam（60+ 接口） |
-| `/specs/gateway.yaml` | api-gateway |
-| `/specs/auth-service.yaml` | auth-service |
-| `/specs/{rag,agent,app-kb,llmgw,ont,mcp,msg,obs}.yaml` | 其余 8 个微服务 |
+| 路径                                                   | 作用                                |
+| ------------------------------------------------------ | ----------------------------------- |
+| `/`                                                    | Swagger UI 聚合页（顶部下拉切服务） |
+| `/specs/<service>.yaml`                                | 单服务 OpenAPI 3.1 yaml             |
+| `/specs/iam.yaml`                                      | mate-tech-iam（60+ 接口）           |
+| `/specs/gateway.yaml`                                  | api-gateway                         |
+| `/specs/auth-service.yaml`                             | auth-service                        |
+| `/specs/{rag,agent,app-kb,llmgw,ont,mcp,msg,obs}.yaml` | 其余 8 个微服务                     |
 
 ## 与 FastAPI 内置 /docs 的关系
 
 每个 Python 服务 `uvicorn main:app` 启动后自带：
-- `GET /docs`     Swagger UI（服务自己的）
-- `GET /redoc`    Redoc UI
-- `GET /openapi.json`  OpenAPI 3.1 JSON（自动生成）
+
+- `GET /docs` Swagger UI（服务自己的）
+- `GET /redoc` Redoc UI
+- `GET /openapi.json` OpenAPI 3.1 JSON（自动生成）
 
 聚合页是**契约快照**（OpenAPI yaml 文件），用于：
+
 - 跨服务查看 API 总览
 - 不启动后端也能看接口文档
 - 与前端联调前的契约评审
@@ -60,29 +62,29 @@ oasdiff diff specs/main.yaml specs/feature.yaml
 ## Docker 集成（推荐补到 docker-compose.yml）
 
 ```yaml
-  swagger-ui:
-    image: swaggerapi/swagger-ui:latest
-    container_name: mate-swagger-ui
-    ports:
-      - "8200:8080"
-    environment:
-      URLS: >-
-        [
-          {url: "/configs/iam.yaml",          name: "mate-tech-iam"},
-          {url: "/configs/auth-service.yaml", name: "auth-service"},
-          {url: "/configs/gateway.yaml",      name: "api-gateway"},
-          {url: "/configs/rag.yaml",          name: "mate-tech-rag"},
-          {url: "/configs/agent.yaml",        name: "mate-tech-agent"},
-          {url: "/configs/app-kb.yaml",       name: "mate-app-kb"},
-          {url: "/configs/llmgw.yaml",        name: "mate-tech-llmgw"},
-          {url: "/configs/ont.yaml",          name: "mate-tech-ont"},
-          {url: "/configs/mcp.yaml",          name: "mate-tech-mcp"},
-          {url: "/configs/msg.yaml",          name: "mate-tech-msg"},
-          {url: "/configs/obs.yaml",          name: "mate-tech-obs"}
-        ]
-    volumes:
-      - ./docs/swagger/specs:/usr/share/nginx/html/configs:ro
-    profiles: [docs, full]
+swagger-ui:
+  image: swaggerapi/swagger-ui:latest
+  container_name: mate-swagger-ui
+  ports:
+    - "8200:8080"
+  environment:
+    URLS: >-
+      [
+        {url: "/configs/iam.yaml",          name: "mate-tech-iam"},
+        {url: "/configs/auth-service.yaml", name: "auth-service"},
+        {url: "/configs/gateway.yaml",      name: "api-gateway"},
+        {url: "/configs/rag.yaml",          name: "mate-tech-rag"},
+        {url: "/configs/agent.yaml",        name: "mate-tech-agent"},
+        {url: "/configs/app-kb.yaml",       name: "mate-app-kb"},
+        {url: "/configs/llmgw.yaml",        name: "mate-tech-llmgw"},
+        {url: "/configs/ont.yaml",          name: "mate-tech-ont"},
+        {url: "/configs/mcp.yaml",          name: "mate-tech-mcp"},
+        {url: "/configs/msg.yaml",          name: "mate-tech-msg"},
+        {url: "/configs/obs.yaml",          name: "mate-tech-obs"}
+      ]
+  volumes:
+    - ./docs/swagger/specs:/usr/share/nginx/html/configs:ro
+  profiles: [docs, full]
 ```
 
 启动：`docker compose --profile docs up -d swagger-ui`，访问 http://localhost:8200

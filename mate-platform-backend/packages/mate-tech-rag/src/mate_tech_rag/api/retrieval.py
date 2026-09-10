@@ -1,4 +1,5 @@
 """Retrieval service: 3-strategy router + real client factory."""
+
 from __future__ import annotations
 
 import logging
@@ -55,6 +56,8 @@ def get_lightrag() -> LightRAGClient:
 
 def get_ragflow() -> RAGFlowClient:
     return _ragflow
+
+
 def get_pg_store():
     return _pg_store
 
@@ -109,7 +112,16 @@ def create_clients():
       - graph            : try Neo4j.
       - full             : try Milvus + Neo4j + LightRAG + RAGFlow.
     """
-    global _hybrid, _graph, _lightrag, _ragflow, _hybrid_real, _graph_real, _pg_client, _pg_store, _pg_mode
+    global \
+        _hybrid, \
+        _graph, \
+        _lightrag, \
+        _ragflow, \
+        _hybrid_real, \
+        _graph_real, \
+        _pg_client, \
+        _pg_store, \
+        _pg_mode
     mode = os.environ.get("RAG_MODE", "memory").lower()
     _pg_mode = False
 
@@ -219,8 +231,10 @@ def _rebuild_registry_from_pg(pg) -> int:
     docs = pg.list_documents()
     for d in docs:
         restore_document(
-            d["tenant_id"], d["document_id"],
-            filename=d.get("filename", ""), chunk_count=d.get("chunk_count", 0),
+            d["tenant_id"],
+            d["document_id"],
+            filename=d.get("filename", ""),
+            chunk_count=d.get("chunk_count", 0),
         )
     _log.info("registry restored from PG: %s documents", len(docs))
     return len(docs)
@@ -230,6 +244,7 @@ def fake_chunk(text: str):
     import uuid
 
     from mate_tech_rag.api.schemas import ChunkHit
+
     return ChunkHit(
         chunk_id=str(uuid.uuid4()),
         document_id=str(uuid.uuid4()),
@@ -380,12 +395,11 @@ def retrieve_with_config(
             new_hits: list[ChunkHit] = []
             for h in hits:
                 text_terms = tokenize_for_match(h.text)
-                overlap_ratio = (
-                    len(query_terms & text_terms) / max(len(query_terms), 1)
-                )
+                overlap_ratio = len(query_terms & text_terms) / max(len(query_terms), 1)
                 vector_score = float(h.score)
                 fused_score = max(
-                    0.0, min(1.0, vw * vector_score + kw * overlap_ratio),
+                    0.0,
+                    min(1.0, vw * vector_score + kw * overlap_ratio),
                 )
                 # Pydantic v2: ChunkHit is frozen; replace via model_copy.
                 new_hits.append(h.model_copy(update={"score": fused_score}))

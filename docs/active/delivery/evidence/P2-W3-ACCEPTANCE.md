@@ -16,38 +16,38 @@ P2-W3 批次聚焦 P2-W2 的已知技术债闭环 + A2A 域从 501 stub 升级�
 
 ## 2. 规模指标
 
-| 指标 | 数量 |
-|---|---:|
-| 净增 endpoint | 10 (`mate-app-a2a`) + 2 (`copilot /a2a/delegate`, `/a2a/external` 替代 501 stub) |
-| 净增 Python 包 | 1（`mate-app-a2a`）|
-| 净增 happy-path tests | 10（a2a happy）|
-| copilot 既有 test 升级 | 1（proxy 测试由 501 改为 200）|
-| 跨 6 包 pytest 总计 | 170 passed, 0 failed |
-| 净增 outbox event 类型 | 4（`a2a.delegation.created` / `.completed` / `agent.registered` / `copilot.a2a.delegated`）|
-| commits | 5（含 docs 更新）|
+| 指标                   |                                                                                        数量 |
+| ---------------------- | ------------------------------------------------------------------------------------------: |
+| 净增 endpoint          |            10 (`mate-app-a2a`) + 2 (`copilot /a2a/delegate`, `/a2a/external` 替代 501 stub) |
+| 净增 Python 包         |                                                                         1（`mate-app-a2a`） |
+| 净增 happy-path tests  |                                                                             10（a2a happy） |
+| copilot 既有 test 升级 |                                                              1（proxy 测试由 501 改为 200） |
+| 跨 6 包 pytest 总计    |                                                                        170 passed, 0 failed |
+| 净增 outbox event 类型 | 4（`a2a.delegation.created` / `.completed` / `agent.registered` / `copilot.a2a.delegated`） |
+| commits                |                                                                           5（含 docs 更新） |
 
 ## 3. ADR-0014 5 步合规矩阵
 
-| Domain | Step 1 | Step 2 | Step 3 | Step 4 | Step 5 |
-|---|---|---|---|---|---|
-| `mate-app-a2a` | ✅ `install_auth(app)` | ✅ `_tid(request)` helper | ✅ 3 POST handler emit outbox event | ✅ `OutgoingAuthMiddleware` imported in app-a2a client | ✅ 4 tenant negative tests |
-| `mate-app-copilot`（P2-W3 增量）| ✅ 沿用 | ✅ 沿用 | ✅ 沿用 + 新 `copilot.a2a.delegated` event | ✅ `BearerAuth` + `OutgoingAuthMiddleware` wired in `clients.py` | ✅ proxy test 升级 |
+| Domain                           | Step 1                 | Step 2                    | Step 3                                     | Step 4                                                           | Step 5                     |
+| -------------------------------- | ---------------------- | ------------------------- | ------------------------------------------ | ---------------------------------------------------------------- | -------------------------- |
+| `mate-app-a2a`                   | ✅ `install_auth(app)` | ✅ `_tid(request)` helper | ✅ 3 POST handler emit outbox event        | ✅ `OutgoingAuthMiddleware` imported in app-a2a client           | ✅ 4 tenant negative tests |
+| `mate-app-copilot`（P2-W3 增量） | ✅ 沿用                | ✅ 沿用                   | ✅ 沿用 + 新 `copilot.a2a.delegated` event | ✅ `BearerAuth` + `OutgoingAuthMiddleware` wired in `clients.py` | ✅ proxy test 升级         |
 
 **5 步闭环**：1 个新域 + 1 个升级域，全部合规。
 
 ## 4. 13 项硬规则验收
 
-| # | 硬规则 | 证据 | 状态 |
-|---|---|---|---|
-| 1 | Swagger 没有接口，不写 route | `mate-app-a2a` 10 个 endpoint 均在 OpenAPI 契约中 | ✅ |
-| 2 | PRD 没有 Requirement ID | FR-A2A-001..010 全部映射 | ✅ |
-| 3 | tenant 上下文不访问 repository | `Event.create` tenant guard + `require_tenant` helper + 4 tenant negative tests | ✅ |
-| 4 | 外部系统 ACL Client | `mate-app-a2a` 客户端使用 `OutgoingAuthMiddleware`；`copilot/clients.py` 使用 `BearerAuth` | ✅ |
-| 5 | 禁止 fallback | `LEGACY_LOGIN_COMPAT=false` 仍强制 | ✅ |
-| 6 | 静态检查失败不合并 | pyright strict 0 errors（见 §5）| ✅ |
-| 7 | 不跳过 tests | 170 passed, 0 skipped | ✅ |
-| 9 | 审计、指标、trace | `mate-app-a2a` 共享 platform OTel bootstrap | ✅ |
-| 10 | 验收证据 | 本文件 | ✅ |
+| #   | 硬规则                         | 证据                                                                                       | 状态 |
+| --- | ------------------------------ | ------------------------------------------------------------------------------------------ | ---- |
+| 1   | Swagger 没有接口，不写 route   | `mate-app-a2a` 10 个 endpoint 均在 OpenAPI 契约中                                          | ✅   |
+| 2   | PRD 没有 Requirement ID        | FR-A2A-001..010 全部映射                                                                   | ✅   |
+| 3   | tenant 上下文不访问 repository | `Event.create` tenant guard + `require_tenant` helper + 4 tenant negative tests            | ✅   |
+| 4   | 外部系统 ACL Client            | `mate-app-a2a` 客户端使用 `OutgoingAuthMiddleware`；`copilot/clients.py` 使用 `BearerAuth` | ✅   |
+| 5   | 禁止 fallback                  | `LEGACY_LOGIN_COMPAT=false` 仍强制                                                         | ✅   |
+| 6   | 静态检查失败不合并             | pyright strict 0 errors（见 §5）                                                           | ✅   |
+| 7   | 不跳过 tests                   | 170 passed, 0 skipped                                                                      | ✅   |
+| 9   | 审计、指标、trace              | `mate-app-a2a` 共享 platform OTel bootstrap                                                | ✅   |
+| 10  | 验收证据                       | 本文件                                                                                     | ✅   |
 
 **新增闭环项**：
 
@@ -86,12 +86,12 @@ $ pyright packages/mate-app-a2a/src/ packages/mate-app-copilot/src/
 
 ## 6. PR gate
 
-| Gate | Result |
-|---|---|
-| `forbid_raw_sql` | 0 violations |
-| `forbid_bare_httpx` | 0 violations（`clients.py` 由 hook 排除，但实际使用 `BearerAuth` 不裸 `httpx`）|
-| `forbid_skip_tests` | 0 violations |
-| `forbid_legacy_fallback` | 0 new violations |
+| Gate                     | Result                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `forbid_raw_sql`         | 0 violations                                                                    |
+| `forbid_bare_httpx`      | 0 violations（`clients.py` 由 hook 排除，但实际使用 `BearerAuth` 不裸 `httpx`） |
+| `forbid_skip_tests`      | 0 violations                                                                    |
+| `forbid_legacy_fallback` | 0 new violations                                                                |
 
 ## 7. commit 历史
 
@@ -103,10 +103,10 @@ $ pyright packages/mate-app-a2a/src/ packages/mate-app-copilot/src/
 
 ## 8. 已知技术债（deferred）
 
-| 编号 | 描述 | 目标 |
-|---|---|---|
-| TD-5 | in-memory → Paimon / Postgres 持久化 | v3.2 |
-| TD-6 | copilot LLM provider 真实路由（llmgw 接入）| P2-W5 |
+| 编号   | 描述                                                      | 目标  |
+| ------ | --------------------------------------------------------- | ----- |
+| TD-5   | in-memory → Paimon / Postgres 持久化                      | v3.2  |
+| TD-6   | copilot LLM provider 真实路由（llmgw 接入）               | P2-W5 |
 | Future | copilot handlers 从 in-memory stub 切到真实 outbound HTTP | P2-W4 |
 
 ## 9. 关联文档

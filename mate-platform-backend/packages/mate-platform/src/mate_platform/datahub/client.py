@@ -18,6 +18,7 @@ Design rationale:
 
 Per ADR-0016 §3.2 (D2 scope).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -71,9 +72,7 @@ class DataProduct:
     datasets: tuple[Dataset, ...] = field(default_factory=tuple)
     quality: dict[str, Any] = field(default_factory=dict)
     lineage_hints: LineageHints | None = None
-    created_at: datetime = field(
-        default_factory=lambda: datetime.now(UTC)
-    )
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass(frozen=True)
@@ -81,9 +80,7 @@ class DataProductVersion:
     """A snapshot of a DataProduct at a specific version."""
 
     product: DataProduct
-    recorded_at: datetime = field(
-        default_factory=lambda: datetime.now(UTC)
-    )
+    recorded_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 class DataHubClient(Protocol):
@@ -93,21 +90,15 @@ class DataHubClient(Protocol):
         """Register (or upgrade) a DataProduct in the catalog."""
         ...
 
-    def get(
-        self, tenant_id: str, product_id: str, version: str | None = None
-    ) -> DataProduct:
+    def get(self, tenant_id: str, product_id: str, version: str | None = None) -> DataProduct:
         """Look up a DataProduct by id (optionally pinned to version)."""
         ...
 
-    def list_products(
-        self, tenant_id: str, domain: str | None = None
-    ) -> list[DataProduct]:
+    def list_products(self, tenant_id: str, domain: str | None = None) -> list[DataProduct]:
         """List DataProducts for a tenant, optionally filtered by domain."""
         ...
 
-    def list_versions(
-        self, tenant_id: str, product_id: str
-    ) -> list[DataProductVersion]:
+    def list_versions(self, tenant_id: str, product_id: str) -> list[DataProductVersion]:
         """Return the full version history of a DataProduct."""
         ...
 
@@ -151,16 +142,12 @@ class InMemoryDataHubClient:
         # Validate version semver-ish format (X.Y.Z).
         parts = product.version.split(".")
         if len(parts) != 3 or not all(p.isdigit() for p in parts):
-            raise DataHubError(
-                f"invalid semver version: {product.version!r}"
-            )
+            raise DataHubError(f"invalid semver version: {product.version!r}")
         version = DataProductVersion(product=product)
         self._store[self._key(product)] = version
         return version
 
-    def get(
-        self, tenant_id: str, product_id: str, version: str | None = None
-    ) -> DataProduct:
+    def get(self, tenant_id: str, product_id: str, version: str | None = None) -> DataProduct:
         if version is not None:
             key = (tenant_id, product_id, version)
             entry = self._store.get(key)
@@ -172,20 +159,15 @@ class InMemoryDataHubClient:
             return entry.product
         # Latest version = max semver for (tenant, id).
         matching = [
-            v
-            for (t, pid, _ver), v in self._store.items()
-            if t == tenant_id and pid == product_id
+            v for (t, pid, _ver), v in self._store.items() if t == tenant_id and pid == product_id
         ]
         if not matching:
             raise DataProductNotFoundError(
-                f"DataProduct {product_id!r} not found "
-                f"for tenant {tenant_id!r}"
+                f"DataProduct {product_id!r} not found for tenant {tenant_id!r}"
             )
         return max(matching, key=lambda v: _semver_tuple(v.product.version)).product
 
-    def list_products(
-        self, tenant_id: str, domain: str | None = None
-    ) -> list[DataProduct]:
+    def list_products(self, tenant_id: str, domain: str | None = None) -> list[DataProduct]:
         # Deduplicate by product id, picking the latest version.
         by_id: dict[str, DataProduct] = {}
         for (t, pid, _ver), entry in self._store.items():
@@ -194,32 +176,20 @@ class InMemoryDataHubClient:
             if domain is not None and entry.product.domain != domain:
                 continue
             existing = by_id.get(pid)
-            if (
-                existing is None
-                or _semver_tuple(entry.product.version)
-                > _semver_tuple(existing.version)
+            if existing is None or _semver_tuple(entry.product.version) > _semver_tuple(
+                existing.version
             ):
                 by_id[pid] = entry.product
         return sorted(by_id.values(), key=lambda p: p.id)
 
-    def list_versions(
-        self, tenant_id: str, product_id: str
-    ) -> list[DataProductVersion]:
+    def list_versions(self, tenant_id: str, product_id: str) -> list[DataProductVersion]:
         versions = [
-            v
-            for (t, pid, _ver), v in self._store.items()
-            if t == tenant_id and pid == product_id
+            v for (t, pid, _ver), v in self._store.items() if t == tenant_id and pid == product_id
         ]
-        return sorted(
-            versions, key=lambda v: _semver_tuple(v.product.version)
-        )
+        return sorted(versions, key=lambda v: _semver_tuple(v.product.version))
 
     def delete(self, tenant_id: str, product_id: str) -> int:
-        keys = [
-            k
-            for k in list(self._store.keys())
-            if k[0] == tenant_id and k[1] == product_id
-        ]
+        keys = [k for k in list(self._store.keys()) if k[0] == tenant_id and k[1] == product_id]
         for k in keys:
             del self._store[k]
         return len(keys)

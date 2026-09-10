@@ -70,6 +70,7 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._edit_overlay: set[tuple[str, str]] = set()
         # GOVERN-05: FunctionResolver 让 upsert_function / set_function_executor 注入。
         from .function_resolver import InMemoryFunctionResolver
+
         self._function_resolver: InMemoryFunctionResolver = InMemoryFunctionResolver()
         self._function_executor: Any = None  # FunctionExecutor | None
 
@@ -82,7 +83,9 @@ class InMemoryOntologyRepository(OntologyRepository):
         # 同步 ActionService 内 _executors + _resolver（每个 function_ref 注册相同 executor）
         for fn_rid in self._functions:
             self._action_service.register_function_ref(
-                fn_rid.rid, executor, self._function_resolver,
+                fn_rid.rid,
+                executor,
+                self._function_resolver,
             )
         self._action_service.set_resolver(self._function_resolver)
 
@@ -91,7 +94,9 @@ class InMemoryOntologyRepository(OntologyRepository):
     def resolve_class_ref(self, rid: str) -> ClassRef:
         return ClassRef(rid)
 
-    def snapshot_version(self, class_rid: ClassRef, author: str, parent: str | None, change_set: tuple[str, ...]) -> Version:
+    def snapshot_version(
+        self, class_rid: ClassRef, author: str, parent: str | None, change_set: tuple[str, ...]
+    ) -> Version:
         existing = self._versions.get(class_rid, [])
         n = len(existing) + 1
         rid = f"ont.{class_rid.rid.split('.')[1]}.ver.{class_rid.rid.split('.')[-1]}.v{n}"
@@ -146,9 +151,7 @@ class InMemoryOntologyRepository(OntologyRepository):
             cursor: str | None = parent_rid
             while cursor is not None and cursor:
                 if cursor in seen:
-                    raise ValueError(
-                        f"parent_class cycle detected at {cursor!r}"
-                    )
+                    raise ValueError(f"parent_class cycle detected at {cursor!r}")
                 seen.add(cursor)
                 parent_ot = self._object_types.get(ClassRef(cursor))
                 cursor = (
@@ -235,9 +238,7 @@ class InMemoryOntologyRepository(OntologyRepository):
             return {
                 "rid": rid,
                 "display_name": ot.display_name,
-                "parent_class": (
-                    ot.parent_class.rid if ot.parent_class is not None else ""
-                ),
+                "parent_class": (ot.parent_class.rid if ot.parent_class is not None else ""),
                 "children": [_node(c) for c in children_of.get(rid, [])],
             }
 
@@ -262,7 +263,10 @@ class InMemoryOntologyRepository(OntologyRepository):
         return i
 
     def list_object_types(
-        self, limit: int, offset: int, tenant_id: str | None = None,
+        self,
+        limit: int,
+        offset: int,
+        tenant_id: str | None = None,
     ) -> list[ObjectType]:
         items = list(self._object_types.values())
         if tenant_id:
@@ -313,7 +317,10 @@ class InMemoryOntologyRepository(OntologyRepository):
             }
 
     def search_objects(
-        self, text: str, class_rid: str | None = None, top_k: int = 5,
+        self,
+        text: str,
+        class_rid: str | None = None,
+        top_k: int = 5,
     ) -> list[dict[str, Any]]:
         """MP-SAL-02: 对象语义检索 → 对象卡片（与 PG 侧同语义，dev/test 用）。"""
         if self._embedder is None:
@@ -333,32 +340,36 @@ class InMemoryOntologyRepository(OntologyRepository):
             if score <= 0.0:
                 continue
             class_of[chunk["individual_rid"]] = chunk["class_rid"]
-            per_individual.setdefault(chunk["individual_rid"], []).append({
-                "property_rid": chunk["property_rid"],
-                "value_text": chunk["value_text"],
-                "score": score,
-            })
+            per_individual.setdefault(chunk["individual_rid"], []).append(
+                {
+                    "property_rid": chunk["property_rid"],
+                    "value_text": chunk["value_text"],
+                    "score": score,
+                }
+            )
         cards: list[dict[str, Any]] = []
         for rid_key, matched in per_individual.items():
             matched.sort(key=lambda m: m["score"], reverse=True)
             top = matched[0]
             card_text = f"{rid_key}:\n- {top['value_text']}"
-            cards.append({
-                "individual_rid": rid_key,
-                "class_rid": class_of[rid_key],
-                "score": top["score"],
-                "matched": matched[:3],
-                "card_text": card_text,
-            })
+            cards.append(
+                {
+                    "individual_rid": rid_key,
+                    "class_rid": class_of[rid_key],
+                    "score": top["score"],
+                    "matched": matched[:3],
+                    "card_text": card_text,
+                }
+            )
         cards.sort(key=lambda c: c["score"], reverse=True)
         return cards[:top_k]
 
     # ───── G33：schema WIP 暂存（InMemory 同语义）─────
 
-    def save_schema_wip(self, rid: str, payload: dict[str, Any],
-                        author: str = "") -> dict[str, Any]:
-        self._schema_wip[rid] = {"rid": rid, "author": author,
-                                 "payload": payload}
+    def save_schema_wip(
+        self, rid: str, payload: dict[str, Any], author: str = ""
+    ) -> dict[str, Any]:
+        self._schema_wip[rid] = {"rid": rid, "author": author, "payload": payload}
         return {"rid": rid, "status": "staged"}
 
     def list_schema_wip(self) -> list[dict[str, Any]]:
@@ -382,19 +393,33 @@ class InMemoryOntologyRepository(OntologyRepository):
     def list_webhook_subscriptions(self) -> list[dict[str, Any]]:
         return [dict(v, rid=k) for k, v in self._webhook_subs.items()]
 
-    def record_webhook_delivery(self, *, event_id: str, subscription_rid: str,
-                                status: str, attempts: int, last_error: str,
-                                tenant_id: str = "") -> None:
-        self._webhook_deliveries.append({
-            "event_id": event_id, "subscription_rid": subscription_rid,
-            "status": status, "attempts": attempts, "last_error": last_error,
-        })
+    def record_webhook_delivery(
+        self,
+        *,
+        event_id: str,
+        subscription_rid: str,
+        status: str,
+        attempts: int,
+        last_error: str,
+        tenant_id: str = "",
+    ) -> None:
+        self._webhook_deliveries.append(
+            {
+                "event_id": event_id,
+                "subscription_rid": subscription_rid,
+                "status": status,
+                "attempts": attempts,
+                "last_error": last_error,
+            }
+        )
 
     def webhook_delivery_exists(self, event_id: str, subscription_rid: str) -> bool:
         return any(
-            d["event_id"] == event_id and d["subscription_rid"] == subscription_rid
+            d["event_id"] == event_id
+            and d["subscription_rid"] == subscription_rid
             and d["status"] == "delivered"
-            for d in self._webhook_deliveries)
+            for d in self._webhook_deliveries
+        )
 
     def list_outbox_events(self, since_id: str = "0", limit: int = 50) -> list[dict[str, Any]]:
         return list(self._outbox_events.values())[:limit]
@@ -408,11 +433,9 @@ class InMemoryOntologyRepository(OntologyRepository):
     def usage_summary(self, days: int = 30) -> list[dict[str, Any]]:
         out: dict[str, dict[str, Any]] = {}
         for (cls, op), n in self._usage_counters.items():
-            e = out.setdefault(cls, {"class_rid": cls, "reads": 0,
-                                     "writes": 0, "active_days": 1})
+            e = out.setdefault(cls, {"class_rid": cls, "reads": 0, "writes": 0, "active_days": 1})
             e["reads" if op == "read" else "writes"] += n
-        return sorted(out.values(),
-                      key=lambda x: -(x["reads"] + x["writes"]))
+        return sorted(out.values(), key=lambda x: -(x["reads"] + x["writes"]))
 
     def upsert_security_policy(self, policy: dict[str, Any]) -> dict[str, Any]:
         """SEC-12：row/column 策略 upsert（InMemory 同语义）。"""
@@ -431,19 +454,24 @@ class InMemoryOntologyRepository(OntologyRepository):
 
         rows_, cols_ = [], []
         for p in self._security_policies.values():
-            markings = tuple(p.get("markings") or p.get("bypass_markings")
-                             or p.get("required_markings") or ())
+            markings = tuple(
+                p.get("markings") or p.get("bypass_markings") or p.get("required_markings") or ()
+            )
             if p.get("kind") == "row":
-                rows_.append(RowPolicy(
-                    class_rid=p.get("class_rid", ""), field=p.get("field", ""),
-                    op=p.get("op", ""), value=p.get("value"),
-                    bypass_markings=markings))
+                rows_.append(
+                    RowPolicy(
+                        class_rid=p.get("class_rid", ""),
+                        field=p.get("field", ""),
+                        op=p.get("op", ""),
+                        value=p.get("value"),
+                        bypass_markings=markings,
+                    )
+                )
             else:
-                cols_.append(ColumnPolicy(
-                    property_rid=p.get("property_rid", ""),
-                    required_markings=markings))
-        return SecurityPolicySet(row_policies=tuple(rows_),
-                                 column_policies=tuple(cols_))
+                cols_.append(
+                    ColumnPolicy(property_rid=p.get("property_rid", ""), required_markings=markings)
+                )
+        return SecurityPolicySet(row_policies=tuple(rows_), column_policies=tuple(cols_))
 
     def _class_markings_of(self, class_rid: str) -> tuple[str, ...]:
         """G6：类型 marking（含祖先 —— schema 血缘传播）。"""
@@ -462,13 +490,16 @@ class InMemoryOntologyRepository(OntologyRepository):
         return tuple(out)
 
     def enforce_read_policies(
-        self, individuals: list[Any], viewer_markings: list[str] | tuple[str, ...],
+        self,
+        individuals: list[Any],
+        viewer_markings: list[str] | tuple[str, ...],
     ) -> list[Any]:
         """行策略 + G6 marking 门（实例 ∧ 类型[含祖先] marking ⊆ viewer）。"""
         from .security_policies import filter_by_markings, filter_visible_individuals
 
         ps = self._policy_set()
         if ps.row_policies:
+
             def _ancestors(class_rid: str) -> frozenset[str]:
                 a = {class_rid}
                 for y, descs in closed.items():
@@ -480,12 +511,16 @@ class InMemoryOntologyRepository(OntologyRepository):
 
             closed = descendant_closure(self._subclass_pairs())
             individuals = filter_visible_individuals(
-                individuals, ps, viewer_markings, ancestor_classes_of=_ancestors)
+                individuals, ps, viewer_markings, ancestor_classes_of=_ancestors
+            )
         return filter_by_markings(
-            individuals, viewer_markings, class_marking_of=self._class_markings_of)
+            individuals, viewer_markings, class_marking_of=self._class_markings_of
+        )
 
     def mask_rows(
-        self, rows: list[dict[str, Any]], viewer_markings: list[str] | tuple[str, ...],
+        self,
+        rows: list[dict[str, Any]],
+        viewer_markings: list[str] | tuple[str, ...],
     ) -> list[dict[str, Any]]:
         from .security_policies import mask_property_values
 
@@ -497,7 +532,9 @@ class InMemoryOntologyRepository(OntologyRepository):
         return rows
 
     def _nearest_individuals(
-        self, spec: Any, allowed_classes: set[str],
+        self,
+        spec: Any,
+        allowed_classes: set[str],
     ) -> list[Any]:
         """G13：embedding 余弦 top-k 实例（InMemory）。"""
         import math
@@ -525,8 +562,12 @@ class InMemoryOntologyRepository(OntologyRepository):
         return [self._individuals[r] for r in top_rids if r in self._individuals]
 
     def search_objects_hybrid(
-        self, text: str, class_rid: str | None = None, top_k: int = 5,
-        tenant_id: str | None = None, k_rrf: int = 60,
+        self,
+        text: str,
+        class_rid: str | None = None,
+        top_k: int = 5,
+        tenant_id: str | None = None,
+        k_rrf: int = 60,
     ) -> list[dict[str, Any]]:
         """AI-09：混合检索（InMemory 同语义：关键词子串 + cosine + RRF）。"""
         import re as _re
@@ -569,11 +610,13 @@ class InMemoryOntologyRepository(OntologyRepository):
                 "individual_rid": irid,
                 "class_rid": class_of.get(irid, ""),
                 "score": _rrf(irid),
-                "matched": [{
-                    "property_rid": kw_meta[irid]["property_rid"] if irid in kw_meta else "",
-                    "value_text": kw_meta[irid]["value_text"] if irid in kw_meta else "",
-                    "score": _rrf(irid),
-                }],
+                "matched": [
+                    {
+                        "property_rid": kw_meta[irid]["property_rid"] if irid in kw_meta else "",
+                        "value_text": kw_meta[irid]["value_text"] if irid in kw_meta else "",
+                        "score": _rrf(irid),
+                    }
+                ],
                 "legs": {
                     "keyword_rank": kw_rank.get(irid),
                     "vector_rank": vec_rank.get(irid),
@@ -599,20 +642,19 @@ class InMemoryOntologyRepository(OntologyRepository):
         if lt is not None:
             # 同 rid 的既有行不算（upsert 语义：重建同一条链接不违反基数）
             src_out = sum(
-                1 for x in self._link_instances.values()
-                if x.rid != li.rid
-                and x.link_type_rid == li.link_type_rid and x.src == li.src
+                1
+                for x in self._link_instances.values()
+                if x.rid != li.rid and x.link_type_rid == li.link_type_rid and x.src == li.src
             )
             dst_in = sum(
-                1 for x in self._link_instances.values()
-                if x.rid != li.rid
-                and x.link_type_rid == li.link_type_rid and x.dst == li.dst
+                1
+                for x in self._link_instances.values()
+                if x.rid != li.rid and x.link_type_rid == li.link_type_rid and x.dst == li.dst
             )
             violation = check_cardinality(lt.cardinality, src_out, dst_in)
             if violation:
                 raise ValueError(
-                    f"{violation} (link_type={li.link_type_rid.rid}, "
-                    f"src={li.src}, dst={li.dst})"
+                    f"{violation} (link_type={li.link_type_rid.rid}, src={li.src}, dst={li.dst})"
                 )
         self._link_instances[li.rid] = li
         return li
@@ -632,17 +674,22 @@ class InMemoryOntologyRepository(OntologyRepository):
             lt = self._link_types.get(l.link_type_rid)
             lt_slug = l.link_type_rid.rid.split(".")
             display = (
-                (lt.src_display_name if lt else "") or (lt_slug[3] if len(lt_slug) >= 5 else lt_slug[-1])
-                if outgoing else
-                (lt.dst_display_name if lt else "") or (lt_slug[3] if len(lt_slug) >= 5 else lt_slug[-1])
+                (lt.src_display_name if lt else "")
+                or (lt_slug[3] if len(lt_slug) >= 5 else lt_slug[-1])
+                if outgoing
+                else (lt.dst_display_name if lt else "")
+                or (lt_slug[3] if len(lt_slug) >= 5 else lt_slug[-1])
             )
             key = (l.link_type_rid.rid, "out" if outgoing else "in")
-            entry = grouped.setdefault(key, {
-                "link_type_rid": l.link_type_rid.rid,
-                "link_display": display,
-                "direction": key[1],
-                "peers": [],
-            })
+            entry = grouped.setdefault(
+                key,
+                {
+                    "link_type_rid": l.link_type_rid.rid,
+                    "link_display": display,
+                    "direction": key[1],
+                    "peers": [],
+                },
+            )
             ind = self._individuals.get(peer_rid)
             if ind is not None:
                 entry["peers"].append(individual_to_row(ind))
@@ -661,11 +708,9 @@ class InMemoryOntologyRepository(OntologyRepository):
         if rid not in self._individuals:
             return False
         self._individuals.pop(rid)
-        for lrid in [l.rid for l in self._link_instances.values()
-                     if rid in (l.src, l.dst)]:
+        for lrid in [l.rid for l in self._link_instances.values() if rid in (l.src, l.dst)]:
             self._link_instances.pop(lrid)
-        self._edit_overlay = {
-            (r, p) for r, p in self._edit_overlay if r != rid}
+        self._edit_overlay = {(r, p) for r, p in self._edit_overlay if r != rid}
         return True
 
     def list_link_instances(self) -> list[LinkInstance]:
@@ -683,10 +728,14 @@ class InMemoryOntologyRepository(OntologyRepository):
     def upsert_function(self, f: Function) -> Function:
         old = self._functions.get(f.rid)
         if old is not None:
-            self._function_versions.setdefault(f.rid.rid, []).append({
-                "function_rid": f.rid.rid, "version": old.version,
-                "language": old.language, "source_ref": old.source_ref,
-            })
+            self._function_versions.setdefault(f.rid.rid, []).append(
+                {
+                    "function_rid": f.rid.rid,
+                    "version": old.version,
+                    "language": old.language,
+                    "source_ref": old.source_ref,
+                }
+            )
         self._functions[f.rid] = f
         # GOVERN-05: source_ref 形如 ``inline://<rid>`` → source 来自 _inline_sources；
         # 默认占位 main（仅返回参数 dict），让 dev 没注册源码时也能 apply。
@@ -716,12 +765,10 @@ class InMemoryOntologyRepository(OntologyRepository):
     def list_function_versions(self, function_rid: str) -> list[dict[str, Any]]:
         return [dict(v) for v in self._function_versions.get(function_rid, [])]
 
-    def invoke_function(self, function_rid: str,
-                        parameters: dict[str, Any]) -> dict[str, Any]:
+    def invoke_function(self, function_rid: str, parameters: dict[str, Any]) -> dict[str, Any]:
         invoker = self._action_service._invokers.get(function_rid)
         if invoker is None:
-            raise KeyError(
-                f"function {function_rid!r} has no registered invoker")
+            raise KeyError(f"function {function_rid!r} has no registered invoker")
         result = invoker(None, parameters)
         return {"function_rid": function_rid, "result": result}
 
@@ -731,6 +778,7 @@ class InMemoryOntologyRepository(OntologyRepository):
         # dev runtime: 委托给 InMemoryObjectSetExecutor，filter_expr / sort 真正生效
         # EXP-01：Interface 源展开 + subclass 后代闭包（G21 同语义进 InMemory 路径）
         from mate_kernel.objectset.compiler import InMemoryObjectSetExecutor
+
         items = list(self._individuals.values())
         extra = self._expand_source_classes(os_.class_rid.rid)
         return InMemoryObjectSetExecutor(items).execute(os_, extra_classes=extra)
@@ -738,15 +786,14 @@ class InMemoryOntologyRepository(OntologyRepository):
     def execute_object_query(self, q: ObjectSetQuery) -> QueryResult:
         """MP-SAL-01: 结构化 IR 查询（ADR-0043），与 PG 侧同语义。"""
         from mate_kernel.objectset.ir import InMemoryQueryExecutor
+
         source_classes = self._expand_source_classes(q.source)
         individuals = tuple(self._individuals.values())
         # G13：nearestNeighbors —— 先 KNN 预选个体，再走 filters/sort/paging
         if q.nearest is not None and self._embedder is not None:
-            selected = self._nearest_individuals(
-                q.nearest, allowed_classes=set(source_classes))
+            selected = self._nearest_individuals(q.nearest, allowed_classes=set(source_classes))
             individuals = tuple(selected)
-            source_classes = frozenset(
-                {q.source} | {i.class_rid.rid for i in selected})
+            source_classes = frozenset({q.source} | {i.class_rid.rid for i in selected})
         executor = InMemoryQueryExecutor(
             individuals=individuals,
             links=tuple(self._link_instances.values()),
@@ -784,10 +831,7 @@ class InMemoryOntologyRepository(OntologyRepository):
     def _attach_derived_inmemory(self, ot: ObjectType, rows: list[Any]) -> None:
         from .types.derived import attach_derived_values
 
-        link_meta = {
-            lt.rid.rid: (lt.src.rid, lt.dst.rid)
-            for lt in self._link_types.values()
-        }
+        link_meta = {lt.rid.rid: (lt.src.rid, lt.dst.rid) for lt in self._link_types.values()}
         link_pairs: dict[str, list[tuple[str, str]]] = {}
         for li in self._link_instances.values():
             link_pairs.setdefault(li.link_type_rid.rid, []).append((li.src, li.dst))
@@ -807,7 +851,12 @@ class InMemoryOntologyRepository(OntologyRepository):
                 return None
 
         attach_derived_values(
-            rows, ot.rid.rid, ot.properties, link_meta, link_pairs, _value_of,
+            rows,
+            ot.rid.rid,
+            ot.properties,
+            link_meta,
+            link_pairs,
+            _value_of,
         )
 
     def list_properties(self) -> list[Property]:
@@ -823,7 +872,8 @@ class InMemoryOntologyRepository(OntologyRepository):
         return [
             {"rid": rid, "shared": len(users) > 1, "used_by": users}
             for rid, users in sorted(
-                usage.items(), key=lambda kv: (-len(kv[1]), kv[0]),
+                usage.items(),
+                key=lambda kv: (-len(kv[1]), kv[0]),
             )
             if users
         ]
@@ -835,22 +885,32 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._outbox_writer = writer
 
     def _side_effect_emitter_hook(
-        self, action_rid: str, target_iid: str, proposal_id: Any,
+        self,
+        action_rid: str,
+        target_iid: str,
+        proposal_id: Any,
     ) -> Any:
         if self._outbox_writer is None:
             return None
 
         def _emit(se: str) -> str | None:
             try:
-                eid = self._outbox_writer(se, "", {
-                    "action_rid": action_rid, "target_iid": target_iid,
-                    "proposal_id": proposal_id,
-                })
+                eid = self._outbox_writer(
+                    se,
+                    "",
+                    {
+                        "action_rid": action_rid,
+                        "target_iid": target_iid,
+                        "proposal_id": proposal_id,
+                    },
+                )
                 if eid is not None:
                     self._outbox_events[str(eid)] = {
-                        "event_id": str(eid), "event_type": se,
+                        "event_id": str(eid),
+                        "event_type": se,
                         "payload": {"action_rid": action_rid},
-                        "tenant_id": "", "created_at": "",
+                        "tenant_id": "",
+                        "created_at": "",
                     }
                 return eid
             except Exception:
@@ -859,30 +919,42 @@ class InMemoryOntologyRepository(OntologyRepository):
         return _emit
 
     def propose_action(
-        self, action_rid: ClassRef, parameters: dict[str, Any],
-        target_iid: str | None, impact_summary: str,
+        self,
+        action_rid: ClassRef,
+        parameters: dict[str, Any],
+        target_iid: str | None,
+        impact_summary: str,
         expected_diff: dict[str, Any] | None = None,
     ) -> Any:
         if action_rid not in self._action_types:
             raise KeyError(f"action not found: {action_rid}")
         at = self._action_types[action_rid]
         return self._action_service.propose(
-            action_rid=at.rid.rid, parameters=parameters, target_iid=target_iid,
-            impact_summary=impact_summary, expected_diff=expected_diff,
+            action_rid=at.rid.rid,
+            parameters=parameters,
+            target_iid=target_iid,
+            impact_summary=impact_summary,
+            expected_diff=expected_diff,
         )
 
     # ───── MP-SAL-04b: 文本→本体 ingest（kind=create_instance / model_type）─────
 
     def propose_create_instance(
-        self, class_rid: str, props: dict[str, Any],
-        impact_summary: str, expected_diff: dict[str, Any] | None = None,
+        self,
+        class_rid: str,
+        props: dict[str, Any],
+        impact_summary: str,
+        expected_diff: dict[str, Any] | None = None,
     ) -> Any:
         """文本抽取字段 → 新建实例提议（subject=class rid，payload=props）。"""
         self.get_object_type(ClassRef(class_rid))  # 类不存在 → KeyError
         return self._action_service.propose(
-            action_rid=class_rid, parameters={"props": dict(props)},
-            target_iid=None, impact_summary=impact_summary,
-            expected_diff=expected_diff, kind="create_instance",
+            action_rid=class_rid,
+            parameters={"props": dict(props)},
+            target_iid=None,
+            impact_summary=impact_summary,
+            expected_diff=expected_diff,
+            kind="create_instance",
         )
 
     def propose_merge(
@@ -919,15 +991,20 @@ class InMemoryOntologyRepository(OntologyRepository):
         )
 
     def propose_model_type(
-        self, type_def: dict[str, Any], impact_summary: str,
+        self,
+        type_def: dict[str, Any],
+        impact_summary: str,
     ) -> Any:
         """文本→新类型定义提议（subject=新类型 rid，payload=type_def）。"""
         if "rid" not in type_def:
             raise ValueError("type_def must carry 'rid'")
         return self._action_service.propose(
-            action_rid=str(type_def["rid"]), parameters={"type_def": type_def},
-            target_iid=None, impact_summary=impact_summary,
-            expected_diff={"+type": type_def["rid"]}, kind="model_type",
+            action_rid=str(type_def["rid"]),
+            parameters={"type_def": type_def},
+            target_iid=None,
+            impact_summary=impact_summary,
+            expected_diff={"+type": type_def["rid"]},
+            kind="model_type",
         )
 
     def execute_proposal(self, proposal_id: str) -> Any:
@@ -954,16 +1031,17 @@ class InMemoryOntologyRepository(OntologyRepository):
 
             templates = p.parameters.get("edits") or []
             if len(templates) > EDIT_BATCH_LIMIT:
-                raise ValueError(
-                    f"edit-set exceeds batch limit {EDIT_BATCH_LIMIT}"
-                )
+                raise ValueError(f"edit-set exceeds batch limit {EDIT_BATCH_LIMIT}")
             ops = resolve_edit_templates(
-                templates, target_iid=p.target_iid,
+                templates,
+                target_iid=p.target_iid,
                 parameters=dict(p.parameters.get("parameters") or {}),
                 now_iso=_dt.now(_UTC).isoformat(),
             )
             result = self._apply_edits(
-                str(p.action_rid), ops, proposal_id=proposal_id,
+                str(p.action_rid),
+                ops,
+                proposal_id=proposal_id,
                 actor=str(p.confirmed_by or ""),
             )
             self._action_service.mark_executed(proposal_id)
@@ -983,9 +1061,7 @@ class InMemoryOntologyRepository(OntologyRepository):
             tenant, cls_slug = rid_parts[1], rid_parts[4] if len(rid_parts) >= 6 else rid_parts[3]
             resolved: list[tuple[ClassRef, Any]] = []
             for key, value in props_in.items():
-                ref = slug_to_ref.get(key) or (
-                    ClassRef(key) if key.startswith("ont.") else None
-                )
+                ref = slug_to_ref.get(key) or (ClassRef(key) if key.startswith("ont.") else None)
                 if ref is None:
                     raise KeyError(f"unknown property {key!r} for {p.action_rid}")
                 resolved.append((ref, value))
@@ -1025,14 +1101,15 @@ class InMemoryOntologyRepository(OntologyRepository):
         # ACT-06：模板引用参数 fail-fast（自定义 edits 只约束引用到的参数）
         at = self._action_types.get(ClassRef(action_rid))
         if at is not None:
-            violations = validate_referenced_parameters(
-                at.parameters, parameters, edit_templates)
+            violations = validate_referenced_parameters(at.parameters, parameters, edit_templates)
             if violations:
                 raise ValueError("; ".join(violations))
 
         # dry-run 计算 expected_diff（预览即确认的数据基础）
         ops = resolve_edit_templates(
-            edit_templates, target_iid=target_iid, parameters=parameters,
+            edit_templates,
+            target_iid=target_iid,
+            parameters=parameters,
         )
         return self._action_service.propose(
             action_rid=action_rid,
@@ -1061,13 +1138,14 @@ class InMemoryOntologyRepository(OntologyRepository):
 
         at = self._action_types.get(ClassRef(action_rid))
         if at is not None:
-            violations = validate_referenced_parameters(
-                at.parameters, parameters, edit_templates)
+            violations = validate_referenced_parameters(at.parameters, parameters, edit_templates)
             if violations:
                 raise ValueError("; ".join(violations))
 
         ops = resolve_edit_templates(
-            edit_templates, target_iid=target_iid, parameters=parameters,
+            edit_templates,
+            target_iid=target_iid,
+            parameters=parameters,
         )
         prop = self._action_service.propose(
             action_rid=action_rid,
@@ -1088,21 +1166,29 @@ class InMemoryOntologyRepository(OntologyRepository):
                 cur = self._individuals.get(e.target)
                 old = cur.get(ClassRef(e.property_rid)) if cur else None
                 diff.setdefault("~props", []).append(
-                    {e.target: {e.property_rid: {"old": old, "new": e.value}}})
+                    {e.target: {e.property_rid: {"old": old, "new": e.value}}}
+                )
             elif e.op == "create_object":
                 diff.setdefault("+objects", []).append(
-                    {"class_rid": e.class_rid, "primary_key": e.primary_key})
+                    {"class_rid": e.class_rid, "primary_key": e.primary_key}
+                )
             elif e.op == "delete_object":
                 diff.setdefault("-objects", []).append(e.target)
             elif e.op == "add_link":
                 diff.setdefault("+links", []).append(
-                    {"link_type_rid": e.link_type_rid, "src": e.src, "dst": e.dst})
+                    {"link_type_rid": e.link_type_rid, "src": e.src, "dst": e.dst}
+                )
             elif e.op == "remove_link":
                 diff.setdefault("-links", []).append(e.link_instance_rid)
         return diff
 
     def _apply_edits(
-        self, action_rid: str, ops: list[Any], *, proposal_id: str, actor: str,
+        self,
+        action_rid: str,
+        ops: list[Any],
+        *,
+        proposal_id: str,
+        actor: str,
     ) -> Any:
         """顺序执行编辑集；任一步失败 → 整体回滚（补偿式，InMemory 语义）。
 
@@ -1140,26 +1226,32 @@ class InMemoryOntologyRepository(OntologyRepository):
                             merged = {k.rid: v for k, v in cur.props}
                             merged[e.property_rid] = e.value
                             self._individuals[cur.rid] = _replace(
-                                cur, props=tuple(
-                                    (ClassRef(k), v) for k, v in merged.items()),
-                                updated_at=now)
+                                cur,
+                                props=tuple((ClassRef(k), v) for k, v in merged.items()),
+                                updated_at=now,
+                            )
                     elif e.op == OP_DELETE_OBJECT:
                         self._individuals.pop(e.target, None)
-                        for lrid in [l.rid for l in self._link_instances.values()
-                                     if e.target in (l.src, l.dst)]:
+                        for lrid in [
+                            l.rid
+                            for l in self._link_instances.values()
+                            if e.target in (l.src, l.dst)
+                        ]:
                             self._link_instances.pop(lrid)
                     elif e.op == OP_REMOVE_LINK:
                         self._link_instances.pop(e.link_instance_rid, None)
                     elif e.op == OP_ADD_LINK:
                         tenant = e.src.split(".")[1] if "." in e.src else ""
-                        self._link_instances.pop(
-                            f"{e.link_instance_rid}", None)
+                        self._link_instances.pop(f"{e.link_instance_rid}", None)
                         # 逆 add_link 用确定性 rid 重建
                         self._link_instances[f"rb-{e.link_instance_rid}"] = _LI(
                             rid=f"rb-{e.link_instance_rid}",
                             link_type_rid=ClassRef(e.link_type_rid),
-                            src=e.src, dst=e.dst, props=(),
-                            created_at=now, tenant_id=tenant,
+                            src=e.src,
+                            dst=e.dst,
+                            props=(),
+                            created_at=now,
+                            tenant_id=tenant,
                         )
                 except Exception:
                     pass  # 回滚尽力而为（与 legacy rollback hook 语义一致）
@@ -1170,15 +1262,15 @@ class InMemoryOntologyRepository(OntologyRepository):
                     cur = self._individuals.get(e.target)
                     if cur is None:
                         raise EditSetError(f"set_property target not found: {e.target}")
-                    old_values[f"{e.target}#{e.property_rid}"] = cur.get(
-                        ClassRef(e.property_rid))
+                    old_values[f"{e.target}#{e.property_rid}"] = cur.get(ClassRef(e.property_rid))
                     merged = {k.rid: v for k, v in cur.props}
                     merged[e.property_rid] = e.value
                     self._edit_overlay.add((e.target, e.property_rid))
                     self._individuals[e.target] = _replace(
-                        cur, props=tuple(
-                            (ClassRef(k), v) for k, v in merged.items()),
-                        updated_at=now)
+                        cur,
+                        props=tuple((ClassRef(k), v) for k, v in merged.items()),
+                        updated_at=now,
+                    )
                 elif e.op == OP_CREATE_OBJECT:
                     ot = self._object_types.get(ClassRef(e.class_rid))
                     if ot is None:
@@ -1193,7 +1285,9 @@ class InMemoryOntologyRepository(OntologyRepository):
                         class_rid=ot.rid,
                         props=tuple((ClassRef(k), v) for k, v in e.props.items()),
                         primary_key=str(e.primary_key),
-                        created_at=now, updated_at=now, tenant_id=tenant,
+                        created_at=now,
+                        updated_at=now,
+                        tenant_id=tenant,
                         marking=inherited,
                     )
                     self.create_individual(ind)
@@ -1202,19 +1296,30 @@ class InMemoryOntologyRepository(OntologyRepository):
                     if e.target not in self._individuals:
                         raise EditSetError(f"delete_object target not found: {e.target}")
                     self._individuals.pop(e.target)
-                    for lrid in [l.rid for l in self._link_instances.values()
-                                 if e.target in (l.src, l.dst)]:
+                    for lrid in [
+                        l.rid for l in self._link_instances.values() if e.target in (l.src, l.dst)
+                    ]:
                         self._link_instances.pop(lrid)
                 elif e.op == OP_ADD_LINK:
                     tenant = e.src.split(".")[1] if "." in e.src else "t"
-                    lt_slug = e.link_type_rid.split(".")[-2]                         if e.link_type_rid.split(".")[-1].startswith("v")                         else e.link_type_rid.split(".")[-1]
-                    li_rid = (f"ont.{tenant}.lnk.{lt_slug}."
-                              f"{len(self._link_instances) + 1}-"
-                              f"{e.src.split('.')[-1]}-{e.dst.split('.')[-1]}")
+                    lt_slug = (
+                        e.link_type_rid.split(".")[-2]
+                        if e.link_type_rid.split(".")[-1].startswith("v")
+                        else e.link_type_rid.split(".")[-1]
+                    )
+                    li_rid = (
+                        f"ont.{tenant}.lnk.{lt_slug}."
+                        f"{len(self._link_instances) + 1}-"
+                        f"{e.src.split('.')[-1]}-{e.dst.split('.')[-1]}"
+                    )
                     li = _LI(
-                        rid=li_rid, link_type_rid=ClassRef(e.link_type_rid),
-                        src=e.src, dst=e.dst, props=(),
-                        created_at=now, tenant_id=tenant,
+                        rid=li_rid,
+                        link_type_rid=ClassRef(e.link_type_rid),
+                        src=e.src,
+                        dst=e.dst,
+                        props=(),
+                        created_at=now,
+                        tenant_id=tenant,
                     )
                     self.create_link_instance(li)  # 内含基数校验
                     e = _replace(e, link_instance_rid=li_rid)  # 回填供 invert
@@ -1222,23 +1327,31 @@ class InMemoryOntologyRepository(OntologyRepository):
                     li = self._link_instances.get(e.link_instance_rid)
                     if li is None:
                         raise EditSetError(f"remove_link not found: {e.link_instance_rid}")
-                    removed_links.append({
-                        "rid": li.rid, "link_type_rid": li.link_type_rid.rid,
-                        "src": li.src, "dst": li.dst,
-                        "props": {k.rid: v for k, v in li.props},
-                    })
+                    removed_links.append(
+                        {
+                            "rid": li.rid,
+                            "link_type_rid": li.link_type_rid.rid,
+                            "src": li.src,
+                            "dst": li.dst,
+                            "props": {k.rid: v for k, v in li.props},
+                        }
+                    )
                     del self._link_instances[li.rid]
                 applied.append(e)
         except Exception:
             inv_ops, _ni = invert_edits(
-                applied, old_values=old_values, created_rids=created_rids,
+                applied,
+                old_values=old_values,
+                created_rids=created_rids,
                 removed_links=removed_links,
             )
             _exec_inverse(list(inv_ops))
             raise
 
         inv_ops, non_invertible = invert_edits(
-            applied, old_values=old_values, created_rids=created_rids,
+            applied,
+            old_values=old_values,
+            created_rids=created_rids,
             removed_links=removed_links,
         )
         result = EditSetResult(
@@ -1262,7 +1375,11 @@ class InMemoryOntologyRepository(OntologyRepository):
         return result
 
     def _record_edit_set_audit(
-        self, action_rid: str, result: Any, proposal_id: str, actor: str,
+        self,
+        action_rid: str,
+        result: Any,
+        proposal_id: str,
+        actor: str,
     ) -> None:
         """edit-set 执行结果落 ActionService 审计（13 硬规则 #9）。"""
         from dataclasses import dataclass as _dc
@@ -1278,7 +1395,9 @@ class InMemoryOntologyRepository(OntologyRepository):
 
         self._action_service._audit.append(
             _EditOutcome(
-                action_rid=action_rid, proposal_id=proposal_id, actor=actor,
+                action_rid=action_rid,
+                proposal_id=proposal_id,
+                actor=actor,
                 applied_count=len(result.applied),
                 created_rids=result.created_rids,
                 applied=result.applied,
@@ -1292,10 +1411,12 @@ class InMemoryOntologyRepository(OntologyRepository):
             primary_key=tuple(ClassRef(pk) for pk in type_def["primary_key"]),
             properties=tuple(
                 Property(
-                    rid=ClassRef(pd["rid"]), type_id=pd.get("type_id", "string"),
+                    rid=ClassRef(pd["rid"]),
+                    type_id=pd.get("type_id", "string"),
                     nullable=pd.get("nullable", True),
                     primary_key=pd.get("primary_key", False),
-                    title=pd.get("title", ""), format=PropertyFormat(pd.get("format", "string")),
+                    title=pd.get("title", ""),
+                    format=PropertyFormat(pd.get("format", "string")),
                 )
                 for pd in type_def.get("properties", ())
             ),
@@ -1303,8 +1424,7 @@ class InMemoryOntologyRepository(OntologyRepository):
             display_name=type_def.get("display_name", ""),
             marking=tuple(type_def.get("marking", ())),
             parent_class=(
-                ClassRef(type_def["parent_class"])
-                if type_def.get("parent_class") else None
+                ClassRef(type_def["parent_class"]) if type_def.get("parent_class") else None
             ),
         )
 
@@ -1329,7 +1449,9 @@ class InMemoryOntologyRepository(OntologyRepository):
         return dict(self._flow_definitions[key])
 
     def put_flow_definition(
-        self, action_rid: ClassRef, flow_json: dict[str, Any],
+        self,
+        action_rid: ClassRef,
+        flow_json: dict[str, Any],
         config: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         from datetime import UTC as _UTC
@@ -1344,7 +1466,13 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._flow_definitions[action_rid.rid] = entry
         return dict(entry)
 
-    def apply_action(self, action_rid: ClassRef, target_iid: str, parameters: dict[str, Any], provenance: dict[str, Any]) -> tuple[datetime, list[str]]:
+    def apply_action(
+        self,
+        action_rid: ClassRef,
+        target_iid: str,
+        parameters: dict[str, Any],
+        provenance: dict[str, Any],
+    ) -> tuple[datetime, list[str]]:
         # ACTION-03 协议：submission_criteria 求值 → Function 落库 → side_effects。
         # GOVERN-05: function_result 写回 target.props（按 at.parameters 短名）。
         if action_rid not in self._action_types:
@@ -1353,9 +1481,7 @@ class InMemoryOntologyRepository(OntologyRepository):
         target = self._individuals.get(target_iid)
         if target is None:
             raise KeyError(f"target not found: {target_iid}")
-        target_props: dict[str, Any] = {
-            k.rid: v for k, v in target.props
-        }
+        target_props: dict[str, Any] = {k.rid: v for k, v in target.props}
         outcome = self._action_service.apply(
             action_rid=at.rid.rid,
             submission_criteria=at.submission_criteria,
@@ -1372,7 +1498,9 @@ class InMemoryOntologyRepository(OntologyRepository):
             target_props=target_props,
             proposal_id=provenance.get("proposal_id"),
             side_effect_emitter=self._side_effect_emitter_hook(
-                at.rid.rid, target_iid, provenance.get("proposal_id"),
+                at.rid.rid,
+                target_iid,
+                provenance.get("proposal_id"),
             ),
         )
         now = outcome.applied_at
@@ -1385,6 +1513,7 @@ class InMemoryOntologyRepository(OntologyRepository):
                 slug = parts[-2] if parts[-1].startswith("v") else parts[-1]
                 param_rids[slug] = p.rid
             from dataclasses import replace
+
             merged = dict(target.props)
             for key, value in parameters.items():
                 resolved = ClassRef(key) if key.startswith("ont.") else param_rids.get(key)
@@ -1399,6 +1528,8 @@ class InMemoryOntologyRepository(OntologyRepository):
                     if rid_for_slug is not None and slug not in parameters:
                         merged[rid_for_slug] = value
             self._individuals[target_iid] = replace(
-                target, props=tuple(merged.items()), updated_at=now,
+                target,
+                props=tuple(merged.items()),
+                updated_at=now,
             )
         return now, outcome.side_effects_emitted

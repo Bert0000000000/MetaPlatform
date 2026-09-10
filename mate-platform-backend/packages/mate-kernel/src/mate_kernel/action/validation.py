@@ -26,8 +26,16 @@ __all__ = [
 ]
 
 _VALID_OPS = {
-    "eq", "ne", "gt", "gte", "lt", "lte",
-    "startswith", "contains", "in", "truthy",
+    "eq",
+    "ne",
+    "gt",
+    "gte",
+    "lt",
+    "lte",
+    "startswith",
+    "contains",
+    "in",
+    "truthy",
 }
 
 
@@ -68,10 +76,12 @@ def validate_parameters(
         is_num = isinstance(value, (int, float)) and not isinstance(value, bool)
         if fmt in ("integer", "double") and not is_num:
             violations.append(
-                f"parameter {_slug(p.rid.rid)!r} expects number, got {type(value).__name__}")
+                f"parameter {_slug(p.rid.rid)!r} expects number, got {type(value).__name__}"
+            )
         elif fmt == "boolean" and not isinstance(value, bool):
             violations.append(
-                f"parameter {_slug(p.rid.rid)!r} expects boolean, got {type(value).__name__}")
+                f"parameter {_slug(p.rid.rid)!r} expects boolean, got {type(value).__name__}"
+            )
     return violations
 
 
@@ -110,11 +120,9 @@ def validate_referenced_parameters(
         fmt = getattr(p.format, "value", str(p.format))
         is_num = isinstance(value, (int, float)) and not isinstance(value, bool)
         if fmt in ("integer", "double") and not is_num:
-            violations.append(
-                f"parameter {name!r} expects number, got {type(value).__name__}")
+            violations.append(f"parameter {name!r} expects number, got {type(value).__name__}")
         elif fmt == "boolean" and not isinstance(value, bool):
-            violations.append(
-                f"parameter {name!r} expects boolean, got {type(value).__name__}")
+            violations.append(f"parameter {name!r} expects boolean, got {type(value).__name__}")
     return violations
 
 
@@ -171,13 +179,9 @@ def evaluate_rule_group(
         except (TypeError, ValueError):
             return False
         return {"gt": fv > ft, "gte": fv >= ft, "lt": fv < ft, "lte": fv <= ft}[op]
-    if group.all_of and not all(
-        evaluate_rule_group(g, resolve) for g in group.all_of
-    ):
+    if group.all_of and not all(evaluate_rule_group(g, resolve) for g in group.all_of):
         return False
-    if group.any_of and not any(
-        evaluate_rule_group(g, resolve) for g in group.any_of
-    ):
+    if group.any_of and not any(evaluate_rule_group(g, resolve) for g in group.any_of):
         return False
     return True
 

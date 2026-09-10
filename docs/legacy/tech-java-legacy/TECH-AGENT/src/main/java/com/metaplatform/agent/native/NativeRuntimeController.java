@@ -29,4 +29,3 @@ public class NativeRuntimeController {
   return ResponseEntity.ok(new UnifiedRuntimeResponse(context.getRunId(),outcome.status(),outcome.content(),context.getClaims(),java.util.List.of(),java.util.List.of(),java.util.Map.of("runtime","native")));
  }
 }
-

@@ -95,13 +95,13 @@ class McpInstaller(BaseInstaller):
 
 ### 13 硬规则对位
 
-| # | 规则 | 本 ADR 实施 |
-|---|---|---|
-| 3 | 没有 tenant 不访问 repo | McpMarketplaceClient.set_tenant 强制注入 X-Tenant-Id |
-| 4 | 外部系统必须有 ACL Client | BearerAuth + OutgoingAuthMiddleware 复用 mate-clients/security |
-| 6 | 静态检查 ruff+pyright | 新代码 ruff 0 / pyright 0 |
-| 7 | 跳过测试不标 Accepted | 0 skip |
-| 10 | 验收证据 | MP-MCP-REGISTER-ACCEPTANCE.md |
+| #   | 规则                      | 本 ADR 实施                                                    |
+| --- | ------------------------- | -------------------------------------------------------------- |
+| 3   | 没有 tenant 不访问 repo   | McpMarketplaceClient.set_tenant 强制注入 X-Tenant-Id           |
+| 4   | 外部系统必须有 ACL Client | BearerAuth + OutgoingAuthMiddleware 复用 mate-clients/security |
+| 6   | 静态检查 ruff+pyright     | 新代码 ruff 0 / pyright 0                                      |
+| 7   | 跳过测试不标 Accepted     | 0 skip                                                         |
+| 10  | 验收证据                  | MP-MCP-REGISTER-ACCEPTANCE.md                                  |
 
 ## 实施清单
 

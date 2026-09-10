@@ -9,6 +9,7 @@ Covers:
     test-webhook (with respx-mocked HTTP).
   * Cross-tenant negative cases (ADR-0014 step 5).
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -123,9 +124,7 @@ class TestSignPayload:
         sig = sign_payload("super-secret", b'{"hello":"world"}')
         assert sig.startswith("sha256=")
         # Verify the signature is the actual HMAC of the body.
-        expected = hmac.new(
-            b"super-secret", b'{"hello":"world"}', hashlib.sha256
-        ).hexdigest()
+        expected = hmac.new(b"super-secret", b'{"hello":"world"}', hashlib.sha256).hexdigest()
         assert sig == f"sha256={expected}"
 
     def test_signature_changes_with_secret(self) -> None:
@@ -151,9 +150,7 @@ class TestSubscriptionStore:
         fetched = fresh_store.get_subscription(tenant_id="t1", sub_id=sub.id)
         assert fetched is sub
 
-    def test_get_returns_none_for_other_tenant(
-        self, fresh_store: SubscriptionStore
-    ) -> None:
+    def test_get_returns_none_for_other_tenant(self, fresh_store: SubscriptionStore) -> None:
         sub = fresh_store.create_subscription(
             tenant_id="t1",
             topic_filter="*",
@@ -192,9 +189,7 @@ class TestSubscriptionStore:
         assert deleted is not None
         assert deleted.status == "deleted"
 
-    def test_delete_returns_false_for_other_tenant(
-        self, fresh_store: SubscriptionStore
-    ) -> None:
+    def test_delete_returns_false_for_other_tenant(self, fresh_store: SubscriptionStore) -> None:
         sub = fresh_store.create_subscription(
             tenant_id="t1",
             topic_filter="*",
@@ -212,9 +207,7 @@ class TestSubscriptionStore:
                 secret="super-secret",
             )
 
-    def test_find_matching_returns_only_active(
-        self, fresh_store: SubscriptionStore
-    ) -> None:
+    def test_find_matching_returns_only_active(self, fresh_store: SubscriptionStore) -> None:
         s1 = fresh_store.create_subscription(
             tenant_id="t1",
             topic_filter="mate.events.*",
@@ -277,10 +270,12 @@ class TestDeliveryEngine:
     ) -> None:
         # First call 500s, second succeeds.
         route = respx.post("https://example.com/hook")
-        route.mock(side_effect=[
-            Response(500, text="boom"),
-            Response(200, text="ok"),
-        ])
+        route.mock(
+            side_effect=[
+                Response(500, text="boom"),
+                Response(200, text="ok"),
+            ]
+        )
         sub = fresh_store.create_subscription(
             tenant_id="t1",
             topic_filter="*",
@@ -305,9 +300,7 @@ class TestDeliveryEngine:
     async def test_deliver_with_retries_records_failure(
         self, fresh_store: SubscriptionStore
     ) -> None:
-        respx.post("https://example.com/hook").mock(
-            return_value=Response(503, text="down")
-        )
+        respx.post("https://example.com/hook").mock(return_value=Response(503, text="down"))
         sub = fresh_store.create_subscription(
             tenant_id="t1",
             topic_filter="*",
@@ -357,9 +350,7 @@ class TestDeliveryEngine:
 
     @respx.mock
     @pytest.mark.asyncio
-    async def test_delivery_records_signature_header(
-        self, fresh_store: SubscriptionStore
-    ) -> None:
+    async def test_delivery_records_signature_header(self, fresh_store: SubscriptionStore) -> None:
         captured: dict[str, Any] = {}
 
         def _intercept(request):
@@ -374,9 +365,7 @@ class TestDeliveryEngine:
             target_url="https://example.com/hook",
             secret="super-secret",
         )
-        await deliver_with_retries(
-            fresh_store, sub, "topic.x", {"hi": 1}, attempt_delays=(0.0,)
-        )
+        await deliver_with_retries(fresh_store, sub, "topic.x", {"hi": 1}, attempt_delays=(0.0,))
         assert "x-mate-signature" in captured["headers"]
         sig = captured["headers"]["x-mate-signature"]
         assert sig.startswith("sha256=")
@@ -496,9 +485,7 @@ class TestSubscriptionsEndpoints:
         assert r.status_code == 404
 
     @respx.mock
-    def test_test_webhook_endpoint_records_delivery(
-        self, client, auth_headers
-    ) -> None:
+    def test_test_webhook_endpoint_records_delivery(self, client, auth_headers) -> None:
         respx.post("https://example.com/hook").mock(return_value=Response(200, text="ok"))
         sub = self._create_sub(client, auth_headers)
         r = client.post(

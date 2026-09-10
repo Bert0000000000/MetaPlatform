@@ -51,6 +51,7 @@ class ManagerLimits:
 @dataclass(frozen=True, slots=True)
 class ManagerContext:
     """Manager 会话绑定信息 —— 等价于 TenantContext + session_id。"""
+
     user_id: str
     tenant_id: str
     session_id: str
@@ -120,9 +121,7 @@ class Manager:
         actor: str | None = None,
     ) -> TrackedChange:
         if len(self._changes) >= self.limits.max_tracked_changes:
-            raise ManagerError(
-                f"tracked changes exceeded limit {self.limits.max_tracked_changes}"
-            )
+            raise ManagerError(f"tracked changes exceeded limit {self.limits.max_tracked_changes}")
         change = TrackedChange(
             kind=kind,
             target_rid=target_rid,

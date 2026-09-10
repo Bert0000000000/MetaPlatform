@@ -23,6 +23,7 @@ keep the original provider classes intact (text-only ``chat`` is
 still their canonical method) and add ``multimodal_chat`` as an
 extension method via composition.
 """
+
 from __future__ import annotations
 
 from typing import Any

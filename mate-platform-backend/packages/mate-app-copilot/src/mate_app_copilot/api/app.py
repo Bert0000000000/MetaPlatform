@@ -7,6 +7,7 @@ repository, except `/auth/login` which sits behind an anonymous path.
 Write handlers emit `<domain>.<aggregate>.<verb>` outbox events via
 `app.state.outbox_writer` (ADR-0014 step 3).
 """
+
 from __future__ import annotations
 
 import json
@@ -119,9 +120,7 @@ def _tid(request: Request) -> str:
     return str(require_tenant(ctx))
 
 
-def _authorize_a2a_target(
-    *, tenant_id: str, target_agent_id: str, client: Any
-) -> None:
+def _authorize_a2a_target(*, tenant_id: str, target_agent_id: str, client: Any) -> None:
     """Authorize delegation against the current tenant's registry entries.
 
     Copilot's current allowlist source is the tenant-scoped
@@ -215,8 +214,7 @@ def _validate_stream_message_envelope(
         raise HTTPException(
             status_code=413,
             detail=(
-                "messages payload too large; "
-                f"limit is {_COPILOT_STREAM_MAX_MESSAGE_BYTES} bytes"
+                f"messages payload too large; limit is {_COPILOT_STREAM_MAX_MESSAGE_BYTES} bytes"
             ),
         )
 
@@ -298,7 +296,7 @@ class _StreamingOutputGuard:
             if end == -1:
                 return ""
             self._in_think = False
-            text = self._think_buf[end + len("</think>"):]
+            text = self._think_buf[end + len("</think>") :]
             self._think_buf = ""
             if not text:
                 return ""
@@ -308,10 +306,10 @@ class _StreamingOutputGuard:
             return text
 
         before = text[:start]
-        rest = text[start + len("<think>"):]
+        rest = text[start + len("<think>") :]
         end = rest.find("</think>")
         if end != -1:
-            return before + rest[end + len("</think>"):]
+            return before + rest[end + len("</think>") :]
 
         self._in_think = True
         self._think_buf = rest
@@ -581,9 +579,7 @@ def _emit(
     tenant_id: str,
 ) -> None:
     """Append an outbox event if a writer is configured (no-op otherwise)."""
-    writer: OutboxWriter | None = getattr(
-        request.app.state, "outbox_writer", None
-    )
+    writer: OutboxWriter | None = getattr(request.app.state, "outbox_writer", None)
     if writer is None:
         return
     writer.append(
@@ -661,9 +657,7 @@ def _audit_routing_decision(
                     "tenant_id": tenant_id,
                     "actor_id": actor_id,
                     "role_snapshot_digest": role_snapshot_digest,
-                    "policy_version": str(
-                        event.get("policy_version") or "semantic-router-v1"
-                    ),
+                    "policy_version": str(event.get("policy_version") or "semantic-router-v1"),
                     "capability_version": capability_version,
                     "selected_rid": _routing_selected_rid(event),
                     "reason_code": str(event.get("reason_code") or "routing_denied"),
@@ -714,9 +708,7 @@ def _get_client(request: Request) -> AsyncCopilotClient:
     the previous `http://localhost` fallback pointed at the copilot
     itself and every outbound call hit a dead endpoint.
     """
-    client: AsyncCopilotClient | None = getattr(
-        request.app.state, "copilot_client", None
-    )
+    client: AsyncCopilotClient | None = getattr(request.app.state, "copilot_client", None)
     if client is not None:
         return client
 
@@ -726,8 +718,8 @@ def _get_client(request: Request) -> AsyncCopilotClient:
             token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
             client_id="metaplatform-backend",
             client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),
-                # P4: "stub" survives only in legacy-compat dev; production must
-                # inject SERVICE_CLIENT_SECRET (hard rule 12).
+            # P4: "stub" survives only in legacy-compat dev; production must
+            # inject SERVICE_CLIENT_SECRET (hard rule 12).
             scope="platform.read platform.write",
         ),
         provider=stub_provider,
@@ -922,15 +914,16 @@ async def match_actions(request: Request, body: dict[str, Any]) -> dict[str, Any
     ctx_lower = context.lower()
     actions = list_actions(tid)
     matched = [
-        a for a in actions
-        if any(k in ctx_lower for k in a.keywords) or a.name.lower() in ctx_lower
+        a for a in actions if any(k in ctx_lower for k in a.keywords) or a.name.lower() in ctx_lower
     ]
     return {"matched": _serialize(matched), "total": len(matched)}
 
 
 @router.post("/actions/{action_id}/execute", status_code=200)
 async def execute_action(
-    request: Request, action_id: str, body: dict[str, Any],
+    request: Request,
+    action_id: str,
+    body: dict[str, Any],
 ) -> dict[str, Any]:
     tid = _tid(request)
     actions = list_actions(tid)
@@ -971,7 +964,8 @@ async def execute_action(
 
 @router.post("/actions/execute", status_code=200)
 async def execute_action_by_body(
-    request: Request, body: dict[str, Any],
+    request: Request,
+    body: dict[str, Any],
 ) -> dict[str, Any]:
     """Execute an action identified by body (FR-COPILOT-COPILOTPOSTCOPILOTACTIONSEXECUTE).
 
@@ -1059,15 +1053,19 @@ async def explain_sql(
     # explanation of what the SQL does.
     client = _get_client(request)
     op_type = stmt.get_type() if stmt else "unknown"
-    explanation = client.chat(
-        [
-            {
-                "role": "system",
-                "content": "Explain what this SQL query does in one sentence.",
-            },
-            {"role": "user", "content": sql[:500]},
-        ]
-    ) if sql.strip() else f"No SQL provided (operation: {op_type})."
+    explanation = (
+        client.chat(
+            [
+                {
+                    "role": "system",
+                    "content": "Explain what this SQL query does in one sentence.",
+                },
+                {"role": "user", "content": sql[:500]},
+            ]
+        )
+        if sql.strip()
+        else f"No SQL provided (operation: {op_type})."
+    )
     return {
         "tables": tables,
         "columns": columns,
@@ -1089,7 +1087,10 @@ async def audit_sql(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     if re.match(r"\s*DELETE\b", sql_upper, re.IGNORECASE) and "WHERE" not in sql_upper:
         issues.append("DELETE without WHERE clause is dangerous")
         risk_level = "high"
-    if re.match(r"\s*(UPDATE|DROP|TRUNCATE)\b", sql_upper, re.IGNORECASE) and "WHERE" not in sql_upper:
+    if (
+        re.match(r"\s*(UPDATE|DROP|TRUNCATE)\b", sql_upper, re.IGNORECASE)
+        and "WHERE" not in sql_upper
+    ):
         issues.append("Destructive statement without WHERE clause")
         risk_level = "high"
     _emit(
@@ -1193,9 +1194,15 @@ async def get_conversations(request: Request) -> dict[str, Any]:
     uid = _uid(request)
     session = get_session()
     try:
-        orms = session.query(ConversationORM).filter_by(
-            tenant_id=tid, user_id=uid,
-        ).order_by(ConversationORM.created_at.desc()).all()
+        orms = (
+            session.query(ConversationORM)
+            .filter_by(
+                tenant_id=tid,
+                user_id=uid,
+            )
+            .order_by(ConversationORM.created_at.desc())
+            .all()
+        )
         db_items = [_conv_orm_to_dict(o) for o in orms]
         return {"items": db_items, "total": len(db_items)}
     finally:
@@ -1213,8 +1220,13 @@ async def create_conversation(request: Request, body: dict = Body(...)) -> dict[
     session = get_session()
     try:
         orm = ConversationORM(
-            id=conv_id, tenant_id=tid, user_id=uid, title=title,
-            summary="", message_count=0, created_at=now,
+            id=conv_id,
+            tenant_id=tid,
+            user_id=uid,
+            title=title,
+            summary="",
+            message_count=0,
+            created_at=now,
         )
         orm.mode = mode
         orm.favorite = False
@@ -1227,8 +1239,13 @@ async def create_conversation(request: Request, body: dict = Body(...)) -> dict[
         return {"code": 0, "data": _conv_orm_to_dict(orm), "message": "ok"}
     except Exception:
         conv = Conversation(
-            id=conv_id, tenant_id=tid, title=title, user_id=uid,
-            summary="", message_count=0, created_at=now,
+            id=conv_id,
+            tenant_id=tid,
+            title=title,
+            user_id=uid,
+            summary="",
+            message_count=0,
+            created_at=now,
         )
         conv.mode = mode
         conv.favorite = False
@@ -1247,7 +1264,9 @@ async def get_conversation_detail(request: Request, conv_id: str) -> dict[str, A
     uid = _uid(request)
     session = get_session()
     try:
-        orm = session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid, user_id=uid).first()
+        orm = (
+            session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid, user_id=uid).first()
+        )
         if not orm:
             raise HTTPException(status_code=404, detail="Conversation not found")
         return {"code": 0, "data": _conv_orm_to_dict(orm), "message": "ok"}
@@ -1261,7 +1280,9 @@ async def delete_conversation(request: Request, conv_id: str) -> dict[str, Any]:
     uid = _uid(request)
     session = get_session()
     try:
-        orm = session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid, user_id=uid).first()
+        orm = (
+            session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid, user_id=uid).first()
+        )
         if orm:
             session.delete(orm)
             session.query(MessageORM).filter_by(conversation_id=conv_id, user_id=uid).delete()
@@ -1283,7 +1304,9 @@ async def toggle_favorite(request: Request, conv_id: str) -> dict[str, Any]:
     uid = _uid(request)
     session = get_session()
     try:
-        orm = session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid, user_id=uid).first()
+        orm = (
+            session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid, user_id=uid).first()
+        )
         if not orm:
             raise HTTPException(status_code=404, detail="Conversation not found")
         orm.favorite = not getattr(orm, "favorite", False)
@@ -1310,15 +1333,24 @@ async def toggle_favorite(request: Request, conv_id: str) -> dict[str, Any]:
 
 @router.get("/conversations/{conv_id}/messages")
 async def get_messages(
-    request: Request, conv_id: str, page: int = 1, pageSize: int = 50,
+    request: Request,
+    conv_id: str,
+    page: int = 1,
+    pageSize: int = 50,
 ) -> dict[str, Any]:
     tid = _tid(request)
     uid = _uid(request)
     session = get_session()
     try:
-        q = select(MessageORM).filter_by(
-            conversation_id=conv_id, tenant_id=tid, user_id=uid,
-        ).order_by(MessageORM.created_at)
+        q = (
+            select(MessageORM)
+            .filter_by(
+                conversation_id=conv_id,
+                tenant_id=tid,
+                user_id=uid,
+            )
+            .order_by(MessageORM.created_at)
+        )
         orms = session.execute(q).scalars().all()
         items = [_msg_orm_to_dict(o) for o in orms]
         return {
@@ -1345,7 +1377,8 @@ def _strip_chain_of_thought(content: str) -> str:
 
 @router.post("/chat/completions/stream")
 async def chat_completions_stream(
-    request: Request, body: dict = Body(...),
+    request: Request,
+    body: dict = Body(...),
 ) -> StreamingResponse:
     tid = _tid(request)
     uid = _uid(request)
@@ -1390,7 +1423,7 @@ async def chat_completions_stream(
             "在执行任何 Action / Tool 调用时，将 session_id 作为 audit / 沙箱关联键。"
         )
         messages = [
-            { **messages[0], "content": messages[0].get("content", "") + marker },
+            {**messages[0], "content": messages[0].get("content", "") + marker},
             *messages[1:],
         ]
 
@@ -1435,8 +1468,8 @@ async def chat_completions_stream(
                 token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
                 client_id="metaplatform-backend",
                 client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),
-                    # P4: "stub" survives only in legacy-compat dev; production must
-                    # inject SERVICE_CLIENT_SECRET (hard rule 12).
+                # P4: "stub" survives only in legacy-compat dev; production must
+                # inject SERVICE_CLIENT_SECRET (hard rule 12).
                 scope="platform.read platform.write",
             ),
             tenant_id=tid,
@@ -1448,9 +1481,7 @@ async def chat_completions_stream(
         provider_cfg: dict[str, str] = {}
         try:
             client = _get_client(request)
-            provider_cfg = await client.get_provider_config(
-                tid, "custom", user_token or None
-            )
+            provider_cfg = await client.get_provider_config(tid, "custom", user_token or None)
         except Exception:
             provider_cfg = {}
         llm_provider = "custom" if provider_cfg.get("base_url") else "openai"
@@ -1578,9 +1609,15 @@ async def chat_completions_stream(
                     metadata_json=json.dumps({"model": model}),
                 )
                 session.add(ai_msg)
-                conv = session.query(ConversationORM).filter_by(
-                    id=conv_id, tenant_id=tid, user_id=uid,
-                ).first()
+                conv = (
+                    session.query(ConversationORM)
+                    .filter_by(
+                        id=conv_id,
+                        tenant_id=tid,
+                        user_id=uid,
+                    )
+                    .first()
+                )
                 if conv:
                     # 首条消息触发标题更新（"新对话" → 第一条用户输入）
                     if not conv.title or conv.title in ("新对话", "新会话"):
@@ -1729,10 +1766,7 @@ async def get_knowledge_bases(request: Request) -> dict[str, Any]:
         return _resp(items)
     # P2-W4: fallback to arch DataAssets as knowledge-base proxies
     assets = list_data_assets(tid)
-    kb_items = [
-        {"id": a.id, "name": a.name, "doc_count": 0}
-        for a in assets[:5]
-    ]
+    kb_items = [{"id": a.id, "name": a.name, "doc_count": 0} for a in assets[:5]]
     return {"items": kb_items, "total": len(kb_items)}
 
 
@@ -1757,8 +1791,11 @@ async def get_multimodal_models(request: Request) -> dict[str, Any]:
             mapped = [
                 {
                     "modelId": i.get("model_id") or i.get("modelId") or "",
-                    "name": i.get("display_name") or i.get("displayName")
-                    or i.get("model_id") or i.get("modelId") or "",
+                    "name": i.get("display_name")
+                    or i.get("displayName")
+                    or i.get("model_id")
+                    or i.get("modelId")
+                    or "",
                     "provider": i.get("provider", ""),
                     "modality": i.get("modality", "text"),
                     "enabled": i.get("enabled", True),
@@ -1844,7 +1881,11 @@ async def expand_graph(
                 if not any(n["id"] == nid for n in nodes):
                     nodes.append({"id": nid, "label": nid})
             edges.append(
-                {"source": flow.source_entity_id, "target": flow.target_entity_id, "label": flow.name}
+                {
+                    "source": flow.source_entity_id,
+                    "target": flow.target_entity_id,
+                    "label": flow.name,
+                }
             )
     if not nodes:
         nodes = [{"id": node_id, "label": node_id}]
@@ -1867,25 +1908,25 @@ async def query_graph(
         nodes.append({"id": cap["id"], "label": cap["name"], "type": "capability"})
     for cap in flat_caps:
         for child in cap.get("children", []) or []:
-            edges.append(
-                {"source": cap["id"], "target": child["id"], "label": "contains"}
-            )
+            edges.append({"source": cap["id"], "target": child["id"], "label": "contains"})
     # 数据资产映射：data_asset_id → 数据来源信息（D 层 / 业务域）
     assets = {a.id: a for a in list_data_assets(tid)}
     for ent in list_data_entities(tid):
         asset = assets.get(ent.data_asset_id)
-        nodes.append({
-            "id": ent.id,
-            "label": ent.name,
-            "type": "entity",
-            # data 供前端 evidence 展示：对应的数据（字段）+ 数据来源（数据资产/D 层/域）
-            "data": {
-                "fields": list(ent.fields)[:8],
-                "dataSource": asset.name if asset else "",
-                "layer": asset.layer if asset else "",
-                "domain": asset.domain if asset else "",
-            },
-        })
+        nodes.append(
+            {
+                "id": ent.id,
+                "label": ent.name,
+                "type": "entity",
+                # data 供前端 evidence 展示：对应的数据（字段）+ 数据来源（数据资产/D 层/域）
+                "data": {
+                    "fields": list(ent.fields)[:8],
+                    "dataSource": asset.name if asset else "",
+                    "layer": asset.layer if asset else "",
+                    "domain": asset.domain if asset else "",
+                },
+            }
+        )
     return {"nodes": nodes, "edges": edges}
 
 
@@ -1977,24 +2018,28 @@ async def match_employees(
     items: list[dict[str, Any]] = []
     for e in raw_employees:
         if not tokens:
-            items.append({
-                "employeeId": e.get("employeeId"),
-                "name": e.get("name"),
-                "role": e.get("roleIdentity"),
-                "capability": e.get("capability"),
-                "confidence": 1.0,
-            })
+            items.append(
+                {
+                    "employeeId": e.get("employeeId"),
+                    "name": e.get("name"),
+                    "role": e.get("roleIdentity"),
+                    "capability": e.get("capability"),
+                    "confidence": 1.0,
+                }
+            )
             continue
         hay = _haystack(e)
         hits = sum(1 for t in tokens if t in hay)
         if hits:
-            items.append({
-                "employeeId": e.get("employeeId"),
-                "name": e.get("name"),
-                "role": e.get("roleIdentity"),
-                "capability": e.get("capability"),
-                "confidence": round(hits / len(tokens), 3),
-            })
+            items.append(
+                {
+                    "employeeId": e.get("employeeId"),
+                    "name": e.get("name"),
+                    "role": e.get("roleIdentity"),
+                    "capability": e.get("capability"),
+                    "confidence": round(hits / len(tokens), 3),
+                }
+            )
 
     # 按 confidence desc 排序，保持稳定
     items.sort(key=lambda x: x.get("confidence", 0), reverse=True)
@@ -2002,7 +2047,9 @@ async def match_employees(
 
 
 @router.post("/scheduling/execution/start")
-async def start_execution(response: Response, request: Request, body: dict[str, Any]) -> dict[str, Any]:
+async def start_execution(
+    response: Response, request: Request, body: dict[str, Any]
+) -> dict[str, Any]:
     _mark_deprecated(response)
     tid = _tid(request)
     plan_id = str(body.get("plan_id", "plan-1"))
@@ -2018,7 +2065,9 @@ async def start_execution(response: Response, request: Request, body: dict[str, 
 
 
 @router.post("/scheduling/intent/detect")
-async def detect_intent(response: Response, request: Request, body: dict[str, Any]) -> dict[str, Any]:
+async def detect_intent(
+    response: Response, request: Request, body: dict[str, Any]
+) -> dict[str, Any]:
     _mark_deprecated(response)
     tid = _tid(request)
     text = str(body.get("text", ""))
@@ -2067,7 +2116,9 @@ async def get_intents(response: Response, request: Request) -> dict[str, Any]:
 
 
 @router.post("/scheduling/plan/generate")
-async def generate_plan(response: Response, request: Request, body: dict[str, Any]) -> dict[str, Any]:
+async def generate_plan(
+    response: Response, request: Request, body: dict[str, Any]
+) -> dict[str, Any]:
     _mark_deprecated(response)
     _tid(request)
     goal = str(body.get("goal", ""))
@@ -2162,13 +2213,14 @@ async def get_agent_tools(request: Request) -> dict[str, Any]:
                 token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
                 client_id="metaplatform-backend",
                 client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),
-                    # P4: "stub" survives only in legacy-compat dev; production must
-                    # inject SERVICE_CLIENT_SECRET (hard rule 12).
+                # P4: "stub" survives only in legacy-compat dev; production must
+                # inject SERVICE_CLIENT_SECRET (hard rule 12).
                 scope="platform.read platform.write",
             ),
         )
         snapshot = await orchestrator_client.authorized_role_snapshot(
-            tenant_id=tid, fallback_token=user_token or None,
+            tenant_id=tid,
+            fallback_token=user_token or None,
         )
         roles, _, _ = _validated_role_snapshot(snapshot)
         sources["orchestrator"] = "ok"
@@ -2205,8 +2257,8 @@ async def get_agent_tools(request: Request) -> dict[str, Any]:
     if truncated:
         tools = tools[:max_tools]
 
-    return {"items": tools, "total": len(tools),
-            "truncated": truncated, "sources": sources}
+    return {"items": tools, "total": len(tools), "truncated": truncated, "sources": sources}
+
 
 # ---------------------------------------------------------------------------
 # Agent loop (FC-driven SuperAI scheduling, real-time event stream)
@@ -2295,8 +2347,8 @@ async def chat_agent_stream(
         token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
         client_id="metaplatform-backend",
         client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),
-            # P4: "stub" survives only in legacy-compat dev; production must
-            # inject SERVICE_CLIENT_SECRET (hard rule 12).
+        # P4: "stub" survives only in legacy-compat dev; production must
+        # inject SERVICE_CLIENT_SECRET (hard rule 12).
         scope="platform.read platform.write",
     )
     llmgw_client = LlmgwStreamClient(
@@ -2333,9 +2385,7 @@ async def chat_agent_stream(
                 tenant_id=tid,
                 fallback_token=user_token or None,
             )
-            roles, capability_version, actor_roles_digest = _validated_role_snapshot(
-                role_snapshot
-            )
+            roles, capability_version, actor_roles_digest = _validated_role_snapshot(role_snapshot)
         except Exception:
             trace_id = str(getattr(request.state.ctx, "trace_id", "") or uuid.uuid4().hex)
             denied_event = {
@@ -2382,8 +2432,11 @@ async def chat_agent_stream(
             _repo = onto_repo
             ontology_exec = lambda name, args: _exec(_repo, name, args)
             last_user = next(
-                (str(m.get("content") or "") for m in reversed(messages)
-                 if m.get("role") == "user"),
+                (
+                    str(m.get("content") or "")
+                    for m in reversed(messages)
+                    if m.get("role") == "user"
+                ),
                 "",
             )
             if last_user:
@@ -2459,17 +2512,21 @@ async def chat_agent_stream(
         except LlmgwStreamError as exc:
             final_parts.clear()
             full_response = f"LLM 决策失败：{exc}"
-            yield _agent_event({
-                "choices": [{"delta": {"content": full_response}, "index": 0}],
-                "model": model,
-            })
+            yield _agent_event(
+                {
+                    "choices": [{"delta": {"content": full_response}, "index": 0}],
+                    "model": model,
+                }
+            )
         except OrchestratorClientError as exc:
             final_parts.clear()
             full_response = f"调度失败：{exc}"
-            yield _agent_event({
-                "choices": [{"delta": {"content": full_response}, "index": 0}],
-                "model": model,
-            })
+            yield _agent_event(
+                {
+                    "choices": [{"delta": {"content": full_response}, "index": 0}],
+                    "model": model,
+                }
+            )
         if final_parts:
             full_response, _ = _sanitize_copilot_response_text(
                 request,
@@ -2478,11 +2535,13 @@ async def chat_agent_stream(
             )
             # Chunk the final answer so the frontend still receives streaming deltas.
             for i in range(0, len(full_response), 32):
-                chunk = full_response[i:i + 32]
-                yield _agent_event({
-                    "choices": [{"delta": {"content": chunk}, "index": 0}],
-                    "model": model,
-                })
+                chunk = full_response[i : i + 32]
+                yield _agent_event(
+                    {
+                        "choices": [{"delta": {"content": chunk}, "index": 0}],
+                        "model": model,
+                    }
+                )
         yield "data: [DONE]\n\n"
 
         # Persist assistant message + update conversation. A denied routing
@@ -2501,16 +2560,24 @@ async def chat_agent_stream(
                         role="assistant",
                         content=full_response,
                         created_at=_now_iso(),
-                        metadata_json=json.dumps({
-                            "model": model,
-                            "agentSteps": agent_steps,
-                            "routingDecisions": routing_decisions,
-                        }),
+                        metadata_json=json.dumps(
+                            {
+                                "model": model,
+                                "agentSteps": agent_steps,
+                                "routingDecisions": routing_decisions,
+                            }
+                        ),
                     )
                     session.add(ai_msg)
-                    conv = session.query(ConversationORM).filter_by(
-                        id=conv_id, tenant_id=tid, user_id=uid,
-                    ).first()
+                    conv = (
+                        session.query(ConversationORM)
+                        .filter_by(
+                            id=conv_id,
+                            tenant_id=tid,
+                            user_id=uid,
+                        )
+                        .first()
+                    )
                     if conv:
                         if not conv.title or conv.title in ("新对话", "新会话"):
                             first_user = next(

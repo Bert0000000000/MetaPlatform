@@ -13,6 +13,7 @@ Verifies the cross-tenant ADS access audit middleware:
     after the response is dispatched
   - the event payload carries tenant / user / trace / product / table / tags
 """
+
 from __future__ import annotations
 
 import os

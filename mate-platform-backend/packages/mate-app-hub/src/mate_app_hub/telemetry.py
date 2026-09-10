@@ -21,6 +21,7 @@ a fresh one backed by an ``InMemorySpanExporter``. Subsequent calls
 to ``get_tracer()`` will return a tracer backed by that provider,
 and the returned exporter lets the test inspect the captured spans.
 """
+
 from __future__ import annotations
 
 from collections.abc import Generator

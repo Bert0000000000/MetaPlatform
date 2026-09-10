@@ -1,4 +1,5 @@
 """mate_app_copilot.main — FastAPI application factory."""
+
 from __future__ import annotations
 
 from fastapi import FastAPI, Response
@@ -30,17 +31,27 @@ def create_app() -> FastAPI:
             OutboxEventORM,
         )
         from mate_tech_db.base import Base, init_engine
-        dsn = os.getenv("MATE_DB_URL") or os.getenv("DATABASE_URL") or "postgresql://meta:meta@postgres:5432/metaplatform"
+
+        dsn = (
+            os.getenv("MATE_DB_URL")
+            or os.getenv("DATABASE_URL")
+            or "postgresql://meta:meta@postgres:5432/metaplatform"
+        )
         init_engine(dsn)
         Base.metadata.create_all(bind=init_engine(dsn))
         app.state.outbox_writer = SqlOutboxWriter()
         import logging
+
         logging.getLogger("mate_app_copilot").info("PostgreSQL initialized: %s", dsn.split("@")[-1])
     except Exception as e:
         import logging
-        logging.getLogger("mate_app_copilot").warning("DB init failed (falling back to in-memory): %s", e)
+
+        logging.getLogger("mate_app_copilot").warning(
+            "DB init failed (falling back to in-memory): %s", e
+        )
     if not hasattr(app.state, "outbox_writer"):
         from mate_platform.messaging.outbox import InMemoryOutboxWriter
+
         app.state.outbox_writer = InMemoryOutboxWriter()
 
     @app.get("/healthz")

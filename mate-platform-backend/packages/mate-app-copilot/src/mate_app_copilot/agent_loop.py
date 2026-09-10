@@ -16,6 +16,7 @@ inline (returns real outcomes); genuinely-async submissions are polled up
 to a timeout. The loop never fabricates a completed result — a timeout /
 pending is reported truthfully back to the LLM.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -99,9 +100,7 @@ def build_system_prompt(
         "一次可以调用多个 dispatch_employee 把任务并行派给不同员工。",
     ]
     if candidate_roles:
-        lines.append(
-            "（候选已由 semantic_router 预筛，请从下列候选中选择最合适的数字员工。）"
-        )
+        lines.append("（候选已由 semantic_router 预筛，请从下列候选中选择最合适的数字员工。）")
     lines.append("可调度的数字员工：")
     for r in selected_roles:
         caps = ", ".join(c.get("name", "") for c in r.get("capabilities", []))
@@ -121,9 +120,7 @@ def build_system_prompt(
         lines.append("")
         lines.append("相关对象上下文（来自本体检索，rid 可追溯，回答时优先引用）：")
         for card in object_cards:
-            lines.append(
-                f"- [{card.get('individual_rid', '?')}] {card.get('card_text', '')}"
-            )
+            lines.append(f"- [{card.get('individual_rid', '?')}] {card.get('card_text', '')}")
     return "\n".join(lines)
 
 
@@ -320,8 +317,7 @@ async def run_agent_loop(
     """
     # Pre-screen: 算 candidate_roles（仅取最后一条 user message 算语义）
     last_user_msg = next(
-        (str(m.get("content") or "") for m in reversed(messages)
-         if m.get("role") == "user"),
+        (str(m.get("content") or "") for m in reversed(messages) if m.get("role") == "user"),
         "",
     )
     router = semantic_router or SemanticRouter()
@@ -370,7 +366,8 @@ async def run_agent_loop(
         "correlation_id": correlation_id,
         "reason": (
             "semantic_router pre-screened roles by embedding + keyword hit"
-            if candidate_roles else "no candidates (empty roles or query)"
+            if candidate_roles
+            else "no candidates (empty roles or query)"
         ),
     }
     if not candidate_roles and not ontology_tools:
@@ -393,7 +390,8 @@ async def run_agent_loop(
     tools = build_tools(dispatch_roles, ontology_tools=ontology_tools)
     slug_enum = {str(r.get("role")) for r in dispatch_roles if r.get("role")}
     onto_names = {
-        t["function"]["name"] for t in (ontology_tools or ())
+        t["function"]["name"]
+        for t in (ontology_tools or ())
         if isinstance(t, dict) and "function" in t
     }
 
@@ -487,26 +485,49 @@ async def run_agent_loop(
         if onto_calls:
             ontology_tool_executed = True
             assistant_tc = [
-                {"id": c["call_id"], "type": "function",
-                 "function": {"name": c["name"], "arguments": json.dumps(c["args"], ensure_ascii=False)}}
+                {
+                    "id": c["call_id"],
+                    "type": "function",
+                    "function": {
+                        "name": c["name"],
+                        "arguments": json.dumps(c["args"], ensure_ascii=False),
+                    },
+                }
                 for c in onto_calls
             ]
-            history.append({
-                "role": "assistant", "content": content or "", "tool_calls": assistant_tc,
-            })
+            history.append(
+                {
+                    "role": "assistant",
+                    "content": content or "",
+                    "tool_calls": assistant_tc,
+                }
+            )
             for c in onto_calls:
-                yield {"type": "tool_call", "callId": c["call_id"], "tool": c["name"], "args": c["args"]}
+                yield {
+                    "type": "tool_call",
+                    "callId": c["call_id"],
+                    "tool": c["name"],
+                    "args": c["args"],
+                }
                 status, result = "success", {}
                 try:
                     result = await asyncio.to_thread(ontology_tool_exec, c["name"], c["args"])
                 except Exception as e:
                     status, result = "error", {"error": f"{type(e).__name__}: {e}"}
-                yield {"type": "tool_result", "callId": c["call_id"], "status": status, "result": result}
-                history.append({
-                    "role": "tool", "tool_call_id": c["call_id"],
-                    "name": c["name"],
-                    "content": json.dumps(result, ensure_ascii=False, default=str)[:8000],
-                })
+                yield {
+                    "type": "tool_result",
+                    "callId": c["call_id"],
+                    "status": status,
+                    "result": result,
+                }
+                history.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": c["call_id"],
+                        "name": c["name"],
+                        "content": json.dumps(result, ensure_ascii=False, default=str)[:8000],
+                    }
+                )
             continue  # 下一轮：LLM 基于本体数据继续（回答或再调度）
 
         # Collect + validate every dispatch_employee call in this decision.
@@ -527,26 +548,40 @@ async def run_agent_loop(
             target = str(args.get("target_rid", "") or "")
             message = str(args.get("message", "") or "")
             if not target or target not in slug_enum:
-                calls.append({
-                    "call_id": call_id, "fn": fn, "args": args,
-                    "valid": False,
-                    "error": f"未知或缺失 target_rid: {target!r}",
-                    "reason_code": (
-                        "no_authorized_candidates"
-                        if not candidate_roles
-                        else "target_not_authorized"
-                    ),
-                })
+                calls.append(
+                    {
+                        "call_id": call_id,
+                        "fn": fn,
+                        "args": args,
+                        "valid": False,
+                        "error": f"未知或缺失 target_rid: {target!r}",
+                        "reason_code": (
+                            "no_authorized_candidates"
+                            if not candidate_roles
+                            else "target_not_authorized"
+                        ),
+                    }
+                )
             elif not message:
-                calls.append({
-                    "call_id": call_id, "fn": fn, "args": args,
-                    "valid": False, "error": "missing message",
-                })
+                calls.append(
+                    {
+                        "call_id": call_id,
+                        "fn": fn,
+                        "args": args,
+                        "valid": False,
+                        "error": "missing message",
+                    }
+                )
             else:
-                calls.append({
-                    "call_id": call_id, "fn": fn, "args": args,
-                    "valid": True, "error": "",
-                })
+                calls.append(
+                    {
+                        "call_id": call_id,
+                        "fn": fn,
+                        "args": args,
+                        "valid": True,
+                        "error": "",
+                    }
+                )
 
         if not calls:
             yield {"type": "final", "content": _strip_chain_of_thought(content)}
@@ -555,7 +590,8 @@ async def run_agent_loop(
             (
                 str(call["reason_code"])
                 for call in calls
-                if call.get("reason_code") in {
+                if call.get("reason_code")
+                in {
                     "target_not_authorized",
                     "no_authorized_candidates",
                 }
@@ -646,29 +682,38 @@ async def run_agent_loop(
                 "result": result,
             }
             if status == "success":
-                dispatched.append({
-                    "target_rid": c["args"].get("target_rid", ""),
-                    "task_id": result.get("task_id", "") if isinstance(result, dict) else "",
-                    "status": result.get("status", "completed") if isinstance(result, dict) else "completed",
-                    "worker_kind": result.get("worker_kind", "") if isinstance(result, dict) else "",
-                })
+                dispatched.append(
+                    {
+                        "target_rid": c["args"].get("target_rid", ""),
+                        "task_id": result.get("task_id", "") if isinstance(result, dict) else "",
+                        "status": result.get("status", "completed")
+                        if isinstance(result, dict)
+                        else "completed",
+                        "worker_kind": result.get("worker_kind", "")
+                        if isinstance(result, dict)
+                        else "",
+                    }
+                )
 
         # Feed the full decision back: one assistant message with all
         # tool_calls, then one tool message per result (OpenAI protocol).
-        history.append({
-            "role": "assistant",
-            "content": content,
-            "tool_calls": [
-                {"id": c["call_id"], "type": "function", "function": c["fn"]}
-                for c in calls
-            ],
-        })
+        history.append(
+            {
+                "role": "assistant",
+                "content": content,
+                "tool_calls": [
+                    {"id": c["call_id"], "type": "function", "function": c["fn"]} for c in calls
+                ],
+            }
+        )
         for c, (_, result, _) in zip(calls, outcomes, strict=False):
-            history.append({
-                "role": "tool",
-                "tool_call_id": c["call_id"],
-                "content": json.dumps(result, ensure_ascii=False),
-            })
+            history.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": c["call_id"],
+                    "content": json.dumps(result, ensure_ascii=False),
+                }
+            )
 
     # Hit the iteration cap without a final text — structured close.
     if dispatched:

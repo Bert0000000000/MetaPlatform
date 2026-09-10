@@ -9,6 +9,7 @@ The engine reads its configuration from environment variables
 ``timeout_seconds``) is preserved from the P2-W7 reserved interface;
 new engine methods are additive.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -64,7 +65,10 @@ class AsyncMetricsClient:
         )
 
     async def get_lineage(
-        self, metric_id: str, *, select: str | None = None,
+        self,
+        metric_id: str,
+        *,
+        select: str | None = None,
     ) -> DbtResult:
         """Get the metric lineage via ``dbt list``."""
         assert self.dbt_engine is not None
@@ -80,11 +84,16 @@ class AsyncMetricsClient:
         """Get the metric values via ``dbt run-operation``."""
         assert self.dbt_engine is not None
         return await self.dbt_engine.get_values(
-            metric_id, expression=expression, limit=limit,
+            metric_id,
+            expression=expression,
+            limit=limit,
         )
 
     async def test_metric(
-        self, metric_id: str, *, select: str | None = None,
+        self,
+        metric_id: str,
+        *,
+        select: str | None = None,
     ) -> DbtResult:
         """Run dbt tests for the metric's models."""
         assert self.dbt_engine is not None

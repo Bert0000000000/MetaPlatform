@@ -1,4 +1,5 @@
 """Kafka client tests (ST-5.1.3)."""
+
 from __future__ import annotations
 
 import pytest

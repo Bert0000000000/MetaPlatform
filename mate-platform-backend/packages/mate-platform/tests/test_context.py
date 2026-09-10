@@ -1,11 +1,15 @@
-﻿from mate_platform.errors import PlatformError, to_http_response
+from mate_platform.errors import PlatformError, to_http_response
 from mate_platform.tenancy import RequestContext, TenantId, UserId
 
 
 def test_request_context_is_immutable() -> None:
     ctx = RequestContext(
-        request_id="r-1", trace_id="t-1", tenant_id=TenantId("tenant-1"),
-        user_id=UserId("u-1"), roles=frozenset({"viewer"}), permissions=frozenset(),
+        request_id="r-1",
+        trace_id="t-1",
+        tenant_id=TenantId("tenant-1"),
+        user_id=UserId("u-1"),
+        roles=frozenset({"viewer"}),
+        permissions=frozenset(),
         locale="zh-CN",
     )
     assert ctx.tenant_id == "tenant-1"

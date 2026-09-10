@@ -6,6 +6,7 @@
 3. merge_to_base → apply_edit_set_now（审计管道）→ 主库生效 + 沙盒清空；
 4. 冲突：沙盒期间主库删除目标 → merge 抛 ScenarioConflictError。
 """
+
 from __future__ import annotations
 
 import os
@@ -36,28 +37,53 @@ ACT = f"ont.{T}.act.org.reassign-seat.v1"
 
 def _base() -> InMemoryOntologyRepository:
     r = InMemoryOntologyRepository()
-    r.upsert_object_type(ObjectType(
-        rid=ClassRef(OBJ),
-        primary_key=(ClassRef(P_ID),),
-        properties=(
-            Property(rid=ClassRef(P_ID), type_id="string", nullable=False,
-                     primary_key=True, title="seatId", format=PropertyFormat.STRING),
-            Property(rid=ClassRef(P_OWNER), type_id="string", nullable=True,
-                     primary_key=False, title="owner", format=PropertyFormat.STRING),
-        ),
-        display_name="seat",
-    ))
-    r.upsert_action_type(ActionType(
-        rid=ClassRef(ACT), parameters=(), submission_criteria=(),
-        side_effects=(), function_ref=ClassRef(f"ont.{T}.fn.org.reassign.v1"),
-        on=(ClassRef(OBJ),), title="Reassign Seat",
-    ))
-    r.create_individual(Individual(
-        rid=f"ont.{T}.ind.seat.s1", class_rid=ClassRef(OBJ),
-        props=((ClassRef(P_ID), "s1"), (ClassRef(P_OWNER), "alice")),
-        primary_key="s1", tenant_id=T,
-        created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
-    ))
+    r.upsert_object_type(
+        ObjectType(
+            rid=ClassRef(OBJ),
+            primary_key=(ClassRef(P_ID),),
+            properties=(
+                Property(
+                    rid=ClassRef(P_ID),
+                    type_id="string",
+                    nullable=False,
+                    primary_key=True,
+                    title="seatId",
+                    format=PropertyFormat.STRING,
+                ),
+                Property(
+                    rid=ClassRef(P_OWNER),
+                    type_id="string",
+                    nullable=True,
+                    primary_key=False,
+                    title="owner",
+                    format=PropertyFormat.STRING,
+                ),
+            ),
+            display_name="seat",
+        )
+    )
+    r.upsert_action_type(
+        ActionType(
+            rid=ClassRef(ACT),
+            parameters=(),
+            submission_criteria=(),
+            side_effects=(),
+            function_ref=ClassRef(f"ont.{T}.fn.org.reassign.v1"),
+            on=(ClassRef(OBJ),),
+            title="Reassign Seat",
+        )
+    )
+    r.create_individual(
+        Individual(
+            rid=f"ont.{T}.ind.seat.s1",
+            class_rid=ClassRef(OBJ),
+            props=((ClassRef(P_ID), "s1"), (ClassRef(P_OWNER), "alice")),
+            primary_key="s1",
+            tenant_id=T,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+    )
     return r
 
 

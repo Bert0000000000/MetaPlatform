@@ -1,4 +1,5 @@
 """JWT token verification against a Keycloak JWKS cache."""
+
 from __future__ import annotations
 
 import base64
@@ -86,9 +87,7 @@ class TokenVerifier:
             raise TokenError(f"token header unreadable: {exc}") from exc
         alg = header.get("alg")
         if alg not in {"RS256", "RS384", "RS512"}:
-            raise TokenError(
-                f"unsupported alg {alg!r}; only RS256/RS384/RS512 are accepted"
-            )
+            raise TokenError(f"unsupported alg {alg!r}; only RS256/RS384/RS512 are accepted")
         kid = header.get("kid")
         if not kid:
             raise TokenError("token header missing kid")

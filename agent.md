@@ -10,15 +10,15 @@
 
 ## 当前方向（2026-09-01 定稿，取代此前摘要）
 
-| 文档 | 内容 |
-|---|---|
-| `docs/superpowers/specs/2026-08-31-federated-digital-employee-platform-design.md` | 目标技术架构（联邦数字员工平台） |
-| `docs/superpowers/specs/2026-09-01-metaplatform-product-modules-design.md` | 产品范围 / 15 个产品模块 / 功能树 |
-| `docs/superpowers/specs/2026-09-01-metaplatform-agile-delivery-operating-model.md` | 敏捷治理模型（PI / Sprint） |
-| `docs/superpowers/plans/2026-09-01-metaplatform-agile-program-delivery.md` | PI/Sprint 顺序与退出条件 |
-| `docs/superpowers/plans/2026-09-01-mvp-01-order-insight-action.md` ~ `mvp-04-ontology-operations.md` | 四个业务 MVP 计划 |
-| `docs/active/decisions/ADR-0060-discard-v3-data-migration.md` | 弃用 v3 数据迁移 |
-| `docs/active/decisions/ADR-0061-temporal-as-workflow-engine.md` | Temporal = 业务 Workflow 可靠编排控制面 |
+| 文档                                                                                                 | 内容                                    |
+| ---------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `docs/superpowers/specs/2026-08-31-federated-digital-employee-platform-design.md`                    | 目标技术架构（联邦数字员工平台）        |
+| `docs/superpowers/specs/2026-09-01-metaplatform-product-modules-design.md`                           | 产品范围 / 15 个产品模块 / 功能树       |
+| `docs/superpowers/specs/2026-09-01-metaplatform-agile-delivery-operating-model.md`                   | 敏捷治理模型（PI / Sprint）             |
+| `docs/superpowers/plans/2026-09-01-metaplatform-agile-program-delivery.md`                           | PI/Sprint 顺序与退出条件                |
+| `docs/superpowers/plans/2026-09-01-mvp-01-order-insight-action.md` ~ `mvp-04-ontology-operations.md` | 四个业务 MVP 计划                       |
+| `docs/active/decisions/ADR-0060-discard-v3-data-migration.md`                                        | 弃用 v3 数据迁移                        |
+| `docs/active/decisions/ADR-0061-temporal-as-workflow-engine.md`                                      | Temporal = 业务 Workflow 可靠编排控制面 |
 
 发生规格冲突时：09-01/08-31 联邦数字员工架构 > CLAUDE.md 摘要 > 本文件。停止实现受影响部分，通过 ADR / 规格修订明确解决后同步。
 

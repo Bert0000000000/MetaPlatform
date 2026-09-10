@@ -1,4 +1,5 @@
 """Tests for /api/v1/admin/users endpoints (FR-DASH-006-01)."""
+
 from __future__ import annotations
 
 import pytest
@@ -92,6 +93,7 @@ async def test_import_and_export(client):
     csv_content = "username,real_name,email,department\nimported1,导入一,a1@meta.com,技术部\nimported2,导入二,a2@meta.com,产品部\n"
     # httpx ASGI: pass file tuple with explicit content_type to ensure multipart works
     import io
+
     files = {"file": ("users.csv", io.BytesIO(csv_content.encode("utf-8")), "text/csv")}
     r = await client.post("/api/v1/admin/users/import", files=files)
     if r.status_code not in (200, 201):

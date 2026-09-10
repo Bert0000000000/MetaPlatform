@@ -1,4 +1,5 @@
 """mate-tech-agent baseline tests (S1 scenario)."""
+
 from __future__ import annotations
 
 import sys
@@ -23,8 +24,10 @@ from mate_tech_agent.tools import set_rag_tool
 class FakeRAGTool:
     def __init__(self, chunks):
         self._chunks = chunks
+
     def search(self, query, top_k=5, mode="AUTO"):
         return list(self._chunks)[:top_k]
+
     def close(self):
         pass
 
@@ -32,8 +35,20 @@ class FakeRAGTool:
 @pytest.fixture
 def fake_rag_with_chunks():
     chunks = [
-        {"chunk_id": "c1", "document_id": "d1", "score": 0.9, "text": "Python FastAPI is the backend framework.", "metadata": {}},
-        {"chunk_id": "c2", "document_id": "d1", "score": 0.7, "text": "MatePlatform uses LangChain for AI.", "metadata": {}},
+        {
+            "chunk_id": "c1",
+            "document_id": "d1",
+            "score": 0.9,
+            "text": "Python FastAPI is the backend framework.",
+            "metadata": {},
+        },
+        {
+            "chunk_id": "c2",
+            "document_id": "d1",
+            "score": 0.7,
+            "text": "MatePlatform uses LangChain for AI.",
+            "metadata": {},
+        },
     ]
     set_rag_tool(FakeRAGTool(chunks))
     return chunks
@@ -120,14 +135,22 @@ def test_retrieve_node_extracts_query(fake_rag_with_chunks):
 
 
 def test_answer_node_synthesizes(fake_rag_with_chunks):
-    state = {"messages": [{"role": "user", "content": "What is FastAPI?"}], "retrieved_chunks": fake_rag_with_chunks, "thread_id": "t1"}
+    state = {
+        "messages": [{"role": "user", "content": "What is FastAPI?"}],
+        "retrieved_chunks": fake_rag_with_chunks,
+        "thread_id": "t1",
+    }
     out = answer_node(state)
     assert "Python FastAPI" in out["answer"]
     assert len(out["retrieved_chunks"]) == 2
 
 
 def test_answer_node_empty(fake_rag_empty):
-    state = {"messages": [{"role": "user", "content": "unknown"}], "retrieved_chunks": [], "thread_id": "t1"}
+    state = {
+        "messages": [{"role": "user", "content": "unknown"}],
+        "retrieved_chunks": [],
+        "thread_id": "t1",
+    }
     out = answer_node(state)
     assert "No context" in out["answer"]
 

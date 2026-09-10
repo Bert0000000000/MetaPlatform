@@ -14,8 +14,14 @@ import os
 import re
 from typing import Any, Protocol
 
-__all__ = ["Embedder", "HashEmbedder", "LlmgwServiceEmbedder",
-           "build_card", "build_env_embedder", "cosine"]
+__all__ = [
+    "Embedder",
+    "HashEmbedder",
+    "LlmgwServiceEmbedder",
+    "build_card",
+    "build_env_embedder",
+    "cosine",
+]
 
 
 class Embedder(Protocol):
@@ -79,16 +85,13 @@ class LlmgwServiceEmbedder:
         import httpx
 
         self._url = os.environ.get(
-            "LLMGW_EMBED_URL",
-            "http://mate-tech-llmgw:8008/api/v1/llmgw/embeddings")
-        self._model = os.environ.get("LLMGW_EMBED_MODEL",
-                                     "text-embedding-3-small")
+            "LLMGW_EMBED_URL", "http://mate-tech-llmgw:8008/api/v1/llmgw/embeddings"
+        )
+        self._model = os.environ.get("LLMGW_EMBED_MODEL", "text-embedding-3-small")
         self._tenant = os.environ.get("LLMGW_EMBED_TENANT", "tenant-default")
         kc = os.environ.get("KEYCLOAK_URL", "http://keycloak:8080").rstrip("/")
-        self._token_url = (
-            kc + "/realms/metaplatform/protocol/openid-connect/token")
-        self._client_id = os.environ.get("SERVICE_CLIENT_ID",
-                                         "metaplatform-backend")
+        self._token_url = kc + "/realms/metaplatform/protocol/openid-connect/token"
+        self._client_id = os.environ.get("SERVICE_CLIENT_ID", "metaplatform-backend")
         self._secret = os.environ.get("SERVICE_CLIENT_SECRET", "")
         self._client = httpx.Client(timeout=30.0)
         self._token: str | None = None
@@ -106,9 +109,12 @@ class LlmgwServiceEmbedder:
             return self._token
         resp = self._client.post(
             self._token_url,
-            data={"grant_type": "client_credentials",
-                  "client_id": self._client_id,
-                  "client_secret": self._secret})
+            data={
+                "grant_type": "client_credentials",
+                "client_id": self._client_id,
+                "client_secret": self._secret,
+            },
+        )
         resp.raise_for_status()
         body = resp.json()
         import time as _t
@@ -121,8 +127,8 @@ class LlmgwServiceEmbedder:
         resp = self._client.post(
             self._url,
             headers={"Authorization": f"Bearer {self._bearer()}"},
-            json={"input": [text or " "], "model": self._model,
-                  "tenant_id": self._tenant})
+            json={"input": [text or " "], "model": self._model, "tenant_id": self._tenant},
+        )
         resp.raise_for_status()
         body = resp.json()
         dims = body.get("dimensions")
@@ -202,8 +208,10 @@ def build_card(
 ) -> dict[str, Any]:
     """matched 属性 → 对象卡片（card_text 带 rid 可追溯）。"""
     score = max((m["score"] for m in matched), default=0.0)
-    parts = [f"- {m['value_text']} ({m['property_rid'].rsplit('.', 2)[0].split('.')[-1]})"
-             for m in matched]
+    parts = [
+        f"- {m['value_text']} ({m['property_rid'].rsplit('.', 2)[0].split('.')[-1]})"
+        for m in matched
+    ]
     card_text = f"{individual_rid}:\n" + "\n".join(parts)
     return {
         "individual_rid": individual_rid,

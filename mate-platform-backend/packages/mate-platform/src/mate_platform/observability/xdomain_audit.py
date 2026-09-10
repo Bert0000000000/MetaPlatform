@@ -12,6 +12,7 @@ the platform's OBS channel. The data federation query path
 itself is implemented in the DATA-D8 schema migration (D8
 schema work in the next batch).
 """
+
 from __future__ import annotations
 
 import logging

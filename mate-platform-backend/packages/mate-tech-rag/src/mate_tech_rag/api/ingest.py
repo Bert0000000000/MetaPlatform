@@ -10,6 +10,7 @@ v3.0 Plan D: ingest writes to:
 - GraphRAG (Neo4j rag-graphrag, entity graph)
 - LightRAG (Neo4j lrag-graph, thematic graph)
 """
+
 from __future__ import annotations
 
 from mate_tech_rag.api.document_registry import mark_failed, mark_indexed, register_document
@@ -82,9 +83,12 @@ def ingest(req: IngestRequest, tenant_id: str = "") -> IngestResponse:
             if pg_store is not None:
                 try:
                     pg_store.save_chunk(
-                        chunk_id, req.document_id, chunk_text,
+                        chunk_id,
+                        req.document_id,
+                        chunk_text,
                         {**req.metadata, "tenant_id": tenant_id},
-                        embedding=vec, tenant_id=tenant_id or "default",
+                        embedding=vec,
+                        tenant_id=tenant_id or "default",
                     )
                 except Exception:
                     pass

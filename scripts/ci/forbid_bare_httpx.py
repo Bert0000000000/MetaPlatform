@@ -4,6 +4,7 @@ Forbids bare `httpx.Client()` / `httpx.AsyncClient()` in app-* and
 mate-platform / mate-clients source code; the platforms must go
 through mate-clients.security.BearerAuth + OutgoingAuthMiddleware.
 """
+
 from __future__ import annotations
 
 import re

@@ -8,6 +8,7 @@ underlying InMemoryHybridClient / GraphRAGClient are global
 singletons, the registry lets the search handler filter hits to only
 those documents the requesting tenant owns.
 """
+
 from __future__ import annotations
 
 import threading
@@ -65,9 +66,7 @@ def register_document(
         return rec
 
 
-def mark_indexed(
-    tenant_id: str, document_id: str, chunk_count: int
-) -> DocumentRecord | None:
+def mark_indexed(tenant_id: str, document_id: str, chunk_count: int) -> DocumentRecord | None:
     """Transition a document to INDEXED after successful fan-out."""
     with _lock:
         store = _REGISTRY.setdefault(tenant_id, {})
@@ -80,9 +79,7 @@ def mark_indexed(
         return rec
 
 
-def mark_failed(
-    tenant_id: str, document_id: str, error: str
-) -> DocumentRecord | None:
+def mark_failed(tenant_id: str, document_id: str, error: str) -> DocumentRecord | None:
     """Transition a document to FAILED."""
     with _lock:
         store = _REGISTRY.setdefault(tenant_id, {})

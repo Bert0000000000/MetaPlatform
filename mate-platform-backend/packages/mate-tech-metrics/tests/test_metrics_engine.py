@@ -4,6 +4,7 @@ Covers happy-path, error, and timeout scenarios for the
 ``DbtMetricsEngine`` (subprocess-based) and the
 ``AsyncMetricsClient`` delegation layer.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -21,8 +22,11 @@ class _MockProcess:
     """Minimal mock of asyncio.subprocess.Process."""
 
     def __init__(
-        self, *, returncode: int = 0,
-        stdout: bytes = b"", stderr: bytes = b"",
+        self,
+        *,
+        returncode: int = 0,
+        stdout: bytes = b"",
+        stderr: bytes = b"",
     ) -> None:
         self.returncode = returncode
         self._stdout = stdout
@@ -92,11 +96,14 @@ async def test_dbt_compute_metric_failure() -> None:
         stderr=b"Compilation Error in model stg_orders\n",
     )
     engine = DbtMetricsEngine(timeout_seconds=10)
-    with patch(
-        "mate_tech_metrics.services.dbt_engine.asyncio.create_subprocess_exec",
-        new_callable=AsyncMock,
-        return_value=proc,
-    ), pytest.raises(DbtMetricsError) as exc_info:
+    with (
+        patch(
+            "mate_tech_metrics.services.dbt_engine.asyncio.create_subprocess_exec",
+            new_callable=AsyncMock,
+            return_value=proc,
+        ),
+        pytest.raises(DbtMetricsError) as exc_info,
+    ):
         await engine.compute_metric("mtc-bad")
 
     assert exc_info.value.returncode == 1
@@ -115,11 +122,14 @@ async def test_dbt_compute_metric_timeout() -> None:
     proc.communicate = slow_communicate  # type: ignore[method-assign]
 
     engine = DbtMetricsEngine(timeout_seconds=0.1)
-    with patch(
-        "mate_tech_metrics.services.dbt_engine.asyncio.create_subprocess_exec",
-        new_callable=AsyncMock,
-        return_value=proc,
-    ), pytest.raises(DbtMetricsError) as exc_info:
+    with (
+        patch(
+            "mate_tech_metrics.services.dbt_engine.asyncio.create_subprocess_exec",
+            new_callable=AsyncMock,
+            return_value=proc,
+        ),
+        pytest.raises(DbtMetricsError) as exc_info,
+    ):
         await engine.compute_metric("mtc-slow")
 
     assert "timed out" in str(exc_info.value).lower()
@@ -162,14 +172,19 @@ async def test_dbt_get_lineage_success() -> None:
 async def test_dbt_get_lineage_failure() -> None:
     """dbt list fails → DbtMetricsError."""
     proc = _MockProcess(
-        returncode=2, stdout=b"", stderr=b"dbt project not found\n",
+        returncode=2,
+        stdout=b"",
+        stderr=b"dbt project not found\n",
     )
     engine = DbtMetricsEngine(timeout_seconds=10)
-    with patch(
-        "mate_tech_metrics.services.dbt_engine.asyncio.create_subprocess_exec",
-        new_callable=AsyncMock,
-        return_value=proc,
-    ), pytest.raises(DbtMetricsError) as exc_info:
+    with (
+        patch(
+            "mate_tech_metrics.services.dbt_engine.asyncio.create_subprocess_exec",
+            new_callable=AsyncMock,
+            return_value=proc,
+        ),
+        pytest.raises(DbtMetricsError) as exc_info,
+    ):
         await engine.get_lineage("mtc-bad")
     assert exc_info.value.returncode == 2
 
@@ -196,7 +211,7 @@ async def test_dbt_get_lineage_empty_output() -> None:
 async def test_dbt_get_values_success() -> None:
     """dbt run-operation returns JSON array → parsed values."""
     stdout = (
-        b'Running with dbt=1.7.0\n'
+        b"Running with dbt=1.7.0\n"
         b'[{"date": "2026-08-01", "value": 12500.0}, '
         b'{"date": "2026-08-02", "value": 13200.0}]\n'
     )
@@ -227,14 +242,19 @@ async def test_dbt_get_values_success() -> None:
 async def test_dbt_get_values_failure() -> None:
     """dbt run-operation fails → DbtMetricsError."""
     proc = _MockProcess(
-        returncode=1, stdout=b"", stderr=b"Macro not found\n",
+        returncode=1,
+        stdout=b"",
+        stderr=b"Macro not found\n",
     )
     engine = DbtMetricsEngine(timeout_seconds=10)
-    with patch(
-        "mate_tech_metrics.services.dbt_engine.asyncio.create_subprocess_exec",
-        new_callable=AsyncMock,
-        return_value=proc,
-    ), pytest.raises(DbtMetricsError) as exc_info:
+    with (
+        patch(
+            "mate_tech_metrics.services.dbt_engine.asyncio.create_subprocess_exec",
+            new_callable=AsyncMock,
+            return_value=proc,
+        ),
+        pytest.raises(DbtMetricsError) as exc_info,
+    ):
         await engine.get_values("mtc-bad", expression="SUM(x)")
     assert "Macro not found" in exc_info.value.stderr
 
@@ -308,10 +328,15 @@ async def test_dbt_test_metric_failure() -> None:
 async def test_metrics_client_delegates_compute() -> None:
     """AsyncMetricsClient.compute_metric delegates to DbtMetricsEngine."""
     mock_dbt = MagicMock(spec=DbtMetricsEngine)
-    mock_dbt.compute_metric = AsyncMock(return_value=MagicMock(
-        metric_id="mtc-001", status="success", returncode=0,
-        stdout="", stderr="",
-    ))
+    mock_dbt.compute_metric = AsyncMock(
+        return_value=MagicMock(
+            metric_id="mtc-001",
+            status="success",
+            returncode=0,
+            stdout="",
+            stderr="",
+        )
+    )
     client = AsyncMetricsClient(
         base_url="http://localhost",
         dbt_engine=mock_dbt,  # type: ignore[arg-type]
@@ -325,9 +350,13 @@ async def test_metrics_client_delegates_compute() -> None:
 async def test_metrics_client_delegates_lineage() -> None:
     """AsyncMetricsClient.get_lineage delegates to DbtMetricsEngine."""
     mock_dbt = MagicMock(spec=DbtMetricsEngine)
-    mock_dbt.get_lineage = AsyncMock(return_value=MagicMock(
-        metric_id="mtc-002", status="success", lineage=[],
-    ))
+    mock_dbt.get_lineage = AsyncMock(
+        return_value=MagicMock(
+            metric_id="mtc-002",
+            status="success",
+            lineage=[],
+        )
+    )
     client = AsyncMetricsClient(
         base_url="http://localhost",
         dbt_engine=mock_dbt,  # type: ignore[arg-type]
@@ -341,16 +370,22 @@ async def test_metrics_client_delegates_lineage() -> None:
 async def test_metrics_client_delegates_values() -> None:
     """AsyncMetricsClient.get_values delegates to DbtMetricsEngine."""
     mock_dbt = MagicMock(spec=DbtMetricsEngine)
-    mock_dbt.get_values = AsyncMock(return_value=MagicMock(
-        metric_id="mtc-003", status="success", values=[],
-    ))
+    mock_dbt.get_values = AsyncMock(
+        return_value=MagicMock(
+            metric_id="mtc-003",
+            status="success",
+            values=[],
+        )
+    )
     client = AsyncMetricsClient(
         base_url="http://localhost",
         dbt_engine=mock_dbt,  # type: ignore[arg-type]
     )
     result = await client.get_values("mtc-003", expression="SUM(x)")
     mock_dbt.get_values.assert_called_once_with(
-        "mtc-003", expression="SUM(x)", limit=100,
+        "mtc-003",
+        expression="SUM(x)",
+        limit=100,
     )
     assert result.metric_id == "mtc-003"
 

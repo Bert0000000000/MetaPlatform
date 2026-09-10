@@ -1,4 +1,5 @@
 """mate_platform.security — unified PII engine (D7)."""
+
 from .pii import (
     ALL_KINDS,
     PATTERNS,

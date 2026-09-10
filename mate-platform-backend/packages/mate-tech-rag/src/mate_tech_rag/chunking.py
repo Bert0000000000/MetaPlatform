@@ -144,11 +144,17 @@ class MarkdownChunker:
                 heading_prefix = lines[0] if self.HEADING_RE.match(lines[0]) else ""
                 rest = lines[1] if len(lines) > 1 else ""
                 if heading_prefix:
-                    sub = self._recursive.chunk(rest, chunk_size=max(chunk_size - len(heading_prefix) - 1, 100), overlap=overlap)
+                    sub = self._recursive.chunk(
+                        rest,
+                        chunk_size=max(chunk_size - len(heading_prefix) - 1, 100),
+                        overlap=overlap,
+                    )
                     for s in sub:
                         final.append(heading_prefix + "\n" + s)
                 else:
-                    final.extend(self._recursive.chunk(section, chunk_size=chunk_size, overlap=overlap))
+                    final.extend(
+                        self._recursive.chunk(section, chunk_size=chunk_size, overlap=overlap)
+                    )
 
         return final
 
@@ -263,7 +269,11 @@ class SlidingWindowChunker:
         step = chunk_size - overlap
         if step <= 0:
             step = 1
-        return [text[i : i + chunk_size] for i in range(0, len(text), step) if text[i : i + chunk_size].strip()]
+        return [
+            text[i : i + chunk_size]
+            for i in range(0, len(text), step)
+            if text[i : i + chunk_size].strip()
+        ]
 
 
 # ---------------------------------------------------------------------------

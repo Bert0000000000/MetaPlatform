@@ -1,4 +1,5 @@
 """W5-7 mate-tech-agent 深度测试 (S1-S4 E2E)."""
+
 from __future__ import annotations
 
 

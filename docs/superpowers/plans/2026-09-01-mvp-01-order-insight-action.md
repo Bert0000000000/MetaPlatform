@@ -36,6 +36,7 @@
 ### Task 1: 固化 Employee Runtime 与不可变 Artifact 契约
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-kernel/src/mate_kernel/employee/__init__.py`
 - Create: `mate-platform-backend/packages/mate-kernel/src/mate_kernel/employee/contracts.py`
 - Create: `mate-platform-backend/packages/mate-kernel/src/mate_kernel/artifact/__init__.py`
@@ -53,6 +54,7 @@
 - Test: `mate-platform-backend/packages/mate-kernel/tests/test_artifact_contracts.py`
 
 **Interfaces:**
+
 - Produces: `RunContext`, `LeaseToken`, `ModelReceipt`, `ArtifactEnvelope`, `ReportArtifact`, `ActionPlan`, `ApprovalRecord`, `ExecutionReceipt` and `content_digest(object_type: str, schema_version: str, model: BaseModel) -> str`.
 - Consumes: Pydantic 2 and UTC ISO-8601 timestamps.
 
@@ -123,6 +125,7 @@ git commit -m "feat(kernel): define employee runtime and artifact contracts"
 ### Task 2: 用 Alembic 建立订单、Run Ledger 与 Artifact Schema
 
 **Files:**
+
 - Create: `mate-platform-backend/alembic/versions/20260901_0016_employee_runtime_order_artifacts.py`
 - Create: `mate-platform-backend/docker-compose.test-postgres.yml`
 - Create: `scripts/test-mvp-postgres.ps1`
@@ -137,6 +140,7 @@ git commit -m "feat(kernel): define employee runtime and artifact contracts"
 - Create: `mate-platform-backend/tests/architecture/test_order_review_schema_authority.py`
 
 **Interfaces:**
+
 - Consumes: Task 1 UUID and Digest fields.
 - Produces: MetaPlatform 权威 control tables `employee_definitions`, `employee_versions`, `employee_instances`, `employee_assignments`, `legacy_employee_id_map` 及其最小 repository/API；runtime tables `business_sessions`, `work_items`, `employee_runs`, `host_sessions`, `execution_leases`, `checkpoints`, `runtime_commands`; immutable object tables `artifacts`, `action_plans`, `approval_records`, `execution_receipts`; mutable/append-only consumption authority `approval_usage_state`, `approval_consumptions`; `side_effect_ledger`; and existing order-review tables under Alembic ownership. `mate-tech-dw` 只暴露兼容迁移读取投影，不接受员工控制写入。
 
@@ -189,12 +193,14 @@ git commit -m "feat(order): migrate runtime and artifact schema"
 ### Task 3: 实现 Run Ledger CAS、Lease fencing 与副作用台账
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/runtime/__init__.py`
 - Create: `mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/runtime/repository.py`
 - Create: `mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/runtime/service.py`
 - Test: `mate-platform-backend/packages/mate-tech-orchestrator/tests/test_runtime_repository_postgres.py`
 
 **Interfaces:**
+
 - Consumes: `RunContext`, `LeaseToken` from Task 1 and tables from Task 2.
 - Produces: `create_business_session(...) -> BusinessSession`; `create_work_item(...) -> WorkItem`; `attach_host_session(...) -> tuple[HostSession, ExecutionLease]`; `save_checkpoint(...) -> Checkpoint`; `transition_run(run_id: UUID, expected_state_version: int, command: RunCommand) -> EmployeeRun`; `assert_current_lease(token: LeaseToken) -> None`; `execute_once(key: SideEffectKey, operation: Callable[[], T]) -> T`.
 
@@ -269,6 +275,7 @@ git commit -m "feat(runtime): add run ledger and lease fencing"
 ### Task 4: 落实订单双主体授权和策略水位
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-platform/src/mate_platform/authz/employee.py`
 - Create: `mate-platform-backend/packages/mate-clients/src/mate_clients/openfga.py`
 - Create: `mate-platform-backend/packages/mate-clients/src/mate_clients/opa.py`
@@ -294,6 +301,7 @@ git commit -m "feat(runtime): add run ledger and lease fencing"
 - Test: `mate-platform-backend/tests/security/test_order_rls_pooling.py`
 
 **Interfaces:**
+
 - Consumes: current verified Keycloak human login, WorkItem/Run/Lease from Tasks 1-3, OpenFGA relationship checks, OPA context policy, PostgreSQL RLS, and the already completed/committed Production Convergence Task 1 toolchain/evidence infrastructure (`scripts/run-plan-tool.ps1` plus `acceptance/toolchain.lock.yaml`). It does not require any component production Gate to be PASSED.
 - Produces: `authorize_employee_action(auth: EmployeeAuthContext, resource: ResourceRef, action: str, risk: RiskContext) -> AuthorizationDecision` with decision ID, policy/assignment/revocation watermarks and deny reasons.
 
@@ -362,6 +370,7 @@ git commit -m "feat(authz): enforce dual-principal order policy"
 ### Task 5: 把订单证据、计划、审批和回执拆成不可变对象链
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/order_review/artifacts.py`
 - Create: `mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/order_review/source.py`
 - Create: `mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/order_review/source_config.py`
@@ -372,6 +381,7 @@ git commit -m "feat(authz): enforce dual-principal order policy"
 - Test: `mate-platform-backend/packages/mate-tech-orchestrator/tests/test_order_source_adapter.py`
 
 **Interfaces:**
+
 - Consumes: Task 1 Artifact contracts and Task 3 runtime service.
 - Produces: `OrderSource.load_order(tenant_id, order_id) -> OrderSnapshot`; `build_order_report(snapshot, evidence, run_context) -> ReportArtifact`; `propose_follow_up(report_digest, order_version) -> ActionPlan`; `approve_action(plan_digest, evidence_digest, approver) -> ApprovalRecord`; `execute_approved_action(...) -> ExecutionReceipt`.
 
@@ -430,6 +440,7 @@ git commit -m "feat(order): bind approval to immutable action plan"
 ### Task 6: 暴露稳定的数字员工 MCP 元工具和订单工具
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/tools/employee_runtime.py`
 - Create: `mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/tools/order_insight.py`
 - Create: `mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/resources/artifact.py`
@@ -450,6 +461,7 @@ git commit -m "feat(order): bind approval to immutable action plan"
 - Test: `mate-platform-backend/contracts/tests/test_order_runtime_contract.py`
 
 **Interfaces:**
+
 - Consumes: runtime, authorization and order APIs from Tasks 3-5 plus verified JWT claims.
 - Produces: `BootstrapCallContext`, `RuntimeToolCallContext`, `MCPServer.call_tool(name, arguments, context: BootstrapCallContext | RuntimeToolCallContext)` and MCP tools `employee.bootstrap`, `employee.resume`, `order.inspect`, `order.propose_follow_up`, `order.confirm_action`; each returns `structuredContent` and an Artifact resource link.
 
@@ -531,6 +543,7 @@ git commit -m "feat(mcp): expose order employee runtime tools"
 ### Task 7: 交付 Artifact 查看、人工确认和真实订单 E2E
 
 **Files:**
+
 - Create: `metaplatform-frontend/packages/shared/src/renderers/ArtifactEnvelopeRenderer.tsx`
 - Create: `metaplatform-frontend/packages/shared/src/renderers/ArtifactEnvelopeRenderer.test.tsx`
 - Modify: `metaplatform-frontend/packages/shared/src/index.ts`
@@ -549,6 +562,7 @@ git commit -m "feat(mcp): expose order employee runtime tools"
 - Create: `acceptance/mvp-01-order-insight-action.md`
 
 **Interfaces:**
+
 - Consumes: Task 5 object chain and Task 6 API/MCP contract.
 - Produces: report/evidence/plan/approval/receipt UI and a real-source acceptance record.
 
@@ -564,7 +578,13 @@ Expected: FAIL because no test matches; an exit code 0 is a gate failure.
 
 ```tsx
 it("disables confirmation when plan and approval digests differ", () => {
-  render(<ArtifactEnvelopeRenderer report={report} plan={changedPlan} approval={approval} />);
+  render(
+    <ArtifactEnvelopeRenderer
+      report={report}
+      plan={changedPlan}
+      approval={approval}
+    />,
+  );
   expect(screen.getByRole("button", { name: "确认执行" })).toBeDisabled();
   expect(screen.getByText("计划已变化，需要重新审批")).toBeVisible();
 });
@@ -586,7 +606,8 @@ const bytes = concatBytes(
   new TextEncoder().encode(canonicalize(omitNullObjectFields(payload))),
 );
 const digest = hex(await crypto.subtle.digest("SHA-256", bytes));
-if (digest !== envelope.integrity.digest) return <Alert type="error" message="Artifact Digest 校验失败" />;
+if (digest !== envelope.integrity.digest)
+  return <Alert type="error" message="Artifact Digest 校验失败" />;
 ```
 
 - [ ] **Step 5: Run typecheck, component tests and real-source E2E**
@@ -613,6 +634,7 @@ git commit -m "feat(order): deliver auditable insight and action MVP"
 ### Task 8: 建立 MVP1 生产准入与第二宿主架构门
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-kernel/src/mate_kernel/employee/package.py`
 - Create: `mate-platform-backend/packages/mate-clients/src/mate_clients/host_connector.py`
 - Modify: `mate-platform-backend/packages/mate-clients/src/mate_clients/marketplace/oci.py`
@@ -633,6 +655,7 @@ git commit -m "feat(order): deliver auditable insight and action MVP"
 - Create: `acceptance/gates/mvp-01-production-gates.md`
 
 **Interfaces:**
+
 - Consumes: stable MCP tools and Run/Lease/authorization contracts from Tasks 3-6.
 - Produces: declarative package load, host capability evidence and production gate record; it consumes the Task 2 EmployeeDefinition/Version/Instance/Assignment authority and creates no second business runtime or control authority.
 

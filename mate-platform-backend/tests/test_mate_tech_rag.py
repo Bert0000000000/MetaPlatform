@@ -1,4 +1,5 @@
 """mate-tech-rag 3-strategy router tests (v0.2: GraphRAG/FlowRAG aligned)."""
+
 from __future__ import annotations
 
 import sys
@@ -188,6 +189,7 @@ def test_mate_common_error_typed() -> None:
     assert payload["message"] == "kb not found"
     assert payload["details"] == {"kb_id": "x"}
 
+
 def test_ragflow_parse_paragraphs(client: TestClient) -> None:
     """RAGFlow parses paragraphs into chunks, fans out to 3 indices."""
     r = client.post(
@@ -239,6 +241,7 @@ def test_ragflow_parse_validation_empty_content(client: TestClient) -> None:
     )
     assert r.status_code == 422
 
+
 def test_upload_text_file_fanout(client: TestClient) -> None:
     """Upload a .txt file -> RAGFlow parses -> 3-index fan-out."""
     text_content = (
@@ -288,6 +291,7 @@ def test_upload_empty_file_400(client: TestClient) -> None:
         files={"file": ("empty.txt", b"", "text/plain")},
     )
     assert r.status_code == 400
+
 
 def test_embedder_factory_default() -> None:
     """Default embedder is local tiny (no API key required)."""

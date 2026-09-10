@@ -2,6 +2,7 @@
 
 纯函数：两个 ObjectType 的属性级 diff，供 REST 与 rollback 校验复用。
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -29,7 +30,8 @@ def diff_object_types(old: ObjectType, new: ObjectType) -> dict[str, Any]:
     added = sorted(set(b) - set(a))
     removed = sorted(set(a) - set(b))
     changed = [
-        slug for slug in sorted(set(a) & set(b))
+        slug
+        for slug in sorted(set(a) & set(b))
         if (a[slug]["type_id"], a[slug]["nullable"]) != (b[slug]["type_id"], b[slug]["nullable"])
     ]
     return {

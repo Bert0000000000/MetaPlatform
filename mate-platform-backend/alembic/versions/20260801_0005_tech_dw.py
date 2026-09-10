@@ -13,6 +13,7 @@ Revision ID: 0005_tech_dw
 Revises: 0004_app_wfe
 Create Date: 2026-08-01
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence

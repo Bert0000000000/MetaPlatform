@@ -1,4 +1,5 @@
 """Tests for password hashing and JWT helpers."""
+
 from __future__ import annotations
 
 from mate_tech_iam.services.security import (

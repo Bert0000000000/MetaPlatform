@@ -6,6 +6,7 @@ GOVERN-03 (2026-08-07): 所有 store 操作强制 ``RequestContext``，namespace
 拼接 ``f"ont.{ctx.tenant_id}.{namespace}"``。``tenant_id`` 不再允许 ``None``，
 payload 字段禁止覆盖 tenant 前缀。
 """
+
 from __future__ import annotations
 
 import time
@@ -55,9 +56,7 @@ def _coerce_tenant_ns(ctx: RequestContextLike, namespace: str | None) -> str:
     # namespace segment — it would otherwise leak through unchanged and
     # produce ``ont.<ctx>.<ont.other.acme>``.
     if ns.startswith("ont.") or ns.startswith("ont:"):
-        raise TenantAccessError(
-            f"namespace must be logical segment only, not qualified: {ns!r}"
-        )
+        raise TenantAccessError(f"namespace must be logical segment only, not qualified: {ns!r}")
     return f"ont.{tenant_id}.{ns}"
 
 
@@ -118,7 +117,11 @@ class InstanceStore:
         )
         self._instances[iid] = inst
         logger.info(
-            "instance.created", id=iid, class_id=class_id, tenant_id=ctx.tenant_id, ns=ns,
+            "instance.created",
+            id=iid,
+            class_id=class_id,
+            tenant_id=ctx.tenant_id,
+            ns=ns,
         )
         return inst
 
@@ -180,12 +183,19 @@ class InstanceStore:
         # caller does not own (defence in depth on top of the per-instance
         # tenant filter).
         if self.get_instance(ctx, src_id) is None:
-            raise TenantAccessError(f"src instance '{src_id}' not visible to tenant {ctx.tenant_id}")
+            raise TenantAccessError(
+                f"src instance '{src_id}' not visible to tenant {ctx.tenant_id}"
+            )
         if self.get_instance(ctx, dst_id) is None:
-            raise TenantAccessError(f"dst instance '{dst_id}' not visible to tenant {ctx.tenant_id}")
+            raise TenantAccessError(
+                f"dst instance '{dst_id}' not visible to tenant {ctx.tenant_id}"
+            )
         rid = str(uuid.uuid4())[:12]
         rel = Relation(
-            id=rid, type=type_, src_id=src_id, dst_id=dst_id,
+            id=rid,
+            type=type_,
+            src_id=src_id,
+            dst_id=dst_id,
             properties=properties or {},
         )
         self._relations[rid] = rel

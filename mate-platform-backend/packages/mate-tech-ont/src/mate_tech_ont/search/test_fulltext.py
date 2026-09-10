@@ -1,4 +1,5 @@
 """Full-text search tests (ST-5.4.10)."""
+
 from __future__ import annotations
 
 from mate_tech_ont.search.fulltext import (  # pyright: ignore[reportPrivateUsage]

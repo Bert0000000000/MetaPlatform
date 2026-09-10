@@ -13,6 +13,7 @@ For each service.yaml we assert:
    default) AND at least one HTTP operation carries an explicit per-operation
    ``security:`` reference.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -50,9 +51,7 @@ class TestServiceSecuritySegments:
         doc = _load(service_file)
         schemes = doc.get("components", {}).get("securitySchemes", {})
         assert schemes, f"{service_file.name} has no components.securitySchemes"
-        assert "bearerAuth" in schemes, (
-            f"{service_file.name} securitySchemes missing bearerAuth"
-        )
+        assert "bearerAuth" in schemes, f"{service_file.name} securitySchemes missing bearerAuth"
         assert "tenantHeader" in schemes, (
             f"{service_file.name} securitySchemes missing tenantHeader"
         )
@@ -76,9 +75,7 @@ class TestServiceSecuritySegments:
     def test_contract_and_endpoints_declare_security(self, service_file: Path) -> None:
         doc = _load(service_file)
         # The contract as a whole must declare a security default.
-        assert doc.get("security"), (
-            f"{service_file.name} has no top-level security declaration"
-        )
+        assert doc.get("security"), f"{service_file.name} has no top-level security declaration"
         # At least one operation must carry an explicit per-operation security.
         ops_with_security = 0
         for methods in doc.get("paths", {}).values():
@@ -94,8 +91,26 @@ def test_all_twenty_one_services_covered() -> None:
     """Guard against silent contract drift in the canonical 21-service set."""
     names = {p.stem for p in SERVICE_FILES}
     expected = {
-        "a2a", "agent", "analytics", "apphub", "arch", "copilot", "dashboard",
-        "data", "deep-research", "dw", "iam", "kb", "llmgw", "marketplace",
-        "mcp", "msg", "obs", "ont", "orchestrator", "rag", "wfe",
+        "a2a",
+        "agent",
+        "analytics",
+        "apphub",
+        "arch",
+        "copilot",
+        "dashboard",
+        "data",
+        "deep-research",
+        "dw",
+        "iam",
+        "kb",
+        "llmgw",
+        "marketplace",
+        "mcp",
+        "msg",
+        "obs",
+        "ont",
+        "orchestrator",
+        "rag",
+        "wfe",
     }
     assert names == expected, f"service contract set drifted: {names ^ expected}"

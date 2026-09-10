@@ -38,7 +38,7 @@ class LinkType:
     # display name，双向可读 —— department.employees / employee.department）。
     src_display_name: str = ""  # 站在 src 视角读向 dst 的名字（复数）
     dst_display_name: str = ""  # 站在 dst 视角读向 src 的名字
-    description: str = ""       # EXP-04：关系语义描述（链接应能回答一个领域问题）
+    description: str = ""  # EXP-04：关系语义描述（链接应能回答一个领域问题）
 
 
 def check_cardinality(

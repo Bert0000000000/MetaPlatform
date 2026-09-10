@@ -23,6 +23,7 @@ The store is tenant-scoped: every method takes ``tenant_id`` from
 the request context (never from the body / path) and refuses
 cross-tenant reads / writes (SEC-TENANT-01 hard rule 3).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -156,9 +157,7 @@ class AlertRuleStore:
         # tenant is the strongest enforceable bound here).
         for existing in bucket.values():
             if existing.alert == alert and existing.status != "deleted":
-                raise ValueError(
-                    f"alert rule with name {alert!r} already exists in this tenant"
-                )
+                raise ValueError(f"alert rule with name {alert!r} already exists in this tenant")
         rule_id = self._next_id()
         rule = ManagedAlertRule(
             id=rule_id,
@@ -198,9 +197,7 @@ class AlertRuleStore:
         if existing is None:
             raise KeyError(rule_id)
         if existing.system:
-            raise PermissionError(
-                f"system alert rule {rule_id!r} is immutable"
-            )
+            raise PermissionError(f"system alert rule {rule_id!r} is immutable")
         # Merge patches
         new_alert = alert if alert is not None else existing.alert
         new_expr = expr if expr is not None else existing.expr
@@ -256,9 +253,7 @@ class AlertRuleStore:
         if existing is None:
             return False
         if existing.system:
-            raise PermissionError(
-                f"system alert rule {rule_id!r} is immutable"
-            )
+            raise PermissionError(f"system alert rule {rule_id!r} is immutable")
         # Soft-delete: keep the row for audit but mark status=deleted.
         bucket[rule_id] = ManagedAlertRule(
             id=existing.id,
@@ -303,9 +298,7 @@ class AlertRuleStore:
         if not for_duration or not for_duration.strip():
             raise ValueError("for_duration required")
         if severity not in VALID_SEVERITIES:
-            raise ValueError(
-                f"severity must be one of {VALID_SEVERITIES}, got {severity!r}"
-            )
+            raise ValueError(f"severity must be one of {VALID_SEVERITIES}, got {severity!r}")
         if not description or not description.strip():
             raise ValueError("description required")
 

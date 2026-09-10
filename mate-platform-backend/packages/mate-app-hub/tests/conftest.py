@@ -1,4 +1,5 @@
 """Shared pytest fixtures for mate-app-hub tests."""
+
 from __future__ import annotations
 
 import os

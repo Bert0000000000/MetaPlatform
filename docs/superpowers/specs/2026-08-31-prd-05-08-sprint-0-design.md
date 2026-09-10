@@ -111,11 +111,11 @@ Node library / canvas / inspector
 
 每批均以测试先行：
 
-| 批次 | 自动化覆盖 | 本地系统验收 |
-|---|---|---|
-| A | 状态机、可信 actor、租户隔离、preview 锁定、slug 并发冲突、merge archive、审计/Outbox | Docker PostgreSQL 重启后 proposal/dedup 事实可查询 |
-| B | 排序、能力变更失效、候选约束、SSE 顺序、跨租户拒绝、依赖失败 | SuperAI SSE 事件及可读路由面板 |
-| C | Plan 版本冲突、节点/边约束、原子删除、错误态、全屏入口 | Docker 全栈生产构建 Playwright，不使用 mock 或固定等待 |
+| 批次 | 自动化覆盖                                                                            | 本地系统验收                                           |
+| ---- | ------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| A    | 状态机、可信 actor、租户隔离、preview 锁定、slug 并发冲突、merge archive、审计/Outbox | Docker PostgreSQL 重启后 proposal/dedup 事实可查询     |
+| B    | 排序、能力变更失效、候选约束、SSE 顺序、跨租户拒绝、依赖失败                          | SuperAI SSE 事件及可读路由面板                         |
+| C    | Plan 版本冲突、节点/边约束、原子删除、错误态、全屏入口                                | Docker 全栈生产构建 Playwright，不使用 mock 或固定等待 |
 
 通过上述测试仅表示代码级和 local Docker acceptance。真实 provider、RLS、staging、
 Sandbox L2、Temporal 运行时和 GA 仍为独立门禁。

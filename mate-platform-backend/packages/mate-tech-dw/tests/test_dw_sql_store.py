@@ -3,6 +3,7 @@
 Uses SQLite in-memory + Base.metadata.create_all to verify the SQL
 store's CRUD + tenant isolation for all 14 dw entities.
 """
+
 from __future__ import annotations
 
 # Tenant-scoped employee id constants (matches seed _emp_id)
@@ -43,8 +44,12 @@ _TENANT_B = "tenant-bigo"
 # ---------------------------------------------------------------------------
 def test_put_and_get_auth_login() -> None:
     entity = mem.DwAuthLogin(
-        id="dw-auth-x", tenant_id=_TENANT_A, employee_id=ACME_E1,
-        login_at="2026-08-01T09:00:00Z", ip="10.0.0.1", status="success",
+        id="dw-auth-x",
+        tenant_id=_TENANT_A,
+        employee_id=ACME_E1,
+        login_at="2026-08-01T09:00:00Z",
+        ip="10.0.0.1",
+        status="success",
     )
     sql.put_auth_login(_TENANT_A, entity)
 
@@ -62,9 +67,13 @@ def test_put_and_get_auth_login() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_collaboration() -> None:
     entity = mem.DwCollaboration(
-        id="dw-collab-x", tenant_id=_TENANT_A, employee_id=ACME_E1,
-        peer_employee_id=ACME_E2, session_id="sess-x",
-        started_at="2026-08-01T10:00:00Z", duration_ms=180_000,
+        id="dw-collab-x",
+        tenant_id=_TENANT_A,
+        employee_id=ACME_E1,
+        peer_employee_id=ACME_E2,
+        session_id="sess-x",
+        started_at="2026-08-01T10:00:00Z",
+        duration_ms=180_000,
     )
     sql.put_collaboration(_TENANT_A, entity)
 
@@ -80,8 +89,12 @@ def test_put_and_get_collaboration() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_commit() -> None:
     entity = mem.DwCommit(
-        id="dw-commit-x", tenant_id=_TENANT_A, employee_id=ACME_E1,
-        scope="kb", target_id="kb-doc-1", summary="test summary",
+        id="dw-commit-x",
+        tenant_id=_TENANT_A,
+        employee_id=ACME_E1,
+        scope="kb",
+        target_id="kb-doc-1",
+        summary="test summary",
         committed_at="2026-08-01T11:00:00Z",
     )
     sql.put_commit(_TENANT_A, entity)
@@ -98,9 +111,14 @@ def test_put_and_get_commit() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_document() -> None:
     entity = mem.DwDocument(
-        id="dw-doc-x", tenant_id=_TENANT_A, name="report.pdf",
-        kind="pdf", size_bytes=1_024, uploaded_by=ACME_E1,
-        uploaded_at="2026-08-01T12:00:00Z", kb_id="dw-kb-1",
+        id="dw-doc-x",
+        tenant_id=_TENANT_A,
+        name="report.pdf",
+        kind="pdf",
+        size_bytes=1_024,
+        uploaded_by=ACME_E1,
+        uploaded_at="2026-08-01T12:00:00Z",
+        kb_id="dw-kb-1",
     )
     sql.put_document(_TENANT_A, entity)
 
@@ -117,9 +135,14 @@ def test_put_and_get_document() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_employee_with_kb_ids() -> None:
     entity = mem.DwEmployee(
-        id="dw-emp-x", tenant_id=_TENANT_A, name="Test Agent",
-        code="EMP-T-001", role="ontology", status="active",
-        model_id="model-openai", kb_ids=("dw-kb-1", "dw-kb-2", "dw-kb-3"),
+        id="dw-emp-x",
+        tenant_id=_TENANT_A,
+        name="Test Agent",
+        code="EMP-T-001",
+        role="ontology",
+        status="active",
+        model_id="model-openai",
+        kb_ids=("dw-kb-1", "dw-kb-2", "dw-kb-3"),
     )
     sql.put_employee(_TENANT_A, entity)
 
@@ -134,8 +157,12 @@ def test_put_and_get_employee_with_kb_ids() -> None:
 
 def test_put_employee_empty_kb_ids() -> None:
     entity = mem.DwEmployee(
-        id="dw-emp-y", tenant_id=_TENANT_A, name="No KB",
-        code="EMP-T-002", role="workflow", status="idle",
+        id="dw-emp-y",
+        tenant_id=_TENANT_A,
+        name="No KB",
+        code="EMP-T-002",
+        role="workflow",
+        status="idle",
         model_id="model-doubao",
     )
     sql.put_employee(_TENANT_A, entity)
@@ -150,10 +177,14 @@ def test_put_employee_empty_kb_ids() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_employee_task_with_finished_at() -> None:
     entity = mem.DwEmployeeTask(
-        id="dw-task-x", tenant_id=_TENANT_A, employee_id=ACME_E1,
-        title="Completed task", status="success",
+        id="dw-task-x",
+        tenant_id=_TENANT_A,
+        employee_id=ACME_E1,
+        title="Completed task",
+        status="success",
         started_at="2026-08-01T13:00:00Z",
-        finished_at="2026-08-01T13:05:00Z", duration_ms=300_000,
+        finished_at="2026-08-01T13:05:00Z",
+        duration_ms=300_000,
     )
     sql.put_employee_task(_TENANT_A, entity)
 
@@ -167,8 +198,11 @@ def test_put_and_get_employee_task_with_finished_at() -> None:
 
 def test_put_employee_task_null_finished_at() -> None:
     entity = mem.DwEmployeeTask(
-        id="dw-task-y", tenant_id=_TENANT_A, employee_id=ACME_E1,
-        title="Running task", status="running",
+        id="dw-task-y",
+        tenant_id=_TENANT_A,
+        employee_id=ACME_E1,
+        title="Running task",
+        status="running",
         started_at="2026-08-01T14:00:00Z",
     )
     sql.put_employee_task(_TENANT_A, entity)
@@ -184,8 +218,12 @@ def test_put_employee_task_null_finished_at() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_evaluation() -> None:
     entity = mem.DwEvaluation(
-        id="dw-eval-x", tenant_id=_TENANT_A, employee_id=ACME_E1,
-        qa_set_id="qa-1", score=92.5, passed=True,
+        id="dw-eval-x",
+        tenant_id=_TENANT_A,
+        employee_id=ACME_E1,
+        qa_set_id="qa-1",
+        score=92.5,
+        passed=True,
         evaluated_at="2026-08-01T15:00:00Z",
     )
     sql.put_evaluation(_TENANT_A, entity)
@@ -199,8 +237,12 @@ def test_put_and_get_evaluation() -> None:
 
 def test_put_evaluation_failed() -> None:
     entity = mem.DwEvaluation(
-        id="dw-eval-y", tenant_id=_TENANT_A, employee_id=ACME_E2,
-        qa_set_id="qa-2", score=55.0, passed=False,
+        id="dw-eval-y",
+        tenant_id=_TENANT_A,
+        employee_id=ACME_E2,
+        qa_set_id="qa-2",
+        score=55.0,
+        passed=False,
         evaluated_at="2026-08-01T15:30:00Z",
     )
     sql.put_evaluation(_TENANT_A, entity)
@@ -216,8 +258,12 @@ def test_put_evaluation_failed() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_extract() -> None:
     entity = mem.DwExtract(
-        id="dw-extract-x", tenant_id=_TENANT_A, employee_id=ACME_E1,
-        source="kb", source_id="dw-kb-1", extracted_facts=42,
+        id="dw-extract-x",
+        tenant_id=_TENANT_A,
+        employee_id=ACME_E1,
+        source="kb",
+        source_id="dw-kb-1",
+        extracted_facts=42,
         extracted_at="2026-08-01T16:00:00Z",
     )
     sql.put_extract(_TENANT_A, entity)
@@ -234,8 +280,13 @@ def test_put_and_get_extract() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_knowledge_base() -> None:
     entity = mem.DwKnowledgeBase(
-        id="dw-kb-x", tenant_id=_TENANT_A, name="Test KB",
-        code="kb-test", docs=100, vectors=4096, owner=ACME_E1,
+        id="dw-kb-x",
+        tenant_id=_TENANT_A,
+        name="Test KB",
+        code="kb-test",
+        docs=100,
+        vectors=4096,
+        owner=ACME_E1,
         updated_at="2026-08-01T09:00:00Z",
     )
     sql.put_knowledge_base(_TENANT_A, entity)
@@ -253,8 +304,12 @@ def test_put_and_get_knowledge_base() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_learning_extract() -> None:
     entity = mem.DwLearningExtract(
-        id="dw-learn-ext-x", tenant_id=_TENANT_A, employee_id=ACME_E1,
-        scenario="cs-refund", extracted_at="2026-08-01T17:00:00Z", facts=7,
+        id="dw-learn-ext-x",
+        tenant_id=_TENANT_A,
+        employee_id=ACME_E1,
+        scenario="cs-refund",
+        extracted_at="2026-08-01T17:00:00Z",
+        facts=7,
     )
     sql.put_learning_extract(_TENANT_A, entity)
 
@@ -269,8 +324,12 @@ def test_put_and_get_learning_extract() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_learning_feedback() -> None:
     entity = mem.DwLearningFeedback(
-        id="dw-learn-fb-x", tenant_id=_TENANT_A, employee_id=ACME_E1,
-        scenario="cs-refund", rating=5, comment="great",
+        id="dw-learn-fb-x",
+        tenant_id=_TENANT_A,
+        employee_id=ACME_E1,
+        scenario="cs-refund",
+        rating=5,
+        comment="great",
         feedback_at="2026-08-01T18:00:00Z",
     )
     sql.put_learning_feedback(_TENANT_A, entity)
@@ -286,9 +345,13 @@ def test_put_and_get_learning_feedback() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_model() -> None:
     entity = mem.DwModel(
-        id="dw-model-x", tenant_id=_TENANT_A, provider="openai",
-        model_id="gpt-4o", display_name="GPT-4o",
-        modality="multimodal", enabled=True,
+        id="dw-model-x",
+        tenant_id=_TENANT_A,
+        provider="openai",
+        model_id="gpt-4o",
+        display_name="GPT-4o",
+        modality="multimodal",
+        enabled=True,
     )
     sql.put_model(_TENANT_A, entity)
 
@@ -302,9 +365,13 @@ def test_put_and_get_model() -> None:
 
 def test_put_model_disabled() -> None:
     entity = mem.DwModel(
-        id="dw-model-y", tenant_id=_TENANT_A, provider="anthropic",
-        model_id="claude-3", display_name="Claude 3",
-        modality="text", enabled=False,
+        id="dw-model-y",
+        tenant_id=_TENANT_A,
+        provider="anthropic",
+        model_id="claude-3",
+        display_name="Claude 3",
+        modality="text",
+        enabled=False,
     )
     sql.put_model(_TENANT_A, entity)
 
@@ -318,8 +385,13 @@ def test_put_model_disabled() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_tool() -> None:
     entity = mem.DwTool(
-        id="dw-tool-x", tenant_id=_TENANT_A, name="Search",
-        code="kb-search", kind="mcp", enabled=True, invocations=1280,
+        id="dw-tool-x",
+        tenant_id=_TENANT_A,
+        name="Search",
+        code="kb-search",
+        kind="mcp",
+        enabled=True,
+        invocations=1280,
     )
     sql.put_tool(_TENANT_A, entity)
 
@@ -336,9 +408,14 @@ def test_put_and_get_tool() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_trace() -> None:
     entity = mem.DwTrace(
-        id="dw-trace-x", tenant_id=_TENANT_A, employee_id=ACME_E1,
-        trace_id="trace-x", span_count=15, status="ok",
-        duration_ms=1500, started_at="2026-08-01T10:00:00Z",
+        id="dw-trace-x",
+        tenant_id=_TENANT_A,
+        employee_id=ACME_E1,
+        trace_id="trace-x",
+        span_count=15,
+        status="ok",
+        duration_ms=1500,
+        started_at="2026-08-01T10:00:00Z",
     )
     sql.put_trace(_TENANT_A, entity)
 
@@ -355,16 +432,26 @@ def test_put_and_get_trace() -> None:
 # ---------------------------------------------------------------------------
 def test_put_employee_upsert() -> None:
     entity = mem.DwEmployee(
-        id="dw-emp-up", tenant_id=_TENANT_A, name="Before",
-        code="EMP-UP-001", role="ontology", status="active",
-        model_id="model-openai", kb_ids=("dw-kb-1",),
+        id="dw-emp-up",
+        tenant_id=_TENANT_A,
+        name="Before",
+        code="EMP-UP-001",
+        role="ontology",
+        status="active",
+        model_id="model-openai",
+        kb_ids=("dw-kb-1",),
     )
     sql.put_employee(_TENANT_A, entity)
 
     updated = mem.DwEmployee(
-        id="dw-emp-up", tenant_id=_TENANT_A, name="After",
-        code="EMP-UP-001", role="app", status="idle",
-        model_id="model-anthropic", kb_ids=("dw-kb-2", "dw-kb-3"),
+        id="dw-emp-up",
+        tenant_id=_TENANT_A,
+        name="After",
+        code="EMP-UP-001",
+        role="app",
+        status="idle",
+        model_id="model-anthropic",
+        kb_ids=("dw-kb-2", "dw-kb-3"),
     )
     sql.put_employee(_TENANT_A, updated)
 
@@ -381,16 +468,30 @@ def test_put_employee_upsert() -> None:
 # Tenant isolation
 # ---------------------------------------------------------------------------
 def test_tenant_isolation_employees() -> None:
-    sql.put_employee(_TENANT_A, mem.DwEmployee(
-        id="dw-emp-a", tenant_id=_TENANT_A, name="A Employee",
-        code="EMP-A-001", role="ontology", status="active",
-        model_id="model-openai",
-    ))
-    sql.put_employee(_TENANT_B, mem.DwEmployee(
-        id="dw-emp-b", tenant_id=_TENANT_B, name="B Employee",
-        code="EMP-B-001", role="workflow", status="active",
-        model_id="model-anthropic",
-    ))
+    sql.put_employee(
+        _TENANT_A,
+        mem.DwEmployee(
+            id="dw-emp-a",
+            tenant_id=_TENANT_A,
+            name="A Employee",
+            code="EMP-A-001",
+            role="ontology",
+            status="active",
+            model_id="model-openai",
+        ),
+    )
+    sql.put_employee(
+        _TENANT_B,
+        mem.DwEmployee(
+            id="dw-emp-b",
+            tenant_id=_TENANT_B,
+            name="B Employee",
+            code="EMP-B-001",
+            role="workflow",
+            status="active",
+            model_id="model-anthropic",
+        ),
+    )
 
     a_emps = sql.list_employees(_TENANT_A)
     assert [e.id for e in a_emps] == ["dw-emp-a"]
@@ -404,24 +505,52 @@ def test_tenant_isolation_employees() -> None:
 
 
 def test_tenant_isolation_traces_and_tools() -> None:
-    sql.put_trace(_TENANT_A, mem.DwTrace(
-        id="dw-trace-a", tenant_id=_TENANT_A, employee_id=ACME_E1,
-        trace_id="trace-a", span_count=5, status="ok",
-        duration_ms=500, started_at="2026-08-01T10:00:00Z",
-    ))
-    sql.put_trace(_TENANT_B, mem.DwTrace(
-        id="dw-trace-b", tenant_id=_TENANT_B, employee_id=ACME_E2,
-        trace_id="trace-b", span_count=10, status="error",
-        duration_ms=1000, started_at="2026-08-01T11:00:00Z",
-    ))
-    sql.put_tool(_TENANT_A, mem.DwTool(
-        id="dw-tool-a", tenant_id=_TENANT_A, name="A Tool",
-        code="tool-a", kind="function",
-    ))
-    sql.put_tool(_TENANT_B, mem.DwTool(
-        id="dw-tool-b", tenant_id=_TENANT_B, name="B Tool",
-        code="tool-b", kind="mcp",
-    ))
+    sql.put_trace(
+        _TENANT_A,
+        mem.DwTrace(
+            id="dw-trace-a",
+            tenant_id=_TENANT_A,
+            employee_id=ACME_E1,
+            trace_id="trace-a",
+            span_count=5,
+            status="ok",
+            duration_ms=500,
+            started_at="2026-08-01T10:00:00Z",
+        ),
+    )
+    sql.put_trace(
+        _TENANT_B,
+        mem.DwTrace(
+            id="dw-trace-b",
+            tenant_id=_TENANT_B,
+            employee_id=ACME_E2,
+            trace_id="trace-b",
+            span_count=10,
+            status="error",
+            duration_ms=1000,
+            started_at="2026-08-01T11:00:00Z",
+        ),
+    )
+    sql.put_tool(
+        _TENANT_A,
+        mem.DwTool(
+            id="dw-tool-a",
+            tenant_id=_TENANT_A,
+            name="A Tool",
+            code="tool-a",
+            kind="function",
+        ),
+    )
+    sql.put_tool(
+        _TENANT_B,
+        mem.DwTool(
+            id="dw-tool-b",
+            tenant_id=_TENANT_B,
+            name="B Tool",
+            code="tool-b",
+            kind="mcp",
+        ),
+    )
 
     assert [t.id for t in sql.list_traces(_TENANT_A)] == ["dw-trace-a"]
     assert [t.id for t in sql.list_traces(_TENANT_B)] == ["dw-trace-b"]

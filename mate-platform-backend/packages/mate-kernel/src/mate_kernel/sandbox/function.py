@@ -136,13 +136,9 @@ def run_function(
                 sandbox_violated=v,
             )
 
-    header = (
-        "import json, sys\n"
-        "_args = json.loads(sys.argv[1])\n"
-    )
+    header = "import json, sys\n_args = json.loads(sys.argv[1])\n"
     footer = (
-        "_result = main(**_args)\n"
-        "sys.stdout.write(json.dumps({\"ok\": True, \"result\": _result}))\n"
+        '_result = main(**_args)\nsys.stdout.write(json.dumps({"ok": True, "result": _result}))\n'
     )
     body = header + textwrap.dedent(fn_source) + "\n" + footer
 
@@ -165,7 +161,8 @@ def run_function(
         # preexec_fn=None 而侥幸通过）。
         preexec_fn = (
             functools.partial(_set_limits, limits.cpu_seconds, limits.memory_mb)
-            if sys.platform != "win32" else None  # type: ignore[arg-type]
+            if sys.platform != "win32"
+            else None  # type: ignore[arg-type]
         )
 
         try:

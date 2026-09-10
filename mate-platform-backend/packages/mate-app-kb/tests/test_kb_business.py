@@ -13,6 +13,7 @@ Test setup follows test_kb_path_alias.py: install_auth is mocked, a
 fake middleware injects a RequestContext with a real tenant_id, and
 require_tenant runs naturally (no mock) so the tenant guard is real.
 """
+
 from __future__ import annotations
 
 import os
@@ -124,7 +125,10 @@ def client_tenant_b(outbox):
 
     fake_rag = RAGClient()
     fake_rag.search = lambda query, top_k=5, mode="AUTO", rerank_strategy=None: {
-        "query": query, "mode": mode, "total": 0, "hits": [],
+        "query": query,
+        "mode": mode,
+        "total": 0,
+        "hits": [],
     }
     fake_rag.stats = lambda: {"total_chunks": 0, "embedder_dim": 0}
 
@@ -147,12 +151,22 @@ def _seed_doc(tenant_id: str, doc_id: str, status: str = "uploaded"):
     from mate_app_kb.repositories.in_memory import KbDocument, put_document
 
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    put_document(tenant_id, KbDocument(
-        id=doc_id, tenant_id=tenant_id, collection_id="kb-sales",
-        document_id=doc_id, filename="test.md", size_bytes=100,
-        chunk_count=0, status=status, metadata={"source": "test"},
-        created_at=now, updated_at=now,
-    ))
+    put_document(
+        tenant_id,
+        KbDocument(
+            id=doc_id,
+            tenant_id=tenant_id,
+            collection_id="kb-sales",
+            document_id=doc_id,
+            filename="test.md",
+            size_bytes=100,
+            chunk_count=0,
+            status=status,
+            metadata={"source": "test"},
+            created_at=now,
+            updated_at=now,
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -423,7 +437,9 @@ def test_search_scoring_dedup_and_sort(client) -> None:
     fake_rag = RAGClient()
     # Two hits for the same document_id (dedup keeps highest score).
     fake_rag.search = lambda query, top_k=5, mode="AUTO", rerank_strategy=None: {
-        "query": query, "mode": mode, "total": 3,
+        "query": query,
+        "mode": mode,
+        "total": 3,
         "hits": [
             {"document_id": "doc-x", "score": 0.5, "content": "alpha"},
             {"document_id": "doc-x", "score": 0.9, "content": "alpha"},
@@ -435,9 +451,11 @@ def test_search_scoring_dedup_and_sort(client) -> None:
     with patch("mate_app_kb.api.app.install_auth"):
         app = create_app(rag=fake_rag, agent=AgentClient())
         app.state.outbox_writer = InMemoryOutboxWriter()
+
         async def fake_mw(request, call_next):
             request.state.ctx = _make_tenant_ctx()
             return await call_next(request)
+
         app.middleware("http")(fake_mw)
         c = TestClient(app)
 

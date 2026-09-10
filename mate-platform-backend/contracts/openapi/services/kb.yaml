@@ -8,48 +8,48 @@ info:
     name: Mate Platform API Governance
     email: api-governance@metaplatform.local
 servers:
-- url: /
+  - url: /
 tags:
-- name: kb
-  description: kb domain operations
-security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+  - name: kb
+    description: kb domain operations
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
 paths:
   /healthz:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
+        - bearerAuth: []
+          tenantHeader: []
       summary: Liveness probe
       tags:
-      - kb
+        - kb
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthResponse'
-        '400':
+                $ref: "#/components/schemas/HealthResponse"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: kbGetHealthz
       description: Liveness probe
       x-mate-owner: knowledge-platform
       x-mate-permission: kb.get
       x-mate-requirements:
-      - FR-KB-KBGETHEALTHZ
+        - FR-KB-KBGETHEALTHZ
       x-mate-implementation-status: implemented
   /api/v1/kb/upload:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: Multipart upload (text/markdown) -> RAG upload
       tags:
-      - kb
+        - kb
       requestBody:
         required: true
         content:
@@ -63,144 +63,144 @@ paths:
                 document_id:
                   type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UploadResponse'
-        '400':
+                $ref: "#/components/schemas/UploadResponse"
+        "400":
           description: Empty file
-        '502':
+        "502":
           description: Upstream RAG error
       operationId: kbPostKbUpload
       description: Multipart upload (text/markdown) -> RAG upload
       x-mate-owner: knowledge-platform
       x-mate-permission: kb.post
       x-mate-requirements:
-      - FR-KB-KBPOSTKBUPLOAD
+        - FR-KB-KBPOSTKBUPLOAD
       x-mate-implementation-status: implemented
   /api/v1/kb/search:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: Search via RAG (forwarded)
       tags:
-      - kb
+        - kb
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SearchRequest'
+              $ref: "#/components/schemas/SearchRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SearchResponse'
-        '502':
+                $ref: "#/components/schemas/SearchResponse"
+        "502":
           description: Upstream RAG error
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: kbPostKbSearch
       description: Search via RAG (forwarded)
       x-mate-owner: knowledge-platform
       x-mate-permission: kb.post
       x-mate-requirements:
-      - FR-KB-KBPOSTKBSEARCH
+        - FR-KB-KBPOSTKBSEARCH
       x-mate-implementation-status: implemented
   /api/v1/kb/chat:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: Agent chat (forwarded to mate-tech-agent)
       tags:
-      - kb
+        - kb
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChatRequest'
+              $ref: "#/components/schemas/ChatRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChatResponse'
-        '502':
+                $ref: "#/components/schemas/ChatResponse"
+        "502":
           description: Upstream agent error
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: kbPostKbChat
       description: Agent chat (forwarded to mate-tech-agent)
       x-mate-owner: knowledge-platform
       x-mate-permission: kb.post
       x-mate-requirements:
-      - FR-KB-KBPOSTKBCHAT
+        - FR-KB-KBPOSTKBCHAT
       x-mate-implementation-status: implemented
   /api/v1/kb/chat/stream:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: Agent chat (SSE) - proxies mate-tech-agent stream
       tags:
-      - kb
+        - kb
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChatRequest'
+              $ref: "#/components/schemas/ChatRequest"
       responses:
-        '200':
+        "200":
           description: SSE stream
           content:
             text/event-stream: {}
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: kbPostKbChatStream
       description: Agent chat (SSE) - proxies mate-tech-agent stream
       x-mate-owner: knowledge-platform
       x-mate-permission: kb.post
       x-mate-requirements:
-      - FR-KB-KBPOSTKBCHATSTREAM
+        - FR-KB-KBPOSTKBCHATSTREAM
       x-mate-implementation-status: implemented
   /api/v1/kb/stats:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: Forwarded RAG stats
       tags:
-      - kb
+        - kb
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatsResponse'
-        '502':
+                $ref: "#/components/schemas/StatsResponse"
+        "502":
           description: Upstream RAG error
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: kbGetKbStats
       description: Forwarded RAG stats
       x-mate-owner: knowledge-platform
       x-mate-permission: kb.get
       x-mate-requirements:
-      - FR-KB-KBGETKBSTATS
+        - FR-KB-KBGETKBSTATS
       x-mate-implementation-status: implemented
 components:
   securitySchemes:
@@ -226,9 +226,9 @@ components:
     HealthResponse:
       type: object
       required:
-      - status
-      - service
-      - version
+        - status
+        - service
+        - version
       properties:
         status:
           type: string
@@ -239,11 +239,11 @@ components:
     UploadResponse:
       type: object
       required:
-      - document_id
-      - filename
-      - size_bytes
-      - chunk_count
-      - indexed_in
+        - document_id
+        - filename
+        - size_bytes
+        - chunk_count
+        - indexed_in
       properties:
         document_id:
           type: string
@@ -262,7 +262,7 @@ components:
     SearchRequest:
       type: object
       required:
-      - query
+        - query
       properties:
         query:
           type: string
@@ -276,19 +276,19 @@ components:
         mode:
           type: string
           enum:
-          - AUTO
-          - FACTUAL
-          - ENTITY
-          - THEMATIC
+            - AUTO
+            - FACTUAL
+            - ENTITY
+            - THEMATIC
           default: AUTO
     SearchResponse:
       type: object
       required:
-      - query
-      - mode
-      - total
-      - hits
-      - latency_ms
+        - query
+        - mode
+        - total
+        - hits
+        - latency_ms
       properties:
         query:
           type: string
@@ -307,7 +307,7 @@ components:
     ChatRequest:
       type: object
       required:
-      - message
+        - message
       properties:
         message:
           type: string
@@ -315,22 +315,22 @@ components:
           maxLength: 4096
         thread_id:
           type:
-          - string
-          - 'null'
+            - string
+            - "null"
         scenario:
           type: string
           enum:
-          - S1
-          - S2
-          - S3
+            - S1
+            - S2
+            - S3
           default: S1
     ChatResponse:
       type: object
       required:
-      - thread_id
-      - scenario
-      - answer
-      - latency_ms
+        - thread_id
+        - scenario
+        - answer
+        - latency_ms
       properties:
         thread_id:
           type: string
@@ -352,8 +352,8 @@ components:
     StatsResponse:
       type: object
       required:
-      - total_chunks
-      - embedder_dim
+        - total_chunks
+        - embedder_dim
       properties:
         total_chunks:
           type: integer

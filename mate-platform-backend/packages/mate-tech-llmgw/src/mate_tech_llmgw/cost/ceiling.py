@@ -10,6 +10,7 @@ Per-user 单日 cost 上限：超限返回 UserDailyCapExceeded，调用方
 Denial-of-wallet detector：单用户在 1h 窗口内 cost ≥ threshold_x
 × 历史中位数 → CostAnomaly 信号。
 """
+
 from __future__ import annotations
 
 import time
@@ -30,7 +31,7 @@ class MonthlyQuotaConfig:
     """月度 token quota 配置."""
 
     monthly_token_limit: int = 100_000_000  # 100M tokens / tenant / month
-    retry_after_sec: int = 86_400            # 24h，月度重置粒度
+    retry_after_sec: int = 86_400  # 24h，月度重置粒度
 
 
 @dataclass(frozen=True, slots=True)
@@ -276,15 +277,9 @@ def scan_for_anomalies(
         by_user.setdefault(key, []).append(r)
     out: list[CostAnomaly] = []
     for (tenant_id, user_id), group in by_user.items():
-        if not detect_burst(
-            group, user_id=user_id, window_sec=window_sec, threshold_x=threshold_x
-        ):
+        if not detect_burst(group, user_id=user_id, window_sec=window_sec, threshold_x=threshold_x):
             continue
-        baseline = [
-            float(r.cost_usd)
-            for r in group
-            if r.ts.timestamp() < time.time() - window_sec
-        ]
+        baseline = [float(r.cost_usd) for r in group if r.ts.timestamp() < time.time() - window_sec]
         baseline.sort()
         if not baseline:
             continue
@@ -294,9 +289,7 @@ def scan_for_anomalies(
         else:
             median = baseline[mid]
         burst_cost = sum(
-            float(r.cost_usd)
-            for r in group
-            if r.ts.timestamp() >= time.time() - window_sec
+            float(r.cost_usd) for r in group if r.ts.timestamp() >= time.time() - window_sec
         )
         out.append(
             CostAnomaly(

@@ -3,6 +3,7 @@
 Provides read + write for ``EtlTask``. The ``config`` dict is
 JSON-serialised to TEXT.
 """
+
 from __future__ import annotations
 
 import json
@@ -56,14 +57,13 @@ def _orm_to_etl_task(row: models.EtlTaskORM) -> EtlTask:
 # Read API
 # ---------------------------------------------------------------------------
 def list_etl_tasks(
-    tenant_id: str, status: str | None = None,
+    tenant_id: str,
+    status: str | None = None,
 ) -> list[EtlTask]:
     if not tenant_id:
         return []
     s = _session()
-    stmt = select(models.EtlTaskORM).where(
-        models.EtlTaskORM.tenant_id == tenant_id
-    )
+    stmt = select(models.EtlTaskORM).where(models.EtlTaskORM.tenant_id == tenant_id)
     if status:
         stmt = stmt.where(models.EtlTaskORM.status == status)
     rows = s.execute(stmt.order_by(models.EtlTaskORM.id)).scalars().all()
@@ -101,13 +101,20 @@ def put_etl_task(tenant_id: str, task: EtlTask) -> EtlTask:
         existing.updated_at = task.updated_at
         existing.last_run_at = task.last_run_at
     else:
-        s.add(models.EtlTaskORM(
-            id=task.id, tenant_id=tenant_id, name=task.name,
-            source_table=task.source_table, target_table=task.target_table,
-            status=task.status, config=config_str,
-            created_at=task.created_at, updated_at=task.updated_at,
-            last_run_at=task.last_run_at,
-        ))
+        s.add(
+            models.EtlTaskORM(
+                id=task.id,
+                tenant_id=tenant_id,
+                name=task.name,
+                source_table=task.source_table,
+                target_table=task.target_table,
+                status=task.status,
+                config=config_str,
+                created_at=task.created_at,
+                updated_at=task.updated_at,
+                last_run_at=task.last_run_at,
+            )
+        )
     s.commit()
     return task
 
@@ -130,7 +137,9 @@ def delete_etl_task(tenant_id: str, task_id: str) -> bool:
 
 
 def set_etl_task_status(
-    tenant_id: str, task_id: str, status: str,
+    tenant_id: str,
+    task_id: str,
+    status: str,
     *,
     last_run_at: str | None = None,
 ) -> EtlTask | None:
@@ -164,7 +173,5 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     from . import in_memory as mem
 
     counts: dict[str, int] = {}
-    counts["etl_tasks"] = len(
-        [put_etl_task(tenant_id, t) for t in mem.list_etl_tasks(tenant_id)]
-    )
+    counts["etl_tasks"] = len([put_etl_task(tenant_id, t) for t in mem.list_etl_tasks(tenant_id)])
     return counts

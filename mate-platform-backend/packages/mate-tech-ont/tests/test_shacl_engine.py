@@ -1,4 +1,5 @@
 """SHACL 推理引擎测试 (v3.2 W2)."""
+
 from __future__ import annotations
 
 import pytest
@@ -19,6 +20,7 @@ def engine() -> SHACLEngine:
 @pytest.fixture
 def client() -> TestClient:
     from mate_tech_ont.main import app
+
     return TestClient(app)
 
 
@@ -125,8 +127,7 @@ def test_shacl_validate_endpoint_happy_path(
         "/api/v1/ont/shacl/validate",
         json={
             "instances": [
-                {"id": "u1", "type": "User", "name": "Alice",
-                 "email": "alice@acme.com"},
+                {"id": "u1", "type": "User", "name": "Alice", "email": "alice@acme.com"},
             ],
             "shapes": _user_shape(),
         },

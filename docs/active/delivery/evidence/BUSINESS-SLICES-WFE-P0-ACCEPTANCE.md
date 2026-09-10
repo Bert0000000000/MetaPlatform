@@ -15,13 +15,13 @@
 
 ## 2. 5 步对位
 
-| # | 步骤 | 已落地 | 证据 |
-|---|---|---|---|
-| 1 | `install_auth(app)` 在 `create_app()` 第一行 | ✅ | `packages/mate-app-wfe/src/mate_app_wfe/main.py:38` |
-| 2 | 每个 handler 第一行 `require_tenant(ctx)` | ✅ | `packages/mate-app-wfe/src/mate_app_wfe/api/app.py:_tid()` |
-| 3 | 写 handler `outbox.append(Event.create(...))` 同事务 | ✅ | `packages/mate-app-wfe/src/mate_app_wfe/api/app.py:_emit()` |
-| 4 | 出向 BearerAuth + OutgoingAuthMiddleware | ✅ | `packages/mate-app-wfe/src/mate_app_wfe/clients.py`（本 PR 升级） |
-| 5 | ≥3 cross-tenant negative | ✅ | `packages/mate-app-wfe/tests/test_app_wfe_tenant_integration.py`（3 case） |
+| #   | 步骤                                                 | 已落地 | 证据                                                                       |
+| --- | ---------------------------------------------------- | ------ | -------------------------------------------------------------------------- |
+| 1   | `install_auth(app)` 在 `create_app()` 第一行         | ✅     | `packages/mate-app-wfe/src/mate_app_wfe/main.py:38`                        |
+| 2   | 每个 handler 第一行 `require_tenant(ctx)`            | ✅     | `packages/mate-app-wfe/src/mate_app_wfe/api/app.py:_tid()`                 |
+| 3   | 写 handler `outbox.append(Event.create(...))` 同事务 | ✅     | `packages/mate-app-wfe/src/mate_app_wfe/api/app.py:_emit()`                |
+| 4   | 出向 BearerAuth + OutgoingAuthMiddleware             | ✅     | `packages/mate-app-wfe/src/mate_app_wfe/clients.py`（本 PR 升级）          |
+| 5   | ≥3 cross-tenant negative                             | ✅     | `packages/mate-app-wfe/tests/test_app_wfe_tenant_integration.py`（3 case） |
 
 ### 2.1 步骤 4 升级详情
 
@@ -77,10 +77,10 @@ $ python -m pytest packages/mate-app-wfe/tests/ -q
 
 ### 3.1 新增 ACL case
 
-| case | 验证内容 |
-|---|---|
+| case                                                    | 验证内容                                                                                                                                        |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `test_flowable_client_injects_bearer_and_tenant_header` | respx mock `http://flowable:8080/...` 端点，校验 outbound 请求 header 含 `Authorization: Bearer test-bearer-token` + `X-Tenant-Id: tenant-acme` |
-| `test_flowable_client_set_tenant_rebinds_auth` | 调 `set_tenant("globex")` 后 `_tenant_id == "globex"`，OutgoingAuthMiddleware rebind 完成 |
+| `test_flowable_client_set_tenant_rebinds_auth`          | 调 `set_tenant("globex")` 后 `_tenant_id == "globex"`，OutgoingAuthMiddleware rebind 完成                                                       |
 
 ### 3.2 既有 5 步对位 case（保持通过）
 
@@ -93,21 +93,21 @@ $ python -m pytest packages/mate-app-wfe/tests/ -q
 
 ## 4. 13 硬规则对位
 
-| # | 规则 | 对位 |
-|---|---|---|
-| 1 | Swagger 没有接口不写 route | OpenAPI `wfe.yaml` 已就位（沿用） |
-| 2 | PRD 有 Requirement ID | FR-WFE-001..002 引用 |
-| 3 | 没有 tenant 不访问 repo | `_tid()` 守门 + `repositories/in_memory.py` 显式 tenant_id 入参 |
-| 4 | **外部系统没有 ACL Client** | **本 PR 修复**：`FlowableClient` 加 `BearerAuth` + `OutgoingAuthMiddleware` |
-| 5 | Production profile 禁 fallback | InMemory fallback 仅在 `FLOWABLE_BASE_URL=""` 触发，prod env 必设 |
-| 6 | 静态检查 ruff+pyright | wfe 包零 lint error |
-| 7 | 跳过测试不标 Accepted | 0 skip |
-| 8 | K8s readiness + 回滚 | Helm chart `infra/helm/service-templates` 沿用（无 wfe 专用值） |
-| 9 | 审计 / 指标 / trace | OTel 中间件沿用 mate-platform；outbox 事件携带 `trace_id` |
-| 10 | 验收证据 | 本文件 + ADR-0024 |
-| 11 | helm-docs 同步 | service-template chart README 自动同步 |
-| 12 | Secret 不进 git | `KEYCLOAK_CLIENT_SECRET` 等用 `.env` + docker-compose env 注入 |
-| 13 | NetworkPolicy 缺失 = prod 不通过 | default-deny 沿用 |
+| #   | 规则                             | 对位                                                                        |
+| --- | -------------------------------- | --------------------------------------------------------------------------- |
+| 1   | Swagger 没有接口不写 route       | OpenAPI `wfe.yaml` 已就位（沿用）                                           |
+| 2   | PRD 有 Requirement ID            | FR-WFE-001..002 引用                                                        |
+| 3   | 没有 tenant 不访问 repo          | `_tid()` 守门 + `repositories/in_memory.py` 显式 tenant_id 入参             |
+| 4   | **外部系统没有 ACL Client**      | **本 PR 修复**：`FlowableClient` 加 `BearerAuth` + `OutgoingAuthMiddleware` |
+| 5   | Production profile 禁 fallback   | InMemory fallback 仅在 `FLOWABLE_BASE_URL=""` 触发，prod env 必设           |
+| 6   | 静态检查 ruff+pyright            | wfe 包零 lint error                                                         |
+| 7   | 跳过测试不标 Accepted            | 0 skip                                                                      |
+| 8   | K8s readiness + 回滚             | Helm chart `infra/helm/service-templates` 沿用（无 wfe 专用值）             |
+| 9   | 审计 / 指标 / trace              | OTel 中间件沿用 mate-platform；outbox 事件携带 `trace_id`                   |
+| 10  | 验收证据                         | 本文件 + ADR-0024                                                           |
+| 11  | helm-docs 同步                   | service-template chart README 自动同步                                      |
+| 12  | Secret 不进 git                  | `KEYCLOAK_CLIENT_SECRET` 等用 `.env` + docker-compose env 注入              |
+| 13  | NetworkPolicy 缺失 = prod 不通过 | default-deny 沿用                                                           |
 
 ## 5. 落档清单
 

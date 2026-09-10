@@ -11,6 +11,7 @@ to apply consistent redaction across:
 
 Per ADR-0016 §3.3 D7.
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -30,11 +31,20 @@ def upgrade() -> None:
         sa.Column("tenant_id", sa.String(64), nullable=False, unique=True, index=True),
         # Comma-separated list of active PII kinds:
         # phone_cn, id_card_cn, email, ssn, credit_card, ip_v4
-        sa.Column("enabled_kinds", sa.String(256), nullable=False, server_default="phone_cn,id_card_cn,email,credit_card"),
+        sa.Column(
+            "enabled_kinds",
+            sa.String(256),
+            nullable=False,
+            server_default="phone_cn,id_card_cn,email,credit_card",
+        ),
         sa.Column("reversible", sa.Boolean, nullable=False, server_default=sa.text("false")),
         sa.Column("mask_token", sa.String(32), nullable=False, server_default="[REDACTED]"),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
     )
 
 

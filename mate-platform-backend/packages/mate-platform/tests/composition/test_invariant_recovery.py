@@ -4,6 +4,7 @@ After any load→unload sequence the coeffect store returns to the
 observationally equivalent state: keys bound before are bound again with
 ≃-equivalent values; keys introduced only by the unloaded fiber are gone.
 """
+
 from __future__ import annotations
 
 import sys
@@ -31,7 +32,9 @@ async def test_store_returns_to_equivalent_state_after_load_unload() -> None:
         fctx.set("svc", "v1")
 
     provider = Component(
-        name="provider", inject=frozenset(), provide=frozenset({"svc"}),
+        name="provider",
+        inject=frozenset(),
+        provide=frozenset({"svc"}),
         apply=provider_apply,
     )
 

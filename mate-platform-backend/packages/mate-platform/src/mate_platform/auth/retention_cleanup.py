@@ -25,6 +25,7 @@ Design:
 
 Per ADR-0016 §3.3 D6.
 """
+
 from __future__ import annotations
 
 import logging
@@ -46,9 +47,7 @@ class CleanupResult:
     tables_processed: int
     rows_deleted: int
     errors: tuple[str, ...] = field(default_factory=tuple)
-    executed_at: str = field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    executed_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     @property
     def success(self) -> bool:
@@ -94,9 +93,7 @@ def run_retention_cleanup(
             rows_deleted=0,
         )
 
-    cutoff = (now or datetime.now(UTC)).timestamp() - (
-        policy.retentionDays * 86400
-    )
+    cutoff = (now or datetime.now(UTC)).timestamp() - (policy.retentionDays * 86400)
     cutoff_str = datetime.fromtimestamp(cutoff, tz=UTC).isoformat()
 
     total_deleted = 0
@@ -109,9 +106,7 @@ def run_retention_cleanup(
             # The created_at column name is consistent across all
             # Alembic 0001-0008 business tables.
             n = conn.execute(
-                f"DELETE FROM {table} "
-                "WHERE tenant_id = :tenant_id "
-                "AND created_at < :cutoff",
+                f"DELETE FROM {table} WHERE tenant_id = :tenant_id AND created_at < :cutoff",
                 {"tenant_id": tenant_id, "cutoff": cutoff_str},
             )
             total_deleted += n

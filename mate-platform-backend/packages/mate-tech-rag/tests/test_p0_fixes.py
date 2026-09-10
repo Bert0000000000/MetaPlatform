@@ -22,6 +22,7 @@ Covers four real bugs / gaps landed in this batch:
   4. P2 LearningPage (frontend) defensiveness — covered by tsc typecheck
        (see apps/web typecheck run).
 """
+
 from __future__ import annotations
 
 import os
@@ -127,6 +128,7 @@ class TestLatencyMsReported:
     def client(self) -> Iterator[TestClient]:
         _reset_rag_state()
         from mate_tech_rag.api import app as _app_module
+
         yield TestClient(_app_module.app)
         _reset_rag_state()
 
@@ -203,9 +205,7 @@ class _StubRagflowWithOverride:
             self._api_key = saved_key
 
     def parse(self, content, document_id, *, metadata=None):
-        self.calls.append(
-            {"method": "parse", "url": self._base_url, "api_key": self._api_key}
-        )
+        self.calls.append({"method": "parse", "url": self._base_url, "api_key": self._api_key})
         return [content] if content.strip() else []
 
     def parse_bytes(self, raw, document_id, *, filename="", metadata=None):
@@ -237,7 +237,9 @@ class TestRagflowPerRequestOverride:
             _reset_rag_state()
 
     def test_ingest_without_override_uses_default_url(
-        self, client_with_stub, auth_acme,
+        self,
+        client_with_stub,
+        auth_acme,
     ):
         """POST /ingest without override fields → ragflow parses at default URL."""
         client, stub = client_with_stub
@@ -253,7 +255,9 @@ class TestRagflowPerRequestOverride:
         assert stub.calls == [], stub.calls
 
     def test_ingest_with_override_restores_default(
-        self, client_with_stub, auth_acme,
+        self,
+        client_with_stub,
+        auth_acme,
     ):
         """POST /ingest with override fields → ctx enters & exits cleanly."""
         client, stub = client_with_stub
@@ -274,7 +278,9 @@ class TestRagflowPerRequestOverride:
         assert stub._api_key == "default-key", stub._api_key
 
     def test_parse_with_override_forwards_to_ragflow(
-        self, client_with_stub, auth_acme,
+        self,
+        client_with_stub,
+        auth_acme,
     ):
         """POST /parse with override → ragflow.parse() sees overridden url/key."""
         client, stub = client_with_stub
@@ -300,7 +306,9 @@ class TestRagflowPerRequestOverride:
         assert stub._api_key == "default-key", stub._api_key
 
     def test_parse_without_override_uses_default(
-        self, client_with_stub, auth_acme,
+        self,
+        client_with_stub,
+        auth_acme,
     ):
         """POST /parse without override → ragflow.parse() sees default url/key."""
         client, stub = client_with_stub
@@ -370,10 +378,12 @@ class _StubRagUploadCapture:
         *,
         kb_id=None,
     ):
-        self.calls.append({
-            "args": (file_content, filename, document_id, content_type),
-            "kb_id": kb_id,
-        })
+        self.calls.append(
+            {
+                "args": (file_content, filename, document_id, content_type),
+                "kb_id": kb_id,
+            }
+        )
         return {
             "document_id": document_id,
             "filename": filename,
@@ -416,7 +426,9 @@ class TestDwUploadKbIsolation:
     """P0: dw /documents/upload enforces employee_id and forwards it as kb_id."""
 
     def test_upload_without_employee_id_returns_400(
-        self, dw_client_with_stub, auth_acme,
+        self,
+        dw_client_with_stub,
+        auth_acme,
     ):
         client, stub = dw_client_with_stub
         r = client.post(
@@ -431,7 +443,9 @@ class TestDwUploadKbIsolation:
         assert stub.calls == [], stub.calls
 
     def test_upload_with_empty_employee_id_returns_400(
-        self, dw_client_with_stub, auth_acme,
+        self,
+        dw_client_with_stub,
+        auth_acme,
     ):
         client, stub = dw_client_with_stub
         r = client.post(
@@ -445,7 +459,9 @@ class TestDwUploadKbIsolation:
         assert stub.calls == [], stub.calls
 
     def test_upload_with_whitespace_employee_id_returns_400(
-        self, dw_client_with_stub, auth_acme,
+        self,
+        dw_client_with_stub,
+        auth_acme,
     ):
         client, stub = dw_client_with_stub
         r = client.post(
@@ -458,7 +474,9 @@ class TestDwUploadKbIsolation:
         assert stub.calls == [], stub.calls
 
     def test_upload_with_employee_id_forwards_kb_id(
-        self, dw_client_with_stub, auth_acme,
+        self,
+        dw_client_with_stub,
+        auth_acme,
     ):
         client, stub = dw_client_with_stub
         r = client.post(
@@ -479,7 +497,9 @@ class TestDwUploadKbIsolation:
         assert call["args"][3] == "text/markdown", call  # content_type
 
     def test_upload_no_longer_uses_dw_kb_default(
-        self, dw_client_with_stub, auth_acme,
+        self,
+        dw_client_with_stub,
+        auth_acme,
     ):
         """Regression: previously ``kb_id = employee_id or "dw-kb-default"``.
         That fallback is gone; an absent employee_id must 400, never silently

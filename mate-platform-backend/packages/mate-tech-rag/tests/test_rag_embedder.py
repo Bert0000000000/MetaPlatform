@@ -4,6 +4,7 @@ The HTTP call is mocked so these run offline; they lock the request body
 (model / input / provider / tenant_id) and the OpenAI-compatible response
 parsing, including dim self-correction.
 """
+
 from __future__ import annotations
 
 import sys
@@ -61,12 +62,14 @@ class TestLlmgwEmbedder:
         def fake_post(url, json=None, **_kw):
             captured["url"] = url
             captured["body"] = json
-            return _FakeResponse({
-                "model": "doubao-embedding-text-240715",
-                "dimensions": 2048,
-                "data": [{"index": 0, "embedding": [0.1] * 2048}],
-                "usage": {"prompt_tokens": 5},
-            })
+            return _FakeResponse(
+                {
+                    "model": "doubao-embedding-text-240715",
+                    "dimensions": 2048,
+                    "data": [{"index": 0, "embedding": [0.1] * 2048}],
+                    "usage": {"prompt_tokens": 5},
+                }
+            )
 
         with patch.object(emb._client, "post", side_effect=fake_post):
             vec = emb.embed("订单审批流程")
@@ -86,11 +89,13 @@ class TestLlmgwEmbedder:
         assert emb.dim == 2048  # configured default
 
         def fake_post(*_a, **_kw):
-            return _FakeResponse({
-                "model": "doubao-embedding-large-text-240915",
-                "dimensions": 2560,
-                "data": [{"index": 0, "embedding": [0.2] * 2560}],
-            })
+            return _FakeResponse(
+                {
+                    "model": "doubao-embedding-large-text-240915",
+                    "dimensions": 2560,
+                    "data": [{"index": 0, "embedding": [0.2] * 2560}],
+                }
+            )
 
         with patch.object(emb._client, "post", side_effect=fake_post):
             vec = emb.embed("hello")

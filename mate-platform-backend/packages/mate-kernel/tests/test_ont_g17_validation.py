@@ -1,4 +1,5 @@
 """ONT-G17 — model/data validation 单测。"""
+
 from __future__ import annotations
 
 import os
@@ -20,15 +21,34 @@ AMT = "ont.t.prop.g-amt.v1"
 
 def _ot():
     return ObjectType(
-        rid=ClassRef("ont.t.obj.goods.v1"), display_name="goods",
+        rid=ClassRef("ont.t.obj.goods.v1"),
+        display_name="goods",
         primary_key=(ClassRef(ID),),
         properties=(
-            Property(rid=ClassRef(ID), type_id="string", nullable=False,
-                     primary_key=True, title="id", format=PropertyFormat.STRING),
-            Property(rid=ClassRef(NAME), type_id="string", nullable=False,
-                     primary_key=False, title="name", format=PropertyFormat.STRING),
-            Property(rid=ClassRef(AMT), type_id="integer", nullable=True,
-                     primary_key=False, title="amt", format=PropertyFormat.INTEGER),
+            Property(
+                rid=ClassRef(ID),
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="id",
+                format=PropertyFormat.STRING,
+            ),
+            Property(
+                rid=ClassRef(NAME),
+                type_id="string",
+                nullable=False,
+                primary_key=False,
+                title="name",
+                format=PropertyFormat.STRING,
+            ),
+            Property(
+                rid=ClassRef(AMT),
+                type_id="integer",
+                nullable=True,
+                primary_key=False,
+                title="amt",
+                format=PropertyFormat.INTEGER,
+            ),
         ),
     )
 
@@ -47,13 +67,31 @@ class TestModel:
 
     def test_duplicate_slug(self):
         a, b = "ont.t.prop.dup.v1", "ont.t.prop.dup.v2"
-        d = validate_model(ObjectType(
-            rid=ClassRef("ont.t.obj.dup.v1"), display_name="d",
-            primary_key=(ClassRef(a),),
-            properties=(Property(rid=ClassRef(a), type_id="string", nullable=False,
-                                 primary_key=True, title="a", format=PropertyFormat.STRING),
-                        Property(rid=ClassRef(b), type_id="string", nullable=False,
-                                 primary_key=False, title="b", format=PropertyFormat.STRING))))
+        d = validate_model(
+            ObjectType(
+                rid=ClassRef("ont.t.obj.dup.v1"),
+                display_name="d",
+                primary_key=(ClassRef(a),),
+                properties=(
+                    Property(
+                        rid=ClassRef(a),
+                        type_id="string",
+                        nullable=False,
+                        primary_key=True,
+                        title="a",
+                        format=PropertyFormat.STRING,
+                    ),
+                    Property(
+                        rid=ClassRef(b),
+                        type_id="string",
+                        nullable=False,
+                        primary_key=False,
+                        title="b",
+                        format=PropertyFormat.STRING,
+                    ),
+                ),
+            )
+        )
         assert any("重复" in e for e in d["errors"])
 
 

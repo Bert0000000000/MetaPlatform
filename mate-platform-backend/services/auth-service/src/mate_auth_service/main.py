@@ -11,6 +11,7 @@
   - 不做切流决策 (那是 Traefik 边网关)
   - 不发 token (Keycloak)
 """
+
 from __future__ import annotations
 
 import os
@@ -40,7 +41,9 @@ KEYCLOAK_INTERNAL_URL = os.getenv("KEYCLOAK_INTERNAL_URL", KEYCLOAK_URL)
 
 JWKS_URL = f"{KEYCLOAK_INTERNAL_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/certs"
 ISSUER = f"{KEYCLOAK_INTERNAL_URL}/realms/{KEYCLOAK_REALM}"
-OIDC_USERINFO_URL = f"{KEYCLOAK_INTERNAL_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/userinfo"
+OIDC_USERINFO_URL = (
+    f"{KEYCLOAK_INTERNAL_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/userinfo"
+)
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 JWKS_REFRESH_SEC = int(os.getenv("JWKS_REFRESH_SEC", "300"))
@@ -77,10 +80,12 @@ async def _refresh_jwks_if_needed(client: httpx.AsyncClient) -> None:
         return
     try:
         import redis.asyncio as aioredis
+
         r = aioredis.from_url(REDIS_URL, decode_responses=True)
         cached = await r.get(JWKS_CACHE_KEY)
         if cached:
             import json
+
             data = json.loads(cached)
             for _kid, _ in data.items():
                 pass  # values are jwk strings, not keys
@@ -89,7 +94,9 @@ async def _refresh_jwks_if_needed(client: httpx.AsyncClient) -> None:
         else:
             _jwks_cache = await _fetch_jwks(client)
             # cache jwks dict (re-fetched above) to redis as JSON of raw jwk strings
-            jwk_payload = {kid: jwt.algorithms.RSAAlgorithm.to_jwk(key) for kid, key in _jwks_cache.items()}
+            jwk_payload = {
+                kid: jwt.algorithms.RSAAlgorithm.to_jwk(key) for kid, key in _jwks_cache.items()
+            }
             await r.set(JWKS_CACHE_KEY, json_dumps(jwk_payload), ex=JWKS_REFRESH_SEC)
         await r.aclose()
     except Exception as exc:
@@ -99,10 +106,12 @@ async def _refresh_jwks_if_needed(client: httpx.AsyncClient) -> None:
 
 def json_dumps(obj: Any) -> str:
     import json
+
     return json.dumps(obj, default=str)
 
 
 # ---- Schemas ----
+
 
 class IamLoginRequest(BaseModel):
     username: str
@@ -178,6 +187,7 @@ async def lifespan(app: FastAPI):
         logger.warning("jwks.warmup_failed", error=str(exc))
     try:
         import redis.asyncio as aioredis
+
         app.state.redis = aioredis.from_url(REDIS_URL, decode_responses=True)
         await app.state.redis.ping()
     except Exception as exc:
@@ -187,6 +197,7 @@ async def lifespan(app: FastAPI):
     try:
         from mate_tech_iam.db import AsyncSessionMaker, init_db
         from mate_tech_iam.seed import seed as iam_seed
+
         await init_db()
         async with AsyncSessionMaker() as session:
             await iam_seed(session)
@@ -312,16 +323,16 @@ async def userinfo(authorization: str | None = Header(default=None)) -> dict[str
     """Proxy to Keycloak userinfo endpoint (RFC 7662 OIDC)."""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing Bearer token")
-    token = authorization[len("Bearer "):]
+    token = authorization[len("Bearer ") :]
     try:
-        r = await app.state.client.get(OIDC_USERINFO_URL, headers={"Authorization": f"Bearer {token}"})
+        r = await app.state.client.get(
+            OIDC_USERINFO_URL, headers={"Authorization": f"Bearer {token}"}
+        )
         if r.status_code == 200:
             return r.json()
         raise HTTPException(status_code=r.status_code, detail=r.text)
     except httpx.TimeoutException:
         raise HTTPException(status_code=504, detail="Keycloak userinfo timeout") from None
-
-
 
 
 # ---- IAM Auth proxy endpoints (login/refresh/logout) ----
@@ -430,7 +441,7 @@ async def iam_logout(authorization: str | None = Header(default=None)) -> dict[s
     """Logout: blacklist current JTI in Redis; best-effort Keycloak end_session."""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing Bearer token")
-    token = authorization[len("Bearer "):]
+    token = authorization[len("Bearer ") :]
     jti = ""
     exp = 0
     try:
@@ -471,7 +482,8 @@ async def dashboard_login_keycloak(req: IamLoginRequest) -> dict[str, Any]:
     }
     try:
         r = await app.state.client.post(
-            token_url, data=form,
+            token_url,
+            data=form,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
     except httpx.TimeoutException:
@@ -607,4 +619,5 @@ logger.info("iam.routers.mounted", count=7)
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8101")))

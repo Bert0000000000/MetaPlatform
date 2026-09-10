@@ -1,4 +1,5 @@
 """mate_tech_orchestrator.api.schemas — request/response models."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -50,7 +51,11 @@ class PlanStepRequest(BaseModel):
     # MP-SAL-05：全部 5 种 StepKind 经 REST 提交（call_agent / apply_action /
     # propose / run_function / evaluate_object_set）
     kind: Literal[
-        "call_agent", "apply_action", "propose", "run_function", "evaluate_object_set",
+        "call_agent",
+        "apply_action",
+        "propose",
+        "run_function",
+        "evaluate_object_set",
     ] = "call_agent"
     target: str = Field(min_length=1, description="rid / capability for the step")
     payload: dict[str, Any] = Field(default_factory=dict)

@@ -1,4 +1,5 @@
 """OAuth JWT tests (ST-5.3.9.2)."""
+
 from __future__ import annotations
 
 import time
@@ -48,10 +49,10 @@ async def test_missing_sub_raises() -> None:
     import json
 
     payload = {"tenant_id": "x", "exp": int(time.time()) + 60}
+
     def b64(d: dict[str, Any]) -> str:
-        return base64.urlsafe_b64encode(
-            json.dumps(d).encode()
-        ).rstrip(b"=").decode()
+        return base64.urlsafe_b64encode(json.dumps(d).encode()).rstrip(b"=").decode()
+
     bad_token = f"{b64({'alg': 'none'})}.{b64(payload)}.sig"
     with pytest.raises(AuthError, match="sub"):
         await verify_jwt_token(bad_token)

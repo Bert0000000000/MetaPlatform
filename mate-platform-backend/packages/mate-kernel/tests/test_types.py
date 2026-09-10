@@ -1,4 +1,4 @@
-﻿from mate_kernel.types import DomainError, DomainEvent, Entity, Result
+from mate_kernel.types import DomainError, DomainEvent, Entity, Result
 
 
 def test_entity_protocol_identity() -> None:

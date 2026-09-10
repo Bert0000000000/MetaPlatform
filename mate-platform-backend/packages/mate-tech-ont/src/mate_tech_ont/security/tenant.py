@@ -1,4 +1,5 @@
 """Tenant isolation (ST-5.4.11)."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -31,6 +32,4 @@ def assert_tenant_access(ctx: TenantContext, resource_tenant: str) -> None:
             ctx=ctx.tenant_id,
             resource=resource_tenant,
         )
-        raise PermissionError(
-            f"Cross-tenant access denied: {ctx.tenant_id} -> {resource_tenant}"
-        )
+        raise PermissionError(f"Cross-tenant access denied: {ctx.tenant_id} -> {resource_tenant}")

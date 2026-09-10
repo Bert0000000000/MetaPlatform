@@ -4,6 +4,7 @@ A target flip during an in-flight transition chains the opposite
 transition when the current one completes: no double-apply, no half
 state. Provider identity changes (not value changes) trigger reloads.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -21,6 +22,7 @@ from mate_platform.composition import Component, FiberState, create_context
 def _provider(name: str, key: str, value: str = "v"):
     async def apply(fctx):
         fctx.set(key, value)
+
     return Component(name=name, inject=frozenset(), provide=frozenset({key}), apply=apply)
 
 
@@ -46,7 +48,7 @@ async def test_target_flip_mid_load_chains_unload() -> None:
     await asyncio.sleep(0)  # d enters LOADING, blocked on gate
     dispose_task = asyncio.create_task(pf.dispose())  # target flips to None
     await asyncio.sleep(0)
-    gate.set()              # load completes → must chain unload
+    gate.set()  # load completes → must chain unload
     await dispose_task
     await task
 
@@ -67,6 +69,7 @@ async def test_target_flip_mid_unload_chains_reload() -> None:
             events.append("unload-begin")
             await unload_gate.wait()
             events.append("unload-end")
+
         yield d_unload
 
     dep = Component(name="d", inject=frozenset({"svc"}), provide=frozenset(), apply=d_apply)
@@ -82,9 +85,9 @@ async def test_target_flip_mid_unload_chains_reload() -> None:
     task = asyncio.create_task(pf1.dispose())
     await asyncio.sleep(0)
     await asyncio.sleep(0)
-    await ctx.use(p2)             # svc satisfied again mid-unload
+    await ctx.use(p2)  # svc satisfied again mid-unload
     await asyncio.sleep(0)
-    unload_gate.set()        # unload completes → must chain reload
+    unload_gate.set()  # unload completes → must chain reload
     await task
     await ctx.start()
 
@@ -105,11 +108,11 @@ async def test_no_double_apply() -> None:
     dep = Component(name="d", inject=frozenset({"svc"}), provide=frozenset(), apply=d_apply)
     await ctx.use(dep)
 
-    unset = ctx.set("svc", "v1")   # satisfy
+    unset = ctx.set("svc", "v1")  # satisfy
     await ctx.start()
-    await unset()                  # unsatisfy
+    await unset()  # unsatisfy
     await ctx.start()
-    ctx.set("svc", "v2")           # satisfy again
+    ctx.set("svc", "v2")  # satisfy again
     await ctx.start()
 
     assert apply_count == 2

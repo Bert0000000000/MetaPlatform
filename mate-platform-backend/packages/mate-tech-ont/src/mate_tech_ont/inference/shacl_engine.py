@@ -24,6 +24,7 @@ Shapes 格式示例::
 - ``min_length`` — 字符串最小长度
 - ``max_length`` — 字符串最大长度
 """
+
 from __future__ import annotations
 
 import re
@@ -135,9 +136,7 @@ class SHACLEngine:
                     continue
                 focus = _instance_id(inst, idx)
                 for c in constraints:
-                    violations.extend(
-                        self._check_constraint(shape_id, focus, inst, c)
-                    )
+                    violations.extend(self._check_constraint(shape_id, focus, inst, c))
 
         result = SHACLResult(
             conforms=not violations,
@@ -196,8 +195,7 @@ class SHACLEngine:
                         path=path,
                         value=values,
                         message=(
-                            f"Property '{path}' allows at most "
-                            f"{cap} value(s), found {len(values)}"
+                            f"Property '{path}' allows at most {cap} value(s), found {len(values)}"
                         ),
                     )
                 )
@@ -252,10 +250,7 @@ class SHACLEngine:
                         focus_node=focus,
                         path=path,
                         value=value,
-                        message=(
-                            f"Property '{path}' value does not match "
-                            f"pattern '{pat}'"
-                        ),
+                        message=(f"Property '{path}' value does not match pattern '{pat}'"),
                     )
                 )
 
@@ -273,8 +268,7 @@ class SHACLEngine:
                         path=path,
                         value=value,
                         message=(
-                            f"Property '{path}' length {length} < "
-                            f"min_length {c['min_length']}"
+                            f"Property '{path}' length {length} < min_length {c['min_length']}"
                         ),
                     )
                 )
@@ -286,8 +280,7 @@ class SHACLEngine:
                         path=path,
                         value=value,
                         message=(
-                            f"Property '{path}' length {length} > "
-                            f"max_length {c['max_length']}"
+                            f"Property '{path}' length {length} > max_length {c['max_length']}"
                         ),
                     )
                 )

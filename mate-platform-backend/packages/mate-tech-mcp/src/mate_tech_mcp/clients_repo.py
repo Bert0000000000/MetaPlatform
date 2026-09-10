@@ -4,6 +4,7 @@ Entities: McpClient (external MCP server connection managed from the
 MCP center UI). Follows the same tenant-scoped store pattern as
 ``in_memory.py`` (tools/resources/prompts).
 """
+
 from __future__ import annotations
 
 import uuid
@@ -137,9 +138,12 @@ def delete_client(tenant_id: str, cid: str) -> bool:
 def mark_client_connected(tenant_id: str, cid: str, tools: int) -> McpClient | None:
     now = _now_iso()
     return update_client(
-        tenant_id, cid,
-        status="connected", discovered_tools=tools,
-        last_connected_at=now, last_sync_at=now,
+        tenant_id,
+        cid,
+        status="connected",
+        discovered_tools=tools,
+        last_connected_at=now,
+        last_sync_at=now,
     )
 
 

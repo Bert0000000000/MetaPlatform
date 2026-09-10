@@ -10,6 +10,7 @@ These tests pin the new wiring contract:
     shutdown clears every singleton and closes clients;
   * either dependency failing never raises out of startup.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -137,10 +138,7 @@ def test_lifespan_wires_redis_and_pg_backends(monkeypatch: pytest.MonkeyPatch) -
         assert recorder is not None
         assert recorder.pool is fake_pool
         # Idempotent DDL was applied to the PG_DSN database.
-        assert any(
-            "CREATE TABLE IF NOT EXISTS llm_usage" in sql
-            for sql in fake_pool.conn.executed
-        )
+        assert any("CREATE TABLE IF NOT EXISTS llm_usage" in sql for sql in fake_pool.conn.executed)
 
     assert router_mod.get_cache() is None
     assert router_mod.get_quota_bucket() is None
@@ -151,6 +149,7 @@ def test_lifespan_pg_failure_degrades_without_crash(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """PG builder raising → startup still succeeds, recorder stays memory."""
+
     async def exploding_pg() -> Any:
         raise RuntimeError("pg down")
 
@@ -178,6 +177,7 @@ def test_lifespan_env_switches_can_disable_subsystems(
 @pytest.mark.asyncio
 async def test_ensure_schema_is_exception_safe() -> None:
     """A broken connection logs and swallows — never blocks startup."""
+
     class _BrokenConn:
         async def execute(self, sql: str, *args: Any) -> str:
             raise RuntimeError("syntax error")

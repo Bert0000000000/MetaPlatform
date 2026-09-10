@@ -8,6 +8,7 @@ Usage:
 The schema is applied idempotently at service startup (repositories.ddl.
 ensure_schema); this CLI exists for release runbooks and CI pre-flight.
 """
+
 from __future__ import annotations
 
 import argparse

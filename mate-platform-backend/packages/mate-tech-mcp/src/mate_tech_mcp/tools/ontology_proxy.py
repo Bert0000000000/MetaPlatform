@@ -69,7 +69,8 @@ class OntologyProxyTool:
         client: httpx.AsyncClient | None = None,
     ) -> None:
         self._base_url = base_url or os.getenv(
-            "TECH_ONT_URL", "http://localhost:8007",
+            "TECH_ONT_URL",
+            "http://localhost:8007",
         )
         # dev/staging：技术本体代理的出站服务凭证。生产应改为逐请求透传
         # 调用方 token（见 MP-SAL-05 运行时接线的 token 透传）。
@@ -80,7 +81,9 @@ class OntologyProxyTool:
             _headers["Authorization"] = f"Bearer {_token}"
             _headers["X-Tenant-Id"] = _tenant
         self._client = client or httpx.AsyncClient(
-            base_url=self._base_url, timeout=timeout, headers=_headers,
+            base_url=self._base_url,
+            timeout=timeout,
+            headers=_headers,
         )
 
     async def _get(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -189,7 +192,9 @@ class OntProposeModelTypeTool(OntologyProxyTool):
     )
     operation_id = "ontProposeV2ObjectType"
     capabilities: ClassVar[tuple[str, ...]] = (
-        "ontology.write", "proposal", "model_type",
+        "ontology.write",
+        "proposal",
+        "model_type",
     )
     input_schema: ClassVar[dict[str, Any]] = {
         "type": "object",
@@ -250,7 +255,9 @@ class OntProposeInstanceTool(OntologyProxyTool):
     )
     operation_id = "ontProposeV2Instance"
     capabilities: ClassVar[tuple[str, ...]] = (
-        "ontology.write", "proposal", "create_instance",
+        "ontology.write",
+        "proposal",
+        "create_instance",
     )
     input_schema: ClassVar[dict[str, Any]] = {
         "type": "object",
@@ -300,7 +307,9 @@ class OntMergeObjectsTool(OntologyProxyTool):
     )
     operation_id = "ontProposeV2ObjectTypeMerge"
     capabilities: ClassVar[tuple[str, ...]] = (
-        "ontology.write", "proposal", "merge_suggestion",
+        "ontology.write",
+        "proposal",
+        "merge_suggestion",
     )
     input_schema: ClassVar[dict[str, Any]] = {
         "type": "object",
@@ -337,7 +346,8 @@ class OntMergeObjectsTool(OntologyProxyTool):
             "mapping": dict(mapping or {}),
         }
         return await self._post(
-            "/api/v1/ont/v2/object-types/propose-merge", payload,
+            "/api/v1/ont/v2/object-types/propose-merge",
+            payload,
         )
 
 
@@ -353,7 +363,9 @@ class OntPreviewProposalTool(OntologyProxyTool):
     )
     operation_id = "ontGetV2ProposalPreview"
     capabilities: ClassVar[tuple[str, ...]] = (
-        "ontology.read", "proposal", "preview",
+        "ontology.read",
+        "proposal",
+        "preview",
     )
     input_schema: ClassVar[dict[str, Any]] = {
         "type": "object",
@@ -381,7 +393,9 @@ class _HitlProposalTool(OntologyProxyTool):
     agent_invokable: bool = False
     readonly_by_user: bool = True
     capabilities: ClassVar[tuple[str, ...]] = (
-        "ontology.write", "proposal", "hitl",
+        "ontology.write",
+        "proposal",
+        "hitl",
     )
 
 
@@ -417,7 +431,8 @@ class OntConfirmProposalTool(_HitlProposalTool):
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {"confirmed_by": confirmed_by}
         return await self._post(
-            f"/api/v1/ont/v2/proposals/{proposal_id}/confirm", payload,
+            f"/api/v1/ont/v2/proposals/{proposal_id}/confirm",
+            payload,
         )
 
 
@@ -453,7 +468,8 @@ class OntRejectProposalTool(_HitlProposalTool):
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {"confirmed_by": confirmed_by}
         return await self._post(
-            f"/api/v1/ont/v2/proposals/{proposal_id}/reject", payload,
+            f"/api/v1/ont/v2/proposals/{proposal_id}/reject",
+            payload,
         )
 
 
@@ -480,7 +496,8 @@ class OntExecuteProposalTool(_HitlProposalTool):
 
     async def __call__(self, *, proposal_id: str) -> dict[str, Any]:
         return await self._post(
-            f"/api/v1/ont/v2/proposals/{proposal_id}/execute", {},
+            f"/api/v1/ont/v2/proposals/{proposal_id}/execute",
+            {},
         )
 
 

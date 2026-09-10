@@ -1,4 +1,5 @@
 """Shared pytest fixtures for mate-tech-mcp (ST-5.3.10.1)."""
+
 from __future__ import annotations
 
 # install_auth() reads these env vars at app-import time. Set them

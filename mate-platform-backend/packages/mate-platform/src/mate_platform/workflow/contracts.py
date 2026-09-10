@@ -4,6 +4,7 @@ The public workflow model deliberately contains no Temporal-specific fields.
 Temporal workflow ids, task queues, and query names belong to the adapter
 layer so the frontend consumes the same contract regardless of the backend.
 """
+
 from __future__ import annotations
 
 import uuid

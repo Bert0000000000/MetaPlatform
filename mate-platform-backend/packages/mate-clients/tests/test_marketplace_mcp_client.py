@@ -7,6 +7,7 @@ Verifies:
   4. Without auth/tenant_id, no outgoing auth (dev profile only — caller
      responsibility).
 """
+
 from __future__ import annotations
 
 import asyncio

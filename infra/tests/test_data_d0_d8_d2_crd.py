@@ -11,6 +11,7 @@ These tests are structural (file content assertions) and complement
 the Python-side e2e tests in
 ``mate-platform-backend/packages/mate-platform/tests/test_data_d0_d8_d2.py``.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

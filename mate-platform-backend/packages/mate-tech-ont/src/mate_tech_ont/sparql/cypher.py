@@ -1,4 +1,5 @@
 """SPARQL -> Cypher (ST-5.4.4)."""
+
 from __future__ import annotations
 
 import re
@@ -19,9 +20,7 @@ class ParsedQuery:
     limit: int | None = None
 
 
-_TRIPLE_RE = re.compile(
-    r"""\\?\\w+\\s+(<[^>]+>|:?\\w+)\\s+(\\?\\w+|<[^>]+>|"[^"]*"\\^\\^\\w+)"""
-)
+_TRIPLE_RE = re.compile(r"""\\?\\w+\\s+(<[^>]+>|:?\\w+)\\s+(\\?\\w+|<[^>]+>|"[^"]*"\\^\\^\\w+)""")
 
 
 def parse_sparql(sparql: str) -> ParsedQuery:
@@ -36,7 +35,9 @@ def parse_sparql(sparql: str) -> ParsedQuery:
     else:
         qtype = "UNKNOWN"
     variables: list[str] = []
-    select_match = re.search(r"SELECT\s+([\?\,\s\w]+?)\s+(?:WHERE|FROM|$)", sparql_strip, re.IGNORECASE)
+    select_match = re.search(
+        r"SELECT\s+([\?\,\s\w]+?)\s+(?:WHERE|FROM|$)", sparql_strip, re.IGNORECASE
+    )
     if select_match:
         variables = re.findall(r"\?(\w+)", select_match.group(1))
     triples: list[tuple[str, str, str]] = []
@@ -114,7 +115,11 @@ def _match_pattern(
     """
     for cs, cp, co in candidates:
         trial = dict(binding)
-        if _bind_term(s_pat, cs, trial) and _bind_term(p_pat, cp, trial) and _bind_term(o_pat, co, trial):
+        if (
+            _bind_term(s_pat, cs, trial)
+            and _bind_term(p_pat, cp, trial)
+            and _bind_term(o_pat, co, trial)
+        ):
             binding.update(trial)
             return True
     return False
@@ -203,8 +208,8 @@ def _insert_to_cypher(p: ParsedQuery) -> str:
         return "CREATE (n:Thing {name: 'empty'})"
     parts = []
     for s, pr, _o in p.triples:
-        label = pr.strip('<>').strip(':')
-        var = s.strip('?') if s.startswith('?') else 'n'
+        label = pr.strip("<>").strip(":")
+        var = s.strip("?") if s.startswith("?") else "n"
         parts.append(f"({var}:{label} {{rdf: '{s}'}})")
     return f"CREATE {', '.join(parts)}"
 
@@ -214,7 +219,7 @@ def _delete_to_cypher(p: ParsedQuery) -> str:
         return "MATCH (n) DELETE n"
     parts = []
     for s, pr, _o in p.triples:
-        var = s.strip('?') if s.startswith('?') else 'n'
+        var = s.strip("?") if s.startswith("?") else "n"
         parts.append(f"({var}:{pr.strip('<>').strip(':')})")
     return f"MATCH {', '.join(parts)} DELETE {', '.join(p.strip('?') if p.startswith('?') else 'n' for p in p.triples)}"
 

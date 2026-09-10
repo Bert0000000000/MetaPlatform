@@ -1,4 +1,5 @@
 """Tool calls provider adapter tests (ST-5.5.8.2)."""
+
 from __future__ import annotations
 
 import pytest

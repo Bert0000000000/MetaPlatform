@@ -11,8 +11,8 @@
 
 ## 版本历史
 
-| 版本 | 日期 | 变更说明 | 作者 |
-|---|---|---|---|
+| 版本 | 日期       | 变更说明                                       | 作者                 |
+| ---- | ---------- | ---------------------------------------------- | -------------------- |
 | v1.0 | 2026-07-16 | Phase 2 定稿：模型管理、多模态对话、批量向量化 | Mate Platform 架构组 |
 
 ---
@@ -54,7 +54,7 @@ Phase 2 在 Phase 1（供应商 CRUD + 模型路由骨架）基础上，落地�
 {
   "code": 0,
   "message": "success",
-  "data": { },
+  "data": {},
   "traceId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 }
 ```
@@ -70,20 +70,20 @@ Phase 2 在 Phase 1（供应商 CRUD + 模型路由骨架）基础上，落地�
 
 ### 2.4 错误码（Phase 2 增量）
 
-| 错误码 | HTTP 状态 | 标识 | 场景 |
-|---|---|---|---|
-| 40001 | 400 | INVALID_PARAM | 请求参数校验失败 |
-| 40003 | 400 | MISSING_REQUIRED_FIELD | 缺字段 |
-| 40004 | 400 | INVALID_FIELD_VALUE | 字段值非法 |
-| 40005 | 400 | UNSUPPORTED_MODEL_TYPE | 模型类型不支持当前端点 |
-| 40006 | 400 | UNSUPPORTED_MODALITY | 模型不支持多模态/输入模态 |
-| 40302 | 403 | TENANT_MISMATCH | 跨租户访问被拒绝 |
-| 40401 | 404 | PROVIDER_NOT_FOUND | 供应商不存在 |
-| 40402 | 404 | MODEL_NOT_FOUND | 模型不存在 |
-| 42202 | 422 | MODEL_NOT_AVAILABLE | 模型未启用 |
-| 42203 | 422 | ALL_PROVIDERS_FAILED | 调用失败 |
-| 50001 | 500 | INTERNAL_ERROR | 内部错误 |
-| 50005 | 500 | PROVIDER_API_ERROR | 供应商 API 错误 |
+| 错误码 | HTTP 状态 | 标识                   | 场景                      |
+| ------ | --------- | ---------------------- | ------------------------- |
+| 40001  | 400       | INVALID_PARAM          | 请求参数校验失败          |
+| 40003  | 400       | MISSING_REQUIRED_FIELD | 缺字段                    |
+| 40004  | 400       | INVALID_FIELD_VALUE    | 字段值非法                |
+| 40005  | 400       | UNSUPPORTED_MODEL_TYPE | 模型类型不支持当前端点    |
+| 40006  | 400       | UNSUPPORTED_MODALITY   | 模型不支持多模态/输入模态 |
+| 40302  | 403       | TENANT_MISMATCH        | 跨租户访问被拒绝          |
+| 40401  | 404       | PROVIDER_NOT_FOUND     | 供应商不存在              |
+| 40402  | 404       | MODEL_NOT_FOUND        | 模型不存在                |
+| 42202  | 422       | MODEL_NOT_AVAILABLE    | 模型未启用                |
+| 42203  | 422       | ALL_PROVIDERS_FAILED   | 调用失败                  |
+| 50001  | 500       | INTERNAL_ERROR         | 内部错误                  |
+| 50005  | 500       | PROVIDER_API_ERROR     | 供应商 API 错误           |
 
 > 全量错误码见全量规范 §2.5。Phase 2 接口的 `data` 字段可携带结构化错误信息（如 `provider/modelId/traceback`），便于排查。
 
@@ -93,14 +93,14 @@ Phase 2 在 Phase 1（供应商 CRUD + 模型路由骨架）基础上，落地�
 
 ### 3.1 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/v1/llmgw/models/sync` | 从已配置的供应商同步可用模型 |
-| GET | `/api/v1/llmgw/models` | 列出当前租户已同步的模型 |
-| GET | `/api/v1/llmgw/models/multimodal` | 仅多模态（图片输入）模型 |
-| GET | `/api/v1/llmgw/models/embedding` | 仅 Embedding 模型 |
-| GET | `/api/v1/llmgw/models/{id}` | 模型详情 |
-| GET | `/api/v1/llmgw/models/global` | 跨租户聚合：当前租户 + 公共模型 |
+| 方法 | 路径                              | 说明                            |
+| ---- | --------------------------------- | ------------------------------- |
+| POST | `/api/v1/llmgw/models/sync`       | 从已配置的供应商同步可用模型    |
+| GET  | `/api/v1/llmgw/models`            | 列出当前租户已同步的模型        |
+| GET  | `/api/v1/llmgw/models/multimodal` | 仅多模态（图片输入）模型        |
+| GET  | `/api/v1/llmgw/models/embedding`  | 仅 Embedding 模型               |
+| GET  | `/api/v1/llmgw/models/{id}`       | 模型详情                        |
+| GET  | `/api/v1/llmgw/models/global`     | 跨租户聚合：当前租户 + 公共模型 |
 
 ### 3.2 数据库表 `llm_models`
 
@@ -161,9 +161,9 @@ ModelCatalog.CATALOG = [
 }
 ```
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| providers | array[string] | 否 | 仅同步指定供应商；为空则同步当前租户全部 ACTIVE 供应商 |
+| 字段      | 类型          | 必填 | 说明                                                   |
+| --------- | ------------- | ---- | ------------------------------------------------------ |
+| providers | array[string] | 否   | 仅同步指定供应商；为空则同步当前租户全部 ACTIVE 供应商 |
 
 响应：
 
@@ -174,8 +174,20 @@ ModelCatalog.CATALOG = [
   "data": {
     "syncedAt": "2026-07-16T14:00:00.000+08:00",
     "providers": [
-      { "provider": "OPENAI", "fetched": 3, "added": 0, "updated": 3, "removed": 0 },
-      { "provider": "VOLCENGINE", "fetched": 3, "added": 1, "updated": 2, "removed": 0 }
+      {
+        "provider": "OPENAI",
+        "fetched": 3,
+        "added": 0,
+        "updated": 3,
+        "removed": 0
+      },
+      {
+        "provider": "VOLCENGINE",
+        "fetched": 3,
+        "added": 1,
+        "updated": 2,
+        "removed": 0
+      }
     ],
     "total": 6
   },
@@ -194,13 +206,13 @@ ModelCatalog.CATALOG = [
 
 Query 参数：
 
-| 参数 | 类型 | 必填 | 默认 | 说明 |
-|---|---|---|---|---|
-| provider | string | 否 | - | 供应商过滤 |
-| type | string | 否 | - | 模型类型：`CHAT` / `EMBEDDING` / `MULTIMODAL` |
-| enabled | boolean | 否 | true | 是否启用 |
-| page | integer | 否 | 1 | 页码 |
-| pageSize | integer | 否 | 20 | 1-100 |
+| 参数     | 类型    | 必填 | 默认 | 说明                                          |
+| -------- | ------- | ---- | ---- | --------------------------------------------- |
+| provider | string  | 否   | -    | 供应商过滤                                    |
+| type     | string  | 否   | -    | 模型类型：`CHAT` / `EMBEDDING` / `MULTIMODAL` |
+| enabled  | boolean | 否   | true | 是否启用                                      |
+| page     | integer | 否   | 1    | 页码                                          |
+| pageSize | integer | 否   | 20   | 1-100                                         |
 
 响应：`data.items[]` 结构：
 
@@ -246,10 +258,10 @@ Query 参数：
 
 ### 4.1 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/v1/llmgw/chat/multimodal` | 内联图片（base64 或 URL）调用 |
-| POST | `/api/v1/llmgw/chat/multimodal/upload` | multipart 文件上传 + 文本 |
+| 方法 | 路径                                   | 说明                          |
+| ---- | -------------------------------------- | ----------------------------- |
+| POST | `/api/v1/llmgw/chat/multimodal`        | 内联图片（base64 或 URL）调用 |
+| POST | `/api/v1/llmgw/chat/multimodal/upload` | multipart 文件上传 + 文本     |
 
 ### 4.2 内联调用
 
@@ -271,17 +283,17 @@ Query 参数：
 }
 ```
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| modelId | string | 是 | 多模态模型 ID（必须 `type = MULTIMODAL` 且支持 `VISION`） |
-| text | string | 是 | 用户文本，长度 1-8192 |
-| images | array | 是 | 至少 1 张，至多 8 张 |
-| images[].url | string | 否 | 与 `base64` 二选一 |
-| images[].base64 | string | 否 | 与 `url` 二选一；可带 `data:image/...;base64,` 前缀 |
-| images[].detail | string | 否 | `low` / `high` / `auto`，默认 `auto` |
-| temperature | float | 否 | 0.0-2.0，默认 0.7 |
-| maxTokens | integer | 否 | 1-8192，默认 1024 |
-| systemPrompt | string | 否 | 可选 system message |
+| 字段            | 类型    | 必填 | 说明                                                      |
+| --------------- | ------- | ---- | --------------------------------------------------------- |
+| modelId         | string  | 是   | 多模态模型 ID（必须 `type = MULTIMODAL` 且支持 `VISION`） |
+| text            | string  | 是   | 用户文本，长度 1-8192                                     |
+| images          | array   | 是   | 至少 1 张，至多 8 张                                      |
+| images[].url    | string  | 否   | 与 `base64` 二选一                                        |
+| images[].base64 | string  | 否   | 与 `url` 二选一；可带 `data:image/...;base64,` 前缀       |
+| images[].detail | string  | 否   | `low` / `high` / `auto`，默认 `auto`                      |
+| temperature     | float   | 否   | 0.0-2.0，默认 0.7                                         |
+| maxTokens       | integer | 否   | 1-8192，默认 1024                                         |
+| systemPrompt    | string  | 否   | 可选 system message                                       |
 
 响应 `data`：
 
@@ -292,7 +304,11 @@ Query 参数：
   "provider": "OPENAI",
   "content": "图中有两只猫...",
   "finishReason": "stop",
-  "usage": { "promptTokens": 1240, "completionTokens": 86, "totalTokens": 1326 },
+  "usage": {
+    "promptTokens": 1240,
+    "completionTokens": 86,
+    "totalTokens": 1326
+  },
   "latencyMs": 1820
 }
 ```
@@ -303,26 +319,26 @@ Query 参数：
 
 `multipart/form-data` 字段：
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| modelId | string | 是 | 模型 ID |
-| text | string | 是 | 文本提示 |
-| image | file[] | 是 | 至少 1 张，至多 8 张；支持 `image/png`、`image/jpeg`、`image/webp` |
-| temperature | float | 否 | - |
-| maxTokens | integer | 否 | - |
+| 字段        | 类型    | 必填 | 说明                                                               |
+| ----------- | ------- | ---- | ------------------------------------------------------------------ |
+| modelId     | string  | 是   | 模型 ID                                                            |
+| text        | string  | 是   | 文本提示                                                           |
+| image       | file[]  | 是   | 至少 1 张，至多 8 张；支持 `image/png`、`image/jpeg`、`image/webp` |
+| temperature | float   | 否   | -                                                                  |
+| maxTokens   | integer | 否   | -                                                                  |
 
 服务端将上传文件读取后转 base64 内嵌到 `images[]`，再走 4.2 同一调用路径；返回体相同。
 
 ### 4.4 错误场景
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 缺 `modelId`/`text`/`images`；图片数 0 或 > 8 |
-| 40006 | `modelId` 不是 MULTIMODAL 模型 |
-| 40402 | modelId 不存在 |
-| 42202 | 模型未启用 |
-| 42203 | 调用失败 |
-| 50005 | 供应商 API 错误 |
+| 错误码 | 场景                                          |
+| ------ | --------------------------------------------- |
+| 40001  | 缺 `modelId`/`text`/`images`；图片数 0 或 > 8 |
+| 40006  | `modelId` 不是 MULTIMODAL 模型                |
+| 40402  | modelId 不存在                                |
+| 42202  | 模型未启用                                    |
+| 42203  | 调用失败                                      |
+| 50005  | 供应商 API 错误                               |
 
 ---
 
@@ -330,8 +346,8 @@ Query 参数：
 
 ### 5.1 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
+| 方法 | 路径                             | 说明           |
+| ---- | -------------------------------- | -------------- |
 | POST | `/api/v1/llmgw/embeddings/batch` | 批量 Embedding |
 
 ### 5.2 批量调用
@@ -348,11 +364,11 @@ Query 参数：
 }
 ```
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| modelId | string | 是 | Embedding 模型 ID（`type = EMBEDDING`） |
-| inputs | array[string] | 是 | 1-100 条文本；单条 1-8192 字符 |
-| normalize | boolean | 否 | 是否 L2 归一化，默认 false |
+| 字段      | 类型          | 必填 | 说明                                    |
+| --------- | ------------- | ---- | --------------------------------------- |
+| modelId   | string        | 是   | Embedding 模型 ID（`type = EMBEDDING`） |
+| inputs    | array[string] | 是   | 1-100 条文本；单条 1-8192 字符          |
+| normalize | boolean       | 否   | 是否 L2 归一化，默认 false              |
 
 响应 `data`：
 
@@ -363,7 +379,7 @@ Query 参数：
   "dimension": 2048,
   "embeddings": [
     [0.012, -0.034, "..."],
-    [0.045,  0.067, "..."],
+    [0.045, 0.067, "..."],
     [0.078, -0.091, "..."]
   ],
   "usage": { "promptTokens": 96, "totalTokens": 96 }
@@ -372,14 +388,14 @@ Query 参数：
 
 ### 5.3 错误场景
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 缺 `modelId`/`inputs`；`inputs` 为空或 > 100 |
-| 40004 | 单条文本超长 |
-| 40005 | `modelId` 不是 EMBEDDING 类型 |
-| 40402 | modelId 不存在 |
-| 42202 | 模型未启用 |
-| 42203 | 调用失败 |
+| 错误码 | 场景                                         |
+| ------ | -------------------------------------------- |
+| 40001  | 缺 `modelId`/`inputs`；`inputs` 为空或 > 100 |
+| 40004  | 单条文本超长                                 |
+| 40005  | `modelId` 不是 EMBEDDING 类型                |
+| 40402  | modelId 不存在                               |
+| 42202  | 模型未启用                                   |
+| 42203  | 调用失败                                     |
 
 ---
 
@@ -427,22 +443,22 @@ Phase 2 提供 `MockEmbeddingClient`（基于 hash 复现为伪随机但确定�
 
 ## 7. 测试覆盖（至少 12 个用例）
 
-| # | 用例 | 类型 |
-|---|---|---|
-| 1 | `test_sync_models_success` | Service + Controller |
-| 2 | `test_sync_models_filters_inactive_provider` | Service |
-| 3 | `test_list_models_filters_by_provider_type_enabled` | Service + Controller |
-| 4 | `test_get_model_detail_404_when_missing` | Controller |
-| 5 | `test_global_models_includes_public_and_tenant` | Service |
-| 6 | `test_multimodal_requires_vision_capability` | Service |
-| 7 | `test_multimodal_chat_success_with_url_image` | Controller + Service |
-| 8 | `test_multimodal_chat_success_with_base64_image` | Controller |
-| 9 | `test_multimodal_upload_endpoint_accepts_files` | Controller (multipart) |
-| 10 | `test_embedding_batch_normalizes_vectors` | Service |
-| 11 | `test_embedding_batch_rejects_non_embedding_model` | Service |
-| 12 | `test_embedding_batch_input_too_many` | Service |
-| 13 | `test_tenant_isolation_blocks_cross_tenant_model` | Service |
-| 14 | `test_api_response_envelope_on_error` | Controller |
+| #   | 用例                                                | 类型                   |
+| --- | --------------------------------------------------- | ---------------------- |
+| 1   | `test_sync_models_success`                          | Service + Controller   |
+| 2   | `test_sync_models_filters_inactive_provider`        | Service                |
+| 3   | `test_list_models_filters_by_provider_type_enabled` | Service + Controller   |
+| 4   | `test_get_model_detail_404_when_missing`            | Controller             |
+| 5   | `test_global_models_includes_public_and_tenant`     | Service                |
+| 6   | `test_multimodal_requires_vision_capability`        | Service                |
+| 7   | `test_multimodal_chat_success_with_url_image`       | Controller + Service   |
+| 8   | `test_multimodal_chat_success_with_base64_image`    | Controller             |
+| 9   | `test_multimodal_upload_endpoint_accepts_files`     | Controller (multipart) |
+| 10  | `test_embedding_batch_normalizes_vectors`           | Service                |
+| 11  | `test_embedding_batch_rejects_non_embedding_model`  | Service                |
+| 12  | `test_embedding_batch_input_too_many`               | Service                |
+| 13  | `test_tenant_isolation_blocks_cross_tenant_model`   | Service                |
+| 14  | `test_api_response_envelope_on_error`               | Controller             |
 
 测试基于 `pytest` + FastAPI `TestClient`，所有外部调用通过 `MockProviderClient` / `MockEmbeddingClient` 注入，不发起真实 HTTP。
 

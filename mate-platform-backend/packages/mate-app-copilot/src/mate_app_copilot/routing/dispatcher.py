@@ -17,6 +17,7 @@ Error handling:
     gets a response.
   * Missing tenant context → ``TenantAccessError`` (hard rule 3).
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -31,9 +32,7 @@ from .complexity import is_deep_research_query
 logger = structlog.get_logger(__name__)
 
 #: Default A2A delegate endpoint (K8s service DNS).
-DEFAULT_A2A_DELEGATE_URL = (
-    "http://mate-app-a2a:8009/api/v1/a2a/delegate"
-)
+DEFAULT_A2A_DELEGATE_URL = "http://mate-app-a2a:8009/api/v1/a2a/delegate"
 
 
 async def dispatch(

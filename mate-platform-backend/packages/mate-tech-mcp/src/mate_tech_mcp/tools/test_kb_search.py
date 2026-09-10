@@ -1,4 +1,5 @@
 """kb_search tool tests (ST-5.3.2.2)."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -43,12 +44,11 @@ async def test_kb_search_with_kb_ids() -> None:
 
     def capture(req: Any) -> Response:
         import json
+
         captured["payload"] = json.loads(req.content)
         return Response(200, json={"hits": [], "total": 0})
 
-    respx.post("http://localhost:8006/api/v1/rag/search").mock(
-        side_effect=capture
-    )
+    respx.post("http://localhost:8006/api/v1/rag/search").mock(side_effect=capture)
     tool = KbSearchTool()
     await tool(query="x", kb_ids=["kb1", "kb2"])
     assert captured["payload"]["kb_ids"] == ["kb1", "kb2"]

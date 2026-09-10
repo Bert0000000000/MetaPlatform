@@ -99,9 +99,7 @@ class WorkflowAgent:
             status=FlowStatus.RUNNING,
         )
         self._states[state.flow_rid + ":" + ctx.session_id] = state
-        return self._run_until_blocked(
-            flow, state, ctx, manager, initial_parameters
-        )
+        return self._run_until_blocked(flow, state, ctx, manager, initial_parameters)
 
     def resume(
         self,
@@ -192,7 +190,9 @@ class WorkflowAgent:
                     state.history.append(f"action failed: {e}")
                     break
                 manager.track(
-                    kind=__import__("mate_kernel.manager.protocol", fromlist=["ChangeKind"]).ChangeKind.APPLY_ACTION,
+                    kind=__import__(
+                        "mate_kernel.manager.protocol", fromlist=["ChangeKind"]
+                    ).ChangeKind.APPLY_ACTION,
                     target_rid=node.action_rid,
                     payload={"node": node.node_id, "flow": flow.flow_rid},
                 )

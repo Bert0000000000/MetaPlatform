@@ -1,4 +1,5 @@
 """Cross-tenant integration tests for mate-tech-metrics (ADR-0014 step 5)."""
+
 from __future__ import annotations
 
 import time

@@ -6,6 +6,7 @@ rejected with a startup guard (硬规则 5: no legacy fallback in prod).
 
 Dev/test falls back to in-process SQLite so unit tests stay fast.
 """
+
 from __future__ import annotations
 
 import os
@@ -48,11 +49,15 @@ def _resolve_dsn(url: str | None = None) -> str:
     # blank values as unset; passing ``""``/whitespace to SQLAlchemy produces
     # an opaque URL parse error and prevents the documented dev SQLite default.
     dsn = next(
-        (candidate.strip() for candidate in (
-            url,
-            os.environ.get("MATE_DB_URL"),
-            os.environ.get("DATABASE_URL"),
-        ) if candidate and candidate.strip()),
+        (
+            candidate.strip()
+            for candidate in (
+                url,
+                os.environ.get("MATE_DB_URL"),
+                os.environ.get("DATABASE_URL"),
+            )
+            if candidate and candidate.strip()
+        ),
         None,
     )
 
@@ -90,9 +95,7 @@ def init_engine(url: str | None = None, echo: bool = False) -> Any:
             poolclass=StaticPool,
         )
     _state.engine = create_engine(dsn, **engine_kwargs)
-    _state.session_local = sessionmaker(
-        bind=_state.engine, class_=Session, expire_on_commit=False
-    )
+    _state.session_local = sessionmaker(bind=_state.engine, class_=Session, expire_on_commit=False)
     return _state.engine
 
 

@@ -41,8 +41,9 @@ _BUILTINS: tuple[ValueType, ...] = (
     ValueType("audio", PropertyFormat.AUDIO, "媒体：音频"),
     ValueType("video", PropertyFormat.VIDEO, "媒体：视频"),
     ValueType("struct", PropertyFormat.STRUCT, "嵌套结构（struct_fields 定义）"),
-    ValueType("vector", PropertyFormat.VECTOR, "embedding 向量（dims 见 params）",
-              {"dims": 0}),  # 0 = 未约束
+    ValueType(
+        "vector", PropertyFormat.VECTOR, "embedding 向量（dims 见 params）", {"dims": 0}
+    ),  # 0 = 未约束
 )
 
 _REGISTRY: dict[str, ValueType] = {vt.type_id: vt for vt in _BUILTINS}
@@ -50,9 +51,7 @@ _REGISTRY: dict[str, ValueType] = {vt.type_id: vt for vt in _BUILTINS}
 
 def register_value_type(vt: ValueType, *, replace: bool = False) -> None:
     if vt.type_id in _REGISTRY and not replace:
-        raise ValueError(
-            f"value type {vt.type_id!r} already registered; pass replace=True"
-        )
+        raise ValueError(f"value type {vt.type_id!r} already registered; pass replace=True")
     _REGISTRY[vt.type_id] = vt
 
 
@@ -75,9 +74,7 @@ def validate_property(p: Property) -> list[str]:
     violations: list[str] = []
     vt = _REGISTRY.get(p.type_id)
     if vt is None:
-        violations.append(
-            f"property {p.rid.rid} references unregistered value type {p.type_id!r}"
-        )
+        violations.append(f"property {p.rid.rid} references unregistered value type {p.type_id!r}")
     elif vt.format is not p.format:
         violations.append(
             f"property {p.rid.rid} format {p.format.value!r} != "

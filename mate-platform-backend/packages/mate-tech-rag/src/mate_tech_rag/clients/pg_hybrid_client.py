@@ -6,6 +6,7 @@ are persisted as JSONB and ranked by cosine in Python (dev scale), BM25 runs
 on the CJK-bigram tsvector column. Everything survives restarts — this is
 the client behind ``RAG_MODE=pg``.
 """
+
 from __future__ import annotations
 
 import logging
@@ -46,8 +47,12 @@ class PgHybridClient:
         tenant_id = meta.get("tenant_id", "default")
         chunk_id = str(uuid.uuid4())
         self._pg.upsert_chunk(
-            chunk_id, document_id, text, meta,
-            embedding=vector, tenant_id=tenant_id,
+            chunk_id,
+            document_id,
+            text,
+            meta,
+            embedding=vector,
+            tenant_id=tenant_id,
         )
         return chunk_id
 

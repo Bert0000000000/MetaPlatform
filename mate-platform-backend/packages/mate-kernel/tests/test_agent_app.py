@@ -90,8 +90,18 @@ class TestAppAgent:
             title="Order",
             slots=(
                 Slot(slot_id="t", kind=SlotKind.TABLE, target_rid=_cls().rid),
-                Slot(slot_id="approve", kind=SlotKind.ACTION_BUTTON, target_rid="ont.acme.act.approve", label="Approve"),
-                Slot(slot_id="reject", kind=SlotKind.ACTION_BUTTON, target_rid="ont.acme.act.reject", label="Reject"),
+                Slot(
+                    slot_id="approve",
+                    kind=SlotKind.ACTION_BUTTON,
+                    target_rid="ont.acme.act.approve",
+                    label="Approve",
+                ),
+                Slot(
+                    slot_id="reject",
+                    kind=SlotKind.ACTION_BUTTON,
+                    target_rid="ont.acme.act.reject",
+                    label="Reject",
+                ),
             ),
         )
         app = AppDefinition(app_rid="app.acme.app.order.v1", name="Order", pages=(page,))
@@ -143,4 +153,5 @@ class TestBuildCrudApp:
 class TestSelectorRoutedToApp:
     def test_app_rid_routes_to_app(self) -> None:
         from mate_kernel.agent.orchestrator import AgentRole, AgentSelector
+
         assert AgentSelector().select("app.acme.app.order.v1") == AgentRole.APP

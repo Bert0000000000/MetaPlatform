@@ -53,8 +53,11 @@
   ],
   "roles": {
     "realm": [
-      {"name": "user", "description": "Default user role"},
-      {"name": "PLATFORM_ADMIN", "description": "Platform administrator (maps to mate-tech-iam admin guard)"}
+      { "name": "user", "description": "Default user role" },
+      {
+        "name": "PLATFORM_ADMIN",
+        "description": "Platform administrator (maps to mate-tech-iam admin guard)"
+      }
     ]
   },
   "clients": [

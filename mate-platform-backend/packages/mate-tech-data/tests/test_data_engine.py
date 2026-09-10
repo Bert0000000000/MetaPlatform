@@ -4,6 +4,7 @@ Covers happy-path, error, and timeout scenarios for the
 ``DebeziumEngine`` (Kafka Connect REST API) and the
 ``AsyncDataClient`` delegation layer.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -23,14 +24,17 @@ from mate_tech_data.services.debezium_engine import DebeziumEngine, DebeziumEngi
 async def test_debezium_start_cdc_task_success() -> None:
     """POST /connectors → connector created and running."""
     respx.post("http://kafka-connect:8083/connectors").mock(
-        return_value=httpx.Response(201, json={
-            "name": "orders-connector",
-            "config": {
-                "connector.class": "io.debezium.connector.mysql.MySqlConnector",
-                "database.hostname": "mysql.example.com",
+        return_value=httpx.Response(
+            201,
+            json={
+                "name": "orders-connector",
+                "config": {
+                    "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+                    "database.hostname": "mysql.example.com",
+                },
+                "tasks": [{"id": 0, "state": "RUNNING"}],
             },
-            "tasks": [{"id": 0, "state": "RUNNING"}],
-        })
+        )
     )
     engine = DebeziumEngine(
         base_url="http://kafka-connect:8083",
@@ -123,11 +127,14 @@ async def test_debezium_stop_cdc_task_not_found() -> None:
 async def test_debezium_get_status_running() -> None:
     """GET /connectors/{name}/status → all tasks RUNNING."""
     respx.get("http://kafka-connect:8083/connectors/orders-connector/status").mock(
-        return_value=httpx.Response(200, json={
-            "name": "orders-connector",
-            "connector": {"state": "RUNNING", "worker_id": "worker-1"},
-            "tasks": [{"id": 0, "state": "RUNNING", "worker_id": "worker-1"}],
-        })
+        return_value=httpx.Response(
+            200,
+            json={
+                "name": "orders-connector",
+                "connector": {"state": "RUNNING", "worker_id": "worker-1"},
+                "tasks": [{"id": 0, "state": "RUNNING", "worker_id": "worker-1"}],
+            },
+        )
     )
     engine = DebeziumEngine(
         base_url="http://kafka-connect:8083",
@@ -143,11 +150,14 @@ async def test_debezium_get_status_running() -> None:
 async def test_debezium_get_status_paused() -> None:
     """GET /connectors/{name}/status → tasks PAUSED."""
     respx.get("http://kafka-connect:8083/connectors/orders-connector/status").mock(
-        return_value=httpx.Response(200, json={
-            "name": "orders-connector",
-            "connector": {"state": "PAUSED", "worker_id": "worker-1"},
-            "tasks": [{"id": 0, "state": "PAUSED", "worker_id": "worker-1"}],
-        })
+        return_value=httpx.Response(
+            200,
+            json={
+                "name": "orders-connector",
+                "connector": {"state": "PAUSED", "worker_id": "worker-1"},
+                "tasks": [{"id": 0, "state": "PAUSED", "worker_id": "worker-1"}],
+            },
+        )
     )
     engine = DebeziumEngine(
         base_url="http://kafka-connect:8083",
@@ -163,11 +173,14 @@ async def test_debezium_get_status_paused() -> None:
 async def test_debezium_get_status_failed() -> None:
     """GET /connectors/{name}/status → task FAILED."""
     respx.get("http://kafka-connect:8083/connectors/orders-connector/status").mock(
-        return_value=httpx.Response(200, json={
-            "name": "orders-connector",
-            "connector": {"state": "RUNNING", "worker_id": "worker-1"},
-            "tasks": [{"id": 0, "state": "FAILED", "worker_id": "worker-1"}],
-        })
+        return_value=httpx.Response(
+            200,
+            json={
+                "name": "orders-connector",
+                "connector": {"state": "RUNNING", "worker_id": "worker-1"},
+                "tasks": [{"id": 0, "state": "FAILED", "worker_id": "worker-1"}],
+            },
+        )
     )
     engine = DebeziumEngine(
         base_url="http://kafka-connect:8083",
@@ -236,16 +249,17 @@ async def test_debezium_restart_cdc_task_success() -> None:
 @respx.mock
 async def test_debezium_retry_on_server_error() -> None:
     """500 → retried, then succeeds."""
-    route = respx.get(
-        "http://kafka-connect:8083/connectors/orders-connector/status"
-    ).mock(
+    route = respx.get("http://kafka-connect:8083/connectors/orders-connector/status").mock(
         side_effect=[
             httpx.Response(500, text="Internal error"),
-            httpx.Response(200, json={
-                "name": "orders-connector",
-                "connector": {"state": "RUNNING"},
-                "tasks": [{"id": 0, "state": "RUNNING"}],
-            }),
+            httpx.Response(
+                200,
+                json={
+                    "name": "orders-connector",
+                    "connector": {"state": "RUNNING"},
+                    "tasks": [{"id": 0, "state": "RUNNING"}],
+                },
+            ),
         ]
     )
     engine = DebeziumEngine(
@@ -280,14 +294,17 @@ async def test_debezium_timeout() -> None:
 async def test_debezium_discover_schema_success() -> None:
     """GET /connectors/{name} → schema parsed from config."""
     respx.get("http://kafka-connect:8083/connectors/orders-connector").mock(
-        return_value=httpx.Response(200, json={
-            "name": "orders-connector",
-            "config": {
-                "connector.class": "io.debezium.connector.mysql.MySqlConnector",
-                "database.hostname": "mysql.example.com",
-                "table.include.list": "orders.orders,orders.order_items",
+        return_value=httpx.Response(
+            200,
+            json={
+                "name": "orders-connector",
+                "config": {
+                    "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+                    "database.hostname": "mysql.example.com",
+                    "table.include.list": "orders.orders,orders.order_items",
+                },
             },
-        })
+        )
     )
     engine = DebeziumEngine(
         base_url="http://kafka-connect:8083",
@@ -306,12 +323,15 @@ async def test_debezium_discover_schema_success() -> None:
 async def test_debezium_discover_schema_no_tables() -> None:
     """GET /connectors/{name} with no table whitelist → empty tables."""
     respx.get("http://kafka-connect:8083/connectors/bare-connector").mock(
-        return_value=httpx.Response(200, json={
-            "name": "bare-connector",
-            "config": {
-                "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+        return_value=httpx.Response(
+            200,
+            json={
+                "name": "bare-connector",
+                "config": {
+                    "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+                },
             },
-        })
+        )
     )
     engine = DebeziumEngine(
         base_url="http://kafka-connect:8083",
@@ -330,21 +350,27 @@ async def test_debezium_discover_schema_no_tables() -> None:
 async def test_debezium_test_connection_success() -> None:
     """test_connection creates a connector, checks status, and cleans up."""
     respx.post("http://kafka-connect:8083/connectors").mock(
-        return_value=httpx.Response(201, json={
-            "name": "test-cdc-001",
-            "config": {},
-            "status": {
+        return_value=httpx.Response(
+            201,
+            json={
+                "name": "test-cdc-001",
+                "config": {},
+                "status": {
+                    "connector": {"state": "RUNNING"},
+                    "tasks": [{"id": 0, "state": "RUNNING"}],
+                },
+            },
+        )
+    )
+    respx.get("http://kafka-connect:8083/connectors/test-cdc-001/status").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "name": "test-cdc-001",
                 "connector": {"state": "RUNNING"},
                 "tasks": [{"id": 0, "state": "RUNNING"}],
             },
-        })
-    )
-    respx.get("http://kafka-connect:8083/connectors/test-cdc-001/status").mock(
-        return_value=httpx.Response(200, json={
-            "name": "test-cdc-001",
-            "connector": {"state": "RUNNING"},
-            "tasks": [{"id": 0, "state": "RUNNING"}],
-        })
+        )
     )
     respx.delete("http://kafka-connect:8083/connectors/test-cdc-001").mock(
         return_value=httpx.Response(204)
@@ -396,10 +422,13 @@ async def test_debezium_test_connection_failure() -> None:
 async def test_data_client_delegates_start() -> None:
     """AsyncDataClient.start_cdc_task delegates to DebeziumEngine."""
     mock_debezium = MagicMock(spec=DebeziumEngine)
-    mock_debezium.start_cdc_task = AsyncMock(return_value=MagicMock(
-        task_id="cdc-001", connector_name="orders-connector",
-        status="running",
-    ))
+    mock_debezium.start_cdc_task = AsyncMock(
+        return_value=MagicMock(
+            task_id="cdc-001",
+            connector_name="orders-connector",
+            status="running",
+        )
+    )
     mock_debezium.close = AsyncMock()
 
     client = AsyncDataClient(
@@ -421,10 +450,13 @@ async def test_data_client_delegates_start() -> None:
 async def test_data_client_delegates_stop() -> None:
     """AsyncDataClient.stop_cdc_task delegates to DebeziumEngine."""
     mock_debezium = MagicMock(spec=DebeziumEngine)
-    mock_debezium.stop_cdc_task = AsyncMock(return_value=MagicMock(
-        task_id="cdc-001", connector_name="orders-connector",
-        status="stopped",
-    ))
+    mock_debezium.stop_cdc_task = AsyncMock(
+        return_value=MagicMock(
+            task_id="cdc-001",
+            connector_name="orders-connector",
+            status="stopped",
+        )
+    )
     mock_debezium.close = AsyncMock()
 
     client = AsyncDataClient(
@@ -441,9 +473,13 @@ async def test_data_client_delegates_stop() -> None:
 async def test_data_client_delegates_test_connection() -> None:
     """AsyncDataClient.test_connection delegates to DebeziumEngine."""
     mock_debezium = MagicMock(spec=DebeziumEngine)
-    mock_debezium.test_connection = AsyncMock(return_value={
-        "task_id": "cdc-001", "ok": True, "status": "running",
-    })
+    mock_debezium.test_connection = AsyncMock(
+        return_value={
+            "task_id": "cdc-001",
+            "ok": True,
+            "status": "running",
+        }
+    )
     mock_debezium.close = AsyncMock()
 
     client = AsyncDataClient(

@@ -12,6 +12,7 @@ The tests run against the live FastAPI app via ``httpx.AsyncClient``
 (with auth middleware in INSECURE_SKIP_SIGNATURE mode) so that the
 route handlers — not just the cypher helpers — are exercised.
 """
+
 from __future__ import annotations
 
 # ─────────────────────────────────────────────────────────────────────
@@ -74,9 +75,7 @@ def _seed_acme_and_other() -> None:
     instance_store.create_instance(other_ctx, class_id="Order", properties={"id": "O1"})
 
 
-_SELECT_ALL = (
-    "SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 50"
-)
+_SELECT_ALL = "SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 50"
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -146,16 +145,17 @@ def test_vector2_payload_namespace_cannot_override_ctx_tenant(
     # ``ont.other.``); no acme row may be present even under the
     # relaxed namespace list.
     other_prefix_ids = {
-        i.id for i in instance_store.list_instances(
+        i.id
+        for i in instance_store.list_instances(
             TenantContext(tenant_id="other", user_id="m", roles=("editor",))
         )
     }
     for iid in ids:
         if iid is None:
             continue
-        assert iid in other_prefix_ids or not iid.startswith(
-            ("A", "O")
-        ), f"unexpected cross-tenant instance id: {iid}"
+        assert iid in other_prefix_ids or not iid.startswith(("A", "O")), (
+            f"unexpected cross-tenant instance id: {iid}"
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────

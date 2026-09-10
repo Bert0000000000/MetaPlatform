@@ -4,6 +4,7 @@
 规则谓词异常按 fail-closed 处理（视为拒绝）。供 cordis 面板能力调用与
 服务端点包装复用。
 """
+
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
@@ -55,8 +56,7 @@ class PolicyEngine:
             elif hit:
                 allowed_by.append(rule.name)
         if denied:
-            return PolicyVerdict(False, denied,
-                                 f"denied by: {', '.join(denied)}")
+            return PolicyVerdict(False, denied, f"denied by: {', '.join(denied)}")
         return PolicyVerdict(True, allowed_by, "allow")
 
 

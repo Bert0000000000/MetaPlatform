@@ -5,10 +5,12 @@ from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8")
 
+
 def get_tables(db):
     r = subprocess.run(
         ["docker", "exec", "mate-postgres", "psql", "-U", "meta", "-d", db, "-c", r"\dt"],
-        capture_output=True, text=True
+        capture_output=True,
+        text=True,
     )
     tables = []
     for line in r.stdout.splitlines():
@@ -17,11 +19,27 @@ def get_tables(db):
             tables.append(m.group(1))
     return tables
 
+
 def get_columns(db, table):
     try:
         r = subprocess.run(
-            ["docker", "exec", "mate-postgres", "psql", "-U", "meta", "-d", db, "-c", r"\d " + table],
-            capture_output=True, text=True, encoding="utf-8", errors="ignore", timeout=10
+            [
+                "docker",
+                "exec",
+                "mate-postgres",
+                "psql",
+                "-U",
+                "meta",
+                "-d",
+                db,
+                "-c",
+                r"\d " + table,
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+            timeout=10,
         )
     except Exception:
         return []
@@ -30,9 +48,10 @@ def get_columns(db, table):
     cols = []
     for line in r.stdout.splitlines():
         m = re.match(r"\s+(\w+)\s*\|\s*(.+?)\s*\|\s*(.+)$", line)
-        if m and m.group(1) not in ('Column', 'Indexes', '---', 'References'):
+        if m and m.group(1) not in ("Column", "Indexes", "---", "References"):
             cols.append({"name": m.group(1), "type": m.group(2), "rest": m.group(3)})
     return cols
+
 
 def pg_to_java(pg_type, module=None):
     pg_type = pg_type.lower()
@@ -62,15 +81,19 @@ def pg_to_java(pg_type, module=None):
         return "byte[]"
     return "String"
 
+
 def to_camel(name):
-    parts = name.split('_')
+    parts = name.split("_")
     if not parts:
         return name
+
     def smart_title(s):
         if s and s[0].isdigit():
             return s.lower()
         return s.title()
-    return parts[0].lower() + ''.join(smart_title(p) for p in parts[1:])
+
+    return parts[0].lower() + "".join(smart_title(p) for p in parts[1:])
+
 
 def jdbc_type_for(pg_type):
     pg_type = pg_type.lower()
@@ -80,42 +103,62 @@ def jdbc_type_for(pg_type):
         return "VARCHAR"
     return None
 
+
 def needs_lob(pg_type):
     pg_type = pg_type.lower()
     return "jsonb" in pg_type or pg_type in {"json", "text"}
 
+
 MODULES = {
     "TECH-AGENT": "metaplatform_agent",
     "TECH-LLMGW": "metaplatform_llmgw",
-    "TECH-A2A":   "metaplatform_a2a",
-    "TECH-RAG":   "metaplatform_rag",
-    "TECH-DATA":  "metaplatform_data",
-    "TECH-IAM":   "metaplatform_iam",
-    "TECH-ONT":   "metaplatform_ont",
-    "TECH-RULE":  "metaplatform_rule",
-    "TECH-WFE":   "metaplatform_wfe",
-    "TECH-GW":    "metaplatform_gw",
-    "TECH-EA":    "metaplatform_ea",
-    "TECH-ACTION":"metaplatform_action",
+    "TECH-A2A": "metaplatform_a2a",
+    "TECH-RAG": "metaplatform_rag",
+    "TECH-DATA": "metaplatform_data",
+    "TECH-IAM": "metaplatform_iam",
+    "TECH-ONT": "metaplatform_ont",
+    "TECH-RULE": "metaplatform_rule",
+    "TECH-WFE": "metaplatform_wfe",
+    "TECH-GW": "metaplatform_gw",
+    "TECH-EA": "metaplatform_ea",
+    "TECH-ACTION": "metaplatform_action",
 }
 
 # Per-module timestamp type preference
 TIMESTAMP_TYPE = {
     "TECH-AGENT": "OffsetDateTime",
     "TECH-LLMGW": "LocalDateTime",
-    "TECH-A2A":   "OffsetDateTime",
-    "TECH-RAG":   "OffsetDateTime",
-    "TECH-DATA":  "OffsetDateTime",
-    "TECH-IAM":   "LocalDateTime",
-    "TECH-ONT":   "LocalDateTime",
-    "TECH-RULE":  "LocalDateTime",
-    "TECH-WFE":   "LocalDateTime",
-    "TECH-GW":    "LocalDateTime",
-    "TECH-EA":    "LocalDateTime",
-    "TECH-ACTION":"LocalDateTime",
+    "TECH-A2A": "OffsetDateTime",
+    "TECH-RAG": "OffsetDateTime",
+    "TECH-DATA": "OffsetDateTime",
+    "TECH-IAM": "LocalDateTime",
+    "TECH-ONT": "LocalDateTime",
+    "TECH-RULE": "LocalDateTime",
+    "TECH-WFE": "LocalDateTime",
+    "TECH-GW": "LocalDateTime",
+    "TECH-EA": "LocalDateTime",
+    "TECH-ACTION": "LocalDateTime",
 }
 
-PREFIXES = ["Llmgw", "A2a", "Mcp", "Agent", "Data", "Rag", "Rule", "Wfe", "Msg", "Obs", "Gw", "Ea", "Action", "Ont", "Iam", "Mate"]
+PREFIXES = [
+    "Llmgw",
+    "A2a",
+    "Mcp",
+    "Agent",
+    "Data",
+    "Rag",
+    "Rule",
+    "Wfe",
+    "Msg",
+    "Obs",
+    "Gw",
+    "Ea",
+    "Action",
+    "Ont",
+    "Iam",
+    "Mate",
+]
+
 
 def find_entity_file(module, table):
     module_path = Path(module) / "src" / "main" / "java"
@@ -132,6 +175,7 @@ def find_entity_file(module, table):
         for p in module_path.rglob(cand + ".java"):
             return p
     return None
+
 
 def generate_entity(module, package_path, table, columns, class_name):
     pass
@@ -189,7 +233,7 @@ def generate_entity(module, package_path, table, columns, class_name):
         seen.add(c["name"])
         java_type = pg_to_java(c["type"], module)
         field_name = to_camel(c["name"])
-        is_pk = (c == pk_col)
+        is_pk = c == pk_col
         is_not_null = "not null" in c["rest"]
         is_lob = needs_lob(c["type"])
         jdbc = jdbc_type_for(c["type"])
@@ -221,6 +265,7 @@ def generate_entity(module, package_path, table, columns, class_name):
 
     lines.append("}")
     return "\n".join(lines) + "\n"
+
 
 for module, db in MODULES.items():
     tables = get_tables(db)

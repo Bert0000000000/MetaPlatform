@@ -22,6 +22,7 @@ the source of truth.
 Write handlers emit `<domain>.<aggregate>.<verb>` outbox events via
 `app.state.outbox_writer` (ADR-0014 step 3).
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -69,9 +70,7 @@ def _emit(
     tenant_id: str,
 ) -> None:
     """Append an outbox event if a writer is configured (no-op otherwise)."""
-    writer: InMemoryOutboxWriter | None = getattr(
-        request.app.state, "outbox_writer", None
-    )
+    writer: InMemoryOutboxWriter | None = getattr(request.app.state, "outbox_writer", None)
     if writer is None:
         return
     writer.append(
@@ -170,9 +169,7 @@ def _task_to_a2a_task(task: Any) -> A2ATask:
     context_id = str(task.context.get("contextId") or task.id)
     artifacts: list[A2AArtifact] = []
     if getattr(task, "result", None):
-        artifacts.append(
-            A2AArtifact(parts=[A2APart(kind="data", data={"result": task.result})])
-        )
+        artifacts.append(A2AArtifact(parts=[A2APart(kind="data", data={"result": task.result})]))
     return A2ATask(
         id=task.id,
         contextId=context_id,
@@ -347,7 +344,9 @@ async def execute(request: Request, message: A2AMessage) -> dict[str, Any]:
 # --- Delegation (1 POST, deprecated in favour of /messages) -----------------
 @router.post("/delegate", deprecated=True)
 async def delegate(
-    request: Request, body: dict[str, Any], response: Response,
+    request: Request,
+    body: dict[str, Any],
+    response: Response,
 ) -> dict[str, Any]:
     tid = _tid(request)
     # Superseded by the W3C `POST /messages` envelope (GOVERN-12-03).
@@ -376,7 +375,9 @@ async def delegate(
 # --- Task result (1 POST) ---------------------------------------------------
 @router.post("/tasks/{task_id}/result")
 async def submit_task_result(
-    request: Request, task_id: str, body: dict[str, Any],
+    request: Request,
+    task_id: str,
+    body: dict[str, Any],
 ) -> dict[str, Any]:
     tid = _tid(request)
     result = body.get("result", {})
@@ -420,7 +421,8 @@ async def register_agent(request: Request, body: dict[str, Any]) -> dict[str, An
 # --- External agent call (1 POST, TD-4 real) --------------------------------
 @router.post("/external")
 async def call_external_agent(
-    request: Request, body: dict[str, Any],
+    request: Request,
+    body: dict[str, Any],
 ) -> dict[str, Any]:
     """Call a registered external (federated) agent synchronously (TD-4).
 

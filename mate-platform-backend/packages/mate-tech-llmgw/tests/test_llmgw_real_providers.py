@@ -9,6 +9,7 @@ Tests cover:
   - test_real_chat_route_openai: POST /llmgw/chat/real with openai
   - test_real_chat_route_fallback: no key → fallback=true
 """
+
 from __future__ import annotations
 
 import os

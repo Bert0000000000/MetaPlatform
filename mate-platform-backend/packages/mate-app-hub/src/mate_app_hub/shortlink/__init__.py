@@ -7,6 +7,7 @@ Public API:
   - service:    create_shortlink / resolve_shortlink / list_shortlinks /
                 revoke_shortlink / get_default_store
 """
+
 from __future__ import annotations
 
 from .generator import ALPHABET, generate_code

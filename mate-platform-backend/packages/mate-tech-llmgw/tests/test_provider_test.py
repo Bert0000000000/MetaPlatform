@@ -4,6 +4,7 @@ Covers the four supported providers plus the no-base-url and
 unknown-provider paths. All HTTP calls are mocked via httpx
 MockTransport so the tests run in CI without upstream access.
 """
+
 from __future__ import annotations
 
 import httpx
@@ -42,8 +43,7 @@ def test_default_probe_url_strips_trailing_slash() -> None:
         == "https://api.openai.com/v1/models"
     )
     assert (
-        default_probe_url("ollama", "http://localhost:11434")
-        == "http://localhost:11434/api/tags"
+        default_probe_url("ollama", "http://localhost:11434") == "http://localhost:11434/api/tags"
     )
     assert (
         default_probe_url("azure", "https://x.openai.azure.com/openai/deployments")
@@ -201,7 +201,11 @@ def test_probe_sends_authorization_header_when_key_provided() -> None:
 
     httpx.AsyncClient.__init__ = _patched  # type: ignore[assignment]
     try:
-        _run(probe(provider="openai", base_url="https://api.example.com", api_key="sk-test-1234567890"))
+        _run(
+            probe(
+                provider="openai", base_url="https://api.example.com", api_key="sk-test-1234567890"
+            )
+        )
     finally:
         httpx.AsyncClient.__init__ = original  # type: ignore[assignment]
     assert captured["authorization"] == "Bearer sk-test-1234567890"

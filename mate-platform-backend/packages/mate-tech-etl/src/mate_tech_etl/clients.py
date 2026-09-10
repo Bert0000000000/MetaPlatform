@@ -14,6 +14,7 @@ every outbound call is bounded by a timeout.
 The client shape (``base_url`` + ``timeout_seconds``) is preserved from
 the P2-W7 reserved interface; new engine methods are additive.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -81,9 +82,7 @@ class AsyncEtlClient:
         if engine_lower == "flink":
             assert self.flink_engine is not None
             return await self.flink_engine.run_task(task_id, **kwargs)
-        raise ValueError(
-            f"Unknown ETL engine '{engine}'. Supported: spark, flink."
-        )
+        raise ValueError(f"Unknown ETL engine '{engine}'. Supported: spark, flink.")
 
     async def stop_task(
         self,
@@ -100,9 +99,7 @@ class AsyncEtlClient:
         if engine_lower == "flink":
             assert self.flink_engine is not None
             return await self.flink_engine.stop_task(task_id, engine_job_id)
-        raise ValueError(
-            f"Unknown ETL engine '{engine}'. Supported: spark, flink."
-        )
+        raise ValueError(f"Unknown ETL engine '{engine}'. Supported: spark, flink.")
 
     async def get_status(
         self,
@@ -119,9 +116,7 @@ class AsyncEtlClient:
         if engine_lower == "flink":
             assert self.flink_engine is not None
             return await self.flink_engine.get_status(task_id, engine_job_id)
-        raise ValueError(
-            f"Unknown ETL engine '{engine}'. Supported: spark, flink."
-        )
+        raise ValueError(f"Unknown ETL engine '{engine}'. Supported: spark, flink.")
 
     async def close(self) -> None:
         """Release resources held by the engine adapters."""

@@ -12,6 +12,7 @@ peers that skip signature verification — same contract as
 mate-tech-iam ``_make_token``. This keeps the orchestrator → center
 leg authenticated end-to-end in the dev environment.
 """
+
 from __future__ import annotations
 
 import os
@@ -86,4 +87,3 @@ def build_service_identity() -> Any:
             scope="platform.read platform.write",
         )
     return LegacyServiceIdentity()
-

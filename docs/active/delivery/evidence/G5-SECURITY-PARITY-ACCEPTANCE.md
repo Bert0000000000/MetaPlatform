@@ -1,8 +1,8 @@
 # G5 — Security 三段式补齐 — ACCEPTANCE
 
-> **Batch**: G5-SECURITY-PARITY  
-> **Date**: 2026-08-02  
-> **Status**: Accepted  
+> **Batch**: G5-SECURITY-PARITY
+> **Date**: 2026-08-02
+> **Status**: Accepted
 > **Related**: v3.2 W3 Week2 · ADR-0011 (SEC-IAM-01) · 13 硬规则 §1
 
 ## 1. 目标
@@ -12,49 +12,49 @@ security contract：
 
 ```yaml
 security:
-  - bearerAuth: []          # Keycloak JWT
-    tenantHeader: []        # X-Tenant-Id
+  - bearerAuth: [] # Keycloak JWT
+    tenantHeader: [] # X-Tenant-Id
     oidcScopes: [platform.read | platform.write | platform.admin]
 ```
 
 ## 2. Scope 分配规则
 
-| 条件 | oidcScopes |
-|---|---|
-| GET / HEAD / OPTIONS | `[platform.read]` |
-| POST / PUT / DELETE / PATCH | `[platform.write]` |
-| `/admin/` + GET | `[platform.admin]` |
+| 条件                        | oidcScopes                         |
+| --------------------------- | ---------------------------------- |
+| GET / HEAD / OPTIONS        | `[platform.read]`                  |
+| POST / PUT / DELETE / PATCH | `[platform.write]`                 |
+| `/admin/` + GET             | `[platform.admin]`                 |
 | `/admin/` + POST/PUT/DELETE | `[platform.write, platform.admin]` |
 
 ## 3. 豁免规则
 
-| 路径 | 理由 |
-|---|---|
+| 路径                           | 理由                          |
+| ------------------------------ | ----------------------------- |
 | `/healthz` `/readyz` `/health` | 基础设施探针，最多 bearerAuth |
-| `/metrics` | Prometheus scrape，无需 auth |
-| `security: []` endpoints | 登录/刷新/SSO 等故意公开 |
+| `/metrics`                     | Prometheus scrape，无需 auth  |
+| `security: []` endpoints       | 登录/刷新/SSO 等故意公开      |
 
 ## 4. 补齐统计
 
-| 域 | endpoints 补齐 |
-|---|---|
-| a2a | 2 |
-| agent | 5 |
-| apphub | 5 |
-| arch | 29 |
-| copilot | 35 |
-| dashboard | 33 |
-| data | 39 |
-| dw | 15 |
-| iam | 38 (含 25 admin) |
-| kb | 5 |
-| llmgw | 4 |
-| mcp | 12 (含 1 +tenantHeader) |
-| msg | 2 |
-| obs | 7 |
-| ont | 12 |
-| rag | 7 |
-| wfe | 2 |
+| 域        | endpoints 补齐                |
+| --------- | ----------------------------- |
+| a2a       | 2                             |
+| agent     | 5                             |
+| apphub    | 5                             |
+| arch      | 29                            |
+| copilot   | 35                            |
+| dashboard | 33                            |
+| data      | 39                            |
+| dw        | 15                            |
+| iam       | 38 (含 25 admin)              |
+| kb        | 5                             |
+| llmgw     | 4                             |
+| mcp       | 12 (含 1 +tenantHeader)       |
+| msg       | 2                             |
+| obs       | 7                             |
+| ont       | 12                            |
+| rag       | 7                             |
+| wfe       | 2                             |
 | **TOTAL** | **252 endpoints, 253 行插入** |
 
 ## 5. 测试覆盖

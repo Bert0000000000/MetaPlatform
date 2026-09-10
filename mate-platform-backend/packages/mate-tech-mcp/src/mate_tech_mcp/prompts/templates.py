@@ -2,6 +2,7 @@
 
 3 个模板: summarize_doc / extract_entities / plan_task.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -29,11 +30,7 @@ class PromptTemplate:
 SUMMARIZE_DOC = PromptTemplate(
     name="summarize_doc",
     description="总结文档内容(输入文档全文)",
-    template=(
-        "请用 3 句话总结以下文档:\n"
-        "--- 文档开始 ---\n{document}\n--- 文档结束 ---\n"
-        "总结:"
-    ),
+    template=("请用 3 句话总结以下文档:\n--- 文档开始 ---\n{document}\n--- 文档结束 ---\n总结:"),
     arguments=["document"],
 )
 
@@ -43,7 +40,7 @@ EXTRACT_ENTITIES = PromptTemplate(
     template=(
         "从以下文本抽取 ontology 实体, 输出 JSON 列表:\n"
         "{text}\n\n"
-        "格式: [{{\"id\": \"...\", \"type\": \"Concept|Object|Metric|Action\", \"label\": \"...\"}}]"
+        '格式: [{{"id": "...", "type": "Concept|Object|Metric|Action", "label": "..."}}]'
     ),
     arguments=["text"],
 )
@@ -54,7 +51,7 @@ PLAN_TASK = PromptTemplate(
     template=(
         "任务: {task}\n"
         "可用工具: {tools}\n\n"
-        "请输出 JSON 计划: [{{\"step\": 1, \"tool\": \"...\", \"args\": {{...}}}}]"
+        '请输出 JSON 计划: [{{"step": 1, "tool": "...", "args": {{...}}}}]'
     ),
     arguments=["task", "tools"],
 )
@@ -73,9 +70,7 @@ def list_prompts() -> list[dict[str, Any]]:
         {
             "name": p.name,
             "description": p.description,
-            "arguments": [
-                {"name": arg, "required": True} for arg in p.arguments
-            ],
+            "arguments": [{"name": arg, "required": True} for arg in p.arguments],
         }
         for p in PROMPT_REGISTRY.values()
     ]

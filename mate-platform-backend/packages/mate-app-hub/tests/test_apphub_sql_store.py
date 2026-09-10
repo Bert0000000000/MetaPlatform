@@ -3,6 +3,7 @@
 Uses SQLite in-memory + Base.metadata.create_all to verify the SQL
 store's CRUD + tenant isolation for the 5 apphub entities.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -38,9 +39,15 @@ _TENANT_B = "tenant-bigo"
 # ---------------------------------------------------------------------------
 def test_put_and_get_app() -> None:
     app = mem.ApphubApp(
-        id="app-x1", tenant_id=_TENANT_A, name="Custom App",
-        code="x1", category="platform", description="a custom app",
-        version="2.0.0", owner="team-x", tags=("platform", "custom"),
+        id="app-x1",
+        tenant_id=_TENANT_A,
+        name="Custom App",
+        code="x1",
+        category="platform",
+        description="a custom app",
+        version="2.0.0",
+        owner="team-x",
+        tags=("platform", "custom"),
     )
     sql.put_app(_TENANT_A, app)
 
@@ -58,15 +65,25 @@ def test_put_and_get_app() -> None:
 
 def test_put_app_upsert() -> None:
     app = mem.ApphubApp(
-        id="app-x2", tenant_id=_TENANT_A, name="App V1",
-        code="x2", category="knowledge", description="v1",
+        id="app-x2",
+        tenant_id=_TENANT_A,
+        name="App V1",
+        code="x2",
+        category="knowledge",
+        description="v1",
     )
     sql.put_app(_TENANT_A, app)
     # Update
     app = mem.ApphubApp(
-        id="app-x2", tenant_id=_TENANT_A, name="App V2",
-        code="x2", category="data", description="v2",
-        version="3.0.0", owner="team-y", tags=("data", "v2"),
+        id="app-x2",
+        tenant_id=_TENANT_A,
+        name="App V2",
+        code="x2",
+        category="data",
+        description="v2",
+        version="3.0.0",
+        owner="team-y",
+        tags=("data", "v2"),
     )
     sql.put_app(_TENANT_A, app)
 
@@ -85,8 +102,12 @@ def test_put_app_upsert() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_group() -> None:
     group = mem.ApphubGroup(
-        id="grp-x1", tenant_id=_TENANT_A, name="Custom Group",
-        code="x1", icon="star", sort_order=50,
+        id="grp-x1",
+        tenant_id=_TENANT_A,
+        name="Custom Group",
+        code="x1",
+        icon="star",
+        sort_order=50,
     )
     sql.put_group(_TENANT_A, group)
 
@@ -104,8 +125,12 @@ def test_put_and_get_group() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_module() -> None:
     module = mem.ApphubModule(
-        id="mod-x1", tenant_id=_TENANT_A, name="Custom Module",
-        code="x1", app_code="kb", description="a custom module",
+        id="mod-x1",
+        tenant_id=_TENANT_A,
+        name="Custom Module",
+        code="x1",
+        app_code="kb",
+        description="a custom module",
         entry_path="/kb/custom",
     )
     sql.put_module(_TENANT_A, module)
@@ -125,8 +150,13 @@ def test_put_and_get_module() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_page() -> None:
     page = mem.ApphubPage(
-        id="page-x1", tenant_id=_TENANT_A, name="Custom Page",
-        code="x1", module_code="kb", layout="split", schema_version=2,
+        id="page-x1",
+        tenant_id=_TENANT_A,
+        name="Custom Page",
+        code="x1",
+        module_code="kb",
+        layout="split",
+        schema_version=2,
     )
     sql.put_page(_TENANT_A, page)
 
@@ -145,10 +175,16 @@ def test_put_and_get_page() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_template() -> None:
     template = mem.ApphubTemplate(
-        id="tpl-x1", tenant_id=_TENANT_A, name="Custom Template",
-        code="x1", template_type="workflow", description="a custom template",
-        content={"nodes": [{"type": "start"}, {"type": "end"}],
-                 "edges": [{"from": "start", "to": "end"}]},
+        id="tpl-x1",
+        tenant_id=_TENANT_A,
+        name="Custom Template",
+        code="x1",
+        template_type="workflow",
+        description="a custom template",
+        content={
+            "nodes": [{"type": "start"}, {"type": "end"}],
+            "edges": [{"from": "start", "to": "end"}],
+        },
     )
     sql.put_template(_TENANT_A, template)
 
@@ -167,15 +203,23 @@ def test_put_and_get_template() -> None:
 
 def test_put_template_upsert() -> None:
     template = mem.ApphubTemplate(
-        id="tpl-x2", tenant_id=_TENANT_A, name="V1",
-        code="x2", template_type="form", description="v1",
+        id="tpl-x2",
+        tenant_id=_TENANT_A,
+        name="V1",
+        code="x2",
+        template_type="form",
+        description="v1",
         content={"fields": []},
     )
     sql.put_template(_TENANT_A, template)
     # Update
     template = mem.ApphubTemplate(
-        id="tpl-x2", tenant_id=_TENANT_A, name="V2",
-        code="x2", template_type="form", description="v2",
+        id="tpl-x2",
+        tenant_id=_TENANT_A,
+        name="V2",
+        code="x2",
+        template_type="form",
+        description="v2",
         content={"fields": [{"name": "q1"}]},
     )
     sql.put_template(_TENANT_A, template)
@@ -191,14 +235,28 @@ def test_put_template_upsert() -> None:
 # Tenant isolation
 # ---------------------------------------------------------------------------
 def test_list_apps_tenant_isolation() -> None:
-    sql.put_app(_TENANT_A, mem.ApphubApp(
-        id="app-a1", tenant_id=_TENANT_A, name="A1",
-        code="a1", category="platform", description="",
-    ))
-    sql.put_app(_TENANT_B, mem.ApphubApp(
-        id="app-b1", tenant_id=_TENANT_B, name="B1",
-        code="b1", category="platform", description="",
-    ))
+    sql.put_app(
+        _TENANT_A,
+        mem.ApphubApp(
+            id="app-a1",
+            tenant_id=_TENANT_A,
+            name="A1",
+            code="a1",
+            category="platform",
+            description="",
+        ),
+    )
+    sql.put_app(
+        _TENANT_B,
+        mem.ApphubApp(
+            id="app-b1",
+            tenant_id=_TENANT_B,
+            name="B1",
+            code="b1",
+            category="platform",
+            description="",
+        ),
+    )
 
     a_apps = sql.list_apps(_TENANT_A)
     assert [a.id for a in a_apps] == ["app-a1"]
@@ -212,14 +270,28 @@ def test_list_apps_tenant_isolation() -> None:
 
 
 def test_list_groups_tenant_isolation() -> None:
-    sql.put_group(_TENANT_A, mem.ApphubGroup(
-        id="grp-a1", tenant_id=_TENANT_A, name="A1",
-        code="a1", icon="book", sort_order=10,
-    ))
-    sql.put_group(_TENANT_B, mem.ApphubGroup(
-        id="grp-b1", tenant_id=_TENANT_B, name="B1",
-        code="b1", icon="server", sort_order=20,
-    ))
+    sql.put_group(
+        _TENANT_A,
+        mem.ApphubGroup(
+            id="grp-a1",
+            tenant_id=_TENANT_A,
+            name="A1",
+            code="a1",
+            icon="book",
+            sort_order=10,
+        ),
+    )
+    sql.put_group(
+        _TENANT_B,
+        mem.ApphubGroup(
+            id="grp-b1",
+            tenant_id=_TENANT_B,
+            name="B1",
+            code="b1",
+            icon="server",
+            sort_order=20,
+        ),
+    )
 
     a_groups = sql.list_groups(_TENANT_A)
     assert [g.id for g in a_groups] == ["grp-a1"]

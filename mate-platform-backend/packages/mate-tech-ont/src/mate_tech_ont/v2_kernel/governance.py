@@ -21,8 +21,7 @@ __all__ = [
 LIFECYCLE_ACTIONS = ("snooze", "deprecate", "delete")
 
 # GOV-18：Kitchen Sink 技术列模式（Pipeline 元数据不入属性 —— 调研材料 02）
-_TECH_COLUMN_RE = re.compile(
-    r"^(dt|etl|ingest|load|batch|pipeline)[_-]?", re.IGNORECASE)
+_TECH_COLUMN_RE = re.compile(r"^(dt|etl|ingest|load|batch|pipeline)[_-]?", re.IGNORECASE)
 # Misnomer：歧义词必须限定（monetaryValue 非 value）
 _VAGUE_NAMES = {"value", "data", "info", "amount", "name_id", "type", "status2"}
 
@@ -54,37 +53,48 @@ def lint_anti_patterns(
         rid = ot.rid.rid
         # God Object
         if len(ot.properties) > god_object_props:
-            findings.append({
-                "pattern": "god_object",
-                "subject": rid,
-                "detail": f"{len(ot.properties)} properties (> {god_object_props})",
-                "hint": "拆分类型；共享特征用 Interface（调研材料 02 §反模式）",
-            })
+            findings.append(
+                {
+                    "pattern": "god_object",
+                    "subject": rid,
+                    "detail": f"{len(ot.properties)} properties (> {god_object_props})",
+                    "hint": "拆分类型；共享特征用 Interface（调研材料 02 §反模式）",
+                }
+            )
         for p in ot.properties:
-            slug = p.rid.rid.split(".")[3] if len(p.rid.rid.split(".")) >= 5 \
+            slug = (
+                p.rid.rid.split(".")[3]
+                if len(p.rid.rid.split(".")) >= 5
                 else p.rid.rid.split(".")[-1]
+            )
             # Kitchen Sink
             if _TECH_COLUMN_RE.match(slug):
-                findings.append({
-                    "pattern": "kitchen_sink",
-                    "subject": f"{rid}#{slug}",
-                    "detail": f"technical column {slug!r} looks like pipeline metadata",
-                    "hint": "ETL 元数据不入属性（刻意策展）",
-                })
+                findings.append(
+                    {
+                        "pattern": "kitchen_sink",
+                        "subject": f"{rid}#{slug}",
+                        "detail": f"technical column {slug!r} looks like pipeline metadata",
+                        "hint": "ETL 元数据不入属性（刻意策展）",
+                    }
+                )
             # Misnomer
             if slug.lower() in _VAGUE_NAMES:
-                findings.append({
-                    "pattern": "misnomer",
-                    "subject": f"{rid}#{slug}",
-                    "detail": f"vague property name {slug!r}",
-                    "hint": "歧义词必须限定（value → monetaryValue）",
-                })
+                findings.append(
+                    {
+                        "pattern": "misnomer",
+                        "subject": f"{rid}#{slug}",
+                        "detail": f"vague property name {slug!r}",
+                        "hint": "歧义词必须限定（value → monetaryValue）",
+                    }
+                )
         # Action Sprawl
         if actions_by_type.get(rid, 0) > action_sprawl:
-            findings.append({
-                "pattern": "action_sprawl",
-                "subject": rid,
-                "detail": f"{actions_by_type[rid]} actions (> {action_sprawl})",
-                "hint": "打包为业务级 Action（Transfer Employee 而非逐字段 Update）",
-            })
+            findings.append(
+                {
+                    "pattern": "action_sprawl",
+                    "subject": rid,
+                    "detail": f"{actions_by_type[rid]} actions (> {action_sprawl})",
+                    "hint": "打包为业务级 Action（Transfer Employee 而非逐字段 Update）",
+                }
+            )
     return findings

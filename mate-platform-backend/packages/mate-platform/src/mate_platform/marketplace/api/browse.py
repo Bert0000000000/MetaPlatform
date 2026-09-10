@@ -1,4 +1,5 @@
 """GET /marketplace/browse + /artifacts/{kind}/{id} — SaaS 检索代理。"""
+
 from __future__ import annotations
 
 from uuid import UUID
@@ -19,9 +20,7 @@ async def list_artifacts(
     """浏览市场列表(SaaS 检索代理 + 本地已安装标注)。"""
     client = request.state.marketplace_client
     try:
-        return await client.list_artifacts(
-            kind=kind, q=q, tag=tag, page=page
-        )
+        return await client.list_artifacts(kind=kind, q=q, tag=tag, page=page)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -37,9 +36,7 @@ async def get_artifact(
 ):
     client = request.state.marketplace_client
     try:
-        return await client.get_artifact(
-            kind=kind, artifact_id=str(artifact_id)
-        )
+        return await client.get_artifact(kind=kind, artifact_id=str(artifact_id))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,

@@ -10,6 +10,7 @@ Production wiring uses `mate_clients.security.BearerAuth` +
 `OutgoingAuthMiddleware` (ADR-0014 step 4). P2-W3 lands that
 wiring together with the first real consumer.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

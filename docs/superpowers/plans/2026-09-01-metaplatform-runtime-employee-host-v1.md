@@ -4,7 +4,7 @@
 
 **Goal:** Deliver the tenant-safe Employee Runtime, governed digital-employee lifecycle, stable Host Connector and four independently verified host adapters so a task can continue across Codex, Claude Code, DeepSeek Harness and Hermes without moving state authority to a host.
 
-**Architecture:** The Runtime owns `BusinessSession`, `WorkItem`, `EmployeeRun`, `SubRun`, `HostSession`, `ExecutionLease`, checkpoints and state-transition commands through PostgreSQL CAS plus lease fencing.  The employee control plane owns immutable employee/version/package/policy/assignment facts and ephemeral assembly receipts; the Host Connector only obtains scoped projections and invokes governed Runtime/MCP contracts.  Hosts display their native conversation/SubAgent interactions but never own platform Run state, authorization, employee identity, approvals or business side effects.
+**Architecture:** The Runtime owns `BusinessSession`, `WorkItem`, `EmployeeRun`, `SubRun`, `HostSession`, `ExecutionLease`, checkpoints and state-transition commands through PostgreSQL CAS plus lease fencing. The employee control plane owns immutable employee/version/package/policy/assignment facts and ephemeral assembly receipts; the Host Connector only obtains scoped projections and invokes governed Runtime/MCP contracts. Hosts display their native conversation/SubAgent interactions but never own platform Run state, authorization, employee identity, approvals or business side effects.
 
 **Tech Stack:** Python 3.12, FastAPI, Pydantic 2, SQLAlchemy, PostgreSQL 16, Alembic, RFC 8785 JSON canonicalization, CloudEvents 1.0, MCP Streamable HTTP, A2A, OpenFGA, OPA, Supabase Auth, Keycloak, React 18, Vite, TypeScript, Vitest, Playwright, Docker/Compose, PowerShell, OpenTelemetry.
 
@@ -29,13 +29,13 @@
 
 ## First-Release Surface Matrix
 
-| Object/lifecycle scope | REST/OpenAPI v1 surface | MCP/A2A/Event surface | Product UI surface | Host adapter acceptance |
-|---|---|---|---|---|
-| BusinessSession, WorkItem, EmployeeRun, SubRun, HostSession, RuntimeCommand | `/api/v1/runtime/sessions`, `/work-items`, `/runs`, `/runs/{id}:pause|resume|cancel|retry`, `/runs/{id}/subruns`, `/host-sessions` | `runtime.run.changed.v1`; `employee.resume`; A2A delegated SubRun envelope | `/workbench/tasks`, `/workbench/tasks/{runId}` | Each host resumes the same session/run and sees no private chain-of-thought |
-| ExecutionLease, Checkpoint, CapabilityAvailabilityProjection | `/runs/{id}/lease`, `/runs/{id}/checkpoints`, `/availability` | lease claim is transport-private; `runtime.availability.changed.v1` | timeline plus read-only/wait/pause/unavailable state | Disconnect/reconnect proves stale lease rejection and clear recovery message |
-| EmployeeDefinition, EmployeeVersion, Package/Release, Instance, Assignment, Team, Policy, Projection | `/api/v1/employees`, `/versions`, `/packages`, `/instances`, `/assignments`, `/teams`, `/projections` | `employee.release.changed.v1`; `platform.bootstrap` returns EmployeeProjection/Catalog | `/admin/employees`, `/workbench/my-employees` | Each host reads only granted fixed projections and schema-compatible MCP catalog |
-| EmployeeAssemblyPlan, EphemeralEmployeeInstance, AssemblyReceipt | `/api/v1/runtime/assembly-plans`, `/ephemeral-employees`, `/assembly-receipts` | `employee.assembly.changed.v1`; A2A SubRun receives narrowed delegation | task detail shows plan, expiry and receipt | TTL, Run completion and revoke remove temporary credentials/roles on every host |
-| HostType/Version, HostCapabilityContract, ConnectorDefinition/Instance | `/api/v1/hosts`, `/contracts`, `/connectors`, `/connector-instances` | `host.capability.changed.v1`; authenticated Connector bootstrap | `/admin/hosts`, `/admin/hosts/{host}/compatibility` | Codex, Claude Code, DSH and Hermes each have version-pinned adapter and live job |
+| Object/lifecycle scope                                                                               | REST/OpenAPI v1 surface                                                                               | MCP/A2A/Event surface                                                                  | Product UI surface                                   | Host adapter acceptance                                                          |
+| ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------- |
+| BusinessSession, WorkItem, EmployeeRun, SubRun, HostSession, RuntimeCommand                          | `/api/v1/runtime/sessions`, `/work-items`, `/runs`, `/runs/{id}:pause                                 | resume                                                                                 | cancel                                               | retry`, `/runs/{id}/subruns`, `/host-sessions`                                   | `runtime.run.changed.v1`; `employee.resume`; A2A delegated SubRun envelope | `/workbench/tasks`, `/workbench/tasks/{runId}` | Each host resumes the same session/run and sees no private chain-of-thought |
+| ExecutionLease, Checkpoint, CapabilityAvailabilityProjection                                         | `/runs/{id}/lease`, `/runs/{id}/checkpoints`, `/availability`                                         | lease claim is transport-private; `runtime.availability.changed.v1`                    | timeline plus read-only/wait/pause/unavailable state | Disconnect/reconnect proves stale lease rejection and clear recovery message     |
+| EmployeeDefinition, EmployeeVersion, Package/Release, Instance, Assignment, Team, Policy, Projection | `/api/v1/employees`, `/versions`, `/packages`, `/instances`, `/assignments`, `/teams`, `/projections` | `employee.release.changed.v1`; `platform.bootstrap` returns EmployeeProjection/Catalog | `/admin/employees`, `/workbench/my-employees`        | Each host reads only granted fixed projections and schema-compatible MCP catalog |
+| EmployeeAssemblyPlan, EphemeralEmployeeInstance, AssemblyReceipt                                     | `/api/v1/runtime/assembly-plans`, `/ephemeral-employees`, `/assembly-receipts`                        | `employee.assembly.changed.v1`; A2A SubRun receives narrowed delegation                | task detail shows plan, expiry and receipt           | TTL, Run completion and revoke remove temporary credentials/roles on every host  |
+| HostType/Version, HostCapabilityContract, ConnectorDefinition/Instance                               | `/api/v1/hosts`, `/contracts`, `/connectors`, `/connector-instances`                                  | `host.capability.changed.v1`; authenticated Connector bootstrap                        | `/admin/hosts`, `/admin/hosts/{host}/compatibility`  | Codex, Claude Code, DSH and Hermes each have version-pinned adapter and live job |
 
 All REST writes require `If-Match`/expected state version and `Idempotency-Key`; all read routes re-authorize tenant/human/employee context. MCP responses use structured JSON plus an Artifact link, never hidden authorization authority. Every event carries CloudEvents `id`, `type`, `subject`, `tenant_id`, `causationid`, `schema_version` and canonical payload Digest.
 
@@ -61,6 +61,7 @@ All REST writes require `If-Match`/expected state version and `Idempotency-Key`;
 ### Task 1: Define Runtime, employee, delegation and host contracts
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-kernel/src/mate_kernel/runtime/contracts.py`
 - Create: `mate-platform-backend/packages/mate-kernel/tests/test_runtime_contracts.py`
 - Create: `mate-platform-backend/contracts/events/runtime.v1.schema.json`
@@ -69,6 +70,7 @@ All REST writes require `If-Match`/expected state version and `Idempotency-Key`;
 - Modify: `mate-platform-backend/contracts/openapi/services/orchestrator.yaml`
 
 **Interfaces:**
+
 - Produces: `transition_run(run_id: UUID, expected_state_version: int, command: RuntimeCommand, principal: DualSubject) -> EmployeeRun`.
 - Produces: `acquire_lease(run_id: UUID, host_session_id: UUID, expected_epoch: int, ttl: timedelta) -> LeaseToken` and `assert_current_lease(token: LeaseToken) -> None`.
 - Produces: `create_subrun(parent: EmployeeRun, request: DelegationRequest, principal: DualSubject) -> SubRun`.
@@ -136,6 +138,7 @@ git commit -m "feat(runtime): define employee host and lease contracts"
 ### Task 2: Extend the MVP1 employee/Runtime authority under RLS
 
 **Files:**
+
 - Create: `mate-platform-backend/alembic/versions/20260901_0022_runtime_employee_host_v1.py`
 - Modify: `mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/runtime/repository.py`
 - Modify: `mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/runtime/service.py`
@@ -149,6 +152,7 @@ git commit -m "feat(runtime): define employee host and lease contracts"
 - Create: `mate-platform-backend/packages/mate-tech-orchestrator/tests/test_employee_assembly.py`
 
 **Interfaces:**
+
 - Consumes the MVP1-owned employee definitions/versions/instances/assignments and Runtime ledger tables/APIs from revision 0016.
 - Produces extension tables `employee_packages`, `employee_teams`, `employee_policy_bindings`, `employee_assembly_plans`, `ephemeral_employee_instances`, `assembly_receipts`, `sub_runs`, `host_capability_contracts` and extension Outbox facts; it adds compatible columns/indexes to core tables only through expand/contract rules.
 - Consumes `UserContextProjection` and current control-plane authorization watermarks; stores references/digests only.
@@ -195,6 +199,7 @@ git commit -m "feat(runtime): extend employee runtime authority for hosts and as
 ### Task 3: Expose Runtime/employee APIs, projections and availability events
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/runtime/projections.py`
 - Create: `mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/runtime/delegation.py`
 - Create: `mate-platform-backend/packages/mate-tech-orchestrator/src/mate_tech_orchestrator/api/runtime.py`
@@ -205,6 +210,7 @@ git commit -m "feat(runtime): extend employee runtime authority for hosts and as
 - Modify: `mate-platform-backend/contracts/openapi/services/orchestrator.yaml`
 
 **Interfaces:**
+
 - Produces `GET /api/v1/runtime/runs/{run_id}`, `POST /api/v1/runtime/runs/{run_id}:pause|resume|cancel|retry`, `GET /api/v1/runtime/runs/{run_id}/availability`, and `POST /api/v1/runtime/runs/{run_id}/subruns`.
 - Produces employee lifecycle collection routes and `GET /api/v1/runtime/projections/{host_session_id}` returning fixed User/Employee/Capability/Availability projections.
 - Produces outbox events only after committed CAS state transition or projection invalidation.
@@ -253,6 +259,7 @@ git commit -m "feat(runtime): expose projections commands and employee APIs"
 ### Task 4: Implement the stable MCP Host Connector
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/connectors/platform_connector.py`
 - Create: `mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/connectors/context.py`
 - Modify: `mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/main.py`
@@ -262,6 +269,7 @@ git commit -m "feat(runtime): expose projections commands and employee APIs"
 - Create: `mate-platform-backend/packages/mate-tech-mcp/tests/test_platform_connector_isolation.py`
 
 **Interfaces:**
+
 - Produces MCP tools `platform.bootstrap`, `platform.resume_task`, `platform.get_task_status`, `platform.get_artifact_link`; each returns `structuredContent` plus an authorized Artifact resource link when applicable.
 - Consumes only a verified HTTP connector context; the model-visible argument schema has no tenant ID, principal ID, role, lease, policy watermark, bearer token or secret.
 - Produces `BootstrapCallContext` and `RuntimeToolCallContext` internally; a missing context returns `AUTH_CONTEXT_REQUIRED`.
@@ -305,6 +313,7 @@ git commit -m "feat(host): add stable authenticated platform connector"
 ### Task 5: Deliver four independent host adapters and capability Gates
 
 **Files:**
+
 - Create: `acceptance/hosts/v1/codex.yaml`
 - Create: `acceptance/hosts/v1/claude-code.yaml`
 - Create: `acceptance/hosts/v1/deepseek-harness.yaml`
@@ -318,6 +327,7 @@ git commit -m "feat(host): add stable authenticated platform connector"
 - Modify: `acceptance/gates/component-matrix.yaml`
 
 **Interfaces:**
+
 - Each YAML pins host build/version, Connector version/Digest, documented configuration surface, supported transport, projection/tool/resource/subagent/streaming/artifact-fallback capabilities and one Gate ID.
 - Each job emits `{host, host_version, connector_digest, contract_digest, scenario_digest, status, evidence_uri}` and cannot reuse another host's evidence.
 - All four jobs must prove bootstrap, catalog visibility, task resume, Artifact link read, revoked projection rejection and user-visible availability fallback.
@@ -373,6 +383,7 @@ git commit -m "test(host): require independent four-host connector evidence"
 ### Task 6: Deliver Runtime/employee product views and end-to-end recovery proof
 
 **Files:**
+
 - Create: `metaplatform-frontend/apps/web/src/api/runtime.ts`
 - Create: `metaplatform-frontend/apps/web/src/api/employees.ts`
 - Create: `metaplatform-frontend/apps/web/src/pages/workbench/TaskCenterPage.tsx`
@@ -386,6 +397,7 @@ git commit -m "test(host): require independent four-host connector evidence"
 - Create: `acceptance/e2e/runtime-employee-host-environment.lock.yaml`
 
 **Interfaces:**
+
 - Produces task timeline/status, approval/artifact links, SubRun list, availability and recovery notice screens; it does not render a general-purpose platform chat loop.
 - Produces employee draft/version/publish/assign/retire and assembly-plan/receipt management screens using typed server APIs.
 - Consumes host-agnostic Run IDs and projection digests; browser clients never manufacture Employee/Lease/Approval facts.
@@ -393,16 +405,23 @@ git commit -m "test(host): require independent four-host connector evidence"
 - [ ] **Step 1: Write failing UI/E2E tests**
 
 ```ts
-test("Codex-started work continues in Hermes without duplicate command or changed employee digest", async ({ page, request }) => {
+test("Codex-started work continues in Hermes without duplicate command or changed employee digest", async ({
+  page,
+  request,
+}) => {
   const created = await startRunThroughHost("codex");
   await resumeRunThroughHost("hermes", created.sessionId, created.runId);
   await page.goto(`/workbench/tasks/${created.runId}`);
   await expect(page.getByText("跨宿主继续")).toBeVisible();
-  await expect(page.getByTestId("employee-version-digest")).toHaveText(created.employeeVersionDigest);
+  await expect(page.getByTestId("employee-version-digest")).toHaveText(
+    created.employeeVersionDigest,
+  );
   expect(await commandCount(request, created.runId)).toBe(1);
 });
 
-test("unavailable action dependency pauses actions but preserves report and recovery path", async ({ page }) => {
+test("unavailable action dependency pauses actions but preserves report and recovery path", async ({
+  page,
+}) => {
   await induceCapabilityFailure("action-service");
   await page.goto(`/workbench/tasks/${RUN}`);
   await expect(page.getByText("操作已暂停")).toBeVisible();

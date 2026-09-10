@@ -23,24 +23,24 @@
 
 ### 2.1 自建内核五机制（对齐论文 Algorithm 1–5 + Table 1 十规则）
 
-| # | 机制 | 论文对应 |
-|---|---|---|
-| 1 | **effect 单原语**：callback 为 sync/async 生成器，每次 yield 一个 disposer；LIFO 复合；guard 在 yield 边界可中断（保留已产出逆） | Alg 1 |
-| 2 | **coeffect**：`set(key, value)` 本身是 effect（装订+通知，逆=摘除+通知）；`get` 两层解析 key→realm→store；`isolate(key, realm)` 多实例隔离 | Alg 2–3 |
-| 3 | **fiber 惰性生命周期**：Component = (name, inject, provide, apply)；六态 PENDING→LOADING→ACTIVE\|FAILED / UNLOADING→DISPOSED；转换跑完再核对 target，变了链式反向切换 | Alg 4–5, §4.3.3 |
-| 4 | **target 视图**：依赖不满足→None；否则 inject key→provider fiber id。provider **身份**变即 reload，纯 value 变不 reload | Def 46 |
-| 5 | **保序卸载**：provider 先标 UNLOADING（停止 provide）→ 等全部依赖者达终态 → 再跑自身逆 | Thm 63, Alg 5 L25 |
+| #   | 机制                                                                                                                                                                  | 论文对应          |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| 1   | **effect 单原语**：callback 为 sync/async 生成器，每次 yield 一个 disposer；LIFO 复合；guard 在 yield 边界可中断（保留已产出逆）                                      | Alg 1             |
+| 2   | **coeffect**：`set(key, value)` 本身是 effect（装订+通知，逆=摘除+通知）；`get` 两层解析 key→realm→store；`isolate(key, realm)` 多实例隔离                            | Alg 2–3           |
+| 3   | **fiber 惰性生命周期**：Component = (name, inject, provide, apply)；六态 PENDING→LOADING→ACTIVE\|FAILED / UNLOADING→DISPOSED；转换跑完再核对 target，变了链式反向切换 | Alg 4–5, §4.3.3   |
+| 4   | **target 视图**：依赖不满足→None；否则 inject key→provider fiber id。provider **身份**变即 reload，纯 value 变不 reload                                               | Def 46            |
+| 5   | **保序卸载**：provider 先标 UNLOADING（停止 provide）→ 等全部依赖者达终态 → 再跑自身逆                                                                                | Thm 63, Alg 5 L25 |
 
 **不做**（明确出范围）：intercept/policy、Proxy 属性访问糖、声明式 YAML loader、HMR、logger/events 服务。
 
 ### 2.2 四条形式化不变量 = 验收断言
 
-| ID | 不变量 | 论文定理 |
-|---|---|---|
-| I1 | 恢复：任意 load→unload 序列后 coeffect store 回到观测等价态 | Thm 7（up to ≃） |
-| I2 | 保序：provider 卸载时依赖者全部先达终态，再执行 provider 任何逆 | Thm 63 |
-| I3 | 环活性：依赖环上的 fiber 永不 ACTIVE，use() 时检测报告（可预测，非死锁） | Thm 66 |
-| I4 | 惰性：转换中 target 翻转正确链式切换，无双发、无半态 | §4.3.3 |
+| ID  | 不变量                                                                   | 论文定理         |
+| --- | ------------------------------------------------------------------------ | ---------------- |
+| I1  | 恢复：任意 load→unload 序列后 coeffect store 回到观测等价态              | Thm 7（up to ≃） |
+| I2  | 保序：provider 卸载时依赖者全部先达终态，再执行 provider 任何逆          | Thm 63           |
+| I3  | 环活性：依赖环上的 fiber 永不 ACTIVE，use() 时检测报告（可预测，非死锁） | Thm 66           |
+| I4  | 惰性：转换中 target 翻转正确链式切换，无双发、无半态                     | §4.3.3           |
 
 ### 2.3 试点语义（orchestrator 能力反应式运行时）
 
@@ -55,21 +55,21 @@
 
 ## 3. 跟既有决策的关系
 
-| 决策 | 关系 |
-|---|---|
-| ADR-0021（Kernel 12 基元） | 正交：12 基元是语义层（类型/实例），组合内核是运行时机制层（组件/效果如何组合）；均自建，不混包 |
-| ADR-0040/0041（沙箱） | 互补：内核管进程内效果可逆性；沙箱管进程/容器边界外隔离（论文 §6.3 bridge 模式是两者的接缝，后续 Batch） |
-| 自建原则 v0.4 | 同款处理：不引入 cordis TS 包，fork 仅作差分测试参考（MIT 允许） |
-| BUSINESS-SLICES / DATA-D0-D8 | 无扰动：17 域业务服务不动 |
+| 决策                         | 关系                                                                                                     |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------- |
+| ADR-0021（Kernel 12 基元）   | 正交：12 基元是语义层（类型/实例），组合内核是运行时机制层（组件/效果如何组合）；均自建，不混包          |
+| ADR-0040/0041（沙箱）        | 互补：内核管进程内效果可逆性；沙箱管进程/容器边界外隔离（论文 §6.3 bridge 模式是两者的接缝，后续 Batch） |
+| 自建原则 v0.4                | 同款处理：不引入 cordis TS 包，fork 仅作差分测试参考（MIT 允许）                                         |
+| BUSINESS-SLICES / DATA-D0-D8 | 无扰动：17 域业务服务不动                                                                                |
 
 ## 4. 跟 13 硬规则对位
 
-| 硬规则 | 承担 |
-|---|---|
+| 硬规则                       | 承担                                                                   |
+| ---------------------------- | ---------------------------------------------------------------------- |
 | ① Swagger 没有接口不写 route | 新端点 `POST/DELETE /api/v1/orchestrator/capabilities` 进 OpenAPI 契约 |
-| ⑥ 静态检查失败不合并 | 内核 pyright-strict + ruff 干净（零新依赖） |
-| ⑦ 跳过测试不标记 Accepted | I1–I4 不变量测试全绿为验收前提 |
-| ⑩ 状态以验收证据为准 | `evidence/MP-COMP-01-ACCEPTANCE.md` 落档 |
+| ⑥ 静态检查失败不合并         | 内核 pyright-strict + ruff 干净（零新依赖）                            |
+| ⑦ 跳过测试不标记 Accepted    | I1–I4 不变量测试全绿为验收前提                                         |
+| ⑩ 状态以验收证据为准         | `evidence/MP-COMP-01-ACCEPTANCE.md` 落档                               |
 
 ## 5. 验收
 

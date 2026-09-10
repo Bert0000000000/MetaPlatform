@@ -6,6 +6,7 @@
 > 它整合了 v2 技术栈决策 + RAGFlow 集成 + LightRAG 集成 + Knowledge Engineering 流水线 + 全部最新决策。
 >
 > **本架构取代以下历史文档**（保留供决策追溯）：
+>
 > - `2026-07-27-rag-graphrag-best-solution.md`（v1 方案）
 > - `2026-07-27-platform-rag-technical-architecture.md`（v1 全 Java 架构，已废止）
 > - `2026-07-27-ragflow-graphrag-integration-a.md`（A 方案，整体方向）
@@ -15,16 +16,16 @@
 
 ## 0. TL;DR
 
-| 维度 | 决策 |
-|---|---|
-| **技术栈基线** | Java 21 + Spring AI Alibaba 1.1.2 主力 + AI 子域允许 Python（v2 决策） |
-| **核心场景** | S1 知识库建立（PPT/Word/PDF 解析）/ S2 Ontology 抽象（KE 流水线）/ S3 知识问答 |
-| **核心引擎** | **RAGFlow**（文档解析，Python）+ **LightRAG**（GraphRAG 检索，Python）+ **自研**（Hybrid / Graph-Enhanced / Router / Citation / KE） |
-| **差异化** | Knowledge Engineering 流水线（AI 抽 Ontology + 人工审核）——护城河 |
-| **数据落点** | 4 个家：PostgreSQL 17 / Neo4j 5.x / Milvus 2.5 / MinIO + 3 个工具：Redis 7.4 / Kafka 3.9 / TECH-OBS |
-| **合规** | RAGFlow AGPL-3.0 自评估 + LightRAG MIT 备案 + 应急方案（Java 重写） |
-| **工期** | MVP 6 周（基础 + RAGFlow + LightRAG 并行），完整 12 周 |
-| **投入** | 1 Java + 1 Python/DevOps + AI 协作 |
+| 维度           | 决策                                                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **技术栈基线** | Java 21 + Spring AI Alibaba 1.1.2 主力 + AI 子域允许 Python（v2 决策）                                                               |
+| **核心场景**   | S1 知识库建立（PPT/Word/PDF 解析）/ S2 Ontology 抽象（KE 流水线）/ S3 知识问答                                                       |
+| **核心引擎**   | **RAGFlow**（文档解析，Python）+ **LightRAG**（GraphRAG 检索，Python）+ **自研**（Hybrid / Graph-Enhanced / Router / Citation / KE） |
+| **差异化**     | Knowledge Engineering 流水线（AI 抽 Ontology + 人工审核）——护城河                                                                    |
+| **数据落点**   | 4 个家：PostgreSQL 17 / Neo4j 5.x / Milvus 2.5 / MinIO + 3 个工具：Redis 7.4 / Kafka 3.9 / TECH-OBS                                  |
+| **合规**       | RAGFlow AGPL-3.0 自评估 + LightRAG MIT 备案 + 应急方案（Java 重写）                                                                  |
+| **工期**       | MVP 6 周（基础 + RAGFlow + LightRAG 并行），完整 12 周                                                                               |
+| **投入**       | 1 Java + 1 Python/DevOps + AI 协作                                                                                                   |
 
 ---
 
@@ -32,34 +33,34 @@
 
 ### 1.1 v2 技术栈决策（2026-07-27 通过）
 
-| 维度 | v1.2（已废止） | **v2（当前）** |
-|---|---|---|
-| 主力栈 | 全量 Java + SAA | **Java 21 + SAA 1.1.2**（不变） |
-| Python 允许 | ❌ 禁止 | ✅ **AI 子域允许**（Agent Runtime / 复杂 RAG / 特定工具） |
-| 决策公理 | 个人能力上限 | **AI 作为技术专家**（团队 + AI + 自评估三重判断） |
-| 运维约束 | "少一套栈" | "**可观测性到位即可**"（不分语言） |
+| 维度        | v1.2（已废止）  | **v2（当前）**                                            |
+| ----------- | --------------- | --------------------------------------------------------- |
+| 主力栈      | 全量 Java + SAA | **Java 21 + SAA 1.1.2**（不变）                           |
+| Python 允许 | ❌ 禁止         | ✅ **AI 子域允许**（Agent Runtime / 复杂 RAG / 特定工具） |
+| 决策公理    | 个人能力上限    | **AI 作为技术专家**（团队 + AI + 自评估三重判断）         |
+| 运维约束    | "少一套栈"      | "**可观测性到位即可**"（不分语言）                        |
 
 详见：`docs/superpowers/specs/2026-07-27-v2-tech-stack-decision.md`
 
 ### 1.2 业务场景（核心三大场景）
 
-| 场景 | 描述 | 当前能力 | 增强后能力 |
-|---|---|---|---|
-| **S1 知识库建立** | PPT/Word/PDF/Excel 精准切片 | 🟠 Tika 基础 | ✅ RAGFlow DeepDoc + 结构化解析 |
-| **S2 Ontology 抽象** | AI 抽实体-关系-优化本体 | ❌ 缺 | ✅ **KE 流水线**（护城河） |
-| **S3 知识问答** | 跨主题、跨文档智能问答 | ✅ Hybrid + Graph-Enhanced | ✅ + LightRAG 主题检索 |
+| 场景                 | 描述                        | 当前能力                   | 增强后能力                      |
+| -------------------- | --------------------------- | -------------------------- | ------------------------------- |
+| **S1 知识库建立**    | PPT/Word/PDF/Excel 精准切片 | 🟠 Tika 基础               | ✅ RAGFlow DeepDoc + 结构化解析 |
+| **S2 Ontology 抽象** | AI 抽实体-关系-优化本体     | ❌ 缺                      | ✅ **KE 流水线**（护城河）      |
+| **S3 知识问答**      | 跨主题、跨文档智能问答      | ✅ Hybrid + Graph-Enhanced | ✅ + LightRAG 主题检索          |
 
 ### 1.3 设计原则（7 条铁律）
 
-| # | 原则 | 说明 |
-|---|---|---|
-| P1 | **主力栈优先** | 新项目默认 Java + SAA |
-| P2 | **AI 子域例外** | Agent Runtime、复杂 RAG、OCR/版面允许 Python |
-| P3 | **核心业务后端禁 Python** | 交易、订单、权限、计费必须 Java |
-| P4 | **法务合规是硬约束** | 任何新开源组件必须过自评估（不**分**语言） |
-| P5 | **可观测性高于语言统一** | 跨语言栈必须统一接入 TECH-OBS |
-| P6 | **AI 协作是新能力维度** | 团队需**主动**与 AI 协作（review、调试、跨语言翻译） |
-| P7 | **季度复盘 + 决策可逆** | 每季度复盘多语言栈成本，可回退 |
+| #   | 原则                      | 说明                                                 |
+| --- | ------------------------- | ---------------------------------------------------- |
+| P1  | **主力栈优先**            | 新项目默认 Java + SAA                                |
+| P2  | **AI 子域例外**           | Agent Runtime、复杂 RAG、OCR/版面允许 Python         |
+| P3  | **核心业务后端禁 Python** | 交易、订单、权限、计费必须 Java                      |
+| P4  | **法务合规是硬约束**      | 任何新开源组件必须过自评估（不**分**语言）           |
+| P5  | **可观测性高于语言统一**  | 跨语言栈必须统一接入 TECH-OBS                        |
+| P6  | **AI 协作是新能力维度**   | 团队需**主动**与 AI 协作（review、调试、跨语言翻译） |
+| P7  | **季度复盘 + 决策可逆**   | 每季度复盘多语言栈成本，可回退                       |
 
 ---
 
@@ -202,14 +203,14 @@ flowchart LR
 
 ### 2.3 跨语言服务集成（v2 决策下统一）
 
-| 维度 | Java 主力 | Python AI 子域 | 统一约束 |
-|---|---|---|---|
-| LLM 调用 | 走 `TECH-LLMGW` | 走 `TECH-LLMGW`（OpenAI 协议） | ✅ 一致 |
-| 身份认证 | 走 `TECH-IAM`（OAuth2） | 走 `TECH-IAM` | ✅ 一致 |
-| 事件流 | 走 `TECH-MSG`（Kafka） | 走 `TECH-MSG` | ✅ 一致 |
-| 可观测性 | 接入 `TECH-OBS` | 接入 `TECH-OBS` | ✅ 一致 |
-| 配置 | `Nacos 3.0+` | `Nacos 3.0+` | ✅ 一致 |
-| 服务发现 | `Nacos 3.0+` | `Nacos 3.0+` | ✅ 一致 |
+| 维度     | Java 主力               | Python AI 子域                 | 统一约束 |
+| -------- | ----------------------- | ------------------------------ | -------- |
+| LLM 调用 | 走 `TECH-LLMGW`         | 走 `TECH-LLMGW`（OpenAI 协议） | ✅ 一致  |
+| 身份认证 | 走 `TECH-IAM`（OAuth2） | 走 `TECH-IAM`                  | ✅ 一致  |
+| 事件流   | 走 `TECH-MSG`（Kafka）  | 走 `TECH-MSG`                  | ✅ 一致  |
+| 可观测性 | 接入 `TECH-OBS`         | 接入 `TECH-OBS`                | ✅ 一致  |
+| 配置     | `Nacos 3.0+`            | `Nacos 3.0+`                   | ✅ 一致  |
+| 服务发现 | `Nacos 3.0+`            | `Nacos 3.0+`                   | ✅ 一致  |
 
 **关键认知**：**RAGFlow 和 LightRAG 不在 v2 公理的"特权"——它们必须和其他服务一样接入平台基础设施**。
 
@@ -223,12 +224,14 @@ flowchart LR
 **协议合规**：AGPL-3.0 自评估通过
 
 **职责**：
+
 - 接收文档上传请求
 - 调用 RAGFlow HTTP API 解析
 - 解析后结构化输出（ParsedDocument）
 - 触发下游 chunking + embedding
 
 **核心类**：
+
 ```
 com.metaplatform.rag.bridge.ragflow/
 ├── RagFlowClient.java              # HTTP 客户端
@@ -253,11 +256,13 @@ com.metaplatform.rag.bridge.ragflow/
 **协议合规**：MIT（极简，仅保留 LICENSE）
 
 **职责**：
+
 - 调用 LightRAG 4 种查询模式（LOCAL/GLOBAL/HYBRID/MIX）
 - 订阅 LightRAG 实体抽取事件
 - 转换 Candidate Fact → 喂给 KE 流水线
 
 **核心类**：
+
 ```
 com.metaplatform.rag.bridge.lightrag/
 ├── LightRagClient.java
@@ -270,12 +275,12 @@ com.metaplatform.rag.bridge.lightrag/
 
 **4 种查询模式**：
 
-| 模式 | 适用问题 | 实现 |
-|---|---|---|
-| LOCAL | "X 是什么" | 实体聚焦 + 邻居扩展 |
-| GLOBAL | "Q3 主要讲了什么" | 社区摘要 + Map-Reduce |
-| HYBRID ⭐ 默认 | 大多数问题 | Local + Global 融合 |
-| MIX | "对比 A 和 B" | 多次检索 + 融合 |
+| 模式           | 适用问题          | 实现                  |
+| -------------- | ----------------- | --------------------- |
+| LOCAL          | "X 是什么"        | 实体聚焦 + 邻居扩展   |
+| GLOBAL         | "Q3 主要讲了什么" | 社区摘要 + Map-Reduce |
+| HYBRID ⭐ 默认 | 大多数问题        | Local + Global 融合   |
+| MIX            | "对比 A 和 B"     | 多次检索 + 融合       |
 
 详见：`docs/superpowers/specs/2026-07-27-lightrag-integration.md`
 
@@ -284,17 +289,20 @@ com.metaplatform.rag.bridge.lightrag/
 **Maven 坐标**：`com.metaplatform:tech-rag-knowledge-eng:1.x.0`
 
 **职责**：
+
 - 接收 LightRAG 抽取事件
 - 转换 Candidate Fact（按置信度分层）
 - 人工审核工作流
 - 调用 TECH-ONT API 提交到 Ontology
 
 **关键设计**：
+
 - 置信度 ≥ 0.8 → 自动入队高优先级审核
 - 置信度 0.5-0.8 → 入队常规审核
 - 置信度 < 0.5 → 丢弃
 
 **核心类**：
+
 ```
 com.metaplatform.rag.knowledgeeng/
 ├── KnowledgeEngineeringService.java
@@ -311,11 +319,13 @@ com.metaplatform.rag.knowledgeeng/
 **状态**：✅ 已有，本架构中**保持不变**，仅增强
 
 **职责**：
+
 - Hybrid Retrieve（向量 + BM25 + Rerank）
 - Graph-Enhanced（基于 Ontology 实体链接）
 - Multi-KB 检索
 
 **与新模块的协同**：
+
 - 订阅 `rag.ke.ontology.committed` 事件 → 本地缓存失效
 - 订阅 `rag.parser.document.parsed` 事件 → 触发向量索引重建
 
@@ -329,6 +339,7 @@ com.metaplatform.rag.knowledgeeng/
 **Maven 坐标**：`com.metaplatform:tech-rag-router:1.x.0`（新建）
 
 **路由策略**：
+
 ```java
 public RetrievalResult route(QueryRequest req) {
     Mode mode = req.getMode() == Mode.AUTO
@@ -350,65 +361,66 @@ public RetrievalResult route(QueryRequest req) {
 
 ### 4.1 数据归属总表
 
-| 数据 | 存储 | Schema/Collection/Database | 拥有模块 |
-|---|---|---|---|
-| 原始文件 | MinIO | `kb-{tenantId}/{kbId}/raw/{docId}.{ext}` | RAGFlow Bridge |
-| ParsedDocument | PostgreSQL | `rag_parser.*` | RAGFlow Bridge |
-| Chunk | PostgreSQL | `rag.*` (既有) | Retrieval |
-| Chunk Embedding | Milvus | `rag_chunk_vec` | Retrieval |
-| LightRAG 实体/关系/社区 | Neo4j | **lrag-graph database** | LightRAG Bridge |
-| LightRAG 摘要 | PostgreSQL | `rag_lightrag.*` | LightRAG Bridge |
-| Community Summary | PostgreSQL | `rag_lightrag.community_summary` | LightRAG Bridge |
-| Candidate Fact | PostgreSQL | `rag_ke.*` | KE |
-| Review Task | PostgreSQL | `rag_ke.*` | KE |
-| Prompt Template | PostgreSQL | `rag_ke.*` | KE |
-| **Ontology Concept/Relation** | Neo4j | **tech-ont database** | **TECH-ONT**（受治理） |
-| Citation | PostgreSQL | `rag_citation.*` | Citation |
-| Query Log | PostgreSQL | `rag_router.*` | Router |
-| LightRAG 调用日志 | PostgreSQL | `rag_bridge_lightrag.*` | LightRAG Bridge |
-| RAGFlow 调用日志 | PostgreSQL | `rag_bridge_ragflow.*` | RAGFlow Bridge |
-| 缓存 | Redis | `rag:*` | 各模块 |
-| 事件 | Kafka | `rag.*.v1` | 各模块 |
-| 可观测性 | TECH-OBS | - | 全模块 |
+| 数据                          | 存储       | Schema/Collection/Database               | 拥有模块               |
+| ----------------------------- | ---------- | ---------------------------------------- | ---------------------- |
+| 原始文件                      | MinIO      | `kb-{tenantId}/{kbId}/raw/{docId}.{ext}` | RAGFlow Bridge         |
+| ParsedDocument                | PostgreSQL | `rag_parser.*`                           | RAGFlow Bridge         |
+| Chunk                         | PostgreSQL | `rag.*` (既有)                           | Retrieval              |
+| Chunk Embedding               | Milvus     | `rag_chunk_vec`                          | Retrieval              |
+| LightRAG 实体/关系/社区       | Neo4j      | **lrag-graph database**                  | LightRAG Bridge        |
+| LightRAG 摘要                 | PostgreSQL | `rag_lightrag.*`                         | LightRAG Bridge        |
+| Community Summary             | PostgreSQL | `rag_lightrag.community_summary`         | LightRAG Bridge        |
+| Candidate Fact                | PostgreSQL | `rag_ke.*`                               | KE                     |
+| Review Task                   | PostgreSQL | `rag_ke.*`                               | KE                     |
+| Prompt Template               | PostgreSQL | `rag_ke.*`                               | KE                     |
+| **Ontology Concept/Relation** | Neo4j      | **tech-ont database**                    | **TECH-ONT**（受治理） |
+| Citation                      | PostgreSQL | `rag_citation.*`                         | Citation               |
+| Query Log                     | PostgreSQL | `rag_router.*`                           | Router                 |
+| LightRAG 调用日志             | PostgreSQL | `rag_bridge_lightrag.*`                  | LightRAG Bridge        |
+| RAGFlow 调用日志              | PostgreSQL | `rag_bridge_ragflow.*`                   | RAGFlow Bridge         |
+| 缓存                          | Redis      | `rag:*`                                  | 各模块                 |
+| 事件                          | Kafka      | `rag.*.v1`                               | 各模块                 |
+| 可观测性                      | TECH-OBS   | -                                        | 全模块                 |
 
 ### 4.2 关键隔离策略
 
 **Neo4j 三库隔离**（生产必选）：
 
-| Database | 拥有方 | Label 前缀 | 写入方 |
-|---|---|---|---|
-| `tech-ont` | TECH-ONT | `tech-ont.*` | TECH-ONT |
-| `lrag-graph` | LightRAG | LightRAG 默认 Label | LightRAG |
-| `rag-graphrag` | GraphRAG Java（备用） | `rag_*` | 自研（未来） |
+| Database       | 拥有方                | Label 前缀          | 写入方       |
+| -------------- | --------------------- | ------------------- | ------------ |
+| `tech-ont`     | TECH-ONT              | `tech-ont.*`        | TECH-ONT     |
+| `lrag-graph`   | LightRAG              | LightRAG 默认 Label | LightRAG     |
+| `rag-graphrag` | GraphRAG Java（备用） | `rag_*`             | 自研（未来） |
 
 **PostgreSQL 多 schema 隔离**：
 
-| Schema | 拥有模块 | 跨 schema FK |
-|---|---|---|
-| `rag` | Retrieval（既有） | ❌ |
-| `rag_parser` | RAGFlow Bridge | ❌ |
-| `rag_ke` | Knowledge Engineering | ❌ |
-| `rag_lightrag` | LightRAG Bridge | ❌ |
-| `rag_citation` | Citation | ❌ |
-| `rag_router` | Router | ❌ |
-| `rag_bridge_ragflow` | RAGFlow Bridge | ❌ |
-| `rag_bridge_lightrag` | LightRAG Bridge | ❌ |
+| Schema                | 拥有模块              | 跨 schema FK |
+| --------------------- | --------------------- | ------------ |
+| `rag`                 | Retrieval（既有）     | ❌           |
+| `rag_parser`          | RAGFlow Bridge        | ❌           |
+| `rag_ke`              | Knowledge Engineering | ❌           |
+| `rag_lightrag`        | LightRAG Bridge       | ❌           |
+| `rag_citation`        | Citation              | ❌           |
+| `rag_router`          | Router                | ❌           |
+| `rag_bridge_ragflow`  | RAGFlow Bridge        | ❌           |
+| `rag_bridge_lightrag` | LightRAG Bridge       | ❌           |
 
 **核心规则**：
+
 - 跨模块**不直查**、**不直写**——通过事件 + 业务 ID
 - 共享 ID 而非共享数据
 - 数据冗余只发生在事件 payload（仅关键 ID，不复制大字段）
 
 ### 4.3 跨模块引用业务键
 
-| 业务键 | 含义 | 跨模块使用 |
-|---|---|---|
-| `tenantId` | 租户 ID | 全部事件 |
-| `kbId` | 知识库 ID | 跨模块检索 |
-| `docId` | 文档 ID | RAGFlow / KE / Retrieval |
-| `chunkId` | Chunk ID | Retrieval / LightRAG |
-| `ontologyId` | Ontology 概念 ID | KE / GE / Router |
-| `eventId` | 事件 ID | 消费幂等 |
+| 业务键       | 含义             | 跨模块使用               |
+| ------------ | ---------------- | ------------------------ |
+| `tenantId`   | 租户 ID          | 全部事件                 |
+| `kbId`       | 知识库 ID        | 跨模块检索               |
+| `docId`      | 文档 ID          | RAGFlow / KE / Retrieval |
+| `chunkId`    | Chunk ID         | Retrieval / LightRAG     |
+| `ontologyId` | Ontology 概念 ID | KE / GE / Router         |
+| `eventId`    | 事件 ID          | 消费幂等                 |
 
 ---
 
@@ -416,16 +428,16 @@ public RetrievalResult route(QueryRequest req) {
 
 ### 5.1 顶层 API 列表
 
-| 模块 | API 前缀 | 方法 | 说明 |
-|---|---|---|---|
-| **RAGFlow Bridge** | `/api/v1/rag/parser/*` | POST/GET | 文档解析 |
-| **LightRAG Bridge** | `/api/v1/rag/lightrag/*` | POST/GET | GraphRAG 检索 |
-| **KE** | `/api/v1/rag/ke/*` | POST/GET | 抽取/审核/提交 |
-| **Retrieval** | `/api/v1/rag/retrieve/*` | POST | Hybrid/Graph-Enhanced |
-| **Citation** | `/api/v1/rag/citation/*` | POST/GET | 引用管理 |
-| **Router** | `/api/v1/rag/retrieve` | POST | 统一入口（带 mode） |
-| **KB 管理** | `/api/v1/rag/knowledge/*` | POST/GET | 知识库 CRUD |
-| **文档管理** | `/api/v1/rag/documents/*` | POST/GET | 文档 CRUD |
+| 模块                | API 前缀                  | 方法     | 说明                  |
+| ------------------- | ------------------------- | -------- | --------------------- |
+| **RAGFlow Bridge**  | `/api/v1/rag/parser/*`    | POST/GET | 文档解析              |
+| **LightRAG Bridge** | `/api/v1/rag/lightrag/*`  | POST/GET | GraphRAG 检索         |
+| **KE**              | `/api/v1/rag/ke/*`        | POST/GET | 抽取/审核/提交        |
+| **Retrieval**       | `/api/v1/rag/retrieve/*`  | POST     | Hybrid/Graph-Enhanced |
+| **Citation**        | `/api/v1/rag/citation/*`  | POST/GET | 引用管理              |
+| **Router**          | `/api/v1/rag/retrieve`    | POST     | 统一入口（带 mode）   |
+| **KB 管理**         | `/api/v1/rag/knowledge/*` | POST/GET | 知识库 CRUD           |
+| **文档管理**        | `/api/v1/rag/documents/*` | POST/GET | 文档 CRUD             |
 
 ### 5.2 统一检索 API（AUTO 模式）
 
@@ -516,17 +528,17 @@ POST /api/v1/rag/ke/prompts
 
 ### 6.1 Kafka 主题清单
 
-| 主题 | 发布方 | 订阅方 | 用途 |
-|---|---|---|---|
-| `rag.parser.document.parsed.v1` | RAGFlow Bridge | KE / Retrieval | 文档解析完成 |
-| `rag.parser.document.parse-failed.v1` | RAGFlow Bridge | KE | 解析失败 |
-| `rag.lightrag.entity.extracted.v1` | LightRAG Bridge | **KE** | **关键**：实体抽取 → 喂给 KE |
-| `rag.lightrag.community.built.v1` | LightRAG Bridge | Router | 社区构建完成 |
-| `rag.ke.candidate.created.v1` | KE | UI | 候选事实待审核 |
-| `rag.ke.ontology.committed.v1` | KE | Retrieval / GraphRAG / Router | **关键**：Ontology 变更 |
-| `rag.ke.prompt.activated.v1` | KE | Retrieval | Prompt 切换 |
-| `rag.retrieval.index.rebuilt.v1` | Retrieval | Router | 索引重建 |
-| `rag.router.query.completed.v1` | Router | OBS | 检索完成（监控用） |
+| 主题                                  | 发布方          | 订阅方                        | 用途                         |
+| ------------------------------------- | --------------- | ----------------------------- | ---------------------------- |
+| `rag.parser.document.parsed.v1`       | RAGFlow Bridge  | KE / Retrieval                | 文档解析完成                 |
+| `rag.parser.document.parse-failed.v1` | RAGFlow Bridge  | KE                            | 解析失败                     |
+| `rag.lightrag.entity.extracted.v1`    | LightRAG Bridge | **KE**                        | **关键**：实体抽取 → 喂给 KE |
+| `rag.lightrag.community.built.v1`     | LightRAG Bridge | Router                        | 社区构建完成                 |
+| `rag.ke.candidate.created.v1`         | KE              | UI                            | 候选事实待审核               |
+| `rag.ke.ontology.committed.v1`        | KE              | Retrieval / GraphRAG / Router | **关键**：Ontology 变更      |
+| `rag.ke.prompt.activated.v1`          | KE              | Retrieval                     | Prompt 切换                  |
+| `rag.retrieval.index.rebuilt.v1`      | Retrieval       | Router                        | 索引重建                     |
+| `rag.router.query.completed.v1`       | Router          | OBS                           | 检索完成（监控用）           |
 
 ### 6.2 事件 Schema 规范
 
@@ -554,49 +566,49 @@ POST /api/v1/rag/ke/prompts
 
 ### 7.1 部署单元（K8s）
 
-| 部署单元 | 包含模块 | 副本数 | 资源 |
-|---|---|---|---|
-| `tech-rag-core` | Router + Retrieval + Citation | 2 | 2C/4G |
-| `tech-rag-ragflow-bridge` | RAGFlow Bridge | 2 | 2C/4G |
-| `tech-rag-lightrag-bridge` | LightRAG Bridge | 2 | 2C/4G |
-| `tech-rag-knowledge-eng` | KE | 2 | 2C/4G |
-| `mate-ragflow` | RAGFlow（外部） | 2 | 4C/8G |
-| `mate-lightrag` | LightRAG（外部） | 2 | 4C/8G |
+| 部署单元                   | 包含模块                      | 副本数 | 资源  |
+| -------------------------- | ----------------------------- | ------ | ----- |
+| `tech-rag-core`            | Router + Retrieval + Citation | 2      | 2C/4G |
+| `tech-rag-ragflow-bridge`  | RAGFlow Bridge                | 2      | 2C/4G |
+| `tech-rag-lightrag-bridge` | LightRAG Bridge               | 2      | 2C/4G |
+| `tech-rag-knowledge-eng`   | KE                            | 2      | 2C/4G |
+| `mate-ragflow`             | RAGFlow（外部）               | 2      | 4C/8G |
+| `mate-lightrag`            | LightRAG（外部）              | 2      | 4C/8G |
 
 ### 7.2 命名空间布局
 
-| Namespace | 包含服务 |
-|---|---|
-| `mate-tech` | TECH-RAG 全套 Java 服务 |
-| `mate-ai` | RAGFlow、LightRAG |
-| `mate-deerflow` | DeerFlow（既有） |
+| Namespace       | 包含服务                          |
+| --------------- | --------------------------------- |
+| `mate-tech`     | TECH-RAG 全套 Java 服务           |
+| `mate-ai`       | RAGFlow、LightRAG                 |
+| `mate-deerflow` | DeerFlow（既有）                  |
 | `mate-deerflow` | （共用，跨 namespace 通过 Nacos） |
 
 ### 7.3 端口分配
 
-| 服务 | 端口 | 协议 |
-|---|---|---|
-| TECH-RAG | 8080 | HTTP |
-| RAGFlow | 9621 | HTTP |
-| **LightRAG** | **9622**（避免与 RAGFlow 冲突） | HTTP |
-| DeerFlow Gateway | 8001 | HTTP（ClusterIP） |
-| TECH-LLMGW | 8081 | HTTP（OpenAI 兼容） |
+| 服务             | 端口                            | 协议                |
+| ---------------- | ------------------------------- | ------------------- |
+| TECH-RAG         | 8080                            | HTTP                |
+| RAGFlow          | 9621                            | HTTP                |
+| **LightRAG**     | **9622**（避免与 RAGFlow 冲突） | HTTP                |
+| DeerFlow Gateway | 8001                            | HTTP（ClusterIP）   |
+| TECH-LLMGW       | 8081                            | HTTP（OpenAI 兼容） |
 
 ### 7.4 中间件依赖
 
-| 中间件 | 版本 | 用途 | Schema/DB |
-|---|---|---|---|
-| PostgreSQL | 17 | 主库 | 8 个 schema 隔离 |
-| Neo4j | 5.x | Ontology + LightRAG | 3 个 database 隔离 |
-| Milvus | 2.5 | 向量库 | 多 collection |
-| MinIO | - | 对象存储 | - |
-| Redis | 7.4 | 缓存 | - |
-| Kafka | 3.9 | 事件流 | - |
-| Nacos | 3.0+ | 服务发现/配置/注册 | - |
-| TECH-LLMGW | - | LLM 路由 | - |
-| TECH-ONT | - | Ontology 服务 | - |
-| TECH-IAM | - | 身份认证 | - |
-| TECH-OBS | - | 可观测性 | - |
+| 中间件     | 版本 | 用途                | Schema/DB          |
+| ---------- | ---- | ------------------- | ------------------ |
+| PostgreSQL | 17   | 主库                | 8 个 schema 隔离   |
+| Neo4j      | 5.x  | Ontology + LightRAG | 3 个 database 隔离 |
+| Milvus     | 2.5  | 向量库              | 多 collection      |
+| MinIO      | -    | 对象存储            | -                  |
+| Redis      | 7.4  | 缓存                | -                  |
+| Kafka      | 3.9  | 事件流              | -                  |
+| Nacos      | 3.0+ | 服务发现/配置/注册  | -                  |
+| TECH-LLMGW | -    | LLM 路由            | -                  |
+| TECH-ONT   | -    | Ontology 服务       | -                  |
+| TECH-IAM   | -    | 身份认证            | -                  |
+| TECH-OBS   | -    | 可观测性            | -                  |
 
 ### 7.5 关键 Nacos 配置示例
 
@@ -636,15 +648,15 @@ lightrag:
 
 ### 8.1 阶段路线
 
-| 阶段 | 模块 | 内容 | 工期 | 关键里程碑 |
-|---|---|---|---|---|
-| **P0** | - | 自评估法务 + 基础准备 | 1 周 | 法务签字 + Neo4j lrag-graph 准备 |
-| **P1-A** | RAGFlow Bridge | 部署 + 桥接层 | 2 周 | 第一个文档解析走 RAGFlow |
-| **P1-B** | LightRAG Bridge | 部署 + 桥接层 | 2 周 | 第一次主题查询走 LightRAG |
-| **P2-A** | KE 流水线 | 抽取 + 审核 + 提交 | 2 周 | 第一个 Candidate → Ontology |
-| **P2-B** | Retrieval Router | AUTO 路由 | 1.5 周 | 统一入口上线 |
-| **P3** | 评估 + 调优 | Recall / Token / 延迟 | 持续 | 全场景验证 |
-| **P4** | 灰度 + 生产化 | 租户灰度 | 2 周 | 正式生产 |
+| 阶段     | 模块             | 内容                  | 工期   | 关键里程碑                       |
+| -------- | ---------------- | --------------------- | ------ | -------------------------------- |
+| **P0**   | -                | 自评估法务 + 基础准备 | 1 周   | 法务签字 + Neo4j lrag-graph 准备 |
+| **P1-A** | RAGFlow Bridge   | 部署 + 桥接层         | 2 周   | 第一个文档解析走 RAGFlow         |
+| **P1-B** | LightRAG Bridge  | 部署 + 桥接层         | 2 周   | 第一次主题查询走 LightRAG        |
+| **P2-A** | KE 流水线        | 抽取 + 审核 + 提交    | 2 周   | 第一个 Candidate → Ontology      |
+| **P2-B** | Retrieval Router | AUTO 路由             | 1.5 周 | 统一入口上线                     |
+| **P3**   | 评估 + 调优      | Recall / Token / 延迟 | 持续   | 全场景验证                       |
+| **P4**   | 灰度 + 生产化    | 租户灰度              | 2 周   | 正式生产                         |
 
 **总工期**：约 10-12 周（其中 P1-A / P1-B / P2-A 可并行）
 
@@ -657,28 +669,28 @@ lightrag:
 
 ### 8.3 灰度策略
 
-| 维度 | 灰度方式 |
-|---|---|
-| 按租户 | Feature Flag 开关 |
+| 维度     | 灰度方式          |
+| -------- | ----------------- |
+| 按租户   | Feature Flag 开关 |
 | 按知识库 | Feature Flag 开关 |
-| 按模块 | 独立灰度 |
+| 按模块   | 独立灰度          |
 
 ---
 
 ## 9. 风险与缓解
 
-| ID | 风险 | 等级 | 缓解 |
-|---|---|---|---|
-| R1 | RAGFlow AGPL-3.0 商业化合规 | 🟡 中 | 自评估 + 应急方案（Java 重写 6-8 周） |
-| R2 | RAGFlow/LightRAG 服务不可用 | 🟡 中 | 降级到自研（Tika / Graph-Enhanced） |
-| R3 | LightRAG 抽取噪声大 | 🟡 中 | 置信度过滤 + 人工审核 |
-| R4 | 跨语言调试困难 | 🟡 中 | v2 决策：AI 协作解决 |
-| R5 | LLM Token 成本爆炸 | 🟡 中 | 摘要用 qwen-turbo + 限社区数 + 缓存 |
-| R6 | 模块独立发版数据不一致 | 🟡 中 | 事件 schema 严格版本化 + 兼容期 |
-| R7 | Neo4j 多库管理复杂 | 🟢 低 | 文档 + 监控 |
-| R8 | KE 事件丢失 | 🟡 中 | 至少一次 + 监控告警 + 定期全量重抽 |
-| R9 | 商业化时协议问题 | 🟡 中 | 商业化前重新评估 + 应急方案 |
-| R10 | v2 决策季度复盘结论为"回退" | 🟢 低 | v1.3 退路已设计 |
+| ID  | 风险                        | 等级  | 缓解                                  |
+| --- | --------------------------- | ----- | ------------------------------------- |
+| R1  | RAGFlow AGPL-3.0 商业化合规 | 🟡 中 | 自评估 + 应急方案（Java 重写 6-8 周） |
+| R2  | RAGFlow/LightRAG 服务不可用 | 🟡 中 | 降级到自研（Tika / Graph-Enhanced）   |
+| R3  | LightRAG 抽取噪声大         | 🟡 中 | 置信度过滤 + 人工审核                 |
+| R4  | 跨语言调试困难              | 🟡 中 | v2 决策：AI 协作解决                  |
+| R5  | LLM Token 成本爆炸          | 🟡 中 | 摘要用 qwen-turbo + 限社区数 + 缓存   |
+| R6  | 模块独立发版数据不一致      | 🟡 中 | 事件 schema 严格版本化 + 兼容期       |
+| R7  | Neo4j 多库管理复杂          | 🟢 低 | 文档 + 监控                           |
+| R8  | KE 事件丢失                 | 🟡 中 | 至少一次 + 监控告警 + 定期全量重抽    |
+| R9  | 商业化时协议问题            | 🟡 中 | 商业化前重新评估 + 应急方案           |
+| R10 | v2 决策季度复盘结论为"回退" | 🟢 低 | v1.3 退路已设计                       |
 
 ---
 
@@ -686,33 +698,33 @@ lightrag:
 
 ### 10.1 质量
 
-| 场景 | 指标 | P1 目标 | P4 目标 |
-|---|---|---|---|
-| S1 知识库建立 | 表格抽取 F1 | ≥ 0.85 | ≥ 0.92 |
-| S1 | 阅读顺序准确率 | ≥ 0.80 | ≥ 0.90 |
-| S2 Ontology 抽取 | 实体抽取 F1 | ≥ 0.75 | ≥ 0.85 |
-| S2 | 关系抽取 F1 | ≥ 0.65 | ≥ 0.80 |
-| S3 知识问答 | 事实型 Recall@10 | 不 regression | 不 regression |
-| S3 | 主题型 Recall@10 | +20% | +50% |
+| 场景             | 指标             | P1 目标       | P4 目标       |
+| ---------------- | ---------------- | ------------- | ------------- |
+| S1 知识库建立    | 表格抽取 F1      | ≥ 0.85        | ≥ 0.92        |
+| S1               | 阅读顺序准确率   | ≥ 0.80        | ≥ 0.90        |
+| S2 Ontology 抽取 | 实体抽取 F1      | ≥ 0.75        | ≥ 0.85        |
+| S2               | 关系抽取 F1      | ≥ 0.65        | ≥ 0.80        |
+| S3 知识问答      | 事实型 Recall@10 | 不 regression | 不 regression |
+| S3               | 主题型 Recall@10 | +20%          | +50%          |
 
 ### 10.2 性能（P95 延迟）
 
-| 模块 | 目标 |
-|---|---|
-| RAGFlow 解析（1MB PDF） | ≤ 3s |
-| LightRAG 索引（1MB 文档） | ≤ 60s |
-| LightRAG 查询 | ≤ 3s |
-| Hybrid Search | ≤ 1s |
-| KE 抽取（单文档） | ≤ 30s |
-| Router AUTO 分类 | ≤ 200ms |
+| 模块                      | 目标    |
+| ------------------------- | ------- |
+| RAGFlow 解析（1MB PDF）   | ≤ 3s    |
+| LightRAG 索引（1MB 文档） | ≤ 60s   |
+| LightRAG 查询             | ≤ 3s    |
+| Hybrid Search             | ≤ 1s    |
+| KE 抽取（单文档）         | ≤ 30s   |
+| Router AUTO 分类          | ≤ 200ms |
 
 ### 10.3 成本
 
-| 项 | 目标 |
-|---|---|
-| LightRAG GLOBAL 查询单次 | ≤ 7000 token |
-| KE 抽取（单文档） | ≤ 2M token |
-| 社区摘要（每 1000 文档一次性） | ≤ 5M token |
+| 项                             | 目标         |
+| ------------------------------ | ------------ |
+| LightRAG GLOBAL 查询单次       | ≤ 7000 token |
+| KE 抽取（单文档）              | ≤ 2M token   |
+| 社区摘要（每 1000 文档一次性） | ≤ 5M token   |
 
 ---
 
@@ -723,6 +735,7 @@ lightrag:
 **自评估决策**：见 `docs/legal/LEGAL_CLEARANCE-ragflow-2026-07-27.md`
 
 **核心结论**：
+
 - 不修改 RAGFlow 源码 ✅
 - 完整保留 LICENSE ✅
 - 服务级使用风险等级：🟡 中（场景 2 ToB 组件）
@@ -731,20 +744,21 @@ lightrag:
 ### 11.2 LightRAG（MIT）
 
 **自评估决策**：
+
 - 协议 MIT，🟢 接近零风险
 - 保留 LICENSE + 产品致谢即可
 - 无需深度法务审查
 
 ### 11.3 其他组件
 
-| 组件 | 协议 | 风险 |
-|---|---|---|
-| Apache PDFBox / Tika / POI | Apache 2.0 | 🟢 |
-| JGraphT（备选） | LGPL 2.1 + EPL | 🟢 |
-| PaddleOCR 模型 | Apache 2.0 | 🟢 |
-| Spring AI Alibaba | Apache 2.0 | 🟢 |
-| Milvus | Apache 2.0 | 🟢 |
-| Neo4j 社区版 | GPL v3 | 🟢（独立进程） |
+| 组件                       | 协议           | 风险           |
+| -------------------------- | -------------- | -------------- |
+| Apache PDFBox / Tika / POI | Apache 2.0     | 🟢             |
+| JGraphT（备选）            | LGPL 2.1 + EPL | 🟢             |
+| PaddleOCR 模型             | Apache 2.0     | 🟢             |
+| Spring AI Alibaba          | Apache 2.0     | 🟢             |
+| Milvus                     | Apache 2.0     | 🟢             |
+| Neo4j 社区版               | GPL v3         | 🟢（独立进程） |
 
 ### 11.4 商业化前必做
 
@@ -791,14 +805,15 @@ lightrag:
 
 ## 13. 关联文档
 
-| 文档 | 关系 | 用途 |
-|---|---|---|
-| `2026-07-27-v2-tech-stack-decision.md` | 决策基础 | v2 决策的来龙去脉 |
-| `2026-07-27-ragflow-graphrag-integration-a.md` | 上层方案 | A 方案整体方向 |
-| `2026-07-27-lightrag-integration.md` | 具体实施 | LightRAG 详细集成 |
-| `2026-07-27-LEGAL_CLEARANCE-ragflow-2026-07-27.md` | 合规 | 自评估法务 |
+| 文档                                               | 关系     | 用途              |
+| -------------------------------------------------- | -------- | ----------------- |
+| `2026-07-27-v2-tech-stack-decision.md`             | 决策基础 | v2 决策的来龙去脉 |
+| `2026-07-27-ragflow-graphrag-integration-a.md`     | 上层方案 | A 方案整体方向    |
+| `2026-07-27-lightrag-integration.md`               | 具体实施 | LightRAG 详细集成 |
+| `2026-07-27-LEGAL_CLEARANCE-ragflow-2026-07-27.md` | 合规     | 自评估法务        |
 
 **历史文档**（保留供决策追溯）：
+
 - `2026-07-27-rag-graphrag-best-solution.md`（v1 方案）
 - `2026-07-27-platform-rag-technical-architecture.md`（v1 全 Java 架构，已废止）
 
@@ -806,18 +821,19 @@ lightrag:
 
 ## 14. 决策记录
 
-| 字段 | 值 |
-|---|---|
+| 字段     | 值                             |
+| -------- | ------------------------------ |
 | 架构名称 | Mate Platform RAG 主架构（v2） |
-| 决策日期 | 2026-07-27 |
-| 决策人 | 项目 Owner（自评） |
-| 上层决策 | v2 技术栈决策 |
-| 合规方式 | 自评估 + 商业化前重评估 |
-| 实施启动 | 本文档 review 后 |
+| 决策日期 | 2026-07-27                     |
+| 决策人   | 项目 Owner（自评）             |
+| 上层决策 | v2 技术栈决策                  |
+| 合规方式 | 自评估 + 商业化前重评估        |
+| 实施启动 | 本文档 review 后               |
 
 ---
 
 **下一步**：
+
 1. 你 review 本文档
 2. 勾选法务决策
 3. 启动 Phase 0（基础准备）

@@ -965,7 +965,7 @@ APP-KB
 
 **PRD 版本**: v1.1（A2A 强化）
 **PRD 日期**: 2026-07-22
-**关联文档**: 
+**关联文档**:
 - `docs/prd/_top/REPORT-设计稿与PRD差异分析_v1.0-20260722.md`
 - `docs/prd/APP-COPILOT/PRD-APP-COPILOT-通用_v2.0-20260722.md`（同步更新）
 - `docs/prd/APP-DW/PRD-APP-DW-数字员工_v1.0-20260716.md`（同步更新）

@@ -6,6 +6,7 @@ This batch exposes only an in-memory implementation. The `Agent` /
 upcoming Paimon / Postgres adapter (v3.2) can reuse them without
 leaking FastAPI types.
 """
+
 from __future__ import annotations
 
 from . import sql_store

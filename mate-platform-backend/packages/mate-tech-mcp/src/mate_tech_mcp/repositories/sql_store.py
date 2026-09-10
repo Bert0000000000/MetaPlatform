@@ -4,6 +4,7 @@ Provides read + write for ``McpTool``, ``McpResource``, and ``McpPrompt``.
 Dict fields (``McpTool.input_schema``) are JSON-serialised to TEXT.
 Tuple fields (``McpPrompt.arguments``) are stored as newline-separated TEXT.
 """
+
 from __future__ import annotations
 
 import json
@@ -95,11 +96,15 @@ def list_tools(tenant_id: str) -> list[McpTool]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.McpToolORM)
-        .where(models.McpToolORM.tenant_id == tenant_id)
-        .order_by(models.McpToolORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.McpToolORM)
+            .where(models.McpToolORM.tenant_id == tenant_id)
+            .order_by(models.McpToolORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_tool(r) for r in rows]
 
 
@@ -123,11 +128,15 @@ def list_resources(tenant_id: str) -> list[McpResource]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.McpResourceORM)
-        .where(models.McpResourceORM.tenant_id == tenant_id)
-        .order_by(models.McpResourceORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.McpResourceORM)
+            .where(models.McpResourceORM.tenant_id == tenant_id)
+            .order_by(models.McpResourceORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_resource(r) for r in rows]
 
 
@@ -151,11 +160,15 @@ def list_prompts(tenant_id: str) -> list[McpPrompt]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.McpPromptORM)
-        .where(models.McpPromptORM.tenant_id == tenant_id)
-        .order_by(models.McpPromptORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.McpPromptORM)
+            .where(models.McpPromptORM.tenant_id == tenant_id)
+            .order_by(models.McpPromptORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_prompt(r) for r in rows]
 
 
@@ -188,12 +201,18 @@ def put_tool(tenant_id: str, tool: McpTool) -> McpTool:
         existing.enabled = tool.enabled
         existing.updated_at = tool.updated_at
     else:
-        s.add(models.McpToolORM(
-            id=tool.id, tenant_id=tenant_id, name=tool.name,
-            description=tool.description, input_schema=schema_str,
-            enabled=tool.enabled, created_at=tool.created_at,
-            updated_at=tool.updated_at,
-        ))
+        s.add(
+            models.McpToolORM(
+                id=tool.id,
+                tenant_id=tenant_id,
+                name=tool.name,
+                description=tool.description,
+                input_schema=schema_str,
+                enabled=tool.enabled,
+                created_at=tool.created_at,
+                updated_at=tool.updated_at,
+            )
+        )
     s.commit()
     return tool
 
@@ -230,11 +249,17 @@ def put_resource(tenant_id: str, res: McpResource) -> McpResource:
         existing.mime_type = res.mime_type
         existing.created_at = res.created_at
     else:
-        s.add(models.McpResourceORM(
-            id=res.id, tenant_id=tenant_id, uri=res.uri,
-            name=res.name, description=res.description,
-            mime_type=res.mime_type, created_at=res.created_at,
-        ))
+        s.add(
+            models.McpResourceORM(
+                id=res.id,
+                tenant_id=tenant_id,
+                uri=res.uri,
+                name=res.name,
+                description=res.description,
+                mime_type=res.mime_type,
+                created_at=res.created_at,
+            )
+        )
     s.commit()
     return res
 
@@ -272,12 +297,18 @@ def put_prompt(tenant_id: str, prompt: McpPrompt) -> McpPrompt:
         existing.arguments = args_str
         existing.updated_at = prompt.updated_at
     else:
-        s.add(models.McpPromptORM(
-            id=prompt.id, tenant_id=tenant_id, name=prompt.name,
-            description=prompt.description, template=prompt.template,
-            arguments=args_str, created_at=prompt.created_at,
-            updated_at=prompt.updated_at,
-        ))
+        s.add(
+            models.McpPromptORM(
+                id=prompt.id,
+                tenant_id=tenant_id,
+                name=prompt.name,
+                description=prompt.description,
+                template=prompt.template,
+                arguments=args_str,
+                created_at=prompt.created_at,
+                updated_at=prompt.updated_at,
+            )
+        )
     s.commit()
     return prompt
 
@@ -306,13 +337,7 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     from . import in_memory as mem
 
     counts: dict[str, int] = {}
-    counts["tools"] = len(
-        [put_tool(tenant_id, t) for t in mem.list_tools(tenant_id)]
-    )
-    counts["resources"] = len(
-        [put_resource(tenant_id, r) for r in mem.list_resources(tenant_id)]
-    )
-    counts["prompts"] = len(
-        [put_prompt(tenant_id, p) for p in mem.list_prompts(tenant_id)]
-    )
+    counts["tools"] = len([put_tool(tenant_id, t) for t in mem.list_tools(tenant_id)])
+    counts["resources"] = len([put_resource(tenant_id, r) for r in mem.list_resources(tenant_id)])
+    counts["prompts"] = len([put_prompt(tenant_id, p) for p in mem.list_prompts(tenant_id)])
     return counts

@@ -37,16 +37,14 @@ class TenantContext:
             raise ValueError("TenantContext.user_id required")
         # rid 正则中的 tenant 段
         import re
+
         if not re.match(r"^[a-z0-9_-]{1,64}$", self.tenant_id):
             raise ValueError(
-                f"TenantContext.tenant_id must match ^[a-z0-9_-]{{1,64}}$, "
-                f"got {self.tenant_id!r}"
+                f"TenantContext.tenant_id must match ^[a-z0-9_-]{{1,64}}$, got {self.tenant_id!r}"
             )
 
 
-_current: ContextVar[TenantContext | None] = ContextVar(
-    "mate_kernel_current_tenant", default=None
-)
+_current: ContextVar[TenantContext | None] = ContextVar("mate_kernel_current_tenant", default=None)
 
 
 def set_tenant(ctx: TenantContext) -> object:

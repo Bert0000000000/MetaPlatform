@@ -11,6 +11,7 @@ The orchestrator is the single seam between the FastAPI handler and
 the outbound HTTP transport, so tests can inject a mock client to
 exercise the full delegation flow without a real network.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -66,8 +67,7 @@ class A2ADelegator:
         agent = self._find_external_agent(tenant_id, external_agent_id)
         if agent is None:
             raise AgentNotFoundError(
-                f"external agent {external_agent_id!r} not found "
-                f"for tenant {tenant_id!r}"
+                f"external agent {external_agent_id!r} not found for tenant {tenant_id!r}"
             )
 
         payload: dict[str, Any] = {
@@ -134,8 +134,7 @@ class A2ADelegator:
         task = get_delegation(tenant_id, task_id)
         if task is None:
             raise AgentNotFoundError(
-                f"delegation task {task_id!r} not found "
-                f"for tenant {tenant_id!r}"
+                f"delegation task {task_id!r} not found for tenant {tenant_id!r}"
             )
 
         # First check internal agents; if found, the task is in-process.
@@ -167,7 +166,9 @@ class A2ADelegator:
         return outcome
 
     def _find_external_agent(
-        self, tenant_id: str, agent_id: str,
+        self,
+        tenant_id: str,
+        agent_id: str,
     ) -> ExternalAgent | None:
         for agent in list_external_agents(tenant_id):
             if agent.id == agent_id:

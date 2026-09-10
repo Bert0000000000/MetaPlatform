@@ -76,21 +76,41 @@ def ensure_chunk_model(
         primary_key=(ClassRef(p_doc),),
         properties=(
             # 主键 = <doc_pk>#<position>（doc 内唯一；跨 doc 唯一因 doc_pk 前缀）
-            Property(rid=ClassRef(f"ont.{tenant}.prop.chunk-key.v1"),
-                     type_id="string", nullable=False, primary_key=True,
-                     title="chunkKey", format=PropertyFormat.STRING),
-            Property(rid=ClassRef(p_text), type_id="string", nullable=False,
-                     primary_key=False, title="chunkText",
-                     format=PropertyFormat.STRING,
-                     description="文档块正文（语义检索单元）"),
-            Property(rid=ClassRef(p_pos), type_id="integer", nullable=False,
-                     primary_key=False, title="position",
-                     format=PropertyFormat.INTEGER,
-                     description="块在源文档中的序位"),
-            Property(rid=ClassRef(p_doc), type_id="string", nullable=False,
-                     primary_key=False, title="sourceDocPk",
-                     format=PropertyFormat.STRING,
-                     description="源文档主键"),
+            Property(
+                rid=ClassRef(f"ont.{tenant}.prop.chunk-key.v1"),
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="chunkKey",
+                format=PropertyFormat.STRING,
+            ),
+            Property(
+                rid=ClassRef(p_text),
+                type_id="string",
+                nullable=False,
+                primary_key=False,
+                title="chunkText",
+                format=PropertyFormat.STRING,
+                description="文档块正文（语义检索单元）",
+            ),
+            Property(
+                rid=ClassRef(p_pos),
+                type_id="integer",
+                nullable=False,
+                primary_key=False,
+                title="position",
+                format=PropertyFormat.INTEGER,
+                description="块在源文档中的序位",
+            ),
+            Property(
+                rid=ClassRef(p_doc),
+                type_id="string",
+                nullable=False,
+                primary_key=False,
+                title="sourceDocPk",
+                format=PropertyFormat.STRING,
+                description="源文档主键",
+            ),
         ),
         display_name="知识块",
         description="文档切块对象（AI-10 管道产物；沿 chunk-source-doc 回源文档）",
@@ -110,16 +130,18 @@ def ensure_chunk_model(
     try:
         repo.get_link_type(ClassRef(lnk_rid))
     except KeyError:
-        repo.upsert_link_type(LinkType(
-            rid=ClassRef(lnk_rid),
-            src=ClassRef(cls_rid),
-            dst=ClassRef(doc_class_rid),
-            cardinality=Cardinality.MANY_TO_ONE,
-            directionality=Directionality.DIRECTED,
-            src_display_name="sourceDocument",
-            dst_display_name="chunks",
-            description="chunk 回溯源文档（检索溯源导航）",
-        ))
+        repo.upsert_link_type(
+            LinkType(
+                rid=ClassRef(lnk_rid),
+                src=ClassRef(cls_rid),
+                dst=ClassRef(doc_class_rid),
+                cardinality=Cardinality.MANY_TO_ONE,
+                directionality=Directionality.DIRECTED,
+                src_display_name="sourceDocument",
+                dst_display_name="chunks",
+                description="chunk 回溯源文档（检索溯源导航）",
+            )
+        )
     return cls_rid, lnk_rid
 
 
@@ -156,35 +178,51 @@ def ingest_document_chunks(
         pk_prop = ot.primary_key[0]
         props = dict(doc_props or {})
         props[pk_prop.rid] = doc_pk
-        repo.create_individual(Individual(
-            rid=doc_rid, class_rid=ClassRef(doc_class_rid),
-            props=tuple((ClassRef(k), v) for k, v in props.items()),
-            primary_key=str(doc_pk), created_at=now, updated_at=now,
-            tenant_id=tenant,
-        ))
+        repo.create_individual(
+            Individual(
+                rid=doc_rid,
+                class_rid=ClassRef(doc_class_rid),
+                props=tuple((ClassRef(k), v) for k, v in props.items()),
+                primary_key=str(doc_pk),
+                created_at=now,
+                updated_at=now,
+                tenant_id=tenant,
+            )
+        )
 
     # 2) chunk 对象 + 回源 link
     created_chunks = 0
     for i, text in enumerate(chunks):
         key = f"{doc_pk}#{i}"
         chunk_rid = f"ont.{tenant}.ind.{CHUNK_SLUG}.{key}"
-        repo.create_individual(Individual(
-            rid=chunk_rid, class_rid=ClassRef(cls_rid),
-            props=(
-                (ClassRef(f"ont.{tenant}.prop.chunk-key.v1"), key),
-                (ClassRef(f"ont.{tenant}.prop.chunk-text.v1"), text),
-                (ClassRef(f"ont.{tenant}.prop.chunk-position.v1"), i),
-                (ClassRef(f"ont.{tenant}.prop.chunk-doc.v1"), doc_pk),
-            ),
-            primary_key=key, created_at=now, updated_at=now, tenant_id=tenant,
-        ))
+        repo.create_individual(
+            Individual(
+                rid=chunk_rid,
+                class_rid=ClassRef(cls_rid),
+                props=(
+                    (ClassRef(f"ont.{tenant}.prop.chunk-key.v1"), key),
+                    (ClassRef(f"ont.{tenant}.prop.chunk-text.v1"), text),
+                    (ClassRef(f"ont.{tenant}.prop.chunk-position.v1"), i),
+                    (ClassRef(f"ont.{tenant}.prop.chunk-doc.v1"), doc_pk),
+                ),
+                primary_key=key,
+                created_at=now,
+                updated_at=now,
+                tenant_id=tenant,
+            )
+        )
         created_chunks += 1
-        repo.create_link_instance(LinkInstance(
-            rid=f"ont.{tenant}.lnk.{LINK_SLUG}.{key}",
-            link_type_rid=ClassRef(lnk_rid),
-            src=chunk_rid, dst=doc_rid, props=(),
-            created_at=now, tenant_id=tenant,
-        ))
+        repo.create_link_instance(
+            LinkInstance(
+                rid=f"ont.{tenant}.lnk.{LINK_SLUG}.{key}",
+                link_type_rid=ClassRef(lnk_rid),
+                src=chunk_rid,
+                dst=doc_rid,
+                props=(),
+                created_at=now,
+                tenant_id=tenant,
+            )
+        )
     return {
         "doc_rid": doc_rid,
         "chunk_class_rid": cls_rid,

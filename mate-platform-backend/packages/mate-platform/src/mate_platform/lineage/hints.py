@@ -11,6 +11,7 @@ event when it crosses a domain boundary (e.g. ``msg`` →
 side, so the lineage server can stitch the cross-domain chain
 together with one stable correlation id.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -51,9 +52,7 @@ class LineageHints:
     def __post_init__(self) -> None:
         # Hard rule 3: tenant_id must never be empty.
         if not self.tenant_id:
-            raise ValueError(
-                "LineageHints.tenant_id is required (SEC-TENANT-01 hard rule 3)"
-            )
+            raise ValueError("LineageHints.tenant_id is required (SEC-TENANT-01 hard rule 3)")
         if not self.correlation_id:
             raise ValueError("LineageHints.correlation_id must not be empty")
 
@@ -107,7 +106,6 @@ def merge_hints(base: LineageHints, **overrides: Any) -> LineageHints:
     for key in overrides:
         if key not in valid_fields:
             raise TypeError(
-                f"merge_hints: unknown field {key!r}; "
-                f"valid fields are {sorted(valid_fields)}"
+                f"merge_hints: unknown field {key!r}; valid fields are {sorted(valid_fields)}"
             )
     return replace(base, **overrides)

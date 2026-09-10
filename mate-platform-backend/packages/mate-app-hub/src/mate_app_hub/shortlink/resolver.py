@@ -4,6 +4,7 @@ Looks up a code in the tenant-scoped store and returns the bound
 app metadata. Raises ``ValueError`` when the code is unknown or
 expired so callers (HTTP layer) can map it to a 404.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -13,7 +14,9 @@ from .repository import InMemoryShortlinkStore
 
 
 def resolve(
-    store: InMemoryShortlinkStore, tenant_id: str, code: str,
+    store: InMemoryShortlinkStore,
+    tenant_id: str,
+    code: str,
 ) -> dict:
     """Resolve a short code to its bound app metadata.
 

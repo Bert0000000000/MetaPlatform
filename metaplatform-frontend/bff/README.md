@@ -4,10 +4,10 @@ Mate Platform BFF.
 
 ## API_MODE 切换
 
-| Mode | 行为 |
-|---|---|
-| mock | 所有返回 mock |
-| live | 透传到 UPSTREAM_BASE |
+| Mode   | 行为                           |
+| ------ | ------------------------------ |
+| mock   | 所有返回 mock                  |
+| live   | 透传到 UPSTREAM_BASE           |
 | hybrid | GET mock, POST/PUT/DELETE live |
 
 ## 启动

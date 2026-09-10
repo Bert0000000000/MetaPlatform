@@ -17,12 +17,12 @@
 
 接力任务的前提描述与仓库实际状态不符，本批按**实际状态 + 测试门禁**收口：
 
-| 任务前提描述 | 仓库实际（扫描结论） |
-|---|---|
-| 10 域已合规 | **0 / 17 域** 含 `tenantHeader`；10 域只有 `bearerAuth`，7 域是 legacy `ApiKeyAuth`+`BearerAuth`+`bearerAuth` |
+| 任务前提描述                          | 仓库实际（扫描结论）                                                                                                          |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 10 域已合规                           | **0 / 17 域** 含 `tenantHeader`；10 域只有 `bearerAuth`，7 域是 legacy `ApiKeyAuth`+`BearerAuth`+`bearerAuth`                 |
 | 待补 7 域含 etl / metrics / scheduler | etl / metrics / scheduler **不是独立 service.yaml**，而是 `dw.yaml` 内的数据 schema（`ETLTask` / `SchedulerTask` / `Metric`） |
-| oidcScopes = `openIdConnect` | 权威 `common/security.yaml` 定义为 `type: oauth2`（client_credentials）；本批沿用权威源 |
-| oidcScopes openIdConnectUrl | 沿用 `common/security.yaml` 的 `flows.clientCredentials.tokenUrl` |
+| oidcScopes = `openIdConnect`          | 权威 `common/security.yaml` 定义为 `type: oauth2`（client_credentials）；本批沿用权威源                                       |
+| oidcScopes openIdConnectUrl           | 沿用 `common/security.yaml` 的 `flows.clientCredentials.tokenUrl`                                                             |
 
 按测试门禁（17 域必须含 `bearerAuth` + `tenantHeader`），**全部 17 域统一补齐到
 3-scheme 标准**。实际存在 legacy 混乱 scheme 的 7 域为：
@@ -34,6 +34,7 @@ a2a / apphub / arch / copilot / data / dw / wfe（清除了 `ApiKeyAuth`、
 路径前缀：`mate-platform-backend/contracts/openapi/services/`
 
 每个文件：
+
 1. `components.securitySchemes` 标准化为 `{bearerAuth, tenantHeader, oidcScopes}`
    （清除 legacy `ApiKeyAuth` / 大写 `BearerAuth`）。
 2. 每个 HTTP operation 补 `security:` 引用
@@ -42,49 +43,49 @@ a2a / apphub / arch / copilot / data / dw / wfe（清除了 `ApiKeyAuth`、
 3. 顶层 `security:` 块（`bearerAuth + tenantHeader + oidcScopes:[platform.read]`）
    已存在，保持不变。
 
-| 文件 | 改前 schemes | ops 补 security |
-|---|---|---:|
-| a2a.yaml | ApiKeyAuth / BearerAuth / bearerAuth | 2/2 |
-| agent.yaml | bearerAuth | 6/6 |
-| apphub.yaml | ApiKeyAuth / BearerAuth / bearerAuth | 5/5 |
-| arch.yaml | ApiKeyAuth / BearerAuth / bearerAuth | 29/29 |
-| copilot.yaml | ApiKeyAuth / BearerAuth / bearerAuth | 35/35 |
-| dashboard.yaml | bearerAuth | 34/34 |
-| data.yaml | ApiKeyAuth / BearerAuth / bearerAuth | 39/39 |
-| dw.yaml | ApiKeyAuth / BearerAuth / bearerAuth | 15/15 |
-| iam.yaml | bearerAuth | 38 新增（5 个 public 端点保留 `security: []`） |
-| kb.yaml | bearerAuth | 6/6 |
-| llmgw.yaml | bearerAuth | 4/4 |
-| mcp.yaml | bearerAuth | 5 新增（1 个已声明） |
-| msg.yaml | bearerAuth | 3/3 |
-| obs.yaml | bearerAuth | 9/9 |
-| ont.yaml | bearerAuth | 13/13 |
-| rag.yaml | bearerAuth | 8/8 |
-| wfe.yaml | ApiKeyAuth / BearerAuth / bearerAuth | 2/2 |
+| 文件           | 改前 schemes                         |                                ops 补 security |
+| -------------- | ------------------------------------ | ---------------------------------------------: |
+| a2a.yaml       | ApiKeyAuth / BearerAuth / bearerAuth |                                            2/2 |
+| agent.yaml     | bearerAuth                           |                                            6/6 |
+| apphub.yaml    | ApiKeyAuth / BearerAuth / bearerAuth |                                            5/5 |
+| arch.yaml      | ApiKeyAuth / BearerAuth / bearerAuth |                                          29/29 |
+| copilot.yaml   | ApiKeyAuth / BearerAuth / bearerAuth |                                          35/35 |
+| dashboard.yaml | bearerAuth                           |                                          34/34 |
+| data.yaml      | ApiKeyAuth / BearerAuth / bearerAuth |                                          39/39 |
+| dw.yaml        | ApiKeyAuth / BearerAuth / bearerAuth |                                          15/15 |
+| iam.yaml       | bearerAuth                           | 38 新增（5 个 public 端点保留 `security: []`） |
+| kb.yaml        | bearerAuth                           |                                            6/6 |
+| llmgw.yaml     | bearerAuth                           |                                            4/4 |
+| mcp.yaml       | bearerAuth                           |                           5 新增（1 个已声明） |
+| msg.yaml       | bearerAuth                           |                                            3/3 |
+| obs.yaml       | bearerAuth                           |                                            9/9 |
+| ont.yaml       | bearerAuth                           |                                          13/13 |
+| rag.yaml       | bearerAuth                           |                                            8/8 |
+| wfe.yaml       | ApiKeyAuth / BearerAuth / bearerAuth |                                            2/2 |
 
 合计 **259 个 operation**，全部声明 security。
 
 ## 4. 17 域合规矩阵（改后）
 
-| 域 | bearerAuth | tenantHeader | oidcScopes | 顶层 security | per-op security |
-|---|:-:|:-:|:-:|:-:|:-:|
-| a2a | ✅ | ✅ | ✅ | ✅ | ✅ |
-| agent | ✅ | ✅ | ✅ | ✅ | ✅ |
-| apphub | ✅ | ✅ | ✅ | ✅ | ✅ |
-| arch | ✅ | ✅ | ✅ | ✅ | ✅ |
-| copilot | ✅ | ✅ | ✅ | ✅ | ✅ |
-| dashboard | ✅ | ✅ | ✅ | ✅ | ✅ |
-| data | ✅ | ✅ | ✅ | ✅ | ✅ |
-| dw | ✅ | ✅ | ✅ | ✅ | ✅ |
-| iam | ✅ | ✅ | ✅ | ✅ | ✅ |
-| kb | ✅ | ✅ | ✅ | ✅ | ✅ |
-| llmgw | ✅ | ✅ | ✅ | ✅ | ✅ |
-| mcp | ✅ | ✅ | ✅ | ✅ | ✅ |
-| msg | ✅ | ✅ | ✅ | ✅ | ✅ |
-| obs | ✅ | ✅ | ✅ | ✅ | ✅ |
-| ont | ✅ | ✅ | ✅ | ✅ | ✅ |
-| rag | ✅ | ✅ | ✅ | ✅ | ✅ |
-| wfe | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 域        | bearerAuth | tenantHeader | oidcScopes | 顶层 security | per-op security |
+| --------- | :--------: | :----------: | :--------: | :-----------: | :-------------: |
+| a2a       |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| agent     |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| apphub    |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| arch      |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| copilot   |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| dashboard |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| data      |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| dw        |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| iam       |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| kb        |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| llmgw     |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| mcp       |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| msg       |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| obs       |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| ont       |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| rag       |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
+| wfe       |     ✅     |      ✅      |     ✅     |      ✅       |       ✅        |
 
 ## 5. 测试
 

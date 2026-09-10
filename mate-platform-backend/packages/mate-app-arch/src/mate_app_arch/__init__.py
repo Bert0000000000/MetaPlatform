@@ -8,6 +8,7 @@ review templates, review tickets, tech debts), impact analysis,
 ontology mappings, orgs / roles, tech stacks / radar / stacks,
 and value streams.
 """
+
 from __future__ import annotations
 
 __version__ = "0.1.0"

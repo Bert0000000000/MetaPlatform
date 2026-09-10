@@ -16,7 +16,15 @@ services:
 
   mate-app-wfe:
     image: mate-app-copilot:dev
-    command: ["uvicorn", "mate_app_wfe.main:app", "--host", "0.0.0.0", "--port", "8510"]
+    command:
+      [
+        "uvicorn",
+        "mate_app_wfe.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8510",
+      ]
     volumes:
       - ./mate-platform-backend/packages:/app/packages:rw
     environment:
@@ -72,7 +80,15 @@ services:
 
   mate-tech-msg:
     image: mate-tech-rag:dev
-    command: ["uvicorn", "mate_tech_msg.main:app", "--host", "0.0.0.0", "--port", "8082"]
+    command:
+      [
+        "uvicorn",
+        "mate_tech_msg.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8082",
+      ]
     volumes:
       - ./mate-platform-backend/packages:/app/packages:rw
     environment:
@@ -83,7 +99,15 @@ services:
 
   mate-tech-dw:
     image: mate-app-copilot:dev
-    command: ["uvicorn", "mate_tech_dw.main:app", "--host", "0.0.0.0", "--port", "8021"]
+    command:
+      [
+        "uvicorn",
+        "mate_tech_dw.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8021",
+      ]
     volumes:
       - ./mate-platform-backend/packages:/app/packages:rw
     environment:
@@ -97,7 +121,15 @@ services:
       context: ./mate-platform-backend
       dockerfile: Dockerfile.agent
     image: mate-tech-agent:task5
-    command: ["uvicorn", "mate_tech_agent.api.app:app", "--host", "0.0.0.0", "--port", "8002"]
+    command:
+      [
+        "uvicorn",
+        "mate_tech_agent.api.app:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8002",
+      ]
     volumes:
       - ./mate-platform-backend/packages:/app/packages:rw
     environment:
@@ -131,7 +163,15 @@ services:
 
   mate-app-kb:
     image: mate-app-copilot:dev
-    command: ["uvicorn", "mate_app_kb.api.app:app", "--host", "0.0.0.0", "--port", "8003"]
+    command:
+      [
+        "uvicorn",
+        "mate_app_kb.api.app:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8003",
+      ]
     volumes:
       - ./mate-platform-backend/packages:/app/packages:rw
     environment:
@@ -142,7 +182,15 @@ services:
 
   mate-app-a2a:
     image: mate-app-copilot:dev
-    command: ["uvicorn", "mate_app_a2a.main:app", "--host", "0.0.0.0", "--port", "8502"]
+    command:
+      [
+        "uvicorn",
+        "mate_app_a2a.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8502",
+      ]
     volumes:
       - ./mate-platform-backend/packages:/app/packages:rw
       - ./mate-platform-backend/.venv/Lib/site-packages/a2a:/opt/a2a:ro
@@ -162,7 +210,15 @@ services:
 
   mate-tech-orchestrator:
     image: mate-app-copilot:dev
-    command: ["uvicorn", "mate_tech_orchestrator.main:app", "--host", "0.0.0.0", "--port", "8505"]
+    command:
+      [
+        "uvicorn",
+        "mate_tech_orchestrator.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8505",
+      ]
     environment:
       MATE_PROFILE: dev
       SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
@@ -178,7 +234,15 @@ services:
 
   mate-tech-data:
     image: mate-app-copilot:dev
-    command: ["uvicorn", "mate_tech_data.main:app", "--host", "0.0.0.0", "--port", "8701"]
+    command:
+      [
+        "uvicorn",
+        "mate_tech_data.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8701",
+      ]
     volumes:
       - ./mate-platform-backend/packages:/app/packages:rw
     environment:

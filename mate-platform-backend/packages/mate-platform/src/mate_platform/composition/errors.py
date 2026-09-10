@@ -1,4 +1,5 @@
 """mate_platform.composition.errors — kernel error types (ADR-0042)."""
+
 from __future__ import annotations
 
 

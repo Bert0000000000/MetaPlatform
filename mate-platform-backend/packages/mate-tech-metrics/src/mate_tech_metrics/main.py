@@ -8,6 +8,7 @@ The `/api/v1/metrics/health` endpoint is widened into the anonymous set
 so liveness probes can reach it without a bearer token; all other
 endpoints read tenant-bound state via `require_tenant`.
 """
+
 from __future__ import annotations
 
 from fastapi import FastAPI

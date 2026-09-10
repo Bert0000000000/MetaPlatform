@@ -6,11 +6,11 @@
 
 封装 `@flowgram.ai/fixed-layout-editor` 的 `FlowgramEditor`，提供**画布 + 工具条 + 本地持久化 + 全屏**的一站式体验。通过 `mode` 切换三大流程编排场景：
 
-| mode | 场景 | 节点库 | 后端 |
-|---|---|---|---|
-| `bpmn` | 审批流程编排 | `BPMN_NODE_REGISTRIES`（7 种） | `TECH-WFE` 状态机 |
-| `agent` | AI 协作流程编排 | `AGENT_NODE_REGISTRIES`（7 种） | `TECH-AGENT` (SAA Graph Core) |
-| `business` | 业务流程编排 | `BUSINESS_FLOW_REGISTRIES`（3 种） | `TECH-ACTION` + `TECH-ONT` |
+| mode       | 场景            | 节点库                             | 后端                          |
+| ---------- | --------------- | ---------------------------------- | ----------------------------- |
+| `bpmn`     | 审批流程编排    | `BPMN_NODE_REGISTRIES`（7 种）     | `TECH-WFE` 状态机             |
+| `agent`    | AI 协作流程编排 | `AGENT_NODE_REGISTRIES`（7 种）    | `TECH-AGENT` (SAA Graph Core) |
+| `business` | 业务流程编排    | `BUSINESS_FLOW_REGISTRIES`（3 种） | `TECH-ACTION` + `TECH-ONT`    |
 
 也支持 `nodeRegistryMode="all"` 启用全部 17 种节点库。
 
@@ -40,10 +40,10 @@ import { FlowDesigner, type FlowMode } from '@mate/shared/flow';
 
 ## 当前已接入
 
-| 页面 | 路径 | mode 默认值 |
-|---|---|---|
-| `apps/web/src/pages/apps/ProcessDesignerPage.tsx` | `/apps/processdesigner` | URL `?mode=` → localStorage → 默认 `bpmn` |
-| `apps/web/src/pages/admin/AdminComponentsPage.tsx` | `/admin/components` | 直接用 `FlowgramEditor`（catalog 演示页，未走 FlowDesigner） |
+| 页面                                               | 路径                    | mode 默认值                                                  |
+| -------------------------------------------------- | ----------------------- | ------------------------------------------------------------ |
+| `apps/web/src/pages/apps/ProcessDesignerPage.tsx`  | `/apps/processdesigner` | URL `?mode=` → localStorage → 默认 `bpmn`                    |
+| `apps/web/src/pages/admin/AdminComponentsPage.tsx` | `/admin/components`     | 直接用 `FlowgramEditor`（catalog 演示页，未走 FlowDesigner） |
 
 ## 工具条交互
 

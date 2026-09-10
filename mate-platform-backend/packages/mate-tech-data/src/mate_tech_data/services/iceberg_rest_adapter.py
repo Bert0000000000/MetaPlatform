@@ -21,6 +21,7 @@ Configuration (all from environment variables):
     ICEBERG_REST_URL       — base URL of the Iceberg REST catalog
                               (default: ``http://iceberg:8181``)
 """
+
 from __future__ import annotations
 
 import os
@@ -36,8 +37,11 @@ class IcebergRestError(Exception):
     """Raised when an Iceberg REST catalog call fails."""
 
     def __init__(
-        self, message: str, *,
-        status_code: int = 0, response_body: str = "",
+        self,
+        message: str,
+        *,
+        status_code: int = 0,
+        response_body: str = "",
     ) -> None:
         super().__init__(message)
         self.status_code = status_code
@@ -81,7 +85,8 @@ class IcebergRestAdapter:
         """Build an adapter from environment variables."""
         return cls(
             base_url=os.environ.get(
-                "ICEBERG_REST_URL", "http://iceberg:8181",
+                "ICEBERG_REST_URL",
+                "http://iceberg:8181",
             ),
             timeout_seconds=timeout_seconds,
         )
@@ -111,7 +116,8 @@ class IcebergRestAdapter:
     # Namespace operations
     # -----------------------------------------------------------------
     async def create_namespace(
-        self, namespace: tuple[str, ...],
+        self,
+        namespace: tuple[str, ...],
     ) -> dict[str, Any]:
         """Create a namespace in the Iceberg REST catalog.
 
@@ -121,14 +127,19 @@ class IcebergRestAdapter:
         """
         body = {"namespace": list(namespace)}
         return await self._request(
-            "POST", "/v1/namespaces", json=body,
+            "POST",
+            "/v1/namespaces",
+            json=body,
         )
 
     # -----------------------------------------------------------------
     # Table operations
     # -----------------------------------------------------------------
     async def create_table(
-        self, namespace: str, name: str, schema: dict[str, Any],
+        self,
+        namespace: str,
+        name: str,
+        schema: dict[str, Any],
     ) -> dict[str, Any]:
         """Create a table in the Iceberg REST catalog.
 
@@ -139,7 +150,9 @@ class IcebergRestAdapter:
         """
         body = {"name": name, "schema": schema}
         return await self._request(
-            "POST", f"/v1/namespaces/{namespace}/tables", json=body,
+            "POST",
+            f"/v1/namespaces/{namespace}/tables",
+            json=body,
         )
 
     async def register_table(
@@ -189,7 +202,10 @@ class IcebergRestAdapter:
         client = await self._get_client()
         try:
             resp = await client.request(
-                method, path, json=json, params=params,
+                method,
+                path,
+                json=json,
+                params=params,
             )
         except httpx.HTTPError as exc:
             raise IcebergRestError(
@@ -197,8 +213,7 @@ class IcebergRestAdapter:
             ) from exc
         if resp.status_code >= 400:
             raise IcebergRestError(
-                f"Iceberg REST {method} {path} returned {resp.status_code}: "
-                f"{resp.text[:300]}",
+                f"Iceberg REST {method} {path} returned {resp.status_code}: {resp.text[:300]}",
                 status_code=resp.status_code,
                 response_body=resp.text[:500],
             )
@@ -209,8 +224,7 @@ class IcebergRestAdapter:
             body = resp.json()
         except ValueError as exc:
             raise IcebergRestError(
-                f"Iceberg REST {method} {path} returned non-JSON body: "
-                f"{resp.text[:200]}",
+                f"Iceberg REST {method} {path} returned non-JSON body: {resp.text[:200]}",
             ) from exc
         if isinstance(body, list):
             return {"items": body}  # type: ignore[return-value]

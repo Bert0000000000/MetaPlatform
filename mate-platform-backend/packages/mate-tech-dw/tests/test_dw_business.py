@@ -8,6 +8,7 @@ Covers the P0 business logic added in the second batch:
   - Outbox event emission (dw.task.created / status_changed / evaluation.submitted / ...)
   - Cross-tenant isolation
 """
+
 from __future__ import annotations
 
 # Tenant-scoped employee id constants (matches seed _emp_id)
@@ -339,8 +340,7 @@ def test_feedback_low_rating_needs_retrain(client, auth_headers_acme) -> None:
     """Rating <= 2 -> needs_retrain=True."""
     r = client.post(
         "/api/v1/dw/learning/feedback",
-        json={"employee_id": ACME_E1, "scenario": "cs-refund",
-              "rating": 2, "comment": "poor"},
+        json={"employee_id": ACME_E1, "scenario": "cs-refund", "rating": 2, "comment": "poor"},
         headers=auth_headers_acme,
     )
     assert r.status_code == 201, r.text
@@ -351,8 +351,7 @@ def test_feedback_high_rating_stable(client, auth_headers_acme) -> None:
     """Rating >= 4 -> needs_retrain=False."""
     r = client.post(
         "/api/v1/dw/learning/feedback",
-        json={"employee_id": ACME_E1, "scenario": "cs-refund",
-              "rating": 5, "comment": "great"},
+        json={"employee_id": ACME_E1, "scenario": "cs-refund", "rating": 5, "comment": "great"},
         headers=auth_headers_acme,
     )
     assert r.status_code == 201, r.text
@@ -363,8 +362,7 @@ def test_feedback_unknown_employee(client, auth_headers_acme) -> None:
     """POST /learning/feedback with unknown employee -> 404."""
     r = client.post(
         "/api/v1/dw/learning/feedback",
-        json={"employee_id": "nope", "scenario": "x",
-              "rating": 3, "comment": ""},
+        json={"employee_id": "nope", "scenario": "x", "rating": 3, "comment": ""},
         headers=auth_headers_acme,
     )
     assert r.status_code == 404, r.text
@@ -374,8 +372,7 @@ def test_feedback_emits_outbox(client, auth_headers_acme, outbox) -> None:
     """POST /learning/feedback emits dw.feedback.submitted."""
     client.post(
         "/api/v1/dw/learning/feedback",
-        json={"employee_id": ACME_E1, "scenario": "cs-refund",
-              "rating": 1, "comment": "bad"},
+        json={"employee_id": ACME_E1, "scenario": "cs-refund", "rating": 1, "comment": "bad"},
         headers=auth_headers_acme,
     )
     events = [rec.event for rec in outbox.all_records()]
@@ -401,16 +398,20 @@ class _StubRAGClient:
         self._fail = fail
 
     def ingest(
-        self, document_id: str, chunks: list[str],
+        self,
+        document_id: str,
+        chunks: list[str],
         metadata: dict | None = None,
     ) -> dict:
         if self._fail:
             raise RuntimeError("simulated rag outage")
-        self.calls.append({
-            "document_id": document_id,
-            "chunks": list(chunks),
-            "metadata": dict(metadata or {}),
-        })
+        self.calls.append(
+            {
+                "document_id": document_id,
+                "chunks": list(chunks),
+                "metadata": dict(metadata or {}),
+            }
+        )
         return {"document_id": document_id, "chunk_count": len(chunks), "total_chunks": len(chunks)}
 
     def close(self) -> None:
@@ -428,6 +429,7 @@ def stub_rag(monkeypatch: pytest.MonkeyPatch):
     """
     stub = _StubRAGClient()
     import mate_tech_dw.api.app as _app_mod
+
     monkeypatch.setattr(_app_mod, "_rag_client", lambda _request, _tenant: stub)
     return stub
 
@@ -435,12 +437,16 @@ def stub_rag(monkeypatch: pytest.MonkeyPatch):
 def _create_feedback(client, headers, **overrides) -> str:
     """Helper: POST /learning/feedback and return its id."""
     body = {
-        "employee_id": ACME_E1, "scenario": "cs-refund",
-        "rating": 5, "comment": "处理非常准确,客户很满意",
+        "employee_id": ACME_E1,
+        "scenario": "cs-refund",
+        "rating": 5,
+        "comment": "处理非常准确,客户很满意",
     }
     body.update(overrides)
     r = client.post(
-        "/api/v1/dw/learning/feedback", json=body, headers=headers,
+        "/api/v1/dw/learning/feedback",
+        json=body,
+        headers=headers,
     )
     assert r.status_code == 201, r.text
     return r.json()["id"]
@@ -450,7 +456,8 @@ def test_promote_feedback_to_kb_returns_201(client, auth_headers_acme, stub_rag)
     """POST /learning/feedback/{id}/promote ingests comment → rag + backfills id."""
     fid = _create_feedback(client, auth_headers_acme)
     r = client.post(
-        f"/api/v1/dw/learning/feedback/{fid}/promote", headers=auth_headers_acme,
+        f"/api/v1/dw/learning/feedback/{fid}/promote",
+        headers=auth_headers_acme,
     )
     assert r.status_code == 201, r.text
     body = r.json()["data"]
@@ -478,22 +485,28 @@ def test_promote_feedback_unknown_returns_404(client, auth_headers_acme, stub_ra
 
 
 def test_promote_feedback_rag_failure_returns_502(
-    client, auth_headers_acme, monkeypatch: pytest.MonkeyPatch,
+    client,
+    auth_headers_acme,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """RAG outage → 502; feedback record itself stays intact (no partial update)."""
     fid = _create_feedback(client, auth_headers_acme)
     failing = _StubRAGClient(fail=True)
     import mate_tech_dw.api.app as _app_mod
+
     monkeypatch.setattr(_app_mod, "_rag_client", lambda _request, _tenant: failing)
     r = client.post(
-        f"/api/v1/dw/learning/feedback/{fid}/promote", headers=auth_headers_acme,
+        f"/api/v1/dw/learning/feedback/{fid}/promote",
+        headers=auth_headers_acme,
     )
     assert r.status_code == 502, r.text
     assert "rag ingest failed" in r.json()["detail"]
 
 
 def test_promote_feedback_backfills_promoted_fields(
-    client, auth_headers_acme, stub_rag,
+    client,
+    auth_headers_acme,
+    stub_rag,
 ) -> None:
     """After promote: GET /learning/feedback returns the feedback with promoted_* filled."""
     fid = _create_feedback(client, auth_headers_acme)
@@ -502,7 +515,8 @@ def test_promote_feedback_backfills_promoted_fields(
         headers=auth_headers_acme,
     )
     r = client.get(
-        "/api/v1/dw/learning/feedback", headers=auth_headers_acme,
+        "/api/v1/dw/learning/feedback",
+        headers=auth_headers_acme,
     )
     assert r.status_code == 200, r.text
     items = r.json()["data"]["items"]
@@ -513,7 +527,10 @@ def test_promote_feedback_backfills_promoted_fields(
 
 
 def test_promote_feedback_emits_outbox(
-    client, auth_headers_acme, outbox, stub_rag,
+    client,
+    auth_headers_acme,
+    outbox,
+    stub_rag,
 ) -> None:
     """POST /learning/feedback/{id}/promote emits dw.feedback.promoted."""
     fid = _create_feedback(client, auth_headers_acme)
@@ -529,7 +546,9 @@ def test_promote_feedback_emits_outbox(
 
 
 def test_promote_feedback_uses_scenario_when_comment_empty(
-    client, auth_headers_acme, stub_rag,
+    client,
+    auth_headers_acme,
+    stub_rag,
 ) -> None:
     """Empty comment → fallback to '[scenario] <scenario>' snippet (no crash)."""
     fid = _create_feedback(client, auth_headers_acme, comment="")
@@ -544,7 +563,10 @@ def test_promote_feedback_uses_scenario_when_comment_empty(
 
 
 def test_promote_feedback_tenant_isolation(
-    client, auth_headers_acme, auth_headers_globex, stub_rag,
+    client,
+    auth_headers_acme,
+    auth_headers_globex,
+    stub_rag,
 ) -> None:
     """Tenant B cannot promote tenant A's feedback (404, no RAG call)."""
     fid = _create_feedback(client, auth_headers_acme)
@@ -565,17 +587,24 @@ def test_update_learning_feedback_repo_unit() -> None:
         get_learning_feedback,
         update_learning_feedback,
     )
+
     repo.reset_store()
     fb = DwLearningFeedback(
-        id="fb-unit-1", tenant_id="tenant-x", employee_id="e-1",
-        scenario="sc-1", rating=4, comment="hello",
+        id="fb-unit-1",
+        tenant_id="tenant-x",
+        employee_id="e-1",
+        scenario="sc-1",
+        rating=4,
+        comment="hello",
         feedback_at="2026-07-30T19:00:00Z",
     )
     append_learning_feedback("tenant-x", fb)
     assert get_learning_feedback("tenant-x", "fb-unit-1") == fb
     updated = update_learning_feedback(
-        "tenant-x", "fb-unit-1",
-        promoted_document_id="rag-doc-abc", promoted_at="2026-08-10T12:00:00Z",
+        "tenant-x",
+        "fb-unit-1",
+        promoted_document_id="rag-doc-abc",
+        promoted_at="2026-08-10T12:00:00Z",
     )
     assert updated is not None
     assert updated.promoted_document_id == "rag-doc-abc"
@@ -599,8 +628,7 @@ def test_collaboration_success(client, auth_headers_acme) -> None:
     """POST /collaborations succeeds when both employees exist and one is active."""
     r = client.post(
         "/api/v1/dw/collaborations",
-        json={"employee_id": ACME_E1, "peer_employee_id": ACME_E2,
-              "duration_ms": 60000},
+        json={"employee_id": ACME_E1, "peer_employee_id": ACME_E2, "duration_ms": 60000},
         headers=auth_headers_acme,
     )
     assert r.status_code == 201, r.text
@@ -614,8 +642,7 @@ def test_collaboration_self_rejected(client, auth_headers_acme) -> None:
     """POST /collaborations with same employee_id -> 422."""
     r = client.post(
         "/api/v1/dw/collaborations",
-        json={"employee_id": ACME_E1, "peer_employee_id": ACME_E1,
-              "duration_ms": 0},
+        json={"employee_id": ACME_E1, "peer_employee_id": ACME_E1, "duration_ms": 0},
         headers=auth_headers_acme,
     )
     assert r.status_code == 422, r.text
@@ -626,8 +653,7 @@ def test_collaboration_unknown_employee(client, auth_headers_acme) -> None:
     """POST /collaborations with unknown employee -> 404."""
     r = client.post(
         "/api/v1/dw/collaborations",
-        json={"employee_id": "nope", "peer_employee_id": ACME_E2,
-              "duration_ms": 0},
+        json={"employee_id": "nope", "peer_employee_id": ACME_E2, "duration_ms": 0},
         headers=auth_headers_acme,
     )
     assert r.status_code == 404, r.text
@@ -637,8 +663,7 @@ def test_collaboration_unknown_peer(client, auth_headers_acme) -> None:
     """POST /collaborations with unknown peer -> 404."""
     r = client.post(
         "/api/v1/dw/collaborations",
-        json={"employee_id": ACME_E1, "peer_employee_id": "nope",
-              "duration_ms": 0},
+        json={"employee_id": ACME_E1, "peer_employee_id": "nope", "duration_ms": 0},
         headers=auth_headers_acme,
     )
     assert r.status_code == 404, r.text
@@ -648,8 +673,7 @@ def test_collaboration_emits_outbox(client, auth_headers_acme, outbox) -> None:
     """POST /collaborations emits dw.collaboration.started."""
     client.post(
         "/api/v1/dw/collaborations",
-        json={"employee_id": ACME_E1, "peer_employee_id": ACME_E3,
-              "duration_ms": 30000},
+        json={"employee_id": ACME_E1, "peer_employee_id": ACME_E3, "duration_ms": 30000},
         headers=auth_headers_acme,
     )
     events = [rec.event for rec in outbox.all_records()]
@@ -673,7 +697,8 @@ def test_task_tenant_isolation(client, auth_headers_acme, auth_headers_globex) -
 
     # Tenant globex lists tasks — must not see acme's task.
     r_globex = client.get(
-        "/api/v1/dw/employees/tasks", headers=auth_headers_globex,
+        "/api/v1/dw/employees/tasks",
+        headers=auth_headers_globex,
     )
     assert r_globex.status_code == 200
     globex_task_ids = {t["id"] for t in r_globex.json()["data"]["items"]}
@@ -681,7 +706,9 @@ def test_task_tenant_isolation(client, auth_headers_acme, auth_headers_globex) -
 
 
 def test_task_transition_tenant_isolation(
-    client, auth_headers_acme, auth_headers_globex,
+    client,
+    auth_headers_acme,
+    auth_headers_globex,
 ) -> None:
     """Tenant B cannot transition tenant A's task."""
     r_acme = client.post(
@@ -775,6 +802,7 @@ def test_custom_employee_prompt_persists(client, auth_headers_acme) -> None:
     )
     assert r2.status_code == 200, r2.text
     assert r2.json()["data"]["capability"]["systemPrompt"] == "新提示词"
+
 
 def test_capability_fields_persist(client, auth_headers_acme) -> None:
     """新建/更新员工时，工具、动作、模型参数等能力字段全部持久化。"""

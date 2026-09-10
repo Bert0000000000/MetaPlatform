@@ -5,6 +5,7 @@
 2. ga-acceptance.yml 含全部 ``ga-NNN-*`` job 名（按 GOVERN-10 拆 job 后）
 3. 5 个 forbid_* / require_evidence 脚本存在
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -43,9 +44,7 @@ def test_matrix_doc_has_at_least_13_rule_rows() -> None:
         and "硬规则" not in line
         and ("✅" in line or "🟡" in line or "⏳" in line or "🔧" in line)
     ]
-    assert len(rule_rows) >= 13, (
-        f"matrix has {len(rule_rows)} rows, expected ≥ 13"
-    )
+    assert len(rule_rows) >= 13, f"matrix has {len(rule_rows)} rows, expected ≥ 13"
 
 
 def test_ga_workflow_has_all_required_jobs() -> None:
@@ -72,9 +71,7 @@ def test_forbid_and_evidence_scripts_exist() -> None:
         "require_evidence.py",
         "validate_requirement_coverage.py",
     ]:
-        assert (REPO / "scripts" / "ci" / script).is_file(), (
-            f"{script} missing"
-        )
+        assert (REPO / "scripts" / "ci" / script).is_file(), f"{script} missing"
 
 
 def test_requirement_coverage_job_uses_canonical_manifest() -> None:

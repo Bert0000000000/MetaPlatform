@@ -7,6 +7,7 @@ Covers:
   - require_tenant enforcement
   - timeout handling
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock

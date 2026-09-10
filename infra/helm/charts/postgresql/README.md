@@ -11,8 +11,8 @@ credentials.
 
 ## Maintainers
 
-| Name | Email |
-|------|-------|
+| Name                        | Email                       |
+| --------------------------- | --------------------------- |
 | MetaPlatform Platform Owner | platform@metaplatform.local |
 
 ## TL;DR
@@ -54,32 +54,32 @@ helm template postgresql . -f ../../values-production.yaml
 
 ## Values
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| fullnameOverride | string | `"postgresql"` | Forces service DNS name to `postgresql` for MATE_DB_URL |
-| image.repository | string | `"postgres"` | Image repository |
-| image.tag | string | `"16"` | PostgreSQL major version |
-| image.pullPolicy | string | `"IfNotPresent"` | Image pull policy |
-| replicaCount | int | `1` | Number of pods (2 in production) |
-| database.name | string | `"metaplatform"` | Database name (POSTGRES_DB) |
-| database.username | string | `"meta"` | Database user (POSTGRES_USER) |
-| database.existingSecretName | string | `"postgresql-credentials"` | Secret name (SealedSecret) |
-| database.existingSecretKey | string | `"password"` | Secret key holding the password |
-| pool.size | int | `10` | SQLAlchemy pool_size (ConfigMap) |
-| pool.maxOverflow | int | `20` | SQLAlchemy max_overflow (ConfigMap) |
-| persistence.enabled | bool | `false` | Use PVC (true) or emptyDir (false) |
-| persistence.size | string | `"50Gi"` | PVC size when enabled |
-| persistence.storageClass | string | `""` | StorageClass (empty = cluster default) |
-| service.type | string | `"ClusterIP"` | Service type |
-| service.port | int | `5432` | PostgreSQL port |
-| resources | object | `{"requests":{"cpu":"250m","memory":"256Mi"},"limits":{"cpu":"1000m","memory":"1Gi"}}` | Resource shape |
-| probes.readiness.initialDelaySeconds | int | `15` | Readiness probe initial delay |
-| probes.readiness.periodSeconds | int | `10` | Readiness probe period |
-| probes.liveness.initialDelaySeconds | int | `30` | Liveness probe initial delay |
-| probes.liveness.periodSeconds | int | `30` | Liveness probe period |
-| networkPolicy.enabled | bool | `true` | Enable default-deny NetworkPolicy |
-| networkPolicy.allowedIngressNamespaces | list | `["metaplatform","api-gateway"]` | Namespaces allowed to reach 5432 |
-| sealedSecret.enabled | bool | `true` | Render SealedSecret placeholder template |
+| Key                                    | Type   | Default                                                                                | Description                                             |
+| -------------------------------------- | ------ | -------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| fullnameOverride                       | string | `"postgresql"`                                                                         | Forces service DNS name to `postgresql` for MATE_DB_URL |
+| image.repository                       | string | `"postgres"`                                                                           | Image repository                                        |
+| image.tag                              | string | `"16"`                                                                                 | PostgreSQL major version                                |
+| image.pullPolicy                       | string | `"IfNotPresent"`                                                                       | Image pull policy                                       |
+| replicaCount                           | int    | `1`                                                                                    | Number of pods (2 in production)                        |
+| database.name                          | string | `"metaplatform"`                                                                       | Database name (POSTGRES_DB)                             |
+| database.username                      | string | `"meta"`                                                                               | Database user (POSTGRES_USER)                           |
+| database.existingSecretName            | string | `"postgresql-credentials"`                                                             | Secret name (SealedSecret)                              |
+| database.existingSecretKey             | string | `"password"`                                                                           | Secret key holding the password                         |
+| pool.size                              | int    | `10`                                                                                   | SQLAlchemy pool_size (ConfigMap)                        |
+| pool.maxOverflow                       | int    | `20`                                                                                   | SQLAlchemy max_overflow (ConfigMap)                     |
+| persistence.enabled                    | bool   | `false`                                                                                | Use PVC (true) or emptyDir (false)                      |
+| persistence.size                       | string | `"50Gi"`                                                                               | PVC size when enabled                                   |
+| persistence.storageClass               | string | `""`                                                                                   | StorageClass (empty = cluster default)                  |
+| service.type                           | string | `"ClusterIP"`                                                                          | Service type                                            |
+| service.port                           | int    | `5432`                                                                                 | PostgreSQL port                                         |
+| resources                              | object | `{"requests":{"cpu":"250m","memory":"256Mi"},"limits":{"cpu":"1000m","memory":"1Gi"}}` | Resource shape                                          |
+| probes.readiness.initialDelaySeconds   | int    | `15`                                                                                   | Readiness probe initial delay                           |
+| probes.readiness.periodSeconds         | int    | `10`                                                                                   | Readiness probe period                                  |
+| probes.liveness.initialDelaySeconds    | int    | `30`                                                                                   | Liveness probe initial delay                            |
+| probes.liveness.periodSeconds          | int    | `30`                                                                                   | Liveness probe period                                   |
+| networkPolicy.enabled                  | bool   | `true`                                                                                 | Enable default-deny NetworkPolicy                       |
+| networkPolicy.allowedIngressNamespaces | list   | `["metaplatform","api-gateway"]`                                                       | Namespaces allowed to reach 5432                        |
+| sealedSecret.enabled                   | bool   | `true`                                                                                 | Render SealedSecret placeholder template                |
 
 ## Hard Rules Enforced
 
@@ -95,7 +95,7 @@ helm template postgresql . -f ../../values-production.yaml
   placeholder `encryptedData` that MUST be regenerated with `kubeseal`
   before cluster apply. No plaintext secret ever enters git.
 - **§13 rule 13** (NetworkPolicy default-deny): `policyTypes: [Ingress,
-  Egress]` with ingress restricted to `metaplatform` and `api-gateway`
+Egress]` with ingress restricted to `metaplatform` and `api-gateway`
   namespaces on port 5432; egress restricted to DNS (kube-system:53).
 
 ## SealedSecret Provisioning

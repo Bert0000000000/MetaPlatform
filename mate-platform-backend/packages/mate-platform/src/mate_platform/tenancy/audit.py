@@ -4,6 +4,7 @@ The audit channel is a structured event stream (typically shipped to
 Loki via the OTel collector; see PLATFORM-K8S-01). Every cross-tenant
 operation must emit exactly one event; the test suite verifies this.
 """
+
 from __future__ import annotations
 
 import logging

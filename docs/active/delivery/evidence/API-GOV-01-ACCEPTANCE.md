@@ -22,44 +22,44 @@ API-GOV-01 批次的治理基线覆盖以下范围：
 
 ## 2. 规模指标
 
-| 指标 | 数量 |
-|---|---:|
-| 领域 | 17 |
-| Paths | 214 |
-| Operations | 248 |
-| PRD Requirements | 248 |
-| implemented | 48 |
-| placeholder | 73 |
-| planned | 127 |
-| Breaking removals | 4 |
-| bundled.yaml | 243,878 bytes |
+| 指标              |          数量 |
+| ----------------- | ------------: |
+| 领域              |            17 |
+| Paths             |           214 |
+| Operations        |           248 |
+| PRD Requirements  |           248 |
+| implemented       |            48 |
+| placeholder       |            73 |
+| planned           |           127 |
+| Breaking removals |             4 |
+| bundled.yaml      | 243,878 bytes |
 
 `placeholder` 与 `planned` 视为 `notAccepted`，不计入 Acceptance Gate。
 
 ## 3. 验收检查项
 
-| 检查项 | 命令 | 结果 |
-|---|---|---|
-| 依赖安装 | `npm ci` | PASS（537 packages） |
-| Bundle | `npm run bundle` | PASS |
-| Redocly | `npm run lint:redocly` | PASS（0 errors/warnings） |
-| Spectral | `npm run lint:spectral` | PASS（0 errors） |
-| 契约单测 | `pytest contracts/tests -q` | PASS（28 passed） |
-| 契约校验 | `validate_contracts.py` | PASS（exit 0） |
-| PRD 追溯 | `validate_traceability.py` | PASS（exit 0） |
-| Runtime 抓取 | `runtime_openapi.py` | PASS（exit 0） |
-| Runtime 对比 | `compare_runtime.py` | PASS（0 missing / 0 undocumented） |
-| Compose | `docker compose --profile docs config --quiet` | PASS |
-| 包内单测 | `pytest packages -q` | PASS（246 passed，23 warnings） |
-| 单一源 | `test_single_source.py` | PASS |
+| 检查项       | 命令                                           | 结果                               |
+| ------------ | ---------------------------------------------- | ---------------------------------- |
+| 依赖安装     | `npm ci`                                       | PASS（537 packages）               |
+| Bundle       | `npm run bundle`                               | PASS                               |
+| Redocly      | `npm run lint:redocly`                         | PASS（0 errors/warnings）          |
+| Spectral     | `npm run lint:spectral`                        | PASS（0 errors）                   |
+| 契约单测     | `pytest contracts/tests -q`                    | PASS（28 passed）                  |
+| 契约校验     | `validate_contracts.py`                        | PASS（exit 0）                     |
+| PRD 追溯     | `validate_traceability.py`                     | PASS（exit 0）                     |
+| Runtime 抓取 | `runtime_openapi.py`                           | PASS（exit 0）                     |
+| Runtime 对比 | `compare_runtime.py`                           | PASS（0 missing / 0 undocumented） |
+| Compose      | `docker compose --profile docs config --quiet` | PASS                               |
+| 包内单测     | `pytest packages -q`                           | PASS（246 passed，23 warnings）    |
+| 单一源       | `test_single_source.py`                        | PASS                               |
 
 ## 4. 运行时验证
 
-| 资源 | URL | 状态 |
-|---|---|---|
-| Swagger UI | `http://localhost:8200/docs/swagger/index.html` | HTTP 200 |
-| 聚合契约 | `http://localhost:8200/mate-platform-backend/contracts/openapi/generated/bundled.yaml` | HTTP 200（243,878 bytes） |
-| Prism Mock | `http://localhost:4010/api/v1/rag/status` | Bearer Token，HTTP 200，schema 校验通过 |
+| 资源       | URL                                                                                    | 状态                                    |
+| ---------- | -------------------------------------------------------------------------------------- | --------------------------------------- |
+| Swagger UI | `http://localhost:8200/docs/swagger/index.html`                                        | HTTP 200                                |
+| 聚合契约   | `http://localhost:8200/mate-platform-backend/contracts/openapi/generated/bundled.yaml` | HTTP 200（243,878 bytes）               |
+| Prism Mock | `http://localhost:4010/api/v1/rag/status`                                              | Bearer Token，HTTP 200，schema 校验通过 |
 
 启动说明：
 
@@ -84,12 +84,12 @@ Docker 镜像已锁定 `stoplight/prism:5`，绕开上游 403 问题；`package-
 
 ## 6. Breaking removals
 
-| 旧路径 | 新路径/动作 |
-|---|---|
+| 旧路径            | 新路径/动作                |
+| ----------------- | -------------------------- |
 | `/api/v1/superai` | 重命名为 `/api/v1/copilot` |
-| `/api/v1/ea` | 重命名为 `/api/v1/arch` |
-| `/api/v1/app-kb` | 重命名为 `/api/v1/kb` |
-| `/api/v1/llm` | 重命名为 `/api/v1/llmgw` |
+| `/api/v1/ea`      | 重命名为 `/api/v1/arch`    |
+| `/api/v1/app-kb`  | 重命名为 `/api/v1/kb`      |
+| `/api/v1/llm`     | 重命名为 `/api/v1/llmgw`   |
 
 以上路径变更已写入迁移说明，CI 通过 oasdiff 阻断孤立路由。
 

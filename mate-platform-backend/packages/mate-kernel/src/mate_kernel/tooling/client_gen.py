@@ -14,6 +14,7 @@ Palantir OSDK 语义（调研材料 06 §1）：从 Ontology 定义生成类型�
 用法::
 
     from mate_kernel.tooling.client_gen import generate_client_source
+
     src = generate_client_source(object_types, action_types, tenant="t1")
     # 写入 mate-clients/sdk/ontology_client/<tenant>_client.py
 """
@@ -207,14 +208,18 @@ class {cls_name}:
     primary_key: str{field_lines}
 '''
 
-_FIELD_TMPL = '''
-    {slug}: {py_type} = None'''
+_FIELD_TMPL = """
+    {slug}: {py_type} = None"""
 
 
 def _py_type(fmt: str) -> str:
     return {
-        "string": "str", "integer": "int", "double": "float",
-        "boolean": "bool", "date": "str", "timestamp": "str",
+        "string": "str",
+        "integer": "int",
+        "double": "float",
+        "boolean": "bool",
+        "date": "str",
+        "timestamp": "str",
     }.get(fmt, "Any")
 
 
@@ -232,9 +237,10 @@ def generate_client_source(
     parts: list[str] = [_HEADER]
     seen_cls: set[str] = set()
     for ot in object_types:
-        cls_name = "".join(
-            w.capitalize() for w in slug_of_rid(ot.rid.rid).replace("-", "_").split("_")
-        ) or "ObjectType"
+        cls_name = (
+            "".join(w.capitalize() for w in slug_of_rid(ot.rid.rid).replace("-", "_").split("_"))
+            or "ObjectType"
+        )
         if cls_name in seen_cls:
             continue
         seen_cls.add(cls_name)
@@ -260,10 +266,15 @@ def generate_client_source(
             for p in ot.properties
             if not p.primary_key
         )
-        parts.append(_TYPE_TMPL.format(
-            cls_name=cls_name, display=ot.display_name or cls_name,
-            rid=ot.rid.rid, desc_lines=desc_lines, field_lines=field_lines,
-        ))
+        parts.append(
+            _TYPE_TMPL.format(
+                cls_name=cls_name,
+                display=ot.display_name or cls_name,
+                rid=ot.rid.rid,
+                desc_lines=desc_lines,
+                field_lines=field_lines,
+            )
+        )
     # ActionType 常量表
     if action_types:
         lines = ["", "", "# ── ActionType rid 常量（propose/apply 用）──"]

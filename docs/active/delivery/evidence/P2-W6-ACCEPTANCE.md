@@ -22,28 +22,28 @@ DATA-D0-D8 落地的是横切能力(retention / pii_mask / xdomain_audit / linea
 
 ## 2. 规模指标
 
-| 项 | 数 |
-|---|---:|
-| 新建包 | 1 (`mate-tech-data`) |
-| 新建文件 | 12 (pyproject + README + 4 src 模块 + 4 包/子包 __init__ + 3 测试) |
-| 实现 endpoint | **15** (cdc-tasks 8 + sources 7) + 1 health |
-| dataclass | 2 (`CdcTask`, `DataSource`) |
-| seed catalog | 3 (sources × 3 + cdc-tasks × 3 + schemas × 3) |
-| outbox 事件类型 | 9 |
-| 新增 tests | **28** (20 happy-path + 8 tenant-integration) |
-| 全后端回归 | **632 passed** (604 + 28) / 0 failed / 118s |
+| 项              |                                                                 数 |
+| --------------- | -----------------------------------------------------------------: |
+| 新建包          |                                               1 (`mate-tech-data`) |
+| 新建文件        | 12 (pyproject + README + 4 src 模块 + 4 包/子包 **init** + 3 测试) |
+| 实现 endpoint   |                        **15** (cdc-tasks 8 + sources 7) + 1 health |
+| dataclass       |                                        2 (`CdcTask`, `DataSource`) |
+| seed catalog    |                      3 (sources × 3 + cdc-tasks × 3 + schemas × 3) |
+| outbox 事件类型 |                                                                  9 |
+| 新增 tests      |                      **28** (20 happy-path + 8 tenant-integration) |
+| 全后端回归      |                        **632 passed** (604 + 28) / 0 failed / 118s |
 
 ---
 
 ## 3. ADR-0014 5 步合规矩阵
 
-| 步骤 | 实现 | 证据 |
-|---|---|---|
-| 1. `install_auth(app)` | ✅ `create_app()` 首行 `install_auth(app, extra_anonymous_paths={"/api/v1/data/health"})` | `main.py:31` |
-| 2. `require_tenant(ctx)` | ✅ `_tid(request)` helper 调用 `require_tenant(ctx)`,每个 handler 首行 | `api/app.py:_tid` |
-| 3. outbox 事件 | ✅ 9 个写 handler emit `data.<aggregate>.<verb>` 事件 | created/updated/deleted/paused/resumed (cdc) + created/updated/deleted/tested (source) |
-| 4. BearerAuth 出向 | ✅ `AsyncDataClient` 预留 (P2-W6 in-memory stub;真实 CDC 引擎 Debezium/Flink 留后续批次) | `clients.py` |
-| 5. tenant tests | ✅ 8 个 tenant tests (wrong-tenant 403 + no-tenant 400 + isolation × 2 + cross-tenant 404 × 2 + health) | `test_app_data_tenant_integration.py` |
+| 步骤                     | 实现                                                                                                    | 证据                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| 1. `install_auth(app)`   | ✅ `create_app()` 首行 `install_auth(app, extra_anonymous_paths={"/api/v1/data/health"})`               | `main.py:31`                                                                           |
+| 2. `require_tenant(ctx)` | ✅ `_tid(request)` helper 调用 `require_tenant(ctx)`,每个 handler 首行                                  | `api/app.py:_tid`                                                                      |
+| 3. outbox 事件           | ✅ 9 个写 handler emit `data.<aggregate>.<verb>` 事件                                                   | created/updated/deleted/paused/resumed (cdc) + created/updated/deleted/tested (source) |
+| 4. BearerAuth 出向       | ✅ `AsyncDataClient` 预留 (P2-W6 in-memory stub;真实 CDC 引擎 Debezium/Flink 留后续批次)                | `clients.py`                                                                           |
+| 5. tenant tests          | ✅ 8 个 tenant tests (wrong-tenant 403 + no-tenant 400 + isolation × 2 + cross-tenant 404 × 2 + health) | `test_app_data_tenant_integration.py`                                                  |
 
 ---
 
@@ -51,16 +51,16 @@ DATA-D0-D8 落地的是横切能力(retention / pii_mask / xdomain_audit / linea
 
 ### 4.1 CDC 任务 (8 endpoint)
 
-| Method | Path | operationId | FR |
-|---|---|---|---|
-| GET | `/api/v1/data/cdc-tasks` | dataGetDataCdcTasks | FR-DATA-DATAGETDATACDCTASKS |
-| POST | `/api/v1/data/cdc-tasks` | dataPostDataCdcTasks | FR-DATA-DATAPOSTDATACDCTASKS |
-| GET | `/api/v1/data/cdc-tasks/{id}` | dataGetDataCdcTasksId | FR-DATA-DATAGETDATACDCTASKSID |
-| PUT | `/api/v1/data/cdc-tasks/{id}` | dataPutDataCdcTasksId | FR-DATA-DATAPUTDATACDCTASKSID |
-| DELETE | `/api/v1/data/cdc-tasks/{id}` | dataDeleteDataCdcTasksId | FR-DATA-DATADELETEDATACDCTASKSID |
-| POST | `/api/v1/data/cdc-tasks/{id}/pause` | dataPostDataCdcTasksIdPause | FR-DATA-DATAPOSTDATACDCTASKSIDPAUSE |
-| POST | `/api/v1/data/cdc-tasks/{id}/resume` | dataPostDataCdcTasksIdResume | FR-DATA-DATAPOSTDATACDCTASKSIDRESUME |
-| GET | `/api/v1/data/cdc-tasks/{id}/status` | dataGetDataCdcTasksIdStatus | FR-DATA-DATAGETDATACDCTASKSIDSTATUS |
+| Method | Path                                 | operationId                  | FR                                   |
+| ------ | ------------------------------------ | ---------------------------- | ------------------------------------ |
+| GET    | `/api/v1/data/cdc-tasks`             | dataGetDataCdcTasks          | FR-DATA-DATAGETDATACDCTASKS          |
+| POST   | `/api/v1/data/cdc-tasks`             | dataPostDataCdcTasks         | FR-DATA-DATAPOSTDATACDCTASKS         |
+| GET    | `/api/v1/data/cdc-tasks/{id}`        | dataGetDataCdcTasksId        | FR-DATA-DATAGETDATACDCTASKSID        |
+| PUT    | `/api/v1/data/cdc-tasks/{id}`        | dataPutDataCdcTasksId        | FR-DATA-DATAPUTDATACDCTASKSID        |
+| DELETE | `/api/v1/data/cdc-tasks/{id}`        | dataDeleteDataCdcTasksId     | FR-DATA-DATADELETEDATACDCTASKSID     |
+| POST   | `/api/v1/data/cdc-tasks/{id}/pause`  | dataPostDataCdcTasksIdPause  | FR-DATA-DATAPOSTDATACDCTASKSIDPAUSE  |
+| POST   | `/api/v1/data/cdc-tasks/{id}/resume` | dataPostDataCdcTasksIdResume | FR-DATA-DATAPOSTDATACDCTASKSIDRESUME |
+| GET    | `/api/v1/data/cdc-tasks/{id}/status` | dataGetDataCdcTasksIdStatus  | FR-DATA-DATAGETDATACDCTASKSIDSTATUS  |
 
 - list 支持 `status` 过滤 + 分页 envelope `{items,total,page,size,pages}`
 - pause/resume 通过 `set_cdc_task_status` 原地修改 status (running↔paused)
@@ -68,15 +68,15 @@ DATA-D0-D8 落地的是横切能力(retention / pii_mask / xdomain_audit / linea
 
 ### 4.2 数据源 (7 endpoint)
 
-| Method | Path | operationId | FR |
-|---|---|---|---|
-| GET | `/api/v1/data/sources` | dataGetDataSources | FR-DATA-DATAGETDATASOURCES |
-| POST | `/api/v1/data/sources` | dataPostDataSources | FR-DATA-DATAPOSTDATASOURCES |
-| GET | `/api/v1/data/sources/{id}` | dataGetDataSourcesId | FR-DATA-DATAGETDATASOURCESID |
-| PUT | `/api/v1/data/sources/{id}` | dataPutDataSourcesId | FR-DATA-DATAPUTDATASOURCESID |
-| DELETE | `/api/v1/data/sources/{id}` | dataDeleteDataSourcesId | FR-DATA-DATADELETEDATASOURCESID |
-| GET | `/api/v1/data/sources/{id}/schema` | dataGetDataSourcesIdSchema | FR-DATA-DATAGETDATASOURCESIDSCHEMA |
-| POST | `/api/v1/data/sources/{id}/test` | dataPostDataSourcesIdTest | FR-DATA-DATAPOSTDATASOURCESIDTEST |
+| Method | Path                               | operationId                | FR                                 |
+| ------ | ---------------------------------- | -------------------------- | ---------------------------------- |
+| GET    | `/api/v1/data/sources`             | dataGetDataSources         | FR-DATA-DATAGETDATASOURCES         |
+| POST   | `/api/v1/data/sources`             | dataPostDataSources        | FR-DATA-DATAPOSTDATASOURCES        |
+| GET    | `/api/v1/data/sources/{id}`        | dataGetDataSourcesId       | FR-DATA-DATAGETDATASOURCESID       |
+| PUT    | `/api/v1/data/sources/{id}`        | dataPutDataSourcesId       | FR-DATA-DATAPUTDATASOURCESID       |
+| DELETE | `/api/v1/data/sources/{id}`        | dataDeleteDataSourcesId    | FR-DATA-DATADELETEDATASOURCESID    |
+| GET    | `/api/v1/data/sources/{id}/schema` | dataGetDataSourcesIdSchema | FR-DATA-DATAGETDATASOURCESIDSCHEMA |
+| POST   | `/api/v1/data/sources/{id}/test`   | dataPostDataSourcesIdTest  | FR-DATA-DATAPOSTDATASOURCESIDTEST  |
 
 - list 支持 `type` 过滤 + 分页
 - schema 发现返回 `{source_id, tables:[{name, columns:[{name,type}]}]}`
@@ -115,12 +115,14 @@ $ uv run pytest packages/ -q --no-header
 ### 5.1 测试构成
 
 **test_app_data.py (20 happy-path)**:
+
 - CDC: list / list+status-filter / create / get / get-404 / update / delete / pause / resume / status (10)
 - Source: list / list+type-filter / create / get / get-404 / update / delete / schema / schema-404 / test-connection (10)
 - 含 outbox 事件断言 (create/update/delete/pause/resume/schema-test)
 - 含 health 匿名访问
 
 **test_app_data_tenant_integration.py (8 tenant)**:
+
 - `test_wrong_tenant_403` — token tenant A + X-Tenant-Id B → 403
 - `test_no_tenant_400` — 空 tenant → 400 E_TENANT_REQUIRED
 - `test_tenant_isolation_cdc_tasks` — 两租户 CDC 列表互不可见
@@ -133,14 +135,14 @@ $ uv run pytest packages/ -q --no-header
 
 ## 6. 与 13 硬规则对齐
 
-| # | 硬规则 | 本批次合规 |
-|---|---|---|
-| 1 | Swagger 没有接口不写 route | ✅ 15 endpoint 全部对应 spec operationId |
-| 3 | 没有 tenant 上下文不访问 repository | ✅ `_tid(request)` + `require_tenant` 守门 |
-| 4 | 外部系统没有 ACL Client | ✅ `AsyncDataClient` 预留 |
-| 7 | 契约或集成测试跳过不标记 Accepted | ✅ 28 tests 全 pass,0 skip |
-| 9 | 没有审计、指标、trace | ✅ OTel 沿用 install_auth 注入 |
-| 10 | 所有状态以验收证据为准 | ✅ 本文件 |
+| #   | 硬规则                              | 本批次合规                                 |
+| --- | ----------------------------------- | ------------------------------------------ |
+| 1   | Swagger 没有接口不写 route          | ✅ 15 endpoint 全部对应 spec operationId   |
+| 3   | 没有 tenant 上下文不访问 repository | ✅ `_tid(request)` + `require_tenant` 守门 |
+| 4   | 外部系统没有 ACL Client             | ✅ `AsyncDataClient` 预留                  |
+| 7   | 契约或集成测试跳过不标记 Accepted   | ✅ 28 tests 全 pass,0 skip                 |
+| 9   | 没有审计、指标、trace               | ✅ OTel 沿用 install_auth 注入             |
+| 10  | 所有状态以验收证据为准              | ✅ 本文件                                  |
 
 ---
 

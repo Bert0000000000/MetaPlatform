@@ -13,6 +13,7 @@ ADR-0014 5-step pattern:
   4. BearerAuth — install_auth enforces it.
   5. Cross-tenant negative tests — see ``tests/test_dashboard_config.py``.
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -85,9 +86,7 @@ async def list_dashboard_configs(request: Request) -> dict[str, Any]:
 
 
 @router.put("/{config_id}")
-async def update_dashboard_config(
-    config_id: str, request: Request
-) -> dict[str, Any]:
+async def update_dashboard_config(config_id: str, request: Request) -> dict[str, Any]:
     """Update an existing custom dashboard configuration."""
     tenant_id = _tenant_id(request)
     body = await request.json()

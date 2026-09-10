@@ -11,19 +11,19 @@
 
 ## 2. 改动清单
 
-| 文件 | 说明 |
-|---|---|
-| `packages/mate-tech-orchestrator/` | **新包**：pyproject / Dockerfile / README / src（main、api、scheduler、workers）/ tests |
-| `scheduler/role_registry.py` | 数字员工角色注册表（租户隔离、动态注册/注销、kernel AgentRole 校验、capability→worker 绑定） |
-| `scheduler/dispatcher.py` | 任务→角色→worker 路由（AgentSelector rid 前缀 / capability 匹配；mcp/a2a/http/local） |
-| `scheduler/plan_runner.py` | kernel SuperAIOrchestrator + 逐步派发 + HITL 门（B3 ≥1 HITL） |
-| `workers/mcp.py` `workers/a2a.py` | 服务中心 worker 适配层（ACL client） |
-| `api/app.py` `api/schemas.py` | 8 端点 + 请求/响应模型 + outbox 事件 |
-| `mate-clients/src/mate_clients/mcp/tools.py` `a2a/messages.py` | **新增 2 个 ACL client**（硬规则④） |
-| `contracts/openapi/services/orchestrator.yaml` | 新契约：9 操作 |
-| `docker-compose.yml` | 新增 `mate-tech-orchestrator` 服务（PORT 8505） |
-| `services/api-gateway/main.py` | ROUTE_MAP 加 `/api/v1/orchestrator/` |
-| 根 `pyproject.toml` | pytest pythonpath 加 orchestrator |
+| 文件                                                           | 说明                                                                                         |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `packages/mate-tech-orchestrator/`                             | **新包**：pyproject / Dockerfile / README / src（main、api、scheduler、workers）/ tests      |
+| `scheduler/role_registry.py`                                   | 数字员工角色注册表（租户隔离、动态注册/注销、kernel AgentRole 校验、capability→worker 绑定） |
+| `scheduler/dispatcher.py`                                      | 任务→角色→worker 路由（AgentSelector rid 前缀 / capability 匹配；mcp/a2a/http/local）        |
+| `scheduler/plan_runner.py`                                     | kernel SuperAIOrchestrator + 逐步派发 + HITL 门（B3 ≥1 HITL）                                |
+| `workers/mcp.py` `workers/a2a.py`                              | 服务中心 worker 适配层（ACL client）                                                         |
+| `api/app.py` `api/schemas.py`                                  | 8 端点 + 请求/响应模型 + outbox 事件                                                         |
+| `mate-clients/src/mate_clients/mcp/tools.py` `a2a/messages.py` | **新增 2 个 ACL client**（硬规则④）                                                          |
+| `contracts/openapi/services/orchestrator.yaml`                 | 新契约：9 操作                                                                               |
+| `docker-compose.yml`                                           | 新增 `mate-tech-orchestrator` 服务（PORT 8505）                                              |
+| `services/api-gateway/main.py`                                 | ROUTE_MAP 加 `/api/v1/orchestrator/`                                                         |
+| 根 `pyproject.toml`                                            | pytest pythonpath 加 orchestrator                                                            |
 
 ## 3. 测试证据
 

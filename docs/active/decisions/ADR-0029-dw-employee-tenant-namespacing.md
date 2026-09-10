@@ -5,7 +5,7 @@
 > 签字：`__/__________`（纸质档填写位）
 >
 > 上游：ADR-0012（SEC-TENANT-01 5 层隔离）；13 硬规则 #3（"没有 tenant 上下文不访问 repository"）
-> 关联：ADR-0028（数字员工 prompt 单一数据源）；MP-AGENT-*-01 / SUPER-COPILOT-01
+> 关联：ADR-0028（数字员工 prompt 单一数据源）；MP-AGENT-\*-01 / SUPER-COPILOT-01
 
 ## 1. 背景
 

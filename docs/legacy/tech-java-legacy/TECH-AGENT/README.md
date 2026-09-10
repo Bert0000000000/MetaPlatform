@@ -28,7 +28,7 @@ P8.1 之后，MetaPlatform 默认走 Native Runtime，DeerFlow 降级为可选�
 ```yaml
 mate:
   runtime:
-    mode: native   # 或 deerflow / hybrid
+    mode: native # 或 deerflow / hybrid
 ```
 
 ## Middleware 链
@@ -45,17 +45,17 @@ mate:
 
 ## 关键 API
 
-| Method | Path | 用途 |
-|---|---|---|
-| POST | /api/v1/agent/agents/{id}/execute | 同步执行 |
-| POST | /api/v1/agent/agents/{id}/execute/stream | SSE 流式 |
-| POST | /api/v1/agent/superai/route | 路由判断 |
-| POST | /api/v1/agent/superai/run | 启动 Run |
-| POST | /api/v1/agent/skills | 注册 Skill |
-| POST | /api/v1/agent/scheduled | 注册定时任务 |
-| POST | /api/v1/agent/triggers | 注册事件触发器 |
-| POST | /api/v1/agent/memories | 写企业记忆 |
-| GET  | /api/v1/agent/memories?scope=... | 召回记忆 |
+| Method | Path                                     | 用途           |
+| ------ | ---------------------------------------- | -------------- |
+| POST   | /api/v1/agent/agents/{id}/execute        | 同步执行       |
+| POST   | /api/v1/agent/agents/{id}/execute/stream | SSE 流式       |
+| POST   | /api/v1/agent/superai/route              | 路由判断       |
+| POST   | /api/v1/agent/superai/run                | 启动 Run       |
+| POST   | /api/v1/agent/skills                     | 注册 Skill     |
+| POST   | /api/v1/agent/scheduled                  | 注册定时任务   |
+| POST   | /api/v1/agent/triggers                   | 注册事件触发器 |
+| POST   | /api/v1/agent/memories                   | 写企业记忆     |
+| GET    | /api/v1/agent/memories?scope=...         | 召回记忆       |
 
 ## 与 DeerFlow 关系
 

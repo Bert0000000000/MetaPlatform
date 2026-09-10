@@ -87,4 +87,3 @@ class ScenarioD_EventTriggerTest {
         return m;
     }
 }
-

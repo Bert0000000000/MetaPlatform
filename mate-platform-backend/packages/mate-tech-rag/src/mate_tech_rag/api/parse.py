@@ -11,6 +11,7 @@ P0 — per-request ragflow override:
     client's ``override()`` context manager so the singleton is rebound
     to the caller-supplied endpoint / key, then restored on exit.
 """
+
 from __future__ import annotations
 
 from contextlib import nullcontext

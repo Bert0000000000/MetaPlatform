@@ -1,4 +1,4 @@
-﻿from .entity import Entity
+from .entity import Entity
 from .error import DomainError
 from .event import DomainEvent
 from .result import Result

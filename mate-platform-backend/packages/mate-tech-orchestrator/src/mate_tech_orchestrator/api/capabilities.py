@@ -7,6 +7,7 @@ deactivates them with their effects reverted. When the app lifespan
 did not run (bare TestClient), the runtime is absent and these
 endpoints report 503 — the rest of the orchestrator is unaffected.
 """
+
 from __future__ import annotations
 
 from typing import Any

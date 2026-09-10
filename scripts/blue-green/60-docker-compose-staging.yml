@@ -22,7 +22,7 @@ services:
       POSTGRES_PASSWORD: mate-pass
       POSTGRES_DB: mate_staging
     ports:
-      - "5433:5432"  # 避 dev 5432
+      - "5433:5432" # 避 dev 5432
     volumes:
       - mate-pg-staging-data:/var/lib/postgresql/data
     networks:
@@ -36,7 +36,7 @@ services:
     container_name: mate-redis-staging
     command: redis-server --appendonly yes
     ports:
-      - "6380:6379"  # 避 dev 6379
+      - "6380:6379" # 避 dev 6379
     volumes:
       - mate-redis-staging-data:/data
     networks:
@@ -64,7 +64,11 @@ services:
     networks:
       - mate-staging-net
     healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092"]
+      test:
+        [
+          "CMD-SHELL",
+          "kafka-broker-api-versions.sh --bootstrap-server localhost:9092",
+        ]
       interval: 30s
 
   minio-staging:
@@ -75,7 +79,7 @@ services:
       MINIO_ROOT_PASSWORD: mate-pass
     command: server /data --console-address ":9001"
     ports:
-      - "9100:9000"  # 避 dev 9000
+      - "9100:9000" # 避 dev 9000
       - "9101:9001"
     volumes:
       - mate-minio-staging-data:/data

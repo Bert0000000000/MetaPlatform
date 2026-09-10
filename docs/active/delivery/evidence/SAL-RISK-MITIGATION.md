@@ -17,7 +17,8 @@
 - 单测：`test_sal5_writeback_consistency.py` 6 passed。
 
 ## 留尾（如实）
+
 - OAG 成本（Ontology Access Graph 检索成本）未量化。
 - "20/20 Accepted" 语义部分合档（G 版本验收范围宽于最小闭环）——
   以 V31-ONTOLOGY-BOARD 各批次的 [x]/[~] 边界为准。
-"""
+  """

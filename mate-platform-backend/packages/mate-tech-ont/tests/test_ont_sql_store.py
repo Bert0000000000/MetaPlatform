@@ -1,4 +1,5 @@
 """Tests for mate_tech_ont.repositories.sql_store — SQL persistence (P3-W4)."""
+
 from __future__ import annotations
 
 import pytest
@@ -24,8 +25,11 @@ _TENANT_B = "tenant-bigo"
 
 def test_put_and_get_ontology() -> None:
     ont = mem.Ontology(
-        id="ont-1", tenant_id=_TENANT_A, namespace="sales",
-        description="Sales domain", created_at="2026-08-01T00:00:00Z",
+        id="ont-1",
+        tenant_id=_TENANT_A,
+        namespace="sales",
+        description="Sales domain",
+        created_at="2026-08-01T00:00:00Z",
     )
     sql.put_ontology(_TENANT_A, ont)
     fetched = sql.get_ontology(_TENANT_A, "ont-1")
@@ -54,8 +58,11 @@ def test_delete_ontology() -> None:
 
 def test_put_and_get_class() -> None:
     cls = mem.OntologyClass(
-        id="cls-1", tenant_id=_TENANT_A, ontology_id="ont-1",
-        label="Customer", properties={"fields": "name,code"},
+        id="cls-1",
+        tenant_id=_TENANT_A,
+        ontology_id="ont-1",
+        label="Customer",
+        properties={"fields": "name,code"},
     )
     sql.put_class(_TENANT_A, cls)
     fetched = sql.get_class(_TENANT_A, "cls-1")
@@ -68,7 +75,9 @@ def test_put_class_upsert() -> None:
     cls = mem.OntologyClass(id="cls-2", tenant_id=_TENANT_A, label="Old")
     sql.put_class(_TENANT_A, cls)
     cls = mem.OntologyClass(
-        id="cls-2", tenant_id=_TENANT_A, label="New",
+        id="cls-2",
+        tenant_id=_TENANT_A,
+        label="New",
         properties={"key": "val"},
     )
     sql.put_class(_TENANT_A, cls)
@@ -86,7 +95,9 @@ def test_delete_class_cross_tenant() -> None:
 
 def test_put_and_get_instance() -> None:
     inst = mem.OntologyInstance(
-        id="inst-1", tenant_id=_TENANT_A, class_id="cls-1",
+        id="inst-1",
+        tenant_id=_TENANT_A,
+        class_id="cls-1",
         properties={"name": "Acme"},
     )
     sql.put_instance(_TENANT_A, inst)
@@ -98,8 +109,11 @@ def test_put_and_get_instance() -> None:
 
 def test_put_and_get_version() -> None:
     ver = mem.OntologyVersion(
-        id="ver-1", tenant_id=_TENANT_A, ontology_id="ont-1",
-        version="v1.0.0", metadata={"author": "test"},
+        id="ver-1",
+        tenant_id=_TENANT_A,
+        ontology_id="ont-1",
+        version="v1.0.0",
+        metadata={"author": "test"},
     )
     sql.put_version(_TENANT_A, ver)
     fetched = sql.get_version(_TENANT_A, "ver-1")

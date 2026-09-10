@@ -6,6 +6,7 @@ mirroring ``mate_app_kb.clients.RAGClient`` (httpx + service-identity bearer +
 tenant header). The read-only aggregation methods (list_kb_documents /
 list_agent_traces) remain reserved for a later batch.
 """
+
 from __future__ import annotations
 
 import os

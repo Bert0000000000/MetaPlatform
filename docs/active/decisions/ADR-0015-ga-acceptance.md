@@ -32,21 +32,21 @@ GA-ACCEPTANCE = "v3.0 全 13 硬规则闭环" + "BUSINESS-SLICES / DATA-D0-D8 �
 
 每个 §13 硬规则对应一个 CI job + 一份证据：
 
-| # | 硬规则 | CI job | 证据 |
-|---|---|---|---|
-| 1 | Swagger 没有接口，不写 route | `ga-001-routes-from-openapi` | oasdiff 校验 |
-| 2 | PRD 没有 Requirement ID，不进入开发 | `ga-002-requirement-ids` | requirement_id 标签 |
-| 3 | 没有 tenant 上下文，不访问 repository | `ga-003-tenant-required` | raw-SQL 钩子 + pytest |
-| 4 | 外部系统没有 ACL Client，业务代码不直连 | `ga-004-acl-client` | grep 禁止裸 httpx |
-| 5 | Production profile 禁止 fake / mock / memory fallback | `ga-005-no-fallback` | env 校验测试 |
-| 6 | 静态检查失败不合并 | `ga-006-ruff-pyright` | ruff + pyright strict |
-| 7 | 契约或集成测试跳过不标记 Accepted | `ga-007-no-skip` | grep 禁止 skip/xfail |
-| 8 | 没有 K8s readiness 和回滚不算生产完成 | `ga-008-k8s-rollback` | helm template + kubeconform + rollback test |
-| 9 | 没有审计、指标和 trace 不算业务闭环 | `ga-009-observability` | OTel + Loki + Tempo |
-| 10 | 所有状态以验收证据为准 | `ga-010-evidence-required` | evidence 字段校验 |
-| 11 | helm-docs 同步每个子 chart 的 README | `ga-011-helm-docs` | helm-docs --dry-run |
-| 12 | Secret 不进 git | `ga-012-secret-scan` | gitleaks + detect-secrets |
-| 13 | NetworkPolicy 缺失等同于 prod 不通过 | `ga-013-networkpolicy` | NetworkPolicy 必须存在 |
+| #   | 硬规则                                                | CI job                       | 证据                                        |
+| --- | ----------------------------------------------------- | ---------------------------- | ------------------------------------------- |
+| 1   | Swagger 没有接口，不写 route                          | `ga-001-routes-from-openapi` | oasdiff 校验                                |
+| 2   | PRD 没有 Requirement ID，不进入开发                   | `ga-002-requirement-ids`     | requirement_id 标签                         |
+| 3   | 没有 tenant 上下文，不访问 repository                 | `ga-003-tenant-required`     | raw-SQL 钩子 + pytest                       |
+| 4   | 外部系统没有 ACL Client，业务代码不直连               | `ga-004-acl-client`          | grep 禁止裸 httpx                           |
+| 5   | Production profile 禁止 fake / mock / memory fallback | `ga-005-no-fallback`         | env 校验测试                                |
+| 6   | 静态检查失败不合并                                    | `ga-006-ruff-pyright`        | ruff + pyright strict                       |
+| 7   | 契约或集成测试跳过不标记 Accepted                     | `ga-007-no-skip`             | grep 禁止 skip/xfail                        |
+| 8   | 没有 K8s readiness 和回滚不算生产完成                 | `ga-008-k8s-rollback`        | helm template + kubeconform + rollback test |
+| 9   | 没有审计、指标和 trace 不算业务闭环                   | `ga-009-observability`       | OTel + Loki + Tempo                         |
+| 10  | 所有状态以验收证据为准                                | `ga-010-evidence-required`   | evidence 字段校验                           |
+| 11  | helm-docs 同步每个子 chart 的 README                  | `ga-011-helm-docs`           | helm-docs --dry-run                         |
+| 12  | Secret 不进 git                                       | `ga-012-secret-scan`         | gitleaks + detect-secrets                   |
+| 13  | NetworkPolicy 缺失等同于 prod 不通过                  | `ga-013-networkpolicy`       | NetworkPolicy 必须存在                      |
 
 ### 2.2 pre-commit 钩子扩展
 
@@ -54,6 +54,7 @@ GA-ACCEPTANCE = "v3.0 全 13 硬规则闭环" + "BUSINESS-SLICES / DATA-D0-D8 �
 / yaml / json / toml / ruff / ruff-format / uv-lock / prettier / hadolint / shellcheck。
 
 本批新增：
+
 - **gitleaks** （§13 第 12 条 secret 扫描）
 - **detect-private-key**（已有，保留）
 - **raw-SQL 钩子**（§13 第 3 条：禁止 `session.execute(text(...))` 出现在 `app-*/src`）
@@ -111,21 +112,22 @@ GA-ACCEPTANCE = "v3.0 全 13 硬规则闭环" + "BUSINESS-SLICES / DATA-D0-D8 �
 dev → local → contract → integration → staging → pre-production → production
 ```
 
-| 阶段 | 动作 | 验证 |
-|---|---|---|
-| dev | pre-commit run --all-files | 0 错 |
-| local | 13 jobs 全跑通 | 13 / 13 pass |
-| contract | 17 域 OpenAPI 合并 oasdiff | 0 breaking |
-| integration | 17 域端到端（mock 模式）| 134+ tests |
-| staging | 真实 Kafka / PG / Redis / MinIO | 13 hard rules |
-| pre-production | 灰度切流 | SLO |
-| production | GA 切流 | 13 jobs + SLO |
+| 阶段           | 动作                            | 验证          |
+| -------------- | ------------------------------- | ------------- |
+| dev            | pre-commit run --all-files      | 0 错          |
+| local          | 13 jobs 全跑通                  | 13 / 13 pass  |
+| contract       | 17 域 OpenAPI 合并 oasdiff      | 0 breaking    |
+| integration    | 17 域端到端（mock 模式）        | 134+ tests    |
+| staging        | 真实 Kafka / PG / Redis / MinIO | 13 hard rules |
+| pre-production | 灰度切流                        | SLO           |
+| production     | GA 切流                         | 13 jobs + SLO |
 
 ## 6. Verification
 
 GA-ACCEPTANCE 退出条件（13 项硬规则映射）：
 
 1-13：每条硬规则必须有 GA job + evidence + pre-commit 钩子。
+
 - 全部 13 jobs pass。
 - 全部 134+ tests pass。
 - pre-commit run --all-files 0 错。

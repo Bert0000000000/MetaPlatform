@@ -3,6 +3,7 @@
 v3.0 Plan D：Milvus（向量）+ PG tsvector（BM25）= 事实型检索。
 当前实现：InMemory 模拟（与原 vector_store 复用）。
 """
+
 from __future__ import annotations
 
 import threading
@@ -14,7 +15,13 @@ from mate_tech_rag.vector_store import InMemoryVectorStore, VectorStore
 
 class HybridClient(Protocol):
     def search(self, query: str, query_vector: list[float], top_k: int = 10) -> list[ChunkHit]: ...
-    def add(self, document_id: str, text: str, vector: list[float], metadata: dict[str, str] | None = None) -> str: ...
+    def add(
+        self,
+        document_id: str,
+        text: str,
+        vector: list[float],
+        metadata: dict[str, str] | None = None,
+    ) -> str: ...
     def count(self) -> int: ...
     def delete_by_document(self, document_id: str) -> int: ...
 

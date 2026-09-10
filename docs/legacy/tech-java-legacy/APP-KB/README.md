@@ -29,15 +29,15 @@ kb_version_diffs             -- 版本差异（V1）
 
 ## API 概览
 
-| Method | Path | 用途 |
-|---|---|---|
-| POST | /api/v1/kb/knowledge-bases | 创建知识库 |
-| GET  | /api/v1/kb/knowledge-bases | 列表 |
-| POST | /api/v1/kb/documents | 上传文档 |
-| POST | /api/v1/kb/documents/{id}/process | 触发解析/切片/向量化 |
-| POST | /api/v1/kb/search | 检索（代理到 TECH-RAG） |
-| POST | /api/v1/kb/bindings | 创建绑定 |
-| GET  | /api/v1/kb/bindings | 查询绑定 |
-| POST | /api/v1/kb/retrieval-configs | 配置检索参数 |
+| Method | Path                              | 用途                    |
+| ------ | --------------------------------- | ----------------------- |
+| POST   | /api/v1/kb/knowledge-bases        | 创建知识库              |
+| GET    | /api/v1/kb/knowledge-bases        | 列表                    |
+| POST   | /api/v1/kb/documents              | 上传文档                |
+| POST   | /api/v1/kb/documents/{id}/process | 触发解析/切片/向量化    |
+| POST   | /api/v1/kb/search                 | 检索（代理到 TECH-RAG） |
+| POST   | /api/v1/kb/bindings               | 创建绑定                |
+| GET    | /api/v1/kb/bindings               | 查询绑定                |
+| POST   | /api/v1/kb/retrieval-configs      | 配置检索参数            |
 
 详见 `docs/superpowers/specs/2026-07-26-ontology-native-deerflow-rollout-roadmap.md` P2.1。

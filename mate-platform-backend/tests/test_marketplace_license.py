@@ -2,6 +2,7 @@
 
 KMS 在 mate_platform.kms 提供对称 AES-GCM 接口;测试中用 monkeypatch 替换。
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock
@@ -21,9 +22,7 @@ async def test_activate_license_persists_kms_encrypted(monkeypatch):
     """
     from mate_platform.marketplace.service import license_service
 
-    monkeypatch.setattr(
-        license_service, "kms_encrypt", lambda plain: f"ENC[{plain}]"
-    )
+    monkeypatch.setattr(license_service, "kms_encrypt", lambda plain: f"ENC[{plain}]")
     monkeypatch.setattr(
         license_service,
         "kms_decrypt",
@@ -36,9 +35,7 @@ async def test_activate_license_persists_kms_encrypted(monkeypatch):
         def __init__(self, **kwargs):
             stored.append(kwargs)
 
-    monkeypatch.setattr(
-        license_service, "Subscription", _FakeSubscription
-    )
+    monkeypatch.setattr(license_service, "Subscription", _FakeSubscription)
 
     class _FakeSession:
         async def add(self, obj):
@@ -71,9 +68,7 @@ def test_kms_encrypt_decrypt_roundtrip(monkeypatch):
     """对称加密往返;测试本地 mock。"""
     from mate_platform.marketplace.service import license_service
 
-    monkeypatch.setattr(
-        license_service, "kms_encrypt", lambda plain: f"ENC[{plain}]"
-    )
+    monkeypatch.setattr(license_service, "kms_encrypt", lambda plain: f"ENC[{plain}]")
     monkeypatch.setattr(
         license_service,
         "kms_decrypt",

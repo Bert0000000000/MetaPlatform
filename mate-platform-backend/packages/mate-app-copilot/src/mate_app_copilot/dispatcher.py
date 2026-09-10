@@ -1,4 +1,5 @@
 """Authorization-bounded fallback dispatch for the copilot routing path."""
+
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
@@ -36,9 +37,7 @@ class DispatchResult:
         }
 
 
-DEFAULT_CHAIN: tuple[FallbackStep, ...] = (
-    FallbackStep("a2a"),
-)
+DEFAULT_CHAIN: tuple[FallbackStep, ...] = (FallbackStep("a2a"),)
 
 
 # ────────────────── handler 类型签名 ──────────────────
@@ -100,9 +99,7 @@ async def dispatch_by_routing(
             reason="no available roles",
         )
 
-    authorized_targets = {
-        str(role.get("role") or "") for role in available_roles
-    } | {
+    authorized_targets = {str(role.get("role") or "") for role in available_roles} | {
         str(role.get("rid") or "") for role in available_roles
     }
 
@@ -168,7 +165,8 @@ def make_embedding_match_handler(
     r = router or SemanticRouter()
 
     def _handler(
-        user_message: str, roles: list[dict[str, Any]],
+        user_message: str,
+        roles: list[dict[str, Any]],
     ) -> DispatchResult | None:
         cands = r.route(user_message, roles, top_k=top_k)
         if not cands:
@@ -179,19 +177,13 @@ def make_embedding_match_handler(
             return DispatchResult(
                 source="embedding_match",
                 target_rid=None,
-                reason=(
-                    f"best similarity {best.similarity:.3f} below threshold "
-                    f"{min_similarity}"
-                ),
+                reason=(f"best similarity {best.similarity:.3f} below threshold {min_similarity}"),
                 candidates=cands_tuple,
             )
         return DispatchResult(
             source="embedding_match",
             target_rid=best.role_slug,
-            reason=(
-                f"top candidate by similarity ({best.similarity:.3f}, "
-                f"reason={best.reason})"
-            ),
+            reason=(f"top candidate by similarity ({best.similarity:.3f}, reason={best.reason})"),
             candidates=cands_tuple,
         )
 

@@ -8,6 +8,7 @@ The package does not own persistent state, telemetry exporters,
 or a process supervisor — those are layered in by the host
 container / platform bundle (out of scope for P2-W2).
 """
+
 from __future__ import annotations
 
 from fastapi import FastAPI, Response

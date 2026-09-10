@@ -1,4 +1,5 @@
 """Strategy base classes (HybridStrategy / GraphStrategy / ThematicStrategy)."""
+
 from __future__ import annotations
 
 import time
@@ -12,6 +13,7 @@ from mate_tech_rag.router import RetrievalMode, RetrievalResult
 
 class HybridStrategy:
     """FACTUAL: Milvus + BM25 hybrid."""
+
     mode = RetrievalMode.FACTUAL
 
     def __init__(self, hybrid_client: HybridClient, embedder: Embedder) -> None:
@@ -31,6 +33,7 @@ class HybridStrategy:
 
 class GraphStrategy:
     """ENTITY: Neo4j entity graph (GraphRAG)."""
+
     mode = RetrievalMode.ENTITY
 
     def __init__(self, graph_client: GraphRAGClient) -> None:
@@ -48,6 +51,7 @@ class GraphStrategy:
 
 class ThematicStrategy:
     """THEMATIC: LightRAG thematic graph."""
+
     mode = RetrievalMode.THEMATIC
 
     def __init__(self, lightrag_client: LightRAGClient) -> None:

@@ -23,6 +23,7 @@
 ## Task 1: Introduce a versioned, bounded routing policy
 
 **Files:**
+
 - Modify: `mate-platform-backend/packages/mate-app-copilot/src/mate_app_copilot/semantic_router.py`
 - Create: `mate-platform-backend/packages/mate-app-copilot/src/mate_app_copilot/routing_policy.py`
 - Modify: `mate-platform-backend/packages/mate-app-copilot/tests/test_semantic_router.py`
@@ -40,6 +41,7 @@
 ## Task 2: Authorize the role snapshot before routing
 
 **Files:**
+
 - Modify: `mate-platform-backend/packages/mate-app-copilot/src/mate_app_copilot/api/app.py`
 - Modify: `mate-platform-backend/packages/mate-app-copilot/src/mate_app_copilot/clients/orchestrator_client.py`
 - Modify: `mate-platform-backend/packages/mate-app-copilot/tests/test_agent_loop_routing.py`
@@ -58,6 +60,7 @@
 ## Task 3: Replace silent fallback dispatch with explicit fail-closed routing events
 
 **Files:**
+
 - Modify: `mate-platform-backend/packages/mate-app-copilot/src/mate_app_copilot/agent_loop.py`
 - Modify: `mate-platform-backend/packages/mate-app-copilot/src/mate_app_copilot/dispatcher.py`
 - Modify: `mate-platform-backend/packages/mate-app-copilot/tests/test_agent_loop_routing.py`
@@ -76,6 +79,7 @@
 ## Task 4: Persist decision audit evidence through the service outbox
 
 **Files:**
+
 - Modify: `mate-platform-backend/packages/mate-app-copilot/src/mate_app_copilot/api/app.py`
 - Modify: `mate-platform-backend/packages/mate-app-copilot/tests/test_agent_loop_routing.py`
 - Create: `mate-platform-backend/packages/mate-app-copilot/tests/test_routing_audit.py`
@@ -93,6 +97,7 @@
 ## Task 5: Align the SuperAI trace UI with the server contract
 
 **Files:**
+
 - Modify: `metaplatform-frontend/apps/web/src/pages/superai/hooks/useAgentStream.ts`
 - Modify: `metaplatform-frontend/apps/web/src/pages/superai/SuperAIChatPage.tsx`
 - Modify: `metaplatform-frontend/apps/web/src/pages/superai/components/RoutingDecisionPanel.tsx`
@@ -111,6 +116,7 @@
 ## Task 6: Prove authorized routing in Docker and Playwright
 
 **Files:**
+
 - Modify: `metaplatform-frontend/apps/web/tests/e2e/superai-routing.spec.ts`
 - Create: `scripts/ci/prd05_semantic_router_smoke.ps1`
 - Modify: `docs/active/prd/APP-COPILOT/PRD-05-Semantic-Router_v1.0-20260831.md`

@@ -21,15 +21,15 @@ info:
     name: Mate Platform Marketplace Consumer
     email: marketplace-consumer@metaplatform.local
 servers:
-- url: /
+  - url: /
 tags:
-- name: marketplace
-  description: 云服务市场消费侧 — browse / install / license / events
+  - name: marketplace
+    description: 云服务市场消费侧 — browse / install / license / events
 security:
-- bearerAuth: []
-  tenantHeader: []
-  oidcScopes:
-  - platform.read
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes:
+      - platform.read
 paths:
   /api/v1/marketplace/browse:
     get:
@@ -38,57 +38,57 @@ paths:
       operationId: listMarketplaceArtifacts
       summary: 浏览市场列表(SaaS 检索代理 + 本地已安装标注)
       tags:
-      - marketplace
+        - marketplace
       parameters:
-      - in: query
-        name: kind
-        schema:
-          type: string
-          enum:
-          - mcp
-          - agent
-          - ontology
-          - skill
-      - in: query
-        name: q
-        schema:
-          type: string
-      - in: query
-        name: tag
-        schema:
-          type: string
-      - in: query
-        name: page
-        schema:
-          type: integer
-          default: 1
-      - in: query
-        name: page_size
-        schema:
-          type: integer
-          default: 20
+        - in: query
+          name: kind
+          schema:
+            type: string
+            enum:
+              - mcp
+              - agent
+              - ontology
+              - skill
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: tag
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 20
       responses:
-        '200':
+        "200":
           description: 列表
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ArtifactList'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '502':
+                $ref: "#/components/schemas/ArtifactList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "502":
           description: 上游 SaaS 不可达
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
       x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-requirements:
-      - MP-CONS-001
+        - MP-CONS-001
   /api/v1/marketplace/artifacts/{kind}/{id}:
     get:
       x-requirement-id: MP-CONS-002
@@ -96,94 +96,95 @@ paths:
       operationId: getMarketplaceArtifact
       summary: 获取资产完整 manifest + 本地已安装版本
       tags:
-      - marketplace
+        - marketplace
       parameters:
-      - in: path
-        name: kind
-        required: true
-        schema:
-          type: string
-          enum:
-          - mcp
-          - agent
-          - ontology
-          - skill
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - in: path
+          name: kind
+          required: true
+          schema:
+            type: string
+            enum:
+              - mcp
+              - agent
+              - ontology
+              - skill
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
-        '200':
+        "200":
           description: 详情
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ArtifactDetail'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '502':
+                $ref: "#/components/schemas/ArtifactDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "502":
           description: 上游 SaaS 不可达
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
       x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-requirements:
-      - MP-CONS-002
+        - MP-CONS-002
   /api/v1/marketplace/installed:
     get:
       x-requirement-id: MP-CONS-003
       x-owner: marketplace-consumer
       operationId: listInstalledArtifacts
       summary: 平台级安装清单
-      description: '跨租户可见 — 不参与 SEC-TENANT-01 db_filter 强过滤,范围由 OAuth scope 决定:
+      description:
+        "跨租户可见 — 不参与 SEC-TENANT-01 db_filter 强过滤,范围由 OAuth scope 决定:
 
         - `platform.read` — 已认证调用可见清单
 
-        '
+        "
       tags:
-      - marketplace
+        - marketplace
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       parameters:
-      - in: query
-        name: kind
-        schema:
-          type: string
-          enum:
-          - mcp
-          - agent
-          - ontology
-          - skill
-      - in: query
-        name: state
-        schema:
-          type: string
-          enum:
-          - downloading
-          - verifying
-          - installed
-          - failed
-          - uninstalled
+        - in: query
+          name: kind
+          schema:
+            type: string
+            enum:
+              - mcp
+              - agent
+              - ontology
+              - skill
+        - in: query
+          name: state
+          schema:
+            type: string
+            enum:
+              - downloading
+              - verifying
+              - installed
+              - failed
+              - uninstalled
       responses:
-        '200':
+        "200":
           description: 安装清单
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstallList'
+                $ref: "#/components/schemas/InstallList"
       x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-requirements:
-      - MP-CONS-003
+        - MP-CONS-003
   /api/v1/marketplace/install:
     post:
       x-requirement-id: MP-CONS-004
@@ -191,36 +192,36 @@ paths:
       operationId: installArtifact
       summary: 异步安装(202 + install_id,orchestrator 异步推进)
       tags:
-      - marketplace
+        - marketplace
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InstallRequest'
+              $ref: "#/components/schemas/InstallRequest"
       responses:
-        '202':
+        "202":
           description: 触发成功
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstallAccepted'
-        '409':
+                $ref: "#/components/schemas/InstallAccepted"
+        "409":
           description: 同 id+version 已在安装中(幂等命中)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
       x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-requirements:
-      - MP-CONS-004
+        - MP-CONS-004
   /api/v1/marketplace/install/{install_id}:
     get:
       x-requirement-id: MP-CONS-005
@@ -228,56 +229,56 @@ paths:
       operationId: getInstallStatus
       summary: 查询安装任务状态
       tags:
-      - marketplace
+        - marketplace
       parameters:
-      - in: path
-        name: install_id
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - in: path
+          name: install_id
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
-        '200':
+        "200":
           description: 状态
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstallState'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/InstallState"
+        "404":
+          $ref: "#/components/responses/NotFound"
       x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-requirements:
-      - MP-CONS-005
+        - MP-CONS-005
     delete:
       x-requirement-id: MP-CONS-006
       x-owner: marketplace-consumer
       operationId: uninstallArtifact
       summary: 异步卸载(反注册 + instance 删除)
       tags:
-      - marketplace
+        - marketplace
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       parameters:
-      - in: path
-        name: install_id
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - in: path
+          name: install_id
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
-        '202':
+        "202":
           description: 卸载已触发
           content:
             application/json:
               schema:
                 type: object
                 required:
-                - install_id
+                  - install_id
                 properties:
                   install_id:
                     type: string
@@ -286,7 +287,7 @@ paths:
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-requirements:
-      - MP-CONS-006
+        - MP-CONS-006
   /api/v1/marketplace/install/{install_id}/retry:
     post:
       x-requirement-id: MP-CONS-006
@@ -294,27 +295,27 @@ paths:
       operationId: retryInstall
       summary: 重新进入 orchestrator
       tags:
-      - marketplace
+        - marketplace
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       parameters:
-      - in: path
-        name: install_id
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - in: path
+          name: install_id
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
-        '202':
+        "202":
           description: 重试已触发
       x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-requirements:
-      - MP-CONS-006
+        - MP-CONS-006
   /api/v1/marketplace/install/{install_id}/events:
     get:
       x-requirement-id: MP-CONS-006
@@ -322,16 +323,16 @@ paths:
       operationId: streamInstallEvents
       summary: SSE 通道,推送 install 状态变更
       tags:
-      - marketplace
+        - marketplace
       parameters:
-      - in: path
-        name: install_id
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - in: path
+          name: install_id
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
-        '200':
+        "200":
           description: SSE 流
           content:
             text/event-stream: {}
@@ -339,7 +340,7 @@ paths:
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-requirements:
-      - MP-CONS-006
+        - MP-CONS-006
   /api/v1/marketplace/license/activate:
     post:
       x-requirement-id: MP-CONS-007
@@ -347,30 +348,30 @@ paths:
       operationId: activateLicense
       summary: 激活 license(写入 marketplace_subscription,KMS 加密存储)
       tags:
-      - marketplace
+        - marketplace
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LicenseActivateRequest'
+              $ref: "#/components/schemas/LicenseActivateRequest"
       responses:
-        '200':
+        "200":
           description: 激活成功
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LicenseActivationResult'
+                $ref: "#/components/schemas/LicenseActivationResult"
       x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-requirements:
-      - MP-CONS-007
+        - MP-CONS-007
   /api/v1/marketplace/subscriptions:
     get:
       x-requirement-id: MP-CONS-008
@@ -378,19 +379,19 @@ paths:
       operationId: listSubscriptions
       summary: 当前租户 license 列表(走标准 db_filter)
       tags:
-      - marketplace
+        - marketplace
       responses:
-        '200':
+        "200":
           description: 列表
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SubscriptionList'
+                $ref: "#/components/schemas/SubscriptionList"
       x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-requirements:
-      - MP-CONS-008
+        - MP-CONS-008
   /api/v1/marketplace/skills:
     post:
       x-requirement-id: MP-CONS-009
@@ -399,46 +400,46 @@ paths:
       description: 上传一个公开或私有 SKILL 到 SkillHub。
       tags: [marketplace]
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SkillUpload'
+              $ref: "#/components/schemas/SkillUpload"
       responses:
-        '201':
+        "201":
           description: 上传成功
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Skill'
-        '403':
+                $ref: "#/components/schemas/Skill"
+        "403":
           description: 缺 marketplace.write scope
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-implementation-status: implemented
       x-mate-requirements:
-      - MP-CONS-009
+        - MP-CONS-009
     get:
       x-requirement-id: MP-CONS-010
       operationId: listSkills
       summary: 浏览 SKILL（公开 + 自有）
       tags: [marketplace]
       parameters:
-      - name: q
-        in: query
-        required: false
-        schema: { type: string }
-      - name: visibility
-        in: query
-        required: false
-        schema: { type: string, enum: [public, private] }
+        - name: q
+          in: query
+          required: false
+          schema: { type: string }
+        - name: visibility
+          in: query
+          required: false
+          schema: { type: string, enum: [public, private] }
       responses:
-        '200':
+        "200":
           description: SKILL 列表
           content:
             application/json:
@@ -448,13 +449,13 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Skill'
+                      $ref: "#/components/schemas/Skill"
                   total: { type: integer }
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-implementation-status: implemented
       x-mate-requirements:
-      - MP-CONS-010
+        - MP-CONS-010
   /api/v1/marketplace/skills/installed:
     get:
       x-requirement-id: MP-CONS-011
@@ -462,7 +463,7 @@ paths:
       summary: 已安装 SKILL（当前租户）
       tags: [marketplace]
       responses:
-        '200':
+        "200":
           description: 已安装 SKILL 列表
           content:
             application/json:
@@ -472,13 +473,13 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Skill'
+                      $ref: "#/components/schemas/Skill"
                   total: { type: integer }
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-implementation-status: implemented
       x-mate-requirements:
-      - MP-CONS-011
+        - MP-CONS-011
   /api/v1/marketplace/skills/{skill_id}:
     get:
       x-requirement-id: MP-CONS-012
@@ -486,84 +487,84 @@ paths:
       summary: SKILL 详情
       tags: [marketplace]
       parameters:
-      - name: skill_id
-        in: path
-        required: true
-        schema: { type: string }
+        - name: skill_id
+          in: path
+          required: true
+          schema: { type: string }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Skill'
-        '404':
+                $ref: "#/components/schemas/Skill"
+        "404":
           description: SKILL 不存在
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-implementation-status: implemented
       x-mate-requirements:
-      - MP-CONS-012
+        - MP-CONS-012
     put:
       x-requirement-id: MP-CONS-013
       operationId: updateSkill
       summary: 更新自有 SKILL（仅作者）
       tags: [marketplace]
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       parameters:
-      - name: skill_id
-        in: path
-        required: true
-        schema: { type: string }
+        - name: skill_id
+          in: path
+          required: true
+          schema: { type: string }
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SkillUpload'
+              $ref: "#/components/schemas/SkillUpload"
       responses:
-        '200':
+        "200":
           description: 更新成功
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Skill'
-        '403':
+                $ref: "#/components/schemas/Skill"
+        "403":
           description: 非作者
-        '404':
+        "404":
           description: SKILL 不存在
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-implementation-status: implemented
       x-mate-requirements:
-      - MP-CONS-013
+        - MP-CONS-013
     delete:
       x-requirement-id: MP-CONS-014
       operationId: deleteSkill
       summary: 删除自有 SKILL
       tags: [marketplace]
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       parameters:
-      - name: skill_id
-        in: path
-        required: true
-        schema: { type: string }
+        - name: skill_id
+          in: path
+          required: true
+          schema: { type: string }
       responses:
-        '200':
+        "200":
           description: 已删除
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-implementation-status: implemented
       x-mate-requirements:
-      - MP-CONS-014
+        - MP-CONS-014
   /api/v1/marketplace/skills/{skill_id}/download:
     get:
       x-requirement-id: MP-CONS-015
@@ -571,12 +572,12 @@ paths:
       summary: 下载 SKILL 内容
       tags: [marketplace]
       parameters:
-      - name: skill_id
-        in: path
-        required: true
-        schema: { type: string }
+        - name: skill_id
+          in: path
+          required: true
+          schema: { type: string }
       responses:
-        '200':
+        "200":
           description: SKILL 内容
           content:
             application/json:
@@ -587,13 +588,13 @@ paths:
                   name: { type: string }
                   version: { type: string }
                   content: { type: string }
-        '404':
+        "404":
           description: SKILL 不存在
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-implementation-status: implemented
       x-mate-requirements:
-      - MP-CONS-015
+        - MP-CONS-015
   /api/v1/marketplace/skills/{skill_id}/install:
     post:
       x-requirement-id: MP-CONS-016
@@ -601,17 +602,17 @@ paths:
       summary: 安装 SKILL
       tags: [marketplace]
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       parameters:
-      - name: skill_id
-        in: path
-        required: true
-        schema: { type: string }
+        - name: skill_id
+          in: path
+          required: true
+          schema: { type: string }
       responses:
-        '200':
+        "200":
           description: 安装成功
           content:
             application/json:
@@ -621,13 +622,13 @@ paths:
                   id: { type: string }
                   installs: { type: integer }
                   status: { type: string }
-        '404':
+        "404":
           description: SKILL 不存在
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-implementation-status: implemented
       x-mate-requirements:
-      - MP-CONS-016
+        - MP-CONS-016
 components:
   securitySchemes:
     bearerAuth:
@@ -652,9 +653,9 @@ components:
     Skill:
       type: object
       required:
-      - id
-      - name
-      - author_tenant
+        - id
+        - name
+        - author_tenant
       properties:
         id: { type: string }
         name: { type: string }
@@ -669,8 +670,8 @@ components:
     SkillUpload:
       type: object
       required:
-      - name
-      - content
+        - name
+        - content
       properties:
         name: { type: string }
         description: { type: string }
@@ -680,22 +681,22 @@ components:
     Error:
       type: object
       required:
-      - code
-      - message
+        - code
+        - message
       properties:
         code:
           type: string
           enum:
-          - MP_DIGEST_MISMATCH
-          - MP_LICENSE_INVALID
-          - MP_LICENSE_EXPIRED
-          - MP_LICENSE_QUOTA_EXCEEDED
-          - MP_KIND_NOT_ALLOWED
-          - MP_INCOMPATIBLE_PLATFORM
-          - MP_MANIFEST_INVALID
-          - MP_SAAS_UNREACHABLE
-          - MP_RATE_LIMITED
-          - MP_INTERNAL
+            - MP_DIGEST_MISMATCH
+            - MP_LICENSE_INVALID
+            - MP_LICENSE_EXPIRED
+            - MP_LICENSE_QUOTA_EXCEEDED
+            - MP_KIND_NOT_ALLOWED
+            - MP_INCOMPATIBLE_PLATFORM
+            - MP_MANIFEST_INVALID
+            - MP_SAAS_UNREACHABLE
+            - MP_RATE_LIMITED
+            - MP_INTERNAL
         message:
           type: string
         retry_after_ms:
@@ -708,19 +709,19 @@ components:
     ArtifactSummary:
       type: object
       required:
-      - kind
-      - id
-      - name
-      - version
-      - publisher
+        - kind
+        - id
+        - name
+        - version
+        - publisher
       properties:
         kind:
           type: string
           enum:
-          - mcp
-          - agent
-          - ontology
-          - skill
+            - mcp
+            - agent
+            - ontology
+            - skill
         id:
           type: string
           format: uuid
@@ -731,9 +732,9 @@ components:
         publisher:
           type: string
           enum:
-          - official
-          - partner
-          - community
+            - official
+            - partner
+            - community
         title:
           type: string
           nullable: true
@@ -751,14 +752,14 @@ components:
     ArtifactList:
       type: object
       required:
-      - items
-      - total
-      - page
+        - items
+        - total
+        - page
       properties:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/ArtifactSummary'
+            $ref: "#/components/schemas/ArtifactSummary"
         total:
           type: integer
         page:
@@ -766,23 +767,23 @@ components:
     ArtifactManifest:
       type: object
       required:
-      - schemaVersion
-      - kind
-      - id
-      - name
-      - version
-      - digest
-      - blobs
+        - schemaVersion
+        - kind
+        - id
+        - name
+        - version
+        - digest
+        - blobs
       properties:
         schemaVersion:
           type: string
         kind:
           type: string
           enum:
-          - mcp
-          - agent
-          - ontology
-          - skill
+            - mcp
+            - agent
+            - ontology
+            - skill
         id:
           type: string
           format: uuid
@@ -793,19 +794,19 @@ components:
         publisher:
           type: string
           enum:
-          - official
-          - partner
-          - community
+            - official
+            - partner
+            - community
         license:
           type: object
           required:
-          - tier
+            - tier
           properties:
             tier:
               type: string
               enum:
-              - free
-              - paid
+                - free
+                - paid
             sku:
               type: string
             checksum:
@@ -813,7 +814,7 @@ components:
         digest:
           type: object
           required:
-          - sha256
+            - sha256
           properties:
             sha256:
               type: string
@@ -825,16 +826,16 @@ components:
           items:
             type: object
             required:
-            - mediaType
-            - digest
-            - size
+              - mediaType
+              - digest
+              - size
             properties:
               mediaType:
                 type: string
               digest:
                 type: object
                 required:
-                - sha256
+                  - sha256
                 properties:
                   sha256:
                     type: string
@@ -873,21 +874,21 @@ components:
                 type: string
     ArtifactDetail:
       allOf:
-      - $ref: '#/components/schemas/ArtifactSummary'
-      - type: object
-        required:
-        - manifest
-        properties:
-          manifest:
-            $ref: '#/components/schemas/ArtifactManifest'
+        - $ref: "#/components/schemas/ArtifactSummary"
+        - type: object
+          required:
+            - manifest
+          properties:
+            manifest:
+              $ref: "#/components/schemas/ArtifactManifest"
     InstallRow:
       type: object
       required:
-      - id
-      - kind
-      - artifact_id
-      - version
-      - state
+        - id
+        - kind
+        - artifact_id
+        - version
+        - state
       properties:
         id:
           type: string
@@ -899,10 +900,10 @@ components:
         kind:
           type: string
           enum:
-          - mcp
-          - agent
-          - ontology
-          - skill
+            - mcp
+            - agent
+            - ontology
+            - skill
         artifact_id:
           type: string
           format: uuid
@@ -914,11 +915,11 @@ components:
         state:
           type: string
           enum:
-          - downloading
-          - verifying
-          - installed
-          - failed
-          - uninstalled
+            - downloading
+            - verifying
+            - installed
+            - failed
+            - uninstalled
         installed_by:
           type: string
           format: uuid
@@ -935,26 +936,26 @@ components:
     InstallList:
       type: object
       required:
-      - items
+        - items
       properties:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/InstallRow'
+            $ref: "#/components/schemas/InstallRow"
     InstallRequest:
       type: object
       required:
-      - kind
-      - artifact_id
-      - version
+        - kind
+        - artifact_id
+        - version
       properties:
         kind:
           type: string
           enum:
-          - mcp
-          - agent
-          - ontology
-          - skill
+            - mcp
+            - agent
+            - ontology
+            - skill
         artifact_id:
           type: string
           format: uuid
@@ -966,7 +967,7 @@ components:
     InstallAccepted:
       type: object
       required:
-      - install_id
+        - install_id
       properties:
         install_id:
           type: string
@@ -977,16 +978,16 @@ components:
     InstallState:
       type: object
       required:
-      - state
+        - state
       properties:
         state:
           type: string
           enum:
-          - downloading
-          - verifying
-          - installed
-          - failed
-          - uninstalled
+            - downloading
+            - verifying
+            - installed
+            - failed
+            - uninstalled
         progress:
           type: integer
           minimum: 0
@@ -995,8 +996,8 @@ components:
           type: object
           nullable: true
           required:
-          - code
-          - message
+            - code
+            - message
           properties:
             code:
               type: string
@@ -1005,14 +1006,14 @@ components:
     LicenseActivateRequest:
       type: object
       required:
-      - license_key
+        - license_key
       properties:
         license_key:
           type: string
     LicenseActivationResult:
       type: object
       required:
-      - sku
+        - sku
       properties:
         sku:
           type: string
@@ -1023,10 +1024,10 @@ components:
     SubscriptionRow:
       type: object
       required:
-      - id
-      - sku
-      - status
-      - purchased_at
+        - id
+        - sku
+        - status
+        - purchased_at
       properties:
         id:
           type: string
@@ -1036,9 +1037,9 @@ components:
         status:
           type: string
           enum:
-          - active
-          - expired
-          - revoked
+            - active
+            - expired
+            - revoked
         purchased_at:
           type: string
           format: date-time
@@ -1049,28 +1050,28 @@ components:
     SubscriptionList:
       type: object
       required:
-      - items
+        - items
       properties:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/SubscriptionRow'
+            $ref: "#/components/schemas/SubscriptionRow"
   responses:
     Unauthorized:
       description: 未认证
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
     Forbidden:
       description: 缺少 scope
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
     NotFound:
       description: 资源不存在
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"

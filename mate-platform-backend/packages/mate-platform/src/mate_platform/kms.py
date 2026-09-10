@@ -9,6 +9,7 @@ SEC-IAM-01 计划中提到该模块,本 Batch 引入最小可用实现。
 当前实现使用 Fernet(对称 32B key),非生产 profile 下接受 ``MATE_KMS_KEY``
 环境变量注入的 base64 key。production profile 必须从密钥管理服务拿。
 """
+
 from __future__ import annotations
 
 import base64

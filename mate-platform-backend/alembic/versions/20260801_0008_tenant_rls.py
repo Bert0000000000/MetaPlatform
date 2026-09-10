@@ -31,6 +31,7 @@ Revision ID: 0008_tenant_rls
 Revises: 0007_outbox_event
 Create Date: 2026-08-01
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -127,10 +128,7 @@ def upgrade() -> None:
     #    All columns are NOT NULL, but guard against pre-constraint data.
     # ------------------------------------------------------------------
     for table in TENANT_TABLES:
-        op.execute(
-            f"UPDATE {table} SET tenant_id = 'system' "
-            "WHERE tenant_id IS NULL"
-        )
+        op.execute(f"UPDATE {table} SET tenant_id = 'system' WHERE tenant_id IS NULL")
 
     # ------------------------------------------------------------------
     # 2. Enable RLS + create policy + force RLS on every table.
@@ -149,7 +147,7 @@ def upgrade() -> None:
     #    Empty string → predicate matches nothing → deny-by-default.
     # ------------------------------------------------------------------
     db_name = bind.engine.url.database
-    op.execute(f'ALTER DATABASE "{db_name}" SET app.tenant_id = \'\'')
+    op.execute(f"ALTER DATABASE \"{db_name}\" SET app.tenant_id = ''")
 
 
 def downgrade() -> None:

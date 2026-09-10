@@ -1,4 +1,5 @@
 """联邦查询引擎测试 — 跨本体 SPARQL 联邦 + 3 种合并策略 (PRD-APP-ONTSTUDIO §6.5)."""
+
 from __future__ import annotations
 
 import time
@@ -24,6 +25,7 @@ from mate_tech_ont.federation import (
 @pytest.fixture
 def client() -> TestClient:
     from mate_tech_ont.main import app
+
     return TestClient(app)
 
 
@@ -220,14 +222,20 @@ class TestFederationEndpoints:
         auth_headers: dict[str, str],
     ) -> None:
         """POST /federation/query — 在两个本体上查询 + union 合并."""
-        _executor.load_ontology("ont-x", [
-            {"uri": "x:1", "label": "X1"},
-            {"uri": "shared", "label": "Shared"},
-        ])
-        _executor.load_ontology("ont-y", [
-            {"uri": "y:1", "label": "Y1"},
-            {"uri": "shared", "label": "Shared"},
-        ])
+        _executor.load_ontology(
+            "ont-x",
+            [
+                {"uri": "x:1", "label": "X1"},
+                {"uri": "shared", "label": "Shared"},
+            ],
+        )
+        _executor.load_ontology(
+            "ont-y",
+            [
+                {"uri": "y:1", "label": "Y1"},
+                {"uri": "shared", "label": "Shared"},
+            ],
+        )
         resp = client.post(
             "/api/v1/ont/federation/query",
             json={
@@ -306,17 +314,13 @@ class TestFederationEndpoints:
             headers=auth_headers,
         )
         # tenant-acme sees it
-        resp_acme = client.get(
-            "/api/v1/ont/federation/mappings", headers=auth_headers
-        )
+        resp_acme = client.get("/api/v1/ont/federation/mappings", headers=auth_headers)
         assert resp_acme.status_code == 200
         assert len(resp_acme.json()) == 1
 
         # tenant-other does NOT see it
         other_headers = _alt_tenant_headers("tenant-other")
-        resp_other = client.get(
-            "/api/v1/ont/federation/mappings", headers=other_headers
-        )
+        resp_other = client.get("/api/v1/ont/federation/mappings", headers=other_headers)
         assert resp_other.status_code == 200
         assert resp_other.json() == []
 

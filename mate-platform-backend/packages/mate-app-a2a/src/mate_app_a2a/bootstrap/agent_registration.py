@@ -8,6 +8,7 @@ as the ``Agent`` / ``AgentCapability`` dataclasses in
 ``register_startup_agent_for_tenant()`` can materialise it into the
 tenant store.
 """
+
 from __future__ import annotations
 
 import os

@@ -29,6 +29,7 @@ class ProviderConfig:
 @dataclass(frozen=True, slots=True)
 class BudgetPolicy:
     """Per-(user, tenant) budget cap + 滑动窗口。"""
+
     max_input_tokens_per_minute: int = 60_000
     max_output_tokens_per_minute: int = 20_000
     max_usd_per_day: float = 10.0
@@ -128,6 +129,7 @@ class ProviderRegistry:
 @dataclass
 class TokenBucket:
     """滑动窗口 budget。"""
+
     window_seconds: int = 60
     max_in: int = 60_000
     max_out: int = 20_000

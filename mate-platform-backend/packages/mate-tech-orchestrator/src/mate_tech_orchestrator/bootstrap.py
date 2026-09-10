@@ -5,6 +5,7 @@ bindings but no actor authorization by default.  A local profile may explicitly
 backfill only an existing empty authorization mapping; it never replaces role
 metadata, capabilities, enabled state, or a non-empty tenant mapping.
 """
+
 from __future__ import annotations
 
 import structlog
@@ -61,14 +62,20 @@ def seed_default_roles(
     """
     registry = get_role_registry()
     changed = 0
-    allowed = tuple(dict.fromkeys(value.strip() for value in default_allowed_actor_roles if value.strip()))
+    allowed = tuple(
+        dict.fromkeys(value.strip() for value in default_allowed_actor_roles if value.strip())
+    )
     for role, caps in _DEFAULT_ROLE_CAPABILITIES.items():
         existing = registry.get(tenant_id, role.value)
         if existing is not None:
             if backfill_empty_authorization and allowed and not existing.allowed_actor_roles:
                 registry.set_allowed_actor_roles(tenant_id, role.value, allowed)
                 changed += 1
-                logger.info("orchestrator.seed.role_authorization_backfilled", tenant=tenant_id, role=role.value)
+                logger.info(
+                    "orchestrator.seed.role_authorization_backfilled",
+                    tenant=tenant_id,
+                    role=role.value,
+                )
             continue
         registry.register(
             tenant_id=tenant_id,

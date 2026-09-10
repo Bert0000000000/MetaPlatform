@@ -4,6 +4,7 @@ LiteLLM deployment_callback_on_failure semantics: failures/min window →
 allowed_fails → Redis cooldown; duration priority config > Retry-After >
 default; success resets; Redis down = no-op.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -35,7 +36,10 @@ class _FakeRedis:
 
         fails_key, ts_key, until_key = args[:3]
         now, window, allowed, cooldown_sec = (
-            float(args[3]), float(args[4]), int(args[5]), float(args[6])
+            float(args[3]),
+            float(args[4]),
+            int(args[5]),
+            float(args[6]),
         )
         ts = float(self.store.get(ts_key, "0"))
         if now - ts > window:
@@ -123,9 +127,9 @@ def test_classify_from_httpx_status_error() -> None:
 
     request = httpx.Request("POST", "https://api.test/v1/chat")
     response = httpx.Response(429, request=request, headers={"Retry-After": "12"})
-    err = classify_provider_error("openai", httpx.HTTPStatusError(
-        "429", request=request, response=response
-    ))
+    err = classify_provider_error(
+        "openai", httpx.HTTPStatusError("429", request=request, response=response)
+    )
     assert err.status_code == 429
     assert err.retryable
     assert err.retry_after == 12
@@ -148,10 +152,12 @@ async def test_call_with_resilience_skips_cooldown_candidate() -> None:
         return "ok"
 
     set_cooldown(manager)
-    result = await call_with_resilience([
-        ("openai", cooling_call),
-        ("qwen", healthy_call),
-    ])
+    result = await call_with_resilience(
+        [
+            ("openai", cooling_call),
+            ("qwen", healthy_call),
+        ]
+    )
     assert result == "ok"
     assert calls == ["qwen"]
 
@@ -187,9 +193,7 @@ async def test_call_with_resilience_5xx_falls_through() -> None:
         return "ok"
 
     # max_attempts=1 → single shot per candidate, deterministic and fast.
-    result = await call_with_resilience(
-        [("openai", failing), ("qwen", healthy)], max_attempts=1
-    )
+    result = await call_with_resilience([("openai", failing), ("qwen", healthy)], max_attempts=1)
     assert result == "ok"
     assert attempts == ["openai", "qwen"]
 
@@ -204,8 +208,7 @@ async def test_call_with_resilience_retries_only_retryable() -> None:
             raise ProviderCallError("503", provider="openai", status_code=503)
         return "recovered"
 
-    result = await call_with_resilience([("openai", flaky)], max_attempts=2,
-                                        initial_wait=0.01)
+    result = await call_with_resilience([("openai", flaky)], max_attempts=2, initial_wait=0.01)
     assert result == "recovered"
     assert len(attempts) == 2
 
@@ -239,9 +242,7 @@ async def test_call_with_resilience_chain_exhausted() -> None:
         raise ProviderCallError("down", provider="openai", status_code=500)
 
     with pytest.raises(RuntimeError, match="all provider candidates failed"):
-        await call_with_resilience(
-            [("openai", failing), ("qwen", failing)], max_attempts=1
-        )
+        await call_with_resilience([("openai", failing), ("qwen", failing)], max_attempts=1)
 
 
 def test_load_fallback_chain_env(monkeypatch: pytest.MonkeyPatch) -> None:

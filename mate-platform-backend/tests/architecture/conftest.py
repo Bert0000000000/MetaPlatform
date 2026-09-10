@@ -1,4 +1,5 @@
 """Conftest for architecture tests."""
+
 import sys
 from pathlib import Path
 

@@ -20,8 +20,8 @@ from typing import Any, Protocol, runtime_checkable
 
 class ExtProtocol(StrEnum):
     HTTP = "http"
-    MCP = "mcp"   # Model Context Protocol
-    A2A = "a2a"   # Agent-to-Agent
+    MCP = "mcp"  # Model Context Protocol
+    A2A = "a2a"  # Agent-to-Agent
 
 
 class SandboxTier(StrEnum):
@@ -41,6 +41,7 @@ class Capability:
 @dataclass(frozen=True, slots=True)
 class ExtAgentManifest:
     """Marketplace 上架的第三方 Agent 描述符。"""
+
     agent_rid: str  # ext.<tenant>.agent.<slug>.v<n>
     name: str
     vendor: str
@@ -64,6 +65,7 @@ class ExtAgentManifest:
 @dataclass(frozen=True, slots=True)
 class ExtInvocation:
     """一次调用记录 —— 必走第三方 sandbox。"""
+
     invocation_id: str
     agent_rid: str
     capability: str
@@ -80,7 +82,9 @@ class ExtInvocation:
 class SandboxRunner(Protocol):
     """L3 MicroVM 抽象 —— 实际由 SANDBOX-02 实现。"""
 
-    def run(self, agent: ExtAgentManifest, capability: str, params: dict[str, Any]) -> tuple[str, Any]:
+    def run(
+        self, agent: ExtAgentManifest, capability: str, params: dict[str, Any]
+    ) -> tuple[str, Any]:
         """返回 (sandbox_id, output)。"""
         ...
 
@@ -95,7 +99,9 @@ class MockMicroVMRunner:
     def register(self, capability: str, fn: callable) -> None:
         self._registry[capability] = fn
 
-    def run(self, agent: ExtAgentManifest, capability: str, params: dict[str, Any]) -> tuple[str, Any]:
+    def run(
+        self, agent: ExtAgentManifest, capability: str, params: dict[str, Any]
+    ) -> tuple[str, Any]:
         self._counter += 1
         sandbox_id = f"microvm-{self._counter}"
         fn = self._registry.get(capability)
@@ -125,7 +131,8 @@ class ExtAgentRegistry:
 
     def find_by_capability(self, cap: str) -> tuple[ExtAgentManifest, ...]:
         return tuple(
-            a for a in self._agents.values()
+            a
+            for a in self._agents.values()
             if a.enabled and any(c.name == cap for c in a.capabilities)
         )
 
@@ -141,7 +148,7 @@ class ExtAgentRegistry:
         if not any(c.name == capability for c in agent.capabilities):
             raise ValueError(f"capability not declared: {capability!r}")
         inv = ExtInvocation(
-            invocation_id=f"inv-{id(inv := object()) & 0xffffff:x}",
+            invocation_id=f"inv-{id(inv := object()) & 0xFFFFFF:x}",
             agent_rid=agent_rid,
             capability=capability,
             parameters=parameters,

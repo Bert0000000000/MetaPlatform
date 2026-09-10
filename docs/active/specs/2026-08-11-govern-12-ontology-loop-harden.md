@@ -1,7 +1,7 @@
 # GOVERN-12 — Ontology-loop 闭环硬化（实施计划）
 
-> **编制日期**：2026-08-11  
-> **来源**：`docs/active/delivery/evidence/GOVERN-11-ONTOLOGY-LOOP-ACCEPTANCE.md` §5（5 条架构 gap F1-F5）+ GOVERN-11-06 升级 DOM  
+> **编制日期**：2026-08-11
+> **来源**：`docs/active/delivery/evidence/GOVERN-11-ONTOLOGY-LOOP-ACCEPTANCE.md` §5（5 条架构 gap F1-F5）+ GOVERN-11-06 升级 DOM
 > **目标**：把 GOVERN-11 摸到的 6 个 follow-up（F1-F5 + DOM 升级）收口，让 ontology 业务闭环从"API 探针"升级到"真实业务链路"
 
 ## 0. 现状（盘点结论）

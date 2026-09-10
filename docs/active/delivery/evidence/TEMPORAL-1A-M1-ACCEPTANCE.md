@@ -6,28 +6,28 @@
 
 ## 1. 交付清单
 
-| # | 资产 | 路径 | 状态 |
-|---|---|---|---|
-| 1 | Temporal 集群（docker，隔离网络 + 专用 DB） | 容器 `temporal`(auto-setup 1.28) + `temporal-db`(postgres:17)，network `temporal-net`，gRPC :7233 | ✅ |
-| 2 | DSL 翻译层（plan JSON ⇄ Temporal workflow input） | `packages/mate-tech-orchestrator/src/mate_tech_orchestrator/temporal_translation.py` | ✅ |
-| 3 | 持久 Workflow 定义（run→HITL signal→resume→terminal） | `.../temporal_workflow.py`（独立模块，sandbox 可 re-import） | ✅ |
-| 4 | Worker（2 Activity 包装 PlanRunner.execute/review，进程内单例） | `.../temporal_worker.py` | ✅ |
-| 5 | 单测（翻译层 round-trip / B3 / payload 模板保真） | `tests/test_temporal_translation.py`（6/6 pass） | ✅ |
-| 6 | live e2e smoke（approve / reject 双路径） | `scripts/smoke_temporal_plan.py` | ✅ SMOKE PASS |
+| #   | 资产                                                            | 路径                                                                                              | 状态          |
+| --- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------- |
+| 1   | Temporal 集群（docker，隔离网络 + 专用 DB）                     | 容器 `temporal`(auto-setup 1.28) + `temporal-db`(postgres:17)，network `temporal-net`，gRPC :7233 | ✅            |
+| 2   | DSL 翻译层（plan JSON ⇄ Temporal workflow input）               | `packages/mate-tech-orchestrator/src/mate_tech_orchestrator/temporal_translation.py`              | ✅            |
+| 3   | 持久 Workflow 定义（run→HITL signal→resume→terminal）           | `.../temporal_workflow.py`（独立模块，sandbox 可 re-import）                                      | ✅            |
+| 4   | Worker（2 Activity 包装 PlanRunner.execute/review，进程内单例） | `.../temporal_worker.py`                                                                          | ✅            |
+| 5   | 单测（翻译层 round-trip / B3 / payload 模板保真）               | `tests/test_temporal_translation.py`（6/6 pass）                                                  | ✅            |
+| 6   | live e2e smoke（approve / reject 双路径）                       | `scripts/smoke_temporal_plan.py`                                                                  | ✅ SMOKE PASS |
 
 ## 2. 架构对位（ADR-0061 §2.1）
 
-| ADR 条目 | M1 实现 |
-|---|---|
-| PlanRunner = LLM-friendly DSL 翻译层 | ✅ Activity 内复用 `PlanRunner.submit/execute/review` 公有 API，零改动 |
-| Temporal = 业务 Workflow 引擎 | ✅ `PlanWorkflow` 逐步 Activity 持久执行 + signal 驱动 HITL |
-| HITL 合一语义不变 | ✅ review approve = confirm+apply 逻辑原样走 `PlanRunner.review` |
-| B3（每 plan ≥1 HITL） | ✅ `PlanRunner.submit` 原校验保留（PROPOSE/APPLY_ACTION 自动计入） |
-| signal 通道 | ✅ `ReviewSignal(step_id, approved, feedback, reviewer)` + `wait_condition` |
-| 可观测（SRE） | ✅ Temporal 自带 history / query `status()`（workflow query 暴露 `hitl_waiting:<step>`） |
-| 双轨切流 | ⬜ M2（`WORKFLOW_ENGINE=temporal\|legacy` 开关 + REST 接线） |
-| outbox→Temporal 桥 | ⬜ M2 |
-| plan 镜像表 reconcile | ⬜ M2/M3 |
+| ADR 条目                             | M1 实现                                                                                  |
+| ------------------------------------ | ---------------------------------------------------------------------------------------- |
+| PlanRunner = LLM-friendly DSL 翻译层 | ✅ Activity 内复用 `PlanRunner.submit/execute/review` 公有 API，零改动                   |
+| Temporal = 业务 Workflow 引擎        | ✅ `PlanWorkflow` 逐步 Activity 持久执行 + signal 驱动 HITL                              |
+| HITL 合一语义不变                    | ✅ review approve = confirm+apply 逻辑原样走 `PlanRunner.review`                         |
+| B3（每 plan ≥1 HITL）                | ✅ `PlanRunner.submit` 原校验保留（PROPOSE/APPLY_ACTION 自动计入）                       |
+| signal 通道                          | ✅ `ReviewSignal(step_id, approved, feedback, reviewer)` + `wait_condition`              |
+| 可观测（SRE）                        | ✅ Temporal 自带 history / query `status()`（workflow query 暴露 `hitl_waiting:<step>`） |
+| 双轨切流                             | ⬜ M2（`WORKFLOW_ENGINE=temporal\|legacy` 开关 + REST 接线）                             |
+| outbox→Temporal 桥                   | ⬜ M2                                                                                    |
+| plan 镜像表 reconcile                | ⬜ M2/M3                                                                                 |
 
 ## 3. Live 实机验证（真 Temporal server + 真 worker 进程）
 
@@ -51,11 +51,11 @@ SMOKE PASS
 
 ## 5. 测试
 
-| 套件 | 结果 |
-|---|---|
-| `pytest packages/mate-tech-orchestrator/tests/test_temporal_translation.py` | 6 passed / 0 failed |
-| `python scripts/smoke_temporal_plan.py`（live） | SMOKE PASS（2 路径 × 4 断言） |
-| 既有 orchestrator 套件回归 | 未触碰 PlanRunner/dispatcher 源码（仅新增文件），无回归面 |
+| 套件                                                                        | 结果                                                      |
+| --------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `pytest packages/mate-tech-orchestrator/tests/test_temporal_translation.py` | 6 passed / 0 failed                                       |
+| `python scripts/smoke_temporal_plan.py`（live）                             | SMOKE PASS（2 路径 × 4 断言）                             |
+| 既有 orchestrator 套件回归                                                  | 未触碰 PlanRunner/dispatcher 源码（仅新增文件），无回归面 |
 
 ## 6. 出范围（后续里程碑）
 

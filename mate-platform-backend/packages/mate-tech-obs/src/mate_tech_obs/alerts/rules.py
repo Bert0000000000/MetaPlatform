@@ -2,6 +2,7 @@
 
 10 条关键告警（5xx 错误率、p95 延迟、PG 连接数、Milvus p99 等）。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -31,7 +32,7 @@ ALERT_RULES: list[AlertRule] = [
     ),
     AlertRule(
         alert="HttpP95Latency",
-        expr='histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m]))) > 1',
+        expr="histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m]))) > 1",
         for_duration="5m",
         severity="warning",
         description="HTTP p95 延迟超过 1s 持续 5 分钟",
@@ -39,7 +40,7 @@ ALERT_RULES: list[AlertRule] = [
     ),
     AlertRule(
         alert="PgConnectionPoolFull",
-        expr='pg_stat_activity_count / pg_settings_max_connections > 0.9',
+        expr="pg_stat_activity_count / pg_settings_max_connections > 0.9",
         for_duration="2m",
         severity="critical",
         description="PG 连接池使用率超过 90%",
@@ -47,7 +48,7 @@ ALERT_RULES: list[AlertRule] = [
     ),
     AlertRule(
         alert="MilvusP99Latency",
-        expr='histogram_quantile(0.99, milvus_search_latency_seconds_bucket) > 0.1',
+        expr="histogram_quantile(0.99, milvus_search_latency_seconds_bucket) > 0.1",
         for_duration="5m",
         severity="warning",
         description="Milvus search p99 超过 100ms",
@@ -55,7 +56,7 @@ ALERT_RULES: list[AlertRule] = [
     ),
     AlertRule(
         alert="KafkaConsumerLag",
-        expr='kafka_consumer_lag > 10000',
+        expr="kafka_consumer_lag > 10000",
         for_duration="10m",
         severity="warning",
         description="Kafka consumer 滞后超过 10000 条",
@@ -79,7 +80,7 @@ ALERT_RULES: list[AlertRule] = [
     ),
     AlertRule(
         alert="RagRecallFailure",
-        expr='sum(rate(rag_search_failed_total[10m])) > 0.1',
+        expr="sum(rate(rag_search_failed_total[10m])) > 0.1",
         for_duration="10m",
         severity="warning",
         description="RAG 检索失败率异常",
@@ -95,7 +96,7 @@ ALERT_RULES: list[AlertRule] = [
     ),
     AlertRule(
         alert="MemoryHigh",
-        expr='(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9',
+        expr="(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9",
         for_duration="5m",
         severity="warning",
         description="内存使用率超过 90%",
@@ -120,7 +121,7 @@ def to_prometheus_yaml() -> str:
         lines.append(ann_lines)
         for k, v in r.annotations.items():
             lines.append(f'          {k}: "{v}"')
-        lines.append(f"          description: \"{r.description}\"")
+        lines.append(f'          description: "{r.description}"')
         lines.append("")
     return "\n".join(lines)
 

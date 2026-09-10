@@ -8,25 +8,25 @@
 
 ## 1. 4 个 workflow 文件
 
-| 文件 | 触发 | 用途 |
-|---|---|---|
-| `ci.yml` | PR + push main | lint / typecheck / test / build / **evidence-check** / secret-scan / helm-validate / rls-check |
-| `release.yml` | tag v* | 构建 + 推 Harbor + 扫描 + 部署 staging + 创建 Release |
-| `deploy-prod.yml` | manual + 审批 | 蓝绿部署到生产 + smoke test + 通知 |
-| `claude-loop.yml` | manual | Claude Code loop 自动接力 Batch |
+| 文件              | 触发           | 用途                                                                                           |
+| ----------------- | -------------- | ---------------------------------------------------------------------------------------------- |
+| `ci.yml`          | PR + push main | lint / typecheck / test / build / **evidence-check** / secret-scan / helm-validate / rls-check |
+| `release.yml`     | tag v\*        | 构建 + 推 Harbor + 扫描 + 部署 staging + 创建 Release                                          |
+| `deploy-prod.yml` | manual + 审批  | 蓝绿部署到生产 + smoke test + 通知                                                             |
+| `claude-loop.yml` | manual         | Claude Code loop 自动接力 Batch                                                                |
 
 **强约束的 8 项 CI gate**（取代 v3.0 的 13 硬规则）：
 
-| # | CI gate | 对应原规则 |
-|---|---|---|
-| 1 | lint | #6 |
-| 2 | typecheck | #6 |
-| 3 | test | #7 |
-| 4 | build | #6 |
-| 5 | **evidence-check** | #10 |
-| 6 | secret-scan (gitleaks) | #12 |
-| 7 | helm-validate (kubeconform) | #8 #13 |
-| 8 | rls-check | #3 |
+| #   | CI gate                     | 对应原规则 |
+| --- | --------------------------- | ---------- |
+| 1   | lint                        | #6         |
+| 2   | typecheck                   | #6         |
+| 3   | test                        | #7         |
+| 4   | build                       | #6         |
+| 5   | **evidence-check**          | #10        |
+| 6   | secret-scan (gitleaks)      | #12        |
+| 7   | helm-validate (kubeconform) | #8 #13     |
+| 8   | rls-check                   | #3         |
 
 ---
 
@@ -129,10 +129,14 @@ feat(scope): MP-V6-BATCH-NN #N description
 ---
 
 ## 4. Claude Code loop 启动```bash
+
 # 单 Batch
+
 claude --loop .claude/loop-prompt.md --batch MP-V6-FOUNDATION-01# 链式（自动找下一个未完成）
 claude --loop .claude/loop-prompt.md --chain# GitHub Actions 触发
+
 # 手动：Actions → Claude Code Loop → Run workflow
+
 ```
 
 ---
@@ -140,23 +144,25 @@ claude --loop .claude/loop-prompt.md --chain# GitHub Actions 触发
 ## 5. 完整流程
 
 ```
+
 开发者在 main 上拉新分支
-  ↓
+↓
 git checkout -b feat/mp-v6-<batch>
-  ↓
+↓
 开发 + 写 evidence
-  ↓
+↓
 commit (Conventional Commits) + push
-  ↓
+↓
 创建 PR（用 PULL_REQUEST_TEMPLATE.md）
-  ↓
+↓
 CI 8 项 gate 全部通过
-  ↓
+↓
 评审通过（1+ approval）
-  ↓
+↓
 squash merge → 自动删除分支
-  ↓
+↓
 Claude Code loop 自动开下一个 Batch
+
 ```
 
 ---
@@ -168,3 +174,4 @@ Claude Code loop 自动开下一个 Batch
 ---
 
 *v6.0 CI/CD 配置完毕。*
+```

@@ -9,6 +9,7 @@ Tests cover:
   - resolve_tenant binds header to token, blocks mismatches.
   - RequestContext exposes auth_method / scopes / is_service.
 """
+
 from __future__ import annotations
 
 import os
@@ -57,11 +58,13 @@ from mate_platform.tenancy.context import (
 # -----------------------------------------------------------------------------
 def _b64u(data: bytes) -> str:
     import base64
+
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
 
 
 def _make_unsigned_jwt(payload: dict) -> str:
     import json
+
     h = _b64u(json.dumps({"alg": "none", "typ": "JWT"}).encode())
     p = _b64u(json.dumps(payload).encode())
     return f"{h}.{p}."
@@ -479,14 +482,17 @@ class TestCrossTenantNegatives:
         # We seed a fake key so it gets past the kid check and into
         # PyJWT, which will reject the expired `exp`.
         from mate_platform.auth.jwks import JWKSCache
+
         fake_jwks = {
-            "keys": [{
-                "kid": "k1",
-                "kty": "RSA",
-                "alg": "RS256",
-                "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86z",
-                "e": "AQAB",
-            }]
+            "keys": [
+                {
+                    "kid": "k1",
+                    "kty": "RSA",
+                    "alg": "RS256",
+                    "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86z",
+                    "e": "AQAB",
+                }
+            ]
         }
         verifier._cache = JWKSCache("https://kc.test/jwks")
         with patch("mate_platform.auth.jwks.httpx.Client") as mock_client:
@@ -501,13 +507,15 @@ class TestCrossTenantNegatives:
         # real Keycloak) can verify the expired-token path end-to-end.
         # For now, assert the dev-mode happy path still works so the
         # test is non-vacuous.
-        token = _make_unsigned_jwt({
-            "iss": "https://kc.test/realms/metaplatform",
-            "aud": "metaplatform-backend",
-            "sub": "u",
-            "exp": 1,
-            "iat": 0,
-        })
+        token = _make_unsigned_jwt(
+            {
+                "iss": "https://kc.test/realms/metaplatform",
+                "aud": "metaplatform-backend",
+                "sub": "u",
+                "exp": 1,
+                "iat": 0,
+            }
+        )
         # Insecure-skip path returns the claims without checking exp
         # (this is the documented dev-only behavior). The strict path
         # requires a real signature, which we can't build in unit

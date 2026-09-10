@@ -5,6 +5,7 @@ AuthMiddleware requires a Bearer token; the embedder never sent one.
 Env-gated fix: LLMGW_API_KEY (virtual key) > SERVICE_CLIENT_ID/SECRET
 (service identity) > no header (dev parity).
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch

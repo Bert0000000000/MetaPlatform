@@ -5,6 +5,7 @@
 退出码：0 = 通过；非 0 = 失败（仅在 --strict 下生效；默认仅打印）。
 依赖：仅 Python 标准库。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -25,8 +26,19 @@ REQUIRED_PRD_SECTIONS: tuple[str, ...] = (
 
 # ACCEPTANCE 必须出现的 13 个 ga-* job（与 ga-acceptance.yml 对齐）
 REQUIRED_GA_JOBS: tuple[str, ...] = (
-    "ga-001", "ga-002", "ga-003", "ga-004", "ga-005", "ga-006",
-    "ga-007", "ga-008", "ga-009", "ga-010", "ga-011", "ga-012", "ga-013",
+    "ga-001",
+    "ga-002",
+    "ga-003",
+    "ga-004",
+    "ga-005",
+    "ga-006",
+    "ga-007",
+    "ga-008",
+    "ga-009",
+    "ga-010",
+    "ga-011",
+    "ga-012",
+    "ga-013",
 )
 
 # 编译正则
@@ -97,8 +109,7 @@ def main() -> int:
         check_prd_file(p, errors)
 
     acceptance_files = [
-        p for p in args.evidence_dir.glob("*-ACCEPTANCE.md")
-        if _RE_ACCEPTANCE_FILE.search(p.name)
+        p for p in args.evidence_dir.glob("*-ACCEPTANCE.md") if _RE_ACCEPTANCE_FILE.search(p.name)
     ]
     if not acceptance_files:
         errors.append(f"未发现 ACCEPTANCE 文件（{args.evidence_dir}/**/*-ACCEPTANCE.md）")
@@ -112,10 +123,7 @@ def main() -> int:
             print(f"  - {e}")
         return 1 if args.strict else 0
 
-    print(
-        f"✅ PRD 骨架校验通过 "
-        f"（{len(prd_files)} PRD + {len(acceptance_files)} ACCEPTANCE）"
-    )
+    print(f"✅ PRD 骨架校验通过 （{len(prd_files)} PRD + {len(acceptance_files)} ACCEPTANCE）")
     return 0
 
 

@@ -1,4 +1,5 @@
 """Tool calling integration tests (ST-5.5.8.3)."""
+
 from __future__ import annotations
 
 import pytest

@@ -4,6 +4,7 @@ The orchestrator takes over copilot's ``scheduling/*`` entry with real
 machinery (role registry + plan runner). These tests exercise the
 intent → match → plan → execute flow.
 """
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
@@ -19,11 +20,13 @@ class FakeMcpWorker:
 def _register_roles() -> None:
     reg = get_role_registry()
     reg.register(
-        tenant_id="tenant-acme", role="knowledge",
+        tenant_id="tenant-acme",
+        role="knowledge",
         capabilities=[CapabilityBinding(name="kb_search", worker_kind="mcp", ref="kb_search")],
     )
     reg.register(
-        tenant_id="tenant-acme", role="workflow",
+        tenant_id="tenant-acme",
+        role="workflow",
         capabilities=[CapabilityBinding(name="flow_run", worker_kind="mcp", ref="flow_run")],
     )
 

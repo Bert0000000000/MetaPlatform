@@ -1,4 +1,5 @@
 """Production profiles must not expose synthetic providers or success paths."""
+
 from __future__ import annotations
 
 import asyncio
@@ -98,7 +99,8 @@ async def test_production_rejects_direct_local_stub_provider(
 @pytest.mark.parametrize("profile", ["production", "staging"])
 @pytest.mark.asyncio
 async def test_deployed_profiles_ignore_explicit_llm_fallback_override(
-    monkeypatch: pytest.MonkeyPatch, profile: str,
+    monkeypatch: pytest.MonkeyPatch,
+    profile: str,
 ) -> None:
     monkeypatch.setenv("MATE_PROFILE", profile)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
@@ -147,7 +149,8 @@ async def test_provider_created_in_development_rejects_after_profile_switch(
 
 @pytest.mark.parametrize("profile", ["production", "staging"])
 def test_deployed_profiles_reject_multimodal_stub_route(
-    monkeypatch: pytest.MonkeyPatch, profile: str,
+    monkeypatch: pytest.MonkeyPatch,
+    profile: str,
 ) -> None:
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
@@ -156,9 +159,7 @@ def test_deployed_profiles_reject_multimodal_stub_route(
     app = FastAPI()
     app.include_router(router)
 
-    response = TestClient(app).post(
-        "/api/v1/llmgw/chat/multimodal", json={"prompt": "describe"}
-    )
+    response = TestClient(app).post("/api/v1/llmgw/chat/multimodal", json={"prompt": "describe"})
 
     assert response.status_code == 503
 

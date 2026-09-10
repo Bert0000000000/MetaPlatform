@@ -42,9 +42,7 @@ async def test_e2e_07_conversation_history_flow(
     """
 
     # 1. 创建一个 ACTIVE 状态的 agent（会话必须绑定 agent）
-    agent_id = await _create_active_agent(
-        agent_client, tenant_headers, "e2e-agent-07-conv"
-    )
+    agent_id = await _create_active_agent(agent_client, tenant_headers, "e2e-agent-07-conv")
 
     # 2. 创建会话
     create_resp = await agent_client.post(
@@ -106,18 +104,14 @@ async def test_e2e_07_conversation_history_flow(
         assert m["conversationId"] == conv_id
 
     # 6. 查看会话详情（应反映 messageCount）
-    detail_resp = await agent_client.get(
-        f"{CONV_BASE}/{conv_id}", headers=tenant_headers
-    )
+    detail_resp = await agent_client.get(f"{CONV_BASE}/{conv_id}", headers=tenant_headers)
     assert detail_resp.status_code == 200
     detail = detail_resp.json()["data"]
     assert detail["conversationId"] == conv_id
     assert detail["messageCount"] >= 4
 
     # 7. 结束会话
-    end_resp = await agent_client.post(
-        f"{CONV_BASE}/{conv_id}/end", headers=tenant_headers
-    )
+    end_resp = await agent_client.post(f"{CONV_BASE}/{conv_id}/end", headers=tenant_headers)
     assert end_resp.status_code == 200, end_resp.text
     ended = end_resp.json()["data"]
     assert ended["conversationId"] == conv_id
@@ -163,9 +157,7 @@ async def test_e2e_07_conversation_filters(
     tenant_headers: dict[str, str],
 ):
     """会话列表过滤器：keyword / favorite / mode。"""
-    agent_id = await _create_active_agent(
-        agent_client, tenant_headers, "e2e-agent-07-filter"
-    )
+    agent_id = await _create_active_agent(agent_client, tenant_headers, "e2e-agent-07-filter")
 
     # 创建一个普通会话
     await agent_client.post(
@@ -180,9 +172,7 @@ async def test_e2e_07_conversation_filters(
         headers=tenant_headers,
     )
     fav_id = fav_resp.json()["data"]["conversationId"]
-    await agent_client.post(
-        f"{CONV_BASE}/{fav_id}/favorite", headers=tenant_headers
-    )
+    await agent_client.post(f"{CONV_BASE}/{fav_id}/favorite", headers=tenant_headers)
 
     # keyword 过滤
     resp = await agent_client.get(

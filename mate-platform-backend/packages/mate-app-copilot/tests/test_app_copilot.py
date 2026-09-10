@@ -5,6 +5,7 @@ SQL generation, SQL execution rejection, multimodal upload,
 scheduling intent detection, action matching, and the P2-W4
 client-routed code explanation endpoint.
 """
+
 from __future__ import annotations
 
 import json
@@ -124,7 +125,9 @@ def test_execute_sql_rejects_cross_tenant_multi_statement_and_skips_downstream(
 
     called: dict[str, object] = {}
 
-    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+    def _fake_execute_read_only_sql(
+        *, sql: str, tenant_id: str, datasource_id: str
+    ) -> dict[str, object]:
         called["sql"] = sql
         called["tenant_id"] = tenant_id
         called["datasource_id"] = datasource_id
@@ -162,7 +165,9 @@ def test_execute_sql_rejects_embedded_destructive_tokens_before_downstream(
 
     called = {"count": 0}
 
-    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+    def _fake_execute_read_only_sql(
+        *, sql: str, tenant_id: str, datasource_id: str
+    ) -> dict[str, object]:
         called["count"] += 1
         return {"rows": [], "columns": []}
 
@@ -189,7 +194,9 @@ def test_execute_sql_rejects_malformed_select_before_downstream(
 
     called = {"count": 0}
 
-    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+    def _fake_execute_read_only_sql(
+        *, sql: str, tenant_id: str, datasource_id: str
+    ) -> dict[str, object]:
         called["count"] += 1
         return {"rows": [], "columns": []}
 
@@ -216,7 +223,9 @@ def test_execute_sql_rejects_quoted_cross_tenant_identifier_before_downstream(
 
     called = {"count": 0}
 
-    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+    def _fake_execute_read_only_sql(
+        *, sql: str, tenant_id: str, datasource_id: str
+    ) -> dict[str, object]:
         called["count"] += 1
         return {"rows": [], "columns": []}
 
@@ -243,7 +252,9 @@ def test_execute_sql_rejects_nested_quoted_cross_tenant_identifier_before_downst
 
     called = {"count": 0}
 
-    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+    def _fake_execute_read_only_sql(
+        *, sql: str, tenant_id: str, datasource_id: str
+    ) -> dict[str, object]:
         called["count"] += 1
         return {"rows": [], "columns": []}
 
@@ -333,7 +344,9 @@ def test_sql_execution_routes_require_sql_input(
 
     called = {"count": 0}
 
-    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+    def _fake_execute_read_only_sql(
+        *, sql: str, tenant_id: str, datasource_id: str
+    ) -> dict[str, object]:
         called["count"] += 1
         return {"rows": [], "columns": []}
 
@@ -357,7 +370,9 @@ def test_queries_execute_allows_same_tenant_select_and_calls_downstream(
 
     captured: dict[str, object] = {}
 
-    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+    def _fake_execute_read_only_sql(
+        *, sql: str, tenant_id: str, datasource_id: str
+    ) -> dict[str, object]:
         captured["sql"] = sql
         captured["tenant_id"] = tenant_id
         captured["datasource_id"] = datasource_id
@@ -734,7 +749,10 @@ def test_chat_agent_stream_filters_prompt_leak_and_persists_safe_reply(
             pass
 
         async def authorized_role_snapshot(
-            self, *, tenant_id: str, fallback_token: str | None = None,
+            self,
+            *,
+            tenant_id: str,
+            fallback_token: str | None = None,
         ) -> dict[str, Any]:
             return {
                 "items": [],
@@ -775,7 +793,10 @@ def test_chat_agent_stream_filters_prompt_leak_and_persists_safe_reply(
 
 
 def test_agent_stream_audits_final_routing_decision_without_message_content(
-    client, auth_headers_acme, outbox, monkeypatch,
+    client,
+    auth_headers_acme,
+    outbox,
+    monkeypatch,
 ) -> None:
     from mate_app_copilot.api import app as copilot_app_module
 
@@ -820,7 +841,11 @@ def test_agent_stream_audits_final_routing_decision_without_message_content(
     )
     assert response.status_code == 200, response.text
 
-    events = [record.event for record in outbox.all_records() if record.event.type == "copilot.routing.decided"]
+    events = [
+        record.event
+        for record in outbox.all_records()
+        if record.event.type == "copilot.routing.decided"
+    ]
     assert len(events) == 1
     payload = events[0].payload
     assert payload == {
@@ -838,7 +863,10 @@ def test_agent_stream_audits_final_routing_decision_without_message_content(
 
 
 def test_agent_stream_audits_final_denial_without_message_content(
-    client, auth_headers_acme, outbox, monkeypatch,
+    client,
+    auth_headers_acme,
+    outbox,
+    monkeypatch,
 ) -> None:
     from mate_app_copilot.api import app as copilot_app_module
 
@@ -877,7 +905,8 @@ def test_agent_stream_audits_final_denial_without_message_content(
     assert response.status_code == 200, response.text
 
     events = [
-        record.event for record in outbox.all_records()
+        record.event
+        for record in outbox.all_records()
         if record.event.type == "copilot.routing.denied"
     ]
     assert len(events) == 1
@@ -921,9 +950,7 @@ def test_scheduling_templates_paginated(client, auth_headers_acme) -> None:
 
 
 # --- GOVERN-12-01: copilot match_employees fallback_token 透传 ----------------
-def test_match_employees_passes_fallback_token(
-    client, auth_headers_acme, monkeypatch
-) -> None:
+def test_match_employees_passes_fallback_token(client, auth_headers_acme, monkeypatch) -> None:
     """GOVERN-12-01: match_employees 必须把入站 Authorization 透传为
     fallback_token 给 dw client.list_dw_employees，避免 keycloak
     client_credentials 不可用时 fallback 到 in-memory 伪员工。
@@ -944,9 +971,13 @@ def test_match_employees_passes_fallback_token(
             captured["fallback_token"] = fallback_token
             # 模拟 5 条 dw 主数据 employee（含 ontology kernel role）
             return [
-                {"employeeId": "dw-emp-default-1", "name": "Ontology Engineer",
-                 "roleCategory": "PLATFORM", "roleIdentity": "ontology",
-                 "capability": "kernel,reasoning"},
+                {
+                    "employeeId": "dw-emp-default-1",
+                    "name": "Ontology Engineer",
+                    "roleCategory": "PLATFORM",
+                    "roleIdentity": "ontology",
+                    "capability": "kernel,reasoning",
+                },
             ]
 
         async def close(self):  # 兼容 AsyncCopilotClient 接口
@@ -972,8 +1003,7 @@ def test_match_employees_passes_fallback_token(
     assert captured["fallback_token"], "fallback_token 未透传"
     inbound_bearer = auth_headers_acme["Authorization"].removeprefix("Bearer ").strip()
     assert captured["fallback_token"] == inbound_bearer, (
-        f"fallback_token mismatch: got {captured['fallback_token']!r}, "
-        f"expected {inbound_bearer!r}"
+        f"fallback_token mismatch: got {captured['fallback_token']!r}, expected {inbound_bearer!r}"
     )
     # tenant_id 也必须对位 ctx.tenant_id
     assert captured["tenant_id"] == "tenant-acme"

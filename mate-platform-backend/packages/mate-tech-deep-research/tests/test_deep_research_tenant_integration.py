@@ -10,6 +10,7 @@ These tests exercise the auth + tenancy contract end-to-end:
   * test_correct_tenant_succeeds: token bound to tenant A reaches
     the handler and the outbox event is stamped with tenant A.
 """
+
 from __future__ import annotations
 
 import time

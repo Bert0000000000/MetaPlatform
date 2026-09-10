@@ -3,6 +3,7 @@
 All network interaction is faked by monkeypatching ``_request`` /
 ``login`` — no gateway is contacted.
 """
+
 from __future__ import annotations
 
 import json
@@ -21,7 +22,8 @@ def test_build_query_body_defaults_and_extra_override() -> None:
 
 
 def test_list_classes_prints_rows_and_total(
-    monkeypatch, capsys,
+    monkeypatch,
+    capsys,
 ) -> None:
     captured: dict = {}
 
@@ -48,11 +50,13 @@ def test_list_classes_prints_rows_and_total(
 
 
 def test_list_classes_accepts_bare_array_envelope(
-    monkeypatch, capsys,
+    monkeypatch,
+    capsys,
 ) -> None:
     """网关 v2 object-types 实测返回裸数组；CLI 两种包络都要支持。"""
     monkeypatch.setattr(
-        cli, "_request",
+        cli,
+        "_request",
         lambda *a, **k: (
             200,
             [{"rid": "ont.tenant-default.obj.ac.v1", "display_name": "AC"}],
@@ -66,7 +70,8 @@ def test_list_classes_accepts_bare_array_envelope(
 
 
 def test_query_posts_object_query_with_auth_headers(
-    monkeypatch, capsys,
+    monkeypatch,
+    capsys,
 ) -> None:
     captured: dict = {}
 
@@ -89,7 +94,8 @@ def test_query_posts_object_query_with_auth_headers(
 
 def test_get_type_404_exits_nonzero(monkeypatch, capsys) -> None:
     monkeypatch.setattr(
-        cli, "_request",
+        cli,
+        "_request",
         lambda *a, **k: (404, b'{"detail":"not found"}'),
     )
     rc = cli.main(["get-type", "ont.t.missing.v1"])

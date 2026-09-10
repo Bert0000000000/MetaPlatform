@@ -14,7 +14,8 @@ from mate_kernel.ontology.types import ActionType, ObjectType, Property, Propert
 from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 
 PG_DSN = os.getenv(
-    "PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform_ont_test",
+    "PG_DSN",
+    "postgresql://meta:meta@localhost:5432/metaplatform_ont_test",
 )
 
 
@@ -28,7 +29,8 @@ def _pg_available() -> bool:
 
 
 pytestmark = pytest.mark.skipif(
-    not _pg_available(), reason=f"PG not reachable at {PG_DSN!r}",
+    not _pg_available(),
+    reason=f"PG not reachable at {PG_DSN!r}",
 )
 
 
@@ -88,15 +90,20 @@ def test_confirm_idempotency_replays_without_duplicate_transition_event(repo) ->
     )
 
     first = repo.confirm_proposal(
-        proposal.proposal_id, confirmed_by="user-1", idempotency_key="confirm-1",
+        proposal.proposal_id,
+        confirmed_by="user-1",
+        idempotency_key="confirm-1",
     )
     replayed = repo.confirm_proposal(
-        proposal.proposal_id, confirmed_by="user-1", idempotency_key="confirm-1",
+        proposal.proposal_id,
+        confirmed_by="user-1",
+        idempotency_key="confirm-1",
     )
 
     assert first == replayed
     assert [event["to_status"] for event in repo.list_proposal_events(proposal.proposal_id)] == [
-        "pending", "confirmed",
+        "pending",
+        "confirmed",
     ]
 
 
@@ -144,14 +151,20 @@ def test_execute_idempotency_replays_persisted_result_without_duplicate_event(re
         impact_summary="persist an execution receipt",
     )
     repo.confirm_proposal(
-        proposal.proposal_id, confirmed_by="reviewer-1", idempotency_key="confirm-execute-1",
+        proposal.proposal_id,
+        confirmed_by="reviewer-1",
+        idempotency_key="confirm-execute-1",
     )
 
     first = repo.execute_proposal(
-        proposal.proposal_id, actor_id="executor-1", idempotency_key="execute-1",
+        proposal.proposal_id,
+        actor_id="executor-1",
+        idempotency_key="execute-1",
     )
     replayed = repo.execute_proposal(
-        proposal.proposal_id, actor_id="executor-1", idempotency_key="execute-1",
+        proposal.proposal_id,
+        actor_id="executor-1",
+        idempotency_key="execute-1",
     )
 
     assert first == {

@@ -4,14 +4,14 @@
 
 Mate Platform Cloud Marketplace Consumer — API + Worker 双 deployment,
 拉 SaaS marketplace HTTP API + OCI Distribution Spec v2 数据面,把 MCP /
-Agent / Ontology 三类资产 install 到本地 mate-tech-* 服务。
+Agent / Ontology 三类资产 install 到本地 mate-tech-\* 服务。
 
 **Homepage:** <https://github.com/Bert0000000000/MetaPlatform>
 
 ## Maintainers
 
-| Name | Email |
-|------|-------|
+| Name                           | Email                          |
+| ------------------------------ | ------------------------------ |
 | MetaPlatform Marketplace Owner | marketplace@metaplatform.local |
 
 ## TL;DR
@@ -44,26 +44,26 @@ helm template marketplace . -f values-staging.yaml
 
 ## Values
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| image.registry | string | `docker.io` | Image registry |
-| image.repository | string | `mate/marketplace` | Image repository |
-| image.tag | string | `latest` | Image tag |
-| saas.baseUrl | string | `https://market.example` | SaaS marketplace HTTP API(控制面) |
-| saas.registry | string | `registry.example.com` | OCI Distribution Spec v2 registry |
-| saas.allowedEgressCidrs | list | `["0.0.0.0/0"]` | NetworkPolicy 允许的 Egress CIDR |
-| api.replicas | int | `1` | API deployment replicas |
-| api.resources | object | 见 values.yaml | API resource shape |
-| worker.replicas | int | `2` | Worker deployment replicas |
-| worker.resources | object | 见 values.yaml | Worker resource shape |
-| networkPolicy.enabled | bool | `true` | 启用 NetworkPolicy |
+| Key                     | Type   | Default                  | Description                       |
+| ----------------------- | ------ | ------------------------ | --------------------------------- |
+| image.registry          | string | `docker.io`              | Image registry                    |
+| image.repository        | string | `mate/marketplace`       | Image repository                  |
+| image.tag               | string | `latest`                 | Image tag                         |
+| saas.baseUrl            | string | `https://market.example` | SaaS marketplace HTTP API(控制面) |
+| saas.registry           | string | `registry.example.com`   | OCI Distribution Spec v2 registry |
+| saas.allowedEgressCidrs | list   | `["0.0.0.0/0"]`          | NetworkPolicy 允许的 Egress CIDR  |
+| api.replicas            | int    | `1`                      | API deployment replicas           |
+| api.resources           | object | 见 values.yaml           | API resource shape                |
+| worker.replicas         | int    | `2`                      | Worker deployment replicas        |
+| worker.resources        | object | 见 values.yaml           | Worker resource shape             |
+| networkPolicy.enabled   | bool   | `true`                   | 启用 NetworkPolicy                |
 
 ## Hard Rules Enforced
 
 - **§13 rule 8**(K8s readiness + rollback):deployment 配 `readinessProbe`
-  + `livenessProbe`(api),worker replicas 默认 2 用于滚动回滚。
+  - `livenessProbe`(api),worker replicas 默认 2 用于滚动回滚。
 - **§13 rule 13**(NetworkPolicy default-deny):`policyTypes: [Ingress,
-  Egress]`,默认隐式 deny;ingress 仅允许 `api-gateway` 命名空间;
+Egress]`,默认隐式 deny;ingress 仅允许 `api-gateway` 命名空间;
   egress 白名单 SaaS CIDR + postgres/redis 内部端口 + kube-dns。
 - **§13 rule 12**(Secret not in git):SaaS license key 不进 chart,
   通过 SealedSecret / ExternalSecret 注入。

@@ -1,4 +1,5 @@
 """Regression tests for reserved characters in proxied command paths."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator

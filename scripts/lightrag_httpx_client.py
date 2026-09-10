@@ -1,4 +1,5 @@
-﻿"""LightRAGClient (THEMATIC) — real httpx client for HKUDS LightRAG HTTP API."""
+"""LightRAGClient (THEMATIC) — real httpx client for HKUDS LightRAG HTTP API."""
+
 from __future__ import annotations
 
 import logging
@@ -68,7 +69,12 @@ class HttpxLightRAGClient:
             r = self._client.post(
                 f"{self._base_url}/query",
                 headers=self._headers(),
-                json={"query": query, "mode": self._mode, "top_k": max(1, top_k), "only_need_context": True},
+                json={
+                    "query": query,
+                    "mode": self._mode,
+                    "top_k": max(1, top_k),
+                    "only_need_context": True,
+                },
             )
             r.raise_for_status()
             data = r.json()

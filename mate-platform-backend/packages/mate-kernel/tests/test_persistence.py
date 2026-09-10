@@ -60,6 +60,7 @@ class TestDDL:
     def test_ddl_statements_count(self) -> None:
         # 4 tables / indexes
         from mate_kernel.ontology.persistence import DDL_STATEMENTS
+
         assert len(DDL_STATEMENTS) == 4
         # 全部 idempotent
         for ddl in DDL_STATEMENTS:

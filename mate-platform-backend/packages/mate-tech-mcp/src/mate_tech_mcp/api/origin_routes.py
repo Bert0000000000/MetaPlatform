@@ -14,6 +14,7 @@ forwarding endpoint. The registry is tenant-scoped and merges into the
 ``GET /tools`` list; ``POST /tools/{name}`` resolves a call via
 local handler → dynamic forwarding → federation → 404.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -171,11 +172,16 @@ async def register_tool_endpoint(
         input_schema=body.input_schema,
         endpoint=body.endpoint,
     )
-    _emit_tool_event(request, "mcp.tool.registered", {
-        "name": tool.name,
-        "endpoint": tool.endpoint,
-        "enabled": tool.enabled,
-    }, tid)
+    _emit_tool_event(
+        request,
+        "mcp.tool.registered",
+        {
+            "name": tool.name,
+            "endpoint": tool.endpoint,
+            "enabled": tool.enabled,
+        },
+        tid,
+    )
     return {
         "name": tool.name,
         "description": tool.description,
@@ -203,11 +209,16 @@ async def update_tool_endpoint(
     )
     if tool is None:
         raise HTTPException(status_code=404, detail=f"Tool '{name}' not found")
-    _emit_tool_event(request, "mcp.tool.updated", {
-        "name": tool.name,
-        "endpoint": tool.endpoint,
-        "enabled": tool.enabled,
-    }, tid)
+    _emit_tool_event(
+        request,
+        "mcp.tool.updated",
+        {
+            "name": tool.name,
+            "endpoint": tool.endpoint,
+            "enabled": tool.enabled,
+        },
+        tid,
+    )
     return {
         "name": tool.name,
         "description": tool.description,
@@ -255,9 +266,7 @@ async def render_prompt_endpoint(
     try:
         rendered = render_prompt(name, **payload)
     except KeyError:
-        raise HTTPException(
-            status_code=404, detail=f"Prompt '{name}' not found"
-        ) from None
+        raise HTTPException(status_code=404, detail=f"Prompt '{name}' not found") from None
     return {"name": name, "rendered": rendered}
 
 

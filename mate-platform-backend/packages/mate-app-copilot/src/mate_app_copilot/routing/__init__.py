@@ -4,6 +4,7 @@
 (long + research keywords) so the dispatcher can route it to the A2A
 DeerFlow agent instead of the lightweight llmgw chat.
 """
+
 from __future__ import annotations
 
 from .complexity import DEEP_RESEARCH_KEYWORDS, is_deep_research_query

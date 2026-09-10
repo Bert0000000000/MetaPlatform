@@ -2,11 +2,13 @@
 
 APPHUB-RUNTIME-01 phase B.
 """
+
 from __future__ import annotations
 
 
 def resolve_field_binding(
-    form_config: dict, flow_config: dict,
+    form_config: dict,
+    flow_config: dict,
 ) -> dict:
     """Resolve form field → flow variable mappings.
 

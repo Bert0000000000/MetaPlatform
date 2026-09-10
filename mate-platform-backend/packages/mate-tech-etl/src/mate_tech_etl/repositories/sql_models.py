@@ -3,6 +3,7 @@
 Mirrors the ``EtlTask`` dataclass in in_memory.py. The ``config``
 dict is serialised as JSON TEXT.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import String, Text

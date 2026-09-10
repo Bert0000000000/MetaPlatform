@@ -13,6 +13,7 @@ Covers:
   6. test_agent_card_registered          — a2a bootstrap registered deep-research
   7. test_outbox_event_on_success        — success → deep.research.completed event
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -196,7 +197,9 @@ def test_agent_card_registered() -> None:
 # 7. Successful invoke emits deep.research.completed outbox event
 # ---------------------------------------------------------------------------
 def test_outbox_event_on_success(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """A successful deep-research call appends a deep.research.completed event."""
     r = client.post(

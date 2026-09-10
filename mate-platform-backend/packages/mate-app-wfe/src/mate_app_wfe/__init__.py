@@ -8,6 +8,7 @@ P2-W5 (this batch): in-memory repository + BPMN structural checks.
 Real Flowable 8.0 engine integration lands in P2-W6 via
 `mate_clients.security.BearerAuth` (ADR-0014 step 4).
 """
+
 from __future__ import annotations
 
 __all__ = ["__version__"]

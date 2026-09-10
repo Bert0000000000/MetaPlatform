@@ -15,6 +15,7 @@ Design
   (``async chat(messages, model) -> dict``) so a test double or a
   real OpenAI-Vision / Anthropic adapter can be dropped in.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -119,9 +120,7 @@ class MultimodalEngine:
     @staticmethod
     def _build_messages(request: MultimodalRequest) -> list[dict[str, Any]]:
         """Flatten the request into a single-user-message payload."""
-        content: list[dict[str, Any]] = [
-            {"type": "text", "text": request.prompt}
-        ]
+        content: list[dict[str, Any]] = [{"type": "text", "text": request.prompt}]
         for image in request.images:
             content.append({"type": "image", "image": image})
         for clip in request.audio:

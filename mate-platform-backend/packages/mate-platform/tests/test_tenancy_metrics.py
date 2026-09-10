@@ -3,6 +3,7 @@
 Verifies the Prometheus counter is exposed and is incremented on each
 ``require_tenant`` / ``require_any_tenant`` failure path.
 """
+
 from __future__ import annotations
 
 import pytest

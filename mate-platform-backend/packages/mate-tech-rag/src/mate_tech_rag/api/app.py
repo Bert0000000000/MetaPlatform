@@ -11,6 +11,7 @@ P1.7 RAG 增强 add-ons:
   * GET   /api/v1/rag/metrics (P2.11 SLO basic metrics)
   * per-endpoint latency tracking (ingest / search / upload)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -104,9 +105,7 @@ def _emit(
     tenant_id: str,
 ) -> None:
     """Append an outbox event if a writer is configured (ADR-0014 step 3)."""
-    writer: InMemoryOutboxWriter | None = getattr(
-        request.app.state, "outbox_writer", None
-    )
+    writer: InMemoryOutboxWriter | None = getattr(request.app.state, "outbox_writer", None)
     if writer is None:
         return
     writer.append(
@@ -129,7 +128,8 @@ def _emit(
 # handler body with it; otherwise fall back to a no-op (in-memory client).
 # ------------------------------------------------------------------
 def _ragflow_override_cm(
-    base_url: str | None, api_key: str | None,
+    base_url: str | None,
+    api_key: str | None,
 ):
     if not (base_url or api_key):
         return nullcontext()
@@ -264,9 +264,9 @@ def create_app() -> FastAPI:
 
     def _require_ctx(request: Request):
         # Defence in depth: install_auth populates ctx or returns 401.
-        ctx = getattr(request.state, 'ctx', None)
+        ctx = getattr(request.state, "ctx", None)
         if ctx is None:
-            raise HTTPException(status_code=401, detail='no auth context')
+            raise HTTPException(status_code=401, detail="no auth context")
         return ctx
 
     @app.get("/healthz", response_model=HealthResponse)
@@ -291,9 +291,21 @@ def create_app() -> FastAPI:
                 model_name=model_name,
             ),
             indexes=[
-                IndexStatus(name="hybrid", backend=_backend_label(get_hybrid()), chunk_count=get_hybrid().count()),
-                IndexStatus(name="graph", backend=_backend_label(get_graph()), chunk_count=get_graph().count()),
-                IndexStatus(name="lightrag", backend=_backend_label(get_lightrag()), chunk_count=get_lightrag().count()),
+                IndexStatus(
+                    name="hybrid",
+                    backend=_backend_label(get_hybrid()),
+                    chunk_count=get_hybrid().count(),
+                ),
+                IndexStatus(
+                    name="graph",
+                    backend=_backend_label(get_graph()),
+                    chunk_count=get_graph().count(),
+                ),
+                IndexStatus(
+                    name="lightrag",
+                    backend=_backend_label(get_lightrag()),
+                    chunk_count=get_lightrag().count(),
+                ),
             ],
         )
 
@@ -307,12 +319,16 @@ def create_app() -> FastAPI:
                 result = parse_document(req)
                 # Register the parsed document in the tenant registry.
                 register_document(
-                    tenant_id, req.document_id, source="parse",
+                    tenant_id,
+                    req.document_id,
+                    source="parse",
                 )
                 mark_indexed(tenant_id, req.document_id, result.chunk_count)
                 # Hook 3 of 5: emit document-parsed event.
                 _emit(
-                    request, "rag.document.parsed", req.document_id,
+                    request,
+                    "rag.document.parsed",
+                    req.document_id,
                     {"document_id": req.document_id, "chunks": result.chunk_count},
                     tenant_id,
                 )
@@ -339,8 +355,11 @@ def create_app() -> FastAPI:
             doc_id = document_id or str(uuid.uuid4())
             # Register document in INGESTING state.
             register_document(
-                tenant_id, doc_id, filename=file.filename or "",
-                size_bytes=len(raw), source="upload",
+                tenant_id,
+                doc_id,
+                filename=file.filename or "",
+                size_bytes=len(raw),
+                source="upload",
             )
             ragflow = get_ragflow()
             embedder = get_embedder()
@@ -369,9 +388,12 @@ def create_app() -> FastAPI:
                 if pg_store is not None:
                     try:
                         pg_store.save_chunk(
-                            chunk_id, doc_id, chunk_text,
+                            chunk_id,
+                            doc_id,
+                            chunk_text,
                             {**meta, "tenant_id": tenant_id},
-                            embedding=vec, tenant_id=tenant_id,
+                            embedding=vec,
+                            tenant_id=tenant_id,
                         )
                     except Exception:
                         pass
@@ -381,7 +403,9 @@ def create_app() -> FastAPI:
                 register_kb_document(kb_id, doc_id, tenant_id=tenant_id)
             # Hook 3 of 5: emit document-uploaded event.
             _emit(
-                request, "rag.document.uploaded", doc_id,
+                request,
+                "rag.document.uploaded",
+                doc_id,
                 {
                     "document_id": doc_id,
                     "filename": file.filename or "",
@@ -406,8 +430,9 @@ def create_app() -> FastAPI:
         except Exception as exc:
             latency_ms = int((time.perf_counter() - start) * 1000)
             _observe("upload", latency_ms)
-            if 'doc_id' in locals():
+            if "doc_id" in locals():
                 from mate_tech_rag.api.document_registry import mark_failed
+
                 mark_failed(tenant_id, doc_id, str(exc))
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -425,7 +450,9 @@ def create_app() -> FastAPI:
                 result = await asyncio.to_thread(ingest, req, tenant_id=tenant_id)
                 # Hook 3 of 5: emit document-ingested event.
                 _emit(
-                    request, "rag.document.ingested", req.document_id,
+                    request,
+                    "rag.document.ingested",
+                    req.document_id,
                     {
                         "document_id": req.document_id,
                         "chunks": result.chunk_count,
@@ -477,7 +504,8 @@ def create_app() -> FastAPI:
                 # key-value pairs in the filter (task 3).
                 if req.metadata_filter:
                     filtered = [
-                        h for h in filtered
+                        h
+                        for h in filtered
                         if all(h.metadata.get(k) == v for k, v in req.metadata_filter.items())
                     ]
                 # Reranker: second-pass reordering of filtered hits (task 2).
@@ -512,7 +540,9 @@ def create_app() -> FastAPI:
                 )
                 # Hook 3 of 5: emit search-executed event.
                 _emit(
-                    request, "rag.search.executed", req.query[:64],
+                    request,
+                    "rag.search.executed",
+                    req.query[:64],
                     {
                         "query": req.query[:200],
                         "top_k": req.top_k,
@@ -564,7 +594,9 @@ def create_app() -> FastAPI:
     # ------------------------------------------------------------------
     @app.get("/api/v1/rag/documents/{doc_id}/chunks")
     async def list_document_chunks(  # pyright: ignore[reportUnusedFunction]
-        request: Request, doc_id: str, limit: int = 100,
+        request: Request,
+        doc_id: str,
+        limit: int = 100,
     ) -> list[dict[str, Any]]:
         """Chunk texts of one document (kb detail view). PG-mode reads the
         persistent kb_chunks table; memory mode falls back to the hybrid
@@ -588,7 +620,8 @@ def create_app() -> FastAPI:
 
     @app.delete("/api/v1/rag/documents/{doc_id}", response_model=DeleteDocumentResponse)
     async def delete_document_endpoint(  # pyright: ignore[reportUnusedFunction]
-        request: Request, doc_id: str,
+        request: Request,
+        doc_id: str,
     ) -> DeleteDocumentResponse:
         """Drop ``doc_id`` from every RAG surface: hybrid vector store,
         graph entity table, lightrag bucket, optional PG BM25, the in-memory
@@ -602,7 +635,9 @@ def create_app() -> FastAPI:
         try:
             result = delete_document_cascade(tenant_id, doc_id)
             _emit(
-                request, "rag.document.deleted", doc_id,
+                request,
+                "rag.document.deleted",
+                doc_id,
                 {
                     "document_id": doc_id,
                     "deleted": result.deleted,

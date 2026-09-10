@@ -7,6 +7,7 @@ Tests exercise:
   * GET  /flows/validate paginated list
   * outbox event emission on test runs
 """
+
 from __future__ import annotations
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
@@ -17,15 +18,17 @@ _VALID_BPMN = (
     '<bpmn:process id="proc-1" isExecutable="true">'
     '<bpmn:startEvent id="start-1"/>'
     '<bpmn:endEvent id="end-1"/>'
-    '</bpmn:process>'
-    '</bpmn:definitions>'
+    "</bpmn:process>"
+    "</bpmn:definitions>"
 )
 
 _INVALID_BPMN = "<not-bpmn>hello</not-bpmn>"
 
 
 def test_post_flows_test_valid_inline(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """POST /flows/test with valid inline BPMN succeeds + emits outbox event."""
     r = client.post(

@@ -37,10 +37,16 @@ _NOW = datetime.now(UTC)
 LINK_OWNS = f"ont.{_T}.link.owns.v1"
 
 
-def _prop(slug: str, fmt: PropertyFormat = PropertyFormat.STRING, type_id: str = "string") -> Property:
+def _prop(
+    slug: str, fmt: PropertyFormat = PropertyFormat.STRING, type_id: str = "string"
+) -> Property:
     return Property(
         rid=ClassRef(f"ont.{_T}.prop.{slug}.v1"),
-        type_id=type_id, nullable=True, primary_key=False, title=slug, format=fmt,
+        type_id=type_id,
+        nullable=True,
+        primary_key=False,
+        title=slug,
+        format=fmt,
     )
 
 
@@ -49,9 +55,14 @@ def _ot_order() -> ObjectType:
         rid=ClassRef(f"ont.{_T}.obj.order.v1"),
         primary_key=(ClassRef(f"ont.{_T}.prop.oid.v1"),),
         properties=(
-            Property(rid=ClassRef(f"ont.{_T}.prop.oid.v1"), type_id="string",
-                     nullable=False, primary_key=True, title="oid",
-                     format=PropertyFormat.STRING),
+            Property(
+                rid=ClassRef(f"ont.{_T}.prop.oid.v1"),
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="oid",
+                format=PropertyFormat.STRING,
+            ),
             _prop("amount", PropertyFormat.INTEGER, "integer"),
             _prop("status"),
             _prop("region"),
@@ -65,9 +76,14 @@ def _ot_customer() -> ObjectType:
         rid=ClassRef(f"ont.{_T}.obj.customer.v1"),
         primary_key=(ClassRef(f"ont.{_T}.prop.cid.v1"),),
         properties=(
-            Property(rid=ClassRef(f"ont.{_T}.prop.cid.v1"), type_id="string",
-                     nullable=False, primary_key=True, title="cid",
-                     format=PropertyFormat.STRING),
+            Property(
+                rid=ClassRef(f"ont.{_T}.prop.cid.v1"),
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="cid",
+                format=PropertyFormat.STRING,
+            ),
             _prop("tier"),
         ),
         display_name="customer",
@@ -84,7 +100,11 @@ def _order(oid: str, amount: int, status: str, region: str) -> Individual:
             (ClassRef(f"ont.{_T}.prop.status.v1"), status),
             (ClassRef(f"ont.{_T}.prop.region.v1"), region),
         ),
-        primary_key=oid, created_at=_NOW, updated_at=_NOW, tenant_id=_T, marking=(),
+        primary_key=oid,
+        created_at=_NOW,
+        updated_at=_NOW,
+        tenant_id=_T,
+        marking=(),
     )
 
 
@@ -96,7 +116,11 @@ def _customer(cid: str, tier: str) -> Individual:
             (ClassRef(f"ont.{_T}.prop.cid.v1"), cid),
             (ClassRef(f"ont.{_T}.prop.tier.v1"), tier),
         ),
-        primary_key=cid, created_at=_NOW, updated_at=_NOW, tenant_id=_T, marking=(),
+        primary_key=cid,
+        created_at=_NOW,
+        updated_at=_NOW,
+        tenant_id=_T,
+        marking=(),
     )
 
 
@@ -104,8 +128,12 @@ def _link(src_rid: str, dst_rid: str) -> LinkInstance:
     return LinkInstance(
         rid=f"ont.{_T}.lnk.{src_rid.rsplit('.', maxsplit=1)[-1]}-{dst_rid.rsplit('.', maxsplit=1)[-1]}",
         link_type_rid=ClassRef(LINK_OWNS),
-        src=src_rid, dst=dst_rid,
-        props=(), created_at=_NOW, tenant_id=_T, marking=(),
+        src=src_rid,
+        dst=dst_rid,
+        props=(),
+        created_at=_NOW,
+        tenant_id=_T,
+        marking=(),
     )
 
 
@@ -178,6 +206,7 @@ def capture_repo(monkeypatch: pytest.MonkeyPatch) -> tuple[PgOntologyRepository,
     from mate_kernel.ontology.function_resolver import (
         InMemoryFunctionResolver,
     )
+
     repo._action_service = ActionService()
     repo._function_resolver = InMemoryFunctionResolver()
     repo._function_executor = None
@@ -197,15 +226,19 @@ def _placeholders(sql: str) -> int:
 
 
 class TestAggregateSql:
-    def test_group_by_and_sum_compiled(self, capture_repo: tuple[PgOntologyRepository, _CaptureCursor]) -> None:
+    def test_group_by_and_sum_compiled(
+        self, capture_repo: tuple[PgOntologyRepository, _CaptureCursor]
+    ) -> None:
         repo, cur = capture_repo
-        repo.execute_object_query(ObjectSetQuery(
-            source=_ot_order().rid,
-            aggregation=Aggregation(
-                group_by=("region",),
-                metrics=(MetricSpec(fn="sum", field="amount"),),
-            ),
-        ))
+        repo.execute_object_query(
+            ObjectSetQuery(
+                source=_ot_order().rid,
+                aggregation=Aggregation(
+                    group_by=("region",),
+                    metrics=(MetricSpec(fn="sum", field="amount"),),
+                ),
+            )
+        )
         sql, params = cur.executed[-1]
         assert "GROUP BY" in sql
         assert f"(props ->> 'ont.{_T}.prop.region.v1')" in sql
@@ -213,24 +246,32 @@ class TestAggregateSql:
         assert f"SUM((props ->> 'ont.{_T}.prop.amount.v1')::numeric)" in sql
         assert _placeholders(sql) == len(params)
 
-    def test_count_star_without_field(self, capture_repo: tuple[PgOntologyRepository, _CaptureCursor]) -> None:
+    def test_count_star_without_field(
+        self, capture_repo: tuple[PgOntologyRepository, _CaptureCursor]
+    ) -> None:
         repo, cur = capture_repo
-        repo.execute_object_query(ObjectSetQuery(
-            source=_ot_order().rid,
-            aggregation=Aggregation(metrics=(MetricSpec(fn="count"),)),
-        ))
+        repo.execute_object_query(
+            ObjectSetQuery(
+                source=_ot_order().rid,
+                aggregation=Aggregation(metrics=(MetricSpec(fn="count"),)),
+            )
+        )
         sql, _ = cur.executed[-1]
         assert "COUNT(*)" in sql
 
 
 class TestTraversalSql:
-    def test_out_traversal_joins_link_instance(self, capture_repo: tuple[PgOntologyRepository, _CaptureCursor]) -> None:
+    def test_out_traversal_joins_link_instance(
+        self, capture_repo: tuple[PgOntologyRepository, _CaptureCursor]
+    ) -> None:
         repo, cur = capture_repo
-        repo.execute_object_query(ObjectSetQuery(
-            source=_ot_order().rid,
-            filters=(Condition("status", QueryOp.EQ, "open"),),
-            traversal=(TraversalStep(link_type=LINK_OWNS, direction="out"),),
-        ))
+        repo.execute_object_query(
+            ObjectSetQuery(
+                source=_ot_order().rid,
+                filters=(Condition("status", QueryOp.EQ, "open"),),
+                traversal=(TraversalStep(link_type=LINK_OWNS, direction="out"),),
+            )
+        )
         sql, params = cur.executed[-1]
         assert "ont_link_instance" in sql
         assert f"ont.{_T}.link.owns.v1" in params or LINK_OWNS in sql
@@ -238,12 +279,16 @@ class TestTraversalSql:
 
 
 class TestMultiKeySortSql:
-    def test_two_key_order_by(self, capture_repo: tuple[PgOntologyRepository, _CaptureCursor]) -> None:
+    def test_two_key_order_by(
+        self, capture_repo: tuple[PgOntologyRepository, _CaptureCursor]
+    ) -> None:
         repo, cur = capture_repo
-        repo.execute_object_query(ObjectSetQuery(
-            source=_ot_order().rid,
-            sort=(SortKey("status"), SortKey("amount", desc=True)),
-        ))
+        repo.execute_object_query(
+            ObjectSetQuery(
+                source=_ot_order().rid,
+                sort=(SortKey("status"), SortKey("amount", desc=True)),
+            )
+        )
         sql, _ = cur.executed[-1]
         assert sql.count("ORDER BY") == 1
         assert "ASC" in sql and "DESC" in sql
@@ -257,6 +302,7 @@ PG_DSN = os.getenv("PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform
 def _pg_available() -> bool:
     try:
         import psycopg2  # type: ignore
+
         conn = psycopg2.connect(PG_DSN, connect_timeout=2)
         conn.close()
         return True
@@ -267,6 +313,7 @@ def _pg_available() -> bool:
 def _normalized(rows: list[dict[str, Any]]) -> list[str]:
     """行集 → 可比较的规范串（排序后 JSON）。"""
     import json
+
     return sorted(json.dumps(r, sort_keys=True, default=str) for r in rows)
 
 
@@ -295,7 +342,8 @@ class TestRealPgParity:
             repo.create_link_instance(lnk)
 
         mem = InMemoryQueryExecutor(
-            individuals=(*orders, *customers), links=links,
+            individuals=(*orders, *customers),
+            links=links,
             object_types=(_ot_order(), _ot_customer()),
         )
 
@@ -329,9 +377,14 @@ class TestRealPgParity:
             rid=ClassRef(f"ont.{_T}.obj.ledger.v1"),
             primary_key=(ClassRef(f"ont.{_T}.prop.lid.v1"),),
             properties=(
-                Property(rid=ClassRef(f"ont.{_T}.prop.lid.v1"), type_id="string",
-                         nullable=False, primary_key=True, title="lid",
-                         format=PropertyFormat.STRING),
+                Property(
+                    rid=ClassRef(f"ont.{_T}.prop.lid.v1"),
+                    type_id="string",
+                    nullable=False,
+                    primary_key=True,
+                    title="lid",
+                    format=PropertyFormat.STRING,
+                ),
             ),
             display_name="ledger",
             marking=("domain:finance",),

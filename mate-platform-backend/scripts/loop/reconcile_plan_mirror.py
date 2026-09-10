@@ -10,6 +10,7 @@ engine=legacy 的行不由本脚本维护（REST 路径写入）。
         --pg "postgresql://meta:meta@127.0.0.1:5432/metaplatform" \
         --temporal 127.0.0.1:7233 --hours 24
 """
+
 from __future__ import annotations
 
 import argparse
@@ -54,16 +55,30 @@ async def main() -> int:
             continue
         desc = await client.get_workflow_handle(wf.id).describe()
         raw = json.dumps({"temporal_status": str(desc.status)}, default=str)
-        _ST = {1: "running", 2: "completed", 3: "failed", 4: "cancelled",
-               5: "terminated", 6: "continued_as_new", 7: "timed_out"}
-        rows.append({
-            "plan_id": wf.id, "tenant_id": "tenant-default",
-            "status": _ST.get(int(getattr(wf, "status", 1))
-                             if not isinstance(wf.status, str) else 1, "running"),
-            "workflow_id": wf.id, "run_id": getattr(wf, "run_id", "") or "",
-            "step_count": 0, "raw": raw,
-            "started_at": wf.start_time or since,
-        })
+        _ST = {
+            1: "running",
+            2: "completed",
+            3: "failed",
+            4: "cancelled",
+            5: "terminated",
+            6: "continued_as_new",
+            7: "timed_out",
+        }
+        rows.append(
+            {
+                "plan_id": wf.id,
+                "tenant_id": "tenant-default",
+                "status": _ST.get(
+                    int(getattr(wf, "status", 1)) if not isinstance(wf.status, str) else 1,
+                    "running",
+                ),
+                "workflow_id": wf.id,
+                "run_id": getattr(wf, "run_id", "") or "",
+                "step_count": 0,
+                "raw": raw,
+                "started_at": wf.start_time or since,
+            }
+        )
         if len(rows) >= args.limit:
             break
 

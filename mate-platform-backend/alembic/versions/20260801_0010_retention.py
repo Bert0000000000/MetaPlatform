@@ -6,6 +6,7 @@ and perform hard-deletes after the GDPR window expires.
 
 Per ADR-0016 §3.3 D6.
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -26,8 +27,12 @@ def upgrade() -> None:
         sa.Column("tenant_id", sa.String(64), nullable=False, unique=True, index=True),
         sa.Column("retention_days", sa.Integer, nullable=False, server_default="0"),
         sa.Column("hard_delete_after_days", sa.Integer, nullable=False, server_default="30"),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
     )
 
     # --- gdpr_soft_delete: tracks GDPR right-to-be-forgotten workflow ---

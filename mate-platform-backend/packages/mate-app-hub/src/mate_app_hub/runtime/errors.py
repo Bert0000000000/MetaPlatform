@@ -1,4 +1,5 @@
 """Runtime error codes for APPHUB-RUNTIME-01 phase B."""
+
 from __future__ import annotations
 
 from enum import StrEnum

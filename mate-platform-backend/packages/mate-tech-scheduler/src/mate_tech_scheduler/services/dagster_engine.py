@@ -18,6 +18,7 @@ Configuration (all from environment variables):
     DAGSTER_AUTH_TOKEN — bearer token for the GraphQL API
                          (default: empty)
 """
+
 from __future__ import annotations
 
 import os
@@ -34,8 +35,11 @@ class DagsterEngineError(Exception):
     """Raised when a Dagster GraphQL call fails."""
 
     def __init__(
-        self, message: str, *,
-        status_code: int = 0, response_body: str = "",
+        self,
+        message: str,
+        *,
+        status_code: int = 0,
+        response_body: str = "",
         errors: list[dict[str, Any]] | None = None,
     ) -> None:
         super().__init__(message)
@@ -232,7 +236,9 @@ class DagsterEngine:
         )
 
     async def get_run_status(
-        self, task_id: str, run_id: str,
+        self,
+        task_id: str,
+        run_id: str,
     ) -> DagsterRunResult:
         """Query the status of a Dagster run via GraphQL query."""
         variables = {"runId": run_id}
@@ -255,7 +261,9 @@ class DagsterEngine:
         )
 
     async def cancel_run(
-        self, task_id: str, run_id: str,
+        self,
+        task_id: str,
+        run_id: str,
     ) -> DagsterRunResult:
         """Cancel a Dagster run via GraphQL mutation."""
         variables = {"runId": run_id}
@@ -302,8 +310,7 @@ class DagsterEngine:
                     continue
                 if resp.status_code >= 400:
                     raise DagsterEngineError(
-                        f"Dagster GraphQL returned {resp.status_code}: "
-                        f"{resp.text[:300]}",
+                        f"Dagster GraphQL returned {resp.status_code}: {resp.text[:300]}",
                         status_code=resp.status_code,
                         response_body=resp.text[:500],
                     )

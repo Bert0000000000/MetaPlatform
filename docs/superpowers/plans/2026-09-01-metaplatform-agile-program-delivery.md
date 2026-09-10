@@ -58,27 +58,28 @@
 
 ## First-Release Coverage Matrix
 
-| 模块 | 主 PI | 首发 Feature 闭环 |
-|---|---|---|
-| 个人中心 | PI-1 | UserProfile、Preference、Consent、UserContextProjection |
-| 任务与运行中心 | PI-1 | Session、WorkItem、Run、Lease、CapabilityAvailabilityProjection |
-| 产物与审批中心 | PI-1/PI-2 | Artifact、Evidence、Approval、Receipt、Schema 和表示 |
-| 应用中心 | PI-2 | Application Manifest、模板包、OutputProfile、安装/升级/回滚 |
-| 数字员工中心 | PI-1/PI-4 | 标准员工版本/分配；动态组装员工与回收 |
-| 本体中心 | PI-4/PI-5 | 本体工厂、自动演化、质量评估、运维发布/回滚 |
-| 技能与能力中心 | PI-2 | Capability、SkillVersion、评测、Release、员工绑定 |
-| MCP 服务中心 | PI-2 | Catalog、SchemaSnapshot、AuthProfile、Route、ConsumerBinding |
-| Action 与工作流中心 | PI-3 | Action/Workflow、智能编排、Temporal 可靠边界 |
-| 数据与知识中心 | PI-3 | DataProduct、质量、RAG、图谱、血缘、联邦查询 |
-| 记忆中心 | PI-5 | Candidate、Review、Promotion、Conflict、Revocation、Deletion |
-| 组织、身份与权限中心 | PI-1 | Organization、DynamicRole、Policy、SoD、AccessReview |
-| 租户与配置中心 | PI-1 | Tenant、ConfigRelease、Quota、FeatureFlag、Notification |
-| 宿主、环境与部署中心 | PI-2/PI-6 | Connector、Host Contract、TenantRuntime、混合部署 |
-| 运营、审计与质量中心 | PI-5/PI-6 | SLO、Alert、Incident、Evaluation、Backup、RestoreDrill、GA |
+| 模块                 | 主 PI     | 首发 Feature 闭环                                               |
+| -------------------- | --------- | --------------------------------------------------------------- |
+| 个人中心             | PI-1      | UserProfile、Preference、Consent、UserContextProjection         |
+| 任务与运行中心       | PI-1      | Session、WorkItem、Run、Lease、CapabilityAvailabilityProjection |
+| 产物与审批中心       | PI-1/PI-2 | Artifact、Evidence、Approval、Receipt、Schema 和表示            |
+| 应用中心             | PI-2      | Application Manifest、模板包、OutputProfile、安装/升级/回滚     |
+| 数字员工中心         | PI-1/PI-4 | 标准员工版本/分配；动态组装员工与回收                           |
+| 本体中心             | PI-4/PI-5 | 本体工厂、自动演化、质量评估、运维发布/回滚                     |
+| 技能与能力中心       | PI-2      | Capability、SkillVersion、评测、Release、员工绑定               |
+| MCP 服务中心         | PI-2      | Catalog、SchemaSnapshot、AuthProfile、Route、ConsumerBinding    |
+| Action 与工作流中心  | PI-3      | Action/Workflow、智能编排、Temporal 可靠边界                    |
+| 数据与知识中心       | PI-3      | DataProduct、质量、RAG、图谱、血缘、联邦查询                    |
+| 记忆中心             | PI-5      | Candidate、Review、Promotion、Conflict、Revocation、Deletion    |
+| 组织、身份与权限中心 | PI-1      | Organization、DynamicRole、Policy、SoD、AccessReview            |
+| 租户与配置中心       | PI-1      | Tenant、ConfigRelease、Quota、FeatureFlag、Notification         |
+| 宿主、环境与部署中心 | PI-2/PI-6 | Connector、Host Contract、TenantRuntime、混合部署               |
+| 运营、审计与质量中心 | PI-5/PI-6 | SLO、Alert、Incident、Evaluation、Backup、RestoreDrill、GA      |
 
 ### Task 1: PI-0 Sprint Board、范围追踪与 Gate 基础
 
 **Files:**
+
 - Create: acceptance/release/v1/requirements.schema.json
 - Create: acceptance/release/v1/requirements.yaml
 - Create: acceptance/release/v1/sprint-board.schema.json
@@ -107,6 +108,7 @@
 - Create: docs/superpowers/plans/2026-09-01-metaplatform-ga-release-and-cutover.md
 
 **Interfaces:**
+
 - Produces: Requirement { id, module, release_status, primary_plan, feature_id, gate_ids, e2e_evidence, recovery_evidence, owner, approver }.
 - Produces: SprintCommitment { pi_id, sprint_id, feature_id, story_id, requirement_ids, dependencies, gate_dependencies[{ gate_id, topology, environment_id, profile_digest, config_digest, evidence_valid_until }], done_evidence, status }.
 - Produces: InterfaceRecord { id, requirement_id, object, operation, surface_type, schema_ref, version, provider, consumers, authorization_policy, compatibility_policy, contract_tests, e2e_tests, rollback, release_status }.
@@ -114,6 +116,7 @@
 - Consumes: product module identifiers, MVP acceptance evidence and registered Gate IDs.
 
 - [ ] **Sprint 0.1: Freeze object-level scope, interfaces and host commitments**
+
   - Write failing tests that reject an enabled Requirement without management object, lifecycle operation, role/tenant policy, interaction surface, primary plan, E2E path, recovery evidence, owner or approver.
   - Populate Requirement rows at Requirement × management object × lifecycle operation × interaction surface granularity; module rows are summaries only and cannot satisfy GA.
   - Populate Interface Registry records for every REST/OpenAPI operation, MCP tool/resource/prompt, A2A card/task, CloudEvent/AsyncAPI topic and user-visible UI/Host surface. Every record binds provider, consumers, Schema/version/Digest, authorization, compatibility/deprecation, contract/E2E tests, rollback and release status.
@@ -121,6 +124,7 @@
   - Commit: git commit -m "docs(agile): create release requirement backlog"
 
 - [ ] **Sprint 0.2: Complete all engineering plans and ownership before commitment**
+
   - Complete and cross-review all six product-v1 plans plus database release/upgrade safety and GA cutover plans; each contains exact files, contracts, API/MCP/event/UI interfaces, tests, migrations, failure/recovery steps and commits.
   - Map every MVP1–MVP4 task and every product object/operation to one primary Story and plan; reject duplicate ownership.
   - Populate Bounded Context Ownership Matrix for object, database/migration, API, event, frontend route and Gate with one DRI, approver, code owner and consumer notification rule.
@@ -149,6 +153,7 @@
 ### Task 2: PI-1 Control Plane, Runtime and MVP1
 
 **Files:**
+
 - Modify: docs/superpowers/plans/2026-09-01-metaplatform-control-plane-v1.md
 - Modify: docs/superpowers/plans/2026-09-01-metaplatform-runtime-employee-host-v1.md
 - Modify: docs/superpowers/plans/2026-09-01-mvp-01-order-insight-action.md
@@ -156,10 +161,12 @@
 - Modify: acceptance/release/v1/requirements.yaml
 
 **Interfaces:**
+
 - Consumes: Requirement and SprintCommitment from PI-0.
 - Produces: UserContextProjection, DynamicRole, Tenant ConfigRelease, RunContext, LeaseToken, ArtifactEnvelope, ApprovalRecord, ExecutionReceipt and CapabilityAvailabilityProjection.
 
 - [ ] **Sprint 1.1: Control-plane identity and tenant slice**
+
   - Execute the control-plane plan for UserProfile, Preference, Consent, Organization, DynamicRole, Policy, Tenant, ConfigRelease, Quota and FeatureFlag.
   - Prove tenant isolation, SoD rejection and that preferences never elevate authorization.
   - Show Bootstrap returns UserContextProjection for one permitted user and rejects cross-tenant lookup.
@@ -167,6 +174,7 @@
   - Commit the completed Feature with its API, UI, audit and E2E evidence.
 
 - [ ] **Sprint 1.2: Runtime and immutable artifact slice**
+
   - Execute MVP1 Tasks 1–5 and the runtime/employee/host plan for EmployeeDefinition, Version, Assignment, BusinessSession, WorkItem, Run, Lease, Artifact, ActionPlan, Approval and Receipt.
   - Run conformance vectors for Digest, state transition, one-use approval, Lease fencing and stable errors.
   - Remove production runtime DDL from every PI-1 production path through the migration-safety plan.
@@ -184,16 +192,19 @@
 ### Task 3: PI-2 Application, Skill, MCP and Host Control Planes
 
 **Files:**
+
 - Modify: docs/superpowers/plans/2026-09-01-metaplatform-artifact-application-output-v1.md
 - Modify: docs/superpowers/plans/2026-09-01-metaplatform-ontology-skill-mcp-v1.md
 - Modify: docs/superpowers/plans/2026-09-01-metaplatform-runtime-employee-host-v1.md
 - Modify: acceptance/release/v1/sprint-board.yaml
 
 **Interfaces:**
+
 - Consumes: immutable Artifact and Employee releases from PI-1.
 - Produces: ArtifactSchema, TemplateVersion, OutputProfile, ApplicationVersion, ApplicationPackage, Capability, SkillVersion, MCPServer, ToolSchemaSnapshot, AuthProfile, Route and HostCapabilityContract.
 
 - [ ] **Sprint 2.1: Artifact-to-application output slice**
+
   - Deliver ArtifactSchema compatibility checks, Markdown/HTML TemplateVersion, OutputProfile and immutable ArtifactRepresentation.
   - Deliver ApplicationVersion Manifest binding fixed Employee, Ontology, Skill, MCP, Action, Data and Role dependency Digests.
   - Prove template/theme/preference changes create new representation without changing Artifact Digest.
@@ -201,6 +212,7 @@
   - Commit the completed Feature with install, upgrade and rollback E2E.
 
 - [ ] **Sprint 2.2: Capability and MCP catalog slice**
+
   - Deliver Capability and SkillVersion lifecycle, evaluation, release and Employee binding.
   - Deliver MCP Server/Tool/Resource/Prompt Catalog, SchemaSnapshot, AuthProfile, Route and ConsumerBinding.
   - Prove Tool discovery does not grant permission, final calls use dual-subject authorization, and incompatible schemas fail closed.
@@ -218,15 +230,18 @@
 ### Task 4: PI-3 Contract Knowledge, Data Products and Intelligent Orchestration
 
 **Files:**
+
 - Modify: docs/superpowers/plans/2026-09-01-metaplatform-action-data-knowledge-memory-v1.md
 - Modify: docs/superpowers/plans/2026-09-01-mvp-02-contract-review.md
 - Modify: acceptance/release/v1/sprint-board.yaml
 
 **Interfaces:**
+
 - Consumes: application/MCP releases from PI-2.
 - Produces: GovernedSourceDocument, KnowledgeChunk, DataProduct, DataQualityResult, QueryEvidence, ActionVersion, IntelligentOrchestrationDefinition, OrchestrationPlan and WorkflowExecution.
 
 - [ ] **Sprint 3.1: Contract knowledge and data-product slice**
+
   - Execute MVP2 Tasks 1–4 for governed upload, parsing, RAGFlow retrieval, source spans, ModelReceipt and legal report generation.
   - Deliver DataSource, DataProduct, Field/SemanticMapping, quality rule, lineage and QueryEvidence minimum lifecycle.
   - Prove parser, cross-tenant object access, prompt injection, malformed document and insufficient evidence cases fail closed.
@@ -234,6 +249,7 @@
   - Commit the completed Feature with a de-identified contract gold set.
 
 - [ ] **Sprint 3.2: Action and reliable workflow slice**
+
   - Deliver ActionVersion, risk policy, pre/post-condition, compensation, WorkflowDefinition, Trigger and WorkflowExecution.
   - Use Temporal only for durable waits, retries, compensation, schedules and approvals; short deterministic paths remain in Runtime.
   - Prove replay cannot repeat a protected side effect and every Activity rechecks Lease, Approval and authorization.
@@ -252,22 +268,26 @@
 ### Task 5: PI-4 Ontology Factory, Dynamic Employees and AI Evolution
 
 **Files:**
+
 - Modify: docs/superpowers/plans/2026-09-01-mvp-03-ontology-factory.md
 - Modify: docs/superpowers/plans/2026-09-01-metaplatform-runtime-employee-host-v1.md
 - Modify: docs/superpowers/plans/2026-09-01-metaplatform-ontology-skill-mcp-v1.md
 - Modify: acceptance/release/v1/sprint-board.yaml
 
 **Interfaces:**
+
 - Consumes: SemanticExtractionResult, SubRun, DataProduct and OrchestrationPlan from PI-3.
 - Produces: OntologyProposal, OntologyQualityAssessment, OntologyPackage, EmployeeAssemblyPlan, EphemeralEmployeeInstance, AssemblyReceipt and OntologyEvolutionPipeline.
 
 - [ ] **Sprint 4.1: Ontology factory slice**
+
   - Execute MVP3 Tasks 1–5 for unified material/dialogue extraction, proposal deduplication, conflict, SHACL, impact analysis, Release Ledger and Jena projection.
   - Prove model output is always a candidate and a failed SHACL, missing provenance, duplicate RID or breaking impact cannot publish.
   - Pass knowledge-memory-ontology and business-services before Jena projection/A2A production use.
   - Commit the completed Feature with proposal-to-release and rollback evidence.
 
 - [ ] **Sprint 4.2: Dynamic employee assembly slice**
+
   - Deliver EmployeeAssemblyPlan, EphemeralEmployeeInstance and AssemblyReceipt.
   - Bind only approved EmployeeVersion, Skill/Capability, Knowledge snapshot, model and policy Digests; use minimum intersection permissions.
   - Prove TTL expiry, Run completion and revocation remove the temporary instance without leaving role, assignment or credential residue.
@@ -285,22 +305,26 @@
 ### Task 6: PI-5 Ontology Operations, Memory and Operational Experience
 
 **Files:**
+
 - Modify: docs/superpowers/plans/2026-09-01-mvp-04-ontology-operations.md
 - Modify: docs/superpowers/plans/2026-09-01-metaplatform-action-data-knowledge-memory-v1.md
 - Modify: docs/superpowers/plans/2026-09-01-metaplatform-tenant-deployment-operations-v1.md
 - Modify: acceptance/release/v1/sprint-board.yaml
 
 **Interfaces:**
+
 - Consumes: OntologyPackage, EvolutionPipeline and Runtime events from PI-4.
 - Produces: MaintenanceRun, DriftFinding, MemoryCandidate, MemoryItem, SLODefinition, AlertRule, Incident, RestoreDrill and recovery notifications.
 
 - [ ] **Sprint 5.1: Event-driven ontology operations slice**
+
   - Execute MVP4 Tasks 1–5 for NATS Outbox/Inbox/DLQ, idempotent maintenance events, drift proposals, quality regression, approval, publish and recovery.
   - Prove duplicate events, event storms, DLQ replay and rejected releases preserve one proposal/one effect semantics.
   - Bind Sprint Done to messaging-nats-temporal PASSED for the current target environment and profile/config Digests.
   - Commit the completed Feature with maintenance E2E and Release Ledger rollback evidence.
 
 - [ ] **Sprint 5.2: Governed memory slice**
+
   - Deliver MemoryPolicy, Candidate, Review, Promotion, Item, Conflict, Revocation, Deletion and Snapshot contracts through the selected Memory Adapter.
   - Prove unreviewed memory never influences a protected action; deletion and revocation propagate to indexes, replicas and host projections.
   - Complete the official `knowledge-memory-ontology` Gate for the locked first-release production-profile and record it in `SprintCommitment.gate_dependencies` with topology, environment ID, profile/config Digests, evidence validity and invalidation inputs; if the selected implementation fails, replace it behind the Memory Adapter and rerun the same lifecycle, deletion, recovery and consumer contracts rather than removing the committed memory Feature.
@@ -318,6 +342,7 @@
 ### Task 7: PI-6 Hybrid Deployment, Promotion and GA
 
 **Files:**
+
 - Modify: docs/superpowers/plans/2026-09-01-metaplatform-database-release-and-upgrade-safety.md
 - Modify: docs/superpowers/plans/2026-09-01-platform-production-convergence-gates.md
 - Modify: docs/superpowers/plans/2026-09-01-metaplatform-ga-release-and-cutover.md
@@ -330,16 +355,19 @@
 - Modify: acceptance/release/v1/sprint-board.yaml
 
 **Interfaces:**
+
 - Consumes: all Done Feature evidence, production-profile, component Gate DAG, SLO and recovery drill results.
 - Produces: PlatformGA { release_id, profile_digest, requirement_matrix_digest, parent_gates, business_e2e, recovery_drill, promotion, rollback, signatures, status }.
 
 - [ ] **Sprint 6.1: Migration, identity and production-profile final convergence**
+
   - Re-run the PI-0 signed least-privilege migration Job, pre-snapshot, full migration chain regression, expand-contract compatibility, PITR and post-migration reconciliation against the final candidate; execute the final contract stage only after N/N-1 consumers have exited.
   - Revalidate that old IAM is absent from runtime authorization routes, OpenAPI manifests and authority reads after the approved compatibility window.
   - Lock each enabled production component to exact image/config Digest, current Gate and declared RPO/RTO/rollback.
   - Commit the completed Feature with source scan, migration, identity and profile evidence.
 
 - [ ] **Sprint 6.2: Hybrid deployment and disaster recovery**
+
   - Run required component Gates for cloud production and connected private TenantRuntime using the same Package.
   - Complete four-host Capability Contract; run disconnected-cell-hosts only when the first-release scope enables fully offline Cell.
   - Execute N/N-1 upgrade, rollback, cross-failure-domain restore and business reconciliation using production-equivalent targets.
@@ -358,21 +386,25 @@
 ### Task 8: PI Review, Retro and Backlog Replanning
 
 **Files:**
+
 - Modify: acceptance/release/v1/sprint-board.yaml
 - Modify: acceptance/release/v1/requirements.yaml
 - Create: acceptance/release/v1/pi-review/PI-0.md through acceptance/release/v1/pi-review/PI-6.md
 - Create: acceptance/release/v1/release-readiness-report.md
 
 **Interfaces:**
+
 - Consumes: SprintCommitment, Feature Done evidence, Gate evidence, risk register and stakeholder decisions.
 - Produces: PIReview { pi_id, demo_evidence, committed_features, done_features, carryover, risks, retro_actions, next_pi_admission }.
 
 - [ ] **Step 1: Hold every Sprint Review on real evidence**
+
   - Demonstrate the user-visible Feature, real/de-identified input, audit correlation, failure/denial case, degradation view and recovery/rollback behavior.
   - Reject mock-only demonstration as Done evidence.
   - Record Review links in the associated SprintCommitment rows.
 
 - [ ] **Step 2: Close each PI only after integration verification**
+
   - Run all PI Feature tests plus their shared conformance, E2E and registered Gate dependencies.
   - Record carryover as a new Story with unmet Done criteria; never move it as a completed Feature.
   - Limit Retro to three owned improvements and attach them to the next Sprint.

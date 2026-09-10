@@ -12,6 +12,7 @@ Adapter dispatch table
 * ``anthropic`` → :func:`anthropic_multimodal_chat` (native Messages
   API image block schema).
 """
+
 from __future__ import annotations
 
 from typing import Any

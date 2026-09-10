@@ -1,4 +1,5 @@
 """Regression tests for the Hard Rule #10 Program Board guard."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -10,10 +11,7 @@ from scripts.ci.require_evidence import (
 
 
 def test_parse_evidence_references_supports_code_links_and_multiple_paths() -> None:
-    cell = (
-        "`evidence/ONE-ACCEPTANCE.md` + "
-        "[second](evidence/TWO-ACCEPTANCE.md)"
-    )
+    cell = "`evidence/ONE-ACCEPTANCE.md` + [second](evidence/TWO-ACCEPTANCE.md)"
 
     assert parse_evidence_references(cell) == (
         "evidence/ONE-ACCEPTANCE.md",

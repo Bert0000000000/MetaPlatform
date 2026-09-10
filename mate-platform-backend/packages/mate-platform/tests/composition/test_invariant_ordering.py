@@ -5,6 +5,7 @@ inactive state BEFORE any of the provider's own disposers run. The
 cascade holds for chains (grandchild → child → provider) and with
 async disposers.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -23,12 +24,14 @@ def _provider(name: str, key: str, events: list[str]):
     async def apply(fctx):
         fctx.set(key, f"{name}-value")
         yield lambda: events.append(f"{name}-dispose")
+
     return Component(name=name, inject=frozenset(), provide=frozenset({key}), apply=apply)
 
 
 def _dependent(name: str, key: str, events: list[str]):
     async def apply(fctx):
         yield lambda: events.append(f"{name}-dispose")
+
     return Component(name=name, inject=frozenset({key}), provide=frozenset(), apply=apply)
 
 
@@ -65,7 +68,9 @@ async def test_cascade_grandchild_before_child_before_provider() -> None:
         fctx.set("kc", "c-value")
         yield lambda: events.append("c-dispose")
 
-    child = Component(name="c", inject=frozenset({"kp"}), provide=frozenset({"kc"}), apply=child_apply)
+    child = Component(
+        name="c", inject=frozenset({"kp"}), provide=frozenset({"kc"}), apply=child_apply
+    )
     grandchild = _dependent("g", "kc", events)
 
     pf = await ctx.use(root_p)
@@ -92,12 +97,14 @@ async def test_ordering_holds_with_async_disposers() -> None:
         async def p_d():
             await asyncio.sleep(0)
             events.append("provider-dispose")
+
         yield p_d
 
     async def d_apply(fctx):
         async def d_d():
             await asyncio.sleep(0)
             events.append("dep-dispose")
+
         yield d_d
 
     provider = Component(name="p", inject=frozenset(), provide=frozenset({"svc"}), apply=p_apply)

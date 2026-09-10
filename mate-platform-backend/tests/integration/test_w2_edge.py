@@ -1,4 +1,5 @@
 """W2 基础设施 edge tests (ST-2.x edge)."""
+
 from __future__ import annotations
 
 

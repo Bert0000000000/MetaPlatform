@@ -11,17 +11,17 @@
 D4 v1（2026-07-30，commit `81955e76`）落地了 OpenLineage ↔ DataHub 同步占位 +
 values `lineage:` 基础段。D4 本批补齐 Python 端 bridge 客户端与 e2e：
 
-| 子能力 | v1 | 本批（D4 client） |
-|---|---|---|
-| helm datahub `lineage:` 基础段（source / marquezUrl / pullInterval） | ✅ | — |
-| OpenLineage ↔ DataHub 同步占位 | ✅ | — |
-| **Python LineageSyncClient**（pull / push / sync_once / list_pending） | — | ✅ 13 e2e tests |
-| **OpenLineageEvent / DatasetRef / SyncResult dataclasses** | — | ✅ |
-| **租户隔离**（每租户独立队列 + 跨租户拒绝） | — | ✅ |
-| **Idempotency**（runId 幂等 ledger） | — | ✅ |
-| **D1 集成**（correlation_id 传播） | — | ✅ |
-| **D2 集成**（DataProduct 同步后更新 lineage_hints） | — | ✅ |
-| **helm bridge 段**（mode / batchSize / retryAttempts / DLQ） | — | ✅ |
+| 子能力                                                                 | v1  | 本批（D4 client） |
+| ---------------------------------------------------------------------- | --- | ----------------- |
+| helm datahub `lineage:` 基础段（source / marquezUrl / pullInterval）   | ✅  | —                 |
+| OpenLineage ↔ DataHub 同步占位                                        | ✅  | —                 |
+| **Python LineageSyncClient**（pull / push / sync_once / list_pending） | —   | ✅ 13 e2e tests   |
+| **OpenLineageEvent / DatasetRef / SyncResult dataclasses**             | —   | ✅                |
+| **租户隔离**（每租户独立队列 + 跨租户拒绝）                            | —   | ✅                |
+| **Idempotency**（runId 幂等 ledger）                                   | —   | ✅                |
+| **D1 集成**（correlation_id 传播）                                     | —   | ✅                |
+| **D2 集成**（DataProduct 同步后更新 lineage_hints）                    | —   | ✅                |
+| **helm bridge 段**（mode / batchSize / retryAttempts / DLQ）           | —   | ✅                |
 
 ## 2. 改动清单
 
@@ -41,6 +41,7 @@ docs/active/delivery/evidence/
 ```
 
 **未改动（按约束）**：
+
 - `mate-platform/src/mate_platform/quality/`（D3）
 - `mate-platform/src/mate_platform/datahub/`（D2 已落）
 - `mate-platform/src/mate_platform/lineage/`（D1 已落，本批只读引用）
@@ -60,16 +61,19 @@ docs/active/delivery/evidence/
 - `InMemoryLineageSyncClient` — 单进程实现，测试与本地开发用；生产替换为 HTTP bridge pod
 
 **事件类型语义**：
+
 - `COMPLETE` → 推送到 DataHub（promote）
 - `FAIL` → 计入 `failed` 计数（observability），不推送
 - `START` / `RUNNING` → 跳过（transitional，既不推送也不计数）
 
 **租户隔离**（SEC-TENANT-01 hard rule 3）：
+
 - pending 队列按 tenant_id 分区；pull / list_pending / sync_once 只操作请求租户的队列
 - push_to_datahub 对每条 event 重新断言 tenant_id；跨租户 event 计入 failed
 - 空 tenant_id 在 dataclass 构造期即被拒绝
 
 **幂等性**：
+
 - 每租户维护 `pushed` ledger（runId 集合）；重复 runId 的 push 是 no-op（返回 0 pushed）
 
 ## 4. D1 / D2 集成
@@ -99,39 +103,39 @@ lineage:
 
 ## 6. 13 e2e tests 覆盖
 
-| # | test | 覆盖点 |
-|---|---|---|
-| 1 | `test_sync_pulls_from_lineage_and_pushes_to_datahub` | 端到端 pull → push |
-| 2 | `test_sync_once_returns_sync_result` | sync_once 返回 SyncResult |
-| 3 | `test_tenant_isolation_tenant_a_events_not_synced_by_tenant_b` | 租户 A 的 events 不被租户 B 同步 |
-| 4 | `test_tenant_isolation_push_rejects_foreign_tenant_event` | 跨租户 push 计 failed |
-| 5 | `test_only_complete_events_synced` | START/RUNNING 跳过 |
-| 6 | `test_failed_events_counted_but_not_pushed` | FAIL 计数不推送 |
-| 7 | `test_empty_queue_sync_zero` | 空队列 → 全零 SyncResult |
-| 8 | `test_lineage_event_carries_tenant_id` | event 携带 tenant_id |
-| 9 | `test_empty_tenant_id_rejected_at_construction` | 空 tenant_id → 拒绝 |
-| 10 | `test_input_output_dataset_refs_preserved` | inputs/outputs dataset refs 完整保留 |
-| 11 | `test_correlation_id_propagated` | D1 correlation_id 透传 |
-| 12 | `test_datahub_data_product_updated_after_sync` | D2 DataProduct 同步后带 lineage_hints |
-| 13 | `test_sync_idempotent_same_runid_not_duplicated` | 同 runId 重复 push 不重复 |
+| #   | test                                                           | 覆盖点                                |
+| --- | -------------------------------------------------------------- | ------------------------------------- |
+| 1   | `test_sync_pulls_from_lineage_and_pushes_to_datahub`           | 端到端 pull → push                    |
+| 2   | `test_sync_once_returns_sync_result`                           | sync_once 返回 SyncResult             |
+| 3   | `test_tenant_isolation_tenant_a_events_not_synced_by_tenant_b` | 租户 A 的 events 不被租户 B 同步      |
+| 4   | `test_tenant_isolation_push_rejects_foreign_tenant_event`      | 跨租户 push 计 failed                 |
+| 5   | `test_only_complete_events_synced`                             | START/RUNNING 跳过                    |
+| 6   | `test_failed_events_counted_but_not_pushed`                    | FAIL 计数不推送                       |
+| 7   | `test_empty_queue_sync_zero`                                   | 空队列 → 全零 SyncResult              |
+| 8   | `test_lineage_event_carries_tenant_id`                         | event 携带 tenant_id                  |
+| 9   | `test_empty_tenant_id_rejected_at_construction`                | 空 tenant_id → 拒绝                   |
+| 10  | `test_input_output_dataset_refs_preserved`                     | inputs/outputs dataset refs 完整保留  |
+| 11  | `test_correlation_id_propagated`                               | D1 correlation_id 透传                |
+| 12  | `test_datahub_data_product_updated_after_sync`                 | D2 DataProduct 同步后带 lineage_hints |
+| 13  | `test_sync_idempotent_same_runid_not_duplicated`               | 同 runId 重复 push 不重复             |
 
 ## 7. 13 项硬规则验收（D4 scope）
 
-| # | 硬规则 | 证据 | 状态 |
-|---|---|---|---|
-| 1 | Swagger 没有接口 | (LineageSyncClient 是内部 client，非 REST 接口) | — |
-| 2 | PRD Requirement ID | (n/a D4) | — |
-| 3 | **没有 tenant 不访问 repository** | OpenLineageEvent.tenant_id 强制 + 每租户独立队列 + push 跨租户拒绝 + 负向 tests | ✅ |
-| 4 | 外部系统 ACL Client | LineageSyncClient Protocol（生产经 Marquez/DataHub REST）；InMemory 用于测试 | ✅ |
-| 5 | 禁止 fallback | retryAttempts=3 是重试非 fallback；无 fallback 路径 | ✅ |
-| 6 | ruff + pyright | Python client 遵循 strict | ✅ |
-| 7 | 不跳 tests | 13 e2e + infra 回归全绿，无 skip | ✅ |
-| 8 | K8s readiness + 回滚 | (bridge sidecar readiness 后续 operator 阶段) | — |
-| 9 | audit/metrics/trace | SyncResult 携带 tenant_id；correlation_id 关联 OTel trace | ✅ |
-| 10 | 验收证据 | 本文 | ✅ |
-| 11 | helm-docs | (后续 sub-chart README 同步) | — |
-| 12 | secret 扫描 | (GA 已收口；本批次无 secret) | ✅ |
-| 13 | NetworkPolicy | (datahub NetworkPolicy v1 既有，未改) | ✅ |
+| #   | 硬规则                            | 证据                                                                            | 状态 |
+| --- | --------------------------------- | ------------------------------------------------------------------------------- | ---- |
+| 1   | Swagger 没有接口                  | (LineageSyncClient 是内部 client，非 REST 接口)                                 | —    |
+| 2   | PRD Requirement ID                | (n/a D4)                                                                        | —    |
+| 3   | **没有 tenant 不访问 repository** | OpenLineageEvent.tenant_id 强制 + 每租户独立队列 + push 跨租户拒绝 + 负向 tests | ✅   |
+| 4   | 外部系统 ACL Client               | LineageSyncClient Protocol（生产经 Marquez/DataHub REST）；InMemory 用于测试    | ✅   |
+| 5   | 禁止 fallback                     | retryAttempts=3 是重试非 fallback；无 fallback 路径                             | ✅   |
+| 6   | ruff + pyright                    | Python client 遵循 strict                                                       | ✅   |
+| 7   | 不跳 tests                        | 13 e2e + infra 回归全绿，无 skip                                                | ✅   |
+| 8   | K8s readiness + 回滚              | (bridge sidecar readiness 后续 operator 阶段)                                   | —    |
+| 9   | audit/metrics/trace               | SyncResult 携带 tenant_id；correlation_id 关联 OTel trace                       | ✅   |
+| 10  | 验收证据                          | 本文                                                                            | ✅   |
+| 11  | helm-docs                         | (后续 sub-chart README 同步)                                                    | —    |
+| 12  | secret 扫描                       | (GA 已收口；本批次无 secret)                                                    | ✅   |
+| 13  | NetworkPolicy                     | (datahub NetworkPolicy v1 既有，未改)                                           | ✅   |
 
 ## 8. 本地实际运行
 

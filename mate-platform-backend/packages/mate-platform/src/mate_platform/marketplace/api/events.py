@@ -2,6 +2,7 @@
 
 `/install/{install_id}/events` — 流式订阅 orchestrator publish 的状态变更。
 """
+
 from __future__ import annotations
 
 import json
@@ -14,20 +15,13 @@ from sse_starlette.sse import EventSourceResponse
 router = APIRouter(tags=["marketplace"])
 
 
-def installer_to_sse_payload(
-    install_id: Any, state: str, **extra: Any
-) -> str:
+def installer_to_sse_payload(install_id: Any, state: str, **extra: Any) -> str:
     """把 state transition 编码为 SSE 消息字符串。"""
     data = {"install_id": str(install_id), "state": state, **extra}
-    return (
-        "event: marketplace.install.state\n"
-        f"data: {json.dumps(data)}\n\n"
-    )
+    return f"event: marketplace.install.state\ndata: {json.dumps(data)}\n\n"
 
 
-async def install_event_stream(
-    install_id: Any, *, pubsub: Any
-) -> AsyncIterator[str]:
+async def install_event_stream(install_id: Any, *, pubsub: Any) -> AsyncIterator[str]:
     """Generator:订阅 Redis pubsub `marketplace.install.<id>.events` 直到断开。
 
     用法:SSE 路由内调用本 generator,FastAPI 包装为 EventSourceResponse。
@@ -36,9 +30,7 @@ async def install_event_stream(
     若无该方法,直接迭代 pubsub 本身。
     """
     if hasattr(pubsub, "subscribe"):
-        sub = await pubsub.subscribe(
-            f"marketplace.install.{install_id}.events"
-        )
+        sub = await pubsub.subscribe(f"marketplace.install.{install_id}.events")
     else:
         sub = pubsub
     try:
@@ -72,9 +64,7 @@ async def stream_install_events(install_id: str, request: Request):
         )
 
     async def event_gen() -> AsyncIterator[str]:
-        async for msg in install_event_stream(
-            install_id, pubsub=redis
-        ):
+        async for msg in install_event_stream(install_id, pubsub=redis):
             yield msg
 
     return EventSourceResponse(event_gen())

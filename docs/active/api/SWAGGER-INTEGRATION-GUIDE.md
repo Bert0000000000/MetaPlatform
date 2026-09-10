@@ -7,14 +7,14 @@
 
 ## 1. 工具栈总览
 
-| 工具 | 用途 | 阶段 |
-|---|---|---|
-| **OpenAPI 3.0 Spec** | API 契约单一真相源 | 阶段 1（已完成） |
-| **Swagger UI** | 交互式 API 文档 | 阶段 2 |
-| **Prism** | Mock 服务 | 阶段 3 |
-| **springdoc-openapi** | 后端 Java 自动生成 DTO + Swagger | 阶段 4（后端） |
-| **openapi-typescript** | 前端 TypeScript 类型生成 | 阶段 5（前端） |
-| **Spectral** | Spec 规范校验 | 阶段 6（CI） |
+| 工具                   | 用途                             | 阶段             |
+| ---------------------- | -------------------------------- | ---------------- |
+| **OpenAPI 3.0 Spec**   | API 契约单一真相源               | 阶段 1（已完成） |
+| **Swagger UI**         | 交互式 API 文档                  | 阶段 2           |
+| **Prism**              | Mock 服务                        | 阶段 3           |
+| **springdoc-openapi**  | 后端 Java 自动生成 DTO + Swagger | 阶段 4（后端）   |
+| **openapi-typescript** | 前端 TypeScript 类型生成         | 阶段 5（前端）   |
+| **Spectral**           | Spec 规范校验                    | 阶段 6（CI）     |
 
 ---
 
@@ -71,7 +71,7 @@ springdoc:
 
 ```typescript
 // vite.config.ts
-import { defineConfig } from 'vite';
+import { defineConfig } from "vite";
 
 export default defineConfig({
   server: {
@@ -102,11 +102,12 @@ prism mock docs/api/openapi.yaml --port 4010
 
 ```typescript
 // metaplatform-frontend/packages/shared/src/config/apiConfig.ts
-const API_BASE = process.env.NODE_ENV === 'production'
-  ? '/api/v1'  // 生产：TECH-GW
-  : process.env.VITE_USE_MOCK === 'true'
-    ? 'http://localhost:4010'  // 本地 Mock
-    : '/api/v1';  // 本地真实后端
+const API_BASE =
+  process.env.NODE_ENV === "production"
+    ? "/api/v1" // 生产：TECH-GW
+    : process.env.VITE_USE_MOCK === "true"
+      ? "http://localhost:4010" // 本地 Mock
+      : "/api/v1"; // 本地真实后端
 ```
 
 ### 4.3 启动脚本
@@ -150,13 +151,13 @@ import jakarta.validation.Valid;
 @Tag(name = "apphub", description = "应用中心")
 @SecurityRequirement(name = "BearerAuth")
 public class AppController {
-    
+
     private final AppService service;
-    
+
     public AppController(AppService service) {
         this.service = service;
     }
-    
+
     @GetMapping
     @Operation(summary = "应用列表", description = "分页查询应用列表")
     @ApiResponses({
@@ -171,7 +172,7 @@ public class AppController {
     ) {
         return ApiResponse.ok(service.list(keyword, group, page, size));
     }
-    
+
     @PostMapping
     @Operation(summary = "创建应用")
     public ApiResponse<AppDto> create(
@@ -198,21 +199,21 @@ import lombok.Data;
 @Data
 @Schema(description = "创建应用请求")
 public class CreateAppRequest {
-    
+
     @Schema(description = "应用名", example = "采购管理", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank
     @Size(min = 1, max = 64)
     private String name;
-    
+
     @Schema(description = "应用编码", example = "purchase_app")
     @NotBlank
     @Pattern(regexp = "^[a-zA-Z][a-zA-Z0-9_]{0,63}$")
     private String code;
-    
+
     @Schema(description = "应用分组")
     @Size(max = 32)
     private String group = "default";
-    
+
     @Schema(description = "应用描述")
     @Size(max = 512)
     private String description;
@@ -293,29 +294,36 @@ export async function listApps(params: paths['/v1/apphub/apps']['get']['paramete
 
 ```typescript
 // packages/shared/src/api/typed-client.ts
-import type { paths } from './types.generated';
-import axios from 'axios';
+import type { paths } from "./types.generated";
+import axios from "axios";
 
-type Path<M extends 'get' | 'post' | 'put' | 'delete' | 'patch'> = {
-  [P in keyof paths]: paths[P] extends { [K in M]?: any } ? P : never
+type Path<M extends "get" | "post" | "put" | "delete" | "patch"> = {
+  [P in keyof paths]: paths[P] extends { [K in M]?: any } ? P : never;
 }[keyof paths];
 
-type RequestParams<P extends string, M extends 'get' | 'post' | 'put' | 'delete' | 'patch'> =
-  paths[P] extends { [K in M]: { parameters?: any; requestBody?: any } }
-    ? paths[P][M]
-    : never;
+type RequestParams<
+  P extends string,
+  M extends "get" | "post" | "put" | "delete" | "patch",
+> = paths[P] extends { [K in M]: { parameters?: any; requestBody?: any } }
+  ? paths[P][M]
+  : never;
 
-export async function request<P extends Path<M>, M extends 'get' | 'post' | 'put' | 'delete' | 'patch'>(
+export async function request<
+  P extends Path<M>,
+  M extends "get" | "post" | "put" | "delete" | "patch",
+>(
   path: P,
   method: M,
-  params?: RequestParams<P, M>['parameters'],
-  body?: RequestParams<P, M>['requestBody']
+  params?: RequestParams<P, M>["parameters"],
+  body?: RequestParams<P, M>["requestBody"],
 ): Promise<any> {
   return apiClient.request({ url: path, method, params, data: body });
 }
 
 // 使用
-const apps = await request('/v1/apphub/apps', 'get', { query: { keyword: 'test' } });
+const apps = await request("/v1/apphub/apps", "get", {
+  query: { keyword: "test" },
+});
 ```
 
 ---
@@ -361,13 +369,13 @@ jobs:
 
 ## 8. 实施时间表
 
-| 阶段 | 工作量 | 前置依赖 |
-|---|---|---|
-| 阶段 2 Swagger UI 部署 | 0.5 人天 | Docker |
-| 阶段 3 Prism Mock 部署 | 0.5 人天 | Node.js |
+| 阶段                       | 工作量   | 前置依赖     |
+| -------------------------- | -------- | ------------ |
+| 阶段 2 Swagger UI 部署     | 0.5 人天 | Docker       |
+| 阶段 3 Prism Mock 部署     | 0.5 人天 | Node.js      |
 | 阶段 4 后端 springdoc 集成 | 2-3 人天 | 后端项目就绪 |
-| 阶段 5 前端类型生成 | 1 人天 | 立即可做 |
-| 阶段 6 CI Spectral 校验 | 0.5 人天 | CI 平台 |
+| 阶段 5 前端类型生成        | 1 人天   | 立即可做     |
+| 阶段 6 CI Spectral 校验    | 0.5 人天 | CI 平台      |
 
 **合计**: 4.5-5.5 人天
 
@@ -375,13 +383,13 @@ jobs:
 
 ## 9. 建议优先级
 
-| 优先级 | 阶段 | 理由 |
-|---|---|---|
-| P0 | 阶段 5 前端类型生成 | 立即可做，提升前端类型安全 |
-| P0 | 阶段 3 Prism Mock | 前端无后端时可独立开发 |
-| P1 | 阶段 2 Swagger UI | 文档即代码 |
-| P1 | 阶段 6 CI Spectral | CI 阶段拦截 |
-| P2 | 阶段 4 springdoc | 等后端就绪后做 |
+| 优先级 | 阶段                | 理由                       |
+| ------ | ------------------- | -------------------------- |
+| P0     | 阶段 5 前端类型生成 | 立即可做，提升前端类型安全 |
+| P0     | 阶段 3 Prism Mock   | 前端无后端时可独立开发     |
+| P1     | 阶段 2 Swagger UI   | 文档即代码                 |
+| P1     | 阶段 6 CI Spectral  | CI 阶段拦截                |
+| P2     | 阶段 4 springdoc    | 等后端就绪后做             |
 
 ---
 

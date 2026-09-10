@@ -1,4 +1,5 @@
 """Production profile must fail closed instead of returning synthetic AI output."""
+
 from __future__ import annotations
 
 import pytest
@@ -16,7 +17,8 @@ def test_production_rejects_echo_llm(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.mark.parametrize("profile", ["production", "staging"])
 def test_deployed_profiles_reject_unknown_llm_provider(
-    monkeypatch: pytest.MonkeyPatch, profile: str,
+    monkeypatch: pytest.MonkeyPatch,
+    profile: str,
 ) -> None:
     monkeypatch.setenv("MATE_PROFILE", profile)
     monkeypatch.setenv("LLM_PROVIDER", "  typo-provider  ")

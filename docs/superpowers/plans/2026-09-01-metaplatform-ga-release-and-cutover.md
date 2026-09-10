@@ -50,6 +50,7 @@
 ### Task 1: Create the signed final-candidate and supply-chain admission policy
 
 **Files:**
+
 - Create: `acceptance/release/v1/final-candidate.schema.json`
 - Create: `acceptance/release/v1/final-candidate.yaml`
 - Create: `acceptance/release/v1/security-exceptions.schema.json`
@@ -58,6 +59,7 @@
 - Create: `mate-platform-backend/tests/architecture/test_final_candidate.py`
 
 **Interfaces:**
+
 - Produces: `FinalCandidate { release_id: str, git_sha: str, toolchain_digest: str, profile_digest: str, requirements_digest: str, components: list[ComponentRef], evidence_valid_until: datetime }`.
 - Produces: `verify_final_candidate(candidate: Path, exceptions: Path, now: datetime) -> VerificationResult`.
 - `ComponentRef` contains `name`, `image_digest`, `config_digest`, `sbom_digest`, `signature_ref`, `license_result`, `vulnerability_result`, `gate_id` and `gate_evidence_digest`.
@@ -112,6 +114,7 @@ git commit -m "test(release): require immutable secure final candidate"
 ### Task 2: Build the all-interface provider/consumer registry and live verifier
 
 **Files:**
+
 - Create: `acceptance/release/v1/interface-registry.schema.json`
 - Create: `acceptance/release/v1/interface-registry.yaml`
 - Create: `scripts/verify-interface-registry.py`
@@ -119,6 +122,7 @@ git commit -m "test(release): require immutable secure final candidate"
 - Modify: `acceptance/release/v1/requirements.yaml`
 
 **Interfaces:**
+
 - Produces: `InterfaceContract { id: str, protocol: Literal["openapi", "mcp", "a2a", "nats", "temporal", "ui", "host"], version: str, provider: ComponentRef, consumers: list[str], compatibility: str, verification: EvidenceRef }`.
 - Produces: `verify_interface_registry(registry: Path, candidate: FinalCandidate) -> VerificationResult`.
 - Consumes: `FinalCandidate.components`, release OpenAPI files, MCP schema snapshots, A2A Agent Cards, NATS event schemas and Temporal workflow interfaces.
@@ -170,6 +174,7 @@ git commit -m "test(release): verify all interface providers and consumers"
 ### Task 3: Exercise every authoritative object and lifecycle operation across 15 modules
 
 **Files:**
+
 - Create: `acceptance/release/v1/module-operations.schema.json`
 - Create: `acceptance/release/v1/module-operations.yaml`
 - Create: `scripts/test-first-release-module-operations.ps1`
@@ -177,6 +182,7 @@ git commit -m "test(release): verify all interface providers and consumers"
 - Modify: `acceptance/release/v1/requirements.yaml`
 
 **Interfaces:**
+
 - Produces: `ModuleOperation { module: str, authority_object: str, operation: Literal["create", "read", "update", "publish", "revoke", "archive", "delete"], actor: str, tenant: str, expected_status: int, audit_event: str, rollback_or_recovery: str }`.
 - Produces: `run_module_operations(matrix: Path, target: TargetEnvironment) -> list[OperationEvidence]`.
 - Consumes: the 15 module Requirements, RBAC/ABAC policy, audit service and final candidate interface registry.
@@ -229,6 +235,7 @@ git commit -m "test(release): exercise first release module operations"
 ### Task 4: Verify four business MVPs and the four standalone host contracts
 
 **Files:**
+
 - Create: `acceptance/release/v1/host-capability-contract.schema.json`
 - Create: `acceptance/release/v1/host-capability-contract.yaml`
 - Create: `scripts/test-host-capability-contract.ps1`
@@ -237,6 +244,7 @@ git commit -m "test(release): exercise first release module operations"
 - Modify: `acceptance/release/v1/interface-registry.yaml`
 
 **Interfaces:**
+
 - Produces: `HostCapabilityContract { host: Literal["codex", "claude-code", "deepseek-harness", "hermes"], topology: Literal["cloud", "connected-private"], environment_id: str, exact_version: str, connector_version: str, connector_digest: str, capabilities: HostCapabilities, environment_digest: str, valid_until: datetime, evidence: list[EvidenceRef] }`.
 - Produces: `run_host_contract(host: str, exact_version: str, target: TargetEnvironment) -> HostEvidence`.
 - Consumes: MVP1–MVP4 E2E contracts, UserContextProjection, EmployeeProjection, CapabilityCatalog and CapabilityAvailabilityProjection.
@@ -292,6 +300,7 @@ git commit -m "test(release): gate four hosts and business MVPs"
 ### Task 5: Promote cloud and connected-private targets through slice observation and rollback
 
 **Files:**
+
 - Create: `acceptance/release/v1/promotion-plan.schema.json`
 - Create: `acceptance/release/v1/promotion-plan.yaml`
 - Create: `acceptance/release/v1/promotion-evidence.yaml`
@@ -300,6 +309,7 @@ git commit -m "test(release): gate four hosts and business MVPs"
 - Modify: `acceptance/release/v1/production-profile.yaml`
 
 **Interfaces:**
+
 - Produces: `PromotionPlan { topology: Literal["cloud", "connected-private"], environment: EvidenceEnvironment, allowlist: Slice, observation_window_minutes: int, slo_queries: list[str], rollback_thresholds: RollbackThresholds, rollback_digest: str }`.
 - Produces: append-only `PromotionEvidence { candidate_digest: str, topology: str, environment_id: str, replay_digest: str, slice: Slice, observation: ObservationResult, rollback_receipt: EvidenceRef, signed_at: datetime }` in promotion-evidence.yaml.
 - Produces: `promote_candidate(plan: PromotionPlan, candidate: FinalCandidate) -> PromotionEvidence` without modifying final-candidate.yaml.
@@ -352,6 +362,7 @@ git commit -m "test(release): promote and roll back both deployment topologies"
 ### Task 6: Aggregate all current evidence into the only GA decision
 
 **Files:**
+
 - Create: `acceptance/release/v1/platform-ga.schema.json`
 - Create: `acceptance/release/v1/platform-ga.yaml`
 - Verify: `acceptance/release/v1/promotion-evidence.yaml`
@@ -363,6 +374,7 @@ git commit -m "test(release): promote and roll back both deployment topologies"
 - Create: `acceptance/release/v1/release-readiness-report.md`
 
 **Interfaces:**
+
 - Produces: `PlatformGA { release_id: str, candidate_digest: str, requirements_digest: str, interface_registry_digest: str, host_contract_digest: str, migration_chain_digest: str, migration_receipts: list[MigrationReceipt], promotion_evidence: list[PromotionEvidence], signatures: Signatures, status: Literal["PASSED", "FAILED", "NOT_EXERCISED"] }`.
 - Produces: `verify_platform_ga(ga: Path, candidate: FinalCandidate, now: datetime) -> VerificationResult`.
 - Consumes: all prior task artifacts, append-only promotion-evidence.yaml, the requirements matrix, component Gate DAG, recovery drill and named business/security/data/operations/release signatures.

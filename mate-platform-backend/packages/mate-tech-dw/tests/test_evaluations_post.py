@@ -7,6 +7,7 @@ Three tests:
   2. Out-of-range score (150) is rejected with 422.
   3. Tenant isolation — acme POSTs are invisible to globex GET.
 """
+
 from __future__ import annotations
 
 
@@ -16,7 +17,9 @@ def _data(r) -> dict:
 
 
 def test_post_evaluation_creates_record(
-    client, auth_headers_acme, acme_emp_id,
+    client,
+    auth_headers_acme,
+    acme_emp_id,
 ) -> None:
     employee_id = acme_emp_id(1)
     payload = {
@@ -27,7 +30,9 @@ def test_post_evaluation_creates_record(
         "comment": "GOVERN-12-05 bulk import smoke test",
     }
     r = client.post(
-        "/api/v1/dw/evaluations", json=payload, headers=auth_headers_acme,
+        "/api/v1/dw/evaluations",
+        json=payload,
+        headers=auth_headers_acme,
     )
     assert r.status_code == 201, r.text
     body = r.json()
@@ -51,20 +56,26 @@ def test_post_evaluation_creates_record(
 
 
 def test_post_evaluation_score_out_of_range_422(
-    client, auth_headers_acme, acme_emp_id,
+    client,
+    auth_headers_acme,
+    acme_emp_id,
 ) -> None:
     payload = {
         "employee_id": acme_emp_id(1),
         "score": 150,
     }
     r = client.post(
-        "/api/v1/dw/evaluations", json=payload, headers=auth_headers_acme,
+        "/api/v1/dw/evaluations",
+        json=payload,
+        headers=auth_headers_acme,
     )
     assert r.status_code == 422, r.text
 
 
 def test_post_evaluation_tenant_isolation(
-    client, auth_headers_acme, auth_headers_globex,
+    client,
+    auth_headers_acme,
+    auth_headers_globex,
 ) -> None:
     payload = {
         "employee_id": "dw-emp-acme-1",
@@ -72,14 +83,17 @@ def test_post_evaluation_tenant_isolation(
         "qa_set_id": "qa-bulk-002",
     }
     r = client.post(
-        "/api/v1/dw/evaluations", json=payload, headers=auth_headers_acme,
+        "/api/v1/dw/evaluations",
+        json=payload,
+        headers=auth_headers_acme,
     )
     assert r.status_code == 201, r.text
     created_id = _data(r)["id"]
 
     # globex GET must not see the acme-written row
     r2 = client.get(
-        "/api/v1/dw/evaluations", headers=auth_headers_globex,
+        "/api/v1/dw/evaluations",
+        headers=auth_headers_globex,
     )
     assert r2.status_code == 200, r2.text
     listed = _data(r2)

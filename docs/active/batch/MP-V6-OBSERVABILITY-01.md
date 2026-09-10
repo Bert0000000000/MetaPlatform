@@ -30,12 +30,12 @@
 
 ### 3.2 存储
 
-|组件 | 角色 |
-|---|---|
-| Tempo | trace 存储（distributed tracing）|
-| Prometheus | metric 存储 +告警 |
-| Loki | log 存储（聚合应用 stdout）|
-| Grafana | 统一可视化面板 |
+| 组件       | 角色                              |
+| ---------- | --------------------------------- |
+| Tempo      | trace 存储（distributed tracing） |
+| Prometheus | metric 存储 +告警                 |
+| Loki       | log 存储（聚合应用 stdout）       |
+| Grafana    | 统一可视化面板                    |
 
 ### 3.3 Grafana Dashboard（基础）
 
@@ -46,11 +46,11 @@
 
 ### 3.4 告警规则（基础）
 
-|级别 | 触发 | 通知 |
-|---|---|---|
-| Critical | 错误率 > 5% 持续 5 分钟 | 邮件 + 钉钉 + PagerDuty |
-| Warning | P99 延迟 > 3s 持续 10 分钟 | 邮件 |
-| Info | 部署事件 | Slack |
+| 级别     | 触发                       | 通知                    |
+| -------- | -------------------------- | ----------------------- |
+| Critical | 错误率 > 5% 持续 5 分钟    | 邮件 + 钉钉 + PagerDuty |
+| Warning  | P99 延迟 > 3s 持续 10 分钟 | 邮件                    |
+| Info     | 部署事件                   | Slack                   |
 
 ---
 
@@ -86,8 +86,8 @@
 
 ## 6. 风险与缓解
 
-|风险 | 缓解 |
-|---|---|
-| Grafana 配置复杂 | 4 个基础 Dashboard 起步，后续按需加 |
-| OTel SDK 版本不一致 | 固定 SDK 版本 + CI 校验 |
-| Prometheus 存储膨胀 | 设置保留周期（30 天）|
+| 风险                | 缓解                                |
+| ------------------- | ----------------------------------- |
+| Grafana 配置复杂    | 4 个基础 Dashboard 起步，后续按需加 |
+| OTel SDK 版本不一致 | 固定 SDK 版本 + CI 校验             |
+| Prometheus 存储膨胀 | 设置保留周期（30 天）               |

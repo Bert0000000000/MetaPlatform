@@ -8,6 +8,7 @@ GOVERN-03 (2026-08-07): every v1 ontology endpoint must carry:
 This script is wired into the ``openapi-ci`` workflow (``lint-sunset-headers``)
 and exits non-zero on any missing or stale annotation.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -26,6 +27,7 @@ def _is_sunset_match(value: object) -> bool:
     if isinstance(value, datetime.date):
         return value.isoformat() == DEFAULT_SUNSET
     return isinstance(value, str) and value == DEFAULT_SUNSET
+
 
 # v2 replacement targets per v1 prefix. Keep in sync with
 # ``docs/active/delivery/evidence/MP-ONT-V1-SUNSET-NOTICE.md``.

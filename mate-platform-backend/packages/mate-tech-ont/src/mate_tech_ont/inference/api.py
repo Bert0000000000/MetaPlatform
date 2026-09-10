@@ -1,4 +1,5 @@
 """推理 API 端点 (ST-5.4.9)."""
+
 from __future__ import annotations
 
 import dataclasses
@@ -105,13 +106,9 @@ async def apply_inference(
     result = _engine.apply_rules(tid, rules)
 
     return InferenceApplyResponse(
-        inherited=[
-            InheritedPropertyResponse(**dataclasses.asdict(ip))
-            for ip in result.inherited
-        ],
+        inherited=[InheritedPropertyResponse(**dataclasses.asdict(ip)) for ip in result.inherited],
         inferred_relations=[
-            InferredRelationResponse(**dataclasses.asdict(ir))
-            for ir in result.inferred_relations
+            InferredRelationResponse(**dataclasses.asdict(ir)) for ir in result.inferred_relations
         ],
     )
 

@@ -59,6 +59,7 @@
 ### Task 1: 建立契约工具工作区
 
 **Files:**
+
 - Create: `mate-platform-backend/contracts/package.json`
 - Create: `mate-platform-backend/contracts/package-lock.json`
 - Create: `mate-platform-backend/contracts/redocly.yaml`
@@ -171,6 +172,7 @@ git commit -m "build(openapi): establish contract tooling workspace"
 ### Task 2: 建立公共 OpenAPI 组件
 
 **Files:**
+
 - Create: `mate-platform-backend/contracts/openapi/common/errors.yaml`
 - Create: `mate-platform-backend/contracts/openapi/common/pagination.yaml`
 - Create: `mate-platform-backend/contracts/openapi/common/security.yaml`
@@ -228,10 +230,10 @@ components:
       additionalProperties: false
       required: [code, message, requestId]
       properties:
-        code: {type: string, pattern: '^E[0-9]{3}_[A-Z0-9_]+$'}
-        message: {type: string, minLength: 1}
-        requestId: {type: string, minLength: 1}
-        details: {type: object, additionalProperties: true}
+        code: { type: string, pattern: "^E[0-9]{3}_[A-Z0-9_]+$" }
+        message: { type: string, minLength: 1 }
+        requestId: { type: string, minLength: 1 }
+        details: { type: object, additionalProperties: true }
 ```
 
 - [ ] **Step 4: 运行测试和 Spectral**
@@ -252,6 +254,7 @@ git commit -m "contract: add shared OpenAPI components"
 ### Task 3: 建立领域 Manifest 与 Owner 治理
 
 **Files:**
+
 - Create: `mate-platform-backend/contracts/openapi/manifest.yaml`
 - Create: `docs/active/delivery/API-OWNERS.yaml`
 - Create: `mate-platform-backend/contracts/scripts/validate_contracts.py`
@@ -333,6 +336,7 @@ git commit -m "feat(openapi): enforce domain ownership and contract rules"
 ### Task 4: 迁移现有 11 个服务契约到唯一契约源
 
 **Files:**
+
 - Create: `mate-platform-backend/contracts/openapi/services/{iam,dashboard,msg,obs,mcp,llmgw,ont,rag,agent,kb}.yaml`
 - Create: `mate-platform-backend/contracts/openapi/services/platform-edge.yaml`（仅内部组合 gateway/auth，最终不进入业务域计数）
 - Create: `mate-platform-backend/contracts/scripts/migrate_existing_contracts.py`
@@ -404,6 +408,7 @@ git commit -m "contract: migrate existing service APIs to canonical source"
 ### Task 5: 从顶层PRD契约建立7个缺失领域契约
 
 **Files:**
+
 - Create: `mate-platform-backend/contracts/openapi/services/{data,copilot,dw,apphub,arch,wfe,a2a}.yaml`
 - Create: `mate-platform-backend/contracts/openapi/migration_exclusions.yaml`
 - Test: `mate-platform-backend/contracts/tests/test_prd_domain_coverage.py`
@@ -456,6 +461,7 @@ git commit -m "contract: define planned APIs for missing PRD domains"
 ### Task 6: 创建聚合契约和可重复Bundle
 
 **Files:**
+
 - Create: `mate-platform-backend/contracts/openapi/platform.yaml`
 - Create: `mate-platform-backend/contracts/openapi/generated/.gitkeep`
 - Create/Generated: `mate-platform-backend/contracts/openapi/generated/bundled.yaml`
@@ -509,6 +515,7 @@ git commit -m "contract: bundle canonical Mate Platform OpenAPI"
 ### Task 7: 建立PRD—契约追踪矩阵
 
 **Files:**
+
 - Create: `docs/active/delivery/REQUIREMENT-MATRIX.yaml`
 - Create: `mate-platform-backend/contracts/scripts/validate_traceability.py`
 - Test: `mate-platform-backend/contracts/tests/test_traceability.py`
@@ -558,6 +565,7 @@ git commit -m "docs(api): add PRD to OpenAPI traceability matrix"
 ### Task 8: 建立FastAPI Runtime对账
 
 **Files:**
+
 - Create: `mate-platform-backend/contracts/scripts/runtime_openapi.py`
 - Create: `mate-platform-backend/contracts/scripts/compare_runtime.py`
 - Create: `mate-platform-backend/contracts/runtime/.gitkeep`
@@ -599,6 +607,7 @@ git commit -m "test(openapi): enforce runtime contract parity"
 ### Task 9: 更新Swagger UI、Redoc和本地启动脚本
 
 **Files:**
+
 - Modify: `docs/swagger/index.html`
 - Create: `docs/swagger/redoc.html`
 - Modify: `docs/swagger/README.md`
@@ -648,6 +657,7 @@ git commit -m "docs(api): serve bundled Swagger and Redoc"
 ### Task 10: 增加Prism与文档Compose Profile
 
 **Files:**
+
 - Modify: `docker-compose.yml`
 - Create: `mate-platform-backend/contracts/Dockerfile.docs`
 - Test: `mate-platform-backend/contracts/tests/test_docs_compose.py`
@@ -688,6 +698,7 @@ git commit -m "build(openapi): add local Swagger Redoc and Prism profile"
 ### Task 11: 接入OpenAPI独立CI门禁
 
 **Files:**
+
 - Create: `.github/workflows/openapi-ci.yml`
 - Modify: `.github/workflows/python-ci.yml`
 - Test: `mate-platform-backend/contracts/tests/test_openapi_ci.py`
@@ -729,6 +740,7 @@ git commit -m "ci(openapi): enforce contract governance gates"
 ### Task 12: 删除多真相源并归档旧聚合契约
 
 **Files:**
+
 - Move: `docs/active/api/openapi.yaml` → `docs/legacy/api/openapi-pre-api-gov-01.yaml`
 - Delete: `docs/swagger/specs/*.yaml`
 - Delete: `mate-platform-backend/packages/*/openapi/*.yaml`
@@ -781,6 +793,7 @@ git commit -m "refactor(openapi): remove duplicate contract sources"
 ### Task 13: API-GOV-01 最终验收
 
 **Files:**
+
 - Create: `docs/active/delivery/evidence/API-GOV-01-ACCEPTANCE.md`
 - Modify: `docs/active/delivery/PROGRAM-BOARD.md`（不存在则创建）
 

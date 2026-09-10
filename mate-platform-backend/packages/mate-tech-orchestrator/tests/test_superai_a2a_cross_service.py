@@ -20,6 +20,7 @@ Requires the backend venv (``mate-app-a2a`` imports ``a2a-sdk``):
     .venv/Scripts/python.exe -m pytest \\
         packages/mate-tech-orchestrator/tests/test_superai_a2a_cross_service.py -v
 """
+
 from __future__ import annotations
 
 import time
@@ -145,7 +146,8 @@ def test_superai_delegates_to_agent_across_services() -> None:
 
         # --- The proof: the A2A center really holds a new delegation --------
         delegated = [
-            t for t in a2a_repo.list_delegations(TENANT)
+            t
+            for t in a2a_repo.list_delegations(TENANT)
             if str(t.context.get("messageId", "")).startswith("orch-")
         ]
         assert len(delegated) == 1, "SuperAI should open exactly one A2A delegation"

@@ -8,6 +8,7 @@ Tests cover:
   - test_a2a_external_timeout_handling: timeout returns status=timeout
   - test_a2a_external_emits_outbox_event: a2a.external.called emitted
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -32,7 +33,9 @@ def _mock_external_client(response_body: dict, *, raise_exc: Exception | None = 
 
 
 def test_a2a_delegate_happy_path(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """POST /a2a/delegate creates a delegation task with status pending."""
     r = client.post(
@@ -59,6 +62,7 @@ def test_a2a_delegate_agent_not_found(client, auth_headers_acme) -> None:
     # Inject a mock delegator so we don't hit a real network.
     mock_client = _mock_external_client({"reply": "ok"})
     from mate_app_a2a.delegate import set_default_delegator
+
     set_default_delegator(A2ADelegator(client=mock_client))
 
     try:
@@ -107,12 +111,15 @@ def test_a2a_delegate_tenant_isolation(client, auth_headers_acme, auth_headers_g
 
 
 def test_a2a_external_call(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """POST /a2a/external calls the external agent endpoint via mock."""
     mock_response = {"reply": "task completed", "data": {"rows": 42}}
     mock_client = _mock_external_client(mock_response)
     from mate_app_a2a.delegate import set_default_delegator
+
     set_default_delegator(A2ADelegator(client=mock_client))
 
     try:
@@ -147,9 +154,11 @@ def test_a2a_external_call(
 def test_a2a_external_timeout_handling(client, auth_headers_acme) -> None:
     """POST /a2a/external returns status=timeout when the agent times out."""
     mock_client = _mock_external_client(
-        {}, raise_exc=httpx.ReadTimeout("connection timed out"),
+        {},
+        raise_exc=httpx.ReadTimeout("connection timed out"),
     )
     from mate_app_a2a.delegate import set_default_delegator
+
     set_default_delegator(A2ADelegator(client=mock_client))
 
     try:

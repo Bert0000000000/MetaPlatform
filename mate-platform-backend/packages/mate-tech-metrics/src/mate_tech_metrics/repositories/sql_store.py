@@ -7,6 +7,7 @@ Lineage (``get_metric_lineage``) and computed values
 (``get_metric_values`` / ``compute_metric``) stay in in_memory
 because they are dynamic and not part of the persistence contract.
 """
+
 from __future__ import annotations
 
 import json
@@ -60,14 +61,13 @@ def _orm_to_metric(row: models.MetricORM) -> Metric:
 # Read API
 # ---------------------------------------------------------------------------
 def list_metrics(
-    tenant_id: str, status: str | None = None,
+    tenant_id: str,
+    status: str | None = None,
 ) -> list[Metric]:
     if not tenant_id:
         return []
     s = _session()
-    stmt = select(models.MetricORM).where(
-        models.MetricORM.tenant_id == tenant_id
-    )
+    stmt = select(models.MetricORM).where(models.MetricORM.tenant_id == tenant_id)
     if status:
         stmt = stmt.where(models.MetricORM.status == status)
     rows = s.execute(stmt.order_by(models.MetricORM.id)).scalars().all()
@@ -105,13 +105,20 @@ def put_metric(tenant_id: str, metric: Metric) -> Metric:
         existing.updated_at = metric.updated_at
         existing.last_computed_at = metric.last_computed_at
     else:
-        s.add(models.MetricORM(
-            id=metric.id, tenant_id=tenant_id, name=metric.name,
-            expression=metric.expression, status=metric.status,
-            description=metric.description, config=config_str,
-            created_at=metric.created_at, updated_at=metric.updated_at,
-            last_computed_at=metric.last_computed_at,
-        ))
+        s.add(
+            models.MetricORM(
+                id=metric.id,
+                tenant_id=tenant_id,
+                name=metric.name,
+                expression=metric.expression,
+                status=metric.status,
+                description=metric.description,
+                config=config_str,
+                created_at=metric.created_at,
+                updated_at=metric.updated_at,
+                last_computed_at=metric.last_computed_at,
+            )
+        )
     s.commit()
     return metric
 
@@ -141,7 +148,5 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     from . import in_memory as mem
 
     counts: dict[str, int] = {}
-    counts["metrics"] = len(
-        [put_metric(tenant_id, m) for m in mem.list_metrics(tenant_id)]
-    )
+    counts["metrics"] = len([put_metric(tenant_id, m) for m in mem.list_metrics(tenant_id)])
     return counts

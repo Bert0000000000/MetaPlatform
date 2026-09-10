@@ -16,6 +16,7 @@ cost_calculator model-info chain):
 ``LLMGW_PRICE_OVERRIDES`` env JSON replaces entries wholesale
 (negotiated / discounted prices) without a redeploy.
 """
+
 from __future__ import annotations
 
 import fnmatch
@@ -46,12 +47,11 @@ class ModelPrice:
     source: str = "vendored"
 
     def cost(self, prompt_tokens: int, completion_tokens: int) -> float:
-        return prompt_tokens * self.input_per_token + (
-            completion_tokens * self.output_per_token
-        )
+        return prompt_tokens * self.input_per_token + (completion_tokens * self.output_per_token)
 
-    def cost_cached(self, cached_prompt_tokens: int, prompt_tokens: int,
-                    completion_tokens: int) -> float:
+    def cost_cached(
+        self, cached_prompt_tokens: int, prompt_tokens: int, completion_tokens: int
+    ) -> float:
         """Cache-hit aware cost (LiteLLM cache_read_input_token_cost pattern)."""
         uncached = max(prompt_tokens - cached_prompt_tokens, 0)
         return (
@@ -124,9 +124,7 @@ class PricingTable:
         return ModelPrice(
             input_per_token=float(entry.get("input_cost_per_token", 0.0) or 0.0),
             output_per_token=float(entry.get("output_cost_per_token", 0.0) or 0.0),
-            cache_read_per_token=float(
-                entry.get("cache_read_input_token_cost", 0.0) or 0.0
-            ),
+            cache_read_per_token=float(entry.get("cache_read_input_token_cost", 0.0) or 0.0),
             source=str(entry.get("_source", source)),
         )
 
@@ -169,16 +167,12 @@ def load_pricing_from_env() -> PricingTable:
         overrides[name] = ModelPrice(
             input_per_token=float(entry.get("input_cost_per_token", 0.0) or 0.0),
             output_per_token=float(entry.get("output_cost_per_token", 0.0) or 0.0),
-            cache_read_per_token=float(
-                entry.get("cache_read_input_token_cost", 0.0) or 0.0
-            ),
+            cache_read_per_token=float(entry.get("cache_read_input_token_cost", 0.0) or 0.0),
             source="override",
         )
 
     aliases_raw = _parse_env_json(os.getenv("LLMGW_MODEL_ALIASES"))
-    aliases = {
-        str(k): str(v) for k, v in aliases_raw.items() if isinstance(v, str)
-    }
+    aliases = {str(k): str(v) for k, v in aliases_raw.items() if isinstance(v, str)}
 
     return PricingTable(load_vendored_prices(), overrides, aliases)
 

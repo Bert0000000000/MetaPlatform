@@ -26,6 +26,7 @@ Design:
 
 Per ADR-0016 §3.3 D5.
 """
+
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
@@ -93,9 +94,7 @@ def install_cross_tenant_audit_middleware(
         # Extract the target tenant from the path (X-Tenant-Id header
         # or path parameter). When actor and target differ, the
         # access is cross-tenant and we emit the audit event.
-        target_tenant = (
-            request.headers.get("X-Tenant-Id") or actor_tenant
-        )
+        target_tenant = request.headers.get("X-Tenant-Id") or actor_tenant
 
         response = await call_next(request)
 

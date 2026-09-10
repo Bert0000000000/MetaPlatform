@@ -5,6 +5,7 @@ GOVERN-03 (2026-08-07): tenant context is taken **exclusively** from
 not trusted; the AuthMiddleware in ``main.py`` is the single source of
 truth.
 """
+
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
@@ -44,6 +45,7 @@ def _require_ctx(request: Request):
 async def sparql_endpoint(req: SparqlRequest, request: Request) -> SparqlResponse:
     """ST-5.4.4: SPARQL → Cypher → 执行."""
     import time
+
     start = time.time()
 
     ctx = _require_ctx(request)

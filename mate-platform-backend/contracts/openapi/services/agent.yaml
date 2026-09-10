@@ -8,195 +8,195 @@ info:
     name: Mate Platform API Governance
     email: api-governance@metaplatform.local
 servers:
-- url: /
+  - url: /
 tags:
-- name: agent
-  description: agent domain operations
-security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+  - name: agent
+    description: agent domain operations
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
 paths:
   /healthz:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
+        - bearerAuth: []
+          tenantHeader: []
       summary: Liveness probe
       tags:
-      - agent
+        - agent
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthResponse'
-        '400':
+                $ref: "#/components/schemas/HealthResponse"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: agentGetHealthz
       description: Liveness probe
       x-mate-owner: agent-platform
       x-mate-permission: agent.get
       x-mate-requirements:
-      - FR-AGENT-AGENTGETHEALTHZ
+        - FR-AGENT-AGENTGETHEALTHZ
       x-mate-implementation-status: placeholder
   /api/v1/agent/chat:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: Agent chat (S1 | S2 | S3 | S4)
       tags:
-      - agent
+        - agent
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChatRequest'
+              $ref: "#/components/schemas/ChatRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChatResponse'
-        '501':
+                $ref: "#/components/schemas/ChatResponse"
+        "501":
           description: Scenario not implemented
-        '500':
+        "500":
           description: Graph execution failure
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: agentPostAgentChat
       description: Agent chat (S1 | S2 | S3 | S4)
       x-mate-owner: agent-platform
       x-mate-permission: agent.post
       x-mate-requirements:
-      - FR-AGENT-AGENTPOSTAGENTCHAT
+        - FR-AGENT-AGENTPOSTAGENTCHAT
       x-mate-implementation-status: placeholder
   /api/v1/agent/chat/stream:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: SSE streaming chat (S1 / S2 / S3)
       tags:
-      - agent
+        - agent
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChatRequest'
+              $ref: "#/components/schemas/ChatRequest"
       responses:
-        '200':
+        "200":
           description: text/event-stream
-        '501':
+        "501":
           description: Scenario not implemented
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: agentPostAgentChatStream
       description: SSE streaming chat (S1 / S2 / S3)
       x-mate-owner: agent-platform
       x-mate-permission: agent.post
       x-mate-requirements:
-      - FR-AGENT-AGENTPOSTAGENTCHATSTREAM
+        - FR-AGENT-AGENTPOSTAGENTCHATSTREAM
       x-mate-implementation-status: placeholder
   /api/v1/agent/review:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: S3 human review resume (approve / abort)
       tags:
-      - agent
+        - agent
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/HumanReviewRequest'
+              $ref: "#/components/schemas/HumanReviewRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HumanReviewResponse'
-        '500':
+                $ref: "#/components/schemas/HumanReviewResponse"
+        "500":
           description: Post-review execution failure
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: agentPostAgentReview
       description: S3 human review resume (approve / abort)
       x-mate-owner: agent-platform
       x-mate-permission: agent.post
       x-mate-requirements:
-      - FR-AGENT-AGENTPOSTAGENTREVIEW
+        - FR-AGENT-AGENTPOSTAGENTREVIEW
       x-mate-implementation-status: placeholder
   /api/v1/agent/state/{thread_id}:
     parameters:
-    - in: path
-      name: thread_id
-      required: true
-      schema:
-        type: string
+      - in: path
+        name: thread_id
+        required: true
+        schema:
+          type: string
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: Read persisted thread state
       tags:
-      - agent
+        - agent
       responses:
-        '200':
+        "200":
           description: OK
-        '404':
+        "404":
           description: thread not found
       operationId: agentGetAgentStateThreadId
       description: Read persisted thread state
       x-mate-owner: agent-platform
       x-mate-permission: agent.get
       x-mate-requirements:
-      - FR-AGENT-AGENTGETAGENTSTATETHREADID
+        - FR-AGENT-AGENTGETAGENTSTATETHREADID
       x-mate-implementation-status: placeholder
       parameters:
-      - name: thread_id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: thread_id
+          in: path
+          required: true
+          schema:
+            type: string
     delete:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: Delete persisted thread state
       tags:
-      - agent
+        - agent
       responses:
-        '200':
+        "200":
           description: OK
-        '404':
+        "404":
           description: thread not found
       operationId: agentDeleteAgentStateThreadId
       description: Delete persisted thread state
       x-mate-owner: agent-platform
       x-mate-permission: agent.delete
       x-mate-requirements:
-      - FR-AGENT-AGENTDELETEAGENTSTATETHREADID
+        - FR-AGENT-AGENTDELETEAGENTSTATETHREADID
       x-mate-implementation-status: placeholder
       parameters:
-      - name: thread_id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: thread_id
+          in: path
+          required: true
+          schema:
+            type: string
 components:
   securitySchemes:
     bearerAuth:
@@ -221,9 +221,9 @@ components:
     HealthResponse:
       type: object
       required:
-      - status
-      - service
-      - version
+        - status
+        - service
+        - version
       properties:
         status:
           type: string
@@ -234,7 +234,7 @@ components:
     ChatRequest:
       type: object
       required:
-      - message
+        - message
       properties:
         message:
           type: string
@@ -242,23 +242,23 @@ components:
           maxLength: 4096
         thread_id:
           type:
-          - string
-          - 'null'
+            - string
+            - "null"
         scenario:
           type: string
           enum:
-          - S1
-          - S2
-          - S3
-          - S4
+            - S1
+            - S2
+            - S3
+            - S4
           default: S1
     ChatResponse:
       type: object
       required:
-      - thread_id
-      - scenario
-      - answer
-      - latency_ms
+        - thread_id
+        - scenario
+        - answer
+        - latency_ms
       properties:
         thread_id:
           type: string
@@ -280,8 +280,8 @@ components:
     HumanReviewRequest:
       type: object
       required:
-      - thread_id
-      - approved
+        - thread_id
+        - approved
       properties:
         thread_id:
           type: string
@@ -289,23 +289,23 @@ components:
           type: boolean
         feedback:
           type:
-          - string
-          - 'null'
+            - string
+            - "null"
     HumanReviewResponse:
       type: object
       required:
-      - thread_id
-      - status
+        - thread_id
+        - status
       properties:
         thread_id:
           type: string
         status:
           type: string
           enum:
-          - approved
-          - aborted
-          - no_pending
+            - approved
+            - aborted
+            - no_pending
         message:
           type:
-          - string
-          - 'null'
+            - string
+            - "null"

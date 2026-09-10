@@ -14,6 +14,7 @@ Raw SQL via session.execute(text(\"...\")) is not intercepted by
 the event listener; CI forbids that path (see pre-commit hook
 introduced in SEC-TENANT-01).
 """
+
 from __future__ import annotations
 
 import logging
@@ -29,9 +30,11 @@ from .guards import is_cross_tenant_admin, require_tenant
 logger = logging.getLogger(__name__)
 
 
-_TENANT_FILTER_ENABLED: bool = os.environ.get(
-    "BYPASS_TENANT_FILTER", "0"
-).lower() not in {"1", "true", "yes"}
+_TENANT_FILTER_ENABLED: bool = os.environ.get("BYPASS_TENANT_FILTER", "0").lower() not in {
+    "1",
+    "true",
+    "yes",
+}
 
 
 # -----------------------------------------------------------------------------
@@ -114,11 +117,10 @@ def _register_event_listeners() -> None:  # pyright: ignore[reportUnusedFunction
 
         # Inject the tenant_id predicate.
         require_tenant(ctx)
-        state.statement = state.statement.where(
-            _build_tenant_predicate(ctx)
-        )
+        state.statement = state.statement.where(_build_tenant_predicate(ctx))
 
     _listeners_registered = True
+
 
 def _build_tenant_predicate(ctx: RequestContext):
     from sqlalchemy import column, literal

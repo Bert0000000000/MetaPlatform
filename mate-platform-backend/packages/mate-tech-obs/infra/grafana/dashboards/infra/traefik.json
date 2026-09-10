@@ -3,6 +3,6 @@
     "id": 1,
     "title": "Traefik RPS",
     "type": "graph",
-    "targets": [{"expr": "rate(traefik_entrypoint_requests_total[5m])"}]
+    "targets": [{ "expr": "rate(traefik_entrypoint_requests_total[5m])" }]
   }
 ]

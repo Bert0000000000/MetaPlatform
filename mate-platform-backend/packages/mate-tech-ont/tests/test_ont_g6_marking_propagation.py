@@ -5,6 +5,7 @@
 - edit-set create_object → 实例继承类型（含祖先）marking；
 - 语义检索卡片按同规则过滤。
 """
+
 from __future__ import annotations
 
 import os
@@ -36,29 +37,55 @@ ACT = f"ont.{T}.act.hr.create-record.v1"
 
 def _mk() -> InMemoryOntologyRepository:
     r = InMemoryOntologyRepository()
-    r.upsert_object_type(ObjectType(
-        rid=ClassRef(OBJ), primary_key=(ClassRef(P_ID),),
-        properties=(
-            Property(rid=ClassRef(P_ID), type_id="string", nullable=False,
-                     primary_key=True, title="id", format=PropertyFormat.STRING),
-            Property(rid=ClassRef(P_NOTE), type_id="string", nullable=True,
-                     primary_key=False, title="note", format=PropertyFormat.STRING),
-        ),
-        display_name="record", marking=("hr",),
-    ))
-    r.upsert_action_type(ActionType(
-        rid=ClassRef(ACT), parameters=(), submission_criteria=(),
-        side_effects=(), function_ref=ClassRef(f"ont.{T}.fn.x.v1"),
-        on=(ClassRef(OBJ),), title="Create Record",
-    ))
+    r.upsert_object_type(
+        ObjectType(
+            rid=ClassRef(OBJ),
+            primary_key=(ClassRef(P_ID),),
+            properties=(
+                Property(
+                    rid=ClassRef(P_ID),
+                    type_id="string",
+                    nullable=False,
+                    primary_key=True,
+                    title="id",
+                    format=PropertyFormat.STRING,
+                ),
+                Property(
+                    rid=ClassRef(P_NOTE),
+                    type_id="string",
+                    nullable=True,
+                    primary_key=False,
+                    title="note",
+                    format=PropertyFormat.STRING,
+                ),
+            ),
+            display_name="record",
+            marking=("hr",),
+        )
+    )
+    r.upsert_action_type(
+        ActionType(
+            rid=ClassRef(ACT),
+            parameters=(),
+            submission_criteria=(),
+            side_effects=(),
+            function_ref=ClassRef(f"ont.{T}.fn.x.v1"),
+            on=(ClassRef(OBJ),),
+            title="Create Record",
+        )
+    )
     return r
 
 
 def _ind(rid: str, cls: str, pk: str, marking: tuple = ()) -> Individual:
     return Individual(
-        rid=rid, class_rid=ClassRef(cls),
-        props=((ClassRef(P_ID), pk),), primary_key=pk, tenant_id=T,
-        created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
+        rid=rid,
+        class_rid=ClassRef(cls),
+        props=((ClassRef(P_ID), pk),),
+        primary_key=pk,
+        tenant_id=T,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
         marking=marking,
     )
 
@@ -84,14 +111,24 @@ class TestReadGate:
     def test_parent_type_marking_propagates(self) -> None:
         r = _mk()
         # 子类型自身无 marking，但父类型 hr → 祖先 marking 传播约束
-        r.upsert_object_type(ObjectType(
-            rid=ClassRef(OBJ_SUB), primary_key=(ClassRef(P_ID),),
-            properties=(
-                Property(rid=ClassRef(P_ID), type_id="string", nullable=False,
-                         primary_key=True, title="id", format=PropertyFormat.STRING),
-            ),
-            display_name="payroll", parent_class=ClassRef(OBJ),
-        ))
+        r.upsert_object_type(
+            ObjectType(
+                rid=ClassRef(OBJ_SUB),
+                primary_key=(ClassRef(P_ID),),
+                properties=(
+                    Property(
+                        rid=ClassRef(P_ID),
+                        type_id="string",
+                        nullable=False,
+                        primary_key=True,
+                        title="id",
+                        format=PropertyFormat.STRING,
+                    ),
+                ),
+                display_name="payroll",
+                parent_class=ClassRef(OBJ),
+            )
+        )
         r.create_individual(_ind(f"ont.{T}.ind.payroll-record.p1", OBJ_SUB, "p1"))
         assert r.enforce_read_policies(r.list_individuals(None), []) == []
         vis = r.enforce_read_policies(r.list_individuals(None), ["hr"])
@@ -102,9 +139,17 @@ class TestWriteInheritance:
     def test_create_object_inherits_type_marking(self) -> None:
         r = _mk()
         r.apply_edit_set_now(
-            ACT, None, {},
-            [{"op": "create_object", "class_rid": OBJ,
-              "primary_key": "r9", "props": {P_ID: "r9", P_NOTE: "n"}}],
+            ACT,
+            None,
+            {},
+            [
+                {
+                    "op": "create_object",
+                    "class_rid": OBJ,
+                    "primary_key": "r9",
+                    "props": {P_ID: "r9", P_NOTE: "n"},
+                }
+            ],
             actor="hr-1",
         )
         ind = r.get_individual(f"ont.{T}.ind.record.r9")
@@ -112,27 +157,43 @@ class TestWriteInheritance:
 
     def test_create_inherits_ancestor_marking(self) -> None:
         r = _mk()
-        r.upsert_object_type(ObjectType(
-            rid=ClassRef(OBJ_SUB), primary_key=(ClassRef(P_ID),),
-            properties=(
-                Property(rid=ClassRef(P_ID), type_id="string", nullable=False,
-                         primary_key=True, title="id", format=PropertyFormat.STRING),
-            ),
-            display_name="payroll", parent_class=ClassRef(OBJ),
-        ))
+        r.upsert_object_type(
+            ObjectType(
+                rid=ClassRef(OBJ_SUB),
+                primary_key=(ClassRef(P_ID),),
+                properties=(
+                    Property(
+                        rid=ClassRef(P_ID),
+                        type_id="string",
+                        nullable=False,
+                        primary_key=True,
+                        title="id",
+                        format=PropertyFormat.STRING,
+                    ),
+                ),
+                display_name="payroll",
+                parent_class=ClassRef(OBJ),
+            )
+        )
         r.apply_edit_set_now(
-            ACT, None, {},
-            [{"op": "create_object", "class_rid": OBJ_SUB,
-              "primary_key": "p9", "props": {P_ID: "p9"}}],
+            ACT,
+            None,
+            {},
+            [
+                {
+                    "op": "create_object",
+                    "class_rid": OBJ_SUB,
+                    "primary_key": "p9",
+                    "props": {P_ID: "p9"},
+                }
+            ],
             actor="hr-1",
         )
         ind = r.get_individual(f"ont.{T}.ind.payroll-record.p9")
         assert ind.marking == ("hr",)  # 父类型 marking 继承
 
 
-PG_DSN = os.environ.get(
-    "G6_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"
-)
+PG_DSN = os.environ.get("G6_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
 
 
 class TestPgSameSemantics:
@@ -155,28 +216,41 @@ class TestPgSameSemantics:
                 r.upsert_action_type(mem.get_action_type(ClassRef(ACT)))
                 r.create_individual(_ind(f"ont.{T}.ind.record.pg1", OBJ, "pg1"))
                 # 类型 marking hr → 无 marking 不可见
-                vis = r.enforce_read_policies(
-                    r.list_individuals(ClassRef(OBJ)), [])
+                vis = r.enforce_read_policies(r.list_individuals(ClassRef(OBJ)), [])
                 assert vis == []
-                vis2 = r.enforce_read_policies(
-                    r.list_individuals(ClassRef(OBJ)), ["hr"])
+                vis2 = r.enforce_read_policies(r.list_individuals(ClassRef(OBJ)), ["hr"])
                 assert {i.primary_key for i in vis2} == {"pg1"}
                 # edit-set 创建 → marking 继承
                 r.apply_edit_set_now(
-                    ACT, None, {},
-                    [{"op": "create_object", "class_rid": OBJ,
-                      "primary_key": "pg9", "props": {P_ID: "pg9"}}],
+                    ACT,
+                    None,
+                    {},
+                    [
+                        {
+                            "op": "create_object",
+                            "class_rid": OBJ,
+                            "primary_key": "pg9",
+                            "props": {P_ID: "pg9"},
+                        }
+                    ],
                     actor="pg-op",
                 )
                 ind = r.get_individual(f"ont.{T}.ind.record.pg9")
                 assert ind.marking == ("hr",)
         finally:
             with conn.cursor() as cur:
-                for tbl in ("ont_individual", "ont_object_type", "ont_axiom",
-                            "ont_action_type", "ont_proposal",
-                            "ont_proposal_event", "ont_proposal_execution",
-                            "ont_proposal_idempotency", "ont_action_audit",
-                            "ont_outbox_event"):
+                for tbl in (
+                    "ont_individual",
+                    "ont_object_type",
+                    "ont_axiom",
+                    "ont_action_type",
+                    "ont_proposal",
+                    "ont_proposal_event",
+                    "ont_proposal_execution",
+                    "ont_proposal_idempotency",
+                    "ont_action_audit",
+                    "ont_outbox_event",
+                ):
                     cur.execute(f"DELETE FROM {tbl} WHERE tenant_id=%s", (T,))
             conn.commit()
             conn.close()

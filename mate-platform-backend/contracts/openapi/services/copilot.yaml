@@ -8,62 +8,62 @@ info:
     name: Mate Platform API Governance
     email: api-governance@metaplatform.local
 servers:
-- url: /
+  - url: /
 tags:
-- name: copilot
-  description: copilot domain operations
+  - name: copilot
+    description: copilot domain operations
 security:
-- bearerAuth: []
-  tenantHeader: []
-  oidcScopes:
-  - platform.read
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes:
+      - platform.read
 paths:
   /api/v1/copilot:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot
       operationId: copilotGetCopilot
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOT
+        - FR-COPILOT-COPILOTGETCOPILOT
       x-mate-implementation-status: implemented
   /api/v1/copilot/a2a/delegate:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/a2a/delegate
       operationId: copilotPostCopilotA2aDelegate
       parameters: []
@@ -72,113 +72,113 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/a2a/delegate
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTA2ADELEGATE
+        - FR-COPILOT-COPILOTPOSTCOPILOTA2ADELEGATE
       x-mate-implementation-status: implemented
   /api/v1/copilot/a2a/external:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/a2a/external
       operationId: copilotGetCopilotA2aExternal
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/a2a/external
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTA2AEXTERNAL
+        - FR-COPILOT-COPILOTGETCOPILOTA2AEXTERNAL
       x-mate-implementation-status: implemented
   /api/v1/copilot/actions:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/actions
       operationId: copilotGetCopilotActions
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/actions
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTACTIONS
+        - FR-COPILOT-COPILOTGETCOPILOTACTIONS
       x-mate-implementation-status: implemented
   /api/v1/copilot/actions/execute:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/actions/execute
       operationId: copilotPostCopilotActionsExecute
       parameters: []
@@ -187,39 +187,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/actions/execute
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTACTIONSEXECUTE
+        - FR-COPILOT-COPILOTPOSTCOPILOTACTIONSEXECUTE
       x-mate-implementation-status: implemented
   /api/v1/copilot/actions/match:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/actions/match
       operationId: copilotPostCopilotActionsMatch
       parameters: []
@@ -228,74 +228,74 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/actions/match
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTACTIONSMATCH
+        - FR-COPILOT-COPILOTPOSTCOPILOTACTIONSMATCH
       x-mate-implementation-status: implemented
   /api/v1/copilot/agent-tools:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/agent-tools
       operationId: copilotGetCopilotAgentTools
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: Live SuperAI agent-loop tool registry (dispatch + ontology tools)
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTAGENTTOOLS
+        - FR-COPILOT-COPILOTGETCOPILOTAGENTTOOLS
       x-mate-implementation-status: implemented
   /api/v1/copilot/analysis/audit-sql:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/analysis/audit-sql
       operationId: copilotPostCopilotAnalysisAuditSql
       parameters: []
@@ -304,39 +304,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/analysis/audit-sql
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTANALYSISAUDITSQL
+        - FR-COPILOT-COPILOTPOSTCOPILOTANALYSISAUDITSQL
       x-mate-implementation-status: implemented
   /api/v1/copilot/analysis/execute-sql:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/analysis/execute-sql
       operationId: copilotPostCopilotAnalysisExecuteSql
       parameters: []
@@ -345,78 +345,78 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/analysis/execute-sql
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTANALYSISEXECUTESQL
+        - FR-COPILOT-COPILOTPOSTCOPILOTANALYSISEXECUTESQL
       x-mate-implementation-status: implemented
   /api/v1/copilot/analysis/explain-sql:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-required-scopes:
-      - platform.read
+        - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/analysis/explain-sql
       operationId: copilotGetCopilotAnalysisExplainSql
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/analysis/explain-sql
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTANALYSISEXPLAINSQL
+        - FR-COPILOT-COPILOTGETCOPILOTANALYSISEXPLAINSQL
       x-mate-implementation-status: implemented
   /api/v1/copilot/analysis/generate-sql:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/analysis/generate-sql
       operationId: copilotPostCopilotAnalysisGenerateSql
       parameters: []
@@ -425,39 +425,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/analysis/generate-sql
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTANALYSISGENERATESQL
+        - FR-COPILOT-COPILOTPOSTCOPILOTANALYSISGENERATESQL
       x-mate-implementation-status: implemented
   /api/v1/copilot/auth/login:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/auth/login
       operationId: copilotPostCopilotAuthLogin
       parameters: []
@@ -466,39 +466,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/auth/login
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTAUTHLOGIN
+        - FR-COPILOT-COPILOTPOSTCOPILOTAUTHLOGIN
       x-mate-implementation-status: implemented
   /api/v1/copilot/chat/multimodal/upload:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/chat/multimodal/upload
       operationId: copilotPostCopilotChatMultimodalUpload
       parameters: []
@@ -507,150 +507,150 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/chat/multimodal/upload
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTCHATMULTIMODALUPLOAD
+        - FR-COPILOT-COPILOTPOSTCOPILOTCHATMULTIMODALUPLOAD
       x-mate-implementation-status: implemented
   /api/v1/copilot/code:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/code
       operationId: copilotGetCopilotCode
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/code
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTCODE
+        - FR-COPILOT-COPILOTGETCOPILOTCODE
       x-mate-implementation-status: implemented
   /api/v1/copilot/conversations:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/conversations
       operationId: copilotGetCopilotConversations
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/conversations
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTCONVERSATIONS
+        - FR-COPILOT-COPILOTGETCOPILOTCONVERSATIONS
       x-mate-implementation-status: implemented
   /api/v1/copilot/datasources:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/datasources
       operationId: copilotGetCopilotDatasources
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/datasources
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTDATASOURCES
+        - FR-COPILOT-COPILOTGETCOPILOTDATASOURCES
       x-mate-implementation-status: implemented
   /api/v1/copilot/generate/dashboard:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/generate/dashboard
       operationId: copilotPostCopilotGenerateDashboard
       parameters: []
@@ -659,39 +659,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/generate/dashboard
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTGENERATEDASHBOARD
+        - FR-COPILOT-COPILOTPOSTCOPILOTGENERATEDASHBOARD
       x-mate-implementation-status: implemented
   /api/v1/copilot/generate/explain-code:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/generate/explain-code
       operationId: copilotPostCopilotGenerateExplainCode
       parameters: []
@@ -700,39 +700,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/generate/explain-code
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTGENERATEEXPLAINCODE
+        - FR-COPILOT-COPILOTPOSTCOPILOTGENERATEEXPLAINCODE
       x-mate-implementation-status: implemented
   /api/v1/copilot/generate/form:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/generate/form
       operationId: copilotPostCopilotGenerateForm
       parameters: []
@@ -741,78 +741,78 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/generate/form
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTGENERATEFORM
+        - FR-COPILOT-COPILOTPOSTCOPILOTGENERATEFORM
       x-mate-implementation-status: implemented
   /api/v1/copilot/generate/process:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-required-scopes:
-      - platform.read
+        - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/generate/process
       operationId: copilotGetCopilotGenerateProcess
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/generate/process
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTGENERATEPROCESS
+        - FR-COPILOT-COPILOTGETCOPILOTGENERATEPROCESS
       x-mate-implementation-status: implemented
   /api/v1/copilot/generate/review-code:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/generate/review-code
       operationId: copilotPostCopilotGenerateReviewCode
       parameters: []
@@ -821,263 +821,263 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/generate/review-code
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTGENERATEREVIEWCODE
+        - FR-COPILOT-COPILOTPOSTCOPILOTGENERATEREVIEWCODE
       x-mate-implementation-status: implemented
   /api/v1/copilot/knowledge-bases:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/knowledge-bases
       operationId: copilotGetCopilotKnowledgeBases
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/knowledge-bases
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTKNOWLEDGEBASES
+        - FR-COPILOT-COPILOTGETCOPILOTKNOWLEDGEBASES
       x-mate-implementation-status: implemented
   /api/v1/copilot/models/multimodal:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/models/multimodal
       operationId: copilotGetCopilotModelsMultimodal
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/models/multimodal
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTMODELSMULTIMODAL
+        - FR-COPILOT-COPILOTGETCOPILOTMODELSMULTIMODAL
       x-mate-implementation-status: implemented
   /api/v1/copilot/ontology/concepts/search:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/ontology/concepts/search
       operationId: copilotGetCopilotOntologyConceptsSearch
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/ontology/concepts/search
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTONTOLOGYCONCEPTSSEARCH
+        - FR-COPILOT-COPILOTGETCOPILOTONTOLOGYCONCEPTSSEARCH
       x-mate-implementation-status: implemented
   /api/v1/copilot/ontology/graph/expand:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/ontology/graph/expand
       operationId: copilotGetCopilotOntologyGraphExpand
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/ontology/graph/expand
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTONTOLOGYGRAPHEXPAND
+        - FR-COPILOT-COPILOTGETCOPILOTONTOLOGYGRAPHEXPAND
       x-mate-implementation-status: implemented
   /api/v1/copilot/ontology/graph/query:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-required-scopes:
-      - platform.read
+        - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/ontology/graph/query
       operationId: copilotGetCopilotOntologyGraphQuery
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/ontology/graph/query
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTONTOLOGYGRAPHQUERY
+        - FR-COPILOT-COPILOTGETCOPILOTONTOLOGYGRAPHQUERY
       x-mate-implementation-status: implemented
   /api/v1/copilot/plans:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/plans
       operationId: copilotGetCopilotPlans
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/plans
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTPLANS
+        - FR-COPILOT-COPILOTGETCOPILOTPLANS
       x-mate-implementation-status: implemented
   /api/v1/copilot/queries/execute:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/queries/execute
       operationId: copilotPostCopilotQueriesExecute
       parameters: []
@@ -1086,116 +1086,116 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/queries/execute
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTQUERIESEXECUTE
+        - FR-COPILOT-COPILOTPOSTCOPILOTQUERIESEXECUTE
       x-mate-implementation-status: implemented
   /api/v1/copilot/queries/history:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/queries/history
       operationId: copilotGetCopilotQueriesHistory
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/queries/history
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTQUERIESHISTORY
+        - FR-COPILOT-COPILOTGETCOPILOTQUERIESHISTORY
       x-mate-implementation-status: implemented
   /api/v1/copilot/scheduling/employees/match:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-required-scopes:
-      - platform.read
+        - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/scheduling/employees/match
       operationId: copilotGetCopilotSchedulingEmployeesMatch
       deprecated: true
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/scheduling/employees/match
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGEMPLOYEESMATCH
+        - FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGEMPLOYEESMATCH
       x-mate-implementation-status: implemented
   /api/v1/copilot/scheduling/execution/start:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/scheduling/execution/start
       operationId: copilotPostCopilotSchedulingExecutionStart
       deprecated: true
@@ -1205,39 +1205,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/scheduling/execution/start
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGEXECUTIONSTART
+        - FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGEXECUTIONSTART
       x-mate-implementation-status: implemented
   /api/v1/copilot/scheduling/intent/detect:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/scheduling/intent/detect
       operationId: copilotPostCopilotSchedulingIntentDetect
       deprecated: true
@@ -1247,77 +1247,77 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/scheduling/intent/detect
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGINTENTDETECT
+        - FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGINTENTDETECT
       x-mate-implementation-status: implemented
   /api/v1/copilot/scheduling/intents:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/scheduling/intents
       operationId: copilotGetCopilotSchedulingIntents
       deprecated: true
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/scheduling/intents
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGINTENTS
+        - FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGINTENTS
       x-mate-implementation-status: implemented
   /api/v1/copilot/scheduling/plan/generate:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/scheduling/plan/generate
       operationId: copilotPostCopilotSchedulingPlanGenerate
       deprecated: true
@@ -1327,106 +1327,106 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiResponse'
+              $ref: "#/components/schemas/ApiResponse"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/scheduling/plan/generate
       x-mate-owner: agent-experience
       x-mate-permission: copilot.post
       x-mate-requirements:
-      - FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGPLANGENERATE
+        - FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGPLANGENERATE
       x-mate-implementation-status: implemented
   /api/v1/copilot/scheduling/templates:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/scheduling/templates
       operationId: copilotGetCopilotSchedulingTemplates
       deprecated: true
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/scheduling/templates
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGTEMPLATES
+        - FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGTEMPLATES
       x-mate-implementation-status: implemented
   /api/v1/copilot/search:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-required-scopes:
-      - platform.read
+        - platform.read
       tags:
-      - copilot
+        - copilot
       summary: /v1/copilot/search
       operationId: copilotGetCopilotSearch
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/copilot/search
       x-mate-owner: agent-experience
       x-mate-permission: copilot.get
       x-mate-requirements:
-      - FR-COPILOT-COPILOTGETCOPILOTSEARCH
+        - FR-COPILOT-COPILOTGETCOPILOTSEARCH
       x-mate-implementation-status: implemented
 components:
   securitySchemes:
@@ -1485,37 +1485,37 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     Forbidden:
       description: 无权限
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     NotFound:
       description: 资源不存在
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     BadRequest:
       description: 参数错误
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     ServerError:
       description: 服务器错误
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
   schemas:
     ErrorResponse:
       type: object
       required:
-      - code
-      - message
+        - code
+        - message
       properties:
         code:
           type: integer
@@ -1526,14 +1526,14 @@ components:
     ApiResponse:
       type: object
       required:
-      - code
-      - message
-      - data
+        - code
+        - message
+        - data
       properties:
         code:
           type: integer
           enum:
-          - 0
+            - 0
         message:
           type: string
         data: {}
@@ -1542,11 +1542,11 @@ components:
     PageResponse:
       type: object
       required:
-      - items
-      - total
-      - page
-      - size
-      - pages
+        - items
+        - total
+        - page
+        - size
+        - pages
       properties:
         items:
           type: array
@@ -1562,13 +1562,13 @@ components:
     BigDataSource:
       type: object
       required:
-      - sourceId
-      - name
-      - sourceType
-      - host
-      - port
-      - authType
-      - status
+        - sourceId
+        - name
+        - sourceType
+        - host
+        - port
+        - authType
+        - status
       properties:
         sourceId:
           type: string
@@ -1580,19 +1580,19 @@ components:
         sourceType:
           type: string
           enum:
-          - HIVE
-          - HBASE
-          - CLICKHOUSE
-          - DORIS
-          - STARROCKS
-          - ICEBERG
-          - HUDI
-          - DELTA
-          - PRESTO
-          - TRINO
-          - KAFKA
-          - PULSAR
-          - HDFS
+            - HIVE
+            - HBASE
+            - CLICKHOUSE
+            - DORIS
+            - STARROCKS
+            - ICEBERG
+            - HUDI
+            - DELTA
+            - PRESTO
+            - TRINO
+            - KAFKA
+            - PULSAR
+            - HDFS
         host:
           type: string
         port:
@@ -1606,10 +1606,10 @@ components:
         authType:
           type: string
           enum:
-          - NONE
-          - USER_PASSWORD
-          - KERBERY
-          - LDAP
+            - NONE
+            - USER_PASSWORD
+            - KERBERY
+            - LDAP
           default: NONE
         sslEnabled:
           type: boolean
@@ -1620,21 +1620,21 @@ components:
         status:
           type: string
           enum:
-          - DRAFT
-          - ACTIVE
-          - INACTIVE
-          - ERROR
-          - DELETED
+            - DRAFT
+            - ACTIVE
+            - INACTIVE
+            - ERROR
+            - DELETED
     CDCTask:
       type: object
       required:
-      - taskId
-      - name
-      - sourceId
-      - syncMode
-      - targetType
-      - targetName
-      - status
+        - taskId
+        - name
+        - sourceId
+        - syncMode
+        - targetType
+        - targetName
+        - status
       properties:
         taskId:
           type: string
@@ -1645,27 +1645,27 @@ components:
         syncMode:
           type: string
           enum:
-          - FULL_INCREMENTAL
-          - INCREMENTAL_ONLY
-          - SNAPSHOT_ONLY
+            - FULL_INCREMENTAL
+            - INCREMENTAL_ONLY
+            - SNAPSHOT_ONLY
         targetType:
           type: string
           enum:
-          - KAFKA
-          - CLICKHOUSE
-          - HUDI
-          - ICEBERG
+            - KAFKA
+            - CLICKHOUSE
+            - HUDI
+            - ICEBERG
         targetName:
           type: string
         status:
           type: string
           enum:
-          - PENDING
-          - SNAPSHOTTING
-          - RUNNING
-          - PAUSED
-          - FAILED
-          - STOPPED
+            - PENDING
+            - SNAPSHOTTING
+            - RUNNING
+            - PAUSED
+            - FAILED
+            - STOPPED
         lagMs:
           type: integer
         totalRecords:
@@ -1674,14 +1674,14 @@ components:
     ETLTask:
       type: object
       required:
-      - taskId
-      - name
-      - mode
-      - sourceIds
-      - targetType
-      - targetTable
-      - writeMode
-      - status
+        - taskId
+        - name
+        - mode
+        - sourceIds
+        - targetType
+        - targetTable
+        - writeMode
+        - status
       properties:
         taskId:
           type: string
@@ -1690,18 +1690,18 @@ components:
         mode:
           type: string
           enum:
-          - BATCH_SPARK
-          - BATCH_FLINK
-          - STREAMING_FLINK
-          - STREAMING_SPARK
-          - SQL_TRANSFORM
+            - BATCH_SPARK
+            - BATCH_FLINK
+            - STREAMING_FLINK
+            - STREAMING_SPARK
+            - SQL_TRANSFORM
         priority:
           type: string
           enum:
-          - LOW
-          - NORMAL
-          - HIGH
-          - URGENT
+            - LOW
+            - NORMAL
+            - HIGH
+            - URGENT
         sourceIds:
           type: array
           items:
@@ -1713,40 +1713,40 @@ components:
         targetType:
           type: string
           enum:
-          - HIVE
-          - CLICKHOUSE
-          - ICEBERG
-          - HUDI
-          - DELTA
-          - DORIS
+            - HIVE
+            - CLICKHOUSE
+            - ICEBERG
+            - HUDI
+            - DELTA
+            - DORIS
         targetTable:
           type: string
         writeMode:
           type: string
           enum:
-          - OVERWRITE
-          - APPEND
-          - UPSERT
-          - MERGE
+            - OVERWRITE
+            - APPEND
+            - UPSERT
+            - MERGE
         status:
           type: string
           enum:
-          - DRAFT
-          - READY
-          - RUNNING
-          - SUCCESS
-          - FAILED
-          - CANCELLED
-          - TIMEOUT
+            - DRAFT
+            - READY
+            - RUNNING
+            - SUCCESS
+            - FAILED
+            - CANCELLED
+            - TIMEOUT
     SchedulerTask:
       type: object
       required:
-      - schedulerId
-      - name
-      - taskType
-      - taskId
-      - triggerType
-      - status
+        - schedulerId
+        - name
+        - taskType
+        - taskId
+        - triggerType
+        - status
       properties:
         schedulerId:
           type: string
@@ -1755,41 +1755,41 @@ components:
         taskType:
           type: string
           enum:
-          - ETL_TASK
-          - CDC_TASK
-          - QUALITY_CHECK
-          - CUSTOM_ACTION
+            - ETL_TASK
+            - CDC_TASK
+            - QUALITY_CHECK
+            - CUSTOM_ACTION
         taskId:
           type: string
         triggerType:
           type: string
           enum:
-          - CRON
-          - EVENT
-          - MANUAL
-          - DEPENDENCY
+            - CRON
+            - EVENT
+            - MANUAL
+            - DEPENDENCY
         cron:
           type: string
         status:
           type: string
           enum:
-          - ACTIVE
-          - PAUSED
-          - EXPIRED
-          - DELETED
+            - ACTIVE
+            - PAUSED
+            - EXPIRED
+            - DELETED
     Metric:
       type: object
       required:
-      - metricId
-      - name
-      - code
-      - type
-      - sourceId
-      - sourceTable
-      - sourceField
-      - aggregation
-      - calculationFrequency
-      - status
+        - metricId
+        - name
+        - code
+        - type
+        - sourceId
+        - sourceTable
+        - sourceField
+        - aggregation
+        - calculationFrequency
+        - status
       properties:
         metricId:
           type: string
@@ -1800,10 +1800,10 @@ components:
         type:
           type: string
           enum:
-          - ATOMIC
-          - DERIVED
-          - COMPOSITE
-          - REALTIME
+            - ATOMIC
+            - DERIVED
+            - COMPOSITE
+            - REALTIME
         sourceId:
           type: string
         sourceTable:
@@ -1813,23 +1813,23 @@ components:
         aggregation:
           type: string
           enum:
-          - SUM
-          - AVG
-          - COUNT
-          - MAX
-          - MIN
-          - LAST
+            - SUM
+            - AVG
+            - COUNT
+            - MAX
+            - MIN
+            - LAST
         calculationFrequency:
           type: string
           enum:
-          - REALTIME
-          - MINUTELY
-          - HOURLY
-          - DAILY
+            - REALTIME
+            - MINUTELY
+            - HOURLY
+            - DAILY
         status:
           type: string
           enum:
-          - DRAFT
-          - ACTIVE
-          - INACTIVE
-          - ERROR
+            - DRAFT
+            - ACTIVE
+            - INACTIVE
+            - ERROR

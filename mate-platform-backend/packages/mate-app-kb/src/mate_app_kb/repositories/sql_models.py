@@ -2,6 +2,7 @@
 
 Table names are prefixed with ``kb_``.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import Boolean, Float, Integer, String, Text

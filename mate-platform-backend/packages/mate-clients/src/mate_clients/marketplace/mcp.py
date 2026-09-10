@@ -12,6 +12,7 @@ This client uses ``BearerAuth`` + ``OutgoingAuthMiddleware`` so every
 outbound request carries ``Authorization: Bearer …`` + ``X-Tenant-Id``
 (13 硬规则 #4 ACL Client contract).
 """
+
 from __future__ import annotations
 
 import hashlib

@@ -17,6 +17,7 @@ package, the HTTP endpoints keep per-process in-memory retrieval config
 even under KB_STORE=sql; everything imported from THIS package (selection
 layer) already routes to SQL.
 """
+
 from __future__ import annotations
 
 import os

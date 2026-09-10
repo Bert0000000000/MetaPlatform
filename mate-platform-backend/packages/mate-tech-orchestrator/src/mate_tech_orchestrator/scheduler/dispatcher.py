@@ -4,6 +4,7 @@ Resolves a task to the right digital-employee role (by rid prefix via
 the kernel ``AgentSelector``, or by capability via the role registry),
 then routes to the role's worker (MCP / A2A / HTTP / local).
 """
+
 from __future__ import annotations
 
 import uuid
@@ -93,7 +94,10 @@ class Dispatcher:
 
     # -- role resolution -------------------------------------------------
     def _resolve_by_rid(
-        self, tenant_id: str, target_rid: str, action: str | None,
+        self,
+        tenant_id: str,
+        target_rid: str,
+        action: str | None,
     ) -> tuple[DigitalEmployeeRole, CapabilityBinding]:
         # A bare role slug (e.g. "knowledge") resolves directly; otherwise
         # fall back to the kernel AgentSelector rid-prefix routing.
@@ -110,7 +114,9 @@ class Dispatcher:
         return role, binding
 
     def _resolve_by_capability(
-        self, tenant_id: str, capability: str,
+        self,
+        tenant_id: str,
+        capability: str,
     ) -> tuple[DigitalEmployeeRole, CapabilityBinding]:
         # MP-COMP-01 overlay: when the reactive capability runtime tracks
         # this capability and its provider fiber is not ACTIVE, the tool is
@@ -123,7 +129,9 @@ class Dispatcher:
             from .session_evolution import get_session_evolution
 
             session_rt = get_session_evolution().dispatch_runtime(
-                getattr(_REQ_CTX, "session_id", None) if getattr(_REQ_CTX, "session_id", None) else None
+                getattr(_REQ_CTX, "session_id", None)
+                if getattr(_REQ_CTX, "session_id", None)
+                else None
             )
         except Exception:
             session_rt = None
@@ -149,9 +157,7 @@ class Dispatcher:
                     return binding
         if role.capabilities:
             return role.capabilities[0]
-        raise NoRoleForTaskError(
-            f"role {role.role!r} has no capability to serve action {action!r}"
-        )
+        raise NoRoleForTaskError(f"role {role.role!r} has no capability to serve action {action!r}")
 
     # -- worker invocation -----------------------------------------------
     async def _invoke_binding(

@@ -10,6 +10,7 @@ ModelObject = 一个可被 Agent/Function 调用的模型（LLM/分类器/预测
 registry 提供 register / get / visible_to（按 actor markings 过滤）——
 与 ObjectType.marking 的工具可见性语义一致（SAL-06 对位）。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -17,12 +18,12 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class ModelObject:
-    rid: str                      # ont.<tenant>.mdl.<slug>.<ver>
+    rid: str  # ont.<tenant>.mdl.<slug>.<ver>
     display_name: str
-    provider: str                 # openai-compatible | anthropic | ark-plan | …
-    model: str                    # 供给方模型名
+    provider: str  # openai-compatible | anthropic | ark-plan | …
+    model: str  # 供给方模型名
     base_url: str = ""
-    input_schema: str = ""        # JSON Schema（字符串内联）
+    input_schema: str = ""  # JSON Schema（字符串内联）
     output_schema: str = ""
     required_markings: frozenset[str] = frozenset()
 
@@ -44,8 +45,7 @@ class ModelRegistry:
         """动态安全：actor markings 覆盖模型 required_markings 才可见。"""
         actor = set(actor_markings)
         return sorted(
-            (m for m in self._models.values()
-             if set(m.required_markings) <= actor),
+            (m for m in self._models.values() if set(m.required_markings) <= actor),
             key=lambda m: m.rid,
         )
 

@@ -1,4 +1,5 @@
 """Audit log model for FR-DASH-006-04."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

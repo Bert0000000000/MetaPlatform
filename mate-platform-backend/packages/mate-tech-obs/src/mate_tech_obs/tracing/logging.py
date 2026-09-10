@@ -1,4 +1,5 @@
 """Loki + Tempo 配置 (ST-5.2.5 + ST-5.2.6)."""
+
 from __future__ import annotations
 
 import os
@@ -8,6 +9,7 @@ import structlog
 
 def configure_json_logging(level: str = "INFO") -> None:
     import logging
+
     log_level = getattr(logging, level.upper(), logging.INFO)
     structlog.configure(
         processors=[

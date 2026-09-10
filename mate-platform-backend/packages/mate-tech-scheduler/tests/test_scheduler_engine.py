@@ -4,6 +4,7 @@ Covers happy-path, error, and timeout scenarios for both the
 ``AirflowEngine`` (REST API) and ``DagsterEngine`` (GraphQL API),
 plus the ``AsyncSchedulerClient`` delegation layer.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -24,11 +25,14 @@ from mate_tech_scheduler.services.dagster_engine import DagsterEngine, DagsterEn
 async def test_airflow_pause_task_success() -> None:
     """PATCH /dags/{dag_id} with is_paused=true → paused status."""
     respx.patch("http://airflow:8081/api/v1/dags/etl_orders").mock(
-        return_value=httpx.Response(200, json={
-            "dag_id": "etl_orders",
-            "is_paused": True,
-            "is_active": True,
-        })
+        return_value=httpx.Response(
+            200,
+            json={
+                "dag_id": "etl_orders",
+                "is_paused": True,
+                "is_active": True,
+            },
+        )
     )
     engine = AirflowEngine(
         base_url="http://airflow:8081",
@@ -47,18 +51,22 @@ async def test_airflow_pause_task_success() -> None:
 async def test_airflow_trigger_task_success() -> None:
     """POST /dags/{dag_id}/dagRuns → running status with run_id."""
     respx.post("http://airflow:8081/api/v1/dags/etl_orders/dagRuns").mock(
-        return_value=httpx.Response(200, json={
-            "dag_run_id": "manual__2026-08-01T00:00:00",
-            "dag_id": "etl_orders",
-            "state": "running",
-        })
+        return_value=httpx.Response(
+            200,
+            json={
+                "dag_run_id": "manual__2026-08-01T00:00:00",
+                "dag_id": "etl_orders",
+                "state": "running",
+            },
+        )
     )
     engine = AirflowEngine(
         base_url="http://airflow:8081",
         max_retries=0,
     )
     result = await engine.trigger_task(
-        "sch-001", "etl_orders",
+        "sch-001",
+        "etl_orders",
         conf={"date": "2026-08-01"},
     )
     assert result.status == "running"
@@ -71,11 +79,14 @@ async def test_airflow_trigger_task_success() -> None:
 async def test_airflow_get_dag_success() -> None:
     """GET /dags/{dag_id} → active status."""
     respx.get("http://airflow:8081/api/v1/dags/etl_orders").mock(
-        return_value=httpx.Response(200, json={
-            "dag_id": "etl_orders",
-            "is_paused": False,
-            "is_active": True,
-        })
+        return_value=httpx.Response(
+            200,
+            json={
+                "dag_id": "etl_orders",
+                "is_paused": False,
+                "is_active": True,
+            },
+        )
     )
     engine = AirflowEngine(
         base_url="http://airflow:8081",
@@ -91,11 +102,14 @@ async def test_airflow_get_dag_success() -> None:
 async def test_airflow_get_dag_paused() -> None:
     """GET /dags/{dag_id} → paused status."""
     respx.get("http://airflow:8081/api/v1/dags/etl_orders").mock(
-        return_value=httpx.Response(200, json={
-            "dag_id": "etl_orders",
-            "is_paused": True,
-            "is_active": True,
-        })
+        return_value=httpx.Response(
+            200,
+            json={
+                "dag_id": "etl_orders",
+                "is_paused": True,
+                "is_active": True,
+            },
+        )
     )
     engine = AirflowEngine(
         base_url="http://airflow:8081",
@@ -130,9 +144,14 @@ async def test_airflow_retry_on_server_error() -> None:
     route = respx.patch("http://airflow:8081/api/v1/dags/etl_orders").mock(
         side_effect=[
             httpx.Response(500, text="Internal error"),
-            httpx.Response(200, json={
-                "dag_id": "etl_orders", "is_paused": True, "is_active": True,
-            }),
+            httpx.Response(
+                200,
+                json={
+                    "dag_id": "etl_orders",
+                    "is_paused": True,
+                    "is_active": True,
+                },
+            ),
         ]
     )
     engine = AirflowEngine(
@@ -167,17 +186,20 @@ async def test_airflow_timeout() -> None:
 async def test_dagster_trigger_task_success() -> None:
     """GraphQL LaunchPipelineRun mutation succeeds."""
     respx.post("http://dagster:3000/graphql").mock(
-        return_value=httpx.Response(200, json={
-            "data": {
-                "launchPipelineRun": {
-                    "__typename": "LaunchRunSuccess",
-                    "run": {
-                        "runId": "dagster-run-001",
-                        "status": "LAUNCHED",
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": {
+                    "launchPipelineRun": {
+                        "__typename": "LaunchRunSuccess",
+                        "run": {
+                            "runId": "dagster-run-001",
+                            "status": "LAUNCHED",
+                        },
                     }
                 }
-            }
-        })
+            },
+        )
     )
     engine = DagsterEngine(
         base_url="http://dagster:3000",
@@ -202,15 +224,18 @@ async def test_dagster_trigger_task_success() -> None:
 async def test_dagster_get_run_status_success() -> None:
     """GraphQL pipelineRunOrError query succeeds."""
     respx.post("http://dagster:3000/graphql").mock(
-        return_value=httpx.Response(200, json={
-            "data": {
-                "pipelineRunOrError": {
-                    "__typename": "Run",
-                    "runId": "dagster-run-001",
-                    "status": "SUCCESS",
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": {
+                    "pipelineRunOrError": {
+                        "__typename": "Run",
+                        "runId": "dagster-run-001",
+                        "status": "SUCCESS",
+                    }
                 }
-            }
-        })
+            },
+        )
     )
     engine = DagsterEngine(
         base_url="http://dagster:3000",
@@ -226,17 +251,20 @@ async def test_dagster_get_run_status_success() -> None:
 async def test_dagster_cancel_run_success() -> None:
     """GraphQL terminatePipelineExecution mutation succeeds."""
     respx.post("http://dagster:3000/graphql").mock(
-        return_value=httpx.Response(200, json={
-            "data": {
-                "terminatePipelineExecution": {
-                    "__typename": "TerminateRunSuccess",
-                    "run": {
-                        "runId": "dagster-run-001",
-                        "status": "CANCELED",
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": {
+                    "terminatePipelineExecution": {
+                        "__typename": "TerminateRunSuccess",
+                        "run": {
+                            "runId": "dagster-run-001",
+                            "status": "CANCELED",
+                        },
                     }
                 }
-            }
-        })
+            },
+        )
     )
     engine = DagsterEngine(
         base_url="http://dagster:3000",
@@ -252,14 +280,17 @@ async def test_dagster_cancel_run_success() -> None:
 async def test_dagster_trigger_launch_failure() -> None:
     """GraphQL LaunchRunSuccess not returned → DagsterEngineError."""
     respx.post("http://dagster:3000/graphql").mock(
-        return_value=httpx.Response(200, json={
-            "data": {
-                "launchPipelineRun": {
-                    "__typename": "PythonError",
-                    "message": "Pipeline not found",
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": {
+                    "launchPipelineRun": {
+                        "__typename": "PythonError",
+                        "message": "Pipeline not found",
+                    }
                 }
-            }
-        })
+            },
+        )
     )
     engine = DagsterEngine(
         base_url="http://dagster:3000",
@@ -281,9 +312,12 @@ async def test_dagster_trigger_launch_failure() -> None:
 async def test_dagster_graphql_errors() -> None:
     """GraphQL response contains 'errors' → DagsterEngineError."""
     respx.post("http://dagster:3000/graphql").mock(
-        return_value=httpx.Response(200, json={
-            "errors": [{"message": "Unauthorized"}],
-        })
+        return_value=httpx.Response(
+            200,
+            json={
+                "errors": [{"message": "Unauthorized"}],
+            },
+        )
     )
     engine = DagsterEngine(
         base_url="http://dagster:3000",
@@ -333,10 +367,14 @@ async def test_dagster_timeout() -> None:
 async def test_scheduler_client_delegates_to_airflow() -> None:
     """AsyncSchedulerClient.trigger_task dispatches to AirflowEngine."""
     mock_airflow = MagicMock(spec=AirflowEngine)
-    mock_airflow.trigger_task = AsyncMock(return_value=MagicMock(
-        task_id="sch-001", dag_id="etl_orders",
-        status="running", run_id="run-001",
-    ))
+    mock_airflow.trigger_task = AsyncMock(
+        return_value=MagicMock(
+            task_id="sch-001",
+            dag_id="etl_orders",
+            status="running",
+            run_id="run-001",
+        )
+    )
     mock_airflow.close = AsyncMock()
     mock_dagster = MagicMock(spec=DagsterEngine)
     mock_dagster.close = AsyncMock()
@@ -347,12 +385,15 @@ async def test_scheduler_client_delegates_to_airflow() -> None:
         dagster_engine=mock_dagster,  # type: ignore[arg-type]
     )
     result = await client.trigger_task(
-        "sch-001", "etl_orders",
+        "sch-001",
+        "etl_orders",
         engine="airflow",
         conf={"date": "2026-08-01"},
     )
     mock_airflow.trigger_task.assert_called_once_with(
-        "sch-001", "etl_orders", conf={"date": "2026-08-01"},
+        "sch-001",
+        "etl_orders",
+        conf={"date": "2026-08-01"},
     )
     assert result.task_id == "sch-001"
     await client.close()
@@ -364,10 +405,13 @@ async def test_scheduler_client_delegates_to_dagster() -> None:
     mock_airflow = MagicMock(spec=AirflowEngine)
     mock_airflow.close = AsyncMock()
     mock_dagster = MagicMock(spec=DagsterEngine)
-    mock_dagster.trigger_task = AsyncMock(return_value=MagicMock(
-        task_id="sch-002", run_id="dagster-run-001",
-        status="launched",
-    ))
+    mock_dagster.trigger_task = AsyncMock(
+        return_value=MagicMock(
+            task_id="sch-002",
+            run_id="dagster-run-001",
+            status="launched",
+        )
+    )
     mock_dagster.close = AsyncMock()
 
     client = AsyncSchedulerClient(
@@ -376,7 +420,8 @@ async def test_scheduler_client_delegates_to_dagster() -> None:
         dagster_engine=mock_dagster,  # type: ignore[arg-type]
     )
     result = await client.trigger_task(
-        "sch-002", "ignored",
+        "sch-002",
+        "ignored",
         engine="dagster",
         repository_location_name="loc",
         repository_name="repo",

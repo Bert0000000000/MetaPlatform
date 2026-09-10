@@ -18,6 +18,7 @@ status carries the same meaning to the caller.
 Error codes follow PRD-A2A §6:
     - ``E_AGENT_NOT_FOUND``  when ``target_agent_id`` is unknown.
 """
+
 from __future__ import annotations
 
 from typing import Any, Protocol, runtime_checkable
@@ -34,9 +35,7 @@ class A2AClient(Protocol):
         """Delegate ``request`` to the target agent and return the result."""
         ...
 
-    def discover_agents(
-        self, tenant_id: str, capability: str | None = None
-    ) -> list[AgentCard]:
+    def discover_agents(self, tenant_id: str, capability: str | None = None) -> list[AgentCard]:
         """List agent cards for a tenant, optionally filtered by capability."""
         ...
 
@@ -77,10 +76,7 @@ class InMemoryA2AClient:
                 target_agent_id=target_agent_id,
                 status="failed",
                 error_code="E_AGENT_NOT_FOUND",
-                error_message=(
-                    f"agent {target_agent_id!r} not found "
-                    f"for tenant {tenant_id!r}"
-                ),
+                error_message=(f"agent {target_agent_id!r} not found for tenant {tenant_id!r}"),
                 lineage_hints=self._hints(request, card=None),
             )
 
@@ -105,18 +101,14 @@ class InMemoryA2AClient:
             lineage_hints=self._hints(request, card=card),
         )
 
-    def discover_agents(
-        self, tenant_id: str, capability: str | None = None
-    ) -> list[AgentCard]:
+    def discover_agents(self, tenant_id: str, capability: str | None = None) -> list[AgentCard]:
         """List agent cards, optionally filtered by capability."""
         if capability:
             return self._registry.filter_by_capability(tenant_id, capability)
         return self._registry.discover(tenant_id)
 
     @staticmethod
-    def _hints(
-        request: DelegationRequest, *, card: AgentCard | None
-    ) -> dict[str, Any]:
+    def _hints(request: DelegationRequest, *, card: AgentCard | None) -> dict[str, Any]:
         """Build lineage hints for the delegation result.
 
         Per ADR-0016 §3.1 + hard rule 9: every cross-domain event

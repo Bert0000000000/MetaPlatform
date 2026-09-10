@@ -6,6 +6,7 @@
 - 失败模式：超时 / 编译错误 / sandbox 违规
 - InMemory / PG 行为对齐
 """
+
 from __future__ import annotations
 
 import os
@@ -29,14 +30,13 @@ from mate_kernel.sandbox.k8s import (
     _SimplePythonExecutor,
 )
 
-PG_DSN = os.getenv(
-    "PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform_ont_test"
-)
+PG_DSN = os.getenv("PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform_ont_test")
 
 
 def _pg_available() -> bool:
     try:
         import psycopg2  # type: ignore
+
         conn = psycopg2.connect(PG_DSN, connect_timeout=2)
         conn.close()
         return True
@@ -77,9 +77,7 @@ def _individual(rid: str) -> Individual:
     return Individual(
         rid=rid,
         class_rid=ClassRef("ont.acme.obj.po.v1"),
-        props=(
-            (ClassRef("ont.acme.prop.po-id.v1"), rid.rsplit(".", maxsplit=1)[-1]),
-        ),
+        props=((ClassRef("ont.acme.prop.po-id.v1"), rid.rsplit(".", maxsplit=1)[-1]),),
         primary_key=rid.rsplit(".", maxsplit=1)[-1],
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
@@ -148,9 +146,7 @@ def test_function_apply_round_trip_inmemory() -> None:
     )
     assert side_effects == []
     got = repo.get_individual("ont.acme.ind.po.0")
-    decision_value = next(
-        v for k, v in got.props if k.rid == "ont.acme.prop.decision.v1"
-    )
+    decision_value = next(v for k, v in got.props if k.rid == "ont.acme.prop.decision.v1")
     assert decision_value == "approved"
 
 
@@ -206,9 +202,7 @@ def test_function_apply_unknown_function_ref_raises_inmemory() -> None:
     )
     assert side_effects == []
     got = repo.get_individual("ont.acme.ind.po.0")
-    decision_value = next(
-        v for k, v in got.props if k.rid == "ont.acme.prop.decision.v1"
-    )
+    decision_value = next(v for k, v in got.props if k.rid == "ont.acme.prop.decision.v1")
     assert decision_value == "manual"
 
 
@@ -241,9 +235,7 @@ def test_function_apply_explicit_parameters_take_precedence_inmemory() -> None:
         provenance={"actor": "alice"},
     )
     got = repo.get_individual("ont.acme.ind.po.0")
-    decision_value = next(
-        v for k, v in got.props if k.rid == "ont.acme.prop.decision.v1"
-    )
+    decision_value = next(v for k, v in got.props if k.rid == "ont.acme.prop.decision.v1")
     assert decision_value == "explicit"
 
 
@@ -253,6 +245,7 @@ def test_function_apply_explicit_parameters_take_precedence_inmemory() -> None:
 @pytest.fixture
 def pg_repo() -> object:
     from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+
     return PgOntologyRepository(dsn=PG_DSN)
 
 
@@ -266,6 +259,7 @@ def _clean_pg(pg_repo) -> None:
         return
     pg_repo._ensure_schema()
     import psycopg2  # type: ignore
+
     conn = psycopg2.connect(PG_DSN)
     try:
         with conn.cursor() as cur:
@@ -306,9 +300,7 @@ def test_function_apply_round_trip_pg(pg_repo) -> None:
     # PG 路径保留 legacy side_effects 字符串（既有调用方依赖）
     assert any("actor=alice" in s for s in side_effects)
     got = pg_repo.get_individual("ont.acme.ind.po.0")
-    decision_value = next(
-        v for k, v in got.props if k.rid == "ont.acme.prop.decision.v1"
-    )
+    decision_value = next(v for k, v in got.props if k.rid == "ont.acme.prop.decision.v1")
     assert decision_value == "approved"
 
 
@@ -369,7 +361,5 @@ def test_function_apply_inmemory_parity_pg(pg_repo) -> None:
     # PG 路径保留 legacy side_effects 字符串（既有调用方依赖）
     assert any("actor=alice" in s for s in side_effects)
     got = pg_repo.get_individual("ont.acme.ind.po.0")
-    decision_value = next(
-        v for k, v in got.props if k.rid == "ont.acme.prop.decision.v1"
-    )
+    decision_value = next(v for k, v in got.props if k.rid == "ont.acme.prop.decision.v1")
     assert decision_value == "parity"

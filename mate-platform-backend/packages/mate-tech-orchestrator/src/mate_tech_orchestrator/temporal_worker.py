@@ -5,6 +5,7 @@ ADR-0061 Sprint 1A Milestone 1: activities wrap the existing
 workflow definition lives in :mod:`mate_tech_orchestrator.temporal_workflow`.
 Run: ``python -m mate_tech_orchestrator.temporal_worker``.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -39,13 +40,19 @@ def _service_token() -> str:
     now = _t.time()
     if _SERVICE_TOKEN["token"] and now < _SERVICE_TOKEN["exp"] - 300:
         return _SERVICE_TOKEN["token"]
-    url = os.environ.get(
-        "IAM_LOGIN_URL", "http://host.docker.internal:8100/api/v1/iam/auth/login")
+    url = os.environ.get("IAM_LOGIN_URL", "http://host.docker.internal:8100/api/v1/iam/auth/login")
     req = urllib.request.Request(
-        url, data=__import__("json").dumps(
-            {"username": os.environ.get("IAM_USER", "admin"),
-             "password": os.environ.get("IAM_PASS", "admin123")}).encode(),
-        headers={"Content-Type": "application/json"})
+        url,
+        data=__import__("json")
+        .dumps(
+            {
+                "username": os.environ.get("IAM_USER", "admin"),
+                "password": os.environ.get("IAM_PASS", "admin123"),
+            }
+        )
+        .encode(),
+        headers={"Content-Type": "application/json"},
+    )
     with urllib.request.urlopen(req, timeout=20) as resp:
         data = __import__("json").loads(resp.read())
     tok = data["accessToken"]
@@ -81,7 +88,8 @@ async def orch_start_plan(inp: dict[str, Any]) -> dict[str, Any]:
     plan_steps = plan_steps_from_dicts(workflow_input_to_plan_steps(parsed))
     spec = runner.submit(author_user_id=parsed.author_user_id, steps=plan_steps)
     result = await runner.execute(
-        plan_id=spec.plan_id, tenant_id=parsed.tenant_id,
+        plan_id=spec.plan_id,
+        tenant_id=parsed.tenant_id,
         token=parsed.token or _service_token(),
     )
     return {"plan_id": spec.plan_id, **result}
@@ -121,13 +129,13 @@ async def orch_revert_proposal(inp: dict[str, Any]) -> dict[str, Any]:
     if client is None:
         return {"status": "failed", "reason": "ontology client not configured"}
     return await client.revert(
-        str(inp["tenant_id"]), str(inp["proposal_id"]),
+        str(inp["tenant_id"]),
+        str(inp["proposal_id"]),
         token=str(inp.get("token") or _service_token()),
     )
 
 
-async def _selfheal_watcher(host: str, interval_s: float = 30.0,
-                             max_failures: int = 3) -> None:
+async def _selfheal_watcher(host: str, interval_s: float = 30.0, max_failures: int = 3) -> None:
     """gRPC 长轮询自愈（M3）：周期性 get_system_info 探活。
 
     本机 Docker VM 会静默掐断 gRPC 长连接（进程存活但 poller 失聪）。
@@ -156,11 +164,15 @@ async def _selfheal_watcher(host: str, interval_s: float = 30.0,
             failures = 0
         except Exception as exc:
             failures += 1
-            print(f"[temporal-worker][selfheal] probe failed "
-                  f"({failures}/{max_failures}): {exc}", flush=True)
+            print(
+                f"[temporal-worker][selfheal] probe failed ({failures}/{max_failures}): {exc}",
+                flush=True,
+            )
             if failures >= max_failures:
-                print("[temporal-worker][selfheal] giving up — exiting for "
-                      "restart-policy revival", flush=True)
+                print(
+                    "[temporal-worker][selfheal] giving up — exiting for restart-policy revival",
+                    flush=True,
+                )
                 _os._exit(1)
 
 
@@ -190,4 +202,3 @@ async def run_worker() -> None:
 
 if __name__ == "__main__":
     asyncio.run(run_worker())
-

@@ -3,6 +3,7 @@
 Uses bcrypt directly (passlib + bcrypt 4.x has API drift issues). Falls back to
 PBKDF2-HMAC-SHA256 if bcrypt is not importable.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -31,7 +32,9 @@ except ImportError:  # pragma: no cover
 
     def hash_password(plain: str) -> str:
         salt = secrets.token_hex(16)
-        digest = hashlib.pbkdf2_hmac(_ALGO, plain.encode("utf-8"), salt.encode("utf-8"), _ITERS).hex()
+        digest = hashlib.pbkdf2_hmac(
+            _ALGO, plain.encode("utf-8"), salt.encode("utf-8"), _ITERS
+        ).hex()
         return "pbkdf2_" + _ALGO + "$" + str(_ITERS) + "$" + salt + "$" + digest
 
     def verify_password(plain: str, hashed: str) -> bool:
@@ -46,7 +49,9 @@ except ImportError:  # pragma: no cover
         except ValueError:
             return False
         algo = scheme.split("_", 1)[1]
-        candidate = hashlib.pbkdf2_hmac(algo, plain.encode("utf-8"), salt.encode("utf-8"), iters).hex()
+        candidate = hashlib.pbkdf2_hmac(
+            algo, plain.encode("utf-8"), salt.encode("utf-8"), iters
+        ).hex()
         return hmac.compare_digest(candidate, digest)
 
 

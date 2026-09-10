@@ -36,9 +36,7 @@ async def test_e2e_01_data_quality_full_flow(
         "severity": "HIGH",
         "enabled": True,
     }
-    resp = await data_client.post(
-        f"{DATA_BASE}/rules", json=create_body, headers=tenant_headers
-    )
+    resp = await data_client.post(f"{DATA_BASE}/rules", json=create_body, headers=tenant_headers)
     assert resp.status_code == 200, resp.text
     rule_data = resp.json()["data"]
     assert rule_data["ruleType"] == "not_null"
@@ -47,9 +45,7 @@ async def test_e2e_01_data_quality_full_flow(
     # 2. 触发检测任务（多次触发以提高随机失败概率，便于后续 issue 断言）
     job_ids: list[str] = []
     for _ in range(5):
-        run_resp = await data_client.post(
-            f"{DATA_BASE}/run", json={}, headers=tenant_headers
-        )
+        run_resp = await data_client.post(f"{DATA_BASE}/run", json={}, headers=tenant_headers)
         assert run_resp.status_code == 200
         run_data = run_resp.json()["data"]
         assert run_data["status"] == "completed"
@@ -60,9 +56,7 @@ async def test_e2e_01_data_quality_full_flow(
         assert run_resp.json()["traceId"] == trace_id
 
     # 3. 查看 issue 列表
-    issues_resp = await data_client.get(
-        f"{DATA_BASE}/issues", headers=tenant_headers
-    )
+    issues_resp = await data_client.get(f"{DATA_BASE}/issues", headers=tenant_headers)
     assert issues_resp.status_code == 200
     assert issues_resp.json()["traceId"] == trace_id
     issues = issues_resp.json()["data"]["items"]
@@ -116,9 +110,7 @@ async def test_e2e_01_data_quality_full_flow(
         assert any(i["issueId"] == issue_id for i in items)
 
     # 5. 查看 overview 应反映规则与最近一次 run
-    overview_resp = await data_client.get(
-        f"{DATA_BASE}/overview", headers=tenant_headers
-    )
+    overview_resp = await data_client.get(f"{DATA_BASE}/overview", headers=tenant_headers)
     assert overview_resp.status_code == 200
     overview = overview_resp.json()["data"]
     assert overview["totalRules"] >= 1
@@ -128,8 +120,12 @@ async def test_e2e_01_data_quality_full_flow(
     assert len(overview["scores"]) == 6
     dims = {s["dimension"] for s in overview["scores"]}
     assert dims == {
-        "completeness", "accuracy", "consistency",
-        "timeliness", "uniqueness", "validity",
+        "completeness",
+        "accuracy",
+        "consistency",
+        "timeliness",
+        "uniqueness",
+        "validity",
     }
     assert overview_resp.json()["traceId"] == trace_id
 

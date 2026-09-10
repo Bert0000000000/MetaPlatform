@@ -5,6 +5,7 @@ docker is unavailable. Instead, each "requires docker" test passes
 trivially in environments without docker (CI pipeline runs the real
 testcontainer version in a dedicated job).
 """
+
 from __future__ import annotations
 
 import shutil
@@ -112,9 +113,12 @@ async def test_dual_write_neo4j_unavailable_no_pg() -> None:
 
     writer = DualWriter(pg_pool=pg_pool, neo4j_session=neo4j)
     result = await writer.write(
-        entity="class", entity_id="1",
-        neo4j_cypher="CREATE", neo4j_params={},
-        pg_sql="INSERT", pg_params={},
+        entity="class",
+        entity_id="1",
+        neo4j_cypher="CREATE",
+        neo4j_params={},
+        pg_sql="INSERT",
+        pg_params={},
     )
     assert result.pg_ok is False
     assert result.neo4j_ok is False

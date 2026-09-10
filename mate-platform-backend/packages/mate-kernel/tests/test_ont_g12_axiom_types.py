@@ -1,4 +1,5 @@
 """ONT-G12 第一批 — Axiom 类型集扩展（OWL 2 常用公理）。"""
+
 from __future__ import annotations
 
 import os
@@ -24,10 +25,14 @@ def _ax(kind: AxiomKind) -> Axiom:
 class TestExtendedKinds:
     def test_all_new_kinds_constructible(self):
         for k in (
-            AxiomKind.EQUIVALENT_CLASS, AxiomKind.PROPERTY_DOMAIN,
-            AxiomKind.PROPERTY_RANGE, AxiomKind.FUNCTIONAL,
-            AxiomKind.INVERSE_FUNCTIONAL, AxiomKind.TRANSITIVE_PROPERTY,
-            AxiomKind.SYMMETRIC_PROPERTY, AxiomKind.PROPERTY_CHAIN,
+            AxiomKind.EQUIVALENT_CLASS,
+            AxiomKind.PROPERTY_DOMAIN,
+            AxiomKind.PROPERTY_RANGE,
+            AxiomKind.FUNCTIONAL,
+            AxiomKind.INVERSE_FUNCTIONAL,
+            AxiomKind.TRANSITIVE_PROPERTY,
+            AxiomKind.SYMMETRIC_PROPERTY,
+            AxiomKind.PROPERTY_CHAIN,
             AxiomKind.HAS_KEY,
         ):
             a = _ax(k)

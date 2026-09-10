@@ -35,13 +35,13 @@ ont）落地 4 条**用户旅程级 SLO** + 1 条**成本 SLO** + 1 条**安全 
 
 ### 2.1 SLO 表（必交付，5 步接入 checklist 第 6 步）
 
-| Journey | SLO / Target | SLI 探针 | 告警阈值 | Owner | 数据来源 |
-|---|---|---|---|---|---|
-| **RAG 首 token 时延（TTFT）** | p95 ≤ 1.5s（本地）/ ≤ 4s（含 LLM 上游） | `rag.retrieve.latency_ms` + `llmgw.chat.ttft_ms` | p95 越线 ≥ 3min | RAG + LLMGW owner | OTel span `rag.retrieve` + `llmgw.chat` |
-| **Agent / Copilot 任务完成率** | ≥ 99%（不计 LLM 上游已知故障） | `agent.run.outcome` + `copilot.chat.outcome` | 错误率 > 5% | Agent + Copilot owner | OTel outcome attribute |
-| **MCP 工具调用授权失败率** | < 0.5%（hard rule 3/4 强约束） | `mcp.tool.deny_count` / `mcp.tool.total_count` | 单窗口 > 1 次 | MCP owner | `mate-platform.tenancy.guards` 抛出计数 |
-| **LLM 网关成本上限（per tenant）** | 月度上限可配；超限 → 429 + Retry-After | `llmgw.quota.exceeded_count` | 任意租户超额 ≥ 1 次/小时 | LLMGW owner | `mate_tech_llmgw/quota/bucket.py` 计数 |
-| **跨租户越权告警（hard rule 3）** | 必须为 0；> 0 即 P0 | `mate_platform.tenancy.cross_tenant_attempt` | 单次即触发 | Security owner | `mate-platform/tenancy/ads_audit.py` |
+| Journey                            | SLO / Target                            | SLI 探针                                         | 告警阈值                 | Owner                 | 数据来源                                |
+| ---------------------------------- | --------------------------------------- | ------------------------------------------------ | ------------------------ | --------------------- | --------------------------------------- |
+| **RAG 首 token 时延（TTFT）**      | p95 ≤ 1.5s（本地）/ ≤ 4s（含 LLM 上游） | `rag.retrieve.latency_ms` + `llmgw.chat.ttft_ms` | p95 越线 ≥ 3min          | RAG + LLMGW owner     | OTel span `rag.retrieve` + `llmgw.chat` |
+| **Agent / Copilot 任务完成率**     | ≥ 99%（不计 LLM 上游已知故障）          | `agent.run.outcome` + `copilot.chat.outcome`     | 错误率 > 5%              | Agent + Copilot owner | OTel outcome attribute                  |
+| **MCP 工具调用授权失败率**         | < 0.5%（hard rule 3/4 强约束）          | `mcp.tool.deny_count` / `mcp.tool.total_count`   | 单窗口 > 1 次            | MCP owner             | `mate-platform.tenancy.guards` 抛出计数 |
+| **LLM 网关成本上限（per tenant）** | 月度上限可配；超限 → 429 + Retry-After  | `llmgw.quota.exceeded_count`                     | 任意租户超额 ≥ 1 次/小时 | LLMGW owner           | `mate_tech_llmgw/quota/bucket.py` 计数  |
+| **跨租户越权告警（hard rule 3）**  | 必须为 0；> 0 即 P0                     | `mate_platform.tenancy.cross_tenant_attempt`     | 单次即触发               | Security owner        | `mate-platform/tenancy/ads_audit.py`    |
 
 ### 2.2 4 条 journey health model（OTel span 必接）
 
@@ -79,11 +79,11 @@ web.request
 LLMGW `QuotaExceededError` 已实现 RPM/TPM 限流（§5 配套基础设施），但**月度成本
 上限未实现**。本 ADR 新增：
 
-| 维度 | 实现位置 | 行为 |
-|---|---|---|
+| 维度                       | 实现位置                                          | 行为                                                       |
+| -------------------------- | ------------------------------------------------- | ---------------------------------------------------------- |
 | per-tenant 月度 token 上限 | `mate_tech_llmgw.quota.bucket.MonthlyTokenBucket` | 超限 → 429 + Retry-After（持久到 PG `llmgw_tenant_quota`） |
-| per-user 单日 cost 上限 | `mate_tech_llmgw.cost.recorder.UserDailyCap` | 超限 → 429 + 强制走 stub |
-| denial-of-wallet 防御 | `mate_tech_llmgw.cost.recorder.CostRecorder` | 检测单用户单小时成本突增 ≥ 10x 中位数 → 临时封禁 + alert |
+| per-user 单日 cost 上限    | `mate_tech_llmgw.cost.recorder.UserDailyCap`      | 超限 → 429 + 强制走 stub                                   |
+| denial-of-wallet 防御      | `mate_tech_llmgw.cost.recorder.CostRecorder`      | 检测单用户单小时成本突增 ≥ 10x 中位数 → 临时封禁 + alert   |
 
 ### 2.5 Adversarial eval 集（新增，B3）
 
@@ -91,21 +91,21 @@ LLMGW `QuotaExceededError` 已实现 RPM/TPM 限流（§5 配套基础设施）�
 
 ## 3. Decision Drivers
 
-| Driver | Priority | Evidence | Tradeoff |
-|---|---|---|---|
-| 用户体验稳定性 | P0 | 联调阶段所有 AI 服务无 SLO，fail 不可见 | 接受 SLO 越线时人工 oncall |
-| Cost abuse 防御 | P0 | 无 monthly ceiling → denial-of-wallet 风险 | 接受少量 false-positive 拒服务 |
-| 跨租户安全 | P0 | hard rule 3 + 4 是 §13 强约束 | 任何越权即 P0 阻断 |
-| 可观测性投入 | P1 | 已 GA OTel，但 journey 视图缺失 | 接入 span 是低成本改造 |
-| LLM 上游不可控 | P1 | OpenAI/Anthropic/Doubao 故障不可控 | 缓存 + 多模型 fallback（已实现） |
+| Driver          | Priority | Evidence                                   | Tradeoff                         |
+| --------------- | -------- | ------------------------------------------ | -------------------------------- |
+| 用户体验稳定性  | P0       | 联调阶段所有 AI 服务无 SLO，fail 不可见    | 接受 SLO 越线时人工 oncall       |
+| Cost abuse 防御 | P0       | 无 monthly ceiling → denial-of-wallet 风险 | 接受少量 false-positive 拒服务   |
+| 跨租户安全      | P0       | hard rule 3 + 4 是 §13 强约束              | 任何越权即 P0 阻断               |
+| 可观测性投入    | P1       | 已 GA OTel，但 journey 视图缺失            | 接入 span 是低成本改造           |
+| LLM 上游不可控  | P1       | OpenAI/Anthropic/Doubao 故障不可控         | 缓存 + 多模型 fallback（已实现） |
 
 ## 4. Options Considered
 
-| Option | Benefits | Costs | Risks | Selected Because |
-|---|---|---|---|---|
-| A. 仅告警，不定义 SLO target | 启动快 | 告警风暴；不可判断是否"达标" | 失稳态无 baseline | ❌ |
-| B. **本 ADR：journey-level SLO + cost ceiling + adversarial eval** | 与 hard rule 9 / 10 闭环；evidence 可验 | 需补 OTel span + cost bucket + eval | 工程量 ~2 周 | ✅ |
-| C. 等价于 NFR SLA 文档（无 telemetry 改造）| 文档齐全 | 不可验、不可执行 | 重蹈 v3.0 早期"无 SLO 时代" | ❌ |
+| Option                                                             | Benefits                                | Costs                               | Risks                       | Selected Because |
+| ------------------------------------------------------------------ | --------------------------------------- | ----------------------------------- | --------------------------- | ---------------- |
+| A. 仅告警，不定义 SLO target                                       | 启动快                                  | 告警风暴；不可判断是否"达标"        | 失稳态无 baseline           | ❌               |
+| B. **本 ADR：journey-level SLO + cost ceiling + adversarial eval** | 与 hard rule 9 / 10 闭环；evidence 可验 | 需补 OTel span + cost bucket + eval | 工程量 ~2 周                | ✅               |
+| C. 等价于 NFR SLA 文档（无 telemetry 改造）                        | 文档齐全                                | 不可验、不可执行                    | 重蹈 v3.0 早期"无 SLO 时代" | ❌               |
 
 ## 5. Status
 
@@ -121,43 +121,45 @@ LLMGW `QuotaExceededError` 已实现 RPM/TPM 限流（§5 配套基础设施）�
 
 ## 6. Bounded Context Map
 
-| Context | Responsibility | Owner | Upstream | Downstream |
-|---|---|---|---|---|
-| SLO registry | 4 journey SLO target + cost ceiling config | SRE | OTel collector | Grafana / Alertmanager |
-| OTel collector | span aggregation | PLATFORM-K8S-01 (ADR-0010) | 各 app | Tempo / Prometheus |
-| Adversarial eval | CI gate on prompt injection / 越权 / cost abuse | Security | LLMGW + RAG + MCP + Agent | CI |
-| Quota bucket | per-tenant RPM/TPM/monthly + per-user daily | LLMGW owner | `mate_tech_llmgw.quota.bucket` | API gateway (429) |
-| Cost recorder | usage tracking + alert on denial-of-wallet | LLMGW owner | LLMGW cache + provider | Grafana / oncall |
+| Context          | Responsibility                                  | Owner                      | Upstream                       | Downstream             |
+| ---------------- | ----------------------------------------------- | -------------------------- | ------------------------------ | ---------------------- |
+| SLO registry     | 4 journey SLO target + cost ceiling config      | SRE                        | OTel collector                 | Grafana / Alertmanager |
+| OTel collector   | span aggregation                                | PLATFORM-K8S-01 (ADR-0010) | 各 app                         | Tempo / Prometheus     |
+| Adversarial eval | CI gate on prompt injection / 越权 / cost abuse | Security                   | LLMGW + RAG + MCP + Agent      | CI                     |
+| Quota bucket     | per-tenant RPM/TPM/monthly + per-user daily     | LLMGW owner                | `mate_tech_llmgw.quota.bucket` | API gateway (429)      |
+| Cost recorder    | usage tracking + alert on denial-of-wallet      | LLMGW owner                | LLMGW cache + provider         | Grafana / oncall       |
 
 ## 7. Runtime Dependency Adoption
 
-| Dependency | Capability | Failure Mode | Timeout/Retry/Fallback | Adoption Criteria |
-|---|---|---|---|---|
-| OTel collector | 跨服务 trace 聚合 | collector down → span 丢失 | n/a（OTel SDK 本地 buffer）| span 覆盖率 ≥ 95% |
-| Prometheus | 指标 scrape | scrape 失败 → alert 延迟 | retry 3 次 | 5xx 越线告警 ≤ 5min 触发 |
-| Grafana | dashboard 渲染 | dashboard 不可用 → 不阻断业务 | n/a | dashboard 与 runbook 一一对应 |
-| LLMGW quota (RPM/TPM) | 实时限流 | Redis down → 降级 no-op | 已有 try/except | 超限 100% 命中 |
-| LLMGW quota (monthly) | 月度限流 | PG down → 降级允许请求 + alert | retry 3 次 + 临时放行 | 超限 100% 命中 |
-| Cost recorder | token / cost 用量 | PG down → 降级 no-op | 已有 try/except | cost 数据 0 丢失 |
+| Dependency            | Capability        | Failure Mode                   | Timeout/Retry/Fallback      | Adoption Criteria             |
+| --------------------- | ----------------- | ------------------------------ | --------------------------- | ----------------------------- |
+| OTel collector        | 跨服务 trace 聚合 | collector down → span 丢失     | n/a（OTel SDK 本地 buffer） | span 覆盖率 ≥ 95%             |
+| Prometheus            | 指标 scrape       | scrape 失败 → alert 延迟       | retry 3 次                  | 5xx 越线告警 ≤ 5min 触发      |
+| Grafana               | dashboard 渲染    | dashboard 不可用 → 不阻断业务  | n/a                         | dashboard 与 runbook 一一对应 |
+| LLMGW quota (RPM/TPM) | 实时限流          | Redis down → 降级 no-op        | 已有 try/except             | 超限 100% 命中                |
+| LLMGW quota (monthly) | 月度限流          | PG down → 降级允许请求 + alert | retry 3 次 + 临时放行       | 超限 100% 命中                |
+| Cost recorder         | token / cost 用量 | PG down → 降级 no-op           | 已有 try/except             | cost 数据 0 丢失              |
 
 ## 8. Risk Register
 
-| Risk | Likelihood | Impact | Mitigation | Owner |
-|---|---|---|---|---|
-| LLM 上游持续故障导致 SLO 不可达 | High | 用户体验降级 | 缓存 + 多模型 fallback（已实现） | LLMGW |
-| Cost ceiling false-positive 拒绝合法用户 | Medium | 业务损失 | monthly cap 默认高水位，按需下调 | LLMGW |
-| Adversarial eval 误报阻塞 CI | Medium | 联调效率下降 | eval case 与 prompt 升级同步演进 | Security |
-| SLO target 漂移（上游变慢）| High | SLO 失真 | 月度 review SLO target | SRE |
-| OTel collector 单点 | Medium | span 不可见 | K8s HA + Tempo backend（已有）| PLATFORM-K8S-01 |
+| Risk                                     | Likelihood | Impact       | Mitigation                       | Owner           |
+| ---------------------------------------- | ---------- | ------------ | -------------------------------- | --------------- |
+| LLM 上游持续故障导致 SLO 不可达          | High       | 用户体验降级 | 缓存 + 多模型 fallback（已实现） | LLMGW           |
+| Cost ceiling false-positive 拒绝合法用户 | Medium     | 业务损失     | monthly cap 默认高水位，按需下调 | LLMGW           |
+| Adversarial eval 误报阻塞 CI             | Medium     | 联调效率下降 | eval case 与 prompt 升级同步演进 | Security        |
+| SLO target 漂移（上游变慢）              | High       | SLO 失真     | 月度 review SLO target           | SRE             |
+| OTel collector 单点                      | Medium     | span 不可见  | K8s HA + Tempo backend（已有）   | PLATFORM-K8S-01 |
 
 ## 9. Consequences
 
 **正面**：
+
 - 联调阶段即可观测每个 journey 的 p95 / 错误率 / 越权。
 - LLM 成本有上限，杜绝 denial-of-wallet。
 - Adversarial eval 闭环，避免 v3.0 早期"ad-hoc 联调" 模式。
 
 **负面**：
+
 - 7 个 AI 服务包均需补 OTel span（约 30-50 行/包）。
 - 月度 quota 持久化增加 PG 写压力（预计 < 10 qps/tenant，可忽略）。
 - Adversarial eval 需 LLM 真实调用（mock 不可信），CI 时间 +30s。

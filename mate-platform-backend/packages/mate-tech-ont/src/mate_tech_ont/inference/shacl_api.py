@@ -1,4 +1,5 @@
 """SHACL 校验 API 端点 (v3.2 W2)."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -22,9 +23,7 @@ class ConstraintSpec(BaseModel):
     path: str = Field(..., description="属性路径")
     min_count: int | None = None
     max_count: int | None = None
-    datatype: str | None = Field(
-        None, description="string | integer | number | boolean"
-    )
+    datatype: str | None = Field(None, description="string | integer | number | boolean")
     pattern: str | None = Field(None, description="正则全匹配")
     min_length: int | None = None
     max_length: int | None = None

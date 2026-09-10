@@ -25,9 +25,9 @@ produced by independent scaffolding runs. No business code diverged.
 
 ## 3. Deleted trees
 
-| Path | Reason |
-|---|---|
-| `services/api-gateway/` | Duplicate of `mate-platform-backend/services/api-gateway/` |
+| Path                     | Reason                                                      |
+| ------------------------ | ----------------------------------------------------------- |
+| `services/api-gateway/`  | Duplicate of `mate-platform-backend/services/api-gateway/`  |
 | `services/auth-service/` | Duplicate of `mate-platform-backend/services/auth-service/` |
 
 Removed with `git rm -r services/api-gateway services/auth-service`.

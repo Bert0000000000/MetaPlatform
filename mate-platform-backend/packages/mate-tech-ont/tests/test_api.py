@@ -1,4 +1,5 @@
 """Ontology API tests (ST-5.4.3)."""
+
 from __future__ import annotations
 
 import pytest

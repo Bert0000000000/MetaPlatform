@@ -18,7 +18,7 @@ DeerFlow Adapter 配置：
 llm:
   base_url: https://llmgw.metaplatform.local/v1
   api_key: ${MATE_LLMGW_API_KEY}
-  model: gpt-4o       # 自动映射到 qwen-max
+  model: gpt-4o # 自动映射到 qwen-max
 ```
 
 调用：
@@ -44,16 +44,16 @@ Content-Type: application/json
 
 OpenAI 名 → 平台内部名映射示例：
 
-| OpenAI | 平台 |
-|---|---|
-| gpt-4o | qwen-max |
-| gpt-4-turbo | qwen-max-longcontext |
-| gpt-3.5-turbo | qwen-turbo |
-| o1 / o1-mini | qwen-max-thinking / qwen-plus-thinking |
-| claude-3.5-sonnet | qwen-max |
-| doubao-pro | doubao-pro |
-| deepseek-chat | deepseek-chat |
-| text-embedding-3-* | text-embedding-v3 |
+| OpenAI              | 平台                                   |
+| ------------------- | -------------------------------------- |
+| gpt-4o              | qwen-max                               |
+| gpt-4-turbo         | qwen-max-longcontext                   |
+| gpt-3.5-turbo       | qwen-turbo                             |
+| o1 / o1-mini        | qwen-max-thinking / qwen-plus-thinking |
+| claude-3.5-sonnet   | qwen-max                               |
+| doubao-pro          | doubao-pro                             |
+| deepseek-chat       | deepseek-chat                          |
+| text-embedding-3-\* | text-embedding-v3                      |
 
 未识别模型 → fallback 到 `qwen-max`。
 

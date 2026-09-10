@@ -17,6 +17,7 @@
 复杂度：``O(N*D) embedding + O(N log N) sort``，N=role 数（当前 13），D=16/384/1536。
 无 LLM 调用、无网络 → 可观测、可 fallback、可单元测试。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -185,8 +186,7 @@ class SemanticRouter:
         if rid:
             # rid 形如 ont.acme.cls.employee.v1 → 拆成 token（去 version 段）
             parts.extend(
-                p for p in rid.replace("/", ".").split(".")
-                if p and not re.fullmatch(r"v\d+", p)
+                p for p in rid.replace("/", ".").split(".") if p and not re.fullmatch(r"v\d+", p)
             )
         return " ".join(p for p in parts if p)
 
@@ -283,11 +283,7 @@ class SemanticRouter:
                 actor_roles_digest=scope[1],
                 capability_version=scope[2],
             )
-            sim = (
-                self._cosine(qvec, entry.embedding)
-                if qvec and entry.embedding
-                else 0.0
-            )
+            sim = self._cosine(qvec, entry.embedding) if qvec and entry.embedding else 0.0
             hit = self._keyword_hit(user_message, entry.capability_tags)
             adjusted = max(
                 0.0,
@@ -300,14 +296,16 @@ class SemanticRouter:
             else:
                 reason = "embedding cosine"
             if adjusted >= self._policy.minimum_relevance:
-                candidates.append(CandidateRole(
-                    role_slug=entry.role_slug,
-                    role_rid=entry.role_rid,
-                    display_name=entry.display_name,
-                    capability_tags=entry.capability_tags,
-                    similarity=float(adjusted),
-                    reason=reason,
-                ))
+                candidates.append(
+                    CandidateRole(
+                        role_slug=entry.role_slug,
+                        role_rid=entry.role_rid,
+                        display_name=entry.display_name,
+                        capability_tags=entry.capability_tags,
+                        similarity=float(adjusted),
+                        reason=reason,
+                    )
+                )
 
         candidates.sort(key=lambda c: c.similarity, reverse=True)
         bounded_top_k = self._policy.top_k if top_k is None else max(0, top_k)

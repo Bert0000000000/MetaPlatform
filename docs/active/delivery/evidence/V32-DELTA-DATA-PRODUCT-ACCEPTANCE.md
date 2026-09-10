@@ -7,11 +7,11 @@
 
 ## 1. 三件并行交付（sub-agent 3 并行）
 
-| Sub-agent | 范围 | 改 package | 测试 |
-|---|---|---|---|
-| A: DataProduct 域 | 新 `data_products` 全栈 CRUD + publish lifecycle + OpenAPI 9 endpoints | mate-tech-data | **15 tests** |
-| B: ADS publish workflow | `IcebergRestAdapter` + `AdsPublisher` 4 步工作流 | mate-tech-data | **22 tests** (11 publisher + 11 adapter) |
-| C: ADS access audit | `AdsAuditMiddleware` ASGI 中间件 | mate-platform | **8 tests** |
+| Sub-agent               | 范围                                                                   | 改 package     | 测试                                     |
+| ----------------------- | ---------------------------------------------------------------------- | -------------- | ---------------------------------------- |
+| A: DataProduct 域       | 新 `data_products` 全栈 CRUD + publish lifecycle + OpenAPI 9 endpoints | mate-tech-data | **15 tests**                             |
+| B: ADS publish workflow | `IcebergRestAdapter` + `AdsPublisher` 4 步工作流                       | mate-tech-data | **22 tests** (11 publisher + 11 adapter) |
+| C: ADS access audit     | `AdsAuditMiddleware` ASGI 中间件                                       | mate-platform  | **8 tests**                              |
 
 **测试增量**：+45（从 1594 → 1639）
 
@@ -21,17 +21,17 @@
 
 ### 2.1 新增 9 个 endpoints
 
-| Method | Path | 用途 |
-|---|---|---|
-| GET | `/api/v1/data/products` | 列表（分页 + status/modality 过滤） |
-| POST | `/api/v1/data/products` | 创建 |
-| GET | `/api/v1/data/products/{id}` | 详情 |
-| PUT | `/api/v1/data/products/{id}` | 更新 |
-| DELETE | `/api/v1/data/products/{id}` | 删除 |
-| POST | `/api/v1/data/products/{id}/publish` | 发布（status="published", version+1, outbox） |
-| POST | `/api/v1/data/products/{id}/certify` | 认证（status="certified", 需 owner, outbox） |
-| POST | `/api/v1/data/products/{id}/suspend` | 暂停（status="suspended", outbox） |
-| GET | `/api/v1/data/products/{id}/versions` | 版本历史 |
+| Method | Path                                  | 用途                                          |
+| ------ | ------------------------------------- | --------------------------------------------- |
+| GET    | `/api/v1/data/products`               | 列表（分页 + status/modality 过滤）           |
+| POST   | `/api/v1/data/products`               | 创建                                          |
+| GET    | `/api/v1/data/products/{id}`          | 详情                                          |
+| PUT    | `/api/v1/data/products/{id}`          | 更新                                          |
+| DELETE | `/api/v1/data/products/{id}`          | 删除                                          |
+| POST   | `/api/v1/data/products/{id}/publish`  | 发布（status="published", version+1, outbox） |
+| POST   | `/api/v1/data/products/{id}/certify`  | 认证（status="certified", 需 owner, outbox）  |
+| POST   | `/api/v1/data/products/{id}/suspend`  | 暂停（status="suspended", outbox）            |
+| GET    | `/api/v1/data/products/{id}/versions` | 版本历史                                      |
 
 ### 2.2 Data Product 字段
 
@@ -57,6 +57,7 @@
 ### 3.1 IcebergRestAdapter (`services/iceberg_rest_adapter.py`)
 
 镜像 `DebeziumEngine` 模式：
+
 - `httpx.AsyncClient` + 生命周期
 - `from_env()` (`ICEBERG_REST_URL`, default `http://iceberg:8181`)
 - 4 方法：`create_namespace`, `create_table`, `register_table`, `close`
@@ -77,6 +78,7 @@
    - 返回 `AdsPublishResult` (frozen dataclass)
 
 错误处理：
+
 - 4xx (除 409 namespace)：透传为 `AdsPublisherError(status_code=400)`
 - 5xx / 网络错误：返回 `status="failed"`，不 bump version，不发 outbox
 
@@ -124,10 +126,12 @@ ASGI middleware 实施 v3.2-δ DATA-D5 跨租户 ADS 访问审计：
 ## 5. 历史 ruff 收尾（顺带）
 
 `mate-tech-data/src/mate_tech_data/services/debezium_engine.py`：
+
 - `I001`: import 块排序（ruff --fix 自动）
 - `SIM105`: `try/except/pass` → `with contextlib.suppress(...)`（unsafe-fix）
 
 `mate-platform/src/mate_platform/tenancy/__init__.py`：
+
 - `RUF022`: `__all__` 排序
 - `F401`: `TenantId` 加 `as TenantId`（外部依赖使用）
 
@@ -149,38 +153,38 @@ $ pytest packages
 
 ## 7. 13 硬规则映射
 
-| # | 硬规则 | 三批次总览 |
-|---|---|---|
-| 3 | tenant 上下文 | ✅ DataProduct 全部 9 handler + AdsPublisher 经 require_tenant (硬规则 3) |
-| 4 | 外部系统 ACL | ✅ IcebergRestAdapter 是 mate-tech-data → iceberg sub-chart 的 ACL 边界 |
-| 6 | 静态检查 | ✅ ruff 0 errors (debezium_engine SIM105 + tenancy __init__ RUF022 + F401 全部清零) |
-| 8 | K8s readiness | ✅ DataProduct publish workflow 与 Iceberg REST 真实集成 (sub-chart 已落) |
-| 9 | 审计/指标/trace | ✅ AdsAuditMiddleware 发 `audit.cross_tenant_data_access` outbox event |
-| 10 | 验收证据 | ✅ 本文档 + 45 tests (15 + 22 + 8) |
-| 13 | NetworkPolicy | ✅ DataProduct publish 走 Iceberg sub-chart 的 NetworkPolicy (前置已落) |
+| #   | 硬规则          | 三批次总览                                                                          |
+| --- | --------------- | ----------------------------------------------------------------------------------- |
+| 3   | tenant 上下文   | ✅ DataProduct 全部 9 handler + AdsPublisher 经 require_tenant (硬规则 3)           |
+| 4   | 外部系统 ACL    | ✅ IcebergRestAdapter 是 mate-tech-data → iceberg sub-chart 的 ACL 边界             |
+| 6   | 静态检查        | ✅ ruff 0 errors (debezium_engine SIM105 + tenancy **init** RUF022 + F401 全部清零) |
+| 8   | K8s readiness   | ✅ DataProduct publish workflow 与 Iceberg REST 真实集成 (sub-chart 已落)           |
+| 9   | 审计/指标/trace | ✅ AdsAuditMiddleware 发 `audit.cross_tenant_data_access` outbox event              |
+| 10  | 验收证据        | ✅ 本文档 + 45 tests (15 + 22 + 8)                                                  |
+| 13  | NetworkPolicy   | ✅ DataProduct publish 走 Iceberg sub-chart 的 NetworkPolicy (前置已落)             |
 
 ## 8. v3.2-δ M-里程碑进度
 
-| M-v3.2-δ 子内容 | 状态 |
-|---|---|
-| DataProduct 控制面 9 endpoints | ✅ Accepted (本批) |
-| Iceberg ADS publish 4 步工作流 | ✅ Accepted (本批) |
-| Cross-tenant ADS 访问审计 middleware | ✅ Accepted (本批) |
-| 真实 K8s 部署 (Paimon → Iceberg ADS) | 🟡 待 DevOps staging 演练 |
-| DataHub Data Product 元数据同步 | ❌ v3.2-ε 接力 |
-| Great Expectations ADS 表 quality gate | ❌ v3.2-ε 接力 |
-| pii_mask + retention ADS 层 | ❌ D6/D7 接力 |
+| M-v3.2-δ 子内容                        | 状态                      |
+| -------------------------------------- | ------------------------- |
+| DataProduct 控制面 9 endpoints         | ✅ Accepted (本批)        |
+| Iceberg ADS publish 4 步工作流         | ✅ Accepted (本批)        |
+| Cross-tenant ADS 访问审计 middleware   | ✅ Accepted (本批)        |
+| 真实 K8s 部署 (Paimon → Iceberg ADS)   | 🟡 待 DevOps staging 演练 |
+| DataHub Data Product 元数据同步        | ❌ v3.2-ε 接力            |
+| Great Expectations ADS 表 quality gate | ❌ v3.2-ε 接力            |
+| pii_mask + retention ADS 层            | ❌ D6/D7 接力             |
 
 **v3.2-δ 多模态数据产品 ADS 控制面 + 工作流 + 审计层全部闭环** ✅
 
 ## 9. 后续接力候选（v3.2-ε + v3.2-ε 后续）
 
-| 候选 | 工作量 | 优先级 |
-|---|---|---|
-| 真实云端 staging 演练（Paimon → Iceberg ADS 真实数据流） | 2-4 周 | **P2** |
-| DataHub Data Product 元数据同步 | 1 周 | P3 |
-| Great Expectations ADS 表 quality gate | 1 周 | P3 |
-| pii_mask ADS 层集成 | 1 周 | P4 |
-| v3.2-ε GA | 2027-03-15 | **P1** |
+| 候选                                                     | 工作量     | 优先级 |
+| -------------------------------------------------------- | ---------- | ------ |
+| 真实云端 staging 演练（Paimon → Iceberg ADS 真实数据流） | 2-4 周     | **P2** |
+| DataHub Data Product 元数据同步                          | 1 周       | P3     |
+| Great Expectations ADS 表 quality gate                   | 1 周       | P3     |
+| pii_mask ADS 层集成                                      | 1 周       | P4     |
+| v3.2-ε GA                                                | 2027-03-15 | **P1** |
 
 下一步推荐：启动真实云端 staging 演练（v3.2-δ 真实部署 + 端到端数据流验证）。

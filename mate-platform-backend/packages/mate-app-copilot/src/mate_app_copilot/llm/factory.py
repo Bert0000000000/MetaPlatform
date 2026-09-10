@@ -10,6 +10,7 @@ The factory is the single point at which provider selection happens;
 callers should never instantiate OpenAI / Anthropic providers
 directly outside of tests.
 """
+
 from __future__ import annotations
 
 import os

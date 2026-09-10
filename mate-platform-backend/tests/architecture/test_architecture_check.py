@@ -7,6 +7,7 @@ must pass when the tool runs", not "the tool must be installed
 everywhere"). CI images install lint-imports; local dev environments
 are not required to.
 """
+
 import shutil
 import subprocess
 import sys
@@ -16,10 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def _lint_imports_available() -> bool:
-    return (
-        shutil.which("lint-imports") is not None
-        or shutil.which("lint_imports") is not None
-    )
+    return shutil.which("lint-imports") is not None or shutil.which("lint_imports") is not None
 
 
 def test_architecture_check_returns_zero() -> None:

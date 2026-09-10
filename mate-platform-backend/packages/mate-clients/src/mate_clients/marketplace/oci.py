@@ -1,4 +1,5 @@
 """OCI Distribution Spec v2 数据面拉取器,边下载边校验 sha256。"""
+
 from __future__ import annotations
 
 import hashlib
@@ -22,14 +23,10 @@ class OCIPuller:
         self.default_registry = default_registry.rstrip("/")
         self.token_cache = token_cache
 
-    async def fetch_token(
-        self, *, registry: str, kind: str, artifact_id: str
-    ) -> str:
+    async def fetch_token(self, *, registry: str, kind: str, artifact_id: str) -> str:
         """从 OCI v2 token endpoint 拿短期 token。"""
         if self.token_cache is not None:
-            cached = await self.token_cache.get(
-                registry, kind, artifact_id
-            )
+            cached = await self.token_cache.get(registry, kind, artifact_id)
             if cached is not None:
                 return cached
 
@@ -60,24 +57,16 @@ class OCIPuller:
         mismatch 抛 DigestMismatch,流终止。
         """
         registry = registry or self.default_registry
-        token = await self.fetch_token(
-            registry=registry, kind=kind, artifact_id=artifact_id
-        )
-        url = (
-            f"{registry}/v2/{kind}/{artifact_id}/blobs/{digest}"
-        )
+        token = await self.fetch_token(registry=registry, kind=kind, artifact_id=artifact_id)
+        url = f"{registry}/v2/{kind}/{artifact_id}/blobs/{digest}"
         headers = {"Authorization": f"Bearer {token}"}
 
         h = hashlib.sha256()
-        async with self.transport.stream(
-            "GET", url, headers=headers
-        ) as resp:
+        async with self.transport.stream("GET", url, headers=headers) as resp:
             resp.raise_for_status()
             async for chunk in resp.aiter_bytes():
                 h.update(chunk)
                 yield chunk
 
         if h.hexdigest() != expected_digest:
-            raise DigestMismatch(
-                f"expected {expected_digest}, got {h.hexdigest()}"
-            )
+            raise DigestMismatch(f"expected {expected_digest}, got {h.hexdigest()}")

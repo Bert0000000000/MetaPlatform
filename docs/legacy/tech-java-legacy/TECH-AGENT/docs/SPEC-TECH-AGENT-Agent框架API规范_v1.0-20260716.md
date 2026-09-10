@@ -9,9 +9,9 @@
 
 ## 版本历史
 
-| 版本 | 日期 | 变更说明 | 作者 |
-|---|---|---|---|
-| v1.0 | 2026-07-16 | 初始版本 | - |
+| 版本 | 日期       | 变更说明 | 作者 |
+| ---- | ---------- | -------- | ---- |
+| v1.0 | 2026-07-16 | 初始版本 | -    |
 
 ---
 
@@ -23,62 +23,62 @@ TECH-AGENT 是 Mate Platform 的 Agent 框架服务，提供数字员工与 Agen
 
 ### 1.2 技术栈
 
-| 层次 | 技术选型 | 说明 |
-|---|---|---|
-| 语言/框架 | Python 3.13 + FastAPI | 异步高性能 Web 框架 |
-| Agent 框架 | LangChain 0.3 + LangGraph 0.2 | Agent 编排与状态机执行引擎 |
-| 持久化 | PostgreSQL 17 | Agent 定义、任务、对话、执行轨迹持久化 |
-| 缓存 | Redis 7.4 | 执行状态缓存、短期记忆、会话上下文、分布式锁 |
-| 消息队列 | Kafka 3.9 | Agent 执行事件、任务状态变更事件（Outbox 模式） |
-| 流式输出 | SSE（Server-Sent Events） | Agent 思考链、工具调用、生成内容的实时流式推送 |
-| 可观测性 | OpenTelemetry 1.45 | trace_id 全链路传播 |
-| 模型调用 | TECH-LLMGW | 统一 LLM Gateway，不直接调用模型 API |
+| 层次       | 技术选型                      | 说明                                            |
+| ---------- | ----------------------------- | ----------------------------------------------- |
+| 语言/框架  | Python 3.13 + FastAPI         | 异步高性能 Web 框架                             |
+| Agent 框架 | LangChain 0.3 + LangGraph 0.2 | Agent 编排与状态机执行引擎                      |
+| 持久化     | PostgreSQL 17                 | Agent 定义、任务、对话、执行轨迹持久化          |
+| 缓存       | Redis 7.4                     | 执行状态缓存、短期记忆、会话上下文、分布式锁    |
+| 消息队列   | Kafka 3.9                     | Agent 执行事件、任务状态变更事件（Outbox 模式） |
+| 流式输出   | SSE（Server-Sent Events）     | Agent 思考链、工具调用、生成内容的实时流式推送  |
+| 可观测性   | OpenTelemetry 1.45            | trace_id 全链路传播                             |
+| 模型调用   | TECH-LLMGW                    | 统一 LLM Gateway，不直接调用模型 API            |
 
 ### 1.3 上游依赖
 
-| 上游服务 | 依赖关系 | 说明 |
-|---|---|---|
-| TECH-LLMGW | 强依赖 | 所有 LLM 调用（Chat/Embedding）通过 LLM Gateway，支持模型路由、负载均衡、Token 计量 |
-| TECH-RAG | 强依赖 | Agent 知识检索通过 RAG 引擎，支持向量 + 非向量混合检索 |
-| TECH-ACTION | 强依赖 | Agent 工具调用中的业务动作执行通过 Action Engine |
-| TECH-ONT | 中依赖 | Agent 配置中引用本体概念，工具调用参数绑定本体对象 |
-| TECH-IAM | 强依赖 | 用户/角色/权限校验，数字员工身份绑定 |
-| TECH-MSG | 弱依赖 | Kafka 消息基础设施 |
+| 上游服务    | 依赖关系 | 说明                                                                                |
+| ----------- | -------- | ----------------------------------------------------------------------------------- |
+| TECH-LLMGW  | 强依赖   | 所有 LLM 调用（Chat/Embedding）通过 LLM Gateway，支持模型路由、负载均衡、Token 计量 |
+| TECH-RAG    | 强依赖   | Agent 知识检索通过 RAG 引擎，支持向量 + 非向量混合检索                              |
+| TECH-ACTION | 强依赖   | Agent 工具调用中的业务动作执行通过 Action Engine                                    |
+| TECH-ONT    | 中依赖   | Agent 配置中引用本体概念，工具调用参数绑定本体对象                                  |
+| TECH-IAM    | 强依赖   | 用户/角色/权限校验，数字员工身份绑定                                                |
+| TECH-MSG    | 弱依赖   | Kafka 消息基础设施                                                                  |
 
 ### 1.4 下游消费
 
-| 下游服务/应用 | 消费方式 | 说明 |
-|---|---|---|
-| APP-DW | REST API + SSE | 数字员工管理、Agent 执行调度、对话交互 |
-| APP-SUPERAI | REST API + SSE | 超级 AI 应用的 Agent 执行、流式对话 |
-| TECH-A2A | REST API | A2A 协议适配层将外部 Agent 委托任务转为内部 Agent 执行 |
-| APP-DASHBOARD | REST API | Agent 运行统计、执行轨迹展示、评估报表 |
-| APP-APPHUB | REST API | 低代码应用中嵌入 Agent 能力调用 |
+| 下游服务/应用 | 消费方式       | 说明                                                   |
+| ------------- | -------------- | ------------------------------------------------------ |
+| APP-DW        | REST API + SSE | 数字员工管理、Agent 执行调度、对话交互                 |
+| APP-SUPERAI   | REST API + SSE | 超级 AI 应用的 Agent 执行、流式对话                    |
+| TECH-A2A      | REST API       | A2A 协议适配层将外部 Agent 委托任务转为内部 Agent 执行 |
+| APP-DASHBOARD | REST API       | Agent 运行统计、执行轨迹展示、评估报表                 |
+| APP-APPHUB    | REST API       | 低代码应用中嵌入 Agent 能力调用                        |
 
 ### 1.5 核心能力清单
 
-| 能力域 | 说明 |
-|---|---|
+| 能力域         | 说明                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------ |
 | Agent 定义管理 | Agent 配置 CRUD、角色定义、能力分配（Tools/RAG/Action 权限）、模型选择、知识范围配置 |
-| Agent 运行时 | 基于 LangGraph 的执行引擎、任务规划（子任务拆解）、工具调用、记忆管理（短期+长期） |
-| 任务管理 | 任务创建、分配给 Agent、任务状态追踪、任务结果收集 |
-| 对话管理 | 对话会话管理、消息历史、多轮对话上下文、SSE 流式响应 |
-| 工具调用 | Tool 注册、Tool 调用执行、调用结果处理、Tool 权限控制 |
-| 执行轨迹 | Agent 执行步骤记录、思考链（CoT）、工具调用记录、执行评估 |
-| A2A 适配 | 与 TECH-A2A 集成，Agent Card 暴露、外部任务接收与委托 |
+| Agent 运行时   | 基于 LangGraph 的执行引擎、任务规划（子任务拆解）、工具调用、记忆管理（短期+长期）   |
+| 任务管理       | 任务创建、分配给 Agent、任务状态追踪、任务结果收集                                   |
+| 对话管理       | 对话会话管理、消息历史、多轮对话上下文、SSE 流式响应                                 |
+| 工具调用       | Tool 注册、Tool 调用执行、调用结果处理、Tool 权限控制                                |
+| 执行轨迹       | Agent 执行步骤记录、思考链（CoT）、工具调用记录、执行评估                            |
+| A2A 适配       | 与 TECH-A2A 集成，Agent Card 暴露、外部任务接收与委托                                |
 
 ### 1.6 核心概念
 
-| 概念 | 说明 |
-|---|---|
-| Agent | 数字员工的智能体定义，包含角色、模型、能力、知识范围等配置 |
-| Execution | Agent 的一次执行实例，对应 LangGraph 的一次图执行 |
-| Task | 交给 Agent 完成的任务单元，可拆解为子任务 |
-| Conversation | 用户与 Agent 之间的多轮对话会话 |
-| Tool | Agent 可调用的工具，包括 MCP Tool、Action Tool、内置 Tool |
-| Memory | Agent 记忆，分为短期记忆（执行上下文）和长期记忆（跨会话） |
-| Trace | Agent 执行轨迹，包含思考链、工具调用、中间结果 |
-| Agent Card | A2A 协议中的 Agent 能力声明，用于跨系统 Agent 发现 |
+| 概念         | 说明                                                       |
+| ------------ | ---------------------------------------------------------- |
+| Agent        | 数字员工的智能体定义，包含角色、模型、能力、知识范围等配置 |
+| Execution    | Agent 的一次执行实例，对应 LangGraph 的一次图执行          |
+| Task         | 交给 Agent 完成的任务单元，可拆解为子任务                  |
+| Conversation | 用户与 Agent 之间的多轮对话会话                            |
+| Tool         | Agent 可调用的工具，包括 MCP Tool、Action Tool、内置 Tool  |
+| Memory       | Agent 记忆，分为短期记忆（执行上下文）和长期记忆（跨会话） |
+| Trace        | Agent 执行轨迹，包含思考链、工具调用、中间结果             |
+| Agent Card   | A2A 协议中的 Agent 能力声明，用于跨系统 Agent 发现         |
 
 ### 1.7 LangGraph 执行模型
 
@@ -126,17 +126,17 @@ TECH-AGENT 基于 LangGraph 0.2 构建 Agent 执行图，核心节点与流转�
 {
   "code": 0,
   "message": "success",
-  "data": { },
+  "data": {},
   "traceId": "a1b2c3d4e5f6"
 }
 ```
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| code | int | 业务状态码，0 表示成功，非 0 表示失败 |
-| message | string | 状态描述信息 |
-| data | object/array/null | 业务数据载体 |
-| traceId | string | 全链路追踪 ID，与请求头 `X-Trace-Id` 一致 |
+| 字段    | 类型              | 说明                                      |
+| ------- | ----------------- | ----------------------------------------- |
+| code    | int               | 业务状态码，0 表示成功，非 0 表示失败     |
+| message | string            | 状态描述信息                              |
+| data    | object/array/null | 业务数据载体                              |
+| traceId | string            | 全链路追踪 ID，与请求头 `X-Trace-Id` 一致 |
 
 ### 2.3 认证
 
@@ -148,42 +148,42 @@ TECH-AGENT 基于 LangGraph 0.2 构建 Agent 执行图，核心节点与流转�
 
 ### 2.4 请求头约定
 
-| 请求头 | 必填 | 说明 |
-|---|---|---|
-| Authorization | 是 | Bearer Token |
-| X-Trace-Id | 否 | 链路追踪 ID，未传则服务端自动生成 |
-| X-Tenant-Id | 是 | 租户 ID |
-| X-Request-Id | 否 | 请求唯一标识，用于幂等控制 |
-| Content-Type | 是 | `application/json;charset=UTF-8` |
-| Accept | 否 | SSE 接口需设为 `text/event-stream` |
+| 请求头        | 必填 | 说明                               |
+| ------------- | ---- | ---------------------------------- |
+| Authorization | 是   | Bearer Token                       |
+| X-Trace-Id    | 否   | 链路追踪 ID，未传则服务端自动生成  |
+| X-Tenant-Id   | 是   | 租户 ID                            |
+| X-Request-Id  | 否   | 请求唯一标识，用于幂等控制         |
+| Content-Type  | 是   | `application/json;charset=UTF-8`   |
+| Accept        | 否   | SSE 接口需设为 `text/event-stream` |
 
 ### 2.5 错误码
 
-| 错误码 | HTTP Status | 含义 | 典型场景 |
-|---|---|---|---|
-| 0 | 200 | 成功 | 正常请求 |
-| 40001 | 400 | 参数校验失败 | 必填字段缺失、格式错误 |
-| 40002 | 400 | 参数值非法 | 枚举值不匹配、数值越界 |
-| 40101 | 401 | 未认证 | Token 缺失或过期 |
-| 40301 | 403 | 无权限 | 用户无权操作该资源 |
-| 40401 | 404 | 资源不存在 | Agent/任务/会话/执行实例不存在 |
-| 40901 | 409 | 状态冲突 | 操作与当前资源状态不兼容（如已禁用的 Agent 执行任务） |
-| 40902 | 409 | 版本冲突 | 并发更新导致乐观锁冲突 |
-| 42201 | 422 | 业务规则校验失败 | Agent 配置不完整、模型不可用、Tool 未注册 |
-| 42202 | 422 | Agent 执行失败 | LLM 调用失败、Tool 执行异常、规划失败 |
-| 42901 | 429 | 请求过于频繁 | 触发限流 |
-| 50001 | 500 | 服务内部错误 | 未捕获异常 |
-| 50002 | 500 | 依赖服务不可用 | TECH-LLMGW/TECH-RAG/TECH-ACTION 不可达 |
-| 50003 | 500 | Agent 运行时异常 | LangGraph 状态机错误、超时 |
+| 错误码 | HTTP Status | 含义             | 典型场景                                              |
+| ------ | ----------- | ---------------- | ----------------------------------------------------- |
+| 0      | 200         | 成功             | 正常请求                                              |
+| 40001  | 400         | 参数校验失败     | 必填字段缺失、格式错误                                |
+| 40002  | 400         | 参数值非法       | 枚举值不匹配、数值越界                                |
+| 40101  | 401         | 未认证           | Token 缺失或过期                                      |
+| 40301  | 403         | 无权限           | 用户无权操作该资源                                    |
+| 40401  | 404         | 资源不存在       | Agent/任务/会话/执行实例不存在                        |
+| 40901  | 409         | 状态冲突         | 操作与当前资源状态不兼容（如已禁用的 Agent 执行任务） |
+| 40902  | 409         | 版本冲突         | 并发更新导致乐观锁冲突                                |
+| 42201  | 422         | 业务规则校验失败 | Agent 配置不完整、模型不可用、Tool 未注册             |
+| 42202  | 422         | Agent 执行失败   | LLM 调用失败、Tool 执行异常、规划失败                 |
+| 42901  | 429         | 请求过于频繁     | 触发限流                                              |
+| 50001  | 500         | 服务内部错误     | 未捕获异常                                            |
+| 50002  | 500         | 依赖服务不可用   | TECH-LLMGW/TECH-RAG/TECH-ACTION 不可达                |
+| 50003  | 500         | Agent 运行时异常 | LangGraph 状态机错误、超时                            |
 
 ### 2.6 分页约定
 
 分页查询接口统一参数：
 
-| 参数 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| page | int | 1 | 页码，从 1 开始 |
-| size | int | 20 | 每页条数，最大 100 |
+| 参数 | 类型   | 默认值     | 说明                       |
+| ---- | ------ | ---------- | -------------------------- |
+| page | int    | 1          | 页码，从 1 开始            |
+| size | int    | 20         | 每页条数，最大 100         |
 | sort | string | -createdAt | 排序字段，`-` 前缀表示降序 |
 
 分页响应结构：
@@ -193,7 +193,7 @@ TECH-AGENT 基于 LangGraph 0.2 构建 Agent 执行图，核心节点与流转�
   "code": 0,
   "message": "success",
   "data": {
-    "items": [ ],
+    "items": [],
     "total": 156,
     "page": 1,
     "size": 20,
@@ -241,19 +241,19 @@ data: <jsonPayload>
 
 SSE 事件类型：
 
-| 事件类型 | 说明 | data 内容 |
-|---|---|---|
-| `execution.started` | 执行开始 | 执行实例基本信息 |
-| `agent.thinking` | Agent 思考 | 当前思考内容（CoT） |
-| `agent.action` | Agent 决策动作 | 动作类型与参数 |
-| `tool.calling` | 工具调用中 | 工具名与入参 |
-| `tool.result` | 工具返回结果 | 工具调用 ID 与返回值 |
-| `content.delta` | 生成内容增量 | 文本片段（delta） |
-| `content.done` | 生成内容完成 | 完整文本 |
-| `execution.step` | 执行步骤完成 | 步骤信息 |
-| `execution.completed` | 执行完成 | 最终结果 |
-| `execution.failed` | 执行失败 | 错误信息 |
-| `error` | 流式错误 | 错误详情 |
+| 事件类型              | 说明           | data 内容            |
+| --------------------- | -------------- | -------------------- |
+| `execution.started`   | 执行开始       | 执行实例基本信息     |
+| `agent.thinking`      | Agent 思考     | 当前思考内容（CoT）  |
+| `agent.action`        | Agent 决策动作 | 动作类型与参数       |
+| `tool.calling`        | 工具调用中     | 工具名与入参         |
+| `tool.result`         | 工具返回结果   | 工具调用 ID 与返回值 |
+| `content.delta`       | 生成内容增量   | 文本片段（delta）    |
+| `content.done`        | 生成内容完成   | 完整文本             |
+| `execution.step`      | 执行步骤完成   | 步骤信息             |
+| `execution.completed` | 执行完成       | 最终结果             |
+| `execution.failed`    | 执行失败       | 错误信息             |
+| `error`               | 流式错误       | 错误详情             |
 
 ### 2.10 LangGraph Checkpoint 机制
 
@@ -279,30 +279,30 @@ POST /api/v1/agent/agents
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| agentKey | string | 是 | Agent 唯一标识（业务 key），同一租户内唯一 |
-| name | string | 是 | Agent 名称 |
-| description | string | 否 | Agent 描述 |
-| role | object | 是 | 角色定义 |
-| role.systemPrompt | string | 是 | 系统提示词（System Prompt） |
-| role.persona | string | 否 | 人设描述（用于数字员工形象） |
-| role.greeting | string | 否 | 欢迎语 |
-| modelConfig | object | 是 | 模型配置 |
-| modelConfig.provider | string | 是 | 模型提供方（通过 TECH-LLMGW 路由） |
-| modelConfig.modelId | string | 是 | 模型 ID（如 doubao-pro-32k） |
-| modelConfig.temperature | float | 否 | 温度参数，默认 0.7 |
-| modelConfig.maxTokens | int | 否 | 最大生成 Token 数，默认 4096 |
-| modelConfig.topP | float | 否 | Top-P 采样，默认 1.0 |
-| reasoningMode | string | 否 | 推理范式：`REACT`（默认）/ `PLAN_AND_SOLVE` / `FUNCTION_CALLING` |
-| maxIterations | int | 否 | 最大迭代轮次（工具调用循环上限），默认 10 |
-| memoryConfig | object | 否 | 记忆配置 |
-| memoryConfig.shortTermEnabled | boolean | 否 | 启用短期记忆，默认 true |
-| memoryConfig.shortTermWindowSize | int | 否 | 短期记忆窗口大小（消息条数），默认 20 |
-| memoryConfig.longTermEnabled | boolean | 否 | 启用长期记忆，默认 false |
-| memoryConfig.longTermStrategy | string | 否 | 长期记忆策略：`SUMMARY` / `ENTITY` / `VECTOR` |
-| tags | array[string] | 否 | 标签列表 |
-| metadata | object | 否 | 自定义元数据 |
+| 字段                             | 类型          | 必填 | 说明                                                             |
+| -------------------------------- | ------------- | ---- | ---------------------------------------------------------------- |
+| agentKey                         | string        | 是   | Agent 唯一标识（业务 key），同一租户内唯一                       |
+| name                             | string        | 是   | Agent 名称                                                       |
+| description                      | string        | 否   | Agent 描述                                                       |
+| role                             | object        | 是   | 角色定义                                                         |
+| role.systemPrompt                | string        | 是   | 系统提示词（System Prompt）                                      |
+| role.persona                     | string        | 否   | 人设描述（用于数字员工形象）                                     |
+| role.greeting                    | string        | 否   | 欢迎语                                                           |
+| modelConfig                      | object        | 是   | 模型配置                                                         |
+| modelConfig.provider             | string        | 是   | 模型提供方（通过 TECH-LLMGW 路由）                               |
+| modelConfig.modelId              | string        | 是   | 模型 ID（如 doubao-pro-32k）                                     |
+| modelConfig.temperature          | float         | 否   | 温度参数，默认 0.7                                               |
+| modelConfig.maxTokens            | int           | 否   | 最大生成 Token 数，默认 4096                                     |
+| modelConfig.topP                 | float         | 否   | Top-P 采样，默认 1.0                                             |
+| reasoningMode                    | string        | 否   | 推理范式：`REACT`（默认）/ `PLAN_AND_SOLVE` / `FUNCTION_CALLING` |
+| maxIterations                    | int           | 否   | 最大迭代轮次（工具调用循环上限），默认 10                        |
+| memoryConfig                     | object        | 否   | 记忆配置                                                         |
+| memoryConfig.shortTermEnabled    | boolean       | 否   | 启用短期记忆，默认 true                                          |
+| memoryConfig.shortTermWindowSize | int           | 否   | 短期记忆窗口大小（消息条数），默认 20                            |
+| memoryConfig.longTermEnabled     | boolean       | 否   | 启用长期记忆，默认 false                                         |
+| memoryConfig.longTermStrategy    | string        | 否   | 长期记忆策略：`SUMMARY` / `ENTITY` / `VECTOR`                    |
+| tags                             | array[string] | 否   | 标签列表                                                         |
+| metadata                         | object        | 否   | 自定义元数据                                                     |
 
 **请求示例**
 
@@ -387,12 +387,12 @@ POST /api/v1/agent/agents
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | agentKey/name/systemPrompt/modelId 为空 |
-| 40901 | agentKey 在同一租户内已存在 |
-| 42201 | modelId 在 TECH-LLMGW 中不可用或无调用权限 |
-| 40002 | reasoningMode 枚举值不合法 |
+| 错误码 | 场景                                       |
+| ------ | ------------------------------------------ |
+| 40001  | agentKey/name/systemPrompt/modelId 为空    |
+| 40901  | agentKey 在同一租户内已存在                |
+| 42201  | modelId 在 TECH-LLMGW 中不可用或无调用权限 |
+| 40002  | reasoningMode 枚举值不合法                 |
 
 ---
 
@@ -406,18 +406,18 @@ GET /api/v1/agent/agents
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| agentKey | string | 否 | Agent key，支持模糊匹配 |
-| name | string | 否 | Agent 名称，支持模糊匹配 |
-| status | string | 否 | 状态：`DRAFT` / `ACTIVE` / `DISABLED` / `ARCHIVED` |
-| reasoningMode | string | 否 | 推理范式 |
-| tag | string | 否 | 标签精确匹配 |
-| createdAfter | string | 否 | 创建时间下界，ISO-8601 |
-| createdBefore | string | 否 | 创建时间上界，ISO-8601 |
-| page | int | 否 | 页码，默认 1 |
-| size | int | 否 | 每页条数，默认 20 |
-| sort | string | 否 | 排序字段，默认 `-createdAt` |
+| 参数          | 类型   | 必填 | 说明                                               |
+| ------------- | ------ | ---- | -------------------------------------------------- |
+| agentKey      | string | 否   | Agent key，支持模糊匹配                            |
+| name          | string | 否   | Agent 名称，支持模糊匹配                           |
+| status        | string | 否   | 状态：`DRAFT` / `ACTIVE` / `DISABLED` / `ARCHIVED` |
+| reasoningMode | string | 否   | 推理范式                                           |
+| tag           | string | 否   | 标签精确匹配                                       |
+| createdAfter  | string | 否   | 创建时间下界，ISO-8601                             |
+| createdBefore | string | 否   | 创建时间上界，ISO-8601                             |
+| page          | int    | 否   | 页码，默认 1                                       |
+| size          | int    | 否   | 每页条数，默认 20                                  |
+| sort          | string | 否   | 排序字段，默认 `-createdAt`                        |
 
 **响应示例**
 
@@ -456,10 +456,10 @@ GET /api/v1/agent/agents
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 分页参数不合法（page < 1 或 size > 100） |
-| 40301 | 用户无权查看该租户的 Agent 列表 |
+| 错误码 | 场景                                     |
+| ------ | ---------------------------------------- |
+| 40001  | 分页参数不合法（page < 1 或 size > 100） |
+| 40301  | 用户无权查看该租户的 Agent 列表          |
 
 ---
 
@@ -473,8 +473,8 @@ GET /api/v1/agent/agents/{agentId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **响应示例**
@@ -587,10 +587,10 @@ GET /api/v1/agent/agents/{agentId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40301 | 用户无权查看该 Agent |
+| 错误码 | 场景                 |
+| ------ | -------------------- |
+| 40401  | Agent 不存在         |
+| 40301  | 用户无权查看该 Agent |
 
 ---
 
@@ -604,24 +604,24 @@ PUT /api/v1/agent/agents/{agentId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 否 | Agent 名称 |
-| description | string | 否 | Agent 描述 |
-| role | object | 否 | 角色定义（同创建接口） |
-| modelConfig | object | 否 | 模型配置（同创建接口） |
-| reasoningMode | string | 否 | 推理范式 |
-| maxIterations | int | 否 | 最大迭代轮次 |
-| memoryConfig | object | 否 | 记忆配置 |
-| tags | array[string] | 否 | 标签列表 |
-| metadata | object | 否 | 自定义元数据 |
-| expectedVersion | int | 是 | 乐观锁版本号，需与当前版本一致 |
+| 字段            | 类型          | 必填 | 说明                           |
+| --------------- | ------------- | ---- | ------------------------------ |
+| name            | string        | 否   | Agent 名称                     |
+| description     | string        | 否   | Agent 描述                     |
+| role            | object        | 否   | 角色定义（同创建接口）         |
+| modelConfig     | object        | 否   | 模型配置（同创建接口）         |
+| reasoningMode   | string        | 否   | 推理范式                       |
+| maxIterations   | int           | 否   | 最大迭代轮次                   |
+| memoryConfig    | object        | 否   | 记忆配置                       |
+| tags            | array[string] | 否   | 标签列表                       |
+| metadata        | object        | 否   | 自定义元数据                   |
+| expectedVersion | int           | 是   | 乐观锁版本号，需与当前版本一致 |
 
 **请求示例**
 
@@ -664,12 +664,12 @@ PUT /api/v1/agent/agents/{agentId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40902 | 版本冲突（expectedVersion 与当前版本不一致） |
-| 40901 | Agent 状态为 ACTIVE 且有运行中执行，不允许更新 |
-| 42201 | modelId 在 TECH-LLMGW 中不可用 |
+| 错误码 | 场景                                           |
+| ------ | ---------------------------------------------- |
+| 40401  | Agent 不存在                                   |
+| 40902  | 版本冲突（expectedVersion 与当前版本不一致）   |
+| 40901  | Agent 状态为 ACTIVE 且有运行中执行，不允许更新 |
+| 42201  | modelId 在 TECH-LLMGW 中不可用                 |
 
 ---
 
@@ -683,16 +683,16 @@ DELETE /api/v1/agent/agents/{agentId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| cascade | boolean | 否 | 是否级联删除关联的对话、执行记录，默认 false |
-| archive | boolean | 否 | 是否归档而非物理删除，默认 true |
+| 参数    | 类型    | 必填 | 说明                                         |
+| ------- | ------- | ---- | -------------------------------------------- |
+| cascade | boolean | 否   | 是否级联删除关联的对话、执行记录，默认 false |
+| archive | boolean | 否   | 是否归档而非物理删除，默认 true              |
 
 **响应示例**
 
@@ -713,11 +713,11 @@ DELETE /api/v1/agent/agents/{agentId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40901 | Agent 状态为 ACTIVE，需先禁用 |
-| 40901 | Agent 有运行中执行（EXECUTING 状态） |
+| 错误码 | 场景                                 |
+| ------ | ------------------------------------ |
+| 40401  | Agent 不存在                         |
+| 40901  | Agent 状态为 ACTIVE，需先禁用        |
+| 40901  | Agent 有运行中执行（EXECUTING 状态） |
 
 ---
 
@@ -731,16 +731,16 @@ PUT /api/v1/agent/agents/{agentId}/state
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| action | string | 是 | `ENABLE`（启用）或 `DISABLE`（禁用） |
-| reason | string | 否 | 操作原因 |
+| 字段   | 类型   | 必填 | 说明                                 |
+| ------ | ------ | ---- | ------------------------------------ |
+| action | string | 是   | `ENABLE`（启用）或 `DISABLE`（禁用） |
+| reason | string | 否   | 操作原因                             |
 
 **请求示例**
 
@@ -768,11 +768,11 @@ PUT /api/v1/agent/agents/{agentId}/state
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40901 | Agent 当前状态不允许该操作（如已禁用再次禁用） |
-| 42201 | 启用前校验失败：模型不可用、未配置工具 |
+| 错误码 | 场景                                           |
+| ------ | ---------------------------------------------- |
+| 40401  | Agent 不存在                                   |
+| 40901  | Agent 当前状态不允许该操作（如已禁用再次禁用） |
+| 42201  | 启用前校验失败：模型不可用、未配置工具         |
 
 ---
 
@@ -786,30 +786,30 @@ PUT /api/v1/agent/agents/{agentId}/capabilities
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| tools | array[object] | 否 | 工具配置列表 |
-| tools[].toolId | string | 是 | 工具 ID |
-| tools[].enabled | boolean | 是 | 是否启用 |
-| tools[].config | object | 否 | 工具级配置（覆盖默认参数） |
-| actions | array[object] | 否 | Action 配置列表 |
-| actions[].actionCode | string | 是 | Action 编码（对应 TECH-ACTION） |
-| actions[].enabled | boolean | 是 | 是否启用 |
-| actions[].paramMapping | object | 否 | 参数映射（Agent 上下文变量 -> Action 参数） |
-| ragScopes | array[object] | 否 | 知识检索范围配置 |
-| ragScopes[].scopeName | string | 是 | 范围名称 |
-| ragScopes[].kbIds | array[string] | 是 | 知识库 ID 列表（对应 TECH-RAG） |
-| ragScopes[].retrievalConfig | object | 否 | 检索配置 |
-| ragScopes[].retrievalConfig.topK | int | 否 | 返回条数，默认 5 |
-| ragScopes[].retrievalConfig.scoreThreshold | float | 否 | 相似度阈值，默认 0.7 |
-| ragScopes[].retrievalConfig.rerankEnabled | boolean | 否 | 是否重排序，默认 false |
-| expectedVersion | int | 是 | 乐观锁版本号 |
+| 字段                                       | 类型          | 必填 | 说明                                        |
+| ------------------------------------------ | ------------- | ---- | ------------------------------------------- |
+| tools                                      | array[object] | 否   | 工具配置列表                                |
+| tools[].toolId                             | string        | 是   | 工具 ID                                     |
+| tools[].enabled                            | boolean       | 是   | 是否启用                                    |
+| tools[].config                             | object        | 否   | 工具级配置（覆盖默认参数）                  |
+| actions                                    | array[object] | 否   | Action 配置列表                             |
+| actions[].actionCode                       | string        | 是   | Action 编码（对应 TECH-ACTION）             |
+| actions[].enabled                          | boolean       | 是   | 是否启用                                    |
+| actions[].paramMapping                     | object        | 否   | 参数映射（Agent 上下文变量 -> Action 参数） |
+| ragScopes                                  | array[object] | 否   | 知识检索范围配置                            |
+| ragScopes[].scopeName                      | string        | 是   | 范围名称                                    |
+| ragScopes[].kbIds                          | array[string] | 是   | 知识库 ID 列表（对应 TECH-RAG）             |
+| ragScopes[].retrievalConfig                | object        | 否   | 检索配置                                    |
+| ragScopes[].retrievalConfig.topK           | int           | 否   | 返回条数，默认 5                            |
+| ragScopes[].retrievalConfig.scoreThreshold | float         | 否   | 相似度阈值，默认 0.7                        |
+| ragScopes[].retrievalConfig.rerankEnabled  | boolean       | 否   | 是否重排序，默认 false                      |
+| expectedVersion                            | int           | 是   | 乐观锁版本号                                |
 
 **请求示例**
 
@@ -886,13 +886,13 @@ PUT /api/v1/agent/agents/{agentId}/capabilities
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40902 | 版本冲突 |
-| 42201 | toolId 未注册（在 Tool 仓库中不存在） |
-| 42201 | actionCode 在 TECH-ACTION 中不存在 |
-| 42201 | kbIds 在 TECH-RAG 中不存在或无访问权限 |
+| 错误码 | 场景                                   |
+| ------ | -------------------------------------- |
+| 40401  | Agent 不存在                           |
+| 40902  | 版本冲突                               |
+| 42201  | toolId 未注册（在 Tool 仓库中不存在）  |
+| 42201  | actionCode 在 TECH-ACTION 中不存在     |
+| 42201  | kbIds 在 TECH-RAG 中不存在或无访问权限 |
 
 ---
 
@@ -906,21 +906,21 @@ PUT /api/v1/agent/agents/{agentId}/model
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| provider | string | 是 | 模型提供方 |
-| modelId | string | 是 | 模型 ID |
-| temperature | float | 否 | 温度参数 |
-| maxTokens | int | 否 | 最大生成 Token 数 |
-| topP | float | 否 | Top-P 采样 |
-| fallbackModelId | string | 否 | 备选模型 ID（主模型不可用时降级） |
-| expectedVersion | int | 是 | 乐观锁版本号 |
+| 字段            | 类型   | 必填 | 说明                              |
+| --------------- | ------ | ---- | --------------------------------- |
+| provider        | string | 是   | 模型提供方                        |
+| modelId         | string | 是   | 模型 ID                           |
+| temperature     | float  | 否   | 温度参数                          |
+| maxTokens       | int    | 否   | 最大生成 Token 数                 |
+| topP            | float  | 否   | Top-P 采样                        |
+| fallbackModelId | string | 否   | 备选模型 ID（主模型不可用时降级） |
+| expectedVersion | int    | 是   | 乐观锁版本号                      |
 
 **请求示例**
 
@@ -961,12 +961,12 @@ PUT /api/v1/agent/agents/{agentId}/model
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40902 | 版本冲突 |
-| 42201 | modelId 在 TECH-LLMGW 中不可用或无调用权限 |
-| 42201 | fallbackModelId 在 TECH-LLMGW 中不可用 |
+| 错误码 | 场景                                       |
+| ------ | ------------------------------------------ |
+| 40401  | Agent 不存在                               |
+| 40902  | 版本冲突                                   |
+| 42201  | modelId 在 TECH-LLMGW 中不可用或无调用权限 |
+| 42201  | fallbackModelId 在 TECH-LLMGW 中不可用     |
 
 ---
 
@@ -980,20 +980,20 @@ PUT /api/v1/agent/agents/{agentId}/knowledge-scope
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| scopes | array[object] | 是 | 知识范围列表（全量覆盖） |
-| scopes[].scopeName | string | 是 | 范围名称 |
-| scopes[].kbIds | array[string] | 是 | 知识库 ID 列表 |
-| scopes[].retrievalConfig | object | 否 | 检索配置（同 3.1.7） |
-| scopes[].filterExpression | string | 否 | 元数据过滤表达式 |
-| expectedVersion | int | 是 | 乐观锁版本号 |
+| 字段                      | 类型          | 必填 | 说明                     |
+| ------------------------- | ------------- | ---- | ------------------------ |
+| scopes                    | array[object] | 是   | 知识范围列表（全量覆盖） |
+| scopes[].scopeName        | string        | 是   | 范围名称                 |
+| scopes[].kbIds            | array[string] | 是   | 知识库 ID 列表           |
+| scopes[].retrievalConfig  | object        | 否   | 检索配置（同 3.1.7）     |
+| scopes[].filterExpression | string        | 否   | 元数据过滤表达式         |
+| expectedVersion           | int           | 是   | 乐观锁版本号             |
 
 **请求示例**
 
@@ -1062,11 +1062,11 @@ PUT /api/v1/agent/agents/{agentId}/knowledge-scope
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40902 | 版本冲突 |
-| 42201 | kbIds 在 TECH-RAG 中不存在或无访问权限 |
+| 错误码 | 场景                                   |
+| ------ | -------------------------------------- |
+| 40401  | Agent 不存在                           |
+| 40902  | 版本冲突                               |
+| 42201  | kbIds 在 TECH-RAG 中不存在或无访问权限 |
 
 ---
 
@@ -1080,8 +1080,8 @@ GET /api/v1/agent/agents/{agentId}/versions
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **响应示例**
@@ -1129,9 +1129,9 @@ GET /api/v1/agent/agents/{agentId}/versions
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
+| 错误码 | 场景         |
+| ------ | ------------ |
+| 40401  | Agent 不存在 |
 
 ---
 
@@ -1145,16 +1145,16 @@ POST /api/v1/agent/agents/{agentId}/rollback
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| targetVersion | int | 是 | 回滚目标版本号 |
-| expectedVersion | int | 是 | 当前乐观锁版本号 |
+| 字段            | 类型 | 必填 | 说明             |
+| --------------- | ---- | ---- | ---------------- |
+| targetVersion   | int  | 是   | 回滚目标版本号   |
+| expectedVersion | int  | 是   | 当前乐观锁版本号 |
 
 **请求示例**
 
@@ -1184,12 +1184,12 @@ POST /api/v1/agent/agents/{agentId}/rollback
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40902 | 版本冲突 |
-| 40401 | 目标版本号不存在 |
-| 40901 | Agent 有运行中执行 |
+| 错误码 | 场景               |
+| ------ | ------------------ |
+| 40401  | Agent 不存在       |
+| 40902  | 版本冲突           |
+| 40401  | 目标版本号不存在   |
+| 40901  | Agent 有运行中执行 |
 
 ---
 
@@ -1203,8 +1203,8 @@ GET /api/v1/agent/agents/{agentId}/card
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **响应示例**
@@ -1268,10 +1268,10 @@ GET /api/v1/agent/agents/{agentId}/card
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 42201 | Agent 未配置能力，无法生成有效 Agent Card |
+| 错误码 | 场景                                      |
+| ------ | ----------------------------------------- |
+| 40401  | Agent 不存在                              |
+| 42201  | Agent 未配置能力，无法生成有效 Agent Card |
 
 ---
 
@@ -1287,27 +1287,27 @@ POST /api/v1/agent/agents/{agentId}/execute
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| input | string | 是 | 用户输入（任务描述/问题） |
-| inputType | string | 否 | 输入类型：`TEXT`（默认）/ `JSON` / `FILE_REF` |
-| context | object | 否 | 执行上下文 |
-| context.conversationId | string | 否 | 关联对话 ID（复用会话上下文） |
-| context.taskId | string | 否 | 关联任务 ID |
-| context.variables | object | 否 | 上下文变量（注入到 Agent 执行环境） |
-| context.userId | string | 否 | 触发用户 ID |
-| options | object | 否 | 执行选项 |
-| options.timeout | int | 否 | 超时时间（秒），默认 120 |
-| options.maxIterations | int | 否 | 覆盖 Agent 默认最大迭代轮次 |
-| options.enableTrace | boolean | 否 | 是否记录详细执行轨迹，默认 true |
-| options.enableMemory | boolean | 否 | 是否启用记忆，默认 true |
-| options.streamCallback | boolean | 否 | 是否启用回调通知（Webhook），默认 false |
+| 字段                   | 类型    | 必填 | 说明                                          |
+| ---------------------- | ------- | ---- | --------------------------------------------- |
+| input                  | string  | 是   | 用户输入（任务描述/问题）                     |
+| inputType              | string  | 否   | 输入类型：`TEXT`（默认）/ `JSON` / `FILE_REF` |
+| context                | object  | 否   | 执行上下文                                    |
+| context.conversationId | string  | 否   | 关联对话 ID（复用会话上下文）                 |
+| context.taskId         | string  | 否   | 关联任务 ID                                   |
+| context.variables      | object  | 否   | 上下文变量（注入到 Agent 执行环境）           |
+| context.userId         | string  | 否   | 触发用户 ID                                   |
+| options                | object  | 否   | 执行选项                                      |
+| options.timeout        | int     | 否   | 超时时间（秒），默认 120                      |
+| options.maxIterations  | int     | 否   | 覆盖 Agent 默认最大迭代轮次                   |
+| options.enableTrace    | boolean | 否   | 是否记录详细执行轨迹，默认 true               |
+| options.enableMemory   | boolean | 否   | 是否启用记忆，默认 true                       |
+| options.streamCallback | boolean | 否   | 是否启用回调通知（Webhook），默认 false       |
 
 **请求示例**
 
@@ -1385,14 +1385,14 @@ POST /api/v1/agent/agents/{agentId}/execute
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40901 | Agent 状态非 ACTIVE |
-| 42202 | LLM 调用失败（TECH-LLMGW 返回错误） |
-| 42202 | Tool 执行失败 |
-| 50003 | Agent 执行超时 |
-| 50002 | TECH-RAG / TECH-ACTION 不可达 |
+| 错误码 | 场景                                |
+| ------ | ----------------------------------- |
+| 40401  | Agent 不存在                        |
+| 40901  | Agent 状态非 ACTIVE                 |
+| 42202  | LLM 调用失败（TECH-LLMGW 返回错误） |
+| 42202  | Tool 执行失败                       |
+| 50003  | Agent 执行超时                      |
+| 50002  | TECH-RAG / TECH-ACTION 不可达       |
 
 ---
 
@@ -1412,8 +1412,8 @@ Accept: text/event-stream
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Body）**
@@ -1484,8 +1484,8 @@ GET /api/v1/agent/executions/{executionId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明        |
+| ----------- | ------ | ----------- |
 | executionId | string | 执行实例 ID |
 
 **响应示例（执行中）**
@@ -1565,10 +1565,10 @@ GET /api/v1/agent/executions/{executionId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 执行实例不存在 |
-| 40301 | 用户无权查看该执行实例 |
+| 错误码 | 场景                   |
+| ------ | ---------------------- |
+| 40401  | 执行实例不存在         |
+| 40301  | 用户无权查看该执行实例 |
 
 ---
 
@@ -1582,15 +1582,15 @@ POST /api/v1/agent/executions/{executionId}/cancel
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明        |
+| ----------- | ------ | ----------- |
 | executionId | string | 执行实例 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| reason | string | 否 | 取消原因 |
+| 字段   | 类型   | 必填 | 说明     |
+| ------ | ------ | ---- | -------- |
+| reason | string | 否   | 取消原因 |
 
 **请求示例**
 
@@ -1628,10 +1628,10 @@ POST /api/v1/agent/executions/{executionId}/cancel
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 执行实例不存在 |
-| 40901 | 执行已完成或已取消，无法再次取消 |
+| 错误码 | 场景                             |
+| ------ | -------------------------------- |
+| 40401  | 执行实例不存在                   |
+| 40901  | 执行已完成或已取消，无法再次取消 |
 
 ---
 
@@ -1645,8 +1645,8 @@ GET /api/v1/agent/executions/{executionId}/result
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明        |
+| ----------- | ------ | ----------- |
 | executionId | string | 执行实例 ID |
 
 **响应示例**
@@ -1692,10 +1692,10 @@ GET /api/v1/agent/executions/{executionId}/result
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 执行实例不存在 |
-| 40901 | 执行尚未完成，结果不可用 |
+| 错误码 | 场景                     |
+| ------ | ------------------------ |
+| 40401  | 执行实例不存在           |
+| 40901  | 执行尚未完成，结果不可用 |
 
 ---
 
@@ -1709,16 +1709,16 @@ POST /api/v1/agent/executions/{executionId}/resume
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明        |
+| ----------- | ------ | ----------- |
 | executionId | string | 执行实例 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| fromCheckpoint | boolean | 否 | 是否从最近的 Checkpoint 恢复，默认 true |
-| modifiedInput | string | 否 | 修改后的输入（覆盖原始输入） |
+| 字段           | 类型    | 必填 | 说明                                    |
+| -------------- | ------- | ---- | --------------------------------------- |
+| fromCheckpoint | boolean | 否   | 是否从最近的 Checkpoint 恢复，默认 true |
+| modifiedInput  | string  | 否   | 修改后的输入（覆盖原始输入）            |
 
 **响应示例**
 
@@ -1742,11 +1742,11 @@ POST /api/v1/agent/executions/{executionId}/resume
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 执行实例不存在 |
-| 40901 | 执行状态非 INTERRUPTED / FAILED |
-| 42201 | 无可用 Checkpoint |
+| 错误码 | 场景                            |
+| ------ | ------------------------------- |
+| 40401  | 执行实例不存在                  |
+| 40901  | 执行状态非 INTERRUPTED / FAILED |
+| 42201  | 无可用 Checkpoint               |
 
 ---
 
@@ -1762,22 +1762,22 @@ POST /api/v1/agent/tasks
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| title | string | 是 | 任务标题 |
-| description | string | 是 | 任务详细描述 |
-| taskType | string | 否 | 任务类型：`ONESHOT`（默认）/ `MULTI_STEP` / `COLLABORATIVE` |
-| priority | string | 否 | 优先级：`LOW` / `MEDIUM`（默认）/ `HIGH` / `URGENT` |
-| input | object | 否 | 任务输入数据 |
-| input.variables | object | 否 | 输入变量 |
-| input.attachments | array[string] | 否 | 附件引用 ID 列表 |
-| expectedOutput | object | 否 | 期望输出格式 |
-| expectedOutput.format | string | 否 | 输出格式：`TEXT` / `JSON` / `STRUCTURED` |
-| expectedOutput.schema | object | 否 | 输出 JSON Schema |
-| deadline | string | 否 | 截止时间，ISO-8601 |
-| parentTaskId | string | 否 | 父任务 ID（用于子任务） |
-| tags | array[string] | 否 | 标签 |
-| metadata | object | 否 | 自定义元数据 |
+| 字段                  | 类型          | 必填 | 说明                                                        |
+| --------------------- | ------------- | ---- | ----------------------------------------------------------- |
+| title                 | string        | 是   | 任务标题                                                    |
+| description           | string        | 是   | 任务详细描述                                                |
+| taskType              | string        | 否   | 任务类型：`ONESHOT`（默认）/ `MULTI_STEP` / `COLLABORATIVE` |
+| priority              | string        | 否   | 优先级：`LOW` / `MEDIUM`（默认）/ `HIGH` / `URGENT`         |
+| input                 | object        | 否   | 任务输入数据                                                |
+| input.variables       | object        | 否   | 输入变量                                                    |
+| input.attachments     | array[string] | 否   | 附件引用 ID 列表                                            |
+| expectedOutput        | object        | 否   | 期望输出格式                                                |
+| expectedOutput.format | string        | 否   | 输出格式：`TEXT` / `JSON` / `STRUCTURED`                    |
+| expectedOutput.schema | object        | 否   | 输出 JSON Schema                                            |
+| deadline              | string        | 否   | 截止时间，ISO-8601                                          |
+| parentTaskId          | string        | 否   | 父任务 ID（用于子任务）                                     |
+| tags                  | array[string] | 否   | 标签                                                        |
+| metadata              | object        | 否   | 自定义元数据                                                |
 
 **请求示例**
 
@@ -1852,12 +1852,12 @@ POST /api/v1/agent/tasks
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | title/description 为空 |
-| 40002 | taskType/priority 枚举值不合法 |
-| 40401 | parentTaskId 不存在 |
-| 42201 | expectedOutput.schema 不是合法 JSON Schema |
+| 错误码 | 场景                                       |
+| ------ | ------------------------------------------ |
+| 40001  | title/description 为空                     |
+| 40002  | taskType/priority 枚举值不合法             |
+| 40401  | parentTaskId 不存在                        |
+| 42201  | expectedOutput.schema 不是合法 JSON Schema |
 
 ---
 
@@ -1871,19 +1871,19 @@ POST /api/v1/agent/tasks/{taskId}/assign
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | taskId | string | 任务 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| agentId | string | 是 | 目标 Agent ID |
-| executionMode | string | 否 | 执行模式：`SYNC`（同步）/ `ASYNC`（默认，异步） |
-| input | string | 否 | 执行输入（覆盖任务 description 作为 Agent 输入） |
-| context | object | 否 | 额外上下文变量 |
-| options | object | 否 | 执行选项（同 3.2.1 options） |
+| 字段          | 类型   | 必填 | 说明                                             |
+| ------------- | ------ | ---- | ------------------------------------------------ |
+| agentId       | string | 是   | 目标 Agent ID                                    |
+| executionMode | string | 否   | 执行模式：`SYNC`（同步）/ `ASYNC`（默认，异步）  |
+| input         | string | 否   | 执行输入（覆盖任务 description 作为 Agent 输入） |
+| context       | object | 否   | 额外上下文变量                                   |
+| options       | object | 否   | 执行选项（同 3.2.1 options）                     |
 
 **请求示例**
 
@@ -1926,12 +1926,12 @@ POST /api/v1/agent/tasks/{taskId}/assign
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 任务或 Agent 不存在 |
-| 40901 | 任务状态非 PENDING，不允许分配 |
-| 40901 | Agent 状态非 ACTIVE |
-| 42201 | Agent 未配置执行所需能力 |
+| 错误码 | 场景                           |
+| ------ | ------------------------------ |
+| 40401  | 任务或 Agent 不存在            |
+| 40901  | 任务状态非 PENDING，不允许分配 |
+| 40901  | Agent 状态非 ACTIVE            |
+| 42201  | Agent 未配置执行所需能力       |
 
 ---
 
@@ -1945,20 +1945,20 @@ GET /api/v1/agent/tasks
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| status | string | 否 | 任务状态：`PENDING` / `ASSIGNED` / `EXECUTING` / `COMPLETED` / `FAILED` / `CANCELLED` |
-| priority | string | 否 | 优先级 |
-| taskType | string | 否 | 任务类型 |
-| agentId | string | 否 | 分配的 Agent ID |
-| createdBy | string | 否 | 创建人 ID |
-| parentTaskId | string | 否 | 父任务 ID（查询子任务） |
-| tag | string | 否 | 标签精确匹配 |
-| createdAfter | string | 否 | 创建时间下界 |
-| createdBefore | string | 否 | 创建时间上界 |
-| page | int | 否 | 页码，默认 1 |
-| size | int | 否 | 每页条数，默认 20 |
-| sort | string | 否 | 排序字段，默认 `-createdAt` |
+| 参数          | 类型   | 必填 | 说明                                                                                  |
+| ------------- | ------ | ---- | ------------------------------------------------------------------------------------- |
+| status        | string | 否   | 任务状态：`PENDING` / `ASSIGNED` / `EXECUTING` / `COMPLETED` / `FAILED` / `CANCELLED` |
+| priority      | string | 否   | 优先级                                                                                |
+| taskType      | string | 否   | 任务类型                                                                              |
+| agentId       | string | 否   | 分配的 Agent ID                                                                       |
+| createdBy     | string | 否   | 创建人 ID                                                                             |
+| parentTaskId  | string | 否   | 父任务 ID（查询子任务）                                                               |
+| tag           | string | 否   | 标签精确匹配                                                                          |
+| createdAfter  | string | 否   | 创建时间下界                                                                          |
+| createdBefore | string | 否   | 创建时间上界                                                                          |
+| page          | int    | 否   | 页码，默认 1                                                                          |
+| size          | int    | 否   | 每页条数，默认 20                                                                     |
+| sort          | string | 否   | 排序字段，默认 `-createdAt`                                                           |
 
 **响应示例**
 
@@ -1997,10 +1997,10 @@ GET /api/v1/agent/tasks
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 分页参数不合法 |
-| 40301 | 用户无权查看该租户的任务列表 |
+| 错误码 | 场景                         |
+| ------ | ---------------------------- |
+| 40001  | 分页参数不合法               |
+| 40301  | 用户无权查看该租户的任务列表 |
 
 ---
 
@@ -2014,8 +2014,8 @@ GET /api/v1/agent/tasks/{taskId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | taskId | string | 任务 ID |
 
 **响应示例**
@@ -2088,10 +2088,10 @@ GET /api/v1/agent/tasks/{taskId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 任务不存在 |
-| 40301 | 用户无权查看该任务 |
+| 错误码 | 场景               |
+| ------ | ------------------ |
+| 40401  | 任务不存在         |
+| 40301  | 用户无权查看该任务 |
 
 ---
 
@@ -2105,8 +2105,8 @@ GET /api/v1/agent/tasks/{taskId}/result
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | taskId | string | 任务 ID |
 
 **响应示例**
@@ -2168,10 +2168,10 @@ GET /api/v1/agent/tasks/{taskId}/result
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 任务不存在 |
-| 40901 | 任务尚未完成，结果不可用 |
+| 错误码 | 场景                     |
+| ------ | ------------------------ |
+| 40401  | 任务不存在               |
+| 40901  | 任务尚未完成，结果不可用 |
 
 ---
 
@@ -2185,16 +2185,16 @@ PUT /api/v1/agent/tasks/{taskId}/status
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | taskId | string | 任务 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| status | string | 是 | 新状态：`PENDING` / `CANCELLED` / `ON_HOLD` |
-| reason | string | 否 | 操作原因 |
+| 字段   | 类型   | 必填 | 说明                                        |
+| ------ | ------ | ---- | ------------------------------------------- |
+| status | string | 是   | 新状态：`PENDING` / `CANCELLED` / `ON_HOLD` |
+| reason | string | 否   | 操作原因                                    |
 
 **请求示例**
 
@@ -2225,11 +2225,11 @@ PUT /api/v1/agent/tasks/{taskId}/status
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 任务不存在 |
-| 40901 | 状态转换不合法（如 COMPLETED 状态不可变更） |
-| 40301 | 用户无权修改任务状态 |
+| 错误码 | 场景                                        |
+| ------ | ------------------------------------------- |
+| 40401  | 任务不存在                                  |
+| 40901  | 状态转换不合法（如 COMPLETED 状态不可变更） |
+| 40301  | 用户无权修改任务状态                        |
 
 ---
 
@@ -2243,8 +2243,8 @@ GET /api/v1/agent/tasks/{taskId}/statistics
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | taskId | string | 任务 ID |
 
 **响应示例**
@@ -2281,9 +2281,9 @@ GET /api/v1/agent/tasks/{taskId}/statistics
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 任务不存在 |
+| 错误码 | 场景       |
+| ------ | ---------- |
+| 40401  | 任务不存在 |
 
 ---
 
@@ -2299,14 +2299,14 @@ POST /api/v1/agent/conversations
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| agentId | string | 是 | Agent ID |
-| title | string | 否 | 对话标题，默认自动生成 |
-| userId | string | 否 | 用户 ID（从 Token 解析，可覆盖） |
-| context | object | 否 | 会话上下文变量 |
-| memoryEnabled | boolean | 否 | 是否启用记忆，默认 true |
-| metadata | object | 否 | 自定义元数据 |
+| 字段          | 类型    | 必填 | 说明                             |
+| ------------- | ------- | ---- | -------------------------------- |
+| agentId       | string  | 是   | Agent ID                         |
+| title         | string  | 否   | 对话标题，默认自动生成           |
+| userId        | string  | 否   | 用户 ID（从 Token 解析，可覆盖） |
+| context       | object  | 否   | 会话上下文变量                   |
+| memoryEnabled | boolean | 否   | 是否启用记忆，默认 true          |
+| metadata      | object  | 否   | 自定义元数据                     |
 
 **请求示例**
 
@@ -2349,10 +2349,10 @@ POST /api/v1/agent/conversations
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40901 | Agent 状态非 ACTIVE |
+| 错误码 | 场景                |
+| ------ | ------------------- |
+| 40401  | Agent 不存在        |
+| 40901  | Agent 状态非 ACTIVE |
 
 ---
 
@@ -2366,22 +2366,22 @@ POST /api/v1/agent/conversations/{conversationId}/messages
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数           | 类型   | 说明        |
+| -------------- | ------ | ----------- |
 | conversationId | string | 对话会话 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| content | string | 是 | 消息内容 |
-| contentType | string | 否 | 内容类型：`TEXT`（默认）/ `JSON` / `FILE_REF` |
-| role | string | 否 | 消息角色：`USER`（默认）/ `SYSTEM` |
-| attachments | array[object] | 否 | 附件列表 |
-| attachments[].fileId | string | 是 | 文件 ID |
-| attachments[].fileName | string | 是 | 文件名 |
-| attachments[].fileType | string | 是 | 文件类型 |
-| options | object | 否 | 执行选项（同 3.2.1 options） |
+| 字段                   | 类型          | 必填 | 说明                                          |
+| ---------------------- | ------------- | ---- | --------------------------------------------- |
+| content                | string        | 是   | 消息内容                                      |
+| contentType            | string        | 否   | 内容类型：`TEXT`（默认）/ `JSON` / `FILE_REF` |
+| role                   | string        | 否   | 消息角色：`USER`（默认）/ `SYSTEM`            |
+| attachments            | array[object] | 否   | 附件列表                                      |
+| attachments[].fileId   | string        | 是   | 文件 ID                                       |
+| attachments[].fileName | string        | 是   | 文件名                                        |
+| attachments[].fileType | string        | 是   | 文件类型                                      |
+| options                | object        | 否   | 执行选项（同 3.2.1 options）                  |
 
 **请求示例**
 
@@ -2431,7 +2431,9 @@ POST /api/v1/agent/conversations/{conversationId}/messages
         {
           "toolCallId": "tc-001",
           "toolName": "采购订单查询",
-          "toolInput": { "dateRange": { "start": "2026-07-09", "end": "2026-07-16" } },
+          "toolInput": {
+            "dateRange": { "start": "2026-07-09", "end": "2026-07-16" }
+          },
           "toolOutput": { "totalOrders": 12 },
           "duration": 2000
         }
@@ -2454,12 +2456,12 @@ POST /api/v1/agent/conversations/{conversationId}/messages
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 对话会话不存在 |
-| 40901 | 对话会话已结束 |
-| 42202 | Agent 执行失败 |
-| 50003 | 执行超时 |
+| 错误码 | 场景           |
+| ------ | -------------- |
+| 40401  | 对话会话不存在 |
+| 40901  | 对话会话已结束 |
+| 42202  | Agent 执行失败 |
+| 50003  | 执行超时       |
 
 ---
 
@@ -2479,8 +2481,8 @@ Accept: text/event-stream
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数           | 类型   | 说明        |
+| -------------- | ------ | ----------- |
 | conversationId | string | 对话会话 ID |
 
 **请求参数（Body）**
@@ -2517,12 +2519,12 @@ data: {"executionId":"exec-20260716-000793","status":"COMPLETED","messageId":"ms
 
 **错误场景（SSE error 事件）**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 对话会话不存在 |
-| 40901 | 对话会话已结束 |
-| 42202 | Agent 执行失败 |
-| 50003 | 执行超时 |
+| 错误码 | 场景           |
+| ------ | -------------- |
+| 40401  | 对话会话不存在 |
+| 40901  | 对话会话已结束 |
+| 42202  | Agent 执行失败 |
+| 50003  | 执行超时       |
 
 ---
 
@@ -2536,19 +2538,19 @@ GET /api/v1/agent/conversations/{conversationId}/messages
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数           | 类型   | 说明        |
+| -------------- | ------ | ----------- |
 | conversationId | string | 对话会话 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| role | string | 否 | 消息角色筛选：`USER` / `ASSISTANT` / `SYSTEM` / `TOOL` |
-| afterMessageId | string | 否 | 返回该消息 ID 之后的消息（用于增量加载） |
-| limit | int | 否 | 返回条数，默认 50，最大 200 |
-| includeToolCalls | boolean | 否 | 是否包含工具调用记录，默认 true |
-| ascending | boolean | 否 | 是否按时间正序排列，默认 true |
+| 参数             | 类型    | 必填 | 说明                                                   |
+| ---------------- | ------- | ---- | ------------------------------------------------------ |
+| role             | string  | 否   | 消息角色筛选：`USER` / `ASSISTANT` / `SYSTEM` / `TOOL` |
+| afterMessageId   | string  | 否   | 返回该消息 ID 之后的消息（用于增量加载）               |
+| limit            | int     | 否   | 返回条数，默认 50，最大 200                            |
+| includeToolCalls | boolean | 否   | 是否包含工具调用记录，默认 true                        |
+| ascending        | boolean | 否   | 是否按时间正序排列，默认 true                          |
 
 **响应示例**
 
@@ -2582,7 +2584,9 @@ GET /api/v1/agent/conversations/{conversationId}/messages
           {
             "toolCallId": "tc-001",
             "toolName": "采购订单查询",
-            "toolInput": { "dateRange": { "start": "2026-07-09", "end": "2026-07-16" } },
+            "toolInput": {
+              "dateRange": { "start": "2026-07-09", "end": "2026-07-16" }
+            },
             "toolOutput": { "totalOrders": 12 },
             "duration": 2000
           }
@@ -2600,10 +2604,10 @@ GET /api/v1/agent/conversations/{conversationId}/messages
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 对话会话不存在 |
-| 40001 | limit 超过最大值 200 |
+| 错误码 | 场景                 |
+| ------ | -------------------- |
+| 40401  | 对话会话不存在       |
+| 40001  | limit 超过最大值 200 |
 
 ---
 
@@ -2617,16 +2621,16 @@ GET /api/v1/agent/conversations
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| agentId | string | 否 | Agent ID 筛选 |
-| status | string | 否 | 状态：`ACTIVE` / `ENDED` / `ARCHIVED` |
-| title | string | 否 | 标题模糊匹配 |
-| createdAfter | string | 否 | 创建时间下界 |
-| createdBefore | string | 否 | 创建时间上界 |
-| page | int | 否 | 页码，默认 1 |
-| size | int | 否 | 每页条数，默认 20 |
-| sort | string | 否 | 排序字段，默认 `-lastMessageAt` |
+| 参数          | 类型   | 必填 | 说明                                  |
+| ------------- | ------ | ---- | ------------------------------------- |
+| agentId       | string | 否   | Agent ID 筛选                         |
+| status        | string | 否   | 状态：`ACTIVE` / `ENDED` / `ARCHIVED` |
+| title         | string | 否   | 标题模糊匹配                          |
+| createdAfter  | string | 否   | 创建时间下界                          |
+| createdBefore | string | 否   | 创建时间上界                          |
+| page          | int    | 否   | 页码，默认 1                          |
+| size          | int    | 否   | 每页条数，默认 20                     |
+| sort          | string | 否   | 排序字段，默认 `-lastMessageAt`       |
 
 **响应示例**
 
@@ -2664,10 +2668,10 @@ GET /api/v1/agent/conversations
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 分页参数不合法 |
-| 40301 | 用户无权查看对话列表 |
+| 错误码 | 场景                 |
+| ------ | -------------------- |
+| 40001  | 分页参数不合法       |
+| 40301  | 用户无权查看对话列表 |
 
 ---
 
@@ -2681,8 +2685,8 @@ GET /api/v1/agent/conversations/{conversationId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数           | 类型   | 说明        |
+| -------------- | ------ | ----------- |
 | conversationId | string | 对话会话 ID |
 
 **响应示例**
@@ -2721,10 +2725,10 @@ GET /api/v1/agent/conversations/{conversationId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 对话会话不存在 |
-| 40301 | 用户无权查看该对话 |
+| 错误码 | 场景               |
+| ------ | ------------------ |
+| 40401  | 对话会话不存在     |
+| 40301  | 用户无权查看该对话 |
 
 ---
 
@@ -2738,17 +2742,17 @@ POST /api/v1/agent/conversations/{conversationId}/end
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数           | 类型   | 说明        |
+| -------------- | ------ | ----------- |
 | conversationId | string | 对话会话 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| saveMemory | boolean | 否 | 是否保存长期记忆，默认 true |
-| generateSummary | boolean | 否 | 是否生成对话摘要，默认 true |
-| reason | string | 否 | 结束原因 |
+| 字段            | 类型    | 必填 | 说明                        |
+| --------------- | ------- | ---- | --------------------------- |
+| saveMemory      | boolean | 否   | 是否保存长期记忆，默认 true |
+| generateSummary | boolean | 否   | 是否生成对话摘要，默认 true |
+| reason          | string  | 否   | 结束原因                    |
 
 **请求示例**
 
@@ -2785,10 +2789,10 @@ POST /api/v1/agent/conversations/{conversationId}/end
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 对话会话不存在 |
-| 40901 | 对话会话已结束 |
+| 错误码 | 场景           |
+| ------ | -------------- |
+| 40401  | 对话会话不存在 |
+| 40901  | 对话会话已结束 |
 
 ---
 
@@ -2804,24 +2808,24 @@ POST /api/v1/agent/tools
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| toolKey | string | 是 | 工具唯一标识 |
-| name | string | 是 | 工具名称 |
-| description | string | 是 | 工具描述（供 Agent 理解工具用途） |
-| toolType | string | 是 | 工具类型：`MCP` / `ACTION` / `BUILTIN` / `CUSTOM` |
-| implementation | object | 是 | 工具实现配置 |
-| implementation.endpoint | string | 条件必填 | MCP Server 端点（toolType=MCP 时） |
-| implementation.actionCode | string | 条件必填 | Action 编码（toolType=ACTION 时，对应 TECH-ACTION） |
-| implementation.module | string | 条件必填 | 内置模块路径（toolType=BUILTIN 时） |
-| implementation.handler | string | 条件必填 | 自定义处理器（toolType=CUSTOM 时，Python 函数路径） |
-| inputSchema | object | 是 | 输入参数 JSON Schema |
-| outputSchema | object | 否 | 输出参数 JSON Schema |
-| config | object | 否 | 工具配置参数 |
-| timeout | int | 否 | 执行超时（秒），默认 30 |
-| retryCount | int | 否 | 失败重试次数，默认 0 |
-| authRequired | boolean | 否 | 是否需要鉴权，默认 true |
-| tags | array[string] | 否 | 标签 |
+| 字段                      | 类型          | 必填     | 说明                                                |
+| ------------------------- | ------------- | -------- | --------------------------------------------------- |
+| toolKey                   | string        | 是       | 工具唯一标识                                        |
+| name                      | string        | 是       | 工具名称                                            |
+| description               | string        | 是       | 工具描述（供 Agent 理解工具用途）                   |
+| toolType                  | string        | 是       | 工具类型：`MCP` / `ACTION` / `BUILTIN` / `CUSTOM`   |
+| implementation            | object        | 是       | 工具实现配置                                        |
+| implementation.endpoint   | string        | 条件必填 | MCP Server 端点（toolType=MCP 时）                  |
+| implementation.actionCode | string        | 条件必填 | Action 编码（toolType=ACTION 时，对应 TECH-ACTION） |
+| implementation.module     | string        | 条件必填 | 内置模块路径（toolType=BUILTIN 时）                 |
+| implementation.handler    | string        | 条件必填 | 自定义处理器（toolType=CUSTOM 时，Python 函数路径） |
+| inputSchema               | object        | 是       | 输入参数 JSON Schema                                |
+| outputSchema              | object        | 否       | 输出参数 JSON Schema                                |
+| config                    | object        | 否       | 工具配置参数                                        |
+| timeout                   | int           | 否       | 执行超时（秒），默认 30                             |
+| retryCount                | int           | 否       | 失败重试次数，默认 0                                |
+| authRequired              | boolean       | 否       | 是否需要鉴权，默认 true                             |
+| tags                      | array[string] | 否       | 标签                                                |
 
 **请求示例**
 
@@ -2845,7 +2849,10 @@ POST /api/v1/agent/tools
         }
       },
       "department": { "type": "string" },
-      "status": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED", "COMPLETED"] }
+      "status": {
+        "type": "string",
+        "enum": ["PENDING", "APPROVED", "REJECTED", "COMPLETED"]
+      }
     },
     "required": ["dateRange"]
   },
@@ -2912,13 +2919,13 @@ POST /api/v1/agent/tools
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | toolKey/name/description/toolType/inputSchema 为空 |
-| 40901 | toolKey 在同一租户内已存在 |
-| 42201 | toolType=ACTION 但 actionCode 在 TECH-ACTION 中不存在 |
-| 42201 | toolType=MCP 但 endpoint 不可达 |
-| 42201 | inputSchema 不是合法 JSON Schema |
+| 错误码 | 场景                                                  |
+| ------ | ----------------------------------------------------- |
+| 40001  | toolKey/name/description/toolType/inputSchema 为空    |
+| 40901  | toolKey 在同一租户内已存在                            |
+| 42201  | toolType=ACTION 但 actionCode 在 TECH-ACTION 中不存在 |
+| 42201  | toolType=MCP 但 endpoint 不可达                       |
+| 42201  | inputSchema 不是合法 JSON Schema                      |
 
 ---
 
@@ -2932,17 +2939,17 @@ GET /api/v1/agent/tools
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| toolKey | string | 否 | 工具 key，支持模糊匹配 |
-| name | string | 否 | 工具名称，支持模糊匹配 |
-| toolType | string | 否 | 工具类型 |
-| status | string | 否 | 状态：`ACTIVE` / `DISABLED` |
-| tag | string | 否 | 标签精确匹配 |
-| agentId | string | 否 | 查询指定 Agent 可用的工具（含已分配检查） |
-| page | int | 否 | 页码，默认 1 |
-| size | int | 否 | 每页条数，默认 20 |
-| sort | string | 否 | 排序字段，默认 `-registeredAt` |
+| 参数     | 类型   | 必填 | 说明                                      |
+| -------- | ------ | ---- | ----------------------------------------- |
+| toolKey  | string | 否   | 工具 key，支持模糊匹配                    |
+| name     | string | 否   | 工具名称，支持模糊匹配                    |
+| toolType | string | 否   | 工具类型                                  |
+| status   | string | 否   | 状态：`ACTIVE` / `DISABLED`               |
+| tag      | string | 否   | 标签精确匹配                              |
+| agentId  | string | 否   | 查询指定 Agent 可用的工具（含已分配检查） |
+| page     | int    | 否   | 页码，默认 1                              |
+| size     | int    | 否   | 每页条数，默认 20                         |
+| sort     | string | 否   | 排序字段，默认 `-registeredAt`            |
 
 **响应示例**
 
@@ -2992,10 +2999,10 @@ GET /api/v1/agent/tools
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | 分页参数不合法 |
-| 40301 | 用户无权查看工具列表 |
+| 错误码 | 场景                 |
+| ------ | -------------------- |
+| 40001  | 分页参数不合法       |
+| 40301  | 用户无权查看工具列表 |
 
 ---
 
@@ -3009,8 +3016,8 @@ GET /api/v1/agent/tools/{toolId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | toolId | string | 工具 ID |
 
 **响应示例**
@@ -3041,7 +3048,10 @@ GET /api/v1/agent/tools/{toolId}
           }
         },
         "department": { "type": "string" },
-        "status": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED", "COMPLETED"] }
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "APPROVED", "REJECTED", "COMPLETED"]
+        }
       },
       "required": ["dateRange"]
     },
@@ -3084,9 +3094,9 @@ GET /api/v1/agent/tools/{toolId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 工具不存在 |
+| 错误码 | 场景       |
+| ------ | ---------- |
+| 40401  | 工具不存在 |
 
 ---
 
@@ -3100,20 +3110,20 @@ POST /api/v1/agent/tools/{toolId}/invoke
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | toolId | string | 工具 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| input | object | 是 | 工具输入参数（需符合 inputSchema） |
-| context | object | 否 | 调用上下文 |
-| context.userId | string | 否 | 调用用户 ID |
-| context.executionId | string | 否 | 关联执行 ID |
-| options | object | 否 | 调用选项 |
-| options.timeout | int | 否 | 超时覆盖 |
+| 字段                | 类型   | 必填 | 说明                               |
+| ------------------- | ------ | ---- | ---------------------------------- |
+| input               | object | 是   | 工具输入参数（需符合 inputSchema） |
+| context             | object | 否   | 调用上下文                         |
+| context.userId      | string | 否   | 调用用户 ID                        |
+| context.executionId | string | 否   | 关联执行 ID                        |
+| options             | object | 否   | 调用选项                           |
+| options.timeout     | int    | 否   | 超时覆盖                           |
 
 **请求示例**
 
@@ -3176,13 +3186,13 @@ POST /api/v1/agent/tools/{toolId}/invoke
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 工具不存在 |
-| 40901 | 工具状态非 ACTIVE |
-| 42201 | 输入参数不符合 inputSchema |
-| 42202 | 工具执行失败（Action 执行异常、MCP Server 不可达） |
-| 50003 | 执行超时 |
+| 错误码 | 场景                                               |
+| ------ | -------------------------------------------------- |
+| 40401  | 工具不存在                                         |
+| 40901  | 工具状态非 ACTIVE                                  |
+| 42201  | 输入参数不符合 inputSchema                         |
+| 42202  | 工具执行失败（Action 执行异常、MCP Server 不可达） |
+| 50003  | 执行超时                                           |
 
 ---
 
@@ -3196,23 +3206,23 @@ PUT /api/v1/agent/tools/{toolId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | toolId | string | 工具 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 否 | 工具名称 |
-| description | string | 否 | 工具描述 |
-| inputSchema | object | 否 | 输入参数 JSON Schema |
-| outputSchema | object | 否 | 输出参数 JSON Schema |
-| config | object | 否 | 工具配置参数 |
-| timeout | int | 否 | 执行超时 |
-| retryCount | int | 否 | 失败重试次数 |
-| tags | array[string] | 否 | 标签 |
-| expectedVersion | int | 是 | 乐观锁版本号 |
+| 字段            | 类型          | 必填 | 说明                 |
+| --------------- | ------------- | ---- | -------------------- |
+| name            | string        | 否   | 工具名称             |
+| description     | string        | 否   | 工具描述             |
+| inputSchema     | object        | 否   | 输入参数 JSON Schema |
+| outputSchema    | object        | 否   | 输出参数 JSON Schema |
+| config          | object        | 否   | 工具配置参数         |
+| timeout         | int           | 否   | 执行超时             |
+| retryCount      | int           | 否   | 失败重试次数         |
+| tags            | array[string] | 否   | 标签                 |
+| expectedVersion | int           | 是   | 乐观锁版本号         |
 
 **请求示例**
 
@@ -3251,11 +3261,11 @@ PUT /api/v1/agent/tools/{toolId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 工具不存在 |
-| 40902 | 版本冲突 |
-| 42201 | inputSchema 不是合法 JSON Schema |
+| 错误码 | 场景                             |
+| ------ | -------------------------------- |
+| 40401  | 工具不存在                       |
+| 40902  | 版本冲突                         |
+| 42201  | inputSchema 不是合法 JSON Schema |
 
 ---
 
@@ -3269,16 +3279,16 @@ PUT /api/v1/agent/tools/{toolId}/state
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | toolId | string | 工具 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| action | string | 是 | `ENABLE` 或 `DISABLE` |
-| reason | string | 否 | 操作原因 |
+| 字段   | 类型   | 必填 | 说明                  |
+| ------ | ------ | ---- | --------------------- |
+| action | string | 是   | `ENABLE` 或 `DISABLE` |
+| reason | string | 否   | 操作原因              |
 
 **请求示例**
 
@@ -3306,10 +3316,10 @@ PUT /api/v1/agent/tools/{toolId}/state
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 工具不存在 |
-| 40901 | 工具当前状态不允许该操作 |
+| 错误码 | 场景                     |
+| ------ | ------------------------ |
+| 40401  | 工具不存在               |
+| 40901  | 工具当前状态不允许该操作 |
 
 ---
 
@@ -3323,8 +3333,8 @@ DELETE /api/v1/agent/tools/{toolId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明    |
+| ------ | ------ | ------- |
 | toolId | string | 工具 ID |
 
 **响应示例**
@@ -3343,11 +3353,11 @@ DELETE /api/v1/agent/tools/{toolId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 工具不存在 |
-| 40901 | 工具仍被 Agent 引用，需先解除引用 |
-| 40901 | 工具状态为 ACTIVE，需先禁用 |
+| 错误码 | 场景                              |
+| ------ | --------------------------------- |
+| 40401  | 工具不存在                        |
+| 40901  | 工具仍被 Agent 引用，需先解除引用 |
+| 40901  | 工具状态为 ACTIVE，需先禁用       |
 
 ---
 
@@ -3363,18 +3373,18 @@ GET /api/v1/agent/executions/{executionId}/steps
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明        |
+| ----------- | ------ | ----------- |
 | executionId | string | 执行实例 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| node | string | 否 | 按节点类型筛选：`planner` / `agent` / `tool_executor` / `evaluator` |
-| status | string | 否 | 按步骤状态筛选：`RUNNING` / `COMPLETED` / `FAILED` / `SKIPPED` |
-| includeInput | boolean | 否 | 是否包含步骤输入，默认 true |
-| includeOutput | boolean | 否 | 是否包含步骤输出，默认 true |
+| 参数          | 类型    | 必填 | 说明                                                                |
+| ------------- | ------- | ---- | ------------------------------------------------------------------- |
+| node          | string  | 否   | 按节点类型筛选：`planner` / `agent` / `tool_executor` / `evaluator` |
+| status        | string  | 否   | 按步骤状态筛选：`RUNNING` / `COMPLETED` / `FAILED` / `SKIPPED`      |
+| includeInput  | boolean | 否   | 是否包含步骤输入，默认 true                                         |
+| includeOutput | boolean | 否   | 是否包含步骤输出，默认 true                                         |
 
 **响应示例**
 
@@ -3507,10 +3517,10 @@ GET /api/v1/agent/executions/{executionId}/steps
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 执行实例不存在 |
-| 40301 | 用户无权查看该执行轨迹 |
+| 错误码 | 场景                   |
+| ------ | ---------------------- |
+| 40401  | 执行实例不存在         |
+| 40301  | 用户无权查看该执行轨迹 |
 
 ---
 
@@ -3524,8 +3534,8 @@ GET /api/v1/agent/executions/{executionId}/thought-chain
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明        |
+| ----------- | ------ | ----------- |
 | executionId | string | 执行实例 ID |
 
 **响应示例**
@@ -3544,7 +3554,9 @@ GET /api/v1/agent/executions/{executionId}/thought-chain
         "action": "CALL_TOOL",
         "actionDetail": {
           "tool": "tool-purchase-query",
-          "params": { "dateRange": { "start": "2026-07-01", "end": "2026-07-16" } }
+          "params": {
+            "dateRange": { "start": "2026-07-01", "end": "2026-07-16" }
+          }
         },
         "confidence": 0.95,
         "timestamp": "2026-07-16T16:30:01.000+08:00"
@@ -3573,10 +3585,10 @@ GET /api/v1/agent/executions/{executionId}/thought-chain
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 执行实例不存在 |
-| 42201 | 执行未启用 Trace 记录，无思考链数据 |
+| 错误码 | 场景                                |
+| ------ | ----------------------------------- |
+| 40401  | 执行实例不存在                      |
+| 42201  | 执行未启用 Trace 记录，无思考链数据 |
 
 ---
 
@@ -3590,16 +3602,16 @@ GET /api/v1/agent/executions/{executionId}/tool-calls
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明        |
+| ----------- | ------ | ----------- |
 | executionId | string | 执行实例 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| toolId | string | 否 | 按工具 ID 筛选 |
-| status | string | 否 | 按状态筛选：`SUCCESS` / `FAILED` / `TIMEOUT` |
+| 参数   | 类型   | 必填 | 说明                                         |
+| ------ | ------ | ---- | -------------------------------------------- |
+| toolId | string | 否   | 按工具 ID 筛选                               |
+| status | string | 否   | 按状态筛选：`SUCCESS` / `FAILED` / `TIMEOUT` |
 
 **响应示例**
 
@@ -3667,9 +3679,9 @@ GET /api/v1/agent/executions/{executionId}/tool-calls
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 执行实例不存在 |
+| 错误码 | 场景           |
+| ------ | -------------- |
+| 40401  | 执行实例不存在 |
 
 ---
 
@@ -3683,23 +3695,23 @@ POST /api/v1/agent/executions/{executionId}/evaluations
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明        |
+| ----------- | ------ | ----------- |
 | executionId | string | 执行实例 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| score | int | 是 | 评分：1-5 |
-| dimensions | object | 否 | 分维度评分 |
-| dimensions.accuracy | int | 否 | 准确性评分 1-5 |
-| dimensions.completeness | int | 否 | 完整性评分 1-5 |
-| dimensions.relevance | int | 否 | 相关性评分 1-5 |
-| dimensions.efficiency | int | 否 | 效率评分 1-5 |
-| feedback | string | 否 | 文字反馈 |
-| tags | array[string] | 否 | 评估标签 |
-| evaluatedBy | string | 否 | 评估人 ID（默认从 Token 解析） |
+| 字段                    | 类型          | 必填 | 说明                           |
+| ----------------------- | ------------- | ---- | ------------------------------ |
+| score                   | int           | 是   | 评分：1-5                      |
+| dimensions              | object        | 否   | 分维度评分                     |
+| dimensions.accuracy     | int           | 否   | 准确性评分 1-5                 |
+| dimensions.completeness | int           | 否   | 完整性评分 1-5                 |
+| dimensions.relevance    | int           | 否   | 相关性评分 1-5                 |
+| dimensions.efficiency   | int           | 否   | 效率评分 1-5                   |
+| feedback                | string        | 否   | 文字反馈                       |
+| tags                    | array[string] | 否   | 评估标签                       |
+| evaluatedBy             | string        | 否   | 评估人 ID（默认从 Token 解析） |
 
 **请求示例**
 
@@ -3744,11 +3756,11 @@ POST /api/v1/agent/executions/{executionId}/evaluations
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 执行实例不存在 |
-| 40002 | score 不在 1-5 范围内 |
-| 40901 | 该执行已被当前用户评估过 |
+| 错误码 | 场景                     |
+| ------ | ------------------------ |
+| 40401  | 执行实例不存在           |
+| 40002  | score 不在 1-5 范围内    |
+| 40901  | 该执行已被当前用户评估过 |
 
 ---
 
@@ -3762,8 +3774,8 @@ GET /api/v1/agent/executions/{executionId}/evaluations
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数        | 类型   | 说明        |
+| ----------- | ------ | ----------- |
 | executionId | string | 执行实例 ID |
 
 **响应示例**
@@ -3800,9 +3812,9 @@ GET /api/v1/agent/executions/{executionId}/evaluations
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 执行实例不存在 |
+| 错误码 | 场景           |
+| ------ | -------------- |
+| 40401  | 执行实例不存在 |
 
 ---
 
@@ -3816,17 +3828,17 @@ GET /api/v1/agent/agents/{agentId}/statistics
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startDate | string | 否 | 统计起始日期，ISO-8601 |
-| endDate | string | 否 | 统计截止日期，ISO-8601 |
-| granularity | string | 否 | 聚合粒度：`HOUR` / `DAY`（默认）/ `WEEK` / `MONTH` |
+| 参数        | 类型   | 必填 | 说明                                               |
+| ----------- | ------ | ---- | -------------------------------------------------- |
+| startDate   | string | 否   | 统计起始日期，ISO-8601                             |
+| endDate     | string | 否   | 统计截止日期，ISO-8601                             |
+| granularity | string | 否   | 聚合粒度：`HOUR` / `DAY`（默认）/ `WEEK` / `MONTH` |
 
 **响应示例**
 
@@ -3900,10 +3912,10 @@ GET /api/v1/agent/agents/{agentId}/statistics
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40001 | 日期范围不合法 |
+| 错误码 | 场景           |
+| ------ | -------------- |
+| 40401  | Agent 不存在   |
+| 40001  | 日期范围不合法 |
 
 ---
 
@@ -3911,24 +3923,24 @@ GET /api/v1/agent/agents/{agentId}/statistics
 
 ### 4.1 PostgreSQL 表结构总览
 
-| 表名 | 说明 |
-|---|---|
-| agent_definition | Agent 定义表 |
-| agent_definition_version | Agent 版本历史表 |
-| agent_capability | Agent 能力配置表（Tools/Actions/RAG Scopes） |
-| agent_knowledge_scope | Agent 知识范围表 |
-| agent_tool | 工具注册表 |
-| agent_execution | Agent 执行实例表 |
-| agent_execution_step | 执行步骤记录表 |
-| agent_checkpoint | LangGraph Checkpoint 表 |
-| agent_task | 任务表 |
-| agent_conversation | 对话会话表 |
-| agent_message | 对话消息表 |
-| agent_tool_call | 工具调用记录表 |
-| agent_memory | 长期记忆表 |
-| agent_evaluation | 执行评估表 |
-| agent_outbox | Outbox 事件表（Kafka 事务消息） |
-| agent_idempotent_request | 幂等请求记录表 |
+| 表名                     | 说明                                         |
+| ------------------------ | -------------------------------------------- |
+| agent_definition         | Agent 定义表                                 |
+| agent_definition_version | Agent 版本历史表                             |
+| agent_capability         | Agent 能力配置表（Tools/Actions/RAG Scopes） |
+| agent_knowledge_scope    | Agent 知识范围表                             |
+| agent_tool               | 工具注册表                                   |
+| agent_execution          | Agent 执行实例表                             |
+| agent_execution_step     | 执行步骤记录表                               |
+| agent_checkpoint         | LangGraph Checkpoint 表                      |
+| agent_task               | 任务表                                       |
+| agent_conversation       | 对话会话表                                   |
+| agent_message            | 对话消息表                                   |
+| agent_tool_call          | 工具调用记录表                               |
+| agent_memory             | 长期记忆表                                   |
+| agent_evaluation         | 执行评估表                                   |
+| agent_outbox             | Outbox 事件表（Kafka 事务消息）              |
+| agent_idempotent_request | 幂等请求记录表                               |
 
 ### 4.2 agent_definition（Agent 定义表）
 
@@ -4355,20 +4367,20 @@ CREATE INDEX idx_air_expires ON agent_idempotent_request (expires_at);
 
 ### 4.18 Redis 数据结构
 
-| Key 模式 | 类型 | 说明 | TTL |
-|---|---|---|---|
-| `agent:exec:{executionId}` | Hash | 执行实例状态缓存（status/currentStep/currentNode/metrics） | 执行中无 TTL，完成后 1 小时 |
-| `agent:exec:{executionId}:lock` | String | 执行分布式锁（防止并发取消/恢复） | 30 秒 |
-| `agent:conv:{conversationId}:context` | Hash | 对话短期记忆上下文（最近 N 条消息摘要） | 24 小时 |
-| `agent:conv:{conversationId}:lock` | String | 对话写入锁 | 10 秒 |
-| `agent:agent:{agentId}:config` | Hash | Agent 配置缓存（role/modelConfig/capabilities） | 5 分钟 |
-| `agent:agent:{agentId}:tools` | Set | Agent 可用工具 ID 集合缓存 | 5 分钟 |
-| `agent:tool:registry` | Hash | 全局工具注册表缓存（toolId -> JSON） | 10 分钟 |
-| `agent:memory:{agentId}:short` | List | 短期记忆消息列表（最近 N 条） | 会话生命周期 |
-| `agent:memory:{agentId}:summary` | String | 长期记忆摘要缓存 | 1 小时 |
-| `agent:rate:{tenantId}:{agentId}` | String | 速率限制计数器 | 1 分钟 |
-| `agent:task:{taskId}:status` | String | 任务状态缓存 | 5 分钟 |
-| `agent:checkpoint:{executionId}:latest` | String | 最新 Checkpoint ID 缓存 | 1 小时 |
+| Key 模式                                | 类型   | 说明                                                       | TTL                         |
+| --------------------------------------- | ------ | ---------------------------------------------------------- | --------------------------- |
+| `agent:exec:{executionId}`              | Hash   | 执行实例状态缓存（status/currentStep/currentNode/metrics） | 执行中无 TTL，完成后 1 小时 |
+| `agent:exec:{executionId}:lock`         | String | 执行分布式锁（防止并发取消/恢复）                          | 30 秒                       |
+| `agent:conv:{conversationId}:context`   | Hash   | 对话短期记忆上下文（最近 N 条消息摘要）                    | 24 小时                     |
+| `agent:conv:{conversationId}:lock`      | String | 对话写入锁                                                 | 10 秒                       |
+| `agent:agent:{agentId}:config`          | Hash   | Agent 配置缓存（role/modelConfig/capabilities）            | 5 分钟                      |
+| `agent:agent:{agentId}:tools`           | Set    | Agent 可用工具 ID 集合缓存                                 | 5 分钟                      |
+| `agent:tool:registry`                   | Hash   | 全局工具注册表缓存（toolId -> JSON）                       | 10 分钟                     |
+| `agent:memory:{agentId}:short`          | List   | 短期记忆消息列表（最近 N 条）                              | 会话生命周期                |
+| `agent:memory:{agentId}:summary`        | String | 长期记忆摘要缓存                                           | 1 小时                      |
+| `agent:rate:{tenantId}:{agentId}`       | String | 速率限制计数器                                             | 1 分钟                      |
+| `agent:task:{taskId}:status`            | String | 任务状态缓存                                               | 5 分钟                      |
+| `agent:checkpoint:{executionId}:latest` | String | 最新 Checkpoint ID 缓存                                    | 1 小时                      |
 
 **Redis 使用约定：**
 
@@ -4384,38 +4396,38 @@ CREATE INDEX idx_air_expires ON agent_idempotent_request (expires_at);
 
 ### 5.1 事件类型
 
-| 事件类型 | 说明 | 触发时机 |
-|---|---|---|
-| AGENT_CREATED | Agent 创建事件 | Agent 定义创建成功后 |
-| AGENT_UPDATED | Agent 更新事件 | Agent 配置更新后 |
-| AGENT_DELETED | Agent 删除事件 | Agent 被删除/归档后 |
-| AGENT_STATE_CHANGED | Agent 状态变更事件 | Agent 启用/禁用后 |
-| EXECUTION_STARTED | 执行开始事件 | Agent 执行实例开始执行 |
-| EXECUTION_STEP_COMPLETED | 执行步骤完成事件 | 一个执行步骤（LangGraph 节点）完成 |
-| EXECUTION_COMPLETED | 执行完成事件 | Agent 执行成功完成 |
-| EXECUTION_FAILED | 执行失败事件 | Agent 执行失败 |
-| EXECUTION_CANCELLED | 执行取消事件 | Agent 执行被取消 |
-| TASK_CREATED | 任务创建事件 | 新任务创建后 |
-| TASK_ASSIGNED | 任务分配事件 | 任务被分配给 Agent |
-| TASK_STATUS_CHANGED | 任务状态变更事件 | 任务状态流转 |
-| TASK_COMPLETED | 任务完成事件 | 任务执行完成 |
-| TASK_FAILED | 任务失败事件 | 任务执行失败 |
-| CONVERSATION_CREATED | 对话创建事件 | 新对话会话创建后 |
-| CONVERSATION_ENDED | 对话结束事件 | 对话会话结束 |
-| TOOL_REGISTERED | 工具注册事件 | 新工具注册后 |
-| TOOL_INVOKED | 工具调用事件 | 工具被调用执行 |
-| TOOL_UNREGISTERED | 工具注销事件 | 工具被删除后 |
+| 事件类型                 | 说明               | 触发时机                           |
+| ------------------------ | ------------------ | ---------------------------------- |
+| AGENT_CREATED            | Agent 创建事件     | Agent 定义创建成功后               |
+| AGENT_UPDATED            | Agent 更新事件     | Agent 配置更新后                   |
+| AGENT_DELETED            | Agent 删除事件     | Agent 被删除/归档后                |
+| AGENT_STATE_CHANGED      | Agent 状态变更事件 | Agent 启用/禁用后                  |
+| EXECUTION_STARTED        | 执行开始事件       | Agent 执行实例开始执行             |
+| EXECUTION_STEP_COMPLETED | 执行步骤完成事件   | 一个执行步骤（LangGraph 节点）完成 |
+| EXECUTION_COMPLETED      | 执行完成事件       | Agent 执行成功完成                 |
+| EXECUTION_FAILED         | 执行失败事件       | Agent 执行失败                     |
+| EXECUTION_CANCELLED      | 执行取消事件       | Agent 执行被取消                   |
+| TASK_CREATED             | 任务创建事件       | 新任务创建后                       |
+| TASK_ASSIGNED            | 任务分配事件       | 任务被分配给 Agent                 |
+| TASK_STATUS_CHANGED      | 任务状态变更事件   | 任务状态流转                       |
+| TASK_COMPLETED           | 任务完成事件       | 任务执行完成                       |
+| TASK_FAILED              | 任务失败事件       | 任务执行失败                       |
+| CONVERSATION_CREATED     | 对话创建事件       | 新对话会话创建后                   |
+| CONVERSATION_ENDED       | 对话结束事件       | 对话会话结束                       |
+| TOOL_REGISTERED          | 工具注册事件       | 新工具注册后                       |
+| TOOL_INVOKED             | 工具调用事件       | 工具被调用执行                     |
+| TOOL_UNREGISTERED        | 工具注销事件       | 工具被删除后                       |
 
 ### 5.2 Kafka Topic 定义
 
-| Topic | 说明 | 分区策略 |
-|---|---|---|
-| `agent.agent.events` | Agent 生命周期事件 | 按 `agentId` 哈希分区 |
-| `agent.execution.events` | Agent 执行生命周期事件 | 按 `executionId` 哈希分区 |
-| `agent.task.events` | 任务生命周期事件 | 按 `taskId` 哈希分区 |
-| `agent.conversation.events` | 对话生命周期事件 | 按 `conversationId` 哈希分区 |
-| `agent.tool.events` | 工具生命周期事件 | 按 `toolId` 哈希分区 |
-| `agent.dlq` | 死信队列 | 消费失败的事件 |
+| Topic                       | 说明                   | 分区策略                     |
+| --------------------------- | ---------------------- | ---------------------------- |
+| `agent.agent.events`        | Agent 生命周期事件     | 按 `agentId` 哈希分区        |
+| `agent.execution.events`    | Agent 执行生命周期事件 | 按 `executionId` 哈希分区    |
+| `agent.task.events`         | 任务生命周期事件       | 按 `taskId` 哈希分区         |
+| `agent.conversation.events` | 对话生命周期事件       | 按 `conversationId` 哈希分区 |
+| `agent.tool.events`         | 工具生命周期事件       | 按 `toolId` 哈希分区         |
+| `agent.dlq`                 | 死信队列               | 消费失败的事件               |
 
 ### 5.3 Kafka 消息结构
 
@@ -4432,19 +4444,19 @@ CREATE INDEX idx_air_expires ON agent_idempotent_request (expires_at);
   "traceId": "a1b2c3d4e5f6",
   "source": "TECH-AGENT",
   "version": "1.0",
-  "payload": { }
+  "payload": {}
 }
 ```
 
 **Kafka 消息头**
 
-| 消息头 | 说明 |
-|---|---|
-| X-Trace-Id | 链路追踪 ID（与消息体 traceId 一致） |
-| X-Event-Type | 事件类型 |
-| X-Event-Id | 事件唯一 ID |
-| X-Tenant-Id | 租户 ID |
-| Content-Type | application/json |
+| 消息头       | 说明                                 |
+| ------------ | ------------------------------------ |
+| X-Trace-Id   | 链路追踪 ID（与消息体 traceId 一致） |
+| X-Event-Type | 事件类型                             |
+| X-Event-Id   | 事件唯一 ID                          |
+| X-Tenant-Id  | 租户 ID                              |
+| Content-Type | application/json                     |
 
 ### 5.4 各事件 Payload 定义
 
@@ -4703,14 +4715,14 @@ CREATE INDEX idx_air_expires ON agent_idempotent_request (expires_at);
 
 ### 5.6 事件消费方指南
 
-| 消费方 | 订阅 Topic | 处理逻辑 |
-|---|---|---|
-| APP-DW | agent.execution.events, agent.task.events | 更新数字员工执行状态、任务进度展示 |
-| APP-SUPERAI | agent.execution.events | 更新对话界面执行状态、流式结果展示 |
-| APP-DASHBOARD | agent.execution.events, agent.task.events, agent.tool.events | 更新仪表盘统计、执行轨迹展示 |
-| TECH-A2A | agent.execution.events, agent.task.events | 外部委托任务状态同步至 A2A 协议 |
-| TECH-MSG | 所有 | 统一消息推送（站内信/邮件/IM 通知任务完成） |
-| TECH-ONT | agent.task.events | 任务完成后更新本体业务对象状态 |
+| 消费方        | 订阅 Topic                                                   | 处理逻辑                                    |
+| ------------- | ------------------------------------------------------------ | ------------------------------------------- |
+| APP-DW        | agent.execution.events, agent.task.events                    | 更新数字员工执行状态、任务进度展示          |
+| APP-SUPERAI   | agent.execution.events                                       | 更新对话界面执行状态、流式结果展示          |
+| APP-DASHBOARD | agent.execution.events, agent.task.events, agent.tool.events | 更新仪表盘统计、执行轨迹展示                |
+| TECH-A2A      | agent.execution.events, agent.task.events                    | 外部委托任务状态同步至 A2A 协议             |
+| TECH-MSG      | 所有                                                         | 统一消息推送（站内信/邮件/IM 通知任务完成） |
+| TECH-ONT      | agent.task.events                                            | 任务完成后更新本体业务对象状态              |
 
 **消费方幂等处理（Python 示例）**
 
@@ -4736,21 +4748,21 @@ async def on_execution_event(event: dict):
 
 **目标**：完成 Agent 定义的 CRUD、版本管理、能力配置基础能力。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 创建 Agent | POST /api/v1/agent/agents | 含角色定义、模型配置、推理范式 |
-| 查询 Agent 列表 | GET /api/v1/agent/agents | 分页查询、条件筛选 |
-| 获取 Agent 详情 | GET /api/v1/agent/agents/{id} | 含能力配置、知识范围 |
-| 更新 Agent | PUT /api/v1/agent/agents/{id} | 乐观锁版本控制 |
-| 删除 Agent | DELETE /api/v1/agent/agents/{id} | 归档/级联删除 |
-| 启用/禁用 Agent | PUT /api/v1/agent/agents/{id}/state | - |
-| 配置 Agent 能力 | PUT /api/v1/agent/agents/{id}/capabilities | Tools/Actions/RAG Scopes |
-| 配置 Agent 模型 | PUT /api/v1/agent/agents/{id}/model | 动态切换模型 |
-| 配置知识范围 | PUT /api/v1/agent/agents/{id}/knowledge-scope | RAG 检索范围 |
-| 版本历史 | GET /api/v1/agent/agents/{id}/versions | 版本变更追溯 |
-| 版本回滚 | POST /api/v1/agent/agents/{id}/rollback | - |
-| 数据表 | 全部 DDL | agent_definition 等核心表 |
-| TECH-LLMGW 集成 | 模型可用性校验 | 创建/更新时校验 modelId |
+| 交付项          | API                                           | 说明                           |
+| --------------- | --------------------------------------------- | ------------------------------ |
+| 创建 Agent      | POST /api/v1/agent/agents                     | 含角色定义、模型配置、推理范式 |
+| 查询 Agent 列表 | GET /api/v1/agent/agents                      | 分页查询、条件筛选             |
+| 获取 Agent 详情 | GET /api/v1/agent/agents/{id}                 | 含能力配置、知识范围           |
+| 更新 Agent      | PUT /api/v1/agent/agents/{id}                 | 乐观锁版本控制                 |
+| 删除 Agent      | DELETE /api/v1/agent/agents/{id}              | 归档/级联删除                  |
+| 启用/禁用 Agent | PUT /api/v1/agent/agents/{id}/state           | -                              |
+| 配置 Agent 能力 | PUT /api/v1/agent/agents/{id}/capabilities    | Tools/Actions/RAG Scopes       |
+| 配置 Agent 模型 | PUT /api/v1/agent/agents/{id}/model           | 动态切换模型                   |
+| 配置知识范围    | PUT /api/v1/agent/agents/{id}/knowledge-scope | RAG 检索范围                   |
+| 版本历史        | GET /api/v1/agent/agents/{id}/versions        | 版本变更追溯                   |
+| 版本回滚        | POST /api/v1/agent/agents/{id}/rollback       | -                              |
+| 数据表          | 全部 DDL                                      | agent_definition 等核心表      |
+| TECH-LLMGW 集成 | 模型可用性校验                                | 创建/更新时校验 modelId        |
 
 **验收标准**：能创建 Agent、配置角色与模型、分配工具和知识范围、管理版本，通过 TECH-LLMGW 校验模型可用性。
 
@@ -4760,20 +4772,20 @@ async def on_execution_event(event: dict):
 
 **目标**：完成基于 LangGraph 的 Agent 执行引擎，支持同步与 SSE 流式执行。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 同步执行任务 | POST /api/v1/agent/agents/{id}/execute | 等待执行完成返回结果 |
-| 流式执行任务 | POST /api/v1/agent/agents/{id}/execute/stream | SSE 流式推送思考链与结果 |
-| 查询执行状态 | GET /api/v1/agent/executions/{id} | 实时状态查询 |
-| 取消执行 | POST /api/v1/agent/executions/{id}/cancel | 优雅取消 + 部分结果 |
-| 获取执行结果 | GET /api/v1/agent/executions/{id}/result | - |
-| 恢复执行 | POST /api/v1/agent/executions/{id}/resume | 基于 Checkpoint 恢复 |
-| LangGraph 集成 | 执行图构建 | planner -> agent -> tool_executor -> evaluator |
-| Checkpoint 机制 | 状态持久化 | PostgreSQL + Redis 双写 |
-| 短期记忆 | 对话上下文管理 | Redis 短期记忆窗口 |
-| TECH-RAG 集成 | 知识检索 | Agent 执行中调用 RAG 检索 |
-| TECH-ACTION 集成 | Action 调用 | Agent 执行中调用 Action Engine |
-| 事件发布 | Kafka EXECUTION_* | Outbox 模式 |
+| 交付项           | API                                           | 说明                                           |
+| ---------------- | --------------------------------------------- | ---------------------------------------------- |
+| 同步执行任务     | POST /api/v1/agent/agents/{id}/execute        | 等待执行完成返回结果                           |
+| 流式执行任务     | POST /api/v1/agent/agents/{id}/execute/stream | SSE 流式推送思考链与结果                       |
+| 查询执行状态     | GET /api/v1/agent/executions/{id}             | 实时状态查询                                   |
+| 取消执行         | POST /api/v1/agent/executions/{id}/cancel     | 优雅取消 + 部分结果                            |
+| 获取执行结果     | GET /api/v1/agent/executions/{id}/result      | -                                              |
+| 恢复执行         | POST /api/v1/agent/executions/{id}/resume     | 基于 Checkpoint 恢复                           |
+| LangGraph 集成   | 执行图构建                                    | planner -> agent -> tool_executor -> evaluator |
+| Checkpoint 机制  | 状态持久化                                    | PostgreSQL + Redis 双写                        |
+| 短期记忆         | 对话上下文管理                                | Redis 短期记忆窗口                             |
+| TECH-RAG 集成    | 知识检索                                      | Agent 执行中调用 RAG 检索                      |
+| TECH-ACTION 集成 | Action 调用                                   | Agent 执行中调用 Action Engine                 |
+| 事件发布         | Kafka EXECUTION\_\*                           | Outbox 模式                                    |
 
 **验收标准**：Agent 能基于 ReAct 范式执行任务，支持同步和流式两种模式，能调用 Tools/Actions/RAG，执行过程可追踪、可取消、可恢复。
 
@@ -4783,24 +4795,24 @@ async def on_execution_event(event: dict):
 
 **目标**：完成任务管理和多轮对话管理的完整能力。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 创建任务 | POST /api/v1/agent/tasks | 含子任务支持 |
-| 分配任务 | POST /api/v1/agent/tasks/{id}/assign | 分配给 Agent 执行 |
-| 任务列表 | GET /api/v1/agent/tasks | 多维度筛选 |
-| 任务详情 | GET /api/v1/agent/tasks/{id} | 含子任务与执行信息 |
-| 任务结果 | GET /api/v1/agent/tasks/{id}/result | - |
-| 更新任务状态 | PUT /api/v1/agent/tasks/{id}/status | 人工介入 |
-| 任务执行统计 | GET /api/v1/agent/tasks/{id}/statistics | - |
-| 创建对话 | POST /api/v1/agent/conversations | 关联 Agent |
-| 发送消息（同步） | POST /api/v1/agent/conversations/{id}/messages | - |
-| 发送消息（流式） | POST /api/v1/agent/conversations/{id}/messages/stream | SSE 流式响应 |
-| 获取对话历史 | GET /api/v1/agent/conversations/{id}/messages | 增量加载 |
-| 获取对话列表 | GET /api/v1/agent/conversations | - |
-| 获取对话详情 | GET /api/v1/agent/conversations/{id} | 含记忆摘要 |
-| 结束对话 | POST /api/v1/agent/conversations/{id}/end | 保存长期记忆 |
-| 长期记忆 | 记忆管理 | SUMMARY 策略、跨会话记忆 |
-| 事件发布 | Kafka TASK_* / CONVERSATION_* | Outbox 模式 |
+| 交付项           | API                                                   | 说明                     |
+| ---------------- | ----------------------------------------------------- | ------------------------ |
+| 创建任务         | POST /api/v1/agent/tasks                              | 含子任务支持             |
+| 分配任务         | POST /api/v1/agent/tasks/{id}/assign                  | 分配给 Agent 执行        |
+| 任务列表         | GET /api/v1/agent/tasks                               | 多维度筛选               |
+| 任务详情         | GET /api/v1/agent/tasks/{id}                          | 含子任务与执行信息       |
+| 任务结果         | GET /api/v1/agent/tasks/{id}/result                   | -                        |
+| 更新任务状态     | PUT /api/v1/agent/tasks/{id}/status                   | 人工介入                 |
+| 任务执行统计     | GET /api/v1/agent/tasks/{id}/statistics               | -                        |
+| 创建对话         | POST /api/v1/agent/conversations                      | 关联 Agent               |
+| 发送消息（同步） | POST /api/v1/agent/conversations/{id}/messages        | -                        |
+| 发送消息（流式） | POST /api/v1/agent/conversations/{id}/messages/stream | SSE 流式响应             |
+| 获取对话历史     | GET /api/v1/agent/conversations/{id}/messages         | 增量加载                 |
+| 获取对话列表     | GET /api/v1/agent/conversations                       | -                        |
+| 获取对话详情     | GET /api/v1/agent/conversations/{id}                  | 含记忆摘要               |
+| 结束对话         | POST /api/v1/agent/conversations/{id}/end             | 保存长期记忆             |
+| 长期记忆         | 记忆管理                                              | SUMMARY 策略、跨会话记忆 |
+| 事件发布         | Kafka TASK*\* / CONVERSATION*\*                       | Outbox 模式              |
 
 **验收标准**：完整的任务创建-分配-执行-结果链路，多轮对话支持流式响应，长期记忆能跨会话保留，任务可拆解为子任务执行。
 
@@ -4810,22 +4822,22 @@ async def on_execution_event(event: dict):
 
 **目标**：完成工具注册管理和执行轨迹查询评估能力。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 注册 Tool | POST /api/v1/agent/tools | MCP/ACTION/BUILTIN/CUSTOM |
-| 查询 Tools | GET /api/v1/agent/tools | 分页查询、按 Agent 筛选 |
-| 获取 Tool 详情 | GET /api/v1/agent/tools/{id} | 含调用统计 |
-| 调用 Tool | POST /api/v1/agent/tools/{id}/invoke | 直接调用（测试用） |
-| 更新 Tool | PUT /api/v1/agent/tools/{id} | - |
-| 启用/禁用 Tool | PUT /api/v1/agent/tools/{id}/state | - |
-| 删除 Tool | DELETE /api/v1/agent/tools/{id} | - |
-| 获取执行步骤 | GET /api/v1/agent/executions/{id}/steps | 完整执行路径 |
-| 获取思考链 | GET /api/v1/agent/executions/{id}/thought-chain | CoT 记录 |
-| 获取工具调用记录 | GET /api/v1/agent/executions/{id}/tool-calls | - |
-| 提交评估 | POST /api/v1/agent/executions/{id}/evaluations | 人工评估 |
-| 获取评估记录 | GET /api/v1/agent/executions/{id}/evaluations | - |
-| Agent 执行统计 | GET /api/v1/agent/agents/{id}/statistics | 仪表盘数据 |
-| 事件发布 | Kafka TOOL_* | Outbox 模式 |
+| 交付项           | API                                             | 说明                      |
+| ---------------- | ----------------------------------------------- | ------------------------- |
+| 注册 Tool        | POST /api/v1/agent/tools                        | MCP/ACTION/BUILTIN/CUSTOM |
+| 查询 Tools       | GET /api/v1/agent/tools                         | 分页查询、按 Agent 筛选   |
+| 获取 Tool 详情   | GET /api/v1/agent/tools/{id}                    | 含调用统计                |
+| 调用 Tool        | POST /api/v1/agent/tools/{id}/invoke            | 直接调用（测试用）        |
+| 更新 Tool        | PUT /api/v1/agent/tools/{id}                    | -                         |
+| 启用/禁用 Tool   | PUT /api/v1/agent/tools/{id}/state              | -                         |
+| 删除 Tool        | DELETE /api/v1/agent/tools/{id}                 | -                         |
+| 获取执行步骤     | GET /api/v1/agent/executions/{id}/steps         | 完整执行路径              |
+| 获取思考链       | GET /api/v1/agent/executions/{id}/thought-chain | CoT 记录                  |
+| 获取工具调用记录 | GET /api/v1/agent/executions/{id}/tool-calls    | -                         |
+| 提交评估         | POST /api/v1/agent/executions/{id}/evaluations  | 人工评估                  |
+| 获取评估记录     | GET /api/v1/agent/executions/{id}/evaluations   | -                         |
+| Agent 执行统计   | GET /api/v1/agent/agents/{id}/statistics        | 仪表盘数据                |
+| 事件发布         | Kafka TOOL\_\*                                  | Outbox 模式               |
 
 **验收标准**：完整工具注册管理，支持四种 Tool 类型注册与调用，执行轨迹可查询（步骤/思考链/工具调用），支持人工评估打分。
 
@@ -4835,20 +4847,20 @@ async def on_execution_event(event: dict):
 
 **目标**：完成 A2A 协议适配，支持跨系统 Agent 协作，进行性能优化。
 
-| 交付项 | API / 说明 | 说明 |
-|---|---|---|
-| Agent Card | GET /api/v1/agent/agents/{id}/card | A2A 协议 Agent 能力声明 |
-| A2A 任务接收 | 内部接口 | 接收 TECH-A2A 委托的外部 Agent 任务 |
-| A2A 任务委托 | 内部接口 | 向外部 Agent 委托任务 |
-| MCP Tool 集成 | POST /api/v1/agent/tools | 支持 MCP 协议工具注册与调用 |
-| Plan-and-Solve | 推理范式增强 | 支持 PLAN_AND_SOLVE 模式 |
-| Function Calling | 推理范式增强 | 支持 FUNCTION_CALLING 模式 |
-| 长期记忆增强 | ENTITY/VECTOR 策略 | 实体记忆、向量记忆 |
-| 配置缓存 | Redis | Agent 配置缓存，减少 DB 查询 |
-| 执行并发优化 | asyncio | 并行工具调用、流式 LLM 响应 |
-| 速率限制 | Redis 滑动窗口 | 租户/Agent 级别限流 |
-| 租户隔离 | 完善多租户 | 数据隔离验证 |
-| 性能压测 | 全链路压测 | 目标 500 并发执行 |
+| 交付项           | API / 说明                         | 说明                                |
+| ---------------- | ---------------------------------- | ----------------------------------- |
+| Agent Card       | GET /api/v1/agent/agents/{id}/card | A2A 协议 Agent 能力声明             |
+| A2A 任务接收     | 内部接口                           | 接收 TECH-A2A 委托的外部 Agent 任务 |
+| A2A 任务委托     | 内部接口                           | 向外部 Agent 委托任务               |
+| MCP Tool 集成    | POST /api/v1/agent/tools           | 支持 MCP 协议工具注册与调用         |
+| Plan-and-Solve   | 推理范式增强                       | 支持 PLAN_AND_SOLVE 模式            |
+| Function Calling | 推理范式增强                       | 支持 FUNCTION_CALLING 模式          |
+| 长期记忆增强     | ENTITY/VECTOR 策略                 | 实体记忆、向量记忆                  |
+| 配置缓存         | Redis                              | Agent 配置缓存，减少 DB 查询        |
+| 执行并发优化     | asyncio                            | 并行工具调用、流式 LLM 响应         |
+| 速率限制         | Redis 滑动窗口                     | 租户/Agent 级别限流                 |
+| 租户隔离         | 完善多租户                         | 数据隔离验证                        |
+| 性能压测         | 全链路压测                         | 目标 500 并发执行                   |
 
 **验收标准**：通过 A2A 协议实现跨系统 Agent 发现与协作，支持 MCP 工具集成，Plan-and-Solve 推理范式可用，通过全链路性能压测，多租户隔离正确。
 
@@ -4856,94 +4868,94 @@ async def on_execution_event(event: dict):
 
 ## 附录 A：枚举值速查表
 
-| 枚举 | 值 | 说明 |
-|---|---|---|
-| AgentStatus | DRAFT / ACTIVE / DISABLED / ARCHIVED | Agent 状态 |
-| ExecutionStatus | QUEUED / EXECUTING / COMPLETED / FAILED / CANCELLED / INTERRUPTED | 执行实例状态 |
-| TaskStatus | PENDING / ASSIGNED / EXECUTING / COMPLETED / FAILED / CANCELLED / ON_HOLD | 任务状态 |
-| TaskType | ONESHOT / MULTI_STEP / COLLABORATIVE | 任务类型 |
-| TaskPriority | LOW / MEDIUM / HIGH / URGENT | 任务优先级 |
-| ConversationStatus | ACTIVE / ENDED / ARCHIVED | 对话会话状态 |
-| MessageRole | USER / ASSISTANT / SYSTEM / TOOL | 消息角色 |
-| ToolType | MCP / ACTION / BUILTIN / CUSTOM | 工具类型 |
-| ToolStatus | ACTIVE / DISABLED | 工具状态 |
-| ReasoningMode | REACT / PLAN_AND_SOLVE / FUNCTION_CALLING | 推理范式 |
-| MemoryType | SUMMARY / ENTITY / EPISODE | 长期记忆类型 |
-| MemoryStrategy | SUMMARY / ENTITY / VECTOR | 长期记忆策略 |
-| StepNode | planner / agent / tool_executor / evaluator | LangGraph 节点 |
-| StepStatus | RUNNING / COMPLETED / FAILED / SKIPPED | 步骤状态 |
-| ToolCallStatus | RUNNING / SUCCESS / FAILED / TIMEOUT | 工具调用状态 |
-| ContentType | TEXT / JSON / FILE_REF | 内容类型 |
-| InputType | TEXT / JSON / FILE_REF | 输入类型 |
-| CapabilityType | TOOL / ACTION / RAG_SCOPE | 能力类型 |
-| ExecutionMode | SYNC / ASYNC | 执行模式 |
+| 枚举               | 值                                                                        | 说明           |
+| ------------------ | ------------------------------------------------------------------------- | -------------- |
+| AgentStatus        | DRAFT / ACTIVE / DISABLED / ARCHIVED                                      | Agent 状态     |
+| ExecutionStatus    | QUEUED / EXECUTING / COMPLETED / FAILED / CANCELLED / INTERRUPTED         | 执行实例状态   |
+| TaskStatus         | PENDING / ASSIGNED / EXECUTING / COMPLETED / FAILED / CANCELLED / ON_HOLD | 任务状态       |
+| TaskType           | ONESHOT / MULTI_STEP / COLLABORATIVE                                      | 任务类型       |
+| TaskPriority       | LOW / MEDIUM / HIGH / URGENT                                              | 任务优先级     |
+| ConversationStatus | ACTIVE / ENDED / ARCHIVED                                                 | 对话会话状态   |
+| MessageRole        | USER / ASSISTANT / SYSTEM / TOOL                                          | 消息角色       |
+| ToolType           | MCP / ACTION / BUILTIN / CUSTOM                                           | 工具类型       |
+| ToolStatus         | ACTIVE / DISABLED                                                         | 工具状态       |
+| ReasoningMode      | REACT / PLAN_AND_SOLVE / FUNCTION_CALLING                                 | 推理范式       |
+| MemoryType         | SUMMARY / ENTITY / EPISODE                                                | 长期记忆类型   |
+| MemoryStrategy     | SUMMARY / ENTITY / VECTOR                                                 | 长期记忆策略   |
+| StepNode           | planner / agent / tool_executor / evaluator                               | LangGraph 节点 |
+| StepStatus         | RUNNING / COMPLETED / FAILED / SKIPPED                                    | 步骤状态       |
+| ToolCallStatus     | RUNNING / SUCCESS / FAILED / TIMEOUT                                      | 工具调用状态   |
+| ContentType        | TEXT / JSON / FILE_REF                                                    | 内容类型       |
+| InputType          | TEXT / JSON / FILE_REF                                                    | 输入类型       |
+| CapabilityType     | TOOL / ACTION / RAG_SCOPE                                                 | 能力类型       |
+| ExecutionMode      | SYNC / ASYNC                                                              | 执行模式       |
 
 ---
 
 ## 附录 B：SSE 事件速查表
 
-| 事件类型 | 触发时机 | 关键 data 字段 |
-|---|---|---|
-| execution.started | Agent 执行开始 | executionId, agentId, startedAt |
-| agent.thinking | Agent 完成一次思考 | executionId, step, thought |
-| agent.action | Agent 做出决策 | executionId, step, action, toolName |
-| tool.calling | 工具开始调用 | executionId, toolCallId, toolName, input |
-| tool.result | 工具返回结果 | executionId, toolCallId, status, output, duration |
-| content.delta | 生成内容增量 | executionId, delta |
-| content.done | 生成内容完成 | executionId, content, messageId |
-| execution.step | 执行步骤完成 | executionId, step, node, status |
-| execution.completed | 执行完成 | executionId, status, metrics |
-| execution.failed | 执行失败 | executionId, status, error |
-| error | 流式错误 | code, message |
+| 事件类型            | 触发时机           | 关键 data 字段                                    |
+| ------------------- | ------------------ | ------------------------------------------------- |
+| execution.started   | Agent 执行开始     | executionId, agentId, startedAt                   |
+| agent.thinking      | Agent 完成一次思考 | executionId, step, thought                        |
+| agent.action        | Agent 做出决策     | executionId, step, action, toolName               |
+| tool.calling        | 工具开始调用       | executionId, toolCallId, toolName, input          |
+| tool.result         | 工具返回结果       | executionId, toolCallId, status, output, duration |
+| content.delta       | 生成内容增量       | executionId, delta                                |
+| content.done        | 生成内容完成       | executionId, content, messageId                   |
+| execution.step      | 执行步骤完成       | executionId, step, node, status                   |
+| execution.completed | 执行完成           | executionId, status, metrics                      |
+| execution.failed    | 执行失败           | executionId, status, error                        |
+| error               | 流式错误           | code, message                                     |
 
 ---
 
 ## 附录 C：API 路径速查表
 
-| 序号 | 方法 | 路径 | 说明 |
-|---|---|---|---|
-| 3.1.1 | POST | /api/v1/agent/agents | 创建 Agent |
-| 3.1.2 | GET | /api/v1/agent/agents | 查询 Agent 列表 |
-| 3.1.3 | GET | /api/v1/agent/agents/{agentId} | 获取 Agent 详情 |
-| 3.1.4 | PUT | /api/v1/agent/agents/{agentId} | 更新 Agent |
-| 3.1.5 | DELETE | /api/v1/agent/agents/{agentId} | 删除 Agent |
-| 3.1.6 | PUT | /api/v1/agent/agents/{agentId}/state | 启用/禁用 Agent |
-| 3.1.7 | PUT | /api/v1/agent/agents/{agentId}/capabilities | 配置 Agent 能力 |
-| 3.1.8 | PUT | /api/v1/agent/agents/{agentId}/model | 配置 Agent 模型 |
-| 3.1.9 | PUT | /api/v1/agent/agents/{agentId}/knowledge-scope | 配置知识范围 |
-| 3.1.10 | GET | /api/v1/agent/agents/{agentId}/versions | 获取版本历史 |
-| 3.1.11 | POST | /api/v1/agent/agents/{agentId}/rollback | 回滚 Agent 版本 |
-| 3.1.12 | GET | /api/v1/agent/agents/{agentId}/card | 获取 Agent Card |
-| 3.2.1 | POST | /api/v1/agent/agents/{agentId}/execute | 执行任务（同步） |
-| 3.2.2 | POST | /api/v1/agent/agents/{agentId}/execute/stream | 执行任务（SSE） |
-| 3.2.3 | GET | /api/v1/agent/executions/{executionId} | 查询执行状态 |
-| 3.2.4 | POST | /api/v1/agent/executions/{executionId}/cancel | 取消执行 |
-| 3.2.5 | GET | /api/v1/agent/executions/{executionId}/result | 获取执行结果 |
-| 3.2.6 | POST | /api/v1/agent/executions/{executionId}/resume | 恢复执行 |
-| 3.3.1 | POST | /api/v1/agent/tasks | 创建任务 |
-| 3.3.2 | POST | /api/v1/agent/tasks/{taskId}/assign | 分配任务 |
-| 3.3.3 | GET | /api/v1/agent/tasks | 查询任务列表 |
-| 3.3.4 | GET | /api/v1/agent/tasks/{taskId} | 获取任务详情 |
-| 3.3.5 | GET | /api/v1/agent/tasks/{taskId}/result | 获取任务结果 |
-| 3.3.6 | PUT | /api/v1/agent/tasks/{taskId}/status | 更新任务状态 |
-| 3.3.7 | GET | /api/v1/agent/tasks/{taskId}/statistics | 获取任务统计 |
-| 3.4.1 | POST | /api/v1/agent/conversations | 创建对话 |
-| 3.4.2 | POST | /api/v1/agent/conversations/{conversationId}/messages | 发送消息（同步） |
-| 3.4.3 | POST | /api/v1/agent/conversations/{conversationId}/messages/stream | 发送消息（SSE） |
-| 3.4.4 | GET | /api/v1/agent/conversations/{conversationId}/messages | 获取对话历史 |
-| 3.4.5 | GET | /api/v1/agent/conversations | 获取对话列表 |
-| 3.4.6 | GET | /api/v1/agent/conversations/{conversationId} | 获取对话详情 |
-| 3.4.7 | POST | /api/v1/agent/conversations/{conversationId}/end | 结束对话 |
-| 3.5.1 | POST | /api/v1/agent/tools | 注册 Tool |
-| 3.5.2 | GET | /api/v1/agent/tools | 查询可用 Tools |
-| 3.5.3 | GET | /api/v1/agent/tools/{toolId} | 获取 Tool 详情 |
-| 3.5.4 | POST | /api/v1/agent/tools/{toolId}/invoke | 调用 Tool |
-| 3.5.5 | PUT | /api/v1/agent/tools/{toolId} | 更新 Tool |
-| 3.5.6 | PUT | /api/v1/agent/tools/{toolId}/state | 启用/禁用 Tool |
-| 3.5.7 | DELETE | /api/v1/agent/tools/{toolId} | 删除 Tool |
-| 3.6.1 | GET | /api/v1/agent/executions/{executionId}/steps | 获取执行步骤 |
-| 3.6.2 | GET | /api/v1/agent/executions/{executionId}/thought-chain | 获取思考链 |
-| 3.6.3 | GET | /api/v1/agent/executions/{executionId}/tool-calls | 获取工具调用记录 |
-| 3.6.4 | POST | /api/v1/agent/executions/{executionId}/evaluations | 提交评估 |
-| 3.6.5 | GET | /api/v1/agent/executions/{executionId}/evaluations | 获取评估记录 |
-| 3.6.6 | GET | /api/v1/agent/agents/{agentId}/statistics | 获取 Agent 统计 |
+| 序号   | 方法   | 路径                                                         | 说明             |
+| ------ | ------ | ------------------------------------------------------------ | ---------------- |
+| 3.1.1  | POST   | /api/v1/agent/agents                                         | 创建 Agent       |
+| 3.1.2  | GET    | /api/v1/agent/agents                                         | 查询 Agent 列表  |
+| 3.1.3  | GET    | /api/v1/agent/agents/{agentId}                               | 获取 Agent 详情  |
+| 3.1.4  | PUT    | /api/v1/agent/agents/{agentId}                               | 更新 Agent       |
+| 3.1.5  | DELETE | /api/v1/agent/agents/{agentId}                               | 删除 Agent       |
+| 3.1.6  | PUT    | /api/v1/agent/agents/{agentId}/state                         | 启用/禁用 Agent  |
+| 3.1.7  | PUT    | /api/v1/agent/agents/{agentId}/capabilities                  | 配置 Agent 能力  |
+| 3.1.8  | PUT    | /api/v1/agent/agents/{agentId}/model                         | 配置 Agent 模型  |
+| 3.1.9  | PUT    | /api/v1/agent/agents/{agentId}/knowledge-scope               | 配置知识范围     |
+| 3.1.10 | GET    | /api/v1/agent/agents/{agentId}/versions                      | 获取版本历史     |
+| 3.1.11 | POST   | /api/v1/agent/agents/{agentId}/rollback                      | 回滚 Agent 版本  |
+| 3.1.12 | GET    | /api/v1/agent/agents/{agentId}/card                          | 获取 Agent Card  |
+| 3.2.1  | POST   | /api/v1/agent/agents/{agentId}/execute                       | 执行任务（同步） |
+| 3.2.2  | POST   | /api/v1/agent/agents/{agentId}/execute/stream                | 执行任务（SSE）  |
+| 3.2.3  | GET    | /api/v1/agent/executions/{executionId}                       | 查询执行状态     |
+| 3.2.4  | POST   | /api/v1/agent/executions/{executionId}/cancel                | 取消执行         |
+| 3.2.5  | GET    | /api/v1/agent/executions/{executionId}/result                | 获取执行结果     |
+| 3.2.6  | POST   | /api/v1/agent/executions/{executionId}/resume                | 恢复执行         |
+| 3.3.1  | POST   | /api/v1/agent/tasks                                          | 创建任务         |
+| 3.3.2  | POST   | /api/v1/agent/tasks/{taskId}/assign                          | 分配任务         |
+| 3.3.3  | GET    | /api/v1/agent/tasks                                          | 查询任务列表     |
+| 3.3.4  | GET    | /api/v1/agent/tasks/{taskId}                                 | 获取任务详情     |
+| 3.3.5  | GET    | /api/v1/agent/tasks/{taskId}/result                          | 获取任务结果     |
+| 3.3.6  | PUT    | /api/v1/agent/tasks/{taskId}/status                          | 更新任务状态     |
+| 3.3.7  | GET    | /api/v1/agent/tasks/{taskId}/statistics                      | 获取任务统计     |
+| 3.4.1  | POST   | /api/v1/agent/conversations                                  | 创建对话         |
+| 3.4.2  | POST   | /api/v1/agent/conversations/{conversationId}/messages        | 发送消息（同步） |
+| 3.4.3  | POST   | /api/v1/agent/conversations/{conversationId}/messages/stream | 发送消息（SSE）  |
+| 3.4.4  | GET    | /api/v1/agent/conversations/{conversationId}/messages        | 获取对话历史     |
+| 3.4.5  | GET    | /api/v1/agent/conversations                                  | 获取对话列表     |
+| 3.4.6  | GET    | /api/v1/agent/conversations/{conversationId}                 | 获取对话详情     |
+| 3.4.7  | POST   | /api/v1/agent/conversations/{conversationId}/end             | 结束对话         |
+| 3.5.1  | POST   | /api/v1/agent/tools                                          | 注册 Tool        |
+| 3.5.2  | GET    | /api/v1/agent/tools                                          | 查询可用 Tools   |
+| 3.5.3  | GET    | /api/v1/agent/tools/{toolId}                                 | 获取 Tool 详情   |
+| 3.5.4  | POST   | /api/v1/agent/tools/{toolId}/invoke                          | 调用 Tool        |
+| 3.5.5  | PUT    | /api/v1/agent/tools/{toolId}                                 | 更新 Tool        |
+| 3.5.6  | PUT    | /api/v1/agent/tools/{toolId}/state                           | 启用/禁用 Tool   |
+| 3.5.7  | DELETE | /api/v1/agent/tools/{toolId}                                 | 删除 Tool        |
+| 3.6.1  | GET    | /api/v1/agent/executions/{executionId}/steps                 | 获取执行步骤     |
+| 3.6.2  | GET    | /api/v1/agent/executions/{executionId}/thought-chain         | 获取思考链       |
+| 3.6.3  | GET    | /api/v1/agent/executions/{executionId}/tool-calls            | 获取工具调用记录 |
+| 3.6.4  | POST   | /api/v1/agent/executions/{executionId}/evaluations           | 提交评估         |
+| 3.6.5  | GET    | /api/v1/agent/executions/{executionId}/evaluations           | 获取评估记录     |
+| 3.6.6  | GET    | /api/v1/agent/agents/{agentId}/statistics                    | 获取 Agent 统计  |

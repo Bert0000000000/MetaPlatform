@@ -1,4 +1,5 @@
 """Hard Rule #13 — canonical service inventory and rendered policy coverage."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -24,9 +25,7 @@ def test_manifest_has_the_canonical_21_runtime_services() -> None:
 
 
 def test_helm_inventory_matches_every_manifest_runtime_service() -> None:
-    assert load_helm_service_ids(HELM / "values.yaml") == load_manifest_service_ids(
-        MANIFEST
-    )
+    assert load_helm_service_ids(HELM / "values.yaml") == load_manifest_service_ids(MANIFEST)
 
 
 def test_rendered_coverage_requires_ingress_and_egress_for_each_service() -> None:
@@ -43,7 +42,7 @@ def test_rendered_coverage_requires_ingress_and_egress_for_each_service() -> Non
             "kind": "NetworkPolicy",
             "metadata": {"name": "metaplatform-default-deny-egress"},
             "spec": {"podSelector": {}, "policyTypes": ["Egress"]},
-        }
+        },
     ]
     for service in services:
         documents.append(
@@ -55,9 +54,7 @@ def test_rendered_coverage_requires_ingress_and_egress_for_each_service() -> Non
                     "labels": {"metaplatform.io/protected-service": service},
                 },
                 "spec": {
-                    "podSelector": {
-                        "matchLabels": {"app.kubernetes.io/name": service}
-                    },
+                    "podSelector": {"matchLabels": {"app.kubernetes.io/name": service}},
                     "policyTypes": ["Ingress", "Egress"],
                 },
             }
@@ -78,9 +75,7 @@ def test_rendered_coverage_rejects_missing_service_policy() -> None:
                 "labels": {"metaplatform.io/protected-service": "alpha"},
             },
             "spec": {
-                "podSelector": {
-                    "matchLabels": {"app.kubernetes.io/name": "alpha"}
-                },
+                "podSelector": {"matchLabels": {"app.kubernetes.io/name": "alpha"}},
                 "policyTypes": ["Ingress", "Egress"],
             },
         }

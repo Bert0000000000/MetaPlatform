@@ -1,4 +1,5 @@
 """Regression tests for request context propagation through LangGraph."""
+
 from __future__ import annotations
 
 from mate_tech_agent.graph import build_s1_graph

@@ -5,6 +5,7 @@ publish API:
 - 甯?idempotency_key
 - 榛樿 partition_key = tenantId
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -75,9 +76,7 @@ class Publisher:
         partition_key = req.partition_key
         if partition_key is None:
             payload_dict = req.payload
-            partition_key = str(
-                payload_dict.get(self._default_partition_key_field, "default")
-            )
+            partition_key = str(payload_dict.get(self._default_partition_key_field, "default"))
 
         # 3. 鍙戦€佸埌 Kafka
         partition, offset = await self._kafka.send(
@@ -122,9 +121,7 @@ class Publisher:
         """
         if self._subscription_store is None:
             return
-        matches = self._subscription_store.find_matching(
-            tenant_id=tenant_id, topic=topic
-        )
+        matches = self._subscription_store.find_matching(tenant_id=tenant_id, topic=topic)
         if not matches:
             return
         logger.info(

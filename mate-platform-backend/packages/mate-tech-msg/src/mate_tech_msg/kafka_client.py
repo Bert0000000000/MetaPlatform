@@ -2,6 +2,7 @@
 
 aiokafka Producer / Consumer 封装。
 """
+
 from __future__ import annotations
 
 import os
@@ -20,9 +21,7 @@ class KafkaClient:
         bootstrap_servers: str | None = None,
         client_id: str = "mate-tech-msg",
     ) -> None:
-        self._bootstrap = bootstrap_servers or os.getenv(
-            "KAFKA_BOOTSTRAP", "localhost:9092"
-        )
+        self._bootstrap = bootstrap_servers or os.getenv("KAFKA_BOOTSTRAP", "localhost:9092")
         self._client_id = client_id
         self._producer: AIOKafkaProducer | None = None
 
@@ -54,9 +53,7 @@ class KafkaClient:
         if self._producer is None:
             await self.start_producer()
         assert self._producer is not None
-        meta = await self._producer.send_and_wait(
-            topic, value=value, key=key, headers=headers
-        )
+        meta = await self._producer.send_and_wait(topic, value=value, key=key, headers=headers)
         logger.info("kafka.sent", topic=topic, partition=meta.partition, offset=meta.offset)
         return meta.partition, meta.offset
 

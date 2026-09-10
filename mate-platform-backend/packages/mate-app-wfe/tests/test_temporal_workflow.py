@@ -1,4 +1,5 @@
 """Temporal workflow and activity contract tests."""
+
 from __future__ import annotations
 
 import asyncio
@@ -67,9 +68,7 @@ async def test_temporal_workflow_waits_for_approval_then_executes_action() -> No
             result = await handle.result()
 
         assert result["status"] == "completed"
-        assert result["results"] == [
-            {"action": "order.review", "status": "applied"}
-        ]
+        assert result["results"] == [{"action": "order.review", "status": "applied"}]
         assert action_executor.calls[0]["tenant_id"] == "tenant-acme"
     finally:
         await environment.shutdown()

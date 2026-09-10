@@ -31,6 +31,7 @@ suite stays hermetic (no Marquez or Kafka dependency) per the
 ADR-0016 D1 acceptance scope. The HTTP emitter is exercised in the
 package-level test suite.
 """
+
 from __future__ import annotations
 
 import json
@@ -55,15 +56,15 @@ os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("LEGACY_LOGIN_COMPAT", "true")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_platform.lineage import (  # noqa: E402  (path-adjusted import)
+from mate_platform.lineage import (
     InMemoryLineageClient,
     LineageHints,
     build_hints_from_event,
     default_hints,
     merge_hints,
 )
-from mate_platform.lineage.in_memory import TenantIsolationError  # noqa: E402
-from mate_platform.messaging import (  # noqa: E402
+from mate_platform.lineage.in_memory import TenantIsolationError
+from mate_platform.messaging import (
     Event,
     EventTypeTopicResolver,
     InMemoryOutboxWriter,
@@ -129,10 +130,7 @@ class CapturingProducer(Producer):
         # Prefer the lineage_hints.source_system (set by the producer)
         # over the event_type prefix so cross-domain tests get the
         # domain they actually emitted from.
-        source_system = (
-            hints.source_system
-            or headers.get("event_type", "msg").split(".", 1)[0]
-        )
+        source_system = hints.source_system or headers.get("event_type", "msg").split(".", 1)[0]
         self.lineage.emit_from_hints(
             hints,
             system=source_system,
@@ -266,9 +264,7 @@ def _drain(
     target_system: str = "msg",
     lineage: InMemoryLineageClient | None = None,
 ) -> tuple[CapturingProducer, InMemoryLineageClient]:
-    outbox, producer, relay = _setup_relay(
-        target_system=target_system, lineage=lineage
-    )
+    outbox, producer, relay = _setup_relay(target_system=target_system, lineage=lineage)
     outbox.append(
         _make_event(
             tenant=tenant,
@@ -334,9 +330,7 @@ class TestLineageQueryReturnsCrossDomainChain:
     def test_lineage_query_returns_cross_domain_chain(self) -> None:
         """msg → obs → dw must all appear in one query result."""
         lineage = InMemoryLineageClient()
-        outbox, producer_msg, relay = _setup_relay(
-            target_system="msg", lineage=lineage
-        )
+        outbox, producer_msg, relay = _setup_relay(target_system="msg", lineage=lineage)
         event = _make_event(
             tenant="acme",
             event_type="order.placed.created",
@@ -358,9 +352,7 @@ class TestLineageQueryReturnsCrossDomainChain:
             aggregate="order-99",
         )
 
-        result = lineage.query(
-            tenant_id="acme", correlation_id="trace-cross-domain"
-        )
+        result = lineage.query(tenant_id="acme", correlation_id="trace-cross-domain")
         systems = [n.system for n in result.nodes]
         # Every domain step must appear in the chain.
         assert "iam" in systems, f"missing iam: {systems}"
@@ -392,9 +384,7 @@ class TestLineageTenantIsolation:
         lineage = InMemoryLineageClient()
 
         # tenant-a chain
-        outbox_a, _, relay_a = _setup_relay(
-            target_system="msg", lineage=lineage
-        )
+        outbox_a, _, relay_a = _setup_relay(target_system="msg", lineage=lineage)
         outbox_a.append(
             _make_event(
                 tenant="tenant-a",
@@ -406,9 +396,7 @@ class TestLineageTenantIsolation:
         relay_a.drain_once()
 
         # tenant-b chain
-        outbox_b, _, relay_b = _setup_relay(
-            target_system="msg", lineage=lineage
-        )
+        outbox_b, _, relay_b = _setup_relay(target_system="msg", lineage=lineage)
         outbox_b.append(
             _make_event(
                 tenant="tenant-b",
@@ -434,9 +422,9 @@ class TestLineageTenantIsolation:
         # list_namespaces shows both, but querying with one tenant
         # never returns the other's nodes.
         assert set(lineage.list_namespaces()) == {"tenant-a", "tenant-b"}
-        assert not any(
-            n.tenant_id == "tenant-b" for n in a_result.nodes
-        ), "tenant-a query leaked tenant-b nodes"
+        assert not any(n.tenant_id == "tenant-b" for n in a_result.nodes), (
+            "tenant-a query leaked tenant-b nodes"
+        )
 
         # Direct attempt to query without tenant_id is refused.
         with pytest.raises(TenantIsolationError):
@@ -454,9 +442,7 @@ class TestLineageHintsCarryCorrelationId:
         the chain back together.
         """
         lineage = InMemoryLineageClient()
-        outbox, producer_msg, relay = _setup_relay(
-            target_system="msg", lineage=lineage
-        )
+        outbox, producer_msg, relay = _setup_relay(target_system="msg", lineage=lineage)
         outbox.append(
             _make_event(
                 tenant="acme",
@@ -466,18 +452,14 @@ class TestLineageHintsCarryCorrelationId:
             )
         )
         relay.drain_once()
-        obs = _DomainConsumer(
-            system="obs", upstream=producer_msg, lineage=lineage
-        )
+        obs = _DomainConsumer(system="obs", upstream=producer_msg, lineage=lineage)
         obs.consume(
             event_type="order.placed.created",
             tenant="acme",
             aggregate="order-1",
         )
 
-        result = lineage.query(
-            tenant_id="acme", correlation_id="trace-corr-id"
-        )
+        result = lineage.query(tenant_id="acme", correlation_id="trace-corr-id")
         assert result.nodes, "chain empty"
         # Every node + edge must carry the same correlation_id.
         correlation_ids = {n.correlation_id for n in result.nodes}
@@ -510,9 +492,7 @@ class TestLineageHintsCarryTenantId:
         mandatory at every hop.
         """
         lineage = InMemoryLineageClient()
-        outbox, _, relay = _setup_relay(
-            target_system="msg", lineage=lineage
-        )
+        outbox, _, relay = _setup_relay(target_system="msg", lineage=lineage)
         outbox.append(
             _make_event(
                 tenant="acme",
@@ -523,9 +503,7 @@ class TestLineageHintsCarryTenantId:
         )
         relay.drain_once()
 
-        result = lineage.query(
-            tenant_id="acme", correlation_id="trace-tenant"
-        )
+        result = lineage.query(tenant_id="acme", correlation_id="trace-tenant")
         assert result.nodes, "chain empty"
         tenant_ids = {n.tenant_id for n in result.nodes}
         edge_tenant_ids = {e.tenant_id for e in result.edges}
@@ -572,9 +550,7 @@ class TestLineageListNamespaces:
         tenant scopes.
         """
         lineage = InMemoryLineageClient()
-        outbox_a, _, relay_a = _setup_relay(
-            target_system="msg", lineage=lineage
-        )
+        outbox_a, _, relay_a = _setup_relay(target_system="msg", lineage=lineage)
         outbox_a.append(
             _make_event(
                 tenant="acme",

@@ -1,4 +1,5 @@
 """Memory adapters (JSON file, PG, etc.)."""
+
 from mate_tech_agent.memory._json_store import (
     _STORAGE_DIR,  # pyright: ignore[reportPrivateUsage]
     delete_state,

@@ -1,4 +1,5 @@
 """Forbid root-level deployment source trees duplicating the monorepo copies."""
+
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]

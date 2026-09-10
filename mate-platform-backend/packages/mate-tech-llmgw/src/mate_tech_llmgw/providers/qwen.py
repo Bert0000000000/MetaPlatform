@@ -2,6 +2,7 @@
 
 Alibaba DashScope Qwen 系列,OpenAI 兼容 API。
 """
+
 from __future__ import annotations
 
 import os

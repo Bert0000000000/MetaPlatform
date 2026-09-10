@@ -28,7 +28,9 @@ class OntologyRepository(Protocol):
 
     # ───── identity ─────
     def resolve_class_ref(self, rid: str) -> ClassRef: ...
-    def snapshot_version(self, class_rid: ClassRef, author: str, parent: str | None, change_set: tuple[str, ...]) -> Version: ...
+    def snapshot_version(
+        self, class_rid: ClassRef, author: str, parent: str | None, change_set: tuple[str, ...]
+    ) -> Version: ...
     def list_versions(self, class_rid: ClassRef) -> list[Version]: ...
 
     # ───── types ─────
@@ -60,7 +62,13 @@ class OntologyRepository(Protocol):
 
     # ───── query / apply ─────
     def evaluate_object_set(self, os_: ObjectSet) -> list[Individual]: ...
-    def apply_action(self, action_rid: ClassRef, target_iid: str, parameters: dict[str, Any], provenance: dict[str, Any]) -> tuple[datetime, list[str]]: ...
+    def apply_action(
+        self,
+        action_rid: ClassRef,
+        target_iid: str,
+        parameters: dict[str, Any],
+        provenance: dict[str, Any],
+    ) -> tuple[datetime, list[str]]: ...
 
 
 __all__ = ["OntologyRepository"]

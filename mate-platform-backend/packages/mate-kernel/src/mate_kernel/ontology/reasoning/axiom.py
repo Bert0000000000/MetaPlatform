@@ -20,15 +20,15 @@ class AxiomKind(StrEnum):
     SAME_AS = "same_as"  # SameAs 推理
     DISJOINT = "disjoint"  # 不相交
     # ONT-G12 扩展（2026-09-08，Sprint 1）：OWL 2 常用公理类型第一批
-    EQUIVALENT_CLASS = "equivalent_class"      # EquivalentClasses
-    PROPERTY_DOMAIN = "property_domain"        # 属性定义域约束
-    PROPERTY_RANGE = "property_range"          # 属性值域约束
-    FUNCTIONAL = "functional"                  # 函数性（单值）
+    EQUIVALENT_CLASS = "equivalent_class"  # EquivalentClasses
+    PROPERTY_DOMAIN = "property_domain"  # 属性定义域约束
+    PROPERTY_RANGE = "property_range"  # 属性值域约束
+    FUNCTIONAL = "functional"  # 函数性（单值）
     INVERSE_FUNCTIONAL = "inverse_functional"  # 逆函数性
     TRANSITIVE_PROPERTY = "transitive_property"
     SYMMETRIC_PROPERTY = "symmetric_property"
-    PROPERTY_CHAIN = "property_chain"          # R1∘R2 ⊑ R3
-    HAS_KEY = "has_key"                        # 唯一键约束
+    PROPERTY_CHAIN = "property_chain"  # R1∘R2 ⊑ R3
+    HAS_KEY = "has_key"  # 唯一键约束
 
 
 @dataclass(frozen=True, slots=True)

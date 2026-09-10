@@ -23,6 +23,7 @@ ADR-0014 5-step pattern (P2 W2 PR #11):
   - Step 5 cross-tenant negatives: see
     `tests/test_dashboard_tenant_integration.py`.
 """
+
 from __future__ import annotations
 
 import secrets
@@ -120,6 +121,7 @@ def _emit(
     except Exception:  # pragma: no cover — defensive only
         logger.warning("dashboard.outbox.append_failed", event_type=event_type)
 
+
 def _now() -> datetime:
     return datetime.now(UTC).replace(microsecond=0)
 
@@ -137,62 +139,106 @@ def _future(days: int = 0) -> datetime:
 
 
 _NOTIFICATIONS: list[dict[str, Any]] = [
-    {"id": "n-1001", "type": "approval",
-     "title": "\u65b0\u5ba1\u6279\u5f85\u529e",
-     "content": "\u674e\u96f7 \u63d0\u4ea4\u4e86\u300c\u91c7\u8d2d\u7533\u8bf7\u5355 #PR-2026-0731\u300d\u7b49\u5f85\u4f60\u7684\u5ba1\u6279",
-     "read": False, "createdAt": _past(minutes=12).isoformat(),
-     "link": "/dashboard?tab=approvals"},
-    {"id": "n-1002", "type": "task",
-     "title": "\u6570\u5b57\u5458\u5de5\u300c\u8d22\u52a1\u5bf9\u8d26\u5458\u300d\u5df2\u751f\u6210\u65e5\u62a5",
-     "content": "\u53ef\u5728 Deliverables \u9875\u9762\u67e5\u770b\u8be6\u7ec6\u62a5\u544a\u4e0e\u4e0b\u8f7d",
-     "read": False, "createdAt": _past(hours=1, minutes=20).isoformat(),
-     "link": "/deliverables"},
-    {"id": "n-1003", "type": "system",
-     "title": "Ontology \u6a21\u578b v1.4.0 \u5df2\u53d1\u5e03",
-     "content": "Concept:Deal \u589e\u52a0 3 \u4e2a\u5c5e\u6027\uff0c\u5efa\u8bae\u5237\u65b0\u6d4f\u89c8\u5668\u67e5\u770b\u6700\u65b0\u6a21\u578b",
-     "read": False, "createdAt": _past(hours=4).isoformat(), "link": None},
-    {"id": "n-1004", "type": "mention",
-     "title": "\u738b\u82b3 \u5728\u300c\u5ba2\u6237\u5408\u540c\u300d\u77e5\u8bc6\u5e93 @ \u4e86\u4f60",
-     "content": "\u8bf7\u5ba1\u9605\u5176\u4e2d\u7684\u98ce\u9669\u70b9\u6bb5\u843d",
-     "read": True, "createdAt": _past(hours=8).isoformat(),
-     "link": "/deliverables"},
-    {"id": "n-1005", "type": "alert",
-     "title": "\u670d\u52a1 TECH-AGENT \u9519\u8bef\u7387\u7a81\u589e",
-     "content": "\u8fd1 5 \u5206\u949f 5xx \u6bd4\u4f8b 4.2%\uff0c\u9608\u503c 1.5%\uff0c\u5df2\u81ea\u52a8\u5f00\u5355",
-     "read": True, "createdAt": _past(days=1).isoformat(),
-     "link": "/aiops"},
+    {
+        "id": "n-1001",
+        "type": "approval",
+        "title": "\u65b0\u5ba1\u6279\u5f85\u529e",
+        "content": "\u674e\u96f7 \u63d0\u4ea4\u4e86\u300c\u91c7\u8d2d\u7533\u8bf7\u5355 #PR-2026-0731\u300d\u7b49\u5f85\u4f60\u7684\u5ba1\u6279",
+        "read": False,
+        "createdAt": _past(minutes=12).isoformat(),
+        "link": "/dashboard?tab=approvals",
+    },
+    {
+        "id": "n-1002",
+        "type": "task",
+        "title": "\u6570\u5b57\u5458\u5de5\u300c\u8d22\u52a1\u5bf9\u8d26\u5458\u300d\u5df2\u751f\u6210\u65e5\u62a5",
+        "content": "\u53ef\u5728 Deliverables \u9875\u9762\u67e5\u770b\u8be6\u7ec6\u62a5\u544a\u4e0e\u4e0b\u8f7d",
+        "read": False,
+        "createdAt": _past(hours=1, minutes=20).isoformat(),
+        "link": "/deliverables",
+    },
+    {
+        "id": "n-1003",
+        "type": "system",
+        "title": "Ontology \u6a21\u578b v1.4.0 \u5df2\u53d1\u5e03",
+        "content": "Concept:Deal \u589e\u52a0 3 \u4e2a\u5c5e\u6027\uff0c\u5efa\u8bae\u5237\u65b0\u6d4f\u89c8\u5668\u67e5\u770b\u6700\u65b0\u6a21\u578b",
+        "read": False,
+        "createdAt": _past(hours=4).isoformat(),
+        "link": None,
+    },
+    {
+        "id": "n-1004",
+        "type": "mention",
+        "title": "\u738b\u82b3 \u5728\u300c\u5ba2\u6237\u5408\u540c\u300d\u77e5\u8bc6\u5e93 @ \u4e86\u4f60",
+        "content": "\u8bf7\u5ba1\u9605\u5176\u4e2d\u7684\u98ce\u9669\u70b9\u6bb5\u843d",
+        "read": True,
+        "createdAt": _past(hours=8).isoformat(),
+        "link": "/deliverables",
+    },
+    {
+        "id": "n-1005",
+        "type": "alert",
+        "title": "\u670d\u52a1 TECH-AGENT \u9519\u8bef\u7387\u7a81\u589e",
+        "content": "\u8fd1 5 \u5206\u949f 5xx \u6bd4\u4f8b 4.2%\uff0c\u9608\u503c 1.5%\uff0c\u5df2\u81ea\u52a8\u5f00\u5355",
+        "read": True,
+        "createdAt": _past(days=1).isoformat(),
+        "link": "/aiops",
+    },
 ]
 
 
 def _seed_todos() -> list[dict[str, Any]]:
     return [
-        {"id": "t-9001", "name": "\u5ba1\u6279\uff1a\u5408\u540c\u7b7e\u7f72\u7533\u8bf7 #CT-2026-0731-01",
-         "assignee": "current", "processInstanceId": "pi-3001",
-         "processDefinitionId": "contract-sign",
-         "createTime": _past(hours=2).isoformat(), "endTime": None,
-         "status": "pending"},
-        {"id": "t-9002", "name": "\u5ba1\u6279\uff1a\u5dee\u65c5\u62a5\u9500\u5355 #TR-2607-018",
-         "assignee": "current", "processInstanceId": "pi-3002",
-         "processDefinitionId": "travel-reimburse",
-         "createTime": _past(hours=6).isoformat(), "endTime": None,
-         "status": "pending"},
-        {"id": "t-9003", "name": "\u5ba1\u6279\uff1a\u5458\u5de5\u8f6c\u5c97\u7533\u8bf7 #HR-2026-0730-007",
-         "assignee": "current", "processInstanceId": "pi-3003",
-         "processDefinitionId": "hr-transfer",
-         "createTime": _past(days=1, hours=2).isoformat(), "endTime": None,
-         "status": "pending"},
-        {"id": "t-9100", "name": "\u5ba1\u6279\uff1a\u5408\u540c\u7b7e\u7f72\u7533\u8bf7 #CT-2026-0728-09",
-         "assignee": "current", "processInstanceId": "pi-3010",
-         "processDefinitionId": "contract-sign",
-         "createTime": _past(days=2).isoformat(),
-         "endTime": _past(days=1, hours=10).isoformat(),
-         "status": "approved"},
-        {"id": "t-9101", "name": "\u5ba1\u6279\uff1a\u91c7\u8d2d\u7533\u8bf7\u5355 #PR-2026-0725-03",
-         "assignee": "current", "processInstanceId": "pi-3011",
-         "processDefinitionId": "purchase-request",
-         "createTime": _past(days=3).isoformat(),
-         "endTime": _past(days=2, hours=12).isoformat(),
-         "status": "rejected"},
+        {
+            "id": "t-9001",
+            "name": "\u5ba1\u6279\uff1a\u5408\u540c\u7b7e\u7f72\u7533\u8bf7 #CT-2026-0731-01",
+            "assignee": "current",
+            "processInstanceId": "pi-3001",
+            "processDefinitionId": "contract-sign",
+            "createTime": _past(hours=2).isoformat(),
+            "endTime": None,
+            "status": "pending",
+        },
+        {
+            "id": "t-9002",
+            "name": "\u5ba1\u6279\uff1a\u5dee\u65c5\u62a5\u9500\u5355 #TR-2607-018",
+            "assignee": "current",
+            "processInstanceId": "pi-3002",
+            "processDefinitionId": "travel-reimburse",
+            "createTime": _past(hours=6).isoformat(),
+            "endTime": None,
+            "status": "pending",
+        },
+        {
+            "id": "t-9003",
+            "name": "\u5ba1\u6279\uff1a\u5458\u5de5\u8f6c\u5c97\u7533\u8bf7 #HR-2026-0730-007",
+            "assignee": "current",
+            "processInstanceId": "pi-3003",
+            "processDefinitionId": "hr-transfer",
+            "createTime": _past(days=1, hours=2).isoformat(),
+            "endTime": None,
+            "status": "pending",
+        },
+        {
+            "id": "t-9100",
+            "name": "\u5ba1\u6279\uff1a\u5408\u540c\u7b7e\u7f72\u7533\u8bf7 #CT-2026-0728-09",
+            "assignee": "current",
+            "processInstanceId": "pi-3010",
+            "processDefinitionId": "contract-sign",
+            "createTime": _past(days=2).isoformat(),
+            "endTime": _past(days=1, hours=10).isoformat(),
+            "status": "approved",
+        },
+        {
+            "id": "t-9101",
+            "name": "\u5ba1\u6279\uff1a\u91c7\u8d2d\u7533\u8bf7\u5355 #PR-2026-0725-03",
+            "assignee": "current",
+            "processInstanceId": "pi-3011",
+            "processDefinitionId": "purchase-request",
+            "createTime": _past(days=3).isoformat(),
+            "endTime": _past(days=2, hours=12).isoformat(),
+            "status": "rejected",
+        },
     ]
 
 
@@ -200,175 +246,315 @@ _TODOS = _seed_todos()
 
 
 _WORKERS: list[dict[str, Any]] = [
-    {"id": "w-1", "employeeId": "EMP-AI-001",
-     "name": "\u8d22\u52a1\u5bf9\u8d26\u5458", "code": "finance-recon",
-     "roleCategory": "\u8d22\u52a1", "status": "ACTIVE",
-     "runningTasks": 2, "completedToday": 18,
-     "lastActiveAt": _past(minutes=4).isoformat()},
-    {"id": "w-2", "employeeId": "EMP-AI-002",
-     "name": "\u5ba2\u6237\u6863\u6848\u7ba1\u7406\u5458", "code": "crm-archivist",
-     "roleCategory": "\u5ba2\u6237\u8fd0\u8425", "status": "ACTIVE",
-     "runningTasks": 0, "completedToday": 9,
-     "lastActiveAt": _past(minutes=22).isoformat()},
-    {"id": "w-3", "employeeId": "EMP-AI-003",
-     "name": "\u77e5\u8bc6\u5e93\u6574\u7406\u5458", "code": "kb-curator",
-     "roleCategory": "\u77e5\u8bc6", "status": "ACTIVE",
-     "runningTasks": 1, "completedToday": 5,
-     "lastActiveAt": _past(hours=1).isoformat()},
-    {"id": "w-4", "employeeId": "EMP-AI-004",
-     "name": "\u5de1\u68c0\u8c03\u5ea6\u5458", "code": "patrol",
-     "roleCategory": "\u8fd0\u7ef4", "status": "INACTIVE",
-     "runningTasks": 0, "completedToday": 0,
-     "lastActiveAt": _past(days=2).isoformat()},
+    {
+        "id": "w-1",
+        "employeeId": "EMP-AI-001",
+        "name": "\u8d22\u52a1\u5bf9\u8d26\u5458",
+        "code": "finance-recon",
+        "roleCategory": "\u8d22\u52a1",
+        "status": "ACTIVE",
+        "runningTasks": 2,
+        "completedToday": 18,
+        "lastActiveAt": _past(minutes=4).isoformat(),
+    },
+    {
+        "id": "w-2",
+        "employeeId": "EMP-AI-002",
+        "name": "\u5ba2\u6237\u6863\u6848\u7ba1\u7406\u5458",
+        "code": "crm-archivist",
+        "roleCategory": "\u5ba2\u6237\u8fd0\u8425",
+        "status": "ACTIVE",
+        "runningTasks": 0,
+        "completedToday": 9,
+        "lastActiveAt": _past(minutes=22).isoformat(),
+    },
+    {
+        "id": "w-3",
+        "employeeId": "EMP-AI-003",
+        "name": "\u77e5\u8bc6\u5e93\u6574\u7406\u5458",
+        "code": "kb-curator",
+        "roleCategory": "\u77e5\u8bc6",
+        "status": "ACTIVE",
+        "runningTasks": 1,
+        "completedToday": 5,
+        "lastActiveAt": _past(hours=1).isoformat(),
+    },
+    {
+        "id": "w-4",
+        "employeeId": "EMP-AI-004",
+        "name": "\u5de1\u68c0\u8c03\u5ea6\u5458",
+        "code": "patrol",
+        "roleCategory": "\u8fd0\u7ef4",
+        "status": "INACTIVE",
+        "runningTasks": 0,
+        "completedToday": 0,
+        "lastActiveAt": _past(days=2).isoformat(),
+    },
 ]
 
 
 _DELIVERABLES: list[dict[str, Any]] = [
-    {"id": "d-1", "type": "report",
-     "title": "7 \u6708\u7ecf\u8425\u5206\u6790\u6708\u62a5",
-     "source": "finance-recon",
-     "description": "\u672c\u6708\u8425\u6536\u3001\u5229\u6da6\u3001\u56de\u6b3e\u3001\u5e94\u6536\u8d26\u9f84\u4e0e\u540c\u6bd4\u73af\u6bd4",
-     "format": "pdf", "status": "ready", "size": 2_356_120,
-     "createdAt": _past(hours=2).isoformat(),
-     "createdBy": "\u8d22\u52a1\u5bf9\u8d26\u5458",
-     "downloadUrl": "/api/v1/dashboard/deliverables/d-1/download?format=pdf"},
-    {"id": "d-2", "type": "task_output",
-     "title": "\u5ba2\u6237\u6863\u6848\u6e05\u6d17\u7ed3\u679c\uff08batch-2607\uff09",
-     "source": "crm-archivist",
-     "description": "\u672c\u6b21\u6e05\u6d17 1,287 \u6761\u5ba2\u6237\u8bb0\u5f55\uff0c\u53bb\u91cd 41 \u6761\u3001\u8865\u5168\u5b57\u6bb5 312 \u6761",
-     "format": "json", "status": "ready", "size": 612_400,
-     "createdAt": _past(hours=5).isoformat(),
-     "createdBy": "\u5ba2\u6237\u6863\u6848\u7ba1\u7406\u5458",
-     "downloadUrl": "/api/v1/dashboard/deliverables/d-2/download?format=json"},
-    {"id": "d-3", "type": "schedule_summary",
-     "title": "\u4eca\u6668\u5b9a\u65f6\u4efb\u52a1\u8fd0\u884c\u6458\u8981",
-     "source": "system-scheduler",
-     "description": "28 \u4e2a\u5b9a\u65f6\u4efb\u52a1\uff0c27 \u6210\u529f\u3001 1 \u5931\u8d25\uff08KB \u7d22\u5f15\u91cd\u5efa\uff09",
-     "format": "markdown", "status": "ready", "size": 18_900,
-     "createdAt": _past(hours=7).isoformat(),
-     "createdBy": "\u7cfb\u7edf",
-     "downloadUrl": "/api/v1/dashboard/deliverables/d-3/download?format=markdown"},
-    {"id": "d-4", "type": "analysis",
-     "title": "\u5f02\u5e38\u4e8b\u4ef6 RCA \u62a5\u544a\uff08TECH-AGENT\uff09",
-     "source": "aiops-analyzer",
-     "description": "5xx \u9519\u8bef\u7387\u7a81\u589e\u6839\u56e0 + \u63a8\u8350\u5904\u7f6e\u52a8\u4f5c",
-     "format": "markdown", "status": "ready", "size": 9_240,
-     "createdAt": _past(hours=10).isoformat(),
-     "createdBy": "AI Ops",
-     "downloadUrl": "/api/v1/dashboard/deliverables/d-4/download?format=markdown"},
-    {"id": "d-5", "type": "report",
-     "title": "\u77e5\u8bc6\u5e93\u7d22\u5f15\u91cd\u5efa\u4efb\u52a1\uff08\u751f\u6210\u4e2d\uff09",
-     "source": "kb-curator",
-     "description": "\u5bf9 3 \u4e2a\u77e5\u8bc6\u5eab\u89e6\u53d1\u5168\u91cf\u91cd\u5efa\uff0c\u5c1a\u672a\u5b8c\u6210",
-     "format": "pdf", "status": "generating", "size": 0,
-     "createdAt": _past(minutes=35).isoformat(),
-     "createdBy": "\u77e5\u8bc6\u5e93\u6574\u7406\u5458"},
+    {
+        "id": "d-1",
+        "type": "report",
+        "title": "7 \u6708\u7ecf\u8425\u5206\u6790\u6708\u62a5",
+        "source": "finance-recon",
+        "description": "\u672c\u6708\u8425\u6536\u3001\u5229\u6da6\u3001\u56de\u6b3e\u3001\u5e94\u6536\u8d26\u9f84\u4e0e\u540c\u6bd4\u73af\u6bd4",
+        "format": "pdf",
+        "status": "ready",
+        "size": 2_356_120,
+        "createdAt": _past(hours=2).isoformat(),
+        "createdBy": "\u8d22\u52a1\u5bf9\u8d26\u5458",
+        "downloadUrl": "/api/v1/dashboard/deliverables/d-1/download?format=pdf",
+    },
+    {
+        "id": "d-2",
+        "type": "task_output",
+        "title": "\u5ba2\u6237\u6863\u6848\u6e05\u6d17\u7ed3\u679c\uff08batch-2607\uff09",
+        "source": "crm-archivist",
+        "description": "\u672c\u6b21\u6e05\u6d17 1,287 \u6761\u5ba2\u6237\u8bb0\u5f55\uff0c\u53bb\u91cd 41 \u6761\u3001\u8865\u5168\u5b57\u6bb5 312 \u6761",
+        "format": "json",
+        "status": "ready",
+        "size": 612_400,
+        "createdAt": _past(hours=5).isoformat(),
+        "createdBy": "\u5ba2\u6237\u6863\u6848\u7ba1\u7406\u5458",
+        "downloadUrl": "/api/v1/dashboard/deliverables/d-2/download?format=json",
+    },
+    {
+        "id": "d-3",
+        "type": "schedule_summary",
+        "title": "\u4eca\u6668\u5b9a\u65f6\u4efb\u52a1\u8fd0\u884c\u6458\u8981",
+        "source": "system-scheduler",
+        "description": "28 \u4e2a\u5b9a\u65f6\u4efb\u52a1\uff0c27 \u6210\u529f\u3001 1 \u5931\u8d25\uff08KB \u7d22\u5f15\u91cd\u5efa\uff09",
+        "format": "markdown",
+        "status": "ready",
+        "size": 18_900,
+        "createdAt": _past(hours=7).isoformat(),
+        "createdBy": "\u7cfb\u7edf",
+        "downloadUrl": "/api/v1/dashboard/deliverables/d-3/download?format=markdown",
+    },
+    {
+        "id": "d-4",
+        "type": "analysis",
+        "title": "\u5f02\u5e38\u4e8b\u4ef6 RCA \u62a5\u544a\uff08TECH-AGENT\uff09",
+        "source": "aiops-analyzer",
+        "description": "5xx \u9519\u8bef\u7387\u7a81\u589e\u6839\u56e0 + \u63a8\u8350\u5904\u7f6e\u52a8\u4f5c",
+        "format": "markdown",
+        "status": "ready",
+        "size": 9_240,
+        "createdAt": _past(hours=10).isoformat(),
+        "createdBy": "AI Ops",
+        "downloadUrl": "/api/v1/dashboard/deliverables/d-4/download?format=markdown",
+    },
+    {
+        "id": "d-5",
+        "type": "report",
+        "title": "\u77e5\u8bc6\u5e93\u7d22\u5f15\u91cd\u5efa\u4efb\u52a1\uff08\u751f\u6210\u4e2d\uff09",
+        "source": "kb-curator",
+        "description": "\u5bf9 3 \u4e2a\u77e5\u8bc6\u5eab\u89e6\u53d1\u5168\u91cf\u91cd\u5efa\uff0c\u5c1a\u672a\u5b8c\u6210",
+        "format": "pdf",
+        "status": "generating",
+        "size": 0,
+        "createdAt": _past(minutes=35).isoformat(),
+        "createdBy": "\u77e5\u8bc6\u5e93\u6574\u7406\u5458",
+    },
 ]
 
 
 _ANOMALIES: list[dict[str, Any]] = [
-    {"id": "an-1", "ruleId": "r-err-rate", "anomalyType": "ERROR_RATE",
-     "severity": "CRITICAL", "serviceName": "TECH-AGENT",
-     "traceId": "5f0b7a3c2e1f9a01", "metricValue": 4.2,
-     "rootCause": "\u4e0a\u6e38 model gateway \u8d85\u65f6\u5bfc\u81f4 502 \u6fc0\u589e",
-     "remediationAction": "\u89e6\u53d1\u7194\u65ad\u964d\u7ea7\u5230\u5907\u7528\u6a21\u578b + \u901a\u77e5\u503c\u73ed",
-     "status": "ANALYZING",
-     "detectedAt": _past(minutes=14).isoformat(), "resolvedAt": None},
-    {"id": "an-2", "ruleId": "r-p99-latency", "anomalyType": "P99_LATENCY",
-     "severity": "WARNING", "serviceName": "TECH-RAG",
-     "traceId": None, "metricValue": 2.8,
-     "rootCause": None, "remediationAction": None,
-     "status": "OPEN", "detectedAt": _past(hours=1).isoformat(),
-     "resolvedAt": None},
-    {"id": "an-3", "ruleId": "r-error-code", "anomalyType": "ERROR_CODE",
-     "severity": "INFO", "serviceName": "TECH-OBS",
-     "traceId": None, "metricValue": 7,
-     "rootCause": "OIDC refresh \u5931\u8d25\uff0c\u91cd\u8bd5\u6210\u529f",
-     "remediationAction": None,
-     "status": "RESOLVED",
-     "detectedAt": _past(hours=6).isoformat(),
-     "resolvedAt": _past(hours=5).isoformat()},
+    {
+        "id": "an-1",
+        "ruleId": "r-err-rate",
+        "anomalyType": "ERROR_RATE",
+        "severity": "CRITICAL",
+        "serviceName": "TECH-AGENT",
+        "traceId": "5f0b7a3c2e1f9a01",
+        "metricValue": 4.2,
+        "rootCause": "\u4e0a\u6e38 model gateway \u8d85\u65f6\u5bfc\u81f4 502 \u6fc0\u589e",
+        "remediationAction": "\u89e6\u53d1\u7194\u65ad\u964d\u7ea7\u5230\u5907\u7528\u6a21\u578b + \u901a\u77e5\u503c\u73ed",
+        "status": "ANALYZING",
+        "detectedAt": _past(minutes=14).isoformat(),
+        "resolvedAt": None,
+    },
+    {
+        "id": "an-2",
+        "ruleId": "r-p99-latency",
+        "anomalyType": "P99_LATENCY",
+        "severity": "WARNING",
+        "serviceName": "TECH-RAG",
+        "traceId": None,
+        "metricValue": 2.8,
+        "rootCause": None,
+        "remediationAction": None,
+        "status": "OPEN",
+        "detectedAt": _past(hours=1).isoformat(),
+        "resolvedAt": None,
+    },
+    {
+        "id": "an-3",
+        "ruleId": "r-error-code",
+        "anomalyType": "ERROR_CODE",
+        "severity": "INFO",
+        "serviceName": "TECH-OBS",
+        "traceId": None,
+        "metricValue": 7,
+        "rootCause": "OIDC refresh \u5931\u8d25\uff0c\u91cd\u8bd5\u6210\u529f",
+        "remediationAction": None,
+        "status": "RESOLVED",
+        "detectedAt": _past(hours=6).isoformat(),
+        "resolvedAt": _past(hours=5).isoformat(),
+    },
 ]
 
 
 _ANOMALY_RULES: list[dict[str, Any]] = [
-    {"id": "r-err-rate", "name": "\u670d\u52a1 5xx \u9519\u8bef\u7387",
-     "metricType": "ERROR_RATE", "conditionOperator": ">",
-     "threshold": 1.5, "timeWindowSeconds": 300,
-     "aggregationFunction": "avg", "severity": "CRITICAL", "enabled": True},
-    {"id": "r-p99-latency", "name": "P99 \u5ef6\u8fdf\u544a\u8b66",
-     "metricType": "P99_LATENCY", "conditionOperator": ">",
-     "threshold": 2.0, "timeWindowSeconds": 600,
-     "aggregationFunction": "p99", "severity": "WARNING", "enabled": True},
-    {"id": "r-error-code", "name": "\u7279\u5b9a\u9519\u8bef\u7801\u9891\u6b21",
-     "metricType": "ERROR_CODE", "conditionOperator": ">",
-     "threshold": 5, "timeWindowSeconds": 600,
-     "aggregationFunction": "count", "severity": "INFO", "enabled": True},
+    {
+        "id": "r-err-rate",
+        "name": "\u670d\u52a1 5xx \u9519\u8bef\u7387",
+        "metricType": "ERROR_RATE",
+        "conditionOperator": ">",
+        "threshold": 1.5,
+        "timeWindowSeconds": 300,
+        "aggregationFunction": "avg",
+        "severity": "CRITICAL",
+        "enabled": True,
+    },
+    {
+        "id": "r-p99-latency",
+        "name": "P99 \u5ef6\u8fdf\u544a\u8b66",
+        "metricType": "P99_LATENCY",
+        "conditionOperator": ">",
+        "threshold": 2.0,
+        "timeWindowSeconds": 600,
+        "aggregationFunction": "p99",
+        "severity": "WARNING",
+        "enabled": True,
+    },
+    {
+        "id": "r-error-code",
+        "name": "\u7279\u5b9a\u9519\u8bef\u7801\u9891\u6b21",
+        "metricType": "ERROR_CODE",
+        "conditionOperator": ">",
+        "threshold": 5,
+        "timeWindowSeconds": 600,
+        "aggregationFunction": "count",
+        "severity": "INFO",
+        "enabled": True,
+    },
 ]
 
 
 _SEARCH_INDEX: list[dict[str, Any]] = [
-    {"category": "app", "id": "app-001",
-     "title": "\u5ba2\u6237\u5408\u540c\u5ba1\u9605 Agent",
-     "description": "\u57fa\u4e8e\u5408\u540c\u6a21\u677f\u4e0e\u6cd5\u89c4\uff0c\u81ea\u52a8\u5ba1\u9605\u6761\u6b3e\u98ce\u9669",
-     "link": "/apps/detail?id=app-001"},
-    {"category": "app", "id": "app-002",
-     "title": "\u8d22\u52a1\u6708\u62a5\u751f\u6210\u5668",
-     "description": "\u4ece ERP \u62bd\u53d6\u6570\u636e\uff0c\u751f\u6210\u6708\u62a5 PPT + \u6570\u636e\u5305",
-     "link": "/apps/detail?id=app-002"},
-    {"category": "knowledge", "id": "kb-001",
-     "title": "\u5ba2\u6237\u5408\u540c\uff082024-2026\uff09",
-     "description": "3,287 \u4efd\u5408\u540c\uff0c\u53ef\u6309\u5ba2\u6237/\u6807\u7684/\u91d1\u989d\u68c0\u7d22",
-     "link": "/kb/detail?id=kb-001"},
-    {"category": "knowledge", "id": "kb-002",
-     "title": "\u4ea7\u54c1\u624b\u518c\uff08Mate Platform\uff09",
-     "description": "\u5168\u5e73\u53f0\u4ea7\u54c1\u624b\u518c\u3001API \u6587\u6863\u3001\u8fd0\u7ef4\u624b\u518c",
-     "link": "/kb/detail?id=kb-002"},
-    {"category": "ontology", "id": "ont-001",
-     "title": "Concept:Customer",
-     "description": "\u5ba2\u6237\u672c\u4f53\uff1a\u57fa\u672c\u4fe1\u606f / \u8054\u7cfb\u4eba / \u5408\u540c / \u7968\u5238",
-     "link": "/ontstudio/ontology/ont-001"},
-    {"category": "ontology", "id": "ont-002",
-     "title": "Action:ApproveContract",
-     "description": "\u5408\u540c\u5ba1\u6279\u52a8\u4f5c\uff1a\u89e6\u53d1 Flowable \u6d41\u7a0b + ABAC \u6821\u9a8c",
-     "link": "/ontstudio/ontology/ont-002"},
-    {"category": "task", "id": "task-001",
-     "title": "\u5ba1\u6279\uff1a\u5408\u540c\u7b7e\u7f72\u7533\u8bf7 #CT-2026-0731-01",
-     "description": "\u63d0\u4ea4\u4eba \u674e\u96f7\uff0c\u5f85\u4f60\u5ba1\u6279",
-     "link": "/dashboard?tab=approvals"},
-    {"category": "task", "id": "task-002",
-     "title": "\u5f02\u5e38\uff1aTECH-AGENT \u9519\u8bef\u7387\u7a81\u589e",
-     "description": "5xx \u6bd4\u4f8b 4.2%\uff0cAI Ops \u5df2\u5f00\u5355",
-     "link": "/aiops"},
+    {
+        "category": "app",
+        "id": "app-001",
+        "title": "\u5ba2\u6237\u5408\u540c\u5ba1\u9605 Agent",
+        "description": "\u57fa\u4e8e\u5408\u540c\u6a21\u677f\u4e0e\u6cd5\u89c4\uff0c\u81ea\u52a8\u5ba1\u9605\u6761\u6b3e\u98ce\u9669",
+        "link": "/apps/detail?id=app-001",
+    },
+    {
+        "category": "app",
+        "id": "app-002",
+        "title": "\u8d22\u52a1\u6708\u62a5\u751f\u6210\u5668",
+        "description": "\u4ece ERP \u62bd\u53d6\u6570\u636e\uff0c\u751f\u6210\u6708\u62a5 PPT + \u6570\u636e\u5305",
+        "link": "/apps/detail?id=app-002",
+    },
+    {
+        "category": "knowledge",
+        "id": "kb-001",
+        "title": "\u5ba2\u6237\u5408\u540c\uff082024-2026\uff09",
+        "description": "3,287 \u4efd\u5408\u540c\uff0c\u53ef\u6309\u5ba2\u6237/\u6807\u7684/\u91d1\u989d\u68c0\u7d22",
+        "link": "/kb/detail?id=kb-001",
+    },
+    {
+        "category": "knowledge",
+        "id": "kb-002",
+        "title": "\u4ea7\u54c1\u624b\u518c\uff08Mate Platform\uff09",
+        "description": "\u5168\u5e73\u53f0\u4ea7\u54c1\u624b\u518c\u3001API \u6587\u6863\u3001\u8fd0\u7ef4\u624b\u518c",
+        "link": "/kb/detail?id=kb-002",
+    },
+    {
+        "category": "ontology",
+        "id": "ont-001",
+        "title": "Concept:Customer",
+        "description": "\u5ba2\u6237\u672c\u4f53\uff1a\u57fa\u672c\u4fe1\u606f / \u8054\u7cfb\u4eba / \u5408\u540c / \u7968\u5238",
+        "link": "/ontstudio/ontology/ont-001",
+    },
+    {
+        "category": "ontology",
+        "id": "ont-002",
+        "title": "Action:ApproveContract",
+        "description": "\u5408\u540c\u5ba1\u6279\u52a8\u4f5c\uff1a\u89e6\u53d1 Flowable \u6d41\u7a0b + ABAC \u6821\u9a8c",
+        "link": "/ontstudio/ontology/ont-002",
+    },
+    {
+        "category": "task",
+        "id": "task-001",
+        "title": "\u5ba1\u6279\uff1a\u5408\u540c\u7b7e\u7f72\u7533\u8bf7 #CT-2026-0731-01",
+        "description": "\u63d0\u4ea4\u4eba \u674e\u96f7\uff0c\u5f85\u4f60\u5ba1\u6279",
+        "link": "/dashboard?tab=approvals",
+    },
+    {
+        "category": "task",
+        "id": "task-002",
+        "title": "\u5f02\u5e38\uff1aTECH-AGENT \u9519\u8bef\u7387\u7a81\u589e",
+        "description": "5xx \u6bd4\u4f8b 4.2%\uff0cAI Ops \u5df2\u5f00\u5355",
+        "link": "/aiops",
+    },
 ]
 
 
 _API_KEYS: list[dict[str, Any]] = [
-    {"apiKeyId": "ak-1", "name": "Read-only integration",
-     "keyPrefix": "mp_live_abcd****", "userId": "u-1",
-     "scopes": ["read:dashboard", "read:knowledge"],
-     "status": "ACTIVE", "expiresAt": _future(days=87).isoformat(),
-     "lastUsedAt": _past(hours=2).isoformat(),
-     "createdAt": _past(days=30).isoformat()},
-    {"apiKeyId": "ak-2", "name": "Legacy ETL token",
-     "keyPrefix": "mp_live_legacy**", "userId": "u-1",
-     "scopes": ["read:all"], "status": "ACTIVE",
-     "expiresAt": _future(days=14).isoformat(),
-     "lastUsedAt": _past(days=3).isoformat(),
-     "createdAt": _past(days=120).isoformat()},
+    {
+        "apiKeyId": "ak-1",
+        "name": "Read-only integration",
+        "keyPrefix": "mp_live_abcd****",
+        "userId": "u-1",
+        "scopes": ["read:dashboard", "read:knowledge"],
+        "status": "ACTIVE",
+        "expiresAt": _future(days=87).isoformat(),
+        "lastUsedAt": _past(hours=2).isoformat(),
+        "createdAt": _past(days=30).isoformat(),
+    },
+    {
+        "apiKeyId": "ak-2",
+        "name": "Legacy ETL token",
+        "keyPrefix": "mp_live_legacy**",
+        "userId": "u-1",
+        "scopes": ["read:all"],
+        "status": "ACTIVE",
+        "expiresAt": _future(days=14).isoformat(),
+        "lastUsedAt": _past(days=3).isoformat(),
+        "createdAt": _past(days=120).isoformat(),
+    },
 ]
 
 
 _SESSIONS: list[dict[str, Any]] = [
-    {"id": "s-1", "device": "Chrome 128 \u00b7 Windows 11",
-     "ip": "10.0.5.21", "location": "\u4e0a\u6d77",
-     "lastActiveAt": _now().isoformat(), "current": True},
-    {"id": "s-2", "device": "Safari 17 \u00b7 iPhone 15",
-     "ip": "10.0.5.21", "location": "\u4e0a\u6d77",
-     "lastActiveAt": _past(hours=4).isoformat(), "current": False},
-    {"id": "s-3", "device": "Edge 128 \u00b7 Windows 11",
-     "ip": "10.0.5.42", "location": "\u529e\u516c\u5ba4 \u00b7 \u5317\u4eac",
-     "lastActiveAt": _past(days=2).isoformat(), "current": False},
+    {
+        "id": "s-1",
+        "device": "Chrome 128 \u00b7 Windows 11",
+        "ip": "10.0.5.21",
+        "location": "\u4e0a\u6d77",
+        "lastActiveAt": _now().isoformat(),
+        "current": True,
+    },
+    {
+        "id": "s-2",
+        "device": "Safari 17 \u00b7 iPhone 15",
+        "ip": "10.0.5.21",
+        "location": "\u4e0a\u6d77",
+        "lastActiveAt": _past(hours=4).isoformat(),
+        "current": False,
+    },
+    {
+        "id": "s-3",
+        "device": "Edge 128 \u00b7 Windows 11",
+        "ip": "10.0.5.42",
+        "location": "\u529e\u516c\u5ba4 \u00b7 \u5317\u4eac",
+        "lastActiveAt": _past(days=2).isoformat(),
+        "current": False,
+    },
 ]
 
 
@@ -388,8 +574,13 @@ _USER_SETTINGS: dict[str, dict[str, Any]] = {
 _NOTIFICATION_SETTINGS: dict[str, dict[str, Any]] = {
     "u-1": {
         "userId": "u-1",
-        "approval": True, "task": True, "system": True, "mention": True,
-        "alert": True, "email": False, "push": True,
+        "approval": True,
+        "task": True,
+        "system": True,
+        "mention": True,
+        "alert": True,
+        "email": False,
+        "push": True,
     }
 }
 
@@ -517,15 +708,28 @@ async def get_profile(request: Request) -> Any:
         "email": "admin@metaplatform.local",
         "realName": "\u7ba1\u7406\u5458",
         "tenantId": "tenant-default",
-        "roles": [{"roleId": "r-1", "roleCode": "PLATFORM_SUPER_ADMIN",
-                    "roleName": "\u8d85\u7ea7\u7ba1\u7406\u5458", "dataScope": "ALL"}],
+        "roles": [
+            {
+                "roleId": "r-1",
+                "roleCode": "PLATFORM_SUPER_ADMIN",
+                "roleName": "\u8d85\u7ea7\u7ba1\u7406\u5458",
+                "dataScope": "ALL",
+            }
+        ],
         "departments": [
-            {"departmentId": "d-1", "departmentCode": "platform",
-             "departmentName": "\u5e73\u53f0\u7ec4", "isPrimary": True},
+            {
+                "departmentId": "d-1",
+                "departmentCode": "platform",
+                "departmentName": "\u5e73\u53f0\u7ec4",
+                "isPrimary": True,
+            },
         ],
         "permissions": [
-            {"permissionCode": "*", "permissionName": "\u5168\u90e8\u6743\u9650",
-             "resourceType": "*"},
+            {
+                "permissionCode": "*",
+                "permissionName": "\u5168\u90e8\u6743\u9650",
+                "resourceType": "*",
+            },
         ],
     }
 
@@ -533,110 +737,260 @@ async def get_profile(request: Request) -> Any:
 @router.get("/myapps", summary="My apps")
 async def my_apps(request: Request) -> Any:
     return [
-        {"name": "财务审批助手", "type": "approval", "type_label": "审批流",
-         "description": "自动化财务报销审批流程",
-         "last_used": "2026-07-30", "date": "2026-06-15", "usage": "日均 45 次",
-         "icon": "AuditOutlined", "pinned": True},
-        {"name": "客户数据看板", "type": "dashboard", "type_label": "数据看板",
-         "description": "客户行为分析实时看板",
-         "last_used": "2026-07-31", "date": "2026-07-01", "usage": "日均 120 次",
-         "icon": "DashboardOutlined", "pinned": True},
-        {"name": "合同管理平台", "type": "workflow", "type_label": "工作流",
-         "description": "合同全生命周期管理",
-         "last_used": "2026-07-28", "date": "2026-05-20", "usage": "日均 18 次",
-         "icon": "FileTextOutlined", "pinned": False},
-        {"name": "营销内容生成器", "type": "ai", "type_label": "AI 应用",
-         "description": "AI 驱动的营销文案自动生成",
-         "last_used": "2026-07-31", "date": "2026-07-10", "usage": "日均 230 次",
-         "icon": "BulbOutlined", "pinned": True},
-        {"name": "安全巡检系统", "type": "monitor", "type_label": "监控",
-         "description": "自动化安全漏洞扫描与告警",
-         "last_used": "2026-07-29", "date": "2026-04-01", "usage": "周均 3 次",
-         "icon": "SafetyOutlined", "pinned": False},
+        {
+            "name": "财务审批助手",
+            "type": "approval",
+            "type_label": "审批流",
+            "description": "自动化财务报销审批流程",
+            "last_used": "2026-07-30",
+            "date": "2026-06-15",
+            "usage": "日均 45 次",
+            "icon": "AuditOutlined",
+            "pinned": True,
+        },
+        {
+            "name": "客户数据看板",
+            "type": "dashboard",
+            "type_label": "数据看板",
+            "description": "客户行为分析实时看板",
+            "last_used": "2026-07-31",
+            "date": "2026-07-01",
+            "usage": "日均 120 次",
+            "icon": "DashboardOutlined",
+            "pinned": True,
+        },
+        {
+            "name": "合同管理平台",
+            "type": "workflow",
+            "type_label": "工作流",
+            "description": "合同全生命周期管理",
+            "last_used": "2026-07-28",
+            "date": "2026-05-20",
+            "usage": "日均 18 次",
+            "icon": "FileTextOutlined",
+            "pinned": False,
+        },
+        {
+            "name": "营销内容生成器",
+            "type": "ai",
+            "type_label": "AI 应用",
+            "description": "AI 驱动的营销文案自动生成",
+            "last_used": "2026-07-31",
+            "date": "2026-07-10",
+            "usage": "日均 230 次",
+            "icon": "BulbOutlined",
+            "pinned": True,
+        },
+        {
+            "name": "安全巡检系统",
+            "type": "monitor",
+            "type_label": "监控",
+            "description": "自动化安全漏洞扫描与告警",
+            "last_used": "2026-07-29",
+            "date": "2026-04-01",
+            "usage": "周均 3 次",
+            "icon": "SafetyOutlined",
+            "pinned": False,
+        },
     ]
 
 
 @router.get("/myagents", summary="My digital employees")
 async def my_agents(request: Request) -> Any:
     return [
-        {"name": "客服助手", "type": "对话型", "type_label": "对话型",
-         "status": "online", "status_class": "success",
-         "description": "7x24 智能客服对话", "tasks": 234, "success_rate": 98.7,
-         "icon": "CustomerServiceOutlined"},
-        {"name": "合同审核员", "type": "审核型", "type_label": "审核型",
-         "status": "busy", "status_class": "processing",
-         "description": "合同条款自动审核", "tasks": 89, "success_rate": 95.5,
-         "icon": "FileSearchOutlined"},
-        {"name": "数据分析师", "type": "分析型", "type_label": "分析型",
-         "status": "paused", "status_class": "warning",
-         "description": "业务数据深度分析", "tasks": 156, "success_rate": 92.3,
-         "icon": "BarChartOutlined"},
-        {"name": "营销文案", "type": "生成型", "type_label": "生成型",
-         "status": "online", "status_class": "success",
-         "description": "营销内容 AI 生成", "tasks": 312, "success_rate": 99.1,
-         "icon": "HighlightOutlined"},
-        {"name": "代码审查员", "type": "审核型", "type_label": "审核型",
-         "status": "online", "status_class": "success",
-         "description": "代码质量自动审查", "tasks": 198, "success_rate": 96.4,
-         "icon": "CodeOutlined"},
+        {
+            "name": "客服助手",
+            "type": "对话型",
+            "type_label": "对话型",
+            "status": "online",
+            "status_class": "success",
+            "description": "7x24 智能客服对话",
+            "tasks": 234,
+            "success_rate": 98.7,
+            "icon": "CustomerServiceOutlined",
+        },
+        {
+            "name": "合同审核员",
+            "type": "审核型",
+            "type_label": "审核型",
+            "status": "busy",
+            "status_class": "processing",
+            "description": "合同条款自动审核",
+            "tasks": 89,
+            "success_rate": 95.5,
+            "icon": "FileSearchOutlined",
+        },
+        {
+            "name": "数据分析师",
+            "type": "分析型",
+            "type_label": "分析型",
+            "status": "paused",
+            "status_class": "warning",
+            "description": "业务数据深度分析",
+            "tasks": 156,
+            "success_rate": 92.3,
+            "icon": "BarChartOutlined",
+        },
+        {
+            "name": "营销文案",
+            "type": "生成型",
+            "type_label": "生成型",
+            "status": "online",
+            "status_class": "success",
+            "description": "营销内容 AI 生成",
+            "tasks": 312,
+            "success_rate": 99.1,
+            "icon": "HighlightOutlined",
+        },
+        {
+            "name": "代码审查员",
+            "type": "审核型",
+            "type_label": "审核型",
+            "status": "online",
+            "status_class": "success",
+            "description": "代码质量自动审查",
+            "tasks": 198,
+            "success_rate": 96.4,
+            "icon": "CodeOutlined",
+        },
     ]
 
 
 @router.get("/myagents/logs", summary="Agent execution logs")
 async def my_agent_logs(request: Request) -> Any:
     return [
-        {"log_id": "log-001", "agent": "客服助手", "agent_id": "agent-001",
-         "exec_time": "2026-07-31 10:30:00", "duration": "1.2s",
-         "status": "success", "status_class": "success", "dot_class": "success",
-         "trigger": "用户请求", "tokens": "1,234"},
-        {"log_id": "log-002", "agent": "合同审核员", "agent_id": "agent-002",
-         "exec_time": "2026-07-31 10:25:00", "duration": "3.5s",
-         "status": "success", "status_class": "success", "dot_class": "success",
-         "trigger": "定时任务", "tokens": "2,890"},
-        {"log_id": "log-003", "agent": "数据分析师", "agent_id": "agent-003",
-         "exec_time": "2026-07-31 09:15:00", "duration": "12.3s",
-         "status": "failed", "status_class": "error", "dot_class": "error",
-         "trigger": "API 调用", "tokens": "5,678"},
+        {
+            "log_id": "log-001",
+            "agent": "客服助手",
+            "agent_id": "agent-001",
+            "exec_time": "2026-07-31 10:30:00",
+            "duration": "1.2s",
+            "status": "success",
+            "status_class": "success",
+            "dot_class": "success",
+            "trigger": "用户请求",
+            "tokens": "1,234",
+        },
+        {
+            "log_id": "log-002",
+            "agent": "合同审核员",
+            "agent_id": "agent-002",
+            "exec_time": "2026-07-31 10:25:00",
+            "duration": "3.5s",
+            "status": "success",
+            "status_class": "success",
+            "dot_class": "success",
+            "trigger": "定时任务",
+            "tokens": "2,890",
+        },
+        {
+            "log_id": "log-003",
+            "agent": "数据分析师",
+            "agent_id": "agent-003",
+            "exec_time": "2026-07-31 09:15:00",
+            "duration": "12.3s",
+            "status": "failed",
+            "status_class": "error",
+            "dot_class": "error",
+            "trigger": "API 调用",
+            "tokens": "5,678",
+        },
     ]
 
 
 @router.get("/messages", summary="Messages")
 async def messages(request: Request) -> Any:
     return [
-        {"msg_id": "msg-001", "sender": "系统通知", "avatar_class": "system",
-         "icon": "NotificationOutlined",
-         "title": "安全巡检完成", "summary": "发现 2 个中危漏洞，请及时处理",
-         "time": "5 分钟前", "priority": "high", "unread": True, "attachments": 1},
-        {"msg_id": "msg-002", "sender": "客服助手", "avatar_class": "agent",
-         "icon": "RobotOutlined",
-         "title": "对话转人工", "summary": "客户 #12345 请求人工客服介入",
-         "time": "15 分钟前", "priority": "normal", "unread": True, "attachments": 0},
-        {"msg_id": "msg-003", "sender": "合同审核员", "avatar_class": "agent",
-         "icon": "FileSearchOutlined",
-         "title": "审核报告已生成", "summary": "合同 #C-2026-0456 审核完成",
-         "time": "1 小时前", "priority": "normal", "unread": False, "attachments": 2},
-        {"msg_id": "msg-004", "sender": "管理员", "avatar_class": "admin",
-         "icon": "UserOutlined",
-         "title": "系统维护通知", "summary": "今晚 22:00-23:00 系统维护",
-         "time": "2 小时前", "priority": "low", "unread": False, "attachments": 0},
+        {
+            "msg_id": "msg-001",
+            "sender": "系统通知",
+            "avatar_class": "system",
+            "icon": "NotificationOutlined",
+            "title": "安全巡检完成",
+            "summary": "发现 2 个中危漏洞，请及时处理",
+            "time": "5 分钟前",
+            "priority": "high",
+            "unread": True,
+            "attachments": 1,
+        },
+        {
+            "msg_id": "msg-002",
+            "sender": "客服助手",
+            "avatar_class": "agent",
+            "icon": "RobotOutlined",
+            "title": "对话转人工",
+            "summary": "客户 #12345 请求人工客服介入",
+            "time": "15 分钟前",
+            "priority": "normal",
+            "unread": True,
+            "attachments": 0,
+        },
+        {
+            "msg_id": "msg-003",
+            "sender": "合同审核员",
+            "avatar_class": "agent",
+            "icon": "FileSearchOutlined",
+            "title": "审核报告已生成",
+            "summary": "合同 #C-2026-0456 审核完成",
+            "time": "1 小时前",
+            "priority": "normal",
+            "unread": False,
+            "attachments": 2,
+        },
+        {
+            "msg_id": "msg-004",
+            "sender": "管理员",
+            "avatar_class": "admin",
+            "icon": "UserOutlined",
+            "title": "系统维护通知",
+            "summary": "今晚 22:00-23:00 系统维护",
+            "time": "2 小时前",
+            "priority": "low",
+            "unread": False,
+            "attachments": 0,
+        },
     ]
 
 
 @router.get("/portal", summary="Portal links")
 async def portal(request: Request, kind: str | None = Query(default=None)) -> Any:
     items = [
-        {"name": "企业知识库", "kind": "internal", "description": "企业内部知识库系统",
-         "icon": "BookOutlined", "visits": 15420, "last_visit": "今天",
-         "url": "https://kb.example.com"},
-        {"name": "数据平台", "kind": "internal", "description": "企业数据资产平台",
-         "icon": "DatabaseOutlined", "visits": 8930, "last_visit": "昨天",
-         "url": "https://data.example.com"},
-        {"name": "OA 系统", "kind": "internal", "description": "办公自动化系统",
-         "icon": "DesktopOutlined", "visits": 23100, "last_visit": "今天",
-         "url": "https://oa.example.com"},
-        {"name": "合作伙伴门户", "kind": "external", "description": "外部合作伙伴入口",
-         "icon": "GlobalOutlined", "visits": 1200, "last_visit": "3 天前",
-         "url": "https://partner.example.com"},
+        {
+            "name": "企业知识库",
+            "kind": "internal",
+            "description": "企业内部知识库系统",
+            "icon": "BookOutlined",
+            "visits": 15420,
+            "last_visit": "今天",
+            "url": "https://kb.example.com",
+        },
+        {
+            "name": "数据平台",
+            "kind": "internal",
+            "description": "企业数据资产平台",
+            "icon": "DatabaseOutlined",
+            "visits": 8930,
+            "last_visit": "昨天",
+            "url": "https://data.example.com",
+        },
+        {
+            "name": "OA 系统",
+            "kind": "internal",
+            "description": "办公自动化系统",
+            "icon": "DesktopOutlined",
+            "visits": 23100,
+            "last_visit": "今天",
+            "url": "https://oa.example.com",
+        },
+        {
+            "name": "合作伙伴门户",
+            "kind": "external",
+            "description": "外部合作伙伴入口",
+            "icon": "GlobalOutlined",
+            "visits": 1200,
+            "last_visit": "3 天前",
+            "url": "https://partner.example.com",
+        },
     ]
     if kind:
         items = [i for i in items if i["kind"] == kind]
@@ -647,32 +1001,88 @@ async def portal(request: Request, kind: str | None = Query(default=None)) -> An
 async def deliverables_summary(request: Request) -> Any:
     return {
         "deliverables": [
-            {"name": "Q2 财务报告", "type_label": "报告", "type_class": "report",
-             "project": "财务部", "gen_class": "ai", "gen_name": "AI 生成",
-             "format": "PDF", "size": "2.3 MB", "date": "2026-07-28",
-             "status": "已交付", "status_class": "success", "icon": "FilePdfOutlined"},
-            {"name": "客户行为分析", "type_label": "分析", "type_class": "analysis",
-             "project": "市场部", "gen_class": "ai", "gen_name": "AI 生成",
-             "format": "XLSX", "size": "5.1 MB", "date": "2026-07-30",
-             "status": "已交付", "status_class": "success", "icon": "FileExcelOutlined"},
-            {"name": "安全审计报告", "type_label": "报告", "type_class": "report",
-             "project": "安全部", "gen_class": "human", "gen_name": "人工编写",
-             "format": "DOCX", "size": "1.8 MB", "date": "2026-07-25",
-             "status": "审核中", "status_class": "processing", "icon": "FileWordOutlined"},
-            {"name": "产品需求文档 v2", "type_label": "文档", "type_class": "doc",
-             "project": "产品部", "gen_class": "ai", "gen_name": "AI 辅助",
-             "format": "PDF", "size": "3.2 MB", "date": "2026-07-20",
-             "status": "已归档", "status_class": "default", "icon": "FilePdfOutlined"},
+            {
+                "name": "Q2 财务报告",
+                "type_label": "报告",
+                "type_class": "report",
+                "project": "财务部",
+                "gen_class": "ai",
+                "gen_name": "AI 生成",
+                "format": "PDF",
+                "size": "2.3 MB",
+                "date": "2026-07-28",
+                "status": "已交付",
+                "status_class": "success",
+                "icon": "FilePdfOutlined",
+            },
+            {
+                "name": "客户行为分析",
+                "type_label": "分析",
+                "type_class": "analysis",
+                "project": "市场部",
+                "gen_class": "ai",
+                "gen_name": "AI 生成",
+                "format": "XLSX",
+                "size": "5.1 MB",
+                "date": "2026-07-30",
+                "status": "已交付",
+                "status_class": "success",
+                "icon": "FileExcelOutlined",
+            },
+            {
+                "name": "安全审计报告",
+                "type_label": "报告",
+                "type_class": "report",
+                "project": "安全部",
+                "gen_class": "human",
+                "gen_name": "人工编写",
+                "format": "DOCX",
+                "size": "1.8 MB",
+                "date": "2026-07-25",
+                "status": "审核中",
+                "status_class": "processing",
+                "icon": "FileWordOutlined",
+            },
+            {
+                "name": "产品需求文档 v2",
+                "type_label": "文档",
+                "type_class": "doc",
+                "project": "产品部",
+                "gen_class": "ai",
+                "gen_name": "AI 辅助",
+                "format": "PDF",
+                "size": "3.2 MB",
+                "date": "2026-07-20",
+                "status": "已归档",
+                "status_class": "default",
+                "icon": "FilePdfOutlined",
+            },
         ],
         "timeline": [
-            {"time_label": "2026-07-31", "title": "客户行为分析已交付",
-             "description": "市场部 — AI 生成，5.1 MB", "icon": "CheckCircleOutlined"},
-            {"time_label": "2026-07-28", "title": "Q2 财务报告已交付",
-             "description": "财务部 — AI 生成，2.3 MB", "icon": "CheckCircleOutlined"},
-            {"time_label": "2026-07-25", "title": "安全审计报告提交审核",
-             "description": "安全部 — 人工编写，1.8 MB", "icon": "ClockCircleOutlined"},
-            {"time_label": "2026-07-20", "title": "产品需求文档 v2 已归档",
-             "description": "产品部 — AI 辅助，3.2 MB", "icon": "ArchiveOutlined"},
+            {
+                "time_label": "2026-07-31",
+                "title": "客户行为分析已交付",
+                "description": "市场部 — AI 生成，5.1 MB",
+                "icon": "CheckCircleOutlined",
+            },
+            {
+                "time_label": "2026-07-28",
+                "title": "Q2 财务报告已交付",
+                "description": "财务部 — AI 生成，2.3 MB",
+                "icon": "CheckCircleOutlined",
+            },
+            {
+                "time_label": "2026-07-25",
+                "title": "安全审计报告提交审核",
+                "description": "安全部 — 人工编写，1.8 MB",
+                "icon": "ClockCircleOutlined",
+            },
+            {
+                "time_label": "2026-07-20",
+                "title": "产品需求文档 v2 已归档",
+                "description": "产品部 — AI 辅助，3.2 MB",
+                "icon": "ArchiveOutlined",
+            },
         ],
     }
 
@@ -685,13 +1095,22 @@ async def get_profile_permissions(request: Request) -> Any:
         "tenantId": "tenant-default",
         "permissionCodes": ["*"],
         "permissions": [
-            {"permissionId": "p-1", "permissionCode": "*",
-             "permissionName": "\u5168\u90e8\u6743\u9650", "resourceType": "*",
-             "actions": ["*"], "effect": "ALLOW"},
+            {
+                "permissionId": "p-1",
+                "permissionCode": "*",
+                "permissionName": "\u5168\u90e8\u6743\u9650",
+                "resourceType": "*",
+                "actions": ["*"],
+                "effect": "ALLOW",
+            },
         ],
         "roles": [
-            {"roleId": "r-1", "roleCode": "PLATFORM_SUPER_ADMIN",
-             "roleName": "\u8d85\u7ea7\u7ba1\u7406\u5458", "dataScope": "ALL"},
+            {
+                "roleId": "r-1",
+                "roleCode": "PLATFORM_SUPER_ADMIN",
+                "roleName": "\u8d85\u7ea7\u7ba1\u7406\u5458",
+                "dataScope": "ALL",
+            },
         ],
     }
 
@@ -742,9 +1161,9 @@ async def get_sessions(request: Request, userId: str | None = Query(default=None
     return list(_SESSIONS)
 
 
-@router.delete("/sessions/{session_id}",
-            status_code=status.HTTP_204_NO_CONTENT,
-            response_class=Response)
+@router.delete(
+    "/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response
+)
 async def revoke_session(request: Request, session_id: str) -> Response:
     ctx = _ctx(request)
     require_tenant(ctx)
@@ -761,12 +1180,12 @@ async def revoke_session(request: Request, session_id: str) -> Response:
 
 
 @router.get("/api-keys", summary="List API keys")
-async def list_api_keys(request: Request, tenantId: str | None = Query(default=None),
-                        page: int = 0, size: int = 100) -> Any:
+async def list_api_keys(
+    request: Request, tenantId: str | None = Query(default=None), page: int = 0, size: int = 100
+) -> Any:
     require_tenant(_ctx(request))
     items = list(_API_KEYS)
-    return {"items": items, "total": len(items), "page": page,
-            "pageSize": size, "totalPages": 1}
+    return {"items": items, "total": len(items), "page": page, "pageSize": size, "totalPages": 1}
 
 
 @router.post("/api-keys", summary="Create API key")
@@ -790,16 +1209,15 @@ async def create_api_key(request: Request, payload: ApiKeyCreate) -> Any:
         request,
         event_type="dashboard.api_key.created",
         aggregate_id=key_id,
-        payload={"apiKeyId": key_id, "name": payload.name,
-                 "scopes": payload.scopes},
+        payload={"apiKeyId": key_id, "name": payload.name, "scopes": payload.scopes},
         tenant_id=str(ctx.tenant_id),
     )
     return {**record, "apiKey": raw}
 
 
-@router.delete("/api-keys/{api_key_id}",
-            status_code=status.HTTP_204_NO_CONTENT,
-            response_class=Response)
+@router.delete(
+    "/api-keys/{api_key_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response
+)
 async def revoke_api_key(request: Request, api_key_id: str) -> Response:
     ctx = _ctx(request)
     require_tenant(ctx)
@@ -821,16 +1239,20 @@ async def revoke_api_key(request: Request, api_key_id: str) -> Response:
 
 
 @router.get("/notifications", summary="List notifications")
-async def list_notifications(request: Request, userId: str | None = Query(default=None),
-                              status: str = "all",
-                              limit: int = 50, offset: int = 0) -> Any:
+async def list_notifications(
+    request: Request,
+    userId: str | None = Query(default=None),
+    status: str = "all",
+    limit: int = 50,
+    offset: int = 0,
+) -> Any:
     require_tenant(_ctx(request))
     items = list(_NOTIFICATIONS)
     if status == "unread":
         items = [n for n in items if not n["read"]]
     elif status == "read":
         items = [n for n in items if n["read"]]
-    return items[offset:offset + limit]
+    return items[offset : offset + limit]
 
 
 @router.get("/notifications/unread-count", summary="Unread count")
@@ -839,9 +1261,11 @@ async def unread_count(request: Request, userId: str | None = Query(default=None
     return sum(1 for n in _NOTIFICATIONS if not n["read"])
 
 
-@router.put("/notifications/{notification_id}/read",
-           status_code=status.HTTP_204_NO_CONTENT,
-           response_class=Response)
+@router.put(
+    "/notifications/{notification_id}/read",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+)
 async def mark_read(request: Request, notification_id: str) -> Response:
     ctx = _ctx(request)
     require_tenant(ctx)
@@ -859,9 +1283,9 @@ async def mark_read(request: Request, notification_id: str) -> Response:
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.post("/notifications/read-all",
-            status_code=status.HTTP_204_NO_CONTENT,
-            response_class=Response)
+@router.post(
+    "/notifications/read-all", status_code=status.HTTP_204_NO_CONTENT, response_class=Response
+)
 async def mark_all_read(request: Request, userId: str | None = Query(default=None)) -> Response:
     ctx = _ctx(request)
     require_tenant(ctx)
@@ -878,22 +1302,46 @@ async def mark_all_read(request: Request, userId: str | None = Query(default=Non
 
 
 @router.get("/notifications/settings", summary="Notification preferences")
-async def get_notification_settings(request: Request, userId: str | None = Query(default=None)) -> Any:
+async def get_notification_settings(
+    request: Request, userId: str | None = Query(default=None)
+) -> Any:
     require_tenant(_ctx(request))
     uid = userId or "u-1"
-    return _NOTIFICATION_SETTINGS.get(uid, {"userId": uid,
-        "approval": True, "task": True, "system": True, "mention": True,
-        "alert": True, "email": False, "push": True})
+    return _NOTIFICATION_SETTINGS.get(
+        uid,
+        {
+            "userId": uid,
+            "approval": True,
+            "task": True,
+            "system": True,
+            "mention": True,
+            "alert": True,
+            "email": False,
+            "push": True,
+        },
+    )
 
 
 @router.put("/notifications/settings", summary="Update notification preferences")
-async def update_notification_settings(request: Request, payload: NotificationSettingsUpdate) -> Any:
+async def update_notification_settings(
+    request: Request, payload: NotificationSettingsUpdate
+) -> Any:
     ctx = _ctx(request)
     require_tenant(ctx)
     uid = payload.userId or "u-1"
-    cur = _NOTIFICATION_SETTINGS.setdefault(uid, {
-        "userId": uid, "approval": True, "task": True, "system": True,
-        "mention": True, "alert": True, "email": False, "push": True})
+    cur = _NOTIFICATION_SETTINGS.setdefault(
+        uid,
+        {
+            "userId": uid,
+            "approval": True,
+            "task": True,
+            "system": True,
+            "mention": True,
+            "alert": True,
+            "email": False,
+            "push": True,
+        },
+    )
     data = payload.model_dump(exclude_unset=True, exclude={"userId"})
     cur.update({k: v for k, v in data.items() if v is not None})
     _emit(
@@ -915,24 +1363,47 @@ async def update_notification_settings(request: Request, payload: NotificationSe
 async def metric_cards(request: Request) -> Any:
     require_tenant(_ctx(request))
     return [
-        {"key": "active_users", "label": "\u4eca\u65e5\u6d3b\u8dc3\u7528\u6237",
-         "value": 287, "unit": "\u4eba", "trend": 12.4, "trendUp": True,
-         "icon": "users"},
-        {"key": "api_calls", "label": "\u4eca\u65e5 API \u8c03\u7528",
-         "value": 142350, "unit": "\u6b21", "trend": 8.1, "trendUp": True,
-         "icon": "activity"},
-        {"key": "errors", "label": "\u4eca\u65e5\u5f02\u5e38",
-         "value": 17, "unit": "\u6b21", "trend": -23.5, "trendUp": False,
-         "icon": "alert"},
-        {"key": "tasks", "label": "\u5728\u9014\u4efb\u52a1",
-         "value": 56, "unit": "\u4e2a", "trend": 3.2, "trendUp": True,
-         "icon": "tasks"},
+        {
+            "key": "active_users",
+            "label": "\u4eca\u65e5\u6d3b\u8dc3\u7528\u6237",
+            "value": 287,
+            "unit": "\u4eba",
+            "trend": 12.4,
+            "trendUp": True,
+            "icon": "users",
+        },
+        {
+            "key": "api_calls",
+            "label": "\u4eca\u65e5 API \u8c03\u7528",
+            "value": 142350,
+            "unit": "\u6b21",
+            "trend": 8.1,
+            "trendUp": True,
+            "icon": "activity",
+        },
+        {
+            "key": "errors",
+            "label": "\u4eca\u65e5\u5f02\u5e38",
+            "value": 17,
+            "unit": "\u6b21",
+            "trend": -23.5,
+            "trendUp": False,
+            "icon": "alert",
+        },
+        {
+            "key": "tasks",
+            "label": "\u5728\u9014\u4efb\u52a1",
+            "value": 56,
+            "unit": "\u4e2a",
+            "trend": 3.2,
+            "trendUp": True,
+            "icon": "tasks",
+        },
     ]
 
 
 @router.get("/metrics/trend", summary="Metric trend")
-async def metric_trend(request: Request,
-                        range_: str = Query(default="24h", alias="range")) -> Any:
+async def metric_trend(request: Request, range_: str = Query(default="24h", alias="range")) -> Any:
     require_tenant(_ctx(request))
     points = 24 if range_ == "24h" else (168 if range_ == "7d" else 30)
     step_h = 1 if range_ in ("1h", "24h") else (4 if range_ == "7d" else 24)
@@ -941,12 +1412,14 @@ async def metric_trend(request: Request,
         t = _now() - timedelta(hours=step_h * (points - i - 1))
         api_calls = 1800 + (i * 35) + (i % 5) * 80
         errors = max(0, int(api_calls * 0.004 + ((i * 7) % 11)))
-        series.append({
-            "time": t.isoformat(),
-            "value": api_calls,
-            "apiCalls": api_calls,
-            "errors": errors,
-        })
+        series.append(
+            {
+                "time": t.isoformat(),
+                "value": api_calls,
+                "apiCalls": api_calls,
+                "errors": errors,
+            }
+        )
     return series
 
 
@@ -956,9 +1429,11 @@ async def metric_trend(request: Request,
 
 
 def _map_todo(item: dict[str, Any]) -> dict[str, Any]:
-    status_norm = ("pending" if item["status"] == "pending"
-                   else ("completed" if item["status"] == "approved"
-                         else "rejected"))
+    status_norm = (
+        "pending"
+        if item["status"] == "pending"
+        else ("completed" if item["status"] == "approved" else "rejected")
+    )
     return {
         "taskId": item["id"],
         "title": item["name"],
@@ -973,21 +1448,27 @@ def _map_todo(item: dict[str, Any]) -> dict[str, Any]:
 
 
 @router.get("/todos", summary="Pending tasks")
-async def list_todos(request: Request, userId: str | None = Query(default=None),
-                     page: int = 1, size: int = 20) -> Any:
+async def list_todos(
+    request: Request, userId: str | None = Query(default=None), page: int = 1, size: int = 20
+) -> Any:
     require_tenant(_ctx(request))
     pending = [_map_todo(t) for t in _TODOS if t["status"] == "pending"]
-    return {"items": pending, "total": len(pending), "page": page,
-            "pageSize": size, "totalPages": 1}
+    return {
+        "items": pending,
+        "total": len(pending),
+        "page": page,
+        "pageSize": size,
+        "totalPages": 1,
+    }
 
 
 @router.get("/todos/done", summary="Done tasks")
-async def list_done_todos(request: Request, userId: str | None = Query(default=None),
-                          page: int = 1, size: int = 20) -> Any:
+async def list_done_todos(
+    request: Request, userId: str | None = Query(default=None), page: int = 1, size: int = 20
+) -> Any:
     require_tenant(_ctx(request))
     done = [_map_todo(t) for t in _TODOS if t["status"] != "pending"]
-    return {"items": done, "total": len(done), "page": page,
-            "pageSize": size, "totalPages": 1}
+    return {"items": done, "total": len(done), "page": page, "pageSize": size, "totalPages": 1}
 
 
 @router.post("/todos/{task_id}/action", summary="Approve / reject")
@@ -997,14 +1478,12 @@ async def act_todo(request: Request, task_id: str, body: TodoActionRequest) -> A
     for t in _TODOS:
         if t["id"] == task_id:
             t["endTime"] = _iso()
-            t["status"] = ("approved" if body.action in ("approve", "complete")
-                           else "rejected")
+            t["status"] = "approved" if body.action in ("approve", "complete") else "rejected"
             _emit(
                 request,
                 event_type=f"dashboard.todo.{t['status']}",
                 aggregate_id=task_id,
-                payload={"taskId": task_id, "action": body.action,
-                         "comment": body.comment},
+                payload={"taskId": task_id, "action": body.action, "comment": body.comment},
                 tenant_id=str(ctx.tenant_id),
             )
             return {"ok": True, "taskId": task_id, "status": t["status"]}
@@ -1020,12 +1499,18 @@ async def act_todo(request: Request, task_id: str, body: TodoActionRequest) -> A
 async def list_workers(request: Request) -> Any:
     require_tenant(_ctx(request))
     return [
-        {"id": w["employeeId"], "employeeId": w["employeeId"],
-         "name": w["name"], "code": w["code"],
-         "roleCategory": w["roleCategory"], "status": w["status"],
-         "runningTasks": w["runningTasks"],
-         "completedToday": w["completedToday"],
-         "lastActiveAt": w["lastActiveAt"]} for w in _WORKERS
+        {
+            "id": w["employeeId"],
+            "employeeId": w["employeeId"],
+            "name": w["name"],
+            "code": w["code"],
+            "roleCategory": w["roleCategory"],
+            "status": w["status"],
+            "runningTasks": w["runningTasks"],
+            "completedToday": w["completedToday"],
+            "lastActiveAt": w["lastActiveAt"],
+        }
+        for w in _WORKERS
     ]
 
 
@@ -1034,7 +1519,8 @@ async def list_deliverables(
     request: Request,
     type: str | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
-    page: int = 0, size: int = 20,
+    page: int = 0,
+    size: int = 20,
     keyword: str | None = None,
 ) -> Any:
     require_tenant(_ctx(request))
@@ -1045,20 +1531,19 @@ async def list_deliverables(
         items = [d for d in items if d["status"] == status_filter]
     if keyword:
         kw = keyword.lower()
-        items = [d for d in items if kw in d["title"].lower()
-                 or kw in d["description"].lower()]
-    return {"items": items, "total": len(items), "page": page,
-            "pageSize": size, "totalPages": 1}
+        items = [d for d in items if kw in d["title"].lower() or kw in d["description"].lower()]
+    return {"items": items, "total": len(items), "page": page, "pageSize": size, "totalPages": 1}
 
 
 @router.post("/deliverables/{deliverable_id}/download")
-async def download_deliverable(request: Request, deliverable_id: str,
-                                body: DownloadRequest | None = None) -> Any:
+async def download_deliverable(
+    request: Request, deliverable_id: str, body: DownloadRequest | None = None
+) -> Any:
     ctx = _ctx(request)
     require_tenant(ctx)
     for d in _DELIVERABLES:
         if d["id"] == deliverable_id:
-            fmt = (body.format if body else d["format"])
+            fmt = body.format if body else d["format"]
             _emit(
                 request,
                 event_type="dashboard.deliverable.downloaded",
@@ -1073,9 +1558,11 @@ async def download_deliverable(request: Request, deliverable_id: str,
     raise HTTPException(status_code=404, detail="deliverable not found")
 
 
-@router.delete("/deliverables/{deliverable_id}",
-            status_code=status.HTTP_204_NO_CONTENT,
-            response_class=Response)
+@router.delete(
+    "/deliverables/{deliverable_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+)
 async def delete_deliverable(request: Request, deliverable_id: str) -> Response:
     ctx = _ctx(request)
     require_tenant(ctx)
@@ -1124,8 +1611,7 @@ async def analyze_anomaly(request: Request, anomaly_id: str) -> Any:
                 request,
                 event_type="dashboard.anomaly.analyzed",
                 aggregate_id=anomaly_id,
-                payload={"anomalyId": anomaly_id,
-                         "serviceName": a["serviceName"]},
+                payload={"anomalyId": anomaly_id, "serviceName": a["serviceName"]},
                 tenant_id=str(ctx.tenant_id),
             )
             return {
@@ -1135,24 +1621,34 @@ async def analyze_anomaly(request: Request, anomaly_id: str) -> Any:
                 ),
                 "suggestedAction": "\u5f00\u542f\u7194\u65ad\u964d\u7ea7 + \u901a\u77e5\u503c\u73ed + \u6682\u65f6\u8df3\u8fc7\u975e\u5173\u952e\u8c03\u7528",
                 "relatedLogs": [
-                    {"timestamp": _past(minutes=10).isoformat(),
-                     "serviceName": a["serviceName"], "level": "ERROR",
-                     "traceId": a.get("traceId") or "n/a",
-                     "message": "Upstream timeout after 30s"},
-                    {"timestamp": _past(minutes=8).isoformat(),
-                     "serviceName": a["serviceName"], "level": "ERROR",
-                     "traceId": a.get("traceId") or "n/a",
-                     "message": "circuit breaker opened"},
+                    {
+                        "timestamp": _past(minutes=10).isoformat(),
+                        "serviceName": a["serviceName"],
+                        "level": "ERROR",
+                        "traceId": a.get("traceId") or "n/a",
+                        "message": "Upstream timeout after 30s",
+                    },
+                    {
+                        "timestamp": _past(minutes=8).isoformat(),
+                        "serviceName": a["serviceName"],
+                        "level": "ERROR",
+                        "traceId": a.get("traceId") or "n/a",
+                        "message": "circuit breaker opened",
+                    },
                 ],
-                "relatedMetrics": {"error_rate": 4.2, "p99_latency": 2.8,
-                                   "active_connections": 312},
+                "relatedMetrics": {
+                    "error_rate": 4.2,
+                    "p99_latency": 2.8,
+                    "active_connections": 312,
+                },
             }
     raise HTTPException(status_code=404, detail="anomaly not found")
 
 
 @router.post("/anomalies/{anomaly_id}/remediate", summary="Trigger remediation")
-async def remediate_anomaly(request: Request, anomaly_id: str,
-                             body: dict[str, Any] | None = None) -> Any:
+async def remediate_anomaly(
+    request: Request, anomaly_id: str, body: dict[str, Any] | None = None
+) -> Any:
     ctx = _ctx(request)
     require_tenant(ctx)
     body = body or {}
@@ -1161,16 +1657,18 @@ async def remediate_anomaly(request: Request, anomaly_id: str,
         request,
         event_type=f"dashboard.anomaly.remediated.{mode.lower()}",
         aggregate_id=anomaly_id,
-        payload={"anomalyId": anomaly_id, "mode": mode,
-                 "actionCode": body.get("actionCode")},
+        payload={"anomalyId": anomaly_id, "mode": mode, "actionCode": body.get("actionCode")},
         tenant_id=str(ctx.tenant_id),
     )
     return {
         "executed": mode == "AUTO",
         "actionCode": body.get("actionCode") or "auto-circuit-breaker",
         "actionName": "\u5f00\u542f\u7194\u65ad\u964d\u7ea7",
-        "message": ("\u5df2\u4e0b\u53d1\u5904\u7f6e\u52a8\u4f5c" if mode == "AUTO"
-                    else "\u5df2\u7ed9\u51fa\u5efa\u8bae\u52a8\u4f5c\uff0c\u9700\u4eba\u5de5\u786e\u8ba4"),
+        "message": (
+            "\u5df2\u4e0b\u53d1\u5904\u7f6e\u52a8\u4f5c"
+            if mode == "AUTO"
+            else "\u5df2\u7ed9\u51fa\u5efa\u8bae\u52a8\u4f5c\uff0c\u9700\u4eba\u5de5\u786e\u8ba4"
+        ),
         "executionId": f"exec-{secrets.token_hex(4)}",
     }
 
@@ -1215,9 +1713,9 @@ async def update_anomaly_rule(request: Request, rule_id: str, payload: AnomalyRu
     raise HTTPException(status_code=404, detail="rule not found")
 
 
-@router.delete("/anomaly-rules/{rule_id}",
-            status_code=status.HTTP_204_NO_CONTENT,
-            response_class=Response)
+@router.delete(
+    "/anomaly-rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response
+)
 async def delete_anomaly_rule(request: Request, rule_id: str) -> Response:
     ctx = _ctx(request)
     require_tenant(ctx)
@@ -1239,14 +1737,12 @@ async def delete_anomaly_rule(request: Request, rule_id: str) -> Response:
 
 
 @router.get("/search", summary="Global search")
-async def global_search(request: Request,
-                          keyword: str | None = Query(default=None)) -> Any:
+async def global_search(request: Request, keyword: str | None = Query(default=None)) -> Any:
     require_tenant(_ctx(request))
     if not keyword:
         return []
     kw = keyword.lower()
-    return [s for s in _SEARCH_INDEX
-            if kw in s["title"].lower() or kw in s["description"].lower()]
+    return [s for s in _SEARCH_INDEX if kw in s["title"].lower() or kw in s["description"].lower()]
 
 
 @router.get("/page/summary", summary="Dashboard page summary")
@@ -1267,16 +1763,41 @@ async def page_summary(request: Request) -> Any:
             {"label": "待处理审批", "value": 5, "status": "attention"},
         ],
         "recentTasks": [
-            {"name": "财务报销审核", "type": "审批", "agent": "合同审核员",
-             "status": "done", "time": "10 分钟前"},
-            {"name": "客户数据周报生成", "type": "分析", "agent": "数据分析师",
-             "status": "running", "time": "25 分钟前"},
-            {"name": "安全漏洞扫描", "type": "巡检", "agent": "安全巡检员",
-             "status": "failed", "time": "42 分钟前"},
-            {"name": "营销邮件撰写", "type": "生成", "agent": "营销文案",
-             "status": "done", "time": "1 小时前"},
-            {"name": "知识库索引重建", "type": "维护", "agent": "知识库管理员",
-             "status": "done", "time": "2 小时前"},
+            {
+                "name": "财务报销审核",
+                "type": "审批",
+                "agent": "合同审核员",
+                "status": "done",
+                "time": "10 分钟前",
+            },
+            {
+                "name": "客户数据周报生成",
+                "type": "分析",
+                "agent": "数据分析师",
+                "status": "running",
+                "time": "25 分钟前",
+            },
+            {
+                "name": "安全漏洞扫描",
+                "type": "巡检",
+                "agent": "安全巡检员",
+                "status": "failed",
+                "time": "42 分钟前",
+            },
+            {
+                "name": "营销邮件撰写",
+                "type": "生成",
+                "agent": "营销文案",
+                "status": "done",
+                "time": "1 小时前",
+            },
+            {
+                "name": "知识库索引重建",
+                "type": "维护",
+                "agent": "知识库管理员",
+                "status": "done",
+                "time": "2 小时前",
+            },
         ],
         "recentTasksTotal": 15,
         "systemHealth": [
@@ -1299,4 +1820,3 @@ async def page_summary(request: Request) -> Any:
             {"label": "架构中心", "icon": "ClusterOutlined", "link": "/arch/capabilities"},
         ],
     }
-

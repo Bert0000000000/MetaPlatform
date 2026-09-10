@@ -38,7 +38,11 @@ def _prop(rid: str, type_id: str, title: str, pk: bool = False) -> Property:
 
 
 def _ind(
-    rid: str, cls: str, props: list[tuple[str, object]], pk: str, tenant: str,
+    rid: str,
+    cls: str,
+    props: list[tuple[str, object]],
+    pk: str,
+    tenant: str,
 ) -> Individual:
     now = datetime.now(UTC)
     return Individual(
@@ -99,147 +103,175 @@ def seed_demo(repo: OntologyRepository, tenant_id: str = TENANT) -> int:
     now = datetime.now(UTC)
 
     # ── ObjectTypes ──
-    repo.upsert_object_type(ObjectType(
-        rid=ClassRef(f"ont.{t}.obj.employee.v1"),
-        primary_key=(ClassRef(f"ont.{t}.prop.emp-id.v1"),),
-        properties=(
-            _prop(f"ont.{t}.prop.emp-id.v1", "string", "employee id", pk=True),
-            _prop(f"ont.{t}.prop.name.v1", "string", "name"),
-            _prop(f"ont.{t}.prop.dept.v1", "string", "department"),
-        ),
-        display_name="员工",
-    ))
-    repo.upsert_object_type(ObjectType(
-        rid=ClassRef(f"ont.{t}.obj.leave-request.v1"),
-        primary_key=(ClassRef(f"ont.{t}.prop.leave-id.v1"),),
-        properties=(
-            _prop(f"ont.{t}.prop.leave-id.v1", "string", "leave id", pk=True),
-            _prop(f"ont.{t}.prop.employee.v1", "string", "employee"),
-            _prop(f"ont.{t}.prop.days.v1", "integer", "days"),
-            _prop(f"ont.{t}.prop.status.v1", "string", "status"),
-            _prop(f"ont.{t}.prop.reason.v1", "string", "reason"),
-        ),
-        display_name="请假申请",
-    ))
-    repo.upsert_object_type(ObjectType(
-        rid=ClassRef(f"ont.{t}.obj.ticket.v1"),
-        primary_key=(ClassRef(f"ont.{t}.prop.ticket-id.v1"),),
-        properties=(
-            _prop(f"ont.{t}.prop.ticket-id.v1", "string", "ticket id", pk=True),
-            _prop(f"ont.{t}.prop.title.v1", "string", "title"),
-            _prop(f"ont.{t}.prop.priority.v1", "string", "priority"),
-            _prop(f"ont.{t}.prop.status.v1", "string", "status"),
-        ),
-        display_name="工单",
-    ))
+    repo.upsert_object_type(
+        ObjectType(
+            rid=ClassRef(f"ont.{t}.obj.employee.v1"),
+            primary_key=(ClassRef(f"ont.{t}.prop.emp-id.v1"),),
+            properties=(
+                _prop(f"ont.{t}.prop.emp-id.v1", "string", "employee id", pk=True),
+                _prop(f"ont.{t}.prop.name.v1", "string", "name"),
+                _prop(f"ont.{t}.prop.dept.v1", "string", "department"),
+            ),
+            display_name="员工",
+        )
+    )
+    repo.upsert_object_type(
+        ObjectType(
+            rid=ClassRef(f"ont.{t}.obj.leave-request.v1"),
+            primary_key=(ClassRef(f"ont.{t}.prop.leave-id.v1"),),
+            properties=(
+                _prop(f"ont.{t}.prop.leave-id.v1", "string", "leave id", pk=True),
+                _prop(f"ont.{t}.prop.employee.v1", "string", "employee"),
+                _prop(f"ont.{t}.prop.days.v1", "integer", "days"),
+                _prop(f"ont.{t}.prop.status.v1", "string", "status"),
+                _prop(f"ont.{t}.prop.reason.v1", "string", "reason"),
+            ),
+            display_name="请假申请",
+        )
+    )
+    repo.upsert_object_type(
+        ObjectType(
+            rid=ClassRef(f"ont.{t}.obj.ticket.v1"),
+            primary_key=(ClassRef(f"ont.{t}.prop.ticket-id.v1"),),
+            properties=(
+                _prop(f"ont.{t}.prop.ticket-id.v1", "string", "ticket id", pk=True),
+                _prop(f"ont.{t}.prop.title.v1", "string", "title"),
+                _prop(f"ont.{t}.prop.priority.v1", "string", "priority"),
+                _prop(f"ont.{t}.prop.status.v1", "string", "status"),
+            ),
+            display_name="工单",
+        )
+    )
 
     # ── Individuals（真实业务场景：3 员工 / 3 请假 / 2 工单） ──
-    employees = [("EMP-001", "王小明", "HR"), ("EMP-002", "李华", "研发"), ("EMP-003", "赵强", "运营")]
+    employees = [
+        ("EMP-001", "王小明", "HR"),
+        ("EMP-002", "李华", "研发"),
+        ("EMP-003", "赵强", "运营"),
+    ]
     for emp_id, name, dept in employees:
-        repo.create_individual(_ind(
-            f"ont.{t}.ind.employee.{emp_id.lower()}",
-            f"ont.{t}.obj.employee.v1",
-            [
-                (f"ont.{t}.prop.emp-id.v1", emp_id),
-                (f"ont.{t}.prop.name.v1", name),
-                (f"ont.{t}.prop.dept.v1", dept),
-            ],
-            emp_id,
-            t,
-        ))
+        repo.create_individual(
+            _ind(
+                f"ont.{t}.ind.employee.{emp_id.lower()}",
+                f"ont.{t}.obj.employee.v1",
+                [
+                    (f"ont.{t}.prop.emp-id.v1", emp_id),
+                    (f"ont.{t}.prop.name.v1", name),
+                    (f"ont.{t}.prop.dept.v1", dept),
+                ],
+                emp_id,
+                t,
+            )
+        )
     leave_rows = [
         ("LR-2026-001", "王小明", 3, "pending", "年假"),
         ("LR-2026-002", "李华", 1, "pending", "事假"),
         ("LR-2026-003", "赵强", 5, "pending", "调休"),
     ]
     for i, (leave_id, emp, days, status, reason) in enumerate(leave_rows):
-        repo.create_individual(_ind(
-            f"ont.{t}.ind.leave-request.{i + 1}",
-            f"ont.{t}.obj.leave-request.v1",
-            [
-                (f"ont.{t}.prop.leave-id.v1", leave_id),
-                (f"ont.{t}.prop.employee.v1", emp),
-                (f"ont.{t}.prop.days.v1", days),
-                (f"ont.{t}.prop.status.v1", status),
-                (f"ont.{t}.prop.reason.v1", reason),
-            ],
-            leave_id,
-            t,
-        ))
+        repo.create_individual(
+            _ind(
+                f"ont.{t}.ind.leave-request.{i + 1}",
+                f"ont.{t}.obj.leave-request.v1",
+                [
+                    (f"ont.{t}.prop.leave-id.v1", leave_id),
+                    (f"ont.{t}.prop.employee.v1", emp),
+                    (f"ont.{t}.prop.days.v1", days),
+                    (f"ont.{t}.prop.status.v1", status),
+                    (f"ont.{t}.prop.reason.v1", reason),
+                ],
+                leave_id,
+                t,
+            )
+        )
     ticket_rows = [
         ("TK-2026-001", "登录页偶发 401", "high"),
         ("TK-2026-002", "报表导出慢", "medium"),
     ]
     for i, (ticket_id, title, priority) in enumerate(ticket_rows):
-        repo.create_individual(_ind(
-            f"ont.{t}.ind.ticket.{i + 1}",
-            f"ont.{t}.obj.ticket.v1",
-            [
-                (f"ont.{t}.prop.ticket-id.v1", ticket_id),
-                (f"ont.{t}.prop.title.v1", title),
-                (f"ont.{t}.prop.priority.v1", priority),
-                (f"ont.{t}.prop.status.v1", "open"),
-            ],
-            ticket_id,
-            t,
-        ))
+        repo.create_individual(
+            _ind(
+                f"ont.{t}.ind.ticket.{i + 1}",
+                f"ont.{t}.obj.ticket.v1",
+                [
+                    (f"ont.{t}.prop.ticket-id.v1", ticket_id),
+                    (f"ont.{t}.prop.title.v1", title),
+                    (f"ont.{t}.prop.priority.v1", priority),
+                    (f"ont.{t}.prop.status.v1", "open"),
+                ],
+                ticket_id,
+                t,
+            )
+        )
 
     # ── ActionTypes（唯一合法写路径） ──
-    repo.upsert_action_type(ActionType(
-        rid=ClassRef(f"ont.{t}.act.approve-leave.v1"),
-        parameters=(_prop(f"ont.{t}.prop.decision.v1", "string", "decision"),),
-        submission_criteria=("decision in (approve, reject)",),
-        side_effects=("notify_email", "audit_log"),
-        function_ref=ClassRef(f"ont.{t}.fn.approve-leave.v1"),
-        on=(ClassRef(f"ont.{t}.obj.leave-request.v1"),),
-        title="审批请假",
-        description="对员工请假申请做出批准 / 驳回决定，通过邮件通知申请人并写审计日志",
-    ))
-    repo.upsert_action_type(ActionType(
-        rid=ClassRef(f"ont.{t}.act.close-ticket.v1"),
-        parameters=(_prop(f"ont.{t}.prop.resolution.v1", "string", "resolution"),),
-        submission_criteria=(),
-        side_effects=("notify_customer",),
-        function_ref=ClassRef(f"ont.{t}.fn.close-ticket.v1"),
-        on=(ClassRef(f"ont.{t}.obj.ticket.v1"),),
-        title="关闭工单",
-        description="填写处理结论并关闭客户工单，自动通知工单提交人",
-    ))
+    repo.upsert_action_type(
+        ActionType(
+            rid=ClassRef(f"ont.{t}.act.approve-leave.v1"),
+            parameters=(_prop(f"ont.{t}.prop.decision.v1", "string", "decision"),),
+            submission_criteria=("decision in (approve, reject)",),
+            side_effects=("notify_email", "audit_log"),
+            function_ref=ClassRef(f"ont.{t}.fn.approve-leave.v1"),
+            on=(ClassRef(f"ont.{t}.obj.leave-request.v1"),),
+            title="审批请假",
+            description="对员工请假申请做出批准 / 驳回决定，通过邮件通知申请人并写审计日志",
+        )
+    )
+    repo.upsert_action_type(
+        ActionType(
+            rid=ClassRef(f"ont.{t}.act.close-ticket.v1"),
+            parameters=(_prop(f"ont.{t}.prop.resolution.v1", "string", "resolution"),),
+            submission_criteria=(),
+            side_effects=("notify_customer",),
+            function_ref=ClassRef(f"ont.{t}.fn.close-ticket.v1"),
+            on=(ClassRef(f"ont.{t}.obj.ticket.v1"),),
+            title="关闭工单",
+            description="填写处理结论并关闭客户工单，自动通知工单提交人",
+        )
+    )
     order_review_created = _seed_order_review_resources(repo, t)
 
     # ── Function / LinkType / LinkInstance ──
     repo.upsert_function(_function_placeholder(t, "approve-leave.v1"))
     repo.upsert_function(_function_placeholder(t, "close-ticket.v1"))
-    repo.upsert_link_type(LinkType(
-        rid=ClassRef(f"ont.{t}.link.employee-leave.v1"),
-        src=ClassRef(f"ont.{t}.obj.employee.v1"),
-        dst=ClassRef(f"ont.{t}.obj.leave-request.v1"),
-        cardinality=Cardinality.ONE_TO_MANY,
-        directionality=Directionality.DIRECTED,
-        link_properties=(),
-    ))
+    repo.upsert_link_type(
+        LinkType(
+            rid=ClassRef(f"ont.{t}.link.employee-leave.v1"),
+            src=ClassRef(f"ont.{t}.obj.employee.v1"),
+            dst=ClassRef(f"ont.{t}.obj.leave-request.v1"),
+            cardinality=Cardinality.ONE_TO_MANY,
+            directionality=Directionality.DIRECTED,
+            link_properties=(),
+        )
+    )
     for i, emp_id in enumerate(["emp-001", "emp-002", "emp-003"]):
-        repo.create_link_instance(LinkInstance(
-            rid=f"ont.{t}.lnk.employee-leave.{i + 1}",
-            link_type_rid=ClassRef(f"ont.{t}.link.employee-leave.v1"),
-            src=f"ont.{t}.ind.employee.{emp_id}",
-            dst=f"ont.{t}.ind.leave-request.{i + 1}",
-            props=(),
-            created_at=now,
-            tenant_id=t,
-            marking=(),
-        ))
+        repo.create_link_instance(
+            LinkInstance(
+                rid=f"ont.{t}.lnk.employee-leave.{i + 1}",
+                link_type_rid=ClassRef(f"ont.{t}.link.employee-leave.v1"),
+                src=f"ont.{t}.ind.employee.{emp_id}",
+                dst=f"ont.{t}.ind.leave-request.{i + 1}",
+                props=(),
+                created_at=now,
+                tenant_id=t,
+                marking=(),
+            )
+        )
 
     # ── 企业核心本体（领域分组 → 前端一级/二级本体） ──
     # 概念 rid 形如 ont.<tenant>.obj.<领域>.<概念>.v1，前端按领域段分组生成
     # 一级本体列表，领域内 ObjectType 即二级本体/概念。
     _seed_enterprise_ontology(repo, t, now)
 
-    return 3 + 5 + 2 + 2 + order_review_created + 1 + 3  # obj types + individuals + action types + functions + link type + link instances
+    return (
+        3 + 5 + 2 + 2 + order_review_created + 1 + 3
+    )  # obj types + individuals + action types + functions + link type + link instances
 
 
 def _seed_enterprise_ontology(
-    repo: OntologyRepository, t: str, now: datetime,
+    repo: OntologyRepository,
+    t: str,
+    now: datetime,
 ) -> int:
     """企业核心本体：5 领域 × 9 概念 + 属性 + 2 下钻 ActionType + 关联 LinkType。
 
@@ -251,61 +283,97 @@ def _seed_enterprise_ontology(
     """
     domain_concepts: dict[str, list[tuple[str, str, list[tuple[str, str, str]]]]] = {
         "crm": [
-            ("customer", "客户", [
-                ("customer-code", "string", "customer code"),
-                ("customer-name", "string", "customer name"),
-                ("industry", "string", "industry"),
-                ("region", "string", "region"),
-                ("credit-level", "string", "credit level"),
-            ]),
-            ("order", "订单", [
-                ("order-id", "string", "order id"),
-                ("order-qty", "integer", "quantity"),
-                ("order-amount", "integer", "amount"),
-                ("order-status", "string", "status"),
-            ]),
-            ("product", "产品", [
-                ("product-code", "string", "product code"),
-                ("product-name", "string", "product name"),
-                ("category", "string", "category"),
-            ]),
-            ("contract", "合同", [
-                ("contract-id", "string", "contract id"),
-                ("contract-name", "string", "contract name"),
-                ("start-date", "string", "start date"),
-                ("end-date", "string", "end date"),
-            ]),
+            (
+                "customer",
+                "客户",
+                [
+                    ("customer-code", "string", "customer code"),
+                    ("customer-name", "string", "customer name"),
+                    ("industry", "string", "industry"),
+                    ("region", "string", "region"),
+                    ("credit-level", "string", "credit level"),
+                ],
+            ),
+            (
+                "order",
+                "订单",
+                [
+                    ("order-id", "string", "order id"),
+                    ("order-qty", "integer", "quantity"),
+                    ("order-amount", "integer", "amount"),
+                    ("order-status", "string", "status"),
+                ],
+            ),
+            (
+                "product",
+                "产品",
+                [
+                    ("product-code", "string", "product code"),
+                    ("product-name", "string", "product name"),
+                    ("category", "string", "category"),
+                ],
+            ),
+            (
+                "contract",
+                "合同",
+                [
+                    ("contract-id", "string", "contract id"),
+                    ("contract-name", "string", "contract name"),
+                    ("start-date", "string", "start date"),
+                    ("end-date", "string", "end date"),
+                ],
+            ),
         ],
         "scm": [
-            ("supplier", "供应商", [
-                ("supplier-code", "string", "supplier code"),
-                ("supplier-name", "string", "supplier name"),
-                ("qualification", "string", "qualification"),
-            ]),
-            ("warehouse", "仓库", [
-                ("warehouse-code", "string", "warehouse code"),
-                ("warehouse-name", "string", "warehouse name"),
-                ("capacity", "integer", "capacity"),
-            ]),
+            (
+                "supplier",
+                "供应商",
+                [
+                    ("supplier-code", "string", "supplier code"),
+                    ("supplier-name", "string", "supplier name"),
+                    ("qualification", "string", "qualification"),
+                ],
+            ),
+            (
+                "warehouse",
+                "仓库",
+                [
+                    ("warehouse-code", "string", "warehouse code"),
+                    ("warehouse-name", "string", "warehouse name"),
+                    ("capacity", "integer", "capacity"),
+                ],
+            ),
         ],
         "fin": [
-            ("invoice", "发票", [
-                ("invoice-id", "string", "invoice id"),
-                ("invoice-amount", "integer", "amount"),
-                ("invoice-status", "string", "status"),
-            ]),
+            (
+                "invoice",
+                "发票",
+                [
+                    ("invoice-id", "string", "invoice id"),
+                    ("invoice-amount", "integer", "amount"),
+                    ("invoice-status", "string", "status"),
+                ],
+            ),
         ],
         "org": [
-            ("organization", "组织", [
-                ("org-code", "string", "org code"),
-                ("org-name", "string", "org name"),
-                ("parent-org", "string", "parent org"),
-            ]),
-            ("person", "人员", [
-                ("person-id", "string", "person id"),
-                ("person-name", "string", "person name"),
-                ("person-dept", "string", "department"),
-            ]),
+            (
+                "organization",
+                "组织",
+                [
+                    ("org-code", "string", "org code"),
+                    ("org-name", "string", "org name"),
+                    ("parent-org", "string", "parent org"),
+                ],
+            ),
+            (
+                "person",
+                "人员",
+                [
+                    ("person-id", "string", "person id"),
+                    ("person-name", "string", "person name"),
+                    ("person-dept", "string", "department"),
+                ],
+            ),
         ],
     }
 
@@ -317,45 +385,53 @@ def _seed_enterprise_ontology(
                 _prop(f"ont.{t}.prop.{slug}-{p}.v1", typ, title, pk=(i == 0))
                 for i, (p, typ, title) in enumerate(props)
             )
-            repo.upsert_object_type(ObjectType(
-                rid=ClassRef(f"ont.{t}.obj.{domain}.{slug}.v1"),
-                primary_key=(prop_defs[0].rid,),
-                properties=prop_defs,
-                display_name=display,
-            ))
+            repo.upsert_object_type(
+                ObjectType(
+                    rid=ClassRef(f"ont.{t}.obj.{domain}.{slug}.v1"),
+                    primary_key=(prop_defs[0].rid,),
+                    properties=prop_defs,
+                    display_name=display,
+                )
+            )
             created += 1
 
     # 下钻 ActionType：合同审批（contract）
-    repo.upsert_action_type(ActionType(
-        rid=ClassRef(f"ont.{t}.act.approve-contract.v1"),
-        parameters=(_prop(f"ont.{t}.prop.decision.v1", "string", "decision"),),
-        submission_criteria=("decision in (approve, reject)",),
-        side_effects=("notify_email", "audit_log"),
-        function_ref=ClassRef(f"ont.{t}.fn.approve-contract.v1"),
-        on=(ClassRef(f"ont.{t}.obj.crm.contract.v1"),),
-        title="审批合同",
-        description="对客户合同进行审批流转（批准 / 驳回），邮件通知相关方并记录审计日志",
-    ))
+    repo.upsert_action_type(
+        ActionType(
+            rid=ClassRef(f"ont.{t}.act.approve-contract.v1"),
+            parameters=(_prop(f"ont.{t}.prop.decision.v1", "string", "decision"),),
+            submission_criteria=("decision in (approve, reject)",),
+            side_effects=("notify_email", "audit_log"),
+            function_ref=ClassRef(f"ont.{t}.fn.approve-contract.v1"),
+            on=(ClassRef(f"ont.{t}.obj.crm.contract.v1"),),
+            title="审批合同",
+            description="对客户合同进行审批流转（批准 / 驳回），邮件通知相关方并记录审计日志",
+        )
+    )
     repo.upsert_function(_function_placeholder(t, "approve-contract.v1"))
     created += 2
 
     # 关联 LinkType：customer→order 1:N、organization→person 1:N
-    repo.upsert_link_type(LinkType(
-        rid=ClassRef(f"ont.{t}.link.customer-order.v1"),
-        src=ClassRef(f"ont.{t}.obj.crm.customer.v1"),
-        dst=ClassRef(f"ont.{t}.obj.crm.order.v1"),
-        cardinality=Cardinality.ONE_TO_MANY,
-        directionality=Directionality.DIRECTED,
-        link_properties=(),
-    ))
-    repo.upsert_link_type(LinkType(
-        rid=ClassRef(f"ont.{t}.link.org-person.v1"),
-        src=ClassRef(f"ont.{t}.obj.org.organization.v1"),
-        dst=ClassRef(f"ont.{t}.obj.org.person.v1"),
-        cardinality=Cardinality.ONE_TO_MANY,
-        directionality=Directionality.DIRECTED,
-        link_properties=(),
-    ))
+    repo.upsert_link_type(
+        LinkType(
+            rid=ClassRef(f"ont.{t}.link.customer-order.v1"),
+            src=ClassRef(f"ont.{t}.obj.crm.customer.v1"),
+            dst=ClassRef(f"ont.{t}.obj.crm.order.v1"),
+            cardinality=Cardinality.ONE_TO_MANY,
+            directionality=Directionality.DIRECTED,
+            link_properties=(),
+        )
+    )
+    repo.upsert_link_type(
+        LinkType(
+            rid=ClassRef(f"ont.{t}.link.org-person.v1"),
+            src=ClassRef(f"ont.{t}.obj.org.organization.v1"),
+            dst=ClassRef(f"ont.{t}.obj.org.person.v1"),
+            cardinality=Cardinality.ONE_TO_MANY,
+            directionality=Directionality.DIRECTED,
+            link_properties=(),
+        )
+    )
     created += 2
 
     return created
@@ -374,27 +450,62 @@ def _seed_enterprise_ontology(
 # 幂等：list_interfaces() 已含 dw-employee-if 视为已 seed，返回 0。
 
 _DW_EMPLOYEES: tuple[tuple[str, str, str, str, tuple[str, ...], tuple[str, ...]], ...] = (
-    ("hr-recruiter", "HR Recruiter", "HR", "agent",
-     ("screen_resume", "schedule_interview", "initiate_onboarding"),
-     ("ont.{t}.obj.employee.v1", "ont.{t}.obj.leave-request.v1")),
-    ("hr-payroll", "HR Payroll Specialist", "HR", "executor",
-     ("calculate_salary", "verify_social_insurance", "compute_overtime_fee"),
-     ("ont.{t}.obj.leave-request.v1",)),
-    ("it-helpdesk", "IT Service Desk", "IT", "agent",
-     ("classify_ticket", "reset_password", "request_device"),
-     ("ont.{t}.obj.ticket.v1",)),
-    ("it-devops", "IT DevOps Engineer", "IT", "executor",
-     ("trigger_ci", "approve_deploy", "alert_monitoring"),
-     ("ont.{t}.obj.ticket.v1",)),
-    ("finance-ar", "Finance AR Specialist", "FINANCE", "analyst",
-     ("issue_invoice", "reconcile_payment", "aging_analysis"),
-     ("ont.{t}.obj.fin.invoice.v1",)),
-    ("finance-expense", "Finance Expense Auditor", "FINANCE", "executor",
-     ("audit_expense", "reimburse", "generate_voucher"),
-     ("ont.{t}.obj.fin.invoice.v1",)),
-    ("sales-crm", "Sales CRM Assistant", "SALES", "agent",
-     ("follow_customer", "draft_contract", "advance_opportunity"),
-     ("ont.{t}.obj.crm.contract.v1",)),
+    (
+        "hr-recruiter",
+        "HR Recruiter",
+        "HR",
+        "agent",
+        ("screen_resume", "schedule_interview", "initiate_onboarding"),
+        ("ont.{t}.obj.employee.v1", "ont.{t}.obj.leave-request.v1"),
+    ),
+    (
+        "hr-payroll",
+        "HR Payroll Specialist",
+        "HR",
+        "executor",
+        ("calculate_salary", "verify_social_insurance", "compute_overtime_fee"),
+        ("ont.{t}.obj.leave-request.v1",),
+    ),
+    (
+        "it-helpdesk",
+        "IT Service Desk",
+        "IT",
+        "agent",
+        ("classify_ticket", "reset_password", "request_device"),
+        ("ont.{t}.obj.ticket.v1",),
+    ),
+    (
+        "it-devops",
+        "IT DevOps Engineer",
+        "IT",
+        "executor",
+        ("trigger_ci", "approve_deploy", "alert_monitoring"),
+        ("ont.{t}.obj.ticket.v1",),
+    ),
+    (
+        "finance-ar",
+        "Finance AR Specialist",
+        "FINANCE",
+        "analyst",
+        ("issue_invoice", "reconcile_payment", "aging_analysis"),
+        ("ont.{t}.obj.fin.invoice.v1",),
+    ),
+    (
+        "finance-expense",
+        "Finance Expense Auditor",
+        "FINANCE",
+        "executor",
+        ("audit_expense", "reimburse", "generate_voucher"),
+        ("ont.{t}.obj.fin.invoice.v1",),
+    ),
+    (
+        "sales-crm",
+        "Sales CRM Assistant",
+        "SALES",
+        "agent",
+        ("follow_customer", "draft_contract", "advance_opportunity"),
+        ("ont.{t}.obj.crm.contract.v1",),
+    ),
 )
 
 
@@ -408,39 +519,47 @@ def seed_hr_it_finance_orchestrator(repo: OntologyRepository, tenant_id: str = T
     now = datetime.now(UTC)
 
     # ── Interface（dw-employee 契约） ──
-    repo.upsert_interface(Interface(
-        rid=interface_rid,
-        properties=(
-            _prop(f"ont.{t}.prop.dw-role.v1", "string", "role"),
-            _prop(f"ont.{t}.prop.dw-role-category.v1", "string", "roleCategory"),
-            _prop(f"ont.{t}.prop.dw-capabilities.v1", "string", "capabilities (CSV)"),
-            _prop(f"ont.{t}.prop.dw-endpoint.v1", "string", "endpoint_url"),
-        ),
-        required_links=(ClassRef(f"ont.{t}.obj.employee.v1"),),
-    ))
+    repo.upsert_interface(
+        Interface(
+            rid=interface_rid,
+            properties=(
+                _prop(f"ont.{t}.prop.dw-role.v1", "string", "role"),
+                _prop(f"ont.{t}.prop.dw-role-category.v1", "string", "roleCategory"),
+                _prop(f"ont.{t}.prop.dw-capabilities.v1", "string", "capabilities (CSV)"),
+                _prop(f"ont.{t}.prop.dw-endpoint.v1", "string", "endpoint_url"),
+            ),
+            required_links=(ClassRef(f"ont.{t}.obj.employee.v1"),),
+        )
+    )
 
     # ── LinkType 3 条 ──
-    repo.upsert_link_type(LinkType(
-        rid=ClassRef(f"ont.{t}.link.dw-employee-of.v1"),
-        src=ClassRef(f"ont.{t}.obj.employee.v1"),
-        dst=ClassRef(f"ont.{t}.if.dw-employee.v1"),
-        cardinality=Cardinality.ONE_TO_MANY,
-        directionality=Directionality.DIRECTED,
-    ))
-    repo.upsert_link_type(LinkType(
-        rid=ClassRef(f"ont.{t}.link.dw-executes-function.v1"),
-        src=ClassRef(f"ont.{t}.if.dw-employee.v1"),
-        dst=ClassRef(f"ont.{t}.fn.dw-execute.v1"),
-        cardinality=Cardinality.ONE_TO_MANY,
-        directionality=Directionality.DIRECTED,
-    ))
-    repo.upsert_link_type(LinkType(
-        rid=ClassRef(f"ont.{t}.link.dw-orchestrated-by.v1"),
-        src=ClassRef(f"ont.{t}.if.dw-employee.v1"),
-        dst=ClassRef(f"ont.{t}.obj.superai.v1"),
-        cardinality=Cardinality.MANY_TO_ONE,
-        directionality=Directionality.DIRECTED,
-    ))
+    repo.upsert_link_type(
+        LinkType(
+            rid=ClassRef(f"ont.{t}.link.dw-employee-of.v1"),
+            src=ClassRef(f"ont.{t}.obj.employee.v1"),
+            dst=ClassRef(f"ont.{t}.if.dw-employee.v1"),
+            cardinality=Cardinality.ONE_TO_MANY,
+            directionality=Directionality.DIRECTED,
+        )
+    )
+    repo.upsert_link_type(
+        LinkType(
+            rid=ClassRef(f"ont.{t}.link.dw-executes-function.v1"),
+            src=ClassRef(f"ont.{t}.if.dw-employee.v1"),
+            dst=ClassRef(f"ont.{t}.fn.dw-execute.v1"),
+            cardinality=Cardinality.ONE_TO_MANY,
+            directionality=Directionality.DIRECTED,
+        )
+    )
+    repo.upsert_link_type(
+        LinkType(
+            rid=ClassRef(f"ont.{t}.link.dw-orchestrated-by.v1"),
+            src=ClassRef(f"ont.{t}.if.dw-employee.v1"),
+            dst=ClassRef(f"ont.{t}.obj.superai.v1"),
+            cardinality=Cardinality.MANY_TO_ONE,
+            directionality=Directionality.DIRECTED,
+        )
+    )
 
     # ── ObjectType: obj.superai.v1（编排者本体） ──
     superai_ot = ObjectType(
@@ -477,77 +596,87 @@ def seed_hr_it_finance_orchestrator(repo: OntologyRepository, tenant_id: str = T
     for slug, name, role_category, role, capabilities, _targets in _DW_EMPLOYEES:
         endpoint = f"http://localhost:8021/api/v1/dw/employees/dw-{slug}/execute"
         cap_csv = ",".join(capabilities)
-        repo.create_individual(_ind(
-            f"ont.{t}.ind.dw-{slug}.v1",
-            f"ont.{t}.obj.dw-digital-employee.v1",
-            [
-                (f"ont.{t}.prop.dw-emp-id.v1", f"dw-{slug}"),
-                (f"ont.{t}.prop.dw-emp-name.v1", name),
-                (f"ont.{t}.prop.dw-role.v1", role),
-                (f"ont.{t}.prop.dw-role-category.v1", role_category),
-                (f"ont.{t}.prop.dw-capabilities.v1", cap_csv),
-                (f"ont.{t}.prop.dw-endpoint.v1", endpoint),
-            ],
-            f"dw-{slug}",
-            t,
-        ))
+        repo.create_individual(
+            _ind(
+                f"ont.{t}.ind.dw-{slug}.v1",
+                f"ont.{t}.obj.dw-digital-employee.v1",
+                [
+                    (f"ont.{t}.prop.dw-emp-id.v1", f"dw-{slug}"),
+                    (f"ont.{t}.prop.dw-emp-name.v1", name),
+                    (f"ont.{t}.prop.dw-role.v1", role),
+                    (f"ont.{t}.prop.dw-role-category.v1", role_category),
+                    (f"ont.{t}.prop.dw-capabilities.v1", cap_csv),
+                    (f"ont.{t}.prop.dw-endpoint.v1", endpoint),
+                ],
+                f"dw-{slug}",
+                t,
+            )
+        )
         # 每个员工 1 个 Function + 1 个 ActionType
         fn_rid = f"ont.{t}.fn.dw-{slug}-execute.v1"
-        repo.upsert_function(Function(
-            rid=ClassRef(fn_rid),
-            language=FunctionLanguage.PYTHON,
-            version=1,
-            source_ref=f"ref://dw_{slug.replace('-', '_')}_execute",
-            signatures=(("intent", "string"), ("payload", "string")),
-        ))
-        repo.upsert_action_type(ActionType(
-            rid=ClassRef(f"ont.{t}.act.dw-{slug}-execute.v1"),
-            parameters=(
-                _prop(f"ont.{t}.prop.intent.v1", "string", "intent"),
-                _prop(f"ont.{t}.prop.payload.v1", "string", "payload"),
-            ),
-            submission_criteria=("len(intent) > 0",),
-            side_effects=("audit_log", "notify_email"),
-            function_ref=ClassRef(fn_rid),
-            on=(ClassRef(f"ont.{t}.obj.dw-digital-employee.v1"),),
-            title=f"{name} · 任务执行",
-            description=f"触发数字员工「{name}」（{role_category}/{role}）执行任务，能力：{cap_csv}",
-        ))
+        repo.upsert_function(
+            Function(
+                rid=ClassRef(fn_rid),
+                language=FunctionLanguage.PYTHON,
+                version=1,
+                source_ref=f"ref://dw_{slug.replace('-', '_')}_execute",
+                signatures=(("intent", "string"), ("payload", "string")),
+            )
+        )
+        repo.upsert_action_type(
+            ActionType(
+                rid=ClassRef(f"ont.{t}.act.dw-{slug}-execute.v1"),
+                parameters=(
+                    _prop(f"ont.{t}.prop.intent.v1", "string", "intent"),
+                    _prop(f"ont.{t}.prop.payload.v1", "string", "payload"),
+                ),
+                submission_criteria=("len(intent) > 0",),
+                side_effects=("audit_log", "notify_email"),
+                function_ref=ClassRef(fn_rid),
+                on=(ClassRef(f"ont.{t}.obj.dw-digital-employee.v1"),),
+                title=f"{name} · 任务执行",
+                description=f"触发数字员工「{name}」（{role_category}/{role}）执行任务，能力：{cap_csv}",
+            )
+        )
         created += 3
 
     # ── SuperAI 编排者 ──
     sa_caps = ("detect_intent", "match_employee", "plan_task", "aggregate_result")
-    repo.create_individual(_ind(
-        f"ont.{t}.ind.superai-orchestrator.v1",
-        f"ont.{t}.obj.superai.v1",
-        [
-            (f"ont.{t}.prop.superai-id.v1", "superai-orchestrator"),
-            (f"ont.{t}.prop.superai-name.v1", "SuperAI Orchestrator"),
-            (f"ont.{t}.prop.superai-capabilities.v1", ",".join(sa_caps)),
-        ],
-        "superai-orchestrator",
-        t,
-    ))
+    repo.create_individual(
+        _ind(
+            f"ont.{t}.ind.superai-orchestrator.v1",
+            f"ont.{t}.obj.superai.v1",
+            [
+                (f"ont.{t}.prop.superai-id.v1", "superai-orchestrator"),
+                (f"ont.{t}.prop.superai-name.v1", "SuperAI Orchestrator"),
+                (f"ont.{t}.prop.superai-capabilities.v1", ",".join(sa_caps)),
+            ],
+            "superai-orchestrator",
+            t,
+        )
+    )
     sa_fn_rid = f"ont.{t}.fn.superai-orchestrate.v1"
-    repo.upsert_function(Function(
-        rid=ClassRef(sa_fn_rid),
-        language=FunctionLanguage.PYTHON,
-        version=1,
-        source_ref="ref://superai_orchestrate",
-        signatures=(("user_intent", "string"), ("tenant_id", "string")),
-    ))
-    repo.upsert_action_type(ActionType(
-        rid=ClassRef(f"ont.{t}.act.superai-orchestrate.v1"),
-        parameters=(
-            _prop(f"ont.{t}.prop.user-intent.v1", "string", "user intent"),
-        ),
-        submission_criteria=("len(user_intent) > 0",),
-        side_effects=("audit_log",),
-        function_ref=ClassRef(sa_fn_rid),
-        on=(ClassRef(f"ont.{t}.obj.superai.v1"),),
-        title="SuperAI 编排调度",
-        description="解析用户意图，匹配并编排数字员工执行任务，汇总各员工返回结果",
-    ))
+    repo.upsert_function(
+        Function(
+            rid=ClassRef(sa_fn_rid),
+            language=FunctionLanguage.PYTHON,
+            version=1,
+            source_ref="ref://superai_orchestrate",
+            signatures=(("user_intent", "string"), ("tenant_id", "string")),
+        )
+    )
+    repo.upsert_action_type(
+        ActionType(
+            rid=ClassRef(f"ont.{t}.act.superai-orchestrate.v1"),
+            parameters=(_prop(f"ont.{t}.prop.user-intent.v1", "string", "user intent"),),
+            submission_criteria=("len(user_intent) > 0",),
+            side_effects=("audit_log",),
+            function_ref=ClassRef(sa_fn_rid),
+            on=(ClassRef(f"ont.{t}.obj.superai.v1"),),
+            title="SuperAI 编排调度",
+            description="解析用户意图，匹配并编排数字员工执行任务，汇总各员工返回结果",
+        )
+    )
     created += 3
 
     return created
@@ -555,10 +684,19 @@ def seed_hr_it_finance_orchestrator(repo: OntologyRepository, tenant_id: str = T
 
 # rid 末段 → (title, description)。老库 ActionType 行缺展示元数据时按此回填。
 _ACTION_DISPLAY_META: dict[str, tuple[str, str]] = {
-    "act.approve-leave.v1": ("审批请假", "对员工请假申请做出批准 / 驳回决定，通过邮件通知申请人并写审计日志"),
+    "act.approve-leave.v1": (
+        "审批请假",
+        "对员工请假申请做出批准 / 驳回决定，通过邮件通知申请人并写审计日志",
+    ),
     "act.close-ticket.v1": ("关闭工单", "填写处理结论并关闭客户工单，自动通知工单提交人"),
-    "act.approve-contract.v1": ("审批合同", "对客户合同进行审批流转（批准 / 驳回），邮件通知相关方并记录审计日志"),
-    "act.superai-orchestrate.v1": ("SuperAI 编排调度", "解析用户意图，匹配并编排数字员工执行任务，汇总各员工返回结果"),
+    "act.approve-contract.v1": (
+        "审批合同",
+        "对客户合同进行审批流转（批准 / 驳回），邮件通知相关方并记录审计日志",
+    ),
+    "act.superai-orchestrate.v1": (
+        "SuperAI 编排调度",
+        "解析用户意图，匹配并编排数字员工执行任务，汇总各员工返回结果",
+    ),
 }
 
 

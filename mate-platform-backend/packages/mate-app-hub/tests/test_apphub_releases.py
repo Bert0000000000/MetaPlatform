@@ -1,4 +1,5 @@
 """Contract tests for AppHub release records used by the release tab."""
+
 from __future__ import annotations
 
 

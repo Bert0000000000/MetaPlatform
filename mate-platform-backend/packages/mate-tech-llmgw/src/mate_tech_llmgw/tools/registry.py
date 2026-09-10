@@ -2,6 +2,7 @@
 
 统一 tool schema(OpenAI Function format)+ 各 provider tool_calls 适配。
 """
+
 from __future__ import annotations
 
 import json

@@ -1,4 +1,5 @@
 """Regression tests for the GA-002 canonical service inventory gate."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -23,7 +24,14 @@ def test_current_manifest_covers_all_service_contracts() -> None:
         REPO / "mate-platform-backend/contracts/openapi/services",
     )
     assert errors == []
-    assert len(module.manifest_contracts(REPO / "mate-platform-backend/contracts/openapi/manifest.yaml")) == 21
+    assert (
+        len(
+            module.manifest_contracts(
+                REPO / "mate-platform-backend/contracts/openapi/manifest.yaml"
+            )
+        )
+        == 21
+    )
 
 
 def test_missing_requirement_id_is_reported(tmp_path: Path) -> None:
@@ -36,6 +44,4 @@ def test_missing_requirement_id_is_reported(tmp_path: Path) -> None:
 
     errors = module.validate(manifest, services)
 
-    assert errors == [
-        "services/example.yaml has no requirement ID metadata"
-    ]
+    assert errors == ["services/example.yaml has no requirement ID metadata"]

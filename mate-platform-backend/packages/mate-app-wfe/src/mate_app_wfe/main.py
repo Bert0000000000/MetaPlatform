@@ -10,6 +10,7 @@ is widened into the anonymous set.
 P2-W5: in-memory BPMN structural validator only. Real Flowable 8.0
 engine integration lands in P2-W6.
 """
+
 from __future__ import annotations
 
 import os
@@ -50,13 +51,12 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="mate-app-wfe",
         version="0.1.0",
-        description=(
-            "Mate Platform - APP-WFE workflow engine center "
-            "(FR-WFE-001..002)."
-        ),
+        description=("Mate Platform - APP-WFE workflow engine center (FR-WFE-001..002)."),
         lifespan=lifespan,
     )
-    has_database = bool(os.getenv("MATE_DB_URL", "").strip() or os.getenv("DATABASE_URL", "").strip())
+    has_database = bool(
+        os.getenv("MATE_DB_URL", "").strip() or os.getenv("DATABASE_URL", "").strip()
+    )
     if workflow_settings.is_deployed_profile and not has_database:
         raise RuntimeError("PostgreSQL MATE_DB_URL is required for deployed WFE")
     if has_database and not workflow_settings.is_deployed_profile:
@@ -66,7 +66,9 @@ def create_app() -> FastAPI:
         create_all()
     app.state.workflow_settings = workflow_settings
     app.state.workflow_executor = (
-        None if workflow_settings.is_deployed_profile else build_workflow_executor(workflow_settings)
+        None
+        if workflow_settings.is_deployed_profile
+        else build_workflow_executor(workflow_settings)
     )
     # Step 1 of ADR-0014 5-step pattern: install bearer-token auth
     # middleware. All wfe endpoints read tenant-bound state, so none

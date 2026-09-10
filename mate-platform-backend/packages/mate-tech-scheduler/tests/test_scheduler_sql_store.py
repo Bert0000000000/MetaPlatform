@@ -1,4 +1,5 @@
 """Tests for mate_tech_scheduler.repositories.sql_store — SQL persistence (P3-W2)."""
+
 from __future__ import annotations
 
 import pytest
@@ -24,8 +25,11 @@ _TENANT_B = "tenant-bigo"
 
 def test_put_and_get_scheduler_task() -> None:
     t = mem.SchedulerTask(
-        id="sch-1", tenant_id=_TENANT_A, name="ETL Daily",
-        cron_expression="0 2 * * *", status="active",
+        id="sch-1",
+        tenant_id=_TENANT_A,
+        name="ETL Daily",
+        cron_expression="0 2 * * *",
+        status="active",
         config={"timezone": "Asia/Shanghai"},
     )
     sql.put_scheduler_task(_TENANT_A, t)
@@ -39,7 +43,9 @@ def test_put_and_get_scheduler_task() -> None:
 
 def test_put_scheduler_task_upsert() -> None:
     t = mem.SchedulerTask(
-        id="sch-2", tenant_id=_TENANT_A, name="Metrics",
+        id="sch-2",
+        tenant_id=_TENANT_A,
+        name="Metrics",
         cron_expression="0 * * * *",
     )
     sql.put_scheduler_task(_TENANT_A, t)
@@ -54,56 +60,97 @@ def test_put_scheduler_task_upsert() -> None:
 
 
 def test_list_scheduler_tasks_tenant_isolation() -> None:
-    sql.put_scheduler_task(_TENANT_A, mem.SchedulerTask(
-        id="sch-a", tenant_id=_TENANT_A, name="A",
-        cron_expression="0 0 * * *",
-    ))
-    sql.put_scheduler_task(_TENANT_B, mem.SchedulerTask(
-        id="sch-b", tenant_id=_TENANT_B, name="B",
-        cron_expression="0 0 * * *",
-    ))
+    sql.put_scheduler_task(
+        _TENANT_A,
+        mem.SchedulerTask(
+            id="sch-a",
+            tenant_id=_TENANT_A,
+            name="A",
+            cron_expression="0 0 * * *",
+        ),
+    )
+    sql.put_scheduler_task(
+        _TENANT_B,
+        mem.SchedulerTask(
+            id="sch-b",
+            tenant_id=_TENANT_B,
+            name="B",
+            cron_expression="0 0 * * *",
+        ),
+    )
     assert [t.id for t in sql.list_scheduler_tasks(_TENANT_A)] == ["sch-a"]
     assert [t.id for t in sql.list_scheduler_tasks(_TENANT_B)] == ["sch-b"]
 
 
 def test_list_scheduler_tasks_status_filter() -> None:
-    sql.put_scheduler_task(_TENANT_A, mem.SchedulerTask(
-        id="sch-active", tenant_id=_TENANT_A, name="A",
-        cron_expression="0 0 * * *", status="active",
-    ))
-    sql.put_scheduler_task(_TENANT_A, mem.SchedulerTask(
-        id="sch-paused", tenant_id=_TENANT_A, name="P",
-        cron_expression="0 0 * * *", status="paused",
-    ))
+    sql.put_scheduler_task(
+        _TENANT_A,
+        mem.SchedulerTask(
+            id="sch-active",
+            tenant_id=_TENANT_A,
+            name="A",
+            cron_expression="0 0 * * *",
+            status="active",
+        ),
+    )
+    sql.put_scheduler_task(
+        _TENANT_A,
+        mem.SchedulerTask(
+            id="sch-paused",
+            tenant_id=_TENANT_A,
+            name="P",
+            cron_expression="0 0 * * *",
+            status="paused",
+        ),
+    )
     active = sql.list_scheduler_tasks(_TENANT_A, status="active")
     assert [t.id for t in active] == ["sch-active"]
 
 
 def test_delete_scheduler_task() -> None:
-    sql.put_scheduler_task(_TENANT_A, mem.SchedulerTask(
-        id="sch-del", tenant_id=_TENANT_A, name="Del",
-        cron_expression="0 0 * * *",
-    ))
+    sql.put_scheduler_task(
+        _TENANT_A,
+        mem.SchedulerTask(
+            id="sch-del",
+            tenant_id=_TENANT_A,
+            name="Del",
+            cron_expression="0 0 * * *",
+        ),
+    )
     assert sql.delete_scheduler_task(_TENANT_A, "sch-del") is True
     assert sql.get_scheduler_task(_TENANT_A, "sch-del") is None
     assert sql.delete_scheduler_task(_TENANT_A, "sch-del") is False
 
 
 def test_delete_scheduler_task_rejects_cross_tenant() -> None:
-    sql.put_scheduler_task(_TENANT_A, mem.SchedulerTask(
-        id="sch-x", tenant_id=_TENANT_A, name="X",
-        cron_expression="0 0 * * *",
-    ))
+    sql.put_scheduler_task(
+        _TENANT_A,
+        mem.SchedulerTask(
+            id="sch-x",
+            tenant_id=_TENANT_A,
+            name="X",
+            cron_expression="0 0 * * *",
+        ),
+    )
     assert sql.delete_scheduler_task(_TENANT_B, "sch-x") is False
 
 
 def test_set_scheduler_task_status() -> None:
-    sql.put_scheduler_task(_TENANT_A, mem.SchedulerTask(
-        id="sch-st", tenant_id=_TENANT_A, name="ST",
-        cron_expression="0 0 * * *", status="active",
-    ))
+    sql.put_scheduler_task(
+        _TENANT_A,
+        mem.SchedulerTask(
+            id="sch-st",
+            tenant_id=_TENANT_A,
+            name="ST",
+            cron_expression="0 0 * * *",
+            status="active",
+        ),
+    )
     updated = sql.set_scheduler_task_status(
-        _TENANT_A, "sch-st", "running", last_run_at="2026-08-01T00:00:00Z",
+        _TENANT_A,
+        "sch-st",
+        "running",
+        last_run_at="2026-08-01T00:00:00Z",
     )
     assert updated is not None
     assert updated.status == "running"

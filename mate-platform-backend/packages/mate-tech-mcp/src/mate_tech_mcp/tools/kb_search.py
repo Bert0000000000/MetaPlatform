@@ -2,6 +2,7 @@
 
 通过 httpx 调 tech-rag HTTP bridge, 返回 top_k 命中.
 """
+
 from __future__ import annotations
 
 import os
@@ -40,9 +41,7 @@ class KbSearchTool:
         timeout: float = 30.0,
         client: httpx.AsyncClient | None = None,
     ) -> None:
-        self._base_url = base_url or os.getenv(
-            "TECH_RAG_URL", "http://localhost:8006"
-        )
+        self._base_url = base_url or os.getenv("TECH_RAG_URL", "http://localhost:8006")
         self._client = client or httpx.AsyncClient(
             base_url=self._base_url,
             timeout=timeout,
@@ -60,9 +59,7 @@ class KbSearchTool:
         if kb_ids:
             payload["kb_ids"] = kb_ids
         try:
-            resp = await self._client.post(
-                "/api/v1/rag/search", json=payload
-            )
+            resp = await self._client.post("/api/v1/rag/search", json=payload)
             resp.raise_for_status()
             data = resp.json()
             logger.info("kb_search.ok", query=query, hits=len(data.get("hits", [])))

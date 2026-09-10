@@ -4,6 +4,7 @@ Provides read + write for ``Agent``, ``AgentSession``, and ``AgentMessage``.
 Dict fields (``Agent.config``) and list fields (``AgentMessage.tool_calls``)
 are JSON-serialised to TEXT.
 """
+
 from __future__ import annotations
 
 import json
@@ -98,11 +99,15 @@ def list_agents(tenant_id: str) -> list[Agent]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.AgentORM)
-        .where(models.AgentORM.tenant_id == tenant_id)
-        .order_by(models.AgentORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.AgentORM)
+            .where(models.AgentORM.tenant_id == tenant_id)
+            .order_by(models.AgentORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_agent(r) for r in rows]
 
 
@@ -126,11 +131,15 @@ def list_sessions(tenant_id: str) -> list[AgentSession]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.AgentSessionORM)
-        .where(models.AgentSessionORM.tenant_id == tenant_id)
-        .order_by(models.AgentSessionORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.AgentSessionORM)
+            .where(models.AgentSessionORM.tenant_id == tenant_id)
+            .order_by(models.AgentSessionORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_session(r) for r in rows]
 
 
@@ -154,11 +163,15 @@ def list_messages(tenant_id: str) -> list[AgentMessage]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.AgentMessageORM)
-        .where(models.AgentMessageORM.tenant_id == tenant_id)
-        .order_by(models.AgentMessageORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.AgentMessageORM)
+            .where(models.AgentMessageORM.tenant_id == tenant_id)
+            .order_by(models.AgentMessageORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_message(r) for r in rows]
 
 
@@ -192,12 +205,19 @@ def put_agent(tenant_id: str, agent: Agent) -> Agent:
         existing.config = config_str
         existing.updated_at = agent.updated_at
     else:
-        s.add(models.AgentORM(
-            id=agent.id, tenant_id=tenant_id, name=agent.name,
-            scenario=agent.scenario, model_id=agent.model_id,
-            status=agent.status, config=config_str,
-            created_at=agent.created_at, updated_at=agent.updated_at,
-        ))
+        s.add(
+            models.AgentORM(
+                id=agent.id,
+                tenant_id=tenant_id,
+                name=agent.name,
+                scenario=agent.scenario,
+                model_id=agent.model_id,
+                status=agent.status,
+                config=config_str,
+                created_at=agent.created_at,
+                updated_at=agent.updated_at,
+            )
+        )
     s.commit()
     return agent
 
@@ -234,12 +254,18 @@ def put_session(tenant_id: str, ses: AgentSession) -> AgentSession:
         existing.status = ses.status
         existing.updated_at = ses.updated_at
     else:
-        s.add(models.AgentSessionORM(
-            id=ses.id, tenant_id=tenant_id, agent_id=ses.agent_id,
-            thread_id=ses.thread_id, scenario=ses.scenario,
-            status=ses.status, created_at=ses.created_at,
-            updated_at=ses.updated_at,
-        ))
+        s.add(
+            models.AgentSessionORM(
+                id=ses.id,
+                tenant_id=tenant_id,
+                agent_id=ses.agent_id,
+                thread_id=ses.thread_id,
+                scenario=ses.scenario,
+                status=ses.status,
+                created_at=ses.created_at,
+                updated_at=ses.updated_at,
+            )
+        )
     s.commit()
     return ses
 
@@ -277,11 +303,17 @@ def put_message(tenant_id: str, msg: AgentMessage) -> AgentMessage:
         existing.tool_calls = tc_str
         existing.created_at = msg.created_at
     else:
-        s.add(models.AgentMessageORM(
-            id=msg.id, tenant_id=tenant_id, thread_id=msg.thread_id,
-            role=msg.role, content=msg.content, tool_calls=tc_str,
-            created_at=msg.created_at,
-        ))
+        s.add(
+            models.AgentMessageORM(
+                id=msg.id,
+                tenant_id=tenant_id,
+                thread_id=msg.thread_id,
+                role=msg.role,
+                content=msg.content,
+                tool_calls=tc_str,
+                created_at=msg.created_at,
+            )
+        )
     s.commit()
     return msg
 
@@ -310,13 +342,7 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     from . import in_memory as mem
 
     counts: dict[str, int] = {}
-    counts["agents"] = len(
-        [put_agent(tenant_id, a) for a in mem.list_agents(tenant_id)]
-    )
-    counts["sessions"] = len(
-        [put_session(tenant_id, s) for s in mem.list_sessions(tenant_id)]
-    )
-    counts["messages"] = len(
-        [put_message(tenant_id, m) for m in mem.list_messages(tenant_id)]
-    )
+    counts["agents"] = len([put_agent(tenant_id, a) for a in mem.list_agents(tenant_id)])
+    counts["sessions"] = len([put_session(tenant_id, s) for s in mem.list_sessions(tenant_id)])
+    counts["messages"] = len([put_message(tenant_id, m) for m in mem.list_messages(tenant_id)])
     return counts

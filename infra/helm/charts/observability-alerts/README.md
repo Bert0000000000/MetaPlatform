@@ -13,13 +13,13 @@ The chart installs a single `PrometheusRule` CRD with five rules:
 Each alert annotation links to the runbook at
 `docs/active/runbooks/{llmgw,mcp,secrets-tenancy}.md`.
 
-| Rule | Severity | Owner | Runbook section |
-|---|---|---|---|
-| RagTTFTLocalP95TooHigh | warning | rag | llmgw.md#rag-ttft-越线 |
-| CopilotChatErrorRateTooHigh | warning | copilot | llmgw.md#copilot-错误率越线 |
-| MCPToolDenySpike | warning | mcp | mcp.md#tool-deny-spike |
-| LLMGWMonthlyQuotaExceeded | info | llmgw | llmgw.md#monthly-quota |
-| CrossTenantAttemptP0 | critical | security | secrets-tenancy.md#cross-tenant-p0 |
+| Rule                        | Severity | Owner    | Runbook section                    |
+| --------------------------- | -------- | -------- | ---------------------------------- |
+| RagTTFTLocalP95TooHigh      | warning  | rag      | llmgw.md#rag-ttft-越线             |
+| CopilotChatErrorRateTooHigh | warning  | copilot  | llmgw.md#copilot-错误率越线        |
+| MCPToolDenySpike            | warning  | mcp      | mcp.md#tool-deny-spike             |
+| LLMGWMonthlyQuotaExceeded   | info     | llmgw    | llmgw.md#monthly-quota             |
+| CrossTenantAttemptP0        | critical | security | secrets-tenancy.md#cross-tenant-p0 |
 
 ## Installing
 

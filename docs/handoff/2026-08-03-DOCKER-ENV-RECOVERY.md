@@ -5,18 +5,18 @@
 
 ## TL;DR
 
-| Item | Status |
-|---|---|
-| Docker Desktop | ✅ Running (4.84.0, build 234817) |
-| Docker daemon | ✅ 29.6.2, WSL2 backend, 7.75 GB allocated |
-| Data location | ✅ **D 盘** — `D:\Docker\wsl_storage\DockerDesktopWSL\` (37.6 GB) |
-| 国内镜像源 | ✅ 7 mirror configured in `~/.docker/daemon.json` |
-| Base images | ✅ 17/17 pulled (postgres / redis / minio / milvus / neo4j / rabbitmq / kafka / nacos / keycloak / traefik / prometheus / loki / promtail / grafana / otel / python:3.12 / alpine) |
-| Local `mate-tech-*:dev` images | **9/11 built** (mcp, api-gateway, obs, ont, llmgw, iam, app-kb, rag, agent) |
-| Missing local images | 2/11 (mate-tech-msg, mate-auth-service) |
-| Container runtime | ⚠️ **0/0** — never started (build incomplete) |
-| GitHub main | ✅ Synced at `c83e981316b4261ebfee2079730978edec2f6e03` |
-| 5000 tracked files | ✅ |
+| Item                           | Status                                                                                                                                                                             |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Docker Desktop                 | ✅ Running (4.84.0, build 234817)                                                                                                                                                  |
+| Docker daemon                  | ✅ 29.6.2, WSL2 backend, 7.75 GB allocated                                                                                                                                         |
+| Data location                  | ✅ **D 盘** — `D:\Docker\wsl_storage\DockerDesktopWSL\` (37.6 GB)                                                                                                                  |
+| 国内镜像源                     | ✅ 7 mirror configured in `~/.docker/daemon.json`                                                                                                                                  |
+| Base images                    | ✅ 17/17 pulled (postgres / redis / minio / milvus / neo4j / rabbitmq / kafka / nacos / keycloak / traefik / prometheus / loki / promtail / grafana / otel / python:3.12 / alpine) |
+| Local `mate-tech-*:dev` images | **9/11 built** (mcp, api-gateway, obs, ont, llmgw, iam, app-kb, rag, agent)                                                                                                        |
+| Missing local images           | 2/11 (mate-tech-msg, mate-auth-service)                                                                                                                                            |
+| Container runtime              | ⚠️ **0/0** — never started (build incomplete)                                                                                                                                      |
+| GitHub main                    | ✅ Synced at `c83e981316b4261ebfee2079730978edec2f6e03`                                                                                                                            |
+| 5000 tracked files             | ✅                                                                                                                                                                                 |
 
 ## Disk layout
 
@@ -25,13 +25,13 @@ C:  319 GB used / 145 GB free / 465 GB total
 D:  157 GB used / 1706 GB free / 1863 GB total
 ```
 
-| Path | Size | Notes |
-|---|---|---|
-| `C:\Program Files\Docker\` | 4.0 GB | Docker Desktop binary (cannot move) |
-| `C:\Users\houuu\AppData\Local\Docker\` | 0.3 MB | logs |
-| `C:\Users\houuu\AppData\Roaming\Docker\` | 0.4 MB | settings |
-| `D:\Docker\wsl_storage\DockerDesktopWSL\` | **37.6 GB** | Live data — daemon uses this |
-| `D:\Docker\DockerDesktopWSL\` (backup) | 1.5 GB | Pre-2026-07-28 backup .vhdx (NOT loaded) |
+| Path                                      | Size        | Notes                                    |
+| ----------------------------------------- | ----------- | ---------------------------------------- |
+| `C:\Program Files\Docker\`                | 4.0 GB      | Docker Desktop binary (cannot move)      |
+| `C:\Users\houuu\AppData\Local\Docker\`    | 0.3 MB      | logs                                     |
+| `C:\Users\houuu\AppData\Roaming\Docker\`  | 0.4 MB      | settings                                 |
+| `D:\Docker\wsl_storage\DockerDesktopWSL\` | **37.6 GB** | Live data — daemon uses this             |
+| `D:\Docker\DockerDesktopWSL\` (backup)    | 1.5 GB      | Pre-2026-07-28 backup .vhdx (NOT loaded) |
 
 C 盘 145 GB 剩余，**没有空间压力**。所有 docker data 已经全在 D 盘。
 
@@ -54,6 +54,7 @@ C 盘 145 GB 剩余，**没有空间压力**。所有 docker data 已经全在 D
 ```
 
 **验证状态（2026-08-03 21:00）**：
+
 - `docker pull alpine:latest` → ✅ works via mirror
 - `docker pull python:3.12` → ✅ works
 - 17 base images pulled successfully after mirror was added
@@ -64,24 +65,24 @@ C 盘 145 GB 剩余，**没有空间压力**。所有 docker data 已经全在 D
 
 ### Built local images (9/11)
 
-| Image | Size | Built |
-|---|---|---|
-| `mate-tech-mcp:dev` | 1.76 GB | 2 hours ago |
-| `mate-api-gateway:dev` | 1.72 GB | 3 hours ago |
-| `mate-tech-obs:dev` | 2.38 GB | 3 hours ago |
-| `mate-tech-ont:dev` | 1.81 GB | 29 minutes ago (rebuilt by compose) |
-| `mate-tech-llmgw:dev` | 1.84 GB | 29 minutes ago (rebuilt by compose) |
-| `mate-tech-iam:dev` | 2.39 GB | 2 hours ago |
-| `mate-app-kb:dev` | 2.38 GB | 2 hours ago |
-| `mate-tech-rag:dev` | 2.40 GB | 2 hours ago |
-| `mate-tech-agent:dev` | 2.38 GB | 2 hours ago |
+| Image                  | Size    | Built                               |
+| ---------------------- | ------- | ----------------------------------- |
+| `mate-tech-mcp:dev`    | 1.76 GB | 2 hours ago                         |
+| `mate-api-gateway:dev` | 1.72 GB | 3 hours ago                         |
+| `mate-tech-obs:dev`    | 2.38 GB | 3 hours ago                         |
+| `mate-tech-ont:dev`    | 1.81 GB | 29 minutes ago (rebuilt by compose) |
+| `mate-tech-llmgw:dev`  | 1.84 GB | 29 minutes ago (rebuilt by compose) |
+| `mate-tech-iam:dev`    | 2.39 GB | 2 hours ago                         |
+| `mate-app-kb:dev`      | 2.38 GB | 2 hours ago                         |
+| `mate-tech-rag:dev`    | 2.40 GB | 2 hours ago                         |
+| `mate-tech-agent:dev`  | 2.38 GB | 2 hours ago                         |
 
 ### Missing local images (2/11)
 
-| Image | Reason | How to build |
-|---|---|---|
-| `mate-tech-msg:dev` | Build hit `RPC EOF` from buildkit (daemon was restarted by user); not retried | `docker build -f .tmp-build-context/packages/mate-tech-msg/Dockerfile -t mate-tech-msg:dev .tmp-build-context` |
-| `mate-auth-service:dev` | Same RPC EOF issue | `docker build -f .tmp-build-context/services/auth-service/Dockerfile -t mate-auth-service:dev .tmp-build-context` |
+| Image                   | Reason                                                                        | How to build                                                                                                      |
+| ----------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `mate-tech-msg:dev`     | Build hit `RPC EOF` from buildkit (daemon was restarted by user); not retried | `docker build -f .tmp-build-context/packages/mate-tech-msg/Dockerfile -t mate-tech-msg:dev .tmp-build-context`    |
+| `mate-auth-service:dev` | Same RPC EOF issue                                                            | `docker build -f .tmp-build-context/services/auth-service/Dockerfile -t mate-auth-service:dev .tmp-build-context` |
 
 ### Base images (17/17) — all pulled ✅
 

@@ -74,4 +74,3 @@ export async function validateForm(
 ): Promise<FormValidateResponse> {
   return post<FormValidateResponse>(`/v1/wfe/forms/${formId}/validate`, request);
 }
-

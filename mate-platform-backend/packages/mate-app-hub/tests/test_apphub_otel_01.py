@@ -14,6 +14,7 @@ the global tracer provider for one backed by an
 TestClient with a valid Keycloak token so the K3-3 ``_tenant_id``
 guard does not reject the calls.
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -77,7 +78,9 @@ def auth_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_load_app_runtime_emits_span(client: TestClient, span_exporter: InMemorySpanExporter, auth_headers: dict[str, str])-> None:
+def test_load_app_runtime_emits_span(
+    client: TestClient, span_exporter: InMemorySpanExporter, auth_headers: dict[str, str]
+) -> None:
     """GET /apps/{app_id}/runtime → apphub.runtime.load span."""
     response = client.get("/api/v1/apphub/apps/kb/runtime", headers=auth_headers)
     assert response.status_code == 200, response.text
@@ -87,7 +90,9 @@ def test_load_app_runtime_emits_span(client: TestClient, span_exporter: InMemory
     )
 
 
-def test_execute_action_emits_span(client: TestClient, span_exporter: InMemorySpanExporter, auth_headers: dict[str, str])-> None:
+def test_execute_action_emits_span(
+    client: TestClient, span_exporter: InMemorySpanExporter, auth_headers: dict[str, str]
+) -> None:
     """POST /apps/{app_id}/runtime/execute → apphub.runtime.submit_form span.
 
     K3-4 (RealExecutor) emits a per-action span named after the action
@@ -110,15 +115,21 @@ def test_execute_action_emits_span(client: TestClient, span_exporter: InMemorySp
     )
 
 
-def test_resolve_shortlink_emits_span(span_exporter: InMemorySpanExporter)-> None:
+def test_resolve_shortlink_emits_span(span_exporter: InMemorySpanExporter) -> None:
     """resolver.resolve → apphub.shortlink.resolve span."""
     # Use the real in-memory store for a clean test surface.
     from mate_app_hub.shortlink.repository import InMemoryShortlinkStore, ShortlinkEntry
     from mate_app_hub.shortlink.resolver import resolve
+
     real_store = InMemoryShortlinkStore()
-    real_store.put(ShortlinkEntry(
-        id="sl-ABC", tenant_id="tenant-a", app_id="app-1", code="ABC123",
-    ))
+    real_store.put(
+        ShortlinkEntry(
+            id="sl-ABC",
+            tenant_id="tenant-a",
+            app_id="app-1",
+            code="ABC123",
+        )
+    )
     result = resolve(real_store, "tenant-a", "ABC123")
     assert result["app_id"] == "app-1"
     spans = span_exporter.get_finished_spans()
@@ -127,7 +138,7 @@ def test_resolve_shortlink_emits_span(span_exporter: InMemorySpanExporter)-> Non
     )
 
 
-def test_create_shortlink_emits_span(span_exporter: InMemorySpanExporter)-> None:
+def test_create_shortlink_emits_span(span_exporter: InMemorySpanExporter) -> None:
     """service.create_shortlink → apphub.shortlink.create span."""
     from mate_app_hub.shortlink.repository import InMemoryShortlinkStore
     from mate_app_hub.shortlink.service import create_shortlink

@@ -4,6 +4,7 @@ Every test exercises one endpoint end-to-end through the FastAPI
 TestClient, asserting the documented response shape + status code.
 Outbox events are captured via the shared `outbox` fixture.
 """
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
@@ -23,9 +24,7 @@ def test_health_anonymous(client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 # 1. GET /tasks — list
 # ---------------------------------------------------------------------------
-def test_list_scheduler_tasks(
-    client: TestClient, auth_headers_acme: dict[str, str]
-) -> None:
+def test_list_scheduler_tasks(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
     r = client.get("/api/v1/scheduler/tasks", headers=auth_headers_acme)
     assert r.status_code == 200, r.text
     body = r.json()
@@ -77,12 +76,8 @@ def test_create_scheduler_task(
 # ---------------------------------------------------------------------------
 # 3. GET /tasks/{id} — detail
 # ---------------------------------------------------------------------------
-def test_get_scheduler_task(
-    client: TestClient, auth_headers_acme: dict[str, str]
-) -> None:
-    tasks = client.get(
-        "/api/v1/scheduler/tasks", headers=auth_headers_acme
-    ).json()["items"]
+def test_get_scheduler_task(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
+    tasks = client.get("/api/v1/scheduler/tasks", headers=auth_headers_acme).json()["items"]
     task_id = tasks[0]["id"]
 
     r = client.get(f"/api/v1/scheduler/tasks/{task_id}", headers=auth_headers_acme)
@@ -96,9 +91,7 @@ def test_get_scheduler_task(
 def test_get_scheduler_task_not_found(
     client: TestClient, auth_headers_acme: dict[str, str]
 ) -> None:
-    r = client.get(
-        "/api/v1/scheduler/tasks/nonexistent", headers=auth_headers_acme
-    )
+    r = client.get("/api/v1/scheduler/tasks/nonexistent", headers=auth_headers_acme)
     assert r.status_code == 404, r.text
 
 
@@ -110,9 +103,7 @@ def test_update_scheduler_task(
     auth_headers_acme: dict[str, str],
     outbox: InMemoryOutboxWriter,
 ) -> None:
-    tasks = client.get(
-        "/api/v1/scheduler/tasks", headers=auth_headers_acme
-    ).json()["items"]
+    tasks = client.get("/api/v1/scheduler/tasks", headers=auth_headers_acme).json()["items"]
     task_id = tasks[0]["id"]
 
     r = client.put(
@@ -137,14 +128,10 @@ def test_delete_scheduler_task(
     auth_headers_acme: dict[str, str],
     outbox: InMemoryOutboxWriter,
 ) -> None:
-    tasks = client.get(
-        "/api/v1/scheduler/tasks", headers=auth_headers_acme
-    ).json()["items"]
+    tasks = client.get("/api/v1/scheduler/tasks", headers=auth_headers_acme).json()["items"]
     task_id = tasks[0]["id"]
 
-    r = client.delete(
-        f"/api/v1/scheduler/tasks/{task_id}", headers=auth_headers_acme
-    )
+    r = client.delete(f"/api/v1/scheduler/tasks/{task_id}", headers=auth_headers_acme)
     assert r.status_code == 200, r.text
     assert r.json()["deleted"] is True
 
@@ -152,9 +139,7 @@ def test_delete_scheduler_task(
     assert "scheduler.task.deleted" in types, types
 
     # Verify gone
-    r2 = client.get(
-        f"/api/v1/scheduler/tasks/{task_id}", headers=auth_headers_acme
-    )
+    r2 = client.get(f"/api/v1/scheduler/tasks/{task_id}", headers=auth_headers_acme)
     assert r2.status_code == 404
 
 
@@ -166,14 +151,10 @@ def test_pause_scheduler_task(
     auth_headers_acme: dict[str, str],
     outbox: InMemoryOutboxWriter,
 ) -> None:
-    tasks = client.get(
-        "/api/v1/scheduler/tasks", headers=auth_headers_acme
-    ).json()["items"]
+    tasks = client.get("/api/v1/scheduler/tasks", headers=auth_headers_acme).json()["items"]
     task_id = tasks[0]["id"]
 
-    r = client.post(
-        f"/api/v1/scheduler/tasks/{task_id}/pause", headers=auth_headers_acme
-    )
+    r = client.post(f"/api/v1/scheduler/tasks/{task_id}/pause", headers=auth_headers_acme)
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["status"] == "paused"
@@ -190,14 +171,10 @@ def test_trigger_scheduler_task(
     auth_headers_acme: dict[str, str],
     outbox: InMemoryOutboxWriter,
 ) -> None:
-    tasks = client.get(
-        "/api/v1/scheduler/tasks", headers=auth_headers_acme
-    ).json()["items"]
+    tasks = client.get("/api/v1/scheduler/tasks", headers=auth_headers_acme).json()["items"]
     task_id = tasks[0]["id"]
 
-    r = client.post(
-        f"/api/v1/scheduler/tasks/{task_id}/trigger", headers=auth_headers_acme
-    )
+    r = client.post(f"/api/v1/scheduler/tasks/{task_id}/trigger", headers=auth_headers_acme)
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["status"] == "running"
@@ -228,9 +205,7 @@ def test_get_dag(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
 # ---------------------------------------------------------------------------
 # Pagination
 # ---------------------------------------------------------------------------
-def test_pagination(
-    client: TestClient, auth_headers_acme: dict[str, str]
-) -> None:
+def test_pagination(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
     r = client.get(
         "/api/v1/scheduler/tasks",
         params={"page": 1, "size": 2},

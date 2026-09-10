@@ -17,20 +17,21 @@ Internet / Frontend (BFF)
 ```
 
 > **职责分离**:
+>
 > - **Traefik** (profile: edge) — TLS / WAF / OIDC 转发鉴权 / 全局限流
 > - **api-gateway** (本服务) — 内部 L7 路由 / 租户级细粒度限流 / 聚合
 > - **auth-service** (mate-auth-service) — JWT 验证 + 租户识别 (供内部调用)
 
 ## 路由表
 
-| Path 前缀 | 上游服务 | 默认地址 |
-|---|---|---|
-| `/api/v1/rag/` | mate-tech-rag | `http://mate-tech-rag:8001` |
+| Path 前缀        | 上游服务        | 默认地址                      |
+| ---------------- | --------------- | ----------------------------- |
+| `/api/v1/rag/`   | mate-tech-rag   | `http://mate-tech-rag:8001`   |
 | `/api/v1/agent/` | mate-tech-agent | `http://mate-tech-agent:8002` |
-| `/api/v1/llm/` | mate-tech-llmgw | `http://mate-tech-llmgw:8008` |
-| `/api/v1/kb/` | mate-app-kb | `http://mate-app-kb:8003` |
-| `/api/v1/ont/` | mate-tech-ont | `http://mate-tech-ont:8007` |
-| `/api/v1/mcp/` | mate-tech-mcp | `http://mate-tech-mcp:8081` |
+| `/api/v1/llm/`   | mate-tech-llmgw | `http://mate-tech-llmgw:8008` |
+| `/api/v1/kb/`    | mate-app-kb     | `http://mate-app-kb:8003`     |
+| `/api/v1/ont/`   | mate-tech-ont   | `http://mate-tech-ont:8007`   |
+| `/api/v1/mcp/`   | mate-tech-mcp   | `http://mate-tech-mcp:8081`   |
 
 所有 `*_URL` 可通过环境变量覆盖（`RAG_URL`、`AGENT_URL` 等）。
 
@@ -44,11 +45,11 @@ Internet / Frontend (BFF)
 
 ## Endpoints
 
-| Method | Path | 用途 |
-|---|---|---|
-| GET | `/healthz` | liveness |
-| GET | `/readyz` | 探测所有上游 `/healthz` |
-| * | `/api/v1/{prefix}/{path}` | 代理到对应上游 |
+| Method | Path                      | 用途                    |
+| ------ | ------------------------- | ----------------------- |
+| GET    | `/healthz`                | liveness                |
+| GET    | `/readyz`                 | 探测所有上游 `/healthz` |
+| \*     | `/api/v1/{prefix}/{path}` | 代理到对应上游          |
 
 ## 本地运行
 

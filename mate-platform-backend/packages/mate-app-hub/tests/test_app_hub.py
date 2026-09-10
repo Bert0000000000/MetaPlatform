@@ -10,27 +10,46 @@
 Each test asserts the response shape, the seed minima declared in
 `mate_app_hub.repositories.in_memory`, and basic filter behaviour.
 """
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
 
-def test_list_apps_returns_seeded_catalog(client: TestClient, auth_headers_acme: dict[str, str])-> None:
+def test_list_apps_returns_seeded_catalog(
+    client: TestClient, auth_headers_acme: dict[str, str]
+) -> None:
     r = client.get("/api/v1/apphub/apps", headers=auth_headers_acme)
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["total"] >= 15, body
     codes = {item["code"] for item in body["items"]}
     # Required apps (per checklist §95)
-    expected_subset = {"kb", "rag", "llmgw", "mcp", "obs", "msg", "ont",
-                       "agent", "arch", "copilot", "dashboard", "dw", "a2a",
-                       "wfe", "data"}
+    expected_subset = {
+        "kb",
+        "rag",
+        "llmgw",
+        "mcp",
+        "obs",
+        "msg",
+        "ont",
+        "agent",
+        "arch",
+        "copilot",
+        "dashboard",
+        "dw",
+        "a2a",
+        "wfe",
+        "data",
+    }
     assert expected_subset.issubset(codes), codes
     # Every item must carry the acme tenant_id
     assert all(item["tenant_id"] == "tenant-acme" for item in body["items"])
 
 
-def test_list_apps_supports_keyword_filter(client: TestClient, auth_headers_acme: dict[str, str])-> None:
+def test_list_apps_supports_keyword_filter(
+    client: TestClient, auth_headers_acme: dict[str, str]
+) -> None:
     # "knowledge" matches the KB app name ("Knowledge Base").
     # Apps outside the knowledge group must not match.
     r = client.get(
@@ -57,7 +76,7 @@ def test_list_apps_supports_keyword_filter(client: TestClient, auth_headers_acme
     assert all(it["category"] == "platform" for it in items), items
 
 
-def test_list_app_groups(client: TestClient, auth_headers_acme: dict[str, str])-> None:
+def test_list_app_groups(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
     r = client.get(
         "/api/v1/apphub/apps/groups",
         headers=auth_headers_acme,
@@ -69,7 +88,9 @@ def test_list_app_groups(client: TestClient, auth_headers_acme: dict[str, str])-
     assert codes == {"knowledge", "platform", "data"}
 
 
-def test_list_modules_with_app_filter(client: TestClient, auth_headers_acme: dict[str, str])-> None:
+def test_list_modules_with_app_filter(
+    client: TestClient, auth_headers_acme: dict[str, str]
+) -> None:
     r = client.get(
         "/api/v1/apphub/modules",
         params={"app_code": "arch"},
@@ -82,7 +103,7 @@ def test_list_modules_with_app_filter(client: TestClient, auth_headers_acme: dic
     assert all(m["tenant_id"] == "tenant-acme" for m in items)
 
 
-def test_list_pages_and_templates(client: TestClient, auth_headers_acme: dict[str, str])-> None:
+def test_list_pages_and_templates(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
     r1 = client.get("/api/v1/apphub/pages", headers=auth_headers_acme)
     assert r1.status_code == 200, r1.text
     pages = r1.json()

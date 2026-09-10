@@ -1,4 +1,5 @@
 """Sprint 1A M1 — temporal translation unit tests (no server needed)."""
+
 from __future__ import annotations
 
 import os
@@ -10,11 +11,17 @@ from pydantic import ValidationError
 sys.path.insert(
     0,
     os.path.join(
-        os.path.dirname(__file__), "..", "src",
+        os.path.dirname(__file__),
+        "..",
+        "src",
     ),
 )
 _KERNEL = os.path.join(
-    os.path.dirname(__file__), "..", "..", "mate-kernel", "src",
+    os.path.dirname(__file__),
+    "..",
+    "..",
+    "mate-kernel",
+    "src",
 )
 if _KERNEL not in sys.path:
     sys.path.insert(0, _KERNEL)
@@ -65,7 +72,9 @@ class TestTranslationRoundTrip:
     def test_input_round_trip_preserves_payload(self) -> None:
         steps = steps_from_dicts(_steps_raw())
         inp = workflow_input_from_steps(
-            tenant_id="t-acme", steps=steps, author_user_id="rouge",
+            tenant_id="t-acme",
+            steps=steps,
+            author_user_id="rouge",
         )
         assert isinstance(inp, PlanWorkflowInput)
         dicts = workflow_input_to_plan_steps(inp)
@@ -77,9 +86,11 @@ class TestTranslationRoundTrip:
     def test_to_kernel_plan_steps(self) -> None:
         from mate_kernel.agent.orchestrator import StepKind
 
-        steps = plan_steps_from_dicts(workflow_input_to_plan_steps(
-            workflow_input_from_steps(tenant_id="t", steps=steps_from_dicts(_steps_raw())),
-        ))
+        steps = plan_steps_from_dicts(
+            workflow_input_to_plan_steps(
+                workflow_input_from_steps(tenant_id="t", steps=steps_from_dicts(_steps_raw())),
+            )
+        )
         assert steps[0].kind is StepKind.RUN_FUNCTION
         assert dict(steps[1].payload)["parameters"]["note"] == "{{steps.s1.stdout}}"
 

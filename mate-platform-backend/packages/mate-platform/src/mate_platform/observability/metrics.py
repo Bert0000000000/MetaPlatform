@@ -5,6 +5,7 @@ production traces; this module provides a simple fallback for
 unit-tested code paths that need a counter without pulling in the
 full observability stack.
 """
+
 from __future__ import annotations
 
 

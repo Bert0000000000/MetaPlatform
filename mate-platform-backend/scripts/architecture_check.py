@@ -1,4 +1,5 @@
 """CLI entry for import-linter contract verification."""
+
 import os
 import subprocess
 import sys

@@ -7,13 +7,13 @@
 
 ## 1. 交付范围
 
-| 项 | 落点 | 状态 |
-|---|---|---|
-| 检索器（PG） | `mate_tech_ont/v2_kernel/object_search.py`（Embedder 协议 + HashEmbedder 离线确定性实现 + OpenAI 兼容 env embedder + cosine）+ `ont_object_embedding` 表（属性级 chunk，index-on-write，best-effort 不阻断主写入）+ `search_objects`（cosine 召回 → 对象卡片）+ `reindex_object_embeddings`（存量补齐） | ✅ |
-| 检索器（InMemory dev） | `InMemoryOntologyRepository.set_embedder/_index_embeddings/search_objects` 同语义 | ✅ |
-| REST | `POST /api/v1/ont/v2/object-search`（ontSearchV2Objects，租户前缀校验）+ `POST /v2/object-search/reindex`（ontReindexV2ObjectSearch） | ✅ |
-| **copilot 通道（核心）** | `ontology_tools` 固定第 4 工具 `search_objects`（注册+执行）；`agent_loop.build_system_prompt(roles, object_cards)` —— 检索命中的对象卡片以「相关对象上下文」段注入 system prompt，**每行显式带 individual_rid（可追溯）** | ✅ |
-| 对象卡片契约 | `{individual_rid, class_rid, score, matched: [{property_rid, value_text, score}], card_text}` | ✅ |
+| 项                       | 落点                                                                                                                                                                                                                                                                                                    | 状态 |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| 检索器（PG）             | `mate_tech_ont/v2_kernel/object_search.py`（Embedder 协议 + HashEmbedder 离线确定性实现 + OpenAI 兼容 env embedder + cosine）+ `ont_object_embedding` 表（属性级 chunk，index-on-write，best-effort 不阻断主写入）+ `search_objects`（cosine 召回 → 对象卡片）+ `reindex_object_embeddings`（存量补齐） | ✅   |
+| 检索器（InMemory dev）   | `InMemoryOntologyRepository.set_embedder/_index_embeddings/search_objects` 同语义                                                                                                                                                                                                                       | ✅   |
+| REST                     | `POST /api/v1/ont/v2/object-search`（ontSearchV2Objects，租户前缀校验）+ `POST /v2/object-search/reindex`（ontReindexV2ObjectSearch）                                                                                                                                                                   | ✅   |
+| **copilot 通道（核心）** | `ontology_tools` 固定第 4 工具 `search_objects`（注册+执行）；`agent_loop.build_system_prompt(roles, object_cards)` —— 检索命中的对象卡片以「相关对象上下文」段注入 system prompt，**每行显式带 individual_rid（可追溯）**                                                                              | ✅   |
+| 对象卡片契约             | `{individual_rid, class_rid, score, matched: [{property_rid, value_text, score}], card_text}`                                                                                                                                                                                                           | ✅   |
 
 **设计要点**：embedding 复用平台 PG 设施（JSONB + 进程内 cosine 的 dev 形态，与 tech-rag kb_chunks 同款；pgvector halfvec+HNSW 升级路径不变）；`OPENAI_API_KEY` 缺席时 embedder=None 索引跳过（dev 优雅降级），`ONT_EMBEDDER=hash` 强制离线确定性模式。
 
@@ -23,11 +23,11 @@ ont.yaml 30→**32 paths** / 54→**57 schemas**（yaml 校验通过）：`Objec
 
 ## 3. 测试证据（硬规则 7）
 
-| 套件 | 结果 | 新增 |
-|---|---|---|
-| mate-tech-ont | **172+11=全绿**（全套 634 passed / 8 skipped 与 kernel 合跑） | `test_v2_object_search.py` 9 项：HashEmbedder 确定性/归一/近邻排序；InMemory 卡片可追溯/class 过滤/无 embedder 降级；PG SQL 捕获（embedding 表查询/reindex 扫 individuals） |
-| mate-app-copilot | 相关 39 passed | `test_ontology_search_channel.py` 6 项：search_objects 注册+执行；**system prompt 注入（rid 进上下文断言）**；无卡片时 prompt 不变 |
-| mate-kernel | 455 passed | InMemory repo 新方法回归（无新增文件，行为内聚） |
+| 套件             | 结果                                                          | 新增                                                                                                                                                                        |
+| ---------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| mate-tech-ont    | **172+11=全绿**（全套 634 passed / 8 skipped 与 kernel 合跑） | `test_v2_object_search.py` 9 项：HashEmbedder 确定性/归一/近邻排序；InMemory 卡片可追溯/class 过滤/无 embedder 降级；PG SQL 捕获（embedding 表查询/reindex 扫 individuals） |
+| mate-app-copilot | 相关 39 passed                                                | `test_ontology_search_channel.py` 6 项：search_objects 注册+执行；**system prompt 注入（rid 进上下文断言）**；无卡片时 prompt 不变                                          |
+| mate-kernel      | 455 passed                                                    | InMemory repo 新方法回归（无新增文件，行为内聚）                                                                                                                            |
 
 ## 4. 静态检查（硬规则 6）
 

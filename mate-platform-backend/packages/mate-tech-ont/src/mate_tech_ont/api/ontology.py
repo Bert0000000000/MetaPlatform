@@ -2,6 +2,7 @@
 
 本体 + 类 CRUD 端点。
 """
+
 from __future__ import annotations
 
 from typing import Any

@@ -11,6 +11,7 @@ Layer 3 — running totals on the owning row: ``llmgw_api_keys.spend_usd``
 All writes happen in one transaction; failures log a warning and never
 propagate to the request path.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -101,7 +102,8 @@ class UsageStore:
                         )
         except Exception as exc:
             logger.warning(
-                "llmgw.usage.store_write_failed", error=str(exc),
+                "llmgw.usage.store_write_failed",
+                error=str(exc),
                 api_key_id=rec.api_key_id or "",
             )
 

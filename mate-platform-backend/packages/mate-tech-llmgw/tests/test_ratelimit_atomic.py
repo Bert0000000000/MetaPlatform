@@ -5,6 +5,7 @@
   requests consume the window slot
 - TenantConfigProvider: Redis read-through → PG → defaults; invalidate()
 """
+
 from __future__ import annotations
 
 import json
@@ -64,7 +65,11 @@ class _LuaRedis:
     async def eval(self, script: str, numkeys: int, *argv: Any) -> list[int]:
         req_key, tok_key = argv[0], argv[1]
         rpm, tpm, est_tokens, window, now = (
-            int(argv[2]), int(argv[3]), int(argv[4]), int(argv[5]), int(argv[6])
+            int(argv[2]),
+            int(argv[3]),
+            int(argv[4]),
+            int(argv[5]),
+            int(argv[6]),
         )
         req = self.store.get(req_key, 0) + 1
         self.store[req_key] = req
@@ -110,9 +115,7 @@ async def test_acquire_rejected_requests_consume_window() -> None:
     with pytest.raises(QuotaExceededError):  # 600 + 600 > 1000
         await bucket.acquire(tenant_id="t", estimated_tokens=600)
     # The rejected request's tokens stayed counted (documented semantics).
-    minute = redis.store and next(
-        k.split(":")[2] for k in redis.store if k.startswith("tok:t:")
-    )
+    minute = redis.store and next(k.split(":")[2] for k in redis.store if k.startswith("tok:t:"))
     assert redis.store[f"tok:t:{minute}"] == 1200
 
 
@@ -224,10 +227,10 @@ async def test_tenant_config_invalidate_clears_cache() -> None:
     cache = _PgRedisDouble()
     provider = TenantConfigProvider(pg_pool=pool, redis_client=cache)
 
-    await provider.resolve("t")          # populates caches
+    await provider.resolve("t")  # populates caches
     await provider.invalidate("t")
     assert "llmgw:tenantcfg:t" not in cache.store
-    cfg = await provider.resolve("t")    # re-reads from PG
+    cfg = await provider.resolve("t")  # re-reads from PG
     assert cfg.rpm_limit == 7
 
 
@@ -236,9 +239,7 @@ async def test_bucket_uses_per_tenant_limits() -> None:
     redis = _LuaRedis()
     pool = _ConfigPool({"rpm_limit": 2, "tpm_limit": 999_999, "window_sec": 60})
     provider = TenantConfigProvider(pg_pool=pool)
-    bucket = RedisTokenBucket(
-        redis_client=redis, config=QuotaConfig(), tenant_config=provider
-    )
+    bucket = RedisTokenBucket(redis_client=redis, config=QuotaConfig(), tenant_config=provider)
 
     await bucket.acquire(tenant_id="tight", estimated_tokens=1)
     await bucket.acquire(tenant_id="tight", estimated_tokens=1)

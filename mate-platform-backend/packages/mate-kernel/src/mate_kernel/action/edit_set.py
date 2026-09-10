@@ -47,8 +47,7 @@ OP_DELETE_OBJECT = "delete_object"
 OP_ADD_LINK = "add_link"
 OP_REMOVE_LINK = "remove_link"
 
-_VALID_OPS = {OP_SET_PROPERTY, OP_CREATE_OBJECT, OP_DELETE_OBJECT,
-              OP_ADD_LINK, OP_REMOVE_LINK}
+_VALID_OPS = {OP_SET_PROPERTY, OP_CREATE_OBJECT, OP_DELETE_OBJECT, OP_ADD_LINK, OP_REMOVE_LINK}
 
 
 class EditSetError(ValueError):
@@ -58,16 +57,16 @@ class EditSetError(ValueError):
 @dataclass(frozen=True, slots=True)
 class EditOp:
     op: str
-    target: str = ""              # set_property/delete_object: Individual rid
-    property_rid: str = ""        # set_property
-    value: Any = None             # set_property / create_object 单值（props 用 props）
-    class_rid: str = ""           # create_object
-    primary_key: str = ""         # create_object
+    target: str = ""  # set_property/delete_object: Individual rid
+    property_rid: str = ""  # set_property
+    value: Any = None  # set_property / create_object 单值（props 用 props）
+    class_rid: str = ""  # create_object
+    primary_key: str = ""  # create_object
     props: dict[str, Any] = field(default_factory=dict)  # create_object: prop_rid → value
-    link_type_rid: str = ""       # add_link
-    src: str = ""                 # add_link
-    dst: str = ""                 # add_link
-    link_instance_rid: str = ""   # remove_link
+    link_type_rid: str = ""  # add_link
+    src: str = ""  # add_link
+    dst: str = ""  # add_link
+    link_instance_rid: str = ""  # remove_link
 
     def __post_init__(self) -> None:
         if self.op not in _VALID_OPS:
@@ -93,9 +92,9 @@ class EditOp:
 class EditSetResult:
     action_rid: str
     applied: tuple[EditOp, ...]
-    inverse: tuple[EditOp, ...]           # 逆编辑（delete_object 逆为占位 → 不进 revert）
-    non_invertible: tuple[str, ...]       # 不可逆编辑的说明（revert 拒绝依据）
-    created_rids: tuple[str, ...]         # create_object 实际生成的 rid
+    inverse: tuple[EditOp, ...]  # 逆编辑（delete_object 逆为占位 → 不进 revert）
+    non_invertible: tuple[str, ...]  # 不可逆编辑的说明（revert 拒绝依据）
+    created_rids: tuple[str, ...]  # create_object 实际生成的 rid
     dry_run: bool = False
 
 
@@ -117,6 +116,7 @@ def resolve_edit_template(
     - ``$now`` → now_iso（调用方生成，避免执行两次时间漂移）
     未知占位符 / 缺参数 → EditSetError（fail-fast，不留半解析状态）。
     """
+
     def _sub(v: Any) -> Any:
         if not isinstance(v, str):
             return v
@@ -127,7 +127,7 @@ def resolve_edit_template(
         if v == "$now":
             return now_iso
         if v.startswith("$param."):
-            name = v[len("$param."):]
+            name = v[len("$param.") :]
             if name not in parameters:
                 raise EditSetError(f"parameter {name!r} not provided")
             return parameters[name]
@@ -151,12 +151,9 @@ def resolve_edit_templates(
     now_iso: str = "",
 ) -> list[EditOp]:
     if len(templates) > EDIT_BATCH_LIMIT:
-        raise EditSetError(
-            f"edit-set exceeds batch limit {EDIT_BATCH_LIMIT}: {len(templates)}"
-        )
+        raise EditSetError(f"edit-set exceeds batch limit {EDIT_BATCH_LIMIT}: {len(templates)}")
     return [
-        resolve_edit_template(t, target_iid=target_iid, parameters=parameters,
-                              now_iso=now_iso)
+        resolve_edit_template(t, target_iid=target_iid, parameters=parameters, now_iso=now_iso)
         for t in templates
     ]
 
@@ -167,9 +164,9 @@ def resolve_edit_templates(
 def invert_edits(
     applied: tuple[EditOp, ...] | list[EditOp],
     *,
-    old_values: dict[str, Any],               # f"{target}#{property_rid}" → 旧值
+    old_values: dict[str, Any],  # f"{target}#{property_rid}" → 旧值
     created_rids: tuple[str, ...] | list[str],
-    removed_links: list[dict[str, Any]],      # remove_link 前的快照（含 props）
+    removed_links: list[dict[str, Any]],  # remove_link 前的快照（含 props）
 ) -> tuple[tuple[EditOp, ...], tuple[str, ...]]:
     """编辑序列 → （逆序列, 不可逆说明）。逆序列按原序的**逆序**（逆操作回滚）。
 
@@ -201,15 +198,20 @@ def invert_edits(
             if not e.link_instance_rid:
                 non_invertible.append("add_link: link_instance_rid not backfilled")
                 continue
-            inverse.append(EditOp(op=OP_REMOVE_LINK,
-                                  link_instance_rid=e.link_instance_rid))
+            inverse.append(EditOp(op=OP_REMOVE_LINK, link_instance_rid=e.link_instance_rid))
         elif e.op == OP_REMOVE_LINK:
             snap = removed_by_rid.get(e.link_instance_rid)
             if snap is None:
                 non_invertible.append(f"remove_link {e.link_instance_rid}: snapshot missing")
                 continue
-            inverse.append(EditOp(op=OP_ADD_LINK, link_type_rid=snap["link_type_rid"],
-                                  src=snap["src"], dst=snap["dst"]))
+            inverse.append(
+                EditOp(
+                    op=OP_ADD_LINK,
+                    link_type_rid=snap["link_type_rid"],
+                    src=snap["src"],
+                    dst=snap["dst"],
+                )
+            )
         elif e.op == OP_DELETE_OBJECT:
             non_invertible.append(
                 f"delete_object {e.target}: inverse requires instance snapshot (v1 unsupported)"

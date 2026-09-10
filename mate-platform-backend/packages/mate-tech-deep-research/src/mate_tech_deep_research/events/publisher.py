@@ -8,6 +8,7 @@ what was researched and how long it took.
 Event type follows the ``<domain>.<aggregate>.<action>`` convention
 required by ``Event.create`` and the EventTypeTopicResolver.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -43,8 +44,7 @@ def publish_research_completed(
         # Delegate to Event.create which will raise ValueError; we
         # surface a clearer message first.
         raise ValueError(
-            "publish_research_completed requires a tenant-bound context "
-            "(SEC-TENANT-01 hard rule 3)"
+            "publish_research_completed requires a tenant-bound context (SEC-TENANT-01 hard rule 3)"
         )
 
     payload: dict[str, Any] = {

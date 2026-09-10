@@ -5,6 +5,7 @@ claims: scopes, client_id, auth_method. The dataclass is the contract
 between the auth layer (Keycloak JWT verification) and the application
 layer (every endpoint that needs a tenant / user / role).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

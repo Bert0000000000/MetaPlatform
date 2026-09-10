@@ -7,6 +7,7 @@ is tenant-scoped: each tenant sees only its own messages.
 This is a P3-W8 stub — the real persistence layer (Paimon / Postgres
 CDC) reuses the ``MessageRecord`` shape without leaking FastAPI types.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

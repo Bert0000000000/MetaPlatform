@@ -3,6 +3,7 @@
 Covers upload / browse / detail / download / install / delete, tenant
 visibility (public vs own-private), and scope gating.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -35,7 +36,9 @@ def _app() -> TestClient:
     return TestClient(app)
 
 
-def _upload(client: TestClient, name: str, tenant: str = "tenant-acme", visibility: str = "public", **kw) -> dict:
+def _upload(
+    client: TestClient, name: str, tenant: str = "tenant-acme", visibility: str = "public", **kw
+) -> dict:
     r = client.post(
         "/skills",
         json={
@@ -121,7 +124,9 @@ def test_delete_only_owner() -> None:
     # owner can
     r2 = c.delete(f"/skills/{skill['id']}", headers={"X-Test-Tenant": "tenant-acme"})
     assert r2.status_code == 200
-    assert c.get(f"/skills/{skill['id']}", headers={"X-Test-Tenant": "tenant-acme"}).status_code == 404
+    assert (
+        c.get(f"/skills/{skill['id']}", headers={"X-Test-Tenant": "tenant-acme"}).status_code == 404
+    )
 
 
 def test_update_skill_owner_only() -> None:
@@ -130,7 +135,13 @@ def test_update_skill_owner_only() -> None:
     # owner can update
     r = c.put(
         f"/skills/{skill['id']}",
-        json={"name": "editable-v2", "description": "updated desc", "version": "v2", "visibility": "public", "content": "# updated"},
+        json={
+            "name": "editable-v2",
+            "description": "updated desc",
+            "version": "v2",
+            "visibility": "public",
+            "content": "# updated",
+        },
         headers={"X-Test-Tenant": "tenant-acme"},
     )
     assert r.status_code == 200, r.text

@@ -7,6 +7,7 @@ as ``alerts.management.AlertRuleStore``: every method takes
 ``tenant_id`` from the request context and refuses cross-tenant
 access.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

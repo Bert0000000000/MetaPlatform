@@ -32,6 +32,7 @@ ADR-0014 5-step pattern
 5. Cross-tenant negative tests: see
    ``tests/test_msg_subscriptions.py``.
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -124,7 +125,9 @@ def _serialize_dlq_entry(e: DLQEntry) -> dict[str, Any]:
 # Request / response models
 # ---------------------------------------------------------------------------
 class CreateSubscriptionRequest(BaseModel):
-    topic_filter: str = Field(..., description="Topic filter: exact match or `*` / `prefix.*` wildcard")
+    topic_filter: str = Field(
+        ..., description="Topic filter: exact match or `*` / `prefix.*` wildcard"
+    )
     target_url: str = Field(..., description="Webhook target URL (http/https)")
     secret: str = Field(..., min_length=8, description="HMAC-SHA256 signing secret")
     max_attempts: int = Field(default=3, ge=1, le=10)
@@ -132,7 +135,9 @@ class CreateSubscriptionRequest(BaseModel):
 
 
 class TestWebhookRequest(BaseModel):
-    topic: str | None = Field(default=None, description="Override topic; defaults to the sub's filter")
+    topic: str | None = Field(
+        default=None, description="Override topic; defaults to the sub's filter"
+    )
     payload: dict[str, Any] = Field(default_factory=lambda: {"test": True})
 
 
@@ -239,7 +244,9 @@ async def test_webhook_endpoint(
     if sub is None:
         raise HTTPException(status_code=404, detail="subscription not found")
     if sub.status != "active":
-        raise HTTPException(status_code=409, detail=f"subscription status is '{sub.status}', expected 'active'")
+        raise HTTPException(
+            status_code=409, detail=f"subscription status is '{sub.status}', expected 'active'"
+        )
 
     topic = req.topic or sub.topic_filter
     delivery = await deliver_with_retries(

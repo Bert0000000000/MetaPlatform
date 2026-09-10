@@ -8,6 +8,7 @@ Covers:
   * /search applies the saved rerank_strategy when the request omits it,
     and an explicit request rerank_strategy overrides the config
 """
+
 from __future__ import annotations
 
 import os
@@ -38,9 +39,14 @@ def _make_tenant_ctx(tenant: str = "tenant-acme"):
     from mate_platform.tenancy import AuthMethod, RequestContext, TenantId, UserId
 
     return RequestContext(
-        request_id="r1", trace_id="trace-1", tenant_id=TenantId(tenant),
-        user_id=UserId("u1"), roles=frozenset(), permissions=frozenset(),
-        client_id="test", auth_method=AuthMethod.USER,
+        request_id="r1",
+        trace_id="trace-1",
+        tenant_id=TenantId(tenant),
+        user_id=UserId("u1"),
+        roles=frozenset(),
+        permissions=frozenset(),
+        client_id="test",
+        auth_method=AuthMethod.USER,
     )
 
 
@@ -60,7 +66,9 @@ def _build_client(tenant: str, captured: dict | None = None) -> TestClient:
             captured["rerank_strategy"] = rerank_strategy
             captured["mode"] = mode
         return {
-            "query": query, "mode": mode, "total": 1,
+            "query": query,
+            "mode": mode,
+            "total": 1,
             "hits": [{"document_id": "doc-a", "score": 0.9, "content": "alpha"}],
         }
 
@@ -68,8 +76,11 @@ def _build_client(tenant: str, captured: dict | None = None) -> TestClient:
     fake_rag.stats = lambda: {"total_chunks": 1, "embedder_dim": 16}
     fake_agent = AgentClient()
     fake_agent.chat = lambda message, scenario="S1", thread_id=None: {
-        "thread_id": "t-1", "scenario": scenario, "answer": "ok",
-        "retrieved_chunks": [], "tool_calls": [],
+        "thread_id": "t-1",
+        "scenario": scenario,
+        "answer": "ok",
+        "retrieved_chunks": [],
+        "tool_calls": [],
     }
 
     with patch("mate_app_kb.api.app.install_auth"):
@@ -89,6 +100,7 @@ def client():
     c = _build_client("tenant-acme")
     yield c
     from mate_app_kb.repositories import in_memory as in_memory_repo
+
     in_memory_repo.reset_store()
 
 
@@ -105,11 +117,17 @@ class TestRetrievalConfigCRUD:
 
     def test_put_then_get_round_trips(self, client: TestClient) -> None:
         payload = {
-            "mode": "FACTUAL", "rerank_strategy": "keyword", "top_k": 5,
-            "similarity_threshold": 0.2, "chunk_strategy": "semantic",
-            "chunk_size": 256, "chunk_overlap": 32,
-            "vector_weight": 0.6, "keyword_weight": 0.4,
-            "reranker_enabled": True, "show_citations": False,
+            "mode": "FACTUAL",
+            "rerank_strategy": "keyword",
+            "top_k": 5,
+            "similarity_threshold": 0.2,
+            "chunk_strategy": "semantic",
+            "chunk_size": 256,
+            "chunk_overlap": 32,
+            "vector_weight": 0.6,
+            "keyword_weight": 0.4,
+            "reranker_enabled": True,
+            "show_citations": False,
         }
         r = client.put("/api/v1/kb/retrieval-config", json=payload)
         assert r.status_code == 200, r.text
@@ -130,7 +148,9 @@ class TestRetrievalConfigCRUD:
         assert r.status_code == 422, r.text
 
     def test_cross_tenant_isolation(self, client: TestClient) -> None:
-        client.put("/api/v1/kb/retrieval-config", json={"rerank_strategy": "keyword", "mode": "FACTUAL"})
+        client.put(
+            "/api/v1/kb/retrieval-config", json={"rerank_strategy": "keyword", "mode": "FACTUAL"}
+        )
         # A client bound to a different tenant sees its own defaults.
         other = _build_client("tenant-globex")
         body = other.get("/api/v1/kb/retrieval-config").json()
@@ -138,6 +158,7 @@ class TestRetrievalConfigCRUD:
         assert body["rerank_strategy"] == "identity"
         assert body["mode"] == "AUTO"
         from mate_app_kb.repositories import in_memory as in_memory_repo
+
         in_memory_repo.reset_store()
 
 
@@ -146,13 +167,16 @@ class TestSearchWiring:
         """When the request omits rerank_strategy, the saved config one is applied."""
         captured: dict = {}
         client = _build_client("tenant-acme", captured=captured)
-        client.put("/api/v1/kb/retrieval-config", json={"rerank_strategy": "keyword", "mode": "FACTUAL"})
+        client.put(
+            "/api/v1/kb/retrieval-config", json={"rerank_strategy": "keyword", "mode": "FACTUAL"}
+        )
         r = client.post("/api/v1/kb/search", json={"query": "hello", "top_k": 5, "mode": "AUTO"})
         assert r.status_code == 200, r.text
         assert captured.get("rerank_strategy") == "keyword", captured
         # Request mode wins over the configured mode.
         assert captured.get("mode") == "AUTO", captured
         from mate_app_kb.repositories import in_memory as in_memory_repo
+
         in_memory_repo.reset_store()
 
     def test_explicit_rerank_overrides_config(self) -> None:
@@ -167,4 +191,5 @@ class TestSearchWiring:
         assert r.status_code == 200, r.text
         assert captured.get("rerank_strategy") == "length", captured
         from mate_app_kb.repositories import in_memory as in_memory_repo
+
         in_memory_repo.reset_store()

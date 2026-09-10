@@ -1,4 +1,5 @@
 """W4 Traefik edge tests (ST-4.x edge)."""
+
 from __future__ import annotations
 
 

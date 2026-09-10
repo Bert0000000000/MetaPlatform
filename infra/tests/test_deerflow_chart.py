@@ -8,6 +8,7 @@ Static text checks (no helm / kubectl required) — mirrors the
 pattern in test_g1_kafka_chart.py. The real helm lint / kubeconform
 runs in CI.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -38,9 +39,7 @@ class TestDeerflowChart:
     def test_deerflow_chart_has_healthcheck(self) -> None:
         """values.yaml must declare healthcheck (path + port + probes)."""
         text = _read(DEERFLOW / "values.yaml")
-        assert "healthcheck:" in text, (
-            "values.yaml must have healthcheck section"
-        )
+        assert "healthcheck:" in text, "values.yaml must have healthcheck section"
         assert "enabled: true" in text
         assert "/healthz" in text, "healthcheck path must be /healthz"
         # Deployment template must render startup/readiness/liveness probes
@@ -101,14 +100,10 @@ class TestDeerflowChart:
         """docker-compose.yml must declare the deerflow-engine service."""
         assert COMPOSE.is_file(), "docker-compose.yml missing"
         text = _read(COMPOSE)
-        assert "deerflow-engine:" in text, (
-            "docker-compose.yml missing deerflow-engine service"
-        )
+        assert "deerflow-engine:" in text, "docker-compose.yml missing deerflow-engine service"
         # research + ai profiles.
         assert "research" in text, "research profile must be declared"
         # Image + healthcheck + volume (mirrors PR-5 spec).
         assert "bytedance/deer-flow" in text
         assert "/healthz" in text
-        assert "deerflowdata" in text, (
-            "docker-compose.yml must declare deerflowdata volume"
-        )
+        assert "deerflowdata" in text, "docker-compose.yml must declare deerflowdata volume"

@@ -130,6 +130,7 @@ class TestBudgetGate:
 class TestTokenBucket:
     def test_window_eviction(self) -> None:
         import time
+
         b = TokenBucket(window_seconds=1, max_in=100, max_out=100)
         now = time.time()
         assert b.consume(50, 0, now=now)

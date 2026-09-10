@@ -5,6 +5,7 @@ GOVERN-03 (2026-08-07): every public method must emit a
 needing a live Neo4j instance by calling the deprecation helper
 directly and via the (mocked) public methods.
 """
+
 from __future__ import annotations
 
 import warnings
@@ -45,9 +46,9 @@ def test_deprecation_helper_emits_warning() -> None:
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         _deprecated_neo4j_method("create_node")
-    assert any(
-        issubclass(w.category, DeprecationWarning) for w in caught
-    ), [str(w.message) for w in caught]
+    assert any(issubclass(w.category, DeprecationWarning) for w in caught), [
+        str(w.message) for w in caught
+    ]
     assert any("create_node" in str(w.message) for w in caught)
     assert any("2026-12-31" in str(w.message) for w in caught)
 
@@ -72,9 +73,9 @@ def test_create_node_method_emits_deprecation() -> None:
         warnings.simplefilter("always")
         with pytest.raises(RuntimeError):
             asyncio.run(r.create_node("Concept", {"k": "v"}))
-    assert any(
-        issubclass(w.category, DeprecationWarning) for w in caught
-    ), [str(w.message) for w in caught]
+    assert any(issubclass(w.category, DeprecationWarning) for w in caught), [
+        str(w.message) for w in caught
+    ]
 
 
 def test_edge_dataclass() -> None:

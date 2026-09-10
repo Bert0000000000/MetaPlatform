@@ -1,86 +1,86 @@
-# Mate Platform Data Platform Implementation Plan (D0¨CD8)
+# Mate Platform Data Platform Implementation Plan (D0ï¿½CD8)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** ÔÚ v3.0 Ö÷ºó¶ËÖ®ÉÏ£¬ÂäµØÍêÕû×ÔÍÐ¹Ü´óÊý¾Ý ETL + ºþ²Ö + ÖÎÀíÄÜÁ¦£»¿ØÖÆÃæÓÃ Python `mate-tech-data`£¬Êý¾ÝÆ½ÃæÓÃ Flink + Airflow + Paimon + Iceberg + Trino + StarRocks + ÖÎÀíÕ»£»²úÆ·Èë¿Ú²¢ÈëÏÖÓÐ `Ontology Studio / Êý¾ÝÖÐÐÄ`£¬²»ÐÂÔö¶ÀÁ¢ APP¡£
+**Goal:** ï¿½ï¿½ v3.0 ï¿½ï¿½ï¿½ï¿½ï¿½Ö®ï¿½Ï£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¹Ü´ï¿½ï¿½ï¿½ï¿½ï¿½ ETL + ï¿½ï¿½ï¿½ï¿½ + ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Python `mate-tech-data`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ½ï¿½ï¿½ï¿½ï¿½ Flink + Airflow + Paimon + Iceberg + Trino + StarRocks + ï¿½ï¿½ï¿½ï¿½Õ»ï¿½ï¿½ï¿½ï¿½Æ·ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ `Ontology Studio / ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ APPï¿½ï¿½
 
-**Architecture:** Python ¿ØÖÆÃæ£¨`mate-tech-data` Ä£¿é»¯µ¥Ìå£©+ Êý¾ÝÆ½Ãæ£¨Kubernetes ÉÏµÄ Flink Application / Airflow / Trino / StarRocks / Paimon + Iceberg ºþ±í / Gravitino + OpenMetadata + OpenLineage + Great Expectations + Ranger + OpenBao£©¡£¿ØÖÆÃæÖ»¹ÜÀí×´Ì¬Óë¶¨Òå£¬ÍÌÍÂÓë×´Ì¬±£ÁôÔÚ Flink / Kafka / ºþ²ÖÖÐ¡£ËùÓÐ Pipeline °æ±¾»¯¡¢¿É»Ø¹ö¡¢²¹Êý£»ËùÓÐÊý¾Ý²úÆ·¾­ Schema Contract / Quality / Security / Ownership / Approval ÎåÖØÃÅ½û¡£
+**Architecture:** Python ï¿½ï¿½ï¿½ï¿½ï¿½æ£¨`mate-tech-data` Ä£ï¿½é»¯ï¿½ï¿½ï¿½å£©+ ï¿½ï¿½ï¿½ï¿½Æ½ï¿½æ£¨Kubernetes ï¿½Ïµï¿½ Flink Application / Airflow / Trino / StarRocks / Paimon + Iceberg ï¿½ï¿½ï¿½ï¿½ / Gravitino + OpenMetadata + OpenLineage + Great Expectations + Ranger + OpenBaoï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ë¶¨ï¿½å£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Flink / Kafka / ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ Pipeline ï¿½æ±¾ï¿½ï¿½ï¿½ï¿½ï¿½É»Ø¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½Æ·ï¿½ï¿½ Schema Contract / Quality / Security / Ownership / Approval ï¿½ï¿½ï¿½ï¿½ï¿½Å½ï¿½ï¿½ï¿½
 
-**Tech Stack:** Python 3.12¡¢FastAPI¡¢SQLModel¡¢Pydantic v2¡¢httpx¡¢uvloop¡¢granian¡¢pyright strict¡¢Pytest¡¢Testcontainers¡¢Kubernetes¡¢Argo CD¡¢Helm¡¢Flink 1.19¡¢Airflow 3.0¡¢Apache Paimon 0.9¡¢Apache Iceberg 1.5¡¢Trino 455¡¢StarRocks 3.3¡¢Apache Gravitino 0.7¡¢OpenMetadata 1.4¡¢OpenLineage 0.50¡¢Great Expectations 0.18¡¢Apache Ranger 2.4¡¢OpenBao 1.15¡¢Apache Kafka 3.7¡¢Apicurio 2.6¡¢Keycloak 25¡¢Flowable 8¡£
+**Tech Stack:** Python 3.12ï¿½ï¿½FastAPIï¿½ï¿½SQLModelï¿½ï¿½Pydantic v2ï¿½ï¿½httpxï¿½ï¿½uvloopï¿½ï¿½granianï¿½ï¿½pyright strictï¿½ï¿½Pytestï¿½ï¿½Testcontainersï¿½ï¿½Kubernetesï¿½ï¿½Argo CDï¿½ï¿½Helmï¿½ï¿½Flink 1.19ï¿½ï¿½Airflow 3.0ï¿½ï¿½Apache Paimon 0.9ï¿½ï¿½Apache Iceberg 1.5ï¿½ï¿½Trino 455ï¿½ï¿½StarRocks 3.3ï¿½ï¿½Apache Gravitino 0.7ï¿½ï¿½OpenMetadata 1.4ï¿½ï¿½OpenLineage 0.50ï¿½ï¿½Great Expectations 0.18ï¿½ï¿½Apache Ranger 2.4ï¿½ï¿½OpenBao 1.15ï¿½ï¿½Apache Kafka 3.7ï¿½ï¿½Apicurio 2.6ï¿½ï¿½Keycloak 25ï¿½ï¿½Flowable 8ï¿½ï¿½
 
 ---
 
 ## File Structure
 
-### ¿ØÖÆÃæ£¨`mate-tech-data`£©
+### ï¿½ï¿½ï¿½ï¿½ï¿½æ£¨`mate-tech-data`ï¿½ï¿½
 
-- `mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/` ¸ù
-- `mate_tech_data/connector/` Á¬½ÓÆ÷Óë Connector SDK
-- `mate_tech_data/pipeline/` Pipeline Spec Óë±àÒë
-- `mate_tech_data/orchestration/` µ÷¶ÈÓëÔËÐÐ
-- `mate_tech_data/catalog/` Êý¾Ý×Ê²ú
-- `mate_tech_data/governance/` ÖÎÀí
-- `mate_tech_data/query/` ²éÑ¯Óë Serving
+- `mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/` ï¿½ï¿½
+- `mate_tech_data/connector/` ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Connector SDK
+- `mate_tech_data/pipeline/` Pipeline Spec ï¿½ï¿½ï¿½ï¿½ï¿½
+- `mate_tech_data/orchestration/` ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+- `mate_tech_data/catalog/` ï¿½ï¿½ï¿½ï¿½ï¿½Ê²ï¿½
+- `mate_tech_data/governance/` ï¿½ï¿½ï¿½ï¿½
+- `mate_tech_data/query/` ï¿½ï¿½Ñ¯ï¿½ï¿½ Serving
 - `mate_tech_data/operator/` Airflow Provider
-- `mate_tech_data/acl/` ÒýÇæ ACL Adapter
-- `mate_tech_data/api/` Â·ÓÉ¾ÛºÏ
-- `mate_tech_data/db/` PostgreSQL Ä£ÐÍÓëÇ¨ÒÆ
+- `mate_tech_data/acl/` ï¿½ï¿½ï¿½ï¿½ ACL Adapter
+- `mate_tech_data/api/` Â·ï¿½É¾Ûºï¿½
+- `mate_tech_data/db/` PostgreSQL Ä£ï¿½ï¿½ï¿½ï¿½Ç¨ï¿½ï¿½
 - `mate_tech_data/outbox/` Outbox
-- `mate_tech_data/auth/` ¼øÈ¨
-- `mate_tech_data/common/` ¹«¹²
+- `mate_tech_data/auth/` ï¿½ï¿½È¨
+- `mate_tech_data/common/` ï¿½ï¿½ï¿½ï¿½
 
-### ÆõÔ¼ÓëÅäÖÃ
+### ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-- `docs/active/api/data/openapi.yaml` `mate-tech-data` ÍêÕû OpenAPI 3.1
-- `docs/active/specs/2026-07-27-mate-platform-data-architecture.md` ×é¼þÏ¸½Ú
+- `docs/active/api/data/openapi.yaml` `mate-tech-data` ï¿½ï¿½ï¿½ï¿½ OpenAPI 3.1
+- `docs/active/specs/2026-07-27-mate-platform-data-architecture.md` ï¿½ï¿½ï¿½Ï¸ï¿½ï¿½
 - `infra/data/k8s/` Helm values
 - `infra/data/docker-compose.observability.yml` Compose profiles
 
-### Ç°¶Ë£¨Ç¶ÈëÏÖÓÐ Ontology Data Center£©
+### Ç°ï¿½Ë£ï¿½Ç¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ontology Data Centerï¿½ï¿½
 
-- `metaplatform-frontend/apps/portal/src/pages/ontology/` ÒÑÓÐ `OntologyDatacenterPage.tsx`£»ÐÂÔö×ÓÒ³Â·ÓÉ
-- `metaplatform-frontend/apps/portal/src/api/data.ts` API ¿Í»§¶Ë
-- `metaplatform-frontend/packages/shared/src/components/` ¸´ÓÃ SubTabs / PageHeader
+- `metaplatform-frontend/apps/portal/src/pages/ontology/` ï¿½ï¿½ï¿½ï¿½ `OntologyDatacenterPage.tsx`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò³Â·ï¿½ï¿½
+- `metaplatform-frontend/apps/portal/src/api/data.ts` API ï¿½Í»ï¿½ï¿½ï¿½
+- `metaplatform-frontend/packages/shared/src/components/` ï¿½ï¿½ï¿½ï¿½ SubTabs / PageHeader
 
-### ²âÊÔ
+### ï¿½ï¿½ï¿½ï¿½
 
 - `mate-platform-backend/packages/mate-tech-data/tests/unit/`
 - `mate-platform-backend/packages/mate-tech-data/tests/integration/`
 - `mate-platform-backend/packages/mate-tech-data/tests/contract/`
 - `tests/e2e/data/` Playwright
-- `tests/perf/data/` Ñ¹²âÓë»ìãç
+- `tests/perf/data/` Ñ¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 ---
 
-## ÈÎÎñÒÀÀµÓëÀï³Ì±®
+## ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì±ï¿½
 
 ```mermaid
 flowchart LR
-  D0[D0 Spike] --> D1[K8s Êý¾ÝÆ½Ãæ] --> D2[mate-tech-data ¹Ç¼Ü] --> D3[CDC + Paimon]
+  D0[D0 Spike] --> D1[K8s ï¿½ï¿½ï¿½ï¿½Æ½ï¿½ï¿½] --> D2[mate-tech-data ï¿½Ç¼ï¿½] --> D3[CDC + Paimon]
   D3 --> D4[Pipeline + Airflow]
   D4 --> D5[Iceberg + Trino + StarRocks]
-  D5 --> D6[ÖÎÀí + °²È« + ÑªÔµ]
-  D6 --> D7[±¾ÌåÒýÇæÔ­Î»ÔöÇ¿]
-  D7 --> D8[Ñ¹²â ÔÖ±¸ GA]
+  D5 --> D6[ï¿½ï¿½ï¿½ï¿½ + ï¿½ï¿½È« + ÑªÔµ]
+  D6 --> D7[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô­Î»ï¿½ï¿½Ç¿]
+  D7 --> D8[Ñ¹ï¿½ï¿½ ï¿½Ö±ï¿½ GA]
 ```
 
 ---
 
+## D0 Spikeï¿½ï¿½2 ï¿½Ü£ï¿½
 
-## D0 Spike£¨2 ÖÜ£©
+**Owner:** D0 owner ï¿½ï¿½ **ï¿½Ø¼ï¿½Â·ï¿½ï¿½ ?**
 
-**Owner:** D0 owner ¡¤ **¹Ø¼üÂ·¾¶ ?**
-
-### Task D0.1: ¹Ø¼üÁ´Â· Spike
+### Task D0.1: ï¿½Ø¼ï¿½ï¿½ï¿½Â· Spike
 
 **Files:**
+
 - Create: `infra/data/spike/cdc-paimon-trino/README.md`
 - Create: `infra/data/spike/cdc-paimon-trino/docker-compose.yml`
 - Create: `infra/data/spike/cdc-paimon-trino/flink-job.sql`
 - Create: `infra/data/spike/cdc-paimon-trino/verify.sh`
 - Create: `docs/superpowers/reports/2026-07-28-data-spike-d0.md`
 
-- [ ] **Step 1: ±àÐ´ docker-compose.yml**
+- [ ] **Step 1: ï¿½ï¿½Ð´ docker-compose.yml**
 
 ```yaml
 services:
@@ -116,9 +116,9 @@ services:
       FLINK_PROPERTIES: "execution.checkpointing.interval: 10s"
 ```
 
-- [ ] **Step 2: ±àÐ´ Flink SQL**
+- [ ] **Step 2: ï¿½ï¿½Ð´ Flink SQL**
 
-±£´æµ½ `infra/data/spike/cdc-paimon-trino/flink-job.sql`£º
+ï¿½ï¿½ï¿½æµ½ `infra/data/spike/cdc-paimon-trino/flink-job.sql`ï¿½ï¿½
 
 ```sql
 CREATE TABLE source_orders (
@@ -152,7 +152,7 @@ CREATE TABLE sink_orders_paimon (
 INSERT INTO sink_orders_paimon SELECT * FROM source_orders;
 ```
 
-- [ ] **Step 3: ±àÐ´ verify.sh**
+- [ ] **Step 3: ï¿½ï¿½Ð´ verify.sh**
 
 ```bash
 #!/usr/bin/env bash
@@ -166,41 +166,42 @@ sleep 30
 trino --server trino:8080 --execute "SELECT count(*) FROM paimon.default.orders;"
 ```
 
-- [ ] **Step 4: ÔËÐÐ²¢¼ÇÂ¼½á¹û**
+- [ ] **Step 4: ï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½**
 
 ```bash
 cd infra/data/spike/cdc-paimon-trino
 ./verify.sh 2>&1 | tee /tmp/spike.log
 ```
 
-- [ ] **Step 5: ±àÐ´ Spike ±¨¸æ**
+- [ ] **Step 5: ï¿½ï¿½Ð´ Spike ï¿½ï¿½ï¿½ï¿½**
 
-±¨¸æ `docs/superpowers/reports/2026-07-28-data-spike-d0.md`£¬ÖÁÉÙ°üº¬£º
+ï¿½ï¿½ï¿½ï¿½ `docs/superpowers/reports/2026-07-28-data-spike-d0.md`ï¿½ï¿½ï¿½ï¿½ï¿½Ù°ï¿½ï¿½ï¿½ï¿½ï¿½
 
-- ¶Ëµ½¶Ë CDC ¡ú Paimon ¡ú Trino ÅÜÍ¨Ö¤¾Ý£¨½ØÍ¼ + Êä³ö£©
-- Flink Job Æô¶¯Ê±¼ä¡¢Checkpoint ¼ä¸ô¡¢Backpressure
-- Paimon ÎÄ¼þ´óÐ¡¡¢Compaction ÐÐÎª
-- Trino ²éÑ¯ P95
-- ÒÑÖª¼æÈÝÐÔÏÝÚå£¨Èç Paimon/Iceberg ÀàÐÍÓ³Éä¡¢Debezium slot ÐÐÎª£©
+- ï¿½Ëµï¿½ï¿½ï¿½ CDC ï¿½ï¿½ Paimon ï¿½ï¿½ Trino ï¿½ï¿½Í¨Ö¤ï¿½Ý£ï¿½ï¿½ï¿½Í¼ + ï¿½ï¿½ï¿½ï¿½ï¿½
+- Flink Job ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ä¡¢Checkpoint ï¿½ï¿½ï¿½ï¿½ï¿½Backpressure
+- Paimon ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½Compaction ï¿½ï¿½Îª
+- Trino ï¿½ï¿½Ñ¯ P95
+- ï¿½ï¿½Öªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½å£¨ï¿½ï¿½ Paimon/Iceberg ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ä¡¢Debezium slot ï¿½ï¿½Îªï¿½ï¿½
 
-- [ ] **Step 6: Ìá½»**
+- [ ] **Step 6: ï¿½á½»**
 
 ```bash
 git add infra/data/spike docs/superpowers/reports
 git commit -m "feat(data): D0 spike cdc paimon trino"
 ```
 
-**ÃÅ½û£º** ¶Ëµ½¶ËÁ´Â·ÅÜÍ¨£¬Spike ±¨¸æ´æÔÚ¡£
+**ï¿½Å½ï¿½ï¿½ï¿½** ï¿½Ëµï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½Í¨ï¿½ï¿½Spike ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¡ï¿½
 
 ---
 
-## D1 Kubernetes Êý¾ÝÆ½Ãæ£¨4 ÖÜ£©
+## D1 Kubernetes ï¿½ï¿½ï¿½ï¿½Æ½ï¿½æ£¨4 ï¿½Ü£ï¿½
 
-**Owner:** D1 owner ¡¤ **¹Ø¼üÂ·¾¶ ?**
+**Owner:** D1 owner ï¿½ï¿½ **ï¿½Ø¼ï¿½Â·ï¿½ï¿½ ?**
 
-### Task D1.1: Helm Chart ¹Ç¼Ü
+### Task D1.1: Helm Chart ï¿½Ç¼ï¿½
 
 **Files:**
+
 - Create: `infra/data/k8s/charts/mate-data-platform/Chart.yaml`
 - Create: `infra/data/k8s/charts/mate-data-platform/values.yaml`
 - Create: `infra/data/k8s/charts/mate-data-platform/values-dev.yaml`
@@ -219,7 +220,7 @@ version: 0.1.0
 appVersion: "0.1.0"
 ```
 
-- [ ] **Step 2: values.yaml Ä¬ÈÏ**
+- [ ] **Step 2: values.yaml Ä¬ï¿½ï¿½**
 
 ```yaml
 global:
@@ -244,7 +245,7 @@ trino:
   workers: 3
 ```
 
-- [ ] **Step 3: Kafka StatefulSet Ä£°å**
+- [ ] **Step 3: Kafka StatefulSet Ä£ï¿½ï¿½**
 
 ```yaml
 apiVersion: apps/v1
@@ -274,27 +275,28 @@ spec:
                   fieldPath: metadata.labels["statefulset.kubernetes.io/pod-name"]
 ```
 
-- [ ] **Step 4: MinIO / Flink Operator / Airflow / Trino Ä£°å**
+- [ ] **Step 4: MinIO / Flink Operator / Airflow / Trino Ä£ï¿½ï¿½**
 
-°´¸÷×Ô Helm ±ê×¼½á¹¹²¹Æë£ºDeployment¡¢Service¡¢ServiceAccount¡¢ConfigMap¡¢Secret Ä£°å¡£
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Helm ï¿½ï¿½×¼ï¿½á¹¹ï¿½ï¿½ï¿½ë£ºDeploymentï¿½ï¿½Serviceï¿½ï¿½ServiceAccountï¿½ï¿½ConfigMapï¿½ï¿½Secret Ä£ï¿½å¡£
 
-- [ ] **Step 5: ÑéÖ¤äÖÈ¾**
+- [ ] **Step 5: ï¿½ï¿½Ö¤ï¿½ï¿½È¾**
 
 ```bash
 helm template mate-data-platform infra/data/k8s/charts/mate-data-platform > /tmp/rendered.yaml
 kubectl --dry-run=client apply -f /tmp/rendered.yaml
 ```
 
-- [ ] **Step 6: Ìá½»**
+- [ ] **Step 6: ï¿½á½»**
 
 ```bash
 git add infra/data/k8s
 git commit -m "feat(data): d1 k8s helm chart skeleton"
 ```
 
-### Task D1.2: Argo CD Ó¦ÓÃ
+### Task D1.2: Argo CD Ó¦ï¿½ï¿½
 
 **Files:**
+
 - Create: `infra/data/k8s/argocd/mate-data-platform.yaml`
 - Create: `infra/data/k8s/argocd/appset.yaml`
 
@@ -315,7 +317,7 @@ spec:
             cluster: prod
   template:
     metadata:
-      name: 'mate-data-platform-{{env}}'
+      name: "mate-data-platform-{{env}}"
     spec:
       project: mate
       source:
@@ -325,51 +327,52 @@ spec:
           valueFiles:
             - values-{{env}}.yaml
       destination:
-        server: '{{cluster}}'
+        server: "{{cluster}}"
 ```
 
-- [ ] **Step 2: Ìá½»**
+- [ ] **Step 2: ï¿½á½»**
 
 ```bash
 git add infra/data/k8s/argocd
 git commit -m "feat(data): d1 argocd applicationset"
 ```
 
-### Task D1.3: ¹ÊÕÏ»Ö¸´ÑÝÁ·
+### Task D1.3: ï¿½ï¿½ï¿½Ï»Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½
 
 **Files:**
+
 - Create: `docs/superpowers/reports/2026-07-28-data-k8s-drill.md`
 
-- [ ] **Step 1: ×¢Èë¹ÊÕÏ**
+- [ ] **Step 1: ×¢ï¿½ï¿½ï¿½ï¿½ï¿½**
 
-- É±µôÒ»¸ö Kafka broker
-- ÖØÆô Flink TaskManager
-- É¾³ý Paimon ÎÄ¼þÔÙ»Ö¸´
+- É±ï¿½ï¿½Ò»ï¿½ï¿½ Kafka broker
+- ï¿½ï¿½ï¿½ï¿½ Flink TaskManager
+- É¾ï¿½ï¿½ Paimon ï¿½Ä¼ï¿½ï¿½Ù»Ö¸ï¿½
 
-- [ ] **Step 2: ÑéÖ¤»Ö¸´**
+- [ ] **Step 2: ï¿½ï¿½Ö¤ï¿½Ö¸ï¿½**
 
-- ¶Ëµ½¶Ë P95 ²»ÁÓ»¯³¬¹ý 50%
-- RPO/RTO ÊýÖµ¼ÇÂ¼
+- ï¿½Ëµï¿½ï¿½ï¿½ P95 ï¿½ï¿½ï¿½Ó»ï¿½ï¿½ï¿½ï¿½ï¿½ 50%
+- RPO/RTO ï¿½ï¿½Öµï¿½ï¿½Â¼
 
-- [ ] **Step 3: Ìá½»±¨¸æ**
+- [ ] **Step 3: ï¿½á½»ï¿½ï¿½ï¿½ï¿½**
 
 ```bash
 git add docs/superpowers/reports
 git commit -m "docs(data): d1 k8s failure recovery drill"
 ```
 
-**ÃÅ½û£º** ¹Ø¼ü×é¼þ½¡¿µ¼ì²éÈ«²¿¾ÍÐ÷£»¹ÊÕÏ»Ö¸´ÑÝÁ·±¨¸æÍê³É¡£
+**ï¿½Å½ï¿½ï¿½ï¿½** ï¿½Ø¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï»Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¡ï¿½
 
 ---
 
+## D2 mate-tech-data ï¿½Ç¼Ü£ï¿½4 ï¿½Ü£ï¿½
 
-## D2 mate-tech-data ¹Ç¼Ü£¨4 ÖÜ£©
+**Owner:** D2 owner ï¿½ï¿½ **ï¿½Ø¼ï¿½Â·ï¿½ï¿½ ?**
 
-**Owner:** D2 owner ¡¤ **¹Ø¼üÂ·¾¶ ?**
-
-### Task D2.1: °ü¹Ç¼ÜÓë pyproject
+### Task D2.1: ï¿½ï¿½ï¿½Ç¼ï¿½ï¿½ï¿½ pyproject
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-tech-data/pyproject.toml`
 - Create: `mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/__init__.py`
 - Create: `mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/common/settings.py`
@@ -465,7 +468,7 @@ def test_settings_loads_from_env(monkeypatch):
     assert "x/y/z" in s.postgres_dsn
 ```
 
-- [ ] **Step 6: ÅÜ²â**
+- [ ] **Step 6: ï¿½Ü²ï¿½**
 
 ```bash
 uv sync
@@ -473,16 +476,17 @@ uv run pytest packages/mate-tech-data/tests/unit/test_settings.py -v
 uv run pyright packages/mate-tech-data
 ```
 
-- [ ] **Step 7: Ìá½»**
+- [ ] **Step 7: ï¿½á½»**
 
 ```bash
 git add packages/mate-tech-data
 git commit -m "feat(data): d2 mate tech data skeleton"
 ```
 
-### Task D2.2: ACL Adapter ×¢²áÖÐÐÄ
+### Task D2.2: ACL Adapter ×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/acl/registry.py`
 - Create: `mate-tech-data/src/mate_tech_data/acl/kafka.py`
 - Create: `mate-tech-data/tests/unit/acl/test_registry.py`
@@ -532,7 +536,7 @@ async def test_register_and_get():
     assert r.get("kafka") is a
 ```
 
-- [ ] **Step 4: ÅÜ²â²¢Ìá½»**
+- [ ] **Step 4: ï¿½Ü²â²¢ï¿½á½»**
 
 ```bash
 uv run pytest packages/mate-tech-data/tests/unit/acl -v
@@ -540,15 +544,16 @@ git add packages/mate-tech-data
 git commit -m "feat(data): d2 acl registry and kafka adapter"
 ```
 
-### Task D2.3: ÁìÓòÄ£ÐÍ + Êý¾Ý¿âÇ¨ÒÆ
+### Task D2.3: ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ + ï¿½ï¿½ï¿½Ý¿ï¿½Ç¨ï¿½ï¿½
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/db/models.py`
 - Create: `mate-tech-data/src/mate_tech_data/db/migrations/env.py`
 - Create: `mate-tech-data/src/mate_tech_data/db/migrations/versions/0001_init.py`
 - Create: `mate-tech-data/tests/integration/db/test_migration.py`
 
-- [ ] **Step 1: SQLModel »ùÀà**
+- [ ] **Step 1: SQLModel ï¿½ï¿½ï¿½ï¿½**
 
 ```python
 from datetime import datetime
@@ -559,18 +564,18 @@ class BaseModel(SQLModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 ```
 
-- [ ] **Step 2: ³õÊ¼»¯ Alembic**
+- [ ] **Step 2: ï¿½ï¿½Ê¼ï¿½ï¿½ Alembic**
 
 ```bash
 cd packages/mate-tech-data
 alembic init -t async src/mate_tech_data/db/migrations
 ```
 
-- [ ] **Step 3: ±àÐ´ 0001_init.py**
+- [ ] **Step 3: ï¿½ï¿½Ð´ 0001_init.py**
 
-°üº¬ `data_source`¡¢`connector_definition`¡¢`schema_snapshot`¡¢`pipeline`¡¢`pipeline_version`¡¢`node`¡¢`edge`¡¢`deployment`¡¢`artifact`¡¢`schedule`¡¢`run`¡¢`backfill`¡¢`checkpoint`¡¢`savepoint`¡¢`data_asset`¡¢`dataset_version`¡¢`data_product`¡¢`contract`¡¢`subscription`¡¢`lineage_edge`¡¢`quality_suite`¡¢`quality_run`¡¢`classification`¡¢`policy_binding`¡¢`sla`¡¢`saved_query`¡¢`metric` ±í¡£
+ï¿½ï¿½ï¿½ï¿½ `data_source`ï¿½ï¿½`connector_definition`ï¿½ï¿½`schema_snapshot`ï¿½ï¿½`pipeline`ï¿½ï¿½`pipeline_version`ï¿½ï¿½`node`ï¿½ï¿½`edge`ï¿½ï¿½`deployment`ï¿½ï¿½`artifact`ï¿½ï¿½`schedule`ï¿½ï¿½`run`ï¿½ï¿½`backfill`ï¿½ï¿½`checkpoint`ï¿½ï¿½`savepoint`ï¿½ï¿½`data_asset`ï¿½ï¿½`dataset_version`ï¿½ï¿½`data_product`ï¿½ï¿½`contract`ï¿½ï¿½`subscription`ï¿½ï¿½`lineage_edge`ï¿½ï¿½`quality_suite`ï¿½ï¿½`quality_run`ï¿½ï¿½`classification`ï¿½ï¿½`policy_binding`ï¿½ï¿½`sla`ï¿½ï¿½`saved_query`ï¿½ï¿½`metric` ï¿½ï¿½ï¿½ï¿½
 
-- [ ] **Step 4: Testcontainers ¼¯³É²âÊÔ**
+- [ ] **Step 4: Testcontainers ï¿½ï¿½ï¿½É²ï¿½ï¿½ï¿½**
 
 ```python
 import pytest
@@ -596,7 +601,7 @@ async def test_init_migration(engine):
     assert "pipeline" in names
 ```
 
-- [ ] **Step 5: ÅÜ²â²¢Ìá½»**
+- [ ] **Step 5: ï¿½Ü²â²¢ï¿½á½»**
 
 ```bash
 uv run pytest packages/mate-tech-data/tests/integration/db -v
@@ -604,9 +609,10 @@ git add packages/mate-tech-data
 git commit -m "feat(data): d2 db schema init migration"
 ```
 
-### Task D2.4: FastAPI Æô¶¯
+### Task D2.4: FastAPI ï¿½ï¿½ï¿½ï¿½
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/main.py`
 - Create: `mate-tech-data/src/mate_tech_data/api/deps.py`
 - Create: `mate-tech-data/src/mate_tech_data/api/routes/health.py`
@@ -631,7 +637,7 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 ```
 
-- [ ] **Step 3: ¼¯³É²âÊÔ**
+- [ ] **Step 3: ï¿½ï¿½ï¿½É²ï¿½ï¿½ï¿½**
 
 ```python
 from httpx import AsyncClient, ASGITransport
@@ -644,7 +650,7 @@ async def test_health():
     assert r.json() == {"status": "ok"}
 ```
 
-- [ ] **Step 4: ÅÜ²â²¢Ìá½»**
+- [ ] **Step 4: ï¿½Ü²â²¢ï¿½á½»**
 
 ```bash
 uv run pytest packages/mate-tech-data/tests/integration/api -v
@@ -652,13 +658,14 @@ git add packages/mate-tech-data
 git commit -m "feat(data): d2 fastapi app shell"
 ```
 
-### Task D2.5: ÆõÔ¼ OpenAPI ³õ¸å
+### Task D2.5: ï¿½ï¿½Ô¼ OpenAPI ï¿½ï¿½ï¿½ï¿½
 
 **Files:**
+
 - Create: `docs/active/api/data/openapi.yaml`
 - Create: `docs/superpowers/specs/2026-07-28-mate-tech-data-openapi.md`
 
-- [ ] **Step 1: Ð´ OpenAPI 3.1 °üº¬**
+- [ ] **Step 1: Ð´ OpenAPI 3.1 ï¿½ï¿½ï¿½ï¿½**
 
 - `/api/v1/data/datasources`
 - `/api/v1/data/pipelines`
@@ -678,24 +685,25 @@ npx @redocly/cli lint docs/active/api/data/openapi.yaml
 npx oasdiff breaking docs/active/api/data/openapi.yaml 1.0.0 docs/active/api/data/openapi.yaml
 ```
 
-- [ ] **Step 3: Ìá½»**
+- [ ] **Step 3: ï¿½á½»**
 
 ```bash
 git add docs/active/api/data
 git commit -m "docs(data): d2 openapi contract"
 ```
 
-**ÃÅ½û£º** `mate-tech-data` ·þÎñ¿ÉÆô¶¯£¬µ¥Ôª/¼¯³É²âÊÔÍ¨¹ý£¬OpenAPI ÆõÔ¼Í¨¹ý Redocly Óë oasdiff CI¡£
+**ï¿½Å½ï¿½ï¿½ï¿½** `mate-tech-data` ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôª/ï¿½ï¿½ï¿½É²ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½OpenAPI ï¿½ï¿½Ô¼Í¨ï¿½ï¿½ Redocly ï¿½ï¿½ oasdiff CIï¿½ï¿½
 
 ---
 
-## D3 CDC + Paimon ODS/DWD£¨5 ÖÜ£©
+## D3 CDC + Paimon ODS/DWDï¿½ï¿½5 ï¿½Ü£ï¿½
 
-**Owner:** D3 owner ¡¤ **¹Ø¼üÂ·¾¶ ?**
+**Owner:** D3 owner ï¿½ï¿½ **ï¿½Ø¼ï¿½Â·ï¿½ï¿½ ?**
 
 ### Task D3.1: Connector SDK
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/connector/models.py`
 - Create: `mate-tech-data/src/mate_tech_data/connector/engine_adapters/postgres_cdc.py`
 - Create: `mate-tech-data/src/mate_tech_data/connector/engine_adapters/mysql_cdc.py`
@@ -757,31 +765,32 @@ def test_data_source_roundtrip():
 
 - [ ] **Step 4: integration test**
 
-Ê¹ÓÃ Testcontainers Æô¶¯ PostgreSQL£¬Ö´ÐÐ `discover` Óë `test_connection`¡£
+Ê¹ï¿½ï¿½ Testcontainers ï¿½ï¿½ï¿½ï¿½ PostgreSQLï¿½ï¿½Ö´ï¿½ï¿½ `discover` ï¿½ï¿½ `test_connection`ï¿½ï¿½
 
-- [ ] **Step 5: Ìá½»**
+- [ ] **Step 5: ï¿½á½»**
 
 ```bash
 git add packages/mate-tech-data
 git commit -m "feat(data): d3 connector sdk with cdc and kafka"
 ```
 
-### Task D3.2: Paimon ODS/DWD Ð´Èë
+### Task D3.2: Paimon ODS/DWD Ð´ï¿½ï¿½
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/pipeline/compiler.py`
 - Create: `mate-tech-data/src/mate_tech_data/acl/paimon.py`
 - Create: `mate-tech-data/tests/integration/pipeline/test_paimon_compile.py`
 
 - [ ] **Step 1: paimon.py**
 
-·â×° `pypaimon` ¿Í»§¶Ë£¬Ö§³Ö£º
+ï¿½ï¿½×° `pypaimon` ï¿½Í»ï¿½ï¿½Ë£ï¿½Ö§ï¿½Ö£ï¿½
 
-- `create_catalog(name, warehouse)` 
+- `create_catalog(name, warehouse)`
 - `create_table(catalog, db, table_name, schema)`
 - `commit(catalog, db, table_name, records)`
 
-- [ ] **Step 2: compiler.py ±àÒë CDC¡úPaimon**
+- [ ] **Step 2: compiler.py ï¿½ï¿½ï¿½ï¿½ CDCï¿½ï¿½Paimon**
 
 ```python
 def compile_cdc_to_paimon(source: DataSource, sink_db: str, sink_table: str) -> str:
@@ -796,24 +805,25 @@ INSERT INTO sink_{sink_table} SELECT * FROM source_{source.id};
 
 - [ ] **Step 3: integration test**
 
-Ê¹ÓÃ Testcontainers Æô¶¯ Flink + MinIO + PostgreSQL£¬Ìá½»±àÒë²úÎï²¢ÑéÖ¤ Paimon ÎÄ¼þÉú³É¡£
+Ê¹ï¿½ï¿½ Testcontainers ï¿½ï¿½ï¿½ï¿½ Flink + MinIO + PostgreSQLï¿½ï¿½ï¿½á½»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï²¢ï¿½ï¿½Ö¤ Paimon ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½É¡ï¿½
 
-- [ ] **Step 4: Ìá½»**
+- [ ] **Step 4: ï¿½á½»**
 
 ```bash
 git add packages/mate-tech-data
 git commit -m "feat(data): d3 paimon ods dwd compiler"
 ```
 
-### Task D3.3: »Ø·ÅÓë¹ÊÕÏ×¢Èë
+### Task D3.3: ï¿½Ø·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½
 
 **Files:**
+
 - Create: `mate-tech-data/tests/integration/pipeline/test_replay.py`
 - Create: `docs/superpowers/reports/2026-07-28-data-replay-d3.md`
 
 - [ ] **Step 1: Golden Dataset**
 
-´æ·ÅÔÚ `tests/integration/data/orders.csv`£º
+ï¿½ï¿½ï¿½ï¿½ï¿½ `tests/integration/data/orders.csv`ï¿½ï¿½
 
 ```
 id,amount,updated_at
@@ -821,7 +831,7 @@ id,amount,updated_at
 2,19.99,2026-07-01T00:00:01Z
 ```
 
-- [ ] **Step 2: »Ø·Å²âÊÔ**
+- [ ] **Step 2: ï¿½Ø·Å²ï¿½ï¿½ï¿½**
 
 ```python
 async def test_replay_pipeline(engine):
@@ -830,39 +840,40 @@ async def test_replay_pipeline(engine):
     assert rows == 2
 ```
 
-- [ ] **Step 3: ¹ÊÕÏ×¢Èë**
+- [ ] **Step 3: ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½**
 
-- É±µô TaskManager£¬ÑéÖ¤ Savepoint ÓëÖØÆô
-- ×¢ÈëÂÒÐòÊÂ¼þ£¬ÑéÖ¤ Paimon Ö÷¼ü¸üÐÂ
-- ×¢Èë Schema ±ä¸ü£¬ÑéÖ¤¾Ü¾ø²¢½øÈë¸ôÀëÇø
+- É±ï¿½ï¿½ TaskManagerï¿½ï¿½ï¿½ï¿½Ö¤ Savepoint ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+- ×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½Ö¤ Paimon ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+- ×¢ï¿½ï¿½ Schema ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¤ï¿½Ü¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-- [ ] **Step 4: Ìá½»**
+- [ ] **Step 4: ï¿½á½»**
 
 ```bash
 git add packages/mate-tech-data docs/superpowers/reports
 git commit -m "test(data): d3 replay and fault injection"
 ```
 
-**ÃÅ½û£º** CDC ÅÜÍ¨£»Upsert/Delete ÕýÈ·£»ÂÒÐòÓë»Ø·Å¶ÔÕËÎÞ²îÒì£»¹ÊÕÏ×¢Èë P50 »Ö¸´ < 30s¡£
+**ï¿½Å½ï¿½ï¿½ï¿½** CDC ï¿½ï¿½Í¨ï¿½ï¿½Upsert/Delete ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø·Å¶ï¿½ï¿½ï¿½ï¿½Þ²ï¿½ï¿½ì£»ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ P50 ï¿½Ö¸ï¿½ < 30sï¿½ï¿½
 
 ---
 
-## D4 Pipeline Spec + Airflow£¨5 ÖÜ£©
+## D4 Pipeline Spec + Airflowï¿½ï¿½5 ï¿½Ü£ï¿½
 
-**Owner:** D4 owner ¡¤ **¹Ø¼üÂ·¾¶ ?**
+**Owner:** D4 owner ï¿½ï¿½ **ï¿½Ø¼ï¿½Â·ï¿½ï¿½ ?**
 
-### Task D4.1: Canonical Spec Óë JSON Schema
+### Task D4.1: Canonical Spec ï¿½ï¿½ JSON Schema
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/pipeline/canonical_spec.py`
 - Create: `docs/active/specs/2026-07-28-mate-tech-data-pipeline-spec.json`
 - Create: `mate-tech-data/tests/unit/pipeline/test_canonical_spec.py`
 
 - [ ] **Step 1: Ð´ JSON Schema**
 
-ÖÁÉÙ°üº¬ `nodes`£¨type/source/transform/sink/quality/map£©¡¢`edges`¡¢`resources`¡¢`parameters`¡¢`contract`¡¢`schedule`¡¢`approval` ×Ö¶Î¡£
+ï¿½ï¿½ï¿½Ù°ï¿½ï¿½ï¿½ `nodes`ï¿½ï¿½type/source/transform/sink/quality/mapï¿½ï¿½ï¿½ï¿½`edges`ï¿½ï¿½`resources`ï¿½ï¿½`parameters`ï¿½ï¿½`contract`ï¿½ï¿½`schedule`ï¿½ï¿½`approval` ï¿½Ö¶Î¡ï¿½
 
-- [ ] **Step 2: Python Ð£ÑéÆ÷**
+- [ ] **Step 2: Python Ð£ï¿½ï¿½ï¿½ï¿½**
 
 ```python
 import jsonschema
@@ -874,11 +885,11 @@ def validate_spec(spec: dict) -> None:
         raise PipelineError(f"invalid pipeline spec: {e.message}") from e
 ```
 
-- [ ] **Step 3: µ¥Ôª²âÊÔ**
+- [ ] **Step 3: ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½**
 
-¸²¸Ç£ººÏ·¨ spec¡¢È±×Ö¶Î¡¢´íÀàÐÍ¡¢Ñ­»·ÒÀÀµ¡£
+ï¿½ï¿½ï¿½Ç£ï¿½ï¿½Ï·ï¿½ specï¿½ï¿½È±ï¿½Ö¶Î¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¡ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-- [ ] **Step 4: Ìá½»**
+- [ ] **Step 4: ï¿½á½»**
 
 ```bash
 git add packages/mate-tech-data docs/active/specs
@@ -888,25 +899,26 @@ git commit -m "feat(data): d4 pipeline canonical spec"
 ### Task D4.2: Pipeline Compiler
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/pipeline/compiler.py`
 - Create: `mate-tech-data/tests/unit/pipeline/test_compiler.py`
 
-- [ ] **Step 1: ÈýÖÖÄ£Ê½±àÒë**
+- [ ] **Step 1: ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½**
 
-- `compile_sql(spec)` ·µ»Ø Flink SQL
-- `compile_flink_job(spec)` ·µ»Ø `FlinkDeployment` manifest
-- `compile_airflow_dag(spec)` ·µ»Ø DAG bundle dict
+- `compile_sql(spec)` ï¿½ï¿½ï¿½ï¿½ Flink SQL
+- `compile_flink_job(spec)` ï¿½ï¿½ï¿½ï¿½ `FlinkDeployment` manifest
+- `compile_airflow_dag(spec)` ï¿½ï¿½ï¿½ï¿½ DAG bundle dict
 
 - [ ] **Step 2: governance manifest**
 
-`compile_governance(spec)` ·µ»Ø OpenLineage / Quality / Ranger intent¡£
+`compile_governance(spec)` ï¿½ï¿½ï¿½ï¿½ OpenLineage / Quality / Ranger intentï¿½ï¿½
 
-- [ ] **Step 3: µ¥Ôª²âÊÔ**
+- [ ] **Step 3: ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½**
 
-- Ã¿¸öÄ£Ê½ÖÁÉÙ 1 ¸ö¿ìÕÕ²âÊÔ
-- Í¬Ò» spec ±àÒë½á¹ûÎÈ¶¨£¨¹þÏ£ÎÈ¶¨£©
+- Ã¿ï¿½ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½ 1 ï¿½ï¿½ï¿½ï¿½ï¿½Õ²ï¿½ï¿½ï¿½
+- Í¬Ò» spec ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¶ï¿½ï¿½ï¿½ï¿½ï¿½Ï£ï¿½È¶ï¿½ï¿½ï¿½
 
-- [ ] **Step 4: Ìá½»**
+- [ ] **Step 4: ï¿½á½»**
 
 ```bash
 git add packages/mate-tech-data
@@ -916,6 +928,7 @@ git commit -m "feat(data): d4 pipeline compiler flink sql airflow"
 ### Task D4.3: Airflow Provider
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/operator/flink_operator.py`
 - Create: `mate-tech-data/src/mate_tech_data/operator/quality_gate_operator.py`
 - Create: `mate-tech-data/src/mate_tech_data/operator/data_product_publish_operator.py`
@@ -923,39 +936,40 @@ git commit -m "feat(data): d4 pipeline compiler flink sql airflow"
 
 - [ ] **Step 1: FlinkSubmitOperator**
 
-µ÷ÓÃ Flink Kubernetes Operator REST£¬Ìá½» `FlinkDeployment`£¬µÈ´ý `RUNNING`£¬·µ»Ø jobId¡£
+ï¿½ï¿½ï¿½ï¿½ Flink Kubernetes Operator RESTï¿½ï¿½ï¿½á½» `FlinkDeployment`ï¿½ï¿½ï¿½È´ï¿½ `RUNNING`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ jobIdï¿½ï¿½
 
 - [ ] **Step 2: QualityGateOperator**
 
-µ÷ÓÃ `mate-tech-data` µÄ `/quality/runs` ¶Ëµã£¬¶ÏÑÔÈ«²¿Í¨¹ý¡£
+ï¿½ï¿½ï¿½ï¿½ `mate-tech-data` ï¿½ï¿½ `/quality/runs` ï¿½Ëµã£¬ï¿½ï¿½ï¿½ï¿½È«ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½
 
 - [ ] **Step 3: DataProductPublishOperator**
 
-½« ADS ±íµÄ°æ±¾Ð´Èë Catalog£¬·¢²¼ÊÂ¼þ¡£
+ï¿½ï¿½ ADS ï¿½ï¿½ï¿½Ä°æ±¾Ð´ï¿½ï¿½ Catalogï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½
 
-- [ ] **Step 4: ¼¯³É²âÊÔ**
+- [ ] **Step 4: ï¿½ï¿½ï¿½É²ï¿½ï¿½ï¿½**
 
-Ê¹ÓÃ Testcontainers Æô¶¯ Airflow + Flink Operator + mate-tech-data£¬´¥·¢Ò»´Î DAG ÔËÐÐ¡£
+Ê¹ï¿½ï¿½ Testcontainers ï¿½ï¿½ï¿½ï¿½ Airflow + Flink Operator + mate-tech-dataï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ DAG ï¿½ï¿½ï¿½Ð¡ï¿½
 
-- [ ] **Step 5: Ìá½»**
+- [ ] **Step 5: ï¿½á½»**
 
 ```bash
 git add packages/mate-tech-data
 git commit -m "feat(data): d4 airflow flink operators"
 ```
 
-### Task D4.4: ·¢²¼×´Ì¬»ú
+### Task D4.4: ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/pipeline/service.py`
 - Create: `mate-tech-data/src/mate_tech_data/pipeline/api.py`
 - Create: `mate-tech-data/tests/integration/pipeline/test_state_machine.py`
 
-- [ ] **Step 1: ×´Ì¬»ú**
+- [ ] **Step 1: ×´Ì¬ï¿½ï¿½**
 
-`DRAFT ¡ú VALIDATED ¡ú IN_REVIEW ¡ú DEPLOYED ¡ú RUNNING / PAUSED / FAILED ¡ú RETIRED`
+`DRAFT ï¿½ï¿½ VALIDATED ï¿½ï¿½ IN_REVIEW ï¿½ï¿½ DEPLOYED ï¿½ï¿½ RUNNING / PAUSED / FAILED ï¿½ï¿½ RETIRED`
 
-- [ ] **Step 2: API ¶Ëµã**
+- [ ] **Step 2: API ï¿½Ëµï¿½**
 
 - `POST /api/v1/data/pipelines`
 - `POST /api/v1/data/pipelines/{id}/validate`
@@ -964,50 +978,50 @@ git commit -m "feat(data): d4 airflow flink operators"
 - `POST /api/v1/data/pipelines/{id}/pause`
 - `POST /api/v1/data/pipelines/{id}/retire`
 
-- [ ] **Step 3: ¼¯³É²âÊÔ**
+- [ ] **Step 3: ï¿½ï¿½ï¿½É²ï¿½ï¿½ï¿½**
 
-ÍêÕûÅÜÒ»±é DRAFT ¡ú RETIRED¡£
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ DRAFT ï¿½ï¿½ RETIREDï¿½ï¿½
 
-- [ ] **Step 4: Ìá½»**
+- [ ] **Step 4: ï¿½á½»**
 
 ```bash
 git add packages/mate-tech-data
 git commit -m "feat(data): d4 pipeline state machine api"
 ```
 
-**ÃÅ½û£º** ÖÁÉÙ 1 Ìõ Pipeline Í¨¹ý SQL + 1 ÌõÍ¨¹ý Java Flink + 1 ÌõÍ¨¹ý PyFlink£¬¶Ëµ½¶ËÅÜÍ¨²¢ÄÜ»Ø¹ö¡£
+**ï¿½Å½ï¿½ï¿½ï¿½** ï¿½ï¿½ï¿½ï¿½ 1 ï¿½ï¿½ Pipeline Í¨ï¿½ï¿½ SQL + 1 ï¿½ï¿½Í¨ï¿½ï¿½ Java Flink + 1 ï¿½ï¿½Í¨ï¿½ï¿½ PyFlinkï¿½ï¿½ï¿½Ëµï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½Ü»Ø¹ï¿½ï¿½ï¿½
 
 ---
 
+## D5 Iceberg + Trino + StarRocksï¿½ï¿½4 ï¿½Ü£ï¿½
 
-## D5 Iceberg + Trino + StarRocks£¨4 ÖÜ£©
+**Owner:** D5 owner ï¿½ï¿½ **ï¿½Ø¼ï¿½Â·ï¿½ï¿½ ?**
 
-**Owner:** D5 owner ¡¤ **¹Ø¼üÂ·¾¶ ?**
-
-### Task D5.1: Iceberg Êý¾Ý²úÆ··¢²¼
+### Task D5.1: Iceberg ï¿½ï¿½ï¿½Ý²ï¿½Æ·ï¿½ï¿½ï¿½ï¿½
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/acl/iceberg.py`
 - Create: `mate-tech-data/src/mate_tech_data/catalog/service.py`
 - Create: `mate-tech-data/tests/integration/catalog/test_iceberg_publish.py`
 
 - [ ] **Step 1: iceberg.py**
 
-·â×° PyIceberg REST catalog ¿Í»§¶Ë¡£
+ï¿½ï¿½×° PyIceberg REST catalog ï¿½Í»ï¿½ï¿½Ë¡ï¿½
 
-- [ ] **Step 2: ÌáÉý Pipeline**
+- [ ] **Step 2: ï¿½ï¿½ï¿½ï¿½ Pipeline**
 
-`promote_to_iceberg(paimon_db, paimon_table, iceberg_db, iceberg_table)`£º
+`promote_to_iceberg(paimon_db, paimon_table, iceberg_db, iceberg_table)`ï¿½ï¿½
 
-- ¶Á Paimon ×îÐÂ¿ìÕÕ
-- Îï»¯µ½ Iceberg
-- Ð´Èë OpenLineage `data.product.certified.v1`
+- ï¿½ï¿½ Paimon ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½
+- ï¿½ï»¯ï¿½ï¿½ Iceberg
+- Ð´ï¿½ï¿½ OpenLineage `data.product.certified.v1`
 
 - [ ] **Step 3: integration test**
 
-Ê¹ÓÃ Testcontainers Æô¶¯ Iceberg REST + Trino£¬ÑéÖ¤ Iceberg ±í¿É±» Trino ²éÑ¯¡£
+Ê¹ï¿½ï¿½ Testcontainers ï¿½ï¿½ï¿½ï¿½ Iceberg REST + Trinoï¿½ï¿½ï¿½ï¿½Ö¤ Iceberg ï¿½ï¿½ï¿½É±ï¿½ Trino ï¿½ï¿½Ñ¯ï¿½ï¿½
 
-- [ ] **Step 4: Ìá½»**
+- [ ] **Step 4: ï¿½á½»**
 
 ```bash
 git add packages/mate-tech-data
@@ -1017,6 +1031,7 @@ git commit -m "feat(data): d5 iceberg promotion"
 ### Task D5.2: Trino Gateway
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/query/trino_gateway.py`
 - Create: `mate-tech-data/src/mate_tech_data/query/api.py`
 - Create: `mate-tech-data/tests/integration/query/test_trino.py`
@@ -1029,18 +1044,18 @@ class TrinoGateway:
         ...
 ```
 
-Ö§³Ö Ranger ¼øÈ¨×¢Èë¡¢³¬Ê±¡¢Limit¡¢Éó¼Æ¡£
+Ö§ï¿½ï¿½ Ranger ï¿½ï¿½È¨×¢ï¿½ë¡¢ï¿½ï¿½Ê±ï¿½ï¿½Limitï¿½ï¿½ï¿½ï¿½Æ¡ï¿½
 
-- [ ] **Step 2: API ¶Ëµã**
+- [ ] **Step 2: API ï¿½Ëµï¿½**
 
 - `POST /api/v1/data/query`
 - `GET /api/v1/data/query/{id}`
 
 - [ ] **Step 3: integration test**
 
-Æô¶¯ Trino + Iceberg + Ranger£¬ÑéÖ¤²éÑ¯Í¨¹ý¼øÈ¨ÓëÏÞÁ÷¡£
+ï¿½ï¿½ï¿½ï¿½ Trino + Iceberg + Rangerï¿½ï¿½ï¿½ï¿½Ö¤ï¿½ï¿½Ñ¯Í¨ï¿½ï¿½ï¿½ï¿½È¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-- [ ] **Step 4: Ìá½»**
+- [ ] **Step 4: ï¿½á½»**
 
 ```bash
 git add packages/mate-tech-data
@@ -1050,92 +1065,96 @@ git commit -m "feat(data): d5 trino query gateway"
 ### Task D5.3: StarRocks Serving
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/query/starrocks_gateway.py`
 - Create: `mate-tech-data/tests/integration/query/test_starrocks.py`
 
 - [ ] **Step 1: gateway**
 
-- ´´½¨Íâ²¿±íÖ¸Ïò Iceberg
-- Îï»¯ÊÓÍ¼
-- Òì²½Îï»¯ÓëÍ¬²½Ë¢ÐÂ
+- ï¿½ï¿½ï¿½ï¿½ï¿½â²¿ï¿½ï¿½Ö¸ï¿½ï¿½ Iceberg
+- ï¿½ï»¯ï¿½ï¿½Í¼
+- ï¿½ì²½ï¿½ï»¯ï¿½ï¿½Í¬ï¿½ï¿½Ë¢ï¿½ï¿½
 
-- [ ] **Step 2: ¼¯³É²âÊÔ**
+- [ ] **Step 2: ï¿½ï¿½ï¿½É²ï¿½ï¿½ï¿½**
 
-Æô¶¯ StarRocks + Iceberg£¬ÑéÖ¤ ADS ²éÑ¯ P95 1¨C3s¡£
+ï¿½ï¿½ï¿½ï¿½ StarRocks + Icebergï¿½ï¿½ï¿½ï¿½Ö¤ ADS ï¿½ï¿½Ñ¯ P95 1ï¿½C3sï¿½ï¿½
 
-- [ ] **Step 3: Ìá½»**
+- [ ] **Step 3: ï¿½á½»**
 
 ```bash
 git add packages/mate-tech-data
 git commit -m "feat(data): d5 starrocks serving"
 ```
 
-**ÃÅ½û£º** ÖÁÉÙ 3 ¸öÈÏÖ¤Êý¾Ý²úÆ·¿É±» BI/RAG/Agent ¶©ÔÄ£»StarRocks P95 1¨C3s¡£
+**ï¿½Å½ï¿½ï¿½ï¿½** ï¿½ï¿½ï¿½ï¿½ 3 ï¿½ï¿½ï¿½ï¿½Ö¤ï¿½ï¿½ï¿½Ý²ï¿½Æ·ï¿½É±ï¿½ BI/RAG/Agent ï¿½ï¿½ï¿½Ä£ï¿½StarRocks P95 1ï¿½C3sï¿½ï¿½
 
 ---
 
-## D6 ÖÎÀíÓë°²È«£¨4 ÖÜ£©
+## D6 ï¿½ï¿½ï¿½ï¿½ï¿½ë°²È«ï¿½ï¿½4 ï¿½Ü£ï¿½
 
-**Owner:** D6 owner ¡¤ **¹Ø¼üÂ·¾¶ ?**
+**Owner:** D6 owner ï¿½ï¿½ **ï¿½Ø¼ï¿½Â·ï¿½ï¿½ ?**
 
-### Task D6.1: Gravitino Áª°î
+### Task D6.1: Gravitino ï¿½ï¿½ï¿½ï¿½
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/catalog/gravitino_adapter.py`
 - Create: `mate-tech-data/tests/integration/catalog/test_gravitino.py`
 
-- [ ] **Step 1: Áª°î Paimon + Iceberg + Kafka + S3**
+- [ ] **Step 1: ï¿½ï¿½ï¿½ï¿½ Paimon + Iceberg + Kafka + S3**
 
-- ´´½¨ Catalog
-- °ó¶¨ Namespace
-- Í¬²½ OpenLineage Ð´Èë `data.schema.changed.v1`
+- ï¿½ï¿½ï¿½ï¿½ Catalog
+- ï¿½ï¿½ Namespace
+- Í¬ï¿½ï¿½ OpenLineage Ð´ï¿½ï¿½ `data.schema.changed.v1`
 
-- [ ] **Step 2: ¼¯³É²âÊÔ**
+- [ ] **Step 2: ï¿½ï¿½ï¿½É²ï¿½ï¿½ï¿½**
 
-- ÑéÖ¤ 4 Àà Catalog ÁªºÏ²éÑ¯
-- ÑéÖ¤ Schema ±ä¸üÊÂ¼þ±» OpenMetadata Ïû·Ñ
+- ï¿½ï¿½Ö¤ 4 ï¿½ï¿½ Catalog ï¿½ï¿½ï¿½Ï²ï¿½Ñ¯
+- ï¿½ï¿½Ö¤ Schema ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ OpenMetadata ï¿½ï¿½ï¿½ï¿½
 
-- [ ] **Step 3: Ìá½»**
+- [ ] **Step 3: ï¿½á½»**
 
 ```bash
 git add packages/mate-tech-data
 git commit -m "feat(data): d6 gravitino federation"
 ```
 
-### Task D6.2: OpenMetadata ÖÎÀí
+### Task D6.2: OpenMetadata ï¿½ï¿½ï¿½ï¿½
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/catalog/openmetadata_adapter.py`
 - Create: `mate-tech-data/tests/integration/catalog/test_openmetadata.py`
 
 - [ ] **Step 1: Adapter**
 
-- ´´½¨ Dataset / Owner / Glossary / Tag
-- ÉÏ±¨ Quality
-- ÉÏ±¨ Lineage£¨½áºÏ OpenLineage£©
+- ï¿½ï¿½ï¿½ï¿½ Dataset / Owner / Glossary / Tag
+- ï¿½Ï±ï¿½ Quality
+- ï¿½Ï±ï¿½ Lineageï¿½ï¿½ï¿½ï¿½ï¿½ OpenLineageï¿½ï¿½
 
-- [ ] **Step 2: ¼¯³É²âÊÔ**
+- [ ] **Step 2: ï¿½ï¿½ï¿½É²ï¿½ï¿½ï¿½**
 
-- ÑéÖ¤ lineage äÖÈ¾
-- ÑéÖ¤ quality ±¨¸æ
+- ï¿½ï¿½Ö¤ lineage ï¿½ï¿½È¾
+- ï¿½ï¿½Ö¤ quality ï¿½ï¿½ï¿½ï¿½
 
-- [ ] **Step 3: Ìá½»**
+- [ ] **Step 3: ï¿½á½»**
 
 ```bash
 git add packages/mate-tech-data
 git commit -m "feat(data): d6 openmetadata governance"
 ```
 
-### Task D6.3: ÖÊÁ¿ÓëÑªÔµ
+### Task D6.3: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÑªÔµ
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/governance/quality.py`
 - Create: `mate-tech-data/src/mate_tech_data/governance/lineage.py`
 - Create: `mate-tech-data/tests/integration/governance/test_quality.py`
 
 - [ ] **Step 1: Quality**
 
-·â×° Great Expectations ¹æÔòÓëÔËÐÐ£º
+ï¿½ï¿½×° Great Expectations ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½
 
 ```python
 class QualityService:
@@ -1144,14 +1163,14 @@ class QualityService:
 
 - [ ] **Step 2: Lineage**
 
-¼àÌý Airflow DAG run ½áÊøÊÂ¼þ£¬ÉÏ±¨ OpenLineage¡£
+ï¿½ï¿½ï¿½ï¿½ Airflow DAG run ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ OpenLineageï¿½ï¿½
 
-- [ ] **Step 3: ¼¯³É²âÊÔ**
+- [ ] **Step 3: ï¿½ï¿½ï¿½É²ï¿½ï¿½ï¿½**
 
-- ´¥·¢Ò»´ÎÊ§°ÜµÄÖÊÁ¿ÔËÐÐ£¬¶ÏÑÔ×è¶Ï·¢²¼
-- ÑéÖ¤ OpenLineage ÊÂ¼þÁ´Â·
+- ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Ê§ï¿½Üµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï·ï¿½ï¿½ï¿½
+- ï¿½ï¿½Ö¤ OpenLineage ï¿½Â¼ï¿½ï¿½ï¿½Â·
 
-- [ ] **Step 4: Ìá½»**
+- [ ] **Step 4: ï¿½á½»**
 
 ```bash
 git add packages/mate-tech-data
@@ -1161,104 +1180,107 @@ git commit -m "feat(data): d6 quality and lineage"
 ### Task D6.4: Ranger + OpenBao
 
 **Files:**
+
 - Create: `mate-tech-data/src/mate_tech_data/governance/policy.py`
 - Create: `mate-tech-data/src/mate_tech_data/governance/secrets.py`
 - Create: `mate-tech-data/tests/integration/governance/test_ranger.py`
 - Create: `mate-tech-data/tests/integration/governance/test_openbao.py`
 
-- [ ] **Step 1: Ranger ÏÂ·¢**
+- [ ] **Step 1: Ranger ï¿½Â·ï¿½**
 
-- ´Ó Pydantic Ä£ÐÍÉú³É Ranger Policy
-- ²âÊÔÁ¬½ÓÆ÷Ê¹ÓÃ Data Product Ê±×¢Èë policy ÉÏÏÂÎÄ
+- ï¿½ï¿½ Pydantic Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ranger Policy
+- ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½ Data Product Ê±×¢ï¿½ï¿½ policy ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-- [ ] **Step 2: OpenBao ¶¯Ì¬Æ¾Ö¤**
+- [ ] **Step 2: OpenBao ï¿½ï¿½Ì¬Æ¾Ö¤**
 
-- Æ¾Ö¤²»´æ Pipeline Spec
-- Í¨¹ý OpenBao API À­È¡¶ÌÆÚ token
+- Æ¾Ö¤ï¿½ï¿½ï¿½ï¿½ Pipeline Spec
+- Í¨ï¿½ï¿½ OpenBao API ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ token
 
-- [ ] **Step 3: ¼¯³É²âÊÔ**
+- [ ] **Step 3: ï¿½ï¿½ï¿½É²ï¿½ï¿½ï¿½**
 
-- ÑéÖ¤Ô½È¨·ÃÎÊ±» Ranger ×è¶Ï
-- ÑéÖ¤ÃÜÔ¿ÂÖ»»
+- ï¿½ï¿½Ö¤Ô½È¨ï¿½ï¿½ï¿½Ê±ï¿½ Ranger ï¿½ï¿½ï¿½
+- ï¿½ï¿½Ö¤ï¿½ï¿½Ô¿ï¿½Ö»ï¿½
 
-- [ ] **Step 4: Ìá½»**
+- [ ] **Step 4: ï¿½á½»**
 
 ```bash
 git add packages/mate-tech-data
 git commit -m "feat(data): d6 ranger and openbao"
 ```
 
-**ÃÅ½û£º** Ô½È¨²âÊÔ 100% ×è¶Ï£»ÃÜÔ¿ 30 Ìì×Ô¶¯ÂÖ»»£»ÖÊÁ¿Ê§°Ü 100% ×è¶Ï·¢²¼£»ÑªÔµ¿ÉÏÂ×êµ½×Ö¶Î¼¶¡£
+**ï¿½Å½ï¿½ï¿½ï¿½** Ô½È¨ï¿½ï¿½ï¿½ï¿½ 100% ï¿½ï¿½Ï£ï¿½ï¿½ï¿½Ô¿ 30 ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½ 100% ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ï¿½ï¿½ÑªÔµï¿½ï¿½ï¿½ï¿½ï¿½êµ½ï¿½Ö¶Î¼ï¿½ï¿½ï¿½
 
 ---
 
-## D7 Ontology Studio Ô­Î»ÔöÇ¿£¨5 ÖÜ£©
+## D7 Ontology Studio Ô­Î»ï¿½ï¿½Ç¿ï¿½ï¿½5 ï¿½Ü£ï¿½
 
-**Owner:** D7 owner ¡¤ **¹Ø¼üÂ·¾¶ ?**
+**Owner:** D7 owner ï¿½ï¿½ **ï¿½Ø¼ï¿½Â·ï¿½ï¿½ ?**
 
-### Task D7.1: Ç°¶Ë API ¿Í»§¶Ë
+### Task D7.1: Ç°ï¿½ï¿½ API ï¿½Í»ï¿½ï¿½ï¿½
 
 **Files:**
+
 - Create: `metaplatform-frontend/apps/portal/src/api/data.ts`
 - Create: `metaplatform-frontend/apps/portal/src/api/data.types.ts`
 
-- [ ] **Step 1: TypeScript ÀàÐÍ**
+- [ ] **Step 1: TypeScript ï¿½ï¿½ï¿½ï¿½**
 
-¶¨Òå `DataSource`¡¢`Pipeline`¡¢`DataProduct` µÈ½Ó¿Ú£¬¶ÔÓ¦ OpenAPI ÆõÔ¼¡£
+ï¿½ï¿½ï¿½ï¿½ `DataSource`ï¿½ï¿½`Pipeline`ï¿½ï¿½`DataProduct` ï¿½È½Ó¿Ú£ï¿½ï¿½ï¿½Ó¦ OpenAPI ï¿½ï¿½Ô¼ï¿½ï¿½
 
-- [ ] **Step 2: ¿Í»§¶Ë·â×°**
+- [ ] **Step 2: ï¿½Í»ï¿½ï¿½Ë·ï¿½×°**
 
 ```ts
 export async function listPipelines(): Promise<Pipeline[]> {
-  const r = await api.get('/v1/data/pipelines');
+  const r = await api.get("/v1/data/pipelines");
   return r.data.items;
 }
 ```
 
-- [ ] **Step 3: Ìá½»**
+- [ ] **Step 3: ï¿½á½»**
 
 ```bash
 git add metaplatform-frontend
 git commit -m "feat(frontend): d7 data api client"
 ```
 
-### Task D7.2: Êý¾ÝÖÐÐÄ×ÓÒ³
+### Task D7.2: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò³
 
 **Files:**
+
 - Create: `metaplatform-frontend/apps/portal/src/pages/ontology/datacenter/OverviewPage.tsx`
 - Create: `metaplatform-frontend/apps/portal/src/pages/ontology/datacenter/SourcesPage.tsx`
 - Create: `metaplatform-frontend/apps/portal/src/pages/ontology/datacenter/PipelinesPage.tsx`
 - Create: `metaplatform-frontend/apps/portal/src/pages/ontology/datacenter/LakehousePage.tsx`
 - Create: `metaplatform-frontend/apps/portal/src/pages/ontology/datacenter/GovernancePage.tsx`
 - Create: `metaplatform-frontend/apps/portal/src/pages/ontology/datacenter/OperationsPage.tsx`
-- Create: `metaplatform-frontend/apps/portal/src/App.tsx`£¨×·¼ÓÂ·ÓÉ£©
+- Create: `metaplatform-frontend/apps/portal/src/App.tsx`ï¿½ï¿½×·ï¿½ï¿½Â·ï¿½É£ï¿½
 - Create: `metaplatform-frontend/tests/e2e/data/datacenter.spec.ts`
 
-- [ ] **Step 1: ×ÜÀÀÒ³**
+- [ ] **Step 1: ï¿½ï¿½ï¿½ï¿½Ò³**
 
-¿¨Æ¬£ºÊý¾ÝÔ´Êý¡¢Pipeline Êý¡¢ºþ²Ö×Ê²úÊý¡¢ÖÊÁ¿ÆÀ·Ö¡¢ÔËÐÐ¸æ¾¯¡£
+ï¿½ï¿½Æ¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½Pipeline ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¡ï¿½ï¿½ï¿½ï¿½Ð¸æ¾¯ï¿½ï¿½
 
-- [ ] **Step 2: Êý¾ÝÔ´Ò³**
+- [ ] **Step 2: ï¿½ï¿½ï¿½ï¿½Ô´Ò³**
 
-Êý¾ÝÔ´ÁÐ±í + ×´Ì¬¡¢Schema Discovery¡¢±í/×Ö¶ÎÓ³ÉäÔ¤ÀÀ¡£
+ï¿½ï¿½ï¿½ï¿½Ô´ï¿½Ð±ï¿½ + ×´Ì¬ï¿½ï¿½Schema Discoveryï¿½ï¿½ï¿½ï¿½/ï¿½Ö¶ï¿½Ó³ï¿½ï¿½Ô¤ï¿½ï¿½ï¿½ï¿½
 
 - [ ] **Step 3: Pipeline Ò³**
 
-»­²¼£¨Visual Canvas£©+ Flink SQL ±à¼­Æ÷ + ±àÒë/·¢²¼/ÔËÐÐÈë¿Ú¡£
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Visual Canvasï¿½ï¿½+ Flink SQL ï¿½à¼­ï¿½ï¿½ + ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¡ï¿½
 
-- [ ] **Step 4: ºþ²ÖÓë SQL**
+- [ ] **Step 4: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ SQL**
 
-°´²ã£¨Landing / ODS / DWD / DWS / ADS£©Õ¹Ê¾£¬Ö§³Ö StarRocks / Trino ²éÑ¯¡£
+ï¿½ï¿½ï¿½ã£¨Landing / ODS / DWD / DWS / ADSï¿½ï¿½Õ¹Ê¾ï¿½ï¿½Ö§ï¿½ï¿½ StarRocks / Trino ï¿½ï¿½Ñ¯ï¿½ï¿½
 
-- [ ] **Step 5: ÖÎÀíÒ³**
+- [ ] **Step 5: ï¿½ï¿½ï¿½ï¿½Ò³**
 
-ÖÊÁ¿¹æÔò¡¢SLA¡¢ÑªÔµ¡¢Owner¡¢ÊõÓï¡¢±êÇ©¡£
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½SLAï¿½ï¿½ÑªÔµï¿½ï¿½Ownerï¿½ï¿½ï¿½ï¿½ï¿½ï¡¢ï¿½ï¿½Ç©ï¿½ï¿½
 
-- [ ] **Step 6: ÔËÐÐ¼à¿Ø**
+- [ ] **Step 6: ï¿½ï¿½ï¿½Ð¼ï¿½ï¿½**
 
-ÔËÐÐÊµÀý¡¢Savepoint¡¢²¹Êý¡¢»Ø¹ö¡¢¸æ¾¯¡£
+ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½Savepointï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø¹ï¿½ï¿½ï¿½ï¿½æ¾¯ï¿½ï¿½
 
-- [ ] **Step 7: Â·ÓÉ**
+- [ ] **Step 7: Â·ï¿½ï¿½**
 
 ```tsx
 <Route path="ontology/datacenter" element={<OverviewPage />} />
@@ -1269,144 +1291,148 @@ git commit -m "feat(frontend): d7 data api client"
 <Route path="ontology/datacenter/operations" element={<OperationsPage />} />
 ```
 
-- [ ] **Step 8: E2E ²âÊÔ**
+- [ ] **Step 8: E2E ï¿½ï¿½ï¿½ï¿½**
 
 ```ts
-test('data center overview renders', async ({ page }) => {
-  await page.goto('/ontology/datacenter');
-  await expect(page.getByText('Êý¾ÝÔ´×ÜÊý')).toBeVisible();
+test("data center overview renders", async ({ page }) => {
+  await page.goto("/ontology/datacenter");
+  await expect(page.getByText("ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½")).toBeVisible();
 });
 ```
 
-- [ ] **Step 9: Ìá½»**
+- [ ] **Step 9: ï¿½á½»**
 
 ```bash
 git add metaplatform-frontend
 git commit -m "feat(frontend): d7 ontology data center pages"
 ```
 
-### Task D7.3: ÓïÒåÓ³ÉäÔ­Î»
+### Task D7.3: ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ï¿½Ô­Î»
 
 **Files:**
+
 - Create: `metaplatform-frontend/apps/portal/src/pages/ontology/datacenter/components/SemanticMapButton.tsx`
 - Create: `metaplatform-frontend/tests/e2e/data/semantic-map.spec.ts`
 
-- [ ] **Step 1: °´Å¥**
+- [ ] **Step 1: ï¿½ï¿½Å¥**
 
-ÔÚÃ¿¸öºþ²Ö×Ê²ú¿¨Æ¬ÉÏ¼Ó¡°Ó³Éäµ½±¾Ìå¡±°´Å¥£¬µ÷ÓÃ `/v1/data/catalog/{id}/map` ¶Ëµã¡£
+ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê²ï¿½ï¿½ï¿½Æ¬ï¿½Ï¼Ó¡ï¿½Ó³ï¿½äµ½ï¿½ï¿½ï¿½å¡±ï¿½ï¿½Å¥ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ `/v1/data/catalog/{id}/map` ï¿½Ëµã¡£
 
 - [ ] **Step 2: E2E**
 
-´ÓÊý¾ÝÔ´µ½ Concept Ò»¼ü´´½¨Ó³Éä¡£
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ Concept Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ä¡£
 
-- [ ] **Step 3: Ìá½»**
+- [ ] **Step 3: ï¿½á½»**
 
 ```bash
 git add metaplatform-frontend
 git commit -m "feat(frontend): d7 semantic map button"
 ```
 
-**ÃÅ½û£º** ÏÖÓÐ 4 ¸ö±¾ÌåÒýÇæÒ³Ç©Óë×ÓÒ³Ç©²»»Ø¹é£»ÓïÒåÓ³ÉäÒ»ÆøºÇ³É¡£
+**ï¿½Å½ï¿½ï¿½ï¿½** ï¿½ï¿½ï¿½ï¿½ 4 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò³Ç©ï¿½ï¿½ï¿½ï¿½Ò³Ç©ï¿½ï¿½ï¿½Ø¹é£»ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ç³É¡ï¿½
 
 ---
 
-## D8 Ñ¹²â ÔÖ±¸ GA£¨4 ÖÜ£©
+## D8 Ñ¹ï¿½ï¿½ ï¿½Ö±ï¿½ GAï¿½ï¿½4 ï¿½Ü£ï¿½
 
-**Owner:** D8 owner ¡¤ **¹Ø¼üÂ·¾¶ ?**
+**Owner:** D8 owner ï¿½ï¿½ **ï¿½Ø¼ï¿½Â·ï¿½ï¿½ ?**
 
-### Task D8.1: ÈÝÁ¿ÓëÑ¹²â
+### Task D8.1: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¹ï¿½ï¿½
 
 **Files:**
+
 - Create: `tests/perf/data/scenarios/cdc_500_pipeline.py`
 - Create: `tests/perf/data/scenarios/trino_p95.py`
 - Create: `tests/perf/data/scenarios/starrocks_p95.py`
 - Create: `docs/superpowers/reports/2026-07-28-data-perf-d8.md`
 
-- [ ] **Step 1: 500 Pipeline Ñ¹²â**
+- [ ] **Step 1: 500 Pipeline Ñ¹ï¿½ï¿½**
 
-- Í¬Ê±ÅÜ 500 Ìõ Pipeline
-- ÑéÖ¤¿ØÖÆÃæ P95 < 200ms
-- ÑéÖ¤Êý¾ÝÆ½Ãæ Kafka Lag < 60s
+- Í¬Ê±ï¿½ï¿½ 500 ï¿½ï¿½ Pipeline
+- ï¿½ï¿½Ö¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ P95 < 200ms
+- ï¿½ï¿½Ö¤ï¿½ï¿½ï¿½ï¿½Æ½ï¿½ï¿½ Kafka Lag < 60s
 
-- [ ] **Step 2: ²éÑ¯ P95**
+- [ ] **Step 2: ï¿½ï¿½Ñ¯ P95**
 
-- Trino ½»»¥²éÑ¯ P95 < 30s
-- StarRocks P95 1¨C3s
-- Êý¾Ý²úÆ·²éÑ¯ P95 < 5s
+- Trino ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¯ P95 < 30s
+- StarRocks P95 1ï¿½C3s
+- ï¿½ï¿½ï¿½Ý²ï¿½Æ·ï¿½ï¿½Ñ¯ P95 < 5s
 
-- [ ] **Step 3: ±¨¸æ**
+- [ ] **Step 3: ï¿½ï¿½ï¿½ï¿½**
 
 ```bash
 git add tests/perf docs/superpowers/reports
 git commit -m "test(data): d8 capacity and p95"
 ```
 
-### Task D8.2: »ìãçÓëÔÖ±¸
+### Task D8.2: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½
 
 **Files:**
+
 - Create: `tests/chaos/data/kafka_broker_outage.yaml`
 - Create: `tests/chaos/data/flink_tm_kill.yaml`
 - Create: `tests/chaos/data/postgres_primary_failover.yaml`
 - Create: `docs/superpowers/reports/2026-07-28-data-chaos-d8.md`
 
-- [ ] **Step 1: ×¢Èë**
+- [ ] **Step 1: ×¢ï¿½ï¿½**
 
-- É±µô 1 ¸ö Kafka broker
-- É±µô Flink TaskManager
-- Postgres Primary ¹ÊÕÏÇÐ»»
+- É±ï¿½ï¿½ 1 ï¿½ï¿½ Kafka broker
+- É±ï¿½ï¿½ Flink TaskManager
+- Postgres Primary ï¿½ï¿½ï¿½ï¿½ï¿½Ð»ï¿½
 
-- [ ] **Step 2: ÑéÖ¤**
+- [ ] **Step 2: ï¿½ï¿½Ö¤**
 
-- ¿ØÖÆÃæ RPO ¡Ü 5 ·ÖÖÓ
-- ¹Ø¼üÁ÷ RPO ¡Ü Checkpoint ÖÜÆÚ
-- ¿ØÖÆÃæ RTO ¡Ü 30 ·ÖÖÓ
-- ¹Ø¼üÁ÷ RTO ¡Ü 15 ·ÖÖÓ
+- ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ RPO ï¿½ï¿½ 5 ï¿½ï¿½ï¿½ï¿½
+- ï¿½Ø¼ï¿½ï¿½ï¿½ RPO ï¿½ï¿½ Checkpoint ï¿½ï¿½ï¿½ï¿½
+- ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ RTO ï¿½ï¿½ 30 ï¿½ï¿½ï¿½ï¿½
+- ï¿½Ø¼ï¿½ï¿½ï¿½ RTO ï¿½ï¿½ 15 ï¿½ï¿½ï¿½ï¿½
 
-- [ ] **Step 3: ±¨¸æ**
+- [ ] **Step 3: ï¿½ï¿½ï¿½ï¿½**
 
 ```bash
 git add tests/chaos docs/superpowers/reports
 git commit -m "test(data): d8 chaos and dr"
 ```
 
-### Task D8.3: GA ÑéÊÕ
+### Task D8.3: GA ï¿½ï¿½ï¿½ï¿½
 
 **Files:**
+
 - Create: `docs/superpowers/reports/2026-07-28-data-ga-d8.md`
 - Create: `docs/superpowers/reports/2026-07-28-data-acceptance-checklist.md`
 
-- [ ] **Step 1: ×ß²éÈ«²¿ GA ÃÅ½û**
+- [ ] **Step 1: ï¿½ß²ï¿½È«ï¿½ï¿½ GA ï¿½Å½ï¿½**
 
-- ¶Ëµ½¶Ë 3 Àà Pipeline ÅÜÍ¨
-- ÎÞ¾²Ä¬¶ªÊý
-- Êý¾Ý²úÆ·¿É±» BI/RAG/Agent ¶©ÔÄ
-- ÐÔÄÜ¡¢¿ÉÓÃÐÔ¡¢SLO¡¢ÔÖ±¸Ö¸±êÈ«²¿´ï±ê
-- ¾É Java `TECH-DATA` ±£³Ö¹éµµ
+- ï¿½Ëµï¿½ï¿½ï¿½ 3 ï¿½ï¿½ Pipeline ï¿½ï¿½Í¨
+- ï¿½Þ¾ï¿½Ä¬ï¿½ï¿½ï¿½ï¿½
+- ï¿½ï¿½ï¿½Ý²ï¿½Æ·ï¿½É±ï¿½ BI/RAG/Agent ï¿½ï¿½ï¿½ï¿½
+- ï¿½ï¿½ï¿½Ü¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¡ï¿½SLOï¿½ï¿½ï¿½Ö±ï¿½Ö¸ï¿½ï¿½È«ï¿½ï¿½ï¿½ï¿½ï¿½
+- ï¿½ï¿½ Java `TECH-DATA` ï¿½ï¿½ï¿½Ö¹éµµ
 
-- [ ] **Step 2: ·¢²¼ GA ±¨¸æ**
+- [ ] **Step 2: ï¿½ï¿½ï¿½ï¿½ GA ï¿½ï¿½ï¿½ï¿½**
 
-- ÈÝÁ¿¡¢ÐÔÄÜ¡¢ÔÖ±¸
-- ÒÑÖª·çÏÕÓëÏÞÖÆ
-- ºóÐøÓÅ»¯·½Ïò
+- ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü¡ï¿½ï¿½Ö±ï¿½
+- ï¿½ï¿½Öªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+- ï¿½ï¿½ï¿½ï¿½ï¿½Å»ï¿½ï¿½ï¿½ï¿½ï¿½
 
-- [ ] **Step 3: Ìá½»**
+- [ ] **Step 3: ï¿½á½»**
 
 ```bash
 git add docs/superpowers/reports
 git commit -m "docs(data): d8 ga report"
 ```
 
-**ÃÅ½û£º** ËùÓÐ v1.0 GA ÑéÊÕÃÅ½ûÈ«²¿Í¨¹ý£»`/api/v1/data/*` ÆõÔ¼¼æÈÝ¾ÉÊµÏÖ£»ÎÞ P0/P1 È±ÏÝÒÅÁô¡£
+**ï¿½Å½ï¿½ï¿½ï¿½** ï¿½ï¿½ï¿½ï¿½ v1.0 GA ï¿½ï¿½ï¿½ï¿½ï¿½Å½ï¿½È«ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½`/api/v1/data/*` ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½Ý¾ï¿½Êµï¿½Ö£ï¿½ï¿½ï¿½ P0/P1 È±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 ---
 
-## ¿ç½×¶ÎÖÊÁ¿ÓëºÏ¹æ
+## ï¿½ï¿½×¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¹ï¿½
 
-- **ÀàÐÍ¼ì²é**£º`uv run pyright packages/mate-tech-data` È«ÂÌ
-- **Lint**£º`uv run ruff check packages/mate-tech-data` È«ÂÌ
-- **²âÊÔ**£ºµ¥Ôª ¡Ý 80% ¸²¸Ç¡¢¼¯³É¸²¸ÇÈ«²¿ Engine Adapter¡¢ÆõÔ¼²âÊÔ¸²¸ÇËùÓÐ REST ¶Ëµã
-- **CI**£º`GitHub Actions` Ôö¼Ó `data-plane-ci`£ºlint + type + unit + contract + oasdiff
-- **Ç°¶Ë**£º`pnpm typecheck`¡¢`pnpm lint`¡¢`pnpm test:e2e` È«²¿ÂÌ
-- **¿É¹Û²â**£ºOTel SDK¡¢Prometheus Ö¸±ê¡¢Loki ÈÕÖ¾¡¢Kafka Lag / Flink Checkpoint / Compaction / Trino Queue / StarRocks Load / Quality Ê§°Ü / SLA / ³É±¾Ö¸±ê
-- **°²È«**£ºRanger ÐÐÁÐÈ¨ÏÞ¡¢OpenBao Æ¾Ö¤¡¢¾µÏñÇ©Ãû¡¢ÈÝÆ÷Ö»¶Á¡¢·Ç root
-- **¿É»Ø¹ö**£ºPipeline Version ²»¿É±ä£»²¿ÊðÊ§°Ü×Ô¶¯»Ø¹öµ½ÉÏÒ» Savepoint£»ADS ·¢²¼Ê§°Ü±£Áô×îºó½¡¿µ°æ±¾
+- **ï¿½ï¿½ï¿½Í¼ï¿½ï¿½**ï¿½ï¿½`uv run pyright packages/mate-tech-data` È«ï¿½ï¿½
+- **Lint**ï¿½ï¿½`uv run ruff check packages/mate-tech-data` È«ï¿½ï¿½
+- **ï¿½ï¿½ï¿½ï¿½**ï¿½ï¿½ï¿½ï¿½Ôª ï¿½ï¿½ 80% ï¿½ï¿½ï¿½Ç¡ï¿½ï¿½ï¿½ï¿½É¸ï¿½ï¿½ï¿½È«ï¿½ï¿½ Engine Adapterï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½Ô¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ REST ï¿½Ëµï¿½
+- **CI**ï¿½ï¿½`GitHub Actions` ï¿½ï¿½ï¿½ï¿½ `data-plane-ci`ï¿½ï¿½lint + type + unit + contract + oasdiff
+- **Ç°ï¿½ï¿½**ï¿½ï¿½`pnpm typecheck`ï¿½ï¿½`pnpm lint`ï¿½ï¿½`pnpm test:e2e` È«ï¿½ï¿½ï¿½ï¿½
+- **ï¿½É¹Û²ï¿½**ï¿½ï¿½OTel SDKï¿½ï¿½Prometheus Ö¸ï¿½ê¡¢Loki ï¿½ï¿½Ö¾ï¿½ï¿½Kafka Lag / Flink Checkpoint / Compaction / Trino Queue / StarRocks Load / Quality Ê§ï¿½ï¿½ / SLA / ï¿½É±ï¿½Ö¸ï¿½ï¿½
+- **ï¿½ï¿½È«**ï¿½ï¿½Ranger ï¿½ï¿½ï¿½ï¿½È¨ï¿½Þ¡ï¿½OpenBao Æ¾Ö¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç©ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ root
+- **ï¿½É»Ø¹ï¿½**ï¿½ï¿½Pipeline Version ï¿½ï¿½ï¿½É±ä£»ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½Ø¹ï¿½ï¿½ï¿½ï¿½ï¿½Ò» Savepointï¿½ï¿½ADS ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü±ï¿½ï¿½ï¿½ï¿½ï¿½ó½¡¿ï¿½ï¿½æ±¾

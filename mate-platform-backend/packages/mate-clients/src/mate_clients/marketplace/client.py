@@ -2,6 +2,7 @@
 
 硬规则 #4:必须经 mate-clients ACL。Bearer + tenantHeader 由 caller 注入。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -62,9 +63,7 @@ class MarketplaceClient:
         resp.raise_for_status()
         return resp.json()
 
-    async def get_artifact(
-        self, *, kind: str, artifact_id: str
-    ) -> dict[str, Any]:
+    async def get_artifact(self, *, kind: str, artifact_id: str) -> dict[str, Any]:
         resp = await self.transport.get(
             f"{self.saas_url}/v1/artifacts/{kind}/{artifact_id}",
             headers=self.auth.headers(),

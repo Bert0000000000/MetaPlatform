@@ -103,11 +103,11 @@ async def test_e2e_08_apphub_versions_full_flow(
 
     # 6. 验证 Mock 调用顺序符合业务链路定义
     expected_paths = [
-        f"{APPHUB_BASE}/apps/{app_id}/versions",        # POST 创建
-        f"{APPHUB_BASE}/versions/{version_id}/publish", # POST 发布
-        f"{APPHUB_BASE}/apps/{app_id}/versions",        # GET 列表
-        f"{APPHUB_BASE}/versions/{version_id}",         # GET 详情
-        f"{APPHUB_BASE}/versions/{version_id}/rollback",# POST 回滚
+        f"{APPHUB_BASE}/apps/{app_id}/versions",  # POST 创建
+        f"{APPHUB_BASE}/versions/{version_id}/publish",  # POST 发布
+        f"{APPHUB_BASE}/apps/{app_id}/versions",  # GET 列表
+        f"{APPHUB_BASE}/versions/{version_id}",  # GET 详情
+        f"{APPHUB_BASE}/versions/{version_id}/rollback",  # POST 回滚
     ]
     assert mock_call_log.paths == expected_paths, (
         f"调用顺序不符: 期望 {expected_paths}, 实际 {mock_call_log.paths}"

@@ -1,4 +1,5 @@
-﻿"""RAG tool bridge."""
+"""RAG tool bridge."""
+
 from __future__ import annotations
 
 import logging
@@ -18,7 +19,10 @@ class RAGTool:
 
     def search(self, query, top_k=5, mode="AUTO"):
         try:
-            r = self._client.post(f"{self._base_url}/api/v1/rag/search", json={"query": query, "top_k": top_k, "mode": mode})
+            r = self._client.post(
+                f"{self._base_url}/api/v1/rag/search",
+                json={"query": query, "top_k": top_k, "mode": mode},
+            )
             r.raise_for_status()
             return list(r.json().get("hits", []))
         except Exception as exc:

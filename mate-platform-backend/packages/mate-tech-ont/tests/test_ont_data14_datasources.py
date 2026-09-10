@@ -3,6 +3,7 @@
 真库门控：源表建在 metaplatform_ont 同库（ONT_SOURCE_DSN 指向它），
 声明 → sync → Individual 落库 → materialization 行集回流。
 """
+
 from __future__ import annotations
 
 import os
@@ -21,9 +22,7 @@ from mate_kernel.ontology.types.object_type import ObjectType
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 
 T = "data14"
-PG_DSN = os.environ.get(
-    "DATA14_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"
-)
+PG_DSN = os.environ.get("DATA14_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
 OBJ = f"ont.{T}.obj.crm.customer.v1"
 P_ID = f"ont.{T}.prop.cid.v1"
 P_NAME = f"ont.{T}.prop.cname.v1"
@@ -53,41 +52,74 @@ def repo():
         cur.execute(f"CREATE TABLE {SRC2} (cid TEXT PRIMARY KEY, cname TEXT, ccity TEXT)")
         cur.execute(f"INSERT INTO {SRC1} (cid, cname) VALUES ('c1', 'crm-name-1')")
         # ERP 的 cname 是旧数据（priority 高的 crm 不应被它覆盖）；city 是新增
-        cur.execute(f"INSERT INTO {SRC2} (cid, cname, ccity) VALUES "
-                    f"('c1', 'erp-name-1', '上海'), ('c2', 'erp-name-2', '广州')")
+        cur.execute(
+            f"INSERT INTO {SRC2} (cid, cname, ccity) VALUES "
+            f"('c1', 'erp-name-1', '上海'), ('c2', 'erp-name-2', '广州')"
+        )
     conn.commit()
     conn.close()
     with r.tenant_scope(T):
-        r.upsert_object_type(ObjectType(
-            rid=ClassRef(OBJ),
-            primary_key=(ClassRef(P_ID),),
-            properties=(
-                Property(rid=ClassRef(P_ID), type_id="string", nullable=False,
-                         primary_key=True, title="id", format=PropertyFormat.STRING),
-                Property(rid=ClassRef(P_NAME), type_id="string", nullable=True,
-                         primary_key=False, title="name", format=PropertyFormat.STRING),
-                Property(rid=ClassRef(P_CITY), type_id="string", nullable=True,
-                         primary_key=False, title="city", format=PropertyFormat.STRING),
-            ),
-            display_name="customer",
-        ))
-        r.upsert_backing_datasource({
-            "class_rid": OBJ, "name": "crm", "table": SRC1, "pk_column": "cid",
-            "field_mapping": {P_ID: "cid", P_NAME: "cname"},
-            "priority": 10, "tenant_id": T,
-        })
-        r.upsert_backing_datasource({
-            "class_rid": OBJ, "name": "erp", "table": SRC2, "pk_column": "cid",
-            "field_mapping": {P_ID: "cid", P_NAME: "cname", P_CITY: "ccity"},
-            "priority": 20, "tenant_id": T,
-        })
+        r.upsert_object_type(
+            ObjectType(
+                rid=ClassRef(OBJ),
+                primary_key=(ClassRef(P_ID),),
+                properties=(
+                    Property(
+                        rid=ClassRef(P_ID),
+                        type_id="string",
+                        nullable=False,
+                        primary_key=True,
+                        title="id",
+                        format=PropertyFormat.STRING,
+                    ),
+                    Property(
+                        rid=ClassRef(P_NAME),
+                        type_id="string",
+                        nullable=True,
+                        primary_key=False,
+                        title="name",
+                        format=PropertyFormat.STRING,
+                    ),
+                    Property(
+                        rid=ClassRef(P_CITY),
+                        type_id="string",
+                        nullable=True,
+                        primary_key=False,
+                        title="city",
+                        format=PropertyFormat.STRING,
+                    ),
+                ),
+                display_name="customer",
+            )
+        )
+        r.upsert_backing_datasource(
+            {
+                "class_rid": OBJ,
+                "name": "crm",
+                "table": SRC1,
+                "pk_column": "cid",
+                "field_mapping": {P_ID: "cid", P_NAME: "cname"},
+                "priority": 10,
+                "tenant_id": T,
+            }
+        )
+        r.upsert_backing_datasource(
+            {
+                "class_rid": OBJ,
+                "name": "erp",
+                "table": SRC2,
+                "pk_column": "cid",
+                "field_mapping": {P_ID: "cid", P_NAME: "cname", P_CITY: "ccity"},
+                "priority": 20,
+                "tenant_id": T,
+            }
+        )
     yield r
     conn = psycopg2.connect(PG_DSN)
     with conn.cursor() as cur:
         cur.execute(f"DROP TABLE IF EXISTS {SRC1}")
         cur.execute(f"DROP TABLE IF EXISTS {SRC2}")
-        for tbl in ("ont_individual", "ont_object_type", "ont_axiom",
-                    "ont_backing_datasource"):
+        for tbl in ("ont_individual", "ont_object_type", "ont_axiom", "ont_backing_datasource"):
             cur.execute(f"DELETE FROM {tbl} WHERE tenant_id=%s", (T,))
     conn.commit()
     conn.close()

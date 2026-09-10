@@ -7,6 +7,7 @@ is forwarded to ``{endpoint}/api/v1/mcp/tools/{name}`` — the same
 MCP-to-MCP surface the federation feature uses (reusing
 ``ExternalMcpClient``, so no bare httpx in this service).
 """
+
 from __future__ import annotations
 
 from typing import Any

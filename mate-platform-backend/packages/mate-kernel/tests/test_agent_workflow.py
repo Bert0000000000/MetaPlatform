@@ -166,4 +166,5 @@ class TestWorkflowAgent:
 class TestSelectorRoutedToWorkflow:
     def test_workflow_rid_routes_to_workflow_role(self) -> None:
         from mate_kernel.agent.orchestrator import AgentRole, AgentSelector
+
         assert AgentSelector().select("wfe.acme.flow.approve.v1") == AgentRole.WORKFLOW

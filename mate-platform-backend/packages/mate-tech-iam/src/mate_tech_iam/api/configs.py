@@ -1,4 +1,5 @@
 """System configuration endpoints (FR-DASH-006-05)."""
+
 from __future__ import annotations
 
 import json
@@ -102,7 +103,9 @@ def _config_to_out(cfg: SystemConfig) -> ConfigOut:
         category=cfg.category,
         label=cfg.label,
         description=cfg.description,
-        enum_options=[x for x in (cfg.enum_options or "").split(",") if x] if cfg.enum_options else [],
+        enum_options=[x for x in (cfg.enum_options or "").split(",") if x]
+        if cfg.enum_options
+        else [],
         is_sensitive=cfg.is_sensitive,
         updated_by=cfg.updated_by,
         created_at=cfg.created_at,
@@ -151,7 +154,11 @@ async def list_configs(
         base = base.where(SystemConfig.key.like(like))
 
     total = (await session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
-    stmt = base.order_by(SystemConfig.category, SystemConfig.key).offset((page_num - 1) * page_size).limit(page_size)
+    stmt = (
+        base.order_by(SystemConfig.category, SystemConfig.key)
+        .offset((page_num - 1) * page_size)
+        .limit(page_size)
+    )
     rows = (await session.execute(stmt)).scalars().all()
     items = [_config_to_out(c).model_dump(mode="json") for c in rows]
     return page(items=items, total=total, page=page_num, page_size=page_size)
@@ -181,10 +188,14 @@ async def update_config(
     payload: ConfigUpdate,
 ) -> dict[str, Any]:
     if not SAFE_KEY_RE.match(key):
-        raise HTTPException(status_code=400, detail={"code": "E400_VALIDATION", "message": "key 不合法"})
+        raise HTTPException(
+            status_code=400, detail={"code": "E400_VALIDATION", "message": "key 不合法"}
+        )
     cfg = await _load_cfg(session, key, caller.tenant_id)
     if not cfg:
-        raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "配置项不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "E404_NOT_FOUND", "message": "配置项不存在"}
+        )
 
     _validate_value(payload.value, cfg.value_type, cfg.enum_options)
     before_raw = cfg.value

@@ -21,6 +21,7 @@ The previous version of `mate_tech_mcp.main` had two latent bugs:
 Both are fixed in this PR; this test pins the 5 endpoints so the
 regression cannot return.
 """
+
 from __future__ import annotations
 
 import os
@@ -107,21 +108,15 @@ class TestMcpHttpEndpointsWired:
         # All three list endpoints return a list under one of these keys.
         assert any(k in body for k in ("tools", "resources", "prompts"))
 
-    def test_render_prompt_requires_auth(
-        self, app_with_mocked_auth: TestClient
-    ) -> None:
+    def test_render_prompt_requires_auth(self, app_with_mocked_auth: TestClient) -> None:
         """POST /api/v1/mcp/prompts/{name} without a Bearer token
         must be rejected (401). The previous version of the file
         served it anonymously, which violated SEC-IAM-01.
         """
-        r = app_with_mocked_auth.post(
-            "/api/v1/mcp/prompts/some_prompt", json={}
-        )
+        r = app_with_mocked_auth.post("/api/v1/mcp/prompts/some_prompt", json={})
         assert r.status_code == 401, r.text
 
-    def test_call_tool_requires_auth(
-        self, app_with_mocked_auth: TestClient
-    ) -> None:
+    def test_call_tool_requires_auth(self, app_with_mocked_auth: TestClient) -> None:
         """POST /api/v1/mcp/tools/{name} without a Bearer token
         must be rejected (401)."""
         r = app_with_mocked_auth.post(
@@ -141,11 +136,7 @@ class TestMcpMainIsImportable:
                     sys.modules.pop(m, None)
             from mate_tech_mcp import main as main_mod
 
-            mounted_paths = {
-                route.path
-                for route in main_mod.app.routes
-                if hasattr(route, "path")
-            }
+            mounted_paths = {route.path for route in main_mod.app.routes if hasattr(route, "path")}
             assert "/api/v1/mcp/protocol" in mounted_paths
             assert "/mcp-protocol" not in mounted_paths
             protocol_mount = next(
@@ -154,8 +145,7 @@ class TestMcpMainIsImportable:
                 if getattr(route, "path", None) == "/api/v1/mcp/protocol"
             )
             assert any(
-                getattr(route, "path", None) == "/mcp"
-                for route in protocol_mount.app.routes
+                getattr(route, "path", None) == "/mcp" for route in protocol_mount.app.routes
             )
 
 
@@ -313,18 +303,14 @@ class TestMcpFederationHttpE2E:
 
     def test_federation_list_servers_returns_200(self, fed_client) -> None:
         self._register(fed_client, name="srv-a", tools=["tool1"])
-        self._register(
-            fed_client, name="srv-b", transport_url="http://b:8081", tools=["tool2"]
-        )
+        self._register(fed_client, name="srv-b", transport_url="http://b:8081", tools=["tool2"])
         r = fed_client.get("/api/v1/mcp/federation/servers", headers=self._hdr())
         assert r.status_code == 200
         assert r.json()["total"] == 2
 
     def test_federation_get_server_returns_200(self, fed_client) -> None:
         srv = self._register(fed_client)
-        r = fed_client.get(
-            f"/api/v1/mcp/federation/servers/{srv['id']}", headers=self._hdr()
-        )
+        r = fed_client.get(f"/api/v1/mcp/federation/servers/{srv['id']}", headers=self._hdr())
         assert r.status_code == 200
         assert r.json()["server"]["id"] == srv["id"]
 
@@ -342,17 +328,13 @@ class TestMcpFederationHttpE2E:
 
     def test_federation_delete_server_returns_200(self, fed_client) -> None:
         srv = self._register(fed_client)
-        r = fed_client.delete(
-            f"/api/v1/mcp/federation/servers/{srv['id']}", headers=self._hdr()
-        )
+        r = fed_client.delete(f"/api/v1/mcp/federation/servers/{srv['id']}", headers=self._hdr())
         assert r.status_code == 200
         assert r.json()["deleted"] is True
 
     def test_federation_list_tools_returns_200(self, fed_client) -> None:
         self._register(fed_client, name="srv-a", tools=["tool1", "tool2"])
-        self._register(
-            fed_client, name="srv-b", transport_url="http://b:8081", tools=["tool3"]
-        )
+        self._register(fed_client, name="srv-b", transport_url="http://b:8081", tools=["tool3"])
         r = fed_client.get("/api/v1/mcp/federation/tools", headers=self._hdr())
         assert r.status_code == 200
         assert r.json()["total"] == 3
@@ -391,16 +373,12 @@ class TestMcpFederationHttpE2E:
         )
         assert r.status_code == 404
         # original tenant can still see it
-        r2 = fed_client.get(
-            f"/api/v1/mcp/federation/servers/{srv['id']}", headers=self._hdr()
-        )
+        r2 = fed_client.get(f"/api/v1/mcp/federation/servers/{srv['id']}", headers=self._hdr())
         assert r2.status_code == 200
 
     def test_federation_empty_tenant_header_returns_400(self, fed_client) -> None:
         """No state.ctx AND an empty X-Tenant-Id → 400 (fallback guard)."""
-        r = fed_client.get(
-            "/api/v1/mcp/federation/servers", headers={"X-Tenant-Id": ""}
-        )
+        r = fed_client.get("/api/v1/mcp/federation/servers", headers={"X-Tenant-Id": ""})
         assert r.status_code == 400
 
     def test_federation_no_header_defaults_tenant(self, fed_client) -> None:

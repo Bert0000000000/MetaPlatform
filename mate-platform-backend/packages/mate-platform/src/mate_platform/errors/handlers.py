@@ -21,9 +21,7 @@ def to_http_response(err: PlatformError, *, request_id: str) -> tuple[dict[str, 
     )
 
 
-async def tenant_access_error_handler(
-    request: Request, exc: TenantAccessError
-) -> JSONResponse:
+async def tenant_access_error_handler(request: Request, exc: TenantAccessError) -> JSONResponse:
     """Map TenantAccessError to a 400 Bad Request with a structured body.
 
     Without this handler the exception propagates to Starlette and

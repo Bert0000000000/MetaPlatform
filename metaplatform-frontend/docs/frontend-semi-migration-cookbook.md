@@ -18,32 +18,32 @@
 
 ## 1. 组件映射表
 
-| antd | Semi | 差异点 |
-|---|---|---|
-| `Space size="large/middle/small"` | `spacing="loose/medium/tight"` | 无 `extraTight`/`large` |
-| `Card extra=` | **`headerExtraContent=`** | 没有 `headerExtra`！底部操作区才是 `extra` |
-| `Button type="primary"` | `theme="solid" type="primary"` | size 是 `'small'|'default'|'large'`（**无 `middle`**） |
-| `Button iconPosition="end"` | `iconPosition="right"` | 无 `end` |
-| `Button danger` | `type="danger"`（配 theme） | Semi 无 danger prop |
-| `Tag color="success/processing/error/default"` | `green/blue/red/grey` | TagColor 是预设联合类型，从 `@douyinfe/semi-ui/lib/es/tag` 导入 |
-| `message.success/error/warning/info` | `Toast.success/error/warning/info` | 全局命令式，无需 Provider |
-| `Modal` | `Modal` | **`visible=`（没有 `open`！Semi 源码只读 props.visible）；`onOk/onCancel/confirmLoading/width` 兼容；无 `destroyOnClose` |
-| `Drawer` | **`SideSheet`** | 打开状态用 **`visible=`**（不是 open！）；无 keepDOM 类型 |
-| `Drawer extra=` | 自定义 title（flex 容器里放按钮） | SideSheet 无 extra |
-| `Alert` | `Banner` | 更名 |
-| `Rate` | `Rating` | 更名 |
-| `Row/Col` | `Row/Col` 从 **`@douyinfe/semi-ui/lib/es/grid`** 导入 | 主入口无 Grid；`gutter/span` 兼容 |
-| `Statistic` | 🔴 无 | 自建 div（label + 大数字） |
-| `Result` | 🔴 无 | 自建（icon + title + 描述 + Button） |
-| `Segmented` | 🔴 无 | `RadioGroup type="button"` 或 Tabs |
-| `Transfer` | 🔴 无 | 自建双栏 |
-| `Skeleton paragraph={{rows}}` | 🔴 无 | 自建 shimmer div |
-| `Empty` | `Empty` | `description` 兼容 |
-| `Spin` | `Spin` | `size="small|middle|large"`；`tip` 兼容 |
-| `Pagination` | `Pagination` | 受控用 `currentPage/onPageChange`（antd 是 current/onChange）；`pageSizeOpts`（不是 pageSizeOptions） |
-| `Table locale={{emptyText}}` | `empty=` prop | 传 ReactNode/string |
-| `Typography.Title level={4}` | `heading={4}` | |
-| `Typography.Text` | `Typography.Text` | `type="tertiary"` 次要文字 |
+| antd                                           | Semi                                                  | 差异点                                                                                                                     |
+| ---------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | --------- | ----------------------------- |
+| `Space size="large/middle/small"`              | `spacing="loose/medium/tight"`                        | 无 `extraTight`/`large`                                                                                                    |
+| `Card extra=`                                  | **`headerExtraContent=`**                             | 没有 `headerExtra`！底部操作区才是 `extra`                                                                                 |
+| `Button type="primary"`                        | `theme="solid" type="primary"`                        | size 是 `'small'                                                                                                           | 'default' | 'large'`（**无 `middle`\*\*） |
+| `Button iconPosition="end"`                    | `iconPosition="right"`                                | 无 `end`                                                                                                                   |
+| `Button danger`                                | `type="danger"`（配 theme）                           | Semi 无 danger prop                                                                                                        |
+| `Tag color="success/processing/error/default"` | `green/blue/red/grey`                                 | TagColor 是预设联合类型，从 `@douyinfe/semi-ui/lib/es/tag` 导入                                                            |
+| `message.success/error/warning/info`           | `Toast.success/error/warning/info`                    | 全局命令式，无需 Provider                                                                                                  |
+| `Modal`                                        | `Modal`                                               | \*\*`visible=`（没有 `open`！Semi 源码只读 props.visible）；`onOk/onCancel/confirmLoading/width` 兼容；无 `destroyOnClose` |
+| `Drawer`                                       | **`SideSheet`**                                       | 打开状态用 **`visible=`**（不是 open！）；无 keepDOM 类型                                                                  |
+| `Drawer extra=`                                | 自定义 title（flex 容器里放按钮）                     | SideSheet 无 extra                                                                                                         |
+| `Alert`                                        | `Banner`                                              | 更名                                                                                                                       |
+| `Rate`                                         | `Rating`                                              | 更名                                                                                                                       |
+| `Row/Col`                                      | `Row/Col` 从 **`@douyinfe/semi-ui/lib/es/grid`** 导入 | 主入口无 Grid；`gutter/span` 兼容                                                                                          |
+| `Statistic`                                    | 🔴 无                                                 | 自建 div（label + 大数字）                                                                                                 |
+| `Result`                                       | 🔴 无                                                 | 自建（icon + title + 描述 + Button）                                                                                       |
+| `Segmented`                                    | 🔴 无                                                 | `RadioGroup type="button"` 或 Tabs                                                                                         |
+| `Transfer`                                     | 🔴 无                                                 | 自建双栏                                                                                                                   |
+| `Skeleton paragraph={{rows}}`                  | 🔴 无                                                 | 自建 shimmer div                                                                                                           |
+| `Empty`                                        | `Empty`                                               | `description` 兼容                                                                                                         |
+| `Spin`                                         | `Spin`                                                | `size="small                                                                                                               | middle    | large"`；`tip` 兼容           |
+| `Pagination`                                   | `Pagination`                                          | 受控用 `currentPage/onPageChange`（antd 是 current/onChange）；`pageSizeOpts`（不是 pageSizeOptions）                      |
+| `Table locale={{emptyText}}`                   | `empty=` prop                                         | 传 ReactNode/string                                                                                                        |
+| `Typography.Title level={4}`                   | `heading={4}`                                         |                                                                                                                            |
+| `Typography.Text`                              | `Typography.Text`                                     | `type="tertiary"` 次要文字                                                                                                 |
 
 ## 2. Form API（差异最大）
 
@@ -74,16 +74,16 @@ form.reset();                            // 不是 resetFields！
 
 ## 3. 事件/受控 API 差异（高频坑）
 
-| antd | Semi |
-|---|---|
+| antd                                           | Semi                                                            |
+| ---------------------------------------------- | --------------------------------------------------------------- | ------------------------------- |
 | `Input onChange={(e) => setV(e.target.value)}` | `onChange={(value: string) => setV(value)}`（第一参数就是值！） |
-| `Input onPressEnter={fn}` | `onEnterPress={fn}` |
-| `Input.TextArea` | 表单内用 `Form.TextArea`；表单外用 `Input type="textarea"` 无效 |
-| `Input allowClear` | `showClear` |
-| `Select options={}` | **`optionList={}`** |
-| `Select onChange={setX}` | `onChange={(v) => setX(v as string | undefined)}`（v 可能 string[]） |
-| `Table pagination={{...}}` | 同构；onPageChange 在 pagination 对象里 |
-| `Table rowKey` | 必须给，否则警告 |
+| `Input onPressEnter={fn}`                      | `onEnterPress={fn}`                                             |
+| `Input.TextArea`                               | 表单内用 `Form.TextArea`；表单外用 `Input type="textarea"` 无效 |
+| `Input allowClear`                             | `showClear`                                                     |
+| `Select options={}`                            | **`optionList={}`**                                             |
+| `Select onChange={setX}`                       | `onChange={(v) => setX(v as string                              | undefined)}`（v 可能 string[]） |
+| `Table pagination={{...}}`                     | 同构；onPageChange 在 pagination 对象里                         |
+| `Table rowKey`                                 | 必须给，否则警告                                                |
 
 ## 4. 迁移顺序（每文件）
 
@@ -99,17 +99,18 @@ form.reset();                            // 不是 resetFields！
 ```bash
 cd metaplatform-frontend/apps/web && npx tsc -b --noEmit 2>&1 | grep <你的模块目录>
 ```
+
 - **既有已知错误**（与迁移无关，忽略）：`superai/components/AgentChatPanel.tsx`、`ClaimRenderer`、`EvidenceRenderer` 的 Claim/Evidence 类型不匹配；`shared/components/flow/*` 两个错误。
 - 注意：多个进程并发跑 tsc -b 会抢 tsbuildinfo，报错重试即可。
 
 ## 6. 语义色映射（Tag）
 
-| antd | Semi TagColor |
-|---|---|
-| success / green | green |
-| processing / blue | blue |
-| error / red | red |
-| default / grey | grey |
-| warning | orange |
-| gold | yellow |
-| purple | purple |
+| antd              | Semi TagColor |
+| ----------------- | ------------- |
+| success / green   | green         |
+| processing / blue | blue          |
+| error / red       | red           |
+| default / grey    | grey          |
+| warning           | orange        |
+| gold              | yellow        |
+| purple            | purple        |

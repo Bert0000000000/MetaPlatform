@@ -4,6 +4,7 @@
 ADR-0014 step 2 (`require_tenant(ctx)`) before touching the
 repository.
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -344,22 +345,33 @@ async def get_value_streams(request: Request) -> dict:
 # Write operations (POST / PUT / DELETE)
 # ===========================================================================
 
+
 # --- Application CRUD ---
 @router.post("/applications")
 async def create_application(request: Request, body: dict = Body(...)) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "applications", Application(
-        id=gen_id("app"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("app")),
-        category=body.get("category", ""), owner=body.get("owner", ""),
-        status=body.get("status", "active"), description=body.get("description", ""),
-    ))
+    item = store_create(
+        tid,
+        "applications",
+        Application(
+            id=gen_id("app"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("app")),
+            category=body.get("category", ""),
+            owner=body.get("owner", ""),
+            status=body.get("status", "active"),
+            description=body.get("description", ""),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/applications/{item_id}")
 async def update_application(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "applications", item_id, _changes(body))
@@ -379,19 +391,27 @@ async def delete_application(request: Request, item_id: str) -> dict:
 @router.post("/capabilities")
 async def create_capability(request: Request, body: dict = Body(...)) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "capabilities", Capability(
-        id=gen_id("cap"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("cap")),
-        parent_id=body.get("parentId", body.get("parent_id", "")),
-        level=body.get("level", 1),
-        description=body.get("description", ""),
-    ))
+    item = store_create(
+        tid,
+        "capabilities",
+        Capability(
+            id=gen_id("cap"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("cap")),
+            parent_id=body.get("parentId", body.get("parent_id", "")),
+            level=body.get("level", 1),
+            description=body.get("description", ""),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/capabilities/{item_id}")
 async def update_capability(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "capabilities", item_id, _changes(body))
@@ -402,7 +422,9 @@ async def update_capability(
 
 @router.put("/capabilities/{item_id}/move")
 async def move_capability_node(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     new_parent = body.get("newParentId", body.get("new_parent_id", ""))
@@ -423,18 +445,26 @@ async def delete_capability(request: Request, item_id: str) -> dict:
 @router.post("/value-streams")
 async def create_value_stream(request: Request, body: dict = Body(...)) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "value_streams", ValueStream(
-        id=gen_id("vs"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("vs")),
-        stages=tuple(body.get("stages", [])),
-        description=body.get("description", ""),
-    ))
+    item = store_create(
+        tid,
+        "value_streams",
+        ValueStream(
+            id=gen_id("vs"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("vs")),
+            stages=tuple(body.get("stages", [])),
+            description=body.get("description", ""),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/value-streams/{item_id}")
 async def update_value_stream(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "value_streams", item_id, _changes(body))
@@ -452,7 +482,9 @@ async def delete_value_stream(request: Request, item_id: str) -> dict:
 
 @router.post("/value-streams/{vs_id}/stages")
 async def add_vs_stage(
-    request: Request, vs_id: str, body: dict = Body(...),
+    request: Request,
+    vs_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     stage_name = body.get("name", body.get("stageName", ""))
@@ -464,7 +496,10 @@ async def add_vs_stage(
 
 @router.put("/value-streams/{vs_id}/stages/{stage_id}")
 async def update_vs_stage(
-    request: Request, vs_id: str, stage_id: str, body: dict = Body(...),
+    request: Request,
+    vs_id: str,
+    stage_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     new_name = body.get("name", body.get("stageName", stage_id))
@@ -476,7 +511,9 @@ async def update_vs_stage(
 
 @router.delete("/value-streams/{vs_id}/stages/{stage_id}")
 async def delete_vs_stage(
-    request: Request, vs_id: str, stage_id: str,
+    request: Request,
+    vs_id: str,
+    stage_id: str,
 ) -> dict:
     tid = _tid(request)
     delete_value_stream_stage(tid, vs_id, stage_id)
@@ -485,36 +522,49 @@ async def delete_vs_stage(
 
 @router.post("/value-streams/{vs_id}/capabilities")
 async def link_vs_capabilities(
-    request: Request, vs_id: str, body: dict = Body(...),
+    request: Request,
+    vs_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     cap_ids = body.get("capabilityIds", body.get("capability_ids", []))
     stage_name = body.get("stageName", body.get("stage_name", ""))
-    return _ok({
-        "valueStreamId": vs_id,
-        "linked": len(cap_ids),
-        "stageName": stage_name,
-    })
+    return _ok(
+        {
+            "valueStreamId": vs_id,
+            "linked": len(cap_ids),
+            "stageName": stage_name,
+        }
+    )
 
 
 # --- BusinessProcess CRUD + roles ---
 @router.post("/business-processes")
 async def create_business_process(
-    request: Request, body: dict = Body(...),
+    request: Request,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "business_processes", BusinessProcess(
-        id=gen_id("bp"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("bp")),
-        application_id=body.get("applicationId", body.get("application_id", "")),
-        description=body.get("description", ""),
-    ))
+    item = store_create(
+        tid,
+        "business_processes",
+        BusinessProcess(
+            id=gen_id("bp"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("bp")),
+            application_id=body.get("applicationId", body.get("application_id", "")),
+            description=body.get("description", ""),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/business-processes/{item_id}")
 async def update_business_process(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "business_processes", item_id, _changes(body))
@@ -532,34 +582,46 @@ async def delete_business_process(request: Request, item_id: str) -> dict:
 
 @router.post("/business-processes/{bp_id}/roles")
 async def link_bp_roles(
-    request: Request, bp_id: str, body: dict = Body(...),
+    request: Request,
+    bp_id: str,
+    body: dict = Body(...),
 ) -> dict:
     _tid(request)
     role_ids = body.get("roleIds", body.get("role_ids", []))
     relationship = body.get("relationship", "owner")
-    return _ok({
-        "businessProcessId": bp_id,
-        "linked": len(role_ids),
-        "relationship": relationship,
-    })
+    return _ok(
+        {
+            "businessProcessId": bp_id,
+            "linked": len(role_ids),
+            "relationship": relationship,
+        }
+    )
 
 
 # --- Org CRUD ---
 @router.post("/orgs")
 async def create_org(request: Request, body: dict = Body(...)) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "orgs", Org(
-        id=gen_id("org"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("org")),
-        parent_id=body.get("parentId", body.get("parent_id", "")),
-        level=body.get("level", 1),
-    ))
+    item = store_create(
+        tid,
+        "orgs",
+        Org(
+            id=gen_id("org"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("org")),
+            parent_id=body.get("parentId", body.get("parent_id", "")),
+            level=body.get("level", 1),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/orgs/{item_id}")
 async def update_org(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "orgs", item_id, _changes(body))
@@ -579,17 +641,25 @@ async def delete_org(request: Request, item_id: str) -> dict:
 @router.post("/roles")
 async def create_role(request: Request, body: dict = Body(...)) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "roles", Role(
-        id=gen_id("role"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("role")),
-        org_id=body.get("orgId", body.get("org_id", "")),
-    ))
+    item = store_create(
+        tid,
+        "roles",
+        Role(
+            id=gen_id("role"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("role")),
+            org_id=body.get("orgId", body.get("org_id", "")),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/roles/{item_id}")
 async def update_role(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "roles", item_id, _changes(body))
@@ -609,11 +679,17 @@ async def delete_role(request: Request, item_id: str) -> dict:
 @router.post("/data/domains")
 async def create_data_domain(request: Request, body: dict = Body(...)) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "data_domains", DataDomain(
-        id=gen_id("dd"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("dd")),
-        parent_id=body.get("parentId", body.get("parent_id", "")),
-    ))
+    item = store_create(
+        tid,
+        "data_domains",
+        DataDomain(
+            id=gen_id("dd"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("dd")),
+            parent_id=body.get("parentId", body.get("parent_id", "")),
+        ),
+    )
     return _ok(asdict(item))
 
 
@@ -628,12 +704,18 @@ async def delete_data_domain(request: Request, item_id: str) -> dict:
 @router.post("/data-entities")
 async def create_data_entity(request: Request, body: dict = Body(...)) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "data_entities", DataEntity(
-        id=gen_id("de"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("de")),
-        data_asset_id=body.get("dataAssetId", body.get("data_asset_id", "")),
-        fields=tuple(body.get("fields", [])),
-    ))
+    item = store_create(
+        tid,
+        "data_entities",
+        DataEntity(
+            id=gen_id("de"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("de")),
+            data_asset_id=body.get("dataAssetId", body.get("data_asset_id", "")),
+            fields=tuple(body.get("fields", [])),
+        ),
+    )
     return _ok(asdict(item))
 
 
@@ -648,7 +730,9 @@ async def get_data_entity(request: Request, item_id: str) -> dict:
 
 @router.put("/data-entities/{item_id}")
 async def update_data_entity(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "data_entities", item_id, _changes(body))
@@ -668,22 +752,27 @@ async def delete_data_entity(request: Request, item_id: str) -> dict:
 @router.post("/data-flows")
 async def create_data_flow(request: Request, body: dict = Body(...)) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "data_flows", DataFlow(
-        id=gen_id("df"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("df")),
-        source_entity_id=body.get(
-            "sourceEntityId", body.get("source_entity_id", "")),
-        target_entity_id=body.get(
-            "targetEntityId", body.get("target_entity_id", "")),
-        pipeline_spec=body.get(
-            "pipelineSpec", body.get("pipeline_spec", "")),
-    ))
+    item = store_create(
+        tid,
+        "data_flows",
+        DataFlow(
+            id=gen_id("df"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("df")),
+            source_entity_id=body.get("sourceEntityId", body.get("source_entity_id", "")),
+            target_entity_id=body.get("targetEntityId", body.get("target_entity_id", "")),
+            pipeline_spec=body.get("pipelineSpec", body.get("pipeline_spec", "")),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/data-flows/{item_id}")
 async def update_data_flow(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "data_flows", item_id, _changes(body))
@@ -703,18 +792,26 @@ async def delete_data_flow(request: Request, item_id: str) -> dict:
 @router.post("/data-standards")
 async def create_data_standard(request: Request, body: dict = Body(...)) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "data_standards", DataStandard(
-        id=gen_id("ds"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("ds")),
-        domain=body.get("domain", ""),
-        description=body.get("description", ""),
-    ))
+    item = store_create(
+        tid,
+        "data_standards",
+        DataStandard(
+            id=gen_id("ds"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("ds")),
+            domain=body.get("domain", ""),
+            description=body.get("description", ""),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/data-standards/{item_id}")
 async def update_data_standard(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "data_standards", item_id, _changes(body))
@@ -734,18 +831,28 @@ async def delete_data_standard(request: Request, item_id: str) -> dict:
 @router.post("/data-assets")
 async def create_data_asset(request: Request, body: dict = Body(...)) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "data_assets", DataAsset(
-        id=gen_id("da"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("da")),
-        layer=body.get("layer", ""), domain=body.get("domain", ""),
-        owner=body.get("owner", ""), status=body.get("status", "accepted"),
-    ))
+    item = store_create(
+        tid,
+        "data_assets",
+        DataAsset(
+            id=gen_id("da"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("da")),
+            layer=body.get("layer", ""),
+            domain=body.get("domain", ""),
+            owner=body.get("owner", ""),
+            status=body.get("status", "accepted"),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/data-assets/{item_id}")
 async def update_data_asset(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "data_assets", item_id, _changes(body))
@@ -765,20 +872,27 @@ async def delete_data_asset(request: Request, item_id: str) -> dict:
 @router.post("/deployments")
 async def create_deployment(request: Request, body: dict = Body(...)) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "deployments", Deployment(
-        id=gen_id("dep"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("dep")),
-        application_id=body.get(
-            "applicationId", body.get("application_id", "")),
-        environment=body.get("environment", "staging"),
-        cluster=body.get("cluster", "default"),
-    ))
+    item = store_create(
+        tid,
+        "deployments",
+        Deployment(
+            id=gen_id("dep"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("dep")),
+            application_id=body.get("applicationId", body.get("application_id", "")),
+            environment=body.get("environment", "staging"),
+            cluster=body.get("cluster", "default"),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/deployments/{item_id}")
 async def update_deployment(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "deployments", item_id, _changes(body))
@@ -797,20 +911,29 @@ async def delete_deployment(request: Request, item_id: str) -> dict:
 # --- PrincipleCategory CRUD ---
 @router.post("/governance/principle-categories")
 async def create_principle_category(
-    request: Request, body: dict = Body(...),
+    request: Request,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "principle_categories", GovernancePrincipleCategory(
-        id=gen_id("gpc"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("gpc")),
-        sort_order=body.get("sortOrder", body.get("sort_order", 0)),
-    ))
+    item = store_create(
+        tid,
+        "principle_categories",
+        GovernancePrincipleCategory(
+            id=gen_id("gpc"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("gpc")),
+            sort_order=body.get("sortOrder", body.get("sort_order", 0)),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/governance/principle-categories/{item_id}")
 async def update_principle_category(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "principle_categories", item_id, _changes(body))
@@ -830,19 +953,26 @@ async def delete_principle_category(request: Request, item_id: str) -> dict:
 @router.post("/governance/principles")
 async def create_principle(request: Request, body: dict = Body(...)) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "principles", GovernancePrinciple(
-        id=gen_id("gp"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("gp")),
-        category_id=body.get(
-            "categoryId", body.get("category_id", "")),
-        description=body.get("description", ""),
-    ))
+    item = store_create(
+        tid,
+        "principles",
+        GovernancePrinciple(
+            id=gen_id("gp"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("gp")),
+            category_id=body.get("categoryId", body.get("category_id", "")),
+            description=body.get("description", ""),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/governance/principles/{item_id}")
 async def update_principle(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "principles", item_id, _changes(body))
@@ -861,21 +991,30 @@ async def delete_principle(request: Request, item_id: str) -> dict:
 # --- ReviewTemplate CRUD ---
 @router.post("/governance/review-templates")
 async def create_review_template(
-    request: Request, body: dict = Body(...),
+    request: Request,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "review_templates", ReviewTemplate(
-        id=gen_id("rt"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("rt")),
-        category=body.get("category", ""),
-        checklist=tuple(body.get("checklist", [])),
-    ))
+    item = store_create(
+        tid,
+        "review_templates",
+        ReviewTemplate(
+            id=gen_id("rt"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("rt")),
+            category=body.get("category", ""),
+            checklist=tuple(body.get("checklist", [])),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/governance/review-templates/{item_id}")
 async def update_review_template(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "review_templates", item_id, _changes(body))
@@ -894,24 +1033,30 @@ async def delete_review_template(request: Request, item_id: str) -> dict:
 # --- ReviewTicket CRUD + actions ---
 @router.post("/governance/review-tickets")
 async def create_review_ticket(
-    request: Request, body: dict = Body(...),
+    request: Request,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "review_tickets", ReviewTicket(
-        id=gen_id("rv"), tenant_id=tid,
-        title=body.get("title", ""),
-        application_id=body.get(
-            "applicationId", body.get("application_id", "")),
-        template_id=body.get(
-            "templateId", body.get("template_id", "")),
-        status=body.get("status", "open"),
-    ))
+    item = store_create(
+        tid,
+        "review_tickets",
+        ReviewTicket(
+            id=gen_id("rv"),
+            tenant_id=tid,
+            title=body.get("title", ""),
+            application_id=body.get("applicationId", body.get("application_id", "")),
+            template_id=body.get("templateId", body.get("template_id", "")),
+            status=body.get("status", "open"),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/governance/review-tickets/{item_id}")
 async def update_review_ticket(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "review_tickets", item_id, _changes(body))
@@ -929,12 +1074,12 @@ async def delete_review_ticket(request: Request, item_id: str) -> dict:
 
 @router.post("/governance/review-tickets/{item_id}/start")
 async def start_review_ticket(
-    request: Request, item_id: str,
+    request: Request,
+    item_id: str,
     reviewer: str = Query(...),
 ) -> dict:
     tid = _tid(request)
-    item = store_update(
-        tid, "review_tickets", item_id, {"status": "in_review"})
+    item = store_update(tid, "review_tickets", item_id, {"status": "in_review"})
     if not item:
         raise HTTPException(status_code=404, detail="Review ticket not found")
     return _ok(asdict(item))
@@ -942,11 +1087,12 @@ async def start_review_ticket(
 
 @router.post("/governance/review-tickets/{item_id}/approve")
 async def approve_review_ticket(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
-    item = store_update(
-        tid, "review_tickets", item_id, {"status": "approved"})
+    item = store_update(tid, "review_tickets", item_id, {"status": "approved"})
     if not item:
         raise HTTPException(status_code=404, detail="Review ticket not found")
     return _ok(asdict(item))
@@ -954,11 +1100,12 @@ async def approve_review_ticket(
 
 @router.post("/governance/review-tickets/{item_id}/reject")
 async def reject_review_ticket(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
-    item = store_update(
-        tid, "review_tickets", item_id, {"status": "rejected"})
+    item = store_update(tid, "review_tickets", item_id, {"status": "rejected"})
     if not item:
         raise HTTPException(status_code=404, detail="Review ticket not found")
     return _ok(asdict(item))
@@ -966,7 +1113,8 @@ async def reject_review_ticket(
 
 @router.post("/governance/review-tickets/{item_id}/comments")
 async def add_review_ticket_comment(
-    request: Request, item_id: str,
+    request: Request,
+    item_id: str,
     reviewer: str = Query(...),
     comment: str = Query(...),
 ) -> dict:
@@ -978,20 +1126,26 @@ async def add_review_ticket_comment(
 @router.post("/governance/tech-debts")
 async def create_tech_debt(request: Request, body: dict = Body(...)) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "tech_debts", TechDebt(
-        id=gen_id("td"), tenant_id=tid,
-        title=body.get("title", ""),
-        application_id=body.get(
-            "applicationId", body.get("application_id", "")),
-        severity=body.get("severity", "medium"),
-        status=body.get("status", "open"),
-    ))
+    item = store_create(
+        tid,
+        "tech_debts",
+        TechDebt(
+            id=gen_id("td"),
+            tenant_id=tid,
+            title=body.get("title", ""),
+            application_id=body.get("applicationId", body.get("application_id", "")),
+            severity=body.get("severity", "medium"),
+            status=body.get("status", "open"),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/governance/tech-debts/{item_id}")
 async def update_tech_debt(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "tech_debts", item_id, _changes(body))
@@ -1010,23 +1164,30 @@ async def delete_tech_debt(request: Request, item_id: str) -> dict:
 # --- OntologyMappingRule CRUD + actions ---
 @router.post("/ontology-mappings/rules")
 async def create_ontology_mapping_rule(
-    request: Request, body: dict = Body(...),
+    request: Request,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "ontology_rules", OntologyMappingRule(
-        id=gen_id("omr"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("omr")),
-        source_concept=body.get(
-            "sourceConcept", body.get("source_concept", "")),
-        target_concept=body.get(
-            "targetConcept", body.get("target_concept", "")),
-    ))
+    item = store_create(
+        tid,
+        "ontology_rules",
+        OntologyMappingRule(
+            id=gen_id("omr"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("omr")),
+            source_concept=body.get("sourceConcept", body.get("source_concept", "")),
+            target_concept=body.get("targetConcept", body.get("target_concept", "")),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/ontology-mappings/rules/{item_id}")
 async def update_ontology_mapping_rule(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "ontology_rules", item_id, _changes(body))
@@ -1037,7 +1198,8 @@ async def update_ontology_mapping_rule(
 
 @router.delete("/ontology-mappings/rules/{item_id}")
 async def delete_ontology_mapping_rule(
-    request: Request, item_id: str,
+    request: Request,
+    item_id: str,
 ) -> dict:
     tid = _tid(request)
     store_delete(tid, "ontology_rules", item_id)
@@ -1064,7 +1226,8 @@ async def sync_from_ontology(
 
 @router.post("/ontology-mappings/changes/{change_id}/resolve")
 async def resolve_ontology_mapping_change(
-    request: Request, change_id: str,
+    request: Request,
+    change_id: str,
 ) -> dict:
     tid = _tid(request)
     resolve_ontology_change(tid, change_id)
@@ -1074,7 +1237,8 @@ async def resolve_ontology_mapping_change(
 # --- ImpactAnalysis POST ---
 @router.post("/impact-analysis")
 async def post_impact_analysis(
-    request: Request, body: dict = Body(...),
+    request: Request,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     node_id = body.get("capabilityId", body.get("capability_id", ""))
@@ -1085,21 +1249,30 @@ async def post_impact_analysis(
 # --- TechnologyComponent CRUD ---
 @router.post("/technology-components")
 async def create_technology_component(
-    request: Request, body: dict = Body(...),
+    request: Request,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "technology_components", TechnologyComponent(
-        id=gen_id("tc"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("tc")),
-        category=body.get("category", ""),
-        vendor=body.get("vendor", "open-source"),
-    ))
+    item = store_create(
+        tid,
+        "technology_components",
+        TechnologyComponent(
+            id=gen_id("tc"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("tc")),
+            category=body.get("category", ""),
+            vendor=body.get("vendor", "open-source"),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/technology-components/{item_id}")
 async def update_technology_component(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "technology_components", item_id, _changes(body))
@@ -1110,7 +1283,8 @@ async def update_technology_component(
 
 @router.delete("/technology-components/{item_id}")
 async def delete_technology_component(
-    request: Request, item_id: str,
+    request: Request,
+    item_id: str,
 ) -> dict:
     tid = _tid(request)
     store_delete(tid, "technology_components", item_id)
@@ -1120,21 +1294,30 @@ async def delete_technology_component(
 # --- TechnologyRadar CRUD ---
 @router.post("/technology-radar")
 async def create_technology_radar(
-    request: Request, body: dict = Body(...),
+    request: Request,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "technology_radar", TechnologyRadarEntry(
-        id=gen_id("tr"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("tr")),
-        quadrant=body.get("quadrant", ""),
-        ring=body.get("ring", ""),
-    ))
+    item = store_create(
+        tid,
+        "technology_radar",
+        TechnologyRadarEntry(
+            id=gen_id("tr"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("tr")),
+            quadrant=body.get("quadrant", ""),
+            ring=body.get("ring", ""),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/technology-radar/{item_id}")
 async def update_technology_radar(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "technology_radar", item_id, _changes(body))
@@ -1153,23 +1336,30 @@ async def delete_technology_radar(request: Request, item_id: str) -> dict:
 # --- TechnologyStack CRUD ---
 @router.post("/technology-stacks")
 async def create_technology_stack(
-    request: Request, body: dict = Body(...),
+    request: Request,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "technology_stacks", TechnologyStack(
-        id=gen_id("tst"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("tst")),
-        application_id=body.get(
-            "applicationId", body.get("application_id", "")),
-        component_ids=tuple(
-            body.get("componentIds", body.get("component_ids", []))),
-    ))
+    item = store_create(
+        tid,
+        "technology_stacks",
+        TechnologyStack(
+            id=gen_id("tst"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("tst")),
+            application_id=body.get("applicationId", body.get("application_id", "")),
+            component_ids=tuple(body.get("componentIds", body.get("component_ids", []))),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/technology-stacks/{item_id}")
 async def update_technology_stack(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "technology_stacks", item_id, _changes(body))
@@ -1180,7 +1370,8 @@ async def update_technology_stack(
 
 @router.delete("/technology-stacks/{item_id}")
 async def delete_technology_stack(
-    request: Request, item_id: str,
+    request: Request,
+    item_id: str,
 ) -> dict:
     tid = _tid(request)
     store_delete(tid, "technology_stacks", item_id)
@@ -1191,17 +1382,25 @@ async def delete_technology_stack(
 @router.post("/tech-stacks")
 async def create_tech_stack(request: Request, body: dict = Body(...)) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "tech_stacks", TechStack(
-        id=gen_id("ts"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("ts")),
-        category=body.get("category", ""),
-    ))
+    item = store_create(
+        tid,
+        "tech_stacks",
+        TechStack(
+            id=gen_id("ts"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("ts")),
+            category=body.get("category", ""),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/tech-stacks/{item_id}")
 async def update_tech_stack(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "tech_stacks", item_id, _changes(body))
@@ -1220,21 +1419,30 @@ async def delete_tech_stack(request: Request, item_id: str) -> dict:
 # --- Infrastructure CRUD ---
 @router.post("/infrastructures")
 async def create_infrastructure(
-    request: Request, body: dict = Body(...),
+    request: Request,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
-    item = store_create(tid, "infrastructures", Infrastructure(
-        id=gen_id("infra"), tenant_id=tid,
-        name=body.get("name", ""), code=body.get("code", gen_id("infra")),
-        kind=body.get("kind", ""),
-        region=body.get("region", "cn-beijing"),
-    ))
+    item = store_create(
+        tid,
+        "infrastructures",
+        Infrastructure(
+            id=gen_id("infra"),
+            tenant_id=tid,
+            name=body.get("name", ""),
+            code=body.get("code", gen_id("infra")),
+            kind=body.get("kind", ""),
+            region=body.get("region", "cn-beijing"),
+        ),
+    )
     return _ok(asdict(item))
 
 
 @router.put("/infrastructures/{item_id}")
 async def update_infrastructure(
-    request: Request, item_id: str, body: dict = Body(...),
+    request: Request,
+    item_id: str,
+    body: dict = Body(...),
 ) -> dict:
     tid = _tid(request)
     item = store_update(tid, "infrastructures", item_id, _changes(body))

@@ -1,4 +1,5 @@
 """Tests for mate_tech_obs.main FastAPI app."""
+
 from __future__ import annotations
 
 import pytest
@@ -69,6 +70,4 @@ class TestAdminRouterMounted:
         # 200 (aggregate report ok) or 503 (all targets unreachable) are
         # both fine; we just need a response != 404 to prove the route
         # exists.
-        assert r.status_code != 404, (
-            f"admin path returned 404; router not mounted. body={r.text!r}"
-        )
+        assert r.status_code != 404, f"admin path returned 404; router not mounted. body={r.text!r}"

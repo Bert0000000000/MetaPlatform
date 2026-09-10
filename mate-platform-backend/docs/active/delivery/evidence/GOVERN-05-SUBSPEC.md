@@ -17,27 +17,27 @@
 
 ### 1.1 已就位（不重写）
 
-| 部件 | 文件 | 行 | 状态 |
-|---|---|---|---|
-| `ActionService.register_function(function_ref, invoker)` | `action/engine.py:125-127` | ✅ 接口已存；0 调用 |
-| `ActionService.apply` 调 invoker | `action/engine.py:174-187` | ✅ try/except + rollback 占位 |
-| `Function` dataclass（rid / language / source_ref） | `ontology/reasoning/function.py` | ✅ |
-| `run_function(fn_source, args, limits)` | `sandbox/function.py:115-187` | ✅ L1 subprocess |
-| `SubprocessExecutor.execute(source, args)` | `sandbox/k8s.py:153-` | ✅ L2 mock 真 subprocess |
-| `_SimplePythonExecutor.execute` | `sandbox/k8s.py:134-150` | ✅ L0 in-process |
-| `FunctionExecutor` Protocol | `sandbox/k8s.py:128-131` | ✅ |
-| `InMemoryOntologyRepository.apply_action`（提交） | `ontology/in_memory.py:160-205` | ✅ 走 ActionService |
-| `PgOntologyRepository.apply_action` | `v2_kernel/pg_repo.py`（GOVERN-04 落） | ✅ 走 ActionService |
+| 部件                                                     | 文件                                   | 行                            | 状态 |
+| -------------------------------------------------------- | -------------------------------------- | ----------------------------- | ---- |
+| `ActionService.register_function(function_ref, invoker)` | `action/engine.py:125-127`             | ✅ 接口已存；0 调用           |
+| `ActionService.apply` 调 invoker                         | `action/engine.py:174-187`             | ✅ try/except + rollback 占位 |
+| `Function` dataclass（rid / language / source_ref）      | `ontology/reasoning/function.py`       | ✅                            |
+| `run_function(fn_source, args, limits)`                  | `sandbox/function.py:115-187`          | ✅ L1 subprocess              |
+| `SubprocessExecutor.execute(source, args)`               | `sandbox/k8s.py:153-`                  | ✅ L2 mock 真 subprocess      |
+| `_SimplePythonExecutor.execute`                          | `sandbox/k8s.py:134-150`               | ✅ L0 in-process              |
+| `FunctionExecutor` Protocol                              | `sandbox/k8s.py:128-131`               | ✅                            |
+| `InMemoryOntologyRepository.apply_action`（提交）        | `ontology/in_memory.py:160-205`        | ✅ 走 ActionService           |
+| `PgOntologyRepository.apply_action`                      | `v2_kernel/pg_repo.py`（GOVERN-04 落） | ✅ 走 ActionService           |
 
 ### 1.2 缺口（本批范围）
 
-| 缺口 | 触发 | 表现 |
-|---|---|---|
-| `apply_action` 不传 `function_ref` 解析 + 不注入 invoker | InMemory + PG 共因 | 函数永不 invoke；`register_function` 接受 callable 但 grep 0 调用 |
-| `apply_action` 不把 invoker 返回值写回 `target.props` | 同上 | ActionType.apply 后 target.props 没"决策结果"字段 |
-| Function 失败模式未测 | `run_function` 已支持但无契约 | timeout / sandbox violation / compile error 没有落地测 |
-| OTel `function.apply` span 缺失 | 13 硬规则 #9 未达 | 无 trace_id |
-| `main.py` 没注入 executor | 应用层空白 | dev 用什么跑 Function？没定 |
+| 缺口                                                     | 触发                          | 表现                                                              |
+| -------------------------------------------------------- | ----------------------------- | ----------------------------------------------------------------- |
+| `apply_action` 不传 `function_ref` 解析 + 不注入 invoker | InMemory + PG 共因            | 函数永不 invoke；`register_function` 接受 callable 但 grep 0 调用 |
+| `apply_action` 不把 invoker 返回值写回 `target.props`    | 同上                          | ActionType.apply 后 target.props 没"决策结果"字段                 |
+| Function 失败模式未测                                    | `run_function` 已支持但无契约 | timeout / sandbox violation / compile error 没有落地测            |
+| OTel `function.apply` span 缺失                          | 13 硬规则 #9 未达             | 无 trace_id                                                       |
+| `main.py` 没注入 executor                                | 应用层空白                    | dev 用什么跑 Function？没定                                       |
 
 ## 2. 设计
 
@@ -185,18 +185,18 @@ with tracer.start_as_current_span("function.apply") as span:
 
 落在 `packages/mate-tech-ont/tests/integration/test_function_apply_e2e.py`（新文件，~120 行）：
 
-| 用例 | 断言 |
-|---|---|
-| `test_function_apply_round_trip` | Function.upsert(source=`def main(target, params): return {'qty': params['qty']*2}`) → ActionType.apply(parameters={'qty':5}) → target.props.qty = 10 |
-| `test_function_apply_uses_explicit_parameters` | parameters 显式 key 优先于 fn_result 字段 |
-| `test_function_apply_no_callable_raises` | 源码无 `def main` → `FunctionExecutionError` |
-| `test_function_apply_timeout_raises` | sleep(20) + timeout=2 → `FunctionTimeout` |
-| `test_function_apply_network_violation_raises` | `import socket` → `SandboxViolation` |
-| `test_function_apply_pg_round_trip` | PG repo 同上 round-trip |
-| `test_function_apply_pg_audit_emits_outbox` | OTel span `function.apply` 必有（mock tracer） |
-| `test_function_apply_pg_unknown_function_ref_raises` | Function 没 register → `FunctionNotRegistered` |
-| `test_function_apply_inmemory_parity` | InMemory 与 PG fn_result 完全一致 |
-| `test_function_apply_compile_error_raises` | `SyntaxError` 源码 → `FunctionExecutionError`，rollback 占位 |
+| 用例                                                 | 断言                                                                                                                                                 |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test_function_apply_round_trip`                     | Function.upsert(source=`def main(target, params): return {'qty': params['qty']*2}`) → ActionType.apply(parameters={'qty':5}) → target.props.qty = 10 |
+| `test_function_apply_uses_explicit_parameters`       | parameters 显式 key 优先于 fn_result 字段                                                                                                            |
+| `test_function_apply_no_callable_raises`             | 源码无 `def main` → `FunctionExecutionError`                                                                                                         |
+| `test_function_apply_timeout_raises`                 | sleep(20) + timeout=2 → `FunctionTimeout`                                                                                                            |
+| `test_function_apply_network_violation_raises`       | `import socket` → `SandboxViolation`                                                                                                                 |
+| `test_function_apply_pg_round_trip`                  | PG repo 同上 round-trip                                                                                                                              |
+| `test_function_apply_pg_audit_emits_outbox`          | OTel span `function.apply` 必有（mock tracer）                                                                                                       |
+| `test_function_apply_pg_unknown_function_ref_raises` | Function 没 register → `FunctionNotRegistered`                                                                                                       |
+| `test_function_apply_inmemory_parity`                | InMemory 与 PG fn_result 完全一致                                                                                                                    |
+| `test_function_apply_compile_error_raises`           | `SyntaxError` 源码 → `FunctionExecutionError`，rollback 占位                                                                                         |
 
 合计 10 用例；InMemory 4 + PG 6 = 10。
 
@@ -221,12 +221,12 @@ with tracer.start_as_current_span("function.apply") as span:
 
 ## 7. 风险
 
-| 风险 | 缓解 |
-|---|---|
-| ActionService 强制化后旧测试 / demo 数据没 register function | seed_demo 加 `register_function_ref` 注入；3 个 pre-existing failure 由 GOVERN-10 同步修 |
-| `FUNCTION_BACKEND=memory` dev 默认在 Windows 上 `_SimplePythonExecutor` 仍能跑（无 subprocess） | dev 默认 `memory`；CI 默认 `subprocess` 走 §4 验证 |
-| OTel 注入增加启动依赖 | dev profile 可选 `OTEL_SDK_DISABLED=true`；本批只接入 tracer.start_as_current_span，不引入 exporter |
-| apply_action 参数解析"短名 → rid"与 demo 数据兼容 | demo 函数返回值用 dict；parameters 短名匹配保留 |
+| 风险                                                                                            | 缓解                                                                                                |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| ActionService 强制化后旧测试 / demo 数据没 register function                                    | seed_demo 加 `register_function_ref` 注入；3 个 pre-existing failure 由 GOVERN-10 同步修            |
+| `FUNCTION_BACKEND=memory` dev 默认在 Windows 上 `_SimplePythonExecutor` 仍能跑（无 subprocess） | dev 默认 `memory`；CI 默认 `subprocess` 走 §4 验证                                                  |
+| OTel 注入增加启动依赖                                                                           | dev profile 可选 `OTEL_SDK_DISABLED=true`；本批只接入 tracer.start_as_current_span，不引入 exporter |
+| apply_action 参数解析"短名 → rid"与 demo 数据兼容                                               | demo 函数返回值用 dict；parameters 短名匹配保留                                                     |
 
 ## 8. 未尽事项
 

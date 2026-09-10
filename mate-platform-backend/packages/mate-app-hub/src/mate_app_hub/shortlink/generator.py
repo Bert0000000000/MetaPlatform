@@ -9,6 +9,7 @@ resistant under the same security posture as other token-like
 identifiers in the platform (even though short codes themselves are
 public URL aliases, not secrets).
 """
+
 from __future__ import annotations
 
 import secrets

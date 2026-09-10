@@ -1,4 +1,5 @@
 """Instance + relation tests (ST-5.4.7)."""
+
 from __future__ import annotations
 
 import pytest

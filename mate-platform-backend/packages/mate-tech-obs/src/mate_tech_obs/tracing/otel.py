@@ -1,4 +1,5 @@
 """OTel SDK 初始化 (ST-5.2.1)."""
+
 from __future__ import annotations
 
 import os
@@ -44,11 +45,13 @@ def get_tracer(name: str = "mate-tech-obs") -> trace.Tracer:
 
 def traced(name: str | None = None) -> Callable:
     """ST-5.2.3 自定义 span 装饰器."""
+
     def decorator(fn: Callable) -> Callable:
         span_name = name or f"{fn.__module__}.{fn.__qualname__}"
         tracer = get_tracer()
 
         if callable(fn) and hasattr(fn, "__await__"):
+
             @wraps(fn)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 with tracer.start_as_current_span(span_name) as span:
@@ -56,8 +59,10 @@ def traced(name: str | None = None) -> Callable:
                         if isinstance(v, (str, int, float, bool)):
                             span.set_attribute(f"fn.{k}", v)
                     return await fn(*args, **kwargs)
+
             return async_wrapper
         else:
+
             @wraps(fn)
             def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
                 with tracer.start_as_current_span(span_name) as span:
@@ -65,6 +70,7 @@ def traced(name: str | None = None) -> Callable:
                         if isinstance(v, (str, int, float, bool)):
                             span.set_attribute(f"fn.{k}", v)
                     return fn(*args, **kwargs)
+
             return sync_wrapper
 
     return decorator

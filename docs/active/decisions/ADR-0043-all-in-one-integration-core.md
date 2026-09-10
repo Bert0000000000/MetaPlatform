@@ -52,22 +52,22 @@
 
 ## 3. 跟既有决策的关系
 
-| 决策 | 关系 |
-|---|---|
-| ADR-0021（Kernel 12 基元） | 语义层正交：12 基元是数据/类型契约；composition 是它们的运行时组合机制 |
-| ADR-0040/0041（沙箱） | 边界层：沙箱把 fiber 装进不可信容器；fiber 在沙箱内、外都同语义 |
-| ADR-0042（composition 内核） | **本 ADR 是 0042 的升格**：内核本身不动，提升它作为集成层 OS 的地位与覆盖范围 |
-| ADR-0044（Assisted Action） | 面向 C 不重写：把 ADR-0044 的状态机搬到 effect 词汇下，confirm/withdraw/reject 升级为可逆 effect |
-| 自建原则 v0.4 | 同款处理：不引入 cordis TS 包、不引入 MAF/外部 agent 框架 |
+| 决策                         | 关系                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------ |
+| ADR-0021（Kernel 12 基元）   | 语义层正交：12 基元是数据/类型契约；composition 是它们的运行时组合机制                           |
+| ADR-0040/0041（沙箱）        | 边界层：沙箱把 fiber 装进不可信容器；fiber 在沙箱内、外都同语义                                  |
+| ADR-0042（composition 内核） | **本 ADR 是 0042 的升格**：内核本身不动，提升它作为集成层 OS 的地位与覆盖范围                    |
+| ADR-0044（Assisted Action）  | 面向 C 不重写：把 ADR-0044 的状态机搬到 effect 词汇下，confirm/withdraw/reject 升级为可逆 effect |
+| 自建原则 v0.4                | 同款处理：不引入 cordis TS 包、不引入 MAF/外部 agent 框架                                        |
 
 ## 4. 跟 13 硬规则对位
 
-| 硬规则 | 承担 |
-|---|---|
-| ① Swagger 没有接口不写 route | 每个 Batch 进 OpenAPI 契约；capability 端点已在 MP-COMP-01 落 |
-| ⑥ 静态检查失败不合并 | composition kernel 已 pyright-strict + ruff 干净；后续 Batch 同款 |
-| ⑨ 没有审计/指标/trace | 每个 fiber dispose 产生 lifecycle 事件；接 OTel |
-| ⑩ 状态以验收证据为准 | 每个面向独立 ACCEPTANCE.md + I1-I4 不变量测试 |
+| 硬规则                       | 承担                                                              |
+| ---------------------------- | ----------------------------------------------------------------- |
+| ① Swagger 没有接口不写 route | 每个 Batch 进 OpenAPI 契约；capability 端点已在 MP-COMP-01 落     |
+| ⑥ 静态检查失败不合并         | composition kernel 已 pyright-strict + ruff 干净；后续 Batch 同款 |
+| ⑨ 没有审计/指标/trace        | 每个 fiber dispose 产生 lifecycle 事件；接 OTel                   |
+| ⑩ 状态以验收证据为准         | 每个面向独立 ACCEPTANCE.md + I1-I4 不变量测试                     |
 
 ## 5. 验收
 

@@ -8,6 +8,7 @@
 ## 1. 范围
 
 D6 实现租户级数据保留 + GDPR 被遗忘权:
+
 - 每租户可配置 retention policy(retentionDays / hardDeleteAfterDays)
 - GDPR 请求标记 soft-delete → N 天后 hard-delete
 - 周期性清理:删除超过 retentionDays 的旧数据
@@ -16,9 +17,11 @@ D6 实现租户级数据保留 + GDPR 被遗忘权:
 ## 2. 改动清单
 
 ### 2.1 既有基础(D6 v1)
+
 - `auth/retention.py` — RetentionPolicy / SoftDeleteRecord / RetentionStore / request_gdpr_forget / is_tenant_soft_deleted
 
 ### 2.2 本批次新增(D6 v2)
+
 - `alembic/versions/20260801_0010_retention.py` — **新建**:retention_policy + gdpr_soft_delete 表(10 字段 + 4 索引)
 - `auth/retention_cleanup.py` — **新建**:CleanupResult + CleanupConnection Protocol + run_retention_cleanup + run_gdpr_hard_delete + find_ready_hard_deletes
 - `tests/test_data_d0_d8_d6.py` — **新建**:13 e2e tests

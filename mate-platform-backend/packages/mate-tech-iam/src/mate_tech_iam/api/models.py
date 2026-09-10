@@ -6,6 +6,7 @@
 - PUT    /api/v1/admin/ai/models/{id}     （启用/禁用/改显示名）
 - DELETE /api/v1/admin/ai/models/{id}
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

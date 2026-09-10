@@ -11,6 +11,7 @@ The background loop (``start``) is a thin ``asyncio`` wrapper around
 ``check_all``; tests exercise ``check_all`` directly without running
 the loop.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -70,9 +71,7 @@ class HealthChecker:
                     results[server_id] = "inactive" if srv.status == "disabled" else srv.status
                     continue
                 try:
-                    ok = await self._remote.health_check(
-                        srv.transport_url, srv.auth_token_ref
-                    )
+                    ok = await self._remote.health_check(srv.transport_url, srv.auth_token_ref)
                 except Exception as e:
                     logger.warning(
                         "federation.heartbeat.check_failed",

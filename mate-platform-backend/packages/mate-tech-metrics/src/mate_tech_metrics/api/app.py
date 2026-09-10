@@ -18,6 +18,7 @@ double-check the tenant — the guard is the source of truth.
 Write handlers emit `metrics.<aggregate>.<verb>` outbox events via
 `app.state.outbox_writer` (ADR-0014 step 3).
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -62,9 +63,7 @@ def _emit(
     tenant_id: str,
 ) -> None:
     """Append an outbox event if a writer is configured (no-op otherwise)."""
-    writer: InMemoryOutboxWriter | None = getattr(
-        request.app.state, "outbox_writer", None
-    )
+    writer: InMemoryOutboxWriter | None = getattr(request.app.state, "outbox_writer", None)
     if writer is None:
         return
     writer.append(
@@ -146,7 +145,8 @@ async def list_metrics_endpoint(
 # ---------------------------------------------------------------------------
 @router.post("")
 async def create_metric_endpoint(
-    request: Request, body: MetricCreate,
+    request: Request,
+    body: MetricCreate,
 ) -> dict[str, Any]:
     """Create a metric (FR-DATA-DATAPOSTMETRICS)."""
     tid = _tid(request)
@@ -172,7 +172,8 @@ async def create_metric_endpoint(
 # ---------------------------------------------------------------------------
 @router.get("/{metric_id}")
 async def get_metric_endpoint(
-    request: Request, metric_id: str,
+    request: Request,
+    metric_id: str,
 ) -> dict[str, Any]:
     """Get a metric by id (FR-DATA-DATAGETMETRICSID)."""
     tid = _tid(request)
@@ -187,7 +188,9 @@ async def get_metric_endpoint(
 # ---------------------------------------------------------------------------
 @router.put("/{metric_id}")
 async def update_metric_endpoint(
-    request: Request, metric_id: str, body: MetricUpdate,
+    request: Request,
+    metric_id: str,
+    body: MetricUpdate,
 ) -> dict[str, Any]:
     """Update a metric (FR-DATA-DATAPUTMETRICSID)."""
     tid = _tid(request)
@@ -217,7 +220,8 @@ async def update_metric_endpoint(
 # ---------------------------------------------------------------------------
 @router.delete("/{metric_id}")
 async def delete_metric_endpoint(
-    request: Request, metric_id: str,
+    request: Request,
+    metric_id: str,
 ) -> dict[str, Any]:
     """Delete a metric (FR-DATA-DATADELETEMETRICSID)."""
     tid = _tid(request)
@@ -238,7 +242,8 @@ async def delete_metric_endpoint(
 # ---------------------------------------------------------------------------
 @router.post("/{metric_id}/compute")
 async def compute_metric_endpoint(
-    request: Request, metric_id: str,
+    request: Request,
+    metric_id: str,
 ) -> dict[str, Any]:
     """Trigger a manual compute for a metric (FR-DATA-DATAPOSTMETRICSIDCOMPUTE)."""
     tid = _tid(request)
@@ -260,7 +265,8 @@ async def compute_metric_endpoint(
 # ---------------------------------------------------------------------------
 @router.get("/{metric_id}/lineage")
 async def get_metric_lineage_endpoint(
-    request: Request, metric_id: str,
+    request: Request,
+    metric_id: str,
 ) -> dict[str, Any]:
     """Get the lineage for a metric (FR-DATA-DATAGETMETRICSIDLINEAGE)."""
     tid = _tid(request)
@@ -275,7 +281,8 @@ async def get_metric_lineage_endpoint(
 # ---------------------------------------------------------------------------
 @router.get("/{metric_id}/values")
 async def get_metric_values_endpoint(
-    request: Request, metric_id: str,
+    request: Request,
+    metric_id: str,
 ) -> dict[str, Any]:
     """Get the values for a metric (FR-DATA-DATAGETMETRICSIDVALUES)."""
     tid = _tid(request)

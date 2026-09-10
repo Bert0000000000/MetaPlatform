@@ -1,6 +1,7 @@
 # RUNTIME-MVP-02 — ACCEPTANCE 证据
 
 > v4 RUNTIME 路线 §6 的 4 Batch 合并提速收口：
+>
 > - RUNTIME-OPT
 > - RUNTIME-K8S-02
 > - IAM-COPILOT-04
@@ -10,16 +11,16 @@
 
 ## 1. 增量交付清单
 
-| 能力 | 文件 | 测试 |
-|---|---|---|
-| **RUNTIME-OPT** SQLCompiler | `packages/mate-kernel/src/mate_kernel/objectset/sql_compiler.py` | 15 单测 |
-| **RUNTIME-OPT** FilterCompiler FIELD 接受完整 rid | `packages/mate-kernel/src/mate_kernel/objectset/compiler.py` | 1 单测 |
-| **RUNTIME-K8S-02** SubprocessExecutor 真子进程 | `packages/mate-kernel/src/mate_kernel/sandbox/k8s.py` | 6 单测 |
-| **RUNTIME-K8S-02** win32 `resource` 守卫 | 同上 | 1 单测 |
-| **IAM-COPILOT-04** Manager dev profile 入口 | `KERNEL_BACKEND` env + main.py 单例 | dev profile 全套 e2e 通过 |
-| **MARKETPLACE-05** 第三方 sandbox 占位（`backend="microvm"`） | `K8sSandboxRunner(backend=...)` API | 1 单测 |
-| **MVP-01 修复** PgOntologyRepository 落地 | `packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py` | 5 PG e2e |
-| **MVP-01 修复** API handler `_call()` helper | `packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py` | 7 handler |
+| 能力                                                          | 文件                                                             | 测试                      |
+| ------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------- |
+| **RUNTIME-OPT** SQLCompiler                                   | `packages/mate-kernel/src/mate_kernel/objectset/sql_compiler.py` | 15 单测                   |
+| **RUNTIME-OPT** FilterCompiler FIELD 接受完整 rid             | `packages/mate-kernel/src/mate_kernel/objectset/compiler.py`     | 1 单测                    |
+| **RUNTIME-K8S-02** SubprocessExecutor 真子进程                | `packages/mate-kernel/src/mate_kernel/sandbox/k8s.py`            | 6 单测                    |
+| **RUNTIME-K8S-02** win32 `resource` 守卫                      | 同上                                                             | 1 单测                    |
+| **IAM-COPILOT-04** Manager dev profile 入口                   | `KERNEL_BACKEND` env + main.py 单例                              | dev profile 全套 e2e 通过 |
+| **MARKETPLACE-05** 第三方 sandbox 占位（`backend="microvm"`） | `K8sSandboxRunner(backend=...)` API                              | 1 单测                    |
+| **MVP-01 修复** PgOntologyRepository 落地                     | `packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py`  | 5 PG e2e                  |
+| **MVP-01 修复** API handler `_call()` helper                  | `packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py`      | 7 handler                 |
 
 ## 2. 测试结果
 
@@ -67,21 +68,21 @@ ObjectSet `filter_expr="ont.acme.prop.po-qty.v1 >= 15"` 真在 PG 上跑（**完
 
 ## 3. 13 硬规则对位
 
-| # | 硬规则 | 本 Batch 落地 |
-|---|---|---|
-| 1 | Swagger 没有接口不写 route | 沿用 MVP-01 5 endpoint，OpenAPI 已对齐 |
-| 2 | PRD 有 Requirement ID | operationId 引用 FR-ONT-MVP-001..005 |
-| 3 | 没有 tenant 不访问 repo | `_repo(request)` 从 ctx 取 tenant；handler 全部走 `_call(_repo(request), "method_name", ...)` |
-| 4 | 外部系统 ACL Client | 无外部系统（MP 阶段） |
-| 5 | Production profile 禁 fallback | `KERNEL_BACKEND=pg` 必须显式；InMemory 仅 dev profile |
-| 6 | ruff+pyright-strict | 全过 |
-| 7 | 跳过测试不标 Accepted | 0 skip |
-| 8 | K8s readiness + 回滚 | RUNTIME-K8S-02 默认 subprocess；K8s Job 接入留 v4 后续 |
-| 9 | 审计 / 指标 / trace | apply_action 落 updated_at + side_effects；OTel 中间件沿用 MVP-01 |
-| 10 | 验收证据 | 本文档 + ADR-0023 |
-| 11 | helm-docs 同步 | n/a（runtime 增量未触及 chart） |
-| 12 | Secret 不进 git | `gitleaks` 过；DSN 不入仓 |
-| 13 | NetworkPolicy | n/a（runtime 增量未触及 netpol） |
+| #   | 硬规则                         | 本 Batch 落地                                                                                 |
+| --- | ------------------------------ | --------------------------------------------------------------------------------------------- |
+| 1   | Swagger 没有接口不写 route     | 沿用 MVP-01 5 endpoint，OpenAPI 已对齐                                                        |
+| 2   | PRD 有 Requirement ID          | operationId 引用 FR-ONT-MVP-001..005                                                          |
+| 3   | 没有 tenant 不访问 repo        | `_repo(request)` 从 ctx 取 tenant；handler 全部走 `_call(_repo(request), "method_name", ...)` |
+| 4   | 外部系统 ACL Client            | 无外部系统（MP 阶段）                                                                         |
+| 5   | Production profile 禁 fallback | `KERNEL_BACKEND=pg` 必须显式；InMemory 仅 dev profile                                         |
+| 6   | ruff+pyright-strict            | 全过                                                                                          |
+| 7   | 跳过测试不标 Accepted          | 0 skip                                                                                        |
+| 8   | K8s readiness + 回滚           | RUNTIME-K8S-02 默认 subprocess；K8s Job 接入留 v4 后续                                        |
+| 9   | 审计 / 指标 / trace            | apply_action 落 updated_at + side_effects；OTel 中间件沿用 MVP-01                             |
+| 10  | 验收证据                       | 本文档 + ADR-0023                                                                             |
+| 11  | helm-docs 同步                 | n/a（runtime 增量未触及 chart）                                                               |
+| 12  | Secret 不进 git                | `gitleaks` 过；DSN 不入仓                                                                     |
+| 13  | NetworkPolicy                  | n/a（runtime 增量未触及 netpol）                                                              |
 
 ## 4. 业务验收路径
 

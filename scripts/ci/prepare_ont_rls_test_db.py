@@ -10,6 +10,7 @@ Usage (from ``mate-platform-backend`` with uv):
 
 The test suite can then run with the default DSN or an explicit ``PG_DSN``.
 """
+
 from __future__ import annotations
 
 import os
@@ -19,16 +20,13 @@ from pathlib import Path
 import psycopg2  # type: ignore
 from psycopg2 import sql  # type: ignore
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_ROOT = REPOSITORY_ROOT / "mate-platform-backend"
 for package_src in (BACKEND_ROOT / "packages").glob("*/src"):
     sys.path.insert(0, str(package_src))
 
 
-ADMIN_DSN = os.getenv(
-    "ONT_RLS_ADMIN_DSN", "postgresql://meta:meta@localhost:5432/postgres"
-)
+ADMIN_DSN = os.getenv("ONT_RLS_ADMIN_DSN", "postgresql://meta:meta@localhost:5432/postgres")
 TEST_ROLE = "mate_ont_test"
 TEST_PASSWORD = os.getenv("ONT_RLS_TEST_PASSWORD", TEST_ROLE)
 TEST_DATABASE = "metaplatform_ont_test"
@@ -59,18 +57,16 @@ def _ensure_role() -> None:
             cur.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (TEST_ROLE,))
             if cur.fetchone() is None:
                 cur.execute(
-                    sql.SQL(
-                        "CREATE ROLE {} LOGIN PASSWORD %s NOSUPERUSER "
-                        "NOBYPASSRLS"
-                    ).format(sql.Identifier(TEST_ROLE)),
+                    sql.SQL("CREATE ROLE {} LOGIN PASSWORD %s NOSUPERUSER NOBYPASSRLS").format(
+                        sql.Identifier(TEST_ROLE)
+                    ),
                     (TEST_PASSWORD,),
                 )
             else:
                 cur.execute(
-                    sql.SQL(
-                        "ALTER ROLE {} WITH LOGIN PASSWORD %s NOSUPERUSER "
-                        "NOBYPASSRLS"
-                    ).format(sql.Identifier(TEST_ROLE)),
+                    sql.SQL("ALTER ROLE {} WITH LOGIN PASSWORD %s NOSUPERUSER NOBYPASSRLS").format(
+                        sql.Identifier(TEST_ROLE)
+                    ),
                     (TEST_PASSWORD,),
                 )
 
@@ -79,9 +75,7 @@ def _ensure_database() -> None:
     with psycopg2.connect(ADMIN_DSN, connect_timeout=5) as conn:  # type: ignore
         conn.autocommit = True
         with conn.cursor() as cur:
-            cur.execute(
-                "SELECT 1 FROM pg_database WHERE datname = %s", (TEST_DATABASE,)
-            )
+            cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (TEST_DATABASE,))
             if cur.fetchone() is None:
                 cur.execute(
                     sql.SQL("CREATE DATABASE {} OWNER {}").format(
@@ -94,9 +88,7 @@ def _ensure_database() -> None:
                         sql.Identifier(TEST_DATABASE), sql.Identifier(TEST_ROLE)
                     )
                 )
-            _execute_ident(
-                cur, "ALTER DATABASE {} SET app.tenant_id = ''", TEST_DATABASE
-            )
+            _execute_ident(cur, "ALTER DATABASE {} SET app.tenant_id = ''", TEST_DATABASE)
 
 
 def _ensure_table_ownership() -> None:
@@ -106,9 +98,7 @@ def _ensure_table_ownership() -> None:
     indexes on its auxiliary ``ont_*`` tables.  This remains scoped to the
     dedicated test database; application databases are never connected here.
     """
-    with psycopg2.connect(
-        ADMIN_DSN, dbname=TEST_DATABASE, connect_timeout=5
-    ) as conn:  # type: ignore
+    with psycopg2.connect(ADMIN_DSN, dbname=TEST_DATABASE, connect_timeout=5) as conn:  # type: ignore
         conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute(
@@ -127,8 +117,7 @@ def _ensure_schema_and_rls() -> None:
     repo = PgOntologyRepository(
         dsn=os.getenv(
             "PG_DSN",
-            f"postgresql://{TEST_ROLE}:{TEST_PASSWORD}"
-            f"@localhost:5432/{TEST_DATABASE}",
+            f"postgresql://{TEST_ROLE}:{TEST_PASSWORD}@localhost:5432/{TEST_DATABASE}",
         )
     )
     repo._ensure_schema()
@@ -137,12 +126,8 @@ def _ensure_schema_and_rls() -> None:
         conn.autocommit = True
         with conn.cursor() as cur:
             for table in KERNEL01_V2_TABLES:
-                _execute_ident(
-                    cur, "ALTER TABLE {} ENABLE ROW LEVEL SECURITY", table
-                )
-                _execute_ident(
-                    cur, "DROP POLICY IF EXISTS tenant_isolation ON {}", table
-                )
+                _execute_ident(cur, "ALTER TABLE {} ENABLE ROW LEVEL SECURITY", table)
+                _execute_ident(cur, "DROP POLICY IF EXISTS tenant_isolation ON {}", table)
                 _execute_ident(
                     cur,
                     "CREATE POLICY tenant_isolation ON {} "
@@ -150,9 +135,7 @@ def _ensure_schema_and_rls() -> None:
                     "WITH CHECK (tenant_id = current_setting('app.tenant_id')::text)",
                     table,
                 )
-                _execute_ident(
-                    cur, "ALTER TABLE {} FORCE ROW LEVEL SECURITY", table
-                )
+                _execute_ident(cur, "ALTER TABLE {} FORCE ROW LEVEL SECURITY", table)
 
 
 def main() -> None:
@@ -163,8 +146,7 @@ def main() -> None:
 
     test_dsn = os.getenv(
         "PG_DSN",
-        f"postgresql://{TEST_ROLE}:{TEST_PASSWORD}"
-        f"@localhost:5432/{TEST_DATABASE}",
+        f"postgresql://{TEST_ROLE}:{TEST_PASSWORD}@localhost:5432/{TEST_DATABASE}",
     )
     with psycopg2.connect(test_dsn, connect_timeout=5) as conn:  # type: ignore
         with conn.cursor() as cur:
@@ -174,15 +156,11 @@ def main() -> None:
             )
             user, superuser, bypassrls = cur.fetchone()
             if user != TEST_ROLE or superuser or bypassrls:
-                raise RuntimeError(
-                    "RLS test connection is not the expected non-privileged role"
-                )
+                raise RuntimeError("RLS test connection is not the expected non-privileged role")
             cur.execute("SELECT current_setting('app.tenant_id')")
             default_tenant = cur.fetchone()[0]
             if default_tenant != "":
-                raise RuntimeError(
-                    f"unexpected app.tenant_id database default: {default_tenant!r}"
-                )
+                raise RuntimeError(f"unexpected app.tenant_id database default: {default_tenant!r}")
     print(
         f"Prepared {TEST_DATABASE!r} with role {TEST_ROLE!r}: "
         f"{len(KERNEL01_V2_TABLES)} forced-RLS tables"

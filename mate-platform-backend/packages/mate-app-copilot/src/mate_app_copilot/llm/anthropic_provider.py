@@ -10,6 +10,7 @@ Env vars:
     ANTHROPIC_BASE_URL   — optional, defaults to https://api.anthropic.com
     ANTHROPIC_MODEL      — optional, defaults to claude-3-5-sonnet-20241022
 """
+
 from __future__ import annotations
 
 import json
@@ -43,16 +44,10 @@ class AnthropicProvider:
         timeout: float | None = None,
     ) -> None:
         self._api_key = api_key or os.getenv("ANTHROPIC_API_KEY", "")
-        self._base_url = (
-            base_url or os.getenv("ANTHROPIC_BASE_URL", DEFAULT_BASE_URL)
-        ).rstrip("/")
+        self._base_url = (base_url or os.getenv("ANTHROPIC_BASE_URL", DEFAULT_BASE_URL)).rstrip("/")
         self.model = model or os.getenv("ANTHROPIC_MODEL", DEFAULT_MODEL)
-        self._max_tokens = (
-            max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS
-        )
-        self._timeout = (
-            timeout if timeout is not None else DEFAULT_TIMEOUT
-        )
+        self._max_tokens = max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS
+        self._timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
         self._client = httpx.AsyncClient(
             base_url=self._base_url,
             timeout=self._timeout,
@@ -122,10 +117,7 @@ class AnthropicProvider:
             usage={
                 "prompt_tokens": usage.get("input_tokens", 0),
                 "completion_tokens": usage.get("output_tokens", 0),
-                "total_tokens": (
-                    usage.get("input_tokens", 0)
-                    + usage.get("output_tokens", 0)
-                ),
+                "total_tokens": (usage.get("input_tokens", 0) + usage.get("output_tokens", 0)),
             },
             metadata={
                 "provider_type": self.provider_type,
@@ -155,9 +147,7 @@ class AnthropicProvider:
         if system:
             payload["system"] = system
         payload.update(kwargs)
-        async with self._client.stream(
-            "POST", "/v1/messages", json=payload
-        ) as resp:
+        async with self._client.stream("POST", "/v1/messages", json=payload) as resp:
             resp.raise_for_status()
             async for line in resp.aiter_lines():
                 if not line.startswith("data: "):

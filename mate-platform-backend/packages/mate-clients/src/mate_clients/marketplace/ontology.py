@@ -11,6 +11,7 @@ to satisfy hard-rule #14 (registered_digest == manifest.digest).
 
 Uses ``BearerAuth`` + ``OutgoingAuthMiddleware`` per 13 硬规则 #4.
 """
+
 from __future__ import annotations
 
 import hashlib

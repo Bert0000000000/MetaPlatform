@@ -1,4 +1,5 @@
 """W1 集成测试 (10 ST)."""
+
 from __future__ import annotations
 
 

@@ -41,7 +41,7 @@ resources:
 persistence:
   enabled: true
   size: 50Gi
-  storageClass: ""     # "" = cluster default StorageClass
+  storageClass: "" # "" = cluster default StorageClass
 
 # G1: resource governance — requests/limits declared so the scheduler
 # can place pods and HPA/KEDA can reference them. Kafka brokers are
@@ -55,10 +55,10 @@ config:
   auto:
     create:
       topics:
-        enable: "false"   # topics are explicit (PLATFORM-EVENT-01)
+        enable: "false" # topics are explicit (PLATFORM-EVENT-01)
   default:
     replication:
-      factor: "1"      # 3 in production
+      factor: "1" # 3 in production
   num:
     partitions: "6"
   log:
@@ -147,7 +147,7 @@ schemaRegistry:
 # fallback for environments that cannot run KRaft (older Kafka <
 # 3.3 or organisational policy). The chart prefers KRaft.
 zookeeper:
-  replicaCount: 1     # 3 in production if ZooKeeper mode is used
+  replicaCount: 1 # 3 in production if ZooKeeper mode is used
   image:
     registry: docker.io
     repository: bitnami/zookeeper

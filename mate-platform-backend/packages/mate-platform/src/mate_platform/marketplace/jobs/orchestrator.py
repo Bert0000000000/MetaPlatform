@@ -11,6 +11,7 @@
   6. write instance(硬规则 #14 已在 installer 内校验)
   7. transition → INSTALLED
 """
+
 from __future__ import annotations
 
 import enum
@@ -94,9 +95,7 @@ class Orchestrator:
             except Exception:  # pubsub 失败不阻塞主流程
                 log.warning("publish event failed", exc_info=True)
 
-    async def run(
-        self, *, install_id: uuid.UUID, artifact: dict
-    ) -> dict:
+    async def run(self, *, install_id: uuid.UUID, artifact: dict) -> dict:
         # 1. license check(仅 paid 资产)
         if artifact.get("license", {}).get("tier") == "paid":
             lic = await self.mp_client.check_license(
@@ -118,22 +117,14 @@ class Orchestrator:
         )
 
         # 3. version check
-        min_v = (
-            manifest.get("requirements", {}).get(
-                "minPlatformVersion", "0.0.0"
-            )
-        )
+        min_v = manifest.get("requirements", {}).get("minPlatformVersion", "0.0.0")
         if _compare_versions(self.platform_version, min_v) < 1:
             await self._transition(
                 install_id,
                 InstallState.FAILED,
-                failure_reason=(
-                    f"need platform {min_v}, have {self.platform_version}"
-                ),
+                failure_reason=(f"need platform {min_v}, have {self.platform_version}"),
             )
-            raise IncompatiblePlatform(
-                f"need {min_v}, have {self.platform_version}"
-            )
+            raise IncompatiblePlatform(f"need {min_v}, have {self.platform_version}")
 
         # 4. fetch blob + verify digest(OCIPuller 内部已 verify)
         await self._transition(install_id, InstallState.DOWNLOADING)
@@ -171,17 +162,13 @@ class Orchestrator:
             elif kind == "ontology":
                 from .installer_ontology import OntologyInstaller
 
-                result = await OntologyInstaller(
-                    self.mp_client.ont
-                ).run(
+                result = await OntologyInstaller(self.mp_client.ont).run(
                     install_id=install_id, manifest=manifest, blob=blob
                 )
             elif kind == "skill":
                 from .installer_skill import SkillInstaller
 
-                result = await SkillInstaller(
-                    self.mp_client.skill
-                ).run(
+                result = await SkillInstaller(self.mp_client.skill).run(
                     install_id=install_id, manifest=manifest, blob=blob
                 )
             else:

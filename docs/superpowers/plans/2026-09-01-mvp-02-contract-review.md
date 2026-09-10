@@ -34,6 +34,7 @@
 ### Task 1: 定义合同领域、Evidence 和 OpenAPI 契约
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-app-contract-review/pyproject.toml`
 - Create: `mate-platform-backend/packages/mate-app-contract-review/src/mate_app_contract_review/__init__.py`
 - Create: `mate-platform-backend/packages/mate-app-contract-review/src/mate_app_contract_review/domain.py`
@@ -56,6 +57,7 @@
 - Test: `mate-platform-backend/contracts/tests/test_contract_review_runtime.py`
 
 **Interfaces:**
+
 - Consumes: `RunContext`, `ReportArtifact`, `ActionPlan` and Digest helpers from MVP1.
 - Produces: shared `GovernedSourceDocument`/`SourceSpan`, `ContractVersion`, `ContractFinding`, `ContractReviewRequest`, `ContractReviewResult`, terminal `DecisionRecord`; runnable `mate_app_contract_review.main:app`; HTTP endpoints `/api/v1/contracts`, `/versions`, `/parse-jobs/{id}`, `/reviews`, `/reviews/{id}`, `/reviews/{id}/decision`.
 
@@ -109,6 +111,7 @@ git commit -m "feat(contract): define review domain and API"
 ### Task 2: 建立合同版本、对象元数据和上传安全边界
 
 **Files:**
+
 - Create: `mate-platform-backend/alembic/versions/20260901_0017_contract_review.py`
 - Create: `mate-platform-backend/packages/mate-app-contract-review/src/mate_app_contract_review/storage.py`
 - Create: `mate-platform-backend/packages/mate-app-contract-review/src/mate_app_contract_review/upload_service.py`
@@ -126,6 +129,7 @@ git commit -m "feat(contract): define review domain and API"
 - Test: `mate-platform-backend/packages/mate-app-contract-review/tests/test_storage_postgres.py`
 
 **Interfaces:**
+
 - Consumes: tenant authorization context, shared `GovernedSourceDocumentService`, SeaweedFS-compatible `ObjectStore` port and ClamAV verdict port.
 - Produces: `accept_upload(stream, filename, media_type, auth) -> ContractVersion`; tables `contracts`, `contract_versions`, `contract_acl`, `parse_jobs`, `contract_reviews`.
 
@@ -171,6 +175,7 @@ git commit -m "feat(contract): add secure immutable uploads"
 ### Task 3: 用真实 RAGFlow 解析和检索替换宽松 fallback
 
 **Files:**
+
 - Modify: `mate-platform-backend/packages/mate-tech-rag/src/mate_tech_rag/clients/ragflow_httpx_client.py`
 - Create: `mate-platform-backend/packages/mate-tech-rag/src/mate_tech_rag/clients/ragflow_async_client.py`
 - Create: `mate-platform-backend/tests/architecture/test_ragflow_consumer_inventory.py`
@@ -190,6 +195,7 @@ git commit -m "feat(contract): add secure immutable uploads"
 - Test: `mate-platform-backend/packages/mate-tech-rag/tests/test_ragflow_fail_closed.py`
 
 **Interfaces:**
+
 - Consumes: `ContractVersion` binary reference and a pinned RAGFlow dataset/parser configuration.
 - Produces: `ParseSnapshot(document_digest, parser_version, dataset_version, chunks)` and `RetrievalSnapshot(query, filters, permission_watermark, ranked_spans)`.
 
@@ -239,6 +245,7 @@ git commit -m "feat(contract): require verifiable ragflow evidence"
 ### Task 4: 生成有证据约束和 ModelReceipt 的合同报告
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-app-contract-review/src/mate_app_contract_review/review_service.py`
 - Create: `mate-platform-backend/packages/mate-app-contract-review/src/mate_app_contract_review/model_gateway.py`
 - Create: `mate-platform-backend/packages/mate-app-contract-review/src/mate_app_contract_review/ontology.py`
@@ -246,6 +253,7 @@ git commit -m "feat(contract): require verifiable ragflow evidence"
 - Test: `mate-platform-backend/packages/mate-app-contract-review/tests/test_prompt_injection.py`
 
 **Interfaces:**
+
 - Consumes: parse/retrieval snapshots from Task 3, contract ontology Digest, policy rules and LiteLLM Model Gateway.
 - Produces: `review_contract(run, version, snapshots) -> ContractReviewResult`; every model call returns `(StructuredFindings, ModelReceipt)`.
 
@@ -290,6 +298,7 @@ git commit -m "feat(contract): generate receipt-backed review artifacts"
 ### Task 5: 接入 MCP、人工决定和可选 Temporal 等待
 
 **Files:**
+
 - Modify: `mate-platform-backend/packages/mate-app-contract-review/src/mate_app_contract_review/api.py`
 - Create: `mate-platform-backend/packages/mate-app-contract-review/src/mate_app_contract_review/workflow.py`
 - Create: `mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/tools/contract_review.py`
@@ -314,6 +323,7 @@ git commit -m "feat(contract): generate receipt-backed review artifacts"
 - Test: `mate-platform-backend/packages/mate-tech-mcp/tests/test_contract_review_tools.py`
 
 **Interfaces:**
+
 - Consumes: Task 4 result, MVP1 Run/Lease and `RuntimeToolCallContext` contract.
 - Produces: `contract.upload`, `contract.get_parse_status`, `contract.review`, `contract.get_report`, `contract.record_decision`; terminal `DecisionRecord`; Temporal workflow `ContractReviewDecisionWorkflow` only when a decision wait outlives the request.
 
@@ -359,6 +369,7 @@ git commit -m "feat(contract): add mcp review and legal decision flow"
 ### Task 6: 交付合同工作台、金标评测与验收
 
 **Files:**
+
 - Create: `metaplatform-frontend/apps/web/src/pages/contracts/ContractReviewPage.tsx`
 - Create: `metaplatform-frontend/apps/web/src/pages/contracts/ContractReviewPage.test.tsx`
 - Create: `metaplatform-frontend/apps/web/src/api/contracts/review.ts`
@@ -379,6 +390,7 @@ git commit -m "feat(contract): add mcp review and legal decision flow"
 - Create: `mate-platform-backend/packages/mate-app-contract-review/tests/conformance.py`
 
 **Interfaces:**
+
 - Consumes: Task 5 API and shared Artifact Renderer.
 - Produces: upload/progress/report/evidence/decision/export UI plus quality metrics.
 
@@ -390,7 +402,11 @@ git commit -m "feat(contract): add mcp review and legal decision flow"
 
 ```tsx
 it("opens the exact page and character span for a finding", async () => {
-  render(<ContractReviewPage review={reviewWithSpan({ page: 7, start: 102, end: 168 })} />);
+  render(
+    <ContractReviewPage
+      review={reviewWithSpan({ page: 7, start: 102, end: 168 })}
+    />,
+  );
   await user.click(screen.getByText("无限责任"));
   expect(pdfViewer()).toHaveAttribute("data-page", "7");
 });

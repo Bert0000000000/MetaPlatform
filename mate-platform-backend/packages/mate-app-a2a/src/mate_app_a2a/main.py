@@ -7,6 +7,7 @@
 The `/api/v1/a2a/health` endpoint is widened into the anonymous set
 so liveness probes can reach it without a bearer token.
 """
+
 from __future__ import annotations
 
 from fastapi import FastAPI, Response

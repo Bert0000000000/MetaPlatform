@@ -8,6 +8,7 @@ kernel 试点语义不变）：会话打开时对全局注册角色做**快照�
 全局（非会话）dispatch 路径不受影响——会话门仅当请求带 ``X-Session-Id``
 且该会话存在时生效（PRD-01 FR-EMP-EVOLVE-001/002/006/007）。
 """
+
 from __future__ import annotations
 
 import time
@@ -47,13 +48,17 @@ class SessionScope:
             for b in role.capabilities:
                 if b.worker_kind == "mcp":
                     await self.runtime.track_capability(
-                        self.tenant_id, b.name, b.ref,
+                        self.tenant_id,
+                        b.name,
+                        b.ref,
                     )
             await self.runtime.attach_role(role)
             count += 1
         logger.info(
             "evolve.session.opened",
-            session_id=self.session_id, tenant=self.tenant_id, roles=count,
+            session_id=self.session_id,
+            tenant=self.tenant_id,
+            roles=count,
         )
         return count
 
@@ -65,7 +70,9 @@ class SessionScope:
         self._mounted[name] = ref
         logger.info(
             "evolve.capability.mounted",
-            session_id=self.session_id, tenant=self.tenant_id, name=name,
+            session_id=self.session_id,
+            tenant=self.tenant_id,
+            name=name,
         )
 
     async def unmount(self, name: str) -> bool:
@@ -75,7 +82,9 @@ class SessionScope:
             self._mounted.pop(name, None)
             logger.info(
                 "evolve.capability.unmounted",
-                session_id=self.session_id, tenant=self.tenant_id, name=name,
+                session_id=self.session_id,
+                tenant=self.tenant_id,
+                name=name,
             )
         return ok
 
@@ -84,7 +93,9 @@ class SessionScope:
         from .role_registry import DigitalEmployeeRole
 
         role = DigitalEmployeeRole(
-            tenant_id=self.tenant_id, role=role_name, name=role_name,
+            tenant_id=self.tenant_id,
+            role=role_name,
+            name=role_name,
             capabilities=tuple(caps),
         )
         for b in caps:
@@ -97,10 +108,14 @@ class SessionScope:
         """员工提议挂载新能力 → pending（人审前不生效）。"""
         pid = f"evop-{abs(hash((self.session_id, name))) % 10**8}"
         self._evolve_proposals[pid] = {
-            "name": name, "ref": ref, "reason": reason, "status": "pending",
+            "name": name,
+            "ref": ref,
+            "reason": reason,
+            "status": "pending",
         }
-        logger.info("evolve.proposal.created", session_id=self.session_id,
-                    proposal_id=pid, name=name)
+        logger.info(
+            "evolve.proposal.created", session_id=self.session_id, proposal_id=pid, name=name
+        )
         return pid
 
     async def approve_evolution(self, pid: str) -> dict:
@@ -109,8 +124,7 @@ class SessionScope:
             raise KeyError(f"evolution proposal {pid!r} not pending")
         await self.mount(p["name"], p["ref"])
         p["status"] = "approved"
-        logger.info("evolve.proposal.approved", session_id=self.session_id,
-                    proposal_id=pid)
+        logger.info("evolve.proposal.approved", session_id=self.session_id, proposal_id=pid)
         return {"proposal_id": pid, **p}
 
     def reject_evolution(self, pid: str) -> dict:
@@ -118,8 +132,7 @@ class SessionScope:
         if p is None or p["status"] != "pending":
             raise KeyError(f"evolution proposal {pid!r} not pending")
         p["status"] = "rejected"
-        logger.info("evolve.proposal.rejected", session_id=self.session_id,
-                    proposal_id=pid)
+        logger.info("evolve.proposal.rejected", session_id=self.session_id, proposal_id=pid)
         return {"proposal_id": pid, **p}
 
     async def close(self) -> dict[str, int]:
@@ -131,7 +144,9 @@ class SessionScope:
         }
         await self.runtime.dispose()
         logger.info(
-            "evolve.session.closed", session_id=self.session_id, **stats,
+            "evolve.session.closed",
+            session_id=self.session_id,
+            **stats,
         )
         return stats
 
@@ -155,8 +170,9 @@ class SessionEvolution:
     def __init__(self) -> None:
         self._sessions: dict[str, SessionScope] = {}
 
-    async def open_session(self, session_id: str, tenant_id: str,
-                           ttl_s: int = _TTL_DEFAULT) -> SessionScope:
+    async def open_session(
+        self, session_id: str, tenant_id: str, ttl_s: int = _TTL_DEFAULT
+    ) -> SessionScope:
         old = self._sessions.get(session_id)
         if old is not None:
             await old.close()

@@ -9,6 +9,7 @@ Schema discovery (``get_source_schema``) and connection probing
 (``test_source_connection``) stay in ``in_memory`` because they are
 dynamic and not part of the persistence contract.
 """
+
 from __future__ import annotations
 
 import json
@@ -120,14 +121,13 @@ def _orm_to_data_product(row: models.DataProductORM) -> DataProduct:
 # Read API — CDC tasks
 # ---------------------------------------------------------------------------
 def list_cdc_tasks(
-    tenant_id: str, status: str | None = None,
+    tenant_id: str,
+    status: str | None = None,
 ) -> list[CdcTask]:
     if not tenant_id:
         return []
     s = _session()
-    stmt = select(models.CdcTaskORM).where(
-        models.CdcTaskORM.tenant_id == tenant_id
-    )
+    stmt = select(models.CdcTaskORM).where(models.CdcTaskORM.tenant_id == tenant_id)
     if status:
         stmt = stmt.where(models.CdcTaskORM.status == status)
     rows = s.execute(stmt.order_by(models.CdcTaskORM.id)).scalars().all()
@@ -151,14 +151,13 @@ def get_cdc_task(tenant_id: str, task_id: str) -> CdcTask | None:
 # Read API — data sources
 # ---------------------------------------------------------------------------
 def list_sources(
-    tenant_id: str, type_filter: str | None = None,
+    tenant_id: str,
+    type_filter: str | None = None,
 ) -> list[DataSource]:
     if not tenant_id:
         return []
     s = _session()
-    stmt = select(models.DataSourceORM).where(
-        models.DataSourceORM.tenant_id == tenant_id
-    )
+    stmt = select(models.DataSourceORM).where(models.DataSourceORM.tenant_id == tenant_id)
     if type_filter:
         stmt = stmt.where(models.DataSourceORM.type == type_filter)
     rows = s.execute(stmt.order_by(models.DataSourceORM.id)).scalars().all()
@@ -195,12 +194,19 @@ def put_cdc_task(tenant_id: str, task: CdcTask) -> CdcTask:
         existing.config = config_str
         existing.updated_at = task.updated_at
     else:
-        s.add(models.CdcTaskORM(
-            id=task.id, tenant_id=tenant_id, name=task.name,
-            source_id=task.source_id, target_table=task.target_table,
-            status=task.status, config=config_str,
-            created_at=task.created_at, updated_at=task.updated_at,
-        ))
+        s.add(
+            models.CdcTaskORM(
+                id=task.id,
+                tenant_id=tenant_id,
+                name=task.name,
+                source_id=task.source_id,
+                target_table=task.target_table,
+                status=task.status,
+                config=config_str,
+                created_at=task.created_at,
+                updated_at=task.updated_at,
+            )
+        )
     s.commit()
     return task
 
@@ -223,7 +229,9 @@ def delete_cdc_task(tenant_id: str, task_id: str) -> bool:
 
 
 def set_cdc_task_status(
-    tenant_id: str, task_id: str, status: str,
+    tenant_id: str,
+    task_id: str,
+    status: str,
 ) -> CdcTask | None:
     if not tenant_id:
         return None
@@ -257,12 +265,18 @@ def put_source(tenant_id: str, source: DataSource) -> DataSource:
         existing.status = source.status
         existing.updated_at = source.updated_at
     else:
-        s.add(models.DataSourceORM(
-            id=source.id, tenant_id=tenant_id, name=source.name,
-            type=source.type, connection_config=config_str,
-            status=source.status, created_at=source.created_at,
-            updated_at=source.updated_at,
-        ))
+        s.add(
+            models.DataSourceORM(
+                id=source.id,
+                tenant_id=tenant_id,
+                name=source.name,
+                type=source.type,
+                connection_config=config_str,
+                status=source.status,
+                created_at=source.created_at,
+                updated_at=source.updated_at,
+            )
+        )
     s.commit()
     return source
 
@@ -295,9 +309,7 @@ def list_data_products(
     if not tenant_id:
         return []
     s = _session()
-    stmt = select(models.DataProductORM).where(
-        models.DataProductORM.tenant_id == tenant_id
-    )
+    stmt = select(models.DataProductORM).where(models.DataProductORM.tenant_id == tenant_id)
     if status:
         stmt = stmt.where(models.DataProductORM.status == status)
     if modality:
@@ -340,16 +352,23 @@ def put_data_product(tenant_id: str, product: DataProduct) -> DataProduct:
         existing.tags = tags_str
         existing.updated_at = product.updated_at
     else:
-        s.add(models.DataProductORM(
-            id=product.id, tenant_id=tenant_id,
-            name=product.name, version=product.version,
-            source_paimon_table=product.source_paimon_table,
-            target_iceberg_table=product.target_iceberg_table,
-            modality=product.modality, status=product.status,
-            owner=product.owner, description=product.description,
-            tags=tags_str,
-            created_at=product.created_at, updated_at=product.updated_at,
-        ))
+        s.add(
+            models.DataProductORM(
+                id=product.id,
+                tenant_id=tenant_id,
+                name=product.name,
+                version=product.version,
+                source_paimon_table=product.source_paimon_table,
+                target_iceberg_table=product.target_iceberg_table,
+                modality=product.modality,
+                status=product.status,
+                owner=product.owner,
+                description=product.description,
+                tags=tags_str,
+                created_at=product.created_at,
+                updated_at=product.updated_at,
+            )
+        )
     s.commit()
     return product
 
@@ -372,7 +391,9 @@ def delete_data_product(tenant_id: str, product_id: str) -> bool:
 
 
 def set_data_product_status(
-    tenant_id: str, product_id: str, status: str,
+    tenant_id: str,
+    product_id: str,
+    status: str,
     *,
     bump_version: bool = False,
     require_owner: bool = False,
@@ -408,12 +429,8 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     from . import in_memory as mem
 
     counts: dict[str, int] = {}
-    counts["cdc_tasks"] = len(
-        [put_cdc_task(tenant_id, t) for t in mem.list_cdc_tasks(tenant_id)]
-    )
-    counts["sources"] = len(
-        [put_source(tenant_id, s) for s in mem.list_sources(tenant_id)]
-    )
+    counts["cdc_tasks"] = len([put_cdc_task(tenant_id, t) for t in mem.list_cdc_tasks(tenant_id)])
+    counts["sources"] = len([put_source(tenant_id, s) for s in mem.list_sources(tenant_id)])
     counts["data_products"] = len(
         [put_data_product(tenant_id, p) for p in mem.list_data_products(tenant_id)]
     )
@@ -528,6 +545,7 @@ def create_data_product(
 ) -> DataProduct:
     """Create a new DataProduct and persist it via put_data_product."""
     from .in_memory import DATA_PRODUCT_MODALITIES
+
     now = _now()
     normalised = modality if modality in DATA_PRODUCT_MODALITIES else "structured"
     product = DataProduct(
@@ -556,6 +574,7 @@ def update_data_product(
 ) -> DataProduct | None:
     """Patch mutable fields of an existing DataProduct. Returns None if missing."""
     from .in_memory import DATA_PRODUCT_MODALITIES
+
     product = get_data_product(tenant_id, product_id)
     if product is None:
         return None
@@ -597,7 +616,9 @@ from .sql_models import (
 
 
 def create_lineage_edge(
-    tenant_id: str, source_entity: str, target_entity: str,
+    tenant_id: str,
+    source_entity: str,
+    target_entity: str,
     edge_type: str = "derived_from",
 ) -> LineageEdge:
     edge = LineageEdge(
@@ -609,49 +630,73 @@ def create_lineage_edge(
         created_at=_now(),
     )
     with _session() as session:
-        session.add(DataLineageEdgeORM(
-            id=edge.id, tenant_id=tenant_id,
-            source_entity=source_entity, target_entity=target_entity,
-            edge_type=edge_type, created_at=edge.created_at))
+        session.add(
+            DataLineageEdgeORM(
+                id=edge.id,
+                tenant_id=tenant_id,
+                source_entity=source_entity,
+                target_entity=target_entity,
+                edge_type=edge_type,
+                created_at=edge.created_at,
+            )
+        )
         session.commit()
     return edge
 
 
 def list_lineage_edges(tenant_id: str) -> list[LineageEdge]:
     with _session() as session:
-        rows = session.query(DataLineageEdgeORM).filter_by(
-            tenant_id=tenant_id).all()
+        rows = session.query(DataLineageEdgeORM).filter_by(tenant_id=tenant_id).all()
         return [
             LineageEdge(
-                id=r.id, tenant_id=r.tenant_id,
-                source_entity=r.source_entity, target_entity=r.target_entity,
-                edge_type=r.edge_type, created_at=r.created_at,
-            ) for r in rows
+                id=r.id,
+                tenant_id=r.tenant_id,
+                source_entity=r.source_entity,
+                target_entity=r.target_entity,
+                edge_type=r.edge_type,
+                created_at=r.created_at,
+            )
+            for r in rows
         ]
 
 
 def create_quality_rule(
-    tenant_id: str, entity_id: str, field: str, rule_type: str,
+    tenant_id: str,
+    entity_id: str,
+    field: str,
+    rule_type: str,
     params: dict[str, Any] | None = None,
 ) -> QualityRule:
     rule = QualityRule(
         id=f"dqr-{uuid.uuid4().hex[:8]}",
-        tenant_id=tenant_id, entity_id=entity_id, field=field,
-        rule_type=rule_type, params=dict(params or {}),
+        tenant_id=tenant_id,
+        entity_id=entity_id,
+        field=field,
+        rule_type=rule_type,
+        params=dict(params or {}),
         created_at=_now(),
     )
     with _session() as session:
-        session.add(DataQualityRuleORM(
-            id=rule.id, tenant_id=tenant_id, entity_id=entity_id,
-            field=field, rule_type=rule_type,
-            params=_json_dumps(rule.params), enabled=True,
-            created_at=rule.created_at))
+        session.add(
+            DataQualityRuleORM(
+                id=rule.id,
+                tenant_id=tenant_id,
+                entity_id=entity_id,
+                field=field,
+                rule_type=rule_type,
+                params=_json_dumps(rule.params),
+                enabled=True,
+                created_at=rule.created_at,
+            )
+        )
         session.commit()
     return rule
 
 
 def list_quality_rules(
-    tenant_id: str, entity_id: str | None = None, enabled_only: bool = False,
+    tenant_id: str,
+    entity_id: str | None = None,
+    enabled_only: bool = False,
 ) -> list[QualityRule]:
     with _session() as session:
         q = session.query(DataQualityRuleORM).filter_by(tenant_id=tenant_id)
@@ -662,21 +707,35 @@ def list_quality_rules(
         rows = q.all()
         return [
             QualityRule(
-                id=r.id, tenant_id=r.tenant_id, entity_id=r.entity_id,
-                field=r.field, rule_type=r.rule_type,
-                params=_json_loads(r.params), enabled=bool(r.enabled),
+                id=r.id,
+                tenant_id=r.tenant_id,
+                entity_id=r.entity_id,
+                field=r.field,
+                rule_type=r.rule_type,
+                params=_json_loads(r.params),
+                enabled=bool(r.enabled),
                 created_at=r.created_at,
-            ) for r in rows
+            )
+            for r in rows
         ]
 
 
 def save_quality_results(tenant_id: str, results: list[QualityResult]) -> None:
     with _session() as session:
         for r in results:
-            session.add(DataQualityResultORM(
-                id=r.id, tenant_id=r.tenant_id, rule_id=r.rule_id,
-                entity_id=r.entity_id, field=r.field, rule_type=r.rule_type,
-                passed=r.passed, detail=r.detail, ran_at=r.ran_at))
+            session.add(
+                DataQualityResultORM(
+                    id=r.id,
+                    tenant_id=r.tenant_id,
+                    rule_id=r.rule_id,
+                    entity_id=r.entity_id,
+                    field=r.field,
+                    rule_type=r.rule_type,
+                    passed=r.passed,
+                    detail=r.detail,
+                    ran_at=r.ran_at,
+                )
+            )
         session.commit()
 
 
@@ -691,10 +750,17 @@ def list_quality_results(tenant_id: str, limit: int = 50) -> list[QualityResult]
         )
         return [
             QualityResult(
-                id=r.id, tenant_id=r.tenant_id, rule_id=r.rule_id,
-                entity_id=r.entity_id, field=r.field, rule_type=r.rule_type,
-                passed=bool(r.passed), detail=r.detail, ran_at=r.ran_at,
-            ) for r in rows
+                id=r.id,
+                tenant_id=r.tenant_id,
+                rule_id=r.rule_id,
+                entity_id=r.entity_id,
+                field=r.field,
+                rule_type=r.rule_type,
+                passed=bool(r.passed),
+                detail=r.detail,
+                ran_at=r.ran_at,
+            )
+            for r in rows
         ]
 
 
@@ -720,8 +786,7 @@ def lineage_graph(tenant_id: str, entity: str | None = None) -> dict[str, Any]:
     """返回 {nodes, edges} 依赖图；entity 给定时只保留相连子图。"""
     edges = list_lineage_edges(tenant_id)
     if entity:
-        edges = [e for e in edges
-                 if entity in (e.source_entity, e.target_entity)]
+        edges = [e for e in edges if entity in (e.source_entity, e.target_entity)]
     nodes: dict[str, None] = {}
     for e in edges:
         nodes[e.source_entity] = None
@@ -729,8 +794,12 @@ def lineage_graph(tenant_id: str, entity: str | None = None) -> dict[str, Any]:
     return {
         "nodes": [{"id": n} for n in sorted(nodes)],
         "edges": [
-            {"source": e.source_entity, "target": e.target_entity,
-             "edge_type": e.edge_type, "id": e.id}
+            {
+                "source": e.source_entity,
+                "target": e.target_entity,
+                "edge_type": e.edge_type,
+                "id": e.id,
+            }
             for e in edges
         ],
     }
@@ -743,11 +812,17 @@ def catalog_search(tenant_id: str, q: str) -> list[dict[str, Any]]:
     for s in list_sources(tenant_id):
         hay = f"{s.name} {s.type}".lower()
         if q_lower in hay:
-            items.append({"kind": "source", "id": s.id, "name": s.name,
-                          "detail": s.type})
+            items.append({"kind": "source", "id": s.id, "name": s.name, "detail": s.type})
     for p in list_data_products(tenant_id):
         hay = f"{p.name} {p.description} {p.modality}".lower()
         if q_lower in hay:
-            items.append({"kind": "product", "id": p.id, "name": p.name,
-                          "detail": p.modality, "status": p.status})
+            items.append(
+                {
+                    "kind": "product",
+                    "id": p.id,
+                    "name": p.name,
+                    "detail": p.modality,
+                    "status": p.status,
+                }
+            )
     return items

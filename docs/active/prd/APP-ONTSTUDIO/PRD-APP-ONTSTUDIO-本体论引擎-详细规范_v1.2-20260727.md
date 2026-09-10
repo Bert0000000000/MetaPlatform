@@ -988,7 +988,7 @@ function SubErrorFallback({ name }) {
 
 ```typescript
 import { MOCK_BIGDATA_SOURCES } from '../mock/ontology-bigdata';
-try { return await apiClient.get(...); } 
+try { return await apiClient.get(...); }
 catch { return filterMock(MOCK_BIGDATA_SOURCES, params); }
 ```
 

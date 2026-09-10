@@ -1,4 +1,5 @@
 """Regression tests for tenant-scoped digital employee identities."""
+
 from __future__ import annotations
 
 import re

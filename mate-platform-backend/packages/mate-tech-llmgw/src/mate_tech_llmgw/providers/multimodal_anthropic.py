@@ -26,6 +26,7 @@ Audio and video are not natively supported on Anthropic Messages;
 the adapter degrades them to text hints so callers can mix content
 parts without 422ing on every provider.
 """
+
 from __future__ import annotations
 
 from typing import Any

@@ -5,25 +5,25 @@
 
 ## 1. 双轨 API 对照（同一 REST 面）
 
-| 能力 | legacy（默认） | temporal（`?engine=temporal`） |
-|---|---|---|
-| 提交 | `POST /plans` → 201 `{plan_id, status:"submitted"}`（不执行） | `POST /plans?engine=temporal` → 201 `{plan_id:"twf-*", status:"hitl_waiting:s2"}`（**提交即持久执行**） |
-| 执行 | `POST /plans/{id}/execute`（进程内跑到 HITL） | 隐式（提交即跑）；显式 execute 返回 409 指引 |
-| 状态查询 | `GET /plans/{id}`（内存态，**进程重启即丢**） | `GET /plans/{id}`（Temporal history 权威，**跨重启/跨副本**） |
-| HITL 审批 | `POST .../review`（confirm+apply 合一，进程内） | 同端点 → signal（`ReviewSignal`）→ review activity（同一 PlanRunner.review 合一语义） |
+| 能力      | legacy（默认）                                                | temporal（`?engine=temporal`）                                                                          |
+| --------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 提交      | `POST /plans` → 201 `{plan_id, status:"submitted"}`（不执行） | `POST /plans?engine=temporal` → 201 `{plan_id:"twf-*", status:"hitl_waiting:s2"}`（**提交即持久执行**） |
+| 执行      | `POST /plans/{id}/execute`（进程内跑到 HITL）                 | 隐式（提交即跑）；显式 execute 返回 409 指引                                                            |
+| 状态查询  | `GET /plans/{id}`（内存态，**进程重启即丢**）                 | `GET /plans/{id}`（Temporal history 权威，**跨重启/跨副本**）                                           |
+| HITL 审批 | `POST .../review`（confirm+apply 合一，进程内）               | 同端点 → signal（`ReviewSignal`）→ review activity（同一 PlanRunner.review 合一语义）                   |
 
 ## 2. live 实测（同晚同栈）
 
-| 维度 | legacy | temporal |
-|---|---|---|
-| 5 StepKind 全过 | ✅（v3.1 SAL-05 起即有） | ✅（M2 五项 PASS，含 apply_action 真实落库、call_agent MCP 调度） |
-| approve/reject 双路径 | ✅ | ✅（completed / aborted） |
-| 进程重启后 plan 可续 | ❌ 状态丢（M2 已做终态化止损） | ✅ workflow 由 history 驱动，worker 换进程照跑 |
-| 挂起等待（HITL）时长上限 | 进程生命周期 | **无上限**（LT 实测 75s 仅受测试窗口约束；1 周+ 由 wait_condition 天然支持） |
-| 失败重试 | 无（步骤失败即终态） | Activity RetryPolicy（cap 3，防毒丸） |
-| SRE 可观测 | 自研 /graph | Temporal history + query `status()` + plan_mirror 对账 |
-| 毒丸免疫（plan 丢失重放） | N/A | ✅（review → 终态 aborted，不重试） |
-| 单测 | 既有套件 | translation 6/6 + bridge 5/5 + dual-rail 9/9 |
+| 维度                      | legacy                         | temporal                                                                     |
+| ------------------------- | ------------------------------ | ---------------------------------------------------------------------------- |
+| 5 StepKind 全过           | ✅（v3.1 SAL-05 起即有）       | ✅（M2 五项 PASS，含 apply_action 真实落库、call_agent MCP 调度）            |
+| approve/reject 双路径     | ✅                             | ✅（completed / aborted）                                                    |
+| 进程重启后 plan 可续      | ❌ 状态丢（M2 已做终态化止损） | ✅ workflow 由 history 驱动，worker 换进程照跑                               |
+| 挂起等待（HITL）时长上限  | 进程生命周期                   | **无上限**（LT 实测 75s 仅受测试窗口约束；1 周+ 由 wait_condition 天然支持） |
+| 失败重试                  | 无（步骤失败即终态）           | Activity RetryPolicy（cap 3，防毒丸）                                        |
+| SRE 可观测                | 自研 /graph                    | Temporal history + query `status()` + plan_mirror 对账                       |
+| 毒丸免疫（plan 丢失重放） | N/A                            | ✅（review → 终态 aborted，不重试）                                          |
+| 单测                      | 既有套件                       | translation 6/6 + bridge 5/5 + dual-rail 9/9                                 |
 
 ## 3. 已知差异（有意为之）
 

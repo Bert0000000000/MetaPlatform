@@ -12,6 +12,7 @@ The test boots the service in-process via ``ASGITransport`` (no Docker
 required) so we can run it on the host pipeline today and also inside
 the rebuilt image once the compose stack is up.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -44,9 +45,7 @@ def test_agent_card_well_known_path() -> None:
     assert resp.status_code == 200, resp.text
     card = resp.json()
     assert card["name"] == "Mate External A2A Agent"
-    assert any(
-        i["protocolBinding"] == "JSONRPC" for i in card["supportedInterfaces"]
-    )
+    assert any(i["protocolBinding"] == "JSONRPC" for i in card["supportedInterfaces"])
     skill_ids = {s["id"] for s in card["skills"]}
     assert skill_ids == set(SKILLS.keys())
 
@@ -110,12 +109,8 @@ def test_docker_requirements_cover_runtime_logging_dependency() -> None:
     """Keep the Docker runtime dependency set aligned with imported modules."""
     backend_root = Path(__file__).resolve().parents[3]
     requirements = (
-        backend_root
-        / "services"
-        / "a2a-external-agent"
-        / "requirements.txt"
+        backend_root / "services" / "a2a-external-agent" / "requirements.txt"
     ).read_text(encoding="utf-8")
     assert any(
-        line.strip().lower().startswith("structlog")
-        for line in requirements.splitlines()
+        line.strip().lower().startswith("structlog") for line in requirements.splitlines()
     ), "Docker requirements must install structlog used by server.py"

@@ -7,12 +7,12 @@
 
 ## 1. D0 范围（按 ADR-0016 §2.1 + §3.1）
 
-| 组件 | 本批状态 | 备注 |
-|---|---|---|
-| Debezium (CDC, PG 16 → Kafka) | ✅ Chart 落地 (`infra/helm/charts/debezium/`) | D0 范围 |
-| OpenLineage + Marquez (lineage) | ✅ Chart 落地 (`infra/helm/charts/marquez/`) | D0 范围 |
-| DataHub (catalog) | ⚠️ Stub chart (`infra/helm/charts/datahub/`, enabled=false) | D1+ 落地 |
-| Great Expectations (quality) | ⚠️ Stub chart (`infra/helm/charts/ge/`, enabled=false) | D0 turns on with alembic/SQLAlchemy hooks |
+| 组件                            | 本批状态                                                    | 备注                                      |
+| ------------------------------- | ----------------------------------------------------------- | ----------------------------------------- |
+| Debezium (CDC, PG 16 → Kafka)   | ✅ Chart 落地 (`infra/helm/charts/debezium/`)               | D0 范围                                   |
+| OpenLineage + Marquez (lineage) | ✅ Chart 落地 (`infra/helm/charts/marquez/`)                | D0 范围                                   |
+| DataHub (catalog)               | ⚠️ Stub chart (`infra/helm/charts/datahub/`, enabled=false) | D1+ 落地                                  |
+| Great Expectations (quality)    | ⚠️ Stub chart (`infra/helm/charts/ge/`, enabled=false)      | D0 turns on with alembic/SQLAlchemy hooks |
 
 ## 2. 落地清单
 
@@ -33,21 +33,21 @@ infra/tests/test_data_d0_d8_d0.py
 
 ## 3. 13 项硬规则验收(D0 scope)
 
-| # | 硬规则 | 证据 | 状态 |
-|---|---|---|---|
-| 1 | Swagger 没有接口 | (n/a D0) | — |
-| 2 | PRD Requirement ID | (n/a D0) | — |
-| 3 | 没有 tenant 不访问 repository | debezium + marquez 都有 tenant 字段(D0 chart 注入) | ✅ chart 层面 |
-| 4 | 外部系统 ACL Client | (n/a D0) | — |
-| 5 | 禁止 fallback | (n/a D0) | — |
-| 6 | ruff + pyright | (n/a D0,后续 batch) | — |
-| 7 | 不跳 tests | 6 e2e 全绿 | ✅ |
-| 8 | K8s readiness + 回滚 | helm chart 用 default probes (后续 PR 补充) | ⚠️ partial |
-| 9 | audit/metrics/trace | marquez partitionByTenant=true | ✅ D0 |
-| 10 | 验收证据 | 本文 | ✅ |
-| 11 | helm-docs | (D1+ 补) | — |
-| 12 | secret 扫描 | (GA 已收口) | ✅ |
-| 13 | NetworkPolicy | (后续 PR 补) | ⚠️ partial |
+| #   | 硬规则                        | 证据                                               | 状态          |
+| --- | ----------------------------- | -------------------------------------------------- | ------------- |
+| 1   | Swagger 没有接口              | (n/a D0)                                           | —             |
+| 2   | PRD Requirement ID            | (n/a D0)                                           | —             |
+| 3   | 没有 tenant 不访问 repository | debezium + marquez 都有 tenant 字段(D0 chart 注入) | ✅ chart 层面 |
+| 4   | 外部系统 ACL Client           | (n/a D0)                                           | —             |
+| 5   | 禁止 fallback                 | (n/a D0)                                           | —             |
+| 6   | ruff + pyright                | (n/a D0,后续 batch)                                | —             |
+| 7   | 不跳 tests                    | 6 e2e 全绿                                         | ✅            |
+| 8   | K8s readiness + 回滚          | helm chart 用 default probes (后续 PR 补充)        | ⚠️ partial    |
+| 9   | audit/metrics/trace           | marquez partitionByTenant=true                     | ✅ D0         |
+| 10  | 验收证据                      | 本文                                               | ✅            |
+| 11  | helm-docs                     | (D1+ 补)                                           | —             |
+| 12  | secret 扫描                   | (GA 已收口)                                        | ✅            |
+| 13  | NetworkPolicy                 | (后续 PR 补)                                       | ⚠️ partial    |
 
 ## 4. 本地实际运行
 
@@ -72,6 +72,7 @@ $ pytest infra/tests/test_data_d0_d8_d0.py -q
 ## 6. 后续推进路径
 
 按 ADR-0016 §6.5 / §6:
+
 - D1: 跨域血缘追踪(每个 CDC 事件 + outbox 事件携带 lineage hints, 落 Marquez)
 - D2: DataHub 数据产品建模(打开 datahub chart,写元数据 ingest pipeline)
 - D3: GE + Airflow 集成(打开 ge chart,DDL migration 必须过 expectations)

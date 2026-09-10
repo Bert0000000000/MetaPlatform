@@ -31,10 +31,16 @@ _T = "cope2e"
 _NOW = datetime.now(UTC)
 
 
-def _prop(slug: str, fmt: PropertyFormat = PropertyFormat.STRING, type_id: str = "string") -> Property:
+def _prop(
+    slug: str, fmt: PropertyFormat = PropertyFormat.STRING, type_id: str = "string"
+) -> Property:
     return Property(
         rid=ClassRef(f"ont.{_T}.prop.{slug}.v1"),
-        type_id=type_id, nullable=True, primary_key=False, title=slug, format=fmt,
+        type_id=type_id,
+        nullable=True,
+        primary_key=False,
+        title=slug,
+        format=fmt,
     )
 
 
@@ -43,9 +49,14 @@ def _ot(slug: str, marking: tuple[str, ...] = ()) -> ObjectType:
         rid=ClassRef(f"ont.{_T}.obj.{slug}.v1"),
         primary_key=(ClassRef(f"ont.{_T}.prop.{slug}-id.v1"),),
         properties=(
-            Property(rid=ClassRef(f"ont.{_T}.prop.{slug}-id.v1"), type_id="string",
-                     nullable=False, primary_key=True, title="id",
-                     format=PropertyFormat.STRING),
+            Property(
+                rid=ClassRef(f"ont.{_T}.prop.{slug}-id.v1"),
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="id",
+                format=PropertyFormat.STRING,
+            ),
             _prop("amount", PropertyFormat.INTEGER, "integer"),
             _prop("status"),
         ),
@@ -83,21 +94,36 @@ class _FakeRepo:
         )
 
     def search_objects(
-        self, text: str, class_rid: str | None = None, top_k: int = 5,
+        self,
+        text: str,
+        class_rid: str | None = None,
+        top_k: int = 5,
     ) -> list[dict]:
         return []
 
     def propose_action(
-        self, action_rid, parameters, target_iid, impact_summary, expected_diff=None,
+        self,
+        action_rid,
+        parameters,
+        target_iid,
+        impact_summary,
+        expected_diff=None,
     ):
         from types import SimpleNamespace
-        self.proposals.append({
-            "action_rid": str(action_rid), "parameters": parameters,
-            "target_iid": target_iid, "impact_summary": impact_summary,
-        })
+
+        self.proposals.append(
+            {
+                "action_rid": str(action_rid),
+                "parameters": parameters,
+                "target_iid": target_iid,
+                "impact_summary": impact_summary,
+            }
+        )
         from mate_kernel.action.engine import ProposalStatus
+
         return SimpleNamespace(
-            proposal_id="prop-xyz", status=ProposalStatus.PENDING,
+            proposal_id="prop-xyz",
+            status=ProposalStatus.PENDING,
             impact_summary=impact_summary,
         )
 
@@ -113,8 +139,13 @@ class TestBuildOntologyTools:
         # AI-11 起 search_objects 由 kernel 虚拟注册表内建（list/inspect 之后、
         # query_* 之前），propose×3 由 copilot 追加；无重名工具。
         assert names == [
-            "list_classes", "inspect_class", "search_objects", "query_order",
-            "propose_action", "propose_create_instance", "propose_model_type",
+            "list_classes",
+            "inspect_class",
+            "search_objects",
+            "query_order",
+            "propose_action",
+            "propose_create_instance",
+            "propose_model_type",
         ]
         assert len(names) == len(set(names))  # 无重名
         # HITL 边界：confirm/reject/execute 绝不作为 LLM 工具出现
@@ -128,16 +159,22 @@ class TestBuildOntologyTools:
     def test_field_enum_baked(self) -> None:
         tools = build_ontology_tools(_repo(), agent_markings=())
         q = next(t for t in tools if t["function"]["name"] == "query_order")
-        enum = q["function"]["parameters"]["properties"]["filters"]["items"]["properties"]["field"]["enum"]
+        enum = q["function"]["parameters"]["properties"]["filters"]["items"]["properties"]["field"][
+            "enum"
+        ]
         assert "amount" in enum
 
 
 class TestExecuteOntologyTool:
     def test_query_tool_executes_ir(self) -> None:
         repo = _repo()
-        out = execute_ontology_tool(repo, "query_order", {
-            "filters": [{"field": "status", "op": "eq", "value": "open"}],
-        })
+        out = execute_ontology_tool(
+            repo,
+            "query_order",
+            {
+                "filters": [{"field": "status", "op": "eq", "value": "open"}],
+            },
+        )
         assert out["kind"] == "objects"
         assert out["rows"][0]["amount"] == 100
         assert out["result_schema"]["amount"]["rid"].endswith("prop.amount.v1")
@@ -150,9 +187,13 @@ class TestExecuteOntologyTool:
         assert slugs == {"order", "ledger"}
 
     def test_inspect_class(self) -> None:
-        out = execute_ontology_tool(_repo(), "inspect_class", {
-            "class_rid": f"ont.{_T}.obj.order.v1",
-        })
+        out = execute_ontology_tool(
+            _repo(),
+            "inspect_class",
+            {
+                "class_rid": f"ont.{_T}.obj.order.v1",
+            },
+        )
         assert out["class_rid"] == f"ont.{_T}.obj.order.v1"
         assert any(p["slug"] == "amount" for p in out["properties"])
 
@@ -162,7 +203,10 @@ class TestExecuteOntologyTool:
 
     def test_marked_type_direct_call_allowed_with_marking(self) -> None:
         out = execute_ontology_tool(
-            _repo(), "query_ledger", {}, agent_markings=("domain:finance",),
+            _repo(),
+            "query_ledger",
+            {},
+            agent_markings=("domain:finance",),
         )
         assert out["kind"] == "objects"
 

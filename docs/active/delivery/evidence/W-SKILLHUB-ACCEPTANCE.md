@@ -10,26 +10,26 @@
 
 ## 2. Backend：marketplace skill kind
 
-| 文件 | 改动 |
-|---|---|
-| `marketplace/skillhub/store.py` | **新增** `SkillHubStore`（SQL 表 `skillhub_skills` + 内存兜底），`Skill`/`SkillORM`，`register_skill` installer 对接 |
-| `marketplace/skillhub/api.py` | **新增** 6 端点：上传/浏览/详情/下载/安装/删除（scope 门禁 + 租户可见性） |
-| `marketplace/jobs/installer_skill.py` | **新增** `SkillInstaller(kind="skill")` |
-| `marketplace/jobs/orchestrator.py` | skill 分支（`mp_client.skill`） |
-| `marketplace/api/browse.py` `installed.py` | kind 校验加 `skill` |
-| `mate-app-hub/marketplace.py` | skillhub router 挂载（`/api/v1/marketplace/skills/*`） |
-| `contracts/openapi/services/marketplace.yaml` | 7 处 kind enum 加 `skill` + 4 条 skillhub 路径 + Skill/SkillUpload schema |
+| 文件                                          | 改动                                                                                                                 |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `marketplace/skillhub/store.py`               | **新增** `SkillHubStore`（SQL 表 `skillhub_skills` + 内存兜底），`Skill`/`SkillORM`，`register_skill` installer 对接 |
+| `marketplace/skillhub/api.py`                 | **新增** 6 端点：上传/浏览/详情/下载/安装/删除（scope 门禁 + 租户可见性）                                            |
+| `marketplace/jobs/installer_skill.py`         | **新增** `SkillInstaller(kind="skill")`                                                                              |
+| `marketplace/jobs/orchestrator.py`            | skill 分支（`mp_client.skill`）                                                                                      |
+| `marketplace/api/browse.py` `installed.py`    | kind 校验加 `skill`                                                                                                  |
+| `mate-app-hub/marketplace.py`                 | skillhub router 挂载（`/api/v1/marketplace/skills/*`）                                                               |
+| `contracts/openapi/services/marketplace.yaml` | 7 处 kind enum 加 `skill` + 4 条 skillhub 路径 + Skill/SkillUpload schema                                            |
 
 ## 3. Frontend：三 HUB + SKILL HUB 页面
 
-| 文件 | 改动 |
-|---|---|
-| `api/mcphub/skills.ts` | **新增** skillhub client（list/upload/get/download/install/delete） |
-| `pages/mcp/SkillHubPage.tsx` | **新增** SKILL HUB 页：公开 SKILL 列表 + 上传 Modal + 下载/安装/删除按钮 |
-| `pages/mcp/A2aInternalAgentsPage.tsx` | **新增** 内部数字员工页（连 dw employees） |
+| 文件                                         | 改动                                                                                                                                                                                       |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `api/mcphub/skills.ts`                       | **新增** skillhub client（list/upload/get/download/install/delete）                                                                                                                        |
+| `pages/mcp/SkillHubPage.tsx`                 | **新增** SKILL HUB 页：公开 SKILL 列表 + 上传 Modal + 下载/安装/删除按钮                                                                                                                   |
+| `pages/mcp/A2aInternalAgentsPage.tsx`        | **新增** 内部数字员工页（连 dw employees）                                                                                                                                                 |
 | `packages/shared/src/config/platformMenu.ts` | mcphub 归组修正：SKILL=skill-hub；MCP=overview/tools/servers/clients/debugger/resources/prompts/权限/审计/监控/IDE；A2A=internal-agents/external-agents/integrations/trusts/collaborations |
-| `pages/mcp/McpCenterLayout.tsx` | tab 标签改为 **SKILL HUB / MCP HUB / A2A 注册中心** + 路径归组 + 默认页 |
-| `apps/web/src/App.tsx` | 加 `/mcp/skill-hub`、`/mcp/internal-agents` 路由；index 指向 skill-hub |
+| `pages/mcp/McpCenterLayout.tsx`              | tab 标签改为 **SKILL HUB / MCP HUB / A2A 注册中心** + 路径归组 + 默认页                                                                                                                    |
+| `apps/web/src/App.tsx`                       | 加 `/mcp/skill-hub`、`/mcp/internal-agents` 路由；index 指向 skill-hub                                                                                                                     |
 
 ## 4. 测试证据
 

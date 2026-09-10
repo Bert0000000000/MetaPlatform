@@ -18,12 +18,12 @@ IAM-COPILOT-04  (3 周)  MARKETPLACE-05      (4 周)
 
 今日（2026-08-06）追加 **RUNTIME-MVP-02** —— 一次性把剩余 4 个 Batch 的"可验收"增量合并提速：
 
-| 原 Batch | RUNTIME-MVP-02 内增量 |
-|---|---|
-| RUNTIME-OPT | ObjectSet 真在 PG 上跑（SQLCompiler + 完整 rid 字段名） |
+| 原 Batch       | RUNTIME-MVP-02 内增量                                                                                                                           |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| RUNTIME-OPT    | ObjectSet 真在 PG 上跑（SQLCompiler + 完整 rid 字段名）                                                                                         |
 | RUNTIME-K8S-02 | Function Sandbox 默认 backend = subprocess（`K8sSandboxRunner` 选 `backend="subprocess"`；`sys.platform == "win32"` 时 `import resource` 守卫） |
-| IAM-COPILOT-04 | ManagerContext 走 dev profile（`LEGACY_LOGIN_COMPAT=1`），AGENT-EXT-01 super-copilot 可用 |
-| MARKETPLACE-05 | 第三方 sandbox 占位：默认 subprocess；为 L3 MicroVM 留口子（`backend="microvm"` 待接） |
+| IAM-COPILOT-04 | ManagerContext 走 dev profile（`LEGACY_LOGIN_COMPAT=1`），AGENT-EXT-01 super-copilot 可用                                                       |
+| MARKETPLACE-05 | 第三方 sandbox 占位：默认 subprocess；为 L3 MicroVM 留口子（`backend="microvm"` 待接）                                                          |
 
 ## 决策
 
@@ -38,19 +38,19 @@ IAM-COPILOT-04  (3 周)  MARKETPLACE-05      (4 周)
 
 ## 实施清单
 
-| 文件 | 改动 |
-|---|---|
-| `packages/mate-kernel/src/mate_kernel/objectset/sql_compiler.py` | **NEW** —— CompiledFilter → 参数化 SQL WHERE + ORDER BY + LIMIT/OFFSET |
-| `packages/mate-kernel/src/mate_kernel/objectset/__init__.py` | +`SQLCompiler`, `is_safe_identifier` |
-| `packages/mate-kernel/src/mate_kernel/objectset/compiler.py` | FIELD regex 接受 `ont.<tenant>.prop.<slug>.v<n>` 完整 rid |
-| `packages/mate-kernel/src/mate_kernel/sandbox/k8s.py` | `import resource` 守卫（win32）；`SubprocessExecutor` 真子进程（timeout + RLIMIT_AS） |
-| `packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py` | **NEW** —— PgOntologyRepository（psycopg2 sync + asyncio.to_thread） |
-| `packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py` | `_call()` helper + 7 handler 全部 `await _call(_repo(request), "method_name", ...)` |
-| `packages/mate-tech-ont/tests/integration/test_v2_kernel_pg_e2e.py` | **NEW** —— 5 PG 真落地测试（含 ObjectSet filter 真 PG SQL） |
-| `packages/mate-kernel/tests/test_objectset_sql_compiler.py` | **NEW** —— 15 SQLCompiler 单测 |
-| `packages/mate-kernel/tests/test_sandbox_subprocess.py` | **NEW** —— 6 SubprocessExecutor 单测 |
-| `packages/mate-kernel/tests/test_sandbox_k8s.py` | M —— test_submit_no_callable 接受 "no callable" / "NO_HANDLER" |
-| `packages/mate-kernel/tests/e2e/test_kitchen_sink_e2e.py` | M —— test_handler_executes 接受 "42" in stdout |
+| 文件                                                                | 改动                                                                                  |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `packages/mate-kernel/src/mate_kernel/objectset/sql_compiler.py`    | **NEW** —— CompiledFilter → 参数化 SQL WHERE + ORDER BY + LIMIT/OFFSET                |
+| `packages/mate-kernel/src/mate_kernel/objectset/__init__.py`        | +`SQLCompiler`, `is_safe_identifier`                                                  |
+| `packages/mate-kernel/src/mate_kernel/objectset/compiler.py`        | FIELD regex 接受 `ont.<tenant>.prop.<slug>.v<n>` 完整 rid                             |
+| `packages/mate-kernel/src/mate_kernel/sandbox/k8s.py`               | `import resource` 守卫（win32）；`SubprocessExecutor` 真子进程（timeout + RLIMIT_AS） |
+| `packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py`     | **NEW** —— PgOntologyRepository（psycopg2 sync + asyncio.to_thread）                  |
+| `packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py`         | `_call()` helper + 7 handler 全部 `await _call(_repo(request), "method_name", ...)`   |
+| `packages/mate-tech-ont/tests/integration/test_v2_kernel_pg_e2e.py` | **NEW** —— 5 PG 真落地测试（含 ObjectSet filter 真 PG SQL）                           |
+| `packages/mate-kernel/tests/test_objectset_sql_compiler.py`         | **NEW** —— 15 SQLCompiler 单测                                                        |
+| `packages/mate-kernel/tests/test_sandbox_subprocess.py`             | **NEW** —— 6 SubprocessExecutor 单测                                                  |
+| `packages/mate-kernel/tests/test_sandbox_k8s.py`                    | M —— test_submit_no_callable 接受 "no callable" / "NO_HANDLER"                        |
+| `packages/mate-kernel/tests/e2e/test_kitchen_sink_e2e.py`           | M —— test_handler_executes 接受 "42" in stdout                                        |
 
 ## 验收
 

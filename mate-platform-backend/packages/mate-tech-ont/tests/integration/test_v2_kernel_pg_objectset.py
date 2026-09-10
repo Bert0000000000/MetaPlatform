@@ -175,7 +175,8 @@ class TestTruthyPlaceholder:
         assert _placeholders(where) == len(params) == 2
 
     def test_truthy_filter_executes_without_indexerror(
-        self, capture_repo: tuple[PgOntologyRepository, _CaptureCursor],
+        self,
+        capture_repo: tuple[PgOntologyRepository, _CaptureCursor],
     ) -> None:
         repo, cur = capture_repo
         os_ = ObjectSet(class_rid=_ot().rid, filter_expr="status")
@@ -212,20 +213,21 @@ class TestSlugNormalization:
     def test_rewrite_descends_children(self) -> None:
         cf = FilterCompiler().compile("amount > 1 OR (status == 'x' AND amount < 9)")
         mapping = {p: f"ont.{_T}.prop.{p}.v1" for p in ("amount", "status")}
-        _where, params = _RepoSQLCompiler().compile_where(
-            _rewrite_filter_fields(cf, mapping)
-        )
+        _where, params = _RepoSQLCompiler().compile_where(_rewrite_filter_fields(cf, mapping))
         assert params.count(f"ont.{_T}.prop.amount.v1") == 2
         assert params.count(f"ont.{_T}.prop.status.v1") == 1
 
     def test_full_rid_filter_unchanged(
-        self, capture_repo: tuple[PgOntologyRepository, _CaptureCursor],
+        self,
+        capture_repo: tuple[PgOntologyRepository, _CaptureCursor],
     ) -> None:
         repo, cur = capture_repo
-        repo.evaluate_object_set(ObjectSet(
-            class_rid=_ot().rid,
-            filter_expr=f"ont.{_T}.prop.amount.v1 >= 15",
-        ))
+        repo.evaluate_object_set(
+            ObjectSet(
+                class_rid=_ot().rid,
+                filter_expr=f"ont.{_T}.prop.amount.v1 >= 15",
+            )
+        )
         _, params = cur.executed[-1]
         assert f"ont.{_T}.prop.amount.v1" in params
 
@@ -239,46 +241,64 @@ class TestSlugNormalization:
 
 class TestSortCompilation:
     def test_numeric_sort_uses_numeric_cast(
-        self, capture_repo: tuple[PgOntologyRepository, _CaptureCursor],
+        self,
+        capture_repo: tuple[PgOntologyRepository, _CaptureCursor],
     ) -> None:
         repo, cur = capture_repo
-        repo.evaluate_object_set(ObjectSet(
-            class_rid=_ot().rid, filter_expr="", sort=("-amount",),
-        ))
+        repo.evaluate_object_set(
+            ObjectSet(
+                class_rid=_ot().rid,
+                filter_expr="",
+                sort=("-amount",),
+            )
+        )
         sql, _ = cur.executed[-1]
         assert f"(props ->> 'ont.{_T}.prop.amount.v1')::numeric DESC" in sql
 
     def test_text_sort_uses_text_cast(
-        self, capture_repo: tuple[PgOntologyRepository, _CaptureCursor],
+        self,
+        capture_repo: tuple[PgOntologyRepository, _CaptureCursor],
     ) -> None:
         """status 是 string —— 旧版 ::numeric 会让任何非数值行 DataError。"""
         repo, cur = capture_repo
-        repo.evaluate_object_set(ObjectSet(
-            class_rid=_ot().rid, filter_expr="", sort=("status",),
-        ))
+        repo.evaluate_object_set(
+            ObjectSet(
+                class_rid=_ot().rid,
+                filter_expr="",
+                sort=("status",),
+            )
+        )
         sql, _ = cur.executed[-1]
         assert f"(props ->> 'ont.{_T}.prop.status.v1')::text ASC" in sql
 
     def test_unknown_sort_field_defaults_to_text(
-        self, capture_repo: tuple[PgOntologyRepository, _CaptureCursor],
+        self,
+        capture_repo: tuple[PgOntologyRepository, _CaptureCursor],
     ) -> None:
         repo, cur = capture_repo
-        repo.evaluate_object_set(ObjectSet(
-            class_rid=_ot().rid, filter_expr="", sort=("mystery",),
-        ))
+        repo.evaluate_object_set(
+            ObjectSet(
+                class_rid=_ot().rid,
+                filter_expr="",
+                sort=("mystery",),
+            )
+        )
         sql, _ = cur.executed[-1]
         assert "(props ->> 'mystery')::text ASC" in sql
 
     def test_unsafe_sort_field_rejected(
-        self, capture_repo: tuple[PgOntologyRepository, _CaptureCursor],
+        self,
+        capture_repo: tuple[PgOntologyRepository, _CaptureCursor],
     ) -> None:
         repo, _cur = capture_repo
         with pytest.raises(ValueError, match="unsafe sort field"):
-            repo.evaluate_object_set(ObjectSet(
-                class_rid=_ot().rid,
-                filter_expr="",
-                sort=("x'); DROP TABLE ont_individual; --",),
-            ))
+            repo.evaluate_object_set(
+                ObjectSet(
+                    class_rid=_ot().rid,
+                    filter_expr="",
+                    sort=("x'); DROP TABLE ont_individual; --",),
+                )
+            )
 
 
 # ─────────────────── PG 可达时的真实执行（skip 规则同 pg_e2e） ───────────────────
@@ -289,6 +309,7 @@ PG_DSN = os.getenv("PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform
 def _pg_available() -> bool:
     try:
         import psycopg2  # type: ignore
+
         conn = psycopg2.connect(PG_DSN, connect_timeout=2)
         conn.close()
         return True
@@ -321,27 +342,41 @@ class TestRealPgSlugQuery:
         repo.create_individual(_individual("c", amount=25, status="open"))
 
         # slug 数值过滤（修复前恒空）
-        got = repo.evaluate_object_set(ObjectSet(
-            class_rid=_ot().rid, filter_expr="amount >= 15",
-        ))
+        got = repo.evaluate_object_set(
+            ObjectSet(
+                class_rid=_ot().rid,
+                filter_expr="amount >= 15",
+            )
+        )
         assert {i.primary_key for i in got} == {"b", "c"}
 
         # slug 过滤 + slug 降序排序（修复前 sort 键恒 NULL + ::numeric）
-        got = repo.evaluate_object_set(ObjectSet(
-            class_rid=_ot().rid, filter_expr="status == 'open'", sort=("-amount",),
-        ))
+        got = repo.evaluate_object_set(
+            ObjectSet(
+                class_rid=_ot().rid,
+                filter_expr="status == 'open'",
+                sort=("-amount",),
+            )
+        )
         assert [i.primary_key for i in got] == ["c", "a"]
 
         # 文本字段排序不 DataError（修复前 ::numeric 直接炸）
-        got = repo.evaluate_object_set(ObjectSet(
-            class_rid=_ot().rid, filter_expr="", sort=("status",),
-        ))
+        got = repo.evaluate_object_set(
+            ObjectSet(
+                class_rid=_ot().rid,
+                filter_expr="",
+                sort=("status",),
+            )
+        )
         assert [i.primary_key for i in got] == ["b", "a", "c"]
 
         # truthy 裸字段（修复前 IndexError）
-        got = repo.evaluate_object_set(ObjectSet(
-            class_rid=_ot().rid, filter_expr="status",
-        ))
+        got = repo.evaluate_object_set(
+            ObjectSet(
+                class_rid=_ot().rid,
+                filter_expr="status",
+            )
+        )
         assert len(got) == 3
 
         # 清理

@@ -1,4 +1,5 @@
 """Tests for the Temporal-to-order-review action adapter."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -79,7 +80,10 @@ async def test_executor_confirms_proposal_through_transactional_service(
 
     assert result["status"] == "confirmed"
     assert result["proposal_id"] == proposal_id
-    assert service.get_order(tenant_id="tenant-acme", order_id="order-1001")["review_status"] == "approved"
+    assert (
+        service.get_order(tenant_id="tenant-acme", order_id="order-1001")["review_status"]
+        == "approved"
+    )
     assert len(service.list_follow_up_tasks(tenant_id="tenant-acme")) == 1
     events = service.list_outbox_events(tenant_id="tenant-acme")
     assert len(events) == 3

@@ -2,6 +2,7 @@
 
 TC-2.1.1 + TC-2.1.6 wrapper.
 """
+
 from __future__ import annotations
 
 import logging
@@ -29,8 +30,12 @@ class PGStore:
         tenant_id: str = "default",
     ) -> bool:
         return self._pg.upsert_chunk(
-            chunk_id, document_id, text, metadata,
-            embedding=embedding, tenant_id=tenant_id,
+            chunk_id,
+            document_id,
+            text,
+            metadata,
+            embedding=embedding,
+            tenant_id=tenant_id,
         )
 
     def save_chunks_bulk(self, chunks: list[dict[str, Any]]) -> int:

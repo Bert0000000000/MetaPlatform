@@ -4,6 +4,7 @@ Development and test environments may use deterministic local adapters, but
 staging/production must never turn an unavailable dependency into a fake
 success.  The profile is explicit so local acceptance remains unchanged.
 """
+
 from __future__ import annotations
 
 import os
@@ -29,8 +30,7 @@ def require_real_dependency(feature: str, configured: bool) -> None:
     """Reject a missing production dependency with an actionable error."""
     if is_production_profile() and not configured:
         raise RuntimeError(
-            f"{feature} is required in {runtime_profile()} profile; "
-            "synthetic fallback is disabled"
+            f"{feature} is required in {runtime_profile()} profile; synthetic fallback is disabled"
         )
 
 
@@ -38,6 +38,5 @@ def reject_production_fallback(feature: str) -> None:
     """Raise when a production request would otherwise use a fake result."""
     if is_production_profile():
         raise RuntimeError(
-            f"{feature} unavailable in {runtime_profile()} profile; "
-            "synthetic fallback is disabled"
+            f"{feature} unavailable in {runtime_profile()} profile; synthetic fallback is disabled"
         )

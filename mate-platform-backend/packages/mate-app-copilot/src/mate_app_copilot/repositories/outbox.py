@@ -1,4 +1,5 @@
 """SQL-backed outbox implementation for Copilot's durable audit boundary."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
@@ -88,12 +89,16 @@ class SqlOutboxWriter:
     def fetch_pending(self, *, limit: int = 100) -> list[OutboxRecord]:
         session = _session()
         try:
-            rows = session.execute(
-                select(OutboxEventORM)
-                .where(OutboxEventORM.status == "pending")
-                .order_by(OutboxEventORM.created_at, OutboxEventORM.id)
-                .limit(limit)
-            ).scalars().all()
+            rows = (
+                session.execute(
+                    select(OutboxEventORM)
+                    .where(OutboxEventORM.status == "pending")
+                    .order_by(OutboxEventORM.created_at, OutboxEventORM.id)
+                    .limit(limit)
+                )
+                .scalars()
+                .all()
+            )
             return [_record(row) for row in rows]
         finally:
             session.close()

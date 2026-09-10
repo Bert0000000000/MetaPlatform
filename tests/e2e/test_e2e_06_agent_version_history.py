@@ -71,9 +71,7 @@ async def test_e2e_06_agent_version_history_flow(
         assert upd_resp.json()["traceId"] == trace_id
 
     # 验证最后一次更新的字段生效
-    final_resp = await agent_client.get(
-        f"{AGENT_BASE}/{agent_id}", headers=tenant_headers
-    )
+    final_resp = await agent_client.get(f"{AGENT_BASE}/{agent_id}", headers=tenant_headers)
     assert final_resp.status_code == 200
     final_agent = final_resp.json()["data"]
     assert final_agent["status"] == "ACTIVE"
@@ -133,9 +131,7 @@ async def test_e2e_06_agent_crud_lifecycle(
     agent_id = create_resp.json()["data"]["agentId"]
 
     # 查询详情
-    get_resp = await agent_client.get(
-        f"{AGENT_BASE}/{agent_id}", headers=tenant_headers
-    )
+    get_resp = await agent_client.get(f"{AGENT_BASE}/{agent_id}", headers=tenant_headers)
     assert get_resp.status_code == 200
     assert get_resp.json()["data"]["agentId"] == agent_id
 
@@ -150,9 +146,7 @@ async def test_e2e_06_agent_crud_lifecycle(
     assert "e2e-agent-06-crud" in codes
 
     # 删除
-    del_resp = await agent_client.delete(
-        f"{AGENT_BASE}/{agent_id}", headers=tenant_headers
-    )
+    del_resp = await agent_client.delete(f"{AGENT_BASE}/{agent_id}", headers=tenant_headers)
     assert del_resp.status_code == 200
     assert del_resp.json()["data"]["deleted"] is True
 

@@ -4,6 +4,7 @@ CostRecorder.summary() is now async and prefers a SQL aggregate over
 llm_usage; the memory deque path remains as fallback with the same
 output shape. Also pins the bounded memory deque (maxlen=10_000).
 """
+
 from __future__ import annotations
 
 import pytest

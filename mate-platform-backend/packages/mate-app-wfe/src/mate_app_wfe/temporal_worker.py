@@ -1,4 +1,5 @@
 """Temporal workflow and worker definitions for the WFE application."""
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -21,8 +22,7 @@ REJECT_SIGNAL = "mate.workflow.reject"
 class ActionExecutor(Protocol):
     """Application action port used by the Temporal activity."""
 
-    async def execute(self, payload: dict[str, Any]) -> dict[str, Any]:
-        ...
+    async def execute(self, payload: dict[str, Any]) -> dict[str, Any]: ...
 
 
 def make_action_activity(
@@ -79,8 +79,9 @@ class PlanWorkflow:
                 self._state["pending_step_id"] = step_id
                 self._touch()
                 await workflow.wait_condition(
-                    lambda step_id=step_id: step_id in self._approved_steps
-                    or step_id in self._rejected_steps
+                    lambda step_id=step_id: (
+                        step_id in self._approved_steps or step_id in self._rejected_steps
+                    )
                 )
                 if step_id in self._rejected_steps:
                     failure = "rejected by operator"
@@ -130,7 +131,9 @@ class PlanWorkflow:
         self._rejected_steps.add(step_id)
 
     def _initial_state(
-        self, envelope: dict[str, Any], plan: dict[str, Any],
+        self,
+        envelope: dict[str, Any],
+        plan: dict[str, Any],
     ) -> dict[str, Any]:
         now = workflow.now().isoformat()
         return {
@@ -148,7 +151,9 @@ class PlanWorkflow:
         }
 
     def _failed_state(
-        self, envelope: dict[str, Any], error: str,
+        self,
+        envelope: dict[str, Any],
+        error: str,
     ) -> dict[str, Any]:
         self._state = {
             "run_id": str(envelope.get("run_id", "")),

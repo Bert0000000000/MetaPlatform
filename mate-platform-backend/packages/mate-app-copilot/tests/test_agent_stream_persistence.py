@@ -5,6 +5,7 @@ context reloads survive via /conversations/{id}/messages. Agent timeline
 (reasoning / tool_call / tool_result) is stashed under
 MessageORM.metadata_json["agentSteps"].
 """
+
 from __future__ import annotations
 
 import os
@@ -104,23 +105,30 @@ class _StubOrchestratorClient:
         self.auth = kwargs.get("auth")
 
     async def authorized_role_snapshot(
-        self, *, tenant_id: str, fallback_token: str | None = None,
+        self,
+        *,
+        tenant_id: str,
+        fallback_token: str | None = None,
     ) -> dict[str, Any]:
         return {
-            "items": [{
-                "role": "workflow",
-                "name": "Workflow Employee",
-                "capabilities": [
-                    {"name": "delegate_run", "worker_kind": "a2a", "ref": "agent-recon"},
-                ],
-            }],
+            "items": [
+                {
+                    "role": "workflow",
+                    "name": "Workflow Employee",
+                    "capabilities": [
+                        {"name": "delegate_run", "worker_kind": "a2a", "ref": "agent-recon"},
+                    ],
+                }
+            ],
             "capability_version": "snapshot-v1",
             "actor_roles_digest": "actor-roles-v1",
         }
 
 
 def test_agent_stream_persists_user_and_assistant(
-    sql_client, auth_headers_acme, monkeypatch,
+    sql_client,
+    auth_headers_acme,
+    monkeypatch,
 ) -> None:
     """POST /chat/agent/stream with conversationId → both rows land in DB."""
     from mate_app_copilot.api import app as copilot_app_module
@@ -207,7 +215,9 @@ def test_agent_stream_persists_user_and_assistant(
 
 
 def test_agent_stream_without_conversation_id_still_streams(
-    sql_client, auth_headers_acme, monkeypatch,
+    sql_client,
+    auth_headers_acme,
+    monkeypatch,
 ) -> None:
     """No conversationId → still works (back-compat), no DB rows written."""
     from mate_app_copilot.api import app as copilot_app_module

@@ -5,6 +5,7 @@ server defaults, and the downgrade path. Uses Alembic's command API
 against a temporary SQLite file so the full migration chain
 (0001 → 0007) is exercised end-to-end.
 """
+
 from __future__ import annotations
 
 import os
@@ -88,9 +89,7 @@ def test_outbox_event_table_exists_after_upgrade(upgraded_engine):
 
 def test_outbox_event_tenant_id_not_null(upgraded_engine):
     """tenant_id column is NOT NULL (SEC-TENANT-01 hard rule 3 alignment)."""
-    columns = {
-        c["name"]: c for c in inspect(upgraded_engine).get_columns("outbox_event")
-    }
+    columns = {c["name"]: c for c in inspect(upgraded_engine).get_columns("outbox_event")}
     assert "tenant_id" in columns
     assert columns["tenant_id"]["nullable"] is False
 
@@ -106,9 +105,7 @@ def test_outbox_event_status_default_pending(upgraded_engine):
             )
         )
     with upgraded_engine.connect() as conn:
-        result = conn.execute(
-            text("SELECT status FROM outbox_event WHERE id = 'evt-1'")
-        )
+        result = conn.execute(text("SELECT status FROM outbox_event WHERE id = 'evt-1'"))
         row = result.fetchone()
     assert row is not None
     assert row[0] == "pending"
@@ -116,10 +113,7 @@ def test_outbox_event_status_default_pending(upgraded_engine):
 
 def test_outbox_event_indexes_present(upgraded_engine):
     """All 5 named indexes exist (4 single-column + 1 composite)."""
-    indexes = {
-        idx["name"]: idx
-        for idx in inspect(upgraded_engine).get_indexes("outbox_event")
-    }
+    indexes = {idx["name"]: idx for idx in inspect(upgraded_engine).get_indexes("outbox_event")}
     for name in EXPECTED_INDEXES:
         assert name in indexes, f"missing index {name}"
     # composite index covers tenant_id + status
@@ -131,9 +125,7 @@ def test_outbox_event_indexes_present(upgraded_engine):
 
 def test_outbox_event_lineage_hints_nullable(upgraded_engine):
     """lineage_hints column is nullable (aligns with D1 lineage side-car)."""
-    columns = {
-        c["name"]: c for c in inspect(upgraded_engine).get_columns("outbox_event")
-    }
+    columns = {c["name"]: c for c in inspect(upgraded_engine).get_columns("outbox_event")}
     assert "lineage_hints" in columns
     assert columns["lineage_hints"]["nullable"] is True
 

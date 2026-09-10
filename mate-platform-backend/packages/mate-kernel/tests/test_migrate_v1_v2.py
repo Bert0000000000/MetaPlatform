@@ -33,9 +33,7 @@ def test_migrate_produces_v2_records() -> None:
     # hasCustomer
     assert len(out["link_type"]) == 1
     # transitive axiom (relatedTo)
-    assert any(
-        ax["kind"] == "transitivity" for ax in out["axiom"]
-    )
+    assert any(ax["kind"] == "transitivity" for ax in out["axiom"])
 
 
 def test_object_types_have_pk() -> None:
@@ -58,8 +56,7 @@ def test_cli_invocation(tmp_path: Path) -> None:
     out = tmp_path / "v2.json"
     env = {**os.environ, "PYTHONPATH": str(SRC_ROOT)}
     result = subprocess.run(
-        [sys.executable, "-m", "mate_kernel.ontology.migrate_v1_v2",
-         str(FIXTURE), str(out)],
+        [sys.executable, "-m", "mate_kernel.ontology.migrate_v1_v2", str(FIXTURE), str(out)],
         capture_output=True,
         text=True,
         env=env,

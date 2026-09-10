@@ -19,16 +19,16 @@
 
 ## 与实现的对位验证
 
-| Palantir 概念 | 蓝图/实现对位 | 状态 |
-|---|---|---|
-| object type = schema definition of entity/event | ObjectType + ClassRef | [x] |
-| link type 1:1/1:N/N:N | LinkType（基数已支持）| [x] |
-| action type = governed edits + side effects | ActionType + proposal 状态机（confirm→execute→revert）| [x] |
-| functions on objects | Function 基元 + resolver（执行语义增量 PRD-30）| [~] |
-| interfaces polymorphism | Interface 基元 + SAL-07 | [x] |
-| markings mandatory control + propagate | marking + SAL-06 可见性 | [x] |
-| AIP agents = Ontology SDK + tools | SuperAI agent loop + MCP 工具面 | [x] |
-| dynamic security / models | models.py 注册 + 动态可见性（G22）| [~] |
+| Palantir 概念                                   | 蓝图/实现对位                                          | 状态 |
+| ----------------------------------------------- | ------------------------------------------------------ | ---- |
+| object type = schema definition of entity/event | ObjectType + ClassRef                                  | [x]  |
+| link type 1:1/1:N/N:N                           | LinkType（基数已支持）                                 | [x]  |
+| action type = governed edits + side effects     | ActionType + proposal 状态机（confirm→execute→revert） | [x]  |
+| functions on objects                            | Function 基元 + resolver（执行语义增量 PRD-30）        | [~]  |
+| interfaces polymorphism                         | Interface 基元 + SAL-07                                | [x]  |
+| markings mandatory control + propagate          | marking + SAL-06 可见性                                | [x]  |
+| AIP agents = Ontology SDK + tools               | SuperAI agent loop + MCP 工具面                        | [x]  |
+| dynamic security / models                       | models.py 注册 + 动态可见性（G22）                     | [~]  |
 
 ## 边界
 

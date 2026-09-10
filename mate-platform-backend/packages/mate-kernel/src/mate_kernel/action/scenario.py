@@ -56,17 +56,15 @@ class ScenarioOverlay:
         with base.tenant_scope(t):
             sc = ScenarioOverlay(base)
             sc.set_property("ont.t.ind.ticket.t1", prop_rid, "critical")
-            sc.list_individuals()          # 合并视图
-            sc.pending_edits()             # 查看暂存
+            sc.list_individuals()  # 合并视图
+            sc.pending_edits()  # 查看暂存
             sc.merge_to_base(action_rid="...", actor="planner-1")
     """
 
     base: Any  # OntologyRepository（duck-typed：用到的读/写方法）
     # 沙盒状态（None = 删除墓碑；Individual = 新建/修改）
-    _individuals: dict[str, Individual | None] = field(
-        default_factory=dict, init=False)
-    _link_instances: dict[str, LinkInstance | None] = field(
-        default_factory=dict, init=False)
+    _individuals: dict[str, Individual | None] = field(default_factory=dict, init=False)
+    _link_instances: dict[str, LinkInstance | None] = field(default_factory=dict, init=False)
     _pending: list[EditOp] = field(default_factory=list, init=False)
 
     # ───── 读（合并视图：overlay 优先，墓碑隐藏）─────
@@ -93,8 +91,11 @@ class ScenarioOverlay:
                 out.append(item)
             seen.add(i.rid)
         for v in self._individuals.values():
-            if v is not None and v.rid not in seen and (
-                    class_rid is None or v.class_rid == class_rid):
+            if (
+                v is not None
+                and v.rid not in seen
+                and (class_rid is None or v.class_rid == class_rid)
+            ):
                 out.append(v)
         return out
 
@@ -130,12 +131,15 @@ class ScenarioOverlay:
             props=tuple((ClassRef(k), v) for k, v in merged.items()),
             updated_at=datetime.now(UTC),
         )
-        self._pending.append(EditOp(
-            op=OP_SET_PROPERTY, target=rid, property_rid=property_rid,
-            value=value))
+        self._pending.append(
+            EditOp(op=OP_SET_PROPERTY, target=rid, property_rid=property_rid, value=value)
+        )
 
     def create_object(
-        self, class_rid: str, primary_key: str, props: dict[str, Any],
+        self,
+        class_rid: str,
+        primary_key: str,
+        props: dict[str, Any],
     ) -> Individual:
         parts = class_rid.split(".")
         tenant = parts[1]
@@ -143,15 +147,23 @@ class ScenarioOverlay:
         rid = f"ont.{tenant}.ind.{cls_slug}.{primary_key}"
         now = datetime.now(UTC)
         ind = Individual(
-            rid=rid, class_rid=ClassRef(class_rid),
+            rid=rid,
+            class_rid=ClassRef(class_rid),
             props=tuple((ClassRef(k), v) for k, v in props.items()),
-            primary_key=str(primary_key), created_at=now, updated_at=now,
+            primary_key=str(primary_key),
+            created_at=now,
+            updated_at=now,
             tenant_id=tenant,
         )
         self._individuals[rid] = ind
-        self._pending.append(EditOp(
-            op=OP_CREATE_OBJECT, class_rid=class_rid,
-            primary_key=str(primary_key), props=dict(props)))
+        self._pending.append(
+            EditOp(
+                op=OP_CREATE_OBJECT,
+                class_rid=class_rid,
+                primary_key=str(primary_key),
+                props=dict(props),
+            )
+        )
         return ind
 
     def delete_object(self, rid: str) -> None:
@@ -170,27 +182,29 @@ class ScenarioOverlay:
         self.get_individual(dst)
         tenant = src.split(".")[1] if "." in src else "t"
         lt_parts = link_type_rid.split(".")
-        lt_slug = (lt_parts[-2] if lt_parts[-1].startswith("v") else lt_parts[-1])
-        li_rid = (f"ont.{tenant}.lnk.{lt_slug}.sc-{len(self._link_instances) + 1}")
+        lt_slug = lt_parts[-2] if lt_parts[-1].startswith("v") else lt_parts[-1]
+        li_rid = f"ont.{tenant}.lnk.{lt_slug}.sc-{len(self._link_instances) + 1}"
         self._link_instances[li_rid] = LinkInstance(
-            rid=li_rid, link_type_rid=ClassRef(link_type_rid),
-            src=src, dst=dst, props=(),
-            created_at=datetime.now(UTC), tenant_id=tenant,
+            rid=li_rid,
+            link_type_rid=ClassRef(link_type_rid),
+            src=src,
+            dst=dst,
+            props=(),
+            created_at=datetime.now(UTC),
+            tenant_id=tenant,
         )
-        self._pending.append(EditOp(
-            op=OP_ADD_LINK, link_type_rid=link_type_rid, src=src, dst=dst))
+        self._pending.append(EditOp(op=OP_ADD_LINK, link_type_rid=link_type_rid, src=src, dst=dst))
 
     def remove_link(self, link_instance_rid: str) -> None:
         li = self._link_instances.get(link_instance_rid)
         if li is None:
             li = next(
-                (l for l in self.base.list_link_instances()
-                 if l.rid == link_instance_rid), None)
+                (l for l in self.base.list_link_instances() if l.rid == link_instance_rid), None
+            )
         if li is None:
             raise KeyError(f"LinkInstance not found: {link_instance_rid}")
         self._link_instances[link_instance_rid] = None
-        self._pending.append(EditOp(
-            op=OP_REMOVE_LINK, link_instance_rid=link_instance_rid))
+        self._pending.append(EditOp(op=OP_REMOVE_LINK, link_instance_rid=link_instance_rid))
 
     # ───── 暂存 / 合并 ─────
 
@@ -212,24 +226,31 @@ class ScenarioOverlay:
         """
         templates = [
             {
-                "op": e.op, "target": e.target, "property_rid": e.property_rid,
-                "value": e.value, "class_rid": e.class_rid,
+                "op": e.op,
+                "target": e.target,
+                "property_rid": e.property_rid,
+                "value": e.value,
+                "class_rid": e.class_rid,
                 "primary_key": e.primary_key,
                 "props": dict(e.props.items()) if e.props else {},
-                "link_type_rid": e.link_type_rid, "src": e.src, "dst": e.dst,
+                "link_type_rid": e.link_type_rid,
+                "src": e.src,
+                "dst": e.dst,
                 "link_instance_rid": e.link_instance_rid,
             }
             for e in self._pending
         ]
         try:
             result = self.base.apply_edit_set_now(
-                action_rid, None, {}, templates, actor=actor,
+                action_rid,
+                None,
+                {},
+                templates,
+                actor=actor,
                 impact_summary=f"scenario merge: {len(templates)} edits",
             )
         except KeyError as e:
-            raise ScenarioConflictError(
-                f"scenario conflict: base state changed ({e})"
-            ) from e
+            raise ScenarioConflictError(f"scenario conflict: base state changed ({e})") from e
         except ValueError as e:
             raise ScenarioConflictError(f"scenario conflict: {e}") from e
         self.discard()

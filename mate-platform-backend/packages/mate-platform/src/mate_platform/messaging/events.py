@@ -18,6 +18,7 @@ The schema is registered in Confluent Schema Registry under
 `metaplatform.<domain>.<event>.v1` so producers cannot publish
 without registering a schema first.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -73,13 +74,9 @@ class Event:
         correlation id lives outside the OTel trace).
         """
         if not type or "." not in type:
-            raise ValueError(
-                f"event type {type!r} must follow '<domain>.<aggregate>.<action>'"
-            )
+            raise ValueError(f"event type {type!r} must follow '<domain>.<aggregate>.<action>'")
         if not tenant_id:
-            raise ValueError(
-                "event tenant_id must not be empty (SEC-TENANT-01 hard rule 3)"
-            )
+            raise ValueError("event tenant_id must not be empty (SEC-TENANT-01 hard rule 3)")
         resolved_occurred_at = occurred_at or datetime.now(UTC).isoformat()
         resolved_id = event_id or new_event_id()
         if lineage_hints is None:

@@ -6,6 +6,7 @@ This batch exposes an in-memory implementation plus a SQL backend
 framework-agnostic so the upcoming Flowable 8.0 adapter (P2-W6) can
 reuse them without leaking FastAPI types.
 """
+
 from __future__ import annotations
 
 from . import sql_store

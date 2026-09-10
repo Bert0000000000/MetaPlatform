@@ -1,4 +1,5 @@
 """LightRAGClient (THEMATIC) — real httpx client for HKUDS LightRAG HTTP API."""
+
 from __future__ import annotations
 
 import logging
@@ -14,7 +15,9 @@ _log = logging.getLogger(__name__)
 
 class LightRAGClient(Protocol):
     def query(self, query: str, top_k: int = 10) -> list[ChunkHit]: ...
-    def insert(self, text: str, document_id: str, metadata: dict[str, str] | None = None) -> str: ...
+    def insert(
+        self, text: str, document_id: str, metadata: dict[str, str] | None = None
+    ) -> str: ...
     def count(self) -> int: ...
 
 
@@ -33,7 +36,13 @@ class HttpxLightRAGClient:
     DEFAULT_URL = "http://localhost:9621"
     DEFAULT_MODE = "hybrid"
 
-    def __init__(self, base_url: str | None = None, api_key: str | None = None, mode: str | None = None, timeout: float = 30.0) -> None:
+    def __init__(
+        self,
+        base_url: str | None = None,
+        api_key: str | None = None,
+        mode: str | None = None,
+        timeout: float = 30.0,
+    ) -> None:
         self._base_url = (base_url or os.environ.get("LIGHTRAG_URL", self.DEFAULT_URL)).rstrip("/")
         self._api_key = api_key or os.environ.get("LIGHTRAG_API_KEY", "")
         self._mode = mode or os.environ.get("LIGHTRAG_MODE", self.DEFAULT_MODE)
@@ -68,7 +77,12 @@ class HttpxLightRAGClient:
             r = self._client.post(
                 f"{self._base_url}/query",
                 headers=self._headers(),
-                json={"query": query, "mode": self._mode, "top_k": max(1, top_k), "only_need_context": True},
+                json={
+                    "query": query,
+                    "mode": self._mode,
+                    "top_k": max(1, top_k),
+                    "only_need_context": True,
+                },
             )
             r.raise_for_status()
             data = r.json()

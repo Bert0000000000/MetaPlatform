@@ -14,6 +14,7 @@ Revision ID: 0003_apphub
 Revises: 0002_data_platform
 Create Date: 2026-08-01
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence

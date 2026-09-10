@@ -20,6 +20,7 @@ RAG_MODE=pg persistence: when a ``pg_sink`` (PgMetricsStore from
 combines the PG totals with the not-yet-flushed remainder so a restart
 keeps the counters. Memory-mode behaviour is unchanged.
 """
+
 from __future__ import annotations
 
 import threading
@@ -155,12 +156,21 @@ def make_default_buckets(
     runbook cares about (ingest / search / upload)."""
     return {
         "ingest": LatencyBucket(
-            name="ingest", window_size=window_size, pg_sink=pg_sink, flush_every=flush_every,
+            name="ingest",
+            window_size=window_size,
+            pg_sink=pg_sink,
+            flush_every=flush_every,
         ),
         "search": LatencyBucket(
-            name="search", window_size=window_size, pg_sink=pg_sink, flush_every=flush_every,
+            name="search",
+            window_size=window_size,
+            pg_sink=pg_sink,
+            flush_every=flush_every,
         ),
         "upload": LatencyBucket(
-            name="upload", window_size=window_size, pg_sink=pg_sink, flush_every=flush_every,
+            name="upload",
+            window_size=window_size,
+            pg_sink=pg_sink,
+            flush_every=flush_every,
         ),
     }

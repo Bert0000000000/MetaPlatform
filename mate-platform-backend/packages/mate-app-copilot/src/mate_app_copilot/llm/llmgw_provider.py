@@ -11,6 +11,7 @@ hard rule 5 (production profile forbids silent fallback) because the
 fallback is explicit, logged, and returns the same deterministic
 stub result rather than masking a real outage with an empty value.
 """
+
 from __future__ import annotations
 
 import logging

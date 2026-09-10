@@ -15,6 +15,7 @@ digital employee over A2A, target_agent_id and all. The receive-side
 (mate-app-a2a turning that message into a delegation task) is covered by
 that service's own suite; here we verify the scheduling/dispatch leg.
 """
+
 from __future__ import annotations
 
 import json
@@ -88,7 +89,8 @@ def _a2a_execute_response() -> dict[str, object]:
 
 @respx.mock
 def test_superai_schedules_other_agent_over_a2a(
-    client: TestClient, auth_headers_acme: dict[str, str],
+    client: TestClient,
+    auth_headers_acme: dict[str, str],
 ) -> None:
     """Full SuperAI scheduling flow dispatches a digital employee via A2A."""
     _register_roles()

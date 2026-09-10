@@ -1,4 +1,5 @@
 """Guardrails tests (ST-5.7.11)."""
+
 from __future__ import annotations
 
 from mate_tech_agent.scenarios.guardrails import check_input, check_output

@@ -10,15 +10,15 @@
 
 ## 2. 改动清单
 
-| 文件 | 改动 |
-|---|---|
-| `repositories/in_memory.py` | `McpTool` 加 `endpoint` 字段；新增 name-keyed 访问器 `get_tool_by_name / register_tool / update_tool / unregister_tool / list_dynamic_tools`（租户隔离） |
-| `repositories/__init__.py` | 导出 catalog + 动态注册表函数（此前为空） |
-| `tools/forwarding.py` | **新增** `DynamicToolInvoker`：复用 federation `ExternalMcpClient` 做 MCP-to-MCP 转发（无裸 httpx） |
-| `api/origin_routes.py` | `GET /tools` 合并静态+租户动态；新增 `POST /tools`、`PUT /tools/{name}`、`DELETE /tools/{name}`（含 outbox 事件）；`POST /tools/{name}` 执行链路加动态转发 + federation fallback |
-| `main.py` | outbox writer 从 None 改为真实 `InMemoryOutboxWriter`（federation + tools 事件），绑定 `app.state.outbox_writer` |
-| `tests/test_dynamic_registry.py` | **新增 6 用例**：注册入列 / 注册后转发 / 更新+删除 / 未知 404 / 租户隔离 / outbox 事件 |
-| `contracts/openapi/services/mcp.yaml` | 新增 3 条路径（POST/PUT/DELETE /tools）+ 3 个 schema（RegisterToolRequest/UpdateToolRequest/DynamicTool） |
+| 文件                                  | 改动                                                                                                                                                                             |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `repositories/in_memory.py`           | `McpTool` 加 `endpoint` 字段；新增 name-keyed 访问器 `get_tool_by_name / register_tool / update_tool / unregister_tool / list_dynamic_tools`（租户隔离）                         |
+| `repositories/__init__.py`            | 导出 catalog + 动态注册表函数（此前为空）                                                                                                                                        |
+| `tools/forwarding.py`                 | **新增** `DynamicToolInvoker`：复用 federation `ExternalMcpClient` 做 MCP-to-MCP 转发（无裸 httpx）                                                                              |
+| `api/origin_routes.py`                | `GET /tools` 合并静态+租户动态；新增 `POST /tools`、`PUT /tools/{name}`、`DELETE /tools/{name}`（含 outbox 事件）；`POST /tools/{name}` 执行链路加动态转发 + federation fallback |
+| `main.py`                             | outbox writer 从 None 改为真实 `InMemoryOutboxWriter`（federation + tools 事件），绑定 `app.state.outbox_writer`                                                                 |
+| `tests/test_dynamic_registry.py`      | **新增 6 用例**：注册入列 / 注册后转发 / 更新+删除 / 未知 404 / 租户隔离 / outbox 事件                                                                                           |
+| `contracts/openapi/services/mcp.yaml` | 新增 3 条路径（POST/PUT/DELETE /tools）+ 3 个 schema（RegisterToolRequest/UpdateToolRequest/DynamicTool）                                                                        |
 
 ## 3. 测试证据
 

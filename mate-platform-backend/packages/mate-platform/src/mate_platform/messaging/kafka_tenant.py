@@ -9,6 +9,7 @@ This module is the *naming* layer; the actual Kafka client (which
 the platform will use via the Outbox pattern in PLATFORM-EVENT-01)
 is separate.
 """
+
 from __future__ import annotations
 
 import re
@@ -27,9 +28,7 @@ class KafkaTopicError(Exception):
 
 def _validate_part(value: str, pattern: re.Pattern[str], label: str) -> str:
     if not pattern.match(value):
-        raise KafkaTopicError(
-            f"invalid {label} {value!r}; must match {pattern.pattern}"
-        )
+        raise KafkaTopicError(f"invalid {label} {value!r}; must match {pattern.pattern}")
     return value
 
 
@@ -72,6 +71,5 @@ def assert_message_tenant(*, expected_tenant: str, ctx: RequestContext) -> None:
     actual = require_tenant(ctx)
     if expected_tenant != actual:
         raise KafkaTopicError(
-            f"message tenant {expected_tenant!r} does not match session "
-            f"tenant {actual!r}"
+            f"message tenant {expected_tenant!r} does not match session tenant {actual!r}"
         )

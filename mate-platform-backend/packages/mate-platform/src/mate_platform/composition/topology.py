@@ -4,6 +4,7 @@
 影响面（反向依赖）查询。为后续 live 拓扑面（从 gateway 路由/服务注册
 自动发现）提供内核。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -37,8 +38,7 @@ class CapabilityTopology:
 
     def dependents_of(self, capability: str) -> list[str]:
         """影响面：直接依赖 capability 的能力名（含传递）。"""
-        direct = {n.capability for n in self._nodes.values()
-                  if capability in n.depends_on}
+        direct = {n.capability for n in self._nodes.values() if capability in n.depends_on}
         seen: set[str] = set()
         frontier = direct
         while frontier:
@@ -47,8 +47,7 @@ class CapabilityTopology:
                 if cap in seen:
                     continue
                 seen.add(cap)
-                new |= {n.capability for n in self._nodes.values()
-                        if cap in n.depends_on} - seen
+                new |= {n.capability for n in self._nodes.values() if cap in n.depends_on} - seen
             frontier = new
         return sorted(seen)
 
@@ -79,10 +78,12 @@ class CapabilityTopology:
     def snapshot(self) -> dict:
         return {
             "capabilities": [
-                {"service": n.service, "capability": n.capability,
-                 "depends_on": sorted(n.depends_on)}
-                for n in sorted(self._nodes.values(),
-                                key=lambda x: x.capability)
+                {
+                    "service": n.service,
+                    "capability": n.capability,
+                    "depends_on": sorted(n.depends_on),
+                }
+                for n in sorted(self._nodes.values(), key=lambda x: x.capability)
             ],
             "missing_dependencies": self.missing_dependencies(),
             "order": self.topological_order(),

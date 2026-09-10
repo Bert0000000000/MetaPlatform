@@ -13,6 +13,7 @@ Recommended env vars (the script also sets sensible defaults)::
     KEYCLOAK_URL=http://localhost:8080
     SERVICE_CLIENT_SECRET=test-secret
 """
+
 from __future__ import annotations
 
 import importlib

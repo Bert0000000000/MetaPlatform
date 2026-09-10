@@ -66,6 +66,7 @@ def client_with_ctx(monkeypatch):
     # GOVERN-10: save+restore around the test so subsequent tests don't see
     # a stale middleware_stack that lost its install_auth binding.
     from mate_tech_ont.main import app as _app
+
     saved_stack = _app.middleware_stack
     _app.middleware_stack = None
     try:
@@ -86,14 +87,18 @@ class TestObjectTypeE2E:
             "properties": [
                 {
                     "rid": "ont.acme.prop.po-id.v1",
-                    "type_id": "string", "nullable": False,
-                    "primary_key": True, "title": "id",
+                    "type_id": "string",
+                    "nullable": False,
+                    "primary_key": True,
+                    "title": "id",
                     "format": "string",
                 },
                 {
                     "rid": "ont.acme.prop.po-qty.v1",
-                    "type_id": "integer", "nullable": False,
-                    "primary_key": False, "title": "qty",
+                    "type_id": "integer",
+                    "nullable": False,
+                    "primary_key": False,
+                    "title": "qty",
                     "format": "integer",
                 },
             ],
@@ -120,8 +125,10 @@ class TestIndividualE2E:
             "properties": [
                 {
                     "rid": "ont.acme.prop.order-id.v1",
-                    "type_id": "string", "nullable": False,
-                    "primary_key": True, "title": "id",
+                    "type_id": "string",
+                    "nullable": False,
+                    "primary_key": True,
+                    "title": "id",
                     "format": "string",
                 },
             ],
@@ -177,14 +184,18 @@ class TestObjectSetEvaluateE2E:
             "properties": [
                 {
                     "rid": "ont.acme.prop.po-id.v1",
-                    "type_id": "string", "nullable": False,
-                    "primary_key": True, "title": "id",
+                    "type_id": "string",
+                    "nullable": False,
+                    "primary_key": True,
+                    "title": "id",
                     "format": "string",
                 },
                 {
                     "rid": "ont.acme.prop.po-qty.v1",
-                    "type_id": "integer", "nullable": False,
-                    "primary_key": False, "title": "qty",
+                    "type_id": "integer",
+                    "nullable": False,
+                    "primary_key": False,
+                    "title": "qty",
                     "format": "integer",
                 },
             ],
@@ -195,21 +206,30 @@ class TestObjectSetEvaluateE2E:
         cls = ClassRef(rid="ont.acme.obj.po.v1")
         for i, q in enumerate([5, 10, 15, 20, 25]):
             from mate_kernel.ontology.instances import Individual
-            repo.create_individual(Individual(
-                rid=f"ont.acme.ind.po.{i}", class_rid=cls,
-                props=((ClassRef(rid="ont.acme.prop.po-qty.v1"), q),),
-                primary_key=str(i), created_at=now, updated_at=now,
-                tenant_id="acme",
-            ))
+
+            repo.create_individual(
+                Individual(
+                    rid=f"ont.acme.ind.po.{i}",
+                    class_rid=cls,
+                    props=((ClassRef(rid="ont.acme.prop.po-qty.v1"), q),),
+                    primary_key=str(i),
+                    created_at=now,
+                    updated_at=now,
+                    tenant_id="acme",
+                )
+            )
 
     def test_filter_through_endpoint(self, client_with_ctx):
         c = client_with_ctx
         self._seed(c)
-        r = c.post("/api/v1/ont/v2/object-sets:evaluate", json={
-            "class_rid": "ont.acme.obj.po.v1",
-            "filter_expr": "po-qty >= 15",
-            "paging_limit": 100,
-        })
+        r = c.post(
+            "/api/v1/ont/v2/object-sets:evaluate",
+            json={
+                "class_rid": "ont.acme.obj.po.v1",
+                "filter_expr": "po-qty >= 15",
+                "paging_limit": 100,
+            },
+        )
         assert r.status_code == 200, r.text
         pks = sorted(x["primary_key"] for x in r.json())
         assert pks == ["2", "3", "4"]
@@ -217,12 +237,15 @@ class TestObjectSetEvaluateE2E:
     def test_sort_desc(self, client_with_ctx):
         c = client_with_ctx
         self._seed(c)
-        r = c.post("/api/v1/ont/v2/object-sets:evaluate", json={
-            "class_rid": "ont.acme.obj.po.v1",
-            "filter_expr": "po-qty >= 5",
-            "sort": ["-po-qty"],
-            "paging_limit": 3,
-        })
+        r = c.post(
+            "/api/v1/ont/v2/object-sets:evaluate",
+            json={
+                "class_rid": "ont.acme.obj.po.v1",
+                "filter_expr": "po-qty >= 5",
+                "sort": ["-po-qty"],
+                "paging_limit": 3,
+            },
+        )
         assert r.status_code == 200
         pks = [x["primary_key"] for x in r.json()]
         assert pks == ["4", "3", "2"]
@@ -236,49 +259,67 @@ class TestActionApplyE2E:
         # 注册一个 ActionType
         from mate_kernel.ontology.identity import ClassRef
         from mate_kernel.ontology.types.action_type import ActionType
+
         repo = app.state.kernel_repo
         prop = Property(
             rid=ClassRef(rid="ont.acme.prop.reason.v1"),
-            type_id="string", nullable=False, primary_key=False,
-            title="reason", format=PropertyFormat.STRING,
+            type_id="string",
+            nullable=False,
+            primary_key=False,
+            title="reason",
+            format=PropertyFormat.STRING,
         )
-        repo.upsert_action_type(ActionType(
-            rid=ClassRef(rid="ont.acme.act.approve.v1"),
-            parameters=(prop,),
-            submission_criteria=(),
-            side_effects=("notify",),
-            function_ref=ClassRef(rid="ont.acme.fn.approve.v1"),
-            on=(ClassRef(rid="ont.acme.obj.po.v1"),),
-        ))
+        repo.upsert_action_type(
+            ActionType(
+                rid=ClassRef(rid="ont.acme.act.approve.v1"),
+                parameters=(prop,),
+                submission_criteria=(),
+                side_effects=("notify",),
+                function_ref=ClassRef(rid="ont.acme.fn.approve.v1"),
+                on=(ClassRef(rid="ont.acme.obj.po.v1"),),
+            )
+        )
         # apply 语义（ACTION-03）：目标 individual 必须存在
         now = datetime.now(UTC)
         from mate_kernel.ontology.instances import Individual
-        repo.create_individual(Individual(
-            rid="ont.acme.ind.po.0", class_rid=ClassRef(rid="ont.acme.obj.po.v1"),
-            props=((ClassRef(rid="ont.acme.prop.po-qty.v1"), 5),),
-            primary_key="0", created_at=now, updated_at=now,
-            tenant_id="acme",
-        ))
+
+        repo.create_individual(
+            Individual(
+                rid="ont.acme.ind.po.0",
+                class_rid=ClassRef(rid="ont.acme.obj.po.v1"),
+                props=((ClassRef(rid="ont.acme.prop.po-qty.v1"), 5),),
+                primary_key="0",
+                created_at=now,
+                updated_at=now,
+                tenant_id="acme",
+            )
+        )
 
     def test_legacy_apply_is_rejected_with_proposal_migration(self, client_with_ctx):
         c = client_with_ctx
         self._seed(c)
-        r = c.post("/api/v1/ont/v2/action-types:apply", json={
-            "action_rid": "ont.acme.act.approve.v1",
-            "target_iid": "ont.acme.ind.po.0",
-            "parameters": {"reason": "ok"},
-            "provenance": {},
-        })
+        r = c.post(
+            "/api/v1/ont/v2/action-types:apply",
+            json={
+                "action_rid": "ont.acme.act.approve.v1",
+                "target_iid": "ont.acme.ind.po.0",
+                "parameters": {"reason": "ok"},
+                "provenance": {},
+            },
+        )
         assert r.status_code == 410, r.text
         assert "proposals" in r.json()["detail"]
 
     def test_direct_apply_does_not_leak_action_existence(self, client_with_ctx):
         c = client_with_ctx
-        r = c.post("/api/v1/ont/v2/action-types:apply", json={
-            "action_rid": "ont.acme.act.unknown.v1",
-            "target_iid": "ont.acme.ind.po.0",
-            "parameters": {},
-        })
+        r = c.post(
+            "/api/v1/ont/v2/action-types:apply",
+            json={
+                "action_rid": "ont.acme.act.unknown.v1",
+                "target_iid": "ont.acme.ind.po.0",
+                "parameters": {},
+            },
+        )
         assert r.status_code == 410
         assert "proposals" in r.json()["detail"]
 
@@ -315,9 +356,14 @@ class TestActionTypeCrudE2E:
         at = {
             "rid": "ont.acme.act.approve-leave.v1",
             "parameters": [
-                {"rid": "ont.acme.prop.decision.v1", "type_id": "string",
-                 "nullable": False, "primary_key": False, "title": "decision",
-                 "format": "string"},
+                {
+                    "rid": "ont.acme.prop.decision.v1",
+                    "type_id": "string",
+                    "nullable": False,
+                    "primary_key": False,
+                    "title": "decision",
+                    "format": "string",
+                },
             ],
             "submission_criteria": ["decision in (approve, reject)"],
             "side_effects": ["notify_email", "audit_log"],
@@ -340,10 +386,13 @@ class TestActionTypeCrudE2E:
 
     def test_cross_tenant_403(self, client_with_ctx):
         c = client_with_ctx
-        r = c.post("/api/v1/ont/v2/action-types", json={
-            "rid": "ont.bob.act.approve-leave.v1",
-            "function_ref": "ont.bob.fn.approve-leave.v1",
-        })
+        r = c.post(
+            "/api/v1/ont/v2/action-types",
+            json={
+                "rid": "ont.bob.act.approve-leave.v1",
+                "function_ref": "ont.bob.fn.approve-leave.v1",
+            },
+        )
         assert r.status_code == 403
 
 
@@ -377,9 +426,14 @@ class TestLinkTypeInterfaceE2E:
         i = {
             "rid": "ont.acme.if.has-owner.v1",
             "properties": [
-                {"rid": "ont.acme.prop.owner.v1", "type_id": "string",
-                 "nullable": False, "primary_key": False, "title": "owner",
-                 "format": "string"},
+                {
+                    "rid": "ont.acme.prop.owner.v1",
+                    "type_id": "string",
+                    "nullable": False,
+                    "primary_key": False,
+                    "title": "owner",
+                    "format": "string",
+                },
             ],
             "required_links": [],
             "polymorphic_action_constraints": [],
@@ -403,18 +457,26 @@ class TestIndividualGetE2E:
             "rid": "ont.acme.obj.leave-request.v1",
             "primary_key": ["ont.acme.prop.leave-id.v1"],
             "properties": [
-                {"rid": "ont.acme.prop.leave-id.v1", "type_id": "string",
-                 "nullable": False, "primary_key": True, "title": "leave id",
-                 "format": "string"},
+                {
+                    "rid": "ont.acme.prop.leave-id.v1",
+                    "type_id": "string",
+                    "nullable": False,
+                    "primary_key": True,
+                    "title": "leave id",
+                    "format": "string",
+                },
             ],
         }
         c.post("/api/v1/ont/v2/object-types", json=ot)
-        c.post("/api/v1/ont/v2/individuals", json={
-            "rid": "ont.acme.ind.leave-request.1",
-            "class_rid": "ont.acme.obj.leave-request.v1",
-            "props": {"ont.acme.prop.leave-id.v1": {"value": "L-1"}},
-            "primary_key": "L-1",
-        })
+        c.post(
+            "/api/v1/ont/v2/individuals",
+            json={
+                "rid": "ont.acme.ind.leave-request.1",
+                "class_rid": "ont.acme.obj.leave-request.v1",
+                "props": {"ont.acme.prop.leave-id.v1": {"value": "L-1"}},
+                "primary_key": "L-1",
+            },
+        )
         r = c.get("/api/v1/ont/v2/individuals/ont.acme.ind.leave-request.1")
         assert r.status_code == 200, r.text
         assert r.json()["primary_key"] == "L-1"
@@ -476,12 +538,22 @@ class TestObjectSetQueryE2E:
             "rid": self.CLS,
             "primary_key": ["ont.acme.prop.q-target-id.v1"],
             "properties": [
-                {"rid": "ont.acme.prop.q-target-id.v1", "type_id": "string",
-                 "nullable": False, "primary_key": True, "title": "id",
-                 "format": "string"},
-                {"rid": "ont.acme.prop.q-target-qty.v1", "type_id": "integer",
-                 "nullable": False, "primary_key": False, "title": "qty",
-                 "format": "integer"},
+                {
+                    "rid": "ont.acme.prop.q-target-id.v1",
+                    "type_id": "string",
+                    "nullable": False,
+                    "primary_key": True,
+                    "title": "id",
+                    "format": "string",
+                },
+                {
+                    "rid": "ont.acme.prop.q-target-qty.v1",
+                    "type_id": "integer",
+                    "nullable": False,
+                    "primary_key": False,
+                    "title": "qty",
+                    "format": "integer",
+                },
             ],
         }
         c.post("/api/v1/ont/v2/object-types", json=ot)
@@ -490,20 +562,29 @@ class TestObjectSetQueryE2E:
         cls = ClassRef(rid=self.CLS)
         for i, q in enumerate([5, 10, 15]):
             from mate_kernel.ontology.instances import Individual
-            repo.create_individual(Individual(
-                rid=f"ont.acme.ind.query-target.{i}", class_rid=cls,
-                props=((ClassRef(rid="ont.acme.prop.q-target-qty.v1"), q),),
-                primary_key=str(i), created_at=now, updated_at=now,
-                tenant_id="acme",
-            ))
+
+            repo.create_individual(
+                Individual(
+                    rid=f"ont.acme.ind.query-target.{i}",
+                    class_rid=cls,
+                    props=((ClassRef(rid="ont.acme.prop.q-target-qty.v1"), q),),
+                    primary_key=str(i),
+                    created_at=now,
+                    updated_at=now,
+                    tenant_id="acme",
+                )
+            )
 
     def test_query_returns_results_and_count(self, client_with_ctx):
         c = client_with_ctx
         self._seed(c)
-        r = c.post("/api/v1/ont/v2/object-sets/query", json={
-            "class_rid": self.CLS,
-            "filter_expr": "q-target-qty >= 10",
-        })
+        r = c.post(
+            "/api/v1/ont/v2/object-sets/query",
+            json={
+                "class_rid": self.CLS,
+                "filter_expr": "q-target-qty >= 10",
+            },
+        )
         assert r.status_code == 200, r.text
         body = r.json()
         assert body["count"] == 2
@@ -520,16 +601,24 @@ class TestVersionE2E:
             "rid": "ont.acme.obj.po.v1",
             "primary_key": ["ont.acme.prop.po-id.v1"],
             "properties": [
-                {"rid": "ont.acme.prop.po-id.v1", "type_id": "string",
-                 "nullable": False, "primary_key": True, "title": "id",
-                 "format": "string"},
+                {
+                    "rid": "ont.acme.prop.po-id.v1",
+                    "type_id": "string",
+                    "nullable": False,
+                    "primary_key": True,
+                    "title": "id",
+                    "format": "string",
+                },
             ],
         }
         c.post("/api/v1/ont/v2/object-types", json=ot)
         r = c.post(
             "/api/v1/ont/v2/versions/ont.acme.obj.po.v1",
-            json={"class_ref": "ont.acme.obj.po.v1", "author": "alice",
-                  "change_set": ["add leave-request"]},
+            json={
+                "class_ref": "ont.acme.obj.po.v1",
+                "author": "alice",
+                "change_set": ["add leave-request"],
+            },
         )
         assert r.status_code == 200, r.text
         body = r.json()

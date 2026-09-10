@@ -9,8 +9,11 @@ from mate_kernel.agent.prompts import SYSTEM_PROMPTS
 _IDENTITY_MARKERS: dict[AgentRole, tuple[str, ...]] = {
     # M3 LLM-driven：proposal 状态机 + 6 种 action_kind
     AgentRole.ONTOLOGY: (
-        "本体员工", "propose_object_type", "propose_instance",
-        "merge_suggestion", "proposal_id",
+        "本体员工",
+        "propose_object_type",
+        "propose_instance",
+        "merge_suggestion",
+        "proposal_id",
     ),
     AgentRole.WORKFLOW: ("工作流员工", "FlowDefinition", "WaitUser", "AWAITING_USER"),
     AgentRole.APP: ("应用员工", "PageManifest", "slot", "action_button"),

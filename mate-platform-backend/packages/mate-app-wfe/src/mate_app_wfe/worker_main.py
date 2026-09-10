@@ -1,4 +1,5 @@
 """Composition root for the real Temporal workflow worker."""
+
 from __future__ import annotations
 
 import asyncio

@@ -7,6 +7,7 @@ so no real HTTP traffic is generated. The in-memory data product
 store provides deterministic fixtures (via ``create_data_product``
 + ``set_data_product_status`` for status variants).
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -86,7 +87,8 @@ def _seed_product(
 # ---------------------------------------------------------------------------
 @pytest.mark.asyncio
 async def test_publish_happy_path(
-    adapter: MagicMock, outbox: InMemoryOutboxWriter,
+    adapter: MagicMock,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """Status=published → namespace + register_table both succeed → result 'published'."""
     product_id = _seed_product(status="published")
@@ -163,12 +165,14 @@ async def test_publish_rejects_suspended_status(adapter: MagicMock) -> None:
 # ---------------------------------------------------------------------------
 @pytest.mark.asyncio
 async def test_publish_handles_adapter_create_namespace_409(
-    adapter: MagicMock, outbox: InMemoryOutboxWriter,
+    adapter: MagicMock,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """create_namespace raising IcebergRestError(409) is treated as success."""
     adapter.create_namespace = AsyncMock(
         side_effect=IcebergRestError(
-            "namespace already exists", status_code=409,
+            "namespace already exists",
+            status_code=409,
         ),
     )
     product_id = _seed_product(status="published")
@@ -188,7 +192,8 @@ async def test_publish_handles_adapter_create_namespace_409(
 # ---------------------------------------------------------------------------
 @pytest.mark.asyncio
 async def test_publish_emits_outbox_event_with_product_id_and_version(
-    adapter: MagicMock, outbox: InMemoryOutboxWriter,
+    adapter: MagicMock,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """Outbox event payload contains product_id + new version."""
     product_id = _seed_product(status="published")
@@ -215,7 +220,8 @@ async def test_publish_emits_outbox_event_with_product_id_and_version(
 # ---------------------------------------------------------------------------
 @pytest.mark.asyncio
 async def test_publish_handles_adapter_register_table_failure(
-    adapter: MagicMock, outbox: InMemoryOutboxWriter,
+    adapter: MagicMock,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """register_table 5xx → result status='failed'; version unchanged; no outbox."""
     adapter.register_table = AsyncMock(

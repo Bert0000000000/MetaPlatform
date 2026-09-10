@@ -2,6 +2,7 @@
 
 URI: ontology://{class_id} → 调 tech-ont 返回类定义。
 """
+
 from __future__ import annotations
 
 import os
@@ -26,9 +27,7 @@ class OntologyResource:
         timeout: float = 30.0,
         client: httpx.AsyncClient | None = None,
     ) -> None:
-        self._base_url = base_url or os.getenv(
-            "TECH_ONT_URL", "http://localhost:8007"
-        )
+        self._base_url = base_url or os.getenv("TECH_ONT_URL", "http://localhost:8007")
         self._client = client or httpx.AsyncClient(
             base_url=self._base_url,
             timeout=timeout,
@@ -38,11 +37,9 @@ class OntologyResource:
         """读取 ontology://xxx 资源."""
         if not uri.startswith("ontology://"):
             return {"error": f"Unsupported URI scheme: {uri}"}
-        class_id = uri[len("ontology://"):]
+        class_id = uri[len("ontology://") :]
         try:
-            resp = await self._client.get(
-                f"/api/v1/ont/classes/{class_id}"
-            )
+            resp = await self._client.get(f"/api/v1/ont/classes/{class_id}")
             resp.raise_for_status()
             data = resp.json()
             logger.info("ontology.read.ok", class_id=class_id)

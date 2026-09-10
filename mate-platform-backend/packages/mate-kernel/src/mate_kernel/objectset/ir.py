@@ -132,7 +132,9 @@ class ObjectSetQuery:
         if not 1 <= self.paging_limit <= 10000:
             raise ValueError("paging_limit must be in [1, 10000]")
         if self.aggregation is not None and self.sort:
-            raise ValueError("sort with aggregation is not supported; sort the metric rows client-side")
+            raise ValueError(
+                "sort with aggregation is not supported; sort the metric rows client-side"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -160,7 +162,9 @@ def _compiled_to_conditions(cf: CompiledFilter) -> tuple[Condition, ...]:
             out += _compiled_to_conditions(child)
         return out
     if cf.kind == "logical_or":
-        raise ValueError("OR is not representable in structured IR filters; restructure as separate conditions")
+        raise ValueError(
+            "OR is not representable in structured IR filters; restructure as separate conditions"
+        )
     if cf.kind == "negate":
         raise ValueError("NOT is not representable in structured IR filters; use the ne operator")
     op_map = {
@@ -240,7 +244,9 @@ class InMemoryQueryExecutor:
         self._types: dict[str, ObjectType] = {t.rid.rid: t for t in object_types}
 
     def execute(
-        self, q: ObjectSetQuery, source_classes: frozenset[str] | None = None,
+        self,
+        q: ObjectSetQuery,
+        source_classes: frozenset[str] | None = None,
     ) -> QueryResult:
         """执行 ObjectSetQuery。
 
@@ -260,24 +266,25 @@ class InMemoryQueryExecutor:
                 i for i in self._individuals if i.class_rid.rid in source_classes
             ]
         else:
-            current = [
-                i for i in self._individuals if i.class_rid.rid == current_class
-            ]
+            current = [i for i in self._individuals if i.class_rid.rid == current_class]
 
         for cond in q.filters:
-            current = [
-                i for i in current
-                if _evaluate_condition(cond, individual_to_row(i))
-            ]
+            current = [i for i in current if _evaluate_condition(cond, individual_to_row(i))]
 
         for step in q.traversal:
             rids = {i.rid for i in current}
             if step.direction == "out":
-                peers = {li.dst for li in self._links
-                         if li.link_type_rid.rid == step.link_type and li.src in rids}
+                peers = {
+                    li.dst
+                    for li in self._links
+                    if li.link_type_rid.rid == step.link_type and li.src in rids
+                }
             else:
-                peers = {li.src for li in self._links
-                         if li.link_type_rid.rid == step.link_type and li.dst in rids}
+                peers = {
+                    li.src
+                    for li in self._links
+                    if li.link_type_rid.rid == step.link_type and li.dst in rids
+                }
             current = [i for i in self._individuals if i.rid in peers]
             current_class = self._class_of_peer(step)
 
@@ -316,7 +323,10 @@ class InMemoryQueryExecutor:
         return out
 
     def _aggregate(
-        self, agg: Aggregation, rows: list[dict[str, Any]], class_rid: str,
+        self,
+        agg: Aggregation,
+        rows: list[dict[str, Any]],
+        class_rid: str,
     ) -> QueryResult:
         groups: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
         for r in rows:

@@ -8,6 +8,7 @@ Covers:
   - endpoints:  POST 201 / GET resolve 200 / 404 / list items / cross-tenant 404
   - isolation:  two tenants same code / tenant A cannot read tenant B
 """
+
 from __future__ import annotations
 
 import pytest
@@ -63,16 +64,16 @@ def client(outbox: InMemoryOutboxWriter) -> TestClient:
 # ---------------------------------------------------------------------------
 # Generator tests (4)
 # ---------------------------------------------------------------------------
-def test_generate_code_default_length_8()-> None:
+def test_generate_code_default_length_8() -> None:
     assert len(generate_code()) == 8
 
 
-def test_generate_code_returns_string()-> None:
+def test_generate_code_returns_string() -> None:
     code = generate_code()
     assert isinstance(code, str)
 
 
-def test_generate_code_no_ambiguous_chars()-> None:
+def test_generate_code_no_ambiguous_chars() -> None:
     ambiguous = set("0O1Il")
     for _ in range(100):
         code = generate_code()
@@ -81,7 +82,7 @@ def test_generate_code_no_ambiguous_chars()-> None:
         assert set(code) <= set(ALPHABET)
 
 
-def test_generate_code_randomness()-> None:
+def test_generate_code_randomness() -> None:
     codes = {generate_code() for _ in range(50)}
     # 50 random 8-char codes should be (almost) all distinct.
     assert len(codes) > 1
@@ -90,11 +91,14 @@ def test_generate_code_randomness()-> None:
 # ---------------------------------------------------------------------------
 # Repository tests (6)
 # ---------------------------------------------------------------------------
-def test_put_and_get_by_code()-> None:
+def test_put_and_get_by_code() -> None:
     store = InMemoryShortlinkStore()
     entry = ShortlinkEntry(
-        id="sl-abc12345", tenant_id="t1", app_id="kb",
-        code="abc12345", created_at="2026-01-01T00:00:00+00:00",
+        id="sl-abc12345",
+        tenant_id="t1",
+        app_id="kb",
+        code="abc12345",
+        created_at="2026-01-01T00:00:00+00:00",
     )
     store.put(entry)
     got = store.get_by_code("t1", "abc12345")
@@ -102,12 +106,12 @@ def test_put_and_get_by_code()-> None:
     assert got.app_id == "kb"
 
 
-def test_get_by_code_nonexistent_returns_none()-> None:
+def test_get_by_code_nonexistent_returns_none() -> None:
     store = InMemoryShortlinkStore()
     assert store.get_by_code("t1", "nope") is None
 
 
-def test_list_returns_all_entries()-> None:
+def test_list_returns_all_entries() -> None:
     store = InMemoryShortlinkStore()
     store.put(ShortlinkEntry(id="sl-1", tenant_id="t1", app_id="a", code="c1"))
     store.put(ShortlinkEntry(id="sl-2", tenant_id="t1", app_id="b", code="c2"))
@@ -115,12 +119,12 @@ def test_list_returns_all_entries()-> None:
     assert len(items) == 2
 
 
-def test_list_empty_tenant_returns_empty()-> None:
+def test_list_empty_tenant_returns_empty() -> None:
     store = InMemoryShortlinkStore()
     assert store.list("t1") == []
 
 
-def test_delete_removes_entry()-> None:
+def test_delete_removes_entry() -> None:
     store = InMemoryShortlinkStore()
     store.put(ShortlinkEntry(id="sl-1", tenant_id="t1", app_id="a", code="c1"))
     assert store.delete("t1", "c1") is True
@@ -128,7 +132,7 @@ def test_delete_removes_entry()-> None:
     assert store.delete("t1", "c1") is False
 
 
-def test_exists_checks_presence()-> None:
+def test_exists_checks_presence() -> None:
     store = InMemoryShortlinkStore()
     assert store.exists("t1", "c1") is False
     store.put(ShortlinkEntry(id="sl-1", tenant_id="t1", app_id="a", code="c1"))
@@ -138,23 +142,28 @@ def test_exists_checks_presence()-> None:
 # ---------------------------------------------------------------------------
 # Resolver tests (3)
 # ---------------------------------------------------------------------------
-def test_resolve_returns_app_id()-> None:
+def test_resolve_returns_app_id() -> None:
     store = InMemoryShortlinkStore()
-    store.put(ShortlinkEntry(
-        id="sl-1", tenant_id="t1", app_id="kb", code="c1",
-        created_at="2026-01-01T00:00:00+00:00",
-    ))
+    store.put(
+        ShortlinkEntry(
+            id="sl-1",
+            tenant_id="t1",
+            app_id="kb",
+            code="c1",
+            created_at="2026-01-01T00:00:00+00:00",
+        )
+    )
     result = resolve(store, "t1", "c1")
     assert result["app_id"] == "kb"
 
 
-def test_resolve_nonexistent_raises()-> None:
+def test_resolve_nonexistent_raises() -> None:
     store = InMemoryShortlinkStore()
     with pytest.raises(ValueError, match="not found"):
         resolve(store, "t1", "nope")
 
 
-def test_resolve_cross_tenant_raises()-> None:
+def test_resolve_cross_tenant_raises() -> None:
     store = InMemoryShortlinkStore()
     store.put(ShortlinkEntry(id="sl-1", tenant_id="t1", app_id="kb", code="c1"))
     # tenant t2 has no such code → treated as not found.
@@ -165,7 +174,7 @@ def test_resolve_cross_tenant_raises()-> None:
 # ---------------------------------------------------------------------------
 # Service tests (4)
 # ---------------------------------------------------------------------------
-def test_create_shortlink_generates_code()-> None:
+def test_create_shortlink_generates_code() -> None:
     store = InMemoryShortlinkStore()
     entry = create_shortlink(store, "t1", "kb")
     assert entry.code
@@ -173,7 +182,7 @@ def test_create_shortlink_generates_code()-> None:
     assert entry.app_id == "kb"
 
 
-def test_create_shortlink_stores_entry()-> None:
+def test_create_shortlink_stores_entry() -> None:
     store = InMemoryShortlinkStore()
     entry = create_shortlink(store, "t1", "kb", role="viewer")
     assert store.exists("t1", entry.code) is True
@@ -182,13 +191,18 @@ def test_create_shortlink_stores_entry()-> None:
     assert got.role == "viewer"
 
 
-def test_create_shortlink_collision_retry(monkeypatch: pytest.MonkeyPatch)-> None:
+def test_create_shortlink_collision_retry(monkeypatch: pytest.MonkeyPatch) -> None:
     """First two generated codes collide; third must succeed."""
     store = InMemoryShortlinkStore()
     # Pre-seed an entry with the code the generator will emit first.
-    store.put(ShortlinkEntry(
-        id="sl-x", tenant_id="t1", app_id="other", code="COLLIDE0",
-    ))
+    store.put(
+        ShortlinkEntry(
+            id="sl-x",
+            tenant_id="t1",
+            app_id="other",
+            code="COLLIDE0",
+        )
+    )
     calls = {"n": 0}
 
     def fake_gen(length: int = 8) -> str:
@@ -198,14 +212,15 @@ def test_create_shortlink_collision_retry(monkeypatch: pytest.MonkeyPatch)-> Non
         return "UNIQUE009"
 
     monkeypatch.setattr(
-        "mate_app_hub.shortlink.service.generate_code", fake_gen,
+        "mate_app_hub.shortlink.service.generate_code",
+        fake_gen,
     )
     entry = create_shortlink(store, "t1", "kb")
     assert entry.code == "UNIQUE009"
     assert calls["n"] == 2  # first collided, second succeeded
 
 
-def test_revoke_shortlink()-> None:
+def test_revoke_shortlink() -> None:
     store = InMemoryShortlinkStore()
     entry = create_shortlink(store, "t1", "kb")
     assert revoke_shortlink(store, "t1", entry.code) is True
@@ -216,7 +231,9 @@ def test_revoke_shortlink()-> None:
 # ---------------------------------------------------------------------------
 # Endpoint tests (5)
 # ---------------------------------------------------------------------------
-def test_create_shortlink_endpoint_returns_201(client: TestClient, auth_headers_acme: dict[str, str])-> None:
+def test_create_shortlink_endpoint_returns_201(
+    client: TestClient, auth_headers_acme: dict[str, str]
+) -> None:
     r = client.post(
         "/api/v1/apphub/shortlinks",
         json={"app_id": "kb", "role": "viewer"},
@@ -229,7 +246,9 @@ def test_create_shortlink_endpoint_returns_201(client: TestClient, auth_headers_
     assert body["created_at"]
 
 
-def test_resolve_shortlink_endpoint_returns_200(client: TestClient, auth_headers_acme: dict[str, str])-> None:
+def test_resolve_shortlink_endpoint_returns_200(
+    client: TestClient, auth_headers_acme: dict[str, str]
+) -> None:
     r_create = client.post(
         "/api/v1/apphub/shortlinks",
         json={"app_id": "kb"},
@@ -247,7 +266,9 @@ def test_resolve_shortlink_endpoint_returns_200(client: TestClient, auth_headers
     assert body["app_id"] == "kb"
 
 
-def test_resolve_shortlink_not_found_404(client: TestClient, auth_headers_acme: dict[str, str])-> None:
+def test_resolve_shortlink_not_found_404(
+    client: TestClient, auth_headers_acme: dict[str, str]
+) -> None:
     r = client.get(
         "/api/v1/apphub/shortlinks/NOPE0000",
         headers=auth_headers_acme,
@@ -255,7 +276,9 @@ def test_resolve_shortlink_not_found_404(client: TestClient, auth_headers_acme: 
     assert r.status_code == 404, r.text
 
 
-def test_list_shortlinks_endpoint_returns_items(client: TestClient, auth_headers_acme: dict[str, str])-> None:
+def test_list_shortlinks_endpoint_returns_items(
+    client: TestClient, auth_headers_acme: dict[str, str]
+) -> None:
     # Create two shortlinks.
     for app_id in ("kb", "rag"):
         client.post(
@@ -274,7 +297,9 @@ def test_list_shortlinks_endpoint_returns_items(client: TestClient, auth_headers
     assert app_ids == {"kb", "rag"}
 
 
-def test_cross_tenant_resolve_returns_404(client: TestClient, auth_headers_acme: dict[str, str], auth_headers_globex: dict[str, str])-> None:
+def test_cross_tenant_resolve_returns_404(
+    client: TestClient, auth_headers_acme: dict[str, str], auth_headers_globex: dict[str, str]
+) -> None:
     # Create a shortlink under tenant-acme.
     r_create = client.post(
         "/api/v1/apphub/shortlinks",
@@ -295,21 +320,31 @@ def test_cross_tenant_resolve_returns_404(client: TestClient, auth_headers_acme:
 # ---------------------------------------------------------------------------
 # Isolation tests (2)
 # ---------------------------------------------------------------------------
-def test_two_tenants_same_code_different_apps()-> None:
+def test_two_tenants_same_code_different_apps() -> None:
     """The same code can exist under different tenants pointing at
     different apps — codes are namespaced by tenant."""
     store = InMemoryShortlinkStore()
-    store.put(ShortlinkEntry(
-        id="sl-1", tenant_id="t1", app_id="kb", code="SHAREDCD0",
-    ))
-    store.put(ShortlinkEntry(
-        id="sl-2", tenant_id="t2", app_id="rag", code="SHAREDCD0",
-    ))
+    store.put(
+        ShortlinkEntry(
+            id="sl-1",
+            tenant_id="t1",
+            app_id="kb",
+            code="SHAREDCD0",
+        )
+    )
+    store.put(
+        ShortlinkEntry(
+            id="sl-2",
+            tenant_id="t2",
+            app_id="rag",
+            code="SHAREDCD0",
+        )
+    )
     assert resolve(store, "t1", "SHAREDCD0")["app_id"] == "kb"
     assert resolve(store, "t2", "SHAREDCD0")["app_id"] == "rag"
 
 
-def test_shortlink_tenant_isolation()-> None:
+def test_shortlink_tenant_isolation() -> None:
     """Tenant A cannot list or resolve tenant B's shortlinks."""
     store = InMemoryShortlinkStore()
     create_shortlink(store, "tenant-a", "kb")

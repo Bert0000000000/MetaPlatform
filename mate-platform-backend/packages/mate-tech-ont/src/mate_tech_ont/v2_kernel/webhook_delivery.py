@@ -28,17 +28,16 @@ RETRY_DELAYS = (0.2, 0.5, 1.0)
 
 def sign_payload(secret: str, body: bytes) -> str:
     """HMAC-SHA256 签名（hex）。验证方：``hmac.compare_digest(sha256_hexdigest, sig)``。"""
-    return "sha256=" + hmac.new(secret.encode("utf-8"), body,
-                                hashlib.sha256).hexdigest()
+    return "sha256=" + hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
 
 
 def _matching_subscriptions(repo: Any, tenant_id: str, event_type: str) -> list[dict[str, Any]]:
     subs = repo.list_webhook_subscriptions()
     return [
-        s for s in subs
+        s
+        for s in subs
         # 空租户（InMemory 镜像）视为通配 —— dev 同语义
-        if (not s.get("tenant_id") or not tenant_id
-            or s.get("tenant_id") == tenant_id)
+        if (not s.get("tenant_id") or not tenant_id or s.get("tenant_id") == tenant_id)
         and (s.get("event_type") == "*" or s.get("event_type") == event_type)
         and s.get("active", True)
     ]
@@ -58,18 +57,21 @@ def deliver_pending(repo: Any, *, limit: int = 50) -> dict[str, Any]:
     events = repo.list_outbox_events(since_id=0, limit=limit)
     delivered = failed = skipped = 0
     for ev in events:
-        for sub in _matching_subscriptions(
-                repo, ev.get("tenant_id", ""), ev.get("event_type", "")):
+        for sub in _matching_subscriptions(repo, ev.get("tenant_id", ""), ev.get("event_type", "")):
             sub_rid = sub["rid"]
             if _already_delivered(repo, ev["event_id"], sub_rid):
                 skipped += 1
                 continue
-            body = json.dumps({
-                "event_id": ev["event_id"],
-                "event_type": ev["event_type"],
-                "payload": ev.get("payload") or {},
-                "created_at": str(ev.get("created_at", "")),
-            }, ensure_ascii=False, default=str).encode("utf-8")
+            body = json.dumps(
+                {
+                    "event_id": ev["event_id"],
+                    "event_type": ev["event_type"],
+                    "payload": ev.get("payload") or {},
+                    "created_at": str(ev.get("created_at", "")),
+                },
+                ensure_ascii=False,
+                default=str,
+            ).encode("utf-8")
             headers = {
                 "Content-Type": "application/json",
                 "X-Mate-Event": ev["event_type"],
@@ -82,8 +84,7 @@ def deliver_pending(repo: Any, *, limit: int = 50) -> dict[str, Any]:
                     time.sleep(delay)
                 attempts = attempt
                 try:
-                    resp = httpx.post(sub["url"], content=body,
-                                      headers=headers, timeout=5.0)
+                    resp = httpx.post(sub["url"], content=body, headers=headers, timeout=5.0)
                     if 200 <= resp.status_code < 300:
                         ok = True
                         break
@@ -93,10 +94,13 @@ def deliver_pending(repo: Any, *, limit: int = 50) -> dict[str, Any]:
                 if attempt > len(RETRY_DELAYS):
                     break
             repo.record_webhook_delivery(
-                event_id=ev["event_id"], subscription_rid=sub_rid,
+                event_id=ev["event_id"],
+                subscription_rid=sub_rid,
                 status="delivered" if ok else "failed",
-                attempts=attempts, last_error=last_err,
-                tenant_id=ev.get("tenant_id", ""))
+                attempts=attempts,
+                last_error=last_err,
+                tenant_id=ev.get("tenant_id", ""),
+            )
             if ok:
                 delivered += 1
             else:

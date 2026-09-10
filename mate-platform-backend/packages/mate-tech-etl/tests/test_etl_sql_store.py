@@ -1,4 +1,5 @@
 """Tests for mate_tech_etl.repositories.sql_store — SQL persistence (P3-W2)."""
+
 from __future__ import annotations
 
 import pytest
@@ -24,9 +25,13 @@ _TENANT_B = "tenant-bigo"
 
 def test_put_and_get_etl_task() -> None:
     task = mem.EtlTask(
-        id="etl-1", tenant_id=_TENANT_A, name="Orders Dim",
-        source_table="ods_orders", target_table="dwd_orders",
-        status="idle", config={"mode": "full_refresh"},
+        id="etl-1",
+        tenant_id=_TENANT_A,
+        name="Orders Dim",
+        source_table="ods_orders",
+        target_table="dwd_orders",
+        status="idle",
+        config={"mode": "full_refresh"},
     )
     sql.put_etl_task(_TENANT_A, task)
 
@@ -39,8 +44,11 @@ def test_put_and_get_etl_task() -> None:
 
 def test_put_etl_task_upsert() -> None:
     task = mem.EtlTask(
-        id="etl-2", tenant_id=_TENANT_A, name="Users Dim",
-        source_table="ods_users", target_table="dwd_users",
+        id="etl-2",
+        tenant_id=_TENANT_A,
+        name="Users Dim",
+        source_table="ods_users",
+        target_table="dwd_users",
     )
     sql.put_etl_task(_TENANT_A, task)
     task.status = "running"
@@ -54,56 +62,104 @@ def test_put_etl_task_upsert() -> None:
 
 
 def test_list_etl_tasks_tenant_isolation() -> None:
-    sql.put_etl_task(_TENANT_A, mem.EtlTask(
-        id="etl-a", tenant_id=_TENANT_A, name="A",
-        source_table="s", target_table="t",
-    ))
-    sql.put_etl_task(_TENANT_B, mem.EtlTask(
-        id="etl-b", tenant_id=_TENANT_B, name="B",
-        source_table="s", target_table="t",
-    ))
+    sql.put_etl_task(
+        _TENANT_A,
+        mem.EtlTask(
+            id="etl-a",
+            tenant_id=_TENANT_A,
+            name="A",
+            source_table="s",
+            target_table="t",
+        ),
+    )
+    sql.put_etl_task(
+        _TENANT_B,
+        mem.EtlTask(
+            id="etl-b",
+            tenant_id=_TENANT_B,
+            name="B",
+            source_table="s",
+            target_table="t",
+        ),
+    )
     assert [t.id for t in sql.list_etl_tasks(_TENANT_A)] == ["etl-a"]
     assert [t.id for t in sql.list_etl_tasks(_TENANT_B)] == ["etl-b"]
 
 
 def test_list_etl_tasks_status_filter() -> None:
-    sql.put_etl_task(_TENANT_A, mem.EtlTask(
-        id="etl-idle", tenant_id=_TENANT_A, name="I",
-        source_table="s", target_table="t", status="idle",
-    ))
-    sql.put_etl_task(_TENANT_A, mem.EtlTask(
-        id="etl-running", tenant_id=_TENANT_A, name="R",
-        source_table="s", target_table="t", status="running",
-    ))
+    sql.put_etl_task(
+        _TENANT_A,
+        mem.EtlTask(
+            id="etl-idle",
+            tenant_id=_TENANT_A,
+            name="I",
+            source_table="s",
+            target_table="t",
+            status="idle",
+        ),
+    )
+    sql.put_etl_task(
+        _TENANT_A,
+        mem.EtlTask(
+            id="etl-running",
+            tenant_id=_TENANT_A,
+            name="R",
+            source_table="s",
+            target_table="t",
+            status="running",
+        ),
+    )
     running = sql.list_etl_tasks(_TENANT_A, status="running")
     assert [t.id for t in running] == ["etl-running"]
 
 
 def test_delete_etl_task() -> None:
-    sql.put_etl_task(_TENANT_A, mem.EtlTask(
-        id="etl-del", tenant_id=_TENANT_A, name="Del",
-        source_table="s", target_table="t",
-    ))
+    sql.put_etl_task(
+        _TENANT_A,
+        mem.EtlTask(
+            id="etl-del",
+            tenant_id=_TENANT_A,
+            name="Del",
+            source_table="s",
+            target_table="t",
+        ),
+    )
     assert sql.delete_etl_task(_TENANT_A, "etl-del") is True
     assert sql.get_etl_task(_TENANT_A, "etl-del") is None
     assert sql.delete_etl_task(_TENANT_A, "etl-del") is False
 
 
 def test_delete_etl_task_rejects_cross_tenant() -> None:
-    sql.put_etl_task(_TENANT_A, mem.EtlTask(
-        id="etl-x", tenant_id=_TENANT_A, name="X",
-        source_table="s", target_table="t",
-    ))
+    sql.put_etl_task(
+        _TENANT_A,
+        mem.EtlTask(
+            id="etl-x",
+            tenant_id=_TENANT_A,
+            name="X",
+            source_table="s",
+            target_table="t",
+        ),
+    )
     assert sql.delete_etl_task(_TENANT_B, "etl-x") is False
 
 
 def test_set_etl_task_status() -> None:
-    sql.put_etl_task(_TENANT_A, mem.EtlTask(
-        id="etl-st", tenant_id=_TENANT_A, name="ST",
-        source_table="s", target_table="t", status="idle",
-    ))
+    sql.put_etl_task(
+        _TENANT_A,
+        mem.EtlTask(
+            id="etl-st",
+            tenant_id=_TENANT_A,
+            name="ST",
+            source_table="s",
+            target_table="t",
+            status="idle",
+        ),
+    )
     updated = sql.set_etl_task_status(
-        _TENANT_A, "etl-st", "running", last_run_at="2026-08-01T00:00:00Z",
+        _TENANT_A,
+        "etl-st",
+        "running",
+        last_run_at="2026-08-01T00:00:00Z",
     )
     assert updated is not None
     assert updated.status == "running"

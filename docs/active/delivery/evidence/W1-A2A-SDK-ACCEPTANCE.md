@@ -11,15 +11,15 @@
 
 ## 2. 改动清单
 
-| 文件 | 改动 |
-|---|---|
-| `packages/mate-app-a2a/pyproject.toml` | 依赖加 `a2a-sdk>=0.1.0` |
-| `packages/mate-app-a2a/Dockerfile` | pip install 列表加 `a2a-sdk` |
-| `src/mate_app_a2a/clients.py` | `ExternalAgentClient` 改用官方 SDK client（`create_client` + `send_message` + artifacts 提取），错误映射保持；新增 `client_factory` 测试注入缝 |
-| `src/mate_app_a2a/api/app.py` | 新增 `A2ATaskStatus/A2AArtifact/A2ATask` 响应模型；`POST /messages`、`GET /tasks/{task_id}` 统一返回 `A2ATask`（`exclude_none` 保持字节不变） |
-| `ruff.toml` | `mate_app_a2a/api/app.py` 加 N815 per-file ignore（W3C camelCase 字段，沿用既有惯例） |
-| `tests/test_messages_envelope.py` | `GET /tasks/{task_id}` 断言更新为 A2ATask 形状 |
-| `tests/test_a2a_protocol_client.py` | **新增 5 用例**：SDK task 提取 / message 文本传递 / 空消息 / 超时传播 / factory 错误映射 |
+| 文件                                   | 改动                                                                                                                                           |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/mate-app-a2a/pyproject.toml` | 依赖加 `a2a-sdk>=0.1.0`                                                                                                                        |
+| `packages/mate-app-a2a/Dockerfile`     | pip install 列表加 `a2a-sdk`                                                                                                                   |
+| `src/mate_app_a2a/clients.py`          | `ExternalAgentClient` 改用官方 SDK client（`create_client` + `send_message` + artifacts 提取），错误映射保持；新增 `client_factory` 测试注入缝 |
+| `src/mate_app_a2a/api/app.py`          | 新增 `A2ATaskStatus/A2AArtifact/A2ATask` 响应模型；`POST /messages`、`GET /tasks/{task_id}` 统一返回 `A2ATask`（`exclude_none` 保持字节不变）  |
+| `ruff.toml`                            | `mate_app_a2a/api/app.py` 加 N815 per-file ignore（W3C camelCase 字段，沿用既有惯例）                                                          |
+| `tests/test_messages_envelope.py`      | `GET /tasks/{task_id}` 断言更新为 A2ATask 形状                                                                                                 |
+| `tests/test_a2a_protocol_client.py`    | **新增 5 用例**：SDK task 提取 / message 文本传递 / 空消息 / 超时传播 / factory 错误映射                                                       |
 
 ## 3. 测试证据
 

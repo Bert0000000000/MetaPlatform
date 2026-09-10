@@ -9,9 +9,9 @@
 
 ## 版本历史
 
-| 版本 | 日期 | 变更说明 | 作者 |
-|---|---|---|---|
-| v1.0 | 2026-07-16 | 初始版本 | - |
+| 版本 | 日期       | 变更说明 | 作者 |
+| ---- | ---------- | -------- | ---- |
+| v1.0 | 2026-07-16 | 初始版本 | -    |
 
 ---
 
@@ -25,61 +25,61 @@ TECH-A2A 屏蔽了外部 Agent 的协议差异与通信细节，为平台提供�
 
 ### 1.2 技术栈
 
-| 层次 | 技术选型 | 说明 |
-|---|---|---|
-| 语言/框架 | Java 21 + Spring Boot 3.4 | 异步非阻塞 Web 框架（WebFlux + WebClient） |
-| 协议规范 | A2A Protocol（Google） | Agent Card、Task lifecycle、JSON-RPC 2.0 |
-| 持久化 | PostgreSQL 17 | Agent Card、委托任务、协作记录、审计日志持久化 |
-| 缓存 | Redis 7.4 | Agent Card 缓存、Agent 健康状态缓存、分布式锁 |
-| 消息队列 | Kafka 3.9 | 任务委托事件、Agent 状态变更事件（Outbox 模式） |
-| 异步任务调度 | Spring Scheduling + Redis 分布式锁 | 任务超时检测、Agent 健康检查定时任务 |
-| 可观测性 | OpenTelemetry 1.45 | trace_id 全链路传播 |
-| 安全认证 | JWT + API Key | Agent 间双向认证 |
+| 层次         | 技术选型                           | 说明                                            |
+| ------------ | ---------------------------------- | ----------------------------------------------- |
+| 语言/框架    | Java 21 + Spring Boot 3.4          | 异步非阻塞 Web 框架（WebFlux + WebClient）      |
+| 协议规范     | A2A Protocol（Google）             | Agent Card、Task lifecycle、JSON-RPC 2.0        |
+| 持久化       | PostgreSQL 17                      | Agent Card、委托任务、协作记录、审计日志持久化  |
+| 缓存         | Redis 7.4                          | Agent Card 缓存、Agent 健康状态缓存、分布式锁   |
+| 消息队列     | Kafka 3.9                          | 任务委托事件、Agent 状态变更事件（Outbox 模式） |
+| 异步任务调度 | Spring Scheduling + Redis 分布式锁 | 任务超时检测、Agent 健康检查定时任务            |
+| 可观测性     | OpenTelemetry 1.45                 | trace_id 全链路传播                             |
+| 安全认证     | JWT + API Key                      | Agent 间双向认证                                |
 
 ### 1.3 上游依赖
 
-| 上游服务 | 依赖关系 | 说明 |
-|---|---|---|
-| TECH-AGENT | 强依赖 | 外部委托任务转交 TECH-AGENT 执行；平台 Agent 执行能力来源于 TECH-AGENT |
-| TECH-WFE | 强依赖 | 外部委托任务可转交 TECH-WFE 转为内部工作流执行；任务回调与工作流事件联动 |
-| TECH-IAM | 强依赖 | Agent 身份认证、API Key/JWT 签发与校验、权限控制 |
-| TECH-GW | 中依赖 | API 网关层路由、限流、TLS 终止 |
-| TECH-MSG | 弱依赖 | Kafka 消息基础设施 |
-| TECH-OBS | 弱依赖 | 可观测性数据采集 |
+| 上游服务   | 依赖关系 | 说明                                                                     |
+| ---------- | -------- | ------------------------------------------------------------------------ |
+| TECH-AGENT | 强依赖   | 外部委托任务转交 TECH-AGENT 执行；平台 Agent 执行能力来源于 TECH-AGENT   |
+| TECH-WFE   | 强依赖   | 外部委托任务可转交 TECH-WFE 转为内部工作流执行；任务回调与工作流事件联动 |
+| TECH-IAM   | 强依赖   | Agent 身份认证、API Key/JWT 签发与校验、权限控制                         |
+| TECH-GW    | 中依赖   | API 网关层路由、限流、TLS 终止                                           |
+| TECH-MSG   | 弱依赖   | Kafka 消息基础设施                                                       |
+| TECH-OBS   | 弱依赖   | 可观测性数据采集                                                         |
 
 ### 1.4 下游消费
 
-| 下游服务/应用 | 消费方式 | 说明 |
-|---|---|---|
-| APP-DW | REST API | 数字员工通过 A2A 向外部 Agent 委托任务、查询委托结果 |
-| APP-SUPERAI | REST API | 超级 AI 发现并调用外部 Agent 能力 |
-| APP-DASHBOARD | REST API | 仪表盘展示协作统计、委托任务状态、Agent 健康度 |
-| 外部 Agent | A2A Protocol（JSON-RPC over HTTP/SSE） | 外部 Agent 通过标准 A2A 协议发现平台 Agent Card、向平台委托任务、获取任务结果 |
+| 下游服务/应用 | 消费方式                               | 说明                                                                          |
+| ------------- | -------------------------------------- | ----------------------------------------------------------------------------- |
+| APP-DW        | REST API                               | 数字员工通过 A2A 向外部 Agent 委托任务、查询委托结果                          |
+| APP-SUPERAI   | REST API                               | 超级 AI 发现并调用外部 Agent 能力                                             |
+| APP-DASHBOARD | REST API                               | 仪表盘展示协作统计、委托任务状态、Agent 健康度                                |
+| 外部 Agent    | A2A Protocol（JSON-RPC over HTTP/SSE） | 外部 Agent 通过标准 A2A 协议发现平台 Agent Card、向平台委托任务、获取任务结果 |
 
 ### 1.5 核心能力清单
 
-| 能力域 | 说明 |
-|---|---|
+| 能力域          | 说明                                                                        |
+| --------------- | --------------------------------------------------------------------------- |
 | Agent Card 管理 | 发布平台 Agent Card（能力声明）、发现外部 Agent Card、Agent Card 搜索与缓存 |
-| 任务委托 | 向外部 Agent 委托任务、接收外部 Agent 的任务委托、任务状态同步与回调 |
-| 异步协作 | 任务进度查询、任务结果获取、任务取消、任务超时处理、回调注册 |
-| Agent 注册发现 | Agent 注册、Agent 发现、Agent 健康检查、Agent 注销 |
-| 消息通道 | Agent 间消息传递、消息队列管理、消息确认机制 |
-| 安全认证 | Agent 间双向认证（API Key/JWT）、Token 管理、权限验证 |
-| 协作审计 | 协作记录查询、委托统计、错误追踪、SLA 监控 |
+| 任务委托        | 向外部 Agent 委托任务、接收外部 Agent 的任务委托、任务状态同步与回调        |
+| 异步协作        | 任务进度查询、任务结果获取、任务取消、任务超时处理、回调注册                |
+| Agent 注册发现  | Agent 注册、Agent 发现、Agent 健康检查、Agent 注销                          |
+| 消息通道        | Agent 间消息传递、消息队列管理、消息确认机制                                |
+| 安全认证        | Agent 间双向认证（API Key/JWT）、Token 管理、权限验证                       |
+| 协作审计        | 协作记录查询、委托统计、错误追踪、SLA 监控                                  |
 
 ### 1.6 核心概念
 
-| 概念 | 说明 |
-|---|---|
-| Agent Card | A2A 协议中的 Agent 能力声明文档，包含 Agent 标识、名称、描述、能力（skills）、端点 URL、认证方式等 |
-| Skill | Agent Card 中声明的单项能力，包含名称、描述、输入/输出模式、标签 |
-| Delegation Task | 跨 Agent 委托的任务单元，包含任务 ID、发起方、接收方、任务输入、状态、结果 |
-| Agent Endpoint | Agent 的 A2A 服务端点 URL，支持 JSON-RPC 2.0 调用 |
-| Collaboration Session | 一次 Agent 间协作会话，可能包含多轮任务委托与消息交互 |
-| Callback URL | 异步任务结果回调地址，任务完成后接收方回调通知发起方 |
-| Agent Registry | Agent 注册中心，管理已注册 Agent 的元信息与健康状态 |
-| Trace Context | 跨 Agent 协作的链路追踪上下文，trace_id 在委托链路中透传 |
+| 概念                  | 说明                                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------------------- |
+| Agent Card            | A2A 协议中的 Agent 能力声明文档，包含 Agent 标识、名称、描述、能力（skills）、端点 URL、认证方式等 |
+| Skill                 | Agent Card 中声明的单项能力，包含名称、描述、输入/输出模式、标签                                   |
+| Delegation Task       | 跨 Agent 委托的任务单元，包含任务 ID、发起方、接收方、任务输入、状态、结果                         |
+| Agent Endpoint        | Agent 的 A2A 服务端点 URL，支持 JSON-RPC 2.0 调用                                                  |
+| Collaboration Session | 一次 Agent 间协作会话，可能包含多轮任务委托与消息交互                                              |
+| Callback URL          | 异步任务结果回调地址，任务完成后接收方回调通知发起方                                               |
+| Agent Registry        | Agent 注册中心，管理已注册 Agent 的元信息与健康状态                                                |
+| Trace Context         | 跨 Agent 协作的链路追踪上下文，trace_id 在委托链路中透传                                           |
 
 ### 1.7 A2A 协议说明
 
@@ -123,6 +123,7 @@ TECH-A2A 同时作为 A2A Server（对外暴露 Agent Card 和接收任务）和
 所有 TECH-A2A API 路径统一前缀：`/api/v1/a2a`
 
 此外，TECH-A2A 还暴露 A2A 协议标准端点：
+
 - Agent Card 端点：`/.well-known/agent.json`（公开，无需认证）
 - JSON-RPC 端点：`/rpc/v1/a2a`（外部 Agent 调用入口）
 
@@ -140,9 +141,7 @@ TECH-A2A 遵循 A2A Protocol 规范，核心交互基于 JSON-RPC 2.0：
     "id": "task-external-001",
     "message": {
       "role": "user",
-      "parts": [
-        { "type": "text", "text": "请分析这份季度报告并生成摘要" }
-      ]
+      "parts": [{ "type": "text", "text": "请分析这份季度报告并生成摘要" }]
     }
   },
   "id": "rpc-001"
@@ -171,29 +170,31 @@ TECH-A2A 遵循 A2A Protocol 规范，核心交互基于 JSON-RPC 2.0：
 {
   "code": 0,
   "message": "success",
-  "data": { },
+  "data": {},
   "traceId": "a1b2c3d4e5f6"
 }
 ```
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| code | int | 业务状态码，0 表示成功，非 0 表示失败 |
-| message | string | 状态描述信息 |
-| data | object/array/null | 业务数据载体 |
-| traceId | string | 全链路追踪 ID，与请求头 `X-Trace-Id` 一致 |
+| 字段    | 类型              | 说明                                      |
+| ------- | ----------------- | ----------------------------------------- |
+| code    | int               | 业务状态码，0 表示成功，非 0 表示失败     |
+| message | string            | 状态描述信息                              |
+| data    | object/array/null | 业务数据载体                              |
+| traceId | string            | 全链路追踪 ID，与请求头 `X-Trace-Id` 一致 |
 
 ### 2.4 认证
 
 TECH-A2A 支持两种认证模式：
 
 **平台内部认证（内部服务调用）**
+
 - 认证方式：Bearer Token（JWT）
 - 请求头：`Authorization: Bearer <token>`
 - Token 由 TECH-IAM 签发，包含 `userId`、`tenantId`、`roles` 等声明
 - 数字员工（APP-DW）调用时使用 Service Token，包含 `agentId` 声明
 
 **Agent 间认证（A2A 协议通信）**
+
 - API Key 认证：请求头 `X-Agent-Api-Key: <apiKey>`，适用于外部 Agent 调用平台
 - JWT 认证：双向 JWT 交换，适用于高安全场景
 - OAuth 2.0：支持 Authorization Code Grant 流程
@@ -201,49 +202,49 @@ TECH-A2A 支持两种认证模式：
 
 ### 2.5 请求头约定
 
-| 请求头 | 必填 | 说明 |
-|---|---|---|
-| Authorization | 是 | Bearer Token（平台内部调用） |
+| 请求头          | 必填 | 说明                                     |
+| --------------- | ---- | ---------------------------------------- |
+| Authorization   | 是   | Bearer Token（平台内部调用）             |
 | X-Agent-Api-Key | 条件 | Agent 间调用时使用（替代 Authorization） |
-| X-Trace-Id | 否 | 链路追踪 ID，未传则服务端自动生成 |
-| X-Tenant-Id | 是 | 租户 ID |
-| X-Request-Id | 否 | 请求唯一标识，用于幂等控制 |
-| X-Callback-Url | 否 | 异步任务结果回调地址 |
-| Content-Type | 是 | `application/json;charset=UTF-8` |
-| Accept | 否 | SSE 接口需设为 `text/event-stream` |
+| X-Trace-Id      | 否   | 链路追踪 ID，未传则服务端自动生成        |
+| X-Tenant-Id     | 是   | 租户 ID                                  |
+| X-Request-Id    | 否   | 请求唯一标识，用于幂等控制               |
+| X-Callback-Url  | 否   | 异步任务结果回调地址                     |
+| Content-Type    | 是   | `application/json;charset=UTF-8`         |
+| Accept          | 否   | SSE 接口需设为 `text/event-stream`       |
 
 ### 2.6 错误码
 
-| 错误码 | HTTP Status | 含义 | 典型场景 |
-|---|---|---|---|
-| 0 | 200 | 成功 | 正常请求 |
-| 40001 | 400 | 参数校验失败 | 必填字段缺失、格式错误 |
-| 40002 | 400 | 参数值非法 | 枚举值不匹配、URL 格式不合法 |
-| 40101 | 401 | 未认证 | Token/API Key 缺失或过期 |
-| 40102 | 401 | Agent 认证失败 | Agent 未注册、API Key 无效、JWT 签名错误 |
-| 40301 | 403 | 无权限 | Agent 无权委托任务给目标 Agent |
-| 40302 | 403 | 能力不匹配 | 目标 Agent 不具备请求的 Skill |
-| 40401 | 404 | 资源不存在 | Agent Card / 委托任务 / Agent 不存在 |
-| 40402 | 404 | 外部 Agent 不可达 | 外部 Agent 端点连接超时或拒绝 |
-| 40901 | 409 | 状态冲突 | 操作与当前任务状态不兼容（如已完成任务再次取消） |
-| 40902 | 409 | Agent 已注册 | Agent 重复注册且不允许覆盖 |
-| 42201 | 422 | 业务规则校验失败 | Agent Card 格式不符合 A2A 规范、Skill 定义不完整 |
-| 42202 | 422 | 任务委托失败 | 目标 Agent 拒绝任务、任务输入不满足 Skill 输入模式 |
-| 42203 | 422 | Agent 不健康 | Agent 健康检查失败，不允许委托任务 |
-| 42901 | 429 | 请求过于频繁 | 触发限流 |
-| 50001 | 500 | 服务内部错误 | 未捕获异常 |
-| 50002 | 500 | 依赖服务不可用 | TECH-AGENT/TECH-WFE/TECH-IAM 不可达 |
-| 50003 | 500 | A2A 协议通信异常 | JSON-RPC 调用失败、外部 Agent 响应解析错误 |
-| 50401 | 504 | 外部 Agent 响应超时 | 委托任务发送超时、回调等待超时 |
+| 错误码 | HTTP Status | 含义                | 典型场景                                           |
+| ------ | ----------- | ------------------- | -------------------------------------------------- |
+| 0      | 200         | 成功                | 正常请求                                           |
+| 40001  | 400         | 参数校验失败        | 必填字段缺失、格式错误                             |
+| 40002  | 400         | 参数值非法          | 枚举值不匹配、URL 格式不合法                       |
+| 40101  | 401         | 未认证              | Token/API Key 缺失或过期                           |
+| 40102  | 401         | Agent 认证失败      | Agent 未注册、API Key 无效、JWT 签名错误           |
+| 40301  | 403         | 无权限              | Agent 无权委托任务给目标 Agent                     |
+| 40302  | 403         | 能力不匹配          | 目标 Agent 不具备请求的 Skill                      |
+| 40401  | 404         | 资源不存在          | Agent Card / 委托任务 / Agent 不存在               |
+| 40402  | 404         | 外部 Agent 不可达   | 外部 Agent 端点连接超时或拒绝                      |
+| 40901  | 409         | 状态冲突            | 操作与当前任务状态不兼容（如已完成任务再次取消）   |
+| 40902  | 409         | Agent 已注册        | Agent 重复注册且不允许覆盖                         |
+| 42201  | 422         | 业务规则校验失败    | Agent Card 格式不符合 A2A 规范、Skill 定义不完整   |
+| 42202  | 422         | 任务委托失败        | 目标 Agent 拒绝任务、任务输入不满足 Skill 输入模式 |
+| 42203  | 422         | Agent 不健康        | Agent 健康检查失败，不允许委托任务                 |
+| 42901  | 429         | 请求过于频繁        | 触发限流                                           |
+| 50001  | 500         | 服务内部错误        | 未捕获异常                                         |
+| 50002  | 500         | 依赖服务不可用      | TECH-AGENT/TECH-WFE/TECH-IAM 不可达                |
+| 50003  | 500         | A2A 协议通信异常    | JSON-RPC 调用失败、外部 Agent 响应解析错误         |
+| 50401  | 504         | 外部 Agent 响应超时 | 委托任务发送超时、回调等待超时                     |
 
 ### 2.7 分页约定
 
 分页查询接口统一参数：
 
-| 参数 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| page | int | 1 | 页码，从 1 开始 |
-| size | int | 20 | 每页条数，最大 100 |
+| 参数 | 类型   | 默认值     | 说明                       |
+| ---- | ------ | ---------- | -------------------------- |
+| page | int    | 1          | 页码，从 1 开始            |
+| size | int    | 20         | 每页条数，最大 100         |
 | sort | string | -createdAt | 排序字段，`-` 前缀表示降序 |
 
 分页响应结构：
@@ -253,7 +254,7 @@ TECH-A2A 支持两种认证模式：
   "code": 0,
   "message": "success",
   "data": {
-    "items": [ ],
+    "items": [],
     "total": 156,
     "page": 1,
     "size": 20,
@@ -319,15 +320,15 @@ TECH-A2A 支持两种认证模式：
                               (超时/异常)
 ```
 
-| 状态 | 说明 |
-|---|---|
-| SUBMITTED | 任务已提交，等待接收 Agent 确认 |
-| WORKING | 接收 Agent 正在处理任务 |
-| INPUT_REQUIRED | 接收 Agent 需要额外输入，等待发起方补充信息 |
-| COMPLETED | 任务已完成，结果可用 |
-| CANCELED | 任务已被取消 |
-| FAILED | 任务执行失败 |
-| TIMEOUT | 任务超时未完成（平台内部状态，A2A 映射为 FAILED） |
+| 状态           | 说明                                              |
+| -------------- | ------------------------------------------------- |
+| SUBMITTED      | 任务已提交，等待接收 Agent 确认                   |
+| WORKING        | 接收 Agent 正在处理任务                           |
+| INPUT_REQUIRED | 接收 Agent 需要额外输入，等待发起方补充信息       |
+| COMPLETED      | 任务已完成，结果可用                              |
+| CANCELED       | 任务已被取消                                      |
+| FAILED         | 任务执行失败                                      |
+| TIMEOUT        | 任务超时未完成（平台内部状态，A2A 映射为 FAILED） |
 
 ---
 
@@ -347,32 +348,32 @@ POST /api/v1/a2a/agent-cards
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| agentId | string | 是 | 平台 Agent ID（关联 TECH-AGENT） |
-| name | string | 是 | Agent 显示名称 |
-| description | string | 是 | Agent 描述 |
-| version | string | 是 | Agent Card 版本号（语义化版本，如 `1.0.0`） |
-| protocolVersion | string | 否 | A2A 协议版本，默认 `1.0` |
-| endpointUrl | string | 否 | A2A 服务端点 URL，不传则使用默认 `https://{platform-host}/rpc/v1/a2a` |
-| skills | array | 是 | 能力声明列表 |
-| skills[].name | string | 是 | Skill 名称（唯一标识） |
-| skills[].description | string | 是 | Skill 描述 |
-| skills[].tags | array | 否 | Skill 标签列表 |
-| skills[].inputSchema | object | 否 | 输入参数 JSON Schema |
-| skills[].outputSchema | object | 否 | 输出结果 JSON Schema |
-| skills[].examples | array | 否 | 使用示例列表 |
-| capabilities | object | 否 | Agent 能力声明 |
-| capabilities.streaming | boolean | 否 | 是否支持 SSE 流式推送，默认 false |
-| capabilities.pushNotifications | boolean | 否 | 是否支持推送通知，默认 false |
-| capabilities.stateTransitionHistory | boolean | 否 | 是否支持状态转换历史查询，默认 false |
-| authentication | object | 否 | 认证方式配置 |
-| authentication.schemes | array | 是 | 认证方案列表：`API_KEY` / `JWT` / `OAUTH2` / `NONE` |
-| authentication.credentials | object | 否 | 认证凭证（API Key 值等，加密存储） |
-| defaultInputModes | array | 否 | 默认输入模式：`text` / `file` / `data`，默认 `["text"]` |
-| defaultOutputModes | array | 否 | 默认输出模式：`text` / `file` / `data`，默认 `["text"]` |
-| visibility | string | 否 | 可见性：`PUBLIC`（公网可发现）/ `PRIVATE`（需认证发现），默认 `PRIVATE` |
-| metadata | object | 否 | 自定义元数据 |
+| 字段                                | 类型    | 必填 | 说明                                                                    |
+| ----------------------------------- | ------- | ---- | ----------------------------------------------------------------------- |
+| agentId                             | string  | 是   | 平台 Agent ID（关联 TECH-AGENT）                                        |
+| name                                | string  | 是   | Agent 显示名称                                                          |
+| description                         | string  | 是   | Agent 描述                                                              |
+| version                             | string  | 是   | Agent Card 版本号（语义化版本，如 `1.0.0`）                             |
+| protocolVersion                     | string  | 否   | A2A 协议版本，默认 `1.0`                                                |
+| endpointUrl                         | string  | 否   | A2A 服务端点 URL，不传则使用默认 `https://{platform-host}/rpc/v1/a2a`   |
+| skills                              | array   | 是   | 能力声明列表                                                            |
+| skills[].name                       | string  | 是   | Skill 名称（唯一标识）                                                  |
+| skills[].description                | string  | 是   | Skill 描述                                                              |
+| skills[].tags                       | array   | 否   | Skill 标签列表                                                          |
+| skills[].inputSchema                | object  | 否   | 输入参数 JSON Schema                                                    |
+| skills[].outputSchema               | object  | 否   | 输出结果 JSON Schema                                                    |
+| skills[].examples                   | array   | 否   | 使用示例列表                                                            |
+| capabilities                        | object  | 否   | Agent 能力声明                                                          |
+| capabilities.streaming              | boolean | 否   | 是否支持 SSE 流式推送，默认 false                                       |
+| capabilities.pushNotifications      | boolean | 否   | 是否支持推送通知，默认 false                                            |
+| capabilities.stateTransitionHistory | boolean | 否   | 是否支持状态转换历史查询，默认 false                                    |
+| authentication                      | object  | 否   | 认证方式配置                                                            |
+| authentication.schemes              | array   | 是   | 认证方案列表：`API_KEY` / `JWT` / `OAUTH2` / `NONE`                     |
+| authentication.credentials          | object  | 否   | 认证凭证（API Key 值等，加密存储）                                      |
+| defaultInputModes                   | array   | 否   | 默认输入模式：`text` / `file` / `data`，默认 `["text"]`                 |
+| defaultOutputModes                  | array   | 否   | 默认输出模式：`text` / `file` / `data`，默认 `["text"]`                 |
+| visibility                          | string  | 否   | 可见性：`PUBLIC`（公网可发现）/ `PRIVATE`（需认证发现），默认 `PRIVATE` |
+| metadata                            | object  | 否   | 自定义元数据                                                            |
 
 **请求示例**
 
@@ -392,7 +393,10 @@ POST /api/v1/a2a/agent-cards
         "type": "object",
         "properties": {
           "reportUrl": { "type": "string", "description": "财务报表文件 URL" },
-          "analysisType": { "type": "string", "enum": ["summary", "deep-dive", "comparison"] }
+          "analysisType": {
+            "type": "string",
+            "enum": ["summary", "deep-dive", "comparison"]
+          }
         },
         "required": ["reportUrl"]
       },
@@ -472,14 +476,14 @@ POST /api/v1/a2a/agent-cards
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | name/description/version/skills 为空 |
-| 40401 | agentId 在 TECH-AGENT 中不存在 |
-| 40902 | 该 agentId 已发布 Agent Card 且版本号未变更 |
-| 42201 | Agent Card 格式不符合 A2A 规范（缺少必填字段、Skill 定义不完整） |
-| 42201 | inputSchema/outputSchema 不是合法的 JSON Schema |
-| 50002 | TECH-AGENT 服务不可达，无法校验 agentId |
+| 错误码 | 场景                                                             |
+| ------ | ---------------------------------------------------------------- |
+| 40001  | name/description/version/skills 为空                             |
+| 40401  | agentId 在 TECH-AGENT 中不存在                                   |
+| 40902  | 该 agentId 已发布 Agent Card 且版本号未变更                      |
+| 42201  | Agent Card 格式不符合 A2A 规范（缺少必填字段、Skill 定义不完整） |
+| 42201  | inputSchema/outputSchema 不是合法的 JSON Schema                  |
+| 50002  | TECH-AGENT 服务不可达，无法校验 agentId                          |
 
 ---
 
@@ -493,16 +497,16 @@ GET /api/v1/a2a/agent-cards/{cardId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明          |
+| ------ | ------ | ------------- |
 | cardId | string | Agent Card ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| includeSkills | boolean | 否 | 是否包含完整 Skill 定义，默认 true |
-| includeAuth | boolean | 否 | 是否包含认证配置（需管理员权限），默认 false |
+| 参数          | 类型    | 必填 | 说明                                         |
+| ------------- | ------- | ---- | -------------------------------------------- |
+| includeSkills | boolean | 否   | 是否包含完整 Skill 定义，默认 true           |
+| includeAuth   | boolean | 否   | 是否包含认证配置（需管理员权限），默认 false |
 
 **响应示例**
 
@@ -524,8 +528,8 @@ GET /api/v1/a2a/agent-cards/{cardId}
         "name": "financial-report-analysis",
         "description": "分析财务报表并生成结构化摘要与洞察",
         "tags": ["finance", "report", "analysis"],
-        "inputSchema": { "type": "object", "properties": { } },
-        "outputSchema": { "type": "object", "properties": { } },
+        "inputSchema": { "type": "object", "properties": {} },
+        "outputSchema": { "type": "object", "properties": {} },
         "examples": ["请分析 2026 年 Q2 季度财报"]
       },
       {
@@ -554,10 +558,10 @@ GET /api/v1/a2a/agent-cards/{cardId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent Card 不存在 |
-| 40301 | 无权查看（PRIVATE Agent Card 且无认证） |
+| 错误码 | 场景                                    |
+| ------ | --------------------------------------- |
+| 40401  | Agent Card 不存在                       |
+| 40301  | 无权查看（PRIVATE Agent Card 且无认证） |
 
 ---
 
@@ -571,18 +575,18 @@ GET /api/v1/a2a/agent-cards
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| keyword | string | 否 | 关键词搜索（匹配 name、description） |
-| skill | string | 否 | 按技能名称筛选 |
-| tags | string | 否 | 按标签筛选，逗号分隔（如 `finance,report`） |
-| source | string | 否 | 来源：`INTERNAL`（平台发布）/ `EXTERNAL`（外部发现）/ `ALL`，默认 `ALL` |
-| visibility | string | 否 | 可见性筛选：`PUBLIC` / `PRIVATE` / `ALL` |
-| status | string | 否 | 状态筛选：`PUBLISHED` / `UNPUBLISHED` / `DEPRECATED` |
-| protocolVersion | string | 否 | A2A 协议版本筛选 |
-| page | int | 否 | 页码 |
-| size | int | 否 | 每页条数 |
-| sort | string | 否 | 排序字段，默认 `-publishedAt` |
+| 参数            | 类型   | 必填 | 说明                                                                    |
+| --------------- | ------ | ---- | ----------------------------------------------------------------------- |
+| keyword         | string | 否   | 关键词搜索（匹配 name、description）                                    |
+| skill           | string | 否   | 按技能名称筛选                                                          |
+| tags            | string | 否   | 按标签筛选，逗号分隔（如 `finance,report`）                             |
+| source          | string | 否   | 来源：`INTERNAL`（平台发布）/ `EXTERNAL`（外部发现）/ `ALL`，默认 `ALL` |
+| visibility      | string | 否   | 可见性筛选：`PUBLIC` / `PRIVATE` / `ALL`                                |
+| status          | string | 否   | 状态筛选：`PUBLISHED` / `UNPUBLISHED` / `DEPRECATED`                    |
+| protocolVersion | string | 否   | A2A 协议版本筛选                                                        |
+| page            | int    | 否   | 页码                                                                    |
+| size            | int    | 否   | 每页条数                                                                |
+| sort            | string | 否   | 排序字段，默认 `-publishedAt`                                           |
 
 **响应示例**
 
@@ -603,7 +607,10 @@ GET /api/v1/a2a/agent-cards
         "status": "PUBLISHED",
         "endpointUrl": "https://metaplatform.example.com/rpc/v1/a2a",
         "skills": [
-          { "name": "financial-report-analysis", "tags": ["finance", "report"] },
+          {
+            "name": "financial-report-analysis",
+            "tags": ["finance", "report"]
+          },
           { "name": "budget-review", "tags": ["finance", "budget"] }
         ],
         "publishedAt": "2026-07-16T10:30:00.000+08:00"
@@ -635,9 +642,9 @@ GET /api/v1/a2a/agent-cards
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40002 | source/visibility/status 枚举值不合法 |
+| 错误码 | 场景                                  |
+| ------ | ------------------------------------- |
+| 40002  | source/visibility/status 枚举值不合法 |
 
 ---
 
@@ -651,23 +658,23 @@ PUT /api/v1/a2a/agent-cards/{cardId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明          |
+| ------ | ------ | ------------- |
 | cardId | string | Agent Card ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 否 | 更新 Agent 显示名称 |
-| description | string | 否 | 更新描述 |
-| version | string | 否 | 新版本号（必须大于当前版本） |
-| skills | array | 否 | 更新能力声明列表（全量替换） |
-| capabilities | object | 否 | 更新能力声明 |
-| authentication | object | 否 | 更新认证配置 |
-| visibility | string | 否 | 更新可见性 |
-| status | string | 否 | 更新状态：`PUBLISHED` / `UNPUBLISHED` / `DEPRECATED` |
-| expectedVersion | int | 是 | 乐观锁版本号（当前数据的 version 字段值） |
+| 字段            | 类型   | 必填 | 说明                                                 |
+| --------------- | ------ | ---- | ---------------------------------------------------- |
+| name            | string | 否   | 更新 Agent 显示名称                                  |
+| description     | string | 否   | 更新描述                                             |
+| version         | string | 否   | 新版本号（必须大于当前版本）                         |
+| skills          | array  | 否   | 更新能力声明列表（全量替换）                         |
+| capabilities    | object | 否   | 更新能力声明                                         |
+| authentication  | object | 否   | 更新认证配置                                         |
+| visibility      | string | 否   | 更新可见性                                           |
+| status          | string | 否   | 更新状态：`PUBLISHED` / `UNPUBLISHED` / `DEPRECATED` |
+| expectedVersion | int    | 是   | 乐观锁版本号（当前数据的 version 字段值）            |
 
 **请求示例**
 
@@ -718,13 +725,13 @@ PUT /api/v1/a2a/agent-cards/{cardId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent Card 不存在 |
-| 40902 | 乐观锁版本冲突（expectedVersion 不匹配） |
-| 42201 | 新版本号不大于当前版本号 |
-| 42201 | skills 格式不符合 A2A 规范 |
-| 40301 | 无权更新该 Agent Card |
+| 错误码 | 场景                                     |
+| ------ | ---------------------------------------- |
+| 40401  | Agent Card 不存在                        |
+| 40902  | 乐观锁版本冲突（expectedVersion 不匹配） |
+| 42201  | 新版本号不大于当前版本号                 |
+| 42201  | skills 格式不符合 A2A 规范               |
+| 40301  | 无权更新该 Agent Card                    |
 
 ---
 
@@ -738,15 +745,15 @@ POST /api/v1/a2a/agent-cards/discover
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| agentUrl | string | 是 | 外部 Agent 的 URL（如 `https://external-agent.example.com`） |
-| agentCardPath | string | 否 | Agent Card 路径，默认 `/.well-known/agent.json` |
-| authentication | object | 否 | 发现请求的认证配置 |
-| authentication.type | string | 否 | 认证类型：`API_KEY` / `BEARER` / `NONE` |
-| authentication.token | string | 否 | 认证令牌 |
-| cacheStrategy | string | 否 | 缓存策略：`CACHE`（缓存到本地）/ `NO_CACHE`（仅查询不缓存），默认 `CACHE` |
-| refresh | boolean | 否 | 是否强制刷新（忽略本地缓存），默认 false |
+| 字段                 | 类型    | 必填 | 说明                                                                      |
+| -------------------- | ------- | ---- | ------------------------------------------------------------------------- |
+| agentUrl             | string  | 是   | 外部 Agent 的 URL（如 `https://external-agent.example.com`）              |
+| agentCardPath        | string  | 否   | Agent Card 路径，默认 `/.well-known/agent.json`                           |
+| authentication       | object  | 否   | 发现请求的认证配置                                                        |
+| authentication.type  | string  | 否   | 认证类型：`API_KEY` / `BEARER` / `NONE`                                   |
+| authentication.token | string  | 否   | 认证令牌                                                                  |
+| cacheStrategy        | string  | 否   | 缓存策略：`CACHE`（缓存到本地）/ `NO_CACHE`（仅查询不缓存），默认 `CACHE` |
+| refresh              | boolean | 否   | 是否强制刷新（忽略本地缓存），默认 false                                  |
 
 **请求示例**
 
@@ -806,13 +813,13 @@ POST /api/v1/a2a/agent-cards/discover
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40002 | agentUrl 格式不合法 |
-| 40402 | 外部 Agent 不可达（连接超时/拒绝） |
-| 42201 | 返回的 Agent Card 格式不符合 A2A 规范 |
-| 50401 | 外部 Agent 响应超时 |
-| 50003 | Agent Card 解析失败 |
+| 错误码 | 场景                                  |
+| ------ | ------------------------------------- |
+| 40002  | agentUrl 格式不合法                   |
+| 40402  | 外部 Agent 不可达（连接超时/拒绝）    |
+| 42201  | 返回的 Agent Card 格式不符合 A2A 规范 |
+| 50401  | 外部 Agent 响应超时                   |
+| 50003  | Agent Card 解析失败                   |
 
 ---
 
@@ -826,15 +833,15 @@ DELETE /api/v1/a2a/agent-cards/{cardId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数   | 类型   | 说明          |
+| ------ | ------ | ------------- |
 | cardId | string | Agent Card ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| force | boolean | 否 | 是否强制删除（取消关联的进行中任务），默认 false |
+| 参数  | 类型    | 必填 | 说明                                             |
+| ----- | ------- | ---- | ------------------------------------------------ |
+| force | boolean | 否   | 是否强制删除（取消关联的进行中任务），默认 false |
 
 **响应示例**
 
@@ -854,11 +861,11 @@ DELETE /api/v1/a2a/agent-cards/{cardId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent Card 不存在 |
-| 40901 | 存在关联的进行中委托任务（force=false 时） |
-| 40301 | 无权删除该 Agent Card |
+| 错误码 | 场景                                       |
+| ------ | ------------------------------------------ |
+| 40401  | Agent Card 不存在                          |
+| 40901  | 存在关联的进行中委托任务（force=false 时） |
+| 40301  | 无权删除该 Agent Card                      |
 
 ---
 
@@ -874,27 +881,27 @@ POST /api/v1/a2a/delegations
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| targetCardId | string | 是 | 目标 Agent Card ID（已注册/发现的外部 Agent） |
-| skillName | string | 是 | 调用的 Skill 名称（需在目标 Agent Card 中声明） |
-| message | object | 是 | 任务消息体（A2A Message 格式） |
-| message.role | string | 否 | 角色，默认 `user` |
-| message.parts | array | 是 | 消息内容分片列表 |
-| message.parts[].type | string | 是 | 分片类型：`text` / `file` / `data` |
-| message.parts[].text | string | 条件 | 文本内容（type=text 时必填） |
-| message.parts[].file | object | 条件 | 文件内容（type=file 时必填） |
-| message.parts[].file.url | string | 是 | 文件 URL |
-| message.parts[].file.mimeType | string | 否 | 文件 MIME 类型 |
-| message.parts[].data | object | 条件 | 结构化数据（type=data 时必填） |
-| sessionId | string | 否 | 协作会话 ID，不传则自动创建新会话 |
-| callbackUrl | string | 否 | 任务结果回调地址（任务完成后回调通知） |
-| timeout | int | 否 | 任务超时时间（秒），默认 300（5 分钟） |
-| priority | int | 否 | 优先级：1(低)/2(中)/3(高)，默认 2 |
-| metadata | object | 否 | 自定义元数据（透传至外部 Agent） |
-| pushNotification | object | 否 | 推送通知配置（当外部 Agent 支持时） |
-| pushNotification.url | string | 是 | 接收推送通知的 URL |
-| pushNotification.token | string | 否 | 推送认证 Token |
+| 字段                          | 类型   | 必填 | 说明                                            |
+| ----------------------------- | ------ | ---- | ----------------------------------------------- |
+| targetCardId                  | string | 是   | 目标 Agent Card ID（已注册/发现的外部 Agent）   |
+| skillName                     | string | 是   | 调用的 Skill 名称（需在目标 Agent Card 中声明） |
+| message                       | object | 是   | 任务消息体（A2A Message 格式）                  |
+| message.role                  | string | 否   | 角色，默认 `user`                               |
+| message.parts                 | array  | 是   | 消息内容分片列表                                |
+| message.parts[].type          | string | 是   | 分片类型：`text` / `file` / `data`              |
+| message.parts[].text          | string | 条件 | 文本内容（type=text 时必填）                    |
+| message.parts[].file          | object | 条件 | 文件内容（type=file 时必填）                    |
+| message.parts[].file.url      | string | 是   | 文件 URL                                        |
+| message.parts[].file.mimeType | string | 否   | 文件 MIME 类型                                  |
+| message.parts[].data          | object | 条件 | 结构化数据（type=data 时必填）                  |
+| sessionId                     | string | 否   | 协作会话 ID，不传则自动创建新会话               |
+| callbackUrl                   | string | 否   | 任务结果回调地址（任务完成后回调通知）          |
+| timeout                       | int    | 否   | 任务超时时间（秒），默认 300（5 分钟）          |
+| priority                      | int    | 否   | 优先级：1(低)/2(中)/3(高)，默认 2               |
+| metadata                      | object | 否   | 自定义元数据（透传至外部 Agent）                |
+| pushNotification              | object | 否   | 推送通知配置（当外部 Agent 支持时）             |
+| pushNotification.url          | string | 是   | 接收推送通知的 URL                              |
+| pushNotification.token        | string | 否   | 推送认证 Token                                  |
 
 **请求示例**
 
@@ -957,16 +964,16 @@ POST /api/v1/a2a/delegations
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | targetCardId/skillName/message 为空 |
-| 40401 | targetCardId 对应的 Agent Card 不存在 |
-| 40302 | 目标 Agent Card 中不存在指定的 skillName |
-| 40402 | 外部 Agent 端点不可达 |
-| 42203 | 目标 Agent 健康检查失败，不允许委托 |
-| 42202 | 外部 Agent 拒绝任务（输入不满足 Skill 输入模式） |
-| 50401 | 外部 Agent 响应超时 |
-| 50003 | JSON-RPC 调用失败、响应解析错误 |
+| 错误码 | 场景                                             |
+| ------ | ------------------------------------------------ |
+| 40001  | targetCardId/skillName/message 为空              |
+| 40401  | targetCardId 对应的 Agent Card 不存在            |
+| 40302  | 目标 Agent Card 中不存在指定的 skillName         |
+| 40402  | 外部 Agent 端点不可达                            |
+| 42203  | 目标 Agent 健康检查失败，不允许委托              |
+| 42202  | 外部 Agent 拒绝任务（输入不满足 Skill 输入模式） |
+| 50401  | 外部 Agent 响应超时                              |
+| 50003  | JSON-RPC 调用失败、响应解析错误                  |
 
 ---
 
@@ -982,17 +989,17 @@ POST /rpc/v1/a2a
 
 **JSON-RPC 请求参数（method: tasks/send）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| id | string | 是 | 外部任务 ID（由外部 Agent 生成） |
-| message | object | 是 | 任务消息体（A2A Message 格式） |
-| message.role | string | 否 | 角色，默认 `user` |
-| message.parts | array | 是 | 消息内容分片列表 |
-| message.parts[].type | string | 是 | 分片类型：`text` / `file` / `data` |
-| message.parts[].text | string | 条件 | 文本内容 |
-| message.parts[].data | object | 条件 | 结构化数据 |
-| sessionId | string | 否 | 会话 ID |
-| pushNotification | object | 否 | 推送通知配置 |
+| 字段                 | 类型   | 必填 | 说明                               |
+| -------------------- | ------ | ---- | ---------------------------------- |
+| id                   | string | 是   | 外部任务 ID（由外部 Agent 生成）   |
+| message              | object | 是   | 任务消息体（A2A Message 格式）     |
+| message.role         | string | 否   | 角色，默认 `user`                  |
+| message.parts        | array  | 是   | 消息内容分片列表                   |
+| message.parts[].type | string | 是   | 分片类型：`text` / `file` / `data` |
+| message.parts[].text | string | 条件 | 文本内容                           |
+| message.parts[].data | object | 条件 | 结构化数据                         |
+| sessionId            | string | 否   | 会话 ID                            |
+| pushNotification     | object | 否   | 推送通知配置                       |
 
 **JSON-RPC 请求示例**
 
@@ -1057,15 +1064,15 @@ POST /rpc/v1/a2a
 
 **错误场景（JSON-RPC error 格式）**
 
-| JSON-RPC error code | 说明 |
-|---|---|
-| -32600 | 无效请求（不符合 JSON-RPC 2.0 规范） |
-| -32601 | 方法不存在（method 不支持） |
-| -32602 | 参数无效（缺少必填字段） |
-| -32001 | Agent 认证失败 |
-| -32002 | Skill 不匹配（无 Agent 能处理请求的 Skill） |
-| -32003 | Agent 不健康 |
-| -32004 | 依赖服务不可用（TECH-AGENT/TECH-WFE 不可达） |
+| JSON-RPC error code | 说明                                         |
+| ------------------- | -------------------------------------------- |
+| -32600              | 无效请求（不符合 JSON-RPC 2.0 规范）         |
+| -32601              | 方法不存在（method 不支持）                  |
+| -32602              | 参数无效（缺少必填字段）                     |
+| -32001              | Agent 认证失败                               |
+| -32002              | Skill 不匹配（无 Agent 能处理请求的 Skill）  |
+| -32003              | Agent 不健康                                 |
+| -32004              | 依赖服务不可用（TECH-AGENT/TECH-WFE 不可达） |
 
 ---
 
@@ -1079,16 +1086,16 @@ GET /api/v1/a2a/delegations/{delegationId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数         | 类型   | 说明        |
+| ------------ | ------ | ----------- |
 | delegationId | string | 委托任务 ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| syncExternal | boolean | 否 | 是否同步查询外部 Agent 最新状态（OUTBOUND 任务），默认 false（返回本地缓存状态） |
-| includeHistory | boolean | 否 | 是否包含状态转换历史，默认 false |
+| 参数           | 类型    | 必填 | 说明                                                                             |
+| -------------- | ------- | ---- | -------------------------------------------------------------------------------- |
+| syncExternal   | boolean | 否   | 是否同步查询外部 Agent 最新状态（OUTBOUND 任务），默认 false（返回本地缓存状态） |
+| includeHistory | boolean | 否   | 是否包含状态转换历史，默认 false                                                 |
 
 **响应示例**
 
@@ -1141,12 +1148,12 @@ GET /api/v1/a2a/delegations/{delegationId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 委托任务不存在 |
-| 40301 | 无权查看该委托任务 |
-| 40402 | syncExternal=true 但外部 Agent 不可达 |
-| 50401 | 外部 Agent 状态查询超时 |
+| 错误码 | 场景                                  |
+| ------ | ------------------------------------- |
+| 40401  | 委托任务不存在                        |
+| 40301  | 无权查看该委托任务                    |
+| 40402  | syncExternal=true 但外部 Agent 不可达 |
+| 50401  | 外部 Agent 状态查询超时               |
 
 ---
 
@@ -1160,8 +1167,8 @@ GET /api/v1/a2a/delegations/{delegationId}/result
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数         | 类型   | 说明        |
+| ------------ | ------ | ----------- |
 | delegationId | string | 委托任务 ID |
 
 **响应示例**
@@ -1225,11 +1232,11 @@ GET /api/v1/a2a/delegations/{delegationId}/result
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 委托任务不存在 |
-| 40901 | 任务尚未完成（状态为 WORKING/SUBMITTED/INPUT_REQUIRED） |
-| 40301 | 无权查看该委托任务结果 |
+| 错误码 | 场景                                                    |
+| ------ | ------------------------------------------------------- |
+| 40401  | 委托任务不存在                                          |
+| 40901  | 任务尚未完成（状态为 WORKING/SUBMITTED/INPUT_REQUIRED） |
+| 40301  | 无权查看该委托任务结果                                  |
 
 ---
 
@@ -1243,16 +1250,16 @@ POST /api/v1/a2a/delegations/{delegationId}/cancel
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数         | 类型   | 说明        |
+| ------------ | ------ | ----------- |
 | delegationId | string | 委托任务 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| reason | string | 否 | 取消原因 |
-| notifyExternal | boolean | 否 | 是否通知外部 Agent（OUTBOUND 任务），默认 true |
+| 字段           | 类型    | 必填 | 说明                                           |
+| -------------- | ------- | ---- | ---------------------------------------------- |
+| reason         | string  | 否   | 取消原因                                       |
+| notifyExternal | boolean | 否   | 是否通知外部 Agent（OUTBOUND 任务），默认 true |
 
 **请求示例**
 
@@ -1284,13 +1291,13 @@ POST /api/v1/a2a/delegations/{delegationId}/cancel
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 委托任务不存在 |
-| 40901 | 任务已处于终态（COMPLETED/CANCELED/FAILED），不可取消 |
-| 40402 | 外部 Agent 不可达（notifyExternal=true 时） |
-| 50401 | 外部 Agent 取消请求超时 |
-| 40301 | 无权取消该委托任务 |
+| 错误码 | 场景                                                  |
+| ------ | ----------------------------------------------------- |
+| 40401  | 委托任务不存在                                        |
+| 40901  | 任务已处于终态（COMPLETED/CANCELED/FAILED），不可取消 |
+| 40402  | 外部 Agent 不可达（notifyExternal=true 时）           |
+| 50401  | 外部 Agent 取消请求超时                               |
+| 40301  | 无权取消该委托任务                                    |
 
 ---
 
@@ -1304,21 +1311,21 @@ GET /api/v1/a2a/delegations
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| direction | string | 否 | 方向：`OUTBOUND` / `INBOUND` / `ALL`，默认 `ALL` |
-| status | string | 否 | 状态筛选，逗号分隔（如 `WORKING,COMPLETED`） |
-| targetCardId | string | 否 | 目标 Agent Card ID |
-| sourceAgentId | string | 否 | 发起 Agent ID |
-| skillName | string | 否 | Skill 名称 |
-| sessionId | string | 否 | 协作会话 ID |
-| createdAfter | string | 否 | 创建时间下界 |
-| createdBefore | string | 否 | 创建时间上界 |
-| completedAfter | string | 否 | 完成时间下界 |
-| completedBefore | string | 否 | 完成时间上界 |
-| page | int | 否 | 页码 |
-| size | int | 否 | 每页条数 |
-| sort | string | 否 | 排序字段，默认 `-createdAt` |
+| 参数            | 类型   | 必填 | 说明                                             |
+| --------------- | ------ | ---- | ------------------------------------------------ |
+| direction       | string | 否   | 方向：`OUTBOUND` / `INBOUND` / `ALL`，默认 `ALL` |
+| status          | string | 否   | 状态筛选，逗号分隔（如 `WORKING,COMPLETED`）     |
+| targetCardId    | string | 否   | 目标 Agent Card ID                               |
+| sourceAgentId   | string | 否   | 发起 Agent ID                                    |
+| skillName       | string | 否   | Skill 名称                                       |
+| sessionId       | string | 否   | 协作会话 ID                                      |
+| createdAfter    | string | 否   | 创建时间下界                                     |
+| createdBefore   | string | 否   | 创建时间上界                                     |
+| completedAfter  | string | 否   | 完成时间下界                                     |
+| completedBefore | string | 否   | 完成时间上界                                     |
+| page            | int    | 否   | 页码                                             |
+| size            | int    | 否   | 每页条数                                         |
+| sort            | string | 否   | 排序字段，默认 `-createdAt`                      |
 
 **响应示例**
 
@@ -1370,9 +1377,9 @@ GET /api/v1/a2a/delegations
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40002 | direction/status 枚举值不合法 |
+| 错误码 | 场景                          |
+| ------ | ----------------------------- |
+| 40002  | direction/status 枚举值不合法 |
 
 ---
 
@@ -1386,19 +1393,19 @@ POST /api/v1/a2a/delegations/{delegationId}/input
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数         | 类型   | 说明        |
+| ------------ | ------ | ----------- |
 | delegationId | string | 委托任务 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| message | object | 是 | 补充输入消息体（A2A Message 格式） |
-| message.role | string | 否 | 角色，默认 `user` |
-| message.parts | array | 是 | 消息内容分片列表 |
-| message.parts[].type | string | 是 | 分片类型 |
-| message.parts[].text | string | 条件 | 文本内容 |
+| 字段                 | 类型   | 必填 | 说明                               |
+| -------------------- | ------ | ---- | ---------------------------------- |
+| message              | object | 是   | 补充输入消息体（A2A Message 格式） |
+| message.role         | string | 否   | 角色，默认 `user`                  |
+| message.parts        | array  | 是   | 消息内容分片列表                   |
+| message.parts[].type | string | 是   | 分片类型                           |
+| message.parts[].text | string | 条件 | 文本内容                           |
 
 **请求示例**
 
@@ -1434,12 +1441,12 @@ POST /api/v1/a2a/delegations/{delegationId}/input
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 委托任务不存在 |
-| 40901 | 任务状态不是 INPUT_REQUIRED，无法补充输入 |
-| 50401 | 外部 Agent 响应超时 |
-| 50003 | JSON-RPC 调用失败 |
+| 错误码 | 场景                                      |
+| ------ | ----------------------------------------- |
+| 40401  | 委托任务不存在                            |
+| 40901  | 任务状态不是 INPUT_REQUIRED，无法补充输入 |
+| 50401  | 外部 Agent 响应超时                       |
+| 50003  | JSON-RPC 调用失败                         |
 
 ---
 
@@ -1455,27 +1462,27 @@ GET /api/v1/a2a/delegations/{delegationId}/stream
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数         | 类型   | 说明        |
+| ------------ | ------ | ----------- |
 | delegationId | string | 委托任务 ID |
 
 **请求头**
 
-| 请求头 | 说明 |
-|---|---|
+| 请求头 | 说明                |
+| ------ | ------------------- |
 | Accept | `text/event-stream` |
 
 **SSE 事件类型**
 
-| 事件类型 | 说明 | data 内容 |
-|---|---|---|
-| `task.status` | 任务状态变更 | 新状态与时间戳 |
-| `task.progress` | 任务进度更新 | 进度消息（A2A Message 分片） |
-| `task.artifact` | 任务产出物 | 产出物信息（文件名、URL、类型） |
-| `task.completed` | 任务完成 | 最终结果摘要 |
-| `task.failed` | 任务失败 | 错误信息 |
-| `task.canceled` | 任务取消 | 取消信息 |
-| `error` | 流式连接错误 | 错误描述 |
+| 事件类型         | 说明         | data 内容                       |
+| ---------------- | ------------ | ------------------------------- |
+| `task.status`    | 任务状态变更 | 新状态与时间戳                  |
+| `task.progress`  | 任务进度更新 | 进度消息（A2A Message 分片）    |
+| `task.artifact`  | 任务产出物   | 产出物信息（文件名、URL、类型） |
+| `task.completed` | 任务完成     | 最终结果摘要                    |
+| `task.failed`    | 任务失败     | 错误信息                        |
+| `task.canceled`  | 任务取消     | 取消信息                        |
+| `error`          | 流式连接错误 | 错误描述                        |
 
 **SSE 响应示例**
 
@@ -1498,11 +1505,11 @@ data: {"delegationId":"deleg-20260716-000001","status":"COMPLETED","completedAt"
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 委托任务不存在 |
-| 40901 | 任务不支持流式订阅（外部 Agent 无 streaming 能力） |
-| 40301 | 无权订阅该任务进度 |
+| 错误码 | 场景                                               |
+| ------ | -------------------------------------------------- |
+| 40401  | 委托任务不存在                                     |
+| 40901  | 任务不支持流式订阅（外部 Agent 无 streaming 能力） |
+| 40301  | 无权订阅该任务进度                                 |
 
 ---
 
@@ -1516,16 +1523,16 @@ POST /api/v1/a2a/delegations/{delegationId}/timeout
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数         | 类型   | 说明        |
+| ------------ | ------ | ----------- |
 | delegationId | string | 委托任务 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| reason | string | 否 | 超时原因说明 |
-| notifyExternal | boolean | 否 | 是否通知外部 Agent（OUTBOUND 任务），默认 true |
+| 字段           | 类型    | 必填 | 说明                                           |
+| -------------- | ------- | ---- | ---------------------------------------------- |
+| reason         | string  | 否   | 超时原因说明                                   |
+| notifyExternal | boolean | 否   | 是否通知外部 Agent（OUTBOUND 任务），默认 true |
 
 **请求示例**
 
@@ -1556,11 +1563,11 @@ POST /api/v1/a2a/delegations/{delegationId}/timeout
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 委托任务不存在 |
-| 40901 | 任务已处于终态，不可超时处理 |
-| 40301 | 无权操作该委托任务 |
+| 错误码 | 场景                         |
+| ------ | ---------------------------- |
+| 40401  | 委托任务不存在               |
+| 40901  | 任务已处于终态，不可超时处理 |
+| 40301  | 无权操作该委托任务           |
 
 ---
 
@@ -1574,20 +1581,20 @@ POST /api/v1/a2a/delegations/{delegationId}/callbacks
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数         | 类型   | 说明        |
+| ------------ | ------ | ----------- |
 | delegationId | string | 委托任务 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| callbackUrl | string | 是 | 回调地址 URL |
-| callbackType | string | 否 | 回调类型：`ON_COMPLETED` / `ON_STATUS_CHANGE` / `ON_FAILED` / `ON_ALL`，默认 `ON_COMPLETED` |
-| headers | object | 否 | 回调请求自定义头 |
-| retryPolicy | object | 否 | 回调重试策略 |
-| retryPolicy.maxRetries | int | 否 | 最大重试次数，默认 3 |
-| retryPolicy.retryInterval | int | 否 | 重试间隔（秒），默认 30 |
+| 字段                      | 类型   | 必填 | 说明                                                                                        |
+| ------------------------- | ------ | ---- | ------------------------------------------------------------------------------------------- |
+| callbackUrl               | string | 是   | 回调地址 URL                                                                                |
+| callbackType              | string | 否   | 回调类型：`ON_COMPLETED` / `ON_STATUS_CHANGE` / `ON_FAILED` / `ON_ALL`，默认 `ON_COMPLETED` |
+| headers                   | object | 否   | 回调请求自定义头                                                                            |
+| retryPolicy               | object | 否   | 回调重试策略                                                                                |
+| retryPolicy.maxRetries    | int    | 否   | 最大重试次数，默认 3                                                                        |
+| retryPolicy.retryInterval | int    | 否   | 重试间隔（秒），默认 30                                                                     |
 
 **请求示例**
 
@@ -1640,12 +1647,12 @@ POST /api/v1/a2a/delegations/{delegationId}/callbacks
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | callbackUrl 为空 |
-| 40002 | callbackUrl 格式不合法 |
-| 40401 | 委托任务不存在 |
-| 40901 | 任务已处于终态，注册回调无意义 |
+| 错误码 | 场景                           |
+| ------ | ------------------------------ |
+| 40001  | callbackUrl 为空               |
+| 40002  | callbackUrl 格式不合法         |
+| 40401  | 委托任务不存在                 |
+| 40901  | 任务已处于终态，注册回调无意义 |
 
 ---
 
@@ -1659,8 +1666,8 @@ GET /api/v1/a2a/delegations/{delegationId}/history
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数         | 类型   | 说明        |
+| ------------ | ------ | ----------- |
 | delegationId | string | 委托任务 ID |
 
 **响应示例**
@@ -1717,10 +1724,10 @@ GET /api/v1/a2a/delegations/{delegationId}/history
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 委托任务不存在 |
-| 40301 | 无权查看该委托任务 |
+| 错误码 | 场景               |
+| ------ | ------------------ |
+| 40401  | 委托任务不存在     |
+| 40301  | 无权查看该委托任务 |
 
 ---
 
@@ -1734,8 +1741,8 @@ GET /api/v1/a2a/delegations/{delegationId}/artifacts
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数         | 类型   | 说明        |
+| ------------ | ------ | ----------- |
 | delegationId | string | 委托任务 ID |
 
 **响应示例**
@@ -1773,10 +1780,10 @@ GET /api/v1/a2a/delegations/{delegationId}/artifacts
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 委托任务不存在 |
-| 40301 | 无权查看该委托任务产出物 |
+| 错误码 | 场景                     |
+| ------ | ------------------------ |
+| 40401  | 委托任务不存在           |
+| 40301  | 无权查看该委托任务产出物 |
 
 ---
 
@@ -1790,24 +1797,24 @@ POST /api/v1/a2a/callbacks/external
 
 **请求头**
 
-| 请求头 | 必填 | 说明 |
-|---|---|---|
-| X-Agent-Api-Key | 是 | 外部 Agent 的 API Key |
-| X-Trace-Id | 否 | 链路追踪 ID（透传） |
+| 请求头          | 必填 | 说明                  |
+| --------------- | ---- | --------------------- |
+| X-Agent-Api-Key | 是   | 外部 Agent 的 API Key |
+| X-Trace-Id      | 否   | 链路追踪 ID（透传）   |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| taskId | string | 是 | 外部任务 ID |
-| status | string | 是 | 任务状态：`completed` / `failed` / `canceled` / `input-required` / `working` |
-| result | object | 否 | 任务结果（status=completed 时） |
-| result.message | object | 否 | 结果消息体（A2A Message 格式） |
-| result.artifacts | array | 否 | 产出物列表 |
-| error | object | 否 | 错误信息（status=failed 时） |
-| error.code | string | 否 | 错误码 |
-| error.message | string | 否 | 错误描述 |
-| metadata | object | 否 | 附加元数据 |
+| 字段             | 类型   | 必填 | 说明                                                                         |
+| ---------------- | ------ | ---- | ---------------------------------------------------------------------------- |
+| taskId           | string | 是   | 外部任务 ID                                                                  |
+| status           | string | 是   | 任务状态：`completed` / `failed` / `canceled` / `input-required` / `working` |
+| result           | object | 否   | 任务结果（status=completed 时）                                              |
+| result.message   | object | 否   | 结果消息体（A2A Message 格式）                                               |
+| result.artifacts | array  | 否   | 产出物列表                                                                   |
+| error            | object | 否   | 错误信息（status=failed 时）                                                 |
+| error.code       | string | 否   | 错误码                                                                       |
+| error.message    | string | 否   | 错误描述                                                                     |
+| metadata         | object | 否   | 附加元数据                                                                   |
 
 **请求示例**
 
@@ -1858,11 +1865,11 @@ POST /api/v1/a2a/callbacks/external
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40102 | 外部 Agent API Key 无效 |
-| 40401 | taskId 对应的委托任务不存在 |
-| 40901 | 任务已处于终态，忽略回调 |
+| 错误码 | 场景                        |
+| ------ | --------------------------- |
+| 40102  | 外部 Agent API Key 无效     |
+| 40401  | taskId 对应的委托任务不存在 |
+| 40901  | 任务已处于终态，忽略回调    |
 
 ---
 
@@ -1878,23 +1885,23 @@ POST /api/v1/a2a/agents
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| agentId | string | 否 | Agent ID（不传则自动生成） |
-| name | string | 是 | Agent 名称 |
-| description | string | 否 | Agent 描述 |
-| type | string | 是 | Agent 类型：`INTERNAL`（平台内部）/ `EXTERNAL`（外部 Agent） |
-| endpointUrl | string | 条件 | A2A 服务端点 URL（EXTERNAL 类型必填） |
-| agentCardId | string | 否 | 关联的 Agent Card ID |
-| authentication | object | 否 | 认证配置 |
-| authentication.scheme | string | 是 | 认证方案：`API_KEY` / `JWT` / `OAUTH2` / `NONE` |
-| authentication.apiKey | string | 条件 | API Key（scheme=API_KEY 时必填） |
-| authentication.jwtConfig | object | 条件 | JWT 配置（scheme=JWT 时必填） |
-| authentication.oauthConfig | object | 条件 | OAuth 配置（scheme=OAUTH2 时必填） |
-| healthCheckEnabled | boolean | 否 | 是否启用健康检查，默认 true |
-| healthCheckInterval | int | 否 | 健康检查间隔（秒），默认 60 |
-| healthCheckTimeout | int | 否 | 健康检查超时（秒），默认 10 |
-| metadata | object | 否 | 自定义元数据 |
+| 字段                       | 类型    | 必填 | 说明                                                         |
+| -------------------------- | ------- | ---- | ------------------------------------------------------------ |
+| agentId                    | string  | 否   | Agent ID（不传则自动生成）                                   |
+| name                       | string  | 是   | Agent 名称                                                   |
+| description                | string  | 否   | Agent 描述                                                   |
+| type                       | string  | 是   | Agent 类型：`INTERNAL`（平台内部）/ `EXTERNAL`（外部 Agent） |
+| endpointUrl                | string  | 条件 | A2A 服务端点 URL（EXTERNAL 类型必填）                        |
+| agentCardId                | string  | 否   | 关联的 Agent Card ID                                         |
+| authentication             | object  | 否   | 认证配置                                                     |
+| authentication.scheme      | string  | 是   | 认证方案：`API_KEY` / `JWT` / `OAUTH2` / `NONE`              |
+| authentication.apiKey      | string  | 条件 | API Key（scheme=API_KEY 时必填）                             |
+| authentication.jwtConfig   | object  | 条件 | JWT 配置（scheme=JWT 时必填）                                |
+| authentication.oauthConfig | object  | 条件 | OAuth 配置（scheme=OAUTH2 时必填）                           |
+| healthCheckEnabled         | boolean | 否   | 是否启用健康检查，默认 true                                  |
+| healthCheckInterval        | int     | 否   | 健康检查间隔（秒），默认 60                                  |
+| healthCheckTimeout         | int     | 否   | 健康检查超时（秒），默认 10                                  |
+| metadata                   | object  | 否   | 自定义元数据                                                 |
 
 **请求示例**
 
@@ -1945,13 +1952,13 @@ POST /api/v1/a2a/agents
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | name/type 为空 |
-| 40002 | type 枚举值不合法 |
-| 40902 | Agent 已注册（endpointUrl 或 name 重复） |
-| 42201 | EXTERNAL 类型但 endpointUrl 为空 |
-| 42201 | 认证配置与 scheme 不匹配 |
+| 错误码 | 场景                                     |
+| ------ | ---------------------------------------- |
+| 40001  | name/type 为空                           |
+| 40002  | type 枚举值不合法                        |
+| 40902  | Agent 已注册（endpointUrl 或 name 重复） |
+| 42201  | EXTERNAL 类型但 endpointUrl 为空         |
+| 42201  | 认证配置与 scheme 不匹配                 |
 
 ---
 
@@ -1965,16 +1972,16 @@ GET /api/v1/a2a/agents
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| keyword | string | 否 | 关键词搜索（匹配 name、description） |
-| type | string | 否 | Agent 类型：`INTERNAL` / `EXTERNAL` |
-| status | string | 否 | 注册状态：`REGISTERED` / `ACTIVE` / `INACTIVE` / `DEREGISTERED` |
-| healthStatus | string | 否 | 健康状态：`HEALTHY` / `UNHEALTHY` / `UNKNOWN` |
-| skill | string | 否 | 按技能名称筛选（匹配关联 Agent Card 的 skills） |
-| page | int | 否 | 页码 |
-| size | int | 否 | 每页条数 |
-| sort | string | 否 | 排序字段，默认 `-registeredAt` |
+| 参数         | 类型   | 必填 | 说明                                                            |
+| ------------ | ------ | ---- | --------------------------------------------------------------- |
+| keyword      | string | 否   | 关键词搜索（匹配 name、description）                            |
+| type         | string | 否   | Agent 类型：`INTERNAL` / `EXTERNAL`                             |
+| status       | string | 否   | 注册状态：`REGISTERED` / `ACTIVE` / `INACTIVE` / `DEREGISTERED` |
+| healthStatus | string | 否   | 健康状态：`HEALTHY` / `UNHEALTHY` / `UNKNOWN`                   |
+| skill        | string | 否   | 按技能名称筛选（匹配关联 Agent Card 的 skills）                 |
+| page         | int    | 否   | 页码                                                            |
+| size         | int    | 否   | 每页条数                                                        |
+| sort         | string | 否   | 排序字段，默认 `-registeredAt`                                  |
 
 **响应示例**
 
@@ -2024,9 +2031,9 @@ GET /api/v1/a2a/agents
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40002 | type/status/healthStatus 枚举值不合法 |
+| 错误码 | 场景                                  |
+| ------ | ------------------------------------- |
+| 40002  | type/status/healthStatus 枚举值不合法 |
 
 ---
 
@@ -2040,16 +2047,16 @@ POST /api/v1/a2a/agents/{agentId}/health-check
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| timeout | int | 否 | 健康检查超时（秒），默认使用 Agent 配置值 |
-| deepCheck | boolean | 否 | 是否深度检查（验证 Agent Card 可达 + Skill 可用），默认 false |
+| 字段      | 类型    | 必填 | 说明                                                          |
+| --------- | ------- | ---- | ------------------------------------------------------------- |
+| timeout   | int     | 否   | 健康检查超时（秒），默认使用 Agent 配置值                     |
+| deepCheck | boolean | 否   | 是否深度检查（验证 Agent Card 可达 + Skill 可用），默认 false |
 
 **请求示例**
 
@@ -2106,11 +2113,11 @@ POST /api/v1/a2a/agents/{agentId}/health-check
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40402 | 外部 Agent 端点不可达 |
-| 50401 | 健康检查超时 |
+| 错误码 | 场景                  |
+| ------ | --------------------- |
+| 40401  | Agent 不存在          |
+| 40402  | 外部 Agent 端点不可达 |
+| 50401  | 健康检查超时          |
 
 ---
 
@@ -2124,16 +2131,16 @@ GET /api/v1/a2a/agents/{agentId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| includeHealthHistory | boolean | 否 | 是否包含健康检查历史，默认 false |
-| includeStats | boolean | 否 | 是否包含委托任务统计，默认 false |
+| 参数                 | 类型    | 必填 | 说明                             |
+| -------------------- | ------- | ---- | -------------------------------- |
+| includeHealthHistory | boolean | 否   | 是否包含健康检查历史，默认 false |
+| includeStats         | boolean | 否   | 是否包含委托任务统计，默认 false |
 
 **响应示例**
 
@@ -2177,9 +2184,9 @@ GET /api/v1/a2a/agents/{agentId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
+| 错误码 | 场景         |
+| ------ | ------------ |
+| 40401  | Agent 不存在 |
 
 ---
 
@@ -2193,22 +2200,22 @@ PUT /api/v1/a2a/agents/{agentId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 否 | 更新名称 |
-| description | string | 否 | 更新描述 |
-| endpointUrl | string | 否 | 更新端点 URL |
-| authentication | object | 否 | 更新认证配置 |
-| healthCheckEnabled | boolean | 否 | 更新健康检查开关 |
-| healthCheckInterval | int | 否 | 更新健康检查间隔 |
-| status | string | 否 | 更新状态：`ACTIVE` / `INACTIVE` |
-| expectedVersion | int | 是 | 乐观锁版本号 |
+| 字段                | 类型    | 必填 | 说明                            |
+| ------------------- | ------- | ---- | ------------------------------- |
+| name                | string  | 否   | 更新名称                        |
+| description         | string  | 否   | 更新描述                        |
+| endpointUrl         | string  | 否   | 更新端点 URL                    |
+| authentication      | object  | 否   | 更新认证配置                    |
+| healthCheckEnabled  | boolean | 否   | 更新健康检查开关                |
+| healthCheckInterval | int     | 否   | 更新健康检查间隔                |
+| status              | string  | 否   | 更新状态：`ACTIVE` / `INACTIVE` |
+| expectedVersion     | int     | 是   | 乐观锁版本号                    |
 
 **请求示例**
 
@@ -2243,12 +2250,12 @@ PUT /api/v1/a2a/agents/{agentId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40902 | 乐观锁版本冲突 |
-| 42201 | endpointUrl 格式不合法 |
-| 40301 | 无权更新该 Agent |
+| 错误码 | 场景                   |
+| ------ | ---------------------- |
+| 40401  | Agent 不存在           |
+| 40902  | 乐观锁版本冲突         |
+| 42201  | endpointUrl 格式不合法 |
+| 40301  | 无权更新该 Agent       |
 
 ---
 
@@ -2262,16 +2269,16 @@ DELETE /api/v1/a2a/agents/{agentId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| reason | string | 否 | 注销原因 |
-| cancelRunningTasks | boolean | 否 | 是否取消进行中的委托任务，默认 false |
+| 参数               | 类型    | 必填 | 说明                                 |
+| ------------------ | ------- | ---- | ------------------------------------ |
+| reason             | string  | 否   | 注销原因                             |
+| cancelRunningTasks | boolean | 否   | 是否取消进行中的委托任务，默认 false |
 
 **响应示例**
 
@@ -2295,11 +2302,11 @@ DELETE /api/v1/a2a/agents/{agentId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40901 | 存在进行中的委托任务（cancelRunningTasks=false 时） |
-| 40301 | 无权注销该 Agent |
+| 错误码 | 场景                                                |
+| ------ | --------------------------------------------------- |
+| 40401  | Agent 不存在                                        |
+| 40901  | 存在进行中的委托任务（cancelRunningTasks=false 时） |
+| 40301  | 无权注销该 Agent                                    |
 
 ---
 
@@ -2315,22 +2322,22 @@ POST /api/v1/a2a/messages
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| targetAgentId | string | 是 | 目标 Agent ID |
-| sourceAgentId | string | 是 | 发送 Agent ID |
-| messageType | string | 否 | 消息类型：`NOTIFICATION` / `QUERY` / `CONTEXT_SYNC` / `CUSTOM`，默认 `NOTIFICATION` |
-| content | object | 是 | 消息内容（A2A Message 格式） |
-| content.role | string | 否 | 角色，默认 `user` |
-| content.parts | array | 是 | 消息内容分片列表 |
-| content.parts[].type | string | 是 | 分片类型：`text` / `file` / `data` |
-| content.parts[].text | string | 条件 | 文本内容 |
-| content.parts[].data | object | 条件 | 结构化数据 |
-| sessionId | string | 否 | 关联的协作会话 ID |
-| priority | int | 否 | 优先级：1(低)/2(中)/3(高)，默认 2 |
-| ttl | int | 否 | 消息存活时间（秒），过期后自动清理，默认 3600 |
-| requireAck | boolean | 否 | 是否需要接收确认，默认 false |
-| metadata | object | 否 | 自定义元数据 |
+| 字段                 | 类型    | 必填 | 说明                                                                                |
+| -------------------- | ------- | ---- | ----------------------------------------------------------------------------------- |
+| targetAgentId        | string  | 是   | 目标 Agent ID                                                                       |
+| sourceAgentId        | string  | 是   | 发送 Agent ID                                                                       |
+| messageType          | string  | 否   | 消息类型：`NOTIFICATION` / `QUERY` / `CONTEXT_SYNC` / `CUSTOM`，默认 `NOTIFICATION` |
+| content              | object  | 是   | 消息内容（A2A Message 格式）                                                        |
+| content.role         | string  | 否   | 角色，默认 `user`                                                                   |
+| content.parts        | array   | 是   | 消息内容分片列表                                                                    |
+| content.parts[].type | string  | 是   | 分片类型：`text` / `file` / `data`                                                  |
+| content.parts[].text | string  | 条件 | 文本内容                                                                            |
+| content.parts[].data | object  | 条件 | 结构化数据                                                                          |
+| sessionId            | string  | 否   | 关联的协作会话 ID                                                                   |
+| priority             | int     | 否   | 优先级：1(低)/2(中)/3(高)，默认 2                                                   |
+| ttl                  | int     | 否   | 消息存活时间（秒），过期后自动清理，默认 3600                                       |
+| requireAck           | boolean | 否   | 是否需要接收确认，默认 false                                                        |
+| metadata             | object  | 否   | 自定义元数据                                                                        |
 
 **请求示例**
 
@@ -2385,13 +2392,13 @@ POST /api/v1/a2a/messages
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | targetAgentId/sourceAgentId/content 为空 |
-| 40401 | targetAgentId 或 sourceAgentId 不存在 |
-| 42203 | 目标 Agent 不健康，消息无法送达 |
-| 40402 | 外部 Agent 端点不可达 |
-| 50401 | 消息发送超时 |
+| 错误码 | 场景                                     |
+| ------ | ---------------------------------------- |
+| 40001  | targetAgentId/sourceAgentId/content 为空 |
+| 40401  | targetAgentId 或 sourceAgentId 不存在    |
+| 42203  | 目标 Agent 不健康，消息无法送达          |
+| 40402  | 外部 Agent 端点不可达                    |
+| 50401  | 消息发送超时                             |
 
 ---
 
@@ -2405,21 +2412,21 @@ GET /api/v1/a2a/agents/{agentId}/messages
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| sessionId | string | 否 | 按会话 ID 筛选 |
-| messageType | string | 否 | 按消息类型筛选 |
-| status | string | 否 | 消息状态：`PENDING` / `DELIVERED` / `ACKED`，默认 `PENDING` |
-| longPoll | boolean | 否 | 是否长轮询（阻塞等待新消息），默认 false |
-| longPollTimeout | int | 否 | 长轮询超时（秒），默认 30 |
-| page | int | 否 | 页码 |
-| size | int | 否 | 每页条数 |
+| 参数            | 类型    | 必填 | 说明                                                        |
+| --------------- | ------- | ---- | ----------------------------------------------------------- |
+| sessionId       | string  | 否   | 按会话 ID 筛选                                              |
+| messageType     | string  | 否   | 按消息类型筛选                                              |
+| status          | string  | 否   | 消息状态：`PENDING` / `DELIVERED` / `ACKED`，默认 `PENDING` |
+| longPoll        | boolean | 否   | 是否长轮询（阻塞等待新消息），默认 false                    |
+| longPollTimeout | int     | 否   | 长轮询超时（秒），默认 30                                   |
+| page            | int     | 否   | 页码                                                        |
+| size            | int     | 否   | 每页条数                                                    |
 
 **响应示例**
 
@@ -2465,11 +2472,11 @@ GET /api/v1/a2a/agents/{agentId}/messages
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40301 | 无权查看该 Agent 的消息 |
-| 40002 | longPollTimeout 超过最大值 60 |
+| 错误码 | 场景                          |
+| ------ | ----------------------------- |
+| 40401  | Agent 不存在                  |
+| 40301  | 无权查看该 Agent 的消息       |
+| 40002  | longPollTimeout 超过最大值 60 |
 
 ---
 
@@ -2483,17 +2490,17 @@ POST /api/v1/a2a/messages/{messageId}/ack
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数      | 类型   | 说明    |
+| --------- | ------ | ------- |
 | messageId | string | 消息 ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| ackBy | string | 是 | 确认方 Agent ID |
-| ackResult | string | 否 | 确认结果：`RECEIVED` / `PROCESSED` / `REJECTED`，默认 `RECEIVED` |
-| comment | string | 否 | 确认备注 |
+| 字段      | 类型   | 必填 | 说明                                                             |
+| --------- | ------ | ---- | ---------------------------------------------------------------- |
+| ackBy     | string | 是   | 确认方 Agent ID                                                  |
+| ackResult | string | 否   | 确认结果：`RECEIVED` / `PROCESSED` / `REJECTED`，默认 `RECEIVED` |
+| comment   | string | 否   | 确认备注                                                         |
 
 **请求示例**
 
@@ -2524,11 +2531,11 @@ POST /api/v1/a2a/messages/{messageId}/ack
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | 消息不存在 |
-| 40901 | 消息已确认或已过期 |
-| 40301 | ackBy 与消息目标 Agent 不匹配 |
+| 错误码 | 场景                          |
+| ------ | ----------------------------- |
+| 40401  | 消息不存在                    |
+| 40901  | 消息已确认或已过期            |
+| 40301  | ackBy 与消息目标 Agent 不匹配 |
 
 ---
 
@@ -2542,8 +2549,8 @@ GET /api/v1/a2a/agents/{agentId}/message-queue
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **响应示例**
@@ -2581,10 +2588,10 @@ GET /api/v1/a2a/agents/{agentId}/message-queue
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40301 | 无权查看该 Agent 的消息队列 |
+| 错误码 | 场景                        |
+| ------ | --------------------------- |
+| 40401  | Agent 不存在                |
+| 40301  | 无权查看该 Agent 的消息队列 |
 
 ---
 
@@ -2598,8 +2605,8 @@ POST /api/v1/a2a/agents/{agentId}/message-queue/cleanup
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **响应示例**
@@ -2619,10 +2626,10 @@ POST /api/v1/a2a/agents/{agentId}/message-queue/cleanup
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40301 | 无权操作该 Agent 的消息队列 |
+| 错误码 | 场景                        |
+| ------ | --------------------------- |
+| 40401  | Agent 不存在                |
+| 40301  | 无权操作该 Agent 的消息队列 |
 
 ---
 
@@ -2638,13 +2645,13 @@ POST /api/v1/a2a/auth/verify
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| agentId | string | 是 | Agent ID |
-| scheme | string | 是 | 认证方案：`API_KEY` / `JWT` |
-| credentials | object | 是 | 认证凭证 |
+| 字段               | 类型   | 必填 | 说明                         |
+| ------------------ | ------ | ---- | ---------------------------- |
+| agentId            | string | 是   | Agent ID                     |
+| scheme             | string | 是   | 认证方案：`API_KEY` / `JWT`  |
+| credentials        | object | 是   | 认证凭证                     |
 | credentials.apiKey | string | 条件 | API Key（scheme=API_KEY 时） |
-| credentials.jwt | string | 条件 | JWT Token（scheme=JWT 时） |
+| credentials.jwt    | string | 条件 | JWT Token（scheme=JWT 时）   |
 
 **请求示例**
 
@@ -2673,7 +2680,12 @@ POST /api/v1/a2a/auth/verify
     "tokenType": "Bearer",
     "expiresIn": 3600,
     "expiresAt": "2026-07-16T11:36:00.000+08:00",
-    "permissions": ["delegation:send", "delegation:receive", "message:send", "message:receive"]
+    "permissions": [
+      "delegation:send",
+      "delegation:receive",
+      "message:send",
+      "message:receive"
+    ]
   },
   "traceId": "a1b2c3d4e5f6"
 }
@@ -2681,12 +2693,12 @@ POST /api/v1/a2a/auth/verify
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | agentId/scheme/credentials 为空 |
-| 40401 | agentId 不存在 |
-| 40102 | 认证失败（API Key 无效/JWT 签名错误/JWT 过期） |
-| 42203 | Agent 已注销或健康检查失败，拒绝认证 |
+| 错误码 | 场景                                           |
+| ------ | ---------------------------------------------- |
+| 40001  | agentId/scheme/credentials 为空                |
+| 40401  | agentId 不存在                                 |
+| 40102  | 认证失败（API Key 无效/JWT 签名错误/JWT 过期） |
+| 42203  | Agent 已注销或健康检查失败，拒绝认证           |
 
 ---
 
@@ -2700,18 +2712,18 @@ POST /api/v1/a2a/agents/{agentId}/api-keys
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 是 | API Key 名称（便于识别） |
-| scopes | array | 否 | 权限范围，默认全部权限 |
-| expiresIn | int | 否 | 有效期（秒），不传则永久有效 |
-| description | string | 否 | 描述 |
+| 字段        | 类型   | 必填 | 说明                         |
+| ----------- | ------ | ---- | ---------------------------- |
+| name        | string | 是   | API Key 名称（便于识别）     |
+| scopes      | array  | 否   | 权限范围，默认全部权限       |
+| expiresIn   | int    | 否   | 有效期（秒），不传则永久有效 |
+| description | string | 否   | 描述                         |
 
 **请求示例**
 
@@ -2745,12 +2757,12 @@ POST /api/v1/a2a/agents/{agentId}/api-keys
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | name 为空 |
-| 40401 | Agent 不存在 |
-| 40301 | 无权为该 Agent 生成 API Key |
-| 42201 | scopes 中包含不支持的权限范围 |
+| 错误码 | 场景                          |
+| ------ | ----------------------------- |
+| 40001  | name 为空                     |
+| 40401  | Agent 不存在                  |
+| 40301  | 无权为该 Agent 生成 API Key   |
+| 42201  | scopes 中包含不支持的权限范围 |
 
 ---
 
@@ -2764,15 +2776,15 @@ GET /api/v1/a2a/agents/{agentId}/api-keys
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| status | string | 否 | 状态：`ACTIVE` / `REVOKED` / `EXPIRED` |
+| 参数   | 类型   | 必填 | 说明                                   |
+| ------ | ------ | ---- | -------------------------------------- |
+| status | string | 否   | 状态：`ACTIVE` / `REVOKED` / `EXPIRED` |
 
 **响应示例**
 
@@ -2811,10 +2823,10 @@ DELETE /api/v1/a2a/agents/{agentId}/api-keys/{keyId}
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
-| agentId | string | Agent ID |
-| keyId | string | API Key ID |
+| 参数    | 类型   | 说明       |
+| ------- | ------ | ---------- |
+| agentId | string | Agent ID   |
+| keyId   | string | API Key ID |
 
 **响应示例**
 
@@ -2834,11 +2846,11 @@ DELETE /api/v1/a2a/agents/{agentId}/api-keys/{keyId}
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 或 API Key 不存在 |
-| 40901 | API Key 已吊销 |
-| 40301 | 无权吊销该 API Key |
+| 错误码 | 场景                    |
+| ------ | ----------------------- |
+| 40401  | Agent 或 API Key 不存在 |
+| 40901  | API Key 已吊销          |
+| 40301  | 无权吊销该 API Key      |
 
 ---
 
@@ -2852,11 +2864,11 @@ POST /api/v1/a2a/auth/authorize
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| agentId | string | 是 | Agent ID |
-| action | string | 是 | 操作类型：`delegation:send` / `delegation:receive` / `message:send` / `message:receive` / `agent:discover` / `agent:manage` |
-| resource | string | 否 | 资源标识（如目标 Agent ID） |
+| 字段     | 类型   | 必填 | 说明                                                                                                                        |
+| -------- | ------ | ---- | --------------------------------------------------------------------------------------------------------------------------- |
+| agentId  | string | 是   | Agent ID                                                                                                                    |
+| action   | string | 是   | 操作类型：`delegation:send` / `delegation:receive` / `message:send` / `message:receive` / `agent:discover` / `agent:manage` |
+| resource | string | 否   | 资源标识（如目标 Agent ID）                                                                                                 |
 
 **请求示例**
 
@@ -2887,11 +2899,11 @@ POST /api/v1/a2a/auth/authorize
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | agentId/action 为空 |
-| 40401 | Agent 不存在 |
-| 40301 | 权限不足（allowed=false 时返回 403） |
+| 错误码 | 场景                                 |
+| ------ | ------------------------------------ |
+| 40001  | agentId/action 为空                  |
+| 40401  | Agent 不存在                         |
+| 40301  | 权限不足（allowed=false 时返回 403） |
 
 ---
 
@@ -2907,19 +2919,19 @@ GET /api/v1/a2a/audit/collaborations
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| agentId | string | 否 | Agent ID（作为发起方或接收方） |
-| collaborationType | string | 否 | 协作类型：`DELEGATION` / `MESSAGE` / `DISCOVERY` / `HEALTH_CHECK` / `AUTH` |
-| direction | string | 否 | 方向：`OUTBOUND` / `INBOUND` |
-| status | string | 否 | 协作状态 |
-| startedAfter | string | 否 | 开始时间下界 |
-| startedBefore | string | 否 | 开始时间上界 |
-| traceId | string | 否 | 按链路追踪 ID 筛选 |
-| sessionId | string | 否 | 按协作会话 ID 筛选 |
-| page | int | 否 | 页码 |
-| size | int | 否 | 每页条数 |
-| sort | string | 否 | 排序字段，默认 `-createdAt` |
+| 参数              | 类型   | 必填 | 说明                                                                       |
+| ----------------- | ------ | ---- | -------------------------------------------------------------------------- |
+| agentId           | string | 否   | Agent ID（作为发起方或接收方）                                             |
+| collaborationType | string | 否   | 协作类型：`DELEGATION` / `MESSAGE` / `DISCOVERY` / `HEALTH_CHECK` / `AUTH` |
+| direction         | string | 否   | 方向：`OUTBOUND` / `INBOUND`                                               |
+| status            | string | 否   | 协作状态                                                                   |
+| startedAfter      | string | 否   | 开始时间下界                                                               |
+| startedBefore     | string | 否   | 开始时间上界                                                               |
+| traceId           | string | 否   | 按链路追踪 ID 筛选                                                         |
+| sessionId         | string | 否   | 按协作会话 ID 筛选                                                         |
+| page              | int    | 否   | 页码                                                                       |
+| size              | int    | 否   | 每页条数                                                                   |
+| sort              | string | 否   | 排序字段，默认 `-createdAt`                                                |
 
 **响应示例**
 
@@ -2975,10 +2987,10 @@ GET /api/v1/a2a/audit/collaborations
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40002 | collaborationType/direction/status 枚举值不合法 |
-| 40301 | 无权查看审计记录 |
+| 错误码 | 场景                                            |
+| ------ | ----------------------------------------------- |
+| 40002  | collaborationType/direction/status 枚举值不合法 |
+| 40301  | 无权查看审计记录                                |
 
 ---
 
@@ -2992,13 +3004,13 @@ GET /api/v1/a2a/audit/delegation-stats
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| agentId | string | 否 | Agent ID |
-| direction | string | 否 | 方向：`OUTBOUND` / `INBOUND` / `ALL` |
-| startedAfter | string | 否 | 开始时间下界 |
-| startedBefore | string | 否 | 开始时间上界 |
-| groupBy | string | 否 | 聚合维度：`agent` / `skill` / `status` / `day` / `hour`，默认 `status` |
+| 参数          | 类型   | 必填 | 说明                                                                   |
+| ------------- | ------ | ---- | ---------------------------------------------------------------------- |
+| agentId       | string | 否   | Agent ID                                                               |
+| direction     | string | 否   | 方向：`OUTBOUND` / `INBOUND` / `ALL`                                   |
+| startedAfter  | string | 否   | 开始时间下界                                                           |
+| startedBefore | string | 否   | 开始时间上界                                                           |
+| groupBy       | string | 否   | 聚合维度：`agent` / `skill` / `status` / `day` / `hour`，默认 `status` |
 
 **响应示例**
 
@@ -3050,10 +3062,10 @@ GET /api/v1/a2a/audit/delegation-stats
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40002 | direction/groupBy 枚举值不合法 |
-| 40301 | 无权查看统计数据 |
+| 错误码 | 场景                           |
+| ------ | ------------------------------ |
+| 40002  | direction/groupBy 枚举值不合法 |
+| 40301  | 无权查看统计数据               |
 
 ---
 
@@ -3067,18 +3079,18 @@ GET /api/v1/a2a/audit/errors
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| agentId | string | 否 | Agent ID |
-| errorCode | string | 否 | 错误码 |
-| errorType | string | 否 | 错误类型：`COMMUNICATION` / `AUTHENTICATION` / `PROTOCOL` / `TIMEOUT` / `BUSINESS` / `INTERNAL` |
-| direction | string | 否 | 方向：`OUTBOUND` / `INBOUND` |
-| occurredAfter | string | 否 | 发生时间下界 |
-| occurredBefore | string | 否 | 发生时间上界 |
-| traceId | string | 否 | 按链路追踪 ID 筛选 |
-| page | int | 否 | 页码 |
-| size | int | 否 | 每页条数 |
-| sort | string | 否 | 排序字段，默认 `-occurredAt` |
+| 参数           | 类型   | 必填 | 说明                                                                                            |
+| -------------- | ------ | ---- | ----------------------------------------------------------------------------------------------- |
+| agentId        | string | 否   | Agent ID                                                                                        |
+| errorCode      | string | 否   | 错误码                                                                                          |
+| errorType      | string | 否   | 错误类型：`COMMUNICATION` / `AUTHENTICATION` / `PROTOCOL` / `TIMEOUT` / `BUSINESS` / `INTERNAL` |
+| direction      | string | 否   | 方向：`OUTBOUND` / `INBOUND`                                                                    |
+| occurredAfter  | string | 否   | 发生时间下界                                                                                    |
+| occurredBefore | string | 否   | 发生时间上界                                                                                    |
+| traceId        | string | 否   | 按链路追踪 ID 筛选                                                                              |
+| page           | int    | 否   | 页码                                                                                            |
+| size           | int    | 否   | 每页条数                                                                                        |
+| sort           | string | 否   | 排序字段，默认 `-occurredAt`                                                                    |
 
 **响应示例**
 
@@ -3132,10 +3144,10 @@ GET /api/v1/a2a/audit/errors
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40002 | errorType/direction 枚举值不合法 |
-| 40301 | 无权查看错误记录 |
+| 错误码 | 场景                             |
+| ------ | -------------------------------- |
+| 40002  | errorType/direction 枚举值不合法 |
+| 40301  | 无权查看错误记录                 |
 
 ---
 
@@ -3149,16 +3161,16 @@ GET /api/v1/a2a/audit/agents/{agentId}/stats
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明     |
+| ------- | ------ | -------- |
 | agentId | string | Agent ID |
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startedAfter | string | 否 | 统计开始时间 |
-| startedBefore | string | 否 | 统计结束时间 |
+| 参数          | 类型   | 必填 | 说明         |
+| ------------- | ------ | ---- | ------------ |
+| startedAfter  | string | 否   | 统计开始时间 |
+| startedBefore | string | 否   | 统计结束时间 |
 
 **响应示例**
 
@@ -3214,8 +3226,16 @@ GET /api/v1/a2a/audit/agents/{agentId}/stats
       "successRate": 98.96
     },
     "topSkills": [
-      { "skillName": "market-research", "invocationCount": 28, "successRate": 92.86 },
-      { "skillName": "competitive-analysis", "invocationCount": 14, "successRate": 85.71 }
+      {
+        "skillName": "market-research",
+        "invocationCount": 28,
+        "successRate": 92.86
+      },
+      {
+        "skillName": "competitive-analysis",
+        "invocationCount": 14,
+        "successRate": 85.71
+      }
     ]
   },
   "traceId": "a1b2c3d4e5f6"
@@ -3224,10 +3244,10 @@ GET /api/v1/a2a/audit/agents/{agentId}/stats
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | Agent 不存在 |
-| 40301 | 无权查看该 Agent 的统计数据 |
+| 错误码 | 场景                        |
+| ------ | --------------------------- |
+| 40401  | Agent 不存在                |
+| 40301  | 无权查看该 Agent 的统计数据 |
 
 ---
 
@@ -3241,13 +3261,13 @@ GET /api/v1/a2a/audit/export
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| format | string | 否 | 导出格式：`JSON` / `CSV`，默认 `JSON` |
-| startedAfter | string | 是 | 开始时间 |
-| startedBefore | string | 是 | 结束时间 |
-| agentId | string | 否 | Agent ID 筛选 |
-| collaborationType | string | 否 | 协作类型筛选 |
+| 参数              | 类型   | 必填 | 说明                                  |
+| ----------------- | ------ | ---- | ------------------------------------- |
+| format            | string | 否   | 导出格式：`JSON` / `CSV`，默认 `JSON` |
+| startedAfter      | string | 是   | 开始时间                              |
+| startedBefore     | string | 是   | 结束时间                              |
+| agentId           | string | 否   | Agent ID 筛选                         |
+| collaborationType | string | 否   | 协作类型筛选                          |
 
 **响应示例**
 
@@ -3262,7 +3282,10 @@ Content-Disposition: attachment; filename="a2a-audit-report-20260701-20260716.js
   "reportMetadata": {
     "generatedAt": "2026-07-16T18:00:00.000+08:00",
     "generatedBy": "user-001",
-    "timeRange": { "from": "2026-07-01T00:00:00.000+08:00", "to": "2026-07-16T23:59:59.000+08:00" },
+    "timeRange": {
+      "from": "2026-07-01T00:00:00.000+08:00",
+      "to": "2026-07-16T23:59:59.000+08:00"
+    },
     "totalRecords": 156,
     "filters": { "agentId": null, "collaborationType": null }
   },
@@ -3273,18 +3296,18 @@ Content-Disposition: attachment; filename="a2a-audit-report-20260701-20260716.js
     "totalErrors": 5,
     "overallSuccessRate": 94.87
   },
-  "records": [ ]
+  "records": []
 }
 ```
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | startedAfter/startedBefore 为空 |
-| 40002 | format 枚举值不合法 |
-| 40301 | 无权导出审计报告 |
-| 42901 | 导出数据量过大（超过 100000 条），请缩小时间范围 |
+| 错误码 | 场景                                             |
+| ------ | ------------------------------------------------ |
+| 40001  | startedAfter/startedBefore 为空                  |
+| 40002  | format 枚举值不合法                              |
+| 40301  | 无权导出审计报告                                 |
+| 42901  | 导出数据量过大（超过 100000 条），请缩小时间范围 |
 
 ---
 
@@ -3292,24 +3315,24 @@ Content-Disposition: attachment; filename="a2a-audit-report-20260701-20260716.js
 
 ### 4.1 PostgreSQL 表结构总览
 
-| 表名 | 说明 |
-|---|---|
-| a2a_agent_card | Agent Card 表（能力声明） |
-| a2a_agent_card_skill | Agent Card 技能表 |
-| a2a_agent | Agent 注册表 |
-| a2a_agent_credential | Agent 认证凭证表（加密存储） |
-| a2a_agent_api_key | Agent API Key 表 |
-| a2a_agent_health_log | Agent 健康检查日志表 |
-| a2a_delegation_task | 委托任务表 |
-| a2a_delegation_status_history | 委托任务状态转换历史表 |
-| a2a_delegation_callback | 委托任务回调注册表 |
-| a2a_delegation_artifact | 委托任务产出物表 |
-| a2a_collaboration_session | 协作会话表 |
-| a2a_message | Agent 间消息表 |
-| a2a_audit_log | 协作审计日志表 |
-| a2a_error_log | 错误日志表 |
-| a2a_outbox | Outbox 事件表（Kafka 事务消息） |
-| a2a_idempotent_request | 幂等请求记录表 |
+| 表名                          | 说明                            |
+| ----------------------------- | ------------------------------- |
+| a2a_agent_card                | Agent Card 表（能力声明）       |
+| a2a_agent_card_skill          | Agent Card 技能表               |
+| a2a_agent                     | Agent 注册表                    |
+| a2a_agent_credential          | Agent 认证凭证表（加密存储）    |
+| a2a_agent_api_key             | Agent API Key 表                |
+| a2a_agent_health_log          | Agent 健康检查日志表            |
+| a2a_delegation_task           | 委托任务表                      |
+| a2a_delegation_status_history | 委托任务状态转换历史表          |
+| a2a_delegation_callback       | 委托任务回调注册表              |
+| a2a_delegation_artifact       | 委托任务产出物表                |
+| a2a_collaboration_session     | 协作会话表                      |
+| a2a_message                   | Agent 间消息表                  |
+| a2a_audit_log                 | 协作审计日志表                  |
+| a2a_error_log                 | 错误日志表                      |
+| a2a_outbox                    | Outbox 事件表（Kafka 事务消息） |
+| a2a_idempotent_request        | 幂等请求记录表                  |
 
 ### 4.2 a2a_agent_card（Agent Card 表）
 
@@ -3774,35 +3797,35 @@ CREATE INDEX idx_idem_expires ON a2a_idempotent_request (expires_at);
 
 ### 5.1 事件类型
 
-| 事件类型 | 说明 | 触发时机 |
-|---|---|---|
-| DELEGATION_SUBMITTED | 任务委托提交事件 | 委托任务创建成功后 |
-| DELEGATION_STATUS_CHANGED | 任务状态变更事件 | 委托任务状态发生转换 |
-| DELEGATION_COMPLETED | 任务完成事件 | 委托任务正常完成 |
-| DELEGATION_FAILED | 任务失败事件 | 委托任务执行失败 |
-| DELEGATION_CANCELED | 任务取消事件 | 委托任务被取消 |
-| DELEGATION_TIMEOUT | 任务超时事件 | 委托任务超时未完成 |
-| DELEGATION_INPUT_REQUIRED | 任务需要输入事件 | 委托任务进入 INPUT_REQUIRED 状态 |
-| AGENT_REGISTERED | Agent 注册事件 | Agent 成功注册到注册中心 |
-| AGENT_DEREGISTERED | Agent 注销事件 | Agent 被注销 |
-| AGENT_HEALTH_CHANGED | Agent 健康状态变更事件 | Agent 健康状态发生变化 |
-| AGENT_CARD_PUBLISHED | Agent Card 发布事件 | Agent Card 成功发布 |
-| AGENT_CARD_UPDATED | Agent Card 更新事件 | Agent Card 信息更新 |
-| MESSAGE_SENT | 消息发送事件 | Agent 间消息发送成功 |
-| MESSAGE_ACKED | 消息确认事件 | 消息被接收方确认 |
-| MESSAGE_EXPIRED | 消息过期事件 | 消息超过 TTL 未被确认 |
-| AUTH_AGENT_VERIFIED | Agent 认证成功事件 | Agent 身份验证通过 |
-| AUTH_AGENT_FAILED | Agent 认证失败事件 | Agent 身份验证失败 |
+| 事件类型                  | 说明                   | 触发时机                         |
+| ------------------------- | ---------------------- | -------------------------------- |
+| DELEGATION_SUBMITTED      | 任务委托提交事件       | 委托任务创建成功后               |
+| DELEGATION_STATUS_CHANGED | 任务状态变更事件       | 委托任务状态发生转换             |
+| DELEGATION_COMPLETED      | 任务完成事件           | 委托任务正常完成                 |
+| DELEGATION_FAILED         | 任务失败事件           | 委托任务执行失败                 |
+| DELEGATION_CANCELED       | 任务取消事件           | 委托任务被取消                   |
+| DELEGATION_TIMEOUT        | 任务超时事件           | 委托任务超时未完成               |
+| DELEGATION_INPUT_REQUIRED | 任务需要输入事件       | 委托任务进入 INPUT_REQUIRED 状态 |
+| AGENT_REGISTERED          | Agent 注册事件         | Agent 成功注册到注册中心         |
+| AGENT_DEREGISTERED        | Agent 注销事件         | Agent 被注销                     |
+| AGENT_HEALTH_CHANGED      | Agent 健康状态变更事件 | Agent 健康状态发生变化           |
+| AGENT_CARD_PUBLISHED      | Agent Card 发布事件    | Agent Card 成功发布              |
+| AGENT_CARD_UPDATED        | Agent Card 更新事件    | Agent Card 信息更新              |
+| MESSAGE_SENT              | 消息发送事件           | Agent 间消息发送成功             |
+| MESSAGE_ACKED             | 消息确认事件           | 消息被接收方确认                 |
+| MESSAGE_EXPIRED           | 消息过期事件           | 消息超过 TTL 未被确认            |
+| AUTH_AGENT_VERIFIED       | Agent 认证成功事件     | Agent 身份验证通过               |
+| AUTH_AGENT_FAILED         | Agent 认证失败事件     | Agent 身份验证失败               |
 
 ### 5.2 Kafka Topic 定义
 
-| Topic | 说明 | 分区策略 |
-|---|---|---|
-| `a2a.delegation.events` | 委托任务生命周期事件 | 按 `delegationId` 哈希分区 |
-| `a2a.agent.events` | Agent 状态变更事件 | 按 `agentId` 哈希分区 |
-| `a2a.message.events` | Agent 间消息事件 | 按 `targetAgentId` 哈希分区 |
-| `a2a.audit.events` | 协作审计事件 | 按 `tenantId` 哈希分区 |
-| `a2a.dlq` | 死信队列 | 消费失败的事件 |
+| Topic                   | 说明                 | 分区策略                    |
+| ----------------------- | -------------------- | --------------------------- |
+| `a2a.delegation.events` | 委托任务生命周期事件 | 按 `delegationId` 哈希分区  |
+| `a2a.agent.events`      | Agent 状态变更事件   | 按 `agentId` 哈希分区       |
+| `a2a.message.events`    | Agent 间消息事件     | 按 `targetAgentId` 哈希分区 |
+| `a2a.audit.events`      | 协作审计事件         | 按 `tenantId` 哈希分区      |
+| `a2a.dlq`               | 死信队列             | 消费失败的事件              |
 
 ### 5.3 Kafka 消息结构
 
@@ -3819,19 +3842,19 @@ CREATE INDEX idx_idem_expires ON a2a_idempotent_request (expires_at);
   "traceId": "a1b2c3d4e5f6",
   "source": "TECH-A2A",
   "version": "1.0",
-  "payload": { }
+  "payload": {}
 }
 ```
 
 **Kafka 消息头**
 
-| 消息头 | 说明 |
-|---|---|
-| X-Trace-Id | 链路追踪 ID（与消息体 traceId 一致） |
-| X-Event-Type | 事件类型 |
-| X-Event-Id | 事件唯一 ID |
-| X-Tenant-Id | 租户 ID |
-| Content-Type | application/json |
+| 消息头       | 说明                                 |
+| ------------ | ------------------------------------ |
+| X-Trace-Id   | 链路追踪 ID（与消息体 traceId 一致） |
+| X-Event-Type | 事件类型                             |
+| X-Event-Id   | 事件唯一 ID                          |
+| X-Tenant-Id  | 租户 ID                              |
+| Content-Type | application/json                     |
 
 ### 5.4 各事件 Payload 定义
 
@@ -4013,24 +4036,24 @@ CREATE INDEX idx_idem_expires ON a2a_idempotent_request (expires_at);
 
 **目标**：完成 Agent Card 发布/查询/搜索、外部 Agent 发现、Agent 注册/发现/健康检查基础能力。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 发布 Agent Card | POST /api/v1/a2a/agent-cards | 含 skills、capabilities、authentication 声明 |
-| 查询 Agent Card | GET /api/v1/a2a/agent-cards/{cardId} | 单个 Agent Card 详情 |
-| 搜索 Agent | GET /api/v1/a2a/agent-cards | 分页搜索、多维度筛选 |
-| 更新 Agent Card | PUT /api/v1/a2a/agent-cards/{cardId} | 乐观锁版本控制 |
-| 发现外部 Agent Card | POST /api/v1/a2a/agent-cards/discover | 通过 URL 发现并缓存 |
-| 删除 Agent Card | DELETE /api/v1/a2a/agent-cards/{cardId} | 含关联任务检查 |
-| Agent 注册 | POST /api/v1/a2a/agents | INTERNAL/EXTERNAL 类型 |
-| Agent 发现 | GET /api/v1/a2a/agents | 分页查询、多维度筛选 |
-| Agent 健康检查 | POST /api/v1/a2a/agents/{agentId}/health-check | 基本+深度检查 |
-| 获取 Agent 详情 | GET /api/v1/a2a/agents/{agentId} | 含健康状态与统计 |
-| 更新 Agent | PUT /api/v1/a2a/agents/{agentId} | 乐观锁版本控制 |
-| 注销 Agent | DELETE /api/v1/a2a/agents/{agentId} | 含进行中任务检查 |
-| Agent Card 公开端点 | GET /.well-known/agent.json | A2A 协议标准端点 |
-| 数据表 | 全部 DDL | agent_card、agent、agent_credential 等核心表 |
-| 健康检查定时任务 | Spring Scheduling | 定时健康检查、状态更新 |
-| 事件发布 | Kafka AGENT_* | Outbox 模式 |
+| 交付项              | API                                            | 说明                                         |
+| ------------------- | ---------------------------------------------- | -------------------------------------------- |
+| 发布 Agent Card     | POST /api/v1/a2a/agent-cards                   | 含 skills、capabilities、authentication 声明 |
+| 查询 Agent Card     | GET /api/v1/a2a/agent-cards/{cardId}           | 单个 Agent Card 详情                         |
+| 搜索 Agent          | GET /api/v1/a2a/agent-cards                    | 分页搜索、多维度筛选                         |
+| 更新 Agent Card     | PUT /api/v1/a2a/agent-cards/{cardId}           | 乐观锁版本控制                               |
+| 发现外部 Agent Card | POST /api/v1/a2a/agent-cards/discover          | 通过 URL 发现并缓存                          |
+| 删除 Agent Card     | DELETE /api/v1/a2a/agent-cards/{cardId}        | 含关联任务检查                               |
+| Agent 注册          | POST /api/v1/a2a/agents                        | INTERNAL/EXTERNAL 类型                       |
+| Agent 发现          | GET /api/v1/a2a/agents                         | 分页查询、多维度筛选                         |
+| Agent 健康检查      | POST /api/v1/a2a/agents/{agentId}/health-check | 基本+深度检查                                |
+| 获取 Agent 详情     | GET /api/v1/a2a/agents/{agentId}               | 含健康状态与统计                             |
+| 更新 Agent          | PUT /api/v1/a2a/agents/{agentId}               | 乐观锁版本控制                               |
+| 注销 Agent          | DELETE /api/v1/a2a/agents/{agentId}            | 含进行中任务检查                             |
+| Agent Card 公开端点 | GET /.well-known/agent.json                    | A2A 协议标准端点                             |
+| 数据表              | 全部 DDL                                       | agent_card、agent、agent_credential 等核心表 |
+| 健康检查定时任务    | Spring Scheduling                              | 定时健康检查、状态更新                       |
+| 事件发布            | Kafka AGENT\_\*                                | Outbox 模式                                  |
 
 **验收标准**：能发布 Agent Card 供外部发现，支持通过 URL 发现外部 Agent Card，Agent 注册后自动健康检查，Agent Card 符合 A2A 协议规范。
 
@@ -4040,25 +4063,25 @@ CREATE INDEX idx_idem_expires ON a2a_idempotent_request (expires_at);
 
 **目标**：完成核心的任务委托链路，支持出站委托（向外部 Agent 发送任务）和入站委托（接收外部 Agent 任务），含状态同步、结果获取、取消、超时处理。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 委托任务给外部 Agent | POST /api/v1/a2a/delegations | A2A Client，JSON-RPC tasks/send |
-| 接收外部任务委托 | POST /rpc/v1/a2a | A2A Server，JSON-RPC 端点 |
-| 查询委托任务状态 | GET /api/v1/a2a/delegations/{delegationId} | 含同步外部状态 |
-| 获取委托任务结果 | GET /api/v1/a2a/delegations/{delegationId}/result | A2A Message 格式结果 |
-| 取消委托任务 | POST /api/v1/a2a/delegations/{delegationId}/cancel | JSON-RPC tasks/cancel |
-| 查询委托任务列表 | GET /api/v1/a2a/delegations | 多维度筛选 |
-| 补充任务输入 | POST /api/v1/a2a/delegations/{delegationId}/input | INPUT_REQUIRED 状态补充输入 |
-| 任务进度流式订阅 | GET /api/v1/a2a/delegations/{delegationId}/stream | SSE 实时进度推送 |
-| 任务超时处理 | POST /api/v1/a2a/delegations/{delegationId}/timeout | 手动/自动超时 |
-| 注册任务回调 | POST /api/v1/a2a/delegations/{delegationId}/callbacks | 多回调地址 |
-| 查询状态转换历史 | GET /api/v1/a2a/delegations/{delegationId}/history | 完整状态机轨迹 |
-| 获取任务产出物 | GET /api/v1/a2a/delegations/{delegationId}/artifacts | 产出物列表 |
-| 接收外部回调 | POST /api/v1/a2a/callbacks/external | 外部 Agent 推送通知 |
-| TECH-AGENT 集成 | 入站任务转交执行 | INBOUND 委托转 Agent 执行 |
-| TECH-WFE 集成 | 入站任务转工作流 | INBOUND 委托转 WFE 流程 |
-| 超时检测定时任务 | Spring Scheduling | 定时扫描超时任务 |
-| 事件发布 | Kafka DELEGATION_* | Outbox 模式 |
+| 交付项               | API                                                   | 说明                            |
+| -------------------- | ----------------------------------------------------- | ------------------------------- |
+| 委托任务给外部 Agent | POST /api/v1/a2a/delegations                          | A2A Client，JSON-RPC tasks/send |
+| 接收外部任务委托     | POST /rpc/v1/a2a                                      | A2A Server，JSON-RPC 端点       |
+| 查询委托任务状态     | GET /api/v1/a2a/delegations/{delegationId}            | 含同步外部状态                  |
+| 获取委托任务结果     | GET /api/v1/a2a/delegations/{delegationId}/result     | A2A Message 格式结果            |
+| 取消委托任务         | POST /api/v1/a2a/delegations/{delegationId}/cancel    | JSON-RPC tasks/cancel           |
+| 查询委托任务列表     | GET /api/v1/a2a/delegations                           | 多维度筛选                      |
+| 补充任务输入         | POST /api/v1/a2a/delegations/{delegationId}/input     | INPUT_REQUIRED 状态补充输入     |
+| 任务进度流式订阅     | GET /api/v1/a2a/delegations/{delegationId}/stream     | SSE 实时进度推送                |
+| 任务超时处理         | POST /api/v1/a2a/delegations/{delegationId}/timeout   | 手动/自动超时                   |
+| 注册任务回调         | POST /api/v1/a2a/delegations/{delegationId}/callbacks | 多回调地址                      |
+| 查询状态转换历史     | GET /api/v1/a2a/delegations/{delegationId}/history    | 完整状态机轨迹                  |
+| 获取任务产出物       | GET /api/v1/a2a/delegations/{delegationId}/artifacts  | 产出物列表                      |
+| 接收外部回调         | POST /api/v1/a2a/callbacks/external                   | 外部 Agent 推送通知             |
+| TECH-AGENT 集成      | 入站任务转交执行                                      | INBOUND 委托转 Agent 执行       |
+| TECH-WFE 集成        | 入站任务转工作流                                      | INBOUND 委托转 WFE 流程         |
+| 超时检测定时任务     | Spring Scheduling                                     | 定时扫描超时任务                |
+| 事件发布             | Kafka DELEGATION\_\*                                  | Outbox 模式                     |
 
 **验收标准**：完整的委托任务生命周期（提交 -> 处理 -> 完成/失败/取消/超时），支持 SSE 流式进度推送，入站任务能转交 TECH-AGENT 或 TECH-WFE 执行，回调机制可靠触发。
 
@@ -4068,21 +4091,21 @@ CREATE INDEX idx_idem_expires ON a2a_idempotent_request (expires_at);
 
 **目标**：完成 Agent 间消息传递能力和安全认证体系，包括 API Key 管理、权限验证。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 发送消息 | POST /api/v1/a2a/messages | 轻量级点对点通信 |
-| 接收消息 | GET /api/v1/a2a/agents/{agentId}/messages | 支持长轮询 |
-| 确认消息 | POST /api/v1/a2a/messages/{messageId}/ack | ACK 机制 |
-| 消息队列管理 | GET /api/v1/a2a/agents/{agentId}/message-queue | 队列状态查询 |
-| 清理过期消息 | POST /api/v1/a2a/agents/{agentId}/message-queue/cleanup | TTL 过期清理 |
-| Agent 认证 | POST /api/v1/a2a/auth/verify | API Key/JWT 双方案 |
-| 生成 API Key | POST /api/v1/a2a/agents/{agentId}/api-keys | 多 Key、独立吊销 |
-| 管理 API Key | GET /api/v1/a2a/agents/{agentId}/api-keys | 查询 Key 列表 |
-| 吊销 API Key | DELETE /api/v1/a2a/agents/{agentId}/api-keys/{keyId} | 即时失效 |
-| 权限验证 | POST /api/v1/a2a/auth/authorize | 操作级权限校验 |
-| 凭证加密存储 | AES-256 加密 | Agent Credential 加密 |
-| 消息过期清理定时任务 | Spring Scheduling | 定时清理过期消息 |
-| 事件发布 | Kafka MESSAGE_* / AUTH_* | Outbox 模式 |
+| 交付项               | API                                                     | 说明                  |
+| -------------------- | ------------------------------------------------------- | --------------------- |
+| 发送消息             | POST /api/v1/a2a/messages                               | 轻量级点对点通信      |
+| 接收消息             | GET /api/v1/a2a/agents/{agentId}/messages               | 支持长轮询            |
+| 确认消息             | POST /api/v1/a2a/messages/{messageId}/ack               | ACK 机制              |
+| 消息队列管理         | GET /api/v1/a2a/agents/{agentId}/message-queue          | 队列状态查询          |
+| 清理过期消息         | POST /api/v1/a2a/agents/{agentId}/message-queue/cleanup | TTL 过期清理          |
+| Agent 认证           | POST /api/v1/a2a/auth/verify                            | API Key/JWT 双方案    |
+| 生成 API Key         | POST /api/v1/a2a/agents/{agentId}/api-keys              | 多 Key、独立吊销      |
+| 管理 API Key         | GET /api/v1/a2a/agents/{agentId}/api-keys               | 查询 Key 列表         |
+| 吊销 API Key         | DELETE /api/v1/a2a/agents/{agentId}/api-keys/{keyId}    | 即时失效              |
+| 权限验证             | POST /api/v1/a2a/auth/authorize                         | 操作级权限校验        |
+| 凭证加密存储         | AES-256 加密                                            | Agent Credential 加密 |
+| 消息过期清理定时任务 | Spring Scheduling                                       | 定时清理过期消息      |
+| 事件发布             | Kafka MESSAGE*\* / AUTH*\*                              | Outbox 模式           |
 
 **验收标准**：Agent 间可发送/接收/确认消息，支持长轮询模式；API Key 可生成/吊销/权限控制；认证凭证加密存储；消息 TTL 过期自动清理。
 
@@ -4092,17 +4115,17 @@ CREATE INDEX idx_idem_expires ON a2a_idempotent_request (expires_at);
 
 **目标**：完成协作审计、统计分析和运维监控能力，提供完整的可观测性。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 协作记录查询 | GET /api/v1/a2a/audit/collaborations | 全量协作审计日志 |
-| 委托统计 | GET /api/v1/a2a/audit/delegation-stats | 多维度聚合统计 |
-| 错误追踪 | GET /api/v1/a2a/audit/errors | 错误记录查询 |
-| Agent 协作统计 | GET /api/v1/a2a/audit/agents/{agentId}/stats | 单 Agent 统计 |
-| 导出审计报告 | GET /api/v1/a2a/audit/export | JSON/CSV 格式导出 |
-| DLQ 管理 | Kafka a2a.dlq | 死信队列消费与重放 |
-| Outbox 投递监控 | Outbox 状态监控 | 未投递事件告警 |
-| OpenTelemetry 集成 | trace_id 全链路 | 跨 Agent 链路追踪 |
-| APP-DASHBOARD 集成 | 统计数据接口 | 仪表盘数据源 |
-| 事件发布 | Kafka AUDIT_* | Outbox 模式 |
+| 交付项             | API                                          | 说明               |
+| ------------------ | -------------------------------------------- | ------------------ |
+| 协作记录查询       | GET /api/v1/a2a/audit/collaborations         | 全量协作审计日志   |
+| 委托统计           | GET /api/v1/a2a/audit/delegation-stats       | 多维度聚合统计     |
+| 错误追踪           | GET /api/v1/a2a/audit/errors                 | 错误记录查询       |
+| Agent 协作统计     | GET /api/v1/a2a/audit/agents/{agentId}/stats | 单 Agent 统计      |
+| 导出审计报告       | GET /api/v1/a2a/audit/export                 | JSON/CSV 格式导出  |
+| DLQ 管理           | Kafka a2a.dlq                                | 死信队列消费与重放 |
+| Outbox 投递监控    | Outbox 状态监控                              | 未投递事件告警     |
+| OpenTelemetry 集成 | trace_id 全链路                              | 跨 Agent 链路追踪  |
+| APP-DASHBOARD 集成 | 统计数据接口                                 | 仪表盘数据源       |
+| 事件发布           | Kafka AUDIT\_\*                              | Outbox 模式        |
 
 **验收标准**：完整的审计日志可查询可导出，委托统计支持多维度聚合，错误追踪含堆栈信息，DLQ 支持重放，trace_id 贯穿全链路（平台内部 + 外部 Agent）。

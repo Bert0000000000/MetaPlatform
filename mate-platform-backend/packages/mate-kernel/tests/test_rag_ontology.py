@@ -66,16 +66,20 @@ class TestRagRetriever:
         return idx
 
     def test_token_overlap_match(self) -> None:
-        idx = self._idx_with([
-            _ind("1", {"note": "this is a rush order"}),
-            _ind("2", {"note": "regular order"}),
-        ])
+        idx = self._idx_with(
+            [
+                _ind("1", {"note": "this is a rush order"}),
+                _ind("2", {"note": "regular order"}),
+            ]
+        )
         r = RagRetriever(idx)
-        hits = r.retrieve(RagQuery(
-            object_set=ObjectSet(class_rid=_cls(), filter_expr=""),
-            text="rush order",
-            top_k=5,
-        ))
+        hits = r.retrieve(
+            RagQuery(
+                object_set=ObjectSet(class_rid=_cls(), filter_expr=""),
+                text="rush order",
+                top_k=5,
+            )
+        )
         assert len(hits) >= 1
         # rank 1 = chunk with most overlap
         assert "1" in hits[0].chunk.individual_rid
@@ -86,49 +90,57 @@ class TestRagRetriever:
         # query against a *different* class — should return nothing
         r = RagRetriever(idx)
         other_cls = ClassRef(rid="ont.acme.cls.invoice.v1")
-        hits = r.retrieve(RagQuery(
-            object_set=ObjectSet(class_rid=other_cls, filter_expr=""),
-            text="rush",
-        ))
+        hits = r.retrieve(
+            RagQuery(
+                object_set=ObjectSet(class_rid=other_cls, filter_expr=""),
+                text="rush",
+            )
+        )
         assert hits == []
 
     def test_top_k_limit(self) -> None:
-        idx = self._idx_with([
-            _ind(str(i), {"note": "rush"}) for i in range(10)
-        ])
+        idx = self._idx_with([_ind(str(i), {"note": "rush"}) for i in range(10)])
         r = RagRetriever(idx)
-        hits = r.retrieve(RagQuery(
-            object_set=ObjectSet(class_rid=_cls(), filter_expr=""),
-            text="rush",
-            top_k=3,
-        ))
+        hits = r.retrieve(
+            RagQuery(
+                object_set=ObjectSet(class_rid=_cls(), filter_expr=""),
+                text="rush",
+                top_k=3,
+            )
+        )
         assert len(hits) == 3
 
     def test_empty_query_returns_nothing(self) -> None:
         idx = self._idx_with([_ind("1", {"note": "x"})])
         r = RagRetriever(idx)
-        hits = r.retrieve(RagQuery(
-            object_set=ObjectSet(class_rid=_cls(), filter_expr=""),
-            text="",
-        ))
+        hits = r.retrieve(
+            RagQuery(
+                object_set=ObjectSet(class_rid=_cls(), filter_expr=""),
+                text="",
+            )
+        )
         assert hits == []
 
     def test_no_match_returns_nothing(self) -> None:
         idx = self._idx_with([_ind("1", {"note": "completely unrelated content"})])
         r = RagRetriever(idx)
-        hits = r.retrieve(RagQuery(
-            object_set=ObjectSet(class_rid=_cls(), filter_expr=""),
-            text="rush",
-        ))
+        hits = r.retrieve(
+            RagQuery(
+                object_set=ObjectSet(class_rid=_cls(), filter_expr=""),
+                text="rush",
+            )
+        )
         assert hits == []
 
     def test_matched_terms_recorded(self) -> None:
         idx = self._idx_with([_ind("1", {"note": "rush special order"})])
         r = RagRetriever(idx)
-        hits = r.retrieve(RagQuery(
-            object_set=ObjectSet(class_rid=_cls(), filter_expr=""),
-            text="rush order",
-        ))
+        hits = r.retrieve(
+            RagQuery(
+                object_set=ObjectSet(class_rid=_cls(), filter_expr=""),
+                text="rush order",
+            )
+        )
         assert len(hits) == 1
         assert "rush" in hits[0].matched_terms
         assert "order" in hits[0].matched_terms

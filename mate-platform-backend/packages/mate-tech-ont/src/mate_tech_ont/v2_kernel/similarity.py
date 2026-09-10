@@ -107,13 +107,15 @@ def search_similar_object_types(
             score = cosine(candidate_vec, existing_vec)
             if score <= 0.0:
                 continue
-            candidates.append({
-                "rid": ot.rid.rid,
-                "display_name": ot.display_name,
-                "slug": existing_slug,
-                "similarity": round(score, 4),
-                "suggested_action": suggest_action(score),
-            })
+            candidates.append(
+                {
+                    "rid": ot.rid.rid,
+                    "display_name": ot.display_name,
+                    "slug": existing_slug,
+                    "similarity": round(score, 4),
+                    "suggested_action": suggest_action(score),
+                }
+            )
     else:
         # Fallback：slug 归一化 + 子串
         norm_candidate = normalize_slug(candidate_slug)
@@ -125,13 +127,15 @@ def search_similar_object_types(
             norm_existing = normalize_slug(existing_slug)
             score = _fallback_score(norm_candidate, norm_existing)
             if score > 0.0:
-                candidates.append({
-                    "rid": ot.rid.rid,
-                    "display_name": ot.display_name,
-                    "slug": existing_slug,
-                    "similarity": score,
-                    "suggested_action": suggest_action(score),
-                })
+                candidates.append(
+                    {
+                        "rid": ot.rid.rid,
+                        "display_name": ot.display_name,
+                        "slug": existing_slug,
+                        "similarity": score,
+                        "suggested_action": suggest_action(score),
+                    }
+                )
 
     candidates.sort(key=lambda c: c["similarity"], reverse=True)
     return candidates[:top_k]

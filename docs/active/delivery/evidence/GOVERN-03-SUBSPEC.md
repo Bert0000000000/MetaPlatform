@@ -10,14 +10,14 @@ GOVERN-03 = 6 个子 spec；当前进度：✅ 子 spec-01（Sunset 头 + tenant
 
 ## 子 Spec 列表
 
-| ID | 子 Spec | 范围 | 前置 | 状态 | 估计影响 tests |
-|---|---|---|---|---|---:|
-| ✅ 03-01 | Sunset 头 + tenant 白名单 + Sunset 通知文档 | `main.py:1-58,86-104`；`evidence/MP-ONT-V1-SUNSET-NOTICE.md` | — | **Accepted** | 0 |
-| 03-02 | sparql/cypher tenant guard（必传 RequestContext + namespace 防伪造） | `sparql/cypher.py:123-152` + `instances/store.py:102` | 03-01 | Planned | ~10 |
-| 03-03 | StoreProxy：强制 tenant namespace；删除 module singleton | `instances/store.py` + `sparql/api.py` | 03-02 | Planned | ~6 |
-| 03-04 | neo4j_repo.create_node 等 `@deprecated` + 启动 warn log | `repos/neo4j_repo.py:33` | 03-01 | Planned | ~2 |
-| 03-05 | ont.yaml x-sunset 标注 + openapi-ci lint `x-migration-target` | `contracts/openapi/services/ont.yaml` + `openapi-ci.yml` | 03-01 | Planned | 0 |
-| 03-06 | test_cypher_tenant_guard.py ≥4 攻击向量 + accept | `packages/mate-tech-ont/tests/` | 03-02 / -03 | Planned | ≥4 |
+| ID       | 子 Spec                                                              | 范围                                                         | 前置        | 状态         | 估计影响 tests |
+| -------- | -------------------------------------------------------------------- | ------------------------------------------------------------ | ----------- | ------------ | -------------: |
+| ✅ 03-01 | Sunset 头 + tenant 白名单 + Sunset 通知文档                          | `main.py:1-58,86-104`；`evidence/MP-ONT-V1-SUNSET-NOTICE.md` | —           | **Accepted** |              0 |
+| 03-02    | sparql/cypher tenant guard（必传 RequestContext + namespace 防伪造） | `sparql/cypher.py:123-152` + `instances/store.py:102`        | 03-01       | Planned      |            ~10 |
+| 03-03    | StoreProxy：强制 tenant namespace；删除 module singleton             | `instances/store.py` + `sparql/api.py`                       | 03-02       | Planned      |             ~6 |
+| 03-04    | neo4j_repo.create_node 等 `@deprecated` + 启动 warn log              | `repos/neo4j_repo.py:33`                                     | 03-01       | Planned      |             ~2 |
+| 03-05    | ont.yaml x-sunset 标注 + openapi-ci lint `x-migration-target`        | `contracts/openapi/services/ont.yaml` + `openapi-ci.yml`     | 03-01       | Planned      |              0 |
+| 03-06    | test_cypher_tenant_guard.py ≥4 攻击向量 + accept                     | `packages/mate-tech-ont/tests/`                              | 03-02 / -03 | Planned      |             ≥4 |
 
 ## 子 Spec 03-02 详细（sparql/cypher tenant guard）
 

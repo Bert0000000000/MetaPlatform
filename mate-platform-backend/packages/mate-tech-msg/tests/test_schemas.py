@@ -1,4 +1,5 @@
 """Message schema tests (ST-5.1.2)."""
+
 from __future__ import annotations
 
 from mate_tech_msg.schemas import Message, PublishRequest, PublishResponse

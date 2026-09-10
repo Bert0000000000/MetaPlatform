@@ -23,6 +23,7 @@ Error mapping (ADR-0014 — explicit failure modes instead of a single
 never raises, so the heartbeat loop (``heartbeat.HealthChecker``) can
 treat a dead server as a state transition rather than an exception.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -79,20 +80,15 @@ class McpRemoteClient:
             headers["Authorization"] = f"Bearer {auth_token}"
         return headers
 
-    def _check_status(
-        self, resp: httpx.Response, *, action: str, endpoint: str
-    ) -> None:
+    def _check_status(self, resp: httpx.Response, *, action: str, endpoint: str) -> None:
         """Map a non-2xx response to the right federation exception."""
         if resp.status_code == 401:
             raise AuthError(f"{action} rejected (401) by {endpoint}")
         if resp.status_code == 503:
-            raise RemoteUnavailableError(
-                f"{action} unavailable (503) at {endpoint}"
-            )
+            raise RemoteUnavailableError(f"{action} unavailable (503) at {endpoint}")
         if resp.status_code >= 400:
             raise RemoteError(
-                f"{action} failed ({resp.status_code}) at {endpoint}: "
-                f"{resp.text[:200]}"
+                f"{action} failed ({resp.status_code}) at {endpoint}: {resp.text[:200]}"
             )
 
     async def discover_tools(
@@ -153,9 +149,7 @@ class McpRemoteClient:
         # Non-dict bodies are wrapped so the contract (-> dict) holds.
         return {"result": data}
 
-    async def health_check(
-        self, server_endpoint: str, auth_token: str | None
-    ) -> bool:
+    async def health_check(self, server_endpoint: str, auth_token: str | None) -> bool:
         """GET ``{endpoint}/health``; return ``True`` only on HTTP 200.
 
         Never raises — any transport error or non-200 status maps to

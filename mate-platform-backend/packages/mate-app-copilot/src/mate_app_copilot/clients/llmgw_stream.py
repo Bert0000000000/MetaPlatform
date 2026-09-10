@@ -204,9 +204,7 @@ class LlmgwStreamClient:
                 ) as resp,
             ):
                 if resp.status_code != 200:
-                    raise LlmgwStreamError(
-                        f"llmgw stream(tools) returned {resp.status_code}"
-                    )
+                    raise LlmgwStreamError(f"llmgw stream(tools) returned {resp.status_code}")
                 async for line in resp.aiter_lines():
                     if not line:
                         continue
@@ -272,7 +270,9 @@ class LlmgwStreamClient:
         except httpx.HTTPError as exc:
             raise LlmgwStreamError(f"llmgw chat(tools) transport error: {exc}") from exc
         if resp.status_code != 200:
-            raise LlmgwStreamError(f"llmgw chat(tools) returned {resp.status_code}: {resp.text[:200]}")
+            raise LlmgwStreamError(
+                f"llmgw chat(tools) returned {resp.status_code}: {resp.text[:200]}"
+            )
         try:
             return resp.json()
         except (ValueError, json.JSONDecodeError) as exc:

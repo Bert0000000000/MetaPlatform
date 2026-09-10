@@ -1,4 +1,5 @@
 """Unit tests for mate_tech_llmgw.cost.ceiling (ADR-0018 §2.4)."""
+
 from __future__ import annotations
 
 import time

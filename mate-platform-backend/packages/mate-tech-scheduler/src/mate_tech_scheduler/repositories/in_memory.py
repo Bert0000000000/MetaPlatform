@@ -18,6 +18,7 @@ ADR-0014 cross-tenant rule is enforced.
 ``SchedulerTask`` is mutable (not frozen) so that update / pause /
 trigger operations can mutate fields in place.
 """
+
 from __future__ import annotations
 
 import time
@@ -129,7 +130,8 @@ def _now() -> str:
 # Public read API
 # ---------------------------------------------------------------------------
 def list_scheduler_tasks(
-    tenant_id: str, status: str | None = None,
+    tenant_id: str,
+    status: str | None = None,
 ) -> list[SchedulerTask]:
     """Return the scheduler tasks for a tenant, optionally filtered by status."""
     if not tenant_id:

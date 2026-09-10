@@ -8,6 +8,7 @@ Table names are prefixed with ``arch_``. Tuple fields (e.g.
 ``DataEntity.fields``) are stored as newline-separated TEXT and
 re-hydrated by the ``_orm_to_*`` helpers in sql_store.py.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import Integer, String, Text

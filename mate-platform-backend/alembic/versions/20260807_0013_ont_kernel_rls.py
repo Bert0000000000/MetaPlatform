@@ -31,6 +31,7 @@ This migration is a **no-op on non-PostgreSQL backends** (SQLite dev /
 MySQL). RLS is a PostgreSQL-specific feature; the SQLAlchemy event
 listener remains the primary enforcement on those backends.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -87,10 +88,7 @@ def upgrade() -> None:
     #    declares tenant_id NOT NULL but guard against legacy data).
     # ------------------------------------------------------------------
     for table in existing:
-        op.execute(
-            f"UPDATE {table} SET tenant_id = 'system' "
-            "WHERE tenant_id IS NULL"
-        )
+        op.execute(f"UPDATE {table} SET tenant_id = 'system' WHERE tenant_id IS NULL")
 
     # ------------------------------------------------------------------
     # 2. Enable RLS + create policy + force RLS on every table.

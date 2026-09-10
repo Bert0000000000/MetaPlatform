@@ -6,6 +6,7 @@ Exercises the full installer loop:
   3. hard-rule #14: registered_digest == manifest.digest
   4. quarantine.commit on success / rollback on digest mismatch
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -61,9 +62,7 @@ def test_ontology_installer_happy_path(quarantine_root):
     stub = _StubClient()
     installer = OntologyInstaller(ontology_client=stub)
 
-    result = asyncio.run(
-        installer.run(install_id="install-001", manifest=manifest, blob=blob)
-    )
+    result = asyncio.run(installer.run(install_id="install-001", manifest=manifest, blob=blob))
 
     assert result["rid"] == manifest["rid"]
     assert result["registered_digest"] == manifest["digest"]["sha256"]
@@ -97,14 +96,10 @@ def test_ontology_installer_digest_mismatch_rolls_back(quarantine_root):
     installer = OntologyInstaller(ontology_client=_StubClient())
 
     with pytest.raises(DigestMismatch):
-        asyncio.run(
-            installer.run(install_id="install-002", manifest=manifest, blob=blob)
-        )
+        asyncio.run(installer.run(install_id="install-002", manifest=manifest, blob=blob))
 
     assert not (quarantine.QUARANTINE / "install-002").exists()
-    assert not (
-        quarantine.INSTALLED / "ontology" / manifest["id"] / manifest["version"]
-    ).exists()
+    assert not (quarantine.INSTALLED / "ontology" / manifest["id"] / manifest["version"]).exists()
 
 
 def test_ontology_installer_hard_rule_14_rolls_back(quarantine_root):
@@ -130,14 +125,10 @@ def test_ontology_installer_hard_rule_14_rolls_back(quarantine_root):
     installer = OntologyInstaller(ontology_client=_StubClient())
 
     with pytest.raises(DigestMismatch):
-        asyncio.run(
-            installer.run(install_id="install-003", manifest=manifest, blob=blob)
-        )
+        asyncio.run(installer.run(install_id="install-003", manifest=manifest, blob=blob))
 
     assert not (quarantine.QUARANTINE / "install-003").exists()
-    assert not (
-        quarantine.INSTALLED / "ontology" / manifest["id"] / manifest["version"]
-    ).exists()
+    assert not (quarantine.INSTALLED / "ontology" / manifest["id"] / manifest["version"]).exists()
 
 
 def test_ontology_installer_real_client_returns_envelope(quarantine_root):
@@ -178,15 +169,9 @@ def test_ontology_installer_real_client_returns_envelope(quarantine_root):
     client._client = httpx.AsyncClient(transport=transport)
 
     installer = OntologyInstaller(ontology_client=client)
-    result = asyncio.run(
-        installer.run(install_id="install-004", manifest=manifest, blob=blob)
-    )
+    result = asyncio.run(installer.run(install_id="install-004", manifest=manifest, blob=blob))
     assert result["rid"] == manifest["rid"]
     assert result["registered_digest"] == manifest["digest"]["sha256"]
     assert (
-        quarantine.INSTALLED
-        / "ontology"
-        / manifest["id"]
-        / manifest["version"]
-        / "bundle.tar.gz"
+        quarantine.INSTALLED / "ontology" / manifest["id"] / manifest["version"] / "bundle.tar.gz"
     ).exists()

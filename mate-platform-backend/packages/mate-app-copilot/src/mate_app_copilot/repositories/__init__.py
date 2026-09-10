@@ -10,6 +10,7 @@ persistence can use sql_store.list_* / put_* directly.
 
 The dataclasses are framework-agnostic so both backends reuse them.
 """
+
 from __future__ import annotations
 
 from . import in_memory, sql_store

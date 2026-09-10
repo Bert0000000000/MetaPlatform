@@ -26,9 +26,12 @@ _BASE = "/api/v1/ont/v2"
 
 def _to_prop(p: dict[str, Any]) -> Property:
     return Property(
-        rid=ClassRef(p["rid"]), type_id=p.get("type_id", "string"),
-        nullable=p.get("nullable", True), primary_key=p.get("primary_key", False),
-        title=p.get("title", ""), format=PropertyFormat(p.get("format", "string")),
+        rid=ClassRef(p["rid"]),
+        type_id=p.get("type_id", "string"),
+        nullable=p.get("nullable", True),
+        primary_key=p.get("primary_key", False),
+        title=p.get("title", ""),
+        format=PropertyFormat(p.get("format", "string")),
     )
 
 
@@ -46,8 +49,12 @@ def _to_ot(d: dict[str, Any]) -> ObjectType:
 class OntologyHttpRepo:
     """OntologyToolRepo 协议的 tech-ont v2 HTTP 实现（sync；调用方包 to_thread）。"""
 
-    def __init__(self, headers: dict[str, str] | None = None, base_url: str | None = None,
-                 timeout: float = 20.0) -> None:
+    def __init__(
+        self,
+        headers: dict[str, str] | None = None,
+        base_url: str | None = None,
+        timeout: float = 20.0,
+    ) -> None:
         self._base = (base_url or os.getenv("ONT_HTTP_BASE", "http://localhost:8007")).rstrip("/")
         self._headers = headers or {}
         self._client = httpx.Client(base_url=self._base, timeout=timeout, headers=self._headers)
@@ -77,8 +84,10 @@ class OntologyHttpRepo:
         items = self._get("/link-instances")
         return [
             SimpleNamespace(
-                rid=li.get("rid", ""), link_type_rid=SimpleNamespace(rid=li.get("link_type_rid", "")),
-                src=li.get("src", ""), dst=li.get("dst", ""),
+                rid=li.get("rid", ""),
+                link_type_rid=SimpleNamespace(rid=li.get("link_type_rid", "")),
+                src=li.get("src", ""),
+                dst=li.get("dst", ""),
             )
             for li in items
         ]
@@ -99,8 +108,11 @@ class OntologyHttpRepo:
             payload["aggregation"] = {
                 "group_by": list(q.aggregation.group_by),
                 "metrics": [
-                    {"fn": m.fn, **({"field": m.field} if m.field else {}),
-                     **({"alias": m.alias} if m.alias else {})}
+                    {
+                        "fn": m.fn,
+                        **({"field": m.field} if m.field else {}),
+                        **({"alias": m.alias} if m.alias else {}),
+                    }
                     for m in q.aggregation.metrics
                 ],
             }
@@ -116,16 +128,27 @@ class OntologyHttpRepo:
         )
 
     def search_objects(
-        self, text: str, class_rid: str | None = None, top_k: int = 5,
+        self,
+        text: str,
+        class_rid: str | None = None,
+        top_k: int = 5,
     ) -> list[dict[str, Any]]:
-        d = self._post("/object-search", {
-            "text": text, **({"class_rid": class_rid} if class_rid else {}), "top_k": top_k,
-        })
+        d = self._post(
+            "/object-search",
+            {
+                "text": text,
+                **({"class_rid": class_rid} if class_rid else {}),
+                "top_k": top_k,
+            },
+        )
         return list(d.get("cards") or ())
 
     def propose_action(
-        self, action_rid: Any, parameters: dict[str, Any],
-        target_iid: str | None, impact_summary: str,
+        self,
+        action_rid: Any,
+        parameters: dict[str, Any],
+        target_iid: str | None,
+        impact_summary: str,
         expected_diff: dict[str, Any] | None = None,
     ) -> Any:
         rid = action_rid if isinstance(action_rid, str) else action_rid.rid
@@ -136,26 +159,40 @@ class OntologyHttpRepo:
             if at.get("declarative_edits"):
                 d = self._post(
                     f"/action-types/{rid}/propose-edit-set",
-                    {"parameters": parameters, "target_iid": target_iid or "",
-                     "impact_summary": impact_summary})
+                    {
+                        "parameters": parameters,
+                        "target_iid": target_iid or "",
+                        "impact_summary": impact_summary,
+                    },
+                )
                 return d
         except Exception:
             pass  # 探测失败回落 legacy 路径
         d = self._post(
             f"/action-types/{rid}/propose",
-            {"parameters": parameters, "target_iid": target_iid or "",
-             "impact_summary": impact_summary, "expected_diff": expected_diff or {}},
+            {
+                "parameters": parameters,
+                "target_iid": target_iid or "",
+                "impact_summary": impact_summary,
+                "expected_diff": expected_diff or {},
+            },
         )
         return _proposal_ns(d)
 
     def propose_create_instance(
-        self, class_rid: str, props: dict[str, Any],
-        impact_summary: str, expected_diff: dict[str, Any] | None = None,
+        self,
+        class_rid: str,
+        props: dict[str, Any],
+        impact_summary: str,
+        expected_diff: dict[str, Any] | None = None,
     ) -> Any:
         d = self._post(
             f"/classes/{class_rid}/propose-instance",
-            {"props": props, "impact_summary": impact_summary,
-             "expected_diff": expected_diff or {}},
+            {
+                "props": props,
+                "impact_summary": impact_summary,
+                "expected_diff": expected_diff or {},
+            },
         )
         return _proposal_ns(d)
 

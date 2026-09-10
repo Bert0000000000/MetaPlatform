@@ -12,6 +12,7 @@ double-check the tenant — the guard is the source of truth.
 Write handlers emit `<domain>.<aggregate>.<verb>` outbox events via
 `app.state.outbox_writer` (ADR-0014 step 3).
 """
+
 from __future__ import annotations
 
 import time
@@ -77,9 +78,7 @@ def _emit(
     tenant_id: str,
 ) -> None:
     """Append an outbox event if a writer is configured (no-op otherwise)."""
-    writer: InMemoryOutboxWriter | None = getattr(
-        request.app.state, "outbox_writer", None
-    )
+    writer: InMemoryOutboxWriter | None = getattr(request.app.state, "outbox_writer", None)
     if writer is None:
         return
     writer.append(
@@ -126,7 +125,8 @@ class FlowTestRequest(BaseModel):
 
 @router.post("/flows/test")
 async def test_flow(
-    request: Request, body: FlowTestRequest,
+    request: Request,
+    body: FlowTestRequest,
 ) -> dict[str, Any]:
     """Dry-run a BPMN flow (FR-WFE-WFEPOSTWFEFLOWSTEST).
 
@@ -218,6 +218,7 @@ async def list_flows_validate(
 # ---------------------------------------------------------------------------
 class FlowCreateRequest(BaseModel):
     """Body schema for POST /flows."""
+
     name: str
     bpmn_xml: str
     version: str = "1.0"
@@ -225,6 +226,7 @@ class FlowCreateRequest(BaseModel):
 
 class FlowStatusRequest(BaseModel):
     """Body schema for PATCH /flows/{id}/status."""
+
     status: str  # draft / active / deprecated
 
 
@@ -242,7 +244,8 @@ async def list_flows_endpoint(
 
 @router.post("/flows", status_code=201)
 async def create_flow(
-    request: Request, body: FlowCreateRequest,
+    request: Request,
+    body: FlowCreateRequest,
 ) -> dict[str, Any]:
     """Create a new flow definition.
 
@@ -257,16 +260,23 @@ async def create_flow(
         raise HTTPException(status_code=422, detail="bpmn_xml is required")
     fid = f"flow-{uuid.uuid4().hex[:8]}"
     flow = FlowDefinition(
-        id=fid, tenant_id=tid, name=body.name,
-        bpmn_xml=body.bpmn_xml, version=body.version, status="draft",
+        id=fid,
+        tenant_id=tid,
+        name=body.name,
+        bpmn_xml=body.bpmn_xml,
+        version=body.version,
+        status="draft",
     )
     put_flow(tid, flow)
     # Validate immediately and persist the validation record.
     valid, issues = validate_bpmn(body.bpmn_xml)
     append_validation(tid, fid, valid, issues)
     _emit(
-        request, "wfe.flow.created", fid,
-        {"flow_id": fid, "name": body.name, "valid": valid}, tid,
+        request,
+        "wfe.flow.created",
+        fid,
+        {"flow_id": fid, "name": body.name, "valid": valid},
+        tid,
     )
     return {"flow": asdict(flow), "validation": {"valid": valid, "issues": issues}}
 
@@ -283,7 +293,9 @@ async def get_flow_endpoint(request: Request, fid: str) -> dict[str, Any]:
 
 @router.patch("/flows/{fid}/status")
 async def transition_flow_status(
-    request: Request, fid: str, body: FlowStatusRequest,
+    request: Request,
+    fid: str,
+    body: FlowStatusRequest,
 ) -> dict[str, Any]:
     """Transition a flow's lifecycle status.
 
@@ -314,8 +326,11 @@ async def transition_flow_status(
             )
     updated = update_flow_status(tid, fid, body.status)
     _emit(
-        request, "wfe.flow.status_changed", fid,
-        {"flow_id": fid, "from": current, "to": body.status}, tid,
+        request,
+        "wfe.flow.status_changed",
+        fid,
+        {"flow_id": fid, "from": current, "to": body.status},
+        tid,
     )
     return asdict(updated)
 
@@ -334,8 +349,11 @@ async def delete_flow_endpoint(request: Request, fid: str) -> dict[str, Any]:
         )
     delete_flow(tid, fid)
     _emit(
-        request, "wfe.flow.deleted", fid,
-        {"flow_id": fid}, tid,
+        request,
+        "wfe.flow.deleted",
+        fid,
+        {"flow_id": fid},
+        tid,
     )
     return {"deleted": fid}
 
@@ -357,7 +375,8 @@ class FlowDeployRequest(BaseModel):
 
 @router.post("/flows/deploy", status_code=201)
 async def deploy_flow_endpoint(
-    request: Request, body: FlowDeployRequest,
+    request: Request,
+    body: FlowDeployRequest,
 ) -> dict[str, Any]:
     """Deploy a BPMN flow to the Flowable engine (P3-W8).
 

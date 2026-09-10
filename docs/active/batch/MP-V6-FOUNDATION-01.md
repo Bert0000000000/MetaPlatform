@@ -24,40 +24,40 @@
 
 ### 3.1 Supabase 8 个能力部署
 
-| 能力 | 验证方式 |
-|---|---|
-| Postgres 14+ | `psql -c "SELECT version()"` 成功 |
-| pgvector | `CREATE EXTENSION vector` 成功 |
-| Auth (GoTrue) | `/auth/v1/health` 返回 200 |
-| Realtime | WebSocket 连接测试 |
-| Storage | S3 API endpoint 测试 |
-| Edge Functions (Deno) | 部署 hello world function |
-| PostgREST | `/rest/v1/` 返回 OpenAPI |
-| Studio | Web UI 登录成功 |
+| 能力                  | 验证方式                          |
+| --------------------- | --------------------------------- |
+| Postgres 14+          | `psql -c "SELECT version()"` 成功 |
+| pgvector              | `CREATE EXTENSION vector` 成功    |
+| Auth (GoTrue)         | `/auth/v1/health` 返回 200        |
+| Realtime              | WebSocket 连接测试                |
+| Storage               | S3 API endpoint 测试              |
+| Edge Functions (Deno) | 部署 hello world function         |
+| PostgREST             | `/rest/v1/` 返回 OpenAPI          |
+| Studio                | Web UI 登录成功                   |
 
 ### 3.2 K8s 基础设施
 
-|组件 | 验证 |
-|---|---|
-| K8s 集群（生产）| kubectl get nodes 成功 |
-| cert-manager | Certificate issued for `*.mp-platform.local` |
-| ArgoCD | Application CRD 部署成功 |
-| Helm chart | umbrella chart 安装成功 |
+| 组件             | 验证                                         |
+| ---------------- | -------------------------------------------- |
+| K8s 集群（生产） | kubectl get nodes 成功                       |
+| cert-manager     | Certificate issued for `*.mp-platform.local` |
+| ArgoCD           | Application CRD 部署成功                     |
+| Helm chart       | umbrella chart 安装成功                      |
 
 ### 3.3 网络与命名空间
 
-|Namespace | 用途 |
-|---|---|
-| mp-platform | 平台总命名空间（默认） |
-| mp-frontend | 后续前端应用 |
-| mp-runtime | 后续 dsh runtime |
-| mp-business | 后续 Edge Functions |
-| mp-ai | 后续 AI 服务 |
-| mp-orchestration | 后续 Temporal |
-| mp-integration | 后续集成 |
-| mp-data | Supabase 全套 |
-| mp-monitoring | OTel + Grafana |
-| mp-infra | cert-manager / argocd / vault |
+| Namespace        | 用途                          |
+| ---------------- | ----------------------------- |
+| mp-platform      | 平台总命名空间（默认）        |
+| mp-frontend      | 后续前端应用                  |
+| mp-runtime       | 后续 dsh runtime              |
+| mp-business      | 后续 Edge Functions           |
+| mp-ai            | 后续 AI 服务                  |
+| mp-orchestration | 后续 Temporal                 |
+| mp-integration   | 后续集成                      |
+| mp-data          | Supabase 全套                 |
+| mp-monitoring    | OTel + Grafana                |
+| mp-infra         | cert-manager / argocd / vault |
 
 ### 3.4 RLS 基线
 
@@ -108,12 +108,12 @@
 
 ## 5. 关键依赖
 
-|依赖 | 来源 |
-|---|---|
+| 依赖                | 来源                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------ |
 | Supabase Helm chart | 官方：[`supabase/supabase`](https://github.com/supabase/supabase/tree/master/docker) |
-| cert-manager | 官方 JetStack |
-| ArgoCD | 官方 |
-| Vault | 官方 |
+| cert-manager        | 官方 JetStack                                                                        |
+| ArgoCD              | 官方                                                                                 |
+| Vault               | 官方                                                                                 |
 
 ## 6. 验收标准（AC）
 
@@ -129,18 +129,19 @@
 
 ## 7. 风险与缓解
 
-|风险 | 缓解 |
-|---|---|
-| Supabase Helm chart 不稳定 | 用官方稳定版 + pin 版本 |
-| RLS 写写错导致数据泄露 | 严格测试 + Studio RLS Editor 审核 |
-| PG 备份失效 | 每月演练恢复 |
-| dsh 服务连不上 Supabase | K8s NetworkPolicy + 测试提前验证 |
+| 风险                       | 缓解                              |
+| -------------------------- | --------------------------------- |
+| Supabase Helm chart 不稳定 | 用官方稳定版 + pin 版本           |
+| RLS 写写错导致数据泄露     | 严格测试 + Studio RLS Editor 审核 |
+| PG 备份失效                | 每月演练恢复                      |
+| dsh 服务连不上 Supabase    | K8s NetworkPolicy + 测试提前验证  |
 
 ---
 
 ## 8. 下游依赖
 
 本 Batch 完成后，以下 Batch 可启动：
+
 - MP-V6-TEMPORAL-01
 - MP-V6-DSH-DOCKER-01
 - MP-V6-DSH-K8S-01

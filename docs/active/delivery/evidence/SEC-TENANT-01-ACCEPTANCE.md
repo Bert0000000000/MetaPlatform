@@ -18,37 +18,38 @@ SEC-TENANT-01 批次落地 Mate Platform v3.0 全栈租户隔离(5 层 + 跨租�
 
 ## 2. 规模指标
 
-| 指标 | 数量 |
-|---|---:|
-| 隔离层 | 5（HTTP / DB / Kafka / Redis / MinIO）|
-| `mate-platform/tenancy/` 新模块 | 4（repository / guards / db_filter / audit）|
-| `mate-clients/` 新模块 | 2（redis/keys + minio/buckets）|
-| `messaging/kafka_tenant.py` | 1 |
-| 单元测试 | 54 |
-| 跨租户 negative cases | 12（HTTP 3 + Redis 3 + MinIO 3 + Kafka 3）|
-| 跨租户 audit event | 1（CrossTenantAccess）|
-| 跨租户 admin 通道 | 1（`cross_tenant_admin` 角色 + audit.log）|
-| 总测试（含回归）| 188（PLATFORM-K8S-01 105 + SEC-IAM-01 29 + SEC-TENANT-01 54）|
+| 指标                            |                                                          数量 |
+| ------------------------------- | ------------------------------------------------------------: |
+| 隔离层                          |                        5（HTTP / DB / Kafka / Redis / MinIO） |
+| `mate-platform/tenancy/` 新模块 |                  4（repository / guards / db_filter / audit） |
+| `mate-clients/` 新模块          |                               2（redis/keys + minio/buckets） |
+| `messaging/kafka_tenant.py`     |                                                             1 |
+| 单元测试                        |                                                            54 |
+| 跨租户 negative cases           |                    12（HTTP 3 + Redis 3 + MinIO 3 + Kafka 3） |
+| 跨租户 audit event              |                                        1（CrossTenantAccess） |
+| 跨租户 admin 通道               |                    1（`cross_tenant_admin` 角色 + audit.log） |
+| 总测试（含回归）                | 188（PLATFORM-K8S-01 105 + SEC-IAM-01 29 + SEC-TENANT-01 54） |
 
 ## 3. 13 项硬规则验收
 
-| # | 硬规则 | 证据路径 | 本地状态 | CI / Staging |
-|---|---|---|---|---|
-| 1 | `pytest mate-platform/tests -q` 全绿 | `tests/test_sec_tenant_01.py` (54 cases) | ✅ **54 passed in 0.28s** | ✅ 同左 |
-| 2 | `pytest mate-clients/tests -q` 全绿 | `src/mate_clients/redis/keys.py` + `minio/buckets.py` 单元测试 | ⚠️ mate-clients 单元测试骨架在 mate-platform 跑（54 cases 覆盖）| ⏸️ per-package pyproject.toml 路径在 mate-platform 阶段统一建 |
-| 3 | `pytest app-*/tests -q` 全绿（每 app ≥ 3 跨租户 negative）| `tests/test_sec_tenant_01.py::TestCrossTenantNegatives` 12 cases | ✅ **4 层 × 3 case = 12 跨租户 negative pass** | ⏸️ 每 app 接入时复制 pattern |
-| 4 | `oasdiff` 无未批准 breaking change | `contracts/openapi/common/security.yaml` 已含 `tenantHeader` | ✅ 已有 (SEC-IAM-01) | ✅ |
-| 5 | 跨租户越权 tests ≥ 3 per layer | TestCrossTenantNegatives 12 cases | ✅ HTTP 3 / Redis 3 / MinIO 3 / Kafka 3 | — |
-| 6 | `helm template + kubeconform` 0 错 | PLATFORM-K8S-01 Keycloak sub-chart 已绿 | ✅ 复用 | ✅ 复用 |
-| 7 | `ruff check` 0 错 | ruff 未本地装 | ⏸️ 本地 ruff 未装 | ✅ CI 跑 |
-| 8 | `pyright --strict` 0 错 | pyright 未本地装 | ⏸️ 本地 pyright 未装 | ✅ CI 跑 |
-| 9 | SQLAlchemy event listener 实测 | `tests/test_sec_tenant_01.py::TestDbFilterListener` 3 cases | ✅ **listener 契约验证 (3 cases)** | ⏸️ 真实 PG 上跑 e2e |
-| 10 | 13 门禁结果落档 | 本文 | ✅ 当前文件 | — |
-| 11 | PROGRAM-BOARD.md 更新 | `docs/active/delivery/PROGRAM-BOARD.md` | ✅ SEC-TENANT-01 = **Accepted** | — |
-| 12 | CI 增加 `security-tenant-ci` job | `.github/workflows/platform-k8s-ci.yml` 扩展 ruff/pyright 路径 | ⏸️ 本批仅扩展静态分析路径，专项 job 在 GA 前硬规则收口时加 | ✅ 已有 ruff/pyright |
-| 13 | pre-commit raw-SQL 检测 | gitleaks / detect-secrets / SQL 检查 hook | ❌ 未实施 | ⏸️ 推迟到 GA-ACCEPTANCE 前的硬规则收口 |
+| #   | 硬规则                                                     | 证据路径                                                         | 本地状态                                                         | CI / Staging                                                  |
+| --- | ---------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------- |
+| 1   | `pytest mate-platform/tests -q` 全绿                       | `tests/test_sec_tenant_01.py` (54 cases)                         | ✅ **54 passed in 0.28s**                                        | ✅ 同左                                                       |
+| 2   | `pytest mate-clients/tests -q` 全绿                        | `src/mate_clients/redis/keys.py` + `minio/buckets.py` 单元测试   | ⚠️ mate-clients 单元测试骨架在 mate-platform 跑（54 cases 覆盖） | ⏸️ per-package pyproject.toml 路径在 mate-platform 阶段统一建 |
+| 3   | `pytest app-*/tests -q` 全绿（每 app ≥ 3 跨租户 negative） | `tests/test_sec_tenant_01.py::TestCrossTenantNegatives` 12 cases | ✅ **4 层 × 3 case = 12 跨租户 negative pass**                   | ⏸️ 每 app 接入时复制 pattern                                  |
+| 4   | `oasdiff` 无未批准 breaking change                         | `contracts/openapi/common/security.yaml` 已含 `tenantHeader`     | ✅ 已有 (SEC-IAM-01)                                             | ✅                                                            |
+| 5   | 跨租户越权 tests ≥ 3 per layer                             | TestCrossTenantNegatives 12 cases                                | ✅ HTTP 3 / Redis 3 / MinIO 3 / Kafka 3                          | —                                                             |
+| 6   | `helm template + kubeconform` 0 错                         | PLATFORM-K8S-01 Keycloak sub-chart 已绿                          | ✅ 复用                                                          | ✅ 复用                                                       |
+| 7   | `ruff check` 0 错                                          | ruff 未本地装                                                    | ⏸️ 本地 ruff 未装                                                | ✅ CI 跑                                                      |
+| 8   | `pyright --strict` 0 错                                    | pyright 未本地装                                                 | ⏸️ 本地 pyright 未装                                             | ✅ CI 跑                                                      |
+| 9   | SQLAlchemy event listener 实测                             | `tests/test_sec_tenant_01.py::TestDbFilterListener` 3 cases      | ✅ **listener 契约验证 (3 cases)**                               | ⏸️ 真实 PG 上跑 e2e                                           |
+| 10  | 13 门禁结果落档                                            | 本文                                                             | ✅ 当前文件                                                      | —                                                             |
+| 11  | PROGRAM-BOARD.md 更新                                      | `docs/active/delivery/PROGRAM-BOARD.md`                          | ✅ SEC-TENANT-01 = **Accepted**                                  | —                                                             |
+| 12  | CI 增加 `security-tenant-ci` job                           | `.github/workflows/platform-k8s-ci.yml` 扩展 ruff/pyright 路径   | ⏸️ 本批仅扩展静态分析路径，专项 job 在 GA 前硬规则收口时加       | ✅ 已有 ruff/pyright                                          |
+| 13  | pre-commit raw-SQL 检测                                    | gitleaks / detect-secrets / SQL 检查 hook                        | ❌ 未实施                                                        | ⏸️ 推迟到 GA-ACCEPTANCE 前的硬规则收口                        |
 
 **汇总**：
+
 - 本地直接验证：1 / 3 / 5 / 6（复用）/ 9 / 10 / 11 = 7 项
 - 已落地但需 CI 跑：7（ruff）/ 8（pyright）/ 12（专项 job）= 3 项
 - 待后续批次补齐：2（mate-clients per-package tests）/ 13（pre-commit hook）= 2 项
@@ -127,7 +128,7 @@ mate-platform-backend/packages/mate-clients/
 
 1. **pre-commit raw-SQL 检测**未实施（gate 13）；计划在 GA-ACCEPTANCE 前的硬规则收口阶段统一接入。
 2. **`mate-clients` per-package 单元测试**仍借用 mate-platform 跑；`pyproject.toml` 中 `[tool.pytest.ini_options]` 的 `pythonpath` 设置在 mate-clients 阶段统一补。
-3. **每 app 接入**：当前 SEC-TENANT-01 在 mate-platform / mate-clients 层提供工具；17 个 app-* 包各自集成 tenant 隔离在 TECH-SERVICES 阶段。
+3. **每 app 接入**：当前 SEC-TENANT-01 在 mate-platform / mate-clients 层提供工具；17 个 app-\* 包各自集成 tenant 隔离在 TECH-SERVICES 阶段。
 4. **真实 PG / Kafka / Redis / MinIO 集成测试**待 staging 集群的 e2e 跑通；本地用 mock 验证了 listener 契约。
 5. **`tenant_id` 列在已有表**（如 mate-tech-iam 旧表）的回填与 RLS 迁移脚本在 PLATFORM-EVENT-01 阶段补齐（与 Outbox 同批做 DDL migration）。
 

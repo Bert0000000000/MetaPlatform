@@ -6,6 +6,7 @@ Two checks:
 
 Returns GuardResult with is_safe (bool), threats (list[str]), redacted_input (str).
 """
+
 from __future__ import annotations
 
 import re

@@ -4,6 +4,7 @@ Entities: LlmProvider, LlmModel, LlmRouteRule.
 These capture the LLM gateway's provider/model registry and routing
 configuration so it can be persisted to SQL.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -62,8 +63,13 @@ def _seed_providers(tenant_id: str) -> dict[str, LlmProvider]:
     ]
     return {
         pid: LlmProvider(
-            id=pid, tenant_id=tenant_id, name=name, provider_type=pt,
-            base_url=url, enabled=en, config={"timeout": 30},
+            id=pid,
+            tenant_id=tenant_id,
+            name=name,
+            provider_type=pt,
+            base_url=url,
+            enabled=en,
+            config={"timeout": 30},
             created_at="2026-08-01T00:00:00Z",
             updated_at="2026-08-01T00:00:00Z",
         )
@@ -74,14 +80,28 @@ def _seed_providers(tenant_id: str) -> dict[str, LlmProvider]:
 def _seed_models(tenant_id: str) -> dict[str, LlmModel]:
     catalog = [
         ("model-gpt4o", "gpt-4o", "GPT-4o", "openai", "text", 4096, True),
-        ("model-claude35", "claude-3-5-sonnet-20241022", "Claude 3.5 Sonnet", "anthropic", "text", 8192, True),
+        (
+            "model-claude35",
+            "claude-3-5-sonnet-20241022",
+            "Claude 3.5 Sonnet",
+            "anthropic",
+            "text",
+            8192,
+            True,
+        ),
         ("model-qwen-max", "qwen-max", "Qwen Max", "qwen", "text", 8192, True),
         ("model-doubao-pro", "doubao-pro", "Doubao Pro", "doubao", "text", 4096, True),
     ]
     return {
         mid: LlmModel(
-            id=mid, tenant_id=tenant_id, model_id=moid, display_name=dn,
-            provider=prov, modality=mod, max_tokens=mt, enabled=en,
+            id=mid,
+            tenant_id=tenant_id,
+            model_id=moid,
+            display_name=dn,
+            provider=prov,
+            modality=mod,
+            max_tokens=mt,
+            enabled=en,
             config={"temperature": 1.0},
             created_at="2026-08-01T00:00:00Z",
             updated_at="2026-08-01T00:00:00Z",
@@ -99,8 +119,12 @@ def _seed_route_rules(tenant_id: str) -> dict[str, LlmRouteRule]:
     ]
     return {
         rid: LlmRouteRule(
-            id=rid, tenant_id=tenant_id, model_pattern=pat, provider=prov,
-            priority=pri, enabled=en,
+            id=rid,
+            tenant_id=tenant_id,
+            model_pattern=pat,
+            provider=prov,
+            priority=pri,
+            enabled=en,
             created_at="2026-08-01T00:00:00Z",
             updated_at="2026-08-01T00:00:00Z",
         )

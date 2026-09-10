@@ -28,12 +28,12 @@ MatePlatform 已交付 8 核心 Batch + v3.1 M1~M3 = 20/20 Batch Accepted，进�
 
 ### 分支策略
 
-| 前缀 | 触发 CI | 用途 |
-|---|---|---|
-| `main` | 全 ga-acceptance 13 门禁 | 生产 |
-| `codex/<batch>` | 全 ga-acceptance 13 门禁 | 正式实现 PR（gate） |
+| 前缀                     | 触发 CI                  | 用途                          |
+| ------------------------ | ------------------------ | ----------------------------- |
+| `main`                   | 全 ga-acceptance 13 门禁 | 生产                          |
+| `codex/<batch>`          | 全 ga-acceptance 13 门禁 | 正式实现 PR（gate）           |
 | **`cowork/<batch>-prd`** | **仅 cowork-prd-ci.yml** | **PRD / ACCEPTANCE 本地迭代** |
-| **`cowork/<batch>`** | **仅 cowork-prd-ci.yml** | **Code 本地迭代（可选）** |
+| **`cowork/<batch>`**     | **仅 cowork-prd-ci.yml** | **Code 本地迭代（可选）**     |
 
 ### 三阶段 Loop
 

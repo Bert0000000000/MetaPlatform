@@ -10,6 +10,7 @@ Verifies:
   - CleanupResult captures errors without crashing
   - Alembic 0010 schema is valid
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -53,9 +54,7 @@ class _MockConn:
 
 
 class TestGDPRRequest:
-    def test_gdpr_marks_tenant_soft_deleted(
-        self, store: InMemoryRetentionStore
-    ) -> None:
+    def test_gdpr_marks_tenant_soft_deleted(self, store: InMemoryRetentionStore) -> None:
         rec = request_gdpr_forget(
             tenant_id="tenant-acme",
             requested_by="admin@metaplatform.io",
@@ -64,9 +63,7 @@ class TestGDPRRequest:
         assert rec.tenant_id == "tenant-acme"
         assert is_tenant_soft_deleted("tenant-acme", store=store)
 
-    def test_gdpr_hard_delete_window_in_future(
-        self, store: InMemoryRetentionStore
-    ) -> None:
+    def test_gdpr_hard_delete_window_in_future(self, store: InMemoryRetentionStore) -> None:
         rec = request_gdpr_forget(
             tenant_id="t1",
             requested_by="u",
@@ -77,17 +74,11 @@ class TestGDPRRequest:
         hard_delete_at = datetime.fromisoformat(rec.hard_delete_at)
         assert hard_delete_at > now + timedelta(days=29)
 
-    def test_gdpr_empty_tenant_rejected(
-        self, store: InMemoryRetentionStore
-    ) -> None:
+    def test_gdpr_empty_tenant_rejected(self, store: InMemoryRetentionStore) -> None:
         with pytest.raises(ValueError, match="tenant_id is required"):
-            request_gdpr_forget(
-                tenant_id="", requested_by="u", store=store
-            )
+            request_gdpr_forget(tenant_id="", requested_by="u", store=store)
 
-    def test_gdpr_negative_window_rejected(
-        self, store: InMemoryRetentionStore
-    ) -> None:
+    def test_gdpr_negative_window_rejected(self, store: InMemoryRetentionStore) -> None:
         with pytest.raises(ValueError, match="hardDeleteAfterDays"):
             request_gdpr_forget(
                 tenant_id="t1",

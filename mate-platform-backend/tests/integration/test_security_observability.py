@@ -1,4 +1,5 @@
 """安全 + 可观测性 (10 ST)."""
+
 from __future__ import annotations
 
 
@@ -6,6 +7,7 @@ from __future__ import annotations
 def test_jwt_expiry_validation() -> None:
     """JWT 过期验证."""
     import time
+
     expired_token_exp = int(time.time()) - 3600  # 1h ago
     current_time = int(time.time())
     is_expired = expired_token_exp < current_time
@@ -16,10 +18,13 @@ def test_oauth_pkce_validation() -> None:
     """OAuth PKCE code_verifier 验证."""
     import base64
     import hashlib
+
     code_verifier = "random-string-43-128-chars"
-    code_challenge = base64.urlsafe_b64encode(
-        hashlib.sha256(code_verifier.encode()).digest()
-    ).decode().rstrip("=")
+    code_challenge = (
+        base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode()).digest())
+        .decode()
+        .rstrip("=")
+    )
     assert len(code_challenge) >= 43
 
 
@@ -49,6 +54,7 @@ def test_xss_prevention() -> None:
 def test_otel_trace_id_format() -> None:
     """OTel trace_id 32 hex chars."""
     import secrets
+
     trace_id = secrets.token_hex(16)
     assert len(trace_id) == 32
     assert all(c in "0123456789abcdef" for c in trace_id)

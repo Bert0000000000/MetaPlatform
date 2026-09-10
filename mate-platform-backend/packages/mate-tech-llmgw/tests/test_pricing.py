@@ -4,6 +4,7 @@ Resolution chain: aliases → overrides → vendored exact → family prefix →
 unknown(cost 0 + warning). ARK ep-xxx endpoint IDs resolve via
 LLMGW_MODEL_ALIASES only.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -81,8 +82,7 @@ def test_unknown_model_returns_none() -> None:
 def test_price_overrides_env_replaces_entry(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(
         "LLMGW_PRICE_OVERRIDES",
-        '{"qwen-max": {"input_cost_per_token": 0.0000006, '
-        '"output_cost_per_token": 0.0000024}}',
+        '{"qwen-max": {"input_cost_per_token": 0.0000006, "output_cost_per_token": 0.0000024}}',
     )
     table = load_pricing_from_env()
     price = table.get("qwen-max")
@@ -92,17 +92,14 @@ def test_price_overrides_env_replaces_entry(monkeypatch: pytest.MonkeyPatch) -> 
 
 
 def test_cost_math_and_cache_aware_cost() -> None:
-    price = ModelPrice(input_per_token=2.5e-06, output_per_token=1e-05,
-                       cache_read_per_token=1.25e-06)
+    price = ModelPrice(
+        input_per_token=2.5e-06, output_per_token=1e-05, cache_read_per_token=1.25e-06
+    )
     assert price.cost(1000, 500) == pytest.approx(0.0075)
     # All prompt tokens cached → cache_read rate on prompt side.
-    assert price.cost_cached(1000, 1000, 500) == pytest.approx(
-        1000 * 1.25e-06 + 500 * 1e-05
-    )
+    assert price.cost_cached(1000, 1000, 500) == pytest.approx(1000 * 1.25e-06 + 500 * 1e-05)
     # Partial cache: 400 cached + 600 uncached.
-    assert price.cost_cached(400, 1000, 0) == pytest.approx(
-        600 * 2.5e-06 + 400 * 1.25e-06
-    )
+    assert price.cost_cached(400, 1000, 0) == pytest.approx(600 * 2.5e-06 + 400 * 1.25e-06)
 
 
 def test_estimate_cost_delegates_to_pricing() -> None:

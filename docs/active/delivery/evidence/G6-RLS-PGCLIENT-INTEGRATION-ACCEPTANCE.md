@@ -56,11 +56,11 @@ install_rls_session(session, ctx)
 
 ### 2.3 新增 3 integration tests
 
-| 测试 | 验证 |
-|---|---|
-| `test_session_binds_tenant_ctx_when_tenant_id_provided` | `session(tenant_id=...)` 绑真实 RequestContext 到 session |
-| `test_session_without_tenant_id_does_not_bind_ctx` | 无 tenant_id 不绑 (硬规则 3 留给调用方) |
-| `test_session_rejects_empty_tenant_id_string` | SQLite dialect 跳过；空 ctx 也绑（生产 PG 上 `require_tenant` 会拒） |
+| 测试                                                    | 验证                                                                 |
+| ------------------------------------------------------- | -------------------------------------------------------------------- |
+| `test_session_binds_tenant_ctx_when_tenant_id_provided` | `session(tenant_id=...)` 绑真实 RequestContext 到 session            |
+| `test_session_without_tenant_id_does_not_bind_ctx`      | 无 tenant_id 不绑 (硬规则 3 留给调用方)                              |
+| `test_session_rejects_empty_tenant_id_string`           | SQLite dialect 跳过；空 ctx 也绑（生产 PG 上 `require_tenant` 会拒） |
 
 ## 3. 验证
 
@@ -79,23 +79,23 @@ $ pytest packages/mate-platform/tests/test_rls_session.py -q
 
 ## 4. 4 道防线现状
 
-| # | 防线 | 触发点 | 状态 |
-|---|---|---|---|
-| 1 | AuthMiddleware 401 | `mate_platform.auth.middleware` | ✅ Accepted (commit 历史) |
-| 2 | `require_tenant(ctx)` guard | 每个 handler 第一行 | ✅ Accepted (commit 历史) |
-| 3 | SQLAlchemy event listener | `mate_platform.tenancy.db_filter` | ✅ Accepted (commit 历史) |
-| 4 | PostgreSQL RLS policy | Alembic 0008 + install_rls_session + PgClient 集成 | ✅ Accepted (本批) |
+| #   | 防线                        | 触发点                                             | 状态                      |
+| --- | --------------------------- | -------------------------------------------------- | ------------------------- |
+| 1   | AuthMiddleware 401          | `mate_platform.auth.middleware`                    | ✅ Accepted (commit 历史) |
+| 2   | `require_tenant(ctx)` guard | 每个 handler 第一行                                | ✅ Accepted (commit 历史) |
+| 3   | SQLAlchemy event listener   | `mate_platform.tenancy.db_filter`                  | ✅ Accepted (commit 历史) |
+| 4   | PostgreSQL RLS policy       | Alembic 0008 + install_rls_session + PgClient 集成 | ✅ Accepted (本批)        |
 
 任何一道失效，其他三道仍能阻断跨租户数据访问。
 
 ## 5. 13 硬规则映射
 
-| # | 硬规则 | 集成 |
-|---|---|---|
-| 3 | 没有 tenant 上下文,不访问 repository | ✅ PgClient.session 自动 install_rls_session (跨服务数据访问路径) |
-| 4 | 外部系统 ACL Client | ✅ PgClient 是 PG 的 ACL 边界 (mate_clients/pg.py docstring 显式声明) |
-| 6 | 静态检查 | ✅ ruff 0 errors (新增代码) |
-| 10 | 验收证据 | ✅ 本文档 + 3 tests |
+| #   | 硬规则                               | 集成                                                                  |
+| --- | ------------------------------------ | --------------------------------------------------------------------- |
+| 3   | 没有 tenant 上下文,不访问 repository | ✅ PgClient.session 自动 install_rls_session (跨服务数据访问路径)     |
+| 4   | 外部系统 ACL Client                  | ✅ PgClient 是 PG 的 ACL 边界 (mate_clients/pg.py docstring 显式声明) |
+| 6   | 静态检查                             | ✅ ruff 0 errors (新增代码)                                           |
+| 10  | 验收证据                             | ✅ 本文档 + 3 tests                                                   |
 
 ## 6. 结论
 

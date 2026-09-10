@@ -84,7 +84,7 @@
 
 ### 2.2 注入位置（避免污染全局）
 
-**禁止**在 `:root` 覆盖（会污染 portal 全站）  
+**禁止**在 `:root` 覆盖（会污染 portal 全站）
 **必须**在 `.gedit-playground` 容器作用域下覆盖：
 
 ```css
@@ -137,20 +137,20 @@ import { getMateSemiTheme } from '@mate/shared/flow';
 
 ### 3.1 `formMeta` 不自动生效
 
-**症状**：在 `nodeRegistries` 里给了 `formMeta.render`，画布上还是显示默认 input 卡片。  
-**根因**：`FixedLayoutEditorProvider` 的 `getNodeDefaultRegistry(type)` 返回默认的 `<Field name="title">` + `<Field name="content">`，**不会自动套用外部传入的 `formMeta`**。  
+**症状**：在 `nodeRegistries` 里给了 `formMeta.render`，画布上还是显示默认 input 卡片。
+**根因**：`FixedLayoutEditorProvider` 的 `getNodeDefaultRegistry(type)` 返回默认的 `<Field name="title">` + `<Field name="content">`，**不会自动套用外部传入的 `formMeta`**。
 **正解**：必须**自己包一层 Provider**，覆盖 `getNodeDefaultRegistry`，把每个节点的 `formMeta` 显式塞进去。`packages/shared/src/components/flow/flowgram-demo/editor.tsx` 已实现该封装，所有页面通过 `FlowgramEditor` 间接调用，**禁止在业务页面里直接用 `FixedLayoutEditorProvider`**。
 
 ### 3.2 `renderDefaultNode` 拖拽绑定
 
-**症状**：节点既无法拖动也无法选中连线。  
-**根因**：自定义节点外壳时没绑定 `onMouseDown → nodeRender.startDrag(e) + stopPropagation`。  
+**症状**：节点既无法拖动也无法选中连线。
+**根因**：自定义节点外壳时没绑定 `onMouseDown → nodeRender.startDrag(e) + stopPropagation`。
 **正解**：`packages/shared/src/components/flow/flowgram-demo/components/base-node.tsx` 与 `apps/portal/src/pages/admin/custom-base-node.tsx` 已有正解，所有业务节点必须基于此壳层扩展，不要重写外壳。
 
 ### 3.3 `fitView` 时机敏感
 
-**症状**：编辑器自带的 `pg.config.fitView(doc.root.bounds.pad(30))` 在 `initialData` 传入时常常不生效，画布出现黑边或节点挤在角落。  
-**根因**：FlowGram 内部 playground 异步渲染，`onInit` 时画布 DOM 还没准备好。  
+**症状**：编辑器自带的 `pg.config.fitView(doc.root.bounds.pad(30))` 在 `initialData` 传入时常常不生效，画布出现黑边或节点挤在角落。
+**根因**：FlowGram 内部 playground 异步渲染，`onInit` 时画布 DOM 还没准备好。
 **正解**：`apps/portal/src/pages/admin/flowgram-editor.tsx` 内的 `<ForceFitViewport>` 组件，用 demo 数据的**逻辑坐标常量** + `ResizeObserver` + 多次重试，**绝对不要用已被 transform 的 `.gedit-flow-background-layer` DOM rect**（会产生循环）。
 
 ---

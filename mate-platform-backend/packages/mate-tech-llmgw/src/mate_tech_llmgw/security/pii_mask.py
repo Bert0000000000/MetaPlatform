@@ -2,6 +2,7 @@
 
 敏感字段(手机号、身份证、邮箱)送 LLM 前自动打码。
 """
+
 from __future__ import annotations
 
 import re
@@ -22,7 +23,9 @@ logger = structlog.get_logger(__name__)
 PII_PATTERNS: dict[str, re.Pattern[str]] = {
     "phone_cn": re.compile(r"(?<!\d)1[3-9]\d{9}(?!\d)"),
     "id_card_cn": re.compile(r"(?<!\d)\d{17}[\dXx](?!\d)"),
-    "email": re.compile(r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?![A-Za-z0-9])"),
+    "email": re.compile(
+        r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?![A-Za-z0-9])"
+    ),
     "credit_card": re.compile(r"(?<!\d)(?:\d[ -]*?){13,19}(?!\d)"),
     "ip_v4": re.compile(r"(?<!\d)(?:\d{1,3}\.){3}\d{1,3}(?!\d)"),
 }

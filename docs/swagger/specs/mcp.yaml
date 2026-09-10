@@ -27,7 +27,7 @@ paths:
                 properties:
                   tools:
                     type: array
-                    items: {$ref: "#/components/schemas/ToolSpec"}
+                    items: { $ref: "#/components/schemas/ToolSpec" }
   /api/v1/mcp/tools/{name}:
     post:
       summary: HTTP 桥接 — 调工具
@@ -38,7 +38,7 @@ paths:
         - name: name
           in: path
           required: true
-          schema: {type: string}
+          schema: { type: string }
       requestBody:
         required: true
         content:
@@ -46,7 +46,7 @@ paths:
             schema:
               type: object
               properties:
-                arguments: {type: object}
+                arguments: { type: object }
       responses:
         "200":
           description: OK
@@ -55,11 +55,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  tool: {type: string}
+                  tool: { type: string }
                   result: {}
-        "401": {description: 缺少或无效 JWT}
-        "404": {description: 工具不存在}
-        "429": {description: 触发限流}
+        "401": { description: 缺少或无效 JWT }
+        "404": { description: 工具不存在 }
+        "429": { description: 触发限流 }
   /api/v1/mcp/resources:
     get:
       summary: 列出资源
@@ -82,16 +82,16 @@ paths:
         - name: name
           in: path
           required: true
-          schema: {type: string}
+          schema: { type: string }
       requestBody:
         required: true
         content:
           application/json:
-            schema: {type: object}
+            schema: { type: object }
       responses:
         "200":
           description: OK
-        "404": {description: prompt 不存在}
+        "404": { description: prompt 不存在 }
 components:
   securitySchemes:
     bearerAuth:
@@ -102,6 +102,6 @@ components:
     ToolSpec:
       type: object
       properties:
-        name: {type: string}
-        description: {type: string}
-        inputSchema: {type: object}
+        name: { type: string }
+        description: { type: string }
+        inputSchema: { type: object }

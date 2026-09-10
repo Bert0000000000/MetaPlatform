@@ -4,6 +4,7 @@
 - 排队 30s 内若释放则重试
 - 超时则 raise QuotaExceededError(HTTP 429 含义)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -35,7 +36,9 @@ def with_quota(
 
     def decorator(fn: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
         @functools.wraps(fn)
-        async def wrapper(*args: Any, tenant_id: str = "default", estimated_tokens: int = 0, **kwargs: Any) -> Any:
+        async def wrapper(
+            *args: Any, tenant_id: str = "default", estimated_tokens: int = 0, **kwargs: Any
+        ) -> Any:
             deadline = asyncio.get_event_loop().time() + queue_timeout
             while True:
                 try:
@@ -44,7 +47,9 @@ def with_quota(
                 except QuotaExceededError as e:
                     remaining = deadline - asyncio.get_event_loop().time()
                     if remaining <= 0:
-                        logger.error("quota.queue_timeout", tenant=tenant_id, retry_after=e.retry_after)
+                        logger.error(
+                            "quota.queue_timeout", tenant=tenant_id, retry_after=e.retry_after
+                        )
                         raise
                     wait = min(e.retry_after, remaining, poll_interval)
                     logger.info("quota.queued", tenant=tenant_id, wait=wait)

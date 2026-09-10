@@ -142,146 +142,176 @@ def _executor() -> InMemoryQueryExecutor:
 
 class TestFilters:
     def test_eq_and_gt_combined(self) -> None:
-        res = _executor().execute(ObjectSetQuery(
-            source=ClassRef(f"ont.{_T}.obj.order.v1"),
-            filters=(
-                Condition("status", QueryOp.EQ, "open"),
-                Condition("amount", QueryOp.GT, 100),
-            ),
-        ))
+        res = _executor().execute(
+            ObjectSetQuery(
+                source=ClassRef(f"ont.{_T}.obj.order.v1"),
+                filters=(
+                    Condition("status", QueryOp.EQ, "open"),
+                    Condition("amount", QueryOp.GT, 100),
+                ),
+            )
+        )
         assert res.kind == "objects"
         assert sorted(r["oid"] for r in res.rows) == ["o2", "o4"]
 
     def test_startswith_and_contains(self) -> None:
-        res = _executor().execute(ObjectSetQuery(
-            source=ClassRef(f"ont.{_T}.obj.order.v1"),
-            filters=(Condition("oid", QueryOp.STARTSWITH, "o"),),
-        ))
+        res = _executor().execute(
+            ObjectSetQuery(
+                source=ClassRef(f"ont.{_T}.obj.order.v1"),
+                filters=(Condition("oid", QueryOp.STARTSWITH, "o"),),
+            )
+        )
         assert len(res.rows) == 4
-        res2 = _executor().execute(ObjectSetQuery(
-            source=ClassRef(f"ont.{_T}.obj.order.v1"),
-            filters=(Condition("region", QueryOp.CONTAINS, "ort"),),
-        ))
+        res2 = _executor().execute(
+            ObjectSetQuery(
+                source=ClassRef(f"ont.{_T}.obj.order.v1"),
+                filters=(Condition("region", QueryOp.CONTAINS, "ort"),),
+            )
+        )
         assert {r["oid"] for r in res2.rows} == {"o1", "o3", "o4"}
 
     def test_truthy(self) -> None:
-        res = _executor().execute(ObjectSetQuery(
-            source=ClassRef(f"ont.{_T}.obj.order.v1"),
-            filters=(Condition("status", QueryOp.TRUTHY, None),),
-        ))
+        res = _executor().execute(
+            ObjectSetQuery(
+                source=ClassRef(f"ont.{_T}.obj.order.v1"),
+                filters=(Condition("status", QueryOp.TRUTHY, None),),
+            )
+        )
         assert len(res.rows) == 4
 
 
 class TestSortAndPaging:
     def test_multi_key_sort(self) -> None:
-        res = _executor().execute(ObjectSetQuery(
-            source=ClassRef(f"ont.{_T}.obj.order.v1"),
-            sort=(SortKey("status"), SortKey("amount", desc=True)),
-        ))
+        res = _executor().execute(
+            ObjectSetQuery(
+                source=ClassRef(f"ont.{_T}.obj.order.v1"),
+                sort=(SortKey("status"), SortKey("amount", desc=True)),
+            )
+        )
         assert [r["oid"] for r in res.rows] == ["o3", "o4", "o2", "o1"]
 
     def test_paging(self) -> None:
-        res = _executor().execute(ObjectSetQuery(
-            source=ClassRef(f"ont.{_T}.obj.order.v1"),
-            sort=(SortKey("amount"),),
-            paging_offset=1,
-            paging_limit=2,
-        ))
+        res = _executor().execute(
+            ObjectSetQuery(
+                source=ClassRef(f"ont.{_T}.obj.order.v1"),
+                sort=(SortKey("amount"),),
+                paging_offset=1,
+                paging_limit=2,
+            )
+        )
         assert [r["oid"] for r in res.rows] == ["o1", "o2"]
 
 
 class TestAggregation:
     def test_group_by_sum(self) -> None:
-        res = _executor().execute(ObjectSetQuery(
-            source=ClassRef(f"ont.{_T}.obj.order.v1"),
-            aggregation=Aggregation(
-                group_by=("region",),
-                metrics=(MetricSpec(fn="sum", field="amount"),),
-            ),
-        ))
+        res = _executor().execute(
+            ObjectSetQuery(
+                source=ClassRef(f"ont.{_T}.obj.order.v1"),
+                aggregation=Aggregation(
+                    group_by=("region",),
+                    metrics=(MetricSpec(fn="sum", field="amount"),),
+                ),
+            )
+        )
         assert res.kind == "aggregates"
         rows = {r["region"]: r["sum_amount"] for r in res.rows}
         assert rows == {"north": 450, "south": 250}
 
     def test_count_and_avg(self) -> None:
-        res = _executor().execute(ObjectSetQuery(
-            source=ClassRef(f"ont.{_T}.obj.order.v1"),
-            filters=(Condition("status", QueryOp.EQ, "open"),),
-            aggregation=Aggregation(
-                metrics=(MetricSpec(fn="count"), MetricSpec(fn="avg", field="amount")),
-            ),
-        ))
+        res = _executor().execute(
+            ObjectSetQuery(
+                source=ClassRef(f"ont.{_T}.obj.order.v1"),
+                filters=(Condition("status", QueryOp.EQ, "open"),),
+                aggregation=Aggregation(
+                    metrics=(MetricSpec(fn="count"), MetricSpec(fn="avg", field="amount")),
+                ),
+            )
+        )
         assert len(res.rows) == 1
         assert res.rows[0]["count"] == 3
         assert res.rows[0]["avg_amount"] == (100 + 250 + 300) / 3
 
     def test_min_max_with_alias(self) -> None:
-        res = _executor().execute(ObjectSetQuery(
-            source=ClassRef(f"ont.{_T}.obj.order.v1"),
-            aggregation=Aggregation(
-                group_by=("status",),
-                metrics=(
-                    MetricSpec(fn="min", field="amount", alias="lo"),
-                    MetricSpec(fn="max", field="amount", alias="hi"),
+        res = _executor().execute(
+            ObjectSetQuery(
+                source=ClassRef(f"ont.{_T}.obj.order.v1"),
+                aggregation=Aggregation(
+                    group_by=("status",),
+                    metrics=(
+                        MetricSpec(fn="min", field="amount", alias="lo"),
+                        MetricSpec(fn="max", field="amount", alias="hi"),
+                    ),
                 ),
-            ),
-        ))
+            )
+        )
         by_status = {r["status"]: (r["lo"], r["hi"]) for r in res.rows}
         assert by_status == {"open": (100, 300), "closed": (50, 50)}
 
     def test_sum_without_field_rejected(self) -> None:
         with pytest.raises(ValueError, match="field"):
-            _executor().execute(ObjectSetQuery(
-                source=ClassRef(f"ont.{_T}.obj.order.v1"),
-                aggregation=Aggregation(
-                    metrics=(MetricSpec(fn="sum"),),
-                ),
-            ))
+            _executor().execute(
+                ObjectSetQuery(
+                    source=ClassRef(f"ont.{_T}.obj.order.v1"),
+                    aggregation=Aggregation(
+                        metrics=(MetricSpec(fn="sum"),),
+                    ),
+                )
+            )
 
 
 class TestTraversal:
     def test_traverse_out_to_customers(self) -> None:
-        res = _executor().execute(ObjectSetQuery(
-            source=ClassRef(f"ont.{_T}.obj.order.v1"),
-            filters=(Condition("status", QueryOp.EQ, "open"),),
-            traversal=(TraversalStep(link_type=LINK_OWNS, direction="out"),),
-        ))
+        res = _executor().execute(
+            ObjectSetQuery(
+                source=ClassRef(f"ont.{_T}.obj.order.v1"),
+                filters=(Condition("status", QueryOp.EQ, "open"),),
+                traversal=(TraversalStep(link_type=LINK_OWNS, direction="out"),),
+            )
+        )
         assert res.kind == "objects"
         assert sorted(r["cid"] for r in res.rows) == ["c1", "c2"]
 
     def test_traverse_in_from_customers(self) -> None:
-        res = _executor().execute(ObjectSetQuery(
-            source=ClassRef(f"ont.{_T}.obj.customer.v1"),
-            filters=(Condition("tier", QueryOp.EQ, "gold"),),
-            traversal=(TraversalStep(link_type=LINK_OWNS, direction="in"),),
-        ))
+        res = _executor().execute(
+            ObjectSetQuery(
+                source=ClassRef(f"ont.{_T}.obj.customer.v1"),
+                filters=(Condition("tier", QueryOp.EQ, "gold"),),
+                traversal=(TraversalStep(link_type=LINK_OWNS, direction="in"),),
+            )
+        )
         assert sorted(r["oid"] for r in res.rows) == ["o1", "o3"]
 
     def test_bad_direction_rejected(self) -> None:
         with pytest.raises(ValueError, match="direction"):
-            _executor().execute(ObjectSetQuery(
-                source=ClassRef(f"ont.{_T}.obj.order.v1"),
-                traversal=(TraversalStep(link_type=LINK_OWNS, direction="sideways"),),
-            ))
+            _executor().execute(
+                ObjectSetQuery(
+                    source=ClassRef(f"ont.{_T}.obj.order.v1"),
+                    traversal=(TraversalStep(link_type=LINK_OWNS, direction="sideways"),),
+                )
+            )
 
 
 class TestResultSchema:
     def test_objects_result_schema_maps_slugs_to_rids(self) -> None:
-        res = _executor().execute(ObjectSetQuery(
-            source=ClassRef(f"ont.{_T}.obj.order.v1"),
-        ))
+        res = _executor().execute(
+            ObjectSetQuery(
+                source=ClassRef(f"ont.{_T}.obj.order.v1"),
+            )
+        )
         assert res.result_schema is not None
         assert res.result_schema["amount"]["rid"] == f"ont.{_T}.prop.amount.v1"
         assert res.result_schema["amount"]["type"] == "integer"
 
     def test_aggregates_result_schema_carries_fn(self) -> None:
-        res = _executor().execute(ObjectSetQuery(
-            source=ClassRef(f"ont.{_T}.obj.order.v1"),
-            aggregation=Aggregation(
-                group_by=("region",),
-                metrics=(MetricSpec(fn="sum", field="amount"),),
-            ),
-        ))
+        res = _executor().execute(
+            ObjectSetQuery(
+                source=ClassRef(f"ont.{_T}.obj.order.v1"),
+                aggregation=Aggregation(
+                    group_by=("region",),
+                    metrics=(MetricSpec(fn="sum", field="amount"),),
+                ),
+            )
+        )
         assert res.result_schema is not None
         assert res.result_schema["sum_amount"]["fn"] == "sum"
 

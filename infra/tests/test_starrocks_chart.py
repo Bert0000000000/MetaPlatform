@@ -6,13 +6,13 @@ external catalogs pointing at the sibling Iceberg + Paimon REST
 catalogs. This module is pure static smoke so it runs on every CI
 machine (Linux / macOS / Windows) without a real cluster.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
 
 import pytest
 import yaml
-
 from conftest import REPO_ROOT
 
 CHART = REPO_ROOT / "infra" / "helm" / "charts" / "starrocks"
@@ -41,7 +41,7 @@ class TestStarRocksChart:
         assert values["fe"]["replicaCount"] >= 1
         assert values["be"]["replicaCount"] >= 3  # production minimum
         assert values["fe"]["queryPort"] == 9030  # MySQL protocol
-        assert values["fe"]["httpPort"] == 8040   # web UI
+        assert values["fe"]["httpPort"] == 8040  # web UI
 
     def test_values_have_external_catalogs(self) -> None:
         values = _load_yaml(CHART / "values.yaml")
@@ -105,9 +105,7 @@ class TestStarRocksChart:
         assert values["fe"]["httpPort"] == 8040
 
     def test_external_catalog_configmap_has_iceberg_and_paimon(self) -> None:
-        cm = (
-            CHART / "templates" / "external-catalog-configmap.yaml"
-        ).read_text(encoding="utf-8")
+        cm = (CHART / "templates" / "external-catalog-configmap.yaml").read_text(encoding="utf-8")
         assert "catalog-iceberg" in cm
         assert "catalog-paimon" in cm
         assert "tenant-database-prefix" in cm

@@ -7,6 +7,7 @@ Implemented Task 7 in the isolated worktree `D:\Hermes\Workspace\10_Projects\202
 ## Changes
 
 1. Wired the existing `RedisTokenBucket` into `mate_tech_llmgw.main.lifespan`.
+
    - Added explicit env switch `MATE_LLMGW_ENABLE_REDIS_QUOTA`.
    - Default behavior is enabled for `staging` / `production` / `prod`, or whenever `REDIS_URL` is non-empty. This enables the checked-in local Docker service even when `MATE_PROFILE` is absent; development/profile-less runs with no `REDIS_URL` remain disabled.
    - Startup only creates a bucket when no bucket is already injected.
@@ -14,11 +15,13 @@ Implemented Task 7 in the isolated worktree `D:\Hermes\Workspace\10_Projects\202
    - Redis init failures degrade by logging a warning and leaving quota inactive.
 
 2. Preserved the existing quota algorithm and shared auth path.
+
    - Reused `RedisTokenBucket` as-is.
    - Did not add a second limiter.
    - Did not alter Copilot production code or shared auth wiring.
 
 3. Added deterministic HTTP quota boundary coverage for LLMGW.
+
    - `test_chat_http_returns_429_with_retry_after_before_provider_call`
    - `test_chat_http_same_tenant_under_quota_returns_200`
    - `test_staging_lifespan_wires_owned_quota_bucket_and_closes_it`
@@ -27,6 +30,7 @@ Implemented Task 7 in the isolated worktree `D:\Hermes\Workspace\10_Projects\202
    - `test_lifespan_preserves_external_quota_bucket_without_closing_it`
 
 4. Replaced the Copilot case-4 false-green loop with a deterministic LLMGW-boundary contract test.
+
    - Removed the 120-request loop and “non-5xx is acceptable” assertion.
    - New case asserts downstream LLMGW `/api/v1/llmgw/chat` returns `429` with `Retry-After` and does not call the provider.
 

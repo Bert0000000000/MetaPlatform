@@ -1,4 +1,5 @@
 """Bootstrap verification tests (ST-5.3.6.x)."""
+
 from __future__ import annotations
 
 from mate_tech_mcp.main import (

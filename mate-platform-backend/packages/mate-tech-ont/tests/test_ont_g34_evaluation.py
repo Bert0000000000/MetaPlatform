@@ -2,6 +2,7 @@
 
 全部走模块纯函数 + tmp_path 本地文件，无 PG / FastAPI 依赖。
 """
+
 from __future__ import annotations
 
 import json
@@ -24,7 +25,9 @@ from mate_tech_ont.v2_kernel.evaluation import (
 )
 
 
-def _q(qid: str, *, tags: tuple[str, ...] = ("test",), expected: str | None = None) -> EvaluationQuestion:
+def _q(
+    qid: str, *, tags: tuple[str, ...] = ("test",), expected: str | None = None
+) -> EvaluationQuestion:
     return EvaluationQuestion(
         id=qid,
         business_question=f"业务问题 {qid}",
@@ -153,7 +156,11 @@ def test_quadrant_report_four_quadrants():
     assert counts["ai_total"] == 4
     # 诊断语义自带（self-describing report）
     assert set(report["diagnosis"]) >= {
-        "both_success", "ai_only", "human_only", "both_fail", "unknown",
+        "both_success",
+        "ai_only",
+        "human_only",
+        "both_fail",
+        "unknown",
     }
 
 
@@ -200,7 +207,9 @@ def test_append_runs_jsonl_and_load_runs(tmp_path):
 
 def test_load_runs_rejects_bad_participant(tmp_path):
     path = tmp_path / "bad.jsonl"
-    path.write_text(json.dumps({"question_id": "Q-1", "participant": "robot"}) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps({"question_id": "Q-1", "participant": "robot"}) + "\n", encoding="utf-8"
+    )
     with pytest.raises(ValueError, match="participant"):
         ev.load_runs(path)
 
@@ -212,7 +221,7 @@ def test_compare_to_baseline_detects_new_failures():
         _run("Q-3", "ai", False),  # 基线本就失败
     ]
     current = [
-        _run("Q-1", "ai", True),   # 仍通过
+        _run("Q-1", "ai", True),  # 仍通过
         _run("Q-2", "ai", False),  # 新失败 → 检出
         _run("Q-3", "ai", False),  # 基线失败延续 → 不算新失败
         _run("Q-4", "ai", False),  # 新增题（基线无记录）→ 不算新失败

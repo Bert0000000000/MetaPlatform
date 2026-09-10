@@ -8,6 +8,7 @@
      format 记冲突标记，按策略（keep_left / keep_right）消解；输出合并审计。
   ③ modularization —— 留增量（PRD-33 FR-ALIGN-003）。
 """
+
 from __future__ import annotations
 
 import re
@@ -36,8 +37,11 @@ _LABEL_KEYS = ("name", "title", "label", "display")
 def _label(ind: dict[str, Any]) -> str:
     """实例 label：优先 name/title/label/display 后缀的属性值。"""
     props = ind.get("props") or {}
-    items = props.items() if isinstance(props, dict) else [
-        (p.get("rid", ""), p.get("value")) for p in props if isinstance(p, dict)]
+    items = (
+        props.items()
+        if isinstance(props, dict)
+        else [(p.get("rid", ""), p.get("value")) for p in props if isinstance(p, dict)]
+    )
     best = ""
     for k, v in items:
         key = str(k).rsplit(".", 1)[-1].split(".")[0].lower()
@@ -53,8 +57,11 @@ def _signature(ind: dict[str, Any]) -> frozenset:
     """结构签名：属性 slug（路径末段语义名，跨本体可比）+ 标量值规范化。"""
     props = ind.get("props") or {}
     sig: set = set()
-    items = props.items() if isinstance(props, dict) else [
-        (p.get("rid", ""), p.get("value")) for p in props if isinstance(p, dict)]
+    items = (
+        props.items()
+        if isinstance(props, dict)
+        else [(p.get("rid", ""), p.get("value")) for p in props if isinstance(p, dict)]
+    )
     for k, v in items:
         seg = str(k).split(".")
         slug = seg[-2] if len(seg) >= 2 else str(k)  # …prop.email.v1 → email
@@ -113,19 +120,21 @@ def align_individuals(
                 evidence.append("structural")
                 score = max(score, structural)
             if evidence:
-                matched.append({
-                    "left": lrid, "right": rrid,
-                    "score": round(score, 4),
-                    "evidence": evidence,
-                })
+                matched.append(
+                    {
+                        "left": lrid,
+                        "right": rrid,
+                        "score": round(score, 4),
+                        "evidence": evidence,
+                    }
+                )
 
     pairs = [(m["left"], m["right"]) for m in matched]
     clusters_map = _union_find(pairs)
     merged: dict[str, list[str]] = {}
     for ind, rep in clusters_map.items():
         merged.setdefault(rep, []).append(ind)
-    clusters = {rep: sorted(members) for rep, members in merged.items()
-                if len(members) > 1}
+    clusters = {rep: sorted(members) for rep, members in merged.items() if len(members) > 1}
     return {
         "clusters": clusters,
         "matched_pairs": matched,
@@ -161,7 +170,10 @@ def _prop_fields(p: Property) -> dict[str, Any]:
 
 
 def merge_object_types(
-    a: ObjectType, b: ObjectType, *, strategy: str = "keep_left",
+    a: ObjectType,
+    b: ObjectType,
+    *,
+    strategy: str = "keep_left",
 ) -> dict[str, Any]:
     """类型合并（ONT-G33 FR-ALIGN-002）：字段并集 + 冲突标记 + 合并审计。
 
@@ -191,19 +203,25 @@ def merge_object_types(
             continue
         resolved = fb if strategy == "keep_right" else fa
         for f in differing:
-            conflicts.append({
-                "property_rid": rid_s, "field": f,
-                "left": _ser(fa[f]), "right": _ser(fb[f]),
-                "resolved": _ser(resolved[f]),
-            })
-        merged_props.append(Property(
-            rid=pa.rid,
-            type_id=resolved["type_id"],
-            nullable=resolved["nullable"],
-            primary_key=resolved["primary_key"],
-            title=resolved["title"],
-            format=resolved["format"],
-        ))
+            conflicts.append(
+                {
+                    "property_rid": rid_s,
+                    "field": f,
+                    "left": _ser(fa[f]),
+                    "right": _ser(fb[f]),
+                    "resolved": _ser(resolved[f]),
+                }
+            )
+        merged_props.append(
+            Property(
+                rid=pa.rid,
+                type_id=resolved["type_id"],
+                nullable=resolved["nullable"],
+                primary_key=resolved["primary_key"],
+                title=resolved["title"],
+                format=resolved["format"],
+            )
+        )
     for rid_s, pb in b_by_rid.items():
         if rid_s not in a_by_rid:
             merged_props.append(pb)
@@ -221,9 +239,9 @@ def merge_object_types(
         rid=a.rid,
         primary_key=tuple(pk_rids),
         properties=tuple(merged_props),
-        interfaces=tuple(sorted(
-            {ClassRef(_rid_str(i)) for i in [*a.interfaces, *b.interfaces]},
-            key=_rid_str)),
+        interfaces=tuple(
+            sorted({ClassRef(_rid_str(i)) for i in [*a.interfaces, *b.interfaces]}, key=_rid_str)
+        ),
         display_name=a.display_name or b.display_name,
         marking=tuple(sorted({*a.marking, *b.marking})),
     )

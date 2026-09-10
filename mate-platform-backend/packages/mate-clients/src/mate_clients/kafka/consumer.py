@@ -12,6 +12,7 @@ IdempotentConsumer wraps a raw Kafka consumer + a Redis dedup store
 The handler runs in the consumer's tenant context (via
 `assert_message_tenant` from SEC-TENANT-01).
 """
+
 from __future__ import annotations
 
 import json
@@ -36,7 +37,9 @@ class ConsumerError(Exception):
 class DlqEntry:
     """An entry written to the DLQ topic after max retries."""
 
-    def __init__(self, original_topic: str, key: str, value: bytes, headers: dict[str, str], error: str) -> None:
+    def __init__(
+        self, original_topic: str, key: str, value: bytes, headers: dict[str, str], error: str
+    ) -> None:
         self.original_topic = original_topic
         self.key = key
         self.value = value

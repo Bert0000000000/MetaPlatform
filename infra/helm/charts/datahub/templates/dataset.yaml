@@ -39,5 +39,5 @@ spec:
   # SLO/SLA contract published to the catalog (hard rule 9 observability).
   sla:
     availability: "99.9%"
-    freshness: "P1D"        # max staleness = 1 day (ISO-8601 duration)
+    freshness: "P1D" # max staleness = 1 day (ISO-8601 duration)
     latencyP99Ms: 500

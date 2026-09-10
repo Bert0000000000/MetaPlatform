@@ -43,14 +43,14 @@ components:
       type: object
       required: [topic, payload]
       properties:
-        topic: {type: string}
-        payload: {type: object}
-        partition_key: {type: string, nullable: true}
-        idempotency_key: {type: string, nullable: true}
+        topic: { type: string }
+        payload: { type: object }
+        partition_key: { type: string, nullable: true }
+        idempotency_key: { type: string, nullable: true }
     PublishResponse:
       type: object
       properties:
-        topic: {type: string}
-        partition: {type: integer}
-        offset: {type: integer}
-        idempotency_hit: {type: boolean}
+        topic: { type: string }
+        partition: { type: integer }
+        offset: { type: integer }
+        idempotency_hit: { type: boolean }

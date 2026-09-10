@@ -31,7 +31,7 @@ class QualityDimension(StrEnum):
     COMPLETENESS = "completeness"  # 0..1
     FRESHNESS_SECONDS = "freshness_seconds"
     ROW_COUNT = "row_count"
-    UNIQUENESS = "uniqueness"      # 0..1
+    UNIQUENESS = "uniqueness"  # 0..1
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,6 +44,7 @@ class QualitySummary:
 @dataclass(frozen=True, slots=True)
 class DataProduct:
     """data.<tenant>.product.<slug>.v<n>"""
+
     product_rid: str
     name: str
     kind: DataProductKind
@@ -63,6 +64,7 @@ class DataProduct:
 @dataclass(frozen=True, slots=True)
 class LineageEdge:
     """上游 → 下游 DataProduct 的依赖边。"""
+
     upstream_rid: str
     downstream_rid: str
     transform: str  # SQL / pipeline 名
@@ -82,11 +84,11 @@ class DataProductAgent:
             raise ValueError(f"data product already registered: {product.product_rid}")
         self._products[product.product_rid] = product
         if product.bound_class_rid is not None:
-            self._by_class.setdefault(product.bound_class_rid.rid, []).append(
-                product.product_rid
-            )
+            self._by_class.setdefault(product.bound_class_rid.rid, []).append(product.product_rid)
         manager.track(
-            kind=__import__("mate_kernel.manager.protocol", fromlist=["ChangeKind"]).ChangeKind.REGISTER_CLASS,
+            kind=__import__(
+                "mate_kernel.manager.protocol", fromlist=["ChangeKind"]
+            ).ChangeKind.REGISTER_CLASS,
             target_rid=product.product_rid,
             payload={"class": product.bound_class_rid.rid if product.bound_class_rid else None},
         )

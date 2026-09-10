@@ -3,37 +3,38 @@ info:
   title: Deep Research Agent API
   version: 1.0.0
   x-mate-owner: ai-protocols
-  description: 'Canonical contract for the Deep Research A2A agent. Delegates deep
+  description:
+    "Canonical contract for the Deep Research A2A agent. Delegates deep
 
     web research tasks to the DeerFlow Engine.
 
-    '
+    "
   contact:
     name: Mate Platform API Governance
     email: api-governance@metaplatform.local
 servers:
-- url: /
+  - url: /
 tags:
-- name: deep-research
-  description: Deep Research agent operations
+  - name: deep-research
+    description: Deep Research agent operations
 security:
-- bearerAuth: []
-  tenantHeader: []
-  oidcScopes:
-  - platform.write
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes:
+      - platform.write
 paths:
   /api/v1/a2a/agent/deep-research/invoke:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - deep-research
+        - deep-research
       summary: Delegate a deep research task to DeerFlow
       operationId: deepResearchInvokeDeepResearch
-      description: 'Invokes the Deep Research agent. The caller supplies a
+      description: "Invokes the Deep Research agent. The caller supplies a
 
         capability id (currently only `web-research`) and an input
 
@@ -43,40 +44,40 @@ paths:
 
         report plus the sources used.
 
-        '
+        "
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DeepResearchInvokeRequest'
+              $ref: "#/components/schemas/DeepResearchInvokeRequest"
       responses:
-        '200':
+        "200":
           description: Research completed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeepResearchInvokeResponse'
-        '400':
+                $ref: "#/components/schemas/DeepResearchInvokeResponse"
+        "400":
           description: Malformed request (unknown capability, empty query)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Missing or invalid bearer token
-        '403':
+        "403":
           description: Tenant binding rejected
-        '503':
+        "503":
           description: DeerFlow Engine unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
       x-mate-owner: ai-protocols
       x-mate-permission: deep-research.invoke
       x-mate-requirements:
-      - FR-DEEP-RESEARCH-INVOKE
+        - FR-DEEP-RESEARCH-INVOKE
       x-mate-implementation-status: planned
 components:
   securitySchemes:
@@ -99,20 +100,20 @@ components:
     DeepResearchInvokeRequest:
       type: object
       required:
-      - capability_id
-      - input
+        - capability_id
+        - input
       properties:
         capability_id:
           type: string
           enum:
-          - web-research
+            - web-research
           description: The capability to invoke.
         input:
-          $ref: '#/components/schemas/DeepResearchInput'
+          $ref: "#/components/schemas/DeepResearchInput"
     DeepResearchInput:
       type: object
       required:
-      - query
+        - query
       properties:
         query:
           type: string
@@ -120,9 +121,9 @@ components:
         depth:
           type: string
           enum:
-          - shallow
-          - medium
-          - deep
+            - shallow
+            - medium
+            - deep
           default: deep
         max_sources:
           type: integer
@@ -131,8 +132,8 @@ components:
         output_format:
           type: string
           enum:
-          - markdown
-          - json
+            - markdown
+            - json
           default: markdown
     DeepResearchInvokeResponse:
       type: object
@@ -144,7 +145,7 @@ components:
         sources:
           type: array
           items:
-            $ref: '#/components/schemas/Source'
+            $ref: "#/components/schemas/Source"
         duration_ms:
           type: integer
     Source:
@@ -159,9 +160,9 @@ components:
         reliability:
           type: string
           enum:
-          - high
-          - medium
-          - low
+            - high
+            - medium
+            - low
         fetched_at:
           type: string
           format: date-time

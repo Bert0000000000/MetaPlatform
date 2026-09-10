@@ -8,6 +8,7 @@ reactive capability runtime (MP-COMP-01 / ADR-0042); without the
 lifespan — e.g. a bare ``TestClient(create_app())`` — the runtime is
 absent and everything behaves as before.
 """
+
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
@@ -49,9 +50,14 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         from .outbox_temporal_bridge import OutboxTemporalBridge
 
         starter = TemporalWorkflowStarter()
-        bridge = OutboxTemporalBridge(
-            app.state.outbox_writer, starter,
-        ) if hasattr(app.state, "outbox_writer") else None
+        bridge = (
+            OutboxTemporalBridge(
+                app.state.outbox_writer,
+                starter,
+            )
+            if hasattr(app.state, "outbox_writer")
+            else None
+        )
         if bridge is None:
             from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
@@ -94,6 +100,7 @@ def create_app() -> FastAPI:
     # MP-SAL-05：plan runner 注入 ontology client（action 步骤执行器；
     # tech-ont 不可达时 action 类步骤报错降级，CALL_AGENT 不受影响）。
     from .scheduler.ontology_client import OntologyActionClient
+
     set_plan_runner(PlanRunner(ontology_client=OntologyActionClient()))
     app.state.plan_runner = get_plan_runner()
     app.state.outbox_writer = InMemoryOutboxWriter()

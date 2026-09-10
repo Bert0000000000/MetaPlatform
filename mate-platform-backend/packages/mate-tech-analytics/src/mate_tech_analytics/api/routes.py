@@ -6,6 +6,7 @@ Every handler enforces the two BUSINESS-SLICES integration hooks:
   - require_tenant(ctx): hard rule 3 -- no tenant context, no data access.
     TenantAccessError is mapped to 400 by install_auth's exception handler.
 """
+
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request

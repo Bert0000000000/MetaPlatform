@@ -6,6 +6,7 @@ Covers:
   - /providers endpoint
   - chat with unsupported provider → 400
 """
+
 from __future__ import annotations
 
 import pytest

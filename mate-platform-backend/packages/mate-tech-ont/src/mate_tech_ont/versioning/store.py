@@ -2,6 +2,7 @@
 
 同 ontology_id 多个 version 隔离。
 """
+
 from __future__ import annotations
 
 import time

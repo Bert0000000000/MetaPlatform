@@ -13,13 +13,19 @@ states only. When the runtime is absent (bare TestClient without
 lifespan) or a capability is untracked, dispatch behaves exactly as
 before.
 """
+
 from __future__ import annotations
 
 from mate_platform.composition import Component, Context, Fiber, FiberState, create_context
 
 from .role_registry import CapabilityBinding, DigitalEmployeeRole
 
-__all__ = ["CapabilityRuntime", "capability_key", "get_capability_runtime", "set_capability_runtime"]
+__all__ = [
+    "CapabilityRuntime",
+    "capability_key",
+    "get_capability_runtime",
+    "set_capability_runtime",
+]
 
 
 def capability_key(tenant_id: str, name: str) -> str:
@@ -138,9 +144,7 @@ class CapabilityRuntime:
 
     def snapshot(self) -> dict[str, dict[str, str]]:
         """Observability view: fiber states by key."""
-        capabilities = {
-            key: fiber.state.value for key, fiber in self._capability_fibers.items()
-        }
+        capabilities = {key: fiber.state.value for key, fiber in self._capability_fibers.items()}
         roles = {
             f"{tenant}:{role}": fiber.state.value
             for (tenant, role), fiber in self._role_fibers.items()

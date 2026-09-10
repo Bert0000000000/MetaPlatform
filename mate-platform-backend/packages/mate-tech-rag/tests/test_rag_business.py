@@ -10,6 +10,7 @@ Covers the P0 business logic added in the deep implementation:
   * Chunk validation: empty/whitespace-only chunks -> HTTP 400,
     duplicate-chunk deduplication within a single ingest request
 """
+
 from __future__ import annotations
 
 import os
@@ -101,6 +102,7 @@ def outbox() -> InMemoryOutboxWriter:
 def client(outbox: InMemoryOutboxWriter) -> Iterator[TestClient]:
     _reset_rag_state()
     from mate_tech_rag.api import app as _app_module
+
     _app_module.app.state.outbox_writer = outbox
     yield TestClient(_app_module.app)
     _reset_rag_state()
@@ -234,9 +236,7 @@ class TestTenantScopedSearch:
         assert r.status_code == 200, r.text
         body = r.json()
         assert body["total"] >= 1, body
-        assert all(
-            h["document_id"] == "doc-acme-visible" for h in body["hits"]
-        ), body
+        assert all(h["document_id"] == "doc-acme-visible" for h in body["hits"]), body
 
     def test_search_with_no_owned_documents(self, client, auth_globex):
         """A tenant that has never ingested anything gets 0 search hits."""

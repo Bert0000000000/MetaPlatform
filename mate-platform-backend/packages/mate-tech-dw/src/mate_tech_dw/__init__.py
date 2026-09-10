@@ -8,6 +8,7 @@ P2-W3 (this batch): in-memory repository + read-only queries +
 stub POST /documents/upload. Real cross-service aggregation via
 mate_clients.security.BearerAuth lands in P2-W5 (TD-6).
 """
+
 from __future__ import annotations
 
 __all__ = ["__version__"]

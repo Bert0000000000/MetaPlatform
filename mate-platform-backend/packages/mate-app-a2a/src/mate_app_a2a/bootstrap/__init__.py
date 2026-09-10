@@ -4,6 +4,7 @@
 ``create_app()`` so the DeerFlow deep-research agent is available
 without manual configuration.
 """
+
 from __future__ import annotations
 
 from .agent_registration import (

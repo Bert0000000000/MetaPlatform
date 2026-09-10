@@ -23,14 +23,14 @@ Secret 加密体系的根信任锚。一旦丢失：
 
 ## 2. 前置条件
 
-| 项 | 要求 | 验证方式 |
-|---|---|---|
-| Kubeseal CLI | ≥ 0.27 | `kubeseal --version` |
-| SealedSecrets controller | ≥ 2.16 | `kubectl get deployment -n kube-system sealed-secrets-controller` |
-| kubectl 集群访问 | staging + production context | `kubectl config get-contexts` |
-| 异地存储访问 | Vault Transit / AWS KMS / GCP KMS（推荐 Vault） | 见 §3.2 |
-| SRE on-call 联系方式 | PagerDuty / 飞书群 | 详见 on-call schedule |
-| 备份清单 | `docs/active/runbooks/sealed-secret-backup-inventory.md` | 存在且最新 |
+| 项                       | 要求                                                     | 验证方式                                                          |
+| ------------------------ | -------------------------------------------------------- | ----------------------------------------------------------------- |
+| Kubeseal CLI             | ≥ 0.27                                                   | `kubeseal --version`                                              |
+| SealedSecrets controller | ≥ 2.16                                                   | `kubectl get deployment -n kube-system sealed-secrets-controller` |
+| kubectl 集群访问         | staging + production context                             | `kubectl config get-contexts`                                     |
+| 异地存储访问             | Vault Transit / AWS KMS / GCP KMS（推荐 Vault）          | 见 §3.2                                                           |
+| SRE on-call 联系方式     | PagerDuty / 飞书群                                       | 详见 on-call schedule                                             |
+| 备份清单                 | `docs/active/runbooks/sealed-secret-backup-inventory.md` | 存在且最新                                                        |
 
 ---
 
@@ -225,14 +225,14 @@ rm -f /tmp/sealed-secrets-key-restore.yaml \
 
 ## 5. 演练计划
 
-| 项 | 要求 |
-|---|---|
-| 频率 | **每季度 1 次**（Q1 / Q2 / Q3 / Q4） |
-| 环境 | staging → 验证通过后在 production 复验 |
-| 参与者 | ≥ 2 名 SRE（执行 + 审计） |
-| 目标 RTO | ≤ 4h（从发现丢失到恢复完成） |
-| 记录 | 演练结果写入 `sealed-secret-backup-inventory.md` 演练日志节 |
-| 升级 | 演练失败 → 立即开 ticket 修复，不得推迟到下季度 |
+| 项       | 要求                                                        |
+| -------- | ----------------------------------------------------------- |
+| 频率     | **每季度 1 次**（Q1 / Q2 / Q3 / Q4）                        |
+| 环境     | staging → 验证通过后在 production 复验                      |
+| 参与者   | ≥ 2 名 SRE（执行 + 审计）                                   |
+| 目标 RTO | ≤ 4h（从发现丢失到恢复完成）                                |
+| 记录     | 演练结果写入 `sealed-secret-backup-inventory.md` 演练日志节 |
+| 升级     | 演练失败 → 立即开 ticket 修复，不得推迟到下季度             |
 
 ### 演练步骤摘要
 
@@ -246,11 +246,11 @@ rm -f /tmp/sealed-secrets-key-restore.yaml \
 
 ## 6. 责任人
 
-| 角色 | 职责 | 联系方式 |
-|---|---|---|
-| **Platform Owner** | 本 runbook 的 owner；审批备份策略变更 | 见 on-call schedule |
-| **SRE on-call** | 执行备份 / 恢复 / 演练；第一时间响应告警 | PagerDuty: mate-platform-sre |
-| **Security Officer** | 审计备份清单；审批异地存储访问权限 | 见安全联系人目录 |
+| 角色                 | 职责                                     | 联系方式                     |
+| -------------------- | ---------------------------------------- | ---------------------------- |
+| **Platform Owner**   | 本 runbook 的 owner；审批备份策略变更    | 见 on-call schedule          |
+| **SRE on-call**      | 执行备份 / 恢复 / 演练；第一时间响应告警 | PagerDuty: mate-platform-sre |
+| **Security Officer** | 审计备份清单；审批异地存储访问权限       | 见安全联系人目录             |
 
 ---
 

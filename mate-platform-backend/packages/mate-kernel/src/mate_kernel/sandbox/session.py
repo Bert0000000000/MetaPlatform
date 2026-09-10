@@ -125,7 +125,9 @@ class SessionSandbox:
             raise SessionExpired(f"session {session_id} expired")
         return s
 
-    def advance(self, user_id: str, session_id: str, token: SessionToken | None = None) -> SessionState:
+    def advance(
+        self, user_id: str, session_id: str, token: SessionToken | None = None
+    ) -> SessionState:
         s = self.get(user_id, session_id, token)
         if s.phase == SessionPhase.PLANNING:
             object.__setattr__(s, "phase", SessionPhase.AWAITING_USER)
@@ -140,7 +142,9 @@ class SessionSandbox:
         s.touch()
         return s
 
-    def abort(self, user_id: str, session_id: str, token: SessionToken | None = None) -> SessionState:
+    def abort(
+        self, user_id: str, session_id: str, token: SessionToken | None = None
+    ) -> SessionState:
         s = self.get(user_id, session_id, token)
         object.__setattr__(s, "phase", SessionPhase.ABORTED)
         s.touch()

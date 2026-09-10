@@ -9,6 +9,7 @@ inbound verifier). They share the same Keycloak configuration
 contract; the only difference is the OAuth2 grant (client_credentials
 vs authorization_code).
 """
+
 from __future__ import annotations
 
 import threading
@@ -54,9 +55,7 @@ class BearerAuth:
         timeout_seconds: int = 5,
     ) -> None:
         if not client_id or not client_secret:
-            raise BearerAuthError(
-                "BearerAuth requires non-empty client_id and client_secret"
-            )
+            raise BearerAuthError("BearerAuth requires non-empty client_id and client_secret")
         self._token_uri = token_uri
         self._client_id = client_id
         self._client_secret = client_secret
@@ -92,9 +91,7 @@ class BearerAuth:
         except httpx.HTTPError as exc:
             raise BearerAuthError(f"token request failed: {exc}") from exc
         if resp.status_code != 200:
-            raise BearerAuthError(
-                f"token endpoint returned {resp.status_code}: {resp.text[:200]}"
-            )
+            raise BearerAuthError(f"token endpoint returned {resp.status_code}: {resp.text[:200]}")
         try:
             payload: dict[str, Any] = resp.json()
         except ValueError as exc:

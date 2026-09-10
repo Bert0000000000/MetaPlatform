@@ -24,6 +24,7 @@ that owns its outbound adapter (``IcebergRestAdapter``) and an
 optional outbox writer. Tests inject the adapter as a mock and
 the outbox as an ``InMemoryOutboxWriter``.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -172,7 +173,10 @@ class AdsPublisher:
         #    changing status — the publish transition is recorded
         #    by the bumped version + the outbox event below.
         bumped = set_data_product_status(
-            tenant_id, product.id, product.status, bump_version=True,
+            tenant_id,
+            product.id,
+            product.status,
+            bump_version=True,
         )
         new_version = bumped.version if bumped is not None else product.version + 1
 
@@ -210,7 +214,8 @@ class AdsPublisher:
     # Internals
     # -----------------------------------------------------------------
     async def _create_namespace_idempotent(
-        self, namespace: tuple[str, ...],
+        self,
+        namespace: tuple[str, ...],
     ) -> None:
         """Create a namespace, treating 409 as success (idempotent)."""
         try:
@@ -252,8 +257,7 @@ def _parse_iceberg_target(target: str) -> tuple[tuple[str, ...], str]:
     parts = target.split(".")
     if len(parts) < 2:
         raise AdsPublisherError(
-            f"target_iceberg_table {target!r} must have at least one dot "
-            f"(namespace.name)",
+            f"target_iceberg_table {target!r} must have at least one dot (namespace.name)",
             status_code=422,
         )
     return tuple(parts[:-1]), parts[-1]

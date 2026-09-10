@@ -11,6 +11,7 @@ The client exposes two methods:
 When the engine is unreachable the client raises
 ``DeerFlowUnavailableError``; the router maps that to HTTP 503.
 """
+
 from __future__ import annotations
 
 import os
@@ -52,12 +53,8 @@ class DeerFlowClient:
         timeout: float = DEFAULT_TIMEOUT,
         httpx_client: httpx.AsyncClient | None = None,
     ) -> None:
-        self.base_url = (
-            base_url or os.environ.get("DEERFLOW_URL", self.DEFAULT_URL)
-        ).rstrip("/")
-        self.api_key = api_key if api_key is not None else os.environ.get(
-            "DEERFLOW_API_KEY", ""
-        )
+        self.base_url = (base_url or os.environ.get("DEERFLOW_URL", self.DEFAULT_URL)).rstrip("/")
+        self.api_key = api_key if api_key is not None else os.environ.get("DEERFLOW_API_KEY", "")
         self.timeout = timeout
         headers: dict[str, str] = {}
         if self.api_key:

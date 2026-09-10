@@ -1,4 +1,5 @@
 """W5-5 工具调用 schema 边角 (ST-5.5.8 final)."""
+
 from __future__ import annotations
 
 
@@ -21,6 +22,7 @@ def test_tool_schema_json_schema_valid() -> None:
 def test_tool_definition_dataclass() -> None:
     """ToolDefinition 数据类."""
     from mate_tech_llmgw.tools.registry import ToolDefinition
+
     t = ToolDefinition(
         name="kb_search",
         description="Search KB",

@@ -101,8 +101,12 @@ class TestObservabilityAgent:
 
     def test_multiple_comparators(self) -> None:
         a = self._a()
-        a.register_rule(_rule(metric="http.latency", op=Comparator.LT, threshold=0.5), Manager(_ctx()))
-        a.register_rule(_rule(metric="http.errors", op=Comparator.GTE, threshold=10.0), Manager(_ctx()))
+        a.register_rule(
+            _rule(metric="http.latency", op=Comparator.LT, threshold=0.5), Manager(_ctx())
+        )
+        a.register_rule(
+            _rule(metric="http.errors", op=Comparator.GTE, threshold=10.0), Manager(_ctx())
+        )
         ev1 = a.evaluate("http.latency", 0.1)
         ev2 = a.evaluate("http.errors", 10.0)
         assert len(ev1) == 1 and ev1[0].observed_value == 0.1
@@ -153,4 +157,5 @@ class TestDashboardSpec:
 class TestSelectorRoutedToObs:
     def test_obs_rid_routes_to_obs(self) -> None:
         from mate_kernel.agent.orchestrator import AgentRole, AgentSelector
+
         assert AgentSelector().select("obs.acme.alert.cpu-high.v1") == AgentRole.OBS

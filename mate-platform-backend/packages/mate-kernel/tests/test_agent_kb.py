@@ -65,7 +65,9 @@ class TestKnowledgeLibraryAgent:
         a = self._a()
         cls = _cls()
         # linked doc → 优先级 2.0；text-only doc 最高 1.0
-        a.add_document(_doc("kb.acme.doc.linked.v1", "unrelated text", classes=(cls.rid,)), Manager(_ctx()))
+        a.add_document(
+            _doc("kb.acme.doc.linked.v1", "unrelated text", classes=(cls.rid,)), Manager(_ctx())
+        )
         a.add_document(_doc("kb.acme.doc.text.v1", "order management guide"), Manager(_ctx()))
         hits = a.retrieve("order guide", object_set=ObjectSet(class_rid=cls, filter_expr=""))
         assert len(hits) == 2
@@ -90,7 +92,9 @@ class TestKnowledgeLibraryAgent:
     def test_combined_retrieve(self) -> None:
         a = self._a()
         cls = _cls()
-        a.add_document(_doc("kb.acme.doc.a.v1", "rush order policy", classes=(cls.rid,)), Manager(_ctx()))
+        a.add_document(
+            _doc("kb.acme.doc.a.v1", "rush order policy", classes=(cls.rid,)), Manager(_ctx())
+        )
         rag = RagIndex()
         hits_rag, hits_kb = a.combined_retrieve(
             rag_query=RagQuery(object_set=ObjectSet(class_rid=cls, filter_expr=""), text="rush"),
@@ -102,4 +106,5 @@ class TestKnowledgeLibraryAgent:
 class TestSelectorRoutedToKb:
     def test_kb_rid_routes_to_kb(self) -> None:
         from mate_kernel.agent.orchestrator import AgentRole, AgentSelector
+
         assert AgentSelector().select("kb.acme.doc.manual.v1") == AgentRole.KNOWLEDGE

@@ -130,9 +130,7 @@ async def test_e2e_05_collaboration_dedup_employees(
     tenant_headers: dict[str, str],
 ):
     """重复 employeeId 不应双倍计数。"""
-    await _seed_scored_conv(
-        agent_client, tenant_headers, "conv-e2e-05-dedup", "emp-e2e-05-dedup"
-    )
+    await _seed_scored_conv(agent_client, tenant_headers, "conv-e2e-05-dedup", "emp-e2e-05-dedup")
     resp = await agent_client.post(
         f"{EVAL_BASE}/aggregate-report",
         json={"employeeIds": ["emp-e2e-05-dedup", "emp-e2e-05-dedup"]},

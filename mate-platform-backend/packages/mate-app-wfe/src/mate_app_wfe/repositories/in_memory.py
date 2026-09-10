@@ -21,6 +21,7 @@ BPMN validation:
     <definitions> / <process> roots, balanced start/end events).
     Real Flowable 8.0 engine validation lands in P2-W6.
 """
+
 from __future__ import annotations
 
 import re
@@ -164,8 +165,8 @@ _VALID_BPMN = (
     '<bpmn:process id="proc-1" isExecutable="true">'
     '<bpmn:startEvent id="start-1"/>'
     '<bpmn:endEvent id="end-1"/>'
-    '</bpmn:process>'
-    '</bpmn:definitions>'
+    "</bpmn:process>"
+    "</bpmn:definitions>"
 )
 
 _INVALID_BPMN = "<not-bpmn>hello</not-bpmn>"
@@ -196,13 +197,13 @@ def _seed_validations(tenant_id: str) -> dict[str, FlowValidation]:
     out: dict[str, FlowValidation] = {}
     for i, (fid, flow) in enumerate(flows.items()):
         valid, issues = validate_bpmn(flow.bpmn_xml)
-        out[f"val-{i+1}"] = FlowValidation(
-            id=f"val-{i+1}",
+        out[f"val-{i + 1}"] = FlowValidation(
+            id=f"val-{i + 1}",
             tenant_id=tenant_id,
             flow_id=fid,
             valid=valid,
             issues=tuple(issues),
-            validated_at=f"2026-07-0{i+1}T00:00:00Z",
+            validated_at=f"2026-07-0{i + 1}T00:00:00Z",
         )
     return out
 
@@ -271,7 +272,10 @@ def list_test_runs(tenant_id: str) -> list[FlowTestRun]:
 # Public write API
 # ---------------------------------------------------------------------------
 def append_validation(
-    tenant_id: str, flow_id: str, valid: bool, issues: list[str],
+    tenant_id: str,
+    flow_id: str,
+    valid: bool,
+    issues: list[str],
 ) -> FlowValidation:
     """Persist a validation record. Used by GET /flows/validate seeding."""
     if not tenant_id:
@@ -279,6 +283,7 @@ def append_validation(
     _ensure_tenant(tenant_id)
     vid = f"val-{uuid.uuid4().hex[:8]}"
     import time
+
     rec = FlowValidation(
         id=vid,
         tenant_id=tenant_id,
@@ -292,13 +297,18 @@ def append_validation(
 
 
 def append_test_run(
-    tenant_id: str, flow_id: str, status: str, duration_ms: int, output: dict[str, Any],
+    tenant_id: str,
+    flow_id: str,
+    status: str,
+    duration_ms: int,
+    output: dict[str, Any],
 ) -> FlowTestRun:
     """Persist a test-run record. Used by POST /flows/test."""
     if not tenant_id:
         raise ValueError("tenant_id is required")
     _ensure_tenant(tenant_id)
     import time
+
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     rid = f"run-{uuid.uuid4().hex[:8]}"
     rec = FlowTestRun(
@@ -333,8 +343,12 @@ def update_flow_status(tenant_id: str, flow_id: str, status: str) -> FlowDefinit
     if flow is None:
         return None
     updated = FlowDefinition(
-        id=flow.id, tenant_id=flow.tenant_id, name=flow.name,
-        bpmn_xml=flow.bpmn_xml, version=flow.version, status=status,
+        id=flow.id,
+        tenant_id=flow.tenant_id,
+        name=flow.name,
+        bpmn_xml=flow.bpmn_xml,
+        version=flow.version,
+        status=status,
     )
     _FLOWS[tenant_id][flow_id] = updated
     return updated
@@ -443,7 +457,10 @@ def save_workflow_definition(
 
 
 def publish_workflow_definition(
-    tenant_id: str, definition_id: str, *, actor_id: str,
+    tenant_id: str,
+    definition_id: str,
+    *,
+    actor_id: str,
 ) -> tuple[WorkflowDefinition, WorkflowDefinitionRevision]:
     """Freeze the current draft as one immutable revision."""
     definition = get_workflow_definition(tenant_id, definition_id)
@@ -481,7 +498,8 @@ def publish_workflow_definition(
 
 
 def resolve_published_workflow_definition(
-    tenant_id: str, definition_id: str,
+    tenant_id: str,
+    definition_id: str,
 ) -> WorkflowDefinitionRevision | None:
     definition = get_workflow_definition(tenant_id, definition_id)
     if definition is None or definition.published_version is None:

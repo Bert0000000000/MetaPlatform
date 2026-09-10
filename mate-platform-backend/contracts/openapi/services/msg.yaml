@@ -8,88 +8,88 @@ info:
     name: Mate Platform API Governance
     email: api-governance@metaplatform.local
 servers:
-- url: /
+  - url: /
 tags:
-- name: msg
-  description: msg domain operations
-security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+  - name: msg
+    description: msg domain operations
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
 paths:
   /healthz:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
+        - bearerAuth: []
+          tenantHeader: []
       summary: 健康检查
       tags:
-      - msg
+        - msg
       responses:
-        '200':
+        "200":
           description: OK
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: msgGetHealthz
       description: 健康检查
       x-mate-owner: platform-messaging
       x-mate-permission: msg.get
       x-mate-requirements:
-      - FR-MSG-MSGGETHEALTHZ
+        - FR-MSG-MSGGETHEALTHZ
       x-mate-implementation-status: implemented
   /api/v1/msg/publish:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: 发布消息
       tags:
-      - msg
+        - msg
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PublishRequest'
+              $ref: "#/components/schemas/PublishRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PublishResponse'
-        '500':
+                $ref: "#/components/schemas/PublishResponse"
+        "500":
           description: 发布失败
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: msgPostMsgPublish
       description: 发布消息
       x-mate-owner: platform-messaging
       x-mate-permission: msg.post
       x-mate-requirements:
-      - FR-MSG-MSGPOSTMSGPUBLISH
+        - FR-MSG-MSGPOSTMSGPUBLISH
       x-mate-implementation-status: implemented
   /api/v1/msg/topics:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: 列出主题
       tags:
-      - msg
+        - msg
       responses:
-        '200':
+        "200":
           description: OK
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: msgGetMsgTopics
       description: 列出主题
       x-mate-owner: platform-messaging
       x-mate-permission: msg.get
       x-mate-requirements:
-      - FR-MSG-MSGGETMSGTOPICS
+        - FR-MSG-MSGGETMSGTOPICS
       x-mate-implementation-status: placeholder
 components:
   securitySchemes:
@@ -115,8 +115,8 @@ components:
     PublishRequest:
       type: object
       required:
-      - topic
-      - payload
+        - topic
+        - payload
       properties:
         topic:
           type: string
@@ -124,12 +124,12 @@ components:
           type: object
         partition_key:
           type:
-          - string
-          - 'null'
+            - string
+            - "null"
         idempotency_key:
           type:
-          - string
-          - 'null'
+            - string
+            - "null"
     PublishResponse:
       type: object
       properties:

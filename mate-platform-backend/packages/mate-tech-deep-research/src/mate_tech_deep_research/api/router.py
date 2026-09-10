@@ -8,6 +8,7 @@ Every handler enforces ADR-0014 step 2 (`require_tenant(ctx)`) before
 doing any work. Successful research emits a `deep.research.completed`
 outbox event (ADR-0014 step 3).
 """
+
 from __future__ import annotations
 
 from typing import Any

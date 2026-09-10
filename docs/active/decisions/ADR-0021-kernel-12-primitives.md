@@ -15,20 +15,20 @@ MetaPlatform 现有 `mate-kernel` 仅有 5 个空 Protocol（entity/value/event/
 
 冻结 12 个 Kernel 基元（按 5 层组织）：
 
-| 层 | 基元 | rid 形如 | 不可变 |
-|---|---|---|---|
-| 标识 | `ClassRef` | `ont.<tenant>.cls.<slug>` | — |
-| 标识 | `Version` | `ont.<tenant>.ver.<rid>.<n>` | ✅ |
-| 类型 | `Property` | `ont.<tenant>.prop.<type>.<slug>` | ✅ |
-| 类型 | `ObjectType` | `ont.<tenant>.obj.<slug>` | ✅ |
-| 类型 | `LinkType` | `ont.<tenant>.link.<slug>` | ✅ |
-| 类型 | `ActionType` | `ont.<tenant>.act.<slug>` | ✅ |
-| 类型 | `Interface` | `ont.<tenant>.if.<slug>` | ✅ |
-| 实例 | `Individual` | `ont.<tenant>.ind.<type>.<pk>` | ❌ 可变 |
-| 实例 | `LinkInstance` | `ont.<tenant>.lnk.<link>.<sid>.<did>` | ❌ 可变 |
-| 推理 | `Axiom` | `ont.<tenant>.ax.<kind>.<slug>` | ✅ |
-| 函数 | `Function` | `ont.<tenant>.fn.<slug>.<ver>` | ✅ |
-| 查询 | `ObjectSet` | `ont.<tenant>.oset.<hash>` | ❌ 一次性 |
+| 层   | 基元           | rid 形如                              | 不可变    |
+| ---- | -------------- | ------------------------------------- | --------- |
+| 标识 | `ClassRef`     | `ont.<tenant>.cls.<slug>`             | —         |
+| 标识 | `Version`      | `ont.<tenant>.ver.<rid>.<n>`          | ✅        |
+| 类型 | `Property`     | `ont.<tenant>.prop.<type>.<slug>`     | ✅        |
+| 类型 | `ObjectType`   | `ont.<tenant>.obj.<slug>`             | ✅        |
+| 类型 | `LinkType`     | `ont.<tenant>.link.<slug>`            | ✅        |
+| 类型 | `ActionType`   | `ont.<tenant>.act.<slug>`             | ✅        |
+| 类型 | `Interface`    | `ont.<tenant>.if.<slug>`              | ✅        |
+| 实例 | `Individual`   | `ont.<tenant>.ind.<type>.<pk>`        | ❌ 可变   |
+| 实例 | `LinkInstance` | `ont.<tenant>.lnk.<link>.<sid>.<did>` | ❌ 可变   |
+| 推理 | `Axiom`        | `ont.<tenant>.ax.<kind>.<slug>`       | ✅        |
+| 函数 | `Function`     | `ont.<tenant>.fn.<slug>.<ver>`        | ✅        |
+| 查询 | `ObjectSet`    | `ont.<tenant>.oset.<hash>`            | ❌ 一次性 |
 
 **强约束**：
 

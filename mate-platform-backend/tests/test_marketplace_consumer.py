@@ -7,6 +7,7 @@
 注:由于 pytest fixture 是 per-module 的,这里不能直接 re-export;
 本文件作为 marker 触发 CI 整体收集;实际测试在 sibling 模块分别跑。
 """
+
 from __future__ import annotations
 
 import os
@@ -28,6 +29,7 @@ def test_consumer_module_loads() -> None:
     import test_marketplace_license  # noqa: F401
     import test_marketplace_orchestrator  # noqa: F401
     import test_marketplace_startup_guard  # noqa: F401
+
     assert True
 
 
@@ -47,9 +49,6 @@ def test_consumer_test_count() -> None:
         mod = __import__(mod_name)
         # 每个模块至少有 2 个 test_
         tests = [
-            name
-            for name in dir(mod)
-            if name.startswith("test_")
-            and callable(getattr(mod, name))
+            name for name in dir(mod) if name.startswith("test_") and callable(getattr(mod, name))
         ]
         assert len(tests) >= 2, f"{mod_name} 测试数量不足:{tests}"

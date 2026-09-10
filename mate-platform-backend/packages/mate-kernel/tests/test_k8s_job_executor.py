@@ -80,12 +80,14 @@ class TestManifest:
 
 class TestLifecycle:
     def test_success_path_apply_wait_logs_delete(self) -> None:
-        k = _FakeKubectl([
-            _FakeProc(stdout="job.apps/sandbox-fn-x created"),
-            _FakeProc(stdout="job.batch/sandbox-fn-x condition met"),
-            _FakeProc(stdout='{"ok": 1}', stderr=""),
-            _FakeProc(stdout="job.batch sandbox-fn-x deleted"),
-        ])
+        k = _FakeKubectl(
+            [
+                _FakeProc(stdout="job.apps/sandbox-fn-x created"),
+                _FakeProc(stdout="job.batch/sandbox-fn-x condition met"),
+                _FakeProc(stdout='{"ok": 1}', stderr=""),
+                _FakeProc(stdout="job.batch sandbox-fn-x deleted"),
+            ]
+        )
         ex = K8sJobExecutor(_runner=k)
         rc, out, _err = ex.execute(_spec().function_source, _spec().arguments)
         assert rc == 0
@@ -101,20 +103,24 @@ class TestLifecycle:
         )
 
     def test_apply_failure_returns_error_without_wait(self) -> None:
-        k = _FakeKubectl([
-            _FakeProc(returncode=1, stderr="namespace not found"),
-        ])
+        k = _FakeKubectl(
+            [
+                _FakeProc(returncode=1, stderr="namespace not found"),
+            ]
+        )
         ex = K8sJobExecutor(_runner=k)
         rc, out, err = ex.execute("def main():\n    return 1", ())
         assert rc == 1
         assert "kubectl apply failed" in err
 
     def test_job_failed_path_returns_logs_and_reason(self) -> None:
-        k = _FakeKubectl([
-            _FakeProc(stdout="created"),
-            _FakeProc(returncode=1, stderr="Error from server: timeout"),
-            _FakeProc(stdout="Traceback...", stderr="boom"),
-        ])
+        k = _FakeKubectl(
+            [
+                _FakeProc(stdout="created"),
+                _FakeProc(returncode=1, stderr="Error from server: timeout"),
+                _FakeProc(stdout="Traceback...", stderr="boom"),
+            ]
+        )
         ex = K8sJobExecutor(_runner=k)
         rc, out, err = ex.execute("def main():\n    raise RuntimeError()", ())
         assert rc == 1
@@ -129,6 +135,7 @@ class TestBackendSwitch:
 
     def test_default_remains_subprocess_dev_dual_track(self) -> None:
         from mate_kernel.sandbox.k8s import SubprocessExecutor
+
         runner = K8sSandboxRunner(backend=None)
         assert isinstance(runner.executor, SubprocessExecutor)
 

@@ -1,4 +1,5 @@
 """Dedup store tests (ST-5.1.8)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock

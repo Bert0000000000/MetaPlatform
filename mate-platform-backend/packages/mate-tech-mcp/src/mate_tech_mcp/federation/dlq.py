@@ -9,6 +9,7 @@ belong to the calling tenant (SEC-TENANT-01 hard rule 3).
 This is the in-memory implementation; the production SQL-backed DLQ
 shares the same surface so the swap is mechanical.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

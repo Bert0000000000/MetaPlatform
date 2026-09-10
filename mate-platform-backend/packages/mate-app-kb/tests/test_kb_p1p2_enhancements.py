@@ -6,6 +6,7 @@ Coverage:
   * KB retrieval-config snapshot history: PUT 3 times → GET history
     returns 2 snapshots with timestamps
 """
+
 from __future__ import annotations
 
 import os
@@ -273,4 +274,3 @@ class TestKBCascadeDelete:
         assert r.status_code == 404, r.text
 
         in_memory_repo.reset_store()
-

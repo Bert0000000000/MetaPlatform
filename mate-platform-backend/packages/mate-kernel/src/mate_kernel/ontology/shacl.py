@@ -22,6 +22,7 @@ Shapes 与本体 12 基元的映射：
 message, severity}], severity_counts, stats}。W3C 语义：仅 severity=Violation
 的结果使 conforms=false；Warning/Info 不影响 conforms。
 """
+
 from __future__ import annotations
 
 import re
@@ -77,11 +78,13 @@ def shape_from_object_type(ot: Any) -> NodeShape:
     props = []
     for p in ot.properties:
         rid = p.rid.rid if hasattr(p.rid, "rid") else str(p.rid)
-        props.append(PropertyShape(
-            path=rid,
-            min_count=1 if (p.primary_key or not p.nullable) else None,
-            datatype=p.type_id if p.type_id in _DATATYPES else None,
-        ))
+        props.append(
+            PropertyShape(
+                path=rid,
+                min_count=1 if (p.primary_key or not p.nullable) else None,
+                datatype=p.type_id if p.type_id in _DATATYPES else None,
+            )
+        )
     return NodeShape(target_class=rid_of(ot), property_shapes=tuple(props))
 
 
@@ -99,8 +102,11 @@ def _values(individual: dict[str, Any], path: str) -> list[Any]:
             return []
         return v if isinstance(v, list) else [v]
     if isinstance(props, list):  # [{rid, value}] 载体
-        return [p.get("value") for p in props
-                if isinstance(p, dict) and p.get("rid") == path and p.get("value") is not None]
+        return [
+            p.get("value")
+            for p in props
+            if isinstance(p, dict) and p.get("rid") == path and p.get("value") is not None
+        ]
     return []
 
 
@@ -117,7 +123,9 @@ def _lang_of(v: Any) -> str | None:
 
 
 def _node_violations(
-    v: Any, ps: PropertyShape, by_rid: dict[str, dict[str, Any]],
+    v: Any,
+    ps: PropertyShape,
+    by_rid: dict[str, dict[str, Any]],
 ) -> list[tuple[str, str]]:
     """节点级约束评估（sh:not / qualifiedValueShape 的内嵌 shape 语义）：
 
@@ -128,26 +136,25 @@ def _node_violations(
     if ps.datatype is not None:
         py_type = _DATATYPES.get(ps.datatype)
         if py_type is not None and not isinstance(v, py_type):
-            out.append(("datatype",
-                        f"expects {ps.datatype}, got {type(v).__name__}"))
+            out.append(("datatype", f"expects {ps.datatype}, got {type(v).__name__}"))
     if ps.pattern is not None and isinstance(v, str) and re.search(ps.pattern, v) is None:
         out.append(("pattern", f"value {v!r} does not match {ps.pattern!r}"))
     if ps.node_class is not None:
         ref = by_rid.get(str(v))
         ref_class = (ref or {}).get("class_rid", "")
         if ref is None or ref_class != ps.node_class:
-            out.append(("class",
-                        f"value {v!r} must be an instance of {ps.node_class}"))
+            out.append(("class", f"value {v!r} must be an instance of {ps.node_class}"))
     if ps.language_in:
         lang = _lang_of(v)
         if lang is None or lang not in ps.language_in:
-            out.append(("languageIn",
-                        f"language tag {lang!r} not in {list(ps.language_in)}"))
+            out.append(("languageIn", f"language tag {lang!r} not in {list(ps.language_in)}"))
     return out
 
 
 def _eval_property_shape(
-    ind: dict[str, Any], focus: str, ps: PropertyShape,
+    ind: dict[str, Any],
+    focus: str,
+    ps: PropertyShape,
     by_rid: dict[str, dict[str, Any]],
     descendants: dict[str, set[str]] | None = None,
 ) -> tuple[list[dict[str, str]], int]:
@@ -156,11 +163,15 @@ def _eval_property_shape(
     checked = 0
 
     def emit(constraint: str, message: str) -> None:
-        violations.append({
-            "focus_node": focus, "path": ps.path,
-            "constraint": constraint, "message": message,
-            "severity": ps.severity if ps.severity in SEVERITIES else "Violation",
-        })
+        violations.append(
+            {
+                "focus_node": focus,
+                "path": ps.path,
+                "constraint": constraint,
+                "message": message,
+                "severity": ps.severity if ps.severity in SEVERITIES else "Violation",
+            }
+        )
 
     values = _values(ind, ps.path)
     count = len(values)
@@ -188,17 +199,15 @@ def _eval_property_shape(
             ref_class = (ref or {}).get("class_rid", "")
             ok_class = ref is not None and (
                 ref_class == ps.node_class
-                or (descendants is not None
-                    and ref_class in descendants.get(ps.node_class, ())))
+                or (descendants is not None and ref_class in descendants.get(ps.node_class, ()))
+            )
             if not ok_class:
-                emit("class",
-                     f"value {v!r} must be an instance of {ps.node_class}")
+                emit("class", f"value {v!r} must be an instance of {ps.node_class}")
         if ps.language_in:
             checked += 1
             lang = _lang_of(v)
             if lang is None or lang not in ps.language_in:
-                emit("languageIn",
-                     f"language tag {lang!r} not in {list(ps.language_in)}")
+                emit("languageIn", f"language tag {lang!r} not in {list(ps.language_in)}")
         if ps.not_shape is not None:
             # sh:not：值节点满足内嵌 shape ⟹ 违例；不满足 ⟹ 通过
             checked += 1
@@ -208,22 +217,25 @@ def _eval_property_shape(
         # qualifiedValueShape：统计满足内嵌 shape 的值数量
         checked += 1
         qualifying = sum(
-            1 for v in values
-            if not _node_violations(v, ps.qualified_value_shape, by_rid))
+            1 for v in values if not _node_violations(v, ps.qualified_value_shape, by_rid)
+        )
         low, high = ps.qualified_min_count, ps.qualified_max_count
         if low is not None and qualifying < low:
-            emit("qualifiedMinCount",
-                 f"expects {low}+ values matching the qualified shape, "
-                 f"found {qualifying}")
+            emit(
+                "qualifiedMinCount",
+                f"expects {low}+ values matching the qualified shape, found {qualifying}",
+            )
         if high is not None and qualifying > high:
-            emit("qualifiedMaxCount",
-                 f"expects at most {high} values matching the qualified "
-                 f"shape, found {qualifying}")
+            emit(
+                "qualifiedMaxCount",
+                f"expects at most {high} values matching the qualified shape, found {qualifying}",
+            )
     return violations, checked
 
 
 def _closed_extra_paths(
-    ind: dict[str, Any], allowed: set[str],
+    ind: dict[str, Any],
+    allowed: set[str],
 ) -> list[str]:
     """closed 语义：未声明的属性路径列表。"""
     props = ind.get("props") or {}
@@ -262,6 +274,7 @@ def validate_shacl(
     descendants: dict[str, set[str]] = {}
     if subclass_axioms:
         from .reasoning.engine import descendant_closure
+
         descendants = descendant_closure(subclass_axioms)
 
     def matches_target(cls: str, target: str) -> bool:
@@ -275,29 +288,32 @@ def validate_shacl(
         return value_cls in descendants.get(declared, ())
 
     for shape in shapes:
-        targets = [ind for ind in individuals
-                   if matches_target(class_of(ind), shape.target_class)]
+        targets = [ind for ind in individuals if matches_target(class_of(ind), shape.target_class)]
         for ind in targets:
             focus = ind.get("rid", "") if isinstance(ind, dict) else rid_of(ind)
             known_paths: set[str] = set()
             for ps in shape.property_shapes:
                 known_paths.add(ps.path)
                 new_violations, new_checked = _eval_property_shape(
-                    ind, focus, ps, by_rid, descendants or None)
+                    ind, focus, ps, by_rid, descendants or None
+                )
                 violations.extend(new_violations)
                 checked += new_checked
             if shape.closed:
                 checked += 1
                 allowed = known_paths | set(shape.ignored_properties)
                 for path in _closed_extra_paths(ind, allowed):
-                    violations.append({
-                        "focus_node": focus, "path": path,
-                        "constraint": "closed",
-                        "message": f"property {path!r} not allowed in closed shape",
-                        "severity": (shape.severity
-                                     if shape.severity in SEVERITIES
-                                     else "Violation"),
-                    })
+                    violations.append(
+                        {
+                            "focus_node": focus,
+                            "path": path,
+                            "constraint": "closed",
+                            "message": f"property {path!r} not allowed in closed shape",
+                            "severity": (
+                                shape.severity if shape.severity in SEVERITIES else "Violation"
+                            ),
+                        }
+                    )
 
     severity_counts = dict.fromkeys(SEVERITIES, 0)
     for v in violations:
@@ -309,9 +325,9 @@ def validate_shacl(
         "severity_counts": severity_counts,
         "stats": {
             "nodes_validated": sum(
-                1 for ind in individuals
-                if any(matches_target(class_of(ind), s.target_class)
-                       for s in shapes)
+                1
+                for ind in individuals
+                if any(matches_target(class_of(ind), s.target_class) for s in shapes)
             ),
             "constraints_checked": checked,
             "shapes": len(shapes),

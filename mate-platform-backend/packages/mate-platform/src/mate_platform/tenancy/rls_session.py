@@ -48,6 +48,7 @@ The middleware path (production) wires the two together inside
 ``mate_platform.auth.middleware``'s ``AuthMiddleware.dispatch`` — that
 work lives in the companion ``rls_session_middleware`` callable.
 """
+
 from __future__ import annotations
 
 import logging
@@ -82,9 +83,7 @@ def _escape_pg_string(value: str) -> str:
     NUL/control character to fail-fast on misbehaving callers.
     """
     if any(ord(c) < 0x20 for c in value):
-        raise ValueError(
-            f"tenant_id contains a control character: {value!r}"
-        )
+        raise ValueError(f"tenant_id contains a control character: {value!r}")
     return value.replace("'", "''")
 
 
@@ -99,9 +98,7 @@ def _build_set_local_statements(ctx: RequestContext) -> list[str]:
     ``tenant_isolation`` matching.
     """
     tenant_id = require_tenant(ctx)
-    stmts: list[str] = [
-        f"SET LOCAL {GUC_TENANT_ID} = '{_escape_pg_string(tenant_id)}'"
-    ]
+    stmts: list[str] = [f"SET LOCAL {GUC_TENANT_ID} = '{_escape_pg_string(tenant_id)}'"]
     if is_cross_tenant_admin(ctx):
         stmts.append(f"SET LOCAL {GUC_BYPASS} = 'true'")
     return stmts
@@ -216,6 +213,7 @@ def rls_session_middleware(
     session begins, ensuring the RLS policy has a non-empty
     ``app.tenant_id`` value before any data-bearing statement runs.
     """
+
     def _open(ctx: RequestContext) -> Session:  # type: ignore[no-redef]
         session = session_factory()
         install_rls_session(session, ctx)
@@ -239,9 +237,7 @@ def rls_db_session(
         @app.get("/items")
         def list_items(
             request: Request,
-            session: Session = Depends(
-                rls_db_session_for(lambda: Session(engine))
-            ),
+            session: Session = Depends(rls_db_session_for(lambda: Session(engine))),
         ):
             rows = session.execute(select(Item)).all()
 
@@ -293,9 +289,9 @@ def rls_db_session_for(
             Depends(rls_db_session_for(lambda: Session(engine))),
         ]
 
+
         @router.get("/items")
-        def list_items(session: SessionDep):
-            ...
+        def list_items(session: SessionDep): ...
 
     The returned callable is wired to FastAPI via ``Depends``. It
     pulls ``request.state.ctx`` from the underlying FastAPI request

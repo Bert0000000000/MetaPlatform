@@ -1,4 +1,5 @@
 """Platform liveness probe tests (GET /healthz)."""
+
 from __future__ import annotations
 
 

@@ -18,6 +18,7 @@ Skipped only if PostgreSQL is not reachable — the local and CI entrypoint
 and database before collection. A privileged role is still rejected so a
 passing run always proves PostgreSQL RLS rather than superuser bypass.
 """
+
 from __future__ import annotations
 
 import os
@@ -46,6 +47,7 @@ KERNEL01_V2_TABLES_FOR_TESTS: tuple[str, ...] = (
 def _pg_available() -> bool:
     try:
         import psycopg2  # type: ignore
+
         conn = psycopg2.connect(PG_DSN, connect_timeout=2)
         conn.close()
         return True
@@ -63,12 +65,12 @@ def _pg_role_is_privileged() -> bool:
     """
     try:
         import psycopg2  # type: ignore
+
         conn = psycopg2.connect(PG_DSN, connect_timeout=2)
         try:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT rolsuper OR rolbypassrls FROM pg_roles "
-                    "WHERE rolname = current_user"
+                    "SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname = current_user"
                 )
                 row = cur.fetchone()
                 return bool(row and row[0])
@@ -94,6 +96,7 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture
 def pg_repo() -> object:
     from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+
     return PgOntologyRepository(dsn=PG_DSN)
 
 
@@ -102,6 +105,7 @@ def _clean_pg(pg_repo: object) -> None:
     """Wipe 9 tables before each test so RLS state is predictable."""
     pg_repo._ensure_schema()
     import psycopg2  # type: ignore
+
     conn = psycopg2.connect(PG_DSN)
     try:
         with conn.cursor() as cur:
@@ -318,7 +322,10 @@ def test_t6_write_with_wrong_tenant_id_blocked_by_with_check(pg_repo: object) ->
 def test_t7_select_other_tenant_rows_returns_empty(pg_repo: object) -> None:
     """T7: tenant_scope("acme") 内 SELECT 别人的 row — USING 拦截 → 404 语义。"""
     _seed_ind_raw(pg_repo, "ont.other.ind.po.0", "other")
-    with pg_repo.tenant_scope("acme") as repo, pytest.raises(KeyError, match="Individual not found"):
+    with (
+        pg_repo.tenant_scope("acme") as repo,
+        pytest.raises(KeyError, match="Individual not found"),
+    ):
         repo.get_individual("ont.other.ind.po.0")
 
 
@@ -329,7 +336,6 @@ def test_t8_update_other_tenant_row_touches_zero(pg_repo: object) -> None:
     """
     _seed_ind_raw(pg_repo, "ont.other.ind.po.0", "other")
     with pg_repo.tenant_scope("acme") as repo:
-
         conn, _ = repo._connect()
         try:
             with conn.cursor() as cur:

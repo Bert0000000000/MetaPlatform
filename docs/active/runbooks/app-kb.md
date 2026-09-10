@@ -13,18 +13,18 @@ uv run --package mate-app-kb python -m mate_app_kb.main
 
 ## 端点
 
-| Method | Path | 说明 |
-|---|---|---|
-| GET | /healthz | 健康检查 |
-| POST | /api/v1/app-kb/kbs | 创建 KB |
-| GET | /api/v1/app-kb/kbs | 列出 KB |
-| GET | /api/v1/app-kb/kbs/{id} | 读取 KB |
-| DELETE | /api/v1/app-kb/kbs/{id} | 删除 KB |
-| POST | /api/v1/app-kb/kbs/{id}/upload | 上传文档 |
-| POST | /api/v1/app-kb/search | 检索（带租户过滤） |
-| POST | /api/v1/app-kb/chat | Agent 对话（含 KB 自动注入） |
-| POST | /api/v1/app-kb/workflows | 启动 S4 BPMN workflow |
-| GET | /api/v1/app-kb/stats | 统计（KB / 文档 / 检索量） |
+| Method | Path                           | 说明                         |
+| ------ | ------------------------------ | ---------------------------- |
+| GET    | /healthz                       | 健康检查                     |
+| POST   | /api/v1/app-kb/kbs             | 创建 KB                      |
+| GET    | /api/v1/app-kb/kbs             | 列出 KB                      |
+| GET    | /api/v1/app-kb/kbs/{id}        | 读取 KB                      |
+| DELETE | /api/v1/app-kb/kbs/{id}        | 删除 KB                      |
+| POST   | /api/v1/app-kb/kbs/{id}/upload | 上传文档                     |
+| POST   | /api/v1/app-kb/search          | 检索（带租户过滤）           |
+| POST   | /api/v1/app-kb/chat            | Agent 对话（含 KB 自动注入） |
+| POST   | /api/v1/app-kb/workflows       | 启动 S4 BPMN workflow        |
+| GET    | /api/v1/app-kb/stats           | 统计（KB / 文档 / 检索量）   |
 
 ## 数据模型
 
@@ -43,9 +43,9 @@ uv run --package mate-app-kb python -m mate_app_kb.main
 
 ## 故障排查
 
-| 现象 | 排查 |
-|---|---|
-| 跨租户有召回 | 检查 tenant_id 透传 |
-| 上传 500 | 检查 Kafka broker + MinIO |
-| chat 慢 | 检查 tech-agent / tech-rag 健康 |
-| 引用为空 | 检查 search top_k ≥ 1 |
+| 现象         | 排查                            |
+| ------------ | ------------------------------- |
+| 跨租户有召回 | 检查 tenant_id 透传             |
+| 上传 500     | 检查 Kafka broker + MinIO       |
+| chat 慢      | 检查 tech-agent / tech-rag 健康 |
+| 引用为空     | 检查 search top_k ≥ 1           |

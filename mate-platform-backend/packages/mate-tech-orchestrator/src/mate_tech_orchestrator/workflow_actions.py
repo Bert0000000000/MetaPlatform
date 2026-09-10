@@ -5,6 +5,7 @@ transactional business side effect.  It deliberately depends on the domain
 service rather than the WFE package so the worker can consume this port
 without introducing an application-package cycle.
 """
+
 from __future__ import annotations
 
 import asyncio

@@ -4,6 +4,7 @@ Covers runtime registration / update / delete of MCP tools with a
 forwarding endpoint, the local → dynamic → federation → 404 execution
 chain, tenant isolation, and outbox events.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock
@@ -43,7 +44,9 @@ def _bearer(tenant: str = "tenant-acme") -> dict[str, str]:
     return {"Authorization": f"Bearer {make_test_token(tenant_id=tenant)}"}
 
 
-def _register(client: TestClient, *, name="hr_tool", endpoint="http://hr-worker:9000", tenant="tenant-acme"):
+def _register(
+    client: TestClient, *, name="hr_tool", endpoint="http://hr-worker:9000", tenant="tenant-acme"
+):
     return client.post(
         "/api/v1/mcp/tools",
         json={"name": name, "description": "HR capability", "endpoint": endpoint},

@@ -8,16 +8,16 @@
 
 `mate-tech-ont`（port 8007）8 个 v1 router 全部进入 Sunset 流程；其覆盖的 endpoint 全部由 KERNEL-01 v2_kernel router（`/api/v1/ont/v2/*`）替代。
 
-| v1 prefix | v1 router 模块 | v2 替代 prefix | v2 主要 operationId |
-|---|---|---|---|
-| `/api/v1/ont`（classes/relations） | `api/ontology.py` | `/api/v1/ont/v2/object-types` `/api/v1/ont/v2/link-types` | `ontCreateV2ObjectType` / `ontGetV2ObjectType` / `ontListV2ObjectTypes` |
-| `/api/v1/ont/instances` | `instances/api.py` | `/api/v1/ont/v2/individuals` | `ontCreateV2Individual` / `ontGetV2Individual` |
-| `/api/v1/ont/sparql` | `sparql/api.py` | `/api/v1/ont/v2/object-sets:evaluate` | `ontPostV2ObjectSetEvaluate` |
-| `/api/v1/ont/explain` | `sparql/explain.py` | `/api/v1/ont/v2/object-sets:evaluate`（explain 字段） | 同上 |
-| `/api/v1/ont/versions` | `versioning/api.py` | `/api/v1/ont/v2/versions/{class_rid:path}` | `ontPostV2Version` / `ontGetV2Version` |
-| `/api/v1/ont/inference` | `inference/api.py` | `/api/v1/ont/v2/object-sets:evaluate` + `/axioms` | `ontPostV2ObjectSetEvaluate` / `ontCreateV2Axiom` |
-| `/api/v1/ont/shacl` | `inference/shacl_api.py` | `/api/v1/ont/v2/axioms` | `ontCreateV2Axiom`（SHACL 子集） |
-| `/api/v1/ont/federation` | `federation.py` | `/api/v1/ont/v2/object-sets:evaluate`（跨 rid 命名空间合并） | `ontPostV2ObjectSetEvaluate`（`across_tenants=false` 默认拒绝） |
+| v1 prefix                          | v1 router 模块           | v2 替代 prefix                                               | v2 主要 operationId                                                     |
+| ---------------------------------- | ------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| `/api/v1/ont`（classes/relations） | `api/ontology.py`        | `/api/v1/ont/v2/object-types` `/api/v1/ont/v2/link-types`    | `ontCreateV2ObjectType` / `ontGetV2ObjectType` / `ontListV2ObjectTypes` |
+| `/api/v1/ont/instances`            | `instances/api.py`       | `/api/v1/ont/v2/individuals`                                 | `ontCreateV2Individual` / `ontGetV2Individual`                          |
+| `/api/v1/ont/sparql`               | `sparql/api.py`          | `/api/v1/ont/v2/object-sets:evaluate`                        | `ontPostV2ObjectSetEvaluate`                                            |
+| `/api/v1/ont/explain`              | `sparql/explain.py`      | `/api/v1/ont/v2/object-sets:evaluate`（explain 字段）        | 同上                                                                    |
+| `/api/v1/ont/versions`             | `versioning/api.py`      | `/api/v1/ont/v2/versions/{class_rid:path}`                   | `ontPostV2Version` / `ontGetV2Version`                                  |
+| `/api/v1/ont/inference`            | `inference/api.py`       | `/api/v1/ont/v2/object-sets:evaluate` + `/axioms`            | `ontPostV2ObjectSetEvaluate` / `ontCreateV2Axiom`                       |
+| `/api/v1/ont/shacl`                | `inference/shacl_api.py` | `/api/v1/ont/v2/axioms`                                      | `ontCreateV2Axiom`（SHACL 子集）                                        |
+| `/api/v1/ont/federation`           | `federation.py`          | `/api/v1/ont/v2/object-sets:evaluate`（跨 rid 命名空间合并） | `ontPostV2ObjectSetEvaluate`（`across_tenants=false` 默认拒绝）         |
 
 ## 2. 已落地的 Sunset 标记（GOVERN-03 第 1 步）
 
@@ -52,12 +52,12 @@ _DEPRECATION_HEADERS = {
 
 ## 5. 退役时间表
 
-| 阶段 | 日期 | 动作 |
-|---|---|---|
-| T0 | 2026-08-07 | Sunset 头 + 白名单（GOVERN-03 第 1 步） |
-| T1 | 2026-09-07 | 灰度结束；前端全面切 v2 |
-| T2 | 2026-11-30 | v1 router 代码移 `_legacy/v1/`，加 `DeprecationWarning` 启动日志 |
-| T3 | 2026-12-31 | 物理移除 v1 router；compose 端口收回 |
+| 阶段 | 日期       | 动作                                                             |
+| ---- | ---------- | ---------------------------------------------------------------- |
+| T0   | 2026-08-07 | Sunset 头 + 白名单（GOVERN-03 第 1 步）                          |
+| T1   | 2026-09-07 | 灰度结束；前端全面切 v2                                          |
+| T2   | 2026-11-30 | v1 router 代码移 `_legacy/v1/`，加 `DeprecationWarning` 启动日志 |
+| T3   | 2026-12-31 | 物理移除 v1 router；compose 端口收回                             |
 
 ## 6. 验收
 

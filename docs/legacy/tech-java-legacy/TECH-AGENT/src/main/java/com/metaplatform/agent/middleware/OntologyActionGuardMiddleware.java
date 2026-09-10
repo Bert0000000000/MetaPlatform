@@ -184,6 +184,3 @@ public class OntologyActionGuardMiddleware implements AgentMiddleware {
         return Map.of();
     }
 }
-
-
-

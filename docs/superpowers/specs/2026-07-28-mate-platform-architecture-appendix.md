@@ -6,21 +6,21 @@
 
 ### A.1 增量服务
 
-| 层 | 服务 | 语言 | 关键镜像/版本 | 端口 | 角色 |
-|---|---|---|---|---|---|
-| Python 主后端（新增） | mate-tech-data | Python 3.12 | python:3.12 | 8080 | 数据平台控制面、Pipeline、SQL Gateway、目录、血缘、质量 |
-| 外部开源引擎（新增） | Flink JobManager / TaskManager | Java + Scala | flink:1.19 + Flink Kubernetes Operator | 8081 | 批流统一计算（CDC / Flink SQL / DataStream / PyFlink） |
-|  | Airflow 3.x | Python | apache/airflow:3.0-python3.12 | 8082 | 数据 DAG、调度、补数、回填 |
-|  | Apache Paimon | Java | apache/paimon:0.9 | — | ODS/DWD 实时主键与变更表 |
-|  | Apache Iceberg | Java | apache/iceberg-rest:1.5 | — | DWS/ADS 开放共享数据产品 |
-|  | Trino | Java | trinodb/trino:455 | 8083 | 即席/联邦 SQL 查询 |
-|  | StarRocks | C++ | starrocks/fe-ubuntu:3.3 | 9030 / 8040 | 高并发指标、报表、Data API |
-|  | Apache Gravitino | Java | apache/gravitino:0.7 | 8090 | 运行时多 Catalog 注册 |
-|  | OpenMetadata | Java | openmetadata/server:1.4 | 8585 | 治理目录、Owner、Glossary、血缘 |
-|  | OpenLineage | Java | openlineage/marquez:0.50 | — | 统一运行时血缘事件 |
-|  | Great Expectations | Python | great-expectations/great_expectations:0.18 | — | 批量质量与对账 |
-|  | Apache Ranger | Java | apache/ranger:2.4 | 6080 | 行列权限、动态脱敏、审计 |
-|  | OpenBao | Go | openbao/openbao:1.15 | 8200 | 连接器密钥、动态凭证、轮换 |
+| 层                    | 服务                           | 语言         | 关键镜像/版本                              | 端口        | 角色                                                    |
+| --------------------- | ------------------------------ | ------------ | ------------------------------------------ | ----------- | ------------------------------------------------------- |
+| Python 主后端（新增） | mate-tech-data                 | Python 3.12  | python:3.12                                | 8080        | 数据平台控制面、Pipeline、SQL Gateway、目录、血缘、质量 |
+| 外部开源引擎（新增）  | Flink JobManager / TaskManager | Java + Scala | flink:1.19 + Flink Kubernetes Operator     | 8081        | 批流统一计算（CDC / Flink SQL / DataStream / PyFlink）  |
+|                       | Airflow 3.x                    | Python       | apache/airflow:3.0-python3.12              | 8082        | 数据 DAG、调度、补数、回填                              |
+|                       | Apache Paimon                  | Java         | apache/paimon:0.9                          | —           | ODS/DWD 实时主键与变更表                                |
+|                       | Apache Iceberg                 | Java         | apache/iceberg-rest:1.5                    | —           | DWS/ADS 开放共享数据产品                                |
+|                       | Trino                          | Java         | trinodb/trino:455                          | 8083        | 即席/联邦 SQL 查询                                      |
+|                       | StarRocks                      | C++          | starrocks/fe-ubuntu:3.3                    | 9030 / 8040 | 高并发指标、报表、Data API                              |
+|                       | Apache Gravitino               | Java         | apache/gravitino:0.7                       | 8090        | 运行时多 Catalog 注册                                   |
+|                       | OpenMetadata                   | Java         | openmetadata/server:1.4                    | 8585        | 治理目录、Owner、Glossary、血缘                         |
+|                       | OpenLineage                    | Java         | openlineage/marquez:0.50                   | —           | 统一运行时血缘事件                                      |
+|                       | Great Expectations             | Python       | great-expectations/great_expectations:0.18 | —           | 批量质量与对账                                          |
+|                       | Apache Ranger                  | Java         | apache/ranger:2.4                          | 6080        | 行列权限、动态脱敏、审计                                |
+|                       | OpenBao                        | Go           | openbao/openbao:1.15                       | 8200        | 连接器密钥、动态凭证、轮换                              |
 
 Flink 为主计算引擎，Airflow 负责调度，Flowable 继续负责人工审批。
 旧 Java `docs/legacy/tech-java-legacy/TECH-DATA` 不恢复上线，只作为 API/模型迁移参考。
@@ -60,14 +60,14 @@ flowchart LR
 
 ### A.5 章节位置同步
 
-| v3.0 章节 | 增量内容 |
-|---|---|
-| §1.2 服务全景 | 追加 A.1 表（v3.1 增量服务） |
-| §6.1 数据归属 | 增加湖仓/治理/调度条目 |
-| §6.2 跨服务数据流 | 替换为 A.2 图 |
-| §8 部署架构 | K8s 数据平面 + Compose profiles |
-| §11 性能目标 | 增加 Gold/Silver P95、StarRocks/Trino 目标 |
-| §12 风险与缓解 | 增加 R9–R12 风险 |
+| v3.0 章节         | 增量内容                                   |
+| ----------------- | ------------------------------------------ |
+| §1.2 服务全景     | 追加 A.1 表（v3.1 增量服务）               |
+| §6.1 数据归属     | 增加湖仓/治理/调度条目                     |
+| §6.2 跨服务数据流 | 替换为 A.2 图                              |
+| §8 部署架构       | K8s 数据平面 + Compose profiles            |
+| §11 性能目标      | 增加 Gold/Silver P95、StarRocks/Trino 目标 |
+| §12 风险与缓解    | 增加 R9–R12 风险                           |
 
 具体正文重写交由实施计划阶段以保持增量改动可回滚。
 

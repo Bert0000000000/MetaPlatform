@@ -3,6 +3,7 @@
 用例对位 W3C shacl-test-suite 的核心组件（focus node 行为以本仓实例载体
 {rid, class_rid, props} 表达；断言 conforms 与关键 constraint）。
 """
+
 from __future__ import annotations
 
 import os
@@ -37,7 +38,9 @@ def test_core_mincount():
         "core/property/minCount-001",
         [{"rid": "i1", "class_rid": CLS, "props": {}}],
         [NodeShape(CLS, (PropertyShape(path=P, min_count=1),))],
-        expect_conforms=False, expect_constraint="minCount")
+        expect_conforms=False,
+        expect_constraint="minCount",
+    )
     assert ok, r
 
 
@@ -46,7 +49,9 @@ def test_core_maxcount():
         "core/property/maxCount-001",
         [{"rid": "i1", "class_rid": CLS, "props": {P: ["a", "b"]}}],
         [NodeShape(CLS, (PropertyShape(path=P, max_count=1),))],
-        expect_conforms=False, expect_constraint="maxCount")
+        expect_conforms=False,
+        expect_constraint="maxCount",
+    )
     assert ok, r
 
 
@@ -55,7 +60,9 @@ def test_core_datatype():
         "core/property/datatype-001",
         [{"rid": "i1", "class_rid": CLS, "props": {P: "not-an-int"}}],
         [NodeShape(CLS, (PropertyShape(path=P, datatype="integer"),))],
-        expect_conforms=False, expect_constraint="datatype")
+        expect_conforms=False,
+        expect_constraint="datatype",
+    )
     assert ok, r
 
 
@@ -64,17 +71,21 @@ def test_core_pattern():
         "core/property/pattern-001",
         [{"rid": "i1", "class_rid": CLS, "props": {P: "abc"}}],
         [NodeShape(CLS, (PropertyShape(path=P, pattern=r"^a.c$"),))],
-        expect_conforms=True)
+        expect_conforms=True,
+    )
     assert ok, r
 
 
 def test_core_class():
     n, ok, r = _case(
         "core/property/class-001",
-        [{"rid": "s1", "class_rid": CLS, "props": {P: "o1"}},
-         {"rid": "o1", "class_rid": CLS, "props": {}}],
+        [
+            {"rid": "s1", "class_rid": CLS, "props": {P: "o1"}},
+            {"rid": "o1", "class_rid": CLS, "props": {}},
+        ],
         [NodeShape(CLS, (PropertyShape(path=P, node_class=CLS),))],
-        expect_conforms=True)
+        expect_conforms=True,
+    )
     assert ok, r
 
 
@@ -83,7 +94,9 @@ def test_core_closed():
         "core/closed-001",
         [{"rid": "i1", "class_rid": CLS, "props": {P: "a", Q: "b"}}],
         [NodeShape(CLS, (PropertyShape(path=P),), closed=True)],
-        expect_conforms=False, expect_constraint="closed")
+        expect_conforms=False,
+        expect_constraint="closed",
+    )
     assert ok, r
 
 
@@ -92,7 +105,8 @@ def test_core_languagein():
         "core/property/languageIn-001",
         [{"rid": "i1", "class_rid": CLS, "props": {P: "bonjour@fr"}}],
         [NodeShape(CLS, (PropertyShape(path=P, language_in=("fr", "en")),))],
-        expect_conforms=True)
+        expect_conforms=True,
+    )
     assert ok, r
 
 
@@ -103,7 +117,9 @@ def test_core_not():
         "core/property/not-001",
         [{"rid": "i1", "class_rid": CLS, "props": {P: "123"}}],
         [shape],
-        expect_conforms=False, expect_constraint="not")
+        expect_conforms=False,
+        expect_constraint="not",
+    )
     assert ok, r
 
 
@@ -112,20 +128,29 @@ def test_severity_semantics():
     n, ok, r = _case(
         "severity (W3C conforms semantics)",
         [{"rid": "i1", "class_rid": CLS, "props": {P: "x"}}],
-        [NodeShape(CLS, (PropertyShape(path=P, pattern=r"^\d+$",
-                                       severity="Warning"),))],
-        expect_conforms=True)
+        [NodeShape(CLS, (PropertyShape(path=P, pattern=r"^\d+$", severity="Warning"),))],
+        expect_conforms=True,
+    )
     assert ok, r
 
 
 def test_qualifiedshapes():
     n, ok, r = _case(
         "core/property/qualifiedValueShape (min count semantics)",
-        [{"rid": "i1", "class_rid": CLS,
-          "props": {P: ["EMP-1", "other"]}}],
-        [NodeShape(CLS, (PropertyShape(
-            path=P,
-            qualified_value_shape=PropertyShape(path=P, pattern=r"^EMP-"),
-            qualified_min_count=2),))],
-        expect_conforms=False, expect_constraint="qualifiedMinCount")
+        [{"rid": "i1", "class_rid": CLS, "props": {P: ["EMP-1", "other"]}}],
+        [
+            NodeShape(
+                CLS,
+                (
+                    PropertyShape(
+                        path=P,
+                        qualified_value_shape=PropertyShape(path=P, pattern=r"^EMP-"),
+                        qualified_min_count=2,
+                    ),
+                ),
+            )
+        ],
+        expect_conforms=False,
+        expect_constraint="qualifiedMinCount",
+    )
     assert ok, r

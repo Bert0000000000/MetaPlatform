@@ -9,6 +9,7 @@ marketplace 路由（browse/install/installed）统一以 /api/v1/marketplace �
   - request.state.outbox：app.state.outbox_writer（InMemoryOutboxWriter）
   - request.state.marketplace_client：browse 用（内存 stub）
 """
+
 from __future__ import annotations
 
 import structlog
@@ -52,6 +53,7 @@ async def _inject_marketplace_state(request: Request):
     AuthMiddleware 之后执行（此时 request.state.ctx 已被填充）。
     """
     from mate_tech_db.base import create_all, get_session
+
     try:
         create_all()
     except Exception as exc:
@@ -59,9 +61,7 @@ async def _inject_marketplace_state(request: Request):
 
     session = get_session()
     request.state.db = session
-    request.state.outbox = getattr(
-        request.app.state, "outbox_writer", None
-    )
+    request.state.outbox = getattr(request.app.state, "outbox_writer", None)
     request.state.marketplace_client = getattr(
         request.app.state, "marketplace_client", _StubMarketplaceClient()
     )
@@ -74,11 +74,19 @@ async def _inject_marketplace_state(request: Request):
         tenant = str(getattr(ctx, "tenant_id", "") or "")
         if tenant:
             scopes.update(
-                {"platform.marketplace.write", "platform.marketplace.read", "platform.marketplace.read.tenant"}
+                {
+                    "platform.marketplace.write",
+                    "platform.marketplace.read",
+                    "platform.marketplace.read.tenant",
+                }
             )
         if "PLATFORM_SUPER_ADMIN" in getattr(ctx, "roles", frozenset()):
             scopes.update(
-                {"platform.marketplace.write", "platform.marketplace.read", "platform.marketplace.read.tenant"}
+                {
+                    "platform.marketplace.write",
+                    "platform.marketplace.read",
+                    "platform.marketplace.read.tenant",
+                }
             )
         request.state.user = _UserProxy(
             id=str(getattr(ctx, "user_id", "") or ""),

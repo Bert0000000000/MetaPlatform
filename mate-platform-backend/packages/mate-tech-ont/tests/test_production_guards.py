@@ -1,4 +1,5 @@
 """Production profile must use durable ontology and sandbox backends."""
+
 from __future__ import annotations
 
 import pytest

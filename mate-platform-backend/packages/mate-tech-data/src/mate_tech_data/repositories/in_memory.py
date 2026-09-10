@@ -19,6 +19,7 @@ Seed data:
 Both ``CdcTask`` and ``DataSource`` are mutable (not frozen) so
 that update / status-patch operations can mutate fields in place.
 """
+
 from __future__ import annotations
 
 import time
@@ -285,7 +286,8 @@ def _now() -> str:
 # Public read API — CDC tasks
 # ---------------------------------------------------------------------------
 def list_cdc_tasks(
-    tenant_id: str, status: str | None = None,
+    tenant_id: str,
+    status: str | None = None,
 ) -> list[CdcTask]:
     """Return the CDC tasks for a tenant, optionally filtered by status."""
     if not tenant_id:
@@ -309,7 +311,8 @@ def get_cdc_task(tenant_id: str, task_id: str) -> CdcTask | None:
 # Public read API — data sources
 # ---------------------------------------------------------------------------
 def list_sources(
-    tenant_id: str, type_filter: str | None = None,
+    tenant_id: str,
+    type_filter: str | None = None,
 ) -> list[DataSource]:
     """Return the data sources for a tenant, optionally filtered by type."""
     if not tenant_id:
@@ -330,7 +333,8 @@ def get_source(tenant_id: str, source_id: str) -> DataSource | None:
 
 
 def get_source_schema(
-    tenant_id: str, source_id: str,
+    tenant_id: str,
+    source_id: str,
 ) -> dict[str, Any] | None:
     """Return the discovered schema for a source, or None if not found."""
     if not tenant_id:
@@ -340,7 +344,8 @@ def get_source_schema(
 
 
 def test_source_connection(
-    tenant_id: str, source_id: str,
+    tenant_id: str,
+    source_id: str,
 ) -> dict[str, Any] | None:
     """Probe a source connection. Returns None if the source is unknown.
 
@@ -424,7 +429,9 @@ def delete_cdc_task(tenant_id: str, task_id: str) -> bool:
 
 
 def set_cdc_task_status(
-    tenant_id: str, task_id: str, status: str,
+    tenant_id: str,
+    task_id: str,
+    status: str,
 ) -> CdcTask | None:
     """Set the status of a CDC task (used by pause/resume). Returns None if missing."""
     _ensure_tenant(tenant_id)
@@ -605,7 +612,9 @@ def delete_data_product(tenant_id: str, product_id: str) -> bool:
 
 
 def set_data_product_status(
-    tenant_id: str, product_id: str, status: str,
+    tenant_id: str,
+    product_id: str,
+    status: str,
     *,
     bump_version: bool = False,
     require_owner: bool = False,
@@ -750,7 +759,9 @@ _QUALITY_RESULTS: dict[str, list[QualityResult]] = {}
 
 
 def create_lineage_edge(
-    tenant_id: str, source_entity: str, target_entity: str,
+    tenant_id: str,
+    source_entity: str,
+    target_entity: str,
     edge_type: str = "derived_from",
 ) -> LineageEdge:
     _ensure_tenant(tenant_id)
@@ -777,8 +788,7 @@ def lineage_graph(tenant_id: str, entity: str | None = None) -> dict[str, Any]:
     """返回 {nodes, edges} 依赖图；entity 给定时只保留与该实体相连的子图。"""
     edges = list_lineage_edges(tenant_id)
     if entity:
-        edges = [e for e in edges
-                 if entity in (e.source_entity, e.target_entity)]
+        edges = [e for e in edges if entity in (e.source_entity, e.target_entity)]
     nodes: dict[str, None] = {}
     for e in edges:
         nodes[e.source_entity] = None
@@ -786,15 +796,22 @@ def lineage_graph(tenant_id: str, entity: str | None = None) -> dict[str, Any]:
     return {
         "nodes": [{"id": n} for n in sorted(nodes)],
         "edges": [
-            {"source": e.source_entity, "target": e.target_entity,
-             "edge_type": e.edge_type, "id": e.id}
+            {
+                "source": e.source_entity,
+                "target": e.target_entity,
+                "edge_type": e.edge_type,
+                "id": e.id,
+            }
             for e in edges
         ],
     }
 
 
 def create_quality_rule(
-    tenant_id: str, entity_id: str, field: str, rule_type: str,
+    tenant_id: str,
+    entity_id: str,
+    field: str,
+    rule_type: str,
     params: dict[str, Any] | None = None,
 ) -> QualityRule:
     _ensure_tenant(tenant_id)
@@ -812,7 +829,9 @@ def create_quality_rule(
 
 
 def list_quality_rules(
-    tenant_id: str, entity_id: str | None = None, enabled_only: bool = False,
+    tenant_id: str,
+    entity_id: str | None = None,
+    enabled_only: bool = False,
 ) -> list[QualityRule]:
     if not tenant_id:
         return []
@@ -833,12 +852,14 @@ def _quality_check(rule: QualityRule, schema: dict[str, Any] | None) -> QualityR
         detail = "source schema not found"
     else:
         table_name = str(rule.params.get("table", ""))
-        table = next((t for t in schema.get("tables", [])
-                      if t.get("name") == table_name), None) if table_name else None
+        table = (
+            next((t for t in schema.get("tables", []) if t.get("name") == table_name), None)
+            if table_name
+            else None
+        )
         columns: dict[str, str] = {}
         if table is not None:
-            columns = {c.get("name", ""): c.get("type", "")
-                       for c in table.get("columns", [])}
+            columns = {c.get("name", ""): c.get("type", "") for c in table.get("columns", [])}
         if table_name and table is None:
             detail = f"table {table_name!r} not found in schema"
         elif rule.field not in columns:
@@ -894,11 +915,17 @@ def catalog_search(tenant_id: str, q: str) -> list[dict[str, Any]]:
     for s in list_sources(tenant_id):
         hay = f"{s.name} {s.type}".lower()
         if q_lower in hay:
-            items.append({"kind": "source", "id": s.id, "name": s.name,
-                          "detail": s.type})
+            items.append({"kind": "source", "id": s.id, "name": s.name, "detail": s.type})
     for p in list_data_products(tenant_id):
         hay = f"{p.name} {p.description} {p.modality}".lower()
         if q_lower in hay:
-            items.append({"kind": "product", "id": p.id, "name": p.name,
-                          "detail": p.modality, "status": p.status})
+            items.append(
+                {
+                    "kind": "product",
+                    "id": p.id,
+                    "name": p.name,
+                    "detail": p.modality,
+                    "status": p.status,
+                }
+            )
     return items

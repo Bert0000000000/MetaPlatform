@@ -10,6 +10,7 @@ layer can catch it specifically and read:
   every other 4xx is a client error that retrying or falling back cannot fix
   (LiteLLM: retrying a 400 just burns quota and hides bugs).
 """
+
 from __future__ import annotations
 
 from typing import Any

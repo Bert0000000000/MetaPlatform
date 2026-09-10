@@ -24,9 +24,7 @@
 
 ## 3. 核心原则
 
-> **完全抛弃 v3.0 代码，仅 ETL 数据。**
-> **不迁移业务逻辑（重新设计），不双写，不渐进式共存。**
-> **v6.0 Schema 与 v3.0 不兼容，字段映射是单向转换。**
+> **完全抛弃 v3.0 代码，仅 ETL 数据。** > **不迁移业务逻辑（重新设计），不双写，不渐进式共存。** > **v6.0 Schema 与 v3.0 不兼容，字段映射是单向转换。**
 
 ---
 
@@ -34,32 +32,32 @@
 
 ### 4.1 导出（v3.0 → 中间文件）
 
-| 数据 | 来源表 | 导出格式 | 备注 |
-|---|---|---|---|
-| **用户** | `users` (v3.0) | CSV（含 password hash）| 密码迁移由 Supabase Auth 处理 |
-| **租户** | `tenants` (v3.0) | CSV | 仅基础信息 |
-| **17 域业务数据** | 17 个 schema 表 | JSON Lines | 按 schema 映射 |
-| **审计日志** | `audit_logs` (v3.0) | JSON Lines | 仅 dump 到冷存储，**不导入热库** |
+| 数据              | 来源表              | 导出格式                | 备注                             |
+| ----------------- | ------------------- | ----------------------- | -------------------------------- |
+| **用户**          | `users` (v3.0)      | CSV（含 password hash） | 密码迁移由 Supabase Auth 处理    |
+| **租户**          | `tenants` (v3.0)    | CSV                     | 仅基础信息                       |
+| **17 域业务数据** | 17 个 schema 表     | JSON Lines              | 按 schema 映射                   |
+| **审计日志**      | `audit_logs` (v3.0) | JSON Lines              | 仅 dump 到冷存储，**不导入热库** |
 
 ### 4.2 不导出（v6.0 重建）
 
-| 内容 | 重建方式 |
-|---|---|
-| Ontology 12 Kernel | v6.0 重新建模 |
-| 17 域 ObjectType | v6.0 重新设计（基于 Ontology）|
-| Workflow 定义 | v6.0 Temporal + workflow_configs |
-| 数字员工 preset | v6.0 全新设计 |
-| dsh session | v6.0 全新 |
-| HITL Hub 配置 | v6.0 全新 |
+| 内容               | 重建方式                         |
+| ------------------ | -------------------------------- |
+| Ontology 12 Kernel | v6.0 重新建模                    |
+| 17 域 ObjectType   | v6.0 重新设计（基于 Ontology）   |
+| Workflow 定义      | v6.0 Temporal + workflow_configs |
+| 数字员工 preset    | v6.0 全新设计                    |
+| dsh session        | v6.0 全新                        |
+| HITL Hub 配置      | v6.0 全新                        |
 
 ### 4.3 导入（中间文件 → v6.0 Supabase）
 
-| 数据 | 目标 | 工具 |
-|---|---|---|
-| 用户 | Supabase Auth `auth.users` + 业务 `users` 表 | Python script |
-| 租户 | Supabase PG `tenants` 表 | Python script |
-| 17 域业务数据 | Supabase PG 17 个 schema（按 v6.0 设计）| Python script + RLS |
-| 审计日志 | 冷存储（S3 / OSS）| Python script |
+| 数据          | 目标                                         | 工具                |
+| ------------- | -------------------------------------------- | ------------------- |
+| 用户          | Supabase Auth `auth.users` + 业务 `users` 表 | Python script       |
+| 租户          | Supabase PG `tenants` 表                     | Python script       |
+| 17 域业务数据 | Supabase PG 17 个 schema（按 v6.0 设计）     | Python script + RLS |
+| 审计日志      | 冷存储（S3 / OSS）                           | Python script       |
 
 ---
 
@@ -108,7 +106,7 @@
 
 orders:
   source_table: "v3_orders"
-  target_table: "orders"  # v6.0 schema
+  target_table: "orders" # v6.0 schema
   primary_key:
     source: order_id
     target: id
@@ -130,7 +128,7 @@ orders:
       target: created_at
       transform: "DATETIME → TIMESTAMPTZ"
   new_fields:
-    - tenant_id  # 必须新增
+    - tenant_id # 必须新增
     - updated_at
     - idempotency_key
     # RLS policy 自动应用
@@ -141,7 +139,7 @@ orders:
 ```sql
 -- 导出用户（含密码 hash）
 COPY (
-  SELECT 
+  SELECT
     id AS v3_user_id,
     username,
     email,
@@ -194,20 +192,20 @@ print(f"Imported {len(users)} users")
 
 ```sql
 -- 验证数据一致性
-SELECT 
+SELECT
   'users' AS table_name,
   (SELECT COUNT(*) FROM v3_users) AS v3_count,
   (SELECT COUNT(*) FROM auth.users WHERE user_metadata->>'v3_user_id' IS NOT NULL) AS v6_count,
-  CASE 
+  CASE
     WHEN (SELECT COUNT(*) FROM v3_users) = (SELECT COUNT(*) FROM auth.users WHERE user_metadata->>'v3_user_id' IS NOT NULL)
     THEN '✅ MATCH' ELSE '❌ MISMATCH'
   END AS status
 UNION ALL
-SELECT 
+SELECT
   'orders',
   (SELECT COUNT(*) FROM v3_orders),
   (SELECT COUNT(*) FROM orders),
-  CASE 
+  CASE
     WHEN (SELECT COUNT(*) FROM v3_orders) = (SELECT COUNT(*) FROM orders)
     THEN '✅ MATCH' ELSE '❌ MISMATCH'
   END;
@@ -217,25 +215,25 @@ SELECT
 
 ## 7. Schema 映射清单（17 域）
 
-| 域 | v3.0 表 | v6.0 表 | 备注 |
-|---|---|---|---|
-| Customer | `v3_customers` | `customers` | schema 映射 |
-| Order | `v3_orders` | `orders` | schema 映射 |
-| Product | `v3_products` | `products` | schema 映射 |
-| Contract | `v3_contracts` | `contracts` | schema 映射 |
-| Supplier | `v3_suppliers` | `suppliers` | schema 映射 |
-| Inventory | `v3_inventory` | `inventory` | schema 映射 |
-| Finance | `v3_invoices` | `invoices` | schema 映射 |
-| Expense | `v3_expenses` | `expenses` | schema 映射 |
-| Document | `v3_documents` | `documents` | schema 映射 |
-| Project | `v3_projects` | `projects` | schema 映射 |
-| Workflow | `v3_workflows` | `workflow_configs` | schema 映射 |
-| Approval | `v3_approvals` | `hitl_requests` | schema 映射 |
-| Notification | `v3_notifications` | `notifications` | schema 映射 |
-| User | `v3_users` | `auth.users` + `users` | Auth 用户 |
-| Organization | `v3_orgs` | `orgs` | schema 映射 |
-| Knowledge | `v3_articles` | `articles` | schema 映射 |
-| Analytics | `v3_metrics` | `metrics` | schema 映射 |
+| 域           | v3.0 表            | v6.0 表                | 备注        |
+| ------------ | ------------------ | ---------------------- | ----------- |
+| Customer     | `v3_customers`     | `customers`            | schema 映射 |
+| Order        | `v3_orders`        | `orders`               | schema 映射 |
+| Product      | `v3_products`      | `products`             | schema 映射 |
+| Contract     | `v3_contracts`     | `contracts`            | schema 映射 |
+| Supplier     | `v3_suppliers`     | `suppliers`            | schema 映射 |
+| Inventory    | `v3_inventory`     | `inventory`            | schema 映射 |
+| Finance      | `v3_invoices`      | `invoices`             | schema 映射 |
+| Expense      | `v3_expenses`      | `expenses`             | schema 映射 |
+| Document     | `v3_documents`     | `documents`            | schema 映射 |
+| Project      | `v3_projects`      | `projects`             | schema 映射 |
+| Workflow     | `v3_workflows`     | `workflow_configs`     | schema 映射 |
+| Approval     | `v3_approvals`     | `hitl_requests`        | schema 映射 |
+| Notification | `v3_notifications` | `notifications`        | schema 映射 |
+| User         | `v3_users`         | `auth.users` + `users` | Auth 用户   |
+| Organization | `v3_orgs`          | `orgs`                 | schema 映射 |
+| Knowledge    | `v3_articles`      | `articles`             | schema 映射 |
+| Analytics    | `v3_metrics`       | `metrics`              | schema 映射 |
 
 ---
 
@@ -256,19 +254,20 @@ SELECT
 
 ## 9. 风险与缓解
 
-| 风险 | 等级 | 缓解 |
-|---|---|---|
-| **ETL 失败** | 🟠 中 | dev / staging 多次演练 + 回滚方案 |
-| **切流量业务中断** | 🟠 中 | 按租户分批切 + 24h 监控 + 应急预案 |
-| **用户密码迁移** | 🟡 低 | Supabase Auth 支持外部 hash / 强制重置 |
-| **Schema 不一致** | 🟠 中 | 提前映射 + 测试 + 数据校验 |
-| **审计日志丢失** | 🟡 低 | 归档到冷存储，保留 N 年 |
+| 风险               | 等级  | 缓解                                   |
+| ------------------ | ----- | -------------------------------------- |
+| **ETL 失败**       | 🟠 中 | dev / staging 多次演练 + 回滚方案      |
+| **切流量业务中断** | 🟠 中 | 按租户分批切 + 24h 监控 + 应急预案     |
+| **用户密码迁移**   | 🟡 低 | Supabase Auth 支持外部 hash / 强制重置 |
+| **Schema 不一致**  | 🟠 中 | 提前映射 + 测试 + 数据校验             |
+| **审计日志丢失**   | 🟡 低 | 归档到冷存储，保留 N 年                |
 
 ---
 
 ## 10. 下游依赖
 
 本 Batch 完成后可启动：
+
 - **v6.0 GA 正式发布**
 - v3.0 完全退役（观察 6 个月）
 - v6.1 演进（罗盘 / 应用中心 / 云市场）
@@ -293,13 +292,13 @@ MP-V6-MIGRATION-01 在 Sprint 3 第 5 周启动，2-3 周完成。
 
 ## 12. 关键依赖
 
-| 依赖 | 来源 |
-|---|---|
-| Supabase Auth | MP-V6-FOUNDATION-01 |
-| Supabase PG | MP-V6-FOUNDATION-01 |
-| 冷存储（S3 / OSS）| MP-V6-FOUNDATION-01 |
-| v3.0 数据库访问 | SRE 提供只读账号 |
-| v6.0 Schema | 已设计（Sprint 2 完成）|
+| 依赖               | 来源                    |
+| ------------------ | ----------------------- |
+| Supabase Auth      | MP-V6-FOUNDATION-01     |
+| Supabase PG        | MP-V6-FOUNDATION-01     |
+| 冷存储（S3 / OSS） | MP-V6-FOUNDATION-01     |
+| v3.0 数据库访问    | SRE 提供只读账号        |
+| v6.0 Schema        | 已设计（Sprint 2 完成） |
 
 ## 13. 不做（明确反对）
 
@@ -316,4 +315,4 @@ MP-V6-MIGRATION-01 在 Sprint 3 第 5 周启动，2-3 周完成。
 
 ---
 
-*MP-V6-MIGRATION-01 完全抛弃 v3.0 数据迁移 Batch。*
+_MP-V6-MIGRATION-01 完全抛弃 v3.0 数据迁移 Batch。_

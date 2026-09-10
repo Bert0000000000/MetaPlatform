@@ -1,4 +1,5 @@
 """FastAPI middleware that injects a verified RequestContext."""
+
 from __future__ import annotations
 
 import inspect
@@ -38,7 +39,8 @@ def install_auth(
     *,
     config: AuthConfig | None = None,
     extra_anonymous_paths: set[str] | None = None,
-    api_key_verifier: Callable[[Request, str], RequestContext | Awaitable[RequestContext]] | None = None,
+    api_key_verifier: Callable[[Request, str], RequestContext | Awaitable[RequestContext]]
+    | None = None,
 ) -> TokenVerifier:
     """Install the bearer-token auth middleware on `app`.
 
@@ -65,7 +67,8 @@ def install_auth(
     cfg = config or load_auth_config()
     verifier = TokenVerifier(cfg)
     anonymous_paths: frozenset[str] = (
-        ANONYMOUS_PATHS if extra_anonymous_paths is None
+        ANONYMOUS_PATHS
+        if extra_anonymous_paths is None
         else ANONYMOUS_PATHS | frozenset(extra_anonymous_paths)
     )
     app.add_middleware(
@@ -107,7 +110,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         config: AuthConfig,
         verifier: TokenVerifier,
         anonymous_paths: frozenset[str] | None = None,
-        api_key_verifier: Callable[[Request, str], RequestContext | Awaitable[RequestContext]] | None = None,
+        api_key_verifier: Callable[[Request, str], RequestContext | Awaitable[RequestContext]]
+        | None = None,
     ) -> None:
         super().__init__(app)
         self._config = config

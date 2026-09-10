@@ -2,6 +2,7 @@
 
 推理层级对 ObjectSet 可见的查询侧原语：B 的后代 = 全部 A⊑…⊑B 的 A。
 """
+
 from __future__ import annotations
 
 import os

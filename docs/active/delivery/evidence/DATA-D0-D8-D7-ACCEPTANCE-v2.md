@@ -8,6 +8,7 @@
 ## 1. 范围
 
 D7 统一平台两套独立 PII 实现(mate-clients + llmgw)为一个策略驱动的引擎:
+
 - 7 种 PII 模式:phone_cn / id_card_cn / email / credit_card / phone_us / ssn / ip_v4
 - per-tenant 策略(enabled_kinds / reversible / mask_token)
 - 修复原 llmgw 中文边界 bug(`\b` 对中文字符无效 → 改用 lookaround)

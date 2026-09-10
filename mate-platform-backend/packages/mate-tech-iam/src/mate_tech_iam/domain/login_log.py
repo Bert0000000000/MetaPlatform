@@ -1,4 +1,5 @@
 """Login log model (FR-DASH-006-01 登录日志)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

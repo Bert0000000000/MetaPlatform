@@ -21,6 +21,7 @@ The `DelegationTask` is mutable (not frozen) so that
 `update_delegation_result` can patch the status / result fields
 in place.
 """
+
 from __future__ import annotations
 
 import uuid

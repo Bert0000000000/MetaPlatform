@@ -2,12 +2,14 @@
 
 基于 testcontainers 的真实集成测试（按需执行）。
 """
+
 from __future__ import annotations
 
 
 def test_docker_available_for_testcontainers() -> None:
     """ST-2.4.1: 检查 docker 可用."""
     import shutil
+
     docker = shutil.which("docker")
     # 不强制存在，但记录
     if docker:

@@ -1,4 +1,5 @@
 """Explain 端点 (ST-5.4.5)."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter

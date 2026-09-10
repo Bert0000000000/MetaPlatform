@@ -8,11 +8,11 @@
 
 ## 评审范围
 
-| ADR | 主题 | 落档路径 |
-|---|---|---|
+| ADR      | 主题                        | 落档路径                                                 |
+| -------- | --------------------------- | -------------------------------------------------------- |
 | ADR-0021 | Ontology Kernel 12 基元冻结 | `docs/active/decisions/ADR-0021-kernel-12-primitives.md` |
-| ADR-0040 | 数字员工/SuperAI 沙箱架构 | `docs/active/decisions/ADR-0040-sandbox-architecture.md` |
-| ADR-0041 | Session Sandbox（用户级） | `docs/active/decisions/ADR-0041-session-sandbox.md` |
+| ADR-0040 | 数字员工/SuperAI 沙箱架构   | `docs/active/decisions/ADR-0040-sandbox-architecture.md` |
+| ADR-0041 | Session Sandbox（用户级）   | `docs/active/decisions/ADR-0041-session-sandbox.md`      |
 
 ## 决议项
 
@@ -46,20 +46,20 @@
 
 ## 跨 ADR 一致性
 
-| 项 | 一致性 |
-|---|---|
-| Function Sandbox 不能拿原始 JWT | ADR-0040 §2.3 + ADR-0041 §3 一致 |
-| Plan 状态机 `awaiting_user` | ADR-0040 §2.4 + ADR-0041 §2.5 一致 |
-| 沙箱 NetworkPolicy default-deny | ADR-0040 §4 + ADR-0041 §4 + 13 硬规则 ⑬ 一致 |
-| OTel 主题 `session.*` / `sandbox.*` | ADR-0040 §5 + ADR-0041 §4 一致 |
+| 项                                  | 一致性                                       |
+| ----------------------------------- | -------------------------------------------- |
+| Function Sandbox 不能拿原始 JWT     | ADR-0040 §2.3 + ADR-0041 §3 一致             |
+| Plan 状态机 `awaiting_user`         | ADR-0040 §2.4 + ADR-0041 §2.5 一致           |
+| 沙箱 NetworkPolicy default-deny     | ADR-0040 §4 + ADR-0041 §4 + 13 硬规则 ⑬ 一致 |
+| OTel 主题 `session.*` / `sandbox.*` | ADR-0040 §5 + ADR-0041 §4 一致               |
 
 ## 风险登记
 
-| 风险 | 缓解 |
-|---|---|
-| KERNEL-01 工期 8 周偏紧 | 拆分：M1 第 1-4 周 12 基元骨架 + 单测；M1 第 5-8 周 OWL 迁移 + 双租户统一 |
-| SANDBOX-01 与 SESSION-01 凭证流耦合 | 同步启动；短期 token 颁发在 SESSION-01，SANDBOX-01 消费 |
-| MicroVM 选型未定 | MP-SANDBOX-02（M3）再决；本评审不强约束 |
+| 风险                                | 缓解                                                                      |
+| ----------------------------------- | ------------------------------------------------------------------------- |
+| KERNEL-01 工期 8 周偏紧             | 拆分：M1 第 1-4 周 12 基元骨架 + 单测；M1 第 5-8 周 OWL 迁移 + 双租户统一 |
+| SANDBOX-01 与 SESSION-01 凭证流耦合 | 同步启动；短期 token 颁发在 SESSION-01，SANDBOX-01 消费                   |
+| MicroVM 选型未定                    | MP-SANDBOX-02（M3）再决；本评审不强约束                                   |
 
 ## 下一步
 

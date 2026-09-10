@@ -8,10 +8,10 @@ info:
     name: Mate Platform API Governance
     email: api-governance@metaplatform.local
 servers:
-- url: /
+  - url: /
 tags:
-- name: ont
-  description: ont domain operations
+  - name: ont
+    description: ont domain operations
 security:
   - bearerAuth: []
     tenantHeader: []
@@ -20,48 +20,47 @@ paths:
   /healthz:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
+        - bearerAuth: []
+          tenantHeader: []
       summary: Liveness probe
       tags:
-      - ont
+        - ont
       responses:
-        '200':
+        "200":
           description: OK
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: ontGetHealthz
       description: Liveness probe
       x-mate-owner: ontology-platform
       x-mate-permission: ont.get
       x-mate-requirements:
-      - FR-ONT-ONTGETHEALTHZ
+        - FR-ONT-ONTGETHEALTHZ
       x-mate-implementation-status: implemented
   /api/v1/ont/ontologies:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: Create ontology
       tags:
-      - ont
+        - ont
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OntologyCreate'
+              $ref: "#/components/schemas/OntologyCreate"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Ontology'
-        '409':
+                $ref: "#/components/schemas/Ontology"
+        "409":
           description: Ontology already exists
-      x-sunset: 2026-12-31
       x-sunset: 2026-12-31
       x-migration-target: "/api/v1/ont/v2/object-types"
       operationId: ontPostOntOntologies
@@ -69,33 +68,32 @@ paths:
       x-mate-owner: ontology-platform
       x-mate-permission: ont.post
       x-mate-requirements:
-      - FR-ONT-ONTPOSTONTONTOLOGIES
+        - FR-ONT-ONTPOSTONTONTOLOGIES
       x-mate-implementation-status: implemented
   /api/v1/ont/ontologies/{ontology_id}:
     parameters:
-    - in: path
-      name: ontology_id
-      required: true
-      schema:
-        type: string
+      - in: path
+        name: ontology_id
+        required: true
+        schema:
+          type: string
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: Read ontology
       tags:
-      - ont
+        - ont
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Ontology'
-        '404':
+                $ref: "#/components/schemas/Ontology"
+        "404":
           description: not found
-      x-sunset: 2026-12-31
       x-sunset: 2026-12-31
       x-migration-target: "/api/v1/ont/v2/object-types"
       operationId: ontGetOntOntologiesOntologyId
@@ -103,39 +101,38 @@ paths:
       x-mate-owner: ontology-platform
       x-mate-permission: ont.get
       x-mate-requirements:
-      - FR-ONT-ONTGETONTONTOLOGIESONTOLOGYID
+        - FR-ONT-ONTGETONTONTOLOGIESONTOLOGYID
       x-mate-implementation-status: implemented
       parameters:
-      - name: ontology_id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: ontology_id
+          in: path
+          required: true
+          schema:
+            type: string
   /api/v1/ont/classes:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: Create class
       tags:
-      - ont
+        - ont
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ClassCreate'
+              $ref: "#/components/schemas/ClassCreate"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClassResponse'
-        '409':
+                $ref: "#/components/schemas/ClassResponse"
+        "409":
           description: Class already exists
-      x-sunset: 2026-12-31
       x-sunset: 2026-12-31
       x-migration-target: "/api/v1/ont/v2/object-types"
       operationId: ontPostOntClasses
@@ -143,33 +140,32 @@ paths:
       x-mate-owner: ontology-platform
       x-mate-permission: ont.post
       x-mate-requirements:
-      - FR-ONT-ONTPOSTONTCLASSES
+        - FR-ONT-ONTPOSTONTCLASSES
       x-mate-implementation-status: implemented
   /api/v1/ont/classes/{class_id}:
     parameters:
-    - in: path
-      name: class_id
-      required: true
-      schema:
-        type: string
+      - in: path
+        name: class_id
+        required: true
+        schema:
+          type: string
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: Read class
       tags:
-      - ont
+        - ont
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClassResponse'
-        '404':
+                $ref: "#/components/schemas/ClassResponse"
+        "404":
           description: not found
-      x-sunset: 2026-12-31
       x-sunset: 2026-12-31
       x-migration-target: "/api/v1/ont/v2/object-types"
       operationId: ontGetOntClassesClassId
@@ -177,40 +173,39 @@ paths:
       x-mate-owner: ontology-platform
       x-mate-permission: ont.get
       x-mate-requirements:
-      - FR-ONT-ONTGETONTCLASSESCLASSID
+        - FR-ONT-ONTGETONTCLASSESCLASSID
       x-mate-implementation-status: implemented
       parameters:
-      - name: class_id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: class_id
+          in: path
+          required: true
+          schema:
+            type: string
   /api/v1/ont/instances:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: List instances (optional class_id filter)
       tags:
-      - ont
+        - ont
       parameters:
-      - in: query
-        name: class_id
-        schema:
-          type: string
+        - in: query
+          name: class_id
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/InstanceResponse'
-        '400':
+                  $ref: "#/components/schemas/InstanceResponse"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
-      x-sunset: 2026-12-31
       x-sunset: 2026-12-31
       x-migration-target: "/api/v1/ont/v2/individuals"
       operationId: ontGetOntInstances
@@ -218,32 +213,31 @@ paths:
       x-mate-owner: ontology-platform
       x-mate-permission: ont.get
       x-mate-requirements:
-      - FR-ONT-ONTGETONTINSTANCES
+        - FR-ONT-ONTGETONTINSTANCES
       x-mate-implementation-status: placeholder
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: Create instance
       tags:
-      - ont
+        - ont
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InstanceCreate'
+              $ref: "#/components/schemas/InstanceCreate"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceResponse'
-        '400':
+                $ref: "#/components/schemas/InstanceResponse"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
-      x-sunset: 2026-12-31
       x-sunset: 2026-12-31
       x-migration-target: "/api/v1/ont/v2/individuals"
       operationId: ontPostOntInstances
@@ -251,33 +245,32 @@ paths:
       x-mate-owner: ontology-platform
       x-mate-permission: ont.post
       x-mate-requirements:
-      - FR-ONT-ONTPOSTONTINSTANCES
+        - FR-ONT-ONTPOSTONTINSTANCES
       x-mate-implementation-status: placeholder
   /api/v1/ont/instances/{iid}:
     parameters:
-    - in: path
-      name: iid
-      required: true
-      schema:
-        type: string
+      - in: path
+        name: iid
+        required: true
+        schema:
+          type: string
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: Read instance
       tags:
-      - ont
+        - ont
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceResponse'
-        '404':
+                $ref: "#/components/schemas/InstanceResponse"
+        "404":
           description: not found
-      x-sunset: 2026-12-31
       x-sunset: 2026-12-31
       x-migration-target: "/api/v1/ont/v2/individuals"
       operationId: ontGetOntInstancesIid
@@ -285,28 +278,27 @@ paths:
       x-mate-owner: ontology-platform
       x-mate-permission: ont.get
       x-mate-requirements:
-      - FR-ONT-ONTGETONTINSTANCESIID
+        - FR-ONT-ONTGETONTINSTANCESIID
       x-mate-implementation-status: placeholder
       parameters:
-      - name: iid
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: iid
+          in: path
+          required: true
+          schema:
+            type: string
     delete:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: Delete instance
       tags:
-      - ont
+        - ont
       responses:
-        '200':
+        "200":
           description: OK
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
-      x-sunset: 2026-12-31
       x-sunset: 2026-12-31
       x-migration-target: "/api/v1/ont/v2/individuals"
       operationId: ontDeleteOntInstancesIid
@@ -314,35 +306,34 @@ paths:
       x-mate-owner: ontology-platform
       x-mate-permission: ont.delete
       x-mate-requirements:
-      - FR-ONT-ONTDELETEONTINSTANCESIID
+        - FR-ONT-ONTDELETEONTINSTANCESIID
       x-mate-implementation-status: placeholder
       parameters:
-      - name: iid
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: iid
+          in: path
+          required: true
+          schema:
+            type: string
   /api/v1/ont/instances/relations:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: List relations
       tags:
-      - ont
+        - ont
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/RelationResponse'
-        '400':
+                  $ref: "#/components/schemas/RelationResponse"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
-      x-sunset: 2026-12-31
       x-sunset: 2026-12-31
       x-migration-target: "/api/v1/ont/v2/individuals"
       operationId: ontGetOntInstancesRelations
@@ -350,32 +341,31 @@ paths:
       x-mate-owner: ontology-platform
       x-mate-permission: ont.get
       x-mate-requirements:
-      - FR-ONT-ONTGETONTINSTANCESRELATIONS
+        - FR-ONT-ONTGETONTINSTANCESRELATIONS
       x-mate-implementation-status: placeholder
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: Create relation
       tags:
-      - ont
+        - ont
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RelationCreate'
+              $ref: "#/components/schemas/RelationCreate"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RelationResponse'
-        '400':
+                $ref: "#/components/schemas/RelationResponse"
+        "400":
           description: Bad payload
-      x-sunset: 2026-12-31
       x-sunset: 2026-12-31
       x-migration-target: "/api/v1/ont/v2/individuals"
       operationId: ontPostOntInstancesRelations
@@ -383,33 +373,32 @@ paths:
       x-mate-owner: ontology-platform
       x-mate-permission: ont.post
       x-mate-requirements:
-      - FR-ONT-ONTPOSTONTINSTANCESRELATIONS
+        - FR-ONT-ONTPOSTONTINSTANCESRELATIONS
       x-mate-implementation-status: placeholder
   /api/v1/ont/sparql:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: SPARQL -> Cypher -> execute
       tags:
-      - ont
+        - ont
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SparqlRequest'
+              $ref: "#/components/schemas/SparqlRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SparqlResponse'
-        '400':
+                $ref: "#/components/schemas/SparqlResponse"
+        "400":
           description: SPARQL parse / transpile failure
-      x-sunset: 2026-12-31
       x-sunset: 2026-12-31
       x-migration-target: "/api/v1/ont/v2/object-sets:evaluate"
       operationId: ontPostOntSparql
@@ -417,17 +406,17 @@ paths:
       x-mate-owner: ontology-platform
       x-mate-permission: ont.post
       x-mate-requirements:
-      - FR-ONT-ONTPOSTONTSPARQL
+        - FR-ONT-ONTPOSTONTSPARQL
       x-mate-implementation-status: placeholder
   /api/v1/ont/explain:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: SPARQL EXPLAIN (parse + transpile only)
       tags:
-      - ont
+        - ont
       requestBody:
         required: true
         content:
@@ -435,12 +424,12 @@ paths:
             schema:
               type: object
               required:
-              - query
+                - query
               properties:
                 query:
                   type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -457,9 +446,8 @@ paths:
                     type: array
                     items:
                       type: string
-        '400':
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
-      x-sunset: 2026-12-31
       x-sunset: 2026-12-31
       x-migration-target: "/api/v1/ont/v2/object-sets:evaluate"
       operationId: ontPostOntExplain
@@ -467,36 +455,35 @@ paths:
       x-mate-owner: ontology-platform
       x-mate-permission: ont.post
       x-mate-requirements:
-      - FR-ONT-ONTPOSTONTEXPLAIN
+        - FR-ONT-ONTPOSTONTEXPLAIN
       x-mate-implementation-status: implemented
   /api/v1/ont/federation/query:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-required-scopes: [platform.read]
       summary: Cross-ontology federation query
       tags:
-      - ont
+        - ont
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FederationQueryRequest'
+              $ref: "#/components/schemas/FederationQueryRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FederationQueryResponse'
-        '400':
+                $ref: "#/components/schemas/FederationQueryResponse"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
-        '500':
+        "500":
           description: Internal federation error
-      x-sunset: 2026-12-31
       x-sunset: 2026-12-31
       x-migration-target: "/api/v1/ont/v2/object-sets:evaluate"
       operationId: ontPostFederationQuery
@@ -505,33 +492,32 @@ paths:
       x-mate-permission: ont.query
       x-mate-required-tenant: true
       x-mate-requirements:
-      - FR-ONT-ONTPOSTFEDERATIONQUERY
+        - FR-ONT-ONTPOSTFEDERATIONQUERY
       x-mate-implementation-status: implemented
   /api/v1/ont/federation/mappings:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.write]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       summary: Create cross-ontology mapping
       tags:
-      - ont
+        - ont
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateMappingRequest'
+              $ref: "#/components/schemas/CreateMappingRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MappingResponse'
-        '400':
+                $ref: "#/components/schemas/MappingResponse"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
-      x-sunset: 2026-12-31
       x-sunset: 2026-12-31
       x-migration-target: "/api/v1/ont/v2/object-sets:evaluate"
       operationId: ontPostFederationMappings
@@ -540,28 +526,27 @@ paths:
       x-mate-permission: ont.write
       x-mate-required-tenant: true
       x-mate-requirements:
-      - FR-ONT-ONTPOSTFEDERATIONMAPPINGS
+        - FR-ONT-ONTPOSTFEDERATIONMAPPINGS
       x-mate-implementation-status: implemented
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes: [platform.read]
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       summary: List cross-ontology mappings
       tags:
-      - ont
+        - ont
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/MappingResponse'
-        '400':
+                  $ref: "#/components/schemas/MappingResponse"
+        "400":
           $ref: ../common/errors.yaml#/components/responses/Error400
-      x-sunset: 2026-12-31
       x-sunset: 2026-12-31
       x-migration-target: "/api/v1/ont/v2/object-sets:evaluate"
       operationId: ontGetFederationMappings
@@ -570,7 +555,7 @@ paths:
       x-mate-permission: ont.get
       x-mate-required-tenant: true
       x-mate-requirements:
-      - FR-ONT-ONTGETFEDERATIONMAPPINGS
+        - FR-ONT-ONTGETFEDERATIONMAPPINGS
       x-mate-implementation-status: implemented
   # ────────────────────────────────────────────────────────────────────
   # v3.1 KERNEL-01 · 12 基元端点（ADR-0021 冻结）
@@ -578,14 +563,15 @@ paths:
   # ────────────────────────────────────────────────────────────────────
   /api/v1/ont/v2/object-types:
     parameters:
-    - in: query
-      name: limit
-      schema: {type: integer, minimum: 1, maximum: 1000, default: 100}
-    - in: query
-      name: offset
-      schema: {type: integer, minimum: 0, default: 0}
+      - in: query
+        name: limit
+        schema: { type: integer, minimum: 1, maximum: 1000, default: 100 }
+      - in: query
+        name: offset
+        schema: { type: integer, minimum: 0, default: 0 }
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: List ObjectTypes (v2 不可变类型层)
       operationId: ontListV2ObjectTypes
@@ -596,16 +582,17 @@ paths:
       x-mate-requirements: [FR-ONT-KERNEL01-LISTOBJECTTYPES]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
-                items: {$ref: '#/components/schemas/ObjectTypeV2'}
-        '400': {$ref: ../common/errors.yaml#/components/responses/Error400}
+                items: { $ref: "#/components/schemas/ObjectTypeV2" }
+        "400": { $ref: ../common/errors.yaml#/components/responses/Error400 }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Create ObjectType (v2 不可变类型层)
       operationId: ontCreateV2ObjectType
@@ -618,23 +605,28 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/ObjectTypeCreateV2'}
+            schema: { $ref: "#/components/schemas/ObjectTypeCreateV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ObjectTypeV2'}
-        '409': {$ref: ../common/errors.yaml#/components/responses/Error409}
-        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+              schema: { $ref: "#/components/schemas/ObjectTypeV2" }
+        "409": { $ref: ../common/errors.yaml#/components/responses/Error409 }
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/object-types/{rid}:
     parameters:
-    - in: path
-      name: rid
-      required: true
-      schema: {type: string, pattern: '^ont\.[a-z0-9_-]{1,64}\.obj\.[a-z0-9_:\-.]+$'}
+      - in: path
+        name: rid
+        required: true
+        schema:
+          {
+            type: string,
+            pattern: '^ont\.[a-z0-9_-]{1,64}\.obj\.[a-z0-9_:\-.]+$',
+          }
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: Read ObjectType by rid
       operationId: ontGetV2ObjectType
@@ -644,20 +636,25 @@ paths:
       x-mate-requirements: [FR-ONT-KERNEL01-GETOBJECTTYPE]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ObjectTypeV2'}
-        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+              schema: { $ref: "#/components/schemas/ObjectTypeV2" }
+        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
   /api/v1/ont/v2/object-types/{rid}/properties:
     parameters:
-    - in: path
-      name: rid
-      required: true
-      schema: {type: string, pattern: '^ont\.[a-z0-9_-]{1,64}\.obj\.[a-z0-9_:\-.]+$'}
+      - in: path
+        name: rid
+        required: true
+        schema:
+          {
+            type: string,
+            pattern: '^ont\.[a-z0-9_-]{1,64}\.obj\.[a-z0-9_:\-.]+$',
+          }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Append a Property to an existing ObjectType (v2 不可变类型层增量)
       operationId: ontAppendV2ObjectTypeProperty
@@ -674,19 +671,20 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/PropertyV2'}
+            schema: { $ref: "#/components/schemas/PropertyV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ObjectTypeV2'}
-        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
-        '409': {$ref: ../common/errors.yaml#/components/responses/Error409}
-        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+              schema: { $ref: "#/components/schemas/ObjectTypeV2" }
+        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
+        "409": { $ref: ../common/errors.yaml#/components/responses/Error409 }
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/link-types:
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: List LinkTypes
       operationId: ontListV2LinkTypes
@@ -696,15 +694,16 @@ paths:
       x-mate-requirements: [FR-ONT-KERNEL01-LISTLINKTYPES]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
-                items: {$ref: '#/components/schemas/LinkTypeV2'}
+                items: { $ref: "#/components/schemas/LinkTypeV2" }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Create LinkType
       operationId: ontCreateV2LinkType
@@ -717,22 +716,27 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/LinkTypeCreateV2'}
+            schema: { $ref: "#/components/schemas/LinkTypeCreateV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/LinkTypeV2'}
-        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+              schema: { $ref: "#/components/schemas/LinkTypeV2" }
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/link-types/{rid}:
     parameters:
-    - in: path
-      name: rid
-      required: true
-      schema: {type: string, pattern: '^ont\.[a-z0-9_-]{1,64}\.link\.[a-z0-9_:\-.]+$'}
+      - in: path
+        name: rid
+        required: true
+        schema:
+          {
+            type: string,
+            pattern: '^ont\.[a-z0-9_-]{1,64}\.link\.[a-z0-9_:\-.]+$',
+          }
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: Read LinkType
       operationId: ontGetV2LinkType
@@ -742,15 +746,16 @@ paths:
       x-mate-requirements: [FR-ONT-KERNEL01-GETLINKTYPE]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/LinkTypeV2'}
-        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+              schema: { $ref: "#/components/schemas/LinkTypeV2" }
+        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
   /api/v1/ont/v2/action-types:
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: List ActionTypes (all write operations route through here)
       operationId: ontListV2ActionTypes
@@ -760,15 +765,16 @@ paths:
       x-mate-requirements: [FR-ONT-KERNEL01-LISTACTIONTYPES]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
-                items: {$ref: '#/components/schemas/ActionTypeV2'}
+                items: { $ref: "#/components/schemas/ActionTypeV2" }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Create ActionType (write the only legal entry point)
       operationId: ontCreateV2ActionType
@@ -781,22 +787,27 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/ActionTypeCreateV2'}
+            schema: { $ref: "#/components/schemas/ActionTypeCreateV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ActionTypeV2'}
-        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+              schema: { $ref: "#/components/schemas/ActionTypeV2" }
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/action-types/{rid}/apply:
     parameters:
-    - in: path
-      name: rid
-      required: true
-      schema: {type: string, pattern: '^ont\.[a-z0-9_-]{1,64}\.act\.[a-z0-9_:\-.]+$'}
+      - in: path
+        name: rid
+        required: true
+        schema:
+          {
+            type: string,
+            pattern: '^ont\.[a-z0-9_-]{1,64}\.act\.[a-z0-9_:\-.]+$',
+          }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Apply ActionType — only legal write entry (AI/Function/SDK all converge here)
       operationId: ontApplyV2ActionType
@@ -809,17 +820,18 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/ActionApplyRequest'}
+            schema: { $ref: "#/components/schemas/ActionApplyRequest" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ActionApplyResponse'}
-        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+              schema: { $ref: "#/components/schemas/ActionApplyResponse" }
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/interfaces:
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: List Interfaces (polymorphic surface)
       operationId: ontListV2Interfaces
@@ -829,15 +841,16 @@ paths:
       x-mate-requirements: [FR-ONT-KERNEL01-LISTINTERFACES]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
-                items: {$ref: '#/components/schemas/InterfaceV2'}
+                items: { $ref: "#/components/schemas/InterfaceV2" }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Create Interface
       operationId: ontCreateV2Interface
@@ -850,17 +863,18 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/InterfaceCreateV2'}
+            schema: { $ref: "#/components/schemas/InterfaceCreateV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/InterfaceV2'}
-        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+              schema: { $ref: "#/components/schemas/InterfaceV2" }
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/individuals:
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: List Individuals (mutable)
       operationId: ontListV2Individuals
@@ -870,20 +884,21 @@ paths:
       x-mate-requirements: [FR-ONT-KERNEL01-LISTINDIVIDUALS]
       x-mate-implementation-status: implemented
       parameters:
-      - in: query
-        name: class_rid
-        schema: {type: string}
+        - in: query
+          name: class_rid
+          schema: { type: string }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
-                items: {$ref: '#/components/schemas/IndividualV2'}
-        '400': {$ref: ../common/errors.yaml#/components/responses/Error400}
+                items: { $ref: "#/components/schemas/IndividualV2" }
+        "400": { $ref: ../common/errors.yaml#/components/responses/Error400 }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Create Individual (use ActionType.apply for any side-effect-bearing change)
       operationId: ontCreateV2Individual
@@ -896,22 +911,27 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/IndividualCreateV2'}
+            schema: { $ref: "#/components/schemas/IndividualCreateV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/IndividualV2'}
-        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+              schema: { $ref: "#/components/schemas/IndividualV2" }
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/individuals/{rid}:
     parameters:
-    - in: path
-      name: rid
-      required: true
-      schema: {type: string, pattern: '^ont\.[a-z0-9_-]{1,64}\.ind\.[a-z0-9_:\-.]+$'}
+      - in: path
+        name: rid
+        required: true
+        schema:
+          {
+            type: string,
+            pattern: '^ont\.[a-z0-9_-]{1,64}\.ind\.[a-z0-9_:\-.]+$',
+          }
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: Read Individual
       operationId: ontGetV2Individual
@@ -921,15 +941,16 @@ paths:
       x-mate-requirements: [FR-ONT-KERNEL01-GETINDIVIDUAL]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/IndividualV2'}
-        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+              schema: { $ref: "#/components/schemas/IndividualV2" }
+        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
   /api/v1/ont/v2/link-instances:
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: List LinkInstances
       operationId: ontListV2LinkInstances
@@ -939,15 +960,16 @@ paths:
       x-mate-requirements: [FR-ONT-KERNEL01-LISTLINKINSTANCES]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
-                items: {$ref: '#/components/schemas/LinkInstanceV2'}
+                items: { $ref: "#/components/schemas/LinkInstanceV2" }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Create LinkInstance
       operationId: ontCreateV2LinkInstance
@@ -960,17 +982,18 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/LinkInstanceCreateV2'}
+            schema: { $ref: "#/components/schemas/LinkInstanceCreateV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/LinkInstanceV2'}
-        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+              schema: { $ref: "#/components/schemas/LinkInstanceV2" }
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/axioms:
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: List Axioms
       operationId: ontListV2Axioms
@@ -980,15 +1003,16 @@ paths:
       x-mate-requirements: [FR-ONT-KERNEL01-LISTAXIOMS]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
-                items: {$ref: '#/components/schemas/AxiomV2'}
+                items: { $ref: "#/components/schemas/AxiomV2" }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Create Axiom
       operationId: ontCreateV2Axiom
@@ -1001,17 +1025,18 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/AxiomCreateV2'}
+            schema: { $ref: "#/components/schemas/AxiomCreateV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/AxiomV2'}
-        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+              schema: { $ref: "#/components/schemas/AxiomV2" }
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/functions:
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: List Functions
       operationId: ontListV2Functions
@@ -1021,15 +1046,16 @@ paths:
       x-mate-requirements: [FR-ONT-KERNEL01-LISTFUNCTIONS]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
-                items: {$ref: '#/components/schemas/FunctionV2'}
+                items: { $ref: "#/components/schemas/FunctionV2" }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Register Function (referenced by ActionType)
       operationId: ontCreateV2Function
@@ -1042,17 +1068,18 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/FunctionCreateV2'}
+            schema: { $ref: "#/components/schemas/FunctionCreateV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/FunctionV2'}
-        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+              schema: { $ref: "#/components/schemas/FunctionV2" }
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/object-sets/query:
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       x-required-scopes: [platform.read]
       tags: [ont]
       summary: Evaluate ObjectSet → bindings
@@ -1066,17 +1093,18 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/ObjectSetV2'}
+            schema: { $ref: "#/components/schemas/ObjectSetV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ObjectSetResult'}
-        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+              schema: { $ref: "#/components/schemas/ObjectSetResult" }
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/object-query:
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       x-required-scopes: [platform.read]
       tags: [ont]
       summary: Execute structured ObjectSet IR query (SAL-01)
@@ -1096,23 +1124,24 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/ObjectQueryV2'}
+            schema: { $ref: "#/components/schemas/ObjectQueryV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ObjectQueryResultV2'}
-        '403': {$ref: ../common/errors.yaml#/components/responses/Error403}
-        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+              schema: { $ref: "#/components/schemas/ObjectQueryResultV2" }
+        "403": { $ref: ../common/errors.yaml#/components/responses/Error403 }
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/classes/{class_rid}/inspect:
     parameters:
-    - in: path
-      name: class_rid
-      required: true
-      schema: {type: string}
+      - in: path
+        name: class_rid
+        required: true
+        schema: { type: string }
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: Inspect class metadata (properties/links/actions) for agents (SAL-01)
       description: >-
@@ -1126,15 +1155,16 @@ paths:
       x-mate-requirements: [FR-ONT-SAL01-INSPECTCLASS]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ClassInspectV2'}
-        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+              schema: { $ref: "#/components/schemas/ClassInspectV2" }
+        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
   /api/v1/ont/v2/agent-tools:
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: Virtual registry of agent tools generated from ObjectTypes (SAL-01)
       description: >-
@@ -1150,22 +1180,23 @@ paths:
       x-mate-requirements: [FR-ONT-SAL01-AGENTTOOLS]
       x-mate-implementation-status: implemented
       parameters:
-      - in: query
-        name: markings
-        required: false
-        description: Comma-separated caller markings for visibility filtering
-        schema: {type: string}
+        - in: query
+          name: markings
+          required: false
+          description: Comma-separated caller markings for visibility filtering
+          schema: { type: string }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
-                items: {$ref: '#/components/schemas/AgentToolV2'}
+                items: { $ref: "#/components/schemas/AgentToolV2" }
   /api/v1/ont/v2/object-search:
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       x-required-scopes: [platform.read]
       tags: [ont]
       summary: Semantic object search - OAG retrieval context (SAL-02)
@@ -1183,17 +1214,18 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/ObjectSearchV2'}
+            schema: { $ref: "#/components/schemas/ObjectSearchV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ObjectSearchResultV2'}
-        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+              schema: { $ref: "#/components/schemas/ObjectSearchResultV2" }
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/object-search/reindex:
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Backfill object embeddings for the tenant (SAL-02)
       operationId: ontReindexV2ObjectSearch
@@ -1203,7 +1235,7 @@ paths:
       x-mate-requirements: [FR-ONT-SAL02-REINDEX]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -1212,15 +1244,16 @@ paths:
                 additionalProperties: false
                 required: [indexed]
                 properties:
-                  indexed: {type: integer}
+                  indexed: { type: integer }
   /api/v1/ont/v2/action-types/{rid}/propose:
     parameters:
-    - in: path
-      name: rid
-      required: true
-      schema: {type: string}
+      - in: path
+        name: rid
+        required: true
+        schema: { type: string }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Propose an action (SAL-04 pending proposal, not applied)
       operationId: ontProposeV2ActionType
@@ -1233,22 +1266,23 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/ProposalCreateV2'}
+            schema: { $ref: "#/components/schemas/ProposalCreateV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ProposalV2'}
-        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+              schema: { $ref: "#/components/schemas/ProposalV2" }
+        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
   /api/v1/ont/v2/action-types/{rid}/flow:
     parameters:
-    - in: path
-      name: rid
-      required: true
-      schema: {type: string}
+      - in: path
+        name: rid
+        required: true
+        schema: { type: string }
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: Get flow orchestration definition for an ActionType (SAL-05 persist)
       operationId: ontGetV2ActionFlow
@@ -1258,14 +1292,15 @@ paths:
       x-mate-requirements: [FR-ONT-SAL05-GETFLOW]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ActionFlowV2'}
-        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+              schema: { $ref: "#/components/schemas/ActionFlowV2" }
+        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
     put:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Persist flow orchestration definition for an ActionType (SAL-05 persist)
       operationId: ontPutV2ActionFlow
@@ -1278,21 +1313,22 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/ActionFlowUpsertV2'}
+            schema: { $ref: "#/components/schemas/ActionFlowUpsertV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ActionFlowV2'}
+              schema: { $ref: "#/components/schemas/ActionFlowV2" }
   /api/v1/ont/v2/proposals/{proposal_id}:
     parameters:
-    - in: path
-      name: proposal_id
-      required: true
-      schema: {type: string}
+      - in: path
+        name: proposal_id
+        required: true
+        schema: { type: string }
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: Get proposal (SAL-04 state machine)
       operationId: ontGetV2Proposal
@@ -1302,20 +1338,21 @@ paths:
       x-mate-requirements: [FR-ONT-SAL04-GETPROPOSAL]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ProposalV2'}
-        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+              schema: { $ref: "#/components/schemas/ProposalV2" }
+        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
   /api/v1/ont/v2/proposals/{proposal_id}/confirm:
     parameters:
-    - in: path
-      name: proposal_id
-      required: true
-      schema: {type: string}
+      - in: path
+        name: proposal_id
+        required: true
+        schema: { type: string }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Confirm proposal (user-side HITL; pending -> confirmed)
       operationId: ontConfirmV2Proposal
@@ -1328,22 +1365,23 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/ProposalConfirmV2'}
+            schema: { $ref: "#/components/schemas/ProposalConfirmV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ProposalV2'}
-        '409': {$ref: ../common/errors.yaml#/components/responses/Error409}
+              schema: { $ref: "#/components/schemas/ProposalV2" }
+        "409": { $ref: ../common/errors.yaml#/components/responses/Error409 }
   /api/v1/ont/v2/proposals/{proposal_id}/reject:
     parameters:
-    - in: path
-      name: proposal_id
-      required: true
-      schema: {type: string}
+      - in: path
+        name: proposal_id
+        required: true
+        schema: { type: string }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Reject proposal (terminal)
       operationId: ontRejectV2Proposal
@@ -1356,21 +1394,22 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/ProposalConfirmV2'}
+            schema: { $ref: "#/components/schemas/ProposalConfirmV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ProposalV2'}
+              schema: { $ref: "#/components/schemas/ProposalV2" }
   /api/v1/ont/v2/classes/{class_rid}/propose-instance:
     parameters:
-    - in: path
-      name: class_rid
-      required: true
-      schema: {type: string}
+      - in: path
+        name: class_rid
+        required: true
+        schema: { type: string }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Propose a new instance from extracted fields (SAL-04b ingest)
       operationId: ontProposeV2Instance
@@ -1383,17 +1422,18 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/InstanceProposeV2'}
+            schema: { $ref: "#/components/schemas/InstanceProposeV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ProposalV2'}
-        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+              schema: { $ref: "#/components/schemas/ProposalV2" }
+        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
   /api/v1/ont/v2/object-types/propose:
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Propose a new ObjectType from text (SAL-04b AI-assisted modeling)
       operationId: ontProposeV2ObjectType
@@ -1406,21 +1446,22 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/TypeProposeV2'}
+            schema: { $ref: "#/components/schemas/TypeProposeV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ProposalV2'}
+              schema: { $ref: "#/components/schemas/ProposalV2" }
   /api/v1/ont/v2/proposals/{proposal_id}/execute:
     parameters:
-    - in: path
-      name: proposal_id
-      required: true
-      schema: {type: string}
+      - in: path
+        name: proposal_id
+        required: true
+        schema: { type: string }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Execute a confirmed proposal (create_instance / model_type; SAL-04b)
       operationId: ontExecuteV2Proposal
@@ -1430,7 +1471,7 @@ paths:
       x-mate-requirements: [FR-ONT-SAL04B-EXECUTE]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -1439,18 +1480,19 @@ paths:
                 additionalProperties: false
                 required: [kind]
                 properties:
-                  kind: {type: string, enum: [create_instance, model_type]}
-                  individual_rid: {type: string}
-                  type_rid: {type: string}
-        '409': {$ref: ../common/errors.yaml#/components/responses/Error409}
+                  kind: { type: string, enum: [create_instance, model_type] }
+                  individual_rid: { type: string }
+                  type_rid: { type: string }
+        "409": { $ref: ../common/errors.yaml#/components/responses/Error409 }
   /api/v1/ont/v2/versions/{class_rid}:
     parameters:
-    - in: path
-      name: class_rid
-      required: true
-      schema: {type: string}
+      - in: path
+        name: class_rid
+        required: true
+        schema: { type: string }
     get:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: List Versions of a class
       operationId: ontListV2Versions
@@ -1460,16 +1502,17 @@ paths:
       x-mate-requirements: [FR-ONT-KERNEL01-LISTVERSIONS]
       x-mate-implementation-status: implemented
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
-                items: {$ref: '#/components/schemas/VersionV2'}
-        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+                items: { $ref: "#/components/schemas/VersionV2" }
+        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Snapshot new Version (immutable history)
       operationId: ontCreateV2Version
@@ -1482,14 +1525,14 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/VersionCreateV2'}
+            schema: { $ref: "#/components/schemas/VersionCreateV2" }
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/VersionV2'}
-        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+              schema: { $ref: "#/components/schemas/VersionV2" }
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
 components:
   securitySchemes:
     bearerAuth:
@@ -1514,7 +1557,7 @@ components:
     OntologyCreate:
       type: object
       required:
-      - id
+        - id
       properties:
         id:
           type: string
@@ -1526,9 +1569,9 @@ components:
     Ontology:
       type: object
       required:
-      - id
-      - namespace
-      - description
+        - id
+        - namespace
+        - description
       properties:
         id:
           type: string
@@ -1539,7 +1582,7 @@ components:
     ClassCreate:
       type: object
       required:
-      - id
+        - id
       properties:
         id:
           type: string
@@ -1550,8 +1593,8 @@ components:
           type: string
         parent:
           type:
-          - string
-          - 'null'
+            - string
+            - "null"
         properties:
           type: array
           items:
@@ -1559,9 +1602,9 @@ components:
     ClassResponse:
       type: object
       required:
-      - id
-      - namespace
-      - label
+        - id
+        - namespace
+        - label
       properties:
         id:
           type: string
@@ -1571,8 +1614,8 @@ components:
           type: string
         parent:
           type:
-          - string
-          - 'null'
+            - string
+            - "null"
         properties:
           type: array
           items:
@@ -1580,7 +1623,7 @@ components:
     InstanceCreate:
       type: object
       required:
-      - class_id
+        - class_id
       properties:
         class_id:
           type: string
@@ -1592,9 +1635,9 @@ components:
     InstanceResponse:
       type: object
       required:
-      - id
-      - class_id
-      - namespace
+        - id
+        - class_id
+        - namespace
       properties:
         id:
           type: string
@@ -1607,9 +1650,9 @@ components:
     RelationCreate:
       type: object
       required:
-      - type
-      - src_id
-      - dst_id
+        - type
+        - src_id
+        - dst_id
       properties:
         type:
           type: string
@@ -1622,10 +1665,10 @@ components:
     RelationResponse:
       type: object
       required:
-      - id
-      - type
-      - src_id
-      - dst_id
+        - id
+        - type
+        - src_id
+        - dst_id
       properties:
         id:
           type: string
@@ -1640,7 +1683,7 @@ components:
     SparqlRequest:
       type: object
       required:
-      - query
+        - query
       properties:
         query:
           type: string
@@ -1648,13 +1691,13 @@ components:
           type: string
           default: json
           enum:
-          - json
-          - xml
-          - csv
+            - json
+            - xml
+            - csv
     SparqlResponse:
       type: object
       required:
-      - cypher
+        - cypher
       properties:
         cypher:
           type: string
@@ -1667,8 +1710,8 @@ components:
     ClassMappingSpec:
       type: object
       required:
-      - source_class
-      - target_class
+        - source_class
+        - target_class
       properties:
         source_class:
           type: string
@@ -1677,8 +1720,8 @@ components:
     PropertyMappingSpec:
       type: object
       required:
-      - source_property
-      - target_property
+        - source_property
+        - target_property
       properties:
         source_property:
           type: string
@@ -1687,8 +1730,8 @@ components:
     CreateMappingRequest:
       type: object
       required:
-      - source_ontology
-      - target_ontology
+        - source_ontology
+        - target_ontology
       properties:
         source_ontology:
           type: string
@@ -1697,16 +1740,16 @@ components:
         class_mappings:
           type: array
           items:
-            $ref: '#/components/schemas/ClassMappingSpec'
+            $ref: "#/components/schemas/ClassMappingSpec"
         property_mappings:
           type: array
           items:
-            $ref: '#/components/schemas/PropertyMappingSpec'
+            $ref: "#/components/schemas/PropertyMappingSpec"
     MappingResponse:
       type: object
       required:
-      - source_ontology
-      - target_ontology
+        - source_ontology
+        - target_ontology
       properties:
         source_ontology:
           type: string
@@ -1715,16 +1758,16 @@ components:
         class_mappings:
           type: array
           items:
-            $ref: '#/components/schemas/ClassMappingSpec'
+            $ref: "#/components/schemas/ClassMappingSpec"
         property_mappings:
           type: array
           items:
-            $ref: '#/components/schemas/PropertyMappingSpec'
+            $ref: "#/components/schemas/PropertyMappingSpec"
     FederationQueryRequest:
       type: object
       required:
-      - query
-      - target_ontologies
+        - query
+        - target_ontologies
       properties:
         query:
           type: string
@@ -1736,9 +1779,9 @@ components:
           type: string
           default: union
           enum:
-          - union
-          - intersection
-          - priority
+            - union
+            - intersection
+            - priority
         ontology_priority:
           type: object
           additionalProperties:
@@ -1746,8 +1789,8 @@ components:
     FederationQueryResponse:
       type: object
       required:
-      - results
-      - count
+        - results
+        - count
       properties:
         results:
           type: array
@@ -1767,13 +1810,14 @@ components:
       enum: [string, integer, double, boolean, date, timestamp, marking]
     CardinalityV2:
       type: string
-      enum: ['1:1', '1:N', 'N:1', 'N:N']
+      enum: ["1:1", "1:N", "N:1", "N:N"]
     DirectionalityV2:
       type: string
       enum: [undirected, directed, bidirectional]
     AxiomKindV2:
       type: string
-      enum: [subclass, transitivity, same_as, functional, domain_range, cardinality]
+      enum:
+        [subclass, transitivity, same_as, functional, domain_range, cardinality]
     FunctionLanguageV2:
       type: string
       enum: [python, typescript, sql, rest]
@@ -1782,236 +1826,236 @@ components:
       additionalProperties: false
       required: [rid, type_id, nullable, primary_key, title, format]
       properties:
-        rid: {$ref: '#/components/schemas/RidString'}
-        type_id: {type: string, minLength: 1}
-        nullable: {type: boolean}
-        primary_key: {type: boolean}
-        title: {type: string, minLength: 1}
-        format: {$ref: '#/components/schemas/PropertyFormatV2'}
+        rid: { $ref: "#/components/schemas/RidString" }
+        type_id: { type: string, minLength: 1 }
+        nullable: { type: boolean }
+        primary_key: { type: boolean }
+        title: { type: string, minLength: 1 }
+        format: { $ref: "#/components/schemas/PropertyFormatV2" }
     ObjectTypeV2:
       type: object
       additionalProperties: false
       required: [rid, primary_key, properties]
       properties:
-        rid: {$ref: '#/components/schemas/RidString'}
+        rid: { $ref: "#/components/schemas/RidString" }
         primary_key:
           type: array
           minItems: 1
-          items: {$ref: '#/components/schemas/RidString'}
+          items: { $ref: "#/components/schemas/RidString" }
         properties:
           type: array
-          items: {$ref: '#/components/schemas/PropertyV2'}
+          items: { $ref: "#/components/schemas/PropertyV2" }
         interfaces:
           type: array
-          items: {$ref: '#/components/schemas/RidString'}
-        display_name: {type: string}
+          items: { $ref: "#/components/schemas/RidString" }
+        display_name: { type: string }
         marking:
           type: array
-          items: {type: string}
+          items: { type: string }
           description: Type-level security markings; visible tool = type marking subset of agent required_markings (ADR-0043 §2.6)
     ObjectTypeCreateV2:
       type: object
       additionalProperties: false
       required: [rid, primary_key, properties]
       properties:
-        rid: {$ref: '#/components/schemas/RidString'}
+        rid: { $ref: "#/components/schemas/RidString" }
         primary_key:
           type: array
           minItems: 1
-          items: {$ref: '#/components/schemas/RidString'}
+          items: { $ref: "#/components/schemas/RidString" }
         properties:
           type: array
           minItems: 1
-          items: {$ref: '#/components/schemas/PropertyV2'}
+          items: { $ref: "#/components/schemas/PropertyV2" }
         interfaces:
           type: array
-          items: {$ref: '#/components/schemas/RidString'}
-        display_name: {type: string}
+          items: { $ref: "#/components/schemas/RidString" }
+        display_name: { type: string }
         marking:
           type: array
-          items: {type: string}
+          items: { type: string }
     LinkTypeV2:
       type: object
       additionalProperties: false
       required: [rid, src, dst, cardinality, directionality]
       properties:
-        rid: {$ref: '#/components/schemas/RidString'}
-        src: {$ref: '#/components/schemas/RidString'}
-        dst: {$ref: '#/components/schemas/RidString'}
-        cardinality: {$ref: '#/components/schemas/CardinalityV2'}
-        directionality: {$ref: '#/components/schemas/DirectionalityV2'}
+        rid: { $ref: "#/components/schemas/RidString" }
+        src: { $ref: "#/components/schemas/RidString" }
+        dst: { $ref: "#/components/schemas/RidString" }
+        cardinality: { $ref: "#/components/schemas/CardinalityV2" }
+        directionality: { $ref: "#/components/schemas/DirectionalityV2" }
         link_properties:
           type: array
-          items: {$ref: '#/components/schemas/PropertyV2'}
+          items: { $ref: "#/components/schemas/PropertyV2" }
     LinkTypeCreateV2:
       type: object
       additionalProperties: false
       required: [rid, src, dst, cardinality, directionality]
       properties:
-        rid: {$ref: '#/components/schemas/RidString'}
-        src: {$ref: '#/components/schemas/RidString'}
-        dst: {$ref: '#/components/schemas/RidString'}
-        cardinality: {$ref: '#/components/schemas/CardinalityV2'}
-        directionality: {$ref: '#/components/schemas/DirectionalityV2'}
+        rid: { $ref: "#/components/schemas/RidString" }
+        src: { $ref: "#/components/schemas/RidString" }
+        dst: { $ref: "#/components/schemas/RidString" }
+        cardinality: { $ref: "#/components/schemas/CardinalityV2" }
+        directionality: { $ref: "#/components/schemas/DirectionalityV2" }
         link_properties:
           type: array
-          items: {$ref: '#/components/schemas/PropertyV2'}
+          items: { $ref: "#/components/schemas/PropertyV2" }
     ActionTypeV2:
       type: object
       additionalProperties: false
       required: [rid, parameters, function_ref, on]
       properties:
-        rid: {$ref: '#/components/schemas/RidString'}
+        rid: { $ref: "#/components/schemas/RidString" }
         parameters:
           type: array
-          items: {$ref: '#/components/schemas/PropertyV2'}
+          items: { $ref: "#/components/schemas/PropertyV2" }
         submission_criteria:
           type: array
-          items: {type: string}
+          items: { type: string }
         side_effects:
           type: array
-          items: {type: string}
-        function_ref: {$ref: '#/components/schemas/RidString'}
+          items: { type: string }
+        function_ref: { $ref: "#/components/schemas/RidString" }
         on:
           type: array
           minItems: 1
-          items: {$ref: '#/components/schemas/RidString'}
+          items: { $ref: "#/components/schemas/RidString" }
     ActionTypeCreateV2:
       type: object
       additionalProperties: false
       required: [rid, parameters, function_ref, on]
       properties:
-        rid: {$ref: '#/components/schemas/RidString'}
+        rid: { $ref: "#/components/schemas/RidString" }
         parameters:
           type: array
-          items: {$ref: '#/components/schemas/PropertyV2'}
+          items: { $ref: "#/components/schemas/PropertyV2" }
         submission_criteria:
           type: array
-          items: {type: string}
+          items: { type: string }
         side_effects:
           type: array
-          items: {type: string}
-        function_ref: {$ref: '#/components/schemas/RidString'}
+          items: { type: string }
+        function_ref: { $ref: "#/components/schemas/RidString" }
         on:
           type: array
           minItems: 1
-          items: {$ref: '#/components/schemas/RidString'}
+          items: { $ref: "#/components/schemas/RidString" }
     ActionApplyRequest:
       type: object
       additionalProperties: false
       required: [parameters]
       properties:
-        parameters: {type: object, additionalProperties: true}
-        target_iid: {type: string}
+        parameters: { type: object, additionalProperties: true }
+        target_iid: { type: string }
         provenance:
           type: object
           properties:
-            actor: {type: string}
-            sandbox_id: {type: string}
-            hitl_token: {type: string}
+            actor: { type: string }
+            sandbox_id: { type: string }
+            hitl_token: { type: string }
     ActionApplyResponse:
       type: object
       additionalProperties: false
       required: [action_rid, applied_at]
       properties:
-        action_rid: {$ref: '#/components/schemas/RidString'}
-        applied_at: {type: string, format: date-time}
+        action_rid: { $ref: "#/components/schemas/RidString" }
+        applied_at: { type: string, format: date-time }
         side_effects_emitted:
           type: array
-          items: {type: string}
+          items: { type: string }
     InterfaceV2:
       type: object
       additionalProperties: false
       required: [rid]
       properties:
-        rid: {$ref: '#/components/schemas/RidString'}
+        rid: { $ref: "#/components/schemas/RidString" }
         properties:
           type: array
-          items: {$ref: '#/components/schemas/PropertyV2'}
+          items: { $ref: "#/components/schemas/PropertyV2" }
         required_links:
           type: array
-          items: {$ref: '#/components/schemas/RidString'}
+          items: { $ref: "#/components/schemas/RidString" }
         polymorphic_action_constraints:
           type: array
-          items: {type: string}
+          items: { type: string }
     InterfaceCreateV2:
       type: object
       additionalProperties: false
       required: [rid]
       properties:
-        rid: {$ref: '#/components/schemas/RidString'}
+        rid: { $ref: "#/components/schemas/RidString" }
         properties:
           type: array
-          items: {$ref: '#/components/schemas/PropertyV2'}
+          items: { $ref: "#/components/schemas/PropertyV2" }
         required_links:
           type: array
-          items: {$ref: '#/components/schemas/RidString'}
+          items: { $ref: "#/components/schemas/RidString" }
         polymorphic_action_constraints:
           type: array
-          items: {type: string}
+          items: { type: string }
     IndividualV2:
       type: object
       additionalProperties: false
       required: [rid, class_rid, primary_key, tenant_id]
       properties:
-        rid: {type: string}
-        class_rid: {$ref: '#/components/schemas/RidString'}
+        rid: { type: string }
+        class_rid: { $ref: "#/components/schemas/RidString" }
         props:
           type: array
           items:
             type: array
             items: 2
-        primary_key: {type: string}
-        created_at: {type: string, format: date-time}
-        updated_at: {type: string, format: date-time}
-        tenant_id: {type: string}
+        primary_key: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        tenant_id: { type: string }
         marking:
           type: array
-          items: {type: string}
+          items: { type: string }
     IndividualCreateV2:
       type: object
       additionalProperties: false
       required: [rid, class_rid, primary_key]
       properties:
-        rid: {type: string}
-        class_rid: {$ref: '#/components/schemas/RidString'}
+        rid: { type: string }
+        class_rid: { $ref: "#/components/schemas/RidString" }
         props:
           type: array
           items:
             type: array
             items: 2
-        primary_key: {type: string}
+        primary_key: { type: string }
         marking:
           type: array
-          items: {type: string}
+          items: { type: string }
     LinkInstanceV2:
       type: object
       additionalProperties: false
       required: [rid, link_type_rid, src, dst, tenant_id]
       properties:
-        rid: {type: string}
-        link_type_rid: {$ref: '#/components/schemas/RidString'}
-        src: {type: string}
-        dst: {type: string}
+        rid: { type: string }
+        link_type_rid: { $ref: "#/components/schemas/RidString" }
+        src: { type: string }
+        dst: { type: string }
         props:
           type: array
           items:
             type: array
             items: 2
-        created_at: {type: string, format: date-time}
-        tenant_id: {type: string}
+        created_at: { type: string, format: date-time }
+        tenant_id: { type: string }
         marking:
           type: array
-          items: {type: string}
+          items: { type: string }
     LinkInstanceCreateV2:
       type: object
       additionalProperties: false
       required: [rid, link_type_rid, src, dst]
       properties:
-        rid: {type: string}
-        link_type_rid: {$ref: '#/components/schemas/RidString'}
-        src: {type: string}
-        dst: {type: string}
+        rid: { type: string }
+        link_type_rid: { $ref: "#/components/schemas/RidString" }
+        src: { type: string }
+        dst: { type: string }
         props:
           type: array
           items:
@@ -2019,18 +2063,18 @@ components:
             items: 2
         marking:
           type: array
-          items: {type: string}
+          items: { type: string }
     AxiomV2:
       type: object
       additionalProperties: false
       required: [rid, kind, operands, rule_ref]
       properties:
-        rid: {$ref: '#/components/schemas/RidString'}
-        kind: {$ref: '#/components/schemas/AxiomKindV2'}
+        rid: { $ref: "#/components/schemas/RidString" }
+        kind: { $ref: "#/components/schemas/AxiomKindV2" }
         operands:
           type: array
-          items: {$ref: '#/components/schemas/RidString'}
-        rule_ref: {type: string}
+          items: { $ref: "#/components/schemas/RidString" }
+        rule_ref: { type: string }
         metadata:
           type: array
           items:
@@ -2041,12 +2085,12 @@ components:
       additionalProperties: false
       required: [rid, kind, operands, rule_ref]
       properties:
-        rid: {$ref: '#/components/schemas/RidString'}
-        kind: {$ref: '#/components/schemas/AxiomKindV2'}
+        rid: { $ref: "#/components/schemas/RidString" }
+        kind: { $ref: "#/components/schemas/AxiomKindV2" }
         operands:
           type: array
-          items: {$ref: '#/components/schemas/RidString'}
-        rule_ref: {type: string}
+          items: { $ref: "#/components/schemas/RidString" }
+        rule_ref: { type: string }
         metadata:
           type: array
           items:
@@ -2057,10 +2101,10 @@ components:
       additionalProperties: false
       required: [rid, language, version, source_ref]
       properties:
-        rid: {$ref: '#/components/schemas/RidString'}
-        language: {$ref: '#/components/schemas/FunctionLanguageV2'}
-        version: {type: string, minLength: 1}
-        source_ref: {type: string, minLength: 1}
+        rid: { $ref: "#/components/schemas/RidString" }
+        language: { $ref: "#/components/schemas/FunctionLanguageV2" }
+        version: { type: string, minLength: 1 }
+        source_ref: { type: string, minLength: 1 }
         signatures:
           type: array
           items:
@@ -2071,10 +2115,10 @@ components:
       additionalProperties: false
       required: [rid, language, version, source_ref]
       properties:
-        rid: {$ref: '#/components/schemas/RidString'}
-        language: {$ref: '#/components/schemas/FunctionLanguageV2'}
-        version: {type: string, minLength: 1}
-        source_ref: {type: string, minLength: 1}
+        rid: { $ref: "#/components/schemas/RidString" }
+        language: { $ref: "#/components/schemas/FunctionLanguageV2" }
+        version: { type: string, minLength: 1 }
+        source_ref: { type: string, minLength: 1 }
         signatures:
           type: array
           items:
@@ -2085,14 +2129,15 @@ components:
       additionalProperties: false
       required: [class_rid]
       properties:
-        class_rid: {$ref: '#/components/schemas/RidString'}
-        filter_expr: {type: string}
+        class_rid: { $ref: "#/components/schemas/RidString" }
+        filter_expr: { type: string }
         sort:
           type: array
-          items: {type: string}
-        paging_offset: {type: integer, minimum: 0, default: 0}
-        paging_limit: {type: integer, minimum: 1, maximum: 10000, default: 100}
-        view_config: {type: object, additionalProperties: true}
+          items: { type: string }
+        paging_offset: { type: integer, minimum: 0, default: 0 }
+        paging_limit:
+          { type: integer, minimum: 1, maximum: 10000, default: 100 }
+        view_config: { type: object, additionalProperties: true }
     ObjectSetResult:
       type: object
       additionalProperties: false
@@ -2100,14 +2145,14 @@ components:
       properties:
         results:
           type: array
-          items: {$ref: '#/components/schemas/IndividualV2'}
-        count: {type: integer}
+          items: { $ref: "#/components/schemas/IndividualV2" }
+        count: { type: integer }
     QueryConditionV2:
       type: object
       additionalProperties: false
       required: [field, op]
       properties:
-        field: {type: string, minLength: 1}
+        field: { type: string, minLength: 1 }
         op:
           type: string
           enum: [eq, ne, gt, gte, lt, lte, startswith, contains, truthy]
@@ -2117,9 +2162,9 @@ components:
       additionalProperties: false
       required: [fn]
       properties:
-        fn: {type: string, enum: [sum, count, avg, min, max]}
-        field: {type: string}
-        alias: {type: string}
+        fn: { type: string, enum: [sum, count, avg, min, max] }
+        field: { type: string }
+        alias: { type: string }
     QueryAggregationV2:
       type: object
       additionalProperties: false
@@ -2127,66 +2172,67 @@ components:
       properties:
         group_by:
           type: array
-          items: {type: string}
+          items: { type: string }
         metrics:
           type: array
           minItems: 1
-          items: {$ref: '#/components/schemas/QueryMetricV2'}
+          items: { $ref: "#/components/schemas/QueryMetricV2" }
     QueryTraversalV2:
       type: object
       additionalProperties: false
       required: [link_type, direction]
       properties:
-        link_type: {$ref: '#/components/schemas/RidString'}
-        direction: {type: string, enum: [out, in]}
+        link_type: { $ref: "#/components/schemas/RidString" }
+        direction: { type: string, enum: [out, in] }
     QuerySortKeyV2:
       type: object
       additionalProperties: false
       required: [field]
       properties:
-        field: {type: string, minLength: 1}
-        desc: {type: boolean, default: false}
+        field: { type: string, minLength: 1 }
+        desc: { type: boolean, default: false }
     ObjectQueryV2:
       type: object
       additionalProperties: false
       required: [source]
       properties:
-        source: {$ref: '#/components/schemas/RidString'}
+        source: { $ref: "#/components/schemas/RidString" }
         filters:
           type: array
-          items: {$ref: '#/components/schemas/QueryConditionV2'}
-        aggregation: {$ref: '#/components/schemas/QueryAggregationV2'}
+          items: { $ref: "#/components/schemas/QueryConditionV2" }
+        aggregation: { $ref: "#/components/schemas/QueryAggregationV2" }
         traversal:
           type: array
-          items: {$ref: '#/components/schemas/QueryTraversalV2'}
+          items: { $ref: "#/components/schemas/QueryTraversalV2" }
         sort:
           type: array
-          items: {$ref: '#/components/schemas/QuerySortKeyV2'}
-        paging_offset: {type: integer, minimum: 0, default: 0}
-        paging_limit: {type: integer, minimum: 1, maximum: 10000, default: 100}
+          items: { $ref: "#/components/schemas/QuerySortKeyV2" }
+        paging_offset: { type: integer, minimum: 0, default: 0 }
+        paging_limit:
+          { type: integer, minimum: 1, maximum: 10000, default: 100 }
     ObjectQueryResultV2:
       type: object
       additionalProperties: false
       required: [kind, rows]
       properties:
-        kind: {type: string, enum: [objects, aggregates]}
+        kind: { type: string, enum: [objects, aggregates] }
         rows:
           type: array
-          items: {type: object, additionalProperties: true}
-        result_schema: {type: object, additionalProperties: true}
+          items: { type: object, additionalProperties: true }
+        result_schema: { type: object, additionalProperties: true }
     ClassInspectV2:
       type: object
       additionalProperties: false
       required: [rid, properties]
       properties:
-        rid: {$ref: '#/components/schemas/RidString'}
-        display_name: {type: string}
+        rid: { $ref: "#/components/schemas/RidString" }
+        display_name: { type: string }
         marking:
           type: array
-          items: {type: string}
+          items: { type: string }
         properties:
           type: array
-          items: {$ref: '#/components/schemas/PropertyV2'}
+          items: { $ref: "#/components/schemas/PropertyV2" }
         links:
           type: array
           items:
@@ -2194,96 +2240,106 @@ components:
             additionalProperties: false
             required: [link_type, direction, peer_class]
             properties:
-              link_type: {$ref: '#/components/schemas/RidString'}
-              direction: {type: string, enum: [out, in]}
-              peer_class: {$ref: '#/components/schemas/RidString'}
+              link_type: { $ref: "#/components/schemas/RidString" }
+              direction: { type: string, enum: [out, in] }
+              peer_class: { $ref: "#/components/schemas/RidString" }
         actions:
           type: array
-          items: {$ref: '#/components/schemas/RidString'}
+          items: { $ref: "#/components/schemas/RidString" }
     AgentToolV2:
       type: object
       additionalProperties: false
       required: [name, description, class_rid, input_schema]
       properties:
-        name: {type: string, minLength: 1}
-        description: {type: string}
-        class_rid: {$ref: '#/components/schemas/RidString'}
-        input_schema: {type: object, additionalProperties: true}
-        result_schema: {type: object, additionalProperties: true}
+        name: { type: string, minLength: 1 }
+        description: { type: string }
+        class_rid: { $ref: "#/components/schemas/RidString" }
+        input_schema: { type: object, additionalProperties: true }
+        result_schema: { type: object, additionalProperties: true }
     ProposalCreateV2:
       type: object
       additionalProperties: false
       properties:
-        parameters: {type: object, additionalProperties: true}
-        target_iid: {type: string}
-        impact_summary: {type: string}
-        expected_diff: {type: object, additionalProperties: true}
+        parameters: { type: object, additionalProperties: true }
+        target_iid: { type: string }
+        impact_summary: { type: string }
+        expected_diff: { type: object, additionalProperties: true }
     ProposalConfirmV2:
       type: object
       additionalProperties: false
       properties:
-        confirmed_by: {type: string}
+        confirmed_by: { type: string }
     InstanceProposeV2:
       type: object
       additionalProperties: false
       properties:
-        props: {type: object, additionalProperties: true}
-        impact_summary: {type: string}
-        expected_diff: {type: object, additionalProperties: true}
+        props: { type: object, additionalProperties: true }
+        impact_summary: { type: string }
+        expected_diff: { type: object, additionalProperties: true }
     TypeProposeV2:
       type: object
       additionalProperties: false
       required: [type_def]
       properties:
-        type_def: {$ref: '#/components/schemas/ObjectTypeCreateV2'}
-        impact_summary: {type: string}
+        type_def: { $ref: "#/components/schemas/ObjectTypeCreateV2" }
+        impact_summary: { type: string }
     ActionFlowUpsertV2:
       type: object
       additionalProperties: false
       required: [flow_json]
       properties:
-        flow_json: {type: object, additionalProperties: true, description: "FlowGram WorkflowJSON (nodes/edges)"}
-        config: {type: object, additionalProperties: true, description: "per-node editable field config"}
+        flow_json:
+          {
+            type: object,
+            additionalProperties: true,
+            description: "FlowGram WorkflowJSON (nodes/edges)",
+          }
+        config:
+          {
+            type: object,
+            additionalProperties: true,
+            description: "per-node editable field config",
+          }
     ActionFlowV2:
       type: object
       additionalProperties: false
       required: [action_rid, flow_json]
       properties:
-        action_rid: {type: string}
-        flow_json: {type: object, additionalProperties: true}
-        config: {type: object, additionalProperties: true}
-        updated_at: {type: string, format: date-time}
+        action_rid: { type: string }
+        flow_json: { type: object, additionalProperties: true }
+        config: { type: object, additionalProperties: true }
+        updated_at: { type: string, format: date-time }
     ProposalV2:
       type: object
       additionalProperties: false
       required: [proposal_id, action_rid, status]
       properties:
-        proposal_id: {type: string}
-        action_rid: {type: string}
-        target_iid: {type: [string, 'null']}
-        parameters: {type: object, additionalProperties: true}
-        impact_summary: {type: string}
-        expected_diff: {type: object, additionalProperties: true}
-        status: {type: string, enum: [pending, confirmed, rejected, applied]}
-        confirmed_by: {type: [string, 'null']}
-        created_at: {type: string}
-        confirmed_at: {type: [string, 'null']}
+        proposal_id: { type: string }
+        action_rid: { type: string }
+        target_iid: { type: [string, "null"] }
+        parameters: { type: object, additionalProperties: true }
+        impact_summary: { type: string }
+        expected_diff: { type: object, additionalProperties: true }
+        status: { type: string, enum: [pending, confirmed, rejected, applied] }
+        confirmed_by: { type: [string, "null"] }
+        created_at: { type: string }
+        confirmed_at: { type: [string, "null"] }
     ObjectSearchV2:
       type: object
       additionalProperties: false
       required: [text]
       properties:
-        text: {type: string, minLength: 1}
-        class_rid: {type: string}
-        top_k: {type: integer, minimum: 1, maximum: 50, default: 5}
+        text: { type: string, minLength: 1 }
+        class_rid: { type: string }
+        top_k: { type: integer, minimum: 1, maximum: 50, default: 5 }
     ObjectCardV2:
       type: object
       additionalProperties: false
       required: [individual_rid, class_rid, score, matched]
       properties:
-        individual_rid: {type: string}
-        class_rid: {type: string}
-        score: {type: number}
+        individual_rid: { type: string }
+        class_rid: { type: string }
+        score: { type: number }
         matched:
           type: array
           items:
@@ -2291,10 +2347,10 @@ components:
             additionalProperties: false
             required: [property_rid, value_text, score]
             properties:
-              property_rid: {type: string}
-              value_text: {type: string}
-              score: {type: number}
-        card_text: {type: string}
+              property_rid: { type: string }
+              value_text: { type: string }
+              score: { type: number }
+        card_text: { type: string }
     ObjectSearchResultV2:
       type: object
       additionalProperties: false
@@ -2302,36 +2358,37 @@ components:
       properties:
         cards:
           type: array
-          items: {$ref: '#/components/schemas/ObjectCardV2'}
+          items: { $ref: "#/components/schemas/ObjectCardV2" }
     VersionV2:
       type: object
       additionalProperties: false
       required: [rid, class_ref, created_at, author]
       properties:
-        rid: {type: string}
-        class_ref: {$ref: '#/components/schemas/RidString'}
+        rid: { type: string }
+        class_ref: { $ref: "#/components/schemas/RidString" }
         parent_rid:
-          type: [string, 'null']
-        created_at: {type: string, format: date-time}
-        author: {type: string}
+          type: [string, "null"]
+        created_at: { type: string, format: date-time }
+        author: { type: string }
         change_set:
           type: array
-          items: {type: string}
+          items: { type: string }
     VersionCreateV2:
       type: object
       additionalProperties: false
       required: [class_ref, author]
       properties:
-        class_ref: {$ref: '#/components/schemas/RidString'}
+        class_ref: { $ref: "#/components/schemas/RidString" }
         parent_rid:
-          type: [string, 'null']
-        author: {type: string}
+          type: [string, "null"]
+        author: { type: string }
         change_set:
           type: array
-          items: {type: string}
+          items: { type: string }
   /api/v1/ont/v2/shacl/validate:
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       x-required-scopes: [platform.write]
       tags: [ont]
       summary: SHACL Core 关键约束验证（minCount/maxCount/datatype/pattern/class/closed）
@@ -2361,7 +2418,7 @@ components:
                 individuals:
                   type: array
                   description: 显式实例集（缺省取 repo 内该类全部实例）
-                  items: {type: object}
+                  items: { type: object }
                 property_shapes:
                   type: array
                   description: >-
@@ -2371,7 +2428,7 @@ components:
                     语言标签集）+ not_shape（sh:not 内嵌 shape，节点级取反）+
                     qualified_value_shape/qualified_min_count/
                     qualified_max_count（sh:qualifiedValueShape）。
-                  items: {type: object}
+                  items: { type: object }
                 closed:
                   type: boolean
                   default: false
@@ -2382,25 +2439,25 @@ components:
                     sh:class 满足子类 is-a 语义（G21 descendant_closure）
                   items:
                     type: array
-                    items: {type: string}
+                    items: { type: string }
       responses:
-        '200':
+        "200":
           description: W3C 验证报告（severity 分级 + 计数）
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  conforms: {type: boolean}
+                  conforms: { type: boolean }
                   violations:
                     type: array
                     items:
                       type: object
                       properties:
-                        focus_node: {type: string}
-                        path: {type: string}
-                        constraint: {type: string}
-                        message: {type: string}
+                        focus_node: { type: string }
+                        path: { type: string }
+                        constraint: { type: string }
+                        message: { type: string }
                         severity:
                           type: string
                           enum: [Violation, Warning, Info]
@@ -2409,10 +2466,11 @@ components:
                     description: 各 severity 结果计数 {Violation, Warning, Info}
                   stats:
                     type: object
-        '403': {$ref: ../common/errors.yaml#/components/responses/Error403}
+        "403": { $ref: ../common/errors.yaml#/components/responses/Error403 }
   /api/v1/ont/v2/alignment/run:
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       x-required-scopes: [platform.write]
       tags: [ont]
       summary: 跨本体实例对齐（same_as 词汇 + 结构相似，并查集聚类）
@@ -2437,21 +2495,21 @@ components:
                 left:
                   type: array
                   description: 左侧实例 [{rid, class_rid, props}]
-                  items: {type: object}
+                  items: { type: object }
                 right:
                   type: array
                   description: 右侧实例
-                  items: {type: object}
+                  items: { type: object }
                 explicit_pairs:
                   type: array
                   description: 已知 same_as 配对 [[left_rid, right_rid]]
                   items:
                     type: array
-                    items: {type: string}
-                lexical_threshold: {type: number, default: 1.0}
-                structural_threshold: {type: number, default: 0.5}
+                    items: { type: string }
+                lexical_threshold: { type: number, default: 1.0 }
+                structural_threshold: { type: number, default: 0.5 }
       responses:
-        '200':
+        "200":
           description: 对齐结果（clusters / matched_pairs / stats）
           content:
             application/json:
@@ -2466,19 +2524,20 @@ components:
                     items:
                       type: object
                       properties:
-                        left: {type: string}
-                        right: {type: string}
-                        score: {type: number}
+                        left: { type: string }
+                        right: { type: string }
+                        score: { type: number }
                         evidence:
                           type: array
                           items:
                             type: string
                             enum: [explicit, lexical, structural]
-                  stats: {type: object}
-        '403': {$ref: ../common/errors.yaml#/components/responses/Error403}
+                  stats: { type: object }
+        "403": { $ref: ../common/errors.yaml#/components/responses/Error403 }
   /api/v1/ont/v2/object-types/merge-preview:
     post:
-      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       x-required-scopes: [platform.write]
       tags: [ont]
       summary: 类型定义合并预览（字段并集 + 冲突标记 + 合并审计）
@@ -2511,7 +2570,7 @@ components:
                   enum: [keep_left, keep_right]
                   default: keep_left
       responses:
-        '200':
+        "200":
           description: 合并结果（merged ObjectType + audit）
           content:
             application/json:
@@ -2526,21 +2585,21 @@ components:
                     properties:
                       merged_from:
                         type: array
-                        items: {type: string}
-                      into: {type: string}
-                      strategy: {type: string}
-                      properties_merged: {type: integer}
+                        items: { type: string }
+                      into: { type: string }
+                      strategy: { type: string }
+                      properties_merged: { type: integer }
                       added:
                         type: array
-                        items: {type: string}
+                        items: { type: string }
                       conflicts:
                         type: array
                         items:
                           type: object
                           properties:
-                            property_rid: {type: string}
-                            field: {type: string}
+                            property_rid: { type: string }
+                            field: { type: string }
                             left: {}
                             right: {}
                             resolved: {}
-        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }

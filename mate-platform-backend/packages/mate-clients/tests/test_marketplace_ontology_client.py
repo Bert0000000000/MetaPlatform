@@ -3,6 +3,7 @@
 Verifies the canonical POST URL + ObjectTypeDTO payload + auth headers,
 registered_digest envelope, set_tenant() rebinding, and dev-profile no-auth.
 """
+
 from __future__ import annotations
 
 import asyncio

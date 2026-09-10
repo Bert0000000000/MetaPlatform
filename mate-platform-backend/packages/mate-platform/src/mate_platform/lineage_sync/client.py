@@ -35,6 +35,7 @@ Tenant isolation (SEC-TENANT-01 hard rule 3):
   - Idempotency: each event has a stable ``runId``; re-pushing the same
     ``runId`` is a no-op (returns 0 pushed) rather than a duplicate.
 """
+
 from __future__ import annotations
 
 import threading
@@ -69,9 +70,7 @@ class DatasetRef:
 
     def __post_init__(self) -> None:
         if not self.tenant_id:
-            raise ValueError(
-                "DatasetRef.tenant_id is required (SEC-TENANT-01 hard rule 3)"
-            )
+            raise ValueError("DatasetRef.tenant_id is required (SEC-TENANT-01 hard rule 3)")
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,9 +100,7 @@ class OpenLineageEvent:
 
     def __post_init__(self) -> None:
         if not self.tenant_id:
-            raise ValueError(
-                "OpenLineageEvent.tenant_id is required (SEC-TENANT-01 hard rule 3)"
-            )
+            raise ValueError("OpenLineageEvent.tenant_id is required (SEC-TENANT-01 hard rule 3)")
         if not self.runId:
             raise ValueError("OpenLineageEvent.runId must not be empty")
 
@@ -122,9 +119,7 @@ class SyncResult:
 class LineageSyncClient(Protocol):
     """OpenLineage <-> DataHub sync bridge surface (D4)."""
 
-    def pull_from_marquez(
-        self, tenant_id: str, since: str | None = None
-    ) -> list[OpenLineageEvent]:
+    def pull_from_marquez(self, tenant_id: str, since: str | None = None) -> list[OpenLineageEvent]:
         """Pull pending lineage events for *one* tenant from Marquez.
 
         ``since`` is an opaque cursor (e.g. ISO-8601 timestamp or
@@ -134,9 +129,7 @@ class LineageSyncClient(Protocol):
         """
         ...
 
-    def push_to_datahub(
-        self, tenant_id: str, events: list[OpenLineageEvent]
-    ) -> tuple[int, int]:
+    def push_to_datahub(self, tenant_id: str, events: list[OpenLineageEvent]) -> tuple[int, int]:
         """Push lineage relationships into the DataHub catalog.
 
         Returns ``(pushed, failed)``. Only ``COMPLETE`` events are
@@ -172,10 +165,7 @@ def _lineage_hints_for(event: OpenLineageEvent) -> LineageHints:
 
 def _datasets_from_refs(refs: tuple[DatasetRef, ...]) -> tuple[Dataset, ...]:
     """Convert OpenLineage dataset refs to D2 ``Dataset`` objects."""
-    return tuple(
-        Dataset(name=r.name, type="table", schema_ref=r.namespace)
-        for r in refs
-    )
+    return tuple(Dataset(name=r.name, type="table", schema_ref=r.namespace) for r in refs)
 
 
 class InMemoryLineageSyncClient:
@@ -217,22 +207,16 @@ class InMemoryLineageSyncClient:
         via ``pull_from_marquez`` polling.
         """
         if not event.tenant_id:
-            raise ValueError(
-                "enqueue: event.tenant_id is required (SEC-TENANT-01 hard rule 3)"
-            )
+            raise ValueError("enqueue: event.tenant_id is required (SEC-TENANT-01 hard rule 3)")
         with self._lock:
             self._pending[event.tenant_id].append(event)
 
     # ------------------------------------------------------------------
     # LineageSyncClient surface
     # ------------------------------------------------------------------
-    def pull_from_marquez(
-        self, tenant_id: str, since: str | None = None
-    ) -> list[OpenLineageEvent]:
+    def pull_from_marquez(self, tenant_id: str, since: str | None = None) -> list[OpenLineageEvent]:
         if not tenant_id:
-            raise ValueError(
-                "pull_from_marquez: tenant_id is required (SEC-TENANT-01 hard rule 3)"
-            )
+            raise ValueError("pull_from_marquez: tenant_id is required (SEC-TENANT-01 hard rule 3)")
         with self._lock:
             # Return a copy so callers cannot mutate the queue.
             pending = list(self._pending.get(tenant_id, ()))
@@ -241,13 +225,9 @@ class InMemoryLineageSyncClient:
         _ = since
         return pending
 
-    def push_to_datahub(
-        self, tenant_id: str, events: list[OpenLineageEvent]
-    ) -> tuple[int, int]:
+    def push_to_datahub(self, tenant_id: str, events: list[OpenLineageEvent]) -> tuple[int, int]:
         if not tenant_id:
-            raise ValueError(
-                "push_to_datahub: tenant_id is required (SEC-TENANT-01 hard rule 3)"
-            )
+            raise ValueError("push_to_datahub: tenant_id is required (SEC-TENANT-01 hard rule 3)")
         pushed = 0
         failed = 0
         with self._lock:
@@ -277,9 +257,7 @@ class InMemoryLineageSyncClient:
 
     def sync_once(self, tenant_id: str) -> SyncResult:
         if not tenant_id:
-            raise ValueError(
-                "sync_once: tenant_id is required (SEC-TENANT-01 hard rule 3)"
-            )
+            raise ValueError("sync_once: tenant_id is required (SEC-TENANT-01 hard rule 3)")
         events = self.pull_from_marquez(tenant_id)
         pushed, failed = self.push_to_datahub(tenant_id, events)
         # Drain the tenant's queue after a successful pass.
@@ -294,18 +272,14 @@ class InMemoryLineageSyncClient:
 
     def list_pending(self, tenant_id: str) -> list[OpenLineageEvent]:
         if not tenant_id:
-            raise ValueError(
-                "list_pending: tenant_id is required (SEC-TENANT-01 hard rule 3)"
-            )
+            raise ValueError("list_pending: tenant_id is required (SEC-TENANT-01 hard rule 3)")
         with self._lock:
             return list(self._pending.get(tenant_id, ()))
 
     # ------------------------------------------------------------------
     # D2 integration
     # ------------------------------------------------------------------
-    def _write_data_product(
-        self, tenant_id: str, event: OpenLineageEvent
-    ) -> None:
+    def _write_data_product(self, tenant_id: str, event: OpenLineageEvent) -> None:
         """Promote one COMPLETE event into a DataHub DataProduct.
 
         The DataProduct id is derived from the job name so repeated

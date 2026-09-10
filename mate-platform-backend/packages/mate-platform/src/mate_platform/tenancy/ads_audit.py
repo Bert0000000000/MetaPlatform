@@ -10,6 +10,7 @@ event on the platform event bus. This is orthogonal to the
 existing ``audit.cross_tenant_access`` (which is the row-level
 bypass flag inside the rls_session module).
 """
+
 from __future__ import annotations
 
 import logging

@@ -1,4 +1,5 @@
 """Service identity (client_credentials) for service-to-service auth."""
+
 from __future__ import annotations
 
 import threading
@@ -33,9 +34,7 @@ class ServiceIdentity:
         timeout_seconds: int = 5,
     ) -> None:
         if not client_id or not client_secret:
-            raise IdentityError(
-                "ServiceIdentity requires non-empty client_id and client_secret"
-            )
+            raise IdentityError("ServiceIdentity requires non-empty client_id and client_secret")
         self._token_uri = token_uri
         self._client_id = client_id
         self._client_secret = client_secret
@@ -71,9 +70,7 @@ class ServiceIdentity:
         except httpx.HTTPError as exc:
             raise IdentityError(f"identity request failed: {exc}") from exc
         if resp.status_code != 200:
-            raise IdentityError(
-                f"identity endpoint returned {resp.status_code}: {resp.text[:200]}"
-            )
+            raise IdentityError(f"identity endpoint returned {resp.status_code}: {resp.text[:200]}")
         try:
             payload: dict[str, Any] = resp.json()
         except ValueError as exc:

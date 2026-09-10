@@ -16,6 +16,7 @@ Endpoints (mounted under ``/api/v1/orchestrator``):
   - GET  /scheduling/intents              — history
   - GET/POST /scheduling/templates
 """
+
 from __future__ import annotations
 
 import re
@@ -43,7 +44,9 @@ def _tokens(text: str) -> list[str]:
     return [t for t in re.split(r"[\s,/_-]+", text.lower()) if t]
 
 
-def _emit(request: Request, event_type: str, aggregate_id: str, payload: dict[str, Any], tenant_id: str) -> None:
+def _emit(
+    request: Request, event_type: str, aggregate_id: str, payload: dict[str, Any], tenant_id: str
+) -> None:
     writer = getattr(request.app.state, "outbox_writer", None)
     if writer is None:
         return
@@ -53,7 +56,13 @@ def _emit(request: Request, event_type: str, aggregate_id: str, payload: dict[st
     ctx = getattr(request.state, "ctx", None)
     trace_id = getattr(ctx, "trace_id", "") if ctx is not None else ""
     writer.append(
-        Event.create(type=event_type, tenant_id=TenantId(tenant_id), aggregate_id=aggregate_id, payload=payload, trace_id=trace_id)
+        Event.create(
+            type=event_type,
+            tenant_id=TenantId(tenant_id),
+            aggregate_id=aggregate_id,
+            payload=payload,
+            trace_id=trace_id,
+        )
     )
 
 
@@ -82,7 +91,9 @@ async def detect_intent(request: Request, body: IntentDetectRequest) -> dict[str
     tid = _tid(request)
     text = body.text
     roles = get_role_registry().list(tid)
-    hay = {r.role: " ".join([r.role, r.name] + [c.name for c in r.capabilities]).lower() for r in roles}
+    hay = {
+        r.role: " ".join([r.role, r.name] + [c.name for c in r.capabilities]).lower() for r in roles
+    }
     best_name = "general"
     best_conf = 0.0
     for token in _tokens(text):
@@ -99,7 +110,13 @@ async def detect_intent(request: Request, body: IntentDetectRequest) -> dict[str
         "detectedEmployees": detected,
         "status": "pending",
     }
-    _emit(request, "orchestrator.scheduling.intent", intent["intentId"], {"intent": best_name, "confidence": best_conf}, tid)
+    _emit(
+        request,
+        "orchestrator.scheduling.intent",
+        intent["intentId"],
+        {"intent": best_name, "confidence": best_conf},
+        tid,
+    )
     return intent
 
 
@@ -116,13 +133,15 @@ async def match_employees(request: Request, body: IntentMatchRequest) -> list[di
         hay = " ".join([role.role, role.name] + [c.name for c in role.capabilities]).lower()
         hits = sum(1 for t in tokens if t in hay)
         if hits or not tokens:
-            items.append({
-                "employeeId": role.role,
-                "name": role.name,
-                "role": role.role,
-                "capability": ",".join(c.name for c in role.capabilities),
-                "confidence": 1.0 if not tokens else min(0.99, 0.5 + 0.15 * hits),
-            })
+            items.append(
+                {
+                    "employeeId": role.role,
+                    "name": role.name,
+                    "role": role.role,
+                    "capability": ",".join(c.name for c in role.capabilities),
+                    "confidence": 1.0 if not tokens else min(0.99, 0.5 + 0.15 * hits),
+                }
+            )
     items.sort(key=lambda e: e["confidence"], reverse=True)
     return items
 
@@ -139,26 +158,44 @@ async def generate_plan(request: Request, body: PlanGenerateRequest) -> dict[str
     step_specs: list[dict[str, Any]] = []
     if roles:
         for i, role in enumerate(roles[:3], start=1):
-            step_specs.append({
-                "id": f"s{i}",
-                "name": f"Dispatch to {role.name}",
-                "employeeId": role.role,
-                "tool": role.capabilities[0].name if role.capabilities else "",
-                "estimatedDuration": 5,
-            })
-            steps.append(PlanStep(
-                step_id=f"s{i}",
-                kind=StepKind.CALL_AGENT,
-                target=role.role,
-                payload=(("action", role.capabilities[0].name if role.capabilities else ""),),
-                requires_hitl=(i == len(roles[:3])),
-            ))
+            step_specs.append(
+                {
+                    "id": f"s{i}",
+                    "name": f"Dispatch to {role.name}",
+                    "employeeId": role.role,
+                    "tool": role.capabilities[0].name if role.capabilities else "",
+                    "estimatedDuration": 5,
+                }
+            )
+            steps.append(
+                PlanStep(
+                    step_id=f"s{i}",
+                    kind=StepKind.CALL_AGENT,
+                    target=role.role,
+                    payload=(("action", role.capabilities[0].name if role.capabilities else ""),),
+                    requires_hitl=(i == len(roles[:3])),
+                )
+            )
     else:
         step_specs = [{"id": "s1", "name": "Analyze intent", "estimatedDuration": 3}]
-        steps.append(PlanStep(step_id="s1", kind=StepKind.CALL_AGENT, target="superai", payload=(), requires_hitl=True))
+        steps.append(
+            PlanStep(
+                step_id="s1",
+                kind=StepKind.CALL_AGENT,
+                target="superai",
+                payload=(),
+                requires_hitl=True,
+            )
+        )
 
     spec = get_plan_runner().submit(author_user_id="system", steps=steps)
-    _emit(request, "orchestrator.scheduling.plan", spec.plan_id, {"intent_id": body.intent_id, "step_count": len(steps)}, tid)
+    _emit(
+        request,
+        "orchestrator.scheduling.plan",
+        spec.plan_id,
+        {"intent_id": body.intent_id, "step_count": len(steps)},
+        tid,
+    )
     return {
         "planId": spec.plan_id,
         "intentId": body.intent_id,
@@ -178,7 +215,13 @@ async def start_execution(request: Request, body: ExecutionStartRequest) -> dict
     except PlanNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     exec_id = f"exec-{uuid.uuid4().hex[:8]}"
-    _emit(request, "orchestrator.scheduling.executed", exec_id, {"plan_id": body.plan_id, "status": result["status"]}, tid)
+    _emit(
+        request,
+        "orchestrator.scheduling.executed",
+        exec_id,
+        {"plan_id": body.plan_id, "status": result["status"]},
+        tid,
+    )
     return {
         "executionId": exec_id,
         "intentId": "",
@@ -186,8 +229,14 @@ async def start_execution(request: Request, body: ExecutionStartRequest) -> dict
         "status": "running" if result["status"] in ("hitl_waiting",) else result["status"],
         "progress": 0,
         "results": [
-            {"resultId": f"r-{i}", "planId": body.plan_id, "stepId": r["step_id"], "status": "completed",
-             "output": str(r.get("output", "")), "startedAt": ""}
+            {
+                "resultId": f"r-{i}",
+                "planId": body.plan_id,
+                "stepId": r["step_id"],
+                "status": "completed",
+                "output": str(r.get("output", "")),
+                "startedAt": "",
+            }
             for i, r in enumerate(result.get("results", []))
         ],
         "startedAt": "",
@@ -243,7 +292,14 @@ async def create_template(request: Request, body: TemplateRequest) -> dict[str, 
         "name": body.name,
         "description": body.description,
         "intentPattern": body.intent_pattern,
-        "plan": {"planId": "", "intentId": "", "steps": body.steps, "totalEstimatedDuration": 0, "parallelGroups": [], "createdAt": ""},
+        "plan": {
+            "planId": "",
+            "intentId": "",
+            "steps": body.steps,
+            "totalEstimatedDuration": 0,
+            "parallelGroups": [],
+            "createdAt": "",
+        },
         "createdBy": "system",
         "createdAt": "",
     }

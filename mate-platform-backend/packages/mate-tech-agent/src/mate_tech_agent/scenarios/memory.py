@@ -2,6 +2,7 @@
 
 短期（thread 内）+ 长期（向量库）记忆。
 """
+
 from __future__ import annotations
 
 import time
@@ -22,14 +23,16 @@ class ShortTermMemory:
     history: list[dict[str, Any]] = field(default_factory=list)
 
     def append(self, role: str, content: str) -> None:
-        self.history.append({
-            "role": role,
-            "content": content,
-            "ts": time.time(),
-        })
+        self.history.append(
+            {
+                "role": role,
+                "content": content,
+                "ts": time.time(),
+            }
+        )
         # 滑动窗口
         if len(self.history) > self.max_turns:
-            self.history = self.history[-self.max_turns:]
+            self.history = self.history[-self.max_turns :]
 
     def recall(self, k: int = 5) -> list[dict[str, Any]]:
         return self.history[-k:]

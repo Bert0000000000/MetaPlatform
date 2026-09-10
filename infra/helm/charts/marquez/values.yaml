@@ -16,7 +16,7 @@ image:
   tag: "0.30.0"
   pullPolicy: IfNotPresent
 
-replicaCount: 1   # 2 in production per values-production.yaml
+replicaCount: 1 # 2 in production per values-production.yaml
 
 # PostgreSQL backend (shared business PG 16 instance). The password
 # is referenced via existingSecret (hard rule 12: never inline).
@@ -46,7 +46,7 @@ resources:
 
 service:
   type: ClusterIP
-  port: 5000    # OpenLineage / Marquez API
+  port: 5000 # OpenLineage / Marquez API
   appPort: 3000 # Marquez web UI
 
 probes:

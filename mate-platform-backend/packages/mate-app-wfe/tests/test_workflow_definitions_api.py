@@ -1,4 +1,5 @@
 """HTTP contract for versioned Action Orchestration Plan definitions."""
+
 from __future__ import annotations
 
 
@@ -30,7 +31,9 @@ def _save(client, headers, definition_id: str = "order-review", version: int = 0
     )
 
 
-def test_definition_get_save_and_tenant_isolation(client, auth_headers_acme, auth_headers_globex) -> None:
+def test_definition_get_save_and_tenant_isolation(
+    client, auth_headers_acme, auth_headers_globex
+) -> None:
     saved = _save(client, auth_headers_acme)
     assert saved.status_code == 200, saved.text
     assert saved.json()["version"] == 1
@@ -43,7 +46,9 @@ def test_definition_get_save_and_tenant_isolation(client, auth_headers_acme, aut
     assert hidden.status_code == 404, hidden.text
 
 
-def test_definition_save_returns_current_summary_for_stale_version(client, auth_headers_acme) -> None:
+def test_definition_save_returns_current_summary_for_stale_version(
+    client, auth_headers_acme
+) -> None:
     assert _save(client, auth_headers_acme).status_code == 200
     updated = _save(client, auth_headers_acme, version=1)
     assert updated.status_code == 200, updated.text
@@ -78,10 +83,13 @@ def test_publish_rejects_invalid_plan_and_is_idempotent(client, auth_headers_acm
 
 def test_run_resolves_only_published_revision(client, auth_headers_acme) -> None:
     assert _save(client, auth_headers_acme).status_code == 200
-    assert client.post(
-        "/api/v1/workflow-definitions/order-review:publish",
-        headers={**auth_headers_acme, "Idempotency-Key": "publish-1"},
-    ).status_code == 200
+    assert (
+        client.post(
+            "/api/v1/workflow-definitions/order-review:publish",
+            headers={**auth_headers_acme, "Idempotency-Key": "publish-1"},
+        ).status_code
+        == 200
+    )
 
     started = client.post(
         "/api/v1/workflows/order-review/runs",

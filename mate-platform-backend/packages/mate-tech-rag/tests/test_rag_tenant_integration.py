@@ -37,10 +37,15 @@ class TestRequireTenantEnforced:
             UserId,
             require_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId(""),
-            user_id=UserId("u"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.USER,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId(""),
+            user_id=UserId("u"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.USER,
         )
         with pytest.raises(TenantAccessError, match="missing tenant"):
             require_tenant(ctx)
@@ -54,10 +59,15 @@ class TestRequireTenantEnforced:
             UserId,
             require_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId("t1"),
-            user_id=UserId("anon"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.ANONYMOUS,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId("t1"),
+            user_id=UserId("anon"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.ANONYMOUS,
         )
         with pytest.raises(TenantAccessError, match="anonymous"):
             require_tenant(ctx)
@@ -70,10 +80,15 @@ class TestRequireTenantEnforced:
             UserId,
             require_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId("acme"),
-            user_id=UserId("u"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.SERVICE,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId("acme"),
+            user_id=UserId("u"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.SERVICE,
         )
         assert require_tenant(ctx) == "acme"
 
@@ -88,10 +103,15 @@ class TestCrossTenantNegatives:
             UserId,
             require_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId(""),
-            user_id=UserId("u"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.USER,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId(""),
+            user_id=UserId("u"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.USER,
         )
         with pytest.raises(TenantAccessError, match="missing tenant"):
             require_tenant(ctx)
@@ -105,10 +125,15 @@ class TestCrossTenantNegatives:
             UserId,
             require_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId("t1"),
-            user_id=UserId("anon"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.ANONYMOUS,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId("t1"),
+            user_id=UserId("anon"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.ANONYMOUS,
         )
         with pytest.raises(TenantAccessError, match="anonymous"):
             require_tenant(ctx)
@@ -122,10 +147,15 @@ class TestCrossTenantNegatives:
             UserId,
             assert_same_tenant,
         )
+
         ctx = RequestContext(
-            request_id="r1", trace_id="t1", tenant_id=TenantId("t1"),
-            user_id=UserId("u"), roles=frozenset(),
-            permissions=frozenset(), auth_method=AuthMethod.USER,
+            request_id="r1",
+            trace_id="t1",
+            tenant_id=TenantId("t1"),
+            user_id=UserId("u"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.USER,
         )
         with pytest.raises(TenantAccessError, match="does not match"):
             assert_same_tenant(TenantId("t2"), ctx)
@@ -138,19 +168,25 @@ class TestRagAppHasTenantGuards:
 
     def test_rag_app_uses_install_auth(self) -> None:
         from pathlib import Path as _Path
-        app_py = _Path(__file__).resolve().parent.parent / "src" / "mate_tech_rag" / "api" / "app.py"
+
+        app_py = (
+            _Path(__file__).resolve().parent.parent / "src" / "mate_tech_rag" / "api" / "app.py"
+        )
         text = app_py.read_text(encoding="utf-8")
         assert "install_auth(app)" in text, "install_auth not wired in rag"
         # All non-/healthz handlers should have a require_tenant line
-        for endpoint in ("/api/v1/rag/status", "/api/v1/rag/parse",
-                        "/api/v1/rag/ingest", "/api/v1/rag/search",
-                        "/api/v1/rag/stats", "/api/v1/rag/admin/pg-stats"):
+        for endpoint in (
+            "/api/v1/rag/status",
+            "/api/v1/rag/parse",
+            "/api/v1/rag/ingest",
+            "/api/v1/rag/search",
+            "/api/v1/rag/stats",
+            "/api/v1/rag/admin/pg-stats",
+        ):
             # Find the handler definition and check the next 5 lines for require_tenant
             idx = text.find(f'"{endpoint}"')
             assert idx > 0, f"endpoint {endpoint} not found"
             # The handler's body should have require_tenant
             # in the next ~20 lines
-            snippet = text[idx:idx + 600]
-            assert "require_tenant" in snippet, (
-                f"endpoint {endpoint} lacks require_tenant guard"
-            )
+            snippet = text[idx : idx + 600]
+            assert "require_tenant" in snippet, f"endpoint {endpoint} lacks require_tenant guard"

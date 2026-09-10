@@ -2,6 +2,7 @@
 
 每个工具按 tenant 50 req/min (用 Redis 滑动窗口).
 """
+
 from __future__ import annotations
 
 import os
@@ -18,7 +19,7 @@ logger = structlog.get_logger(__name__)
 class RateLimitConfig:
     """限流配置."""
 
-    limit: int = 50       # requests per minute
+    limit: int = 50  # requests per minute
     window_sec: int = 60
 
 

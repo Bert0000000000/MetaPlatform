@@ -36,40 +36,49 @@
 ## Task 1: Add a failing browser contract for the first page
 
 **Files:**
+
 - Create: `metaplatform-frontend/tests/e2e/ai-assistant.spec.ts`
 
 - [ ] **Step 1: Write the authentication setup and the failing architecture-page test**
 
 ```ts
-import { expect, test } from '@playwright/test';
+import { expect, test } from "@playwright/test";
 
-const portalUrl = process.env.PORTAL_E2E_URL ?? 'http://localhost:9200';
+const portalUrl = process.env.PORTAL_E2E_URL ?? "http://localhost:9200";
 
-async function authenticate(page: import('@playwright/test').Page) {
+async function authenticate(page: import("@playwright/test").Page) {
   await page.addInitScript(() => {
-    localStorage.setItem('mate_platform_token', 'e2e-token');
-    localStorage.setItem('mate_platform_user', JSON.stringify({
-      id: 'e2e-user',
-      username: 'e2e',
-      realName: 'E2E User',
-      tenantId: 'default',
-      roles: ['admin'],
-    }));
+    localStorage.setItem("mate_platform_token", "e2e-token");
+    localStorage.setItem(
+      "mate_platform_user",
+      JSON.stringify({
+        id: "e2e-user",
+        username: "e2e",
+        realName: "E2E User",
+        tenantId: "default",
+        roles: ["admin"],
+      }),
+    );
   });
 }
 
-test.describe('page-level AI assistant', () => {
+test.describe("page-level AI assistant", () => {
   test.beforeEach(async ({ page }) => authenticate(page));
 
-  test('opens beside business architecture content and preserves messages while closed', async ({ page }) => {
+  test("opens beside business architecture content and preserves messages while closed", async ({
+    page,
+  }) => {
     await page.goto(`${portalUrl}/arch`);
-    const content = page.getByTestId('assistant-page-content');
+    const content = page.getByTestId("assistant-page-content");
     const before = await content.boundingBox();
 
-    await page.getByRole('button', { name: /AI 助手/ }).click();
-    const panel = page.getByTestId('ai-assistant-panel');
+    await page.getByRole("button", { name: /AI 助手/ }).click();
+    const panel = page.getByTestId("ai-assistant-panel");
     await expect(panel).toBeVisible();
-    await expect(panel).toHaveAttribute('data-employee-id', 'architecture-planner');
+    await expect(panel).toHaveAttribute(
+      "data-employee-id",
+      "architecture-planner",
+    );
 
     const panelBox = await panel.boundingBox();
     const after = await content.boundingBox();
@@ -77,17 +86,23 @@ test.describe('page-level AI assistant', () => {
     expect(panelBox?.width).toBeLessThanOrEqual(400);
     expect(after!.width).toBeLessThan(before!.width - 350);
 
-    const composer = page.getByLabel('向架构规划数字员工发送消息');
-    await composer.fill('帮我分析当前业务架构');
-    await composer.press('Enter');
-    await expect(page.getByText('帮我分析当前业务架构', { exact: true })).toBeVisible();
-    await expect(page.getByText('正在思考')).toBeVisible();
-    await expect(page.getByTestId('assistant-message-assistant').last()).toBeVisible();
+    const composer = page.getByLabel("向架构规划数字员工发送消息");
+    await composer.fill("帮我分析当前业务架构");
+    await composer.press("Enter");
+    await expect(
+      page.getByText("帮我分析当前业务架构", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("正在思考")).toBeVisible();
+    await expect(
+      page.getByTestId("assistant-message-assistant").last(),
+    ).toBeVisible();
 
-    await page.getByRole('button', { name: '关闭 AI 助手' }).click();
+    await page.getByRole("button", { name: "关闭 AI 助手" }).click();
     await expect(panel).not.toBeVisible();
-    await page.getByRole('button', { name: /AI 助手/ }).click();
-    await expect(page.getByText('帮我分析当前业务架构', { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: /AI 助手/ }).click();
+    await expect(
+      page.getByText("帮我分析当前业务架构", { exact: true }),
+    ).toBeVisible();
   });
 });
 ```
@@ -112,6 +127,7 @@ git commit -m "test: define page AI assistant interaction contract"
 ## Task 2: Build the reusable page-local assistant primitives
 
 **Files:**
+
 - Create: `metaplatform-frontend/packages/shared/src/components/assistant/types.ts`
 - Create: `metaplatform-frontend/packages/shared/src/components/assistant/usePageAssistant.ts`
 - Create: `metaplatform-frontend/packages/shared/src/components/assistant/AIAssistantPanel.tsx`
@@ -124,11 +140,11 @@ git commit -m "test: define page AI assistant interaction contract"
 - [ ] **Step 1: Define stable public types**
 
 ```ts
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 export interface AssistantMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   createdAt: string;
 }
@@ -195,7 +211,11 @@ The component must render the current AI avatar treatment, expose `aria-expanded
 Composer behavior:
 
 ```ts
-if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+if (
+  event.key === "Enter" &&
+  !event.shiftKey &&
+  !event.nativeEvent.isComposing
+) {
   event.preventDefault();
   submit();
 }
@@ -206,13 +226,26 @@ Set the textarea accessible name to `向${employeeName}发送消息`. Mark messa
 - [ ] **Step 5: Implement the side-by-side workspace**
 
 ```tsx
-export default function AIAssistantWorkspace({ assistant, children }: PropsWithChildren<{ assistant: PageAssistantController }>) {
+export default function AIAssistantWorkspace({
+  assistant,
+  children,
+}: PropsWithChildren<{ assistant: PageAssistantController }>) {
   return (
-    <div className={`ai-assistant-workspace${assistant.isOpen ? ' ai-assistant-workspace--open' : ''}`}>
-      <div className="ai-assistant-workspace__content" data-testid="assistant-page-content">
+    <div
+      className={`ai-assistant-workspace${
+        assistant.isOpen ? " ai-assistant-workspace--open" : ""
+      }`}
+    >
+      <div
+        className="ai-assistant-workspace__content"
+        data-testid="assistant-page-content"
+      >
         {children}
       </div>
-      <div className="ai-assistant-workspace__aside" aria-hidden={!assistant.isOpen}>
+      <div
+        className="ai-assistant-workspace__aside"
+        aria-hidden={!assistant.isOpen}
+      >
         <AIAssistantPanel assistant={assistant} />
       </div>
     </div>
@@ -225,17 +258,55 @@ export default function AIAssistantWorkspace({ assistant, children }: PropsWithC
 Implement these layout invariants in `assistant.css`:
 
 ```css
-.ai-assistant-workspace { display:flex; flex:1; width:100%; min-width:0; min-height:0; overflow:hidden; }
-.ai-assistant-workspace__content { display:flex; flex:1 1 auto; min-width:0; min-height:0; }
-.ai-assistant-workspace__aside { flex:0 0 auto; width:0; min-width:0; opacity:0; overflow:hidden; pointer-events:none; transition:width .2s ease, opacity .2s ease; }
-.ai-assistant-workspace--open .ai-assistant-workspace__aside { width:400px; opacity:1; pointer-events:auto; }
-.ai-assistant-panel { width:400px; height:100%; min-height:0; display:flex; flex-direction:column; border-left:1px solid var(--border); background:var(--card); }
-@media (max-width:1280px) {
-  .ai-assistant-workspace--open .ai-assistant-workspace__aside,
-  .ai-assistant-panel { width:380px; }
+.ai-assistant-workspace {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
-@media (prefers-reduced-motion:reduce) {
-  .ai-assistant-workspace__aside { transition:none; }
+.ai-assistant-workspace__content {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+.ai-assistant-workspace__aside {
+  flex: 0 0 auto;
+  width: 0;
+  min-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    width 0.2s ease,
+    opacity 0.2s ease;
+}
+.ai-assistant-workspace--open .ai-assistant-workspace__aside {
+  width: 400px;
+  opacity: 1;
+  pointer-events: auto;
+}
+.ai-assistant-panel {
+  width: 400px;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  background: var(--card);
+}
+@media (max-width: 1280px) {
+  .ai-assistant-workspace--open .ai-assistant-workspace__aside,
+  .ai-assistant-panel {
+    width: 380px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-assistant-workspace__aside {
+    transition: none;
+  }
 }
 ```
 
@@ -246,7 +317,7 @@ Add focused class rules for header, avatar, status, message bubbles, suggestion 
 `components/assistant/index.ts` exports all four runtime modules and public types. `packages/shared/src/index.ts` adds:
 
 ```ts
-export * from './components/assistant';
+export * from "./components/assistant";
 ```
 
 Run:
@@ -267,6 +338,7 @@ git commit -m "feat: add reusable page AI assistant components"
 ## Task 3: Integrate the business architecture page and make the first test green
 
 **Files:**
+
 - Modify: `metaplatform-frontend/apps/portal/src/pages/arch/ArchBusinessPage.tsx:1-15,138-260,548-555`
 - Test: `metaplatform-frontend/tests/e2e/ai-assistant.spec.ts`
 
@@ -276,13 +348,19 @@ Add imports for `AIAssistantTrigger`, `AIAssistantWorkspace`, and `usePageAssist
 
 ```ts
 const assistant = usePageAssistant({
-  employeeId: 'architecture-planner',
-  employeeName: '架构规划数字员工',
-  employeeDescription: '协助分析业务能力、流程分层与架构演进关系。',
-  moduleLabel: '业务架构',
-  welcomeMessage: '你好，我是架构规划数字员工。可以帮你分析 L1-L4 业务架构及其演进关系。',
-  suggestions: ['分析当前业务能力短板', '梳理 L1 到 L4 的依赖关系', '给出下一阶段架构演进建议'],
-  createReply: (content) => `我会结合当前业务架构视图分析“${content}”。当前为模拟回复，重点会覆盖能力、流程和业务对象之间的关系。`,
+  employeeId: "architecture-planner",
+  employeeName: "架构规划数字员工",
+  employeeDescription: "协助分析业务能力、流程分层与架构演进关系。",
+  moduleLabel: "业务架构",
+  welcomeMessage:
+    "你好，我是架构规划数字员工。可以帮你分析 L1-L4 业务架构及其演进关系。",
+  suggestions: [
+    "分析当前业务能力短板",
+    "梳理 L1 到 L4 的依赖关系",
+    "给出下一阶段架构演进建议",
+  ],
+  createReply: (content) =>
+    `我会结合当前业务架构视图分析“${content}”。当前为模拟回复，重点会覆盖能力、流程和业务对象之间的关系。`,
 });
 ```
 
@@ -291,9 +369,7 @@ const assistant = usePageAssistant({
 ```tsx
 return (
   <AIAssistantWorkspace assistant={assistant}>
-    <>
-      {/* existing style block, page content, and process Drawer */}
-    </>
+    <>{/* existing style block, page content, and process Drawer */}</>
   </AIAssistantWorkspace>
 );
 ```
@@ -326,6 +402,7 @@ git commit -m "feat: add architecture page AI assistant"
 ## Task 4: Integrate the other five independent employees
 
 **Files:**
+
 - Modify: `metaplatform-frontend/apps/portal/src/pages/apps/AppsListPage.tsx`
 - Modify: `metaplatform-frontend/apps/portal/src/pages/ontology/OntologyModelingPage.tsx`
 - Modify: `metaplatform-frontend/apps/portal/src/pages/ontology/OntologyDatacenterPage.tsx`
@@ -386,6 +463,7 @@ git commit -m "feat: add independent AI assistants to portal modules"
 ## Task 5: Cover keyboard, clear-session, and module isolation behavior
 
 **Files:**
+
 - Modify: `metaplatform-frontend/tests/e2e/ai-assistant.spec.ts`
 
 - [ ] **Step 1: Add a keyboard and clear-session test**
@@ -418,9 +496,11 @@ Run the same command. Expected: PASS.
 Open `/arch`, send a uniquely named message, navigate to `/knowledge`, open its AI assistant, and assert:
 
 ```ts
-await expect(panel).toHaveAttribute('data-employee-id', 'knowledge-governor');
-await expect(page.getByText('知识治理数字员工', { exact: true })).toBeVisible();
-await expect(page.getByText(uniqueArchitectureMessage, { exact: true })).toHaveCount(0);
+await expect(panel).toHaveAttribute("data-employee-id", "knowledge-governor");
+await expect(page.getByText("知识治理数字员工", { exact: true })).toBeVisible();
+await expect(
+  page.getByText(uniqueArchitectureMessage, { exact: true }),
+).toHaveCount(0);
 ```
 
 This proves that different pages render different employees and do not share current messages.
@@ -443,6 +523,7 @@ git commit -m "test: cover AI assistant session isolation"
 ## Task 6: Final verification and visual inspection
 
 **Files:**
+
 - Verify all files above; modify only when a check exposes a defect.
 
 - [ ] **Step 1: Run targeted static and production checks**

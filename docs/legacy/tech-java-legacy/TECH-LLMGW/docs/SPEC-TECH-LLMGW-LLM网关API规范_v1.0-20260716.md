@@ -10,9 +10,9 @@
 
 ## 版本历史
 
-| 版本 | 日期 | 变更说明 | 作者 |
-|---|---|---|---|
-| v1.0 | 2026-07-16 | 初始版本 | - |
+| 版本 | 日期       | 变更说明 | 作者 |
+| ---- | ---------- | -------- | ---- |
+| v1.0 | 2026-07-16 | 初始版本 | -    |
 
 ---
 
@@ -37,65 +37,65 @@ TECH-LLMGW 是 Mate Platform 的**大模型统一接入网关**，为平台所�
 
 ### 1.2 技术栈
 
-| 层级 | 技术 | 版本 | 用途 |
-|---|---|---|---|
-| 语言/框架 | Python + FastAPI | 3.13 / 0.115 | 服务主体，异步高性能 API |
-| AI SDK | OpenAI SDK / Anthropic SDK | latest | 多供应商模型调用 SDK |
-| 关系数据库 | PostgreSQL | 17 | 供应商配置、模型配置、Prompt 模板、调用日志、成本数据 |
-| 缓存 | Redis | 7.4 | 限流计数器、配额缓存、Prompt 缓存、模型列表缓存、会话上下文 |
-| 消息队列 | Kafka | 3.9 | Token 消耗事件、调用审计事件（Outbox 模式） |
-| 可观测性 | OpenTelemetry + Prometheus | 1.45 / 3.x | trace_id 传播、指标采集、延迟监控 |
-| 加密 | AES-256-GCM | - | API Key 加密存储 |
-| 流式输出 | SSE（Server-Sent Events） | - | 流式对话实时推送 |
+| 层级       | 技术                       | 版本         | 用途                                                        |
+| ---------- | -------------------------- | ------------ | ----------------------------------------------------------- |
+| 语言/框架  | Python + FastAPI           | 3.13 / 0.115 | 服务主体，异步高性能 API                                    |
+| AI SDK     | OpenAI SDK / Anthropic SDK | latest       | 多供应商模型调用 SDK                                        |
+| 关系数据库 | PostgreSQL                 | 17           | 供应商配置、模型配置、Prompt 模板、调用日志、成本数据       |
+| 缓存       | Redis                      | 7.4          | 限流计数器、配额缓存、Prompt 缓存、模型列表缓存、会话上下文 |
+| 消息队列   | Kafka                      | 3.9          | Token 消耗事件、调用审计事件（Outbox 模式）                 |
+| 可观测性   | OpenTelemetry + Prometheus | 1.45 / 3.x   | trace_id 传播、指标采集、延迟监控                           |
+| 加密       | AES-256-GCM                | -            | API Key 加密存储                                            |
+| 流式输出   | SSE（Server-Sent Events）  | -            | 流式对话实时推送                                            |
 
 ### 1.3 上游依赖
 
-| 上游服务 | 依赖关系 | 说明 |
-|---|---|---|
-| 外部模型 API | 强依赖 | OpenAI / Anthropic / 火山方舟 / 通义千问等模型供应商 API，TECH-LLMGW 作为统一代理层 |
-| TECH-IAM | 强依赖 | 用户认证、租户隔离、API Key 权限校验 |
-| TECH-MSG | 弱依赖 | Kafka 消息基础设施（Token 消耗事件、审计事件发布） |
-| TECH-OBS | 弱依赖 | 可观测性指标上报 |
+| 上游服务     | 依赖关系 | 说明                                                                                |
+| ------------ | -------- | ----------------------------------------------------------------------------------- |
+| 外部模型 API | 强依赖   | OpenAI / Anthropic / 火山方舟 / 通义千问等模型供应商 API，TECH-LLMGW 作为统一代理层 |
+| TECH-IAM     | 强依赖   | 用户认证、租户隔离、API Key 权限校验                                                |
+| TECH-MSG     | 弱依赖   | Kafka 消息基础设施（Token 消耗事件、审计事件发布）                                  |
+| TECH-OBS     | 弱依赖   | 可观测性指标上报                                                                    |
 
 ### 1.4 下游消费方
 
-| 下游服务/应用 | 消费方式 | 说明 |
-|---|---|---|
-| TECH-RAG | REST API | Embedding 生成、Rerank 模型调用，所有向量化请求通过 LLM Gateway |
-| TECH-AGENT | REST API + SSE | Agent 执行中的所有 LLM 调用（Chat / Function Calling），支持流式输出 |
-| APP-SUPERAI | REST API + SSE | 超级 AI 对话应用的所有模型调用，支持同步与流式 |
-| APP-DW | REST API + SSE | 数字员工对话与推理的模型调用 |
-| TECH-MCP | REST API | MCP Server 暴露的 LLM 能力 Tool 通过 LLM Gateway 调用 |
-| APP-APPHUB | REST API | 低代码应用中嵌入的 AI 对话能力 |
-| APP-DASHBOARD | REST API | 仪表盘展示模型调用统计、成本报表、延迟分析 |
+| 下游服务/应用 | 消费方式       | 说明                                                                 |
+| ------------- | -------------- | -------------------------------------------------------------------- |
+| TECH-RAG      | REST API       | Embedding 生成、Rerank 模型调用，所有向量化请求通过 LLM Gateway      |
+| TECH-AGENT    | REST API + SSE | Agent 执行中的所有 LLM 调用（Chat / Function Calling），支持流式输出 |
+| APP-SUPERAI   | REST API + SSE | 超级 AI 对话应用的所有模型调用，支持同步与流式                       |
+| APP-DW        | REST API + SSE | 数字员工对话与推理的模型调用                                         |
+| TECH-MCP      | REST API       | MCP Server 暴露的 LLM 能力 Tool 通过 LLM Gateway 调用                |
+| APP-APPHUB    | REST API       | 低代码应用中嵌入的 AI 对话能力                                       |
+| APP-DASHBOARD | REST API       | 仪表盘展示模型调用统计、成本报表、延迟分析                           |
 
 ### 1.5 核心能力清单
 
-| 能力域 | 说明 |
-|---|---|
-| 模型供应商管理 | 供应商 CRUD、API Key 加密存储与轮换、模型列表同步 |
-| 模型路由 | 按模型名称路由、Fallback 策略、负载均衡、健康检查 |
-| 流量控制 | QPS 限流（令牌桶）、Token 配额（用户/应用/租户级）、熔断降级 |
-| 同步对话 | 单轮/多轮对话、Function Calling、多模态输入 |
-| 流式对话 | SSE 流式输出、Token 级实时推送、中断控制 |
-| 多模态对话 | 文本 + 图片（URL/Base64）、文件输入、视觉理解 |
-| Embedding 服务 | 单条/批量文本向量化、模型切换、维度管理 |
-| Prompt 管理 | 模板 CRUD、版本管理、变量替换、实时预览 |
-| 成本核算 | Token 消耗统计、多维度成本报表、预算预警 |
-| 调用审计 | 调用日志、错误追踪、延迟统计、trace_id 关联 |
+| 能力域         | 说明                                                         |
+| -------------- | ------------------------------------------------------------ |
+| 模型供应商管理 | 供应商 CRUD、API Key 加密存储与轮换、模型列表同步            |
+| 模型路由       | 按模型名称路由、Fallback 策略、负载均衡、健康检查            |
+| 流量控制       | QPS 限流（令牌桶）、Token 配额（用户/应用/租户级）、熔断降级 |
+| 同步对话       | 单轮/多轮对话、Function Calling、多模态输入                  |
+| 流式对话       | SSE 流式输出、Token 级实时推送、中断控制                     |
+| 多模态对话     | 文本 + 图片（URL/Base64）、文件输入、视觉理解                |
+| Embedding 服务 | 单条/批量文本向量化、模型切换、维度管理                      |
+| Prompt 管理    | 模板 CRUD、版本管理、变量替换、实时预览                      |
+| 成本核算       | Token 消耗统计、多维度成本报表、预算预警                     |
+| 调用审计       | 调用日志、错误追踪、延迟统计、trace_id 关联                  |
 
 ### 1.6 核心概念
 
-| 概念 | 说明 |
-|---|---|
-| Provider | 模型供应商，如 OpenAI、Anthropic、火山方舟、通义千问 |
-| Model | 具体模型实例，如 `doubao-pro-32k`、`gpt-4o`、`claude-3.5-sonnet` |
-| Model Route | 模型路由规则，定义模型名称到供应商的映射及 Fallback 链 |
-| Quota | 配额，按用户/应用/租户维度的 Token 或请求数限额 |
-| Rate Limit | 限流策略，基于令牌桶算法的 QPS 控制 |
-| Prompt Template | Prompt 模板，含变量占位符、版本管理 |
-| Token Usage | Token 消耗记录，含 prompt_tokens / completion_tokens / total_tokens |
-| Call Log | 调用日志，记录每次 LLM 调用的完整信息 |
+| 概念            | 说明                                                                |
+| --------------- | ------------------------------------------------------------------- |
+| Provider        | 模型供应商，如 OpenAI、Anthropic、火山方舟、通义千问                |
+| Model           | 具体模型实例，如 `doubao-pro-32k`、`gpt-4o`、`claude-3.5-sonnet`    |
+| Model Route     | 模型路由规则，定义模型名称到供应商的映射及 Fallback 链              |
+| Quota           | 配额，按用户/应用/租户维度的 Token 或请求数限额                     |
+| Rate Limit      | 限流策略，基于令牌桶算法的 QPS 控制                                 |
+| Prompt Template | Prompt 模板，含变量占位符、版本管理                                 |
+| Token Usage     | Token 消耗记录，含 prompt_tokens / completion_tokens / total_tokens |
+| Call Log        | 调用日志，记录每次 LLM 调用的完整信息                               |
 
 ### 1.7 模型路由架构
 
@@ -165,17 +165,17 @@ TECH-LLMGW 的模型路由核心流程：
 {
   "code": 0,
   "message": "success",
-  "data": { },
+  "data": {},
   "traceId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 }
 ```
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| code | integer | 业务状态码，`0` 表示成功，非 `0` 表示业务错误 |
-| message | string | 状态描述信息 |
-| data | object \| array \| null | 业务数据载荷 |
-| traceId | string | 链路追踪 ID，全链路唯一，用于排障 |
+| 字段    | 类型                    | 说明                                          |
+| ------- | ----------------------- | --------------------------------------------- |
+| code    | integer                 | 业务状态码，`0` 表示成功，非 `0` 表示业务错误 |
+| message | string                  | 状态描述信息                                  |
+| data    | object \| array \| null | 业务数据载荷                                  |
+| traceId | string                  | 链路追踪 ID，全链路唯一，用于排障             |
 
 #### 2.2.3 分页响应结构
 
@@ -186,7 +186,7 @@ TECH-LLMGW 的模型路由核心流程：
   "code": 0,
   "message": "success",
   "data": {
-    "items": [ ],
+    "items": [],
     "total": 100,
     "page": 1,
     "pageSize": 20,
@@ -221,82 +221,82 @@ X-Tenant-Id: <tenant_id>
 
 ### 2.4 请求头约定
 
-| 请求头 | 必填 | 说明 |
-|---|---|---|
-| Authorization | 是 | Bearer Token（与 X-API-Key 二选一） |
-| X-API-Key | 否 | 服务间调用 API Key（与 Authorization 二选一） |
-| X-Trace-Id | 否 | 链路追踪 ID，未传则服务端自动生成 |
-| X-Tenant-Id | 是 | 租户 ID |
-| X-Request-Id | 否 | 请求唯一标识，用于幂等控制 |
-| Content-Type | 是 | `application/json;charset=UTF-8` 或 `multipart/form-data` |
-| Accept | 否 | SSE 接口需设为 `text/event-stream` |
+| 请求头        | 必填 | 说明                                                      |
+| ------------- | ---- | --------------------------------------------------------- |
+| Authorization | 是   | Bearer Token（与 X-API-Key 二选一）                       |
+| X-API-Key     | 否   | 服务间调用 API Key（与 Authorization 二选一）             |
+| X-Trace-Id    | 否   | 链路追踪 ID，未传则服务端自动生成                         |
+| X-Tenant-Id   | 是   | 租户 ID                                                   |
+| X-Request-Id  | 否   | 请求唯一标识，用于幂等控制                                |
+| Content-Type  | 是   | `application/json;charset=UTF-8` 或 `multipart/form-data` |
+| Accept        | 否   | SSE 接口需设为 `text/event-stream`                        |
 
 ### 2.5 错误码定义
 
 #### 2.5.1 HTTP 状态码
 
-| HTTP 状态码 | 含义 | 使用场景 |
-|---|---|---|
-| 200 | OK | 请求成功 |
-| 201 | Created | 资源创建成功 |
-| 400 | Bad Request | 请求参数校验失败 |
-| 401 | Unauthorized | 未认证或认证失效 |
-| 403 | Forbidden | 权限不足 |
-| 404 | Not Found | 资源不存在 |
-| 409 | Conflict | 资源冲突（唯一性约束） |
-| 422 | Unprocessable Entity | 业务逻辑校验失败 |
-| 429 | Too Many Requests | 限流 / 配额耗尽 |
-| 500 | Internal Server Error | 服务内部错误 |
-| 502 | Bad Gateway | 上游模型供应商返回错误 |
-| 503 | Service Unavailable | 依赖服务不可用 |
-| 504 | Gateway Timeout | 模型调用超时 |
+| HTTP 状态码 | 含义                  | 使用场景               |
+| ----------- | --------------------- | ---------------------- |
+| 200         | OK                    | 请求成功               |
+| 201         | Created               | 资源创建成功           |
+| 400         | Bad Request           | 请求参数校验失败       |
+| 401         | Unauthorized          | 未认证或认证失效       |
+| 403         | Forbidden             | 权限不足               |
+| 404         | Not Found             | 资源不存在             |
+| 409         | Conflict              | 资源冲突（唯一性约束） |
+| 422         | Unprocessable Entity  | 业务逻辑校验失败       |
+| 429         | Too Many Requests     | 限流 / 配额耗尽        |
+| 500         | Internal Server Error | 服务内部错误           |
+| 502         | Bad Gateway           | 上游模型供应商返回错误 |
+| 503         | Service Unavailable   | 依赖服务不可用         |
+| 504         | Gateway Timeout       | 模型调用超时           |
 
 #### 2.5.2 业务错误码
 
-| 错误码 | HTTP 状态码 | 错误标识 | 说明 |
-|---|---|---|---|
-| 0 | 200 | SUCCESS | 成功 |
-| 40001 | 400 | INVALID_PARAM | 请求参数校验失败 |
-| 40002 | 400 | INVALID_JSON | 请求体 JSON 格式错误 |
-| 40003 | 400 | MISSING_REQUIRED_FIELD | 缺少必填字段 |
-| 40004 | 400 | INVALID_FIELD_VALUE | 字段值不合法 |
-| 40005 | 400 | UNSUPPORTED_MODEL_TYPE | 不支持的模型类型 |
-| 40006 | 400 | UNSUPPORTED_MODALITY | 不支持的输入模态 |
-| 40101 | 401 | TOKEN_EXPIRED | Token 已过期 |
-| 40102 | 401 | TOKEN_INVALID | Token 无效 |
-| 40103 | 401 | API_KEY_INVALID | API Key 无效 |
-| 40301 | 403 | PERMISSION_DENIED | 权限不足 |
-| 40302 | 403 | TENANT_MISMATCH | 租户不匹配 |
-| 40401 | 404 | PROVIDER_NOT_FOUND | 供应商不存在 |
-| 40402 | 404 | MODEL_NOT_FOUND | 模型不存在 |
-| 40403 | 404 | MODEL_ROUTE_NOT_FOUND | 模型路由规则不存在 |
-| 40404 | 404 | PROMPT_NOT_FOUND | Prompt 模板不存在 |
-| 40405 | 404 | QUOTA_NOT_FOUND | 配额配置不存在 |
-| 40406 | 404 | CALL_LOG_NOT_FOUND | 调用日志不存在 |
-| 40901 | 409 | PROVIDER_ALREADY_EXISTS | 供应商标识已存在 |
-| 40902 | 409 | MODEL_ALREADY_EXISTS | 模型标识已存在 |
-| 40903 | 409 | PROMPT_KEY_EXISTS | Prompt 模板 key 已存在 |
-| 40904 | 409 | DUPLICATE_RATE_LIMIT | 限流规则已存在 |
-| 42201 | 422 | PROVIDER_NOT_ACTIVE | 供应商未启用 |
-| 42202 | 422 | MODEL_NOT_AVAILABLE | 模型不可用（供应商未启用或模型未激活） |
-| 42203 | 422 | ALL_PROVIDERS_FAILED | 所有供应商（含 Fallback）均调用失败 |
-| 42204 | 422 | QUOTA_EXCEEDED | Token 配额已耗尽 |
-| 42205 | 422 | PROMPT_VARIABLE_MISSING | Prompt 模板变量未提供 |
-| 42206 | 422 | PROMPT_RENDER_FAILED | Prompt 模板渲染失败 |
-| 42207 | 422 | EMBEDDING_DIM_MISMATCH | Embedding 维度不匹配 |
-| 42208 | 422 | API_KEY_NOT_CONFIGURED | 供应商 API Key 未配置 |
-| 42901 | 429 | RATE_LIMIT_EXCEEDED | QPS 限流触发 |
-| 42902 | 429 | TOKEN_QUOTA_EXCEEDED | Token 配额耗尽 |
-| 42903 | 429 | CONCURRENT_LIMIT_EXCEEDED | 并发数超限 |
-| 50001 | 500 | INTERNAL_ERROR | 服务内部错误 |
-| 50002 | 500 | DATABASE_ERROR | 数据库操作失败 |
-| 50003 | 500 | REDIS_ERROR | Redis 操作失败 |
-| 50004 | 500 | KAFKA_PUBLISH_FAILED | Kafka 消息发布失败 |
-| 50005 | 500 | PROVIDER_API_ERROR | 模型供应商 API 返回错误 |
-| 50006 | 500 | PROVIDER_TIMEOUT | 模型供应商调用超时 |
-| 50007 | 500 | ENCRYPTION_ERROR | API Key 加解密失败 |
-| 50301 | 503 | SERVICE_UNAVAILABLE | 服务暂不可用 |
-| 50302 | 503 | ALL_PROVIDERS_UNAVAILABLE | 所有模型供应商不可用 |
+| 错误码 | HTTP 状态码 | 错误标识                  | 说明                                   |
+| ------ | ----------- | ------------------------- | -------------------------------------- |
+| 0      | 200         | SUCCESS                   | 成功                                   |
+| 40001  | 400         | INVALID_PARAM             | 请求参数校验失败                       |
+| 40002  | 400         | INVALID_JSON              | 请求体 JSON 格式错误                   |
+| 40003  | 400         | MISSING_REQUIRED_FIELD    | 缺少必填字段                           |
+| 40004  | 400         | INVALID_FIELD_VALUE       | 字段值不合法                           |
+| 40005  | 400         | UNSUPPORTED_MODEL_TYPE    | 不支持的模型类型                       |
+| 40006  | 400         | UNSUPPORTED_MODALITY      | 不支持的输入模态                       |
+| 40101  | 401         | TOKEN_EXPIRED             | Token 已过期                           |
+| 40102  | 401         | TOKEN_INVALID             | Token 无效                             |
+| 40103  | 401         | API_KEY_INVALID           | API Key 无效                           |
+| 40301  | 403         | PERMISSION_DENIED         | 权限不足                               |
+| 40302  | 403         | TENANT_MISMATCH           | 租户不匹配                             |
+| 40401  | 404         | PROVIDER_NOT_FOUND        | 供应商不存在                           |
+| 40402  | 404         | MODEL_NOT_FOUND           | 模型不存在                             |
+| 40403  | 404         | MODEL_ROUTE_NOT_FOUND     | 模型路由规则不存在                     |
+| 40404  | 404         | PROMPT_NOT_FOUND          | Prompt 模板不存在                      |
+| 40405  | 404         | QUOTA_NOT_FOUND           | 配额配置不存在                         |
+| 40406  | 404         | CALL_LOG_NOT_FOUND        | 调用日志不存在                         |
+| 40901  | 409         | PROVIDER_ALREADY_EXISTS   | 供应商标识已存在                       |
+| 40902  | 409         | MODEL_ALREADY_EXISTS      | 模型标识已存在                         |
+| 40903  | 409         | PROMPT_KEY_EXISTS         | Prompt 模板 key 已存在                 |
+| 40904  | 409         | DUPLICATE_RATE_LIMIT      | 限流规则已存在                         |
+| 42201  | 422         | PROVIDER_NOT_ACTIVE       | 供应商未启用                           |
+| 42202  | 422         | MODEL_NOT_AVAILABLE       | 模型不可用（供应商未启用或模型未激活） |
+| 42203  | 422         | ALL_PROVIDERS_FAILED      | 所有供应商（含 Fallback）均调用失败    |
+| 42204  | 422         | QUOTA_EXCEEDED            | Token 配额已耗尽                       |
+| 42205  | 422         | PROMPT_VARIABLE_MISSING   | Prompt 模板变量未提供                  |
+| 42206  | 422         | PROMPT_RENDER_FAILED      | Prompt 模板渲染失败                    |
+| 42207  | 422         | EMBEDDING_DIM_MISMATCH    | Embedding 维度不匹配                   |
+| 42208  | 422         | API_KEY_NOT_CONFIGURED    | 供应商 API Key 未配置                  |
+| 42901  | 429         | RATE_LIMIT_EXCEEDED       | QPS 限流触发                           |
+| 42902  | 429         | TOKEN_QUOTA_EXCEEDED      | Token 配额耗尽                         |
+| 42903  | 429         | CONCURRENT_LIMIT_EXCEEDED | 并发数超限                             |
+| 50001  | 500         | INTERNAL_ERROR            | 服务内部错误                           |
+| 50002  | 500         | DATABASE_ERROR            | 数据库操作失败                         |
+| 50003  | 500         | REDIS_ERROR               | Redis 操作失败                         |
+| 50004  | 500         | KAFKA_PUBLISH_FAILED      | Kafka 消息发布失败                     |
+| 50005  | 500         | PROVIDER_API_ERROR        | 模型供应商 API 返回错误                |
+| 50006  | 500         | PROVIDER_TIMEOUT          | 模型供应商调用超时                     |
+| 50007  | 500         | ENCRYPTION_ERROR          | API Key 加解密失败                     |
+| 50301  | 503         | SERVICE_UNAVAILABLE       | 服务暂不可用                           |
+| 50302  | 503         | ALL_PROVIDERS_UNAVAILABLE | 所有模型供应商不可用                   |
 
 **错误响应示例**：
 
@@ -318,12 +318,12 @@ X-Tenant-Id: <tenant_id>
 
 所有列表接口支持以下通用查询参数：
 
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|---|---|---|---|---|
-| page | integer | 否 | 1 | 页码，从 1 开始 |
-| pageSize | integer | 否 | 20 | 每页条数，最大 100 |
-| sort | string | 否 | createdAt:desc | 排序字段，格式 `field:asc\|desc`，支持多字段逗号分隔 |
-| keyword | string | 否 | - | 关键词搜索（模糊匹配名称/描述） |
+| 参数     | 类型    | 必填 | 默认值         | 说明                                                 |
+| -------- | ------- | ---- | -------------- | ---------------------------------------------------- |
+| page     | integer | 否   | 1              | 页码，从 1 开始                                      |
+| pageSize | integer | 否   | 20             | 每页条数，最大 100                                   |
+| sort     | string  | 否   | createdAt:desc | 排序字段，格式 `field:asc\|desc`，支持多字段逗号分隔 |
+| keyword  | string  | 否   | -              | 关键词搜索（模糊匹配名称/描述）                      |
 
 ### 2.7 trace_id 传播
 
@@ -373,17 +373,17 @@ data: <jsonPayload>
 
 SSE 事件类型：
 
-| 事件类型 | 说明 | data 内容 |
-|---|---|---|
-| `chat.started` | 对话开始 | 请求基本信息（model、conversationId） |
-| `content.delta` | 内容增量 | 文本片段（delta） |
-| `tool.calling` | 工具调用中 | 工具名与入参 |
-| `tool.result` | 工具返回结果 | 工具调用 ID 与返回值 |
-| `usage.updated` | Token 用量更新 | 当前 Token 消耗 |
-| `content.done` | 内容完成 | 完整文本与 finish_reason |
-| `chat.completed` | 对话完成 | 完整响应含 usage |
-| `chat.failed` | 对话失败 | 错误信息 |
-| `error` | 流式错误 | 错误详情 |
+| 事件类型         | 说明           | data 内容                             |
+| ---------------- | -------------- | ------------------------------------- |
+| `chat.started`   | 对话开始       | 请求基本信息（model、conversationId） |
+| `content.delta`  | 内容增量       | 文本片段（delta）                     |
+| `tool.calling`   | 工具调用中     | 工具名与入参                          |
+| `tool.result`    | 工具返回结果   | 工具调用 ID 与返回值                  |
+| `usage.updated`  | Token 用量更新 | 当前 Token 消耗                       |
+| `content.done`   | 内容完成       | 完整文本与 finish_reason              |
+| `chat.completed` | 对话完成       | 完整响应含 usage                      |
+| `chat.failed`    | 对话失败       | 错误信息                              |
+| `error`          | 流式错误       | 错误详情                              |
 
 ### 2.10 API Key 加密策略
 
@@ -401,22 +401,22 @@ SSE 事件类型：
 
 #### 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/v1/llmgw/providers` | 创建模型供应商 |
-| GET | `/api/v1/llmgw/providers` | 供应商列表（分页） |
-| GET | `/api/v1/llmgw/providers/{providerId}` | 获取供应商详情 |
-| PUT | `/api/v1/llmgw/providers/{providerId}` | 更新供应商 |
-| DELETE | `/api/v1/llmgw/providers/{providerId}` | 删除供应商 |
-| PUT | `/api/v1/llmgw/providers/{providerId}/state` | 启用/禁用供应商 |
-| POST | `/api/v1/llmgw/providers/{providerId}/api-keys` | 添加 API Key |
-| GET | `/api/v1/llmgw/providers/{providerId}/api-keys` | API Key 列表（掩码） |
-| DELETE | `/api/v1/llmgw/providers/{providerId}/api-keys/{keyId}` | 删除 API Key |
-| PUT | `/api/v1/llmgw/providers/{providerId}/api-keys/{keyId}/rotate` | 轮换 API Key |
-| POST | `/api/v1/llmgw/providers/{providerId}/models/sync` | 同步供应商模型列表 |
-| GET | `/api/v1/llmgw/providers/{providerId}/models` | 供应商下的模型列表 |
-| GET | `/api/v1/llmgw/models` | 全局模型列表（跨供应商） |
-| GET | `/api/v1/llmgw/models/{modelId}` | 获取模型详情 |
+| 方法   | 路径                                                           | 说明                     |
+| ------ | -------------------------------------------------------------- | ------------------------ |
+| POST   | `/api/v1/llmgw/providers`                                      | 创建模型供应商           |
+| GET    | `/api/v1/llmgw/providers`                                      | 供应商列表（分页）       |
+| GET    | `/api/v1/llmgw/providers/{providerId}`                         | 获取供应商详情           |
+| PUT    | `/api/v1/llmgw/providers/{providerId}`                         | 更新供应商               |
+| DELETE | `/api/v1/llmgw/providers/{providerId}`                         | 删除供应商               |
+| PUT    | `/api/v1/llmgw/providers/{providerId}/state`                   | 启用/禁用供应商          |
+| POST   | `/api/v1/llmgw/providers/{providerId}/api-keys`                | 添加 API Key             |
+| GET    | `/api/v1/llmgw/providers/{providerId}/api-keys`                | API Key 列表（掩码）     |
+| DELETE | `/api/v1/llmgw/providers/{providerId}/api-keys/{keyId}`        | 删除 API Key             |
+| PUT    | `/api/v1/llmgw/providers/{providerId}/api-keys/{keyId}/rotate` | 轮换 API Key             |
+| POST   | `/api/v1/llmgw/providers/{providerId}/models/sync`             | 同步供应商模型列表       |
+| GET    | `/api/v1/llmgw/providers/{providerId}/models`                  | 供应商下的模型列表       |
+| GET    | `/api/v1/llmgw/models`                                         | 全局模型列表（跨供应商） |
+| GET    | `/api/v1/llmgw/models/{modelId}`                               | 获取模型详情             |
 
 ---
 
@@ -428,20 +428,20 @@ SSE 事件类型：
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| providerKey | string | 是 | 供应商唯一标识（业务 key），同一租户内唯一，如 `openai`、`anthropic`、`volcengine` |
-| name | string | 是 | 供应商显示名称，1-128 字符 |
-| type | string | 是 | 供应商类型：`OPENAI` / `ANTHROPIC` / `VOLCENGINE` / `QWEN` / `ZHIPU` / `BAICHUAN` / `CUSTOM` |
-| baseUrl | string | 是 | 供应商 API 基础地址，如 `https://api.openai.com/v1` |
-| description | string | 否 | 供应商描述，最长 1024 字符 |
-| apiKeys | array | 否 | 初始 API Key 列表（可后续添加） |
-| apiKeys[].key | string | 否 | API Key 明文（服务端加密存储） |
-| apiKeys[].label | string | 否 | API Key 标签，如 `prod-key-1` |
-| defaultHeaders | object | 否 | 自定义请求头（如 `Helicone-Auth`），key-value 结构 |
-| timeout | integer | 否 | 调用超时时间（秒），默认 60，范围 5-300 |
-| maxRetries | integer | 否 | 最大重试次数，默认 2，范围 0-5 |
-| metadata | object | 否 | 扩展元数据 |
+| 字段            | 类型    | 必填 | 说明                                                                                         |
+| --------------- | ------- | ---- | -------------------------------------------------------------------------------------------- |
+| providerKey     | string  | 是   | 供应商唯一标识（业务 key），同一租户内唯一，如 `openai`、`anthropic`、`volcengine`           |
+| name            | string  | 是   | 供应商显示名称，1-128 字符                                                                   |
+| type            | string  | 是   | 供应商类型：`OPENAI` / `ANTHROPIC` / `VOLCENGINE` / `QWEN` / `ZHIPU` / `BAICHUAN` / `CUSTOM` |
+| baseUrl         | string  | 是   | 供应商 API 基础地址，如 `https://api.openai.com/v1`                                          |
+| description     | string  | 否   | 供应商描述，最长 1024 字符                                                                   |
+| apiKeys         | array   | 否   | 初始 API Key 列表（可后续添加）                                                              |
+| apiKeys[].key   | string  | 否   | API Key 明文（服务端加密存储）                                                               |
+| apiKeys[].label | string  | 否   | API Key 标签，如 `prod-key-1`                                                                |
+| defaultHeaders  | object  | 否   | 自定义请求头（如 `Helicone-Auth`），key-value 结构                                           |
+| timeout         | integer | 否   | 调用超时时间（秒），默认 60，范围 5-300                                                      |
+| maxRetries      | integer | 否   | 最大重试次数，默认 2，范围 0-5                                                               |
+| metadata        | object  | 否   | 扩展元数据                                                                                   |
 
 **请求示例**
 
@@ -509,11 +509,11 @@ SSE 事件类型：
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | providerKey / name / type / baseUrl 为空 |
-| 40901 | providerKey 在同一租户内已存在 |
-| 40004 | type 枚举值不合法或 baseUrl 格式不正确 |
+| 错误码 | 场景                                     |
+| ------ | ---------------------------------------- |
+| 40001  | providerKey / name / type / baseUrl 为空 |
+| 40901  | providerKey 在同一租户内已存在           |
+| 40004  | type 枚举值不合法或 baseUrl 格式不正确   |
 
 ---
 
@@ -525,14 +525,14 @@ SSE 事件类型：
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | integer | 否 | 页码，默认 1 |
-| pageSize | integer | 否 | 每页条数，默认 20，最大 100 |
-| type | string | 否 | 供应商类型筛选 |
-| status | string | 否 | 状态筛选：`ACTIVE` / `INACTIVE` |
-| keyword | string | 否 | 关键词搜索（名称/标识） |
-| sort | string | 否 | 排序字段，默认 `createdAt:desc` |
+| 参数     | 类型    | 必填 | 说明                            |
+| -------- | ------- | ---- | ------------------------------- |
+| page     | integer | 否   | 页码，默认 1                    |
+| pageSize | integer | 否   | 每页条数，默认 20，最大 100     |
+| type     | string  | 否   | 供应商类型筛选                  |
+| status   | string  | 否   | 状态筛选：`ACTIVE` / `INACTIVE` |
+| keyword  | string  | 否   | 关键词搜索（名称/标识）         |
+| sort     | string  | 否   | 排序字段，默认 `createdAt:desc` |
 
 **响应示例**
 
@@ -584,8 +584,8 @@ SSE 事件类型：
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数       | 类型   | 说明      |
+| ---------- | ------ | --------- |
 | providerId | string | 供应商 ID |
 
 **响应示例**
@@ -632,9 +632,9 @@ SSE 事件类型：
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | providerId 不存在 |
+| 错误码 | 场景              |
+| ------ | ----------------- |
+| 40401  | providerId 不存在 |
 
 ---
 
@@ -644,16 +644,16 @@ SSE 事件类型：
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 否 | 供应商显示名称 |
-| baseUrl | string | 否 | API 基础地址 |
-| description | string | 否 | 供应商描述 |
-| defaultHeaders | object | 否 | 自定义请求头 |
-| timeout | integer | 否 | 调用超时时间（秒） |
-| maxRetries | integer | 否 | 最大重试次数 |
-| metadata | object | 否 | 扩展元数据 |
-| version | integer | 是 | 乐观锁版本号 |
+| 字段           | 类型    | 必填 | 说明               |
+| -------------- | ------- | ---- | ------------------ |
+| name           | string  | 否   | 供应商显示名称     |
+| baseUrl        | string  | 否   | API 基础地址       |
+| description    | string  | 否   | 供应商描述         |
+| defaultHeaders | object  | 否   | 自定义请求头       |
+| timeout        | integer | 否   | 调用超时时间（秒） |
+| maxRetries     | integer | 否   | 最大重试次数       |
+| metadata       | object  | 否   | 扩展元数据         |
+| version        | integer | 是   | 乐观锁版本号       |
 
 **请求示例**
 
@@ -690,10 +690,10 @@ SSE 事件类型：
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | providerId 不存在 |
-| 40902 | 版本号不匹配（乐观锁冲突） |
+| 错误码 | 场景                       |
+| ------ | -------------------------- |
+| 40401  | providerId 不存在          |
+| 40902  | 版本号不匹配（乐观锁冲突） |
 
 ---
 
@@ -705,9 +705,9 @@ SSE 事件类型：
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| force | boolean | 否 | 是否强制删除（级联删除关联模型与路由），默认 false |
+| 参数  | 类型    | 必填 | 说明                                               |
+| ----- | ------- | ---- | -------------------------------------------------- |
+| force | boolean | 否   | 是否强制删除（级联删除关联模型与路由），默认 false |
 
 **响应示例**
 
@@ -727,10 +727,10 @@ SSE 事件类型：
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | providerId 不存在 |
-| 42201 | 供应商下存在模型且 force=false |
+| 错误码 | 场景                           |
+| ------ | ------------------------------ |
+| 40401  | providerId 不存在              |
+| 42201  | 供应商下存在模型且 force=false |
 
 ---
 
@@ -740,10 +740,10 @@ SSE 事件类型：
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| status | string | 是 | 目标状态：`ACTIVE` / `INACTIVE` |
-| reason | string | 否 | 状态变更原因 |
+| 字段   | 类型   | 必填 | 说明                            |
+| ------ | ------ | ---- | ------------------------------- |
+| status | string | 是   | 目标状态：`ACTIVE` / `INACTIVE` |
+| reason | string | 否   | 状态变更原因                    |
 
 **请求示例**
 
@@ -781,11 +781,11 @@ SSE 事件类型：
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| key | string | 是 | API Key 明文 |
-| label | string | 否 | Key 标签，用于标识用途，如 `prod-key-2` |
-| isPrimary | boolean | 否 | 是否设为主 Key，默认 false |
+| 字段      | 类型    | 必填 | 说明                                    |
+| --------- | ------- | ---- | --------------------------------------- |
+| key       | string  | 是   | API Key 明文                            |
+| label     | string  | 否   | Key 标签，用于标识用途，如 `prod-key-2` |
+| isPrimary | boolean | 否   | 是否设为主 Key，默认 false              |
 
 **请求示例**
 
@@ -817,10 +817,10 @@ SSE 事件类型：
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | providerId 不存在 |
-| 42201 | 供应商未启用 |
+| 错误码 | 场景              |
+| ------ | ----------------- |
+| 40401  | providerId 不存在 |
+| 42201  | 供应商未启用      |
 
 ---
 
@@ -889,10 +889,10 @@ SSE 事件类型：
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | providerId 或 keyId 不存在 |
-| 42201 | 删除主 Key 但无其他可用 Key |
+| 错误码 | 场景                        |
+| ------ | --------------------------- |
+| 40401  | providerId 或 keyId 不存在  |
+| 42201  | 删除主 Key 但无其他可用 Key |
 
 ---
 
@@ -904,10 +904,10 @@ SSE 事件类型：
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| newKey | string | 是 | 新 API Key 明文 |
-| gracePeriodHours | integer | 否 | 旧 Key 灰度期（小时），默认 24，范围 0-72 |
+| 字段             | 类型    | 必填 | 说明                                      |
+| ---------------- | ------- | ---- | ----------------------------------------- |
+| newKey           | string  | 是   | 新 API Key 明文                           |
+| gracePeriodHours | integer | 否   | 旧 Key 灰度期（小时），默认 24，范围 0-72 |
 
 **请求示例**
 
@@ -969,13 +969,13 @@ SSE 事件类型：
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40401 | providerId 不存在 |
-| 42201 | 供应商未启用 |
-| 42208 | 供应商 API Key 未配置 |
-| 50005 | 供应商 API 返回错误 |
-| 50006 | 供应商 API 调用超时 |
+| 错误码 | 场景                  |
+| ------ | --------------------- |
+| 40401  | providerId 不存在     |
+| 42201  | 供应商未启用          |
+| 42208  | 供应商 API Key 未配置 |
+| 50005  | 供应商 API 返回错误   |
+| 50006  | 供应商 API 调用超时   |
 
 ---
 
@@ -985,12 +985,12 @@ SSE 事件类型：
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | integer | 否 | 页码，默认 1 |
-| pageSize | integer | 否 | 每页条数，默认 20，最大 100 |
-| capability | string | 否 | 能力筛选：`CHAT` / `EMBEDDING` / `RERANK` / `VISION` / `FUNCTION_CALLING` |
-| status | string | 否 | 状态筛选：`ACTIVE` / `INACTIVE` |
+| 参数       | 类型    | 必填 | 说明                                                                      |
+| ---------- | ------- | ---- | ------------------------------------------------------------------------- |
+| page       | integer | 否   | 页码，默认 1                                                              |
+| pageSize   | integer | 否   | 每页条数，默认 20，最大 100                                               |
+| capability | string  | 否   | 能力筛选：`CHAT` / `EMBEDDING` / `RERANK` / `VISION` / `FUNCTION_CALLING` |
+| status     | string  | 否   | 状态筛选：`ACTIVE` / `INACTIVE`                                           |
 
 **响应示例**
 
@@ -1046,14 +1046,14 @@ SSE 事件类型：
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | integer | 否 | 页码，默认 1 |
-| pageSize | integer | 否 | 每页条数，默认 20，最大 100 |
-| capability | string | 否 | 能力筛选：`CHAT` / `EMBEDDING` / `RERANK` / `VISION` / `FUNCTION_CALLING` |
-| providerType | string | 否 | 供应商类型筛选 |
-| status | string | 否 | 状态筛选 |
-| keyword | string | 否 | 关键词搜索（模型ID/名称） |
+| 参数         | 类型    | 必填 | 说明                                                                      |
+| ------------ | ------- | ---- | ------------------------------------------------------------------------- |
+| page         | integer | 否   | 页码，默认 1                                                              |
+| pageSize     | integer | 否   | 每页条数，默认 20，最大 100                                               |
+| capability   | string  | 否   | 能力筛选：`CHAT` / `EMBEDDING` / `RERANK` / `VISION` / `FUNCTION_CALLING` |
+| providerType | string  | 否   | 供应商类型筛选                                                            |
+| status       | string  | 否   | 状态筛选                                                                  |
+| keyword      | string  | 否   | 关键词搜索（模型ID/名称）                                                 |
 
 **响应示例**
 
@@ -1120,8 +1120,8 @@ SSE 事件类型：
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数    | 类型   | 说明    |
+| ------- | ------ | ------- |
 | modelId | string | 模型 ID |
 
 **响应示例**
@@ -1158,9 +1158,9 @@ SSE 事件类型：
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40402 | modelId 不存在 |
+| 错误码 | 场景           |
+| ------ | -------------- |
+| 40402  | modelId 不存在 |
 
 ---
 
@@ -1168,12 +1168,12 @@ SSE 事件类型：
 
 #### 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/v1/llmgw/chat/completions` | 同步对话（阻塞等待完整响应） |
-| POST | `/api/v1/llmgw/chat/completions/stream` | 流式对话（SSE 实时推送） |
-| POST | `/api/v1/llmgw/chat/multimodal` | 多模态对话（文本+图片+文件） |
-| GET | `/api/v1/llmgw/chat/models` | 可用对话模型列表 |
+| 方法 | 路径                                    | 说明                         |
+| ---- | --------------------------------------- | ---------------------------- |
+| POST | `/api/v1/llmgw/chat/completions`        | 同步对话（阻塞等待完整响应） |
+| POST | `/api/v1/llmgw/chat/completions/stream` | 流式对话（SSE 实时推送）     |
+| POST | `/api/v1/llmgw/chat/multimodal`         | 多模态对话（文本+图片+文件） |
+| GET  | `/api/v1/llmgw/chat/models`             | 可用对话模型列表             |
 
 ---
 
@@ -1185,31 +1185,31 @@ SSE 事件类型：
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| model | string | 是 | 模型 ID（如 `doubao-pro-32k`），网关根据此字段路由到对应供应商 |
-| messages | array | 是 | 消息列表，至少包含一条消息 |
-| messages[].role | string | 是 | 角色：`system` / `user` / `assistant` / `tool` |
-| messages[].content | string \| array | 是 | 消息内容。纯文本为 string；多模态为 array（含 type+text/image_url） |
-| temperature | float | 否 | 温度参数，默认 0.7，范围 0.0-2.0 |
-| maxTokens | integer | 否 | 最大生成 Token 数，默认 4096 |
-| topP | float | 否 | Top-P 采样，默认 1.0，范围 0.0-1.0 |
-| frequencyPenalty | float | 否 | 频率惩罚，默认 0.0，范围 -2.0-2.0 |
-| presencePenalty | float | 否 | 存在惩罚，默认 0.0，范围 -2.0-2.0 |
-| stop | array[string] | 否 | 停止序列，最多 4 个 |
-| tools | array | 否 | Function Calling 工具定义列表 |
-| tools[].type | string | 否 | 工具类型，目前仅支持 `function` |
-| tools[].function | object | 否 | 函数定义 |
-| tools[].function.name | string | 否 | 函数名称 |
-| tools[].function.description | string | 否 | 函数描述 |
-| tools[].function.parameters | object | 否 | 函数参数 JSON Schema |
-| toolChoice | string \| object | 否 | 工具选择策略：`auto`（默认）/ `none` / `required` / 指定函数 |
-| user | string | 否 | 用户标识，用于审计与配额统计 |
-| appId | string | 否 | 应用标识，用于应用级配额统计 |
-| conversationId | string | 否 | 对话 ID，用于多轮对话关联（不传则不关联） |
-| fallbackModels | array[string] | 否 | Fallback 模型列表，主模型不可用时按顺序尝试 |
-| responseFormat | object | 否 | 响应格式约束（如 `{"type": "json_object"}`） |
-| seed | integer | 否 | 随机种子，用于可复现输出 |
+| 字段                         | 类型             | 必填 | 说明                                                                |
+| ---------------------------- | ---------------- | ---- | ------------------------------------------------------------------- |
+| model                        | string           | 是   | 模型 ID（如 `doubao-pro-32k`），网关根据此字段路由到对应供应商      |
+| messages                     | array            | 是   | 消息列表，至少包含一条消息                                          |
+| messages[].role              | string           | 是   | 角色：`system` / `user` / `assistant` / `tool`                      |
+| messages[].content           | string \| array  | 是   | 消息内容。纯文本为 string；多模态为 array（含 type+text/image_url） |
+| temperature                  | float            | 否   | 温度参数，默认 0.7，范围 0.0-2.0                                    |
+| maxTokens                    | integer          | 否   | 最大生成 Token 数，默认 4096                                        |
+| topP                         | float            | 否   | Top-P 采样，默认 1.0，范围 0.0-1.0                                  |
+| frequencyPenalty             | float            | 否   | 频率惩罚，默认 0.0，范围 -2.0-2.0                                   |
+| presencePenalty              | float            | 否   | 存在惩罚，默认 0.0，范围 -2.0-2.0                                   |
+| stop                         | array[string]    | 否   | 停止序列，最多 4 个                                                 |
+| tools                        | array            | 否   | Function Calling 工具定义列表                                       |
+| tools[].type                 | string           | 否   | 工具类型，目前仅支持 `function`                                     |
+| tools[].function             | object           | 否   | 函数定义                                                            |
+| tools[].function.name        | string           | 否   | 函数名称                                                            |
+| tools[].function.description | string           | 否   | 函数描述                                                            |
+| tools[].function.parameters  | object           | 否   | 函数参数 JSON Schema                                                |
+| toolChoice                   | string \| object | 否   | 工具选择策略：`auto`（默认）/ `none` / `required` / 指定函数        |
+| user                         | string           | 否   | 用户标识，用于审计与配额统计                                        |
+| appId                        | string           | 否   | 应用标识，用于应用级配额统计                                        |
+| conversationId               | string           | 否   | 对话 ID，用于多轮对话关联（不传则不关联）                           |
+| fallbackModels               | array[string]    | 否   | Fallback 模型列表，主模型不可用时按顺序尝试                         |
+| responseFormat               | object           | 否   | 响应格式约束（如 `{"type": "json_object"}`）                        |
+| seed                         | integer          | 否   | 随机种子，用于可复现输出                                            |
 
 **请求示例**
 
@@ -1279,18 +1279,18 @@ SSE 事件类型：
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | model / messages 为空或格式不正确 |
-| 40402 | modelId 不存在 |
-| 42201 | 供应商未启用 |
-| 42202 | 模型不可用 |
-| 42203 | 所有供应商（含 Fallback）均调用失败 |
-| 42204 | Token 配额已耗尽 |
-| 42901 | QPS 限流触发 |
-| 42903 | 并发数超限 |
-| 50005 | 模型供应商 API 返回错误 |
-| 50006 | 模型供应商调用超时 |
+| 错误码 | 场景                                |
+| ------ | ----------------------------------- |
+| 40001  | model / messages 为空或格式不正确   |
+| 40402  | modelId 不存在                      |
+| 42201  | 供应商未启用                        |
+| 42202  | 模型不可用                          |
+| 42203  | 所有供应商（含 Fallback）均调用失败 |
+| 42204  | Token 配额已耗尽                    |
+| 42901  | QPS 限流触发                        |
+| 42903  | 并发数超限                          |
+| 50005  | 模型供应商 API 返回错误             |
+| 50006  | 模型供应商调用超时                  |
 
 ---
 
@@ -1369,16 +1369,16 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | model / messages 为空或格式不正确 |
-| 40402 | modelId 不存在 |
-| 42202 | 模型不可用 |
-| 42203 | 所有供应商（含 Fallback）均调用失败 |
-| 42204 | Token 配额已耗尽 |
-| 42901 | QPS 限流触发 |
-| 50005 | 模型供应商 API 返回错误（流式中断） |
-| 50006 | 模型供应商调用超时（流式中断） |
+| 错误码 | 场景                                |
+| ------ | ----------------------------------- |
+| 40001  | model / messages 为空或格式不正确   |
+| 40402  | modelId 不存在                      |
+| 42202  | 模型不可用                          |
+| 42203  | 所有供应商（含 Fallback）均调用失败 |
+| 42204  | Token 配额已耗尽                    |
+| 42901  | QPS 限流触发                        |
+| 50005  | 模型供应商 API 返回错误（流式中断） |
+| 50006  | 模型供应商调用超时（流式中断）      |
 
 ---
 
@@ -1390,26 +1390,26 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| model | string | 是 | 支持多模态的模型 ID（如 `doubao-vision-pro`、`gpt-4o`、`claude-3-5-sonnet`） |
-| messages | array | 是 | 消息列表 |
-| messages[].role | string | 是 | 角色：`system` / `user` / `assistant` |
-| messages[].content | array | 是 | 多模态内容数组 |
-| messages[].content[].type | string | 是 | 内容类型：`text` / `image_url` / `file` |
-| messages[].content[].text | string | 否 | 文本内容（type=text 时） |
-| messages[].content[].imageUrl | object | 否 | 图片信息（type=image_url 时） |
-| messages[].content[].imageUrl.url | string | 是 | 图片 URL 或 Base64（`data:image/png;base64,...`） |
-| messages[].content[].imageUrl.detail | string | 否 | 图片精度：`low` / `high` / `auto`（默认） |
-| messages[].content[].file | object | 否 | 文件信息（type=file 时） |
-| messages[].content[].file.url | string | 是 | 文件 URL |
-| messages[].content[].file.name | string | 否 | 文件名 |
-| messages[].content[].file.mimeType | string | 否 | MIME 类型 |
-| temperature | float | 否 | 温度参数，默认 0.7 |
-| maxTokens | integer | 否 | 最大生成 Token 数，默认 4096 |
-| stream | boolean | 否 | 是否流式返回，默认 false（true 时走 SSE） |
-| user | string | 否 | 用户标识 |
-| appId | string | 否 | 应用标识 |
+| 字段                                 | 类型    | 必填 | 说明                                                                         |
+| ------------------------------------ | ------- | ---- | ---------------------------------------------------------------------------- |
+| model                                | string  | 是   | 支持多模态的模型 ID（如 `doubao-vision-pro`、`gpt-4o`、`claude-3-5-sonnet`） |
+| messages                             | array   | 是   | 消息列表                                                                     |
+| messages[].role                      | string  | 是   | 角色：`system` / `user` / `assistant`                                        |
+| messages[].content                   | array   | 是   | 多模态内容数组                                                               |
+| messages[].content[].type            | string  | 是   | 内容类型：`text` / `image_url` / `file`                                      |
+| messages[].content[].text            | string  | 否   | 文本内容（type=text 时）                                                     |
+| messages[].content[].imageUrl        | object  | 否   | 图片信息（type=image_url 时）                                                |
+| messages[].content[].imageUrl.url    | string  | 是   | 图片 URL 或 Base64（`data:image/png;base64,...`）                            |
+| messages[].content[].imageUrl.detail | string  | 否   | 图片精度：`low` / `high` / `auto`（默认）                                    |
+| messages[].content[].file            | object  | 否   | 文件信息（type=file 时）                                                     |
+| messages[].content[].file.url        | string  | 是   | 文件 URL                                                                     |
+| messages[].content[].file.name       | string  | 否   | 文件名                                                                       |
+| messages[].content[].file.mimeType   | string  | 否   | MIME 类型                                                                    |
+| temperature                          | float   | 否   | 温度参数，默认 0.7                                                           |
+| maxTokens                            | integer | 否   | 最大生成 Token 数，默认 4096                                                 |
+| stream                               | boolean | 否   | 是否流式返回，默认 false（true 时走 SSE）                                    |
+| user                                 | string  | 否   | 用户标识                                                                     |
+| appId                                | string  | 否   | 应用标识                                                                     |
 
 **请求示例**
 
@@ -1490,17 +1490,17 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | model / messages 为空 |
-| 40006 | 模型不支持多模态输入 |
-| 40402 | modelId 不存在 |
-| 42202 | 模型不可用 |
-| 42203 | 所有供应商（含 Fallback）均调用失败 |
-| 42204 | Token 配额已耗尽 |
-| 42901 | QPS 限流触发 |
-| 50005 | 模型供应商 API 返回错误 |
-| 50006 | 模型供应商调用超时 |
+| 错误码 | 场景                                |
+| ------ | ----------------------------------- |
+| 40001  | model / messages 为空               |
+| 40006  | 模型不支持多模态输入                |
+| 40402  | modelId 不存在                      |
+| 42202  | 模型不可用                          |
+| 42203  | 所有供应商（含 Fallback）均调用失败 |
+| 42204  | Token 配额已耗尽                    |
+| 42901  | QPS 限流触发                        |
+| 50005  | 模型供应商 API 返回错误             |
+| 50006  | 模型供应商调用超时                  |
 
 ---
 
@@ -1512,11 +1512,11 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| capability | string | 否 | 能力筛选，默认 `CHAT` |
-| includeVision | boolean | 否 | 是否包含视觉模型，默认 false |
-| includeFunctionCalling | boolean | 否 | 是否包含 Function Calling 模型，默认 false |
+| 参数                   | 类型    | 必填 | 说明                                       |
+| ---------------------- | ------- | ---- | ------------------------------------------ |
+| capability             | string  | 否   | 能力筛选，默认 `CHAT`                      |
+| includeVision          | boolean | 否   | 是否包含视觉模型，默认 false               |
+| includeFunctionCalling | boolean | 否   | 是否包含 Function Calling 模型，默认 false |
 
 **响应示例**
 
@@ -1572,11 +1572,11 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 #### 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/v1/llmgw/embeddings` | 单条文本向量化 |
-| POST | `/api/v1/llmgw/embeddings/batch` | 批量文本向量化 |
-| GET | `/api/v1/llmgw/embeddings/models` | 可用 Embedding 模型列表 |
+| 方法 | 路径                              | 说明                    |
+| ---- | --------------------------------- | ----------------------- |
+| POST | `/api/v1/llmgw/embeddings`        | 单条文本向量化          |
+| POST | `/api/v1/llmgw/embeddings/batch`  | 批量文本向量化          |
+| GET  | `/api/v1/llmgw/embeddings/models` | 可用 Embedding 模型列表 |
 
 ---
 
@@ -1588,14 +1588,14 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| model | string | 是 | Embedding 模型 ID（如 `doubao-embedding-large`） |
-| input | string | 是 | 待向量化的文本，最长 8192 字符 |
-| encodingFormat | string | 否 | 返回格式：`float`（默认）/ `base64` |
-| dimensions | integer | 否 | 输出维度（部分模型支持降维），不传则使用模型默认维度 |
-| user | string | 否 | 用户标识 |
-| appId | string | 否 | 应用标识 |
+| 字段           | 类型    | 必填 | 说明                                                 |
+| -------------- | ------- | ---- | ---------------------------------------------------- |
+| model          | string  | 是   | Embedding 模型 ID（如 `doubao-embedding-large`）     |
+| input          | string  | 是   | 待向量化的文本，最长 8192 字符                       |
+| encodingFormat | string  | 否   | 返回格式：`float`（默认）/ `base64`                  |
+| dimensions     | integer | 否   | 输出维度（部分模型支持降维），不传则使用模型默认维度 |
+| user           | string  | 否   | 用户标识                                             |
+| appId          | string  | 否   | 应用标识                                             |
 
 **请求示例**
 
@@ -1642,15 +1642,15 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | model / input 为空 |
-| 40004 | input 超过最大长度限制 |
-| 40402 | modelId 不存在 |
-| 42202 | 模型不可用 |
-| 42204 | Token 配额已耗尽 |
-| 42901 | QPS 限流触发 |
-| 50005 | 模型供应商 API 返回错误 |
+| 错误码 | 场景                    |
+| ------ | ----------------------- |
+| 40001  | model / input 为空      |
+| 40004  | input 超过最大长度限制  |
+| 40402  | modelId 不存在          |
+| 42202  | 模型不可用              |
+| 42204  | Token 配额已耗尽        |
+| 42901  | QPS 限流触发            |
+| 50005  | 模型供应商 API 返回错误 |
 
 ---
 
@@ -1662,14 +1662,14 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| model | string | 是 | Embedding 模型 ID |
-| input | array[string] | 是 | 待向量化的文本列表，1-100 条，每条最长 8192 字符 |
-| encodingFormat | string | 否 | 返回格式：`float`（默认）/ `base64` |
-| dimensions | integer | 否 | 输出维度 |
-| user | string | 否 | 用户标识 |
-| appId | string | 否 | 应用标识 |
+| 字段           | 类型          | 必填 | 说明                                             |
+| -------------- | ------------- | ---- | ------------------------------------------------ |
+| model          | string        | 是   | Embedding 模型 ID                                |
+| input          | array[string] | 是   | 待向量化的文本列表，1-100 条，每条最长 8192 字符 |
+| encodingFormat | string        | 否   | 返回格式：`float`（默认）/ `base64`              |
+| dimensions     | integer       | 否   | 输出维度                                         |
+| user           | string        | 否   | 用户标识                                         |
+| appId          | string        | 否   | 应用标识                                         |
 
 **请求示例**
 
@@ -1731,15 +1731,15 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | model / input 为空 |
-| 40004 | input 超过 100 条或单条超过长度限制 |
-| 40402 | modelId 不存在 |
-| 42202 | 模型不可用 |
-| 42204 | Token 配额已耗尽 |
-| 42901 | QPS 限流触发 |
-| 50005 | 模型供应商 API 返回错误 |
+| 错误码 | 场景                                |
+| ------ | ----------------------------------- |
+| 40001  | model / input 为空                  |
+| 40004  | input 超过 100 条或单条超过长度限制 |
+| 40402  | modelId 不存在                      |
+| 42202  | 模型不可用                          |
+| 42204  | Token 配额已耗尽                    |
+| 42901  | QPS 限流触发                        |
+| 50005  | 模型供应商 API 返回错误             |
 
 ---
 
@@ -1797,18 +1797,18 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 #### 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/v1/llmgw/prompts` | 创建 Prompt 模板 |
-| GET | `/api/v1/llmgw/prompts` | Prompt 模板列表（分页） |
-| GET | `/api/v1/llmgw/prompts/{promptId}` | 获取 Prompt 模板详情 |
-| PUT | `/api/v1/llmgw/prompts/{promptId}` | 更新 Prompt 模板（创建新版本） |
-| DELETE | `/api/v1/llmgw/prompts/{promptId}` | 删除 Prompt 模板 |
-| GET | `/api/v1/llmgw/prompts/{promptId}/versions` | 获取版本历史 |
-| GET | `/api/v1/llmgw/prompts/{promptId}/versions/{version}` | 获取指定版本 |
-| POST | `/api/v1/llmgw/prompts/{promptId}/rollback` | 回滚到指定版本 |
-| POST | `/api/v1/llmgw/prompts/{promptId}/render` | 渲染 Prompt（变量替换） |
-| POST | `/api/v1/llmgw/prompts/{promptId}/preview` | 预览 Prompt（渲染 + 模型调用） |
+| 方法   | 路径                                                  | 说明                           |
+| ------ | ----------------------------------------------------- | ------------------------------ |
+| POST   | `/api/v1/llmgw/prompts`                               | 创建 Prompt 模板               |
+| GET    | `/api/v1/llmgw/prompts`                               | Prompt 模板列表（分页）        |
+| GET    | `/api/v1/llmgw/prompts/{promptId}`                    | 获取 Prompt 模板详情           |
+| PUT    | `/api/v1/llmgw/prompts/{promptId}`                    | 更新 Prompt 模板（创建新版本） |
+| DELETE | `/api/v1/llmgw/prompts/{promptId}`                    | 删除 Prompt 模板               |
+| GET    | `/api/v1/llmgw/prompts/{promptId}/versions`           | 获取版本历史                   |
+| GET    | `/api/v1/llmgw/prompts/{promptId}/versions/{version}` | 获取指定版本                   |
+| POST   | `/api/v1/llmgw/prompts/{promptId}/rollback`           | 回滚到指定版本                 |
+| POST   | `/api/v1/llmgw/prompts/{promptId}/render`             | 渲染 Prompt（变量替换）        |
+| POST   | `/api/v1/llmgw/prompts/{promptId}/preview`            | 预览 Prompt（渲染 + 模型调用） |
 
 ---
 
@@ -1820,24 +1820,24 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| promptKey | string | 是 | 模板唯一标识（业务 key），同一租户内唯一 |
-| name | string | 是 | 模板名称，1-128 字符 |
-| description | string | 否 | 模板描述 |
-| category | string | 否 | 分类标签，如 `system` / `assistant` / `rag` / `agent` |
-| template | string | 是 | 模板内容，支持 `{{variable}}` 变量占位 |
-| variables | array | 否 | 变量定义列表 |
-| variables[].name | string | 否 | 变量名 |
-| variables[].type | string | 否 | 变量类型：`string` / `number` / `boolean` / `object` / `array` |
-| variables[].required | boolean | 否 | 是否必填，默认 true |
-| variables[].defaultValue | any | 否 | 默认值 |
-| variables[].description | string | 否 | 变量描述 |
-| defaultModel | string | 否 | 默认关联模型 ID |
-| defaultParams | object | 否 | 默认调用参数 |
-| defaultParams.temperature | float | 否 | 默认温度 |
-| defaultParams.maxTokens | integer | 否 | 默认最大 Token 数 |
-| tags | array[string] | 否 | 标签列表 |
+| 字段                      | 类型          | 必填 | 说明                                                           |
+| ------------------------- | ------------- | ---- | -------------------------------------------------------------- |
+| promptKey                 | string        | 是   | 模板唯一标识（业务 key），同一租户内唯一                       |
+| name                      | string        | 是   | 模板名称，1-128 字符                                           |
+| description               | string        | 否   | 模板描述                                                       |
+| category                  | string        | 否   | 分类标签，如 `system` / `assistant` / `rag` / `agent`          |
+| template                  | string        | 是   | 模板内容，支持 `{{variable}}` 变量占位                         |
+| variables                 | array         | 否   | 变量定义列表                                                   |
+| variables[].name          | string        | 否   | 变量名                                                         |
+| variables[].type          | string        | 否   | 变量类型：`string` / `number` / `boolean` / `object` / `array` |
+| variables[].required      | boolean       | 否   | 是否必填，默认 true                                            |
+| variables[].defaultValue  | any           | 否   | 默认值                                                         |
+| variables[].description   | string        | 否   | 变量描述                                                       |
+| defaultModel              | string        | 否   | 默认关联模型 ID                                                |
+| defaultParams             | object        | 否   | 默认调用参数                                                   |
+| defaultParams.temperature | float         | 否   | 默认温度                                                       |
+| defaultParams.maxTokens   | integer       | 否   | 默认最大 Token 数                                              |
+| tags                      | array[string] | 否   | 标签列表                                                       |
 
 **请求示例**
 
@@ -1916,11 +1916,11 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | promptKey / name / template 为空 |
-| 40903 | promptKey 在同一租户内已存在 |
-| 42205 | 模板中的变量未在 variables 中定义 |
+| 错误码 | 场景                              |
+| ------ | --------------------------------- |
+| 40001  | promptKey / name / template 为空  |
+| 40903  | promptKey 在同一租户内已存在      |
+| 42205  | 模板中的变量未在 variables 中定义 |
 
 ---
 
@@ -1930,14 +1930,14 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | integer | 否 | 页码，默认 1 |
-| pageSize | integer | 否 | 每页条数，默认 20 |
-| category | string | 否 | 分类筛选 |
-| tags | string | 否 | 标签筛选（逗号分隔） |
-| keyword | string | 否 | 关键词搜索 |
-| status | string | 否 | 状态筛选 |
+| 参数     | 类型    | 必填 | 说明                 |
+| -------- | ------- | ---- | -------------------- |
+| page     | integer | 否   | 页码，默认 1         |
+| pageSize | integer | 否   | 每页条数，默认 20    |
+| category | string  | 否   | 分类筛选             |
+| tags     | string  | 否   | 标签筛选（逗号分隔） |
+| keyword  | string  | 否   | 关键词搜索           |
+| status   | string  | 否   | 状态筛选             |
 
 **响应示例**
 
@@ -1989,8 +1989,8 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数     | 类型   | 说明           |
+| -------- | ------ | -------------- |
 | promptId | string | Prompt 模板 ID |
 
 **响应示例**
@@ -2038,9 +2038,9 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40404 | promptId 不存在 |
+| 错误码 | 场景            |
+| ------ | --------------- |
+| 40404  | promptId 不存在 |
 
 ---
 
@@ -2052,17 +2052,17 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | 否 | 模板名称 |
-| description | string | 否 | 模板描述 |
-| category | string | 否 | 分类标签 |
-| template | string | 否 | 模板内容 |
-| variables | array | 否 | 变量定义列表 |
-| defaultModel | string | 否 | 默认关联模型 ID |
-| defaultParams | object | 否 | 默认调用参数 |
-| tags | array[string] | 否 | 标签列表 |
-| changeLog | string | 否 | 变更说明 |
+| 字段          | 类型          | 必填 | 说明            |
+| ------------- | ------------- | ---- | --------------- |
+| name          | string        | 否   | 模板名称        |
+| description   | string        | 否   | 模板描述        |
+| category      | string        | 否   | 分类标签        |
+| template      | string        | 否   | 模板内容        |
+| variables     | array         | 否   | 变量定义列表    |
+| defaultModel  | string        | 否   | 默认关联模型 ID |
+| defaultParams | object        | 否   | 默认调用参数    |
+| tags          | array[string] | 否   | 标签列表        |
+| changeLog     | string        | 否   | 变更说明        |
 
 **请求示例**
 
@@ -2094,10 +2094,10 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40404 | promptId 不存在 |
-| 42205 | 模板中的变量未在 variables 中定义 |
+| 错误码 | 场景                              |
+| ------ | --------------------------------- |
+| 40404  | promptId 不存在                   |
+| 42205  | 模板中的变量未在 variables 中定义 |
 
 ---
 
@@ -2179,10 +2179,10 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
-| promptId | string | Prompt 模板 ID |
-| version | integer | 版本号 |
+| 参数     | 类型    | 说明           |
+| -------- | ------- | -------------- |
+| promptId | string  | Prompt 模板 ID |
+| version  | integer | 版本号         |
 
 **响应示例**
 
@@ -2233,10 +2233,10 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| targetVersion | integer | 是 | 目标版本号 |
-| changeLog | string | 否 | 回滚说明 |
+| 字段          | 类型    | 必填 | 说明       |
+| ------------- | ------- | ---- | ---------- |
+| targetVersion | integer | 是   | 目标版本号 |
+| changeLog     | string  | 否   | 回滚说明   |
 
 **请求示例**
 
@@ -2268,10 +2268,10 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40404 | promptId 不存在 |
-| 40004 | targetVersion 不存在 |
+| 错误码 | 场景                 |
+| ------ | -------------------- |
+| 40404  | promptId 不存在      |
+| 40004  | targetVersion 不存在 |
 
 ---
 
@@ -2283,10 +2283,10 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| variables | object | 是 | 变量键值对，key 为变量名，value 为变量值 |
-| version | integer | 否 | 指定版本号，不传则使用最新版本 |
+| 字段      | 类型    | 必填 | 说明                                     |
+| --------- | ------- | ---- | ---------------------------------------- |
+| variables | object  | 是   | 变量键值对，key 为变量名，value 为变量值 |
+| version   | integer | 否   | 指定版本号，不传则使用最新版本           |
 
 **请求示例**
 
@@ -2319,11 +2319,11 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40404 | promptId 不存在 |
-| 42205 | 必填变量未提供 |
-| 42206 | 模板渲染失败（变量格式错误等） |
+| 错误码 | 场景                           |
+| ------ | ------------------------------ |
+| 40404  | promptId 不存在                |
+| 42205  | 必填变量未提供                 |
+| 42206  | 模板渲染失败（变量格式错误等） |
 
 ---
 
@@ -2335,14 +2335,14 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| variables | object | 是 | 变量键值对 |
-| model | string | 否 | 模型 ID（不传则使用模板默认模型） |
-| params | object | 否 | 调用参数（覆盖默认参数） |
-| params.temperature | float | 否 | 温度 |
-| params.maxTokens | integer | 否 | 最大 Token 数 |
-| version | integer | 否 | 指定版本号 |
+| 字段               | 类型    | 必填 | 说明                              |
+| ------------------ | ------- | ---- | --------------------------------- |
+| variables          | object  | 是   | 变量键值对                        |
+| model              | string  | 否   | 模型 ID（不传则使用模板默认模型） |
+| params             | object  | 否   | 调用参数（覆盖默认参数）          |
+| params.temperature | float   | 否   | 温度                              |
+| params.maxTokens   | integer | 否   | 最大 Token 数                     |
+| version            | integer | 否   | 指定版本号                        |
 
 **请求示例**
 
@@ -2392,14 +2392,14 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40404 | promptId 不存在 |
-| 42205 | 必填变量未提供 |
-| 42206 | 模板渲染失败 |
-| 42202 | 模型不可用 |
-| 42204 | Token 配额已耗尽 |
-| 50005 | 模型供应商 API 返回错误 |
+| 错误码 | 场景                    |
+| ------ | ----------------------- |
+| 40404  | promptId 不存在         |
+| 42205  | 必填变量未提供          |
+| 42206  | 模板渲染失败            |
+| 42202  | 模型不可用              |
+| 42204  | Token 配额已耗尽        |
+| 50005  | 模型供应商 API 返回错误 |
 
 ---
 
@@ -2407,19 +2407,19 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 #### 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/api/v1/llmgw/quotas` | 配额列表查询 |
-| GET | `/api/v1/llmgw/quotas/{quotaId}` | 配额详情 |
-| POST | `/api/v1/llmgw/quotas` | 创建配额规则 |
-| PUT | `/api/v1/llmgw/quotas/{quotaId}` | 更新配额规则 |
-| DELETE | `/api/v1/llmgw/quotas/{quotaId}` | 删除配额规则 |
-| GET | `/api/v1/llmgw/quotas/usage` | 配额使用情况查询（实时） |
-| PUT | `/api/v1/llmgw/quotas/{quotaId}/reset` | 重置配额使用量 |
-| GET | `/api/v1/llmgw/rate-limits` | 限流规则列表 |
-| POST | `/api/v1/llmgw/rate-limits` | 创建限流规则 |
-| PUT | `/api/v1/llmgw/rate-limits/{ruleId}` | 更新限流规则 |
-| DELETE | `/api/v1/llmgw/rate-limits/{ruleId}` | 删除限流规则 |
+| 方法   | 路径                                   | 说明                     |
+| ------ | -------------------------------------- | ------------------------ |
+| GET    | `/api/v1/llmgw/quotas`                 | 配额列表查询             |
+| GET    | `/api/v1/llmgw/quotas/{quotaId}`       | 配额详情                 |
+| POST   | `/api/v1/llmgw/quotas`                 | 创建配额规则             |
+| PUT    | `/api/v1/llmgw/quotas/{quotaId}`       | 更新配额规则             |
+| DELETE | `/api/v1/llmgw/quotas/{quotaId}`       | 删除配额规则             |
+| GET    | `/api/v1/llmgw/quotas/usage`           | 配额使用情况查询（实时） |
+| PUT    | `/api/v1/llmgw/quotas/{quotaId}/reset` | 重置配额使用量           |
+| GET    | `/api/v1/llmgw/rate-limits`            | 限流规则列表             |
+| POST   | `/api/v1/llmgw/rate-limits`            | 创建限流规则             |
+| PUT    | `/api/v1/llmgw/rate-limits/{ruleId}`   | 更新限流规则             |
+| DELETE | `/api/v1/llmgw/rate-limits/{ruleId}`   | 删除限流规则             |
 
 ---
 
@@ -2429,13 +2429,13 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | integer | 否 | 页码 |
-| pageSize | integer | 否 | 每页条数 |
-| scope | string | 否 | 配额维度：`USER` / `APP` / `TENANT` / `MODEL` |
-| scopeId | string | 否 | 维度目标 ID |
-| quotaType | string | 否 | 配额类型：`TOKEN_DAILY` / `TOKEN_MONTHLY` / `REQUEST_DAILY` / `REQUEST_MONTHLY` |
+| 参数      | 类型    | 必填 | 说明                                                                            |
+| --------- | ------- | ---- | ------------------------------------------------------------------------------- |
+| page      | integer | 否   | 页码                                                                            |
+| pageSize  | integer | 否   | 每页条数                                                                        |
+| scope     | string  | 否   | 配额维度：`USER` / `APP` / `TENANT` / `MODEL`                                   |
+| scopeId   | string  | 否   | 维度目标 ID                                                                     |
+| quotaType | string  | 否   | 配额类型：`TOKEN_DAILY` / `TOKEN_MONTHLY` / `REQUEST_DAILY` / `REQUEST_MONTHLY` |
 
 **响应示例**
 
@@ -2536,15 +2536,15 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| scope | string | 是 | 配额维度：`USER` / `APP` / `TENANT` / `MODEL` |
-| scopeId | string | 是 | 维度目标 ID（用户ID/应用ID/租户ID/模型ID） |
-| quotaType | string | 是 | 配额类型：`TOKEN_DAILY` / `TOKEN_MONTHLY` / `REQUEST_DAILY` / `REQUEST_MONTHLY` |
-| limit | integer | 是 | 配额上限（Token 数或请求数） |
-| modelId | string | 否 | 限定模型 ID（不传则对所有模型生效） |
-| alertThreshold | integer | 否 | 预警阈值百分比，默认 80，范围 50-99 |
-| alertEnabled | boolean | 否 | 是否启用预警，默认 true |
+| 字段           | 类型    | 必填 | 说明                                                                            |
+| -------------- | ------- | ---- | ------------------------------------------------------------------------------- |
+| scope          | string  | 是   | 配额维度：`USER` / `APP` / `TENANT` / `MODEL`                                   |
+| scopeId        | string  | 是   | 维度目标 ID（用户ID/应用ID/租户ID/模型ID）                                      |
+| quotaType      | string  | 是   | 配额类型：`TOKEN_DAILY` / `TOKEN_MONTHLY` / `REQUEST_DAILY` / `REQUEST_MONTHLY` |
+| limit          | integer | 是   | 配额上限（Token 数或请求数）                                                    |
+| modelId        | string  | 否   | 限定模型 ID（不传则对所有模型生效）                                             |
+| alertThreshold | integer | 否   | 预警阈值百分比，默认 80，范围 50-99                                             |
+| alertEnabled   | boolean | 否   | 是否启用预警，默认 true                                                         |
 
 **请求示例**
 
@@ -2586,11 +2586,11 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | scope / scopeId / quotaType / limit 为空 |
-| 40004 | limit 值不合法（小于等于 0） |
-| 40901 | 同一 scope+scopeId+quotaType+modelId 的配额已存在 |
+| 错误码 | 场景                                              |
+| ------ | ------------------------------------------------- |
+| 40001  | scope / scopeId / quotaType / limit 为空          |
+| 40004  | limit 值不合法（小于等于 0）                      |
+| 40901  | 同一 scope+scopeId+quotaType+modelId 的配额已存在 |
 
 ---
 
@@ -2600,13 +2600,13 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| limit | integer | 否 | 新的配额上限 |
-| alertThreshold | integer | 否 | 预警阈值百分比 |
-| alertEnabled | boolean | 否 | 是否启用预警 |
-| status | string | 否 | 状态：`ACTIVE` / `INACTIVE` |
-| version | integer | 是 | 乐观锁版本号 |
+| 字段           | 类型    | 必填 | 说明                        |
+| -------------- | ------- | ---- | --------------------------- |
+| limit          | integer | 否   | 新的配额上限                |
+| alertThreshold | integer | 否   | 预警阈值百分比              |
+| alertEnabled   | boolean | 否   | 是否启用预警                |
+| status         | string  | 否   | 状态：`ACTIVE` / `INACTIVE` |
+| version        | integer | 是   | 乐观锁版本号                |
 
 **请求示例**
 
@@ -2667,11 +2667,11 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| scope | string | 否 | 配额维度 |
-| scopeId | string | 否 | 维度目标 ID |
-| quotaType | string | 否 | 配额类型 |
+| 参数      | 类型   | 必填 | 说明        |
+| --------- | ------ | ---- | ----------- |
+| scope     | string | 否   | 配额维度    |
+| scopeId   | string | 否   | 维度目标 ID |
+| quotaType | string | 否   | 配额类型    |
 
 **响应示例**
 
@@ -2720,9 +2720,9 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| reason | string | 否 | 重置原因 |
+| 字段   | 类型   | 必填 | 说明     |
+| ------ | ------ | ---- | -------- |
+| reason | string | 否   | 重置原因 |
 
 **请求示例**
 
@@ -2758,12 +2758,12 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | integer | 否 | 页码 |
-| pageSize | integer | 否 | 每页条数 |
-| scope | string | 否 | 限流维度：`USER` / `APP` / `TENANT` / `GLOBAL` / `MODEL` |
-| status | string | 否 | 状态筛选 |
+| 参数     | 类型    | 必填 | 说明                                                     |
+| -------- | ------- | ---- | -------------------------------------------------------- |
+| page     | integer | 否   | 页码                                                     |
+| pageSize | integer | 否   | 每页条数                                                 |
+| scope    | string  | 否   | 限流维度：`USER` / `APP` / `TENANT` / `GLOBAL` / `MODEL` |
+| status   | string  | 否   | 状态筛选                                                 |
 
 **响应示例**
 
@@ -2821,13 +2821,13 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| scope | string | 是 | 限流维度：`USER` / `APP` / `TENANT` / `GLOBAL` / `MODEL` |
-| scopeId | string | 是 | 维度目标 ID（GLOBAL 时传 `*`） |
-| qpsLimit | integer | 是 | 每秒请求数上限，范围 1-10000 |
-| concurrentLimit | integer | 否 | 并发请求数上限，范围 1-1000，默认 10 |
-| modelId | string | 否 | 限定模型 ID（不传则对所有模型生效） |
+| 字段            | 类型    | 必填 | 说明                                                     |
+| --------------- | ------- | ---- | -------------------------------------------------------- |
+| scope           | string  | 是   | 限流维度：`USER` / `APP` / `TENANT` / `GLOBAL` / `MODEL` |
+| scopeId         | string  | 是   | 维度目标 ID（GLOBAL 时传 `*`）                           |
+| qpsLimit        | integer | 是   | 每秒请求数上限，范围 1-10000                             |
+| concurrentLimit | integer | 否   | 并发请求数上限，范围 1-1000，默认 10                     |
+| modelId         | string  | 否   | 限定模型 ID（不传则对所有模型生效）                      |
 
 **请求示例**
 
@@ -2862,11 +2862,11 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40001 | scope / scopeId / qpsLimit 为空 |
-| 40004 | qpsLimit 或 concurrentLimit 值不合法 |
-| 40904 | 同一 scope+scopeId+modelId 的限流规则已存在 |
+| 错误码 | 场景                                        |
+| ------ | ------------------------------------------- |
+| 40001  | scope / scopeId / qpsLimit 为空             |
+| 40004  | qpsLimit 或 concurrentLimit 值不合法        |
+| 40904  | 同一 scope+scopeId+modelId 的限流规则已存在 |
 
 ---
 
@@ -2876,12 +2876,12 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Body）**
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| qpsLimit | integer | 否 | 新的 QPS 上限 |
-| concurrentLimit | integer | 否 | 新的并发上限 |
-| status | string | 否 | 状态：`ACTIVE` / `INACTIVE` |
-| version | integer | 是 | 乐观锁版本号 |
+| 字段            | 类型    | 必填 | 说明                        |
+| --------------- | ------- | ---- | --------------------------- |
+| qpsLimit        | integer | 否   | 新的 QPS 上限               |
+| concurrentLimit | integer | 否   | 新的并发上限                |
+| status          | string  | 否   | 状态：`ACTIVE` / `INACTIVE` |
+| version         | integer | 是   | 乐观锁版本号                |
 
 **请求示例**
 
@@ -2936,15 +2936,15 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 #### 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/api/v1/llmgw/costs/summary` | 成本汇总（总览） |
-| GET | `/api/v1/llmgw/costs/by-user` | 按用户维度成本报表 |
-| GET | `/api/v1/llmgw/costs/by-app` | 按应用维度成本报表 |
-| GET | `/api/v1/llmgw/costs/by-model` | 按模型维度成本报表 |
-| GET | `/api/v1/llmgw/costs/by-provider` | 按供应商维度成本报表 |
-| GET | `/api/v1/llmgw/costs/timeline` | 成本时间序列 |
-| GET | `/api/v1/llmgw/costs/export` | 导出成本报表（CSV） |
+| 方法 | 路径                              | 说明                 |
+| ---- | --------------------------------- | -------------------- |
+| GET  | `/api/v1/llmgw/costs/summary`     | 成本汇总（总览）     |
+| GET  | `/api/v1/llmgw/costs/by-user`     | 按用户维度成本报表   |
+| GET  | `/api/v1/llmgw/costs/by-app`      | 按应用维度成本报表   |
+| GET  | `/api/v1/llmgw/costs/by-model`    | 按模型维度成本报表   |
+| GET  | `/api/v1/llmgw/costs/by-provider` | 按供应商维度成本报表 |
+| GET  | `/api/v1/llmgw/costs/timeline`    | 成本时间序列         |
+| GET  | `/api/v1/llmgw/costs/export`      | 导出成本报表（CSV）  |
 
 ---
 
@@ -2956,13 +2956,13 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startTime | string | 是 | 开始时间（ISO 8601），如 `2026-07-01T00:00:00.000+08:00` |
-| endTime | string | 是 | 结束时间（ISO 8601），如 `2026-07-16T23:59:59.999+08:00` |
-| userId | string | 否 | 用户 ID 筛选 |
-| appId | string | 否 | 应用 ID 筛选 |
-| modelId | string | 否 | 模型 ID 筛选 |
+| 参数      | 类型   | 必填 | 说明                                                     |
+| --------- | ------ | ---- | -------------------------------------------------------- |
+| startTime | string | 是   | 开始时间（ISO 8601），如 `2026-07-01T00:00:00.000+08:00` |
+| endTime   | string | 是   | 结束时间（ISO 8601），如 `2026-07-16T23:59:59.999+08:00` |
+| userId    | string | 否   | 用户 ID 筛选                                             |
+| appId     | string | 否   | 应用 ID 筛选                                             |
+| modelId   | string | 否   | 模型 ID 筛选                                             |
 
 **响应示例**
 
@@ -2984,7 +2984,7 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
     "breakdown": {
       "byModality": {
         "chat": {
-          "cost": 1180.50,
+          "cost": 1180.5,
           "calls": 42000,
           "tokens": 78000000
         },
@@ -2998,13 +2998,13 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
     "topModels": [
       {
         "modelId": "doubao-pro-32k",
-        "cost": 680.00,
+        "cost": 680.0,
         "calls": 28000,
         "tokens": 52000000
       },
       {
         "modelId": "gpt-4o",
-        "cost": 420.50,
+        "cost": 420.5,
         "calls": 12000,
         "tokens": 21000000
       }
@@ -3022,13 +3022,13 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startTime | string | 是 | 开始时间 |
-| endTime | string | 是 | 结束时间 |
-| page | integer | 否 | 页码 |
-| pageSize | integer | 否 | 每页条数 |
-| sort | string | 否 | 排序字段，默认 `totalCost:desc` |
+| 参数      | 类型    | 必填 | 说明                            |
+| --------- | ------- | ---- | ------------------------------- |
+| startTime | string  | 是   | 开始时间                        |
+| endTime   | string  | 是   | 结束时间                        |
+| page      | integer | 否   | 页码                            |
+| pageSize  | integer | 否   | 每页条数                        |
+| sort      | string  | 否   | 排序字段，默认 `totalCost:desc` |
 
 **响应示例**
 
@@ -3041,7 +3041,7 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
       {
         "userId": "user-001",
         "userName": "张三",
-        "totalCost": 320.50,
+        "totalCost": 320.5,
         "totalCalls": 8500,
         "totalTokens": 15000000,
         "promptTokens": 11000000,
@@ -3049,12 +3049,12 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
         "avgLatencyMs": 1200,
         "errorRate": 0.002,
         "topModel": "doubao-pro-32k",
-        "topModelCost": 280.00
+        "topModelCost": 280.0
       },
       {
         "userId": "user-002",
         "userName": "李四",
-        "totalCost": 256.30,
+        "totalCost": 256.3,
         "totalCalls": 6200,
         "totalTokens": 12000000,
         "promptTokens": 9000000,
@@ -3062,7 +3062,7 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
         "avgLatencyMs": 1350,
         "errorRate": 0.005,
         "topModel": "gpt-4o",
-        "topModelCost": 200.00
+        "topModelCost": 200.0
       }
     ],
     "total": 2,
@@ -3082,12 +3082,12 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startTime | string | 是 | 开始时间 |
-| endTime | string | 是 | 结束时间 |
-| page | integer | 否 | 页码 |
-| pageSize | integer | 否 | 每页条数 |
+| 参数      | 类型    | 必填 | 说明     |
+| --------- | ------- | ---- | -------- |
+| startTime | string  | 是   | 开始时间 |
+| endTime   | string  | 是   | 结束时间 |
+| page      | integer | 否   | 页码     |
+| pageSize  | integer | 否   | 每页条数 |
 
 **响应示例**
 
@@ -3100,7 +3100,7 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
       {
         "appId": "app-superai",
         "appName": "超级 AI",
-        "totalCost": 580.00,
+        "totalCost": 580.0,
         "totalCalls": 18000,
         "totalTokens": 32000000,
         "promptTokens": 24000000,
@@ -3141,12 +3141,12 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startTime | string | 是 | 开始时间 |
-| endTime | string | 是 | 结束时间 |
-| page | integer | 否 | 页码 |
-| pageSize | integer | 否 | 每页条数 |
+| 参数      | 类型    | 必填 | 说明     |
+| --------- | ------- | ---- | -------- |
+| startTime | string  | 是   | 开始时间 |
+| endTime   | string  | 是   | 结束时间 |
+| page      | integer | 否   | 页码     |
+| pageSize  | integer | 否   | 每页条数 |
 
 **响应示例**
 
@@ -3160,13 +3160,13 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
         "modelId": "doubao-pro-32k",
         "modelName": "Doubao Pro 32K",
         "providerName": "火山方舟",
-        "totalCost": 680.00,
+        "totalCost": 680.0,
         "totalCalls": 28000,
         "totalTokens": 52000000,
         "promptTokens": 38000000,
         "completionTokens": 14000000,
-        "inputCost": 304.00,
-        "outputCost": 376.00,
+        "inputCost": 304.0,
+        "outputCost": 376.0,
         "avgLatencyMs": 1200,
         "errorRate": 0.002,
         "avgPromptTokens": 1357,
@@ -3176,13 +3176,13 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
         "modelId": "gpt-4o",
         "modelName": "GPT-4o",
         "providerName": "OpenAI",
-        "totalCost": 420.50,
+        "totalCost": 420.5,
         "totalCalls": 12000,
         "totalTokens": 21000000,
         "promptTokens": 16000000,
         "completionTokens": 5000000,
-        "inputCost": 80.00,
-        "outputCost": 75.00,
+        "inputCost": 80.0,
+        "outputCost": 75.0,
         "avgLatencyMs": 1500,
         "errorRate": 0.005,
         "avgPromptTokens": 1333,
@@ -3206,10 +3206,10 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startTime | string | 是 | 开始时间 |
-| endTime | string | 是 | 结束时间 |
+| 参数      | 类型   | 必填 | 说明     |
+| --------- | ------ | ---- | -------- |
+| startTime | string | 是   | 开始时间 |
+| endTime   | string | 是   | 结束时间 |
 
 **响应示例**
 
@@ -3237,7 +3237,7 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
         "providerId": "prv-a1b2c3d4e5f6",
         "providerName": "OpenAI",
         "providerType": "OPENAI",
-        "totalCost": 400.50,
+        "totalCost": 400.5,
         "totalCalls": 14000,
         "totalTokens": 26000000,
         "promptTokens": 16800000,
@@ -3264,13 +3264,13 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startTime | string | 是 | 开始时间 |
-| endTime | string | 是 | 结束时间 |
-| granularity | string | 否 | 时间粒度：`HOUR` / `DAY` / `WEEK` / `MONTH`，默认 `DAY` |
-| dimension | string | 否 | 分组维度：`MODEL` / `APP` / `USER` / `PROVIDER`，不传则为总计 |
-| dimensionId | string | 否 | 分组维度目标 ID |
+| 参数        | 类型   | 必填 | 说明                                                          |
+| ----------- | ------ | ---- | ------------------------------------------------------------- |
+| startTime   | string | 是   | 开始时间                                                      |
+| endTime     | string | 是   | 结束时间                                                      |
+| granularity | string | 否   | 时间粒度：`HOUR` / `DAY` / `WEEK` / `MONTH`，默认 `DAY`       |
+| dimension   | string | 否   | 分组维度：`MODEL` / `APP` / `USER` / `PROVIDER`，不传则为总计 |
+| dimensionId | string | 否   | 分组维度目标 ID                                               |
 
 **响应示例**
 
@@ -3284,25 +3284,25 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
     "points": [
       {
         "timestamp": "2026-07-01T00:00:00.000+08:00",
-        "cost": 45.20,
+        "cost": 45.2,
         "calls": 1800,
         "tokens": 3200000
       },
       {
         "timestamp": "2026-07-02T00:00:00.000+08:00",
-        "cost": 52.30,
+        "cost": 52.3,
         "calls": 2100,
         "tokens": 3800000
       },
       {
         "timestamp": "2026-07-03T00:00:00.000+08:00",
-        "cost": 68.50,
+        "cost": 68.5,
         "calls": 2600,
         "tokens": 4800000
       },
       {
         "timestamp": "2026-07-15T00:00:00.000+08:00",
-        "cost": 95.80,
+        "cost": 95.8,
         "calls": 3500,
         "tokens": 6200000
       },
@@ -3329,12 +3329,12 @@ data: {"id":"chatcmpl-9a8b7c6d2026","errorCode":50006,"errorMessage":"模型供�
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startTime | string | 是 | 开始时间 |
-| endTime | string | 是 | 结束时间 |
-| dimension | string | 是 | 维度：`USER` / `APP` / `MODEL` / `PROVIDER` |
-| format | string | 否 | 导出格式：`CSV`（默认）/ `JSON` |
+| 参数      | 类型   | 必填 | 说明                                        |
+| --------- | ------ | ---- | ------------------------------------------- |
+| startTime | string | 是   | 开始时间                                    |
+| endTime   | string | 是   | 结束时间                                    |
+| dimension | string | 是   | 维度：`USER` / `APP` / `MODEL` / `PROVIDER` |
+| format    | string | 否   | 导出格式：`CSV`（默认）/ `JSON`             |
 
 **响应**
 
@@ -3355,14 +3355,14 @@ user-002,李四,256.30,6200,12000000,9000000,3000000,1350,0.005,gpt-4o
 
 #### 接口总览
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/api/v1/llmgw/audit/logs` | 调用日志查询（分页） |
-| GET | `/api/v1/llmgw/audit/logs/{logId}` | 调用日志详情 |
-| GET | `/api/v1/llmgw/audit/errors` | 错误日志查询 |
-| GET | `/api/v1/llmgw/audit/errors/{logId}` | 错误日志详情 |
-| GET | `/api/v1/llmgw/audit/latency` | 延迟统计 |
-| GET | `/api/v1/llmgw/audit/latency/by-model` | 按模型的延迟统计 |
+| 方法 | 路径                                   | 说明                 |
+| ---- | -------------------------------------- | -------------------- |
+| GET  | `/api/v1/llmgw/audit/logs`             | 调用日志查询（分页） |
+| GET  | `/api/v1/llmgw/audit/logs/{logId}`     | 调用日志详情         |
+| GET  | `/api/v1/llmgw/audit/errors`           | 错误日志查询         |
+| GET  | `/api/v1/llmgw/audit/errors/{logId}`   | 错误日志详情         |
+| GET  | `/api/v1/llmgw/audit/latency`          | 延迟统计             |
+| GET  | `/api/v1/llmgw/audit/latency/by-model` | 按模型的延迟统计     |
 
 ---
 
@@ -3372,20 +3372,20 @@ user-002,李四,256.30,6200,12000000,9000000,3000000,1350,0.005,gpt-4o
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | integer | 否 | 页码，默认 1 |
-| pageSize | integer | 否 | 每页条数，默认 20，最大 100 |
-| startTime | string | 否 | 开始时间 |
-| endTime | string | 否 | 结束时间 |
-| userId | string | 否 | 用户 ID 筛选 |
-| appId | string | 否 | 应用 ID 筛选 |
-| modelId | string | 否 | 模型 ID 筛选 |
-| providerId | string | 否 | 供应商 ID 筛选 |
-| status | string | 否 | 调用状态：`SUCCESS` / `FAILED` / `TIMEOUT` |
-| traceId | string | 否 | 按 trace_id 查询 |
-| requestType | string | 否 | 请求类型：`CHAT` / `EMBEDDING` / `MULTIMODAL` |
-| sort | string | 否 | 排序字段，默认 `createdAt:desc` |
+| 参数        | 类型    | 必填 | 说明                                          |
+| ----------- | ------- | ---- | --------------------------------------------- |
+| page        | integer | 否   | 页码，默认 1                                  |
+| pageSize    | integer | 否   | 每页条数，默认 20，最大 100                   |
+| startTime   | string  | 否   | 开始时间                                      |
+| endTime     | string  | 否   | 结束时间                                      |
+| userId      | string  | 否   | 用户 ID 筛选                                  |
+| appId       | string  | 否   | 应用 ID 筛选                                  |
+| modelId     | string  | 否   | 模型 ID 筛选                                  |
+| providerId  | string  | 否   | 供应商 ID 筛选                                |
+| status      | string  | 否   | 调用状态：`SUCCESS` / `FAILED` / `TIMEOUT`    |
+| traceId     | string  | 否   | 按 trace_id 查询                              |
+| requestType | string  | 否   | 请求类型：`CHAT` / `EMBEDDING` / `MULTIMODAL` |
+| sort        | string  | 否   | 排序字段，默认 `createdAt:desc`               |
 
 **响应示例**
 
@@ -3461,8 +3461,8 @@ user-002,李四,256.30,6200,12000000,9000000,3000000,1350,0.005,gpt-4o
 
 **路径参数**
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
+| 参数  | 类型   | 说明    |
+| ----- | ------ | ------- |
 | logId | string | 日志 ID |
 
 **响应示例**
@@ -3536,9 +3536,9 @@ user-002,李四,256.30,6200,12000000,9000000,3000000,1350,0.005,gpt-4o
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40406 | logId 不存在 |
+| 错误码 | 场景         |
+| ------ | ------------ |
+| 40406  | logId 不存在 |
 
 ---
 
@@ -3550,17 +3550,17 @@ user-002,李四,256.30,6200,12000000,9000000,3000000,1350,0.005,gpt-4o
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| page | integer | 否 | 页码，默认 1 |
-| pageSize | integer | 否 | 每页条数，默认 20 |
-| startTime | string | 否 | 开始时间 |
-| endTime | string | 否 | 结束时间 |
-| errorCode | integer | 否 | 业务错误码筛选 |
-| modelId | string | 否 | 模型 ID 筛选 |
-| providerId | string | 否 | 供应商 ID 筛选 |
-| userId | string | 否 | 用户 ID 筛选 |
-| appId | string | 否 | 应用 ID 筛选 |
+| 参数       | 类型    | 必填 | 说明              |
+| ---------- | ------- | ---- | ----------------- |
+| page       | integer | 否   | 页码，默认 1      |
+| pageSize   | integer | 否   | 每页条数，默认 20 |
+| startTime  | string  | 否   | 开始时间          |
+| endTime    | string  | 否   | 结束时间          |
+| errorCode  | integer | 否   | 业务错误码筛选    |
+| modelId    | string  | 否   | 模型 ID 筛选      |
+| providerId | string  | 否   | 供应商 ID 筛选    |
+| userId     | string  | 否   | 用户 ID 筛选      |
+| appId      | string  | 否   | 应用 ID 筛选      |
 
 **响应示例**
 
@@ -3645,9 +3645,7 @@ user-002,李四,256.30,6200,12000000,9000000,3000000,1350,0.005,gpt-4o
     "errorType": "PROVIDER_TIMEOUT",
     "request": {
       "model": "doubao-pro-32k",
-      "messages": [
-        {"role": "user", "content": "帮我总结今天的会议纪要"}
-      ],
+      "messages": [{ "role": "user", "content": "帮我总结今天的会议纪要" }],
       "temperature": 0.7,
       "maxTokens": 2048
     },
@@ -3686,9 +3684,9 @@ user-002,李四,256.30,6200,12000000,9000000,3000000,1350,0.005,gpt-4o
 
 **错误场景**
 
-| 错误码 | 场景 |
-|---|---|
-| 40406 | logId 不存在 |
+| 错误码 | 场景         |
+| ------ | ------------ |
+| 40406  | logId 不存在 |
 
 ---
 
@@ -3700,13 +3698,13 @@ user-002,李四,256.30,6200,12000000,9000000,3000000,1350,0.005,gpt-4o
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startTime | string | 是 | 开始时间 |
-| endTime | string | 是 | 结束时间 |
-| modelId | string | 否 | 模型 ID 筛选 |
-| providerId | string | 否 | 供应商 ID 筛选 |
-| requestType | string | 否 | 请求类型筛选 |
+| 参数        | 类型   | 必填 | 说明           |
+| ----------- | ------ | ---- | -------------- |
+| startTime   | string | 是   | 开始时间       |
+| endTime     | string | 是   | 结束时间       |
+| modelId     | string | 否   | 模型 ID 筛选   |
+| providerId  | string | 否   | 供应商 ID 筛选 |
+| requestType | string | 否   | 请求类型筛选   |
 
 **响应示例**
 
@@ -3758,10 +3756,10 @@ user-002,李四,256.30,6200,12000000,9000000,3000000,1350,0.005,gpt-4o
 
 **请求参数（Query）**
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startTime | string | 是 | 开始时间 |
-| endTime | string | 是 | 结束时间 |
+| 参数      | 类型   | 必填 | 说明     |
+| --------- | ------ | ---- | -------- |
+| startTime | string | 是   | 开始时间 |
+| endTime   | string | 是   | 结束时间 |
 
 **响应示例**
 
@@ -3936,7 +3934,7 @@ CREATE TABLE llmgw_prompt_versions (
     change_log           TEXT,
     created_by           VARCHAR(64)   NOT NULL,
     created_at           TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
-    
+
     UNIQUE(prompt_id, version)
 );
 
@@ -4151,33 +4149,33 @@ TTL:   60s
 
 ### 5.1 事件类型
 
-| 事件类型 | 说明 | 触发时机 |
-|---|---|---|
-| TOKEN_CONSUMED | Token 消耗事件 | 每次 LLM 调用完成（成功/失败均发布） |
-| PROVIDER_CREATED | 供应商创建事件 | 供应商配置创建后 |
-| PROVIDER_UPDATED | 供应商更新事件 | 供应商配置更新后 |
-| PROVIDER_STATE_CHANGED | 供应商状态变更事件 | 供应商启用/禁用后 |
-| PROVIDER_DELETED | 供应商删除事件 | 供应商被删除后 |
-| API_KEY_ROTATED | API Key 轮换事件 | API Key 轮换操作后 |
-| QUOTA_EXCEEDED | 配额耗尽事件 | 用户/应用配额达到上限时 |
-| QUOTA_WARNING | 配额预警事件 | 配额使用达到预警阈值时 |
-| RATE_LIMIT_TRIGGERED | 限流触发事件 | QPS 或并发限流被触发时 |
-| PROMPT_CREATED | Prompt 模板创建事件 | Prompt 模板创建后 |
-| PROMPT_UPDATED | Prompt 模板更新事件 | Prompt 模板更新（新版本）后 |
-| PROMPT_DELETED | Prompt 模板删除事件 | Prompt 模板被删除后 |
-| MODEL_SYNC_COMPLETED | 模型同步完成事件 | 供应商模型列表同步完成后 |
-| PROVIDER_HEALTH_CHANGED | 供应商健康状态变更事件 | 供应商健康状态变化时 |
+| 事件类型                | 说明                   | 触发时机                             |
+| ----------------------- | ---------------------- | ------------------------------------ |
+| TOKEN_CONSUMED          | Token 消耗事件         | 每次 LLM 调用完成（成功/失败均发布） |
+| PROVIDER_CREATED        | 供应商创建事件         | 供应商配置创建后                     |
+| PROVIDER_UPDATED        | 供应商更新事件         | 供应商配置更新后                     |
+| PROVIDER_STATE_CHANGED  | 供应商状态变更事件     | 供应商启用/禁用后                    |
+| PROVIDER_DELETED        | 供应商删除事件         | 供应商被删除后                       |
+| API_KEY_ROTATED         | API Key 轮换事件       | API Key 轮换操作后                   |
+| QUOTA_EXCEEDED          | 配额耗尽事件           | 用户/应用配额达到上限时              |
+| QUOTA_WARNING           | 配额预警事件           | 配额使用达到预警阈值时               |
+| RATE_LIMIT_TRIGGERED    | 限流触发事件           | QPS 或并发限流被触发时               |
+| PROMPT_CREATED          | Prompt 模板创建事件    | Prompt 模板创建后                    |
+| PROMPT_UPDATED          | Prompt 模板更新事件    | Prompt 模板更新（新版本）后          |
+| PROMPT_DELETED          | Prompt 模板删除事件    | Prompt 模板被删除后                  |
+| MODEL_SYNC_COMPLETED    | 模型同步完成事件       | 供应商模型列表同步完成后             |
+| PROVIDER_HEALTH_CHANGED | 供应商健康状态变更事件 | 供应商健康状态变化时                 |
 
 ### 5.2 Kafka Topic 定义
 
-| Topic | 说明 | 分区策略 |
-|---|---|---|
-| `llmgw.token.events` | Token 消耗事件 | 按 `tenantId` 哈希分区 |
-| `llmgw.provider.events` | 供应商生命周期事件 | 按 `providerId` 哈希分区 |
-| `llmgw.quota.events` | 配额事件 | 按 `tenantId` 哈希分区 |
-| `llmgw.prompt.events` | Prompt 生命周期事件 | 按 `promptId` 哈希分区 |
-| `llmgw.audit.events` | 审计事件（限流触发等） | 按 `tenantId` 哈希分区 |
-| `llmgw.dlq` | 死信队列 | 消费失败的事件 |
+| Topic                   | 说明                   | 分区策略                 |
+| ----------------------- | ---------------------- | ------------------------ |
+| `llmgw.token.events`    | Token 消耗事件         | 按 `tenantId` 哈希分区   |
+| `llmgw.provider.events` | 供应商生命周期事件     | 按 `providerId` 哈希分区 |
+| `llmgw.quota.events`    | 配额事件               | 按 `tenantId` 哈希分区   |
+| `llmgw.prompt.events`   | Prompt 生命周期事件    | 按 `promptId` 哈希分区   |
+| `llmgw.audit.events`    | 审计事件（限流触发等） | 按 `tenantId` 哈希分区   |
+| `llmgw.dlq`             | 死信队列               | 消费失败的事件           |
 
 ### 5.3 Kafka 消息结构
 
@@ -4194,19 +4192,19 @@ TTL:   60s
   "traceId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "source": "TECH-LLMGW",
   "version": "1.0",
-  "payload": { }
+  "payload": {}
 }
 ```
 
 **Kafka 消息头**
 
-| 消息头 | 说明 |
-|---|---|
-| X-Trace-Id | 链路追踪 ID（与消息体 traceId 一致） |
-| X-Event-Type | 事件类型 |
-| X-Event-Id | 事件唯一 ID |
-| X-Tenant-Id | 租户 ID |
-| Content-Type | application/json |
+| 消息头       | 说明                                 |
+| ------------ | ------------------------------------ |
+| X-Trace-Id   | 链路追踪 ID（与消息体 traceId 一致） |
+| X-Event-Type | 事件类型                             |
+| X-Event-Id   | 事件唯一 ID                          |
+| X-Tenant-Id  | 租户 ID                              |
+| Content-Type | application/json                     |
 
 ### 5.4 各事件 Payload 定义
 
@@ -4356,22 +4354,26 @@ TTL:   60s
   "newModels": 3,
   "updatedModels": 1,
   "unchangedModels": 11,
-  "newModelIds": ["doubao-pro-256k", "doubao-vision-pro", "doubao-embedding-large"]
+  "newModelIds": [
+    "doubao-pro-256k",
+    "doubao-vision-pro",
+    "doubao-embedding-large"
+  ]
 }
 ```
 
 ### 5.5 事件消费方
 
-| 事件类型 | 消费方 | 消费说明 |
-|---|---|---|
-| TOKEN_CONSUMED | APP-DASHBOARD | 仪表盘实时展示 Token 消耗与成本 |
-| TOKEN_CONSUMED | TECH-OBS | 可观测性指标采集 |
-| QUOTA_EXCEEDED | APP-SUPERAI / APP-DW | 通知应用配额耗尽，降级处理 |
-| QUOTA_WARNING | APP-DASHBOARD | 仪表盘展示配额预警 |
-| RATE_LIMIT_TRIGGERED | TECH-OBS | 限流指标采集与告警 |
-| PROVIDER_STATE_CHANGED | APP-DASHBOARD | 仪表盘展示供应商状态 |
-| PROVIDER_HEALTH_CHANGED | APP-DASHBOARD / TECH-OBS | 健康状态展示与告警 |
-| MODEL_SYNC_COMPLETED | APP-DASHBOARD | 通知模型列表已更新 |
+| 事件类型                | 消费方                   | 消费说明                        |
+| ----------------------- | ------------------------ | ------------------------------- |
+| TOKEN_CONSUMED          | APP-DASHBOARD            | 仪表盘实时展示 Token 消耗与成本 |
+| TOKEN_CONSUMED          | TECH-OBS                 | 可观测性指标采集                |
+| QUOTA_EXCEEDED          | APP-SUPERAI / APP-DW     | 通知应用配额耗尽，降级处理      |
+| QUOTA_WARNING           | APP-DASHBOARD            | 仪表盘展示配额预警              |
+| RATE_LIMIT_TRIGGERED    | TECH-OBS                 | 限流指标采集与告警              |
+| PROVIDER_STATE_CHANGED  | APP-DASHBOARD            | 仪表盘展示供应商状态            |
+| PROVIDER_HEALTH_CHANGED | APP-DASHBOARD / TECH-OBS | 健康状态展示与告警              |
+| MODEL_SYNC_COMPLETED    | APP-DASHBOARD            | 通知模型列表已更新              |
 
 ---
 
@@ -4381,24 +4383,24 @@ TTL:   60s
 
 **目标**：完成模型供应商 CRUD、API Key 加密管理、模型列表同步与模型路由基础能力。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 创建供应商 | POST /api/v1/llmgw/providers | 含类型、baseUrl、API Key |
-| 供应商列表 | GET /api/v1/llmgw/providers | 分页查询、条件筛选 |
-| 供应商详情 | GET /api/v1/llmgw/providers/{id} | 含 API Key 列表（掩码） |
-| 更新供应商 | PUT /api/v1/llmgw/providers/{id} | 乐观锁版本控制 |
-| 删除供应商 | DELETE /api/v1/llmgw/providers/{id} | 级联删除 |
-| 启用/禁用供应商 | PUT /api/v1/llmgw/providers/{id}/state | - |
-| 添加 API Key | POST /api/v1/llmgw/providers/{id}/api-keys | AES-256-GCM 加密 |
-| API Key 列表 | GET /api/v1/llmgw/providers/{id}/api-keys | 掩码显示 |
-| 删除 API Key | DELETE /api/v1/llmgw/providers/{id}/api-keys/{keyId} | - |
-| 轮换 API Key | PUT /api/v1/llmgw/providers/{id}/api-keys/{keyId}/rotate | 灰度期机制 |
-| 同步模型列表 | POST /api/v1/llmgw/providers/{id}/models/sync | 从供应商 API 拉取 |
-| 全局模型列表 | GET /api/v1/llmgw/models | 跨供应商查询 |
-| 模型详情 | GET /api/v1/llmgw/models/{modelId} | 含统计信息 |
-| 数据表 | 全部 DDL | llmgw_providers、llmgw_provider_api_keys、llmgw_models |
-| 加密机制 | AES-256-GCM | API Key 加密存储 |
-| 模型路由 | 路由引擎 | 按 modelId 路由到对应供应商 |
+| 交付项          | API                                                      | 说明                                                   |
+| --------------- | -------------------------------------------------------- | ------------------------------------------------------ |
+| 创建供应商      | POST /api/v1/llmgw/providers                             | 含类型、baseUrl、API Key                               |
+| 供应商列表      | GET /api/v1/llmgw/providers                              | 分页查询、条件筛选                                     |
+| 供应商详情      | GET /api/v1/llmgw/providers/{id}                         | 含 API Key 列表（掩码）                                |
+| 更新供应商      | PUT /api/v1/llmgw/providers/{id}                         | 乐观锁版本控制                                         |
+| 删除供应商      | DELETE /api/v1/llmgw/providers/{id}                      | 级联删除                                               |
+| 启用/禁用供应商 | PUT /api/v1/llmgw/providers/{id}/state                   | -                                                      |
+| 添加 API Key    | POST /api/v1/llmgw/providers/{id}/api-keys               | AES-256-GCM 加密                                       |
+| API Key 列表    | GET /api/v1/llmgw/providers/{id}/api-keys                | 掩码显示                                               |
+| 删除 API Key    | DELETE /api/v1/llmgw/providers/{id}/api-keys/{keyId}     | -                                                      |
+| 轮换 API Key    | PUT /api/v1/llmgw/providers/{id}/api-keys/{keyId}/rotate | 灰度期机制                                             |
+| 同步模型列表    | POST /api/v1/llmgw/providers/{id}/models/sync            | 从供应商 API 拉取                                      |
+| 全局模型列表    | GET /api/v1/llmgw/models                                 | 跨供应商查询                                           |
+| 模型详情        | GET /api/v1/llmgw/models/{modelId}                       | 含统计信息                                             |
+| 数据表          | 全部 DDL                                                 | llmgw_providers、llmgw_provider_api_keys、llmgw_models |
+| 加密机制        | AES-256-GCM                                              | API Key 加密存储                                       |
+| 模型路由        | 路由引擎                                                 | 按 modelId 路由到对应供应商                            |
 
 **验收标准**：能配置多个模型供应商，API Key 加密存储，能从供应商同步模型列表，按模型名称正确路由到对应供应商。
 
@@ -4408,19 +4410,19 @@ TTL:   60s
 
 **目标**：完成同步对话、流式对话（SSE）、多模态对话与 Embedding 接口，支持 Fallback 机制。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 同步对话 | POST /api/v1/llmgw/chat/completions | 含 Function Calling |
-| 流式对话 | POST /api/v1/llmgw/chat/completions/stream | SSE 实时推送 |
-| 多模态对话 | POST /api/v1/llmgw/chat/multimodal | 文本+图片+文件 |
-| 可用对话模型 | GET /api/v1/llmgw/chat/models | 含能力筛选 |
-| 单条向量化 | POST /api/v1/llmgw/embeddings | - |
-| 批量向量化 | POST /api/v1/llmgw/embeddings/batch | 最多 100 条 |
-| Embedding 模型列表 | GET /api/v1/llmgw/embeddings/models | - |
-| Fallback 机制 | 路由引擎 | 主模型不可用时自动切换 |
-| Token 计量 | usage 解析 | 从供应商响应解析 token 用量 |
-| 调用日志 | 日志记录 | 每次调用写入 llmgw_call_logs |
-| 事件发布 | Kafka TOKEN_CONSUMED | Outbox 模式 |
+| 交付项             | API                                        | 说明                         |
+| ------------------ | ------------------------------------------ | ---------------------------- |
+| 同步对话           | POST /api/v1/llmgw/chat/completions        | 含 Function Calling          |
+| 流式对话           | POST /api/v1/llmgw/chat/completions/stream | SSE 实时推送                 |
+| 多模态对话         | POST /api/v1/llmgw/chat/multimodal         | 文本+图片+文件               |
+| 可用对话模型       | GET /api/v1/llmgw/chat/models              | 含能力筛选                   |
+| 单条向量化         | POST /api/v1/llmgw/embeddings              | -                            |
+| 批量向量化         | POST /api/v1/llmgw/embeddings/batch        | 最多 100 条                  |
+| Embedding 模型列表 | GET /api/v1/llmgw/embeddings/models        | -                            |
+| Fallback 机制      | 路由引擎                                   | 主模型不可用时自动切换       |
+| Token 计量         | usage 解析                                 | 从供应商响应解析 token 用量  |
+| 调用日志           | 日志记录                                   | 每次调用写入 llmgw_call_logs |
+| 事件发布           | Kafka TOKEN_CONSUMED                       | Outbox 模式                  |
 
 **验收标准**：能通过网关调用多种模型完成对话（同步/流式），支持多模态输入，Fallback 机制在主模型不可用时自动切换，Token 用量正确计量并发布 Kafka 事件。
 
@@ -4430,23 +4432,23 @@ TTL:   60s
 
 **目标**：完成 QPS 限流、Token 配额管理、并发控制等流量控制能力。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 配额列表 | GET /api/v1/llmgw/quotas | 分页查询 |
-| 配额详情 | GET /api/v1/llmgw/quotas/{id} | - |
-| 创建配额 | POST /api/v1/llmgw/quotas | 用户/应用/租户/模型维度 |
-| 更新配额 | PUT /api/v1/llmgw/quotas/{id} | 乐观锁 |
-| 删除配额 | DELETE /api/v1/llmgw/quotas/{id} | - |
-| 配额使用查询 | GET /api/v1/llmgw/quotas/usage | Redis 实时数据 |
-| 重置配额 | PUT /api/v1/llmgw/quotas/{id}/reset | 手动归零 |
-| 限流规则列表 | GET /api/v1/llmgw/rate-limits | - |
-| 创建限流规则 | POST /api/v1/llmgw/rate-limits | QPS + 并发 |
-| 更新限流规则 | PUT /api/v1/llmgw/rate-limits/{id} | - |
-| 删除限流规则 | DELETE /api/v1/llmgw/rate-limits/{id} | - |
-| 令牌桶限流 | Redis 实现 | 滑动窗口 QPS 控制 |
-| 配额预警 | QUOTA_WARNING 事件 | 达到阈值时发布事件 |
-| 数据表 | DDL | llmgw_quotas、llmgw_rate_limits |
-| Redis 结构 | 限流计数器 + 配额缓存 | - |
+| 交付项       | API                                   | 说明                            |
+| ------------ | ------------------------------------- | ------------------------------- |
+| 配额列表     | GET /api/v1/llmgw/quotas              | 分页查询                        |
+| 配额详情     | GET /api/v1/llmgw/quotas/{id}         | -                               |
+| 创建配额     | POST /api/v1/llmgw/quotas             | 用户/应用/租户/模型维度         |
+| 更新配额     | PUT /api/v1/llmgw/quotas/{id}         | 乐观锁                          |
+| 删除配额     | DELETE /api/v1/llmgw/quotas/{id}      | -                               |
+| 配额使用查询 | GET /api/v1/llmgw/quotas/usage        | Redis 实时数据                  |
+| 重置配额     | PUT /api/v1/llmgw/quotas/{id}/reset   | 手动归零                        |
+| 限流规则列表 | GET /api/v1/llmgw/rate-limits         | -                               |
+| 创建限流规则 | POST /api/v1/llmgw/rate-limits        | QPS + 并发                      |
+| 更新限流规则 | PUT /api/v1/llmgw/rate-limits/{id}    | -                               |
+| 删除限流规则 | DELETE /api/v1/llmgw/rate-limits/{id} | -                               |
+| 令牌桶限流   | Redis 实现                            | 滑动窗口 QPS 控制               |
+| 配额预警     | QUOTA_WARNING 事件                    | 达到阈值时发布事件              |
+| 数据表       | DDL                                   | llmgw_quotas、llmgw_rate_limits |
+| Redis 结构   | 限流计数器 + 配额缓存                 | -                               |
 
 **验收标准**：能配置多维度配额与限流规则，QPS 限流在超限时返回 429，Token 配额在耗尽时拒绝请求，配额预警在达到阈值时发布事件。
 
@@ -4456,27 +4458,27 @@ TTL:   60s
 
 **目标**：完成 Prompt 模板 CRUD、版本管理、变量替换、预览，以及成本核算报表。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 创建 Prompt | POST /api/v1/llmgw/prompts | 含变量定义 |
-| Prompt 列表 | GET /api/v1/llmgw/prompts | 分页、分类筛选 |
-| Prompt 详情 | GET /api/v1/llmgw/prompts/{id} | - |
-| 更新 Prompt | PUT /api/v1/llmgw/prompts/{id} | 创建新版本 |
-| 删除 Prompt | DELETE /api/v1/llmgw/prompts/{id} | - |
-| 版本历史 | GET /api/v1/llmgw/prompts/{id}/versions | - |
-| 指定版本 | GET /api/v1/llmgw/prompts/{id}/versions/{v} | - |
-| 回滚版本 | POST /api/v1/llmgw/prompts/{id}/rollback | - |
-| 渲染 Prompt | POST /api/v1/llmgw/prompts/{id}/render | 变量替换 |
-| 预览 Prompt | POST /api/v1/llmgw/prompts/{id}/preview | 渲染 + 模型调用 |
-| 成本汇总 | GET /api/v1/llmgw/costs/summary | 总览 |
-| 按用户成本 | GET /api/v1/llmgw/costs/by-user | - |
-| 按应用成本 | GET /api/v1/llmgw/costs/by-app | - |
-| 按模型成本 | GET /api/v1/llmgw/costs/by-model | - |
-| 按供应商成本 | GET /api/v1/llmgw/costs/by-provider | - |
-| 成本时间序列 | GET /api/v1/llmgw/costs/timeline | 图表数据 |
-| 导出报表 | GET /api/v1/llmgw/costs/export | CSV/JSON |
-| 数据表 | DDL | llmgw_prompts、llmgw_prompt_versions |
-| Prompt 缓存 | Redis | 模板与渲染结果缓存 |
+| 交付项       | API                                         | 说明                                 |
+| ------------ | ------------------------------------------- | ------------------------------------ |
+| 创建 Prompt  | POST /api/v1/llmgw/prompts                  | 含变量定义                           |
+| Prompt 列表  | GET /api/v1/llmgw/prompts                   | 分页、分类筛选                       |
+| Prompt 详情  | GET /api/v1/llmgw/prompts/{id}              | -                                    |
+| 更新 Prompt  | PUT /api/v1/llmgw/prompts/{id}              | 创建新版本                           |
+| 删除 Prompt  | DELETE /api/v1/llmgw/prompts/{id}           | -                                    |
+| 版本历史     | GET /api/v1/llmgw/prompts/{id}/versions     | -                                    |
+| 指定版本     | GET /api/v1/llmgw/prompts/{id}/versions/{v} | -                                    |
+| 回滚版本     | POST /api/v1/llmgw/prompts/{id}/rollback    | -                                    |
+| 渲染 Prompt  | POST /api/v1/llmgw/prompts/{id}/render      | 变量替换                             |
+| 预览 Prompt  | POST /api/v1/llmgw/prompts/{id}/preview     | 渲染 + 模型调用                      |
+| 成本汇总     | GET /api/v1/llmgw/costs/summary             | 总览                                 |
+| 按用户成本   | GET /api/v1/llmgw/costs/by-user             | -                                    |
+| 按应用成本   | GET /api/v1/llmgw/costs/by-app              | -                                    |
+| 按模型成本   | GET /api/v1/llmgw/costs/by-model            | -                                    |
+| 按供应商成本 | GET /api/v1/llmgw/costs/by-provider         | -                                    |
+| 成本时间序列 | GET /api/v1/llmgw/costs/timeline            | 图表数据                             |
+| 导出报表     | GET /api/v1/llmgw/costs/export              | CSV/JSON                             |
+| 数据表       | DDL                                         | llmgw_prompts、llmgw_prompt_versions |
+| Prompt 缓存  | Redis                                       | 模板与渲染结果缓存                   |
 
 **验收标准**：Prompt 模板支持版本管理与变量替换，预览功能能渲染并调用模型返回结果，成本报表支持多维度查询与导出。
 
@@ -4486,18 +4488,18 @@ TTL:   60s
 
 **目标**：完成调用日志查询、错误追踪、延迟统计等审计能力，完善可观测性。
 
-| 交付项 | API | 说明 |
-|---|---|---|
-| 调用日志查询 | GET /api/v1/llmgw/audit/logs | 多维度筛选 |
-| 调用日志详情 | GET /api/v1/llmgw/audit/logs/{id} | 含请求/响应体 |
-| 错误日志查询 | GET /api/v1/llmgw/audit/errors | 按错误码筛选 |
-| 错误日志详情 | GET /api/v1/llmgw/audit/errors/{id} | 含 Fallback 链 |
-| 延迟统计 | GET /api/v1/llmgw/audit/latency | P50/P90/P95/P99 |
-| 按模型延迟 | GET /api/v1/llmgw/audit/latency/by-model | 模型性能对比 |
-| 供应商健康检查 | 健康检查机制 | 定时探测 + Redis 状态 |
-| trace_id 关联 | 全链路追踪 | 请求->日志->Kafka 事件 |
-| DLQ 机制 | 死信队列 | 消费失败重试 3 次 |
-| Prometheus 指标 | 指标采集 | QPS / 延迟 / 错误率 / Token 用量 |
-| 事件发布 | Kafka 全部事件 | Outbox 模式 |
+| 交付项          | API                                      | 说明                             |
+| --------------- | ---------------------------------------- | -------------------------------- |
+| 调用日志查询    | GET /api/v1/llmgw/audit/logs             | 多维度筛选                       |
+| 调用日志详情    | GET /api/v1/llmgw/audit/logs/{id}        | 含请求/响应体                    |
+| 错误日志查询    | GET /api/v1/llmgw/audit/errors           | 按错误码筛选                     |
+| 错误日志详情    | GET /api/v1/llmgw/audit/errors/{id}      | 含 Fallback 链                   |
+| 延迟统计        | GET /api/v1/llmgw/audit/latency          | P50/P90/P95/P99                  |
+| 按模型延迟      | GET /api/v1/llmgw/audit/latency/by-model | 模型性能对比                     |
+| 供应商健康检查  | 健康检查机制                             | 定时探测 + Redis 状态            |
+| trace_id 关联   | 全链路追踪                               | 请求->日志->Kafka 事件           |
+| DLQ 机制        | 死信队列                                 | 消费失败重试 3 次                |
+| Prometheus 指标 | 指标采集                                 | QPS / 延迟 / 错误率 / Token 用量 |
+| 事件发布        | Kafka 全部事件                           | Outbox 模式                      |
 
 **验收标准**：调用日志可多维度查询与详情查看，错误日志包含完整 Fallback 链信息，延迟统计提供分位数指标，trace_id 全链路关联，Kafka 事件通过 Outbox 模式可靠发布，DLQ 机制保障消费失败可追溯。

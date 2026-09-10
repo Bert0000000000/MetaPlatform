@@ -8,6 +8,7 @@ Covers:
   * /admin/pg-stats endpoint reflects PG availability
   * BM25 search fallback supplements insufficient vector results
 """
+
 from __future__ import annotations
 
 import os
@@ -75,8 +76,14 @@ class FakePGStore:
         self._available = True
 
     def save_chunk(
-        self, chunk_id: str, document_id: str, text: str, metadata: dict[str, Any] | None = None,
-        *, embedding: list[float] | None = None, tenant_id: str = "default",
+        self,
+        chunk_id: str,
+        document_id: str,
+        text: str,
+        metadata: dict[str, Any] | None = None,
+        *,
+        embedding: list[float] | None = None,
+        tenant_id: str = "default",
     ) -> bool:
         self._chunks.append(
             {

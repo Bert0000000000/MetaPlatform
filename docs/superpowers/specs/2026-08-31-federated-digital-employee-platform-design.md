@@ -190,14 +190,14 @@ flowchart TB
 
 ### 4.1 分层职责
 
-| 层 | 负责 | 不负责 |
-|---|---|---|
-| 多宿主交互层 | 用户交互、宿主原生 Agent Loop、加载员工投影 | 员工主数据、最终授权、长期记忆权威 |
-| 中央控制面 | 定义、版本、发布、授权模型、租户治理 | 租户业务查询和高频执行状态 |
-| 统一访问网关层 | 协议适配、基础身份校验、路由、配额和调用观测 | 对业务对象与动作做最终授权 |
-| 租户运行面 | 业务状态、记忆、知识、数据访问、执行、审批和审计 | 跨租户集中保存敏感业务数据 |
-| 数据知识引擎 | 文档证据、本体语义、关系投影、联邦查询 | 直接决定业务动作是否允许 |
-| 基础设施与可观测 | 运行、存储、安全、备份、监控 | 替代业务审计和业务证据链 |
+| 层               | 负责                                             | 不负责                             |
+| ---------------- | ------------------------------------------------ | ---------------------------------- |
+| 多宿主交互层     | 用户交互、宿主原生 Agent Loop、加载员工投影      | 员工主数据、最终授权、长期记忆权威 |
+| 中央控制面       | 定义、版本、发布、授权模型、租户治理             | 租户业务查询和高频执行状态         |
+| 统一访问网关层   | 协议适配、基础身份校验、路由、配额和调用观测     | 对业务对象与动作做最终授权         |
+| 租户运行面       | 业务状态、记忆、知识、数据访问、执行、审批和审计 | 跨租户集中保存敏感业务数据         |
+| 数据知识引擎     | 文档证据、本体语义、关系投影、联邦查询           | 直接决定业务动作是否允许           |
+| 基础设施与可观测 | 运行、存储、安全、备份、监控                     | 替代业务审计和业务证据链           |
 
 ## 5. 数字员工对象模型
 
@@ -213,17 +213,17 @@ EmployeeDefinition
                       └─ ExecutionLease
 ```
 
-| 对象 | 语义 |
-|---|---|
-| `EmployeeDefinition` | 岗位模板的稳定身份、职责和生命周期 |
-| `EmployeeVersion` | 不可变版本，固定技能、能力要求、模型策略、知识策略、输出和审批规则 |
-| `EmployeePackage` | 面向宿主分发的签名制品，不是员工状态数据库 |
-| `EmployeeInstance` | 某租户拥有的长期数字员工，具有稳定 `employee_id` |
-| `BusinessSession` | 可跨宿主持续的业务会话，关联目标、事实、决策、产物和任务 |
-| `HostSession` | 某宿主的一次短期连接，可丢弃、可重建 |
-| `WorkItem` | 业务任务及其授权来源、输入、目标、期限和风险 |
-| `EmployeeRun` | 一次执行或重试，固定员工版本、本体版本和权限上下文 |
-| `ExecutionLease` | HostSession 对 Run 的短期写权，使用 epoch 阻断旧写者 |
+| 对象                 | 语义                                                               |
+| -------------------- | ------------------------------------------------------------------ |
+| `EmployeeDefinition` | 岗位模板的稳定身份、职责和生命周期                                 |
+| `EmployeeVersion`    | 不可变版本，固定技能、能力要求、模型策略、知识策略、输出和审批规则 |
+| `EmployeePackage`    | 面向宿主分发的签名制品，不是员工状态数据库                         |
+| `EmployeeInstance`   | 某租户拥有的长期数字员工，具有稳定 `employee_id`                   |
+| `BusinessSession`    | 可跨宿主持续的业务会话，关联目标、事实、决策、产物和任务           |
+| `HostSession`        | 某宿主的一次短期连接，可丢弃、可重建                               |
+| `WorkItem`           | 业务任务及其授权来源、输入、目标、期限和风险                       |
+| `EmployeeRun`        | 一次执行或重试，固定员工版本、本体版本和权限上下文                 |
+| `ExecutionLease`     | HostSession 对 Run 的短期写权，使用 epoch 阻断旧写者               |
 
 关键不变量：
 
@@ -307,15 +307,15 @@ EmployeePackage 禁止安装钩子、隐式命令和随包自动执行的二进�
 
 ### 7.1 身份分工
 
-| 对象 | 权威组件 | 说明 |
-|---|---|---|
-| 人类用户 | Supabase Auth；Disconnected Cell 可接客户本地 OIDC IdP | 各部署信任域内唯一的人类身份权威；平台映射稳定 `(issuer, sub)` |
-| 运行令牌与信任代理 | Keycloak | OIDC Identity Brokering、内部 Token Exchange、服务账号和短期令牌；JWT Authorization Grant 仅作条件非交互路径 |
-| 员工与服务主体元数据 | Supabase 表 + Keycloak Client/Service Account | 不建设自研 Principal Registry 服务 |
-| 关系权限 | OpenFGA | 人、员工、团队、租户、资源之间的稳定关系 |
-| 上下文策略 | OPA | 风险、金额、时间、地域、数据分类、审批状态等动态规则 |
-| 数据行权限 | PostgreSQL RLS | 数据库最后一道租户和主体隔离 |
-| 凭据与 PKI | OpenBao | API Key、数据库动态凭据、签名密钥、证书和秘密审计 |
+| 对象                 | 权威组件                                               | 说明                                                                                                         |
+| -------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| 人类用户             | Supabase Auth；Disconnected Cell 可接客户本地 OIDC IdP | 各部署信任域内唯一的人类身份权威；平台映射稳定 `(issuer, sub)`                                               |
+| 运行令牌与信任代理   | Keycloak                                               | OIDC Identity Brokering、内部 Token Exchange、服务账号和短期令牌；JWT Authorization Grant 仅作条件非交互路径 |
+| 员工与服务主体元数据 | Supabase 表 + Keycloak Client/Service Account          | 不建设自研 Principal Registry 服务                                                                           |
+| 关系权限             | OpenFGA                                                | 人、员工、团队、租户、资源之间的稳定关系                                                                     |
+| 上下文策略           | OPA                                                    | 风险、金额、时间、地域、数据分类、审批状态等动态规则                                                         |
+| 数据行权限           | PostgreSQL RLS                                         | 数据库最后一道租户和主体隔离                                                                                 |
+| 凭据与 PKI           | OpenBao                                                | API Key、数据库动态凭据、签名密钥、证书和秘密审计                                                            |
 
 连接型部署以 Supabase Auth 作为人类身份唯一权威；Keycloak 不成为第二套用户主数据库。交互式登录的主路径是 Keycloak OIDC Identity Brokering：浏览器使用 Authorization Code + PKCE 跳转到 Supabase OAuth/OIDC Server，Keycloak 校验 discovery/JWKS、ID Token 的 `iss`、`aud`、`nonce`、`exp` 和预链接 `(issuer, sub)` 后，只保存外部身份链接，再签发内部令牌。Keycloak 内部使用标准 Token Exchange 做 audience 限定和降权。JWT Authorization Grant 仅在锁定 Supabase 版本能签发以 Keycloak token endpoint 为明确 audience、带一次性 `jti` 的非交互断言且通过 Gate 时启用；普通 Supabase access token 或为其他客户端签发的 ID Token 不得直接充当该断言。换票只发生在 Bootstrap、续租或权限变化时，MCP/A2A 网关依据缓存的 JWKS 本地验证短期 JWT，不把中央 Keycloak 放入每次业务调用的同步热路径。2026-09-01 检查的 Supabase 官方文档仍将 OAuth 2.1 Server 标记为 Beta；生产判定以 Gate 锁定版本的证据为准，不依赖该标签长期不变。
 
@@ -375,13 +375,13 @@ LiteLLM 只做网关级访问控制、工具过滤、配额和路由；业务对
 
 ### 7.3 风险等级
 
-| 等级 | 行为 |
-|---|---|
-| R0 | 查询、分析和报告可自动执行 |
-| R1 | 低风险、可逆且已预授权动作可自动执行并审计 |
-| R2 | 改变普通业务状态，需要用户或业务负责人确认 |
-| R3 | 高金额、不可逆或合规敏感，需要独立审批或双人审批 |
-| R4 | 策略禁止，任何主体都不能绕过 |
+| 等级 | 行为                                             |
+| ---- | ------------------------------------------------ |
+| R0   | 查询、分析和报告可自动执行                       |
+| R1   | 低风险、可逆且已预授权动作可自动执行并审计       |
+| R2   | 改变普通业务状态，需要用户或业务负责人确认       |
+| R3   | 高金额、不可逆或合规敏感，需要独立审批或双人审批 |
+| R4   | 策略禁止，任何主体都不能绕过                     |
 
 风险等级由服务端 Policy Decision 计算；模型和宿主只能提出候选等级。策略可直接提高风险等级；降低等级必须引用策略版本并留下审计证据。
 
@@ -391,11 +391,11 @@ LiteLLM 只做网关级访问控制、工具过滤、配额和路由；业务对
 
 同一开源产品按职责拆成三个逻辑网关，可独立配置和扩缩：
 
-| 逻辑角色 | 职责 |
-|---|---|
-| Model Gateway | 服务端模型别名、路由、配额、成本、回退和 vLLM 接入 |
-| MCP Gateway | MCP Server 聚合、协议适配、工具发现、基础访问和调用观测 |
-| A2A Gateway | Agent Card、A2A 路由、流式传输、访问、负载和预算 |
+| 逻辑角色      | 职责                                                    |
+| ------------- | ------------------------------------------------------- |
+| Model Gateway | 服务端模型别名、路由、配额、成本、回退和 vLLM 接入      |
+| MCP Gateway   | MCP Server 聚合、协议适配、工具发现、基础访问和调用观测 |
+| A2A Gateway   | Agent Card、A2A 路由、流式传输、访问、负载和预算        |
 
 宿主内由 Codex、Claude Code、DeepSeek Harness 或 Hermes 发起的原生模型调用保持原生，不强制绕过 LiteLLM，但其输出默认是“不受信候选”。正式报告、R1-R3 动作和本体发布所依赖的推理必须通过服务端 Model Gateway，或来自已通过准入且能提供可验证 `ModelReceipt` 的宿主。没有回执的结果只能保存为草稿，不能触发副作用。
 
@@ -594,16 +594,16 @@ MetaPortal 是非聊天型管理与业务工作台，负责：
 
 统一前端基线：
 
-| 用途 | 选择 |
-|---|---|
-| 应用基座 | React + TypeScript + Vite |
-| 通用组件 | Ant Design，作为唯一通用组件库 |
-| 管理与 CRUD | Refine + `@refinedev/antd` |
-| Schema 表单 | RJSF + `@rjsf/antd` |
-| 常规业务图表 | Ant Design Charts |
-| 本体与关系图 | Cytoscape.js，作为专业例外 |
-| MCP 内嵌 UI | MCP Apps SDK，界面仍复用 Ant Design |
-| 文档展示 | 共享 Artifact Renderer |
+| 用途         | 选择                                |
+| ------------ | ----------------------------------- |
+| 应用基座     | React + TypeScript + Vite           |
+| 通用组件     | Ant Design，作为唯一通用组件库      |
+| 管理与 CRUD  | Refine + `@refinedev/antd`          |
+| Schema 表单  | RJSF + `@rjsf/antd`                 |
+| 常规业务图表 | Ant Design Charts                   |
+| 本体与关系图 | Cytoscape.js，作为专业例外          |
+| MCP 内嵌 UI  | MCP Apps SDK，界面仍复用 Ant Design |
+| 文档展示     | 共享 Artifact Renderer              |
 
 不在核心前端混用 shadcn/ui、Material UI、Mantine、Chakra UI、Bootstrap、多套图标或多套表格表单体系。`@metaplatform/ui` 只保存主题、语言和少量业务组件，不包装所有 Ant Design 组件，也不重新发明设计系统。
 
@@ -639,13 +639,13 @@ RAGFlow UI、Temporal UI、Supabase Studio、Keycloak Admin、OpenBao UI、OpenS
 
 ### 14.1 部署形态
 
-| 环境 | 选择 |
-|---|---|
-| 云端生产 | 托管、符合 Kubernetes 标准的集群 |
-| 连接型私有部署 | RKE2 + 租户本地 Gateway |
-| 完全断网部署 | RKE2 Disconnected Cell |
-| 开发/演示 | Docker Compose |
-| 容器运行时 | containerd |
+| 环境           | 选择                             |
+| -------------- | -------------------------------- |
+| 云端生产       | 托管、符合 Kubernetes 标准的集群 |
+| 连接型私有部署 | RKE2 + 租户本地 Gateway          |
+| 完全断网部署   | RKE2 Disconnected Cell           |
+| 开发/演示      | Docker Compose                   |
+| 容器运行时     | containerd                       |
 
 PlatformFoundation 与 TenantRuntime 是两个独立发布单元。PlatformFoundation 只拥有集群级 CRD、Controller 和兼容升级责任；TenantRuntime 只含 Namespace 资源并声明所需 Foundation API 版本，不能安装或修改集群级对象。同一个 TenantRuntime Helm Package 同时支持托管 Namespace 和客户集群，不为不同部署地点维护两套产品代码。Disconnected Cell 额外打包本地身份代理、Bootstrap、策略副本、OCI 镜像和 GitOps 源，通过签名 `DeploymentBundle` 导入；所有令牌、策略和制品设置最大离线有效期，过期后 R1-R4 失败关闭。重新联网时按版本和水位单向同步治理包，不自动覆盖租户业务事实。
 
@@ -678,51 +678,51 @@ PlatformFoundation 与 TenantRuntime 是两个独立发布单元。PlatformFound
 
 ### 14.5 故障域与降级规则
 
-| 故障域 | 新会话 | 既有 Run | 读取 | R1-R4 写入 | 恢复权威 |
-|---|---|---|---|---|---|
-| Supabase Auth / Keycloak | 禁止新登录与换票 | 有效短票和水位内可继续 | 策略允许的 R0 | 票据或撤销水位过期即关闭 | 身份库、签名密钥和链接关系备份 |
-| Employee Registry / OCI | 禁止新版本加载 | 固定 Digest 可继续 | 已缓存签名包可读 | 不得换版本或扩权 | Registry 元数据 + OCI Digest |
-| Run Ledger PostgreSQL | 禁止 | 停止推进 | 仅独立只读系统可降级 | 全部关闭 | CloudNativePG PITR |
-| OpenFGA / OPA | 禁止高风险新 Run | 水位有效且缓存命中才继续 | 明确允许的 R0 | 全部关闭 | 签名策略包 + 业务关系事实 |
-| LiteLLM 逻辑网关共享故障 | 对应协议不可用 | 不改变 Run 权威状态 | 无隐式直连降级 | 无隐式直连降级 | 网关配置库 + 无状态实例 |
-| MemoryCore | 可开始但标记记忆不可用 | 主流程可继续 | 不召回或写入记忆 | 业务动作按原证据执行，不伪造记忆成功 | 加密快照 + 审核台账 |
-| RAGFlow / Jena / Trino | 依场景拒绝或降级 | 保持可恢复状态 | 证据不足显式返回 | 依赖其证据的动作关闭 | 各自权威数据与不可变版本 |
-| SeaweedFS | 可建立无附件会话 | Run 保持等待 | 无法读取对象时显式失败 | 依赖对象的动作关闭 | 元数据快照 + 数据副本 |
+| 故障域                   | 新会话                 | 既有 Run                 | 读取                   | R1-R4 写入                           | 恢复权威                       |
+| ------------------------ | ---------------------- | ------------------------ | ---------------------- | ------------------------------------ | ------------------------------ |
+| Supabase Auth / Keycloak | 禁止新登录与换票       | 有效短票和水位内可继续   | 策略允许的 R0          | 票据或撤销水位过期即关闭             | 身份库、签名密钥和链接关系备份 |
+| Employee Registry / OCI  | 禁止新版本加载         | 固定 Digest 可继续       | 已缓存签名包可读       | 不得换版本或扩权                     | Registry 元数据 + OCI Digest   |
+| Run Ledger PostgreSQL    | 禁止                   | 停止推进                 | 仅独立只读系统可降级   | 全部关闭                             | CloudNativePG PITR             |
+| OpenFGA / OPA            | 禁止高风险新 Run       | 水位有效且缓存命中才继续 | 明确允许的 R0          | 全部关闭                             | 签名策略包 + 业务关系事实      |
+| LiteLLM 逻辑网关共享故障 | 对应协议不可用         | 不改变 Run 权威状态      | 无隐式直连降级         | 无隐式直连降级                       | 网关配置库 + 无状态实例        |
+| MemoryCore               | 可开始但标记记忆不可用 | 主流程可继续             | 不召回或写入记忆       | 业务动作按原证据执行，不伪造记忆成功 | 加密快照 + 审核台账            |
+| RAGFlow / Jena / Trino   | 依场景拒绝或降级       | 保持可恢复状态           | 证据不足显式返回       | 依赖其证据的动作关闭                 | 各自权威数据与不可变版本       |
+| SeaweedFS                | 可建立无附件会话       | Run 保持等待             | 无法读取对象时显式失败 | 依赖对象的动作关闭                   | 元数据快照 + 数据副本          |
 
 每个业务 MVP 必须为实际启用的故障域确定 RPO/RTO 类别、降级行为和恢复顺序；表中的关闭规则不能被宿主或模型改写。
 
 ## 15. 技术选型总表
 
-| 能力域 | 选型 | 权威职责 |
-|---|---|---|
-| 人类身份 | Supabase Auth | 用户登录与人类身份权威 |
-| 运行令牌 | Keycloak | OIDC Identity Brokering、Token Exchange、服务账号；JWT Grant 条件启用 |
-| 关系授权 | OpenFGA | 人、员工、团队、资源关系 |
-| 上下文策略 | OPA | 风险、环境、审批和数据策略 |
-| 秘密与 PKI | OpenBao | 凭据、密钥、证书和动态秘密 |
-| 事务数据库 | CloudNativePG PostgreSQL | 租户业务和平台元数据 |
-| 员工运行时 | MetaPlatform Tenant Employee Runtime + PostgreSQL Run Ledger | Session、WorkItem、Run、Lease、Checkpoint 的唯一状态权威 |
-| Supabase 数据面 | PostgREST、Realtime、Edge、Studio；Storage 条件启用 | API、实时和运维；对象入口不能形成第二权威 |
-| 连接池 | PgBouncer | PostgreSQL 连接治理 |
-| 模型网关 | LiteLLM | 服务端模型路由、成本和配额 |
-| MCP 网关 | LiteLLM MCP Gateway | MCP 聚合、协议和基础访问 |
-| A2A 网关 | LiteLLM A2A Gateway，准入通过后启用 | Agent Card 与 Agent 路由；不拥有委托状态 |
-| 可靠工作流 | Temporal | 审批、等待、重试和补偿 |
-| 事件 | NATS JetStream | 领域事件和异步通知 |
-| RAG | RAGFlow + PostgreSQL + Valkey + Infinity + SeaweedFS S3 | 文档、切片、索引、检索和证据 |
-| 记忆 | TencentDB Agent Memory / MemoryCore，限定子组件 | L0-L3 员工经验记忆，不拥有团队、技能、ACL 或知识权威 |
-| 本体权威 | PostgreSQL | 定义、版本、映射、审批和发布 |
-| RDF 投影 | Apache Jena Fuseki/TDB2 | RDF、SHACL、SPARQL、Named Graph 和有限规则推理 |
-| 数据联邦 | Trino | 跨源读取和分析 |
-| 湖仓格式 | Iceberg v2 + Parquet | 历史与分析数据 |
-| Catalog | Apache Polaris | Iceberg REST Catalog |
-| 对象存储 | SeaweedFS S3 | 业务文件、Artifact 和数据文件 |
-| Artifact 权威 | PostgreSQL Artifact Schema + SeaweedFS S3 | 不可变对象元数据、Digest、权限、表示和二进制 |
-| 制品仓库 | OCI Distribution + ORAS + Cosign | 镜像、员工包、技能包和签名 |
-| 前端 | React/Vite + Ant Design + Refine + RJSF | MetaPortal 与共享业务界面 |
-| 图谱前端 | Cytoscape.js | 本体和关系图可视化 |
-| 技术可观测 | OTel/OpenInference + Prometheus/Perses + OpenSearch | Trace、Metric、Log |
-| 集群交付 | Kubernetes/RKE2 + Helm/Kustomize + Flux | 混合部署和 GitOps |
+| 能力域          | 选型                                                         | 权威职责                                                              |
+| --------------- | ------------------------------------------------------------ | --------------------------------------------------------------------- |
+| 人类身份        | Supabase Auth                                                | 用户登录与人类身份权威                                                |
+| 运行令牌        | Keycloak                                                     | OIDC Identity Brokering、Token Exchange、服务账号；JWT Grant 条件启用 |
+| 关系授权        | OpenFGA                                                      | 人、员工、团队、资源关系                                              |
+| 上下文策略      | OPA                                                          | 风险、环境、审批和数据策略                                            |
+| 秘密与 PKI      | OpenBao                                                      | 凭据、密钥、证书和动态秘密                                            |
+| 事务数据库      | CloudNativePG PostgreSQL                                     | 租户业务和平台元数据                                                  |
+| 员工运行时      | MetaPlatform Tenant Employee Runtime + PostgreSQL Run Ledger | Session、WorkItem、Run、Lease、Checkpoint 的唯一状态权威              |
+| Supabase 数据面 | PostgREST、Realtime、Edge、Studio；Storage 条件启用          | API、实时和运维；对象入口不能形成第二权威                             |
+| 连接池          | PgBouncer                                                    | PostgreSQL 连接治理                                                   |
+| 模型网关        | LiteLLM                                                      | 服务端模型路由、成本和配额                                            |
+| MCP 网关        | LiteLLM MCP Gateway                                          | MCP 聚合、协议和基础访问                                              |
+| A2A 网关        | LiteLLM A2A Gateway，准入通过后启用                          | Agent Card 与 Agent 路由；不拥有委托状态                              |
+| 可靠工作流      | Temporal                                                     | 审批、等待、重试和补偿                                                |
+| 事件            | NATS JetStream                                               | 领域事件和异步通知                                                    |
+| RAG             | RAGFlow + PostgreSQL + Valkey + Infinity + SeaweedFS S3      | 文档、切片、索引、检索和证据                                          |
+| 记忆            | TencentDB Agent Memory / MemoryCore，限定子组件              | L0-L3 员工经验记忆，不拥有团队、技能、ACL 或知识权威                  |
+| 本体权威        | PostgreSQL                                                   | 定义、版本、映射、审批和发布                                          |
+| RDF 投影        | Apache Jena Fuseki/TDB2                                      | RDF、SHACL、SPARQL、Named Graph 和有限规则推理                        |
+| 数据联邦        | Trino                                                        | 跨源读取和分析                                                        |
+| 湖仓格式        | Iceberg v2 + Parquet                                         | 历史与分析数据                                                        |
+| Catalog         | Apache Polaris                                               | Iceberg REST Catalog                                                  |
+| 对象存储        | SeaweedFS S3                                                 | 业务文件、Artifact 和数据文件                                         |
+| Artifact 权威   | PostgreSQL Artifact Schema + SeaweedFS S3                    | 不可变对象元数据、Digest、权限、表示和二进制                          |
+| 制品仓库        | OCI Distribution + ORAS + Cosign                             | 镜像、员工包、技能包和签名                                            |
+| 前端            | React/Vite + Ant Design + Refine + RJSF                      | MetaPortal 与共享业务界面                                             |
+| 图谱前端        | Cytoscape.js                                                 | 本体和关系图可视化                                                    |
+| 技术可观测      | OTel/OpenInference + Prometheus/Perses + OpenSearch          | Trace、Metric、Log                                                    |
+| 集群交付        | Kubernetes/RKE2 + Helm/Kustomize + Flux                      | 混合部署和 GitOps                                                     |
 
 组件版本不在总体架构中写死。实施时必须以兼容矩阵、锁文件和镜像 Digest 固定具体版本。
 
@@ -764,14 +764,14 @@ PlatformFoundation 与 TenantRuntime 是两个独立发布单元。PlatformFound
 
 ## 18. 六个业务场景的架构覆盖
 
-| 场景 | 输入与授权权威 | Run / 快照 | Artifact 与审批 | 副作用与回执 | 失败与恢复 |
-|---|---|---|---|---|---|
-| 合同审查 | 合同版本、上传者、ACL、分类和恶意文件检查 | ContractRun 固定文件 Digest、本体 Digest、RAG 索引与权限水位、ModelReceipt | 风险 ReportArtifact 与修改 ActionPlan 分离；法务 DecisionRecord 绑定计划和证据 Digest | MVP2 不创建外部任务或修改合同；DecisionRecord 是终态，不产生 ExecutionReceipt | 解析、检索或模型失败保持可重试；禁止整文或 mock fallback 冒充证据 |
-| 订单洞察与行动 | 订单数据产品、字段、用途和员工/授权人双主体 | OrderRun 固定订单水位、本体 Digest、逻辑/物理查询 Digest 和策略版本 | 报告、ActionPlan、ApprovalRecord 各自不可变 | 业务 MCP 在 Lease/授权/前置条件复核后执行可逆动作并对账 | 重复调用、迟到 Lease、外部超时通过副作用台账只产生一次效果 |
-| 本体构建 | 对话/材料 ACL、来源 Digest、建模职责和发布职责分离 | OntologyRun + A2A SubRun 固定候选来源、预算和委托链 | OntologyProposal、SHACL 结果、差异和评审记录进入 Artifact | Release Ledger 幂等发布签名 OntologyPackage，Jena `current` 与通知由恢复器收敛 | 校验不通过不发布；任一边界失败按 Ledger 恢复，旧版本保留给既有 Run |
-| 本体运维 | RAG 切片、Schema/数据产品事件及其权限水位 | MaintenanceRun 固定基线、本体候选、影响范围和回归金标 | DriftReport、ChangePlan 和独立审批 | 发布或回滚产生回执和下游兼容通知 | 事件去重、阈值不达标拒绝发布；失败可从基线重新运行 |
-| 对话关系识别 | 受授权对话片段和用户主体 | RecognitionRun 固定消息 Digest、文本跨度、本体版本和模型回执 | 候选实体/关系/约束进入可确认 Artifact | 用户确认后保存 OntologyProposal 或业务事实候选，不直接发布 | 去重、冲突和低置信候选进入人工确认；撤回来源传播到候选 |
-| 材料本体识别 | 文件版本、ACL、分类、恶意文件检查和保留策略 | RecognitionRun 固定文件/切片 Digest、解析器与索引版本 | 带来源跨度的候选、冲突和合并建议进入 Artifact | 评审后合并到 OntologyProposal，不直接改权威本体 | 解析失败、重复材料、来源删除和保留到期均有显式状态与清理传播 |
+| 场景           | 输入与授权权威                                     | Run / 快照                                                                 | Artifact 与审批                                                                       | 副作用与回执                                                                   | 失败与恢复                                                         |
+| -------------- | -------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| 合同审查       | 合同版本、上传者、ACL、分类和恶意文件检查          | ContractRun 固定文件 Digest、本体 Digest、RAG 索引与权限水位、ModelReceipt | 风险 ReportArtifact 与修改 ActionPlan 分离；法务 DecisionRecord 绑定计划和证据 Digest | MVP2 不创建外部任务或修改合同；DecisionRecord 是终态，不产生 ExecutionReceipt  | 解析、检索或模型失败保持可重试；禁止整文或 mock fallback 冒充证据  |
+| 订单洞察与行动 | 订单数据产品、字段、用途和员工/授权人双主体        | OrderRun 固定订单水位、本体 Digest、逻辑/物理查询 Digest 和策略版本        | 报告、ActionPlan、ApprovalRecord 各自不可变                                           | 业务 MCP 在 Lease/授权/前置条件复核后执行可逆动作并对账                        | 重复调用、迟到 Lease、外部超时通过副作用台账只产生一次效果         |
+| 本体构建       | 对话/材料 ACL、来源 Digest、建模职责和发布职责分离 | OntologyRun + A2A SubRun 固定候选来源、预算和委托链                        | OntologyProposal、SHACL 结果、差异和评审记录进入 Artifact                             | Release Ledger 幂等发布签名 OntologyPackage，Jena `current` 与通知由恢复器收敛 | 校验不通过不发布；任一边界失败按 Ledger 恢复，旧版本保留给既有 Run |
+| 本体运维       | RAG 切片、Schema/数据产品事件及其权限水位          | MaintenanceRun 固定基线、本体候选、影响范围和回归金标                      | DriftReport、ChangePlan 和独立审批                                                    | 发布或回滚产生回执和下游兼容通知                                               | 事件去重、阈值不达标拒绝发布；失败可从基线重新运行                 |
+| 对话关系识别   | 受授权对话片段和用户主体                           | RecognitionRun 固定消息 Digest、文本跨度、本体版本和模型回执               | 候选实体/关系/约束进入可确认 Artifact                                                 | 用户确认后保存 OntologyProposal 或业务事实候选，不直接发布                     | 去重、冲突和低置信候选进入人工确认；撤回来源传播到候选             |
+| 材料本体识别   | 文件版本、ACL、分类、恶意文件检查和保留策略        | RecognitionRun 固定文件/切片 Digest、解析器与索引版本                      | 带来源跨度的候选、冲突和合并建议进入 Artifact                                         | 评审后合并到 OntologyProposal，不直接改权威本体                                | 解析失败、重复材料、来源删除和保留到期均有显式状态与清理传播       |
 
 场景 5 和 6 是场景 1 至 4 的共享语义输入能力，不建立另一套 Employee Runtime，但它们本身也必须完成“候选 → 用户/专家确认 → Artifact → 反馈/撤销”的闭环。六个场景统一使用 Run Ledger、Evidence、不可变对象链、审计和跨宿主 BusinessSession。
 
@@ -790,12 +790,12 @@ PlatformFoundation 与 TenantRuntime 是两个独立发布单元。PlatformFound
 
 2026-09-01 的能力结论如下，均不等价于“宿主原生拥有完整数字员工生命周期”：
 
-| 宿主 | 可用扩展面 | 架构用法与限制 |
-|---|---|---|
-| Codex | Skills、Plugins、MCP | 安装一个稳定 Connector，以 Bootstrap/元工具装载员工投影；不假设按员工热装 MCP 配置 |
-| Claude Code | Plugins、Skills、Agents、MCP，可刷新插件 | 可动态刷新扩展，但 Run、Lease、Memory 和员工身份仍归平台 |
-| DeepSeek Harness | Cordis plugin mount/unmount、Skills | 能力可用但上游仍处早期版本；进入生产前锁版并验证破坏性兼容 |
-| Hermes | MCP reload、Plugins、Skills | 适合作为受控入口；其单租户/高权限插件安全假设不能替代平台多租户沙箱 |
+| 宿主             | 可用扩展面                               | 架构用法与限制                                                                     |
+| ---------------- | ---------------------------------------- | ---------------------------------------------------------------------------------- |
+| Codex            | Skills、Plugins、MCP                     | 安装一个稳定 Connector，以 Bootstrap/元工具装载员工投影；不假设按员工热装 MCP 配置 |
+| Claude Code      | Plugins、Skills、Agents、MCP，可刷新插件 | 可动态刷新扩展，但 Run、Lease、Memory 和员工身份仍归平台                           |
+| DeepSeek Harness | Cordis plugin mount/unmount、Skills      | 能力可用但上游仍处早期版本；进入生产前锁版并验证破坏性兼容                         |
+| Hermes           | MCP reload、Plugins、Skills              | 适合作为受控入口；其单租户/高权限插件安全假设不能替代平台多租户沙箱                |
 
 因此“动态加载数字员工”的标准实现是稳定 Connector 动态获取服务端投影，而不是为每名员工安装一套宿主插件。
 
@@ -872,25 +872,25 @@ SeaweedFS 必须固定到包含已知跨 Bucket 读取漏洞修复的安全版�
 
 本表只证明 2026-09-01 检查时的上游能力，不代替锁定版本的集成、恢复和许可证验收。
 
-| 组件/能力 | 证据 | 2026-09-01 准入判定 |
-|---|---|---|
-| Codex Skills/Plugins/MCP | <https://learn.chatgpt.com/docs/build-skills>、<https://learn.chatgpt.com/docs/build-plugins>、<https://learn.chatgpt.com/docs/extend/mcp> | 条件采用稳定 Connector；不假设完整员工热加载 |
-| Claude Code Plugins/MCP | <https://code.claude.com/docs/en/plugins>、<https://code.claude.com/docs/en/mcp> | 条件采用；平台仍拥有员工生命周期 |
-| DeepSeek Harness | <https://github.com/deepseek-ai/deepseek-harness>、<https://github.com/deepseek-ai/deepseek-harness/releases> | 条件采用；早期版本需锁版和兼容门 |
-| Hermes Agent | <https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md>、<https://github.com/NousResearch/hermes-agent/security> | 条件采用；不得把单租户插件权限模型当多租户沙箱 |
-| Supabase OAuth 2.1 / JWT keys | <https://supabase.com/docs/guides/auth/oauth-server>、<https://supabase.com/docs/guides/auth/signing-keys> | 条件采用；锁版验证 Beta 能力、非对称签名和回退 |
+| 组件/能力                                                              | 证据                                                                                                                                                                                             | 2026-09-01 准入判定                                                                                                                                           |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Codex Skills/Plugins/MCP                                               | <https://learn.chatgpt.com/docs/build-skills>、<https://learn.chatgpt.com/docs/build-plugins>、<https://learn.chatgpt.com/docs/extend/mcp>                                                       | 条件采用稳定 Connector；不假设完整员工热加载                                                                                                                  |
+| Claude Code Plugins/MCP                                                | <https://code.claude.com/docs/en/plugins>、<https://code.claude.com/docs/en/mcp>                                                                                                                 | 条件采用；平台仍拥有员工生命周期                                                                                                                              |
+| DeepSeek Harness                                                       | <https://github.com/deepseek-ai/deepseek-harness>、<https://github.com/deepseek-ai/deepseek-harness/releases>                                                                                    | 条件采用；早期版本需锁版和兼容门                                                                                                                              |
+| Hermes Agent                                                           | <https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md>、<https://github.com/NousResearch/hermes-agent/security>                                        | 条件采用；不得把单租户插件权限模型当多租户沙箱                                                                                                                |
+| Supabase OAuth 2.1 / JWT keys                                          | <https://supabase.com/docs/guides/auth/oauth-server>、<https://supabase.com/docs/guides/auth/signing-keys>                                                                                       | 条件采用；锁版验证 Beta 能力、非对称签名和回退                                                                                                                |
 | Keycloak Identity Brokering / Token Exchange / JWT Authorization Grant | <https://www.keycloak.org/docs/latest/server_admin/#_identity_broker>、<https://www.keycloak.org/securing-apps/token-exchange>、<https://www.keycloak.org/securing-apps/jwt-authorization-grant> | OIDC Broker + Token Exchange 主路径；执行时锁当前安全受支持 patch 与镜像 Digest，2026-09-01 验证基线为 26.7.3；JWT Grant 仅在断言 audience/jti 子门通过后启用 |
-| LiteLLM Model/MCP/A2A | <https://github.com/BerriAI/litellm>、<https://docs.litellm.ai/docs/mcp>、<https://docs.litellm.ai/docs/a2a> | Model 确认；MCP/A2A 条件采用，需互操作与 MIT-only 证明 |
-| LiteLLM 许可证边界 | <https://raw.githubusercontent.com/BerriAI/litellm/main/LICENSE>、<https://raw.githubusercontent.com/BerriAI/litellm/main/enterprise/LICENSE.md> | 必须锁 commit、检查 import graph 与 SBOM |
-| MCP Apps | <https://modelcontextprotocol.io/extensions/apps/overview>、<https://github.com/modelcontextprotocol/ext-apps> | 可选采用；逐宿主版本验证并保留 fallback |
-| RAGFlow 目标拓扑 | <https://github.com/infiniflow/ragflow/blob/main/docker/.env>、<https://github.com/infiniflow/ragflow/blob/main/helm/values.yaml> | 条件采用；PostgreSQL/Infinity/SeaweedFS 是待验证组合 |
-| TencentDB Agent Memory / MemoryCore | <https://github.com/TencentCloud/TencentDB-Agent-Memory>、<https://github.com/TencentCloud/TencentDB-Agent-Memory/releases> | 条件采用；只启用 L0-L3，锁 tag/commit，先单活验收 |
-| Apache Jena Fuseki/TDB2/SHACL | <https://jena.apache.org/documentation/fuseki2/>、<https://jena.apache.org/documentation/tdb2/>、<https://jena.apache.org/documentation/shacl/> | 采用；定位为可重建投影和发布校验，不宣称多写 HA/完整 OWL DL |
-| Trino Iceberg / Polaris | <https://trino.io/docs/current/connector/iceberg.html>、<https://polaris.apache.org/guides/trino/> | 采用；显式只读和最小权限 |
-| SeaweedFS S3 / 安全公告 | <https://github.com/seaweedfs/seaweedfs/wiki/Amazon-S3-API>、<https://github.com/seaweedfs/seaweedfs/security/advisories/GHSA-56wq-x3wv-3ff4> | 条件采用；锁安全版本并完成组合兼容测试 |
-| OpenFGA / OPA | <https://openfga.dev/docs/concepts>、<https://www.openpolicyagent.org/docs/> | 采用；模型、元组和策略权威必须分离 |
-| Temporal / NATS JetStream | <https://docs.temporal.io/>、<https://docs.nats.io/nats-concepts/jetstream> | 采用；只在业务需要时启用并落实幂等/因果契约 |
-| OCI / ORAS / Cosign | <https://github.com/opencontainers/distribution-spec>、<https://oras.land/docs/>、<https://docs.sigstore.dev/cosign/> | 采用；制品固定 Digest、签名和撤销 |
-| OpenBao | <https://openbao.org/docs/internals/high-availability/>、<https://raw.githubusercontent.com/openbao/openbao/main/LICENSE> | 采用；MPL-2.0 文件级义务按交付物处理 |
-| CloudNativePG Barman Cloud Plugin | <https://github.com/cloudnative-pg/plugin-barman-cloud> | 采用 Apache-2.0 插件，不采用 GPL-3.0 独立 Barman 发行物 |
-| 前端基线 | <https://github.com/ant-design/ant-design>、<https://refine.dev/core/docs/ui-integrations/>、<https://github.com/rjsf-team/react-jsonschema-form> | 采用；只迁移业务 MVP 触达页面 |
+| LiteLLM Model/MCP/A2A                                                  | <https://github.com/BerriAI/litellm>、<https://docs.litellm.ai/docs/mcp>、<https://docs.litellm.ai/docs/a2a>                                                                                     | Model 确认；MCP/A2A 条件采用，需互操作与 MIT-only 证明                                                                                                        |
+| LiteLLM 许可证边界                                                     | <https://raw.githubusercontent.com/BerriAI/litellm/main/LICENSE>、<https://raw.githubusercontent.com/BerriAI/litellm/main/enterprise/LICENSE.md>                                                 | 必须锁 commit、检查 import graph 与 SBOM                                                                                                                      |
+| MCP Apps                                                               | <https://modelcontextprotocol.io/extensions/apps/overview>、<https://github.com/modelcontextprotocol/ext-apps>                                                                                   | 可选采用；逐宿主版本验证并保留 fallback                                                                                                                       |
+| RAGFlow 目标拓扑                                                       | <https://github.com/infiniflow/ragflow/blob/main/docker/.env>、<https://github.com/infiniflow/ragflow/blob/main/helm/values.yaml>                                                                | 条件采用；PostgreSQL/Infinity/SeaweedFS 是待验证组合                                                                                                          |
+| TencentDB Agent Memory / MemoryCore                                    | <https://github.com/TencentCloud/TencentDB-Agent-Memory>、<https://github.com/TencentCloud/TencentDB-Agent-Memory/releases>                                                                      | 条件采用；只启用 L0-L3，锁 tag/commit，先单活验收                                                                                                             |
+| Apache Jena Fuseki/TDB2/SHACL                                          | <https://jena.apache.org/documentation/fuseki2/>、<https://jena.apache.org/documentation/tdb2/>、<https://jena.apache.org/documentation/shacl/>                                                  | 采用；定位为可重建投影和发布校验，不宣称多写 HA/完整 OWL DL                                                                                                   |
+| Trino Iceberg / Polaris                                                | <https://trino.io/docs/current/connector/iceberg.html>、<https://polaris.apache.org/guides/trino/>                                                                                               | 采用；显式只读和最小权限                                                                                                                                      |
+| SeaweedFS S3 / 安全公告                                                | <https://github.com/seaweedfs/seaweedfs/wiki/Amazon-S3-API>、<https://github.com/seaweedfs/seaweedfs/security/advisories/GHSA-56wq-x3wv-3ff4>                                                    | 条件采用；锁安全版本并完成组合兼容测试                                                                                                                        |
+| OpenFGA / OPA                                                          | <https://openfga.dev/docs/concepts>、<https://www.openpolicyagent.org/docs/>                                                                                                                     | 采用；模型、元组和策略权威必须分离                                                                                                                            |
+| Temporal / NATS JetStream                                              | <https://docs.temporal.io/>、<https://docs.nats.io/nats-concepts/jetstream>                                                                                                                      | 采用；只在业务需要时启用并落实幂等/因果契约                                                                                                                   |
+| OCI / ORAS / Cosign                                                    | <https://github.com/opencontainers/distribution-spec>、<https://oras.land/docs/>、<https://docs.sigstore.dev/cosign/>                                                                            | 采用；制品固定 Digest、签名和撤销                                                                                                                             |
+| OpenBao                                                                | <https://openbao.org/docs/internals/high-availability/>、<https://raw.githubusercontent.com/openbao/openbao/main/LICENSE>                                                                        | 采用；MPL-2.0 文件级义务按交付物处理                                                                                                                          |
+| CloudNativePG Barman Cloud Plugin                                      | <https://github.com/cloudnative-pg/plugin-barman-cloud>                                                                                                                                          | 采用 Apache-2.0 插件，不采用 GPL-3.0 独立 Barman 发行物                                                                                                       |
+| 前端基线                                                               | <https://github.com/ant-design/ant-design>、<https://refine.dev/core/docs/ui-integrations/>、<https://github.com/rjsf-team/react-jsonschema-form>                                                | 采用；只迁移业务 MVP 触达页面                                                                                                                                 |

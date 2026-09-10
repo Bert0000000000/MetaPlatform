@@ -1,4 +1,5 @@
 """Domain models (SQLModel) for IAM admin."""
+
 from .ai_model import AiModel
 from .audit import AuditAction, AuditLog
 from .login_log import LoginLog, LoginResult

@@ -39,11 +39,17 @@ class OntologyToolRepo(Protocol):
     def list_link_instances(self) -> list[LinkInstance]: ...
     def execute_object_query(self, q: ObjectSetQuery) -> QueryResult: ...
     def search_objects(
-        self, text: str, class_rid: str | None = ..., top_k: int = ...,
+        self,
+        text: str,
+        class_rid: str | None = ...,
+        top_k: int = ...,
     ) -> list[dict[str, Any]]: ...
     def propose_action(
-        self, action_rid: Any, parameters: dict[str, Any],
-        target_iid: str | None, impact_summary: str,
+        self,
+        action_rid: Any,
+        parameters: dict[str, Any],
+        target_iid: str | None,
+        impact_summary: str,
         expected_diff: dict[str, Any] | None = ...,
     ) -> Any: ...
 
@@ -135,7 +141,8 @@ PROPOSE_MODEL_TYPE_TOOL: dict[str, Any] = {
 
 
 def build_ontology_tools(
-    repo: OntologyToolRepo, agent_markings: tuple[str, ...] | list[str] = (),
+    repo: OntologyToolRepo,
+    agent_markings: tuple[str, ...] | list[str] = (),
 ) -> list[dict[str, Any]]:
     """发布即可见：每次调用从 repo 实时计算（虚拟注册表，零 push 同步）。"""
     types = repo.list_object_types(10000, 0)
@@ -240,10 +247,7 @@ def _inspect_class(repo: OntologyToolRepo, class_rid: str) -> dict[str, Any]:
             {"slug": slug_of_rid(p.rid.rid), "type": p.type_id, "format": p.format.value}
             for p in ot.properties
         ],
-        "links": [
-            {"link_type": li.link_type_rid.rid}
-            for li in repo.list_link_instances()
-        ][:50],
+        "links": [{"link_type": li.link_type_rid.rid} for li in repo.list_link_instances()][:50],
     }
 
 
@@ -264,8 +268,7 @@ def _execute_query(
     # 执行期二次校验（工具可见性不等于执行放行）
     if not visible_object_types((target,), markings):
         raise PermissionError(
-            f"tool {name!r} requires markings {list(target.marking)}, "
-            f"agent has {list(markings)}"
+            f"tool {name!r} requires markings {list(target.marking)}, agent has {list(markings)}"
         )
 
     agg: Aggregation | None = None
@@ -294,7 +297,8 @@ def _execute_query(
             aggregation=agg,
             traversal=tuple(
                 TraversalStep(
-                    link_type=str(t["link_type"]), direction=str(t["direction"]),
+                    link_type=str(t["link_type"]),
+                    direction=str(t["direction"]),
                 )
                 for t in arguments.get("traversal", ())
                 if isinstance(t, dict)

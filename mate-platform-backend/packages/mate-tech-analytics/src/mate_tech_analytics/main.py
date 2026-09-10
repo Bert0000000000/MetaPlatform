@@ -5,6 +5,7 @@ Wires the integration hooks per ADR-0014:
   2. require_tenant(ctx) at every /api/v1/analytics handler
      (SEC-TENANT-01, hard rule 3) -- enforced in api/routes.py.
 """
+
 from __future__ import annotations
 
 import os

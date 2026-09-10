@@ -12,6 +12,7 @@ needs to access tenant-owned data. The protocol guarantees:
     tenant. This catches the case where the row was inserted by
     another tenant after the query was issued.
 """
+
 from __future__ import annotations
 
 from typing import Any, Protocol, TypeVar

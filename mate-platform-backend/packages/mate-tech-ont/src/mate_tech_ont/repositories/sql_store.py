@@ -4,6 +4,7 @@ Provides read + write for Ontology, OntologyClass, OntologyInstance,
 OntologyRelation, and OntologyVersion. Dict fields (``properties``,
 ``metadata``) are JSON-serialised to TEXT.
 """
+
 from __future__ import annotations
 
 import json
@@ -113,11 +114,15 @@ def list_ontologies(tenant_id: str) -> list[Ontology]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.OntologyORM)
-        .where(models.OntologyORM.tenant_id == tenant_id)
-        .order_by(models.OntologyORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.OntologyORM)
+            .where(models.OntologyORM.tenant_id == tenant_id)
+            .order_by(models.OntologyORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_ontology(r) for r in rows]
 
 
@@ -138,11 +143,15 @@ def list_classes(tenant_id: str) -> list[OntologyClass]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.OntologyClassORM)
-        .where(models.OntologyClassORM.tenant_id == tenant_id)
-        .order_by(models.OntologyClassORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.OntologyClassORM)
+            .where(models.OntologyClassORM.tenant_id == tenant_id)
+            .order_by(models.OntologyClassORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_class(r) for r in rows]
 
 
@@ -163,11 +172,15 @@ def list_instances(tenant_id: str) -> list[OntologyInstance]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.OntologyInstanceORM)
-        .where(models.OntologyInstanceORM.tenant_id == tenant_id)
-        .order_by(models.OntologyInstanceORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.OntologyInstanceORM)
+            .where(models.OntologyInstanceORM.tenant_id == tenant_id)
+            .order_by(models.OntologyInstanceORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_instance(r) for r in rows]
 
 
@@ -188,11 +201,15 @@ def list_relations(tenant_id: str) -> list[OntologyRelation]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.OntologyRelationORM)
-        .where(models.OntologyRelationORM.tenant_id == tenant_id)
-        .order_by(models.OntologyRelationORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.OntologyRelationORM)
+            .where(models.OntologyRelationORM.tenant_id == tenant_id)
+            .order_by(models.OntologyRelationORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_relation(r) for r in rows]
 
 
@@ -213,11 +230,15 @@ def list_versions(tenant_id: str) -> list[OntologyVersion]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.OntologyVersionORM)
-        .where(models.OntologyVersionORM.tenant_id == tenant_id)
-        .order_by(models.OntologyVersionORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.OntologyVersionORM)
+            .where(models.OntologyVersionORM.tenant_id == tenant_id)
+            .order_by(models.OntologyVersionORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_version(r) for r in rows]
 
 
@@ -247,11 +268,16 @@ def put_ontology(tenant_id: str, ont: Ontology) -> Ontology:
         existing.description = ont.description
         existing.updated_at = ont.updated_at
     else:
-        s.add(models.OntologyORM(
-            id=ont.id, tenant_id=tenant_id, namespace=ont.namespace,
-            description=ont.description, created_at=ont.created_at,
-            updated_at=ont.updated_at,
-        ))
+        s.add(
+            models.OntologyORM(
+                id=ont.id,
+                tenant_id=tenant_id,
+                namespace=ont.namespace,
+                description=ont.description,
+                created_at=ont.created_at,
+                updated_at=ont.updated_at,
+            )
+        )
     s.commit()
     return ont
 
@@ -290,11 +316,18 @@ def put_class(tenant_id: str, cls: OntologyClass) -> OntologyClass:
         existing.properties = props_str
         existing.created_at = cls.created_at
     else:
-        s.add(models.OntologyClassORM(
-            id=cls.id, tenant_id=tenant_id, ontology_id=cls.ontology_id,
-            namespace=cls.namespace, label=cls.label, parent=cls.parent,
-            properties=props_str, created_at=cls.created_at,
-        ))
+        s.add(
+            models.OntologyClassORM(
+                id=cls.id,
+                tenant_id=tenant_id,
+                ontology_id=cls.ontology_id,
+                namespace=cls.namespace,
+                label=cls.label,
+                parent=cls.parent,
+                properties=props_str,
+                created_at=cls.created_at,
+            )
+        )
     s.commit()
     return cls
 
@@ -331,11 +364,16 @@ def put_instance(tenant_id: str, inst: OntologyInstance) -> OntologyInstance:
         existing.properties = props_str
         existing.created_at = inst.created_at
     else:
-        s.add(models.OntologyInstanceORM(
-            id=inst.id, tenant_id=tenant_id, class_id=inst.class_id,
-            namespace=inst.namespace, properties=props_str,
-            created_at=inst.created_at,
-        ))
+        s.add(
+            models.OntologyInstanceORM(
+                id=inst.id,
+                tenant_id=tenant_id,
+                class_id=inst.class_id,
+                namespace=inst.namespace,
+                properties=props_str,
+                created_at=inst.created_at,
+            )
+        )
     s.commit()
     return inst
 
@@ -373,11 +411,17 @@ def put_version(tenant_id: str, ver: OntologyVersion) -> OntologyVersion:
         existing.ver_meta = meta_str
         existing.created_at = ver.created_at
     else:
-        s.add(models.OntologyVersionORM(
-            id=ver.id, tenant_id=tenant_id, ontology_id=ver.ontology_id,
-            version=ver.version, parent=ver.parent, ver_meta=meta_str,
-            created_at=ver.created_at,
-        ))
+        s.add(
+            models.OntologyVersionORM(
+                id=ver.id,
+                tenant_id=tenant_id,
+                ontology_id=ver.ontology_id,
+                version=ver.version,
+                parent=ver.parent,
+                ver_meta=meta_str,
+                created_at=ver.created_at,
+            )
+        )
     s.commit()
     return ver
 
@@ -406,16 +450,8 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     from . import in_memory as mem
 
     counts: dict[str, int] = {}
-    counts["ontologies"] = len(
-        [put_ontology(tenant_id, o) for o in mem.list_ontologies(tenant_id)]
-    )
-    counts["classes"] = len(
-        [put_class(tenant_id, c) for c in mem.list_classes(tenant_id)]
-    )
-    counts["instances"] = len(
-        [put_instance(tenant_id, i) for i in mem.list_instances(tenant_id)]
-    )
-    counts["versions"] = len(
-        [put_version(tenant_id, v) for v in mem.list_versions(tenant_id)]
-    )
+    counts["ontologies"] = len([put_ontology(tenant_id, o) for o in mem.list_ontologies(tenant_id)])
+    counts["classes"] = len([put_class(tenant_id, c) for c in mem.list_classes(tenant_id)])
+    counts["instances"] = len([put_instance(tenant_id, i) for i in mem.list_instances(tenant_id)])
+    counts["versions"] = len([put_version(tenant_id, v) for v in mem.list_versions(tenant_id)])
     return counts

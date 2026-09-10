@@ -16,7 +16,7 @@ image:
   tag: "16"
   pullPolicy: IfNotPresent
 
-replicaCount: 1   # 2 in production per values-production.yaml
+replicaCount: 1 # 2 in production per values-production.yaml
 
 database:
   name: metaplatform
@@ -33,9 +33,9 @@ pool:
   maxOverflow: 20
 
 persistence:
-  enabled: false        # true in production (PVC); false = emptyDir
+  enabled: false # true in production (PVC); false = emptyDir
   size: 50Gi
-  storageClass: ""      # "" = cluster default StorageClass
+  storageClass: "" # "" = cluster default StorageClass
 
 service:
   type: ClusterIP

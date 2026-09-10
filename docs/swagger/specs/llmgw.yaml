@@ -13,15 +13,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChatRequest'
+              $ref: "#/components/schemas/ChatRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChatResponseAPI'
-        '501':
+                $ref: "#/components/schemas/ChatResponseAPI"
+        "501":
           description: Provider not implemented
   /api/v1/llm/chat/stream:
     post:
@@ -32,9 +32,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChatRequest'
+              $ref: "#/components/schemas/ChatRequest"
       responses:
-        '200':
+        "200":
           description: SSE stream
           content:
             text/event-stream: {}
@@ -47,58 +47,58 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EmbeddingRequest'
+              $ref: "#/components/schemas/EmbeddingRequest"
       responses:
-        '200':
+        "200":
           description: OK
   /healthz:
     get:
       summary: 健康检查
       tags: [meta]
       responses:
-        '200':
+        "200":
           description: OK
 components:
   schemas:
     ChatMessage:
       type: object
       properties:
-        role: {type: string}
-        content: {type: string}
-        name: {type: string, nullable: true}
-        tool_call_id: {type: string, nullable: true}
+        role: { type: string }
+        content: { type: string }
+        name: { type: string, nullable: true }
+        tool_call_id: { type: string, nullable: true }
     ChatRequest:
       type: object
       required: [model, messages]
       properties:
-        model: {type: string}
+        model: { type: string }
         messages:
           type: array
-          items: {$ref: '#/components/schemas/ChatMessage'}
-        temperature: {type: number, default: 1.0}
-        max_tokens: {type: integer, nullable: true}
+          items: { $ref: "#/components/schemas/ChatMessage" }
+        temperature: { type: number, default: 1.0 }
+        max_tokens: { type: integer, nullable: true }
         tools:
           type: array
-          items: {type: object}
+          items: { type: object }
     ChatResponseAPI:
       type: object
       properties:
-        content: {type: string}
-        model: {type: string}
-        finish_reason: {type: string, nullable: true}
-        tool_calls: {type: array, items: {type: object}}
-        usage: {type: object}
+        content: { type: string }
+        model: { type: string }
+        finish_reason: { type: string, nullable: true }
+        tool_calls: { type: array, items: { type: object } }
+        usage: { type: object }
     EmbeddingRequest:
       type: object
       required: [input]
       properties:
-        model: {type: string, default: text-embedding-3-small}
+        model: { type: string, default: text-embedding-3-small }
         input:
           type: array
-          items: {type: string}
+          items: { type: string }
     EmbeddingResponse:
       type: object
       properties:
-        model: {type: string}
-        data: {type: array, items: {type: object}}
-        usage: {type: object}
+        model: { type: string }
+        data: { type: array, items: { type: object } }
+        usage: { type: object }

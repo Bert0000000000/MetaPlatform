@@ -1,4 +1,5 @@
 """Shared pytest fixtures for mate-tech-agent."""
+
 from __future__ import annotations
 
 # BUSINESS-SLICES P1 wave 2: ensure cross-package paths work

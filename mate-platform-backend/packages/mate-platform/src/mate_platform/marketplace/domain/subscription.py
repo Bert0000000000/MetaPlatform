@@ -2,6 +2,7 @@
 
 KMS 加密 license_key 后存盘;license_payload 存 SaaS 返回的元数据。
 """
+
 from __future__ import annotations
 
 import uuid
@@ -20,26 +21,16 @@ JSONType = JSONB().with_variant(JSON(), "sqlite")
 class Subscription(Base):
     __tablename__ = "marketplace_subscription"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True
-    )
-    tenant_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False, index=True
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
     sku: Mapped[str] = mapped_column(String(128), nullable=False)
     # KMS 加密后的 license_key(密文)。Task 8 写入。
     license_key: Mapped[str] = mapped_column(String(512), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     license_payload: Mapped[dict] = mapped_column(JSONType, nullable=False)
-    purchased_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
-    expires_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True)
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    purchased_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
         Index(

@@ -1,4 +1,5 @@
 """Prometheus /metrics (ST-5.2.4)."""
+
 from __future__ import annotations
 
 from prometheus_client import (
@@ -36,4 +37,5 @@ def render_metrics() -> tuple[bytes, str]:
 
 def get_registry() -> CollectorRegistry:
     from prometheus_client import REGISTRY
+
     return REGISTRY

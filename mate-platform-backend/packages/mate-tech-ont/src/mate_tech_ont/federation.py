@@ -10,6 +10,7 @@
 - intersection— 取交集(URI 在所有结果集中均出现)
 - priority    — 按本体优先级排序后取并集
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -430,8 +431,7 @@ async def create_mapping_endpoint(
         source_ontology=payload.source_ontology,
         target_ontology=payload.target_ontology,
         class_mappings=[
-            ClassMapping(cm.source_class, cm.target_class)
-            for cm in payload.class_mappings
+            ClassMapping(cm.source_class, cm.target_class) for cm in payload.class_mappings
         ],
         property_mappings=[
             PropertyMapping(pm.source_property, pm.target_property)

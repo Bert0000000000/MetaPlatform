@@ -23,6 +23,7 @@ Design:
 
 Per ADR-0016 §3.3 D7.
 """
+
 from __future__ import annotations
 
 import re
@@ -129,9 +130,7 @@ class PIIEngine:
         if not text:
             return False
         return any(
-            PATTERNS[kind].search(text)
-            for kind in self._policy.enabled_kinds
-            if kind in PATTERNS
+            PATTERNS[kind].search(text) for kind in self._policy.enabled_kinds if kind in PATTERNS
         )
 
     def apply(self, text: str) -> PIIResult:
@@ -166,11 +165,7 @@ class PIIEngine:
         fields: list[str] | None = None,
     ) -> tuple[dict[str, Any], tuple[PIIMatch, ...]]:
         """Recursively redact PII in a dict's string values."""
-        keys = (
-            [k for k, v in payload.items() if isinstance(v, str)]
-            if fields is None
-            else fields
-        )
+        keys = [k for k, v in payload.items() if isinstance(v, str)] if fields is None else fields
         out = dict(payload)
         all_matches: list[PIIMatch] = []
         for k in keys:
@@ -180,8 +175,7 @@ class PIIEngine:
             result = self.apply(v)
             out[k] = result.redacted
             all_matches.extend(
-                PIIMatch(field=k, kind=m.kind, count=m.count)
-                for m in result.matches
+                PIIMatch(field=k, kind=m.kind, count=m.count) for m in result.matches
             )
         return out, tuple(all_matches)
 

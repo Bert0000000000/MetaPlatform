@@ -111,7 +111,7 @@ mate:
     # JSON-RPC 协议
     protocol:
       version: "2025-03-26"
-      max-message-size: 10485760  # 10MB
+      max-message-size: 10485760 # 10MB
       request-timeout-seconds: 30
     # Tool 配置缓存（Redis）
     cache:

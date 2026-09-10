@@ -7,6 +7,7 @@ safe for Temporal serialization, and back. The workflow/activities in
 delegate execution to :class:`~...scheduler.plan_runner.PlanRunner`
 (HITL 合一 semantics preserved untouched).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -15,11 +16,17 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 StepKindLiteral = Literal[
-    "call_agent", "apply_action", "propose", "run_function", "evaluate_object_set",
+    "call_agent",
+    "apply_action",
+    "propose",
+    "run_function",
+    "evaluate_object_set",
 ]
 
 TASK_QUEUE = "plan-orchestration"
-TEMPORAL_HOST = "127.0.0.1:7233"  # NOT localhost: IPv6 resolution breaks gRPC h2 on some Windows hosts
+TEMPORAL_HOST = (
+    "127.0.0.1:7233"  # NOT localhost: IPv6 resolution breaks gRPC h2 on some Windows hosts
+)
 
 
 class WorkflowStep(BaseModel):

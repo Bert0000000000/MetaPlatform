@@ -2,6 +2,7 @@
 
 Entities: Agent, AgentSession, AgentMessage.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -73,9 +74,15 @@ def _seed_agents(tenant_id: str) -> dict[str, Agent]:
     ]
     return {
         aid: Agent(
-            id=aid, tenant_id=tenant_id, name=name, scenario=sc,
-            model_id=mid, status=st, config={"temperature": 0.7},
-            created_at="2026-08-01T00:00:00Z", updated_at="2026-08-01T00:00:00Z",
+            id=aid,
+            tenant_id=tenant_id,
+            name=name,
+            scenario=sc,
+            model_id=mid,
+            status=st,
+            config={"temperature": 0.7},
+            created_at="2026-08-01T00:00:00Z",
+            updated_at="2026-08-01T00:00:00Z",
         )
         for aid, name, sc, mid, st in catalog
     }
@@ -88,9 +95,14 @@ def _seed_sessions(tenant_id: str) -> dict[str, AgentSession]:
     ]
     return {
         sid: AgentSession(
-            id=sid, tenant_id=tenant_id, agent_id=aid,
-            thread_id=tid, scenario=sc, status=st,
-            created_at="2026-08-01T00:00:00Z", updated_at="2026-08-01T00:00:00Z",
+            id=sid,
+            tenant_id=tenant_id,
+            agent_id=aid,
+            thread_id=tid,
+            scenario=sc,
+            status=st,
+            created_at="2026-08-01T00:00:00Z",
+            updated_at="2026-08-01T00:00:00Z",
         )
         for sid, aid, tid, sc, st in catalog
     }
@@ -104,8 +116,12 @@ def _seed_messages(tenant_id: str) -> dict[str, AgentMessage]:
     ]
     return {
         mid: AgentMessage(
-            id=mid, tenant_id=tenant_id, thread_id=tid,
-            role=role, content=content, tool_calls=tc,
+            id=mid,
+            tenant_id=tenant_id,
+            thread_id=tid,
+            role=role,
+            content=content,
+            tool_calls=tc,
             created_at="2026-08-01T00:00:00Z",
         )
         for mid, tid, role, content, tc in catalog
@@ -129,7 +145,9 @@ def _seed_plan_executions(tenant_id: str) -> dict[str, PlanExecution]:
     ]
     return {
         pid: PlanExecution(
-            id=pid, tenant_id=tenant_id, plan_id=plid,
+            id=pid,
+            tenant_id=tenant_id,
+            plan_id=plid,
             steps=[dict(s) for s in steps],
             results=[dict(r) for r in results],
             status="completed",

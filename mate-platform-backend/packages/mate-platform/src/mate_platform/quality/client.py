@@ -27,6 +27,7 @@ Design rationale:
 
 Per ADR-0016 §3.2 (D3 scope).
 """
+
 from __future__ import annotations
 
 import uuid
@@ -99,9 +100,7 @@ class ExpectationSuite:
     domain: str = ""
     datasets: tuple[str, ...] = field(default_factory=tuple)
     checks: tuple[Check, ...] = field(default_factory=tuple)
-    created_at: datetime = field(
-        default_factory=lambda: datetime.now(UTC)
-    )
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass(frozen=True)
@@ -123,9 +122,7 @@ class Checkpoint:
     run_id: str
     status: str  # "passed" | "failed" | "skipped"
     results: tuple[CheckResult, ...] = field(default_factory=tuple)
-    created_at: datetime = field(
-        default_factory=lambda: datetime.now(UTC)
-    )
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 # ---------------------------------------------------------------------------
@@ -142,21 +139,15 @@ class QualityClient(Protocol):
         """Look up an ExpectationSuite by name within a tenant."""
         ...
 
-    def list_suites(
-        self, tenant_id: str, domain: str | None = None
-    ) -> list[ExpectationSuite]:
+    def list_suites(self, tenant_id: str, domain: str | None = None) -> list[ExpectationSuite]:
         """List ExpectationSuites for a tenant, optionally by domain."""
         ...
 
-    def run_checkpoint(
-        self, tenant_id: str, suite_name: str
-    ) -> Checkpoint:
+    def run_checkpoint(self, tenant_id: str, suite_name: str) -> Checkpoint:
         """Execute all checks in a suite and return the checkpoint."""
         ...
 
-    def checkpoint_history(
-        self, tenant_id: str, suite_name: str
-    ) -> list[Checkpoint]:
+    def checkpoint_history(self, tenant_id: str, suite_name: str) -> list[Checkpoint]:
         """Return the full run history of a suite, oldest first."""
         ...
 
@@ -194,15 +185,12 @@ class InMemoryQualityClient:
         if not suite.tenant_id:
             raise QualityError("ExpectationSuite tenant_id must not be empty")
 
-    def _require_suite(
-        self, tenant_id: str, suite_name: str
-    ) -> ExpectationSuite:
+    def _require_suite(self, tenant_id: str, suite_name: str) -> ExpectationSuite:
         key = self._suite_key(tenant_id, suite_name)
         suite = self._suites.get(key)
         if suite is None:
             raise ExpectationSuiteNotFoundError(
-                f"ExpectationSuite {suite_name!r} not found "
-                f"for tenant {tenant_id!r}"
+                f"ExpectationSuite {suite_name!r} not found for tenant {tenant_id!r}"
             )
         return suite
 
@@ -220,19 +208,13 @@ class InMemoryQualityClient:
     def get_suite(self, tenant_id: str, suite_name: str) -> ExpectationSuite:
         return self._require_suite(tenant_id, suite_name)
 
-    def list_suites(
-        self, tenant_id: str, domain: str | None = None
-    ) -> list[ExpectationSuite]:
-        suites = [
-            s for s in self._suites.values() if s.tenant_id == tenant_id
-        ]
+    def list_suites(self, tenant_id: str, domain: str | None = None) -> list[ExpectationSuite]:
+        suites = [s for s in self._suites.values() if s.tenant_id == tenant_id]
         if domain is not None:
             suites = [s for s in suites if s.domain == domain]
         return sorted(suites, key=lambda s: s.name)
 
-    def run_checkpoint(
-        self, tenant_id: str, suite_name: str
-    ) -> Checkpoint:
+    def run_checkpoint(self, tenant_id: str, suite_name: str) -> Checkpoint:
         suite = self._require_suite(tenant_id, suite_name)
 
         # Evaluate every check against its pre-set outcome.
@@ -269,9 +251,7 @@ class InMemoryQualityClient:
         self._history.setdefault(key, []).append(checkpoint)
         return checkpoint
 
-    def checkpoint_history(
-        self, tenant_id: str, suite_name: str
-    ) -> list[Checkpoint]:
+    def checkpoint_history(self, tenant_id: str, suite_name: str) -> list[Checkpoint]:
         key = self._suite_key(tenant_id, suite_name)
         return list(self._history.get(key, []))
 

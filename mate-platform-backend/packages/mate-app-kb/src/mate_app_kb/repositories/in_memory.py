@@ -4,6 +4,7 @@ Entities: KbCollection, KbDocument, KbSearchLog.
 The kb facade persists its own metadata (collections, document index,
 search audit log) separate from the underlying RAG/Agent stores.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -87,6 +88,7 @@ class KbRetrievalConfigSnapshot:
     "version history" expander (read-only; rollback is intentionally out
     of scope for this batch).
     """
+
     # Composite key: tenant_id + version. ``id`` is ``{tenant}:{version}``.
     id: str
     tenant_id: str
@@ -116,8 +118,13 @@ def _seed_collections(tenant_id: str) -> dict[str, KbCollection]:
     ]
     return {
         cid: KbCollection(
-            id=cid, tenant_id=tenant_id, name=name, description=desc,
-            document_count=count, status=st, config={"embedder": "text-embedding-3-small"},
+            id=cid,
+            tenant_id=tenant_id,
+            name=name,
+            description=desc,
+            document_count=count,
+            status=st,
+            config={"embedder": "text-embedding-3-small"},
             created_at="2026-08-01T00:00:00Z",
             updated_at="2026-08-01T00:00:00Z",
         )
@@ -133,8 +140,14 @@ def _seed_documents(tenant_id: str) -> dict[str, KbDocument]:
     ]
     return {
         did: KbDocument(
-            id=did, tenant_id=tenant_id, collection_id=col, document_id=doid,
-            filename=fn, size_bytes=sz, chunk_count=cc, status=st,
+            id=did,
+            tenant_id=tenant_id,
+            collection_id=col,
+            document_id=doid,
+            filename=fn,
+            size_bytes=sz,
+            chunk_count=cc,
+            status=st,
             metadata={"source": "upload"},
             created_at="2026-08-01T00:00:00Z",
             updated_at="2026-08-01T00:00:00Z",
@@ -150,8 +163,12 @@ def _seed_search_logs(tenant_id: str) -> dict[str, KbSearchLog]:
     ]
     return {
         lid: KbSearchLog(
-            id=lid, tenant_id=tenant_id, query=q, mode=m,
-            total_hits=th, latency_ms=lm,
+            id=lid,
+            tenant_id=tenant_id,
+            query=q,
+            mode=m,
+            total_hits=th,
+            latency_ms=lm,
             created_at="2026-08-01T00:00:00Z",
         )
         for lid, q, m, th, lm in catalog
@@ -300,7 +317,8 @@ def put_retrieval_config(tenant_id: str, cfg: KbRetrievalConfig) -> KbRetrievalC
 # P1.8: snapshot support for the retrieval-config history feature
 # ---------------------------------------------------------------------------
 def put_retrieval_config_snapshot(
-    tenant_id: str, snapshot: KbRetrievalConfigSnapshot,
+    tenant_id: str,
+    snapshot: KbRetrievalConfigSnapshot,
 ) -> KbRetrievalConfigSnapshot:
     """Append a snapshot of the prior config to the tenant's history.
 
@@ -319,7 +337,8 @@ def put_retrieval_config_snapshot(
 
 
 def list_retrieval_config_snapshots(
-    tenant_id: str, limit: int | None = None,
+    tenant_id: str,
+    limit: int | None = None,
 ) -> list[KbRetrievalConfigSnapshot]:
     """Return the tenant's snapshot history, newest last.
 

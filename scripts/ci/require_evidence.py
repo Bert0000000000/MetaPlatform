@@ -5,6 +5,7 @@ evidence cell is the source of truth: a display name or a commit hash is not a
 stable evidence reference.  This checker deliberately stays dependency-free
 so it can run from a pre-commit hook on Windows and CI alike.
 """
+
 from __future__ import annotations
 
 import re
@@ -55,9 +56,7 @@ def _expand_reference(reference: str) -> list[str]:
     expanded: list[str] = []
     for choice in choices:
         expanded.extend(
-            _expand_reference(
-                reference[: match.start()] + choice + reference[match.end() :]
-            )
+            _expand_reference(reference[: match.start()] + choice + reference[match.end() :])
         )
     return expanded
 
@@ -99,9 +98,7 @@ def _accepted_table_rows(board_text: str):
             line_number += 1
             continue
         status_columns = [
-            index
-            for index, name in enumerate(header)
-            if "状态" in name or "status" in name.lower()
+            index for index, name in enumerate(header) if "状态" in name or "status" in name.lower()
         ]
         evidence_columns = [
             index
@@ -114,8 +111,7 @@ def _accepted_table_rows(board_text: str):
             if row is None:
                 break
             if status_columns and any(
-                index < len(row) and ACCEPTED_MARKER.search(row[index])
-                for index in status_columns
+                index < len(row) and ACCEPTED_MARKER.search(row[index]) for index in status_columns
             ):
                 yield row_number + 1, row, evidence_columns
             row_number += 1
@@ -128,18 +124,14 @@ def check_program_board(board_text: str, repo_root: Path = REPO) -> list[str]:
     violations: list[str] = []
     for line_number, cells, evidence_columns in _accepted_table_rows(board_text):
         if not evidence_columns:
-            violations.append(
-                f"L{line_number}: Accepted row has no evidence column"
-            )
+            violations.append(f"L{line_number}: Accepted row has no evidence column")
             continue
         references: list[str] = []
         for index in evidence_columns:
             if index < len(cells):
                 references.extend(parse_evidence_references(cells[index]))
         if not references:
-            violations.append(
-                f"L{line_number}: Accepted row has no repository evidence reference"
-            )
+            violations.append(f"L{line_number}: Accepted row has no repository evidence reference")
             continue
         missing: list[str] = []
         empty: list[str] = []
@@ -150,9 +142,7 @@ def check_program_board(board_text: str, repo_root: Path = REPO) -> list[str]:
             elif not path.read_text(encoding="utf-8").strip():
                 empty.append(reference)
         if missing:
-            violations.append(
-                f"L{line_number}: missing evidence: {', '.join(missing)}"
-            )
+            violations.append(f"L{line_number}: missing evidence: {', '.join(missing)}")
         if empty:
             violations.append(f"L{line_number}: empty evidence: {', '.join(empty)}")
     return violations

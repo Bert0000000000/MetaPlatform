@@ -10,14 +10,14 @@
 
 ## 1. 范围增量（相对于上一版 D1 ACCEPTANCE）
 
-| 项 | 上一版状态 | 本次增量 | 备注 |
-|---|---|---|---|
-| `LineageEvent` (OpenLineage-shape) | ✅ 已落地 | — | `mate_platform.messaging.LineageEvent` 维持不变 |
-| `InMemoryLineageEmitter` (emit 端) | ✅ 单测 7 e2e | — | emit 路径已在 D1 单测覆盖 |
-| `LineageClient` (query 端) | ⚠️ 未实现 | ✅ **新增** | `mate_platform.lineage` 包：Protocol + InMemoryLineageClient + LineageHints |
-| `LineageHints` dataclass | ⚠️ 未实现 | ✅ **新增** | tenant_id / correlation_id / source_system / target_system / job_name |
-| `Event.create()` 自动注入 hints | ⚠️ 未实现 | ✅ **新增** | 默认 None 时填充，业务 0 改动 |
-| 跨域 lineage e2e 测试 | ⚠️ stub | ✅ **5+1 测试** | `infra/tests/test_data_d0_d8_d1.py` 6 e2e 全绿 |
+| 项                                 | 上一版状态    | 本次增量        | 备注                                                                        |
+| ---------------------------------- | ------------- | --------------- | --------------------------------------------------------------------------- |
+| `LineageEvent` (OpenLineage-shape) | ✅ 已落地     | —               | `mate_platform.messaging.LineageEvent` 维持不变                             |
+| `InMemoryLineageEmitter` (emit 端) | ✅ 单测 7 e2e | —               | emit 路径已在 D1 单测覆盖                                                   |
+| `LineageClient` (query 端)         | ⚠️ 未实现     | ✅ **新增**     | `mate_platform.lineage` 包：Protocol + InMemoryLineageClient + LineageHints |
+| `LineageHints` dataclass           | ⚠️ 未实现     | ✅ **新增**     | tenant_id / correlation_id / source_system / target_system / job_name       |
+| `Event.create()` 自动注入 hints    | ⚠️ 未实现     | ✅ **新增**     | 默认 None 时填充，业务 0 改动                                               |
+| 跨域 lineage e2e 测试              | ⚠️ stub       | ✅ **5+1 测试** | `infra/tests/test_data_d0_d8_d1.py` 6 e2e 全绿                              |
 
 ## 2. 落地清单
 
@@ -39,32 +39,32 @@ infra/tests/test_data_d0_d8_d1.py
 
 ## 3. 13 项硬规则验收（D1 E2E scope）
 
-| # | 硬规则 | 证据 | 状态 |
-|---|---|---|---|
-| 1 | Swagger 没有接口不写 route | (n/a — D1 E2E 纯 query 路径) | — |
-| 2 | PRD Requirement ID | (n/a) | — |
-| 3 | **没有 tenant 不访问 repository** | `LineageHints.__post_init__` 拒绝空 tenant;`InMemoryLineageClient.emit/link/query` 拒绝空 tenant;`build_hints_from_event` 必须从 `Event` 取 tenant | ✅ enforced |
-| 4 | **外部系统 ACL Client** | D1 E2E 用 `InMemoryLineageClient`(无外部依赖);HTTP emitter 沿用 D1 的 `MarquezHttpLineageEmitter`(已被 D1 acceptance 覆盖) | ✅ |
-| 5 | **禁止 fallback** | 无 fallback 路径;空 tenant 直接 raise | ✅ |
-| 6 | **ruff + pyright 0 错** | ruff clean / pyright 0 errors (lineage + events.py) | ✅ |
-| 7 | **不跳 tests** | 6 e2e + 7 D1 单测 + 124 platform 单测 + 56 mate-tech-msg 单测 = **193 tests pass**(原 187 + 6 新增) | ✅ |
-| 8 | K8s readiness + 回滚 | (n/a — 纯 Python lib) | — |
-| 9 | **audit / metrics / trace** | `LineageHints` 携带 `tenant_id` + `correlation_id`(= trace_id);`Event.lineage_hints` 随 `to_dict` 序列化 | ✅ |
-| 10 | **验收证据** | 本文件 | ✅ |
-| 11 | helm-docs | (n/a — 纯 Python lib) | — |
-| 12 | secret 扫描 | (n/a) | ✅ GA 已收口 |
-| 13 | NetworkPolicy | (n/a) | — |
+| #   | 硬规则                            | 证据                                                                                                                                               | 状态         |
+| --- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 1   | Swagger 没有接口不写 route        | (n/a — D1 E2E 纯 query 路径)                                                                                                                       | —            |
+| 2   | PRD Requirement ID                | (n/a)                                                                                                                                              | —            |
+| 3   | **没有 tenant 不访问 repository** | `LineageHints.__post_init__` 拒绝空 tenant;`InMemoryLineageClient.emit/link/query` 拒绝空 tenant;`build_hints_from_event` 必须从 `Event` 取 tenant | ✅ enforced  |
+| 4   | **外部系统 ACL Client**           | D1 E2E 用 `InMemoryLineageClient`(无外部依赖);HTTP emitter 沿用 D1 的 `MarquezHttpLineageEmitter`(已被 D1 acceptance 覆盖)                         | ✅           |
+| 5   | **禁止 fallback**                 | 无 fallback 路径;空 tenant 直接 raise                                                                                                              | ✅           |
+| 6   | **ruff + pyright 0 错**           | ruff clean / pyright 0 errors (lineage + events.py)                                                                                                | ✅           |
+| 7   | **不跳 tests**                    | 6 e2e + 7 D1 单测 + 124 platform 单测 + 56 mate-tech-msg 单测 = **193 tests pass**(原 187 + 6 新增)                                                | ✅           |
+| 8   | K8s readiness + 回滚              | (n/a — 纯 Python lib)                                                                                                                              | —            |
+| 9   | **audit / metrics / trace**       | `LineageHints` 携带 `tenant_id` + `correlation_id`(= trace_id);`Event.lineage_hints` 随 `to_dict` 序列化                                           | ✅           |
+| 10  | **验收证据**                      | 本文件                                                                                                                                             | ✅           |
+| 11  | helm-docs                         | (n/a — 纯 Python lib)                                                                                                                              | —            |
+| 12  | secret 扫描                       | (n/a)                                                                                                                                              | ✅ GA 已收口 |
+| 13  | NetworkPolicy                     | (n/a)                                                                                                                                              | —            |
 
 ## 4. 5 项 e2e 验证 (per ADR-0016 §6.5)
 
-| 测试 | 验证内容 | 结果 |
-|---|---|---|
-| `test_lineage_event_emitted_from_outbox` | 业务事件 → outbox → relay → Producer → lineage 节点可查;`LineageEvent.to_openlineage_dict()` payload 含 `tenant_id` + `trace_id` | ✅ |
-| `test_lineage_query_returns_cross_domain_chain` | msg → obs → dw 三节点 + 三跨域边,单查询可见 | ✅ |
-| `test_lineage_tenant_isolation` | tenant-a 查询只返回 tenant-a 节点;tenant-b 不可见;空 tenant_id 直接 `TenantIsolationError` | ✅ |
-| `test_lineage_hints_carry_correlation_id` | 整条 chain 所有节点 + 边 correlation_id 一致;`build_hints_from_event` 默认取 trace_id | ✅ |
-| `test_lineage_hints_carry_tenant_id` | 整条 chain 所有节点 + 边 tenant_id 一致;`Event.create()` 自动注入 `LineageHints`;显式传入也被保留 | ✅ |
-| `test_list_namespaces_isolated_per_tenant` *(bonus)* | `list_namespaces` 返回租户命名空间;`all_correlation_ids` 暴露链 ID 不暴露节点 | ✅ |
+| 测试                                                 | 验证内容                                                                                                                         | 结果 |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| `test_lineage_event_emitted_from_outbox`             | 业务事件 → outbox → relay → Producer → lineage 节点可查;`LineageEvent.to_openlineage_dict()` payload 含 `tenant_id` + `trace_id` | ✅   |
+| `test_lineage_query_returns_cross_domain_chain`      | msg → obs → dw 三节点 + 三跨域边,单查询可见                                                                                      | ✅   |
+| `test_lineage_tenant_isolation`                      | tenant-a 查询只返回 tenant-a 节点;tenant-b 不可见;空 tenant_id 直接 `TenantIsolationError`                                       | ✅   |
+| `test_lineage_hints_carry_correlation_id`            | 整条 chain 所有节点 + 边 correlation_id 一致;`build_hints_from_event` 默认取 trace_id                                            | ✅   |
+| `test_lineage_hints_carry_tenant_id`                 | 整条 chain 所有节点 + 边 tenant_id 一致;`Event.create()` 自动注入 `LineageHints`;显式传入也被保留                                | ✅   |
+| `test_list_namespaces_isolated_per_tenant` _(bonus)_ | `list_namespaces` 返回租户命名空间;`all_correlation_ids` 暴露链 ID 不暴露节点                                                    | ✅   |
 
 ## 5. 本地实际运行
 
@@ -110,9 +110,9 @@ $ pyright mate-platform-backend/packages/mate-platform/src/mate_platform/lineage
   `Event.lineage_hints` 把 `trace_id` 复制为 `correlation_id`,lineage 服务
   端到端可关联。
 - **SEC-TENANT-01 (commit 026ce4a8)**: 5 层隔离 — `LineageHints.__post_init__`
-  + `InMemoryLineageClient.query/emit/link` 都强制 tenant_id 非空;namespace
-  `metaplatform.<tenant>` 强制 per-tenant graph(由 `LineageEvent` 的 OpenLineage
-  payload 沿用)。
+  - `InMemoryLineageClient.query/emit/link` 都强制 tenant_id 非空;namespace
+    `metaplatform.<tenant>` 强制 per-tenant graph(由 `LineageEvent` 的 OpenLineage
+    payload 沿用)。
 - **GA-ACCEPTANCE (commit 87f589be)**: 不修改 13 门禁脚本(`scripts/ci/forbid_*`);
   本次新增的 `InMemoryLineageClient` 是纯内存实现,无外部依赖,不触发
   `forbid_bare_httpx` 或 `forbid_raw_sql` 守门。

@@ -15,6 +15,7 @@ docker-compose service name + port). When ``fallback_token`` is given the
 caller's inbound user token is passed through (dev mode where the keycloak
 client secret is a stub).
 """
+
 from __future__ import annotations
 
 import os
@@ -81,7 +82,10 @@ class OrchestratorClient:
         return [dict(r) for r in items]
 
     async def authorized_role_snapshot(
-        self, *, tenant_id: str, fallback_token: str | None = None,
+        self,
+        *,
+        tenant_id: str,
+        fallback_token: str | None = None,
     ) -> dict[str, Any]:
         """Fetch the authenticated caller's authorized routing snapshot."""
         headers = {"X-Tenant-Id": tenant_id}

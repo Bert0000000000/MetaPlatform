@@ -12,6 +12,7 @@ Verifies the Python-side LineageSyncClient lifecycle:
 
 Per ADR-0016 §3.2 (D4 scope).
 """
+
 from __future__ import annotations
 
 import pytest
@@ -50,7 +51,9 @@ def _make_event(
         DatasetRef(name="iam.user", namespace="metaplatform.tenant-acme", tenant_id="tenant-acme"),
     ),
     outputs: tuple[DatasetRef, ...] = (
-        DatasetRef(name="iam.user.processed", namespace="metaplatform.tenant-acme", tenant_id="tenant-acme"),
+        DatasetRef(
+            name="iam.user.processed", namespace="metaplatform.tenant-acme", tenant_id="tenant-acme"
+        ),
     ),
 ) -> OpenLineageEvent:
     return OpenLineageEvent(
@@ -79,9 +82,7 @@ class TestSyncPullsAndPushes:
         assert result.failed == 0
         assert result.tenant_id == "tenant-acme"
 
-    def test_sync_once_returns_sync_result(
-        self, bridge: InMemoryLineageSyncClient
-    ) -> None:
+    def test_sync_once_returns_sync_result(self, bridge: InMemoryLineageSyncClient) -> None:
         bridge.enqueue(_make_event())
         result = bridge.sync_once("tenant-acme")
         assert isinstance(result, SyncResult)
@@ -116,9 +117,7 @@ class TestTenantIsolation:
 
 
 class TestEventTypeFiltering:
-    def test_only_complete_events_synced(
-        self, bridge: InMemoryLineageSyncClient
-    ) -> None:
+    def test_only_complete_events_synced(self, bridge: InMemoryLineageSyncClient) -> None:
         bridge.enqueue(_make_event(event_type="START", run_id="s1"))
         bridge.enqueue(_make_event(event_type="RUNNING", run_id="s2"))
         bridge.enqueue(_make_event(event_type="COMPLETE", run_id="c1"))
@@ -128,9 +127,7 @@ class TestEventTypeFiltering:
         assert result.pushed == 1
         assert result.failed == 0
 
-    def test_failed_events_counted_but_not_pushed(
-        self, bridge: InMemoryLineageSyncClient
-    ) -> None:
+    def test_failed_events_counted_but_not_pushed(self, bridge: InMemoryLineageSyncClient) -> None:
         bridge.enqueue(_make_event(event_type="FAIL", run_id="f1"))
         bridge.enqueue(_make_event(event_type="COMPLETE", run_id="c1"))
         result = bridge.sync_once("tenant-acme")
@@ -139,9 +136,7 @@ class TestEventTypeFiltering:
 
 
 class TestEdgeCases:
-    def test_empty_queue_sync_zero(
-        self, bridge: InMemoryLineageSyncClient
-    ) -> None:
+    def test_empty_queue_sync_zero(self, bridge: InMemoryLineageSyncClient) -> None:
         result = bridge.sync_once("tenant-acme")
         assert result.pulled == 0
         assert result.pushed == 0
@@ -149,9 +144,7 @@ class TestEdgeCases:
 
 
 class TestEventPayload:
-    def test_lineage_event_carries_tenant_id(
-        self, bridge: InMemoryLineageSyncClient
-    ) -> None:
+    def test_lineage_event_carries_tenant_id(self, bridge: InMemoryLineageSyncClient) -> None:
         event = _make_event(tenant_id="tenant-acme")
         bridge.enqueue(event)
         pulled = bridge.list_pending("tenant-acme")
@@ -167,15 +160,9 @@ class TestEventPayload:
                 tenant_id="",
             )
 
-    def test_input_output_dataset_refs_preserved(
-        self, bridge: InMemoryLineageSyncClient
-    ) -> None:
-        inputs = (
-            DatasetRef(name="src.table", namespace="ns.src", tenant_id="tenant-acme"),
-        )
-        outputs = (
-            DatasetRef(name="dst.view", namespace="ns.dst", tenant_id="tenant-acme"),
-        )
+    def test_input_output_dataset_refs_preserved(self, bridge: InMemoryLineageSyncClient) -> None:
+        inputs = (DatasetRef(name="src.table", namespace="ns.src", tenant_id="tenant-acme"),)
+        outputs = (DatasetRef(name="dst.view", namespace="ns.dst", tenant_id="tenant-acme"),)
         event = _make_event(run_id="r-io", inputs=inputs, outputs=outputs)
         bridge.enqueue(event)
         pulled = bridge.pull_from_marquez("tenant-acme")
@@ -185,9 +172,7 @@ class TestEventPayload:
 
 
 class TestD1D2Integration:
-    def test_correlation_id_propagated(
-        self, bridge: InMemoryLineageSyncClient
-    ) -> None:
+    def test_correlation_id_propagated(self, bridge: InMemoryLineageSyncClient) -> None:
         # D1 integration: the correlation_id from the lineage event
         # survives the pull and is present on every pulled event so the
         # bridge can tie the catalog entry back to the OTel trace.

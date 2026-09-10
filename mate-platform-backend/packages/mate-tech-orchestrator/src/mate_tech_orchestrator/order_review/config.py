@@ -17,9 +17,7 @@ def resolve_order_review_threshold_cents(override: int | None = None) -> int:
         try:
             threshold_cents = int(raw_value)
         except ValueError as error:
-            raise ValueError(
-                f"{ORDER_REVIEW_THRESHOLD_ENV} must be a positive integer"
-            ) from error
+            raise ValueError(f"{ORDER_REVIEW_THRESHOLD_ENV} must be a positive integer") from error
     else:
         threshold_cents = override
 

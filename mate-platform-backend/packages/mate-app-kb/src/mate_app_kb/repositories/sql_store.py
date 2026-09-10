@@ -6,6 +6,7 @@ fields (``KbCollection.config``, ``KbDocument.metadata``) are
 JSON-serialised to TEXT. The ``metadata`` attribute is stored as ``meta``
 to avoid the SQLAlchemy-reserved ``metadata`` name.
 """
+
 from __future__ import annotations
 
 import json
@@ -101,11 +102,15 @@ def list_collections(tenant_id: str) -> list[KbCollection]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.KbCollectionORM)
-        .where(models.KbCollectionORM.tenant_id == tenant_id)
-        .order_by(models.KbCollectionORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.KbCollectionORM)
+            .where(models.KbCollectionORM.tenant_id == tenant_id)
+            .order_by(models.KbCollectionORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_collection(r) for r in rows]
 
 
@@ -129,11 +134,15 @@ def list_documents(tenant_id: str) -> list[KbDocument]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.KbDocumentORM)
-        .where(models.KbDocumentORM.tenant_id == tenant_id)
-        .order_by(models.KbDocumentORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.KbDocumentORM)
+            .where(models.KbDocumentORM.tenant_id == tenant_id)
+            .order_by(models.KbDocumentORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_document(r) for r in rows]
 
 
@@ -157,11 +166,15 @@ def list_search_logs(tenant_id: str) -> list[KbSearchLog]:
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.KbSearchLogORM)
-        .where(models.KbSearchLogORM.tenant_id == tenant_id)
-        .order_by(models.KbSearchLogORM.id)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.KbSearchLogORM)
+            .where(models.KbSearchLogORM.tenant_id == tenant_id)
+            .order_by(models.KbSearchLogORM.id)
+        )
+        .scalars()
+        .all()
+    )
     return [_orm_to_search_log(r) for r in rows]
 
 
@@ -195,12 +208,19 @@ def put_collection(tenant_id: str, col: KbCollection) -> KbCollection:
         existing.config = config_str
         existing.updated_at = col.updated_at
     else:
-        s.add(models.KbCollectionORM(
-            id=col.id, tenant_id=tenant_id, name=col.name,
-            description=col.description, document_count=col.document_count,
-            status=col.status, config=config_str,
-            created_at=col.created_at, updated_at=col.updated_at,
-        ))
+        s.add(
+            models.KbCollectionORM(
+                id=col.id,
+                tenant_id=tenant_id,
+                name=col.name,
+                description=col.description,
+                document_count=col.document_count,
+                status=col.status,
+                config=config_str,
+                created_at=col.created_at,
+                updated_at=col.updated_at,
+            )
+        )
     s.commit()
     return col
 
@@ -241,13 +261,21 @@ def put_document(tenant_id: str, doc: KbDocument) -> KbDocument:
         existing.meta = meta_str
         existing.updated_at = doc.updated_at
     else:
-        s.add(models.KbDocumentORM(
-            id=doc.id, tenant_id=tenant_id, collection_id=doc.collection_id,
-            document_id=doc.document_id, filename=doc.filename,
-            size_bytes=doc.size_bytes, chunk_count=doc.chunk_count,
-            status=doc.status, meta=meta_str,
-            created_at=doc.created_at, updated_at=doc.updated_at,
-        ))
+        s.add(
+            models.KbDocumentORM(
+                id=doc.id,
+                tenant_id=tenant_id,
+                collection_id=doc.collection_id,
+                document_id=doc.document_id,
+                filename=doc.filename,
+                size_bytes=doc.size_bytes,
+                chunk_count=doc.chunk_count,
+                status=doc.status,
+                meta=meta_str,
+                created_at=doc.created_at,
+                updated_at=doc.updated_at,
+            )
+        )
     s.commit()
     return doc
 
@@ -284,11 +312,17 @@ def put_search_log(tenant_id: str, log: KbSearchLog) -> KbSearchLog:
         existing.latency_ms = log.latency_ms
         existing.created_at = log.created_at
     else:
-        s.add(models.KbSearchLogORM(
-            id=log.id, tenant_id=tenant_id, query=log.query,
-            mode=log.mode, total_hits=log.total_hits,
-            latency_ms=log.latency_ms, created_at=log.created_at,
-        ))
+        s.add(
+            models.KbSearchLogORM(
+                id=log.id,
+                tenant_id=tenant_id,
+                query=log.query,
+                mode=log.mode,
+                total_hits=log.total_hits,
+                latency_ms=log.latency_ms,
+                created_at=log.created_at,
+            )
+        )
     s.commit()
     return log
 
@@ -372,7 +406,8 @@ def _apply_retrieval_config(row: models.KbRetrievalConfigORM, cfg: KbRetrievalCo
 
 
 def _apply_snapshot(
-    row: models.KbRetrievalConfigSnapshotORM, snap: KbRetrievalConfigSnapshot,
+    row: models.KbRetrievalConfigSnapshotORM,
+    snap: KbRetrievalConfigSnapshot,
 ) -> None:
     row.tenant_id = snap.tenant_id
     row.version = snap.version
@@ -409,17 +444,24 @@ def get_retrieval_config(tenant_id: str) -> KbRetrievalConfig:
     row = s.get(models.KbRetrievalConfigORM, tenant_id)
     if row is None:
         cfg = KbRetrievalConfig(tenant_id=tenant_id)
-        s.add(models.KbRetrievalConfigORM(
-            tenant_id=tenant_id,
-            version=cfg.version, mode=cfg.mode,
-            rerank_strategy=cfg.rerank_strategy, top_k=cfg.top_k,
-            similarity_threshold=cfg.similarity_threshold,
-            chunk_strategy=cfg.chunk_strategy, chunk_size=cfg.chunk_size,
-            chunk_overlap=cfg.chunk_overlap, vector_weight=cfg.vector_weight,
-            keyword_weight=cfg.keyword_weight,
-            reranker_enabled=cfg.reranker_enabled,
-            show_citations=cfg.show_citations, updated_at=cfg.updated_at,
-        ))
+        s.add(
+            models.KbRetrievalConfigORM(
+                tenant_id=tenant_id,
+                version=cfg.version,
+                mode=cfg.mode,
+                rerank_strategy=cfg.rerank_strategy,
+                top_k=cfg.top_k,
+                similarity_threshold=cfg.similarity_threshold,
+                chunk_strategy=cfg.chunk_strategy,
+                chunk_size=cfg.chunk_size,
+                chunk_overlap=cfg.chunk_overlap,
+                vector_weight=cfg.vector_weight,
+                keyword_weight=cfg.keyword_weight,
+                reranker_enabled=cfg.reranker_enabled,
+                show_citations=cfg.show_citations,
+                updated_at=cfg.updated_at,
+            )
+        )
         s.commit()
         return cfg
     return _orm_to_retrieval_config(row)
@@ -449,7 +491,8 @@ def put_retrieval_config(tenant_id: str, cfg: KbRetrievalConfig) -> KbRetrievalC
 # Retrieval config — version snapshots (P1.8 history, FIFO cap 10)
 # ---------------------------------------------------------------------------
 def put_retrieval_config_snapshot(
-    tenant_id: str, snapshot: KbRetrievalConfigSnapshot,
+    tenant_id: str,
+    snapshot: KbRetrievalConfigSnapshot,
 ) -> KbRetrievalConfigSnapshot:
     """Append a snapshot to the tenant's history (FIFO-capped at 10).
 
@@ -469,21 +512,28 @@ def put_retrieval_config_snapshot(
     if existing is not None:
         _apply_snapshot(existing, snapshot)
     else:
-        next_seq = (s.execute(
-            select(func.max(models.KbRetrievalConfigSnapshotORM.seq)).where(
-                models.KbRetrievalConfigSnapshotORM.tenant_id == tenant_id
-            )
-        ).scalar() or 0) + 1
+        next_seq = (
+            s.execute(
+                select(func.max(models.KbRetrievalConfigSnapshotORM.seq)).where(
+                    models.KbRetrievalConfigSnapshotORM.tenant_id == tenant_id
+                )
+            ).scalar()
+            or 0
+        ) + 1
         row = models.KbRetrievalConfigSnapshotORM(id=snapshot.id, seq=next_seq)
         _apply_snapshot(row, snapshot)
         s.add(row)
     s.commit()
     # FIFO trim — keep the most recent _SNAPSHOT_LIMIT snapshots.
-    rows = s.execute(
-        select(models.KbRetrievalConfigSnapshotORM)
-        .where(models.KbRetrievalConfigSnapshotORM.tenant_id == tenant_id)
-        .order_by(models.KbRetrievalConfigSnapshotORM.seq)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.KbRetrievalConfigSnapshotORM)
+            .where(models.KbRetrievalConfigSnapshotORM.tenant_id == tenant_id)
+            .order_by(models.KbRetrievalConfigSnapshotORM.seq)
+        )
+        .scalars()
+        .all()
+    )
     overflow = len(rows) - _SNAPSHOT_LIMIT
     if overflow > 0:
         for stale in rows[:overflow]:
@@ -493,7 +543,8 @@ def put_retrieval_config_snapshot(
 
 
 def list_retrieval_config_snapshots(
-    tenant_id: str, limit: int | None = None,
+    tenant_id: str,
+    limit: int | None = None,
 ) -> list[KbRetrievalConfigSnapshot]:
     """Return the tenant's snapshot history, oldest first (newest last).
 
@@ -504,14 +555,18 @@ def list_retrieval_config_snapshots(
     if not tenant_id:
         return []
     s = _session()
-    rows = s.execute(
-        select(models.KbRetrievalConfigSnapshotORM)
-        .where(models.KbRetrievalConfigSnapshotORM.tenant_id == tenant_id)
-        .order_by(models.KbRetrievalConfigSnapshotORM.seq)
-    ).scalars().all()
+    rows = (
+        s.execute(
+            select(models.KbRetrievalConfigSnapshotORM)
+            .where(models.KbRetrievalConfigSnapshotORM.tenant_id == tenant_id)
+            .order_by(models.KbRetrievalConfigSnapshotORM.seq)
+        )
+        .scalars()
+        .all()
+    )
     items = [_orm_to_snapshot(r) for r in rows]
     if limit is not None:
-        return items[-max(1, int(limit)):]
+        return items[-max(1, int(limit)) :]
     return items
 
 
@@ -532,9 +587,7 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     counts["collections"] = len(
         [put_collection(tenant_id, c) for c in mem.list_collections(tenant_id)]
     )
-    counts["documents"] = len(
-        [put_document(tenant_id, d) for d in mem.list_documents(tenant_id)]
-    )
+    counts["documents"] = len([put_document(tenant_id, d) for d in mem.list_documents(tenant_id)])
     counts["search_logs"] = len(
         [put_search_log(tenant_id, l) for l in mem.list_search_logs(tenant_id)]
     )

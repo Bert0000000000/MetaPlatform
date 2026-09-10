@@ -2,6 +2,7 @@
 
 Table names are prefixed with ``mcp_``.
 """
+
 from __future__ import annotations
 
 from mate_tech_db.base import Base

@@ -3,6 +3,7 @@
 硬规则 #5:production profile 禁止 fallback;启动时若 SaaS 不可达,
 直接 raise RuntimeError,拒绝启动(不允许走降级路径)。
 """
+
 from __future__ import annotations
 
 import os
@@ -27,9 +28,7 @@ def assert_saas_reachable_or_exit(saas_url: str) -> None:
 
     dev / test profile 不会调用本函数,由 main.py 按 profile 决定。
     """
-    if os.environ.get("MATE_PROFILE") == "production" and not _probe_saas(
-        saas_url
-    ):
+    if os.environ.get("MATE_PROFILE") == "production" and not _probe_saas(saas_url):
         raise RuntimeError(
             f"SaaS unreachable at {saas_url}; "
             "MARKETPLACE-CONSUMER requires SaaS connectivity "

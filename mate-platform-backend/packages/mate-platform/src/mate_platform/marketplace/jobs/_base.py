@@ -1,4 +1,5 @@
 """installer 共享逻辑 — digest verify + quarantine + 硬规则 #14 校验。"""
+
 from __future__ import annotations
 
 import hashlib
@@ -36,9 +37,7 @@ class BaseInstaller:
         expected = manifest["digest"]["sha256"]
         actual = hashlib.sha256(blob).hexdigest()
         if actual != expected:
-            raise DigestMismatch(
-                f"expected {expected}, got {actual}"
-            )
+            raise DigestMismatch(f"expected {expected}, got {actual}")
 
         quarantine.store(
             str(install_id),
@@ -48,9 +47,7 @@ class BaseInstaller:
             version=manifest["version"],
         )
         try:
-            register_fn: Callable[..., Awaitable[dict]] = getattr(
-                self.client, self.register_method
-            )
+            register_fn: Callable[..., Awaitable[dict]] = getattr(self.client, self.register_method)
             result = await register_fn(artifact=manifest, blob=blob)
         except Exception:
             quarantine.rollback(str(install_id))
@@ -59,9 +56,7 @@ class BaseInstaller:
         # 硬规则 #14:registered_digest 必须 == manifest.digest
         if result.get("registered_digest") != expected:
             quarantine.rollback(str(install_id))
-            raise DigestMismatch(
-                "硬规则 #14:registered_digest 与 manifest.digest 不一致"
-            )
+            raise DigestMismatch("硬规则 #14:registered_digest 与 manifest.digest 不一致")
 
         quarantine.commit(
             str(install_id),

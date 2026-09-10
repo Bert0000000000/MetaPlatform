@@ -9,6 +9,7 @@ bm25 * keyword_weight) without standing up Milvus or PG. Activated by
 ``RAG_MODE=hybrid_v2`` (forced in-memory) or as graceful degradation
 when both Milvus and PG are unreachable.
 """
+
 from __future__ import annotations
 
 import logging
@@ -39,7 +40,13 @@ class HybridV2Client:
         self._vector_weight = vector_weight
         self._fallback = InMemoryVectorStore()
 
-    def add(self, document_id: str, text: str, vector: list[float], metadata: dict[str, str] | None = None) -> str:
+    def add(
+        self,
+        document_id: str,
+        text: str,
+        vector: list[float],
+        metadata: dict[str, str] | None = None,
+    ) -> str:
         chunk_id = self._milvus.add(document_id, text, vector, metadata)
         self._pg.upsert_chunk(chunk_id, document_id, text, metadata)
         return chunk_id

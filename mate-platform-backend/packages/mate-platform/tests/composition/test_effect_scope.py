@@ -3,6 +3,7 @@
 Covers: sync/async disposer LIFO composition, guard interruption at
 yield boundaries, and partial disposal when apply raises.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -73,7 +74,7 @@ async def test_guard_stops_iteration_keeps_yielded_disposers() -> None:
 
     task = asyncio.create_task(fiber.dispose())
     await asyncio.sleep(0)  # dispose marks retired and joins the drive
-    gate.set()              # apply resumes, yields d2 → guard discards it
+    gate.set()  # apply resumes, yields d2 → guard discards it
     await task
 
     assert fiber.state is FiberState.DISPOSED

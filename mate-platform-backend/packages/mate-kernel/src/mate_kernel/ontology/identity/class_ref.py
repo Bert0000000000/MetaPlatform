@@ -24,8 +24,18 @@ import re
 from dataclasses import dataclass
 
 _VALID_KINDS = (
-    "cls", "ver", "prop", "obj", "link", "act", "if",
-    "ind", "lnk", "ax", "fn", "oset",
+    "cls",
+    "ver",
+    "prop",
+    "obj",
+    "link",
+    "act",
+    "if",
+    "ind",
+    "lnk",
+    "ax",
+    "fn",
+    "oset",
 )
 _RID_RE = re.compile(
     rf"^ont\.[a-z0-9_-]{{1,64}}\.(?:{'|'.join(_VALID_KINDS)})\.[a-z0-9_:\-.]{{1,200}}$"
@@ -38,9 +48,7 @@ class ClassRef:
 
     def __post_init__(self) -> None:
         if not _RID_RE.match(self.rid):
-            raise ValueError(
-                f"ClassRef.rid must match {_RID_RE.pattern}, got {self.rid!r}"
-            )
+            raise ValueError(f"ClassRef.rid must match {_RID_RE.pattern}, got {self.rid!r}")
 
     def __str__(self) -> str:
         return self.rid

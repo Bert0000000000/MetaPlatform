@@ -21,6 +21,7 @@
 ## Task 1: Add a tested repository-root backend test runner
 
 **Files:**
+
 - Create `scripts/ci/run_backend_tests.py`
 - Create `scripts/ci/test_run_backend_tests.py`
 
@@ -35,6 +36,7 @@
 ## Task 2: Correct backend pytest discovery and module isolation
 
 **Files:**
+
 - Modify `mate-platform-backend/pyproject.toml`
 
 **Steps:**
@@ -47,6 +49,7 @@
 ## Task 3: Synchronize declared dependencies and lock data
 
 **Files:**
+
 - Modify `mate-platform-backend/uv.lock` through the repository’s uv lock workflow.
 - Inspect `mate-platform-backend/packages/mate-app-a2a/pyproject.toml` and related package declarations; modify only if the lock workflow exposes a declaration inconsistency.
 
@@ -60,6 +63,7 @@
 ## Task 4: Verify the baseline and hand off
 
 **Files:**
+
 - No additional files unless verification finds a directly related defect.
 
 **Steps:**

@@ -7,9 +7,9 @@
 
 ## 版本历史
 
-| 版本 | 日期 | 变更说明 | 作者 |
-|---|---|---|---|
-| v1.0 | 2026-07-16 | 初始版本，覆盖日志、指标、链路追踪、告警、仪表板、服务地图、SLO 七大领域 API | - |
+| 版本 | 日期       | 变更说明                                                                     | 作者 |
+| ---- | ---------- | ---------------------------------------------------------------------------- | ---- |
+| v1.0 | 2026-07-16 | 初始版本，覆盖日志、指标、链路追踪、告警、仪表板、服务地图、SLO 七大领域 API | -    |
 
 ---
 
@@ -41,37 +41,37 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 ### 1.2 技术栈
 
-| 层级 | 技术 | 版本 | 用途 |
-|---|---|---|---|
-| 应用层 | Java 21 + Spring Boot 3.4 | 21 / 3.4 | API 服务主体 |
-| 链路采集 | OpenTelemetry Collector | 0.115+ | Trace/Metrics/Logs 采集网关 |
-| Java Agent | OpenTelemetry Java Agent | 2.x | Java 应用自动埋点 |
-| Python SDK | OpenTelemetry Python | 1.29+ | Python 应用自动埋点 |
-| 指标存储 | Prometheus + Alertmanager | 3.x | 指标存储与告警引擎 |
-| 日志存储 | Loki + Vector | 3.x | 日志存储与日志管道 |
-| 链路存储 | Jaeger | 1.62+ | 分布式链路存储与查询 |
-| 可视化 | Grafana | 11.x | 仪表板与可视化引擎 |
-| 元数据存储 | PostgreSQL | 17 | 告警规则、仪表板配置、SLO 定义等元数据 |
-| 消息队列 | Kafka | 3.9 | 告警事件分发 |
-| 缓存 | Redis | 7.4 | 查询缓存、限流 |
+| 层级       | 技术                      | 版本     | 用途                                   |
+| ---------- | ------------------------- | -------- | -------------------------------------- |
+| 应用层     | Java 21 + Spring Boot 3.4 | 21 / 3.4 | API 服务主体                           |
+| 链路采集   | OpenTelemetry Collector   | 0.115+   | Trace/Metrics/Logs 采集网关            |
+| Java Agent | OpenTelemetry Java Agent  | 2.x      | Java 应用自动埋点                      |
+| Python SDK | OpenTelemetry Python      | 1.29+    | Python 应用自动埋点                    |
+| 指标存储   | Prometheus + Alertmanager | 3.x      | 指标存储与告警引擎                     |
+| 日志存储   | Loki + Vector             | 3.x      | 日志存储与日志管道                     |
+| 链路存储   | Jaeger                    | 1.62+    | 分布式链路存储与查询                   |
+| 可视化     | Grafana                   | 11.x     | 仪表板与可视化引擎                     |
+| 元数据存储 | PostgreSQL                | 17       | 告警规则、仪表板配置、SLO 定义等元数据 |
+| 消息队列   | Kafka                     | 3.9      | 告警事件分发                           |
+| 缓存       | Redis                     | 7.4      | 查询缓存、限流                         |
 
 ### 1.3 上游依赖
 
-| 上游模块 | 依赖说明 |
-|---|---|
-| 所有 APP-\* 模块 | 通过 OpenTelemetry SDK / Agent 自动上报日志、指标、Trace |
-| 所有 TECH-\* 模块 | 同上，自动上报可观测性数据 |
-| TECH-IAM | 认证鉴权，API 请求身份校验 |
-| TECH-GW | API 网关路由、限流 |
-| TECH-MSG | Kafka 消息基础设施，用于告警事件分发 |
+| 上游模块          | 依赖说明                                                 |
+| ----------------- | -------------------------------------------------------- |
+| 所有 APP-\* 模块  | 通过 OpenTelemetry SDK / Agent 自动上报日志、指标、Trace |
+| 所有 TECH-\* 模块 | 同上，自动上报可观测性数据                               |
+| TECH-IAM          | 认证鉴权，API 请求身份校验                               |
+| TECH-GW           | API 网关路由、限流                                       |
+| TECH-MSG          | Kafka 消息基础设施，用于告警事件分发                     |
 
 ### 1.4 下游消费
 
-| 下游模块 | 消费说明 |
-|---|---|
+| 下游模块      | 消费说明                                                                             |
+| ------------- | ------------------------------------------------------------------------------------ |
 | APP-DASHBOARD | 可观测性仪表板展示，消费日志查询、指标查询、链路查询、告警列表、服务地图、SLO 等 API |
-| APP-ARCH | 架构健康度分析，消费服务地图与指标数据 |
-| 运维平台 | 外部运维系统集成，消费告警通知与指标数据 |
+| APP-ARCH      | 架构健康度分析，消费服务地图与指标数据                                               |
+| 运维平台      | 外部运维系统集成，消费告警通知与指标数据                                             |
 
 ### 1.5 核心职责
 
@@ -110,12 +110,12 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 }
 ```
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| `code` | integer | 业务状态码，`0` 表示成功，非 `0` 表示业务错误 |
-| `message` | string | 状态描述信息 |
-| `data` | object / array / null | 业务数据载荷 |
-| `traceId` | string | 本次请求的分布式链路追踪 ID，32 位十六进制字符串 |
+| 字段      | 类型                  | 说明                                             |
+| --------- | --------------------- | ------------------------------------------------ |
+| `code`    | integer               | 业务状态码，`0` 表示成功，非 `0` 表示业务错误    |
+| `message` | string                | 状态描述信息                                     |
+| `data`    | object / array / null | 业务数据载荷                                     |
+| `traceId` | string                | 本次请求的分布式链路追踪 ID，32 位十六进制字符串 |
 
 **分页响应体**：
 
@@ -141,18 +141,18 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 ### 2.4 错误码
 
-| code | HTTP Status | 含义 | 说明 |
-|---|---|---|---|
-| `0` | 200 | 成功 | 请求处理成功 |
-| `40001` | 400 | 参数校验失败 | 请求参数缺失或格式错误 |
-| `40004` | 404 | 资源不存在 | 请求的资源未找到 |
-| `40009` | 409 | 资源冲突 | 资源已存在或状态冲突 |
-| `40101` | 401 | 未认证 | Token 缺失或无效 |
-| `40301` | 403 | 无权限 | 当前用户无操作权限 |
-| `42901` | 429 | 请求限流 | 触发速率限制 |
-| `50001` | 500 | 服务内部错误 | 服务端未预期异常 |
-| `50301` | 503 | 下游不可用 | Loki / Prometheus / Jaeger 等下游不可用 |
-| `50401` | 504 | 查询超时 | 查询执行超时 |
+| code    | HTTP Status | 含义         | 说明                                    |
+| ------- | ----------- | ------------ | --------------------------------------- |
+| `0`     | 200         | 成功         | 请求处理成功                            |
+| `40001` | 400         | 参数校验失败 | 请求参数缺失或格式错误                  |
+| `40004` | 404         | 资源不存在   | 请求的资源未找到                        |
+| `40009` | 409         | 资源冲突     | 资源已存在或状态冲突                    |
+| `40101` | 401         | 未认证       | Token 缺失或无效                        |
+| `40301` | 403         | 无权限       | 当前用户无操作权限                      |
+| `42901` | 429         | 请求限流     | 触发速率限制                            |
+| `50001` | 500         | 服务内部错误 | 服务端未预期异常                        |
+| `50301` | 503         | 下游不可用   | Loki / Prometheus / Jaeger 等下游不可用 |
+| `50401` | 504         | 查询超时     | 查询执行超时                            |
 
 错误响应示例：
 
@@ -169,12 +169,12 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 列表类 API 支持统一分页参数：
 
-| 参数 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `page` | integer | 1 | 页码，从 1 开始 |
-| `pageSize` | integer | 20 | 每页条数，最大 100 |
-| `sortBy` | string | - | 排序字段 |
-| `sortOrder` | string | `desc` | 排序方向：`asc` / `desc` |
+| 参数        | 类型    | 默认值 | 说明                     |
+| ----------- | ------- | ------ | ------------------------ |
+| `page`      | integer | 1      | 页码，从 1 开始          |
+| `pageSize`  | integer | 20     | 每页条数，最大 100       |
+| `sortBy`    | string  | -      | 排序字段                 |
+| `sortOrder` | string  | `desc` | 排序方向：`asc` / `desc` |
 
 ### 2.6 trace_id 传播
 
@@ -207,17 +207,17 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `service` | body | string | 是 | 服务名称，如 `tech-ont` |
-| `labels` | body | object | 否 | 标签过滤条件，key-value 键值对 |
-| `query` | body | string | 否 | LogQL 查询表达式，如 `{service="tech-ont"} \|~ "ERROR"` |
-| `startTime` | body | string | 是 | 查询起始时间，ISO 8601 UTC |
-| `endTime` | body | string | 是 | 查询结束时间，ISO 8601 UTC |
-| `limit` | body | integer | 否 | 返回日志条数上限，默认 100，最大 5000 |
-| `direction` | body | string | 否 | 日志排序方向：`forward`（正序）/ `backward`（倒序），默认 `backward` |
-| `page` | body | integer | 否 | 页码，默认 1 |
-| `pageSize` | body | integer | 否 | 每页条数，默认 20 |
+| 参数        | 位置 | 类型    | 必填 | 说明                                                                 |
+| ----------- | ---- | ------- | ---- | -------------------------------------------------------------------- |
+| `service`   | body | string  | 是   | 服务名称，如 `tech-ont`                                              |
+| `labels`    | body | object  | 否   | 标签过滤条件，key-value 键值对                                       |
+| `query`     | body | string  | 否   | LogQL 查询表达式，如 `{service="tech-ont"} \|~ "ERROR"`              |
+| `startTime` | body | string  | 是   | 查询起始时间，ISO 8601 UTC                                           |
+| `endTime`   | body | string  | 是   | 查询结束时间，ISO 8601 UTC                                           |
+| `limit`     | body | integer | 否   | 返回日志条数上限，默认 100，最大 5000                                |
+| `direction` | body | string  | 否   | 日志排序方向：`forward`（正序）/ `backward`（倒序），默认 `backward` |
+| `page`      | body | integer | 否   | 页码，默认 1                                                         |
+| `pageSize`  | body | integer | 否   | 每页条数，默认 20                                                    |
 
 **请求示例**
 
@@ -293,12 +293,12 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景                                     |
+| ------- | ---------------------------------------- |
 | `40001` | `startTime` 或 `endTime` 缺失 / 格式错误 |
-| `40001` | `service` 字段为空 |
-| `50301` | Loki 下游不可用 |
-| `50401` | 查询执行超时（超过 30s） |
+| `40001` | `service` 字段为空                       |
+| `50301` | Loki 下游不可用                          |
+| `50401` | 查询执行超时（超过 30s）                 |
 
 ---
 
@@ -310,17 +310,17 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `keyword` | body | string | 是 | 搜索关键词，支持正则 |
-| `services` | body | array[string] | 否 | 限定服务列表，为空则搜索全部服务 |
-| `levels` | body | array[string] | 否 | 日志级别过滤：`DEBUG` / `INFO` / `WARN` / `ERROR` |
-| `startTime` | body | string | 是 | 查询起始时间 |
-| `endTime` | body | string | 是 | 查询结束时间 |
-| `isRegex` | body | boolean | 否 | 是否正则匹配，默认 `false` |
-| `caseSensitive` | body | boolean | 否 | 是否区分大小写，默认 `false` |
-| `page` | body | integer | 否 | 页码，默认 1 |
-| `pageSize` | body | integer | 否 | 每页条数，默认 20 |
+| 参数            | 位置 | 类型          | 必填 | 说明                                              |
+| --------------- | ---- | ------------- | ---- | ------------------------------------------------- |
+| `keyword`       | body | string        | 是   | 搜索关键词，支持正则                              |
+| `services`      | body | array[string] | 否   | 限定服务列表，为空则搜索全部服务                  |
+| `levels`        | body | array[string] | 否   | 日志级别过滤：`DEBUG` / `INFO` / `WARN` / `ERROR` |
+| `startTime`     | body | string        | 是   | 查询起始时间                                      |
+| `endTime`       | body | string        | 是   | 查询结束时间                                      |
+| `isRegex`       | body | boolean       | 否   | 是否正则匹配，默认 `false`                        |
+| `caseSensitive` | body | boolean       | 否   | 是否区分大小写，默认 `false`                      |
+| `page`          | body | integer       | 否   | 页码，默认 1                                      |
+| `pageSize`      | body | integer       | 否   | 每页条数，默认 20                                 |
 
 **请求示例**
 
@@ -371,11 +371,11 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40001` | `keyword` 为空 |
+| code    | 场景            |
+| ------- | --------------- |
+| `40001` | `keyword` 为空  |
 | `50301` | Loki 下游不可用 |
-| `50401` | 查询超时 |
+| `50401` | 查询超时        |
 
 ---
 
@@ -387,11 +387,11 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `service` | body | string | 是 | 服务名称 |
-| `logger` | body | string | 是 | Logger 全限定名，如 `com.metaplatform.ont.engine`；设为 `ROOT` 表示根 Logger |
-| `level` | body | string | 是 | 目标日志级别：`TRACE` / `DEBUG` / `INFO` / `WARN` / `ERROR` / `OFF` |
+| 参数      | 位置 | 类型   | 必填 | 说明                                                                         |
+| --------- | ---- | ------ | ---- | ---------------------------------------------------------------------------- |
+| `service` | body | string | 是   | 服务名称                                                                     |
+| `logger`  | body | string | 是   | Logger 全限定名，如 `com.metaplatform.ont.engine`；设为 `ROOT` 表示根 Logger |
+| `level`   | body | string | 是   | 目标日志级别：`TRACE` / `DEBUG` / `INFO` / `WARN` / `ERROR` / `OFF`          |
 
 **请求示例**
 
@@ -416,10 +416,7 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
     "previousLevel": "INFO",
     "updatedAt": "2026-07-16T08:00:00Z",
     "effectiveScope": "instance",
-    "instances": [
-      "pod-ont-7f9b-x2k4",
-      "pod-ont-7f9b-m9p1"
-    ]
+    "instances": ["pod-ont-7f9b-x2k4", "pod-ont-7f9b-m9p1"]
   },
   "traceId": "a1b2c3d4e5f6789012345678abcdef00"
 }
@@ -427,10 +424,10 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40001` | `service`、`logger` 或 `level` 为空 |
-| `40004` | 指定服务不存在 |
+| code    | 场景                                 |
+| ------- | ------------------------------------ |
+| `40001` | `service`、`logger` 或 `level` 为空  |
+| `40004` | 指定服务不存在                       |
 | `50301` | 服务实例不可达，无法下发日志级别变更 |
 
 ---
@@ -443,9 +440,9 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `service` | query | string | 是 | 服务名称 |
+| 参数      | 位置  | 类型   | 必填 | 说明     |
+| --------- | ----- | ------ | ---- | -------- |
+| `service` | query | string | 是   | 服务名称 |
 
 **响应示例**
 
@@ -479,8 +476,8 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景           |
+| ------- | -------------- |
 | `40001` | `service` 为空 |
 | `40004` | 指定服务不存在 |
 
@@ -494,13 +491,13 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `service` | body | string | 否 | 服务名称，为空则统计全部 |
-| `groupBy` | body | string | 是 | 聚合维度：`service` / `level` / `logger` / `host` |
-| `startTime` | body | string | 是 | 起始时间 |
-| `endTime` | body | string | 是 | 结束时间 |
-| `interval` | body | string | 否 | 时间桶大小：`1m` / `5m` / `1h` / `1d`，默认 `5m` |
+| 参数        | 位置 | 类型   | 必填 | 说明                                              |
+| ----------- | ---- | ------ | ---- | ------------------------------------------------- |
+| `service`   | body | string | 否   | 服务名称，为空则统计全部                          |
+| `groupBy`   | body | string | 是   | 聚合维度：`service` / `level` / `logger` / `host` |
+| `startTime` | body | string | 是   | 起始时间                                          |
+| `endTime`   | body | string | 是   | 结束时间                                          |
+| `interval`  | body | string | 否   | 时间桶大小：`1m` / `5m` / `1h` / `1d`，默认 `5m`  |
 
 **请求示例**
 
@@ -555,10 +552,10 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景                     |
+| ------- | ------------------------ |
 | `40001` | `groupBy` 为空或值不合法 |
-| `50301` | Loki 下游不可用 |
+| `50301` | Loki 下游不可用          |
 
 ---
 
@@ -570,16 +567,16 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `name` | body | string | 是 | 规则名称 |
-| `service` | body | string | 是 | 目标服务 |
-| `condition` | body | string | 是 | LogQL 告警条件表达式，如 `rate({service="tech-ont",level="ERROR"}[5m]) > 10` |
-| `for` | body | string | 否 | 持续时间窗口，如 `5m`，默认 `1m` |
-| `severity` | body | string | 是 | 告警级别：`critical` / `warning` / `info` |
-| `notificationChannelIds` | body | array[string] | 否 | 通知渠道 ID 列表 |
-| `annotations` | body | object | 否 | 注解信息，如 `summary`、`description` |
-| `enabled` | body | boolean | 否 | 是否启用，默认 `true` |
+| 参数                     | 位置 | 类型          | 必填 | 说明                                                                         |
+| ------------------------ | ---- | ------------- | ---- | ---------------------------------------------------------------------------- |
+| `name`                   | body | string        | 是   | 规则名称                                                                     |
+| `service`                | body | string        | 是   | 目标服务                                                                     |
+| `condition`              | body | string        | 是   | LogQL 告警条件表达式，如 `rate({service="tech-ont",level="ERROR"}[5m]) > 10` |
+| `for`                    | body | string        | 否   | 持续时间窗口，如 `5m`，默认 `1m`                                             |
+| `severity`               | body | string        | 是   | 告警级别：`critical` / `warning` / `info`                                    |
+| `notificationChannelIds` | body | array[string] | 否   | 通知渠道 ID 列表                                                             |
+| `annotations`            | body | object        | 否   | 注解信息，如 `summary`、`description`                                        |
+| `enabled`                | body | boolean       | 否   | 是否启用，默认 `true`                                                        |
 
 **请求示例**
 
@@ -628,11 +625,11 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景                                            |
+| ------- | ----------------------------------------------- |
 | `40001` | `name`、`service`、`condition`、`severity` 为空 |
-| `40009` | 规则名称已存在 |
-| `50001` | 规则写入 Prometheus Alertmanager 失败 |
+| `40009` | 规则名称已存在                                  |
+| `50001` | 规则写入 Prometheus Alertmanager 失败           |
 
 ---
 
@@ -644,13 +641,13 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `service` | query | string | 否 | 按服务过滤 |
-| `severity` | query | string | 否 | 按级别过滤 |
-| `enabled` | query | boolean | 否 | 按启用状态过滤 |
-| `page` | query | integer | 否 | 页码 |
-| `pageSize` | query | integer | 否 | 每页条数 |
+| 参数       | 位置  | 类型    | 必填 | 说明           |
+| ---------- | ----- | ------- | ---- | -------------- |
+| `service`  | query | string  | 否   | 按服务过滤     |
+| `severity` | query | string  | 否   | 按级别过滤     |
+| `enabled`  | query | boolean | 否   | 按启用状态过滤 |
+| `page`     | query | integer | 否   | 页码           |
+| `pageSize` | query | integer | 否   | 每页条数       |
 
 **响应示例**
 
@@ -683,8 +680,8 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景                 |
+| ------- | -------------------- |
 | `50301` | 查询元数据数据库失败 |
 
 ---
@@ -697,16 +694,16 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `ruleId` | path | string | 是 | 规则 ID |
-| `name` | body | string | 否 | 规则名称 |
-| `condition` | body | string | 否 | 告警条件表达式 |
-| `for` | body | string | 否 | 持续时间窗口 |
-| `severity` | body | string | 否 | 告警级别 |
-| `notificationChannelIds` | body | array[string] | 否 | 通知渠道 ID 列表 |
-| `annotations` | body | object | 否 | 注解信息 |
-| `enabled` | body | boolean | 否 | 是否启用 |
+| 参数                     | 位置 | 类型          | 必填 | 说明             |
+| ------------------------ | ---- | ------------- | ---- | ---------------- |
+| `ruleId`                 | path | string        | 是   | 规则 ID          |
+| `name`                   | body | string        | 否   | 规则名称         |
+| `condition`              | body | string        | 否   | 告警条件表达式   |
+| `for`                    | body | string        | 否   | 持续时间窗口     |
+| `severity`               | body | string        | 否   | 告警级别         |
+| `notificationChannelIds` | body | array[string] | 否   | 通知渠道 ID 列表 |
+| `annotations`            | body | object        | 否   | 注解信息         |
+| `enabled`                | body | boolean       | 否   | 是否启用         |
 
 **请求示例**
 
@@ -742,10 +739,10 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 规则不存在 |
-| `40001` | 参数校验失败 |
+| code    | 场景                       |
+| ------- | -------------------------- |
+| `40004` | 规则不存在                 |
+| `40001` | 参数校验失败               |
 | `50001` | 更新 Alertmanager 规则失败 |
 
 ---
@@ -758,9 +755,9 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `ruleId` | path | string | 是 | 规则 ID |
+| 参数     | 位置 | 类型   | 必填 | 说明    |
+| -------- | ---- | ------ | ---- | ------- |
+| `ruleId` | path | string | 是   | 规则 ID |
 
 **响应示例**
 
@@ -778,9 +775,9 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 规则不存在 |
+| code    | 场景                         |
+| ------- | ---------------------------- |
+| `40004` | 规则不存在                   |
 | `50001` | 从 Alertmanager 删除规则失败 |
 
 ---
@@ -799,16 +796,16 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `name` | body | string | 是 | 指标名称，符合 Prometheus 命名规范，如 `metaplatform_ont_concept_total` |
-| `type` | body | string | 是 | 指标类型：`counter` / `gauge` / `histogram` / `summary` |
-| `help` | body | string | 是 | 指标帮助描述 |
-| `labels` | body | array[object] | 否 | 标签定义列表 |
-| `labels[].name` | body | string | 否 | 标签名称 |
-| `labels[].description` | body | string | 否 | 标签描述 |
-| `unit` | body | string | 否 | 指标单位，如 `seconds` / `bytes` / `count` |
-| `service` | body | string | 是 | 归属服务名称 |
+| 参数                   | 位置 | 类型          | 必填 | 说明                                                                    |
+| ---------------------- | ---- | ------------- | ---- | ----------------------------------------------------------------------- |
+| `name`                 | body | string        | 是   | 指标名称，符合 Prometheus 命名规范，如 `metaplatform_ont_concept_total` |
+| `type`                 | body | string        | 是   | 指标类型：`counter` / `gauge` / `histogram` / `summary`                 |
+| `help`                 | body | string        | 是   | 指标帮助描述                                                            |
+| `labels`               | body | array[object] | 否   | 标签定义列表                                                            |
+| `labels[].name`        | body | string        | 否   | 标签名称                                                                |
+| `labels[].description` | body | string        | 否   | 标签描述                                                                |
+| `unit`                 | body | string        | 否   | 指标单位，如 `seconds` / `bytes` / `count`                              |
+| `service`              | body | string        | 是   | 归属服务名称                                                            |
 
 **请求示例**
 
@@ -852,10 +849,10 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40001` | `name`、`type`、`help`、`service` 为空 |
-| `40009` | 指标名称已注册 |
+| code    | 场景                                                             |
+| ------- | ---------------------------------------------------------------- |
+| `40001` | `name`、`type`、`help`、`service` 为空                           |
+| `40009` | 指标名称已注册                                                   |
 | `40001` | 指标名称不符合 Prometheus 命名规范（`[a-zA-Z_:][a-zA-Z0-9_:]*`） |
 
 ---
@@ -868,14 +865,14 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `query` | body | string | 是 | PromQL 查询表达式，如 `rate(http_requests_total[5m])` |
-| `time` | body | string | 否 | 查询时间点（瞬时查询），ISO 8601 UTC；不传则使用当前时间 |
-| `startTime` | body | string | 否 | 范围查询起始时间（与 `endTime` 同时使用） |
-| `endTime` | body | string | 否 | 范围查询结束时间 |
-| `step` | body | string | 否 | 范围查询步长，如 `15s` / `1m` / `5m`，默认 `1m` |
-| `timeout` | body | string | 否 | 查询超时时间，默认 `30s`，最大 `2m` |
+| 参数        | 位置 | 类型   | 必填 | 说明                                                     |
+| ----------- | ---- | ------ | ---- | -------------------------------------------------------- |
+| `query`     | body | string | 是   | PromQL 查询表达式，如 `rate(http_requests_total[5m])`    |
+| `time`      | body | string | 否   | 查询时间点（瞬时查询），ISO 8601 UTC；不传则使用当前时间 |
+| `startTime` | body | string | 否   | 范围查询起始时间（与 `endTime` 同时使用）                |
+| `endTime`   | body | string | 否   | 范围查询结束时间                                         |
+| `step`      | body | string | 否   | 范围查询步长，如 `15s` / `1m` / `5m`，默认 `1m`          |
+| `timeout`   | body | string | 否   | 查询超时时间，默认 `30s`，最大 `2m`                      |
 
 **请求示例（瞬时查询）**
 
@@ -963,12 +960,12 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40001` | `query` 为空 |
-| `40001` | PromQL 语法错误 |
+| code    | 场景                  |
+| ------- | --------------------- |
+| `40001` | `query` 为空          |
+| `40001` | PromQL 语法错误       |
 | `50301` | Prometheus 下游不可用 |
-| `50401` | 查询超时 |
+| `50401` | 查询超时              |
 
 ---
 
@@ -980,13 +977,13 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `service` | query | string | 否 | 按服务过滤 |
-| `type` | query | string | 否 | 按指标类型过滤：`counter` / `gauge` / `histogram` / `summary` |
-| `keyword` | query | string | 否 | 指标名称模糊搜索 |
-| `page` | query | integer | 否 | 页码 |
-| `pageSize` | query | integer | 否 | 每页条数 |
+| 参数       | 位置  | 类型    | 必填 | 说明                                                          |
+| ---------- | ----- | ------- | ---- | ------------------------------------------------------------- |
+| `service`  | query | string  | 否   | 按服务过滤                                                    |
+| `type`     | query | string  | 否   | 按指标类型过滤：`counter` / `gauge` / `histogram` / `summary` |
+| `keyword`  | query | string  | 否   | 指标名称模糊搜索                                              |
+| `page`     | query | integer | 否   | 页码                                                          |
+| `pageSize` | query | integer | 否   | 每页条数                                                      |
 
 **响应示例**
 
@@ -1035,8 +1032,8 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景                 |
+| ------- | -------------------- |
 | `50301` | 查询元数据数据库失败 |
 
 ---
@@ -1049,9 +1046,9 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `metricId` | path | string | 是 | 指标 ID |
+| 参数       | 位置 | 类型   | 必填 | 说明    |
+| ---------- | ---- | ------ | ---- | ------- |
+| `metricId` | path | string | 是   | 指标 ID |
 
 **响应示例**
 
@@ -1092,8 +1089,8 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景       |
+| ------- | ---------- |
 | `40004` | 指标不存在 |
 
 ---
@@ -1106,12 +1103,12 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `metricId` | path | string | 是 | 指标 ID |
-| `scrapeInterval` | body | string | 否 | 采集间隔，如 `15s` / `30s` / `1m`，默认 `15s` |
-| `scrapeTimeout` | body | string | 否 | 采集超时，如 `10s`，默认 `10s` |
-| `enabled` | body | boolean | 否 | 是否启用采集 |
+| 参数             | 位置 | 类型    | 必填 | 说明                                          |
+| ---------------- | ---- | ------- | ---- | --------------------------------------------- |
+| `metricId`       | path | string  | 是   | 指标 ID                                       |
+| `scrapeInterval` | body | string  | 否   | 采集间隔，如 `15s` / `30s` / `1m`，默认 `15s` |
+| `scrapeTimeout`  | body | string  | 否   | 采集超时，如 `10s`，默认 `10s`                |
+| `enabled`        | body | boolean | 否   | 是否启用采集                                  |
 
 **请求示例**
 
@@ -1142,9 +1139,9 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 指标不存在 |
+| code    | 场景                         |
+| ------- | ---------------------------- |
+| `40004` | 指标不存在                   |
 | `50001` | 更新 Prometheus 采集配置失败 |
 
 ---
@@ -1157,9 +1154,9 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `metricId` | path | string | 是 | 指标 ID |
+| 参数       | 位置 | 类型   | 必填 | 说明    |
+| ---------- | ---- | ------ | ---- | ------- |
+| `metricId` | path | string | 是   | 指标 ID |
 
 **响应示例**
 
@@ -1177,9 +1174,9 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 指标不存在 |
+| code    | 场景                           |
+| ------- | ------------------------------ |
+| `40004` | 指标不存在                     |
 | `50001` | 从 Prometheus 移除采集配置失败 |
 
 ---
@@ -1198,20 +1195,20 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `service` | body | string | 否 | 服务名称过滤 |
-| `operation` | body | string | 否 | 操作名称过滤（Span 名称） |
-| `traceId` | body | string | 否 | 精确 Trace ID 查询 |
-| `tags` | body | object | 否 | 标签过滤，key-value 键值对 |
-| `minDuration` | body | string | 否 | 最小耗时，如 `1s` / `500ms` |
-| `maxDuration` | body | string | 否 | 最大耗时 |
-| `startTime` | body | string | 是 | 查询起始时间 |
-| `endTime` | body | string | 是 | 查询结束时间 |
-| `sortBy` | body | string | 否 | 排序字段：`duration` / `timestamp` / `spans`，默认 `duration` |
-| `sortOrder` | body | string | 否 | 排序方向：`asc` / `desc`，默认 `desc` |
-| `page` | body | integer | 否 | 页码 |
-| `pageSize` | body | integer | 否 | 每页条数 |
+| 参数          | 位置 | 类型    | 必填 | 说明                                                          |
+| ------------- | ---- | ------- | ---- | ------------------------------------------------------------- |
+| `service`     | body | string  | 否   | 服务名称过滤                                                  |
+| `operation`   | body | string  | 否   | 操作名称过滤（Span 名称）                                     |
+| `traceId`     | body | string  | 否   | 精确 Trace ID 查询                                            |
+| `tags`        | body | object  | 否   | 标签过滤，key-value 键值对                                    |
+| `minDuration` | body | string  | 否   | 最小耗时，如 `1s` / `500ms`                                   |
+| `maxDuration` | body | string  | 否   | 最大耗时                                                      |
+| `startTime`   | body | string  | 是   | 查询起始时间                                                  |
+| `endTime`     | body | string  | 是   | 查询结束时间                                                  |
+| `sortBy`      | body | string  | 否   | 排序字段：`duration` / `timestamp` / `spans`，默认 `duration` |
+| `sortOrder`   | body | string  | 否   | 排序方向：`asc` / `desc`，默认 `desc`                         |
+| `page`        | body | integer | 否   | 页码                                                          |
+| `pageSize`    | body | integer | 否   | 每页条数                                                      |
 
 **请求示例**
 
@@ -1277,11 +1274,11 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景                          |
+| ------- | ----------------------------- |
 | `40001` | `startTime` 或 `endTime` 缺失 |
-| `50301` | Jaeger 下游不可用 |
-| `50401` | 查询超时 |
+| `50301` | Jaeger 下游不可用             |
+| `50401` | 查询超时                      |
 
 ---
 
@@ -1293,9 +1290,9 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `traceId` | path | string | 是 | Trace ID |
+| 参数      | 位置 | 类型   | 必填 | 说明     |
+| --------- | ---- | ------ | ---- | -------- |
+| `traceId` | path | string | 是   | Trace ID |
 
 **响应示例**
 
@@ -1462,9 +1459,9 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | Trace 不存在 |
+| code    | 场景              |
+| ------- | ----------------- |
+| `40004` | Trace 不存在      |
 | `50301` | Jaeger 下游不可用 |
 
 ---
@@ -1477,10 +1474,10 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `traceId` | path | string | 是 | Trace ID |
-| `spanId` | path | string | 是 | Span ID |
+| 参数      | 位置 | 类型   | 必填 | 说明     |
+| --------- | ---- | ------ | ---- | -------- |
+| `traceId` | path | string | 是   | Trace ID |
+| `spanId`  | path | string | 是   | Span ID  |
 
 **响应示例**
 
@@ -1541,10 +1538,10 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景                 |
+| ------- | -------------------- |
 | `40004` | Trace 或 Span 不存在 |
-| `50301` | Jaeger 下游不可用 |
+| `50301` | Jaeger 下游不可用    |
 
 ---
 
@@ -1556,9 +1553,9 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `traceId` | path | string | 是 | Trace ID |
+| 参数      | 位置 | 类型   | 必填 | 说明     |
+| --------- | ---- | ------ | ---- | -------- |
+| `traceId` | path | string | 是   | Trace ID |
 
 **响应示例**
 
@@ -1637,9 +1634,9 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | Trace 不存在 |
+| code    | 场景              |
+| ------- | ----------------- |
+| `40004` | Trace 不存在      |
 | `50301` | Jaeger 下游不可用 |
 
 ---
@@ -1652,11 +1649,11 @@ TECH-OBS 并非简单封装开源组件，而是在 OpenTelemetry + Prometheus +
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `service` | query | string | 否 | 指定服务名，查询该服务的依赖 |
-| `startTime` | query | string | 是 | 起始时间 |
-| `endTime` | query | string | 是 | 结束时间 |
+| 参数        | 位置  | 类型   | 必填 | 说明                         |
+| ----------- | ----- | ------ | ---- | ---------------------------- |
+| `service`   | query | string | 否   | 指定服务名，查询该服务的依赖 |
+| `startTime` | query | string | 是   | 起始时间                     |
+| `endTime`   | query | string | 是   | 结束时间                     |
 
 **请求示例**
 
@@ -1697,9 +1694,7 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
         "errorRate": 0.0042,
         "avgDuration": 156,
         "p99Duration": 1100,
-        "operations": [
-          { "operation": "DataSource.query", "count": 2890 }
-        ]
+        "operations": [{ "operation": "DataSource.query", "count": 2890 }]
       },
       {
         "parent": "tech-ont",
@@ -1709,9 +1704,7 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
         "errorRate": 0.0,
         "avgDuration": 89,
         "p99Duration": 320,
-        "operations": [
-          { "operation": "RAGService.search", "count": 345 }
-        ]
+        "operations": [{ "operation": "RAGService.search", "count": 345 }]
       }
     ]
   },
@@ -1721,10 +1714,10 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景                          |
+| ------- | ----------------------------- |
 | `40001` | `startTime` 或 `endTime` 缺失 |
-| `50301` | Jaeger 下游不可用 |
+| `50301` | Jaeger 下游不可用             |
 
 ---
 
@@ -1742,18 +1735,18 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `name` | body | string | 是 | 规则名称 |
-| `type` | body | string | 是 | 告警类型：`metric` / `log` / `trace` |
-| `service` | body | string | 是 | 目标服务 |
-| `condition` | body | string | 是 | 告警条件表达式 |
-| `for` | body | string | 否 | 持续时间窗口，默认 `1m` |
-| `severity` | body | string | 是 | 告警级别：`critical` / `warning` / `info` |
-| `notificationChannelIds` | body | array[string] | 否 | 通知渠道 ID 列表 |
-| `annotations` | body | object | 否 | 注解信息（`summary`、`description`、`runbook_url`） |
-| `labels` | body | object | 否 | 自定义标签 |
-| `enabled` | body | boolean | 否 | 是否启用，默认 `true` |
+| 参数                     | 位置 | 类型          | 必填 | 说明                                                |
+| ------------------------ | ---- | ------------- | ---- | --------------------------------------------------- |
+| `name`                   | body | string        | 是   | 规则名称                                            |
+| `type`                   | body | string        | 是   | 告警类型：`metric` / `log` / `trace`                |
+| `service`                | body | string        | 是   | 目标服务                                            |
+| `condition`              | body | string        | 是   | 告警条件表达式                                      |
+| `for`                    | body | string        | 否   | 持续时间窗口，默认 `1m`                             |
+| `severity`               | body | string        | 是   | 告警级别：`critical` / `warning` / `info`           |
+| `notificationChannelIds` | body | array[string] | 否   | 通知渠道 ID 列表                                    |
+| `annotations`            | body | object        | 否   | 注解信息（`summary`、`description`、`runbook_url`） |
+| `labels`                 | body | object        | 否   | 自定义标签                                          |
+| `enabled`                | body | boolean       | 否   | 是否启用，默认 `true`                               |
 
 **请求示例**
 
@@ -1814,11 +1807,11 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景                                                    |
+| ------- | ------------------------------------------------------- |
 | `40001` | `name`、`type`、`service`、`condition`、`severity` 为空 |
-| `40009` | 规则名称已存在 |
-| `50001` | 规则写入 Alertmanager 失败 |
+| `40009` | 规则名称已存在                                          |
+| `50001` | 规则写入 Alertmanager 失败                              |
 
 ---
 
@@ -1830,15 +1823,15 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `type` | query | string | 否 | 告警类型：`metric` / `log` / `trace` |
-| `service` | query | string | 否 | 按服务过滤 |
-| `severity` | query | string | 否 | 按级别过滤 |
-| `enabled` | query | boolean | 否 | 按启用状态过滤 |
-| `state` | query | string | 否 | 按告警状态过滤：`firing` / `pending` / `ok` |
-| `page` | query | integer | 否 | 页码 |
-| `pageSize` | query | integer | 否 | 每页条数 |
+| 参数       | 位置  | 类型    | 必填 | 说明                                        |
+| ---------- | ----- | ------- | ---- | ------------------------------------------- |
+| `type`     | query | string  | 否   | 告警类型：`metric` / `log` / `trace`        |
+| `service`  | query | string  | 否   | 按服务过滤                                  |
+| `severity` | query | string  | 否   | 按级别过滤                                  |
+| `enabled`  | query | boolean | 否   | 按启用状态过滤                              |
+| `state`    | query | string  | 否   | 按告警状态过滤：`firing` / `pending` / `ok` |
+| `page`     | query | integer | 否   | 页码                                        |
+| `pageSize` | query | integer | 否   | 每页条数                                    |
 
 **响应示例**
 
@@ -1885,8 +1878,8 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景                                 |
+| ------- | ------------------------------------ |
 | `50301` | 查询元数据数据库或 Alertmanager 失败 |
 
 ---
@@ -1899,9 +1892,9 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `ruleId` | path | string | 是 | 规则 ID |
+| 参数     | 位置 | 类型   | 必填 | 说明    |
+| -------- | ---- | ------ | ---- | ------- |
+| `ruleId` | path | string | 是   | 规则 ID |
 
 **响应示例**
 
@@ -1942,8 +1935,8 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景       |
+| ------- | ---------- |
 | `40004` | 规则不存在 |
 
 ---
@@ -1956,17 +1949,17 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `ruleId` | path | string | 是 | 规则 ID |
-| `name` | body | string | 否 | 规则名称 |
-| `condition` | body | string | 否 | 告警条件表达式 |
-| `for` | body | string | 否 | 持续时间窗口 |
-| `severity` | body | string | 否 | 告警级别 |
-| `notificationChannelIds` | body | array[string] | 否 | 通知渠道 ID 列表 |
-| `annotations` | body | object | 否 | 注解信息 |
-| `labels` | body | object | 否 | 自定义标签 |
-| `enabled` | body | boolean | 否 | 是否启用 |
+| 参数                     | 位置 | 类型          | 必填 | 说明             |
+| ------------------------ | ---- | ------------- | ---- | ---------------- |
+| `ruleId`                 | path | string        | 是   | 规则 ID          |
+| `name`                   | body | string        | 否   | 规则名称         |
+| `condition`              | body | string        | 否   | 告警条件表达式   |
+| `for`                    | body | string        | 否   | 持续时间窗口     |
+| `severity`               | body | string        | 否   | 告警级别         |
+| `notificationChannelIds` | body | array[string] | 否   | 通知渠道 ID 列表 |
+| `annotations`            | body | object        | 否   | 注解信息         |
+| `labels`                 | body | object        | 否   | 自定义标签       |
+| `enabled`                | body | boolean       | 否   | 是否启用         |
 
 **请求示例**
 
@@ -2002,9 +1995,9 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 规则不存在 |
+| code    | 场景                       |
+| ------- | -------------------------- |
+| `40004` | 规则不存在                 |
 | `50001` | 更新 Alertmanager 规则失败 |
 
 ---
@@ -2017,9 +2010,9 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `ruleId` | path | string | 是 | 规则 ID |
+| 参数     | 位置 | 类型   | 必填 | 说明    |
+| -------- | ---- | ------ | ---- | ------- |
+| `ruleId` | path | string | 是   | 规则 ID |
 
 **响应示例**
 
@@ -2037,9 +2030,9 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 规则不存在 |
+| code    | 场景                         |
+| ------- | ---------------------------- |
+| `40004` | 规则不存在                   |
 | `50001` | 从 Alertmanager 删除规则失败 |
 
 ---
@@ -2052,16 +2045,16 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `state` | query | string | 否 | 告警状态过滤：`firing` / `pending` / `all`，默认 `all` |
-| `severity` | query | string | 否 | 按级别过滤 |
-| `service` | query | string | 否 | 按服务过滤 |
-| `type` | query | string | 否 | 按类型过滤 |
-| `startTime` | query | string | 否 | 告警触发起始时间 |
-| `endTime` | query | string | 否 | 告警触发结束时间 |
-| `page` | query | integer | 否 | 页码 |
-| `pageSize` | query | integer | 否 | 每页条数 |
+| 参数        | 位置  | 类型    | 必填 | 说明                                                   |
+| ----------- | ----- | ------- | ---- | ------------------------------------------------------ |
+| `state`     | query | string  | 否   | 告警状态过滤：`firing` / `pending` / `all`，默认 `all` |
+| `severity`  | query | string  | 否   | 按级别过滤                                             |
+| `service`   | query | string  | 否   | 按服务过滤                                             |
+| `type`      | query | string  | 否   | 按类型过滤                                             |
+| `startTime` | query | string  | 否   | 告警触发起始时间                                       |
+| `endTime`   | query | string  | 否   | 告警触发结束时间                                       |
+| `page`      | query | integer | 否   | 页码                                                   |
+| `pageSize`  | query | integer | 否   | 每页条数                                               |
 
 **响应示例**
 
@@ -2133,8 +2126,8 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景                    |
+| ------- | ----------------------- |
 | `50301` | Alertmanager 下游不可用 |
 
 ---
@@ -2147,16 +2140,16 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `name` | body | string | 是 | 渠道名称 |
-| `type` | body | string | 是 | 渠道类型：`feishu` / `dingtalk` / `email` / `webhook` / `slack` |
-| `config` | body | object | 是 | 渠道配置 |
-| `config.webhookUrl` | body | string | 否 | Webhook URL（飞书/钉钉/Slack/Webhook 类型必填） |
-| `config.emails` | body | array[string] | 否 | 邮箱列表（email 类型必填） |
-| `config.smtpServer` | body | string | 否 | SMTP 服务器地址（email 类型可选） |
-| `severityFilter` | body | array[string] | 否 | 接收告警级别过滤，如 `["critical", "warning"]`，为空则接收全部 |
-| `enabled` | body | boolean | 否 | 是否启用，默认 `true` |
+| 参数                | 位置 | 类型          | 必填 | 说明                                                            |
+| ------------------- | ---- | ------------- | ---- | --------------------------------------------------------------- |
+| `name`              | body | string        | 是   | 渠道名称                                                        |
+| `type`              | body | string        | 是   | 渠道类型：`feishu` / `dingtalk` / `email` / `webhook` / `slack` |
+| `config`            | body | object        | 是   | 渠道配置                                                        |
+| `config.webhookUrl` | body | string        | 否   | Webhook URL（飞书/钉钉/Slack/Webhook 类型必填）                 |
+| `config.emails`     | body | array[string] | 否   | 邮箱列表（email 类型必填）                                      |
+| `config.smtpServer` | body | string        | 否   | SMTP 服务器地址（email 类型可选）                               |
+| `severityFilter`    | body | array[string] | 否   | 接收告警级别过滤，如 `["critical", "warning"]`，为空则接收全部  |
+| `enabled`           | body | boolean       | 否   | 是否启用，默认 `true`                                           |
 
 **请求示例**
 
@@ -2196,11 +2189,11 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景                          |
+| ------- | ----------------------------- |
 | `40001` | `name`、`type`、`config` 为空 |
-| `40001` | Webhook URL 格式不合法 |
-| `40009` | 渠道名称已存在 |
+| `40001` | Webhook URL 格式不合法        |
+| `40009` | 渠道名称已存在                |
 
 ---
 
@@ -2212,12 +2205,12 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `type` | query | string | 否 | 按渠道类型过滤 |
-| `enabled` | query | boolean | 否 | 按启用状态过滤 |
-| `page` | query | integer | 否 | 页码 |
-| `pageSize` | query | integer | 否 | 每页条数 |
+| 参数       | 位置  | 类型    | 必填 | 说明           |
+| ---------- | ----- | ------- | ---- | -------------- |
+| `type`     | query | string  | 否   | 按渠道类型过滤 |
+| `enabled`  | query | boolean | 否   | 按启用状态过滤 |
+| `page`     | query | integer | 否   | 页码           |
+| `pageSize` | query | integer | 否   | 每页条数       |
 
 **响应示例**
 
@@ -2257,8 +2250,8 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景                 |
+| ------- | -------------------- |
 | `50301` | 查询元数据数据库失败 |
 
 ---
@@ -2271,13 +2264,13 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `channelId` | path | string | 是 | 渠道 ID |
-| `name` | body | string | 否 | 渠道名称 |
-| `config` | body | object | 否 | 渠道配置 |
-| `severityFilter` | body | array[string] | 否 | 接收告警级别过滤 |
-| `enabled` | body | boolean | 否 | 是否启用 |
+| 参数             | 位置 | 类型          | 必填 | 说明             |
+| ---------------- | ---- | ------------- | ---- | ---------------- |
+| `channelId`      | path | string        | 是   | 渠道 ID          |
+| `name`           | body | string        | 否   | 渠道名称         |
+| `config`         | body | object        | 否   | 渠道配置         |
+| `severityFilter` | body | array[string] | 否   | 接收告警级别过滤 |
+| `enabled`        | body | boolean       | 否   | 是否启用         |
 
 **请求示例**
 
@@ -2309,8 +2302,8 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景       |
+| ------- | ---------- |
 | `40004` | 渠道不存在 |
 
 ---
@@ -2323,9 +2316,9 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `channelId` | path | string | 是 | 渠道 ID |
+| 参数        | 位置 | 类型   | 必填 | 说明    |
+| ----------- | ---- | ------ | ---- | ------- |
+| `channelId` | path | string | 是   | 渠道 ID |
 
 **响应示例**
 
@@ -2343,9 +2336,9 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 渠道不存在 |
+| code    | 场景                           |
+| ------- | ------------------------------ |
+| `40004` | 渠道不存在                     |
 | `40009` | 渠道仍被告警规则引用，无法删除 |
 
 ---
@@ -2358,11 +2351,11 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `alertId` | path | string | 是 | 告警 ID |
-| `duration` | body | string | 是 | 静默持续时间，如 `1h` / `2h` / `24h` |
-| `reason` | body | string | 否 | 静默原因 |
+| 参数       | 位置 | 类型   | 必填 | 说明                                 |
+| ---------- | ---- | ------ | ---- | ------------------------------------ |
+| `alertId`  | path | string | 是   | 告警 ID                              |
+| `duration` | body | string | 是   | 静默持续时间，如 `1h` / `2h` / `24h` |
+| `reason`   | body | string | 否   | 静默原因                             |
 
 **请求示例**
 
@@ -2393,10 +2386,10 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 告警不存在 |
-| `40009` | 告警已被静默 |
+| code    | 场景                      |
+| ------- | ------------------------- |
+| `40004` | 告警不存在                |
+| `40009` | 告警已被静默              |
 | `50001` | Alertmanager 静默操作失败 |
 
 ---
@@ -2409,9 +2402,9 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `alertId` | path | string | 是 | 告警 ID |
+| 参数      | 位置 | 类型   | 必填 | 说明    |
+| --------- | ---- | ------ | ---- | ------- |
+| `alertId` | path | string | 是   | 告警 ID |
 
 **响应示例**
 
@@ -2431,10 +2424,10 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 告警不存在 |
-| `40009` | 告警未被静默，无需取消 |
+| code    | 场景                          |
+| ------- | ----------------------------- |
+| `40004` | 告警不存在                    |
+| `40009` | 告警未被静默，无需取消        |
 | `50001` | Alertmanager 取消静默操作失败 |
 
 ---
@@ -2447,16 +2440,16 @@ GET /api/v1/obs/traces/dependencies?service=tech-ont&startTime=2026-07-16T07:00:
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `ruleId` | query | string | 否 | 按规则 ID 过滤 |
-| `service` | query | string | 否 | 按服务过滤 |
-| `severity` | query | string | 否 | 按级别过滤 |
-| `state` | query | string | 否 | 按状态过滤：`firing` / `resolved` |
-| `startTime` | query | string | 是 | 起始时间 |
-| `endTime` | query | string | 是 | 结束时间 |
-| `page` | query | integer | 否 | 页码 |
-| `pageSize` | query | integer | 否 | 每页条数 |
+| 参数        | 位置  | 类型    | 必填 | 说明                              |
+| ----------- | ----- | ------- | ---- | --------------------------------- |
+| `ruleId`    | query | string  | 否   | 按规则 ID 过滤                    |
+| `service`   | query | string  | 否   | 按服务过滤                        |
+| `severity`  | query | string  | 否   | 按级别过滤                        |
+| `state`     | query | string  | 否   | 按状态过滤：`firing` / `resolved` |
+| `startTime` | query | string  | 是   | 起始时间                          |
+| `endTime`   | query | string  | 是   | 结束时间                          |
+| `page`      | query | integer | 否   | 页码                              |
+| `pageSize`  | query | integer | 否   | 每页条数                          |
 
 **请求示例**
 
@@ -2506,9 +2499,9 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40001` | `startTime` 或 `endTime` 缺失 |
+| code    | 场景                           |
+| ------- | ------------------------------ |
+| `40001` | `startTime` 或 `endTime` 缺失  |
 | `50301` | 查询 Alertmanager 历史数据失败 |
 
 ---
@@ -2527,20 +2520,20 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `name` | body | string | 是 | 仪表板名称 |
-| `description` | body | string | 否 | 仪表板描述 |
-| `tags` | body | array[string] | 否 | 标签列表 |
-| `refreshInterval` | body | string | 否 | 自动刷新间隔：`5s` / `10s` / `30s` / `1m` / `5m` / `off`，默认 `30s` |
-| `timeRange` | body | object | 否 | 默认时间范围 |
-| `timeRange.from` | body | string | 否 | 默认起始时间或相对时间，如 `now-1h` |
-| `timeRange.to` | body | string | 否 | 默认结束时间或相对时间，如 `now` |
-| `variables` | body | array[object] | 否 | 模板变量定义 |
-| `variables[].name` | body | string | 否 | 变量名称 |
-| `variables[].type` | body | string | 否 | 变量类型：`query` / `custom` / `interval` |
-| `variables[].query` | body | string | 否 | 变量查询表达式（type=query 时） |
-| `variables[].options` | body | array | 否 | 自定义选项列表（type=custom 时） |
+| 参数                  | 位置 | 类型          | 必填 | 说明                                                                 |
+| --------------------- | ---- | ------------- | ---- | -------------------------------------------------------------------- |
+| `name`                | body | string        | 是   | 仪表板名称                                                           |
+| `description`         | body | string        | 否   | 仪表板描述                                                           |
+| `tags`                | body | array[string] | 否   | 标签列表                                                             |
+| `refreshInterval`     | body | string        | 否   | 自动刷新间隔：`5s` / `10s` / `30s` / `1m` / `5m` / `off`，默认 `30s` |
+| `timeRange`           | body | object        | 否   | 默认时间范围                                                         |
+| `timeRange.from`      | body | string        | 否   | 默认起始时间或相对时间，如 `now-1h`                                  |
+| `timeRange.to`        | body | string        | 否   | 默认结束时间或相对时间，如 `now`                                     |
+| `variables`           | body | array[object] | 否   | 模板变量定义                                                         |
+| `variables[].name`    | body | string        | 否   | 变量名称                                                             |
+| `variables[].type`    | body | string        | 否   | 变量类型：`query` / `custom` / `interval`                            |
+| `variables[].query`   | body | string        | 否   | 变量查询表达式（type=query 时）                                      |
+| `variables[].options` | body | array         | 否   | 自定义选项列表（type=custom 时）                                     |
 
 **请求示例**
 
@@ -2614,10 +2607,10 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40001` | `name` 为空 |
-| `40009` | 仪表板名称已存在 |
+| code    | 场景                    |
+| ------- | ----------------------- |
+| `40001` | `name` 为空             |
+| `40009` | 仪表板名称已存在        |
 | `50001` | 创建 Grafana 仪表板失败 |
 
 ---
@@ -2630,13 +2623,13 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `tag` | query | string | 否 | 按标签过滤 |
-| `keyword` | query | string | 否 | 名称模糊搜索 |
-| `createdBy` | query | string | 否 | 按创建人过滤 |
-| `page` | query | integer | 否 | 页码 |
-| `pageSize` | query | integer | 否 | 每页条数 |
+| 参数        | 位置  | 类型    | 必填 | 说明         |
+| ----------- | ----- | ------- | ---- | ------------ |
+| `tag`       | query | string  | 否   | 按标签过滤   |
+| `keyword`   | query | string  | 否   | 名称模糊搜索 |
+| `createdBy` | query | string  | 否   | 按创建人过滤 |
+| `page`      | query | integer | 否   | 页码         |
+| `pageSize`  | query | integer | 否   | 每页条数     |
 
 **响应示例**
 
@@ -2669,8 +2662,8 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景              |
+| ------- | ----------------- |
 | `50301` | 查询 Grafana 失败 |
 
 ---
@@ -2683,9 +2676,9 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `dashboardId` | path | string | 是 | 仪表板 ID |
+| 参数          | 位置 | 类型   | 必填 | 说明      |
+| ------------- | ---- | ------ | ---- | --------- |
+| `dashboardId` | path | string | 是   | 仪表板 ID |
 
 **响应示例**
 
@@ -2806,9 +2799,9 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 仪表板不存在 |
+| code    | 场景              |
+| ------- | ----------------- |
+| `40004` | 仪表板不存在      |
 | `50301` | 查询 Grafana 失败 |
 
 ---
@@ -2821,15 +2814,15 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `dashboardId` | path | string | 是 | 仪表板 ID |
-| `name` | body | string | 否 | 仪表板名称 |
-| `description` | body | string | 否 | 仪表板描述 |
-| `tags` | body | array[string] | 否 | 标签列表 |
-| `refreshInterval` | body | string | 否 | 自动刷新间隔 |
-| `timeRange` | body | object | 否 | 默认时间范围 |
-| `variables` | body | array[object] | 否 | 模板变量定义 |
+| 参数              | 位置 | 类型          | 必填 | 说明         |
+| ----------------- | ---- | ------------- | ---- | ------------ |
+| `dashboardId`     | path | string        | 是   | 仪表板 ID    |
+| `name`            | body | string        | 否   | 仪表板名称   |
+| `description`     | body | string        | 否   | 仪表板描述   |
+| `tags`            | body | array[string] | 否   | 标签列表     |
+| `refreshInterval` | body | string        | 否   | 自动刷新间隔 |
+| `timeRange`       | body | object        | 否   | 默认时间范围 |
+| `variables`       | body | array[object] | 否   | 模板变量定义 |
 
 **请求示例**
 
@@ -2868,9 +2861,9 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 仪表板不存在 |
+| code    | 场景                    |
+| ------- | ----------------------- |
+| `40004` | 仪表板不存在            |
 | `50001` | 更新 Grafana 仪表板失败 |
 
 ---
@@ -2883,9 +2876,9 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `dashboardId` | path | string | 是 | 仪表板 ID |
+| 参数          | 位置 | 类型   | 必填 | 说明      |
+| ------------- | ---- | ------ | ---- | --------- |
+| `dashboardId` | path | string | 是   | 仪表板 ID |
 
 **响应示例**
 
@@ -2903,9 +2896,9 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 仪表板不存在 |
+| code    | 场景                    |
+| ------- | ----------------------- |
+| `40004` | 仪表板不存在            |
 | `50001` | 删除 Grafana 仪表板失败 |
 
 ---
@@ -2918,23 +2911,23 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `dashboardId` | path | string | 是 | 仪表板 ID |
-| `title` | body | string | 是 | 面板标题 |
-| `type` | body | string | 是 | 面板类型：`timeseries` / `stat` / `gauge` / `table` / `bargauge` / `piechart` / `heatmap` / `log` / `nodeGraph` / `traces` / `alertlist` |
-| `gridPos` | body | object | 是 | 网格位置 |
-| `gridPos.x` | body | integer | 是 | X 坐标（0-23） |
-| `gridPos.y` | body | integer | 是 | Y 坐标 |
-| `gridPos.w` | body | integer | 是 | 宽度（1-24） |
-| `gridPos.h` | body | integer | 是 | 高度 |
-| `datasource` | body | string | 是 | 数据源：`prometheus` / `loki` / `jaeger` |
-| `targets` | body | array[object] | 是 | 查询目标列表 |
-| `targets[].refId` | body | string | 是 | 引用 ID，如 `A` |
-| `targets[].expr` | body | string | 是 | 查询表达式（PromQL / LogQL / Trace 查询） |
-| `targets[].legendFormat` | body | string | 否 | 图例格式 |
-| `fieldConfig` | body | object | 否 | 字段配置（单位、颜色、阈值） |
-| `options` | body | object | 否 | 面板选项 |
+| 参数                     | 位置 | 类型          | 必填 | 说明                                                                                                                                     |
+| ------------------------ | ---- | ------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `dashboardId`            | path | string        | 是   | 仪表板 ID                                                                                                                                |
+| `title`                  | body | string        | 是   | 面板标题                                                                                                                                 |
+| `type`                   | body | string        | 是   | 面板类型：`timeseries` / `stat` / `gauge` / `table` / `bargauge` / `piechart` / `heatmap` / `log` / `nodeGraph` / `traces` / `alertlist` |
+| `gridPos`                | body | object        | 是   | 网格位置                                                                                                                                 |
+| `gridPos.x`              | body | integer       | 是   | X 坐标（0-23）                                                                                                                           |
+| `gridPos.y`              | body | integer       | 是   | Y 坐标                                                                                                                                   |
+| `gridPos.w`              | body | integer       | 是   | 宽度（1-24）                                                                                                                             |
+| `gridPos.h`              | body | integer       | 是   | 高度                                                                                                                                     |
+| `datasource`             | body | string        | 是   | 数据源：`prometheus` / `loki` / `jaeger`                                                                                                 |
+| `targets`                | body | array[object] | 是   | 查询目标列表                                                                                                                             |
+| `targets[].refId`        | body | string        | 是   | 引用 ID，如 `A`                                                                                                                          |
+| `targets[].expr`         | body | string        | 是   | 查询表达式（PromQL / LogQL / Trace 查询）                                                                                                |
+| `targets[].legendFormat` | body | string        | 否   | 图例格式                                                                                                                                 |
+| `fieldConfig`            | body | object        | 否   | 字段配置（单位、颜色、阈值）                                                                                                             |
+| `options`                | body | object        | 否   | 面板选项                                                                                                                                 |
 
 **请求示例**
 
@@ -3001,11 +2994,11 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 仪表板不存在 |
+| code    | 场景                                                     |
+| ------- | -------------------------------------------------------- |
+| `40004` | 仪表板不存在                                             |
 | `40001` | `title`、`type`、`gridPos`、`datasource`、`targets` 为空 |
-| `50001` | 更新 Grafana 面板失败 |
+| `50001` | 更新 Grafana 面板失败                                    |
 
 ---
 
@@ -3017,17 +3010,17 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `dashboardId` | path | string | 是 | 仪表板 ID |
-| `panelId` | path | string | 是 | 面板 ID |
-| `title` | body | string | 否 | 面板标题 |
-| `type` | body | string | 否 | 面板类型 |
-| `gridPos` | body | object | 否 | 网格位置 |
-| `datasource` | body | string | 否 | 数据源 |
-| `targets` | body | array[object] | 否 | 查询目标列表 |
-| `fieldConfig` | body | object | 否 | 字段配置 |
-| `options` | body | object | 否 | 面板选项 |
+| 参数          | 位置 | 类型          | 必填 | 说明         |
+| ------------- | ---- | ------------- | ---- | ------------ |
+| `dashboardId` | path | string        | 是   | 仪表板 ID    |
+| `panelId`     | path | string        | 是   | 面板 ID      |
+| `title`       | body | string        | 否   | 面板标题     |
+| `type`        | body | string        | 否   | 面板类型     |
+| `gridPos`     | body | object        | 否   | 网格位置     |
+| `datasource`  | body | string        | 否   | 数据源       |
+| `targets`     | body | array[object] | 否   | 查询目标列表 |
+| `fieldConfig` | body | object        | 否   | 字段配置     |
+| `options`     | body | object        | 否   | 面板选项     |
 
 **请求示例**
 
@@ -3057,9 +3050,9 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 仪表板或面板不存在 |
+| code    | 场景                  |
+| ------- | --------------------- |
+| `40004` | 仪表板或面板不存在    |
 | `50001` | 更新 Grafana 面板失败 |
 
 ---
@@ -3072,10 +3065,10 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `dashboardId` | path | string | 是 | 仪表板 ID |
-| `panelId` | path | string | 是 | 面板 ID |
+| 参数          | 位置 | 类型   | 必填 | 说明      |
+| ------------- | ---- | ------ | ---- | --------- |
+| `dashboardId` | path | string | 是   | 仪表板 ID |
+| `panelId`     | path | string | 是   | 面板 ID   |
 
 **响应示例**
 
@@ -3094,9 +3087,9 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 仪表板或面板不存在 |
+| code    | 场景                  |
+| ------- | --------------------- |
+| `40004` | 仪表板或面板不存在    |
 | `50001` | 更新 Grafana 面板失败 |
 
 ---
@@ -3109,13 +3102,13 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `dashboardId` | path | string | 是 | 仪表板 ID |
-| `accessType` | body | string | 是 | 访问类型：`public` / `organization` / `specific_users` |
-| `expiresIn` | body | string | 否 | 链接有效期：`1h` / `1d` / `7d` / `30d` / `never`，默认 `7d` |
-| `allowedUsers` | body | array[string] | 否 | 允许访问的用户列表（accessType=specific_users 时必填） |
-| `readOnly` | body | boolean | 否 | 是否只读，默认 `true` |
+| 参数           | 位置 | 类型          | 必填 | 说明                                                        |
+| -------------- | ---- | ------------- | ---- | ----------------------------------------------------------- |
+| `dashboardId`  | path | string        | 是   | 仪表板 ID                                                   |
+| `accessType`   | body | string        | 是   | 访问类型：`public` / `organization` / `specific_users`      |
+| `expiresIn`    | body | string        | 否   | 链接有效期：`1h` / `1d` / `7d` / `30d` / `never`，默认 `7d` |
+| `allowedUsers` | body | array[string] | 否   | 允许访问的用户列表（accessType=specific_users 时必填）      |
+| `readOnly`     | body | boolean       | 否   | 是否只读，默认 `true`                                       |
 
 **请求示例**
 
@@ -3149,12 +3142,12 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 仪表板不存在 |
-| `40001` | `accessType` 为空或值不合法 |
+| code    | 场景                                             |
+| ------- | ------------------------------------------------ |
+| `40004` | 仪表板不存在                                     |
+| `40001` | `accessType` 为空或值不合法                      |
 | `40001` | accessType=specific_users 时 `allowedUsers` 为空 |
-| `50001` | 生成 Grafana 分享链接失败 |
+| `50001` | 生成 Grafana 分享链接失败                        |
 
 ---
 
@@ -3166,10 +3159,10 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `dashboardId` | path | string | 是 | 仪表板 ID |
-| `format` | query | string | 否 | 导出格式：`json`（Grafana JSON）/ `yaml`，默认 `json` |
+| 参数          | 位置  | 类型   | 必填 | 说明                                                  |
+| ------------- | ----- | ------ | ---- | ----------------------------------------------------- |
+| `dashboardId` | path  | string | 是   | 仪表板 ID                                             |
+| `format`      | query | string | 否   | 导出格式：`json`（Grafana JSON）/ `yaml`，默认 `json` |
 
 **响应示例**
 
@@ -3230,9 +3223,9 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 仪表板不存在 |
+| code    | 场景                    |
+| ------- | ----------------------- |
+| `40004` | 仪表板不存在            |
 | `50001` | 导出 Grafana 仪表板失败 |
 
 ---
@@ -3251,11 +3244,11 @@ GET /api/v1/obs/alerts/history?service=tech-ont&state=resolved&startTime=2026-07
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `startTime` | query | string | 是 | 起始时间 |
-| `endTime` | query | string | 是 | 结束时间 |
-| `service` | query | string | 否 | 指定服务名，仅展示该服务及其直接上下游 |
+| 参数        | 位置  | 类型   | 必填 | 说明                                   |
+| ----------- | ----- | ------ | ---- | -------------------------------------- |
+| `startTime` | query | string | 是   | 起始时间                               |
+| `endTime`   | query | string | 是   | 结束时间                               |
+| `service`   | query | string | 否   | 指定服务名，仅展示该服务及其直接上下游 |
 
 **请求示例**
 
@@ -3399,11 +3392,11 @@ GET /api/v1/obs/service-map/topology?startTime=2026-07-16T07:00:00Z&endTime=2026
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40001` | `startTime` 或 `endTime` 缺失 |
+| code    | 场景                            |
+| ------- | ------------------------------- |
+| `40001` | `startTime` 或 `endTime` 缺失   |
 | `50301` | Jaeger 或 Prometheus 下游不可用 |
-| `50401` | 查询超时 |
+| `50401` | 查询超时                        |
 
 ---
 
@@ -3415,9 +3408,9 @@ GET /api/v1/obs/service-map/topology?startTime=2026-07-16T07:00:00Z&endTime=2026
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `service` | query | string | 否 | 指定服务名，为空则返回全部服务 |
+| 参数      | 位置  | 类型   | 必填 | 说明                           |
+| --------- | ----- | ------ | ---- | ------------------------------ |
+| `service` | query | string | 否   | 指定服务名，为空则返回全部服务 |
 
 **请求示例**
 
@@ -3518,9 +3511,9 @@ GET /api/v1/obs/service-map/health
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 指定服务不存在 |
+| code    | 场景                  |
+| ------- | --------------------- |
+| `40004` | 指定服务不存在        |
 | `50301` | Prometheus 下游不可用 |
 
 ---
@@ -3533,12 +3526,12 @@ GET /api/v1/obs/service-map/health
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `service` | path | string | 是 | 服务名称 |
-| `startTime` | query | string | 否 | 起始时间，默认最近 1 小时 |
-| `endTime` | query | string | 否 | 结束时间，默认当前时间 |
-| `direction` | query | string | 否 | 依赖方向：`upstream` / `downstream` / `both`，默认 `both` |
+| 参数        | 位置  | 类型   | 必填 | 说明                                                      |
+| ----------- | ----- | ------ | ---- | --------------------------------------------------------- |
+| `service`   | path  | string | 是   | 服务名称                                                  |
+| `startTime` | query | string | 否   | 起始时间，默认最近 1 小时                                 |
+| `endTime`   | query | string | 否   | 结束时间，默认当前时间                                    |
+| `direction` | query | string | 否   | 依赖方向：`upstream` / `downstream` / `both`，默认 `both` |
 
 **请求示例**
 
@@ -3566,9 +3559,21 @@ GET /api/v1/obs/service-map/tech-ont/dependencies?direction=both&startTime=2026-
         "p99Latency": 1850,
         "p99LatencyUnit": "ms",
         "operations": [
-          { "operation": "POST /api/v1/ont/concepts", "count": 520, "errorCount": 47 },
-          { "operation": "GET /api/v1/ont/concepts/{id}", "count": 803, "errorCount": 0 },
-          { "operation": "PUT /api/v1/ont/concepts/{id}", "count": 200, "errorCount": 5 }
+          {
+            "operation": "POST /api/v1/ont/concepts",
+            "count": 520,
+            "errorCount": 47
+          },
+          {
+            "operation": "GET /api/v1/ont/concepts/{id}",
+            "count": 803,
+            "errorCount": 0
+          },
+          {
+            "operation": "PUT /api/v1/ont/concepts/{id}",
+            "count": 200,
+            "errorCount": 5
+          }
         ]
       },
       {
@@ -3580,7 +3585,11 @@ GET /api/v1/obs/service-map/tech-ont/dependencies?direction=both&startTime=2026-
         "p99Latency": 890,
         "p99LatencyUnit": "ms",
         "operations": [
-          { "operation": "GET /api/v1/ont/concepts", "count": 412, "errorCount": 3 }
+          {
+            "operation": "GET /api/v1/ont/concepts",
+            "count": 412,
+            "errorCount": 3
+          }
         ]
       }
     ],
@@ -3617,9 +3626,9 @@ GET /api/v1/obs/service-map/tech-ont/dependencies?direction=both&startTime=2026-
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | 指定服务不存在 |
+| code    | 场景              |
+| ------- | ----------------- |
+| `40004` | 指定服务不存在    |
 | `50301` | Jaeger 下游不可用 |
 
 ---
@@ -3638,26 +3647,26 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `name` | body | string | 是 | SLO 名称 |
-| `service` | body | string | 是 | 目标服务 |
-| `description` | body | string | 否 | SLO 描述 |
-| `sli` | body | object | 是 | SLI 定义 |
-| `sli.type` | body | string | 是 | SLI 类型：`availability` / `latency` / `throughput` / `error_rate` / `custom` |
-| `sli.query` | body | string | 是 | SLI PromQL 查询表达式（分子），如 `1 - (sum(rate(http_requests_total{status=~\"5..\"}[{{.window}}])) / sum(rate(http_requests_total[{{.window}}])))` |
-| `sli.totalQuery` | body | string | 否 | 总量查询（分母），当 type 非 custom 时可选 |
-| `sli.labels` | body | object | 否 | SLI 额外标签 |
-| `target` | body | number | 是 | SLO 目标值（百分比），如 `99.9` 表示 99.9% |
-| `window` | body | string | 是 | SLO 评估窗口：`7d` / `14d` / `30d` / `90d` |
-| `alerting` | body | object | 否 | 告警配置 |
-| `alerting.fastBurn` | body | object | 否 | 快速燃烧告警配置 |
-| `alerting.fastBurn.threshold` | body | number | 否 | 快速燃烧阈值（错误预算消耗百分比），默认 `2`（即 2% 错误预算在 1 小时内消耗完） |
-| `alerting.fastBurn.window` | body | string | 否 | 快速燃烧窗口，默认 `1h` |
-| `alerting.slowBurn` | body | object | 否 | 慢速燃烧告警配置 |
-| `alerting.slowBurn.threshold` | body | number | 否 | 慢速燃烧阈值，默认 `25` |
-| `alerting.slowBurn.window` | body | string | 否 | 慢速燃烧窗口，默认 `6h` |
-| `notificationChannelIds` | body | array[string] | 否 | 通知渠道 ID |
+| 参数                          | 位置 | 类型          | 必填 | 说明                                                                                                                                                 |
+| ----------------------------- | ---- | ------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                        | body | string        | 是   | SLO 名称                                                                                                                                             |
+| `service`                     | body | string        | 是   | 目标服务                                                                                                                                             |
+| `description`                 | body | string        | 否   | SLO 描述                                                                                                                                             |
+| `sli`                         | body | object        | 是   | SLI 定义                                                                                                                                             |
+| `sli.type`                    | body | string        | 是   | SLI 类型：`availability` / `latency` / `throughput` / `error_rate` / `custom`                                                                        |
+| `sli.query`                   | body | string        | 是   | SLI PromQL 查询表达式（分子），如 `1 - (sum(rate(http_requests_total{status=~\"5..\"}[{{.window}}])) / sum(rate(http_requests_total[{{.window}}])))` |
+| `sli.totalQuery`              | body | string        | 否   | 总量查询（分母），当 type 非 custom 时可选                                                                                                           |
+| `sli.labels`                  | body | object        | 否   | SLI 额外标签                                                                                                                                         |
+| `target`                      | body | number        | 是   | SLO 目标值（百分比），如 `99.9` 表示 99.9%                                                                                                           |
+| `window`                      | body | string        | 是   | SLO 评估窗口：`7d` / `14d` / `30d` / `90d`                                                                                                           |
+| `alerting`                    | body | object        | 否   | 告警配置                                                                                                                                             |
+| `alerting.fastBurn`           | body | object        | 否   | 快速燃烧告警配置                                                                                                                                     |
+| `alerting.fastBurn.threshold` | body | number        | 否   | 快速燃烧阈值（错误预算消耗百分比），默认 `2`（即 2% 错误预算在 1 小时内消耗完）                                                                      |
+| `alerting.fastBurn.window`    | body | string        | 否   | 快速燃烧窗口，默认 `1h`                                                                                                                              |
+| `alerting.slowBurn`           | body | object        | 否   | 慢速燃烧告警配置                                                                                                                                     |
+| `alerting.slowBurn.threshold` | body | number        | 否   | 慢速燃烧阈值，默认 `25`                                                                                                                              |
+| `alerting.slowBurn.window`    | body | string        | 否   | 慢速燃烧窗口，默认 `6h`                                                                                                                              |
+| `notificationChannelIds`      | body | array[string] | 否   | 通知渠道 ID                                                                                                                                          |
 
 **请求示例**
 
@@ -3733,13 +3742,13 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40001` | `name`、`service`、`sli`、`target`、`window` 为空 |
-| `40009` | SLO 名称已存在 |
-| `40001` | `target` 不在 0-100 范围内 |
+| code    | 场景                                                     |
+| ------- | -------------------------------------------------------- |
+| `40001` | `name`、`service`、`sli`、`target`、`window` 为空        |
+| `40009` | SLO 名称已存在                                           |
+| `40001` | `target` 不在 0-100 范围内                               |
 | `40001` | `window` 值不合法（仅支持 `7d` / `14d` / `30d` / `90d`） |
-| `50001` | SLO 规则写入 Alertmanager 失败 |
+| `50001` | SLO 规则写入 Alertmanager 失败                           |
 
 ---
 
@@ -3751,12 +3760,12 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `service` | query | string | 否 | 按服务过滤 |
-| `status` | query | string | 否 | 按状态过滤：`active` / `inactive` / `violated` |
-| `page` | query | integer | 否 | 页码 |
-| `pageSize` | query | integer | 否 | 每页条数 |
+| 参数       | 位置  | 类型    | 必填 | 说明                                           |
+| ---------- | ----- | ------- | ---- | ---------------------------------------------- |
+| `service`  | query | string  | 否   | 按服务过滤                                     |
+| `status`   | query | string  | 否   | 按状态过滤：`active` / `inactive` / `violated` |
+| `page`     | query | integer | 否   | 页码                                           |
+| `pageSize` | query | integer | 否   | 每页条数                                       |
 
 **响应示例**
 
@@ -3790,8 +3799,8 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景                 |
+| ------- | -------------------- |
 | `50301` | 查询元数据数据库失败 |
 
 ---
@@ -3804,9 +3813,9 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `sloId` | path | string | 是 | SLO ID |
+| 参数    | 位置 | 类型   | 必填 | 说明   |
+| ------- | ---- | ------ | ---- | ------ |
+| `sloId` | path | string | 是   | SLO ID |
 
 **响应示例**
 
@@ -3853,8 +3862,8 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
+| code    | 场景       |
+| ------- | ---------- |
 | `40004` | SLO 不存在 |
 
 ---
@@ -3867,17 +3876,17 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `sloId` | path | string | 是 | SLO ID |
-| `name` | body | string | 否 | SLO 名称 |
-| `description` | body | string | 否 | SLO 描述 |
-| `sli` | body | object | 否 | SLI 定义 |
-| `target` | body | number | 否 | SLO 目标值 |
-| `window` | body | string | 否 | SLO 评估窗口 |
-| `alerting` | body | object | 否 | 告警配置 |
-| `notificationChannelIds` | body | array[string] | 否 | 通知渠道 ID |
-| `status` | body | string | 否 | SLO 状态：`active` / `inactive` |
+| 参数                     | 位置 | 类型          | 必填 | 说明                            |
+| ------------------------ | ---- | ------------- | ---- | ------------------------------- |
+| `sloId`                  | path | string        | 是   | SLO ID                          |
+| `name`                   | body | string        | 否   | SLO 名称                        |
+| `description`            | body | string        | 否   | SLO 描述                        |
+| `sli`                    | body | object        | 否   | SLI 定义                        |
+| `target`                 | body | number        | 否   | SLO 目标值                      |
+| `window`                 | body | string        | 否   | SLO 评估窗口                    |
+| `alerting`               | body | object        | 否   | 告警配置                        |
+| `notificationChannelIds` | body | array[string] | 否   | 通知渠道 ID                     |
+| `status`                 | body | string        | 否   | SLO 状态：`active` / `inactive` |
 
 **请求示例**
 
@@ -3911,9 +3920,9 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | SLO 不存在 |
+| code    | 场景                       |
+| ------- | -------------------------- |
+| `40004` | SLO 不存在                 |
 | `40001` | `target` 不在 0-100 范围内 |
 | `50001` | 更新 Alertmanager 规则失败 |
 
@@ -3927,9 +3936,9 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `sloId` | path | string | 是 | SLO ID |
+| 参数    | 位置 | 类型   | 必填 | 说明   |
+| ------- | ---- | ------ | ---- | ------ |
+| `sloId` | path | string | 是   | SLO ID |
 
 **响应示例**
 
@@ -3947,9 +3956,9 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | SLO 不存在 |
+| code    | 场景                 |
+| ------- | -------------------- |
+| `40004` | SLO 不存在           |
 | `50001` | 删除关联告警规则失败 |
 
 ---
@@ -3962,12 +3971,12 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `sloId` | path | string | 是 | SLO ID |
-| `startTime` | query | string | 否 | 起始时间，默认当前窗口起始 |
-| `endTime` | query | string | 否 | 结束时间，默认当前时间 |
-| `granularity` | query | string | 否 | 时间粒度：`1h` / `6h` / `1d`，默认 `1h` |
+| 参数          | 位置  | 类型   | 必填 | 说明                                    |
+| ------------- | ----- | ------ | ---- | --------------------------------------- |
+| `sloId`       | path  | string | 是   | SLO ID                                  |
+| `startTime`   | query | string | 否   | 起始时间，默认当前窗口起始              |
+| `endTime`     | query | string | 否   | 结束时间，默认当前时间                  |
+| `granularity` | query | string | 否   | 时间粒度：`1h` / `6h` / `1d`，默认 `1h` |
 
 **响应示例**
 
@@ -4011,9 +4020,9 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | SLO 不存在 |
+| code    | 场景                |
+| ------- | ------------------- |
+| `40004` | SLO 不存在          |
 | `50301` | Prometheus 查询失败 |
 
 ---
@@ -4026,12 +4035,12 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `sloId` | path | string | 是 | SLO ID |
-| `startTime` | query | string | 否 | 起始时间 |
-| `endTime` | query | string | 否 | 结束时间 |
-| `step` | query | string | 否 | 时间步长，默认 `5m` |
+| 参数        | 位置  | 类型   | 必填 | 说明                |
+| ----------- | ----- | ------ | ---- | ------------------- |
+| `sloId`     | path  | string | 是   | SLO ID              |
+| `startTime` | query | string | 否   | 起始时间            |
+| `endTime`   | query | string | 否   | 结束时间            |
+| `step`      | query | string | 否   | 时间步长，默认 `5m` |
 
 **响应示例**
 
@@ -4072,7 +4081,7 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
       },
       {
         "timestamp": "2026-07-16T07:25:00Z",
-        "value": 99.80
+        "value": 99.8
       },
       {
         "timestamp": "2026-07-16T07:30:00Z",
@@ -4080,7 +4089,7 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
       },
       {
         "timestamp": "2026-07-16T07:35:00Z",
-        "value": 99.90
+        "value": 99.9
       },
       {
         "timestamp": "2026-07-16T07:40:00Z",
@@ -4107,7 +4116,7 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
       "min": 99.75,
       "max": 99.95,
       "avg": 99.88,
-      "p50": 99.90,
+      "p50": 99.9,
       "p95": 99.94,
       "p99": 99.95
     }
@@ -4118,9 +4127,9 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | SLO 不存在 |
+| code    | 场景                |
+| ------- | ------------------- |
+| `40004` | SLO 不存在          |
 | `50301` | Prometheus 查询失败 |
 
 ---
@@ -4133,11 +4142,11 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **请求参数**
 
-| 参数 | 位置 | 类型 | 必填 | 说明 |
-|---|---|---|---|---|
-| `sloId` | path | string | 是 | SLO ID |
-| `startTime` | query | string | 是 | 报告起始时间 |
-| `endTime` | query | string | 是 | 报告结束时间 |
+| 参数        | 位置  | 类型   | 必填 | 说明         |
+| ----------- | ----- | ------ | ---- | ------------ |
+| `sloId`     | path  | string | 是   | SLO ID       |
+| `startTime` | query | string | 是   | 报告起始时间 |
+| `endTime`   | query | string | 是   | 报告结束时间 |
 
 **响应示例**
 
@@ -4224,11 +4233,11 @@ SLO 管理 API 提供服务等级目标（SLO）的定义、错误预算查询�
 
 **错误场景**
 
-| code | 场景 |
-|---|---|
-| `40004` | SLO 不存在 |
+| code    | 场景                          |
+| ------- | ----------------------------- |
+| `40004` | SLO 不存在                    |
 | `40001` | `startTime` 或 `endTime` 缺失 |
-| `50301` | Prometheus 查询失败 |
+| `50301` | Prometheus 查询失败           |
 
 ---
 
@@ -4462,20 +4471,20 @@ metaplatform_{service}_{metric_name}_{unit}
 
 #### 4.2.2 核心指标定义
 
-| 指标名称 | 类型 | 标签 | 说明 |
-|---|---|---|---|
-| `metaplatform_{service}_request_total` | counter | `method`, `path`, `status`, `tenant_id` | HTTP 请求总数 |
-| `metaplatform_{service}_request_duration_seconds` | histogram | `method`, `path`, `status`, `tenant_id` | HTTP 请求延迟分布 |
-| `metaplatform_{service}_request_in_progress` | gauge | `method`, `path` | 当前处理中的请求数 |
-| `metaplatform_{service}_error_total` | counter | `type`, `exception`, `tenant_id` | 错误总数 |
-| `metaplatform_{service}_jvm_memory_used_bytes` | gauge | `area`, `pod` | JVM 内存使用 |
-| `metaplatform_{service}_jvm_gc_pause_seconds` | histogram | `action`, `cause`, `pod` | JVM GC 暂停时间 |
-| `metaplatform_{service}_db_connection_pool_active` | gauge | `pool`, `pod` | 数据库连接池活跃连接数 |
-| `metaplatform_{service}_kafka_consumer_lag` | gauge | `topic`, `partition`, `consumer_group` | Kafka 消费延迟 |
-| `metaplatform_obs_alert_fired_total` | counter | `rule_id`, `severity`, `service` | 告警触发总数 |
-| `metaplatform_obs_alert_resolved_total` | counter | `rule_id`, `severity`, `service` | 告警恢复总数 |
-| `metaplatform_obs_sli_value` | gauge | `slo_id`, `service`, `sli_type` | SLI 当前值 |
-| `metaplatform_obs_error_budget_remaining` | gauge | `slo_id`, `service` | 错误预算剩余比例 |
+| 指标名称                                           | 类型      | 标签                                    | 说明                   |
+| -------------------------------------------------- | --------- | --------------------------------------- | ---------------------- |
+| `metaplatform_{service}_request_total`             | counter   | `method`, `path`, `status`, `tenant_id` | HTTP 请求总数          |
+| `metaplatform_{service}_request_duration_seconds`  | histogram | `method`, `path`, `status`, `tenant_id` | HTTP 请求延迟分布      |
+| `metaplatform_{service}_request_in_progress`       | gauge     | `method`, `path`                        | 当前处理中的请求数     |
+| `metaplatform_{service}_error_total`               | counter   | `type`, `exception`, `tenant_id`        | 错误总数               |
+| `metaplatform_{service}_jvm_memory_used_bytes`     | gauge     | `area`, `pod`                           | JVM 内存使用           |
+| `metaplatform_{service}_jvm_gc_pause_seconds`      | histogram | `action`, `cause`, `pod`                | JVM GC 暂停时间        |
+| `metaplatform_{service}_db_connection_pool_active` | gauge     | `pool`, `pod`                           | 数据库连接池活跃连接数 |
+| `metaplatform_{service}_kafka_consumer_lag`        | gauge     | `topic`, `partition`, `consumer_group`  | Kafka 消费延迟         |
+| `metaplatform_obs_alert_fired_total`               | counter   | `rule_id`, `severity`, `service`        | 告警触发总数           |
+| `metaplatform_obs_alert_resolved_total`            | counter   | `rule_id`, `severity`, `service`        | 告警恢复总数           |
+| `metaplatform_obs_sli_value`                       | gauge     | `slo_id`, `service`, `sli_type`         | SLI 当前值             |
+| `metaplatform_obs_error_budget_remaining`          | gauge     | `slo_id`, `service`                     | 错误预算剩余比例       |
 
 #### 4.2.3 OpenTelemetry 指标采集配置
 
@@ -4491,12 +4500,13 @@ receivers:
   prometheus:
     config:
       scrape_configs:
-        - job_name: 'metaplatform-services'
+        - job_name: "metaplatform-services"
           scrape_interval: 15s
           kubernetes_sd_configs:
             - role: pod
           relabel_configs:
-            - source_labels: [__meta_kubernetes_pod_annotation_metaplatform_scrape]
+            - source_labels:
+                [__meta_kubernetes_pod_annotation_metaplatform_scrape]
               action: keep
               regex: true
 
@@ -4602,25 +4612,25 @@ service:
 
 #### 4.3.2 Span Kind 枚举
 
-| 值 | 说明 |
-|---|---|
-| `SPAN_KIND_UNSPECIFIED` | 未指定 |
-| `SPAN_KIND_INTERNAL` | 内部操作 |
-| `SPAN_KIND_SERVER` | 服务端处理 |
-| `SPAN_KIND_CLIENT` | 客户端调用 |
-| `SPAN_KIND_PRODUCER` | 消息生产者 |
-| `SPAN_KIND_CONSUMER` | 消息消费者 |
+| 值                      | 说明       |
+| ----------------------- | ---------- |
+| `SPAN_KIND_UNSPECIFIED` | 未指定     |
+| `SPAN_KIND_INTERNAL`    | 内部操作   |
+| `SPAN_KIND_SERVER`      | 服务端处理 |
+| `SPAN_KIND_CLIENT`      | 客户端调用 |
+| `SPAN_KIND_PRODUCER`    | 消息生产者 |
+| `SPAN_KIND_CONSUMER`    | 消息消费者 |
 
 #### 4.3.3 标准 Span 属性约定
 
-| 属性前缀 | 说明 | 示例 |
-|---|---|---|
-| `http.*` | HTTP 请求属性 | `http.method`, `http.url`, `http.status_code` |
-| `db.*` | 数据库操作属性 | `db.system`, `db.statement`, `db.duration` |
-| `messaging.*` | 消息队列属性 | `messaging.system`, `messaging.destination` |
-| `rpc.*` | RPC 调用属性 | `rpc.system`, `rpc.service`, `rpc.method` |
-| `tenant_id` | 租户 ID（自定义） | `t001` |
-| `trace_id` | 关联 Trace ID | `a1b2c3d4e5f6789012345678abcdef00` |
+| 属性前缀      | 说明              | 示例                                          |
+| ------------- | ----------------- | --------------------------------------------- |
+| `http.*`      | HTTP 请求属性     | `http.method`, `http.url`, `http.status_code` |
+| `db.*`        | 数据库操作属性    | `db.system`, `db.statement`, `db.duration`    |
+| `messaging.*` | 消息队列属性      | `messaging.system`, `messaging.destination`   |
+| `rpc.*`       | RPC 调用属性      | `rpc.system`, `rpc.service`, `rpc.method`     |
+| `tenant_id`   | 租户 ID（自定义） | `t001`                                        |
+| `trace_id`    | 关联 Trace ID     | `a1b2c3d4e5f6789012345678abcdef00`            |
 
 ---
 
@@ -4630,12 +4640,12 @@ TECH-OBS 通过 Kafka 3.9 发布告警事件，遵循 **Outbox 模式** 防止�
 
 ### 5.1 Kafka Topic 定义
 
-| Topic | 说明 | 分区数 | 副本数 | 保留策略 |
-|---|---|---|---|---|
-| `metaplatform.obs.alert.fired` | 告警触发事件 | 6 | 3 | 7 天 |
-| `metaplatform.obs.alert.resolved` | 告警恢复事件 | 6 | 3 | 7 天 |
-| `metaplatform.obs.alert.silenced` | 告警静默事件 | 3 | 3 | 3 天 |
-| `metaplatform.obs.slo.violated` | SLO 违规事件 | 3 | 3 | 30 天 |
+| Topic                             | 说明         | 分区数 | 副本数 | 保留策略 |
+| --------------------------------- | ------------ | ------ | ------ | -------- |
+| `metaplatform.obs.alert.fired`    | 告警触发事件 | 6      | 3      | 7 天     |
+| `metaplatform.obs.alert.resolved` | 告警恢复事件 | 6      | 3      | 7 天     |
+| `metaplatform.obs.alert.silenced` | 告警静默事件 | 3      | 3      | 3 天     |
+| `metaplatform.obs.slo.violated`   | SLO 违规事件 | 3      | 3      | 30 天    |
 
 ### 5.2 告警触发事件
 
@@ -4680,12 +4690,12 @@ TECH-OBS 通过 Kafka 3.9 发布告警事件，遵循 **Outbox 模式** 防止�
 
 **Kafka 消息头**：
 
-| Header | 值 |
-|---|---|
-| `X-Trace-Id` | `a1b2c3d4e5f6789012345678abcdef00` |
-| `event-type` | `ALERT_FIRED` |
-| `event-version` | `1.0` |
-| `content-type` | `application/json` |
+| Header          | 值                                 |
+| --------------- | ---------------------------------- |
+| `X-Trace-Id`    | `a1b2c3d4e5f6789012345678abcdef00` |
+| `event-type`    | `ALERT_FIRED`                      |
+| `event-version` | `1.0`                              |
+| `content-type`  | `application/json`                 |
 
 ### 5.3 告警恢复事件
 
@@ -4776,8 +4786,18 @@ TECH-OBS 通过 Kafka 3.9 发布告警事件，遵循 **Outbox 模式** 防止�
       "remainingPercentage": 0.0
     },
     "burnRate": {
-      "fast": { "current": 14.2, "threshold": 2, "window": "1h", "breached": true },
-      "slow": { "current": 3.1, "threshold": 25, "window": "6h", "breached": false }
+      "fast": {
+        "current": 14.2,
+        "threshold": 2,
+        "window": "1h",
+        "breached": true
+      },
+      "slow": {
+        "current": 3.1,
+        "threshold": 25,
+        "window": "6h",
+        "breached": false
+      }
     },
     "violationStartTime": "2026-07-16T07:15:00Z",
     "errorCount": 45,
@@ -4826,13 +4846,13 @@ CREATE INDEX idx_outbox_aggregate ON outbox_events(aggregate_type, aggregate_id)
 
 ### 5.7 DLQ 处理
 
-| 配置项 | 值 | 说明 |
-|---|---|---|
-| 重试次数 | 3 | 最多重试 3 次 |
-| 重试间隔 | 指数退避 | 10s → 30s → 90s |
-| DLQ Topic 后缀 | `.dlq` | 如 `metaplatform.obs.alert.fired.dlq` |
-| DLQ 记录保留 | 30 天 | 便于故障诊断 |
-| DLQ 记录必含字段 | `traceId` | 用于跨系统故障追踪 |
+| 配置项           | 值        | 说明                                  |
+| ---------------- | --------- | ------------------------------------- |
+| 重试次数         | 3         | 最多重试 3 次                         |
+| 重试间隔         | 指数退避  | 10s → 30s → 90s                       |
+| DLQ Topic 后缀   | `.dlq`    | 如 `metaplatform.obs.alert.fired.dlq` |
+| DLQ 记录保留     | 30 天     | 便于故障诊断                          |
+| DLQ 记录必含字段 | `traceId` | 用于跨系统故障追踪                    |
 
 ---
 
@@ -4840,159 +4860,159 @@ CREATE INDEX idx_outbox_aggregate ON outbox_events(aggregate_type, aggregate_id)
 
 ### 6.1 交付阶段总览
 
-| 阶段 | 名称 | 时间范围 | 交付内容 | 依赖 |
-|---|---|---|---|---|
-| P0 | 基础设施搭建 | 第 1-2 周 | OpenTelemetry Collector + Prometheus + Loki + Jaeger 部署，基础采集管道 | K8s 集群就绪 |
-| P1 | 日志管理 | 第 3-4 周 | 3.1 日志管理 API 全部接口 | P0 完成 |
-| P2 | 指标管理 | 第 5-6 周 | 3.2 指标管理 API 全部接口 | P0 完成 |
-| P3 | 链路追踪 | 第 7-8 周 | 3.3 链路追踪 API 全部接口 | P0 完成 |
-| P4 | 告警管理 | 第 9-10 周 | 3.4 告警管理 API + Kafka 事件 + Outbox | P1/P2/P3 完成 |
-| P5 | 仪表板管理 | 第 11-12 周 | 3.5 仪表板管理 API + Grafana 集成 | P2 完成 |
-| P6 | 服务地图 | 第 13-14 周 | 3.6 服务地图 API | P2/P3 完成 |
-| P7 | SLO 管理 | 第 15-16 周 | 3.7 SLO 管理 API 全部接口 | P2/P4 完成 |
+| 阶段 | 名称         | 时间范围    | 交付内容                                                                | 依赖          |
+| ---- | ------------ | ----------- | ----------------------------------------------------------------------- | ------------- |
+| P0   | 基础设施搭建 | 第 1-2 周   | OpenTelemetry Collector + Prometheus + Loki + Jaeger 部署，基础采集管道 | K8s 集群就绪  |
+| P1   | 日志管理     | 第 3-4 周   | 3.1 日志管理 API 全部接口                                               | P0 完成       |
+| P2   | 指标管理     | 第 5-6 周   | 3.2 指标管理 API 全部接口                                               | P0 完成       |
+| P3   | 链路追踪     | 第 7-8 周   | 3.3 链路追踪 API 全部接口                                               | P0 完成       |
+| P4   | 告警管理     | 第 9-10 周  | 3.4 告警管理 API + Kafka 事件 + Outbox                                  | P1/P2/P3 完成 |
+| P5   | 仪表板管理   | 第 11-12 周 | 3.5 仪表板管理 API + Grafana 集成                                       | P2 完成       |
+| P6   | 服务地图     | 第 13-14 周 | 3.6 服务地图 API                                                        | P2/P3 完成    |
+| P7   | SLO 管理     | 第 15-16 周 | 3.7 SLO 管理 API 全部接口                                               | P2/P4 完成    |
 
 ### 6.2 P0 - 基础设施搭建（第 1-2 周）
 
 **交付目标**：完成可观测性基础组件部署与数据采集管道搭建。
 
-| 交付项 | 说明 |
-|---|---|
+| 交付项                       | 说明                                                             |
+| ---------------------------- | ---------------------------------------------------------------- |
 | OpenTelemetry Collector 部署 | 部署 Collector，配置 OTLP 接收器和 Prometheus/Loki/Jaeger 导出器 |
-| Prometheus 3.x 部署 | 部署 Prometheus + Alertmanager，配置 scrape_configs |
-| Loki 3.x 部署 | 部署 Loki + Vector 日志管道 |
-| Jaeger 1.62 部署 | 部署 Jaeger，配置 OTLP 协议接收 |
-| Grafana 11.x 部署 | 部署 Grafana，配置数据源（Prometheus / Loki / Jaeger） |
-| Java Agent 注入 | 为所有 Java 服务注入 OpenTelemetry Java Agent 2.x |
-| Python SDK 集成 | 为所有 Python 服务集成 OpenTelemetry Python SDK |
-| trace_id 传播验证 | 验证 trace_id 在 HTTP / Kafka 间正确传播 |
+| Prometheus 3.x 部署          | 部署 Prometheus + Alertmanager，配置 scrape_configs              |
+| Loki 3.x 部署                | 部署 Loki + Vector 日志管道                                      |
+| Jaeger 1.62 部署             | 部署 Jaeger，配置 OTLP 协议接收                                  |
+| Grafana 11.x 部署            | 部署 Grafana，配置数据源（Prometheus / Loki / Jaeger）           |
+| Java Agent 注入              | 为所有 Java 服务注入 OpenTelemetry Java Agent 2.x                |
+| Python SDK 集成              | 为所有 Python 服务集成 OpenTelemetry Python SDK                  |
+| trace_id 传播验证            | 验证 trace_id 在 HTTP / Kafka 间正确传播                         |
 
 ### 6.3 P1 - 日志管理（第 3-4 周）
 
 **交付目标**：实现日志查询、搜索、级别管理和日志告警规则。
 
-| API | 优先级 | 交付项 |
-|---|---|---|
-| 3.1.1 日志查询 | P1 | POST `/api/v1/obs/logs/query` |
-| 3.1.2 日志全文搜索 | P1 | POST `/api/v1/obs/logs/search` |
-| 3.1.3 日志级别动态管理 | P2 | PUT `/api/v1/obs/logs/level` |
-| 3.1.4 查询日志级别配置 | P2 | GET `/api/v1/obs/logs/level` |
-| 3.1.5 日志聚合统计 | P2 | POST `/api/v1/obs/logs/aggregate` |
-| 3.1.6 日志告警规则创建 | P3 | POST `/api/v1/obs/logs/alert-rules` |
-| 3.1.7 日志告警规则列表 | P3 | GET `/api/v1/obs/logs/alert-rules` |
-| 3.1.8 日志告警规则更新 | P3 | PUT `/api/v1/obs/logs/alert-rules/{ruleId}` |
-| 3.1.9 日志告警规则删除 | P3 | DELETE `/api/v1/obs/logs/alert-rules/{ruleId}` |
+| API                    | 优先级 | 交付项                                         |
+| ---------------------- | ------ | ---------------------------------------------- |
+| 3.1.1 日志查询         | P1     | POST `/api/v1/obs/logs/query`                  |
+| 3.1.2 日志全文搜索     | P1     | POST `/api/v1/obs/logs/search`                 |
+| 3.1.3 日志级别动态管理 | P2     | PUT `/api/v1/obs/logs/level`                   |
+| 3.1.4 查询日志级别配置 | P2     | GET `/api/v1/obs/logs/level`                   |
+| 3.1.5 日志聚合统计     | P2     | POST `/api/v1/obs/logs/aggregate`              |
+| 3.1.6 日志告警规则创建 | P3     | POST `/api/v1/obs/logs/alert-rules`            |
+| 3.1.7 日志告警规则列表 | P3     | GET `/api/v1/obs/logs/alert-rules`             |
+| 3.1.8 日志告警规则更新 | P3     | PUT `/api/v1/obs/logs/alert-rules/{ruleId}`    |
+| 3.1.9 日志告警规则删除 | P3     | DELETE `/api/v1/obs/logs/alert-rules/{ruleId}` |
 
 ### 6.4 P2 - 指标管理（第 5-6 周）
 
 **交付目标**：实现自定义指标注册、PromQL 查询和指标元数据管理。
 
-| API | 优先级 | 交付项 |
-|---|---|---|
-| 3.2.1 自定义指标注册 | P1 | POST `/api/v1/obs/metrics/register` |
-| 3.2.2 指标查询（PromQL） | P1 | POST `/api/v1/obs/metrics/query` |
-| 3.2.3 指标列表查询 | P1 | GET `/api/v1/obs/metrics` |
-| 3.2.4 指标元数据详情 | P2 | GET `/api/v1/obs/metrics/{metricId}` |
-| 3.2.5 指标采集配置 | P2 | PUT `/api/v1/obs/metrics/{metricId}/scrape-config` |
-| 3.2.6 指标删除 | P2 | DELETE `/api/v1/obs/metrics/{metricId}` |
+| API                      | 优先级 | 交付项                                             |
+| ------------------------ | ------ | -------------------------------------------------- |
+| 3.2.1 自定义指标注册     | P1     | POST `/api/v1/obs/metrics/register`                |
+| 3.2.2 指标查询（PromQL） | P1     | POST `/api/v1/obs/metrics/query`                   |
+| 3.2.3 指标列表查询       | P1     | GET `/api/v1/obs/metrics`                          |
+| 3.2.4 指标元数据详情     | P2     | GET `/api/v1/obs/metrics/{metricId}`               |
+| 3.2.5 指标采集配置       | P2     | PUT `/api/v1/obs/metrics/{metricId}/scrape-config` |
+| 3.2.6 指标删除           | P2     | DELETE `/api/v1/obs/metrics/{metricId}`            |
 
 ### 6.5 P3 - 链路追踪（第 7-8 周）
 
 **交付目标**：实现 Trace 查询、Span 详情、调用拓扑图和服务依赖查询。
 
-| API | 优先级 | 交付项 |
-|---|---|---|
-| 3.3.1 Trace 查询 | P1 | POST `/api/v1/obs/traces/query` |
-| 3.3.2 Trace 详情 | P1 | GET `/api/v1/obs/traces/{traceId}` |
-| 3.3.3 Span 详情 | P1 | GET `/api/v1/obs/traces/{traceId}/spans/{spanId}` |
-| 3.3.4 调用拓扑图 | P2 | GET `/api/v1/obs/traces/{traceId}/topology` |
-| 3.3.5 服务依赖查询 | P2 | GET `/api/v1/obs/traces/dependencies` |
+| API                | 优先级 | 交付项                                            |
+| ------------------ | ------ | ------------------------------------------------- |
+| 3.3.1 Trace 查询   | P1     | POST `/api/v1/obs/traces/query`                   |
+| 3.3.2 Trace 详情   | P1     | GET `/api/v1/obs/traces/{traceId}`                |
+| 3.3.3 Span 详情    | P1     | GET `/api/v1/obs/traces/{traceId}/spans/{spanId}` |
+| 3.3.4 调用拓扑图   | P2     | GET `/api/v1/obs/traces/{traceId}/topology`       |
+| 3.3.5 服务依赖查询 | P2     | GET `/api/v1/obs/traces/dependencies`             |
 
 ### 6.6 P4 - 告警管理（第 9-10 周）
 
 **交付目标**：实现统一告警规则 CRUD、告警列表、通知渠道管理、Silenced/恢复和告警历史，接入 Kafka 事件和 Outbox 模式。
 
-| API | 优先级 | 交付项 |
-|---|---|---|
-| 3.4.1 创建告警规则 | P1 | POST `/api/v1/obs/alerts/rules` |
-| 3.4.2 告警规则列表 | P1 | GET `/api/v1/obs/alerts/rules` |
-| 3.4.3 告警规则详情 | P1 | GET `/api/v1/obs/alerts/rules/{ruleId}` |
-| 3.4.4 更新告警规则 | P1 | PUT `/api/v1/obs/alerts/rules/{ruleId}` |
-| 3.4.5 删除告警规则 | P1 | DELETE `/api/v1/obs/alerts/rules/{ruleId}` |
-| 3.4.6 告警列表查询 | P1 | GET `/api/v1/obs/alerts` |
-| 3.4.7 通知渠道创建 | P2 | POST `/api/v1/obs/alerts/notification-channels` |
-| 3.4.8 通知渠道列表 | P2 | GET `/api/v1/obs/alerts/notification-channels` |
-| 3.4.9 通知渠道更新 | P2 | PUT `/api/v1/obs/alerts/notification-channels/{channelId}` |
-| 3.4.10 通知渠道删除 | P2 | DELETE `/api/v1/obs/alerts/notification-channels/{channelId}` |
-| 3.4.11 告警 Silenced | P2 | POST `/api/v1/obs/alerts/{alertId}/silence` |
-| 3.4.12 告警恢复 | P2 | POST `/api/v1/obs/alerts/{alertId}/unsilence` |
-| 3.4.13 告警历史查询 | P3 | GET `/api/v1/obs/alerts/history` |
-| Kafka 事件 | P1 | Outbox + 4 个 Topic + DLQ |
+| API                  | 优先级 | 交付项                                                        |
+| -------------------- | ------ | ------------------------------------------------------------- |
+| 3.4.1 创建告警规则   | P1     | POST `/api/v1/obs/alerts/rules`                               |
+| 3.4.2 告警规则列表   | P1     | GET `/api/v1/obs/alerts/rules`                                |
+| 3.4.3 告警规则详情   | P1     | GET `/api/v1/obs/alerts/rules/{ruleId}`                       |
+| 3.4.4 更新告警规则   | P1     | PUT `/api/v1/obs/alerts/rules/{ruleId}`                       |
+| 3.4.5 删除告警规则   | P1     | DELETE `/api/v1/obs/alerts/rules/{ruleId}`                    |
+| 3.4.6 告警列表查询   | P1     | GET `/api/v1/obs/alerts`                                      |
+| 3.4.7 通知渠道创建   | P2     | POST `/api/v1/obs/alerts/notification-channels`               |
+| 3.4.8 通知渠道列表   | P2     | GET `/api/v1/obs/alerts/notification-channels`                |
+| 3.4.9 通知渠道更新   | P2     | PUT `/api/v1/obs/alerts/notification-channels/{channelId}`    |
+| 3.4.10 通知渠道删除  | P2     | DELETE `/api/v1/obs/alerts/notification-channels/{channelId}` |
+| 3.4.11 告警 Silenced | P2     | POST `/api/v1/obs/alerts/{alertId}/silence`                   |
+| 3.4.12 告警恢复      | P2     | POST `/api/v1/obs/alerts/{alertId}/unsilence`                 |
+| 3.4.13 告警历史查询  | P3     | GET `/api/v1/obs/alerts/history`                              |
+| Kafka 事件           | P1     | Outbox + 4 个 Topic + DLQ                                     |
 
 ### 6.7 P5 - 仪表板管理（第 11-12 周）
 
 **交付目标**：实现自定义仪表板 CRUD、面板组件配置、分享和导出，集成 Grafana。
 
-| API | 优先级 | 交付项 |
-|---|---|---|
-| 3.5.1 创建仪表板 | P1 | POST `/api/v1/obs/dashboards` |
-| 3.5.2 仪表板列表 | P1 | GET `/api/v1/obs/dashboards` |
-| 3.5.3 仪表板详情 | P1 | GET `/api/v1/obs/dashboards/{dashboardId}` |
-| 3.5.4 更新仪表板 | P1 | PUT `/api/v1/obs/dashboards/{dashboardId}` |
-| 3.5.5 删除仪表板 | P1 | DELETE `/api/v1/obs/dashboards/{dashboardId}` |
-| 3.5.6 添加面板组件 | P2 | POST `/api/v1/obs/dashboards/{dashboardId}/panels` |
-| 3.5.7 更新面板组件 | P2 | PUT `/api/v1/obs/dashboards/{dashboardId}/panels/{panelId}` |
-| 3.5.8 删除面板组件 | P2 | DELETE `/api/v1/obs/dashboards/{dashboardId}/panels/{panelId}` |
-| 3.5.9 仪表板分享 | P3 | POST `/api/v1/obs/dashboards/{dashboardId}/share` |
-| 3.5.10 仪表板导出 | P3 | GET `/api/v1/obs/dashboards/{dashboardId}/export` |
+| API                | 优先级 | 交付项                                                         |
+| ------------------ | ------ | -------------------------------------------------------------- |
+| 3.5.1 创建仪表板   | P1     | POST `/api/v1/obs/dashboards`                                  |
+| 3.5.2 仪表板列表   | P1     | GET `/api/v1/obs/dashboards`                                   |
+| 3.5.3 仪表板详情   | P1     | GET `/api/v1/obs/dashboards/{dashboardId}`                     |
+| 3.5.4 更新仪表板   | P1     | PUT `/api/v1/obs/dashboards/{dashboardId}`                     |
+| 3.5.5 删除仪表板   | P1     | DELETE `/api/v1/obs/dashboards/{dashboardId}`                  |
+| 3.5.6 添加面板组件 | P2     | POST `/api/v1/obs/dashboards/{dashboardId}/panels`             |
+| 3.5.7 更新面板组件 | P2     | PUT `/api/v1/obs/dashboards/{dashboardId}/panels/{panelId}`    |
+| 3.5.8 删除面板组件 | P2     | DELETE `/api/v1/obs/dashboards/{dashboardId}/panels/{panelId}` |
+| 3.5.9 仪表板分享   | P3     | POST `/api/v1/obs/dashboards/{dashboardId}/share`              |
+| 3.5.10 仪表板导出  | P3     | GET `/api/v1/obs/dashboards/{dashboardId}/export`              |
 
 ### 6.8 P6 - 服务地图（第 13-14 周）
 
 **交付目标**：实现服务拓扑图、服务健康状态和服务依赖查询。
 
-| API | 优先级 | 交付项 |
-|---|---|---|
-| 3.6.1 服务拓扑图 | P1 | GET `/api/v1/obs/service-map/topology` |
-| 3.6.2 服务健康状态 | P1 | GET `/api/v1/obs/service-map/health` |
-| 3.6.3 服务依赖查询 | P2 | GET `/api/v1/obs/service-map/{service}/dependencies` |
+| API                | 优先级 | 交付项                                               |
+| ------------------ | ------ | ---------------------------------------------------- |
+| 3.6.1 服务拓扑图   | P1     | GET `/api/v1/obs/service-map/topology`               |
+| 3.6.2 服务健康状态 | P1     | GET `/api/v1/obs/service-map/health`                 |
+| 3.6.3 服务依赖查询 | P2     | GET `/api/v1/obs/service-map/{service}/dependencies` |
 
 ### 6.9 P7 - SLO 管理（第 15-16 周）
 
 **交付目标**：实现 SLO 定义 CRUD、错误预算查询、SLI 查询和 SLO 报告。
 
-| API | 优先级 | 交付项 |
-|---|---|---|
-| 3.7.1 创建 SLO 定义 | P1 | POST `/api/v1/obs/slos` |
-| 3.7.2 SLO 列表查询 | P1 | GET `/api/v1/obs/slos` |
-| 3.7.3 SLO 详情 | P1 | GET `/api/v1/obs/slos/{sloId}` |
-| 3.7.4 更新 SLO | P1 | PUT `/api/v1/obs/slos/{sloId}` |
-| 3.7.5 删除 SLO | P1 | DELETE `/api/v1/obs/slos/{sloId}` |
-| 3.7.6 错误预算查询 | P2 | GET `/api/v1/obs/slos/{sloId}/error-budget` |
-| 3.7.7 SLI 查询 | P2 | GET `/api/v1/obs/slos/{sloId}/sli` |
-| 3.7.8 SLO 报告 | P3 | GET `/api/v1/obs/slos/{sloId}/report` |
+| API                 | 优先级 | 交付项                                      |
+| ------------------- | ------ | ------------------------------------------- |
+| 3.7.1 创建 SLO 定义 | P1     | POST `/api/v1/obs/slos`                     |
+| 3.7.2 SLO 列表查询  | P1     | GET `/api/v1/obs/slos`                      |
+| 3.7.3 SLO 详情      | P1     | GET `/api/v1/obs/slos/{sloId}`              |
+| 3.7.4 更新 SLO      | P1     | PUT `/api/v1/obs/slos/{sloId}`              |
+| 3.7.5 删除 SLO      | P1     | DELETE `/api/v1/obs/slos/{sloId}`           |
+| 3.7.6 错误预算查询  | P2     | GET `/api/v1/obs/slos/{sloId}/error-budget` |
+| 3.7.7 SLI 查询      | P2     | GET `/api/v1/obs/slos/{sloId}/sli`          |
+| 3.7.8 SLO 报告      | P3     | GET `/api/v1/obs/slos/{sloId}/report`       |
 
 ### 6.10 API 接口统计
 
-| 领域 | API 数量 | P1 优先级 | P2 优先级 | P3 优先级 |
-|---|---|---|---|---|
-| 日志管理 | 9 | 2 | 3 | 4 |
-| 指标管理 | 6 | 3 | 3 | 0 |
-| 链路追踪 | 5 | 3 | 2 | 0 |
-| 告警管理 | 13 | 6 | 6 | 1 |
-| 仪表板管理 | 10 | 5 | 3 | 2 |
-| 服务地图 | 3 | 2 | 1 | 0 |
-| SLO 管理 | 8 | 5 | 2 | 1 |
-| **合计** | **54** | **26** | **20** | **8** |
+| 领域       | API 数量 | P1 优先级 | P2 优先级 | P3 优先级 |
+| ---------- | -------- | --------- | --------- | --------- |
+| 日志管理   | 9        | 2         | 3         | 4         |
+| 指标管理   | 6        | 3         | 3         | 0         |
+| 链路追踪   | 5        | 3         | 2         | 0         |
+| 告警管理   | 13       | 6         | 6         | 1         |
+| 仪表板管理 | 10       | 5         | 3         | 2         |
+| 服务地图   | 3        | 2         | 1         | 0         |
+| SLO 管理   | 8        | 5         | 2         | 1         |
+| **合计**   | **54**   | **26**    | **20**    | **8**     |
 
 ### 6.11 里程碑
 
-| 里程碑 | 时间 | 验收标准 |
-|---|---|---|
-| M1: 基础设施就绪 | 第 2 周末 | 所有服务自动上报 Metrics/Logs/Traces，Grafana 可展示 |
-| M2: 日志+指标可用 | 第 6 周末 | 日志查询/搜索 + PromQL 查询通过验收测试 |
-| M3: 全链路可观测 | 第 8 周末 | Trace 查询 + 调用拓扑 + 服务依赖通过验收测试 |
-| M4: 告警体系就绪 | 第 10 周末 | 告警规则 CRUD + Kafka 事件 + 通知渠道 + DLQ 通过验收 |
-| M5: 仪表板+服务地图 | 第 14 周末 | 仪表板 CRUD + 服务拓扑图 + 健康状态通过验收 |
-| M6: SLO 体系完成 | 第 16 周末 | SLO CRUD + 错误预算 + SLI + SLO 报告通过验收 |
+| 里程碑              | 时间       | 验收标准                                             |
+| ------------------- | ---------- | ---------------------------------------------------- |
+| M1: 基础设施就绪    | 第 2 周末  | 所有服务自动上报 Metrics/Logs/Traces，Grafana 可展示 |
+| M2: 日志+指标可用   | 第 6 周末  | 日志查询/搜索 + PromQL 查询通过验收测试              |
+| M3: 全链路可观测    | 第 8 周末  | Trace 查询 + 调用拓扑 + 服务依赖通过验收测试         |
+| M4: 告警体系就绪    | 第 10 周末 | 告警规则 CRUD + Kafka 事件 + 通知渠道 + DLQ 通过验收 |
+| M5: 仪表板+服务地图 | 第 14 周末 | 仪表板 CRUD + 服务拓扑图 + 健康状态通过验收          |
+| M6: SLO 体系完成    | 第 16 周末 | SLO CRUD + 错误预算 + SLI + SLO 报告通过验收         |
 
 ---
 
@@ -5000,62 +5020,62 @@ CREATE INDEX idx_outbox_aggregate ON outbox_events(aggregate_type, aggregate_id)
 
 ### A. API 接口完整索引
 
-| 序号 | 方法 | 路径 | 所属章节 |
-|---|---|---|---|
-| 1 | POST | `/api/v1/obs/logs/query` | 3.1.1 |
-| 2 | POST | `/api/v1/obs/logs/search` | 3.1.2 |
-| 3 | PUT | `/api/v1/obs/logs/level` | 3.1.3 |
-| 4 | GET | `/api/v1/obs/logs/level` | 3.1.4 |
-| 5 | POST | `/api/v1/obs/logs/aggregate` | 3.1.5 |
-| 6 | POST | `/api/v1/obs/logs/alert-rules` | 3.1.6 |
-| 7 | GET | `/api/v1/obs/logs/alert-rules` | 3.1.7 |
-| 8 | PUT | `/api/v1/obs/logs/alert-rules/{ruleId}` | 3.1.8 |
-| 9 | DELETE | `/api/v1/obs/logs/alert-rules/{ruleId}` | 3.1.9 |
-| 10 | POST | `/api/v1/obs/metrics/register` | 3.2.1 |
-| 11 | POST | `/api/v1/obs/metrics/query` | 3.2.2 |
-| 12 | GET | `/api/v1/obs/metrics` | 3.2.3 |
-| 13 | GET | `/api/v1/obs/metrics/{metricId}` | 3.2.4 |
-| 14 | PUT | `/api/v1/obs/metrics/{metricId}/scrape-config` | 3.2.5 |
-| 15 | DELETE | `/api/v1/obs/metrics/{metricId}` | 3.2.6 |
-| 16 | POST | `/api/v1/obs/traces/query` | 3.3.1 |
-| 17 | GET | `/api/v1/obs/traces/{traceId}` | 3.3.2 |
-| 18 | GET | `/api/v1/obs/traces/{traceId}/spans/{spanId}` | 3.3.3 |
-| 19 | GET | `/api/v1/obs/traces/{traceId}/topology` | 3.3.4 |
-| 20 | GET | `/api/v1/obs/traces/dependencies` | 3.3.5 |
-| 21 | POST | `/api/v1/obs/alerts/rules` | 3.4.1 |
-| 22 | GET | `/api/v1/obs/alerts/rules` | 3.4.2 |
-| 23 | GET | `/api/v1/obs/alerts/rules/{ruleId}` | 3.4.3 |
-| 24 | PUT | `/api/v1/obs/alerts/rules/{ruleId}` | 3.4.4 |
-| 25 | DELETE | `/api/v1/obs/alerts/rules/{ruleId}` | 3.4.5 |
-| 26 | GET | `/api/v1/obs/alerts` | 3.4.6 |
-| 27 | POST | `/api/v1/obs/alerts/notification-channels` | 3.4.7 |
-| 28 | GET | `/api/v1/obs/alerts/notification-channels` | 3.4.8 |
-| 29 | PUT | `/api/v1/obs/alerts/notification-channels/{channelId}` | 3.4.9 |
-| 30 | DELETE | `/api/v1/obs/alerts/notification-channels/{channelId}` | 3.4.10 |
-| 31 | POST | `/api/v1/obs/alerts/{alertId}/silence` | 3.4.11 |
-| 32 | POST | `/api/v1/obs/alerts/{alertId}/unsilence` | 3.4.12 |
-| 33 | GET | `/api/v1/obs/alerts/history` | 3.4.13 |
-| 34 | POST | `/api/v1/obs/dashboards` | 3.5.1 |
-| 35 | GET | `/api/v1/obs/dashboards` | 3.5.2 |
-| 36 | GET | `/api/v1/obs/dashboards/{dashboardId}` | 3.5.3 |
-| 37 | PUT | `/api/v1/obs/dashboards/{dashboardId}` | 3.5.4 |
-| 38 | DELETE | `/api/v1/obs/dashboards/{dashboardId}` | 3.5.5 |
-| 39 | POST | `/api/v1/obs/dashboards/{dashboardId}/panels` | 3.5.6 |
-| 40 | PUT | `/api/v1/obs/dashboards/{dashboardId}/panels/{panelId}` | 3.5.7 |
-| 41 | DELETE | `/api/v1/obs/dashboards/{dashboardId}/panels/{panelId}` | 3.5.8 |
-| 42 | POST | `/api/v1/obs/dashboards/{dashboardId}/share` | 3.5.9 |
-| 43 | GET | `/api/v1/obs/dashboards/{dashboardId}/export` | 3.5.10 |
-| 44 | GET | `/api/v1/obs/service-map/topology` | 3.6.1 |
-| 45 | GET | `/api/v1/obs/service-map/health` | 3.6.2 |
-| 46 | GET | `/api/v1/obs/service-map/{service}/dependencies` | 3.6.3 |
-| 47 | POST | `/api/v1/obs/slos` | 3.7.1 |
-| 48 | GET | `/api/v1/obs/slos` | 3.7.2 |
-| 49 | GET | `/api/v1/obs/slos/{sloId}` | 3.7.3 |
-| 50 | PUT | `/api/v1/obs/slos/{sloId}` | 3.7.4 |
-| 51 | DELETE | `/api/v1/obs/slos/{sloId}` | 3.7.5 |
-| 52 | GET | `/api/v1/obs/slos/{sloId}/error-budget` | 3.7.6 |
-| 53 | GET | `/api/v1/obs/slos/{sloId}/sli` | 3.7.7 |
-| 54 | GET | `/api/v1/obs/slos/{sloId}/report` | 3.7.8 |
+| 序号 | 方法   | 路径                                                    | 所属章节 |
+| ---- | ------ | ------------------------------------------------------- | -------- |
+| 1    | POST   | `/api/v1/obs/logs/query`                                | 3.1.1    |
+| 2    | POST   | `/api/v1/obs/logs/search`                               | 3.1.2    |
+| 3    | PUT    | `/api/v1/obs/logs/level`                                | 3.1.3    |
+| 4    | GET    | `/api/v1/obs/logs/level`                                | 3.1.4    |
+| 5    | POST   | `/api/v1/obs/logs/aggregate`                            | 3.1.5    |
+| 6    | POST   | `/api/v1/obs/logs/alert-rules`                          | 3.1.6    |
+| 7    | GET    | `/api/v1/obs/logs/alert-rules`                          | 3.1.7    |
+| 8    | PUT    | `/api/v1/obs/logs/alert-rules/{ruleId}`                 | 3.1.8    |
+| 9    | DELETE | `/api/v1/obs/logs/alert-rules/{ruleId}`                 | 3.1.9    |
+| 10   | POST   | `/api/v1/obs/metrics/register`                          | 3.2.1    |
+| 11   | POST   | `/api/v1/obs/metrics/query`                             | 3.2.2    |
+| 12   | GET    | `/api/v1/obs/metrics`                                   | 3.2.3    |
+| 13   | GET    | `/api/v1/obs/metrics/{metricId}`                        | 3.2.4    |
+| 14   | PUT    | `/api/v1/obs/metrics/{metricId}/scrape-config`          | 3.2.5    |
+| 15   | DELETE | `/api/v1/obs/metrics/{metricId}`                        | 3.2.6    |
+| 16   | POST   | `/api/v1/obs/traces/query`                              | 3.3.1    |
+| 17   | GET    | `/api/v1/obs/traces/{traceId}`                          | 3.3.2    |
+| 18   | GET    | `/api/v1/obs/traces/{traceId}/spans/{spanId}`           | 3.3.3    |
+| 19   | GET    | `/api/v1/obs/traces/{traceId}/topology`                 | 3.3.4    |
+| 20   | GET    | `/api/v1/obs/traces/dependencies`                       | 3.3.5    |
+| 21   | POST   | `/api/v1/obs/alerts/rules`                              | 3.4.1    |
+| 22   | GET    | `/api/v1/obs/alerts/rules`                              | 3.4.2    |
+| 23   | GET    | `/api/v1/obs/alerts/rules/{ruleId}`                     | 3.4.3    |
+| 24   | PUT    | `/api/v1/obs/alerts/rules/{ruleId}`                     | 3.4.4    |
+| 25   | DELETE | `/api/v1/obs/alerts/rules/{ruleId}`                     | 3.4.5    |
+| 26   | GET    | `/api/v1/obs/alerts`                                    | 3.4.6    |
+| 27   | POST   | `/api/v1/obs/alerts/notification-channels`              | 3.4.7    |
+| 28   | GET    | `/api/v1/obs/alerts/notification-channels`              | 3.4.8    |
+| 29   | PUT    | `/api/v1/obs/alerts/notification-channels/{channelId}`  | 3.4.9    |
+| 30   | DELETE | `/api/v1/obs/alerts/notification-channels/{channelId}`  | 3.4.10   |
+| 31   | POST   | `/api/v1/obs/alerts/{alertId}/silence`                  | 3.4.11   |
+| 32   | POST   | `/api/v1/obs/alerts/{alertId}/unsilence`                | 3.4.12   |
+| 33   | GET    | `/api/v1/obs/alerts/history`                            | 3.4.13   |
+| 34   | POST   | `/api/v1/obs/dashboards`                                | 3.5.1    |
+| 35   | GET    | `/api/v1/obs/dashboards`                                | 3.5.2    |
+| 36   | GET    | `/api/v1/obs/dashboards/{dashboardId}`                  | 3.5.3    |
+| 37   | PUT    | `/api/v1/obs/dashboards/{dashboardId}`                  | 3.5.4    |
+| 38   | DELETE | `/api/v1/obs/dashboards/{dashboardId}`                  | 3.5.5    |
+| 39   | POST   | `/api/v1/obs/dashboards/{dashboardId}/panels`           | 3.5.6    |
+| 40   | PUT    | `/api/v1/obs/dashboards/{dashboardId}/panels/{panelId}` | 3.5.7    |
+| 41   | DELETE | `/api/v1/obs/dashboards/{dashboardId}/panels/{panelId}` | 3.5.8    |
+| 42   | POST   | `/api/v1/obs/dashboards/{dashboardId}/share`            | 3.5.9    |
+| 43   | GET    | `/api/v1/obs/dashboards/{dashboardId}/export`           | 3.5.10   |
+| 44   | GET    | `/api/v1/obs/service-map/topology`                      | 3.6.1    |
+| 45   | GET    | `/api/v1/obs/service-map/health`                        | 3.6.2    |
+| 46   | GET    | `/api/v1/obs/service-map/{service}/dependencies`        | 3.6.3    |
+| 47   | POST   | `/api/v1/obs/slos`                                      | 3.7.1    |
+| 48   | GET    | `/api/v1/obs/slos`                                      | 3.7.2    |
+| 49   | GET    | `/api/v1/obs/slos/{sloId}`                              | 3.7.3    |
+| 50   | PUT    | `/api/v1/obs/slos/{sloId}`                              | 3.7.4    |
+| 51   | DELETE | `/api/v1/obs/slos/{sloId}`                              | 3.7.5    |
+| 52   | GET    | `/api/v1/obs/slos/{sloId}/error-budget`                 | 3.7.6    |
+| 53   | GET    | `/api/v1/obs/slos/{sloId}/sli`                          | 3.7.7    |
+| 54   | GET    | `/api/v1/obs/slos/{sloId}/report`                       | 3.7.8    |
 
 ---
 

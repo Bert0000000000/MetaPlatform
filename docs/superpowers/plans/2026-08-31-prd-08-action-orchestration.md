@@ -23,6 +23,7 @@
 ## Task 1: Define and test the versioned Plan-definition domain model
 
 **Files:**
+
 - Modify: `mate-platform-backend/packages/mate-platform/src/mate_platform/workflow/contracts.py`
 - Modify: `mate-platform-backend/packages/mate-app-wfe/src/mate_app_wfe/repositories/sql_models.py`
 - Modify: `mate-platform-backend/packages/mate-app-wfe/src/mate_app_wfe/repositories/sql_store.py`
@@ -42,6 +43,7 @@
 ## Task 2: Add definition APIs and connect runs to published revisions
 
 **Files:**
+
 - Modify: `mate-platform-backend/packages/mate-app-wfe/src/mate_app_wfe/api/workflows.py`
 - Modify: `mate-platform-backend/packages/mate-app-wfe/src/mate_app_wfe/main.py`
 - Modify: `mate-platform-backend/packages/mate-app-wfe/tests/conftest.py`
@@ -61,6 +63,7 @@
 ## Task 3: Validate Plan graphs through a server node registry
 
 **Files:**
+
 - Create: `mate-platform-backend/packages/mate-app-wfe/src/mate_app_wfe/plan_validation.py`
 - Modify: `mate-platform-backend/packages/mate-app-wfe/src/mate_app_wfe/api/workflows.py`
 - Create: `mate-platform-backend/packages/mate-app-wfe/tests/test_plan_validation.py`
@@ -78,6 +81,7 @@
 ## Task 4: Replace the SuperAI task demo with the persistent editor
 
 **Files:**
+
 - Create: `metaplatform-frontend/apps/web/src/api/wfe/workflowDefinitions.ts`
 - Create: `metaplatform-frontend/apps/web/src/pages/wfe/ActionOrchestrationPage.tsx`
 - Create: `metaplatform-frontend/apps/web/src/pages/wfe/components/PlanCanvas.tsx`
@@ -99,6 +103,7 @@
 ## Task 5: Execute published Plans through the existing Temporal contract
 
 **Files:**
+
 - Modify: `mate-platform-backend/packages/mate-platform/src/mate_platform/workflow/executor.py`
 - Modify: `mate-platform-backend/packages/mate-app-wfe/src/mate_app_wfe/api/workflows.py`
 - Modify: `mate-platform-backend/packages/mate-app-wfe/tests/test_temporal_workflow.py`
@@ -117,6 +122,7 @@
 ## Task 6: Verify the local editor-to-run journey and retire misleading evidence
 
 **Files:**
+
 - Create: `metaplatform-frontend/apps/web/tests/e2e/action-orchestration.spec.ts`
 - Create: `scripts/ci/prd08_action_orchestration_smoke.ps1`
 - Modify: `docs/active/prd/APP-WFE/PRD-08-Action-Orchestration-v1.7_v1.0-20260831.md`

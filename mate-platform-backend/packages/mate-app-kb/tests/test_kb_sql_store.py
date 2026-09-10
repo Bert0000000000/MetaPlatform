@@ -5,6 +5,7 @@ store's CRUD + tenant isolation + JSON serialisation (config, metadata),
 plus the retrieval-config + snapshot surface (defaults-on-first-get,
 upsert, FIFO cap, in_memory semantic parity).
 """
+
 from __future__ import annotations
 
 import pytest
@@ -35,9 +36,13 @@ _TENANT_B = "tenant-bigo"
 # ---------------------------------------------------------------------------
 def test_put_and_get_collection() -> None:
     col = mem.KbCollection(
-        id="kb-1", tenant_id=_TENANT_A, name="Sales KB",
-        description="Sales knowledge base", document_count=12,
-        status="active", config={"embedder": "text-embedding-3-small"},
+        id="kb-1",
+        tenant_id=_TENANT_A,
+        name="Sales KB",
+        description="Sales knowledge base",
+        document_count=12,
+        status="active",
+        config={"embedder": "text-embedding-3-small"},
         created_at="2026-08-01T00:00:00Z",
         updated_at="2026-08-01T00:00:00Z",
     )
@@ -54,13 +59,18 @@ def test_put_and_get_collection() -> None:
 
 def test_put_collection_upsert() -> None:
     col = mem.KbCollection(
-        id="kb-2", tenant_id=_TENANT_A, name="Old",
+        id="kb-2",
+        tenant_id=_TENANT_A,
+        name="Old",
         config={"embedder": "v1"},
     )
     sql.put_collection(_TENANT_A, col)
     col = mem.KbCollection(
-        id="kb-2", tenant_id=_TENANT_A, name="New",
-        document_count=20, status="archived",
+        id="kb-2",
+        tenant_id=_TENANT_A,
+        name="New",
+        document_count=20,
+        status="archived",
         config={"embedder": "v2", "dim": 1536},
     )
     sql.put_collection(_TENANT_A, col)
@@ -91,9 +101,14 @@ def test_delete_collection_rejects_cross_tenant() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_document() -> None:
     doc = mem.KbDocument(
-        id="doc-1", tenant_id=_TENANT_A, collection_id="kb-sales",
-        document_id="doc-1", filename="manual.md",
-        size_bytes=4096, chunk_count=12, status="indexed",
+        id="doc-1",
+        tenant_id=_TENANT_A,
+        collection_id="kb-sales",
+        document_id="doc-1",
+        filename="manual.md",
+        size_bytes=4096,
+        chunk_count=12,
+        status="indexed",
         metadata={"source": "upload", "author": "alice"},
         created_at="2026-08-01T00:00:00Z",
         updated_at="2026-08-01T00:00:00Z",
@@ -112,13 +127,19 @@ def test_put_and_get_document() -> None:
 
 def test_put_document_upsert() -> None:
     doc = mem.KbDocument(
-        id="doc-2", tenant_id=_TENANT_A, filename="old.md",
-        chunk_count=5, metadata={"error": "parse"},
+        id="doc-2",
+        tenant_id=_TENANT_A,
+        filename="old.md",
+        chunk_count=5,
+        metadata={"error": "parse"},
     )
     sql.put_document(_TENANT_A, doc)
     doc = mem.KbDocument(
-        id="doc-2", tenant_id=_TENANT_A, filename="new.md",
-        chunk_count=10, status="failed",
+        id="doc-2",
+        tenant_id=_TENANT_A,
+        filename="new.md",
+        chunk_count=10,
+        status="failed",
         metadata={"error": "parse", "retry": 3},
     )
     sql.put_document(_TENANT_A, doc)
@@ -147,8 +168,12 @@ def test_delete_document_rejects_cross_tenant() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_search_log() -> None:
     log = mem.KbSearchLog(
-        id="log-1", tenant_id=_TENANT_A, query="sales trend Q3",
-        mode="hybrid", total_hits=5, latency_ms=120,
+        id="log-1",
+        tenant_id=_TENANT_A,
+        query="sales trend Q3",
+        mode="hybrid",
+        total_hits=5,
+        latency_ms=120,
         created_at="2026-08-01T00:00:00Z",
     )
     sql.put_search_log(_TENANT_A, log)
@@ -231,25 +256,46 @@ def test_get_retrieval_config_defaults_on_first_access() -> None:
 
 def test_put_then_get_retrieval_config_round_trips() -> None:
     cfg = mem.KbRetrievalConfig(
-        tenant_id=_TENANT_A, mode="FACTUAL", rerank_strategy="keyword",
-        top_k=5, similarity_threshold=0.25, chunk_strategy="semantic",
-        chunk_size=256, chunk_overlap=32, vector_weight=0.6,
-        keyword_weight=0.4, reranker_enabled=False, show_citations=False,
-        version=7, updated_at="2026-08-16T00:00:00Z",
+        tenant_id=_TENANT_A,
+        mode="FACTUAL",
+        rerank_strategy="keyword",
+        top_k=5,
+        similarity_threshold=0.25,
+        chunk_strategy="semantic",
+        chunk_size=256,
+        chunk_overlap=32,
+        vector_weight=0.6,
+        keyword_weight=0.4,
+        reranker_enabled=False,
+        show_citations=False,
+        version=7,
+        updated_at="2026-08-16T00:00:00Z",
     )
     assert sql.put_retrieval_config(_TENANT_A, cfg) == cfg
     assert sql.get_retrieval_config(_TENANT_A) == cfg
 
 
 def test_put_retrieval_config_upsert_overwrites() -> None:
-    sql.put_retrieval_config(_TENANT_A, mem.KbRetrievalConfig(
-        tenant_id=_TENANT_A, rerank_strategy="keyword", version=2,
-        updated_at="2026-08-16T00:00:00Z",
-    ))
-    sql.put_retrieval_config(_TENANT_A, mem.KbRetrievalConfig(
-        tenant_id=_TENANT_A, rerank_strategy="length", top_k=3,
-        show_citations=False, version=3, updated_at="2026-08-16T01:00:00Z",
-    ))
+    sql.put_retrieval_config(
+        _TENANT_A,
+        mem.KbRetrievalConfig(
+            tenant_id=_TENANT_A,
+            rerank_strategy="keyword",
+            version=2,
+            updated_at="2026-08-16T00:00:00Z",
+        ),
+    )
+    sql.put_retrieval_config(
+        _TENANT_A,
+        mem.KbRetrievalConfig(
+            tenant_id=_TENANT_A,
+            rerank_strategy="length",
+            top_k=3,
+            show_citations=False,
+            version=3,
+            updated_at="2026-08-16T01:00:00Z",
+        ),
+    )
     got = sql.get_retrieval_config(_TENANT_A)
     assert got.rerank_strategy == "length"
     assert got.top_k == 3
@@ -258,10 +304,15 @@ def test_put_retrieval_config_upsert_overwrites() -> None:
 
 
 def test_retrieval_config_cross_tenant_isolation() -> None:
-    sql.put_retrieval_config(_TENANT_A, mem.KbRetrievalConfig(
-        tenant_id=_TENANT_A, rerank_strategy="keyword", version=2,
-        updated_at="2026-08-16T00:00:00Z",
-    ))
+    sql.put_retrieval_config(
+        _TENANT_A,
+        mem.KbRetrievalConfig(
+            tenant_id=_TENANT_A,
+            rerank_strategy="keyword",
+            version=2,
+            updated_at="2026-08-16T00:00:00Z",
+        ),
+    )
     b = sql.get_retrieval_config(_TENANT_B)
     assert b.tenant_id == _TENANT_B
     assert b.rerank_strategy == "identity"  # its own defaults
@@ -287,19 +338,29 @@ def test_seed_from_inmemory_does_not_seed_retrieval_config() -> None:
     """The SQL bootstrap never writes config/snapshot rows — a tenant's
     saved config cannot be clobbered by (re)seeding (create_app calls
     seed_from_inmemory on every start under KB_STORE=sql)."""
-    sql.put_retrieval_config(_TENANT_A, mem.KbRetrievalConfig(
-        tenant_id=_TENANT_A, rerank_strategy="keyword", version=4,
-        updated_at="2026-08-16T00:00:00Z",
-    ))
+    sql.put_retrieval_config(
+        _TENANT_A,
+        mem.KbRetrievalConfig(
+            tenant_id=_TENANT_A,
+            rerank_strategy="keyword",
+            version=4,
+            updated_at="2026-08-16T00:00:00Z",
+        ),
+    )
     sql.seed_from_inmemory(_TENANT_A)
     # Saved config untouched; other tenants still have no rows.
     assert sql.get_retrieval_config(_TENANT_A).rerank_strategy == "keyword"
     s = sql._session()
-    assert s.execute(
-        select(models.KbRetrievalConfigORM).where(
-            models.KbRetrievalConfigORM.tenant_id == _TENANT_B
+    assert (
+        s.execute(
+            select(models.KbRetrievalConfigORM).where(
+                models.KbRetrievalConfigORM.tenant_id == _TENANT_B
+            )
         )
-    ).scalars().first() is None
+        .scalars()
+        .first()
+        is None
+    )
     assert s.execute(select(models.KbRetrievalConfigSnapshotORM)).scalars().first() is None
 
 
@@ -308,18 +369,30 @@ def test_seed_from_inmemory_does_not_seed_retrieval_config() -> None:
 # ---------------------------------------------------------------------------
 def _snap(version: int, tenant: str = _TENANT_A) -> mem.KbRetrievalConfigSnapshot:
     return mem.KbRetrievalConfigSnapshot(
-        id=f"{tenant}:{version}", tenant_id=tenant, version=version,
-        rerank_strategy=f"strategy-{version}", snapshot_at=f"2026-08-16T00:00:{version:02d}Z",
+        id=f"{tenant}:{version}",
+        tenant_id=tenant,
+        version=version,
+        rerank_strategy=f"strategy-{version}",
+        snapshot_at=f"2026-08-16T00:00:{version:02d}Z",
     )
 
 
 def test_snapshot_round_trip() -> None:
     snap = mem.KbRetrievalConfigSnapshot(
-        id=f"{_TENANT_A}:2", tenant_id=_TENANT_A, version=2,
-        mode="FACTUAL", rerank_strategy="keyword", top_k=5,
-        similarity_threshold=0.25, chunk_strategy="semantic", chunk_size=256,
-        chunk_overlap=32, vector_weight=0.6, keyword_weight=0.4,
-        reranker_enabled=False, show_citations=False,
+        id=f"{_TENANT_A}:2",
+        tenant_id=_TENANT_A,
+        version=2,
+        mode="FACTUAL",
+        rerank_strategy="keyword",
+        top_k=5,
+        similarity_threshold=0.25,
+        chunk_strategy="semantic",
+        chunk_size=256,
+        chunk_overlap=32,
+        vector_weight=0.6,
+        keyword_weight=0.4,
+        reranker_enabled=False,
+        show_citations=False,
         snapshot_at="2026-08-16T00:00:00Z",
     )
     assert sql.put_retrieval_config_snapshot(_TENANT_A, snap) == snap
@@ -359,8 +432,11 @@ def test_snapshot_reput_same_id_refreshes_in_place() -> None:
     API never re-snapshots a version; this pins the SQL-side behaviour)."""
     sql.put_retrieval_config_snapshot(_TENANT_A, _snap(2))
     refreshed = mem.KbRetrievalConfigSnapshot(
-        id=f"{_TENANT_A}:2", tenant_id=_TENANT_A, version=2,
-        rerank_strategy="refreshed", snapshot_at="2026-08-16T09:00:00Z",
+        id=f"{_TENANT_A}:2",
+        tenant_id=_TENANT_A,
+        version=2,
+        rerank_strategy="refreshed",
+        snapshot_at="2026-08-16T09:00:00Z",
     )
     sql.put_retrieval_config_snapshot(_TENANT_A, refreshed)
     sql.put_retrieval_config_snapshot(_TENANT_A, _snap(3))

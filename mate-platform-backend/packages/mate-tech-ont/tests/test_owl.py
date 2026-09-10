@@ -1,4 +1,5 @@
 """OWL IO tests (ST-5.4.6)."""
+
 from __future__ import annotations
 
 from mate_tech_ont.owl.io import (

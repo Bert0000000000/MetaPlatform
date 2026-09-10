@@ -10,8 +10,8 @@ PLATFORM-K8S-01 / PLATFORM-EVENT-01 placeholder.
 
 ## Maintainers
 
-| Name | Email |
-|------|-------|
+| Name                        | Email                       |
+| --------------------------- | --------------------------- |
 | MetaPlatform Platform Owner | platform@metaplatform.local |
 
 ## TL;DR
@@ -52,47 +52,47 @@ helm template kafka . -f ../../values-production.yaml
 
 ## Values
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| fullnameOverride | string | `"kafka"` | Forces service DNS name to `kafka` for bootstrap servers |
-| image.registry | string | `"docker.io"` | Image registry |
-| image.repository | string | `"bitnami/kafka"` | Image repository |
-| image.tag | string | `"3.7.1"` | Image tag (KRaft mode) |
-| image.pullPolicy | string | `"IfNotPresent"` | Image pull policy |
-| kraft.enabled | bool | `true` | Use KRaft (no Zookeeper) |
-| kraft.clusterId | string | `"metaplatform-kraft-cluster"` | KRaft cluster id |
-| replicaCount | int | `3` | Number of brokers (G1 default; 1 in local dev) |
-| resources | object | `{"requests":{"cpu":1,"memory":"2Gi"},"limits":{"cpu":2,"memory":"4Gi"}}` | Resource shape (prod 4Gi/2CPU) |
-| persistence.enabled | bool | `true` | Use PVC (true) or emptyDir (false) |
-| persistence.size | string | `"50Gi"` | Volume size |
-| persistence.storageClass | string | `""` | StorageClass (empty = cluster default) |
-| autoScaling.enabled | bool | `true` | Resource governance flag (requests/limits declared) |
-| tenantIsolation.enabled | bool | `true` | Per-tenant topic prefix isolation |
-| tenantIsolation.topicPrefix | string | `"tenant"` | Topic prefix convention |
-| config.auto.create.topics.enable | string | `"false"` | Topics are explicit (PLATFORM-EVENT-01) |
-| config.default.replication.factor | string | `"1"` | 3 in production |
-| config.num.partitions | string | `"6"` | Default partition count |
-| config.log.retention.hours | string | `"72"` | Retention |
-| config.compression.type | string | `"producer"` | Producer-side compression |
-| topics.preCreate | bool | `true` | Pre-create 17 domain topics at install |
-| topics.domains | list | 17 domains | Partition defaults per domain |
-| service.type | string | `"ClusterIP"` | Service type |
-| service.ports.client | int | `9092` | Client port |
-| service.ports.internal | int | `9094` | Internal port |
-| schemaRegistry.enabled | bool | `true` | Confluent Schema Registry |
-| schemaRegistry.image.repository | string | `"confluentinc/cp-schema-registry"` | |
-| schemaRegistry.image.tag | string | `"7.6.1"` | |
-| schemaRegistry.service.port | int | `8081` | Schema Registry port |
-| zookeeper.replicaCount | int | `1` | ZK replicas (only when kraft.enabled=false) |
-| zookeeper.image.repository | string | `"bitnami/zookeeper"` | ZK image |
-| zookeeper.image.tag | string | `"3.9.2"` | ZK image tag |
-| zookeeper.persistence.enabled | bool | `false` | ZK PVC toggle |
-| probes.readiness.initialDelaySeconds | int | `10` | Readiness probe initial delay |
-| probes.readiness.periodSeconds | int | `10` | Readiness probe period |
-| probes.liveness.initialDelaySeconds | int | `30` | Liveness probe initial delay |
-| probes.liveness.periodSeconds | int | `30` | Liveness probe period |
-| networkPolicy.enabled | bool | `true` | Enable default-deny NetworkPolicy |
-| networkPolicy.allowedIngressNamespaces | list | `["metaplatform","api-gateway"]` | Namespaces allowed to reach 9092 |
+| Key                                    | Type   | Default                                                                   | Description                                              |
+| -------------------------------------- | ------ | ------------------------------------------------------------------------- | -------------------------------------------------------- |
+| fullnameOverride                       | string | `"kafka"`                                                                 | Forces service DNS name to `kafka` for bootstrap servers |
+| image.registry                         | string | `"docker.io"`                                                             | Image registry                                           |
+| image.repository                       | string | `"bitnami/kafka"`                                                         | Image repository                                         |
+| image.tag                              | string | `"3.7.1"`                                                                 | Image tag (KRaft mode)                                   |
+| image.pullPolicy                       | string | `"IfNotPresent"`                                                          | Image pull policy                                        |
+| kraft.enabled                          | bool   | `true`                                                                    | Use KRaft (no Zookeeper)                                 |
+| kraft.clusterId                        | string | `"metaplatform-kraft-cluster"`                                            | KRaft cluster id                                         |
+| replicaCount                           | int    | `3`                                                                       | Number of brokers (G1 default; 1 in local dev)           |
+| resources                              | object | `{"requests":{"cpu":1,"memory":"2Gi"},"limits":{"cpu":2,"memory":"4Gi"}}` | Resource shape (prod 4Gi/2CPU)                           |
+| persistence.enabled                    | bool   | `true`                                                                    | Use PVC (true) or emptyDir (false)                       |
+| persistence.size                       | string | `"50Gi"`                                                                  | Volume size                                              |
+| persistence.storageClass               | string | `""`                                                                      | StorageClass (empty = cluster default)                   |
+| autoScaling.enabled                    | bool   | `true`                                                                    | Resource governance flag (requests/limits declared)      |
+| tenantIsolation.enabled                | bool   | `true`                                                                    | Per-tenant topic prefix isolation                        |
+| tenantIsolation.topicPrefix            | string | `"tenant"`                                                                | Topic prefix convention                                  |
+| config.auto.create.topics.enable       | string | `"false"`                                                                 | Topics are explicit (PLATFORM-EVENT-01)                  |
+| config.default.replication.factor      | string | `"1"`                                                                     | 3 in production                                          |
+| config.num.partitions                  | string | `"6"`                                                                     | Default partition count                                  |
+| config.log.retention.hours             | string | `"72"`                                                                    | Retention                                                |
+| config.compression.type                | string | `"producer"`                                                              | Producer-side compression                                |
+| topics.preCreate                       | bool   | `true`                                                                    | Pre-create 17 domain topics at install                   |
+| topics.domains                         | list   | 17 domains                                                                | Partition defaults per domain                            |
+| service.type                           | string | `"ClusterIP"`                                                             | Service type                                             |
+| service.ports.client                   | int    | `9092`                                                                    | Client port                                              |
+| service.ports.internal                 | int    | `9094`                                                                    | Internal port                                            |
+| schemaRegistry.enabled                 | bool   | `true`                                                                    | Confluent Schema Registry                                |
+| schemaRegistry.image.repository        | string | `"confluentinc/cp-schema-registry"`                                       |                                                          |
+| schemaRegistry.image.tag               | string | `"7.6.1"`                                                                 |                                                          |
+| schemaRegistry.service.port            | int    | `8081`                                                                    | Schema Registry port                                     |
+| zookeeper.replicaCount                 | int    | `1`                                                                       | ZK replicas (only when kraft.enabled=false)              |
+| zookeeper.image.repository             | string | `"bitnami/zookeeper"`                                                     | ZK image                                                 |
+| zookeeper.image.tag                    | string | `"3.9.2"`                                                                 | ZK image tag                                             |
+| zookeeper.persistence.enabled          | bool   | `false`                                                                   | ZK PVC toggle                                            |
+| probes.readiness.initialDelaySeconds   | int    | `10`                                                                      | Readiness probe initial delay                            |
+| probes.readiness.periodSeconds         | int    | `10`                                                                      | Readiness probe period                                   |
+| probes.liveness.initialDelaySeconds    | int    | `30`                                                                      | Liveness probe initial delay                             |
+| probes.liveness.periodSeconds          | int    | `30`                                                                      | Liveness probe period                                    |
+| networkPolicy.enabled                  | bool   | `true`                                                                    | Enable default-deny NetworkPolicy                        |
+| networkPolicy.allowedIngressNamespaces | list   | `["metaplatform","api-gateway"]`                                          | Namespaces allowed to reach 9092                         |
 
 ## Hard Rules Enforced
 
@@ -102,7 +102,7 @@ helm template kafka . -f ../../values-production.yaml
   restarts (production); default replicaCount=1 for dev, 3 in
   production (per values-production.yaml).
 - **§13 rule 13** (NetworkPolicy default-deny): `policyTypes:
-  [Ingress, Egress]` with ingress restricted to `metaplatform`
+[Ingress, Egress]` with ingress restricted to `metaplatform`
   and `api-gateway` namespaces on port 9092 (+ 9093 controller
   in KRaft mode); egress restricted to DNS (kube-system:53).
 - **§13 rule 12** (Secret not in git): KRaft cluster id is a

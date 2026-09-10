@@ -1,4 +1,5 @@
 """Seed data for TECH-IAM. Idempotent: re-running won't duplicate rows."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -81,7 +82,12 @@ PERMISSION_SEED: list[PermissionSpec] = [
     {"code": "user:create", "name": "创建用户", "resource_type": "user", "actions": "create"},
     {"code": "user:update", "name": "更新用户", "resource_type": "user", "actions": "update"},
     {"code": "user:delete", "name": "删除用户", "resource_type": "user", "actions": "delete"},
-    {"code": "user:reset_password", "name": "重置密码", "resource_type": "user", "actions": "reset"},
+    {
+        "code": "user:reset_password",
+        "name": "重置密码",
+        "resource_type": "user",
+        "actions": "reset",
+    },
     {"code": "user:enable", "name": "启停用户", "resource_type": "user", "actions": "enable"},
     {"code": "user:import", "name": "批量导入", "resource_type": "user", "actions": "import"},
     # role / permission
@@ -101,7 +107,12 @@ PERMISSION_SEED: list[PermissionSpec] = [
     {"code": "log:export", "name": "导出审计日志", "resource_type": "log", "actions": "export"},
     # config
     {"code": "config:view", "name": "查看系统配置", "resource_type": "config", "actions": "read"},
-    {"code": "config:update", "name": "修改系统配置", "resource_type": "config", "actions": "update"},
+    {
+        "code": "config:update",
+        "name": "修改系统配置",
+        "resource_type": "config",
+        "actions": "update",
+    },
     # operations
     {"code": "ops:view", "name": "查看运维监控", "resource_type": "ops", "actions": "read"},
 ]
@@ -121,12 +132,24 @@ ROLE_SEED: list[RoleSpec] = [
         "description": "日常运维管理（不含删除用户/角色）",
         "data_scope": "ALL",
         "permission_codes": [
-            "user:view", "user:create", "user:update", "user:reset_password",
-            "user:enable", "user:import",
-            "role:view", "role:create", "role:update", "role:assign",
-            "org:view", "org:create", "org:update", "org:transfer",
-            "log:view", "log:export",
-            "config:view", "config:update",
+            "user:view",
+            "user:create",
+            "user:update",
+            "user:reset_password",
+            "user:enable",
+            "user:import",
+            "role:view",
+            "role:create",
+            "role:update",
+            "role:assign",
+            "org:view",
+            "org:create",
+            "org:update",
+            "org:transfer",
+            "log:view",
+            "log:export",
+            "config:view",
+            "config:update",
             "ops:view",
         ],
     },
@@ -136,7 +159,12 @@ ROLE_SEED: list[RoleSpec] = [
         "description": "仅查看权限",
         "data_scope": "ALL",
         "permission_codes": [
-            "user:view", "role:view", "org:view", "log:view", "config:view", "ops:view",
+            "user:view",
+            "role:view",
+            "org:view",
+            "log:view",
+            "config:view",
+            "ops:view",
         ],
     },
 ]
@@ -386,9 +414,12 @@ async def seed(session: AsyncSession, tenant_id: str = "tenant-default") -> None
     """Seed minimal demo data. Idempotent."""
     # --- permissions ---
     existing_perms = {
-        p.code: p for p in (
+        p.code: p
+        for p in (
             await session.execute(select(Permission).where(Permission.tenant_id == tenant_id))
-        ).scalars().all()
+        )
+        .scalars()
+        .all()
     }
     perm_by_code: dict[str, Permission] = {}
     for spec in PERMISSION_SEED:
@@ -410,9 +441,10 @@ async def seed(session: AsyncSession, tenant_id: str = "tenant-default") -> None
 
     # --- roles ---
     existing_roles = {
-        r.code: r for r in (
-            await session.execute(select(Role).where(Role.tenant_id == tenant_id))
-        ).scalars().all()
+        r.code: r
+        for r in (await session.execute(select(Role).where(Role.tenant_id == tenant_id)))
+        .scalars()
+        .all()
     }
     for spec in ROLE_SEED:
         code = spec["code"]
@@ -440,9 +472,10 @@ async def seed(session: AsyncSession, tenant_id: str = "tenant-default") -> None
 
     # --- demo users ---
     existing_users = {
-        u.username: u for u in (
-            await session.execute(select(User).where(User.tenant_id == tenant_id))
-        ).scalars().all()
+        u.username: u
+        for u in (await session.execute(select(User).where(User.tenant_id == tenant_id)))
+        .scalars()
+        .all()
     }
     demo_users: list[DemoUserSpec] = [
         {
@@ -588,9 +621,7 @@ async def seed(session: AsyncSession, tenant_id: str = "tenant-default") -> None
             existing_users[spec["username"]] = user
 
         # bind roles (idempotent: clear then add)
-        await session.execute(
-            UserRole.__table__.delete().where(UserRole.user_id == user.id)
-        )
+        await session.execute(UserRole.__table__.delete().where(UserRole.user_id == user.id))
         for rcode in spec["roles"]:
             role = role_by_code.get(rcode)
             if role and role.id is not None and user.id is not None:
@@ -598,18 +629,61 @@ async def seed(session: AsyncSession, tenant_id: str = "tenant-default") -> None
 
     # --- orgs ---
     existing_orgs = {
-        o.code: o for o in (
-            await session.execute(select(Org).where(Org.tenant_id == tenant_id))
-        ).scalars().all()
+        o.code: o
+        for o in (await session.execute(select(Org).where(Org.tenant_id == tenant_id)))
+        .scalars()
+        .all()
     }
     org_specs: list[OrgSpec] = [
-        {"code": "ROOT", "name": "MetaPlatform 总部", "type": OrgType.COMPANY, "parent_id": None, "sort_order": 0},
-        {"code": "TECH", "name": "技术中心", "type": OrgType.DEPARTMENT, "parent_id": "ROOT", "sort_order": 1},
-        {"code": "OPS", "name": "运营中心", "type": OrgType.DEPARTMENT, "parent_id": "ROOT", "sort_order": 2},
-        {"code": "PRODUCT", "name": "产品部", "type": OrgType.DEPARTMENT, "parent_id": "ROOT", "sort_order": 3},
-        {"code": "TECH_PLAT", "name": "平台工程部", "type": OrgType.TEAM, "parent_id": "TECH", "sort_order": 0},
-        {"code": "TECH_AI", "name": "AI 算法部", "type": OrgType.TEAM, "parent_id": "TECH", "sort_order": 1},
-        {"code": "TECH_FE", "name": "前端体验部", "type": OrgType.TEAM, "parent_id": "TECH", "sort_order": 2},
+        {
+            "code": "ROOT",
+            "name": "MetaPlatform 总部",
+            "type": OrgType.COMPANY,
+            "parent_id": None,
+            "sort_order": 0,
+        },
+        {
+            "code": "TECH",
+            "name": "技术中心",
+            "type": OrgType.DEPARTMENT,
+            "parent_id": "ROOT",
+            "sort_order": 1,
+        },
+        {
+            "code": "OPS",
+            "name": "运营中心",
+            "type": OrgType.DEPARTMENT,
+            "parent_id": "ROOT",
+            "sort_order": 2,
+        },
+        {
+            "code": "PRODUCT",
+            "name": "产品部",
+            "type": OrgType.DEPARTMENT,
+            "parent_id": "ROOT",
+            "sort_order": 3,
+        },
+        {
+            "code": "TECH_PLAT",
+            "name": "平台工程部",
+            "type": OrgType.TEAM,
+            "parent_id": "TECH",
+            "sort_order": 0,
+        },
+        {
+            "code": "TECH_AI",
+            "name": "AI 算法部",
+            "type": OrgType.TEAM,
+            "parent_id": "TECH",
+            "sort_order": 1,
+        },
+        {
+            "code": "TECH_FE",
+            "name": "前端体验部",
+            "type": OrgType.TEAM,
+            "parent_id": "TECH",
+            "sort_order": 2,
+        },
     ]
     org_by_code: dict[str, Org] = dict(existing_orgs)
     for spec in org_specs:
@@ -633,9 +707,10 @@ async def seed(session: AsyncSession, tenant_id: str = "tenant-default") -> None
 
     # --- positions ---
     existing_positions = {
-        p.code: p for p in (
-            await session.execute(select(Position).where(Position.tenant_id == tenant_id))
-        ).scalars().all()
+        p.code: p
+        for p in (await session.execute(select(Position).where(Position.tenant_id == tenant_id)))
+        .scalars()
+        .all()
     }
     pos_specs: list[PosSpec] = [
         {"code": "TECH_LEAD", "org_code": "TECH", "name": "技术总监", "level": "M3"},
@@ -673,53 +748,74 @@ async def seed(session: AsyncSession, tenant_id: str = "tenant-default") -> None
     plat_dev = pos_by_code.get("TECH_PLAT_DEV")
     if admin_user and admin_user.id is not None and tech_lead and tech_lead.id is not None:
         existing_ep = (
-            await session.execute(
-                select(EmployeePosition).where(EmployeePosition.user_id == admin_user.id)
+            (
+                await session.execute(
+                    select(EmployeePosition).where(EmployeePosition.user_id == admin_user.id)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         if not existing_ep:
-            session.add(EmployeePosition(
-                tenant_id=tenant_id,
-                user_id=admin_user.id,
-                position_id=tech_lead.id,
-                reports_to=None,
-                is_primary=True,
-            ))
+            session.add(
+                EmployeePosition(
+                    tenant_id=tenant_id,
+                    user_id=admin_user.id,
+                    position_id=tech_lead.id,
+                    reports_to=None,
+                    is_primary=True,
+                )
+            )
     if operator_user and operator_user.id is not None and ops_mgr and ops_mgr.id is not None:
         existing_ep = (
-            await session.execute(
-                select(EmployeePosition).where(EmployeePosition.user_id == operator_user.id)
+            (
+                await session.execute(
+                    select(EmployeePosition).where(EmployeePosition.user_id == operator_user.id)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         if not existing_ep:
-            session.add(EmployeePosition(
-                tenant_id=tenant_id,
-                user_id=operator_user.id,
-                position_id=ops_mgr.id,
-                reports_to=admin_user.id if admin_user else None,
-                is_primary=True,
-            ))
+            session.add(
+                EmployeePosition(
+                    tenant_id=tenant_id,
+                    user_id=operator_user.id,
+                    position_id=ops_mgr.id,
+                    reports_to=admin_user.id if admin_user else None,
+                    is_primary=True,
+                )
+            )
     zhangsan = existing_users.get("zhangsan")
     if zhangsan and zhangsan.id is not None and plat_dev and plat_dev.id is not None:
         existing_ep = (
-            await session.execute(
-                select(EmployeePosition).where(EmployeePosition.user_id == zhangsan.id)
+            (
+                await session.execute(
+                    select(EmployeePosition).where(EmployeePosition.user_id == zhangsan.id)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         if not existing_ep:
-            session.add(EmployeePosition(
-                tenant_id=tenant_id,
-                user_id=zhangsan.id,
-                position_id=plat_dev.id,
-                reports_to=admin_user.id if admin_user else None,
-                is_primary=True,
-            ))
+            session.add(
+                EmployeePosition(
+                    tenant_id=tenant_id,
+                    user_id=zhangsan.id,
+                    position_id=plat_dev.id,
+                    reports_to=admin_user.id if admin_user else None,
+                    is_primary=True,
+                )
+            )
 
     # --- system configs ---
     existing_cfg = {
-        c.key: c for c in (
+        c.key: c
+        for c in (
             await session.execute(select(SystemConfig).where(SystemConfig.tenant_id == tenant_id))
-        ).scalars().all()
+        )
+        .scalars()
+        .all()
     }
     for spec in CONFIG_SEED:
         key = spec["key"]
@@ -740,54 +836,73 @@ async def seed(session: AsyncSession, tenant_id: str = "tenant-default") -> None
 
     # --- demo audit logs (only if empty) ---
     audit_count = (
-        await session.execute(
-            select(AuditLog).where(AuditLog.tenant_id == tenant_id).limit(1)
-        )
-    ).scalars().first()
+        (await session.execute(select(AuditLog).where(AuditLog.tenant_id == tenant_id).limit(1)))
+        .scalars()
+        .first()
+    )
     if not audit_count:
         now = datetime.now(UTC)
-        admin_actor: dict[str, str] = {"actor_id": admin_user.username if admin_user else "system",
-                       "actor_name": (admin_user.real_name or "系统") if admin_user else "系统"}
+        admin_actor: dict[str, str] = {
+            "actor_id": admin_user.username if admin_user else "system",
+            "actor_name": (admin_user.real_name or "系统") if admin_user else "系统",
+        }
         seed_logs = [
             ("user", AuditAction.CREATE, "user", "zhangsan", "张三", "新建用户 zhangsan"),
             ("user", AuditAction.RESET_PASSWORD, "user", "lisi", "李四", "重置用户 lisi 密码"),
-            ("role", AuditAction.CREATE, "role", "PLATFORM_ADMIN", "平台管理员", "创建角色 PLATFORM_ADMIN"),
+            (
+                "role",
+                AuditAction.CREATE,
+                "role",
+                "PLATFORM_ADMIN",
+                "平台管理员",
+                "创建角色 PLATFORM_ADMIN",
+            ),
             ("role", AuditAction.ASSIGN, "user", "zhangsan", "张三", "分配角色给 zhangsan"),
             ("org", AuditAction.UPDATE, "org", "TECH", "技术中心", "更新组织 技术中心"),
-            ("config", AuditAction.CONFIG_CHANGE, "config", "rate_limit.api_per_minute", "API 全局限流",
-             "修改配置 rate_limit.api_per_minute"),
+            (
+                "config",
+                AuditAction.CONFIG_CHANGE,
+                "config",
+                "rate_limit.api_per_minute",
+                "API 全局限流",
+                "修改配置 rate_limit.api_per_minute",
+            ),
             ("user", AuditAction.DISABLE, "user", "wangwu", "王五", "停用用户 wangwu"),
             ("user", AuditAction.LOGIN, "user", "admin", "系统管理员", "登录系统"),
         ]
         for i, (module, action, rtype, rid, rname, summary) in enumerate(seed_logs):
-            session.add(AuditLog(
-                tenant_id=tenant_id,
-                actor_id=admin_actor["actor_id"],
-                actor_name=admin_actor["actor_name"],
-                module=module,
-                action=action,
-                resource_type=rtype,
-                resource_id=rid,
-                resource_name=rname,
-                summary=summary,
-                ip="127.0.0.1",
-                user_agent="seed-script",
-                occurred_at=now - timedelta(minutes=i * 13),
-            ))
+            session.add(
+                AuditLog(
+                    tenant_id=tenant_id,
+                    actor_id=admin_actor["actor_id"],
+                    actor_name=admin_actor["actor_name"],
+                    module=module,
+                    action=action,
+                    resource_type=rtype,
+                    resource_id=rid,
+                    resource_name=rname,
+                    summary=summary,
+                    ip="127.0.0.1",
+                    user_agent="seed-script",
+                    occurred_at=now - timedelta(minutes=i * 13),
+                )
+            )
 
-    # --- demo login logs ---
+        # --- demo login logs ---
         for i in range(20):
-            session.add(LoginLog(
-                tenant_id=tenant_id,
-                username=admin_actor["actor_id"] if i % 3 == 0 else "zhangsan",
-                user_id=admin_user.id if i % 3 == 0 and admin_user else None,
-                result=LoginResult.SUCCESS if i % 7 != 0 else LoginResult.FAILED,
-                ip="127.0.0.1" if i % 2 == 0 else f"10.0.0.{i}",
-                device="Chrome / Windows" if i % 2 == 0 else "Safari / macOS",
-                location="Shanghai",
-                failure_reason=None if i % 7 != 0 else "密码错误",
-                occurred_at=now - timedelta(hours=i),
-            ))
+            session.add(
+                LoginLog(
+                    tenant_id=tenant_id,
+                    username=admin_actor["actor_id"] if i % 3 == 0 else "zhangsan",
+                    user_id=admin_user.id if i % 3 == 0 and admin_user else None,
+                    result=LoginResult.SUCCESS if i % 7 != 0 else LoginResult.FAILED,
+                    ip="127.0.0.1" if i % 2 == 0 else f"10.0.0.{i}",
+                    device="Chrome / Windows" if i % 2 == 0 else "Safari / macOS",
+                    location="Shanghai",
+                    failure_reason=None if i % 7 != 0 else "密码错误",
+                    occurred_at=now - timedelta(hours=i),
+                )
+            )
 
     await session.commit()
     logger.info("iam.seed.complete", tenant_id=tenant_id)

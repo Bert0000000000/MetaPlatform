@@ -1,4 +1,5 @@
-﻿"""Test constants exposed by mate_common.constants."""
+"""Test constants exposed by mate_common.constants."""
+
 from __future__ import annotations
 
 from mate_common.constants import (

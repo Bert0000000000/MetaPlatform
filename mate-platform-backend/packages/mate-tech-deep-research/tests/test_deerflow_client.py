@@ -4,6 +4,7 @@ Uses ``respx`` to mock the httpx transport so no real network call
 is made. Covers: success, 401, 503, timeout, check() true/false,
 unavailable raises, and bearer header attachment.
 """
+
 from __future__ import annotations
 
 import httpx
@@ -142,7 +143,9 @@ async def test_research_propagates_timeout() -> None:
 @pytest.mark.asyncio
 @respx.mock
 async def test_bearer_header_sent_when_api_key_present() -> None:
-    route = respx.get(f"{BASE}/healthz").mock(return_value=httpx.Response(200, json={"status": "ok"}))
+    route = respx.get(f"{BASE}/healthz").mock(
+        return_value=httpx.Response(200, json={"status": "ok"})
+    )
     client = DeerFlowClient(base_url=BASE, api_key="secret-key")
     try:
         await client.check()
@@ -168,7 +171,9 @@ async def test_no_bearer_header_when_api_key_empty() -> None:
 @pytest.mark.asyncio
 @respx.mock
 async def test_availability_cached_so_check_not_repeated() -> None:
-    health = respx.get(f"{BASE}/healthz").mock(return_value=httpx.Response(200, json={"status": "ok"}))
+    health = respx.get(f"{BASE}/healthz").mock(
+        return_value=httpx.Response(200, json={"status": "ok"})
+    )
     research = respx.post(f"{BASE}/api/research").mock(
         return_value=httpx.Response(200, json={"report": "r", "sources": [], "duration_ms": 1})
     )

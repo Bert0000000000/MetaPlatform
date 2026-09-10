@@ -1,4 +1,5 @@
 """API Schemas for mate-app-kb (business aggregation)."""
+
 from __future__ import annotations
 
 from typing import Annotated, Literal
@@ -28,7 +29,9 @@ class SearchRequest(BaseModel):
     top_k: Annotated[int, Field(ge=1, le=100, default=10)]
     mode: Annotated[Literal["AUTO", "FACTUAL", "ENTITY", "THEMATIC"], Field(default="AUTO")]
     # When omitted, the tenant's saved retrieval-config rerank_strategy is used.
-    rerank_strategy: Annotated[Literal["identity", "keyword", "length", "heuristic_cross"] | None, Field(default=None)]
+    rerank_strategy: Annotated[
+        Literal["identity", "keyword", "length", "heuristic_cross"] | None, Field(default=None)
+    ]
 
 
 class SearchResponse(BaseModel):
@@ -66,6 +69,7 @@ class StatsResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # BUSINESS-SLICES deep implementation schemas
 # ---------------------------------------------------------------------------
+
 
 class CollectionCreateRequest(BaseModel):
     model_config = ConfigDict(strict=True)
@@ -121,6 +125,7 @@ class DocumentTransitionRequest(BaseModel):
       uploaded -> indexing -> failed
       indexed  -> archived
     """
+
     model_config = ConfigDict(strict=True)
     status: Annotated[Literal["indexing", "indexed", "failed", "archived"], Field()]
     error: Annotated[str | None, Field(default=None, max_length=2048)]
@@ -138,6 +143,7 @@ _ChunkStrategy = Literal["recursive", "markdown", "semantic", "sliding"]
 
 class RetrievalConfigUpdate(BaseModel):
     """PUT body for the tenant's global retrieval config."""
+
     model_config = ConfigDict(extra="forbid")
     mode: Annotated[_RetrievalMode, Field(default="AUTO")]
     rerank_strategy: Annotated[_RerankStrategy, Field(default="identity")]

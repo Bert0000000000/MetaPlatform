@@ -8,6 +8,7 @@ and is wired into the umbrella chart dependencies.
 Static text checks (no helm / kubectl required) — mirrors the pattern
 in test_g1_kafka_chart.py. The real helm lint / kubeconform runs in CI.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -43,40 +44,26 @@ class TestC1PaimonChart:
         """values.yaml must declare catalog.mode (filesystem default)."""
         values = _load_values()
         assert "catalog" in values, "values.yaml must have catalog section"
-        assert values["catalog"]["mode"] == "filesystem", (
-            "default catalog mode must be filesystem"
-        )
-        assert values["catalog"]["warehouse"].startswith("s3://"), (
-            "warehouse must be S3-backed"
-        )
+        assert values["catalog"]["mode"] == "filesystem", "default catalog mode must be filesystem"
+        assert values["catalog"]["warehouse"].startswith("s3://"), "warehouse must be S3-backed"
 
     def test_paimon_chart_has_persistence(self) -> None:
         """values.yaml must declare persistence (enabled by default)."""
         values = _load_values()
-        assert "persistence" in values, (
-            "values.yaml must have persistence section"
-        )
-        assert values["persistence"]["enabled"] is True, (
-            "default persistence must be enabled"
-        )
+        assert "persistence" in values, "values.yaml must have persistence section"
+        assert values["persistence"]["enabled"] is True, "default persistence must be enabled"
 
     def test_paimon_chart_has_cdc_integration(self) -> None:
         """values.yaml must declare cdc.enabled (Debezium → Paimon)."""
         values = _load_values()
         assert "cdc" in values, "values.yaml must have cdc section"
-        assert values["cdc"]["enabled"] is True, (
-            "default CDC integration must be enabled"
-        )
+        assert values["cdc"]["enabled"] is True, "default CDC integration must be enabled"
 
     def test_paimon_chart_has_tenant_isolation(self) -> None:
         """values.yaml must declare tenantIsolation (per-tenant table prefix)."""
         values = _load_values()
-        assert "tenantIsolation" in values, (
-            "values.yaml must have tenantIsolation section"
-        )
-        assert values["tenantIsolation"]["enabled"] is True, (
-            "tenantIsolation.enabled must be true"
-        )
+        assert "tenantIsolation" in values, "values.yaml must have tenantIsolation section"
+        assert values["tenantIsolation"]["enabled"] is True, "tenantIsolation.enabled must be true"
 
     def test_paimon_chart_has_networkpolicy(self) -> None:
         """networkpolicy.yaml must exist with default-deny (hard rule 13)."""

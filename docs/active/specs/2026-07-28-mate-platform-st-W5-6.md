@@ -476,7 +476,7 @@
 
 **改动清单**：
 1. @router.post(/search) → 调用 retriever
-2. 加 OTel span 
+2. 加 OTel span
 ag.search
 3. 鉴权：依赖 X-Tenant-Id header
 

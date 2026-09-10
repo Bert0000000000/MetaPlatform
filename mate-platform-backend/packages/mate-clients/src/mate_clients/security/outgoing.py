@@ -1,4 +1,5 @@
 """Outgoing httpx middleware that auto-injects Authorization + X-Tenant-Id."""
+
 from __future__ import annotations
 
 import httpx

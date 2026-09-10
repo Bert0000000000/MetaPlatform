@@ -7,6 +7,7 @@ Coverage:
   * DELETE with the upstream RAG unavailable still drops the local
     catalog row (best-effort cascade).
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -89,7 +90,9 @@ class TestDwDocumentCascadeDelete:
     """P1.7 RAG 增强: cascade-delete a DW-uploaded document."""
 
     def test_delete_calls_rag_then_clears_local(
-        self, client_with_stub_rag, auth_headers,
+        self,
+        client_with_stub_rag,
+        auth_headers,
     ) -> None:
         client, stub = client_with_stub_rag
 
@@ -114,7 +117,8 @@ class TestDwDocumentCascadeDelete:
         )
 
         r = client.delete(
-            "/api/v1/dw/documents/dw-doc-test", headers=auth_headers,
+            "/api/v1/dw/documents/dw-doc-test",
+            headers=auth_headers,
         )
         assert r.status_code == 200, r.text
         body = r.json()
@@ -124,16 +128,17 @@ class TestDwDocumentCascadeDelete:
         # The stub recorded the cascade.
         assert stub.calls == ["dw-doc-test"], stub.calls
         # Local catalog row is gone.
-        remaining = [
-            d.id for d in in_memory_repo.list_documents("tenant-acme")
-        ]
+        remaining = [d.id for d in in_memory_repo.list_documents("tenant-acme")]
         assert "dw-doc-test" not in remaining, remaining
 
     def test_delete_unknown_returns_404(
-        self, client_with_stub_rag, auth_headers,
+        self,
+        client_with_stub_rag,
+        auth_headers,
     ) -> None:
         client, _stub = client_with_stub_rag
         r = client.delete(
-            "/api/v1/dw/documents/never-existed", headers=auth_headers,
+            "/api/v1/dw/documents/never-existed",
+            headers=auth_headers,
         )
         assert r.status_code == 404, r.text

@@ -2,6 +2,7 @@
 
 kernel 层（host 可跑，无 PG 依赖）：转移守卫 + 终态语义。
 """
+
 from __future__ import annotations
 
 import os
@@ -23,7 +24,10 @@ from mate_kernel.action.engine import (
 def _svc_with_pending():
     svc = ActionService()
     p = svc.propose(
-        "ont.t.obj.x.v1", {"a": 1}, None, "test",
+        "ont.t.obj.x.v1",
+        {"a": 1},
+        None,
+        "test",
         kind="create_instance",
     )
     return svc, p
@@ -45,8 +49,9 @@ class TestWithdraw:
         svc, p = _svc_with_pending()
         svc.withdraw_proposal(p.proposal_id)
         with pytest.raises(ProposalNotConfirmed):
-            svc.mark_applied(p.proposal_id) if hasattr(svc, "mark_applied") \
-                else svc.mark_executed(p.proposal_id)
+            svc.mark_applied(p.proposal_id) if hasattr(svc, "mark_applied") else svc.mark_executed(
+                p.proposal_id
+            )
 
     def test_double_withdraw_rejected(self) -> None:
         svc, p = _svc_with_pending()

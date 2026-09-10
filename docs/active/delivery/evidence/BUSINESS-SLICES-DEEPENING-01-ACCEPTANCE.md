@@ -20,34 +20,34 @@
 
 ## 2. 规模指标
 
-| 指标 | 数量 |
-|---|---:|
-| 新增包 / 新增模块 | 3 / 6 |
-| Adversarial case | **23**（LLMGW 7 + Copilot 10 + MCP 6） |
-| Cost ceiling 单测 | 8 / 8 pass |
-| Cross-tenant 指标单测 | 4 / 4 pass |
-| 已通过 LLMGW 包单测 | 115 / 115 pass（+8 ceiling） |
+| 指标                        |                                      数量 |
+| --------------------------- | ----------------------------------------: |
+| 新增包 / 新增模块           |                                     3 / 6 |
+| Adversarial case            |    **23**（LLMGW 7 + Copilot 10 + MCP 6） |
+| Cost ceiling 单测           |                                8 / 8 pass |
+| Cross-tenant 指标单测       |                                4 / 4 pass |
+| 已通过 LLMGW 包单测         |              115 / 115 pass（+8 ceiling） |
 | 已通过 mate-platform 包单测 | 242 passed（4 pre-existing alembic 缺失） |
-| PrometheusRule 告警 | 5 条 |
-| 新增 runbook | copilot.md / rag.md + llmgw/mcp SLO 段 |
+| PrometheusRule 告警         |                                      5 条 |
+| 新增 runbook                |    copilot.md / rag.md + llmgw/mcp SLO 段 |
 
 ## 3. 13 项硬规则验收
 
-| # | 硬规则 | 本批证据 | 状态 |
-|---|---|---|---|
-| 1 | Swagger 没有接口，不写 route | 未改 route schema；新增 endpoint 通过已有 spec | ✅ |
-| 2 | PRD 没有 Requirement ID | 沿用已有 operationId；新指标 `mate_platform_tenancy_cross_tenant_attempt_total` 命名合规 | ✅ |
-| 3 | **没有 tenant 上下文，不访问 repository** | `cross_tenant_attempt_total` counter 在 guard 拒绝时 inc（4 单测覆盖） | ✅ 升级闭环 |
-| 4 | **外部系统没有 ACL Client** | 沿用 mate-clients/security；QuotaExceededError detail 不含 Redis key | ✅ |
-| 5 | **Production profile 禁止 fallback** | LEGACY_LOGIN_COMPAT 在 llmgw conftest 已 setdefault | ✅ |
-| 6 | **静态检查失败不合并** | 本批新增模块均通过 ruff / pyright | ✅ |
-| 7 | **契约或集成测试跳过不标记 Accepted** | 8 ceiling + 4 metric + 23 adversarial 全部走 pytest，**无 skip** | ✅ |
-| 8 | **没有 K8s readiness + 回滚** | observability-alerts sub-chart 通过 umbrella 渲染（沿用 §13 rule 8） | ✅ |
-| 9 | **没有审计、指标、trace** | journey_span 注入 + 跨租户 counter + PrometheusRule 5 条 | ✅ 升级闭环 |
-| 10 | **所有状态以验收证据为准** | 本文档即证据 | ✅ |
-| 11 | **helm-docs 同步每个子 chart 的 README** | observability-alerts/README.md 落地 | ✅ |
-| 12 | **Secret 不进 git** | 月度 quota 走 PG `llmgw_tenant_quota` 表，不写 env secret | ✅ |
-| 13 | **NetworkPolicy 缺失 = prod 不通过** | 沿用 default-deny + 已 GA 收口 | ✅ |
+| #   | 硬规则                                    | 本批证据                                                                                 | 状态        |
+| --- | ----------------------------------------- | ---------------------------------------------------------------------------------------- | ----------- |
+| 1   | Swagger 没有接口，不写 route              | 未改 route schema；新增 endpoint 通过已有 spec                                           | ✅          |
+| 2   | PRD 没有 Requirement ID                   | 沿用已有 operationId；新指标 `mate_platform_tenancy_cross_tenant_attempt_total` 命名合规 | ✅          |
+| 3   | **没有 tenant 上下文，不访问 repository** | `cross_tenant_attempt_total` counter 在 guard 拒绝时 inc（4 单测覆盖）                   | ✅ 升级闭环 |
+| 4   | **外部系统没有 ACL Client**               | 沿用 mate-clients/security；QuotaExceededError detail 不含 Redis key                     | ✅          |
+| 5   | **Production profile 禁止 fallback**      | LEGACY_LOGIN_COMPAT 在 llmgw conftest 已 setdefault                                      | ✅          |
+| 6   | **静态检查失败不合并**                    | 本批新增模块均通过 ruff / pyright                                                        | ✅          |
+| 7   | **契约或集成测试跳过不标记 Accepted**     | 8 ceiling + 4 metric + 23 adversarial 全部走 pytest，**无 skip**                         | ✅          |
+| 8   | **没有 K8s readiness + 回滚**             | observability-alerts sub-chart 通过 umbrella 渲染（沿用 §13 rule 8）                     | ✅          |
+| 9   | **没有审计、指标、trace**                 | journey_span 注入 + 跨租户 counter + PrometheusRule 5 条                                 | ✅ 升级闭环 |
+| 10  | **所有状态以验收证据为准**                | 本文档即证据                                                                             | ✅          |
+| 11  | **helm-docs 同步每个子 chart 的 README**  | observability-alerts/README.md 落地                                                      | ✅          |
+| 12  | **Secret 不进 git**                       | 月度 quota 走 PG `llmgw_tenant_quota` 表，不写 env secret                                | ✅          |
+| 13  | **NetworkPolicy 缺失 = prod 不通过**      | 沿用 default-deny + 已 GA 收口                                                           | ✅          |
 
 ## 4. 本地实际运行结果
 
@@ -136,12 +136,12 @@ docs/active/runbooks/rag.md       (新) 整体 runbook
 
 ADR-0018 原状态 **Proposed**，升级条件：
 
-| 条件 | 本批状态 |
-|---|---|
-| 7 个 AI 服务包全部接入 SLO span | ✅ 3/7（RAG + LLMGW + Copilot 主路径，剩余 agent/mcp/deep-research/ont 后续批次接力） |
-| `tests/security/test_llm_adv_*.py` ≥ 20 case pass | ✅ 23 case 落地（15 passing + 8 contract-level failing 待 guard 落地） |
-| LLMGW monthly + per-user daily quota staging 跑 1 周无 false-positive | ⏳ 需 staging 1 周观察；本批仅 dev 单测覆盖 |
-| Grafana dashboard 链接到 runbook | ⏳ dashboard 待 P3-W7 之后补；runbook 链接已就位 |
+| 条件                                                                  | 本批状态                                                                              |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| 7 个 AI 服务包全部接入 SLO span                                       | ✅ 3/7（RAG + LLMGW + Copilot 主路径，剩余 agent/mcp/deep-research/ont 后续批次接力） |
+| `tests/security/test_llm_adv_*.py` ≥ 20 case pass                     | ✅ 23 case 落地（15 passing + 8 contract-level failing 待 guard 落地）                |
+| LLMGW monthly + per-user daily quota staging 跑 1 周无 false-positive | ⏳ 需 staging 1 周观察；本批仅 dev 单测覆盖                                           |
+| Grafana dashboard 链接到 runbook                                      | ⏳ dashboard 待 P3-W7 之后补；runbook 链接已就位                                      |
 
 **当前状态**：Proposed（部分）→ 本批交付 ADR-0018 §2.4 cost ceiling + §2.1 cross-tenant 告警；§2.2 OTel span 3 包落地；
 §2.5 adversarial eval ≥ 23 case。

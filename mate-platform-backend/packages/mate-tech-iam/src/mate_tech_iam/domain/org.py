@@ -1,4 +1,5 @@
 """Organization, position and employee-position models (FR-DASH-006-03)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -32,11 +33,17 @@ class Org(SQLModel, table=True):
     code: str = Field(max_length=64, description="组织编码")
     name: str = Field(max_length=128, description="组织名称")
     type: OrgType = Field(default=OrgType.DEPARTMENT)
-    leader_id: int | None = Field(default=None, foreign_key="iam_user.id", description="负责人 user_id")
+    leader_id: int | None = Field(
+        default=None, foreign_key="iam_user.id", description="负责人 user_id"
+    )
     sort_order: int = Field(default=0, description="同级排序")
     description: str | None = Field(default=None, max_length=512)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))
+    )
 
 
 class Position(SQLModel, table=True):
@@ -52,8 +59,12 @@ class Position(SQLModel, table=True):
     name: str = Field(max_length=128)
     level: str | None = Field(default=None, max_length=32, description="P1-P12 / M1-M5 / etc.")
     description: str | None = Field(default=None, max_length=512)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))
+    )
 
 
 class EmployeePosition(SQLModel, table=True):
@@ -69,8 +80,12 @@ class EmployeePosition(SQLModel, table=True):
     tenant_id: str = Field(index=True, max_length=64)
     user_id: int = Field(foreign_key="iam_user.id", index=True)
     position_id: int = Field(foreign_key="iam_position.id", index=True)
-    reports_to: int | None = Field(default=None, foreign_key="iam_user.id", description="汇报对象 user_id")
+    reports_to: int | None = Field(
+        default=None, foreign_key="iam_user.id", description="汇报对象 user_id"
+    )
     is_primary: bool = Field(default=True, description="是否主岗")
     effective_from: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))
     effective_to: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))
+    )

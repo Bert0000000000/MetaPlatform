@@ -6,13 +6,16 @@ These tests close the gaps left by test_app_copilot.py:
   - test_actions_execute_emits_outbox_event: verify the handler
     emits ``copilot.action.executed`` to the outbox writer.
 """
+
 from __future__ import annotations
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 
 def test_actions_execute_tenant_isolation(
-    client, auth_headers_acme, auth_headers_globex,
+    client,
+    auth_headers_acme,
+    auth_headers_globex,
 ) -> None:
     """POST /actions/execute only resolves actions in the caller's tenant.
 
@@ -43,7 +46,9 @@ def test_actions_execute_tenant_isolation(
 
 
 def test_actions_execute_emits_outbox_event(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     """POST /actions/execute emits ``copilot.action.executed`` outbox event."""
     # Clear any prior events from fixture setup

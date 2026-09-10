@@ -17,13 +17,13 @@ image:
   tag: "2.7.0.Final"
   pullPolicy: IfNotPresent
 
-replicaCount: 1   # 2 in production per values-production.yaml
+replicaCount: 1 # 2 in production per values-production.yaml
 
 # Kafka sink + connector group configuration (non-sensitive).
 config:
   bootstrap.servers: "kafka:9092"
   group.id: "metaplatform-debezium"
-  kafkaReplicationFactor: "1"   # 3 in production
+  kafkaReplicationFactor: "1" # 3 in production
 
 # PostgreSQL source connector (logical replication). The password
 # is referenced via existingSecret (hard rule 12: never inline).

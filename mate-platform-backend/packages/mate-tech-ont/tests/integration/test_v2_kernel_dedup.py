@@ -22,14 +22,13 @@ from mate_kernel.ontology.identity import ClassRef
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.types import ObjectType, Property, PropertyFormat
 
-PG_DSN = os.getenv(
-    "PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform_ont_test"
-)
+PG_DSN = os.getenv("PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform_ont_test")
 
 
 def _pg_available() -> bool:
     try:
         import psycopg2  # type: ignore
+
         conn = psycopg2.connect(PG_DSN, connect_timeout=2)
         conn.close()
         return True
@@ -47,6 +46,7 @@ pytestmark = pytest.mark.skipif(
 def repo() -> object:
     from mate_tech_ont.v2_kernel.object_search import HashEmbedder
     from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+
     r = PgOntologyRepository(dsn=PG_DSN)
     # 注入确定性 embedder —— precheck 走 embedding 路径
     r.set_embedder(HashEmbedder())
@@ -58,6 +58,7 @@ def _clean_pg(repo) -> None:
     """每个测试前清表：先确保 schema 存在再 DELETE。"""
     repo._ensure_schema()
     import psycopg2  # type: ignore
+
     conn = psycopg2.connect(PG_DSN)
     try:
         with conn.cursor() as cur:
@@ -95,14 +96,17 @@ def _slug(rid: str) -> str:
 def _ot(rid: str, display_name: str = "", props: tuple[Property, ...] = ()) -> ObjectType:
     return ObjectType(
         rid=ClassRef(rid),
-        primary_key=tuple(ClassRef(p.rid.rid) for p in props if p.primary_key) or (
-            ClassRef(f"ont.{_tenant_id(rid)}.prop.{_slug(rid)}-id.v1"),
-        ),
-        properties=props or (
+        primary_key=tuple(ClassRef(p.rid.rid) for p in props if p.primary_key)
+        or (ClassRef(f"ont.{_tenant_id(rid)}.prop.{_slug(rid)}-id.v1"),),
+        properties=props
+        or (
             Property(
                 rid=ClassRef(f"ont.{_tenant_id(rid)}.prop.{_slug(rid)}-id.v1"),
-                type_id="string", nullable=False, primary_key=True,
-                title="id", format=PropertyFormat.STRING,
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="id",
+                format=PropertyFormat.STRING,
             ),
         ),
         display_name=display_name,
@@ -158,7 +162,8 @@ def test_different_slug_in_same_tenant_is_allowed(repo) -> None:
     repo.upsert_object_type(_ot("ont.acme.obj.crm.product.v1", "Product"))
     items = repo.list_object_types(limit=10, offset=0, tenant_id="acme")
     assert {x.rid.rid for x in items} >= {
-        "ont.acme.obj.crm.customer.v1", "ont.acme.obj.crm.product.v1",
+        "ont.acme.obj.crm.customer.v1",
+        "ont.acme.obj.crm.product.v1",
     }
 
 
@@ -183,7 +188,11 @@ def test_precheck_finds_chinese_vs_english_match_via_embedder(repo) -> None:
     repo.upsert_object_type(_ot("ont.acme.obj.crm.product.v1", "Product"))
 
     cands = search_similar_object_types(
-        repo, "acme", "客户", "customer", top_k=5,
+        repo,
+        "acme",
+        "客户",
+        "customer",
+        top_k=5,
     )
     # "客户 customer" 与 "Customer customer" 字符级有重叠，cosine > 0
     customer_match = [c for c in cands if c["slug"] == "customer"]
@@ -205,7 +214,11 @@ def test_precheck_returns_empty_when_no_match(repo) -> None:
     repo.upsert_object_type(_ot("ont.acme.obj.crm.customer.v1", "Customer"))
 
     cands = search_similar_object_types(
-        repo, "acme", "完全无关的词", "totally-unrelated", top_k=5,
+        repo,
+        "acme",
+        "完全无关的词",
+        "totally-unrelated",
+        top_k=5,
     )
     # 归一化 "totallyunrelated" 不在 "customer" 里，反之亦然
     assert cands == []
@@ -222,7 +235,11 @@ def test_precheck_fallback_normalizes_slug(repo) -> None:
     repo.upsert_object_type(_ot("ont.acme.obj.crm.customer-order.v1", "Customer Order"))
 
     cands = search_similar_object_types(
-        repo, "acme", "Customer Order", "customer_order", top_k=5,
+        repo,
+        "acme",
+        "Customer Order",
+        "customer_order",
+        top_k=5,
     )
     assert cands, "expected fallback to normalize 'customer_order' vs 'customer-order'"
     top = cands[0]
@@ -300,7 +317,8 @@ def test_merge_rejects_cross_tenant(repo) -> None:
 
     with pytest.raises(ValueError, match="cross-tenant"):
         repo.merge_object_types(
-            "ont.acme.obj.crm.customer.v1", "ont.beta.obj.crm.client.v1",
+            "ont.acme.obj.crm.customer.v1",
+            "ont.beta.obj.crm.client.v1",
         )
 
 
@@ -350,6 +368,7 @@ def test_merge_suggestion_proposal_lifecycle_pending_confirmed_executed(repo) ->
 
     # 直接 execute（未 confirm）→ 应报 ProposalNotConfirmed
     import mate_kernel.action.engine as engine_mod
+
     with pytest.raises(engine_mod.ProposalNotConfirmed):
         repo.execute_proposal(prop.proposal_id)
 
@@ -384,8 +403,10 @@ def test_merge_suggestion_proposal_rejected_does_not_merge(repo) -> None:
     repo.create_individual(_ind("ont.acme.ind.customer.1", source_rid, "1"))
 
     prop = repo.propose_merge(
-        source_rid=source_rid, target_rid=target_rid,
-        similarity=0.85, impact_summary="可能同义",
+        source_rid=source_rid,
+        target_rid=target_rid,
+        similarity=0.85,
+        impact_summary="可能同义",
     )
     repo.reject_proposal(prop.proposal_id, confirmed_by="bob")
 

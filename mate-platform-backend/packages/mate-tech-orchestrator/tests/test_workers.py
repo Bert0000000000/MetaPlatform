@@ -4,6 +4,7 @@ The MCP / A2A centers enforce ``install_auth``; production calls must
 carry a service identity. These tests verify the identity builder and
 its wiring into the ACL clients.
 """
+
 from __future__ import annotations
 
 from mate_tech_orchestrator.workers.a2a import A2AWorker

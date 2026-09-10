@@ -16,6 +16,7 @@ room for the ont_kernel_rls migration that runs ahead of this one).
 Revises: 0013_ont_kernel_rls
 Create Date: 2026-08-02
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence

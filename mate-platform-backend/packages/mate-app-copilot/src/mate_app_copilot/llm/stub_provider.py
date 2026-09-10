@@ -10,6 +10,7 @@ selection logic works for stub / OpenAI / Anthropic. The legacy
 module-level functions are preserved for backward compat with
 ``AsyncCopilotClient`` + ``LlmgwProvider``.
 """
+
 from __future__ import annotations
 
 import hashlib

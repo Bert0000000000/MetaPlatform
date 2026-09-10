@@ -4,6 +4,7 @@ scope 决定可见范围:
   - platform.marketplace.read:全平台
   - platform.marketplace.read.tenant:当前租户
 """
+
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -37,8 +38,7 @@ async def list_installed(
             detail={
                 "code": "MP_INSUFFICIENT_SCOPE",
                 "message": (
-                    "需要 platform.marketplace.read 或 "
-                    "platform.marketplace.read.tenant scope"
+                    "需要 platform.marketplace.read 或 platform.marketplace.read.tenant scope"
                 ),
             },
         )
@@ -62,9 +62,7 @@ async def list_installed(
                 "artifact_id": str(r.artifact_id),
                 "version": r.version,
                 "state": r.state,
-                "installed_at": (
-                    r.installed_at.isoformat() if r.installed_at else None
-                ),
+                "installed_at": (r.installed_at.isoformat() if r.installed_at else None),
             }
             for r in rows
         ]

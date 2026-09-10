@@ -17,6 +17,7 @@ emitted by Alembic 0008 (``mate-platform-backend/alembic/versions/
 Tests use a mock dialect (no real PostgreSQL required) so CI runs
 on SQLite/Postgres-agnostic pipelines.
 """
+
 from __future__ import annotations
 
 import os
@@ -124,9 +125,7 @@ class TestBuildSetLocalStatements:
         stmts = _build_set_local_statements(ctx)
         # The single quote is doubled, so the resulting statement is a
         # single SQL literal; nothing breaks out of the string.
-        assert stmts == [
-            f"SET LOCAL {GUC_TENANT_ID} = 'tenant''; DROP TABLE x; --'"
-        ]
+        assert stmts == [f"SET LOCAL {GUC_TENANT_ID} = 'tenant''; DROP TABLE x; --'"]
 
 
 # ---------------------------------------------------------------------------
@@ -160,9 +159,7 @@ class TestInstallRlsSession:
     def test_sets_local_on_postgres(self) -> None:
         session = _FakeSession(dialect_name="postgresql")
         install_rls_session(session, _ctx())
-        assert session.conn.executed == [
-            f"SET LOCAL {GUC_TENANT_ID} = 'tenant-acme'"
-        ]
+        assert session.conn.executed == [f"SET LOCAL {GUC_TENANT_ID} = 'tenant-acme'"]
 
     def test_sets_bypass_for_cross_tenant_admin(self) -> None:
         session = _FakeSession(dialect_name="postgresql")
@@ -226,9 +223,7 @@ class TestRlsSessionMiddleware:
         result = opener(ctx)
         assert result is session
         assert session.info["tenant_ctx"] is ctx
-        assert session.conn.executed == [
-            f"SET LOCAL {GUC_TENANT_ID} = 'tenant-acme'"
-        ]
+        assert session.conn.executed == [f"SET LOCAL {GUC_TENANT_ID} = 'tenant-acme'"]
 
 
 class TestRlsDbSession:
@@ -247,9 +242,7 @@ class TestRlsDbSession:
         result = rls_db_session(request, lambda: session)
         assert result is session
         assert session.info["tenant_ctx"] is ctx
-        assert session.conn.executed == [
-            f"SET LOCAL {GUC_TENANT_ID} = 'tenant-acme'"
-        ]
+        assert session.conn.executed == [f"SET LOCAL {GUC_TENANT_ID} = 'tenant-acme'"]
 
     def test_rejects_missing_ctx(self) -> None:
         request = MagicMock()
@@ -303,9 +296,7 @@ class TestRlsDbSessionFor:
         result = dep(request)
         assert result is session
         assert session.info["tenant_ctx"] is ctx
-        assert session.conn.executed == [
-            f"SET LOCAL {GUC_TENANT_ID} = 'tenant-acme'"
-        ]
+        assert session.conn.executed == [f"SET LOCAL {GUC_TENANT_ID} = 'tenant-acme'"]
 
     def test_returns_callable_that_resolves_request_from_kwargs(self) -> None:
         ctx = _ctx(tenant_id="tenant-acme")

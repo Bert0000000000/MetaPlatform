@@ -6,6 +6,7 @@ Path B: run_function -> HITL gate -> reject  -> aborted
 TEMPORAL_HOST env overrides the server address (default 127.0.0.1:7233;
 set to e.g. temporal:7233 when running inside the docker network).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -31,11 +32,15 @@ async def _run(approved: bool) -> dict:
     client = await Client.connect(TEMPORAL_ADDR, data_converter=pydantic_data_converter)
     steps = [
         WorkflowStep(
-            step_id="s1", kind="run_function", target="inline",
+            step_id="s1",
+            kind="run_function",
+            target="inline",
             payload={"source": "print('sprint1a-m1-ok')"},
         ),
         WorkflowStep(
-            step_id="s2", kind="run_function", target="inline",
+            step_id="s2",
+            kind="run_function",
+            target="inline",
             payload={"source": "print('after-hitl')"},
             requires_hitl=True,
         ),
@@ -54,10 +59,15 @@ async def _run(approved: bool) -> dict:
         mid = await handle.query(PlanWorkflow.status)
         if str(mid).startswith("hitl_waiting"):
             break
-    await handle.signal(PlanWorkflow.review, ReviewSignal(
-        step_id="s2", approved=approved,
-        feedback="live-smoke", reviewer="acceptance",
-    ))
+    await handle.signal(
+        PlanWorkflow.review,
+        ReviewSignal(
+            step_id="s2",
+            approved=approved,
+            feedback="live-smoke",
+            reviewer="acceptance",
+        ),
+    )
     result = await handle.result()
     return {"mid_status": mid, "final": result}
 
@@ -68,8 +78,10 @@ async def main() -> int:
     b = await _run(False)
     print("REJECT: ", b["mid_status"], "->", b["final"]["status"], b["final"]["plan_id"])
     ok = (
-        a["mid_status"] == "hitl_waiting:s2" and a["final"]["status"] == "completed"
-        and b["mid_status"] == "hitl_waiting:s2" and b["final"]["status"] == "aborted"
+        a["mid_status"] == "hitl_waiting:s2"
+        and a["final"]["status"] == "completed"
+        and b["mid_status"] == "hitl_waiting:s2"
+        and b["final"]["status"] == "aborted"
     )
     print("SMOKE", "PASS" if ok else "FAIL")
     return 0 if ok else 1

@@ -1,4 +1,5 @@
 """SAL §5 Scenario 写回一致性校验单测。"""
+
 from __future__ import annotations
 
 from mate_kernel.ontology.writeback import validate_write_back
@@ -14,8 +15,7 @@ ENTRY = {
 
 
 def test_valid_batch_returns_no_issues():
-    assert validate_write_back([ENTRY], known_classes=KNOWN,
-                               tenant_id="t1") == []
+    assert validate_write_back([ENTRY], known_classes=KNOWN, tenant_id="t1") == []
 
 
 def test_unknown_class_flagged():
@@ -31,8 +31,7 @@ def test_tenant_mismatch_flagged():
 
 
 def test_duplicate_target_flagged():
-    issues = validate_write_back([ENTRY, dict(ENTRY)], known_classes=KNOWN,
-                                 tenant_id="t1")
+    issues = validate_write_back([ENTRY, dict(ENTRY)], known_classes=KNOWN, tenant_id="t1")
     dup = [i for i in issues if i.code == "duplicate_target"]
     assert len(dup) == 1 and dup[0].index == 1
 

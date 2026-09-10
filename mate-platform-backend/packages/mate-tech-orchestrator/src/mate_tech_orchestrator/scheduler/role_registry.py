@@ -13,6 +13,7 @@ The registry is tenant-scoped and dynamic (register / unregister at
 runtime). The kernel ``AgentRole`` enum is the authoritative role
 vocabulary; unknown slugs are rejected at registration time.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
@@ -60,9 +61,7 @@ class DigitalEmployeeRole:
 
 def validate_worker_kind(kind: str) -> str:
     if kind not in _WORKER_KINDS:
-        raise UnknownRoleError(
-            f"unknown worker_kind {kind!r}; expected one of {_WORKER_KINDS}"
-        )
+        raise UnknownRoleError(f"unknown worker_kind {kind!r}; expected one of {_WORKER_KINDS}")
     return kind
 
 
@@ -157,7 +156,10 @@ class RoleRegistry:
         return [r for (tid, _), r in self._roles.items() if tid == tenant_id]
 
     def authorized_snapshot(
-        self, tenant_id: str, *, actor_roles: set[str] | frozenset[str],
+        self,
+        tenant_id: str,
+        *,
+        actor_roles: set[str] | frozenset[str],
     ) -> list[DigitalEmployeeRole]:
         """Return only enabled roles explicitly permitted to the actor.
 
@@ -165,9 +167,9 @@ class RoleRegistry:
         """
         actor = set(actor_roles)
         return [
-            role for role in self.list(tenant_id)
-            if role.enabled
-            and bool(actor.intersection(role.allowed_actor_roles))
+            role
+            for role in self.list(tenant_id)
+            if role.enabled and bool(actor.intersection(role.allowed_actor_roles))
         ]
 
     def iter_all(self) -> list[DigitalEmployeeRole]:
@@ -185,7 +187,9 @@ class RoleRegistry:
         return True
 
     def find_by_capability(
-        self, tenant_id: str, capability: str,
+        self,
+        tenant_id: str,
+        capability: str,
     ) -> tuple[DigitalEmployeeRole, CapabilityBinding] | None:
         """Find an enabled role exposing ``capability`` (first match)."""
         for role in self.list(tenant_id):

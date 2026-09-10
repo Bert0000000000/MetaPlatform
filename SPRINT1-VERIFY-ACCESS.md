@@ -6,12 +6,12 @@
 
 ## 访问入口
 
-| 服务 | URL | 备注 |
-|---|---|---|
-| **前端（用户访问）** | **http://localhost:9200/** | vite dev mode + proxy `/api/v1` → 8100 |
-| 后端 API | http://localhost:8100/ | FastAPI dev_server（单进程多组件） |
-| 后端 health | http://localhost:8100/healthz | `{"status":"ok"}` |
-| Swagger UI（开发用） | (未启动）| 可选 |
+| 服务                 | URL                           | 备注                                   |
+| -------------------- | ----------------------------- | -------------------------------------- |
+| **前端（用户访问）** | **http://localhost:9200/**    | vite dev mode + proxy `/api/v1` → 8100 |
+| 后端 API             | http://localhost:8100/        | FastAPI dev_server（单进程多组件）     |
+| 后端 health          | http://localhost:8100/healthz | `{"status":"ok"}`                      |
+| Swagger UI（开发用） | (未启动）                     | 可选                                   |
 
 ## 登录账号
 
@@ -28,23 +28,31 @@ CLAUDE.md / memory 提到：**dev 模式下 Semi Design Button onClick 是 noop*
 
 ```js
 // 一键登录（拿 token + 注入前端）
-fetch('/api/v1/iam/auth/login', {
-  method: 'POST',
-  headers: {'Content-Type': 'application/json'},
-  body: JSON.stringify({username: 'admin', password: 'admin123'})
+fetch("/api/v1/iam/auth/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ username: "admin", password: "admin123" }),
 })
-.then(r => r.json())
-.then(d => {
-  localStorage.setItem('mate_platform_settings', JSON.stringify({
-    ...JSON.parse(localStorage.getItem('mate_platform_settings') || '{}'),
-    accessToken: d.accessToken,
-    refreshToken: d.refreshToken,
-    user: d.user,
-  }));
-  console.log('✅ Login OK, user:', d.user.realName, 'role:', d.is_super_admin);
-  console.log('Token (1h):', d.accessToken.slice(0, 50) + '...');
-  console.log('现在可以刷新页面正常使用');
-});
+  .then((r) => r.json())
+  .then((d) => {
+    localStorage.setItem(
+      "mate_platform_settings",
+      JSON.stringify({
+        ...JSON.parse(localStorage.getItem("mate_platform_settings") || "{}"),
+        accessToken: d.accessToken,
+        refreshToken: d.refreshToken,
+        user: d.user,
+      }),
+    );
+    console.log(
+      "✅ Login OK, user:",
+      d.user.realName,
+      "role:",
+      d.is_super_admin,
+    );
+    console.log("Token (1h):", d.accessToken.slice(0, 50) + "...");
+    console.log("现在可以刷新页面正常使用");
+  });
 ```
 
 **绕过方案 2**：把 token 复制到浏览器开发者工具 → Application → Local Storage → 添加 `accessToken` key。
@@ -53,14 +61,14 @@ fetch('/api/v1/iam/auth/login', {
 
 ## 关键验收入口
 
-| 验收点 | URL 路径 | 后端 endpoint | 备注 |
-|---|---|---|---|
-| Ontology 浏览 | `/datacenter/objects` | `GET /api/v1/ont/v2/object-types` | **已实测 OK** — 5 个对象（员工/请假/工单/客户/订单） |
-| SuperAI 聊天 | `/superai` 或 `/copilot` | `POST /api/v1/copilot/...` | 需登录后访问 |
-| Arch 应用中心 | `/arch` | `/api/v1/arch/...` | 需登录后访问 |
-| A2A Agent 调度 | `/a2a` | `/api/v1/a2a/...` | 需登录 |
-| AppHub 应用 | `/apphub` | `/api/v1/apphub/...` | 需登录 |
-| LLM Gateway | (内部）| `/api/v1/llmgw/chat` | anonymous path，无需 token |
+| 验收点         | URL 路径                 | 后端 endpoint                     | 备注                                                 |
+| -------------- | ------------------------ | --------------------------------- | ---------------------------------------------------- |
+| Ontology 浏览  | `/datacenter/objects`    | `GET /api/v1/ont/v2/object-types` | **已实测 OK** — 5 个对象（员工/请假/工单/客户/订单） |
+| SuperAI 聊天   | `/superai` 或 `/copilot` | `POST /api/v1/copilot/...`        | 需登录后访问                                         |
+| Arch 应用中心  | `/arch`                  | `/api/v1/arch/...`                | 需登录后访问                                         |
+| A2A Agent 调度 | `/a2a`                   | `/api/v1/a2a/...`                 | 需登录                                               |
+| AppHub 应用    | `/apphub`                | `/api/v1/apphub/...`              | 需登录                                               |
+| LLM Gateway    | (内部）                  | `/api/v1/llmgw/chat`              | anonymous path，无需 token                           |
 
 ## 快速验证（curl）
 
@@ -81,14 +89,15 @@ curl "http://localhost:9200/api/v1/ont/v2/object-types?limit=5" \
 
 ## 服务进程
 
-| 进程 | PID | 日志 |
-|---|---|---|
+| 进程       | PID              | 日志                  |
+| ---------- | ---------------- | --------------------- |
 | dev_server | (后台 PID 37044) | `/tmp/dev-server.log` |
-| vite dev | (后台 PID) | `/tmp/vite-dev.log` |
+| vite dev   | (后台 PID)       | `/tmp/vite-dev.log`   |
 
 ## 当前 Sprint 1 范围
 
 ✅ **已部署并可验收**：v3.0 GA + v3.1 Ontology + v4 RUNTIME + SAL × 6 + Composition Kernel + LOOP-ROLLOUT-01
+
 - 12 Ontology Kernel（identity/types/instances/reasoning/query）
 - 73 个 ontology API 路由
 - 7+1 类数字员工（copilot 43 routes / arch 114 / apphub 37 / dw 58 / llmgw 13）
@@ -105,12 +114,12 @@ dev_server 是 Sprint 1 之前的快照集成版。Sprint 1 的 30+ 项任务是
 
 ## 已知次要警告
 
-| 警告 | 影响 | 后续 |
-|---|---|---|
-| `a2a` 模块找不到 | a2a 路由未 mount | 装 a2a-sdk 或独立起 a2a 服务 |
-| `psycopg` 缺失 | KB/RAG SQL store 降级 in-memory | 装 psycopg2-binary 启用 PG 模式 |
-| PG DSN 不可达 | KB/RAG/DW 的 SQL store 降级 | 用 Supabase PG (54322) 或启动 docker compose postgres |
-| IAM 用 sqlite（dev 模式）| dev OK，prod 必须用 PG | 上线前改 IAM_DATABASE_URL 指向 PG |
+| 警告                      | 影响                            | 后续                                                  |
+| ------------------------- | ------------------------------- | ----------------------------------------------------- |
+| `a2a` 模块找不到          | a2a 路由未 mount                | 装 a2a-sdk 或独立起 a2a 服务                          |
+| `psycopg` 缺失            | KB/RAG SQL store 降级 in-memory | 装 psycopg2-binary 启用 PG 模式                       |
+| PG DSN 不可达             | KB/RAG/DW 的 SQL store 降级     | 用 Supabase PG (54322) 或启动 docker compose postgres |
+| IAM 用 sqlite（dev 模式） | dev OK，prod 必须用 PG          | 上线前改 IAM_DATABASE_URL 指向 PG                     |
 
 ## 进一步建议
 

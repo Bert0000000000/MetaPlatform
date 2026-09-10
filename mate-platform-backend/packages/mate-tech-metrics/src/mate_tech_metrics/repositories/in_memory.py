@@ -14,6 +14,7 @@ ADR-0014 cross-tenant rule is enforced.
 ``Metric`` is mutable (not frozen) so that update / compute
 operations can mutate fields in place.
 """
+
 from __future__ import annotations
 
 import time
@@ -150,7 +151,8 @@ def _now() -> str:
 # Public read API
 # ---------------------------------------------------------------------------
 def list_metrics(
-    tenant_id: str, status: str | None = None,
+    tenant_id: str,
+    status: str | None = None,
 ) -> list[Metric]:
     """Return the metrics for a tenant, optionally filtered by status."""
     if not tenant_id:
@@ -171,7 +173,8 @@ def get_metric(tenant_id: str, metric_id: str) -> Metric | None:
 
 
 def get_metric_lineage(
-    tenant_id: str, metric_id: str,
+    tenant_id: str,
+    metric_id: str,
 ) -> dict[str, Any] | None:
     """Return the lineage for a metric, or None if not found."""
     if not tenant_id:
@@ -181,7 +184,8 @@ def get_metric_lineage(
 
 
 def get_metric_values(
-    tenant_id: str, metric_id: str,
+    tenant_id: str,
+    metric_id: str,
 ) -> list[dict[str, Any]] | None:
     """Return the values for a metric, or None if not found."""
     if not tenant_id:
@@ -258,7 +262,8 @@ def delete_metric(tenant_id: str, metric_id: str) -> bool:
 
 
 def compute_metric(
-    tenant_id: str, metric_id: str,
+    tenant_id: str,
+    metric_id: str,
 ) -> Metric | None:
     """Trigger a manual compute for a metric. Returns None if missing."""
     _ensure_tenant(tenant_id)

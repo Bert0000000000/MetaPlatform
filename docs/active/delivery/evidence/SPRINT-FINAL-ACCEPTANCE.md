@@ -5,6 +5,7 @@
 ## 批次一 · 轻量面（4/4 完成）
 
 ### 1. Sprint 0 条件验收核销（2 [x] + 2 [~] 收窄）
+
 - **MP-ONT-PROPOSAL-01 [~→x]**：重复确认 409 / 未确认执行 409 / 非法转移 409 /
   越权 403 / create_instance revert 等价回滚（实例 404）/ confirm 后重启服务
   状态存活再 execute 成功 / 真实 LLM（ARK Plan）/ 真实 PG。
@@ -23,6 +24,7 @@
 - 脚本：`scripts/smoke_sprint_final_batch1.py` **16/16 PASS**。
 
 ### 2. 真实 LLM 接入 + LEGACY_LOGIN_COMPAT 移除 [x]
+
 - 19+ 服务 `LEGACY_LOGIN_COMPAT`/`INSECURE_SKIP_SIGNATURE` 翻 false（compose
   修编 + flip 脚本）；Keycloak JWKS RS256 签名强校验生效：篡改 token 401、
   伪造 jwt 401。
@@ -32,26 +34,28 @@
   独立变量避免闭包重绑定）。
 
 ### 3. PRD 起稿族 [x]
+
 11 份落稿（状态如实）：PRD-09 [ ]（mcp 联邦增量）/ 14 [x] / 19 [x] /
 21 [~] / 22 [~] / 24 [ ]（ONT-G15 目标稿）/ 25 [~] / 26 [~] / 27 [~] /
 28 [~] / 29 [~]；PRD-20 更新 [x]（SDK 交付）。
 
 ### 4. 北极星 demo v2 [x]
+
 真实界面走查 6 截图（登录→工作台→SuperAI 真对话→本体引擎 48 概念→数据资产）：
 `evidence/NORTHSTAR-DEMO-V2.md` + `northstar-demo-v2.cjs`。
 
 ## 批次二 · Ontology/平台面（8/8 落地）
 
-| 项 | 结果 | 证据 |
-|---|---|---|
-| 5. MP-MKT-INSTALL-01 | [x] uninstall/retry 事务化 + 同事务审计表 `marketplace_install_audit` + outbox；allowed-from 校验（409/404）| 单测 4 |
-| 6. MP-INTEGRATION-HUB-01 | [~] kernel `composition/topology.py`（拓扑排序/环检测/缺失依赖/影响面）单测 4；live 拓扑面留尾 | 同左 |
-| 7. INTERCEPT/POLICY | [~] kernel `composition/policy.py`（deny-first、谓词异常 fail-closed、async intercept/PolicyDenied）单测 5；端点接线留尾 | 同左 |
-| 8. G6 OSDK typed client | [~] `generate_typed_client.py` operationId→方法（56 生成）+ 4 单测 + live（容器内经网关 3 types）| osdk_generated.py |
-| 9. ONT-G11 ontology-sdk | [x] `mate_clients/ontology_sdk.py`（CRUD/proposal/SHACL+推理联动/reasoning/alignment）单测 8 + 网关 live 全链 | PRD-20 [x] |
-| 10. llmgw 语音/视频 | [!] **外部边界**：ARK Agent Plan 唯一可用模型 glm-5.3-flash 为纯文本（audio input 显式不支持、video_url 解析失败实测）；MiniMax 429 保留。解锁=含音频/视频的 plan 或第二多模态 provider | §2.6 行 |
-| 11. ont SHACL 推理 | [~] kernel `subclass_axioms`（G21 闭包扩展 target + sh:class 子类 is-a）单测 6 + REST live A/B；kernel 全套 617 | contracts ont.yaml |
-| 12. SAL §5 风险消化 | [~] ① AGENT_TOOLS_BUDGET 工具预算截断 ② kernel 写回一致性门（unknown_class/tenant_mismatch/duplicate_target/missing_pk）单测 6 | app.py + writeback.py |
+| 项                       | 结果                                                                                                                                                                                    | 证据                  |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| 5. MP-MKT-INSTALL-01     | [x] uninstall/retry 事务化 + 同事务审计表 `marketplace_install_audit` + outbox；allowed-from 校验（409/404）                                                                            | 单测 4                |
+| 6. MP-INTEGRATION-HUB-01 | [~] kernel `composition/topology.py`（拓扑排序/环检测/缺失依赖/影响面）单测 4；live 拓扑面留尾                                                                                          | 同左                  |
+| 7. INTERCEPT/POLICY      | [~] kernel `composition/policy.py`（deny-first、谓词异常 fail-closed、async intercept/PolicyDenied）单测 5；端点接线留尾                                                                | 同左                  |
+| 8. G6 OSDK typed client  | [~] `generate_typed_client.py` operationId→方法（56 生成）+ 4 单测 + live（容器内经网关 3 types）                                                                                       | osdk_generated.py     |
+| 9. ONT-G11 ontology-sdk  | [x] `mate_clients/ontology_sdk.py`（CRUD/proposal/SHACL+推理联动/reasoning/alignment）单测 8 + 网关 live 全链                                                                           | PRD-20 [x]            |
+| 10. llmgw 语音/视频      | [!] **外部边界**：ARK Agent Plan 唯一可用模型 glm-5.3-flash 为纯文本（audio input 显式不支持、video_url 解析失败实测）；MiniMax 429 保留。解锁=含音频/视频的 plan 或第二多模态 provider | §2.6 行               |
+| 11. ont SHACL 推理       | [~] kernel `subclass_axioms`（G21 闭包扩展 target + sh:class 子类 is-a）单测 6 + REST live A/B；kernel 全套 617                                                                         | contracts ont.yaml    |
+| 12. SAL §5 风险消化      | [~] ① AGENT_TOOLS_BUDGET 工具预算截断 ② kernel 写回一致性门（unknown_class/tenant_mismatch/duplicate_target/missing_pk）单测 6                                                          | app.py + writeback.py |
 
 **批次一/二新增单测 37+（≥30 ✓）**；kernel 全套 617 绿、clients 42 绿、
 marketplace 26 绿、copilot 基线持平（仅存 HEAD 存量失败）。
@@ -61,6 +65,7 @@ marketplace 26 绿、copilot 基线持平（仅存 HEAD 存量失败）。
 ### 13. staging 演练 [!]（两轮部署 · 最终卡点=存储权限/内存上限/上游镜像删除）
 
 **第二轮部署（Docker Desktop 内置 k8s，WSL2 模式）**：
+
 - 用户中途将 Docker Desktop 切到 Docker VMM 模式 → 触发引擎数据根切换、
   全部容器不可见（数据仍在原 WSL2 盘，已切回并确认 111.6GB
   docker_data.vhdx 完好保留于 D:\Docker\wsl_storage\DockerDesktopWSL\disk\）。
@@ -86,14 +91,17 @@ marketplace 26 绿、copilot 基线持平（仅存 HEAD 存量失败）。
   8GB 内存生效后逐批调度、chart 镜像 tag 全面升级。
 
 ### 14. StarRocks + Trino BI [!]
+
 镜像拉取受同一窗口限制（starrocks-fe/be 从未 Running）；Trino 数据面已可用
 （联邦查询 + Iceberg Roundtrip 已收口），StarRocks→Trino 联邦查询待窗口。
 
 ### 15. Sandbox L2 [ ]
+
 本窗口被 staging 挤占未尝试；kind 集群可用后按 kernel test_k8s_job_executor
 路径做真实 Job 执行留证。
 
 ## 环境事件记录（如实）
+
 - Docker VM 两次进入内存挤占（daemon API 500 / 端口转发 10054 / healthcheck
   exec 超时）；第二次以 `wsl --shutdown` + Docker Desktop 重启恢复；
   mate-postgres 崩溃恢复两轮均自愈（redo 极小、无数据损失）。
@@ -107,6 +115,7 @@ marketplace 26 绿、copilot 基线持平（仅存 HEAD 存量失败）。
   补丁保留）。教训：容器互联一律用服务名，禁止硬编码 IP。
 
 ## 收尾态（最终验证）
+
 31 容器 Up / 0 Restarting / 0 Exited / 0 unhealthy（含 temporal 栈全绿）。
 fe9200=200、login=200、check_plan_tables=0。
 k8s：WSL2 模式下单节点 Ready（Docker Desktop 内置 k8s 在 WSL2 模式为单节点；
@@ -142,9 +151,9 @@ k8s：WSL2 模式下单节点 Ready（Docker Desktop 内置 k8s 在 WSL2 模式�
 
 ## 19. 最终冲刺状态总览
 
-| 批次 | 结果 |
-|---|---|
-| 一 | 4/4 [x]（含 2 条件验收转正 + 2 收窄；真 LLM；PRD×11；demo v2）|
-| 二 | 8/8 落地：5/6/7/8/11/12 [~]、9 [x]、10 [!]（外部模型白名单）|
-| 三 | staging [!]（install deployed + 探活被窗口阻塞）、StarRocks [!]、Sandbox L2 [ ] |
-| 四 | 压测/性能/安全审计 [~]、手册 [x]、G10/G34 [~]、demo [~]；G15/G22/G7 dev 留 [ ] |
+| 批次 | 结果                                                                            |
+| ---- | ------------------------------------------------------------------------------- |
+| 一   | 4/4 [x]（含 2 条件验收转正 + 2 收窄；真 LLM；PRD×11；demo v2）                  |
+| 二   | 8/8 落地：5/6/7/8/11/12 [~]、9 [x]、10 [!]（外部模型白名单）                    |
+| 三   | staging [!]（install deployed + 探活被窗口阻塞）、StarRocks [!]、Sandbox L2 [ ] |
+| 四   | 压测/性能/安全审计 [~]、手册 [x]、G10/G34 [~]、demo [~]；G15/G22/G7 dev 留 [ ]  |

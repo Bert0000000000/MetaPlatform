@@ -39,30 +39,32 @@
 
 ## Management Object Matrix
 
-| 对象 | 生命周期操作 | REST / MCP / A2A / Event / UI 合同 |
-|---|---|---|
-| OntologyPackage | 草拟、提案、评审、发布、弃用、回滚 | /ontology/proposals、/releases；ontology.get_projection；A2A 仅提交候选；ontology.package.published.v1；本体工厂页 |
-| AI Evolution | 受治理输入、抽取、质量、维护提案、人工发布 | /ontology/evolution-runs；ontology.get_quality；ontology.maintenance.proposed.v1；质量/影响面板 |
-| Capability/Skill | 创建、评测、发布、绑定、弃用、撤销、归档 | /capabilities、/skills；capability.list；skill.revoked.v1；技能页 |
-| MCP Catalog | 注册、Schema 快照、验证、路由、绑定、撤销 | /mcp/servers、/routes；受权 MCP 调用；A2A allowlist；mcp.route.revoked.v1；MCP 中心页 |
+| 对象             | 生命周期操作                               | REST / MCP / A2A / Event / UI 合同                                                                                 |
+| ---------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| OntologyPackage  | 草拟、提案、评审、发布、弃用、回滚         | /ontology/proposals、/releases；ontology.get_projection；A2A 仅提交候选；ontology.package.published.v1；本体工厂页 |
+| AI Evolution     | 受治理输入、抽取、质量、维护提案、人工发布 | /ontology/evolution-runs；ontology.get_quality；ontology.maintenance.proposed.v1；质量/影响面板                    |
+| Capability/Skill | 创建、评测、发布、绑定、弃用、撤销、归档   | /capabilities、/skills；capability.list；skill.revoked.v1；技能页                                                  |
+| MCP Catalog      | 注册、Schema 快照、验证、路由、绑定、撤销  | /mcp/servers、/routes；受权 MCP 调用；A2A allowlist；mcp.route.revoked.v1；MCP 中心页                              |
 
 ### Task 1: 固化本体、质量、Skill、MCP 与 A2A 生命周期契约
 
 **Files:**
+
 - Create: mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/center_contracts.py
 - Create: mate-platform-backend/packages/mate-kernel/src/mate_kernel/capability/contracts.py
 - Create: mate-platform-backend/packages/mate-kernel/src/mate_kernel/mcp_catalog/contracts.py
-- Modify: mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/__init__.py
+- Modify: mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/**init**.py
 - Create: mate-platform-backend/packages/mate-kernel/tests/test_ontology_skill_mcp_contracts.py
 - Create: mate-platform-backend/tests/conformance/ontology_skill_mcp/test_lifecycle_vectors.py
 
 **Interfaces:**
+
 - Consumes: MVP1 RunContext/Digest/ModelReceipt and MVP3 SemanticExtractionResult.
 - Produces: OntologyTerm, OntologyProposal, OntologyQualityAssessment, OntologyPackage, Capability, SkillVersion, MCPServer, ToolSchemaSnapshot, AuthProfile, Route, ConsumerBinding, A2ADelegationEnvelope and validate_transition().
 
 - [ ] **Step 1: Write failing authority, provenance and discovery tests**
 
-~~~python
+```python
 def test_ontology_publish_requires_human_approval_and_passing_quality():
     proposal = OntologyProposal(state="approved", quality_digest=None, approval_digest=None)
     with pytest.raises(ValueError, match="ONTOLOGY_RELEASE_EVIDENCE_REQUIRED"):
@@ -71,7 +73,7 @@ def test_ontology_publish_requires_human_approval_and_passing_quality():
 def test_catalog_discovery_is_not_a_tool_grant():
     binding = ConsumerBinding.discovered(consumer=EMPLOYEE, tool_id="order.inspect")
     assert binding.may_invoke is False
-~~~
+```
 
 - [ ] **Step 2: Run contract tests and verify they fail**
 
@@ -81,7 +83,7 @@ Expected: FAIL because center contract modules are absent.
 
 - [ ] **Step 3: Implement immutable terms, releases and transition validators**
 
-~~~python
+```python
 class OntologyTerm(BaseModel):
     kind: Literal["concept", "property", "link", "action", "axiom", "constraint"]
     rid: str
@@ -95,7 +97,7 @@ class A2ADelegationEnvelope(BaseModel):
     capability_allowlist: tuple[str, ...]
     max_depth: int = Field(ge=0, le=4)
     ttl_seconds: int = Field(gt=0, le=3600)
-~~~
+```
 
 Require fixed Digests and published states for bindings. OntologyQualityAssessment contains completeness, consistency, coverage, conflict and impact plus deterministic-check Digests. MCP Server/Route rejects undefined Schema version; SkillVersion cannot publish without an evaluation report.
 
@@ -107,14 +109,15 @@ Expected: PASS; discovery remains non-authorizing and invalid publication transi
 
 - [ ] **Step 5: Commit**
 
-~~~bash
+```bash
 git add mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology mate-platform-backend/packages/mate-kernel/src/mate_kernel/capability mate-platform-backend/packages/mate-kernel/src/mate_kernel/mcp_catalog mate-platform-backend/packages/mate-kernel/tests/test_ontology_skill_mcp_contracts.py mate-platform-backend/tests/conformance/ontology_skill_mcp
 git commit -m "feat(ontology): define skill mcp lifecycle contracts"
-~~~
+```
 
 ### Task 2: 建立本体、Skill、MCP Catalog 的 Alembic 权威与租户授权
 
 **Files:**
+
 - Create: mate-platform-backend/alembic/versions/20260901_0024_ontology_skill_mcp.py
 - Modify: mate-platform-backend/packages/mate-app-ontology-factory/src/mate_app_ontology_factory/release_repository.py
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/ontology_center/quality_repository.py
@@ -125,13 +128,14 @@ git commit -m "feat(ontology): define skill mcp lifecycle contracts"
 - Create: mate-platform-backend/tests/security/test_ontology_skill_mcp_rls.py
 
 **Interfaces:**
+
 - Consumes: Task 1 contracts and tenant-scoped transaction context.
 - Consumes the MVP3 proposal/review/package/Release Ledger repository and Jena projection.
 - Produces OntologyQualityAssessment/evolution-subscription extensions, Skill lifecycle and Catalog repositories; authorize_tool_call(human, employee, run, route, arguments) -> AuthorizationDecision.
 
 - [ ] **Step 1: Write failing RLS, immutable release and dual-subject tests**
 
-~~~python
+```python
 async def test_human_and_employee_must_both_be_authorized(authorizer):
     decision = await authorizer.authorize_tool_call(human=HUMAN, employee=REVOKED_EMPLOYEE, run=RUN, route=ROUTE, arguments={})
     assert decision.allowed is False
@@ -141,7 +145,7 @@ async def test_cross_tenant_ontology_release_is_not_found(repo):
     release = await repo.publish(sample_approved_proposal("t1"))
     with pytest.raises(NotFound):
         await repo.get_package("t2", release.digest)
-~~~
+```
 
 - [ ] **Step 2: Run PostgreSQL tests and verify they fail**
 
@@ -161,14 +165,15 @@ Expected: PASS; revoked employee, stale lease and cross-tenant reads fail before
 
 - [ ] **Step 5: Commit**
 
-~~~bash
+```bash
 git add mate-platform-backend/alembic/versions/20260901_0024_ontology_skill_mcp.py mate-platform-backend/packages/mate-app-ontology-factory/src/mate_app_ontology_factory/release_repository.py mate-platform-backend/packages/mate-platform/src/mate_platform/ontology_center mate-platform-backend/packages/mate-platform/src/mate_platform/capabilities mate-platform-backend/packages/mate-platform/src/mate_platform/mcp_catalog mate-platform-backend/tests/migrations/test_ontology_skill_mcp_upgrade.py mate-platform-backend/tests/security/test_ontology_skill_mcp_rls.py
 git commit -m "feat(mcp): add governed catalog persistence"
-~~~
+```
 
 ### Task 3: 交付 AI 本体自动构建、演化、质量评估与人工发布
 
 **Files:**
+
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/ontology_center/extraction.py
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/ontology_center/evolution.py
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/ontology_center/quality.py
@@ -178,12 +183,13 @@ git commit -m "feat(mcp): add governed catalog persistence"
 - Create: mate-platform-backend/tests/integration/test_ontology_shacl_release_rollback.py
 
 **Interfaces:**
+
 - Consumes: governed SourceAnchor, KnowledgeChunk, DataProduct SchemaChanged/lineage events, ModelReceipt and Task 2 repositories.
 - Produces: propose_evolution() -> OntologyProposal and assess_quality() -> OntologyQualityAssessment; consumes MVP3 extract/publish/rollback commands rather than creating another ontology release service.
 
 - [ ] **Step 1: Write failing candidate-only, SHACL and rollback tests**
 
-~~~python
+```python
 async def test_schema_change_creates_maintenance_proposal_not_release(pipeline):
     result = await pipeline.handle_schema_changed(governed_schema_event())
     assert result.state == "draft"
@@ -193,7 +199,7 @@ async def test_failed_shacl_cannot_publish_and_rollback_restores_prior_digest(se
     with pytest.raises(ReleaseBlocked, match="SHACL_VALIDATION_FAILED"):
         await service.publish_package(invalid_approved_proposal())
     assert (await service.rollback_package(CURRENT)).digest == PRIOR_DIGEST
-~~~
+```
 
 - [ ] **Step 2: Run pipeline tests and verify they fail**
 
@@ -213,14 +219,15 @@ Expected: PASS; AI stays candidate-only and quality/SHACL/approval blocks unsafe
 
 - [ ] **Step 5: Commit**
 
-~~~bash
+```bash
 git add mate-platform-backend/packages/mate-platform/src/mate_platform/ontology_center mate-platform-backend/packages/mate-clients/src/mate_clients/jena.py mate-platform-backend/packages/mate-platform/tests/test_ontology_evolution_pipeline.py mate-platform-backend/tests/integration/test_ontology_shacl_release_rollback.py
 git commit -m "feat(ontology): add governed ai evolution"
-~~~
+```
 
 ### Task 4: 实现 Skill/Capability 评测、发布、员工绑定与撤销
 
 **Files:**
+
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/capabilities/service.py
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/capabilities/evaluation.py
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/capabilities/bindings.py
@@ -229,12 +236,13 @@ git commit -m "feat(ontology): add governed ai evolution"
 - Create: mate-platform-backend/tests/integration/test_employee_capability_binding.py
 
 **Interfaces:**
+
 - Consumes: Task 1 SkillVersion/Capability contracts, published Employee release, policy decision and evaluation gold set.
 - Produces: evaluate_skill() -> SkillEvaluation, publish_skill() -> SkillVersion, bind_employee_capability(), revoke_skill() and CapabilityProjection.
 
 - [ ] **Step 1: Write failing evaluation and revocation tests**
 
-~~~python
+```python
 async def test_skill_cannot_bind_without_passing_evaluation(service):
     with pytest.raises(TransitionBlocked, match="SKILL_EVALUATION_REQUIRED"):
         await service.bind_employee_capability(employee=EMPLOYEE, skill=draft_skill())
@@ -243,7 +251,7 @@ async def test_revocation_removes_projection_and_blocks_future_tool_calls(servic
     binding = await service.bind_employee_capability(EMPLOYEE, published_skill())
     await service.revoke_skill(binding.skill_digest, actor=SECURITY_ADMIN)
     assert not (await service.capability_projection(EMPLOYEE)).contains(binding.capability_id)
-~~~
+```
 
 - [ ] **Step 2: Run lifecycle tests and verify they fail**
 
@@ -263,14 +271,15 @@ Expected: PASS; no untested or revoked Skill is visible to Employee.
 
 - [ ] **Step 5: Commit**
 
-~~~bash
+```bash
 git add mate-platform-backend/packages/mate-platform/src/mate_platform/capabilities mate-platform-backend/packages/mate-platform/tests/test_skill_capability_lifecycle.py mate-platform-backend/tests/security/test_skill_revocation.py mate-platform-backend/tests/integration/test_employee_capability_binding.py
 git commit -m "feat(skill): add evaluated capability lifecycle"
-~~~
+```
 
 ### Task 5: 实现 MCP Catalog、兼容性、双主体调用与受限 A2A 委托
 
 **Files:**
+
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/mcp_catalog/service.py
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/mcp_catalog/compatibility.py
 - Create: mate-platform-backend/packages/mate-platform/src/mate_platform/mcp_catalog/a2a.py
@@ -281,12 +290,13 @@ git commit -m "feat(skill): add evaluated capability lifecycle"
 - Create: mate-platform-backend/tests/integration/test_a2a_delegation_limits.py
 
 **Interfaces:**
+
 - Consumes: Task 2 authorization, Task 4 CapabilityProjection, Runtime RunContext/Lease and published ToolSchemaSnapshot.
 - Produces: register_server(), publish_route(), discover_catalog(), invoke_tool(), validate_schema_compatibility() and delegate_subrun().
 
 - [ ] **Step 1: Write failing discover/authorize/compatibility/A2A tests**
 
-~~~python
+```python
 async def test_discovery_returns_metadata_but_call_requires_two_subjects(catalog):
     assert "order.inspect" in [tool.name for tool in await catalog.discover_catalog(READER)]
     denied = await catalog.invoke_tool("order.inspect", human=READER, employee=UNBOUND_EMPLOYEE, run=RUN, arguments={})
@@ -298,7 +308,7 @@ def test_breaking_schema_snapshot_fails_closed():
 async def test_a2a_rejects_depth_and_capability_escape(delegator):
     with pytest.raises(DelegationDenied, match="A2A_LIMIT_EXCEEDED"):
         await delegator.delegate_subrun(parent=RUN, requested_capabilities=("admin.delete",), depth=5)
-~~~
+```
 
 - [ ] **Step 2: Run catalog tests and verify they fail**
 
@@ -318,14 +328,15 @@ Expected: PASS; listing Tool never grants it, breaking schema fails closed and A
 
 - [ ] **Step 5: Commit**
 
-~~~bash
+```bash
 git add mate-platform-backend/packages/mate-platform/src/mate_platform/mcp_catalog mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/tools/catalog.py mate-platform-backend/packages/mate-tech-mcp/tests/test_catalog_authorization.py mate-platform-backend/tests/security/test_mcp_dual_subject_authorization.py mate-platform-backend/tests/integration/test_mcp_schema_compatibility.py mate-platform-backend/tests/integration/test_a2a_delegation_limits.py
 git commit -m "feat(mcp): add dual-subject catalog"
-~~~
+```
 
 ### Task 6: 暴露 REST、Event、UI 与跨宿主 E2E/恢复证据
 
 **Files:**
+
 - Create: mate-platform-backend/contracts/openapi/services/ontology-skill-mcp.yaml
 - Modify: mate-platform-backend/contracts/openapi/manifest.yaml
 - Create: mate-platform-backend/contracts/events/ontology-skill-mcp.v1.json
@@ -341,11 +352,12 @@ git commit -m "feat(mcp): add dual-subject catalog"
 - Modify: acceptance/release/v1/interface-registry.yaml
 
 **Interfaces:**
+
 - Consumes MVP3 REST /api/v1/ontology/proposals and /releases plus ontology.package.published.v1; produces /api/v1/ontology/evolution-runs, /quality-assessments, /capabilities, /skills, /mcp/servers, /routes, /compatibility; Events ontology.maintenance.proposed.v1, ontology.quality.assessed.v1, skill.revoked.v1, mcp.route.revoked.v1; management pages and release evidence.
 
 - [ ] **Step 1: Write failing API/UI/E2E/recovery test**
 
-~~~python
+```python
 async def test_document_to_candidate_review_publish_skill_bound_mcp_call_and_restore(stack):
     proposal = await stack.submit_governed_document_for_extraction()
     assert proposal.state == "draft"
@@ -354,7 +366,7 @@ async def test_document_to_candidate_review_publish_skill_bound_mcp_call_and_res
     result = await stack.invoke_cataloged_tool_as_authorized_dual_subject()
     assert result.is_error is False
     assert (await stack.restore_and_reconcile()).ontology_package_digest == package.digest
-~~~
+```
 
 - [ ] **Step 2: Run E2E and verify it fails**
 
@@ -374,10 +386,10 @@ Expected: PASS; AI only makes candidates, human-gated release recovers, revoked/
 
 - [ ] **Step 5: Commit**
 
-~~~bash
+```bash
 git add mate-platform-backend/contracts/openapi/services/ontology-skill-mcp.yaml mate-platform-backend/contracts/openapi/manifest.yaml mate-platform-backend/contracts/events/ontology-skill-mcp.v1.json mate-platform-backend/packages/mate-platform/src/mate_platform/ontology_center/quality_api.py mate-platform-backend/packages/mate-platform/src/mate_platform/capabilities/api.py mate-platform-backend/packages/mate-platform/src/mate_platform/mcp_catalog/api.py metaplatform-frontend/apps/web/src/pages/ontology metaplatform-frontend/apps/web/src/pages/mcp mate-platform-backend/tests/e2e/test_ontology_skill_mcp_flow.py metaplatform-frontend/apps/web/e2e/ontology-skill-mcp.spec.ts scripts/test-ontology-skill-mcp-e2e.ps1 acceptance/release/v1/requirements.yaml acceptance/release/v1/interface-registry.yaml
 git commit -m "test(ontology): prove governed ontology skill mcp flow"
-~~~
+```
 
 ## Self-Review
 

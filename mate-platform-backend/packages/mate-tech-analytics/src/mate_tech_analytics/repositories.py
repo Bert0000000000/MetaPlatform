@@ -6,6 +6,7 @@ different numbers (cross-tenant isolation is observable, not just enforced
 by the guard). No real database is touched; this is a stand-in until the
 DATA-D0-D8 platform lands.
 """
+
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -209,9 +210,7 @@ def get_usage(tenant_id: str, days: int) -> UsageResponse:
 
 def get_users(tenant_id: str, days: int) -> UserActivityResponse:
     win = _window(tenant_id, days)
-    points = [
-        UserActivityPoint(date=r.date, dau=r.dau, new_users=r.new_users) for r in win
-    ]
+    points = [UserActivityPoint(date=r.date, dau=r.dau, new_users=r.new_users) for r in win]
     # MAU = sum of DAU over the full 30-day rolling window (active users
     # are not additive, but for a synthetic store this is a stable proxy).
     all_recs = _data_for(tenant_id)
@@ -250,9 +249,7 @@ def get_trends(tenant_id: str, days: int) -> TrendResponse:
     seed = _tenant_seed(tenant_id) or 1
     base_storage = 5.0 + (seed % 50)
     daily_growth = 0.4 + (seed % 30) / 100.0
-    storage_by_offset = {
-        i: round(base_storage + i * daily_growth, 2) for i in range(len(all_recs))
-    }
+    storage_by_offset = {i: round(base_storage + i * daily_growth, 2) for i in range(len(all_recs))}
     points: list[TrendPoint] = []
     # map each record to its global index for the storage curve
     global_index_start = len(all_recs) - len(win)

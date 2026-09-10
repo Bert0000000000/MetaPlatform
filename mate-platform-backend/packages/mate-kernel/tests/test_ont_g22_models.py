@@ -1,4 +1,5 @@
 """ONT-G22 — 模型对象注册 + 动态安全（marking 可见性）单测。"""
+
 from __future__ import annotations
 
 import os
@@ -15,7 +16,10 @@ from mate_kernel.ontology.models import ModelObject, ModelRegistry
 
 def _mdl(rid: str, markings: tuple[str, ...] = ()) -> ModelObject:
     return ModelObject(
-        rid=rid, display_name=rid, provider="ark-plan", model="glm-5.3-flash",
+        rid=rid,
+        display_name=rid,
+        provider="ark-plan",
+        model="glm-5.3-flash",
         base_url="https://ark.cn-beijing.volces.com/api/plan/v3",
         required_markings=frozenset(markings),
     )
@@ -40,8 +44,7 @@ def test_visible_to_filters_by_markings():
     pub_actor = frozenset()
     sec_actor = {"PII"}
     assert [m.rid for m in r.visible_to(pub_actor)] == ["ont.t1.mdl.pub.v1"]
-    assert [m.rid for m in r.visible_to(sec_actor)] == \
-        ["ont.t1.mdl.pub.v1", "ont.t1.mdl.sec.v1"]
+    assert [m.rid for m in r.visible_to(sec_actor)] == ["ont.t1.mdl.pub.v1", "ont.t1.mdl.sec.v1"]
 
 
 def test_check_gate_reasons():

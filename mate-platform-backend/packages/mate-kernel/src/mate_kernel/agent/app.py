@@ -27,9 +27,9 @@ class PageKind(StrEnum):
 
 
 class SlotKind(StrEnum):
-    FIELD = "field"            # 单字段显示
-    TABLE = "table"            # 列表
-    LINK = "link"              # 跳转到详情
+    FIELD = "field"  # 单字段显示
+    TABLE = "table"  # 列表
+    LINK = "link"  # 跳转到详情
     ACTION_BUTTON = "action_button"  # 调用 ActionType
     CHART = "chart"
 
@@ -40,7 +40,7 @@ class Slot:
     kind: SlotKind
     target_rid: str | None = None  # 属性 rid / ActionType rid / LinkType rid
     label: str | None = None
-    required: bool = False         # FORM 字段是否必填
+    required: bool = False  # FORM 字段是否必填
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,7 +86,9 @@ class AppAgent:
             self._pages[page.page_rid] = page
         self._apps[app.app_rid] = app
         manager.track(
-            kind=__import__("mate_kernel.manager.protocol", fromlist=["ChangeKind"]).ChangeKind.REGISTER_CLASS,
+            kind=__import__(
+                "mate_kernel.manager.protocol", fromlist=["ChangeKind"]
+            ).ChangeKind.REGISTER_CLASS,
             target_rid=app.app_rid,
             payload={"pages": [p.page_rid for p in app.pages]},
         )
@@ -128,16 +130,25 @@ def build_crud_app(
                 kind=PageKind.LIST,
                 bound_class_rid=bound_class,
                 title=list_title,
-                slots=(
-                    Slot(slot_id="table", kind=SlotKind.TABLE, target_rid=bound_class.rid),
-                ),
+                slots=(Slot(slot_id="table", kind=SlotKind.TABLE, target_rid=bound_class.rid),),
             ),
             PageManifest(
                 page_rid=f"{base}.page.{cls_slug}-detail.v1",
                 kind=PageKind.DETAIL,
                 bound_class_rid=bound_class,
                 title=f"{list_title} · 详情",
-                slots=(Slot(slot_id="props", kind=SlotKind.FIELD, target_rid=bound_class.rid), *tuple(Slot(slot_id=f"act-{i}", kind=SlotKind.ACTION_BUTTON, target_rid=rid, label=rid.split(".")[-1]) for i, rid in enumerate(action_rids))),
+                slots=(
+                    Slot(slot_id="props", kind=SlotKind.FIELD, target_rid=bound_class.rid),
+                    *tuple(
+                        Slot(
+                            slot_id=f"act-{i}",
+                            kind=SlotKind.ACTION_BUTTON,
+                            target_rid=rid,
+                            label=rid.split(".")[-1],
+                        )
+                        for i, rid in enumerate(action_rids)
+                    ),
+                ),
             ),
             PageManifest(
                 page_rid=f"{base}.page.{cls_slug}-form.v1",
@@ -145,7 +156,12 @@ def build_crud_app(
                 bound_class_rid=bound_class,
                 title=f"{list_title} · 表单",
                 slots=(
-                    Slot(slot_id="primary", kind=SlotKind.FIELD, target_rid=bound_class.rid, required=True),
+                    Slot(
+                        slot_id="primary",
+                        kind=SlotKind.FIELD,
+                        target_rid=bound_class.rid,
+                        required=True,
+                    ),
                 ),
             ),
         ),

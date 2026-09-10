@@ -2,20 +2,26 @@
 
 走 docker exec 内部 curl（宿主代理会截 8088），跟踪 nextUri 直到 FINISHED。
 """
+
 from __future__ import annotations
 
 import json
 import subprocess
 import sys
 
-INNER = ('curl -s -X POST -H "X-Trino-User: mate" '
-         '--data-binary @- http://localhost:8080/v1/statement')
+INNER = (
+    'curl -s -X POST -H "X-Trino-User: mate" --data-binary @- http://localhost:8080/v1/statement'
+)
 
 
 def query(sql: str) -> dict:
     proc = subprocess.run(
         ["docker", "exec", "-i", "mate-trino", "sh", "-c", INNER],
-        input=sql, capture_output=True, text=True, timeout=180)
+        input=sql,
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
     obj = json.loads(proc.stdout)
     rows: list = []
     while True:
@@ -25,17 +31,32 @@ def query(sql: str) -> dict:
             rows.extend(obj["data"])
         state = obj.get("stats", {}).get("state")
         if state in ("FINISHED", "FAILED", "CANCELED"):
-            return {"rows": rows, "columns": [c["name"] for c in obj.get("columns", [])],
-                    "state": state}
+            return {
+                "rows": rows,
+                "columns": [c["name"] for c in obj.get("columns", [])],
+                "state": state,
+            }
         nxt = obj.get("nextUri")
         if not nxt:
-            return {"rows": rows, "columns": [c["name"] for c in obj.get("columns", [])],
-                    "state": state}
+            return {
+                "rows": rows,
+                "columns": [c["name"] for c in obj.get("columns", [])],
+                "state": state,
+            }
         nxt_in_container = nxt.replace("http://localhost:8080", "http://localhost:8080")
         proc = subprocess.run(
-            ["docker", "exec", "mate-trino", "sh", "-c",
-             f'curl -s -H "X-Trino-User: mate" "{nxt}"'],
-            capture_output=True, text=True, timeout=180)
+            [
+                "docker",
+                "exec",
+                "mate-trino",
+                "sh",
+                "-c",
+                f'curl -s -H "X-Trino-User: mate" "{nxt}"',
+            ],
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
         obj = json.loads(proc.stdout)
 
 

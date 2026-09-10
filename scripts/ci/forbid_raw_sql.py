@@ -15,12 +15,12 @@ Detected patterns (G2 hardening, 2026-08-01):
 5. bare ``text("...")`` in ``src/``     - constructing a raw SQL clause
                                          (allowed under ``tests/``)
 """
+
 from __future__ import annotations
 
 import re
 import sys
 from pathlib import Path
-
 
 # Each entry: (description, compiled regex).
 PATTERNS: list[tuple[str, re.Pattern[str]]] = [

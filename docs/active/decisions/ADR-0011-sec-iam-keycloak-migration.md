@@ -31,6 +31,7 @@ SEC-IAM-01 落地以下变更：
 `mate-tech-iam` 包标记为 **deprecated**，在 SEC-IAM-01 完成后从主构建中剔除
 （生产构建不再 include router），但保留在 git 历史中作为可回滚的归档。
 具体动作：
+
 - `mate-platform-backend/contracts/openapi/manifest.yaml` 中
   `iam.runtimeModule` 由 `mate_tech_iam.main:app` 改为 `null`
   （manifest.yaml 已记录此值；本 ADR 仅为状态声明）。
@@ -48,7 +49,7 @@ SEC-IAM-01 落地以下变更：
   `X-Robots-Tag: noindex`，幂等。
 - 缓存用 `dict[str, JWK]` 按 `kid` 索引，线程安全（RLock）。
 - 签名验证优先查 kid；未命中则触发立即刷新一次（key rotation 容错）。
-- 算法白名单 RS256 / RS384 / RS512（拒绝 HS*，避免 alg confusion 攻击）。
+- 算法白名单 RS256 / RS384 / RS512（拒绝 HS\*，避免 alg confusion 攻击）。
 - `aud` 必须包含 `metaplatform-backend`；`iss` 必须等于 `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}`。
 
 ### 2.3 RequestContext 强化
@@ -207,15 +208,15 @@ security:
 dev → local → contract → integration → staging → pre-production → production
 ```
 
-| 阶段 | 动作 | 验证 |
-|---|---|---|
-| dev | `legacy_login_compat=true`，mate-tech-iam HS256 仍可用 | 端到端冒烟 |
-| local | Keycloak 本地 helm install，JWKS 端到端跑通 | pytest 跨租户 negative cases |
-| contract | helm template + kubeconform | contract CI 全绿 |
-| integration | Keycloak 真实启动，17 个 app 切换到 bearer + tenantHeader | 17 域端到端 e2e |
-| staging | 完整 13 硬规则跑通 | DR 演练 + 跨租户越权矩阵 |
-| pre-production | 真实数据 + 灰度切流 | 全量 e2e + 性能基线 |
-| production | GA 切流，旧 mate-tech-iam 路由全部 404 | 0 越权 + 0 服务身份越界 |
+| 阶段           | 动作                                                      | 验证                         |
+| -------------- | --------------------------------------------------------- | ---------------------------- |
+| dev            | `legacy_login_compat=true`，mate-tech-iam HS256 仍可用    | 端到端冒烟                   |
+| local          | Keycloak 本地 helm install，JWKS 端到端跑通               | pytest 跨租户 negative cases |
+| contract       | helm template + kubeconform                               | contract CI 全绿             |
+| integration    | Keycloak 真实启动，17 个 app 切换到 bearer + tenantHeader | 17 域端到端 e2e              |
+| staging        | 完整 13 硬规则跑通                                        | DR 演练 + 跨租户越权矩阵     |
+| pre-production | 真实数据 + 灰度切流                                       | 全量 e2e + 性能基线          |
+| production     | GA 切流，旧 mate-tech-iam 路由全部 404                    | 0 越权 + 0 服务身份越界      |
 
 回退路径：若 SEC-IAM-01 production 上线后出现重大故障，PLATFORM-K8S-01
 ApplicationSet 单一 application 回滚到上一 commit；Keycloak realm 通过

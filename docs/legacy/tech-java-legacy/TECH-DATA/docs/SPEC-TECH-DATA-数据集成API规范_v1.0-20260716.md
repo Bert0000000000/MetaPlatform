@@ -36,31 +36,31 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
 
 核心职责：
 
-| 序号 | 能力域 | 说明 |
-|------|--------|------|
-| 1 | 数据源管理 | 外部数据库、API、文件数据源接入，连接配置，测试连接 |
-| 2 | CDC 实时同步 | 基于 Flink CDC 的实时数据变更捕获，CDC 任务配置与管理 |
-| 3 | ETL/ELT 任务 | 基于 Airflow 的批量 ETL 任务编排，DBT 数仓建模，任务调度 |
-| 4 | 数据湖管理 | Hudi/Iceberg 表管理，数据入湖（DeltaStreamer/upsert），湖表查询 |
-| 5 | 数据仓库 | StarRocks OLAP 查询，数仓分层（ODS/DWD/DWS/ADS），物化视图 |
-| 6 | 数据目录 | 数据资产目录，元数据管理，数据血缘追踪 |
-| 7 | 数据质量 | 数据质量规则，质量监控，质量报告 |
-| 8 | 任务监控 | ETL 任务运行状态，SLA 监控，失败告警 |
+| 序号 | 能力域       | 说明                                                            |
+| ---- | ------------ | --------------------------------------------------------------- |
+| 1    | 数据源管理   | 外部数据库、API、文件数据源接入，连接配置，测试连接             |
+| 2    | CDC 实时同步 | 基于 Flink CDC 的实时数据变更捕获，CDC 任务配置与管理           |
+| 3    | ETL/ELT 任务 | 基于 Airflow 的批量 ETL 任务编排，DBT 数仓建模，任务调度        |
+| 4    | 数据湖管理   | Hudi/Iceberg 表管理，数据入湖（DeltaStreamer/upsert），湖表查询 |
+| 5    | 数据仓库     | StarRocks OLAP 查询，数仓分层（ODS/DWD/DWS/ADS），物化视图      |
+| 6    | 数据目录     | 数据资产目录，元数据管理，数据血缘追踪                          |
+| 7    | 数据质量     | 数据质量规则，质量监控，质量报告                                |
+| 8    | 任务监控     | ETL 任务运行状态，SLA 监控，失败告警                            |
 
 ### 1.2 技术栈
 
-| 层级 | 技术选型 | 用途 |
-|------|----------|------|
-| 服务框架 | Python 3.13 + FastAPI | REST API 服务 |
-| 流处理 | Apache Flink 1.20 + Flink CDC | 实时数据变更捕获与同步 |
-| 批处理 | Apache Airflow 2.10 | 批量 ETL 任务编排与调度 |
-| 数仓建模 | DBT 1.9 | 数据仓库分层建模、转换逻辑管理 |
-| 数据湖（主） | Apache Hudi 1.x | CDC/upsert 场景，DeltaStreamer 入湖，MoR 模式 |
-| 数据湖（备） | Apache Iceberg 1.8 | 追加场景，时间旅行，Schema 演化 |
-| OLAP | StarRocks 3.4 | 实时 OLAP 查询，多模型，物化视图 |
-| 消息队列 | Kafka 3.9 | CDC 数据管道、事件通知 |
-| 元数据存储 | PostgreSQL 17 | 数据源配置、任务元数据、质量规则 |
-| 对象存储 | MinIO | 数据湖底层存储 |
+| 层级         | 技术选型                      | 用途                                          |
+| ------------ | ----------------------------- | --------------------------------------------- |
+| 服务框架     | Python 3.13 + FastAPI         | REST API 服务                                 |
+| 流处理       | Apache Flink 1.20 + Flink CDC | 实时数据变更捕获与同步                        |
+| 批处理       | Apache Airflow 2.10           | 批量 ETL 任务编排与调度                       |
+| 数仓建模     | DBT 1.9                       | 数据仓库分层建模、转换逻辑管理                |
+| 数据湖（主） | Apache Hudi 1.x               | CDC/upsert 场景，DeltaStreamer 入湖，MoR 模式 |
+| 数据湖（备） | Apache Iceberg 1.8            | 追加场景，时间旅行，Schema 演化               |
+| OLAP         | StarRocks 3.4                 | 实时 OLAP 查询，多模型，物化视图              |
+| 消息队列     | Kafka 3.9                     | CDC 数据管道、事件通知                        |
+| 元数据存储   | PostgreSQL 17                 | 数据源配置、任务元数据、质量规则              |
+| 对象存储     | MinIO                         | 数据湖底层存储                                |
 
 ### 1.3 上下游关系
 
@@ -92,23 +92,25 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
 ```
 
 **上游依赖：**
+
 - 外部数据源：MySQL、PostgreSQL、Oracle、SQL Server、MongoDB、REST API、文件（CSV/Parquet/JSON）、S3/MinIO
 - TECH-MSG：消费 Kafka 中的控制指令，发布数据同步事件
 
 **下游消费：**
+
 - TECH-ONT：将数据资产注册为本体引擎的数据节点，作为平台唯一数据真相源的物理层
 - TECH-RAG：将文档类数据切片后供 RAG 引擎检索
 - APP-ONTSTUDIO：在本体论引擎前端展示数据资产目录、血缘、质量信息
 
 ### 1.4 服务端口与部署
 
-| 配置项 | 值 |
-|--------|-----|
-| 服务端口 | 8090 |
-| 健康检查 | `/api/v1/data/health` |
-| API 文档 | `/api/v1/data/docs`（FastAPI Swagger UI） |
-| OpenAPI JSON | `/api/v1/data/openapi.json` |
-| 部署方式 | Kubernetes Pod（tek_data 服务） |
+| 配置项       | 值                                        |
+| ------------ | ----------------------------------------- |
+| 服务端口     | 8090                                      |
+| 健康检查     | `/api/v1/data/health`                     |
+| API 文档     | `/api/v1/data/docs`（FastAPI Swagger UI） |
+| OpenAPI JSON | `/api/v1/data/openapi.json`               |
+| 部署方式     | Kubernetes Pod（tek_data 服务）           |
 
 ---
 
@@ -135,12 +137,12 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
 }
 ```
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `code` | integer | 业务状态码，`0` 表示成功，非 `0` 表示失败 |
-| `message` | string | 状态描述信息 |
-| `data` | object/array/null | 业务数据，失败时为 `null` |
-| `traceId` | string | 链路追踪 ID，用于全链路日志关联 |
+| 字段      | 类型              | 说明                                      |
+| --------- | ----------------- | ----------------------------------------- |
+| `code`    | integer           | 业务状态码，`0` 表示成功，非 `0` 表示失败 |
+| `message` | string            | 状态描述信息                              |
+| `data`    | object/array/null | 业务数据，失败时为 `null`                 |
+| `traceId` | string            | 链路追踪 ID，用于全链路日志关联           |
 
 分页响应的 `data` 结构：
 
@@ -161,30 +163,30 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
 
 ### 2.3 认证
 
-| 认证方式 | 说明 |
-|----------|------|
+| 认证方式     | 说明                                                         |
+| ------------ | ------------------------------------------------------------ |
 | Bearer Token | 请求头 `Authorization: Bearer <JWT_TOKEN>`，由 TECH-IAM 签发 |
-| API Key | 请求头 `X-API-Key: <key>`，用于服务间调用（M2M） |
-| 租户标识 | 请求头 `X-Tenant-Id: <tenant_id>`，多租户隔离 |
+| API Key      | 请求头 `X-API-Key: <key>`，用于服务间调用（M2M）             |
+| 租户标识     | 请求头 `X-Tenant-Id: <tenant_id>`，多租户隔离                |
 
 ### 2.4 错误码
 
-| code | HTTP Status | 说明 | 典型场景 |
-|------|-------------|------|----------|
-| 0 | 200 | 成功 | 正常请求 |
-| 40001 | 400 | 参数校验失败 | 必填参数缺失、格式错误 |
-| 40101 | 401 | 未认证 | Token 缺失或过期 |
-| 40301 | 403 | 无权限 | 当前用户无操作权限 |
-| 40401 | 404 | 资源不存在 | 数据源/任务/表不存在 |
-| 40901 | 409 | 资源冲突 | 名称重复、状态冲突 |
-| 42201 | 422 | 业务规则冲突 | 数据源正在使用中无法删除 |
-| 42901 | 429 | 请求过于频繁 | 触发限流 |
-| 50001 | 500 | 服务内部错误 | 未捕获异常 |
-| 50002 | 500 | 数据源连接失败 | 数据库连接超时/认证失败 |
-| 50003 | 500 | 任务执行失败 | ETL/CDC 任务运行异常 |
-| 50004 | 500 | 数据湖操作失败 | Hudi/Iceberg 表操作异常 |
-| 50005 | 500 | OLAP 查询失败 | StarRocks 查询执行异常 |
-| 50301 | 503 | 服务不可用 | 依赖组件（Flink/Airflow/StarRocks）不可用 |
+| code  | HTTP Status | 说明           | 典型场景                                  |
+| ----- | ----------- | -------------- | ----------------------------------------- |
+| 0     | 200         | 成功           | 正常请求                                  |
+| 40001 | 400         | 参数校验失败   | 必填参数缺失、格式错误                    |
+| 40101 | 401         | 未认证         | Token 缺失或过期                          |
+| 40301 | 403         | 无权限         | 当前用户无操作权限                        |
+| 40401 | 404         | 资源不存在     | 数据源/任务/表不存在                      |
+| 40901 | 409         | 资源冲突       | 名称重复、状态冲突                        |
+| 42201 | 422         | 业务规则冲突   | 数据源正在使用中无法删除                  |
+| 42901 | 429         | 请求过于频繁   | 触发限流                                  |
+| 50001 | 500         | 服务内部错误   | 未捕获异常                                |
+| 50002 | 500         | 数据源连接失败 | 数据库连接超时/认证失败                   |
+| 50003 | 500         | 任务执行失败   | ETL/CDC 任务运行异常                      |
+| 50004 | 500         | 数据湖操作失败 | Hudi/Iceberg 表操作异常                   |
+| 50005 | 500         | OLAP 查询失败  | StarRocks 查询执行异常                    |
+| 50301 | 503         | 服务不可用     | 依赖组件（Flink/Airflow/StarRocks）不可用 |
 
 错误响应示例：
 
@@ -199,14 +201,14 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
 
 ### 2.5 分页参数
 
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `page` | integer | 1 | 页码，从 1 开始 |
-| `pageSize` | integer | 20 | 每页条数，最大 100 |
-| `sortBy` | string | `createdAt` | 排序字段 |
-| `sortOrder` | string | `desc` | 排序方向：`asc`/`desc` |
-| `keyword` | string | - | 名称模糊搜索关键词 |
-| `status` | string | - | 状态过滤 |
+| 参数        | 类型    | 默认值      | 说明                   |
+| ----------- | ------- | ----------- | ---------------------- |
+| `page`      | integer | 1           | 页码，从 1 开始        |
+| `pageSize`  | integer | 20          | 每页条数，最大 100     |
+| `sortBy`    | string  | `createdAt` | 排序字段               |
+| `sortOrder` | string  | `desc`      | 排序方向：`asc`/`desc` |
+| `keyword`   | string  | -           | 名称模糊搜索关键词     |
+| `status`    | string  | -           | 状态过滤               |
 
 ### 2.6 trace_id 传播
 
@@ -242,12 +244,12 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
 
 获取平台支持的所有数据源类型。
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                             |
+| -------- | -------------------------------- |
+| **方法** | `GET`                            |
 | **路径** | `/api/v1/data/datasources/types` |
-| **认证** | Bearer Token |
-| **权限** | `data:datasource:read` |
+| **认证** | Bearer Token                     |
+| **权限** | `data:datasource:read`           |
 
 **请求参数：** 无
 
@@ -266,7 +268,14 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
         "supportsCDC": true,
         "supportsBatch": true,
         "defaultPort": 3306,
-        "connectionParams": ["host", "port", "database", "username", "password", "sslMode"],
+        "connectionParams": [
+          "host",
+          "port",
+          "database",
+          "username",
+          "password",
+          "sslMode"
+        ],
         "version": "5.7+"
       },
       {
@@ -276,7 +285,14 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
         "supportsCDC": true,
         "supportsBatch": true,
         "defaultPort": 5432,
-        "connectionParams": ["host", "port", "database", "username", "password", "sslMode"],
+        "connectionParams": [
+          "host",
+          "port",
+          "database",
+          "username",
+          "password",
+          "sslMode"
+        ],
         "version": "10+"
       },
       {
@@ -286,7 +302,13 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
         "supportsCDC": true,
         "supportsBatch": true,
         "defaultPort": 1521,
-        "connectionParams": ["host", "port", "serviceName", "username", "password"],
+        "connectionParams": [
+          "host",
+          "port",
+          "serviceName",
+          "username",
+          "password"
+        ],
         "version": "11g+"
       },
       {
@@ -296,7 +318,13 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
         "supportsCDC": true,
         "supportsBatch": true,
         "defaultPort": 1433,
-        "connectionParams": ["host", "port", "database", "username", "password"],
+        "connectionParams": [
+          "host",
+          "port",
+          "database",
+          "username",
+          "password"
+        ],
         "version": "2016+"
       },
       {
@@ -306,7 +334,14 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
         "supportsCDC": true,
         "supportsBatch": true,
         "defaultPort": 27017,
-        "connectionParams": ["host", "port", "database", "username", "password", "replicaSet"],
+        "connectionParams": [
+          "host",
+          "port",
+          "database",
+          "username",
+          "password",
+          "replicaSet"
+        ],
         "version": "4.0+"
       },
       {
@@ -346,7 +381,13 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
         "supportsCDC": false,
         "supportsBatch": true,
         "defaultPort": 9000,
-        "connectionParams": ["endpoint", "bucket", "accessKey", "secretKey", "region"],
+        "connectionParams": [
+          "endpoint",
+          "bucket",
+          "accessKey",
+          "secretKey",
+          "region"
+        ],
         "version": "-"
       },
       {
@@ -371,24 +412,24 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
 
 #### 3.1.2 创建数据源
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                       |
+| -------- | -------------------------- |
+| **方法** | `POST`                     |
 | **路径** | `/api/v1/data/datasources` |
-| **认证** | Bearer Token |
-| **权限** | `data:datasource:write` |
+| **认证** | Bearer Token               |
+| **权限** | `data:datasource:write`    |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `name` | string | 是 | 数据源名称，租户内唯一，1-100 字符 |
-| `type` | string | 是 | 数据源类型，见 3.1.1 返回的 `type` 值 |
-| `description` | string | 否 | 数据源描述，最多 500 字符 |
-| `category` | string | 是 | 数据源分类：`database`/`api`/`file`/`object_storage`/`streaming` |
-| `connectionConfig` | object | 是 | 连接配置，结构取决于 `type`，敏感字段加密存储 |
-| `tags` | string[] | 否 | 标签列表 |
-| `ownerId` | string | 是 | 负责人用户 ID |
+| 参数               | 类型     | 必填 | 说明                                                             |
+| ------------------ | -------- | ---- | ---------------------------------------------------------------- |
+| `name`             | string   | 是   | 数据源名称，租户内唯一，1-100 字符                               |
+| `type`             | string   | 是   | 数据源类型，见 3.1.1 返回的 `type` 值                            |
+| `description`      | string   | 否   | 数据源描述，最多 500 字符                                        |
+| `category`         | string   | 是   | 数据源分类：`database`/`api`/`file`/`object_storage`/`streaming` |
+| `connectionConfig` | object   | 是   | 连接配置，结构取决于 `type`，敏感字段加密存储                    |
+| `tags`             | string[] | 否   | 标签列表                                                         |
+| `ownerId`          | string   | 是   | 负责人用户 ID                                                    |
 
 **请求示例（MySQL）：**
 
@@ -444,37 +485,37 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
+| code  | 场景                                                                      |
+| ----- | ------------------------------------------------------------------------- |
 | 40001 | `name` 为空或超长；`type` 不在支持列表中；`connectionConfig` 缺少必填字段 |
-| 40901 | 同租户下数据源名称已存在 |
-| 50001 | 密钥加密服务异常 |
+| 40901 | 同租户下数据源名称已存在                                                  |
+| 50001 | 密钥加密服务异常                                                          |
 
 ---
 
 #### 3.1.3 获取数据源列表
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                       |
+| -------- | -------------------------- |
+| **方法** | `GET`                      |
 | **路径** | `/api/v1/data/datasources` |
-| **认证** | Bearer Token |
-| **权限** | `data:datasource:read` |
+| **认证** | Bearer Token               |
+| **权限** | `data:datasource:read`     |
 
 **请求参数（Query）：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `page` | integer | 否 | 页码，默认 1 |
-| `pageSize` | integer | 否 | 每页条数，默认 20 |
-| `keyword` | string | 否 | 名称模糊搜索 |
-| `type` | string | 否 | 数据源类型过滤 |
-| `category` | string | 否 | 分类过滤 |
-| `status` | string | 否 | 状态过滤：`created`/`active`/`disabled` |
-| `connectionStatus` | string | 否 | 连接状态：`connected`/`disconnected`/`untested`/`error` |
-| `tag` | string | 否 | 标签过滤 |
-| `sortBy` | string | 否 | 排序字段，默认 `createdAt` |
-| `sortOrder` | string | 否 | `asc`/`desc`，默认 `desc` |
+| 参数               | 类型    | 必填 | 说明                                                    |
+| ------------------ | ------- | ---- | ------------------------------------------------------- |
+| `page`             | integer | 否   | 页码，默认 1                                            |
+| `pageSize`         | integer | 否   | 每页条数，默认 20                                       |
+| `keyword`          | string  | 否   | 名称模糊搜索                                            |
+| `type`             | string  | 否   | 数据源类型过滤                                          |
+| `category`         | string  | 否   | 分类过滤                                                |
+| `status`           | string  | 否   | 状态过滤：`created`/`active`/`disabled`                 |
+| `connectionStatus` | string  | 否   | 连接状态：`connected`/`disconnected`/`untested`/`error` |
+| `tag`              | string  | 否   | 标签过滤                                                |
+| `sortBy`           | string  | 否   | 排序字段，默认 `createdAt`                              |
+| `sortOrder`        | string  | 否   | `asc`/`desc`，默认 `desc`                               |
 
 **响应示例：**
 
@@ -513,17 +554,17 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
 
 #### 3.1.4 获取数据源详情
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                                      |
+| -------- | ----------------------------------------- |
+| **方法** | `GET`                                     |
 | **路径** | `/api/v1/data/datasources/{datasourceId}` |
-| **认证** | Bearer Token |
-| **权限** | `data:datasource:read` |
+| **认证** | Bearer Token                              |
+| **权限** | `data:datasource:read`                    |
 
 **路径参数：**
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
+| 参数           | 类型   | 说明      |
+| -------------- | ------ | --------- |
 | `datasourceId` | string | 数据源 ID |
 
 **响应示例：**
@@ -566,30 +607,30 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
+| code  | 场景             |
+| ----- | ---------------- |
 | 40401 | 数据源 ID 不存在 |
 
 ---
 
 #### 3.1.5 更新数据源
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `PUT` |
+| 项目     | 说明                                      |
+| -------- | ----------------------------------------- |
+| **方法** | `PUT`                                     |
 | **路径** | `/api/v1/data/datasources/{datasourceId}` |
-| **认证** | Bearer Token |
-| **权限** | `data:datasource:write` |
+| **认证** | Bearer Token                              |
+| **权限** | `data:datasource:write`                   |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `name` | string | 否 | 数据源名称 |
-| `description` | string | 否 | 描述 |
-| `connectionConfig` | object | 否 | 连接配置（部分更新） |
-| `tags` | string[] | 否 | 标签 |
-| `status` | string | 否 | 状态：`active`/`disabled` |
+| 参数               | 类型     | 必填 | 说明                      |
+| ------------------ | -------- | ---- | ------------------------- |
+| `name`             | string   | 否   | 数据源名称                |
+| `description`      | string   | 否   | 描述                      |
+| `connectionConfig` | object   | 否   | 连接配置（部分更新）      |
+| `tags`             | string[] | 否   | 标签                      |
+| `status`           | string   | 否   | 状态：`active`/`disabled` |
 
 **请求示例：**
 
@@ -634,34 +675,34 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40401 | 数据源不存在 |
-| 40901 | 名称与其他数据源冲突 |
+| code  | 场景                                          |
+| ----- | --------------------------------------------- |
+| 40401 | 数据源不存在                                  |
+| 40901 | 名称与其他数据源冲突                          |
 | 42201 | 数据源存在运行中的 CDC 任务，无法修改连接配置 |
 
 ---
 
 #### 3.1.6 删除数据源
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `DELETE` |
+| 项目     | 说明                                      |
+| -------- | ----------------------------------------- |
+| **方法** | `DELETE`                                  |
 | **路径** | `/api/v1/data/datasources/{datasourceId}` |
-| **认证** | Bearer Token |
-| **权限** | `data:datasource:delete` |
+| **认证** | Bearer Token                              |
+| **权限** | `data:datasource:delete`                  |
 
 **路径参数：**
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
+| 参数           | 类型   | 说明      |
+| -------------- | ------ | --------- |
 | `datasourceId` | string | 数据源 ID |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `force` | boolean | 否 | 是否强制删除（忽略关联任务检查），默认 `false` |
+| 参数    | 类型    | 必填 | 说明                                           |
+| ------- | ------- | ---- | ---------------------------------------------- |
+| `force` | boolean | 否   | 是否强制删除（忽略关联任务检查），默认 `false` |
 
 **响应示例：**
 
@@ -680,28 +721,28 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40401 | 数据源不存在 |
+| code  | 场景                                                |
+| ----- | --------------------------------------------------- |
+| 40401 | 数据源不存在                                        |
 | 42201 | 数据源关联了运行中的 CDC/ETL 任务，且 `force=false` |
 
 ---
 
 #### 3.1.7 测试数据源连接
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                                           |
+| -------- | ---------------------------------------------- |
+| **方法** | `POST`                                         |
 | **路径** | `/api/v1/data/datasources/{datasourceId}/test` |
-| **认证** | Bearer Token |
-| **权限** | `data:datasource:write` |
+| **认证** | Bearer Token                                   |
+| **权限** | `data:datasource:write`                        |
 
 **请求参数（可选，用于测试未保存的配置）：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `connectionConfig` | object | 否 | 临时连接配置，不传则使用已保存的配置 |
-| `timeout` | integer | 否 | 连接超时秒数，默认 10 |
+| 参数               | 类型    | 必填 | 说明                                 |
+| ------------------ | ------- | ---- | ------------------------------------ |
+| `connectionConfig` | object  | 否   | 临时连接配置，不传则使用已保存的配置 |
+| `timeout`          | integer | 否   | 连接超时秒数，默认 10                |
 
 **响应示例（成功）：**
 
@@ -739,9 +780,9 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40401 | 数据源不存在 |
+| code  | 场景                           |
+| ----- | ------------------------------ |
+| 40401 | 数据源不存在                   |
 | 50002 | 连接超时、认证失败、网络不可达 |
 
 ---
@@ -750,21 +791,21 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
 
 获取数据源的数据库/Schema/表/字段结构。
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                                             |
+| -------- | ------------------------------------------------ |
+| **方法** | `GET`                                            |
 | **路径** | `/api/v1/data/datasources/{datasourceId}/schema` |
-| **认证** | Bearer Token |
-| **权限** | `data:datasource:read` |
+| **认证** | Bearer Token                                     |
+| **权限** | `data:datasource:read`                           |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `database` | string | 否 | 数据库名（数据库类型数据源） |
-| `table` | string | 否 | 表名，传入时返回该表的字段详情 |
-| `includeColumns` | boolean | 否 | 是否包含字段详情，默认 `true` |
-| `sampleSize` | integer | 否 | 样本数据行数，默认 0（不取样） |
+| 参数             | 类型    | 必填 | 说明                           |
+| ---------------- | ------- | ---- | ------------------------------ |
+| `database`       | string  | 否   | 数据库名（数据库类型数据源）   |
+| `table`          | string  | 否   | 表名，传入时返回该表的字段详情 |
+| `includeColumns` | boolean | 否   | 是否包含字段详情，默认 `true`  |
+| `sampleSize`     | integer | 否   | 样本数据行数，默认 0（不取样） |
 
 **响应示例（库表列表）：**
 
@@ -842,9 +883,9 @@ TECH-DATA 是 Mate Platform 的数据集成与 ETL 服务，负责将外围系�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40401 | 数据源不存在 |
+| code  | 场景                           |
+| ----- | ------------------------------ |
+| 40401 | 数据源不存在                   |
 | 50002 | 数据源未连接或 schema 获取失败 |
 
 ---
@@ -855,44 +896,44 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.2.1 创建 CDC 任务
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                     |
+| -------- | ------------------------ |
+| **方法** | `POST`                   |
 | **路径** | `/api/v1/data/cdc-tasks` |
-| **认证** | Bearer Token |
-| **权限** | `data:cdc:write` |
+| **认证** | Bearer Token             |
+| **权限** | `data:cdc:write`         |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `name` | string | 是 | CDC 任务名称，租户内唯一 |
-| `description` | string | 否 | 任务描述 |
-| `sourceDatasourceId` | string | 是 | 源数据源 ID |
-| `sourceConfig` | object | 是 | 源表配置 |
-| `sourceConfig.database` | string | 是 | 源数据库名 |
-| `sourceConfig.tables` | string[] | 是 | 需同步的表列表 |
-| `sourceConfig.includeSchemaChanges` | boolean | 否 | 是否同步 DDL 变更，默认 `false` |
-| `sourceConfig.startupMode` | string | 否 | 启动模式：`initial`/`latest`/`timestamp`/`specific`，默认 `initial` |
-| `sourceConfig.startupTimestamp` | string | 否 | `timestamp` 模式下的起始时间戳 |
-| `targetConfig` | object | 是 | 目标配置 |
-| `targetConfig.type` | string | 是 | 目标类型：`hudi`/`kafka`/`iceberg` |
-| `targetConfig.database` | string | 是 | 目标数据库名 |
-| `targetConfig.tablePrefix` | string | 否 | 目标表名前缀 |
-| `targetConfig.kafkaTopic` | string | 否 | `kafka` 类型时的 topic 名 |
-| `targetConfig.hudiConfig` | object | 否 | Hudi 特有配置 |
-| `targetConfig.hudiConfig.tableType` | string | 否 | `COW`/`MOR`，默认 `MOR` |
-| `targetConfig.hudiConfig.primaryKey` | string | 否 | 主键字段，逗号分隔 |
-| `targetConfig.hudiConfig.partitionFields` | string | 否 | 分区字段 |
-| `targetConfig.hudiConfig.recordKeyField` | string | 否 | 记录键字段 |
-| `targetConfig.hudiConfig.preCombineField` | string | 否 | 预合并字段 |
-| `targetConfig.hudiConfig.indexType` | string | 否 | 索引类型：`BLOOM`/`SIMPLE`/`BUCKET`，默认 `BLOOM` |
-| `syncConfig` | object | 是 | 同步配置 |
-| `syncConfig.parallelism` | integer | 否 | Flink 并行度，默认 1 |
-| `syncConfig.checkpointInterval` | integer | 否 | Checkpoint 间隔（毫秒），默认 30000 |
-| `syncConfig.flushIntervalMs` | integer | 否 | 刷新间隔（毫秒），默认 60000 |
-| `syncConfig.retryTimes` | integer | 否 | 重试次数，默认 3 |
-| `ownerId` | string | 是 | 负责人 ID |
+| 参数                                      | 类型     | 必填 | 说明                                                                |
+| ----------------------------------------- | -------- | ---- | ------------------------------------------------------------------- |
+| `name`                                    | string   | 是   | CDC 任务名称，租户内唯一                                            |
+| `description`                             | string   | 否   | 任务描述                                                            |
+| `sourceDatasourceId`                      | string   | 是   | 源数据源 ID                                                         |
+| `sourceConfig`                            | object   | 是   | 源表配置                                                            |
+| `sourceConfig.database`                   | string   | 是   | 源数据库名                                                          |
+| `sourceConfig.tables`                     | string[] | 是   | 需同步的表列表                                                      |
+| `sourceConfig.includeSchemaChanges`       | boolean  | 否   | 是否同步 DDL 变更，默认 `false`                                     |
+| `sourceConfig.startupMode`                | string   | 否   | 启动模式：`initial`/`latest`/`timestamp`/`specific`，默认 `initial` |
+| `sourceConfig.startupTimestamp`           | string   | 否   | `timestamp` 模式下的起始时间戳                                      |
+| `targetConfig`                            | object   | 是   | 目标配置                                                            |
+| `targetConfig.type`                       | string   | 是   | 目标类型：`hudi`/`kafka`/`iceberg`                                  |
+| `targetConfig.database`                   | string   | 是   | 目标数据库名                                                        |
+| `targetConfig.tablePrefix`                | string   | 否   | 目标表名前缀                                                        |
+| `targetConfig.kafkaTopic`                 | string   | 否   | `kafka` 类型时的 topic 名                                           |
+| `targetConfig.hudiConfig`                 | object   | 否   | Hudi 特有配置                                                       |
+| `targetConfig.hudiConfig.tableType`       | string   | 否   | `COW`/`MOR`，默认 `MOR`                                             |
+| `targetConfig.hudiConfig.primaryKey`      | string   | 否   | 主键字段，逗号分隔                                                  |
+| `targetConfig.hudiConfig.partitionFields` | string   | 否   | 分区字段                                                            |
+| `targetConfig.hudiConfig.recordKeyField`  | string   | 否   | 记录键字段                                                          |
+| `targetConfig.hudiConfig.preCombineField` | string   | 否   | 预合并字段                                                          |
+| `targetConfig.hudiConfig.indexType`       | string   | 否   | 索引类型：`BLOOM`/`SIMPLE`/`BUCKET`，默认 `BLOOM`                   |
+| `syncConfig`                              | object   | 是   | 同步配置                                                            |
+| `syncConfig.parallelism`                  | integer  | 否   | Flink 并行度，默认 1                                                |
+| `syncConfig.checkpointInterval`           | integer  | 否   | Checkpoint 间隔（毫秒），默认 30000                                 |
+| `syncConfig.flushIntervalMs`              | integer  | 否   | 刷新间隔（毫秒），默认 60000                                        |
+| `syncConfig.retryTimes`                   | integer  | 否   | 重试次数，默认 3                                                    |
+| `ownerId`                                 | string   | 是   | 负责人 ID                                                           |
 
 **请求示例：**
 
@@ -979,35 +1020,35 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
+| code  | 场景                                                      |
+| ----- | --------------------------------------------------------- |
 | 40001 | 源数据源不支持 CDC（`supportsCDC=false`）；目标类型不合法 |
-| 40401 | 源数据源不存在 |
-| 40901 | 任务名称已存在 |
-| 42201 | 源数据源连接状态为 `disconnected` 或 `error` |
+| 40401 | 源数据源不存在                                            |
+| 40901 | 任务名称已存在                                            |
+| 42201 | 源数据源连接状态为 `disconnected` 或 `error`              |
 
 ---
 
 #### 3.2.2 获取 CDC 任务列表
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                     |
+| -------- | ------------------------ |
+| **方法** | `GET`                    |
 | **路径** | `/api/v1/data/cdc-tasks` |
-| **认证** | Bearer Token |
-| **权限** | `data:cdc:read` |
+| **认证** | Bearer Token             |
+| **权限** | `data:cdc:read`          |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `page` | integer | 否 | 页码 |
-| `pageSize` | integer | 否 | 每页条数 |
-| `keyword` | string | 否 | 名称搜索 |
-| `status` | string | 否 | `created`/`running`/`stopped`/`failed`/`paused` |
-| `sourceDatasourceId` | string | 否 | 源数据源 ID 过滤 |
-| `targetType` | string | 否 | 目标类型过滤 |
-| `ownerId` | string | 否 | 负责人过滤 |
+| 参数                 | 类型    | 必填 | 说明                                            |
+| -------------------- | ------- | ---- | ----------------------------------------------- |
+| `page`               | integer | 否   | 页码                                            |
+| `pageSize`           | integer | 否   | 每页条数                                        |
+| `keyword`            | string  | 否   | 名称搜索                                        |
+| `status`             | string  | 否   | `created`/`running`/`stopped`/`failed`/`paused` |
+| `sourceDatasourceId` | string  | 否   | 源数据源 ID 过滤                                |
+| `targetType`         | string  | 否   | 目标类型过滤                                    |
+| `ownerId`            | string  | 否   | 负责人过滤                                      |
 
 **响应示例：**
 
@@ -1053,12 +1094,12 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.2.3 获取 CDC 任务详情
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                              |
+| -------- | --------------------------------- |
+| **方法** | `GET`                             |
 | **路径** | `/api/v1/data/cdc-tasks/{taskId}` |
-| **认证** | Bearer Token |
-| **权限** | `data:cdc:read` |
+| **认证** | Bearer Token                      |
+| **权限** | `data:cdc:read`                   |
 
 **响应示例：**
 
@@ -1142,29 +1183,29 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
+| code  | 场景           |
+| ----- | -------------- |
 | 40401 | 任务 ID 不存在 |
 
 ---
 
 #### 3.2.4 更新 CDC 任务
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `PUT` |
+| 项目     | 说明                              |
+| -------- | --------------------------------- |
+| **方法** | `PUT`                             |
 | **路径** | `/api/v1/data/cdc-tasks/{taskId}` |
-| **认证** | Bearer Token |
-| **权限** | `data:cdc:write` |
+| **认证** | Bearer Token                      |
+| **权限** | `data:cdc:write`                  |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `name` | string | 否 | 任务名称 |
-| `description` | string | 否 | 描述 |
-| `syncConfig` | object | 否 | 同步配置（并行度、Checkpoint 间隔等） |
-| `sourceConfig` | object | 否 | 源表配置（增加/减少同步表） |
+| 参数           | 类型   | 必填 | 说明                                  |
+| -------------- | ------ | ---- | ------------------------------------- |
+| `name`         | string | 否   | 任务名称                              |
+| `description`  | string | 否   | 描述                                  |
+| `syncConfig`   | object | 否   | 同步配置（并行度、Checkpoint 间隔等） |
+| `sourceConfig` | object | 否   | 源表配置（增加/减少同步表）           |
 
 > 注意：运行中的任务修改配置后，需重启任务生效。
 
@@ -1187,28 +1228,28 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40401 | 任务不存在 |
+| code  | 场景                           |
+| ----- | ------------------------------ |
+| 40401 | 任务不存在                     |
 | 42201 | 任务运行中，不允许修改源数据库 |
 
 ---
 
 #### 3.2.5 删除 CDC 任务
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `DELETE` |
+| 项目     | 说明                              |
+| -------- | --------------------------------- |
+| **方法** | `DELETE`                          |
 | **路径** | `/api/v1/data/cdc-tasks/{taskId}` |
-| **认证** | Bearer Token |
-| **权限** | `data:cdc:delete` |
+| **认证** | Bearer Token                      |
+| **权限** | `data:cdc:delete`                 |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `stopFirst` | boolean | 否 | 是否先停止再删除，默认 `true` |
-| `cleanupTarget` | boolean | 否 | 是否清理目标表数据，默认 `false` |
+| 参数            | 类型    | 必填 | 说明                             |
+| --------------- | ------- | ---- | -------------------------------- |
+| `stopFirst`     | boolean | 否   | 是否先停止再删除，默认 `true`    |
+| `cleanupTarget` | boolean | 否   | 是否清理目标表数据，默认 `false` |
 
 **响应示例：**
 
@@ -1228,28 +1269,28 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40401 | 任务不存在 |
+| code  | 场景                           |
+| ----- | ------------------------------ |
+| 40401 | 任务不存在                     |
 | 42201 | 任务运行中且 `stopFirst=false` |
 
 ---
 
 #### 3.2.6 启动 CDC 任务
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                                    |
+| -------- | --------------------------------------- |
+| **方法** | `POST`                                  |
 | **路径** | `/api/v1/data/cdc-tasks/{taskId}/start` |
-| **认证** | Bearer Token |
-| **权限** | `data:cdc:operate` |
+| **认证** | Bearer Token                            |
+| **权限** | `data:cdc:operate`                      |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `savepointPath` | string | 否 | 从指定 savepoint 恢复 |
-| `allowNonRestoredState` | boolean | 否 | 是否允许忽略无法恢复的状态，默认 `false` |
+| 参数                    | 类型    | 必填 | 说明                                     |
+| ----------------------- | ------- | ---- | ---------------------------------------- |
+| `savepointPath`         | string  | 否   | 从指定 savepoint 恢复                    |
+| `allowNonRestoredState` | boolean | 否   | 是否允许忽略无法恢复的状态，默认 `false` |
 
 **响应示例：**
 
@@ -1269,31 +1310,31 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40401 | 任务不存在 |
-| 40901 | 任务已在运行中 |
+| code  | 场景               |
+| ----- | ------------------ |
+| 40401 | 任务不存在         |
+| 40901 | 任务已在运行中     |
 | 50003 | Flink 作业提交失败 |
-| 50301 | Flink 集群不可用 |
+| 50301 | Flink 集群不可用   |
 
 ---
 
 #### 3.2.7 停止 CDC 任务
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                                   |
+| -------- | -------------------------------------- |
+| **方法** | `POST`                                 |
 | **路径** | `/api/v1/data/cdc-tasks/{taskId}/stop` |
-| **认证** | Bearer Token |
-| **权限** | `data:cdc:operate` |
+| **认证** | Bearer Token                           |
+| **权限** | `data:cdc:operate`                     |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `savepoint` | boolean | 否 | 停止时是否创建 savepoint，默认 `true` |
-| `savepointPath` | string | 否 | savepoint 存储路径 |
-| `drain` | boolean | 否 | 是否在停止前处理完所有已读取的数据，默认 `false` |
+| 参数            | 类型    | 必填 | 说明                                             |
+| --------------- | ------- | ---- | ------------------------------------------------ |
+| `savepoint`     | boolean | 否   | 停止时是否创建 savepoint，默认 `true`            |
+| `savepointPath` | string  | 否   | savepoint 存储路径                               |
+| `drain`         | boolean | 否   | 是否在停止前处理完所有已读取的数据，默认 `false` |
 
 **响应示例：**
 
@@ -1313,22 +1354,22 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40401 | 任务不存在 |
-| 40901 | 任务已停止 |
+| code  | 场景               |
+| ----- | ------------------ |
+| 40401 | 任务不存在         |
+| 40901 | 任务已停止         |
 | 50003 | Flink 作业停止失败 |
 
 ---
 
 #### 3.2.8 暂停/恢复 CDC 任务
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                                       |
+| -------- | ------------------------------------------ |
+| **方法** | `POST`                                     |
 | **路径** | `/api/v1/data/cdc-tasks/{taskId}/{action}` |
-| **认证** | Bearer Token |
-| **权限** | `data:cdc:operate` |
+| **认证** | Bearer Token                               |
+| **权限** | `data:cdc:operate`                         |
 
 `{action}` 取值：`pause` / `resume`
 
@@ -1350,9 +1391,9 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40401 | 任务不存在 |
+| code  | 场景                 |
+| ----- | -------------------- |
+| 40401 | 任务不存在           |
 | 40901 | 当前状态不允许该操作 |
 
 ---
@@ -1361,19 +1402,19 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 获取 CDC 任务的实时运行指标。
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                                      |
+| -------- | ----------------------------------------- |
+| **方法** | `GET`                                     |
 | **路径** | `/api/v1/data/cdc-tasks/{taskId}/metrics` |
-| **认证** | Bearer Token |
-| **权限** | `data:cdc:read` |
+| **认证** | Bearer Token                              |
+| **权限** | `data:cdc:read`                           |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `timeRange` | string | 否 | 时间范围：`1h`/`6h`/`24h`/`7d`，默认 `1h` |
-| `granularity` | string | 否 | 粒度：`1m`/`5m`/`1h`，默认 `5m` |
+| 参数          | 类型   | 必填 | 说明                                      |
+| ------------- | ------ | ---- | ----------------------------------------- |
+| `timeRange`   | string | 否   | 时间范围：`1h`/`6h`/`24h`/`7d`，默认 `1h` |
+| `granularity` | string | 否   | 粒度：`1m`/`5m`/`1h`，默认 `5m`           |
 
 **响应示例：**
 
@@ -1424,20 +1465,20 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 获取 CDC 任务的数据管道拓扑（源表 -> 目标表的映射关系）。
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                         |
+| -------- | ---------------------------- |
+| **方法** | `GET`                        |
 | **路径** | `/api/v1/data/cdc-pipelines` |
-| **认证** | Bearer Token |
-| **权限** | `data:cdc:read` |
+| **认证** | Bearer Token                 |
+| **权限** | `data:cdc:read`              |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `sourceDatasourceId` | string | 否 | 源数据源过滤 |
-| `targetType` | string | 否 | 目标类型过滤 |
-| `sourceTable` | string | 否 | 源表名过滤 |
+| 参数                 | 类型   | 必填 | 说明         |
+| -------------------- | ------ | ---- | ------------ |
+| `sourceDatasourceId` | string | 否   | 源数据源过滤 |
+| `targetType`         | string | 否   | 目标类型过滤 |
+| `sourceTable`        | string | 否   | 源表名过滤   |
 
 **响应示例：**
 
@@ -1503,40 +1544,40 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.3.1 创建 ETL 任务
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                     |
+| -------- | ------------------------ |
+| **方法** | `POST`                   |
 | **路径** | `/api/v1/data/etl-tasks` |
-| **认证** | Bearer Token |
-| **权限** | `data:etl:write` |
+| **认证** | Bearer Token             |
+| **权限** | `data:etl:write`         |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `name` | string | 是 | ETL 任务名称，租户内唯一 |
-| `description` | string | 否 | 任务描述 |
-| `taskType` | string | 是 | 任务类型：`etl`/`elt`/`dbt`/`sql`/`python`/`shell` |
-| `sourceDatasourceIds` | string[] | 否 | 源数据源 ID 列表 |
-| `targetDatasourceId` | string | 否 | 目标数据源 ID |
-| `dagConfig` | object | 是 | Airflow DAG 配置 |
-| `dagConfig.schedule` | string | 是 | 调度表达式（Cron 或 `@daily` 等） |
-| `dagConfig.startDate` | string | 是 | 生效开始日期（ISO 8601） |
-| `dagConfig.endDate` | string | 否 | 生效结束日期 |
-| `dagConfig.catchup` | boolean | 否 | 是否补跑历史，默认 `false` |
-| `dagConfig.maxActiveRuns` | integer | 否 | 最大并发运行数，默认 1 |
-| `dagConfig.tags` | string[] | 否 | Airflow DAG 标签 |
-| `dagConfig.defaultArgs` | object | 否 | 默认参数 |
-| `dagConfig.defaultArgs.owner` | string | 否 | DAG owner |
-| `dagConfig.defaultArgs.retries` | integer | 否 | 重试次数，默认 3 |
-| `dagConfig.defaultArgs.retryDelaySec` | integer | 否 | 重试间隔（秒），默认 300 |
-| `dagConfig.defaultArgs.timeoutSec` | integer | 否 | 任务超时（秒），默认 3600 |
-| `steps` | array | 是 | ETL 步骤列表 |
-| `steps[].name` | string | 是 | 步骤名称 |
-| `steps[].type` | string | 是 | 步骤类型：`extract`/`transform`/`load`/`dbt_run`/`dbt_test`/`sql`/`python`/`shell` |
-| `steps[].config` | object | 是 | 步骤配置 |
-| `steps[].dependsOn` | string[] | 否 | 依赖的步骤名列表 |
-| `ownerId` | string | 是 | 负责人 ID |
+| 参数                                  | 类型     | 必填 | 说明                                                                               |
+| ------------------------------------- | -------- | ---- | ---------------------------------------------------------------------------------- |
+| `name`                                | string   | 是   | ETL 任务名称，租户内唯一                                                           |
+| `description`                         | string   | 否   | 任务描述                                                                           |
+| `taskType`                            | string   | 是   | 任务类型：`etl`/`elt`/`dbt`/`sql`/`python`/`shell`                                 |
+| `sourceDatasourceIds`                 | string[] | 否   | 源数据源 ID 列表                                                                   |
+| `targetDatasourceId`                  | string   | 否   | 目标数据源 ID                                                                      |
+| `dagConfig`                           | object   | 是   | Airflow DAG 配置                                                                   |
+| `dagConfig.schedule`                  | string   | 是   | 调度表达式（Cron 或 `@daily` 等）                                                  |
+| `dagConfig.startDate`                 | string   | 是   | 生效开始日期（ISO 8601）                                                           |
+| `dagConfig.endDate`                   | string   | 否   | 生效结束日期                                                                       |
+| `dagConfig.catchup`                   | boolean  | 否   | 是否补跑历史，默认 `false`                                                         |
+| `dagConfig.maxActiveRuns`             | integer  | 否   | 最大并发运行数，默认 1                                                             |
+| `dagConfig.tags`                      | string[] | 否   | Airflow DAG 标签                                                                   |
+| `dagConfig.defaultArgs`               | object   | 否   | 默认参数                                                                           |
+| `dagConfig.defaultArgs.owner`         | string   | 否   | DAG owner                                                                          |
+| `dagConfig.defaultArgs.retries`       | integer  | 否   | 重试次数，默认 3                                                                   |
+| `dagConfig.defaultArgs.retryDelaySec` | integer  | 否   | 重试间隔（秒），默认 300                                                           |
+| `dagConfig.defaultArgs.timeoutSec`    | integer  | 否   | 任务超时（秒），默认 3600                                                          |
+| `steps`                               | array    | 是   | ETL 步骤列表                                                                       |
+| `steps[].name`                        | string   | 是   | 步骤名称                                                                           |
+| `steps[].type`                        | string   | 是   | 步骤类型：`extract`/`transform`/`load`/`dbt_run`/`dbt_test`/`sql`/`python`/`shell` |
+| `steps[].config`                      | object   | 是   | 步骤配置                                                                           |
+| `steps[].dependsOn`                   | string[] | 否   | 依赖的步骤名列表                                                                   |
+| `ownerId`                             | string   | 是   | 负责人 ID                                                                          |
 
 **请求示例：**
 
@@ -1633,35 +1674,35 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
+| code  | 场景                               |
+| ----- | ---------------------------------- |
 | 40001 | 调度表达式格式错误；步骤依赖形成环 |
-| 40401 | 源/目标数据源不存在 |
-| 40901 | 任务名称已存在 |
-| 50301 | Airflow 服务不可用 |
+| 40401 | 源/目标数据源不存在                |
+| 40901 | 任务名称已存在                     |
+| 50301 | Airflow 服务不可用                 |
 
 ---
 
 #### 3.3.2 获取 ETL 任务列表
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                     |
+| -------- | ------------------------ |
+| **方法** | `GET`                    |
 | **路径** | `/api/v1/data/etl-tasks` |
-| **认证** | Bearer Token |
-| **权限** | `data:etl:read` |
+| **认证** | Bearer Token             |
+| **权限** | `data:etl:read`          |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `page` | integer | 否 | 页码 |
-| `pageSize` | integer | 否 | 每页条数 |
-| `keyword` | string | 否 | 名称搜索 |
-| `taskType` | string | 否 | 任务类型过滤 |
-| `status` | string | 否 | `created`/`active`/`paused`/`error` |
-| `ownerId` | string | 否 | 负责人过滤 |
-| `tag` | string | 否 | 标签过滤 |
+| 参数       | 类型    | 必填 | 说明                                |
+| ---------- | ------- | ---- | ----------------------------------- |
+| `page`     | integer | 否   | 页码                                |
+| `pageSize` | integer | 否   | 每页条数                            |
+| `keyword`  | string  | 否   | 名称搜索                            |
+| `taskType` | string  | 否   | 任务类型过滤                        |
+| `status`   | string  | 否   | `created`/`active`/`paused`/`error` |
+| `ownerId`  | string  | 否   | 负责人过滤                          |
+| `tag`      | string  | 否   | 标签过滤                            |
 
 **响应示例：**
 
@@ -1699,12 +1740,12 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.3.3 获取 ETL 任务详情
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                              |
+| -------- | --------------------------------- |
+| **方法** | `GET`                             |
 | **路径** | `/api/v1/data/etl-tasks/{taskId}` |
-| **认证** | Bearer Token |
-| **权限** | `data:etl:read` |
+| **认证** | Bearer Token                      |
+| **权限** | `data:etl:read`                   |
 
 **响应示例：**
 
@@ -1777,12 +1818,12 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.3.4 更新 ETL 任务
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `PUT` |
+| 项目     | 说明                              |
+| -------- | --------------------------------- |
+| **方法** | `PUT`                             |
 | **路径** | `/api/v1/data/etl-tasks/{taskId}` |
-| **认证** | Bearer Token |
-| **权限** | `data:etl:write` |
+| **认证** | Bearer Token                      |
+| **权限** | `data:etl:write`                  |
 
 **请求参数：** 同 3.3.1，所有字段可选。
 
@@ -1806,12 +1847,12 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.3.5 删除 ETL 任务
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `DELETE` |
+| 项目     | 说明                              |
+| -------- | --------------------------------- |
+| **方法** | `DELETE`                          |
 | **路径** | `/api/v1/data/etl-tasks/{taskId}` |
-| **认证** | Bearer Token |
-| **权限** | `data:etl:delete` |
+| **认证** | Bearer Token                      |
+| **权限** | `data:etl:delete`                 |
 
 **响应示例：**
 
@@ -1832,20 +1873,20 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.3.6 手动触发 ETL 任务
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                                      |
+| -------- | ----------------------------------------- |
+| **方法** | `POST`                                    |
 | **路径** | `/api/v1/data/etl-tasks/{taskId}/trigger` |
-| **认证** | Bearer Token |
-| **权限** | `data:etl:operate` |
+| **认证** | Bearer Token                              |
+| **权限** | `data:etl:operate`                        |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `logicalDate` | string | 否 | 逻辑日期（ISO 8601），默认当前时间 |
-| `configOverride` | object | 否 | 配置覆盖（Airflow conf） |
-| `steps` | string[] | 否 | 仅执行指定步骤 |
+| 参数             | 类型     | 必填 | 说明                               |
+| ---------------- | -------- | ---- | ---------------------------------- |
+| `logicalDate`    | string   | 否   | 逻辑日期（ISO 8601），默认当前时间 |
+| `configOverride` | object   | 否   | 配置覆盖（Airflow conf）           |
+| `steps`          | string[] | 否   | 仅执行指定步骤                     |
 
 **请求示例：**
 
@@ -1880,32 +1921,32 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40401 | 任务不存在 |
+| code  | 场景                        |
+| ----- | --------------------------- |
+| 40401 | 任务不存在                  |
 | 40901 | 已有相同 logicalDate 的运行 |
-| 50301 | Airflow 服务不可用 |
+| 50301 | Airflow 服务不可用          |
 
 ---
 
 #### 3.3.7 获取执行历史
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                                   |
+| -------- | -------------------------------------- |
+| **方法** | `GET`                                  |
 | **路径** | `/api/v1/data/etl-tasks/{taskId}/runs` |
-| **认证** | Bearer Token |
-| **权限** | `data:etl:read` |
+| **认证** | Bearer Token                           |
+| **权限** | `data:etl:read`                        |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `page` | integer | 否 | 页码 |
-| `pageSize` | integer | 否 | 每页条数 |
-| `status` | string | 否 | `running`/`success`/`failed`/`queued` |
-| `startDate` | string | 否 | 开始日期 |
-| `endDate` | string | 否 | 结束日期 |
+| 参数        | 类型    | 必填 | 说明                                  |
+| ----------- | ------- | ---- | ------------------------------------- |
+| `page`      | integer | 否   | 页码                                  |
+| `pageSize`  | integer | 否   | 每页条数                              |
+| `status`    | string  | 否   | `running`/`success`/`failed`/`queued` |
+| `startDate` | string  | 否   | 开始日期                              |
+| `endDate`   | string  | 否   | 结束日期                              |
 
 **响应示例：**
 
@@ -1975,12 +2016,12 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.3.8 获取执行详情
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                                           |
+| -------- | ---------------------------------------------- |
+| **方法** | `GET`                                          |
 | **路径** | `/api/v1/data/etl-tasks/{taskId}/runs/{runId}` |
-| **认证** | Bearer Token |
-| **权限** | `data:etl:read` |
+| **认证** | Bearer Token                                   |
+| **权限** | `data:etl:read`                                |
 
 **响应示例：**
 
@@ -2078,12 +2119,12 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.3.9 DBT 模型管理 - 列出 DBT 项目
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                        |
+| -------- | --------------------------- |
+| **方法** | `GET`                       |
 | **路径** | `/api/v1/data/dbt/projects` |
-| **认证** | Bearer Token |
-| **权限** | `data:etl:read` |
+| **认证** | Bearer Token                |
+| **权限** | `data:etl:read`             |
 
 **响应示例：**
 
@@ -2117,19 +2158,19 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.3.10 DBT 模型管理 - 列出模型
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                                           |
+| -------- | ---------------------------------------------- |
+| **方法** | `GET`                                          |
 | **路径** | `/api/v1/data/dbt/projects/{projectId}/models` |
-| **认证** | Bearer Token |
-| **权限** | `data:etl:read` |
+| **认证** | Bearer Token                                   |
+| **权限** | `data:etl:read`                                |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `layer` | string | 否 | 数仓分层：`staging`/`intermediate`/`marts` |
-| `materialized` | string | 否 | 物化方式：`view`/`table`/`incremental`/`ephemeral` |
+| 参数           | 类型   | 必填 | 说明                                               |
+| -------------- | ------ | ---- | -------------------------------------------------- |
+| `layer`        | string | 否   | 数仓分层：`staging`/`intermediate`/`marts`         |
+| `materialized` | string | 否   | 物化方式：`view`/`table`/`incremental`/`ephemeral` |
 
 **响应示例：**
 
@@ -2223,20 +2264,20 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.3.11 DBT 模型管理 - 编译模型
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                                            |
+| -------- | ----------------------------------------------- |
+| **方法** | `POST`                                          |
 | **路径** | `/api/v1/data/dbt/projects/{projectId}/compile` |
-| **认证** | Bearer Token |
-| **权限** | `data:etl:write` |
+| **认证** | Bearer Token                                    |
+| **权限** | `data:etl:write`                                |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `models` | string[] | 否 | 指定模型（支持 `+` 语法），不传则编译全部 |
-| `vars` | object | 否 | 变量覆盖 |
-| `fullRefresh` | boolean | 否 | 是否全量刷新，默认 `false` |
+| 参数          | 类型     | 必填 | 说明                                      |
+| ------------- | -------- | ---- | ----------------------------------------- |
+| `models`      | string[] | 否   | 指定模型（支持 `+` 语法），不传则编译全部 |
+| `vars`        | object   | 否   | 变量覆盖                                  |
+| `fullRefresh` | boolean  | 否   | 是否全量刷新，默认 `false`                |
 
 **响应示例：**
 
@@ -2259,12 +2300,12 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.3.12 ETL 任务编排 - DAG 可视化
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                                  |
+| -------- | ------------------------------------- |
+| **方法** | `GET`                                 |
 | **路径** | `/api/v1/data/etl-tasks/{taskId}/dag` |
-| **认证** | Bearer Token |
-| **权限** | `data:etl:read` |
+| **认证** | Bearer Token                          |
+| **权限** | `data:etl:read`                       |
 
 **响应示例：**
 
@@ -2328,36 +2369,36 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.4.1 创建 Hudi 表
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                            |
+| -------- | ------------------------------- |
+| **方法** | `POST`                          |
 | **路径** | `/api/v1/data/lake/hudi/tables` |
-| **认证** | Bearer Token |
-| **权限** | `data:lake:write` |
+| **认证** | Bearer Token                    |
+| **权限** | `data:lake:write`               |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `database` | string | 是 | 数据库名 |
-| `tableName` | string | 是 | 表名 |
-| `description` | string | 否 | 表描述 |
-| `tableType` | string | 是 | 表类型：`COW`（Copy On Write）/`MOR`（Merge On Read） |
-| `schema` | array | 是 | 字段定义列表 |
-| `schema[].name` | string | 是 | 字段名 |
-| `schema[].dataType` | string | 是 | 字段类型 |
-| `schema[].nullable` | boolean | 否 | 是否允许 NULL，默认 `true` |
-| `schema[].comment` | string | 否 | 字段注释 |
-| `primaryKey` | string | 是 | 主键字段，逗号分隔多个 |
-| `preCombineField` | string | 是 | 预合并字段（用于去重） |
-| `partitionFields` | string | 否 | 分区字段，逗号分隔 |
-| `partitionType` | string | 否 | 分区类型：`SIMPLE`/`MULTI`/`BUCKET`，默认 `SIMPLE` |
-| `indexType` | string | 否 | 索引类型：`BLOOM`/`SIMPLE`/`BUCKET`/`GLOBAL_BLOOM`，默认 `BLOOM` |
-| `hoodieConfig` | object | 否 | Hudi 高级配置 |
-| `hoodieConfig.cleanAsync` | boolean | 否 | 异步清理，默认 `true` |
-| `hoodieConfig.cleanRetainCommits` | integer | 否 | 保留 commit 数，默认 10 |
-| `hoodieConfig.compactAsync` | boolean | 否 | 异步压缩（MOR），默认 `true` |
-| `hoodieConfig.compactDeltaCommits` | integer | 否 | 压缩 delta commit 阈值，默认 5 |
+| 参数                               | 类型    | 必填 | 说明                                                             |
+| ---------------------------------- | ------- | ---- | ---------------------------------------------------------------- |
+| `database`                         | string  | 是   | 数据库名                                                         |
+| `tableName`                        | string  | 是   | 表名                                                             |
+| `description`                      | string  | 否   | 表描述                                                           |
+| `tableType`                        | string  | 是   | 表类型：`COW`（Copy On Write）/`MOR`（Merge On Read）            |
+| `schema`                           | array   | 是   | 字段定义列表                                                     |
+| `schema[].name`                    | string  | 是   | 字段名                                                           |
+| `schema[].dataType`                | string  | 是   | 字段类型                                                         |
+| `schema[].nullable`                | boolean | 否   | 是否允许 NULL，默认 `true`                                       |
+| `schema[].comment`                 | string  | 否   | 字段注释                                                         |
+| `primaryKey`                       | string  | 是   | 主键字段，逗号分隔多个                                           |
+| `preCombineField`                  | string  | 是   | 预合并字段（用于去重）                                           |
+| `partitionFields`                  | string  | 否   | 分区字段，逗号分隔                                               |
+| `partitionType`                    | string  | 否   | 分区类型：`SIMPLE`/`MULTI`/`BUCKET`，默认 `SIMPLE`               |
+| `indexType`                        | string  | 否   | 索引类型：`BLOOM`/`SIMPLE`/`BUCKET`/`GLOBAL_BLOOM`，默认 `BLOOM` |
+| `hoodieConfig`                     | object  | 否   | Hudi 高级配置                                                    |
+| `hoodieConfig.cleanAsync`          | boolean | 否   | 异步清理，默认 `true`                                            |
+| `hoodieConfig.cleanRetainCommits`  | integer | 否   | 保留 commit 数，默认 10                                          |
+| `hoodieConfig.compactAsync`        | boolean | 否   | 异步压缩（MOR），默认 `true`                                     |
+| `hoodieConfig.compactDeltaCommits` | integer | 否   | 压缩 delta commit 阈值，默认 5                                   |
 
 **请求示例：**
 
@@ -2368,12 +2409,42 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
   "description": "客户信息表（Hudi MOR）",
   "tableType": "MOR",
   "schema": [
-    { "name": "id", "dataType": "BIGINT", "nullable": false, "comment": "客户ID" },
-    { "name": "customer_name", "dataType": "STRING", "nullable": false, "comment": "客户名称" },
-    { "name": "phone", "dataType": "STRING", "nullable": true, "comment": "电话" },
-    { "name": "email", "dataType": "STRING", "nullable": true, "comment": "邮箱" },
-    { "name": "created_at", "dataType": "TIMESTAMP", "nullable": false, "comment": "创建时间" },
-    { "name": "updated_at", "dataType": "TIMESTAMP", "nullable": false, "comment": "更新时间" }
+    {
+      "name": "id",
+      "dataType": "BIGINT",
+      "nullable": false,
+      "comment": "客户ID"
+    },
+    {
+      "name": "customer_name",
+      "dataType": "STRING",
+      "nullable": false,
+      "comment": "客户名称"
+    },
+    {
+      "name": "phone",
+      "dataType": "STRING",
+      "nullable": true,
+      "comment": "电话"
+    },
+    {
+      "name": "email",
+      "dataType": "STRING",
+      "nullable": true,
+      "comment": "邮箱"
+    },
+    {
+      "name": "created_at",
+      "dataType": "TIMESTAMP",
+      "nullable": false,
+      "comment": "创建时间"
+    },
+    {
+      "name": "updated_at",
+      "dataType": "TIMESTAMP",
+      "nullable": false,
+      "comment": "更新时间"
+    }
   ],
   "primaryKey": "id",
   "preCombineField": "updated_at",
@@ -2410,42 +2481,42 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
+| code  | 场景                                       |
+| ----- | ------------------------------------------ |
 | 40001 | 字段定义不合法；主键字段不存在于 schema 中 |
-| 40901 | 表已存在 |
-| 50004 | Hudi 表创建失败 |
+| 40901 | 表已存在                                   |
+| 50004 | Hudi 表创建失败                            |
 
 ---
 
 #### 3.4.2 创建 Iceberg 表
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                               |
+| -------- | ---------------------------------- |
+| **方法** | `POST`                             |
 | **路径** | `/api/v1/data/lake/iceberg/tables` |
-| **认证** | Bearer Token |
-| **权限** | `data:lake:write` |
+| **认证** | Bearer Token                       |
+| **权限** | `data:lake:write`                  |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `database` | string | 是 | 数据库名 |
-| `tableName` | string | 是 | 表名 |
-| `description` | string | 否 | 表描述 |
-| `format` | string | 否 | 文件格式：`PARQUET`/`AVRO`/`ORC`，默认 `PARQUET` |
-| `schema` | array | 是 | 字段定义列表 |
-| `schema[].name` | string | 是 | 字段名 |
-| `schema[].dataType` | string | 是 | 字段类型 |
-| `schema[].nullable` | boolean | 否 | 是否允许 NULL |
-| `schema[].comment` | string | 否 | 字段注释 |
-| `partitionSpec` | array | 否 | 分区规格 |
-| `partitionSpec[].field` | string | 是 | 分区字段 |
-| `partitionSpec[].transform` | string | 否 | 变换：`identity`/`year`/`month`/`day`/`hour`/`bucket[N]`/`truncate[W]`，默认 `identity` |
-| `properties` | object | 否 | Iceberg 表属性 |
-| `properties.writeFormat` | string | 否 | 写入格式 |
-| `properties.targetFileSizeBytes` | integer | 否 | 目标文件大小，默认 536870912 |
+| 参数                             | 类型    | 必填 | 说明                                                                                    |
+| -------------------------------- | ------- | ---- | --------------------------------------------------------------------------------------- |
+| `database`                       | string  | 是   | 数据库名                                                                                |
+| `tableName`                      | string  | 是   | 表名                                                                                    |
+| `description`                    | string  | 否   | 表描述                                                                                  |
+| `format`                         | string  | 否   | 文件格式：`PARQUET`/`AVRO`/`ORC`，默认 `PARQUET`                                        |
+| `schema`                         | array   | 是   | 字段定义列表                                                                            |
+| `schema[].name`                  | string  | 是   | 字段名                                                                                  |
+| `schema[].dataType`              | string  | 是   | 字段类型                                                                                |
+| `schema[].nullable`              | boolean | 否   | 是否允许 NULL                                                                           |
+| `schema[].comment`               | string  | 否   | 字段注释                                                                                |
+| `partitionSpec`                  | array   | 否   | 分区规格                                                                                |
+| `partitionSpec[].field`          | string  | 是   | 分区字段                                                                                |
+| `partitionSpec[].transform`      | string  | 否   | 变换：`identity`/`year`/`month`/`day`/`hour`/`bucket[N]`/`truncate[W]`，默认 `identity` |
+| `properties`                     | object  | 否   | Iceberg 表属性                                                                          |
+| `properties.writeFormat`         | string  | 否   | 写入格式                                                                                |
+| `properties.targetFileSizeBytes` | integer | 否   | 目标文件大小，默认 536870912                                                            |
 
 **请求示例：**
 
@@ -2456,10 +2527,30 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
   "description": "事件日志表（Iceberg）",
   "format": "PARQUET",
   "schema": [
-    { "name": "event_id", "dataType": "STRING", "nullable": false, "comment": "事件ID" },
-    { "name": "event_type", "dataType": "STRING", "nullable": false, "comment": "事件类型" },
-    { "name": "event_data", "dataType": "STRING", "nullable": true, "comment": "事件数据JSON" },
-    { "name": "event_time", "dataType": "TIMESTAMP", "nullable": false, "comment": "事件时间" }
+    {
+      "name": "event_id",
+      "dataType": "STRING",
+      "nullable": false,
+      "comment": "事件ID"
+    },
+    {
+      "name": "event_type",
+      "dataType": "STRING",
+      "nullable": false,
+      "comment": "事件类型"
+    },
+    {
+      "name": "event_data",
+      "dataType": "STRING",
+      "nullable": true,
+      "comment": "事件数据JSON"
+    },
+    {
+      "name": "event_time",
+      "dataType": "TIMESTAMP",
+      "nullable": false,
+      "comment": "事件时间"
+    }
   ],
   "partitionSpec": [
     { "field": "event_time", "transform": "day" },
@@ -2494,23 +2585,23 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.4.3 获取数据湖表列表
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                       |
+| -------- | -------------------------- |
+| **方法** | `GET`                      |
 | **路径** | `/api/v1/data/lake/tables` |
-| **认证** | Bearer Token |
-| **权限** | `data:lake:read` |
+| **认证** | Bearer Token               |
+| **权限** | `data:lake:read`           |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `page` | integer | 否 | 页码 |
-| `pageSize` | integer | 否 | 每页条数 |
-| `lakeType` | string | 否 | `hudi`/`iceberg` |
-| `database` | string | 否 | 数据库过滤 |
-| `keyword` | string | 否 | 表名搜索 |
-| `tableType` | string | 否 | Hudi 表类型：`COW`/`MOR` |
+| 参数        | 类型    | 必填 | 说明                     |
+| ----------- | ------- | ---- | ------------------------ |
+| `page`      | integer | 否   | 页码                     |
+| `pageSize`  | integer | 否   | 每页条数                 |
+| `lakeType`  | string  | 否   | `hudi`/`iceberg`         |
+| `database`  | string  | 否   | 数据库过滤               |
+| `keyword`   | string  | 否   | 表名搜索                 |
+| `tableType` | string  | 否   | Hudi 表类型：`COW`/`MOR` |
 
 **响应示例：**
 
@@ -2575,12 +2666,12 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.4.4 获取数据湖表详情
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                                 |
+| -------- | ------------------------------------ |
+| **方法** | `GET`                                |
 | **路径** | `/api/v1/data/lake/tables/{tableId}` |
-| **认证** | Bearer Token |
-| **权限** | `data:lake:read` |
+| **认证** | Bearer Token                         |
+| **权限** | `data:lake:read`                     |
 
 **响应示例（Hudi）：**
 
@@ -2597,12 +2688,42 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
     "tableType": "MOR",
     "location": "hdfs:///data/lake/hudi/ods_biz/ods_customers",
     "schema": [
-      { "name": "id", "dataType": "BIGINT", "nullable": false, "comment": "客户ID" },
-      { "name": "customer_name", "dataType": "STRING", "nullable": false, "comment": "客户名称" },
-      { "name": "phone", "dataType": "STRING", "nullable": true, "comment": "电话" },
-      { "name": "email", "dataType": "STRING", "nullable": true, "comment": "邮箱" },
-      { "name": "created_at", "dataType": "TIMESTAMP", "nullable": false, "comment": "创建时间" },
-      { "name": "updated_at", "dataType": "TIMESTAMP", "nullable": false, "comment": "更新时间" }
+      {
+        "name": "id",
+        "dataType": "BIGINT",
+        "nullable": false,
+        "comment": "客户ID"
+      },
+      {
+        "name": "customer_name",
+        "dataType": "STRING",
+        "nullable": false,
+        "comment": "客户名称"
+      },
+      {
+        "name": "phone",
+        "dataType": "STRING",
+        "nullable": true,
+        "comment": "电话"
+      },
+      {
+        "name": "email",
+        "dataType": "STRING",
+        "nullable": true,
+        "comment": "邮箱"
+      },
+      {
+        "name": "created_at",
+        "dataType": "TIMESTAMP",
+        "nullable": false,
+        "comment": "创建时间"
+      },
+      {
+        "name": "updated_at",
+        "dataType": "TIMESTAMP",
+        "nullable": false,
+        "comment": "更新时间"
+      }
     ],
     "primaryKey": "id",
     "preCombineField": "updated_at",
@@ -2647,18 +2768,18 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 #### 3.4.5 删除数据湖表
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `DELETE` |
+| 项目     | 说明                                 |
+| -------- | ------------------------------------ |
+| **方法** | `DELETE`                             |
 | **路径** | `/api/v1/data/lake/tables/{tableId}` |
-| **认证** | Bearer Token |
-| **权限** | `data:lake:delete` |
+| **认证** | Bearer Token                         |
+| **权限** | `data:lake:delete`                   |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `purgeData` | boolean | 否 | 是否物理删除数据文件，默认 `false`（仅删元数据） |
+| 参数        | 类型    | 必填 | 说明                                             |
+| ----------- | ------- | ---- | ------------------------------------------------ |
+| `purgeData` | boolean | 否   | 是否物理删除数据文件，默认 `false`（仅删元数据） |
 
 **响应示例：**
 
@@ -2678,40 +2799,40 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40401 | 表不存在 |
+| code  | 场景                        |
+| ----- | --------------------------- |
+| 40401 | 表不存在                    |
 | 42201 | 表被 CDC 任务引用，无法删除 |
 
 ---
 
 #### 3.4.6 创建入湖任务
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                                |
+| -------- | ----------------------------------- |
+| **方法** | `POST`                              |
 | **路径** | `/api/v1/data/lake/ingestion-tasks` |
-| **认证** | Bearer Token |
-| **权限** | `data:lake:write` |
+| **认证** | Bearer Token                        |
+| **权限** | `data:lake:write`                   |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `name` | string | 是 | 入湖任务名称 |
-| `sourceDatasourceId` | string | 是 | 源数据源 ID |
-| `sourceConfig` | object | 是 | 源配置 |
-| `sourceConfig.database` | string | 是 | 源数据库 |
-| `sourceConfig.table` | string | 是 | 源表 |
-| `sourceConfig.sql` | string | 否 | 自定义抽取 SQL（与 table 二选一） |
-| `targetConfig` | object | 是 | 目标配置 |
-| `targetConfig.lakeType` | string | 是 | `hudi`/`iceberg` |
-| `targetConfig.database` | string | 是 | 目标数据库 |
-| `targetConfig.tableName` | string | 是 | 目标表名 |
-| `targetConfig.writeMode` | string | 是 | 写入模式：`upsert`/`insert`/`bulk_insert`/`append` |
-| `schedule` | string | 否 | 调度表达式（Cron），不传则仅手动触发 |
-| `batchSize` | integer | 否 | 批次大小，默认 1000 |
-| `parallelism` | integer | 否 | 并行度，默认 1 |
+| 参数                     | 类型    | 必填 | 说明                                               |
+| ------------------------ | ------- | ---- | -------------------------------------------------- |
+| `name`                   | string  | 是   | 入湖任务名称                                       |
+| `sourceDatasourceId`     | string  | 是   | 源数据源 ID                                        |
+| `sourceConfig`           | object  | 是   | 源配置                                             |
+| `sourceConfig.database`  | string  | 是   | 源数据库                                           |
+| `sourceConfig.table`     | string  | 是   | 源表                                               |
+| `sourceConfig.sql`       | string  | 否   | 自定义抽取 SQL（与 table 二选一）                  |
+| `targetConfig`           | object  | 是   | 目标配置                                           |
+| `targetConfig.lakeType`  | string  | 是   | `hudi`/`iceberg`                                   |
+| `targetConfig.database`  | string  | 是   | 目标数据库                                         |
+| `targetConfig.tableName` | string  | 是   | 目标表名                                           |
+| `targetConfig.writeMode` | string  | 是   | 写入模式：`upsert`/`insert`/`bulk_insert`/`append` |
+| `schedule`               | string  | 否   | 调度表达式（Cron），不传则仅手动触发               |
+| `batchSize`              | integer | 否   | 批次大小，默认 1000                                |
+| `parallelism`            | integer | 否   | 并行度，默认 1                                     |
 
 **请求示例：**
 
@@ -2756,9 +2877,9 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40401 | 源数据源或目标表不存在 |
+| code  | 场景                                                 |
+| ----- | ---------------------------------------------------- |
+| 40401 | 源数据源或目标表不存在                               |
 | 40001 | 写入模式与表类型不兼容（如 Iceberg 不支持 `upsert`） |
 
 ---
@@ -2767,27 +2888,27 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 通过 Trino/Presto 引擎查询数据湖表。
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                      |
+| -------- | ------------------------- |
+| **方法** | `POST`                    |
 | **路径** | `/api/v1/data/lake/query` |
-| **认证** | Bearer Token |
-| **权限** | `data:lake:read` |
+| **认证** | Bearer Token              |
+| **权限** | `data:lake:read`          |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `lakeType` | string | 是 | `hudi`/`iceberg` |
-| `database` | string | 是 | 数据库名 |
-| `table` | string | 是 | 表名 |
-| `sql` | string | 否 | 自定义查询 SQL，不传则返回前 N 行 |
-| `limit` | integer | 否 | 返回行数限制，默认 100，最大 1000 |
-| `columns` | string[] | 否 | 指定返回列 |
-| `filters` | object | 否 | 过滤条件 |
-| `timeTravel` | object | 否 | 时间旅行（Iceberg 专用） |
-| `timeTravel.snapshotId` | string | 否 | 快照 ID |
-| `timeTravel.timestamp` | string | 否 | 时间戳 |
+| 参数                    | 类型     | 必填 | 说明                              |
+| ----------------------- | -------- | ---- | --------------------------------- |
+| `lakeType`              | string   | 是   | `hudi`/`iceberg`                  |
+| `database`              | string   | 是   | 数据库名                          |
+| `table`                 | string   | 是   | 表名                              |
+| `sql`                   | string   | 否   | 自定义查询 SQL，不传则返回前 N 行 |
+| `limit`                 | integer  | 否   | 返回行数限制，默认 100，最大 1000 |
+| `columns`               | string[] | 否   | 指定返回列                        |
+| `filters`               | object   | 否   | 过滤条件                          |
+| `timeTravel`            | object   | 否   | 时间旅行（Iceberg 专用）          |
+| `timeTravel.snapshotId` | string   | 否   | 快照 ID                           |
+| `timeTravel.timestamp`  | string   | 否   | 时间戳                            |
 
 **请求示例：**
 
@@ -2833,28 +2954,28 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40401 | 表不存在 |
+| code  | 场景                         |
+| ----- | ---------------------------- |
+| 40401 | 表不存在                     |
 | 50004 | 查询引擎不可用；SQL 语法错误 |
 
 ---
 
 #### 3.4.8 分区管理
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                                            |
+| -------- | ----------------------------------------------- |
+| **方法** | `GET`                                           |
 | **路径** | `/api/v1/data/lake/tables/{tableId}/partitions` |
-| **认证** | Bearer Token |
-| **权限** | `data:lake:read` |
+| **认证** | Bearer Token                                    |
+| **权限** | `data:lake:read`                                |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `page` | integer | 否 | 页码 |
-| `pageSize` | integer | 否 | 每页条数 |
+| 参数       | 类型    | 必填 | 说明     |
+| ---------- | ------- | ---- | -------- |
+| `page`     | integer | 否   | 页码     |
+| `pageSize` | integer | 否   | 每页条数 |
 
 **响应示例：**
 
@@ -2891,9 +3012,9 @@ CDC（Change Data Capture）实时同步基于 Flink CDC 捕获源数据库的�
 
 **删除分区：**
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `DELETE` |
+| 项目     | 说明                                                            |
+| -------- | --------------------------------------------------------------- |
+| **方法** | `DELETE`                                                        |
 | **路径** | `/api/v1/data/lake/tables/{tableId}/partitions/{partitionPath}` |
 
 **响应示例：**
@@ -2920,22 +3041,22 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 #### 3.5.1 执行 StarRocks 查询
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                             |
+| -------- | -------------------------------- |
+| **方法** | `POST`                           |
 | **路径** | `/api/v1/data/warehouse/queries` |
-| **认证** | Bearer Token |
-| **权限** | `data:warehouse:query` |
+| **认证** | Bearer Token                     |
+| **权限** | `data:warehouse:query`           |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `database` | string | 是 | 数据库名 |
-| `sql` | string | 是 | 查询 SQL |
-| `limit` | integer | 否 | 返回行数限制，默认 1000，最大 10000 |
-| `timeout` | integer | 否 | 查询超时（秒），默认 60 |
-| `format` | string | 否 | 返回格式：`json`/`csv`，默认 `json` |
+| 参数       | 类型    | 必填 | 说明                                |
+| ---------- | ------- | ---- | ----------------------------------- |
+| `database` | string  | 是   | 数据库名                            |
+| `sql`      | string  | 是   | 查询 SQL                            |
+| `limit`    | integer | 否   | 返回行数限制，默认 1000，最大 10000 |
+| `timeout`  | integer | 否   | 查询超时（秒），默认 60             |
+| `format`   | string  | 否   | 返回格式：`json`/`csv`，默认 `json` |
 
 **请求示例：**
 
@@ -2963,9 +3084,9 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
       { "name": "total_amount", "dataType": "DECIMAL(15,2)" }
     ],
     "rows": [
-      ["2026-07-15", 1250, 456789.00],
-      ["2026-07-14", 1180, 432100.50],
-      ["2026-07-13", 1320, 489000.00]
+      ["2026-07-15", 1250, 456789.0],
+      ["2026-07-14", 1180, 432100.5],
+      ["2026-07-13", 1320, 489000.0]
     ],
     "totalRows": 3,
     "queryDurationMs": 45,
@@ -2979,22 +3100,22 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40001 | SQL 语法错误 |
+| code  | 场景                             |
+| ----- | -------------------------------- |
+| 40001 | SQL 语法错误                     |
 | 50005 | StarRocks 查询执行失败；查询超时 |
-| 50301 | StarRocks 服务不可用 |
+| 50301 | StarRocks 服务不可用             |
 
 ---
 
 #### 3.5.2 获取数仓分层结构
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                            |
+| -------- | ------------------------------- |
+| **方法** | `GET`                           |
 | **路径** | `/api/v1/data/warehouse/layers` |
-| **认证** | Bearer Token |
-| **权限** | `data:warehouse:read` |
+| **认证** | Bearer Token                    |
+| **权限** | `data:warehouse:read`           |
 
 **响应示例：**
 
@@ -3054,23 +3175,23 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 #### 3.5.3 获取数仓表列表
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                            |
+| -------- | ------------------------------- |
+| **方法** | `GET`                           |
 | **路径** | `/api/v1/data/warehouse/tables` |
-| **认证** | Bearer Token |
-| **权限** | `data:warehouse:read` |
+| **认证** | Bearer Token                    |
+| **权限** | `data:warehouse:read`           |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `page` | integer | 否 | 页码 |
-| `pageSize` | integer | 否 | 每页条数 |
-| `database` | string | 否 | 数据库过滤 |
-| `layer` | string | 否 | 分层过滤：`ODS`/`DWD`/`DWS`/`ADS`/`DIM` |
-| `keyword` | string | 否 | 表名搜索 |
-| `tableType` | string | 否 | 表类型：`table`/`view`/`materialized_view` |
+| 参数        | 类型    | 必填 | 说明                                       |
+| ----------- | ------- | ---- | ------------------------------------------ |
+| `page`      | integer | 否   | 页码                                       |
+| `pageSize`  | integer | 否   | 每页条数                                   |
+| `database`  | string  | 否   | 数据库过滤                                 |
+| `layer`     | string  | 否   | 分层过滤：`ODS`/`DWD`/`DWS`/`ADS`/`DIM`    |
+| `keyword`   | string  | 否   | 表名搜索                                   |
+| `tableType` | string  | 否   | 表类型：`table`/`view`/`materialized_view` |
 
 **响应示例：**
 
@@ -3120,26 +3241,26 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 #### 3.5.4 创建物化视图
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                                        |
+| -------- | ------------------------------------------- |
+| **方法** | `POST`                                      |
 | **路径** | `/api/v1/data/warehouse/materialized-views` |
-| **认证** | Bearer Token |
-| **权限** | `data:warehouse:write` |
+| **认证** | Bearer Token                                |
+| **权限** | `data:warehouse:write`                      |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `database` | string | 是 | 数据库名 |
-| `name` | string | 是 | 物化视图名称 |
-| `description` | string | 否 | 描述 |
-| `sql` | string | 是 | 物化视图定义 SQL |
-| `refreshStrategy` | string | 是 | 刷新策略：`manual`/`auto`/`scheduled` |
-| `refreshInterval` | string | 否 | `scheduled` 策略的刷新间隔（Cron） |
-| `partitionBy` | string | 否 | 分区字段 |
-| `distributionBy` | string | 否 | 分桶字段 |
-| `properties` | object | 否 | StarRocks 表属性 |
+| 参数              | 类型   | 必填 | 说明                                  |
+| ----------------- | ------ | ---- | ------------------------------------- |
+| `database`        | string | 是   | 数据库名                              |
+| `name`            | string | 是   | 物化视图名称                          |
+| `description`     | string | 否   | 描述                                  |
+| `sql`             | string | 是   | 物化视图定义 SQL                      |
+| `refreshStrategy` | string | 是   | 刷新策略：`manual`/`auto`/`scheduled` |
+| `refreshInterval` | string | 否   | `scheduled` 策略的刷新间隔（Cron）    |
+| `partitionBy`     | string | 否   | 分区字段                              |
+| `distributionBy`  | string | 否   | 分桶字段                              |
+| `properties`      | object | 否   | StarRocks 表属性                      |
 
 **请求示例：**
 
@@ -3182,29 +3303,29 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
+| code  | 场景                         |
+| ----- | ---------------------------- |
 | 40001 | SQL 语法错误；刷新策略不合法 |
-| 40901 | 物化视图名称已存在 |
-| 50005 | StarRocks 物化视图创建失败 |
+| 40901 | 物化视图名称已存在           |
+| 50005 | StarRocks 物化视图创建失败   |
 
 ---
 
 #### 3.5.5 刷新物化视图
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                                                       |
+| -------- | ---------------------------------------------------------- |
+| **方法** | `POST`                                                     |
 | **路径** | `/api/v1/data/warehouse/materialized-views/{mvId}/refresh` |
-| **认证** | Bearer Token |
-| **权限** | `data:warehouse:operate` |
+| **认证** | Bearer Token                                               |
+| **权限** | `data:warehouse:operate`                                   |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `sync` | boolean | 否 | 是否同步等待刷新完成，默认 `false` |
-| `partitionNames` | string[] | 否 | 指定刷新的分区 |
+| 参数             | 类型     | 必填 | 说明                               |
+| ---------------- | -------- | ---- | ---------------------------------- |
+| `sync`           | boolean  | 否   | 是否同步等待刷新完成，默认 `false` |
+| `partitionNames` | string[] | 否   | 指定刷新的分区                     |
 
 **响应示例：**
 
@@ -3226,19 +3347,19 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 #### 3.5.6 获取物化视图刷新历史
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                                                               |
+| -------- | ------------------------------------------------------------------ |
+| **方法** | `GET`                                                              |
 | **路径** | `/api/v1/data/warehouse/materialized-views/{mvId}/refresh-history` |
-| **认证** | Bearer Token |
-| **权限** | `data:warehouse:read` |
+| **认证** | Bearer Token                                                       |
+| **权限** | `data:warehouse:read`                                              |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `page` | integer | 否 | 页码 |
-| `pageSize` | integer | 否 | 每页条数 |
+| 参数       | 类型    | 必填 | 说明     |
+| ---------- | ------- | ---- | -------- |
+| `page`     | integer | 否   | 页码     |
+| `pageSize` | integer | 否   | 每页条数 |
 
 **响应示例：**
 
@@ -3277,25 +3398,25 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 #### 3.6.1 获取数据资产目录
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                          |
+| -------- | ----------------------------- |
+| **方法** | `GET`                         |
 | **路径** | `/api/v1/data/catalog/assets` |
-| **认证** | Bearer Token |
-| **权限** | `data:catalog:read` |
+| **认证** | Bearer Token                  |
+| **权限** | `data:catalog:read`           |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `page` | integer | 否 | 页码 |
-| `pageSize` | integer | 否 | 每页条数 |
-| `keyword` | string | 否 | 名称搜索 |
-| `assetType` | string | 否 | 资产类型：`datasource`/`database`/`table`/`column`/`lake_table`/`warehouse_table`/`dbt_model` |
-| `source` | string | 否 | 来源：`datasource`/`lake`/`warehouse`/`dbt` |
-| `layer` | string | 否 | 数仓分层 |
-| `tag` | string | 否 | 标签 |
-| `ownerId` | string | 否 | 负责人 |
+| 参数        | 类型    | 必填 | 说明                                                                                          |
+| ----------- | ------- | ---- | --------------------------------------------------------------------------------------------- |
+| `page`      | integer | 否   | 页码                                                                                          |
+| `pageSize`  | integer | 否   | 每页条数                                                                                      |
+| `keyword`   | string  | 否   | 名称搜索                                                                                      |
+| `assetType` | string  | 否   | 资产类型：`datasource`/`database`/`table`/`column`/`lake_table`/`warehouse_table`/`dbt_model` |
+| `source`    | string  | 否   | 来源：`datasource`/`lake`/`warehouse`/`dbt`                                                   |
+| `layer`     | string  | 否   | 数仓分层                                                                                      |
+| `tag`       | string  | 否   | 标签                                                                                          |
+| `ownerId`   | string  | 否   | 负责人                                                                                        |
 
 **响应示例：**
 
@@ -3359,12 +3480,12 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 #### 3.6.2 获取资产详情
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                                    |
+| -------- | --------------------------------------- |
+| **方法** | `GET`                                   |
 | **路径** | `/api/v1/data/catalog/assets/{assetId}` |
-| **认证** | Bearer Token |
-| **权限** | `data:catalog:read` |
+| **认证** | Bearer Token                            |
+| **权限** | `data:catalog:read`                     |
 
 **响应示例：**
 
@@ -3447,22 +3568,22 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 #### 3.6.3 更新资产元数据
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `PUT` |
+| 项目     | 说明                                             |
+| -------- | ------------------------------------------------ |
+| **方法** | `PUT`                                            |
 | **路径** | `/api/v1/data/catalog/assets/{assetId}/metadata` |
-| **认证** | Bearer Token |
-| **权限** | `data:catalog:write` |
+| **认证** | Bearer Token                                     |
+| **权限** | `data:catalog:write`                             |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `description` | string | 否 | 资产描述 |
-| `tags` | string[] | 否 | 标签 |
-| `ownerId` | string | 否 | 负责人 |
-| `customProperties` | object | 否 | 自定义属性键值对 |
-| `businessGlossary` | string | 否 | 关联业务术语 ID |
+| 参数               | 类型     | 必填 | 说明             |
+| ------------------ | -------- | ---- | ---------------- |
+| `description`      | string   | 否   | 资产描述         |
+| `tags`             | string[] | 否   | 标签             |
+| `ownerId`          | string   | 否   | 负责人           |
+| `customProperties` | object   | 否   | 自定义属性键值对 |
+| `businessGlossary` | string   | 否   | 关联业务术语 ID  |
 
 **请求示例：**
 
@@ -3505,20 +3626,20 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 #### 3.6.4 数据血缘查询
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                           |
+| -------- | ------------------------------ |
+| **方法** | `GET`                          |
 | **路径** | `/api/v1/data/catalog/lineage` |
-| **认证** | Bearer Token |
-| **权限** | `data:catalog:read` |
+| **认证** | Bearer Token                   |
+| **权限** | `data:catalog:read`            |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `assetId` | string | 是 | 资产 ID |
-| `direction` | string | 否 | 方向：`upstream`（上游）/`downstream`（下游）/`both`（双向），默认 `both` |
-| `depth` | integer | 否 | 查询深度，默认 3，最大 10 |
+| 参数        | 类型    | 必填 | 说明                                                                      |
+| ----------- | ------- | ---- | ------------------------------------------------------------------------- |
+| `assetId`   | string  | 是   | 资产 ID                                                                   |
+| `direction` | string  | 否   | 方向：`upstream`（上游）/`downstream`（下游）/`both`（双向），默认 `both` |
+| `depth`     | integer | 否   | 查询深度，默认 3，最大 10                                                 |
 
 **响应示例：**
 
@@ -3601,19 +3722,19 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 #### 3.6.5 数据资产画像
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                                            |
+| -------- | ----------------------------------------------- |
+| **方法** | `POST`                                          |
 | **路径** | `/api/v1/data/catalog/assets/{assetId}/profile` |
-| **认证** | Bearer Token |
-| **权限** | `data:catalog:write` |
+| **认证** | Bearer Token                                    |
+| **权限** | `data:catalog:write`                            |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `sampleSize` | integer | 否 | 采样行数，默认 10000 |
-| `columns` | string[] | 否 | 指定列画像（不传则全部列） |
+| 参数         | 类型     | 必填 | 说明                       |
+| ------------ | -------- | ---- | -------------------------- |
+| `sampleSize` | integer  | 否   | 采样行数，默认 10000       |
+| `columns`    | string[] | 否   | 指定列画像（不传则全部列） |
 
 **响应示例：**
 
@@ -3671,35 +3792,35 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 #### 3.7.1 创建质量规则
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                         |
+| -------- | ---------------------------- |
+| **方法** | `POST`                       |
 | **路径** | `/api/v1/data/quality/rules` |
-| **认证** | Bearer Token |
-| **权限** | `data:quality:write` |
+| **认证** | Bearer Token                 |
+| **权限** | `data:quality:write`         |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `name` | string | 是 | 规则名称 |
-| `description` | string | 否 | 描述 |
-| `targetType` | string | 是 | 目标类型：`datasource_table`/`lake_table`/`warehouse_table` |
-| `targetConfig` | object | 是 | 目标配置 |
-| `targetConfig.datasourceId` | string | 否 | 数据源 ID |
-| `targetConfig.database` | string | 是 | 数据库名 |
-| `targetConfig.table` | string | 是 | 表名 |
-| `targetConfig.column` | string | 否 | 列名（列级规则） |
-| `ruleType` | string | 是 | 规则类型：`not_null`/`unique`/`not_empty`/`range`/`regex`/`enum`/`foreign_key`/`custom_sql` |
-| `ruleConfig` | object | 是 | 规则配置（随类型不同） |
-| `ruleConfig.minValue` | any | 否 | `range` 类型最小值 |
-| `ruleConfig.maxValue` | any | 否 | `range` 类型最大值 |
-| `ruleConfig.pattern` | string | 否 | `regex` 类型正则表达式 |
-| `ruleConfig.allowedValues` | array | 否 | `enum` 类型允许值列表 |
-| `ruleConfig.sql` | string | 否 | `custom_sql` 类型自定义 SQL |
-| `severity` | string | 是 | 严重级别：`info`/`warning`/`error`/`critical` |
-| `threshold` | number | 否 | 失败阈值（失败率），默认 0.0（任何失败即告警） |
-| `schedule` | string | 否 | 检查调度（Cron），不传则不自动检查 |
+| 参数                        | 类型   | 必填 | 说明                                                                                        |
+| --------------------------- | ------ | ---- | ------------------------------------------------------------------------------------------- |
+| `name`                      | string | 是   | 规则名称                                                                                    |
+| `description`               | string | 否   | 描述                                                                                        |
+| `targetType`                | string | 是   | 目标类型：`datasource_table`/`lake_table`/`warehouse_table`                                 |
+| `targetConfig`              | object | 是   | 目标配置                                                                                    |
+| `targetConfig.datasourceId` | string | 否   | 数据源 ID                                                                                   |
+| `targetConfig.database`     | string | 是   | 数据库名                                                                                    |
+| `targetConfig.table`        | string | 是   | 表名                                                                                        |
+| `targetConfig.column`       | string | 否   | 列名（列级规则）                                                                            |
+| `ruleType`                  | string | 是   | 规则类型：`not_null`/`unique`/`not_empty`/`range`/`regex`/`enum`/`foreign_key`/`custom_sql` |
+| `ruleConfig`                | object | 是   | 规则配置（随类型不同）                                                                      |
+| `ruleConfig.minValue`       | any    | 否   | `range` 类型最小值                                                                          |
+| `ruleConfig.maxValue`       | any    | 否   | `range` 类型最大值                                                                          |
+| `ruleConfig.pattern`        | string | 否   | `regex` 类型正则表达式                                                                      |
+| `ruleConfig.allowedValues`  | array  | 否   | `enum` 类型允许值列表                                                                       |
+| `ruleConfig.sql`            | string | 否   | `custom_sql` 类型自定义 SQL                                                                 |
+| `severity`                  | string | 是   | 严重级别：`info`/`warning`/`error`/`critical`                                               |
+| `threshold`                 | number | 否   | 失败阈值（失败率），默认 0.0（任何失败即告警）                                              |
+| `schedule`                  | string | 否   | 检查调度（Cron），不传则不自动检查                                                          |
 
 **请求示例：**
 
@@ -3741,33 +3862,33 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
+| code  | 场景                                 |
+| ----- | ------------------------------------ |
 | 40001 | 规则类型不合法；规则配置与类型不匹配 |
-| 40401 | 目标表不存在 |
+| 40401 | 目标表不存在                         |
 
 ---
 
 #### 3.7.2 获取质量规则列表
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                         |
+| -------- | ---------------------------- |
+| **方法** | `GET`                        |
 | **路径** | `/api/v1/data/quality/rules` |
-| **认证** | Bearer Token |
-| **权限** | `data:quality:read` |
+| **认证** | Bearer Token                 |
+| **权限** | `data:quality:read`          |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `page` | integer | 否 | 页码 |
-| `pageSize` | integer | 否 | 每页条数 |
-| `keyword` | string | 否 | 名称搜索 |
-| `ruleType` | string | 否 | 规则类型过滤 |
-| `severity` | string | 否 | 严重级别过滤 |
-| `status` | string | 否 | `active`/`inactive` |
-| `targetTable` | string | 否 | 目标表过滤 |
+| 参数          | 类型    | 必填 | 说明                |
+| ------------- | ------- | ---- | ------------------- |
+| `page`        | integer | 否   | 页码                |
+| `pageSize`    | integer | 否   | 每页条数            |
+| `keyword`     | string  | 否   | 名称搜索            |
+| `ruleType`    | string  | 否   | 规则类型过滤        |
+| `severity`    | string  | 否   | 严重级别过滤        |
+| `status`      | string  | 否   | `active`/`inactive` |
+| `targetTable` | string  | 否   | 目标表过滤          |
 
 **响应示例：**
 
@@ -3824,19 +3945,19 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 #### 3.7.3 执行质量检查
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                                        |
+| -------- | ------------------------------------------- |
+| **方法** | `POST`                                      |
 | **路径** | `/api/v1/data/quality/rules/{ruleId}/check` |
-| **认证** | Bearer Token |
-| **权限** | `data:quality:operate` |
+| **认证** | Bearer Token                                |
+| **权限** | `data:quality:operate`                      |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `sync` | boolean | 否 | 是否同步等待结果，默认 `true` |
-| `sampleSize` | integer | 否 | 采样行数，不传则全量检查 |
+| 参数         | 类型    | 必填 | 说明                          |
+| ------------ | ------- | ---- | ----------------------------- |
+| `sync`       | boolean | 否   | 是否同步等待结果，默认 `true` |
+| `sampleSize` | integer | 否   | 采样行数，不传则全量检查      |
 
 **响应示例：**
 
@@ -3866,30 +3987,30 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40401 | 规则不存在 |
+| code  | 场景             |
+| ----- | ---------------- |
+| 40401 | 规则不存在       |
 | 50003 | 质量检查执行失败 |
 
 ---
 
 #### 3.7.4 获取质量报告
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                           |
+| -------- | ------------------------------ |
+| **方法** | `GET`                          |
 | **路径** | `/api/v1/data/quality/reports` |
-| **认证** | Bearer Token |
-| **权限** | `data:quality:read` |
+| **认证** | Bearer Token                   |
+| **权限** | `data:quality:read`            |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `startDate` | string | 是 | 报告开始日期 |
-| `endDate` | string | 是 | 报告结束日期 |
-| `targetTable` | string | 否 | 目标表过滤 |
-| `severity` | string | 否 | 严重级别过滤 |
+| 参数          | 类型   | 必填 | 说明         |
+| ------------- | ------ | ---- | ------------ |
+| `startDate`   | string | 是   | 报告开始日期 |
+| `endDate`     | string | 是   | 报告结束日期 |
+| `targetTable` | string | 否   | 目标表过滤   |
+| `severity`    | string | 否   | 严重级别过滤 |
 
 **响应示例：**
 
@@ -3961,18 +4082,18 @@ StarRocks OLAP 查询、数仓分层管理、物化视图管理。
 
 #### 3.7.5 质量监控看板
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                             |
+| -------- | -------------------------------- |
+| **方法** | `GET`                            |
 | **路径** | `/api/v1/data/quality/dashboard` |
-| **认证** | Bearer Token |
-| **权限** | `data:quality:read` |
+| **认证** | Bearer Token                     |
+| **权限** | `data:quality:read`              |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `timeRange` | string | 否 | `24h`/`7d`/`30d`，默认 `24h` |
+| 参数        | 类型   | 必填 | 说明                         |
+| ----------- | ------ | ---- | ---------------------------- |
+| `timeRange` | string | 否   | `24h`/`7d`/`30d`，默认 `24h` |
 
 **响应示例：**
 
@@ -4023,18 +4144,18 @@ ETL/CDC 任务运行状态监控、SLA 监控、失败告警和任务日志查�
 
 #### 3.8.1 获取任务运行状态总览
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                               |
+| -------- | ---------------------------------- |
+| **方法** | `GET`                              |
 | **路径** | `/api/v1/data/monitoring/overview` |
-| **认证** | Bearer Token |
-| **权限** | `data:monitoring:read` |
+| **认证** | Bearer Token                       |
+| **权限** | `data:monitoring:read`             |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `timeRange` | string | 否 | `1h`/`6h`/`24h`/`7d`，默认 `24h` |
+| 参数        | 类型   | 必填 | 说明                             |
+| ----------- | ------ | ---- | -------------------------------- |
+| `timeRange` | string | 否   | `1h`/`6h`/`24h`/`7d`，默认 `24h` |
 
 **响应示例：**
 
@@ -4079,19 +4200,19 @@ ETL/CDC 任务运行状态监控、SLA 监控、失败告警和任务日志查�
 
 #### 3.8.2 SLA 监控
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                          |
+| -------- | ----------------------------- |
+| **方法** | `GET`                         |
 | **路径** | `/api/v1/data/monitoring/sla` |
-| **认证** | Bearer Token |
-| **权限** | `data:monitoring:read` |
+| **认证** | Bearer Token                  |
+| **权限** | `data:monitoring:read`        |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `status` | string | 否 | `on_track`/`at_risk`/`violated` |
-| `taskId` | string | 否 | 任务 ID 过滤 |
+| 参数     | 类型   | 必填 | 说明                            |
+| -------- | ------ | ---- | ------------------------------- |
+| `status` | string | 否   | `on_track`/`at_risk`/`violated` |
+| `taskId` | string | 否   | 任务 ID 过滤                    |
 
 **响应示例：**
 
@@ -4143,24 +4264,24 @@ ETL/CDC 任务运行状态监控、SLA 监控、失败告警和任务日志查�
 
 #### 3.8.3 失败告警列表
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                             |
+| -------- | -------------------------------- |
+| **方法** | `GET`                            |
 | **路径** | `/api/v1/data/monitoring/alerts` |
-| **认证** | Bearer Token |
-| **权限** | `data:monitoring:read` |
+| **认证** | Bearer Token                     |
+| **权限** | `data:monitoring:read`           |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `page` | integer | 否 | 页码 |
-| `pageSize` | integer | 否 | 每页条数 |
-| `severity` | string | 否 | `info`/`warning`/`error`/`critical` |
-| `status` | string | 否 | `open`/`acknowledged`/`resolved` |
-| `taskType` | string | 否 | `cdc`/`etl` |
-| `startTime` | string | 否 | 开始时间 |
-| `endTime` | string | 否 | 结束时间 |
+| 参数        | 类型    | 必填 | 说明                                |
+| ----------- | ------- | ---- | ----------------------------------- |
+| `page`      | integer | 否   | 页码                                |
+| `pageSize`  | integer | 否   | 每页条数                            |
+| `severity`  | string  | 否   | `info`/`warning`/`error`/`critical` |
+| `status`    | string  | 否   | `open`/`acknowledged`/`resolved`    |
+| `taskType`  | string  | 否   | `cdc`/`etl`                         |
+| `startTime` | string  | 否   | 开始时间                            |
+| `endTime`   | string  | 否   | 结束时间                            |
 
 **响应示例：**
 
@@ -4227,19 +4348,19 @@ ETL/CDC 任务运行状态监控、SLA 监控、失败告警和任务日志查�
 
 #### 3.8.4 确认/解决告警
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `POST` |
+| 项目     | 说明                                                   |
+| -------- | ------------------------------------------------------ |
+| **方法** | `POST`                                                 |
 | **路径** | `/api/v1/data/monitoring/alerts/{alertId}/acknowledge` |
-| **认证** | Bearer Token |
-| **权限** | `data:monitoring:operate` |
+| **认证** | Bearer Token                                           |
+| **权限** | `data:monitoring:operate`                              |
 
 **请求参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `action` | string | 是 | `acknowledge`/`resolve` |
-| `note` | string | 否 | 处理备注 |
+| 参数     | 类型   | 必填 | 说明                    |
+| -------- | ------ | ---- | ----------------------- |
+| `action` | string | 是   | `acknowledge`/`resolve` |
+| `note`   | string | 否   | 处理备注                |
 
 **请求示例：**
 
@@ -4269,35 +4390,35 @@ ETL/CDC 任务运行状态监控、SLA 监控、失败告警和任务日志查�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
-| 40401 | 告警不存在 |
+| code  | 场景              |
+| ----- | ----------------- |
+| 40401 | 告警不存在        |
 | 40901 | 告警已被确认/解决 |
 
 ---
 
 #### 3.8.5 获取任务日志
 
-| 项目 | 说明 |
-|------|------|
-| **方法** | `GET` |
+| 项目     | 说明                           |
+| -------- | ------------------------------ |
+| **方法** | `GET`                          |
 | **路径** | `/api/v1/data/monitoring/logs` |
-| **认证** | Bearer Token |
-| **权限** | `data:monitoring:read` |
+| **认证** | Bearer Token                   |
+| **权限** | `data:monitoring:read`         |
 
 **Query 参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `taskId` | string | 是 | 任务 ID |
-| `runId` | string | 否 | 执行 ID（ETL 任务） |
-| `step` | string | 否 | 步骤名（ETL 任务） |
-| `level` | string | 否 | 日志级别：`INFO`/`WARN`/`ERROR`/`DEBUG` |
-| `startTime` | string | 否 | 开始时间 |
-| `endTime` | string | 否 | 结束时间 |
-| `keyword` | string | 否 | 关键词搜索 |
-| `page` | integer | 否 | 页码 |
-| `pageSize` | integer | 否 | 每页条数，默认 100 |
+| 参数        | 类型    | 必填 | 说明                                    |
+| ----------- | ------- | ---- | --------------------------------------- |
+| `taskId`    | string  | 是   | 任务 ID                                 |
+| `runId`     | string  | 否   | 执行 ID（ETL 任务）                     |
+| `step`      | string  | 否   | 步骤名（ETL 任务）                      |
+| `level`     | string  | 否   | 日志级别：`INFO`/`WARN`/`ERROR`/`DEBUG` |
+| `startTime` | string  | 否   | 开始时间                                |
+| `endTime`   | string  | 否   | 结束时间                                |
+| `keyword`   | string  | 否   | 关键词搜索                              |
+| `page`      | integer | 否   | 页码                                    |
+| `pageSize`  | integer | 否   | 每页条数，默认 100                      |
 
 **响应示例：**
 
@@ -4358,8 +4479,8 @@ ETL/CDC 任务运行状态监控、SLA 监控、失败告警和任务日志查�
 
 **错误场景：**
 
-| code | 场景 |
-|------|------|
+| code  | 场景       |
+| ----- | ---------- |
 | 40401 | 任务不存在 |
 
 ---
@@ -4809,13 +4930,13 @@ TECH-DATA 通过 Kafka 发布事件，遵循 **Outbox 模式**（先写 `outbox_
 
 ### 5.1 Kafka Topic 规划
 
-| Topic | 说明 | 消费者 |
-|-------|------|--------|
-| `tech_data.cdc.sync` | CDC 数据同步事件 | TECH-ONT, TECH-RAG |
-| `tech_data.task.status` | ETL/CDC 任务状态变更事件 | TECH-OBS, APP-ONTSTUDIO |
-| `tech_data.quality.alert` | 数据质量告警事件 | TECH-OBS |
-| `tech_data.lake.commit` | 数据湖提交事件 | TECH-ONT |
-| `tech_data.dlq` | 死信队列（消费失败超过 3 次） | 监控系统 |
+| Topic                     | 说明                          | 消费者                  |
+| ------------------------- | ----------------------------- | ----------------------- |
+| `tech_data.cdc.sync`      | CDC 数据同步事件              | TECH-ONT, TECH-RAG      |
+| `tech_data.task.status`   | ETL/CDC 任务状态变更事件      | TECH-OBS, APP-ONTSTUDIO |
+| `tech_data.quality.alert` | 数据质量告警事件              | TECH-OBS                |
+| `tech_data.lake.commit`   | 数据湖提交事件                | TECH-ONT                |
+| `tech_data.dlq`           | 死信队列（消费失败超过 3 次） | 监控系统                |
 
 ### 5.2 事件通用结构
 
@@ -4883,7 +5004,11 @@ TECH-DATA 通过 Kafka 发布事件，遵循 **Outbox 模式**（先写 `outbox_
     "totalRecordsWritten": 1500000,
     "tablesSynced": [
       { "sourceTable": "orders", "targetTable": "ods_orders", "records": 3000 },
-      { "sourceTable": "order_items", "targetTable": "ods_order_items", "records": 2000 }
+      {
+        "sourceTable": "order_items",
+        "targetTable": "ods_order_items",
+        "records": 2000
+      }
     ]
   }
 }
@@ -5074,17 +5199,17 @@ TECH-DATA 通过 Kafka 发布事件，遵循 **Outbox 模式**（先写 `outbox_
 
 ### 6.1 版本规划
 
-| 版本 | 预计时间 | 范围 | 关键交付 |
-|------|----------|------|----------|
-| v0.1 | 2026 Q3 | 数据源管理 MVP | 数据源 CRUD、连接测试、Schema 发现 |
-| v0.2 | 2026 Q3 | ETL 任务基础 | Airflow 集成、ETL 任务 CRUD、手动触发、执行历史 |
-| v0.3 | 2026 Q4 | CDC 实时同步 | Flink CDC 集成、CDC 任务 CRUD、启停、状态监控 |
-| v0.4 | 2026 Q4 | 数据湖管理 | Hudi/Iceberg 表 CRUD、入湖任务、湖表查询 |
-| v0.5 | 2027 Q1 | 数据仓库 | StarRocks 查询、数仓分层、物化视图 |
-| v0.6 | 2027 Q1 | 数据目录 | 资产目录、元数据管理、数据血缘 |
-| v0.7 | 2027 Q2 | 数据质量 | 质量规则、质量检查、质量报告 |
-| v0.8 | 2027 Q2 | 任务监控 | SLA 监控、失败告警、任务日志 |
-| v1.0 | 2027 Q3 | 正式发布 | 全功能 GA、性能优化、安全加固 |
+| 版本 | 预计时间 | 范围           | 关键交付                                        |
+| ---- | -------- | -------------- | ----------------------------------------------- |
+| v0.1 | 2026 Q3  | 数据源管理 MVP | 数据源 CRUD、连接测试、Schema 发现              |
+| v0.2 | 2026 Q3  | ETL 任务基础   | Airflow 集成、ETL 任务 CRUD、手动触发、执行历史 |
+| v0.3 | 2026 Q4  | CDC 实时同步   | Flink CDC 集成、CDC 任务 CRUD、启停、状态监控   |
+| v0.4 | 2026 Q4  | 数据湖管理     | Hudi/Iceberg 表 CRUD、入湖任务、湖表查询        |
+| v0.5 | 2027 Q1  | 数据仓库       | StarRocks 查询、数仓分层、物化视图              |
+| v0.6 | 2027 Q1  | 数据目录       | 资产目录、元数据管理、数据血缘                  |
+| v0.7 | 2027 Q2  | 数据质量       | 质量规则、质量检查、质量报告                    |
+| v0.8 | 2027 Q2  | 任务监控       | SLA 监控、失败告警、任务日志                    |
+| v1.0 | 2027 Q3  | 正式发布       | 全功能 GA、性能优化、安全加固                   |
 
 ### 6.2 各版本详细交付项
 
@@ -5184,28 +5309,28 @@ TECH-DATA 通过 Kafka 发布事件，遵循 **Outbox 模式**（先写 `outbox_
 
 ### 6.3 API 接口交付清单汇总
 
-| API 分组 | 接口数 | v0.1 | v0.2 | v0.3 | v0.4 | v0.5 | v0.6 | v0.7 | v0.8 |
-|----------|--------|------|------|------|------|------|------|------|------|
-| 数据源管理 | 8 | 8 | - | - | - | - | - | - | - |
-| ETL/ELT 任务 | 12 | - | 12 | - | - | - | - | - | - |
-| CDC 实时同步 | 10 | - | - | 10 | - | - | - | - | - |
-| 数据湖管理 | 8 | - | - | - | 8 | - | - | - | - |
-| 数据仓库 | 6 | - | - | - | - | 6 | - | - | - |
-| 数据目录 | 5 | - | - | - | - | - | 5 | - | - |
-| 数据质量 | 5 | - | - | - | - | - | - | 5 | - |
-| 任务监控 | 5 | - | - | - | - | - | - | - | 5 |
-| **合计** | **59** | **8** | **12** | **10** | **8** | **6** | **5** | **5** | **5** |
+| API 分组     | 接口数 | v0.1  | v0.2   | v0.3   | v0.4  | v0.5  | v0.6  | v0.7  | v0.8  |
+| ------------ | ------ | ----- | ------ | ------ | ----- | ----- | ----- | ----- | ----- |
+| 数据源管理   | 8      | 8     | -      | -      | -     | -     | -     | -     | -     |
+| ETL/ELT 任务 | 12     | -     | 12     | -      | -     | -     | -     | -     | -     |
+| CDC 实时同步 | 10     | -     | -      | 10     | -     | -     | -     | -     | -     |
+| 数据湖管理   | 8      | -     | -      | -      | 8     | -     | -     | -     | -     |
+| 数据仓库     | 6      | -     | -      | -      | -     | 6     | -     | -     | -     |
+| 数据目录     | 5      | -     | -      | -      | -     | -     | 5     | -     | -     |
+| 数据质量     | 5      | -     | -      | -      | -     | -     | -     | 5     | -     |
+| 任务监控     | 5      | -     | -      | -      | -     | -     | -     | -     | 5     |
+| **合计**     | **59** | **8** | **12** | **10** | **8** | **6** | **5** | **5** | **5** |
 
 ### 6.4 依赖与风险
 
-| 依赖项 | 说明 | 风险等级 | 缓解措施 |
-|--------|------|----------|----------|
-| Flink 集群稳定性 | CDC 任务依赖 Flink 作业运行 | 高 | K8s 部署 Flink Session Cluster，配置自动恢复 |
-| Airflow 调度可靠性 | ETL 任务依赖 Airflow DAG 调度 | 中 | Airflow HA 部署，DB 后端 PostgreSQL |
-| StarRocks 查询性能 | 大数据量 OLAP 查询超时 | 中 | 物化视图加速、查询超时控制、分页限制 |
-| 源数据库连接稳定性 | CDC 实时同步依赖源库可用性 | 高 | 连接池管理、断线重连、告警通知 |
-| Hudi/Iceberg 兼容性 | 湖格式版本升级风险 | 中 | 锁定版本（Hudi 1.x / Iceberg 1.8），充分测试 |
-| Kafka 消息可靠性 | 事件投递需保证 At-Least-Once | 中 | Outbox 模式 + 幂等消费 + DLQ |
+| 依赖项              | 说明                          | 风险等级 | 缓解措施                                     |
+| ------------------- | ----------------------------- | -------- | -------------------------------------------- |
+| Flink 集群稳定性    | CDC 任务依赖 Flink 作业运行   | 高       | K8s 部署 Flink Session Cluster，配置自动恢复 |
+| Airflow 调度可靠性  | ETL 任务依赖 Airflow DAG 调度 | 中       | Airflow HA 部署，DB 后端 PostgreSQL          |
+| StarRocks 查询性能  | 大数据量 OLAP 查询超时        | 中       | 物化视图加速、查询超时控制、分页限制         |
+| 源数据库连接稳定性  | CDC 实时同步依赖源库可用性    | 高       | 连接池管理、断线重连、告警通知               |
+| Hudi/Iceberg 兼容性 | 湖格式版本升级风险            | 中       | 锁定版本（Hudi 1.x / Iceberg 1.8），充分测试 |
+| Kafka 消息可靠性    | 事件投递需保证 At-Least-Once  | 中       | Outbox 模式 + 幂等消费 + DLQ                 |
 
 ---
 

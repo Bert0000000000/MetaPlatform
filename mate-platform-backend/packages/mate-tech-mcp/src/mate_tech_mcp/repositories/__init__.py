@@ -5,6 +5,7 @@ prompts) plus the W2 dynamic tool registry accessors. A SQL backend
 mirror lives in ``sql_store`` (wired when ``MATE_DB_URL`` is set); the
 runtime surfaces use the in-memory store by default.
 """
+
 from __future__ import annotations
 
 from .in_memory import (

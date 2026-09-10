@@ -4,6 +4,7 @@ Per ADR-0016: D2 = DataHub DataProduct + ingest pipeline,
 D3 = Great Expectations + Airflow integration. Both build on the
 D0 chart stubs and turn them on.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -70,6 +71,4 @@ class TestUmbrellaChartStillWired:
     def test_umbrella_chart_includes_d2_d3_components(self) -> None:
         text = UMBRELLA.read_text(encoding="utf-8")
         for chart in ("debezium", "marquez", "datahub", "ge"):
-            assert f"- name: {chart}" in text, (
-                f"{chart} missing from umbrella dependencies"
-            )
+            assert f"- name: {chart}" in text, f"{chart} missing from umbrella dependencies"

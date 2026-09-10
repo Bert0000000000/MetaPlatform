@@ -25,12 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Verified pages
 
-| Page | URL | Status |
-|---|---|---|
-| Login | `/login` | ✅ admin/admin123 auth works |
-| Dashboard | `/dashboard` | ✅ Full render: metrics, task table, system status, digital employees |
-| Arch capabilities | `/arch/capabilities` | ✅ Capability tree + list + visualization |
-| SuperAI chat | `/superai/chat` | ✅ Chat input, query type selector, conversation area |
+| Page              | URL                  | Status                                                                |
+| ----------------- | -------------------- | --------------------------------------------------------------------- |
+| Login             | `/login`             | ✅ admin/admin123 auth works                                          |
+| Dashboard         | `/dashboard`         | ✅ Full render: metrics, task table, system status, digital employees |
+| Arch capabilities | `/arch/capabilities` | ✅ Capability tree + list + visualization                             |
+| SuperAI chat      | `/superai/chat`      | ✅ Chat input, query type selector, conversation area                 |
 
 ## [v3.2.1] — 2026-07-31
 
@@ -94,10 +94,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v3.1] — 2026-07-30 ~ 2026-08-02
 
 > v3.1 增量波最终收口。BUSINESS-SLICES + DATA 数据平台 + 8 条 GA 硬规则
-> + TD 技术债 + PRD 业务深化 + MCP 路径修复全部闭环。详见
-> `docs/active/delivery/evidence/V3.1-FINAL-STATUS.md`。
+>
+> - TD 技术债 + PRD 业务深化 + MCP 路径修复全部闭环。详见
+>   `docs/active/delivery/evidence/V3.1-FINAL-STATUS.md`。
 
 ### GA 硬规则(G1-G8)
+
 - G1 kafka sub-chart(KRaft 3-broker)✅
 - G2 pre-commit 加固 ✅
 - G3 Outbox DDL ✅
@@ -108,6 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - G8 旧 infra 清理(3 目录 + docker-compose + docs)✅
 
 ### DATA-D0-D8 数据平台
+
 - D0 CDC + Marquez + DataHub + GE 接入 ✅
 - D1 跨域 lineage e2e ✅
 - D2 DataProduct + DataJob + Dataset CRD ✅
@@ -119,25 +122,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - D8 跨域数据联邦查询 ✅
 
 ### PRD 业务深化
+
 - P3-W8:arch 2 endpoint + agent plan + msg 历史 + wfe Flowable(16 tests)
 - P3-W9:llmgw cache/quota/cost 接入 chat + msg webhook fan-out + ont SPARQL + 推理引擎(34 tests)
 
 ### MCP 路径修复
+
 - P3-W10:mcp 5 原 endpoint + 7 federation + origin_routes.py(95 tests)
 
 ### BUSINESS-SLICES 业务域接入(早期 wave，并入 v3.1)
+
 - **4 个新 Python 包**：`mate-app-hub`（5）/ `mate-app-arch`（27）/ `mate-app-copilot`（33）/ `mate-app-a2a`（10）— 共 75 个新 endpoint。
 - **Dashboard（`mate-tech-iam`）**：34 endpoint 升级到 ADR-0014 5 步合规。
 - **AsyncCopilotClient** + **LlmgwProvider**（真实 HTTP LLM 网关 + 断路器回退）。
 - **TD-1**：`TenantAccessError` 返回 400（原 500）；**TD-7**：pyright strict 0 errors。
 
 ### 统计
+
 - 累计 ~2100+ tests pass / 0 failed
 - 17/17 域 5 步合规
 - SPEC 命中 214/214
 - Alembic migrations:0001-0012(12 个)
 
 ### Commits(关键)
+
 - `0cd0ecfb` feat(infra): v3.2 W3 G1 kafka sub-chart KRaft + persistence + networkpolicy
 - `083dc26f` feat(ont): v3.2 W2 SHACL 推理引擎 — ShaclEngine + validate endpoint
 - `75831dea` feat(mcp): v3.2 W1 federation 真实化 — remote client + health + DLQ
@@ -156,7 +164,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `196542ca` feat(ci): G4 kind K8s e2e — CI workflow + 本地 smoke 脚本
 - `d0cd4f91` feat(db): G6 tenant_id RLS 迁移 — Alembic 0008 + 双保险策略
 - `c5a3ac2c` feat(contracts): G5 per-service security 段补齐 — 17 域收口
-- `7d0942b1` feat(ci): G2 pre-commit 收口 — forbid_* 加固 + gitleaks
+- `7d0942b1` feat(ci): G2 pre-commit 收口 — forbid\_\* 加固 + gitleaks
 - `85f4df75` feat(infra): G3+G7 硬规则收口 — Outbox DDL Alembic 0007 + SealedSecret runbook
 - `bae2ec63` feat(data): D1 lineage e2e — cross-domain trace + tenant isolation
 - `833a809d` feat: P2-W2 batch — 4 domains / 99 endpoints / 93 tests (#12)

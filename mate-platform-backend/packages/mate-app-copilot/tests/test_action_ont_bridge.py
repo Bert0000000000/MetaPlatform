@@ -43,16 +43,17 @@ class _FakeClient(AsyncCopilotClient):
         self._fail = fail
         self._calls: list[tuple] = calls if calls is not None else []
 
-    async def ont_apply_action(self, rid, tenant_id, parameters=None,
-                               target_iid="", provenance=None,
-                               fallback_token=None) -> dict[str, Any]:
+    async def ont_apply_action(
+        self, rid, tenant_id, parameters=None, target_iid="", provenance=None, fallback_token=None
+    ) -> dict[str, Any]:
         self._calls.append((rid, tenant_id, parameters, target_iid, fallback_token))
         if self._fail:
             raise RuntimeError("kernel unavailable")
         return dict(KERNEL_RESPONSE, action_rid=rid)
 
-    async def ont_propose_action(self, rid, tenant_id, parameters=None,
-                                 target_iid="", fallback_token=None) -> dict[str, Any]:
+    async def ont_propose_action(
+        self, rid, tenant_id, parameters=None, target_iid="", fallback_token=None
+    ) -> dict[str, Any]:
         self._calls.append(("propose", rid, tenant_id, parameters, target_iid, fallback_token))
         if self._fail:
             raise RuntimeError("kernel unavailable")
@@ -61,6 +62,7 @@ class _FakeClient(AsyncCopilotClient):
 
 def _dummy_auth():
     from mate_clients.security.bearer import BearerAuth
+
     return BearerAuth(
         token_uri="http://localhost:8080/realms/metaplatform/protocol/openid-connect/token",
         client_id="metaplatform-backend",

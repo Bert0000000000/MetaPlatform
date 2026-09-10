@@ -10,6 +10,7 @@ Exposed under `/api/v1/iam/*`. Provides:
 Tokens are HS256 JWTs signed with IAM_DEV_JWT_SECRET for dev / BFF usage. In
 production, swap to RS256 + Keycloak JWKS (see services/auth-service).
 """
+
 from __future__ import annotations
 
 import os
@@ -96,7 +97,9 @@ def _make_token(user: User, roles: list[str], ttl: int, kind: str) -> str:
         "iss": os.getenv(
             "KEYCLOAK_URL",
             "http://localhost:8080",
-        ).rstrip("/") + "/realms/" + os.getenv("KEYCLOAK_REALM", "metaplatform"),
+        ).rstrip("/")
+        + "/realms/"
+        + os.getenv("KEYCLOAK_REALM", "metaplatform"),
         "aud": os.getenv("KEYCLOAK_AUDIENCE", "metaplatform-backend"),
         "azp": os.getenv("SERVICE_CLIENT_ID", "metaplatform-backend"),
         "realm_access": {"roles": list(roles)},
@@ -200,26 +203,47 @@ async def iam_login(
     ip = x_forwarded_for.split(",")[0].strip() if x_forwarded_for else None
 
     async with AsyncSessionMaker() as session:
-        stmt = select(User).where(
-            and_(User.tenant_id == tenant_id, User.username == req.username)
-        )
+        stmt = select(User).where(and_(User.tenant_id == tenant_id, User.username == req.username))
         user = (await session.execute(stmt)).scalar_one_or_none()
         if not user:
-            await _write_login_log(session, tenant_id, req.username, None, LoginResult.FAILED, ip, "user not found")
-            raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": "Invalid username or password"})
+            await _write_login_log(
+                session, tenant_id, req.username, None, LoginResult.FAILED, ip, "user not found"
+            )
+            raise HTTPException(
+                status_code=401,
+                detail={"code": "E401_UNAUTHORIZED", "message": "Invalid username or password"},
+            )
 
         if not user.password_hash or not verify_password(req.password, user.password_hash):
-            await _write_login_log(session, tenant_id, req.username, user.id, LoginResult.FAILED, ip, "bad password")
-            raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": "Invalid username or password"})
+            await _write_login_log(
+                session, tenant_id, req.username, user.id, LoginResult.FAILED, ip, "bad password"
+            )
+            raise HTTPException(
+                status_code=401,
+                detail={"code": "E401_UNAUTHORIZED", "message": "Invalid username or password"},
+            )
 
         if user.status != UserStatus.ACTIVE:
-            await _write_login_log(session, tenant_id, req.username, user.id, LoginResult.LOCKED, ip, f"status={user.status.value}")
-            raise HTTPException(status_code=403, detail={"code": "E403_FORBIDDEN", "message": f"Account is {user.status.value}"})
+            await _write_login_log(
+                session,
+                tenant_id,
+                req.username,
+                user.id,
+                LoginResult.LOCKED,
+                ip,
+                f"status={user.status.value}",
+            )
+            raise HTTPException(
+                status_code=403,
+                detail={"code": "E403_FORBIDDEN", "message": f"Account is {user.status.value}"},
+            )
 
         roles = await _load_roles(session, user.id)
         user.last_login_at = datetime.now(UTC)
         user.last_login_ip = ip
-        await _write_login_log(session, tenant_id, req.username, user.id, LoginResult.SUCCESS, ip, None)
+        await _write_login_log(
+            session, tenant_id, req.username, user.id, LoginResult.SUCCESS, ip, None
+        )
         await write_audit(
             session,
             caller=get_caller_for_user(user),
@@ -241,7 +265,7 @@ async def iam_logout(authorization: str | None = Header(default=None)) -> dict[s
 
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing Bearer token")
-    token = authorization[len("Bearer "):]
+    token = authorization[len("Bearer ") :]
     try:
         unverified = jwt.decode(token, options={"verify_signature": False})
         jti = unverified.get("jti", "")
@@ -254,7 +278,9 @@ async def iam_logout(authorization: str | None = Header(default=None)) -> dict[s
         from sqlalchemy import update
 
         async with AsyncSessionMaker() as session:
-            await session.execute(update(User).where(User.id == user_id).values(updated_at=datetime.now(UTC)))
+            await session.execute(
+                update(User).where(User.id == user_id).values(updated_at=datetime.now(UTC))
+            )
             await session.commit()
     return {"loggedOut": True, "jti": jti}
 
@@ -275,10 +301,15 @@ async def iam_refresh(req: RefreshRequest) -> AuthResponse:
             options={"verify_aud": False},
         )
     except jwt.PyJWTError as exc:
-        raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": f"Invalid refresh token: {exc}"}) from exc
+        raise HTTPException(
+            status_code=401,
+            detail={"code": "E401_UNAUTHORIZED", "message": f"Invalid refresh token: {exc}"},
+        ) from exc
 
     if claims.get("token_kind") != "refresh":
-        raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": "Not a refresh token"})
+        raise HTTPException(
+            status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": "Not a refresh token"}
+        )
 
     user_id = int(claims.get("sub", "0"))
     tenant_id = claims.get("tenant_id", "tenant-default")
@@ -289,10 +320,12 @@ async def iam_refresh(req: RefreshRequest) -> AuthResponse:
             )
         ).scalar_one_or_none()
         if not user or user.status != UserStatus.ACTIVE:
-            raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": "User not found or disabled"})
+            raise HTTPException(
+                status_code=401,
+                detail={"code": "E401_UNAUTHORIZED", "message": "User not found or disabled"},
+            )
         roles = await _load_roles(session, user.id)
         return _build_response(user, roles, None)
-
 
 
 @router.get("/auth/me")
@@ -307,8 +340,10 @@ async def iam_me(authorization: str | None = Header(default=None)) -> dict[str, 
     from ..db import AsyncSessionMaker
 
     if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": "Missing Bearer token"})
-    token = authorization[len("Bearer "):].strip()
+        raise HTTPException(
+            status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": "Missing Bearer token"}
+        )
+    token = authorization[len("Bearer ") :].strip()
     try:
         # `verify_aud=False` keeps /auth/me decoupled from the bearer
         # middleware's audience policy; this endpoint is the legacy
@@ -320,29 +355,39 @@ async def iam_me(authorization: str | None = Header(default=None)) -> dict[str, 
             options={"verify_aud": False},
         )
     except jwt.PyJWTError as exc:
-        raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": f"Invalid token: {exc}"}) from exc
+        raise HTTPException(
+            status_code=401,
+            detail={"code": "E401_UNAUTHORIZED", "message": f"Invalid token: {exc}"},
+        ) from exc
 
     try:
         uid = int(claims.get("sub", "0"))
     except (TypeError, ValueError):
-        raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": "Invalid token subject"}) from None
+        raise HTTPException(
+            status_code=401,
+            detail={"code": "E401_UNAUTHORIZED", "message": "Invalid token subject"},
+        ) from None
     claims.get("tenant_id", "tenant-default")
 
     async with AsyncSessionMaker() as session:
         user = (await session.execute(select(User).where(User.id == uid))).scalar_one_or_none()
         if not user:
-            raise HTTPException(status_code=404, detail={"code": "E404_NOT_FOUND", "message": "User not found"})
+            raise HTTPException(
+                status_code=404, detail={"code": "E404_NOT_FOUND", "message": "User not found"}
+            )
         roles = await _load_roles(session, user.id)
-        return ok({
-            "userId": str(user.id),
-            "username": user.username,
-            "realName": user.real_name,
-            "email": user.email,
-            "status": user.status.value if user.status else None,
-            "tenantId": user.tenant_id,
-            "isSuperAdmin": user.is_super_admin,
-            "roles": roles,
-        })
+        return ok(
+            {
+                "userId": str(user.id),
+                "username": user.username,
+                "realName": user.real_name,
+                "email": user.email,
+                "status": user.status.value if user.status else None,
+                "tenantId": user.tenant_id,
+                "isSuperAdmin": user.is_super_admin,
+                "roles": roles,
+            }
+        )
 
 
 @router.get("/sso-providers")
@@ -353,10 +398,12 @@ async def list_sso_providers(
     enabled_only: bool = False,
 ) -> dict[str, Any]:
     """List SSO providers (empty in default dev deployment)."""
-    return ok({
-        "items": [],
-        "total": 0,
-        "page": page,
-        "size": size,
-        "hint": "SSO providers not configured in default dev; can be added via future IAM module",
-    })
+    return ok(
+        {
+            "items": [],
+            "total": 0,
+            "page": page,
+            "size": size,
+            "hint": "SSO providers not configured in default dev; can be added via future IAM module",
+        }
+    )

@@ -7,15 +7,15 @@
 
 ## 1. 进度
 
-| 阶段 | 状态 | 说明 |
-|---|---|---|
-| 12 基元 Protocol/dataclass 骨架 | ✅ 落档 | `src/mate_kernel/ontology/{identity,types,instances,reasoning,query}/` |
-| 单元测试起步集 | ✅ 43 tests pass | `tests/test_ontology_primitives.py` |
-| 60 tests 全量 | ⏳ | 当前 43；M1 第 2 周扩到 ≥60 |
-| OWL 迁移 v2 | ⏳ | M1 第 5-6 周 |
-| 双租户上下文统一 | ⏳ | M1 第 7-8 周 |
-| OpenAPI 先行 | ⏳ | M1 第 3-4 周 |
-| 验收证据 ACCEPTANCE.md | ⏳ | M1 结束前 |
+| 阶段                            | 状态             | 说明                                                                   |
+| ------------------------------- | ---------------- | ---------------------------------------------------------------------- |
+| 12 基元 Protocol/dataclass 骨架 | ✅ 落档          | `src/mate_kernel/ontology/{identity,types,instances,reasoning,query}/` |
+| 单元测试起步集                  | ✅ 43 tests pass | `tests/test_ontology_primitives.py`                                    |
+| 60 tests 全量                   | ⏳               | 当前 43；M1 第 2 周扩到 ≥60                                            |
+| OWL 迁移 v2                     | ⏳               | M1 第 5-6 周                                                           |
+| 双租户上下文统一                | ⏳               | M1 第 7-8 周                                                           |
+| OpenAPI 先行                    | ⏳               | M1 第 3-4 周                                                           |
+| 验收证据 ACCEPTANCE.md          | ⏳               | M1 结束前                                                              |
 
 ## 2. 文件清单
 
@@ -57,20 +57,20 @@ python -m pytest tests/test_ontology_primitives.py -v
 
 ## 4. 12 基元速查
 
-| # | 基元 | rid 形如 | 可变？ |
-|---|---|---|---|
-| 1 | `ClassRef` | `ont.<tenant>.<kind>.<rest>` | — |
-| 2 | `Version` | `ont.<tenant>.ver.<class_ref>.<tag>.v<n>` | 否（不可变快照） |
-| 3 | `Property` | `ont.<tenant>.prop.<type>.<slug>` | 否 |
-| 4 | `ObjectType` | `ont.<tenant>.obj.<slug>` | 否 |
-| 5 | `LinkType` | `ont.<tenant>.link.<slug>` | 否 |
-| 6 | `ActionType` | `ont.<tenant>.act.<slug>` | 否 |
-| 7 | `Interface` | `ont.<tenant>.if.<slug>` | 否 |
-| 8 | `Individual` | `ont.<tenant>.ind.<type>.<pk>` | **是** |
-| 9 | `LinkInstance` | `ont.<tenant>.lnk.<link>.<sid>.<did>` | **是** |
-| 10 | `Axiom` | `ont.<tenant>.ax.<kind>.<slug>` | 否 |
-| 11 | `Function` | `ont.<tenant>.fn.<slug>.v<n>` | 否 |
-| 12 | `ObjectSet` | `ont.<tenant>.oset.<hash>` | 一次性 |
+| #   | 基元           | rid 形如                                  | 可变？           |
+| --- | -------------- | ----------------------------------------- | ---------------- |
+| 1   | `ClassRef`     | `ont.<tenant>.<kind>.<rest>`              | —                |
+| 2   | `Version`      | `ont.<tenant>.ver.<class_ref>.<tag>.v<n>` | 否（不可变快照） |
+| 3   | `Property`     | `ont.<tenant>.prop.<type>.<slug>`         | 否               |
+| 4   | `ObjectType`   | `ont.<tenant>.obj.<slug>`                 | 否               |
+| 5   | `LinkType`     | `ont.<tenant>.link.<slug>`                | 否               |
+| 6   | `ActionType`   | `ont.<tenant>.act.<slug>`                 | 否               |
+| 7   | `Interface`    | `ont.<tenant>.if.<slug>`                  | 否               |
+| 8   | `Individual`   | `ont.<tenant>.ind.<type>.<pk>`            | **是**           |
+| 9   | `LinkInstance` | `ont.<tenant>.lnk.<link>.<sid>.<did>`     | **是**           |
+| 10  | `Axiom`        | `ont.<tenant>.ax.<kind>.<slug>`           | 否               |
+| 11  | `Function`     | `ont.<tenant>.fn.<slug>.v<n>`             | 否               |
+| 12  | `ObjectSet`    | `ont.<tenant>.oset.<hash>`                | 一次性           |
 
 ## 5. 关键不变量（由 `__post_init__` 强制）
 
@@ -82,15 +82,15 @@ python -m pytest tests/test_ontology_primitives.py -v
 
 ## 6. M1 后续 7 周任务拆分
 
-| 周 | 任务 | 交付 |
-|---|---|---|
-| W1 | 12 基元骨架 + 起步测试 | ✅ 当前状态 |
-| W2 | 扩到 ≥60 tests（含错误路径、跨基元交互） | +17 tests |
-| W3 | OpenAPI 先行：12 基元 schema 入 `ont.yaml` | `contracts/openapi/services/ont.yaml` 扩到 ~32 端点 |
-| W4 | 工具函数：rid 编解码、跨 rid 比较、序列化（to_dict/from_dict） | `mate_kernel/ontology/serde.py` |
-| W5 | OWL 数据迁移脚本（v1 旧表 → v2 新表） | `mate-tech-ont/alembic/versions/2026_08_v2_migration.py` |
-| W6 | 旧表 deprecate + 双租户上下文统一（移除 `mate-tech-ont/security/tenant.py`） | CI 加 `forbid_legacy_tenant_ctx.py` |
-| W7 | 13 硬规则对位 + `MP-ONT-KERNEL-01-ACCEPTANCE.md` 收口 | evidence 落档 |
+| 周  | 任务                                                                         | 交付                                                     |
+| --- | ---------------------------------------------------------------------------- | -------------------------------------------------------- |
+| W1  | 12 基元骨架 + 起步测试                                                       | ✅ 当前状态                                              |
+| W2  | 扩到 ≥60 tests（含错误路径、跨基元交互）                                     | +17 tests                                                |
+| W3  | OpenAPI 先行：12 基元 schema 入 `ont.yaml`                                   | `contracts/openapi/services/ont.yaml` 扩到 ~32 端点      |
+| W4  | 工具函数：rid 编解码、跨 rid 比较、序列化（to_dict/from_dict）               | `mate_kernel/ontology/serde.py`                          |
+| W5  | OWL 数据迁移脚本（v1 旧表 → v2 新表）                                        | `mate-tech-ont/alembic/versions/2026_08_v2_migration.py` |
+| W6  | 旧表 deprecate + 双租户上下文统一（移除 `mate-tech-ont/security/tenant.py`） | CI 加 `forbid_legacy_tenant_ctx.py`                      |
+| W7  | 13 硬规则对位 + `MP-ONT-KERNEL-01-ACCEPTANCE.md` 收口                        | evidence 落档                                            |
 
 ## 7. 接力指引
 

@@ -25,6 +25,7 @@ Wiring
 ``GET .../{id}/deliveries`` + ``POST .../{id}/test``) on the same
 FastAPI app.
 """
+
 from __future__ import annotations
 
 import asyncio

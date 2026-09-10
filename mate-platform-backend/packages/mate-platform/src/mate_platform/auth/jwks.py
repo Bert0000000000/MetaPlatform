@@ -8,6 +8,7 @@ The cache is keyed by `kid` and is updated:
 Algorithm whitelist is RS256 / RS384 / RS512. HS* is rejected to prevent
 alg-confusion attacks (CVE-2015-9235 family).
 """
+
 from __future__ import annotations
 
 import threading
@@ -55,9 +56,7 @@ class JWKSCache:
                         headers={"X-Robots-Tag": "noindex"},
                     )
                 if resp.status_code != 200:
-                    raise JWKSError(
-                        f"JWKS endpoint returned {resp.status_code}: {resp.text[:200]}"
-                    )
+                    raise JWKSError(f"JWKS endpoint returned {resp.status_code}: {resp.text[:200]}")
                 payload = resp.json()
             except httpx.HTTPError as exc:
                 raise JWKSError(f"JWKS request failed: {exc}") from exc

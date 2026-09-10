@@ -47,7 +47,8 @@ kernel role → embedding → keyword 的 dispatcher 链路，以及
   false，签名强校验生效（篡改 token → 401、伪造 jwt → 401）。
 
 **仍未核销（如实）**：
+
 1. 两个独立真实 provider 的配额/熔断/故障切换——MiniMax 配额 429 为外部
    账户边界（§2.5 [!] 保留），第二 provider 待补；
 2. staging 集群级 SSE 断线恢复证据——随 Sprint 5 staging 演练批次归档。
-状态：`[~]`（条件范围收窄为上述两项）。
+   状态：`[~]`（条件范围收窄为上述两项）。

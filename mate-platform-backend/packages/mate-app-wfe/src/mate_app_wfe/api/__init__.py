@@ -1,4 +1,5 @@
 """mate_app_wfe.api — FastAPI routers for WFE and workflow runs."""
+
 from __future__ import annotations
 
 from .app import router

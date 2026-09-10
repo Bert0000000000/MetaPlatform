@@ -13,6 +13,7 @@ reranker/chunker use).
 Vector search still goes to Milvus in RAG_MODE=hybrid|full; this module is
 the single source of truth for the persistent copy either way.
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -157,19 +158,23 @@ class PGClient:
                             conn.rollback()
                             _log.warning(
                                 "pgvector step failed (continuing): %s | %s",
-                                stmt[:60], stmt_exc,
+                                stmt[:60],
+                                stmt_exc,
                             )
                             raise
                 self._has_pgvector = True
                 _log.info(
                     "pgvector ACTIVE (dim=%d, %s, HNSW %s)",
-                    self._vec_dim, self._vec_type, self._vec_ops,
+                    self._vec_dim,
+                    self._vec_type,
+                    self._vec_ops,
                 )
             except Exception as exc:
                 self._has_pgvector = False
                 _log.info(
                     "pgvector unavailable — vector search falls back to JSONB "
-                    "python cosine (dev scale): %s", exc,
+                    "python cosine (dev scale): %s",
+                    exc,
                 )
             self._available = True
             _log.info("PGClient connected: %s", self._dsn.split("@")[-1])
@@ -223,7 +228,17 @@ class PGClient:
                             embedding_vec = COALESCE(EXCLUDED.embedding_vec, kb_chunks.embedding_vec),
                             text_tokens = EXCLUDED.text_tokens
                         """,
-                        (chunk_id, document_id, text, _json_dump(meta), tokens, tenant_id, emb_json, vec_str, tokens),
+                        (
+                            chunk_id,
+                            document_id,
+                            text,
+                            _json_dump(meta),
+                            tokens,
+                            tenant_id,
+                            emb_json,
+                            vec_str,
+                            tokens,
+                        ),
                     )
                 conn.commit()
             return True
@@ -248,7 +263,9 @@ class PGClient:
     # ------------------------------------------------------------------
     # Read path
     # ------------------------------------------------------------------
-    def bm25_search(self, query: str, top_k: int = 10, *, tenant_id: str | None = None) -> list[dict[str, Any]]:
+    def bm25_search(
+        self, query: str, top_k: int = 10, *, tenant_id: str | None = None
+    ) -> list[dict[str, Any]]:
         """BM25 over the CJK-bigram token column. Works for Chinese + Latin."""
         if not self._available or self._pool is None:
             return []
@@ -364,7 +381,7 @@ class PGClient:
                     )
                 )
             scored.sort(key=lambda t: t[0], reverse=True)
-            return [item for _, item in scored[: top_k]]
+            return [item for _, item in scored[:top_k]]
         except Exception as exc:
             _log.warning("PG vector_search failed: %s", exc)
             return []

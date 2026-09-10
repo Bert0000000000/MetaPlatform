@@ -373,17 +373,17 @@ router = APIRouter()
 @router.post("/api/v1/a2a/agent/deep-research/invoke")
 async def invoke_deep_research(request: Request, body: dict) -> dict:
     """A2A endpoint for deep research delegation.
-    
+
     Body:
         capability_id: "web-research" | "report-summarize"
         input: { query, depth, max_sources, output_format }
     """
     ctx = request.state.ctx
     require_tenant(ctx)
-    
+
     capability_id = body.get("capability_id")
     input_data = body.get("input", {})
-    
+
     if capability_id == "web-research":
         req = ResearchRequest(
             query=input_data["query"],
@@ -399,7 +399,7 @@ async def invoke_deep_research(request: Request, body: dict) -> dict:
                 "code": "E_DEERFLOW_UNAVAILABLE",
                 "message": str(exc),
             })
-        
+
         # emit outbox event
         outbox: OutboxWriter = request.app.state.outbox_writer
         outbox.append(Event.create(
@@ -415,14 +415,14 @@ async def invoke_deep_research(request: Request, body: dict) -> dict:
             },
             trace_id=ctx.trace_id,
         ))
-        
+
         return {
             "capability_id": capability_id,
             "report": result.report,
             "sources": [s.dict() for s in result.sources],
             "duration_ms": result.duration_ms,
         }
-    
+
     elif capability_id == "report-summarize":
         # ... similar for summarize
         raise HTTPException(status_code=501, detail="report-summarize not yet implemented")
@@ -474,7 +474,7 @@ def register_deerflow_at_startup():
         "DEERFLOW_RESEARCH_URL",
         "http://mate-tech-deep-research:8200/api/v1/a2a/agent/deep-research/invoke"
     )
-    
+
     register_agent({
         "id": "deep-research",
         "name": "深度调研 Agent",
@@ -532,9 +532,9 @@ def is_deep_research_query(query: str) -> bool:
 async def chat(request: Request, body: dict):
     ctx = request.state.ctx
     require_tenant(ctx)
-    
+
     query = body["query"]
-    
+
     if is_deep_research_query(query):
         # 深度调研: delegate to DeerFlow via A2A
         async with httpx.AsyncClient() as client:
@@ -754,16 +754,16 @@ def test_deerflow_e2e_smoke():
     )
     assert r.status_code == 200
     data = r.json()
-    
+
     # 2. 验证返回 (来自 A2A → DeerFlow)
     assert "report" in data
     assert "sources" in data
     assert len(data["sources"]) > 0
     assert data["duration_ms"] < 300_000  # 5 min
-    
+
     # 3. 验证 report 是 Markdown
     assert data["report"].startswith("# ") or "##" in data["report"]
-    
+
     # 4. 验证 sources 包含 URL
     for source in data["sources"]:
         assert "url" in source

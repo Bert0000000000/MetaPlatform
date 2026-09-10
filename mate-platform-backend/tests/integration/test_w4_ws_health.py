@@ -1,4 +1,5 @@
 """W4 Traefik WebSocket + health check + canary (ST-4.3.x)."""
+
 from __future__ import annotations
 
 
@@ -67,6 +68,7 @@ def test_otel_trace_id_propagation() -> None:
 def test_access_log_json_format() -> None:
     """ST-4.3.5: access log JSON."""
     import json
+
     log_entry = {"trace_id": "abc", "status": 200, "duration_ms": 25}
     serialized = json.dumps(log_entry)
     assert "abc" in serialized

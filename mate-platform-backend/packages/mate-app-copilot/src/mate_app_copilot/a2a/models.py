@@ -11,6 +11,7 @@ correlation metadata required by ADR-0016 §3.1 + §13 hard rule 9:
 ``tenant_id`` (mandatory, hard rule 3) + ``correlation_id`` (the
 OTel trace_id of the originating request).
 """
+
 from __future__ import annotations
 
 import uuid

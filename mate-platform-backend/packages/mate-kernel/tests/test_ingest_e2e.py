@@ -24,7 +24,10 @@ _NOW = datetime.now(UTC)
 def _prop(slug: str, pk: bool = False, type_id: str = "string") -> Property:
     return Property(
         rid=ClassRef(f"ont.{_T}.prop.{slug}.v1"),
-        type_id=type_id, nullable=not pk, primary_key=pk, title=slug,
+        type_id=type_id,
+        nullable=not pk,
+        primary_key=pk,
+        title=slug,
         format=PropertyFormat.STRING,
     )
 
@@ -34,10 +37,17 @@ def _supplier_type() -> ObjectType:
         rid=ClassRef(f"ont.{_T}.obj.supplier.v1"),
         primary_key=(ClassRef(f"ont.{_T}.prop.supplier-id.v1"),),
         properties=(
-            Property(rid=ClassRef(f"ont.{_T}.prop.supplier-id.v1"), type_id="string",
-                     nullable=False, primary_key=True, title="supplier_id",
-                     format=PropertyFormat.STRING),
-            _prop("name"), _prop("region"), _prop("rating"),
+            Property(
+                rid=ClassRef(f"ont.{_T}.prop.supplier-id.v1"),
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="supplier_id",
+                format=PropertyFormat.STRING,
+            ),
+            _prop("name"),
+            _prop("region"),
+            _prop("rating"),
         ),
         display_name="supplier",
     )
@@ -81,7 +91,9 @@ class TestCreateInstance:
     def test_unconfirmed_execute_never_creates(self) -> None:
         repo = _repo()
         prop = repo.propose_create_instance(
-            f"ont.{_T}.obj.supplier.v1", _PROPS, "impact",
+            f"ont.{_T}.obj.supplier.v1",
+            _PROPS,
+            "impact",
         )
         with pytest.raises(ProposalNotConfirmed):
             repo.execute_proposal(prop.proposal_id)
@@ -101,12 +113,22 @@ class TestModelType:
                 "rid": f"ont.{_T}.obj.warehouse.v1",
                 "primary_key": [f"ont.{_T}.prop.wh-id.v1"],
                 "properties": [
-                    {"rid": f"ont.{_T}.prop.wh-id.v1", "type_id": "string",
-                     "nullable": False, "primary_key": True, "title": "wh_id",
-                     "format": "string"},
-                    {"rid": f"ont.{_T}.prop.addr.v1", "type_id": "string",
-                     "nullable": True, "primary_key": False, "title": "addr",
-                     "format": "string"},
+                    {
+                        "rid": f"ont.{_T}.prop.wh-id.v1",
+                        "type_id": "string",
+                        "nullable": False,
+                        "primary_key": True,
+                        "title": "wh_id",
+                        "format": "string",
+                    },
+                    {
+                        "rid": f"ont.{_T}.prop.addr.v1",
+                        "type_id": "string",
+                        "nullable": True,
+                        "primary_key": False,
+                        "title": "addr",
+                        "format": "string",
+                    },
                 ],
                 "display_name": "warehouse",
             },
@@ -122,16 +144,21 @@ class TestModelType:
 class TestActionKindGuards:
     def test_action_proposal_execute_rejected(self) -> None:
         repo = _repo()
-        repo.upsert_action_type(ActionType(
-            rid=ClassRef(f"ont.{_T}.act.flag.v1"),
-            parameters=(),
-            submission_criteria=(),
-            side_effects=(),
-            function_ref=ClassRef(f"ont.{_T}.fn.flag.v1"),
-            on=(ClassRef(f"ont.{_T}.obj.supplier.v1"),),
-        ))
+        repo.upsert_action_type(
+            ActionType(
+                rid=ClassRef(f"ont.{_T}.act.flag.v1"),
+                parameters=(),
+                submission_criteria=(),
+                side_effects=(),
+                function_ref=ClassRef(f"ont.{_T}.fn.flag.v1"),
+                on=(ClassRef(f"ont.{_T}.obj.supplier.v1"),),
+            )
+        )
         prop = repo.propose_action(
-            ClassRef(f"ont.{_T}.act.flag.v1"), {}, None, "impact",
+            ClassRef(f"ont.{_T}.act.flag.v1"),
+            {},
+            None,
+            "impact",
         )
         repo.confirm_proposal(prop.proposal_id)
         with pytest.raises(ValueError, match="action"):

@@ -1,4 +1,5 @@
 """composition/policy + topology 最小闭环单测（INTERCEPT/POLICY + HUB）。"""
+
 from __future__ import annotations
 
 import pytest
@@ -18,8 +19,7 @@ from mate_platform.composition.topology import (
 
 
 def rule(name, effect=PolicyEffect.DENY):
-    return PolicyRule(name=name, predicate=lambda ctx: bool(ctx.get(name)),
-                      effect=effect)
+    return PolicyRule(name=name, predicate=lambda ctx: bool(ctx.get(name)), effect=effect)
 
 
 class TestPolicyEngine:
@@ -39,6 +39,7 @@ class TestPolicyEngine:
     def test_fail_closed_on_predicate_error(self):
         def boom(ctx):
             raise RuntimeError("boom")
+
         engine = PolicyEngine()
         engine.register(PolicyRule(name="boom", predicate=boom))
         v = engine.check({})

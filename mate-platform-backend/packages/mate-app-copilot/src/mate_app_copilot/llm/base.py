@@ -12,6 +12,7 @@ embeddings / generate_sql) remain for backward compat with
 through the new protocol. The new providers route via
 ``get_provider()`` and are surfaced in v3.1+ handlers.
 """
+
 from __future__ import annotations
 
 from collections.abc import AsyncIterator

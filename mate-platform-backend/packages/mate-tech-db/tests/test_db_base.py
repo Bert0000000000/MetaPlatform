@@ -2,6 +2,7 @@
 
 Extended in P3-W1 for production profile guard + env-var DSN resolution.
 """
+
 from __future__ import annotations
 
 import os

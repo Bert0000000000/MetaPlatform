@@ -9,6 +9,7 @@ Schema lookup pattern: `schema_for(event_type)` returns the registered
 schema for an event type; the producer refuses to publish if no
 schema is registered.
 """
+
 from __future__ import annotations
 
 import re

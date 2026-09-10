@@ -2,6 +2,7 @@
 
 POST /api/v1/llm/chat/stream 输出 SSE。
 """
+
 from __future__ import annotations
 
 import json

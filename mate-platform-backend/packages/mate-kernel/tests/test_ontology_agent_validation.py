@@ -39,6 +39,7 @@ class FakeLlm:
 @dataclass
 class FailingDispatcher:
     """全部 dispatcher 方法都抛 —— 模拟 dispatch 阶段故障。"""
+
     mode: str = "raise"  # raise / return_partial
 
     async def list_object_types(self, tenant_id: str, **kwargs: Any) -> list[dict[str, Any]]:
@@ -48,26 +49,42 @@ class FailingDispatcher:
         raise RuntimeError("tech-ont down")
 
     async def search_objects(
-        self, tenant_id: str, text: str,
-        class_rid: str | None, top_k: int, **kwargs: Any,
+        self,
+        tenant_id: str,
+        text: str,
+        class_rid: str | None,
+        top_k: int,
+        **kwargs: Any,
     ) -> list[dict[str, Any]]:
         raise RuntimeError("tech-ont down")
 
     async def propose_object_type(
-        self, tenant_id: str, type_def: dict[str, Any],
-        impact_summary: str, **kwargs: Any,
+        self,
+        tenant_id: str,
+        type_def: dict[str, Any],
+        impact_summary: str,
+        **kwargs: Any,
     ) -> str:
         raise RuntimeError("propose failed")
 
     async def propose_instance(
-        self, tenant_id: str, class_rid: str,
-        props: dict[str, Any], impact_summary: str, **kwargs: Any,
+        self,
+        tenant_id: str,
+        class_rid: str,
+        props: dict[str, Any],
+        impact_summary: str,
+        **kwargs: Any,
     ) -> str:
         raise RuntimeError("propose failed")
 
     async def propose_merge(
-        self, tenant_id: str, source_rid: str, target_rid: str,
-        similarity: float, impact_summary: str, mapping: dict[str, str],
+        self,
+        tenant_id: str,
+        source_rid: str,
+        target_rid: str,
+        similarity: float,
+        impact_summary: str,
+        mapping: dict[str, str],
         **kwargs: Any,
     ) -> str:
         raise RuntimeError("propose failed")
@@ -116,7 +133,7 @@ async def test_invalid_output_pure_prose() -> None:
 
 @pytest.mark.asyncio
 async def test_invalid_output_unclosed_markdown_fence() -> None:
-    llm = FakeLlm(responses=["```json\n{\"action\": \"list\""])
+    llm = FakeLlm(responses=['```json\n{"action": "list"'])
     agent = OntologyAgent(llm=llm, dispatcher=FailingDispatcher())
     result = await agent.handle_message("anything", {"tenant_id": "acme"})
     assert result.action == "error"
@@ -156,10 +173,17 @@ async def test_missing_action_field() -> None:
 
 @pytest.mark.asyncio
 async def test_unknown_action_kind() -> None:
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "wipe_database",
-        "parameters": {}, "reason": "bad",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "wipe_database",
+                    "parameters": {},
+                    "reason": "bad",
+                }
+            )
+        ]
+    )
     agent = OntologyAgent(llm=llm, dispatcher=FailingDispatcher())
     result = await agent.handle_message("anything", {"tenant_id": "acme"})
     assert result.action == "error"
@@ -168,9 +192,17 @@ async def test_unknown_action_kind() -> None:
 
 @pytest.mark.asyncio
 async def test_parameters_wrong_type() -> None:
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "list", "parameters": "no", "reason": "",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "list",
+                    "parameters": "no",
+                    "reason": "",
+                }
+            )
+        ]
+    )
     agent = OntologyAgent(llm=llm, dispatcher=FailingDispatcher())
     result = await agent.handle_message("anything", {"tenant_id": "acme"})
     assert result.action == "error"
@@ -182,9 +214,17 @@ async def test_parameters_wrong_type() -> None:
 
 @pytest.mark.asyncio
 async def test_inspect_missing_rid_rejected() -> None:
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "inspect", "parameters": {}, "reason": "no rid",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "inspect",
+                    "parameters": {},
+                    "reason": "no rid",
+                }
+            )
+        ]
+    )
     agent = OntologyAgent(llm=llm, dispatcher=FailingDispatcher())
     result = await agent.handle_message("x", {"tenant_id": "acme"})
     assert result.action == "inspect"
@@ -195,11 +235,17 @@ async def test_inspect_missing_rid_rejected() -> None:
 
 @pytest.mark.asyncio
 async def test_inspect_cross_tenant_rejected() -> None:
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "inspect",
-        "parameters": {"rid": "ont.other.obj.x.v1"},
-        "reason": "",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "inspect",
+                    "parameters": {"rid": "ont.other.obj.x.v1"},
+                    "reason": "",
+                }
+            )
+        ]
+    )
     agent = OntologyAgent(llm=llm, dispatcher=FailingDispatcher())
     result = await agent.handle_message("x", {"tenant_id": "acme"})
     assert result.action == "inspect"
@@ -209,11 +255,17 @@ async def test_inspect_cross_tenant_rejected() -> None:
 
 @pytest.mark.asyncio
 async def test_propose_instance_missing_class_rid_rejected() -> None:
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "propose_instance",
-        "parameters": {"props": {"a": 1}},
-        "reason": "",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "propose_instance",
+                    "parameters": {"props": {"a": 1}},
+                    "reason": "",
+                }
+            )
+        ]
+    )
     agent = OntologyAgent(llm=llm, dispatcher=FailingDispatcher())
     result = await agent.handle_message("x", {"tenant_id": "acme"})
     assert result.action == "propose_instance"
@@ -223,11 +275,17 @@ async def test_propose_instance_missing_class_rid_rejected() -> None:
 
 @pytest.mark.asyncio
 async def test_propose_instance_cross_tenant_rejected() -> None:
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "propose_instance",
-        "parameters": {"class_rid": "ont.other.obj.x.v1", "props": {"a": 1}},
-        "reason": "",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "propose_instance",
+                    "parameters": {"class_rid": "ont.other.obj.x.v1", "props": {"a": 1}},
+                    "reason": "",
+                }
+            )
+        ]
+    )
     agent = OntologyAgent(llm=llm, dispatcher=FailingDispatcher())
     result = await agent.handle_message("x", {"tenant_id": "acme"})
     assert result.action == "propose_instance"
@@ -236,11 +294,17 @@ async def test_propose_instance_cross_tenant_rejected() -> None:
 
 @pytest.mark.asyncio
 async def test_merge_missing_source_or_target_rejected() -> None:
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "merge_suggestion",
-        "parameters": {"source_rid": "ont.acme.obj.a.v1"},
-        "reason": "",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "merge_suggestion",
+                    "parameters": {"source_rid": "ont.acme.obj.a.v1"},
+                    "reason": "",
+                }
+            )
+        ]
+    )
     agent = OntologyAgent(llm=llm, dispatcher=FailingDispatcher())
     result = await agent.handle_message("x", {"tenant_id": "acme"})
     assert result.action == "merge_suggestion"
@@ -250,14 +314,20 @@ async def test_merge_missing_source_or_target_rejected() -> None:
 
 @pytest.mark.asyncio
 async def test_merge_cross_tenant_rejected() -> None:
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "merge_suggestion",
-        "parameters": {
-            "source_rid": "ont.acme.obj.a.v1",
-            "target_rid": "ont.other.obj.b.v1",
-        },
-        "reason": "",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "merge_suggestion",
+                    "parameters": {
+                        "source_rid": "ont.acme.obj.a.v1",
+                        "target_rid": "ont.other.obj.b.v1",
+                    },
+                    "reason": "",
+                }
+            )
+        ]
+    )
     agent = OntologyAgent(llm=llm, dispatcher=FailingDispatcher())
     result = await agent.handle_message("x", {"tenant_id": "acme"})
     assert result.action == "merge_suggestion"
@@ -266,11 +336,17 @@ async def test_merge_cross_tenant_rejected() -> None:
 
 @pytest.mark.asyncio
 async def test_propose_object_type_missing_slug_rejected() -> None:
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "propose_object_type",
-        "parameters": {"properties": []},
-        "reason": "",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "propose_object_type",
+                    "parameters": {"properties": []},
+                    "reason": "",
+                }
+            )
+        ]
+    )
     agent = OntologyAgent(llm=llm, dispatcher=FailingDispatcher())
     result = await agent.handle_message("x", {"tenant_id": "acme"})
     assert result.action == "propose_object_type"
@@ -293,12 +369,21 @@ async def test_llm_chat_exception_caught() -> None:
 
 @pytest.mark.asyncio
 async def test_dispatcher_exception_caught() -> None:
-    llm = FakeLlm(responses=[json.dumps({
-        "action": "propose_object_type",
-        "parameters": {"slug": "x", "primary_key": "id",
-                       "properties": [{"name": "id", "type_id": "string"}]},
-        "reason": "",
-    })])
+    llm = FakeLlm(
+        responses=[
+            json.dumps(
+                {
+                    "action": "propose_object_type",
+                    "parameters": {
+                        "slug": "x",
+                        "primary_key": "id",
+                        "properties": [{"name": "id", "type_id": "string"}],
+                    },
+                    "reason": "",
+                }
+            )
+        ]
+    )
     agent = OntologyAgent(llm=llm, dispatcher=FailingDispatcher())
     result = await agent.handle_message("建 x", {"tenant_id": "acme"})
     assert result.action == "propose_object_type"

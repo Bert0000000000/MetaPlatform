@@ -2,6 +2,7 @@
 
 支持 GPT-4o / GPT-4o-mini / GPT-3.5-turbo 等。
 """
+
 from __future__ import annotations
 
 import os
@@ -23,13 +24,13 @@ class OpenAIChatProvider:
         *,
         api_key: str | None = None,
         model: str = "gpt-4o",
-        base_url: str | None = None,  # Sprint 3：默认消费 OPENAI_BASE_URL env（MiniMax 等 OpenAI 兼容端点）
+        base_url: str
+        | None = None,  # Sprint 3：默认消费 OPENAI_BASE_URL env（MiniMax 等 OpenAI 兼容端点）
         timeout: float = 30.0,
     ) -> None:
         self.model = model
         self._api_key = api_key or os.getenv("OPENAI_API_KEY", "")
-        self._base_url = base_url or os.getenv(
-            "OPENAI_BASE_URL", "https://api.openai.com/v1")
+        self._base_url = base_url or os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
         self._client = httpx.AsyncClient(
             base_url=self._base_url,
             timeout=timeout,

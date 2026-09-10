@@ -5,12 +5,12 @@ Kept small on purpose (~30 entries); this is NOT the full LiteLLM catalog.
 
 ## Sources (pulled 2026-09-09)
 
-| `_source` | Meaning |
-|---|---|
-| `litellm` | BerriAI/litellm `model_prices_and_context_window.json` @ main (MIT). Verbatim values. |
-| `arkcli` | Volcengine ARK settlement prices via `arkcli pricing models` (CNY per 1K tokens), converted at 7.2 CNY/USD → `_source` keeps the original CNY value for audit. |
-| `legacy` | Pre-P1 llmgw hardcoded table — still accurate, not present in current LiteLLM catalog. |
-| `historical` | Provider-published price at model GA; the model has since dropped off current price lists (e.g. moonshot-v1). Verify before relying. |
+| `_source`    | Meaning                                                                                                                                                        |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `litellm`    | BerriAI/litellm `model_prices_and_context_window.json` @ main (MIT). Verbatim values.                                                                          |
+| `arkcli`     | Volcengine ARK settlement prices via `arkcli pricing models` (CNY per 1K tokens), converted at 7.2 CNY/USD → `_source` keeps the original CNY value for audit. |
+| `legacy`     | Pre-P1 llmgw hardcoded table — still accurate, not present in current LiteLLM catalog.                                                                         |
+| `historical` | Provider-published price at model GA; the model has since dropped off current price lists (e.g. moonshot-v1). Verify before relying.                           |
 
 ## Update procedure
 

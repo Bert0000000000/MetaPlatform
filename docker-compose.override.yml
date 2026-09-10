@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 
 # Workaround for WSL2 + pytest_cache ACL locks on Windows:
 # When `COPY packages/` reads from a Windows volume mount via 9P, buildkit

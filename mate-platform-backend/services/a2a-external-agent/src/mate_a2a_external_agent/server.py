@@ -19,6 +19,7 @@ Why this exists (SuperAI W3 follow-up):
     actually reach a federated A2A 1.0 server over the JSON-RPC
     envelope mounted at ``/.well-known/agent-card.json`` + ``POST /``.
 """
+
 from __future__ import annotations
 
 import os
@@ -173,9 +174,7 @@ def _render(role: str, user_text: str) -> dict[str, str]:
 class _ExternalAgentExecutor(AgentExecutor):
     """Implements the real business work for each federated skill."""
 
-    async def execute(
-        self, context: RequestContext, event_queue: EventQueue
-    ) -> None:
+    async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         user_text = context.get_user_input() or ""
         meta: dict[str, Any] = dict(context.message.metadata or {})
         role = _pick_role(user_text, meta)
@@ -203,9 +202,7 @@ class _ExternalAgentExecutor(AgentExecutor):
             )
         )
 
-    async def cancel(
-        self, context: RequestContext, event_queue: EventQueue
-    ) -> None:
+    async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         await event_queue.enqueue_event(
             TaskStatusUpdateEvent(
                 task_id=context.task_id,
@@ -247,10 +244,7 @@ def _build_app() -> FastAPI:
 
     @app.get("/skills")
     def _skills() -> list[dict[str, str]]:
-        return [
-            {"id": s.id, "name": s.name, "description": s.description}
-            for s in SKILLS.values()
-        ]
+        return [{"id": s.id, "name": s.name, "description": s.description} for s in SKILLS.values()]
 
     return app
 

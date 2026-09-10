@@ -1,4 +1,5 @@
 """Direct test for the four-layer module template."""
+
 import sys
 import tempfile
 from pathlib import Path

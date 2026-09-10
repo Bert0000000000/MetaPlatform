@@ -1,98 +1,98 @@
 {
- "generated": "2026-09-09T10:10:00",
- "scope": "internal automated battery (unauth/tenant/jwt/sqli/oversize/methods)",
- "total": 15,
- "passed": 13,
- "results": [
-  {
-   "name": "unauth:/api/v1/ont/v2/object-types",
-   "pass": true,
-   "got": 401,
-   "expect": "401/403"
-  },
-  {
-   "name": "unauth:/api/v1/data/products",
-   "pass": true,
-   "got": 401,
-   "expect": "401/403"
-  },
-  {
-   "name": "unauth:/api/v1/copilot/conversations",
-   "pass": true,
-   "got": 401,
-   "expect": "401/403"
-  },
-  {
-   "name": "unauth:/api/v1/kb/documents",
-   "pass": true,
-   "got": 401,
-   "expect": "401/403"
-  },
-  {
-   "name": "unauth:/api/v1/marketplace/install",
-   "pass": false,
-   "got": 504,
-   "expect": "401/403"
-  },
-  {
-   "name": "unauth:/api/v1/mcp/tools",
-   "pass": true,
-   "got": 401,
-   "expect": "401/403"
-  },
-  {
-   "name": "unauth:/api/v1/agent/tools",
-   "pass": true,
-   "got": 401,
-   "expect": "401/403"
-  },
-  {
-   "name": "unauth:/api/v1/arch/applications",
-   "pass": true,
-   "got": 401,
-   "expect": "401/403"
-  },
-  {
-   "name": "tenant-mismatch:ont",
-   "pass": true,
-   "got": 403,
-   "expect": "401/403"
-  },
-  {
-   "name": "jwt-tamper",
-   "pass": true,
-   "got": 401,
-   "expect": "401"
-  },
-  {
-   "name": "jwt-forged",
-   "pass": true,
-   "got": 401,
-   "expect": "401"
-  },
-  {
-   "name": "sqli:' OR 1=1 --",
-   "pass": true,
-   "got": 404,
-   "expect": "400/404/422"
-  },
-  {
-   "name": "sqli:'; DROP TABLE ont_",
-   "pass": true,
-   "got": 404,
-   "expect": "400/404/422"
-  },
-  {
-   "name": "oversized-payload",
-   "pass": false,
-   "got": 504,
-   "expect": "4xx"
-  },
-  {
-   "name": "trace-method",
-   "pass": true,
-   "got": 405,
-   "expect": "405/501"
-  }
- ]
+  "generated": "2026-09-09T10:10:00",
+  "scope": "internal automated battery (unauth/tenant/jwt/sqli/oversize/methods)",
+  "total": 15,
+  "passed": 13,
+  "results": [
+    {
+      "name": "unauth:/api/v1/ont/v2/object-types",
+      "pass": true,
+      "got": 401,
+      "expect": "401/403"
+    },
+    {
+      "name": "unauth:/api/v1/data/products",
+      "pass": true,
+      "got": 401,
+      "expect": "401/403"
+    },
+    {
+      "name": "unauth:/api/v1/copilot/conversations",
+      "pass": true,
+      "got": 401,
+      "expect": "401/403"
+    },
+    {
+      "name": "unauth:/api/v1/kb/documents",
+      "pass": true,
+      "got": 401,
+      "expect": "401/403"
+    },
+    {
+      "name": "unauth:/api/v1/marketplace/install",
+      "pass": false,
+      "got": 504,
+      "expect": "401/403"
+    },
+    {
+      "name": "unauth:/api/v1/mcp/tools",
+      "pass": true,
+      "got": 401,
+      "expect": "401/403"
+    },
+    {
+      "name": "unauth:/api/v1/agent/tools",
+      "pass": true,
+      "got": 401,
+      "expect": "401/403"
+    },
+    {
+      "name": "unauth:/api/v1/arch/applications",
+      "pass": true,
+      "got": 401,
+      "expect": "401/403"
+    },
+    {
+      "name": "tenant-mismatch:ont",
+      "pass": true,
+      "got": 403,
+      "expect": "401/403"
+    },
+    {
+      "name": "jwt-tamper",
+      "pass": true,
+      "got": 401,
+      "expect": "401"
+    },
+    {
+      "name": "jwt-forged",
+      "pass": true,
+      "got": 401,
+      "expect": "401"
+    },
+    {
+      "name": "sqli:' OR 1=1 --",
+      "pass": true,
+      "got": 404,
+      "expect": "400/404/422"
+    },
+    {
+      "name": "sqli:'; DROP TABLE ont_",
+      "pass": true,
+      "got": 404,
+      "expect": "400/404/422"
+    },
+    {
+      "name": "oversized-payload",
+      "pass": false,
+      "got": 504,
+      "expect": "4xx"
+    },
+    {
+      "name": "trace-method",
+      "pass": true,
+      "got": 405,
+      "expect": "405/501"
+    }
+  ]
 }

@@ -1,8 +1,10 @@
 """Forbid framework/infrastructure imports in domain layer."""
+
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 FORBIDDEN = ("sqlalchemy", "redis", "aiokafka", "neo4j", "pymilvus", "minio", "httpx", "fastapi")
+
 
 def test_domain_layer_has_no_infrastructure_imports() -> None:
     for package in [

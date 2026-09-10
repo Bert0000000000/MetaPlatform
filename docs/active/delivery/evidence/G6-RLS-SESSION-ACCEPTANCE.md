@@ -25,27 +25,27 @@ CREATE POLICY tenant_isolation ON <t>
 
 公开 API：
 
-| Symbol | 作用 |
-|---|---|
-| `GUC_TENANT_ID = "app.tenant_id"` | 与 Alembic 0008 policy 同步的 GUC 名 |
-| `GUC_BYPASS = "app.bypass_tenant"` | cross-tenant admin 标记 (审计信号) |
-| `_escape_pg_string(value)` | 双单引号 + 拒绝控制字符 (SQL 注入防护) |
-| `_build_set_local_statements(ctx)` | 生成 `SET LOCAL` 语句列表 |
-| `install_rls_session(session, ctx)` | 主工作函数：绑 ctx + 执行 `SET LOCAL` |
-| `attach_rls_listener(engine)` | idempotent 标记，未来 connect-event hook 接入点 |
-| `is_attached(engine)` | 诊断 / 测试断言 |
-| `rls_session_middleware(session_factory)` | closure：AuthMiddleware 集成用 |
+| Symbol                                    | 作用                                            |
+| ----------------------------------------- | ----------------------------------------------- |
+| `GUC_TENANT_ID = "app.tenant_id"`         | 与 Alembic 0008 policy 同步的 GUC 名            |
+| `GUC_BYPASS = "app.bypass_tenant"`        | cross-tenant admin 标记 (审计信号)              |
+| `_escape_pg_string(value)`                | 双单引号 + 拒绝控制字符 (SQL 注入防护)          |
+| `_build_set_local_statements(ctx)`        | 生成 `SET LOCAL` 语句列表                       |
+| `install_rls_session(session, ctx)`       | 主工作函数：绑 ctx + 执行 `SET LOCAL`           |
+| `attach_rls_listener(engine)`             | idempotent 标记，未来 connect-event hook 接入点 |
+| `is_attached(engine)`                     | 诊断 / 测试断言                                 |
+| `rls_session_middleware(session_factory)` | closure：AuthMiddleware 集成用                  |
 
 ### 2.2 安全特性
 
-| 风险 | 防御 |
-|---|---|
+| 风险                                           | 防御                                                     |
+| ---------------------------------------------- | -------------------------------------------------------- |
 | SQL 注入 (`tenant_id = "'; DROP TABLE x; --"`) | `_escape_pg_string` 双单引号转义，注入失败为字符串字面量 |
-| 控制字符攻击 (`tenant_id = "tenant\nDROP"`) | 拒绝所有 `ord(c) < 0x20` 字符 |
-| 匿名上下文 | `require_tenant(ctx)` 拒 ANONYMOUS method |
-| 空 tenant_id | `require_tenant(ctx)` 拒空字符串 |
-| 非 PG dialect (dev SQLite) | `engine.dialect.name != "postgresql"` 跳过 `SET LOCAL` |
-| Cross-tenant 滥用 | `emit_cross_tenant_access` audit 强制留痕 |
+| 控制字符攻击 (`tenant_id = "tenant\nDROP"`)    | 拒绝所有 `ord(c) < 0x20` 字符                            |
+| 匿名上下文                                     | `require_tenant(ctx)` 拒 ANONYMOUS method                |
+| 空 tenant_id                                   | `require_tenant(ctx)` 拒空字符串                         |
+| 非 PG dialect (dev SQLite)                     | `engine.dialect.name != "postgresql"` 跳过 `SET LOCAL`   |
+| Cross-tenant 滥用                              | `emit_cross_tenant_access` audit 强制留痕                |
 
 ### 2.3 middleware 集成模式
 
@@ -63,13 +63,13 @@ with opener(request.state.ctx) as session:
 
 ### 3.1 新增 `test_rls_session.py` (18 tests, mock dialect)
 
-| 测试类 | 覆盖 |
-|---|---|
-| `TestEscapePgString` (4) | simple pass / double quote / control char reject / empty |
+| 测试类                            | 覆盖                                                                                                       |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `TestEscapePgString` (4)          | simple pass / double quote / control char reject / empty                                                   |
 | `TestBuildSetLocalStatements` (5) | basic user / cross-tenant admin bypass / anonymous reject / empty tenant reject / SQL injection neutralise |
-| `TestInstallRlsSession` (6) | postgres SET LOCAL / cross_tenant_admin bypass / sqlite skip / mysql skip / ctx bound / none reject |
-| `TestAttachRlsListener` (2) | idempotent / sqlite noop |
-| `TestRlsSessionMiddleware` (1) | factory + ctx bound + SET LOCAL emitted |
+| `TestInstallRlsSession` (6)       | postgres SET LOCAL / cross_tenant_admin bypass / sqlite skip / mysql skip / ctx bound / none reject        |
+| `TestAttachRlsListener` (2)       | idempotent / sqlite noop                                                                                   |
+| `TestRlsSessionMiddleware` (1)    | factory + ctx bound + SET LOCAL emitted                                                                    |
 
 ### 3.2 关键测试用例
 
@@ -100,12 +100,12 @@ $ pytest packages -q
 
 ## 5. 13 硬规则映射
 
-| # | 硬规则 | G6 增强 |
-|---|---|---|
-| 3 | 没有 tenant 上下文,不访问 repository | **DB + 应用双保险**: 引擎层 RLS (0008) + 应用层 `SET LOCAL app.tenant_id` |
-| 6 | 静态检查 | ✅ ruff 0 errors |
-| 10 | 验收证据 | ✅ 本文档 + 18 tests |
-| 12 | Secret 不进 git | ✅ tenant_id escape 防御 + audit log 留痕 |
+| #   | 硬规则                               | G6 增强                                                                   |
+| --- | ------------------------------------ | ------------------------------------------------------------------------- |
+| 3   | 没有 tenant 上下文,不访问 repository | **DB + 应用双保险**: 引擎层 RLS (0008) + 应用层 `SET LOCAL app.tenant_id` |
+| 6   | 静态检查                             | ✅ ruff 0 errors                                                          |
+| 10  | 验收证据                             | ✅ 本文档 + 18 tests                                                      |
+| 12  | Secret 不进 git                      | ✅ tenant_id escape 防御 + audit log 留痕                                 |
 
 ## 6. 后续工作
 

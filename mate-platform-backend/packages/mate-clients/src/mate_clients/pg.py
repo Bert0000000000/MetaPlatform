@@ -22,6 +22,7 @@ The ``PgClient`` is the ACL boundary: no bare ``create_engine`` /
 ``sessionmaker`` calls are allowed outside ``mate-tech-db`` (enforced
 by ``forbid_bare_httpx``-style lint in a future CI hook).
 """
+
 from __future__ import annotations
 
 import os
@@ -62,9 +63,7 @@ class PgClient:
         """
         resolved = dsn or os.environ.get("MATE_DB_URL") or os.environ.get("DATABASE_URL")
         if resolved is None:
-            raise RuntimeError(
-                "PgClient requires a DSN. Set MATE_DB_URL or pass dsn explicitly."
-            )
+            raise RuntimeError("PgClient requires a DSN. Set MATE_DB_URL or pass dsn explicitly.")
         self._dsn = resolved
         # SQLite (default SingletonThreadPool) rejects pool_size / max_overflow.
         # Only forward pool kwargs for real server-side dialects (Postgres etc.)

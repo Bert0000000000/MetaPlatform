@@ -16,12 +16,12 @@ uv run --package mate-tech-llmgw python -m mate_tech_llmgw.main
 
 ## 端点
 
-| Method | Path | 说明 |
-|---|---|---|
-| GET | /healthz | 健康检查 |
-| POST | /api/v1/llm/chat | 同步 chat |
-| POST | /api/v1/llm/chat/stream | SSE 流式 chat |
-| POST | /api/v1/llm/embeddings | 嵌入向量 |
+| Method | Path                    | 说明          |
+| ------ | ----------------------- | ------------- |
+| GET    | /healthz                | 健康检查      |
+| POST   | /api/v1/llm/chat        | 同步 chat     |
+| POST   | /api/v1/llm/chat/stream | SSE 流式 chat |
+| POST   | /api/v1/llm/embeddings  | 嵌入向量      |
 
 ## 配额（Quota）
 
@@ -38,6 +38,7 @@ temperature=0 强制 cache-first 路径。命中 → 直接返回。
 ## 成本（Cost）
 
 `PRICING` 表覆盖 7 个 model：
+
 - OpenAI: gpt-4o / gpt-4o-mini / gpt-4-turbo / gpt-3.5-turbo
 - Anthropic: claude-3-5-sonnet / claude-3-opus / claude-3-haiku
 
@@ -46,6 +47,7 @@ temperature=0 强制 cache-first 路径。命中 → 直接返回。
 ## 安全（Security）
 
 敏感字段送 LLM 前自动打码：
+
 - `phone_cn` (1[3-9]\d{9})
 - `id_card_cn` (\d{17}[\dXx])
 - `email`
@@ -54,11 +56,11 @@ temperature=0 强制 cache-first 路径。命中 → 直接返回。
 
 ## 故障排查
 
-| 现象 | 排查 |
-|---|---|
-| 5xx > 1% | 检查 provider API key + 网络 |
-| 429 高 | 检查 `LLMGW_RPM_LIMIT` env |
-| 缓存不命中 | 检查 `temperature > 0` |
+| 现象       | 排查                             |
+| ---------- | -------------------------------- |
+| 5xx > 1%   | 检查 provider API key + 网络     |
+| 429 高     | 检查 `LLMGW_RPM_LIMIT` env       |
+| 缓存不命中 | 检查 `temperature > 0`           |
 | PII 未脱敏 | 检查 `security/pii_mask.py` 加载 |
 
 ## SLO 越线（ADR-0018 §2.1）

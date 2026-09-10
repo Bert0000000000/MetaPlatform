@@ -1,4 +1,5 @@
 """Dual write integration tests (ST-5.4.12)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock

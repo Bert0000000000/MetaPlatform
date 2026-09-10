@@ -9,14 +9,12 @@ Validates that:
 4. ``values-production.yaml`` does not disable PG RLS (GOVERN-06
    hardening is preserved at the helm values layer).
 """
+
 from __future__ import annotations
 
 from pathlib import Path
 
 import yaml
-
-from conftest import CHARTS_DIR
-
 
 NP_REQUIRED = {
     "default-deny.yaml",
@@ -55,17 +53,17 @@ class TestNetworkPolicyChart:
 
 class TestServiceTemplatesOtelHelper:
     def test_otelEnv_helper_defined(self, charts_dir: Path) -> None:
-        helpers = (
-            charts_dir / "service-templates" / "templates" / "_helpers.tpl"
-        ).read_text(encoding="utf-8")
+        helpers = (charts_dir / "service-templates" / "templates" / "_helpers.tpl").read_text(
+            encoding="utf-8"
+        )
         assert "service-templates.otelEnv" in helpers
 
     def test_otelEnv_renders_all_required_env_vars(self, charts_dir: Path) -> None:
-        helpers = (
-            charts_dir / "service-templates" / "templates" / "_helpers.tpl"
-        ).read_text(encoding="utf-8")
+        helpers = (charts_dir / "service-templates" / "templates" / "_helpers.tpl").read_text(
+            encoding="utf-8"
+        )
         # Extract the otelEnv define block only (greedy).
-        start = helpers.find("define \"service-templates.otelEnv\"")
+        start = helpers.find('define "service-templates.otelEnv"')
         assert start >= 0
         block = helpers[start:]
         end = block.find("{{- end -}}")
@@ -87,9 +85,7 @@ class TestServiceTemplatesOtelHelper:
 
 class TestHelmValuesRlsGuard:
     def test_production_values_does_not_disable_rls(self, helm_dir: Path) -> None:
-        values = yaml.safe_load(
-            (helm_dir / "values-production.yaml").read_text(encoding="utf-8")
-        )
+        values = yaml.safe_load((helm_dir / "values-production.yaml").read_text(encoding="utf-8"))
         postgresql = values.get("postgresql", {})
         params = postgresql.get("postgresqlParameters", {})
         # GOVERN-06 default is rowSecurity=on; production must not opt out.

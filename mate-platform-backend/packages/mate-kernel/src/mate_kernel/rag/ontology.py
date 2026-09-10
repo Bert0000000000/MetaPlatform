@@ -31,6 +31,7 @@ from mate_kernel.ontology.types.property_ import PropertyFormat
 @dataclass(frozen=True, slots=True)
 class RagChunk:
     """RAG 索引单元 —— 一个属性值（带类型 + 上下文）。"""
+
     chunk_id: str
     individual_rid: str
     class_rid: str
@@ -51,6 +52,7 @@ class RagHit:
 @dataclass(frozen=True, slots=True)
 class RagQuery:
     """RAG 查询：ObjectSet 过滤 + 自然语言。"""
+
     object_set: ObjectSet
     text: str
     top_k: int = 5

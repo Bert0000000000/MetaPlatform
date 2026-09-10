@@ -12,6 +12,7 @@ SKILL.md 内容作为上下文，据此搭应用。
 tenant_id 由调用方（orchestrator / MCP 客户端）在 arguments 中显式传入，
 因为 MCP 桥 `call_tool` 只转发 arguments（不注入 tenant claim）。
 """
+
 from __future__ import annotations
 
 import os
@@ -75,7 +76,10 @@ class SearchSkillTool:
     input_schema: ClassVar[dict[str, Any]] = {
         "type": "object",
         "properties": {
-            "query": {"type": "string", "description": "skill 名称/描述关键词，如 platform-ui-components"},
+            "query": {
+                "type": "string",
+                "description": "skill 名称/描述关键词，如 platform-ui-components",
+            },
             "tenant_id": {"type": "string", "description": "租户 ID（由调用方注入）"},
         },
         "required": ["query"],
@@ -88,9 +92,7 @@ class SearchSkillTool:
         client: httpx.AsyncClient | None = None,
     ) -> None:
         self._base_url = base_url or os.getenv("APPHUB_URL", "http://localhost:8301")
-        self._client = client or httpx.AsyncClient(
-            base_url=self._base_url, timeout=timeout
-        )
+        self._client = client or httpx.AsyncClient(base_url=self._base_url, timeout=timeout)
 
     @staticmethod
     def _headers(tenant_id: str) -> dict[str, str]:
@@ -164,9 +166,7 @@ class ReadSkillTool:
         client: httpx.AsyncClient | None = None,
     ) -> None:
         self._base_url = base_url or os.getenv("APPHUB_URL", "http://localhost:8301")
-        self._client = client or httpx.AsyncClient(
-            base_url=self._base_url, timeout=timeout
-        )
+        self._client = client or httpx.AsyncClient(base_url=self._base_url, timeout=timeout)
 
     async def __call__(
         self,

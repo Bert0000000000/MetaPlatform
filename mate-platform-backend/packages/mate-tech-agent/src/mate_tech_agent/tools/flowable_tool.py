@@ -8,6 +8,7 @@ Real endpoints (Flowable 6/7/8 REST API):
 Env: FLOWABLE_URL (default http://localhost:8080).
 Falls back to InMemory (returns mock) when server unavailable.
 """
+
 from __future__ import annotations
 
 import logging
@@ -26,7 +27,9 @@ _log = logging.getLogger(__name__)
 
 class FlowableTool(Protocol):
     def deploy_bpmn(self, process_key: str, bpmn_xml: str, name: str = "") -> dict[str, Any]: ...
-    def start_process(self, process_key: str, variables: dict[str, Any] | None = None) -> dict[str, Any]: ...
+    def start_process(
+        self, process_key: str, variables: dict[str, Any] | None = None
+    ) -> dict[str, Any]: ...
     def get_process_state(self, instance_id: str) -> dict[str, Any]: ...
     def list_process_definitions(self) -> list[dict[str, Any]]: ...
 
@@ -50,7 +53,9 @@ class InMemoryFlowableTool:
             self._defs[process_key] = self._deployments[dep_id]
         return self._deployments[dep_id]
 
-    def start_process(self, process_key: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
+    def start_process(
+        self, process_key: str, variables: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         with self._lock:
             if process_key not in self._defs:
                 return {"id": "", "error": f"process {process_key} not deployed"}
@@ -93,27 +98,27 @@ class HttpxFlowableTool:
         self._check()
         if is_production_profile() and not self._available:
             self.close()
-            raise RuntimeError(
-                "synthetic Flowable fallback is disabled in production"
-            )
+            raise RuntimeError("synthetic Flowable fallback is disabled in production")
 
     def _check(self) -> None:
         try:
-            r = self._client.get(f"{self._base_url}{self.REST_PREFIX}/management/engine", timeout=5.0)
+            r = self._client.get(
+                f"{self._base_url}{self.REST_PREFIX}/management/engine", timeout=5.0
+            )
             self._available = r.status_code == 200
             if self._available:
                 _log.info("Flowable ACTIVE at %s", self._base_url)
             else:
                 _log.info("Flowable responded %d, using InMemory fallback", r.status_code)
         except Exception as exc:
-            _log.info("Flowable unavailable at %s: %s (using InMemory fallback)", self._base_url, exc)
+            _log.info(
+                "Flowable unavailable at %s: %s (using InMemory fallback)", self._base_url, exc
+            )
 
     def deploy_bpmn(self, process_key: str, bpmn_xml: str, name: str = "") -> dict[str, Any]:
         if not self._available:
             if is_production_profile():
-                raise RuntimeError(
-                    "synthetic Flowable fallback is disabled in production"
-                )
+                raise RuntimeError("synthetic Flowable fallback is disabled in production")
             return self._fallback.deploy_bpmn(process_key, bpmn_xml, name)
         try:
             files = {"file": ("process.bpmn20.xml", bpmn_xml.encode("utf-8"), "application/xml")}
@@ -126,18 +131,16 @@ class HttpxFlowableTool:
             return r.json()
         except Exception as exc:
             if is_production_profile():
-                raise RuntimeError(
-                    "synthetic Flowable fallback is disabled in production"
-                ) from exc
+                raise RuntimeError("synthetic Flowable fallback is disabled in production") from exc
             _log.warning("Flowable deploy failed: %s (using fallback)", exc)
             return self._fallback.deploy_bpmn(process_key, bpmn_xml, name)
 
-    def start_process(self, process_key: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
+    def start_process(
+        self, process_key: str, variables: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         if not self._available:
             if is_production_profile():
-                raise RuntimeError(
-                    "synthetic Flowable fallback is disabled in production"
-                )
+                raise RuntimeError("synthetic Flowable fallback is disabled in production")
             return self._fallback.start_process(process_key, variables)
         try:
             r = self._client.post(
@@ -148,17 +151,13 @@ class HttpxFlowableTool:
             return r.json()
         except Exception as exc:
             if is_production_profile():
-                raise RuntimeError(
-                    "synthetic Flowable fallback is disabled in production"
-                ) from exc
+                raise RuntimeError("synthetic Flowable fallback is disabled in production") from exc
             return self._fallback.start_process(process_key, variables)
 
     def get_process_state(self, instance_id: str) -> dict[str, Any]:
         if not self._available:
             if is_production_profile():
-                raise RuntimeError(
-                    "synthetic Flowable fallback is disabled in production"
-                )
+                raise RuntimeError("synthetic Flowable fallback is disabled in production")
             return self._fallback.get_process_state(instance_id)
         try:
             r = self._client.get(
@@ -171,27 +170,23 @@ class HttpxFlowableTool:
             return {"id": instance_id, "status": "not_found"}
         except Exception as exc:
             if is_production_profile():
-                raise RuntimeError(
-                    "synthetic Flowable fallback is disabled in production"
-                ) from exc
+                raise RuntimeError("synthetic Flowable fallback is disabled in production") from exc
             return self._fallback.get_process_state(instance_id)
 
     def list_process_definitions(self) -> list[dict[str, Any]]:
         if not self._available:
             if is_production_profile():
-                raise RuntimeError(
-                    "synthetic Flowable fallback is disabled in production"
-                )
+                raise RuntimeError("synthetic Flowable fallback is disabled in production")
             return self._fallback.list_process_definitions()
         try:
-            r = self._client.get(f"{self._base_url}{self.REST_PREFIX}/repository/process-definitions")
+            r = self._client.get(
+                f"{self._base_url}{self.REST_PREFIX}/repository/process-definitions"
+            )
             r.raise_for_status()
             return r.json().get("data", [])
         except Exception as exc:
             if is_production_profile():
-                raise RuntimeError(
-                    "synthetic Flowable fallback is disabled in production"
-                ) from exc
+                raise RuntimeError("synthetic Flowable fallback is disabled in production") from exc
             return self._fallback.list_process_definitions()
 
     def close(self) -> None:

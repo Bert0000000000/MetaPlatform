@@ -10,6 +10,7 @@ to any user).
 Per SuperAI multi-user isolation requirement (same tenant, per-user
 session separation).
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa

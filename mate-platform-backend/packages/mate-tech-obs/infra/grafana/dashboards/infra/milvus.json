@@ -3,6 +3,10 @@
     "id": 1,
     "title": "Milvus Search p99",
     "type": "graph",
-    "targets": [{"expr": "histogram_quantile(0.99, milvus_search_latency_seconds_bucket)"}]
+    "targets": [
+      {
+        "expr": "histogram_quantile(0.99, milvus_search_latency_seconds_bucket)"
+      }
+    ]
   }
 ]

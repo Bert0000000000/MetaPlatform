@@ -1,7 +1,7 @@
 # 页面级 AI 助手侧栏设计
 
-**日期：** 2026-07-28  
-**状态：** 已经用户确认，待实现计划  
+**日期：** 2026-07-28
+**状态：** 已经用户确认，待实现计划
 **范围：** `metaplatform-frontend/apps/portal` 中当前带有“AI 助手”入口的页面
 
 ## 1. 背景与目标
@@ -109,7 +109,7 @@ interface AIAssistantPanelProps {
 ```ts
 interface AssistantMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   createdAt: string;
 }

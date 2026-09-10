@@ -9,6 +9,7 @@ Usage:
 
 All /api/v1/* routes from 6 app packages are served on one port.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -62,15 +63,18 @@ def build_app() -> FastAPI:
     try:
         from mate_platform.auth import install_auth
 
-        install_auth(app, extra_anonymous_paths={
-            "/api/v1/iam/auth/login",
-            "/api/v1/iam/auth/refresh",
-            "/api/v1/iam/sso-providers",
-            "/api/v1/dashboard/auth/login",
-            "/api/v1/llmgw/chat",
-            "/api/v1/llmgw/chat/stream",
-            "/api/v1/llmgw/embeddings",
-        })
+        install_auth(
+            app,
+            extra_anonymous_paths={
+                "/api/v1/iam/auth/login",
+                "/api/v1/iam/auth/refresh",
+                "/api/v1/iam/sso-providers",
+                "/api/v1/dashboard/auth/login",
+                "/api/v1/llmgw/chat",
+                "/api/v1/llmgw/chat/stream",
+                "/api/v1/llmgw/embeddings",
+            },
+        )
         logger.info("Auth middleware installed (with login anonymous paths)")
     except Exception as e:
         logger.warning("Auth install failed: %s", e)
@@ -96,6 +100,7 @@ def build_app() -> FastAPI:
     try:
         sys.path.insert(0, _base + r"\mate-tech-dw\src")
         from mate_tech_dw.api import router as dw_router
+
         app.include_router(dw_router)
         logger.info("Mounted dw router (%d routes)", len(dw_router.routes))
     except Exception as e:
@@ -105,6 +110,7 @@ def build_app() -> FastAPI:
     try:
         sys.path.insert(0, _base + r"\mate-tech-llmgw\src")
         from mate_tech_llmgw.api.routes import router as llmgw_router
+
         app.include_router(llmgw_router)
         logger.info("Mounted llmgw router (%d routes)", len(llmgw_router.routes))
     except Exception as e:
@@ -124,6 +130,7 @@ def build_app() -> FastAPI:
         from mate_tech_iam.api import (
             models as models_api,
         )
+
         app.include_router(auth_api.router)
         app.include_router(dashboard_api.router)
         app.include_router(configs_api.router)
@@ -135,11 +142,13 @@ def build_app() -> FastAPI:
         async def _init_iam() -> None:
             try:
                 from mate_tech_iam.db import init_db
+
                 await init_db()
                 logger.info("IAM database initialized")
 
                 from mate_tech_iam.db import AsyncSessionMaker
                 from mate_tech_iam.seed import seed
+
                 async with AsyncSessionMaker() as session:
                     await seed(session)
                     await session.commit()
@@ -186,21 +195,57 @@ def build_app() -> FastAPI:
             "evidenceRefs": ["历史数据模型", "竞品分析报告"],
         }
         _runs[run_id] = [
-            {"eventId": f"evt-{_uuid.uuid4().hex[:8]}", "runId": run_id,
-             "type": "RUN_STARTED", "seq": 1, "ts": "2026-07-31T12:00:00Z",
-             "traceId": "", "tenantId": "", "payload": {}, "data": {}},
-            {"eventId": f"evt-{_uuid.uuid4().hex[:8]}", "runId": run_id,
-             "type": "CLAIM_PRODUCED", "seq": 2, "ts": "2026-07-31T12:00:01Z",
-             "traceId": "", "tenantId": "", "payload": {"claim": claim1}, "data": claim1},
-            {"eventId": f"evt-{_uuid.uuid4().hex[:8]}", "runId": run_id,
-             "type": "CLAIM_PRODUCED", "seq": 3, "ts": "2026-07-31T12:00:02Z",
-             "traceId": "", "tenantId": "", "payload": {"claim": claim2}, "data": claim2},
-            {"eventId": f"evt-{_uuid.uuid4().hex[:8]}", "runId": run_id,
-             "type": "RUN_COMPLETED", "seq": 4, "ts": "2026-07-31T12:00:03Z",
-             "traceId": "", "tenantId": "", "payload": {"summary": "分析完成"}, "data": {"summary": "分析完成"}},
+            {
+                "eventId": f"evt-{_uuid.uuid4().hex[:8]}",
+                "runId": run_id,
+                "type": "RUN_STARTED",
+                "seq": 1,
+                "ts": "2026-07-31T12:00:00Z",
+                "traceId": "",
+                "tenantId": "",
+                "payload": {},
+                "data": {},
+            },
+            {
+                "eventId": f"evt-{_uuid.uuid4().hex[:8]}",
+                "runId": run_id,
+                "type": "CLAIM_PRODUCED",
+                "seq": 2,
+                "ts": "2026-07-31T12:00:01Z",
+                "traceId": "",
+                "tenantId": "",
+                "payload": {"claim": claim1},
+                "data": claim1,
+            },
+            {
+                "eventId": f"evt-{_uuid.uuid4().hex[:8]}",
+                "runId": run_id,
+                "type": "CLAIM_PRODUCED",
+                "seq": 3,
+                "ts": "2026-07-31T12:00:02Z",
+                "traceId": "",
+                "tenantId": "",
+                "payload": {"claim": claim2},
+                "data": claim2,
+            },
+            {
+                "eventId": f"evt-{_uuid.uuid4().hex[:8]}",
+                "runId": run_id,
+                "type": "RUN_COMPLETED",
+                "seq": 4,
+                "ts": "2026-07-31T12:00:03Z",
+                "traceId": "",
+                "tenantId": "",
+                "payload": {"summary": "分析完成"},
+                "data": {"summary": "分析完成"},
+            },
         ]
         logger.info("Created agent run %s for goal: %s", run_id, goal[:50])
-        return {"code": 0, "data": {"runId": run_id, "status": "RUNNING", "traceId": ""}, "message": "ok"}
+        return {
+            "code": 0,
+            "data": {"runId": run_id, "status": "RUNNING", "traceId": ""},
+            "message": "ok",
+        }
 
     @app.get("/api/v1/agent/runs/{run_id}/events")
     async def _get_events(run_id: str, afterSeq: int = 0) -> Any:
@@ -225,12 +270,14 @@ def build_app() -> FastAPI:
         sys.path.insert(0, _base + r"\mate-tech-rag\src")
         from mate_app_kb.api.app import create_app as _create_kb_app
         from mate_tech_rag.api.app import create_app as _create_rag_app
+
         _kb = _create_kb_app()
         _rag = _create_rag_app()
         app.routes.extend(_kb.routes)
         app.routes.extend(_rag.routes)
         # KB/RAG handlers read request.app.state.outbox_writer; give the host one.
         from mate_platform.messaging.outbox import InMemoryOutboxWriter
+
         if not hasattr(app.state, "outbox_writer"):
             app.state.outbox_writer = InMemoryOutboxWriter()
         logger.info("Mounted kb (%d routes) + rag (%d routes)", len(_kb.routes), len(_rag.routes))
@@ -246,6 +293,7 @@ def build_app() -> FastAPI:
         sys.path.insert(0, _base + r"\mate-tech-ont\src")
         sys.path.insert(0, _base + r"\mate-kernel\src")
         from mate_tech_ont.main import create_app as _create_ont_app
+
         _ont = _create_ont_app()
         app.routes.extend(_ont.routes)
         logger.info("Mounted ont (%d routes)", len(_ont.routes))
@@ -296,10 +344,7 @@ def build_app() -> FastAPI:
             rows = await session.execute(
                 select(SystemConfig).where(SystemConfig.tenant_id == tenant_id)
             )
-            return [
-                {"key": r.key, "value": r.value}
-                for r in rows.scalars().all()
-            ]
+            return [{"key": r.key, "value": r.value} for r in rows.scalars().all()]
 
     app.state.iam_config_reader = _read_iam_configs
     logger.info("Injected in-process IAM config reader for llmgw embedding resolution")

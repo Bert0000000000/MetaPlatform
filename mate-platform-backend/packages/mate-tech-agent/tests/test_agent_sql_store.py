@@ -3,6 +3,7 @@
 Uses SQLite in-memory + Base.metadata.create_all to verify the SQL
 store's CRUD + tenant isolation + JSON serialisation (config, tool_calls).
 """
+
 from __future__ import annotations
 
 import pytest
@@ -32,8 +33,12 @@ _TENANT_B = "tenant-bigo"
 # ---------------------------------------------------------------------------
 def test_put_and_get_agent() -> None:
     agent = mem.Agent(
-        id="agent-1", tenant_id=_TENANT_A, name="Sales Bot",
-        scenario="S1", model_id="gpt-4o", status="active",
+        id="agent-1",
+        tenant_id=_TENANT_A,
+        name="Sales Bot",
+        scenario="S1",
+        model_id="gpt-4o",
+        status="active",
         config={"temperature": 0.7, "top_p": 0.9},
         created_at="2026-08-01T00:00:00Z",
         updated_at="2026-08-01T00:00:00Z",
@@ -53,14 +58,21 @@ def test_put_and_get_agent() -> None:
 
 def test_put_agent_upsert() -> None:
     agent = mem.Agent(
-        id="agent-2", tenant_id=_TENANT_A, name="Old",
-        scenario="S2", model_id="claude-3-5-sonnet-20241022",
+        id="agent-2",
+        tenant_id=_TENANT_A,
+        name="Old",
+        scenario="S2",
+        model_id="claude-3-5-sonnet-20241022",
     )
     sql.put_agent(_TENANT_A, agent)
     # Update
     agent = mem.Agent(
-        id="agent-2", tenant_id=_TENANT_A, name="New",
-        scenario="S3", model_id="gpt-4o", status="draft",
+        id="agent-2",
+        tenant_id=_TENANT_A,
+        name="New",
+        scenario="S3",
+        model_id="gpt-4o",
+        status="draft",
         config={"max_tokens": 4096},
     )
     sql.put_agent(_TENANT_A, agent)
@@ -74,18 +86,28 @@ def test_put_agent_upsert() -> None:
 
 
 def test_delete_agent() -> None:
-    sql.put_agent(_TENANT_A, mem.Agent(
-        id="agent-del", tenant_id=_TENANT_A, name="Del",
-    ))
+    sql.put_agent(
+        _TENANT_A,
+        mem.Agent(
+            id="agent-del",
+            tenant_id=_TENANT_A,
+            name="Del",
+        ),
+    )
     assert sql.delete_agent(_TENANT_A, "agent-del") is True
     assert sql.get_agent(_TENANT_A, "agent-del") is None
     assert sql.delete_agent(_TENANT_A, "agent-del") is False
 
 
 def test_delete_agent_rejects_cross_tenant() -> None:
-    sql.put_agent(_TENANT_A, mem.Agent(
-        id="agent-x", tenant_id=_TENANT_A, name="X",
-    ))
+    sql.put_agent(
+        _TENANT_A,
+        mem.Agent(
+            id="agent-x",
+            tenant_id=_TENANT_A,
+            name="X",
+        ),
+    )
     assert sql.delete_agent(_TENANT_B, "agent-x") is False
     assert sql.get_agent(_TENANT_A, "agent-x") is not None
 
@@ -95,8 +117,12 @@ def test_delete_agent_rejects_cross_tenant() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_session() -> None:
     ses = mem.AgentSession(
-        id="ses-1", tenant_id=_TENANT_A, agent_id="agent-1",
-        thread_id="thread-1", scenario="S1", status="active",
+        id="ses-1",
+        tenant_id=_TENANT_A,
+        agent_id="agent-1",
+        thread_id="thread-1",
+        scenario="S1",
+        status="active",
         created_at="2026-08-01T00:00:00Z",
         updated_at="2026-08-01T00:00:00Z",
     )
@@ -111,17 +137,26 @@ def test_put_and_get_session() -> None:
 
 
 def test_delete_session() -> None:
-    sql.put_session(_TENANT_A, mem.AgentSession(
-        id="ses-del", tenant_id=_TENANT_A, agent_id="agent-1",
-    ))
+    sql.put_session(
+        _TENANT_A,
+        mem.AgentSession(
+            id="ses-del",
+            tenant_id=_TENANT_A,
+            agent_id="agent-1",
+        ),
+    )
     assert sql.delete_session(_TENANT_A, "ses-del") is True
     assert sql.get_session(_TENANT_A, "ses-del") is None
 
 
 def test_delete_session_rejects_cross_tenant() -> None:
-    sql.put_session(_TENANT_A, mem.AgentSession(
-        id="ses-x", tenant_id=_TENANT_A,
-    ))
+    sql.put_session(
+        _TENANT_A,
+        mem.AgentSession(
+            id="ses-x",
+            tenant_id=_TENANT_A,
+        ),
+    )
     assert sql.delete_session(_TENANT_B, "ses-x") is False
 
 
@@ -130,8 +165,11 @@ def test_delete_session_rejects_cross_tenant() -> None:
 # ---------------------------------------------------------------------------
 def test_put_and_get_message() -> None:
     msg = mem.AgentMessage(
-        id="msg-1", tenant_id=_TENANT_A, thread_id="thread-1",
-        role="assistant", content="Here are the results.",
+        id="msg-1",
+        tenant_id=_TENANT_A,
+        thread_id="thread-1",
+        role="assistant",
+        content="Here are the results.",
         tool_calls=[{"name": "search", "args": {"q": "sales"}}],
         created_at="2026-08-01T00:00:00Z",
     )
@@ -147,13 +185,19 @@ def test_put_and_get_message() -> None:
 
 def test_put_message_upsert() -> None:
     msg = mem.AgentMessage(
-        id="msg-2", tenant_id=_TENANT_A, thread_id="thread-1",
-        role="user", content="Hello",
+        id="msg-2",
+        tenant_id=_TENANT_A,
+        thread_id="thread-1",
+        role="user",
+        content="Hello",
     )
     sql.put_message(_TENANT_A, msg)
     msg = mem.AgentMessage(
-        id="msg-2", tenant_id=_TENANT_A, thread_id="thread-1",
-        role="assistant", content="Hi there",
+        id="msg-2",
+        tenant_id=_TENANT_A,
+        thread_id="thread-1",
+        role="assistant",
+        content="Hi there",
         tool_calls=[{"name": "tool1"}],
     )
     sql.put_message(_TENANT_A, msg)
@@ -166,17 +210,27 @@ def test_put_message_upsert() -> None:
 
 
 def test_delete_message() -> None:
-    sql.put_message(_TENANT_A, mem.AgentMessage(
-        id="msg-del", tenant_id=_TENANT_A, thread_id="t1",
-    ))
+    sql.put_message(
+        _TENANT_A,
+        mem.AgentMessage(
+            id="msg-del",
+            tenant_id=_TENANT_A,
+            thread_id="t1",
+        ),
+    )
     assert sql.delete_message(_TENANT_A, "msg-del") is True
     assert sql.get_message(_TENANT_A, "msg-del") is None
 
 
 def test_delete_message_rejects_cross_tenant() -> None:
-    sql.put_message(_TENANT_A, mem.AgentMessage(
-        id="msg-x", tenant_id=_TENANT_A, thread_id="t1",
-    ))
+    sql.put_message(
+        _TENANT_A,
+        mem.AgentMessage(
+            id="msg-x",
+            tenant_id=_TENANT_A,
+            thread_id="t1",
+        ),
+    )
     assert sql.delete_message(_TENANT_B, "msg-x") is False
 
 

@@ -8,10 +8,12 @@
 ## 1. 范围
 
 G2 收口两条 §13 硬规则:
+
 - **规则 6**:静态检查失败不合并(ruff + pyright strict)
 - **规则 12**:Secret 不进 git(gitleaks 全仓扫描)
 
 并附带强化 4 条相关硬规则的 pre-commit enforcement:
+
 - **规则 3**:forbid_raw_sql(session.execute(text(...)) 在 src/)
 - **规则 4**:forbid_bare_httpx(外部服务 ACL 边界)
 - **规则 5**:forbid_legacy_fallback(production profile 禁止 fallback)
@@ -21,6 +23,7 @@ G2 收口两条 §13 硬规则:
 ## 2. 改动清单
 
 ### 2.1 pre-commit hooks(已闭环)
+
 - `.pre-commit-config.yaml` — 9 个 hook(gitleaks + 5 forbid + 3 lint)
 - `scripts/ci/forbid_raw_sql.py` — 既有,扫描 src/
 - `scripts/ci/forbid_bare_httpx.py` — **强化**:扩展 EXCLUDE_FILES 从 6 → 23(覆盖外部 LLM providers / engine adapters / agent tools / MCP federation / msg webhook / obs aggregator / RAG adapters / IDP 直连)
@@ -30,11 +33,13 @@ G2 收口两条 §13 硬规则:
 - `scripts/ci/g2_batch_validator.py` — **新增**:本地批跑 5 个 forbid 的统一入口
 
 ### 2.2 CI jobs(.github/workflows/ga-acceptance.yml 已配)
+
 - `ga-006-static` — ruff + pyright strict
 - `ga-012-secret-scan` — gitleaks-action@v2
 - `ga-hooks-and-tests` — pre-commit run --all-files(规则 3/4/5/7/10/12 一把过)
 
 ### 2.3 测试文件(同步修复)
+
 - `mate-platform-backend/tests/architecture/test_architecture_check.py` — 去掉 `pytest.skip`,改为 `_lint_imports_available()` vacuous-pass
 - `mate-platform-backend/tests/integration/test_w2_testcontainer_real.py` — 10 个 `@pytest.mark.skip` → `_docker_available()` vacuous-pass
 - `mate-platform-backend/tests/integration/test_w2_100pct.py` — 2 个 `@pytest.mark.skip` → `_docker_available()` vacuous-pass
@@ -66,15 +71,15 @@ exit: 0
 
 ## 4. 13 硬规则映射
 
-| 规则 | G2 落地 | 守门 |
-|---|---|---|
-| 3 | forbid_raw_sql | `session.execute(text(...))` 在 src/ 全禁 |
-| 4 | forbid_bare_httpx(强化) | 23 类外部 adapter 白名单 + 内部服务禁裸 httpx |
-| 5 | forbid_legacy_fallback(强化) | 文档/tests 描述豁免,生产 env 仍禁 |
-| 6 | ruff + pyright strict | ga-006 CI job |
-| 7 | forbid_skip_tests | tests/ 全禁 skip/xfail |
-| 10 | require_evidence | PROGRAM-BOARD 改动配 ACCEPTANCE |
-| 12 | gitleaks | ga-012 CI job + pre-commit hook |
+| 规则 | G2 落地                      | 守门                                          |
+| ---- | ---------------------------- | --------------------------------------------- |
+| 3    | forbid_raw_sql               | `session.execute(text(...))` 在 src/ 全禁     |
+| 4    | forbid_bare_httpx(强化)      | 23 类外部 adapter 白名单 + 内部服务禁裸 httpx |
+| 5    | forbid_legacy_fallback(强化) | 文档/tests 描述豁免,生产 env 仍禁             |
+| 6    | ruff + pyright strict        | ga-006 CI job                                 |
+| 7    | forbid_skip_tests            | tests/ 全禁 skip/xfail                        |
+| 10   | require_evidence             | PROGRAM-BOARD 改动配 ACCEPTANCE               |
+| 12   | gitleaks                     | ga-012 CI job + pre-commit hook               |
 
 ## 5. 状态
 

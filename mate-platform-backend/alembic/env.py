@@ -8,6 +8,7 @@ Model registration: imports all ``sql_models`` modules from packages
 that have them (arch / copilot / a2a / + future domains as they get
 SQL-ized in TD-5 waves).
 """
+
 from __future__ import annotations
 
 import os

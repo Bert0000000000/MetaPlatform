@@ -1,4 +1,5 @@
 """Common API response helpers to keep response envelopes consistent."""
+
 from __future__ import annotations
 
 from typing import Any

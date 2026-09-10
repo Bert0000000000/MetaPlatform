@@ -42,9 +42,7 @@ class TestRidCodec:
         assert encode_rid("ont.acme.cls.order") == "ont%2Eacme%2Ecls%2Eorder"
 
     def test_encode_with_colon(self) -> None:
-        assert encode_rid("ont.acme.prop.alias:display") == (
-            "ont%2Eacme%2Eprop%2Ealias%3Adisplay"
-        )
+        assert encode_rid("ont.acme.prop.alias:display") == ("ont%2Eacme%2Eprop%2Ealias%3Adisplay")
 
     def test_encode_with_dash_underscore(self) -> None:
         # `:` 和 `.` 必然被编码；`-_` 也编码以保证 URL 安全

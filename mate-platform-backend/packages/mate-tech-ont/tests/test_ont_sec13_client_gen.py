@@ -6,6 +6,7 @@
 3. ActionType rid 常量表；
 4. 生成代码实例化 OntologyClient（不发请求 —— 只验证结构完整）。
 """
+
 from __future__ import annotations
 
 import os
@@ -34,12 +35,30 @@ def _ot() -> ObjectType:
         rid=ClassRef(OBJ),
         primary_key=(ClassRef(P_ID),),
         properties=(
-            Property(rid=ClassRef(P_ID), type_id="string", nullable=False,
-                     primary_key=True, title="id", format=PropertyFormat.STRING),
-            Property(rid=ClassRef(P_NAME), type_id="string", nullable=True,
-                     primary_key=False, title="name", format=PropertyFormat.STRING),
-            Property(rid=ClassRef(P_TIER), type_id="integer", nullable=True,
-                     primary_key=False, title="tier", format=PropertyFormat.INTEGER),
+            Property(
+                rid=ClassRef(P_ID),
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="id",
+                format=PropertyFormat.STRING,
+            ),
+            Property(
+                rid=ClassRef(P_NAME),
+                type_id="string",
+                nullable=True,
+                primary_key=False,
+                title="name",
+                format=PropertyFormat.STRING,
+            ),
+            Property(
+                rid=ClassRef(P_TIER),
+                type_id="integer",
+                nullable=True,
+                primary_key=False,
+                title="tier",
+                format=PropertyFormat.INTEGER,
+            ),
         ),
         display_name="VIP 客户",
         description="高价值客户档案",
@@ -49,9 +68,13 @@ def _ot() -> ObjectType:
 
 def _at() -> ActionType:
     return ActionType(
-        rid=ClassRef(ACT), parameters=(), submission_criteria=(),
-        side_effects=(), function_ref=ClassRef(f"ont.{T}.fn.x.v1"),
-        on=(ClassRef(OBJ),), title="Upgrade Tier",
+        rid=ClassRef(ACT),
+        parameters=(),
+        submission_criteria=(),
+        side_effects=(),
+        function_ref=ClassRef(f"ont.{T}.fn.x.v1"),
+        on=(ClassRef(OBJ),),
+        title="Upgrade Tier",
     )
 
 
@@ -74,11 +97,11 @@ class TestClientGen:
         ns: dict[str, object] = {}
         exec(compile(src, "<generated>", "exec"), ns)
         client_cls = ns["OntologyClient"]
-        client = client_cls(base_url="http://localhost:8100/api/v1/ont/v2",
-                            token="t")
+        client = client_cls(base_url="http://localhost:8100/api/v1/ont/v2", token="t")
         assert client.base_url.endswith("/ont/v2")
-        vip = ns["VipCustomer"](rid="ont.x.ind.vip-customer.1", primary_key="1",
-                                cname="acme", ctier=3)
+        vip = ns["VipCustomer"](
+            rid="ont.x.ind.vip-customer.1", primary_key="1", cname="acme", ctier=3
+        )
         assert vip.ctier == 3
 
     def test_no_duplicate_class_names(self) -> None:

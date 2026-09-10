@@ -6,4 +6,5 @@ hooks per ADR-0014:
   1. install_auth(app) from mate_platform.auth (SEC-IAM-01).
   2. require_tenant(ctx) at every handler (SEC-TENANT-01, hard rule 3).
 """
+
 __version__ = "0.1.0"

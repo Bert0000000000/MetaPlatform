@@ -67,7 +67,7 @@ const SkeletonLine: React.FC<{ width?: string; height?: string; style?: React.CS
 );
 
 export default function PortalPage() {
-  
+
   // 数据状态
   const [portals, setPortals] = useState<PortalItem[]>(FALLBACK_PORTALS);
   const [loading, setLoading] = useState(true);

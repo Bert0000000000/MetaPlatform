@@ -10,13 +10,13 @@
 
 ## 1. 交付范围（6 个 commit）
 
-| commit | 内容 | ADR | 测试增量 |
-|---|---|---|---:|
-| `bae2ec63` | **D1 lineage e2e** — 跨域 trace chain（msg→obs→dw）+ 租户隔离断言 + `LineageHints` 自动注入 | ADR-0016 §6.5 | +6 e2e |
-| `d799b956` | **P3-W6 并行 wave 收口** — business + features + engines + G8 旧 infra 清理 | ADR-0014 | 全后端回归 1292 |
-| `85f4df75` | **G3 Outbox DDL**（Alembic 0007，`outbox_event` 11 字段 + 5 索引）+ **G7 SealedSecrets 备份 runbook**（2 文档） | ADR-0013 §2.1 / ADR-0010 §4.3 | +6（G3） |
-| `04ce4780` | **DATA helm subcharts 真实化** — debezium / marquez / datahub / ge 4 个 sub-chart 从占位升级为真实 values | ADR-0016 | +46（infra helm） |
-| `4878eb82` | **copilot 补 3 endpoint + A2A 真实（TD-4）+ LLM 真实 provider（TD-6）** — OpenAI / Anthropic provider 落地；copilot 35/35 全完成 | ADR-0014 | +18 + 1 test 修复 |
+| commit     | 内容                                                                                                                             | ADR                           |          测试增量 |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- | ----------------: |
+| `bae2ec63` | **D1 lineage e2e** — 跨域 trace chain（msg→obs→dw）+ 租户隔离断言 + `LineageHints` 自动注入                                      | ADR-0016 §6.5                 |            +6 e2e |
+| `d799b956` | **P3-W6 并行 wave 收口** — business + features + engines + G8 旧 infra 清理                                                      | ADR-0014                      |   全后端回归 1292 |
+| `85f4df75` | **G3 Outbox DDL**（Alembic 0007，`outbox_event` 11 字段 + 5 索引）+ **G7 SealedSecrets 备份 runbook**（2 文档）                  | ADR-0013 §2.1 / ADR-0010 §4.3 |          +6（G3） |
+| `04ce4780` | **DATA helm subcharts 真实化** — debezium / marquez / datahub / ge 4 个 sub-chart 从占位升级为真实 values                        | ADR-0016                      | +46（infra helm） |
+| `4878eb82` | **copilot 补 3 endpoint + A2A 真实（TD-4）+ LLM 真实 provider（TD-6）** — OpenAI / Anthropic provider 落地；copilot 35/35 全完成 | ADR-0014                      | +18 + 1 test 修复 |
 
 ---
 
@@ -37,14 +37,14 @@ $ python -m pytest infra/tests -q --tb=short
 
 ### 2.1 测试演进
 
-| commit | 全后端 | infra | 合计 |
-|---|---:|---:|---:|
-| `d799b956`（P3-W6 基线） | — | — | 1292 |
-| `bae2ec63`（D1 lineage e2e） | — | +6 | 1298 |
-| `85f4df75`（G3 outbox） | +6 | — | 1304 |
-| `04ce4780`（DATA helm） | — | +46 | 1350 |
-| `4878eb82`（copilot/a2a/llmgw） | +18 | — | 1370+ |
-| **最终全量** | **1222** | **278** | **1500** |
+| commit                          |   全后端 |   infra |     合计 |
+| ------------------------------- | -------: | ------: | -------: |
+| `d799b956`（P3-W6 基线）        |        — |       — |     1292 |
+| `bae2ec63`（D1 lineage e2e）    |        — |      +6 |     1298 |
+| `85f4df75`（G3 outbox）         |       +6 |       — |     1304 |
+| `04ce4780`（DATA helm）         |        — |     +46 |     1350 |
+| `4878eb82`（copilot/a2a/llmgw） |      +18 |       — |    1370+ |
+| **最终全量**                    | **1222** | **278** | **1500** |
 
 ---
 
@@ -95,12 +95,12 @@ $ python -m pytest infra/tests -q --tb=short
 
 ## 4. 13 硬规则映射
 
-| # | 硬规则 | 本批次关联 | 证据 |
-|---|---|---|---|
-| 4 | **外部系统没有 ACL Client** | copilot LLM provider 通过 `llm/base.py` Protocol + factory 封装；A2A 通过 `a2a/` 模块封装；不裸调 httpx | `llm/factory.py` + `a2a/` 模块 |
-| 9 | **没有审计、指标、trace** | D1 lineage e2e：`LineageHints` 携带 `tenant_id` + `correlation_id`（= trace_id）；G3：`outbox_event` 表是事件审计基础存储，`lineage_hints` 列与 D1 对齐 | `lineage/hints.py` + Alembic 0007 |
-| 12 | **Secret 不进 git** | G7：SealedSecrets 主私钥异地备份 runbook + 恢复 + 演练 | `sealed-secret-backup.md` + `sealed-secret-backup-inventory.md` |
-| 13 | **NetworkPolicy 缺失 = prod 不通过** | DATA helm 真实化沿用 default-deny NetworkPolicy（GA-ACCEPTANCE 已闭环） | `infra/helm/charts/network-policies/` |
+| #   | 硬规则                               | 本批次关联                                                                                                                                              | 证据                                                            |
+| --- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| 4   | **外部系统没有 ACL Client**          | copilot LLM provider 通过 `llm/base.py` Protocol + factory 封装；A2A 通过 `a2a/` 模块封装；不裸调 httpx                                                 | `llm/factory.py` + `a2a/` 模块                                  |
+| 9   | **没有审计、指标、trace**            | D1 lineage e2e：`LineageHints` 携带 `tenant_id` + `correlation_id`（= trace_id）；G3：`outbox_event` 表是事件审计基础存储，`lineage_hints` 列与 D1 对齐 | `lineage/hints.py` + Alembic 0007                               |
+| 12  | **Secret 不进 git**                  | G7：SealedSecrets 主私钥异地备份 runbook + 恢复 + 演练                                                                                                  | `sealed-secret-backup.md` + `sealed-secret-backup-inventory.md` |
+| 13  | **NetworkPolicy 缺失 = prod 不通过** | DATA helm 真实化沿用 default-deny NetworkPolicy（GA-ACCEPTANCE 已闭环）                                                                                 | `infra/helm/charts/network-policies/`                           |
 
 > 其余硬规则（1/2/3/5/6/7/8/10/11）在 GA-ACCEPTANCE 已闭环，本批次不引入回归。
 
@@ -108,26 +108,26 @@ $ python -m pytest infra/tests -q --tb=short
 
 ## 5. 关联 ADR
 
-| ADR | 标题 | 本批次关联 |
-|---|---|---|
-| ADR-0010 | SealedSecrets 密钥管理 | G7 备份 runbook（§4.3） |
-| ADR-0013 | Outbox + 幂等消费者 + DLQ | G3 `outbox_event` 表 DDL（§2.1） |
-| ADR-0014 | 17 域 5 步接入模式 | copilot A2A/LLM 真实遵循 5 步模式 |
-| ADR-0016 | 数据平台架构 | D1 lineage e2e（§6.5）+ DATA helm 真实化 |
+| ADR      | 标题                      | 本批次关联                               |
+| -------- | ------------------------- | ---------------------------------------- |
+| ADR-0010 | SealedSecrets 密钥管理    | G7 备份 runbook（§4.3）                  |
+| ADR-0013 | Outbox + 幂等消费者 + DLQ | G3 `outbox_event` 表 DDL（§2.1）         |
+| ADR-0014 | 17 域 5 步接入模式        | copilot A2A/LLM 真实遵循 5 步模式        |
+| ADR-0016 | 数据平台架构              | D1 lineage e2e（§6.5）+ DATA helm 真实化 |
 
 ---
 
 ## 6. G 项状态
 
-| # | 项 | 状态 | 备注 |
-|---|---|---|---|
-| G1 | kafka sub-chart 落地 | In Progress | 不在本批次范围 |
-| **G3** | **Outbox DDL 迁移** | **✅ Accepted** | commit `85f4df75` |
-| G4 | 真实 K8s 集成 e2e | Not Started | 不在本批次范围 |
-| G5 | per-service `security:` 段补齐 | In Progress | 不在本批次范围 |
-| G6 | 已有表 `tenant_id` 回填 + RLS | Not Started | 不在本批次范围 |
+| #      | 项                                   | 状态            | 备注              |
+| ------ | ------------------------------------ | --------------- | ----------------- |
+| G1     | kafka sub-chart 落地                 | In Progress     | 不在本批次范围    |
+| **G3** | **Outbox DDL 迁移**                  | **✅ Accepted** | commit `85f4df75` |
+| G4     | 真实 K8s 集成 e2e                    | Not Started     | 不在本批次范围    |
+| G5     | per-service `security:` 段补齐       | In Progress     | 不在本批次范围    |
+| G6     | 已有表 `tenant_id` 回填 + RLS        | Not Started     | 不在本批次范围    |
 | **G7** | **SealedSecrets 主私钥备份 runbook** | **✅ Accepted** | commit `85f4df75` |
-| G8 | 清理 main 上旧 `infra/` | In Progress | P3-W6 已部分清理 |
+| G8     | 清理 main 上旧 `infra/`              | In Progress     | P3-W6 已部分清理  |
 
 ---
 

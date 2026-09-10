@@ -2,6 +2,7 @@
 
 封装 mcp.Server 实例化与 stdio 启动。
 """
+
 from __future__ import annotations
 
 import os
@@ -26,6 +27,7 @@ class MCPServer:
         """懒加载 mcp.Server."""
         if self._server is None:
             from mcp.server import Server
+
             self._server = Server(self.name)
             logger.info("mcp.server.created", name=self.name)
         return self._server
@@ -63,8 +65,7 @@ class MCPServer:
 
     async def list_resources(self) -> list[dict[str, Any]]:
         return [
-            {"uri": getattr(r, "uri", "?"), "name": getattr(r, "name", "")}
-            for r in self._resources
+            {"uri": getattr(r, "uri", "?"), "name": getattr(r, "name", "")} for r in self._resources
         ]
 
     async def list_prompts(self) -> list[dict[str, Any]]:
@@ -101,7 +102,7 @@ class MCPServer:
                 if hasattr(result, "__await__"):
                     result = await result
                 return result
-        raise KeyError(f"Tool '\''{name}'\'' not found")
+        raise KeyError(f"Tool '''{name}''' not found")
 
     @staticmethod
     def _normalize_arguments(tool: Any, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -121,9 +122,7 @@ class MCPServer:
         if not isinstance(properties, dict):
             return arguments
 
-        normalized = {
-            key: value for key, value in arguments.items() if key in properties
-        }
+        normalized = {key: value for key, value in arguments.items() if key in properties}
         if "message" in arguments and "message" not in properties:
             if "query" in properties and "query" not in normalized:
                 normalized["query"] = arguments["message"]

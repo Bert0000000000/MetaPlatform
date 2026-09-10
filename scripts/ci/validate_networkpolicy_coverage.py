@@ -6,6 +6,7 @@ the Helm application-service inventory, and the rendered per-service policies.
 It intentionally accepts a rendered YAML file so CI validates what Helm will
 actually install rather than only checking template text.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -101,16 +102,11 @@ def _collect_rendered_policies(
     return policies, namespace_default_deny
 
 
-def _validate_service_policy(
-    service_id: str, matches: list[dict[str, Any]]
-) -> list[str]:
+def _validate_service_policy(service_id: str, matches: list[dict[str, Any]]) -> list[str]:
     if not matches:
         return [f"missing per-service NetworkPolicy: {service_id}"]
     if len(matches) != 1:
-        return [
-            f"expected one per-service NetworkPolicy for {service_id}, "
-            f"found {len(matches)}"
-        ]
+        return [f"expected one per-service NetworkPolicy for {service_id}, found {len(matches)}"]
     spec = matches[0].get("spec")
     if not isinstance(spec, dict):
         return [f"policy has no spec: {service_id}"]
@@ -118,9 +114,10 @@ def _validate_service_policy(
     violations: list[str] = []
     selector = spec.get("podSelector")
     match_labels = selector.get("matchLabels") if isinstance(selector, dict) else None
-    if not isinstance(match_labels, dict) or match_labels.get(
-        "app.kubernetes.io/name"
-    ) != service_id:
+    if (
+        not isinstance(match_labels, dict)
+        or match_labels.get("app.kubernetes.io/name") != service_id
+    ):
         violations.append(f"policy selector does not target service: {service_id}")
     policy_types = spec.get("policyTypes")
     if not isinstance(policy_types, list) or not {
@@ -186,9 +183,7 @@ def main() -> int:
         args.repo_root / "mate-platform-backend" / "contracts" / "openapi" / "manifest.yaml"
     )
     violations.extend(
-        validate_rendered_coverage(
-            args.rendered.read_text(encoding="utf-8"), expected
-        )
+        validate_rendered_coverage(args.rendered.read_text(encoding="utf-8"), expected)
     )
     if violations:
         print("validate_networkpolicy_coverage: rule 13 violation(s):")

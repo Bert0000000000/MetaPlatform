@@ -6,6 +6,7 @@
 3. WIP 流：save（暂存不落正式）→ list/get → apply（同门禁）→ 正式生效并清 WIP；
    discard。
 """
+
 from __future__ import annotations
 
 import os
@@ -32,15 +33,32 @@ P_NAME = f"ont.{T}.prop.acc-name.v1"
 
 
 def _ot(with_name: bool = True, fmt=PropertyFormat.STRING) -> ObjectType:
-    props = [Property(rid=ClassRef(P_ID), type_id="string", nullable=False,
-                      primary_key=True, title="id", format=PropertyFormat.STRING)]
+    props = [
+        Property(
+            rid=ClassRef(P_ID),
+            type_id="string",
+            nullable=False,
+            primary_key=True,
+            title="id",
+            format=PropertyFormat.STRING,
+        )
+    ]
     if with_name:
-        props.append(Property(rid=ClassRef(P_NAME), type_id=fmt.value if False else "string",
-                              nullable=True, primary_key=False, title="name",
-                              format=fmt))
+        props.append(
+            Property(
+                rid=ClassRef(P_NAME),
+                type_id=fmt.value if False else "string",
+                nullable=True,
+                primary_key=False,
+                title="name",
+                format=fmt,
+            )
+        )
     return ObjectType(
-        rid=ClassRef(OBJ), primary_key=(ClassRef(P_ID),),
-        properties=tuple(props), display_name="账户",
+        rid=ClassRef(OBJ),
+        primary_key=(ClassRef(P_ID),),
+        properties=tuple(props),
+        display_name="账户",
     )
 
 
@@ -63,9 +81,14 @@ class TestDetect:
             _ot(),
             properties=(
                 changed.properties[0],
-                Property(rid=ClassRef(P_NAME), type_id="double",
-                         nullable=True, primary_key=False, title="name",
-                         format=PropertyFormat.DOUBLE),
+                Property(
+                    rid=ClassRef(P_NAME),
+                    type_id="double",
+                    nullable=True,
+                    primary_key=False,
+                    title="name",
+                    format=PropertyFormat.DOUBLE,
+                ),
             ),
         )
         assert any("format changed" in c for c in detect_destructive_changes(changed, new))
@@ -79,9 +102,14 @@ class TestDetect:
     def test_add_property_not_destructive(self) -> None:
         from dataclasses import replace as _r
 
-        extra = Property(rid=ClassRef(f"ont.{T}.prop.acc-tier.v1"),
-                         type_id="string", nullable=True, primary_key=False,
-                         title="tier", format=PropertyFormat.STRING)
+        extra = Property(
+            rid=ClassRef(f"ont.{T}.prop.acc-tier.v1"),
+            type_id="string",
+            nullable=True,
+            primary_key=False,
+            title="tier",
+            format=PropertyFormat.STRING,
+        )
         new = _r(_ot(), properties=(*_ot().properties, extra))
         assert detect_destructive_changes(_ot(), new) == []
 
@@ -89,15 +117,21 @@ class TestDetect:
 class TestWipFlow:
     def test_wip_staged_then_apply(self) -> None:
         r = _repo()
-        extra = Property(rid=ClassRef(f"ont.{T}.prop.acc-tier.v1"),
-                         type_id="string", nullable=True, primary_key=False,
-                         title="tier", format=PropertyFormat.STRING)
+        extra = Property(
+            rid=ClassRef(f"ont.{T}.prop.acc-tier.v1"),
+            type_id="string",
+            nullable=True,
+            primary_key=False,
+            title="tier",
+            format=PropertyFormat.STRING,
+        )
         from dataclasses import replace as _r
 
         draft = _r(_ot(), properties=(*_ot().properties, extra))
         # 暂存：正式表不变
-        r.save_schema_wip(OBJ, {"rid": draft.rid.rid,
-                                "display_name": draft.display_name}, author="a1")
+        r.save_schema_wip(
+            OBJ, {"rid": draft.rid.rid, "display_name": draft.display_name}, author="a1"
+        )
         assert len(r.get_object_type(ClassRef(OBJ)).properties) == 2
         assert len(r.list_schema_wip()) == 1
         # 应用（repo 层直接 upsert draft —— API 层门禁由 409 测试覆盖语义）
@@ -119,8 +153,7 @@ class TestGateSemantics:
     def test_destructive_requires_matching_name(self) -> None:
         r = _repo()
         new = _ot(with_name=False)
-        changes = detect_destructive_changes(
-            r.get_object_type(ClassRef(OBJ)), new)
+        changes = detect_destructive_changes(r.get_object_type(ClassRef(OBJ)), new)
         assert changes
         # confirm_name 不匹配 → 拒（API 层 409；此处断言检测清单内容）
         assert any("removed" in c for c in changes)

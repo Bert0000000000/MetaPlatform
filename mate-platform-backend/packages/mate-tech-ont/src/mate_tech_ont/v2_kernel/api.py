@@ -73,6 +73,7 @@ router = APIRouter(prefix="/api/v1/ont/v2", tags=["v2-kernel"])
 
 class DerivedSpecDTO(BaseModel):
     """EXP-02：派生属性规格（D4：v1 声明式聚合）。field 须为完整 Property rid。"""
+
     fn: str  # count | sum | avg
     over_link: str  # LinkType rid
     field: str | None = None
@@ -155,6 +156,7 @@ class ActionApplyBodyDTO(BaseModel):
 
     Only `parameters` is required (contract `required: [parameters]`).
     """
+
     parameters: dict[str, Any] = Field(default_factory=dict)
     target_iid: str = ""
     provenance: dict[str, Any] = Field(default_factory=dict)
@@ -162,6 +164,7 @@ class ActionApplyBodyDTO(BaseModel):
 
 class ActionApplyDTO(ActionApplyBodyDTO):
     """Legacy body for the deprecated `:apply` alias — action rid inside the body."""
+
     action_rid: str
 
 
@@ -302,9 +305,7 @@ async def _call(repo: OntologyRepository, method_name: str, /, *args, **kwargs):
     return await asyncio.to_thread(method, *args, **kwargs)
 
 
-async def _call_scoped(
-    request: Request, method_name: str, /, *args, **kwargs
-):
+async def _call_scoped(request: Request, method_name: str, /, *args, **kwargs):
     """GOVERN-06: 在 tenant_scope 内调 repo method，自动 install_rls。
 
     等价于::
@@ -353,15 +354,20 @@ def _effective_markings(request: Request, param: str) -> tuple[str, ...]:
 
 def _prop_to_dto(p: Property) -> PropertyDTO:
     return PropertyDTO(
-        rid=p.rid.rid, type_id=p.type_id, nullable=p.nullable,
-        primary_key=p.primary_key, title=p.title, format=p.format.value,
+        rid=p.rid.rid,
+        type_id=p.type_id,
+        nullable=p.nullable,
+        primary_key=p.primary_key,
+        title=p.title,
+        format=p.format.value,
         description=p.description,
         struct_fields=[_prop_to_dto(sf) for sf in p.struct_fields],
-        array=p.array, reducer=p.reducer,
+        array=p.array,
+        reducer=p.reducer,
         derived=(
-            DerivedSpecDTO(fn=p.derived.fn, over_link=p.derived.over_link,
-                           field=p.derived.field)
-            if p.derived is not None else None
+            DerivedSpecDTO(fn=p.derived.fn, over_link=p.derived.over_link, field=p.derived.field)
+            if p.derived is not None
+            else None
         ),
         shared=p.shared,
     )
@@ -382,9 +388,9 @@ def _dto_to_prop(d: PropertyDTO) -> Property:
         array=d.array,
         reducer=d.reducer,
         derived=(
-            DerivedSpec(fn=d.derived.fn, over_link=d.derived.over_link,
-                        field=d.derived.field)
-            if d.derived is not None else None
+            DerivedSpec(fn=d.derived.fn, over_link=d.derived.over_link, field=d.derived.field)
+            if d.derived is not None
+            else None
         ),
         shared=d.shared,
     )
@@ -580,6 +586,7 @@ def _dto_to_ot(d: ObjectTypeDTO) -> ObjectType:
 
 class ChunkIngestDTO(BaseModel):
     """AI-10：文档 → chunk 对象 + 回源 link（Palantir chunk 溯源设计）。"""
+
     doc_class_rid: str
     doc_pk: str
     chunks: list[str]
@@ -592,7 +599,8 @@ class ChunkIngestDTO(BaseModel):
     operation_id="ontIngestV2DocumentChunks",
 )
 async def ingest_document_chunks(
-    payload: ChunkIngestDTO, request: Request,
+    payload: ChunkIngestDTO,
+    request: Request,
 ) -> dict:
     """AI-10：文档切块入本体（chunk 即对象，link 回源文档，检索可溯源）。"""
     ctx = _ctx(request)
@@ -605,8 +613,12 @@ async def ingest_document_chunks(
 
         with _scoped_repo(request) as repo:
             return _ing(
-                repo, tenant, payload.doc_class_rid, payload.doc_pk,
-                payload.chunks, doc_props=payload.doc_props or None,
+                repo,
+                tenant,
+                payload.doc_class_rid,
+                payload.doc_pk,
+                payload.chunks,
+                doc_props=payload.doc_props or None,
             )
 
     import asyncio
@@ -617,6 +629,7 @@ async def ingest_document_chunks(
 class SecurityPolicyDTO(BaseModel):
     """SEC-12：行列级安全策略。row：行可见条件 + bypass_markings；
     column：属性 required_markings。"""
+
     rid: str = ""
     kind: str  # row | column
     class_rid: str = ""
@@ -633,7 +646,8 @@ class SecurityPolicyDTO(BaseModel):
     operation_id="ontUpsertV2SecurityPolicy",
 )
 async def upsert_security_policy(
-    payload: SecurityPolicyDTO, request: Request,
+    payload: SecurityPolicyDTO,
+    request: Request,
 ) -> dict:
     ctx = _ctx(request)
     payload_dict = payload.model_dump()
@@ -658,6 +672,7 @@ async def list_security_policies(request: Request) -> list[dict]:
 
 class BackingDatasourceDTO(BaseModel):
     """DATA-14：背挂数据源声明（kind v1=pg_table；secret 走 dsn_env 环境变量）。"""
+
     class_rid: str
     name: str
     kind: str = "pg_table"
@@ -674,7 +689,9 @@ class BackingDatasourceDTO(BaseModel):
     operation_id="ontUpsertV2BackingDatasource",
 )
 async def upsert_backing_datasource(
-    rid: str, payload: BackingDatasourceDTO, request: Request,
+    rid: str,
+    payload: BackingDatasourceDTO,
+    request: Request,
 ) -> dict:
     """DATA-14：声明 backing datasource（数据平面 → 对象索引管道配置）。"""
     ctx = _ctx(request)
@@ -716,15 +733,16 @@ async def delete_security_policy(rid: str, request: Request) -> dict:
     operation_id="ontSyncV2BackingDatasources",
 )
 async def sync_backing_datasources(
-    rid: str, request: Request, incremental: bool = False,
+    rid: str,
+    request: Request,
+    incremental: bool = False,
 ) -> dict:
     """DATA-14/CDC：批量或增量同步（增量按 ts_column > 水位；用户编辑覆盖层不覆盖）。"""
     ctx = _ctx(request)
     if not rid.startswith(f"ont.{ctx.tenant_id!s}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
     try:
-        return await _call_scoped(
-            request, "sync_backing_datasources", rid, incremental)
+        return await _call_scoped(request, "sync_backing_datasources", rid, incremental)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:
@@ -733,6 +751,7 @@ async def sync_backing_datasources(
 
 class CdcApplyDTO(BaseModel):
     """CDC 变更事件批（debezium / mate-tech-etl 推送）。"""
+
     changes: list[dict[str, Any]]  # [{op: upsert|delete, pk, data?: {列: 值}}]
 
 
@@ -742,15 +761,16 @@ class CdcApplyDTO(BaseModel):
     operation_id="ontApplyV2CdcChanges",
 )
 async def apply_cdc_changes(
-    rid: str, payload: CdcApplyDTO, request: Request,
+    rid: str,
+    payload: CdcApplyDTO,
+    request: Request,
 ) -> dict:
     """CDC 流式绑定：变更事件 → 对象平面（upsert 尊重用户编辑覆盖层）。"""
     ctx = _ctx(request)
     if not rid.startswith(f"ont.{ctx.tenant_id!s}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
     try:
-        return await _call_scoped(
-            request, "apply_cdc_changes", rid, payload.changes)
+        return await _call_scoped(request, "apply_cdc_changes", rid, payload.changes)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 
@@ -777,7 +797,9 @@ async def get_materialization(rid: str, request: Request) -> dict:
     operation_id="ontListV2ActionAudit",
 )
 async def list_action_audit(
-    request: Request, limit: int = 100, action_rid: str | None = None,
+    request: Request,
+    limit: int = 100,
+    action_rid: str | None = None,
 ) -> list[dict]:
     """UI-04：Action 执行历史（actor/参数/结果/审计链，倒序）。"""
     _ctx(request)
@@ -786,6 +808,7 @@ async def list_action_audit(
 
 class WebhookSubscriptionDTO(BaseModel):
     """G20：webhook 订阅（event_type=* 或精确；secret 用于 HMAC 签名）。"""
+
     event_type: str = "*"
     url: str
     secret: str = ""
@@ -798,7 +821,8 @@ class WebhookSubscriptionDTO(BaseModel):
     operation_id="ontUpsertV2Webhook",
 )
 async def upsert_webhook(
-    payload: WebhookSubscriptionDTO, request: Request,
+    payload: WebhookSubscriptionDTO,
+    request: Request,
 ) -> dict:
     ctx = _ctx(request)
     decl = payload.model_dump()
@@ -838,12 +862,14 @@ async def deliver_webhooks(request: Request) -> dict:
 
 class FunctionAliasDTO(BaseModel):
     """G23：函数别名（稳定名 → 可演进的 rid）。"""
+
     alias: str
     function_rid: str
 
 
 class FunctionInvokeDTO(BaseModel):
     """G23：函数调用体。"""
+
     parameters: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -853,13 +879,14 @@ class FunctionInvokeDTO(BaseModel):
     operation_id="ontRegisterV2FunctionAlias",
 )
 async def register_function_alias(
-    payload: FunctionAliasDTO, request: Request,
+    payload: FunctionAliasDTO,
+    request: Request,
 ) -> dict:
     _ctx(request)
     try:
         return await _call_scoped(
-            request, "register_function_alias",
-            payload.alias, payload.function_rid)
+            request, "register_function_alias", payload.alias, payload.function_rid
+        )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 
@@ -881,7 +908,9 @@ async def list_function_versions(rid: str, request: Request) -> list[dict]:
     operation_id="ontInvokeV2Function",
 )
 async def invoke_function(
-    rid: str, payload: FunctionInvokeDTO, request: Request,
+    rid: str,
+    payload: FunctionInvokeDTO,
+    request: Request,
 ) -> dict:
     """G23：调用已注册 Function（invoker/stub/沙箱执行器）。"""
     _ctx(request)
@@ -895,8 +924,7 @@ async def invoke_function(
     except Exception:
         pass
     try:
-        return await _call_scoped(
-            request, "invoke_function", target, payload.parameters)
+        return await _call_scoped(request, "invoke_function", target, payload.parameters)
     except KeyError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
     except RuntimeError as e:
@@ -924,8 +952,7 @@ async def ws_object_changes(websocket: WebSocket) -> None:
     try:
         while True:
             try:
-                events = await asyncio.to_thread(
-                    repo.list_outbox_events, "0", 20)
+                events = await asyncio.to_thread(repo.list_outbox_events, "0", 20)
             except Exception:
                 events = []
             for ev in events:
@@ -933,11 +960,13 @@ async def ws_object_changes(websocket: WebSocket) -> None:
                 if not eid or eid in sent:
                     continue
                 sent.add(eid)
-                await websocket.send_json({
-                    "event_id": eid,
-                    "event_type": ev.get("event_type", ""),
-                    "payload": ev.get("payload") or {},
-                })
+                await websocket.send_json(
+                    {
+                        "event_id": eid,
+                        "event_type": ev.get("event_type", ""),
+                        "payload": ev.get("payload") or {},
+                    }
+                )
             await asyncio.sleep(1.5)
     except Exception:
         # 客户端断开 / 发送失败 → 退订
@@ -956,12 +985,14 @@ _SCENARIOS: dict[str, dict[str, Any]] = {}
 
 class ScenarioCreateDTO(BaseModel):
     """G44：建沙盒会话（编辑留沙盒；合并走 apply-edit-set 审计管道）。"""
+
     title: str = ""
 
 
 class ScenarioEditDTO(BaseModel):
     """G44：沙盒编辑（op 语义同 edit-set：set_property/create_object/
     delete_object/add_link/remove_link）。"""
+
     op: str
     target: str = ""
     property_rid: str = ""
@@ -1009,7 +1040,8 @@ def _scenario_overlay(request: Request, sid: str) -> Any:
     operation_id="ontCreateV2Scenario",
 )
 async def create_scenario(
-    payload: ScenarioCreateDTO, request: Request,
+    payload: ScenarioCreateDTO,
+    request: Request,
 ) -> dict:
     ctx = _ctx(request)
     sid = f"scn-{_uuid.uuid4().hex[:10]}"
@@ -1029,10 +1061,15 @@ async def create_scenario(
 )
 async def list_scenarios(request: Request) -> list[dict]:
     _ctx(request)
-    return [{"scenario_id": k, "title": v["title"],
-             "edits": len(v["edits"]),
-             "created_at": v["created_at"]}
-            for k, v in _SCENARIOS.items()]
+    return [
+        {
+            "scenario_id": k,
+            "title": v["title"],
+            "edits": len(v["edits"]),
+            "created_at": v["created_at"],
+        }
+        for k, v in _SCENARIOS.items()
+    ]
 
 
 @router.post(
@@ -1041,7 +1078,9 @@ async def list_scenarios(request: Request) -> list[dict]:
     operation_id="ontAppendV2ScenarioEdit",
 )
 async def append_scenario_edit(
-    sid: str, payload: ScenarioEditDTO, request: Request,
+    sid: str,
+    payload: ScenarioEditDTO,
+    request: Request,
 ) -> dict:
     _ctx(request)
     if sid not in _SCENARIOS:
@@ -1051,12 +1090,30 @@ async def append_scenario_edit(
     from mate_kernel.action.edit_set import EditOp, EditSetError
 
     try:
-        EditOp(**{k: v for k, v in edit.items() if v or k in (
-            "op", "target", "property_rid", "value", "class_rid",
-            "primary_key", "props", "link_type_rid", "src", "dst",
-            "link_instance_rid")})
+        EditOp(
+            **{
+                k: v
+                for k, v in edit.items()
+                if v
+                or k
+                in (
+                    "op",
+                    "target",
+                    "property_rid",
+                    "value",
+                    "class_rid",
+                    "primary_key",
+                    "props",
+                    "link_type_rid",
+                    "src",
+                    "dst",
+                    "link_instance_rid",
+                )
+            }
+        )
     except (EditSetError, TypeError) as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
+
     # 即时回放校验（目标存在性等）—— to_thread 内
     def _validate() -> None:
         try:
@@ -1086,7 +1143,9 @@ async def append_scenario_edit(
     operation_id="ontGetV2ScenarioView",
 )
 async def scenario_view(
-    sid: str, request: Request, class_rid: str = "",
+    sid: str,
+    request: Request,
+    class_rid: str = "",
 ) -> dict:
     """G44：沙盒合并视图（overlay 优先 + 墓碑隐藏；_sandbox_ 标记新建/修改）。"""
     _ctx(request)
@@ -1100,8 +1159,7 @@ async def scenario_view(
         ov, _repo, _e = _scenario_overlay(request, sid)
         cls = ClassRef(class_rid) if class_rid else None
         inds = ov.list_individuals(cls)
-        touched = {e.get("target") for e in entry["edits"]
-                   if e.get("op") == "set_property"}
+        touched = {e.get("target") for e in entry["edits"] if e.get("op") == "set_property"}
         created = set()
         for e in entry["edits"]:
             if e.get("op") == "create_object":
@@ -1111,11 +1169,9 @@ async def scenario_view(
         rows = []
         for i in inds:
             row = individual_to_row(i)
-            row["_sandbox_"] = ("new" if i.rid in created
-                                else "changed" if i.rid in touched else "")
+            row["_sandbox_"] = "new" if i.rid in created else "changed" if i.rid in touched else ""
             rows.append(row)
-        return {"scenario_id": sid, "rows": rows,
-                "pending_edits": len(entry["edits"])}
+        return {"scenario_id": sid, "rows": rows, "pending_edits": len(entry["edits"])}
 
     import asyncio
 
@@ -1128,7 +1184,9 @@ async def scenario_view(
     operation_id="ontMergeV2Scenario",
 )
 async def merge_scenario(
-    sid: str, payload: ScenarioMergeDTO, request: Request,
+    sid: str,
+    payload: ScenarioMergeDTO,
+    request: Request,
 ) -> dict:
     """G44：沙盒合并 —— 暂存编辑经 apply_edit_set_now（审计管道）落主库。"""
     ctx = _ctx(request)
@@ -1149,8 +1207,11 @@ async def merge_scenario(
     except Exception as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     del _SCENARIOS[sid]
-    out = dict(result) if isinstance(result, dict) else {
-        "applied": len(getattr(result, "applied", ()) or ())}
+    out = (
+        dict(result)
+        if isinstance(result, dict)
+        else {"applied": len(getattr(result, "applied", ()) or ())}
+    )
     out["scenario_id"] = sid
     out["merged"] = True
     return out
@@ -1189,7 +1250,9 @@ class LifecycleActionDTO(BaseModel):
     operation_id="ontApplyV2Lifecycle",
 )
 async def apply_lifecycle(
-    rid: str, payload: LifecycleActionDTO, request: Request,
+    rid: str,
+    payload: LifecycleActionDTO,
+    request: Request,
 ) -> dict:
     """GOV-17：Cleanup 三级处置（Snooze/Deprecate/Delete）+ 使用量删除保护。"""
     ctx = _ctx(request)
@@ -1197,8 +1260,12 @@ async def apply_lifecycle(
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
     try:
         return await _call_scoped(
-            request, "apply_lifecycle", rid, payload.action,
-            payload.actor or str(getattr(ctx, "user_id", "")))
+            request,
+            "apply_lifecycle",
+            rid,
+            payload.action,
+            payload.actor or str(getattr(ctx, "user_id", "")),
+        )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:
@@ -1222,6 +1289,7 @@ async def lint_anti_patterns(request: Request) -> list[dict]:
 
 class TimeseriesAppendDTO(BaseModel):
     """GOV-19：时序点追加（series_rid = TIMESERIES 属性值）。"""
+
     series_rid: str
     points: list[dict[str, Any]]
 
@@ -1232,15 +1300,14 @@ class TimeseriesAppendDTO(BaseModel):
     operation_id="ontAppendV2Timeseries",
 )
 async def append_timeseries(
-    payload: TimeseriesAppendDTO, request: Request,
+    payload: TimeseriesAppendDTO,
+    request: Request,
 ) -> dict:
     ctx = _ctx(request)
     tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
     if not payload.series_rid.startswith(f"ont.{tenant}."):
         raise HTTPException(status_code=403, detail="cross-tenant series denied")
-    n = await _call_scoped(
-        request, "append_timeseries", payload.series_rid,
-        payload.points, tenant)
+    n = await _call_scoped(request, "append_timeseries", payload.series_rid, payload.points, tenant)
     return {"appended": n}
 
 
@@ -1250,17 +1317,19 @@ async def append_timeseries(
     operation_id="ontQueryV2Timeseries",
 )
 async def query_timeseries(
-    series_rid: str, request: Request,
-    start: str | None = None, end: str | None = None,
+    series_rid: str,
+    request: Request,
+    start: str | None = None,
+    end: str | None = None,
 ) -> list[dict]:
     """GOV-19：时序窗口查询（ts 升序）。"""
     _ctx(request)
-    return await _call_scoped(
-        request, "query_timeseries", series_rid, start, end)
+    return await _call_scoped(request, "query_timeseries", series_rid, start, end)
 
 
 class SchemaWipDTO(BaseModel):
     """G33：WIP 暂存体（payload 即 ObjectTypeDTO 形态）。"""
+
     payload: ObjectTypeDTO
     author: str = ""
 
@@ -1271,7 +1340,8 @@ class SchemaWipDTO(BaseModel):
     operation_id="ontSaveV2SchemaWip",
 )
 async def save_schema_wip(
-    payload: SchemaWipDTO, request: Request,
+    payload: SchemaWipDTO,
+    request: Request,
 ) -> dict:
     """G33：schema 变更暂存（他人不可见；不落正式表、不做门禁）。"""
     ctx = _ctx(request)
@@ -1279,9 +1349,12 @@ async def save_schema_wip(
     if not payload.payload.rid.startswith(f"ont.{tenant}."):
         raise HTTPException(status_code=403, detail="cross-tenant rid denied")
     return await _call_scoped(
-        request, "save_schema_wip", payload.payload.rid,
+        request,
+        "save_schema_wip",
+        payload.payload.rid,
         payload.payload.model_dump(exclude={"confirm_name"}),
-        payload.author)
+        payload.author,
+    )
 
 
 @router.get(
@@ -1300,7 +1373,9 @@ async def list_schema_wip(request: Request) -> list[dict]:
     operation_id="ontApplyV2SchemaWip",
 )
 async def apply_schema_wip(
-    rid: str, request: Request, confirm_name: str = "",
+    rid: str,
+    request: Request,
+    confirm_name: str = "",
 ) -> ObjectTypeResponse:
     """G33：应用 WIP → 正式表（走与直接 upsert 相同的破坏性门禁）。"""
     ctx = _ctx(request)
@@ -1324,24 +1399,27 @@ async def discard_schema_wip(rid: str, request: Request) -> dict:
 
 
 async def _upsert_object_type_gated(
-    payload: ObjectTypeDTO, request: Request, ctx: Any,
+    payload: ObjectTypeDTO,
+    request: Request,
+    ctx: Any,
 ) -> ObjectType:
     """G33：与 POST /object-types 相同的门禁 + upsert（WIP apply 复用）。"""
     from mate_kernel.ontology.types.object_type import detect_destructive_changes
 
     ot = _dto_to_ot(payload)
     try:
-        existing = await _call_scoped(
-            request, "get_object_type", ClassRef(payload.rid))
+        existing = await _call_scoped(request, "get_object_type", ClassRef(payload.rid))
         destructive = detect_destructive_changes(existing, ot)
     except KeyError:
         destructive = []
     if destructive and payload.confirm_name != existing.display_name:
         raise HTTPException(
             status_code=409,
-            detail={"error": "destructive_confirm_required",
-                    "changes": destructive,
-                    "confirm_with": existing.display_name},
+            detail={
+                "error": "destructive_confirm_required",
+                "changes": destructive,
+                "confirm_with": existing.display_name,
+            },
         )
     try:
         return await _call_scoped(request, "upsert_object_type", ot)
@@ -1412,7 +1490,8 @@ async def shared_properties(request: Request) -> list[dict]:
     operation_id="ontUpsertV2Property",
 )
 async def upsert_property(
-    payload: PropertyDTO, request: Request,
+    payload: PropertyDTO,
+    request: Request,
 ) -> PropertyDTO:
     """EXP-02：属性库独立 upsert（先注册后引用；struct/derived/共享标记可带）。"""
     ctx = _ctx(request)
@@ -1443,7 +1522,8 @@ async def list_interface_implementations(rid: str, request: Request) -> list[str
     operation_id="ontCreateV2ObjectType",
 )
 async def upsert_object_type(
-    payload: ObjectTypeDTO, request: Request,
+    payload: ObjectTypeDTO,
+    request: Request,
 ) -> ObjectTypeResponse:
     """Upsert an ObjectType — registers Property + Class in kernel repo.
 
@@ -1458,8 +1538,7 @@ async def upsert_object_type(
     from mate_kernel.ontology.types.object_type import detect_destructive_changes
 
     try:
-        existing = await _call_scoped(
-            request, "get_object_type", ClassRef(payload.rid))
+        existing = await _call_scoped(request, "get_object_type", ClassRef(payload.rid))
         destructive = detect_destructive_changes(existing, ot)
     except KeyError:
         destructive = []
@@ -1488,7 +1567,7 @@ async def upsert_object_type(
                 "existing_display_name": e.existing_display_name,
                 "slug": e.slug,
                 "hint": "Call POST /v2/object-types/precheck to find similar types, "
-                        "or POST /v2/object-types/merge to merge into the existing one.",
+                "or POST /v2/object-types/merge to merge into the existing one.",
             },
         ) from e
     return _ot_to_dto(saved)
@@ -1500,13 +1579,18 @@ async def upsert_object_type(
     operation_id="ontListV2ObjectTypes",
 )
 async def list_object_types(
-    request: Request, limit: int = 100, offset: int = 0,
+    request: Request,
+    limit: int = 100,
+    offset: int = 0,
 ) -> list[ObjectTypeResponse]:
     """List ObjectTypes with pagination."""
     _ctx(request)
     ctx = _ctx(request)
     items = await _call_scoped(
-        request, "list_object_types", limit=limit, offset=offset,
+        request,
+        "list_object_types",
+        limit=limit,
+        offset=offset,
         tenant_id=str(ctx.tenant_id),  # type: ignore[attr-defined]
     )
     return [_ot_to_dto(i) for i in items]
@@ -1517,8 +1601,7 @@ async def list_object_types(
     response_model=dict,
     operation_id="ontExportV2ObjectType",
 )
-async def export_object_type(rid: str, request: Request,
-                             format: str = "jsonld") -> dict:
+async def export_object_type(rid: str, request: Request, format: str = "jsonld") -> dict:
     """ONT-G9/G20：导出类型定义为 JSON-LD 或 OWL/Turtle（@prefix 序列）。"""
     from mate_kernel.ontology.identity.class_ref import ClassRef
 
@@ -1554,9 +1637,11 @@ async def export_object_type(rid: str, request: Request,
         "format": "jsonld",
         "rid": rid,
         "content": {
-            "@context": {"owl": "http://www.w3.org/2002/07/owl#",
-                         "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-                         "schema": "https://schema.org/"},
+            "@context": {
+                "owl": "http://www.w3.org/2002/07/owl#",
+                "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+                "schema": "https://schema.org/",
+            },
             "@id": ot.rid.rid,
             "@type": "owl:Class",
             "rdfs:label": ot.display_name,
@@ -1580,17 +1665,21 @@ async def import_object_type(request: Request, payload: dict) -> ObjectTypeRespo
     raw_props = content.get("schema:hasProperty") or []
     props = []
     for rp in raw_props:
-        props.append({
-            "rid": rp["@id"], "type_id": rp.get("ont:type_id", "string"),
-            "nullable": bool(rp.get("ont:nullable", True)),
-            "primary_key": bool(rp.get("ont:primary_key", False)),
-            "title": rp.get("schema:name", rp["@id"]),
-            "format": "string",
-        })
+        props.append(
+            {
+                "rid": rp["@id"],
+                "type_id": rp.get("ont:type_id", "string"),
+                "nullable": bool(rp.get("ont:nullable", True)),
+                "primary_key": bool(rp.get("ont:primary_key", False)),
+                "title": rp.get("schema:name", rp["@id"]),
+                "format": "string",
+            }
+        )
     if not props:
         raise HTTPException(status_code=422, detail="no properties in content")
     body = {
-        "rid": rid, "display_name": content.get("rdfs:label", rid),
+        "rid": rid,
+        "display_name": content.get("rdfs:label", rid),
         "primary_key": [p["rid"] for p in props if p["primary_key"]] or [props[0]["rid"]],
         "properties": props,
     }
@@ -1600,20 +1689,21 @@ async def import_object_type(request: Request, payload: dict) -> ObjectTypeRespo
 
     pk_rids = list(body["primary_key"])
     ot = ObjectType(
-        rid=ClassRef(rid), display_name=body["display_name"],
+        rid=ClassRef(rid),
+        display_name=body["display_name"],
         primary_key=tuple(ClassRef(r) for r in pk_rids),
         properties=tuple(
-            Property(rid=ClassRef(pp["rid"]),
-                     type_id=pp.get("type_id", "string"),
-                     nullable=bool(pp.get("nullable", True)),
-                     primary_key=pp["rid"] in pk_rids,
-                     title=pp.get("title", pp["rid"]),
-                     format=PropertyFormat.STRING)
+            Property(
+                rid=ClassRef(pp["rid"]),
+                type_id=pp.get("type_id", "string"),
+                nullable=bool(pp.get("nullable", True)),
+                primary_key=pp["rid"] in pk_rids,
+                title=pp.get("title", pp["rid"]),
+                format=PropertyFormat.STRING,
+            )
             for pp in body["properties"]
         ),
-        parent_class=(
-            ClassRef(body["parent_class"]) if body.get("parent_class") else None
-        ),
+        parent_class=(ClassRef(body["parent_class"]) if body.get("parent_class") else None),
     )
     out = await _call_scoped(request, "upsert_object_type", ot)
     return _ot_to_dto(out)
@@ -1627,8 +1717,9 @@ async def import_object_type(request: Request, payload: dict) -> ObjectTypeRespo
 async def list_axioms(request: Request, enabled_only: bool = False) -> list[dict]:
     """ONT-G18：列出本租户已注册公理。"""
     _ctx(request)
-    return await _call_scoped(request, "list_axiom_records", _ctx(request).tenant_id,
-                                  enabled_only=enabled_only)
+    return await _call_scoped(
+        request, "list_axiom_records", _ctx(request).tenant_id, enabled_only=enabled_only
+    )
 
 
 @router.post(
@@ -1644,7 +1735,10 @@ async def upsert_axiom(request: Request, payload: dict) -> dict:
         raise HTTPException(status_code=422, detail="rid must be ont.<tenant>.ax.<slug>.<v>")
     try:
         return await _call_scoped(
-            request, "upsert_axiom_record", rid, str(payload.get("kind")),
+            request,
+            "upsert_axiom_record",
+            rid,
+            str(payload.get("kind")),
             [str(o) for o in payload.get("operands") or []],
             str(payload.get("rule_ref") or "builtin"),
             tenant_id=ctx.tenant_id,
@@ -1676,7 +1770,8 @@ async def explain_reasoning(request: Request, payload: dict) -> dict:
     sub_ax = [tuple(p) for p in payload.get("subclass_axioms") or []]
     individuals = dict(payload.get("individuals") or {})
     out = run_inference(
-        subclass_axioms=sub_ax, individuals=individuals,
+        subclass_axioms=sub_ax,
+        individuals=individuals,
         same_as_pairs=[tuple(p) for p in payload.get("same_as_pairs") or []],
         transitive_axioms=list(payload.get("transitive_axioms") or []),
         property_edges=[tuple(e) for e in payload.get("property_edges") or []],
@@ -1692,26 +1787,36 @@ async def explain_reasoning(request: Request, payload: dict) -> dict:
                     if chain[-1] == sup and sub not in chain:
                         chain.append(sub)
                         changed = True
-            derivations.append({
-                "fact": f"{ind} ∈ {cls}", "rule": "subclass-closure",
-                "chain": [*list(reversed(chain)), ind],
-                "premises": [f"{chain[i]} ⊑ {chain[i+1]}"
-                             for i in range(len(chain) - 1)],
-            })
+            derivations.append(
+                {
+                    "fact": f"{ind} ∈ {cls}",
+                    "rule": "subclass-closure",
+                    "chain": [*list(reversed(chain)), ind],
+                    "premises": [f"{chain[i]} ⊑ {chain[i + 1]}" for i in range(len(chain) - 1)],
+                }
+            )
     for _rep, members in out["same_as_clusters"].items():
-        derivations.append({
-            "fact": " ≈ ".join(members), "rule": "same-as-merge",
-            "chain": members, "premises": payload.get("same_as_pairs") or [],
-        })
+        derivations.append(
+            {
+                "fact": " ≈ ".join(members),
+                "rule": "same-as-merge",
+                "chain": members,
+                "premises": payload.get("same_as_pairs") or [],
+            }
+        )
     for e in out["transitive_inferred"]:
-        derivations.append({
-            "fact": f"{e['src']} --{e['property']}--> {e['dst']}",
-            "rule": "transitive-property", "chain": [e["src"], e["dst"]],
-            "premises": [f"{e['src']} --{e['property']}--> ?",
-                         f"? --{e['property']}--> {e['dst']}"],
-        })
-    return {"derivation_count": len(derivations), "derivations": derivations,
-            "result": out}
+        derivations.append(
+            {
+                "fact": f"{e['src']} --{e['property']}--> {e['dst']}",
+                "rule": "transitive-property",
+                "chain": [e["src"], e["dst"]],
+                "premises": [
+                    f"{e['src']} --{e['property']}--> ?",
+                    f"? --{e['property']}--> {e['dst']}",
+                ],
+            }
+        )
+    return {"derivation_count": len(derivations), "derivations": derivations, "result": out}
 
 
 @router.post(
@@ -1759,8 +1864,12 @@ async def validate_model_endpoint(request: Request, payload: dict) -> dict:
         ot = _dto_to_ot(dto)
     except ValueError as e:
         # 构造器不变量（PK∈properties 等）本身即模型错误 —— 返回为验证结果
-        return {"valid": False, "errors": [str(e)], "warnings": [],
-                "rid": str(payload.get("rid", ""))}
+        return {
+            "valid": False,
+            "errors": [str(e)],
+            "warnings": [],
+            "rid": str(payload.get("rid", "")),
+        }
     return validate_model(ot)
 
 
@@ -1775,8 +1884,7 @@ async def validate_data_endpoint(request: Request, payload: dict) -> dict:
     from mate_kernel.ontology.identity.class_ref import ClassRef
     from mate_kernel.ontology.validation_ops import validate_instance
 
-    ot = await _call_scoped(
-        request, "get_object_type", ClassRef(str(payload["class_rid"])))
+    ot = await _call_scoped(request, "get_object_type", ClassRef(str(payload["class_rid"])))
     return validate_instance(ot, dict(payload.get("props") or {}))
 
 
@@ -1836,13 +1944,11 @@ async def validate_shacl_endpoint(request: Request, payload: dict) -> dict:
     individuals = payload.get("individuals")
     if individuals is None:
         try:
-            stored = await _call_scoped(
-                request, "list_individuals", ClassRef(target_class))
+            stored = await _call_scoped(request, "list_individuals", ClassRef(target_class))
         except KeyError:
             stored = []
         individuals = [
-            {"rid": i.rid, "class_rid": i.class_rid.rid,
-             "props": {k.rid: v for k, v in i.props}}
+            {"rid": i.rid, "class_rid": i.class_rid.rid, "props": {k.rid: v for k, v in i.props}}
             for i in stored
         ]
 
@@ -1854,18 +1960,24 @@ async def validate_shacl_endpoint(request: Request, payload: dict) -> dict:
         shapes = []
     extra = payload.get("property_shapes") or []
     if isinstance(extra, list) and extra:
-        ps = tuple(_ps(s) for s in extra
-                   if isinstance(s, dict) and s.get("path"))
-        shapes.append(NodeShape(target_class=target_class, property_shapes=ps,
-                                closed=bool(payload.get("closed"))))
+        ps = tuple(_ps(s) for s in extra if isinstance(s, dict) and s.get("path"))
+        shapes.append(
+            NodeShape(
+                target_class=target_class, property_shapes=ps, closed=bool(payload.get("closed"))
+            )
+        )
     elif payload.get("closed"):
         shapes.append(NodeShape(target_class=target_class, closed=True))
 
     return validate_shacl(
-        individuals, shapes,
-        subclass_axioms=[(str(a[0]), str(a[1]))
-                         for a in (payload.get("subclass_axioms") or [])
-                         if isinstance(a, (list, tuple)) and len(a) == 2] or None,
+        individuals,
+        shapes,
+        subclass_axioms=[
+            (str(a[0]), str(a[1]))
+            for a in (payload.get("subclass_axioms") or [])
+            if isinstance(a, (list, tuple)) and len(a) == 2
+        ]
+        or None,
     )
 
 
@@ -1880,11 +1992,11 @@ async def align_individuals_endpoint(request: Request, payload: dict) -> dict:
     body::
 
         {
-          "left": [ {"rid","class_rid","props"} ],
-          "right": [ ... ],
-          "explicit_pairs": [["l1","r1"], ...],   # 可选
-          "lexical_threshold": 1.0,               # 可选
-          "structural_threshold": 0.5             # 可选
+            "left": [{"rid", "class_rid", "props"}],
+            "right": [...],
+            "explicit_pairs": [["l1", "r1"], ...],  # 可选
+            "lexical_threshold": 1.0,  # 可选
+            "structural_threshold": 0.5,  # 可选
         }
 
     证据链：explicit（显式 same_as）/ lexical（label 规范化相等）/
@@ -1896,9 +2008,11 @@ async def align_individuals_endpoint(request: Request, payload: dict) -> dict:
     return align_individuals(
         list(payload.get("left") or []),
         list(payload.get("right") or []),
-        explicit_pairs=[(str(p[0]), str(p[1]))
-                        for p in (payload.get("explicit_pairs") or [])
-                        if isinstance(p, (list, tuple)) and len(p) == 2],
+        explicit_pairs=[
+            (str(p[0]), str(p[1]))
+            for p in (payload.get("explicit_pairs") or [])
+            if isinstance(p, (list, tuple)) and len(p) == 2
+        ],
         lexical_threshold=float(payload.get("lexical_threshold") or 1.0),
         structural_threshold=float(payload.get("structural_threshold") or 0.5),
     )
@@ -1930,15 +2044,13 @@ async def merge_preview_object_types(request: Request, payload: dict) -> dict:
         left = _dto_to_ot(ObjectTypeDTO(**(payload.get("left") or {})))
         right = _dto_to_ot(ObjectTypeDTO(**(payload.get("right") or {})))
     except KeyError as e:
-        raise HTTPException(
-            status_code=422, detail=f"invalid object type payload: {e}") from e
+        raise HTTPException(status_code=422, detail=f"invalid object type payload: {e}") from e
     strategy = str(payload.get("strategy") or "keep_left")
     try:
         out = merge_object_types(left, right, strategy=strategy)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
-    return {"object_type": _ot_to_dto(out["object_type"]),
-            "audit": out["audit"]}
+    return {"object_type": _ot_to_dto(out["object_type"]), "audit": out["audit"]}
 
 
 @router.post(
@@ -1947,7 +2059,9 @@ async def merge_preview_object_types(request: Request, payload: dict) -> dict:
     operation_id="ontBranchV2ObjectType",
 )
 async def branch_object_type(
-    rid: str, request: Request, payload: dict = None,
+    rid: str,
+    request: Request,
+    payload: dict = None,
 ) -> ObjectTypeResponse:
     """ONT-G8/G19：以当前定义分支出新版本 rid（body: {new_rid, note?}）。"""
     ctx = _ctx(request)
@@ -1960,7 +2074,11 @@ async def branch_object_type(
         from mate_kernel.ontology.identity.class_ref import ClassRef
 
         out = await _call_scoped(
-            request, "branch_object_type", ClassRef(rid), ClassRef(new_rid), note=note,
+            request,
+            "branch_object_type",
+            ClassRef(rid),
+            ClassRef(new_rid),
+            note=note,
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -1979,7 +2097,10 @@ async def diff_object_type(rid: str, request: Request, against: str) -> dict:
         from mate_kernel.ontology.identity.class_ref import ClassRef
 
         return await _call_scoped(
-            request, "diff_object_types", ClassRef(rid), ClassRef(against),
+            request,
+            "diff_object_types",
+            ClassRef(rid),
+            ClassRef(against),
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -1991,7 +2112,9 @@ async def diff_object_type(rid: str, request: Request, against: str) -> dict:
     operation_id="ontRollbackV2ObjectType",
 )
 async def rollback_object_type(
-    rid: str, request: Request, payload: dict = None,
+    rid: str,
+    request: Request,
+    payload: dict = None,
 ) -> ObjectTypeResponse:
     """ONT-G8/G19：把 rid 定义回滚为 from_rid（body: {from_rid}）。"""
     ctx = _ctx(request)
@@ -2003,7 +2126,10 @@ async def rollback_object_type(
         from mate_kernel.ontology.identity.class_ref import ClassRef
 
         out = await _call_scoped(
-            request, "rollback_object_type", ClassRef(rid), ClassRef(from_rid),
+            request,
+            "rollback_object_type",
+            ClassRef(rid),
+            ClassRef(from_rid),
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -2033,7 +2159,9 @@ async def get_object_type(rid: str, request: Request) -> ObjectTypeResponse:
     operation_id="ontAppendV2ObjectTypeProperty",
 )
 async def append_object_type_property(
-    rid: str, payload: PropertyDTO, request: Request,
+    rid: str,
+    payload: PropertyDTO,
+    request: Request,
 ) -> ObjectTypeResponse:
     """增量追加单个 Property 到已存在的 ObjectType。
 
@@ -2063,8 +2191,7 @@ async def append_object_type_property(
     # status/type_group/render_hints —— 旧版显式重建会丢 EXP-01/02/04 字段）
     from dataclasses import replace as _dc_replace
 
-    merged = _dc_replace(
-        existing, properties=(*existing.properties, new_prop))
+    merged = _dc_replace(existing, properties=(*existing.properties, new_prop))
     saved = await _call_scoped(request, "upsert_object_type", merged)
     return _ot_to_dto(saved)
 
@@ -2078,7 +2205,8 @@ async def append_object_type_property(
     operation_id="ontCreateV2Individual",
 )
 async def create_individual(
-    payload: IndividualCreateDTO, request: Request,
+    payload: IndividualCreateDTO,
+    request: Request,
 ) -> IndividualResponse:
     """Create an Individual instance; tenant_id 由 ctx 强制注入（不信任 payload）。"""
     ctx = _ctx(request)
@@ -2097,8 +2225,7 @@ async def create_individual(
         )
     now = datetime.now(UTC)
     props_tuple = tuple(
-        (ClassRef(p_rid), payload.props[p_rid].get("value"))
-        for p_rid in payload.props
+        (ClassRef(p_rid), payload.props[p_rid].get("value")) for p_rid in payload.props
     )
     ind = Individual(
         rid=payload.rid,
@@ -2128,7 +2255,9 @@ async def create_individual(
     operation_id="ontListV2Individuals",
 )
 async def list_individuals(
-    request: Request, class_rid: str | None = None, markings: str = "",
+    request: Request,
+    class_rid: str | None = None,
+    markings: str = "",
 ) -> list[IndividualResponse]:
     """List individuals; class_rid 过滤 + SEC-12 行策略读时强制（markings 参数）。"""
     ctx = _ctx(request)
@@ -2140,8 +2269,7 @@ async def list_individuals(
         await _call_scoped(request, "record_usage", class_rid, "read", 1)
     if markings:
         viewer = _effective_markings(request, markings)
-        items = await _call_scoped(
-            request, "enforce_read_policies", items, viewer)
+        items = await _call_scoped(request, "enforce_read_policies", items, viewer)
     return [
         IndividualResponse(
             rid=i.rid,
@@ -2165,7 +2293,8 @@ async def list_individuals(
     operation_id="ontPostV2ObjectSetEvaluate",
 )
 async def evaluate_object_set(
-    payload: ObjectSetDTO, request: Request,
+    payload: ObjectSetDTO,
+    request: Request,
 ) -> list[IndividualResponse]:
     """Evaluate an ObjectSet query plan against the kernel repo."""
     ctx = _ctx(request)
@@ -2197,7 +2326,9 @@ async def evaluate_object_set(
 # ─────────────────── 4) ActionType apply ───────────────────
 
 
-async def _apply_action(request: Request, action_rid: str, payload: ActionApplyBodyDTO) -> ActionApplyResponse:
+async def _apply_action(
+    request: Request, action_rid: str, payload: ActionApplyBodyDTO
+) -> ActionApplyResponse:
     import uuid
 
     ctx = _ctx(request)
@@ -2206,7 +2337,9 @@ async def _apply_action(request: Request, action_rid: str, payload: ActionApplyB
         raise HTTPException(status_code=403, detail="cross-tenant action denied")
     provenance = {**payload.provenance, "actor": ctx.user_id}  # type: ignore[attr-defined]
     try:
-        applied_at, side_effects = await _call_scoped(request, "apply_action",
+        applied_at, side_effects = await _call_scoped(
+            request,
+            "apply_action",
             action_rid=rid_ref,
             target_iid=payload.target_iid,
             parameters=payload.parameters,
@@ -2231,7 +2364,9 @@ async def _apply_action(request: Request, action_rid: str, payload: ActionApplyB
     operation_id="ontApplyV2ActionType",
 )
 async def apply_action_by_rid(
-    rid: str, payload: ActionApplyBodyDTO, request: Request,
+    rid: str,
+    payload: ActionApplyBodyDTO,
+    request: Request,
 ) -> ActionApplyResponse:
     """Reject direct execution that could bypass human confirmation.
 
@@ -2254,6 +2389,7 @@ async def apply_action_by_rid(
 
 class EditSetApplyBodyDTO(BaseModel):
     """ACT-05：edit-set 执行体。edits 缺省时用 ActionType.declarative_edits 模板。"""
+
     parameters: dict[str, Any] = Field(default_factory=dict)
     target_iid: str = ""
     edits: list[dict[str, Any]] = Field(default_factory=list)
@@ -2266,7 +2402,9 @@ class EditSetApplyBodyDTO(BaseModel):
     operation_id="ontProposeV2EditSet",
 )
 async def propose_edit_set(
-    rid: str, payload: EditSetApplyBodyDTO, request: Request,
+    rid: str,
+    payload: EditSetApplyBodyDTO,
+    request: Request,
 ) -> dict:
     """ACT-05：AI 路径 edit-set 提案（强制 HITL —— pending → 用户 confirm → execute）。"""
     ctx = _ctx(request)
@@ -2278,11 +2416,17 @@ async def propose_edit_set(
         raise HTTPException(status_code=404, detail=f"action type not found: {rid}") from None
     edits = payload.edits or [dict(t) for t in at.declarative_edits]
     if not edits:
-        raise HTTPException(status_code=422, detail="no declarative_edits on action and no edits in body")
+        raise HTTPException(
+            status_code=422, detail="no declarative_edits on action and no edits in body"
+        )
     try:
         prop = await _call_scoped(
-            request, "propose_edit_set", rid, payload.target_iid or None,
-            dict(payload.parameters), edits,
+            request,
+            "propose_edit_set",
+            rid,
+            payload.target_iid or None,
+            dict(payload.parameters),
+            edits,
             payload.impact_summary or f"edit-set proposal for {rid}",
         )
     except ValueError as e:
@@ -2300,7 +2444,9 @@ async def propose_edit_set(
     operation_id="ontApplyV2EditSet",
 )
 async def apply_edit_set(
-    rid: str, payload: EditSetApplyBodyDTO, request: Request,
+    rid: str,
+    payload: EditSetApplyBodyDTO,
+    request: Request,
 ) -> dict:
     """ACT-05 / D7：人工路径「预览即确认」—— 即时 proposal + 单事务执行 + 审计。
 
@@ -2316,11 +2462,18 @@ async def apply_edit_set(
         raise HTTPException(status_code=404, detail=f"action type not found: {rid}") from None
     edits = payload.edits or [dict(t) for t in at.declarative_edits]
     if not edits:
-        raise HTTPException(status_code=422, detail="no declarative_edits on action and no edits in body")
+        raise HTTPException(
+            status_code=422, detail="no declarative_edits on action and no edits in body"
+        )
     try:
         result = await _call_scoped(
-            request, "apply_edit_set_now", rid, payload.target_iid or None,
-            dict(payload.parameters), edits, actor,
+            request,
+            "apply_edit_set_now",
+            rid,
+            payload.target_iid or None,
+            dict(payload.parameters),
+            edits,
+            actor,
             payload.impact_summary,
         )
     except ValueError as e:
@@ -2421,7 +2574,9 @@ class ProposalExecuteResultDTO(BaseModel):
     operation_id="ontProposeV2Instance",
 )
 async def propose_instance(
-    class_rid: str, payload: InstanceProposeDTO, request: Request,
+    class_rid: str,
+    payload: InstanceProposeDTO,
+    request: Request,
 ) -> ProposalResponse:
     """MP-SAL-04b：AI 从文本抽取的字段 → 新建实例提议（kind=create_instance，不落库）。"""
     ctx = _ctx(request)
@@ -2429,14 +2584,19 @@ async def propose_instance(
         raise HTTPException(status_code=403, detail="cross-tenant propose denied")
     _logger.info(
         "ont.proposal.propose",
-        proposal_kind="create_instance", class_rid=class_rid,
+        proposal_kind="create_instance",
+        class_rid=class_rid,
         tenant_id=getattr(ctx, "tenant_id", ""),
         actor_id=str(getattr(ctx, "user_id", "")),
     )
     try:
         prop = await _call_scoped(
-            request, "propose_create_instance", class_rid,
-            payload.props, payload.impact_summary, payload.expected_diff or None,
+            request,
+            "propose_create_instance",
+            class_rid,
+            payload.props,
+            payload.impact_summary,
+            payload.expected_diff or None,
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -2449,7 +2609,8 @@ async def propose_instance(
     operation_id="ontProposeV2ObjectType",
 )
 async def propose_object_type(
-    payload: TypeProposeDTO, request: Request,
+    payload: TypeProposeDTO,
+    request: Request,
 ) -> ProposalResponse:
     """MP-SAL-04b：AI 辅助建模提议（kind=model_type；确认后经 execute 落库）。"""
     ctx = _ctx(request)
@@ -2457,7 +2618,10 @@ async def propose_object_type(
     if not type_def["rid"].startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant propose denied")
     prop = await _call_scoped(
-        request, "propose_model_type", type_def, payload.impact_summary,
+        request,
+        "propose_model_type",
+        type_def,
+        payload.impact_summary,
     )
     return _proposal_to_dto(prop)
 
@@ -2468,7 +2632,8 @@ async def propose_object_type(
     operation_id="ontWithdrawV2Proposal",
 )
 async def withdraw_proposal(
-    proposal_id: str, request: Request,
+    proposal_id: str,
+    request: Request,
 ) -> dict:
     """PRD-02 FR-ACT-CONFIRM-001：pending → withdrawn（作者确认前撤回；终态）。"""
     _logger.info(
@@ -2479,7 +2644,9 @@ async def withdraw_proposal(
     )
     try:
         out = await _call_scoped(
-            request, "withdraw_proposal", proposal_id,
+            request,
+            "withdraw_proposal",
+            proposal_id,
             actor_id=str(_ctx(request).user_id),
         )
     except KeyError as e:
@@ -2495,7 +2662,8 @@ async def withdraw_proposal(
     operation_id="ontRevertV2Proposal",
 )
 async def revert_proposal(
-    proposal_id: str, request: Request,
+    proposal_id: str,
+    request: Request,
 ) -> dict:
     """PRD-02 FR-ACT-CONFIRM-002..006：executed → reverted（人审撤销 + 补偿）。
 
@@ -2506,14 +2674,18 @@ async def revert_proposal(
     idempotency_key = _require_idempotency_key(request)
     _logger.info(
         "ont.proposal.revert",
-        proposal_id=proposal_id, tenant_id=getattr(ctx, "tenant_id", ""),
+        proposal_id=proposal_id,
+        tenant_id=getattr(ctx, "tenant_id", ""),
         actor_id=str(getattr(ctx, "user_id", "")),
         idempotency_key=idempotency_key,
     )
     try:
         out = await _call_scoped(
-            request, "revert_proposal", proposal_id,
-            actor_id=str(ctx.user_id), idempotency_key=idempotency_key,
+            request,
+            "revert_proposal",
+            proposal_id,
+            actor_id=str(ctx.user_id),
+            idempotency_key=idempotency_key,
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -2528,7 +2700,8 @@ async def revert_proposal(
     operation_id="ontExecuteV2Proposal",
 )
 async def execute_proposal(
-    proposal_id: str, request: Request,
+    proposal_id: str,
+    request: Request,
 ) -> ProposalExecuteResultDTO:
     """MP-SAL-04b / MP-DEDUP-01：confirmed proposal 落库执行。
 
@@ -2562,7 +2735,9 @@ async def execute_proposal(
     operation_id="ontProposeV2ActionType",
 )
 async def propose_action(
-    rid: str, payload: ProposalCreateDTO, request: Request,
+    rid: str,
+    payload: ProposalCreateDTO,
+    request: Request,
 ) -> ProposalResponse:
     """AI/用户提议（ADR-0044）：产出 pending proposal（含预期 diff），不落库。"""
     ctx = _ctx(request)
@@ -2571,9 +2746,13 @@ async def propose_action(
         raise HTTPException(status_code=403, detail="cross-tenant propose denied")
     try:
         prop = await _call_scoped(
-            request, "propose_action", rid_ref,
-            payload.parameters, payload.target_iid or None,
-            payload.impact_summary, payload.expected_diff or None,
+            request,
+            "propose_action",
+            rid_ref,
+            payload.parameters,
+            payload.target_iid or None,
+            payload.impact_summary,
+            payload.expected_diff or None,
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -2587,6 +2766,7 @@ class ObjectTypePrecheckDTO(BaseModel):
     """precheck 入参：候选 (display_name, slug, domain)。
 
     domain 仅作为 hint 元数据透传（v1 不参与过滤）。"""
+
     name: str
     slug: str
     domain: str = ""
@@ -2611,7 +2791,8 @@ class ObjectTypePrecheckResponse(BaseModel):
     operation_id="ontPrecheckV2ObjectType",
 )
 async def precheck_object_type(
-    payload: ObjectTypePrecheckDTO, request: Request,
+    payload: ObjectTypePrecheckDTO,
+    request: Request,
 ) -> ObjectTypePrecheckResponse:
     """MP-DEDUP-01：创建前相似扫描 —— 找到候选后再决定走 merge / rename。
 
@@ -2624,7 +2805,11 @@ async def precheck_object_type(
     # _call_scoped 推 threadpool 会丢失 threading.local tenant；显式传 tenant_id
     cands = await asyncio.to_thread(
         search_similar_object_types,
-        repo, tenant_id, payload.name, payload.slug, payload.top_k,
+        repo,
+        tenant_id,
+        payload.name,
+        payload.slug,
+        payload.top_k,
     )
     return ObjectTypePrecheckResponse(
         candidates=[ObjectTypeCandidateDTO(**c) for c in cands],
@@ -2636,6 +2821,7 @@ class MergeObjectTypeDTO(BaseModel):
 
     mapping 缺省 → 按 Property slug 兜底（source prop rid 第 4 段 slug
     对应到 target prop rid）。"""
+
     source_rid: str
     target_rid: str
     mapping: dict[str, str] = Field(default_factory=dict)
@@ -2656,7 +2842,8 @@ class MergeObjectTypeResponse(BaseModel):
     operation_id="ontMergeV2ObjectTypes",
 )
 async def merge_object_types(
-    payload: MergeObjectTypeDTO, request: Request,
+    payload: MergeObjectTypeDTO,
+    request: Request,
 ) -> MergeObjectTypeResponse:
     """MP-DEDUP-01：source → target 重映射 + 软删 source。
 
@@ -2676,8 +2863,11 @@ async def merge_object_types(
         raise HTTPException(status_code=403, detail="cross-tenant merge denied")
     try:
         result = await _call_scoped(
-            request, "merge_object_types",
-            payload.source_rid, payload.target_rid, payload.mapping,
+            request,
+            "merge_object_types",
+            payload.source_rid,
+            payload.target_rid,
+            payload.mapping,
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -2690,6 +2880,7 @@ class MergeProposalDTO(BaseModel):
     """AI 提议合并的入参。
 
     similarity 透传到 proposal.parameters 用于前端展示。"""
+
     source_rid: str
     target_rid: str
     similarity: float = 0.0
@@ -2703,7 +2894,8 @@ class MergeProposalDTO(BaseModel):
     operation_id="ontProposeV2ObjectTypeMerge",
 )
 async def propose_object_type_merge(
-    payload: MergeProposalDTO, request: Request,
+    payload: MergeProposalDTO,
+    request: Request,
 ) -> ProposalResponse:
     """MP-DEDUP-01：AI 提议两个 ObjectType 可能相同 → 走 proposal 状态机。
 
@@ -2717,9 +2909,13 @@ async def propose_object_type_merge(
         raise HTTPException(status_code=403, detail="cross-tenant propose denied")
     try:
         prop = await _call_scoped(
-            request, "propose_merge",
-            payload.source_rid, payload.target_rid,
-            payload.similarity, payload.impact_summary, payload.mapping,
+            request,
+            "propose_merge",
+            payload.source_rid,
+            payload.target_rid,
+            payload.similarity,
+            payload.impact_summary,
+            payload.mapping,
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -2753,7 +2949,9 @@ async def get_action_flow(rid: str, request: Request) -> ActionFlowResponse:
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return ActionFlowResponse(
-        action_rid=d["action_rid"], flow_json=d["flow_json"], config=d["config"],
+        action_rid=d["action_rid"],
+        flow_json=d["flow_json"],
+        config=d["config"],
         updated_at=str(d.get("updated_at") or ""),
     )
 
@@ -2764,18 +2962,25 @@ async def get_action_flow(rid: str, request: Request) -> ActionFlowResponse:
     operation_id="ontPutV2ActionFlow",
 )
 async def put_action_flow(
-    rid: str, payload: ActionFlowUpsertDTO, request: Request,
+    rid: str,
+    payload: ActionFlowUpsertDTO,
+    request: Request,
 ) -> ActionFlowResponse:
     """MP-SAL-05：持久化 ActionType 的流程编排定义（upsert）。"""
     ctx = _ctx(request)
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant flow denied")
     d = await _call_scoped(
-        request, "put_flow_definition", ClassRef(rid),
-        payload.flow_json, payload.config,
+        request,
+        "put_flow_definition",
+        ClassRef(rid),
+        payload.flow_json,
+        payload.config,
     )
     return ActionFlowResponse(
-        action_rid=d["action_rid"], flow_json=d["flow_json"], config=d["config"],
+        action_rid=d["action_rid"],
+        flow_json=d["flow_json"],
+        config=d["config"],
         updated_at=str(d.get("updated_at") or ""),
     )
 
@@ -2800,13 +3005,16 @@ async def get_proposal(proposal_id: str, request: Request) -> ProposalResponse:
     operation_id="ontConfirmV2Proposal",
 )
 async def confirm_proposal(
-    proposal_id: str, payload: ProposalConfirmDTO, request: Request,
+    proposal_id: str,
+    payload: ProposalConfirmDTO,
+    request: Request,
 ) -> ProposalResponse:
     """用户确认（pending → confirmed）。只能由用户侧发起——不是 LLM 工具。"""
     del payload  # identity comes exclusively from the authenticated context
     _logger.info(
         "ont.proposal.confirm",
-        proposal_id=proposal_id, tenant_id=getattr(_ctx(request), "tenant_id", ""),
+        proposal_id=proposal_id,
+        tenant_id=getattr(_ctx(request), "tenant_id", ""),
         actor_id=str(getattr(_ctx(request), "user_id", "")),
     )
     ctx = _ctx(request)
@@ -2832,14 +3040,17 @@ async def confirm_proposal(
     operation_id="ontRejectV2Proposal",
 )
 async def reject_proposal(
-    proposal_id: str, payload: ProposalConfirmDTO, request: Request,
+    proposal_id: str,
+    payload: ProposalConfirmDTO,
+    request: Request,
 ) -> ProposalResponse:
     del payload  # identity comes exclusively from the authenticated context
     ctx = _ctx(request)
     idempotency_key = _require_idempotency_key(request)
     _logger.info(
         "ont.proposal.reject",
-        proposal_id=proposal_id, tenant_id=getattr(ctx, "tenant_id", ""),
+        proposal_id=proposal_id,
+        tenant_id=getattr(ctx, "tenant_id", ""),
         actor_id=str(getattr(ctx, "user_id", "")),
     )
     try:
@@ -2863,7 +3074,8 @@ async def reject_proposal(
     operation_id="ontApplyV2ActionTypeLegacy",
 )
 async def apply_action_legacy(
-    payload: ActionApplyDTO, request: Request,
+    payload: ActionApplyDTO,
+    request: Request,
 ) -> ActionApplyResponse:
     """Reject the colon-style direct apply alias with the same migration path."""
     ctx = _ctx(request)
@@ -2938,7 +3150,9 @@ def _slug_from_rid(rid: str) -> str:
 
 
 async def _render_model_type_preview(
-    request: Request, tenant_id: str, parameters: dict[str, Any],
+    request: Request,
+    tenant_id: str,
+    parameters: dict[str, Any],
 ) -> dict[str, Any]:
     """compute kind=model_type preview payload（不含 proposal metadata）。"""
     type_def = parameters.get("type_def") or {}
@@ -2959,15 +3173,17 @@ async def _render_model_type_preview(
         if not isinstance(p, dict):
             continue
         p_rid = str(p.get("rid") or "")
-        properties.append({
-            "rid": p_rid,
-            "name": _slug_from_rid(p_rid),
-            "type_id": str(p.get("type_id") or "string"),
-            "nullable": bool(p.get("nullable", False)),
-            "primary_key": bool(p.get("primary_key", False)),
-            "title": str(p.get("title") or ""),
-            "format": str(p.get("format") or "string"),
-        })
+        properties.append(
+            {
+                "rid": p_rid,
+                "name": _slug_from_rid(p_rid),
+                "type_id": str(p.get("type_id") or "string"),
+                "nullable": bool(p.get("nullable", False)),
+                "primary_key": bool(p.get("primary_key", False)),
+                "title": str(p.get("title") or ""),
+                "format": str(p.get("format") or "string"),
+            }
+        )
         if p.get("primary_key"):
             pk_in_props.append(p_rid)
     pk_rids = [r for r in pk if isinstance(r, str)] if isinstance(pk, list) else []
@@ -2978,7 +3194,11 @@ async def _render_model_type_preview(
     backward: list[str] = []
     try:
         all_ots = await _call_scoped(
-            request, "list_object_types", 10000, 0, tenant_id,
+            request,
+            "list_object_types",
+            10000,
+            0,
+            tenant_id,
         )
         for ot in all_ots:
             other_slug = _slug_from_rid(ot.rid.rid)
@@ -3003,7 +3223,9 @@ async def _render_model_type_preview(
 
 
 async def _render_create_instance_preview(
-    request: Request, tenant_id: str, parameters: dict[str, Any],
+    request: Request,
+    tenant_id: str,
+    parameters: dict[str, Any],
     fallback_class_rid: str = "",
 ) -> dict[str, Any]:
     """compute kind=create_instance preview payload。
@@ -3034,10 +3256,13 @@ async def _render_create_instance_preview(
     try:
         if class_rid:
             ot = await _call_scoped(
-                request, "get_object_type", ClassRef(class_rid),
+                request,
+                "get_object_type",
+                ClassRef(class_rid),
             )
             required_props = [
-                getattr(p.rid, "rid", "") for p in getattr(ot, "properties", ())
+                getattr(p.rid, "rid", "")
+                for p in getattr(ot, "properties", ())
                 if getattr(p, "primary_key", False) or not getattr(p, "nullable", True)
             ]
             missing = [r for r in required_props if r and r not in field_values]
@@ -3065,7 +3290,9 @@ async def _render_create_instance_preview(
 
 
 async def _render_merge_suggestion_preview(
-    request: Request, tenant_id: str, parameters: dict[str, Any],
+    request: Request,
+    tenant_id: str,
+    parameters: dict[str, Any],
 ) -> dict[str, Any]:
     """compute kind=merge_suggestion preview payload。"""
     src = str(parameters.get("source_rid") or "")
@@ -3078,10 +3305,14 @@ async def _render_merge_suggestion_preview(
     overlap: dict[str, Any] = {"shared_props": [], "source_only": [], "target_only": []}
     try:
         src_ot = await _call_scoped(
-            request, "get_object_type", ClassRef(src),
+            request,
+            "get_object_type",
+            ClassRef(src),
         )
         tgt_ot = await _call_scoped(
-            request, "get_object_type", ClassRef(tgt),
+            request,
+            "get_object_type",
+            ClassRef(tgt),
         )
         src_names = {getattr(p.rid, "rid", ""): getattr(p, "title", "") for p in src_ot.properties}
         tgt_names = {getattr(p.rid, "rid", ""): getattr(p, "title", "") for p in tgt_ot.properties}
@@ -3092,17 +3323,28 @@ async def _render_merge_suggestion_preview(
             for t_rid, _t_title in tgt_names.items():
                 t_slug = _slug_from_rid(t_rid).split("-")[-1]
                 if p_slug and p_slug == t_slug:
-                    overlap["shared_props"].append({
-                        "source": p_rid, "target": t_rid,
-                        "auto_mapped": p_rid not in mapping,
-                    })
+                    overlap["shared_props"].append(
+                        {
+                            "source": p_rid,
+                            "target": t_rid,
+                            "auto_mapped": p_rid not in mapping,
+                        }
+                    )
                     break
     except KeyError as e:
-        overlap = {"shared_props": [], "source_only": [], "target_only": [],
-                   "error": f"class not found: {e}"}
+        overlap = {
+            "shared_props": [],
+            "source_only": [],
+            "target_only": [],
+            "error": f"class not found: {e}",
+        }
     except Exception as e:
-        overlap = {"shared_props": [], "source_only": [], "target_only": [],
-                   "error": f"{type(e).__name__}: {e}"}
+        overlap = {
+            "shared_props": [],
+            "source_only": [],
+            "target_only": [],
+            "error": f"{type(e).__name__}: {e}",
+        }
 
     return {
         "merge_source_rid": src,
@@ -3116,7 +3358,7 @@ def _render_action_preview(parameters: dict[str, Any]) -> dict[str, Any]:
     """kind=action（apply 路径）—— 不在 preview 内执行，仅透传参数。"""
     return {
         "note": "action-kind proposals execute via /action-types/{rid}/apply, not /execute; "
-                "preview only shows intended parameters."
+        "preview only shows intended parameters."
     }
 
 
@@ -3126,7 +3368,8 @@ def _render_action_preview(parameters: dict[str, Any]) -> dict[str, Any]:
     operation_id="ontPreviewV2Proposal",
 )
 async def get_proposal_preview(
-    proposal_id: str, request: Request,
+    proposal_id: str,
+    request: Request,
 ) -> ProposalPreviewResponse:
     """MP-SAL-04c：pending proposal 渲染（前端 staging 卡片用）。
 
@@ -3145,9 +3388,7 @@ async def get_proposal_preview(
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 
-    status_value = (
-        prop.status.value if hasattr(prop.status, "value") else str(prop.status)
-    )
+    status_value = prop.status.value if hasattr(prop.status, "value") else str(prop.status)
     if status_value in _PREVIEW_LOCK_STATES:
         raise HTTPException(
             status_code=409,
@@ -3176,32 +3417,42 @@ async def get_proposal_preview(
         action_type = "create"
         try:
             extra = await _render_create_instance_preview(
-                request, tenant_id, parameters,
+                request,
+                tenant_id,
+                parameters,
                 fallback_class_rid=target_rid,
             )
         except Exception as e:
-            extra = {"class_rid": target_rid,
-                     "validation_status": "validation_error",
-                     "field_values": {},
-                     "error": f"{type(e).__name__}: {e}"}
+            extra = {
+                "class_rid": target_rid,
+                "validation_status": "validation_error",
+                "field_values": {},
+                "error": f"{type(e).__name__}: {e}",
+            }
     elif kind == "merge_suggestion":
         action_type = "execute"
         try:
             extra = await _render_merge_suggestion_preview(request, tenant_id, parameters)
         except Exception as e:
-            extra = {"merge_source_rid": parameters.get("source_rid", ""),
-                     "merge_target_rid": parameters.get("target_rid", ""),
-                     "merge_mapping": {},
-                     "merge_property_overlap": {},
-                     "error": f"{type(e).__name__}: {e}"}
+            extra = {
+                "merge_source_rid": parameters.get("source_rid", ""),
+                "merge_target_rid": parameters.get("target_rid", ""),
+                "merge_mapping": {},
+                "merge_property_overlap": {},
+                "error": f"{type(e).__name__}: {e}",
+            }
     else:  # action
         action_type = "apply"
         extra = _render_action_preview(parameters)
 
     try:
         impact_summary = await _compute_impact_summary(
-            kind=kind, request=request, tenant_id=tenant_id,
-            parameters=parameters, target_rid=target_rid, extra=extra,
+            kind=kind,
+            request=request,
+            tenant_id=tenant_id,
+            parameters=parameters,
+            target_rid=target_rid,
+            extra=extra,
         )
     except Exception as e:
         impact_summary = {"error": f"{type(e).__name__}: {e}"}
@@ -3258,15 +3509,17 @@ async def _compute_impact_summary(
         properties = extra.get("properties", []) or []
         primary_key = extra.get("primary_key", []) or []
         backward = extra.get("backward_link_candidates", []) or []
-        summary.update({
-            "new_object_type_rid": rid,
-            "new_property_count": len(properties),
-            "primary_key": primary_key,
-            "interfaces": extra.get("interfaces", []) or [],
-            "backward_link_candidates": backward,
-            "affected_individuals_estimate": 0,
-            "affected_link_instances_estimate": 0,
-        })
+        summary.update(
+            {
+                "new_object_type_rid": rid,
+                "new_property_count": len(properties),
+                "primary_key": primary_key,
+                "interfaces": extra.get("interfaces", []) or [],
+                "backward_link_candidates": backward,
+                "affected_individuals_estimate": 0,
+                "affected_link_instances_estimate": 0,
+            }
+        )
         if backward:
             summary["warnings"].append(
                 f"{len(backward)} properties from other ObjectTypes seem to reference "
@@ -3285,19 +3538,23 @@ async def _compute_impact_summary(
         try:
             if class_rid:
                 rows = await _call_scoped(
-                    request, "list_individuals", ClassRef(class_rid),
+                    request,
+                    "list_individuals",
+                    ClassRef(class_rid),
                 )
                 existing_count = len(rows)
         except Exception:
             existing_count = 0
-        summary.update({
-            "class_rid": class_rid,
-            "field_count": len(field_values),
-            "validation_status": validation,
-            "affected_individuals_estimate": 1,
-            "existing_individuals_in_class": existing_count,
-            "cross_schema_references": [],
-        })
+        summary.update(
+            {
+                "class_rid": class_rid,
+                "field_count": len(field_values),
+                "validation_status": validation,
+                "affected_individuals_estimate": 1,
+                "existing_individuals_in_class": existing_count,
+                "cross_schema_references": [],
+            }
+        )
         if validation in {"missing_required", "empty"}:
             summary["warnings"].append(
                 f"validation status={validation}; user will need to refill fields before confirm."
@@ -3311,7 +3568,9 @@ async def _compute_impact_summary(
         ind_count, li_count = 0, 0
         try:
             inds = await _call_scoped(
-                request, "list_individuals", ClassRef(src),
+                request,
+                "list_individuals",
+                ClassRef(src),
             )
             lis = await _call_scoped(request, "list_link_instances")
             ind_count = len(inds)
@@ -3322,30 +3581,34 @@ async def _compute_impact_summary(
             similarity = float(parameters.get("similarity") or 0.0)
         except (TypeError, ValueError):
             similarity = 0.0
-        summary.update({
-            "source_rid": src,
-            "target_rid": tgt,
-            "similarity": similarity,
-            "mapping_count": len(mapping),
-            "shared_property_count": len(overlap.get("shared_props", []) or []),
-            "affected_individuals": ind_count,
-            "affected_links": li_count,
-            "cross_schema_references": [
-                {"source_property_rid": str(p.get("source"))}
-                for p in (overlap.get("shared_props", []) or [])
-            ],
-        })
+        summary.update(
+            {
+                "source_rid": src,
+                "target_rid": tgt,
+                "similarity": similarity,
+                "mapping_count": len(mapping),
+                "shared_property_count": len(overlap.get("shared_props", []) or []),
+                "affected_individuals": ind_count,
+                "affected_links": li_count,
+                "cross_schema_references": [
+                    {"source_property_rid": str(p.get("source"))}
+                    for p in (overlap.get("shared_props", []) or [])
+                ],
+            }
+        )
         if similarity < 0.7:
             summary["warnings"].append(
                 f"similarity={similarity:.2f} below safe-merge floor (0.7); user must confirm explicitly."
             )
 
     else:  # action
-        summary.update({
-            "target_action_rid": target_rid,
-            "parameters_keys": list(parameters.keys()),
-            "affected_individuals_estimate": 1,
-        })
+        summary.update(
+            {
+                "target_action_rid": target_rid,
+                "parameters_keys": list(parameters.keys()),
+                "affected_individuals_estimate": 1,
+            }
+        )
 
     return summary
 
@@ -3359,7 +3622,8 @@ async def _compute_impact_summary(
     operation_id="ontCreateV2ActionType",
 )
 async def upsert_action_type(
-    payload: ActionTypeDTO, request: Request,
+    payload: ActionTypeDTO,
+    request: Request,
 ) -> ActionTypeDTO:
     """Register an ActionType (write operations route through it)."""
     ctx = _ctx(request)
@@ -3407,7 +3671,8 @@ async def get_action_type(rid: str, request: Request) -> ActionTypeDTO:
     operation_id="ontCreateV2LinkType",
 )
 async def upsert_link_type(
-    payload: LinkTypeDTO, request: Request,
+    payload: LinkTypeDTO,
+    request: Request,
 ) -> LinkTypeDTO:
     ctx = _ctx(request)
     lt = _dto_to_link_type(payload)
@@ -3453,7 +3718,8 @@ async def get_link_type(rid: str, request: Request) -> LinkTypeDTO:
     operation_id="ontCreateV2Interface",
 )
 async def upsert_interface(
-    payload: InterfaceDTO, request: Request,
+    payload: InterfaceDTO,
+    request: Request,
 ) -> InterfaceDTO:
     ctx = _ctx(request)
     i = _dto_to_interface(payload)
@@ -3518,7 +3784,8 @@ async def get_individual(rid: str, request: Request) -> IndividualResponse:
     operation_id="ontCreateV2Axiom",
 )
 async def upsert_axiom_dto(
-    payload: AxiomDTO, request: Request,
+    payload: AxiomDTO,
+    request: Request,
 ) -> AxiomDTO:
     ctx = _ctx(request)
     ax = _dto_to_axiom(payload)
@@ -3550,7 +3817,8 @@ async def list_axioms_dto(
     operation_id="ontCreateV2Function",
 )
 async def upsert_function(
-    payload: FunctionDTO, request: Request,
+    payload: FunctionDTO,
+    request: Request,
 ) -> FunctionDTO:
     ctx = _ctx(request)
     f = _dto_to_function(payload)
@@ -3582,7 +3850,8 @@ async def list_functions(
     operation_id="ontEvaluateV2ObjectSet",
 )
 async def query_object_set(
-    payload: ObjectSetDTO, request: Request,
+    payload: ObjectSetDTO,
+    request: Request,
 ) -> ObjectSetResult:
     """Evaluate an ObjectSet query plan — contract path returning {results, count}."""
     ctx = _ctx(request)
@@ -3633,6 +3902,7 @@ class QuerySortKeyDTO(BaseModel):
 
 class NearestSpecDTO(BaseModel):
     """G13：nearestNeighbors 查询算子（先 KNN 后 filters）。"""
+
     text: str
     k: int = 10
     property_rid: str | None = None
@@ -3684,29 +3954,26 @@ def _dto_to_ir_query(d: ObjectQueryDTO) -> ObjectSetQuery:
         agg = Aggregation(
             group_by=tuple(d.aggregation.group_by),
             metrics=tuple(
-                MetricSpec(fn=m.fn, field=m.field, alias=m.alias)
-                for m in d.aggregation.metrics
+                MetricSpec(fn=m.fn, field=m.field, alias=m.alias) for m in d.aggregation.metrics
             ),
         )
     try:
         return ObjectSetQuery(
             source=d.source,
             filters=tuple(
-                Condition(field=c.field, op=QueryOp(c.op), value=c.value)
-                for c in d.filters
+                Condition(field=c.field, op=QueryOp(c.op), value=c.value) for c in d.filters
             ),
             aggregation=agg,
             traversal=tuple(
-                TraversalStep(link_type=t.link_type, direction=t.direction)
-                for t in d.traversal
+                TraversalStep(link_type=t.link_type, direction=t.direction) for t in d.traversal
             ),
             sort=tuple(SortKey(field=k.field, desc=k.desc) for k in d.sort),
             paging_offset=d.paging_offset,
             paging_limit=d.paging_limit,
             nearest=(
-                NearestSpec(text=d.nearest.text, k=d.nearest.k,
-                            property_rid=d.nearest.property_rid)
-                if d.nearest is not None else None
+                NearestSpec(text=d.nearest.text, k=d.nearest.k, property_rid=d.nearest.property_rid)
+                if d.nearest is not None
+                else None
             ),
         )
     except ValueError as e:
@@ -3719,7 +3986,9 @@ def _dto_to_ir_query(d: ObjectQueryDTO) -> ObjectSetQuery:
     operation_id="ontExecuteV2ObjectQuery",
 )
 async def execute_object_query(
-    payload: ObjectQueryDTO, request: Request, markings: str = "",
+    payload: ObjectQueryDTO,
+    request: Request,
+    markings: str = "",
 ) -> ObjectQueryResultDTO:
     """Structured IR query (ADR-0043) + SEC-12 enforcement (markings param)."""
     ctx = _ctx(request)
@@ -3731,8 +4000,9 @@ async def execute_object_query(
         viewer = _effective_markings(request, markings)
         rows = list(result.rows)
         rows = await _call_scoped(request, "mask_rows", rows, viewer)
-        result = type(result)(kind=result.kind, rows=tuple(rows),
-                              result_schema=result.result_schema)
+        result = type(result)(
+            kind=result.kind, rows=tuple(rows), result_schema=result.result_schema
+        )
     return ObjectQueryResultDTO(
         kind=result.kind,
         rows=[dict(r) for r in result.rows],
@@ -3756,17 +4026,24 @@ async def inspect_class(class_rid: str, request: Request) -> ClassInspectDTO:
     links: list[InspectLinkDTO] = []
     for lt in link_types:
         if lt.src.rid == class_rid:
-            links.append(InspectLinkDTO(
-                link_type=lt.rid.rid, direction="out", peer_class=lt.dst.rid,
-            ))
+            links.append(
+                InspectLinkDTO(
+                    link_type=lt.rid.rid,
+                    direction="out",
+                    peer_class=lt.dst.rid,
+                )
+            )
         if lt.dst.rid == class_rid:
-            links.append(InspectLinkDTO(
-                link_type=lt.rid.rid, direction="in", peer_class=lt.src.rid,
-            ))
+            links.append(
+                InspectLinkDTO(
+                    link_type=lt.rid.rid,
+                    direction="in",
+                    peer_class=lt.src.rid,
+                )
+            )
     action_types = await _call_scoped(request, "list_action_types")
     actions = [
-        at.rid.rid for at in action_types
-        if class_rid in [str(r) for r in getattr(at, "on", ())]
+        at.rid.rid for at in action_types if class_rid in [str(r) for r in getattr(at, "on", ())]
     ]
     return ClassInspectDTO(
         rid=ot.rid.rid,
@@ -3784,38 +4061,47 @@ async def inspect_class(class_rid: str, request: Request) -> ClassInspectDTO:
     operation_id="ontListV2AgentTools",
 )
 async def list_agent_tools(
-    request: Request, markings: str = "",
+    request: Request,
+    markings: str = "",
 ) -> list[AgentToolDTO]:
     """Virtual registry: tools computed on demand from ont_object_types (zero push sync)."""
     ctx = _ctx(request)
     caller_markings = tuple(m.strip() for m in markings.split(",") if m.strip())
 
     object_types = await _call_scoped(
-        request, "list_object_types", 10000, 0,
+        request,
+        "list_object_types",
+        10000,
+        0,
         str(ctx.tenant_id),  # type: ignore[attr-defined]  # 显式租户（thread-local 不可见）
     )
     links = await _call_scoped(request, "list_link_instances")
     action_types = await _call_scoped(request, "list_action_types")
-    schemas = agent_tool_schemas(
-        object_types, links, caller_markings, action_types=action_types)
+    schemas = agent_tool_schemas(object_types, links, caller_markings, action_types=action_types)
     tools: list[AgentToolDTO] = []
     for s in schemas:
         name = s["function"]["name"]
         # AI-11：读工具（query_*）+ 语义检索 + 写提案工具（propose_action_*）
-        if not (name.startswith("query_") or name == "search_objects"
-                or name.startswith("propose_action_")):
+        if not (
+            name.startswith("query_")
+            or name == "search_objects"
+            or name.startswith("propose_action_")
+        ):
             continue
-        tools.append(AgentToolDTO(
-            name=name,
-            description=s["function"].get("description", ""),
-            class_rid=_class_rid_of_tool(object_types, name),
-            input_schema=s["function"]["parameters"],
-        ))
+        tools.append(
+            AgentToolDTO(
+                name=name,
+                description=s["function"].get("description", ""),
+                class_rid=_class_rid_of_tool(object_types, name),
+                input_schema=s["function"]["parameters"],
+            )
+        )
     return tools
 
 
 def _class_rid_of_tool(
-    object_types: list[ObjectType], tool_name: str,
+    object_types: list[ObjectType],
+    tool_name: str,
 ) -> str | None:
     slug = tool_name.removeprefix("query_")
     for ot in object_types:
@@ -3840,7 +4126,9 @@ class ObjectSearchResultDTO(BaseModel):
     operation_id="ontSearchV2Objects",
 )
 async def search_objects(
-    payload: ObjectSearchDTO, request: Request, markings: str = "",
+    payload: ObjectSearchDTO,
+    request: Request,
+    markings: str = "",
 ) -> ObjectSearchResultDTO:
     """MP-SAL-02: 对象语义检索（OAG）→ 对象卡片（G6 marking 过滤 + G7 scope 收窄）。"""
     ctx = _ctx(request)
@@ -3850,7 +4138,11 @@ async def search_objects(
         raise HTTPException(status_code=403, detail="cross-tenant search denied")
     viewer = _effective_markings(request, markings) if markings else None
     cards = await _call_scoped(
-        request, "search_objects", payload.text, payload.class_rid, payload.top_k,
+        request,
+        "search_objects",
+        payload.text,
+        payload.class_rid,
+        payload.top_k,
         str(ctx.tenant_id),  # type: ignore[attr-defined]  # to_thread 下 thread-local 不可见，显式传租户
         viewer,
     )
@@ -3863,7 +4155,9 @@ async def search_objects(
     operation_id="ontHybridSearchV2Objects",
 )
 async def hybrid_search_objects(
-    payload: ObjectSearchDTO, request: Request, markings: str = "",
+    payload: ObjectSearchDTO,
+    request: Request,
+    markings: str = "",
 ) -> ObjectSearchResultDTO:
     """AI-09：混合检索（G6 marking 过滤 + G7 scope 收窄）。"""
     ctx = _ctx(request)
@@ -3873,8 +4167,12 @@ async def hybrid_search_objects(
         raise HTTPException(status_code=403, detail="cross-tenant search denied")
     viewer = _effective_markings(request, markings) if markings else None
     cards = await _call_scoped(
-        request, "search_objects_hybrid", payload.text, payload.class_rid,
-        payload.top_k, str(ctx.tenant_id),  # type: ignore[attr-defined]
+        request,
+        "search_objects_hybrid",
+        payload.text,
+        payload.class_rid,
+        payload.top_k,
+        str(ctx.tenant_id),  # type: ignore[attr-defined]
         viewer_markings=viewer,
     )
     return ObjectSearchResultDTO(cards=cards)
@@ -3888,7 +4186,9 @@ async def reindex_object_search(request: Request) -> dict[str, int]:
     """MP-SAL-02: 存量 Individual 补齐 embedding（租户内）。"""
     ctx = _ctx(request)
     count = await _call_scoped(
-        request, "reindex_object_embeddings", str(ctx.tenant_id),  # type: ignore[attr-defined]
+        request,
+        "reindex_object_embeddings",
+        str(ctx.tenant_id),  # type: ignore[attr-defined]
     )
     return {"indexed": count}
 
@@ -3902,7 +4202,8 @@ async def reindex_object_search(request: Request) -> dict[str, int]:
     operation_id="ontCreateV2LinkInstance",
 )
 async def create_link_instance(
-    payload: LinkInstanceDTO, request: Request,
+    payload: LinkInstanceDTO,
+    request: Request,
 ) -> LinkInstanceResponse:
     ctx = _ctx(request)
     tenant_id = ctx.tenant_id  # type: ignore[attr-defined]
@@ -3919,8 +4220,7 @@ async def create_link_instance(
         )
     now = datetime.now(UTC)
     props_tuple = tuple(
-        (ClassRef(p_rid), payload.props[p_rid].get("value"))
-        for p_rid in payload.props
+        (ClassRef(p_rid), payload.props[p_rid].get("value")) for p_rid in payload.props
     )
     li = LinkInstance(
         rid=payload.rid,
@@ -3971,12 +4271,16 @@ async def list_versions(class_rid: str, request: Request) -> list[VersionDTO]:
     operation_id="ontCreateV2Version",
 )
 async def snapshot_version(
-    class_rid: str, payload: VersionCreateDTO, request: Request,
+    class_rid: str,
+    payload: VersionCreateDTO,
+    request: Request,
 ) -> VersionDTO:
     ctx = _ctx(request)
     if not class_rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant access denied")
-    v = await _call_scoped(request, "snapshot_version",
+    v = await _call_scoped(
+        request,
+        "snapshot_version",
         ClassRef(payload.class_ref),
         payload.author,
         payload.parent_rid,

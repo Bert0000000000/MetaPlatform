@@ -65,9 +65,7 @@ class TestSecurityAgent:
 
     def test_cross_tenant_takes_precedence(self) -> None:
         # 跨租户 + marking 都缺失 → tenant 规则先生效
-        d = self._a().decide(
-            _req(tenant="acme", target="evil", markings=(), required=("x",))
-        )
+        d = self._a().decide(_req(tenant="acme", target="evil", markings=(), required=("x",)))
         assert d.rule_id == "R-TENANT-001"
 
     def test_decision_records_audit(self) -> None:
@@ -88,7 +86,9 @@ class TestCheckActionApply:
 
     def test_check_blocks_cross_tenant(self) -> None:
         a = SecurityAgent()
-        d = check_action_apply(a, _ctx(tenant="acme"), target_tenant="evil", target_rid="ont.acme.act.x")
+        d = check_action_apply(
+            a, _ctx(tenant="acme"), target_tenant="evil", target_rid="ont.acme.act.x"
+        )
         assert d.decision == Decision.DENY
 
     def test_check_with_markings(self) -> None:

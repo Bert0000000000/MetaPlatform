@@ -1,4 +1,5 @@
 """健康检查聚合 (ST-5.2.9)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -89,10 +90,7 @@ async def aggregate_health(
     timeout: float = 2.0,
 ) -> HealthReport:
     targets = DEFAULT_TARGETS if targets is None else targets
-    tasks = [
-        check_endpoint(name, url, timeout)
-        for _kind, name, url in targets
-    ]
+    tasks = [check_endpoint(name, url, timeout) for _kind, name, url in targets]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     report = HealthReport()

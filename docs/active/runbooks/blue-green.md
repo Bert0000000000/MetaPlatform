@@ -40,7 +40,7 @@ bash scripts/blue-green/04-dual-tag.sh tech-msg 20261010-1200
 bash scripts/blue-green/05-weight-switch.sh tech-msg 10
 
 # 监控 24h
-# ... 
+# ...
 
 # 50% 切流
 bash scripts/blue-green/05-weight-switch.sh tech-msg 50
@@ -63,12 +63,12 @@ bash scripts/blue-green/06-auto-rollback.sh tech-msg previous latest 60 1
 
 ## 关键检查点
 
-| 阶段 | 检查项 | 失败回退 |
-|---|---|---|
-| 10% 切流 | 24h 内错误率 < 0.1% | 切回 0% |
-| 50% 切流 | 24h 内错误率 < 0.1% | 切回 0% |
-| 100% 切流 | 7 天 0 P0/P1 | 切回 previous |
-| 7 天后 | 无重大问题 | 标 latest = v_n |
+| 阶段      | 检查项              | 失败回退        |
+| --------- | ------------------- | --------------- |
+| 10% 切流  | 24h 内错误率 < 0.1% | 切回 0%         |
+| 50% 切流  | 24h 内错误率 < 0.1% | 切回 0%         |
+| 100% 切流 | 7 天 0 P0/P1        | 切回 previous   |
+| 7 天后    | 无重大问题          | 标 latest = v_n |
 
 ## 应急操作
 
@@ -84,5 +84,5 @@ docker push ghcr.io/mate/tech-msg:latest
 ## 风险
 
 - 🔴 R1: 单模块迁移失败无 Java 兜底 → 充分预演 + 7 天回退窗口
-- 🔴 R2: 数据迁移 v_{n-1} 写入丢失 → 双向同步 3 天后再切
+- 🔴 R2: 数据迁移 v\_{n-1} 写入丢失 → 双向同步 3 天后再切
 - 🟡 R3: 影子流量敏感数据泄露 → 脱敏后比对、不落库

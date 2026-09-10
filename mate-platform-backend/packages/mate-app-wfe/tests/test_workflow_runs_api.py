@@ -1,4 +1,5 @@
 """System-facing workflow run API tests for immutable published Plans."""
+
 from __future__ import annotations
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
@@ -43,7 +44,9 @@ def _body() -> dict[str, object]:
 
 
 def test_start_workflow_returns_202_and_queryable_run(
-    client, auth_headers_acme, outbox: InMemoryOutboxWriter,
+    client,
+    auth_headers_acme,
+    outbox: InMemoryOutboxWriter,
 ) -> None:
     _prepare_published_definition(client, auth_headers_acme)
     response = client.post(
@@ -81,7 +84,9 @@ def test_start_workflow_is_idempotent_for_same_tenant(client, auth_headers_acme)
 
 
 def test_workflow_run_is_not_visible_to_another_tenant(
-    client, auth_headers_acme, auth_headers_globex,
+    client,
+    auth_headers_acme,
+    auth_headers_globex,
 ) -> None:
     _prepare_published_definition(client, auth_headers_acme)
     response = client.post(
@@ -98,7 +103,9 @@ def test_workflow_run_is_not_visible_to_another_tenant(
 
 def test_start_workflow_requires_idempotency_key(client, auth_headers_acme) -> None:
     _prepare_published_definition(client, auth_headers_acme)
-    response = client.post("/api/v1/workflows/order-review/runs", json=_body(), headers=auth_headers_acme)
+    response = client.post(
+        "/api/v1/workflows/order-review/runs", json=_body(), headers=auth_headers_acme
+    )
     assert response.status_code == 400, response.text
 
 

@@ -1,4 +1,5 @@
 """Client stubs must fail closed when used by production code."""
+
 from __future__ import annotations
 
 import pytest

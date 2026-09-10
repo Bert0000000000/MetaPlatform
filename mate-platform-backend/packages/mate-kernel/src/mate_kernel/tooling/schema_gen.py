@@ -197,9 +197,12 @@ def action_propose_tool_schema(at: Any) -> dict[str, Any]:
     required: list[str] = []
     for p in at.parameters:
         slug = slug_of_property_rid(p.rid.rid)
-        json_type = {"string": "string", "integer": "integer",
-                     "double": "number", "boolean": "boolean"}.get(
-            getattr(p.format, "value", str(p.format)), "string")
+        json_type = {
+            "string": "string",
+            "integer": "integer",
+            "double": "number",
+            "boolean": "boolean",
+        }.get(getattr(p.format, "value", str(p.format)), "string")
         params[slug] = {"type": json_type, "description": p.description or p.title}
         if not p.nullable:
             required.append(slug)
@@ -219,7 +222,8 @@ def action_propose_tool_schema(at: Any) -> dict[str, Any]:
                 + (f" {at.description}" if at.description else "")
             ),
             "parameters": {
-                "type": "object", "properties": params,
+                "type": "object",
+                "properties": params,
                 **({"required": required} if required else {}),
             },
         },

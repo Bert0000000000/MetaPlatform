@@ -13,21 +13,21 @@ uv run --package mate-tech-ont python -m mate_tech_ont.main
 
 ## 端点
 
-| Method | Path | 说明 |
-|---|---|---|
-| GET | /healthz | 健康检查 |
-| POST | /api/v1/ont/ontologies | 创建本体 |
-| GET | /api/v1/ont/ontologies/{id} | 读取本体 |
-| POST | /api/v1/ont/classes | 创建类 |
-| GET | /api/v1/ont/classes/{id} | 读取类 |
-| POST | /api/v1/ont/instances | 创建实例 |
-| GET | /api/v1/ont/instances/{id} | 读取实例 |
-| GET | /api/v1/ont/instances?class_id= | 按类过滤 |
-| DELETE | /api/v1/ont/instances/{id} | 删除实例（级联关系） |
-| POST | /api/v1/ont/instances/relations | 创建关系 |
-| GET | /api/v1/ont/instances/relations | 列出关系 |
-| POST | /api/v1/ont/sparql | SPARQL → Cypher → 执行 |
-| POST | /api/v1/ont/explain | SPARQL EXPLAIN |
+| Method | Path                            | 说明                   |
+| ------ | ------------------------------- | ---------------------- |
+| GET    | /healthz                        | 健康检查               |
+| POST   | /api/v1/ont/ontologies          | 创建本体               |
+| GET    | /api/v1/ont/ontologies/{id}     | 读取本体               |
+| POST   | /api/v1/ont/classes             | 创建类                 |
+| GET    | /api/v1/ont/classes/{id}        | 读取类                 |
+| POST   | /api/v1/ont/instances           | 创建实例               |
+| GET    | /api/v1/ont/instances/{id}      | 读取实例               |
+| GET    | /api/v1/ont/instances?class_id= | 按类过滤               |
+| DELETE | /api/v1/ont/instances/{id}      | 删除实例（级联关系）   |
+| POST   | /api/v1/ont/instances/relations | 创建关系               |
+| GET    | /api/v1/ont/instances/relations | 列出关系               |
+| POST   | /api/v1/ont/sparql              | SPARQL → Cypher → 执行 |
+| POST   | /api/v1/ont/explain             | SPARQL EXPLAIN         |
 
 ## 数据模型
 
@@ -75,10 +75,10 @@ Neo4j 先写 → PG 后写。PG 失败 → Neo4j 自动 DETACH DELETE 回滚。
 
 ## 故障排查
 
-| 现象 | 排查 |
-|---|---|
-| Neo4j 连接失败 | 检查 `NEO4J_URI` env + 网络 |
-| SPARQL 400 | 检查 WHERE 子句语法 |
-| OWL 解析失败 | 检查 RDF/XML 格式 |
-| 跨租户 403 | 检查 X-Tenant-Id header |
-| 双写部分失败 | 检查 PG 连接 + Neo4j 回滚日志 |
+| 现象           | 排查                          |
+| -------------- | ----------------------------- |
+| Neo4j 连接失败 | 检查 `NEO4J_URI` env + 网络   |
+| SPARQL 400     | 检查 WHERE 子句语法           |
+| OWL 解析失败   | 检查 RDF/XML 格式             |
+| 跨租户 403     | 检查 X-Tenant-Id header       |
+| 双写部分失败   | 检查 PG 连接 + Neo4j 回滚日志 |

@@ -21,7 +21,7 @@ image:
 # Catalog configuration. Mode matches Paimon so both engines can
 # read the same warehouse.
 catalog:
-  mode: filesystem    # filesystem | hive | jdbc
+  mode: filesystem # filesystem | hive | jdbc
   warehouse: "s3://mate-platform/data-lake"
   hive_metastore: ""
 

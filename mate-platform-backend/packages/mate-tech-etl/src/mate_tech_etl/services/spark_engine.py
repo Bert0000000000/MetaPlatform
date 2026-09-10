@@ -18,6 +18,7 @@ The adapter is **not** a stub: it builds real CLI argument lists,
 captures stdout/stderr, parses the Spark submission ID from the
 output, and surfaces non-zero exit codes as ``SparkSubmitError``.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -34,8 +35,12 @@ class SparkSubmitError(Exception):
     """Raised when a spark-submit invocation fails."""
 
     def __init__(
-        self, message: str, *, returncode: int = -1,
-        stdout: str = "", stderr: str = "",
+        self,
+        message: str,
+        *,
+        returncode: int = -1,
+        stdout: str = "",
+        stderr: str = "",
     ) -> None:
         super().__init__(message)
         self.returncode = returncode
@@ -73,7 +78,8 @@ class SparkSubmitEngine:
     # Regex to extract the submission ID from spark-submit output.
     # Spark prints: "submissionId: driver-20240101000000-0001"
     _SUBMISSION_RE = re.compile(
-        r"submission[_ ]?id\s*[:=]\s*(\S+)", re.IGNORECASE,
+        r"submission[_ ]?id\s*[:=]\s*(\S+)",
+        re.IGNORECASE,
     )
     # Alternative: "Connected to Spark master ... driver-..."
     _DRIVER_RE = re.compile(r"(driver-\d{8}-\d{4}-\d+)")
@@ -131,7 +137,8 @@ class SparkSubmitEngine:
         )
         try:
             stdout_b, stderr_b = await asyncio.wait_for(
-                proc.communicate(), timeout=self._timeout,
+                proc.communicate(),
+                timeout=self._timeout,
             )
         except TimeoutError as exc:
             proc.kill()
@@ -147,8 +154,7 @@ class SparkSubmitEngine:
 
         if rc != 0:
             raise SparkSubmitError(
-                f"spark-submit exited with code {rc} for task {task_id}: "
-                f"{stderr[:500]}",
+                f"spark-submit exited with code {rc} for task {task_id}: {stderr[:500]}",
                 returncode=rc,
                 stdout=stdout,
                 stderr=stderr,
@@ -165,13 +171,17 @@ class SparkSubmitEngine:
         )
 
     async def stop_task(
-        self, task_id: str, submission_id: str,
+        self,
+        task_id: str,
+        submission_id: str,
     ) -> SparkSubmissionResult:
         """Kill a running Spark submission via ``spark-submit --kill``."""
         cmd = [
             self._spark_submit_path,
-            "--master", self._spark_master,
-            "--kill", submission_id,
+            "--master",
+            self._spark_master,
+            "--kill",
+            submission_id,
         ]
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -180,7 +190,8 @@ class SparkSubmitEngine:
         )
         try:
             stdout_b, stderr_b = await asyncio.wait_for(
-                proc.communicate(), timeout=self._timeout,
+                proc.communicate(),
+                timeout=self._timeout,
             )
         except TimeoutError as exc:
             proc.kill()
@@ -206,13 +217,17 @@ class SparkSubmitEngine:
         )
 
     async def get_status(
-        self, task_id: str, submission_id: str,
+        self,
+        task_id: str,
+        submission_id: str,
     ) -> SparkSubmissionResult:
         """Query the status of a Spark submission via ``spark-submit --status``."""
         cmd = [
             self._spark_submit_path,
-            "--master", self._spark_master,
-            "--status", submission_id,
+            "--master",
+            self._spark_master,
+            "--status",
+            submission_id,
         ]
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -221,7 +236,8 @@ class SparkSubmitEngine:
         )
         try:
             stdout_b, stderr_b = await asyncio.wait_for(
-                proc.communicate(), timeout=self._timeout,
+                proc.communicate(),
+                timeout=self._timeout,
             )
         except TimeoutError as exc:
             proc.kill()

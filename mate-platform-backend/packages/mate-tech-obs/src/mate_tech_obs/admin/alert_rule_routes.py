@@ -34,6 +34,7 @@ ADR-0014 5-step pattern
 5. Cross-tenant negative tests: see
    ``tests/test_alert_rule_management.py``.
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict

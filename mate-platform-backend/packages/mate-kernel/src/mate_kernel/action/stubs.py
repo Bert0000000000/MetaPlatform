@@ -21,8 +21,9 @@ class FunctionStub:
         ...  # apply 后断言 stub.calls == [(target, params)]
     """
 
-    def __init__(self, result: Any = None, *, error: Exception | None = None,
-                 fail_first_n: int = 0) -> None:
+    def __init__(
+        self, result: Any = None, *, error: Exception | None = None, fail_first_n: int = 0
+    ) -> None:
         self.result = result
         self.error = error
         self.fail_first_n = fail_first_n  # 前 N 次抛错（演练失败路径）

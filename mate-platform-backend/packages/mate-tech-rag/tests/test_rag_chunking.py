@@ -3,6 +3,7 @@
 Covers RecursiveChunker, MarkdownChunker, SemanticChunker, SlidingWindowChunker,
 the create_chunker factory, and InMemoryRAGFlowClient integration.
 """
+
 from __future__ import annotations
 
 import sys
@@ -59,7 +60,9 @@ class TestRecursiveChunker:
         if len(chunks) >= 2:
             # The tail of chunk[i-1] should appear at the start of chunk[i].
             tail = chunks[0][-overlap:]
-            assert chunks[1].startswith(tail), f"Overlap not found: {chunks[1][:overlap]!r} != {tail!r}"
+            assert chunks[1].startswith(tail), (
+                f"Overlap not found: {chunks[1][:overlap]!r} != {tail!r}"
+            )
 
     def test_recursive_chunker_short_text(self):
         """Short text returns a single chunk."""
@@ -165,7 +168,9 @@ class TestSemanticChunker:
         few = chunker.chunk(text, chunk_size=512, overlap=0, similarity_threshold=0.1)
         # High threshold: even slightly different sentences split.
         many = chunker.chunk(text, chunk_size=512, overlap=0, similarity_threshold=0.9)
-        assert len(many) >= len(few), f"Higher threshold should yield >= chunks: {len(many)} vs {len(few)}"
+        assert len(many) >= len(few), (
+            f"Higher threshold should yield >= chunks: {len(many)} vs {len(few)}"
+        )
 
     def test_semantic_chunker_single_sentence(self):
         """A single sentence returns a single chunk."""

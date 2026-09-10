@@ -5,6 +5,7 @@ The GA-002 gate must follow the manifest rather than a historical domain count.
 This check intentionally uses only the Python standard library so it can run in
 the lightweight CI job without installing a YAML parser.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -21,8 +22,11 @@ REQUIREMENT_ID_RE = re.compile(r"\b[A-Z][A-Z0-9]*(?:-[A-Z0-9][A-Z0-9_.]*)+\b")
 
 def manifest_contracts(manifest: Path) -> list[str]:
     """Return contract filenames declared by the canonical manifest."""
-    contracts = [match.group(1) for line in manifest.read_text(encoding="utf-8").splitlines()
-                 if (match := CONTRACT_RE.match(line))]
+    contracts = [
+        match.group(1)
+        for line in manifest.read_text(encoding="utf-8").splitlines()
+        if (match := CONTRACT_RE.match(line))
+    ]
     return contracts
 
 
@@ -58,9 +62,7 @@ def validate(manifest: Path, services_dir: Path) -> list[str]:
         # the complete document keeps both valid forms covered.
         requirement_ids = set(REQUIREMENT_ID_RE.findall(text))
         if not requirement_ids:
-            errors.append(
-                f"services/{filename} has no requirement ID metadata"
-            )
+            errors.append(f"services/{filename} has no requirement ID metadata")
     return errors
 
 

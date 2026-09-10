@@ -14,11 +14,11 @@ uv run --package mate-tech-rag python -m mate_tech_rag.bootstrap
 
 ## SLO（ADR-0018 §2.1）
 
-| Journey | SLO | 当前基线 |
-|---|---|---|
-| RAG TTFT（本地） | p95 ≤ 1.5s | 待 P3-W7 之后统计 |
-| RAG TTFT（含 LLM 上游） | p95 ≤ 4s | 待 P3-W7 之后统计 |
-| Reranker 命中率 | ≥ 60% | dev |
+| Journey                 | SLO        | 当前基线          |
+| ----------------------- | ---------- | ----------------- |
+| RAG TTFT（本地）        | p95 ≤ 1.5s | 待 P3-W7 之后统计 |
+| RAG TTFT（含 LLM 上游） | p95 ≤ 4s   | 待 P3-W7 之后统计 |
+| Reranker 命中率         | ≥ 60%      | dev               |
 
 ## SLO 越线
 
@@ -36,9 +36,9 @@ uv run --package mate-tech-rag python -m mate_tech_rag.bootstrap
 
 ## 故障排查
 
-| 现象 | 排查 |
-|---|---|
-| 检索 0 hits | 检查 tenant document registry（`tenant_document_ids`） |
-| 越权返回其他租户内容 | hard rule 3 — tenant_document_ids 必须强制 |
-| reranker 慢 | 检查 `RAG_RERANK_BATCH_SIZE` env |
-| 嵌入超时 | 看 embedding provider 健康（openai / doubao / local） |
+| 现象                 | 排查                                                   |
+| -------------------- | ------------------------------------------------------ |
+| 检索 0 hits          | 检查 tenant document registry（`tenant_document_ids`） |
+| 越权返回其他租户内容 | hard rule 3 — tenant_document_ids 必须强制             |
+| reranker 慢          | 检查 `RAG_RERANK_BATCH_SIZE` env                       |
+| 嵌入超时             | 看 embedding provider 健康（openai / doubao / local）  |

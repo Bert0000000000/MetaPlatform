@@ -3,14 +3,12 @@
 These checks run without helm / kubectl and act as a static smoke test.
 The real helm lint / kubeconform / helm-unittest runs in CI.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
 
 import yaml
-
-from conftest import HELM_DIR
-
 
 REQUIRED_TOP_LEVEL_FILES = {
     "Chart.yaml",
@@ -113,9 +111,7 @@ class TestSubChartLayout:
                 continue
             tpl = sub / "templates"
             assert tpl.is_dir(), f"{sub.name}/templates/ missing"
-            assert any(tpl.glob("*.yaml")) or any(tpl.glob("*.tpl")), (
-                f"{sub.name}/templates/ empty"
-            )
+            assert any(tpl.glob("*.yaml")) or any(tpl.glob("*.tpl")), f"{sub.name}/templates/ empty"
 
 
 class TestHelmignore:

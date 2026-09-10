@@ -129,8 +129,7 @@ class PerfReport:
             )
         lines.append(sep)
         lines.append(
-            f"总结：{len(self.stats)} 个 API | "
-            f"全部通过 P95<500ms：{'YES' if all_pass else 'NO'}"
+            f"总结：{len(self.stats)} 个 API | 全部通过 P95<500ms：{'YES' if all_pass else 'NO'}"
         )
         return "\n".join(lines)
 

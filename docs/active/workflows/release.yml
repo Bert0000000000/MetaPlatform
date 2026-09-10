@@ -2,13 +2,13 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    tags: ["v*"]
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g. v6.0.0)'
+        description: "Version tag (e.g. v6.0.0)"
         required: true
-        default: 'v6.0.0'
+        default: "v6.0.0"
 
 env:
   HARBOR_REGISTRY: harbor.mp-platform.local
@@ -81,9 +81,9 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ matrix.app }}:${{ github.ref_name }}
-          format: 'table'
-          severity: 'HIGH,CRITICAL'
-          exit-code: '1'
+          format: "table"
+          severity: "HIGH,CRITICAL"
+          exit-code: "1"
           ignore-unfixed: true
 
   # 3. 部署到 staging

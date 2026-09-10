@@ -9,6 +9,7 @@ Verifies:
   - Per-tenant policy controls enabled kinds
   - Alembic 0011 schema valid
 """
+
 from __future__ import annotations
 
 from mate_platform.security import (
@@ -68,9 +69,7 @@ class TestMasking:
         assert not result.has_pii
 
     def test_reversible_mode_adds_kind_label(self) -> None:
-        engine = PIIEngine(
-            PIIPolicy(reversible=True, mask_token="[REDACTED]")
-        )
+        engine = PIIEngine(PIIPolicy(reversible=True, mask_token="[REDACTED]"))
         result = engine.apply("手机13800138000邮箱a@b.com")
         assert "13800138000" not in result.redacted
         assert "a@b.com" not in result.redacted
@@ -92,9 +91,7 @@ class TestMasking:
 class TestPolicyControl:
     def test_disabled_kind_not_detected(self) -> None:
         # Only phone_cn enabled; email should pass through
-        engine = PIIEngine(
-            PIIPolicy(enabled_kinds=("phone_cn",), mask_token="***")
-        )
+        engine = PIIEngine(PIIPolicy(enabled_kinds=("phone_cn",), mask_token="***"))
         result = engine.apply("手机13800138000邮箱a@b.com")
         assert "13800138000" not in result.redacted
         assert "a@b.com" in result.redacted  # not masked

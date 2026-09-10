@@ -1,4 +1,5 @@
 """Public API for mate_platform.datahub (DATA-D2)."""
+
 from .client import (
     DataHubClient,
     DataHubError,

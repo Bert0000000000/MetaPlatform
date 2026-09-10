@@ -1,4 +1,5 @@
 """W2 集成测试 (ST-2.3.x + ST-2.4.5 + ST-2.4.6)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock
@@ -10,6 +11,7 @@ import pytest
 async def test_inmemory_factory(mock_pg_pool, mock_kafka, mock_redis, mock_neo4j) -> None:
     """ST-2.3.4: InMemoryRepository 工厂."""
     from mate_tech_rag.repos.inmemory import InMemoryKnowledgeBaseRepo
+
     repo = InMemoryKnowledgeBaseRepo()
     assert repo is not None
 
@@ -18,6 +20,7 @@ async def test_inmemory_factory(mock_pg_pool, mock_kafka, mock_redis, mock_neo4j
 async def test_live_factory(mock_neo4j, mock_pg_pool) -> None:
     """ST-2.3.5: Live 工厂 (PG + Neo4j)."""
     from mate_tech_ont.repos.neo4j_repo import Neo4jGraphRepository
+
     repo = Neo4jGraphRepository()
     # 连接失败应优雅降级
     assert repo is not None
@@ -37,6 +40,7 @@ async def test_contract_test_pg_vs_inmemory(mock_pg_pool) -> None:
     from mate_tech_kb.repos.mem_document import InMemoryDocumentRepository
     from mate_tech_kb.repos.pg_document import PgDocumentRepository
     from mate_tech_kb.repos.protocols import DocumentRepository
+
     assert isinstance(PgDocumentRepository(), DocumentRepository) or True
     assert isinstance(InMemoryDocumentRepository(), DocumentRepository) or True
 
@@ -57,9 +61,8 @@ async def test_pg_connection_retry(mock_pg_pool) -> None:
     mock_pg_pool.acquire = flaky_acquire
     # 跑 retry
     from tenacity import AsyncRetrying, stop_after_attempt, wait_fixed
-    async for attempt in AsyncRetrying(
-        stop=stop_after_attempt(3), wait=wait_fixed(0.01)
-    ):
+
+    async for attempt in AsyncRetrying(stop=stop_after_attempt(3), wait=wait_fixed(0.01)):
         with attempt:
             await mock_pg_pool.acquire()
             break
@@ -84,6 +87,7 @@ async def test_dual_write_pg_neo4j(mock_pg_pool, mock_neo4j) -> None:
     mock_neo4j.run = AsyncMock()
     # 双写
     from mate_tech_ont.dual_write.writer import DualWriter
+
     writer = DualWriter(pg_pool=mock_pg_pool, neo4j_session=mock_neo4j)
     result = await writer.write(
         entity="class",
@@ -105,6 +109,7 @@ async def test_dual_write_rollback(mock_pg_pool, mock_neo4j) -> None:
     )
     mock_neo4j.run = AsyncMock()
     from mate_tech_ont.dual_write.writer import DualWriter
+
     writer = DualWriter(pg_pool=mock_pg_pool, neo4j_session=mock_neo4j)
     result = await writer.write(
         entity="class",

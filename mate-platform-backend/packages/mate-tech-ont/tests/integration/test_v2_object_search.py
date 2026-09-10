@@ -26,7 +26,10 @@ _NOW = datetime.now(UTC)
 def _prop(slug: str, type_id: str = "string") -> Property:
     return Property(
         rid=ClassRef(f"ont.{_T}.prop.{slug}.v1"),
-        type_id=type_id, nullable=True, primary_key=False, title=slug,
+        type_id=type_id,
+        nullable=True,
+        primary_key=False,
+        title=slug,
         format=PropertyFormat.STRING,
     )
 
@@ -36,10 +39,16 @@ def _ot() -> ObjectType:
         rid=ClassRef(f"ont.{_T}.obj.order.v1"),
         primary_key=(ClassRef(f"ont.{_T}.prop.oid.v1"),),
         properties=(
-            Property(rid=ClassRef(f"ont.{_T}.prop.oid.v1"), type_id="string",
-                     nullable=False, primary_key=True, title="oid",
-                     format=PropertyFormat.STRING),
-            _prop("status"), _prop("memo"),
+            Property(
+                rid=ClassRef(f"ont.{_T}.prop.oid.v1"),
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="oid",
+                format=PropertyFormat.STRING,
+            ),
+            _prop("status"),
+            _prop("memo"),
         ),
         display_name="order",
     )
@@ -54,7 +63,11 @@ def _ind(oid: str, status: str, memo: str) -> Individual:
             (ClassRef(f"ont.{_T}.prop.status.v1"), status),
             (ClassRef(f"ont.{_T}.prop.memo.v1"), memo),
         ),
-        primary_key=oid, created_at=_NOW, updated_at=_NOW, tenant_id=_T, marking=(),
+        primary_key=oid,
+        created_at=_NOW,
+        updated_at=_NOW,
+        tenant_id=_T,
+        marking=(),
     )
 
 
@@ -163,6 +176,7 @@ def capture_repo(monkeypatch: pytest.MonkeyPatch) -> tuple[Any, _CaptureCursor]:
     from mate_kernel.ontology.function_resolver import (
         InMemoryFunctionResolver,
     )
+
     repo._action_service = ActionService()
     repo._function_resolver = InMemoryFunctionResolver()
     repo._function_executor = None

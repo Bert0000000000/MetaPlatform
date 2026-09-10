@@ -8,12 +8,12 @@
 
 ## 1. 选型决策
 
-| 维度 | Iceberg (选) | Delta Lake (弃) | Hudi (弃) |
-|---|---|---|---|
-| 引擎支持 | Trino / Spark / Flink / Dremio 全支持 | 主要 Spark | 主要 Spark |
-| 流式 | 流批一体 (Flink 同写) | 批量为主 | 流式但社区小 |
-| 本项目约束 | Trino 已选为查询引擎，Iceberg REST 是 Trino 标准 connector | — | — |
-| 与 Paimon 协同 | 共享 warehouse，table format 互通 | — | — |
+| 维度           | Iceberg (选)                                               | Delta Lake (弃) | Hudi (弃)    |
+| -------------- | ---------------------------------------------------------- | --------------- | ------------ |
+| 引擎支持       | Trino / Spark / Flink / Dremio 全支持                      | 主要 Spark      | 主要 Spark   |
+| 流式           | 流批一体 (Flink 同写)                                      | 批量为主        | 流式但社区小 |
+| 本项目约束     | Trino 已选为查询引擎，Iceberg REST 是 Trino 标准 connector | —               | —            |
+| 与 Paimon 协同 | 共享 warehouse，table format 互通                          | —               | —            |
 
 **结论**：Apache Iceberg + Apache Trino 作为 v3.2-γ 数据湖 SQL federation 双子。Iceberg REST catalog 在 `infra/helm/charts/iceberg/`，Trino coordinator + worker 在 `infra/helm/charts/trino/`。共享 S3 warehouse，Trino 通过 Iceberg + Paimon connector 联邦查询。
 
@@ -32,18 +32,18 @@ infra/helm/charts/iceberg/
     └── NOTES.txt           catalog endpoint / 验证命令
 ```
 
-| 字段 | 值 |
-|---|---|
-| fullnameOverride | `iceberg` |
-| replicaCount | 2 |
-| image | `apache/iceberg-rest-fixture:1.4` |
-| catalog.mode | filesystem |
-| catalog.warehouse | `s3://mate-platform/data-lake` |
-| tables.format | parquet |
-| service.port | 8181 |
-| tenantIsolation.tablePrefix | `tenant_` |
-| persistence.size | 100Gi |
-| networkPolicy.allowedIngressNamespaces | `metaplatform` |
+| 字段                                   | 值                                |
+| -------------------------------------- | --------------------------------- |
+| fullnameOverride                       | `iceberg`                         |
+| replicaCount                           | 2                                 |
+| image                                  | `apache/iceberg-rest-fixture:1.4` |
+| catalog.mode                           | filesystem                        |
+| catalog.warehouse                      | `s3://mate-platform/data-lake`    |
+| tables.format                          | parquet                           |
+| service.port                           | 8181                              |
+| tenantIsolation.tablePrefix            | `tenant_`                         |
+| persistence.size                       | 100Gi                             |
+| networkPolicy.allowedIngressNamespaces | `metaplatform`                    |
 
 ## 3. Trino sub-chart 结构
 
@@ -61,42 +61,42 @@ infra/helm/charts/trino/
     └── NOTES.txt           JDBC URL + 验证命令
 ```
 
-| 字段 | 值 |
-|---|---|
-| fullnameOverride | `trino` |
-| coordinator replicaCount | 1 |
-| worker replicaCount | 2 |
-| image | `trinodb/trino:435` |
-| catalogs.iceberg.endpoint | `http://iceberg:8181` |
-| catalogs.paimon.endpoint | `http://paimon:8081` |
-| catalogs.system.enabled | true |
-| tenantIsolation.tablePrefix | `tenant_` |
-| service.httpPort | 8080 |
-| Thrift | 8081 |
-| networkPolicy.allowedIngressNamespaces | `metaplatform` |
+| 字段                                   | 值                    |
+| -------------------------------------- | --------------------- |
+| fullnameOverride                       | `trino`               |
+| coordinator replicaCount               | 1                     |
+| worker replicaCount                    | 2                     |
+| image                                  | `trinodb/trino:435`   |
+| catalogs.iceberg.endpoint              | `http://iceberg:8181` |
+| catalogs.paimon.endpoint               | `http://paimon:8081`  |
+| catalogs.system.enabled                | true                  |
+| tenantIsolation.tablePrefix            | `tenant_`             |
+| service.httpPort                       | 8080                  |
+| Thrift                                 | 8081                  |
+| networkPolicy.allowedIngressNamespaces | `metaplatform`        |
 
 ## 4. Umbrella 集成
 
 `infra/helm/Chart.yaml` 加 2 依赖：
 
 ```yaml
-  - name: iceberg
-    version: 0.1.0
-    condition: iceberg.enabled
-  - name: trino
-    version: 0.1.0
-    condition: trino.enabled
+- name: iceberg
+  version: 0.1.0
+  condition: iceberg.enabled
+- name: trino
+  version: 0.1.0
+  condition: trino.enabled
 ```
 
 `infra/tests/test_chart_structure.py` `REQUIRED_SUB_CHARTS` 加 `iceberg` + `trino` —— 22 test_chart_structure 静态 guard 现在 13 sub-chart 全检。
 
 ## 5. 测试 (22 tests)
 
-| 测试类 | 覆盖 |
-|---|---|
-| `TestIcebergChart` (7) | Chart.yaml / apiVersion / name / tenant isolation / NetworkPolicy / StatefulSet 探针 + configmap / default-deny |
-| `TestTrinoChart` (9) | Chart.yaml / apiVersion / name / 联邦 3 catalog 端点 / tenant isolation / coordinator-worker 分离 / coordinator init script / worker discovery URI / service http+thrift / default-deny |
-| `TestUmbrellaChartDeclaresIcebergTrino` (5) | iceberg 注册 / trino 注册 / iceberg condition / trino condition / 全 dependencies condition 一致性 |
+| 测试类                                      | 覆盖                                                                                                                                                                                    |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TestIcebergChart` (7)                      | Chart.yaml / apiVersion / name / tenant isolation / NetworkPolicy / StatefulSet 探针 + configmap / default-deny                                                                         |
+| `TestTrinoChart` (9)                        | Chart.yaml / apiVersion / name / 联邦 3 catalog 端点 / tenant isolation / coordinator-worker 分离 / coordinator init script / worker discovery URI / service http+thrift / default-deny |
+| `TestUmbrellaChartDeclaresIcebergTrino` (5) | iceberg 注册 / trino 注册 / iceberg condition / trino condition / 全 dependencies condition 一致性                                                                                      |
 
 模式与 G4 (`test_g4_kind_workflow.py`) 同源：static smoke + CI 上每 PR 跑，无需真实 kind / helm。
 
@@ -139,13 +139,13 @@ $ pytest packages -q
 
 ## 8. 13 硬规则映射
 
-| # | 硬规则 | v3.2-γ |
-|---|---|---|
-| 5 | Production fallback | ✅ values-staging 用独立 stg_ 前缀 (继承 G1/G6 pattern) |
-| 8 | K8s readiness | ✅ Iceberg/Trino StatefulSet/Deployment 探针 livenessProbe + readinessProbe (/health, /v1/info) |
-| 9 | 审计/指标/trace | ✅ 通过 OTel collector (out-of-scope of this chart; 已部署) |
-| 10 | 验收证据 | ✅ 本文档 + 22 tests + V3.2-γ 接力 prompt |
-| 13 | NetworkPolicy | ✅ Iceberg/Trino sub-charts 自带 default-deny + kube-system DNS egress |
+| #   | 硬规则              | v3.2-γ                                                                                          |
+| --- | ------------------- | ----------------------------------------------------------------------------------------------- |
+| 5   | Production fallback | ✅ values-staging 用独立 stg\_ 前缀 (继承 G1/G6 pattern)                                        |
+| 8   | K8s readiness       | ✅ Iceberg/Trino StatefulSet/Deployment 探针 livenessProbe + readinessProbe (/health, /v1/info) |
+| 9   | 审计/指标/trace     | ✅ 通过 OTel collector (out-of-scope of this chart; 已部署)                                     |
+| 10  | 验收证据            | ✅ 本文档 + 22 tests + V3.2-γ 接力 prompt                                                       |
+| 13  | NetworkPolicy       | ✅ Iceberg/Trino sub-charts 自带 default-deny + kube-system DNS egress                          |
 
 ## 9. 后续工作
 

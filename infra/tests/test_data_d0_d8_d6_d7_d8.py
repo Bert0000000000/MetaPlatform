@@ -1,4 +1,5 @@
 """DATA-D0-D8 D6 + D7 + D8 e2e tests."""
+
 from __future__ import annotations
 
 import sys
@@ -10,14 +11,20 @@ CHARTS = REPO / "infra" / "helm" / "charts"
 # Setup path for mate-platform modules.
 _PY = (
     Path(__file__).resolve().parents[2]
-    / "mate-platform-backend" / "packages" / "mate-platform" / "src"
+    / "mate-platform-backend"
+    / "packages"
+    / "mate-platform"
+    / "src"
 )
 if str(_PY) not in sys.path:
     sys.path.insert(0, str(_PY))
 
 _PC = (
     Path(__file__).resolve().parents[2]
-    / "mate-platform-backend" / "packages" / "mate-clients" / "src"
+    / "mate-platform-backend"
+    / "packages"
+    / "mate-clients"
+    / "src"
 )
 if str(_PC) not in sys.path:
     sys.path.insert(0, str(_PC))
@@ -39,6 +46,7 @@ class TestD6Retention:
             InMemoryRetentionStore,
             request_gdpr_forget,
         )
+
         store = InMemoryRetentionStore()
         rec = request_gdpr_forget(
             tenant_id="acme",
@@ -67,6 +75,7 @@ class TestD6Retention:
             RetentionPolicy,
             request_gdpr_forget,
         )
+
         store = InMemoryRetentionStore()
         rec = request_gdpr_forget(
             tenant_id="acme",
@@ -82,6 +91,7 @@ class TestD6Retention:
             InMemoryRetentionStore,
             request_gdpr_forget,
         )
+
         store = InMemoryRetentionStore()
         request_gdpr_forget(tenant_id="t1", requested_by="u1", store=store)
         # At least one pending
@@ -92,11 +102,18 @@ class TestD6Retention:
             InMemoryRetentionStore,
             request_gdpr_forget,
         )
+
         store = InMemoryRetentionStore()
         rec = request_gdpr_forget(tenant_id="acme", requested_by="u1", store=store)
         d = rec.to_dict()
-        for k in ("record_id", "tenant_id", "requested_by",
-                  "requested_at", "hard_delete_at", "policy"):
+        for k in (
+            "record_id",
+            "tenant_id",
+            "requested_by",
+            "requested_at",
+            "hard_delete_at",
+            "policy",
+        ):
             assert k in d
 
 
@@ -147,11 +164,13 @@ class TestD7PIIMask:
     def test_redact_dict(self) -> None:
         from mate_clients.security.pii_mask import redact_dict
 
-        d, matches = redact_dict({
-            "name": "Alice",
-            "phone": "555-123-4567",
-            "age": 30,
-        })
+        d, matches = redact_dict(
+            {
+                "name": "Alice",
+                "phone": "555-123-4567",
+                "age": 30,
+            }
+        )
         assert "[REDACTED_PHONE]" in d["phone"]
         assert d["name"] == "Alice"  # not a phone
         assert any(m.kind == "phone" for m in matches)
@@ -178,6 +197,7 @@ class TestD8CrossDomainAudit:
             InMemoryCrossDomainSink,
             emit_cross_domain_query,
         )
+
         sink = InMemoryCrossDomainSink()
         emit_cross_domain_query(
             actor_user_id="ops",
@@ -196,6 +216,7 @@ class TestD8CrossDomainAudit:
             InMemoryCrossDomainSink,
             emit_cross_domain_query,
         )
+
         sink = InMemoryCrossDomainSink()
         emit_cross_domain_query(
             actor_user_id="u1",
@@ -212,6 +233,7 @@ class TestD8CrossDomainAudit:
             InMemoryCrossDomainSink,
             emit_cross_domain_query,
         )
+
         sink = InMemoryCrossDomainSink()
         emit_cross_domain_query(
             actor_user_id="u1",
@@ -222,6 +244,13 @@ class TestD8CrossDomainAudit:
             sink=sink,
         )
         d = sink.all()[0].to_dict()
-        for k in ("query_id", "actor_user_id", "actor_tenant_id",
-                  "target_tenants", "query", "trace_id", "occurred_at"):
+        for k in (
+            "query_id",
+            "actor_user_id",
+            "actor_tenant_id",
+            "target_tenants",
+            "query",
+            "trace_id",
+            "occurred_at",
+        ):
             assert k in d

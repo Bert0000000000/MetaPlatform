@@ -77,8 +77,11 @@ def _ot(rid: str, display_name: str = "", extra_props: tuple[Property, ...] = ()
     tenant, _, _, slug, _v = rid.split(".")
     pk_prop = Property(
         rid=ClassRef(f"ont.{tenant}.prop.{slug}-id.v1"),
-        type_id="string", nullable=False, primary_key=True,
-        title="id", format=PropertyFormat.STRING,
+        type_id="string",
+        nullable=False,
+        primary_key=True,
+        title="id",
+        format=PropertyFormat.STRING,
     )
     props = (pk_prop, *extra_props)
     return ObjectType(
@@ -96,32 +99,44 @@ def _tenant(rid: str) -> str:
 def _seed_pair_repo(repo) -> tuple[ObjectType, ObjectType]:
     """塞两个 ObjectType + 一个 refer 它们的 prop（用于反向引用扫描）。"""
     src = _ot(
-        "ont.acme.obj.sales-order.v1", "Sales Order",
+        "ont.acme.obj.sales-order.v1",
+        "Sales Order",
         extra_props=(
             Property(
                 rid=ClassRef("ont.acme.prop.sales-order-amount.v1"),
-                type_id="float", nullable=True, primary_key=False,
-                title="amount", format=PropertyFormat.DOUBLE,
+                type_id="float",
+                nullable=True,
+                primary_key=False,
+                title="amount",
+                format=PropertyFormat.DOUBLE,
             ),
         ),
     )
     tgt = _ot(
-        "ont.acme.obj.order.v1", "Order",
+        "ont.acme.obj.order.v1",
+        "Order",
         extra_props=(
             Property(
                 rid=ClassRef("ont.acme.prop.order-amount.v1"),
-                type_id="float", nullable=True, primary_key=False,
-                title="amount", format=PropertyFormat.DOUBLE,
+                type_id="float",
+                nullable=True,
+                primary_key=False,
+                title="amount",
+                format=PropertyFormat.DOUBLE,
             ),
         ),
     )
     ref = _ot(
-        "ont.acme.obj.line-item.v1", "Line Item",
+        "ont.acme.obj.line-item.v1",
+        "Line Item",
         extra_props=(
             Property(
                 rid=ClassRef("ont.acme.prop.line-item-sales-order-ref.v1"),
-                type_id="string", nullable=True, primary_key=False,
-                title="sales_order_ref", format=PropertyFormat.STRING,
+                type_id="string",
+                nullable=True,
+                primary_key=False,
+                title="sales_order_ref",
+                format=PropertyFormat.STRING,
             ),
         ),
     )
@@ -146,13 +161,19 @@ def test_model_type_preview_renders_properties_and_primary_key(client, app) -> N
         "properties": [
             {
                 "rid": "ont.acme.prop.invoice-id.v1",
-                "type_id": "string", "nullable": False, "primary_key": True,
-                "title": "Invoice ID", "format": "string",
+                "type_id": "string",
+                "nullable": False,
+                "primary_key": True,
+                "title": "Invoice ID",
+                "format": "string",
             },
             {
                 "rid": "ont.acme.prop.invoice-amount.v1",
-                "type_id": "float", "nullable": False, "primary_key": False,
-                "title": "amount", "format": "float",
+                "type_id": "float",
+                "nullable": False,
+                "primary_key": False,
+                "title": "amount",
+                "format": "float",
             },
         ],
         "display_name": "Invoice",
@@ -243,12 +264,16 @@ def test_create_instance_preview_missing_required(client, app) -> None:
     target_rid = "ont.acme.obj.invoice.v1"
     repo.upsert_object_type(
         _ot(
-            target_rid, "Invoice",
+            target_rid,
+            "Invoice",
             extra_props=(
                 Property(
                     rid=ClassRef("ont.acme.prop.invoice-total.v1"),
-                    type_id="float", nullable=False, primary_key=False,
-                    title="total", format=PropertyFormat.DOUBLE,
+                    type_id="float",
+                    nullable=False,
+                    primary_key=False,
+                    title="total",
+                    format=PropertyFormat.DOUBLE,
                 ),
             ),
         ),
@@ -331,8 +356,7 @@ def test_merge_suggestion_preview_with_property_overlap(client, app) -> None:
         similarity=0.92,
         impact_summary="merge",
         mapping={
-            "ont.acme.prop.sales-order-amount.v1":
-                "ont.acme.prop.order-amount.v1",
+            "ont.acme.prop.sales-order-amount.v1": "ont.acme.prop.order-amount.v1",
         },
     )
     resp = client.get(
@@ -347,9 +371,10 @@ def test_merge_suggestion_preview_with_property_overlap(client, app) -> None:
     assert body["merge_target_rid"] == "ont.acme.obj.order.v1"
     overlap = body["merge_property_overlap"]
     # id prop 自动算重名（slug 都是 id）→ 共享
-    assert any(p["source"].endswith("sales-order-id.v1")
-               and p["target"].endswith("order-id.v1")
-               for p in overlap["shared_props"])
+    assert any(
+        p["source"].endswith("sales-order-id.v1") and p["target"].endswith("order-id.v1")
+        for p in overlap["shared_props"]
+    )
     impact = body["impact_summary"]
     assert impact["similarity"] == 0.92
     assert impact["affected_individuals"] == 2
@@ -374,8 +399,9 @@ def test_merge_suggestion_low_similarity_warning(client, app) -> None:
         headers={"X-Tenant-Id": "acme"},
     )
     body = resp.json()
-    assert any("0.45" in w and "below safe-merge floor" in w
-               for w in body["impact_summary"]["warnings"])
+    assert any(
+        "0.45" in w and "below safe-merge floor" in w for w in body["impact_summary"]["warnings"]
+    )
 
 
 # ─────────────────── 4) confirmed / executed → 409 ───────────────────
@@ -389,11 +415,18 @@ def test_confirmed_proposal_returns_409(client, app) -> None:
             "rid": "ont.acme.obj.x.v1",
             "primary_key": ["ont.acme.prop.x-id.v1"],
             "properties": [
-                {"rid": "ont.acme.prop.x-id.v1", "type_id": "string",
-                 "nullable": False, "primary_key": True,
-                 "title": "id", "format": "string"},
+                {
+                    "rid": "ont.acme.prop.x-id.v1",
+                    "type_id": "string",
+                    "nullable": False,
+                    "primary_key": True,
+                    "title": "id",
+                    "format": "string",
+                },
             ],
-            "display_name": "X", "interfaces": [], "marking": [],
+            "display_name": "X",
+            "interfaces": [],
+            "marking": [],
         },
         impact_summary="x",
     )
@@ -418,11 +451,18 @@ def test_executed_proposal_returns_409_with_executed_state(client, app) -> None:
             "rid": "ont.acme.obj.executed-preview.v1",
             "primary_key": ["ont.acme.prop.executed-preview-id.v1"],
             "properties": [
-                {"rid": "ont.acme.prop.executed-preview-id.v1", "type_id": "string",
-                 "nullable": False, "primary_key": True,
-                 "title": "id", "format": "string"},
+                {
+                    "rid": "ont.acme.prop.executed-preview-id.v1",
+                    "type_id": "string",
+                    "nullable": False,
+                    "primary_key": True,
+                    "title": "id",
+                    "format": "string",
+                },
             ],
-            "display_name": "Executed preview", "interfaces": [], "marking": [],
+            "display_name": "Executed preview",
+            "interfaces": [],
+            "marking": [],
         },
         impact_summary="execute preview lock",
     )
@@ -448,11 +488,18 @@ def test_rejected_proposal_returns_409(client, app) -> None:
             "rid": "ont.acme.obj.y.v1",
             "primary_key": ["ont.acme.prop.y-id.v1"],
             "properties": [
-                {"rid": "ont.acme.prop.y-id.v1", "type_id": "string",
-                 "nullable": False, "primary_key": True,
-                 "title": "id", "format": "string"},
+                {
+                    "rid": "ont.acme.prop.y-id.v1",
+                    "type_id": "string",
+                    "nullable": False,
+                    "primary_key": True,
+                    "title": "id",
+                    "format": "string",
+                },
             ],
-            "display_name": "Y", "interfaces": [], "marking": [],
+            "display_name": "Y",
+            "interfaces": [],
+            "marking": [],
         },
         impact_summary="y",
     )
@@ -483,19 +530,25 @@ def test_action_kind_preview_passes_through(client, app) -> None:
     _seed_pair_repo(repo)
     # 先建一个 ActionType 让 propose_action 通过（rid 用 act 命名空间）
     from mate_kernel.ontology.types import ActionType
+
     at = ActionType(
         rid=ClassRef("ont.acme.act.do-thing.v1"),
-        parameters=(), submission_criteria=(), side_effects=(),
+        parameters=(),
+        submission_criteria=(),
+        side_effects=(),
         function_ref=ClassRef("ont.acme.fn.do-thing.v1"),
-        title="do thing", description="do a thing",
+        title="do thing",
+        description="do a thing",
         on=(),
     )
     repo.upsert_action_type(at)
 
     prop = repo.propose_action(
         ClassRef("ont.acme.act.do-thing.v1"),
-        parameters={"x": 1}, target_iid=None,
-        impact_summary="do thing", expected_diff={"x": 1},
+        parameters={"x": 1},
+        target_iid=None,
+        impact_summary="do thing",
+        expected_diff={"x": 1},
     )
     assert prop.status is ProposalStatus.PENDING
 
@@ -532,8 +585,7 @@ def test_impact_summary_cross_schema_refs_for_merge(client, app) -> None:
     )
     body = resp.json()
     refs = body["impact_summary"]["cross_schema_references"]
-    assert any(r.get("source_property_rid", "").endswith("sales-order-id.v1")
-               for r in refs)
+    assert any(r.get("source_property_rid", "").endswith("sales-order-id.v1") for r in refs)
 
 
 def test_impact_summary_backward_warn_for_new_type_with_colliding_slugs(client, app) -> None:
@@ -545,12 +597,18 @@ def test_impact_summary_backward_warn_for_new_type_with_colliding_slugs(client, 
         "rid": "ont.acme.obj.sales-order2.v1",
         "primary_key": ["ont.acme.prop.sales-order2-id.v1"],
         "properties": [
-            {"rid": "ont.acme.prop.sales-order2-id.v1", "type_id": "string",
-             "nullable": False, "primary_key": True, "title": "id",
-             "format": "string"},
+            {
+                "rid": "ont.acme.prop.sales-order2-id.v1",
+                "type_id": "string",
+                "nullable": False,
+                "primary_key": True,
+                "title": "id",
+                "format": "string",
+            },
         ],
         "display_name": "Sales Order 2",
-        "interfaces": [], "marking": [],
+        "interfaces": [],
+        "marking": [],
     }
     prop = repo.propose_model_type(type_def, impact_summary="init")
     resp = client.get(

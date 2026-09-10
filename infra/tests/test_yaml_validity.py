@@ -4,6 +4,7 @@ Files under templates/ that contain Helm template syntax ({{ ... }}) are
 NOT valid YAML by themselves; they are rendered by `helm template` and
 verified in CI via helm lint + helm-unittest.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -74,8 +75,6 @@ class TestValuesYaml:
             yaml.safe_load((helm_dir / "values.yaml").read_text(encoding="utf-8")).keys()
         )
         for env in ("local", "staging", "production"):
-            data = yaml.safe_load(
-                (helm_dir / f"values-{env}.yaml").read_text(encoding="utf-8")
-            )
+            data = yaml.safe_load((helm_dir / f"values-{env}.yaml").read_text(encoding="utf-8"))
             extras = set(data.keys()) - default_keys
             assert not extras, f"values-{env}.yaml introduces new top-level keys: {extras}"

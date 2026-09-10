@@ -3,6 +3,7 @@
 Reserved for P2-W3: arch → ontology / kb / iam cross-service calls
 via `mate_clients.security.BearerAuth` + `OutgoingAuthMiddleware`.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

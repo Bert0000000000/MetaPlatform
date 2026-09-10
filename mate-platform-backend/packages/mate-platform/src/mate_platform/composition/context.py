@@ -12,6 +12,7 @@ The root context owns the store, the fiber registry, and the drive
 scheduler; fiber contexts are children that attribute bindings to
 their owning fiber and may shadow realms via ``isolate``.
 """
+
 # Context and Fiber are cooperating kernel classes: their underscore
 # hooks are the kernel-internal protocol between the two.
 # pyright: reportPrivateUsage=false

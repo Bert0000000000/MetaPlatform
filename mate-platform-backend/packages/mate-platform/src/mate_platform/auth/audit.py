@@ -11,6 +11,7 @@ their own data) does NOT emit a cross-tenant event. Only the
 explicit cross-tenant access paths (admin, ETL, scheduler)
 trigger audit.cross_tenant_data_access.
 """
+
 from __future__ import annotations
 
 import logging

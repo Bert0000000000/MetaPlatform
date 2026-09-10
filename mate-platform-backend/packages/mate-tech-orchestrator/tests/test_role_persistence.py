@@ -3,6 +3,7 @@
 Uses a file-based SQLite so save → load round-trips work across
 sessions (``:memory:`` gives each connection a fresh DB).
 """
+
 from __future__ import annotations
 
 import pytest
@@ -77,9 +78,13 @@ def test_authorized_snapshot_filters_roles_and_fails_closed(_sqlite) -> None:
         capabilities=_caps(),
     )
 
-    assert [role.role for role in reg.authorized_snapshot(
-        "tenant-acme", actor_roles={"knowledge_user"},
-    )] == ["knowledge"]
+    assert [
+        role.role
+        for role in reg.authorized_snapshot(
+            "tenant-acme",
+            actor_roles={"knowledge_user"},
+        )
+    ] == ["knowledge"]
     assert reg.authorized_snapshot("tenant-acme", actor_roles=set()) == []
 
 
@@ -110,7 +115,9 @@ def test_store_disabled_without_dsn(monkeypatch, _sqlite) -> None:
     assert store.load() == []  # no-op without a configured DSN
     store.save(
         RoleRegistry(store=store).register(
-            tenant_id="t", role="knowledge", capabilities=_caps(),
+            tenant_id="t",
+            role="knowledge",
+            capabilities=_caps(),
         )
     )
     assert store.load() == []
@@ -121,7 +128,8 @@ def test_store_repairs_legacy_role_table_without_actor_roles_column(_sqlite) -> 
     engine = get_engine()
     with engine.begin() as connection:
         connection.execute(text("DROP TABLE orchestrator_roles"))
-        connection.execute(text("""
+        connection.execute(
+            text("""
             CREATE TABLE orchestrator_roles (
                 tenant_id VARCHAR(64) NOT NULL,
                 role VARCHAR(64) NOT NULL,
@@ -131,12 +139,15 @@ def test_store_repairs_legacy_role_table_without_actor_roles_column(_sqlite) -> 
                 created_at VARCHAR(64),
                 PRIMARY KEY (tenant_id, role)
             )
-        """))
-        connection.execute(text("""
+        """)
+        )
+        connection.execute(
+            text("""
             INSERT INTO orchestrator_roles
                 (tenant_id, role, name, capabilities, enabled, created_at)
             VALUES ('tenant-acme', 'knowledge', 'Knowledge', '[]', 1, '')
-        """))
+        """)
+        )
 
     restored = SqlRoleStore(always_persist=True).load()
 

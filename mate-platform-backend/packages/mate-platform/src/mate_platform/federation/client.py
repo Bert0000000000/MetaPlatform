@@ -25,6 +25,7 @@ Design:
 
 Per ADR-0016 §3.3 D8.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -81,9 +82,7 @@ class DataSourceAdapter(Protocol):
     federation layer does not re-filter.
     """
 
-    def query(
-        self, tenant_id: str, sql: str, trace_id: str = ""
-    ) -> list[dict[str, Any]]:
+    def query(self, tenant_id: str, sql: str, trace_id: str = "") -> list[dict[str, Any]]:
         """Execute ``sql`` against ``tenant_id``'s partition."""
         ...
 
@@ -95,15 +94,11 @@ class InMemoryDataSourceAdapter:
         # tenant_id -> list of row dicts
         self._data: dict[str, list[dict[str, Any]]] = {}
 
-    def seed(
-        self, tenant_id: str, rows: list[dict[str, Any]]
-    ) -> None:
+    def seed(self, tenant_id: str, rows: list[dict[str, Any]]) -> None:
         """Seed test data for a tenant."""
         self._data.setdefault(tenant_id, []).extend(rows)
 
-    def query(
-        self, tenant_id: str, sql: str, trace_id: str = ""
-    ) -> list[dict[str, Any]]:
+    def query(self, tenant_id: str, sql: str, trace_id: str = "") -> list[dict[str, Any]]:
         # The in-memory adapter ignores SQL semantics and returns
         # all rows for the tenant. Production adapters execute the
         # SQL against a real engine. This is sufficient for testing
@@ -155,16 +150,12 @@ class FederationClient:
                 rows = self._adapter.query(tid, query, trace_id)
                 elapsed = (datetime.now(UTC) - start).total_seconds() * 1000
                 per_tenant_results.append(
-                    TenantQueryResult(
-                        tenant_id=tid, rows=rows, duration_ms=elapsed
-                    )
+                    TenantQueryResult(tenant_id=tid, rows=rows, duration_ms=elapsed)
                 )
             except Exception as exc:
                 elapsed = (datetime.now(UTC) - start).total_seconds() * 1000
                 per_tenant_results.append(
-                    TenantQueryResult(
-                        tenant_id=tid, error=str(exc), duration_ms=elapsed
-                    )
+                    TenantQueryResult(tenant_id=tid, error=str(exc), duration_ms=elapsed)
                 )
 
         # Merge: concatenate all successful rows, tag each with

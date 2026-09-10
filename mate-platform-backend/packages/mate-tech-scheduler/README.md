@@ -7,17 +7,17 @@ DAG scheduling control plane for the Mate Platform data plane
 
 8 endpoints under `/api/v1/scheduler/*`:
 
-| Method | Path                       | Description                          |
-|--------|----------------------------|--------------------------------------|
-| GET    | `/tasks`                   | List scheduler tasks (paginated)     |
-| POST   | `/tasks`                   | Create a scheduler task              |
-| GET    | `/tasks/{id}`              | Get a scheduler task by id           |
-| PUT    | `/tasks/{id}`              | Update a scheduler task              |
-| DELETE | `/tasks/{id}`              | Delete a scheduler task              |
-| POST   | `/tasks/{id}/pause`        | Pause a scheduler task               |
-| POST   | `/tasks/{id}/trigger`      | Manually trigger a scheduler task    |
-| GET    | `/dag`                     | Get the DAG graph                    |
-| GET    | `/health`                  | Anonymous liveness probe             |
+| Method | Path                  | Description                       |
+| ------ | --------------------- | --------------------------------- |
+| GET    | `/tasks`              | List scheduler tasks (paginated)  |
+| POST   | `/tasks`              | Create a scheduler task           |
+| GET    | `/tasks/{id}`         | Get a scheduler task by id        |
+| PUT    | `/tasks/{id}`         | Update a scheduler task           |
+| DELETE | `/tasks/{id}`         | Delete a scheduler task           |
+| POST   | `/tasks/{id}/pause`   | Pause a scheduler task            |
+| POST   | `/tasks/{id}/trigger` | Manually trigger a scheduler task |
+| GET    | `/dag`                | Get the DAG graph                 |
+| GET    | `/health`             | Anonymous liveness probe          |
 
 ## ADR-0014 5-step compliance
 

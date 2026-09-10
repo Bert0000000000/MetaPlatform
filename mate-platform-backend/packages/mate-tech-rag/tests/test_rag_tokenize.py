@@ -4,6 +4,7 @@ Verifies that Chinese text is broken into character bigrams so overlap-based
 scoring (KeywordReranker) and similarity-based splitting (SemanticChunker)
 work on Chinese, while Latin text tokenizes exactly as before.
 """
+
 from __future__ import annotations
 
 import sys

@@ -19,22 +19,22 @@
 
 ## 2. 已确认的决策
 
-| 主题 | 决策 |
-|---|---|
-| 产品定位 | 自带完整湖仓平台，不依赖外部托管数据平台 |
-| 生产部署 | Kubernetes；Docker Compose 仅作为开发/演示精简环境 |
-| 容量基线 | 100 TB–1 PB；日增量 5–50 TB；约 500 条并发 Pipeline |
-| 计算引擎 | Flink 为唯一主计算引擎；首版不部署 Spark |
-| 计算模式 | Flink CDC、Flink SQL、DataStream、PyFlink 覆盖流批场景 |
-| 湖表策略 | Paimon 承载 ODS/DWD 实时可变层；Iceberg 承载 DWS/ADS 稳定共享层 |
-| 数据消费 | Trino 即席/联邦查询 + StarRocks 高并发 Serving；BI 与 AI/Ontology 同等重要 |
-| 调度审批 | Airflow 负责任务 DAG/调度/补数；Flowable 负责发布审批和访问审批 |
-| 租户模型 | 单企业单租户私有化部署；企业内部通过项目、数据域、Namespace、RBAC 隔离 |
-| 产品入口 | 嵌入现有本体论引擎 `/ontology/datacenter`，不新增 `APP-DATA` |
-| 控制面 | 新建 Python `mate-tech-data`，旧 Java TECH-DATA 不上线 |
-| Pipeline 开发 | 可视化 + Flink SQL + 受控 Java/PyFlink 自定义作业 |
-| GA 优先级 | 大数据能力作为 v1.0 GA 硬前置，不延期到 v1.1 |
-| 文档同步 | 技术架构、技术栈、交付路线、`CLAUDE.md`、`agent.md` 必须同步更新 |
+| 主题          | 决策                                                                       |
+| ------------- | -------------------------------------------------------------------------- |
+| 产品定位      | 自带完整湖仓平台，不依赖外部托管数据平台                                   |
+| 生产部署      | Kubernetes；Docker Compose 仅作为开发/演示精简环境                         |
+| 容量基线      | 100 TB–1 PB；日增量 5–50 TB；约 500 条并发 Pipeline                        |
+| 计算引擎      | Flink 为唯一主计算引擎；首版不部署 Spark                                   |
+| 计算模式      | Flink CDC、Flink SQL、DataStream、PyFlink 覆盖流批场景                     |
+| 湖表策略      | Paimon 承载 ODS/DWD 实时可变层；Iceberg 承载 DWS/ADS 稳定共享层            |
+| 数据消费      | Trino 即席/联邦查询 + StarRocks 高并发 Serving；BI 与 AI/Ontology 同等重要 |
+| 调度审批      | Airflow 负责任务 DAG/调度/补数；Flowable 负责发布审批和访问审批            |
+| 租户模型      | 单企业单租户私有化部署；企业内部通过项目、数据域、Namespace、RBAC 隔离     |
+| 产品入口      | 嵌入现有本体论引擎 `/ontology/datacenter`，不新增 `APP-DATA`               |
+| 控制面        | 新建 Python `mate-tech-data`，旧 Java TECH-DATA 不上线                     |
+| Pipeline 开发 | 可视化 + Flink SQL + 受控 Java/PyFlink 自定义作业                          |
+| GA 优先级     | 大数据能力作为 v1.0 GA 硬前置，不延期到 v1.1                               |
+| 文档同步      | 技术架构、技术栈、交付路线、`CLAUDE.md`、`agent.md` 必须同步更新           |
 
 ## 3. 目标与非目标
 
@@ -117,14 +117,14 @@ flowchart TB
 
 ### 4.3 数据分层原则
 
-| 层 | 技术 | 责任 | 消费限制 |
-|---|---|---|---|
-| Landing | MinIO/S3 | 原始不可变、回放、审计 | 默认仅工程和治理角色 |
-| ODS | Paimon | 源结构对齐、CDC Upsert/Delete、Schema Evolution | 受策略控制 |
-| DWD | Paimon | 清洗、标准化、主数据对齐、实时明细 | 工程、治理和受授权查询 |
-| DWS | Iceberg | 主题汇总、维度、指标、开放共享 | 可申请/订阅 |
-| ADS | Iceberg | 版本化、认证的数据产品契约 | BI、RAG、Ontology、Agent 首选 |
-| Serving | StarRocks | 高并发指标、报表和 Data API | 通过 Query Gateway/数据产品 API |
+| 层      | 技术      | 责任                                            | 消费限制                        |
+| ------- | --------- | ----------------------------------------------- | ------------------------------- |
+| Landing | MinIO/S3  | 原始不可变、回放、审计                          | 默认仅工程和治理角色            |
+| ODS     | Paimon    | 源结构对齐、CDC Upsert/Delete、Schema Evolution | 受策略控制                      |
+| DWD     | Paimon    | 清洗、标准化、主数据对齐、实时明细              | 工程、治理和受授权查询          |
+| DWS     | Iceberg   | 主题汇总、维度、指标、开放共享                  | 可申请/订阅                     |
+| ADS     | Iceberg   | 版本化、认证的数据产品契约                      | BI、RAG、Ontology、Agent 首选   |
+| Serving | StarRocks | 高并发指标、报表和 Data API                     | 通过 Query Gateway/数据产品 API |
 
 Paimon 到 Iceberg 的提升是明确的数据产品发布动作，不是对所有表的自动双写。每个 ADS 产品拥有 Contract、Owner、SLA、质量报告、血缘和语义映射。
 
@@ -132,39 +132,39 @@ Paimon 到 Iceberg 的提升是明确的数据产品发布动作，不是对所�
 
 ### 5.1 Mate 自研
 
-| 组件 | 技术 | 责任 |
-|---|---|---|
-| 数据中心前端 | 现有 React/TypeScript 本体引擎 | 数据源、Pipeline、湖仓、SQL、治理和运行体验 |
-| `mate-tech-data` | Python 3.12、FastAPI、SQLModel、Pydantic v2、httpx | 统一控制面与领域 API |
-| Pipeline Spec | JSON Schema / Pydantic Canonical Spec | 版本化数据管道定义 |
-| Compiler | Python 编译器 | 生成 Flink SQL、Job Manifest、Airflow DAG Bundle 和治理 Manifest |
-| Engine Adapter | Python ACL | Airflow、Flink、Trino、StarRocks、Gravitino、OpenMetadata 调用 |
-| `mate-airflow-provider` | Python Provider/Operators | Flink 提交、Savepoint、质量门禁、数据产品发布 |
-| Connector SDK | Python 描述与运行规范 | 连接器注册、Schema Discovery、凭证引用和审计 |
+| 组件                    | 技术                                               | 责任                                                             |
+| ----------------------- | -------------------------------------------------- | ---------------------------------------------------------------- |
+| 数据中心前端            | 现有 React/TypeScript 本体引擎                     | 数据源、Pipeline、湖仓、SQL、治理和运行体验                      |
+| `mate-tech-data`        | Python 3.12、FastAPI、SQLModel、Pydantic v2、httpx | 统一控制面与领域 API                                             |
+| Pipeline Spec           | JSON Schema / Pydantic Canonical Spec              | 版本化数据管道定义                                               |
+| Compiler                | Python 编译器                                      | 生成 Flink SQL、Job Manifest、Airflow DAG Bundle 和治理 Manifest |
+| Engine Adapter          | Python ACL                                         | Airflow、Flink、Trino、StarRocks、Gravitino、OpenMetadata 调用   |
+| `mate-airflow-provider` | Python Provider/Operators                          | Flink 提交、Savepoint、质量门禁、数据产品发布                    |
+| Connector SDK           | Python 描述与运行规范                              | 连接器注册、Schema Discovery、凭证引用和审计                     |
 
 首版 `mate-tech-data` 采用模块化单体，内部划分 Connector、Pipeline、Orchestration、Catalog、Governance、Query & Serving 六个 Bounded Context；吞吐和状态不放进 Python 控制面。
 
 ### 5.2 外部开源产品
 
-| 能力 | 组件 | 集成边界 |
-|---|---|---|
-| 批流计算 | Flink + Flink Kubernetes Operator | Application Mode；SQL/DataStream/PyFlink |
-| CDC | Flink CDC | 全量快照、增量、Upsert/Delete、Schema Evolution |
-| 调度 | Airflow 3.x + KubernetesExecutor | DAG、重试、补数、回填和运行历史 |
-| 审批 | Flowable 8 | 发布、访问和敏感资产审批 |
-| 事件总线 | Kafka（KRaft）+ Apicurio Registry | 领域事件、Schema Contract 和重放 |
-| 对象存储 | MinIO Distributed / S3 API | Landing、湖表文件、产物和报告 |
-| 实时湖表 | Apache Paimon | ODS/DWD 主键表和实时变更 |
-| 开放湖表 | Apache Iceberg | DWS/ADS 共享数据产品 |
-| 联邦查询 | Trino | Paimon/Iceberg/外部源 SQL |
-| OLAP Serving | StarRocks | 报表、物化视图、指标和低延迟 API |
-| 运行时目录 | Apache Gravitino | Catalog、Namespace、Table、Topic、Fileset 注册 |
-| 治理目录 | OpenMetadata | Owner、术语、标签、认证、质量和治理血缘 |
-| 运行血缘 | OpenLineage | Airflow/Flink/Trino 运行事件 |
-| 批量质量 | Great Expectations | 质量规则、对账和批量检查；流式规则编译为 Flink SQL/质量算子 |
-| 访问策略 | Apache Ranger | 行列权限、脱敏、审计和策略发布 |
-| 密钥 | OpenBao | 连接器密钥、动态凭证和密钥轮换 |
-| 可观测性 | OTel、Prometheus、Grafana、Loki | 日志、指标、Trace、Lag、SLA 和成本 |
+| 能力         | 组件                              | 集成边界                                                    |
+| ------------ | --------------------------------- | ----------------------------------------------------------- |
+| 批流计算     | Flink + Flink Kubernetes Operator | Application Mode；SQL/DataStream/PyFlink                    |
+| CDC          | Flink CDC                         | 全量快照、增量、Upsert/Delete、Schema Evolution             |
+| 调度         | Airflow 3.x + KubernetesExecutor  | DAG、重试、补数、回填和运行历史                             |
+| 审批         | Flowable 8                        | 发布、访问和敏感资产审批                                    |
+| 事件总线     | Kafka（KRaft）+ Apicurio Registry | 领域事件、Schema Contract 和重放                            |
+| 对象存储     | MinIO Distributed / S3 API        | Landing、湖表文件、产物和报告                               |
+| 实时湖表     | Apache Paimon                     | ODS/DWD 主键表和实时变更                                    |
+| 开放湖表     | Apache Iceberg                    | DWS/ADS 共享数据产品                                        |
+| 联邦查询     | Trino                             | Paimon/Iceberg/外部源 SQL                                   |
+| OLAP Serving | StarRocks                         | 报表、物化视图、指标和低延迟 API                            |
+| 运行时目录   | Apache Gravitino                  | Catalog、Namespace、Table、Topic、Fileset 注册              |
+| 治理目录     | OpenMetadata                      | Owner、术语、标签、认证、质量和治理血缘                     |
+| 运行血缘     | OpenLineage                       | Airflow/Flink/Trino 运行事件                                |
+| 批量质量     | Great Expectations                | 质量规则、对账和批量检查；流式规则编译为 Flink SQL/质量算子 |
+| 访问策略     | Apache Ranger                     | 行列权限、脱敏、审计和策略发布                              |
+| 密钥         | OpenBao                           | 连接器密钥、动态凭证和密钥轮换                              |
+| 可观测性     | OTel、Prometheus、Grafana、Loki   | 日志、指标、Trace、Lag、SLA 和成本                          |
 
 Gravitino 只负责技术运行时目录；OpenMetadata 负责治理目录；`mate-tech-ont` 负责物理资产到业务语义的映射，三者不互相替代。
 
@@ -206,13 +206,13 @@ DRAFT
 
 ### 6.4 失败策略
 
-| 场景 | 处理 |
-|---|---|
-| 源不可用 | 指数退避、熔断、告警，从 Offset/Checkpoint 恢复 |
-| Schema 不兼容 | 暂停受影响 Sink，进入隔离区，等待兼容决策 |
-| 质量失败 | 原始数据保留，阻断认证/发布，不覆盖最后健康版本 |
-| 部署失败 | 补偿清理新资源，从上一 Savepoint 恢复 |
-| 查询超时 | Query Gateway 取消、记录资源消耗和审计，不影响 Pipeline |
+| 场景          | 处理                                                    |
+| ------------- | ------------------------------------------------------- |
+| 源不可用      | 指数退避、熔断、告警，从 Offset/Checkpoint 恢复         |
+| Schema 不兼容 | 暂停受影响 Sink，进入隔离区，等待兼容决策               |
+| 质量失败      | 原始数据保留，阻断认证/发布，不覆盖最后健康版本         |
+| 部署失败      | 补偿清理新资源，从上一 Savepoint 恢复                   |
+| 查询超时      | Query Gateway 取消、记录资源消耗和审计，不影响 Pipeline |
 
 ## 7. 控制面数据与接口
 
@@ -315,16 +315,16 @@ DRAFT
 
 ## 10. 容量、性能与可观测性
 
-| 指标 | 目标 |
-|---|---|
-| 湖仓容量 | 100 TB–1 PB |
-| 日增量 | 5–50 TB/day |
-| Pipeline 并发 | 约 500 条 |
-| 控制面可用性 | ≥ 99.9% |
-| Gold 实时端到端 | P95 < 5s |
-| Silver 准实时端到端 | P95 < 60s |
-| StarRocks | 查询 P95 1–3s |
-| Trino | 交互查询 P95 5–30s |
+| 指标                | 目标               |
+| ------------------- | ------------------ |
+| 湖仓容量            | 100 TB–1 PB        |
+| 日增量              | 5–50 TB/day        |
+| Pipeline 并发       | 约 500 条          |
+| 控制面可用性        | ≥ 99.9%            |
+| Gold 实时端到端     | P95 < 5s           |
+| Silver 准实时端到端 | P95 < 60s          |
+| StarRocks           | 查询 P95 1–3s      |
+| Trino               | 交互查询 P95 5–30s |
 
 沿用 OTel、Prometheus、Grafana、Loki，并新增 Kafka Lag、Flink Backpressure/Checkpoint、Paimon/Iceberg Compaction、Trino Queue、StarRocks Load、质量失败、SLA 和每条 Pipeline 成本指标。
 
@@ -348,17 +348,17 @@ StarRocks、OpenMetadata、Ranger、OpenBao、完整质量和治理组件放在�
 
 ## 12. 交付路线 D0–D8
 
-| 阶段 | 工期 | 产出 | 前置/门禁 |
-|---|---:|---|---|
-| D0 | 2 周 | Flink CDC→Paimon→Iceberg→Trino/StarRocks Spike、兼容矩阵、容量模型 | 关键链路可运行 |
-| D1 | 4 周 | K8s 数据平面、Kafka、MinIO、Flink Operator、Airflow、Trino | 基础设施健康与重启恢复 |
-| D2 | 4 周 | Python MATE-DATA 骨架、领域模型、OpenAPI、Outbox、Engine ACL | 契约和类型检查通过 |
-| D3 | 5 周 | CDC、事件、批量 Connector、Paimon ODS/DWD、Schema Evolution | 回放、Upsert/Delete 和断点恢复 |
-| D4 | 5 周 | Pipeline Spec、Canvas、Flink 编译、Airflow DAG Bundle、发布状态机 | SQL/Java/PyFlink 三类作业 |
-| D5 | 4 周 | Iceberg Promotion、Trino、StarRocks、SQL Gateway、数据产品 API | BI/AI 可消费认证产品 |
-| D6 | 4 周 | Gravitino、OpenMetadata、OpenLineage、质量、Ranger、OpenBao | 质量/权限/血缘门禁 |
-| D7 | 5 周 | 现有 Ontology Data Center 原位增强、语义映射、E2E | 现有四大页签和旧流程不回归 |
-| D8 | 4 周 | 压测、混沌、RPO/RTO、回滚、文档、GA | 全部 GA 验收门禁通过 |
+| 阶段 | 工期 | 产出                                                               | 前置/门禁                      |
+| ---- | ---: | ------------------------------------------------------------------ | ------------------------------ |
+| D0   | 2 周 | Flink CDC→Paimon→Iceberg→Trino/StarRocks Spike、兼容矩阵、容量模型 | 关键链路可运行                 |
+| D1   | 4 周 | K8s 数据平面、Kafka、MinIO、Flink Operator、Airflow、Trino         | 基础设施健康与重启恢复         |
+| D2   | 4 周 | Python MATE-DATA 骨架、领域模型、OpenAPI、Outbox、Engine ACL       | 契约和类型检查通过             |
+| D3   | 5 周 | CDC、事件、批量 Connector、Paimon ODS/DWD、Schema Evolution        | 回放、Upsert/Delete 和断点恢复 |
+| D4   | 5 周 | Pipeline Spec、Canvas、Flink 编译、Airflow DAG Bundle、发布状态机  | SQL/Java/PyFlink 三类作业      |
+| D5   | 4 周 | Iceberg Promotion、Trino、StarRocks、SQL Gateway、数据产品 API     | BI/AI 可消费认证产品           |
+| D6   | 4 周 | Gravitino、OpenMetadata、OpenLineage、质量、Ranger、OpenBao        | 质量/权限/血缘门禁             |
+| D7   | 5 周 | 现有 Ontology Data Center 原位增强、语义映射、E2E                  | 现有四大页签和旧流程不回归     |
+| D8   | 4 周 | 压测、混沌、RPO/RTO、回滚、文档、GA                                | 全部 GA 验收门禁通过           |
 
 D1 与 D2 可并行；D3 可与现有 TECH-ONT 基础能力并行；D7 必须等待 D4/D6 接口稳定。建议独立 Data Platform Squad；若只有当前单团队，不能继续使用原 22 周总工期假设。
 
@@ -410,24 +410,24 @@ D1 与 D2 可并行；D3 可与现有 TECH-ONT 基础能力并行；D7 必须等
 
 ## 16. 方案比较与最终选择
 
-| 方案 | 优点 | 风险 | 结论 |
-|---|---|---|---|
-| Iceberg 单一湖表 | 跨引擎生态和长期可移植性最佳 | 高频 CDC Upsert/Delete、小文件和 Compaction 压力大 | 不选作唯一格式 |
-| Paimon 单一湖表 | Flink CDC/Upsert/流批一体最自然 | BI 与跨引擎生态锁定更强 | 不选作唯一格式 |
-| Paimon ODS/DWD + Iceberg DWS/ADS | 同时满足 Flink 实时 CDC、开放共享、BI 和 AI 数据产品 | 两种格式需要统一治理和清晰提升边界 | **最终选择** |
+| 方案                             | 优点                                                 | 风险                                               | 结论           |
+| -------------------------------- | ---------------------------------------------------- | -------------------------------------------------- | -------------- |
+| Iceberg 单一湖表                 | 跨引擎生态和长期可移植性最佳                         | 高频 CDC Upsert/Delete、小文件和 Compaction 压力大 | 不选作唯一格式 |
+| Paimon 单一湖表                  | Flink CDC/Upsert/流批一体最自然                      | BI 与跨引擎生态锁定更强                            | 不选作唯一格式 |
+| Paimon ODS/DWD + Iceberg DWS/ADS | 同时满足 Flink 实时 CDC、开放共享、BI 和 AI 数据产品 | 两种格式需要统一治理和清晰提升边界                 | **最终选择**   |
 
 ## 17. 风险与缓解
 
-| 风险 | 缓解 |
-|---|---|
-| 组件数量多、运维复杂 | Compose profiles 降载；K8s 使用官方 Helm/Operator；D0 建兼容矩阵 |
-| Paimon/Trino/StarRocks 组合兼容性 | D0 做真实 Spike；所有目标组合进入集成测试 |
-| 500 Pipeline 资源争用 | Namespace、ResourceQuota、流批节点池和按 Pipeline 资源标签隔离 |
-| CDC Schema 变更破坏下游 | Contract、兼容检查、隔离区和人工审批 |
-| 小文件/Compaction 积压 | 统一 Compaction、文件大小、快照和成本指标治理 |
-| 旧 Java 领域模型与新 Python 不一致 | API 契约、Golden Dataset、回放和双读对账 |
-| 项目工期被低估 | 独立 Data Platform Squad；将 D0–D8 纳入 GA 关键路径 |
-| 数据权限绕过控制面 | 浏览器不直连引擎；Ranger + Keycloak + OpenBao；全链路审计 |
+| 风险                               | 缓解                                                             |
+| ---------------------------------- | ---------------------------------------------------------------- |
+| 组件数量多、运维复杂               | Compose profiles 降载；K8s 使用官方 Helm/Operator；D0 建兼容矩阵 |
+| Paimon/Trino/StarRocks 组合兼容性  | D0 做真实 Spike；所有目标组合进入集成测试                        |
+| 500 Pipeline 资源争用              | Namespace、ResourceQuota、流批节点池和按 Pipeline 资源标签隔离   |
+| CDC Schema 变更破坏下游            | Contract、兼容检查、隔离区和人工审批                             |
+| 小文件/Compaction 积压             | 统一 Compaction、文件大小、快照和成本指标治理                    |
+| 旧 Java 领域模型与新 Python 不一致 | API 契约、Golden Dataset、回放和双读对账                         |
+| 项目工期被低估                     | 独立 Data Platform Squad；将 D0–D8 纳入 GA 关键路径              |
+| 数据权限绕过控制面                 | 浏览器不直连引擎；Ranger + Keycloak + OpenBao；全链路审计        |
 
 ## 18. 设计完成标准
 

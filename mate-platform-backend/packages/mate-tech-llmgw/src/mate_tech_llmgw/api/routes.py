@@ -10,6 +10,7 @@ Path alignment (P0 close-out, 2026-07-30):
     bodies, but the legacy paths emit the RFC 8594 Deprecation
     response header pointing at the canonical prefix.
 """
+
 from __future__ import annotations
 
 import json
@@ -436,7 +437,9 @@ def _infer_embedding_provider(model: str, explicit: str) -> str:
     return "openai"
 
 
-async def _run_embeddings(req: EmbeddingRequest, request: Request | None = None) -> EmbeddingResponse:
+async def _run_embeddings(
+    req: EmbeddingRequest, request: Request | None = None
+) -> EmbeddingResponse:
     """共享 embedding 执行逻辑 (canonical + legacy 复用，保证 body 一致).
 
     Provider 解析优先级：请求显式 base_url/api_key > 后台 AI Provider 配置
@@ -464,7 +467,9 @@ async def _run_embeddings(req: EmbeddingRequest, request: Request | None = None)
         api_key = req.api_key or resolved.get("api_key", "")
         model = resolved.get("model") or req.model
         provider = build_configured_embedding_provider(
-            base_url=base_url or "", api_key=api_key or "", model=model or "",
+            base_url=base_url or "",
+            api_key=api_key or "",
+            model=model or "",
         )
         effective_model = model or req.model
     else:
@@ -475,9 +480,7 @@ async def _run_embeddings(req: EmbeddingRequest, request: Request | None = None)
     data: list[dict[str, Any]] = []
     total_tokens = 0
     for i, text in enumerate(req.input):
-        result = await provider.embed(
-            text, model=effective_model, tenant_id=req.tenant_id
-        )
+        result = await provider.embed(text, model=effective_model, tenant_id=req.tenant_id)
         data.append({"index": i, "embedding": result.embedding})
         total_tokens += result.usage.get("prompt_tokens", 0)
 
@@ -522,12 +525,8 @@ async def embeddings_endpoint(req: EmbeddingRequest, request: Request) -> Embedd
 class RealChatRequest(BaseModel):
     """``/chat/real`` 请求体 (TD-6)."""
 
-    provider: str = Field(
-        ..., description="openai | anthropic | custom — selects the real backend"
-    )
-    model: str = Field(
-        default="", description="模型名 (defaults to provider default)"
-    )
+    provider: str = Field(..., description="openai | anthropic | custom — selects the real backend")
+    model: str = Field(default="", description="模型名 (defaults to provider default)")
     messages: list[ChatMessage]
     temperature: float = 1.0
     max_tokens: int | None = None
@@ -712,10 +711,7 @@ async def real_chat_stream_endpoint(req: RealChatRequest, request: Request):
     if req.provider not in ("openai", "custom"):
         raise HTTPException(
             status_code=400,
-            detail=(
-                f"streaming only supports openai/custom providers, got "
-                f"{req.provider!r}"
-            ),
+            detail=(f"streaming only supports openai/custom providers, got {req.provider!r}"),
         )
     from ..providers.real_openai_provider import RealOpenAIProvider
     from ..resilience.call import call_with_resilience
@@ -728,6 +724,7 @@ async def real_chat_stream_endpoint(req: RealChatRequest, request: Request):
         Retry/cooldown applies ONLY until the first SSE event — once tokens
         are flowing to the client, restarting would duplicate output.
         """
+
         async def _run():
             p = RealOpenAIProvider(
                 model=model,
@@ -760,9 +757,7 @@ async def real_chat_stream_endpoint(req: RealChatRequest, request: Request):
         return _run()
 
     try:
-        provider, stream, first_event = await call_with_resilience(
-            [(req.provider, _open_stream)]
-        )
+        provider, stream, first_event = await call_with_resilience([(req.provider, _open_stream)])
     except RuntimeError as exc:
         raise HTTPException(
             status_code=503,
@@ -878,13 +873,21 @@ def _to_mm_message(message: dict[str, Any]) -> Any:
     for part in content:
         ptype = str(part.get("type", "")) if isinstance(part, dict) else ""
         if ptype == "image":
-            parts.append(_media_ref(
-                str(part.get("image", "")), url_type="image_url", b64_type="image_base64",
-            ))
+            parts.append(
+                _media_ref(
+                    str(part.get("image", "")),
+                    url_type="image_url",
+                    b64_type="image_base64",
+                )
+            )
         elif ptype == "audio":
-            parts.append(_media_ref(
-                str(part.get("audio", "")), url_type="audio_url", b64_type="audio_base64",
-            ))
+            parts.append(
+                _media_ref(
+                    str(part.get("audio", "")),
+                    url_type="audio_url",
+                    b64_type="audio_base64",
+                )
+            )
         else:
             parts.append(MultimodalContentPart(type="text", text=str(part.get("text", ""))))
     return MultimodalMessage(role=str(message.get("role", "user")), content=parts)
@@ -910,7 +913,9 @@ def _resolve_multimodal_provider(req: MultimodalApiRequest) -> tuple[Any, str]:
 
 
 @router.post("/chat/multimodal", response_model=MultimodalApiResponse)
-async def multimodal_chat_endpoint(req: MultimodalApiRequest, request: Request) -> MultimodalApiResponse:
+async def multimodal_chat_endpoint(
+    req: MultimodalApiRequest, request: Request
+) -> MultimodalApiResponse:
     """v3.2 W2: simplified multimodal chat (text + image + audio → text).
 
     Quota and cost reuse the same singletons as the text chat path
@@ -928,22 +933,16 @@ async def multimodal_chat_endpoint(req: MultimodalApiRequest, request: Request) 
     from ..multimodal.engine import MultimodalEngine, MultimodalRequest
 
     real_provider, model = _resolve_multimodal_provider(req)
-    engine = (
-        MultimodalEngine(real_provider) if real_provider is not None else MultimodalEngine()
-    )
+    engine = MultimodalEngine(real_provider) if real_provider is not None else MultimodalEngine()
 
     # --- 1. Quota check (mirrors router.chat semantics) ---
     bucket = get_quota_bucket()
     if bucket is not None:
         from ..tokens import estimate_tokens
 
-        estimated_tokens = estimate_tokens(req.prompt) + 100 * (
-            len(req.images) + len(req.audio)
-        )
+        estimated_tokens = estimate_tokens(req.prompt) + 100 * (len(req.images) + len(req.audio))
         try:
-            await bucket.acquire(
-                tenant_id=req.tenant_id, estimated_tokens=estimated_tokens
-            )
+            await bucket.acquire(tenant_id=req.tenant_id, estimated_tokens=estimated_tokens)
         except QuotaExceededError as e:
             raise HTTPException(
                 status_code=429,
@@ -951,9 +950,7 @@ async def multimodal_chat_endpoint(req: MultimodalApiRequest, request: Request) 
                 headers={"Retry-After": str(e.retry_after)},
             ) from e
         except Exception as e:
-            logger.warning(
-                "llmgw.multimodal.quota.degraded", tenant=req.tenant_id, error=str(e)
-            )
+            logger.warning("llmgw.multimodal.quota.degraded", tenant=req.tenant_id, error=str(e))
 
     # --- 2. Engine call ---
     request = MultimodalRequest(
@@ -972,9 +969,7 @@ async def multimodal_chat_endpoint(req: MultimodalApiRequest, request: Request) 
     recorder = get_cost_recorder()
     if recorder is not None:
         try:
-            await recorder.record(
-                model=model, tenant_id=req.tenant_id, usage=resp.usage
-            )
+            await recorder.record(model=model, tenant_id=req.tenant_id, usage=resp.usage)
         except Exception as e:
             logger.warning("llmgw.multimodal.cost.record_failed", error=str(e))
 
@@ -1135,7 +1130,9 @@ async def legacy_chat_stream(req: ChatRequest, response: Response):
     response_model=EmbeddingResponse,
     deprecated=True,
 )
-async def legacy_embeddings(req: EmbeddingRequest, response: Response, request: Request) -> EmbeddingResponse:
+async def legacy_embeddings(
+    req: EmbeddingRequest, response: Response, request: Request
+) -> EmbeddingResponse:
     response.headers.update(_deprecation_header())
     _apply_request_tenant(request, req)
     return await _run_embeddings(req, request)
@@ -1225,10 +1222,11 @@ async def providers_test_endpoint(req: ProviderTestRequest) -> ProviderTestRespo
         probe_url=(
             f"{req.base_url.rstrip('/')}"
             + (
-                "/openai/deployments?api-version="
-                + (req.api_version or "2024-02-01")
+                "/openai/deployments?api-version=" + (req.api_version or "2024-02-01")
                 if provider == "azure"
-                else "/models" if provider != "ollama" else "/api/tags"
+                else "/models"
+                if provider != "ollama"
+                else "/api/tags"
             )
         ),
     )

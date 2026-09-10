@@ -6,6 +6,7 @@ Covers:
   * FastAPI endpoints: create / list-managed / get / update / delete.
   * Cross-tenant negative cases (ADR-0014 step 5).
 """
+
 from __future__ import annotations
 
 import os
@@ -223,9 +224,7 @@ class TestAlertRuleStoreTenantIsolation:
         # t1's rule is still there.
         assert fresh_store.get_rule(tenant_id="t1", rule_id=rule.id) is not None
 
-    def test_cross_tenant_update_raises_keyerror(
-        self, fresh_store: AlertRuleStore
-    ) -> None:
+    def test_cross_tenant_update_raises_keyerror(self, fresh_store: AlertRuleStore) -> None:
         rule = fresh_store.create_rule(
             tenant_id="t1",
             alert="PrivateRule",
@@ -372,9 +371,7 @@ class TestAlertRuleEndpoints:
         )
         assert r.status_code == 400
 
-    def test_list_managed_includes_system_and_custom(
-        self, client, auth_headers
-    ) -> None:
+    def test_list_managed_includes_system_and_custom(self, client, auth_headers) -> None:
         # Initially: 10 system rules.
         r = client.get(
             "/api/v1/admin/operations/alerts/rules/managed",
@@ -522,9 +519,7 @@ class TestCrossTenantNegatives:
         with pytest.raises(TenantAccessError, match="missing tenant"):
             require_tenant(ctx)
 
-    def test_alert_rule_store_refuses_cross_tenant_read(
-        self, fresh_store: AlertRuleStore
-    ) -> None:
+    def test_alert_rule_store_refuses_cross_tenant_read(self, fresh_store: AlertRuleStore) -> None:
         rule = fresh_store.create_rule(
             tenant_id="t1",
             alert="PrivateRule",

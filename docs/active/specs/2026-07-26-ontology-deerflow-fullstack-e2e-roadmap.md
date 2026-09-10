@@ -132,7 +132,7 @@ docs/superpowers/specs/2026-07-26-ontology-deerflow-phase1.yaml
 | C-7 | NetworkPolicy / Secret 管理 | `k8s/deerflow/network-policy.yaml` |
 
 ### 注意：仓库基础问题
-当前基线 6 个文件编译失败（ArtifactService / DocumentCandidateListener / ContractExpiringTrigger / K8sSandboxProvider / WorkspaceProvisioner / OntologyDraftService）。  
+当前基线 6 个文件编译失败（ArtifactService / DocumentCandidateListener / ContractExpiringTrigger / K8sSandboxProvider / WorkspaceProvisioner / OntologyDraftService）。
 **批次 B 与 C 启动前必须先解决这些基线问题**，或在工作流中显式跳过。
 
 ### 启动 prompt（尚未写）

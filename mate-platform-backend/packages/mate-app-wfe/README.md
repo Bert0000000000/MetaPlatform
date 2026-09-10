@@ -4,10 +4,10 @@
 
 ## Endpoints
 
-| Method | Path | operationId | FR |
-|---|---|---|---|
-| POST | `/api/v1/wfe/flows/test` | `wfePostWfeFlowsTest` | FR-WFE-WFEPOSTWFEFLOWSTEST |
-| GET  | `/api/v1/wfe/flows/validate` | `wfeGetWfeFlowsValidate` | FR-WFE-WFEGETWFEFLOWSVALIDATE |
+| Method | Path                         | operationId              | FR                            |
+| ------ | ---------------------------- | ------------------------ | ----------------------------- |
+| POST   | `/api/v1/wfe/flows/test`     | `wfePostWfeFlowsTest`    | FR-WFE-WFEPOSTWFEFLOWSTEST    |
+| GET    | `/api/v1/wfe/flows/validate` | `wfeGetWfeFlowsValidate` | FR-WFE-WFEGETWFEFLOWSVALIDATE |
 
 ## ADR-0014 5-step compliance
 

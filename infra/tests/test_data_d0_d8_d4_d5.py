@@ -1,4 +1,5 @@
 """DATA-D0-D8 D4 + D5 e2e tests."""
+
 from __future__ import annotations
 
 import sys
@@ -9,7 +10,10 @@ from pathlib import Path
 # for new test files in the same dir, so do it here.
 _AUTH_SRC = (
     Path(__file__).resolve().parents[2]
-    / "mate-platform-backend" / "packages" / "mate-platform" / "src"
+    / "mate-platform-backend"
+    / "packages"
+    / "mate-platform"
+    / "src"
 )
 if str(_AUTH_SRC) not in sys.path:
     sys.path.insert(0, str(_AUTH_SRC))
@@ -38,7 +42,13 @@ class TestDataD5CrossTenantAuditModule:
     def test_audit_module_exists(self) -> None:
         path = (
             Path(__file__).resolve().parents[2]
-            / "mate-platform-backend" / "packages" / "mate-platform" / "src" / "mate_platform" / "auth" / "audit.py"
+            / "mate-platform-backend"
+            / "packages"
+            / "mate-platform"
+            / "src"
+            / "mate_platform"
+            / "auth"
+            / "audit.py"
         )
         assert path.is_file(), f"auth/audit.py missing at {path}"
 
@@ -47,10 +57,16 @@ class TestDataD5CrossTenantAuditModule:
             InMemoryAuditSink,
             emit_cross_tenant_data_access,
         )
+
         sink = InMemoryAuditSink()
         emit_cross_tenant_data_access(
-            actor_user_id="u1", actor_tenant_id="t1", target_tenant_id="t1",
-            operation="READ", dataset="x", trace_id="t", sink=sink,
+            actor_user_id="u1",
+            actor_tenant_id="t1",
+            target_tenant_id="t1",
+            operation="READ",
+            dataset="x",
+            trace_id="t",
+            sink=sink,
         )
         assert sink.all() == []
 
@@ -59,10 +75,16 @@ class TestDataD5CrossTenantAuditModule:
             InMemoryAuditSink,
             emit_cross_tenant_data_access,
         )
+
         sink = InMemoryAuditSink()
         emit_cross_tenant_data_access(
-            actor_user_id="u1", actor_tenant_id="a", target_tenant_id="b",
-            operation="READ", dataset="iam.user", trace_id="t1", sink=sink,
+            actor_user_id="u1",
+            actor_tenant_id="a",
+            target_tenant_id="b",
+            operation="READ",
+            dataset="iam.user",
+            trace_id="t1",
+            sink=sink,
         )
         assert len(sink.all()) == 1
 
@@ -71,9 +93,15 @@ class TestDataD5CrossTenantAuditModule:
             InMemoryAuditSink,
             emit_cross_tenant_data_access,
         )
+
         sink = InMemoryAuditSink()
         emit_cross_tenant_data_access(
-            actor_user_id="u", actor_tenant_id="a", target_tenant_id="b",
-            operation="READ", dataset="x", trace_id="trace-42", sink=sink,
+            actor_user_id="u",
+            actor_tenant_id="a",
+            target_tenant_id="b",
+            operation="READ",
+            dataset="x",
+            trace_id="trace-42",
+            sink=sink,
         )
         assert sink.all()[0].trace_id == "trace-42"

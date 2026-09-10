@@ -41,6 +41,7 @@
 ### Task 1: Create the PI-0 database-safety contract and admission verifier
 
 **Files:**
+
 - Create: `acceptance/release/v1/database-safety.schema.json`
 - Create: `acceptance/release/v1/database-safety.yaml`
 - Create: `acceptance/release/v1/migration-chain.yaml`
@@ -49,6 +50,7 @@
 - Modify: `.github/workflows/ga-acceptance.yml`
 
 **Interfaces:**
+
 - Produces: `DatabaseSafetyContract { profile_digest: str, identity_authority: "supabase-auth", token_broker: "keycloak", migration: MigrationAuthority, environments: list[EvidenceEnvironment], compatibility: CompatibilityWindow, recovery: RecoveryTarget, evidence: list[EvidenceRef] }`; PI-1 admission requires distinct cloud and connected-private receipts.
 - Produces: `verify_database_safety(contract_path: Path, repository_root: Path, now: datetime) -> VerificationResult` where `VerificationResult.status` is `PASSED` or `FAILED` and `codes: set[str]`.
 - Consumes: `acceptance/release/v1/production-profile.yaml`, `acceptance/gates/component-matrix.yaml`, and `acceptance/toolchain.lock.yaml`; validates the canonical migration chain and unique table/API/event ownership.
@@ -119,6 +121,7 @@ git commit -m "test(release): block PI-1 on database identity safety"
 ### Task 2: Build the signed least-privilege Alembic release Job
 
 **Files:**
+
 - Create: `infra/helm/charts/alembic-migration-job/Chart.yaml`
 - Create: `infra/helm/charts/alembic-migration-job/values.yaml`
 - Create: `infra/helm/charts/alembic-migration-job/templates/serviceaccount.yaml`
@@ -130,6 +133,7 @@ git commit -m "test(release): block PI-1 on database identity safety"
 - Create: `mate-platform-backend/tests/security/test_alembic_migration_job_policy.py`
 
 **Interfaces:**
+
 - Produces: `MigrationAuthority { image_digest: str, signer_identity: str, service_account: str, allowed_revisions: list[str], database_role: str, profile_digest: str }`.
 - Produces: `assert_migration_job_policy(rendered: str) -> set[str]`, returning violations such as `MIGRATION_JOB_PRIVILEGE_TOO_BROAD` or `MIGRATION_IMAGE_UNSIGNED`.
 - Consumes: `DatabaseSafetyContract.migration` from Task 1 and the OCI signature/SBOM verifier from the production Gate plan.
@@ -157,7 +161,7 @@ Expected: FAIL because the chart and policy verifier do not exist.
 serviceAccount:
   name: metaplatform-alembic-release
 job:
-  image: "{{ .Values.image.repository }}@{{ required \"image.digest is required\" .Values.image.digest }}"
+  image: '{{ .Values.image.repository }}@{{ required "image.digest is required" .Values.image.digest }}'
   command: ["alembic", "upgrade", "head"]
 databaseRole: metaplatform_migrator
 networkPolicy:
@@ -187,6 +191,7 @@ git commit -m "feat(release): add signed least-privilege migration job"
 ### Task 3: Establish the single Supabase Auth → Keycloak identity path and retire legacy IAM
 
 **Files:**
+
 - Modify: `infra/helm/charts/supabase-auth/values.yaml`
 - Modify: `infra/helm/charts/keycloak/values.yaml`
 - Modify: `infra/keycloak/realm/identity-broker.json`
@@ -197,6 +202,7 @@ git commit -m "feat(release): add signed least-privilege migration job"
 - Modify: `acceptance/gates/identity-supabase-keycloak.yaml`
 
 **Interfaces:**
+
 - Produces: `exchange_supabase_identity(id_token: str, audience: str) -> RuntimeToken`.
 - Produces: `reject_legacy_iam_request(path: str, now: datetime, compatibility_until: datetime) -> None`, raising `LegacyIdentityRetired` after the window.
 - `RuntimeToken` contains `iss`, `sub`, `tenant_id`, `actor_id`, `aud`, `exp`, `jti`, `policy_watermark` and `assignment_watermark`; it never contains a Supabase refresh token or a legacy-IAM entitlement.
@@ -248,6 +254,7 @@ git commit -m "feat(identity): converge runtime onto supabase keycloak chain"
 PI-0 freezes, implements and applies the complete 0016–0026 schema-only expand chain as one backward-compatible foundation in both production-equivalent topologies. PI-1 through PI-5 activate their services, routes and Feature Flags only after their own Gate/compatibility checks; they do not defer a required predecessor migration until feature activation. The destructive 0027 contract revision is created and exercised only in PI-6 after all N/N-1 consumers and the legacy-IAM window are closed.
 
 **Files:**
+
 - Create: `mate-platform-backend/alembic/versions/20260901_0027_contract_legacy_iam.py` (revision = 0027_contract_legacy_iam; down_revision = 0026_deployment_operations_v1)
 - Create: `mate-platform-backend/tests/compatibility/test_database_n_minus_one.py`
 - Create: `mate-platform-backend/tests/recovery/test_database_release_rollback.py`
@@ -257,6 +264,7 @@ PI-0 freezes, implements and applies the complete 0016–0026 schema-only expand
 - Modify: `scripts/test-database-release.ps1`
 
 **Interfaces:**
+
 - Produces: `upgrade_release(from_revision: str, to_revision: str, client_version: str, environment: EvidenceEnvironment) -> MigrationReceipt` where the receipt binds topology, environment/profile/migration-image Digests, from/to revisions, rollback/re-apply result and validity.
 - Produces: `reconcile_release_state(expected: ReleaseSnapshot, actual: ReleaseSnapshot) -> ReconciliationResult`.
 - Consumes: Task 2 `MigrationAuthority` and Task 3 stable subject mapping.
@@ -309,7 +317,8 @@ revisions:
   - revision: "0027_contract_legacy_iam"
     down_revision: "0026_deployment_operations_v1"
     phase: contract
-    requires: ["n-1-retired", "legacy-iam-window-closed", "reconciliation-passed"]
+    requires:
+      ["n-1-retired", "legacy-iam-window-closed", "reconciliation-passed"]
     rollback_to: "0026_deployment_operations_v1"
 ```
 
@@ -337,6 +346,7 @@ git commit -m "test(database): prove expand contract compatibility and rollback"
 ### Task 5: Exercise independent-domain PITR, RPO/RTO and business reconciliation
 
 **Files:**
+
 - Create: `acceptance/gates/environments/database-recovery-two-domain.yaml`
 - Create: `mate-platform-backend/tests/recovery/test_database_release_pitr.py`
 - Create: `scripts/collect-database-reconciliation-evidence.py`
@@ -344,6 +354,7 @@ git commit -m "test(database): prove expand contract compatibility and rollback"
 - Modify: `acceptance/gates/cnpg-barman-backup.yaml`
 
 **Interfaces:**
+
 - Produces: `RecoveryEvidence { environment_digest: str, backup_domain_id: str, restore_cluster_uid: str, recovery_point: datetime, achieved_rpo_seconds: int, achieved_rto_seconds: int, reconciliation_digest: str, valid_until: datetime }`.
 - Produces: `reconcile_business_facts(before: ReleaseSnapshot, after: ReleaseSnapshot) -> ReconciliationResult` with `duplicate_side_effects`, `missing_artifacts`, `identity_mismatches` and `audit_chain_breaks`.
 - Consumes: Task 1 environment binding and Task 4 migration receipts.
@@ -393,6 +404,7 @@ git commit -m "test(recovery): bind database pitr evidence to independent domain
 ### Task 6: Close the PI-0 blocker and enforce evidence invalidation
 
 **Files:**
+
 - Modify: `scripts/verify-database-release-safety.py`
 - Modify: `acceptance/release/v1/database-safety.yaml`
 - Modify: `acceptance/release/v1/sprint-board.yaml`
@@ -401,6 +413,7 @@ git commit -m "test(recovery): bind database pitr evidence to independent domain
 - Create: `mate-platform-backend/tests/architecture/test_database_safety_pi0_admission.py`
 
 **Interfaces:**
+
 - Produces: `admit_pi1(board: SprintBoard, safety: VerificationResult, identity_gate: GateResult, recovery: RecoveryEvidence, topology_receipts: dict[Topology, MigrationReceipt]) -> AdmissionResult`.
 - `AdmissionResult.status` is `ADMITTED` only when all inputs are current and `PASSED`; otherwise it is `BLOCKED` with stable failure codes.
 

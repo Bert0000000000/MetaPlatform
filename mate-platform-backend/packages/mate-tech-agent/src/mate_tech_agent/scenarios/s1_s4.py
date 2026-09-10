@@ -5,6 +5,7 @@
 - S3: Human-in-the-loop（interrupt_before）
 - S4: 流程驱动（Flowable BPMN）
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

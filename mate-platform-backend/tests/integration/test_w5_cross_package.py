@@ -1,4 +1,5 @@
 """W5 跨包综合集成 (tech-msg + tech-mcp + tech-rag + tech-llmgw + tech-agent + tech-ont)."""
+
 from __future__ import annotations
 
 

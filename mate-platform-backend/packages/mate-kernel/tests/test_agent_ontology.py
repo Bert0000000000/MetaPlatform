@@ -107,6 +107,7 @@ class TestOntologyAgent:
         class StubPlanner:
             def plan(self, query, default_class):
                 from mate_kernel.ontology.query.object_set import ObjectSet
+
                 return ObjectSet(class_rid=default_class, filter_expr="custom == 1")
 
         m = Manager(_ctx())

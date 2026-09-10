@@ -10,6 +10,7 @@ This test pins the new behaviour: a chunk whose text shares CJK bigrams
 with the query should outrank an unrelated chunk that started from the
 same vector score.
 """
+
 from __future__ import annotations
 
 import os
@@ -38,9 +39,14 @@ def _make_tenant_ctx(tenant: str = "tenant-acme"):
     from mate_platform.tenancy import AuthMethod, RequestContext, TenantId, UserId
 
     return RequestContext(
-        request_id="r1", trace_id="trace-1", tenant_id=TenantId(tenant),
-        user_id=UserId("u1"), roles=frozenset(), permissions=frozenset(),
-        client_id="test", auth_method=AuthMethod.USER,
+        request_id="r1",
+        trace_id="trace-1",
+        tenant_id=TenantId(tenant),
+        user_id=UserId("u1"),
+        roles=frozenset(),
+        permissions=frozenset(),
+        client_id="test",
+        auth_method=AuthMethod.USER,
     )
 
 
@@ -64,8 +70,11 @@ def _build_client(tenant: str, fake_hits: list[dict]) -> TestClient:
     fake_rag.stats = lambda: {"total_chunks": 0, "embedder_dim": 0}
     fake_agent = AgentClient()
     fake_agent.chat = lambda message, scenario="S1", thread_id=None: {
-        "thread_id": thread_id or "t-1", "scenario": scenario, "answer": "ok",
-        "retrieved_chunks": [], "tool_calls": [],
+        "thread_id": thread_id or "t-1",
+        "scenario": scenario,
+        "answer": "ok",
+        "retrieved_chunks": [],
+        "tool_calls": [],
     }
 
     with patch("mate_app_kb.api.app.install_auth"):
@@ -115,6 +124,7 @@ class TestKbScoreHitsCJK:
         assert hits[0]["score"] > hits[1]["score"], hits
 
         from mate_app_kb.repositories import in_memory as in_memory_repo
+
         in_memory_repo.reset_store()
 
     def test_english_overlap_still_works(self):
@@ -144,4 +154,5 @@ class TestKbScoreHitsCJK:
         assert hits[0]["score"] > hits[1]["score"], hits
 
         from mate_app_kb.repositories import in_memory as in_memory_repo
+
         in_memory_repo.reset_store()

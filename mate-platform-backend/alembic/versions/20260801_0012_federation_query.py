@@ -8,6 +8,7 @@ OBS in parallel.
 
 Per ADR-0016 §3.3 D8.
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa

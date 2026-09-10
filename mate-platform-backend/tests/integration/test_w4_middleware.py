@@ -1,4 +1,5 @@
 """W4 Traefik middleware 边角 (ST-4.2.x comprehensive)."""
+
 from __future__ import annotations
 
 

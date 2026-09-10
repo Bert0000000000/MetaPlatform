@@ -6,6 +6,7 @@ implementation calls require_tenant() as its first line; the DB filter
 event listener in db_filter.py is the secondary defense that catches
 raw SQL paths.
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -47,14 +48,10 @@ def require_tenant(ctx: RequestContext) -> TenantId:
     """
     if ctx.auth_method == AuthMethod.ANONYMOUS:
         _record_cross_tenant_attempt("anonymous", tenant_id=None)
-        raise TenantAccessError(
-            "anonymous callers cannot access tenant-scoped data (hard rule 3)"
-        )
+        raise TenantAccessError("anonymous callers cannot access tenant-scoped data (hard rule 3)")
     if not ctx.tenant_id:
         _record_cross_tenant_attempt("missing", tenant_id=None)
-        raise TenantAccessError(
-            "missing tenant context; refusing repository access (hard rule 3)"
-        )
+        raise TenantAccessError("missing tenant context; refusing repository access (hard rule 3)")
     return ctx.tenant_id
 
 

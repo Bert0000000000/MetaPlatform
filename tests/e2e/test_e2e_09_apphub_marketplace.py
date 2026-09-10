@@ -36,9 +36,7 @@ async def test_e2e_09_apphub_marketplace_full_flow(
     """
 
     # 1. 浏览模板（不带过滤条件）
-    list_resp = await wfe_client.get(
-        f"{APPHUB_BASE}/templates", headers=tenant_headers
-    )
+    list_resp = await wfe_client.get(f"{APPHUB_BASE}/templates", headers=tenant_headers)
     assert list_resp.status_code == 200, list_resp.text
     templates = list_resp.json()["data"]
     assert list_resp.json()["traceId"] == trace_id

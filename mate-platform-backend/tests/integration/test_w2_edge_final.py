@@ -1,4 +1,5 @@
 """W2 final edge tests."""
+
 from __future__ import annotations
 
 import os

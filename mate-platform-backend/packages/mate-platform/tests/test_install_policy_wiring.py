@@ -1,4 +1,5 @@
 """INTERCEPT/POLICY 端点接线单测：MP_POLICY_DENY_KINDS deny-first。"""
+
 from __future__ import annotations
 
 import importlib
@@ -11,6 +12,7 @@ import pytest
 def api(monkeypatch):
     os.environ.pop("MP_POLICY_DENY_KINDS", None)
     import mate_platform.marketplace.api.install as install_mod
+
     mod = importlib.reload(install_mod)
     yield mod
     os.environ.pop("MP_POLICY_DENY_KINDS", None)

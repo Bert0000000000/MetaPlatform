@@ -89,7 +89,7 @@ const priorityTagClass: Record<string, string> = {
 
 export default function AgentsEvaluationPage() {
   const navigate = useNavigate();
-  
+
   return (
     <div>
 

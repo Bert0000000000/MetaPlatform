@@ -8,6 +8,7 @@ because every outbox producer already imports it; the *query* side
 is only needed by services that visualize or audit lineage, so it
 gets its own module.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -68,9 +69,7 @@ class LineageClient(Protocol):
         """Append a directed edge between two existing nodes."""
         ...
 
-    def query(
-        self, *, tenant_id: str, correlation_id: str
-    ) -> LineageQueryResult:
+    def query(self, *, tenant_id: str, correlation_id: str) -> LineageQueryResult:
         """Return the cross-domain chain for a correlation id.
 
         Tenant isolation: the result MUST only contain nodes whose

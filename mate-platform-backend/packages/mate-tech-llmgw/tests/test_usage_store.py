@@ -3,6 +3,7 @@
 Layers: llm_usage detail → llm_usage_daily rollup → llmgw_api_keys.spend.
 Budget checks read ONLY the daily rollup (window_spend).
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

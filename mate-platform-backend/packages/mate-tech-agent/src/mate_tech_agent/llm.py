@@ -2,6 +2,7 @@
 
 LLM_PROVIDER env: "openai" | "noop" | "echo" (default).
 """
+
 from __future__ import annotations
 
 import logging
@@ -37,9 +38,7 @@ class EchoLLM:
 def get_llm() -> Any:
     provider = os.environ.get("LLM_PROVIDER", "echo").strip().lower()
     if is_production_profile() and provider in {"echo", "noop"}:
-        raise RuntimeError(
-            f"synthetic LLM provider {provider!r} is disabled in production"
-        )
+        raise RuntimeError(f"synthetic LLM provider {provider!r} is disabled in production")
     if is_production_profile() and provider != "openai":
         raise RuntimeError(f"unsupported LLM provider {provider!r} in production")
     if provider == "openai":

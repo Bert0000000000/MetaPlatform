@@ -1,17 +1,16 @@
 # MP-SAL-03 ACCEPTANCE — Function 沙箱生产化（生产门）
 
 > **Batch**: MP-SAL-03（Semantic layer AI Landing · 03 · 生产门，对位差距 G5）
-> **日期**: 2026-08-17 · **分支**: `refactor/mp-sal-01`
-> **ADR**: ADR-0040 §2.5（双轨）· spec v0.3 §4.2 SAL-03
+> **日期**: 2026-08-17 · **分支**: `refactor/mp-sal-01` > **ADR**: ADR-0040 §2.5（双轨）· spec v0.3 §4.2 SAL-03
 
 ## 1. 交付范围
 
-| 项 | 落点 | 状态 |
-|---|---|---|
-| **K8s Job 真接（L2）** | `mate_kernel/sandbox/k8s.py` 新增 `K8sJobExecutor`：`K8sSandboxSpec` → batch/v1 Job manifest 渲染（ResourceLimits→Limits/activeDeadlineSeconds、backoffLimit=0、restartPolicy=Never、最小 serviceAccount、NetworkPolicy egress 白名单以注解携带对齐集群 default-deny）；经 `kubectl` 子进程零新依赖执行全生命周期 apply→wait→logs→delete（失败路径取日志、异常降级为执行失败、finally 必清理） | ✅ |
-| **backend 开关** | `SANDBOX_BACKEND=k8s` 启用；默认 subprocess（dev 双轨，ADR-0040 §2.5.1 保持） | ✅ |
-| **copilot 真鉴权** | 核实机制已完备：copilot `install_auth` 已装（SEC-IAM-01 规范中间件）；`mate_platform/auth/config.py:72-87` production profile 在 `LEGACY_LOGIN_COMPAT=false`（默认）时强制 KEYCLOAK_URL + SERVICE_CLIENT_SECRET，否则拒启（硬规则 5 guard）。**代码无缺口**；生产部署动作（Keycloak 接入配置）属部署 checklist | ✅（机制核实） |
-| **L3 MicroVM** | 仍留 Marketplace 后续（ADR-0040 决策不变） | 出范围 |
+| 项                     | 落点                                                                                                                                                                                                                                                                                                                                                                                           | 状态           |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| **K8s Job 真接（L2）** | `mate_kernel/sandbox/k8s.py` 新增 `K8sJobExecutor`：`K8sSandboxSpec` → batch/v1 Job manifest 渲染（ResourceLimits→Limits/activeDeadlineSeconds、backoffLimit=0、restartPolicy=Never、最小 serviceAccount、NetworkPolicy egress 白名单以注解携带对齐集群 default-deny）；经 `kubectl` 子进程零新依赖执行全生命周期 apply→wait→logs→delete（失败路径取日志、异常降级为执行失败、finally 必清理） | ✅             |
+| **backend 开关**       | `SANDBOX_BACKEND=k8s` 启用；默认 subprocess（dev 双轨，ADR-0040 §2.5.1 保持）                                                                                                                                                                                                                                                                                                                  | ✅             |
+| **copilot 真鉴权**     | 核实机制已完备：copilot `install_auth` 已装（SEC-IAM-01 规范中间件）；`mate_platform/auth/config.py:72-87` production profile 在 `LEGACY_LOGIN_COMPAT=false`（默认）时强制 KEYCLOAK_URL + SERVICE_CLIENT_SECRET，否则拒启（硬规则 5 guard）。**代码无缺口**；生产部署动作（Keycloak 接入配置）属部署 checklist                                                                                 | ✅（机制核实） |
+| **L3 MicroVM**         | 仍留 Marketplace 后续（ADR-0040 决策不变）                                                                                                                                                                                                                                                                                                                                                     | 出范围         |
 
 ## 2. 测试证据
 

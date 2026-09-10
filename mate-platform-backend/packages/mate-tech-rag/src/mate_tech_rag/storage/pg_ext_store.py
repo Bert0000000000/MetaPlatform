@@ -26,6 +26,7 @@ The CJK tokenizer below is a deliberate COPY of the one in ``pg_client.py``
 (see that module for the rationale): importing the maintainer's private
 ``_cjk_tokens`` would couple this module to internals we do not own.
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -141,7 +142,11 @@ def get_shared_pool(dsn: str | None = None) -> Any:
             from psycopg_pool import ConnectionPool  # pyright: ignore[reportMissingImports]
 
             pool = ConnectionPool(
-                conninfo=resolved, min_size=1, max_size=3, timeout=5.0, open=True,
+                conninfo=resolved,
+                min_size=1,
+                max_size=3,
+                timeout=5.0,
+                open=True,
             )
             with pool.connection() as conn:
                 with conn.cursor() as cur:
@@ -150,7 +155,8 @@ def get_shared_pool(dsn: str | None = None) -> Any:
         except Exception as exc:
             _log.warning(
                 "pg_ext_store pool init failed for %s: %s",
-                resolved.split("@")[-1], exc,
+                resolved.split("@")[-1],
+                exc,
             )
             if pool is not None:
                 with contextlib.suppress(Exception):
@@ -329,7 +335,8 @@ class PgGraphRAGClient(_BasePgStore):
 
     def delete_by_document(self, document_id: str) -> int:
         return self._exec(
-            f"DELETE FROM {self._TABLE} WHERE document_id = %s", (document_id,),
+            f"DELETE FROM {self._TABLE} WHERE document_id = %s",
+            (document_id,),
         )
 
 
@@ -409,7 +416,8 @@ class PgLightRAGClient(_BasePgStore):
 
     def delete_by_document(self, document_id: str) -> int:
         return self._exec(
-            f"DELETE FROM {self._TABLE} WHERE document_id = %s", (document_id,),
+            f"DELETE FROM {self._TABLE} WHERE document_id = %s",
+            (document_id,),
         )
 
 
@@ -420,15 +428,18 @@ class PgKbDocumentStore(_BasePgStore):
     """Persistent replacement for the app-level ``_kb_documents`` dict."""
 
     def register(self, kb_id: str, document_id: str, tenant_id: str = "default") -> bool:
-        return self._exec(
-            """
+        return (
+            self._exec(
+                """
             INSERT INTO rag_kb_documents (kb_id, document_id, tenant_id)
             VALUES (%s, %s, %s)
             ON CONFLICT (kb_id, document_id) DO UPDATE
             SET tenant_id = EXCLUDED.tenant_id
             """,
-            (kb_id, document_id, tenant_id or "default"),
-        ) > 0
+                (kb_id, document_id, tenant_id or "default"),
+            )
+            > 0
+        )
 
     def unregister(self, kb_id: str, document_id: str) -> int:
         return self._exec(
@@ -445,7 +456,8 @@ class PgKbDocumentStore(_BasePgStore):
 
     def delete_by_document(self, document_id: str) -> int:
         return self._exec(
-            "DELETE FROM rag_kb_documents WHERE document_id = %s", (document_id,),
+            "DELETE FROM rag_kb_documents WHERE document_id = %s",
+            (document_id,),
         )
 
     def clear(self) -> int:
@@ -465,8 +477,9 @@ class PgMetricsStore(_BasePgStore):
         ``p95_last`` is a last-writer-wins snapshot of the in-memory sliding
         window's p95 at flush time.
         """
-        return self._exec(
-            """
+        return (
+            self._exec(
+                """
             INSERT INTO rag_metrics (endpoint, count, sum_ms, p95_last, updated_at)
             VALUES (%s, %s, %s, %s, NOW())
             ON CONFLICT (endpoint) DO UPDATE SET
@@ -475,13 +488,13 @@ class PgMetricsStore(_BasePgStore):
                 p95_last = EXCLUDED.p95_last,
                 updated_at = NOW()
             """,
-            (endpoint, int(count_delta), float(sum_delta_ms), float(p95_last)),
-        ) > 0
+                (endpoint, int(count_delta), float(sum_delta_ms), float(p95_last)),
+            )
+            > 0
+        )
 
     def load_all(self) -> dict[str, dict[str, Any]]:
-        rows = self._fetch(
-            "SELECT endpoint, count, sum_ms, p95_last, updated_at FROM rag_metrics"
-        )
+        rows = self._fetch("SELECT endpoint, count, sum_ms, p95_last, updated_at FROM rag_metrics")
         return {
             str(r[0]): {
                 "count": int(r[1] or 0),

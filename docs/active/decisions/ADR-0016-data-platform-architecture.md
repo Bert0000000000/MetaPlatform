@@ -22,22 +22,22 @@ DATA-D0-D8 是 v3.0 GA 之后第一个 v3.1 增量批次,目标是补完数据�
 
 DATA-D0-D8 采用 4 组件 + 2 隔离:
 
-| 组件 | 实现 | 接入点 |
-|---|---|---|
-| CDC（变更数据捕获）| Debezium（Kafka Connect）| 业务表 → Kafka topic |
-| Lineage（血缘）| OpenLineage + Marquez | Event listener → lineage server |
-| Catalog（数据目录）| DataHub | 静态元数据 + 业务术语 |
-| Quality（质量门禁）| Great Expectations | DDL migration / pipeline gate |
+| 组件                | 实现                      | 接入点                          |
+| ------------------- | ------------------------- | ------------------------------- |
+| CDC（变更数据捕获） | Debezium（Kafka Connect） | 业务表 → Kafka topic            |
+| Lineage（血缘）     | OpenLineage + Marquez     | Event listener → lineage server |
+| Catalog（数据目录） | DataHub                   | 静态元数据 + 业务术语           |
+| Quality（质量门禁） | Great Expectations        | DDL migration / pipeline gate   |
 
 5 层数据隔离（与 SEC-TENANT-01 一致）：
 
-| 层 | 实现 |
-|---|---|
-| HTTP | mate-platform.auth / install_auth（GA 已闭环）|
-| DB | row-level security（业务表 + tenant_id）+ SQLAlchemy event listener（GA 已闭环）|
-| Kafka | topic 命名约定（PLATFORM-EVENT-01 已闭环）|
-| Redis | key 前缀（SEC-TENANT-01 已闭环）|
-| MinIO | bucket 命名（SEC-TENANT-01 已闭环）|
+| 层    | 实现                                                                             |
+| ----- | -------------------------------------------------------------------------------- |
+| HTTP  | mate-platform.auth / install_auth（GA 已闭环）                                   |
+| DB    | row-level security（业务表 + tenant_id）+ SQLAlchemy event listener（GA 已闭环） |
+| Kafka | topic 命名约定（PLATFORM-EVENT-01 已闭环）                                       |
+| Redis | key 前缀（SEC-TENANT-01 已闭环）                                                 |
+| MinIO | bucket 命名（SEC-TENANT-01 已闭环）                                              |
 
 ## 3. 范围
 
@@ -97,11 +97,11 @@ DATA-D0-D8 采用 4 组件 + 2 隔离:
 
 按 D0-D8 渐进：
 
-| 阶段 | 动作 | 验证 |
-|---|---|---|
-| D0 | Debezium + Marquez + DataHub + GE 接入 | 17 域 CDC 跑通 |
-| D1-D4 | 跨域血缘 + Data Product + 集成 | lineage 跨域追踪 |
-| D5-D8 | 审计 + 留存 + 脱敏 + federated query | GA-ready |
+| 阶段  | 动作                                   | 验证             |
+| ----- | -------------------------------------- | ---------------- |
+| D0    | Debezium + Marquez + DataHub + GE 接入 | 17 域 CDC 跑通   |
+| D1-D4 | 跨域血缘 + Data Product + 集成         | lineage 跨域追踪 |
+| D5-D8 | 审计 + 留存 + 脱敏 + federated query   | GA-ready         |
 
 ## 6. Verification
 
@@ -133,15 +133,15 @@ DATA-D0-D8 退出条件（13 项硬规则映射）：
 
 ## 8. 阶段划分（与 R5 报告同步）
 
-| 阶段 | 范围 | 预计工时 |
-|---|---|---|
-| D0 | CDC + Marquez + DataHub + GE 接入 | 1 周 |
-| D1 | 跨域 lineage 追踪 | 1 周 |
-| D2 | Data Product 建模 | 1 周 |
-| D3 | GE 与 Airflow 集成 | 1 周 |
-| D4 | OpenLineage 与 DataHub 同步 | 0.5 周 |
-| D5 | 跨域 data access 审计 | 0.5 周 |
-| D6 | 租户级 retention / GDPR | 0.5 周 |
-| D7 | pii_mask 整合 | 0.5 周 |
-| D8 | data federation | 1 周 |
-| **合计** | | **8 周** |
+| 阶段     | 范围                              | 预计工时 |
+| -------- | --------------------------------- | -------- |
+| D0       | CDC + Marquez + DataHub + GE 接入 | 1 周     |
+| D1       | 跨域 lineage 追踪                 | 1 周     |
+| D2       | Data Product 建模                 | 1 周     |
+| D3       | GE 与 Airflow 集成                | 1 周     |
+| D4       | OpenLineage 与 DataHub 同步       | 0.5 周   |
+| D5       | 跨域 data access 审计             | 0.5 周   |
+| D6       | 租户级 retention / GDPR           | 0.5 周   |
+| D7       | pii_mask 整合                     | 0.5 周   |
+| D8       | data federation                   | 1 周     |
+| **合计** |                                   | **8 周** |

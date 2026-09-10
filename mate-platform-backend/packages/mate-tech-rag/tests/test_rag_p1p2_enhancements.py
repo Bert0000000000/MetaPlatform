@@ -6,6 +6,7 @@ Coverage:
   * DELETE /api/v1/rag/documents/{doc_id} clears the 3 indexes and the
     lifecycle record so subsequent searches return 0 hits for that doc.
 """
+
 from __future__ import annotations
 
 import os
@@ -111,7 +112,9 @@ class TestRagSloMetrics:
     each endpoint bucket after exercising the API."""
 
     def test_metrics_search_count_increases_after_calls(
-        self, rag_client, auth_acme,
+        self,
+        rag_client,
+        auth_acme,
     ) -> None:
         # Pre-seed a doc so the search has something to find.
         rag_client.post(
@@ -141,7 +144,9 @@ class TestRagSloMetrics:
         assert body["window_size"] == 32
 
     def test_metrics_endpoint_records_upload_latency(
-        self, rag_client, auth_acme,
+        self,
+        rag_client,
+        auth_acme,
     ) -> None:
         r = rag_client.post(
             "/api/v1/rag/upload",
@@ -156,7 +161,9 @@ class TestRagSloMetrics:
         assert upload_bucket["count"] >= 1, upload_bucket
 
     def test_metrics_endpoint_records_ingest_latency(
-        self, rag_client, auth_acme,
+        self,
+        rag_client,
+        auth_acme,
     ) -> None:
         r = rag_client.post(
             "/api/v1/rag/ingest",
@@ -182,7 +189,9 @@ class TestRagCascadeDelete:
     lifecycle record so subsequent searches return 0 hits for that doc."""
 
     def test_ingest_then_delete_then_search_returns_zero(
-        self, rag_client, auth_acme,
+        self,
+        rag_client,
+        auth_acme,
     ) -> None:
         # Seed a doc with a chunk that the query will match.
         r_seed = rag_client.post(
@@ -213,7 +222,8 @@ class TestRagCascadeDelete:
 
         # DELETE.
         r2 = rag_client.delete(
-            "/api/v1/rag/documents/doc-cascade", headers=auth_acme,
+            "/api/v1/rag/documents/doc-cascade",
+            headers=auth_acme,
         )
         assert r2.status_code == 200, r2.text
         body = r2.json()
@@ -233,13 +243,12 @@ class TestRagCascadeDelete:
             headers=auth_acme,
         )
         assert r3.status_code == 200, r3.text
-        assert all(
-            h["document_id"] != "doc-cascade" for h in r3.json()["hits"]
-        ), r3.json()
+        assert all(h["document_id"] != "doc-cascade" for h in r3.json()["hits"]), r3.json()
 
     def test_delete_unknown_doc_idempotent(self, rag_client, auth_acme) -> None:
         r = rag_client.delete(
-            "/api/v1/rag/documents/no-such-tenant-doc", headers=auth_acme,
+            "/api/v1/rag/documents/no-such-tenant-doc",
+            headers=auth_acme,
         )
         # Unknown doc returns 200 with deleted=False (idempotent).
         assert r.status_code == 200, r.text

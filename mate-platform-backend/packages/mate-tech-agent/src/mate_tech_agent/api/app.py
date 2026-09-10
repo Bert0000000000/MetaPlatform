@@ -7,6 +7,7 @@ EXPIRED), and input validation (AUTO scenario resolution, thread-id
 sanitisation). Endpoint contracts (HTTP method / path / response
 shape) are unchanged.
 """
+
 # pyright: reportUnusedFunction=false
 from __future__ import annotations
 
@@ -156,13 +157,15 @@ def _run_s3_initial(
     state = retrieve_node(init)
     state = answer_node(state)
     state = human_review_node(state)
-    _set_review(ReviewState(
-        thread_id=thread_id,
-        tenant_id=tenant_id,
-        scenario="S3",
-        status="PENDING",
-        created_at=time.time(),
-    ))
+    _set_review(
+        ReviewState(
+            thread_id=thread_id,
+            tenant_id=tenant_id,
+            scenario="S3",
+            status="PENDING",
+            created_at=time.time(),
+        )
+    )
     _persist(tenant_id, thread_id, state)
     return state
 
@@ -175,9 +178,7 @@ def _emit(
     tenant_id: str,
 ) -> None:
     """Append an outbox event if a writer is configured (ADR-0014 step 3)."""
-    writer: InMemoryOutboxWriter | None = getattr(
-        request.app.state, "outbox_writer", None
-    )
+    writer: InMemoryOutboxWriter | None = getattr(request.app.state, "outbox_writer", None)
     if writer is None:
         return
     writer.append(
@@ -244,13 +245,15 @@ def create_app() -> FastAPI:
             graph = _GRAPHS[scenario]
             prior = load_state(tenant_id, thread_id)
             base = dict(prior.get("state", {})) if prior else {}
-            base.update({
-                "messages": [{"role": "user", "content": req.message}],
-                "thread_id": thread_id,
-                "tenant_id": tenant_id,
-                "_scenario": scenario,
-                "_access_token": access_token,
-            })
+            base.update(
+                {
+                    "messages": [{"role": "user", "content": req.message}],
+                    "thread_id": thread_id,
+                    "tenant_id": tenant_id,
+                    "_scenario": scenario,
+                    "_access_token": access_token,
+                }
+            )
             try:
                 state = graph.invoke(base)
             except Exception as exc:
@@ -311,13 +314,15 @@ def create_app() -> FastAPI:
                     yield f"event: token\ndata: {token}\n\n"
                 yield "event: llm_done\ndata: complete\n\n"
                 state = human_review_node(state)
-                _set_review(ReviewState(
-                    thread_id=thread_id,
-                    tenant_id=tenant_id,
-                    scenario="S3",
-                    status="PENDING",
-                    created_at=time.time(),
-                ))
+                _set_review(
+                    ReviewState(
+                        thread_id=thread_id,
+                        tenant_id=tenant_id,
+                        scenario="S3",
+                        status="PENDING",
+                        created_at=time.time(),
+                    )
+                )
                 _emit(
                     request,
                     "agent.review.requested",
@@ -494,7 +499,8 @@ def create_app() -> FastAPI:
 
     @app.post("/api/v1/agent/plan/execute", response_model=PlanExecuteResponse)
     async def plan_execute(
-        request: Request, req: PlanExecuteRequest,
+        request: Request,
+        req: PlanExecuteRequest,
     ) -> PlanExecuteResponse:
         """Cross-agent plan orchestration (P3-W8).
 
@@ -510,12 +516,14 @@ def create_app() -> FastAPI:
         # here we record the orchestration envelope).
         results: list[dict[str, Any]] = []
         for step in raw_steps:
-            results.append({
-                "agent_id": step["agent_id"],
-                "action": step["action"],
-                "status": "completed",
-                "output": f"{step['action']} dispatched to {step['agent_id']}",
-            })
+            results.append(
+                {
+                    "agent_id": step["agent_id"],
+                    "action": step["action"],
+                    "status": "completed",
+                    "output": f"{step['action']} dispatched to {step['agent_id']}",
+                }
+            )
 
         rec = create_plan_execution(
             tenant_id=tenant_id,

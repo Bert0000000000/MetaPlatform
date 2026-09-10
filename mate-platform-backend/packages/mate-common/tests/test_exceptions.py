@@ -1,4 +1,5 @@
-﻿"""Test exception hierarchy and ErrorCode enum."""
+"""Test exception hierarchy and ErrorCode enum."""
+
 from __future__ import annotations
 
 import pytest

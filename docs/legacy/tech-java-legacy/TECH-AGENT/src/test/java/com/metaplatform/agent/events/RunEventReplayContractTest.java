@@ -136,7 +136,7 @@ class RunEventReplayContractTest {
         service.record(run, "RUN_STARTED", Map.of("k", "v"));
         ArgumentCaptor<RunEventEntity> captor = ArgumentCaptor.forClass(RunEventEntity.class);
         Mockito.verify(repository).saveAndFlush(captor.capture());
-        // and order: saveAndFlush was called BEFORE the list() query above, 
+        // and order: saveAndFlush was called BEFORE the list() query above,
         // proving the seq calculation read state from the previous flush.
         org.mockito.Mockito.inOrder(repository);
         org.mockito.InOrder order = Mockito.inOrder(repository);

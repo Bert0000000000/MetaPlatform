@@ -27,6 +27,7 @@ Three assertions
 
 Related: 13 硬规则 §1 (oasdiff gate), ADR-0011 (SEC-IAM-01).
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -104,7 +105,11 @@ HEALTHZ_ENDPOINTS = [e for e in ALL_ENDPOINTS if "/healthz" in e[2]]
     ids=[_ep_id(*e) for e in ALL_ENDPOINTS],
 )
 def test_all_endpoints_have_security(
-    fname: str, method: str, path: str, op: dict, global_security: Any,
+    fname: str,
+    method: str,
+    path: str,
+    op: dict,
+    global_security: Any,
 ) -> None:
     """No route ships without an authentication contract.
 
@@ -137,7 +142,11 @@ def test_endpoint_inventory_non_empty() -> None:
     ids=[_ep_id(*e) for e in WRITE_ENDPOINTS],
 )
 def test_write_endpoints_use_write_scope(
-    fname: str, method: str, path: str, op: dict, global_security: Any,
+    fname: str,
+    method: str,
+    path: str,
+    op: dict,
+    global_security: Any,
 ) -> None:
     """Mutating operations declaring ``oidcScopes`` must require write.
 
@@ -170,7 +179,11 @@ def test_write_endpoints_use_write_scope(
     ids=[_ep_id(*e) for e in HEALTHZ_ENDPOINTS],
 )
 def test_healthz_exempt_from_oidc(
-    fname: str, method: str, path: str, op: dict, global_security: Any,
+    fname: str,
+    method: str,
+    path: str,
+    op: dict,
+    global_security: Any,
 ) -> None:
     """``/healthz`` must not require ``oidcScopes``.
 
@@ -186,6 +199,5 @@ def test_healthz_exempt_from_oidc(
     for req in sec:
         if isinstance(req, dict):
             assert "oidcScopes" not in req, (
-                f"{fname} {method} {path} requires oidcScopes but "
-                f"healthz probes must be exempt"
+                f"{fname} {method} {path} requires oidcScopes but healthz probes must be exempt"
             )

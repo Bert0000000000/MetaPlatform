@@ -17,7 +17,6 @@ spring:
       - org.springframework.cloud.autoconfigure.RefreshAutoConfiguration
       - org.springframework.cloud.context.refresh.ContextRefresherAutoConfiguration
 
-
   datasource:
     url: jdbc:postgresql://localhost:5432/metaplatform_wfe
     username: meta

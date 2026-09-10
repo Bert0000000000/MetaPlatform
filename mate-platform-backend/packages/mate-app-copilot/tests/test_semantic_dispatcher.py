@@ -10,6 +10,7 @@ Covers:
   - Default handler factories (keyword / embedding / kernel_role)
   - DispatchResult.to_dict()
 """
+
 from __future__ import annotations
 
 import pytest
@@ -81,25 +82,35 @@ def test_default_chain_order() -> None:
 @pytest.mark.asyncio
 async def test_a2a_first_wins() -> None:
     a2a_result = DispatchResult(
-        source="a2a", target_rid="workflow",
+        source="a2a",
+        target_rid="workflow",
         reason="a2a dispatch accepted",
     )
     result = await dispatch_by_routing(
         user_message="帮我发起审批",
         available_roles=ROLES,
         a2a_handler=_async_handler(a2a_result),
-        kernel_role_handler=_sync_handler(DispatchResult(
-            source="kernel_role", target_rid="workflow",
-            reason="should not be reached",
-        )),
-        embedding_handler=_sync_handler(DispatchResult(
-            source="embedding_match", target_rid="knowledge",
-            reason="should not be reached",
-        )),
-        keyword_substring_handler=_sync_handler(DispatchResult(
-            source="keyword_substring", target_rid="ontology",
-            reason="should not be reached",
-        )),
+        kernel_role_handler=_sync_handler(
+            DispatchResult(
+                source="kernel_role",
+                target_rid="workflow",
+                reason="should not be reached",
+            )
+        ),
+        embedding_handler=_sync_handler(
+            DispatchResult(
+                source="embedding_match",
+                target_rid="knowledge",
+                reason="should not be reached",
+            )
+        ),
+        keyword_substring_handler=_sync_handler(
+            DispatchResult(
+                source="keyword_substring",
+                target_rid="ontology",
+                reason="should not be reached",
+            )
+        ),
         target_hint="agent-1",
     )
     assert result.source == "a2a"
@@ -114,16 +125,21 @@ async def test_a2a_skipped_when_no_target_hint() -> None:
     def _kw_with_flag(*args, **kwargs):
         called["kw"] = True
         return DispatchResult(
-            source="keyword_substring", target_rid="workflow",
+            source="keyword_substring",
+            target_rid="workflow",
             reason="role slug workflow in message",
         )
 
     result = await dispatch_by_routing(
         user_message="请调度 workflow 处理对账单",
         available_roles=ROLES,
-        a2a_handler=_async_handler(DispatchResult(
-            source="a2a", target_rid="workflow", reason="would have matched",
-        )),
+        a2a_handler=_async_handler(
+            DispatchResult(
+                source="a2a",
+                target_rid="workflow",
+                reason="would have matched",
+            )
+        ),
         keyword_substring_handler=_kw_with_flag,
         target_hint=None,  # explicit None
     )
@@ -145,11 +161,16 @@ async def test_kernel_role_when_a2a_skipped() -> None:
         user_message="anything",
         available_roles=ROLES,
         fallback_chain=chain,
-        a2a_handler=_async_handler(DispatchResult(
-            source="a2a", target_rid="workflow", reason="would have matched",
-        )),
+        a2a_handler=_async_handler(
+            DispatchResult(
+                source="a2a",
+                target_rid="workflow",
+                reason="would have matched",
+            )
+        ),
         kernel_role_handler=lambda hint, msg: DispatchResult(
-            source="kernel_role", target_rid="workflow",
+            source="kernel_role",
+            target_rid="workflow",
             reason=f"AgentSelector classified {hint!r}",
         ),
         target_hint=None,
@@ -165,14 +186,20 @@ async def test_kernel_role_superai_default_is_not_hit() -> None:
         user_message="anything",
         available_roles=ROLES,
         a2a_handler=_async_handler(None),
-        kernel_role_handler=_sync_handler(DispatchResult(
-            source="kernel_role", target_rid=None,
-            reason="AgentSelector classify as SUPERAI (default)",
-        )),
-        keyword_substring_handler=_sync_handler(DispatchResult(
-            source="keyword_substring", target_rid="workflow",
-            reason="workflow in message",
-        )),
+        kernel_role_handler=_sync_handler(
+            DispatchResult(
+                source="kernel_role",
+                target_rid=None,
+                reason="AgentSelector classify as SUPERAI (default)",
+            )
+        ),
+        keyword_substring_handler=_sync_handler(
+            DispatchResult(
+                source="keyword_substring",
+                target_rid="workflow",
+                reason="workflow in message",
+            )
+        ),
         target_hint="unknown-prefix.foo.bar",
     )
     assert result.source == "none"
@@ -189,10 +216,13 @@ async def test_embedding_match_third() -> None:
         available_roles=ROLES,
         a2a_handler=_async_handler(None),
         kernel_role_handler=_sync_handler(None),
-        embedding_handler=_sync_handler(DispatchResult(
-            source="embedding_match", target_rid="workflow",
-            reason="top candidate by similarity (0.42)",
-        )),
+        embedding_handler=_sync_handler(
+            DispatchResult(
+                source="embedding_match",
+                target_rid="workflow",
+                reason="top candidate by similarity (0.42)",
+            )
+        ),
         target_hint=None,
     )
     assert result.source == "none"
@@ -211,10 +241,13 @@ async def test_keyword_substring_last_resort() -> None:
         a2a_handler=_async_handler(None),
         kernel_role_handler=_sync_handler(None),
         embedding_handler=_sync_handler(None),
-        keyword_substring_handler=_sync_handler(DispatchResult(
-            source="keyword_substring", target_rid="workflow",
-            reason="role slug workflow in message",
-        )),
+        keyword_substring_handler=_sync_handler(
+            DispatchResult(
+                source="keyword_substring",
+                target_rid="workflow",
+                reason="role slug workflow in message",
+            )
+        ),
         target_hint=None,
     )
     assert result.source == "none"
@@ -242,9 +275,13 @@ async def test_empty_roles_returns_none() -> None:
     result = await dispatch_by_routing(
         user_message="anything",
         available_roles=[],
-        a2a_handler=_async_handler(DispatchResult(
-            source="a2a", target_rid="x", reason="y",
-        )),
+        a2a_handler=_async_handler(
+            DispatchResult(
+                source="a2a",
+                target_rid="x",
+                reason="y",
+            )
+        ),
     )
     assert result.source == "none"
     assert "no available roles" in result.reason
@@ -264,10 +301,13 @@ async def test_handler_exception_denies_without_fallback() -> None:
         a2a_handler=_boom,
         kernel_role_handler=lambda h, m: (_ for _ in ()).throw(RuntimeError("kernel boom")),
         embedding_handler=lambda msg, roles: (_ for _ in ()).throw(RuntimeError("emb boom")),
-        keyword_substring_handler=_sync_handler(DispatchResult(
-            source="keyword_substring", target_rid="workflow",
-            reason="substring match",
-        )),
+        keyword_substring_handler=_sync_handler(
+            DispatchResult(
+                source="keyword_substring",
+                target_rid="workflow",
+                reason="substring match",
+            )
+        ),
         target_hint="anything",
     )
     assert result.source == "none"
@@ -287,10 +327,13 @@ async def test_unknown_kind_skipped() -> None:
         user_message="hello workflow",
         available_roles=ROLES,
         fallback_chain=chain,
-        keyword_substring_handler=_sync_handler(DispatchResult(
-            source="keyword_substring", target_rid="workflow",
-            reason="substring match",
-        )),
+        keyword_substring_handler=_sync_handler(
+            DispatchResult(
+                source="keyword_substring",
+                target_rid="workflow",
+                reason="substring match",
+            )
+        ),
     )
     assert result.source == "none"
 
@@ -320,8 +363,7 @@ async def test_step_target_overrides_target_hint() -> None:
 # DispatchResult.to_dict
 # ---------------------------------------------------------------------------
 def test_dispatch_result_to_dict_no_candidates() -> None:
-    r = DispatchResult(source="keyword_substring", target_rid="workflow",
-                       reason="substring match")
+    r = DispatchResult(source="keyword_substring", target_rid="workflow", reason="substring match")
     d = r.to_dict()
     assert d == {
         "source": "keyword_substring",
@@ -335,13 +377,18 @@ def test_dispatch_result_to_dict_with_candidates() -> None:
     from mate_app_copilot.semantic_router import CandidateRole
 
     c = CandidateRole(
-        role_slug="workflow", role_rid="wfe.x.y.v1",
-        display_name="Workflow", capability_tags=("approve",),
-        similarity=0.42, reason="embedding cosine",
+        role_slug="workflow",
+        role_rid="wfe.x.y.v1",
+        display_name="Workflow",
+        capability_tags=("approve",),
+        similarity=0.42,
+        reason="embedding cosine",
     )
     r = DispatchResult(
-        source="embedding_match", target_rid="workflow",
-        reason="top candidate", candidates=(c,),
+        source="embedding_match",
+        target_rid="workflow",
+        reason="top candidate",
+        candidates=(c,),
     )
     d = r.to_dict()
     assert len(d["candidates"]) == 1
@@ -426,13 +473,20 @@ async def test_custom_chain_order() -> None:
         user_message="请帮我用 workflow 处理",
         available_roles=ROLES,
         fallback_chain=[FallbackStep("keyword_substring"), FallbackStep("a2a")],
-        a2a_handler=_async_handler(DispatchResult(
-            source="a2a", target_rid="workflow", reason="would have matched",
-        )),
-        keyword_substring_handler=_sync_handler(DispatchResult(
-            source="keyword_substring", target_rid="workflow",
-            reason="substring match",
-        )),
+        a2a_handler=_async_handler(
+            DispatchResult(
+                source="a2a",
+                target_rid="workflow",
+                reason="would have matched",
+            )
+        ),
+        keyword_substring_handler=_sync_handler(
+            DispatchResult(
+                source="keyword_substring",
+                target_rid="workflow",
+                reason="substring match",
+            )
+        ),
         target_hint="agent-x",
     )
     assert result.source == "a2a"
@@ -459,9 +513,13 @@ async def test_a2a_target_outside_authorized_snapshot_is_denied() -> None:
     result = await dispatch_by_routing(
         user_message="anything",
         available_roles=ROLES,
-        a2a_handler=_async_handler(DispatchResult(
-            source="a2a", target_rid="unregistered", reason="not authorized",
-        )),
+        a2a_handler=_async_handler(
+            DispatchResult(
+                source="a2a",
+                target_rid="unregistered",
+                reason="not authorized",
+            )
+        ),
         target_hint="agent-x",
     )
     assert result.source == "none"

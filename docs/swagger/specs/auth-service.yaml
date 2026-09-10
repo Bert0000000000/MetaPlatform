@@ -26,13 +26,13 @@ paths:
       summary: Liveness probe
       tags: [meta]
       responses:
-        "200": {description: OK}
+        "200": { description: OK }
   /readyz:
     get:
       summary: Readiness (JWKS reachable + Redis ping)
       tags: [meta]
       responses:
-        "200": {description: OK}
+        "200": { description: OK }
   /api/v1/iam/auth/login:
     post:
       summary: Resource Owner Password (Keycloak grant) -> access + refresh
@@ -80,10 +80,16 @@ paths:
       summary: Blacklist current JTI in Redis; best-effort Keycloak end_session
       tags: [auth]
       parameters:
-        - {in: header, name: Authorization, required: true, schema: {type: string}, description: "Bearer <JWT>"}
+        - {
+            in: header,
+            name: Authorization,
+            required: true,
+            schema: { type: string },
+            description: "Bearer <JWT>",
+          }
       responses:
-        "200": {description: OK}
-        "401": {description: Missing Bearer token}
+        "200": { description: OK }
+        "401": { description: Missing Bearer token }
   /api/v1/auth/verify:
     post:
       summary: Verify a JWT (used by sidecars / BFF)
@@ -101,7 +107,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VerifyResponse"
-        "401": {description: Bad signature / expired / unknown kid}
+        "401": { description: Bad signature / expired / unknown kid }
   /api/v1/auth/revoke:
     post:
       summary: Revoke (blacklist) a JTI
@@ -113,78 +119,84 @@ paths:
             schema:
               $ref: "#/components/schemas/RevokeRequest"
       responses:
-        "200": {description: OK}
+        "200": { description: OK }
   /api/v1/auth/userinfo:
     get:
       summary: Proxy to Keycloak OIDC userinfo (best-effort)
       tags: [auth]
       parameters:
-        - {in: header, name: Authorization, required: true, schema: {type: string}, description: "Bearer <access_token>"}
+        - {
+            in: header,
+            name: Authorization,
+            required: true,
+            schema: { type: string },
+            description: "Bearer <access_token>",
+          }
       responses:
-        "200": {description: OK}
-        "502": {description: Keycloak upstream error}
+        "200": { description: OK }
+        "502": { description: Keycloak upstream error }
 components:
   schemas:
     IamLoginRequest:
       type: object
       required: [username, password]
       properties:
-        username: {type: string}
-        password: {type: string}
-        tenantId: {type: string, nullable: true}
+        username: { type: string }
+        password: { type: string }
+        tenantId: { type: string, nullable: true }
     IamRefreshRequest:
       type: object
       required: [refreshToken]
       properties:
-        refreshToken: {type: string}
+        refreshToken: { type: string }
     IamAuthUserInfo:
       type: object
       properties:
-        id: {type: string}
-        username: {type: string}
-        email: {type: string, nullable: true}
-        realName: {type: string, nullable: true}
+        id: { type: string }
+        username: { type: string }
+        email: { type: string, nullable: true }
+        realName: { type: string, nullable: true }
     IamAuthResponse:
       type: object
       required: [accessToken]
       properties:
-        accessToken: {type: string}
-        refreshToken: {type: string, nullable: true}
-        tokenType: {type: string, default: Bearer}
-        expiresIn: {type: integer}
-        refreshExpiresIn: {type: integer}
-        userId: {type: string, nullable: true}
-        username: {type: string, nullable: true}
-        realName: {type: string, nullable: true}
+        accessToken: { type: string }
+        refreshToken: { type: string, nullable: true }
+        tokenType: { type: string, default: Bearer }
+        expiresIn: { type: integer }
+        refreshExpiresIn: { type: integer }
+        userId: { type: string, nullable: true }
+        username: { type: string, nullable: true }
+        realName: { type: string, nullable: true }
         user:
           $ref: "#/components/schemas/IamAuthUserInfo"
-        requirePasswordReset: {type: boolean}
-        mfaRequired: {type: boolean}
-        loginAt: {type: string, nullable: true}
+        requirePasswordReset: { type: boolean }
+        mfaRequired: { type: boolean }
+        loginAt: { type: string, nullable: true }
     VerifyRequest:
       type: object
       required: [token]
       properties:
-        token: {type: string, description: "Bearer JWT to verify"}
+        token: { type: string, description: "Bearer JWT to verify" }
     VerifyResponse:
       type: object
       required: [valid]
       properties:
-        valid: {type: boolean}
-        subject: {type: string, nullable: true}
-        tenant_id: {type: string, nullable: true}
-        username: {type: string, nullable: true}
-        email: {type: string, nullable: true}
+        valid: { type: boolean }
+        subject: { type: string, nullable: true }
+        tenant_id: { type: string, nullable: true }
+        username: { type: string, nullable: true }
+        email: { type: string, nullable: true }
         roles:
           type: array
-          items: {type: string}
+          items: { type: string }
         scopes:
           type: array
-          items: {type: string}
-        expires_at: {type: integer}
-        issued_at: {type: integer}
+          items: { type: string }
+        expires_at: { type: integer }
+        issued_at: { type: integer }
     RevokeRequest:
       type: object
       required: [jti]
       properties:
-        jti: {type: string, description: "JWT ID to revoke"}
+        jti: { type: string, description: "JWT ID to revoke" }

@@ -8,62 +8,62 @@ info:
     name: Mate Platform API Governance
     email: api-governance@metaplatform.local
 servers:
-- url: /
+  - url: /
 tags:
-- name: a2a
-  description: a2a domain operations
+  - name: a2a
+    description: a2a domain operations
 security:
-- bearerAuth: []
-  tenantHeader: []
-  oidcScopes:
-  - platform.read
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes:
+      - platform.read
 paths:
   /api/v1/a2a/agent-cards/search:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - a2a
+        - a2a
       summary: /v1/a2a/agent-cards/search
       operationId: a2aGetA2aAgentCardsSearch
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/a2a/agent-cards/search
       x-mate-owner: ai-protocols
       x-mate-permission: a2a.get
       x-mate-requirements:
-      - FR-A2A-A2AGETA2AAGENTCARDSSEARCH
+        - FR-A2A-A2AGETA2AAGENTCARDSSEARCH
       x-mate-implementation-status: implemented
   /api/v1/a2a/delegate:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - a2a
+        - a2a
       summary: /v1/a2a/delegate (deprecated; use /messages)
       operationId: a2aPostA2aDelegate
       requestBody:
@@ -73,8 +73,8 @@ paths:
             schema:
               type: object
               required:
-              - target_agent_id
-              - message
+                - target_agent_id
+                - message
               properties:
                 target_agent_id:
                   type: string
@@ -84,28 +84,28 @@ paths:
                   type: object
                   additionalProperties: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: object
                 required:
-                - task_id
-                - status
+                  - task_id
+                  - status
                 properties:
                   task_id:
                     type: string
                   status:
                     type: string
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/ServerError'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: >-
         Create a delegation task (deprecated). Superseded by the W3C
         `POST /api/v1/a2a/messages` envelope (GOVERN-12-03).
@@ -115,85 +115,85 @@ paths:
       x-mate-owner: ai-protocols
       x-mate-permission: a2a.post
       x-mate-requirements:
-      - FR-A2A-A2APOSTA2ADELEGATE
+        - FR-A2A-A2APOSTA2ADELEGATE
       x-mate-implementation-status: implemented
   /api/v1/a2a/delegations:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - a2a
+        - a2a
       summary: /v1/a2a/delegations
       operationId: a2aGetA2aDelegations
       parameters:
-      - $ref: '#/components/parameters/Page'
-      - $ref: '#/components/parameters/Size'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: /v1/a2a/delegations
       x-mate-owner: ai-protocols
       x-mate-permission: a2a.get
       x-mate-requirements:
-      - FR-A2A-A2AGETA2ADELEGATIONS
+        - FR-A2A-A2AGETA2ADELEGATIONS
       x-mate-implementation-status: implemented
   /api/v1/a2a/health:
     get:
       security: []
       tags:
-      - a2a
+        - a2a
       summary: /v1/a2a/health (anonymous liveness probe)
       operationId: a2aGetA2aHealth
       parameters: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: object
                 required:
-                - status
+                  - status
                 properties:
                   status:
                     type: string
                     enum:
-                    - ok
-        '500':
-          $ref: '#/components/responses/ServerError'
+                      - ok
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: >-
         Anonymous liveness probe — no tenant guard.
       x-mate-owner: ai-protocols
       x-mate-permission: a2a.get
       x-mate-requirements:
-      - FR-A2A-A2AGETA2AHEALTH
+        - FR-A2A-A2AGETA2AHEALTH
       x-mate-implementation-status: implemented
   /api/v1/a2a/messages:
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
       tags:
-      - a2a
+        - a2a
       summary: /v1/a2a/messages (W3C A2A envelope, GOVERN-12-03)
       operationId: a2aPostA2aMessages
       requestBody:
@@ -201,24 +201,24 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/A2AMessage'
+              $ref: "#/components/schemas/A2AMessage"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/A2ATask'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/A2ATask"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: >-
         Accept a W3C A2A message and open a delegation task (GOVERN-12-03).
         The envelope is translated into the existing DelegationTask
@@ -229,47 +229,47 @@ paths:
       x-mate-owner: ai-protocols
       x-mate-permission: a2a.post
       x-mate-requirements:
-      - FR-A2A-A2APOSTA2AMESSAGES
+        - FR-A2A-A2APOSTA2AMESSAGES
       x-mate-implementation-status: implemented
   /api/v1/a2a/tasks/{task_id}:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
-      - a2a
+        - a2a
       summary: /v1/a2a/tasks/{task_id} (W3C Task status)
       operationId: a2aGetA2aTask
       parameters:
-      - name: task_id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/A2ATask'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+                $ref: "#/components/schemas/A2ATask"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
       description: Get delegation task status (W3C Task schema).
       x-mate-owner: ai-protocols
       x-mate-permission: a2a.get
       x-mate-requirements:
-      - FR-A2A-A2AGETA2ATASK
+        - FR-A2A-A2AGETA2ATASK
       x-mate-implementation-status: implemented
 components:
   securitySchemes:
@@ -328,37 +328,37 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     Forbidden:
       description: 无权限
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     NotFound:
       description: 资源不存在
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     BadRequest:
       description: 参数错误
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
     ServerError:
       description: 服务器错误
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
   schemas:
     ErrorResponse:
       type: object
       required:
-      - code
-      - message
+        - code
+        - message
       properties:
         code:
           type: integer
@@ -369,14 +369,14 @@ components:
     ApiResponse:
       type: object
       required:
-      - code
-      - message
-      - data
+        - code
+        - message
+        - data
       properties:
         code:
           type: integer
           enum:
-          - 0
+            - 0
         message:
           type: string
         data: {}
@@ -385,11 +385,11 @@ components:
     PageResponse:
       type: object
       required:
-      - items
-      - total
-      - page
-      - size
-      - pages
+        - items
+        - total
+        - page
+        - size
+        - pages
       properties:
         items:
           type: array
@@ -405,13 +405,13 @@ components:
     BigDataSource:
       type: object
       required:
-      - sourceId
-      - name
-      - sourceType
-      - host
-      - port
-      - authType
-      - status
+        - sourceId
+        - name
+        - sourceType
+        - host
+        - port
+        - authType
+        - status
       properties:
         sourceId:
           type: string
@@ -423,19 +423,19 @@ components:
         sourceType:
           type: string
           enum:
-          - HIVE
-          - HBASE
-          - CLICKHOUSE
-          - DORIS
-          - STARROCKS
-          - ICEBERG
-          - HUDI
-          - DELTA
-          - PRESTO
-          - TRINO
-          - KAFKA
-          - PULSAR
-          - HDFS
+            - HIVE
+            - HBASE
+            - CLICKHOUSE
+            - DORIS
+            - STARROCKS
+            - ICEBERG
+            - HUDI
+            - DELTA
+            - PRESTO
+            - TRINO
+            - KAFKA
+            - PULSAR
+            - HDFS
         host:
           type: string
         port:
@@ -449,10 +449,10 @@ components:
         authType:
           type: string
           enum:
-          - NONE
-          - USER_PASSWORD
-          - KERBERY
-          - LDAP
+            - NONE
+            - USER_PASSWORD
+            - KERBERY
+            - LDAP
           default: NONE
         sslEnabled:
           type: boolean
@@ -463,21 +463,21 @@ components:
         status:
           type: string
           enum:
-          - DRAFT
-          - ACTIVE
-          - INACTIVE
-          - ERROR
-          - DELETED
+            - DRAFT
+            - ACTIVE
+            - INACTIVE
+            - ERROR
+            - DELETED
     CDCTask:
       type: object
       required:
-      - taskId
-      - name
-      - sourceId
-      - syncMode
-      - targetType
-      - targetName
-      - status
+        - taskId
+        - name
+        - sourceId
+        - syncMode
+        - targetType
+        - targetName
+        - status
       properties:
         taskId:
           type: string
@@ -488,27 +488,27 @@ components:
         syncMode:
           type: string
           enum:
-          - FULL_INCREMENTAL
-          - INCREMENTAL_ONLY
-          - SNAPSHOT_ONLY
+            - FULL_INCREMENTAL
+            - INCREMENTAL_ONLY
+            - SNAPSHOT_ONLY
         targetType:
           type: string
           enum:
-          - KAFKA
-          - CLICKHOUSE
-          - HUDI
-          - ICEBERG
+            - KAFKA
+            - CLICKHOUSE
+            - HUDI
+            - ICEBERG
         targetName:
           type: string
         status:
           type: string
           enum:
-          - PENDING
-          - SNAPSHOTTING
-          - RUNNING
-          - PAUSED
-          - FAILED
-          - STOPPED
+            - PENDING
+            - SNAPSHOTTING
+            - RUNNING
+            - PAUSED
+            - FAILED
+            - STOPPED
         lagMs:
           type: integer
         totalRecords:
@@ -517,14 +517,14 @@ components:
     ETLTask:
       type: object
       required:
-      - taskId
-      - name
-      - mode
-      - sourceIds
-      - targetType
-      - targetTable
-      - writeMode
-      - status
+        - taskId
+        - name
+        - mode
+        - sourceIds
+        - targetType
+        - targetTable
+        - writeMode
+        - status
       properties:
         taskId:
           type: string
@@ -533,18 +533,18 @@ components:
         mode:
           type: string
           enum:
-          - BATCH_SPARK
-          - BATCH_FLINK
-          - STREAMING_FLINK
-          - STREAMING_SPARK
-          - SQL_TRANSFORM
+            - BATCH_SPARK
+            - BATCH_FLINK
+            - STREAMING_FLINK
+            - STREAMING_SPARK
+            - SQL_TRANSFORM
         priority:
           type: string
           enum:
-          - LOW
-          - NORMAL
-          - HIGH
-          - URGENT
+            - LOW
+            - NORMAL
+            - HIGH
+            - URGENT
         sourceIds:
           type: array
           items:
@@ -556,40 +556,40 @@ components:
         targetType:
           type: string
           enum:
-          - HIVE
-          - CLICKHOUSE
-          - ICEBERG
-          - HUDI
-          - DELTA
-          - DORIS
+            - HIVE
+            - CLICKHOUSE
+            - ICEBERG
+            - HUDI
+            - DELTA
+            - DORIS
         targetTable:
           type: string
         writeMode:
           type: string
           enum:
-          - OVERWRITE
-          - APPEND
-          - UPSERT
-          - MERGE
+            - OVERWRITE
+            - APPEND
+            - UPSERT
+            - MERGE
         status:
           type: string
           enum:
-          - DRAFT
-          - READY
-          - RUNNING
-          - SUCCESS
-          - FAILED
-          - CANCELLED
-          - TIMEOUT
+            - DRAFT
+            - READY
+            - RUNNING
+            - SUCCESS
+            - FAILED
+            - CANCELLED
+            - TIMEOUT
     SchedulerTask:
       type: object
       required:
-      - schedulerId
-      - name
-      - taskType
-      - taskId
-      - triggerType
-      - status
+        - schedulerId
+        - name
+        - taskType
+        - taskId
+        - triggerType
+        - status
       properties:
         schedulerId:
           type: string
@@ -598,41 +598,41 @@ components:
         taskType:
           type: string
           enum:
-          - ETL_TASK
-          - CDC_TASK
-          - QUALITY_CHECK
-          - CUSTOM_ACTION
+            - ETL_TASK
+            - CDC_TASK
+            - QUALITY_CHECK
+            - CUSTOM_ACTION
         taskId:
           type: string
         triggerType:
           type: string
           enum:
-          - CRON
-          - EVENT
-          - MANUAL
-          - DEPENDENCY
+            - CRON
+            - EVENT
+            - MANUAL
+            - DEPENDENCY
         cron:
           type: string
         status:
           type: string
           enum:
-          - ACTIVE
-          - PAUSED
-          - EXPIRED
-          - DELETED
+            - ACTIVE
+            - PAUSED
+            - EXPIRED
+            - DELETED
     Metric:
       type: object
       required:
-      - metricId
-      - name
-      - code
-      - type
-      - sourceId
-      - sourceTable
-      - sourceField
-      - aggregation
-      - calculationFrequency
-      - status
+        - metricId
+        - name
+        - code
+        - type
+        - sourceId
+        - sourceTable
+        - sourceField
+        - aggregation
+        - calculationFrequency
+        - status
       properties:
         metricId:
           type: string
@@ -643,10 +643,10 @@ components:
         type:
           type: string
           enum:
-          - ATOMIC
-          - DERIVED
-          - COMPOSITE
-          - REALTIME
+            - ATOMIC
+            - DERIVED
+            - COMPOSITE
+            - REALTIME
         sourceId:
           type: string
         sourceTable:
@@ -656,38 +656,38 @@ components:
         aggregation:
           type: string
           enum:
-          - SUM
-          - AVG
-          - COUNT
-          - MAX
-          - MIN
-          - LAST
+            - SUM
+            - AVG
+            - COUNT
+            - MAX
+            - MIN
+            - LAST
         calculationFrequency:
           type: string
           enum:
-          - REALTIME
-          - MINUTELY
-          - HOURLY
-          - DAILY
+            - REALTIME
+            - MINUTELY
+            - HOURLY
+            - DAILY
         status:
           type: string
           enum:
-          - DRAFT
-          - ACTIVE
-          - INACTIVE
-          - ERROR
+            - DRAFT
+            - ACTIVE
+            - INACTIVE
+            - ERROR
     A2APart:
       type: object
       description: One content part of a W3C A2A message.
       required:
-      - kind
+        - kind
       properties:
         kind:
           type: string
           enum:
-          - text
-          - file
-          - data
+            - text
+            - file
+            - data
         text:
           type: string
           nullable: true
@@ -699,9 +699,9 @@ components:
       type: object
       description: W3C A2A message envelope (the `/messages` request body).
       required:
-      - messageId
-      - role
-      - parts
+        - messageId
+        - role
+        - parts
       properties:
         messageId:
           type: string
@@ -709,12 +709,12 @@ components:
         role:
           type: string
           enum:
-          - user
-          - agent
+            - user
+            - agent
         parts:
           type: array
           items:
-            $ref: '#/components/schemas/A2APart'
+            $ref: "#/components/schemas/A2APart"
         contextId:
           type: string
           nullable: true
@@ -725,7 +725,7 @@ components:
       type: object
       description: A W3C A2A artifact attached to a Task.
       required:
-      - name
+        - name
       properties:
         name:
           type: string
@@ -734,13 +734,13 @@ components:
         parts:
           type: array
           items:
-            $ref: '#/components/schemas/A2APart'
+            $ref: "#/components/schemas/A2APart"
     A2ATask:
       type: object
       description: W3C A2A Task object returned by `/messages` and `/tasks/{task_id}`.
       required:
-      - id
-      - status
+        - id
+        - status
       properties:
         id:
           type: string
@@ -749,24 +749,24 @@ components:
         status:
           type: object
           required:
-          - state
+            - state
           properties:
             state:
               type: string
               enum:
-              - submitted
-              - working
-              - input-required
-              - completed
-              - failed
-              - canceled
+                - submitted
+                - working
+                - input-required
+                - completed
+                - failed
+                - canceled
             message:
-              $ref: '#/components/schemas/A2AMessage'
+              $ref: "#/components/schemas/A2AMessage"
         artifacts:
           type: array
           items:
-            $ref: '#/components/schemas/A2AArtifact'
+            $ref: "#/components/schemas/A2AArtifact"
         history:
           type: array
           items:
-            $ref: '#/components/schemas/A2AMessage'
+            $ref: "#/components/schemas/A2AMessage"

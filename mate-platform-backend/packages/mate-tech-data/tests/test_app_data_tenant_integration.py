@@ -17,6 +17,7 @@ These tests exercise the auth + tenancy contract end-to-end:
   - test_health_anonymous_ok: the health endpoint is reachable
     without a bearer token.
 """
+
 from __future__ import annotations
 
 import time

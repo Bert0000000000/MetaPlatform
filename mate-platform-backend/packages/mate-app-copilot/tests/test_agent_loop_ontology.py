@@ -30,12 +30,16 @@ class _FakeDecision:
 
 def _onto_call(name: str, args: dict[str, Any], call_id: str = "c1") -> dict[str, Any]:
     import json as _json
+
     return {
         "content": "",
-        "tool_calls": [{
-            "id": call_id, "type": "function",
-            "function": {"name": name, "arguments": _json.dumps(args, ensure_ascii=False)},
-        }],
+        "tool_calls": [
+            {
+                "id": call_id,
+                "type": "function",
+                "function": {"name": name, "arguments": _json.dumps(args, ensure_ascii=False)},
+            }
+        ],
     }
 
 
@@ -46,10 +50,12 @@ async def _collect(agraph: Any) -> list[dict[str, Any]]:
 class TestOntologyToolExecution:
     @pytest.mark.asyncio
     async def test_query_answered_without_dispatch(self, monkeypatch: Any) -> None:
-        decisions = _FakeDecision([
-            _onto_call("list_classes", {}),
-            {"content": "系统里有 2 个本体类型：order 和 ledger。", "tool_calls": []},
-        ])
+        decisions = _FakeDecision(
+            [
+                _onto_call("list_classes", {}),
+                {"content": "系统里有 2 个本体类型：order 和 ledger。", "tool_calls": []},
+            ]
+        )
         monkeypatch.setattr(agent_loop, "_decision_turn", decisions)
 
         executed: list[tuple[str, dict]] = []
@@ -59,22 +65,28 @@ class TestOntologyToolExecution:
             return {"classes": [{"rid": "ont.t.obj.order.v1"}, {"rid": "ont.t.obj.ledger.v1"}]}
 
         onto_tools = [
-            {"type": "function", "function": {
-                "name": "list_classes", "description": "d",
-                "parameters": {"type": "object", "properties": {}},
-            }},
+            {
+                "type": "function",
+                "function": {
+                    "name": "list_classes",
+                    "description": "d",
+                    "parameters": {"type": "object", "properties": {}},
+                },
+            },
         ]
 
-        events = await _collect(agent_loop.run_agent_loop(
-            llmgw_client=object(),
-            orchestrator_client=object(),
-            messages=[{"role": "user", "content": "系统里有多少本体"}],
-            model="m",
-            roles=[{"role": "workflow", "name": "W", "capabilities": []}],
-            tenant_id="t",
-            ontology_tools=onto_tools,
-            ontology_tool_exec=exec_fn,
-        ))
+        events = await _collect(
+            agent_loop.run_agent_loop(
+                llmgw_client=object(),
+                orchestrator_client=object(),
+                messages=[{"role": "user", "content": "系统里有多少本体"}],
+                model="m",
+                roles=[{"role": "workflow", "name": "W", "capabilities": []}],
+                tenant_id="t",
+                ontology_tools=onto_tools,
+                ontology_tool_exec=exec_fn,
+            )
+        )
 
         assert executed == [("list_classes", {})]
         kinds = [(e["type"], e.get("tool")) for e in events]
@@ -90,30 +102,40 @@ class TestOntologyToolExecution:
 
     @pytest.mark.asyncio
     async def test_tool_error_degrades_not_crashes(self, monkeypatch: Any) -> None:
-        decisions = _FakeDecision([
-            _onto_call("query_order", {"filters": []}),
-            {"content": "本体查询暂不可用。", "tool_calls": []},
-        ])
+        decisions = _FakeDecision(
+            [
+                _onto_call("query_order", {"filters": []}),
+                {"content": "本体查询暂不可用。", "tool_calls": []},
+            ]
+        )
         monkeypatch.setattr(agent_loop, "_decision_turn", decisions)
 
         def boom(name: str, args: dict) -> dict:
             raise RuntimeError("tech-ont down")
 
-        onto_tools = [{"type": "function", "function": {
-            "name": "query_order", "description": "d",
-            "parameters": {"type": "object", "properties": {}},
-        }}]
+        onto_tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "query_order",
+                    "description": "d",
+                    "parameters": {"type": "object", "properties": {}},
+                },
+            }
+        ]
 
-        events = await _collect(agent_loop.run_agent_loop(
-            llmgw_client=object(),
-            orchestrator_client=object(),
-            messages=[{"role": "user", "content": "查订单"}],
-            model="m",
-            roles=[],
-            tenant_id="t",
-            ontology_tools=onto_tools,
-            ontology_tool_exec=boom,
-        ))
+        events = await _collect(
+            agent_loop.run_agent_loop(
+                llmgw_client=object(),
+                orchestrator_client=object(),
+                messages=[{"role": "user", "content": "查订单"}],
+                model="m",
+                roles=[],
+                tenant_id="t",
+                ontology_tools=onto_tools,
+                ontology_tool_exec=boom,
+            )
+        )
         tool_results = [e for e in events if e["type"] == "tool_result"]
         assert tool_results and tool_results[0]["status"] == "error"
         assert any(e["type"] == "final" for e in events)
@@ -133,20 +155,28 @@ class TestOntologyToolExecution:
 
         monkeypatch.setattr(agent_loop, "_decision_turn", _Cap())
         cards = [{"individual_rid": "ont.t.ind.order.o1", "card_text": "order o1"}]
-        await _collect(agent_loop.run_agent_loop(
-            llmgw_client=object(),
-            orchestrator_client=object(),
-            messages=[{"role": "user", "content": "hi"}],
-            model="m",
-            roles=[],
-            tenant_id="t",
-            ontology_tools=[{"type": "function", "function": {
-                "name": "list_classes", "description": "d",
-                "parameters": {"type": "object", "properties": {}},
-            }}],
-            ontology_tool_exec=lambda n, a: {},
-            object_cards=cards,
-        ))
+        await _collect(
+            agent_loop.run_agent_loop(
+                llmgw_client=object(),
+                orchestrator_client=object(),
+                messages=[{"role": "user", "content": "hi"}],
+                model="m",
+                roles=[],
+                tenant_id="t",
+                ontology_tools=[
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "list_classes",
+                            "description": "d",
+                            "parameters": {"type": "object", "properties": {}},
+                        },
+                    }
+                ],
+                ontology_tool_exec=lambda n, a: {},
+                object_cards=cards,
+            )
+        )
         system = captured["history"][0]["content"]
         assert "本体能力" in system  # ontology_hint 生效
         assert "ont.t.ind.order.o1" in system  # OAG 卡片注入（rid 可追溯）

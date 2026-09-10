@@ -1,4 +1,5 @@
 """Cache tests (ST-5.5.10.2)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock
@@ -90,6 +91,7 @@ async def test_cache_set_writes_to_redis() -> None:
     assert args[0] == "test-key"
     assert args[1] == 120  # ttl
     import json
+
     payload = json.loads(args[2])
     assert payload["content"] == "hi"
     assert payload["model"] == "gpt-4o"

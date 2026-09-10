@@ -7,6 +7,7 @@ Execution delegates to activities wrapping :class:`PlanRunner`
 (review approve = proposal confirm + apply) are preserved untouched;
 Temporal adds durability, retry, and the HITL signal channel.
 """
+
 from __future__ import annotations
 
 import datetime
@@ -32,8 +33,10 @@ class PlanWorkflow:
     @workflow.run
     async def run(self, inp: Any) -> dict[str, Any]:
         started = await workflow.execute_activity(
-            "orch_start_plan", inp,
-            start_to_close_timeout=_ACTIVITY_TIMEOUT, retry_policy=_RETRY,
+            "orch_start_plan",
+            inp,
+            start_to_close_timeout=_ACTIVITY_TIMEOUT,
+            retry_policy=_RETRY,
         )
         plan_id: str = started["plan_id"]
         status: str = str(started.get("status", "failed"))
@@ -55,16 +58,15 @@ class PlanWorkflow:
                     "tenant_id": str(inp["tenant_id"]),
                     "token": str(inp.get("token", "")),
                 },
-                start_to_close_timeout=_ACTIVITY_TIMEOUT, retry_policy=_RETRY,
+                start_to_close_timeout=_ACTIVITY_TIMEOUT,
+                retry_policy=_RETRY,
             )
             status = str(started.get("status", "failed"))
             if not decision.approved:
                 break
 
         self._status = status
-        return {"plan_id": plan_id, **{
-            k: v for k, v in started.items() if k != "plan_id"
-        }}
+        return {"plan_id": plan_id, **{k: v for k, v in started.items() if k != "plan_id"}}
 
     @workflow.signal
     async def review(self, signal: ReviewSignal) -> None:
@@ -89,8 +91,10 @@ class RevertWorkflow:
     @workflow.run
     async def run(self, inp: Any) -> dict[str, Any]:
         out = await workflow.execute_activity(
-            "orch_revert_proposal", inp,
-            start_to_close_timeout=_ACTIVITY_TIMEOUT, retry_policy=_RETRY,
+            "orch_revert_proposal",
+            inp,
+            start_to_close_timeout=_ACTIVITY_TIMEOUT,
+            retry_policy=_RETRY,
         )
         self._status = str(out.get("status", "failed"))
         return out

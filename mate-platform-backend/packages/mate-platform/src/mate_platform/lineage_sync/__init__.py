@@ -6,6 +6,7 @@ relationships into the DataHub catalog (D2).
 
 Per ADR-0016 §3.2 (D4 scope).
 """
+
 from .client import (
     DatasetRef,
     EventType,

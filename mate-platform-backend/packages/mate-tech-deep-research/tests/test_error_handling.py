@@ -7,6 +7,7 @@ Covers the documented error codes:
   * E_DEERFLOW_UNAVAILABLE — engine down → 503.
   * Malformed input payload (input not a dict).
 """
+
 from __future__ import annotations
 
 
@@ -53,7 +54,9 @@ def test_missing_capability_returns_400(client, auth_headers_acme) -> None:
 
 
 def test_deerflow_unavailable_returns_503(
-    client, auth_headers_acme, stub_client,
+    client,
+    auth_headers_acme,
+    stub_client,
 ) -> None:
     stub_client.raise_unavailable = True
     r = client.post(
@@ -68,7 +71,8 @@ def test_deerflow_unavailable_returns_503(
 
 
 def test_malformed_input_field_treated_as_empty_query(
-    client, auth_headers_acme,
+    client,
+    auth_headers_acme,
 ) -> None:
     """input is a string instead of an object → treated as empty query."""
     r = client.post(
@@ -81,7 +85,9 @@ def test_malformed_input_field_treated_as_empty_query(
 
 
 def test_no_outbox_event_on_error(
-    client, auth_headers_acme, outbox,
+    client,
+    auth_headers_acme,
+    outbox,
 ) -> None:
     """When the handler errors out (400), no event is written."""
     r = client.post(

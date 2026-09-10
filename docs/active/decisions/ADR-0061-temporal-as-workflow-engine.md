@@ -3,16 +3,18 @@
 > **状态**: Accepted · **日期**: 2026-08-21 · **决策人**: MatePlatform Architecture Council
 > **签字**: `__/__________` （落档于 ADR-REVIEW；纸质档填写位）
 > **上游**:
+>
 > - 蓝图 `docs/active/specs/2026-08-06-ontology-kernel-blueprint.md` v0.4 §3.3 M40（"Workflow Path C 引擎（自研 + Edge Function + Temporal）"原本设想）
 > - MP-AGENT-WF-01（M3 已 Accepted）+ SAL-05 P1（2026-08-17 Accepted）+ SAL-05 P2（Plan 1 在 Sprint 1）
 > - 路径 A/B/C 三选项对比（V1.0-RELEASE-PLAN §Temporal 引入分析）
-> **配套**: V1.0-RELEASE-PLAN.md §2.3 Sprint 1A + ADR-0044（proposal 状态机）+ ADR-0045（workflow ↔ 本体联动）
+>   **配套**: V1.0-RELEASE-PLAN.md §2.3 Sprint 1A + ADR-0044（proposal 状态机）+ ADR-0045（workflow ↔ 本体联动）
 
 ## 1. 背景
 
 当前 Workflow 编排由自研 `PlanRunner`（mate-tech-orchestrator，5 种 StepKind：PROPOSE / APPLY_ACTION / EVALUATE_OBJECTSET / RUN_FUNCTION / CALL_AGENT）承担，SAL-05 P1 已落地 HITL 合一（review approve = proposal confirm + apply 一次完成）。
 
 自研 PlanRunner 在以下方面不足：
+
 - **持久化弱**：plan 仍 in-memory（SAL-05 P2 才补）；崩溃恢复靠手动
 - **长任务**：1 周+ 审批等待无 wait_condition；多级超时升级要自建
 - **Activity retry / heartbeat**：无；worker 健康靠外层 OTel 推
@@ -28,18 +30,18 @@
 
 ### 2.1 架构分工
 
-| 层 | 角色 | 实现 |
-|---|---|---|
-| **LLM 友好 DSL** | PlanRunner 翻译层 | `plan JSON`（PlanStepRequest / PlanSpec）→ Temporal Workflow Definition（`@workflow.defn`） |
-| **业务 Workflow 引擎** | Temporal Worker | `process_plan` workflow + 5 种 Activity（propose / confirm / apply / objectset_query / run_function / call_agent） |
-| **持久化** | Temporal history | 自动序列化 / replay |
-| **长任务** | Temporal wait_condition | 1 周+ 内置；超时升级靠 Activity heartbeat + workflow version |
-| **HITL 信号** | Temporal signal | `ReviewSignal(proposal_id, decision, token)`；HITL Hub 收到用户决策后发 signal |
-| **Activity retry** | Temporal retry policy | 内置 backoff + 指数退避 |
-| **可视化（SRE）** | Temporal UI | 工业级 workflow 调试 / 历史回放 |
-| **可视化（业务）** | 保留自研 `/plans/{id}/graph` | 翻译层从 Temporal describe + history 推导节点状态 |
-| **LLM 编排平面** | 保留 PlanRunner DSL | AgentLoop 生成 plan JSON → 翻译层产 workflow → worker 执行 |
-| **SuperAI / Copilot** | 不变 | LLM 仍通过 DSL 表达意图，不直接接触 Temporal API |
+| 层                     | 角色                         | 实现                                                                                                               |
+| ---------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **LLM 友好 DSL**       | PlanRunner 翻译层            | `plan JSON`（PlanStepRequest / PlanSpec）→ Temporal Workflow Definition（`@workflow.defn`）                        |
+| **业务 Workflow 引擎** | Temporal Worker              | `process_plan` workflow + 5 种 Activity（propose / confirm / apply / objectset_query / run_function / call_agent） |
+| **持久化**             | Temporal history             | 自动序列化 / replay                                                                                                |
+| **长任务**             | Temporal wait_condition      | 1 周+ 内置；超时升级靠 Activity heartbeat + workflow version                                                       |
+| **HITL 信号**          | Temporal signal              | `ReviewSignal(proposal_id, decision, token)`；HITL Hub 收到用户决策后发 signal                                     |
+| **Activity retry**     | Temporal retry policy        | 内置 backoff + 指数退避                                                                                            |
+| **可视化（SRE）**      | Temporal UI                  | 工业级 workflow 调试 / 历史回放                                                                                    |
+| **可视化（业务）**     | 保留自研 `/plans/{id}/graph` | 翻译层从 Temporal describe + history 推导节点状态                                                                  |
+| **LLM 编排平面**       | 保留 PlanRunner DSL          | AgentLoop 生成 plan JSON → 翻译层产 workflow → worker 执行                                                         |
+| **SuperAI / Copilot**  | 不变                         | LLM 仍通过 DSL 表达意图，不直接接触 Temporal API                                                                   |
 
 ### 2.2 HITL 重设计
 
@@ -69,18 +71,18 @@
 
 ### 3.1 必影响
 
-| 模块 | 变化 |
-|---|---|
-| `mate-tech-orchestrator/` | PlanRunner 改为 DSL 翻译层；新增 Temporal Worker；保留 5 Activity 适配 |
-| `mate-tech-ont` | proposal 端点不变；新增 confirm_then_apply 复合端点 |
-| `hitl-hub` | review approve 后发 Temporal signal 而非直接调 confirm+apply；reject 同理 |
-| `infra/helm/charts/` | 新增 `temporal/` sub-chart（server + worker + web + DB schema）|
-| `.github/workflows/` | 新增 temporal-ci.yml（lint workflow / activity / 测试）|
-| `scripts/ci/` | 新增 `check_temporal_grammar.py`（workflow/activity 命名规范 + retry policy 检查）|
-| 13 硬规则 | #8 K8s readiness + 回滚 → Temporal sub-chart 落地；#9 审计 → Temporal history 自带 |
-| SAL-05 P2 通道②（outbox→流程自动启动）| 由 Temporal 接管（outbox event handler 调 Temporal client.start workflow）|
-| Sprint 1 SAL-05 P2 任务 | 拆分：plan 持久化由 Temporal history 接管（出 Sprint 1A）；outbox→流程启动接入 Temporal client（Sprint 1A）|
-| 蓝图 §3.3 M40 | 实施落地（原本就是自研 + Temporal 双层，现在 Temporal 接管）|
+| 模块                                   | 变化                                                                                                        |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `mate-tech-orchestrator/`              | PlanRunner 改为 DSL 翻译层；新增 Temporal Worker；保留 5 Activity 适配                                      |
+| `mate-tech-ont`                        | proposal 端点不变；新增 confirm_then_apply 复合端点                                                         |
+| `hitl-hub`                             | review approve 后发 Temporal signal 而非直接调 confirm+apply；reject 同理                                   |
+| `infra/helm/charts/`                   | 新增 `temporal/` sub-chart（server + worker + web + DB schema）                                             |
+| `.github/workflows/`                   | 新增 temporal-ci.yml（lint workflow / activity / 测试）                                                     |
+| `scripts/ci/`                          | 新增 `check_temporal_grammar.py`（workflow/activity 命名规范 + retry policy 检查）                          |
+| 13 硬规则                              | #8 K8s readiness + 回滚 → Temporal sub-chart 落地；#9 审计 → Temporal history 自带                          |
+| SAL-05 P2 通道②（outbox→流程自动启动） | 由 Temporal 接管（outbox event handler 调 Temporal client.start workflow）                                  |
+| Sprint 1 SAL-05 P2 任务                | 拆分：plan 持久化由 Temporal history 接管（出 Sprint 1A）；outbox→流程启动接入 Temporal client（Sprint 1A） |
+| 蓝图 §3.3 M40                          | 实施落地（原本就是自研 + Temporal 双层，现在 Temporal 接管）                                                |
 
 ### 3.2 不影响
 
@@ -92,14 +94,14 @@
 
 ### 3.3 工作量
 
-| 项 | 周 |
-|---|---|
-| Temporal 集群部署（helm sub-chart + DB schema + UI）| 1 |
-| PlanRunner DSL 翻译层 + 5 Activity 落地 | 1.5 |
-| HITL signal 重设计 + HITL Hub 发 signal | 0.5 |
-| 双轨灰度 + 切流开关 | 0.5 |
-| e2e 验证（北极星 + 长审批 + 灰度）| 0.5 |
-| **合计** | **4 周**（Sprint 1A） |
+| 项                                                   | 周                    |
+| ---------------------------------------------------- | --------------------- |
+| Temporal 集群部署（helm sub-chart + DB schema + UI） | 1                     |
+| PlanRunner DSL 翻译层 + 5 Activity 落地              | 1.5                   |
+| HITL signal 重设计 + HITL Hub 发 signal              | 0.5                   |
+| 双轨灰度 + 切流开关                                  | 0.5                   |
+| e2e 验证（北极星 + 长审批 + 灰度）                   | 0.5                   |
+| **合计**                                             | **4 周**（Sprint 1A） |
 
 ## 4. 验收标准
 
@@ -119,14 +121,14 @@
 
 ## 6. 风险与缓解
 
-| 风险 | 缓解 |
-|---|---|
-| Temporal 学习曲线 | Sprint 1A 第 1 周团队 spike + 官方 tutorial；DBA + SRE 联合运维 |
-| 持久化双轨期数据不一致 | plan 镜像表定时 reconcile；切流前冻结 plan schema |
+| 风险                            | 缓解                                                                         |
+| ------------------------------- | ---------------------------------------------------------------------------- |
+| Temporal 学习曲线               | Sprint 1A 第 1 周团队 spike + 官方 tutorial；DBA + SRE 联合运维              |
+| 持久化双轨期数据不一致          | plan 镜像表定时 reconcile；切流前冻结 plan schema                            |
 | HITL signal 引入额外 round-trip | 复合 Activity 内部调 confirm + apply；signal payload 内联 proposal + payload |
-| Temporal 集群单点 | HA 部署（3 节点 server + postgres + elasticsearch visibility）+ 备份 |
-| Temporal 升级 breaking | 锁版本 + 升级窗口 + replay 测试 |
-| workflow version 灰度 | Temporal 内置 versioning；切流按 plan_id 灰度 |
+| Temporal 集群单点               | HA 部署（3 节点 server + postgres + elasticsearch visibility）+ 备份         |
+| Temporal 升级 breaking          | 锁版本 + 升级窗口 + replay 测试                                              |
+| workflow version 灰度           | Temporal 内置 versioning；切流按 plan_id 灰度                                |
 
 ## 7. 关联
 

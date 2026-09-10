@@ -7,6 +7,7 @@ Covers:
   * DLQ replay re-delivers and removes on success.
   * Subscription pause / resume (status transitions + find_matching impact).
 """
+
 from __future__ import annotations
 
 import os
@@ -91,9 +92,7 @@ class TestPublishFanOut:
         fresh_sub_store: SubscriptionStore,
         fresh_dlq_store: InMemoryDLQStore,
     ) -> None:
-        respx.post("https://hook.example.com/cb").mock(
-            return_value=Response(200, text="ok")
-        )
+        respx.post("https://hook.example.com/cb").mock(return_value=Response(200, text="ok"))
         fresh_sub_store.create_subscription(
             tenant_id=_TENANT,
             topic_filter="mate.events.*",
@@ -120,9 +119,7 @@ class TestPublishFanOut:
         fresh_sub_store: SubscriptionStore,
         fresh_dlq_store: InMemoryDLQStore,
     ) -> None:
-        respx.post("https://hook.example.com/cb").mock(
-            return_value=Response(200, text="ok")
-        )
+        respx.post("https://hook.example.com/cb").mock(return_value=Response(200, text="ok"))
         # Subscription for a different topic pattern.
         fresh_sub_store.create_subscription(
             tenant_id=_TENANT,
@@ -149,9 +146,7 @@ class TestPublishFanOut:
         fresh_sub_store: SubscriptionStore,
         fresh_dlq_store: InMemoryDLQStore,
     ) -> None:
-        respx.post("https://hook.example.com/cb").mock(
-            return_value=Response(200, text="ok")
-        )
+        respx.post("https://hook.example.com/cb").mock(return_value=Response(200, text="ok"))
         sub = fresh_sub_store.create_subscription(
             tenant_id=_TENANT,
             topic_filter="mate.events.*",
@@ -186,9 +181,7 @@ class TestDLQ:
         fresh_sub_store: SubscriptionStore,
         fresh_dlq_store: InMemoryDLQStore,
     ) -> None:
-        respx.post("https://hook.example.com/cb").mock(
-            return_value=Response(500, text="boom")
-        )
+        respx.post("https://hook.example.com/cb").mock(return_value=Response(500, text="boom"))
         sub = fresh_sub_store.create_subscription(
             tenant_id=_TENANT,
             topic_filter="mate.events.*",
@@ -238,12 +231,8 @@ class TestDLQ:
         # Cross-tenant isolation: t3 sees nothing.
         assert len(fresh_dlq_store.list(tenant_id="t3")) == 0
         # Filter by subscription_id within a tenant.
-        assert len(
-            fresh_dlq_store.list(tenant_id="t1", subscription_id="s1")
-        ) == 1
-        assert len(
-            fresh_dlq_store.list(tenant_id="t1", subscription_id="nope")
-        ) == 0
+        assert len(fresh_dlq_store.list(tenant_id="t1", subscription_id="s1")) == 1
+        assert len(fresh_dlq_store.list(tenant_id="t1", subscription_id="nope")) == 0
 
     @respx.mock
     @pytest.mark.asyncio
@@ -253,9 +242,7 @@ class TestDLQ:
         fresh_dlq_store: InMemoryDLQStore,
     ) -> None:
         # Step 1: create a failed delivery that lands in DLQ.
-        respx.post("https://hook.example.com/cb").mock(
-            return_value=Response(500, text="boom")
-        )
+        respx.post("https://hook.example.com/cb").mock(return_value=Response(500, text="boom"))
         sub = fresh_sub_store.create_subscription(
             tenant_id=_TENANT,
             topic_filter="mate.events.*",
@@ -276,9 +263,7 @@ class TestDLQ:
         msg_id = entries[0].message_id
 
         # Step 2: mock webhook to succeed and replay the delivery.
-        respx.post("https://hook.example.com/cb").mock(
-            return_value=Response(200, text="ok")
-        )
+        respx.post("https://hook.example.com/cb").mock(return_value=Response(200, text="ok"))
         entry = fresh_dlq_store.get(tenant_id=_TENANT, message_id=msg_id)
         assert entry is not None
         assert entry.subscription_id == sub.id
@@ -298,9 +283,7 @@ class TestDLQ:
         assert delivery.status == "success"
 
         # On success, the entry is removed from DLQ.
-        assert fresh_dlq_store.remove(
-            tenant_id=_TENANT, message_id=msg_id
-        ) is True
+        assert fresh_dlq_store.remove(tenant_id=_TENANT, message_id=msg_id) is True
         assert len(fresh_dlq_store.list(tenant_id=_TENANT)) == 0
 
 
@@ -330,14 +313,7 @@ class TestSubscriptionPauseResume:
         assert paused.status == "paused"
 
         # Paused subscriptions are excluded from find_matching.
-        assert (
-            len(
-                fresh_sub_store.find_matching(
-                    tenant_id=_TENANT, topic="any.topic"
-                )
-            )
-            == 0
-        )
+        assert len(fresh_sub_store.find_matching(tenant_id=_TENANT, topic="any.topic")) == 0
 
         # Resume: paused → active.
         resumed = fresh_sub_store.update_subscription_status(
@@ -349,14 +325,7 @@ class TestSubscriptionPauseResume:
         assert resumed.status == "active"
 
         # Active subscriptions are back in find_matching results.
-        assert (
-            len(
-                fresh_sub_store.find_matching(
-                    tenant_id=_TENANT, topic="any.topic"
-                )
-            )
-            == 1
-        )
+        assert len(fresh_sub_store.find_matching(tenant_id=_TENANT, topic="any.topic")) == 1
 
         # Cross-tenant: update returns None.
         assert (

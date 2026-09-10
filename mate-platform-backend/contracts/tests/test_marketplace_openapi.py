@@ -2,6 +2,7 @@
 
 MP-CONS-001..008(8 个 requirement id)。
 """
+
 from pathlib import Path
 
 import yaml
@@ -52,10 +53,12 @@ def test_all_endpoints_have_requirement_id() -> None:
 def test_install_and_license_activate_require_write_scope() -> None:
     """硬规则补强:写操作必须要求 platform.marketplace.write scope。"""
     spec = _load_spec()
-    for path in ("/api/v1/marketplace/install",
-                 "/api/v1/marketplace/license/activate",
-                 "/api/v1/marketplace/install/{install_id}",
-                 "/api/v1/marketplace/install/{install_id}/retry"):
+    for path in (
+        "/api/v1/marketplace/install",
+        "/api/v1/marketplace/license/activate",
+        "/api/v1/marketplace/install/{install_id}",
+        "/api/v1/marketplace/install/{install_id}/retry",
+    ):
         methods = spec["paths"][path]
         # install 是 POST;install/{id} 有 POST retry + DELETE uninstall
         for method_name, op in methods.items():
@@ -99,6 +102,12 @@ def test_error_codes_enumerated() -> None:
     """统一错误响应 schema 含 MP_* 错误码(SPEC §4.1)。"""
     spec = _load_spec()
     codes = set(spec["components"]["schemas"]["Error"]["properties"]["code"]["enum"])
-    for expected in ("MP_DIGEST_MISMATCH", "MP_LICENSE_INVALID", "MP_LICENSE_EXPIRED",
-                     "MP_KIND_NOT_ALLOWED", "MP_INCOMPATIBLE_PLATFORM", "MP_SAAS_UNREACHABLE"):
+    for expected in (
+        "MP_DIGEST_MISMATCH",
+        "MP_LICENSE_INVALID",
+        "MP_LICENSE_EXPIRED",
+        "MP_KIND_NOT_ALLOWED",
+        "MP_INCOMPATIBLE_PLATFORM",
+        "MP_SAAS_UNREACHABLE",
+    ):
         assert expected in codes, f"缺少错误码 {expected}"

@@ -1,4 +1,5 @@
 """Happy-path tests for mate-tech-metrics (FR-DATA-METRICS-001..008)."""
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
@@ -20,12 +21,8 @@ def test_list_metrics(client: TestClient, auth_headers_acme: dict[str, str]) -> 
     assert all(m["tenant_id"] == "tenant-acme" for m in body["items"])
 
 
-def test_list_metrics_status_filter(
-    client: TestClient, auth_headers_acme: dict[str, str]
-) -> None:
-    r = client.get(
-        "/api/v1/metrics", params={"status": "active"}, headers=auth_headers_acme
-    )
+def test_list_metrics_status_filter(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
+    r = client.get("/api/v1/metrics", params={"status": "active"}, headers=auth_headers_acme)
     assert r.status_code == 200, r.text
     body = r.json()
     assert all(m["status"] == "active" for m in body["items"])
@@ -66,9 +63,7 @@ def test_get_metric(client: TestClient, auth_headers_acme: dict[str, str]) -> No
     assert "expression" in body
 
 
-def test_get_metric_not_found(
-    client: TestClient, auth_headers_acme: dict[str, str]
-) -> None:
+def test_get_metric_not_found(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
     r = client.get("/api/v1/metrics/nonexistent", headers=auth_headers_acme)
     assert r.status_code == 404, r.text
 
@@ -131,9 +126,7 @@ def test_compute_metric(
     assert "metrics.metric.computed" in types, types
 
 
-def test_get_metric_lineage(
-    client: TestClient, auth_headers_acme: dict[str, str]
-) -> None:
+def test_get_metric_lineage(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
     metrics = client.get("/api/v1/metrics", headers=auth_headers_acme).json()["items"]
     metric_id = metrics[0]["id"]
 
@@ -145,9 +138,7 @@ def test_get_metric_lineage(
     assert len(body["sources"]) >= 1
 
 
-def test_get_metric_values(
-    client: TestClient, auth_headers_acme: dict[str, str]
-) -> None:
+def test_get_metric_values(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
     metrics = client.get("/api/v1/metrics", headers=auth_headers_acme).json()["items"]
     metric_id = metrics[0]["id"]
 
@@ -159,9 +150,7 @@ def test_get_metric_values(
     assert body["count"] >= 1
 
 
-def test_pagination(
-    client: TestClient, auth_headers_acme: dict[str, str]
-) -> None:
+def test_pagination(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
     r = client.get(
         "/api/v1/metrics",
         params={"page": 1, "size": 2},

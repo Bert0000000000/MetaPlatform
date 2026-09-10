@@ -5,6 +5,7 @@ Persistence is enabled when ``MATE_DB_URL`` / ``DATABASE_URL`` is set
 in-memory. ``save`` / ``delete`` / ``load`` mirror the registry's
 mutation surface.
 """
+
 from __future__ import annotations
 
 import json
@@ -40,7 +41,11 @@ def _capabilities_from_json(raw: str) -> tuple[CapabilityBinding, ...]:
     except ValueError:
         items = []
     return tuple(
-        CapabilityBinding(name=str(i.get("name", "")), worker_kind=str(i.get("worker_kind", "local")), ref=str(i.get("ref", "")))
+        CapabilityBinding(
+            name=str(i.get("name", "")),
+            worker_kind=str(i.get("worker_kind", "local")),
+            ref=str(i.get("ref", "")),
+        )
         for i in items
         if isinstance(i, dict)
     )
@@ -89,10 +94,12 @@ class SqlRoleStore:
         columns = {column["name"] for column in inspect(engine).get_columns("orchestrator_roles")}
         if "allowed_actor_roles" not in columns:
             with engine.begin() as connection:
-                connection.execute(text(
-                    "ALTER TABLE orchestrator_roles "
-                    "ADD COLUMN allowed_actor_roles TEXT NOT NULL DEFAULT '[]'"
-                ))
+                connection.execute(
+                    text(
+                        "ALTER TABLE orchestrator_roles "
+                        "ADD COLUMN allowed_actor_roles TEXT NOT NULL DEFAULT '[]'"
+                    )
+                )
 
     def save(self, role: DigitalEmployeeRole) -> None:
         if not self._enabled():

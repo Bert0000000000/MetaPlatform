@@ -8,9 +8,7 @@
   "paths": {
     "/api/v1/copilot": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Get Root",
         "operationId": "get_root_api_v1_copilot_get",
         "responses": {
@@ -31,9 +29,7 @@
     },
     "/api/v1/copilot/auth/login": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Auth Login",
         "operationId": "auth_login_api_v1_copilot_auth_login_post",
         "responses": {
@@ -54,9 +50,7 @@
     },
     "/api/v1/copilot/a2a/delegate": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "A2A Delegate",
         "description": "Delegate a task to an A2A-compatible agent (TD-4 real implementation).\n\nAccepts ``{target_agent_id, message, context}`` and dispatches\nvia the local ``InMemoryA2AClient``. The response carries the\n``task_id``, ``status`` (``completed`` / ``failed``), the agent's\n``result`` payload, and ``lineage_hints`` for cross-service\ncorrelation. Unknown agents return 404 (``E_AGENT_NOT_FOUND``).\n\nEmits ``copilot.a2a.delegated`` outbox event regardless of\noutcome — the audit log captures both successful and failed\ndelegations.",
         "operationId": "a2a_delegate_api_v1_copilot_a2a_delegate_post",
@@ -78,9 +72,7 @@
     },
     "/api/v1/copilot/a2a/external": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "A2A External",
         "description": "List external (federated) agent cards (TD-4 real implementation).\n\nReturns cards from the local ``AgentCardRegistry``, optionally\nfiltered by ``capability`` (case-insensitive match against any\nentry in the card's ``capabilities`` tuple). The registry is\ntenant-scoped — cards from other tenants are never surfaced.",
         "operationId": "a2a_external_api_v1_copilot_a2a_external_get",
@@ -130,9 +122,7 @@
     },
     "/api/v1/copilot/actions": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Get Actions",
         "operationId": "get_actions_api_v1_copilot_actions_get",
         "parameters": [
@@ -181,9 +171,7 @@
     },
     "/api/v1/copilot/actions/match": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Match Actions",
         "operationId": "match_actions_api_v1_copilot_actions_match_post",
         "requestBody": {
@@ -226,9 +214,7 @@
     },
     "/api/v1/copilot/actions/{action_id}/execute": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Execute Action",
         "operationId": "execute_action_api_v1_copilot_actions__action_id__execute_post",
         "parameters": [
@@ -282,9 +268,7 @@
     },
     "/api/v1/copilot/actions/execute": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Execute Action By Body",
         "description": "Execute an action identified by body (FR-COPILOT-COPILOTPOSTCOPILOTACTIONSEXECUTE).\n\nAccepts ``action_id`` / ``actionId`` (preferred) or ``action_name``\nin the request body so callers can fire an action without embedding\nthe id in the path. The frontend SuperAI Action 面板 sends camelCase\n``actionId`` — both spellings are accepted. Mapped actions are\napplied in the ontology kernel (三大原理 #3); unmapped actions stay\nemit-only. Emits ``copilot.action.executed`` outbox event.",
         "operationId": "execute_action_by_body_api_v1_copilot_actions_execute_post",
@@ -328,9 +312,7 @@
     },
     "/api/v1/copilot/analysis/explain-sql": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Explain Sql",
         "operationId": "explain_sql_api_v1_copilot_analysis_explain_sql_post",
         "requestBody": {
@@ -373,9 +355,7 @@
     },
     "/api/v1/copilot/analysis/audit-sql": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Audit Sql",
         "operationId": "audit_sql_api_v1_copilot_analysis_audit_sql_post",
         "requestBody": {
@@ -418,9 +398,7 @@
     },
     "/api/v1/copilot/analysis/execute-sql": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Execute Sql",
         "operationId": "execute_sql_api_v1_copilot_analysis_execute_sql_post",
         "requestBody": {
@@ -463,9 +441,7 @@
     },
     "/api/v1/copilot/analysis/generate-sql": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Generate Sql",
         "operationId": "generate_sql_api_v1_copilot_analysis_generate_sql_post",
         "requestBody": {
@@ -508,9 +484,7 @@
     },
     "/api/v1/copilot/chat/multimodal/upload": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Multimodal Upload",
         "operationId": "multimodal_upload_api_v1_copilot_chat_multimodal_upload_post",
         "requestBody": {
@@ -553,9 +527,7 @@
     },
     "/api/v1/copilot/code": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Get Code",
         "operationId": "get_code_api_v1_copilot_code_get",
         "responses": {
@@ -576,9 +548,7 @@
     },
     "/api/v1/copilot/conversations": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Get Conversations",
         "operationId": "get_conversations_api_v1_copilot_conversations_get",
         "responses": {
@@ -597,9 +567,7 @@
         }
       },
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Create Conversation",
         "operationId": "create_conversation_api_v1_copilot_conversations_post",
         "requestBody": {
@@ -642,9 +610,7 @@
     },
     "/api/v1/copilot/conversations/{conv_id}": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Get Conversation Detail",
         "operationId": "get_conversation_detail_api_v1_copilot_conversations__conv_id__get",
         "parameters": [
@@ -684,9 +650,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Delete Conversation",
         "operationId": "delete_conversation_api_v1_copilot_conversations__conv_id__delete",
         "parameters": [
@@ -728,9 +692,7 @@
     },
     "/api/v1/copilot/conversations/{conv_id}/favorite": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Toggle Favorite",
         "operationId": "toggle_favorite_api_v1_copilot_conversations__conv_id__favorite_post",
         "parameters": [
@@ -772,9 +734,7 @@
     },
     "/api/v1/copilot/conversations/{conv_id}/messages": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Get Messages",
         "operationId": "get_messages_api_v1_copilot_conversations__conv_id__messages_get",
         "parameters": [
@@ -836,9 +796,7 @@
     },
     "/api/v1/copilot/chat/completions/stream": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Chat Completions Stream",
         "operationId": "chat_completions_stream_api_v1_copilot_chat_completions_stream_post",
         "requestBody": {
@@ -877,9 +835,7 @@
     },
     "/api/v1/copilot/datasources": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Get Datasources",
         "operationId": "get_datasources_api_v1_copilot_datasources_get",
         "responses": {
@@ -900,9 +856,7 @@
     },
     "/api/v1/copilot/generate/dashboard": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Generate Dashboard",
         "operationId": "generate_dashboard_api_v1_copilot_generate_dashboard_post",
         "requestBody": {
@@ -945,9 +899,7 @@
     },
     "/api/v1/copilot/generate/explain-code": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Explain Code",
         "operationId": "explain_code_api_v1_copilot_generate_explain_code_post",
         "requestBody": {
@@ -990,9 +942,7 @@
     },
     "/api/v1/copilot/generate/form": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Generate Form",
         "operationId": "generate_form_api_v1_copilot_generate_form_post",
         "requestBody": {
@@ -1035,9 +985,7 @@
     },
     "/api/v1/copilot/generate/review-code": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Review Code",
         "operationId": "review_code_api_v1_copilot_generate_review_code_post",
         "requestBody": {
@@ -1080,9 +1028,7 @@
     },
     "/api/v1/copilot/generate/process": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Get Generate Process",
         "description": "List generation processes (FR-COPILOT-COPILOTGETCOPILOTGENERATEPROCESS).\n\nA generation process is backed by a copilot Plan in ``running`` /\n``draft`` state; we surface the plan list as the process catalog.",
         "operationId": "get_generate_process_api_v1_copilot_generate_process_post",
@@ -1126,9 +1072,7 @@
     },
     "/api/v1/copilot/knowledge-bases": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Get Knowledge Bases",
         "operationId": "get_knowledge_bases_api_v1_copilot_knowledge_bases_get",
         "responses": {
@@ -1149,9 +1093,7 @@
     },
     "/api/v1/copilot/models/multimodal": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Get Multimodal Models",
         "description": "返回可用模型清单。\n\n优先读 IAM ai_model 注册表（后台「获取模型」配置的真实模型），\nIAM 不可用时回退到 in_memory seed（保持既有行为）。",
         "operationId": "get_multimodal_models_api_v1_copilot_models_multimodal_get",
@@ -1173,9 +1115,7 @@
     },
     "/api/v1/copilot/ontology/concepts/search": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Search Concepts",
         "operationId": "search_concepts_api_v1_copilot_ontology_concepts_search_get",
         "parameters": [
@@ -1217,9 +1157,7 @@
     },
     "/api/v1/copilot/ontology/graph/expand": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Expand Graph",
         "operationId": "expand_graph_api_v1_copilot_ontology_graph_expand_get",
         "parameters": [
@@ -1261,9 +1199,7 @@
     },
     "/api/v1/copilot/ontology/graph/query": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Query Graph",
         "operationId": "query_graph_api_v1_copilot_ontology_graph_query_post",
         "requestBody": {
@@ -1306,9 +1242,7 @@
     },
     "/api/v1/copilot/plans": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Get Plans",
         "operationId": "get_plans_api_v1_copilot_plans_get",
         "responses": {
@@ -1329,9 +1263,7 @@
     },
     "/api/v1/copilot/queries/execute": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Execute Query",
         "operationId": "execute_query_api_v1_copilot_queries_execute_post",
         "requestBody": {
@@ -1374,9 +1306,7 @@
     },
     "/api/v1/copilot/queries/history": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Query History",
         "operationId": "query_history_api_v1_copilot_queries_history_get",
         "responses": {
@@ -1397,9 +1327,7 @@
     },
     "/api/v1/copilot/scheduling/employees/match": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Match Employees",
         "description": "意图匹配 → 候选员工列表。\n\nGOVERN-11 P0：候选池改为从 dw 域主数据 (`GET /api/v1/dw/employees`)\n实时拉取，**删除** copilot 内部硬编码 employee 影子表。\n\n命中策略：\n  1) 把 task_type 拆 token，按 token 子串匹配 capabilities/roleCategory\n  2) 全部候选（无 task_type）走全量返回，confidence 全部 1.0\n  3) dw 调用失败 → 回退 in-memory seed（保证不 500）",
         "operationId": "match_employees_api_v1_copilot_scheduling_employees_match_post",
@@ -1443,9 +1371,7 @@
     },
     "/api/v1/copilot/scheduling/execution/start": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Start Execution",
         "operationId": "start_execution_api_v1_copilot_scheduling_execution_start_post",
         "requestBody": {
@@ -1488,9 +1414,7 @@
     },
     "/api/v1/copilot/scheduling/intent/detect": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Detect Intent",
         "operationId": "detect_intent_api_v1_copilot_scheduling_intent_detect_post",
         "requestBody": {
@@ -1533,9 +1457,7 @@
     },
     "/api/v1/copilot/scheduling/intents": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Get Intents",
         "operationId": "get_intents_api_v1_copilot_scheduling_intents_get",
         "responses": {
@@ -1556,9 +1478,7 @@
     },
     "/api/v1/copilot/scheduling/plan/generate": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Generate Plan",
         "operationId": "generate_plan_api_v1_copilot_scheduling_plan_generate_post",
         "requestBody": {
@@ -1601,9 +1521,7 @@
     },
     "/api/v1/copilot/scheduling/templates": {
       "get": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Get Scheduling Templates",
         "description": "List scheduling templates (FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGTEMPLATES).\n\nTemplates are reusable plan skeletons; we surface the copilot\nTemplate catalog, optionally filtered by category.",
         "operationId": "get_scheduling_templates_api_v1_copilot_scheduling_templates_get",
@@ -1660,9 +1578,7 @@
     },
     "/api/v1/copilot/search": {
       "post": {
-        "tags": [
-          "copilot"
-        ],
+        "tags": ["copilot"],
         "summary": "Search",
         "operationId": "search_api_v1_copilot_search_post",
         "requestBody": {
@@ -1705,9 +1621,7 @@
     },
     "/api/v1/a2a/health": {
       "get": {
-        "tags": [
-          "a2a"
-        ],
+        "tags": ["a2a"],
         "summary": "Health",
         "description": "Anonymous liveness probe — no tenant guard.",
         "operationId": "health_api_v1_a2a_health_get",
@@ -1731,9 +1645,7 @@
     },
     "/api/v1/a2a/agents": {
       "get": {
-        "tags": [
-          "a2a"
-        ],
+        "tags": ["a2a"],
         "summary": "Get Agents",
         "operationId": "get_agents_api_v1_a2a_agents_get",
         "responses": {
@@ -1754,9 +1666,7 @@
     },
     "/api/v1/a2a/agents/{agent_id}": {
       "get": {
-        "tags": [
-          "a2a"
-        ],
+        "tags": ["a2a"],
         "summary": "Get Agent Detail",
         "operationId": "get_agent_detail_api_v1_a2a_agents__agent_id__get",
         "parameters": [
@@ -1798,9 +1708,7 @@
     },
     "/api/v1/a2a/agents/{agent_id}/capabilities": {
       "get": {
-        "tags": [
-          "a2a"
-        ],
+        "tags": ["a2a"],
         "summary": "Get Agent Capabilities",
         "operationId": "get_agent_capabilities_api_v1_a2a_agents__agent_id__capabilities_get",
         "parameters": [
@@ -1842,9 +1750,7 @@
     },
     "/api/v1/a2a/external": {
       "get": {
-        "tags": [
-          "a2a"
-        ],
+        "tags": ["a2a"],
         "summary": "Get External Agents",
         "operationId": "get_external_agents_api_v1_a2a_external_get",
         "responses": {
@@ -1863,9 +1769,7 @@
         }
       },
       "post": {
-        "tags": [
-          "a2a"
-        ],
+        "tags": ["a2a"],
         "summary": "Call External Agent",
         "description": "Call a registered external (federated) agent synchronously (TD-4).\n\nAccepts ``{target_agent_id, message, context}`` and dispatches to\nthe agent's HTTP endpoint via the ``A2ADelegator``. The response\ncarries the agent's reply payload, the delegation status\n(``completed`` / ``failed`` / ``timeout``), and the agent summary.\n\nEmits ``a2a.external.called`` outbox event regardless of outcome.",
         "operationId": "call_external_agent_api_v1_a2a_external_post",
@@ -1909,9 +1813,7 @@
     },
     "/api/v1/a2a/tasks": {
       "get": {
-        "tags": [
-          "a2a"
-        ],
+        "tags": ["a2a"],
         "summary": "Get Tasks",
         "operationId": "get_tasks_api_v1_a2a_tasks_get",
         "responses": {
@@ -1932,9 +1834,7 @@
     },
     "/api/v1/a2a/tasks/{task_id}": {
       "get": {
-        "tags": [
-          "a2a"
-        ],
+        "tags": ["a2a"],
         "summary": "Get Task Detail",
         "operationId": "get_task_detail_api_v1_a2a_tasks__task_id__get",
         "parameters": [
@@ -1976,9 +1876,7 @@
     },
     "/api/v1/a2a/messages": {
       "post": {
-        "tags": [
-          "a2a"
-        ],
+        "tags": ["a2a"],
         "summary": "Post Message",
         "description": "Accept a W3C A2A message and open a delegation task (GOVERN-12-03).\n\nThe envelope is translated into the existing ``DelegationTask``\nmodel: text parts become the task message, data parts are merged\ninto the task context (alongside the W3C correlation ids). The\nresponse is a W3C Task object rather than the legacy\n``{task_id,status}`` shape returned by ``/delegate``.",
         "operationId": "post_message_api_v1_a2a_messages_post",
@@ -2020,9 +1918,7 @@
     },
     "/api/v1/a2a/delegate": {
       "post": {
-        "tags": [
-          "a2a"
-        ],
+        "tags": ["a2a"],
         "summary": "Delegate",
         "operationId": "delegate_api_v1_a2a_delegate_post",
         "requestBody": {
@@ -2066,9 +1962,7 @@
     },
     "/api/v1/a2a/tasks/{task_id}/result": {
       "post": {
-        "tags": [
-          "a2a"
-        ],
+        "tags": ["a2a"],
         "summary": "Submit Task Result",
         "operationId": "submit_task_result_api_v1_a2a_tasks__task_id__result_post",
         "parameters": [
@@ -2122,9 +2016,7 @@
     },
     "/api/v1/a2a/register": {
       "post": {
-        "tags": [
-          "a2a"
-        ],
+        "tags": ["a2a"],
         "summary": "Register Agent",
         "operationId": "register_agent_api_v1_a2a_register_post",
         "requestBody": {
@@ -2167,9 +2059,7 @@
     },
     "/api/v1/a2a/agent-cards/search": {
       "get": {
-        "tags": [
-          "a2a"
-        ],
+        "tags": ["a2a"],
         "summary": "Search Agent Cards",
         "description": "Search A2A agent cards (FR-A2A-A2AGETA2AAGENTCARDSSEARCH).\n\nMerges internal agents and federated external agents into a\nsingle card list, then paginates. Cards carry a `source` field\nso callers can tell internal vs federated apart.",
         "operationId": "search_agent_cards_api_v1_a2a_agent_cards_search_get",
@@ -2226,9 +2116,7 @@
     },
     "/api/v1/a2a/delegations": {
       "get": {
-        "tags": [
-          "a2a"
-        ],
+        "tags": ["a2a"],
         "summary": "List Delegations Paginated",
         "description": "List delegation tasks, paginated (FR-A2A-A2AGETA2ADELEGATIONS).\n\nThis is the canonical spec path for `GET /api/v1/a2a/delegations`.\nIt returns the same DelegationTask rows as `GET /tasks` but in\nthe standard `{items,total,page,size,pages}` page envelope.",
         "operationId": "list_delegations_paginated_api_v1_a2a_delegations_get",
@@ -2285,9 +2173,7 @@
     },
     "/api/v1/arch/applications": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Applications",
         "operationId": "get_applications_api_v1_arch_applications_get",
         "parameters": [
@@ -2334,9 +2220,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Application",
         "operationId": "create_application_api_v1_arch_applications_post",
         "requestBody": {
@@ -2379,9 +2263,7 @@
     },
     "/api/v1/arch/business-processes": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Business Processes",
         "operationId": "get_business_processes_api_v1_arch_business_processes_get",
         "responses": {
@@ -2400,9 +2282,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Business Process",
         "operationId": "create_business_process_api_v1_arch_business_processes_post",
         "requestBody": {
@@ -2445,9 +2325,7 @@
     },
     "/api/v1/arch/capabilities/tree": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Capability Tree",
         "operationId": "get_capability_tree_api_v1_arch_capabilities_tree_get",
         "responses": {
@@ -2468,9 +2346,7 @@
     },
     "/api/v1/arch/capabilities/mappings": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Capability Mappings",
         "operationId": "get_capability_mappings_api_v1_arch_capabilities_mappings_get",
         "responses": {
@@ -2491,9 +2367,7 @@
     },
     "/api/v1/arch/capabilities": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Capabilities",
         "description": "Flat capability list (FR-ARCH-ARCHGETARCHCAPABILITIES).",
         "operationId": "get_capabilities_api_v1_arch_capabilities_get",
@@ -2548,9 +2422,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Capability",
         "operationId": "create_capability_api_v1_arch_capabilities_post",
         "requestBody": {
@@ -2593,9 +2465,7 @@
     },
     "/api/v1/arch/capability-mappings": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Capability Mappings Flat",
         "description": "Flat capability→application mappings (FR-ARCH-ARCHGETARCHCAPABILITYMAPPINGS).\n\nAlias of /capabilities/mappings exposed at the canonical EA path.",
         "operationId": "get_capability_mappings_flat_api_v1_arch_capability_mappings_get",
@@ -2652,9 +2522,7 @@
     },
     "/api/v1/arch/data-assets": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Data Assets",
         "operationId": "get_data_assets_api_v1_arch_data_assets_get",
         "parameters": [
@@ -2701,9 +2569,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Data Asset",
         "operationId": "create_data_asset_api_v1_arch_data_assets_post",
         "requestBody": {
@@ -2746,9 +2612,7 @@
     },
     "/api/v1/arch/data-assets/catalog": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Data Assets Catalog",
         "operationId": "get_data_assets_catalog_api_v1_arch_data_assets_catalog_get",
         "responses": {
@@ -2769,9 +2633,7 @@
     },
     "/api/v1/arch/data-entities": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Data Entities",
         "operationId": "get_data_entities_api_v1_arch_data_entities_get",
         "responses": {
@@ -2790,9 +2652,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Data Entity",
         "operationId": "create_data_entity_api_v1_arch_data_entities_post",
         "requestBody": {
@@ -2835,9 +2695,7 @@
     },
     "/api/v1/arch/data-flows": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Data Flows",
         "operationId": "get_data_flows_api_v1_arch_data_flows_get",
         "responses": {
@@ -2856,9 +2714,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Data Flow",
         "operationId": "create_data_flow_api_v1_arch_data_flows_post",
         "requestBody": {
@@ -2901,9 +2757,7 @@
     },
     "/api/v1/arch/data-standards": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Data Standards",
         "operationId": "get_data_standards_api_v1_arch_data_standards_get",
         "responses": {
@@ -2922,9 +2776,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Data Standard",
         "operationId": "create_data_standard_api_v1_arch_data_standards_post",
         "requestBody": {
@@ -2967,9 +2819,7 @@
     },
     "/api/v1/arch/data/domains": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Data Domains",
         "operationId": "get_data_domains_api_v1_arch_data_domains_get",
         "responses": {
@@ -2988,9 +2838,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Data Domain",
         "operationId": "create_data_domain_api_v1_arch_data_domains_post",
         "requestBody": {
@@ -3033,9 +2881,7 @@
     },
     "/api/v1/arch/deployments": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Deployments",
         "operationId": "get_deployments_api_v1_arch_deployments_get",
         "responses": {
@@ -3054,9 +2900,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Deployment",
         "operationId": "create_deployment_api_v1_arch_deployments_post",
         "requestBody": {
@@ -3099,9 +2943,7 @@
     },
     "/api/v1/arch/infrastructures": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Infrastructures",
         "operationId": "get_infrastructures_api_v1_arch_infrastructures_get",
         "responses": {
@@ -3120,9 +2962,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Infrastructure",
         "operationId": "create_infrastructure_api_v1_arch_infrastructures_post",
         "requestBody": {
@@ -3165,9 +3005,7 @@
     },
     "/api/v1/arch/governance/principle-categories": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Principle Categories",
         "operationId": "get_principle_categories_api_v1_arch_governance_principle_categories_get",
         "responses": {
@@ -3186,9 +3024,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Principle Category",
         "operationId": "create_principle_category_api_v1_arch_governance_principle_categories_post",
         "requestBody": {
@@ -3231,9 +3067,7 @@
     },
     "/api/v1/arch/governance/principles": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Principles",
         "operationId": "get_principles_api_v1_arch_governance_principles_get",
         "responses": {
@@ -3252,9 +3086,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Principle",
         "operationId": "create_principle_api_v1_arch_governance_principles_post",
         "requestBody": {
@@ -3297,9 +3129,7 @@
     },
     "/api/v1/arch/governance/review-templates": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Review Templates",
         "operationId": "get_review_templates_api_v1_arch_governance_review_templates_get",
         "responses": {
@@ -3318,9 +3148,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Review Template",
         "operationId": "create_review_template_api_v1_arch_governance_review_templates_post",
         "requestBody": {
@@ -3363,9 +3191,7 @@
     },
     "/api/v1/arch/governance/review-tickets": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Review Tickets",
         "operationId": "get_review_tickets_api_v1_arch_governance_review_tickets_get",
         "responses": {
@@ -3384,9 +3210,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Review Ticket",
         "operationId": "create_review_ticket_api_v1_arch_governance_review_tickets_post",
         "requestBody": {
@@ -3429,9 +3253,7 @@
     },
     "/api/v1/arch/governance/tech-debts": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Tech Debts",
         "operationId": "get_tech_debts_api_v1_arch_governance_tech_debts_get",
         "responses": {
@@ -3450,9 +3272,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Tech Debt",
         "operationId": "create_tech_debt_api_v1_arch_governance_tech_debts_post",
         "requestBody": {
@@ -3495,9 +3315,7 @@
     },
     "/api/v1/arch/impact-analysis": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Impact Analysis",
         "operationId": "get_impact_analysis_api_v1_arch_impact_analysis_get",
         "parameters": [
@@ -3539,9 +3357,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Post Impact Analysis",
         "operationId": "post_impact_analysis_api_v1_arch_impact_analysis_post",
         "requestBody": {
@@ -3584,9 +3400,7 @@
     },
     "/api/v1/arch/ontology-mappings/changes": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Ontology Mapping Changes",
         "operationId": "get_ontology_mapping_changes_api_v1_arch_ontology_mappings_changes_get",
         "responses": {
@@ -3607,9 +3421,7 @@
     },
     "/api/v1/arch/ontology-mappings/rules": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Ontology Mapping Rules",
         "operationId": "get_ontology_mapping_rules_api_v1_arch_ontology_mappings_rules_get",
         "responses": {
@@ -3628,9 +3440,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Ontology Mapping Rule",
         "operationId": "create_ontology_mapping_rule_api_v1_arch_ontology_mappings_rules_post",
         "requestBody": {
@@ -3673,9 +3483,7 @@
     },
     "/api/v1/arch/orgs/tree": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Org Tree",
         "operationId": "get_org_tree_api_v1_arch_orgs_tree_get",
         "responses": {
@@ -3696,9 +3504,7 @@
     },
     "/api/v1/arch/orgs/roles": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Org Roles",
         "operationId": "get_org_roles_api_v1_arch_orgs_roles_get",
         "responses": {
@@ -3719,9 +3525,7 @@
     },
     "/api/v1/arch/orgs": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Orgs",
         "description": "Flat org list (FR-ARCH-ARCHGETARCHORGS).",
         "operationId": "get_orgs_api_v1_arch_orgs_get",
@@ -3776,9 +3580,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Org",
         "operationId": "create_org_api_v1_arch_orgs_post",
         "requestBody": {
@@ -3821,9 +3623,7 @@
     },
     "/api/v1/arch/roles": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Roles",
         "description": "Flat role list (FR-ARCH-ARCHGETARCHROLES).",
         "operationId": "get_roles_api_v1_arch_roles_get",
@@ -3878,9 +3678,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Role",
         "operationId": "create_role_api_v1_arch_roles_post",
         "requestBody": {
@@ -3923,9 +3721,7 @@
     },
     "/api/v1/arch/tech-stacks": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Tech Stacks",
         "operationId": "get_tech_stacks_api_v1_arch_tech_stacks_get",
         "responses": {
@@ -3944,9 +3740,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Tech Stack",
         "operationId": "create_tech_stack_api_v1_arch_tech_stacks_post",
         "requestBody": {
@@ -3989,9 +3783,7 @@
     },
     "/api/v1/arch/technology-components": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Technology Components",
         "operationId": "get_technology_components_api_v1_arch_technology_components_get",
         "responses": {
@@ -4010,9 +3802,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Technology Component",
         "operationId": "create_technology_component_api_v1_arch_technology_components_post",
         "requestBody": {
@@ -4055,9 +3845,7 @@
     },
     "/api/v1/arch/technology-radar": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Technology Radar",
         "operationId": "get_technology_radar_api_v1_arch_technology_radar_get",
         "parameters": [
@@ -4104,9 +3892,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Technology Radar",
         "operationId": "create_technology_radar_api_v1_arch_technology_radar_post",
         "requestBody": {
@@ -4149,9 +3935,7 @@
     },
     "/api/v1/arch/technology-stacks": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Technology Stacks",
         "operationId": "get_technology_stacks_api_v1_arch_technology_stacks_get",
         "responses": {
@@ -4170,9 +3954,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Technology Stack",
         "operationId": "create_technology_stack_api_v1_arch_technology_stacks_post",
         "requestBody": {
@@ -4215,9 +3997,7 @@
     },
     "/api/v1/arch/value-streams": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Value Streams",
         "operationId": "get_value_streams_api_v1_arch_value_streams_get",
         "responses": {
@@ -4236,9 +4016,7 @@
         }
       },
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Create Value Stream",
         "operationId": "create_value_stream_api_v1_arch_value_streams_post",
         "requestBody": {
@@ -4281,9 +4059,7 @@
     },
     "/api/v1/arch/applications/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Application",
         "operationId": "update_application_api_v1_arch_applications__item_id__put",
         "parameters": [
@@ -4335,9 +4111,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Application",
         "operationId": "delete_application_api_v1_arch_applications__item_id__delete",
         "parameters": [
@@ -4379,9 +4153,7 @@
     },
     "/api/v1/arch/capabilities/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Capability",
         "operationId": "update_capability_api_v1_arch_capabilities__item_id__put",
         "parameters": [
@@ -4433,9 +4205,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Capability",
         "operationId": "delete_capability_api_v1_arch_capabilities__item_id__delete",
         "parameters": [
@@ -4477,9 +4247,7 @@
     },
     "/api/v1/arch/capabilities/{item_id}/move": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Move Capability Node",
         "operationId": "move_capability_node_api_v1_arch_capabilities__item_id__move_put",
         "parameters": [
@@ -4533,9 +4301,7 @@
     },
     "/api/v1/arch/value-streams/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Value Stream",
         "operationId": "update_value_stream_api_v1_arch_value_streams__item_id__put",
         "parameters": [
@@ -4587,9 +4353,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Value Stream",
         "operationId": "delete_value_stream_api_v1_arch_value_streams__item_id__delete",
         "parameters": [
@@ -4631,9 +4395,7 @@
     },
     "/api/v1/arch/value-streams/{vs_id}/stages": {
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Add Vs Stage",
         "operationId": "add_vs_stage_api_v1_arch_value_streams__vs_id__stages_post",
         "parameters": [
@@ -4687,9 +4449,7 @@
     },
     "/api/v1/arch/value-streams/{vs_id}/stages/{stage_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Vs Stage",
         "operationId": "update_vs_stage_api_v1_arch_value_streams__vs_id__stages__stage_id__put",
         "parameters": [
@@ -4750,9 +4510,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Vs Stage",
         "operationId": "delete_vs_stage_api_v1_arch_value_streams__vs_id__stages__stage_id__delete",
         "parameters": [
@@ -4803,9 +4561,7 @@
     },
     "/api/v1/arch/value-streams/{vs_id}/capabilities": {
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Link Vs Capabilities",
         "operationId": "link_vs_capabilities_api_v1_arch_value_streams__vs_id__capabilities_post",
         "parameters": [
@@ -4859,9 +4615,7 @@
     },
     "/api/v1/arch/business-processes/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Business Process",
         "operationId": "update_business_process_api_v1_arch_business_processes__item_id__put",
         "parameters": [
@@ -4913,9 +4667,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Business Process",
         "operationId": "delete_business_process_api_v1_arch_business_processes__item_id__delete",
         "parameters": [
@@ -4957,9 +4709,7 @@
     },
     "/api/v1/arch/business-processes/{bp_id}/roles": {
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Link Bp Roles",
         "operationId": "link_bp_roles_api_v1_arch_business_processes__bp_id__roles_post",
         "parameters": [
@@ -5013,9 +4763,7 @@
     },
     "/api/v1/arch/orgs/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Org",
         "operationId": "update_org_api_v1_arch_orgs__item_id__put",
         "parameters": [
@@ -5067,9 +4815,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Org",
         "operationId": "delete_org_api_v1_arch_orgs__item_id__delete",
         "parameters": [
@@ -5111,9 +4857,7 @@
     },
     "/api/v1/arch/roles/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Role",
         "operationId": "update_role_api_v1_arch_roles__item_id__put",
         "parameters": [
@@ -5165,9 +4909,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Role",
         "operationId": "delete_role_api_v1_arch_roles__item_id__delete",
         "parameters": [
@@ -5209,9 +4951,7 @@
     },
     "/api/v1/arch/data/domains/{item_id}": {
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Data Domain",
         "operationId": "delete_data_domain_api_v1_arch_data_domains__item_id__delete",
         "parameters": [
@@ -5253,9 +4993,7 @@
     },
     "/api/v1/arch/data-entities/{item_id}": {
       "get": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Get Data Entity",
         "operationId": "get_data_entity_api_v1_arch_data_entities__item_id__get",
         "parameters": [
@@ -5295,9 +5033,7 @@
         }
       },
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Data Entity",
         "operationId": "update_data_entity_api_v1_arch_data_entities__item_id__put",
         "parameters": [
@@ -5349,9 +5085,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Data Entity",
         "operationId": "delete_data_entity_api_v1_arch_data_entities__item_id__delete",
         "parameters": [
@@ -5393,9 +5127,7 @@
     },
     "/api/v1/arch/data-flows/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Data Flow",
         "operationId": "update_data_flow_api_v1_arch_data_flows__item_id__put",
         "parameters": [
@@ -5447,9 +5179,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Data Flow",
         "operationId": "delete_data_flow_api_v1_arch_data_flows__item_id__delete",
         "parameters": [
@@ -5491,9 +5221,7 @@
     },
     "/api/v1/arch/data-standards/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Data Standard",
         "operationId": "update_data_standard_api_v1_arch_data_standards__item_id__put",
         "parameters": [
@@ -5545,9 +5273,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Data Standard",
         "operationId": "delete_data_standard_api_v1_arch_data_standards__item_id__delete",
         "parameters": [
@@ -5589,9 +5315,7 @@
     },
     "/api/v1/arch/data-assets/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Data Asset",
         "operationId": "update_data_asset_api_v1_arch_data_assets__item_id__put",
         "parameters": [
@@ -5643,9 +5367,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Data Asset",
         "operationId": "delete_data_asset_api_v1_arch_data_assets__item_id__delete",
         "parameters": [
@@ -5687,9 +5409,7 @@
     },
     "/api/v1/arch/deployments/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Deployment",
         "operationId": "update_deployment_api_v1_arch_deployments__item_id__put",
         "parameters": [
@@ -5741,9 +5461,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Deployment",
         "operationId": "delete_deployment_api_v1_arch_deployments__item_id__delete",
         "parameters": [
@@ -5785,9 +5503,7 @@
     },
     "/api/v1/arch/governance/principle-categories/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Principle Category",
         "operationId": "update_principle_category_api_v1_arch_governance_principle_categories__item_id__put",
         "parameters": [
@@ -5839,9 +5555,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Principle Category",
         "operationId": "delete_principle_category_api_v1_arch_governance_principle_categories__item_id__delete",
         "parameters": [
@@ -5883,9 +5597,7 @@
     },
     "/api/v1/arch/governance/principles/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Principle",
         "operationId": "update_principle_api_v1_arch_governance_principles__item_id__put",
         "parameters": [
@@ -5937,9 +5649,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Principle",
         "operationId": "delete_principle_api_v1_arch_governance_principles__item_id__delete",
         "parameters": [
@@ -5981,9 +5691,7 @@
     },
     "/api/v1/arch/governance/review-templates/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Review Template",
         "operationId": "update_review_template_api_v1_arch_governance_review_templates__item_id__put",
         "parameters": [
@@ -6035,9 +5743,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Review Template",
         "operationId": "delete_review_template_api_v1_arch_governance_review_templates__item_id__delete",
         "parameters": [
@@ -6079,9 +5785,7 @@
     },
     "/api/v1/arch/governance/review-tickets/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Review Ticket",
         "operationId": "update_review_ticket_api_v1_arch_governance_review_tickets__item_id__put",
         "parameters": [
@@ -6133,9 +5837,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Review Ticket",
         "operationId": "delete_review_ticket_api_v1_arch_governance_review_tickets__item_id__delete",
         "parameters": [
@@ -6177,9 +5879,7 @@
     },
     "/api/v1/arch/governance/review-tickets/{item_id}/start": {
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Start Review Ticket",
         "operationId": "start_review_ticket_api_v1_arch_governance_review_tickets__item_id__start_post",
         "parameters": [
@@ -6230,9 +5930,7 @@
     },
     "/api/v1/arch/governance/review-tickets/{item_id}/approve": {
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Approve Review Ticket",
         "operationId": "approve_review_ticket_api_v1_arch_governance_review_tickets__item_id__approve_post",
         "parameters": [
@@ -6286,9 +5984,7 @@
     },
     "/api/v1/arch/governance/review-tickets/{item_id}/reject": {
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Reject Review Ticket",
         "operationId": "reject_review_ticket_api_v1_arch_governance_review_tickets__item_id__reject_post",
         "parameters": [
@@ -6342,9 +6038,7 @@
     },
     "/api/v1/arch/governance/review-tickets/{item_id}/comments": {
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Add Review Ticket Comment",
         "operationId": "add_review_ticket_comment_api_v1_arch_governance_review_tickets__item_id__comments_post",
         "parameters": [
@@ -6404,9 +6098,7 @@
     },
     "/api/v1/arch/governance/tech-debts/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Tech Debt",
         "operationId": "update_tech_debt_api_v1_arch_governance_tech_debts__item_id__put",
         "parameters": [
@@ -6458,9 +6150,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Tech Debt",
         "operationId": "delete_tech_debt_api_v1_arch_governance_tech_debts__item_id__delete",
         "parameters": [
@@ -6502,9 +6192,7 @@
     },
     "/api/v1/arch/ontology-mappings/rules/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Ontology Mapping Rule",
         "operationId": "update_ontology_mapping_rule_api_v1_arch_ontology_mappings_rules__item_id__put",
         "parameters": [
@@ -6556,9 +6244,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Ontology Mapping Rule",
         "operationId": "delete_ontology_mapping_rule_api_v1_arch_ontology_mappings_rules__item_id__delete",
         "parameters": [
@@ -6600,9 +6286,7 @@
     },
     "/api/v1/arch/ontology-mappings/sync-to-ontology": {
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Sync To Ontology",
         "operationId": "sync_to_ontology_api_v1_arch_ontology_mappings_sync_to_ontology_post",
         "parameters": [
@@ -6651,9 +6335,7 @@
     },
     "/api/v1/arch/ontology-mappings/sync-from-ontology": {
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Sync From Ontology",
         "operationId": "sync_from_ontology_api_v1_arch_ontology_mappings_sync_from_ontology_post",
         "parameters": [
@@ -6702,9 +6384,7 @@
     },
     "/api/v1/arch/ontology-mappings/changes/{change_id}/resolve": {
       "post": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Resolve Ontology Mapping Change",
         "operationId": "resolve_ontology_mapping_change_api_v1_arch_ontology_mappings_changes__change_id__resolve_post",
         "parameters": [
@@ -6746,9 +6426,7 @@
     },
     "/api/v1/arch/technology-components/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Technology Component",
         "operationId": "update_technology_component_api_v1_arch_technology_components__item_id__put",
         "parameters": [
@@ -6800,9 +6478,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Technology Component",
         "operationId": "delete_technology_component_api_v1_arch_technology_components__item_id__delete",
         "parameters": [
@@ -6844,9 +6520,7 @@
     },
     "/api/v1/arch/technology-radar/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Technology Radar",
         "operationId": "update_technology_radar_api_v1_arch_technology_radar__item_id__put",
         "parameters": [
@@ -6898,9 +6572,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Technology Radar",
         "operationId": "delete_technology_radar_api_v1_arch_technology_radar__item_id__delete",
         "parameters": [
@@ -6942,9 +6614,7 @@
     },
     "/api/v1/arch/technology-stacks/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Technology Stack",
         "operationId": "update_technology_stack_api_v1_arch_technology_stacks__item_id__put",
         "parameters": [
@@ -6996,9 +6666,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Technology Stack",
         "operationId": "delete_technology_stack_api_v1_arch_technology_stacks__item_id__delete",
         "parameters": [
@@ -7040,9 +6708,7 @@
     },
     "/api/v1/arch/tech-stacks/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Tech Stack",
         "operationId": "update_tech_stack_api_v1_arch_tech_stacks__item_id__put",
         "parameters": [
@@ -7094,9 +6760,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Tech Stack",
         "operationId": "delete_tech_stack_api_v1_arch_tech_stacks__item_id__delete",
         "parameters": [
@@ -7138,9 +6802,7 @@
     },
     "/api/v1/arch/infrastructures/{item_id}": {
       "put": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Update Infrastructure",
         "operationId": "update_infrastructure_api_v1_arch_infrastructures__item_id__put",
         "parameters": [
@@ -7192,9 +6854,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "arch"
-        ],
+        "tags": ["arch"],
         "summary": "Delete Infrastructure",
         "operationId": "delete_infrastructure_api_v1_arch_infrastructures__item_id__delete",
         "parameters": [
@@ -7236,9 +6896,7 @@
     },
     "/api/v1/apphub/apps": {
       "get": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "List Registered Apps",
         "operationId": "list_registered_apps_api_v1_apphub_apps_get",
         "parameters": [
@@ -7305,9 +6963,7 @@
         }
       },
       "post": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Register App",
         "description": "Register a new application.\n\nValidation rules:\n  - ``code`` must be unique within the tenant.\n  - ``category`` must be one of the known categories (knowledge /\n    platform / data) and match an existing group.\n  - ``version`` must be a valid semver (MAJOR.MINOR.PATCH).",
         "operationId": "register_app_api_v1_apphub_apps_post",
@@ -7349,9 +7005,7 @@
     },
     "/api/v1/apphub/apps/groups": {
       "get": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "List App Groups",
         "operationId": "list_app_groups_api_v1_apphub_apps_groups_get",
         "responses": {
@@ -7372,9 +7026,7 @@
     },
     "/api/v1/apphub/apps/{app_id}": {
       "get": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Get App Detail",
         "description": "Get a single application detail by id or code.",
         "operationId": "get_app_detail_api_v1_apphub_apps__app_id__get",
@@ -7417,9 +7069,7 @@
     },
     "/api/v1/apphub/modules": {
       "get": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "List Business Modules",
         "operationId": "list_business_modules_api_v1_apphub_modules_get",
         "parameters": [
@@ -7468,9 +7118,7 @@
         }
       },
       "post": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Create Module",
         "description": "Create a new business module.\n\nThe ``app_code`` must reference an existing registered app.",
         "operationId": "create_module_api_v1_apphub_modules_post",
@@ -7512,9 +7160,7 @@
     },
     "/api/v1/apphub/modules/{module_id}": {
       "get": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Get Module Detail",
         "description": "Get a single business module detail.",
         "operationId": "get_module_detail_api_v1_apphub_modules__module_id__get",
@@ -7557,9 +7203,7 @@
     },
     "/api/v1/apphub/pages": {
       "get": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "List Page Templates",
         "operationId": "list_page_templates_api_v1_apphub_pages_get",
         "parameters": [
@@ -7608,9 +7252,7 @@
         }
       },
       "post": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Create Page",
         "description": "Create a new page template.\n\nThe ``module_code`` must reference an existing module.",
         "operationId": "create_page_api_v1_apphub_pages_post",
@@ -7652,9 +7294,7 @@
     },
     "/api/v1/apphub/templates": {
       "get": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "List Workflow Templates",
         "operationId": "list_workflow_templates_api_v1_apphub_templates_get",
         "parameters": [
@@ -7703,9 +7343,7 @@
         }
       },
       "post": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Create Template",
         "description": "Create a new workflow / form / approval template.\n\nThe ``template_type`` must be one of: workflow / form / approval.",
         "operationId": "create_template_api_v1_apphub_templates_post",
@@ -7747,9 +7385,7 @@
     },
     "/api/v1/apphub/apps/{code}": {
       "patch": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Update App",
         "description": "Update an application's metadata.\n\nVersion bumps must follow semver. The new version must differ\nfrom the current one.",
         "operationId": "update_app_api_v1_apphub_apps__code__patch",
@@ -7800,9 +7436,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Delete App Endpoint",
         "description": "Delete an application by code.",
         "operationId": "delete_app_endpoint_api_v1_apphub_apps__code__delete",
@@ -7845,9 +7479,7 @@
     },
     "/api/v1/apphub/groups": {
       "post": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Create Group",
         "description": "Create a new application group.",
         "operationId": "create_group_api_v1_apphub_groups_post",
@@ -7889,9 +7521,7 @@
     },
     "/api/v1/apphub/groups/{code}": {
       "delete": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Delete Group Endpoint",
         "description": "Delete a group. A group with apps referencing its category cannot be deleted.",
         "operationId": "delete_group_endpoint_api_v1_apphub_groups__code__delete",
@@ -7934,9 +7564,7 @@
     },
     "/api/v1/apphub/apps/{app_id}/runtime": {
       "get": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Get App Runtime",
         "description": "Return the runtime context + render tree for an app.",
         "operationId": "get_app_runtime_api_v1_apphub_apps__app_id__runtime_get",
@@ -7979,9 +7607,7 @@
     },
     "/api/v1/apphub/apps/{app_id}/runtime/execute": {
       "post": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Execute Runtime Action",
         "description": "Execute a runtime action (submit_form / trigger_flow / call_api / navigate).",
         "operationId": "execute_runtime_action_api_v1_apphub_apps__app_id__runtime_execute_post",
@@ -8024,9 +7650,7 @@
     },
     "/api/v1/apphub/apps/{app_id}/publish": {
       "post": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Publish App",
         "description": "Mark an app as PUBLISHED and emit an outbox event.",
         "operationId": "publish_app_api_v1_apphub_apps__app_id__publish_post",
@@ -8069,9 +7693,7 @@
     },
     "/api/v1/apphub/shortlinks/{code}": {
       "get": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Resolve Shortlink Endpoint",
         "description": "Resolve a short code to its bound app metadata.",
         "operationId": "resolve_shortlink_endpoint_api_v1_apphub_shortlinks__code__get",
@@ -8114,9 +7736,7 @@
     },
     "/api/v1/apphub/shortlinks": {
       "get": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "List Shortlinks Endpoint",
         "description": "List all short-links for the current tenant.",
         "operationId": "list_shortlinks_endpoint_api_v1_apphub_shortlinks_get",
@@ -8136,9 +7756,7 @@
         }
       },
       "post": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Create Shortlink Endpoint",
         "description": "Create a new short-link for an app.",
         "operationId": "create_shortlink_endpoint_api_v1_apphub_shortlinks_post",
@@ -8160,9 +7778,7 @@
     },
     "/api/v1/apphub/v1/wfe/forms/{form_id}": {
       "get": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Get Form Definition",
         "operationId": "get_form_definition_api_v1_apphub_v1_wfe_forms__form_id__get",
         "parameters": [
@@ -8204,9 +7820,7 @@
     },
     "/api/v1/apphub/v1/wfe/forms/{form_id}/settings": {
       "put": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Save Form Settings",
         "operationId": "save_form_settings_api_v1_apphub_v1_wfe_forms__form_id__settings_put",
         "parameters": [
@@ -8248,9 +7862,7 @@
     },
     "/api/v1/apphub/v1/wfe/forms/{form_id}/linkage-rules": {
       "put": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Save Form Linkage Rules",
         "operationId": "save_form_linkage_rules_api_v1_apphub_v1_wfe_forms__form_id__linkage_rules_put",
         "parameters": [
@@ -8292,9 +7904,7 @@
     },
     "/api/v1/apphub/v1/wfe/forms/{form_id}/scripts": {
       "put": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Save Form Scripts",
         "operationId": "save_form_scripts_api_v1_apphub_v1_wfe_forms__form_id__scripts_put",
         "parameters": [
@@ -8336,9 +7946,7 @@
     },
     "/api/v1/apphub/v1/wfe/forms/{form_id}/validate": {
       "post": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Validate Form",
         "operationId": "validate_form_api_v1_apphub_v1_wfe_forms__form_id__validate_post",
         "parameters": [
@@ -8380,9 +7988,7 @@
     },
     "/api/v1/apphub/v1/wfe/flows/{module_id}": {
       "get": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Get Flow",
         "operationId": "get_flow_api_v1_apphub_v1_wfe_flows__module_id__get",
         "parameters": [
@@ -8422,9 +8028,7 @@
         }
       },
       "put": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Save Flow",
         "operationId": "save_flow_api_v1_apphub_v1_wfe_flows__module_id__put",
         "parameters": [
@@ -8466,9 +8070,7 @@
     },
     "/api/v1/apphub/wfe/flows/validate": {
       "post": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Validate Flow",
         "operationId": "validate_flow_api_v1_apphub_wfe_flows_validate_post",
         "responses": {
@@ -8489,9 +8091,7 @@
     },
     "/api/v1/apphub/wfe/flows/test": {
       "post": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Test Flow",
         "operationId": "test_flow_api_v1_apphub_wfe_flows_test_post",
         "responses": {
@@ -8512,9 +8112,7 @@
     },
     "/api/v1/apphub/v1/wfe/flows/{module_id}/publish": {
       "post": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Publish Flow",
         "operationId": "publish_flow_api_v1_apphub_v1_wfe_flows__module_id__publish_post",
         "parameters": [
@@ -8556,9 +8154,7 @@
     },
     "/api/v1/apphub/apps/{app_id}/versions": {
       "get": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "List App Versions",
         "operationId": "list_app_versions_api_v1_apphub_apps__app_id__versions_get",
         "parameters": [
@@ -8598,9 +8194,7 @@
         }
       },
       "post": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Create App Version",
         "operationId": "create_app_version_api_v1_apphub_apps__app_id__versions_post",
         "parameters": [
@@ -8642,9 +8236,7 @@
     },
     "/api/v1/apphub/apps/{app_id}/versions/{version_id}/publish": {
       "post": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Publish App Version",
         "operationId": "publish_app_version_api_v1_apphub_apps__app_id__versions__version_id__publish_post",
         "parameters": [
@@ -8695,9 +8287,7 @@
     },
     "/api/v1/apphub/apps/{app_id}/versions/{version_id}/rollback": {
       "post": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Rollback App Version",
         "operationId": "rollback_app_version_api_v1_apphub_apps__app_id__versions__version_id__rollback_post",
         "parameters": [
@@ -8748,9 +8338,7 @@
     },
     "/api/v1/apphub/apps/{app_id}/versions/{version_id}": {
       "delete": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Delete App Version",
         "operationId": "delete_app_version_api_v1_apphub_apps__app_id__versions__version_id__delete",
         "parameters": [
@@ -8801,9 +8389,7 @@
     },
     "/api/v1/apphub/pages/{page_id}": {
       "get": {
-        "tags": [
-          "apphub"
-        ],
+        "tags": ["apphub"],
         "summary": "Get Page Detail",
         "operationId": "get_page_detail_api_v1_apphub_pages__page_id__get",
         "parameters": [
@@ -8845,9 +8431,7 @@
     },
     "/api/v1/iam/auth/login": {
       "post": {
-        "tags": [
-          "iam-auth"
-        ],
+        "tags": ["iam-auth"],
         "summary": "Iam Login",
         "operationId": "iam_login_api_v1_iam_auth_login_post",
         "parameters": [
@@ -8904,9 +8488,7 @@
     },
     "/api/v1/iam/auth/logout": {
       "post": {
-        "tags": [
-          "iam-auth"
-        ],
+        "tags": ["iam-auth"],
         "summary": "Iam Logout",
         "operationId": "iam_logout_api_v1_iam_auth_logout_post",
         "parameters": [
@@ -8955,9 +8537,7 @@
     },
     "/api/v1/iam/auth/refresh": {
       "post": {
-        "tags": [
-          "iam-auth"
-        ],
+        "tags": ["iam-auth"],
         "summary": "Iam Refresh",
         "operationId": "iam_refresh_api_v1_iam_auth_refresh_post",
         "requestBody": {
@@ -8996,9 +8576,7 @@
     },
     "/api/v1/iam/auth/me": {
       "get": {
-        "tags": [
-          "iam-auth"
-        ],
+        "tags": ["iam-auth"],
         "summary": "Iam Me",
         "description": "Return the current authenticated user profile + roles.\n\nUses inline bearer parsing to avoid the `Depends(get_caller)` overhead and\nsidestep an observed dep-resolution issue under uvicorn. Returns 401 when the\nbearer token is missing or invalid; 404 when the token is valid but the user\nno longer exists.",
         "operationId": "iam_me_api_v1_iam_auth_me_get",
@@ -9048,9 +8626,7 @@
     },
     "/api/v1/iam/sso-providers": {
       "get": {
-        "tags": [
-          "iam-auth"
-        ],
+        "tags": ["iam-auth"],
         "summary": "List Sso Providers",
         "description": "List SSO providers (empty in default dev deployment).",
         "operationId": "list_sso_providers_api_v1_iam_sso_providers_get",
@@ -9130,9 +8706,7 @@
     },
     "/api/v1/admin/configs": {
       "get": {
-        "tags": [
-          "admin-configs"
-        ],
+        "tags": ["admin-configs"],
         "summary": "List Configs",
         "operationId": "list_configs_api_v1_admin_configs_get",
         "parameters": [
@@ -9284,9 +8858,7 @@
     },
     "/api/v1/admin/configs/categories": {
       "get": {
-        "tags": [
-          "admin-configs"
-        ],
+        "tags": ["admin-configs"],
         "summary": "List Categories",
         "operationId": "list_categories_api_v1_admin_configs_categories_get",
         "parameters": [
@@ -9383,9 +8955,7 @@
     },
     "/api/v1/admin/configs/{key}": {
       "put": {
-        "tags": [
-          "admin-configs"
-        ],
+        "tags": ["admin-configs"],
         "summary": "Update Config",
         "operationId": "update_config_api_v1_admin_configs__key__put",
         "parameters": [
@@ -9501,9 +9071,7 @@
     },
     "/api/v1/admin/configs/batch": {
       "post": {
-        "tags": [
-          "admin-configs"
-        ],
+        "tags": ["admin-configs"],
         "summary": "Batch Create Configs",
         "description": "批量创建配置项（添加自定义 AI Provider 时用）。已存在的 key 跳过。",
         "operationId": "batch_create_configs_api_v1_admin_configs_batch_post",
@@ -9611,9 +9179,7 @@
     },
     "/api/v1/dashboard/auth/login": {
       "post": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Workbench login",
         "operationId": "dashboard_login_api_v1_dashboard_auth_login_post",
         "requestBody": {
@@ -9652,9 +9218,7 @@
     },
     "/api/v1/dashboard/profile": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Current user profile",
         "operationId": "get_profile_api_v1_dashboard_profile_get",
         "responses": {
@@ -9673,9 +9237,7 @@
     },
     "/api/v1/dashboard/myapps": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "My apps",
         "operationId": "my_apps_api_v1_dashboard_myapps_get",
         "responses": {
@@ -9694,9 +9256,7 @@
     },
     "/api/v1/dashboard/myagents": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "My digital employees",
         "operationId": "my_agents_api_v1_dashboard_myagents_get",
         "responses": {
@@ -9715,9 +9275,7 @@
     },
     "/api/v1/dashboard/myagents/logs": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Agent execution logs",
         "operationId": "my_agent_logs_api_v1_dashboard_myagents_logs_get",
         "responses": {
@@ -9736,9 +9294,7 @@
     },
     "/api/v1/dashboard/messages": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Messages",
         "operationId": "messages_api_v1_dashboard_messages_get",
         "responses": {
@@ -9757,9 +9313,7 @@
     },
     "/api/v1/dashboard/portal": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Portal links",
         "operationId": "portal_api_v1_dashboard_portal_get",
         "parameters": [
@@ -9806,9 +9360,7 @@
     },
     "/api/v1/dashboard/deliverables/summary": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Deliverables + timeline",
         "operationId": "deliverables_summary_api_v1_dashboard_deliverables_summary_get",
         "responses": {
@@ -9827,9 +9379,7 @@
     },
     "/api/v1/dashboard/profile/permissions": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Aggregated permissions",
         "operationId": "get_profile_permissions_api_v1_dashboard_profile_permissions_get",
         "responses": {
@@ -9848,9 +9398,7 @@
     },
     "/api/v1/dashboard/settings": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "User preferences",
         "operationId": "get_settings_api_v1_dashboard_settings_get",
         "parameters": [
@@ -9895,9 +9443,7 @@
         }
       },
       "put": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Update user preferences",
         "operationId": "update_settings_api_v1_dashboard_settings_put",
         "requestBody": {
@@ -9936,9 +9482,7 @@
     },
     "/api/v1/dashboard/sessions": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Active sessions",
         "operationId": "get_sessions_api_v1_dashboard_sessions_get",
         "parameters": [
@@ -9985,9 +9529,7 @@
     },
     "/api/v1/dashboard/sessions/{session_id}": {
       "delete": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Revoke Session",
         "operationId": "revoke_session_api_v1_dashboard_sessions__session_id__delete",
         "parameters": [
@@ -10020,9 +9562,7 @@
     },
     "/api/v1/dashboard/api-keys": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "List API keys",
         "operationId": "list_api_keys_api_v1_dashboard_api_keys_get",
         "parameters": [
@@ -10087,9 +9627,7 @@
         }
       },
       "post": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Create API key",
         "operationId": "create_api_key_api_v1_dashboard_api_keys_post",
         "requestBody": {
@@ -10128,9 +9666,7 @@
     },
     "/api/v1/dashboard/api-keys/{api_key_id}": {
       "delete": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Revoke Api Key",
         "operationId": "revoke_api_key_api_v1_dashboard_api_keys__api_key_id__delete",
         "parameters": [
@@ -10163,9 +9699,7 @@
     },
     "/api/v1/dashboard/notifications": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "List notifications",
         "operationId": "list_notifications_api_v1_dashboard_notifications_get",
         "parameters": [
@@ -10242,9 +9776,7 @@
     },
     "/api/v1/dashboard/notifications/unread-count": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Unread count",
         "operationId": "unread_count_api_v1_dashboard_notifications_unread_count_get",
         "parameters": [
@@ -10291,9 +9823,7 @@
     },
     "/api/v1/dashboard/notifications/{notification_id}/read": {
       "put": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Mark Read",
         "operationId": "mark_read_api_v1_dashboard_notifications__notification_id__read_put",
         "parameters": [
@@ -10326,9 +9856,7 @@
     },
     "/api/v1/dashboard/notifications/read-all": {
       "post": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Mark All Read",
         "operationId": "mark_all_read_api_v1_dashboard_notifications_read_all_post",
         "parameters": [
@@ -10368,9 +9896,7 @@
     },
     "/api/v1/dashboard/notifications/settings": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Notification preferences",
         "operationId": "get_notification_settings_api_v1_dashboard_notifications_settings_get",
         "parameters": [
@@ -10415,9 +9941,7 @@
         }
       },
       "put": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Update notification preferences",
         "operationId": "update_notification_settings_api_v1_dashboard_notifications_settings_put",
         "requestBody": {
@@ -10456,9 +9980,7 @@
     },
     "/api/v1/dashboard/metrics": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Metric cards",
         "operationId": "metric_cards_api_v1_dashboard_metrics_get",
         "responses": {
@@ -10477,9 +9999,7 @@
     },
     "/api/v1/dashboard/metrics/trend": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Metric trend",
         "operationId": "metric_trend_api_v1_dashboard_metrics_trend_get",
         "parameters": [
@@ -10520,9 +10040,7 @@
     },
     "/api/v1/dashboard/todos": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Pending tasks",
         "operationId": "list_todos_api_v1_dashboard_todos_get",
         "parameters": [
@@ -10589,9 +10107,7 @@
     },
     "/api/v1/dashboard/todos/done": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Done tasks",
         "operationId": "list_done_todos_api_v1_dashboard_todos_done_get",
         "parameters": [
@@ -10658,9 +10174,7 @@
     },
     "/api/v1/dashboard/todos/{task_id}/action": {
       "post": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Approve / reject",
         "operationId": "act_todo_api_v1_dashboard_todos__task_id__action_post",
         "parameters": [
@@ -10710,9 +10224,7 @@
     },
     "/api/v1/dashboard/workers": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Digital workers",
         "operationId": "list_workers_api_v1_dashboard_workers_get",
         "responses": {
@@ -10731,9 +10243,7 @@
     },
     "/api/v1/dashboard/deliverables": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Deliverables",
         "operationId": "list_deliverables_api_v1_dashboard_deliverables_get",
         "parameters": [
@@ -10832,9 +10342,7 @@
     },
     "/api/v1/dashboard/deliverables/{deliverable_id}/download": {
       "post": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Download Deliverable",
         "operationId": "download_deliverable_api_v1_dashboard_deliverables__deliverable_id__download_post",
         "parameters": [
@@ -10891,9 +10399,7 @@
     },
     "/api/v1/dashboard/deliverables/{deliverable_id}": {
       "delete": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Delete Deliverable",
         "operationId": "delete_deliverable_api_v1_dashboard_deliverables__deliverable_id__delete",
         "parameters": [
@@ -10926,9 +10432,7 @@
     },
     "/api/v1/dashboard/anomalies": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Anomaly events",
         "operationId": "list_anomalies_api_v1_dashboard_anomalies_get",
         "parameters": [
@@ -10975,9 +10479,7 @@
     },
     "/api/v1/dashboard/anomalies/{anomaly_id}": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Anomaly detail",
         "operationId": "get_anomaly_api_v1_dashboard_anomalies__anomaly_id__get",
         "parameters": [
@@ -11017,9 +10519,7 @@
     },
     "/api/v1/dashboard/anomalies/{anomaly_id}/analyze": {
       "post": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "RCA",
         "operationId": "analyze_anomaly_api_v1_dashboard_anomalies__anomaly_id__analyze_post",
         "parameters": [
@@ -11059,9 +10559,7 @@
     },
     "/api/v1/dashboard/anomalies/{anomaly_id}/remediate": {
       "post": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Trigger remediation",
         "operationId": "remediate_anomaly_api_v1_dashboard_anomalies__anomaly_id__remediate_post",
         "parameters": [
@@ -11119,9 +10617,7 @@
     },
     "/api/v1/dashboard/anomaly-rules": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Anomaly detection rules",
         "operationId": "list_anomaly_rules_api_v1_dashboard_anomaly_rules_get",
         "responses": {
@@ -11138,9 +10634,7 @@
         }
       },
       "post": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Create rule",
         "operationId": "create_anomaly_rule_api_v1_dashboard_anomaly_rules_post",
         "requestBody": {
@@ -11179,9 +10673,7 @@
     },
     "/api/v1/dashboard/anomaly-rules/{rule_id}": {
       "put": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Update rule",
         "operationId": "update_anomaly_rule_api_v1_dashboard_anomaly_rules__rule_id__put",
         "parameters": [
@@ -11229,9 +10721,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Delete Anomaly Rule",
         "operationId": "delete_anomaly_rule_api_v1_dashboard_anomaly_rules__rule_id__delete",
         "parameters": [
@@ -11264,9 +10754,7 @@
     },
     "/api/v1/dashboard/search": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Global search",
         "operationId": "global_search_api_v1_dashboard_search_get",
         "parameters": [
@@ -11313,9 +10801,7 @@
     },
     "/api/v1/dashboard/page/summary": {
       "get": {
-        "tags": [
-          "dashboard"
-        ],
+        "tags": ["dashboard"],
         "summary": "Dashboard page summary",
         "description": "Aggregated dashboard data for the workbench homepage.\n\nReturns stats, recent tasks, system health, active agents, and\nquick links in a single payload so the frontend can render the\ndashboard with one request.",
         "operationId": "page_summary_api_v1_dashboard_page_summary_get",
@@ -11335,9 +10821,7 @@
     },
     "/api/v1/admin/logs/audit": {
       "get": {
-        "tags": [
-          "admin-logs"
-        ],
+        "tags": ["admin-logs"],
         "summary": "List Audit Logs",
         "operationId": "list_audit_logs_api_v1_admin_logs_audit_get",
         "parameters": [
@@ -11577,9 +11061,7 @@
     },
     "/api/v1/admin/logs/audit/export": {
       "get": {
-        "tags": [
-          "admin-logs"
-        ],
+        "tags": ["admin-logs"],
         "summary": "Export Audit Logs",
         "operationId": "export_audit_logs_api_v1_admin_logs_audit_export_get",
         "parameters": [
@@ -11763,9 +11245,7 @@
     },
     "/api/v1/admin/logs/audit/{log_id}": {
       "get": {
-        "tags": [
-          "admin-logs"
-        ],
+        "tags": ["admin-logs"],
         "summary": "Get Audit Log",
         "operationId": "get_audit_log_api_v1_admin_logs_audit__log_id__get",
         "parameters": [
@@ -11871,9 +11351,7 @@
     },
     "/api/v1/admin/logs/modules": {
       "get": {
-        "tags": [
-          "admin-logs"
-        ],
+        "tags": ["admin-logs"],
         "summary": "List Modules",
         "description": "枚举当前租户出现过的 module + action，便于前端过滤.",
         "operationId": "list_modules_api_v1_admin_logs_modules_get",
@@ -11971,9 +11449,7 @@
     },
     "/api/v1/admin/orgs/tree": {
       "get": {
-        "tags": [
-          "admin-orgs"
-        ],
+        "tags": ["admin-orgs"],
         "summary": "Get Org Tree",
         "description": "组织树 (FR-DASH-006-03 主视图).",
         "operationId": "get_org_tree_api_v1_admin_orgs_tree_get",
@@ -12071,9 +11547,7 @@
     },
     "/api/v1/admin/orgs": {
       "get": {
-        "tags": [
-          "admin-orgs"
-        ],
+        "tags": ["admin-orgs"],
         "summary": "List Orgs",
         "operationId": "list_orgs_api_v1_admin_orgs_get",
         "parameters": [
@@ -12223,9 +11697,7 @@
         }
       },
       "post": {
-        "tags": [
-          "admin-orgs"
-        ],
+        "tags": ["admin-orgs"],
         "summary": "Create Org",
         "operationId": "create_org_api_v1_admin_orgs_post",
         "parameters": [
@@ -12332,9 +11804,7 @@
     },
     "/api/v1/admin/orgs/{org_id}": {
       "put": {
-        "tags": [
-          "admin-orgs"
-        ],
+        "tags": ["admin-orgs"],
         "summary": "Update Org",
         "operationId": "update_org_api_v1_admin_orgs__org_id__put",
         "parameters": [
@@ -12448,9 +11918,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "admin-orgs"
-        ],
+        "tags": ["admin-orgs"],
         "summary": "Delete Org",
         "operationId": "delete_org_api_v1_admin_orgs__org_id__delete",
         "parameters": [
@@ -12556,9 +12024,7 @@
     },
     "/api/v1/admin/orgs/positions": {
       "get": {
-        "tags": [
-          "admin-orgs"
-        ],
+        "tags": ["admin-orgs"],
         "summary": "List Positions",
         "operationId": "list_positions_api_v1_admin_orgs_positions_get",
         "parameters": [
@@ -12708,9 +12174,7 @@
         }
       },
       "post": {
-        "tags": [
-          "admin-orgs"
-        ],
+        "tags": ["admin-orgs"],
         "summary": "Create Position",
         "operationId": "create_position_api_v1_admin_orgs_positions_post",
         "parameters": [
@@ -12817,9 +12281,7 @@
     },
     "/api/v1/admin/orgs/positions/{position_id}": {
       "put": {
-        "tags": [
-          "admin-orgs"
-        ],
+        "tags": ["admin-orgs"],
         "summary": "Update Position",
         "operationId": "update_position_api_v1_admin_orgs_positions__position_id__put",
         "parameters": [
@@ -12933,9 +12395,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "admin-orgs"
-        ],
+        "tags": ["admin-orgs"],
         "summary": "Delete Position",
         "operationId": "delete_position_api_v1_admin_orgs_positions__position_id__delete",
         "parameters": [
@@ -13041,9 +12501,7 @@
     },
     "/api/v1/admin/orgs/transfer": {
       "post": {
-        "tags": [
-          "admin-orgs"
-        ],
+        "tags": ["admin-orgs"],
         "summary": "Transfer",
         "description": "人员调岗 (FR-DASH-006-03).",
         "operationId": "transfer_api_v1_admin_orgs_transfer_post",
@@ -13151,9 +12609,7 @@
     },
     "/api/v1/admin/permissions/roles": {
       "get": {
-        "tags": [
-          "admin-permissions"
-        ],
+        "tags": ["admin-permissions"],
         "summary": "List Roles",
         "operationId": "list_roles_api_v1_admin_permissions_roles_get",
         "parameters": [
@@ -13287,9 +12743,7 @@
         }
       },
       "post": {
-        "tags": [
-          "admin-permissions"
-        ],
+        "tags": ["admin-permissions"],
         "summary": "Create Role",
         "operationId": "create_role_api_v1_admin_permissions_roles_post",
         "parameters": [
@@ -13396,9 +12850,7 @@
     },
     "/api/v1/admin/permissions/roles/{role_id}": {
       "put": {
-        "tags": [
-          "admin-permissions"
-        ],
+        "tags": ["admin-permissions"],
         "summary": "Update Role",
         "operationId": "update_role_api_v1_admin_permissions_roles__role_id__put",
         "parameters": [
@@ -13512,9 +12964,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "admin-permissions"
-        ],
+        "tags": ["admin-permissions"],
         "summary": "Delete Role",
         "operationId": "delete_role_api_v1_admin_permissions_roles__role_id__delete",
         "parameters": [
@@ -13618,9 +13068,7 @@
         }
       },
       "get": {
-        "tags": [
-          "admin-permissions"
-        ],
+        "tags": ["admin-permissions"],
         "summary": "Get Role Detail",
         "operationId": "get_role_detail_api_v1_admin_permissions_roles__role_id__get",
         "parameters": [
@@ -13726,9 +13174,7 @@
     },
     "/api/v1/admin/permissions/catalog": {
       "get": {
-        "tags": [
-          "admin-permissions"
-        ],
+        "tags": ["admin-permissions"],
         "summary": "List Catalog",
         "operationId": "list_catalog_api_v1_admin_permissions_catalog_get",
         "parameters": [
@@ -13839,9 +13285,7 @@
         }
       },
       "post": {
-        "tags": [
-          "admin-permissions"
-        ],
+        "tags": ["admin-permissions"],
         "summary": "Create Catalog",
         "operationId": "create_catalog_api_v1_admin_permissions_catalog_post",
         "parameters": [
@@ -13948,9 +13392,7 @@
     },
     "/api/v1/admin/permissions/catalog/{perm_id}": {
       "put": {
-        "tags": [
-          "admin-permissions"
-        ],
+        "tags": ["admin-permissions"],
         "summary": "Update Catalog",
         "operationId": "update_catalog_api_v1_admin_permissions_catalog__perm_id__put",
         "parameters": [
@@ -14064,9 +13506,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "admin-permissions"
-        ],
+        "tags": ["admin-permissions"],
         "summary": "Delete Catalog",
         "operationId": "delete_catalog_api_v1_admin_permissions_catalog__perm_id__delete",
         "parameters": [
@@ -14172,9 +13612,7 @@
     },
     "/api/v1/admin/permissions/assign": {
       "post": {
-        "tags": [
-          "admin-permissions"
-        ],
+        "tags": ["admin-permissions"],
         "summary": "Assign",
         "operationId": "assign_api_v1_admin_permissions_assign_post",
         "parameters": [
@@ -14281,9 +13719,7 @@
     },
     "/api/v1/admin/permissions/matrix": {
       "get": {
-        "tags": [
-          "admin-permissions"
-        ],
+        "tags": ["admin-permissions"],
         "summary": "Permission Matrix",
         "description": "Returns roles × resources snapshot for the permission matrix UI.",
         "operationId": "permission_matrix_api_v1_admin_permissions_matrix_get",
@@ -14381,9 +13817,7 @@
     },
     "/api/v1/admin/users": {
       "get": {
-        "tags": [
-          "admin-users"
-        ],
+        "tags": ["admin-users"],
         "summary": "List Users",
         "operationId": "list_users_api_v1_admin_users_get",
         "parameters": [
@@ -14567,9 +14001,7 @@
         }
       },
       "post": {
-        "tags": [
-          "admin-users"
-        ],
+        "tags": ["admin-users"],
         "summary": "Create User",
         "operationId": "create_user_api_v1_admin_users_post",
         "parameters": [
@@ -14676,9 +14108,7 @@
     },
     "/api/v1/admin/users/import": {
       "post": {
-        "tags": [
-          "admin-users"
-        ],
+        "tags": ["admin-users"],
         "summary": "Import Users",
         "operationId": "import_users_api_v1_admin_users_import_post",
         "parameters": [
@@ -14785,9 +14215,7 @@
     },
     "/api/v1/admin/users/export": {
       "get": {
-        "tags": [
-          "admin-users"
-        ],
+        "tags": ["admin-users"],
         "summary": "Export Users",
         "operationId": "export_users_api_v1_admin_users_export_get",
         "parameters": [
@@ -14880,9 +14308,7 @@
     },
     "/api/v1/admin/users/{user_id}": {
       "get": {
-        "tags": [
-          "admin-users"
-        ],
+        "tags": ["admin-users"],
         "summary": "Get User",
         "operationId": "get_user_api_v1_admin_users__user_id__get",
         "parameters": [
@@ -14986,9 +14412,7 @@
         }
       },
       "put": {
-        "tags": [
-          "admin-users"
-        ],
+        "tags": ["admin-users"],
         "summary": "Update User",
         "operationId": "update_user_api_v1_admin_users__user_id__put",
         "parameters": [
@@ -15102,9 +14526,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "admin-users"
-        ],
+        "tags": ["admin-users"],
         "summary": "Delete User",
         "operationId": "delete_user_api_v1_admin_users__user_id__delete",
         "parameters": [
@@ -15210,9 +14632,7 @@
     },
     "/api/v1/admin/users/{user_id}/reset-password": {
       "post": {
-        "tags": [
-          "admin-users"
-        ],
+        "tags": ["admin-users"],
         "summary": "Reset Password",
         "operationId": "reset_password_api_v1_admin_users__user_id__reset_password_post",
         "parameters": [
@@ -15318,9 +14738,7 @@
     },
     "/api/v1/admin/users/{user_id}/status": {
       "post": {
-        "tags": [
-          "admin-users"
-        ],
+        "tags": ["admin-users"],
         "summary": "Set Status",
         "operationId": "set_status_api_v1_admin_users__user_id__status_post",
         "parameters": [
@@ -15436,9 +14854,7 @@
     },
     "/api/v1/admin/users/{user_id}/verify-password": {
       "post": {
-        "tags": [
-          "admin-users"
-        ],
+        "tags": ["admin-users"],
         "summary": "Verify User Password",
         "operationId": "verify_user_password_api_v1_admin_users__user_id__verify_password_post",
         "parameters": [
@@ -15554,9 +14970,7 @@
     },
     "/api/v1/admin/users/{user_id}/login-logs": {
       "get": {
-        "tags": [
-          "admin-users"
-        ],
+        "tags": ["admin-users"],
         "summary": "List User Login Logs",
         "description": "最近登录日志 (FR-DASH-006-01).",
         "operationId": "list_user_login_logs_api_v1_admin_users__user_id__login_logs_get",
@@ -16257,9 +15671,7 @@
     },
     "/api/v1/app-kb/upload": {
       "post": {
-        "tags": [
-          "kb-deprecated"
-        ],
+        "tags": ["kb-deprecated"],
         "summary": " Deprecated Upload",
         "operationId": "_deprecated_upload_api_v1_app_kb_upload_post",
         "deprecated": true,
@@ -16317,9 +15729,7 @@
     },
     "/api/v1/app-kb/search": {
       "post": {
-        "tags": [
-          "kb-deprecated"
-        ],
+        "tags": ["kb-deprecated"],
         "summary": " Deprecated Search",
         "operationId": "_deprecated_search_api_v1_app_kb_search_post",
         "requestBody": {
@@ -16359,9 +15769,7 @@
     },
     "/api/v1/app-kb/chat": {
       "post": {
-        "tags": [
-          "kb-deprecated"
-        ],
+        "tags": ["kb-deprecated"],
         "summary": " Deprecated Chat",
         "operationId": "_deprecated_chat_api_v1_app_kb_chat_post",
         "requestBody": {
@@ -16401,9 +15809,7 @@
     },
     "/api/v1/app-kb/chat/stream": {
       "post": {
-        "tags": [
-          "kb-deprecated"
-        ],
+        "tags": ["kb-deprecated"],
         "summary": " Deprecated Chat Stream",
         "operationId": "_deprecated_chat_stream_api_v1_app_kb_chat_stream_post",
         "requestBody": {
@@ -16441,9 +15847,7 @@
     },
     "/api/v1/app-kb/stats": {
       "get": {
-        "tags": [
-          "kb-deprecated"
-        ],
+        "tags": ["kb-deprecated"],
         "summary": " Deprecated Stats",
         "operationId": "_deprecated_stats_api_v1_app_kb_stats_get",
         "responses": {
@@ -16473,10 +15877,7 @@
           },
           "role": {
             "type": "string",
-            "enum": [
-              "user",
-              "agent"
-            ],
+            "enum": ["user", "agent"],
             "title": "Role"
           },
           "parts": {
@@ -16510,11 +15911,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "messageId",
-          "role",
-          "parts"
-        ],
+        "required": ["messageId", "role", "parts"],
         "title": "A2AMessage",
         "description": "W3C A2A message envelope (the `/messages` request body)."
       },
@@ -16522,11 +15919,7 @@
         "properties": {
           "kind": {
             "type": "string",
-            "enum": [
-              "text",
-              "file",
-              "data"
-            ],
+            "enum": ["text", "file", "data"],
             "title": "Kind"
           },
           "text": {
@@ -16554,9 +15947,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "kind"
-        ],
+        "required": ["kind"],
         "title": "A2APart",
         "description": "One content part of a W3C A2A message."
       },
@@ -16657,9 +16048,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "ApiKeyCreate"
       },
       "AppRegisterRequest": {
@@ -16707,11 +16096,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "code",
-          "category"
-        ],
+        "required": ["name", "code", "category"],
         "title": "AppRegisterRequest",
         "description": "Body schema for POST /apps."
       },
@@ -16804,10 +16189,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "type",
-          "target_id"
-        ],
+        "required": ["type", "target_id"],
         "title": "AssignPayload"
       },
       "AuditAction": {
@@ -16929,9 +16311,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "file"
-        ],
+        "required": ["file"],
         "title": "Body__deprecated_upload_api_v1_app_kb_upload_post"
       },
       "Body_import_users_api_v1_admin_users_import_post": {
@@ -16944,9 +16324,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "file"
-        ],
+        "required": ["file"],
         "title": "Body_import_users_api_v1_admin_users_import_post"
       },
       "Body_upload_api_v1_kb_upload_post": {
@@ -16958,9 +16336,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "file"
-        ],
+        "required": ["file"],
         "title": "Body_upload_api_v1_kb_upload_post"
       },
       "ChatRequest": {
@@ -16984,19 +16360,13 @@
           },
           "scenario": {
             "type": "string",
-            "enum": [
-              "S1",
-              "S2",
-              "S3"
-            ],
+            "enum": ["S1", "S2", "S3"],
             "title": "Scenario",
             "default": "S1"
           }
         },
         "type": "object",
-        "required": [
-          "message"
-        ],
+        "required": ["message"],
         "title": "ChatRequest"
       },
       "ChatResponse": {
@@ -17036,12 +16406,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "thread_id",
-          "scenario",
-          "answer",
-          "latency_ms"
-        ],
+        "required": ["thread_id", "scenario", "answer", "latency_ms"],
         "title": "ChatResponse"
       },
       "CollectionCreateRequest": {
@@ -17065,9 +16430,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "CollectionCreateRequest"
       },
       "CollectionResponse": {
@@ -17135,9 +16498,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "items"
-        ],
+        "required": ["items"],
         "title": "ConfigBatchCreate"
       },
       "ConfigCategory": {
@@ -17200,9 +16561,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "key"
-        ],
+        "required": ["key"],
         "title": "ConfigCreateItem"
       },
       "ConfigUpdate": {
@@ -17225,9 +16584,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "value"
-        ],
+        "required": ["value"],
         "title": "ConfigUpdate"
       },
       "DocumentResponse": {
@@ -17299,12 +16656,7 @@
         "properties": {
           "status": {
             "type": "string",
-            "enum": [
-              "indexing",
-              "indexed",
-              "failed",
-              "archived"
-            ],
+            "enum": ["indexing", "indexed", "failed", "archived"],
             "title": "Status"
           },
           "error": {
@@ -17333,9 +16685,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "title": "DocumentTransitionRequest",
         "description": "Transition a document's lifecycle status.\n\nAllowed transitions:\n  uploaded -> indexing -> indexed\n  uploaded -> indexing -> failed\n  indexed  -> archived"
       },
@@ -17347,9 +16697,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "format"
-        ],
+        "required": ["format"],
         "title": "DownloadRequest"
       },
       "GroupCreateRequest": {
@@ -17380,10 +16728,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "code"
-        ],
+        "required": ["name", "code"],
         "title": "GroupCreateRequest"
       },
       "HTTPValidationError": {
@@ -17415,11 +16760,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "status",
-          "service",
-          "version"
-        ],
+        "required": ["status", "service", "version"],
         "title": "HealthResponse"
       },
       "ModuleCreateRequest": {
@@ -17456,11 +16797,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "code",
-          "app_code"
-        ],
+        "required": ["name", "code", "app_code"],
         "title": "ModuleCreateRequest"
       },
       "NotificationSettingsUpdate": {
@@ -17616,20 +16953,12 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "name"
-        ],
+        "required": ["code", "name"],
         "title": "OrgCreate"
       },
       "OrgType": {
         "type": "string",
-        "enum": [
-          "COMPANY",
-          "DEPARTMENT",
-          "TEAM",
-          "VIRTUAL"
-        ],
+        "enum": ["COMPANY", "DEPARTMENT", "TEAM", "VIRTUAL"],
         "title": "OrgType",
         "description": "Organization node type."
       },
@@ -17740,11 +17069,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "code",
-          "module_code"
-        ],
+        "required": ["name", "code", "module_code"],
         "title": "PageCreateRequest"
       },
       "PasswordVerifyRequest": {
@@ -17755,9 +17080,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "password"
-        ],
+        "required": ["password"],
         "title": "PasswordVerifyRequest"
       },
       "PermissionPayload": {
@@ -17800,11 +17123,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "name",
-          "resource_type"
-        ],
+        "required": ["code", "name", "resource_type"],
         "title": "PermissionPayload"
       },
       "PositionCreate": {
@@ -17851,11 +17170,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "org_id",
-          "code",
-          "name"
-        ],
+        "required": ["org_id", "code", "name"],
         "title": "PositionCreate"
       },
       "PositionUpdate": {
@@ -17909,9 +17224,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "refreshToken"
-        ],
+        "required": ["refreshToken"],
         "title": "RefreshRequest"
       },
       "RoleCreate": {
@@ -17955,10 +17268,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "name"
-        ],
+        "required": ["code", "name"],
         "title": "RoleCreate"
       },
       "RoleUpdate": {
@@ -18079,20 +17389,13 @@
           },
           "mode": {
             "type": "string",
-            "enum": [
-              "AUTO",
-              "FACTUAL",
-              "ENTITY",
-              "THEMATIC"
-            ],
+            "enum": ["AUTO", "FACTUAL", "ENTITY", "THEMATIC"],
             "title": "Mode",
             "default": "AUTO"
           }
         },
         "type": "object",
-        "required": [
-          "query"
-        ],
+        "required": ["query"],
         "title": "SearchRequest"
       },
       "SearchResponse": {
@@ -18125,12 +17428,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "query",
-          "mode",
-          "total",
-          "latency_ms"
-        ],
+        "required": ["query", "mode", "total", "latency_ms"],
         "title": "SearchResponse"
       },
       "SettingsUpdate": {
@@ -18233,10 +17531,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "total_chunks",
-          "embedder_dim"
-        ],
+        "required": ["total_chunks", "embedder_dim"],
         "title": "StatsResponse"
       },
       "StatusUpdate": {
@@ -18246,9 +17541,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "title": "StatusUpdate"
       },
       "TemplateCreateRequest": {
@@ -18284,11 +17577,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "code",
-          "template_type"
-        ],
+        "required": ["name", "code", "template_type"],
         "title": "TemplateCreateRequest"
       },
       "TodoActionRequest": {
@@ -18310,9 +17599,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "action"
-        ],
+        "required": ["action"],
         "title": "TodoActionRequest"
       },
       "TransferPayload": {
@@ -18361,10 +17648,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "user_id",
-          "target_org_id"
-        ],
+        "required": ["user_id", "target_org_id"],
         "title": "TransferPayload"
       },
       "UploadResponse": {
@@ -18396,12 +17680,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "document_id",
-          "filename",
-          "size_bytes",
-          "chunk_count"
-        ],
+        "required": ["document_id", "filename", "size_bytes", "chunk_count"],
         "title": "UploadResponse"
       },
       "UserCreate": {
@@ -18504,9 +17783,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "username"
-        ],
+        "required": ["username"],
         "title": "UserCreate"
       },
       "UserInfo": {
@@ -18554,19 +17831,12 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "username"
-        ],
+        "required": ["id", "username"],
         "title": "UserInfo"
       },
       "UserStatus": {
         "type": "string",
-        "enum": [
-          "ACTIVE",
-          "INACTIVE",
-          "LOCKED"
-        ],
+        "enum": ["ACTIVE", "INACTIVE", "LOCKED"],
         "title": "UserStatus",
         "description": "User account status (FR-DASH-006-01)."
       },
@@ -18709,11 +17979,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "ValidationError"
       },
       "mate_tech_iam__api__auth__LoginRequest": {
@@ -18739,10 +18005,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "username",
-          "password"
-        ],
+        "required": ["username", "password"],
         "title": "LoginRequest"
       },
       "mate_tech_iam__api__dashboard__LoginRequest": {
@@ -18770,10 +18033,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "username",
-          "password"
-        ],
+        "required": ["username", "password"],
         "title": "LoginRequest"
       }
     }
