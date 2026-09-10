@@ -208,7 +208,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - name: install uv + pytest
-        run: python -m pip install uv pre-commit pytest pytest-asyncio pyyaml sqlalchemy pydantic httpx structlog fastapi tenacity pyjwt opentelemetry-api opentelemetry-sdk temporalio alembic
+        run: python -m pip install uv pre-commit pytest pytest-asyncio pyyaml sqlalchemy pydantic httpx structlog fastapi tenacity pyjwt python-multipart opentelemetry-api opentelemetry-sdk temporalio alembic
       # 依赖闭包一次性安装：uv sync --frozen 从 workspace 锁文件解全部
       # runtime+dev 依赖（手工 pip 清单连续 6 轮暴露缺口：fastapi→pyjwt→
       # otel→temporalio→alembic…），与 ga-014 同一验证过的路径
@@ -225,7 +225,8 @@ jobs:
       - name: mate-platform/tests (SEC-IAM-01 + SEC-TENANT-01 + PLATFORM-EVENT-01)
         run: uv run --directory mate-platform-backend/packages/mate-platform pytest -q
       - name: mate-app-kb/tests (TECH-SERVICES canonical)
-        run: uv run --directory mate-platform-backend/packages/mate-app-kb pytest -q
+        run: pytest -q
+        working-directory: mate-platform-backend/packages/mate-app-kb
       - name: GOVERN-02 forbid_iam_dep_imports (rule 5 DEPRECATED mate_tech_iam)
         run: python scripts/ci/forbid_iam_dep_imports.py
       - name: GOVERN-07 forbid_legacy_artifacts (Spring-era residue)
