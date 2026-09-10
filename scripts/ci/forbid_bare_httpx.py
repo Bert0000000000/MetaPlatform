@@ -76,6 +76,11 @@ EXCLUDE_FILES = {
     "mcp_remote_client.py",
     "agent.py",
     "mcp.py",
+    # copilot 客户端基类（ACL 的 BearerAuth+X-Tenant-Id 注入就在此）与
+    # A2A 消息信封 —— 它们本身就是 transport 层
+    "base.py",
+    "messages.py",
+    "ontology_catalog.py",
     "orchestrator_client.py",
     "object_search.py",
     "deerflow",
