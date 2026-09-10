@@ -58,6 +58,15 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._security_policies: dict[str, dict[str, Any]] = {}
         # GOV-16：使用量计数器
         self._usage_counters: dict[tuple[str, str], int] = {}
+        # G33：schema WIP 暂存
+        self._schema_wip: dict[str, dict[str, Any]] = {}
+        # G23：Function 别名 + 版本快照
+        self._function_aliases: dict[str, str] = {}
+        self._function_versions: dict[str, list[dict[str, Any]]] = {}
+        # G20：webhook 订阅/投递/outbox 事件镜像
+        self._webhook_subs: dict[str, dict[str, Any]] = {}
+        self._webhook_deliveries: list[dict[str, Any]] = []
+        self._outbox_events: dict[str, dict[str, Any]] = {}
         # writeback 双流合并：用户编辑覆盖层（rid, prop_rid）
         self._edit_overlay: set[tuple[str, str]] = set()
         # GOVERN-05: FunctionResolver 让 upsert_function / set_function_executor 注入。
@@ -344,6 +353,52 @@ class InMemoryOntologyRepository(OntologyRepository):
         cards.sort(key=lambda c: c["score"], reverse=True)
         return cards[:top_k]
 
+    # ───── G33：schema WIP 暂存（InMemory 同语义）─────
+
+    def save_schema_wip(self, rid: str, payload: dict[str, Any],
+                        author: str = "") -> dict[str, Any]:
+        self._schema_wip[rid] = {"rid": rid, "author": author,
+                                 "payload": payload}
+        return {"rid": rid, "status": "staged"}
+
+    def list_schema_wip(self) -> list[dict[str, Any]]:
+        return list(self._schema_wip.values())
+
+    def get_schema_wip(self, rid: str) -> dict[str, Any]:
+        if rid not in self._schema_wip:
+            raise KeyError(f"wip not found: {rid}")
+        return dict(self._schema_wip[rid])
+
+    def delete_schema_wip(self, rid: str) -> bool:
+        return self._schema_wip.pop(rid, None) is not None
+
+    # ───── G20：webhook 订阅 + 投递（InMemory 同语义）─────
+
+    def upsert_webhook_subscription(self, decl: dict[str, Any]) -> dict[str, Any]:
+        rid = decl.get("rid") or f"wh-{len(self._webhook_subs) + 1}"
+        self._webhook_subs[rid] = dict(decl)
+        return {"rid": rid}
+
+    def list_webhook_subscriptions(self) -> list[dict[str, Any]]:
+        return [dict(v, rid=k) for k, v in self._webhook_subs.items()]
+
+    def record_webhook_delivery(self, *, event_id: str, subscription_rid: str,
+                                status: str, attempts: int, last_error: str,
+                                tenant_id: str = "") -> None:
+        self._webhook_deliveries.append({
+            "event_id": event_id, "subscription_rid": subscription_rid,
+            "status": status, "attempts": attempts, "last_error": last_error,
+        })
+
+    def webhook_delivery_exists(self, event_id: str, subscription_rid: str) -> bool:
+        return any(
+            d["event_id"] == event_id and d["subscription_rid"] == subscription_rid
+            and d["status"] == "delivered"
+            for d in self._webhook_deliveries)
+
+    def list_outbox_events(self, since_id: str = "0", limit: int = 50) -> list[dict[str, Any]]:
+        return list(self._outbox_events.values())[:limit]
+
     # ───── GOV-16：使用量（InMemory 计数器，与 PG 日聚合同语义）─────
 
     def record_usage(self, class_rid: str, op: str, count: int = 1) -> None:
@@ -437,6 +492,34 @@ class InMemoryOntologyRepository(OntologyRepository):
         for r in rows:
             mask_property_values(r, ps, viewer_markings)
         return rows
+
+    def _nearest_individuals(
+        self, spec: Any, allowed_classes: set[str],
+    ) -> list[Any]:
+        """G13：embedding 余弦 top-k 实例（InMemory）。"""
+        import math
+
+        qvec = self._embedder.embed(spec.text)
+        scored: list[tuple[float, Any]] = []
+        for chunk in self._embeddings.values():
+            if allowed_classes and chunk["class_rid"] not in allowed_classes:
+                continue
+            if spec.property_rid and chunk["property_rid"] != spec.property_rid:
+                continue
+            vec = chunk["embedding"]
+            n1 = math.sqrt(sum(x * x for x in qvec)) or 1.0
+            n2 = math.sqrt(sum(x * x for x in vec)) or 1.0
+            score = sum(x * y for x, y in zip(qvec, vec, strict=True)) / (n1 * n2)
+            scored.append((score, chunk))
+        scored.sort(key=lambda t: t[0], reverse=True)
+        top_rids: list[str] = []
+        for _s, chunk in scored:
+            irid = chunk["individual_rid"]
+            if irid not in top_rids:
+                top_rids.append(irid)
+            if len(top_rids) >= spec.k:
+                break
+        return [self._individuals[r] for r in top_rids if r in self._individuals]
 
     def search_objects_hybrid(
         self, text: str, class_rid: str | None = None, top_k: int = 5,
@@ -595,6 +678,12 @@ class InMemoryOntologyRepository(OntologyRepository):
         return list(self._axioms.values())
 
     def upsert_function(self, f: Function) -> Function:
+        old = self._functions.get(f.rid)
+        if old is not None:
+            self._function_versions.setdefault(f.rid.rid, []).append({
+                "function_rid": f.rid.rid, "version": old.version,
+                "language": old.language, "source_ref": old.source_ref,
+            })
         self._functions[f.rid] = f
         # GOVERN-05: source_ref 形如 ``inline://<rid>`` → source 来自 _inline_sources；
         # 默认占位 main（仅返回参数 dict），让 dev 没注册源码时也能 apply。
@@ -610,6 +699,29 @@ class InMemoryOntologyRepository(OntologyRepository):
     def list_functions(self) -> list[Function]:
         return list(self._functions.values())
 
+    # ───── G23：Function 别名/版本/调用（InMemory 同语义）─────
+
+    def register_function_alias(self, alias: str, function_rid: str) -> dict[str, Any]:
+        self._function_aliases[alias] = function_rid
+        return {"alias": alias, "function_rid": function_rid}
+
+    def resolve_function_alias(self, alias: str) -> str:
+        if alias not in self._function_aliases:
+            raise KeyError(f"alias not found: {alias}")
+        return self._function_aliases[alias]
+
+    def list_function_versions(self, function_rid: str) -> list[dict[str, Any]]:
+        return [dict(v) for v in self._function_versions.get(function_rid, [])]
+
+    def invoke_function(self, function_rid: str,
+                        parameters: dict[str, Any]) -> dict[str, Any]:
+        invoker = self._action_service._invokers.get(function_rid)  # noqa: SLF001
+        if invoker is None:
+            raise KeyError(
+                f"function {function_rid!r} has no registered invoker")
+        result = invoker(None, parameters)
+        return {"function_rid": function_rid, "result": result}
+
     # ───── query / apply ─────
 
     def evaluate_object_set(self, os_: ObjectSet) -> list[Individual]:
@@ -624,12 +736,37 @@ class InMemoryOntologyRepository(OntologyRepository):
         """MP-SAL-01: 结构化 IR 查询（ADR-0043），与 PG 侧同语义。"""
         from mate_kernel.objectset.ir import InMemoryQueryExecutor
         source_classes = self._expand_source_classes(q.source)
+        individuals = tuple(self._individuals.values())
+        # G13：nearestNeighbors —— 先 KNN 预选个体，再走 filters/sort/paging
+        if q.nearest is not None and self._embedder is not None:
+            selected = self._nearest_individuals(
+                q.nearest, allowed_classes=set(source_classes))
+            individuals = tuple(selected)
+            source_classes = frozenset(
+                {q.source} | {i.class_rid.rid for i in selected})
         executor = InMemoryQueryExecutor(
-            individuals=tuple(self._individuals.values()),
+            individuals=individuals,
             links=tuple(self._link_instances.values()),
             object_types=tuple(self._object_types.values()),
         )
         result = executor.execute(q, source_classes=source_classes)
+        # G12：数组属性按声明 reducer 折叠
+        ot_arr = self._object_types.get(ClassRef(q.source))
+        if result.kind == "objects" and ot_arr is not None:
+            from .types.property_ import reduce_array_value
+
+            rows0 = list(result.rows)
+            for pr in ot_arr.properties:
+                if not pr.array or not pr.reducer:
+                    continue
+                parts = pr.rid.rid.split(".")
+                slug = parts[3] if len(parts) >= 5 else parts[-1]
+                for row in rows0:
+                    if slug in row:
+                        row[slug] = reduce_array_value(row[slug], pr.reducer)
+            from dataclasses import replace as _r0
+
+            result = _r0(result, rows=tuple(rows0))
         # EXP-02：派生列追加（count/sum/avg over link）
         if result.kind == "objects":
             ot = self._object_types.get(ClassRef(q.source))
@@ -702,10 +839,17 @@ class InMemoryOntologyRepository(OntologyRepository):
 
         def _emit(se: str) -> str | None:
             try:
-                return str(self._outbox_writer(se, "", {
+                eid = self._outbox_writer(se, "", {
                     "action_rid": action_rid, "target_iid": target_iid,
                     "proposal_id": proposal_id,
-                }))
+                })
+                if eid is not None:
+                    self._outbox_events[str(eid)] = {
+                        "event_id": str(eid), "event_type": se,
+                        "payload": {"action_rid": action_rid},
+                        "tenant_id": "", "created_at": "",
+                    }
+                return eid
             except Exception:  # noqa: BLE001
                 return None
 
@@ -1092,6 +1236,16 @@ class InMemoryOntologyRepository(OntologyRepository):
             created_rids=tuple(created_rids),
         )
         self._record_edit_set_audit(action_rid, result, proposal_id, actor)
+        # G20：声明副作用发射（outbox 事件镜像；dev 未接 writer 时静默）
+        at_se = self._action_types.get(ClassRef(action_rid))
+        if at_se is not None and at_se.side_effects:
+            emitter = self._side_effect_emitter_hook(action_rid, "", proposal_id)
+            if emitter is not None:
+                for se in at_se.side_effects:
+                    try:
+                        emitter(se)
+                    except Exception:
+                        pass
         return result
 
     def _record_edit_set_audit(

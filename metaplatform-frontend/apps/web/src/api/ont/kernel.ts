@@ -643,3 +643,61 @@ export async function queryTimeseries(
   );
   return resp.data as TimeseriesPoint[];
 }
+
+// ── G41：类型版本操作（branch / diff / rollback）+ Export/Import ──
+// 后端契约（v2_kernel/api.py）：
+//   POST /object-types/{rid}/branch    body: {new_rid, note?}（new_rid 必须是本租户 obj rid）
+//   GET  /object-types/{rid}/diff?against=<同族另一版本>  → {old_rid,new_rid,added,removed,changed,has_changes}
+//   POST /object-types/{rid}/rollback  body: {from_rid}
+//   GET  /object-types/{rid}/export    → {format, rid, content}（jsonld）/ turtle 文本
+//   POST /object-types/import          body 即 export 的 JSON（同 rid upsert）
+
+/** G41：以当前定义分支出新版本类型（返回分支后的类型）。 */
+export async function branchObjectType(
+  rid: string, newRid: string, note = '',
+): Promise<KernelObjectType> {
+  const resp = await apiClient.post(
+    v2(`/object-types/${encodeURIComponent(rid)}/branch`),
+    { new_rid: newRid, note });
+  return resp.data as KernelObjectType;
+}
+
+/** G41：rid 与 againstRid（同族另一版本）的属性级 diff。 */
+export async function diffObjectTypes(
+  rid: string, againstRid: string,
+): Promise<Record<string, unknown>> {
+  const resp = await apiClient.get(
+    v2(`/object-types/${encodeURIComponent(rid)}/diff`),
+    { params: { against: againstRid } },
+  );
+  return resp.data as Record<string, unknown>;
+}
+
+/** G41：把 rid 的定义回滚为 fromRid 版本的定义（返回回滚后的类型）。 */
+export async function rollbackObjectType(
+  rid: string, fromRid: string,
+): Promise<KernelObjectType> {
+  const resp = await apiClient.post(
+    v2(`/object-types/${encodeURIComponent(rid)}/rollback`),
+    { from_rid: fromRid });
+  return resp.data as KernelObjectType;
+}
+
+/** G41：导出类型定义（默认 jsonld；返回体整体即 import 的入参）。 */
+export async function exportObjectType(
+  rid: string, format: 'jsonld' | 'turtle' = 'jsonld',
+): Promise<Record<string, unknown>> {
+  const resp = await apiClient.get(
+    v2(`/object-types/${encodeURIComponent(rid)}/export`),
+    { params: { format } },
+  );
+  return resp.data as Record<string, unknown>;
+}
+
+/** G41：导入 export 的 JSON 回灌类型（同 rid upsert 语义，返回导入后的类型）。 */
+export async function importObjectTypes(
+  payload: Record<string, unknown>,
+): Promise<KernelObjectType> {
+  const resp = await apiClient.post(v2('/object-types/import'), payload);
+  return resp.data as KernelObjectType;
+}

@@ -33,7 +33,7 @@ from typing import Any
 
 import structlog
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, WebSocket
 from pydantic import BaseModel, Field
 
 from mate_kernel.action.engine import ProposalNotConfirmed
@@ -41,6 +41,7 @@ from mate_kernel.objectset.ir import (
     Aggregation,
     Condition,
     MetricSpec,
+    NearestSpec,
     ObjectSetQuery,
     QueryOp,
     SortKey,
@@ -102,6 +103,7 @@ class ObjectTypeDTO(BaseModel):
     interfaces: list[str] = Field(default_factory=list)
     marking: list[str] = Field(default_factory=list)
     parent_class: str = ""  # EXP-01：浅层级声明（限 1 层；自动同步 subclass 公理）
+    confirm_name: str = ""  # G33：破坏性变更显式确认（须等于现有 display_name）
     # EXP-04：治理/展示元数据
     description: str = ""
     status: str = "active"
@@ -330,6 +332,24 @@ def _require_idempotency_key(request: Request) -> str:
     if not key:
         raise HTTPException(status_code=400, detail="Idempotency-Key is required")
     return key
+
+
+def _effective_markings(request: Request, param: str) -> tuple[str, ...]:
+    """G7：scoped session 目的限制 —— viewer markings ∩ X-Scope-Markings 头。
+
+    会话只能**收窄**可见范围（Palantir scoped sessions：用户在会话中选择
+    markings 子集，实现 purpose limitation / data minimization）：
+    - 两侧都给 → 交集；
+    - 只给 param → param；
+    - 只给 header → 空（scope 未授权任何 param 所指之外的东西时按 header
+      与 param 交集 = 空更安全；此处语义：header 存在即必须交集）。
+    """
+    p_set = tuple(m.strip() for m in param.split(",") if m.strip())
+    header = request.headers.get("X-Scope-Markings", "")
+    if not header:
+        return p_set
+    h_set = {m.strip() for m in header.split(",") if m.strip()}
+    return tuple(m for m in p_set if m in h_set)
 
 
 def _prop_to_dto(p: Property) -> PropertyDTO:
@@ -742,6 +762,389 @@ async def list_action_audit(
     return await _call_scoped(request, "list_action_audit", limit, action_rid)
 
 
+class WebhookSubscriptionDTO(BaseModel):
+    """G20：webhook 订阅（event_type=* 或精确；secret 用于 HMAC 签名）。"""
+    event_type: str = "*"
+    url: str
+    secret: str = ""
+    active: bool = True
+
+
+@router.post(
+    "/webhooks",
+    response_model=dict,
+    operation_id="ontUpsertV2Webhook",
+)
+async def upsert_webhook(
+    payload: WebhookSubscriptionDTO, request: Request,
+) -> dict:
+    ctx = _ctx(request)
+    decl = payload.model_dump()
+    decl["tenant_id"] = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    return await _call_scoped(request, "upsert_webhook_subscription", decl)
+
+
+@router.get(
+    "/webhooks",
+    response_model=list[dict],
+    operation_id="ontListV2Webhooks",
+)
+async def list_webhooks(request: Request) -> list[dict]:
+    _ctx(request)
+    return await _call_scoped(request, "list_webhook_subscriptions")
+
+
+@router.post(
+    "/webhooks/deliver",
+    response_model=dict,
+    operation_id="ontDeliverV2Webhooks",
+)
+async def deliver_webhooks(request: Request) -> dict:
+    """G20：手动触发批投递（生产挂 Scheduler 周期调）。"""
+    _ctx(request)
+
+    def _run() -> dict:
+        from .webhook_delivery import deliver_pending
+
+        with _scoped_repo(request) as repo:
+            return deliver_pending(repo)
+
+    import asyncio
+
+    return await asyncio.to_thread(_run)
+
+
+class FunctionAliasDTO(BaseModel):
+    """G23：函数别名（稳定名 → 可演进的 rid）。"""
+    alias: str
+    function_rid: str
+
+
+class FunctionInvokeDTO(BaseModel):
+    """G23：函数调用体。"""
+    parameters: dict[str, Any] = Field(default_factory=dict)
+
+
+@router.post(
+    "/functions/alias",
+    response_model=dict,
+    operation_id="ontRegisterV2FunctionAlias",
+)
+async def register_function_alias(
+    payload: FunctionAliasDTO, request: Request,
+) -> dict:
+    _ctx(request)
+    try:
+        return await _call_scoped(
+            request, "register_function_alias",
+            payload.alias, payload.function_rid)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@router.get(
+    "/functions/{rid:path}/versions",
+    response_model=list[dict],
+    operation_id="ontListV2FunctionVersions",
+)
+async def list_function_versions(rid: str, request: Request) -> list[dict]:
+    """G23：版本快照倒序（被覆盖的历史版本）。"""
+    _ctx(request)
+    return await _call_scoped(request, "list_function_versions", rid)
+
+
+@router.post(
+    "/functions/{rid:path}/invoke",
+    response_model=dict,
+    operation_id="ontInvokeV2Function",
+)
+async def invoke_function(
+    rid: str, payload: FunctionInvokeDTO, request: Request,
+) -> dict:
+    """G23：调用已注册 Function（invoker/stub/沙箱执行器）。"""
+    _ctx(request)
+    # 别名透传（alias → rid）
+    target = rid
+    try:
+        resolved = await _call_scoped(request, "resolve_function_alias", rid)
+        target = resolved
+    except KeyError:
+        pass
+    except Exception:
+        pass
+    try:
+        return await _call_scoped(
+            request, "invoke_function", target, payload.parameters)
+    except KeyError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.websocket("/ws/object-changes")
+async def ws_object_changes(websocket: "WebSocket") -> None:
+    """G25：对象变更 WebSocket 订阅（outbox 事件推送）。
+
+    连接即订阅：服务端轮询 repo outbox 增量（~1.5s）推 JSON 事件
+    {event_id, event_type, payload}；客户端断开即退订。WS 不经过 HTTP
+    认证中间件 —— 鉴权由网关层 WS 透传承担（dev 直连）。
+    """
+    await websocket.accept()
+    repo = getattr(websocket.app.state, "kernel_repo", None)
+    if repo is None:
+        await websocket.send_json({"error": "kernel_repo not initialized"})
+        await websocket.close()
+        return
+    await websocket.send_json({"type": "subscribed", "topic": "object-changes"})
+    sent: set[str] = set()
+    import asyncio
+
+    try:
+        while True:
+            try:
+                events = await asyncio.to_thread(
+                    repo.list_outbox_events, "0", 20)
+            except Exception:
+                events = []
+            for ev in events:
+                eid = str(ev.get("event_id", ""))
+                if not eid or eid in sent:
+                    continue
+                sent.add(eid)
+                await websocket.send_json({
+                    "event_id": eid,
+                    "event_type": ev.get("event_type", ""),
+                    "payload": ev.get("payload") or {},
+                })
+            await asyncio.sleep(1.5)
+    except Exception:
+        # 客户端断开 / 发送失败 → 退订
+        try:
+            await websocket.close()
+        except Exception:
+            pass
+
+
+# ───── G44：Scenario 会话 API（ACT-08 overlay 的 HTTP 化）─────
+
+import uuid as _uuid
+
+_SCENARIOS: dict[str, dict[str, Any]] = {}
+
+
+class ScenarioCreateDTO(BaseModel):
+    """G44：建沙盒会话（编辑留沙盒；合并走 apply-edit-set 审计管道）。"""
+    title: str = ""
+
+
+class ScenarioEditDTO(BaseModel):
+    """G44：沙盒编辑（op 语义同 edit-set：set_property/create_object/
+    delete_object/add_link/remove_link）。"""
+    op: str
+    target: str = ""
+    property_rid: str = ""
+    value: Any = None
+    class_rid: str = ""
+    primary_key: str = ""
+    props: dict[str, Any] = Field(default_factory=dict)
+    link_type_rid: str = ""
+    src: str = ""
+    dst: str = ""
+    link_instance_rid: str = ""
+
+
+class ScenarioMergeDTO(BaseModel):
+    action_rid: str
+    actor: str = ""
+
+
+def _scenario_overlay(request: Request, sid: str) -> Any:
+    """to_thread 内调用：tenant_scope 内重建 overlay 并回放暂存编辑。"""
+    from mate_kernel.action.scenario import ScenarioOverlay
+
+    entry = _SCENARIOS.get(sid)
+    if entry is None:
+        raise KeyError(f"scenario not found: {sid}")
+    with _scoped_repo(request) as repo:
+        ov = ScenarioOverlay(repo)
+        for e in entry["edits"]:
+            if e["op"] == "set_property":
+                ov.set_property(e["target"], e["property_rid"], e["value"])
+            elif e["op"] == "create_object":
+                ov.create_object(e["class_rid"], e["primary_key"], e["props"])
+            elif e["op"] == "delete_object":
+                ov.delete_object(e["target"])
+            elif e["op"] == "add_link":
+                ov.add_link(e["link_type_rid"], e["src"], e["dst"])
+            elif e["op"] == "remove_link":
+                ov.remove_link(e["link_instance_rid"])
+        return ov, repo, entry
+
+
+@router.post(
+    "/scenarios",
+    response_model=dict,
+    operation_id="ontCreateV2Scenario",
+)
+async def create_scenario(
+    payload: ScenarioCreateDTO, request: Request,
+) -> dict:
+    ctx = _ctx(request)
+    sid = f"scn-{_uuid.uuid4().hex[:10]}"
+    _SCENARIOS[sid] = {
+        "title": payload.title,
+        "tenant_id": str(ctx.tenant_id),  # type: ignore[attr-defined]
+        "edits": [],
+        "created_at": datetime.now(UTC).isoformat(),
+    }
+    return {"scenario_id": sid, "status": "active"}
+
+
+@router.get(
+    "/scenarios",
+    response_model=list[dict],
+    operation_id="ontListV2Scenarios",
+)
+async def list_scenarios(request: Request) -> list[dict]:
+    _ctx(request)
+    return [{"scenario_id": k, "title": v["title"],
+             "edits": len(v["edits"]),
+             "created_at": v["created_at"]}
+            for k, v in _SCENARIOS.items()]
+
+
+@router.post(
+    "/scenarios/{sid}/edits",
+    response_model=dict,
+    operation_id="ontAppendV2ScenarioEdit",
+)
+async def append_scenario_edit(
+    sid: str, payload: ScenarioEditDTO, request: Request,
+) -> dict:
+    _ctx(request)
+    if sid not in _SCENARIOS:
+        raise HTTPException(status_code=404, detail=f"scenario not found: {sid}")
+    edit = payload.model_dump()
+    # 结构校验（复用 EditOp 校验，不执行）
+    from mate_kernel.action.edit_set import EditOp, EditSetError
+
+    try:
+        EditOp(**{k: v for k, v in edit.items() if v or k in (
+            "op", "target", "property_rid", "value", "class_rid",
+            "primary_key", "props", "link_type_rid", "src", "dst",
+            "link_instance_rid")})
+    except (EditSetError, TypeError) as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    # 即时回放校验（目标存在性等）—— to_thread 内
+    def _validate() -> None:
+        try:
+            _scenario_overlay(request, sid)
+        except KeyError:
+            raise
+        # 追加后回放一遍验证
+        _SCENARIOS[sid]["edits"].append(edit)
+        try:
+            _scenario_overlay(request, sid)
+        except Exception as e:
+            _SCENARIOS[sid]["edits"].pop()
+            raise ValueError(str(e)) from e
+
+    import asyncio
+
+    try:
+        await asyncio.to_thread(_validate)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    return {"scenario_id": sid, "pending": len(_SCENARIOS[sid]["edits"])}
+
+
+@router.get(
+    "/scenarios/{sid}/view",
+    response_model=dict,
+    operation_id="ontGetV2ScenarioView",
+)
+async def scenario_view(
+    sid: str, request: Request, class_rid: str = "",
+) -> dict:
+    """G44：沙盒合并视图（overlay 优先 + 墓碑隐藏；_sandbox_ 标记新建/修改）。"""
+    _ctx(request)
+    if sid not in _SCENARIOS:
+        raise HTTPException(status_code=404, detail=f"scenario not found: {sid}")
+    entry = _SCENARIOS[sid]
+
+    def _run() -> dict:
+        from mate_kernel.objectset.compiler import individual_to_row
+
+        ov, _repo, _e = _scenario_overlay(request, sid)
+        cls = ClassRef(class_rid) if class_rid else None
+        inds = ov.list_individuals(cls)
+        touched = {e.get("target") for e in entry["edits"]
+                   if e.get("op") == "set_property"}
+        created = set()
+        for e in entry["edits"]:
+            if e.get("op") == "create_object":
+                parts = e["class_rid"].split(".")
+                slug = parts[4] if len(parts) >= 6 else parts[3]
+                created.add(f"ont.{parts[1]}.ind.{slug}.{e['primary_key']}")
+        rows = []
+        for i in inds:
+            row = individual_to_row(i)
+            row["_sandbox_"] = ("new" if i.rid in created
+                                else "changed" if i.rid in touched else "")
+            rows.append(row)
+        return {"scenario_id": sid, "rows": rows,
+                "pending_edits": len(entry["edits"])}
+
+    import asyncio
+
+    return await asyncio.to_thread(_run)
+
+
+@router.post(
+    "/scenarios/{sid}/merge",
+    response_model=dict,
+    operation_id="ontMergeV2Scenario",
+)
+async def merge_scenario(
+    sid: str, payload: ScenarioMergeDTO, request: Request,
+) -> dict:
+    """G44：沙盒合并 —— 暂存编辑经 apply_edit_set_now（审计管道）落主库。"""
+    ctx = _ctx(request)
+    if sid not in _SCENARIOS:
+        raise HTTPException(status_code=404, detail=f"scenario not found: {sid}")
+
+    def _run() -> dict:
+        ov, _repo, _e = _scenario_overlay(request, sid)
+        return ov.merge_to_base(
+            payload.action_rid,
+            actor=payload.actor or str(getattr(ctx, "user_id", "")) or "scenario-op",
+        )
+
+    import asyncio
+
+    try:
+        result = await asyncio.to_thread(_run)
+    except Exception as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    del _SCENARIOS[sid]
+    out = dict(result) if isinstance(result, dict) else {
+        "applied": len(getattr(result, "applied", ()) or ())}
+    out["scenario_id"] = sid
+    out["merged"] = True
+    return out
+
+
+@router.delete(
+    "/scenarios/{sid}",
+    response_model=dict,
+    operation_id="ontDiscardV2Scenario",
+)
+async def discard_scenario(sid: str, request: Request) -> dict:
+    _ctx(request)
+    existed = _SCENARIOS.pop(sid, None)
+    return {"scenario_id": sid, "discarded": existed is not None}
+
+
 @router.get(
     "/usage/types",
     response_model=list[dict],
@@ -832,6 +1235,98 @@ async def query_timeseries(
     _ctx(request)
     return await _call_scoped(
         request, "query_timeseries", series_rid, start, end)
+
+
+class SchemaWipDTO(BaseModel):
+    """G33：WIP 暂存体（payload 即 ObjectTypeDTO 形态）。"""
+    payload: ObjectTypeDTO
+    author: str = ""
+
+
+@router.post(
+    "/object-types/wip",
+    response_model=dict,
+    operation_id="ontSaveV2SchemaWip",
+)
+async def save_schema_wip(
+    payload: SchemaWipDTO, request: Request,
+) -> dict:
+    """G33：schema 变更暂存（他人不可见；不落正式表、不做门禁）。"""
+    ctx = _ctx(request)
+    tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    if not payload.payload.rid.startswith(f"ont.{tenant}."):
+        raise HTTPException(status_code=403, detail="cross-tenant rid denied")
+    return await _call_scoped(
+        request, "save_schema_wip", payload.payload.rid,
+        payload.payload.model_dump(exclude={"confirm_name"}),
+        payload.author)
+
+
+@router.get(
+    "/object-types/wip",
+    response_model=list[dict],
+    operation_id="ontListV2SchemaWip",
+)
+async def list_schema_wip(request: Request) -> list[dict]:
+    _ctx(request)
+    return await _call_scoped(request, "list_schema_wip")
+
+
+@router.post(
+    "/object-types/wip/{rid:path}/apply",
+    response_model=ObjectTypeResponse,
+    operation_id="ontApplyV2SchemaWip",
+)
+async def apply_schema_wip(
+    rid: str, request: Request, confirm_name: str = "",
+) -> ObjectTypeResponse:
+    """G33：应用 WIP → 正式表（走与直接 upsert 相同的破坏性门禁）。"""
+    ctx = _ctx(request)
+    del confirm_name
+    wip = await _call_scoped(request, "get_schema_wip", rid)
+    dto = ObjectTypeDTO(**wip["payload"])
+    # 复用主 upsert 端点的门禁逻辑：直接调内部实现
+    saved = await _upsert_object_type_gated(dto, request, ctx)
+    await _call_scoped(request, "delete_schema_wip", rid)
+    return _ot_to_dto(saved)
+
+
+@router.delete(
+    "/object-types/wip/{rid:path}",
+    response_model=dict,
+    operation_id="ontDiscardV2SchemaWip",
+)
+async def discard_schema_wip(rid: str, request: Request) -> dict:
+    ok = await _call_scoped(request, "delete_schema_wip", rid)
+    return {"rid": rid, "discarded": bool(ok)}
+
+
+async def _upsert_object_type_gated(
+    payload: ObjectTypeDTO, request: Request, ctx: Any,
+) -> ObjectType:
+    """G33：与 POST /object-types 相同的门禁 + upsert（WIP apply 复用）。"""
+    from mate_kernel.ontology.types.object_type import detect_destructive_changes
+
+    ot = _dto_to_ot(payload)
+    try:
+        existing = await _call_scoped(
+            request, "get_object_type", ClassRef(payload.rid))
+        destructive = detect_destructive_changes(existing, ot)
+    except KeyError:
+        destructive = []
+    if destructive and payload.confirm_name != existing.display_name:
+        raise HTTPException(
+            status_code=409,
+            detail={"error": "destructive_confirm_required",
+                    "changes": destructive,
+                    "confirm_with": existing.display_name},
+        )
+    try:
+        return await _call_scoped(request, "upsert_object_type", ot)
+    except SlugConflictError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
 
 
 @router.get(
@@ -937,6 +1432,27 @@ async def upsert_object_type(
         # GOVERN-06 第一道防线：外租户前缀 rid 一律拒绝写入
         raise HTTPException(status_code=403, detail="cross-tenant rid denied")
     ot = _dto_to_ot(payload)
+    # G33：破坏性变更门禁 —— 删属性/改 format/改主键/改 parent 须 confirm_name
+    from mate_kernel.ontology.types.object_type import detect_destructive_changes
+
+    try:
+        existing = await _call_scoped(
+            request, "get_object_type", ClassRef(payload.rid))
+        destructive = detect_destructive_changes(existing, ot)
+    except KeyError:
+        destructive = []
+    except Exception:
+        destructive = []
+    if destructive and payload.confirm_name != existing.display_name:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "destructive_confirm_required",
+                "changes": destructive,
+                "confirm_with": existing.display_name,
+                "hint": "resend with confirm_name == 该类型当前 display_name",
+            },
+        )
     try:
         saved = await _call_scoped(request, "upsert_object_type", ot)
     except SlugConflictError as e:
@@ -1601,7 +2117,7 @@ async def list_individuals(
     if class_rid:  # GOV-16：读打点（best-effort）
         await _call_scoped(request, "record_usage", class_rid, "read", 1)
     if markings:
-        viewer = tuple(m.strip() for m in markings.split(",") if m.strip())
+        viewer = _effective_markings(request, markings)
         items = await _call_scoped(
             request, "enforce_read_policies", items, viewer)
     return [
@@ -3094,6 +3610,13 @@ class QuerySortKeyDTO(BaseModel):
     desc: bool = False
 
 
+class NearestSpecDTO(BaseModel):
+    """G13：nearestNeighbors 查询算子（先 KNN 后 filters）。"""
+    text: str
+    k: int = 10
+    property_rid: str | None = None
+
+
 class ObjectQueryDTO(BaseModel):
     source: str
     filters: list[QueryConditionDTO] = Field(default_factory=list)
@@ -3102,6 +3625,7 @@ class ObjectQueryDTO(BaseModel):
     sort: list[QuerySortKeyDTO] = Field(default_factory=list)
     paging_offset: int = 0
     paging_limit: int = 100
+    nearest: NearestSpecDTO | None = None
 
 
 class ObjectQueryResultDTO(BaseModel):
@@ -3155,9 +3679,14 @@ def _dto_to_ir_query(d: ObjectQueryDTO) -> ObjectSetQuery:
                 TraversalStep(link_type=t.link_type, direction=t.direction)
                 for t in d.traversal
             ),
-            sort=tuple(SortKey(field=s.field, desc=s.desc) for s in d.sort),
+            sort=tuple(SortKey(field=k.field, desc=k.desc) for k in d.sort),
             paging_offset=d.paging_offset,
             paging_limit=d.paging_limit,
+            nearest=(
+                NearestSpec(text=d.nearest.text, k=d.nearest.k,
+                            property_rid=d.nearest.property_rid)
+                if d.nearest is not None else None
+            ),
         )
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
@@ -3178,7 +3707,7 @@ async def execute_object_query(
     q = _dto_to_ir_query(payload)
     result = await _call_scoped(request, "execute_object_query", q)
     if markings and result.kind == "objects":
-        viewer = tuple(m.strip() for m in markings.split(",") if m.strip())
+        viewer = _effective_markings(request, markings)
         rows = list(result.rows)
         rows = await _call_scoped(request, "mask_rows", rows, viewer)
         result = type(result)(kind=result.kind, rows=tuple(rows),
@@ -3290,17 +3819,19 @@ class ObjectSearchResultDTO(BaseModel):
     operation_id="ontSearchV2Objects",
 )
 async def search_objects(
-    payload: ObjectSearchDTO, request: Request,
+    payload: ObjectSearchDTO, request: Request, markings: str = "",
 ) -> ObjectSearchResultDTO:
-    """MP-SAL-02: 对象语义检索（OAG）→ 对象卡片（带 rid 可追溯）。"""
+    """MP-SAL-02: 对象语义检索（OAG）→ 对象卡片（G6 marking 过滤 + G7 scope 收窄）。"""
     ctx = _ctx(request)
     if payload.class_rid and not payload.class_rid.startswith(
         f"ont.{ctx.tenant_id}.",  # type: ignore[attr-defined]
     ):
         raise HTTPException(status_code=403, detail="cross-tenant search denied")
+    viewer = _effective_markings(request, markings) if markings else None
     cards = await _call_scoped(
         request, "search_objects", payload.text, payload.class_rid, payload.top_k,
         str(ctx.tenant_id),  # type: ignore[attr-defined]  # to_thread 下 thread-local 不可见，显式传租户
+        viewer,
     )
     return ObjectSearchResultDTO(cards=cards)
 
@@ -3311,17 +3842,18 @@ async def search_objects(
     operation_id="ontHybridSearchV2Objects",
 )
 async def hybrid_search_objects(
-    payload: ObjectSearchDTO, request: Request,
+    payload: ObjectSearchDTO, request: Request, markings: str = "",
 ) -> ObjectSearchResultDTO:
-    """AI-09：混合检索（关键词 + 向量 + RRF 融合，调研材料 03 §OAG）。"""
+    """AI-09：混合检索（G6 marking 过滤 + G7 scope 收窄）。"""
     ctx = _ctx(request)
     if payload.class_rid and not payload.class_rid.startswith(
         f"ont.{ctx.tenant_id}.",  # type: ignore[attr-defined]
     ):
         raise HTTPException(status_code=403, detail="cross-tenant search denied")
+    viewer = _effective_markings(request, markings) if markings else None
     cards = await _call_scoped(
         request, "search_objects_hybrid", payload.text, payload.class_rid,
-        payload.top_k, str(ctx.tenant_id),  # type: ignore[attr-defined]
+        payload.top_k, str(ctx.tenant_id), viewer,  # type: ignore[attr-defined]
     )
     return ObjectSearchResultDTO(cards=cards)
 

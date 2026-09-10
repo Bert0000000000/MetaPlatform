@@ -321,6 +321,60 @@ DDL: tuple[str, ...] = (
     # CDC 增量腿：水位 + 时间戳列
     "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMPTZ",
     "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS ts_column TEXT NOT NULL DEFAULT 'updated_at'",
+    # G20：webhook 订阅 + 投递审计
+    """
+    CREATE TABLE IF NOT EXISTS ont_webhook_subscription (
+        rid        TEXT PRIMARY KEY,
+        tenant_id  TEXT NOT NULL,
+        event_type TEXT NOT NULL DEFAULT '*',
+        url        TEXT NOT NULL,
+        secret     TEXT NOT NULL DEFAULT '',
+        active     BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS ont_webhook_delivery (
+        id               BIGSERIAL PRIMARY KEY,
+        event_id         TEXT NOT NULL,
+        subscription_rid TEXT NOT NULL,
+        status           TEXT NOT NULL,
+        attempts         INTEGER NOT NULL DEFAULT 0,
+        last_error       TEXT NOT NULL DEFAULT '',
+        tenant_id        TEXT NOT NULL DEFAULT '',
+        delivered_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_whd_pair ON ont_webhook_delivery (event_id, subscription_rid)",
+    # G33：schema WIP 暂存（他人不可见；apply 走破坏性门禁）
+    """
+    CREATE TABLE IF NOT EXISTS ont_schema_wip (
+        rid        TEXT PRIMARY KEY,
+        tenant_id  TEXT NOT NULL,
+        author     TEXT NOT NULL DEFAULT '',
+        payload    JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_wip_tenant ON ont_schema_wip (tenant_id)",
+    # G23：Function 版本快照 + 别名
+    """
+    CREATE TABLE IF NOT EXISTS ont_function_version (
+        function_rid TEXT NOT NULL,
+        version      INTEGER NOT NULL,
+        language     TEXT NOT NULL DEFAULT '',
+        source_ref   TEXT NOT NULL DEFAULT '',
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (function_rid, version)
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS ont_function_alias (
+        alias        TEXT PRIMARY KEY,
+        function_rid TEXT NOT NULL,
+        tenant_id    TEXT NOT NULL DEFAULT ''
+    )
+    """,
     # GOV-16：使用量指标（Reads/Writes per type per day）
     """
     CREATE TABLE IF NOT EXISTS ont_usage_metric (
@@ -2140,6 +2194,29 @@ class PgOntologyRepository(OntologyRepository):
 
     def upsert_function(self, f: Function) -> Function:
         self._ensure_schema()
+        # G23：被覆盖的旧版本先快照（版本演进可回溯）
+        try:
+            conn_v, _ = self._connect()
+            try:
+                with self._cursor(conn_v) as cur:
+                    cur.execute(
+                        "SELECT version, language, source_ref FROM ont_function "
+                        "WHERE rid = %s", (f.rid.rid,))
+                    old = cur.fetchone()
+                if old is not None:
+                    with self._cursor(conn_v) as cur:
+                        cur.execute(
+                            """INSERT INTO ont_function_version
+                               (function_rid, version, language, source_ref)
+                               VALUES (%s,%s,%s,%s)
+                               ON CONFLICT (function_rid, version) DO NOTHING""",
+                            (f.rid.rid, int(old["version"]), old["language"],
+                             old["source_ref"]))
+                conn_v.commit()
+            finally:
+                conn_v.close()
+        except Exception:
+            pass  # 快照失败不阻断主路径
         row = _fn_to_row(f)
         conn, _ = self._connect()
         try:
@@ -2193,6 +2270,76 @@ class PgOntologyRepository(OntologyRepository):
             return [_row_to_fn(r) for r in rows]
         finally:
             conn.close()
+
+    # ───── G23：Function 版本/别名/调用 ─────
+
+    def register_function_alias(self, alias: str, function_rid: str) -> dict[str, Any]:
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """INSERT INTO ont_function_alias (alias, function_rid, tenant_id)
+                       VALUES (%s,%s,%s)
+                       ON CONFLICT (alias) DO UPDATE SET
+                         function_rid = EXCLUDED.function_rid""",
+                    (alias, function_rid,
+                     self._current_tenant() or "tenant-default"))
+            conn.commit()
+            return {"alias": alias, "function_rid": function_rid}
+        finally:
+            conn.close()
+
+    def resolve_function_alias(self, alias: str) -> str:
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT function_rid FROM ont_function_alias WHERE alias = %s",
+                    (alias,))
+                row = cur.fetchone()
+            if row is None:
+                raise KeyError(f"alias not found: {alias}")
+            return row["function_rid"]
+        finally:
+            conn.close()
+
+    def list_function_versions(self, function_rid: str) -> list[dict[str, Any]]:
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT * FROM ont_function_version WHERE function_rid = %s "
+                    "ORDER BY version DESC", (function_rid,))
+                return [dict(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
+
+    def invoke_function(self, function_rid: str,
+                        parameters: dict[str, Any]) -> dict[str, Any]:
+        """调用已注册 Function（invoker/executor 优先，缺位报 422 语义错误）。"""
+        action_rid = function_rid
+        invoker = self._action_service._invokers.get(function_rid)  # noqa: SLF001
+        if invoker is not None:
+            result = invoker(None, parameters)
+            return {"function_rid": function_rid, "result": result}
+        executor = self._function_executor
+        if executor is not None:
+            lang, source = self._function_resolver.resolve(ClassRef(function_rid))
+            rc, out, err = executor.execute(source, (None, parameters))
+            if rc != 0:
+                raise RuntimeError(f"function exited {rc}: {err}")
+            try:
+                import json as _json
+
+                parsed = _json.loads(out) if out else None
+                result = parsed.get("result", parsed) if isinstance(parsed, dict) else parsed
+            except Exception:
+                result = None
+            return {"function_rid": function_rid, "result": result}
+        raise KeyError(
+            f"function {function_rid!r} has no registered invoker/executor "
+            "(G23 invoke 需先 set_function_executor 或 register_function)")
 
     # ───── query / apply ─────
 
@@ -2381,6 +2528,7 @@ class PgOntologyRepository(OntologyRepository):
 
         # EXP-01：Interface 多态查询源（IR 路径）—— source 是 Interface rid 时
         # 展开为实现类型集合；无实现类型 → 空结果信封。
+        impl: list[str] = []
         if ot is None:
             try:
                 ifcs = self.list_interfaces()
@@ -2406,6 +2554,12 @@ class PgOntologyRepository(OntologyRepository):
         else:
             params_inner = [q.source]
             inner = "SELECT rid FROM ont_individual WHERE class_rid = %s"
+        # G13：nearestNeighbors —— inner 换成 embedding KNN 子查询
+        # （先 KNN 后 filters：filters 作用于最终行集）
+        if q.nearest is not None and self._embedder is not None:
+            inner, params_inner = self._nearest_inner_sql(
+                q.nearest, source_rids=impl if (ot is None and impl) else [q.source],
+                fallback_classes=[q.source])
         params: list[Any] = list(params_inner)
         where_sql, where_params = _ir_where(q.filters, slug_to_rid)
         if where_sql:
@@ -2459,6 +2613,9 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
         result_rows = [individual_to_row(i) for i in individuals]
+        # G12：数组属性按声明 reducer 折叠为单值
+        if ot is not None:
+            self._apply_array_reducers(ot, result_rows)
         # EXP-02：派生列追加（count/sum/avg over link，批量聚合避免逐行子查询）
         if ot is not None:
             self._attach_derived_pg(ot, result_rows)
@@ -2467,6 +2624,73 @@ class PgOntologyRepository(OntologyRepository):
             rows=tuple(result_rows),
             result_schema=self._ir_objects_schema(final_class),
         )
+
+    def _nearest_inner_sql(
+        self, spec: Any, source_rids: list[str], fallback_classes: list[str],
+    ) -> tuple[str, list[Any]]:
+        """G13：nearest 的 inner SQL（embedding_vec KNN，HNSW 加速）。
+
+        类过滤：source 类集合 = Interface 展开（或自身）+ 后代闭包 —— 复用
+        G21 的公理闭包；无 embedder/扩展缺位由调用方保证不进此路径。
+        """
+        # 展开类集合（含后代）
+        rid_by_slug: dict[str, set[str]] = {}
+        conn0, _ = self._connect()
+        try:
+            with self._cursor(conn0) as cur:
+                cur.execute("SELECT rid FROM ont_object_type WHERE rid LIKE %s",
+                            ("ont.%.obj.%.%",))
+                for row in cur.fetchall():
+                    parts = row["rid"].split(".")
+                    if len(parts) >= 6:
+                        rid_by_slug.setdefault(parts[4], set()).add(row["rid"])
+        finally:
+            conn0.close()
+        pairs: list[tuple[str, str]] = []
+        for r in self.list_axiom_records("", enabled_only=False):
+            if r.get("kind") != "subclass":
+                continue
+            ops = r.get("operands") or []
+            if len(ops) >= 2 and ops[1]:
+                subs = {ops[0]} if ops[0].startswith("ont.") else rid_by_slug.get(ops[0], set())
+                sups = {ops[1]} if ops[1].startswith("ont.") else rid_by_slug.get(ops[1], set())
+                pairs.extend((a, b) for a in subs for b in sups)
+        from mate_kernel.ontology.reasoning.engine import descendant_closure
+
+        closure = descendant_closure(pairs) if pairs else {}
+        classes: set[str] = set()
+        for base in source_rids or fallback_classes:
+            classes.add(base)
+            classes |= closure.get(base, set())
+        qvec = self._embedder.embed(spec.text)
+        vec_literal = "[" + ",".join(f"{x:.6g}" for x in qvec) + "]"
+        conds = ["e.embedding_vec IS NOT NULL", "e.class_rid = ANY(%s)"]
+        params: list[Any] = [sorted(classes)]
+        if spec.property_rid:
+            conds.append("e.property_rid = %s")
+            params.append(spec.property_rid)
+        # DISTINCT + ORDER BY 表达式冲突 → GROUP BY individual + min(距离)（个体级最近）
+        sql = (
+            "SELECT e.individual_rid AS rid FROM ont_object_embedding e "
+            "WHERE " + " AND ".join(conds) + " "
+            "GROUP BY e.individual_rid "
+            "ORDER BY min(e.embedding_vec <=> %s::halfvec) LIMIT %s"
+        )
+        params.extend([vec_literal, spec.k])
+        return sql, params
+
+    @staticmethod
+    def _apply_array_reducers(ot: ObjectType, rows: list[dict[str, Any]]) -> None:
+        """G12：array 属性行值按 reducer 折叠（就地）。"""
+        from mate_kernel.ontology.types.property_ import reduce_array_value
+
+        for p in ot.properties:
+            if not p.array or not p.reducer:
+                continue
+            slug = _prop_slug(p.rid.rid)
+            for row in rows:
+                if slug in row:
+                    row[slug] = reduce_array_value(row[slug], p.reducer)
 
     def _attach_derived_pg(
         self, ot: ObjectType, rows: list[dict[str, Any]],
@@ -2683,6 +2907,139 @@ class PgOntologyRepository(OntologyRepository):
             logging.getLogger(__name__).warning(
                 "object_embedding_index_failed", extra={"rid": ind.rid},
             )
+
+    # ───── G33：schema WIP 暂存 ─────
+
+    def save_schema_wip(self, rid: str, payload: dict[str, Any],
+                        author: str = "") -> dict[str, Any]:
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """INSERT INTO ont_schema_wip (rid, tenant_id, author, payload)
+                       VALUES (%s, %s, %s, %s::jsonb)
+                       ON CONFLICT (rid) DO UPDATE SET
+                         payload = EXCLUDED.payload, author = EXCLUDED.author,
+                         created_at = now()""",
+                    (rid, self._current_tenant() or "tenant-default",
+                     author, json.dumps(payload, default=str)))
+            conn.commit()
+            return {"rid": rid, "status": "staged"}
+        finally:
+            conn.close()
+
+    def list_schema_wip(self) -> list[dict[str, Any]]:
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT rid, author, payload, created_at FROM ont_schema_wip "
+                    "ORDER BY created_at DESC")
+                return [dict(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
+
+    def get_schema_wip(self, rid: str) -> dict[str, Any]:
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT * FROM ont_schema_wip WHERE rid = %s", (rid,))
+                row = cur.fetchone()
+            if row is None:
+                raise KeyError(f"wip not found: {rid}")
+            return dict(row)
+        finally:
+            conn.close()
+
+    def delete_schema_wip(self, rid: str) -> bool:
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("DELETE FROM ont_schema_wip WHERE rid = %s", (rid,))
+                deleted = cur.rowcount == 1
+            conn.commit()
+            return deleted
+        finally:
+            conn.close()
+
+    # ───── G20：webhook 订阅 + 投递 ─────
+
+    def upsert_webhook_subscription(self, decl: dict[str, Any]) -> dict[str, Any]:
+        rid = decl.get("rid") or (
+            "ont." + (decl.get("tenant_id") or "t") + ".wh." + decl["url"].split("//")[-1].replace("/", "_")[:40]
+        )
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """INSERT INTO ont_webhook_subscription
+                       (rid, tenant_id, event_type, url, secret, active)
+                       VALUES (%s,%s,%s,%s,%s,%s)
+                       ON CONFLICT (rid) DO UPDATE SET
+                         event_type=EXCLUDED.event_type, url=EXCLUDED.url,
+                         secret=EXCLUDED.secret, active=EXCLUDED.active""",
+                    (rid, decl.get("tenant_id") or self._current_tenant() or "tenant-default",
+                     decl.get("event_type", "*"), decl["url"],
+                     decl.get("secret", ""), bool(decl.get("active", True))))
+            conn.commit()
+            return {"rid": rid}
+        finally:
+            conn.close()
+
+    def list_webhook_subscriptions(self) -> list[dict[str, Any]]:
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_webhook_subscription ORDER BY rid")
+                return [dict(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
+
+    def record_webhook_delivery(self, *, event_id: str, subscription_rid: str,
+                                status: str, attempts: int, last_error: str,
+                                tenant_id: str = "") -> None:
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """INSERT INTO ont_webhook_delivery
+                       (event_id, subscription_rid, status, attempts, last_error, tenant_id)
+                       VALUES (%s,%s,%s,%s,%s,%s)""",
+                    (event_id, subscription_rid, status, attempts,
+                     last_error, tenant_id))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def webhook_delivery_exists(self, event_id: str, subscription_rid: str) -> bool:
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT 1 FROM ont_webhook_delivery WHERE event_id=%s "
+                    "AND subscription_rid=%s AND status='delivered' LIMIT 1",
+                    (event_id, subscription_rid))
+                return cur.fetchone() is not None
+        finally:
+            conn.close()
+
+    def list_outbox_events(self, since_id: str = "0", limit: int = 50) -> list[dict[str, Any]]:
+        """outbox 事件列（id 比较：PG 无自增 id → 用 created_at+event_id 序；
+        since_id 取 event_id 字典序，v1 简化为全量窗口 limit）。"""
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT * FROM ont_outbox_event ORDER BY created_at DESC LIMIT %s",
+                    (limit,))
+                return [dict(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
 
     # ───── GOV-16~19：治理四件套 ─────
 

@@ -31,6 +31,13 @@ from mate_kernel.ontology.instances.link_instance import LinkInstance
 __all__ = ["ScenarioOverlay", "ScenarioConflictError"]
 
 
+class _Absent:
+    """哨兵：键不存在（保留 base）—— 与墓碑 None（隐藏）区分。"""
+
+
+_ABSENT = _Absent()
+
+
 class ScenarioConflictError(RuntimeError):
     """merge 时主库现状与沙盒假设冲突（v1：目标被主库删除/被并发修改）。"""
 
@@ -69,28 +76,37 @@ class ScenarioOverlay:
         return self.base.get_individual(rid)
 
     def list_individuals(self, class_rid: ClassRef | None = None) -> list[Individual]:
-        base_list = [
-            i for i in self.base.list_individuals(class_rid)
-            if self._individuals.get(i.rid) is not None
-        ]
-        overlay_list = [
-            v for v in self._individuals.values()
-            if v is not None
-            and (class_rid is None or v.class_rid == class_rid)
-        ]
-        seen = {i.rid for i in base_list}
-        return base_list + [v for v in overlay_list if v.rid not in seen]
+        # 合并视图：overlay 优先（修改/新建）；墓碑（None）隐藏；
+        # absent（未在沙盒触碰）→ 保留 base 版本。
+        out: list[Individual] = []
+        seen: set[str] = set()
+        for i in self.base.list_individuals(class_rid):
+            ov = self._individuals.get(i.rid, _ABSENT)
+            if ov is None:
+                continue  # 墓碑
+            item = i if ov is _ABSENT else ov
+            if class_rid is None or item.class_rid == class_rid:
+                out.append(item)
+            seen.add(i.rid)
+        for v in self._individuals.values():
+            if v is not None and v.rid not in seen and (
+                    class_rid is None or v.class_rid == class_rid):
+                out.append(v)
+        return out
 
     def list_link_instances(self) -> list[LinkInstance]:
-        base_list = [
-            l for l in self.base.list_link_instances()
-            if self._link_instances.get(l.rid) is not None
-        ]
-        overlay_list = [
-            v for v in self._link_instances.values() if v is not None
-        ]
-        seen = {l.rid for l in base_list}
-        return base_list + [v for v in overlay_list if v.rid not in seen]
+        out: list[LinkInstance] = []
+        seen: set[str] = set()
+        for l in self.base.list_link_instances():
+            ov = self._link_instances.get(l.rid, _ABSENT)
+            if ov is None:
+                continue
+            out.append(l if ov is _ABSENT else ov)
+            seen.add(l.rid)
+        for v in self._link_instances.values():
+            if v is not None and v.rid not in seen:
+                out.append(v)
+        return out
 
     def evaluate_object_set(self, os_: Any) -> list[Individual]:
         """ObjectSet 求值（合并视图快照 → InMemory 执行器）。"""

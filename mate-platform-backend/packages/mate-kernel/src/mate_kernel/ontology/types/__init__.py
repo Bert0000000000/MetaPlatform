@@ -3,7 +3,7 @@
 按 ADR-0021 冻结；EXP-02（2026-09-10）扩展 Property 体系与值类型注册表。
 """
 
-from .property_ import DerivedSpec, Property, PropertyFormat, ai_metadata_struct
+from .property_ import DerivedSpec, Property, PropertyFormat, ai_metadata_struct, reduce_array_value
 from .object_type import ObjectType
 from .link_type import LinkType, Cardinality, Directionality
 from .action_type import ActionType
@@ -22,6 +22,7 @@ __all__ = [
     "PropertyFormat",
     "DerivedSpec",
     "ai_metadata_struct",
+    "reduce_array_value",
     "ObjectType",
     "LinkType",
     "Cardinality",

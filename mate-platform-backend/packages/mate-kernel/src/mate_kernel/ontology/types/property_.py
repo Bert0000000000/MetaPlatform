@@ -128,3 +128,20 @@ def ai_metadata_struct(rid: ClassRef) -> "Property":
             ),
         ),
     )
+
+def reduce_array_value(value: object, reducer: str | None) -> object:
+    """G12：数组属性查询时归约（first -> 首元素；latest -> 末元素）。
+
+    多值属性存储为数组；查询输出按声明 reducer 折叠为单值（Palantir
+    multi-value + reducer 语义）。非数组值 / 空 reducer 原样返回；
+    空数组返回 None。contains 等算子对数组按 str() 全量匹配（v1 语义）。
+    """
+    if not reducer or not isinstance(value, (list, tuple)):
+        return value
+    if len(value) == 0:
+        return None
+    if reducer == "first":
+        return value[0]
+    if reducer == "latest":
+        return value[-1]
+    return value

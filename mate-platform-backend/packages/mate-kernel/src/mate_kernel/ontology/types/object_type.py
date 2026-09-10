@@ -45,3 +45,34 @@ class ObjectType:
                 )
         if self.parent_class is not None and self.parent_class == self.rid:
             raise ValueError("ObjectType.parent_class must not equal rid (self-parent)")
+
+
+def detect_destructive_changes(old: "ObjectType", new: "ObjectType") -> list[str]:
+    """G33：破坏性 schema 变更检测（返回清单，空 = 安全）。
+
+    破坏性（数据兼容性破坏）：
+    - 属性 rid 集合缩（删除属性 → 存量实例数据悬空）
+    - 主键变更（primary_key 集合不同）
+    - 属性 format 变化（存储/查询语义破坏）
+    - parent_class 变化（层级重挂 —— 谨慎项，计入）
+    不计入：display_name/description/marking/render_hints 等元数据变更，
+    新增属性（集合扩）。
+    """
+    changes: list[str] = []
+    old_props = {p.rid.rid: p for p in old.properties}
+    new_props = {p.rid.rid: p for p in new.properties}
+    removed = sorted(set(old_props) - set(new_props))
+    if removed:
+        changes.append(f"properties removed: {', '.join(removed)}")
+    for rid in sorted(set(old_props) & set(new_props)):
+        if old_props[rid].format is not new_props[rid].format:
+            changes.append(
+                f"property format changed: {rid} "
+                f"{old_props[rid].format.value} -> {new_props[rid].format.value}")
+    if {pk.rid for pk in old.primary_key} != {pk.rid for pk in new.primary_key}:
+        changes.append("primary_key changed")
+    old_parent = old.parent_class.rid if old.parent_class is not None else ""
+    new_parent = new.parent_class.rid if new.parent_class is not None else ""
+    if old_parent != new_parent:
+        changes.append(f"parent_class changed: {old_parent or 'None'} -> {new_parent or 'None'}")
+    return changes
