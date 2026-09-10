@@ -52,7 +52,11 @@ BARE_TEXT_DESC = "bare text('...') in src/"
 #   order_review.py - pg_advisory_xact_lock(:lock_key) 参数化 advisory lock
 #                     （无租户表访问；ORM 无对应表达）。
 EXCLUDE_FILES = {
-    "db_filter.py", "migrations.py", "pg.py", "db.py", "order_review.py",
+    "db_filter.py",
+    "migrations.py",
+    "pg.py",
+    "db.py",
+    "order_review.py",
 }
 
 
