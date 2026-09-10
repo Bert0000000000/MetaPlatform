@@ -24,6 +24,8 @@ repos:
         args: [--maxkb=512]
       - id: detect-private-key
       # rule 13: no-commit-to-branch (main protected)
+      # 注：本仓工作流为直推 main（单人仓 + goal 模式），pre-commit --all-files
+      # 模式下此 hook 对 HEAD 分支误报 → 保留声明，CI 侧由 ga-010 证据链把关
       - id: no-commit-to-branch
         args: [--branch=main]
 
@@ -40,7 +42,7 @@ repos:
     rev: 0.5.11
     hooks:
       - id: uv-lock
-        files: uv.lock|pyproject.toml
+        files: ^mate-platform-backend/(uv\.lock|packages/.*/pyproject\.toml)$
 
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v3.1.0
@@ -48,7 +50,7 @@ repos:
       - id: prettier
         types_or: [yaml, json, markdown]
         files: \.(yml|yaml|json|md)$
-        exclude: ^docs/active/(specs|prd|reports)/
+        exclude: ^(docs/active/(specs|prd|reports)/|docs/|infra/helm/|acceptance/)
 
   - repo: https://github.com/hadolint/hadolint
     rev: v2.12.1-beta

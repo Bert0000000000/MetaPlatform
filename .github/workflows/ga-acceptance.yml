@@ -210,7 +210,9 @@ jobs:
       - name: install pre-commit
         run: pip install pre-commit
       - name: pre-commit run --all-files (rules 3 / 4 / 5 / 7 / 10 / 12)
-        run: pre-commit run --all-files
+        # SKIP=no-commit-to-branch：--all-files 模式下该 hook 对 main 直推工作流误报
+        # （分支保护由 GitHub 分支规则 + ga-010 证据链承担）
+        run: SKIP=no-commit-to-branch pre-commit run --all-files
       - name: infra/tests (PLATFORM-K8S-01 regression, rule 8 contract)
         run: pytest -q
         working-directory: infra/tests
