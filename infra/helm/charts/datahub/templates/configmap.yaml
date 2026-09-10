@@ -12,12 +12,7 @@ data:
   # (hard rule 12: never inline).
   neo4j-host: {{ .Values.backends.neo4j.host | quote }}
   neo4j-port: {{ .Values.backends.neo4j.port | quote }}
-  neo4j-uri:
-    {
-      {
-        printf "bolt://%s:%d" .Values.backends.neo4j.host (int .Values.backends.neo4j.port) | quote,
-      },
-    }
+  neo4j-uri: {{ printf "bolt://%s:%d" .Values.backends.neo4j.host (int .Values.backends.neo4j.port) | quote }}
   elasticsearch-host: {{ .Values.backends.elasticsearch.host | quote }}
   elasticsearch-port: {{ .Values.backends.elasticsearch.port | quote }}
   kafka-bootstrap-servers:
