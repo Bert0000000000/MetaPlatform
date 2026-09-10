@@ -48,12 +48,17 @@ READ_METHODS = frozenset({"get", "head", "options"})
 EXEMPT_EXACT_PATHS = frozenset({"/healthz", "/readyz", "/health", "/metrics"})
 ADMIN_MARKER = "/admin/"
 
-VALID_SCOPES = frozenset({
-    "platform.read", "platform.write", "platform.admin",
-    # marketplace 细粒度 scope（test_marketplace_openapi.py 契约要求）
-    "platform.marketplace.read", "platform.marketplace.read.tenant",
-    "platform.marketplace.write",
-})
+VALID_SCOPES = frozenset(
+    {
+        "platform.read",
+        "platform.write",
+        "platform.admin",
+        # marketplace 细粒度 scope（test_marketplace_openapi.py 契约要求）
+        "platform.marketplace.read",
+        "platform.marketplace.read.tenant",
+        "platform.marketplace.write",
+    }
+)
 
 
 def _load(path: Path) -> dict[str, Any]:
