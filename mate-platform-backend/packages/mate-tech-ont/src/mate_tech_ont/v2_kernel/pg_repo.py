@@ -307,6 +307,20 @@ DDL: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_bds_tenant ON ont_backing_datasource (tenant_id)",
+    # writeback 双流合并：用户编辑覆盖层（管道同步不覆盖这些属性）
+    """
+    CREATE TABLE IF NOT EXISTS ont_edit_overlay (
+        individual_rid TEXT NOT NULL,
+        property_rid   TEXT NOT NULL,
+        tenant_id      TEXT NOT NULL,
+        updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (individual_rid, property_rid)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_eo_tenant ON ont_edit_overlay (tenant_id)",
+    # CDC 增量腿：水位 + 时间戳列
+    "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMPTZ",
+    "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS ts_column TEXT NOT NULL DEFAULT 'updated_at'",
     # GOV-16：使用量指标（Reads/Writes per type per day）
     """
     CREATE TABLE IF NOT EXISTS ont_usage_metric (
@@ -1897,7 +1911,7 @@ class PgOntologyRepository(OntologyRepository):
                         (rid, tenant_id, class_rid, props, primary_key, marking, created_at, updated_at)
                     VALUES (%s, %s, %s, %s::jsonb, %s, %s, %s, %s)
                     ON CONFLICT (rid) DO UPDATE SET
-                        props = EXCLUDED.props,
+                        props = ont_individual.props || EXCLUDED.props,
                         marking = EXCLUDED.marking,
                         updated_at = EXCLUDED.updated_at
                     """,
@@ -2854,6 +2868,42 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
+    def _edit_overlay_for_class(self, tenant: str, cls_slug: str) -> dict[str, set[str]]:
+        """writeback 双流合并：类前缀下的用户编辑覆盖层（rid → {prop_rid}）。"""
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT individual_rid, property_rid FROM ont_edit_overlay "
+                    "WHERE individual_rid LIKE %s",
+                    (f"ont.{tenant}.ind.{cls_slug}.%",))
+                out: dict[str, set[str]] = {}
+                for r in cur.fetchall():
+                    out.setdefault(r["individual_rid"], set()).add(r["property_rid"])
+            return out
+        finally:
+            conn.close()
+
+    def delete_individual(self, rid: str) -> bool:
+        """删实例 + 级联链接 + 清覆盖层。返回是否删除（False = 不存在）。"""
+        self._ensure_schema()
+        tenant = self._current_tenant() or "tenant-default"
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "DELETE FROM ont_link_instance WHERE src = %s OR dst = %s",
+                    (rid, rid))
+                cur.execute(
+                    "DELETE FROM ont_edit_overlay WHERE individual_rid = %s", (rid,))
+                cur.execute("DELETE FROM ont_individual WHERE rid = %s", (rid,))
+                deleted = cur.rowcount == 1
+            conn.commit()
+            return deleted
+        finally:
+            conn.close()
+
     def list_backing_datasources(self, class_rid: str | None = None) -> list[dict[str, Any]]:
         self._ensure_schema()
         conn, _ = self._connect()
@@ -2870,14 +2920,23 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
-    def sync_backing_datasources(self, class_rid: str) -> dict[str, Any]:
-        """DATA-14：执行同步（声明按 priority 序 → sync_backing_datasource）。"""
+    def sync_backing_datasources(self, class_rid: str,
+                                 incremental: bool = False) -> dict[str, Any]:
+        """DATA-14/CDC：批量或增量同步（声明按 priority 序）。
+
+        incremental=True：按 ts_column > last_synced_at 过滤（水位随同步推进）；
+        同步全程尊重用户编辑覆盖层（writeback 双流合并）。
+        """
         from .backing_datasources import BackingDatasource, sync_backing_datasource
 
         decls = self.list_backing_datasources(class_rid)
         if not decls:
             raise KeyError(f"no backing datasources declared for {class_rid}")
         ot = self.get_object_type(ClassRef(class_rid))
+        rid_parts = class_rid.split(".")
+        tenant = self._current_tenant() or rid_parts[1]
+        cls_slug = rid_parts[4] if len(rid_parts) >= 6 else rid_parts[3]
+        overlay = self._edit_overlay_for_class(tenant, cls_slug)
         sources = [
             BackingDatasource(
                 name=d["name"], kind=d["kind"], dsn_env=d["dsn_env"],
@@ -2887,7 +2946,51 @@ class PgOntologyRepository(OntologyRepository):
             )
             for d in decls
         ]
-        return sync_backing_datasource(self, ot, sources)
+        stats = sync_backing_datasource(
+            self, ot, sources, incremental=incremental, overlay_props=overlay,
+            watermarks={d["name"]: (
+                d["last_synced_at"].isoformat()
+                if d.get("last_synced_at") else None) for d in decls},
+            ts_columns={d["name"]: d.get("ts_column") or "updated_at" for d in decls},
+        )
+        if incremental:
+            conn, _ = self._connect()
+            try:
+                with self._cursor(conn) as cur:
+                    for d in decls:
+                        cur.execute(
+                            "UPDATE ont_backing_datasource SET last_synced_at = now() "
+                            "WHERE class_rid = %s AND name = %s",
+                            (class_rid, d["name"]))
+                conn.commit()
+            finally:
+                conn.close()
+        return stats
+
+    def apply_cdc_changes(self, class_rid: str,
+                          changes: list[dict[str, Any]]) -> dict[str, int]:
+        """CDC 流式绑定入口（debezium / mate-tech-etl 变更事件）。
+
+        mapping 缺省取 priority 最高声明的 field_mapping；upsert 尊重
+        用户编辑覆盖层；delete 走 delete_individual（含级联清理）。
+        """
+        from .backing_datasources import apply_cdc_changes as _apply
+
+        decls = self.list_backing_datasources(class_rid)
+        if not decls:
+            raise KeyError(f"no backing datasources declared for {class_rid}")
+        ot = self.get_object_type(ClassRef(class_rid))
+        rid_parts = class_rid.split(".")
+        tenant = self._current_tenant() or rid_parts[1]
+        cls_slug = rid_parts[4] if len(rid_parts) >= 6 else rid_parts[3]
+        overlay = self._edit_overlay_for_class(tenant, cls_slug)
+        top = decls[0]
+        return _apply(
+            self, ot, changes,
+            pk_column=top["pk_column"],
+            field_mapping={k: v for k, v in (top.get("field_mapping") or {}).items()},
+            overlay_props=overlay,
+        )
 
     def materialize_object_type(self, class_rid: str, limit: int = 10000) -> dict[str, Any]:
         """DATA-15：对象当前状态 → 行集（materialization 读端点）。"""
@@ -4166,6 +4269,14 @@ class PgOntologyRepository(OntologyRepository):
                             "UPDATE ont_individual SET props = %s::jsonb, "
                             "updated_at = now() WHERE rid = %s",
                             (json.dumps(new_props, default=str), e.target))
+                        # writeback 双流合并：记覆盖层（管道同步不覆盖该属性）
+                        cur.execute(
+                            """INSERT INTO ont_edit_overlay
+                               (individual_rid, property_rid, tenant_id, updated_at)
+                               VALUES (%s, %s, %s, now())
+                               ON CONFLICT (individual_rid, property_rid)
+                               DO UPDATE SET updated_at = now()""",
+                            (e.target, e.property_rid, tenant_id))
                     elif e.op == "create_object":
                         parts = e.class_rid.split(".")
                         tenant = parts[1]

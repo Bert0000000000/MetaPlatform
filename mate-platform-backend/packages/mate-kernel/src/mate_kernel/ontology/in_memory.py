@@ -58,6 +58,8 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._security_policies: dict[str, dict[str, Any]] = {}
         # GOV-16：使用量计数器
         self._usage_counters: dict[tuple[str, str], int] = {}
+        # writeback 双流合并：用户编辑覆盖层（rid, prop_rid）
+        self._edit_overlay: set[tuple[str, str]] = set()
         # GOVERN-05: FunctionResolver 让 upsert_function / set_function_executor 注入。
         from .function_resolver import InMemoryFunctionResolver
         self._function_resolver: InMemoryFunctionResolver = InMemoryFunctionResolver()
@@ -560,6 +562,26 @@ class InMemoryOntologyRepository(OntologyRepository):
                 entry["peers"].append(individual_to_row(ind))
         return list(grouped.values())
 
+    def _edit_overlay_for_class(self, tenant: str, cls_slug: str) -> dict[str, set[str]]:
+        out: dict[str, set[str]] = {}
+        prefix = f"ont.{tenant}.ind.{cls_slug}."
+        for rid, prop in self._edit_overlay:
+            if rid.startswith(prefix):
+                out.setdefault(rid, set()).add(prop)
+        return out
+
+    def delete_individual(self, rid: str) -> bool:
+        """删实例 + 级联链接 + 清覆盖层（与 PG 侧同语义）。"""
+        if rid not in self._individuals:
+            return False
+        self._individuals.pop(rid)
+        for lrid in [l.rid for l in self._link_instances.values()
+                     if l.src == rid or l.dst == rid]:
+            self._link_instances.pop(lrid)
+        self._edit_overlay = {
+            (r, p) for r, p in self._edit_overlay if r != rid}
+        return True
+
     def list_link_instances(self) -> list[LinkInstance]:
         return list(self._link_instances.values())
 
@@ -995,6 +1017,7 @@ class InMemoryOntologyRepository(OntologyRepository):
                         ClassRef(e.property_rid))
                     merged = {k.rid: v for k, v in cur.props}
                     merged[e.property_rid] = e.value
+                    self._edit_overlay.add((e.target, e.property_rid))
                     self._individuals[e.target] = _replace(
                         cur, props=tuple(
                             (ClassRef(k), v) for k, v in merged.items()),

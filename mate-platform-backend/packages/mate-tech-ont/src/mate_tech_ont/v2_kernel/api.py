@@ -673,13 +673,42 @@ async def upsert_backing_datasource(
     response_model=dict,
     operation_id="ontSyncV2BackingDatasources",
 )
-async def sync_backing_datasources(rid: str, request: Request) -> dict:
-    """DATA-14：执行同步（批量索引；MDO 多源按 priority 字段级合并）。"""
+async def sync_backing_datasources(
+    rid: str, request: Request, incremental: bool = False,
+) -> dict:
+    """DATA-14/CDC：批量或增量同步（增量按 ts_column > 水位；用户编辑覆盖层不覆盖）。"""
     ctx = _ctx(request)
     if not rid.startswith(f"ont.{str(ctx.tenant_id)}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
     try:
-        return await _call_scoped(request, "sync_backing_datasources", rid)
+        return await _call_scoped(
+            request, "sync_backing_datasources", rid, incremental)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+
+class CdcApplyDTO(BaseModel):
+    """CDC 变更事件批（debezium / mate-tech-etl 推送）。"""
+    changes: list[dict[str, Any]]  # [{op: upsert|delete, pk, data?: {列: 值}}]
+
+
+@router.post(
+    "/object-types/{rid:path}/datasources/cdc",
+    response_model=dict,
+    operation_id="ontApplyV2CdcChanges",
+)
+async def apply_cdc_changes(
+    rid: str, payload: CdcApplyDTO, request: Request,
+) -> dict:
+    """CDC 流式绑定：变更事件 → 对象平面（upsert 尊重用户编辑覆盖层）。"""
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{str(ctx.tenant_id)}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant class denied")
+    try:
+        return await _call_scoped(
+            request, "apply_cdc_changes", rid, payload.changes)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 

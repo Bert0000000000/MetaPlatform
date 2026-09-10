@@ -1,20 +1,22 @@
-"""DATA-14/15：数据平面绑定 —— backing datasources + 索引管道 + materialization。
+"""DATA-14/15 + CDC 腿：数据平面绑定 —— backing datasources + 索引管道 + materialization。
 
 Palantir 语义（调研材料 06 §5 / 00 §L0）：
 - ObjectType 由 datasets/streams **索引**成对象（Funnel）；本体坐在数据平面之上；
 - MDO：一个类型多个数据源拼接，字段级优先级合并；
-- materialization：对象最新状态回流数据平面供下游管道消费。
+- materialization：对象最新状态回流数据平面供下游管道消费；
+- 双流合并：管道数据 + 用户编辑（user edits）合并为最新表示。
 
-Mate v1（D1 拍板全量纳入，最小可运行集）：
+Mate v1（D1 拍板全量纳入）：
 - ``BackingDatasource``：{name, kind: pg_table, dsn_env, table, pk_column,
   field_mapping: prop_rid → 列名, priority}；
-- ``sync_backing_datasource``：读源表 → 按 mapping upsert Individual
-  （多源按 priority 升序同步，后源不覆盖先源已写入的非空值 —— 字段级优先级）；
-- ``materialize_object_type``：对象当前状态导出为行集（回流数据平面的
-  读端点形态；写回 dataset 由下游管道订阅）。
+- ``sync_backing_datasource``：批量/增量读源表 → 按 mapping upsert Individual
+  （多源按 priority 升序，先源非空值不被后源覆盖；用户编辑覆盖层不覆盖）；
+- ``apply_cdc_changes``：debezium / mate-tech-etl 变更事件 → 对象平面
+  （流式腿的集成入口）；
+- ``materialize_object_type``：对象当前状态导出为行集（回流读端点形态）。
 
-v1 边界：定时调度挂 Scheduler、CDC 流式、writeback 双流合并（user edits 与
-管道数据的 edited-overlay 合并）后续批次；本批先吃批量表数据。
+v1 边界：定时调度挂 Scheduler；debezium engine 的事件订阅接线在
+mate-tech-etl 侧（本模块提供无状态入口）。
 """
 
 from __future__ import annotations
@@ -29,6 +31,7 @@ from mate_kernel.ontology.instances.individual import Individual
 __all__ = [
     "BackingDatasource",
     "sync_backing_datasource",
+    "apply_cdc_changes",
     "materialize_object_type",
 ]
 
@@ -38,7 +41,7 @@ class BackingDatasource:
     """对象类型的背挂数据源（v1: 同实例 PG 表）。"""
 
     name: str
-    kind: str = "pg_table"           # v1 仅 pg_table（csv/cdc 后续）
+    kind: str = "pg_table"           # v1 仅 pg_table（csv/cdc 走 apply_cdc_changes）
     dsn_env: str = "ONT_SOURCE_DSN"  # 源库 DSN 环境变量名（secret 不进 git）
     table: str = ""
     pk_column: str = ""
@@ -67,15 +70,27 @@ def _connect_source(ds: BackingDatasource) -> Any:
 
 def sync_backing_datasource(
     repo: Any,
-    ot: Any,  # ObjectType（携带 backing_datasources 元数据 —— dict 形态）
+    ot: Any,
     sources: list[BackingDatasource] | None = None,
     *,
     batch_limit: int = 5000,
+    incremental: bool = False,
+    overlay_props: dict[str, set[str]] | None = None,
+    watermarks: dict[str, str | None] | None = None,
+    ts_columns: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    """批量索引：源表 → Individual upsert（MDO 多源按 priority 合并）。
+    """批量/增量索引：源表 → Individual upsert（MDO 多源按 priority 合并）。
 
     合并语义（字段级优先级）：按 priority 升序逐源同步；先源写入的非空
-    值不被后源覆盖（Palantir 字段级冲突优先级的简化：先到先得）。
+    值不被后源覆盖（先到先得）。
+
+    writeback 双流合并：``overlay_props`` 是用户编辑覆盖层
+    （individual_rid → {property_rid}）—— 在覆盖层中的属性**不被管道数据
+    覆盖**（用户编辑赢；Palantir「管道数据 + 用户编辑」合并语义）。
+
+    增量（CDC 流式腿的批量形态）：``incremental=True`` 时按各源
+    ``ts_columns[name] > watermarks[name]`` 过滤（watermark 缺省 = 全量首同步）。
+
     返回 {source: synced} 统计。upsert 使用 create_individual（PG 侧
     ON CONFLICT merge props）。
     """
@@ -88,8 +103,14 @@ def sync_backing_datasource(
     tenant = rid_parts[1]
     cls_slug = rid_parts[4] if len(rid_parts) >= 6 else rid_parts[3]
     now = datetime.now(UTC)
-    stats: dict[str, int] = {}
+    overlay = overlay_props or {}
+    watermarks = watermarks or {}
+    ts_columns = ts_columns or {}
 
+    def _rid_of(pk: str) -> str:
+        return f"ont.{tenant}.ind.{cls_slug}.{pk}"
+
+    stats: dict[str, int] = {}
     # 已写入值缓存（pk → {prop_rid: value}）—— 多源合并不覆盖非空
     written: dict[str, dict[str, Any]] = {}
     for ds in sorted(sources, key=lambda s: s.priority):
@@ -98,15 +119,30 @@ def sync_backing_datasource(
             import psycopg2.extras
 
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                cur.execute(f"SELECT * FROM {ds.table} LIMIT %s", (batch_limit,))  # noqa: S608
+                if incremental:
+                    ts_col = ts_columns.get(ds.name, "updated_at")
+                    wm = watermarks.get(ds.name)
+                    if wm:
+                        cur.execute(
+                            f"SELECT * FROM {ds.table} "  # noqa: S608
+                            f"WHERE {ts_col} > %s ORDER BY {ts_col} LIMIT %s",
+                            (wm, batch_limit,))
+                    else:
+                        cur.execute(
+                            f"SELECT * FROM {ds.table} LIMIT %s", (batch_limit,))  # noqa: S608
+                else:
+                    cur.execute(f"SELECT * FROM {ds.table} LIMIT %s", (batch_limit,))  # noqa: S608
                 rows = cur.fetchall()
         finally:
             conn.close()
         synced = 0
         for row in rows:
             pk = str(row[ds.pk_column])
+            user_edited = overlay.get(_rid_of(pk), set())
             props: dict[str, Any] = {}
             for prop_rid, column in ds.field_mapping.items():
+                if prop_rid in user_edited:
+                    continue  # 双流合并：用户编辑过的属性管道不覆盖
                 if column in row and row[column] is not None:
                     props[prop_rid] = row[column]
             merged = dict(written.get(pk, {}))
@@ -132,6 +168,59 @@ def sync_backing_datasource(
                 continue
         stats[ds.name] = synced
     return stats
+
+
+def apply_cdc_changes(
+    repo: Any,
+    ot: Any,
+    changes: list[dict[str, Any]],
+    *,
+    pk_column: str = "id",
+    field_mapping: dict[str, str] | None = None,
+    overlay_props: dict[str, set[str]] | None = None,
+) -> dict[str, int]:
+    """CDC 流式绑定入口（debezium / mate-tech-etl 变更事件 → 对象平面）。
+
+    changes 元素：{op: "upsert"|"delete", pk: str, data?: {列: 值}}。
+    - upsert：按 field_mapping 落 props；**overlay 内属性不覆盖**（双流合并）；
+    - delete：删实例（管道删除走真删 —— 与用户编辑无冲突维度）。
+    返回 {upserted, deleted}。
+    """
+    rid_parts = ot.rid.rid.split(".")
+    tenant = rid_parts[1]
+    cls_slug = rid_parts[4] if len(rid_parts) >= 6 else rid_parts[3]
+    now = datetime.now(UTC)
+    overlay = overlay_props or {}
+    mapping = field_mapping or {}
+    upserted = 0
+    deleted = 0
+    for ch in changes:
+        pk = str(ch.get("pk", ""))
+        if not pk:
+            continue
+        rid_now = f"ont.{tenant}.ind.{cls_slug}.{pk}"
+        if ch.get("op") == "delete":
+            try:
+                repo.delete_individual(rid_now)
+                deleted += 1
+            except Exception:
+                continue
+            continue
+        data = ch.get("data") or {}
+        user_edited = overlay.get(rid_now, set())
+        props: dict[str, Any] = {ot.primary_key[0].rid: pk}
+        for prop_rid, column in mapping.items():
+            if prop_rid in user_edited:
+                continue
+            if column in data and data[column] is not None:
+                props[prop_rid] = data[column]
+        repo.create_individual(Individual(
+            rid=rid_now, class_rid=ot.rid,
+            props=tuple((ClassRef(k), v) for k, v in props.items()),
+            primary_key=pk, created_at=now, updated_at=now, tenant_id=tenant,
+        ))
+        upserted += 1
+    return {"upserted": upserted, "deleted": deleted}
 
 
 def materialize_object_type(repo: Any, class_rid: str, *, limit: int = 10000) -> dict[str, Any]:
