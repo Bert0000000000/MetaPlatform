@@ -11,6 +11,7 @@ import time
 from contextlib import asynccontextmanager, suppress
 from typing import Any
 
+import asyncio
 import httpx
 import structlog
 from fastapi import FastAPI, Request, Response
@@ -268,16 +269,40 @@ async def proxy(path: str, request: Request) -> Response:
     if client is None:
         client = httpx.AsyncClient(
             timeout=httpx.Timeout(UPSTREAM_TIMEOUT_SEC, connect=5.0),
-            limits=httpx.Limits(max_connections=200, max_keepalive_connections=50),
+            # C4：keepalive 30s 过期——上游容器重启后池内陈旧连接窗口收窄
+            limits=httpx.Limits(max_connections=200, max_keepalive_connections=50,
+                                keepalive_expiry=30.0),
         )
     try:
-        upstream = await client.request(
-            method=request.method,
-            url=target_url,
-            params=request.url.query,
-            headers=headers,
-            content=body,
-        )
+        # C4：陈旧 keepalive 连接重试 —— 上游容器重启后池内死连接的两种表现：
+        # ① ConnectError / RemoteProtocolError（连接即断，任何方法重试安全）；
+        # ② ReadTimeout（Windows docker-proxy 黑洞，请求写入无响应）——仅对
+        #   幂等方法（GET/HEAD/OPTIONS）重试；POST 不重试（可能已被上游处理）。
+        _idempotent = request.method.upper() in ("GET", "HEAD", "OPTIONS")
+        _retriable = (httpx.ConnectError, httpx.RemoteProtocolError,
+                      httpx.ReadTimeout)
+        upstream = None
+        for _attempt in range(2):
+            try:
+                upstream = await client.request(
+                    method=request.method,
+                    url=target_url,
+                    params=request.url.query,
+                    headers=headers,
+                    content=body,
+                )
+                break
+            except _retriable as _exc:
+                if _attempt == 1:
+                    raise
+                if isinstance(_exc, httpx.ReadTimeout) and not _idempotent:
+                    raise
+                logger.warning(
+                    "proxy.stale_conn_retry",
+                    upstream=matched_service, url=target_url,
+                    error=type(_exc).__name__,
+                )
+                await asyncio.sleep(1.0)  # 连接失败重试退避（短闪断桥接）
         latency_ms = int((time.perf_counter() - start) * 1000)
         logger.info(
             "proxy.forward",
