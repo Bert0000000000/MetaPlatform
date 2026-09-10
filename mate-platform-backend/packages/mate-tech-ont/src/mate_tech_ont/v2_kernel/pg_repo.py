@@ -2994,19 +2994,41 @@ class PgOntologyRepository(OntologyRepository):
         anc = _subclass_closure(pairs).get(class_rid, set())
         return frozenset({class_rid} | anc)
 
+    def _class_markings_of(self, class_rid: str) -> tuple[str, ...]:
+        """G6：类型 marking（含祖先类型 —— schema 血缘传播）。"""
+        anc = self._ancestors_of_class(class_rid)
+        out: set[str] = set()
+        if not anc:
+            return ()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT marking FROM ont_object_type WHERE rid = ANY(%s)",
+                    (sorted(anc),))
+                for row in cur.fetchall():
+                    out.update(row.get("marking") or [])
+        finally:
+            conn.close()
+        return tuple(out)
+
     def enforce_read_policies(
         self, individuals: list[Any], viewer_markings: list[str] | tuple[str, ...],
     ) -> list[Any]:
-        """行策略过滤（读端点调用；分页前）。"""
-        from mate_kernel.ontology.security_policies import filter_visible_individuals
+        """行策略 + G6 marking 门（读端点调用；分页前）。"""
+        from mate_kernel.ontology.security_policies import (
+            filter_by_markings, filter_visible_individuals,
+        )
 
         ps = self._policy_set()
-        if not ps.row_policies:
-            return individuals
-        return filter_visible_individuals(
-            individuals, ps, viewer_markings,
-            ancestor_classes_of=self._ancestors_of_class,
-        )
+        if ps.row_policies:
+            individuals = filter_visible_individuals(
+                individuals, ps, viewer_markings,
+                ancestor_classes_of=self._ancestors_of_class,
+            )
+        # G6：实例 marking ⊆ viewer ∧ 类型 marking（含祖先）⊆ viewer
+        return filter_by_markings(
+            individuals, viewer_markings, class_marking_of=self._class_markings_of)
 
     def mask_rows(
         self, rows: list[dict[str, Any]], viewer_markings: list[str] | tuple[str, ...],
@@ -3021,11 +3043,30 @@ class PgOntologyRepository(OntologyRepository):
             mask_property_values(r, ps, viewer_markings)
         return rows
 
+    def _marking_visible_rids(self, rids: list[str],
+                              viewer_markings: tuple[str, ...] | list[str]) -> set[str]:
+        """G6：卡片按实例/类型 marking 过滤后可见的 rid 集。"""
+        if not rids:
+            return set()
+        from mate_kernel.ontology.identity.class_ref import ClassRef
+        from mate_kernel.ontology.security_policies import filter_by_markings
+
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_individual WHERE rid = ANY(%s)", (rids,))
+                inds = [_row_to_individual(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
+        return {i.rid for i in filter_by_markings(
+            inds, viewer_markings, class_marking_of=self._class_markings_of)}
+
     def search_objects(
         self, text: str, class_rid: str | None = None, top_k: int = 5,
         tenant_id: str | None = None,
+        viewer_markings: tuple[str, ...] | list[str] | None = None,
     ) -> list[dict[str, Any]]:
-        """语义检索 → 对象卡片（带 rid 可追溯）。
+        """语义检索 → 对象卡片（带 rid 可追溯；G6 marking 过滤可选）。
 
         tenant_id 显式传入优先（``_call_scoped`` 经 asyncio.to_thread 执行，
         tenant_scope 的 threading.local 在工作线程不可见 —— 显式参数是
@@ -3082,7 +3123,12 @@ class PgOntologyRepository(OntologyRepository):
                 cards.append(
                     build_card(individual_rid, class_of[individual_rid], matched[:3]))
             cards.sort(key=lambda c: c["score"], reverse=True)
-            return cards[:top_k]
+            cards = cards[:top_k]
+            if viewer_markings:
+                visible = self._marking_visible_rids(
+                    [c["individual_rid"] for c in cards], viewer_markings)
+                cards = [c for c in cards if c["individual_rid"] in visible]
+            return cards
 
         conds: list[str] = []
         params = []
@@ -3126,11 +3172,17 @@ class PgOntologyRepository(OntologyRepository):
                 build_card(individual_rid, class_of[individual_rid], matched[:3])
             )
         cards.sort(key=lambda c: c["score"], reverse=True)
-        return cards[:top_k]
+        cards = cards[:top_k]
+        if viewer_markings:
+            visible = self._marking_visible_rids(
+                [c["individual_rid"] for c in cards], viewer_markings)
+            cards = [c for c in cards if c["individual_rid"] in visible]
+        return cards
 
     def search_objects_hybrid(
         self, text: str, class_rid: str | None = None, top_k: int = 5,
         tenant_id: str | None = None, k_rrf: int = 60,
+        viewer_markings: tuple[str, ...] | list[str] | None = None,
     ) -> list[dict[str, Any]]:
         """AI-09：混合检索（关键词 + 向量 + RRF 融合，调研材料 03 §OAG）。
 
@@ -3180,8 +3232,9 @@ class PgOntologyRepository(OntologyRepository):
                 kw_rank[irid] = len(kw_rank) + 1
                 kw_meta[irid] = r
 
-        # 向量路
-        vec_cards = self.search_objects(text, class_rid, top_k * 3, tenant_id)
+        # 向量路（G6 marking 透传）
+        vec_cards = self.search_objects(text, class_rid, top_k * 3, tenant_id,
+                                        viewer_markings=viewer_markings)
         vec_rank: dict[str, int] = {c["individual_rid"]: i + 1
                                     for i, c in enumerate(vec_cards)}
 
@@ -3199,6 +3252,9 @@ class PgOntologyRepository(OntologyRepository):
             return score
 
         fused = sorted(all_rids, key=_rrf, reverse=True)[:top_k]
+        if viewer_markings:
+            visible = self._marking_visible_rids(list(all_rids), viewer_markings)
+            fused = [r for r in fused if r in visible]
         cards: list[dict[str, Any]] = []
         for irid in fused:
             kw_hit = kw_meta.get(irid)
@@ -4115,18 +4171,20 @@ class PgOntologyRepository(OntologyRepository):
                         tenant = parts[1]
                         cls_slug = parts[4] if len(parts) >= 6 else parts[3]
                         rid = f"ont.{tenant}.ind.{cls_slug}.{e.primary_key}"
+                        # G6：实例继承类型 marking（含祖先 —— 写时血缘传播）
+                        inherited = list(self._class_markings_of(e.class_rid))
                         cur.execute(
                             """INSERT INTO ont_individual
                                (rid, tenant_id, class_rid, props, primary_key,
-                                created_at, updated_at)
-                               VALUES (%s, %s, %s, %s::jsonb, %s, now(), now())
+                                marking, created_at, updated_at)
+                               VALUES (%s, %s, %s, %s::jsonb, %s, %s, now(), now())
                                ON CONFLICT (rid) DO UPDATE SET
                                  props = EXCLUDED.props,
                                  primary_key = EXCLUDED.primary_key,
                                  updated_at = now()""",
                             (rid, tenant, e.class_rid,
                              json.dumps(e.props, default=str),
-                             str(e.primary_key)))
+                             str(e.primary_key), inherited))
                         created_rids.append(rid)
                     elif e.op == "delete_object":
                         cur.execute(

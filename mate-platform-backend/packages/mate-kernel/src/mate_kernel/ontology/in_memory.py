@@ -385,28 +385,44 @@ class InMemoryOntologyRepository(OntologyRepository):
         return SecurityPolicySet(row_policies=tuple(rows_),
                                  column_policies=tuple(cols_))
 
+    def _class_markings_of(self, class_rid: str) -> tuple[str, ...]:
+        """G6：类型 marking（含祖先 —— schema 血缘传播）。"""
+        from .reasoning.engine import descendant_closure
+
+        closed = descendant_closure(self._subclass_pairs())
+        anc = {class_rid}
+        for y, descs in closed.items():
+            if class_rid in descs:
+                anc.add(y)
+        out: set[str] = set()
+        for r in anc:
+            ot = self._object_types.get(ClassRef(r))
+            if ot is not None:
+                out.update(ot.marking)
+        return tuple(out)
+
     def enforce_read_policies(
         self, individuals: list[Any], viewer_markings: list[str] | tuple[str, ...],
     ) -> list[Any]:
-        from .security_policies import filter_visible_individuals
+        """行策略 + G6 marking 门（实例 ∧ 类型[含祖先] marking ⊆ viewer）。"""
+        from .security_policies import filter_by_markings, filter_visible_individuals
 
         ps = self._policy_set()
-        if not ps.row_policies:
-            return individuals
+        if ps.row_policies:
+            def _ancestors(class_rid: str) -> frozenset[str]:
+                a = {class_rid}
+                for y, descs in closed.items():
+                    if class_rid in descs:
+                        a.add(y)
+                return frozenset(a)
 
-        def _ancestors(class_rid: str) -> frozenset[str]:
             from .reasoning.engine import descendant_closure
 
             closed = descendant_closure(self._subclass_pairs())
-            # ancestors(x) = descendants 闭包的逆：找所有 y 使 x ∈ descendants(y)
-            anc = {class_rid}
-            for y, descs in closed.items():
-                if class_rid in descs:
-                    anc.add(y)
-            return frozenset(anc)
-
-        return filter_visible_individuals(
-            individuals, ps, viewer_markings, ancestor_classes_of=_ancestors)
+            individuals = filter_visible_individuals(
+                individuals, ps, viewer_markings, ancestor_classes_of=_ancestors)
+        return filter_by_markings(
+            individuals, viewer_markings, class_marking_of=self._class_markings_of)
 
     def mask_rows(
         self, rows: list[dict[str, Any]], viewer_markings: list[str] | tuple[str, ...],
@@ -990,12 +1006,15 @@ class InMemoryOntologyRepository(OntologyRepository):
                     rid_parts = e.class_rid.split(".")
                     tenant = rid_parts[1]
                     cls_slug = rid_parts[4] if len(rid_parts) >= 6 else rid_parts[3]
+                    # G6：实例继承类型 marking（含祖先 —— 写时血缘传播）
+                    inherited = self._class_markings_of(e.class_rid)
                     ind = Individual(
                         rid=f"ont.{tenant}.ind.{cls_slug}.{e.primary_key}",
                         class_rid=ot.rid,
                         props=tuple((ClassRef(k), v) for k, v in e.props.items()),
                         primary_key=str(e.primary_key),
                         created_at=now, updated_at=now, tenant_id=tenant,
+                        marking=inherited,
                     )
                     self.create_individual(ind)
                     created_rids.append(ind.rid)

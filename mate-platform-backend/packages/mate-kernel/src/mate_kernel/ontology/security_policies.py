@@ -32,6 +32,7 @@ __all__ = [
     "ColumnPolicy",
     "SecurityPolicySet",
     "filter_visible_individuals",
+    "filter_by_markings",
     "mask_property_values",
     "policy_applies",
 ]
@@ -126,6 +127,33 @@ def filter_visible_individuals(
                 break
         if visible:
             out.append(ind)
+    return out
+
+
+def filter_by_markings(
+    individuals: list[Any],
+    viewer_markings: tuple[str, ...] | list[str],
+    class_marking_of: Any = None,  # callable(class_rid) -> tuple[str, ...]
+) -> list[Any]:
+    """G6：marking 血缘传播的读时强制（强制控制随血缘走）。
+
+    可见条件（合取，Palantir markings 二元合取语义）：
+    1. 实例自身 marking ⊆ viewer markings；
+    2. 所属类型 marking（含祖先类型 —— schema 血缘传播，class_marking_of
+       由 repo 侧合并祖先后给出）⊆ viewer markings。
+    class_marking_of 缺省（None）→ 只查实例级。
+    """
+    if class_marking_of is None:
+        return [i for i in individuals
+                if set(getattr(i, "marking", ()) or ()) <= set(viewer_markings)]
+    out: list[Any] = []
+    for i in individuals:
+        if not set(getattr(i, "marking", ()) or ()) <= set(viewer_markings):
+            continue
+        cls = i.class_rid.rid
+        if not set(class_marking_of(cls) or ()) <= set(viewer_markings):
+            continue
+        out.append(i)
     return out
 
 
