@@ -214,9 +214,6 @@ jobs:
       # otel→temporalio→alembic…），与 ga-014 同一验证过的路径
       - name: sync workspace deps (frozen, complete closure)
         run: uv sync --directory mate-platform-backend --package mate-platform --package mate-app-kb --dev --frozen
-      # uv venv 的 bin 进 PATH —— 后续 bare pytest 解析到完整依赖闭包的 venv
-      - name: add workspace venv to PATH
-        run: echo "${GITHUB_WORKSPACE}/mate-platform-backend/.venv/bin" >> "${GITHUB_PATH}"
       - name: pre-commit run --all-files (rules 3 / 4 / 5 / 7 / 10 / 12)
         # SKIP=no-commit-to-branch：--all-files 模式下该 hook 对 main 直推工作流误报
         # （分支保护由 GitHub 分支规则 + ga-010 证据链承担）
@@ -224,12 +221,11 @@ jobs:
       - name: infra/tests (PLATFORM-K8S-01 regression, rule 8 contract)
         run: pytest -q
         working-directory: infra/tests
+      # 后端两套件走 uv venv（完整闭包；系统 pip 只保 infra tests + pre-commit）
       - name: mate-platform/tests (SEC-IAM-01 + SEC-TENANT-01 + PLATFORM-EVENT-01)
-        run: pytest -q
-        working-directory: mate-platform-backend/packages/mate-platform
+        run: uv run --directory mate-platform-backend/packages/mate-platform pytest -q
       - name: mate-app-kb/tests (TECH-SERVICES canonical)
-        run: pytest -q
-        working-directory: mate-platform-backend/packages/mate-app-kb
+        run: uv run --directory mate-platform-backend/packages/mate-app-kb pytest -q
       - name: GOVERN-02 forbid_iam_dep_imports (rule 5 DEPRECATED mate_tech_iam)
         run: python scripts/ci/forbid_iam_dep_imports.py
       - name: GOVERN-07 forbid_legacy_artifacts (Spring-era residue)
