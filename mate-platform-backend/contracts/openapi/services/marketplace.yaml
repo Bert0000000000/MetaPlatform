@@ -201,6 +201,7 @@ paths:
           tenantHeader: []
           oidcScopes:
             - platform.marketplace.write
+            - platform.write
       requestBody:
         required: true
         content:
@@ -266,6 +267,7 @@ paths:
           tenantHeader: []
           oidcScopes:
             - platform.marketplace.write
+            - platform.write
       parameters:
         - in: path
           name: install_id
@@ -304,6 +306,7 @@ paths:
           tenantHeader: []
           oidcScopes:
             - platform.marketplace.write
+            - platform.write
       parameters:
         - in: path
           name: install_id
@@ -357,6 +360,7 @@ paths:
           tenantHeader: []
           oidcScopes:
             - platform.marketplace.write
+            - platform.write
       requestBody:
         required: true
         content:
@@ -401,7 +405,8 @@ paths:
       operationId: uploadSkill
       summary: 上传 SKILL（SKILL HUB）
       description: 上传一个公开或私有 SKILL 到 SkillHub。
-      tags: [marketplace]
+      tags:
+        - marketplace
       security:
         - bearerAuth: []
           tenantHeader: []
@@ -431,16 +436,22 @@ paths:
       x-requirement-id: MP-CONS-010
       operationId: listSkills
       summary: 浏览 SKILL（公开 + 自有）
-      tags: [marketplace]
+      tags:
+        - marketplace
       parameters:
         - name: q
           in: query
           required: false
-          schema: { type: string }
+          schema:
+            type: string
         - name: visibility
           in: query
           required: false
-          schema: { type: string, enum: [public, private] }
+          schema:
+            type: string
+            enum:
+              - public
+              - private
       responses:
         "200":
           description: SKILL 列表
@@ -453,7 +464,8 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Skill"
-                  total: { type: integer }
+                  total:
+                    type: integer
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-implementation-status: implemented
@@ -464,7 +476,8 @@ paths:
       x-requirement-id: MP-CONS-011
       operationId: listInstalledSkills
       summary: 已安装 SKILL（当前租户）
-      tags: [marketplace]
+      tags:
+        - marketplace
       responses:
         "200":
           description: 已安装 SKILL 列表
@@ -477,7 +490,8 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Skill"
-                  total: { type: integer }
+                  total:
+                    type: integer
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-implementation-status: implemented
@@ -488,12 +502,14 @@ paths:
       x-requirement-id: MP-CONS-012
       operationId: getSkill
       summary: SKILL 详情
-      tags: [marketplace]
+      tags:
+        - marketplace
       parameters:
         - name: skill_id
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -512,7 +528,8 @@ paths:
       x-requirement-id: MP-CONS-013
       operationId: updateSkill
       summary: 更新自有 SKILL（仅作者）
-      tags: [marketplace]
+      tags:
+        - marketplace
       security:
         - bearerAuth: []
           tenantHeader: []
@@ -522,7 +539,8 @@ paths:
         - name: skill_id
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -549,7 +567,8 @@ paths:
       x-requirement-id: MP-CONS-014
       operationId: deleteSkill
       summary: 删除自有 SKILL
-      tags: [marketplace]
+      tags:
+        - marketplace
       security:
         - bearerAuth: []
           tenantHeader: []
@@ -559,7 +578,8 @@ paths:
         - name: skill_id
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       responses:
         "200":
           description: 已删除
@@ -573,12 +593,14 @@ paths:
       x-requirement-id: MP-CONS-015
       operationId: downloadSkill
       summary: 下载 SKILL 内容
-      tags: [marketplace]
+      tags:
+        - marketplace
       parameters:
         - name: skill_id
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       responses:
         "200":
           description: SKILL 内容
@@ -587,10 +609,14 @@ paths:
               schema:
                 type: object
                 properties:
-                  id: { type: string }
-                  name: { type: string }
-                  version: { type: string }
-                  content: { type: string }
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  version:
+                    type: string
+                  content:
+                    type: string
         "404":
           description: SKILL 不存在
       x-mate-owner: marketplace-consumer
@@ -603,7 +629,8 @@ paths:
       x-requirement-id: MP-CONS-016
       operationId: installSkill
       summary: 安装 SKILL
-      tags: [marketplace]
+      tags:
+        - marketplace
       security:
         - bearerAuth: []
           tenantHeader: []
@@ -613,7 +640,8 @@ paths:
         - name: skill_id
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       responses:
         "200":
           description: 安装成功
@@ -622,9 +650,12 @@ paths:
               schema:
                 type: object
                 properties:
-                  id: { type: string }
-                  installs: { type: integer }
-                  status: { type: string }
+                  id:
+                    type: string
+                  installs:
+                    type: integer
+                  status:
+                    type: string
         "404":
           description: SKILL 不存在
       x-mate-owner: marketplace-consumer
@@ -651,9 +682,13 @@ components:
             platform.read: Read-only access
             platform.write: Mutation access
             platform.admin: Service-to-service admin
-            platform.marketplace.read: Platform-level (cross-tenant) marketplace install list
+            platform.marketplace.read:
+              Platform-level (cross-tenant) marketplace install
+              list
             platform.marketplace.read.tenant: Tenant-scoped marketplace install list
-            platform.marketplace.write: Marketplace install / uninstall / license mutation
+            platform.marketplace.write:
+              Marketplace install / uninstall / license
+              mutation
             tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   schemas:
     Skill:
@@ -663,27 +698,51 @@ components:
         - name
         - author_tenant
       properties:
-        id: { type: string }
-        name: { type: string }
-        description: { type: string }
-        version: { type: string }
-        author_tenant: { type: string }
-        visibility: { type: string, enum: [public, private] }
-        content: { type: string }
-        installs: { type: integer }
-        created_at: { type: string }
-        is_owner: { type: boolean, description: 当前请求租户是否为作者 }
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        author_tenant:
+          type: string
+        visibility:
+          type: string
+          enum:
+            - public
+            - private
+        content:
+          type: string
+        installs:
+          type: integer
+        created_at:
+          type: string
+        is_owner:
+          type: boolean
+          description: 当前请求租户是否为作者
     SkillUpload:
       type: object
       required:
         - name
         - content
       properties:
-        name: { type: string }
-        description: { type: string }
-        version: { type: string, default: v1 }
-        visibility: { type: string, enum: [public, private], default: public }
-        content: { type: string }
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+          default: v1
+        visibility:
+          type: string
+          enum:
+            - public
+            - private
+          default: public
+        content:
+          type: string
     Error:
       type: object
       required:
@@ -706,9 +765,13 @@ components:
         message:
           type: string
         retry_after_ms:
-          type: ["integer", "null"]
+          type:
+            - integer
+            - "null"
         request_id:
-          type: ["string", "null"]
+          type:
+            - string
+            - "null"
           format: uuid
     ArtifactSummary:
       type: object
@@ -740,16 +803,22 @@ components:
             - partner
             - community
         title:
-          type: ["string", "null"]
+          type:
+            - string
+            - "null"
         tags:
           type: array
           items:
             type: string
         icon:
-          type: ["string", "null"]
+          type:
+            - string
+            - "null"
           format: uri
         installed_version:
-          type: ["string", "null"]
+          type:
+            - string
+            - "null"
     ArtifactList:
       type: object
       required:
@@ -895,7 +964,9 @@ components:
           type: string
           format: uuid
         tenant_id:
-          type: ["string", "null"]
+          type:
+            - string
+            - "null"
           format: uuid
         kind:
           type: string
@@ -924,12 +995,18 @@ components:
           type: string
           format: uuid
         installed_at:
-          type: ["string", "null"]
+          type:
+            - string
+            - "null"
           format: date-time
         install_path:
-          type: ["string", "null"]
+          type:
+            - string
+            - "null"
         failure_reason:
-          type: ["string", "null"]
+          type:
+            - string
+            - "null"
     InstallList:
       type: object
       required:
@@ -959,7 +1036,9 @@ components:
         version:
           type: string
         license_key:
-          type: ["string", "null"]
+          type:
+            - string
+            - "null"
     InstallAccepted:
       type: object
       required:
@@ -989,7 +1068,9 @@ components:
           minimum: 0
           maximum: 100
         error:
-          type: ["object", "null"]
+          type:
+            - object
+            - "null"
           required:
             - code
             - message
@@ -1013,7 +1094,9 @@ components:
         sku:
           type: string
         expires_at:
-          type: ["string", "null"]
+          type:
+            - string
+            - "null"
           format: date-time
     SubscriptionRow:
       type: object
@@ -1038,7 +1121,9 @@ components:
           type: string
           format: date-time
         expires_at:
-          type: ["string", "null"]
+          type:
+            - string
+            - "null"
           format: date-time
     SubscriptionList:
       type: object
