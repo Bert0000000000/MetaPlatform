@@ -65,6 +65,12 @@ EXCLUDE_FILES = {
     "mcp.py",
     "iceberg_rest_adapter.py",
     "dispatcher.py",
+    # 三轮 CI 实跑揭示的余量：本体/市场/深度研究/MCP 工具适配层（均为
+    # ACL 本体或外部端点适配器，边界同上）
+    "ontology_client.py",
+    "client.py",
+    "ontology_sdk.py",
+    "skill_search.py",
     "rag_tool.py",
     # Existing llmgw providers (predating TD-6 naming convention):
     # anthropic / doubao / openai / qwen — all call external LLM public
