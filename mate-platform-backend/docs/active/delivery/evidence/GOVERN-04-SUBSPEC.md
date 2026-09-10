@@ -220,6 +220,7 @@ def apply_action(
 ) -> tuple[datetime, list[str]]:
     from mate_kernel.action.engine import ActionService, SubmissionContext
     from dataclasses import replace
+
     self._ensure_schema()
     at = self.get_action_type(action_rid)
     ind = self.get_individual(target_iid)

@@ -48,25 +48,27 @@
 ```python
 class FunctionNotFound(KeyError): ...
 
+
 class FunctionResolver(Protocol):
     """把 Function.rid / source_ref 解析为可执行源码 + 语言。"""
 
     def resolve(self, function_ref: ClassRef) -> tuple[FunctionLanguage, str]:
         """返回 (language, source_code)。"""
 
+
 class InMemoryFunctionResolver:
     """GOVERN-05 默认实现：从 self._registry 拿 source_ref → 源码。
 
     registry: dict[(FunctionLanguage, source_ref), source_code]
     """
+
     def __init__(self) -> None:
         self._registry: dict[tuple[FunctionLanguage, str], str] = {}
 
     def register(self, language: FunctionLanguage, source_ref: str, source: str) -> None:
         self._registry[(language, source_ref)] = source
 
-    def resolve(self, function_ref: ClassRef) -> tuple[FunctionLanguage, str]:
-        ...
+    def resolve(self, function_ref: ClassRef) -> tuple[FunctionLanguage, str]: ...
 ```
 
 `InMemoryOntologyRepository.__init__` 增 `self._function_resolver = InMemoryFunctionResolver()`；`upsert_function(fn)` 时按 `fn.source_ref` 注入源码（`source_ref` 用 `inline://<rid>` 表示内联）。
@@ -76,7 +78,7 @@ class InMemoryFunctionResolver:
 ```python
 @dataclass(frozen=True, slots=True)
 class ApplyOutcome:
-    ... # 已存
+    ...  # 已存
     function_result: Any = None  # 新增：invoker stdout JSON 反序列化值
     return None
 ```
@@ -125,13 +127,16 @@ def _build_function_executor() -> FunctionExecutor:
     backend = os.getenv("FUNCTION_BACKEND", "memory").lower()
     if backend == "memory":
         from mate_kernel.sandbox.k8s import _SimplePythonExecutor
+
         return _SimplePythonExecutor()
     if backend == "subprocess":
         from mate_kernel.sandbox.k8s import SubprocessExecutor
+
         return SubprocessExecutor(memory_mb=256, timeout_seconds=10)
     if backend == "k8s":
         # ADR-0040 §2.5 prod L2；本批仅占位（K8s Job 提交走 SANDBOX-02 后续）
         from mate_kernel.sandbox.k8s import SubprocessExecutor
+
         return SubprocessExecutor(memory_mb=512, timeout_seconds=60)
     raise RuntimeError(f"unknown FUNCTION_BACKEND={backend!r}")
 ```
@@ -161,6 +166,7 @@ main.py on_startup 增：
 
 ```python
 from opentelemetry import trace
+
 tracer = trace.get_tracer("mate-tech-ont")
 
 # apply_action 入口
