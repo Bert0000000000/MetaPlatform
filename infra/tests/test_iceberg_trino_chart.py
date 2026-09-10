@@ -108,7 +108,7 @@ class TestTrinoChart:
         # The init command writes per-catalog properties files.
         assert "connector.name=iceberg" in coord
         assert "connector.name=paimon" in coord
-        assert "connector.name=system" in coord
+        # system catalog 已移除（Sprint5 正解：Trino 483 内建，显式声明是非法值）
 
     def test_worker_deployment_uses_coordinator_discovery(self) -> None:
         worker = (TRINO_CHART / "templates" / "worker.yaml").read_text(encoding="utf-8")
