@@ -113,7 +113,7 @@ def _register_event_listeners() -> None:  # pyright: ignore[reportUnusedFunction
             _build_tenant_predicate(ctx)
         )
 
-    setattr(_register_event_listeners, "_registered", True)  # 函数属性注入标记
+    _register_event_listeners._registered = True  # 函数属性注入标记
 
 def _build_tenant_predicate(ctx: RequestContext):
     from sqlalchemy import column, literal
