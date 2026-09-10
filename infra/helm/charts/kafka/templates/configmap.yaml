@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: { { include "kafka.fullname" . } }
-  labels: { { - include "kafka.labels" . | nindent 4 } }
+  name: {{ include "kafka.fullname" . }}
+  labels: {{- include "kafka.labels" . | nindent 4 }}
   annotations:
     policy.description: |
       Non-sensitive Kafka broker configuration. Consumed by the
@@ -11,23 +11,23 @@ metadata:
 data:
   # Topic + replication defaults (PLATFORM-EVENT-01: topics are
   # explicit, auto-create is OFF in production).
-  auto-create-topics: { { .Values.config.auto.create.topics.enable | quote } }
+  auto-create-topics: {{ .Values.config.auto.create.topics.enable | quote }}
   default-replication-factor:
-    { { .Values.config.default.replication.factor | quote } }
-  num-partitions: { { .Values.config.num.partitions | quote } }
+    {{ .Values.config.default.replication.factor | quote }}
+  num-partitions: {{ .Values.config.num.partitions | quote }}
 
   # Retention + compression.
-  log-retention-hours: { { .Values.config.log.retention.hours | quote } }
-  compression-type: { { .Values.config.compression.type | quote } }
+  log-retention-hours: {{ .Values.config.log.retention.hours | quote }}
+  compression-type: {{ .Values.config.compression.type | quote }}
 
   # Listener config (non-secret; SASL_SSL credentials live in Secret).
   inter-broker-listener-names:
-    { { .Values.config.inter.broker.listener.names | quote } }
-  advertised-listeners: { { .Values.config.advertised.listeners | quote } }
+    {{ .Values.config.inter.broker.listener.names | quote }}
+  advertised-listeners: {{ .Values.config.advertised.listeners | quote }}
   listener-security-protocol-map:
-    { { .Values.config.listener.security.protocol.map | quote } }
+    {{ .Values.config.listener.security.protocol.map | quote }}
 
   # G1: tenant isolation — topic prefix per tenant. The application
   # layer resolves full topic names from this prefix + tenant_id.
-  tenant-isolation-enabled: { { .Values.tenantIsolation.enabled | quote } }
-  tenant-topic-prefix: { { .Values.tenantIsolation.topicPrefix | quote } }
+  tenant-isolation-enabled: {{ .Values.tenantIsolation.enabled | quote }}
+  tenant-topic-prefix: {{ .Values.tenantIsolation.topicPrefix | quote }}
