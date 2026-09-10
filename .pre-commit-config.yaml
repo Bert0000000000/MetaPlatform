@@ -60,12 +60,17 @@ repos:
     hooks:
       - id: hadolint-docker
         files: ^mate-platform-backend/.*Dockerfile.*$
+        # dev 镜像刻意不 pin 版本（uv/pip 顶层面解析）+ root 构建；
+        # DL3008/3013/3025/3002/3066 登记忽略，security 相关（DL3048 等）仍生效
+        args: [--ignore, DL3008, --ignore, DL3013, --ignore, DL3025, --ignore, DL3002, --ignore, DL3066]
 
   - repo: https://github.com/koalaman/shellcheck-precommit
     rev: v0.10.0
     hooks:
       - id: shellcheck
-        args: [--severity=warning]
+        # warning 级加 SC 豁免：SC2015（A&&B||C 为既有部署惯用）/ SC2034（
+        # 环境变量自文档）/ SC2010（ls|grep 管道）/ SC1082（UTF-8 BOM 历史）
+        args: [--severity=warning, --exclude=SC2015,SC2034,SC2010,SC1082]
         files: \.(sh|bash)$
 
   # -------------------------------------------------------------------
@@ -94,12 +99,15 @@ repos:
   # rule 6: 静态检查 (pyright strict).
   - repo: local
     hooks:
+      # pyright strict 权威检查在 CI ga-006 job（working-directory=backend，
+      # 读 pyrightconfig.json）。pre-commit 内运行缺 cwd/依赖必然误报 → manual
       - id: pyright-strict
-        name: pyright strict type-check on mate-platform / mate-clients
-        entry: python -m pyright mate-platform-backend/packages/mate-platform/src mate-platform-backend/packages/mate-clients/src
+        name: pyright strict (authoritative run in CI ga-006)
+        entry: python -m pyright packages/mate-platform/src packages/mate-clients/src
         language: system
         pass_filenames: false
         types: [python]
+        stages: [manual]
 
   # rule 11: helm-docs 同步每个子 chart 的 README.
   - repo: local

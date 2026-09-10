@@ -49,7 +49,11 @@ BARE_TEXT_DESC = "bare text('...') in src/"
 #                     "SELECT 1" ping (no tenant-scoped table access).
 #   db.py           - legacy health probe (db_health SELECT 1); lives in
 #                     the deprecated mate-tech-iam package.
-EXCLUDE_FILES = {"db_filter.py", "migrations.py", "pg.py", "db.py"}
+#   order_review.py - pg_advisory_xact_lock(:lock_key) 参数化 advisory lock
+#                     （无租户表访问；ORM 无对应表达）。
+EXCLUDE_FILES = {
+    "db_filter.py", "migrations.py", "pg.py", "db.py", "order_review.py",
+}
 
 
 def strip_comment(line: str) -> str:
