@@ -3,6 +3,14 @@
 
 import { apiClient } from '@/api/client';
 
+/** EXP-02：派生属性规格（fn ∈ count/sum/avg + over_link + 对端属性完整 rid）。 */
+export interface KernelDerivedSpec {
+  fn: 'count' | 'sum' | 'avg' | string;
+  over_link: string;
+  /** sum/avg 必填（对端类型属性完整 rid）；count 可为 null。 */
+  field: string | null;
+}
+
 export interface KernelProperty {
   rid: string;
   type_id: string;
@@ -10,6 +18,16 @@ export interface KernelProperty {
   primary_key: boolean;
   title: string;
   format: string;
+  // ── EXP-02 扩展（可选，增量；后端 PropertyDTO 已支持） ──
+  description?: string;
+  /** format=struct 时的嵌套字段定义。 */
+  struct_fields?: KernelProperty[];
+  array?: boolean;
+  /** 多值归约：first / latest；仅 array 时有意义。 */
+  reducer?: string | null;
+  derived?: KernelDerivedSpec | null;
+  /** 共享属性（同一 rid 被多个 ObjectType 引用）。 */
+  shared?: boolean;
 }
 
 export interface KernelObjectType {
@@ -18,6 +36,12 @@ export interface KernelObjectType {
   properties: KernelProperty[];
   interfaces: string[];
   display_name: string;
+  marking?: string[];
+  parent_class?: string;
+  description?: string;
+  status?: string;
+  type_group?: string;
+  render_hints?: Array<[string, string]>;
 }
 
 export interface KernelActionType {
@@ -38,6 +62,9 @@ export interface KernelLinkType {
   cardinality: string;
   directionality: string;
   link_properties: KernelProperty[];
+  src_display_name?: string;
+  dst_display_name?: string;
+  description?: string;
 }
 
 export interface KernelIndividual {
@@ -101,6 +128,20 @@ export async function listFunctions(): Promise<KernelFunction[]> {
   return list<KernelFunction>('/functions');
 }
 
+/** EXP-02：值类型注册表条目（GET /value-types）。type_id → format 一致性由注册表保证。 */
+export interface KernelValueType {
+  type_id: string;
+  format: string;
+  description: string;
+  /** 结构化附加参数（vector dims / decimal precision 等），元数据级。 */
+  params?: Record<string, unknown>;
+}
+
+/** 值类型注册表（Property.type_id 引用目标；format 决定 struct_fields 等联动）。 */
+export async function listValueTypes(): Promise<KernelValueType[]> {
+  return list<KernelValueType>('/value-types');
+}
+
 // 写操作：与后端 PropertyDTO / ObjectTypeDTO 对齐（v2_kernel/api.py）。
 
 export interface KernelObjectTypeCreate {
@@ -109,6 +150,17 @@ export interface KernelObjectTypeCreate {
   primary_key: string[];
   properties: KernelProperty[];
   interfaces: string[];
+  // ── EXP-02/EXP-04 扩展（可选，增量；POST /object-types 整体 upsert） ──
+  marking?: string[];
+  /** 父类型 rid（浅层级声明，限 1 层）；空串 = 无。 */
+  parent_class?: string;
+  description?: string;
+  /** active / draft / deprecated。 */
+  status?: string;
+  type_group?: string;
+  render_hints?: Array<[string, string]>;
+  /** G33：破坏性变更二段确认（须等于现有类型 display_name；后端 ObjectTypeDTO 已有该字段）。 */
+  confirm_name?: string;
 }
 
 /** 增量追加单个 Property 到已存在的 ObjectType（POST /object-types/{rid}/properties）。 */
@@ -410,4 +462,427 @@ export function slugAndVersionOfProperty(rid: string): { slug: string; version: 
   const m = last.match(/^v\d+$/);
   if (!m) return { slug: tail.join('.'), version: '' };
   return { slug: tail.slice(0, -1).join('.'), version: last };
+}
+
+// ── EXP-01/03（ONT-UI-01 对象浏览器）：层级树 / searchAround / 语义检索 ──
+
+/** 类型层级树节点（GET /object-types/hierarchy）。 */
+export interface TypeHierarchyNode {
+  rid: string;
+  display_name: string;
+  parent_class: string;
+  children: TypeHierarchyNode[];
+}
+
+/** 层级树（EXP-01）。 */
+export async function getTypeHierarchy(): Promise<TypeHierarchyNode[]> {
+  return list<TypeHierarchyNode>('/object-types/hierarchy');
+}
+
+/** searchAround 分组条目（GET /individuals/{rid}/around）。 */
+export interface SearchAroundGroup {
+  link_type_rid: string;
+  /** 方向性显示名（出边 = src_display_name，入边 = dst_display_name）。 */
+  link_display: string;
+  direction: 'out' | 'in' | string;
+  peers: Array<Record<string, unknown> & { __rid__?: string }>;
+}
+
+/** 一跳关系遍历（EXP-03）。 */
+export async function searchAround(rid: string, limit = 100): Promise<SearchAroundGroup[]> {
+  const resp = await apiClient.get(
+    v2(`/individuals/${encodeURIComponent(rid)}/around`), { params: { limit } },
+  );
+  return resp.data as SearchAroundGroup[];
+}
+
+/** 单个实例详情（GET /individuals/{rid}）。 */
+export async function getIndividual(rid: string): Promise<KernelIndividual> {
+  return getOne<KernelIndividual>(`/individuals/${encodeURIComponent(rid)}`);
+}
+
+/** 语义检索结果卡片（POST /object-search，MP-SAL-02 OAG）。 */
+export interface SemanticSearchCard {
+  individual_rid: string;
+  class_rid: string;
+  score: number;
+  matched: Array<{ property_rid: string; value_text: string; score: number }>;
+  card_text?: string;
+}
+
+/** 对象语义检索（OAG → 对象卡片，带 rid 可追溯）。 */
+export async function searchObjectsSemantic(payload: {
+  text: string;
+  class_rid?: string;
+  top_k?: number;
+}): Promise<SemanticSearchCard[]> {
+  const resp = await apiClient.post(v2('/object-search'), payload);
+  const data = resp.data as { data?: SemanticSearchCard[]; results?: SemanticSearchCard[] } | SemanticSearchCard[];
+  if (Array.isArray(data)) return data;
+  const wrapped = data as { data?: SemanticSearchCard[]; results?: SemanticSearchCard[] };
+  return wrapped.data ?? wrapped.results ?? [];
+}
+
+/** props 键（完整 Property rid）→ slug 短键（与后端 individual_to_row 同规则）。 */
+export function propSlug(rid: string): string {
+  const parts = rid.split('.');
+  return parts[3] ?? rid;
+}
+
+// ── UI-02/03/04/05：Action 表单 / 治理面 / Interface / 时序 ──
+
+/** 提交 edit-set 提案（AI 路径，强制 HITL）。 */
+export async function proposeEditSet(
+  actionRid: string, body: {
+    parameters: Record<string, unknown>; target_iid?: string;
+    edits?: Array<Record<string, unknown>>; impact_summary?: string;
+  },
+): Promise<{ proposal_id: string; status: string; requires_hitl: boolean }> {
+  const resp = await apiClient.post(
+    v2(`/action-types/${encodeURIComponent(actionRid)}/propose-edit-set`), body);
+  const data = resp.data as { data?: unknown } | Record<string, unknown>;
+  return (data && typeof data === 'object' && 'data' in data
+    ? (data as { data: { proposal_id: string; status: string; requires_hitl: boolean } }).data
+    : data) as { proposal_id: string; status: string; requires_hitl: boolean };
+}
+
+/** 人工路径「预览即确认」edit-set（即时 proposal + 单事务 + 审计）。 */
+export async function applyEditSet(
+  actionRid: string, body: {
+    parameters: Record<string, unknown>; target_iid?: string;
+    edits?: Array<Record<string, unknown>>; impact_summary?: string;
+  },
+): Promise<Record<string, unknown>> {
+  const resp = await apiClient.post(
+    v2(`/action-types/${encodeURIComponent(actionRid)}/apply-edit-set`), body);
+  return resp.data as Record<string, unknown>;
+}
+
+/** GOV-16：类型使用量。 */
+export interface UsageRow {
+  class_rid: string;
+  reads: number | null;
+  writes: number | null;
+  active_days: number | null;
+}
+
+export async function getUsageSummary(days = 30): Promise<UsageRow[]> {
+  const resp = await apiClient.get(v2('/usage/types'), { params: { days } });
+  return resp.data as UsageRow[];
+}
+
+/** UI-04：执行历史（audit 行）。 */
+export interface ActionAuditRow {
+  audit_id: string;
+  tenant_id: string;
+  proposal_id: string;
+  action_rid: string;
+  target_iid: string;
+  actor_id: string;
+  result: Record<string, unknown>;
+  created_at: string;
+}
+
+export async function listActionAudit(limit = 100, actionRid?: string): Promise<ActionAuditRow[]> {
+  const resp = await apiClient.get(v2('/action-audit'), {
+    params: { limit, action_rid: actionRid },
+  });
+  return resp.data as ActionAuditRow[];
+}
+
+/** GOV-18：反模式 lint。 */
+export interface LintFinding {
+  pattern: string;
+  subject: string;
+  detail: string;
+  hint: string;
+}
+
+export async function lintAntiPatterns(): Promise<LintFinding[]> {
+  const resp = await apiClient.get(v2('/lint/anti-patterns'));
+  return resp.data as LintFinding[];
+}
+
+/** GOV-17：生命周期处置。 */
+export async function applyLifecycle(
+  classRid: string, action: 'snooze' | 'deprecate' | 'delete',
+): Promise<Record<string, unknown>> {
+  const resp = await apiClient.post(
+    v2(`/object-types/${encodeURIComponent(classRid)}/lifecycle`),
+    { action });
+  return resp.data as Record<string, unknown>;
+}
+
+/** UI-03：Interface 清单。 */
+export interface KernelInterface {
+  rid: string;
+  properties: KernelProperty[];
+  required_links: string[];
+  polymorphic_action_constraints: string[];
+}
+
+export async function listInterfaces(): Promise<KernelInterface[]> {
+  return list<KernelInterface>('/interfaces');
+}
+
+export async function listInterfaceImplementations(rid: string): Promise<string[]> {
+  return list<string>(`/interfaces/${encodeURIComponent(rid)}/implementations`);
+}
+
+/** GOV-19：时序窗口查询。 */
+export interface TimeseriesPoint {
+  ts: string;
+  value: number;
+  attrs?: Record<string, unknown>;
+}
+
+export async function queryTimeseries(
+  seriesRid: string, start?: string, end?: string,
+): Promise<TimeseriesPoint[]> {
+  const resp = await apiClient.get(
+    v2(`/timeseries/${encodeURIComponent(seriesRid)}`),
+    { params: { start, end } },
+  );
+  return resp.data as TimeseriesPoint[];
+}
+
+// ── G41：类型版本操作（branch / diff / rollback）+ Export/Import ──
+// 后端契约（v2_kernel/api.py）：
+//   POST /object-types/{rid}/branch    body: {new_rid, note?}（new_rid 必须是本租户 obj rid）
+//   GET  /object-types/{rid}/diff?against=<同族另一版本>  → {old_rid,new_rid,added,removed,changed,has_changes}
+//   POST /object-types/{rid}/rollback  body: {from_rid}
+//   GET  /object-types/{rid}/export    → {format, rid, content}（jsonld）/ turtle 文本
+//   POST /object-types/import          body 即 export 的 JSON（同 rid upsert）
+
+/** G41：以当前定义分支出新版本类型（返回分支后的类型）。 */
+export async function branchObjectType(
+  rid: string, newRid: string, note = '',
+): Promise<KernelObjectType> {
+  const resp = await apiClient.post(
+    v2(`/object-types/${encodeURIComponent(rid)}/branch`),
+    { new_rid: newRid, note });
+  return resp.data as KernelObjectType;
+}
+
+/** G41：rid 与 againstRid（同族另一版本）的属性级 diff。 */
+export async function diffObjectTypes(
+  rid: string, againstRid: string,
+): Promise<Record<string, unknown>> {
+  const resp = await apiClient.get(
+    v2(`/object-types/${encodeURIComponent(rid)}/diff`),
+    { params: { against: againstRid } },
+  );
+  return resp.data as Record<string, unknown>;
+}
+
+/** G41：把 rid 的定义回滚为 fromRid 版本的定义（返回回滚后的类型）。 */
+export async function rollbackObjectType(
+  rid: string, fromRid: string,
+): Promise<KernelObjectType> {
+  const resp = await apiClient.post(
+    v2(`/object-types/${encodeURIComponent(rid)}/rollback`),
+    { from_rid: fromRid });
+  return resp.data as KernelObjectType;
+}
+
+/** G41：导出类型定义（默认 jsonld；返回体整体即 import 的入参）。 */
+export async function exportObjectType(
+  rid: string, format: 'jsonld' | 'turtle' = 'jsonld',
+): Promise<Record<string, unknown>> {
+  const resp = await apiClient.get(
+    v2(`/object-types/${encodeURIComponent(rid)}/export`),
+    { params: { format } },
+  );
+  return resp.data as Record<string, unknown>;
+}
+
+/** G41：导入 export 的 JSON 回灌类型（同 rid upsert 语义，返回导入后的类型）。 */
+export async function importObjectTypes(
+  payload: Record<string, unknown>,
+): Promise<KernelObjectType> {
+  const resp = await apiClient.post(v2('/object-types/import'), payload);
+  return resp.data as KernelObjectType;
+}
+
+// ── G33：WIP 暂存（schema 变更暂存区，他人不可见）+ 409 破坏性门禁 ──
+
+/** G33：409 detail 的破坏性确认形态（POST /object-types 与 WIP apply 共用；detail 也可能是普通 string）。 */
+export interface DestructiveConfirmDetail {
+  error: 'destructive_confirm_required' | string;
+  changes: string[];
+  confirm_with: string;
+  hint?: string;
+}
+
+/** 从 axios 错误中提取 409 破坏性确认 detail；非该形态（含 detail 为 string）返回 null。 */
+export function extractDestructiveConfirm(e: unknown): DestructiveConfirmDetail | null {
+  const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+  if (!detail || typeof detail !== 'object' || Array.isArray(detail)) return null;
+  const d = detail as Record<string, unknown>;
+  if (d.error !== 'destructive_confirm_required') return null;
+  if (!Array.isArray(d.changes) || typeof d.confirm_with !== 'string') return null;
+  return {
+    error: 'destructive_confirm_required',
+    changes: d.changes.map(String),
+    confirm_with: d.confirm_with,
+    hint: typeof d.hint === 'string' ? d.hint : undefined,
+  };
+}
+
+/** 从 axios 错误取 FastAPI detail 文本（detail 可能是 string 或 dict —— dict 时取 message/error，兜底 JSON 串）。 */
+export function errDetailText(e: unknown, fallback: string): string {
+  const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+  if (typeof detail === 'string' && detail) return detail;
+  if (detail && typeof detail === 'object') {
+    const d = detail as Record<string, unknown>;
+    const msg = d.message ?? d.error;
+    if (typeof msg === 'string' && msg) return msg;
+    try {
+      return JSON.stringify(detail);
+    } catch {
+      // fall through
+    }
+  }
+  if (e instanceof Error && e.message) return e.message;
+  return fallback;
+}
+
+/** GET /object-types/wip 行（payload 即 ObjectTypeDTO 形态）。 */
+export interface SchemaWipEntry {
+  rid: string;
+  author: string;
+  payload: Record<string, unknown>;
+  created_at?: string;
+}
+
+/** WIP 暂存清单（G33，他人不可见）。 */
+export async function listSchemaWip(): Promise<SchemaWipEntry[]> {
+  return list<SchemaWipEntry>('/object-types/wip');
+}
+
+/** 应用 WIP → 正式表（走与直接 upsert 相同的破坏性门禁；二段确认 confirm_name 走 query 参数）。 */
+export async function applySchemaWip(rid: string, confirmName = ''): Promise<KernelObjectType> {
+  const resp = await apiClient.post(
+    v2(`/object-types/wip/${encodeURIComponent(rid)}/apply`), {},
+    { params: confirmName ? { confirm_name: confirmName } : undefined },
+  );
+  return resp.data as KernelObjectType;
+}
+
+/** 丢弃 WIP。 */
+export async function discardSchemaWip(rid: string): Promise<{ rid: string; discarded: boolean }> {
+  const resp = await apiClient.delete(v2(`/object-types/wip/${encodeURIComponent(rid)}`));
+  return resp.data as { rid: string; discarded: boolean };
+}
+
+// ── SEC-12：行/列级安全策略 ──
+
+/** GET /security-policies 行（SELECT * 列；value 为 JSONB 反序列化值，markings 为数组）。 */
+export interface KernelSecurityPolicy {
+  rid: string;
+  kind: 'row' | 'column' | string;
+  class_rid?: string;
+  property_rid?: string;
+  field?: string;
+  op?: string;
+  value?: unknown;
+  markings?: string[];
+}
+
+/** POST /security-policies 入参（row：class_rid/field/op/value + markings；column：property_rid + markings）。 */
+export interface SecurityPolicyCreate {
+  rid?: string;
+  kind: 'row' | 'column';
+  class_rid?: string;
+  property_rid?: string;
+  field?: string;
+  op?: string;
+  value?: unknown;
+  markings: string[];
+}
+
+export async function listSecurityPolicies(): Promise<KernelSecurityPolicy[]> {
+  return list<KernelSecurityPolicy>('/security-policies');
+}
+
+export async function upsertSecurityPolicy(
+  payload: SecurityPolicyCreate,
+): Promise<Record<string, unknown>> {
+  const resp = await apiClient.post(v2('/security-policies'), payload);
+  return resp.data as Record<string, unknown>;
+}
+
+export async function deleteSecurityPolicy(rid: string): Promise<{ rid: string; deleted: boolean }> {
+  const resp = await apiClient.delete(v2(`/security-policies/${encodeURIComponent(rid)}`));
+  return resp.data as { rid: string; deleted: boolean };
+}
+
+// ── DATA-14/15：背挂数据源声明 + 同步 + 物化 ──
+
+/** GET /object-types/{rid}/datasources 行（DB 列名 table_name / ts_column / last_synced_at）。 */
+export interface KernelBackingDatasource {
+  rid: string;
+  class_rid: string;
+  name: string;
+  kind: string;
+  dsn_env: string;
+  table_name: string;
+  pk_column: string;
+  field_mapping: Record<string, string>;
+  priority: number;
+  ts_column?: string;
+  last_synced_at?: string | null;
+  updated_at?: string;
+}
+
+/** POST /object-types/{rid}/datasources 声明入参（DTO 字段 table；class_rid 以路径 rid 为准）。 */
+export interface BackingDatasourceCreate {
+  class_rid: string;
+  name: string;
+  kind?: string;
+  dsn_env?: string;
+  table: string;
+  pk_column: string;
+  field_mapping: Record<string, string>;
+  priority?: number;
+}
+
+export async function listBackingDatasources(
+  classRid: string,
+): Promise<KernelBackingDatasource[]> {
+  return list<KernelBackingDatasource>(
+    `/object-types/${encodeURIComponent(classRid)}/datasources`);
+}
+
+export async function upsertBackingDatasource(
+  classRid: string, payload: BackingDatasourceCreate,
+): Promise<Record<string, unknown>> {
+  const resp = await apiClient.post(
+    v2(`/object-types/${encodeURIComponent(classRid)}/datasources`), payload);
+  return resp.data as Record<string, unknown>;
+}
+
+/** 批量/增量同步（incremental=true 按 ts_column > 水位）；返回 {源名: 同步行数}。 */
+export async function syncBackingDatasources(
+  classRid: string, incremental = false,
+): Promise<Record<string, number>> {
+  const resp = await apiClient.post(
+    v2(`/object-types/${encodeURIComponent(classRid)}/datasources/sync`), {},
+    { params: incremental ? { incremental: true } : undefined },
+  );
+  return resp.data as Record<string, number>;
+}
+
+/** DATA-15：物化行集（对象最新状态回流读端点）。 */
+export interface MaterializationResult {
+  class_rid: string;
+  count: number;
+  rows: Array<Record<string, unknown>>;
+  schema: Record<string, Record<string, unknown>>;
+  generated_at?: string;
+}
+
+export async function getMaterialization(classRid: string): Promise<MaterializationResult> {
+  return getOne<MaterializationResult>(
+    `/object-types/${encodeURIComponent(classRid)}/materialization`);
 }

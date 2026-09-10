@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -28,7 +28,6 @@ from mate_kernel.ontology import (
     PropertyFormat,
     Version,
 )
-
 
 # ─────────────────────────── identity (12 tests) ───────────────────────────
 
@@ -61,7 +60,7 @@ class TestVersion:
             rid="ont.acme.ver.order:v1.v1",
             class_ref=self._cr(),
             parent_rid=None,
-            created_at=datetime(2026, 8, 6, tzinfo=timezone.utc),
+            created_at=datetime(2026, 8, 6, tzinfo=UTC),
             author="alice",
         )
         assert v.parent_rid is None
@@ -72,7 +71,7 @@ class TestVersion:
             rid="ont.acme.ver.order:v1.v2",
             class_ref=self._cr(),
             parent_rid="ont.acme.ver.order:v1.v1",
-            created_at=datetime(2026, 8, 7, tzinfo=timezone.utc),
+            created_at=datetime(2026, 8, 7, tzinfo=UTC),
             author="bob",
             change_set=("add property status",),
         )
@@ -85,7 +84,7 @@ class TestVersion:
                 rid="bad-rid",
                 class_ref=self._cr(),
                 parent_rid=None,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
                 author="alice",
             )
 
@@ -300,7 +299,7 @@ class TestIndividual:
         return ClassRef("ont.acme.cls.order_id")
 
     def _make(self) -> Individual:
-        now = datetime(2026, 8, 6, tzinfo=timezone.utc)
+        now = datetime(2026, 8, 6, tzinfo=UTC)
         return Individual(
             rid="ont.acme.ind.order.10086",
             class_rid=ClassRef("ont.acme.cls.order"),
@@ -323,8 +322,8 @@ class TestIndividual:
                 class_rid=ClassRef("ont.acme.cls.order"),
                 props=(),
                 primary_key="10086",
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
                 tenant_id="acme",
             )
 
@@ -335,8 +334,8 @@ class TestIndividual:
                 class_rid=ClassRef("ont.acme.cls.order"),
                 props=(),
                 primary_key="",
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
                 tenant_id="acme",
             )
 
@@ -366,7 +365,7 @@ class TestIndividual:
 
 class TestLinkInstance:
     def _make(self) -> LinkInstance:
-        now = datetime(2026, 8, 6, tzinfo=timezone.utc)
+        now = datetime(2026, 8, 6, tzinfo=UTC)
         return LinkInstance(
             rid="ont.acme.lnk.has_items.order10086.item42",
             link_type_rid=ClassRef("ont.acme.cls.has_items"),
@@ -390,7 +389,7 @@ class TestLinkInstance:
                 src="ont.acme.ind.x.1",
                 dst="ont.acme.ind.x.1",
                 props=(),
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
                 tenant_id="acme",
             )
 
@@ -402,7 +401,7 @@ class TestLinkInstance:
                 src="a",
                 dst="b",
                 props=(),
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
                 tenant_id="acme",
             )
 

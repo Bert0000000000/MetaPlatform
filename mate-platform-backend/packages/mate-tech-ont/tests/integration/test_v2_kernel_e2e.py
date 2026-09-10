@@ -15,17 +15,15 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
-
 from fastapi.testclient import TestClient
 
-from mate_tech_ont.main import app, on_startup, on_shutdown
 from mate_kernel.ontology.identity import ClassRef
 from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
-from mate_kernel.ontology.types.object_type import ObjectType
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat
+from mate_tech_ont.main import app
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -192,7 +190,7 @@ class TestObjectSetEvaluateE2E:
             ],
         }
         c.post("/api/v1/ont/v2/object-types", json=ot)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         repo = app.state.kernel_repo
         cls = ClassRef(rid="ont.acme.obj.po.v1")
         for i, q in enumerate([5, 10, 15, 20, 25]):
@@ -253,7 +251,7 @@ class TestActionApplyE2E:
             on=(ClassRef(rid="ont.acme.obj.po.v1"),),
         ))
         # apply 语义（ACTION-03）：目标 individual 必须存在
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         from mate_kernel.ontology.instances import Individual
         repo.create_individual(Individual(
             rid="ont.acme.ind.po.0", class_rid=ClassRef(rid="ont.acme.obj.po.v1"),
@@ -487,7 +485,7 @@ class TestObjectSetQueryE2E:
             ],
         }
         c.post("/api/v1/ont/v2/object-types", json=ot)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         repo = app.state.kernel_repo
         cls = ClassRef(rid=self.CLS)
         for i, q in enumerate([5, 10, 15]):

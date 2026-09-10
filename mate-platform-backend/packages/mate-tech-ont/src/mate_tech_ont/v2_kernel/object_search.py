@@ -14,7 +14,8 @@ import os
 import re
 from typing import Any, Protocol
 
-__all__ = ["Embedder", "HashEmbedder", "build_card", "build_env_embedder", "cosine"]
+__all__ = ["Embedder", "HashEmbedder", "LlmgwServiceEmbedder",
+           "build_card", "build_env_embedder", "cosine"]
 
 
 class Embedder(Protocol):
@@ -65,9 +66,84 @@ class HashEmbedder:
         return vec
 
 
+class LlmgwServiceEmbedder:
+    """B1：llmgw 服务级 embedder（平台 LLM Gateway 唯一通道，D5 决策）。
+
+    认证：Keycloak client_credentials（SERVICE_CLIENT_ID/SECRET）→ Bearer；
+    token 缓存并在过期前 60s 自动刷新。请求体 input 为**数组**（llmgw 契约
+    与 OpenAI 兼容客户端的差异点），携带 tenant_id。
+    维度：首响应后缓存（.dim），需与 ONT_VECTOR_DIM 对齐（建列用）。
+    """
+
+    def __init__(self) -> None:
+        import httpx
+
+        self._url = os.environ.get(
+            "LLMGW_EMBED_URL",
+            "http://mate-tech-llmgw:8008/api/v1/llmgw/embeddings")
+        self._model = os.environ.get("LLMGW_EMBED_MODEL",
+                                     "text-embedding-3-small")
+        self._tenant = os.environ.get("LLMGW_EMBED_TENANT", "tenant-default")
+        kc = os.environ.get("KEYCLOAK_URL", "http://keycloak:8080").rstrip("/")
+        self._token_url = (
+            kc + "/realms/metaplatform/protocol/openid-connect/token")
+        self._client_id = os.environ.get("SERVICE_CLIENT_ID",
+                                         "metaplatform-backend")
+        self._secret = os.environ.get("SERVICE_CLIENT_SECRET", "")
+        self._client = httpx.Client(timeout=30.0)
+        self._token: str | None = None
+        self._token_exp: float = 0.0
+        self._dim_value: int | None = None
+
+    @property
+    def dim(self) -> int:
+        return self._dim_value or int(os.environ.get("OPENAI_EMBED_DIM", "384"))
+
+    def _bearer(self) -> str:
+        import time
+
+        if self._token and time.time() < self._token_exp:
+            return self._token
+        resp = self._client.post(
+            self._token_url,
+            data={"grant_type": "client_credentials",
+                  "client_id": self._client_id,
+                  "client_secret": self._secret})
+        resp.raise_for_status()
+        body = resp.json()
+        import time as _t
+
+        self._token = body["access_token"]
+        self._token_exp = _t.time() + float(body.get("expires_in", 300)) - 60.0
+        return self._token
+
+    def embed(self, text: str) -> list[float]:
+        resp = self._client.post(
+            self._url,
+            headers={"Authorization": f"Bearer {self._bearer()}"},
+            json={"input": [text or " "], "model": self._model,
+                  "tenant_id": self._tenant})
+        resp.raise_for_status()
+        body = resp.json()
+        dims = body.get("dimensions")
+        if isinstance(dims, int):
+            self._dim_value = dims
+        vec = [float(x) for x in body["data"][0]["embedding"]]
+        self._dim_value = len(vec)
+        return vec
+
+    def close(self) -> None:
+        self._client.close()
+
+
 def build_env_embedder() -> Embedder | None:
-    """优先级：ONT_EMBEDDER=hash（离线确定性，无需 key）> OPENAI_API_KEY 兼容客户端 > None。"""
-    if os.environ.get("ONT_EMBEDDER", "").lower() == "hash":
+    """优先级：ONT_EMBEDDER=llmgw（平台通道，D5）> hash（离线确定性）> OPENAI_API_KEY 兼容客户端 > None。"""
+    mode = os.environ.get("ONT_EMBEDDER", "").lower()
+    if mode == "llmgw":
+        if not os.environ.get("SERVICE_CLIENT_SECRET"):
+            return None
+        return LlmgwServiceEmbedder()
+    if mode == "hash":
         return HashEmbedder()
     if not os.environ.get("OPENAI_API_KEY"):
         return None

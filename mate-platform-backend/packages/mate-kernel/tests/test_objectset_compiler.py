@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
-from mate_kernel.ontology.identity.class_ref import ClassRef
-from mate_kernel.ontology.instances.individual import Individual
-from mate_kernel.ontology.query.object_set import ObjectSet
 from mate_kernel.objectset.compiler import (
     CompiledFilter,
     FilterCompiler,
@@ -17,6 +14,9 @@ from mate_kernel.objectset.compiler import (
     SQLObjectSetExecutor,
     individual_to_row,
 )
+from mate_kernel.ontology.identity.class_ref import ClassRef
+from mate_kernel.ontology.instances.individual import Individual
+from mate_kernel.ontology.query.object_set import ObjectSet
 
 
 def _cls(slug: str = "order") -> ClassRef:
@@ -36,8 +36,8 @@ def _ind(pk: str, props: dict[str, object]) -> Individual:
             (_prop(name), value) for name, value in props.items()  # type: ignore[arg-type]
         ),
         primary_key=pk,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
         tenant_id="acme",
     )
 
@@ -204,7 +204,7 @@ class TestInMemoryExecutor:
             Individual(
                 rid="ont.acme.ind.order.1", class_rid=cls_order,
                 props=((cls_order, "1"),), primary_key="1",
-                created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
                 tenant_id="acme",
             )
         ]
@@ -212,7 +212,7 @@ class TestInMemoryExecutor:
             Individual(
                 rid="ont.acme.ind.invoice.1", class_rid=cls_inv,
                 props=((cls_inv, "1"),), primary_key="1",
-                created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
                 tenant_id="acme",
             )
         ]
@@ -319,8 +319,8 @@ class TestRepoEvaluateFilterRegression:
 
     def _seed(self):
         from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
-        from mate_kernel.ontology.types.property_ import Property, PropertyFormat
         from mate_kernel.ontology.types.object_type import ObjectType
+        from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 
         repo = InMemoryOntologyRepository()
         cls = _cls("po")
@@ -338,7 +338,7 @@ class TestRepoEvaluateFilterRegression:
             rid=cls, primary_key=(prop_pk.rid,),
             properties=(prop_pk, prop_qty), display_name="PO",
         ))
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for i, q in enumerate([5, 10, 15, 20, 25]):
             repo.create_individual(Individual(
                 rid=f"ont.acme.ind.po.{i}", class_rid=cls,

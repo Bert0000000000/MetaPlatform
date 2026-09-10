@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -33,7 +33,6 @@ from mate_kernel.ontology.serde import (
     rid_split,
     to_dict,
 )
-
 
 # ──────────────────────── rid codec (8 tests) ────────────────────────
 
@@ -97,7 +96,7 @@ class TestRidCodec:
 
 
 def _ts() -> datetime:
-    return datetime(2026, 8, 6, 12, 0, 0, tzinfo=timezone.utc)
+    return datetime(2026, 8, 6, 12, 0, 0, tzinfo=UTC)
 
 
 class TestSerdeRoundTrip:

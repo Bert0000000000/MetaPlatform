@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import runpy
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -59,7 +59,6 @@ from mate_kernel.sandbox.k8s import (
     ResourceLimits,
 )
 
-
 # ─────────────────── 1) ObjectSet filter 真消费 ───────────────────
 
 
@@ -83,7 +82,7 @@ class TestObjectSetFilterE2E:
             rid=cls, primary_key=(prop_pk.rid,),
             properties=(prop_pk, prop_qty), display_name="PO",
         ))
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for i, q in enumerate([5, 10, 15, 20, 25]):
             repo.create_individual(Individual(
                 rid=f"ont.acme.ind.po.{i}", class_rid=cls,

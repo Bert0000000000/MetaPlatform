@@ -62,7 +62,7 @@ def test_create_node_method_emits_deprecation() -> None:
 
     r = Neo4jGraphRepository()
 
-    async def _fake_session(self):  # noqa: ANN001
+    async def _fake_session(self):
         raise RuntimeError("no driver in test; only the wrapper should run")
 
     # Replace the async method; the deprecation wrapper is the FIRST line.

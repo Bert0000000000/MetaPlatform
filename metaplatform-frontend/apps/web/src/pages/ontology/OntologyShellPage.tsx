@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { Hexagon, Link2, Zap, Database, PlayCircle, GitBranch, Plus } from 'lucide-react';
+import { Hexagon, Link2, Zap, Database, PlayCircle, GitBranch, Plus, Boxes, Layers, ShieldCheck } from 'lucide-react';
 import { Button } from '@douyinfe/semi-ui';
 import { AIAssistantTrigger, AIAssistantWorkspace, PageRoot, SubTabs, usePageAssistant } from '@mate/shared';
 import OntologyModelingPage from './OntologyModelingPage';
 import OntologyDatacenterPage from './OntologyDatacenterPage';
 import OntologyActionPage from './OntologyActionPage';
 import OntologyGraphPage from './OntologyGraphPage';
+import ObjectDataPage from './ObjectDataPage';
+import GovernancePage from './GovernancePage';
+import InterfaceListPage from './InterfaceListPage';
 import RelationshipTypeListPage from './relationship-types/RelationshipTypeListPage';
 import ActionTypeListPage from './actions/ActionTypeListPage';
 import { useOntologyAssistant, type ProposalFromStream } from './hooks/useOntologyAssistant';
@@ -14,11 +17,14 @@ import ProposalConfirmDrawer from './components/ProposalConfirmDrawer';
 
 const TABS = [
   { key: 'concept', label: '概念模型', icon: Hexagon, path: '/ontology' },
+  { key: 'objects', label: '对象数据', icon: Boxes, path: '/ontology?tab=objects' },
   { key: 'relationship-types', label: '关系类型', icon: Link2, path: '/ontology?tab=relationship-types' },
   { key: 'action-types', label: '动作类型', icon: Zap, path: '/ontology?tab=action-types' },
   { key: 'datacenter', label: '数据中心', icon: Database, path: '/ontology?tab=datacenter' },
   { key: 'action', label: 'Action 编排', icon: PlayCircle, path: '/ontology?tab=action' },
   { key: 'graph', label: '知识图谱', icon: GitBranch, path: '/ontology?tab=graph' },
+  { key: 'interfaces', label: '接口', icon: Layers, path: '/ontology?tab=interfaces' },
+  { key: 'governance', label: '治理', icon: ShieldCheck, path: '/ontology?tab=governance' },
 ];
 
 const ALIASES: Record<string, string> = {
@@ -37,11 +43,14 @@ const ALIASES: Record<string, string> = {
  */
 const TAB_TITLES: Record<string, string> = {
   concept: '概念模型',
+  objects: '对象数据',
   'relationship-types': '关系模型',
   'action-types': 'Action 模型',
   datacenter: '数据中心',
   action: 'Action 编排',
   graph: '知识图谱',
+  interfaces: 'Interface 契约',
+  governance: '治理',
 };
 
 function resolveTab(raw: string | null): string {
@@ -180,6 +189,7 @@ export default function OntologyShellPage() {
   return (
     <PageRoot header={stickyHeader}>
       <AIAssistantWorkspace assistant={activeAssistant}>
+        {activeTab === 'objects' && <ObjectDataPage />}
         {activeTab === 'concept' && (
           <OntologyModelingPage
             createOpen={createOpen}
@@ -190,6 +200,8 @@ export default function OntologyShellPage() {
         {activeTab === 'datacenter' && <OntologyDatacenterPage initialSubTab={subTab} />}
         {activeTab === 'action' && <OntologyActionPage />}
         {activeTab === 'graph' && <OntologyGraphPage />}
+        {activeTab === 'interfaces' && <InterfaceListPage />}
+        {activeTab === 'governance' && <GovernancePage />}
         {activeTab === 'relationship-types' && <RelationshipTypeListPage />}
         {activeTab === 'action-types' && <ActionTypeListPage />}
       </AIAssistantWorkspace>

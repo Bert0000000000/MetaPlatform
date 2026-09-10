@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
-import pytest
+from datetime import UTC, datetime
 
 from mate_kernel.ontology import ClassRef, Property, PropertyFormat, Version
 from mate_kernel.ontology.persistence import (
@@ -30,7 +28,7 @@ class TestVersionRow:
             rid="ont.acme.ver.cls-order.v1",
             class_ref=ClassRef("ont.acme.cls.order"),
             parent_rid=None,
-            created_at=datetime(2026, 8, 6, tzinfo=timezone.utc),
+            created_at=datetime(2026, 8, 6, tzinfo=UTC),
             author="alice",
             change_set=("init",),
         )

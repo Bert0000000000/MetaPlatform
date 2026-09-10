@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC
+
 import pytest
 
 from mate_kernel.ontology.tenant import (
@@ -100,11 +102,12 @@ class TestAssertSameTenant:
 class TestRepositoryIntegration:
     def test_individual_tenant_must_match(self) -> None:
         """Repository 写入 / 读取必须携带 ctx；跨租户访问禁止（13 硬规则 #3）。"""
-        from datetime import datetime, timezone
+        from datetime import datetime
+
         from mate_kernel.ontology import (
             ClassRef,
-            InMemoryOntologyRepository,
             Individual,
+            InMemoryOntologyRepository,
         )
 
         repo = InMemoryOntologyRepository()
@@ -116,8 +119,8 @@ class TestRepositoryIntegration:
                 class_rid=ClassRef("ont.acme.obj.order"),
                 props=(),
                 primary_key="1",
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
                 tenant_id="acme",
                 marking=(),
             )

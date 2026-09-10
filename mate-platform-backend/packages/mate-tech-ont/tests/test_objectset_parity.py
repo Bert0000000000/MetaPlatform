@@ -18,12 +18,17 @@ for _p in (_K, _O):
         sys.path.insert(0, _p)
 
 from mate_kernel.objectset.ir import (  # noqa: E402
-    Aggregation, Condition, MetricSpec, ObjectSetQuery, QueryOp, TraversalStep,
+    Aggregation,
+    Condition,
+    MetricSpec,
+    ObjectSetQuery,
+    QueryOp,
+    TraversalStep,
 )
 from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
+from mate_kernel.ontology.instances.link_instance import LinkInstance  # noqa: E402
 from mate_kernel.ontology.types.object_type import ObjectType  # noqa: E402
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat  # noqa: E402
-from mate_kernel.ontology.instances.link_instance import LinkInstance  # noqa: E402
 
 PG_DSN = os.environ.get(
     "PARITY_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"
@@ -153,7 +158,10 @@ class TestParity:
         with repo.tenant_scope(T):
             pg = repo.execute_object_query(q)
         mem = _inmemory(repo, q)
-        key = lambda rows: {r["item-cat"]: (r["total"], r["n"]) for r in rows}
+
+        def key(rows):
+            return {r["item-cat"]: (r["total"], r["n"]) for r in rows}
+
         assert key(pg.rows) == key(mem.rows) == {
             "a": (30, 2), "b": (5, 1), "c": (7, 1)}
 

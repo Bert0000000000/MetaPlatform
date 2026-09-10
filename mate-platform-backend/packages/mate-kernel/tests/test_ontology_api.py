@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -15,8 +15,8 @@ from mate_kernel.ontology import (
     Directionality,
     Function,
     FunctionLanguage,
-    InMemoryOntologyRepository,
     Individual,
+    InMemoryOntologyRepository,
     Interface,
     LinkInstance,
     LinkType,
@@ -152,8 +152,8 @@ class TestInstancesCRUD:
             class_rid=ClassRef("ont.acme.obj.order"),
             props=((ClassRef("ont.acme.prop.string.order_id"), "10086"),),
             primary_key="10086",
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
             tenant_id="acme",
             marking=(),
         )
@@ -167,8 +167,8 @@ class TestInstancesCRUD:
             class_rid=ClassRef("ont.acme.obj.order"),
             props=(),
             primary_key="1",
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
             tenant_id="acme",
             marking=(),
         )
@@ -186,7 +186,7 @@ class TestInstancesCRUD:
             src="ont.acme.ind.user.u1",
             dst="ont.acme.ind.order.o1",
             props=(),
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             tenant_id="acme",
             marking=(),
         )
@@ -235,8 +235,8 @@ class TestQueryAndApply:
                 class_rid=ClassRef("ont.acme.obj.order"),
                 props=(),
                 primary_key=str(i),
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
                 tenant_id="acme",
                 marking=(),
             )
@@ -268,8 +268,8 @@ class TestQueryAndApply:
             class_rid=ClassRef("ont.acme.obj.order"),
             props=(),
             primary_key="1",
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
             tenant_id="acme",
         ))
         now, se = repo.apply_action(

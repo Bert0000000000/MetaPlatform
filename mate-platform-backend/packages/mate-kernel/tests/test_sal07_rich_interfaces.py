@@ -10,7 +10,8 @@ if _K not in sys.path:
 
 from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
 from mate_kernel.ontology.types.interface import (  # noqa: E402
-    Interface, implements_interface,
+    Interface,
+    implements_interface,
 )
 from mate_kernel.ontology.types.object_type import ObjectType  # noqa: E402
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat  # noqa: E402

@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
-
 from mate_kernel.agent.ontology import (
     OntologyAgent,
     OntologyAgentRequest,
-    OntologyQueryPlanner,
     SimpleQueryPlanner,
 )
 from mate_kernel.manager.protocol import Manager, ManagerContext

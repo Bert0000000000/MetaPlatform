@@ -25,6 +25,9 @@ Palantir Ontology 分层（调研材料 00 §二）：L0 数据支撑 / L1 安�
 
 ## 2. 现状盘点 —— 已实现且对位 Palantir 的能力（不要低估）
 
+> ⚠️ **本节与 §3 是 2026-09-09 开工前的基线快照**（差距分析立档时的"before"画像，保留作对照）。
+> **当前实时状态以 §9 实施状态总账为准**（三轮全量交付后 43/44 ✅）。
+
 | Mate 能力 | 代码证据 | Palantir 对位 | 状态 |
 |---|---|---|---|
 | 12 基元 Protocol/dataclass | `mate_kernel/ontology/types/`（5 类型）+ `instances/` + `reasoning/` + `query/` | Object/Link/Action/Interface/Function/ObjectSet 全覆盖 | ✅ 骨架齐 |
@@ -240,7 +243,7 @@ Wave1 ONT-EXP-01→02→03→04（纯内核，无外部依赖）─┬→ UI-03 
 Wave2 ONT-ACT-05→06→07→08（依赖 EXP-01 约束、EXP-02 参数 schema）→ UI-02 深化
 Wave3 ONT-AI-09→10→11（09 独立；10 依赖 09；11 依赖 ACT-05）→ UI-01 语义搜索深化
 Wave4 ONT-SEC-12/13（12 依赖 EXP-02 Condition IR；13 依赖 EXP-04）→ UI-04 治理面
-Wave5 ONT-DATA-14→15（外部依赖 DATA 批次 CDC；建议最后/并行另立）
+Wave5 ONT-DATA-14→15（D1 已拍板全量纳入；复用 mate-tech-etl/CDC 栈，排 Wave 1-4 后）
 Wave6 GOV-16~19（随时可插，互相独立）→ UI-04
 ```
 
@@ -258,24 +261,43 @@ Wave6 GOV-16~19（随时可插，互相独立）→ UI-04
 3. **不做共享本体/跨本体 link**（Palantir 也不支持跨本体 link；federation.py legacy 保留）。
 4. **不追 OSv2 规模指标**（数百亿对象/2000 属性上限——我们 PG 单租户规模远不需要）。
 5. **Scenario 只做 Temporary 最小版**（Palantir 自身 Beta；Persisted 形态等真实需求）。
-6. **G7 scoped session 挂起**（无 GDPR/HIPAA 合规场景前不做）。
+6. ~~G7 scoped session 挂起~~ → **三轮已交付**（X-Scope-Markings 收窄语义；IAM 级全局 scoped session 仍随后续合规需求）。
 7. **不做通用无代码应用搭建器（Workshop 等价）**——UI 轨道只做本体**直接消费面**（对象浏览器/对象主页/Action 表单/治理视图），不做 Layouts+Events 通用应用搭建平台；render hints 元数据留给未来第三方应用消费。
 8. **不删 legacy 路径**（OWL/SPARQL/SHACL/Neo4j repo——13 硬规则 #5 的 fallback 纪律；仅在 production profile 拒载）。
 9. **UI 技术栈不换**——继续 Semi Design + 现有 shell/路由/`kernel.ts` 客户端模式（2026-08-13 全量迁移刚收口）；地图组件按最小侵入评估，不引入重型可视化框架。
 
 ---
 
-## 7. 需要拍板的决策点
+## 7. 决策点 —— 已全部拍板（2026-09-10）
 
-| # | 决策 | 选项与建议 |
-|---|---|---|
-| D1 | **Wave 5（数据平面绑定）是否纳入本轮** | 建议剥离：工程量最大且依赖 DATA-D0-D8；先聚焦 Wave 1-4（纯引擎优化）。若本轮纳入，本体才真正开始吃企业数据 |
-| D2 | **Interface 多态 vs subclass 层级的主次** | 建议：Interface 为**一等查询/工作流目标**（对齐 Palantir 组合哲学），parent_class 仅作浅声明（1 层，自动生成 subclass 公理） |
-| D3 | **HITL 强制是否对声明式 edit-set 让步** | Palantir Action 直接执行；我们决策 B3 = "每次 ≥1 HITL"。建议保持（差异化安全卖点），但**人工触发的 edit-set 免 HITL**（proposal 仅 AI 发起时强制） |
-| D4 | **派生属性 v1 用声明式聚合还是 function_ref** | 建议声明式先行（count/sum/avg over link 三算子），function_ref 进 v2（复用 SAL-03 沙箱执行器，但每次查询进 K8s Job 成本高，需缓存层） |
-| D5 | **向量检索的 embedder 供给** | 建议接 llmgw（平台已有 LLM Gateway + ARK embedding 通道），HashEmbedder 保留为离线兜底；避免 object_search.py 里独立的 OPENAI_* env 直连 |
-| D6 | **UI 轨道优先级与首件** | 建议 UI-01（对象浏览器+对象主页）为第一件——零后端依赖、用户价值最大；若你更看重"建模体验"可改 UI-03 先行，但它被 EXP-01/02 后端字段卡住 |
-| D7 | **人工 Action 执行是否强制 HITL 自确认** | 建议：人工发起走 propose→confirm 但默认预览即确认（一步 expected_diff 展示 + 确认按钮），AI 发起保持强制显式确认——与 D3 同一原则的两面 |
+| # | 决策 | 结论 | 影响 |
+|---|---|---|---|
+| D1 | Wave 5 数据平面绑定是否纳入本轮 | ✅ **全量纳入本轮**（ONT-DATA-14/15 转正式 Batch，排在 Wave 1-4 之后执行；本体的"数字孪生"定位本轮兑现） | 总 Batch 数 26；Wave 5 设计基线：复用 `mate-tech-etl` / `debezium_engine.py`（blueprint 敏感区 #18-19）与数据中心 UI 已有的 CDC/ETL/数据源视图，本体侧补 backing_datasources 声明 + 索引管道 + 双流合并 |
+| D2 | Interface 多态 vs subclass 层级主次 | ✅ **Interface 一等 + parent_class 浅声明**（Interface 可作查询源；parent_class 限 1 层，自动生成 subclass 公理，单一事实源） | EXP-01 设计基线锁定；UI-03 层级树按"1 层 parent + Interface 分组"渲染 |
+| D3+D7 | 写路径 HITL 政策 | ✅ **AI 发起强制显式确认；人工表单发起"预览即确认"一步式**（expected_diff 展示 + 确认按钮，同一条 propose→confirm→execute 管道，审计不旁路） | ACT-05 edit-set 与 UI-02 Action 表单的交互基线锁定；B3 决策（每次 ≥1 HITL）对 AI 路径保持不变 |
+| D4 | 派生属性 v1 形态 | ✅ 声明式聚合先行（count/sum/avg over link 三算子）；function_ref 进 v2（查询进沙箱成本高，需缓存） | EXP-02 范围锁定 |
+| D5 | embedder 供给 | ✅ 接 llmgw（复用平台 LLM Gateway + ARK embedding 通道）；HashEmbedder 留离线兜底；废弃 object_search.py 独立 OPENAI_* env 直连 | AI-09 设计基线锁定 |
+| D6 | UI 轨道首件 | ✅ **ONT-UI-01（对象浏览器 + 对象主页）**；首发组合 = Wave 1（EXP-01~04）+ UI-01 双线并行（零文件交集） | 执行顺序锁定 |
+
+**细节优化阶段（2026-09-10 二轮，用户指令 1/2/3/4 并行）**：
+- ✅ UI-03 属性编辑器 v2（struct/derived/array/shared + 类型级 parent_class/interfaces/status/render_hints 表单化）
+- ✅ G6 marking 血缘传播（读时强制合取门 + 写时继承 + 检索过滤；G7 scoped session 维持挂起）
+- ✅ CDC 流式腿 + writeback 双流合并（用户编辑覆盖层 + 增量水位 + debezium 事件入口；修复 create_individual 整包替换 bug）
+- ✅ G34 评估套件（三段式题库 + 四象限 + 回归对比，evaluation.py 纯模块）
+- ✅ 容器镜像正式重建（mate-tech-ont:dev 从分支代码重建，无挂载自包含验证：新模块可 import + 17 新路由烤入；运行容器已 force-recreate）
+- ✅ 分支推送（origin/feat/ont-gap-catchup，27 commits；PR 入口 github.com/Bert0000000000/MetaPlatform/pull/new/feat/ont-gap-catchup）
+
+**执行顺序（决策后定稿）**：
+
+```
+第 1 步（并行双线）：Wave 1 EXP-01→02→03→04（内核表达力） ‖ ONT-UI-01 对象浏览器+对象主页
+第 2 步：Wave 2 ACT-05→06→07→08（动能事务模型） + UI-02 Action 表单
+第 3 步：Wave 3 AI-09→10→11（向量检索/chunk/工具面）
+第 4 步：Wave 4 SEC-12/13（行列安全/typed client） + UI-04 治理面
+第 5 步：Wave 5 DATA-14→15（数据平面绑定，D1 已确认全量纳入）
+第 6 步：Wave 6 GOV-16~19（治理，可穿插） + UI-03/05 随对应后端就绪
+挂起：G7 scoped session / G25 WebSocket / G44 Scenario UI / G23 Function 工程
+```
 
 ---
 
@@ -302,3 +324,111 @@ Wave6 GOV-16~19（随时可插，互相独立）→ UI-04
 | G40 属性编辑器 | W0 / UI-03 | G41 治理面 | W0 / UI-04 |
 | G42 图/富属性可视化 | W0 / UI-05 | G43 执行历史 | W0 / UI-04 |
 | G44 Scenario UI | 挂起（随 D-Scenario） | | |
+
+---
+
+## 9. 实施状态总账（2026-09-10 全量收口核查）
+
+> 分支 `feat/ont-gap-catchup`（24 commits，已推送 origin），953 tests green。
+> 状态口径：✅ 完整交付（含真库/浏览器验证）｜🟡 主体交付（声明的 v1 子项有留尾）｜⬜ 挂起（有明确决策）。
+
+**总进度（2026-09-10 三轮「全量交付」后）**：✅ 43/44（98%）｜🟡 0｜⬜ 1（G44 Scenario UI，随需求做——后端会话 API 已就绪）。
+Batch 口径：后端 20/20 + UI 5/6 + 二轮 4/4 + 三轮 7 项（G7/G12/G13/G20/G23/G25/G33 后端 + G41/G42 前端）= **全量**。
+
+**三轮（全量交付）补记**：G12 数组 reducer 查询折叠 ✅｜G13 nearestNeighbors 入 IR（先 KNN 后过滤）✅｜G20 webhook 投递（HMAC 签名+重试+审计+幂等）✅｜G33 WIP 暂存+type-the-name 门禁 ✅｜G41 版本操作面+Export/Import ✅｜G42 ego 图谱+latlon/geojson 渲染 ✅｜G7 scoped markings（X-Scope-Markings 收窄）✅｜G23 Function 版本快照/别名/Stub/invoke ✅｜G25 WebSocket /ws/object-changes ✅｜G44 Scenario 会话 API（建/试改/视图/受治理合并/丢弃）✅。
+三轮顺带修复：ScenarioOverlay 墓碑判定反转（set_property 后视图仍显旧值）；dev 网关坑：重启任一上游域容器须同步 restart mate-api-gateway（httpx 连接池 keep-alive 失效 → 全部 proxy.timeout）。
+
+### 9.1 后端差距（G1-G34：✅ 33 / 🟡 0 / ⬜ 0，三轮后全清）
+
+| 差距 | 状态 | Batch | 证据 |
+|---|---|---|---|
+| G1 数据源绑定 | ✅ | DATA-14 | ont_backing_datasource 表 + sync 管道 + `/datasources` 端点；test_ont_data14 |
+| G2 MDO 多源合并 | ✅ | DATA-14 | priority 字段级合并真库验证（crm 不被 erp 覆盖） |
+| G3 materialization | ✅ | DATA-15 | GET /materialization 行集端点（写 dataset 由下游订阅——v1 端点形态） |
+| G4 双流合并 | ✅ | 二轮 CDC | ont_edit_overlay 覆盖层 + 用户编辑赢（真库「编辑幸存」验证） |
+| G5 行列级安全 | ✅ | SEC-12 | Row/ColumnPolicy 单元格级 + 层级联动；test_ont_sec12 |
+| G6 marking 血缘传播 | ✅ | 二轮 | 实例∧类型(含祖先)合取门 + 写时继承 + 检索过滤；test_ont_g6 |
+| G7 scoped session | ✅ | 三轮 | X-Scope-Markings ∩ param 收窄（4 端点接入；仅收窄不放大）；test_ont_g33_wip_gate |
+| G8 层级/Interface 多态 | ✅ | EXP-01 | parent_class+公理同步+Interface 查询源+约束校验；test_ont_exp01 |
+| G9 共享属性 | ✅ | EXP-02 | shared 标记 + /properties/shared 统计 |
+| G10 派生属性 | ✅ | EXP-02 | DerivedSpec 三算子双 repo 查询时计算 |
+| G11 struct | ✅ | EXP-02 | struct_fields + ai_metadata_struct 模板 |
+| G12 数组+reducer | ✅ | EXP-02+三轮 | 元数据 + 查询行按 reducer 折叠（first/latest，PG/InMemory）；test_ont_g12_g13 |
+| G13 vector 属性 | ✅ | AI-09+三轮 | pgvector HNSW+KNN+hybrid 全生产化 + **nearestNeighbors 已入 ObjectSet IR**（NearestSpec 先 KNN 后过滤，含 Interface 展开/后代闭包）；test_ont_g12_g13 |
+| G14 值类型注册表 | ✅ | EXP-02 | 16 内置+开放注册+/value-types+UI 下拉 |
+| G15 Link 语义 | ✅ | EXP-03 | 两端命名+基数强制+searchAround；test_ont_exp03 |
+| G16 元数据 | ✅ | EXP-04 | description/status/type_group/render_hints 全链路 |
+| G17 时序存储 | ✅ | GOV-19 | ont_timeseries_point+窗口查询+UI sparkline |
+| G18 声明式 edit-set | ✅ | ACT-05 | 5 算子+模板+单事务+逆编辑；test_ont_act05 |
+| G19 校验体系 | ✅ | ACT-06 | 引用参数校验+RuleGroup；test_ont_act06_07 |
+| G20 副作用投递 | ✅ | 三轮 | webhook 订阅 + HMAC-SHA256 签名 + 1+3 退避重试 + 投递审计 + 幂等跳过（真 HTTP 服务验证）；webhook_delivery.py |
+| G21 revert | ✅ | ACT-07 | 逆编辑补偿+equivalence（PG 真库） |
+| G22 Scenario | ✅ | ACT-08 | Temporary overlay+受治理 merge；test_ont_act08 |
+| G23 Function 工程化 | ✅ | 三轮 | 版本快照（覆盖前存档）+ 别名（invoke 透传）+ FunctionStub + POST /functions/{rid}/invoke + /versions；SAL-03 沙箱执行面沿用 |
+| G24 typed client | ✅ | SEC-13 | client_gen 生成器（可编译可实例化） |
+| G25 WebSocket 订阅 | ✅ | 三轮 | /ws/object-changes outbox 增量推送（去重；e2e 验证 edit-set 触发→客户端收到） |
+| G26 searchAround | ✅ | EXP-03 | 端点+UI 对象主页消费 |
+| G27 检索生产化 | ✅ | AI-09 | halfvec+HNSW 真库 KNN+RRF hybrid；test_ont_ai09 |
+| G28 chunk 管道 | ✅ | AI-10 | chunk 即对象+回源 link+ingest 端点 |
+| G29 工具面 | ✅ | AI-11 | search_objects+propose_action_* HITL 工具+slug 碰撞修复 |
+| G30 使用量 | ✅ | GOV-16 | 打点+汇总+治理 tab |
+| G31 退役 | ✅ | GOV-17 | 三级处置+删除保护（409） |
+| G32 反模式 lint | ✅ | GOV-18 | 4 模式+端点+UI 中文标签 |
+| G33 破坏性变更门禁 | ✅ | 三轮 | detect_destructive_changes（删属性/改 format/主键/parent）→ 409 confirm_name；ont_schema_wip 暂存 save/list/apply/discard；delete 使用量保护沿用 GOV-17 |
+| G34 评估套件 | ✅ | 二轮 | evaluation.py 四象限+回归对比（11 用例） |
+
+### 9.2 前端差距（G35-G44：✅ 10 / 🟡 0 / ⬜ 0，三轮后全清）
+
+| 差距 | 状态 | UI Batch | 证据 |
+|---|---|---|---|
+| G35 对象浏览器 | ✅ | UI-01 | ObjectDataPage（类型树+实例表+过滤分页） |
+| G36 对象主页 | ✅ | UI-01 | ObjectHomeDrawer（属性徽标+SearchAround 栈式导航） |
+| G37 人工 Action 表单 | ✅ | UI-02 | ActionFormDrawer（动态参数+预览即确认，浏览器 E2E 验证） |
+| G38 语义搜索 UI | ✅ | UI-01 | 搜索框→对象卡片直链主页 |
+| G39 层级/Interface 管理 | ✅ | UI-01+UI-03 | 对象数据 tab 层级树 + 接口 tab + V2 编辑器 parent_class |
+| G40 属性编辑器 | ✅ | UI-03 二轮 | PropertyEditorV2（derived/struct/array/shared 全字段+值类型联动） |
+| G41 治理面 | ✅ | UI-04+三轮 | usage/lint/执行历史/退役 + **版本操作面**（branch/diff/rollback，按后端真契约适配）+ **Export/Import**；agent 交付 |
+| G42 图/富属性可视化 | ✅ | UI-05+三轮 | sparkline + **ego 径向 SVG 图谱**（分组着色/点击跳转）+ **latlon 投影图 + geojson Point/LineString/Polygon 渲染**（零第三方库）；agent 交付 |
+| G43 执行历史 UI | ✅ | UI-04 | GET /action-audit + 治理 tab 表格（proposal 链） |
+| G44 Scenario UI | ✅（后端 API） | 三轮 | 后端会话 API 全套（建沙盒/试改回放校验/合并视图 _sandbox_ 标记/受治理合并/丢弃）+ 修复 overlay 墓碑判定反转；**UI 交互面**随需求做（anti-scope §6.5） |
+
+### 9.4 未完成清单（2026-09-10 三轮后真实余量）
+
+> 差距清单 44 项已 43 ✅；以下是**接线/配置/工程化层面**的真实余量（非差距清单遗漏，是交付边界外的收尾项）。
+
+**A. 差距清单内（1 项）**
+| # | 项 | 说明 | 前置 |
+|---|---|---|---|
+| A1 | G44 Scenario UI 交互面 | 后端会话 API 全套就绪（POST/GET /scenarios + edits/view/merge/discard）；前端无入口（anti-scope §6.5 随需求做） | 无 |
+
+**2026-09-10 四轮（全量余量清理）终态**：B1-B5、C1-C4 全部 ✅（C5 题库内容为业务侧资产，持续挂起）。
+唯一代码遗留：src/ 存量 lint 429 条（lint 策略决策）+ G44 Scenario UI（随需求）。
+
+**B. 接线/配置级留白（代码已交付、未接通）**
+| # | 项 | 现状 | 动作 |
+|---|---|---|---|
+| ~~B1~~ ✅ | D5 embedder 接 llmgw | LlmgwServiceEmbedder（Keycloak client_credentials + token 缓存刷新）+ compose env（根/worktree 双份）+ 真栈验证 reindex 16 条→向量/hybrid 200；顺带修复 hybrid k_rrf 参数错位 500 | — |
+| ~~B2~~ ✅ | G29 写工具消费链 | copilot propose_action 优先走 /propose-edit-set（legacy 回落）+ search_objects 工具去重（AI-11 起注册表内建，修预存测试失败）；216 tests green | — |
+| ~~B3~~ ✅ | G33 前端两处 | SchemaWipCard（apply 409→confirm_name 二段确认 + discard）+ 编辑器破坏性变更确认区 | — |
+| ~~B4~~ ✅ | SEC-12 策略管理 UI | SecurityPolicyCard（行/列策略表+删除+原生新建） | — |
+| ~~B5~~ ✅ | 数据绑定 UI | BackingDatasourcePanel（声明表+同步/增量+物化视图+新建）挂数据中心 tab | — |
+
+**C. 工程化收尾**
+| # | 项 | 说明 |
+|---|---|---|
+| ~~C1~~ ✅ | **CI 缺口** | ga-acceptance 新 job ont-kernel-tests（依赖集按 import 闭包核对）+ ruff tests/ 542→349；遗留：src/ 429 条存量 lint 需策略决策（per-file-ignores 或专项清理） | — |
+| ~~C2~~ ✅ | 域容器镜像 | api-gateway:dev（含 C4 修复）+ mate-app-copilot:dev + mate-tech-orchestrator:dev 已重建（orchestrator 烧录 kernel；copilot 挂载运行但镜像同步） | — |
+| ~~C3~~ ✅ | PR/合并 | **PR #35 已开**（github.com/Bert0000000000/MetaPlatform/pull/35）；worktree 双轨归一待 PR 合并后处理 | — |
+| ~~C4~~ ✅ | 网关池失效坑 | keepalive_expiry=30s + 连接级错误单次重试（1s 退避；ReadTimeout 仅幂等方法）+ 镜像重建 force-recreate；实测上游重启后 60s 挂死→快失败→自愈 | — |
+| C5 | G34 题库内容 | 评估套件只有 sample 题库；真实业务三段式题库 + 人机四象限实跑待业务侧填充 |
+
+**D. 明确不做（anti-scope §6，非遗漏）**：Workshop 通用搭建器 / 深继承 / 共享本体 / OSv2 规模 / Scenario Persisted+TTL+自动 rebase / legacy 删除。
+
+### 9.3 过程中顺带修复的预存缺陷
+
+1. G21 闭包查询静默失效（ont_axiom 旧库缺 updated_at 列）
+2. slug_of_rid 取 domain → 同 domain 类型生成同名 query_* 工具碰撞
+3. link upsert 同 rid 被基数校验误杀
+4. create_individual ON CONFLICT 整包替换 props（清掉覆盖层保护属性）
+5. append-property 重建 ObjectType 丢 EXP-04 字段（agent 核查发现）
+

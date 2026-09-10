@@ -8,12 +8,11 @@
 from __future__ import annotations
 
 import pytest
-
 from fastapi.testclient import TestClient
 
 from mate_kernel.ontology.identity import ClassRef
-from mate_tech_ont.main import app
 from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
+from mate_tech_ont.main import app
 from mate_tech_ont.v2_kernel.seed import TENANT, seed_demo
 
 

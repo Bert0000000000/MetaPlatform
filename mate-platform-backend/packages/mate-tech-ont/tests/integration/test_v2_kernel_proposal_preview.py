@@ -13,13 +13,12 @@ InMemory repo + FastAPI TestClient。不依赖 PG —— 在 dev 环境跑得起
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
 
 import pytest
 
 from mate_kernel.action.engine import ProposalStatus
 from mate_kernel.ontology.identity import ClassRef
-from mate_kernel.ontology.instances import Individual, LinkInstance
+from mate_kernel.ontology.instances import Individual
 from mate_kernel.ontology.types import (
     ObjectType,
     Property,
@@ -29,8 +28,8 @@ from mate_kernel.ontology.types import (
 
 @pytest.fixture(scope="module")
 def app():
-    from mate_tech_ont.main import app
     from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
+    from mate_tech_ont.main import app
 
     # 若 main 已挂载（PG / seed），先看一眼 repo；否则装个干净的 InMemory
     repo = getattr(app.state, "kernel_repo", None) or InMemoryOntologyRepository()
@@ -45,7 +44,10 @@ def client(app, monkeypatch):
 
     from mate_platform.auth import middleware as auth_mw
     from mate_platform.tenancy.context import (
-        AuthMethod, RequestContext, TenantId, UserId,
+        AuthMethod,
+        RequestContext,
+        TenantId,
+        UserId,
     )
 
     async def fake_dispatch(self, request, call_next):
@@ -78,7 +80,7 @@ def _ot(rid: str, display_name: str = "", extra_props: tuple[Property, ...] = ()
         type_id="string", nullable=False, primary_key=True,
         title="id", format=PropertyFormat.STRING,
     )
-    props = (pk_prop,) + tuple(extra_props)
+    props = (pk_prop, *extra_props)
     return ObjectType(
         rid=ClassRef(rid),
         primary_key=(pk_prop.rid,),
@@ -206,7 +208,6 @@ def test_create_instance_preview_with_class_not_found(client, app) -> None:
     _seed_pair_repo(repo)
 
     # 直接走 action_service 构造一个 class_rid 不存在的 proposal
-    from mate_kernel.action.engine import ProposalStatus
     prop = repo._action_service.propose(
         action_rid="ont.acme.obj.nope.v1",  # class_rid（已不存在）
         parameters={
@@ -478,7 +479,6 @@ def test_unknown_proposal_returns_404(client, app) -> None:
 
 def test_action_kind_preview_passes_through(client, app) -> None:
     """kind=action → preview 仅透传 + 提示走 /apply。"""
-    from mate_kernel.action.engine import ProposalStatus
     repo = app.state.kernel_repo
     _seed_pair_repo(repo)
     # 先建一个 ActionType 让 propose_action 通过（rid 用 act 命名空间）

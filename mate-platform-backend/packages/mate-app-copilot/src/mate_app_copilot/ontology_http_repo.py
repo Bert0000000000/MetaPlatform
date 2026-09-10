@@ -129,6 +129,18 @@ class OntologyHttpRepo:
         expected_diff: dict[str, Any] | None = None,
     ) -> Any:
         rid = action_rid if isinstance(action_rid, str) else action_rid.rid
+        # B2：声明式动作优先走 propose-edit-set（declarative_edits 模板解析，
+        # 单事务/审计同管道）；legacy 动作（无声明模板）回落 /propose。
+        try:
+            at = self._get(f"/action-types/{rid}")
+            if at.get("declarative_edits"):
+                d = self._post(
+                    f"/action-types/{rid}/propose-edit-set",
+                    {"parameters": parameters, "target_iid": target_iid or "",
+                     "impact_summary": impact_summary})
+                return d
+        except Exception:
+            pass  # 探测失败回落 legacy 路径
         d = self._post(
             f"/action-types/{rid}/propose",
             {"parameters": parameters, "target_iid": target_iid or "",

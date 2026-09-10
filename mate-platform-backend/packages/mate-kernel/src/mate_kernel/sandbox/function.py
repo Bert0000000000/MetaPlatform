@@ -14,6 +14,7 @@ L3（MicroVM 第三方）。
 
 from __future__ import annotations
 
+import functools
 import json
 import os
 import signal
@@ -156,8 +157,16 @@ def run_function(
             "PYTHONUNBUFFERED": "1",
             "TMPDIR": tmp,
         }
-        # POSIX 限制生效；Windows 上 subprocess 退化为 timeout-only
-        preexec_fn = _set_limits if sys.platform != "win32" else None  # type: ignore[arg-type]
+        # POSIX 限制生效；Windows 上 subprocess 退化为 timeout-only。
+        # preexec_fn 在子进程内以**无参**调用 —— _set_limits(cpu, mem) 必须
+        # 经 partial 捕获参数（旧版直接传函数引用 → POSIX 上必抛
+        # TypeError("missing 2 required positional arguments")，沙箱限制从未
+        # 生效且 4 个 sandbox 测试在 Linux CI 全挂 —— 本地 Windows 因
+        # preexec_fn=None 而侥幸通过）。
+        preexec_fn = (
+            functools.partial(_set_limits, limits.cpu_seconds, limits.memory_mb)
+            if sys.platform != "win32" else None  # type: ignore[arg-type]
+        )
 
         try:
             proc = subprocess.run(

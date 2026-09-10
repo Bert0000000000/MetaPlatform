@@ -23,3 +23,7 @@ class ActionType:
     # 面向用户的展示元数据（对称于 ObjectType.display_name）；空串 = 未设置
     title: str = ""
     description: str = ""
+    # ACT-05（D3/D7 拍板 2026-09-10）：声明式编辑模板（Palantir action rules）。
+    # 非空时 apply 走 edit-set 单事务路径（占位符 $target/$param.<name>/$now），
+    # 为空时走 legacy function_ref 回写。模板字段见 action/edit_set.py EditOp。
+    declarative_edits: tuple[dict, ...] = ()

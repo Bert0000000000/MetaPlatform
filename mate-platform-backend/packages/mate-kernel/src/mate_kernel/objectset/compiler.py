@@ -214,13 +214,28 @@ class InMemoryObjectSetExecutor:
     def __init__(self, source: list[Individual]) -> None:
         self.source = source
 
-    def execute(self, plan: ObjectSet) -> list[Individual]:
+    def execute(
+        self, plan: ObjectSet, extra_classes: "frozenset[str] | None" = None,
+    ) -> list[Individual]:
+        """执行 ObjectSet。
+
+        extra_classes（EXP-01）：在 plan.class_rid 之外额外命中的类集合 ——
+        repo 层用于 Interface 多态源展开与 subclass 后代闭包（G21 同语义）。
+        None = 精确类匹配（legacy 行为）。
+        """
         compiler = FilterCompiler()
         compiled = compiler.compile(plan.filter_expr)
         ev = FilterEvaluator()
+        allowed = (
+            None if extra_classes is None
+            else frozenset({plan.class_rid.rid, *extra_classes})
+        )
         out: list[Individual] = []
         for ind in self.source:
-            if ind.class_rid.rid != plan.class_rid.rid:
+            if allowed is not None:
+                if ind.class_rid.rid not in allowed:
+                    continue
+            elif ind.class_rid.rid != plan.class_rid.rid:
                 continue
             row = individual_to_row(ind)
             if not ev.evaluate(compiled, row):

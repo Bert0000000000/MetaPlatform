@@ -5,19 +5,22 @@ import {
   Hexagon, Search, Plus, Columns3,
   Link as LinkIcon, ArrowRight, Zap, GitBranch, GitMerge, AlertTriangle,
 } from 'lucide-react';
-import { FormDrawer, Field, TextInput } from '@mate/shared';
 import {
   listObjectTypes, listActionTypes, listLinkTypes,
-  createObjectType, appendObjectTypeProperty,
+  listValueTypes, listInterfaces,
+  createObjectType,
   getObjectType,
   precheckObjectTypes, mergeObjectTypes,
   domainOfObjectType, slugAndVersionOfObjectType, slugAndVersionOfProperty,
+  errDetailText, extractDestructiveConfirm,
   type KernelObjectType, type KernelActionType, type KernelLinkType,
-  type ObjectTypeCandidate,
+  type KernelValueType, type KernelInterface, type KernelObjectTypeCreate,
+  type ObjectTypeCandidate, type DestructiveConfirmDetail,
 } from '@/api/ont/kernel';
 import { getTenantId } from '@/utils/auth';
 import { actionDisplayName } from './actions/ActionTypeListPage';
 import OntologyMergeDrawer from './components/OntologyMergeDrawer';
+import ObjectTypeEditorV2Drawer, { type ObjectTypeEditorPrefill } from './components/ObjectTypeEditorV2Drawer';
 
 
 // 领域码 → 中文（rid 形如 ont.<tenant>.obj.<domain>.<slug>.v1）
@@ -67,26 +70,25 @@ export default function OntologyModelingPage({
     const [objectTypes, setObjectTypes] = useState<KernelObjectType[]>([]);
   const [actionTypes, setActionTypes] = useState<KernelActionType[]>([]);
   const [linkTypes, setLinkTypes] = useState<KernelLinkType[]>([]);
+  // EXP-02/04：值类型注册表 + Interface 清单（V2 编辑器数据源）
+  const [valueTypes, setValueTypes] = useState<KernelValueType[]>([]);
+  const [ontInterfaces, setOntInterfaces] = useState<KernelInterface[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [selectedConcept, setSelectedConcept] = useState<string>('');
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  // 新增属性表单
-  const [addOpen, setAddOpen] = useState(false);
-  const [propName, setPropName] = useState('');
-  const [propType, setPropType] = useState('STRING');
-  const [propTitle, setPropTitle] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  // V2 类型/属性编辑器（create 由 Shell 的 createOpen 驱动；edit 由本页按钮驱动）
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create');
+  const [editorPrefill, setEditorPrefill] = useState<ObjectTypeEditorPrefill>({});
+  // 提交时 precheck 命中候选：暂存完整 payload，候选 Modal「仍要新建」直接落库
+  const [pendingCreatePayload, setPendingCreatePayload] = useState<KernelObjectTypeCreate | null>(null);
+  // 用户在候选 Modal 选过「仍要新建」的 name|slug|domain 组合（本次会话不再重复扫描）
+  const [precheckDismissedKey, setPrecheckDismissedKey] = useState('');
 
-  // 新建概念抽屉（开关由 Shell 拥有，按钮在 sticky Tab 行右侧）
-  const [createName, setCreateName] = useState('');
-  const [createSlug, setCreateSlug] = useState('');
-  const [createDomain, setCreateDomain] = useState('crm');
-  const [createSubmitting, setCreateSubmitting] = useState(false);
-
-  // 相似候选扫描（precheck onBlur） + 合并 drawer
+  // 相似候选扫描（precheck） + 合并 drawer
   const [precheckLoading, setPrecheckLoading] = useState(false);
   const [candidates, setCandidates] = useState<ObjectTypeCandidate[]>([]);
   const [candidateModalOpen, setCandidateModalOpen] = useState(false);
@@ -100,10 +102,19 @@ export default function OntologyModelingPage({
 
   // 重拉全部 kernel 数据（初始加载 / 写操作后刷新）
   const refreshAll = async () => {
-    const [ots, ats, lts] = await Promise.all([listObjectTypes(), listActionTypes(), listLinkTypes()]);
+    const [ots, ats, lts, vts, ifcs] = await Promise.all([
+      listObjectTypes(),
+      listActionTypes(),
+      listLinkTypes(),
+      // value-types / interfaces 拉取失败不阻塞页面（编辑器内有兜底注册表）
+      listValueTypes().catch(() => [] as KernelValueType[]),
+      listInterfaces().catch(() => [] as KernelInterface[]),
+    ]);
     setObjectTypes(ots);
     setActionTypes(ats);
     setLinkTypes(lts);
+    setValueTypes(vts);
+    setOntInterfaces(ifcs);
     return ots;
   };
 
@@ -190,86 +201,42 @@ export default function OntologyModelingPage({
     return { concepts: objectTypes.length, props: totalProps, links: linkTypes.length };
   }, [objectTypes, linkTypes]);
 
-  // 新增属性 → append → 重拉刷新
-  const submitAddProperty = async () => {
-    if (!selectedConceptDetail || !propName.trim()) return;
-    setSubmitting(true);
-    try {
-      const tenant = getTenantId() || 'demo';
-      // 合法属性 rid：ClassRef 正则要求 ont.<tenant>.prop.<slug>.<ver>，
-      // 由概念 rid 的 obj 段替换为 prop 段并追加属性名
-      const conceptSlug = slugAndVersionOfObjectType(selectedConceptDetail.rid).slug.replace(/\.v\d+$/, '');
-      const propRid = `ont.${tenant}.prop.${conceptSlug.replace(/^obj\./, '')}-${propName.trim()}.v1`;
-      await appendObjectTypeProperty(selectedConceptDetail.rid, {
-        rid: propRid,
-        type_id: propType,
-        nullable: true,
-        primary_key: false,
-        title: propTitle.trim() || propName.trim(),
-        format: 'string',
-      });
-      await refreshAll();
-      setAddOpen(false);
-      setPropName('');
-      setPropTitle('');
-    } catch (e) {
-      console.warn('新增 property 失败', e);
-    } finally {
-      setSubmitting(false);
-    }
+  // ── V2 类型/属性编辑器编排 ──
+
+  // Shell「新建概念」按钮 → 打开 V2 编辑器（create 模式）
+  useEffect(() => {
+    if (!createOpen) return;
+    setEditorMode('create');
+    setEditorPrefill({});
+    setEditorOpen(true);
+  }, [createOpen]);
+
+  // 打开编辑器（edit 模式）：可指定直接展开某属性 / 直接追加新属性
+  const openEditConcept = (prefill: ObjectTypeEditorPrefill = {}) => {
+    setEditorMode('edit');
+    setEditorPrefill(prefill);
+    setEditorOpen(true);
   };
 
-  // 新建概念 → POST /object-types → 选中新概念
-  const submitCreate = async () => {
-    const name = createName.trim();
-    const slug = createSlug.trim();
-    if (!name || !slug) return;
-    setCreateSubmitting(true);
-    const tenant = getTenantId() || 'demo';
-    const rid = `ont.${tenant}.obj.${createDomain}.${slug}.v1`;
-    // 新概念自动带一个主键属性（概念必有主键）；kind 段用 'prop'（ClassRef 正则只认 prop）
-    const pkRid = `ont.${tenant}.prop.${slug}-id.v1`;
-    try {
-      await createObjectType({
-        rid,
-        display_name: name,
-        primary_key: [pkRid],
-        properties: [{
-          rid: pkRid,
-          type_id: 'string',
-          nullable: false,
-          primary_key: true,
-          title: `${name} ID`,
-          format: 'string',
-        }],
-        interfaces: [],
-      });
-      setCreateOpen(false);
-      setCreateName('');
-      setCreateSlug('');
-      const ots = await refreshAll();
-      setSelectedDomain(createDomain);
-      if (ots.some((ot) => ot.rid === rid)) setSelectedConcept(rid);
-    } catch (e) {
-      console.warn('新建概念失败', e);
-    } finally {
-      setCreateSubmitting(false);
-    }
+  const closeEditor = () => {
+    setEditorOpen(false);
+    setCreateOpen(false);
   };
 
-  // 概念名称 onBlur → 调 precheck；命中候选 → 弹 Modal 让用户选 merge / 继续创建 / 取消
-  const handlePrecheck = async () => {
-    const name = createName.trim();
-    const slug = createSlug.trim();
+  // 概念名称失焦（create 模式）→ 调 precheck；命中候选 → 弹 Modal 让用户选 merge / 仍要新建 / 取消
+  const handleCreateNameBlur = async (name: string, slug: string, domain: string) => {
     if (!name) return;
-    // slug 暂未填也允许按 name 扫（后端兜底走 embedder）；只在两者都空时跳过
+    if (precheckDismissedKey === `${name}|${slug}|${domain}`) return;
     setPrecheckLoading(true);
     try {
-      const resp = await precheckObjectTypes({ name, slug: slug || name, domain: createDomain, top_k: 5 });
+      // slug 暂未填也允许按 name 扫（后端兜底走 embedder）
+      const resp = await precheckObjectTypes({ name, slug: slug || name, domain, top_k: 5 });
       const list = resp?.candidates ?? [];
       if (list.length > 0) {
+        // 失焦触发的扫描：清掉提交路径的暂存 payload（本路径只提示，不落库）
+        setPendingCreatePayload(null);
         setCandidates(list);
-        setPrecheckSource({ name, slug, domain: createDomain });
+        setPrecheckSource({ name, slug, domain });
         setCandidateModalOpen(true);
       }
     } catch (e) {
@@ -280,10 +247,88 @@ export default function OntologyModelingPage({
     }
   };
 
+  // 保存成功后的收尾：清暂存、重拉、选中新概念
+  const afterEditorSave = async (rid: string) => {
+    setPendingCreatePayload(null);
+    const ots = await refreshAll();
+    setSelectedDomain(domainOfObjectType(rid));
+    if (ots.some((ot) => ot.rid === rid)) setSelectedConcept(rid);
+  };
+
+  // V2 编辑器提交：create 先过 precheck 门禁；edit 整体 upsert。
+  // 返回 null=成功；string=错误信息；DestructiveConfirmDetail 对象=409 破坏性门禁
+  // （编辑器抽屉底部展示二段确认区，确认重发时 payload 顶层带 confirm_name）。
+  const submitEditor = async (
+    payload: KernelObjectTypeCreate, mode: 'create' | 'edit',
+  ): Promise<string | DestructiveConfirmDetail | null> => {
+    const domain = domainOfObjectType(payload.rid);
+    // rid = ont.<tenant>.obj.<domain>.<slug>.v1 → slug 段（与 handleCreateNameBlur 的 key 同构）
+    const fullSlug = slugAndVersionOfObjectType(payload.rid).slug.replace(/^obj\./, '');
+    const slug = fullSlug.slice(domain.length + 1);
+    const key = `${payload.display_name}|${slug}|${domain}`;
+    try {
+      if (mode === 'create' && precheckDismissedKey !== key) {
+        try {
+          const resp = await precheckObjectTypes({
+            name: payload.display_name, slug, domain, top_k: 5,
+          });
+          const list = resp?.candidates ?? [];
+          if (list.length > 0) {
+            // 抽屉正常关闭，由候选 Modal 续接（合并 / 仍要新建直接落库 / 取消）
+            setPendingCreatePayload(payload);
+            setCandidates(list);
+            setPrecheckSource({ name: payload.display_name, slug, domain });
+            setCandidateModalOpen(true);
+            return null;
+          }
+        } catch {
+          // precheck 失败不阻塞创建（best-effort）
+        }
+      }
+      await createObjectType(payload);
+      await afterEditorSave(payload.rid);
+      return null;
+    } catch (e) {
+      console.warn('保存概念失败', e);
+      // G33：409 且 detail 是对象 {error:"destructive_confirm_required",...} → 交给抽屉二段确认
+      const dc = extractDestructiveConfirm(e);
+      if (dc) return dc;
+      return errDetailText(e, '保存概念失败');
+    }
+  };
+
+  // 候选 Modal 取消：丢弃暂存 payload（避免残留到下一次「仍要新建」误落库）
+  const cancelCandidateModal = () => {
+    setCandidateModalOpen(false);
+    setPendingCreatePayload(null);
+  };
+
+  // 候选 Modal「仍要新建」：
+  //   - 提交时触发的扫描（payload 已完整、抽屉已关）→ 直接落库
+  //   - 失焦触发的扫描（抽屉还在、表单未填完）→ 只记录「本次已忽略」，回到编辑器继续
+  const continueCreateAnyway = async () => {
+    setCandidateModalOpen(false);
+    if (pendingCreatePayload) {
+      const payload = pendingCreatePayload;
+      try {
+        await createObjectType(payload);
+        await afterEditorSave(payload.rid);
+      } catch (e) {
+        console.warn('新建概念失败', e);
+      }
+    } else if (precheckSource) {
+      setPrecheckDismissedKey(`${precheckSource.name}|${precheckSource.slug}|${precheckSource.domain}`);
+    }
+  };
+
   // 用户在候选 Modal 里选了某个候选 → 打开合并 drawer（先 resolve source / target 完整定义）
   const openMergeDrawerForCandidate = async (candidate: ObjectTypeCandidate) => {
     if (!precheckSource) return;
     setCandidateModalOpen(false);
+    // 合并 drawer zIndex(1100) 低于 V2 编辑器(1200)：先关编辑器避免遮挡
+    setEditorOpen(false);
+    setCreateOpen(false);
+    setPendingCreatePayload(null);
     try {
       const tenant = getTenantId() || 'demo';
       const sourceRid = `ont.${tenant}.obj.${precheckSource.domain}.${precheckSource.slug}.v1`;
@@ -321,12 +366,11 @@ export default function OntologyModelingPage({
       setMergeOpen(false);
       setMergeSource(null);
       setMergeTarget(null);
-      // 候选 Modal 也关掉、create drawer 关掉、清空已输入字段
+      // 候选 Modal 也关掉、create 编辑器关掉
       setCandidateModalOpen(false);
       setCandidates([]);
       setCreateOpen(false);
-      setCreateName('');
-      setCreateSlug('');
+      setPendingCreatePayload(null);
       const ots = await refreshAll();
       const targetDomain = domainOfObjectType(mergeTarget.rid);
       setSelectedDomain(targetDomain);
@@ -371,6 +415,7 @@ export default function OntologyModelingPage({
         .om-stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
         .om-stat-value{font-size:28px;font-weight:700;line-height:1;letter-spacing:-0.02em}
         .om-stat-label{font-size:12px;color:var(--muted-foreground);margin-top:6px}
+        .v-attr-badge{display:inline-block;font-size:10px;line-height:16px;padding:0 6px;border-radius:999px;border:1px solid var(--muted-foreground);color:var(--muted-foreground);white-space:nowrap}
       `}</style>
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
@@ -530,70 +575,43 @@ export default function OntologyModelingPage({
             )}
           </Card>
 
-          {/* Detail Section（下钻：属性表 + 新增属性 + 关联 Action + 关系） */}
+          {/* Detail Section（下钻：属性表 + V2 编辑器入口 + 关联 Action + 关系） */}
           {selectedConceptDetail && (
             <div ref={detailRef} style={{ display: 'flex', gap: 20, marginTop: 20, scrollMarginTop: 12 }}>
-              {/* Attribute Table + Add-property form + 关联 Action */}
+              {/* Attribute Table + V2 编辑器入口 + 关联 Action */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <Card style={{overflow: 'hidden'}} bodyStyle={{padding: 0}}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
                     <h4 style={{ fontSize: 14, fontWeight: 600 }}>{selectedConceptDetail.display_name} · 属性定义</h4>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span className="v-eyebrow">{selectedConceptDetail.properties.length} 个属性</span>
-                      <Button theme="light" type="secondary" style={{ height: 28, padding: '0 10px', fontSize: 12 }} onClick={() => setAddOpen((v) => !v)}>
+                      {/* 原生 button（dev 模式 Semi Button onClick 被截 noop） */}
+                      <button
+                        type="button"
+                        onClick={() => openEditConcept({})}
+                        style={{
+                          height: 28, padding: '0 10px', fontSize: 12,
+                          background: 'var(--card)', color: 'var(--foreground)',
+                          border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+                          cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
+                        }}
+                      >
+                        编辑概念
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openEditConcept({ addNewProp: true })}
+                        style={{
+                          height: 28, padding: '0 10px', fontSize: 12,
+                          background: 'var(--card)', color: 'var(--foreground)',
+                          border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+                          cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
+                        }}
+                      >
                         <Plus style={{ width: 14, height: 14 }} />新增属性
-                      </Button>
+                      </button>
                     </div>
                   </div>
-                  {addOpen && (
-                    <div style={{ padding: 16, borderBottom: '1px solid var(--border)', background: 'var(--muted)' }}>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                        <div>
-                          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 4 }}>属性名</div>
-                          <input
-                            value={propName}
-                            onChange={(e) => setPropName(e.target.value)}
-                            placeholder="例如 dept_name"
-                            style={{ height: 30, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 10px', fontSize: 12, color: 'var(--foreground)', outline: 'none', width: 160 }}
-                          />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 4 }}>类型</div>
-                          <select
-                            value={propType}
-                            onChange={(e) => setPropType(e.target.value)}
-                            style={{ height: 30, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 10px', fontSize: 12, color: 'var(--foreground)', outline: 'none' }}
-                          >
-                            <option value="STRING">STRING</option>
-                            <option value="INTEGER">INTEGER</option>
-                            <option value="DECIMAL">DECIMAL</option>
-                            <option value="BOOLEAN">BOOLEAN</option>
-                            <option value="DATETIME">DATETIME</option>
-                            <option value="ENUM">ENUM</option>
-                          </select>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 4 }}>描述</div>
-                          <input
-                            value={propTitle}
-                            onChange={(e) => setPropTitle(e.target.value)}
-                            placeholder="可选"
-                            style={{ height: 30, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 10px', fontSize: 12, color: 'var(--foreground)', outline: 'none', width: 200 }}
-                          />
-                        </div>
-                        <Button theme="solid" type="primary" disabled={submitting || !propName.trim()}
-                          onClick={submitAddProperty}
-                          style={{ height: 30, padding: '0 14px', fontSize: 12, opacity: submitting || !propName.trim() ? 0.6 : 1 }}>
-                          {submitting ? '提交中…' : '保存'}
-                        </Button>
-                        <Button theme="light" type="secondary" onClick={() => setAddOpen(false)}
-                          style={{ height: 30, padding: '0 10px', fontSize: 12 }}
-                        >
-                          取消
-                        </Button>
-                      </div>
-                    </div>
-                  )}
                   <table className="om-attr-table">
                     <thead>
                       <tr>
@@ -602,7 +620,9 @@ export default function OntologyModelingPage({
                         <th>类型</th>
                         <th>必填</th>
                         <th>主键</th>
+                        <th>标记</th>
                         <th>描述</th>
+                        <th>操作</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -610,14 +630,46 @@ export default function OntologyModelingPage({
                         const { slug, version } = slugAndVersionOfProperty(attr.rid);
                         // 砍掉 kind 段（prop / prp）—— 后端用 'prop'，统一兼容
                         const propSlug = slug.replace(/^(prop|prp)\./, '');
+                        const hasMarks = attr.array || attr.derived || attr.format === 'struct' || attr.shared;
                         return (
                           <tr key={attr.rid}>
-                            <td style={{ fontWeight: 500 }}>{propSlug}</td>
+                            <td style={{ fontWeight: 500 }} title={attr.title || undefined}>{propSlug}</td>
                             <td style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{version || '—'}</td>
-                            <td><span className={typeBadgeClass(attr.type_id)}>{attr.type_id}</span></td>
+                            <td><span className={typeBadgeClass(attr.type_id)} title={attr.format}>{attr.type_id}</span></td>
                             <td><span style={{ color: attr.nullable ? 'var(--muted-foreground)' : 'var(--success)', fontSize: 12 }}>{attr.nullable ? '否' : '是'}</span></td>
                             <td><span style={{ color: attr.primary_key ? 'var(--success)' : 'var(--muted-foreground)', fontSize: 12 }}>{attr.primary_key ? '是' : '否'}</span></td>
-                            <td style={{ color: 'var(--muted-foreground)' }}>{attr.title}</td>
+                            <td>
+                              <span style={{ display: 'inline-flex', gap: 4, flexWrap: 'wrap' }}>
+                                {attr.array && (
+                                  <span className="v-attr-badge" title={`array · reducer: ${attr.reducer ?? '未设置'}`}>数组{attr.reducer ? `·${attr.reducer}` : ''}</span>
+                                )}
+                                {attr.derived && (
+                                  <span className="v-attr-badge" title={`derived · over_link: ${attr.derived.over_link}${attr.derived.field ? ` · field: ${attr.derived.field}` : ''}`}>派生·{attr.derived.fn}</span>
+                                )}
+                                {attr.format === 'struct' && (
+                                  <span className="v-attr-badge" title={`${attr.struct_fields?.length ?? 0} 个嵌套字段`}>struct·{attr.struct_fields?.length ?? 0}</span>
+                                )}
+                                {attr.shared && <span className="v-attr-badge">共享</span>}
+                                {!hasMarks && <span style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>—</span>}
+                              </span>
+                            </td>
+                            <td style={{ color: 'var(--muted-foreground)', fontSize: 12, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={attr.description || attr.title || undefined}>
+                              {attr.description || attr.title || '—'}
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                onClick={() => openEditConcept({ expandPropRid: attr.rid })}
+                                style={{
+                                  height: 24, padding: '0 8px', fontSize: 12,
+                                  background: 'var(--card)', color: 'var(--foreground)',
+                                  border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                编辑
+                              </button>
+                            </td>
                           </tr>
                         );
                       })}
@@ -680,57 +732,26 @@ export default function OntologyModelingPage({
         </div>
       </div>
 
-      <FormDrawer
-        open={createOpen}
-        title="新建概念（ObjectType）"
-        onCancel={() => setCreateOpen(false)}
-        onOk={submitCreate}
-        okText="创建"
-        confirmLoading={createSubmitting}
-      >
-        <Field label="概念名称" required>
-          <div style={{ position: 'relative' }}>
-            <TextInput
-              placeholder="例如：客户"
-              value={createName}
-              onChange={(e) => setCreateName(e.target.value)}
-              onBlur={handlePrecheck}
-            />
-            {precheckLoading && (
-              <span style={{
-                position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                fontSize: 11, color: 'var(--muted-foreground)',
-              }}>
-                相似扫描中…
-              </span>
-            )}
-          </div>
-        </Field>
-        <Field label="slug（rid 末段）" required>
-          <TextInput
-            placeholder="例如：customer"
-            value={createSlug}
-            onChange={(e) => setCreateSlug(e.target.value)}
-          />
-        </Field>
-        <Field label="领域">
-          <select
-            value={createDomain}
-            onChange={(e) => setCreateDomain(e.target.value)}
-            style={{ width: '100%', height: 34, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 10px', fontSize: 13, color: 'var(--foreground)', outline: 'none' }}
-          >
-            {Object.entries(DOMAIN_LABELS).map(([code, label]) => (
-              <option key={code} value={code}>{label}</option>
-            ))}
-          </select>
-        </Field>
-        <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>
-          生成 rid：<code>ont.{getTenantId() || 'demo'}.obj.{createDomain}.{createSlug.trim() || '<slug>'}.v1</code>
-          <br />自动创建主键属性：<code>ont.{getTenantId() || 'demo'}.prop.{createSlug.trim() || '<slug>'}-id.v1</code>
-        </div>
-      </FormDrawer>
+      {/* V2 类型/属性编辑器：create（Shell 按钮）/ edit（编辑概念 / 新增属性 / 行内编辑） */}
+      <ObjectTypeEditorV2Drawer
+        open={editorOpen}
+        mode={editorMode}
+        objectType={editorMode === 'edit' ? selectedConceptDetail : null}
+        objectTypes={objectTypes}
+        linkTypes={linkTypes}
+        interfaces={ontInterfaces}
+        valueTypes={valueTypes}
+        tenant={getTenantId() || 'demo'}
+        domainOptions={Object.entries(DOMAIN_LABELS).map(([code, label]) => ({ code, label }))}
+        prefill={editorPrefill}
+        onClose={closeEditor}
+        onSubmit={submitEditor}
+        onCreateNameBlur={handleCreateNameBlur}
+        prechecking={precheckLoading}
+      />
 
-      {/* 相似候选 Modal：precheck 命中后展示，每个候选可三选一 */}
+      {/* 相似候选 Modal：precheck 命中后展示，每个候选可三选一。
+          zIndex 1500 —— 需盖过 V2 编辑器原生 overlay（1200）。 */}
       <Modal
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -739,13 +760,15 @@ export default function OntologyModelingPage({
           </div>
         }
         visible={candidateModalOpen}
-        onCancel={() => setCandidateModalOpen(false)}
+        onCancel={cancelCandidateModal}
         footer={null}
         width={640}
+        zIndex={1500}
       >
         <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 12, lineHeight: 1.6 }}>
           概念名「<strong style={{ color: 'var(--foreground)' }}>{precheckSource?.name}</strong>」与下方已有概念相似，
-          请选择「合并到它」（走合并 drawer，迁移数据后软删源）或「继续新建」（忽略提示，直接创建新概念）。
+          请选择「合并到它」（走合并 drawer，迁移数据后软删源）或「仍要新建」
+          {pendingCreatePayload ? '（忽略提示，直接创建新概念）' : '（忽略提示，回到编辑器继续填写）'}。
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {candidates.map((c) => {
@@ -795,7 +818,7 @@ export default function OntologyModelingPage({
         }}>
           <button
             type="button"
-            onClick={() => setCandidateModalOpen(false)}
+            onClick={cancelCandidateModal}
             style={{
               height: 34, padding: '0 14px', fontSize: 13,
               background: 'var(--card)', color: 'var(--foreground)',
@@ -806,18 +829,14 @@ export default function OntologyModelingPage({
           </button>
           <button
             type="button"
-            onClick={() => {
-              setCandidateModalOpen(false);
-              // 走原本 submitCreate（继续新建）
-              submitCreate();
-            }}
+            onClick={() => void continueCreateAnyway()}
             style={{
               height: 34, padding: '0 14px', fontSize: 13,
               background: 'var(--primary)', color: 'var(--primary-foreground, #fff)',
               border: 'none', borderRadius: 'var(--radius)', cursor: 'pointer',
             }}
           >
-            继续新建
+            仍要新建
           </button>
         </div>
       </Modal>

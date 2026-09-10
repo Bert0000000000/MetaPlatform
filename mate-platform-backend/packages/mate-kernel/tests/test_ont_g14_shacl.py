@@ -138,8 +138,7 @@ class TestReport:
 
 
 # ---------------------------------------------------------------------------
-# W3C 全集增量（第三批）：severity 分级 / sh:not / sh:languageIn /
-# sh:qualifiedValueShape
+# W3C 全集增量（第三批）：severity 分级 / sh:not / sh:languageIn 与 sh:qualifiedValueShape
 # ---------------------------------------------------------------------------
 
 class TestSeverity:

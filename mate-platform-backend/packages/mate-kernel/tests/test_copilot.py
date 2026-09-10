@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 import pytest
 
@@ -103,7 +103,13 @@ class TestIntentRouter:
 
 class TestAuditRetention:
     def _plan_state(self):
-        from mate_kernel.agent.orchestrator import PlanSpec, PlanState, PlanStep, StepKind, StepResult, StepStatus
+        from mate_kernel.agent.orchestrator import (
+            PlanSpec,
+            PlanState,
+            PlanStep,
+            StepKind,
+            StepResult,
+        )
         spec = PlanSpec(
             plan_id="p1",
             author_user_id="alice",

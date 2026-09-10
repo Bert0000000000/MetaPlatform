@@ -33,7 +33,7 @@ from typing import Any
 
 import structlog
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, WebSocket
 from pydantic import BaseModel, Field
 
 from mate_kernel.action.engine import ProposalNotConfirmed
@@ -41,6 +41,7 @@ from mate_kernel.objectset.ir import (
     Aggregation,
     Condition,
     MetricSpec,
+    NearestSpec,
     ObjectSetQuery,
     QueryOp,
     SortKey,
@@ -71,6 +72,13 @@ router = APIRouter(prefix="/api/v1/ont/v2", tags=["v2-kernel"])
 # ─────────────────── DTO ───────────────────
 
 
+class DerivedSpecDTO(BaseModel):
+    """EXP-02：派生属性规格（D4：v1 声明式聚合）。field 须为完整 Property rid。"""
+    fn: str  # count | sum | avg
+    over_link: str  # LinkType rid
+    field: str | None = None
+
+
 class PropertyDTO(BaseModel):
     rid: str
     type_id: str
@@ -78,6 +86,13 @@ class PropertyDTO(BaseModel):
     primary_key: bool = False
     title: str = ""
     format: str = "string"
+    # ── EXP-02 扩展 ──
+    description: str = ""
+    struct_fields: list["PropertyDTO"] = Field(default_factory=list)
+    array: bool = False
+    reducer: str | None = None  # first / latest
+    derived: DerivedSpecDTO | None = None
+    shared: bool = False
 
 
 class ObjectTypeDTO(BaseModel):
@@ -87,6 +102,13 @@ class ObjectTypeDTO(BaseModel):
     display_name: str = ""
     interfaces: list[str] = Field(default_factory=list)
     marking: list[str] = Field(default_factory=list)
+    parent_class: str = ""  # EXP-01：浅层级声明（限 1 层；自动同步 subclass 公理）
+    confirm_name: str = ""  # G33：破坏性变更显式确认（须等于现有 display_name）
+    # EXP-04：治理/展示元数据
+    description: str = ""
+    status: str = "active"
+    type_group: str = ""
+    render_hints: list[tuple[str, str]] = Field(default_factory=list)
 
 
 class ObjectTypeResponse(BaseModel):
@@ -96,6 +118,11 @@ class ObjectTypeResponse(BaseModel):
     display_name: str = ""
     interfaces: list[str] = Field(default_factory=list)
     marking: list[str] = Field(default_factory=list)
+    parent_class: str = ""
+    description: str = ""
+    status: str = "active"
+    type_group: str = ""
+    render_hints: list[tuple[str, str]] = Field(default_factory=list)
 
 
 class IndividualCreateDTO(BaseModel):
@@ -155,6 +182,8 @@ class ActionTypeDTO(BaseModel):
     on: list[str] = Field(default_factory=list)
     title: str = ""
     description: str = ""
+    # ACT-05：声明式编辑模板（非空时 apply 走 edit-set 单事务）
+    declarative_edits: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class LinkTypeDTO(BaseModel):
@@ -164,6 +193,10 @@ class LinkTypeDTO(BaseModel):
     cardinality: str
     directionality: str
     link_properties: list[PropertyDTO] = Field(default_factory=list)
+    # EXP-03：两端独立命名（双向可读）
+    src_display_name: str = ""
+    dst_display_name: str = ""
+    description: str = ""
 
 
 class InterfaceDTO(BaseModel):
@@ -301,14 +334,43 @@ def _require_idempotency_key(request: Request) -> str:
     return key
 
 
+def _effective_markings(request: Request, param: str) -> tuple[str, ...]:
+    """G7：scoped session 目的限制 —— viewer markings ∩ X-Scope-Markings 头。
+
+    会话只能**收窄**可见范围（Palantir scoped sessions：用户在会话中选择
+    markings 子集，实现 purpose limitation / data minimization）：
+    - 两侧都给 → 交集；
+    - 只给 param → param；
+    - 只给 header → 空（scope 未授权任何 param 所指之外的东西时按 header
+      与 param 交集 = 空更安全；此处语义：header 存在即必须交集）。
+    """
+    p_set = tuple(m.strip() for m in param.split(",") if m.strip())
+    header = request.headers.get("X-Scope-Markings", "")
+    if not header:
+        return p_set
+    h_set = {m.strip() for m in header.split(",") if m.strip()}
+    return tuple(m for m in p_set if m in h_set)
+
+
 def _prop_to_dto(p: Property) -> PropertyDTO:
     return PropertyDTO(
         rid=p.rid.rid, type_id=p.type_id, nullable=p.nullable,
         primary_key=p.primary_key, title=p.title, format=p.format.value,
+        description=p.description,
+        struct_fields=[_prop_to_dto(sf) for sf in p.struct_fields],
+        array=p.array, reducer=p.reducer,
+        derived=(
+            DerivedSpecDTO(fn=p.derived.fn, over_link=p.derived.over_link,
+                           field=p.derived.field)
+            if p.derived is not None else None
+        ),
+        shared=p.shared,
     )
 
 
 def _dto_to_prop(d: PropertyDTO) -> Property:
+    from mate_kernel.ontology.types.property_ import DerivedSpec
+
     return Property(
         rid=ClassRef(d.rid),
         type_id=d.type_id,
@@ -316,6 +378,16 @@ def _dto_to_prop(d: PropertyDTO) -> Property:
         primary_key=d.primary_key,
         title=d.title,
         format=PropertyFormat(d.format),
+        description=d.description,
+        struct_fields=tuple(_dto_to_prop(sf) for sf in d.struct_fields),
+        array=d.array,
+        reducer=d.reducer,
+        derived=(
+            DerivedSpec(fn=d.derived.fn, over_link=d.derived.over_link,
+                        field=d.derived.field)
+            if d.derived is not None else None
+        ),
+        shared=d.shared,
     )
 
 
@@ -330,6 +402,11 @@ def _ot_to_dto(ot: ObjectType) -> ObjectTypeResponse:
         display_name=ot.display_name,
         interfaces=[i.rid for i in ot.interfaces],
         marking=list(ot.marking),
+        parent_class=ot.parent_class.rid if ot.parent_class is not None else "",
+        description=ot.description,
+        status=ot.status,
+        type_group=ot.type_group,
+        render_hints=[tuple(kv) for kv in ot.render_hints],
     )
 
 
@@ -343,6 +420,7 @@ def _dto_to_action_type(d: ActionTypeDTO) -> ActionType:
         on=tuple(ClassRef(o) for o in d.on),
         title=d.title,
         description=d.description,
+        declarative_edits=tuple(dict(t) for t in d.declarative_edits),
     )
 
 
@@ -356,6 +434,7 @@ def _action_type_to_dto(at: ActionType) -> ActionTypeDTO:
         on=[c.rid for c in at.on],
         title=at.title,
         description=at.description,
+        declarative_edits=[dict(t) for t in at.declarative_edits],
     )
 
 
@@ -367,6 +446,9 @@ def _dto_to_link_type(d: LinkTypeDTO) -> LinkType:
         cardinality=Cardinality(d.cardinality),
         directionality=Directionality(d.directionality),
         link_properties=tuple(_dto_to_prop(p) for p in d.link_properties),
+        src_display_name=d.src_display_name,
+        dst_display_name=d.dst_display_name,
+        description=d.description,
     )
 
 
@@ -378,6 +460,9 @@ def _link_type_to_dto(lt: LinkType) -> LinkTypeDTO:
         cardinality=lt.cardinality.value,
         directionality=lt.directionality.value,
         link_properties=[_prop_to_dto(p) for p in lt.link_properties],
+        src_display_name=lt.src_display_name,
+        dst_display_name=lt.dst_display_name,
+        description=lt.description,
     )
 
 
@@ -483,10 +568,874 @@ def _dto_to_ot(d: ObjectTypeDTO) -> ObjectType:
         display_name=d.display_name,
         interfaces=tuple(ClassRef(i) for i in d.interfaces),
         marking=tuple(d.marking),
+        parent_class=ClassRef(d.parent_class) if d.parent_class else None,
+        description=d.description,
+        status=d.status,
+        type_group=d.type_group,
+        render_hints=tuple(tuple(kv) for kv in d.render_hints),
     )
 
 
 # ─────────────────── 1) ObjectType CRUD ───────────────────
+
+
+class ChunkIngestDTO(BaseModel):
+    """AI-10：文档 → chunk 对象 + 回源 link（Palantir chunk 溯源设计）。"""
+    doc_class_rid: str
+    doc_pk: str
+    chunks: list[str]
+    doc_props: dict[str, Any] = Field(default_factory=dict)
+
+
+@router.post(
+    "/object-types/chunks/ingest",
+    response_model=dict,
+    operation_id="ontIngestV2DocumentChunks",
+)
+async def ingest_document_chunks(
+    payload: ChunkIngestDTO, request: Request,
+) -> dict:
+    """AI-10：文档切块入本体（chunk 即对象，link 回源文档，检索可溯源）。"""
+    ctx = _ctx(request)
+    tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    if not payload.doc_class_rid.startswith(f"ont.{tenant}."):
+        raise HTTPException(status_code=403, detail="cross-tenant doc class denied")
+
+    def _ingest() -> dict:
+        from .chunk_pipeline import ingest_document_chunks as _ing
+
+        with _scoped_repo(request) as repo:
+            return _ing(
+                repo, tenant, payload.doc_class_rid, payload.doc_pk,
+                payload.chunks, doc_props=payload.doc_props or None,
+            )
+
+    import asyncio
+
+    return await asyncio.to_thread(_ingest)
+
+
+class SecurityPolicyDTO(BaseModel):
+    """SEC-12：行列级安全策略。row：行可见条件 + bypass_markings；
+    column：属性 required_markings。"""
+    rid: str = ""
+    kind: str  # row | column
+    class_rid: str = ""
+    property_rid: str = ""
+    field: str = ""
+    op: str = ""
+    value: Any = None
+    markings: list[str] = Field(default_factory=list)
+
+
+@router.post(
+    "/security-policies",
+    response_model=dict,
+    operation_id="ontUpsertV2SecurityPolicy",
+)
+async def upsert_security_policy(
+    payload: SecurityPolicyDTO, request: Request,
+) -> dict:
+    ctx = _ctx(request)
+    payload_dict = payload.model_dump()
+    payload_dict["tenant_id"] = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    return await _call_scoped(request, "upsert_security_policy", payload_dict)
+
+
+@router.get(
+    "/security-policies",
+    response_model=list[dict],
+    operation_id="ontListV2SecurityPolicies",
+)
+async def list_security_policies(request: Request) -> list[dict]:
+    _ctx(request)
+    items = await _call_scoped(request, "list_security_policies")
+    out: list[dict] = []
+    for it in items:
+        it.pop("value_json", None)
+        out.append({k: v for k, v in it.items()})
+    return out
+
+
+class BackingDatasourceDTO(BaseModel):
+    """DATA-14：背挂数据源声明（kind v1=pg_table；secret 走 dsn_env 环境变量）。"""
+    class_rid: str
+    name: str
+    kind: str = "pg_table"
+    dsn_env: str = "ONT_SOURCE_DSN"
+    table: str
+    pk_column: str
+    field_mapping: dict[str, str] = Field(default_factory=dict)
+    priority: int = 100
+
+
+@router.post(
+    "/object-types/{rid:path}/datasources",
+    response_model=dict,
+    operation_id="ontUpsertV2BackingDatasource",
+)
+async def upsert_backing_datasource(
+    rid: str, payload: BackingDatasourceDTO, request: Request,
+) -> dict:
+    """DATA-14：声明 backing datasource（数据平面 → 对象索引管道配置）。"""
+    ctx = _ctx(request)
+    tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    if not rid.startswith(f"ont.{tenant}."):
+        raise HTTPException(status_code=403, detail="cross-tenant class denied")
+    decl = payload.model_dump()
+    decl["class_rid"] = rid
+    decl["tenant_id"] = tenant
+    return await _call_scoped(request, "upsert_backing_datasource", decl)
+
+
+@router.get(
+    "/object-types/{rid:path}/datasources",
+    response_model=list[dict],
+    operation_id="ontListV2BackingDatasources",
+)
+async def list_backing_datasources(rid: str, request: Request) -> list[dict]:
+    """B5：类型的背挂数据源声明清单（priority 序）。"""
+    _ctx(request)
+    return await _call_scoped(request, "list_backing_datasources", rid)
+
+
+@router.delete(
+    "/security-policies/{rid:path}",
+    response_model=dict,
+    operation_id="ontDeleteV2SecurityPolicy",
+)
+async def delete_security_policy(rid: str, request: Request) -> dict:
+    """B4：删除安全策略。"""
+    _ctx(request)
+    ok = await _call_scoped(request, "delete_security_policy", rid)
+    return {"rid": rid, "deleted": bool(ok)}
+
+
+@router.post(
+    "/object-types/{rid:path}/datasources/sync",
+    response_model=dict,
+    operation_id="ontSyncV2BackingDatasources",
+)
+async def sync_backing_datasources(
+    rid: str, request: Request, incremental: bool = False,
+) -> dict:
+    """DATA-14/CDC：批量或增量同步（增量按 ts_column > 水位；用户编辑覆盖层不覆盖）。"""
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{str(ctx.tenant_id)}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant class denied")
+    try:
+        return await _call_scoped(
+            request, "sync_backing_datasources", rid, incremental)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+
+class CdcApplyDTO(BaseModel):
+    """CDC 变更事件批（debezium / mate-tech-etl 推送）。"""
+    changes: list[dict[str, Any]]  # [{op: upsert|delete, pk, data?: {列: 值}}]
+
+
+@router.post(
+    "/object-types/{rid:path}/datasources/cdc",
+    response_model=dict,
+    operation_id="ontApplyV2CdcChanges",
+)
+async def apply_cdc_changes(
+    rid: str, payload: CdcApplyDTO, request: Request,
+) -> dict:
+    """CDC 流式绑定：变更事件 → 对象平面（upsert 尊重用户编辑覆盖层）。"""
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{str(ctx.tenant_id)}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant class denied")
+    try:
+        return await _call_scoped(
+            request, "apply_cdc_changes", rid, payload.changes)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@router.get(
+    "/object-types/{rid:path}/materialization",
+    response_model=dict,
+    operation_id="ontGetV2Materialization",
+)
+async def get_materialization(rid: str, request: Request) -> dict:
+    """DATA-15：对象最新状态行集（materialization 回流读端点）。"""
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{str(ctx.tenant_id)}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant class denied")
+    try:
+        return await _call_scoped(request, "materialize_object_type", rid)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@router.get(
+    "/action-audit",
+    response_model=list[dict],
+    operation_id="ontListV2ActionAudit",
+)
+async def list_action_audit(
+    request: Request, limit: int = 100, action_rid: str | None = None,
+) -> list[dict]:
+    """UI-04：Action 执行历史（actor/参数/结果/审计链，倒序）。"""
+    _ctx(request)
+    return await _call_scoped(request, "list_action_audit", limit, action_rid)
+
+
+class WebhookSubscriptionDTO(BaseModel):
+    """G20：webhook 订阅（event_type=* 或精确；secret 用于 HMAC 签名）。"""
+    event_type: str = "*"
+    url: str
+    secret: str = ""
+    active: bool = True
+
+
+@router.post(
+    "/webhooks",
+    response_model=dict,
+    operation_id="ontUpsertV2Webhook",
+)
+async def upsert_webhook(
+    payload: WebhookSubscriptionDTO, request: Request,
+) -> dict:
+    ctx = _ctx(request)
+    decl = payload.model_dump()
+    decl["tenant_id"] = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    return await _call_scoped(request, "upsert_webhook_subscription", decl)
+
+
+@router.get(
+    "/webhooks",
+    response_model=list[dict],
+    operation_id="ontListV2Webhooks",
+)
+async def list_webhooks(request: Request) -> list[dict]:
+    _ctx(request)
+    return await _call_scoped(request, "list_webhook_subscriptions")
+
+
+@router.post(
+    "/webhooks/deliver",
+    response_model=dict,
+    operation_id="ontDeliverV2Webhooks",
+)
+async def deliver_webhooks(request: Request) -> dict:
+    """G20：手动触发批投递（生产挂 Scheduler 周期调）。"""
+    _ctx(request)
+
+    def _run() -> dict:
+        from .webhook_delivery import deliver_pending
+
+        with _scoped_repo(request) as repo:
+            return deliver_pending(repo)
+
+    import asyncio
+
+    return await asyncio.to_thread(_run)
+
+
+class FunctionAliasDTO(BaseModel):
+    """G23：函数别名（稳定名 → 可演进的 rid）。"""
+    alias: str
+    function_rid: str
+
+
+class FunctionInvokeDTO(BaseModel):
+    """G23：函数调用体。"""
+    parameters: dict[str, Any] = Field(default_factory=dict)
+
+
+@router.post(
+    "/functions/alias",
+    response_model=dict,
+    operation_id="ontRegisterV2FunctionAlias",
+)
+async def register_function_alias(
+    payload: FunctionAliasDTO, request: Request,
+) -> dict:
+    _ctx(request)
+    try:
+        return await _call_scoped(
+            request, "register_function_alias",
+            payload.alias, payload.function_rid)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@router.get(
+    "/functions/{rid:path}/versions",
+    response_model=list[dict],
+    operation_id="ontListV2FunctionVersions",
+)
+async def list_function_versions(rid: str, request: Request) -> list[dict]:
+    """G23：版本快照倒序（被覆盖的历史版本）。"""
+    _ctx(request)
+    return await _call_scoped(request, "list_function_versions", rid)
+
+
+@router.post(
+    "/functions/{rid:path}/invoke",
+    response_model=dict,
+    operation_id="ontInvokeV2Function",
+)
+async def invoke_function(
+    rid: str, payload: FunctionInvokeDTO, request: Request,
+) -> dict:
+    """G23：调用已注册 Function（invoker/stub/沙箱执行器）。"""
+    _ctx(request)
+    # 别名透传（alias → rid）
+    target = rid
+    try:
+        resolved = await _call_scoped(request, "resolve_function_alias", rid)
+        target = resolved
+    except KeyError:
+        pass
+    except Exception:
+        pass
+    try:
+        return await _call_scoped(
+            request, "invoke_function", target, payload.parameters)
+    except KeyError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.websocket("/ws/object-changes")
+async def ws_object_changes(websocket: "WebSocket") -> None:
+    """G25：对象变更 WebSocket 订阅（outbox 事件推送）。
+
+    连接即订阅：服务端轮询 repo outbox 增量（~1.5s）推 JSON 事件
+    {event_id, event_type, payload}；客户端断开即退订。WS 不经过 HTTP
+    认证中间件 —— 鉴权由网关层 WS 透传承担（dev 直连）。
+    """
+    await websocket.accept()
+    repo = getattr(websocket.app.state, "kernel_repo", None)
+    if repo is None:
+        await websocket.send_json({"error": "kernel_repo not initialized"})
+        await websocket.close()
+        return
+    await websocket.send_json({"type": "subscribed", "topic": "object-changes"})
+    sent: set[str] = set()
+    import asyncio
+
+    try:
+        while True:
+            try:
+                events = await asyncio.to_thread(
+                    repo.list_outbox_events, "0", 20)
+            except Exception:
+                events = []
+            for ev in events:
+                eid = str(ev.get("event_id", ""))
+                if not eid or eid in sent:
+                    continue
+                sent.add(eid)
+                await websocket.send_json({
+                    "event_id": eid,
+                    "event_type": ev.get("event_type", ""),
+                    "payload": ev.get("payload") or {},
+                })
+            await asyncio.sleep(1.5)
+    except Exception:
+        # 客户端断开 / 发送失败 → 退订
+        try:
+            await websocket.close()
+        except Exception:
+            pass
+
+
+# ───── G44：Scenario 会话 API（ACT-08 overlay 的 HTTP 化）─────
+
+import uuid as _uuid
+
+_SCENARIOS: dict[str, dict[str, Any]] = {}
+
+
+class ScenarioCreateDTO(BaseModel):
+    """G44：建沙盒会话（编辑留沙盒；合并走 apply-edit-set 审计管道）。"""
+    title: str = ""
+
+
+class ScenarioEditDTO(BaseModel):
+    """G44：沙盒编辑（op 语义同 edit-set：set_property/create_object/
+    delete_object/add_link/remove_link）。"""
+    op: str
+    target: str = ""
+    property_rid: str = ""
+    value: Any = None
+    class_rid: str = ""
+    primary_key: str = ""
+    props: dict[str, Any] = Field(default_factory=dict)
+    link_type_rid: str = ""
+    src: str = ""
+    dst: str = ""
+    link_instance_rid: str = ""
+
+
+class ScenarioMergeDTO(BaseModel):
+    action_rid: str
+    actor: str = ""
+
+
+def _scenario_overlay(request: Request, sid: str) -> Any:
+    """to_thread 内调用：tenant_scope 内重建 overlay 并回放暂存编辑。"""
+    from mate_kernel.action.scenario import ScenarioOverlay
+
+    entry = _SCENARIOS.get(sid)
+    if entry is None:
+        raise KeyError(f"scenario not found: {sid}")
+    with _scoped_repo(request) as repo:
+        ov = ScenarioOverlay(repo)
+        for e in entry["edits"]:
+            if e["op"] == "set_property":
+                ov.set_property(e["target"], e["property_rid"], e["value"])
+            elif e["op"] == "create_object":
+                ov.create_object(e["class_rid"], e["primary_key"], e["props"])
+            elif e["op"] == "delete_object":
+                ov.delete_object(e["target"])
+            elif e["op"] == "add_link":
+                ov.add_link(e["link_type_rid"], e["src"], e["dst"])
+            elif e["op"] == "remove_link":
+                ov.remove_link(e["link_instance_rid"])
+        return ov, repo, entry
+
+
+@router.post(
+    "/scenarios",
+    response_model=dict,
+    operation_id="ontCreateV2Scenario",
+)
+async def create_scenario(
+    payload: ScenarioCreateDTO, request: Request,
+) -> dict:
+    ctx = _ctx(request)
+    sid = f"scn-{_uuid.uuid4().hex[:10]}"
+    _SCENARIOS[sid] = {
+        "title": payload.title,
+        "tenant_id": str(ctx.tenant_id),  # type: ignore[attr-defined]
+        "edits": [],
+        "created_at": datetime.now(UTC).isoformat(),
+    }
+    return {"scenario_id": sid, "status": "active"}
+
+
+@router.get(
+    "/scenarios",
+    response_model=list[dict],
+    operation_id="ontListV2Scenarios",
+)
+async def list_scenarios(request: Request) -> list[dict]:
+    _ctx(request)
+    return [{"scenario_id": k, "title": v["title"],
+             "edits": len(v["edits"]),
+             "created_at": v["created_at"]}
+            for k, v in _SCENARIOS.items()]
+
+
+@router.post(
+    "/scenarios/{sid}/edits",
+    response_model=dict,
+    operation_id="ontAppendV2ScenarioEdit",
+)
+async def append_scenario_edit(
+    sid: str, payload: ScenarioEditDTO, request: Request,
+) -> dict:
+    _ctx(request)
+    if sid not in _SCENARIOS:
+        raise HTTPException(status_code=404, detail=f"scenario not found: {sid}")
+    edit = payload.model_dump()
+    # 结构校验（复用 EditOp 校验，不执行）
+    from mate_kernel.action.edit_set import EditOp, EditSetError
+
+    try:
+        EditOp(**{k: v for k, v in edit.items() if v or k in (
+            "op", "target", "property_rid", "value", "class_rid",
+            "primary_key", "props", "link_type_rid", "src", "dst",
+            "link_instance_rid")})
+    except (EditSetError, TypeError) as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    # 即时回放校验（目标存在性等）—— to_thread 内
+    def _validate() -> None:
+        try:
+            _scenario_overlay(request, sid)
+        except KeyError:
+            raise
+        # 追加后回放一遍验证
+        _SCENARIOS[sid]["edits"].append(edit)
+        try:
+            _scenario_overlay(request, sid)
+        except Exception as e:
+            _SCENARIOS[sid]["edits"].pop()
+            raise ValueError(str(e)) from e
+
+    import asyncio
+
+    try:
+        await asyncio.to_thread(_validate)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    return {"scenario_id": sid, "pending": len(_SCENARIOS[sid]["edits"])}
+
+
+@router.get(
+    "/scenarios/{sid}/view",
+    response_model=dict,
+    operation_id="ontGetV2ScenarioView",
+)
+async def scenario_view(
+    sid: str, request: Request, class_rid: str = "",
+) -> dict:
+    """G44：沙盒合并视图（overlay 优先 + 墓碑隐藏；_sandbox_ 标记新建/修改）。"""
+    _ctx(request)
+    if sid not in _SCENARIOS:
+        raise HTTPException(status_code=404, detail=f"scenario not found: {sid}")
+    entry = _SCENARIOS[sid]
+
+    def _run() -> dict:
+        from mate_kernel.objectset.compiler import individual_to_row
+
+        ov, _repo, _e = _scenario_overlay(request, sid)
+        cls = ClassRef(class_rid) if class_rid else None
+        inds = ov.list_individuals(cls)
+        touched = {e.get("target") for e in entry["edits"]
+                   if e.get("op") == "set_property"}
+        created = set()
+        for e in entry["edits"]:
+            if e.get("op") == "create_object":
+                parts = e["class_rid"].split(".")
+                slug = parts[4] if len(parts) >= 6 else parts[3]
+                created.add(f"ont.{parts[1]}.ind.{slug}.{e['primary_key']}")
+        rows = []
+        for i in inds:
+            row = individual_to_row(i)
+            row["_sandbox_"] = ("new" if i.rid in created
+                                else "changed" if i.rid in touched else "")
+            rows.append(row)
+        return {"scenario_id": sid, "rows": rows,
+                "pending_edits": len(entry["edits"])}
+
+    import asyncio
+
+    return await asyncio.to_thread(_run)
+
+
+@router.post(
+    "/scenarios/{sid}/merge",
+    response_model=dict,
+    operation_id="ontMergeV2Scenario",
+)
+async def merge_scenario(
+    sid: str, payload: ScenarioMergeDTO, request: Request,
+) -> dict:
+    """G44：沙盒合并 —— 暂存编辑经 apply_edit_set_now（审计管道）落主库。"""
+    ctx = _ctx(request)
+    if sid not in _SCENARIOS:
+        raise HTTPException(status_code=404, detail=f"scenario not found: {sid}")
+
+    def _run() -> dict:
+        ov, _repo, _e = _scenario_overlay(request, sid)
+        return ov.merge_to_base(
+            payload.action_rid,
+            actor=payload.actor or str(getattr(ctx, "user_id", "")) or "scenario-op",
+        )
+
+    import asyncio
+
+    try:
+        result = await asyncio.to_thread(_run)
+    except Exception as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    del _SCENARIOS[sid]
+    out = dict(result) if isinstance(result, dict) else {
+        "applied": len(getattr(result, "applied", ()) or ())}
+    out["scenario_id"] = sid
+    out["merged"] = True
+    return out
+
+
+@router.delete(
+    "/scenarios/{sid}",
+    response_model=dict,
+    operation_id="ontDiscardV2Scenario",
+)
+async def discard_scenario(sid: str, request: Request) -> dict:
+    _ctx(request)
+    existed = _SCENARIOS.pop(sid, None)
+    return {"scenario_id": sid, "discarded": existed is not None}
+
+
+@router.get(
+    "/usage/types",
+    response_model=list[dict],
+    operation_id="ontGetV2UsageSummary",
+)
+async def usage_summary(request: Request, days: int = 30) -> list[dict]:
+    """GOV-16：近 N 天 per-type 使用量（变更影响评估 / 退役决策）。"""
+    _ctx(request)
+    return await _call_scoped(request, "usage_summary", days)
+
+
+class LifecycleActionDTO(BaseModel):
+    action: str  # snooze | deprecate | delete
+    actor: str = ""
+
+
+@router.post(
+    "/object-types/{rid:path}/lifecycle",
+    response_model=dict,
+    operation_id="ontApplyV2Lifecycle",
+)
+async def apply_lifecycle(
+    rid: str, payload: LifecycleActionDTO, request: Request,
+) -> dict:
+    """GOV-17：Cleanup 三级处置（Snooze/Deprecate/Delete）+ 使用量删除保护。"""
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{str(ctx.tenant_id)}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant class denied")
+    try:
+        return await _call_scoped(
+            request, "apply_lifecycle", rid, payload.action,
+            payload.actor or str(getattr(ctx, "user_id", "")))
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+
+
+@router.get(
+    "/lint/anti-patterns",
+    response_model=list[dict],
+    operation_id="ontLintV2AntiPatterns",
+)
+async def lint_anti_patterns(request: Request) -> list[dict]:
+    """GOV-18：反模式 lint（god_object / kitchen_sink / misnomer / action_sprawl）。"""
+    from .governance import lint_anti_patterns as _lint
+
+    _ctx(request)
+    ots = await _call_scoped(request, "list_object_types", 10000, 0)
+    ats = await _call_scoped(request, "list_action_types")
+    return _lint(list(ots), list(ats))
+
+
+class TimeseriesAppendDTO(BaseModel):
+    """GOV-19：时序点追加（series_rid = TIMESERIES 属性值）。"""
+    series_rid: str
+    points: list[dict[str, Any]]
+
+
+@router.post(
+    "/timeseries/append",
+    response_model=dict,
+    operation_id="ontAppendV2Timeseries",
+)
+async def append_timeseries(
+    payload: TimeseriesAppendDTO, request: Request,
+) -> dict:
+    ctx = _ctx(request)
+    tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    if not payload.series_rid.startswith(f"ont.{tenant}."):
+        raise HTTPException(status_code=403, detail="cross-tenant series denied")
+    n = await _call_scoped(
+        request, "append_timeseries", payload.series_rid,
+        payload.points, tenant)
+    return {"appended": n}
+
+
+@router.get(
+    "/timeseries/{series_rid:path}",
+    response_model=list[dict],
+    operation_id="ontQueryV2Timeseries",
+)
+async def query_timeseries(
+    series_rid: str, request: Request,
+    start: str | None = None, end: str | None = None,
+) -> list[dict]:
+    """GOV-19：时序窗口查询（ts 升序）。"""
+    _ctx(request)
+    return await _call_scoped(
+        request, "query_timeseries", series_rid, start, end)
+
+
+class SchemaWipDTO(BaseModel):
+    """G33：WIP 暂存体（payload 即 ObjectTypeDTO 形态）。"""
+    payload: ObjectTypeDTO
+    author: str = ""
+
+
+@router.post(
+    "/object-types/wip",
+    response_model=dict,
+    operation_id="ontSaveV2SchemaWip",
+)
+async def save_schema_wip(
+    payload: SchemaWipDTO, request: Request,
+) -> dict:
+    """G33：schema 变更暂存（他人不可见；不落正式表、不做门禁）。"""
+    ctx = _ctx(request)
+    tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    if not payload.payload.rid.startswith(f"ont.{tenant}."):
+        raise HTTPException(status_code=403, detail="cross-tenant rid denied")
+    return await _call_scoped(
+        request, "save_schema_wip", payload.payload.rid,
+        payload.payload.model_dump(exclude={"confirm_name"}),
+        payload.author)
+
+
+@router.get(
+    "/object-types/wip",
+    response_model=list[dict],
+    operation_id="ontListV2SchemaWip",
+)
+async def list_schema_wip(request: Request) -> list[dict]:
+    _ctx(request)
+    return await _call_scoped(request, "list_schema_wip")
+
+
+@router.post(
+    "/object-types/wip/{rid:path}/apply",
+    response_model=ObjectTypeResponse,
+    operation_id="ontApplyV2SchemaWip",
+)
+async def apply_schema_wip(
+    rid: str, request: Request, confirm_name: str = "",
+) -> ObjectTypeResponse:
+    """G33：应用 WIP → 正式表（走与直接 upsert 相同的破坏性门禁）。"""
+    ctx = _ctx(request)
+    del confirm_name
+    wip = await _call_scoped(request, "get_schema_wip", rid)
+    dto = ObjectTypeDTO(**wip["payload"])
+    # 复用主 upsert 端点的门禁逻辑：直接调内部实现
+    saved = await _upsert_object_type_gated(dto, request, ctx)
+    await _call_scoped(request, "delete_schema_wip", rid)
+    return _ot_to_dto(saved)
+
+
+@router.delete(
+    "/object-types/wip/{rid:path}",
+    response_model=dict,
+    operation_id="ontDiscardV2SchemaWip",
+)
+async def discard_schema_wip(rid: str, request: Request) -> dict:
+    ok = await _call_scoped(request, "delete_schema_wip", rid)
+    return {"rid": rid, "discarded": bool(ok)}
+
+
+async def _upsert_object_type_gated(
+    payload: ObjectTypeDTO, request: Request, ctx: Any,
+) -> ObjectType:
+    """G33：与 POST /object-types 相同的门禁 + upsert（WIP apply 复用）。"""
+    from mate_kernel.ontology.types.object_type import detect_destructive_changes
+
+    ot = _dto_to_ot(payload)
+    try:
+        existing = await _call_scoped(
+            request, "get_object_type", ClassRef(payload.rid))
+        destructive = detect_destructive_changes(existing, ot)
+    except KeyError:
+        destructive = []
+    if destructive and payload.confirm_name != existing.display_name:
+        raise HTTPException(
+            status_code=409,
+            detail={"error": "destructive_confirm_required",
+                    "changes": destructive,
+                    "confirm_with": existing.display_name},
+        )
+    try:
+        return await _call_scoped(request, "upsert_object_type", ot)
+    except SlugConflictError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+
+@router.get(
+    "/object-types/hierarchy",
+    response_model=list[dict],
+    operation_id="ontGetV2TypeHierarchy",
+)
+async def get_type_hierarchy(request: Request) -> list[dict]:
+    """EXP-01：租户类型层级树（parent_class 维度，children 嵌套完整子树）。"""
+    _ctx(request)
+    return await _call_scoped(request, "get_type_hierarchy")
+
+
+@router.get(
+    "/value-types",
+    response_model=list[dict],
+    operation_id="ontListV2ValueTypes",
+)
+async def list_value_types(request: Request) -> list[dict]:
+    """EXP-02：值类型注册表（Property.type_id 引用目标）。"""
+    _ctx(request)
+    from mate_kernel.ontology.types.value_types import list_value_types as _list
+
+    return [
+        {
+            "type_id": vt.type_id,
+            "format": vt.format.value,
+            "description": vt.description,
+            "params": vt.params,
+        }
+        for vt in _list()
+    ]
+
+
+@router.get(
+    "/properties",
+    response_model=list[PropertyDTO],
+    operation_id="ontListV2Properties",
+)
+async def list_properties(request: Request) -> list[PropertyDTO]:
+    """EXP-02：属性库全量（共享属性建模 / 引用面）。"""
+    _ctx(request)
+    items = await _call_scoped(request, "list_properties")
+    return [_prop_to_dto(p) for p in items]
+
+
+@router.get(
+    "/properties/shared",
+    response_model=list[dict],
+    operation_id="ontListV2SharedProperties",
+)
+async def shared_properties(request: Request) -> list[dict]:
+    """EXP-02：共享属性使用统计 —— Property rid → 引用类型清单（>1 即共享）。"""
+    _ctx(request)
+    return await _call_scoped(request, "shared_properties_usage")
+
+
+@router.post(
+    "/properties",
+    response_model=PropertyDTO,
+    operation_id="ontUpsertV2Property",
+)
+async def upsert_property(
+    payload: PropertyDTO, request: Request,
+) -> PropertyDTO:
+    """EXP-02：属性库独立 upsert（先注册后引用；struct/derived/共享标记可带）。"""
+    ctx = _ctx(request)
+    if not payload.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant rid denied")
+    p = _dto_to_prop(payload)
+    saved = await _call_scoped(request, "upsert_property", p)
+    return _prop_to_dto(saved)
+
+
+@router.get(
+    "/interfaces/{rid:path}/implementations",
+    response_model=list[str],
+    operation_id="ontListV2InterfaceImplementations",
+)
+async def list_interface_implementations(rid: str, request: Request) -> list[str]:
+    """EXP-01：Interface rid → 实现它的全部 ObjectType rid（多态查询源展开结果）。"""
+    from mate_kernel.ontology.types.interface import interface_source_rids
+
+    _ctx(request)
+    ots = await _call_scoped(request, "list_object_types", 10000, 0)
+    return interface_source_rids(rid, ots)
 
 
 @router.post(
@@ -506,6 +1455,27 @@ async def upsert_object_type(
         # GOVERN-06 第一道防线：外租户前缀 rid 一律拒绝写入
         raise HTTPException(status_code=403, detail="cross-tenant rid denied")
     ot = _dto_to_ot(payload)
+    # G33：破坏性变更门禁 —— 删属性/改 format/改主键/改 parent 须 confirm_name
+    from mate_kernel.ontology.types.object_type import detect_destructive_changes
+
+    try:
+        existing = await _call_scoped(
+            request, "get_object_type", ClassRef(payload.rid))
+        destructive = detect_destructive_changes(existing, ot)
+    except KeyError:
+        destructive = []
+    except Exception:
+        destructive = []
+    if destructive and payload.confirm_name != existing.display_name:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "destructive_confirm_required",
+                "changes": destructive,
+                "confirm_with": existing.display_name,
+                "hint": "resend with confirm_name == 该类型当前 display_name",
+            },
+        )
     try:
         saved = await _call_scoped(request, "upsert_object_type", ot)
     except SlugConflictError as e:
@@ -643,6 +1613,9 @@ async def import_object_type(request: Request, payload: dict) -> ObjectTypeRespo
                      title=pp.get("title", pp["rid"]),
                      format=PropertyFormat.STRING)
             for pp in body["properties"]
+        ),
+        parent_class=(
+            ClassRef(body["parent_class"]) if body.get("parent_class") else None
         ),
     )
     out = await _call_scoped(request, "upsert_object_type", ot)
@@ -1087,13 +2060,12 @@ async def append_object_type_property(
         )
 
     new_prop = _dto_to_prop(payload)
-    merged = ObjectType(
-        rid=existing.rid,
-        primary_key=existing.primary_key,
-        properties=existing.properties + (new_prop,),
-        display_name=existing.display_name,
-        interfaces=existing.interfaces,
-    )
+    # dataclasses.replace 保留全部既有字段（marking/parent_class/description/
+    # status/type_group/render_hints —— 旧版显式重建会丢 EXP-01/02/04 字段）
+    from dataclasses import replace as _dc_replace
+
+    merged = _dc_replace(
+        existing, properties=existing.properties + (new_prop,))
     saved = await _call_scoped(request, "upsert_object_type", merged)
     return _ot_to_dto(saved)
 
@@ -1157,14 +2129,20 @@ async def create_individual(
     operation_id="ontListV2Individuals",
 )
 async def list_individuals(
-    request: Request, class_rid: str | None = None,
+    request: Request, class_rid: str | None = None, markings: str = "",
 ) -> list[IndividualResponse]:
-    """List individuals; class_rid 过滤。"""
+    """List individuals; class_rid 过滤 + SEC-12 行策略读时强制（markings 参数）。"""
     ctx = _ctx(request)
     cls_ref = ClassRef(class_rid) if class_rid else None
     if cls_ref and not cls_ref.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant access denied")
     items = await _call_scoped(request, "list_individuals", cls_ref)
+    if class_rid:  # GOV-16：读打点（best-effort）
+        await _call_scoped(request, "record_usage", class_rid, "read", 1)
+    if markings:
+        viewer = _effective_markings(request, markings)
+        items = await _call_scoped(
+            request, "enforce_read_policies", items, viewer)
     return [
         IndividualResponse(
             rid=i.rid,
@@ -1273,6 +2251,90 @@ async def apply_action_by_rid(
             "then POST /proposals/{proposal_id}/execute"
         ),
     )
+
+
+class EditSetApplyBodyDTO(BaseModel):
+    """ACT-05：edit-set 执行体。edits 缺省时用 ActionType.declarative_edits 模板。"""
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    target_iid: str = ""
+    edits: list[dict[str, Any]] = Field(default_factory=list)
+    impact_summary: str = ""
+
+
+@router.post(
+    "/action-types/{rid:path}/propose-edit-set",
+    response_model=dict,
+    operation_id="ontProposeV2EditSet",
+)
+async def propose_edit_set(
+    rid: str, payload: EditSetApplyBodyDTO, request: Request,
+) -> dict:
+    """ACT-05：AI 路径 edit-set 提案（强制 HITL —— pending → 用户 confirm → execute）。"""
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant action denied")
+    try:
+        at = await _call_scoped(request, "get_action_type", ClassRef(rid))
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"action type not found: {rid}")
+    edits = payload.edits or [dict(t) for t in at.declarative_edits]
+    if not edits:
+        raise HTTPException(status_code=422, detail="no declarative_edits on action and no edits in body")
+    try:
+        prop = await _call_scoped(
+            request, "propose_edit_set", rid, payload.target_iid or None,
+            dict(payload.parameters), edits,
+            payload.impact_summary or f"edit-set proposal for {rid}",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    return {
+        "proposal_id": getattr(prop, "proposal_id", None) or prop.get("proposal_id"),
+        "status": "pending",
+        "requires_hitl": True,
+    }
+
+
+@router.post(
+    "/action-types/{rid:path}/apply-edit-set",
+    response_model=dict,
+    operation_id="ontApplyV2EditSet",
+)
+async def apply_edit_set(
+    rid: str, payload: EditSetApplyBodyDTO, request: Request,
+) -> dict:
+    """ACT-05 / D7：人工路径「预览即确认」—— 即时 proposal + 单事务执行 + 审计。
+
+    expected_diff 预览在 proposal 记录中可查（GET /proposals/{id}/preview）。
+    """
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant action denied")
+    actor = str(ctx.user_id if hasattr(ctx, "user_id") else "") or "human-operator"
+    try:
+        at = await _call_scoped(request, "get_action_type", ClassRef(rid))
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"action type not found: {rid}")
+    edits = payload.edits or [dict(t) for t in at.declarative_edits]
+    if not edits:
+        raise HTTPException(status_code=422, detail="no declarative_edits on action and no edits in body")
+    try:
+        result = await _call_scoped(
+            request, "apply_edit_set_now", rid, payload.target_iid or None,
+            dict(payload.parameters), edits, actor,
+            payload.impact_summary,
+        )
+    except ValueError as e:
+        # ACT-06 校验 / 模板解析失败 / 编辑执行失败 → 422（可操作错误）
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    # GOV-16：写打点（on 里第一个类；best-effort）
+    try:
+        at0 = at.on[0].rid if at.on else ""
+        if at0:
+            await _call_scoped(request, "record_usage", at0, "write", 1)
+    except Exception:
+        pass
+    return result
 
 
 # ─────────────────── MP-SAL-04: Proposal 状态机端点（ADR-0044 §2.4）───────────────────
@@ -2416,6 +3478,20 @@ async def list_interfaces(
     return [_interface_to_dto(i) for i in items]
 
 
+@router.get(
+    "/individuals/{rid:path}/around",
+    response_model=list[dict],
+    operation_id="ontSearchAroundV2Individual",
+)
+async def search_around(rid: str, request: Request, limit: int = 100) -> list[dict]:
+    """EXP-03：一跳关系遍历（Object Explorer Search Around 同语义）。
+
+    按 (link_type, direction) 分组返回对端实例清单；limit 为对端总数上限。
+    """
+    _ctx(request)
+    return await _call_scoped(request, "search_around", rid, limit)
+
+
 # ─────────────────── 8) Individual by rid ───────────────────
 
 
@@ -2557,6 +3633,13 @@ class QuerySortKeyDTO(BaseModel):
     desc: bool = False
 
 
+class NearestSpecDTO(BaseModel):
+    """G13：nearestNeighbors 查询算子（先 KNN 后 filters）。"""
+    text: str
+    k: int = 10
+    property_rid: str | None = None
+
+
 class ObjectQueryDTO(BaseModel):
     source: str
     filters: list[QueryConditionDTO] = Field(default_factory=list)
@@ -2565,6 +3648,7 @@ class ObjectQueryDTO(BaseModel):
     sort: list[QuerySortKeyDTO] = Field(default_factory=list)
     paging_offset: int = 0
     paging_limit: int = 100
+    nearest: NearestSpecDTO | None = None
 
 
 class ObjectQueryResultDTO(BaseModel):
@@ -2618,9 +3702,14 @@ def _dto_to_ir_query(d: ObjectQueryDTO) -> ObjectSetQuery:
                 TraversalStep(link_type=t.link_type, direction=t.direction)
                 for t in d.traversal
             ),
-            sort=tuple(SortKey(field=s.field, desc=s.desc) for s in d.sort),
+            sort=tuple(SortKey(field=k.field, desc=k.desc) for k in d.sort),
             paging_offset=d.paging_offset,
             paging_limit=d.paging_limit,
+            nearest=(
+                NearestSpec(text=d.nearest.text, k=d.nearest.k,
+                            property_rid=d.nearest.property_rid)
+                if d.nearest is not None else None
+            ),
         )
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
@@ -2632,14 +3721,20 @@ def _dto_to_ir_query(d: ObjectQueryDTO) -> ObjectSetQuery:
     operation_id="ontExecuteV2ObjectQuery",
 )
 async def execute_object_query(
-    payload: ObjectQueryDTO, request: Request,
+    payload: ObjectQueryDTO, request: Request, markings: str = "",
 ) -> ObjectQueryResultDTO:
-    """Structured IR query (ADR-0043): filters / aggregation / traversal / multi-key sort."""
+    """Structured IR query (ADR-0043) + SEC-12 enforcement (markings param)."""
     ctx = _ctx(request)
     if not payload.source.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant query denied")
     q = _dto_to_ir_query(payload)
     result = await _call_scoped(request, "execute_object_query", q)
+    if markings and result.kind == "objects":
+        viewer = _effective_markings(request, markings)
+        rows = list(result.rows)
+        rows = await _call_scoped(request, "mask_rows", rows, viewer)
+        result = type(result)(kind=result.kind, rows=tuple(rows),
+                              result_schema=result.result_schema)
     return ObjectQueryResultDTO(
         kind=result.kind,
         rows=[dict(r) for r in result.rows],
@@ -2702,11 +3797,15 @@ async def list_agent_tools(
         str(ctx.tenant_id),  # type: ignore[attr-defined]  # 显式租户（thread-local 不可见）
     )
     links = await _call_scoped(request, "list_link_instances")
-    schemas = agent_tool_schemas(object_types, links, caller_markings)
+    action_types = await _call_scoped(request, "list_action_types")
+    schemas = agent_tool_schemas(
+        object_types, links, caller_markings, action_types=action_types)
     tools: list[AgentToolDTO] = []
     for s in schemas:
         name = s["function"]["name"]
-        if not name.startswith("query_"):
+        # AI-11：读工具（query_*）+ 语义检索 + 写提案工具（propose_action_*）
+        if not (name.startswith("query_") or name == "search_objects"
+                or name.startswith("propose_action_")):
             continue
         tools.append(AgentToolDTO(
             name=name,
@@ -2743,17 +3842,42 @@ class ObjectSearchResultDTO(BaseModel):
     operation_id="ontSearchV2Objects",
 )
 async def search_objects(
-    payload: ObjectSearchDTO, request: Request,
+    payload: ObjectSearchDTO, request: Request, markings: str = "",
 ) -> ObjectSearchResultDTO:
-    """MP-SAL-02: 对象语义检索（OAG）→ 对象卡片（带 rid 可追溯）。"""
+    """MP-SAL-02: 对象语义检索（OAG）→ 对象卡片（G6 marking 过滤 + G7 scope 收窄）。"""
     ctx = _ctx(request)
     if payload.class_rid and not payload.class_rid.startswith(
         f"ont.{ctx.tenant_id}.",  # type: ignore[attr-defined]
     ):
         raise HTTPException(status_code=403, detail="cross-tenant search denied")
+    viewer = _effective_markings(request, markings) if markings else None
     cards = await _call_scoped(
         request, "search_objects", payload.text, payload.class_rid, payload.top_k,
         str(ctx.tenant_id),  # type: ignore[attr-defined]  # to_thread 下 thread-local 不可见，显式传租户
+        viewer,
+    )
+    return ObjectSearchResultDTO(cards=cards)
+
+
+@router.post(
+    "/object-search/hybrid",
+    response_model=ObjectSearchResultDTO,
+    operation_id="ontHybridSearchV2Objects",
+)
+async def hybrid_search_objects(
+    payload: ObjectSearchDTO, request: Request, markings: str = "",
+) -> ObjectSearchResultDTO:
+    """AI-09：混合检索（G6 marking 过滤 + G7 scope 收窄）。"""
+    ctx = _ctx(request)
+    if payload.class_rid and not payload.class_rid.startswith(
+        f"ont.{ctx.tenant_id}.",  # type: ignore[attr-defined]
+    ):
+        raise HTTPException(status_code=403, detail="cross-tenant search denied")
+    viewer = _effective_markings(request, markings) if markings else None
+    cards = await _call_scoped(
+        request, "search_objects_hybrid", payload.text, payload.class_rid,
+        payload.top_k, str(ctx.tenant_id),  # type: ignore[attr-defined]
+        viewer_markings=viewer,
     )
     return ObjectSearchResultDTO(cards=cards)
 

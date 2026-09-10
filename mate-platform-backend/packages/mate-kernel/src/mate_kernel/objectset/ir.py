@@ -28,6 +28,7 @@ __all__ = [
     "Condition",
     "InMemoryQueryExecutor",
     "MetricSpec",
+    "NearestSpec",
     "ObjectSetQuery",
     "QueryOp",
     "QueryResult",
@@ -91,14 +92,36 @@ class SortKey:
 
 
 @dataclass(frozen=True, slots=True)
+class NearestSpec:
+    """G13：nearestNeighbors 查询算子（vector 检索入 IR）。
+
+    语义：先按 embedding 余弦距离取 source 类（含 Interface 展开/后代闭包）
+    的 top-k 实例，再在其上应用 filters / sort / paging（先 KNN 后过滤）。
+    text 由 repo 注入的 embedder 现算向量；property_rid 可选（限定属性级
+    embedding 通道，缺省全属性）。
+    """
+
+    text: str
+    k: int = 10
+    property_rid: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.text.strip():
+            raise ValueError("NearestSpec.text must be non-empty")
+        if not 1 <= self.k <= 500:
+            raise ValueError("NearestSpec.k must be in [1, 500]")
+
+
+@dataclass(frozen=True, slots=True)
 class ObjectSetQuery:
-    source: str  # ObjectType rid
+    source: str  # ObjectType rid（或 Interface rid —— repo 层展开）
     filters: tuple[Condition, ...] = ()
     aggregation: Aggregation | None = None
     traversal: tuple[TraversalStep, ...] = ()
     sort: tuple[SortKey, ...] = ()
     paging_offset: int = 0
     paging_limit: int = 100
+    nearest: NearestSpec | None = None  # G13
 
     def __post_init__(self) -> None:
         # 兼容 ClassRef 与 str 两种入参（DTO 层传 str，内核调用方常持 ClassRef）
@@ -216,7 +239,14 @@ class InMemoryQueryExecutor:
         self._links: tuple[LinkInstance, ...] = tuple(links)
         self._types: dict[str, ObjectType] = {t.rid.rid: t for t in object_types}
 
-    def execute(self, q: ObjectSetQuery) -> QueryResult:
+    def execute(
+        self, q: ObjectSetQuery, source_classes: "frozenset[str] | None" = None,
+    ) -> QueryResult:
+        """执行 ObjectSetQuery。
+
+        source_classes（EXP-01）：源类集合覆盖 —— repo 层用于 Interface 多态
+        源展开与 subclass 后代闭包。None = 按 q.source 精确匹配（legacy）。
+        """
         if q.aggregation is not None:
             for m in q.aggregation.metrics:
                 if m.fn != "count" and m.field is None:
@@ -225,9 +255,14 @@ class InMemoryQueryExecutor:
                     raise ValueError(f"unknown metric fn {m.fn!r}")
 
         current_class = q.source
-        current: list[Individual] = [
-            i for i in self._individuals if i.class_rid.rid == current_class
-        ]
+        if source_classes is not None:
+            current: list[Individual] = [
+                i for i in self._individuals if i.class_rid.rid in source_classes
+            ]
+        else:
+            current = [
+                i for i in self._individuals if i.class_rid.rid == current_class
+            ]
 
         for cond in q.filters:
             current = [

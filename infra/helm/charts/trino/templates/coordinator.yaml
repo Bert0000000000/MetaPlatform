@@ -42,9 +42,7 @@ spec:
               {{- if .Values.catalogs.paimon.enabled }}
               echo "connector.name=paimon" > /etc/trino/catalog/paimon.properties
               {{- end }}
-              {{- if .Values.catalogs.system.enabled }}
-              echo "connector.name=system" > /etc/trino/catalog/system.properties
-              {{- end }}
+
               # node/jvm 基础文件（launcher 直启，绕过镜像内 -D 参数错位的包装）
               cat > /etc/trino/node.properties <<EOF
               node.environment={{ .Chart.Name }}

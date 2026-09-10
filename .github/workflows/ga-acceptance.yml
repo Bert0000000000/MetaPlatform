@@ -222,6 +222,36 @@ jobs:
       - name: GOVERN-07 forbid_legacy_artifacts (Spring-era residue)
         run: python scripts/ci/forbid_legacy_artifacts.py
 
+  # v3.1 Ontology (ADR-0021 KERNEL-01 + ADR-0016 mate-tech-ont): bring the
+  # mate-kernel + mate-tech-ont pytest suites under the same gate. PG-gated
+  # e2e cases auto-skip without a PostgreSQL service (expected in CI: no PG
+  # container in this job; local baseline ~980 passed / ~57 skipped).
+  ont-kernel-tests:
+    name: ont-kernel pytest (mate-kernel + mate-tech-ont)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      # Minimal import-closure-verified dependency set for the two suites:
+      # pytest-asyncio -> @pytest.mark.asyncio under --strict-markers;
+      # sqlalchemy -> mate_tech_db sqlite in-memory store (test_ont_sql_store);
+      # neo4j -> legacy repo imported at module level by mate_tech_ont.main;
+      # rdflib -> owl/io.py lazy import exercised by test_owl.py assertions;
+      # psycopg2-binary -> import-time + PG-gated tests (skips without PG);
+      # pyyaml -> tests/contracts/test_lint_sunset_headers.py (CI 上一轮实跑暴露).
+      - name: install minimal deps
+        run: >
+          pip install pytest pytest-asyncio fastapi httpx pydantic pydantic-settings
+          structlog tenacity psycopg2-binary "pyjwt[crypto]" sqlalchemy neo4j rdflib
+          pyyaml
+      # Root pyproject [tool.pytest.ini_options] provides pythonpath +
+      # --import-mode=importlib; test files also bootstrap sys.path themselves.
+      - name: mate-kernel/tests + mate-tech-ont/tests
+        run: python -m pytest packages/mate-kernel/tests packages/mate-tech-ont/tests -q
+        working-directory: mate-platform-backend
+
   # rule 6 + GOVERN-06: PostgreSQL FORCE RLS must execute as a real
   # non-superuser. The dedicated test database is created inside this job and
   # is never shared with application data.

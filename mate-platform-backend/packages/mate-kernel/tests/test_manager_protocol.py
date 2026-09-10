@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -33,7 +33,7 @@ def _ver(slug: str = "order", v: int = 1) -> Version:
         rid=f"ont.acme.ver.{slug}.v{v}",
         class_ref=_cls(slug),
         parent_rid=None,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
         author="alice",
     )
 
@@ -160,7 +160,7 @@ class TestTrackedChange:
             kind=ChangeKind.REGISTER_CLASS,
             target_rid="ont.acme.cls.x.v1",
             payload_hash="abcd1234",
-            occurred_at=datetime.now(timezone.utc),
+            occurred_at=datetime.now(UTC),
             actor="alice",
         )
         with pytest.raises(Exception):
@@ -175,7 +175,7 @@ class TestNullChangeSink:
                 kind=ChangeKind.REGISTER_CLASS,
                 target_rid="ont.acme.cls.x.v1",
                 payload_hash="abcd1234",
-                occurred_at=datetime.now(timezone.utc),
+                occurred_at=datetime.now(UTC),
                 actor="alice",
             )
         )
