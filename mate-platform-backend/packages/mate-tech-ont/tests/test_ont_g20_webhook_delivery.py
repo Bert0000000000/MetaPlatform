@@ -11,7 +11,6 @@ import json
 import os
 import sys
 import threading
-from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 _K = os.path.join(os.path.dirname(__file__), "..", "..", "mate-kernel", "src")
@@ -53,7 +52,7 @@ def _mk_repo() -> InMemoryOntologyRepository:
 class _Collector(BaseHTTPRequestHandler):
     received: list[dict] = []
 
-    def do_POST(self):  # noqa: N802
+    def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length)
         _Collector.received.append({
@@ -73,7 +72,8 @@ class _Collector(BaseHTTPRequestHandler):
 class TestWebhookDelivery:
     def test_sign_deliver_retry_idempotent(self) -> None:
         from mate_tech_ont.v2_kernel.webhook_delivery import (
-            deliver_pending, sign_payload,
+            deliver_pending,
+            sign_payload,
         )
 
         server = HTTPServer(("127.0.0.1", 0), _Collector)
@@ -98,7 +98,7 @@ class TestWebhookDelivery:
                   "primary_key": "a1", "props": {P_ID: "a1"}}],
                 actor="ops-1", impact_summary="",
             )
-            assert len(r._outbox_events) >= 1  # noqa: SLF001
+            assert len(r._outbox_events) >= 1
             # 3) 签名单元
             sig = sign_payload(secret, b'{"a":1}')
             assert sig.startswith("sha256=")
@@ -117,7 +117,7 @@ class TestWebhookDelivery:
             assert hmac.compare_digest(got["signature"], body_sig)
             assert got["body"]["payload"]["action_rid"] == ACT
             # 失败订阅的审计（attempts=3, last_error 非空）
-            fails = [d for d in r._webhook_deliveries  # noqa: SLF001
+            fails = [d for d in r._webhook_deliveries
                      if d["status"] == "failed"]
             assert fails and fails[0]["attempts"] == 4 and fails[0]["last_error"]  # 1 次 + 3 重试
             # 5) 幂等：重跑 → 成功过的跳过

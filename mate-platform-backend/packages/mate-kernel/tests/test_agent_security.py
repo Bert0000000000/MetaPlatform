@@ -106,7 +106,6 @@ class TestCheckActionApply:
 
 class TestDecisionFrozen:
     def test_immutable(self) -> None:
-        from datetime import datetime, timezone
         d = SecurityAgent().decide(_req())
         with pytest.raises(Exception):
             d.decision = Decision.DENY  # type: ignore[misc]

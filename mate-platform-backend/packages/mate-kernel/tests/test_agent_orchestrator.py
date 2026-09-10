@@ -8,7 +8,6 @@ from mate_kernel.agent.orchestrator import (
     AgentRole,
     AgentSelector,
     PlanSpec,
-    PlanState,
     PlanStep,
     StepKind,
     StepResult,

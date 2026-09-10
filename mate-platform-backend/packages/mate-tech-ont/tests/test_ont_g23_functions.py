@@ -38,7 +38,7 @@ class TestVersionSnapshots:
         r.upsert_function(_fn(2))
         versions = r.list_function_versions(FN)
         assert versions and versions[0]["version"] == 1
-        assert r._functions[ClassRef(FN)].version == 2  # noqa: SLF001
+        assert r._functions[ClassRef(FN)].version == 2
 
 
 class TestAlias:
@@ -61,7 +61,7 @@ class TestStubAndInvoke:
     def test_stub_records_and_returns(self) -> None:
         stub = FunctionStub(result={"decision": "approved"})
         r = _repo()
-        r._action_service.register_function(FN, stub)  # noqa: SLF001
+        r._action_service.register_function(FN, stub)
         out = r.invoke_function(FN, {"amount": 42})
         assert out["result"] == {"decision": "approved"}
         assert stub.calls == [(None, {"amount": 42})]
@@ -70,7 +70,7 @@ class TestStubAndInvoke:
         stub = FunctionStub(result="ok", error=RuntimeError("boom"),
                             fail_first_n=1)
         r = _repo()
-        r._action_service.register_function(FN, stub)  # noqa: SLF001
+        r._action_service.register_function(FN, stub)
         try:
             r.invoke_function(FN, {})
             first_failed = False
@@ -93,7 +93,6 @@ class TestWebSocketSubscription:
     """G25：WS 订阅 —— edit-set 触发 outbox 事件推送到连接客户端。"""
 
     def test_ws_receives_outbox_event(self) -> None:
-        import pytest
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
 
@@ -134,7 +133,6 @@ class TestWebSocketSubscription:
                   "primary_key": "t1", "props": {P2: "t1"}}],
                 actor="ops-1", impact_summary="",
             )
-            import threading
             import time
 
             got = None

@@ -19,7 +19,6 @@ from mate_kernel.agent.ontology import (
     _propose_object_type_payload,
 )
 
-
 # ─────────────────── Fakes ───────────────────
 
 

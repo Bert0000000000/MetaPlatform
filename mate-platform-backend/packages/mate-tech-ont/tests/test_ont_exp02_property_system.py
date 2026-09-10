@@ -22,20 +22,26 @@ for _p in (_K, _O):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mate_kernel.objectset.ir import ObjectSetQuery  # noqa: E402
 from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
 from mate_kernel.ontology.in_memory import InMemoryOntologyRepository  # noqa: E402
 from mate_kernel.ontology.instances.individual import Individual  # noqa: E402
 from mate_kernel.ontology.types.link_type import (  # noqa: E402
-    Cardinality, Directionality, LinkType,
+    Cardinality,
+    Directionality,
+    LinkType,
 )
 from mate_kernel.ontology.types.object_type import ObjectType  # noqa: E402
 from mate_kernel.ontology.types.property_ import (  # noqa: E402
-    DerivedSpec, Property, PropertyFormat, ai_metadata_struct,
+    DerivedSpec,
+    Property,
+    PropertyFormat,
+    ai_metadata_struct,
 )
 from mate_kernel.ontology.types.value_types import (  # noqa: E402
-    get_value_type, list_value_types, validate_property,
+    list_value_types,
+    validate_property,
 )
-from mate_kernel.objectset.ir import ObjectSetQuery  # noqa: E402
 
 T = "exp02"
 OBJ_DEPT = f"ont.{T}.obj.org.department.v1"

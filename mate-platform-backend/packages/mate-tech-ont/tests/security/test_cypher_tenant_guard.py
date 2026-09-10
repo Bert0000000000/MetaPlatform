@@ -14,27 +14,25 @@ route handlers — not just the cypher helpers — are exercised.
 """
 from __future__ import annotations
 
+# ─────────────────────────────────────────────────────────────────────
+# helpers
+# ─────────────────────────────────────────────────────────────────────
+import time as _time
+
+import jwt as _pyjwt
 import pytest
 from fastapi.testclient import TestClient
 
-from mate_tech_ont.main import app
 from mate_tech_ont.instances.store import (
     InstanceStore,
     TenantAccessError,
     _coerce_tenant_ns,
+)
+from mate_tech_ont.instances.store import (
     store as instance_store,
 )
+from mate_tech_ont.main import app
 from mate_tech_ont.security.tenant import TenantContext
-
-
-# ─────────────────────────────────────────────────────────────────────
-# helpers
-# ─────────────────────────────────────────────────────────────────────
-
-
-import time as _time
-
-import jwt as _pyjwt
 
 _TEST_JWT_SECRET = "test-secret"
 

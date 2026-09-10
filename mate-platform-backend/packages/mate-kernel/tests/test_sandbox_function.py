@@ -2,14 +2,10 @@
 
 from __future__ import annotations
 
-import sys
-
 import pytest
 
 from mate_kernel.sandbox.function import (
     SandboxLimits,
-    SandboxResult,
-    SandboxViolation,
     _static_check,
     run_function,
 )

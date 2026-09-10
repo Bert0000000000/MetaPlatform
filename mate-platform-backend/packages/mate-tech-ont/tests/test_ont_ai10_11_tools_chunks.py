@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import os
 import sys
-from datetime import UTC, datetime
 
 _K = os.path.join(os.path.dirname(__file__), "..", "..", "mate-kernel", "src")
 _O = os.path.join(os.path.dirname(__file__), "..", "src")
@@ -25,7 +24,9 @@ from mate_kernel.ontology.types.action_type import ActionType  # noqa: E402
 from mate_kernel.ontology.types.object_type import ObjectType  # noqa: E402
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat  # noqa: E402
 from mate_kernel.tooling.schema_gen import (  # noqa: E402
-    action_propose_tool_schema, agent_tool_schemas, semantic_search_tool_schema,
+    action_propose_tool_schema,
+    agent_tool_schemas,
+    semantic_search_tool_schema,
 )
 
 T = "ai1011"
@@ -50,7 +51,8 @@ def _repo_with_doc() -> InMemoryOntologyRepository:
 class TestChunkPipeline:
     def test_ingest_and_traceback(self) -> None:
         from mate_tech_ont.v2_kernel.chunk_pipeline import (
-            chunk_class_rid, ingest_document_chunks,
+            chunk_class_rid,
+            ingest_document_chunks,
         )
         from mate_tech_ont.v2_kernel.object_search import HashEmbedder
 

@@ -38,7 +38,7 @@ def test_duplicate_target_flagged():
 
 
 def test_missing_pk_flagged():
-    bad = {k: v for k, v in ENTRY.items()}
+    bad = dict(ENTRY)
     bad["props"] = {"name": "no-pk"}
     issues = validate_write_back([bad], known_classes=KNOWN, tenant_id="t1")
     assert [i.code for i in issues] == ["missing_pk"]

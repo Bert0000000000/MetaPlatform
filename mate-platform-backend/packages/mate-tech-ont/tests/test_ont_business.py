@@ -10,10 +10,8 @@ from mate_tech_ont.inference.engine import (
     TransitivityRule,
 )
 from mate_tech_ont.instances.store import store as instance_store
-from mate_tech_ont.sparql.cypher import execute_sparql
-from mate_tech_ont.versioning.store import version_store
 from mate_tech_ont.security.tenant import TenantContext
-
+from mate_tech_ont.sparql.cypher import execute_sparql
 
 # ---------------------------------------------------------------------------
 # Fixtures

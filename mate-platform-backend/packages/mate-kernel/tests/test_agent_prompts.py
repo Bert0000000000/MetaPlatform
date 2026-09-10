@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from mate_kernel.agent.orchestrator import AgentRole
 from mate_kernel.agent.prompts import SYSTEM_PROMPTS
 

@@ -24,6 +24,7 @@ for _p in (_K, _O):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mate_kernel.objectset.ir import ObjectSetQuery  # noqa: E402
 from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
 from mate_kernel.ontology.in_memory import InMemoryOntologyRepository  # noqa: E402
 from mate_kernel.ontology.instances.individual import Individual  # noqa: E402
@@ -31,7 +32,6 @@ from mate_kernel.ontology.query.object_set import ObjectSet  # noqa: E402
 from mate_kernel.ontology.types.interface import Interface  # noqa: E402
 from mate_kernel.ontology.types.object_type import ObjectType  # noqa: E402
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat  # noqa: E402
-from mate_kernel.objectset.ir import ObjectSetQuery  # noqa: E402
 
 T = "exp01"
 OBJ_BASE = f"ont.{T}.obj.core.base-entity.v1"
@@ -248,6 +248,5 @@ class TestPgSameSemantics:
             assert [c["rid"] for c in base_node["children"]] == [OBJ_CHILD]
 
     def test_pg_cycle_rejected(self, pg_repo) -> None:
-        with pytest.raises(ValueError, match="cycle"):
-            with pg_repo.tenant_scope(T):
-                pg_repo.upsert_object_type(_type(OBJ_BASE, parent=OBJ_CHILD))
+        with pytest.raises(ValueError, match="cycle"), pg_repo.tenant_scope(T):
+            pg_repo.upsert_object_type(_type(OBJ_BASE, parent=OBJ_CHILD))

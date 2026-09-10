@@ -102,7 +102,7 @@ class TestPgVector:
             r._ensure_schema()
         except Exception as e:
             pytest.skip(f"PG unavailable: {e}")
-        if not r._pgvector_ready:  # noqa: SLF001
+        if not r._pgvector_ready:
             pytest.skip("pgvector extension not available")
         from mate_tech_ont.v2_kernel.object_search import HashEmbedder
 

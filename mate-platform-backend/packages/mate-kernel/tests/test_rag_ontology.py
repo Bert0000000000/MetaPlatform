@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
-import pytest
+from datetime import UTC, datetime
 
 from mate_kernel.ontology.identity.class_ref import ClassRef
 from mate_kernel.ontology.instances.individual import Individual
@@ -27,8 +25,8 @@ def _ind(pk: str, props: dict[str, object]) -> Individual:
         class_rid=_cls(),
         props=tuple((_prop(name), value) for name, value in props.items()),  # type: ignore[arg-type]
         primary_key=pk,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
         tenant_id="acme",
     )
 

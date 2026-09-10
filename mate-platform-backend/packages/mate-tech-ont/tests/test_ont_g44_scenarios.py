@@ -19,13 +19,13 @@ import pytest  # noqa: E402
 from fastapi import FastAPI  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
+import mate_tech_ont.v2_kernel.api as ont_api  # noqa: E402
 from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
 from mate_kernel.ontology.in_memory import InMemoryOntologyRepository  # noqa: E402
 from mate_kernel.ontology.instances.individual import Individual  # noqa: E402
 from mate_kernel.ontology.types.action_type import ActionType  # noqa: E402
 from mate_kernel.ontology.types.object_type import ObjectType  # noqa: E402
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat  # noqa: E402
-import mate_tech_ont.v2_kernel.api as ont_api  # noqa: E402
 
 T = "g44"
 OBJ = f"ont.{T}.obj.crm.deal.v1"
@@ -66,7 +66,10 @@ def client() -> TestClient:
     @app.middleware("http")
     async def _fake_auth(request, call_next):
         from mate_platform.tenancy.context import (
-            AuthMethod, RequestContext, TenantId, UserId,
+            AuthMethod,
+            RequestContext,
+            TenantId,
+            UserId,
         )
 
         request.state.ctx = RequestContext(

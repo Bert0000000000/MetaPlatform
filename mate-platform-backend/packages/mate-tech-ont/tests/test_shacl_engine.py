@@ -6,7 +6,6 @@ from fastapi.testclient import TestClient
 
 from mate_tech_ont.inference.shacl_engine import SHACLEngine
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

@@ -28,10 +28,6 @@ def _case(name, individuals, shapes, expect_conforms, expect_constraint=None):
     ok = r["conforms"] == expect_conforms and (
         expect_constraint is None
         or any(v["constraint"] == expect_constraint for v in r["violations"])
-    ) if expect_conforms else (
-        r["conforms"] == expect_conforms
-        and (expect_constraint is None
-             or any(v["constraint"] == expect_constraint for v in r["violations"]))
     )
     return name, ok, r
 

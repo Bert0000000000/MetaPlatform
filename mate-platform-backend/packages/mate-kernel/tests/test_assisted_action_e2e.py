@@ -14,8 +14,8 @@ import pytest
 
 from mate_kernel.action.engine import ProposalNotConfirmed
 from mate_kernel.ontology.identity import ClassRef
-from mate_kernel.ontology.instances import Individual
 from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
+from mate_kernel.ontology.instances import Individual
 from mate_kernel.ontology.types import ActionType, ObjectType, Property, PropertyFormat
 
 _T = "sal4"

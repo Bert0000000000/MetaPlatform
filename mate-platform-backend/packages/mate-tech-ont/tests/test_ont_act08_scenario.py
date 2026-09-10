@@ -96,13 +96,13 @@ class TestScenarioOverlay:
         # 沙盒清空
         assert sc.pending_edits() == []
         # 审计留痕（即时 proposal 路径）
-        assert len(base._action_service.get_audit()) >= 1  # noqa: SLF001
+        assert len(base._action_service.get_audit()) >= 1
 
     def test_conflict_when_base_deleted_target(self) -> None:
         base = _base()
         sc = ScenarioOverlay(base)
         sc.set_property(f"ont.{T}.ind.seat.s1", P_OWNER, "frank")
         # 沙盒期间主库删掉目标（模拟并发）
-        base._individuals.pop(f"ont.{T}.ind.seat.s1")  # noqa: SLF001
+        base._individuals.pop(f"ont.{T}.ind.seat.s1")
         with pytest.raises(ScenarioConflictError):
             sc.merge_to_base(ACT, actor="planner-1")

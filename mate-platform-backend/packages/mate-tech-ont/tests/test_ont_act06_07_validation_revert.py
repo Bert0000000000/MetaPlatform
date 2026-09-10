@@ -22,7 +22,10 @@ for _p in (_K, _O):
         sys.path.insert(0, _p)
 
 from mate_kernel.action.validation import (  # noqa: E402
-    Condition, RuleGroup, evaluate_rule_group, validate_referenced_parameters,
+    Condition,
+    RuleGroup,
+    evaluate_rule_group,
+    validate_referenced_parameters,
     validate_submission_rules,
 )
 from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
@@ -126,11 +129,11 @@ class TestRuleGroups:
             ),
         )
         data = {"severity": "low", "score": "7", "vip": None}
-        assert evaluate_rule_group(rule, lambda f: data.get(f)) is True
+        assert evaluate_rule_group(rule, data.get) is True
         data2 = {"severity": "high", "score": "7", "vip": None}
-        assert evaluate_rule_group(rule, lambda f: data2.get(f)) is False
+        assert evaluate_rule_group(rule, data2.get) is False
         data3 = {"severity": "low", "score": "1", "vip": True}
-        assert evaluate_rule_group(rule, lambda f: data3.get(f)) is True
+        assert evaluate_rule_group(rule, data3.get) is True
 
     def test_structure_validation(self) -> None:
         bad = [
@@ -188,7 +191,7 @@ class TestPgRevertCompensation:
                   "property_rid": P_SEV, "value": "critical"}],
                 actor="op-1",
             )
-            pid = applied["proposal_id"] if "proposal_id" in applied else None
+            pid = applied.get("proposal_id")
             # apply_edit_set_now 返回 result（无 proposal_id）→ 从 proposal 表查最新
             conn_pid = None
             import psycopg2

@@ -12,8 +12,8 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from mate_tech_ont.main import app
 from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
+from mate_tech_ont.main import app
 from mate_tech_ont.v2_kernel.seed import TENANT, seed_demo
 
 
@@ -32,7 +32,10 @@ def client_with_ctx(monkeypatch):
     """
     from mate_platform.auth import middleware as auth_mw
     from mate_platform.tenancy.context import (
-        AuthMethod, RequestContext, TenantId, UserId,
+        AuthMethod,
+        RequestContext,
+        TenantId,
+        UserId,
     )
 
     tenant_id_in_call = {"value": TENANT}

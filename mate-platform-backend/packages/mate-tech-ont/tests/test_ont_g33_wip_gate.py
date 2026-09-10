@@ -11,8 +11,6 @@ from __future__ import annotations
 import os
 import sys
 
-import pytest
-
 _K = os.path.join(os.path.dirname(__file__), "..", "..", "mate-kernel", "src")
 _O = os.path.join(os.path.dirname(__file__), "..", "src")
 for _p in (_K, _O):
@@ -22,7 +20,8 @@ for _p in (_K, _O):
 from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
 from mate_kernel.ontology.in_memory import InMemoryOntologyRepository  # noqa: E402
 from mate_kernel.ontology.types.object_type import (  # noqa: E402
-    ObjectType, detect_destructive_changes,
+    ObjectType,
+    detect_destructive_changes,
 )
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat  # noqa: E402
 
@@ -83,7 +82,7 @@ class TestDetect:
         extra = Property(rid=ClassRef(f"ont.{T}.prop.acc-tier.v1"),
                          type_id="string", nullable=True, primary_key=False,
                          title="tier", format=PropertyFormat.STRING)
-        new = _r(_ot(), properties=_ot().properties + (extra,))
+        new = _r(_ot(), properties=(*_ot().properties, extra))
         assert detect_destructive_changes(_ot(), new) == []
 
 
@@ -95,7 +94,7 @@ class TestWipFlow:
                          title="tier", format=PropertyFormat.STRING)
         from dataclasses import replace as _r
 
-        draft = _r(_ot(), properties=_ot().properties + (extra,))
+        draft = _r(_ot(), properties=(*_ot().properties, extra))
         # 暂存：正式表不变
         r.save_schema_wip(OBJ, {"rid": draft.rid.rid,
                                 "display_name": draft.display_name}, author="a1")
@@ -135,7 +134,6 @@ class TestScopedMarkingsHelper:
     """G7：X-Scope-Markings ∩ param（会话只能收窄）。"""
 
     def _eff(self, param: str, header: str) -> set[str]:
-        import sys as _sys
         from mate_tech_ont.v2_kernel.api import _effective_markings
 
         class _R:

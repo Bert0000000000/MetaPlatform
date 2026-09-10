@@ -14,7 +14,6 @@ from mate_kernel.tooling.schema_gen import visible_object_types  # noqa: E402
 def _ot(rid, marking):
     from mate_kernel.ontology.identity.class_ref import ClassRef
     from mate_kernel.ontology.types.object_type import ObjectType
-
     from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 
     pk = ClassRef(f"ont.t-sal06.prop.{rid}-id.v1")
@@ -43,7 +42,7 @@ class TestToolVisibility:
 
 class TestAgentEnforcement:
     def _mk(self, req_markings, held):
-        from mate_kernel.agent.security import SecurityRequest, SecurityAgent
+        from mate_kernel.agent.security import SecurityAgent, SecurityRequest
 
         requester = type("P", (), {"markings": tuple(held), "user_id": "u",
                                    "tenant_id": "t"})()
@@ -54,7 +53,7 @@ class TestAgentEnforcement:
 
     def test_missing_marking_denied(self):
         d = self._mk(("s",), ())
-        assert d.decision.value == "deny" and "R-MARK-001" == d.rule_id
+        assert d.decision.value == "deny" and d.rule_id == "R-MARK-001"
 
     def test_held_marking_allowed(self):
         d = self._mk(("s",), ("s",))

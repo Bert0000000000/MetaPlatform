@@ -45,8 +45,8 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture
 def repo() -> object:
-    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository  # noqa: PLC0415
     from mate_tech_ont.v2_kernel.object_search import HashEmbedder
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository  # noqa: PLC0415
     r = PgOntologyRepository(dsn=PG_DSN)
     # 注入确定性 embedder —— precheck 走 embedding 路径
     r.set_embedder(HashEmbedder())
@@ -213,8 +213,8 @@ def test_precheck_returns_empty_when_no_match(repo) -> None:
 
 def test_precheck_fallback_normalizes_slug(repo) -> None:
     """embedder=None 时 fallback 走归一化：'customer_order' 命中 'customer-order'。"""
-    from mate_tech_ont.v2_kernel.similarity import search_similar_object_types
     from mate_tech_ont.v2_kernel.object_search import HashEmbedder
+    from mate_tech_ont.v2_kernel.similarity import search_similar_object_types
 
     repo.set_embedder(None)  # 强制 fallback
     _ = HashEmbedder  # avoid linter unused
@@ -294,7 +294,6 @@ def test_merge_remaps_link_instances(repo) -> None:
 
 def test_merge_rejects_cross_tenant(repo) -> None:
     """跨 tenant merge → ValueError（403）。"""
-    from mate_tech_ont.v2_kernel.pg_repo import SlugConflictError
 
     repo.upsert_object_type(_ot("ont.acme.obj.crm.customer.v1", "Customer"))
     repo.upsert_object_type(_ot("ont.beta.obj.crm.client.v1", "Client"))

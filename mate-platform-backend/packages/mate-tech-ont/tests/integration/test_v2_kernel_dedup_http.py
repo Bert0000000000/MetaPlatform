@@ -39,8 +39,8 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture
 def pg_repo() -> Any:
-    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
     from mate_tech_ont.v2_kernel.object_search import HashEmbedder
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 
     r = PgOntologyRepository(dsn=PG_DSN)
     r.set_embedder(HashEmbedder())
@@ -108,8 +108,8 @@ def _ind(rid: str, class_rid: str, pk: str) -> Individual:
 def _init_kernel_repo():
     """挂载 PG repo 到 app.state 以便 TestClient 通过 HTTP 走真实 PG。"""
     from mate_tech_ont.main import app
-    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
     from mate_tech_ont.v2_kernel.object_search import HashEmbedder
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 
     r = PgOntologyRepository(dsn=PG_DSN)
     r.set_embedder(HashEmbedder())

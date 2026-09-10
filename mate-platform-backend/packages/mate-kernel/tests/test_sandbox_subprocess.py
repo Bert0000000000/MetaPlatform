@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import sys
 
 from mate_kernel.sandbox.k8s import SubprocessExecutor
 
@@ -41,7 +40,7 @@ def test_subprocess_timeout() -> None:
     )
     code, _, err = exe.execute(source, ())
     # POSIX 下 subprocess.TimeoutExpired → returncode=124；Windows 下 Popen 被强杀 → 1
-    assert code in (124, 1)  # noqa: PLR2004
+    assert code in (124, 1)
     assert "timeout" in err.lower() or code == 1  # Windows: 进程被杀，err 无 timeout 字样
 
 

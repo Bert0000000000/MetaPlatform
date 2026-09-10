@@ -106,7 +106,7 @@ def _clean_pg(pg_repo: object) -> None:
     try:
         with conn.cursor() as cur:
             tables = ", ".join(KERNEL01_V2_TABLES_FOR_TESTS)
-            cur.execute(f"TRUNCATE TABLE {tables}")  # noqa: S608
+            cur.execute(f"TRUNCATE TABLE {tables}")
         conn.commit()
     finally:
         conn.close()
@@ -318,9 +318,8 @@ def test_t6_write_with_wrong_tenant_id_blocked_by_with_check(pg_repo: object) ->
 def test_t7_select_other_tenant_rows_returns_empty(pg_repo: object) -> None:
     """T7: tenant_scope("acme") 内 SELECT 别人的 row — USING 拦截 → 404 语义。"""
     _seed_ind_raw(pg_repo, "ont.other.ind.po.0", "other")
-    with pg_repo.tenant_scope("acme") as repo:
-        with pytest.raises(KeyError, match="Individual not found"):
-            repo.get_individual("ont.other.ind.po.0")
+    with pg_repo.tenant_scope("acme") as repo, pytest.raises(KeyError, match="Individual not found"):
+        repo.get_individual("ont.other.ind.po.0")
 
 
 def test_t8_update_other_tenant_row_touches_zero(pg_repo: object) -> None:

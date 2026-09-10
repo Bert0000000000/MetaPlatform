@@ -8,10 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 from mate_kernel.ontology.migrate_v1_v2 import migrate, parse_ntriples
-
 
 FIXTURE = Path(__file__).parent / "fixtures" / "owl_sample.nt"
 SRC_ROOT = Path(__file__).resolve().parents[1] / "src"

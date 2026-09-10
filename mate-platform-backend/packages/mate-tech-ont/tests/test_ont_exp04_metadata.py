@@ -26,15 +26,15 @@ P = f"ont.{T}.prop.meta-name.v1"
 
 
 def _ot(**kw) -> ObjectType:
-    base = dict(
-        rid=ClassRef(OBJ),
-        primary_key=(ClassRef(P),),
-        properties=(
+    base = {
+        "rid": ClassRef(OBJ),
+        "primary_key": (ClassRef(P),),
+        "properties": (
             Property(rid=ClassRef(P), type_id="string", nullable=False,
                      primary_key=True, title="name", format=PropertyFormat.STRING),
         ),
-        display_name="annotated",
-    )
+        "display_name": "annotated",
+    }
     base.update(kw)
     return ObjectType(**base)
 
