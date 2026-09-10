@@ -401,19 +401,22 @@ Batch 口径：后端 20/20 + UI 5/6 + 二轮 4/4 + 三轮 7 项（G7/G12/G13/G2
 |---|---|---|---|
 | A1 | G44 Scenario UI 交互面 | 后端会话 API 全套就绪（POST/GET /scenarios + edits/view/merge/discard）；前端无入口（anti-scope §6.5 随需求做） | 无 |
 
+**2026-09-10 四轮（全量余量清理）终态**：B1-B5、C1-C4 全部 ✅（C5 题库内容为业务侧资产，持续挂起）。
+唯一代码遗留：src/ 存量 lint 429 条（lint 策略决策）+ G44 Scenario UI（随需求）。
+
 **B. 接线/配置级留白（代码已交付、未接通）**
 | # | 项 | 现状 | 动作 |
 |---|---|---|---|
 | ~~B1~~ ✅ | D5 embedder 接 llmgw | LlmgwServiceEmbedder（Keycloak client_credentials + token 缓存刷新）+ compose env（根/worktree 双份）+ 真栈验证 reindex 16 条→向量/hybrid 200；顺带修复 hybrid k_rrf 参数错位 500 | — |
 | ~~B2~~ ✅ | G29 写工具消费链 | copilot propose_action 优先走 /propose-edit-set（legacy 回落）+ search_objects 工具去重（AI-11 起注册表内建，修预存测试失败）；216 tests green | — |
-| B3 | G33 前端两处 | 后台 agent 执行中（WIP 卡 + 编辑器二段确认） | — |
-| B4 | SEC-12 策略管理 UI | 后台 agent 执行中（策略卡 + DELETE 端点已补） | — |
-| B5 | 数据绑定 UI | 后台 agent 执行中（数据源绑定面板 + GET 列表端点已补） | — |
+| ~~B3~~ ✅ | G33 前端两处 | SchemaWipCard（apply 409→confirm_name 二段确认 + discard）+ 编辑器破坏性变更确认区 | — |
+| ~~B4~~ ✅ | SEC-12 策略管理 UI | SecurityPolicyCard（行/列策略表+删除+原生新建） | — |
+| ~~B5~~ ✅ | 数据绑定 UI | BackingDatasourcePanel（声明表+同步/增量+物化视图+新建）挂数据中心 tab | — |
 
 **C. 工程化收尾**
 | # | 项 | 说明 |
 |---|---|---|
-| C1 | **CI 缺口** | 后台 agent 执行中（ga-acceptance 加 ont-kernel-tests job + ruff tests/ 清理） | — |
+| ~~C1~~ ✅ | **CI 缺口** | ga-acceptance 新 job ont-kernel-tests（依赖集按 import 闭包核对）+ ruff tests/ 542→349；遗留：src/ 429 条存量 lint 需策略决策（per-file-ignores 或专项清理） | — |
 | ~~C2~~ ✅ | 域容器镜像 | api-gateway:dev（含 C4 修复）+ mate-app-copilot:dev + mate-tech-orchestrator:dev 已重建（orchestrator 烧录 kernel；copilot 挂载运行但镜像同步） | — |
 | ~~C3~~ ✅ | PR/合并 | **PR #35 已开**（github.com/Bert0000000000/MetaPlatform/pull/35）；worktree 双轨归一待 PR 合并后处理 | — |
 | ~~C4~~ ✅ | 网关池失效坑 | keepalive_expiry=30s + 连接级错误单次重试（1s 退避；ReadTimeout 仅幂等方法）+ 镜像重建 force-recreate；实测上游重启后 60s 挂死→快失败→自愈 | — |
