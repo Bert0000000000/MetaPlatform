@@ -86,10 +86,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # containerbase/upcoming-action 仓库已不存在（404）—— 换 pip 安装 compose 工具
       - name: Lint compose file
-        uses: containerbase/upcoming-action@v1
-        with:
-          tool: docker-compose
+        run: |
+          python -m pip install docker-compose
+          docker-compose -f docker-compose.yml config --quiet
       - name: Hadolint Dockerfiles
         uses: hadolint/hadolint-action@v3.1.0
         with:
