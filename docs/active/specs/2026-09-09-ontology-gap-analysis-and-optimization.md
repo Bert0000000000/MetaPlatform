@@ -320,3 +320,76 @@ Wave6 GOV-16~19（随时可插，互相独立）→ UI-04
 | G40 属性编辑器 | W0 / UI-03 | G41 治理面 | W0 / UI-04 |
 | G42 图/富属性可视化 | W0 / UI-05 | G43 执行历史 | W0 / UI-04 |
 | G44 Scenario UI | 挂起（随 D-Scenario） | | |
+
+---
+
+## 9. 实施状态总账（2026-09-10 全量收口核查）
+
+> 分支 `feat/ont-gap-catchup`（24 commits，已推送 origin），953 tests green。
+> 状态口径：✅ 完整交付（含真库/浏览器验证）｜🟡 主体交付（声明的 v1 子项有留尾）｜⬜ 挂起（有明确决策）。
+
+**总进度**：✅ 34/44（77%）｜🟡 6/44｜⬜ 4/44 —— **含部分交付 40/44（91%）**。
+Batch 口径：后端 20/20 + UI 5/6 + 二轮 4/4 = **29/30**。
+
+### 9.1 后端差距（G1-G34：✅ 27 / 🟡 4 / ⬜ 3）
+
+| 差距 | 状态 | Batch | 证据 |
+|---|---|---|---|
+| G1 数据源绑定 | ✅ | DATA-14 | ont_backing_datasource 表 + sync 管道 + `/datasources` 端点；test_ont_data14 |
+| G2 MDO 多源合并 | ✅ | DATA-14 | priority 字段级合并真库验证（crm 不被 erp 覆盖） |
+| G3 materialization | ✅ | DATA-15 | GET /materialization 行集端点（写 dataset 由下游订阅——v1 端点形态） |
+| G4 双流合并 | ✅ | 二轮 CDC | ont_edit_overlay 覆盖层 + 用户编辑赢（真库「编辑幸存」验证） |
+| G5 行列级安全 | ✅ | SEC-12 | Row/ColumnPolicy 单元格级 + 层级联动；test_ont_sec12 |
+| G6 marking 血缘传播 | ✅ | 二轮 | 实例∧类型(含祖先)合取门 + 写时继承 + 检索过滤；test_ont_g6 |
+| G7 scoped session | ⬜ | — | D 决策：合规场景触发再做 |
+| G8 层级/Interface 多态 | ✅ | EXP-01 | parent_class+公理同步+Interface 查询源+约束校验；test_ont_exp01 |
+| G9 共享属性 | ✅ | EXP-02 | shared 标记 + /properties/shared 统计 |
+| G10 派生属性 | ✅ | EXP-02 | DerivedSpec 三算子双 repo 查询时计算 |
+| G11 struct | ✅ | EXP-02 | struct_fields + ai_metadata_struct 模板 |
+| G12 数组+reducer | 🟡 | EXP-02 | 元数据级（字段+校验+UI 勾选）；查询端数组展开语义留尾 |
+| G13 vector 属性 | 🟡 | AI-09 | 检索通道全生产化（pgvector HNSW+KNN+hybrid）；nearestNeighbors 未并入 ObjectSet IR（专端点形态） |
+| G14 值类型注册表 | ✅ | EXP-02 | 16 内置+开放注册+/value-types+UI 下拉 |
+| G15 Link 语义 | ✅ | EXP-03 | 两端命名+基数强制+searchAround；test_ont_exp03 |
+| G16 元数据 | ✅ | EXP-04 | description/status/type_group/render_hints 全链路 |
+| G17 时序存储 | ✅ | GOV-19 | ont_timeseries_point+窗口查询+UI sparkline |
+| G18 声明式 edit-set | ✅ | ACT-05 | 5 算子+模板+单事务+逆编辑；test_ont_act05 |
+| G19 校验体系 | ✅ | ACT-06 | 引用参数校验+RuleGroup；test_ont_act06_07 |
+| G20 副作用投递 | 🟡 | ACT-07 | outbox 事件+edit_set.applied；webhook 投递器（签名/重试）留尾 |
+| G21 revert | ✅ | ACT-07 | 逆编辑补偿+equivalence（PG 真库） |
+| G22 Scenario | ✅ | ACT-08 | Temporary overlay+受治理 merge；test_ont_act08 |
+| G23 Function 工程化 | ⬜ | — | SAL-03 沙箱执行面已有；版本/别名/测试桩挂起 |
+| G24 typed client | ✅ | SEC-13 | client_gen 生成器（可编译可实例化） |
+| G25 WebSocket 订阅 | ⬜ | — | 挂起（outbox 源已备） |
+| G26 searchAround | ✅ | EXP-03 | 端点+UI 对象主页消费 |
+| G27 检索生产化 | ✅ | AI-09 | halfvec+HNSW 真库 KNN+RRF hybrid；test_ont_ai09 |
+| G28 chunk 管道 | ✅ | AI-10 | chunk 即对象+回源 link+ingest 端点 |
+| G29 工具面 | ✅ | AI-11 | search_objects+propose_action_* HITL 工具+slug 碰撞修复 |
+| G30 使用量 | ✅ | GOV-16 | 打点+汇总+治理 tab |
+| G31 退役 | ✅ | GOV-17 | 三级处置+删除保护（409） |
+| G32 反模式 lint | ✅ | GOV-18 | 4 模式+端点+UI 中文标签 |
+| G33 破坏性变更门禁 | 🟡 | GOV-17 | delete 使用量保护覆盖；WIP 暂存/type-the-name 确认留尾 |
+| G34 评估套件 | ✅ | 二轮 | evaluation.py 四象限+回归对比（11 用例） |
+
+### 9.2 前端差距（G35-G44：✅ 7 / 🟡 2 / ⬜ 1）
+
+| 差距 | 状态 | UI Batch | 证据 |
+|---|---|---|---|
+| G35 对象浏览器 | ✅ | UI-01 | ObjectDataPage（类型树+实例表+过滤分页） |
+| G36 对象主页 | ✅ | UI-01 | ObjectHomeDrawer（属性徽标+SearchAround 栈式导航） |
+| G37 人工 Action 表单 | ✅ | UI-02 | ActionFormDrawer（动态参数+预览即确认，浏览器 E2E 验证） |
+| G38 语义搜索 UI | ✅ | UI-01 | 搜索框→对象卡片直链主页 |
+| G39 层级/Interface 管理 | ✅ | UI-01+UI-03 | 对象数据 tab 层级树 + 接口 tab + V2 编辑器 parent_class |
+| G40 属性编辑器 | ✅ | UI-03 二轮 | PropertyEditorV2（derived/struct/array/shared 全字段+值类型联动） |
+| G41 治理面 | 🟡 | UI-04 | usage/lint/执行历史/退役按钮已交付；WIP 暂存/branch-diff 操作面/Export-Import 留尾 |
+| G42 图/富属性可视化 | 🟡 | UI-05 | sparkline+关联对象分组视图已交付；ego force 图+地图组件留尾 |
+| G43 执行历史 UI | ✅ | UI-04 | GET /action-audit + 治理 tab 表格（proposal 链） |
+| G44 Scenario UI | ⬜ | UI-06 | 挂起（后端 ACT-08 overlay 已备，UI 随需求做） |
+
+### 9.3 过程中顺带修复的预存缺陷
+
+1. G21 闭包查询静默失效（ont_axiom 旧库缺 updated_at 列）
+2. slug_of_rid 取 domain → 同 domain 类型生成同名 query_* 工具碰撞
+3. link upsert 同 rid 被基数校验误杀
+4. create_individual ON CONFLICT 整包替换 props（清掉覆盖层保护属性）
+5. append-property 重建 ObjectType 丢 EXP-04 字段（agent 核查发现）
+
