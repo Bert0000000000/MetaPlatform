@@ -688,6 +688,29 @@ async def upsert_backing_datasource(
     return await _call_scoped(request, "upsert_backing_datasource", decl)
 
 
+@router.get(
+    "/object-types/{rid:path}/datasources",
+    response_model=list[dict],
+    operation_id="ontListV2BackingDatasources",
+)
+async def list_backing_datasources(rid: str, request: Request) -> list[dict]:
+    """B5：类型的背挂数据源声明清单（priority 序）。"""
+    _ctx(request)
+    return await _call_scoped(request, "list_backing_datasources", rid)
+
+
+@router.delete(
+    "/security-policies/{rid:path}",
+    response_model=dict,
+    operation_id="ontDeleteV2SecurityPolicy",
+)
+async def delete_security_policy(rid: str, request: Request) -> dict:
+    """B4：删除安全策略。"""
+    _ctx(request)
+    ok = await _call_scoped(request, "delete_security_policy", rid)
+    return {"rid": rid, "deleted": bool(ok)}
+
+
 @router.post(
     "/object-types/{rid:path}/datasources/sync",
     response_model=dict,

@@ -3403,6 +3403,17 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
+    def delete_security_policy(self, rid: str) -> bool:
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("DELETE FROM ont_security_policy WHERE rid = %s", (rid,))
+                deleted = cur.rowcount == 1
+            conn.commit()
+            return deleted
+        finally:
+            conn.close()
+
     def _policy_set(self) -> Any:
         """行/列策略 → kernel SecurityPolicySet（本租户）。"""
         from mate_kernel.ontology.security_policies import (

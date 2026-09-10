@@ -423,6 +423,9 @@ class InMemoryOntologyRepository(OntologyRepository):
     def list_security_policies(self) -> list[dict[str, Any]]:
         return [dict(v, rid=k) for k, v in self._security_policies.items()]
 
+    def delete_security_policy(self, rid: str) -> bool:
+        return self._security_policies.pop(rid, None) is not None
+
     def _policy_set(self) -> Any:
         from .security_policies import ColumnPolicy, RowPolicy, SecurityPolicySet
 
