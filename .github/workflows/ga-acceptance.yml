@@ -207,8 +207,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - name: install pre-commit
-        run: pip install pre-commit
+      - name: install pre-commit + pytest
+        run: pip install pre-commit pytest pyyaml
       - name: pre-commit run --all-files (rules 3 / 4 / 5 / 7 / 10 / 12)
         # SKIP=no-commit-to-branch：--all-files 模式下该 hook 对 main 直推工作流误报
         # （分支保护由 GitHub 分支规则 + ga-010 证据链承担）
