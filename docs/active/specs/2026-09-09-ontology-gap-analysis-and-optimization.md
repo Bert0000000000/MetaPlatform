@@ -392,6 +392,35 @@ Batch 口径：后端 20/20 + UI 5/6 + 二轮 4/4 + 三轮 7 项（G7/G12/G13/G2
 | G43 执行历史 UI | ✅ | UI-04 | GET /action-audit + 治理 tab 表格（proposal 链） |
 | G44 Scenario UI | ✅（后端 API） | 三轮 | 后端会话 API 全套（建沙盒/试改回放校验/合并视图 _sandbox_ 标记/受治理合并/丢弃）+ 修复 overlay 墓碑判定反转；**UI 交互面**随需求做（anti-scope §6.5） |
 
+### 9.4 未完成清单（2026-09-10 三轮后真实余量）
+
+> 差距清单 44 项已 43 ✅；以下是**接线/配置/工程化层面**的真实余量（非差距清单遗漏，是交付边界外的收尾项）。
+
+**A. 差距清单内（1 项）**
+| # | 项 | 说明 | 前置 |
+|---|---|---|---|
+| A1 | G44 Scenario UI 交互面 | 后端会话 API 全套就绪（POST/GET /scenarios + edits/view/merge/discard）；前端无入口（anti-scope §6.5 随需求做） | 无 |
+
+**B. 接线/配置级留白（代码已交付、未接通）**
+| # | 项 | 现状 | 动作 |
+|---|---|---|---|
+| B1 | D5 embedder 接 llmgw | 容器无 ONT_EMBEDDER/OPENAI_* env → 生产容器语义检索返回空（本地测试用 HashEmbedder 全过） | compose 配 llmgw embedding 通道 env |
+| B2 | G29 写工具消费链 | propose_action_* 已进 /agent-tools 注册表；copilot/MCP agent loop 侧调用 propose-edit-set 的接线未验证 | copilot agent_loop 接工具调用 |
+| B3 | G33 前端两处 | ① WIP 暂存视图（后端 /object-types/wip 全套端点，治理页无 UI）；② 破坏性 409 的 confirm_name 二段确认交互（编辑器只显示报错） | 治理页 + 编辑器补交互 |
+| B4 | SEC-12 策略管理 UI | POST/GET /security-policies 无前端入口 | 治理页加策略管理卡 |
+| B5 | 数据绑定 UI | /datasources（声明/sync/CDC/materialization）无前端入口；数据中心 tab 是旧 CDC/ETL 视图 | 数据中心 tab 接新端点族 |
+
+**C. 工程化收尾**
+| # | 项 | 说明 |
+|---|---|---|
+| C1 | **CI 缺口** | ga-acceptance 只跑 infra/mate-platform/mate-app-kb 三处 pytest；mate-kernel + mate-tech-ont 的 980 测试（含本轮全部新测试）不在任何 CI job —— 全部仅本地验证 |
+| C2 | 域容器镜像 | 仅重建 mate-tech-ont:dev；copilot 等烧录 mate-kernel 的镜像仍旧（dev 靠挂载不阻塞，生产前统一重建） |
+| C3 | PR/合并 | 分支已推 origin（28 commits）；未创建 PR→main；.worktrees/prd-05-08-sprint-0 双轨待归一 |
+| C4 | 网关池失效坑 | 重启上游域容器 → 网关 httpx keep-alive 池失效全超时；目前靠操作纪律（同步 restart gateway），网关未加 stale-connection retry |
+| C5 | G34 题库内容 | 评估套件只有 sample 题库；真实业务三段式题库 + 人机四象限实跑待业务侧填充 |
+
+**D. 明确不做（anti-scope §6，非遗漏）**：Workshop 通用搭建器 / 深继承 / 共享本体 / OSv2 规模 / Scenario Persisted+TTL+自动 rebase / legacy 删除。
+
 ### 9.3 过程中顺带修复的预存缺陷
 
 1. G21 闭包查询静默失效（ont_axiom 旧库缺 updated_at 列）
