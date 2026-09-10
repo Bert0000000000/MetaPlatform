@@ -58,6 +58,13 @@ EXCLUDE_FILES = {
     # state, not via HTTP headers.
     "tools.py",
     "flowable_tool.py",
+    # B2/B5 接线（2026-09-10）：本体/数据面客户端适配器 —— 这些是
+    # mate-clients ACL 本身或数据源管理端点适配器（ADMISSION 与
+    # forbid_bare_httpx 的"内部服务须走 ACL"边界一致）
+    "ontology_http_repo.py",
+    "mcp.py",
+    "iceberg_rest_adapter.py",
+    "dispatcher.py",
     "rag_tool.py",
     # Existing llmgw providers (predating TD-6 naming convention):
     # anthropic / doubao / openai / qwen — all call external LLM public
