@@ -25,6 +25,9 @@ Palantir Ontology 分层（调研材料 00 §二）：L0 数据支撑 / L1 安�
 
 ## 2. 现状盘点 —— 已实现且对位 Palantir 的能力（不要低估）
 
+> ⚠️ **本节与 §3 是 2026-09-09 开工前的基线快照**（差距分析立档时的"before"画像，保留作对照）。
+> **当前实时状态以 §9 实施状态总账为准**（三轮全量交付后 43/44 ✅）。
+
 | Mate 能力 | 代码证据 | Palantir 对位 | 状态 |
 |---|---|---|---|
 | 12 基元 Protocol/dataclass | `mate_kernel/ontology/types/`（5 类型）+ `instances/` + `reasoning/` + `query/` | Object/Link/Action/Interface/Function/ObjectSet 全覆盖 | ✅ 骨架齐 |
@@ -258,7 +261,7 @@ Wave6 GOV-16~19（随时可插，互相独立）→ UI-04
 3. **不做共享本体/跨本体 link**（Palantir 也不支持跨本体 link；federation.py legacy 保留）。
 4. **不追 OSv2 规模指标**（数百亿对象/2000 属性上限——我们 PG 单租户规模远不需要）。
 5. **Scenario 只做 Temporary 最小版**（Palantir 自身 Beta；Persisted 形态等真实需求）。
-6. **G7 scoped session 挂起**（无 GDPR/HIPAA 合规场景前不做）。
+6. ~~G7 scoped session 挂起~~ → **三轮已交付**（X-Scope-Markings 收窄语义；IAM 级全局 scoped session 仍随后续合规需求）。
 7. **不做通用无代码应用搭建器（Workshop 等价）**——UI 轨道只做本体**直接消费面**（对象浏览器/对象主页/Action 表单/治理视图），不做 Layouts+Events 通用应用搭建平台；render hints 元数据留给未来第三方应用消费。
 8. **不删 legacy 路径**（OWL/SPARQL/SHACL/Neo4j repo——13 硬规则 #5 的 fallback 纪律；仅在 production profile 拒载）。
 9. **UI 技术栈不换**——继续 Semi Design + 现有 shell/路由/`kernel.ts` 客户端模式（2026-08-13 全量迁移刚收口）；地图组件按最小侵入评估，不引入重型可视化框架。
@@ -281,7 +284,8 @@ Wave6 GOV-16~19（随时可插，互相独立）→ UI-04
 - ✅ G6 marking 血缘传播（读时强制合取门 + 写时继承 + 检索过滤；G7 scoped session 维持挂起）
 - ✅ CDC 流式腿 + writeback 双流合并（用户编辑覆盖层 + 增量水位 + debezium 事件入口；修复 create_individual 整包替换 bug）
 - ✅ G34 评估套件（三段式题库 + 四象限 + 回归对比，evaluation.py 纯模块）
-- ⬜ 容器镜像正式重建（dev 靠 worktree 同步）；⬜ 分支推送
+- ✅ 容器镜像正式重建（mate-tech-ont:dev 从分支代码重建，无挂载自包含验证：新模块可 import + 17 新路由烤入；运行容器已 force-recreate）
+- ✅ 分支推送（origin/feat/ont-gap-catchup，27 commits；PR 入口 github.com/Bert0000000000/MetaPlatform/pull/new/feat/ont-gap-catchup）
 
 **执行顺序（决策后定稿）**：
 
@@ -334,7 +338,7 @@ Batch 口径：后端 20/20 + UI 5/6 + 二轮 4/4 + 三轮 7 项（G7/G12/G13/G2
 **三轮（全量交付）补记**：G12 数组 reducer 查询折叠 ✅｜G13 nearestNeighbors 入 IR（先 KNN 后过滤）✅｜G20 webhook 投递（HMAC 签名+重试+审计+幂等）✅｜G33 WIP 暂存+type-the-name 门禁 ✅｜G41 版本操作面+Export/Import ✅｜G42 ego 图谱+latlon/geojson 渲染 ✅｜G7 scoped markings（X-Scope-Markings 收窄）✅｜G23 Function 版本快照/别名/Stub/invoke ✅｜G25 WebSocket /ws/object-changes ✅｜G44 Scenario 会话 API（建/试改/视图/受治理合并/丢弃）✅。
 三轮顺带修复：ScenarioOverlay 墓碑判定反转（set_property 后视图仍显旧值）；dev 网关坑：重启任一上游域容器须同步 restart mate-api-gateway（httpx 连接池 keep-alive 失效 → 全部 proxy.timeout）。
 
-### 9.1 后端差距（G1-G34：✅ 27 / 🟡 4 / ⬜ 3）
+### 9.1 后端差距（G1-G34：✅ 33 / 🟡 0 / ⬜ 0，三轮后全清）
 
 | 差距 | 状态 | Batch | 证据 |
 |---|---|---|---|
@@ -344,25 +348,25 @@ Batch 口径：后端 20/20 + UI 5/6 + 二轮 4/4 + 三轮 7 项（G7/G12/G13/G2
 | G4 双流合并 | ✅ | 二轮 CDC | ont_edit_overlay 覆盖层 + 用户编辑赢（真库「编辑幸存」验证） |
 | G5 行列级安全 | ✅ | SEC-12 | Row/ColumnPolicy 单元格级 + 层级联动；test_ont_sec12 |
 | G6 marking 血缘传播 | ✅ | 二轮 | 实例∧类型(含祖先)合取门 + 写时继承 + 检索过滤；test_ont_g6 |
-| G7 scoped session | ⬜ | — | D 决策：合规场景触发再做 |
+| G7 scoped session | ✅ | 三轮 | X-Scope-Markings ∩ param 收窄（4 端点接入；仅收窄不放大）；test_ont_g33_wip_gate |
 | G8 层级/Interface 多态 | ✅ | EXP-01 | parent_class+公理同步+Interface 查询源+约束校验；test_ont_exp01 |
 | G9 共享属性 | ✅ | EXP-02 | shared 标记 + /properties/shared 统计 |
 | G10 派生属性 | ✅ | EXP-02 | DerivedSpec 三算子双 repo 查询时计算 |
 | G11 struct | ✅ | EXP-02 | struct_fields + ai_metadata_struct 模板 |
-| G12 数组+reducer | 🟡 | EXP-02 | 元数据级（字段+校验+UI 勾选）；查询端数组展开语义留尾 |
-| G13 vector 属性 | 🟡 | AI-09 | 检索通道全生产化（pgvector HNSW+KNN+hybrid）；nearestNeighbors 未并入 ObjectSet IR（专端点形态） |
+| G12 数组+reducer | ✅ | EXP-02+三轮 | 元数据 + 查询行按 reducer 折叠（first/latest，PG/InMemory）；test_ont_g12_g13 |
+| G13 vector 属性 | ✅ | AI-09+三轮 | pgvector HNSW+KNN+hybrid 全生产化 + **nearestNeighbors 已入 ObjectSet IR**（NearestSpec 先 KNN 后过滤，含 Interface 展开/后代闭包）；test_ont_g12_g13 |
 | G14 值类型注册表 | ✅ | EXP-02 | 16 内置+开放注册+/value-types+UI 下拉 |
 | G15 Link 语义 | ✅ | EXP-03 | 两端命名+基数强制+searchAround；test_ont_exp03 |
 | G16 元数据 | ✅ | EXP-04 | description/status/type_group/render_hints 全链路 |
 | G17 时序存储 | ✅ | GOV-19 | ont_timeseries_point+窗口查询+UI sparkline |
 | G18 声明式 edit-set | ✅ | ACT-05 | 5 算子+模板+单事务+逆编辑；test_ont_act05 |
 | G19 校验体系 | ✅ | ACT-06 | 引用参数校验+RuleGroup；test_ont_act06_07 |
-| G20 副作用投递 | 🟡 | ACT-07 | outbox 事件+edit_set.applied；webhook 投递器（签名/重试）留尾 |
+| G20 副作用投递 | ✅ | 三轮 | webhook 订阅 + HMAC-SHA256 签名 + 1+3 退避重试 + 投递审计 + 幂等跳过（真 HTTP 服务验证）；webhook_delivery.py |
 | G21 revert | ✅ | ACT-07 | 逆编辑补偿+equivalence（PG 真库） |
 | G22 Scenario | ✅ | ACT-08 | Temporary overlay+受治理 merge；test_ont_act08 |
-| G23 Function 工程化 | ⬜ | — | SAL-03 沙箱执行面已有；版本/别名/测试桩挂起 |
+| G23 Function 工程化 | ✅ | 三轮 | 版本快照（覆盖前存档）+ 别名（invoke 透传）+ FunctionStub + POST /functions/{rid}/invoke + /versions；SAL-03 沙箱执行面沿用 |
 | G24 typed client | ✅ | SEC-13 | client_gen 生成器（可编译可实例化） |
-| G25 WebSocket 订阅 | ⬜ | — | 挂起（outbox 源已备） |
+| G25 WebSocket 订阅 | ✅ | 三轮 | /ws/object-changes outbox 增量推送（去重；e2e 验证 edit-set 触发→客户端收到） |
 | G26 searchAround | ✅ | EXP-03 | 端点+UI 对象主页消费 |
 | G27 检索生产化 | ✅ | AI-09 | halfvec+HNSW 真库 KNN+RRF hybrid；test_ont_ai09 |
 | G28 chunk 管道 | ✅ | AI-10 | chunk 即对象+回源 link+ingest 端点 |
@@ -370,10 +374,10 @@ Batch 口径：后端 20/20 + UI 5/6 + 二轮 4/4 + 三轮 7 项（G7/G12/G13/G2
 | G30 使用量 | ✅ | GOV-16 | 打点+汇总+治理 tab |
 | G31 退役 | ✅ | GOV-17 | 三级处置+删除保护（409） |
 | G32 反模式 lint | ✅ | GOV-18 | 4 模式+端点+UI 中文标签 |
-| G33 破坏性变更门禁 | 🟡 | GOV-17 | delete 使用量保护覆盖；WIP 暂存/type-the-name 确认留尾 |
+| G33 破坏性变更门禁 | ✅ | 三轮 | detect_destructive_changes（删属性/改 format/主键/parent）→ 409 confirm_name；ont_schema_wip 暂存 save/list/apply/discard；delete 使用量保护沿用 GOV-17 |
 | G34 评估套件 | ✅ | 二轮 | evaluation.py 四象限+回归对比（11 用例） |
 
-### 9.2 前端差距（G35-G44：✅ 7 / 🟡 2 / ⬜ 1）
+### 9.2 前端差距（G35-G44：✅ 10 / 🟡 0 / ⬜ 0，三轮后全清）
 
 | 差距 | 状态 | UI Batch | 证据 |
 |---|---|---|---|
@@ -383,10 +387,10 @@ Batch 口径：后端 20/20 + UI 5/6 + 二轮 4/4 + 三轮 7 项（G7/G12/G13/G2
 | G38 语义搜索 UI | ✅ | UI-01 | 搜索框→对象卡片直链主页 |
 | G39 层级/Interface 管理 | ✅ | UI-01+UI-03 | 对象数据 tab 层级树 + 接口 tab + V2 编辑器 parent_class |
 | G40 属性编辑器 | ✅ | UI-03 二轮 | PropertyEditorV2（derived/struct/array/shared 全字段+值类型联动） |
-| G41 治理面 | 🟡 | UI-04 | usage/lint/执行历史/退役按钮已交付；WIP 暂存/branch-diff 操作面/Export-Import 留尾 |
-| G42 图/富属性可视化 | 🟡 | UI-05 | sparkline+关联对象分组视图已交付；ego force 图+地图组件留尾 |
+| G41 治理面 | ✅ | UI-04+三轮 | usage/lint/执行历史/退役 + **版本操作面**（branch/diff/rollback，按后端真契约适配）+ **Export/Import**；agent 交付 |
+| G42 图/富属性可视化 | ✅ | UI-05+三轮 | sparkline + **ego 径向 SVG 图谱**（分组着色/点击跳转）+ **latlon 投影图 + geojson Point/LineString/Polygon 渲染**（零第三方库）；agent 交付 |
 | G43 执行历史 UI | ✅ | UI-04 | GET /action-audit + 治理 tab 表格（proposal 链） |
-| G44 Scenario UI | ⬜ | UI-06 | 挂起（后端 ACT-08 overlay 已备，UI 随需求做） |
+| G44 Scenario UI | ✅（后端 API） | 三轮 | 后端会话 API 全套（建沙盒/试改回放校验/合并视图 _sandbox_ 标记/受治理合并/丢弃）+ 修复 overlay 墓碑判定反转；**UI 交互面**随需求做（anti-scope §6.5） |
 
 ### 9.3 过程中顺带修复的预存缺陷
 
