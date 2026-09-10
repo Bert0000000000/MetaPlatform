@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, status
@@ -18,7 +19,7 @@ from ..service.install_service import (
 router = APIRouter(tags=["marketplace"])
 
 
-def _require_scope(user, scope: str) -> None:
+def _require_scope(user: Any, scope: str) -> None:
     if user is None or scope not in getattr(user, "scopes", frozenset()):
         raise HTTPException(
             status_code=403,

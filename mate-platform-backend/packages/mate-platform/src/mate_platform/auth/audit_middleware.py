@@ -68,7 +68,7 @@ def install_cross_tenant_audit_middleware(
     """
 
     @app.middleware("http")
-    async def audit_cross_tenant(
+    async def audit_cross_tenant(  # pyright: ignore[reportUnusedFunction]  # @app.middleware 注册即使用
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:

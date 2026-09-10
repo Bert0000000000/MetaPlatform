@@ -1,6 +1,7 @@
 """OCI Distribution Spec v2 数据面拉取器,边下载边校验 sha256。"""
 from __future__ import annotations
 
+from typing import Any
 import hashlib
 from collections.abc import AsyncIterator
 
@@ -13,9 +14,9 @@ class OCIPuller:
     def __init__(
         self,
         *,
-        transport,
+        transport: Any,
         default_registry: str,
-        token_cache=None,
+        token_cache: Any = None,
     ) -> None:
         self.transport = transport
         self.default_registry = default_registry.rstrip("/")

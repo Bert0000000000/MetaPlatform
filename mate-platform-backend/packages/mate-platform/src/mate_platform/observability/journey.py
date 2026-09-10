@@ -30,7 +30,7 @@ from opentelemetry.trace import Status, StatusCode
 _tracer = trace.get_tracer("mate_platform.journey")
 
 
-@contextmanager
+@contextmanager  # pyright: ignore[reportDeprecated]
 def journey_span(
     name: str,
     *,

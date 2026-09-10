@@ -92,7 +92,7 @@ class PgClient:
         """Return the underlying SQLAlchemy engine."""
         return self._engine
 
-    @contextmanager
+    @contextmanager  # pyright: ignore[reportDeprecated]
     def session(self, tenant_id: str | None = None) -> Iterator[Session]:
         """Yield a session with optional tenant context binding.
 

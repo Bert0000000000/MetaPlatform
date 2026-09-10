@@ -1,6 +1,7 @@
 """license_service — 激活 license + KMS 加密入库。"""
 from __future__ import annotations
 
+from typing import Any
 import uuid
 from datetime import UTC, datetime
 from uuid import UUID
@@ -13,6 +14,9 @@ kms_encrypt = _kms.encrypt
 kms_decrypt = _kms.decrypt
 
 
+__all__ = ["_encrypt", "_decrypt", "activate_license"]
+
+
 def _encrypt(plain: str) -> str:
     return kms_encrypt(plain)
 
@@ -23,8 +27,8 @@ def _decrypt(enc: str) -> str:
 
 async def activate_license(
     *,
-    session,
-    mp_client,
+    session: Any,
+    mp_client: Any,
     license_key: str,
     tenant_id: UUID,
     user_id: UUID,

@@ -50,6 +50,7 @@ work lives in the companion ``rls_session_middleware`` callable.
 """
 from __future__ import annotations
 
+from typing import Any
 import logging
 from collections.abc import Callable
 
@@ -137,7 +138,7 @@ def install_rls_session(session: Session, ctx: RequestContext) -> None:
     No-op on non-PostgreSQL backends (the engine dialect gate is the
     caller's responsibility; this helper trusts the engine).
     """
-    if ctx is None:
+    if ctx is None:  # pyright: ignore[reportUnnecessaryComparison]  # 防御性（外部调用方契约）
         raise ValueError("install_rls_session requires a RequestContext")
 
     bind_tenant_context(session, ctx)
@@ -227,7 +228,7 @@ def rls_session_middleware(
 # FastAPI integration: bind a SQLAlchemy session to ``request.state.ctx``
 # ---------------------------------------------------------------------------
 def rls_db_session(
-    request,  # FastAPI Request type — untyped to keep this helper
+    request: Any,  # FastAPI Request — Any 以保持 helper 可被无 fastapi 的 CLI 进程导入
     # importable from non-web CLI workers that don't pull fastapi in.
     session_factory: Callable[[], Session],
 ) -> Session:
