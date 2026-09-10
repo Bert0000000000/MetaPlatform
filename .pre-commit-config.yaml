@@ -53,7 +53,7 @@ repos:
       - id: prettier
         types_or: [yaml, json, markdown]
         files: \.(yml|yaml|json|md)$
-        exclude: ^(docs/active/(specs|prd|reports)/|docs/|infra/helm/|acceptance/)
+        exclude: ^(docs/active/(specs|prd|reports)/|docs/|infra/helm/|acceptance/|\.pre-commit-config\.yaml)
 
   - repo: https://github.com/hadolint/hadolint
     rev: v2.12.1-beta
@@ -70,7 +70,7 @@ repos:
       - id: shellcheck
         # warning 级加 SC 豁免：SC2015（A&&B||C 为既有部署惯用）/ SC2034（
         # 环境变量自文档）/ SC2010（ls|grep 管道）/ SC1082（UTF-8 BOM 历史）
-        args: [--severity=warning, '--exclude=SC2015,SC2034,SC2010,SC1082']
+        args: [--severity=warning, --exclude=SC2015,SC2034,SC2010,SC1082]
         files: \.(sh|bash)$
 
   # -------------------------------------------------------------------
