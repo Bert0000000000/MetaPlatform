@@ -207,8 +207,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - name: install pre-commit + pytest
-        run: pip install pre-commit pytest pytest-asyncio pyyaml sqlalchemy pydantic httpx structlog fastapi tenacity pyjwt opentelemetry-api opentelemetry-sdk temporalio
+      - name: install uv
+        run: python -m pip install uv pre-commit
+      # 依赖闭包一次性安装：uv sync --frozen 从 workspace 锁文件解全部
+      # runtime+dev 依赖（手工 pip 清单连续 6 轮暴露缺口：fastapi→pyjwt→
+      # otel→temporalio→alembic…），与 ga-014 同一验证过的路径
+      - name: sync workspace deps (frozen, complete closure)
+        run: uv sync --directory mate-platform-backend --package mate-platform --package mate-app-kb --dev --frozen
       - name: pre-commit run --all-files (rules 3 / 4 / 5 / 7 / 10 / 12)
         # SKIP=no-commit-to-branch：--all-files 模式下该 hook 对 main 直推工作流误报
         # （分支保护由 GitHub 分支规则 + ga-010 证据链承担）
