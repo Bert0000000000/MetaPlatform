@@ -75,12 +75,17 @@ def _has_tenant_column(table: Table) -> bool:  # pyright: ignore[reportUnusedFun
     return "tenant_id" in table.c
 
 
-def _register_event_listeners() -> None:  # pyright: ignore[reportUnusedFunction]
+_listeners_registered = False
+
+
+def _register_event_listeners() -> None:  # pyright: ignore[reportUnusedFunction]  # scaffold：SQLAlchemy 集成预留
     """Attach do_orm_execute event listener.
 
-    Idempotent: a function-local marker keeps the listeners single-registered.
+    Idempotent: module-level flag keeps the listeners single-registered
+    （函数属性注入在 ruff B010 与 pyright strict 之间无解 → 改模块级标志）.
     """
-    if getattr(_register_event_listeners, "_registered", False):
+    global _listeners_registered
+    if _listeners_registered:
         return
 
     from sqlalchemy.engine import Engine
@@ -113,7 +118,7 @@ def _register_event_listeners() -> None:  # pyright: ignore[reportUnusedFunction
             _build_tenant_predicate(ctx)
         )
 
-    _register_event_listeners._registered = True  # 函数属性注入标记
+    _listeners_registered = True
 
 def _build_tenant_predicate(ctx: RequestContext):
     from sqlalchemy import column, literal
