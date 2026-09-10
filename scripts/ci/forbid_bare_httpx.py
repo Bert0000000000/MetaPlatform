@@ -79,7 +79,6 @@ EXCLUDE_FILES = {
     # A2A 消息信封 —— 它们本身就是 transport 层
     "base.py",
     "messages.py",
-    "ontology_catalog.py",
     "__init__.py",
     "ontology_proxy.py",
     "forbid_bare_httpx.py",
