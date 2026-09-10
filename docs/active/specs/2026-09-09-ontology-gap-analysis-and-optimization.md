@@ -276,6 +276,13 @@ Wave6 GOV-16~19（随时可插，互相独立）→ UI-04
 | D5 | embedder 供给 | ✅ 接 llmgw（复用平台 LLM Gateway + ARK embedding 通道）；HashEmbedder 留离线兜底；废弃 object_search.py 独立 OPENAI_* env 直连 | AI-09 设计基线锁定 |
 | D6 | UI 轨道首件 | ✅ **ONT-UI-01（对象浏览器 + 对象主页）**；首发组合 = Wave 1（EXP-01~04）+ UI-01 双线并行（零文件交集） | 执行顺序锁定 |
 
+**细节优化阶段（2026-09-10 二轮，用户指令 1/2/3/4 并行）**：
+- ✅ UI-03 属性编辑器 v2（struct/derived/array/shared + 类型级 parent_class/interfaces/status/render_hints 表单化）
+- ✅ G6 marking 血缘传播（读时强制合取门 + 写时继承 + 检索过滤；G7 scoped session 维持挂起）
+- ✅ CDC 流式腿 + writeback 双流合并（用户编辑覆盖层 + 增量水位 + debezium 事件入口；修复 create_individual 整包替换 bug）
+- ✅ G34 评估套件（三段式题库 + 四象限 + 回归对比，evaluation.py 纯模块）
+- ⬜ 容器镜像正式重建（dev 靠 worktree 同步）；⬜ 分支推送
+
 **执行顺序（决策后定稿）**：
 
 ```
