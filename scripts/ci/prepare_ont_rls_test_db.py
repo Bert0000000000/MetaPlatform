@@ -72,8 +72,9 @@ def _ensure_role() -> None:
 
 
 def _ensure_database() -> None:
-    with psycopg2.connect(ADMIN_DSN, connect_timeout=5) as conn:  # type: ignore
-        conn.autocommit = True
+    conn = psycopg2.connect(ADMIN_DSN, connect_timeout=5)  # type: ignore
+    conn.autocommit = True
+    try:
         with conn.cursor() as cur:
             cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (TEST_DATABASE,))
             if cur.fetchone() is None:
@@ -89,6 +90,8 @@ def _ensure_database() -> None:
                     )
                 )
             _execute_ident(cur, "ALTER DATABASE {} SET app.tenant_id = ''", TEST_DATABASE)
+    finally:
+        conn.close()
 
 
 def _ensure_table_ownership() -> None:
