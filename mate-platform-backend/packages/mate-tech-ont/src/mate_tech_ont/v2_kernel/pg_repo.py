@@ -4712,9 +4712,7 @@ class PgOntologyRepository(OntologyRepository):
                     actor_id=actor_id or None,
                 )
                 # P1-5：记录待 NOTIFY 事件（事务提交后统一 pg_notify）
-                self._pending_notify.extend(
-                    str(eid) for _et, eid in outbox_evidence
-                )
+                self._pending_notify.extend(str(eid) for _et, eid in outbox_evidence)
                 if idempotency_key:
                     cur.execute(
                         """

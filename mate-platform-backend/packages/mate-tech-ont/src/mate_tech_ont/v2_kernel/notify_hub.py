@@ -58,7 +58,8 @@ class NotifyHub:
             return False
         self._started = True
         self._thread = threading.Thread(
-            target=self._listen_loop, daemon=True, name="ont-notify-hub")
+            target=self._listen_loop, daemon=True, name="ont-notify-hub"
+        )
         self._thread.start()
         logger.info("notify_hub.started", channel=NOTIFY_CHANNEL)
         return True
@@ -117,6 +118,7 @@ class NotifyHub:
         if loop is None or not subs:
             return
         for q in subs:
+
             def _put(q_ref: asyncio.Queue[str] = q) -> None:
                 try:
                     q_ref.put_nowait(payload)
@@ -172,8 +174,7 @@ def notify_outbox_event(dsn: str, event_id: str) -> None:
         conn.autocommit = True
         try:
             with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT pg_notify(%s, %s)", (NOTIFY_CHANNEL, event_id))
+                cur.execute("SELECT pg_notify(%s, %s)", (NOTIFY_CHANNEL, event_id))
         finally:
             conn.close()
     except Exception:

@@ -7,6 +7,7 @@
 4. interval=0 时 start 不建任务（禁用语义）；
 5. 真实 PG（可达时）：声明 → run_once → last_synced_at 推进。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -90,8 +91,15 @@ class TestRunOnce:
         assert len(only) == 1
         assert only[0]["class_rid"] == "ont.t1.obj.crm.account.v1"
         row = only[0]
-        assert {"tenant_id", "class_rid", "last_result", "last_error",
-                "last_duration_ms", "last_run_at", "consecutive_failures"} <= set(row)
+        assert {
+            "tenant_id",
+            "class_rid",
+            "last_result",
+            "last_error",
+            "last_duration_ms",
+            "last_run_at",
+            "consecutive_failures",
+        } <= set(row)
 
     def test_interval_zero_disables_start(self) -> None:
         repo = _FakeRepo(DECLS)
@@ -115,9 +123,7 @@ class TestStartStop:
         asyncio.run(_drive())
 
 
-PG_DSN = os.environ.get(
-    "P14_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"
-)
+PG_DSN = os.environ.get("P14_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
 
 
 class TestPgIntegration:
@@ -145,19 +151,35 @@ class TestPgIntegration:
                 try:
                     r.get_object_type(ClassRef(OBJ))
                 except KeyError:
-                    r.upsert_object_type(ObjectType(
-                        rid=ClassRef(OBJ), primary_key=(ClassRef(P_ID),),
-                        properties=(Property(
-                            rid=ClassRef(P_ID), type_id="string", nullable=False,
-                            primary_key=True, title="id",
-                            format=PropertyFormat.STRING),),
-                        display_name="acct"))
+                    r.upsert_object_type(
+                        ObjectType(
+                            rid=ClassRef(OBJ),
+                            primary_key=(ClassRef(P_ID),),
+                            properties=(
+                                Property(
+                                    rid=ClassRef(P_ID),
+                                    type_id="string",
+                                    nullable=False,
+                                    primary_key=True,
+                                    title="id",
+                                    format=PropertyFormat.STRING,
+                                ),
+                            ),
+                            display_name="acct",
+                        )
+                    )
                 try:
-                    r.upsert_backing_datasource({
-                        "class_rid": OBJ, "name": "src1",
-                        "table": "src_p14", "pk_column": "aid",
-                        "field_mapping": {P_ID: "aid"},
-                        "priority": 10, "tenant_id": T})
+                    r.upsert_backing_datasource(
+                        {
+                            "class_rid": OBJ,
+                            "name": "src1",
+                            "table": "src_p14",
+                            "pk_column": "aid",
+                            "field_mapping": {P_ID: "aid"},
+                            "priority": 10,
+                            "tenant_id": T,
+                        }
+                    )
                 except Exception:
                     pytest.skip(f"PG unavailable: source table {OBJ} not provisioned")
             # 无源表可达 → run_once 应记录失败但不抛
@@ -169,8 +191,13 @@ class TestPgIntegration:
             assert len(st) == 1 and st[0]["last_run_at"]
         finally:
             with conn.cursor() as cur:
-                for tbl in ("ont_backing_datasource", "ont_object_type",
-                            "ont_axiom", "ont_edit_overlay", "ont_individual"):
+                for tbl in (
+                    "ont_backing_datasource",
+                    "ont_object_type",
+                    "ont_axiom",
+                    "ont_edit_overlay",
+                    "ont_individual",
+                ):
                     cur.execute(f"DELETE FROM {tbl} WHERE tenant_id=%s", (T,))
             conn.commit()
             conn.close()

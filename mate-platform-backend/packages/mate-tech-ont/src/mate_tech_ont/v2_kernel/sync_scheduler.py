@@ -85,7 +85,9 @@ class SyncScheduler:
             t0 = time.monotonic()
             try:
                 result = await asyncio.to_thread(
-                    self._sync_one, tenant_id, class_rid,
+                    self._sync_one,
+                    tenant_id,
+                    class_rid,
                 )
                 self._status[(tenant_id, class_rid)] = {
                     "tenant_id": tenant_id,
@@ -112,8 +114,10 @@ class SyncScheduler:
                 stats["failed"] += 1
                 logger.warning(
                     "sync_scheduler.sync_failed",
-                    tenant_id=tenant_id, class_rid=class_rid,
-                    error=str(e)[:200], consecutive_failures=fails,
+                    tenant_id=tenant_id,
+                    class_rid=class_rid,
+                    error=str(e)[:200],
+                    consecutive_failures=fails,
                 )
         if declarations:
             logger.info("sync_scheduler.tick", **stats, types=len(declarations))

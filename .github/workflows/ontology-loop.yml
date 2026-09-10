@@ -59,7 +59,7 @@ jobs:
   boot-stack:
     name: boot ontology-loop stack
     # 栈启动在本机/CI 资源受限（docker-compose 9 服务）。债务登记 2026-09-10
-    continue-on-error: true  # 债务登记：预存红，不阻塞合并
+    continue-on-error: true # 债务登记：预存红，不阻塞合并
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:

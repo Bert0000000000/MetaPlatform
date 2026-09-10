@@ -9,6 +9,7 @@
 5. outbox 写入 → _flush_notify → NOTIFY 发出（pg_stat_activity 无断言，
    直接验证 hub 队列收到 event_id）。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -86,9 +87,7 @@ class TestHubFor:
         assert hub_for(_State(), "") is None
 
 
-PG_DSN = os.environ.get(
-    "P15_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"
-)
+PG_DSN = os.environ.get("P15_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
 
 
 class TestPgListenNotify:
@@ -110,8 +109,7 @@ class TestPgListenNotify:
                 eid = f"evt-notify-test-{int(time.time())}"
                 notify_outbox_event(PG_DSN, eid)
                 # 毫秒级推送验证：1s 超时内必须收到
-                got = asyncio.run_coroutine_threadsafe(
-                    q.get(), loop).result(timeout=1.0)
+                got = asyncio.run_coroutine_threadsafe(q.get(), loop).result(timeout=1.0)
                 assert parse_event_id(got) == eid
             finally:
                 hub.unsubscribe(q)
