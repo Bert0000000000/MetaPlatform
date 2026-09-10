@@ -44,7 +44,8 @@ def main() -> int:
     _LEGIT = re.compile(
         r"importorskip|PG unavailable|PG not reachable|pgvector (extension|not)|"
         r"executable bit|partial checkout|not meaningful on Windows|"
-        r"not in umbrella",
+        r"not in umbrella|inherits global security|intentionally public|"
+        r"prometheus_client not installed",
         re.I,
     )
     bad = [(f, n, l) for f, n, l in bad if not _LEGIT.search(l)]
