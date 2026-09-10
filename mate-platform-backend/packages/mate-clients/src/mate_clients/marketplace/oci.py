@@ -1,9 +1,9 @@
 """OCI Distribution Spec v2 数据面拉取器,边下载边校验 sha256。"""
 from __future__ import annotations
 
-from typing import Any
 import hashlib
 from collections.abc import AsyncIterator
+from typing import Any
 
 from .errors import DigestMismatch
 

@@ -1,9 +1,9 @@
 """license_service — 激活 license + KMS 加密入库。"""
 from __future__ import annotations
 
-from typing import Any
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 from mate_platform import kms as _kms

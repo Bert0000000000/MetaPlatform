@@ -50,9 +50,9 @@ work lives in the companion ``rls_session_middleware`` callable.
 """
 from __future__ import annotations
 
-from typing import Any
 import logging
 from collections.abc import Callable
+from typing import Any
 
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
