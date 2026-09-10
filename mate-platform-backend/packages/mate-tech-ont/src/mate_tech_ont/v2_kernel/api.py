@@ -963,8 +963,44 @@ async def ws_object_changes(websocket: WebSocket) -> None:
     sent: set[str] = set()
     import asyncio
 
+    # P1-5：PG repo 时接 LISTEN/NOTIFY hub（毫秒级推）；memory/PG 缺位回退轮询。
+    from .notify_hub import hub_for, parse_event_id
+
+    dsn = getattr(repo, "_dsn", None) or ""
+    hub = hub_for(websocket.app.state, dsn) if dsn else None
+    queue = hub.subscribe() if hub is not None else None
+    pending: set[str] = set()
+
+    async def _send_event(eid: str) -> None:
+        # 取事件体（按 event_id 精确定位；outbox list 后匹配）
+        try:
+            events = await asyncio.to_thread(repo.list_outbox_events, "0", 100)
+        except Exception:
+            return
+        for ev in events:
+            if str(ev.get("event_id", "")) == eid:
+                await websocket.send_json(
+                    {
+                        "event_id": eid,
+                        "event_type": ev.get("event_type", ""),
+                        "payload": ev.get("payload") or {},
+                    }
+                )
+                return
+
     try:
         while True:
+            if queue is not None:
+                # LISTEN/NOTIFY 唤醒路径：等 hub 队列（秒级超时 → 兜底轮询对齐）
+                try:
+                    payload = await asyncio.wait_for(queue.get(), timeout=1.0)
+                    eid = parse_event_id(payload)
+                    if eid and eid not in sent:
+                        sent.add(eid)
+                        await _send_event(eid)
+                    continue
+                except TimeoutError:
+                    pass
             try:
                 events = await asyncio.to_thread(repo.list_outbox_events, "0", 20)
             except Exception:
@@ -988,6 +1024,9 @@ async def ws_object_changes(websocket: WebSocket) -> None:
             await websocket.close()
         except Exception:
             pass
+    finally:
+        if hub is not None and queue is not None:
+            hub.unsubscribe(queue)
 
 
 # ───── G44：Scenario 会话 API（ACT-08 overlay 的 HTTP 化）─────

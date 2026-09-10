@@ -978,6 +978,8 @@ class PgOntologyRepository(OntologyRepository):
         from mate_kernel.action.engine import ActionService
 
         self._action_service = ActionService()
+        # P1-5：事务提交后待 pg_notify 的事件 ID（WS LISTEN/NOTIFY 即时推）
+        self._pending_notify: list[str] = []
         # GOVERN-05: FunctionResolver + FunctionExecutor 注入
         from mate_kernel.ontology.function_resolver import InMemoryFunctionResolver
 
@@ -2114,6 +2116,22 @@ class PgOntologyRepository(OntologyRepository):
             return li
         finally:
             conn.close()
+
+    def _flush_notify(self) -> None:
+        """P1-5：事务提交后对 pending 事件发 pg_notify（即时推 WS 订阅者）。
+
+        独立短连接；失败静默（轮询兜底）。清空 pending 防重发。
+        """
+        if not self._pending_notify:
+            return
+        pending, self._pending_notify = self._pending_notify[:], []
+        dsn = getattr(self, "_dsn", "")
+        if not dsn:
+            return
+        from .notify_hub import notify_outbox_event
+
+        for eid in pending:
+            notify_outbox_event(dsn, eid)
 
     def _check_link_cardinality(
         self,
@@ -4693,6 +4711,10 @@ class PgOntologyRepository(OntologyRepository):
                     to_status="executed",
                     actor_id=actor_id or None,
                 )
+                # P1-5：记录待 NOTIFY 事件（事务提交后统一 pg_notify）
+                self._pending_notify.extend(
+                    str(eid) for _et, eid in outbox_evidence
+                )
                 if idempotency_key:
                     cur.execute(
                         """
@@ -4719,9 +4741,12 @@ class PgOntologyRepository(OntologyRepository):
                     ),
                 )
             conn.commit()
+            # P1-5：提交成功 → pg_notify 即时推 WS 订阅者
+            self._flush_notify()
             return result
         except Exception:
             conn.rollback()
+            self._pending_notify.clear()  # 事务失败 → 未提交事件不 NOTIFY
             # ActionService is an in-process cache. Restore it after a failed
             # database transaction so a later retry still sees ``confirmed``.
             self._action_service._proposals[proposal.proposal_id] = proposal
@@ -5033,6 +5058,8 @@ class PgOntologyRepository(OntologyRepository):
                     ),
                 )
                 event_id = f"evt-{_uuid.uuid4().hex[:12]}"
+                # P1-5：记录待 NOTIFY 事件
+                self._pending_notify.append(event_id)
                 cur.execute(
                     """INSERT INTO ont_outbox_event
                        (event_id, tenant_id, proposal_id, event_type, payload)
@@ -5064,9 +5091,12 @@ class PgOntologyRepository(OntologyRepository):
             conn.commit()
         except Exception:
             conn.rollback()
+            self._pending_notify.clear()  # 事务失败 → 未提交事件不 NOTIFY
             raise
         finally:
             conn.close()
+        # P1-5：提交成功 → pg_notify 即时推 WS 订阅者
+        self._flush_notify()
         return result
 
     def execute_proposal(

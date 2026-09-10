@@ -11170,7 +11170,7 @@ components:
             from token.tenant_id
       flows:
         clientCredentials:
-          tokenUrl: ${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
+          tokenUrl: https://keycloak.metaplatform.io/realms/metaplatform/protocol/openid-connect/token
           scopes:
             platform.read: Read-only access
             platform.write: Mutation access

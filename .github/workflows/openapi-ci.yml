@@ -53,9 +53,6 @@ jobs:
       - run: python -m pytest contracts/tests -q
 
   runtime-parity:
-    # 债务登记（2026-09-10）：依赖 a2a-sdk（仅 backend venv 有），job 内 pip 未装。
-    # 预存红（main 合并前即挂）；修法=uv sync 或 pip 装 a2a-sdk。不阻塞合并。
-    continue-on-error: true
     runs-on: ubuntu-latest
     env:
       LEGACY_LOGIN_COMPAT: "true"
@@ -65,17 +62,19 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - name: Install backend deps
-        run: |
-          pip install -r mate-platform-backend/requirements.txt
-          # requirements.txt (7/28 export) 缺多个运行时依赖；runtime_openapi 导入的
-          # 服务模块依赖它们。uv sync 会尝试构建 deep-research 等 workspace 成员
-          # 触发 Failed to parse entry，故用 requirements + 补装。
-          pip install structlog PyYAML prometheus_client prometheus-fastapi-instrumentator \
-            sqlparse aiokafka neo4j redis pymilvus opentelemetry-api opentelemetry-sdk \
-            opentelemetry-instrumentation-fastapi sse-starlette tiktoken langgraph tenacity
-      - run: python mate-platform-backend/contracts/scripts/runtime_openapi.py
-      - run: python mate-platform-backend/contracts/scripts/compare_runtime.py
+      - name: Install uv
+        run: python -m pip install uv
+      # 依赖闭包一次性从 workspace 锁文件装全（2026-09-10 修复）：
+      # 旧的 requirements.txt + pip 补装路线拿不到 a2a-sdk（ModuleNotFoundError:
+      # a2a），且逐包打地鼠维护不住。--all-packages 安装全部 workspace 成员
+      # + 根依赖，覆盖 runtime_openapi.py 全部 19 个 runtimeModule 的导入
+      # 闭包（structlog / langgraph / mcp / rdflib / a2a-sdk / ...）。
+      # 注：早期「uv sync 构建失败」的备注已过时 —— 全 workspace 锁文件
+      # 现可完整解析构建（本地已验证）。
+      - name: Sync backend dependency closure from lockfile
+        run: uv sync --directory mate-platform-backend --frozen --no-dev --all-packages
+      - run: uv run --directory mate-platform-backend --no-sync python contracts/scripts/runtime_openapi.py
+      - run: uv run --directory mate-platform-backend --no-sync python contracts/scripts/compare_runtime.py
 
   breaking-change:
     if: github.event_name == 'pull_request'

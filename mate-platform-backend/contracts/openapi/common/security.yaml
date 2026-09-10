@@ -46,7 +46,10 @@ components:
             from token.tenant_id
       flows:
         clientCredentials:
-          tokenUrl: ${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
+          # Documentation reference endpoint; deployments override via
+          # KEYCLOAK_URL / KEYCLOAK_REALM env (template vars are not valid
+          # uri-reference and fail spectral oas3-schema).
+          tokenUrl: https://keycloak.metaplatform.io/realms/metaplatform/protocol/openid-connect/token
           scopes:
             platform.read: Read-only access
             platform.write: Mutation access
