@@ -328,8 +328,11 @@ Wave6 GOV-16~19（随时可插，互相独立）→ UI-04
 > 分支 `feat/ont-gap-catchup`（24 commits，已推送 origin），953 tests green。
 > 状态口径：✅ 完整交付（含真库/浏览器验证）｜🟡 主体交付（声明的 v1 子项有留尾）｜⬜ 挂起（有明确决策）。
 
-**总进度**：✅ 34/44（77%）｜🟡 6/44｜⬜ 4/44 —— **含部分交付 40/44（91%）**。
-Batch 口径：后端 20/20 + UI 5/6 + 二轮 4/4 = **29/30**。
+**总进度（2026-09-10 三轮「全量交付」后）**：✅ 43/44（98%）｜🟡 0｜⬜ 1（G44 Scenario UI，随需求做——后端会话 API 已就绪）。
+Batch 口径：后端 20/20 + UI 5/6 + 二轮 4/4 + 三轮 7 项（G7/G12/G13/G20/G23/G25/G33 后端 + G41/G42 前端）= **全量**。
+
+**三轮（全量交付）补记**：G12 数组 reducer 查询折叠 ✅｜G13 nearestNeighbors 入 IR（先 KNN 后过滤）✅｜G20 webhook 投递（HMAC 签名+重试+审计+幂等）✅｜G33 WIP 暂存+type-the-name 门禁 ✅｜G41 版本操作面+Export/Import ✅｜G42 ego 图谱+latlon/geojson 渲染 ✅｜G7 scoped markings（X-Scope-Markings 收窄）✅｜G23 Function 版本快照/别名/Stub/invoke ✅｜G25 WebSocket /ws/object-changes ✅｜G44 Scenario 会话 API（建/试改/视图/受治理合并/丢弃）✅。
+三轮顺带修复：ScenarioOverlay 墓碑判定反转（set_property 后视图仍显旧值）；dev 网关坑：重启任一上游域容器须同步 restart mate-api-gateway（httpx 连接池 keep-alive 失效 → 全部 proxy.timeout）。
 
 ### 9.1 后端差距（G1-G34：✅ 27 / 🟡 4 / ⬜ 3）
 
