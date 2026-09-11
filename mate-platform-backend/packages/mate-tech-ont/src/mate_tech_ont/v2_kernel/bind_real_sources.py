@@ -74,7 +74,7 @@ def bind_all(repo: Any, extended: bool = False) -> dict[str, Any]:
                 {**b, "tenant_id": TENANT})
             stats = repo.sync_backing_datasources(rid, incremental=True)
             results[rid] = {"ok": True, "stats": stats}
-        except Exception as e:  # noqa: BLE001 — 逐类型隔离
+        except Exception as e:  # 逐类型隔离——单类型失败不中断
             results[rid] = {"ok": False, "error": str(e)[:200]}
     return results
 
