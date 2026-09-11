@@ -80,35 +80,161 @@ DEV_PASSWORD = "admin123"
 #: 从中文句子中确定性提取「实义词」。命中即视为该词在句中出现）。
 _DOMAIN_GLOSSARY: tuple[str, ...] = (
     # 区域 / 等级
-    "华东", "华北", "华南", "西南", "东北", "西北",
-    "A级", "B级", "C级", "信用等级", "授信",
+    "华东",
+    "华北",
+    "华南",
+    "西南",
+    "东北",
+    "西北",
+    "A级",
+    "B级",
+    "C级",
+    "信用等级",
+    "授信",
     # CRM
-    "客户", "订单", "产品", "合同", "采购", "备货", "类目",
-    "未完结", "完结", "延迟", "复核", "续约", "到期", "签约", "下单",
-    "回款", "跟进", "额度", "占比", "集中度", "行业", "区域",
+    "客户",
+    "订单",
+    "产品",
+    "合同",
+    "采购",
+    "备货",
+    "类目",
+    "未完结",
+    "完结",
+    "延迟",
+    "复核",
+    "续约",
+    "到期",
+    "签约",
+    "下单",
+    "回款",
+    "跟进",
+    "额度",
+    "占比",
+    "集中度",
+    "行业",
+    "区域",
     # HR
-    "员工", "请假", "年假", "事假", "调休", "待审批", "审批", "驳回",
-    "部门", "排班", "缺勤", "薪资", "社保", "加班", "招聘", "入职",
-    "简历", "面试", "录用", "交接", "人力", "研发", "运营",
+    "员工",
+    "请假",
+    "年假",
+    "事假",
+    "调休",
+    "待审批",
+    "审批",
+    "驳回",
+    "部门",
+    "排班",
+    "缺勤",
+    "薪资",
+    "社保",
+    "加班",
+    "招聘",
+    "入职",
+    "简历",
+    "面试",
+    "录用",
+    "交接",
+    "人力",
+    "研发",
+    "运营",
     # IT
-    "工单", "优先级", "积压", "滞留", "密码重置", "设备", "告警",
-    "部署", "值守", "容量", "登录", "认证", "故障", "发布", "回归",
+    "工单",
+    "优先级",
+    "积压",
+    "滞留",
+    "密码重置",
+    "设备",
+    "告警",
+    "部署",
+    "值守",
+    "容量",
+    "登录",
+    "认证",
+    "故障",
+    "发布",
+    "回归",
     # Finance
-    "发票", "账龄", "逾期", "催收", "坏账", "开票", "对账", "未回款",
-    "应收", "凭证", "报销", "审计", "关账", "收入", "利润", "计提",
+    "发票",
+    "账龄",
+    "逾期",
+    "催收",
+    "坏账",
+    "开票",
+    "对账",
+    "未回款",
+    "应收",
+    "凭证",
+    "报销",
+    "审计",
+    "关账",
+    "收入",
+    "利润",
+    "计提",
     # 跨域 / 推理
-    "数字员工", "编排", "意图", "协同", "兜底", "人工",
-    "根因", "卡点", "副作用", "联动", "链路", "环节",
-    "分布", "走势", "趋势", "环比", "周期", "清单", "名单", "明细",
-    "全景", "剪刀差", "转化率", "敞口", "波动", "频次", "零下单",
-    "冲击", "波及", "复购", "流失", "拖累", "过载", "分流", "匹配",
+    "数字员工",
+    "编排",
+    "意图",
+    "协同",
+    "兜底",
+    "人工",
+    "根因",
+    "卡点",
+    "副作用",
+    "联动",
+    "链路",
+    "环节",
+    "分布",
+    "走势",
+    "趋势",
+    "环比",
+    "周期",
+    "清单",
+    "名单",
+    "明细",
+    "全景",
+    "剪刀差",
+    "转化率",
+    "敞口",
+    "波动",
+    "频次",
+    "零下单",
+    "冲击",
+    "波及",
+    "复购",
+    "流失",
+    "拖累",
+    "过载",
+    "分流",
+    "匹配",
 )
 
 #: latin 停用词（泛词不参与 token 重叠判定）。
-_LATIN_STOPWORDS = frozenset({
-    "the", "a", "an", "of", "and", "or", "to", "in", "on", "for", "is",
-    "are", "be", "it", "its", "id", "no", "if", "at", "by", "as",
-})
+_LATIN_STOPWORDS = frozenset(
+    {
+        "the",
+        "a",
+        "an",
+        "of",
+        "and",
+        "or",
+        "to",
+        "in",
+        "on",
+        "for",
+        "is",
+        "are",
+        "be",
+        "it",
+        "its",
+        "id",
+        "no",
+        "if",
+        "at",
+        "by",
+        "as",
+    }
+)
 
 _LATIN_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9_\-]*")
 
@@ -162,71 +288,101 @@ def content_words(text: str, limit: int = 3) -> list[str]:
 # 企业核心本体 + 7+1 数字员工）的已知对象名/属性值，用于确定性模拟
 # 「有领域知识的人类在数据中查找」的下界——不是真实人类作答。
 _KNOWN_DATA_FACTS: tuple[dict[str, object], ...] = (
-    {"keys": ["李华", "EMP-002"],
-     "fact": "employee EMP-002 李华 dept=研发；请假 LR-2026-002 事假 1 天 pending"},
-    {"keys": ["王小明", "EMP-001"],
-     "fact": "employee EMP-001 王小明 dept=HR；请假 LR-2026-001 年假 3 天 pending"},
-    {"keys": ["赵强", "EMP-003"],
-     "fact": "employee EMP-003 赵强 dept=运营；请假 LR-2026-003 调休 5 天 pending"},
+    {
+        "keys": ["李华", "EMP-002"],
+        "fact": "employee EMP-002 李华 dept=研发；请假 LR-2026-002 事假 1 天 pending",
+    },
+    {
+        "keys": ["王小明", "EMP-001"],
+        "fact": "employee EMP-001 王小明 dept=HR；请假 LR-2026-001 年假 3 天 pending",
+    },
+    {
+        "keys": ["赵强", "EMP-003"],
+        "fact": "employee EMP-003 赵强 dept=运营；请假 LR-2026-003 调休 5 天 pending",
+    },
     {"keys": ["LR-2026-001"], "fact": "请假单 LR-2026-001：年假 3 天 pending（王小明）"},
     {"keys": ["LR-2026-002"], "fact": "请假单 LR-2026-002：事假 1 天 pending（李华）"},
     {"keys": ["LR-2026-003"], "fact": "请假单 LR-2026-003：调休 5 天 pending（赵强）"},
-    {"keys": ["TK-2026-001", "登录页偶发", "401"],
-     "fact": "工单 TK-2026-001「登录页偶发 401」priority=high status=open"},
-    {"keys": ["TK-2026-002", "报表导出慢"],
-     "fact": "工单 TK-2026-002「报表导出慢」priority=medium status=open"},
-    {"keys": ["审批请假", "approve-leave"],
-     "fact": "act.approve-leave 审批请假 side_effects=notify_email,audit_log"},
-    {"keys": ["关闭工单", "close-ticket"],
-     "fact": "act.close-ticket 关闭工单 side_effects=notify_customer"},
-    {"keys": ["订单复核", "order-review-confirm"],
-     "fact": "act.order-review-confirm 订单复核确认 "
-             "side_effects=update_order,create_follow_up_task,audit_log"},
-    {"keys": ["审批合同", "approve-contract"],
-     "fact": "act.approve-contract 审批合同 side_effects=notify_email,audit_log"},
-    {"keys": ["dw-hr-recruiter", "招聘"],
-     "fact": "dw-hr-recruiter（HR Recruiter）capabilities="
-             "screen_resume,schedule_interview,initiate_onboarding"},
-    {"keys": ["dw-hr-payroll", "薪资"],
-     "fact": "dw-hr-payroll（HR Payroll）capabilities="
-             "calculate_salary,verify_social_insurance,compute_overtime_fee"},
-    {"keys": ["dw-it-helpdesk", "服务台"],
-     "fact": "dw-it-helpdesk（IT Service Desk）capabilities="
-             "classify_ticket,reset_password,request_device"},
-    {"keys": ["dw-it-devops", "devops"],
-     "fact": "dw-it-devops（IT DevOps）capabilities="
-             "trigger_ci,approve_deploy,alert_monitoring"},
-    {"keys": ["dw-finance-ar", "应收"],
-     "fact": "dw-finance-ar（Finance AR）capabilities="
-             "issue_invoice,reconcile_payment,aging_analysis"},
-    {"keys": ["dw-finance-expense", "报销"],
-     "fact": "dw-finance-expense（Expense Auditor）capabilities="
-             "audit_expense,reimburse,generate_voucher"},
-    {"keys": ["dw-sales-crm", "销售助理"],
-     "fact": "dw-sales-crm（Sales CRM Assistant）capabilities="
-             "follow_customer,draft_contract,advance_opportunity"},
-    {"keys": ["superai-orchestrator", "编排者"],
-     "fact": "superai-orchestrator capabilities="
-             "detect_intent,match_employee,plan_task,aggregate_result"},
-    {"keys": ["superai-orchestrate"],
-     "fact": "act.superai-orchestrate 编排调度 side_effects=audit_log"},
-    {"keys": ["华东"],
-     "fact": "customer-master 样例客户 region=华东（CRM 真实源库已绑定样例）"},
-    {"keys": ["信用等级", "credit-level"],
-     "fact": "customer credit-level 属性（取值 A/B/C）已建模"},
-    {"keys": ["办公设备"],
-     "fact": "product category=办公设备（类目已建模）"},
-    {"keys": ["employee-leave"],
-     "fact": "LinkType employee-leave（员工→请假 1:N）已建模"},
-    {"keys": ["customer-order"],
-     "fact": "LinkType customer-order（客户→订单 1:N）已建模"},
+    {
+        "keys": ["TK-2026-001", "登录页偶发", "401"],
+        "fact": "工单 TK-2026-001「登录页偶发 401」priority=high status=open",
+    },
+    {
+        "keys": ["TK-2026-002", "报表导出慢"],
+        "fact": "工单 TK-2026-002「报表导出慢」priority=medium status=open",
+    },
+    {
+        "keys": ["审批请假", "approve-leave"],
+        "fact": "act.approve-leave 审批请假 side_effects=notify_email,audit_log",
+    },
+    {
+        "keys": ["关闭工单", "close-ticket"],
+        "fact": "act.close-ticket 关闭工单 side_effects=notify_customer",
+    },
+    {
+        "keys": ["订单复核", "order-review-confirm"],
+        "fact": "act.order-review-confirm 订单复核确认 "
+        "side_effects=update_order,create_follow_up_task,audit_log",
+    },
+    {
+        "keys": ["审批合同", "approve-contract"],
+        "fact": "act.approve-contract 审批合同 side_effects=notify_email,audit_log",
+    },
+    {
+        "keys": ["dw-hr-recruiter", "招聘"],
+        "fact": "dw-hr-recruiter（HR Recruiter）capabilities="
+        "screen_resume,schedule_interview,initiate_onboarding",
+    },
+    {
+        "keys": ["dw-hr-payroll", "薪资"],
+        "fact": "dw-hr-payroll（HR Payroll）capabilities="
+        "calculate_salary,verify_social_insurance,compute_overtime_fee",
+    },
+    {
+        "keys": ["dw-it-helpdesk", "服务台"],
+        "fact": "dw-it-helpdesk（IT Service Desk）capabilities="
+        "classify_ticket,reset_password,request_device",
+    },
+    {
+        "keys": ["dw-it-devops", "devops"],
+        "fact": "dw-it-devops（IT DevOps）capabilities=trigger_ci,approve_deploy,alert_monitoring",
+    },
+    {
+        "keys": ["dw-finance-ar", "应收"],
+        "fact": "dw-finance-ar（Finance AR）capabilities="
+        "issue_invoice,reconcile_payment,aging_analysis",
+    },
+    {
+        "keys": ["dw-finance-expense", "报销"],
+        "fact": "dw-finance-expense（Expense Auditor）capabilities="
+        "audit_expense,reimburse,generate_voucher",
+    },
+    {
+        "keys": ["dw-sales-crm", "销售助理"],
+        "fact": "dw-sales-crm（Sales CRM Assistant）capabilities="
+        "follow_customer,draft_contract,advance_opportunity",
+    },
+    {
+        "keys": ["superai-orchestrator", "编排者"],
+        "fact": "superai-orchestrator capabilities="
+        "detect_intent,match_employee,plan_task,aggregate_result",
+    },
+    {
+        "keys": ["superai-orchestrate"],
+        "fact": "act.superai-orchestrate 编排调度 side_effects=audit_log",
+    },
+    {"keys": ["华东"], "fact": "customer-master 样例客户 region=华东（CRM 真实源库已绑定样例）"},
+    {
+        "keys": ["信用等级", "credit-level"],
+        "fact": "customer credit-level 属性（取值 A/B/C）已建模",
+    },
+    {"keys": ["办公设备"], "fact": "product category=办公设备（类目已建模）"},
+    {"keys": ["employee-leave"], "fact": "LinkType employee-leave（员工→请假 1:N）已建模"},
+    {"keys": ["customer-order"], "fact": "LinkType customer-order（客户→订单 1:N）已建模"},
     {"keys": ["high"], "fact": "ticket priority=high 为已知取值"},
-    {"keys": ["年假", "事假", "调休"],
-     "fact": "leave-request reason 取值：年假/事假/调休"},
-    {"keys": ["ORD-"],
-     "fact": "sales-order 单号前缀 ORD-（5000 张订单已绑定为 Individual）"},
-    {"keys": ["未回款", "逾期"],
-     "fact": "invoice-status 已建模（含未回款/逾期等取值）"},
+    {"keys": ["年假", "事假", "调休"], "fact": "leave-request reason 取值：年假/事假/调休"},
+    {"keys": ["ORD-"], "fact": "sales-order 单号前缀 ORD-（5000 张订单已绑定为 Individual）"},
+    {"keys": ["未回款", "逾期"], "fact": "invoice-status 已建模（含未回款/逾期等取值）"},
 )
 
 
@@ -268,6 +424,7 @@ def _human_answer_question(q: EvaluationQuestion) -> RunRecord:
 # ---------------------------------------------------------------------------
 # AI runner：本体检索通道（hybrid 优先，0 结果降级语义检索）
 # ---------------------------------------------------------------------------
+
 
 class OntSearchClient:
     """dev 栈网关客户端：登录 + object-search / hybrid。"""
@@ -329,9 +486,7 @@ def _card_hit_keywords(card: dict, expected_kws: list[str], expected_latin: set[
     return hits
 
 
-def _make_ai_runner(
-    client: OntSearchClient, top_k: int, delay_s: float, total: int
-):
+def _make_ai_runner(client: OntSearchClient, top_k: int, delay_s: float, total: int):
     """构造 AI runner 闭包（run_suite 注入用；每题间隔 delay 秒防限流）。"""
     state = {"done": 0}
 
@@ -361,8 +516,7 @@ def _make_ai_runner(
                 "rid": c.get("individual_rid"),
                 "score": c.get("score"),
                 "matched": [
-                    str(m.get("value_text", ""))[:80]
-                    for m in (c.get("matched") or [])[:3]
+                    str(m.get("value_text", ""))[:80] for m in (c.get("matched") or [])[:3]
                 ],
             }
             for c in cards[:3]
@@ -427,8 +581,7 @@ def _print_report(
     lines.append("=" * 72)
     lines.append("G34 四象限基线报告（question_bank v%s）" % QUESTION_BANK_VERSION)
     lines.append(
-        f"题数={len(ai_runs)}  top_k={args.top_k}  delay={args.delay}s  "
-        f"gateway={args.gateway}"
+        f"题数={len(ai_runs)}  top_k={args.top_k}  delay={args.delay}s  gateway={args.gateway}"
     )
     lines.append(f"AI runs JSONL: {ai_path}")
     lines.append("(human 侧为 keyword-in-data 模拟基线，非真实人类作答)")
@@ -479,7 +632,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--limit", type=int, default=0, help="只跑前 N 题（默认全部 50）")
     parser.add_argument("--gateway", default=DEFAULT_GATEWAY, help="API 网关地址")
     parser.add_argument(
-        "--append", action="store_true",
+        "--append",
+        action="store_true",
         help="追加写 JSONL（默认覆盖，保持基线可复现；格式同 append_runs）",
     )
     parser.add_argument("--timeout", type=float, default=120.0, help="单请求超时秒数")
@@ -497,7 +651,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         client.login()
         print("登录 OK，开始 AI 检索作答……")
-        ai_runs = run_suite(questions, _make_ai_runner(client, args.top_k, args.delay, len(questions)))
+        ai_runs = run_suite(
+            questions, _make_ai_runner(client, args.top_k, args.delay, len(questions))
+        )
     finally:
         client.close()
 

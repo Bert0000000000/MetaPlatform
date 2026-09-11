@@ -1120,13 +1120,16 @@ class PgOntologyRepository(OntologyRepository):
             "CREATE EXTENSION IF NOT EXISTS vector",
             (
                 "DO $do$ BEGIN "
-                "IF EXISTS (SELECT 1 FROM information_schema.columns "
-                "WHERE table_name='ont_object_embedding' "
-                "AND column_name='embedding_vec' "
-                "AND (udt_name <> '" + vec_type + "' "
-                "     OR COALESCE(character_maximum_length::text, '') <> '"
-                + str(vec_dim)
-                + "')) THEN "
+                "IF EXISTS (SELECT 1 FROM pg_attribute a "
+                "JOIN pg_class c ON c.oid = a.attrelid "
+                "JOIN pg_type t ON t.oid = a.atttypid "
+                "WHERE c.relname='ont_object_embedding' "
+                "AND a.attname='embedding_vec' "
+                "AND (t.typname <> '" + vec_type + "' "
+                # atttypmod = dim for vector/halfvec；information_schema 的
+                # character_maximum_length 对扩展类型恒为 NULL，用它比较会让
+                # DROP 分支每次启动都触发、把已回填的向量全部清空。
+                "     OR COALESCE(a.atttypmod, 0) <> '" + str(vec_dim) + "'::int)) THEN "
                 "ALTER TABLE ont_object_embedding DROP COLUMN embedding_vec; "
                 "END IF; "
                 "END $do$"

@@ -70,8 +70,7 @@ def bind_all(repo: Any, extended: bool = False) -> dict[str, Any]:
     for b in bindings:
         rid = b["class_rid"]
         try:
-            repo.upsert_backing_datasource(
-                {**b, "tenant_id": TENANT})
+            repo.upsert_backing_datasource({**b, "tenant_id": TENANT})
             stats = repo.sync_backing_datasources(rid, incremental=True)
             results[rid] = {"ok": True, "stats": stats}
         except Exception as e:  # 逐类型隔离——单类型失败不中断
@@ -82,8 +81,7 @@ def bind_all(repo: Any, extended: bool = False) -> dict[str, Any]:
 if __name__ == "__main__":
     import os
 
-    dsn = os.environ.get(
-        "PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform_ont")
+    dsn = os.environ.get("PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform_ont")
     repo = get_repo(dsn)
     extended = "--extended" in sys.argv
     out = bind_all(repo, extended=extended)
