@@ -97,7 +97,11 @@ jobs:
       # ubuntu-latest 镜像自带 Docker Compose v2 插件（`docker compose`），
       # 直接用即可，无需任何安装步骤。
       - name: Lint compose file
-        run: docker compose -f docker-compose.yml config --quiet
+        run: |
+          # CI 无 .env（KEYCLOAK_CLIENT_SECRET 等 required 变量）——
+          # 空值 env-file 兜底让 config 插值通过
+          touch .env
+          docker compose -f docker-compose.yml config --quiet
       - name: Hadolint Dockerfiles
         uses: hadolint/hadolint-action@v3.1.0
         with:

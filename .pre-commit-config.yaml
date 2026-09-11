@@ -53,7 +53,7 @@ repos:
       - id: prettier
         types_or: [yaml, json, markdown]
         files: \.(yml|yaml|json|md)$
-        exclude: ^(docs/active/(specs|prd|reports)/|docs/|infra/helm/|acceptance/|\.pre-commit-config\.yaml)
+        exclude: ^(docs/|infra/helm/|acceptance/|\.pre-commit-config\.yaml|mate-platform-backend/contracts/openapi/generated/)
 
   - repo: https://github.com/hadolint/hadolint
     rev: v2.12.1-beta
