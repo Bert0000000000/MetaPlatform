@@ -2998,12 +2998,19 @@ class PgOntologyRepository(OntologyRepository):
         return out
 
     def _index_individual_embeddings(self, conn: Any, ind: Individual) -> None:
-        """index-on-write（best-effort：embedder 缺席或失败不阻断主写入）。"""
+        """index-on-write（best-effort：embedder 缺席或失败不阻断主写入）。
+
+        真实缺陷修复（2026-09-11）：整个 embedding 写入包在 SAVEPOINT 里。
+        此前维度不匹配的 embedding_vec INSERT 会使 PG 事务进入 aborted
+        状态，后续 conn.commit() 变成 no-op——主行写入静默丢失（raw
+        count 0）。SAVEPOINT 让失败只回滚 embedding，不影响主行提交。
+        """
         try:
             chunks = self._embed_chunks(ind)
             if not chunks:
                 return
             with self._cursor(conn) as cur:
+                cur.execute("SAVEPOINT embedding_index")
                 for chunk_id, individual_rid, class_rid, property_rid, value_text, vec in chunks:
                     vec_written = False
                     if not getattr(self, "_pgvector_ready", False):
@@ -3042,7 +3049,13 @@ class PgOntologyRepository(OntologyRepository):
                             )
                             vec_written = True
                         except Exception:
-                            conn.rollback()  # 维度不匹配等 → 回落 JSONB-only
+                            # 维度不匹配等 → ROLLBACK TO savepoint 回落 JSONB-only
+                            # （裸 conn.rollback() 会连主行一起回滚）
+                            try:
+                                cur.execute("ROLLBACK TO SAVEPOINT embedding_index")
+                                cur.execute("SAVEPOINT embedding_index")
+                            except Exception:
+                                pass
                     if not vec_written:
                         cur.execute(
                             """
@@ -3072,6 +3085,17 @@ class PgOntologyRepository(OntologyRepository):
                 "object_embedding_index_failed",
                 extra={"rid": ind.rid},
             )
+            try:  # 回滚 aborted 语句到 savepoint——保住主行事务可提交
+                with self._cursor(conn) as cur:
+                    cur.execute("ROLLBACK TO SAVEPOINT embedding_index")
+            except Exception:
+                pass
+        finally:
+            try:
+                with self._cursor(conn) as cur:
+                    cur.execute("RELEASE SAVEPOINT embedding_index")
+            except Exception:
+                pass  # savepoint 已随事务回滚销毁
 
     # ───── G33：schema WIP 暂存 ─────
 
