@@ -3013,9 +3013,14 @@ class PgOntologyRepository(OntologyRepository):
             chunks = self._embed_chunks(ind)
             if not chunks:
                 return
+            sp_n = 0
             with self._cursor(conn) as cur:
-                cur.execute("SAVEPOINT embedding_index")
                 for chunk_id, individual_rid, class_rid, property_rid, value_text, vec in chunks:
+                    sp_n += 1
+                    sp_name = f"embedding_index_{sp_n}"
+                    # 每 chunk 独立 savepoint：单 chunk 失败只回滚该 chunk，
+                    # 不污染事务（ cured 了早期"一个失败全事务 aborted"）
+                    cur.execute(f"SAVEPOINT {sp_name}")
                     vec_written = False
                     if not getattr(self, "_pgvector_ready", False):
                         # 硬化：启动时升级可能因瞬时锁/连接问题静默失败
@@ -3056,8 +3061,8 @@ class PgOntologyRepository(OntologyRepository):
                             # 维度不匹配等 → ROLLBACK TO savepoint 回落 JSONB-only
                             # （裸 conn.rollback() 会连主行一起回滚）
                             try:
-                                cur.execute("ROLLBACK TO SAVEPOINT embedding_index")
-                                cur.execute("SAVEPOINT embedding_index")
+                                cur.execute(f"ROLLBACK TO SAVEPOINT {sp_name}")
+                                cur.execute(f"SAVEPOINT {sp_name}")
                             except Exception:
                                 pass
                     if not vec_written:
@@ -3089,17 +3094,6 @@ class PgOntologyRepository(OntologyRepository):
                 "object_embedding_index_failed",
                 extra={"rid": ind.rid},
             )
-            try:  # 回滚 aborted 语句到 savepoint——保住主行事务可提交
-                with self._cursor(conn) as cur:
-                    cur.execute("ROLLBACK TO SAVEPOINT embedding_index")
-            except Exception:
-                pass
-        finally:
-            try:
-                with self._cursor(conn) as cur:
-                    cur.execute("RELEASE SAVEPOINT embedding_index")
-            except Exception:
-                pass  # savepoint 已随事务回滚销毁
 
     # ───── G33：schema WIP 暂存 ─────
 
