@@ -334,6 +334,33 @@ def _require_idempotency_key(request: Request) -> str:
     return key
 
 
+def _app_scoped_markings(request: Request, param: str) -> tuple[str, ...]:
+    """L4：per-app scoped token 的 marking 收窄（token scopes ⊆ param markings）。
+
+    Palantir 语义：OSDK token 只 scoped 到应用声明的实体子集，叠加用户
+    权限是额外收紧层。本地实现：JWT claims 中的 ``app_markings``（逗号串，
+    由服务端 mint 时写入）∩ query markings param——三个来源取最窄：
+
+        有效 = X-Scope-Markings(header) ∩ param ∩ app_markings(token claims)
+
+    无 app_markings claim 时 = _effective_markings（G7 行为不变）。
+    """
+    base = _effective_markings(request, param)
+    if not base:
+        return base
+    ctx = getattr(request.state, "ctx", None)
+    app_markings = getattr(ctx, "app_markings", None) if ctx else None
+    if not app_markings:
+        # RequestContext 无此字段时从原始 claims 拿（向后兼容）
+        app_markings = getattr(ctx, "claims", {}).get("app_markings") if ctx else None
+    if not app_markings:
+        return base
+    app_set = {m.strip() for m in str(app_markings).split(",") if m.strip()}
+    if not app_set:
+        return base
+    return tuple(m for m in base if m in app_set)
+
+
 def _effective_markings(request: Request, param: str) -> tuple[str, ...]:
     """G7：scoped session 目的限制 —— viewer markings ∩ X-Scope-Markings 头。
 
@@ -810,7 +837,7 @@ async def get_materialization(
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     if markings:
-        viewer = _effective_markings(request, markings)
+        viewer = _app_scoped_markings(request, markings)
         rows = list(result.get("rows") or [])
         rows = await _call_scoped(request, "mask_rows", rows, viewer)
         result["rows"] = rows
@@ -2335,7 +2362,7 @@ async def list_individuals(
         reader = str(getattr(ctx, "user_id", "") or "")
         await _call_scoped(request, "record_usage", class_rid, "read", 1, reader, "api")
     if markings:
-        viewer = _effective_markings(request, markings)
+        viewer = _app_scoped_markings(request, markings)
         items = await _call_scoped(request, "enforce_read_policies", items, viewer)
     return [
         IndividualResponse(
@@ -4064,7 +4091,7 @@ async def execute_object_query(
     q = _dto_to_ir_query(payload)
     result = await _call_scoped(request, "execute_object_query", q)
     if markings and result.kind == "objects":
-        viewer = _effective_markings(request, markings)
+        viewer = _app_scoped_markings(request, markings)
         rows = list(result.rows)
         rows = await _call_scoped(request, "mask_rows", rows, viewer)
         result = type(result)(
@@ -4203,7 +4230,7 @@ async def search_objects(
         f"ont.{ctx.tenant_id}.",  # type: ignore[attr-defined]
     ):
         raise HTTPException(status_code=403, detail="cross-tenant search denied")
-    viewer = _effective_markings(request, markings) if markings else None
+    viewer = _app_scoped_markings(request, markings) if markings else None
     cards = await _call_scoped(
         request,
         "search_objects",
@@ -4239,7 +4266,7 @@ async def hybrid_search_objects(
         f"ont.{ctx.tenant_id}.",  # type: ignore[attr-defined]
     ):
         raise HTTPException(status_code=403, detail="cross-tenant search denied")
-    viewer = _effective_markings(request, markings) if markings else None
+    viewer = _app_scoped_markings(request, markings) if markings else None
 
     modes = set(boost.split(",")) if boost else {"hyde", "enrich", "rerank"}
     if "none" in modes:
