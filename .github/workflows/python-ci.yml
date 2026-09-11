@@ -100,11 +100,7 @@ jobs:
         run: |
           # CI 无 .env（KEYCLOAK_CLIENT_SECRET 等 required 变量）——
           # 提供 required 变量的空值兜底让 config 插值通过
-          printf '%s
-%s
-%s
-%s
-' "KEYCLOAK_CLIENT_SECRET=" "SERVICE_CLIENT_SECRET=" "POSTGRES_USER=meta" "POSTGRES_PASSWORD=meta" > .env
+          printf '%s\n%s\n%s\n%s\n' "KEYCLOAK_CLIENT_SECRET=" "SERVICE_CLIENT_SECRET=" "POSTGRES_USER=meta" "POSTGRES_PASSWORD=meta" > .env
           docker compose -f docker-compose.yml config --quiet
       - name: Hadolint Dockerfiles
         uses: hadolint/hadolint-action@v3.1.0
