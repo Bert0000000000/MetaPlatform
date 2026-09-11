@@ -73,3 +73,31 @@ paths = [
     '''acceptance/evidence/.*''',
     '''docs/active/specs/SPEC-TECH-.*''',
 ]
+
+# 测试代码内占位 key（llmgw provider 测试）与测试样例 api_key 字符串
+[[rules]]
+id = "llmgw-test-placeholder-key"
+description = "test placeholder key in llmgw provider tests"
+regex = '''api_key\s*=\s*"[a-f0-9-]{8,}"'''
+path = '''packages/mate-tech-llmgw/tests/.*'''
+[rules.allowlist]
+regexes = [
+  '''api_key\s*=\s*"[a-f0-9-]{8,}"''',
+]
+
+[[rules]]
+id = "orchestrator-sample-token"
+description = "orchestrator 代码注释/示例中的 token 形状（非真实凭证）"
+regex = '''token, \s*"revert-\{proposal_id\}'''
+path = '''packages/mate-tech-orchestrator/.*'''
+[rules.allowlist]
+regexes = [
+  '''token, \s*"revert-\{proposal_id\}''',
+]
+
+[[rules]]
+id = "keycloak-realm-configmap-sample"
+description = "keycloak realm ConfigMap 样例 realm（staging seed 数据）"
+path = '''infra/helm/crds/keycloak-realm-configmap.yaml'''
+[rules.allowlist]
+paths = ['''infra/helm/crds/keycloak-realm-configmap.yaml''']
