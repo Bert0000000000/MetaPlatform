@@ -36,40 +36,171 @@ from typing import Any
 
 REGIONS = ["华东", "华南", "华北", "西南", "东北", "中部"]
 INDUSTRIES = [
-    "重工", "轻工", "能源", "物流", "智造",
-    "生物", "化工", "电子", "食品", "纺织",
+    "重工",
+    "轻工",
+    "能源",
+    "物流",
+    "智造",
+    "生物",
+    "化工",
+    "电子",
+    "食品",
+    "纺织",
 ]
 SUFFIXES = ["集团", "股份", "有限公司", "科技"]
 BRANDS = [
-    "华宇", "恒达", "鑫泰", "宏远", "瑞丰", "天成", "联创", "恒信",
-    "中科", "广汇", "利丰", "永昌", "安捷", "凯盛", "正大", "博远",
+    "华宇",
+    "恒达",
+    "鑫泰",
+    "宏远",
+    "瑞丰",
+    "天成",
+    "联创",
+    "恒信",
+    "中科",
+    "广汇",
+    "利丰",
+    "永昌",
+    "安捷",
+    "凯盛",
+    "正大",
+    "博远",
 ]
 
 CITIES = [
-    "北京", "上海", "广州", "深圳", "成都", "杭州", "武汉", "西安", "重庆", "南京",
-    "天津", "苏州", "郑州", "长沙", "沈阳", "青岛", "大连", "宁波", "无锡", "佛山",
-    "东莞", "昆明", "合肥", "福州", "厦门", "济南", "长春", "哈尔滨", "贵阳", "石家庄",
+    "北京",
+    "上海",
+    "广州",
+    "深圳",
+    "成都",
+    "杭州",
+    "武汉",
+    "西安",
+    "重庆",
+    "南京",
+    "天津",
+    "苏州",
+    "郑州",
+    "长沙",
+    "沈阳",
+    "青岛",
+    "大连",
+    "宁波",
+    "无锡",
+    "佛山",
+    "东莞",
+    "昆明",
+    "合肥",
+    "福州",
+    "厦门",
+    "济南",
+    "长春",
+    "哈尔滨",
+    "贵阳",
+    "石家庄",
 ]
 
 SURNAMES = [
-    "王", "李", "张", "刘", "陈", "杨", "黄", "赵", "吴", "周",
-    "徐", "孙", "马", "朱", "胡", "郭", "何", "高", "林", "罗",
-    "郑", "梁", "谢", "宋", "唐", "许", "韩", "冯", "邓", "曹",
-    "彭", "肖", "田", "董", "袁", "蔡", "余", "杜", "叶", "程",
-    "苏", "魏", "吕", "丁", "任", "沈", "姚", "卢",
+    "王",
+    "李",
+    "张",
+    "刘",
+    "陈",
+    "杨",
+    "黄",
+    "赵",
+    "吴",
+    "周",
+    "徐",
+    "孙",
+    "马",
+    "朱",
+    "胡",
+    "郭",
+    "何",
+    "高",
+    "林",
+    "罗",
+    "郑",
+    "梁",
+    "谢",
+    "宋",
+    "唐",
+    "许",
+    "韩",
+    "冯",
+    "邓",
+    "曹",
+    "彭",
+    "肖",
+    "田",
+    "董",
+    "袁",
+    "蔡",
+    "余",
+    "杜",
+    "叶",
+    "程",
+    "苏",
+    "魏",
+    "吕",
+    "丁",
+    "任",
+    "沈",
+    "姚",
+    "卢",
 ]
 GIVEN_CHARS = [
-    "伟", "强", "磊", "涛", "斌", "杰", "锋", "鹏", "华", "明",
-    "志", "远", "毅", "辉", "宇", "浩", "然", "婷", "雪", "梅",
-    "琳", "静", "敏", "佳", "怡", "欣", "悦", "娜", "丽", "娟",
-    "芳", "燕", "萍", "红", "玉", "秀", "英", "晨", "阳", "曦",
+    "伟",
+    "强",
+    "磊",
+    "涛",
+    "斌",
+    "杰",
+    "锋",
+    "鹏",
+    "华",
+    "明",
+    "志",
+    "远",
+    "毅",
+    "辉",
+    "宇",
+    "浩",
+    "然",
+    "婷",
+    "雪",
+    "梅",
+    "琳",
+    "静",
+    "敏",
+    "佳",
+    "怡",
+    "欣",
+    "悦",
+    "娜",
+    "丽",
+    "娟",
+    "芳",
+    "燕",
+    "萍",
+    "红",
+    "玉",
+    "秀",
+    "英",
+    "晨",
+    "阳",
+    "曦",
 ]
 
 # 加权分布（权重按任务规格；未给定的用合理业务分布）
 TIER_WEIGHTS = [("vip", 10), ("standard", 60), ("trial", 30)]
 ORDER_STATUS_WEIGHTS = [
-    ("confirmed", 15), ("processing", 20), ("shipped", 20),
-    ("delivered", 35), ("cancelled", 10),
+    ("confirmed", 15),
+    ("processing", 20),
+    ("shipped", 20),
+    ("delivered", 35),
+    ("cancelled", 10),
 ]
 AMOUNT_BANDS = [  # (下限, 上限, 权重) —— 1000..500000 加权分布
     (1_000.0, 50_000.0, 65),
@@ -78,18 +209,24 @@ AMOUNT_BANDS = [  # (下限, 上限, 权重) —— 1000..500000 加权分布
 ]
 DEPT_WEIGHTS = [("hr", 10), ("it", 30), ("finance", 15), ("sales", 25), ("ops", 20)]
 LEVEL_WEIGHTS = [
-    ("junior", 35), ("mid", 30), ("senior", 20), ("lead", 10), ("principal", 5),
+    ("junior", 35),
+    ("mid", 30),
+    ("senior", 20),
+    ("lead", 10),
+    ("principal", 5),
 ]
 TICKET_CATEGORY_WEIGHTS = [
-    ("hardware", 30), ("network", 25), ("software", 30), ("access", 15),
+    ("hardware", 30),
+    ("network", 25),
+    ("software", 30),
+    ("access", 15),
 ]
 PRIORITY_WEIGHTS = [("p0", 5), ("p1", 15), ("p2", 50), ("p3", 30)]
 TICKET_STATUS_WEIGHTS = [("open", 25), ("in_progress", 30), ("resolved", 45)]
 INVOICE_STATUS_WEIGHTS = [("pending", 20), ("paid", 60), ("overdue", 20)]
 
 BATCH_SIZE = 500
-REPO_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_OUTPUT = os.path.join(REPO_ROOT, "scripts", "mock", "business_mock.sql")
 
 
@@ -105,8 +242,9 @@ def weighted(rng: random.Random, table: Sequence[tuple[str, int]]) -> str:
     return table[-1][0]
 
 
-def weighted_band(rng: random.Random, bands: Sequence[tuple[float, float, int]]
-                  ) -> tuple[float, float]:
+def weighted_band(
+    rng: random.Random, bands: Sequence[tuple[float, float, int]]
+) -> tuple[float, float]:
     """金额区间加权抽样，返回 (lo, hi)。"""
     total = sum(b[2] for b in bands)
     r = rng.random() * total
@@ -131,12 +269,15 @@ def sq(value: Any) -> str:
 # 行生成（上游先建，下游采样 FK）
 # ---------------------------------------------------------------------------
 
+
 def gen_customers(rng: random.Random, n: int, anchor: dt.datetime) -> list[tuple]:
-    combos = [r + b + i + s for r in REGIONS for b in BRANDS
-              for i in INDUSTRIES for s in SUFFIXES]
+    combos = [r + b + i + s for r in REGIONS for b in BRANDS for i in INDUSTRIES for s in SUFFIXES]
     if n > len(combos):  # 防御：需求超过词表组合时补序号分公司
-        combos += [f"{c}第{k}分公司" for k in range(1, n - len(combos) + 1)
-                   for c in combos[: (n - len(combos) + 1)]]
+        combos += [
+            f"{c}第{k}分公司"
+            for k in range(1, n - len(combos) + 1)
+            for c in combos[: (n - len(combos) + 1)]
+        ]
     rng.shuffle(combos)
     rows = []
     for idx in range(n):
@@ -201,34 +342,28 @@ def gen_invoices(
 ) -> list[tuple]:
     """发票挂订单：amount ≈ 关联订单金额 ±10%；overdue 的 issue_date 必须 >90 天前。"""
     anchor_date = anchor.date()
-    overdue_cap = anchor_date - dt.timedelta(days=91)   # overdue 上界（>90 天前）
+    overdue_cap = anchor_date - dt.timedelta(days=91)  # overdue 上界（>90 天前）
     overdue_floor = anchor_date - dt.timedelta(days=180)
     order_meta = [
-        (o[0], dt.datetime.strptime(o[4], "%Y-%m-%d %H:%M:%S").date(), float(o[2]))
-        for o in orders
+        (o[0], dt.datetime.strptime(o[4], "%Y-%m-%d %H:%M:%S").date(), float(o[2])) for o in orders
     ]
     # 可开逾期票的订单：下单时间须早于 overdue 上界（留 4 天裕量）
-    overdue_eligible = [
-        m for m in order_meta
-        if m[1] <= overdue_cap - dt.timedelta(days=4)
-    ] or [(o[0], overdue_floor, float(o[2])) for o in order_meta]
+    overdue_eligible = [m for m in order_meta if m[1] <= overdue_cap - dt.timedelta(days=4)] or [
+        (o[0], overdue_floor, float(o[2])) for o in order_meta
+    ]
 
     rows = []
     for idx in range(n):
         iid = f"INV-{idx + 1:06d}"
         status = weighted(rng, INVOICE_STATUS_WEIGHTS)
         if status == "overdue":
-            oid, pick_date, base_amount = overdue_eligible[
-                rng.randrange(len(overdue_eligible))]
+            oid, pick_date, base_amount = overdue_eligible[rng.randrange(len(overdue_eligible))]
             lo = max(pick_date, overdue_floor)
-            issue = lo + dt.timedelta(
-                days=rng.randint(0, max((overdue_cap - lo).days, 0)))
+            issue = lo + dt.timedelta(days=rng.randint(0, max((overdue_cap - lo).days, 0)))
         else:
-            oid, order_date, base_amount = order_meta[
-                rng.randrange(len(order_meta))]
+            oid, order_date, base_amount = order_meta[rng.randrange(len(order_meta))]
             lo = max(order_date, anchor_date - dt.timedelta(days=179))
-            issue = lo + dt.timedelta(
-                days=rng.randint(0, max((anchor_date - lo).days, 0)))
+            issue = lo + dt.timedelta(days=rng.randint(0, max((anchor_date - lo).days, 0)))
         amount = round(base_amount * rng.uniform(0.90, 1.10), 2)
         rows.append((iid, oid, f"{amount:.2f}", status, issue.isoformat()))
     return rows
@@ -303,12 +438,11 @@ def render_insert(table: str, columns: list[str], rows: list[tuple]) -> list[str
     stmts = []
     header = f"INSERT INTO {table} ({', '.join(columns)}) VALUES"
     for start in range(0, len(rows), BATCH_SIZE):
-        chunk = rows[start:start + BATCH_SIZE]
+        chunk = rows[start : start + BATCH_SIZE]
         lines = [header]
         for j, row in enumerate(chunk):
             values = ", ".join(
-                v if (c in ("amount",)) else sq(v)
-                for c, v in zip(columns, row, strict=True)
+                v if (c in ("amount",)) else sq(v) for c, v in zip(columns, row, strict=True)
             )
             tail = ";" if j == len(chunk) - 1 else ","
             lines.append(f"({values}){tail}")
@@ -322,9 +456,9 @@ def build_sql(anchor: dt.datetime, counts: dict[str, int], sections: dict[str, l
 --
 -- 生成器 : scripts/mock/generate_business_mock.py（纯 stdlib，--seed 可重现）
 -- 锚点日期 : {anchor.date().isoformat()}（--anchor 可指定；同 seed + 同 anchor => 字节级一致）
--- 行数 : src_crm_customers={counts['src_crm_customers']}, src_crm_orders={counts['src_crm_orders']},
---        src_hr_employees={counts['src_hr_employees']}, src_it_tickets={counts['src_it_tickets']},
---        src_finance_invoices={counts['src_finance_invoices']}
+-- 行数 : src_crm_customers={counts["src_crm_customers"]}, src_crm_orders={counts["src_crm_orders"]},
+--        src_hr_employees={counts["src_hr_employees"]}, src_it_tickets={counts["src_it_tickets"]},
+--        src_finance_invoices={counts["src_finance_invoices"]}
 --
 -- 用途 : 为 dev PG（metaplatform_ont）灌入大规模真实感业务源表，供 Ontology
 --        ObjectType / backing datasource 绑定（bind_real_sources.py）端到端验证。
@@ -352,6 +486,7 @@ BEGIN;
 # ---------------------------------------------------------------------------
 # 自检（无 PG 直连：引号感知的语句切分 + 括号配对 + 行数核对）
 # ---------------------------------------------------------------------------
+
 
 def split_statements(sql: str) -> list[str]:
     stmts: list[str] = []
@@ -414,16 +549,18 @@ def verify_sql(sql: str, counts: dict[str, int]) -> dict[str, int]:
         actual[table] += tuples
     for table, expected in counts.items():
         if actual[table] != expected:
-            raise ValueError(
-                f"{table}: INSERT 元组数 {actual[table]} != 预期 {expected}")
+            raise ValueError(f"{table}: INSERT 元组数 {actual[table]} != 预期 {expected}")
     if insert_stmts == 0:
         raise ValueError("未发现任何 INSERT 语句")
     return actual
 
 
 def verify_fk(
-    customers: list[tuple], orders: list[tuple],
-    employees: list[tuple], tickets: list[tuple], invoices: list[tuple],
+    customers: list[tuple],
+    orders: list[tuple],
+    employees: list[tuple],
+    tickets: list[tuple],
+    invoices: list[tuple],
 ) -> None:
     cids = {r[0] for r in customers}
     eids = {r[0] for r in employees}
@@ -434,12 +571,14 @@ def verify_fk(
     if bad_cid or bad_eid or bad_oid:
         raise ValueError(
             f"FK 一致性失败: orders.cid 悬空 {len(bad_cid)}, "
-            f"tickets.eid 悬空 {len(bad_eid)}, invoices.oid 悬空 {len(bad_oid)}")
+            f"tickets.eid 悬空 {len(bad_eid)}, invoices.oid 悬空 {len(bad_oid)}"
+        )
 
 
 # ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
+
 
 def main(argv: Sequence[str] | None = None) -> int:
     # Windows 控制台（GBK 代码页）下避免中文报告乱码
@@ -450,7 +589,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             except Exception:  # 显示辅助，失败不阻断
                 pass
     parser = argparse.ArgumentParser(
-        description="生成本体引擎数据绑定验证用多域业务 mock 数据 SQL（纯 stdlib）")
+        description="生成本体引擎数据绑定验证用多域业务 mock 数据 SQL（纯 stdlib）"
+    )
     parser.add_argument("--customers", type=int, default=2000, help="客户行数（默认 2000）")
     parser.add_argument("--orders", type=int, default=5000, help="订单行数（默认 5000）")
     parser.add_argument("--employees", type=int, default=500, help="员工行数（默认 500）")
@@ -458,13 +598,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--invoices", type=int, default=4000, help="发票行数（默认 4000）")
     parser.add_argument("--seed", type=int, default=42, help="随机种子（默认 42，保证可重现）")
     parser.add_argument(
-        "--anchor", type=str, default=None,
-        help="锚点日期 YYYY-MM-DD（默认今天；同 seed+anchor 字节级可重现）")
+        "--anchor",
+        type=str,
+        default=None,
+        help="锚点日期 YYYY-MM-DD（默认今天；同 seed+anchor 字节级可重现）",
+    )
     parser.add_argument("--output", type=str, default=DEFAULT_OUTPUT, help="输出 SQL 路径")
     args = parser.parse_args(argv)
 
-    anchor_date = (
-        dt.date.fromisoformat(args.anchor) if args.anchor else dt.date.today())
+    anchor_date = dt.date.fromisoformat(args.anchor) if args.anchor else dt.date.today()
     anchor = dt.datetime.combine(anchor_date, dt.time.min)
     rng = random.Random(args.seed)
 
@@ -489,9 +631,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "src_finance_invoices": invoices,
     }
     counts = {t: len(rows) for t, rows in data.items()}
-    sections = {
-        ddl[0]: render_insert(ddl[0], ddl[2], data[ddl[0]]) for ddl in TABLE_DDL
-    }
+    sections = {ddl[0]: render_insert(ddl[0], ddl[2], data[ddl[0]]) for ddl in TABLE_DDL}
     sql = build_sql(anchor, counts, sections)
 
     # 4) SQL 粗校验（括号/引号/分号配对 + 行数核对）
@@ -510,7 +650,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"  INSERT 语句数 : {sum(len(v) for v in sections.values())}（每批 {BATCH_SIZE} 行）")
     for table in data:
         print(f"  {table:<24} {actual[table]:>6} rows")
-    print("  自检 : 语句括号/引号配对 OK；三组 FK（orders.cid / invoices.oid / tickets.eid）子集校验 OK")
+    print(
+        "  自检 : 语句括号/引号配对 OK；三组 FK（orders.cid / invoices.oid / tickets.eid）子集校验 OK"
+    )
     print(f"  执行 : docker exec -i mate-postgres psql -U meta -d metaplatform_ont < {args.output}")
     return 0
 
