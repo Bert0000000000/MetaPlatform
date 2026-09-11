@@ -99,8 +99,13 @@ jobs:
       - name: Lint compose file
         run: |
           # CI 无 .env（KEYCLOAK_CLIENT_SECRET 等 required 变量）——
-          # 空值 env-file 兜底让 config 插值通过
-          touch .env
+          # 提供 required 变量的空值兜底让 config 插值通过
+          cat > .env <<'ENVFILE'
+          KEYCLOAK_CLIENT_SECRET=
+          SERVICE_CLIENT_SECRET=
+          POSTGRES_USER=meta
+          POSTGRES_PASSWORD=meta
+          ENVFILE
           docker compose -f docker-compose.yml config --quiet
       - name: Hadolint Dockerfiles
         uses: hadolint/hadolint-action@v3.1.0
