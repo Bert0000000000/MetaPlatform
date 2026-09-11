@@ -1144,6 +1144,7 @@ class PgOntologyRepository(OntologyRepository):
                         cur.execute(stmt)
                 conn.commit()
                 self._pgvector_ready = True
+                self._pgvector_dim = vec_dim  # 记录实际列维度（写侧自检用）
             finally:
                 conn.close()
         except Exception:
