@@ -853,6 +853,8 @@ services:
       ONT_EMBEDDER: llmgw
       # P1-4：数据源周期增量同步（0=禁用；调度器在 ont 进程内 asyncio 跑）
       ONT_SYNC_INTERVAL_SECONDS: ${ONT_SYNC_INTERVAL_SECONDS:-300}
+      # 真实源库 DSN（dev = 同实例 PG；生产换业务源库）
+      ONT_SOURCE_DSN: ${ONT_SOURCE_DSN:-postgresql://meta:meta@postgres:5432/metaplatform_ont}
       LLMGW_EMBED_URL: http://mate-tech-llmgw:8008/api/v1/llmgw/embeddings
       LLMGW_EMBED_MODEL: ${LLMGW_EMBED_MODEL:-doubao-embedding-vision}
       ONT_VECTOR_DIM: ${ONT_VECTOR_DIM:-2048}
