@@ -463,12 +463,12 @@ services:
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-metaplatform}
       KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-metaplatform-backend}
       SERVICE_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-metaplatform-backend}
-      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set this in .env}
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-set this in .env}
       SERVICE_CLIENT_SCOPE: ${AGENT_SERVICE_SCOPE:-openid}
       RAG_URL: http://mate-tech-rag:8001
       AGENT_PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_agent
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY required for agent}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
       FLOWABLE_URL: http://flowable:8181/flowable-rest
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
@@ -1356,11 +1356,11 @@ services:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-metaplatform}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-metaplatform-backend}
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set this in .env}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-set this in .env}
       # GOVERN-10 hardening: install_auth requires SERVICE_CLIENT_SECRET in non-legacy profile.
       # Reuse KEYCLOAK_CLIENT_SECRET — they're the same backend-services client secret in Keycloak.
       SERVICE_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-metaplatform-backend}
-      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set this in .env}
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-set this in .env}
       REDIS_URL: redis://redis:6379/0
       JWKS_REFRESH_SEC: ${JWKS_REFRESH_SEC:-300}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
