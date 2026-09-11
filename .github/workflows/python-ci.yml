@@ -1,12 +1,15 @@
 name: Python Backend CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main, master, develop]
     paths:
       - "mate-platform-backend/**"
       - "pyproject.toml"
       - "uv.lock"
+      - "docker-compose.yml"
+      - ".github/workflows/python-ci.yml"
       - "ruff.toml"
       - ".github/workflows/python-ci.yml"
   pull_request:
