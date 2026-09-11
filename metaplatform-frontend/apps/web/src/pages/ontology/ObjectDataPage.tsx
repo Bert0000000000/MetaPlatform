@@ -11,7 +11,7 @@
 // 严格原生 button/input（dev 模式 Semi 交互组件被截 noop 的纪律只涉及
 // 事件绑定；表格用 Semi Table 只读渲染）。
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, Table, Tag } from '@douyinfe/semi-ui';
 import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import { ChevronRight, Hexagon, Loader2, Search, Sparkles } from 'lucide-react';
@@ -55,6 +55,14 @@ export default function ObjectDataPage() {
   const [semanticText, setSemanticText] = useState('');
   const [semanticCards, setSemanticCards] = useState<SemanticSearchCard[] | null>(null);
   const [semanticBusy, setSemanticBusy] = useState(false);
+  // 300ms 防抖计时器 + 请求序号（迟到的旧响应不覆盖新结果）
+  const semanticTimer = useRef<number | null>(null);
+  const semanticSeq = useRef(0);
+
+  useEffect(() => () => {
+    // 卸载时清掉挂起的防抖回调
+    if (semanticTimer.current !== null) window.clearTimeout(semanticTimer.current);
+  }, []);
 
   // 对象主页栈
   const [homeStack, setHomeStack] = useState<string[]>([]);
@@ -73,7 +81,22 @@ export default function ObjectDataPage() {
           ? flattenTree(tree)
           : groupByDomain(ots);
         setFlatTypes(flat);
-        if (flat.length > 0) setSelectedType((prev) => prev || flat[0]!.rid);
+
+        // 初始选中：并发探测前 5 个类型（limit=1 只探「有无实例」），
+        // 取第一个有实例的 —— 避免选中一个空类型后用户看到空表；
+        // 全空 / 探测全失败时回退第一个类型。一次并发 5 个轻请求，
+        // 取代旧的低效遍历（逐个串行加载实例再判断）。
+        if (flat.length > 0) {
+          const candidates = flat.slice(0, 5);
+          const probes = await Promise.allSettled(
+            candidates.map((c) => listIndividuals({ classRid: c.rid, limit: 1 })),
+          );
+          if (cancelled) return;
+          const firstWithInstances = candidates.find(
+            (c, i) => probes[i].status === 'fulfilled' && probes[i].value.length > 0,
+          );
+          setSelectedType((prev) => prev || (firstWithInstances?.rid ?? flat[0]!.rid));
+        }
       } catch (e) {
         if (!cancelled) setTypeError(e instanceof Error ? e.message : String(e));
       } finally {
@@ -164,16 +187,27 @@ export default function ObjectDataPage() {
 
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  const runSemantic = async () => {
-    if (!semanticText.trim()) { setSemanticCards(null); return; }
+  /** 语义检索（text 显式传入，避免闭包读到旧 state；seq 守卫丢弃迟到响应）。 */
+  const runSemantic = async (text: string) => {
+    const seq = ++semanticSeq.current;
+    if (!text.trim()) { setSemanticCards(null); return; }
     setSemanticBusy(true);
     try {
-      const cards = await searchObjectsSemantic({ text: semanticText.trim(), top_k: 8 });
+      const cards = await searchObjectsSemantic({ text: text.trim(), top_k: 8 });
+      if (seq !== semanticSeq.current) return;
       setSemanticCards(cards);
     } catch {
+      if (seq !== semanticSeq.current) return;
       setSemanticCards([]);
     } finally {
-      setSemanticBusy(false);
+      if (seq === semanticSeq.current) setSemanticBusy(false);
+    }
+  };
+
+  const clearSemanticTimer = () => {
+    if (semanticTimer.current !== null) {
+      window.clearTimeout(semanticTimer.current);
+      semanticTimer.current = null;
     }
   };
 
@@ -230,8 +264,20 @@ export default function ObjectDataPage() {
               type="text"
               placeholder="语义搜索对象（自然语言，如「上海的头部客户」）…"
               value={semanticText}
-              onChange={(e) => setSemanticText(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') void runSemantic(); }}
+              onChange={(e) => {
+                const v = e.target.value;
+                setSemanticText(v);
+                // 300ms 防抖：停止输入后再检索（Enter / 按钮仍即时）
+                clearSemanticTimer();
+                if (!v.trim()) { setSemanticCards(null); return; }
+                semanticTimer.current = window.setTimeout(() => { void runSemantic(v); }, 300);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  clearSemanticTimer();
+                  void runSemantic(semanticText);
+                }
+              }}
               style={{
                 flex: 1, height: 34, background: 'var(--card)', border: '1px solid var(--border)',
                 borderRadius: 'var(--radius)', padding: '0 12px', fontSize: 13,
@@ -240,7 +286,10 @@ export default function ObjectDataPage() {
             />
             <button
               type="button"
-              onClick={() => void runSemantic()}
+              onClick={() => {
+                clearSemanticTimer();
+                void runSemantic(semanticText);
+              }}
               disabled={semanticBusy}
               style={{
                 height: 34, padding: '0 16px', fontSize: 13, borderRadius: 'var(--radius)',
@@ -309,6 +358,15 @@ export default function ObjectDataPage() {
               />
             </div>
           </div>
+          {/* v1 不做真虚拟化：结果量过大时提示缩小范围（拉取上限 500，触顶即视为截断） */}
+          {(filtered.length > 500 || individuals.length >= 500) && (
+            <div style={{
+              padding: '6px 20px', fontSize: 12, color: 'var(--warning)',
+              borderBottom: '1px solid var(--border)', background: 'var(--card)',
+            }}>
+              结果过多（{filtered.length > 500 ? filtered.length : '≥500'} 条），建议使用语义搜索缩小范围
+            </div>
+          )}
           <Table<KernelIndividual>
             columns={columns}
             dataSource={paged}

@@ -886,3 +886,77 @@ export async function getMaterialization(classRid: string): Promise<Materializat
   return getOne<MaterializationResult>(
     `/object-types/${encodeURIComponent(classRid)}/materialization`);
 }
+
+// ── L6 应用层（分析工作台 / 仪表盘 / 地图）：object-query 封装 + 同步健康 ──
+// 后端契约（v2_kernel/api.py MP-SAL-01 IR 查询）：
+//   POST /object-query body {source, aggregation?, sort?, paging_limit?}
+//   → {kind: "aggregates" | "objects", rows, result_schema}
+//   聚合行键：group_by 按「传入的字段名」原样返回；度量列名 = alias
+//   ?? (field == null ? fn : `${fn}_${field}`)（mate_kernel MetricSpec.output_name）。
+//   对象行键：{__rid__, <propSlug>: 值}（individual_to_row 同规则）。
+
+/** object-query 聚合度量（fn ∈ sum/count/avg/min/max；count 可无 field）。 */
+export interface ObjectQueryMetric {
+  fn: 'sum' | 'count' | 'avg' | 'min' | 'max' | string;
+  /** 度量属性 slug 短键（与 group_by 同口径）；fn=count 时可省略（计全部行）。 */
+  field?: string | null;
+  alias?: string | null;
+}
+
+/** object-query 结果信封（aggregates=聚合行 / objects=实例行）。 */
+export interface ObjectQueryResult {
+  kind: 'aggregates' | 'objects' | string;
+  rows: Array<Record<string, unknown>>;
+  result_schema?: Record<string, Record<string, unknown>> | null;
+}
+
+/** 聚合查询封装（分析工作台 / 仪表盘卡片共用；分组与度量字段用 slug 短键）。 */
+export async function getObjectQueryAggregation(payload: {
+  source: string;
+  group_by: string[];
+  metrics: ObjectQueryMetric[];
+  paging_limit?: number;
+}): Promise<ObjectQueryResult> {
+  const resp = await apiClient.post(v2('/object-query'), {
+    source: payload.source,
+    aggregation: { group_by: payload.group_by, metrics: payload.metrics },
+    paging_limit: payload.paging_limit ?? 100,
+  });
+  return resp.data as ObjectQueryResult;
+}
+
+/** 对象行查询（地图页拉全量实例；rows 为 {__rid__, <slug>: 值}）。 */
+export async function getObjectQueryRows(payload: {
+  source: string;
+  paging_limit?: number;
+  sort?: Array<{ field: string; desc?: boolean }>;
+}): Promise<ObjectQueryResult> {
+  const resp = await apiClient.post(v2('/object-query'), {
+    source: payload.source,
+    sort: payload.sort,
+    paging_limit: payload.paging_limit ?? 1000,
+  });
+  return resp.data as ObjectQueryResult;
+}
+
+// ── Overview 首页总览：数据源同步健康面（GET /datasources/sync-status，P1-4） ──
+
+/** GET /datasources/sync-status 行（per-(tenant,class) 同步健康快照）。 */
+export interface SyncStatusRow {
+  tenant_id: string;
+  class_rid: string;
+  /** 最近一轮成功同步的 {源名: 行数}。 */
+  last_result?: Record<string, unknown>;
+  /** 最近一轮错误（空串 = 成功）。 */
+  last_error?: string;
+  last_duration_ms?: number;
+  /** ISO 时间戳。 */
+  last_run_at?: string;
+  /** 连续失败次数（0 = 健康）。 */
+  consecutive_failures?: number;
+}
+
+/** 数据源同步健康面（调度器未启动时返回空数组）。 */
+export async function getDatasourceSyncStatus(): Promise<SyncStatusRow[]> {
+  return list<SyncStatusRow>('/datasources/sync-status');
+}

@@ -1,12 +1,15 @@
-import { useMemo, useState } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
-import { Hexagon, Link2, Zap, Database, PlayCircle, GitBranch, Plus, Boxes, Layers, ShieldCheck } from 'lucide-react';
+import { Suspense, lazy, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import {
+  Hexagon, Link2, Zap, Database, PlayCircle, GitBranch, Plus, Boxes, Layers, ShieldCheck,
+  Home, BarChart3, LayoutDashboard, Map as MapIcon,
+} from 'lucide-react';
 import { Button } from '@douyinfe/semi-ui';
 import { AIAssistantTrigger, AIAssistantWorkspace, PageRoot, SubTabs, usePageAssistant } from '@mate/shared';
+import OverviewPage from './OverviewPage';
 import OntologyModelingPage from './OntologyModelingPage';
 import OntologyDatacenterPage from './OntologyDatacenterPage';
 import OntologyActionPage from './OntologyActionPage';
-import OntologyGraphPage from './OntologyGraphPage';
 import ObjectDataPage from './ObjectDataPage';
 import GovernancePage from './GovernancePage';
 import InterfaceListPage from './InterfaceListPage';
@@ -15,8 +18,28 @@ import ActionTypeListPage from './actions/ActionTypeListPage';
 import { useOntologyAssistant, type ProposalFromStream } from './hooks/useOntologyAssistant';
 import ProposalConfirmDrawer from './components/ProposalConfirmDrawer';
 
+// 懒加载（减首屏 bundle）：
+//   - 知识图谱页（OntologyGraphPage 含较重的图渲染，非首屏 tab）
+//   - AnalysisPage / DashboardPage / MapPage 由并行任务交付中，
+//     文件落盘前 tsc 会报 Cannot find module —— @ts-ignore 压制，
+//     文件存在后该指令保持惰性、无需回收；Vite 按字面量动态 import 正常分包。
+const OntologyGraphPage = lazy(() => import('./OntologyGraphPage'));
+// @ts-ignore AnalysisPage 由并行任务创建中（见上）
+const AnalysisPage = lazy(() => import('./AnalysisPage'));
+// @ts-ignore DashboardPage 由并行任务创建中（见上）
+const DashboardPage = lazy(() => import('./DashboardPage'));
+// @ts-ignore MapPage 由并行任务创建中（见上）
+const MapPage = lazy(() => import('./MapPage'));
+
+const LAZY_FALLBACK = (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, color: 'var(--muted-foreground)', fontSize: 13 }}>
+    加载中…
+  </div>
+);
+
 const TABS = [
-  { key: 'concept', label: '概念模型', icon: Hexagon, path: '/ontology' },
+  { key: 'overview', label: '总览', icon: Home, path: '/ontology' },
+  { key: 'concept', label: '概念模型', icon: Hexagon, path: '/ontology?tab=concept' },
   { key: 'objects', label: '对象数据', icon: Boxes, path: '/ontology?tab=objects' },
   { key: 'relationship-types', label: '关系类型', icon: Link2, path: '/ontology?tab=relationship-types' },
   { key: 'action-types', label: '动作类型', icon: Zap, path: '/ontology?tab=action-types' },
@@ -25,6 +48,9 @@ const TABS = [
   { key: 'graph', label: '知识图谱', icon: GitBranch, path: '/ontology?tab=graph' },
   { key: 'interfaces', label: '接口', icon: Layers, path: '/ontology?tab=interfaces' },
   { key: 'governance', label: '治理', icon: ShieldCheck, path: '/ontology?tab=governance' },
+  { key: 'analysis', label: '分析', icon: BarChart3, path: '/ontology?tab=analysis' },
+  { key: 'dashboard', label: '仪表盘', icon: LayoutDashboard, path: '/ontology?tab=dashboard' },
+  { key: 'map', label: '地图', icon: MapIcon, path: '/ontology?tab=map' },
 ];
 
 const ALIASES: Record<string, string> = {
@@ -42,6 +68,7 @@ const ALIASES: Record<string, string> = {
  * 标题也为系统验收、无障碍导航和浏览器历史提供稳定锚点。
  */
 const TAB_TITLES: Record<string, string> = {
+  overview: '总览',
   concept: '概念模型',
   objects: '对象数据',
   'relationship-types': '关系模型',
@@ -51,16 +78,22 @@ const TAB_TITLES: Record<string, string> = {
   graph: '知识图谱',
   interfaces: 'Interface 契约',
   governance: '治理',
+  analysis: '分析',
+  dashboard: '仪表盘',
+  map: '地图',
 };
 
+/** /ontology 无 query 时默认落在总览 tab（首页驾驶舱）。 */
 function resolveTab(raw: string | null): string {
-  const k = (raw || 'concept').toLowerCase();
+  const k = (raw || 'overview').toLowerCase();
   return ALIASES[k] ?? k;
 }
 
+/** tab → SubTabs active 匹配锚点（各 tab 唯一且互为非前缀，保证精确命中）。 */
+const tabMatchPath = (key: string) => (key === 'overview' ? '/ontology' : `?tab=${key}`);
+
 export default function OntologyShellPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const location = useLocation();
   const activeTab = resolveTab(searchParams.get('tab'));
   const subTab = searchParams.get('subTab') ?? undefined;
 
@@ -117,9 +150,11 @@ export default function OntologyShellPage() {
   });
   const activeAssistant = activeTab === 'datacenter' ? dataAssistant : assistant;
 
+  // 各 tab 的 active 匹配锚点互不相同且互为非前缀（overview → '/ontology'，
+  // 其余 → '?tab=<key>'），SubTabs 精确命中当前 tab，不再依赖 pathname 拼接。
   const subTabs = useMemo(
-    () => TABS.map((t) => ({ label: t.label, path: t.path, activePath: activeTab === t.key ? '/ontology' : `${location.pathname}?tab=${t.key}` })),
-    [activeTab, location.pathname],
+    () => TABS.map((t) => ({ label: t.label, path: t.path, activePath: tabMatchPath(t.key) })),
+    [],
   );
 
   const handleTabChange = (key: string) => {
@@ -165,10 +200,11 @@ export default function OntologyShellPage() {
       >
         {TAB_TITLES[activeTab] ?? 'Ontology'}
       </h1>
-      <div style={{ flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden' }}>
+      {/* tab 多达 13 个时横向滚动（overflowX auto + nowrap），不换行不挤爆 header */}
+      <div style={{ flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden', whiteSpace: 'nowrap' }}>
         <SubTabs
           items={subTabs}
-          activePath={activeTab === 'concept' ? '/ontology' : `?tab=${activeTab}`}
+          activePath={tabMatchPath(activeTab)}
           embedded
         />
       </div>
@@ -189,6 +225,7 @@ export default function OntologyShellPage() {
   return (
     <PageRoot header={stickyHeader}>
       <AIAssistantWorkspace assistant={activeAssistant}>
+        {activeTab === 'overview' && <OverviewPage />}
         {activeTab === 'objects' && <ObjectDataPage />}
         {activeTab === 'concept' && (
           <OntologyModelingPage
@@ -199,11 +236,30 @@ export default function OntologyShellPage() {
         )}
         {activeTab === 'datacenter' && <OntologyDatacenterPage initialSubTab={subTab} />}
         {activeTab === 'action' && <OntologyActionPage />}
-        {activeTab === 'graph' && <OntologyGraphPage />}
+        {activeTab === 'graph' && (
+          <Suspense fallback={LAZY_FALLBACK}>
+            <OntologyGraphPage />
+          </Suspense>
+        )}
         {activeTab === 'interfaces' && <InterfaceListPage />}
         {activeTab === 'governance' && <GovernancePage />}
         {activeTab === 'relationship-types' && <RelationshipTypeListPage />}
         {activeTab === 'action-types' && <ActionTypeListPage />}
+        {activeTab === 'analysis' && (
+          <Suspense fallback={LAZY_FALLBACK}>
+            <AnalysisPage />
+          </Suspense>
+        )}
+        {activeTab === 'dashboard' && (
+          <Suspense fallback={LAZY_FALLBACK}>
+            <DashboardPage />
+          </Suspense>
+        )}
+        {activeTab === 'map' && (
+          <Suspense fallback={LAZY_FALLBACK}>
+            <MapPage />
+          </Suspense>
+        )}
       </AIAssistantWorkspace>
 
       {/* ProposalConfirmDrawer：流返回 proposal_id 时弹出 */}
