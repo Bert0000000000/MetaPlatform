@@ -2769,7 +2769,9 @@ class PgOntologyRepository(OntologyRepository):
         return sql, params
 
     def _propagate_derived_markings(
-        self, ot: ObjectType, rows: list[dict[str, Any]],
+        self,
+        ot: ObjectType,
+        rows: list[dict[str, Any]],
     ) -> None:
         """L1：派生属性值继承计算源对象的 marking（血缘传播）。
 

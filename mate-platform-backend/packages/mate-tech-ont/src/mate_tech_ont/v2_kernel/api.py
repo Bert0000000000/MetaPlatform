@@ -822,7 +822,9 @@ async def apply_cdc_changes(
     operation_id="ontGetV2Materialization",
 )
 async def get_materialization(
-    rid: str, request: Request, markings: str = "",
+    rid: str,
+    request: Request,
+    markings: str = "",
 ) -> dict:
     """DATA-15：对象最新状态行集（materialization 回流读端点）。
 
@@ -4291,8 +4293,13 @@ async def hybrid_search_objects(
         hyde_doc = await asyncio.to_thread(_hyde)
         if hyde_doc:
             hyde_cards = await _call_scoped(
-                request, "search_objects", hyde_doc, payload.class_rid,
-                payload.top_k * 2, str(ctx.tenant_id), viewer,  # type: ignore[attr-defined]
+                request,
+                "search_objects",
+                hyde_doc,
+                payload.class_rid,
+                payload.top_k * 2,
+                str(ctx.tenant_id),
+                viewer,  # type: ignore[attr-defined]
             )
 
     cards = await _call_scoped(
@@ -4313,13 +4320,9 @@ async def hybrid_search_objects(
     if "rerank" in modes and cards:
         from .search_boost import bm25_rerank
 
-        docs = [
-            " ".join(str(m.get("value_text", "")) for m in c.get("matched", []))
-            for c in cards
-        ]
+        docs = [" ".join(str(m.get("value_text", "")) for m in c.get("matched", [])) for c in cards]
         ids = [c["individual_rid"] for c in cards]
-        ranked = await asyncio.to_thread(
-            bm25_rerank, payload.text, docs, ids, top_k=len(cards))
+        ranked = await asyncio.to_thread(bm25_rerank, payload.text, docs, ids, top_k=len(cards))
         rank_map = {rid: i for i, (rid, _s) in enumerate(ranked)}
         cards.sort(key=lambda c: rank_map.get(c["individual_rid"], 999))
 

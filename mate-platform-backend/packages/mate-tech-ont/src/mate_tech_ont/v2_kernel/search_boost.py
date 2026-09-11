@@ -30,22 +30,125 @@ __all__ = [
 
 # ─────────────────── Query Augmentation ───────────────────
 
-STOPWORDS_CN_EN = frozenset({
-    # EN
-    "a", "an", "the", "is", "are", "was", "were", "be", "been", "being",
-    "have", "has", "had", "do", "does", "did", "will", "would", "could",
-    "should", "may", "might", "shall", "can", "of", "in", "on", "at", "to",
-    "for", "with", "by", "from", "up", "about", "into", "over", "after",
-    "what", "which", "who", "whom", "where", "when", "why", "how", "all",
-    "any", "both", "each", "few", "more", "most", "other", "some", "such",
-    "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very",
-    "find", "search", "show", "list", "get", "query", "给我", "找出",
-    "查找", "搜索", "列出", "哪些", "什么", "怎么", "如何", "所有",
-    # CN 常用停用
-    "的", "了", "在", "是", "我", "有", "和", "就", "不", "人", "都",
-    "一", "个", "上", "也", "很", "到", "说", "要", "去", "会", "着",
-    "没有", "看", "好", "自己", "这", "那", "它", "我们", "你们",
-})
+STOPWORDS_CN_EN = frozenset(
+    {
+        # EN
+        "a",
+        "an",
+        "the",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "have",
+        "has",
+        "had",
+        "do",
+        "does",
+        "did",
+        "will",
+        "would",
+        "could",
+        "should",
+        "may",
+        "might",
+        "shall",
+        "can",
+        "of",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "with",
+        "by",
+        "from",
+        "up",
+        "about",
+        "into",
+        "over",
+        "after",
+        "what",
+        "which",
+        "who",
+        "whom",
+        "where",
+        "when",
+        "why",
+        "how",
+        "all",
+        "any",
+        "both",
+        "each",
+        "few",
+        "more",
+        "most",
+        "other",
+        "some",
+        "such",
+        "no",
+        "nor",
+        "not",
+        "only",
+        "own",
+        "same",
+        "so",
+        "than",
+        "too",
+        "very",
+        "find",
+        "search",
+        "show",
+        "list",
+        "get",
+        "query",
+        "给我",
+        "找出",
+        "查找",
+        "搜索",
+        "列出",
+        "哪些",
+        "什么",
+        "怎么",
+        "如何",
+        "所有",
+        # CN 常用停用
+        "的",
+        "了",
+        "在",
+        "是",
+        "我",
+        "有",
+        "和",
+        "就",
+        "不",
+        "人",
+        "都",
+        "一",
+        "个",
+        "上",
+        "也",
+        "很",
+        "到",
+        "说",
+        "要",
+        "去",
+        "会",
+        "着",
+        "没有",
+        "看",
+        "好",
+        "自己",
+        "这",
+        "那",
+        "它",
+        "我们",
+        "你们",
+    }
+)
 
 _WORD_RE = re.compile(r"[0-9A-Za-z]+", re.UNICODE)
 _CJK_RE = re.compile(r"[㐀-䶿一-鿿豈-﫿]+", re.UNICODE)
@@ -77,7 +180,6 @@ def _llmgw_chat(prompt: str, system: str = "") -> str | None:
     """llmgw chat 单轮（query enrich/HyDE 用）。失败返回 None（调用方降级）。"""
     import os
 
-
     url = os.environ.get("LLMGW_CHAT_URL", "")
     if not url:
         # 从 llmgw embeddings URL 推导（/api/v1/llmgw/embeddings → /chat）
@@ -92,12 +194,14 @@ def _llmgw_chat(prompt: str, system: str = "") -> str | None:
         import httpx as _hx
 
         with _hx.Client(timeout=15.0) as c:
-            resp = c.post(token_url, data={
-                "grant_type": "client_credentials",
-                "client_id": os.environ.get("SERVICE_CLIENT_ID",
-                                            "metaplatform-backend"),
-                "client_secret": os.environ.get("SERVICE_CLIENT_SECRET", ""),
-            })
+            resp = c.post(
+                token_url,
+                data={
+                    "grant_type": "client_credentials",
+                    "client_id": os.environ.get("SERVICE_CLIENT_ID", "metaplatform-backend"),
+                    "client_secret": os.environ.get("SERVICE_CLIENT_SECRET", ""),
+                },
+            )
             resp.raise_for_status()
             token = resp.json()["access_token"]
             chat = c.post(
@@ -145,8 +249,11 @@ def enrich_query(query: str) -> str:
     expanded = _llmgw_chat(prompt)
     if expanded and expanded.strip():
         # 只取词（防 LLM 返回解释文本），拼回原 query
-        extra = [w for w in re.split(r"[\s,，、]+", expanded.strip())
-                 if w and w.lower() not in STOPWORDS_CN_EN][:6]
+        extra = [
+            w
+            for w in re.split(r"[\s,，、]+", expanded.strip())
+            if w and w.lower() not in STOPWORDS_CN_EN
+        ][:6]
         if extra:
             return query + " " + " ".join(extra)
     return remove_stopwords(query)

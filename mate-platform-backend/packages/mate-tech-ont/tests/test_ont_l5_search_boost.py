@@ -1,4 +1,5 @@
 """L5 检索高级技术测试 —— HyDE / query augmentation / BM25 reranker。"""
+
 from __future__ import annotations
 
 import os
@@ -40,9 +41,9 @@ class TestRemoveStopwords:
 class TestBM25Rerank:
     def test_ranks_relevant_doc_first(self) -> None:
         docs = [
-            "财务应收专员负责发票核对",       # 无关
-            "华东重工集团的订单已确认",        # 相关（订单）
-            "员工请假申请审批流程",           # 无关
+            "财务应收专员负责发票核对",  # 无关
+            "华东重工集团的订单已确认",  # 相关（订单）
+            "员工请假申请审批流程",  # 无关
         ]
         ids = ["d0", "d1", "d2"]
         ranked = bm25_rerank("订单 确认", docs, ids)
