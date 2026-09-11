@@ -1,6 +1,7 @@
 name: OpenAPI Contract CI
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - "mate-platform-backend/contracts/**"

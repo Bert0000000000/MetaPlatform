@@ -1,6 +1,7 @@
 name: Architecture Governance CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main, master, develop, codex/arch-core-01]
     paths:

@@ -1,6 +1,7 @@
 name: g4-d1-staging-e2e
 
 on:
+  workflow_dispatch:
   push:
     branches: [main, codex/**]
     paths:
