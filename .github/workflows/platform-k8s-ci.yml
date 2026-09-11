@@ -47,11 +47,9 @@ jobs:
           ruff check . || (echo "::error::ruff failed" && exit 1)
 
       - name: Pyright strict
-        uses: jakebailey/pyright-action@v1
-        with:
-          pythonversion: "3.12"
-          project: infra/tests
-          strict: ["infra/tests"]
+        run: |
+          pip install pyright
+          cd infra/tests && pyright --strict .
 
   helm-lint:
     name: helm lint (umbrella + sub-charts)
