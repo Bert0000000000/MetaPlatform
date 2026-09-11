@@ -10,8 +10,10 @@ for _p in (_K, _O):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from mate_tech_ont.v2_kernel.search_boost import (  # noqa: E402
-    bm25_rerank, extract_query_terms, remove_stopwords,
+from mate_tech_ont.v2_kernel.search_boost import (
+    bm25_rerank,
+    extract_query_terms,
+    remove_stopwords,
 )
 
 

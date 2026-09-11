@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import math
 import re
-from typing import Any
 
 __all__ = [
     "bm25_rerank",
@@ -78,7 +77,6 @@ def _llmgw_chat(prompt: str, system: str = "") -> str | None:
     """llmgw chat 单轮（query enrich/HyDE 用）。失败返回 None（调用方降级）。"""
     import os
 
-    import httpx
 
     url = os.environ.get("LLMGW_CHAT_URL", "")
     if not url:
