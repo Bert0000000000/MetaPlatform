@@ -794,15 +794,28 @@ async def apply_cdc_changes(
     response_model=dict,
     operation_id="ontGetV2Materialization",
 )
-async def get_materialization(rid: str, request: Request) -> dict:
-    """DATA-15：对象最新状态行集（materialization 回流读端点）。"""
+async def get_materialization(
+    rid: str, request: Request, markings: str = "",
+) -> dict:
+    """DATA-15：对象最新状态行集（materialization 回流读端点）。
+
+    L1：行/列安全策略延伸到导出——markings 参数触发行过滤 + 列脱敏
+    （Palantir 语义：读时强制不保护下游，导出端点是策略的最后一站）。
+    """
     ctx = _ctx(request)
     if not rid.startswith(f"ont.{ctx.tenant_id!s}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
     try:
-        return await _call_scoped(request, "materialize_object_type", rid)
+        result = await _call_scoped(request, "materialize_object_type", rid)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+    if markings:
+        viewer = _effective_markings(request, markings)
+        rows = list(result.get("rows") or [])
+        rows = await _call_scoped(request, "mask_rows", rows, viewer)
+        result["rows"] = rows
+        result["masked"] = True
+    return result
 
 
 @router.get(
@@ -4212,24 +4225,78 @@ async def hybrid_search_objects(
     payload: ObjectSearchDTO,
     request: Request,
     markings: str = "",
+    boost: str = "",
 ) -> ObjectSearchResultDTO:
-    """AI-09：混合检索（G6 marking 过滤 + G7 scope 收窄）。"""
+    """AI-09 混合检索（G6+G7）+ L5 boost（hyde/enrich/rerank 组合）。
+
+    boost 逗号组合（缺省全开）：hyde（假设文档嵌入弥合不对称）|
+    enrich（同义词扩展）| rerank（BM25 精排）| none（全关）。
+    """
+    import asyncio
+
     ctx = _ctx(request)
     if payload.class_rid and not payload.class_rid.startswith(
         f"ont.{ctx.tenant_id}.",  # type: ignore[attr-defined]
     ):
         raise HTTPException(status_code=403, detail="cross-tenant search denied")
     viewer = _effective_markings(request, markings) if markings else None
+
+    modes = set(boost.split(",")) if boost else {"hyde", "enrich", "rerank"}
+    if "none" in modes:
+        modes = set()
+
+    text = payload.text
+    if "enrich" in modes:
+        from .search_boost import enrich_query
+
+        def _enrich() -> str:
+            return enrich_query(payload.text)
+
+        text = await asyncio.to_thread(_enrich)
+
+    hyde_cards: list[dict] = []
+    if "hyde" in modes:
+        from .search_boost import hyde_expand
+
+        def _hyde() -> str:
+            return hyde_expand(payload.text) or ""
+
+        hyde_doc = await asyncio.to_thread(_hyde)
+        if hyde_doc:
+            hyde_cards = await _call_scoped(
+                request, "search_objects", hyde_doc, payload.class_rid,
+                payload.top_k * 2, str(ctx.tenant_id), viewer,  # type: ignore[attr-defined]
+            )
+
     cards = await _call_scoped(
         request,
         "search_objects_hybrid",
-        payload.text,
+        text,
         payload.class_rid,
         payload.top_k,
         str(ctx.tenant_id),  # type: ignore[attr-defined]
         viewer_markings=viewer,
     )
-    return ObjectSearchResultDTO(cards=cards)
+    if hyde_cards:
+        seen = {c["individual_rid"] for c in cards}
+        for hc in hyde_cards:
+            if hc["individual_rid"] not in seen:
+                cards.append({**hc, "boost_leg": "hyde"})
+
+    if "rerank" in modes and cards:
+        from .search_boost import bm25_rerank
+
+        docs = [
+            " ".join(str(m.get("value_text", "")) for m in c.get("matched", []))
+            for c in cards
+        ]
+        ids = [c["individual_rid"] for c in cards]
+        ranked = await asyncio.to_thread(
+            bm25_rerank, payload.text, docs, ids, top_k=len(cards))
+        rank_map = {rid: i for i, (rid, _s) in enumerate(ranked)}
+        cards.sort(key=lambda c: rank_map.get(c["individual_rid"], 999))
+
+    return ObjectSearchResultDTO(cards=cards[: payload.top_k])
 
 
 @router.post(

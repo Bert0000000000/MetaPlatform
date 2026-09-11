@@ -2703,6 +2703,9 @@ class PgOntologyRepository(OntologyRepository):
         # EXP-02：派生列追加（count/sum/avg over link，批量聚合避免逐行子查询）
         if ot is not None:
             self._attach_derived_pg(ot, result_rows)
+            # L1 marking 血缘传播：派生值继承源对象 marking（Palantir 语义：
+            # derived properties 沿计算涉及对象继承安全标记）
+            self._propagate_derived_markings(ot, result_rows)
         return QueryResult(
             kind="objects",
             rows=tuple(result_rows),
@@ -2764,6 +2767,55 @@ class PgOntologyRepository(OntologyRepository):
         )
         params.extend([vec_literal, spec.k])
         return sql, params
+
+    def _propagate_derived_markings(
+        self, ot: ObjectType, rows: list[dict[str, Any]],
+    ) -> None:
+        """L1：派生属性值继承计算源对象的 marking（血缘传播）。
+
+        语义：如果类型有派生属性，则查询结果的行附带
+        ``_derived_markings``（源对象 marking 的并集）—— 下游消费方
+        （导出/报表/二次计算）应据此打标。源对象 = link 对端个体。
+        实现：对有 derived 属性的类型，拉对端个体 marking 的并集一次性
+        附加（v1 类型级传播；行级精确传播在 link 数据量大时按需升级）。
+        """
+        from mate_kernel.ontology.types.derived import derived_properties
+
+        dprops = derived_properties(ot.properties)
+        if not dprops:
+            return
+        # 类型级传播：本类型 marking ∪ 各 over_link 对端类型 marking
+        inherited = set(ot.marking)
+        conn = None
+        try:
+            for p in dprops:
+                spec = p.derived
+                assert spec is not None
+                try:
+                    lt = self.get_link_type(ClassRef(spec.over_link))
+                    peer = lt.dst if lt.src.rid == ot.rid.rid else lt.src
+                    if conn is None:
+                        conn, _ = self._connect()
+                    with self._cursor(conn) as cur:
+                        cur.execute(
+                            "SELECT DISTINCT unnest(marking) FROM ont_object_type "
+                            "WHERE rid = ANY(%s)",
+                            ([ot.rid.rid, peer.rid],),
+                        )
+                        for r in cur.fetchall():
+                            m = r[0] if not isinstance(r, dict) else r.get("unnest")
+                            if m:
+                                inherited.add(m)
+                except KeyError:
+                    continue
+        except Exception:
+            pass  # 血缘传播 best-effort——失败不影响查询结果
+        finally:
+            if conn is not None:
+                conn.close()
+        if inherited:
+            for row in rows:
+                row["_derived_markings"] = sorted(inherited)
 
     @staticmethod
     def _apply_array_reducers(ot: ObjectType, rows: list[dict[str, Any]]) -> None:
