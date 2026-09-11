@@ -67,4 +67,7 @@ paths = [
     '''docs/active/scenarios/.*\.json''',
     '''scripts/ci/tests/.*''',
     '''\.gitleaks\.toml''',
+    # .env 历史泄漏（commit bacf5f01 已将其移出跟踪；key 已全部轮换/失效，
+    # 历史 commit 无法改写——登记为已知事件而非活动泄漏）
+    '''^\.env$''',
 ]
