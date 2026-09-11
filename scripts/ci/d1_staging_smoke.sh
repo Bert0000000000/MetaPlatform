@@ -29,6 +29,9 @@ fi
 kind export kubeconfig --name "${CLUSTER_NAME}"
 
 echo "=== 2. helm install (staging profile) ==="
+# crds/ 阶段先于 --create-namespace 执行（helm 生命周期顺序）——
+# 显式建 namespace 避免首批 CRD/ConfigMap 安装时 namespace 缺失
+kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
 helm install mate-platform infra/helm \
   --values "${VALUES_FILE}" \
   --namespace "${NAMESPACE}" \
