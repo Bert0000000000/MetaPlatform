@@ -59,7 +59,7 @@ export default function InterfaceListPage() {
   };
 
   return (
-    <Card bodyStyle={{ padding: 0 }}>
+    <Card bodyStyle={{ padding: 0 }} style={{ flex: 1, minWidth: 0, width: '100%' }}>
       <div style={{
         padding: '14px 20px', borderBottom: '1px solid var(--border)',
         display: 'flex', gap: 8, alignItems: 'center',

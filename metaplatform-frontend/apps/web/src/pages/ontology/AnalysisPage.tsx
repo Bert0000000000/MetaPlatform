@@ -226,7 +226,7 @@ export default function AnalysisPage() {
   };
 
   return (
-    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flex: 1, minWidth: 0, width: '100%' }}>
       {/* 左栏：数据源选择 */}
       <div style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
         <Card style={{ height: 'fit-content' }}>

@@ -272,7 +272,7 @@ export default function GovernancePage() {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minWidth: 0, width: '100%' }}>
       {msg && (
         <div style={{
           padding: '8px 14px', fontSize: 12, borderRadius: 6,

@@ -11,6 +11,7 @@ import OntologyModelingPage from './OntologyModelingPage';
 import OntologyDatacenterPage from './OntologyDatacenterPage';
 import OntologyActionPage from './OntologyActionPage';
 import ObjectDataPage from './ObjectDataPage';
+import TypeManagementTab from './TypeManagementTab';
 import GovernancePage from './GovernancePage';
 import InterfaceListPage from './InterfaceListPage';
 import RelationshipTypeListPage from './relationship-types/RelationshipTypeListPage';
@@ -39,10 +40,8 @@ const LAZY_FALLBACK = (
 
 const TABS = [
   { key: 'overview', label: '总览', icon: Home, path: '/ontology' },
-  { key: 'concept', label: '概念模型', icon: Hexagon, path: '/ontology?tab=concept' },
+  { key: 'concept', label: '类型管理', icon: Hexagon, path: '/ontology?tab=concept' },
   { key: 'objects', label: '对象数据', icon: Boxes, path: '/ontology?tab=objects' },
-  { key: 'relationship-types', label: '关系类型', icon: Link2, path: '/ontology?tab=relationship-types' },
-  { key: 'action-types', label: '动作类型', icon: Zap, path: '/ontology?tab=action-types' },
   { key: 'datacenter', label: '数据中心', icon: Database, path: '/ontology?tab=datacenter' },
   { key: 'action', label: 'Action 编排', icon: PlayCircle, path: '/ontology?tab=action' },
   { key: 'graph', label: '知识图谱', icon: GitBranch, path: '/ontology?tab=graph' },
@@ -55,9 +54,11 @@ const TABS = [
 
 const ALIASES: Record<string, string> = {
   modeling: 'concept',
-  rel: 'relationship-types',
-  relationship: 'relationship-types',
-  'action-type': 'action-types',
+  rel: 'concept',
+  relationship: 'concept',
+  'relationship-types': 'concept',
+  'action-type': 'concept',
+  'action-types': 'concept',
   data: 'datacenter',
   orchestration: 'action',
   knowledge: 'graph',
@@ -69,10 +70,8 @@ const ALIASES: Record<string, string> = {
  */
 const TAB_TITLES: Record<string, string> = {
   overview: '总览',
-  concept: '概念模型',
+  concept: '类型管理',
   objects: '对象数据',
-  'relationship-types': '关系模型',
-  'action-types': 'Action 模型',
   datacenter: '数据中心',
   action: 'Action 编排',
   graph: '知识图谱',
@@ -225,41 +224,46 @@ export default function OntologyShellPage() {
   return (
     <PageRoot header={stickyHeader}>
       <AIAssistantWorkspace assistant={activeAssistant}>
-        {activeTab === 'overview' && <OverviewPage />}
-        {activeTab === 'objects' && <ObjectDataPage />}
-        {activeTab === 'concept' && (
-          <OntologyModelingPage
-            createOpen={createOpen}
-            setCreateOpen={setCreateOpen}
-            refreshKey={modelingRefreshKey}
-          />
-        )}
-        {activeTab === 'datacenter' && <OntologyDatacenterPage initialSubTab={subTab} />}
-        {activeTab === 'action' && <OntologyActionPage />}
-        {activeTab === 'graph' && (
-          <Suspense fallback={LAZY_FALLBACK}>
-            <OntologyGraphPage />
-          </Suspense>
-        )}
-        {activeTab === 'interfaces' && <InterfaceListPage />}
-        {activeTab === 'governance' && <GovernancePage />}
-        {activeTab === 'relationship-types' && <RelationshipTypeListPage />}
-        {activeTab === 'action-types' && <ActionTypeListPage />}
-        {activeTab === 'analysis' && (
-          <Suspense fallback={LAZY_FALLBACK}>
-            <AnalysisPage />
-          </Suspense>
-        )}
-        {activeTab === 'dashboard' && (
-          <Suspense fallback={LAZY_FALLBACK}>
-            <DashboardPage />
-          </Suspense>
-        )}
-        {activeTab === 'map' && (
-          <Suspense fallback={LAZY_FALLBACK}>
-            <MapPage />
-          </Suspense>
-        )}
+        <div style={{ flex: 1, minWidth: 0, width: '100%', display: 'flex', flexDirection: 'column' }}>
+          {activeTab === 'overview' && <OverviewPage />}
+          {activeTab === 'objects' && <ObjectDataPage />}
+          {(activeTab === 'concept' || activeTab === 'relationship-types' || activeTab === 'action-types') && (
+            <TypeManagementTab
+              initialSub={activeTab === 'relationship-types' ? 'relationship' : activeTab === 'action-types' ? 'action' : subTab || 'object'}
+              conceptNode={
+                <OntologyModelingPage
+                  createOpen={createOpen}
+                  setCreateOpen={setCreateOpen}
+                  refreshKey={modelingRefreshKey}
+                />
+              }
+            />
+          )}
+          {activeTab === 'datacenter' && <OntologyDatacenterPage initialSubTab={subTab} />}
+          {activeTab === 'action' && <OntologyActionPage />}
+          {activeTab === 'graph' && (
+            <Suspense fallback={LAZY_FALLBACK}>
+              <OntologyGraphPage />
+            </Suspense>
+          )}
+          {activeTab === 'interfaces' && <InterfaceListPage />}
+          {activeTab === 'governance' && <GovernancePage />}
+          {activeTab === 'analysis' && (
+            <Suspense fallback={LAZY_FALLBACK}>
+              <AnalysisPage />
+            </Suspense>
+          )}
+          {activeTab === 'dashboard' && (
+            <Suspense fallback={LAZY_FALLBACK}>
+              <DashboardPage />
+            </Suspense>
+          )}
+          {activeTab === 'map' && (
+            <Suspense fallback={LAZY_FALLBACK}>
+              <MapPage />
+            </Suspense>
+          )}
+        </div>
       </AIAssistantWorkspace>
 
       {/* ProposalConfirmDrawer：流返回 proposal_id 时弹出 */}

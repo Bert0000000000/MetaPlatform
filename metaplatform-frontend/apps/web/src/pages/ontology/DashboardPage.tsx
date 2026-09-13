@@ -95,7 +95,7 @@ function PinCard({
   useEffect(() => { void load(); }, [load, reloadKey]);
 
   return (
-    <Card bodyStyle={{ padding: 0 }} style={{ overflow: 'hidden' }}>
+    <Card bodyStyle={{ padding: 0 }} style={{ overflow: 'hidden', flex: 1, minWidth: 0, width: '100%' }}>
       <div style={CARD_HEAD_STYLE}>
         <Pin style={{ width: 13, height: 13, color: 'var(--primary)', flexShrink: 0 }} />
         <div style={{ flex: 1, minWidth: 0 }}>

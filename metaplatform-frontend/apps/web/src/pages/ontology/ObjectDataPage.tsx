@@ -214,7 +214,7 @@ export default function ObjectDataPage() {
   const currentHomeRid = homeStack.length ? homeStack[homeStack.length - 1]! : null;
 
   return (
-    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flex: 1, minWidth: 0, width: '100%' }}>
       {/* 左栏：类型层级树 */}
       <div style={{ width: 250, flexShrink: 0 }}>
         <Card style={{ height: 'fit-content' }}>

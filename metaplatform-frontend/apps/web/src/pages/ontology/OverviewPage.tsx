@@ -160,7 +160,7 @@ export default function OverviewPage() {
   const openEntry = (path: string) => { window.location.assign(path); };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minWidth: 0, width: '100%' }}>
       {/* ── 1. 四张指标卡 ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16 }}>
         <div style={{ padding: '18px 20px', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', background: 'var(--card)', boxShadow: 'var(--shadow-1)' }}>
