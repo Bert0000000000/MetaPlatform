@@ -91,9 +91,16 @@ function resolveTab(rawTab: string | null, rawSub: string | null): { tab: string
 /** tab → SubTabs active 匹配锚点（各 tab 唯一且互为非前缀，保证精确命中）。 */
 const tabMatchPath = (key: string) => (key === 'overview' ? '/ontology' : `?tab=${key}`);
 
-export default function OntologyShellPage() {
+/**
+ * @param defaultTab UI-P0 新 IA 桥接：`/ontology/{explorer,datacenter,model,ops}` 用路径表达
+ *   主 tab，而本页内部仍以 `?tab=` 为准。无 query 时用该默认值兜底，两侧保持一致。
+ */
+export default function OntologyShellPage({ defaultTab }: { defaultTab?: string } = {}) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { tab: activeTab, subTab } = resolveTab(searchParams.get('tab'), searchParams.get('subTab'));
+  const { tab: activeTab, subTab } = resolveTab(
+    searchParams.get('tab') ?? defaultTab ?? null,
+    searchParams.get('subTab'),
+  );
 
   // 概念模型 tab 的「新建概念」drawer 开关：状态提到 Shell，按钮渲染在 sticky 行右侧
   const [createOpen, setCreateOpen] = useState(false);

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import SemiPlugin from '@douyinfe/semi-vite-plugin';
 import path from 'path';
 
 // Use the IPv4 loopback by default for the local browser-to-Docker gateway
@@ -11,7 +12,9 @@ const proxyTarget = (port: number) => `http://${proxyHost}:${port}`;
 const BACKEND_PORT = Number(process.env.VITE_BACKEND_PORT ?? 8100);
 
 export default defineConfig({
-  plugins: [react()],
+  // Semi 官方主题定制：DSM 主题包（构建期替换官方 SCSS 变量）。
+  // 见 docs/active/specs/2026-09-14-ui-redesign/DESIGN-SPEC.md §4 与 packages/semi-theme-mate。
+  plugins: [react(), SemiPlugin({ theme: '@mate/semi-theme' })],
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
@@ -20,7 +23,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 9200,
+    // 与 E2E（playwright.config.ts）和 UI-P0 设计规范约定的 dev 端口保持一致
+    port: 9250,
     proxy: {
       // v3.2: all routes proxy to unified backend on BACKEND_PORT (default 8100)
       '/api/v1': { target: proxyTarget(BACKEND_PORT), changeOrigin: true,

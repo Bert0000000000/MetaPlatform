@@ -1,0 +1,17 @@
+// Mate Platform · 组件级变量覆写
+// semi-vite-plugin 在每个组件 scss 的 `@import './variables.scss';` 之后注入本文件，
+// 因此这里可以用官方组件变量名做定点微调（不需要、也不允许去写 .semi-* 选择器）。
+// 列表只放 DESIGN-SPEC 明确要求、且官方变量粒度支持的项。
+
+// --- 图标导航栏 rail（DESIGN-SPEC §3：一级 rail 56px）---
+$width-navigation_container_collapsed: 56px;
+$width-navigation_item-borderRadius: var(--semi-border-radius-medium); // 8px
+
+// --- 数据表格（DESIGN-SPEC §4.1：行高 40px = 20px line-height + 2 × 10px）---
+$spacing-table_tbody_rowCell-padding: 10px 16px;
+$spacing-table_row_head-paddingY: 10px;
+
+// --- 主色实底上的前景色（深色主题主色为亮紫蓝，白字对比度不足）---
+$color-button_primary-text-default: var(--semi-color-primary-on);
+$color-button_primary-text-hover: var(--semi-color-primary-on);
+$color-button_primary-text-active: var(--semi-color-primary-on);

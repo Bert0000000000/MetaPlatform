@@ -1,0 +1,313 @@
+// Mate Platform · Calm Density 主题色盘
+// 值来源：docs/active/specs/2026-09-14-ui-redesign/DESIGN-SPEC.md §4.3 / §4.4
+// 本文件被 semi-vite-plugin 注入到含 `semi-base` 的组件 scss 中（即全局只注入一次）。
+// 浅色 =
+@import './_palette.scss';
+
+body, body[theme-mode="dark"] .semi-always-light, :host, :host .semi-always-light {
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    --semi-color-white: rgba(255, 255, 255, 1); // 浅色模式下深色背景内容 Inverse
+    --semi-color-black: rgba(0, 0, 0, 1); // 深色模式下浅色背景内容 Inverse
+
+    // 主色（唯一强调色）：可交互 / 选中 / 进行中
+    --semi-color-primary: rgba(59, 91, 246, 1); // #3B5BF6
+    --semi-color-primary-hover: rgba(47, 75, 224, 1); // #2F4BE0
+    --semi-color-primary-active: rgba(37, 60, 194, 1);
+    --semi-color-primary-disabled: rgba(174, 187, 251, 1);
+    --semi-color-primary-light-default: rgba(235, 239, 254, 1); // #EBEFFE
+    --semi-color-primary-light-hover: rgba(223, 229, 253, 1);
+    --semi-color-primary-light-active: rgba(209, 219, 252, 1);
+    --semi-color-primary-on: rgba(255, 255, 255, 1); // 主色实底上的前景色
+
+    // 次要色沿用 Semi 官方 info 蓝，避免出现第二个品牌色
+    --semi-color-secondary: rgba(0, 100, 250, 1);
+    --semi-color-secondary-hover: rgba(0, 98, 214, 1);
+    --semi-color-secondary-active: rgba(0, 79, 179, 1);
+    --semi-color-secondary-disabled: rgba(152, 205, 253, 1);
+    --semi-color-secondary-light-default: rgba(234, 245, 255, 1);
+    --semi-color-secondary-light-hover: rgba(203, 231, 254, 1);
+    --semi-color-secondary-light-active: rgba(152, 205, 253, 1);
+
+    --semi-color-tertiary: rgba(107, 112, 117, 1);
+    --semi-color-tertiary-hover: rgba(85, 91, 97, 1);
+    --semi-color-tertiary-active: rgba(65, 70, 76, 1);
+    --semi-color-tertiary-light-default: rgba(249, 249, 249, 1);
+    --semi-color-tertiary-light-hover: rgba(230, 232, 234, 1);
+    --semi-color-tertiary-light-active: rgba(198, 202, 205, 1);
+
+    --semi-color-default: rgba(249, 249, 249, 1);
+    --semi-color-default-hover: rgba(230, 232, 234, 1);
+    --semi-color-default-active: rgba(198, 202, 205, 1);
+
+    --semi-color-info: rgba(59, 91, 246, 1);
+    --semi-color-info-hover: rgba(47, 75, 224, 1);
+    --semi-color-info-active: rgba(37, 60, 194, 1);
+    --semi-color-info-disabled: rgba(174, 187, 251, 1);
+    --semi-color-info-light-default: rgba(235, 239, 254, 1);
+    --semi-color-info-light-hover: rgba(223, 229, 253, 1);
+    --semi-color-info-light-active: rgba(209, 219, 252, 1);
+
+    // 语义三色：只出现在状态 chip / 圆点 / 进度
+    --semi-color-success: rgba(30, 138, 90, 1); // #1E8A5A
+    --semi-color-success-hover: rgba(25, 118, 77, 1);
+    --semi-color-success-active: rgba(21, 98, 64, 1);
+    --semi-color-success-disabled: rgba(160, 210, 187, 1);
+    --semi-color-success-light-default: rgba(230, 245, 238, 1); // #E6F5EE
+    --semi-color-success-light-hover: rgba(213, 238, 226, 1);
+    --semi-color-success-light-active: rgba(191, 229, 211, 1);
+
+    --semi-color-danger: rgba(211, 64, 64, 1); // #D34040
+    --semi-color-danger-hover: rgba(182, 52, 52, 1);
+    --semi-color-danger-active: rgba(153, 42, 42, 1);
+    --semi-color-danger-light-default: rgba(252, 235, 235, 1); // #FCEBEB
+    --semi-color-danger-light-hover: rgba(249, 220, 220, 1);
+    --semi-color-danger-light-active: rgba(247, 203, 203, 1);
+
+    --semi-color-warning: rgba(169, 106, 8, 1); // #A96A08
+    --semi-color-warning-hover: rgba(145, 90, 5, 1);
+    --semi-color-warning-active: rgba(121, 74, 3, 1);
+    --semi-color-warning-light-default: rgba(251, 241, 223, 1); // #FBF1DF
+    --semi-color-warning-light-hover: rgba(248, 231, 200, 1);
+    --semi-color-warning-light-active: rgba(245, 220, 175, 1);
+
+    // 分类两色：只用于对象域类别标签
+    --semi-color-purple: rgba(122, 90, 248, 1); // #7A5AF8
+    --semi-color-cyan: rgba(14, 124, 147, 1); // #0E7C93
+
+    --semi-color-focus-border: rgba(59, 91, 246, 1);
+
+    --semi-color-disabled-text: rgba(25, 29, 36, .35);
+    --semi-color-disabled-border: rgba(231, 233, 239, 1);
+    --semi-color-disabled-bg: rgba(247, 248, 250, 1);
+    --semi-color-disabled-fill: rgba(25, 29, 36, .04);
+
+    --semi-color-shadow: rgba(16, 24, 40, .05);
+
+    --semi-color-link: rgba(59, 91, 246, 1);
+    --semi-color-link-hover: rgba(47, 75, 224, 1);
+    --semi-color-link-active: rgba(37, 60, 194, 1);
+    --semi-color-link-visited: rgba(59, 91, 246, 1);
+
+    // 边框 / 表面 / 文本（DESIGN-SPEC §4.3）
+    --semi-color-border: rgba(231, 233, 239, 1); // #E7E9EF
+    --semi-color-nav-bg: rgba(251, 251, 252, 1); // #FBFBFC（rail）
+    --semi-color-overlay-bg: rgba(23, 27, 35, .4);
+
+    --semi-color-fill-0: rgba(23, 27, 35, .045);
+    --semi-color-fill-1: rgba(23, 27, 35, .09);
+    --semi-color-fill-2: rgba(23, 27, 35, .13);
+    --semi-color-bg-0: rgba(245, 246, 248, 1); // #F5F6F8
+    --semi-color-bg-1: rgba(255, 255, 255, 1); // #FFFFFF
+    --semi-color-bg-2: rgba(255, 255, 255, 1);
+    --semi-color-bg-3: rgba(255, 255, 255, 1);
+    --semi-color-bg-4: rgba(255, 255, 255, 1);
+    --semi-color-text-0: rgba(25, 29, 36, 1); // #191D24
+    --semi-color-text-1: rgba(75, 82, 98, 1); // #4B5262
+    --semi-color-text-2: rgba(138, 145, 162, 1); // #8A91A2
+    --semi-color-text-3: rgba(169, 175, 188, 1);
+
+    // 阴影极轻，层级靠边框与背景差
+    --semi-shadow-elevated: 0 12px 32px rgba(16, 24, 40, .14), 0 2px 6px rgba(16, 24, 40, .06);
+
+    // 圆角三级（DESIGN-SPEC §4.4）
+    --semi-border-radius-extra-small: 4px;
+    --semi-border-radius-small: 6px; // chip / tag
+    --semi-border-radius-medium: 8px; // 输入 / 按钮
+    --semi-border-radius-large: 12px; // 卡片
+    --semi-border-radius-circle: 50%;
+    --semi-border-radius-full: 9999px;
+
+    --semi-color-highlight-bg: rgba(251, 218, 50, 1);
+    --semi-color-highlight: rgba(0, 0, 0, 1);
+    --semi-color-data-0: rgba(87, 105, 255, 1);
+    --semi-color-data-1: rgba(142, 212, 231, 1);
+    --semi-color-data-2: rgba(245, 135, 0, 1);
+    --semi-color-data-3: rgba(220, 183, 252, 1);
+    --semi-color-data-4: rgba(74, 156, 247, 1);
+    --semi-color-data-5: rgba(243, 204, 53, 1);
+    --semi-color-data-6: rgba(254, 128, 144, 1);
+    --semi-color-data-7: rgba(139, 215, 210, 1);
+    --semi-color-data-8: rgba(131, 176, 35, 1);
+    --semi-color-data-9: rgba(233, 165, 229, 1);
+    --semi-color-data-10: rgba(48, 167, 206, 1);
+    --semi-color-data-11: rgba(249, 192, 100, 1);
+    --semi-color-data-12: rgba(177, 113, 249, 1);
+    --semi-color-data-13: rgba(119, 182, 249, 1);
+    --semi-color-data-14: rgba(200, 143, 2, 1);
+    --semi-color-data-15: rgba(255, 170, 178, 1);
+    --semi-color-data-16: rgba(51, 176, 171, 1);
+    --semi-color-data-17: rgba(182, 215, 129, 1);
+    --semi-color-data-18: rgba(212, 88, 212, 1);
+    --semi-color-data-19: rgba(188, 198, 255, 1);
+
+    // ai related（保持官方渐变，AI 场景仍走官方配色）
+    --semi-color-ai-general: var(--semi-ai-general-5);
+    --semi-color-ai-general-hover: var(--semi-ai-general-6);
+    --semi-color-ai-general-active: var(--semi-ai-general-7);
+    --semi-color-ai-general-disabled: var(--semi-ai-general-2);
+
+    --semi-color-ai-purple: rgba(var(--semi-ai-purple-5));
+    --semi-color-ai-purple-hover: rgba(var(--semi-ai-purple-6));
+    --semi-color-ai-purple-active: rgba(var(--semi-ai-purple-7));
+    --semi-color-ai-purple-disabled: rgba(var(--semi-ai-purple-2));
+
+    --semi-color-ai-background-bottom: linear-gradient(201.15deg, rgba(255, 255, 255, 0.04) 6.58%, rgba(255, 226, 138, 0.04) 32.88%, rgba(231, 45, 255, 0.04) 67.93%, rgba(0, 115, 255, 0.04) 94.23%);
+    --semi-color-ai-background-bottom-hover: linear-gradient(201.15deg, rgba(255, 255, 255, 0.08) 6.58%, rgba(255, 226, 138, 0.08) 32.88%, rgba(231, 45, 255, 0.08) 67.93%, rgba(0, 115, 255, 0.08) 94.23%);
+    --semi-color-ai-background-bottom-active: linear-gradient(201.15deg, rgba(255, 255, 255, 0.12) 6.58%, rgba(255, 226, 138, 0.12) 32.88%, rgba(231, 45, 255, 0.12) 67.93%, rgba(0, 115, 255, 0.12) 94.23%);
+    --semi-color-ai-background-top: linear-gradient(201.15deg, rgba(83, 56, 255, 0.16) 6.58%, rgba(176, 48, 240, 0.096) 32.88%, rgba(231, 45, 255, 0.048) 59.17%, rgba(255, 255, 255, 0) 94.23%);
+    --semi-color-ai-background-top-hover: linear-gradient(201.15deg, rgba(83, 56, 255, 0.24) 6.58%, rgba(176, 48, 240, 0.144) 32.88%, rgba(231, 45, 255, 0.072) 59.17%, rgba(255, 255, 255, 0) 94.23%);
+    --semi-color-ai-background-top-active: linear-gradient(201.15deg, rgba(83, 56, 255, 0.32) 6.58%, rgba(176, 48, 240, 0.192) 32.88%, rgba(231, 45, 255, 0.096) 59.17%, rgba(255, 255, 255, 0) 94.23%);
+}
+
+body[theme-mode="dark"], body .semi-always-dark, :host([theme-mode="dark"]), :host .semi-always-dark {
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    --semi-color-white: rgba(233, 235, 239, 1);
+    --semi-color-black: rgba(11, 13, 17, 1);
+
+    // 深色主色提亮（DESIGN-SPEC §4.3：深色 #7C8FFF）
+    --semi-color-primary: rgba(124, 143, 255, 1);
+    --semi-color-primary-hover: rgba(147, 164, 255, 1);
+    --semi-color-primary-active: rgba(170, 184, 255, 1);
+    --semi-color-primary-disabled: rgba(124, 143, 255, .4);
+    --semi-color-primary-light-default: rgba(124, 143, 255, .13);
+    --semi-color-primary-light-hover: rgba(124, 143, 255, .2);
+    --semi-color-primary-light-active: rgba(124, 143, 255, .28);
+    --semi-color-primary-on: rgba(11, 13, 17, 1); // 深色下主色实底用深前景（对比度）
+
+    --semi-color-secondary: rgba(84, 169, 255, 1);
+    --semi-color-secondary-hover: rgba(127, 193, 255, 1);
+    --semi-color-secondary-active: rgba(169, 215, 255, 1);
+    --semi-color-secondary-disabled: rgba(84, 169, 255, .4);
+    --semi-color-secondary-light-default: rgba(84, 169, 255, .13);
+    --semi-color-secondary-light-hover: rgba(84, 169, 255, .2);
+    --semi-color-secondary-light-active: rgba(84, 169, 255, .28);
+
+    --semi-color-tertiary: rgba(136, 141, 146, 1);
+    --semi-color-tertiary-hover: rgba(167, 171, 176, 1);
+    --semi-color-tertiary-active: rgba(198, 202, 205, 1);
+    --semi-color-tertiary-light-default: rgba(136, 141, 146, .13);
+    --semi-color-tertiary-light-hover: rgba(136, 141, 146, .2);
+    --semi-color-tertiary-light-active: rgba(136, 141, 146, .28);
+
+    --semi-color-default: rgba(28, 31, 35, 1);
+    --semi-color-default-hover: rgba(46, 50, 56, 1);
+    --semi-color-default-active: rgba(65, 70, 76, 1);
+
+    --semi-color-info: rgba(124, 143, 255, 1);
+    --semi-color-info-hover: rgba(147, 164, 255, 1);
+    --semi-color-info-active: rgba(170, 184, 255, 1);
+    --semi-color-info-disabled: rgba(124, 143, 255, .4);
+    --semi-color-info-light-default: rgba(124, 143, 255, .13);
+    --semi-color-info-light-hover: rgba(124, 143, 255, .2);
+    --semi-color-info-light-active: rgba(124, 143, 255, .28);
+
+    --semi-color-success: rgba(75, 197, 139, 1); // #4BC58B
+    --semi-color-success-hover: rgba(103, 209, 159, 1);
+    --semi-color-success-active: rgba(131, 221, 179, 1);
+    --semi-color-success-disabled: rgba(75, 197, 139, .4);
+    --semi-color-success-light-default: rgba(75, 197, 139, .13);
+    --semi-color-success-light-hover: rgba(75, 197, 139, .2);
+    --semi-color-success-light-active: rgba(75, 197, 139, .28);
+
+    --semi-color-danger: rgba(240, 122, 122, 1); // #F07A7A
+    --semi-color-danger-hover: rgba(244, 150, 150, 1);
+    --semi-color-danger-active: rgba(247, 178, 178, 1);
+    --semi-color-danger-disabled: rgba(240, 122, 122, .4);
+    --semi-color-danger-light-default: rgba(240, 122, 122, .13);
+    --semi-color-danger-light-hover: rgba(240, 122, 122, .2);
+    --semi-color-danger-light-active: rgba(240, 122, 122, .28);
+
+    --semi-color-warning: rgba(229, 167, 61, 1); // #E5A73D
+    --semi-color-warning-hover: rgba(236, 185, 98, 1);
+    --semi-color-warning-active: rgba(242, 203, 135, 1);
+    --semi-color-warning-disabled: rgba(229, 167, 61, .4);
+    --semi-color-warning-light-default: rgba(229, 167, 61, .13);
+    --semi-color-warning-light-hover: rgba(229, 167, 61, .2);
+    --semi-color-warning-light-active: rgba(229, 167, 61, .28);
+
+    --semi-color-purple: rgba(161, 139, 255, 1); // #A18BFF
+    --semi-color-cyan: rgba(85, 188, 211, 1); // #55BCD3
+
+    --semi-color-focus-border: rgba(124, 143, 255, 1);
+
+    --semi-color-disabled-text: rgba(233, 235, 239, .35);
+    --semi-color-disabled-border: rgba(36, 40, 50, 1);
+    --semi-color-disabled-bg: rgba(26, 30, 36, 1);
+    --semi-color-disabled-fill: rgba(233, 235, 239, .04);
+
+    --semi-color-shadow: rgba(0, 0, 0, .25);
+
+    --semi-color-link: rgba(124, 143, 255, 1);
+    --semi-color-link-hover: rgba(147, 164, 255, 1);
+    --semi-color-link-active: rgba(170, 184, 255, 1);
+    --semi-color-link-visited: rgba(124, 143, 255, 1);
+
+    // 深色：提亮表面 + 边框，弱阴影
+    --semi-color-border: rgba(36, 40, 50, 1); // #242832
+    --semi-color-nav-bg: rgba(16, 19, 24, 1); // #101318
+    --semi-color-overlay-bg: rgba(4, 6, 10, .6);
+
+    --semi-color-fill-0: rgba(255, 255, 255, .055);
+    --semi-color-fill-1: rgba(255, 255, 255, .09);
+    --semi-color-fill-2: rgba(255, 255, 255, .13);
+    --semi-color-bg-0: rgba(13, 15, 19, 1); // #0D0F13
+    --semi-color-bg-1: rgba(21, 24, 29, 1); // #15181D
+    --semi-color-bg-2: rgba(27, 31, 38, 1); // #1B1F26 弹层提亮
+    --semi-color-bg-3: rgba(34, 38, 46, 1);
+    --semi-color-bg-4: rgba(42, 47, 56, 1);
+    --semi-color-text-0: rgba(233, 235, 239, 1); // #E9EBEF
+    --semi-color-text-1: rgba(163, 170, 183, 1); // #A3AAB7
+    --semi-color-text-2: rgba(123, 131, 145, 1); // #7B8391
+    --semi-color-text-3: rgba(106, 113, 128, 1);
+
+    --semi-shadow-elevated: inset 0 0 0 1px rgba(255, 255, 255, .1), 0 16px 40px rgba(0, 0, 0, .55);
+
+    --semi-border-radius-extra-small: 4px;
+    --semi-border-radius-small: 6px;
+    --semi-border-radius-medium: 8px;
+    --semi-border-radius-large: 12px;
+    --semi-border-radius-circle: 50%;
+    --semi-border-radius-full: 9999px;
+
+    --semi-color-highlight-bg: rgba(253, 243, 152, 1);
+    --semi-color-highlight: rgba(233, 235, 239, 1);
+    --semi-color-data-0: rgba(94, 109, 194, 1);
+    --semi-color-data-1: rgba(8, 104, 120, 1);
+    --semi-color-data-2: rgba(250, 173, 63, 1);
+    --semi-color-data-3: rgba(76, 43, 156, 1);
+    --semi-color-data-4: rgba(16, 125, 248, 1);
+    --semi-color-data-5: rgba(248, 202, 16, 1);
+    --semi-color-data-6: rgba(195, 30, 87, 1);
+    --semi-color-data-7: rgba(5, 119, 115, 1);
+    --semi-color-data-8: rgba(154, 207, 13, 1);
+    --semi-color-data-9: rgba(117, 29, 138, 1);
+    --semi-color-data-10: rgba(16, 162, 180, 1);
+    --semi-color-data-11: rgba(208, 110, 11, 1);
+    --semi-color-data-12: rgba(113, 66, 197, 1);
+    --semi-color-data-13: rgba(7, 100, 212, 1);
+    --semi-color-data-14: rgba(251, 232, 110, 1);
+    --semi-color-data-15: rgba(160, 19, 73, 1);
+    --semi-color-data-16: rgba(11, 179, 167, 1);
+    --semi-color-data-17: rgba(98, 138, 6, 1);
+    --semi-color-data-18: rgba(162, 48, 179, 1);
+    --semi-color-data-19: rgba(40, 51, 138, 1);
+
+    --semi-color-ai-general: var(--semi-ai-general-5);
+    --semi-color-ai-general-hover: var(--semi-ai-general-6);
+    --semi-color-ai-general-active: var(--semi-ai-general-7);
+    --semi-color-ai-general-disabled: var(--semi-ai-general-2);
+
+    --semi-color-ai-purple: rgba(var(--semi-ai-purple-5));
+    --semi-color-ai-purple-hover: rgba(var(--semi-ai-purple-6));
+    --semi-color-ai-purple-active: rgba(var(--semi-ai-purple-7));
+    --semi-color-ai-purple-disabled: rgba(var(--semi-ai-purple-2));
+
+    --semi-color-ai-background-bottom: linear-gradient(201.15deg, rgba(255, 226, 138, 0.2) 6.58%, rgba(231, 45, 255, 0.2) 50.4%, rgba(0, 115, 255, 0.2) 94.23%);
+    --semi-color-ai-background-bottom-hover: linear-gradient(201.15deg, rgba(255, 226, 138, 0.3) 6.58%, rgba(231, 45, 255, 0.3) 50.4%, rgba(0, 115, 255, 0.3) 94.23%);
+    --semi-color-ai-background-bottom-active: linear-gradient(201.15deg, rgba(255, 226, 138, 0.4) 6.58%, rgba(231, 45, 255, 0.4) 50.4%, rgba(0, 115, 255, 0.4) 94.23%);
+    --semi-color-ai-background-top: linear-gradient(201.15deg, rgba(83, 56, 255, 0.36) 6.58%, rgba(176, 48, 240, 0.216) 32.88%, rgba(154, 0, 174, 0.108) 59.17%, rgba(0, 0, 0, 0) 94.23%);
+    --semi-color-ai-background-top-hover: linear-gradient(201.15deg, rgba(83, 56, 255, 0.54) 6.58%, rgba(176, 48, 240, 0.324) 32.88%, rgba(154, 0, 174, 0.162) 59.17%, rgba(0, 0, 0, 0) 94.23%);
+    --semi-color-ai-background-top-active: linear-gradient(201.15deg, rgba(83, 56, 255, 0.72) 6.58%, rgba(176, 48, 240, 0.432) 32.88%, rgba(154, 0, 174, 0.216) 59.17%, rgba(0, 0, 0, 0) 94.23%);
+}

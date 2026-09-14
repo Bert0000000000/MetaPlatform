@@ -1,0 +1,16 @@
+{
+  "name": "@mate/semi-theme",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mate Platform DSM theme for Semi Design (Calm Density)",
+  "keywords": [
+    "semi-theme",
+    "scss"
+  ],
+  "files": [
+    "scss"
+  ],
+  "main": "semi.scss",
+  "sideEffects": "*.scss",
+  "license": "UNLICENSED"
+}

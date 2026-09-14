@@ -1,26 +1,71 @@
 import { ConfigProvider as SemiConfigProvider } from '@douyinfe/semi-ui';
 import zh_CN from '@douyinfe/semi-ui/lib/es/locale/source/zh_CN';
-import { BrowserRouter, Routes, Route, Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
-import {
-  AppLayout,
-  AuthProvider,
-  AuthGuard,
-  ScrollbarAutoHide,
-} from '@mate/shared';
+import { AuthProvider, AuthGuard, ScrollbarAutoHide, type ModuleTab } from '@mate/shared';
 import LoginPage from './pages/LoginPage';
-import ArchLayout from './pages/arch/ArchLayout';
-import KnowledgeLayout from './pages/knowledge/KnowledgeLayout';
-import AgentsLayout from './pages/agents/AgentsLayout';
-import { SettingsProvider, useSettings } from './contexts/SettingsContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import AppShell from './components/shell/AppShell';
+import { legacyRedirectRoutes } from './routes/legacy-redirects';
 
-// 閹虫帒濮炴潪钘夋倗濡€虫健妞ょ敻娼?
+/**
+ * 新信息架构（11 域 → 8 域，DESIGN-SPEC §2）。
+ * 本文件只负责「新 IA 路由注册」；旧路径 301 全部集中在 src/routes/legacy-redirects.tsx。
+ * 页内 tab 的定义在 src/components/shell/domains.tsx（单一事实源）。
+ */
 
-// `/superai/chat` is the user-facing SuperAI entry point.  Keep the
-// ontology-native/semantic-router surface in `SuperAIChatPage` for its
-// focused implementation, but do not expose that reduced diagnostics page
-// as the primary product experience.
+// ---------- 工作台 ----------
+const DashboardDashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
+const DashboardMyAppsPage = lazy(() => import('./pages/dashboard/MyAppsPage'));
+const DashboardMessagesPage = lazy(() => import('./pages/dashboard/MessagesPage'));
+const DashboardPortalPage = lazy(() => import('./pages/dashboard/PortalPage'));
+const DashboardNotificationsPage = lazy(() => import('./pages/dashboard/NotificationsPage'));
+const DashboardAiOpsPage = lazy(() => import('./pages/dashboard/AiOpsPage'));
+const DashboardSettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'));
+const DashboardDeliverablesPage = lazy(() => import('./pages/dashboard/DeliverablesPage'));
+
+// ---------- 平台管理 ----------
+const DashboardAdminUsersPage = lazy(() => import('./pages/dashboard/admin/UsersPage'));
+const DashboardAdminPermissionsPage = lazy(() => import('./pages/dashboard/admin/PermissionsPage'));
+const DashboardAdminOrgsPage = lazy(() => import('./pages/dashboard/admin/OrgsPage'));
+const DashboardAdminLogsPage = lazy(() => import('./pages/dashboard/admin/LogsPage'));
+const DashboardAdminConfigsPage = lazy(() => import('./pages/dashboard/admin/ConfigsPage'));
+const DashboardAdminAIProvidersPage = lazy(() => import('./pages/dashboard/admin/AIProvidersPage'));
+const DashboardAdminOperationsPage = lazy(() => import('./pages/dashboard/admin/OperationsPage'));
+const DashboardAdminAnalyticsPage = lazy(() => import('./pages/dashboard/admin/AnalyticsPage'));
+const DashboardAdminComponentDemoPage = lazy(() => import('./pages/dashboard/admin/ComponentDemoPage'));
+const DashboardAdminFlowgramDemoPage = lazy(() => import('./pages/dashboard/admin/FlowgramDemoPage'));
+const UiP0DemoPage = lazy(() => import('./routes/demo'));
+
+// ---------- 本体 ----------
+const OntologyShellPage = lazy(() => import('./pages/ontology/OntologyShellPage'));
+
+// ---------- 数字员工 ----------
+const AgentsLayout = lazy(() => import('./pages/agents/AgentsLayout'));
+const EmployeeListPage = lazy(() => import('./pages/agents/EmployeeListPage'));
+const EmployeeCreatePage = lazy(() => import('./pages/agents/EmployeeCreatePage'));
+const EmployeeDetailPage = lazy(() => import('./pages/agents/EmployeeDetailPage'));
+const TaskListPage = lazy(() => import('./pages/agents/TaskListPage'));
+const TaskDetailPage = lazy(() => import('./pages/agents/TaskDetailPage'));
+const CollaborationListPage = lazy(() => import('./pages/agents/CollaborationListPage'));
+const CollaborationCreatePage = lazy(() => import('./pages/agents/CollaborationCreatePage'));
+const CollaborationMonitorPage = lazy(() => import('./pages/agents/CollaborationMonitorPage'));
+const EvaluationPage = lazy(() => import('./pages/agents/EvaluationPage'));
+const CapabilityConfigPage = lazy(() => import('./pages/agents/CapabilityConfigPage'));
+const ExternalAgentsPage = lazy(() => import('./pages/agents/ExternalAgentsPage'));
+
+// DW API consumption routes (GOVERN-08)
+const DwEmployeesPage = lazy(() => import('./pages/dw/EmployeesPage'));
+const DwEvaluationsPage = lazy(() => import('./pages/dw/EvaluationsPage'));
+const DwCollaborationsPage = lazy(() => import('./pages/dw/CollaborationsPage'));
+const DwTasksPage = lazy(() => import('./pages/dw/TasksPage'));
+const DwLearningPage = lazy(() => import('./pages/dw/LearningPage'));
+const DwDocumentsPage = lazy(() => import('./pages/dw/DocumentsPage'));
+const DwExtractionPage = lazy(() => import('./pages/dw/ExtractionPage'));
+const DwObsPage = lazy(() => import('./pages/dw/ObsPage'));
+
+// ---------- SuperAI ----------
 const SuperaiChatPage = lazy(() => import('./pages/superai/ChatPage'));
 const SuperaiA2ACollaborationPage = lazy(() => import('./pages/superai/A2ACollaborationPage'));
 const SuperaiAgentCopilotPage = lazy(() => import('./pages/superai/AgentCopilotPage'));
@@ -37,69 +82,53 @@ const SuperaiResultSummaryPage = lazy(() => import('./pages/superai/ResultSummar
 const SuperaiScheduleExecutionPage = lazy(() => import('./pages/superai/ScheduleExecutionPage'));
 const SuperaiScheduleIntentPage = lazy(() => import('./pages/superai/ScheduleIntentPage'));
 const SuperaiSchedulePlanCardPage = lazy(() => import('./pages/superai/SchedulePlanCardPage'));
-const ActionOrchestrationPage = lazy(() => import('./pages/wfe/ActionOrchestrationPage'));
 const SuperaiTaskTemplatePage = lazy(() => import('./pages/superai/TaskTemplatePage'));
 const SuperaiOrderReviewPage = lazy(() => import('./pages/superai/OrderReviewPage'));
 const SuperaiOrchestrationConsolePage = lazy(() => import('./pages/superai/OrchestrationConsolePage'));
+const ActionOrchestrationPage = lazy(() => import('./pages/wfe/ActionOrchestrationPage'));
 
-// 应用中心单页：所有子内容作为 tab 在 ApphubShellPage 内切换
+// ---------- 应用中心 ----------
 const ApphubShellPage = lazy(() => import('./pages/apphub/ApphubShellPage'));
 const ApphubRuntimePage = lazy(() => import('./pages/apphub/runtime/AppRuntimePage'));
 
-/**
- * Legacy AppHub URLs remain bookmark-compatible while the UI uses the
- * canonical single-shell route.  A literal `:appId` in <Navigate> is not
- * interpolated by React Router, so resolve route params before redirecting.
- */
-function LegacyAppRoute({ tab }: { tab: 'detail' | 'lifecycle' | 'versions' | 'form-designer' | 'flow-designer' | 'page' }) {
-  const { appId, moduleId, versionId, pageId } = useParams<{ appId: string; moduleId: string; versionId: string; pageId: string }>();
-  const query = new URLSearchParams();
-  if (tab === 'page') {
-    if (pageId) query.set('page', pageId);
-    query.set('tab', 'page');
-  } else {
-    if (appId) query.set('app', appId);
-    if (tab !== 'detail') query.set('tab', tab);
-    if (moduleId) query.set('module', moduleId);
-    if (versionId) query.set('vid', versionId);
-  }
-  return <Navigate to={`/apps?${query.toString()}`} replace />;
-}
+// ---------- 知识与集成 ----------
+const KnowledgeLayout = lazy(() => import('./pages/knowledge/KnowledgeLayout'));
+const KnowledgeBasePage = lazy(() => import('./pages/knowledge/KnowledgeBasePage'));
+const KnowledgeDocsPage = lazy(() => import('./pages/knowledge/KnowledgeDocsPage'));
+const KnowledgeTestPage = lazy(() => import('./pages/knowledge/KnowledgeTestPage'));
+const KnowledgeConfigPage = lazy(() => import('./pages/knowledge/KnowledgeConfigPage'));
+const KnowledgeKbDetailPage = lazy(() => import('./pages/knowledge/KnowledgeKbDetailPage'));
 
-/** Preserve the old nested Datacenter tab while redirecting to Ontology Shell. */
-function LegacyOntologyDatacenterRoute() {
-  const [searchParams] = useSearchParams();
-  const next = new URLSearchParams({ tab: 'datacenter' });
-  const subTab = searchParams.get('tab');
-  if (subTab) next.set('subTab', subTab);
-  return <Navigate to={`/ontology?${next.toString()}`} replace />;
-}
+const McpCenterLayout = lazy(() => import('./pages/mcp/McpCenterLayout'));
+const McpToolsPage = lazy(() => import('./pages/mcp/McpToolsPage'));
+const McpServerPage = lazy(() => import('./pages/mcp/McpServerPage'));
+const McpClientPage = lazy(() => import('./pages/mcp/McpClientPage'));
+const McpDebuggerPage = lazy(() => import('./pages/mcp/McpDebuggerPage'));
+const McpPermissionsPage = lazy(() => import('./pages/mcp/McpPermissionsPage'));
+const McpAuditPage = lazy(() => import('./pages/mcp/McpAuditPage'));
+const McpOverviewPage = lazy(() => import('./pages/mcp/OverviewPage'));
+const McpSkillHubPage = lazy(() => import('./pages/mcp/SkillHubPage'));
+const A2aInternalAgentsPage = lazy(() => import('./pages/mcp/A2aInternalAgentsPage'));
+const A2aIntegrationGuidePage = lazy(() => import('./pages/mcp/A2aIntegrationGuidePage'));
+const McpConnectionMonitorPage = lazy(() => import('./pages/mcp/ConnectionMonitorPage'));
+const McpToolDetailPage = lazy(() => import('./pages/mcp/ToolDetailPage'));
+const McpToolEditPage = lazy(() => import('./pages/mcp/ToolEditPage'));
+const McpServerDetailPage = lazy(() => import('./pages/mcp/ServerDetailPage'));
+const McpClientDetailPage = lazy(() => import('./pages/mcp/ClientDetailPage'));
+const McpClientFormPage = lazy(() => import('./pages/mcp/ClientFormPage'));
+const McpResourceListPage = lazy(() => import('./pages/mcp/ResourceListPage'));
+const McpResourceEditPage = lazy(() => import('./pages/mcp/ResourceEditPage'));
+const McpPromptTemplatePage = lazy(() => import('./pages/mcp/PromptTemplatePage'));
+const McpPermissionRulePage = lazy(() => import('./pages/mcp/PermissionRulePage'));
+const McpPolicyManagementPage = lazy(() => import('./pages/mcp/PolicyManagementPage'));
+const McpIdeConfigPage = lazy(() => import('./pages/mcp/IdeConfigPage'));
+const McpExternalAgentListPage = lazy(() => import('./pages/mcp/ExternalAgentListPage'));
+const McpTrustManagementPage = lazy(() => import('./pages/mcp/TrustManagementPage'));
+const McpAuditDetailPage = lazy(() => import('./pages/mcp/AuditDetailPage'));
+const McpAuditStatisticsPage = lazy(() => import('./pages/mcp/AuditStatisticsPage'));
 
-const DashboardDashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
-const DashboardMyAppsPage = lazy(() => import('./pages/dashboard/MyAppsPage'));
-const DashboardMyAgentsPage = lazy(() => import('./pages/dashboard/MyAgentsPage'));
-const DashboardMessagesPage = lazy(() => import('./pages/dashboard/MessagesPage'));
-
-// 本体引擎单页：所有子内容作为 tab 在 OntologyShellPage 内切换
-const OntologyShellPage = lazy(() => import('./pages/ontology/OntologyShellPage'));
-
-// 本体引擎原单页入口已下线，重定向到默认子路由
-const DashboardPortalPage = lazy(() => import('./pages/dashboard/PortalPage'));
-const DashboardNotificationsPage = lazy(() => import('./pages/dashboard/NotificationsPage'));
-const DashboardAiOpsPage = lazy(() => import('./pages/dashboard/AiOpsPage'));
-const DashboardSettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'));
-const DashboardAdminOverviewPage = lazy(() => import('./pages/dashboard/admin/OverviewPage'));
-const DashboardAdminUsersPage = lazy(() => import('./pages/dashboard/admin/UsersPage'));
-const DashboardAdminPermissionsPage = lazy(() => import('./pages/dashboard/admin/PermissionsPage'));
-const DashboardAdminOrgsPage = lazy(() => import('./pages/dashboard/admin/OrgsPage'));
-const DashboardAdminLogsPage = lazy(() => import('./pages/dashboard/admin/LogsPage'));
-const DashboardAdminConfigsPage = lazy(() => import('./pages/dashboard/admin/ConfigsPage'));
-const DashboardAdminAIProvidersPage = lazy(() => import('./pages/dashboard/admin/AIProvidersPage'));
-const DashboardAdminOperationsPage = lazy(() => import('./pages/dashboard/admin/OperationsPage'));
-const DashboardAdminAnalyticsPage = lazy(() => import('./pages/dashboard/admin/AnalyticsPage'));
-const DashboardAdminComponentDemoPage = lazy(() => import('./pages/dashboard/admin/ComponentDemoPage'));
-const DashboardAdminFlowgramDemoPage = lazy(() => import('./pages/dashboard/admin/FlowgramDemoPage'));
-const DashboardDeliverablesPage = lazy(() => import('./pages/dashboard/DeliverablesPage'));
+// ---------- 数据与治理 ----------
+const ArchLayout = lazy(() => import('./pages/arch/ArchLayout'));
 const ArchBusinessArchPage = lazy(() => import('./pages/arch/BusinessArchPage'));
 const ArchApplicationManagementPage = lazy(() => import('./pages/arch/ApplicationManagementPage'));
 const ArchCapabilityManagementPage = lazy(() => import('./pages/arch/CapabilityManagementPage'));
@@ -121,68 +150,85 @@ const ArchReviewTemplatePage = lazy(() => import('./pages/arch/ReviewTemplatePag
 const ArchReviewPage = lazy(() => import('./pages/arch/ReviewPage'));
 const ArchTechDebtPage = lazy(() => import('./pages/arch/TechDebtPage'));
 const ArchOntologyMappingPage = lazy(() => import('./pages/arch/OntologyMappingPage'));
-const KnowledgeBasePage = lazy(() => import('./pages/knowledge/KnowledgeBasePage'));
-const KnowledgeDocsPage = lazy(() => import('./pages/knowledge/KnowledgeDocsPage'));
-const KnowledgeTestPage = lazy(() => import('./pages/knowledge/KnowledgeTestPage'));
-const KnowledgeConfigPage = lazy(() => import('./pages/knowledge/KnowledgeConfigPage'));
-const KnowledgeKbDetailPage = lazy(() => import('./pages/knowledge/KnowledgeKbDetailPage'));
 
-const McpToolsPage = lazy(() => import('./pages/mcp/McpToolsPage'));
-const McpServerPage = lazy(() => import('./pages/mcp/McpServerPage'));
-const McpClientPage = lazy(() => import('./pages/mcp/McpClientPage'));
-const McpDebuggerPage = lazy(() => import('./pages/mcp/McpDebuggerPage'));
-const McpPermissionsPage = lazy(() => import('./pages/mcp/McpPermissionsPage'));
-const McpExternalPage = lazy(() => import('./pages/mcp/McpExternalPage'));
-const McpAuditPage = lazy(() => import('./pages/mcp/McpAuditPage'));
-const McpOverviewPage = lazy(() => import('./pages/mcp/OverviewPage'));
-const McpCenterLayout = lazy(() => import('./pages/mcp/McpCenterLayout'));
-const McpSkillHubPage = lazy(() => import('./pages/mcp/SkillHubPage'));
-const A2aInternalAgentsPage = lazy(() => import('./pages/mcp/A2aInternalAgentsPage'));
-const A2aIntegrationGuidePage = lazy(() => import('./pages/mcp/A2aIntegrationGuidePage'));
-const McpConnectionMonitorPage = lazy(() => import('./pages/mcp/ConnectionMonitorPage'));
-const McpToolDetailPage = lazy(() => import('./pages/mcp/ToolDetailPage'));
-const McpToolEditPage = lazy(() => import('./pages/mcp/ToolEditPage'));
-const McpServerDetailPage = lazy(() => import('./pages/mcp/ServerDetailPage'));
-const McpClientDetailPage = lazy(() => import('./pages/mcp/ClientDetailPage'));
-const McpClientFormPage = lazy(() => import('./pages/mcp/ClientFormPage'));
-const McpResourceListPage = lazy(() => import('./pages/mcp/ResourceListPage'));
-const McpResourceEditPage = lazy(() => import('./pages/mcp/ResourceEditPage'));
-const McpPromptTemplatePage = lazy(() => import('./pages/mcp/PromptTemplatePage'));
-const McpPermissionRulePage = lazy(() => import('./pages/mcp/PermissionRulePage'));
-const McpPolicyManagementPage = lazy(() => import('./pages/mcp/PolicyManagementPage'));
-const McpIdeConfigPage = lazy(() => import('./pages/mcp/IdeConfigPage'));
-const McpExternalAgentListPage = lazy(() => import('./pages/mcp/ExternalAgentListPage'));
-const McpTrustManagementPage = lazy(() => import('./pages/mcp/TrustManagementPage'));
-const McpAuditDetailPage = lazy(() => import('./pages/mcp/AuditDetailPage'));
-const McpAuditStatisticsPage = lazy(() => import('./pages/mcp/AuditStatisticsPage'));
-const EmployeeListPage = lazy(() => import('./pages/agents/EmployeeListPage'));
-const EmployeeCreatePage = lazy(() => import('./pages/agents/EmployeeCreatePage'));
-const EmployeeDetailPage = lazy(() => import('./pages/agents/EmployeeDetailPage'));
-const TaskListPage = lazy(() => import('./pages/agents/TaskListPage'));
-const TaskDetailPage = lazy(() => import('./pages/agents/TaskDetailPage'));
-const CollaborationListPage = lazy(() => import('./pages/agents/CollaborationListPage'));
-const CollaborationCreatePage = lazy(() => import('./pages/agents/CollaborationCreatePage'));
-const CollaborationMonitorPage = lazy(() => import('./pages/agents/CollaborationMonitorPage'));
-const EvaluationPage = lazy(() => import('./pages/agents/EvaluationPage'));
-const CapabilityConfigPage = lazy(() => import('./pages/agents/CapabilityConfigPage'));
-const ExternalAgentsPage = lazy(() => import('./pages/agents/ExternalAgentsPage'));
+/* ---------- 域内二级 tab 定义（/gov、/ki、/agents 交给旧布局承载，但路径换新 IA） ---------- */
+const GOV_TABS: ModuleTab[] = [
+  {
+    key: 'business',
+    label: '业务架构',
+    path: '/gov/business',
+    matchPaths: [
+      '/gov/business/capabilities',
+      '/gov/business/applications',
+      '/gov/business/value-streams',
+      '/gov/business/processes',
+      '/gov/business/org-roles',
+    ],
+  },
+  {
+    key: 'data',
+    label: '数据架构',
+    path: '/gov/data',
+    matchPaths: ['/gov/data/flows', '/gov/data/standards', '/gov/data/assets', '/gov/data/entities'],
+  },
+  {
+    key: 'tech',
+    label: '技术架构',
+    path: '/gov/tech',
+    matchPaths: ['/gov/tech/components', '/gov/tech/stacks', '/gov/tech/topologies', '/gov/tech/radar'],
+  },
+  {
+    key: 'governance',
+    label: '治理',
+    path: '/gov/governance',
+    matchPaths: [
+      '/gov/governance/principles',
+      '/gov/governance/reviews',
+      '/gov/governance/review-templates',
+      '/gov/governance/tech-debt',
+      '/gov/governance/ontology-mapping',
+    ],
+  },
+];
 
-// DW API consumption routes (GOVERN-08)
-const DwEmployeesPage = lazy(() => import('./pages/dw/EmployeesPage'));
-const DwEvaluationsPage = lazy(() => import('./pages/dw/EvaluationsPage'));
-const DwCollaborationsPage = lazy(() => import('./pages/dw/CollaborationsPage'));
-const DwA2APage = lazy(() => import('./pages/dw/A2APage'));
-const DwTasksPage = lazy(() => import('./pages/dw/TasksPage'));
-const DwLearningPage = lazy(() => import('./pages/dw/LearningPage'));
-const DwDocumentsPage = lazy(() => import('./pages/dw/DocumentsPage'));
-const DwExtractionPage = lazy(() => import('./pages/dw/ExtractionPage'));
-const DwObsPage = lazy(() => import('./pages/dw/ObsPage'));
+const KI_TABS: ModuleTab[] = [
+  { key: 'kb', label: '知识库', path: '/ki/kb', matchPaths: ['/ki/kb/docs', '/ki/kb/config'] },
+  {
+    key: 'mcp',
+    label: 'MCP 工具',
+    path: '/ki/mcp',
+    matchPaths: [
+      '/ki/mcp/tools',
+      '/ki/mcp/servers',
+      '/ki/mcp/clients',
+      '/ki/mcp/debugger',
+      '/ki/mcp/permissions',
+      '/ki/mcp/audit',
+      '/ki/mcp/connection-monitor',
+    ],
+  },
+  { key: 'a2a', label: 'A2A', path: '/ki/a2a', matchPaths: ['/ki/a2a/external-agents', '/ki/a2a/trusts'] },
+  { key: 'test', label: '检索测试', path: '/ki/test' },
+];
 
+const AGENTS_TABS_V2: ModuleTab[] = [
+  {
+    key: 'employees',
+    label: '员工',
+    path: '/agents',
+    matchPaths: ['/agents/employees', '/agents/learning', '/agents/obs', '/agents/extraction'],
+  },
+  { key: 'external', label: '外部员工 · A2A', path: '/agents/external' },
+  { key: 'tasks', label: '任务中心', path: '/agents/tasks', matchPaths: ['/agents/dw-tasks'] },
+  { key: 'collab', label: '协作编排', path: '/agents/collab', matchPaths: ['/agents/dw-collaborations'] },
+  { key: 'evaluation', label: '能力评估', path: '/agents/evaluation', matchPaths: ['/agents/dw-evaluations'] },
+  { key: 'documents', label: '文档处理', path: '/agents/documents' },
+];
 
 function Loading() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-      <span style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>閸旂姾娴囨稉?..</span>
+    <div className="mp-loading">
+      <span className="mp-loading-text">加载中…</span>
     </div>
   );
 }
@@ -191,194 +237,381 @@ function AppRoutes() {
   return (
     <>
       <ScrollbarAutoHide />
-    <Suspense fallback={<Loading />}>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/s/:code" element={<ApphubRuntimePage />} />
-        <Route
-          path="/"
-          element={
-            <AuthGuard>
-              <AppLayout />
-            </AuthGuard>
-          }
-        >
-          {/* 瀹搞儰缍旈崣?Phase 4.2: from apps/dashboard) */}
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardDashboardPage />} />
-          <Route path="dashboard/my-apps" element={<DashboardMyAppsPage />} />
-          <Route path="dashboard/my-agents" element={<DashboardMyAgentsPage />} />
-          <Route path="dashboard/messages" element={<DashboardMessagesPage />} />
-          <Route path="dashboard/portal" element={<DashboardPortalPage />} />
-          <Route path="dashboard/notifications" element={<DashboardNotificationsPage />} />
-          <Route path="dashboard/deliverables" element={<DashboardDeliverablesPage />} />
-          <Route path="dashboard/aiops" element={<DashboardAiOpsPage />} />
-          <Route path="dashboard/settings" element={<DashboardSettingsPage />} />
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/s/:code" element={<ApphubRuntimePage />} />
+          <Route
+            path="/"
+            element={
+              <AuthGuard>
+                <AppShell />
+              </AuthGuard>
+            }
+          >
+            <Route index element={<Navigate to="/home" replace />} />
 
-          {/* 閸氬骸褰寸粻锛勬倞(Phase 4.2: from apps/dashboard) */}
-          <Route path="admin" element={<DashboardAdminOverviewPage />} />
-          <Route path="admin/users" element={<DashboardAdminUsersPage />} />
-          <Route path="admin/permissions" element={<DashboardAdminPermissionsPage />} />
-          <Route path="admin/orgs" element={<DashboardAdminOrgsPage />} />
-          <Route path="admin/logs" element={<DashboardAdminLogsPage />} />
-          <Route path="admin/configs" element={<DashboardAdminConfigsPage />} />
-          <Route path="admin/ai-providers" element={<DashboardAdminAIProvidersPage />} />
-          <Route path="admin/operations" element={<DashboardAdminOperationsPage />} />
-          <Route path="admin/analytics" element={<DashboardAdminAnalyticsPage />} />
-          <Route path="admin/components" element={<DashboardAdminComponentDemoPage />} />
-          <Route path="admin/flowgram" element={<DashboardAdminFlowgramDemoPage />} />
-          {/* SuperAI 鐎电鐦芥稉顓炵妇(Phase 4.5: from apps/superai) */}
-          <Route path="superai" element={<Navigate to="/superai/chat" replace />} />
-          <Route path="superai/chat" element={<SuperaiChatPage />} />
-          <Route path="superai/a2a" element={<SuperaiA2ACollaborationPage />} />
-          <Route path="superai/copilot" element={<SuperaiAgentCopilotPage />} />
-          <Route path="superai/cost" element={<SuperaiCostOptimizationPage />} />
-          <Route path="superai/data" element={<SuperaiDataAnalysisPage />} />
-          <Route path="superai/employee-match" element={<SuperaiEmployeeMatchingPage />} />
-          <Route path="superai/execution" element={<SuperaiExecutionPlanPage />} />
-          <Route path="superai/execution/:id" element={<SuperaiExecutionDetailPage />} />
-          <Route path="superai/manual-select" element={<SuperaiManualSelectEmployeePage />} />
-          <Route path="superai/parallel" element={<SuperaiParallelExecutionPage />} />
-          <Route path="superai/report" element={<SuperaiReportExportPage />} />
-          <Route path="superai/result-aggregation" element={<SuperaiResultAggregationPage />} />
-          <Route path="superai/result-summary" element={<SuperaiResultSummaryPage />} />
-          <Route path="superai/schedule" element={<SuperaiScheduleIntentPage />} />
-          <Route path="superai/schedule/execute" element={<SuperaiScheduleExecutionPage />} />
-          <Route path="superai/schedule/plan" element={<SuperaiSchedulePlanCardPage />} />
-          <Route path="superai/tasks" element={<Navigate to="/wfe/action-orchestration/order-review" replace />} />
-          <Route path="superai/templates" element={<SuperaiTaskTemplatePage />} />
-          <Route path="superai/order-review" element={<Navigate to="/apps/order-review" replace />} />
-          <Route path="wfe/action-orchestration/:definitionId" element={<ActionOrchestrationPage />} />
-          {/* 閺嬭埖鐎稉顓炵妇(Phase 4: from apps/arch) */}
-          <Route path="arch" element={<Navigate to="/arch/business" replace />} />
-          <Route path="arch/business" element={<ArchLayout><ArchBusinessArchPage /></ArchLayout>} />
-          <Route path="arch/capabilities" element={<ArchLayout><ArchCapabilityManagementPage /></ArchLayout>} />
-          <Route path="arch/applications" element={<ArchLayout><ArchApplicationManagementPage /></ArchLayout>} />
-          <Route path="arch/value-streams" element={<ArchLayout><ArchValueStreamPage /></ArchLayout>} />
-          <Route path="arch/processes" element={<ArchLayout><ArchBusinessProcessPage /></ArchLayout>} />
-          <Route path="arch/org-roles" element={<ArchLayout><ArchOrgRolePage /></ArchLayout>} />
-          <Route path="arch/data" element={<ArchLayout><ArchDataArchPage /></ArchLayout>} />
-          <Route path="arch/data/entities/:id" element={<ArchLayout><ArchDataEntityDetailPage /></ArchLayout>} />
-          <Route path="arch/data/flows" element={<ArchLayout><ArchDataFlowPage /></ArchLayout>} />
-          <Route path="arch/data/standards" element={<ArchLayout><ArchDataStandardPage /></ArchLayout>} />
-          <Route path="arch/data/assets" element={<ArchLayout><ArchDataAssetCatalogPage /></ArchLayout>} />
-          <Route path="arch/tech" element={<ArchLayout><ArchTechArchPage /></ArchLayout>} />
-          <Route path="arch/tech-components" element={<ArchLayout><ArchTechComponentPage /></ArchLayout>} />
-          <Route path="arch/tech-stacks" element={<ArchLayout><ArchTechStackPage /></ArchLayout>} />
-          <Route path="arch/deployment-topologies" element={<ArchLayout><ArchDeploymentTopologyPage /></ArchLayout>} />
-          <Route path="arch/tech-radar" element={<ArchLayout><ArchTechRadarPage /></ArchLayout>} />
-          <Route path="arch/principles" element={<ArchLayout><ArchPrinciplesPage /></ArchLayout>} />
-          <Route path="arch/review-templates" element={<ArchLayout><ArchReviewTemplatePage /></ArchLayout>} />
-          <Route path="arch/reviews" element={<ArchLayout><ArchReviewPage /></ArchLayout>} />
-          <Route path="arch/tech-debt" element={<ArchLayout><ArchTechDebtPage /></ArchLayout>} />
-          <Route path="arch/ontology-mapping" element={<ArchLayout><ArchOntologyMappingPage /></ArchLayout>} />
+            {/* ---------- 1. 工作台 ---------- */}
+            <Route path="home" element={<DashboardDashboardPage />} />
+            <Route path="home/todos" element={<DashboardNotificationsPage />} />
+            <Route path="home/messages" element={<DashboardMessagesPage />} />
+            <Route path="home/deliverables" element={<DashboardDeliverablesPage />} />
+            <Route path="home/apps" element={<DashboardMyAppsPage />} />
+            <Route path="home/me" element={<DashboardSettingsPage />} />
+            <Route path="home/portal" element={<DashboardPortalPage />} />
+            <Route path="home/aiops" element={<DashboardAiOpsPage />} />
 
-          {/* 应用中心单页：所有子内容作为 tab 在 ApphubShellPage 内切换 */}
-          <Route path="apps" element={<ApphubShellPage />} />
-          <Route path="apps/order-review" element={<SuperaiOrderReviewPage />} />
-          <Route path="superai/orchestration" element={<SuperaiOrchestrationConsolePage />} />
-          {/* 旧子路由重定向到合并页（带 tab + app/tid 参数保留用户上下文） */}
-          <Route path="apps/:appId" element={<LegacyAppRoute tab="detail" />} />
-          <Route path="apps/:appId/lifecycle" element={<LegacyAppRoute tab="lifecycle" />} />
-          <Route path="apps/:appId/versions" element={<LegacyAppRoute tab="versions" />} />
-          <Route path="apps/:appId/versions/:versionId" element={<LegacyAppRoute tab="versions" />} />
-          <Route path="apps/:appId/modules/:moduleId/form-designer" element={<LegacyAppRoute tab="form-designer" />} />
-          <Route path="apps/:appId/modules/:moduleId/flow-designer" element={<LegacyAppRoute tab="flow-designer" />} />
-          <Route path="pages/:pageId" element={<LegacyAppRoute tab="page" />} />
-          <Route path="marketplace" element={<Navigate to="/apps?tab=market&mp=1" replace />} />
-          <Route path="marketplace/:templateId" element={<Navigate to="/apps?tab=market&mp=1&tid=:templateId" replace />} />
-          <Route path="market" element={<Navigate to="/apps?tab=market" replace />} />
-          <Route path="market/:templateId" element={<Navigate to="/apps?tab=market&tid=:templateId" replace />} />
-          <Route path="my-templates" element={<Navigate to="/apps?tab=my-templates" replace />} />
-          <Route path="my-templates/submit" element={<Navigate to="/apps?tab=my-templates&submit=1" replace />} />
-          <Route path="ai-designer" element={<Navigate to="/apps?tab=ai-designer" replace />} />
+            {/* ---------- 2. 本体 ---------- */}
+            <Route path="ontology/explorer" element={<OntologyShellPage defaultTab="objects" />} />
+            <Route path="ontology/datacenter" element={<OntologyShellPage defaultTab="datacenter" />} />
+            <Route path="ontology/model" element={<OntologyShellPage defaultTab="concept" />} />
+            <Route path="ontology/ops" element={<OntologyShellPage defaultTab="governance" />} />
 
-          {/* 本体引擎原单页入口已下线，重定向到默认 tab */}
-          <Route path="ontology" element={<OntologyShellPage />} />
-          {/* 旧子路由重定向到合并页（带 tab 参数保留用户上下文） */}
-          <Route path="ontology/datacenter" element={<LegacyOntologyDatacenterRoute />} />
-          <Route path="ontology/action" element={<Navigate to="/ontology?tab=action" replace />} />
-          <Route path="ontology/graph" element={<Navigate to="/ontology?tab=graph" replace />} />
-          <Route path="ontology/relationship-types" element={<Navigate to="/ontology?tab=concept&subTab=relationship" replace />} />
-          <Route path="ontology/actions" element={<Navigate to="/ontology?tab=concept&subTab=action" replace />} />
-          <Route path="ontology/object-types" element={<Navigate to="/ontology" replace />} />
-          <Route path="ontology/object-types/:rid" element={<Navigate to="/ontology" replace />} />
+            {/* ---------- 3. 数字员工 ---------- */}
+            <Route path="agents" element={<AgentsLayout tabs={AGENTS_TABS_V2} />}>
+              <Route index element={<EmployeeListPage />} />
+              <Route path="create" element={<EmployeeCreatePage />} />
+              <Route path="external" element={<ExternalAgentsPage />} />
+              <Route path="tasks" element={<TaskListPage />} />
+              <Route path="tasks/:taskId" element={<TaskDetailPage />} />
+              <Route path="collab" element={<CollaborationListPage />} />
+              <Route path="collab/create" element={<CollaborationCreatePage />} />
+              <Route path="collab/:id" element={<CollaborationMonitorPage />} />
+              <Route path="evaluation" element={<EvaluationPage />} />
+              <Route path="documents" element={<DwDocumentsPage />} />
+              {/* DW API consumption pages (GOVERN-08) */}
+              <Route path="employees" element={<DwEmployeesPage />} />
+              <Route path="dw-tasks" element={<DwTasksPage />} />
+              <Route path="dw-collaborations" element={<DwCollaborationsPage />} />
+              <Route path="dw-evaluations" element={<DwEvaluationsPage />} />
+              <Route path="learning" element={<DwLearningPage />} />
+              <Route path="extraction" element={<DwExtractionPage />} />
+              <Route path="obs" element={<DwObsPage />} />
+              <Route path=":employeeId" element={<EmployeeDetailPage />} />
+              <Route path=":employeeId/capabilities" element={<CapabilityConfigPage />} />
+            </Route>
 
-          {/* 閻儴鐦戞惔?*/}
-          <Route path="knowledge" element={<KnowledgeLayout><KnowledgeBasePage /></KnowledgeLayout>} />
-          <Route path="knowledge/kb/:kbId" element={<KnowledgeLayout><KnowledgeKbDetailPage /></KnowledgeLayout>} />
-          <Route path="knowledge/docs" element={<KnowledgeLayout><KnowledgeDocsPage /></KnowledgeLayout>} />
-          <Route path="knowledge/test" element={<KnowledgeLayout><KnowledgeTestPage /></KnowledgeLayout>} />
-          <Route path="knowledge/config" element={<KnowledgeLayout><KnowledgeConfigPage /></KnowledgeLayout>} />
+            {/* ---------- 4. SuperAI ---------- */}
+            <Route path="superai" element={<Navigate to="/superai/chat" replace />} />
+            <Route path="superai/chat" element={<SuperaiChatPage />} />
+            <Route path="superai/chat/copilot" element={<SuperaiAgentCopilotPage />} />
+            <Route path="superai/plans" element={<SuperaiExecutionPlanPage />} />
+            <Route path="superai/plans/exec/:id" element={<SuperaiExecutionDetailPage />} />
+            <Route path="superai/plans/a2a" element={<SuperaiA2ACollaborationPage />} />
+            <Route path="superai/plans/orchestration" element={<SuperaiOrchestrationConsolePage />} />
+            <Route path="superai/plans/manual-select" element={<SuperaiManualSelectEmployeePage />} />
+            <Route path="superai/plans/parallel" element={<SuperaiParallelExecutionPage />} />
+            <Route path="superai/plans/result-aggregation" element={<SuperaiResultAggregationPage />} />
+            <Route path="superai/plans/result-summary" element={<SuperaiResultSummaryPage />} />
+            <Route path="superai/plans/employee-match" element={<SuperaiEmployeeMatchingPage />} />
+            {/* 参数名保持 definitionId：ActionOrchestrationPage 以该 key 读取路由参数 */}
+            <Route path="superai/plans/:definitionId" element={<ActionOrchestrationPage />} />
+            <Route path="superai/schedules" element={<SuperaiScheduleIntentPage />} />
+            <Route path="superai/schedules/execute" element={<SuperaiScheduleExecutionPage />} />
+            <Route path="superai/schedules/plan" element={<SuperaiSchedulePlanCardPage />} />
+            <Route path="superai/cost" element={<SuperaiCostOptimizationPage />} />
+            <Route path="superai/cost/data" element={<SuperaiDataAnalysisPage />} />
+            <Route path="superai/cost/report" element={<SuperaiReportExportPage />} />
+            <Route path="superai/templates" element={<SuperaiTaskTemplatePage />} />
 
-          {/* MCP 娑擃厼绺?/ 三 HUB 布局：SKILL / MCP / A2A */}
-          <Route path="mcp" element={<McpCenterLayout />}>
-            <Route index element={<Navigate to="/mcp/skill-hub" replace />} />
-            {/* SKILL HUB */}
-            <Route path="skill-hub" element={<McpSkillHubPage />} />
-            {/* MCP HUB（协议层） */}
-            <Route path="overview" element={<McpOverviewPage />} />
-            <Route path="tools" element={<McpToolsPage />} />
-            <Route path="tools/:id" element={<McpToolDetailPage />} />
-            <Route path="tools/:id/edit" element={<McpToolEditPage />} />
-            <Route path="resources" element={<McpResourceListPage />} />
-            <Route path="resources/:id" element={<McpResourceEditPage />} />
-            <Route path="prompts" element={<McpPromptTemplatePage />} />
-            <Route path="debugger" element={<McpDebuggerPage />} />
-            <Route path="ide-config" element={<McpIdeConfigPage />} />
-            {/* MCP 服务（协议层） */}
-            <Route path="server" element={<Navigate to="/mcp/servers" replace />} />
-            <Route path="servers" element={<McpServerPage />} />
-            <Route path="servers/:id" element={<McpServerDetailPage />} />
-            <Route path="clients" element={<McpClientPage />} />
-            <Route path="client" element={<McpClientPage />} />
-            <Route path="clients/new" element={<McpClientFormPage />} />
-            <Route path="clients/:id" element={<McpClientDetailPage />} />
-            <Route path="permissions" element={<McpPermissionsPage />} />
-            <Route path="permissions/rules" element={<McpPermissionRulePage />} />
-            <Route path="policies" element={<McpPolicyManagementPage />} />
-            <Route path="matrix" element={<McpPolicyManagementPage />} />
-            <Route path="audit" element={<McpAuditPage />} />
-            <Route path="audit/detail/:id" element={<McpAuditDetailPage />} />
-            <Route path="audit/stats" element={<McpAuditStatisticsPage />} />
-            <Route path="connection-monitor" element={<McpConnectionMonitorPage />} />
-            {/* A2A 注册中心（内外 Agent） */}
-            <Route path="internal-agents" element={<A2aInternalAgentsPage />} />
-            <Route path="external-agents" element={<McpExternalAgentListPage />} />
-            <Route path="a2a-guide" element={<A2aIntegrationGuidePage />} />
-            <Route path="external" element={<McpExternalPage />} />
-            <Route path="integrations" element={<McpExternalPage />} />
-            <Route path="trusts" element={<McpTrustManagementPage />} />
-            <Route path="collaborations" element={<McpExternalPage />} />
+            {/* ---------- 5. 应用中心 ---------- */}
+            <Route path="apps/mine" element={<ApphubShellPage defaultTab="list" />} />
+            <Route path="apps/market" element={<ApphubShellPage defaultTab="market" />} />
+            <Route path="apps/templates" element={<ApphubShellPage defaultTab="my-templates" />} />
+            <Route path="apps/designer" element={<ApphubShellPage defaultTab="ai-designer" />} />
+            <Route path="apps/order-review" element={<SuperaiOrderReviewPage />} />
+
+            {/* ---------- 6. 知识与集成 ---------- */}
+            <Route path="ki" element={<Navigate to="/ki/kb" replace />} />
+            <Route
+              path="ki/kb"
+              element={
+                <KnowledgeLayout tabs={KI_TABS}>
+                  <KnowledgeBasePage />
+                </KnowledgeLayout>
+              }
+            />
+            <Route
+              path="ki/kb/docs"
+              element={
+                <KnowledgeLayout tabs={KI_TABS}>
+                  <KnowledgeDocsPage />
+                </KnowledgeLayout>
+              }
+            />
+            <Route
+              path="ki/kb/config"
+              element={
+                <KnowledgeLayout tabs={KI_TABS}>
+                  <KnowledgeConfigPage />
+                </KnowledgeLayout>
+              }
+            />
+            <Route
+              path="ki/kb/test"
+              element={
+                <KnowledgeLayout tabs={KI_TABS}>
+                  <KnowledgeTestPage />
+                </KnowledgeLayout>
+              }
+            />
+            <Route
+              path="ki/kb/:kbId"
+              element={
+                <KnowledgeLayout tabs={KI_TABS}>
+                  <KnowledgeKbDetailPage />
+                </KnowledgeLayout>
+              }
+            />
+            <Route
+              path="ki/test"
+              element={
+                <KnowledgeLayout tabs={KI_TABS}>
+                  <KnowledgeTestPage />
+                </KnowledgeLayout>
+              }
+            />
+
+            <Route path="ki/mcp" element={<McpCenterLayout basePath="/ki/mcp" />}>
+              <Route index element={<Navigate to="/ki/mcp/tools" replace />} />
+              <Route path="overview" element={<McpOverviewPage />} />
+              <Route path="skill-hub" element={<McpSkillHubPage />} />
+              <Route path="tools" element={<McpToolsPage />} />
+              <Route path="tools/:id" element={<McpToolDetailPage />} />
+              <Route path="tools/:id/edit" element={<McpToolEditPage />} />
+              <Route path="resources" element={<McpResourceListPage />} />
+              <Route path="resources/:id" element={<McpResourceEditPage />} />
+              <Route path="prompts" element={<McpPromptTemplatePage />} />
+              <Route path="debugger" element={<McpDebuggerPage />} />
+              <Route path="ide-config" element={<McpIdeConfigPage />} />
+              <Route path="servers" element={<McpServerPage />} />
+              <Route path="servers/:id" element={<McpServerDetailPage />} />
+              <Route path="clients" element={<McpClientPage />} />
+              <Route path="clients/new" element={<McpClientFormPage />} />
+              <Route path="clients/:id" element={<McpClientDetailPage />} />
+              <Route path="permissions" element={<McpPermissionsPage />} />
+              <Route path="permissions/rules" element={<McpPermissionRulePage />} />
+              <Route path="policies" element={<McpPolicyManagementPage />} />
+              <Route path="matrix" element={<McpPolicyManagementPage />} />
+              <Route path="audit" element={<McpAuditPage />} />
+              <Route path="audit/detail/:id" element={<McpAuditDetailPage />} />
+              <Route path="audit/stats" element={<McpAuditStatisticsPage />} />
+              <Route path="connection-monitor" element={<McpConnectionMonitorPage />} />
+            </Route>
+
+            <Route path="ki/a2a" element={<McpCenterLayout basePath="/ki/a2a" initialHub="a2a" />}>
+              <Route index element={<Navigate to="/ki/a2a/internal-agents" replace />} />
+              <Route path="internal-agents" element={<A2aInternalAgentsPage />} />
+              <Route path="external-agents" element={<McpExternalAgentListPage />} />
+              <Route path="trusts" element={<McpTrustManagementPage />} />
+              <Route path="a2a-guide" element={<A2aIntegrationGuidePage />} />
+              <Route path="overview" element={<Navigate to="/ki/mcp/overview" replace />} />
+              <Route path="skill-hub" element={<Navigate to="/ki/mcp/skill-hub" replace />} />
+            </Route>
+
+            {/* ---------- 7. 数据与治理 ---------- */}
+            <Route
+              path="gov/business"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchBusinessArchPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/business/capabilities"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchCapabilityManagementPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/business/applications"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchApplicationManagementPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/business/value-streams"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchValueStreamPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/business/processes"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchBusinessProcessPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/business/org-roles"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchOrgRolePage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/data"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchDataArchPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/data/entities/:id"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchDataEntityDetailPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/data/flows"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchDataFlowPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/data/standards"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchDataStandardPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/data/assets"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchDataAssetCatalogPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/tech"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchTechArchPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/tech/components"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchTechComponentPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/tech/stacks"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchTechStackPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/tech/topologies"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchDeploymentTopologyPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/tech/radar"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchTechRadarPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/governance"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchPrinciplesPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/governance/principles"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchPrinciplesPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/governance/reviews"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchReviewPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/governance/review-templates"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchReviewTemplatePage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/governance/tech-debt"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchTechDebtPage />
+                </ArchLayout>
+              }
+            />
+            <Route
+              path="gov/governance/ontology-mapping"
+              element={
+                <ArchLayout tabs={GOV_TABS}>
+                  <ArchOntologyMappingPage />
+                </ArchLayout>
+              }
+            />
+
+            {/* ---------- 8. 平台管理 ---------- */}
+            <Route path="admin" element={<Navigate to="/admin/org/users" replace />} />
+            <Route path="admin/org" element={<Navigate to="/admin/org/users" replace />} />
+            <Route path="admin/org/users" element={<DashboardAdminUsersPage />} />
+            <Route path="admin/org/roles" element={<DashboardAdminPermissionsPage />} />
+            <Route path="admin/org/tenants" element={<DashboardAdminOrgsPage />} />
+            <Route path="admin/platform" element={<Navigate to="/admin/platform/configs" replace />} />
+            <Route path="admin/platform/configs" element={<DashboardAdminConfigsPage />} />
+            <Route path="admin/platform/ai-providers" element={<DashboardAdminAIProvidersPage />} />
+            <Route path="admin/platform/components" element={<DashboardAdminComponentDemoPage />} />
+            <Route path="admin/ops" element={<Navigate to="/admin/ops/logs" replace />} />
+            <Route path="admin/ops/logs" element={<DashboardAdminLogsPage />} />
+            <Route path="admin/ops/operations" element={<DashboardAdminOperationsPage />} />
+            <Route path="admin/ops/analytics" element={<DashboardAdminAnalyticsPage />} />
+            <Route path="admin/flowgram" element={<DashboardAdminFlowgramDemoPage />} />
+            {/* UI-P0 五骨架组件演示页 */}
+            <Route path="admin/demo" element={<UiP0DemoPage />} />
+
+            {/* ---------- 旧路由 301（集中在 src/routes/legacy-redirects.tsx） ---------- */}
+            {legacyRedirectRoutes}
+
+            <Route path="*" element={<Navigate to="/home" replace />} />
           </Route>
-          {/* 閺佹澘鐡ч崨妯轰紣 */}
-          <Route path="agents" element={<AgentsLayout />}>
-            <Route index element={<EmployeeListPage />} />
-            <Route path="create" element={<EmployeeCreatePage />} />
-            <Route path=":employeeId" element={<EmployeeDetailPage />} />
-            <Route path="tasks" element={<TaskListPage />} />
-            <Route path="tasks/:taskId" element={<TaskDetailPage />} />
-            <Route path="collab" element={<CollaborationListPage />} />
-            <Route path="collab/create" element={<CollaborationCreatePage />} />
-            <Route path="collab/:id" element={<CollaborationMonitorPage />} />
-            <Route path="evaluation" element={<EvaluationPage />} />
-            <Route path=":employeeId/capabilities" element={<CapabilityConfigPage />} />
-            <Route path="external" element={<ExternalAgentsPage />} />
-          </Route>          {/* 鍚庡彴绠＄悊锛氱粺涓€浣跨敤 dashboard/admin 椤甸潰锛岄伩鍏嶉噸澶嶈矾鐢卞拰鏈畾涔夌粍浠?*/}
-
-          {/* DW API consumption routes (GOVERN-08) */}
-          <Route path="dw/employees" element={<DwEmployeesPage />} />
-          <Route path="dw/evaluations" element={<DwEvaluationsPage />} />
-          <Route path="dw/collaborations" element={<DwCollaborationsPage />} />
-          <Route path="dw/a2a" element={<DwA2APage />} />
-          <Route path="dw/tasks" element={<DwTasksPage />} />
-          <Route path="dw/learning" element={<DwLearningPage />} />
-          <Route path="dw/documents" element={<DwDocumentsPage />} />
-          <Route path="dw/extraction" element={<DwExtractionPage />} />
-          <Route path="dw/obs" element={<DwObsPage />} />
-        </Route>
-      </Routes>
-    </Suspense>
+        </Routes>
+      </Suspense>
     </>
   );
 }
@@ -389,7 +622,9 @@ function App() {
       <SettingsProvider>
         <AuthProvider>
           <BrowserRouter>
-            <AppRoutes />
+            <ErrorBoundary>
+              <AppRoutes />
+            </ErrorBoundary>
           </BrowserRouter>
         </AuthProvider>
       </SettingsProvider>

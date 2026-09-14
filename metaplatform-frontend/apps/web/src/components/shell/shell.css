@@ -1,0 +1,360 @@
+/*
+ * 应用壳样式（DESIGN-SPEC §3）。
+ * 只写「布局与壳自身结构」的类；颜色/圆角/字号全部取 DSM 主题包注入的 token，
+ * 尺寸取 tokens.css 的 --mp-* 令牌。不覆写任何 Semi 内部类名。
+ */
+
+/* ---------- 根 ---------- */
+.mp-app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--semi-color-bg-0);
+}
+
+/* 顶栏导航模式下隐藏一级图标栏 */
+.mp-app[data-nav='top'] .mp-rail-sider {
+  display: none;
+}
+
+/* ---------- 一级图标栏 ---------- */
+.mp-app .mp-rail-sider {
+  width: var(--mp-rail-w);
+  flex: none;
+  height: 100vh;
+  background: var(--semi-color-nav-bg);
+  border-right: 1px solid var(--semi-color-border);
+}
+
+.mp-rail-nav {
+  height: 100%;
+  border-right: none;
+  background: transparent;
+}
+
+.mp-rail-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mp-space-1);
+  width: 100%;
+}
+
+.mp-rail-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--semi-border-radius-medium);
+  background: transparent;
+  color: var(--semi-color-text-2);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.mp-rail-icon:hover {
+  background: var(--semi-color-fill-0);
+  color: var(--semi-color-text-0);
+}
+
+.mp-rail-icon.is-on {
+  background: var(--semi-color-primary-light-default);
+  color: var(--semi-color-primary);
+}
+
+/* ---------- 主区 ---------- */
+.mp-app .mp-main {
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--semi-color-bg-0);
+}
+
+.mp-main .mp-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ---------- 顶栏 ---------- */
+.mp-main .mp-topbar {
+  height: var(--mp-header-h);
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-3);
+  padding: 0 var(--mp-space-4);
+  border-bottom: 1px solid var(--semi-color-border);
+  background: var(--semi-color-bg-1);
+  z-index: 12;
+}
+
+/* 一级导航横排：仅顶栏模式可见（模式 B） */
+.mp-app[data-nav='side'] .mp-topnav {
+  display: none;
+}
+
+.mp-topnav {
+  flex: none;
+  max-width: 46%;
+}
+
+.mp-crumbs {
+  min-width: 0;
+  flex: 1;
+  font-size: 13px;
+}
+
+.mp-topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  flex: none;
+}
+
+.mp-searchbar {
+  width: 260px;
+}
+
+.mp-kbd {
+  font-size: 11px;
+  color: var(--semi-color-text-3);
+  border: 1px solid var(--semi-color-border);
+  border-bottom-width: 2px;
+  border-radius: var(--semi-border-radius-extra-small);
+  padding: 0 5px;
+  line-height: 17px;
+  background: var(--semi-color-fill-0);
+  white-space: nowrap;
+}
+
+.mp-env-chip {
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.mp-menu-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+}
+
+.mp-user {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  cursor: pointer;
+  padding: 0 var(--mp-space-1);
+  border-radius: var(--semi-border-radius-medium);
+}
+
+.mp-user-name {
+  font-size: 13px;
+  color: var(--semi-color-text-0);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 页内 tab ---------- */
+.mp-pagetabs {
+  flex: none;
+  padding: 0 var(--mp-space-4);
+  border-bottom: 1px solid var(--semi-color-border);
+  background: var(--semi-color-bg-0);
+  position: sticky;
+  top: 0;
+  z-index: 6;
+}
+
+.mp-pagetabs-line {
+  min-height: var(--mp-tabbar-h);
+}
+
+.mp-subtabs {
+  margin-bottom: var(--mp-space-2);
+}
+
+/* ---------- 内容区 ---------- */
+/*
+ * 与旧 AppLayout.Content 的能力对齐（padding / overflow / flex column），
+ * 这样未迁移的旧页面在新壳内保持原有排版，sticky 头部也照旧生效。
+ */
+.mp-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  padding: var(--mp-space-6);
+}
+
+/* 未迁移的旧页面自带内边距；这里只兜底给一层横向留白 */
+.mp-page > * {
+  min-width: 0;
+}
+
+/* ---------- Copilot dock ---------- */
+.mp-dock {
+  width: var(--mp-dock-w);
+  flex: none;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--semi-color-bg-1);
+  border-left: 1px solid var(--semi-color-border);
+  transition: margin-right 0.2s ease;
+  z-index: 20;
+}
+
+.mp-app[data-copilot='closed'] .mp-dock {
+  margin-right: calc(-1 * var(--mp-dock-w));
+}
+
+.mp-dock-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  padding: var(--mp-space-3) var(--mp-space-4);
+  border-bottom: 1px solid var(--semi-color-border);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mp-dock-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  color: var(--semi-color-text-0);
+}
+
+.mp-dock-name svg {
+  color: var(--semi-color-primary);
+}
+
+.mp-dock-ctx {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--semi-color-text-3);
+  background: var(--semi-color-fill-0);
+  border: 1px dashed var(--semi-color-border);
+  border-radius: var(--semi-border-radius-medium);
+  padding: 2px var(--mp-space-2);
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-dock-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--mp-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-3);
+}
+
+.mp-dock-note {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--semi-color-text-2);
+}
+
+.mp-dock-foot {
+  flex: none;
+  padding: var(--mp-space-3) var(--mp-space-4);
+  border-top: 1px solid var(--semi-color-border);
+}
+
+/* ---------- ⌘K 命令面板（Modal portal 在 body 下，不依赖 .mp-app） ---------- */
+.mp-cmdk .mp-cmdk-input,
+.mp-cmdk .mp-cmdk-body,
+.mp-cmdk .mp-cmdk-foot {
+  width: 100%;
+}
+
+.mp-cmdk-input {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-3);
+  padding: var(--mp-space-3) var(--mp-space-4);
+  border-bottom: 1px solid var(--semi-color-border);
+  color: var(--semi-color-text-3);
+}
+
+.mp-cmdk-field {
+  flex: 1;
+}
+
+.mp-cmdk-body {
+  max-height: 380px;
+  overflow: auto;
+  padding: var(--mp-space-2);
+}
+
+.mp-cmdk-group {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--semi-color-text-3);
+  padding: var(--mp-space-2) var(--mp-space-3) var(--mp-space-1);
+}
+
+.mp-cmdk-item {
+  border-radius: var(--semi-border-radius-medium);
+  cursor: pointer;
+}
+
+.mp-cmdk-item.is-active {
+  background: var(--semi-color-primary-light-default);
+}
+
+.mp-cmdk-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  font-size: 13px;
+  color: var(--semi-color-text-0);
+}
+
+.mp-cmdk-meta {
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+}
+
+.mp-cmdk-empty {
+  padding: var(--mp-space-6);
+  text-align: center;
+  font-size: 13px;
+  color: var(--semi-color-text-3);
+}
+
+.mp-cmdk-foot {
+  display: flex;
+  gap: var(--mp-space-4);
+  padding: var(--mp-space-2) var(--mp-space-4);
+  border-top: 1px solid var(--semi-color-border);
+  font-size: 11px;
+  color: var(--semi-color-text-3);
+  background: var(--semi-color-fill-0);
+}
+
+.mp-cmdk-foot-right {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+}

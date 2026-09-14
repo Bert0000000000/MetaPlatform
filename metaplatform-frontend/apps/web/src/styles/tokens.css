@@ -1,0 +1,37 @@
+/*
+ * Mate Platform 平台布局令牌 · Calm Density
+ * 来源：docs/active/specs/2026-09-14-ui-redesign/DESIGN-SPEC.md §4.1 / §3
+ *
+ * 本文件只承载「Semi 主题体系覆盖不到的布局量」：导航宽度、tab 行高、浮层宽度、10 档间距。
+ * 颜色 / 圆角 / 字号 / 阴影由 DSM 主题包 packages/semi-theme-mate 在构建期注入，
+ * 这里不重复定义，也不做任何 Semi 令牌的运行时覆写。
+ */
+
+:root {
+  /* 间距 10 档（4px 基网格）——业务代码的 padding / margin / gap 只允许取这 10 个值 */
+  --mp-space-1: 4px;
+  --mp-space-2: 8px;
+  --mp-space-3: 12px;
+  --mp-space-4: 16px;
+  --mp-space-5: 20px;
+  --mp-space-6: 24px;
+  --mp-space-7: 32px;
+  --mp-space-8: 40px;
+  --mp-space-9: 48px;
+  --mp-space-10: 64px;
+
+  /* 应用壳尺寸 */
+  --mp-rail-w: 56px; /* 一级图标导航栏 */
+  --mp-header-h: 48px; /* 顶栏 */
+  --mp-tabbar-h: 44px; /* 页内主 tab 行 */
+  --mp-subtab-h: 32px; /* 子 tab（胶囊）行 */
+  --mp-dock-w: 376px; /* Copilot 右侧栏 */
+
+  /* 浮层尺寸 */
+  --mp-sheet-w: 456px; /* 详情 Preview Sheet（Foundry Selection Preview 范式）*/
+
+  /* 内容容器 */
+  --mp-page-max-w: 1440px;
+  --mp-content-pad-x: var(--mp-space-7);
+  --mp-content-pad-y: var(--mp-space-6);
+}

@@ -8,6 +8,8 @@ import App from './App.tsx';
 // 触发 prismjs UMD 包装器把 Prism 注册到 window（react-syntax-highlighter 的 prism 语言渲染依赖）。
 import 'prismjs';
 import 'prismjs/themes/prism.css';
+// 平台布局令牌（--mp-*）：早于业务样式加载，供应用壳与共享组件引用
+import './styles/tokens.css';
 import '../../../packages/shared/src/global.css';
 import './App.css';
 

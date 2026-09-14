@@ -31,10 +31,14 @@ function resolveTab(raw: string | null): TabKey {
   return 'list';
 }
 
-export default function ApphubShellPage() {
+/**
+ * @param defaultTab UI-P0 新 IA 桥接：`/apps/{mine,market,templates,designer}` 用路径表达主 tab，
+ *   本页内部仍以 `?tab=` 为准；无 query 时用该默认值兜底，避免两套 tab 语义打架。
+ */
+export default function ApphubShellPage({ defaultTab }: { defaultTab?: TabKey } = {}) {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
-  const activeTab = resolveTab(searchParams.get('tab'));
+  const activeTab = resolveTab(searchParams.get('tab') ?? defaultTab ?? null);
   const appId = searchParams.get('app');
   const tid = searchParams.get('tid');
   const vid = searchParams.get('vid');

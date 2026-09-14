@@ -10,10 +10,11 @@ export const AGENTS_TABS: ModuleTab[] = [
   { key: 'evaluation', label: '评估', path: '/agents/evaluation' },
 ];
 
-export default function AgentsLayout() {
+/** UI-P0：「数字员工」域传入本域 6 个 tab（含文档处理） */
+export default function AgentsLayout({ tabs = AGENTS_TABS }: { tabs?: ModuleTab[] } = {}) {
   return (
     <PageRoot>
-      <ModuleTabsLayout tabs={AGENTS_TABS}>
+      <ModuleTabsLayout tabs={tabs}>
         <Outlet />
       </ModuleTabsLayout>
     </PageRoot>

@@ -43,8 +43,14 @@ export const ARCH_TABS: ModuleTab[] = [
   },
 ];
 
-/** 架构中心布局：全局 ModuleTabsLayout + 6 个 tab，内容为具体页面 */
-export default function ArchLayout({ children }: { children: ReactNode }) {
+/** 架构中心布局：全局 ModuleTabsLayout + tab（UI-P0 起「数据与治理」域传入 /gov/* 的 tab 集） */
+export default function ArchLayout({
+  children,
+  tabs = ARCH_TABS,
+}: {
+  children: ReactNode;
+  tabs?: ModuleTab[];
+}) {
   const assistant = usePageAssistant({
     employeeId: 'architecture-planner',
     employeeName: '架构规划数字员工',
@@ -63,7 +69,7 @@ export default function ArchLayout({ children }: { children: ReactNode }) {
   return (
     <PageRoot header={header}>
       <AIAssistantWorkspace assistant={assistant}>
-        <ModuleTabsLayout tabs={ARCH_TABS}>{children}</ModuleTabsLayout>
+        <ModuleTabsLayout tabs={tabs}>{children}</ModuleTabsLayout>
       </AIAssistantWorkspace>
     </PageRoot>
   );

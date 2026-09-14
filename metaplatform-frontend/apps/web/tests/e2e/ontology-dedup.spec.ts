@@ -133,8 +133,8 @@ test.describe('本体创建去重 e2e (MP-DEDUP-01)', () => {
       `second POST 409 body must include slug_conflict / existing_rid`,
     ).toBeTruthy();
 
-    // 1. 进入 /ontology（概念模型 tab 默认）
-    await page.goto('/ontology', { waitUntil: 'domcontentloaded' });
+    // 1. 进入 /ontology/model（UI-P0 新 IA：类型建模 tab 承载概念模型）
+    await page.goto('/ontology/model', { waitUntil: 'domcontentloaded' });
     await expect(page.getByText('一级本体', { exact: true })).toBeVisible({ timeout: 15_000 });
     await page.screenshot({ path: `${SCREENSHOT_DIR}/ontology-dedup-01-initial.png`, fullPage: true });
 

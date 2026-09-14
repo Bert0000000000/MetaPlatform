@@ -1,0 +1,145 @@
+/*
+ * 五骨架共享组件样式。
+ * 间距只允许取 tokens.css 的 --mp-space-* 十档；颜色/圆角取 DSM 主题 token。
+ * 不自绘 Semi 已有元素的观感，也不覆写任何 Semi 内部类名。
+ */
+
+/* ---------- PageHeader ---------- */
+.mp-page-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mp-space-4);
+  padding-bottom: var(--mp-space-5);
+}
+
+.mp-page-head-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.mp-page-head-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--semi-color-text-0);
+}
+
+.mp-page-head-desc {
+  margin: var(--mp-space-1) 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--semi-color-text-2);
+}
+
+.mp-page-head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  flex: none;
+}
+
+/* ---------- FilterBar ---------- */
+.mp-filterbar {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  padding-bottom: var(--mp-space-4);
+}
+
+.mp-filterbar-search {
+  width: 260px;
+  flex: none;
+}
+
+.mp-filterbar-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.mp-filterbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  margin-left: auto;
+  flex: none;
+}
+
+/* ---------- DataTablePro ---------- */
+.mp-tablepro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+  min-width: 0;
+}
+
+.mp-table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--mp-space-2);
+}
+
+.mp-table-columns {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+  padding: var(--mp-space-1);
+  min-width: 160px;
+}
+
+.mp-table-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-3);
+  padding-top: var(--mp-space-1);
+}
+
+.mp-table-foot-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+  font-size: 13px;
+  color: var(--semi-color-text-2);
+}
+
+.mp-table-foot-pager {
+  margin-left: auto;
+}
+
+/* ---------- SheetDetail ---------- */
+.mp-sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
+}
+
+/* ---------- EmptyState ---------- */
+.mp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mp-space-4);
+  padding: var(--mp-space-8) var(--mp-space-5);
+}
+
+.mp-empty-art {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mp-empty-art svg {
+  width: 120px;
+  height: 90px;
+}
+
+.mp-empty-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+}

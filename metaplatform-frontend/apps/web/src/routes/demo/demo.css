@@ -1,0 +1,73 @@
+/*
+ * 组件演示页样式（仅 UI-P0 验证用途）。
+ * 间距只取 --mp-space-* 十档，等宽条块用令牌本身取值，直观证明「10 档」确有落地。
+ */
+
+/* 外层留白由壳的 .mp-page 统一提供，这里只管分栏间距与内容宽度 */
+.mp-demo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
+  max-width: var(--mp-page-max-w);
+}
+
+.mp-demo-card {
+  width: 100%;
+}
+
+.mp-demo-tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mp-space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mp-demo-token {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+
+.mp-demo-swatch {
+  display: inline-block;
+  height: var(--mp-space-4);
+  border-radius: var(--semi-border-radius-extra-small);
+  background: var(--semi-color-primary);
+  opacity: 0.75;
+}
+
+/* 每档宽度直接取对应令牌，宽度即令牌值 */
+.mp-demo-bar-1 {
+  width: var(--mp-space-1);
+}
+.mp-demo-bar-2 {
+  width: var(--mp-space-2);
+}
+.mp-demo-bar-3 {
+  width: var(--mp-space-3);
+}
+.mp-demo-bar-4 {
+  width: var(--mp-space-4);
+}
+.mp-demo-bar-5 {
+  width: var(--mp-space-5);
+}
+.mp-demo-bar-6 {
+  width: var(--mp-space-6);
+}
+.mp-demo-bar-7 {
+  width: var(--mp-space-7);
+}
+.mp-demo-bar-8 {
+  width: var(--mp-space-8);
+}
+.mp-demo-bar-9 {
+  width: var(--mp-space-9);
+}
+.mp-demo-bar-10 {
+  width: var(--mp-space-10);
+}

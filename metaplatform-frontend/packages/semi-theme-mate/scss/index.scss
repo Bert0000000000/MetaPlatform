@@ -1,0 +1,6 @@
+// Mate Platform DSM 主题入口。
+// semi-vite-plugin 会把它 @import 到每个 semi-foundation 组件 scss 的顶部，
+// 因此这里定义的 SCSS 变量在构建期替换官方默认值（运行时覆盖 --semi-color-* 无效）。
+@import './mixin.scss';
+@import './variables.scss';
+@import './_font.scss';

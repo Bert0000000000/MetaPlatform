@@ -9,7 +9,14 @@ export const KNOWLEDGE_TABS: ModuleTab[] = [
   { key: 'config', label: '检索配置', path: '/knowledge/config' },
 ];
 
-export default function KnowledgeLayout({ children }: { children: ReactNode }) {
+/** 知识库布局（UI-P0 起「知识与集成」域传入 /ki/* 的 tab 集） */
+export default function KnowledgeLayout({
+  children,
+  tabs = KNOWLEDGE_TABS,
+}: {
+  children: ReactNode;
+  tabs?: ModuleTab[];
+}) {
   const assistant = usePageAssistant({
     employeeId: 'knowledge-governor',
     employeeName: '知识治理数字员工',
@@ -28,7 +35,7 @@ export default function KnowledgeLayout({ children }: { children: ReactNode }) {
   return (
     <PageRoot header={header}>
       <AIAssistantWorkspace assistant={assistant}>
-        <ModuleTabsLayout tabs={KNOWLEDGE_TABS}>{children}</ModuleTabsLayout>
+        <ModuleTabsLayout tabs={tabs}>{children}</ModuleTabsLayout>
       </AIAssistantWorkspace>
     </PageRoot>
   );
