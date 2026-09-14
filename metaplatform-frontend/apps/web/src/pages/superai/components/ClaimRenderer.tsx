@@ -1,4 +1,3 @@
-import React from 'react';
 import { Tag, Tooltip, Typography } from '@douyinfe/semi-ui';
 import { CheckCircleOutlined, BulbOutlined, ThunderboltOutlined } from '@mate/shared';
 import type { Claim } from '@/api/superai/types';
@@ -10,72 +9,66 @@ export interface ClaimRendererProps {
   onEvidenceClick?: (evidenceId: string) => void;
 }
 
+/** claim 类型 → 语义色与图标的样式类（颜色全在 CSS 里）。 */
+const CLAIM_META: Record<string, { cls: string; color: 'green' | 'blue' | 'orange' }> = {
+  FACT: { cls: 'is-fact', color: 'green' },
+  INFERENCE: { cls: 'is-inference', color: 'blue' },
+  RECOMMENDATION: { cls: 'is-recommendation', color: 'orange' },
+};
+
 /**
- * P4.5 ClaimRenderer - renders a single Claim (FACT / INFERENCE / RECOMMENDATION)
- * with type-aware styling and clickable evidence references.
+ * P4.5 ClaimRenderer - 渲染单条 Claim（FACT / INFERENCE / RECOMMENDATION）：
+ * 类型徽标 + 置信度 + 可点击的 evidence 引用。
  */
 export function ClaimRenderer({ claim, onEvidenceClick }: ClaimRendererProps) {
+  const meta = CLAIM_META[claim.type] ?? { cls: '', color: 'blue' as const };
+
   const icon = (() => {
     switch (claim.type) {
       case 'FACT':
-        return <CheckCircleOutlined style={{ color: 'var(--semi-color-success)' }} />;
-      case 'INFERENCE':
-        return <BulbOutlined style={{ color: 'var(--semi-color-primary)' }} />;
+        return <CheckCircleOutlined />;
       case 'RECOMMENDATION':
-        return <ThunderboltOutlined style={{ color: 'var(--semi-color-warning)' }} />;
+        return <ThunderboltOutlined />;
+      default:
+        return <BulbOutlined />;
     }
   })();
 
-  const color = (() => {
-    switch (claim.type) {
-      case 'FACT':
-        return 'green';
-      case 'INFERENCE':
-        return 'blue';
-      case 'RECOMMENDATION':
-        return 'orange';
-    }
-  })();
+  const confidenceText = claim.confidence != null ? `${(claim.confidence * 100).toFixed(0)}%` : '-';
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        gap: 8,
-        padding: '8px 12px',
-        border: '1px solid var(--border)',
-        borderRadius: 6,
-        marginBottom: 8,
-        background: 'var(--muted)',
-      }}
-      data-claim-id={claim.claimId}
-    >
-      <div style={{ flex: '0 0 auto', paddingTop: 2 }}>{icon}</div>
-      <div style={{ flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <Tag color={color}>{claim.type}</Tag>
-          <Tooltip content={'Confidence: ' + (claim.confidence != null ? (claim.confidence * 100).toFixed(0) + '%' : 'N/A')}>
-            <Text type="tertiary" style={{ fontSize: 12 }}>
-              {claim.confidence != null ? (claim.confidence * 100).toFixed(0) + '%' : '-'}
+    <div className="mp-claim" data-claim-id={claim.claimId}>
+      <span className={`mp-claim-icon ${meta.cls}`}>{icon}</span>
+      <div className="mp-claim-main">
+        <div className="mp-claim-head">
+          <Tag color={meta.color} type="light">
+            {claim.type}
+          </Tag>
+          <Tooltip content={`Confidence: ${confidenceText}`}>
+            <Text type="tertiary" className="mp-claim-conf">
+              {confidenceText}
             </Text>
           </Tooltip>
         </div>
         <Text>{claim.text}</Text>
-        {claim.evidenceRefs && claim.evidenceRefs.length > 0 && (
-          <div style={{ marginTop: 6, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-            <Text type="tertiary" style={{ fontSize: 12 }}>Evidence:</Text>
+        {claim.evidenceRefs && claim.evidenceRefs.length > 0 ? (
+          <div className="mp-claim-refs">
+            <Text type="tertiary" className="mp-claim-conf">
+              Evidence:
+            </Text>
             {claim.evidenceRefs.map((ref) => (
               <Tag
                 key={ref}
                 color="indigo"
-                style={{ cursor: onEvidenceClick ? 'pointer' : 'default' }}
+                type="light"
+                className={`mp-claim-ref${onEvidenceClick ? '' : ' is-static'}`}
                 onClick={() => onEvidenceClick?.(ref)}
               >
                 {ref}
               </Tag>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

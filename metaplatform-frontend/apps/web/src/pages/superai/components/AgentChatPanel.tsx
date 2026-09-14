@@ -1,13 +1,15 @@
 import React, { useCallback, useMemo } from 'react';
-import { Banner, Button, Card, Empty, Space, Spin, Tag, Typography } from '@douyinfe/semi-ui';
+import { Banner, Button, Card, List, Space, Spin, Tag, TextArea, Typography } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
-import { PlayCircleOutlined, StopOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { Play, Square, Zap } from 'lucide-react';
 import { useAgentStream, useInteractionContext } from '@/api/superai/types';
+import { EmptyState } from '@/components/skeleton';
+import '../superai.css';
 import { ClaimRenderer } from './ClaimRenderer';
 import { EvidenceRenderer } from './EvidenceRenderer';
-import type { Claim, Evidence, InteractionContext } from '@/api/superai/types';
+import type { InteractionContext } from '@/api/superai/types';
 
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
 
 export interface AgentChatPanelProps {
   /** Optional message override (e.g. from query param). */
@@ -24,6 +26,8 @@ export interface AgentChatPanelProps {
  * <p>Wires InteractionContextProvider + useAgentStream into a single chat-like
  * UI: send button streams RunEvents, displays Claims + Evidence in real time,
  * shows the final answer, and supports abort.</p>
+ *
+ * 版式走 Calm Density：外层 mp-exec-col 负责纵向节奏，事件流走 Semi List。
  */
 export function AgentChatPanel({ initialMessage, subject, placeholder }: AgentChatPanelProps) {
   const { context, setMessage, setSubject } = useInteractionContext();
@@ -55,90 +59,100 @@ export function AgentChatPanel({ initialMessage, subject, placeholder }: AgentCh
   }, [subject?.conceptCode, subject?.objectId]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%' }}>
+    <div className="mp-exec-col">
       <Card
         title={
           <Space>
-            <ThunderboltOutlined />
+            <Zap size={15} strokeWidth={1.5} />
             <Text strong>SuperAI Agent Run</Text>
-            {runId && <Tag color="blue">{runId}</Tag>}
-            <Tag color={statusColor(status)}>{status}</Tag>
+            {runId && <Tag color="blue" type="light">{runId}</Tag>}
+            <Tag color={statusColor(status)} type="light">{status}</Tag>
             {streaming && <Spin size="small" />}
           </Space>
         }
         headerExtraContent={
-          <Space>
-            {streaming ? (
-              <Button type="danger" icon={<StopOutlined />} onClick={onAbort}>
-                Stop
-              </Button>
-            ) : (
-              <Button theme="solid" type="primary" icon={<PlayCircleOutlined />} onClick={onSend}>
-                Run
-              </Button>
-            )}
-          </Space>
+          streaming ? (
+            <Button type="danger" icon={<Square size={14} strokeWidth={1.5} />} onClick={onAbort}>
+              Stop
+            </Button>
+          ) : (
+            <Button theme="solid" type="primary" icon={<Play size={15} strokeWidth={1.5} />} onClick={onSend}>
+              Run
+            </Button>
+          )
         }
       >
-        <Paragraph type="secondary" style={{ marginBottom: 8 }}>
-          发送消息 → Agent Run 流式返回 RunEvents → Claim/Evidence 实时绑定。
-        </Paragraph>
-        <textarea
-          rows={3}
-          style={{ width: '100%', padding: 8, border: '1px solid var(--border)', borderRadius: 6, fontFamily: 'inherit' }}
-          placeholder={placeholder || '请输入分析问题，例如：分析 CUST-10086 最近的销售下降原因'}
-          value={context.message}
-          onChange={(e) => setMessage(e.target.value)}
-          disabled={streaming}
-        />
+        <div className="mp-exec-col">
+          <Text type="secondary">发送消息 → Agent Run 流式返回 RunEvents → Claim/Evidence 实时绑定。</Text>
+          <TextArea
+            rows={3}
+            placeholder={placeholder || '请输入分析问题，例如：分析 CUST-10086 最近的销售下降原因'}
+            value={context.message}
+            onChange={(v) => setMessage(v)}
+            disabled={streaming}
+          />
+        </div>
       </Card>
 
-      {error && <Banner type="danger" description={error} />}
+      {error ? <Banner type="danger" closeIcon={null} description={error} /> : null}
 
       <Card title={<Text strong>Run Events ({events.length})</Text>}>
         {events.length === 0 ? (
-          <Empty description="No events yet" />
+          <EmptyState illustration="idle" title="暂无事件" desc="发送消息后 RunEvent 会实时出现在这里。" />
         ) : (
-          <Space vertical spacing={4} style={{ width: '100%' }}>
-            {events.slice(-10).map((ev) => (
-              <Space key={ev.eventId} spacing={6}>
-                <Tag color={eventColor(ev.type)} style={{ minWidth: 130, textAlign: 'center' }}>
-                  {ev.type}
-                </Tag>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  {ev.type === 'CLAIM_PRODUCED'
-                    ? 'Claim ' + ((ev.payload.claim as { claimId?: string })?.claimId ?? '')
-                    : ev.type === 'EVIDENCE_ATTACHED'
-                    ? 'Evidence ' + ((ev.payload.evidence as { evidenceId?: string })?.evidenceId ?? '')
-                    : JSON.stringify(ev.payload).slice(0, 80)}
-                </Text>
-              </Space>
-            ))}
-          </Space>
+          <List
+            dataSource={events.slice(-10)}
+            renderItem={(ev) => (
+              <List.Item
+                main={
+                  <Space>
+                    <Tag color={eventColor(ev.type)} type="light">{ev.type}</Tag>
+                    <Text type="secondary">{eventSummary(ev)}</Text>
+                  </Space>
+                }
+              />
+            )}
+          />
         )}
       </Card>
 
-      {answer && (
+      {answer ? (
         <Card title={<Text strong>Final Answer</Text>}>
-          <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{answer}</Paragraph>
-        </Card>
-      )}
-
-      {claims.length > 0 && (
-        <Card title={<Text strong>Claims ({claims.length})</Text>}>
-          {claims.map((c) => (
-            <ClaimRenderer key={c.claimId} claim={c} />
+          {answer.split('\n').map((line, i) => (
+            <div key={i}>
+              <Text>{line.length > 0 ? line : ' '}</Text>
+            </div>
           ))}
         </Card>
-      )}
+      ) : null}
 
-      {evidence.length > 0 && (
+      {claims.length > 0 ? (
+        <Card title={<Text strong>Claims ({claims.length})</Text>}>
+          <div className="mp-exec-col">
+            {claims.map((c) => (
+              <ClaimRenderer key={c.claimId} claim={c} />
+            ))}
+          </div>
+        </Card>
+      ) : null}
+
+      {evidence.length > 0 ? (
         <Card title={<Text strong>Evidence ({evidence.length})</Text>}>
           <EvidenceRenderer evidenceList={evidence} />
         </Card>
-      )}
+      ) : null}
     </div>
   );
+}
+
+function eventSummary(ev: { type: string; payload: Record<string, unknown> }): string {
+  if (ev.type === 'CLAIM_PRODUCED') {
+    return `Claim ${((ev.payload.claim as { claimId?: string })?.claimId ?? '')}`;
+  }
+  if (ev.type === 'EVIDENCE_ATTACHED') {
+    return `Evidence ${((ev.payload.evidence as { evidenceId?: string })?.evidenceId ?? '')}`;
+  }
+  return JSON.stringify(ev.payload).slice(0, 80);
 }
 
 function statusColor(s: string): TagColor {

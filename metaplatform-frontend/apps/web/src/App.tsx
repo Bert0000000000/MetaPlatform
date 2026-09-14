@@ -12,6 +12,8 @@ import { ontologyRoutes } from './routes/ontology';
 import { adminRoutes } from './routes/admin';
 import { homeRoutes } from './routes/home';
 import { agentsRoutes } from './routes/agents';
+import { superaiRoutes } from './routes/superai';
+const SuperaiOrderReviewPage = lazy(() => import('./pages/superai/OrderReviewPage'));
 
 /**
  * 新信息架构（11 域 → 8 域，DESIGN-SPEC §2）。
@@ -26,26 +28,6 @@ import { agentsRoutes } from './routes/agents';
 // DW API consumption routes (GOVERN-08)
 
 // ---------- SuperAI ----------
-const SuperaiChatPage = lazy(() => import('./pages/superai/ChatPage'));
-const SuperaiA2ACollaborationPage = lazy(() => import('./pages/superai/A2ACollaborationPage'));
-const SuperaiAgentCopilotPage = lazy(() => import('./pages/superai/AgentCopilotPage'));
-const SuperaiCostOptimizationPage = lazy(() => import('./pages/superai/CostOptimizationPage'));
-const SuperaiDataAnalysisPage = lazy(() => import('./pages/superai/DataAnalysisPage'));
-const SuperaiEmployeeMatchingPage = lazy(() => import('./pages/superai/EmployeeMatchingPage'));
-const SuperaiExecutionDetailPage = lazy(() => import('./pages/superai/ExecutionDetailPage'));
-const SuperaiExecutionPlanPage = lazy(() => import('./pages/superai/ExecutionPlanPage'));
-const SuperaiManualSelectEmployeePage = lazy(() => import('./pages/superai/ManualSelectEmployeePage'));
-const SuperaiParallelExecutionPage = lazy(() => import('./pages/superai/ParallelExecutionPage'));
-const SuperaiReportExportPage = lazy(() => import('./pages/superai/ReportExportPage'));
-const SuperaiResultAggregationPage = lazy(() => import('./pages/superai/ResultAggregationPage'));
-const SuperaiResultSummaryPage = lazy(() => import('./pages/superai/ResultSummaryPage'));
-const SuperaiScheduleExecutionPage = lazy(() => import('./pages/superai/ScheduleExecutionPage'));
-const SuperaiScheduleIntentPage = lazy(() => import('./pages/superai/ScheduleIntentPage'));
-const SuperaiSchedulePlanCardPage = lazy(() => import('./pages/superai/SchedulePlanCardPage'));
-const SuperaiTaskTemplatePage = lazy(() => import('./pages/superai/TaskTemplatePage'));
-const SuperaiOrderReviewPage = lazy(() => import('./pages/superai/OrderReviewPage'));
-const SuperaiOrchestrationConsolePage = lazy(() => import('./pages/superai/OrchestrationConsolePage'));
-const ActionOrchestrationPage = lazy(() => import('./pages/wfe/ActionOrchestrationPage'));
 
 // ---------- 应用中心 ----------
 const ApphubShellPage = lazy(() => import('./pages/apphub/ApphubShellPage'));
@@ -207,28 +189,8 @@ function AppRoutes() {
             {/* ---------- 3. 数字员工（域路由见 src/routes/agents.tsx） ---------- */}
             {agentsRoutes}
 
-            {/* ---------- 4. SuperAI ---------- */}
-            <Route path="superai" element={<Navigate to="/superai/chat" replace />} />
-            <Route path="superai/chat" element={<SuperaiChatPage />} />
-            <Route path="superai/chat/copilot" element={<SuperaiAgentCopilotPage />} />
-            <Route path="superai/plans" element={<SuperaiExecutionPlanPage />} />
-            <Route path="superai/plans/exec/:id" element={<SuperaiExecutionDetailPage />} />
-            <Route path="superai/plans/a2a" element={<SuperaiA2ACollaborationPage />} />
-            <Route path="superai/plans/orchestration" element={<SuperaiOrchestrationConsolePage />} />
-            <Route path="superai/plans/manual-select" element={<SuperaiManualSelectEmployeePage />} />
-            <Route path="superai/plans/parallel" element={<SuperaiParallelExecutionPage />} />
-            <Route path="superai/plans/result-aggregation" element={<SuperaiResultAggregationPage />} />
-            <Route path="superai/plans/result-summary" element={<SuperaiResultSummaryPage />} />
-            <Route path="superai/plans/employee-match" element={<SuperaiEmployeeMatchingPage />} />
-            {/* 参数名保持 definitionId：ActionOrchestrationPage 以该 key 读取路由参数 */}
-            <Route path="superai/plans/:definitionId" element={<ActionOrchestrationPage />} />
-            <Route path="superai/schedules" element={<SuperaiScheduleIntentPage />} />
-            <Route path="superai/schedules/execute" element={<SuperaiScheduleExecutionPage />} />
-            <Route path="superai/schedules/plan" element={<SuperaiSchedulePlanCardPage />} />
-            <Route path="superai/cost" element={<SuperaiCostOptimizationPage />} />
-            <Route path="superai/cost/data" element={<SuperaiDataAnalysisPage />} />
-            <Route path="superai/cost/report" element={<SuperaiReportExportPage />} />
-            <Route path="superai/templates" element={<SuperaiTaskTemplatePage />} />
+            {/* ---------- 4. SuperAI（域路由见 src/routes/superai.tsx） ---------- */}
+            {superaiRoutes}
 
             {/* ---------- 5. 应用中心 ---------- */}
             <Route path="apps/mine" element={<ApphubShellPage defaultTab="list" />} />

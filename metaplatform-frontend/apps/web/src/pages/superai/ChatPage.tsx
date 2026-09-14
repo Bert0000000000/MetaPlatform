@@ -1,13 +1,16 @@
 /**
- * ChatPage - SuperAI AI 对话（重构版）
+ * ChatPage - SuperAI AI 对话（Calm Density 重排版）
  * --------------------------------------------------
- * 布局（Semi 官方 AI 组件方案）：
+ * 布局（Semi 官方 AI 组件方案，壳已提供页面外框）：
  * ┌───────────────────────────┬──────────────┐
  * │ 对话区（左）               │ Sidebar（右） │
  * │  · topbar（开关+标题）     │  · 会话历史    │
  * │  · AIChatDialogue         │  · timeline   │
  * │  · AIChatInput(Configure) │              │
  * └───────────────────────────┴──────────────┘
+ *
+ * 排版契约（DESIGN-SPEC §4 令牌 / §5 骨架）：本文件 0 处 JSX inline style，
+ * 间距/颜色全部走共享类（shell/skeleton/superai.css）+ Semi 组件属性。
  * 后端对接：copilot stream（LLM 流式）/ conversations（会话 CRUD + 历史）/ 多模态。
  */
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -20,6 +23,11 @@ import {
   Typography,
   Toast,
   Input,
+  List,
+  Row,
+  Col,
+  Space,
+  Tag,
 } from '@douyinfe/semi-ui';
 import type { Message as SemiMessage } from '@douyinfe/semi-ui/lib/es/aiChatDialogue/interface';
 import type { FileItem } from '@douyinfe/semi-ui/lib/es/upload';
@@ -28,15 +36,21 @@ import type {
   Suggestion,
   Skill,
 } from '@douyinfe/semi-ui/lib/es/aiChatInput/interface';
+import { getUser, PageLoading, RobotOutlined } from '@mate/shared';
 import {
-  ChevronsLeft,
-  ChevronsRight,
-  RobotOutlined,
-  PlusOutlined,
-  ThunderboltOutlined,
-} from '@mate/shared';
-import { DeleteOutlined, StarFilled, StarOutlined } from '@ant-design/icons';
-import { IconSearch, IconTemplateStroked, IconUser, IconUserCircle } from '@douyinfe/semi-icons';
+  IconBolt,
+  IconChevronLeft,
+  IconChevronRight,
+  IconDelete,
+  IconPlus,
+  IconSearch,
+  IconStar,
+  IconStarStroked,
+  IconTemplateStroked,
+  IconUser,
+  IconUserCircle,
+} from '@douyinfe/semi-icons';
+import EmptyState from '@/components/skeleton/EmptyState';
 import {
   streamChat,
   streamAgentChat,
@@ -66,6 +80,7 @@ import type {
   MultimodalModel,
   RoutingDecision,
 } from '@/api/superai/types';
+import './superai.css';
 
 // ============ 常量 ============
 
@@ -282,74 +297,38 @@ const WRITING_TEMPLATES: Array<{ title: string; desc: string; content: string }>
   },
 ];
 
-/** 写作模板面板：点击模板将内容插入输入框 */
+/** 写作模板面板：点击模板将内容插入输入框（Semi List 承载，无自绘样式） */
 function TemplatePanel({ onTemplateClick }: { onTemplateClick: (content: string) => void }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 4 }}>
-      {WRITING_TEMPLATES.map((item) => (
-        <div
-          key={item.title}
+    <List
+      size="small"
+      split={false}
+      dataSource={WRITING_TEMPLATES}
+      renderItem={(item) => (
+        <List.Item
           onClick={() => onTemplateClick(item.content)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '10px 12px',
-            borderRadius: 8,
-            cursor: 'pointer',
-            background: 'var(--card)',
-            border: '1px solid var(--border)',
-            transition: 'border-color .15s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'var(--semi-color-primary)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'var(--border)';
-          }}
-        >
-          <span
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 8,
-              background: 'var(--semi-color-primary)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              flexShrink: 0,
-            }}
-          >
-            <IconTemplateStroked />
-          </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>{item.title}</div>
-            <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{item.desc}</div>
-          </div>
-        </div>
-      ))}
-    </div>
+          header={<IconTemplateStroked />}
+          main={
+            <>
+              <div>
+                <Typography.Text strong>{item.title}</Typography.Text>
+              </div>
+              <div>
+                <Typography.Text type="tertiary" size="small">{item.desc}</Typography.Text>
+              </div>
+            </>
+          }
+        />
+      )}
+    />
   );
 }
 
 export default function ChatPage() {
   // --- 会话与消息状态 ---
-  const [sessions, setSessions] = useState<ChatSession[]>(() => [
-    {
-      ...createSession('Mate Platform 介绍'),
-      messages: [
-        createMessage('user', '请介绍一下 Mate Platform'),
-        createMessage(
-          'assistant',
-          '## Mate Platform\n\nMate Platform 是基于 **Ontology 本体论引擎**的企业级决策与运营提效平台。\n\n### 核心能力\n- Ontology 本体引擎（统一语义建模与推理）\n- 低代码应用构建（融合 BPMN 审批流与 AI Agent 编排）\n- 数字员工（AI 驱动的自动化）\n- 企业级 RAG 知识库\n- MCP/A2A 协议支持',
-          {
-            citations: [{ id: 'c0', title: '项目总览', type: 'DOC', score: 98, snippet: 'Mate Platform 是统一的企业级 AI 运营平台。' }],
-          },
-        ),
-      ],
-    },
-  ]);
+  // 起始为空列表：会话一律来自后端 conversations 接口，不预置任何演示数据。
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [conversationsLoading, setConversationsLoading] = useState(true);
   const [activeId, setActiveId] = useState<string>(() => '');
   const [streamingMap, setStreamingMap] = useState<Record<string, string>>({});
   const [agentMode, setAgentMode] = useState(false);
@@ -367,12 +346,12 @@ export default function ChatPage() {
   const abortRef = useRef<AbortController | null>(null);
   const loadedHistoryRef = useRef<Set<string>>(new Set());
   const aiInputRef = useRef<any>(null);
-  const [references, setReferences] = useState<Reference[]>([
-    { id: 'ref-1', type: 'text', content: 'Ontology 本体引擎是企业级语义建模与推理引擎。' },
-    { id: 'ref-2', type: 'docx', name: 'Ontology 架构文档.docx' },
-    { id: 'ref-3', type: 'xlsx', name: '销售数据.xlsx' },
-  ]);
+  // 引用区留空：不预置示例引用，交由用户自行添加
+  const [references, setReferences] = useState<Reference[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  // 对话角色名取当前登录用户（无登录态时退化为中性称呼，不写死 Admin）
+  const currentUserName = useMemo(() => getUser()?.username ?? '我', []);
 
   // activeId 初始化（挂载后取第一个会话）
   useEffect(() => {
@@ -395,7 +374,10 @@ export default function ChatPage() {
         setActiveId((prev) => (convs.some((c) => c.id === prev) ? prev : convs[0]?.id ?? prev));
       })
       .catch(() => {
-        Toast.warning('后端会话加载失败，已使用本地缓存');
+        Toast.warning('会话列表加载失败');
+      })
+      .finally(() => {
+        setConversationsLoading(false);
       });
   }, []);
 
@@ -430,7 +412,7 @@ export default function ChatPage() {
         setAvailableModels(models.map((m) => ({ label: m.displayName || m.modelCode, value: m.modelId })));
       })
       .catch(() => {
-        setAvailableModels([{ label: 'doubao-pro-32k', value: 'doubao-pro-32k' }]);
+        // 模型列表加载失败：保持空可选列表，不伪造可用模型
       });
   }, []);
 
@@ -961,179 +943,124 @@ export default function ChatPage() {
     return result;
   }, [sessions, searchKeyword]);
 
+  // 无活动会话：加载中给加载态，加载完成后给诚实空态（两者视觉可区分）
   if (!activeSession) {
-    return <div style={{ padding: 24 }}>加载中...</div>;
+    return (
+      <div className="mp-split mp-page-full">
+        <div className="mp-split-main">
+          {conversationsLoading ? (
+            <PageLoading tip="正在加载会话…" />
+          ) : (
+            <EmptyState
+              illustration="no-content"
+              title="暂无会话"
+              desc="新建一个会话，开始与 SuperAI 对话。"
+              actions={
+                <Button
+                  theme="solid"
+                  type="primary"
+                  icon={<IconPlus />}
+                  onClick={() => void handleNewConversation()}
+                >
+                  新建会话
+                </Button>
+              }
+            />
+          )}
+        </div>
+      </div>
+    );
   }
 
   // ============ 渲染 ============
   return (
-    <div style={{ display: 'flex', flex: 1, minHeight: 0, width: 'auto' }}>
+    <div className="mp-split mp-page-full">
       {/* ===== 左：对话区 ===== */}
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          background: 'var(--background)',
-        }}
-      >
+      <div className="mp-split-main">
         {/* chat-topbar：侧栏开关 + 对话标题 + 运行状态 */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '10px 20px',
-            borderBottom: '1px solid var(--border)',
-            flexShrink: 0,
-            minHeight: 44,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              flex: 1,
-              minWidth: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {activeSession.title}
-          </span>
-          {isSessionRunning(activeSession) && (
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                fontSize: 12,
-                color: 'var(--semi-color-primary)',
-                flexShrink: 0,
-              }}
-            >
-              <span
-                style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: '50%',
-                  background: 'var(--semi-color-primary)',
-                  animation: 'pulse 1.2s ease-in-out infinite',
-                }}
+        <div className="mp-pagetabs">
+          <Row type="flex" align="middle" justify="space-between">
+            <Col span={19}>
+              <Typography.Text strong ellipsis={{ showTooltip: true }}>
+                {activeSession.title}
+              </Typography.Text>
+            </Col>
+            <Space align="center" spacing={8}>
+              {isSessionRunning(activeSession) && (
+                <Tag color="blue" size="small" prefixIcon={<span className="mp-exec-dot is-running" />}>
+                  运行中
+                </Tag>
+              )}
+              <Button
+                theme="borderless"
+                size="small"
+                icon={sessionPanelVisible ? <IconChevronRight /> : <IconChevronLeft />}
+                title={sessionPanelVisible ? '收起会话侧栏' : '展开会话侧栏'}
+                onClick={() => setSessionPanelVisible((v) => !v)}
               />
-              运行中
-            </span>
-          )}
-          <Button
-            theme="borderless"
-            size="small"
-            icon={
-              sessionPanelVisible ? (
-                <ChevronsRight style={{ width: 15, height: 15 }} />
-              ) : (
-                <ChevronsLeft style={{ width: 15, height: 15 }} />
-              )
-            }
-            title={sessionPanelVisible ? '收起会话侧栏' : '展开会话侧栏'}
-            onClick={() => setSessionPanelVisible((v) => !v)}
-          />
+            </Space>
+          </Row>
         </div>
 
         {/* 消息流（官方 AIChatDialogue：左右布局 + reasoning + annotations） */}
-        <AIChatDialogue
-          key={activeSession.id}
-          className="superai-chat"
-          style={{ flex: 1, minHeight: 0, width: '100%', maxWidth: 'none', padding: '24px 0 0' }}
-          roleConfig={{
-            user: { name: 'Admin' },
-            assistant: { name: 'SuperAI' },
-          }}
-          dialogueRenderConfig={{
-            renderDialogueAvatar: ({ message }) => (
-              <Avatar size="extra-small" style={{ background: message?.role === 'user' ? 'var(--semi-color-primary)' : 'var(--semi-color-secondary)' }}>
-                {message?.role === 'user' ? <IconUser size="extra-small" /> : <IconUserCircle size="extra-small" />}
-              </Avatar>
-            ),
-          }}
-          renderDialogueContentItem={{
-            steps: (item: any) => {
-              const steps: any[] = item.steps ?? [];
-              if (steps.length === 0) return null;
-              return (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 6,
-                    margin: '8px 0',
-                    padding: '8px 12px',
-                    borderRadius: 8,
-                    background: 'var(--semi-color-fill-0)',
-                  }}
-                >
-                  {steps.map((s: any, i: number) => {
-                    const failed = s.status === 'failed';
-                    const done = s.status === 'completed';
-                    const dotColor = failed ? 'var(--semi-color-danger)' : done ? 'var(--semi-color-success)' : 'var(--semi-color-primary)';
-                    return (
-                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13 }}>
-                        <span
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: 4,
-                            background: dotColor,
-                            marginTop: 5,
-                            display: 'inline-block',
-                            flexShrink: 0,
-                          }}
-                        />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 500, color: 'var(--foreground)' }}>{s.summary}</div>
+        <div className="mp-split-main">
+          <AIChatDialogue
+            key={activeSession.id}
+            roleConfig={{
+              user: { name: currentUserName },
+              assistant: { name: 'SuperAI' },
+            }}
+            dialogueRenderConfig={{
+              renderDialogueAvatar: ({ message }) => (
+                <Avatar size="extra-small" color={message?.role === 'user' ? 'blue' : 'grey'}>
+                  {message?.role === 'user' ? <IconUser size="extra-small" /> : <IconUserCircle size="extra-small" />}
+                </Avatar>
+              ),
+            }}
+            renderDialogueContentItem={{
+              steps: (item: any) => {
+                const steps: any[] = item.steps ?? [];
+                if (steps.length === 0) return null;
+                return (
+                  <div className="mp-exec-col">
+                    {steps.map((s: any, i: number) => {
+                      const dotState = s.status === 'failed' ? 'is-failed' : s.status === 'completed' ? 'is-done' : 'is-running';
+                      return (
+                        <div key={i}>
+                          <div className="mp-exec-step-head">
+                            <span className={`mp-exec-dot ${dotState}`} />
+                            <span className="mp-exec-step-title">{s.summary}</span>
+                          </div>
                           {(s.actions ?? []).map((a: any, j: number) => (
-                            <div key={j} style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>
+                            <div key={j} className="mp-exec-step-body">
                               {a.summary}
                               {a.description ? (
-                                <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{a.description}</div>
+                                <div>
+                                  <Typography.Text type="tertiary" size="small">{a.description}</Typography.Text>
+                                </div>
                               ) : null}
                             </div>
                           ))}
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            },
-            routing_decision: (item: { routingDecisions?: RoutingDecision[]; routingDecisionError?: string }) => {
-              const decisions = item.routingDecisions ?? [];
-              return decisions.length > 0 || item.routingDecisionError
-                ? <RoutingDecisionPanel decision={decisions} streamError={item.routingDecisionError} />
-                : null;
-            },
-          }}
-          chats={semiMessages}
-          topSlot={
-            activeSession.messages.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 24px 0' }}>
-                <RobotOutlined style={{ fontSize: 36, color: 'var(--foreground)' }} />
-                <Typography.Title heading={4} style={{ margin: '16px 0 8px', color: 'var(--foreground)' }}>
-                  你好，我是 SuperAI
-                </Typography.Title>
-                <Typography.Text style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
-                  统一 AI 交互入口，自动识别您的意图 — 智能问答、数据分析、知识图谱、代码生成，一个输入框搞定。
-                </Typography.Text>
-              </div>
-            ) : undefined
-          }
-          hints={activeSession.messages.length === 0 ? WELCOME_PROMPTS : EMPTY_HINTS}
-          hintStyle={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginLeft: 0 }}
-          onHintClick={(hint) => {
-            void handleSend(hint);
-          }}
-        />
+                      );
+                    })}
+                  </div>
+                );
+              },
+              routing_decision: (item: { routingDecisions?: RoutingDecision[]; routingDecisionError?: string }) => {
+                const decisions = item.routingDecisions ?? [];
+                return decisions.length > 0 || item.routingDecisionError
+                  ? <RoutingDecisionPanel decision={decisions} streamError={item.routingDecisionError} />
+                  : null;
+              },
+            }}
+            chats={semiMessages}
+            hints={activeSession.messages.length === 0 ? WELCOME_PROMPTS : EMPTY_HINTS}
+            onHintClick={(hint) => {
+              void handleSend(hint);
+            }}
+          />
+        </div>
 
         {/* 输入框（官方 Configure：模型 / 深度思考 / 思考模式 / 附件） */}
         <AIChatInput
@@ -1171,12 +1098,12 @@ export default function ChatPage() {
               <Button
                 size="small"
                 type={agentMode ? 'primary' : 'tertiary'}
-                icon={<RobotOutlined style={{ fontSize: 14 }} />}
+                icon={<RobotOutlined size={14} />}
                 onClick={() => setAgentMode((v) => !v)}
               >
                 {agentMode ? 'Agent 调度中' : 'Agent 调度'}
               </Button>
-              <Configure.Button icon={<ThunderboltOutlined style={{ fontSize: 14 }} />} field="thinking">
+              <Configure.Button icon={<IconBolt />} field="thinking">
                 深度思考
               </Configure.Button>
               <Configure.RadioButton
@@ -1210,11 +1137,10 @@ export default function ChatPage() {
           minWidth={200}
           maxWidth={360}
           onCancel={() => setSessionPanelVisible(false)}
-          style={{ width: '100%', border: 'none', height: '100%', borderLeft: '1px solid var(--border)' }}
           options={[{ key: 'toolbar', icon: null, name: null }]}
           renderOptionItem={() => (
-            <div key="toolbar" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Button theme="solid" type="primary" icon={<PlusOutlined />} block onClick={() => void handleNewConversation()}>
+            <>
+              <Button theme="solid" type="primary" icon={<IconPlus />} block onClick={() => void handleNewConversation()}>
                 新建会话
               </Button>
               <Input
@@ -1223,12 +1149,11 @@ export default function ChatPage() {
                 showClear
                 value={searchKeyword}
                 onChange={(v) => setSearchKeyword(v)}
-                style={{ width: '100%' }}
               />
-            </div>
+            </>
           )}
           renderMainContent={() => (
-            <div className="superai-scroll" style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
+            <>
               {(() => {
                 const groups: Array<{ label: string; items: ChatSession[] }> = [];
                 for (const s of filteredSessions) {
@@ -1244,110 +1169,72 @@ export default function ChatPage() {
                   <>
                     {groups.map((g) => (
                       <div key={g.label}>
-                        <div
-                          style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '8px 12px 4px', fontWeight: 600 }}
-                        >
-                          {g.label}
-                        </div>
-                        {g.items.map((s) => (
-                          <div
-                            key={s.id}
-                            onClick={() => handleSelectConversation(s.id)}
-                            style={{
-                              padding: '10px 12px',
-                              borderRadius: 4,
-                              cursor: 'pointer',
-                              marginBottom: 2,
-                              background: s.id === activeId ? 'var(--muted)' : 'transparent',
-                              transition: 'background .15s',
-                            }}
-                          >
-                            <div
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                fontSize: 13,
-                                fontWeight: 500,
-                                marginBottom: 3,
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                color: 'var(--foreground)',
-                              }}
-                            >
-                              {isSessionRunning(s) && (
+                        <div className="mp-pane-title">{g.label}</div>
+                        <List
+                          split={false}
+                          dataSource={g.items}
+                          renderItem={(s) => (
+                            <List.Item
+                              key={s.id}
+                              onClick={() => handleSelectConversation(s.id)}
+                              header={
+                                isSessionRunning(s) ? <span className="mp-exec-dot is-running" /> : undefined
+                              }
+                              main={
                                 <>
-                                  <span
-                                    style={{
-                                      width: 7,
-                                      height: 7,
-                                      borderRadius: '50%',
-                                      flexShrink: 0,
-                                      background: 'var(--semi-color-primary)',
-                                      animation: 'pulse 1.2s ease-in-out infinite',
+                                  <div>
+                                    <Typography.Text strong ellipsis={{ showTooltip: true }}>
+                                      {s.title}
+                                    </Typography.Text>
+                                  </div>
+                                  <Space spacing={6}>
+                                    <Typography.Text type="tertiary" size="small">
+                                      {new Date(s.updatedAt).toLocaleString('zh-CN', {
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </Typography.Text>
+                                    {s.id === activeId ? (
+                                      <Tag color="blue" size="small">当前</Tag>
+                                    ) : null}
+                                  </Space>
+                                </>
+                              }
+                              extra={
+                                <Space spacing={2}>
+                                  <Button
+                                    size="small"
+                                    theme="borderless"
+                                    icon={s.favorite ? <IconStar /> : <IconStarStroked />}
+                                    title={s.favorite ? '取消收藏' : '收藏'}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      void handleToggleFavorite(s.id);
                                     }}
                                   />
-                                  <span style={{ fontSize: 10, color: 'var(--semi-color-primary)', flexShrink: 0 }}>
-                                    运行中
-                                  </span>
-                                </>
-                              )}
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</span>
-                            </div>
-                            <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
-                              {new Date(s.updatedAt).toLocaleString('zh-CN', {
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                              <span
-                                style={{
-                                  display: 'inline-block',
-                                  fontSize: 10,
-                                  padding: '1px 6px',
-                                  borderRadius: 4,
-                                  background: 'var(--card)',
-                                  border: '1px solid var(--border)',
-                                  color: 'var(--muted-foreground)',
-                                }}
-                              >
-                                SuperAI
-                              </span>
-                              {s.favorite && <StarFilled style={{ fontSize: 10, color: 'var(--warning)' }} />}
-                              <Button
-                                size="small"
-                                theme="borderless"
-                                icon={s.favorite ? <StarFilled style={{ fontSize: 12, color: 'var(--warning)' }} /> : <StarOutlined style={{ fontSize: 12 }} />}
-                                title={s.favorite ? '取消收藏' : '收藏'}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void handleToggleFavorite(s.id);
-                                }}
-                              />
-                              <Button
-                                size="small"
-                                theme="borderless"
-                                icon={<DeleteOutlined style={{ fontSize: 12 }} />}
-                                title="删除会话"
-                                style={{ marginLeft: 'auto' }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void handleDeleteConversation(s.id);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        ))}
+                                  <Button
+                                    size="small"
+                                    theme="borderless"
+                                    icon={<IconDelete />}
+                                    title="删除会话"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      void handleDeleteConversation(s.id);
+                                    }}
+                                  />
+                                </Space>
+                              }
+                            />
+                          )}
+                        />
                       </div>
                     ))}
                   </>
                 );
               })()}
-            </div>
+            </>
           )}
         />
       )}

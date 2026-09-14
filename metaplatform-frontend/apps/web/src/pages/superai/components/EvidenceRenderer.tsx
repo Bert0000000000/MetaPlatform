@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Card, SideSheet, Empty, Tag, Typography } from '@douyinfe/semi-ui';
-import { FileText, Database, Link } from 'lucide-react';
+import { useState } from 'react';
+import { Card, Tag, Typography } from '@douyinfe/semi-ui';
+import { Database, FileText, Link } from 'lucide-react';
 import type { Evidence } from '@/api/superai/types';
+import { EmptyState, SheetDetail } from '@/components/skeleton';
 
 const { Text, Paragraph } = Typography;
 
@@ -10,108 +11,135 @@ export interface EvidenceRendererProps {
   emptyText?: string;
 }
 
+/** evidence 类型 → 图标样式类（颜色全在 CSS 里）。 */
+function iconClassFor(type: Evidence['type']): string {
+  switch (type) {
+    case 'ONTOLOGY_OBJECT':
+    case 'ONTOLOGY_METRIC':
+    case 'ONTOLOGY_RELATION':
+      return 'is-ontology';
+    case 'DOCUMENT':
+    case 'KB_CHUNK':
+      return 'is-document';
+    default:
+      return 'is-external';
+  }
+}
+
+function iconFor(type: Evidence['type']) {
+  switch (type) {
+    case 'ONTOLOGY_OBJECT':
+    case 'ONTOLOGY_METRIC':
+    case 'ONTOLOGY_RELATION':
+      return <Database size={16} strokeWidth={1.5} />;
+    case 'DOCUMENT':
+    case 'KB_CHUNK':
+      return <FileText size={16} strokeWidth={1.5} />;
+    default:
+      return <Link size={16} strokeWidth={1.5} />;
+  }
+}
+
 /**
- * P4.5 EvidenceRenderer - renders a list of Evidence with
- * type-aware icon and a click-to-detail drawer.
+ * P4.5 EvidenceRenderer - 渲染 Evidence 列表，点开右侧非模态详情浮层。
+ * 详情统一走 P0 的 SheetDetail（456px / mask=false / Esc 关闭）。
  */
 export function EvidenceRenderer({ evidenceList, emptyText }: EvidenceRendererProps) {
   const [activeEvidence, setActiveEvidence] = useState<Evidence | null>(null);
 
   if (evidenceList.length === 0) {
-    return <Empty description={emptyText || 'No evidence yet'} />;
+    return (
+      <EmptyState
+        illustration="no-content"
+        title={emptyText || '暂无证据'}
+        desc="回答引用的证据会在生成过程中逐条出现。"
+      />
+    );
   }
-
-  const iconFor = (type: Evidence['type']) => {
-    switch (type) {
-      case 'ONTOLOGY_OBJECT':
-      case 'ONTOLOGY_METRIC':
-      case 'ONTOLOGY_RELATION':
-        return <Database size={16} style={{ color: 'var(--semi-color-primary)' }} />;
-      case 'DOCUMENT':
-      case 'KB_CHUNK':
-        return <FileText size={16} style={{ color: 'var(--semi-color-success)' }} />;
-      case 'EXTERNAL':
-      case 'MODEL_DERIVED':
-        return <Link size={16} style={{ color: 'var(--semi-color-violet)' }} />;
-    }
-  };
 
   return (
     <>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div className="mp-evidence-list">
         {evidenceList.map((e) => (
-          <Card key={e.evidenceId} style={{ cursor: 'pointer' }}>
+          <Card key={e.evidenceId} className="mp-evidence">
             <div onClick={() => setActiveEvidence(e)} data-evidence-id={e.evidenceId}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {iconFor(e.type)}
-              <Text strong style={{ flex: 1 }}>{e.ref}</Text>
-              <Tag color="grey">{e.type}</Tag>
-            </div>
-            {e.concept && (
-              <Text type="tertiary" style={{ fontSize: 12 }}>
-                {e.concept}{e.objectId ? ' / ' + e.objectId : ''}
-              </Text>
-            )}
-            {e.fragment && (
-              <Paragraph
-                type="tertiary"
-                ellipsis={{ rows: 2 }}
-                style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}
-              >
-                {e.fragment}
-              </Paragraph>
-            )}
+              <div className="mp-evidence-head">
+                <span className={`mp-evidence-icon ${iconClassFor(e.type)}`}>{iconFor(e.type)}</span>
+                <Text strong className="mp-evidence-ref">
+                  {e.ref}
+                </Text>
+                <Tag color="grey" type="light">
+                  {e.type}
+                </Tag>
+              </div>
+              {e.concept ? (
+                <Text type="tertiary" className="mp-evidence-sub">
+                  {e.concept}
+                  {e.objectId ? ` / ${e.objectId}` : ''}
+                </Text>
+              ) : null}
+              {e.fragment ? (
+                <Paragraph type="tertiary" ellipsis={{ rows: 2 }} className="mp-evidence-fragment">
+                  {e.fragment}
+                </Paragraph>
+              ) : null}
             </div>
           </Card>
         ))}
       </div>
-      <SideSheet
-        title={activeEvidence ? 'Evidence: ' + activeEvidence.evidenceId : ''}
-        visible={!!activeEvidence}
-        onCancel={() => setActiveEvidence(null)}
-        width={560}
+
+      <SheetDetail
+        title={activeEvidence ? `Evidence · ${activeEvidence.evidenceId}` : 'Evidence'}
+        open={activeEvidence !== null}
+        onClose={() => setActiveEvidence(null)}
+        footer={<Text type="tertiary">证据由执行链落库，只读</Text>}
       >
-        {activeEvidence && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {activeEvidence ? (
+          <div className="mp-evidence-sheet">
             <div>
-              <Text type="tertiary">Type</Text>
-              <div><Tag color="grey">{activeEvidence.type}</Tag></div>
+              <div className="mp-evidence-field-label">Type</div>
+              <Tag color="grey" type="light">
+                {activeEvidence.type}
+              </Tag>
             </div>
             <div>
-              <Text type="tertiary">Reference</Text>
-              <div><code style={{ fontSize: 13 }}>{activeEvidence.ref}</code></div>
+              <div className="mp-evidence-field-label">Reference</div>
+              <code className="mp-evidence-code">{activeEvidence.ref}</code>
             </div>
-            {activeEvidence.concept && (
+            {activeEvidence.concept ? (
               <div>
-                <Text type="tertiary">Concept / Object</Text>
-                <div><Text>{activeEvidence.concept}{activeEvidence.objectId ? ' / ' + activeEvidence.objectId : ''}</Text></div>
+                <div className="mp-evidence-field-label">Concept / Object</div>
+                <Text>
+                  {activeEvidence.concept}
+                  {activeEvidence.objectId ? ` / ${activeEvidence.objectId}` : ''}
+                </Text>
               </div>
-            )}
-            {activeEvidence.fragment && (
+            ) : null}
+            {activeEvidence.fragment ? (
               <div>
-                <Text type="tertiary">Fragment</Text>
-                <Paragraph copyable style={{ background: 'var(--muted)', padding: 8, borderRadius: 4 }}>
+                <div className="mp-evidence-field-label">Fragment</div>
+                <Paragraph copyable className="mp-evidence-fragment-box">
                   {activeEvidence.fragment}
                 </Paragraph>
               </div>
-            )}
+            ) : null}
             <div>
-              <Text type="tertiary">Captured at</Text>
-              <div><Text>{activeEvidence.capturedAt}</Text></div>
+              <div className="mp-evidence-field-label">Captured at</div>
+              <Text>{activeEvidence.capturedAt}</Text>
             </div>
             <div>
-              <Text type="tertiary">Envelope</Text>
-              <div><code style={{ fontSize: 13 }}>{activeEvidence.envelopeId}</code></div>
+              <div className="mp-evidence-field-label">Envelope</div>
+              <code className="mp-evidence-code">{activeEvidence.envelopeId}</code>
             </div>
-            {activeEvidence.toolCallId && (
+            {activeEvidence.toolCallId ? (
               <div>
-                <Text type="tertiary">Tool call</Text>
-                <div><code style={{ fontSize: 13 }}>{activeEvidence.toolCallId}</code></div>
+                <div className="mp-evidence-field-label">Tool call</div>
+                <code className="mp-evidence-code">{activeEvidence.toolCallId}</code>
               </div>
-            )}
+            ) : null}
           </div>
-        )}
-      </SideSheet>
+        ) : null}
+      </SheetDetail>
     </>
   );
 }

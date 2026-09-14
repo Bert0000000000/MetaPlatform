@@ -1,21 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { Card, Space, Typography, Tag } from '@douyinfe/semi-ui';
+import { Tag } from '@douyinfe/semi-ui';
 import { InteractionContextProvider } from '@/api/superai/types';
+import { PageHeader } from '@/components/skeleton';
 import AgentChatPanelImpl from './components/AgentChatPanel';
 
-const { Title, Text } = Typography;
-
 /**
- * P4.2 AgentCopilotPage - dedicated page for ontology-native Agent Run.
+ * P4.2 AgentCopilotPage - ontology-native Agent Run 的独立页。
  *
- * <p>Wired into the SuperAI sidebar; reads optional ?concept=Customer&objectId=CUST-10086
- * query params to seed the InteractionContext subject.</p>
+ * 版式：PageHeader（标题 + 说明 + 主体标签）+ AgentChatPanel。
+ * 保留原数据接线：读取 ?concept=&objectId= 作为 InteractionContext 的 subject。
  */
 export default function AgentCopilotPage() {
   const [params] = useSearchParams();
   const location = useLocation();
-  const [subject, setSubject] = useState<{ conceptCode: string; objectId: string } | undefined>(undefined);
+  const [subject, setSubject] = useState<{ conceptCode: string; objectId: string } | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
     const concept = params.get('concept');
@@ -32,22 +33,18 @@ export default function AgentCopilotPage() {
       pageUrl="/agent-copilot"
       initialSubject={subject}
     >
-      <div style={{ padding: 16, flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <Space>
-          <Title heading={4} style={{ margin: 0 }}>Object Copilot</Title>
-          {subject && (
-            <Tag color="blue">
+      <PageHeader
+        title="Object Copilot"
+        desc="Stream 实时 RunEvents · Claim/Evidence 绑定 · 统一 OntologyContextEnvelope 签名"
+        actions={
+          subject ? (
+            <Tag color="blue" type="light">
               {subject.conceptCode}#{subject.objectId}
             </Tag>
-          )}
-        </Space>
-        <Text type="secondary">
-          Stream 实时 RunEvents · Claim/Evidence 绑定 · 统一 OntologyContextEnvelope 签名
-        </Text>
-        <div style={{ flex: 1, minHeight: 0 }}>
-          <AgentChatPanelImpl placeholder="分析当前对象的最近情况，或直接问业务问题" />
-        </div>
-      </div>
+          ) : undefined
+        }
+      />
+      <AgentChatPanelImpl placeholder="分析当前对象的最近情况，或直接问业务问题" />
     </InteractionContextProvider>
   );
 }

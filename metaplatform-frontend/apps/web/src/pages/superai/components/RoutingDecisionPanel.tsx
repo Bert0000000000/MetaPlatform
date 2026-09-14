@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Card, Progress, Space, Tag, Typography } from '@douyinfe/semi-ui';
+import { Card, Progress, Tag, Typography } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { IconChevronDown, IconChevronRight, IconRoute } from '@douyinfe/semi-icons';
 import type { RoutingDecision, RoutingTakenPath } from '@/api/superai/types';
@@ -53,13 +53,15 @@ export function RoutingDecisionPanel({ decision, streamError, defaultExpanded = 
   if (streamError) {
     return (
       <Card data-testid="routing-decision-panel">
-        <Text strong style={{ fontSize: 13 }}>路由决策</Text>
-        <Paragraph type="danger" style={{ fontSize: 12, margin: '8px 0 0' }}>
-          {streamError}
-        </Paragraph>
-        <Text type="tertiary" style={{ fontSize: 12 }}>
-          本次路由轨迹未展示，也不会允许手动选择角色。
-        </Text>
+        <div className="mp-evidence-list">
+          <Text strong>路由决策</Text>
+          <Paragraph type="danger" className="mp-evidence-fragment">
+            {streamError}
+          </Paragraph>
+          <Text type="tertiary" className="mp-evidence-sub">
+            本次路由轨迹未展示，也不会允许手动选择角色。
+          </Text>
+        </div>
       </Card>
     );
   }
@@ -75,39 +77,25 @@ export function RoutingDecisionPanel({ decision, streamError, defaultExpanded = 
   const denied = primary.outcome === 'denied';
 
   return (
-    <Card
-      data-testid="routing-decision-panel"
-      style={{
-        marginTop: 8,
-        border: '1px solid var(--semi-color-border, var(--border))',
-        background: 'var(--semi-color-fill-0, var(--muted))',
-      }}
-      bodyStyle={{ padding: expanded ? 12 : 8 }}
-      headerStyle={{ padding: expanded ? '8px 12px' : '4px 12px' }}
-      header={
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
+    <Card data-testid="routing-decision-panel">
+      <div className="mp-exec-col">
+        <div
+          role="button"
+          tabIndex={0}
           aria-expanded={expanded}
           data-testid="routing-decision-toggle"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            width: '100%',
-            padding: 0,
-            margin: 0,
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            color: 'inherit',
-            font: 'inherit',
-            textAlign: 'left',
+          className="mp-exec-step-head mp-claim-ref"
+          onClick={() => setExpanded((v) => !v)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              setExpanded((v) => !v);
+            }
           }}
         >
           {expanded ? <IconChevronDown size="small" /> : <IconChevronRight size="small" />}
-          <IconRoute size="small" style={{ color: 'var(--semi-color-primary)' }} />
-          <Text strong style={{ fontSize: 13 }}>路由决策</Text>
+          <IconRoute size="small" className="mp-evidence-icon is-ontology" />
+          <Text strong>路由决策</Text>
           <Tag color="grey" size="small">{totalCandidates} candidates</Tag>
           {selectedRoleSlug && (
             <Tag color="blue" size="small">→ {selectedCandidate?.display_name ?? '已授权角色'}</Tag>
@@ -119,93 +107,72 @@ export function RoutingDecisionPanel({ decision, streamError, defaultExpanded = 
           {decisions.length > 1 && (
             <Tag color="cyan" size="small">{decisions.length} events</Tag>
           )}
-        </button>
-      }
-    >
-      {expanded && (
-        <div data-testid="routing-decision-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Candidates list */}
-          <Space vertical spacing={6} style={{ width: '100%' }}>
-            {primary.candidates.length === 0 && (
-              <Text type="tertiary" style={{ fontSize: 12 }}>无候选角色</Text>
-            )}
-            {primary.candidates.map((c, idx) => {
-              const isSelected = !!selectedRoleSlug && c.role_slug === selectedRoleSlug;
-              const pct = clampPercent(c.similarity);
-              return (
-                <div
-                  key={`${c.role_slug}-${idx}`}
-                  data-testid={`routing-candidate-${idx}`}
-                  style={{
-                    padding: '6px 10px',
-                    border: isSelected
-                      ? '2px solid var(--semi-color-primary)'
-                      : '1px solid var(--semi-color-border, var(--border))',
-                    borderRadius: 6,
-                    background: isSelected
-                      ? 'var(--semi-color-primary-light-default, rgba(56, 125, 255, 0.08))'
-                      : 'transparent',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 4,
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Text strong style={{ fontSize: 13 }}>{c.display_name}</Text>
-                    {isSelected && <Tag color="blue" size="small">SELECTED</Tag>}
-                    <Text type="tertiary" style={{ fontSize: 12, marginLeft: 'auto' }}>
-                      {(pct).toFixed(1)}%
-                    </Text>
-                  </div>
-                  <Progress percent={pct} size="small" showInfo={false} />
-                </div>
-              );
-            })}
-          </Space>
-
-          {/* Taken path + reason */}
-          {(takenPath || primary.reason) && (
-            <div
-              style={{
-                paddingTop: 8,
-                borderTop: '1px dashed var(--semi-color-border, var(--border))',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 4,
-              }}
-            >
-              {takenPath && (
-                <Space spacing={6}>
-                  <Text type="tertiary" style={{ fontSize: 12 }}>来源:</Text>
-                  <Tag color={takenPathColor(takenPath)} size="small">{takenPathLabel(takenPath)}</Tag>
-                </Space>
-              )}
-              {primary.outcome === 'denied' && (
-                <Text type="danger" style={{ fontSize: 12 }}>此轮请求未执行任何调度。</Text>
-              )}
-              {routingSummary(primary) && (
-                <Paragraph
-                  type="tertiary"
-                  style={{ fontSize: 12, marginBottom: 0 }}
-                >
-                  {routingSummary(primary)}
-                </Paragraph>
-              )}
-              {primary.policy_version && (
-                <Text type="tertiary" style={{ fontSize: 11 }}>
-                  策略版本: {primary.policy_version}
-                </Text>
-              )}
-            </div>
-          )}
-
-          {decisions.length > 1 && (
-            <Text type="tertiary" style={{ fontSize: 11 }}>
-              共收到 {decisions.length} 个 routing_decision 事件（pre-screen + 决策回填）
-            </Text>
-          )}
         </div>
-      )}
+
+        {expanded && (
+          <div data-testid="routing-decision-body" className="mp-exec-col">
+            {/* Candidates list */}
+            <div className="mp-evidence-list">
+              {primary.candidates.length === 0 && (
+                <Text type="tertiary" className="mp-evidence-sub">无候选角色</Text>
+              )}
+              {primary.candidates.map((c, idx) => {
+                const isSelected = !!selectedRoleSlug && c.role_slug === selectedRoleSlug;
+                const pct = clampPercent(c.similarity);
+                return (
+                  <div
+                    key={`${c.role_slug}-${idx}`}
+                    data-testid={`routing-candidate-${idx}`}
+                    className="mp-claim"
+                  >
+                    <div className="mp-claim-main">
+                      <div className="mp-exec-line">
+                        <span className="mp-exec-chips">
+                          <Text strong>{c.display_name}</Text>
+                          {isSelected && <Tag color="blue" size="small">SELECTED</Tag>}
+                        </span>
+                        <Text type="tertiary">{(pct).toFixed(1)}%</Text>
+                      </div>
+                      <Progress percent={pct} size="small" showInfo={false} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Taken path + reason */}
+            {(takenPath || primary.reason) && (
+              <div className="mp-evidence-list">
+                {takenPath && (
+                  <div className="mp-exec-chips">
+                    <Text type="tertiary" className="mp-evidence-sub">来源:</Text>
+                    <Tag color={takenPathColor(takenPath)} size="small">{takenPathLabel(takenPath)}</Tag>
+                  </div>
+                )}
+                {primary.outcome === 'denied' && (
+                  <Text type="danger" className="mp-evidence-sub">此轮请求未执行任何调度。</Text>
+                )}
+                {routingSummary(primary) && (
+                  <Paragraph type="tertiary" className="mp-evidence-fragment">
+                    {routingSummary(primary)}
+                  </Paragraph>
+                )}
+                {primary.policy_version && (
+                  <Text type="tertiary" className="mp-evidence-sub">
+                    策略版本: {primary.policy_version}
+                  </Text>
+                )}
+              </div>
+            )}
+
+            {decisions.length > 1 && (
+              <Text type="tertiary" className="mp-evidence-sub">
+                共收到 {decisions.length} 个 routing_decision 事件（pre-screen + 决策回填）
+              </Text>
+            )}
+          </div>
+        )}
+      </div>
     </Card>
   );
 }

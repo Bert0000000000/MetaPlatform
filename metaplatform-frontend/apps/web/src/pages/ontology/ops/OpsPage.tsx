@@ -197,7 +197,7 @@ export default function OpsPage() {
             },
             {
               title: '状态',
-              dataIndex: 'last_error',
+              dataIndex: '__health__',
               width: 140,
               render: (v: string | undefined) =>
                 v ? (
@@ -235,7 +235,7 @@ export default function OpsPage() {
           columns={[
             {
               title: '对象类型',
-              dataIndex: 'rid',
+              dataIndex: '__label__',
               width: 260,
               ellipsis: true,
               render: (v: string) => <span className="mp-onto-strong">{ridTail(v)}</span>,

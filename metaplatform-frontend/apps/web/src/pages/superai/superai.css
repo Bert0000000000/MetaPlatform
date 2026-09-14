@@ -1,0 +1,284 @@
+/*
+ * SuperAI 域共享样式（D 骨架流程详情 + E 骨架列表页）。
+ */
+
+/* ---------- 执行计划：状态四卡 ---------- */
+.mp-exec-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--mp-space-3);
+  margin-bottom: var(--mp-space-4);
+}
+
+@media (max-width: 1180px) {
+  .mp-exec-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.mp-exec-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+  min-width: 0;
+}
+
+.mp-exec-kpi-label {
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+}
+
+.mp-exec-kpi-value {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--semi-color-text-0);
+}
+
+.mp-exec-kpi-state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.mp-exec-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--semi-color-text-3);
+}
+
+.mp-exec-dot.is-running {
+  background: var(--semi-color-primary);
+}
+
+.mp-exec-dot.is-done {
+  background: var(--semi-color-success);
+}
+
+.mp-exec-dot.is-failed {
+  background: var(--semi-color-danger);
+}
+
+/* ---------- 主列 / 侧列 ---------- */
+.mp-exec-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: var(--mp-space-4);
+  align-items: start;
+}
+
+@media (max-width: 1180px) {
+  .mp-exec-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.mp-exec-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
+  min-width: 0;
+}
+
+/* 步骤行：标题 + 状态 + 动作 */
+.mp-exec-step-head {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  flex-wrap: wrap;
+}
+
+.mp-exec-step-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+}
+
+.mp-exec-step-body {
+  font-size: 12.5px;
+  color: var(--semi-color-text-2);
+  margin-top: var(--mp-space-1);
+}
+
+.mp-exec-step-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+  margin-top: var(--mp-space-2);
+}
+
+.mp-exec-chips {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+  flex-wrap: wrap;
+}
+
+.mp-exec-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mp-space-3);
+  font-size: 12.5px;
+}
+
+.mp-exec-line-label {
+  color: var(--semi-color-text-3);
+}
+
+.mp-exec-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mp-space-8);
+}
+
+/* 意图输入行 */
+.mp-exec-intent {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--mp-space-3);
+}
+
+.mp-exec-intent-input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- Claim / Evidence 渲染器（AgentChatPanel 用） ---------- */
+.mp-claim {
+  display: flex;
+  gap: var(--mp-space-2);
+  padding: var(--mp-space-2) var(--mp-space-3);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-fill-0);
+  margin-bottom: var(--mp-space-2);
+}
+
+.mp-claim-icon {
+  flex: none;
+  padding-top: 2px;
+  display: inline-flex;
+}
+
+.mp-claim-icon.is-fact {
+  color: var(--semi-color-success);
+}
+
+.mp-claim-icon.is-inference {
+  color: var(--semi-color-primary);
+}
+
+.mp-claim-icon.is-recommendation {
+  color: var(--semi-color-warning);
+}
+
+.mp-claim-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.mp-claim-head {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  margin-bottom: var(--mp-space-1);
+}
+
+.mp-claim-conf {
+  font-size: 12px;
+}
+
+.mp-claim-refs {
+  margin-top: var(--mp-space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+  flex-wrap: wrap;
+}
+
+.mp-claim-ref {
+  cursor: pointer;
+}
+
+.mp-claim-ref.is-static {
+  cursor: default;
+}
+
+.mp-evidence-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+}
+
+.mp-evidence {
+  cursor: pointer;
+}
+
+.mp-evidence-head {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+}
+
+.mp-evidence-icon {
+  display: inline-flex;
+}
+
+.mp-evidence-icon.is-ontology {
+  color: var(--semi-color-primary);
+}
+
+.mp-evidence-icon.is-document {
+  color: var(--semi-color-success);
+}
+
+.mp-evidence-icon.is-external {
+  color: var(--semi-color-purple);
+}
+
+.mp-evidence-ref {
+  flex: 1;
+  min-width: 0;
+}
+
+.mp-evidence-sub {
+  font-size: 12px;
+}
+
+.mp-evidence-fragment {
+  font-size: 12px;
+  margin: var(--mp-space-1) 0 0;
+}
+
+.mp-evidence-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-3);
+}
+
+.mp-evidence-field-label {
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+}
+
+.mp-evidence-code {
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+
+.mp-evidence-fragment-box {
+  background: var(--semi-color-fill-0);
+  padding: var(--mp-space-2);
+  border-radius: var(--semi-border-radius-medium);
+  margin: 0;
+}

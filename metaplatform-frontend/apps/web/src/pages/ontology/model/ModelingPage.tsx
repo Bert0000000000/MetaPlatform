@@ -238,7 +238,7 @@ export default function ModelingPage() {
           columns={[
             {
               title: '关系',
-              dataIndex: 'rid',
+              dataIndex: '__label__',
               width: 200,
               ellipsis: true,
               render: (v: string) => <span className="mp-onto-strong">{ridTail(v)}</span>,
@@ -321,7 +321,7 @@ export default function ModelingPage() {
           columns={[
             {
               title: '函数',
-              dataIndex: 'rid',
+              dataIndex: '__label__',
               width: 240,
               ellipsis: true,
               render: (v: string) => <span className="mp-onto-strong">{ridTail(v)}</span>,
@@ -353,7 +353,7 @@ export default function ModelingPage() {
           columns={[
             {
               title: '接口',
-              dataIndex: 'rid',
+              dataIndex: '__label__',
               width: 260,
               ellipsis: true,
               render: (v: string) => <span className="mp-onto-strong">{ridTail(v)}</span>,

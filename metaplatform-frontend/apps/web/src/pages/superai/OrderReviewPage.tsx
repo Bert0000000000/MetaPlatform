@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Empty, Space, Steps, Table, Tag, Toast, Typography } from '@douyinfe/semi-ui';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Banner, Button, Card, Space, Steps, Tag, Toast, Typography } from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import { CheckCircle2, ClipboardCheck, RefreshCw, Sparkles, XCircle } from 'lucide-react';
-import { PageRoot } from '@mate/shared';
 import {
   confirmActionProposal,
   createReviewCase,
@@ -13,6 +13,7 @@ import {
   type ActionResult,
   type ReviewOrder,
 } from '@/api/superai/orderReview';
+import { DataTablePro, EmptyState, PageHeader } from '@/components/skeleton';
 import OrderReviewEvidence from '@/pages/superai/components/OrderReviewEvidence';
 
 function formatAmount(amountCents: number): string {
@@ -24,23 +25,34 @@ function statusLabel(status: ReviewOrder['review_status']): string {
   return status === 'pending' ? '待复核' : status;
 }
 
+/**
+ * SuperAI · 订单复核（app 入口 /apps/order-review）。
+ *
+ * 数据面沿用 src/api/superai/orderReview：listHighValueUnpaid 列高价值未支付订单，
+ * createReviewCase 生成 evidence 建议，confirm/reject 走 Action + 幂等键。
+ * 这里是真实 HITL 链路：没有 evidence 快照或证据非 complete 时不允许确认执行。
+ */
 export default function OrderReviewPage() {
   const [orders, setOrders] = useState<ReviewOrder[]>([]);
   const [thresholdCents, setThresholdCents] = useState<number>();
   const [selectedOrderId, setSelectedOrderId] = useState<string>();
   const [proposal, setProposal] = useState<ActionProposal>();
   const [result, setResult] = useState<ActionResult>();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
-  const [error, setError] = useState<string>();
+  const [loadError, setLoadError] = useState('');
+  const [actionError, setActionError] = useState('');
 
   const selectedOrder = useMemo(
     () => orders.find((order) => order.order_id === selectedOrderId),
     [orders, selectedOrderId],
   );
-  const canConfirmProposal = proposal?.status === 'pending'
-    && proposal.evidence?.status === 'complete'
-    && proposal.evidence.recommendation.requires_confirmation === true;
+
+  const canConfirmProposal =
+    proposal?.status === 'pending' &&
+    proposal.evidence?.status === 'complete' &&
+    proposal.evidence.recommendation.requires_confirmation === true;
+
   const confirmationMessage = !proposal
     ? undefined
     : !proposal.evidence
@@ -51,51 +63,50 @@ export default function OrderReviewPage() {
           ? '当前建议不允许人工确认执行。'
           : undefined;
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     setLoading(true);
-    setError(undefined);
+    setLoadError('');
     try {
       const response = await listHighValueUnpaid();
-      const { items } = response;
-      setOrders(items);
+      setOrders(response.items ?? []);
       setThresholdCents(response.threshold_cents);
-      if (!selectedOrderId && items[0]) setSelectedOrderId(items[0].order_id);
+      setSelectedOrderId((prev) => prev ?? response.items?.[0]?.order_id);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '订单加载失败');
+      setOrders([]);
+      setLoadError(cause instanceof Error ? cause.message : '订单加载失败');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void loadOrders();
-  }, []);
+  }, [loadOrders]);
 
-  const generateSuggestion = async (order: ReviewOrder) => {
+  const generateSuggestion = useCallback(async (order: ReviewOrder) => {
     setWorking(true);
-    setError(undefined);
+    setActionError('');
     setResult(undefined);
     try {
       const created = await createReviewCase({
         orderId: order.order_id,
-        suggestion: {
-          action: 'follow_up_payment',
-        },
+        suggestion: { action: 'follow_up_payment' },
         sourceRefs: [],
       });
       setProposal(await getActionProposalWithCreatedEvidence(created.proposal_id, created.evidence));
       Toast.success('复核建议已生成，等待人工确认');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '复核建议生成失败');
+      setActionError(cause instanceof Error ? cause.message : '复核建议生成失败');
+      Toast.error('复核建议生成失败');
     } finally {
       setWorking(false);
     }
-  };
+  }, []);
 
-  const confirm = async () => {
+  const confirm = useCallback(async () => {
     if (!proposal) return;
     setWorking(true);
-    setError(undefined);
+    setActionError('');
     try {
       const actionResult = await confirmActionProposal(
         proposal.proposal_id,
@@ -107,16 +118,17 @@ export default function OrderReviewPage() {
       await loadOrders();
       Toast.success('已确认并创建跟进单');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '确认执行失败');
+      setActionError(cause instanceof Error ? cause.message : '确认执行失败');
+      Toast.error('确认执行失败');
     } finally {
       setWorking(false);
     }
-  };
+  }, [proposal, loadOrders]);
 
-  const reject = async () => {
+  const reject = useCallback(async () => {
     if (!proposal) return;
     setWorking(true);
-    setError(undefined);
+    setActionError('');
     try {
       const actionResult = await rejectActionProposal(
         proposal.proposal_id,
@@ -128,115 +140,184 @@ export default function OrderReviewPage() {
       setProposal(await getActionProposalWithExistingEvidence(proposal.proposal_id, proposal.evidence));
       Toast.success('已拒绝复核建议');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '拒绝操作失败');
+      setActionError(cause instanceof Error ? cause.message : '拒绝操作失败');
+      Toast.error('拒绝操作失败');
     } finally {
       setWorking(false);
     }
-  };
+  }, [proposal]);
+
+  const columns: ColumnProps<ReviewOrder>[] = useMemo(
+    () => [
+      { title: '订单号', dataIndex: 'order_id', width: 200, ellipsis: true },
+      {
+        title: '金额',
+        dataIndex: 'amount_cents',
+        width: 140,
+        render: (value: number) => formatAmount(value),
+      },
+      {
+        title: '支付状态',
+        dataIndex: 'payment_status',
+        width: 110,
+        render: () => (
+          <Tag type="light" color="orange">
+            未支付
+          </Tag>
+        ),
+      },
+      {
+        title: '复核状态',
+        dataIndex: 'review_status',
+        width: 110,
+        render: (value: ReviewOrder['review_status']) => (
+          <Tag type="light" color={value === 'approved' ? 'green' : 'orange'}>
+            {statusLabel(value)}
+          </Tag>
+        ),
+      },
+      {
+        title: '操作',
+        width: 150,
+        render: (_: unknown, order: ReviewOrder) => (
+          <Button
+            data-testid={`review-order-${order.order_id}`}
+            theme="solid"
+            type="primary"
+            size="small"
+            icon={<Sparkles size={14} strokeWidth={1.5} />}
+            loading={working && selectedOrderId === order.order_id}
+            onClick={() => {
+              setSelectedOrderId(order.order_id);
+              void generateSuggestion(order);
+            }}
+          >
+            生成复核建议
+          </Button>
+        ),
+      },
+    ],
+    [working, selectedOrderId, generateSuggestion],
+  );
 
   return (
-    <PageRoot>
-      <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div>
-          <Typography.Title heading={3} style={{ margin: 0 }}>订单复核</Typography.Title>
-          <Typography.Text type="tertiary">
-            SuperAI 基于服务端 evidence 快照生成建议，人工确认后通过 Action 更新订单并创建跟进单。
-          </Typography.Text>
-        </div>
+    <>
+      <PageHeader
+        title="订单复核"
+        desc="SuperAI 基于服务端 evidence 快照生成建议，人工确认后通过 Action 更新订单并创建跟进单。"
+        actions={
+          <Button
+            icon={<RefreshCw size={15} strokeWidth={1.5} />}
+            loading={loading}
+            onClick={() => void loadOrders()}
+          >
+            刷新
+          </Button>
+        }
+      />
 
-        {error && (
-          <div role="alert" style={{ padding: '10px 12px', color: 'var(--danger)', background: 'var(--danger-light, #fff1f2)', borderRadius: 6 }}>
-            {error}
-          </div>
-        )}
+      {loadError ? (
+        <EmptyState
+          illustration="failure"
+          title="订单加载失败"
+          desc={loadError}
+          actions={
+            <Button theme="solid" type="primary" onClick={() => void loadOrders()}>
+              重试
+            </Button>
+          }
+        />
+      ) : (
+        <>
+          <Card title="复核流程">
+            <Steps current={result ? 3 : proposal ? 2 : selectedOrder ? 1 : 0} type="basic">
+              <Steps.Step title="识别高价值未支付订单" />
+              <Steps.Step title="生成 evidence 建议" />
+              <Steps.Step title="人工确认 Action" />
+              <Steps.Step title="订单更新与跟进单" />
+            </Steps>
+          </Card>
 
-        <Card title="复核流程">
-          <Steps current={result ? 3 : proposal ? 2 : selectedOrder ? 1 : 0} type="basic">
-            <Steps.Step title="识别高价值未支付订单" />
-            <Steps.Step title="生成 evidence 建议" />
-            <Steps.Step title="人工确认 Action" />
-            <Steps.Step title="订单更新与跟进单" />
-          </Steps>
-        </Card>
+          {actionError ? <Banner type="danger" closeIcon={null} description={actionError} /> : null}
 
-        <Card
-          title={thresholdCents === undefined
-            ? '高价值未支付订单'
-            : `高价值未支付订单（≥ ${formatAmount(thresholdCents)}）`}
-          headerExtraContent={<Button icon={<RefreshCw size={14} />} loading={loading} onClick={() => void loadOrders()}>刷新</Button>}
-        >
-          {orders.length === 0 && !loading ? (
-            <Empty description="当前没有待复核订单" />
-          ) : (
-            <Table
-              rowKey="order_id"
+          <Card
+            title={
+              thresholdCents === undefined
+                ? '高价值未支付订单'
+                : `高价值未支付订单（≥ ${formatAmount(thresholdCents)}）`
+            }
+          >
+            <DataTablePro<ReviewOrder>
+              columns={columns}
               dataSource={orders}
+              rowKey="order_id"
               loading={loading}
-              pagination={false}
-              columns={[
-                { title: '订单号', dataIndex: 'order_id' },
-                { title: '金额', dataIndex: 'amount_cents', render: (value: number) => formatAmount(value) },
-                { title: '支付状态', dataIndex: 'payment_status', render: () => <Tag color="orange">未支付</Tag> },
-                { title: '复核状态', dataIndex: 'review_status', render: (value: ReviewOrder['review_status']) => <Tag color={value === 'approved' ? 'green' : 'orange'}>{statusLabel(value)}</Tag> },
-                {
-                  title: '操作',
-                  render: (_: unknown, order: ReviewOrder) => (
+              columnSettings={false}
+              empty={
+                <EmptyState
+                  illustration="no-content"
+                  title="当前没有待复核订单"
+                  desc="出现高价值未支付订单后，会在这里列出。"
+                />
+              }
+            />
+          </Card>
+
+          {proposal ? (
+            <Card
+              data-testid="review-proposal"
+              title="AI 复核建议"
+              headerExtraContent={
+                <Tag type="light" color={proposal.status === 'pending' ? 'orange' : 'green'}>
+                  {proposal.status}
+                </Tag>
+              }
+            >
+              <div className="mp-exec-col">
+                <Typography.Text strong>订单：{proposal.order_id}</Typography.Text>
+                <OrderReviewEvidence evidence={proposal.evidence} />
+                {proposal.status === 'pending' && confirmationMessage ? (
+                  <Banner type="warning" closeIcon={null} description={confirmationMessage} />
+                ) : null}
+                <Typography.Text type="tertiary">proposal_id：{proposal.proposal_id}</Typography.Text>
+                {proposal.status === 'pending' ? (
+                  <div className="mp-exec-step-actions">
                     <Button
-                      data-testid={`review-order-${order.order_id}`}
                       theme="solid"
                       type="primary"
-                      icon={<Sparkles size={14} />}
-                      loading={working && selectedOrderId === order.order_id}
-                      onClick={() => { setSelectedOrderId(order.order_id); void generateSuggestion(order); }}
+                      icon={<CheckCircle2 size={14} strokeWidth={1.5} />}
+                      loading={working}
+                      disabled={!canConfirmProposal}
+                      onClick={() => void confirm()}
                     >
-                      生成复核建议
+                      确认执行
                     </Button>
-                  ),
-                },
-              ]}
-            />
-          )}
-        </Card>
+                    <Button
+                      type="danger"
+                      icon={<XCircle size={14} strokeWidth={1.5} />}
+                      loading={working}
+                      onClick={() => void reject()}
+                    >
+                      拒绝建议
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            </Card>
+          ) : null}
 
-        {proposal && (
-          <Card data-testid="review-proposal" title="AI 复核建议" headerExtraContent={<Tag color={proposal.status === 'pending' ? 'orange' : 'green'}>{proposal.status}</Tag>}>
-            <Space vertical align="start" style={{ width: '100%' }}>
-              <Typography.Text strong>订单：{proposal.order_id}</Typography.Text>
-              <OrderReviewEvidence evidence={proposal.evidence} />
-              {proposal.status === 'pending' && confirmationMessage && <Typography.Text type="danger">{confirmationMessage}</Typography.Text>}
-              <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
-                proposal_id：{proposal.proposal_id}
-              </Typography.Text>
-              {proposal.status === 'pending' && (
-                <Space>
-                  <Button
-                    theme="solid"
-                    type="primary"
-                    icon={<CheckCircle2 size={14} />}
-                    loading={working}
-                    disabled={!canConfirmProposal}
-                    onClick={() => void confirm()}
-                  >
-                    确认执行
-                  </Button>
-                  <Button type="danger" icon={<XCircle size={14} />} loading={working} onClick={() => void reject()}>
-                    拒绝建议
-                  </Button>
-                </Space>
-              )}
-            </Space>
-          </Card>
-        )}
-
-        {result?.status === 'confirmed' && (
-          <Card data-testid="review-result" title="Action 执行结果">
-            <Space>
-              <ClipboardCheck size={18} color="var(--success)" />
-              <Typography.Text>订单已更新为已批准，版本 {result.order_version}；跟进单：{result.follow_up_task_id}</Typography.Text>
-            </Space>
-          </Card>
-        )}
-      </div>
-    </PageRoot>
+          {result?.status === 'confirmed' ? (
+            <Card data-testid="review-result" title="Action 执行结果">
+              <Space>
+                <ClipboardCheck size={18} strokeWidth={1.5} color="var(--semi-color-success)" />
+                <Typography.Text>
+                  订单已更新为已批准，版本 {result.order_version}；跟进单：{result.follow_up_task_id}
+                </Typography.Text>
+              </Space>
+            </Card>
+          ) : null}
+        </>
+      )}
+    </>
   );
 }

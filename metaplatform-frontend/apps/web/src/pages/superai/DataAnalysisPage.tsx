@@ -1,28 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Card,
-  Empty,
   List,
   Select,
-  Space,
   Spin,
-  Table,
-  Tag,
   Tabs,
   TabPane,
-  Typography,
+  Tag,
   Toast,
+  Typography,
 } from '@douyinfe/semi-ui';
-import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
-import {
-  PlayCircleOutlined,
-  FileExcelOutlined,
-  FileTextOutlined,
-  BranchesOutlined,
-  HistoryOutlined,
-  CloudDownloadOutlined,
-} from '@ant-design/icons';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
+import { History, Play, RefreshCw, Route } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import {
   executeQuery,
@@ -38,7 +28,7 @@ import type {
   QueryExecuteResult,
   QueryHistoryItem,
 } from '@/api/superai/types';
-import { PageRoot } from '@mate/shared';
+import { DataTablePro, EmptyState, FilterBar, PageHeader } from '@/components/skeleton';
 
 const { Text } = Typography;
 
@@ -54,7 +44,7 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 function formatTime(value?: string) {
-  if (!value) return '-';
+  if (!value) return '—';
   try {
     return new Date(value).toLocaleString('zh-CN');
   } catch {
@@ -62,6 +52,39 @@ function formatTime(value?: string) {
   }
 }
 
+function renderPlan(value: unknown): React.ReactNode {
+  if (value === null || value === undefined) return <Text type="secondary">null</Text>;
+  if (typeof value !== 'object') return <Text>{String(value)}</Text>;
+  if (Array.isArray(value)) {
+    if (value.length === 0) return <Text type="secondary">[]</Text>;
+    return (
+      <div>
+        {value.map((item, idx) => (
+          <div key={idx}>
+            <Tag type="light">[{idx}]</Tag> {renderPlan(item)}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div>
+      {Object.entries(value as Record<string, unknown>).map(([k, v]) => (
+        <div key={k}>
+          <Text strong>{k}:</Text> {typeof v === 'object' ? renderPlan(v) : String(v)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * SuperAI · 数据分析。
+ *
+ * 数据面沿用 src/api/superai/data：listDataSources / executeQuery / getExecutionPlan /
+ * exportQueryResult / listQueryHistory。SQL 编辑器走 Monaco；结果与执行计划分 tab；
+ * 右侧分析历史可恢复。页级加载失败 → EmptyState failure，执行/导出等动作失败 → Toast.error。
+ */
 export default function DataAnalysisPage() {
   const [dataSources, setDataSources] = useState<DataSource[]>([]);
   const [selectedDataSource, setSelectedDataSource] = useState<string>('');
@@ -71,40 +94,48 @@ export default function DataAnalysisPage() {
   const [plan, setPlan] = useState<ExecutionPlan | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
   const [history, setHistory] = useState<QueryHistoryItem[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState('');
   const [activeTab, setActiveTab] = useState('result');
+  const [dsLoading, setDsLoading] = useState(true);
+  const [dsError, setDsError] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const loadDataSources = async () => {
+  const loadDataSources = useCallback(async () => {
+    setDsLoading(true);
+    setDsError('');
     try {
       const items = await listDataSources();
       setDataSources(items);
-      if (items.length > 0 && !selectedDataSource) {
-        setSelectedDataSource(items[0].id);
-      }
-    } catch (err) {
-      Toast.error('加载数据源失败');
+      setSelectedDataSource((prev) => prev || items[0]?.id || '');
+    } catch (e) {
+      setDataSources([]);
+      setDsError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDsLoading(false);
     }
-  };
+  }, []);
 
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     setHistoryLoading(true);
+    setHistoryError('');
     try {
-      const items = await listQueryHistory();
-      setHistory(items);
-    } catch (err) {
-      Toast.error('加载分析历史失败');
+      setHistory(await listQueryHistory());
+    } catch (e) {
+      setHistory([]);
+      setHistoryError(e instanceof Error ? e.message : String(e));
     } finally {
       setHistoryLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadDataSources();
-    loadHistory();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleExecute = async () => {
+  useEffect(() => {
+    void loadDataSources();
+    void loadHistory();
+  }, [loadDataSources, loadHistory]);
+
+  const handleExecute = useCallback(async () => {
     if (!selectedDataSource) {
       Toast.warning('请先选择数据源');
       return;
@@ -120,53 +151,56 @@ export default function DataAnalysisPage() {
       const res = await executeQuery({ dataSourceId: selectedDataSource, sql });
       setResult(res);
       setActiveTab('result');
-      loadHistory();
-    } catch (err) {
-      // 错误已由 client 拦截器提示
+      setPage(1);
+      void loadHistory();
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : '查询执行失败');
     } finally {
       setExecuting(false);
     }
-  };
+  }, [selectedDataSource, sql, loadHistory]);
 
-  const handleShowPlan = async () => {
+  const handleShowPlan = useCallback(async () => {
     if (!result?.queryId) {
       Toast.warning('请先执行查询');
       return;
     }
     setPlanLoading(true);
     try {
-      const res = await getExecutionPlan(result.queryId);
-      setPlan(res);
+      setPlan(await getExecutionPlan(result.queryId));
       setActiveTab('plan');
-    } catch (err) {
-      // 错误已由 client 拦截器提示
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : '执行计划获取失败');
     } finally {
       setPlanLoading(false);
     }
-  };
+  }, [result]);
 
-  const handleExport = async (format: ExportFormat) => {
-    if (!result?.queryId) {
-      Toast.warning('请先执行查询');
-      return;
-    }
-    try {
-      const blob = await exportQueryResult(result.queryId, format);
-      const ext = format === 'excel' ? 'xlsx' : format;
-      downloadBlob(blob, `query-${result.queryId}.${ext}`);
-    } catch (err) {
-      Toast.error('导出失败');
-    }
-  };
+  const handleExport = useCallback(
+    async (format: ExportFormat) => {
+      if (!result?.queryId) {
+        Toast.warning('请先执行查询');
+        return;
+      }
+      try {
+        const blob = await exportQueryResult(result.queryId, format);
+        const ext = format === 'excel' ? 'xlsx' : format;
+        downloadBlob(blob, `query-${result.queryId}.${ext}`);
+      } catch (e) {
+        Toast.error(e instanceof Error ? e.message : '导出失败');
+      }
+    },
+    [result],
+  );
 
-  const handleRestoreHistory = (item: QueryHistoryItem) => {
+  const handleRestoreHistory = useCallback((item: QueryHistoryItem) => {
     setSelectedDataSource(item.dataSourceId);
     setSql(item.sql);
     setResult(null);
     setPlan(null);
-  };
+  }, []);
 
-  const resultColumns = useMemo(() => {
+  const resultColumns: ColumnProps<Record<string, unknown>>[] = useMemo(() => {
     if (!result) return [];
     return result.columns.map((col) => ({
       title: col,
@@ -176,230 +210,267 @@ export default function DataAnalysisPage() {
     }));
   }, [result]);
 
-  const renderPlan = (value: unknown, depth = 0): React.ReactNode => {
-    if (value === null || value === undefined) {
-      return <Text type="secondary">null</Text>;
-    }
-    if (typeof value !== 'object') {
-      return <Text>{String(value)}</Text>;
-    }
-    if (Array.isArray(value)) {
-      return (
-        <div style={{ paddingLeft: depth * 12 }}>
-          {value.length === 0 ? (
-            <Text type="secondary">[]</Text>
-          ) : (
-            value.map((item, idx) => (
-              <div key={idx} style={{ marginBottom: 4 }}>
-                <Tag>[{idx}]</Tag>
-                {renderPlan(item, depth + 1)}
-              </div>
-            ))
-          )}
-        </div>
-      );
-    }
-    return (
-      <div style={{ paddingLeft: depth * 12 }}>
-        {Object.entries(value as Record<string, unknown>).map(([k, v]) => (
-          <div key={k} style={{ marginBottom: 4 }}>
-            <Text strong>{k}:</Text>{' '}
-            {typeof v === 'object' ? renderPlan(v, depth + 1) : String(v)}
-          </div>
-        ))}
-      </div>
-    );
-  };
+  const resultRows = useMemo(() => {
+    if (!result) return [];
+    return result.rows.map((r, i) => ({ ...r, __rowKey: String(i) }));
+  }, [result]);
 
-  return (
-    <PageRoot>
-      <div style={{ display: 'flex', gap: 16, flex: 1, minHeight: 0 }}>
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <Card>
-          <Space vertical spacing="medium" style={{ width: '100%' }}>
-            <Row gutter={16} align="middle">
-              <Col style={{ flex: 'auto' }}>
-                <Space>
-                  <DatabaseIcon />
-                  <Text strong>数据源</Text>
-                  <Select
-                    style={{ minWidth: 240 }}
-                    placeholder="选择数据源"
-                    value={selectedDataSource || undefined}
-                    onChange={(v) => setSelectedDataSource(v as string)}
-                    optionList={dataSources.map((ds) => ({
-                      label: `${ds.name} (${ds.sourceType})`,
-                      value: ds.id,
-                    }))}
-                  />
-                </Space>
-              </Col>
-              <Col style={{ flexShrink: 0 }}>
-                <Space>
-                  <Button
-                    theme="solid"
-                    type="primary"
-                    icon={<PlayCircleOutlined />}
-                    loading={executing}
-                    onClick={handleExecute}
-                  >
-                    执行 SQL
-                  </Button>
-                  <Button icon={<BranchesOutlined />} loading={planLoading} onClick={handleShowPlan}>
-                    执行计划
-                  </Button>
-                </Space>
-              </Col>
-            </Row>
-
-            <div
-              style={{
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--radius)',
-                overflow: 'hidden',
-              }}
-            >
-              <Editor
-                height={280}
-                language="sql"
-                value={sql}
-                theme="vs"
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 13,
-                  automaticLayout: true,
-                  scrollBeyondLastLine: false,
-                }}
-                onChange={(value) => setSql(value || '')}
-              />
-            </div>
-
-            <Space>
-              <Text type="secondary">导出结果：</Text>
-              <Button icon={<FileTextOutlined />} size="small" onClick={() => handleExport('csv')}>
-                CSV
-              </Button>
-              <Button icon={<FileExcelOutlined />} size="small" onClick={() => handleExport('excel')}>
-                Excel
-              </Button>
-              <Button icon={<CloudDownloadOutlined />} size="small" onClick={() => handleExport('json')}>
-                JSON
-              </Button>
-            </Space>
-          </Space>
-        </Card>
-
-        <Card style={{ flex: 1, minHeight: 0 }}>
-          <Tabs
-            activeKey={activeTab}
-            onChange={setActiveTab}
-            size="small"
-            tabList={[
-              { itemKey: 'result', tab: '查询结果' },
-              { itemKey: 'plan', tab: '执行计划' },
-            ]}
-          >
-            <TabPane itemKey="result">
-              {result ? (
-                <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <Space style={{ marginBottom: 8 }}>
-                    <Tag color="blue">{result.rowCount} 行</Tag>
-                    <Tag>{result.executionTime} ms</Tag>
-                  </Space>
-                  <Table
-                    dataSource={result.rows.map((r, i) => ({ ...r, __rowKey: String(i) }))}
-                    columns={resultColumns}
-                    rowKey="__rowKey"
-                    pagination={{ pageSize: 10 }}
-                    scroll={{ x: 'max-content' }}
-                  />
-                </div>
-              ) : (
-                <Empty description="执行 SQL 后查看结果" />
-              )}
-            </TabPane>
-            <TabPane itemKey="plan">
-              {plan ? (
-                <div
-                  style={{
-                    maxHeight: 480,
-                    overflow: 'auto',
-                    background: 'var(--muted)',
-                    padding: 12,
-                    borderRadius: 'var(--radius)',
-                  }}
-                >
-                  {renderPlan(plan.plan)}
-                </div>
-              ) : (
-                <Empty description="执行查询后查看执行计划" />
-              )}
-            </TabPane>
-          </Tabs>
-        </Card>
-      </div>
-
-      <Card
-        title={
-          <Space>
-            <HistoryOutlined />
-            <Text strong>分析历史</Text>
-          </Space>
-        }
-        style={{ width: 320, flexShrink: 0 }}
-      >
-        <Spin spinning={historyLoading}>
-          <List
-            dataSource={history}
-            emptyContent={<Empty description="暂无分析历史" />}
-            renderItem={(item) => (
-              <List.Item
-                extra={
-                  <Button
-                    theme="borderless"
-                    size="small"
-                    onClick={() => handleRestoreHistory(item)}
-                  >
-                    恢复
-                  </Button>
-                }
-              >
-                <div>
-                  <Typography.Paragraph
-                    ellipsis={{ rows: 2 }}
-                    style={{ marginBottom: 0, fontSize: 12 }}
-                  >
-                    {item.sql}
-                  </Typography.Paragraph>
-                  <Space spacing="tight">
-                    <Tag color={item.status === 'success' ? 'green' : 'red'}>
-                      {item.status === 'success' ? '成功' : '失败'}
-                    </Tag>
-                    <Text type="secondary" style={{ fontSize: 11 }}>
-                      {item.rowCount} 行 · {formatTime(item.createdAt)}
-                    </Text>
-                  </Space>
-                </div>
-              </List.Item>
-            )}
-          />
-        </Spin>
-      </Card>
-    </div>
-    </PageRoot>
+  const pagedRows = useMemo(
+    () => resultRows.slice((page - 1) * pageSize, page * pageSize),
+    [resultRows, page, pageSize],
   );
-}
 
-function DatabaseIcon() {
   return (
-    <svg
-      viewBox="0 0 1024 1024"
-      width="1em"
-      height="1em"
-      fill="currentColor"
-      style={{ display: 'inline-block' }}
-    >
-      <path d="M832 192c0-88.4-201.6-160-448-160S64 103.6 64 192v640c0 88.4 201.6 160 448 160s448-71.6 448-160V192z m-64 0c0 35.2-148.8 96-384 96S0 227.2 0 192s148.8-96 384-96 384 60.8 384 96zM512 832c-235.2 0-384-60.8-384-96v-96c76.8 35.2 204.8 64 384 64s307.2-28.8 384-64v96c0 35.2-148.8 96-384 96z m0-224c-235.2 0-384-60.8-384-96v-96c76.8 35.2 204.8 64 384 64s307.2-28.8 384-64v96c0 35.2-148.8 96-384 96z" />
-    </svg>
+    <>
+      <PageHeader
+        title="数据分析"
+        desc="选择数据源执行 SQL，查看结果、执行计划与历史"
+        actions={
+          <Button
+            icon={<RefreshCw size={15} strokeWidth={1.5} />}
+            loading={dsLoading}
+            onClick={() => void loadDataSources()}
+          >
+            刷新数据源
+          </Button>
+        }
+      />
+
+      {dsError ? (
+        <EmptyState
+          illustration="failure"
+          title="数据源加载失败"
+          desc={dsError}
+          actions={
+            <Button theme="solid" type="primary" onClick={() => void loadDataSources()}>
+              重试
+            </Button>
+          }
+        />
+      ) : dsLoading && dataSources.length === 0 ? (
+        <div className="mp-exec-loading">
+          <Spin size="middle" />
+        </div>
+      ) : (
+        <>
+          <FilterBar
+            filters={
+              <Select
+                value={selectedDataSource || undefined}
+                onChange={(v) => setSelectedDataSource(v as string)}
+                placeholder="选择数据源"
+                optionList={dataSources.map((ds) => ({
+                  label: ds.sourceType ? `${ds.name} (${ds.sourceType})` : ds.name,
+                  value: ds.id,
+                }))}
+              />
+            }
+            right={
+              <>
+                <Button
+                  theme="solid"
+                  type="primary"
+                  icon={<Play size={15} strokeWidth={1.5} />}
+                  loading={executing}
+                  onClick={() => void handleExecute()}
+                >
+                  执行 SQL
+                </Button>
+                <Button
+                  icon={<Route size={15} strokeWidth={1.5} />}
+                  loading={planLoading}
+                  onClick={() => void handleShowPlan()}
+                >
+                  执行计划
+                </Button>
+              </>
+            }
+          />
+
+          <div className="mp-exec-grid">
+            <div className="mp-exec-col">
+              <Card>
+                <div className="mp-exec-col">
+                  <Editor
+                    height={280}
+                    language="sql"
+                    value={sql}
+                    theme="vs"
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 13,
+                      automaticLayout: true,
+                      scrollBeyondLastLine: false,
+                    }}
+                    onChange={(value) => setSql(value || '')}
+                  />
+
+                  <span className="mp-exec-chips">
+                    <Text type="secondary">导出结果：</Text>
+                  <Button size="small" onClick={() => void handleExport('csv')}>
+                    CSV
+                  </Button>
+                  <Button size="small" onClick={() => void handleExport('excel')}>
+                    Excel
+                  </Button>
+                  <Button size="small" onClick={() => void handleExport('json')}>
+                    JSON
+                  </Button>
+                </span>
+              </div>
+            </Card>
+
+            <Card
+              headerExtraContent={executing ? <Spin size="small" /> : null}
+            >
+              <Tabs
+                activeKey={activeTab}
+                onChange={setActiveTab}
+                size="small"
+                tabList={[
+                  { itemKey: 'result', tab: '查询结果' },
+                  { itemKey: 'plan', tab: '执行计划' },
+                ]}
+              >
+                <TabPane itemKey="result">
+                  {result ? (
+                    <div className="mp-exec-col">
+                      <span className="mp-exec-chips">
+                        <Tag type="light" color="blue">
+                          {result.rowCount} 行
+                        </Tag>
+                        <Tag type="light">{result.executionTime} ms</Tag>
+                      </span>
+                      <DataTablePro<Record<string, unknown>>
+                        columns={resultColumns}
+                        dataSource={pagedRows}
+                        rowKey="__rowKey"
+                        empty={<EmptyState illustration="no-content" title="查询无结果" />}
+                        pagination={{
+                          currentPage: page,
+                          pageSize,
+                          total: resultRows.length,
+                          onChange: setPage,
+                          onPageSizeChange: (size) => {
+                            setPageSize(size);
+                            setPage(1);
+                          },
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <EmptyState
+                      illustration="idle"
+                      title="执行 SQL 后查看结果"
+                      desc="在上方编辑器写好 SQL，点击「执行 SQL」。"
+                    />
+                  )}
+                </TabPane>
+                <TabPane itemKey="plan">
+                  {plan ? (
+                    <div className="mp-exec-col">{renderPlan(plan.plan)}</div>
+                  ) : (
+                    <EmptyState
+                      illustration="idle"
+                      title="执行查询后查看执行计划"
+                      desc="先执行一次查询，再点击「执行计划」。"
+                    />
+                  )}
+                </TabPane>
+              </Tabs>
+            </Card>
+          </div>
+
+          <div className="mp-exec-col">
+            <Card
+              title={
+                <span className="mp-exec-step-head">
+                  <History size={15} strokeWidth={1.5} />
+                  <span className="mp-exec-step-title">分析历史</span>
+                </span>
+              }
+              headerExtraContent={
+                <Button
+                  theme="borderless"
+                  type="primary"
+                  size="small"
+                  loading={historyLoading}
+                  onClick={() => void loadHistory()}
+                >
+                  刷新
+                </Button>
+              }
+            >
+              {historyError ? (
+                <EmptyState
+                  illustration="failure"
+                  title="分析历史加载失败"
+                  desc={historyError}
+                  actions={
+                    <Button theme="solid" type="primary" onClick={() => void loadHistory()}>
+                      重试
+                    </Button>
+                  }
+                />
+              ) : historyLoading && history.length === 0 ? (
+                <div className="mp-exec-loading">
+                  <Spin size="small" />
+                </div>
+              ) : (
+                <List
+                  dataSource={history}
+                  emptyContent={<EmptyState illustration="no-content" title="暂无分析历史" />}
+                  renderItem={(item: QueryHistoryItem) => (
+                    <List.Item
+                      extra={
+                        <Button
+                          theme="borderless"
+                          size="small"
+                          onClick={() => handleRestoreHistory(item)}
+                        >
+                          恢复
+                        </Button>
+                      }
+                    >
+                      <div>
+                        <Typography.Paragraph ellipsis={{ rows: 2 }}>
+                          {item.sql}
+                        </Typography.Paragraph>
+                        <span className="mp-exec-chips">
+                          <Tag type="light" color={item.status === 'success' ? 'green' : 'red'}>
+                            {item.status === 'success' ? '成功' : '失败'}
+                          </Tag>
+                          <Text type="secondary">
+                            {item.rowCount} 行 · {formatTime(item.createdAt)}
+                          </Text>
+                        </span>
+                      </div>
+                    </List.Item>
+                  )}
+                />
+              )}
+            </Card>
+
+            <Card title="数据源">
+              <List
+                dataSource={dataSources}
+                emptyContent={<EmptyState illustration="no-content" title="暂无数据源" />}
+                renderItem={(ds: DataSource) => (
+                  <List.Item
+                    main={
+                      <span className="mp-exec-line">
+                        <span>{ds.name}</span>
+                        {ds.sourceType ? <Tag type="light">{ds.sourceType}</Tag> : null}
+                      </span>
+                    }
+                  />
+                )}
+              />
+            </Card>
+          </div>
+          </div>
+        </>
+      )}
+    </>
   );
 }

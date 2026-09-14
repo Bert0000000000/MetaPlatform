@@ -326,7 +326,10 @@ test.describe('SuperAI 语义路由 e2e (MP-SR-01 task 2)', () => {
       (response) => response.url().includes('/api/v1/copilot/conversations')
         && response.request().method() === 'POST',
     );
-    await page.getByRole('button', { name: '新建会话', exact: true }).click();
+    // ChatPage 现按「加载中 → 空态/列表」三态渲染，按钮要等会话列表加载完才出现
+    const newConversation = page.getByRole('button').filter({ hasText: '新建会话' }).first();
+    await expect(newConversation).toBeVisible({ timeout: 20_000 });
+    await newConversation.click();
     const createdConversation = await (await createdResponse).json() as { data: { id: string } };
     const conversationId = createdConversation.data.id;
     expect(conversationId).toMatch(/^conv-/);

@@ -288,6 +288,220 @@
   border-top: 1px solid var(--semi-color-border);
 }
 
+/* ---------- Copilot 对话（P1d 接线后） ---------- */
+.mp-dock-msg {
+  display: flex;
+  gap: var(--mp-space-2);
+  align-items: flex-start;
+}
+
+.mp-dock-who {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--semi-border-radius-medium);
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--semi-color-fill-0);
+  color: var(--semi-color-text-2);
+}
+
+.mp-dock-msg.is-assistant .mp-dock-who {
+  background: var(--semi-color-primary-light-default);
+  color: var(--semi-color-primary);
+}
+
+.mp-dock-bubble {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+}
+
+.mp-dock-say {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--semi-color-text-0);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mp-dock-error {
+  font-size: 12.5px;
+  color: var(--semi-color-danger);
+}
+
+.mp-dock-reasoning {
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+  background: var(--semi-color-fill-0);
+  border-radius: var(--semi-border-radius-medium);
+  padding: var(--mp-space-2);
+}
+
+.mp-dock-reasoning summary {
+  cursor: pointer;
+  color: var(--semi-color-text-3);
+}
+
+.mp-dock-reasoning > div {
+  margin-top: var(--mp-space-1);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mp-dock-tools {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+
+.mp-dock-tools li {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+}
+
+.mp-dock-tool-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--semi-color-text-3);
+}
+
+.mp-dock-tool-dot.is-running {
+  background: var(--semi-color-primary);
+}
+
+.mp-dock-tool-dot.is-success {
+  background: var(--semi-color-success);
+}
+
+.mp-dock-tool-dot.is-error {
+  background: var(--semi-color-danger);
+}
+
+.mp-dock-tool-status {
+  margin-left: auto;
+  color: var(--semi-color-text-3);
+}
+
+.mp-dock-decision {
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+  background: var(--semi-color-primary-light-default);
+  border-radius: var(--semi-border-radius-medium);
+  padding: var(--mp-space-2);
+}
+
+.mp-dock-plan {
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-large);
+  background: var(--semi-color-bg-1);
+  overflow: hidden;
+}
+
+.mp-dock-plan-head {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  padding: var(--mp-space-2) var(--mp-space-3);
+  border-bottom: 1px solid var(--semi-color-border);
+  background: var(--semi-color-fill-0);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+}
+
+.mp-dock-plan-count {
+  margin-left: auto;
+  font-weight: 400;
+  color: var(--semi-color-text-3);
+}
+
+.mp-dock-plan ol {
+  margin: 0;
+  padding: var(--mp-space-2) var(--mp-space-3) var(--mp-space-2) var(--mp-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+  font-size: 12.5px;
+  color: var(--semi-color-text-1);
+}
+
+.mp-dock-plan-note {
+  padding: var(--mp-space-2) var(--mp-space-3);
+  border-top: 1px solid var(--semi-color-border);
+  font-size: 11.5px;
+  color: var(--semi-color-text-3);
+}
+
+.mp-dock-plan-actions {
+  display: flex;
+  gap: var(--mp-space-1);
+}
+
+.mp-dock-input {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--mp-space-2);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-large);
+  padding: var(--mp-space-2);
+  background: var(--semi-color-bg-1);
+}
+
+.mp-dock-input:focus-within {
+  border-color: var(--semi-color-primary);
+}
+
+.mp-dock-textarea {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--semi-color-text-0);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  max-height: 96px;
+}
+
+.mp-dock-send {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-primary);
+  color: var(--semi-color-primary-on);
+  cursor: pointer;
+}
+
+.mp-dock-send.is-stop {
+  background: var(--semi-color-fill-1);
+  color: var(--semi-color-text-1);
+}
+
+.mp-dock-send:disabled {
+  background: var(--semi-color-fill-1);
+  color: var(--semi-color-text-3);
+  cursor: not-allowed;
+}
+
 /* ---------- ⌘K 命令面板（Modal portal 在 body 下，不依赖 .mp-app） ---------- */
 .mp-cmdk .mp-cmdk-input,
 .mp-cmdk .mp-cmdk-body,

@@ -1,71 +1,48 @@
-import { useEffect, useState } from 'react';
-import { Card, Empty, Progress, Space, Tag, Typography } from '@douyinfe/semi-ui';
-import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
+import { Banner, Button } from '@douyinfe/semi-ui';
+import { useNavigate } from 'react-router-dom';
+import { PlayCircle } from 'lucide-react';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 
-interface SubStep {
-  id: string;
-  name: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  progress: number;
-  duration?: number;
-}
-
-const MOCK_STEPS: SubStep[] = [
-  { id: 's1', name: '数据查询', status: 'completed', progress: 100, duration: 12 },
-  { id: 's2', name: '数据分析', status: 'running', progress: 65, duration: 45 },
-  { id: 's3', name: '汇总汇总', status: 'pending', progress: 0 },
-];
-
+/**
+ * SuperAI · 并行执行监控。
+ *
+ * 后端现状（2026-09-14 实测，dev 的 copilot/orchestrator 为 stub）：
+ * 只有「启动一次执行」（POST /scheduling/execution/start）与「取最终报告」，
+ * 没有「列出正在并行执行的子任务 / 轮询进度」的接口。原页用 setInterval 随机
+ * 递增的进度条是纯伪造数据，已删除；这里只如实说明能力缺口，不放假进度。
+ * 等后端补上执行监控契约后，再按 Steps/Progress 呈现真实子任务。
+ */
 export default function ParallelExecutionPage() {
-  const [steps, setSteps] = useState(MOCK_STEPS);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setSteps((prev) =>
-        prev.map((s) => {
-          if (s.status === 'running') {
-            const p = Math.min(100, s.progress + Math.random() * 10);
-            return { ...s, progress: p, status: p >= 100 ? 'completed' : 'running' };
-          }
-          return s;
-        }),
-      );
-    }, 2000);
-    return () => clearInterval(id);
-  }, []);
-
-  const COLOR: Record<SubStep['status'], TagColor> = {
-    pending: 'grey',
-    running: 'blue',
-    completed: 'green',
-    failed: 'red',
-  };
+  const navigate = useNavigate();
 
   return (
-    <div>
-      <Typography.Title heading={4}>并行执行监控</Typography.Title>
-      <Card>
-        {steps.length === 0 ? (
-          <Empty />
-        ) : (
-          <Space vertical spacing="medium" style={{ width: '100%' }}>
-            {steps.map((s) => (
-              <Card key={s.id} title={s.name}>
-                <Space vertical style={{ width: '100%' }}>
-                  <Space>
-                    <Tag color={COLOR[s.status]}>{s.status}</Tag>
-                    {s.duration && <Tag>耗时 {s.duration}s</Tag>}
-                  </Space>
-                  <Progress
-                    percent={Math.round(s.progress)}
-                    stroke={s.status === 'completed' ? 'var(--success)' : undefined}
-                  />
-                </Space>
-              </Card>
-            ))}
-          </Space>
-        )}
-      </Card>
-    </div>
+    <>
+      <PageHeader
+        title="并行执行监控"
+        desc="所有子任务完成后自动汇聚；执行与报告走调度执行面板"
+        actions={
+          <Button
+            theme="solid"
+            type="primary"
+            icon={<PlayCircle size={15} strokeWidth={1.5} />}
+            onClick={() => navigate('/superai/schedules/execute')}
+          >
+            去执行面板
+          </Button>
+        }
+      />
+
+      <Banner
+        type="info"
+        closeIcon={null}
+        description="当前后端没有「并行子任务实时进度」接口（只有启动执行与取报告），本页不再展示模拟进度。子任务状态请以执行面板返回的真实结果为准。"
+      />
+
+      <EmptyState
+        illustration="no-content"
+        title="没有正在监控的并行执行"
+        desc="启动一次调度执行后，子任务结果会在执行面板按后端真实数据呈现。"
+      />
+    </>
   );
 }
