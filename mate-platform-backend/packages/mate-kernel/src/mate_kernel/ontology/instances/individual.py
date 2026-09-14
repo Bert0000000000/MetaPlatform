@@ -22,6 +22,11 @@ class Individual:
     updated_at: datetime
     tenant_id: str
     marking: tuple[str, ...] = field(default_factory=tuple)
+    # ONT-PROV-01（2026-09-14）：记录级溯源。AI proposal 落库时写入
+    # {source: "ai"|"user", confidence?, model?, proposal_id, actor, executed_at}。
+    # 记录级而非 props 级：props 受类型闭包 schema 约束（未声明属性会被
+    # SHACL/validate_instance 拦），溯源是平台元数据不属于业务 schema。
+    provenance: dict | None = None
 
     def __post_init__(self) -> None:
         if not self.rid.startswith(f"ont.{self.tenant_id}.ind."):

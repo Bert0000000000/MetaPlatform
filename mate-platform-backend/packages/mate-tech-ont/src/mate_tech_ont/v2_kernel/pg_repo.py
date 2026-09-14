@@ -128,6 +128,7 @@ DDL: tuple[str, ...] = (
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_ot_tenant ON ont_object_type (tenant_id)",
     # MP-SAL-01：类型级 marking（ADR-0043 §2.6）——旧库补列
+    "ALTER TABLE ont_individual ADD COLUMN IF NOT EXISTS provenance JSONB NULL",
     "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS marking TEXT[] NOT NULL DEFAULT '{}'",
     # MP-DEDUP-01：slug 列（从 rid 第 4 段派生）+ archived 列（merge 软删标记）
     "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS slug TEXT NOT NULL DEFAULT ''",
@@ -258,6 +259,9 @@ DDL: tuple[str, ...] = (
     # 旧库补列：早期 ont_axiom 无 updated_at（G21 闭包查询 ORDER BY 抛错被
     # evaluate_object_set 静默吞掉 → 层级查询退化为精确匹配，test_ont_g21 失败）
     "ALTER TABLE ont_axiom ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()",
+    # GOVERN-04：kernel Axiom.metadata（kv 元数据）—— 早期 DDL 漏列，upsert_axiom
+    # 一直写该列（无列即 500），此前测试库未启用未暴露
+    "ALTER TABLE ont_axiom ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb",
     # MP-SAL-02: 对象语义检索索引表（OAG，spec §4.2 SAL-02）
     """
     CREATE TABLE IF NOT EXISTS ont_object_embedding (
@@ -670,6 +674,7 @@ def _row_to_individual(row: dict[str, Any]) -> Individual:
         updated_at=row["updated_at"],
         tenant_id=row["tenant_id"],
         marking=tuple(row.get("marking", []) or []),
+        provenance=row.get("provenance") if isinstance(row.get("provenance"), dict) else None,
     )
 
 
@@ -2030,12 +2035,13 @@ class PgOntologyRepository(OntologyRepository):
                 cur.execute(
                     """
                     INSERT INTO ont_individual
-                        (rid, tenant_id, class_rid, props, primary_key, marking, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s::jsonb, %s, %s, %s, %s)
+                        (rid, tenant_id, class_rid, props, primary_key, marking, created_at, updated_at, provenance)
+                    VALUES (%s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s::jsonb)
                     ON CONFLICT (rid) DO UPDATE SET
                         props = ont_individual.props || EXCLUDED.props,
                         marking = EXCLUDED.marking,
-                        updated_at = EXCLUDED.updated_at
+                        updated_at = EXCLUDED.updated_at,
+                        provenance = EXCLUDED.provenance
                     """,
                     (
                         ind.rid,
@@ -2046,6 +2052,7 @@ class PgOntologyRepository(OntologyRepository):
                         list(ind.marking),
                         ind.created_at,
                         ind.updated_at,
+                        json.dumps(ind.provenance, default=str) if ind.provenance else None,
                     ),
                 )
             self._index_individual_embeddings(conn, ind)
@@ -4202,11 +4209,15 @@ class PgOntologyRepository(OntologyRepository):
         props: dict[str, Any],
         impact_summary: str,
         expected_diff: dict[str, Any] | None = None,
+        provenance: dict[str, Any] | None = None,
     ) -> Any:
-        """MP-SAL-04b：文本抽取字段 → 新建实例提议（subject=class rid）。"""
+        """MP-SAL-04b：文本抽取字段 → 新建实例提议（subject=class rid）。
+
+        ONT-PROV-01：provenance 随 parameters 存提案，execute 落实例。
+        """
         return self.propose_action(
             ClassRef(class_rid),
-            {"props": dict(props)},
+            {"props": dict(props), "provenance": dict(provenance or {})},
             None,
             impact_summary,
             expected_diff,
@@ -5255,6 +5266,17 @@ class PgOntologyRepository(OntologyRepository):
                 created_at=_dt.now(_UTC),
                 updated_at=_dt.now(_UTC),
                 tenant_id=tenant,
+                # ONT-PROV-01：提案级溯源落实例（AI/人工来源 + 执行链证据）
+                provenance={
+                    **(
+                        dict(p.parameters.get("provenance") or {})
+                        if isinstance(p.parameters, dict)
+                        else {}
+                    ),
+                    "proposal_id": proposal_id,
+                    "actor_id": actor_id or "",
+                    "executed_at": _dt.now(_UTC).isoformat(),
+                },
             )
             created = self.create_individual(ind)
             result = {"kind": "create_instance", "individual_rid": created.rid}

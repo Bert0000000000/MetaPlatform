@@ -2016,6 +2016,10 @@ components:
         marking:
           type: array
           items: { type: string }
+        provenance:
+          type: [object, "null"]
+          additionalProperties: true
+          description: ONT-PROV-01 记录级溯源（AI proposal 落库带 source/confidence/proposal_id）
     IndividualCreateV2:
       type: object
       additionalProperties: false
@@ -2308,6 +2312,12 @@ components:
         props: { type: object, additionalProperties: true }
         impact_summary: { type: string }
         expected_diff: { type: object, additionalProperties: true }
+        provenance:
+          type: object
+          additionalProperties: true
+          description: |
+            ONT-PROV-01 记录级溯源（source: ai|user、confidence、model、agent_id）。
+            execute 时合并 proposal_id/actor/executed_at 落到实例 provenance。
     TypeProposeV2:
       type: object
       additionalProperties: false

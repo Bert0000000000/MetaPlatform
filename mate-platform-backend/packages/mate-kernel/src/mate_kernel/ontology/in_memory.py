@@ -956,12 +956,17 @@ class InMemoryOntologyRepository(OntologyRepository):
         props: dict[str, Any],
         impact_summary: str,
         expected_diff: dict[str, Any] | None = None,
+        provenance: dict[str, Any] | None = None,
     ) -> Any:
-        """文本抽取字段 → 新建实例提议（subject=class rid，payload=props）。"""
+        """文本抽取字段 → 新建实例提议（subject=class rid，payload=props）。
+
+        ONT-PROV-01：provenance（来源/置信度/模型）随提案存 parameters，
+        execute 时落实例记录级溯源。
+        """
         self.get_object_type(ClassRef(class_rid))  # 类不存在 → KeyError
         return self._action_service.propose(
             action_rid=class_rid,
-            parameters={"props": dict(props)},
+            parameters={"props": dict(props), "provenance": dict(provenance or {})},
             target_iid=None,
             impact_summary=impact_summary,
             expected_diff=expected_diff,
@@ -1085,6 +1090,12 @@ class InMemoryOntologyRepository(OntologyRepository):
                 created_at=_dt.now(_UTC),
                 updated_at=_dt.now(_UTC),
                 tenant_id=tenant,
+                # ONT-PROV-01：提案级溯源落实例
+                provenance={
+                    **(dict(p.parameters.get("provenance") or {}) if isinstance(p.parameters, dict) else {}),
+                    "proposal_id": proposal_id,
+                    "executed_at": _dt.now(_UTC).isoformat(),
+                },
             )
             self.create_individual(ind)
             self._action_service.mark_executed(proposal_id)
