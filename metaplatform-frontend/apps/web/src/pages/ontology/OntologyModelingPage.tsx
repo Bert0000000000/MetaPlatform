@@ -435,7 +435,9 @@ export default function OntologyModelingPage({
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 20 }}>
+      {/* AIAssistantWorkspace__content 是横向 flex 容器：子行必须 flex:1 + width:100%
+          才能撑满可用宽度（此前缺省导致右侧约 1/3 空白）。 */}
+      <div style={{ display: 'flex', gap: 20, flex: 1, minWidth: 0, width: '100%' }}>
         {/* Left: 一级本体列表 */}
         <div style={{ width: 240, flexShrink: 0 }}>
           <Card style={{ height: 'fit-content' }}>
@@ -577,7 +579,7 @@ export default function OntologyModelingPage({
 
           {/* Detail Section（下钻：属性表 + V2 编辑器入口 + 关联 Action + 关系） */}
           {selectedConceptDetail && (
-            <div ref={detailRef} style={{ display: 'flex', gap: 20, marginTop: 20, scrollMarginTop: 12 }}>
+            <div ref={detailRef} style={{ display: 'flex', gap: 20, marginTop: 20, scrollMarginTop: 12, width: '100%' }}>
               {/* Attribute Table + V2 编辑器入口 + 关联 Action */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <Card style={{overflow: 'hidden'}} bodyStyle={{padding: 0}}>

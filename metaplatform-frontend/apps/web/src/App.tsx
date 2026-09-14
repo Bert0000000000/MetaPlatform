@@ -299,8 +299,8 @@ function AppRoutes() {
           <Route path="ontology/datacenter" element={<LegacyOntologyDatacenterRoute />} />
           <Route path="ontology/action" element={<Navigate to="/ontology?tab=action" replace />} />
           <Route path="ontology/graph" element={<Navigate to="/ontology?tab=graph" replace />} />
-          <Route path="ontology/relationship-types" element={<Navigate to="/ontology?tab=relationship-types" replace />} />
-          <Route path="ontology/actions" element={<Navigate to="/ontology?tab=action-types" replace />} />
+          <Route path="ontology/relationship-types" element={<Navigate to="/ontology?tab=concept&subTab=relationship" replace />} />
+          <Route path="ontology/actions" element={<Navigate to="/ontology?tab=concept&subTab=action" replace />} />
           <Route path="ontology/object-types" element={<Navigate to="/ontology" replace />} />
           <Route path="ontology/object-types/:rid" element={<Navigate to="/ontology" replace />} />
 

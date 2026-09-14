@@ -1,8 +1,8 @@
 import { Suspense, lazy, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  Hexagon, Link2, Zap, Database, PlayCircle, GitBranch, Plus, Boxes, Layers, ShieldCheck,
-  Home, BarChart3, LayoutDashboard, Map as MapIcon,
+  Hexagon, Database, PlayCircle, GitBranch, Plus, Boxes, ShieldCheck,
+  Home, LineChart,
 } from 'lucide-react';
 import { Button } from '@douyinfe/semi-ui';
 import { AIAssistantTrigger, AIAssistantWorkspace, PageRoot, SubTabs, usePageAssistant } from '@mate/shared';
@@ -13,24 +13,14 @@ import OntologyActionPage from './OntologyActionPage';
 import ObjectDataPage from './ObjectDataPage';
 import TypeManagementTab from './TypeManagementTab';
 import GovernancePage from './GovernancePage';
-import InterfaceListPage from './InterfaceListPage';
-import RelationshipTypeListPage from './relationship-types/RelationshipTypeListPage';
-import ActionTypeListPage from './actions/ActionTypeListPage';
+import AnalyticsTab from './AnalyticsTab';
 import { useOntologyAssistant, type ProposalFromStream } from './hooks/useOntologyAssistant';
 import ProposalConfirmDrawer from './components/ProposalConfirmDrawer';
 
 // 懒加载（减首屏 bundle）：
 //   - 知识图谱页（OntologyGraphPage 含较重的图渲染，非首屏 tab）
-//   - AnalysisPage / DashboardPage / MapPage 由并行任务交付中，
-//     文件落盘前 tsc 会报 Cannot find module —— @ts-ignore 压制，
-//     文件存在后该指令保持惰性、无需回收；Vite 按字面量动态 import 正常分包。
+//   - 分析应用三个子页（分析工作台 / 仪表盘 / 地图）由 AnalyticsTab 按需挂载
 const OntologyGraphPage = lazy(() => import('./OntologyGraphPage'));
-// @ts-ignore AnalysisPage 由并行任务创建中（见上）
-const AnalysisPage = lazy(() => import('./AnalysisPage'));
-// @ts-ignore DashboardPage 由并行任务创建中（见上）
-const DashboardPage = lazy(() => import('./DashboardPage'));
-// @ts-ignore MapPage 由并行任务创建中（见上）
-const MapPage = lazy(() => import('./MapPage'));
 
 const LAZY_FALLBACK = (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, color: 'var(--muted-foreground)', fontSize: 13 }}>
@@ -38,6 +28,9 @@ const LAZY_FALLBACK = (
   </div>
 );
 
+// 8 个一级 tab（两轮去重后）：
+//   - 类型管理 = 对象/关系/动作/接口 四类 Kernel 类型层基元的统一入口
+//   - 分析应用 = 分析工作台 / 仪表盘 / 地图（L6 应用层三件套，Palantir Quiver/Carbon/Map 对位）
 const TABS = [
   { key: 'overview', label: '总览', icon: Home, path: '/ontology' },
   { key: 'concept', label: '类型管理', icon: Hexagon, path: '/ontology?tab=concept' },
@@ -45,23 +38,29 @@ const TABS = [
   { key: 'datacenter', label: '数据中心', icon: Database, path: '/ontology?tab=datacenter' },
   { key: 'action', label: 'Action 编排', icon: PlayCircle, path: '/ontology?tab=action' },
   { key: 'graph', label: '知识图谱', icon: GitBranch, path: '/ontology?tab=graph' },
-  { key: 'interfaces', label: '接口', icon: Layers, path: '/ontology?tab=interfaces' },
   { key: 'governance', label: '治理', icon: ShieldCheck, path: '/ontology?tab=governance' },
-  { key: 'analysis', label: '分析', icon: BarChart3, path: '/ontology?tab=analysis' },
-  { key: 'dashboard', label: '仪表盘', icon: LayoutDashboard, path: '/ontology?tab=dashboard' },
-  { key: 'map', label: '地图', icon: MapIcon, path: '/ontology?tab=map' },
+  { key: 'analytics', label: '分析应用', icon: LineChart, path: '/ontology?tab=analytics' },
 ];
 
-const ALIASES: Record<string, string> = {
-  modeling: 'concept',
-  rel: 'concept',
-  relationship: 'concept',
-  'relationship-types': 'concept',
-  'action-type': 'concept',
-  'action-types': 'concept',
-  data: 'datacenter',
-  orchestration: 'action',
-  knowledge: 'graph',
+/**
+ * 历史 tab key → 目标 {tab, subTab}。
+ * 被合并的 tab 不只映射父 tab，还要落到对应子 tab，
+ * 否则旧链接（如 ?tab=relationship-types）会丢失目标子页、落回默认子页。
+ */
+const LEGACY_TABS: Record<string, { tab: string; subTab?: string }> = {
+  modeling: { tab: 'concept' },
+  rel: { tab: 'concept', subTab: 'relationship' },
+  relationship: { tab: 'concept', subTab: 'relationship' },
+  'relationship-types': { tab: 'concept', subTab: 'relationship' },
+  'action-type': { tab: 'concept', subTab: 'action' },
+  'action-types': { tab: 'concept', subTab: 'action' },
+  interfaces: { tab: 'concept', subTab: 'interface' },
+  analysis: { tab: 'analytics', subTab: 'analysis' },
+  dashboard: { tab: 'analytics', subTab: 'dashboard' },
+  map: { tab: 'analytics', subTab: 'map' },
+  data: { tab: 'datacenter' },
+  orchestration: { tab: 'action' },
+  knowledge: { tab: 'graph' },
 };
 
 /**
@@ -75,17 +74,18 @@ const TAB_TITLES: Record<string, string> = {
   datacenter: '数据中心',
   action: 'Action 编排',
   graph: '知识图谱',
-  interfaces: 'Interface 契约',
   governance: '治理',
-  analysis: '分析',
-  dashboard: '仪表盘',
-  map: '地图',
+  analytics: '分析应用',
 };
 
 /** /ontology 无 query 时默认落在总览 tab（首页驾驶舱）。 */
-function resolveTab(raw: string | null): string {
-  const k = (raw || 'overview').toLowerCase();
-  return ALIASES[k] ?? k;
+function resolveTab(rawTab: string | null, rawSub: string | null): { tab: string; subTab?: string } {
+  const k = (rawTab || 'overview').toLowerCase();
+  const legacy = LEGACY_TABS[k];
+  if (legacy) return { tab: legacy.tab, subTab: legacy.subTab ?? undefined };
+  const known = TABS.some((t) => t.key === k);
+  if (!known) return { tab: 'overview' };
+  return { tab: k, subTab: rawSub ?? undefined };
 }
 
 /** tab → SubTabs active 匹配锚点（各 tab 唯一且互为非前缀，保证精确命中）。 */
@@ -93,8 +93,7 @@ const tabMatchPath = (key: string) => (key === 'overview' ? '/ontology' : `?tab=
 
 export default function OntologyShellPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = resolveTab(searchParams.get('tab'));
-  const subTab = searchParams.get('subTab') ?? undefined;
+  const { tab: activeTab, subTab } = resolveTab(searchParams.get('tab'), searchParams.get('subTab'));
 
   // 概念模型 tab 的「新建概念」drawer 开关：状态提到 Shell，按钮渲染在 sticky 行右侧
   const [createOpen, setCreateOpen] = useState(false);
@@ -156,20 +155,6 @@ export default function OntologyShellPage() {
     [],
   );
 
-  const handleTabChange = (key: string) => {
-    const next = new URLSearchParams();
-    next.set('tab', key);
-    // 切一级 tab 时清掉子 tab，避免非法 subTab 残留
-    setSearchParams(next, { replace: false });
-  };
-
-  const handleSubTabChange = (subKey: string) => {
-    const next = new URLSearchParams(searchParams);
-    next.set('tab', activeTab);
-    next.set('subTab', subKey);
-    setSearchParams(next, { replace: false });
-  };
-
   const stickyHeader = (
     <div
       style={{
@@ -199,7 +184,7 @@ export default function OntologyShellPage() {
       >
         {TAB_TITLES[activeTab] ?? 'Ontology'}
       </h1>
-      {/* tab 多达 13 个时横向滚动（overflowX auto + nowrap），不换行不挤爆 header */}
+      {/* tab 收敛到 8 个后常规宽度单行放下；overflowX 兜底窄屏横向滚动 */}
       <div style={{ flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden', whiteSpace: 'nowrap' }}>
         <SubTabs
           items={subTabs}
@@ -227,9 +212,9 @@ export default function OntologyShellPage() {
         <div style={{ flex: 1, minWidth: 0, width: '100%', display: 'flex', flexDirection: 'column' }}>
           {activeTab === 'overview' && <OverviewPage />}
           {activeTab === 'objects' && <ObjectDataPage />}
-          {(activeTab === 'concept' || activeTab === 'relationship-types' || activeTab === 'action-types') && (
+          {activeTab === 'concept' && (
             <TypeManagementTab
-              initialSub={activeTab === 'relationship-types' ? 'relationship' : activeTab === 'action-types' ? 'action' : subTab || 'object'}
+              initialSub={subTab}
               conceptNode={
                 <OntologyModelingPage
                   createOpen={createOpen}
@@ -246,23 +231,8 @@ export default function OntologyShellPage() {
               <OntologyGraphPage />
             </Suspense>
           )}
-          {activeTab === 'interfaces' && <InterfaceListPage />}
           {activeTab === 'governance' && <GovernancePage />}
-          {activeTab === 'analysis' && (
-            <Suspense fallback={LAZY_FALLBACK}>
-              <AnalysisPage />
-            </Suspense>
-          )}
-          {activeTab === 'dashboard' && (
-            <Suspense fallback={LAZY_FALLBACK}>
-              <DashboardPage />
-            </Suspense>
-          )}
-          {activeTab === 'map' && (
-            <Suspense fallback={LAZY_FALLBACK}>
-              <MapPage />
-            </Suspense>
-          )}
+          {activeTab === 'analytics' && <AnalyticsTab initialSub={subTab} />}
         </div>
       </AIAssistantWorkspace>
 

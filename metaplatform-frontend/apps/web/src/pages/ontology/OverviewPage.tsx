@@ -16,8 +16,8 @@
 
 import { useEffect, useState } from 'react';
 import {
-  AlertTriangle, Boxes, CheckCircle2, ChevronRight, Database, GitBranch,
-  Hexagon, History, Layers, Link2, Loader2, PlayCircle, ShieldCheck, XCircle, Zap,
+  AlertTriangle, BarChart3, Boxes, CheckCircle2, ChevronRight, Database, GitBranch,
+  Hexagon, History, Loader2, PlayCircle, ShieldCheck, XCircle,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -26,7 +26,7 @@ import {
   type ActionAuditRow, type KernelObjectType, type SyncStatusRow,
 } from '@/api/ont/kernel';
 
-/** tab 快捷入口卡配置（path 与 OntologyShellPage TABS 对齐）。 */
+/** tab 快捷入口卡配置（path 与 OntologyShellPage TABS 对齐，7 个模块 = 8 个 tab 去掉总览自身）。 */
 interface EntryCard {
   key: string;
   label: string;
@@ -36,15 +36,13 @@ interface EntryCard {
 }
 
 const ENTRY_CARDS: EntryCard[] = [
-  { key: 'concept', label: '概念模型', icon: Hexagon, path: '/ontology?tab=concept', description: '类型 schema 管理：属性 / 主键 / 层级 / 版本' },
+  { key: 'concept', label: '类型管理', icon: Hexagon, path: '/ontology?tab=concept', description: '类型 schema 管理：对象 / 关系 / 动作 / 接口契约' },
   { key: 'objects', label: '对象数据', icon: Boxes, path: '/ontology?tab=objects', description: '实例浏览与语义搜索，一跳关系遍历' },
-  { key: 'relationship-types', label: '关系类型', icon: Link2, path: '/ontology?tab=relationship-types', description: '关系模型：基数 / 方向 / 关系属性' },
-  { key: 'action-types', label: '动作类型', icon: Zap, path: '/ontology?tab=action-types', description: 'Action 模型：参数 / 提交条件 / 副作用' },
   { key: 'action', label: 'Action 编排', icon: PlayCircle, path: '/ontology?tab=action', description: 'FlowGram 流程编排与执行历史' },
   { key: 'datacenter', label: '数据中心', icon: Database, path: '/ontology?tab=datacenter', description: '数据源绑定 / CDC 同步 / 物化' },
   { key: 'graph', label: '知识图谱', icon: GitBranch, path: '/ontology?tab=graph', description: '图谱可视化：领域视角全量浏览' },
-  { key: 'interfaces', label: '接口', icon: Layers, path: '/ontology?tab=interfaces', description: 'Interface 契约与实现清单' },
   { key: 'governance', label: '治理', icon: ShieldCheck, path: '/ontology?tab=governance', description: '使用量 / 反模式 lint / 生命周期' },
+  { key: 'analytics', label: '分析应用', icon: BarChart3, path: '/ontology?tab=analytics', description: '分析工作台 / 仪表盘 / 地图' },
 ];
 
 /** 实例总数探测：最多取前 10 个类型，单类 limit=100。 */
@@ -215,18 +213,16 @@ export default function OverviewPage() {
                   </span>
                   <span style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: '16px' }}>{entry.description}</span>
                   {entry.key === 'concept' && metrics.objectTypes !== null && (
-                    <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{metrics.objectTypes} 个类型</span>
+                    <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                      对象 {metrics.objectTypes}
+                      {metrics.linkTypes !== null ? ` · 关系 ${metrics.linkTypes}` : ''}
+                      {metrics.actionTypes !== null ? ` · 动作 ${metrics.actionTypes}` : ''}
+                    </span>
                   )}
                   {entry.key === 'objects' && metrics.instances !== null && (
                     <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
                       {metrics.instancesTruncated ? '>' : ''}{metrics.instances} 条实例（探测口径）
                     </span>
-                  )}
-                  {entry.key === 'relationship-types' && metrics.linkTypes !== null && (
-                    <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{metrics.linkTypes} 个关系</span>
-                  )}
-                  {entry.key === 'action-types' && metrics.actionTypes !== null && (
-                    <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{metrics.actionTypes} 个 Action</span>
                   )}
                 </button>
               );

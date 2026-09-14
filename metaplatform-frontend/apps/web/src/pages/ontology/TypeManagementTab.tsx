@@ -1,11 +1,12 @@
-// TypeManagementTab —— "类型管理" tab 的子导航（对象/关系/动作三合一）。
-// 原"概念模型"/"关系类型"/"动作类型"三个一级 tab 合并为一个，减少 tab 拥挤。
-// 概念模型（OntologyModelingPage）内容最重，作为默认子 tab 直接挂载；
-// 关系/动作 tab 是轻量列表页，按需挂载。
+// TypeManagementTab —— "类型管理" tab 的子导航（对象/关系/动作/接口四合一）。
+// 类型层四类 Kernel 基元（ObjectType / LinkType / ActionType / Interface）统一入口，
+// 避免四个一级 tab 语义重复。对象类型（OntologyModelingPage）内容最重，
+// 作为默认子 tab 直接挂载；关系/动作/接口是轻量列表页，按需挂载。
 
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import RelationshipTypeListPage from './relationship-types/RelationshipTypeListPage';
 import ActionTypeListPage from './actions/ActionTypeListPage';
+import InterfaceListPage from './InterfaceListPage';
 
 export interface TypeManagementTabProps {
   initialSub?: string;
@@ -13,13 +14,16 @@ export interface TypeManagementTabProps {
   conceptNode: ReactNode;
 }
 
-type SubKey = 'object' | 'relationship' | 'action';
+type SubKey = 'object' | 'relationship' | 'action' | 'interface';
 
 const SUB_LABELS: Record<SubKey, string> = {
   object: '对象类型',
   relationship: '关系类型',
   action: '动作类型',
+  interface: '接口契约',
 };
+
+const SUB_KEYS = Object.keys(SUB_LABELS) as SubKey[];
 
 const BTN_BASE: CSSProperties = {
   padding: '6px 16px',
@@ -30,16 +34,18 @@ const BTN_BASE: CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
+function normalizeSub(raw: string | undefined): SubKey {
+  return SUB_KEYS.includes(raw as SubKey) ? (raw as SubKey) : 'object';
+}
+
 export default function TypeManagementTab({
   initialSub,
   conceptNode,
 }: TypeManagementTabProps) {
-  const [sub, setSub] = useState<SubKey>(
-    initialSub === 'relationship' ? 'relationship' : initialSub === 'action' ? 'action' : 'object',
-  );
+  const [sub, setSub] = useState<SubKey>(normalizeSub(initialSub));
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', flex: 1, minWidth: 0 }}>
       <div
         style={{
           display: 'flex',
@@ -48,7 +54,7 @@ export default function TypeManagementTab({
           paddingBottom: 8,
         }}
       >
-        {(Object.keys(SUB_LABELS) as SubKey[]).map((k) => (
+        {SUB_KEYS.map((k) => (
           <button
             key={k}
             type="button"
@@ -64,10 +70,11 @@ export default function TypeManagementTab({
           </button>
         ))}
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         {sub === 'object' && conceptNode}
         {sub === 'relationship' && <RelationshipTypeListPage />}
         {sub === 'action' && <ActionTypeListPage />}
+        {sub === 'interface' && <InterfaceListPage />}
       </div>
     </div>
   );
