@@ -948,13 +948,18 @@ class InMemoryOntologyRepository(OntologyRepository):
         target_iid: str | None,
         impact_summary: str,
         expected_diff: dict[str, Any] | None = None,
+        provenance: dict[str, Any] | None = None,
     ) -> Any:
         if action_rid not in self._action_types:
             raise KeyError(f"action not found: {action_rid}")
         at = self._action_types[action_rid]
+        # ONT-PROV-01：与 PG 同口径，provenance 归一进 parameters
+        params: dict[str, Any] = dict(parameters)
+        if provenance:
+            params["provenance"] = {**(params.get("provenance") or {}), **provenance}
         return self._action_service.propose(
             action_rid=at.rid.rid,
-            parameters=parameters,
+            parameters=params,
             target_iid=target_iid,
             impact_summary=impact_summary,
             expected_diff=expected_diff,
@@ -1022,13 +1027,14 @@ class InMemoryOntologyRepository(OntologyRepository):
         self,
         type_def: dict[str, Any],
         impact_summary: str,
+        provenance: dict[str, Any] | None = None,
     ) -> Any:
         """文本→新类型定义提议（subject=新类型 rid，payload=type_def）。"""
         if "rid" not in type_def:
             raise ValueError("type_def must carry 'rid'")
         return self._action_service.propose(
             action_rid=str(type_def["rid"]),
-            parameters={"type_def": type_def},
+            parameters={"type_def": type_def, "provenance": dict(provenance or {})},
             target_iid=None,
             impact_summary=impact_summary,
             expected_diff={"+type": type_def["rid"]},

@@ -2598,6 +2598,9 @@ class ProposalCreateDTO(BaseModel):
     target_iid: str = ""
     impact_summary: str = ""
     expected_diff: dict[str, Any] = Field(default_factory=dict)
+    # ONT-PROV-01：提案级溯源（copilot AI 工具自动注入 source=ai + model）。
+    # action 提案无实例可落，随 parameters 存档（审计可见）。
+    provenance: dict[str, Any] = Field(default_factory=dict)
 
 
 class ProposalConfirmDTO(BaseModel):
@@ -2855,6 +2858,8 @@ class TypeProposeDTO(BaseModel):
 
     type_def: ObjectTypeDTO
     impact_summary: str = ""
+    # ONT-PROV-01：提案级溯源（随 parameters 存档）
+    provenance: dict[str, Any] = Field(default_factory=dict)
 
 
 class ProposalExecuteResultDTO(BaseModel):
@@ -2933,6 +2938,7 @@ async def propose_object_type(
         "propose_model_type",
         type_def,
         payload.impact_summary,
+        payload.provenance or None,
     )
     return _proposal_to_dto(prop, await _proposal_preflight(request, prop))
 
@@ -3088,6 +3094,8 @@ async def propose_action(
             payload.target_iid or None,
             payload.impact_summary,
             payload.expected_diff or None,
+            "action",
+            payload.provenance or None,
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e

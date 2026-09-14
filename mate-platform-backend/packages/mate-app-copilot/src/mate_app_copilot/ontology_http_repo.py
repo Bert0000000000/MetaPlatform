@@ -4,6 +4,8 @@
 - 工具面（list/inspect/query_<slug>/search/propose×3）经 build_ontology_tools 使用
 - 执行经 execute_ontology_tool 使用
 - OAG 卡片：search_objects(用户消息) → system prompt 注入
+- ONT-PROV-01：propose×3 自动携带 AI 溯源 provenance（source=ai + 可得的
+  model/agent_id…；见 ``_ai_provenance``）——人工路径不经过这些工具，天然区分
 
 跨进程标准部署用 env ONT_HTTP_BASE（默认 http://localhost:8007，同 MCP 代理
 工具约定）；鉴权：构造时传入请求头（Bearer + X-Tenant-Id），逐请求透传。
@@ -22,6 +24,36 @@ from mate_kernel.ontology.identity import ClassRef
 from mate_kernel.ontology.types import ObjectType, Property, PropertyFormat
 
 _BASE = "/api/v1/ont/v2"
+
+
+def _ai_provenance(
+    *,
+    model: str | None = None,
+    agent_id: str | None = None,
+    employee: str | None = None,
+    confidence: float | None = None,
+    explicit: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """ONT-PROV-01：AI 提案溯源字段（单一注入点，全部 propose 调用复用）。
+
+    口径：``source="ai"`` 恒有（人工路径不经过这些 AI 工具，天然区分）；
+    ``model`` / ``agent_id`` / ``employee`` 仅在调用上下文真实可得时携带；
+    ``confidence`` 仅上游真的产生置信度数值时携带——缺失一律省键，不编造。
+    ``explicit`` 为调用方已显式传入的 provenance：键冲突时显式值优先
+    （merge 不覆盖），自动键只补缺。
+    """
+    prov: dict[str, Any] = {"source": "ai"}
+    if model:
+        prov["model"] = model
+    if agent_id:
+        prov["agent_id"] = agent_id
+    if employee:
+        prov["employee"] = employee
+    if confidence is not None:
+        prov["confidence"] = confidence
+    if explicit:
+        prov.update(explicit)
+    return prov
 
 
 def _to_prop(p: dict[str, Any]) -> Property:
@@ -54,10 +86,32 @@ class OntologyHttpRepo:
         headers: dict[str, str] | None = None,
         base_url: str | None = None,
         timeout: float = 20.0,
+        *,
+        ai_provenance: dict[str, Any] | None = None,
+        transport: httpx.BaseTransport | None = None,
     ) -> None:
         self._base = (base_url or os.getenv("ONT_HTTP_BASE", "http://localhost:8007")).rstrip("/")
         self._headers = headers or {}
-        self._client = httpx.Client(base_url=self._base, timeout=timeout, headers=self._headers)
+        # ONT-PROV-01：AI 提案溯源上下文（model/agent_id/employee…）——
+        # 构造时由调用方从请求/LLM 配置解析注入；缺啥省啥，不硬编码。
+        self._ai_prov_ctx: dict[str, Any] = dict(ai_provenance or {})
+        self._client = httpx.Client(
+            base_url=self._base,
+            timeout=timeout,
+            headers=self._headers,
+            transport=transport,
+        )
+
+    def _provenance_payload(self, explicit: dict[str, Any] | None = None) -> dict[str, Any]:
+        """propose 请求体的 provenance 字段（自动注入 + 显式 merge）。"""
+        ctx = self._ai_prov_ctx
+        return _ai_provenance(
+            model=ctx.get("model") or None,
+            agent_id=ctx.get("agent_id") or None,
+            employee=ctx.get("employee") or None,
+            confidence=ctx.get("confidence"),
+            explicit=explicit,
+        )
 
     def _get(self, path: str, params: dict[str, Any] | None = None) -> Any:
         resp = self._client.get(f"{_BASE}{path}", params=params)
@@ -150,8 +204,10 @@ class OntologyHttpRepo:
         target_iid: str | None,
         impact_summary: str,
         expected_diff: dict[str, Any] | None = None,
+        provenance: dict[str, Any] | None = None,
     ) -> Any:
         rid = action_rid if isinstance(action_rid, str) else action_rid.rid
+        prov = self._provenance_payload(provenance)
         # B2：声明式动作优先走 propose-edit-set（declarative_edits 模板解析，
         # 单事务/审计同管道）；legacy 动作（无声明模板）回落 /propose。
         try:
@@ -163,6 +219,7 @@ class OntologyHttpRepo:
                         "parameters": parameters,
                         "target_iid": target_iid or "",
                         "impact_summary": impact_summary,
+                        "provenance": prov,
                     },
                 )
                 return d
@@ -175,6 +232,7 @@ class OntologyHttpRepo:
                 "target_iid": target_iid or "",
                 "impact_summary": impact_summary,
                 "expected_diff": expected_diff or {},
+                "provenance": prov,
             },
         )
         return _proposal_ns(d)
@@ -185,6 +243,7 @@ class OntologyHttpRepo:
         props: dict[str, Any],
         impact_summary: str,
         expected_diff: dict[str, Any] | None = None,
+        provenance: dict[str, Any] | None = None,
     ) -> Any:
         d = self._post(
             f"/classes/{class_rid}/propose-instance",
@@ -192,14 +251,24 @@ class OntologyHttpRepo:
                 "props": props,
                 "impact_summary": impact_summary,
                 "expected_diff": expected_diff or {},
+                "provenance": self._provenance_payload(provenance),
             },
         )
         return _proposal_ns(d)
 
-    def propose_model_type(self, type_def: dict[str, Any], impact_summary: str) -> Any:
+    def propose_model_type(
+        self,
+        type_def: dict[str, Any],
+        impact_summary: str,
+        provenance: dict[str, Any] | None = None,
+    ) -> Any:
         d = self._post(
             "/object-types/propose",
-            {"type_def": type_def, "impact_summary": impact_summary},
+            {
+                "type_def": type_def,
+                "impact_summary": impact_summary,
+                "provenance": self._provenance_payload(provenance),
+            },
         )
         return _proposal_ns(d)
 

@@ -2434,7 +2434,14 @@ async def chat_agent_stream(
             from ..ontology_tools import build_ontology_tools, execute_ontology_tool
 
             auth_headers = {"Authorization": f"Bearer {user_token or ''}", "X-Tenant-Id": tid}
-            onto_repo = OntologyHttpRepo(headers=auth_headers)
+            # ONT-PROV-01：AI 提案溯源上下文——propose×3 自动带 source=ai +
+            # 当前生效 LLM 模型名（provider default_model 已在上方覆盖 model）。
+            # agent_id/employee：本体工具运行于 SuperAI copilot 进程内，请求
+            # 上下文无数字员工标识——按"有则带、无则省"口径省略，不编造。
+            onto_repo = OntologyHttpRepo(
+                headers=auth_headers,
+                ai_provenance={"model": model},
+            )
             ontology_tools = build_ontology_tools(onto_repo)
             _exec = execute_ontology_tool
             _repo = onto_repo

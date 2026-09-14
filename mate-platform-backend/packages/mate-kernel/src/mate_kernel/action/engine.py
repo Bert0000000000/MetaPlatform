@@ -164,6 +164,9 @@ class ActionProposal:
     expected_diff: dict[str, Any] = field(default_factory=dict)  # 预期 diff（staging 语义）
     confirmed_by: str | None = None
     confirmed_at: datetime | None = None
+    # ONT-PROV-01：提案级溯源（source=ai|user、model、agent_id…；executed
+    # 时 create_instance 落实例记录级 provenance，其它 kind 随提案存档）
+    provenance: dict[str, Any] | None = None
 
 
 class ActionService:
@@ -211,6 +214,7 @@ class ActionService:
         impact_summary: str,
         expected_diff: dict[str, Any] | None = None,
         kind: str = "action",
+        provenance: dict[str, Any] | None = None,
     ) -> ActionProposal:
         import uuid
 
@@ -224,6 +228,7 @@ class ActionService:
             requires_hitl=True,
             expected_diff=dict(expected_diff or {}),
             kind=kind,
+            provenance=dict(provenance) if provenance else None,
         )
         self._proposals[prop.proposal_id] = prop
         return prop

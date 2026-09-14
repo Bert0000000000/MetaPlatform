@@ -116,6 +116,8 @@ def check_action_parameters(action_type: ActionType, parameters: dict[str, Any])
             required.append((aliases, p))
 
     for key, value in (parameters or {}).items():
+        if str(key) == "provenance":
+            continue  # ONT-PROV-01 保留键（平台元数据，非业务参数）
         p = by_key.get(str(key))
         if p is None:
             warnings.append(f"未声明参数: {key}")

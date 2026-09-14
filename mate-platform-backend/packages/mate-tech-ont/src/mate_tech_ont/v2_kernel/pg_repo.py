@@ -4184,6 +4184,7 @@ class PgOntologyRepository(OntologyRepository):
         impact_summary: str,
         expected_diff: dict[str, Any] | None = None,
         kind: str = "action",
+        provenance: dict[str, Any] | None = None,
     ) -> Any:
         """AI/用户提议 → pending proposal（持久化 + 引擎镜像）。kind 见 MP-SAL-04b。"""
         self._ensure_schema()
@@ -4197,13 +4198,19 @@ class PgOntologyRepository(OntologyRepository):
                     self.get_object_type(action_rid)
             except KeyError as e:
                 raise KeyError(str(e)) from e
+        # ONT-PROV-01：provenance 统一存 parameters（PG JSONB 持久化 + 引擎镜像
+        # 同源）；显式传入与 parameters 自带 merge，显式优先。
+        params: dict[str, Any] = dict(parameters)
+        if provenance:
+            params["provenance"] = {**(params.get("provenance") or {}), **provenance}
         prop = self._action_service.propose(
             action_rid=subject,
-            parameters=parameters,
+            parameters=params,
             target_iid=target_iid,
             impact_summary=impact_summary,
             expected_diff=expected_diff,
             kind=kind,
+            provenance=params.get("provenance"),
         )
         conn, _ = self._connect()
         try:
@@ -4220,7 +4227,7 @@ class PgOntologyRepository(OntologyRepository):
                         self._proposal_tenant_id(subject),
                         subject,
                         target_iid,
-                        json.dumps(parameters, default=str),
+                        json.dumps(params, default=str),
                         impact_summary,
                         json.dumps(expected_diff or {}, default=str),
                         prop.status.value,
@@ -4267,13 +4274,17 @@ class PgOntologyRepository(OntologyRepository):
         self,
         type_def: dict[str, Any],
         impact_summary: str,
+        provenance: dict[str, Any] | None = None,
     ) -> Any:
-        """MP-SAL-04b：文本→新类型定义提议（subject=新类型 rid）。"""
+        """MP-SAL-04b：文本→新类型定义提议（subject=新类型 rid）。
+
+        ONT-PROV-01：provenance 随 parameters 存档（模型提案无实例载体）。
+        """
         if not isinstance(type_def, dict) or "rid" not in type_def:
             raise ValueError("type_def must carry 'rid'")
         return self.propose_action(
             ClassRef(str(type_def["rid"])),
-            {"type_def": type_def},
+            {"type_def": type_def, "provenance": dict(provenance or {})},
             None,
             impact_summary,
             {"+type": type_def["rid"]},
