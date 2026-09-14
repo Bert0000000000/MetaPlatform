@@ -392,6 +392,17 @@ export interface ProposalRecord {
   kind: ProposalKind;
   confirmed_by?: string | null;
   confirmed_at?: string | null;
+  /** ONT-GATE-01：三闸门预检（schema×SHACL×Axiom；GET 时实时重算） */
+  preflight?: ProposalPreflight | null;
+}
+
+/** ONT-GATE-01 预检报告（与后端 preflight.PreflightReport.to_dict 对齐）。 */
+export interface ProposalPreflight {
+  blocked: boolean;
+  schema: { checked?: boolean; errors?: string[]; warnings?: string[]; valid?: boolean };
+  shacl: { checked?: boolean; conforms?: boolean; violations?: Array<Record<string, unknown>> };
+  axioms: Array<{ rule: string; severity: string; message: string; subjects?: string[] }>;
+  summary: string;
 }
 
 export async function getProposal(id: string): Promise<ProposalRecord> {

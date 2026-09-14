@@ -17,7 +17,7 @@ import { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Loader2, X } from 'lucide-react';
 import {
   confirmProposal, executeProposal, getProposal, getProposalPreview, rejectProposal,
-  type ProposalPreview, type ProposalRecord,
+  type ProposalPreflight, type ProposalPreview, type ProposalRecord,
 } from '@/api/ont/kernel';
 import OntologyStagingPreview from './OntologyStagingPreview';
 
@@ -50,6 +50,8 @@ export default function ProposalConfirmDrawer({
 }: ProposalConfirmDrawerProps) {
   const [preview, setPreview] = useState<ProposalPreview | null>(null);
   const [authoritativeProposal, setAuthoritativeProposal] = useState<ProposalRecord | null>(null);
+  // ONT-GATE-01：三闸门预检报告（blocked 时禁用确认按钮）
+  const [preflight, setPreflight] = useState<ProposalPreflight | null>(null);
   const [state, setState] = useState<DrawerState>('loading');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [executeResult, setExecuteResult] = useState<{
@@ -60,7 +62,7 @@ export default function ProposalConfirmDrawer({
     outbox_event_ids?: string[];
   } | null>(null);
 
-  // open=true + proposalId 变化 → 加载 preview
+  // open=true + proposalId 变化 → 加载 preview + 三闸门预检（ONT-GATE-01）
   useEffect(() => {
     if (!open || !proposalId) return;
     let cancelled = false;
@@ -69,6 +71,7 @@ export default function ProposalConfirmDrawer({
     setPreview(null);
     setAuthoritativeProposal(null);
     setExecuteResult(null);
+    setPreflight(null);
     (async () => {
       try {
         const data = await getProposalPreview(proposalId);
@@ -80,6 +83,14 @@ export default function ProposalConfirmDrawer({
         const msg = (e as Error).message || '加载 staging 预览失败';
         setErrorMsg(msg);
         setState('error');
+      }
+      // 预检独立加载：失败不阻塞 preview 展示（execute 端还会权威复核）
+      try {
+        const rec = await getProposal(proposalId);
+        if (cancelled) return;
+        setPreflight(rec.preflight ?? null);
+      } catch {
+        /* 预检不可得 = 无报告，不放行信号也不报错 */
       }
     })();
     return () => {
@@ -276,6 +287,42 @@ export default function ProposalConfirmDrawer({
             <OntologyStagingPreview preview={preview} />
           )}
 
+          {/* ONT-GATE-01 三闸门预检横幅（schema × SHACL × Axiom） */}
+          {state !== 'done' && preflight && (
+            <div style={{
+              marginTop: 16, padding: '12px 16px',
+              background: preflight.blocked ? 'rgba(239,68,68,0.10)' : 'rgba(16,185,129,0.10)',
+              border: `1px solid ${preflight.blocked ? 'var(--destructive)' : 'var(--success)'}`,
+              borderRadius: 'var(--radius)', fontSize: 13,
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+            }}>
+              {preflight.blocked
+                ? <AlertTriangle style={{ width: 18, height: 18, color: 'var(--destructive)', flexShrink: 0, marginTop: 1 }} />
+                : <CheckCircle2 style={{ width: 18, height: 18, color: 'var(--success)', flexShrink: 0, marginTop: 1 }} />}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                  机器预检{preflight.blocked ? '阻断' : '通过'}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+                  {preflight.summary}
+                </div>
+                {preflight.blocked && (
+                  <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 12, color: 'var(--muted-foreground)' }}>
+                    {(preflight.schema?.errors ?? []).slice(0, 4).map((e, i) => (
+                      <li key={`s${i}`}>schema：{e}</li>
+                    ))}
+                    {(preflight.shacl?.violations ?? []).slice(0, 3).map((v, i) => (
+                      <li key={`h${i}`}>SHACL：{String((v as { message?: string }).message ?? (v as { constraint?: string }).constraint ?? '')}</li>
+                    ))}
+                    {preflight.axioms.filter(a => a.severity === 'violation').slice(0, 3).map((a, i) => (
+                      <li key={`a${i}`}>Axiom[{a.rule}]：{a.message}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* 执行结果横幅 */}
           {state === 'done' && executeResult && (
             <div style={{
@@ -391,16 +438,17 @@ export default function ProposalConfirmDrawer({
                 <button
                   type="button"
                   onClick={handleConfirm}
-                  disabled={state === 'confirming' || state === 'executing'}
+                  disabled={state === 'confirming' || state === 'executing' || preflight?.blocked === true}
+                  title={preflight?.blocked === true ? '预检阻断（schema/SHACL/Axiom violation），需先修正提案' : undefined}
                   style={{
                     height: 34, padding: '0 14px', fontSize: 13, fontWeight: 500,
                     background: 'var(--primary)', color: 'var(--primary-foreground, #fff)',
                     border: 'none', borderRadius: 'var(--radius)',
-                    cursor: state === 'confirming' || state === 'executing' ? 'not-allowed' : 'pointer',
-                    opacity: state === 'confirming' || state === 'executing' ? 0.6 : 1,
+                    cursor: state === 'confirming' || state === 'executing' || preflight?.blocked === true ? 'not-allowed' : 'pointer',
+                    opacity: state === 'confirming' || state === 'executing' || preflight?.blocked === true ? 0.6 : 1,
                   }}
                 >
-                  {state === 'executing' ? '执行中…' : state === 'confirming' ? '确认中…' : '确认并执行'}
+                  {state === 'executing' ? '执行中…' : state === 'confirming' ? '确认中…' : preflight?.blocked === true ? '预检阻断，不可执行' : '确认并执行'}
                 </button>
               </>
             )}

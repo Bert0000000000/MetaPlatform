@@ -2615,9 +2615,101 @@ class ProposalResponse(BaseModel):
     confirmed_by: str | None = None
     created_at: str = ""
     confirmed_at: str | None = None
+    # ONT-GATE-01：三闸门预检报告（schema×SHACL×Axiom）。propose 时算一份
+    # 快照供 UI 展示；execute 时重算为权威判定（快照不作准）。
+    preflight: dict[str, Any] | None = None
 
 
-def _proposal_to_dto(p: Any) -> ProposalResponse:
+async def _proposal_preflight(request: Request, prop: Any) -> dict[str, Any] | None:
+    """ONT-GATE-01：按 proposal kind 跑三闸门预检（无状态，数据实时取）。
+
+    - create_instance → schema + SHACL（合成候选个体）+ Axiom dry-run
+    - model_type      → 静态模型验证 + 层级环/互斥推演
+    - action          → ActionType 参数 schema 闸
+    - 其它（merge_suggestion 等已有 precheck 机制）→ None（不设闸）
+    """
+    kind = str(getattr(prop, "kind", "action") or "action")
+    try:
+        from mate_kernel.ontology.preflight import (
+            preflight_action,
+            preflight_create_instance,
+            preflight_model_type,
+        )
+
+        if kind == "create_instance":
+            from mate_kernel.ontology.identity.class_ref import ClassRef
+
+            ot = await _call_scoped(
+                request, "get_object_type", ClassRef(str(prop.action_rid))
+            )
+            axiom_records = await _call_scoped(
+                request, "list_axiom_records", _ctx(request).tenant_id, enabled_only=True
+            )
+            all_types = await _call_scoped(request, "list_object_types", 10000, 0)
+            return preflight_create_instance(
+                ot,
+                dict((prop.parameters or {}).get("props") or {}),
+                axiom_records=axiom_records,
+                all_types=all_types,
+            ).to_dict()
+        if kind == "model_type":
+            from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: F401
+
+            type_def = dict((prop.parameters or {}).get("type_def") or {})
+            if not type_def:
+                return None
+            try:
+                dto = ObjectTypeDTO(**type_def)
+                ot = _dto_to_ot(dto)
+            except Exception:
+                # 类型构造即失败（PK∉properties 等）→ 以 schema 闸呈现
+                return {
+                    "blocked": True,
+                    "schema": {"checked": True, "errors": ["类型定义无法构造"],
+                               "warnings": []},
+                    "shacl": {"checked": False, "conforms": True, "violations": []},
+                    "axioms": [],
+                    "summary": "预检阻断：类型定义无法构造",
+                }
+            axiom_records = await _call_scoped(
+                request, "list_axiom_records", _ctx(request).tenant_id, enabled_only=True
+            )
+            existing = await _call_scoped(request, "list_object_types", 10000, 0)
+            return preflight_model_type(
+                ot, existing_types=existing, axiom_records=axiom_records
+            ).to_dict()
+        if kind == "action":
+            from mate_kernel.ontology.identity.class_ref import ClassRef
+
+            at = await _call_scoped(
+                request, "get_action_type", ClassRef(str(prop.action_rid))
+            )
+            return preflight_action(at, dict(prop.parameters or {})).to_dict()
+        return None
+    except KeyError:
+        # subject 类型/公理数据不可得（跨租户/已删）→ 无法预检不静默放行：
+        # 以 schema 闸呈现"无法预检"，由 execute 端复核。
+        return {
+            "blocked": False,
+            "schema": {"checked": False, "errors": [], "warnings": ["预检数据不可得"]},
+            "shacl": {"checked": False, "conforms": True, "violations": []},
+            "axioms": [],
+            "summary": "预检数据不可得（subject 不存在或不可见）",
+        }
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001 —— 预检自身故障不能拖死 propose 主链路
+        _logger.warning("ont.preflight.failed", error=str(e))
+        return {
+            "blocked": False,
+            "schema": {"checked": False, "errors": [], "warnings": [f"预检异常: {e}"]},
+            "shacl": {"checked": False, "conforms": True, "violations": []},
+            "axioms": [],
+            "summary": f"预检异常（不阻断，execute 时复核）: {e}",
+        }
+
+
+def _proposal_to_dto(p: Any, preflight: dict[str, Any] | None = None) -> ProposalResponse:
     return ProposalResponse(
         proposal_id=p.proposal_id,
         action_rid=p.action_rid,
@@ -2630,6 +2722,7 @@ def _proposal_to_dto(p: Any) -> ProposalResponse:
         confirmed_by=p.confirmed_by,
         created_at=p.created_at.isoformat() if p.created_at else "",
         confirmed_at=p.confirmed_at.isoformat() if p.confirmed_at else None,
+        preflight=preflight,
     )
 
 
@@ -2696,7 +2789,7 @@ async def propose_instance(
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    return _proposal_to_dto(prop)
+    return _proposal_to_dto(prop, await _proposal_preflight(request, prop))
 
 
 @router.post(
@@ -2719,7 +2812,7 @@ async def propose_object_type(
         type_def,
         payload.impact_summary,
     )
-    return _proposal_to_dto(prop)
+    return _proposal_to_dto(prop, await _proposal_preflight(request, prop))
 
 
 @router.post(
@@ -2805,9 +2898,31 @@ async def execute_proposal(
     - model_type → upsert 类型
     - merge_suggestion → 自动触发 merge_object_types，archived source
     - action → 通过已确认的提案执行，并返回审计与 Outbox 凭据
+    - ONT-GATE-01：执行前**重跑**三闸门预检（schema×SHACL×Axiom）——
+      propose 时的报告只是快照，本体在窗口期可能已变化；violation 级
+      发现 → 409 阻断（机器预检是 HITL 之后的强制底线）。
     """
     ctx = _ctx(request)
     idempotency_key = _require_idempotency_key(request)
+    try:
+        prop = await _call_scoped(request, "get_proposal", proposal_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    preflight = await _proposal_preflight(request, prop)
+    if preflight is not None and preflight.get("blocked"):
+        _logger.warning(
+            "ont.proposal.execute.blocked_by_preflight",
+            proposal_id=proposal_id,
+            summary=str(preflight.get("summary", "")),
+        )
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "E409_PREFLIGHT_BLOCKED",
+                "message": f"proposal 预检阻断: {preflight.get('summary', '')}",
+                "preflight": preflight,
+            },
+        )
     try:
         out = await _call_scoped(
             request,
@@ -2852,7 +2967,7 @@ async def propose_action(
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    return _proposal_to_dto(prop)
+    return _proposal_to_dto(prop, await _proposal_preflight(request, prop))
 
 
 # ─────────────────── 1b) MP-DEDUP-01: precheck / merge / propose-merge ───────────────────
@@ -3092,7 +3207,8 @@ async def get_proposal(proposal_id: str, request: Request) -> ProposalResponse:
         prop = await _call_scoped(request, "get_proposal", proposal_id)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    return _proposal_to_dto(prop)
+    # GET 时重算预检（无状态）：ProposalConfirmDrawer 拉详情即得最新闸门结论
+    return _proposal_to_dto(prop, await _proposal_preflight(request, prop))
 
 
 @router.post(
