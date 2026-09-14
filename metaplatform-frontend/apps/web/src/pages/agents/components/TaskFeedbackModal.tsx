@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Form, Input, Modal, Radio, Space, Tag, Typography } from '@douyinfe/semi-ui';
-import { LikeOutlined, DislikeOutlined, EditOutlined } from '@ant-design/icons';
+import { Button, Form, Input, Modal, Radio, Space, Tag } from '@douyinfe/semi-ui';
+import { Lightbulb, ThumbsDown, ThumbsUp } from 'lucide-react';
 import type { EmployeeTask, ExecutionResult, FeedbackType } from '@/api/dw/types';
+import '../agents.css';
 
 interface TaskFeedbackModalProps {
   open: boolean;
@@ -17,9 +18,9 @@ interface TaskFeedbackModalProps {
 }
 
 const FEEDBACK_OPTIONS: { value: FeedbackType; label: string; icon: React.ReactNode }[] = [
-  { value: 'thumb_up', label: '点赞', icon: <LikeOutlined /> },
-  { value: 'thumb_down', label: '点踩', icon: <DislikeOutlined /> },
-  { value: 'suggestion', label: '建议', icon: <EditOutlined /> },
+  { value: 'thumb_up', label: '点赞', icon: <ThumbsUp size={14} strokeWidth={1.5} /> },
+  { value: 'thumb_down', label: '点踩', icon: <ThumbsDown size={14} strokeWidth={1.5} /> },
+  { value: 'suggestion', label: '建议', icon: <Lightbulb size={14} strokeWidth={1.5} /> },
 ];
 
 const EXECUTION_OPTIONS: { value: ExecutionResult; label: string }[] = [
@@ -36,6 +37,10 @@ type FeedbackFormValues = {
   suggestion: string;
 };
 
+/**
+ * 任务反馈（沿用 recordFeedback 的字段名与校验：executionResult / feedbackType / suggestion / tags）。
+ * 标签选择用 Semi Button 做成可切换 chip，不再用不可访问的「可点 Tag」。
+ */
 export default function TaskFeedbackModal({
   open,
   task,
@@ -111,43 +116,44 @@ export default function TaskFeedbackModal({
           placeholder="请输入具体建议，帮助员工学习优化"
         />
 
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ marginBottom: 8 }}>
-            <Typography.Text>标签</Typography.Text>
+        <div>
+          <div>
+            <span className="mp-agent-section-label">标签</span>
           </div>
-          <Space wrap>
+          <div className="mp-agent-chips">
             {PRESET_TAGS.map((tag) => (
-              <Tag
+              <Button
                 key={tag}
-                color={selectedTags.includes(tag) ? 'blue' : 'grey'}
-                style={{ cursor: 'pointer' }}
+                size="small"
+                theme={selectedTags.includes(tag) ? 'solid' : 'light'}
+                type={selectedTags.includes(tag) ? 'primary' : 'tertiary'}
                 onClick={() => toggleTag(tag)}
               >
                 {tag}
-              </Tag>
+              </Button>
             ))}
-          </Space>
-          <div style={{ marginTop: 8 }}>
-            <Space>
-              <Input
-                size="small"
-                placeholder="自定义标签"
-                value={customTag}
-                onChange={(v: string) => setCustomTag(v)}
-                onEnterPress={addCustomTag}
-              />
-              <Typography.Text link onClick={addCustomTag}>添加</Typography.Text>
-            </Space>
           </div>
-          {selectedTags.length > 0 && (
-            <div style={{ marginTop: 8 }}>
+          <Space>
+            <Input
+              size="small"
+              placeholder="自定义标签"
+              value={customTag}
+              onChange={(v: string) => setCustomTag(v)}
+              onEnterPress={addCustomTag}
+            />
+            <Button size="small" theme="borderless" type="primary" onClick={addCustomTag}>
+              添加
+            </Button>
+          </Space>
+          {selectedTags.length > 0 ? (
+            <div className="mp-agent-chips">
               {selectedTags.map((tag) => (
                 <Tag key={tag} closable onClose={() => toggleTag(tag)}>
                   {tag}
                 </Tag>
               ))}
             </div>
-          )}
+          ) : null}
         </div>
       </Form>
     </Modal>

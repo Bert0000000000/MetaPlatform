@@ -1,70 +1,94 @@
-import { Card, Tag, Timeline, Typography } from '@douyinfe/semi-ui';
-import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
+import { Card, Tag, Timeline } from '@douyinfe/semi-ui';
 import type { EmployeeTask } from '@/api/dw/types';
+import { EmptyState } from '@/components/skeleton';
+import '../agents.css';
 
 interface ExecutionTimelineProps {
   task: EmployeeTask;
 }
 
-interface Step {
-  id: string;
-  name: string;
-  status: 'completed' | 'current' | 'pending' | 'failed';
-  timestamp: string;
-  type: 'plan' | 'tool' | 'retrieve' | 'reflect' | 'finalize';
+type TagColorName = 'grey' | 'blue' | 'green' | 'red';
+
+const STATUS_META: Record<string, { label: string; color: TagColorName }> = {
+  pending: { label: '待处理', color: 'grey' },
+  in_progress: { label: '运行中', color: 'blue' },
+  running: { label: '运行中', color: 'blue' },
+  completed: { label: '已完成', color: 'green' },
+  success: { label: '已完成', color: 'green' },
+  done: { label: '已完成', color: 'green' },
+  failed: { label: '失败', color: 'red' },
+  error: { label: '失败', color: 'red' },
+  cancelled: { label: '已取消', color: 'grey' },
+};
+
+function statusMeta(value: string): { label: string; color: TagColorName } {
+  return STATUS_META[value] ?? { label: value, color: 'grey' };
 }
 
-const MOCK_STEPS: Step[] = [
-  { id: '1', name: '任务规划', status: 'completed', timestamp: new Date(Date.now() - 60000).toISOString(), type: 'plan' },
-  { id: '2', name: '知识库检索', status: 'completed', timestamp: new Date(Date.now() - 50000).toISOString(), type: 'retrieve' },
-  { id: '3', name: '工具调用: query_database', status: 'completed', timestamp: new Date(Date.now() - 40000).toISOString(), type: 'tool' },
-  { id: '4', name: '反思重试 (修正 SQL)', status: 'current', timestamp: new Date(Date.now() - 30000).toISOString(), type: 'reflect' },
-  { id: '5', name: '汇总输出', status: 'pending', timestamp: '', type: 'finalize' },
-];
-
-const STEP_TYPE_COLOR: Record<Step['type'], TagColor> = {
-  plan: 'blue',
-  tool: 'purple',
-  retrieve: 'cyan',
-  reflect: 'orange',
-  finalize: 'green',
+/** Semi Timeline.Item 的 color 直接作为圆点背景色，取状态语义 token。 */
+const DOT_COLOR: Record<TagColorName, string> = {
+  green: 'var(--semi-color-success)',
+  red: 'var(--semi-color-danger)',
+  blue: 'var(--semi-color-primary)',
+  grey: 'var(--semi-color-text-3)',
 };
 
-// Timeline 圆点颜色（Semi Timeline.Item color 直接作为 CSS backgroundColor）
-const DOT_COLOR: Record<Step['status'], string> = {
-  completed: 'var(--semi-color-success)',
-  current: 'var(--semi-color-primary)',
-  pending: 'var(--semi-color-tertiary)',
-  failed: 'var(--semi-color-danger)',
-};
+interface LifecycleEvent {
+  key: string;
+  name: string;
+  at: string;
+}
 
-const STATUS_TAG_COLOR: Record<Step['status'], TagColor> = {
-  completed: 'green',
-  current: 'blue',
-  pending: 'grey',
-  failed: 'red',
-};
-
+/**
+ * 执行轨迹：由任务自身的生命周期时间戳派生（创建 → 开始 → 完成），是真实数据。
+ * 平台没有逐步的 plan/tool/reflect 轨迹接口，故不编造步骤轨迹。
+ */
 export default function ExecutionTimeline({ task }: ExecutionTimelineProps) {
+  const events: LifecycleEvent[] = [];
+  if (task.createdAt) events.push({ key: 'created', name: '任务创建', at: task.createdAt });
+  if (task.startedAt) events.push({ key: 'started', name: '开始执行', at: task.startedAt });
+  if (task.completedAt) events.push({ key: 'completed', name: '执行结束', at: task.completedAt });
+
+  const meta = statusMeta(task.status);
+
+  if (events.length === 0) {
+    return (
+      <Card title={`执行轨迹 · ${task.title || task.id}`}>
+        <EmptyState
+          illustration="no-content"
+          title="暂无轨迹时间戳"
+          desc="该任务还没有创建/开始/完成时间记录。"
+        />
+      </Card>
+    );
+  }
+
   return (
-    <Card title={`执行轨迹 - ${task.title}`}>
+    <Card title={`执行轨迹 · ${task.title || task.id}`}>
       <Timeline>
-        {MOCK_STEPS.map((s) => (
-          <Timeline.Item key={s.id} color={DOT_COLOR[s.status]}>
-            <div>
-              <Typography.Text strong>{s.name}</Typography.Text>
-              <div>
-                <Tag color={STEP_TYPE_COLOR[s.type]}>{s.type}</Tag>
-                <Tag color={STATUS_TAG_COLOR[s.status]}>{s.status}</Tag>
-                {s.timestamp && (
-                  <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
-                    {' '} {new Date(s.timestamp).toLocaleTimeString()}
-                  </Typography.Text>
-                )}
+        {events.map((event, index) => {
+          const isLast = index === events.length - 1;
+          const color = isLast ? DOT_COLOR[meta.color] : DOT_COLOR.blue;
+          return (
+            <Timeline.Item key={event.key} color={color}>
+              <div className="mp-agent-line">
+                <span>
+                  <span className="mp-agent-name">{event.name}</span>{' '}
+                  <Tag color={isLast ? meta.color : 'blue'} type="light">
+                    {isLast ? meta.label : '已记录'}
+                  </Tag>
+                </span>
+                <span className="mp-agent-line-label">{new Date(event.at).toLocaleString()}</span>
               </div>
-            </div>
-          </Timeline.Item>
-        ))}
+              {isLast && task.result ? (
+                <div className="mp-agent-line">
+                  <span className="mp-agent-line-label">结果</span>
+                  <span>{task.result}</span>
+                </div>
+              ) : null}
+            </Timeline.Item>
+          );
+        })}
       </Timeline>
     </Card>
   );

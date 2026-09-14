@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Empty, Spin, Timeline, Typography } from '@douyinfe/semi-ui';
-import { ReloadOutlined } from '@ant-design/icons';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button, Card, Space, Spin, Timeline, Typography } from '@douyinfe/semi-ui';
+import { RefreshCw } from 'lucide-react';
 import { getEmployeeOperationLogs } from '@/api/dw/employees';
 import type { EmployeeOperationLog } from '@/api/dw/types';
+import { EmptyState } from '@/components/skeleton';
+import '../agents.css';
 
 const { Text } = Typography;
 
@@ -30,28 +32,28 @@ function actionLabel(action: string): string {
   return map[action] || action;
 }
 
+/** 员工操作日志（Card 区块 + Semi Timeline）。数据面沿用 /dw/employees/{id}/logs。 */
 export default function OperationLogPanel({ employeeId }: OperationLogPanelProps) {
   const [logs, setLogs] = useState<EmployeeOperationLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState('');
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setError('');
     try {
-      const data = await getEmployeeOperationLogs(employeeId);
-      setLogs(data);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
+      setLogs(await getEmployeeOperationLogs(employeeId));
+    } catch (e) {
+      setLogs([]);
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  };
+  }, [employeeId]);
 
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employeeId]);
+    void load();
+  }, [load]);
 
   const dataSource = useMemo(
     () =>
@@ -60,44 +62,51 @@ export default function OperationLogPanel({ employeeId }: OperationLogPanelProps
         type: (log.status === 'success' ? 'success' : 'error') as 'success' | 'error',
         extra: log.actor,
         content: (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <Text strong style={{ fontSize: 13 }}>{actionLabel(log.action)}</Text>
-            {log.resource && (
-              <Text type="tertiary" style={{ fontSize: 12 }}>· {log.resource}</Text>
-            )}
-            {log.ip && (
-              <Text type="tertiary" style={{ fontSize: 11, fontFamily: 'monospace' }}>
-                · {log.ip}
-              </Text>
-            )}
-          </div>
+          <Space spacing={4} wrap>
+            <Text strong>{actionLabel(log.action)}</Text>
+            {log.resource ? <Text type="tertiary">· {log.resource}</Text> : null}
+            {log.ip ? <Text type="tertiary">· {log.ip}</Text> : null}
+          </Space>
         ),
       })),
     [logs],
   );
 
-  if (loading) {
-    return (
-      <Card title="操作日志">
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
-          <Spin />
-        </div>
-      </Card>
-    );
-  }
-
   return (
     <Card
       title="操作日志"
       headerExtraContent={
-        <Button icon={<ReloadOutlined />} onClick={load} size="small">刷新</Button>
+        <Button
+          size="small"
+          icon={<RefreshCw size={14} strokeWidth={1.5} />}
+          loading={loading}
+          onClick={() => void load()}
+        >
+          刷新
+        </Button>
       }
-      bodyStyle={{ padding: error ? 16 : '8px 16px 0' }}
     >
       {error ? (
-        <Empty description={`加载失败：${error.message}`} />
+        <EmptyState
+          illustration="failure"
+          title="操作日志加载失败"
+          desc={error}
+          actions={
+            <Button theme="solid" type="primary" onClick={() => void load()}>
+              重试
+            </Button>
+          }
+        />
+      ) : loading ? (
+        <div className="mp-agent-loading">
+          <Spin size="middle" />
+        </div>
       ) : logs.length === 0 ? (
-        <Empty description="暂无操作日志" />
+        <EmptyState
+          illustration="no-content"
+          title="暂无操作日志"
+          desc="对该员工的启用、停用、配置变更都会记录在这里。"
+        />
       ) : (
         <Timeline dataSource={dataSource} />
       )}

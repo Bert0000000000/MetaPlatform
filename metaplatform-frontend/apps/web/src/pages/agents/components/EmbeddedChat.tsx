@@ -3,7 +3,10 @@ import {
   AIChatDialogue,
   AIChatInput,
   Avatar,
+  Button,
+  Space,
   Spin,
+  Toast,
   Typography,
 } from '@douyinfe/semi-ui';
 import type { Message as SemiMessage } from '@douyinfe/semi-ui/lib/es/aiChatDialogue/interface';
@@ -17,12 +20,10 @@ import {
   listEmployeeMessages,
   type EmployeeMessage,
 } from '@/api/dw/employee-conversations';
+import { EmptyState } from '@/components/skeleton';
+import '../agents.css';
 
-const WELCOME_HINTS = [
-  '介绍一下你的能力',
-  '帮我写一条 SQL',
-  '总结最近一次执行',
-];
+const WELCOME_HINTS = ['介绍一下你的能力', '帮我写一条 SQL', '总结最近一次执行'];
 
 function extractPlainText(contents: Array<{ type: string; [key: string]: unknown }> | undefined): string {
   const parts: string[] = [];
@@ -40,16 +41,8 @@ function extractPlainText(contents: Array<{ type: string; [key: string]: unknown
   return parts.join('');
 }
 
-const MOCK_REPLIES = [
-  '收到您的消息。我是您的数字员工助手，正在为您处理任务。',
-  '根据我的知识库，这个问题可以这样解决：请先确认相关流程，然后按照标准操作执行。',
-  '我已查阅相关文档，您询问的内容属于标准业务流程范畴，建议按照规范操作执行。',
-  '已为您查询到相关信息。如需进一步操作，请告诉我具体需求。',
-];
-
 interface EmbeddedChatProps {
   employee: Employee;
-  heightMode?: 'fixed' | 'fill';
 }
 
 const STORAGE_PREFIX = 'dwe-conv:';
@@ -61,12 +54,20 @@ function writeStoredConv(empId: string, convId: string) {
   try { localStorage.setItem(STORAGE_PREFIX + empId, convId); } catch { /* ignore */ }
 }
 
-export default function EmbeddedChat({ employee, heightMode = 'fixed' }: EmbeddedChatProps) {
+/**
+ * 员工内嵌对话（AIChatDialogue + AIChatInput）。
+ *
+ * 消息走 /api/v1/copilot/chat/completions/stream 真实流式接口并落库；
+ * 网关不可用时如实报错（Toast + 失败气泡），不伪造回复。
+ * 版式全部交给 Semi 组件与 agents.css 共享类，本文件 0 处内联样式。
+ */
+export default function EmbeddedChat({ employee }: EmbeddedChatProps) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<EmployeeMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
 
   // 进入页面：恢复 / 加载 / 自动创建会话
@@ -74,7 +75,7 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
     let cancelled = false;
     (async () => {
       setInitialLoading(true);
-      setError(null);
+      setError('');
       try {
         // 优先使用 localStorage 缓存的会话 id（session 内稳定）
         const stored = readStoredConv(employee.employeeId);
@@ -104,13 +105,13 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
         if (cancelled) return;
         setMessages(msgs);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err : new Error(String(err)));
+        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
       } finally {
         if (!cancelled) setInitialLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [employee.employeeId]);
+  }, [employee.employeeId, reloadKey]);
 
   const handleSend = useCallback(
     async (text: string) => {
@@ -118,7 +119,7 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
       if (!trimmed || loading || !conversationId) return;
 
       setLoading(true);
-      setError(null);
+      setError('');
 
       // 1. 持久化 user 消息
       let userMsg: EmployeeMessage;
@@ -129,7 +130,7 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
         });
         setMessages((prev) => [...prev, userMsg]);
       } catch (err) {
-        setError(err instanceof Error ? err : new Error('保存消息失败'));
+        Toast.error(err instanceof Error ? err.message : '保存消息失败');
         setLoading(false);
         return;
       }
@@ -157,6 +158,7 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
       ]);
 
       let accumulated = '';
+      let failed = false;
       try {
         const response = await fetch('/api/v1/copilot/chat/completions/stream', {
           method: 'POST',
@@ -197,10 +199,10 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
           for (const line of lines) {
             const t = line.trim();
             if (!t.startsWith('data:')) continue;
-            const data = t.slice(5).trim();
-            if (!data || data === '[DONE]') continue;
+            const raw = t.slice(5).trim();
+            if (!raw || raw === '[DONE]') continue;
             try {
-              const parsed = JSON.parse(data) as {
+              const parsed = JSON.parse(raw) as {
                 type?: string;
                 data?: { text?: string; finish_reason?: string };
                 choices?: { delta?: { content?: string }; finish_reason?: string }[];
@@ -217,37 +219,28 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
               if (parsed.choices?.[0]?.finish_reason || parsed.type === 'final' || parsed.data?.finish_reason) {
                 finished = true;
               }
-            } catch { /* ignore */ }
+            } catch { /* ignore malformed frame */ }
           }
         }
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') {
           // 用户取消 — 保留已累积内容
         } else {
-          // 走 mock 回复
-          const reply = MOCK_REPLIES[Math.floor(Math.random() * MOCK_REPLIES.length)];
-          let index = 0;
-          const timer = setInterval(() => {
-            if (index >= reply.length) {
-              clearInterval(timer);
-              accumulated = reply;
-              setMessages((prev) =>
-                prev.map((m) => (m.messageId === tempAssistantId ? { ...m, content: accumulated } : m)),
-              );
-            } else {
-              accumulated += reply.slice(index, index + 2);
-              index += 2;
-              setMessages((prev) =>
-                prev.map((m) => (m.messageId === tempAssistantId ? { ...m, content: accumulated } : m)),
-              );
-            }
-          }, 50);
-          // 等 mock 流式写完
-          await new Promise((r) => setTimeout(r, (reply.length / 2) * 50 + 100));
+          failed = true;
+          const message = err instanceof Error ? err.message : String(err);
+          Toast.error(`回复失败：${message}`);
         }
       } finally {
         setLoading(false);
         abortRef.current = null;
+      }
+
+      if (failed && !accumulated) {
+        // 没有拿到任何内容：标记失败气泡，不落库
+        setMessages((prev) =>
+          prev.map((m) => (m.messageId === tempAssistantId ? { ...m, status: 'failed' } : m)),
+        );
+        return;
       }
 
       // 3. 持久化 assistant 消息（替换临时条目为持久化消息）
@@ -255,7 +248,7 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
         const assistantMsg = await appendEmployeeMessage(employee.employeeId, conversationId, {
           role: 'assistant',
           content: accumulated,
-          status: 'completed',
+          status: failed ? 'failed' : 'completed',
           model: employee.capability?.model || '',
           createdAt: new Date().toISOString(),
         });
@@ -308,89 +301,72 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
 
   const showWelcome = messages.length === 0 && !initialLoading;
 
+  if (initialLoading) {
+    return (
+      <div className="mp-agent-loading">
+        <Spin size="middle" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <EmptyState
+        illustration="failure"
+        title="会话加载失败"
+        desc={error}
+        actions={
+          <Button theme="solid" type="primary" onClick={() => setReloadKey((k) => k + 1)}>
+            重试
+          </Button>
+        }
+      />
+    );
+  }
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: heightMode === 'fill' ? '100%' : 500,
-        minHeight: heightMode === 'fill' ? 0 : undefined,
-        gap: 8,
-        position: 'relative',
-      }}
-    >
-      {initialLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-          <Spin />
-        </div>
-      ) : error ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--semi-color-danger)', fontSize: 13 }}>
-          加载失败：{error.message}
-        </div>
-      ) : (
-        <>
-          <AIChatDialogue
-            className="edp-ai-dialogue"
-            style={{ flex: 1, minHeight: 0, width: '100%', maxWidth: 'none', padding: '12px 0 0' }}
-            align="leftRight"
-            mode="bubble"
-            chats={semiMessages}
-            roleConfig={{
-              user: { name: '我' },
-              assistant: { name: employee.name },
-            }}
-            dialogueRenderConfig={{
-              renderDialogueAvatar: ({ message }) => (
-                <Avatar
-                  size="extra-small"
-                  color={message?.role === 'user' ? 'blue' : 'purple'}
-                  style={{ flexShrink: 0 }}
-                >
-                  {message?.role === 'user' ? <UserIcon size={14} /> : <Bot size={14} />}
-                </Avatar>
-              ),
-            }}
-            topSlot={
-              showWelcome ? (
-                <div style={{ textAlign: 'center', padding: '32px 16px 8px' }}>
-                  <div
-                    style={{
-                      width: 48, height: 48, borderRadius: 12,
-                      background: 'var(--semi-color-primary-light-default)',
-                      color: 'var(--semi-color-primary)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: 12,
-                    }}
-                  >
-                    <Sparkles size={24} />
-                  </div>
-                  <Typography.Title heading={5} style={{ margin: '0 0 4px' }}>
-                    你好，我是 {employee.name}
-                  </Typography.Title>
-                  <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
-                    {employee.roleIdentity || '数字员工'} · 随时为你服务
-                  </Typography.Text>
-                </div>
-              ) : undefined
-            }
-            hints={showWelcome ? WELCOME_HINTS : []}
-            hintStyle={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginLeft: 0, marginTop: 16 }}
-            onHintClick={(hint) => { void handleSend(hint); }}
-          />
-          <AIChatInput
-            placeholder={`向 ${employee.name} 发送消息…`}
-            sendHotKey="enter"
-            round
-            generating={loading}
-            onStopGenerate={handleCancel}
-            onMessageSend={({ inputContents }) => {
-              void handleSend(extractPlainText(inputContents));
-            }}
-          />
-        </>
-      )}
-    </div>
+    <>
+      <AIChatDialogue
+        align="leftRight"
+        mode="bubble"
+        chats={semiMessages}
+        roleConfig={{
+          user: { name: '我' },
+          assistant: { name: employee.name },
+        }}
+        dialogueRenderConfig={{
+          renderDialogueAvatar: ({ message }) => (
+            <Avatar size="extra-small" color={message?.role === 'user' ? 'blue' : 'purple'}>
+              {message?.role === 'user' ? <UserIcon size={14} /> : <Bot size={14} />}
+            </Avatar>
+          ),
+        }}
+        topSlot={
+          showWelcome ? (
+            <Space vertical align="center" spacing={8}>
+              <Sparkles size={24} strokeWidth={1.5} />
+              <Typography.Title heading={5} type="secondary">
+                你好，我是 {employee.name}
+              </Typography.Title>
+              <Typography.Text type="tertiary">
+                {employee.roleIdentity || '数字员工'} · 随时为你服务
+              </Typography.Text>
+            </Space>
+          ) : undefined
+        }
+        hints={showWelcome ? WELCOME_HINTS : []}
+        onHintClick={(hint) => { void handleSend(hint); }}
+      />
+      <AIChatInput
+        placeholder={`向 ${employee.name} 发送消息…`}
+        sendHotKey="enter"
+        round
+        generating={loading}
+        onStopGenerate={handleCancel}
+        onMessageSend={({ inputContents }) => {
+          void handleSend(extractPlainText(inputContents));
+        }}
+      />
+    </>
   );
 }

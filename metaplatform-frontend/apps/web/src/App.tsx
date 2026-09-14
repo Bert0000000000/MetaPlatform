@@ -11,6 +11,7 @@ import { legacyRedirectRoutes } from './routes/legacy-redirects';
 import { ontologyRoutes } from './routes/ontology';
 import { adminRoutes } from './routes/admin';
 import { homeRoutes } from './routes/home';
+import { agentsRoutes } from './routes/agents';
 
 /**
  * 新信息架构（11 域 → 8 域，DESIGN-SPEC §2）。
@@ -21,28 +22,8 @@ import { homeRoutes } from './routes/home';
 // ---------- 平台管理 ----------
 
 // ---------- 数字员工 ----------
-const AgentsLayout = lazy(() => import('./pages/agents/AgentsLayout'));
-const EmployeeListPage = lazy(() => import('./pages/agents/EmployeeListPage'));
-const EmployeeCreatePage = lazy(() => import('./pages/agents/EmployeeCreatePage'));
-const EmployeeDetailPage = lazy(() => import('./pages/agents/EmployeeDetailPage'));
-const TaskListPage = lazy(() => import('./pages/agents/TaskListPage'));
-const TaskDetailPage = lazy(() => import('./pages/agents/TaskDetailPage'));
-const CollaborationListPage = lazy(() => import('./pages/agents/CollaborationListPage'));
-const CollaborationCreatePage = lazy(() => import('./pages/agents/CollaborationCreatePage'));
-const CollaborationMonitorPage = lazy(() => import('./pages/agents/CollaborationMonitorPage'));
-const EvaluationPage = lazy(() => import('./pages/agents/EvaluationPage'));
-const CapabilityConfigPage = lazy(() => import('./pages/agents/CapabilityConfigPage'));
-const ExternalAgentsPage = lazy(() => import('./pages/agents/ExternalAgentsPage'));
 
 // DW API consumption routes (GOVERN-08)
-const DwEmployeesPage = lazy(() => import('./pages/dw/EmployeesPage'));
-const DwEvaluationsPage = lazy(() => import('./pages/dw/EvaluationsPage'));
-const DwCollaborationsPage = lazy(() => import('./pages/dw/CollaborationsPage'));
-const DwTasksPage = lazy(() => import('./pages/dw/TasksPage'));
-const DwLearningPage = lazy(() => import('./pages/dw/LearningPage'));
-const DwDocumentsPage = lazy(() => import('./pages/dw/DocumentsPage'));
-const DwExtractionPage = lazy(() => import('./pages/dw/ExtractionPage'));
-const DwObsPage = lazy(() => import('./pages/dw/ObsPage'));
 
 // ---------- SuperAI ----------
 const SuperaiChatPage = lazy(() => import('./pages/superai/ChatPage'));
@@ -190,19 +171,6 @@ const KI_TABS: ModuleTab[] = [
   { key: 'test', label: '检索测试', path: '/ki/test' },
 ];
 
-const AGENTS_TABS_V2: ModuleTab[] = [
-  {
-    key: 'employees',
-    label: '员工',
-    path: '/agents',
-    matchPaths: ['/agents/employees', '/agents/learning', '/agents/obs', '/agents/extraction'],
-  },
-  { key: 'external', label: '外部员工 · A2A', path: '/agents/external' },
-  { key: 'tasks', label: '任务中心', path: '/agents/tasks', matchPaths: ['/agents/dw-tasks'] },
-  { key: 'collab', label: '协作编排', path: '/agents/collab', matchPaths: ['/agents/dw-collaborations'] },
-  { key: 'evaluation', label: '能力评估', path: '/agents/evaluation', matchPaths: ['/agents/dw-evaluations'] },
-  { key: 'documents', label: '文档处理', path: '/agents/documents' },
-];
 
 function Loading() {
   return (
@@ -236,29 +204,8 @@ function AppRoutes() {
             {/* ---------- 2. 本体（域路由见 src/routes/ontology.tsx） ---------- */}
             {ontologyRoutes}
 
-            {/* ---------- 3. 数字员工 ---------- */}
-            <Route path="agents" element={<AgentsLayout tabs={AGENTS_TABS_V2} />}>
-              <Route index element={<EmployeeListPage />} />
-              <Route path="create" element={<EmployeeCreatePage />} />
-              <Route path="external" element={<ExternalAgentsPage />} />
-              <Route path="tasks" element={<TaskListPage />} />
-              <Route path="tasks/:taskId" element={<TaskDetailPage />} />
-              <Route path="collab" element={<CollaborationListPage />} />
-              <Route path="collab/create" element={<CollaborationCreatePage />} />
-              <Route path="collab/:id" element={<CollaborationMonitorPage />} />
-              <Route path="evaluation" element={<EvaluationPage />} />
-              <Route path="documents" element={<DwDocumentsPage />} />
-              {/* DW API consumption pages (GOVERN-08) */}
-              <Route path="employees" element={<DwEmployeesPage />} />
-              <Route path="dw-tasks" element={<DwTasksPage />} />
-              <Route path="dw-collaborations" element={<DwCollaborationsPage />} />
-              <Route path="dw-evaluations" element={<DwEvaluationsPage />} />
-              <Route path="learning" element={<DwLearningPage />} />
-              <Route path="extraction" element={<DwExtractionPage />} />
-              <Route path="obs" element={<DwObsPage />} />
-              <Route path=":employeeId" element={<EmployeeDetailPage />} />
-              <Route path=":employeeId/capabilities" element={<CapabilityConfigPage />} />
-            </Route>
+            {/* ---------- 3. 数字员工（域路由见 src/routes/agents.tsx） ---------- */}
+            {agentsRoutes}
 
             {/* ---------- 4. SuperAI ---------- */}
             <Route path="superai" element={<Navigate to="/superai/chat" replace />} />

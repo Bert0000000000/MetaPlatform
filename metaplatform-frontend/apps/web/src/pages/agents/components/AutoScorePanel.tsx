@@ -2,22 +2,25 @@ import { useState } from 'react';
 import {
   Button,
   Card,
+  Col,
   Collapse,
-  Empty,
+  Descriptions,
   Input,
-  Toast,
   Progress,
+  Row,
   Space,
   Tag,
+  Toast,
   Typography,
 } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
-import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
-import { ThunderboltOutlined, ExperimentOutlined } from '@ant-design/icons';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
+import { FlaskConical, Zap } from 'lucide-react';
 import { autoScoreConversation, batchAutoScore } from '@/api/dw/evaluations';
 import { DIMENSION_META } from '@/api/dw/types';
-import type { AutoScoreResult } from '@/api/dw/types';
-import DimensionScoreChart from './DimensionScoreChart';
+import type { AutoScoreResult, DimensionScore } from '@/api/dw/types';
+import { DataTablePro, EmptyState, SheetDetail } from '@/components/skeleton';
+import '../agents.css';
 
 interface AutoScorePanelProps {
   conversationId?: string;
@@ -25,34 +28,75 @@ interface AutoScorePanelProps {
   onScored?: (result: AutoScoreResult) => void;
 }
 
-interface BatchRow {
-  key: string;
-  conversationId: string;
-  overallScore: number;
-  mode: string;
-  evaluatedAt: string;
-  result: AutoScoreResult;
-}
+type SemiColumns<T> = ColumnProps<T & Record<string, any>>[];
 
-/** 根据分数返回 Tag 的颜色 */
+/** 分数 → Semi Tag 预设色。 */
 function scoreTagColor(s: number): TagColor {
   if (s >= 85) return 'green';
   if (s >= 70) return 'orange';
   return 'red';
 }
 
-/** 根据分数返回进度环的描边颜色 */
+/** 分数 → 进度条描边色（只取 DSM 主题令牌）。 */
 function scoreStrokeColor(s: number): string {
   if (s >= 85) return 'var(--semi-color-success)';
   if (s >= 70) return 'var(--semi-color-warning)';
   return 'var(--semi-color-danger)';
 }
 
+/** 六维评分条：每维一行（标签 / Progress / 分值 Tag），无 SVG、无内联样式。 */
+function DimensionBars({ dimensions }: { dimensions: DimensionScore[] }) {
+  return (
+    <Row gutter={[12, 16]}>
+      {dimensions.map((d) => {
+        // 后端可能返回前端未登记的维度枚举，统一兜底
+        const label = DIMENSION_META[d.dimension]?.label ?? d.dimension;
+        return (
+          <Col span={24} key={d.dimension}>
+            <Row gutter={12} type="flex" align="middle">
+              <Col span={6}>
+                <Typography.Text>{label}</Typography.Text>
+              </Col>
+              <Col span={14}>
+                <Progress
+                  percent={d.score}
+                  stroke={scoreStrokeColor(d.score)}
+                  showInfo={false}
+                  aria-label={`${label} ${d.score} 分`}
+                />
+              </Col>
+              <Col span={4}>
+                <Tag color={scoreTagColor(d.score)}>{d.score}</Tag>
+              </Col>
+            </Row>
+            {d.reasoning ? (
+              <Typography.Paragraph type="tertiary" size="small">
+                {d.reasoning}
+              </Typography.Paragraph>
+            ) : null}
+            {d.evidence && d.evidence.length > 0 ? (
+              <div className="mp-agent-chips">
+                {d.evidence.map((e, i) => (
+                  <Tag key={`${d.dimension}-ev-${i}`} type="light">
+                    {e}
+                  </Tag>
+                ))}
+              </div>
+            ) : null}
+          </Col>
+        );
+      })}
+    </Row>
+  );
+}
+
 /**
  * 自动评分面板：
  * - 单条对话评分：输入 conversationId 或使用 props.conversationId
  * - 批量评分：基于 employeeId
- * - 展示总分进度环、维度评分折叠列表、评分模型与时间
+ * - 结果展示总分 Progress 环 + 维度 Progress 条（不再手绘雷达 SVG）
+ *
+ * 交互失败一律 Toast.error；未评分时给 EmptyState，不预置任何示例分数。
  */
 export default function AutoScorePanel({
   conversationId,
@@ -64,6 +108,7 @@ export default function AutoScorePanel({
   const [result, setResult] = useState<AutoScoreResult | null>(null);
   const [batchResults, setBatchResults] = useState<AutoScoreResult[]>([]);
   const [inputConvId, setInputConvId] = useState<string>(conversationId ?? '');
+  const [preview, setPreview] = useState<AutoScoreResult | null>(null);
 
   const handleSingleScore = async () => {
     const targetId = inputConvId.trim() || conversationId;
@@ -77,6 +122,8 @@ export default function AutoScorePanel({
       setResult(r);
       onScored?.(r);
       Toast.success(`评分完成：总分 ${r.overallScore}`);
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setSingleLoading(false);
     }
@@ -84,7 +131,7 @@ export default function AutoScorePanel({
 
   const handleBatchScore = async () => {
     if (!employeeId) {
-      Toast.warning('批量评分需要 employeeId');
+      Toast.warning('批量评分需要先选择数字员工');
       return;
     }
     setBatchLoading(true);
@@ -92,197 +139,160 @@ export default function AutoScorePanel({
       const r = await batchAutoScore(employeeId, { limit: 3 });
       setBatchResults(r.results);
       Toast.success(`批量评分完成：${r.scored}/${r.total}`);
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setBatchLoading(false);
     }
   };
 
-  const batchRows: BatchRow[] = batchResults.map((r) => ({
-    key: r.conversationId,
-    conversationId: r.conversationId,
-    overallScore: r.overallScore,
-    mode: r.mode,
-    evaluatedAt: r.evaluatedAt,
-    result: r,
-  }));
+  const batchColumns: SemiColumns<AutoScoreResult> = [
+    { title: '对话', dataIndex: 'conversationId' },
+    {
+      title: '总分',
+      dataIndex: 'overallScore',
+      width: 100,
+      render: (v: number) => <Tag color={scoreTagColor(v)}>{v}</Tag>,
+    },
+    { title: '评分模式', dataIndex: 'mode', width: 110 },
+    { title: '评分模型', dataIndex: 'evaluatorModel', ellipsis: true },
+    {
+      title: '评分时间',
+      dataIndex: 'evaluatedAt',
+      width: 180,
+      render: (v: string) => new Date(v).toLocaleString(),
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      width: 90,
+      fixed: 'right' as const,
+      render: (_: unknown, r: AutoScoreResult) => (
+        <Button theme="borderless" type="primary" size="small" onClick={() => setPreview(r)}>
+          详情
+        </Button>
+      ),
+    },
+  ];
 
   return (
-    <Space vertical style={{ width: '100%' }} spacing="medium">
-      <Card title="自动评分">
-        <Space wrap>
-          <Input
-            placeholder="对话 ID（留空则使用 props.conversationId）"
-            value={inputConvId}
-            onChange={(v: string) => setInputConvId(v)}
-            style={{ width: 320 }}
-            showClear
-          />
-          <Button
-            theme="solid"
-            type="primary"
-            icon={<ThunderboltOutlined />}
-            loading={singleLoading}
-            onClick={handleSingleScore}
-          >
-            一键自动评分
-          </Button>
-          <Button
-            icon={<ExperimentOutlined />}
-            loading={batchLoading}
-            onClick={handleBatchScore}
-            disabled={!employeeId}
-          >
-            批量评分（最近 3 条）
-          </Button>
-        </Space>
-      </Card>
-
-      {result && (
-        <Card title="评分结果">
-          <Row gutter={24}>
-            <Col xs={24} md={8}>
-              <Card title="总分">
-                <div style={{ textAlign: 'center', padding: '12px 0' }}>
-                  <Progress
-                    type="circle"
-                    percent={result.overallScore}
-                    stroke={scoreStrokeColor(result.overallScore)}
-                    format={(p) => <span style={{ fontSize: 24, fontWeight: 700 }}>{p}</span>}
-                  />
-                  <Typography.Paragraph
-                    type="secondary"
-                    style={{ marginTop: 12, marginBottom: 0 }}
-                  >
-                    {result.summary}
-                  </Typography.Paragraph>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    Model: {result.evaluatorModel} ·{' '}
-                    {new Date(result.evaluatedAt).toLocaleString()}
-                  </Typography.Text>
-                  <div style={{ marginTop: 8 }}>
-                    <Tag color="blue">模式：{result.mode}</Tag>
-                  </div>
-                </div>
-              </Card>
+    <Row gutter={[16, 16]}>
+      <Col span={24}>
+        <Card title="自动评分">
+          <Row gutter={[12, 12]}>
+            <Col xs={24} md={10}>
+              <Input
+                placeholder="对话 ID（留空则使用当前选中的对话）"
+                value={inputConvId}
+                onChange={(v: string) => setInputConvId(v)}
+                showClear
+                prefix={<Zap size={15} strokeWidth={1.5} />}
+              />
             </Col>
-            <Col xs={24} md={8}>
-              <Card title="维度雷达">
-                <DimensionScoreChart dimensions={result.dimensions} size={300} />
-              </Card>
-            </Col>
-            <Col xs={24} md={8}>
-              <Card title="维度明细">
-                <Collapse>
-                  {result.dimensions.map((d) => (
-                    <Collapse.Panel
-                      key={d.dimension}
-                      itemKey={d.dimension}
-                      header={
-                        <Space>
-                          <Typography.Text strong>{DIMENSION_META[d.dimension].label}</Typography.Text>
-                          <Tag color={scoreTagColor(d.score)}>{d.score}</Tag>
-                          {d.weight != null && (
-                            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                              权重 {(d.weight * 100).toFixed(0)}%
-                            </Typography.Text>
-                          )}
-                        </Space>
-                      }
-                    >
-                      <Space vertical spacing="tight" style={{ width: '100%' }}>
-                        {d.reasoning && (
-                          <Typography.Paragraph style={{ marginBottom: 0 }}>
-                            <Typography.Text type="secondary">理由：</Typography.Text>
-                            {d.reasoning}
-                          </Typography.Paragraph>
-                        )}
-                        {d.evidence && d.evidence.length > 0 && (
-                          <div>
-                            <Typography.Text type="secondary">证据：</Typography.Text>
-                            <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
-                              {d.evidence.map((e, i) => (
-                                <li key={i}>
-                                  <Typography.Text style={{ fontSize: 12 }}>{e}</Typography.Text>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </Space>
-                    </Collapse.Panel>
-                  ))}
-                </Collapse>
-              </Card>
+            <Col xs={24} md={14}>
+              <Space wrap>
+                <Button
+                  theme="solid"
+                  type="primary"
+                  loading={singleLoading}
+                  onClick={() => void handleSingleScore()}
+                >
+                  一键自动评分
+                </Button>
+                <Button
+                  icon={<FlaskConical size={15} strokeWidth={1.5} />}
+                  loading={batchLoading}
+                  onClick={() => void handleBatchScore()}
+                  disabled={!employeeId}
+                >
+                  批量评分（最近 3 条）
+                </Button>
+              </Space>
             </Col>
           </Row>
         </Card>
-      )}
+      </Col>
 
-      {batchResults.length > 0 && (
-        <Card title="批量评分结果">
-          <Collapse>
-            {batchRows.map((row) => (
-              <Collapse.Panel
-                key={row.key}
-                itemKey={row.key}
-                header={
-                  <Space>
-                    <Typography.Text>{row.conversationId}</Typography.Text>
-                    <Tag color={scoreTagColor(row.overallScore)}>
-                      总分 {row.overallScore}
-                    </Tag>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {new Date(row.evaluatedAt).toLocaleString()}
-                    </Typography.Text>
-                  </Space>
-                }
-              >
-                <Row gutter={16}>
-                  <Col xs={24} md={10}>
-                    <DimensionScoreChart dimensions={row.result.dimensions} size={260} />
-                  </Col>
-                  <Col xs={24} md={14}>
-                    <Typography.Paragraph>{row.result.summary}</Typography.Paragraph>
-                    <Collapse>
-                      {row.result.dimensions.map((d) => (
-                        <Collapse.Panel
-                          key={d.dimension}
-                          itemKey={d.dimension}
-                          header={
-                            <Space>
-                              <Typography.Text strong>{DIMENSION_META[d.dimension].label}</Typography.Text>
-                              <Tag>{d.score}</Tag>
-                            </Space>
-                          }
-                        >
-                          <Space vertical spacing={4} style={{ width: '100%' }}>
-                            {d.reasoning && <Typography.Text>{d.reasoning}</Typography.Text>}
-                            {d.evidence && d.evidence.length > 0 && (
-                              <ul style={{ margin: 0, paddingLeft: 16 }}>
-                                {d.evidence.map((e, i) => (
-                                  <li key={i}>
-                                    <Typography.Text style={{ fontSize: 12 }}>{e}</Typography.Text>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </Space>
-                        </Collapse.Panel>
-                      ))}
-                    </Collapse>
-                  </Col>
-                </Row>
-              </Collapse.Panel>
-            ))}
-          </Collapse>
-        </Card>
-      )}
+      {result ? (
+        <Col span={24}>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={8}>
+              <Card title="总分">
+                <Progress
+                  type="circle"
+                  percent={result.overallScore}
+                  width={132}
+                  stroke={scoreStrokeColor(result.overallScore)}
+                  format={(p) => `${p ?? 0}`}
+                  aria-label="自动评分总分"
+                />
+                <Typography.Paragraph type="secondary">{result.summary}</Typography.Paragraph>
+                <Descriptions
+                  row
+                  data={[
+                    { key: '评分模型', value: result.evaluatorModel },
+                    { key: '评分模式', value: result.mode },
+                    { key: '评分时间', value: new Date(result.evaluatedAt).toLocaleString() },
+                  ]}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} md={16}>
+              <Card title="维度评分">
+                <DimensionBars dimensions={result.dimensions} />
+              </Card>
+            </Col>
+          </Row>
+        </Col>
+      ) : null}
 
-      {!result && batchResults.length === 0 && (
-        <Card>
-          <Empty description="点击上方按钮开始自动评分" />
-        </Card>
-      )}
-    </Space>
+      {batchResults.length > 0 ? (
+        <Col span={24}>
+          <Card title="批量评分结果">
+            <DataTablePro<AutoScoreResult>
+              rowKey="conversationId"
+              dataSource={batchResults}
+              columns={batchColumns}
+              empty={<EmptyState illustration="no-result" title="本批没有评分结果" />}
+            />
+          </Card>
+        </Col>
+      ) : null}
+
+      {!result && batchResults.length === 0 ? (
+        <Col span={24}>
+          <Card>
+            <EmptyState
+              illustration="idle"
+              title="尚未开始评分"
+              desc="填入对话 ID 做单条评分，或对当前员工批量评分。"
+            />
+          </Card>
+        </Col>
+      ) : null}
+
+      <SheetDetail
+        title={preview ? `评分详情 · ${preview.conversationId}` : '评分详情'}
+        open={preview !== null}
+        onClose={() => setPreview(null)}
+        footer={<Button onClick={() => setPreview(null)}>关闭</Button>}
+      >
+        {preview ? (
+          <>
+            <Descriptions
+              row
+              data={[
+                { key: '总分', value: String(preview.overallScore) },
+                { key: '评分模式', value: preview.mode },
+                { key: '评分模型', value: preview.evaluatorModel },
+                { key: '评分时间', value: new Date(preview.evaluatedAt).toLocaleString() },
+              ]}
+            />
+            <Typography.Paragraph>{preview.summary}</Typography.Paragraph>
+            <DimensionBars dimensions={preview.dimensions} />
+          </>
+        ) : null}
+      </SheetDetail>
+    </Row>
   );
 }

@@ -1,76 +1,37 @@
-import { useEffect, useState } from 'react';
-import type { CSSProperties } from 'react';
-import { Card, Progress, Space, Typography } from '@douyinfe/semi-ui';
+import { Card, Descriptions, Progress } from '@douyinfe/semi-ui';
 import type { EmployeeTask } from '@/api/dw/types';
 
 interface ExecutionProgressProps {
   task: EmployeeTask;
 }
 
+function formatTime(value?: string | null): string {
+  return value ? new Date(value).toLocaleString() : '—';
+}
+
+/**
+ * 实时进度：只呈现任务记录里真实存在的字段（progress / 起止时间 / 结果）。
+ * 平台没有任务日志流接口，因此不渲染任何模拟日志行。
+ */
 export default function ExecutionProgress({ task }: ExecutionProgressProps) {
-  const [progress, setProgress] = useState(task.progress || 0);
-  const [logs, setLogs] = useState<string[]>([
-    `[${new Date(task.createdAt).toLocaleTimeString()}] 任务已创建`,
-    `[${new Date().toLocaleTimeString()}] 任务开始执行`,
-  ]);
-
-  useEffect(() => {
-    setProgress(task.progress || 0);
-  }, [task.progress]);
-
-  useEffect(() => {
-    if (task.status !== 'running') return;
-    const interval = setInterval(() => {
-      setProgress((p) => Math.min(100, p + Math.random() * 5));
-      setLogs((l) => [
-        `[${new Date().toLocaleTimeString()}] ${randomLog()}`,
-        ...l,
-      ].slice(0, 20));
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [task.status]);
+  const percent = typeof task.progress === 'number' ? Math.round(task.progress) : 0;
 
   return (
-    <div>
-      <Card>
-        <Space vertical style={{ width: '100%' }}>
-          <Typography.Text>当前进度：{Math.round(progress)}%</Typography.Text>
-          {/* Semi Progress 无 status prop：完成态用 stroke 语义色，进行中默认主题色 */}
-          <Progress
-            percent={Math.round(progress)}
-            stroke={progress >= 100 ? 'var(--semi-color-success)' : undefined}
-          />
-          <Typography.Text strong>实时日志：</Typography.Text>
-          <Card>
-            <pre style={codeStyle}>
-              {logs.join('\n')}
-            </pre>
-          </Card>
-        </Space>
-      </Card>
-    </div>
+    <Card title="实时进度">
+      {/* Semi Progress 无 status prop：完成态用语义色，进行中走主题色 */}
+      <Progress
+        percent={percent}
+        stroke={percent >= 100 ? 'var(--semi-color-success)' : undefined}
+      />
+      <Descriptions
+        row
+        data={[
+          { key: '当前进度', value: `${percent}%` },
+          { key: '开始时间', value: formatTime(task.startedAt) },
+          { key: '完成时间', value: formatTime(task.completedAt) },
+          { key: '执行结果', value: task.result || '—' },
+        ]}
+      />
+    </Card>
   );
 }
-
-function randomLog(): string {
-  const samples = [
-    '读取知识库 ...',
-    '调用工具 query_database ...',
-    '已生成 SQL 并执行 (rows: 12)',
-    '正在总结输出 ...',
-    '调用 Action ' + (['send_email', 'create_record'][Math.floor(Math.random() * 2)]),
-    '已完成步骤，等待用户确认',
-  ];
-  return samples[Math.floor(Math.random() * samples.length)]!;
-}
-
-const codeStyle: CSSProperties = {
-  background: 'var(--semi-color-fill-0)',
-  padding: 12,
-  borderRadius: 4,
-  fontFamily: 'Menlo, Consolas, monospace',
-  fontSize: 12,
-  maxHeight: 240,
-  overflow: 'auto',
-  margin: 0,
-};
