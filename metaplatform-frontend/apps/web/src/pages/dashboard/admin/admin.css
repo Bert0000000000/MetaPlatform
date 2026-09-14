@@ -1,0 +1,161 @@
+/*
+ * 平台管理域共享样式（E 骨架表格页）。
+ * 只做「单元格与抽屉内」的排版语义；表格/筛选/抽屉外壳一律走 P0 骨架组件。
+ */
+
+/* 表格里的「主体」单元格：头像 + 主标题 + 副标题 */
+.mp-admin-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  min-width: 0;
+}
+
+.mp-admin-cell-main {
+  min-width: 0;
+}
+
+.mp-admin-cell-title {
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-admin-cell-sub {
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-admin-chips {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+  flex-wrap: wrap;
+}
+
+.mp-admin-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+
+.mp-admin-muted {
+  color: var(--semi-color-text-2);
+}
+
+.mp-admin-faint {
+  color: var(--semi-color-text-3);
+  font-size: 12px;
+}
+
+/* 抽屉里的表单与分区 */
+.mp-admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+}
+
+.mp-admin-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+}
+
+.mp-admin-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--semi-color-text-3);
+}
+
+.mp-admin-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mp-space-3);
+}
+
+.mp-admin-switch-hint {
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+
+/* 行内动作 */
+.mp-admin-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+}
+
+/* 登录记录 / 键值小列表 */
+.mp-admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mp-admin-list-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--mp-space-3);
+  font-size: 12.5px;
+}
+
+.mp-admin-list-time {
+  color: var(--semi-color-text-3);
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 代码/JSON 输出块（运营监控的 PromQL 结果等） */
+.mp-admin-pre {
+  margin: var(--mp-space-3) 0 0;
+  padding: var(--mp-space-3);
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-fill-0);
+  color: var(--semi-color-text-1);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 300px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* KPI 行（运营/分析页顶部） */
+.mp-admin-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--mp-space-3);
+  margin-bottom: var(--mp-space-4);
+}
+
+@media (max-width: 1180px) {
+  .mp-admin-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.mp-admin-kpi-label {
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+}
+
+.mp-admin-kpi-value {
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--semi-color-text-0);
+  margin-top: var(--mp-space-1);
+}

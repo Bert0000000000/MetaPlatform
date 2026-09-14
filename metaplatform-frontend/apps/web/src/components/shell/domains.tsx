@@ -242,7 +242,7 @@ export const DOMAINS: DomainDef[] = [
         children: [
           { key: 'configs', label: '平台配置', path: '/admin/platform/configs' },
           { key: 'ai-providers', label: 'AI Provider', path: '/admin/platform/ai-providers' },
-          { key: 'components', label: '模型与组件', path: '/admin/platform/components' },
+          { key: 'components', label: '组件演示', path: '/admin/platform/components' },
         ],
       },
       {

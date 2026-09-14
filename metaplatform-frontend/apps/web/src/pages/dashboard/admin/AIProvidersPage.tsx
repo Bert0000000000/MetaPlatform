@@ -1,112 +1,121 @@
 /**
- * AI Provider 管理页 — 系统配置 AI_PROVIDER 分类的可视化与连接测试
- * - 卡片视图：OpenAI / Azure OpenAI / Ollama / 自定义第三方
- * - 顶部：默认生效的 provider 切换
- * - 每个卡片：启用 / Base URL / API Key / 默认模型 + [保存] [测试连接]
+ * AI Provider 管理页（DESIGN-SPEC §5 版式 E：页头 + 筛选栏 + 表格 + 抽屉）。
+ * 数据面沿用 src/api/admin/configs + src/api/admin/models，未新增后端契约：
+ * - 表格：每个 provider 一行（启用状态 / Base URL / 默认模型 / 模型数 / 连接测试）
+ * - 抽屉：编辑单 provider 的 Base URL / API Key / 默认模型 / Embedding 模型 / API Version
+ * - 抽屉：查看并管理该 provider 已获取的模型清单（启用开关 / 删除）
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Banner,
   Button,
   Card,
   Form,
   Input,
-  Modal,
   Select,
-  Space,
-  Spin,
   Switch,
   Tag,
-  Tooltip,
   Toast,
-} from "@douyinfe/semi-ui";
+  Tooltip,
+} from '@douyinfe/semi-ui';
 import {
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  CloudServerOutlined,
-  GlobalOutlined,
-  KeyOutlined,
-  LoadingOutlined,
-  MessageOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-  ThunderboltOutlined,
-  CloudDownloadOutlined,
-  DeleteOutlined,
-} from "@ant-design/icons";
-import type { AdminSystemConfig } from "@/types";
-import { listConfigs, updateConfig, batchCreateConfigs } from "@/api/admin/configs";
-import { listAiModels, saveAiModelsBulk, updateAiModel, deleteAiModel, type AiModelItem } from "@/api/admin/models";
-import { AdminLayout, StatCard, StatGrid } from "./__AdminLayout";
-import { formatDateTime } from "@/utils/datetime";
-import { useSettings } from "@/contexts/SettingsContext";
-import { testProvider, fetchProviderModels } from "@mate/shared/api";
+  CheckCircle2,
+  CloudDownload,
+  Globe,
+  KeyRound,
+  Loader2,
+  MessageSquare,
+  Plus,
+  RefreshCw,
+  Server,
+  Trash2,
+  XCircle,
+  Zap,
+} from 'lucide-react';
+import type { AdminSystemConfig } from '@/types';
+import { batchCreateConfigs, listConfigs, updateConfig } from '@/api/admin/configs';
+import {
+  deleteAiModel,
+  listAiModels,
+  saveAiModelsBulk,
+  updateAiModel,
+  type AiModelItem,
+} from '@/api/admin/models';
+import { fetchProviderModels, testProvider } from '@mate/shared/api';
+import { DataTablePro, EmptyState, FilterBar, PageHeader, SheetDetail } from '@/components/skeleton';
+import { formatDateTime } from '@/utils/datetime';
+import { useSettings } from '@/contexts/SettingsContext';
+import './admin.css';
 
 type ProviderId = string;
 
-const BUILTIN_PROVIDERS = ["openai", "azure", "ollama", "ark"];
+const BUILTIN_PROVIDERS = ['openai', 'azure', 'ollama', 'ark'];
 
-const PROVIDER_META: Record<
-  ProviderId,
-  {
-    name: string;
-    description: string;
-    docs: string;
-    icon: React.ReactNode;
-    color: string;
-    baseUrlExample: string;
-    defaultModelExample: string;
-  }
-> = {
+interface ProviderMeta {
+  name: string;
+  description: string;
+  docs: string;
+  icon: React.ReactNode;
+  baseUrlExample: string;
+  defaultModelExample: string;
+}
+
+const PROVIDER_META: Record<string, ProviderMeta> = {
   openai: {
-    name: "OpenAI",
-    description: "OpenAI 官方或自建 OpenAI 兼容代理",
-    docs: "https://platform.openai.com/docs/api-reference",
-    icon: <GlobalOutlined />,
-    color: "#10a37f",
-    baseUrlExample: "https://api.openai.com/v1",
-    defaultModelExample: "gpt-4o-mini",
+    name: 'OpenAI',
+    description: 'OpenAI 官方或自建 OpenAI 兼容代理',
+    docs: 'https://platform.openai.com/docs/api-reference',
+    icon: <Globe size={16} strokeWidth={1.5} />,
+    baseUrlExample: 'https://api.openai.com/v1',
+    defaultModelExample: 'gpt-4o-mini',
   },
   azure: {
-    name: "Azure OpenAI",
-    description: "Azure 上的 OpenAI 服务，需部署 Deployment",
-    docs: "https://learn.microsoft.com/azure/ai-services/openai/",
-    icon: <CloudServerOutlined />,
-    color: "#0078d4",
-    baseUrlExample: "https://{your-resource}.openai.azure.com/openai/deployments",
-    defaultModelExample: "gpt-4o",
+    name: 'Azure OpenAI',
+    description: 'Azure 上的 OpenAI 服务，需部署 Deployment',
+    docs: 'https://learn.microsoft.com/azure/ai-services/openai/',
+    icon: <Server size={16} strokeWidth={1.5} />,
+    baseUrlExample: 'https://{your-resource}.openai.azure.com/openai/deployments',
+    defaultModelExample: 'gpt-4o',
   },
   ollama: {
-    name: "Ollama（本地）",
-    description: "本地/自托管开源模型（无需 API Key）",
-    docs: "https://ollama.com/",
-    icon: <KeyOutlined />,
-    color: "#7c3aed",
-    baseUrlExample: "http://localhost:11434",
-    defaultModelExample: "llama3.2",
+    name: 'Ollama（本地）',
+    description: '本地 / 自托管开源模型（无需 API Key）',
+    docs: 'https://ollama.com/',
+    icon: <KeyRound size={16} strokeWidth={1.5} />,
+    baseUrlExample: 'http://localhost:11434',
+    defaultModelExample: 'llama3.2',
   },
   ark: {
-    name: "火山方舟 ARK",
-    description: "ARK Plan 专属通道（OpenAI 兼容，生产 Key 正式托管位）",
-    docs: "https://www.volcengine.com/product/ark",
-    icon: <ThunderboltOutlined />,
-    color: "#0f6fff",
-    baseUrlExample: "https://ark.cn-beijing.volces.com/api/plan/v3",
-    defaultModelExample: "glm-5.3-flash",
-  },
-  custom: {
-    name: "自定义第三方",
-    description: "任何 OpenAI 兼容 API（智谱 GLM、DeepSeek、自建网关等）",
-    docs: "",
-    icon: <MessageOutlined />,
-    color: "#f59e0b",
-    baseUrlExample: "https://open.bigmodel.cn/api/paas/v4",
-    defaultModelExample: "glm-4-flash",
+    name: '火山方舟 ARK',
+    description: 'ARK Plan 专属通道（OpenAI 兼容，生产 Key 正式托管位）',
+    docs: 'https://www.volcengine.com/product/ark',
+    icon: <Zap size={16} strokeWidth={1.5} />,
+    baseUrlExample: 'https://ark.cn-beijing.volces.com/api/plan/v3',
+    defaultModelExample: 'glm-5.3-flash',
   },
 };
 
-// 自定义 provider 的 metadata fallback（动态 instanceId 用）
+// 自定义 provider 的显示名缓存（动态 instanceId 用）
 const customLabels: Record<string, string> = {};
+
+/** 只用到 getValues：用最小结构类型承接 Semi 的 formApi，避免深路径 import 与泛型噪声。 */
+interface FormApiLike {
+  getValues: () => Record<string, unknown>;
+}
+
+function getProviderMeta(id: string): ProviderMeta {
+  const builtin = PROVIDER_META[id];
+  if (builtin) return builtin;
+  // custom_{instanceId} → 从 config label 生成
+  const label = customLabels[id] || id.replace(/^custom_/, '');
+  return {
+    name: label,
+    description: '自定义 OpenAI 兼容 API',
+    docs: '',
+    icon: <MessageSquare size={16} strokeWidth={1.5} />,
+    baseUrlExample: 'https://api.example.com/v1',
+    defaultModelExample: 'model-name',
+  };
+}
 
 /**
  * 托管模式下的 API key 下发规则（ADR-0019）：
@@ -114,195 +123,225 @@ const customLabels: Record<string, string> = {};
  * 掩码或空值都转 null，由 llmgw 服务端从 IAM 解析。
  */
 function maskedAwareKey(value: unknown): string | null {
-  if (typeof value !== "string" || value.length === 0) return null;
+  if (typeof value !== 'string' || value.length === 0) return null;
   const v = value.trim();
-  return v === "***" || v === "********" ? null : value;
-}
-
-function getProviderMeta(id: string) {
-  if (PROVIDER_META[id as keyof typeof PROVIDER_META]) {
-    return PROVIDER_META[id as keyof typeof PROVIDER_META];
-  }
-  // custom_{instanceId} → 从 config label 生成
-  const label = customLabels[id] || id.replace(/^custom_/, "");
-  return {
-    name: label,
-    description: "自定义 OpenAI 兼容 API",
-    docs: "",
-    icon: <MessageOutlined />,
-    color: "#f59e0b",
-    baseUrlExample: "https://api.example.com/v1",
-    defaultModelExample: "model-name",
-  };
+  return v === '***' || v === '********' ? null : value;
 }
 
 interface TestState {
-  status: "idle" | "loading" | "ok" | "fail";
+  status: 'idle' | 'loading' | 'ok' | 'fail';
   message?: string;
   latencyMs?: number;
 }
 
-// 表单字段 label（Form.Item 无 Semi 等价物，用 div 呈现）
-function FieldLabel({ children, hint }: { children: React.ReactNode; hint?: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: 6 }}>
-      <div style={{ fontSize: 14, marginBottom: hint ? 2 : 0 }}>{children}</div>
-      {hint && <div style={{ fontSize: 12, color: "var(--muted-foreground)" }}>{hint}</div>}
-    </div>
-  );
+interface ProviderRow {
+  id: string;
+  name: string;
+  kind: 'builtin' | 'custom';
+  enabled: boolean;
+  baseUrl: string;
+  defaultModel: string;
+  modelCount: number;
+  isDefault: boolean;
 }
 
 export default function AIProvidersPage() {
   const { settings } = useSettings();
-  const [items, setItems] = useState<AdminSystemConfig[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [defaultActive, setDefaultActive] = useState<string>("openai");
-  const [defaultEmbedding, setDefaultEmbedding] = useState<string>("disabled");
-  const [customProviderIds, setCustomProviderIds] = useState<string[]>([]);
-  const [addModalOpen, setAddModalOpen] = useState(false);
-  const [newProviderName, setNewProviderName] = useState("");
-  const [adding, setAdding] = useState(false);
-  const [testStates, setTestStates] = useState<Record<ProviderId, TestState>>({
-    openai: { status: "idle" },
-    azure: { status: "idle" },
-    ollama: { status: "idle" },
-    custom: { status: "idle" },
-  });
-  const [saving, setSaving] = useState<Record<ProviderId, boolean>>({
-    openai: false,
-    azure: false,
-    ollama: false,
-    custom: false,
-  });
-  const [models, setModels] = useState<Record<ProviderId, AiModelItem[]>>({
-    openai: [],
-    azure: [],
-    ollama: [],
-    custom: [],
-  });
-  const [fetchingModels, setFetchingModels] = useState<Record<ProviderId, boolean>>({
-    openai: false,
-    azure: false,
-    ollama: false,
-    custom: false,
-  });
 
-  const load = async () => {
+  const [items, setItems] = useState<AdminSystemConfig[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [keyword, setKeyword] = useState('');
+
+  const [defaultActive, setDefaultActive] = useState<string>('openai');
+  const [defaultEmbedding, setDefaultEmbedding] = useState<string>('disabled');
+  const [customProviderIds, setCustomProviderIds] = useState<string[]>([]);
+
+  const [models, setModels] = useState<Record<ProviderId, AiModelItem[]>>({});
+  const [testStates, setTestStates] = useState<Record<ProviderId, TestState>>({});
+  const [fetchingId, setFetchingId] = useState<ProviderId | null>(null);
+  const [savingId, setSavingId] = useState<ProviderId | null>(null);
+
+  const [editId, setEditId] = useState<ProviderId | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [newProviderName, setNewProviderName] = useState('');
+  const formApi = useRef<FormApiLike | null>(null);
+
+  const loadModels = useCallback(async (provider?: ProviderId) => {
+    try {
+      const list = await listAiModels(provider ? { provider } : undefined);
+      setModels((prev) => {
+        const next: Record<ProviderId, AiModelItem[]> = provider ? { ...prev } : {};
+        if (provider) {
+          next[provider] = list;
+        } else {
+          for (const m of list) {
+            next[m.provider] = next[m.provider] ?? [];
+            next[m.provider].push(m);
+          }
+        }
+        return next;
+      });
+    } catch {
+      // 静默：模型清单不可用时保留空，不影响 provider 配置
+    }
+  }, []);
+
+  const load = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
       const res = await listConfigs({ pageSize: 200 });
-      const aiItems = (res.items ?? []).filter((c) => c.category === "AI_PROVIDER");
+      const aiItems = (res.items ?? []).filter((c) => c.category === 'AI_PROVIDER');
       setItems(aiItems);
-      const active = aiItems.find((c) => c.key === "ai.provider.default_active");
-      if (active && typeof active.value === "string") setDefaultActive(active.value);
-      const emb = aiItems.find((c) => c.key === "ai.embedding.default_provider");
-      if (emb && typeof emb.value === "string") setDefaultEmbedding(emb.value);
+      const active = aiItems.find((c) => c.key === 'ai.provider.default_active');
+      if (active && typeof active.value === 'string') setDefaultActive(active.value);
+      const emb = aiItems.find((c) => c.key === 'ai.embedding.default_provider');
+      if (emb && typeof emb.value === 'string') setDefaultEmbedding(emb.value);
+
       // 发现自定义 provider：从 config key 前缀 ai.provider.custom_* 提取
       const customs = new Set<string>();
       for (const c of aiItems) {
         const m = c.key.match(/^ai\.provider\.(custom_\w+)\./);
         if (m) {
           customs.add(m[1]);
-          // 从 label 或 key 提取显示名
           const labelCfg = aiItems.find((x) => x.key === `ai.provider.${m[1]}.label`);
-          customLabels[m[1]] = (labelCfg?.value as string) || m[1].replace(/^custom_/, "");
+          customLabels[m[1]] = (labelCfg?.value as string) || m[1].replace(/^custom_/, '');
         }
       }
       // 也保留旧版单一 custom（向后兼容）
-      if (aiItems.some((c) => c.key.startsWith("ai.provider.custom."))) {
-        customs.add("custom");
-        customLabels["custom"] = "自定义第三方";
+      if (aiItems.some((c) => c.key.startsWith('ai.provider.custom.'))) {
+        customs.add('custom');
+        customLabels['custom'] = '自定义第三方';
       }
       setCustomProviderIds([...customs].sort());
-    } catch {
-      // 静默降级：保留空卡片 UI
+    } catch (e) {
+      setItems([]);
+      setCustomProviderIds([]);
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    load();
   }, []);
 
-  // 添加自定义 Provider
-  const handleAddCustom = async () => {
-    const name = newProviderName.trim();
-    if (!name) {
-      Toast.warning("请输入名称");
-      return;
-    }
-    const instanceId = "custom_" + name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").slice(0, 20);
-    if (customProviderIds.includes(instanceId)) {
-      Toast.warning("该 Provider 已存在");
-      return;
-    }
-    setAdding(true);
-    try {
-      await batchCreateConfigs([
-        { key: `ai.provider.${instanceId}.enabled`, value: "true", value_type: "bool", label: `${name} 启用` },
-        { key: `ai.provider.${instanceId}.base_url`, value: "", value_type: "string", label: `${name} Base URL` },
-        { key: `ai.provider.${instanceId}.api_key`, value: "", value_type: "string", label: `${name} API Key`, is_sensitive: true },
-        { key: `ai.provider.${instanceId}.default_model`, value: "", value_type: "string", label: `${name} 默认模型` },
-        { key: `ai.provider.${instanceId}.embedding_model`, value: "", value_type: "string", label: `${name} Embedding 模型` },
-        { key: `ai.provider.${instanceId}.label`, value: name, value_type: "string", label: `${name} 显示名` },
-      ]);
-      Toast.success(`已添加 ${name}`);
-      setAddModalOpen(false);
-      setNewProviderName("");
-      await load();
-    } catch (e) {
-      Toast.error(e instanceof Error ? e.message : "添加失败");
-    } finally {
-      setAdding(false);
-    }
-  };
+  useEffect(() => {
+    void load();
+    void loadModels();
+  }, [load, loadModels]);
+
+  const pickByKey = useCallback(
+    (provider: ProviderId, suffix: string): AdminSystemConfig | undefined =>
+      items.find((c) => c.key === `ai.provider.${provider}.${suffix}`),
+    [items],
+  );
+
+  const providerIds = useMemo<ProviderId[]>(
+    () => [...BUILTIN_PROVIDERS, ...customProviderIds],
+    [customProviderIds],
+  );
+
+  const rows = useMemo<ProviderRow[]>(
+    () =>
+      providerIds.map((id) => {
+        const enabledCfg = pickByKey(id, 'enabled');
+        const baseUrlCfg = pickByKey(id, 'base_url');
+        const modelCfg = pickByKey(id, 'default_model');
+        return {
+          id,
+          name: getProviderMeta(id).name,
+          kind: (BUILTIN_PROVIDERS as string[]).includes(id) ? 'builtin' : 'custom',
+          enabled: enabledCfg?.value === true || enabledCfg?.value === 'true',
+          baseUrl: typeof baseUrlCfg?.value === 'string' ? baseUrlCfg.value : '',
+          defaultModel: typeof modelCfg?.value === 'string' ? modelCfg.value : '',
+          modelCount: (models[id] ?? []).length,
+          isDefault: defaultActive === id,
+        };
+      }),
+    [providerIds, pickByKey, models, defaultActive],
+  );
+
+  const filteredRows = useMemo(() => {
+    const kw = keyword.trim().toLowerCase();
+    if (!kw) return rows;
+    return rows.filter(
+      (r) => r.name.toLowerCase().includes(kw) || r.id.toLowerCase().includes(kw),
+    );
+  }, [rows, keyword]);
+
+  const summary = useMemo(() => {
+    const enabledCount = rows.filter((r) => r.enabled).length;
+    const configured = rows.filter((r) => r.baseUrl.length > 0).length;
+    return { enabledCount, configured, total: rows.length };
+  }, [rows]);
 
   // llmgw 探测/模型拉取的 provider 归一：custom_* 与 ark 都是 OpenAI 兼容透传
-  const llmgwProvider = (id: string) =>
-    id.startsWith("custom") || id === "ark" ? "custom" : id;
+  const llmgwProvider = (id: string) => (id.startsWith('custom') || id === 'ark' ? 'custom' : id);
 
-  // 加载已配置的模型清单
-  useEffect(() => {
-    (async () => {
-      try {
-        const all = await listAiModels();
-        const grouped: Record<ProviderId, AiModelItem[]> = {
-          openai: [],
-          azure: [],
-          ollama: [],
-          custom: [],
-        };
-        for (const m of all) {
-          const p = m.provider as ProviderId;
-          // 动态桶（ark / custom_*）懒建，避免模型被静默丢弃
-          grouped[p] = grouped[p] || [];
-          grouped[p].push(m);
-        }
-        setModels(grouped);
-      } catch {
-        // 静默：模型清单不可用时保留空
-      }
-    })();
-  }, []);
+  const cfgString = (cfg?: AdminSystemConfig): string => {
+    if (!cfg) return '';
+    if (cfg.isSensitive) return '';
+    const v = cfg.value;
+    if (v === undefined || v === null) return '';
+    return typeof v === 'string' ? v : String(v);
+  };
 
-  // 「获取模型」：调 LLMGW providers/models 拉上游模型 → 批量存 IAM
-  const handleFetchModels = async (provider: ProviderId) => {
-    const cfg = pickByKey(provider, "base_url");
-    const baseUrl = cfg && typeof cfg.value === "string" ? cfg.value : "";
+  // ── 连接测试 ──
+  const handleTest = async (provider: ProviderId) => {
+    const baseUrl = cfgString(pickByKey(provider, 'base_url'));
     if (!baseUrl) {
-      Toast.warning("请先填写 Base URL");
+      Toast.warning('请先配置 Base URL');
       return;
     }
-    const apiKeyCfg = pickByKey(provider, "api_key");
-    // 托管模式：掩码值不下发，llmgw 服务端解析真实 key（同 handleTest）
-    const apiKeyValue = maskedAwareKey(apiKeyCfg?.value);
+    setTestStates((s) => ({ ...s, [provider]: { status: 'loading' } }));
+    const apiKeyValue = maskedAwareKey(pickByKey(provider, 'api_key')?.value);
     const apiVersion = (() => {
-      if (provider !== "azure") return undefined;
-      const v = pickByKey(provider, "api_version");
-      return v && typeof v.value === "string" ? v.value : undefined;
+      if (provider !== 'azure') return undefined;
+      const v = pickByKey(provider, 'api_version');
+      return typeof v?.value === 'string' ? v.value : undefined;
     })();
-    setFetchingModels((s) => ({ ...s, [provider]: true }));
+    try {
+      const result = await testProvider({
+        provider: llmgwProvider(provider),
+        base_url: baseUrl,
+        api_key: apiKeyValue,
+        api_version: apiVersion,
+        timeout_sec: 10,
+      });
+      setTestStates((s) => ({
+        ...s,
+        [provider]: {
+          status: result.ok ? 'ok' : 'fail',
+          message: result.message,
+          latencyMs: result.latency_ms,
+        },
+      }));
+    } catch (e) {
+      setTestStates((s) => ({
+        ...s,
+        [provider]: {
+          status: 'fail',
+          message: e instanceof Error ? e.message : String(e),
+          latencyMs: 0,
+        },
+      }));
+    }
+  };
+
+  // ── 获取模型：调 LLMGW providers/models 拉上游模型 → 批量存 IAM ──
+  const handleFetchModels = async (provider: ProviderId) => {
+    const baseUrl = cfgString(pickByKey(provider, 'base_url'));
+    if (!baseUrl) {
+      Toast.warning('请先配置 Base URL');
+      return;
+    }
+    const apiKeyValue = maskedAwareKey(pickByKey(provider, 'api_key')?.value);
+    const apiVersion = (() => {
+      if (provider !== 'azure') return undefined;
+      const v = pickByKey(provider, 'api_version');
+      return typeof v?.value === 'string' ? v.value : undefined;
+    })();
+    setFetchingId(provider);
     try {
       const result = await fetchProviderModels({
         // 探测端点只认 openai/azure/ollama/custom；custom_* 与 ark 归一为 custom
@@ -313,28 +352,25 @@ export default function AIProvidersPage() {
         timeout_sec: 15,
       });
       if (!result.ok || result.models.length === 0) {
-        Toast.warning(result.message || "未获取到模型");
+        Toast.warning(result.message || '未获取到模型');
         return;
       }
       await saveAiModelsBulk(
-        // 模型桶按原始 provider id 存（ark / custom_* 各自独立），
-        // 与卡片渲染（models[id]）一致；此前归一到 custom 会导致
-        // 自定义 provider 卡片拉取后模型列表恒空。
+        // 模型桶按原始 provider id 存（ark / custom_* 各自独立）
         provider,
         result.models.map((mid) => ({
           modelId: mid,
           displayName: result.display_names?.[mid] || undefined,
-          modality: provider === "azure" || provider === "ollama" ? "text" : "text",
+          modality: 'text',
           enabled: true,
         })),
       );
       Toast.success(`已获取 ${result.models.length} 个模型并保存`);
-      const refreshed = await listAiModels({ provider });
-      setModels((s) => ({ ...s, [provider]: refreshed }));
+      await loadModels(provider);
     } catch (e) {
-      Toast.error(e instanceof Error ? e.message : "获取模型失败");
+      Toast.error(e instanceof Error ? e.message : '获取模型失败');
     } finally {
-      setFetchingModels((s) => ({ ...s, [provider]: false }));
+      setFetchingId(null);
     }
   };
 
@@ -342,11 +378,9 @@ export default function AIProvidersPage() {
     if (model.id == null) return;
     try {
       await updateAiModel(model.id, { enabled: !model.enabled });
-      const provider = model.provider as ProviderId;
-      const refreshed = await listAiModels({ provider });
-      setModels((s) => ({ ...s, [provider]: refreshed }));
-    } catch {
-      Toast.error("更新失败");
+      await loadModels(model.provider);
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : '更新失败');
     }
   };
 
@@ -354,450 +388,538 @@ export default function AIProvidersPage() {
     if (model.id == null) return;
     try {
       await deleteAiModel(model.id);
-      const provider = model.provider as ProviderId;
-      setModels((s) => ({
-        ...s,
-        [provider]: s[provider].filter((m) => m.id !== model.id),
-      }));
-      Toast.success("已删除模型");
-    } catch {
-      Toast.error("删除失败");
+      Toast.success('已删除模型');
+      await loadModels(model.provider);
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : '删除失败');
     }
   };
 
-  const pickByKey = (provider: ProviderId, suffix: string): AdminSystemConfig | undefined =>
-    items.find((c) => c.key === `ai.provider.${provider}.${suffix}`);
-
-  const providerSummary = useMemo(() => {
-    const list: ProviderId[] = [...BUILTIN_PROVIDERS, ...customProviderIds];
-    const enabledCount = list.filter((id) => pickByKey(id, "enabled")?.value === "true").length;
-    const configured = list.filter((id) => {
-      const base = pickByKey(id, "base_url");
-      return base && typeof base.value === "string" && base.value.length > 0;
-    }).length;
-    return { enabledCount, configured, total: list.length };
-  }, [items]);
-
-  const handleSave = async (provider: ProviderId) => {
-    setSaving((s) => ({ ...s, [provider]: true }));
+  // ── 启用 / 默认项切换 ──
+  const handleToggle = async (provider: ProviderId, enabled: boolean) => {
+    const cfg = pickByKey(provider, 'enabled');
+    if (!cfg) {
+      Toast.warning('该 Provider 尚未初始化 enabled 配置');
+      return;
+    }
     try {
-      const suffixes = ["enabled", "base_url", "api_key", "default_model", "embedding_model", "api_version"];
+      await updateConfig(cfg.key, enabled, `AI Provider ${provider}.enabled`);
+      Toast.success((enabled ? '已启用 ' : '已禁用 ') + getProviderMeta(provider).name);
+      await load();
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const setDefaultActiveProvider = async (val: string) => {
+    setDefaultActive(val);
+    try {
+      await updateConfig('ai.provider.default_active', val, '切换默认 AI Provider');
+      Toast.success('默认 Provider 已切换');
+      await load();
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const setDefaultEmbeddingProvider = async (val: string) => {
+    setDefaultEmbedding(val);
+    const key = 'ai.embedding.default_provider';
+    try {
+      await updateConfig(key, val, '切换默认 Embedding Provider');
+    } catch {
+      // Key 尚未 seed（旧后端）→ 幂等创建，值随创建写入
+      try {
+        await batchCreateConfigs([
+          { key, value: val, value_type: 'string', label: '默认 Embedding Provider' },
+        ]);
+      } catch {
+        Toast.error('默认 Embedding Provider 保存失败');
+        return;
+      }
+    }
+    Toast.success(val === 'disabled' ? 'Embedding 已禁用（回退本地）' : '默认 Embedding Provider 已切换');
+    await load();
+  };
+
+  // ── 保存单 provider 配置 ──
+  const submitProvider = async () => {
+    const provider = editId;
+    const values = formApi.current?.getValues();
+    if (!provider || !values) return;
+    setSavingId(provider);
+    try {
+      const suffixes = ['enabled', 'base_url', 'api_key', 'default_model', 'embedding_model', 'api_version'];
       for (const s of suffixes) {
         const cfg = pickByKey(provider, s);
         if (!cfg) continue;
-        // 从 DOM 读最新值：Input / Input(mode=password) 渲染为 <input>
-        const el = document.querySelector(`[data-cfg-key="${cfg.key}"]`) as HTMLInputElement | null;
-        if (!el) continue;
-        const raw = el.value;
-        if (raw === undefined || raw === "") {
-          // 空值：API Key 等敏感字段可能保留原值（不改空）
-          if (s === "api_key") continue;
-        }
+        const raw = values[s];
+        // 敏感字段留空 = 保持原值（IAM 只回掩码，不覆盖）
+        if (s === 'api_key' && (raw === undefined || raw === '')) continue;
         let payload: unknown = raw;
-        if (cfg.valueType === "bool") payload = raw === "true" || raw === "on";
-        if (cfg.valueType === "int") payload = parseInt(raw, 10);
-        await updateConfig(cfg.key, payload, "AI Provider 配置调整");
+        if (cfg.valueType === 'bool') payload = raw === true || raw === 'true';
+        else if (cfg.valueType === 'int') payload = parseInt(String(raw), 10);
+        await updateConfig(cfg.key, payload, 'AI Provider 配置调整');
       }
-      Toast.success("已保存");
+      Toast.success('已保存');
+      setEditId(null);
       await load();
-    } catch {
-      /* ignore */
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
     } finally {
-      setSaving((s) => ({ ...s, [provider]: false }));
+      setSavingId(null);
     }
   };
 
-  const setField = async (provider: ProviderId, suffix: string, value: unknown, valueType: string) => {
-    const cfg = pickByKey(provider, suffix);
-    if (!cfg) return;
-    await updateConfig(cfg.key, value, `AI Provider ${provider}.${suffix}`);
-  };
-
-  const handleToggle = async (provider: ProviderId, enabled: boolean) => {
-    try {
-      await setField(provider, "enabled", enabled, "bool");
-      Toast.success((enabled ? "已启用 " : "已禁用 ") + getProviderMeta(provider).name);
-      load();
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const handleDefaultChange = async (val: string) => {
-    setDefaultActive(val);
-    try {
-      await updateConfig("ai.provider.default_active", val, "切换默认 AI Provider");
-      Toast.success("默认 Provider 已切换");
-      load();
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const handleDefaultEmbeddingChange = async (val: string) => {
-    setDefaultEmbedding(val);
-    const key = "ai.embedding.default_provider";
-    try {
-      await updateConfig(key, val, "切换默认 Embedding Provider");
-    } catch {
-      // Key not created yet (not seeded) → create it (idempotent), value set on create.
-      try {
-        await batchCreateConfigs([
-          { key, value: val, value_type: "string", label: "默认 Embedding Provider" },
-        ]);
-      } catch {
-        /* ignore */
-      }
-    }
-    Toast.success(val === "disabled" ? "Embedding 已禁用（回退本地）" : "默认 Embedding Provider 已切换");
-    load();
-  };
-
-  // 简易"连接测试"：通过后端代理（LLMGW POST /api/v1/llmgw/providers/test，
-  // ADR-0019）发到上游 LLM 平台。浏览器不再直接 fetch 第三方 API
-  // （避免 CORS + API Key 暴露）。
-  const handleTest = async (provider: ProviderId) => {
-    const cfg = pickByKey(provider, "base_url");
-    const baseUrl = cfg && typeof cfg.value === "string" ? cfg.value : "";
-    if (!baseUrl) {
-      Toast.warning("请先填写 Base URL");
+  // ── 添加自定义 Provider ──
+  const submitCustom = async () => {
+    const name = newProviderName.trim();
+    if (!name) {
+      Toast.warning('请输入名称');
       return;
     }
-    setTestStates((s) => ({ ...s, [provider]: { status: "loading" } }));
-    const apiKeyCfg = pickByKey(provider, "api_key");
-    // 托管模式：IAM 对敏感配置只回掩码（***），真实 key 由 llmgw
-    // 服务端解析（ADR-0019）—— 掩码/空值一律不下发。
-    const apiKeyValue = maskedAwareKey(apiKeyCfg?.value);
-    const apiVersion = (() => {
-      if (provider !== "azure") return undefined;
-      const v = pickByKey(provider, "api_version");
-      return v && typeof v.value === "string" ? v.value : undefined;
-    })();
+    const instanceId =
+      'custom_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').slice(0, 20);
+    if (customProviderIds.includes(instanceId)) {
+      Toast.warning('该 Provider 已存在');
+      return;
+    }
+    setAdding(true);
     try {
-      const result = await testProvider({
-        provider: llmgwProvider(provider) as any,
-        base_url: baseUrl,
-        api_key: apiKeyValue,
-        api_version: apiVersion,
-        timeout_sec: 10,
-      });
-      setTestStates((s) => ({
-        ...s,
-        [provider]: {
-          status: result.ok ? "ok" : "fail",
-          message: result.message,
-          latencyMs: result.latency_ms,
-        },
-      }));
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setTestStates((s) => ({
-        ...s,
-        [provider]: { status: "fail", message: msg, latencyMs: 0 },
-      }));
+      await batchCreateConfigs([
+        { key: `ai.provider.${instanceId}.enabled`, value: 'true', value_type: 'bool', label: `${name} 启用` },
+        { key: `ai.provider.${instanceId}.base_url`, value: '', value_type: 'string', label: `${name} Base URL` },
+        { key: `ai.provider.${instanceId}.api_key`, value: '', value_type: 'string', label: `${name} API Key`, is_sensitive: true },
+        { key: `ai.provider.${instanceId}.default_model`, value: '', value_type: 'string', label: `${name} 默认模型` },
+        { key: `ai.provider.${instanceId}.embedding_model`, value: '', value_type: 'string', label: `${name} Embedding 模型` },
+        { key: `ai.provider.${instanceId}.label`, value: name, value_type: 'string', label: `${name} 显示名` },
+      ]);
+      Toast.success(`已添加 ${name}`);
+      setAddOpen(false);
+      setNewProviderName('');
+      await load();
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : '添加失败');
+    } finally {
+      setAdding(false);
     }
   };
 
-  const renderValue = (cfg: AdminSystemConfig | undefined, provider: ProviderId, fallback: string) => {
-    if (!cfg) return fallback;
-    if (cfg.isSensitive) return "********";
-    const v = cfg.value;
-    if (cfg.valueType === "bool") return v ? "true" : "false";
-    return typeof v === "string" ? v : fallback;
-  };
+  const defaultOptions = useMemo(
+    () => [
+      ...BUILTIN_PROVIDERS.map((id) => ({
+        value: id,
+        label: `${getProviderMeta(id).name}（内置）`,
+      })),
+      ...customProviderIds.map((id) => ({ value: id, label: getProviderMeta(id).name })),
+      { value: 'disabled', label: '禁用（临时下线）' },
+    ],
+    [customProviderIds],
+  );
 
-  const renderProviderCard = (id: ProviderId) => {
-    const meta = getProviderMeta(id);
-    const enabled = pickByKey(id, "enabled");
-    const baseUrl = pickByKey(id, "base_url");
-    const apiKey = pickByKey(id, "api_key");
-    const defaultModel = pickByKey(id, "default_model");
-    const embeddingModel = pickByKey(id, "embedding_model");
-    const apiVersion = id === "azure" ? pickByKey(id, "api_version") : undefined;
-    const isEnabled = enabled?.value === true || enabled?.value === "true";
-    // testStates 只初始化了 4 个内置 key；动态添加的自定义 provider 不在其中，
-    // 直接读 testStates[id] 会得到 undefined → testState.status 崩溃（页面白屏）。
-    const testState = testStates[id] ?? { status: "idle" as const };
-    const isSaving = saving[id];
+  const embeddingOptions = useMemo(
+    () => [
+      ...providerIds.map((id) => ({ value: id, label: getProviderMeta(id).name })),
+      { value: 'disabled', label: '禁用（回退本地 hash）' },
+    ],
+    [providerIds],
+  );
 
-    return (
-      <Card
-        key={id}
-        title={
-          <Space>
-            <span style={{ color: meta.color, fontSize: 18 }}>{meta.icon}</span>
-            <strong>{meta.name}</strong>
-            {isEnabled ? <Tag color="green">已启用</Tag> : <Tag>未启用</Tag>}
-            {defaultActive === id && <Tag color="blue">默认</Tag>}
-          </Space>
-        }
-        headerExtraContent={
+  const columns = useMemo(
+    () => [
+      {
+        title: 'Provider',
+        dataIndex: 'name',
+        width: 220,
+        render: (_: unknown, row: ProviderRow) => (
+          <span className="mp-admin-cell">
+            {getProviderMeta(row.id).icon}
+            <span className="mp-admin-cell-main">
+              <span className="mp-admin-cell-title">{row.name}</span>
+              <span className="mp-admin-cell-sub">{getProviderMeta(row.id).description}</span>
+            </span>
+            {row.isDefault ? (
+              <Tag color="blue" type="light">
+                默认
+              </Tag>
+            ) : null}
+            {row.kind === 'custom' ? <Tag type="light">自定义</Tag> : null}
+          </span>
+        ),
+      },
+      {
+        title: '启用',
+        dataIndex: 'enabled',
+        width: 110,
+        render: (_: unknown, row: ProviderRow) => (
           <Switch
-            checked={isEnabled}
-            onChange={(v) => handleToggle(id, v)}
+            checked={row.enabled}
+            onChange={(v) => void handleToggle(row.id, v)}
             checkedText="ON"
             uncheckedText="OFF"
+            aria-label={`启用 ${row.name}`}
           />
-        }
-        style={{ borderRadius: 8 }}
-      >
-        <p style={{ color: "var(--muted-foreground)", marginTop: 0 }}>{meta.description}</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div>
-            <div style={{ marginBottom: 6 }}>
-              <Space spacing={8}>
-                <span style={{ fontSize: 14 }}>Base URL</span>
-                <Tooltip content={`示例：${meta.baseUrlExample}`}>
-                  <Tag style={{ marginLeft: 0 }}>示例</Tag>
-                </Tooltip>
-              </Space>
-            </div>
-            <Input
-              data-cfg-key={baseUrl?.key}
-              defaultValue={renderValue(baseUrl, id, meta.baseUrlExample)}
-              placeholder={meta.baseUrlExample}
-              disabled={!isEnabled}
-            />
-          </div>
-          <div>
-            <FieldLabel>API Key</FieldLabel>
-            <Input
-              mode="password"
-              data-cfg-key={apiKey?.key}
-              // 托管模式：敏感值永不回显（IAM 读接口只有掩码）——
-              // 有值（含掩码）时占位符提示"已设置"，留空保存 = 保持原值。
-              defaultValue=""
-              placeholder={apiKey?.value ? "已设置（输入新值覆盖）" : "输入 API Key"}
-              disabled={!isEnabled}
-            />
-          </div>
-          <div>
-            <FieldLabel>默认模型</FieldLabel>
-            <Input
-              data-cfg-key={defaultModel?.key}
-              defaultValue={renderValue(defaultModel, id, meta.defaultModelExample)}
-              placeholder={meta.defaultModelExample}
-              disabled={!isEnabled}
-            />
-          </div>
-          <div>
-            <FieldLabel hint="该 provider 上的 embedding 模型名（如 doubao-embedding-text-240715、text-embedding-3-small）">
-              Embedding 模型
-            </FieldLabel>
-            <Input
-              data-cfg-key={embeddingModel?.key}
-              defaultValue={renderValue(embeddingModel, id, meta.defaultModelExample)}
-              placeholder={meta.defaultModelExample}
-              disabled={!isEnabled}
-            />
-          </div>
-          {apiVersion && (
-            <div>
-              <FieldLabel>API Version</FieldLabel>
-              <Input
-                data-cfg-key={apiVersion.key}
-                defaultValue={renderValue(apiVersion, id, "2024-02-01")}
-                placeholder="2024-02-01"
-                disabled={!isEnabled}
-              />
-            </div>
-          )}
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-          <Space>
-            {testState.status === "idle" && (
-              <Tag prefixIcon={<ThunderboltOutlined />}>未测试</Tag>
-            )}
-            {testState.status === "loading" && (
-              <Tag prefixIcon={<LoadingOutlined />} color="blue">
+        ),
+      },
+      {
+        title: 'Base URL',
+        dataIndex: 'baseUrl',
+        width: 280,
+        ellipsis: true,
+        render: (v: string) =>
+          v ? <span className="mp-admin-mono">{v}</span> : <span className="mp-admin-faint">未配置</span>,
+      },
+      {
+        title: '默认模型',
+        dataIndex: 'defaultModel',
+        width: 180,
+        ellipsis: true,
+        render: (v: string) =>
+          v ? <span className="mp-admin-mono">{v}</span> : <span className="mp-admin-faint">—</span>,
+      },
+      {
+        title: '模型数',
+        dataIndex: 'modelCount',
+        width: 90,
+        render: (v: number) => (
+          <Tag type="light" color={v > 0 ? 'blue' : 'grey'}>
+            {v ?? 0}
+          </Tag>
+        ),
+      },
+      {
+        title: '连接测试',
+        dataIndex: '__test__',
+        width: 200,
+        render: (_: unknown, row: ProviderRow) => {
+          const state = testStates[row.id] ?? { status: 'idle' as const };
+          if (state.status === 'loading') {
+            return (
+              <Tag type="light" color="blue" prefixIcon={<Loader2 size={12} strokeWidth={1.5} />}>
                 测试中…
               </Tag>
-            )}
-            {testState.status === "ok" && (
-              <Tag prefixIcon={<CheckCircleOutlined />} color="green">
-                {testState.message}
-                {testState.latencyMs ? " · " + testState.latencyMs + "ms" : ""}
+            );
+          }
+          if (state.status === 'ok') {
+            return (
+              <Tag type="light" color="green" prefixIcon={<CheckCircle2 size={12} strokeWidth={1.5} />}>
+                {state.message}
+                {state.latencyMs ? ` · ${state.latencyMs}ms` : ''}
               </Tag>
-            )}
-            {testState.status === "fail" && (
-              <Tag prefixIcon={<CloseCircleOutlined />} color="red">
-                {testState.message}
+            );
+          }
+          if (state.status === 'fail') {
+            return (
+              <Tag type="light" color="red" prefixIcon={<XCircle size={12} strokeWidth={1.5} />}>
+                {state.message}
               </Tag>
-            )}
-          </Space>
-          <Space>
+            );
+          }
+          return (
+            <span className="mp-admin-faint">
+              <Zap size={12} strokeWidth={1.5} /> 未测试
+            </span>
+          );
+        },
+      },
+      {
+        title: '',
+        dataIndex: '__actions__',
+        width: 320,
+        render: (_: unknown, row: ProviderRow) => (
+          <span className="mp-admin-row-actions">
             <Button
-              icon={<ThunderboltOutlined />}
-              onClick={() => handleTest(id)}
-              disabled={!isEnabled || testState.status === "loading"}
+              theme="borderless"
+              type="primary"
+              size="small"
+              onClick={() => {
+                formApi.current = null;
+                setEditId(row.id);
+              }}
+            >
+              配置
+            </Button>
+            <Button
+              theme="borderless"
+              type="tertiary"
+              size="small"
+              icon={<Zap size={15} strokeWidth={1.5} />}
+              disabled={!row.enabled}
+              onClick={() => void handleTest(row.id)}
             >
               测试连接
             </Button>
             <Button
-              icon={<CloudDownloadOutlined />}
-              onClick={() => handleFetchModels(id)}
-              loading={fetchingModels[id]}
-              disabled={!isEnabled}
+              theme="borderless"
+              type="tertiary"
+              size="small"
+              icon={<CloudDownload size={15} strokeWidth={1.5} />}
+              loading={fetchingId === row.id}
+              disabled={!row.enabled}
+              onClick={() => void handleFetchModels(row.id)}
             >
               获取模型
             </Button>
-            <Button
-              theme="solid"
-              type="primary"
-              icon={<CheckCircleOutlined />}
-              onClick={() => handleSave(id)}
-              loading={isSaving}
-              disabled={!isEnabled}
-            >
-              保存
-            </Button>
-          </Space>
-        </div>
+          </span>
+        ),
+      },
+    ],
+    // handleToggle / handleTest / handleFetchModels 为稳定闭包，随其读取的状态更新
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [testStates, fetchingId],
+  );
 
-        {/* 已配置模型清单 */}
-        {(models[id]?.length ?? 0) > 0 && (
-          <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: "var(--muted-foreground)" }}>
-              已配置模型（{models[id].length}）
-            </div>
-            <Space wrap spacing={[4, 4]}>
-              {models[id].map((m) => (
-                <Tag
-                  key={m.id}
-                  closable
-                  onClose={(_v, e) => {
-                    e.preventDefault();
-                    handleDeleteModel(m);
-                  }}
-                  prefixIcon={
-                    <Switch
-                      size="small"
-                      checked={m.enabled}
-                      onChange={() => handleToggleModel(m)}
-                      style={{ marginRight: 4 }}
-                    />
-                  }
-                  style={{ display: "inline-flex", alignItems: "center", cursor: "default" }}
-                >
-                  {m.displayName || m.modelId}
-                </Tag>
-              ))}
-            </Space>
-          </div>
-        )}
-      </Card>
-    );
-  };
+  const editMeta = editId ? getProviderMeta(editId) : null;
+  const editModels = editId ? models[editId] ?? [] : [];
 
   return (
-    <AdminLayout
-      title="AI 提供方"
-      extra={
-        <Space>
-          <Button
-            theme="solid"
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setAddModalOpen(true)}
-          >
-            添加自定义 Provider
-          </Button>
-          <Button icon={<ReloadOutlined />} onClick={load}>
-            刷新
-          </Button>
-        </Space>
-      }
-    >
-      <StatGrid>
-        <StatCard label="已启用" value={providerSummary.enabledCount} color="success" />
-        <StatCard label="已配置 Base URL" value={providerSummary.configured} color="warning" />
-        <StatCard label="Provider 数量" value={providerSummary.total} />
-        <StatCard
-          label="默认生效"
-          value={PROVIDER_META[defaultActive as ProviderId]?.name ?? defaultActive}
-          color="default"
-        />
-      </StatGrid>
-
-      <Banner
-        style={{ marginBottom: 16 }}
-        type="info"
-        title="AI Provider 配置对接到外部第三方模型服务"
-        description={
-          <Space vertical spacing={4} style={{ width: "100%" }}>
-            <span>
-              下游 AI 助手 / Agent / 知识库检索会按"默认生效"选择实际调用的 provider。修改后请使用「测试连接」验证连通性。
-            </span>
-            <span>
-              默认 Provider：
-              <Select
-                size="small"
-                value={defaultActive}
-                onChange={(v) => handleDefaultChange(v as string)}
-                style={{ marginLeft: 8, minWidth: 200 }}
-                optionList={[
-                  ...BUILTIN_PROVIDERS.map((id) => ({ value: id, label: `${PROVIDER_META[id as keyof typeof PROVIDER_META].name}（内置）` })),
-                  ...customProviderIds.map((id) => ({ value: id, label: getProviderMeta(id).name })),
-                  { value: "disabled", label: "禁用（临时下线）" },
-                ]}
-              />
-            </span>
-            <span>
-              默认 Embedding Provider：
-              <Select
-                size="small"
-                value={defaultEmbedding}
-                onChange={(v) => handleDefaultEmbeddingChange(v as string)}
-                style={{ marginLeft: 8, minWidth: 200 }}
-                optionList={[
-                  ...[...BUILTIN_PROVIDERS, ...customProviderIds].map((id) => ({
-                    value: id,
-                    label: getProviderMeta(id).name,
-                  })),
-                  { value: "disabled", label: "禁用（回退本地 hash）" },
-                ]}
-              />
-            </span>
-          </Space>
+    <>
+      <PageHeader
+        title="AI 提供方"
+        desc={
+          items.length
+            ? `${summary.total} 个 Provider · ${summary.enabledCount} 个已启用 · 下游助手 / Agent / 知识库检索按「默认生效」选择实际调用的 Provider；最后更新 ${formatDateTime(items[0]?.updatedAt ?? '', settings)}`
+            : '配置外部第三方模型服务；下游助手 / Agent / 知识库检索按「默认生效」选择实际调用的 Provider。'
+        }
+        actions={
+          <>
+            <Button
+              icon={<Plus size={15} strokeWidth={1.5} />}
+              onClick={() => {
+                setNewProviderName('');
+                setAddOpen(true);
+              }}
+            >
+              添加自定义 Provider
+            </Button>
+            <Button
+              icon={<RefreshCw size={15} strokeWidth={1.5} />}
+              loading={loading}
+              onClick={() => {
+                void load();
+                void loadModels();
+              }}
+            >
+              刷新
+            </Button>
+          </>
         }
       />
 
-      <Spin spinning={loading}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))",
-            gap: 16,
-          }}
-        >
-          {([...BUILTIN_PROVIDERS, ...customProviderIds] as ProviderId[]).map(renderProviderCard)}
-        </div>
-      </Spin>
+      <div className="mp-admin-kpis">
+        <Card>
+          <span className="mp-admin-kpi-label">已启用</span>
+          <div className="mp-admin-kpi-value">{summary.enabledCount}</div>
+        </Card>
+        <Card>
+          <span className="mp-admin-kpi-label">已配置 Base URL</span>
+          <div className="mp-admin-kpi-value">{summary.configured}</div>
+        </Card>
+        <Card>
+          <span className="mp-admin-kpi-label">Provider 数量</span>
+          <div className="mp-admin-kpi-value">{summary.total}</div>
+        </Card>
+        <Card>
+          <span className="mp-admin-kpi-label">默认生效</span>
+          <div className="mp-admin-kpi-value">{getProviderMeta(defaultActive).name}</div>
+        </Card>
+      </div>
 
-      <p style={{ color: "var(--muted-foreground)", fontSize: 12, marginTop: 16 }}>
-        最后更新：{formatDateTime(items[0]?.updatedAt ?? "", settings)}
-      </p>
+      <FilterBar
+        search={{ value: keyword, onChange: setKeyword, placeholder: '搜索 Provider 名称…' }}
+        filters={
+          <>
+            <Tooltip content="下游实际调用哪个 Provider">
+              <span className="mp-admin-faint">默认 Provider</span>
+            </Tooltip>
+            <Select value={defaultActive} onChange={(v) => void setDefaultActiveProvider(v as string)} optionList={defaultOptions} />
+            <span className="mp-admin-faint">默认 Embedding</span>
+            <Select
+              value={defaultEmbedding}
+              onChange={(v) => void setDefaultEmbeddingProvider(v as string)}
+              optionList={embeddingOptions}
+            />
+          </>
+        }
+      />
 
-      <Modal
-        title="添加自定义 Provider"
-        visible={addModalOpen}
-        onCancel={() => setAddModalOpen(false)}
-        onOk={handleAddCustom}
-        confirmLoading={adding}
-        okText="添加"
-        cancelText="取消"
+      <DataTablePro<ProviderRow>
+        columns={columns}
+        dataSource={filteredRows}
+        rowKey="id"
+        loading={loading}
+        onRow={(record) => ({ onDoubleClick: () => setEditId(record.id) })}
+        empty={
+          error ? (
+            <EmptyState illustration="failure" title="Provider 配置加载失败" desc={error} />
+          ) : (
+            <EmptyState
+              illustration="no-result"
+              title="没有匹配的 Provider"
+              desc="调整关键词，或添加一个自定义 Provider。"
+            />
+          )
+        }
+      />
+
+      {/* 编辑单个 Provider */}
+      <SheetDetail
+        title={editMeta ? `配置 · ${editMeta.name}` : '配置 Provider'}
+        open={editId !== null}
+        onClose={() => setEditId(null)}
+        footer={
+          <>
+            {editId ? (
+              <>
+                <Button
+                  icon={<Zap size={15} strokeWidth={1.5} />}
+                  onClick={() => void handleTest(editId)}
+                >
+                  测试连接
+                </Button>
+                <Button
+                  icon={<CloudDownload size={15} strokeWidth={1.5} />}
+                  loading={fetchingId === editId}
+                  onClick={() => void handleFetchModels(editId)}
+                >
+                  获取模型
+                </Button>
+              </>
+            ) : null}
+            <Button onClick={() => setEditId(null)}>取消</Button>
+            <Button
+              theme="solid"
+              type="primary"
+              loading={savingId !== null}
+              onClick={() => void submitProvider()}
+            >
+              保存
+            </Button>
+          </>
+        }
       >
-        <FieldLabel hint="输入显示名称（如「智谱 GLM」「DeepSeek」「公司自建」），系统自动生成 instanceId">
-          Provider 名称
-        </FieldLabel>
-        <Input
-          value={newProviderName}
-          onChange={(v) => setNewProviderName(v)}
-          placeholder="例如：智谱 GLM"
-          maxLength={20}
-          onEnterPress={handleAddCustom}
-        />
-      </Modal>
-    </AdminLayout>
+        {editId && editMeta ? (
+          <div className="mp-admin-form">
+            <Form
+              key={editId}
+              getFormApi={(api) => {
+                formApi.current = api as unknown as FormApiLike;
+              }}
+              initValues={{
+                enabled:
+                  pickByKey(editId, 'enabled')?.value === true ||
+                  pickByKey(editId, 'enabled')?.value === 'true',
+                base_url: cfgString(pickByKey(editId, 'base_url')),
+                api_key: '',
+                default_model: cfgString(pickByKey(editId, 'default_model')),
+                embedding_model: cfgString(pickByKey(editId, 'embedding_model')),
+                api_version: cfgString(pickByKey(editId, 'api_version')),
+              }}
+              labelPosition="left"
+              labelWidth={120}
+            >
+              <Form.Switch
+                field="enabled"
+                label="启用"
+                extraText="关闭后下游回退到默认 Provider"
+              />
+              {pickByKey(editId, 'base_url') ? (
+                <Form.Input
+                  field="base_url"
+                  label="Base URL"
+                  placeholder={editMeta.baseUrlExample}
+                />
+              ) : null}
+              {pickByKey(editId, 'api_key') ? (
+                <Form.Input
+                  field="api_key"
+                  label="API Key"
+                  mode="password"
+                  placeholder={
+                    pickByKey(editId, 'api_key')?.value ? '已设置（输入新值覆盖）' : '输入 API Key'
+                  }
+                  extraText="托管模式：留空表示保持原值，真实 Key 不出后端"
+                />
+              ) : null}
+              {pickByKey(editId, 'default_model') ? (
+                <Form.Input
+                  field="default_model"
+                  label="默认模型"
+                  placeholder={editMeta.defaultModelExample}
+                />
+              ) : null}
+              {pickByKey(editId, 'embedding_model') ? (
+                <Form.Input
+                  field="embedding_model"
+                  label="Embedding 模型"
+                  placeholder={editMeta.defaultModelExample}
+                />
+              ) : null}
+              {pickByKey(editId, 'api_version') ? (
+                <Form.Input field="api_version" label="API Version" placeholder="2024-02-01" />
+              ) : null}
+            </Form>
+
+            <div className="mp-admin-section">
+              <span className="mp-admin-section-label">已获取模型（{editModels.length}）</span>
+              {editModels.length === 0 ? (
+                <span className="mp-admin-faint">尚无模型，点击「获取模型」从上游拉取。</span>
+              ) : (
+                <ul className="mp-admin-list">
+                  {editModels.map((m) => (
+                    <li key={m.id ?? m.modelId} className="mp-admin-list-item">
+                      <span className="mp-admin-mono">{m.displayName || m.modelId}</span>
+                      <span className="mp-admin-row-actions">
+                        <Switch
+                          size="small"
+                          checked={m.enabled}
+                          onChange={() => void handleToggleModel(m)}
+                          aria-label={`启用 ${m.modelId}`}
+                        />
+                        <Button
+                          theme="borderless"
+                          type="danger"
+                          size="small"
+                          icon={<Trash2 size={14} strokeWidth={1.5} />}
+                          onClick={() => void handleDeleteModel(m)}
+                          aria-label={`删除 ${m.modelId}`}
+                        />
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        ) : null}
+      </SheetDetail>
+
+      {/* 添加自定义 Provider */}
+      <SheetDetail
+        title="添加自定义 Provider"
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        footer={
+          <>
+            <Button onClick={() => setAddOpen(false)}>取消</Button>
+            <Button theme="solid" type="primary" loading={adding} onClick={() => void submitCustom()}>
+              添加
+            </Button>
+          </>
+        }
+      >
+        <div className="mp-admin-form">
+          <Input
+            value={newProviderName}
+            onChange={setNewProviderName}
+            maxLength={20}
+            placeholder="例如：智谱 GLM"
+          />
+          <span className="mp-admin-faint">
+            输入显示名称（如「智谱 GLM」「DeepSeek」「公司自建」），系统自动生成 instanceId。
+          </span>
+        </div>
+      </SheetDetail>
+    </>
   );
 }

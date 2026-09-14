@@ -1,217 +1,338 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Button,
+  Card,
+  Descriptions,
   Form,
-  Input,
-  Modal,
   Popconfirm,
-  Select,
-  Space,
-  Table,
-  Tabs,
   Tag,
-  Tree,
   Toast,
-} from "@douyinfe/semi-ui";
-import type { ColumnProps } from "@douyinfe/semi-ui/lib/es/table";
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  ApartmentOutlined,
-  SwapOutlined,
-} from "@ant-design/icons";
+  Tree,
+} from '@douyinfe/semi-ui';
+import { ArrowRightLeft, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import {
   createOrg,
   createPosition,
   deleteOrg,
   deletePosition,
   getOrgTree,
+  listOrgs,
   listPositions,
   transferEmployee,
   updateOrg,
   updatePosition,
-} from "@/api/admin/orgs";
-import type { CreateOrgPayload, CreatePositionPayload, TransferPayload } from "@/api/admin/orgs";
-import type {
-  AdminOrg,
-  AdminOrgTreeNode,
-  AdminPosition,
-  OrgType,
-} from "@/types";
-import { AdminLayout, StatCard, StatGrid } from "./__AdminLayout";
+  type CreateOrgPayload,
+  type CreatePositionPayload,
+  type UpdatePositionPayload,
+  type TransferPayload,
+} from '@/api/admin/orgs';
+import type { AdminOrg, AdminOrgTreeNode, AdminPosition, OrgType } from '@/types';
+import {
+  DataTablePro,
+  EmptyState,
+  FilterBar,
+  PageHeader,
+  SheetDetail,
+  SplitPane,
+} from '@/components/skeleton';
+import './admin.css';
 
-interface OrgTreeDataNode {
+const PAGE_SIZE = 20;
+const LOAD_LIMIT = 500;
+
+const ORG_TYPE_LABEL: Record<OrgType, string> = {
+  COMPANY: '公司',
+  DEPARTMENT: '部门',
+  TEAM: '团队',
+  VIRTUAL: '虚拟组织',
+};
+
+const ORG_TYPE_OPTIONS = (Object.keys(ORG_TYPE_LABEL) as OrgType[]).map((value) => ({
+  value,
+  label: ORG_TYPE_LABEL[value],
+}));
+
+/** Semi Tree 的数据节点：key/label/children 是 Tree 约定，其余字段供 renderLabel 使用。 */
+interface OrgTreeNode {
   key: string;
   label: string;
   type: OrgType;
   memberCount: number;
-  children?: OrgTreeDataNode[];
-  raw: AdminOrgTreeNode;
+  children?: OrgTreeNode[];
 }
 
-function toTreeData(nodes: AdminOrgTreeNode[] | undefined): OrgTreeDataNode[] {
+function toTreeData(nodes: AdminOrgTreeNode[] | undefined): OrgTreeNode[] {
   if (!Array.isArray(nodes)) return [];
   return nodes.map((n) => {
     // 后端 Pydantic 默认 snake_case，回退兼容
-    const raw = n as unknown as {
-      member_count?: number;
-      leader_name?: string | null;
-      sort_order?: number;
-    };
+    const raw = n as unknown as { member_count?: number };
     return {
       key: String(n.id),
       label: n.name,
       type: n.type,
       memberCount: n.memberCount ?? raw.member_count ?? 0,
-      children: Array.isArray(n.children) && n.children.length > 0 ? toTreeData(n.children) : undefined,
-      raw: n,
+      children:
+        Array.isArray(n.children) && n.children.length > 0 ? toTreeData(n.children) : undefined,
     };
   });
 }
 
+function collectSubtreeIds(nodes: AdminOrgTreeNode[], id: number, out: Set<number>): boolean {
+  for (const n of nodes) {
+    if (n.id === id) {
+      const walk = (list: AdminOrgTreeNode[]) => {
+        for (const x of list) {
+          out.add(x.id);
+          if (x.children?.length) walk(x.children);
+        }
+      };
+      walk([n]);
+      return true;
+    }
+    if (n.children?.length && collectSubtreeIds(n.children, id, out)) return true;
+  }
+  return false;
+}
+
+/**
+ * 平台管理 · 组织与租户（DESIGN-SPEC §5 版式 E + 树）。
+ * 左栏为组织树（Semi Tree），右栏为扁平组织表（DataTablePro，listOrgs 数据面）；
+ * 新建/编辑组织、岗位、人员调岗全部走右侧 SheetDetail。
+ *
+ * 说明：旧版「成员」tab 只是占位文案，无对应后端接口，未保留；
+ * 组织人数 / 岗位数由 detail 抽屉如实呈现。
+ */
 export default function OrgsPage() {
   const [tree, setTree] = useState<AdminOrgTreeNode[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selected, setSelected] = useState<AdminOrg | null>(null);
-  const [positions, setPositions] = useState<AdminPosition[]>([]);
-  const [orgModal, setOrgModal] = useState<{ mode: "create" | "edit"; parentId?: number | null } | null>(null);
-  const [positionModal, setPositionModal] = useState<{ mode: "create" | "edit"; orgId?: number; positionId?: number } | null>(null);
-  const [transferOpen, setTransferOpen] = useState(false);
-  const [orgForm] = Form.useForm<CreateOrgPayload>();
-  const [positionForm] = Form.useForm<CreatePositionPayload>();
-  const [transferForm] = Form.useForm<TransferPayload>();
-  const [tab, setTab] = useState<"positions" | "members">("positions");
+  const [treeLoading, setTreeLoading] = useState(true);
+  const [treeError, setTreeError] = useState('');
 
-  const loadTree = async () => {
-    setLoading(true);
+  const [orgs, setOrgs] = useState<AdminOrg[]>([]);
+  const [orgsLoading, setOrgsLoading] = useState(true);
+  const [orgsError, setOrgsError] = useState('');
+
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
+  const [selectedTreeKey, setSelectedTreeKey] = useState<string | null>(null);
+
+  const [detailOrg, setDetailOrg] = useState<AdminOrg | null>(null);
+  const [positions, setPositions] = useState<AdminPosition[]>([]);
+  const [positionsLoading, setPositionsLoading] = useState(false);
+  const [positionsError, setPositionsError] = useState('');
+
+  const [orgDraft, setOrgDraft] = useState<{ mode: 'create' | 'edit'; orgId?: number } | null>(null);
+  const [positionDraft, setPositionDraft] = useState<{
+    mode: 'create' | 'edit';
+    positionId?: number;
+  } | null>(null);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
+
+  const [orgForm] = Form.useForm();
+  const [positionForm] = Form.useForm();
+  const [transferForm] = Form.useForm();
+
+  const loadTree = useCallback(async () => {
+    setTreeLoading(true);
+    setTreeError('');
     try {
       const t = await getOrgTree();
       setTree(t ?? []);
+    } catch (e) {
+      setTree([]);
+      setTreeError(e instanceof Error ? e.message : String(e));
     } finally {
-      setLoading(false);
+      setTreeLoading(false);
     }
-  };
+  }, []);
 
-  const loadPositions = async (orgId: number) => {
+  const loadOrgs = useCallback(async () => {
+    setOrgsLoading(true);
+    setOrgsError('');
+    try {
+      const r = await listOrgs({ pageSize: LOAD_LIMIT });
+      setOrgs(r.items ?? []);
+    } catch (e) {
+      setOrgs([]);
+      setOrgsError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setOrgsLoading(false);
+    }
+  }, []);
+
+  const loadPositions = useCallback(async (orgId: number) => {
+    setPositionsLoading(true);
+    setPositionsError('');
     try {
       const r = await listPositions({ orgId, pageSize: 100 });
       setPositions(r.items ?? []);
-    } catch {
-      /* ignore */
+    } catch (e) {
+      setPositions([]);
+      setPositionsError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPositionsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadTree();
   }, []);
 
   useEffect(() => {
-    if (selected) {
-      loadPositions(selected.id);
-    } else {
-      setPositions([]);
-    }
-  }, [selected]);
+    void loadTree();
+    void loadOrgs();
+  }, [loadTree, loadOrgs]);
 
-  const onSelect = (selectedKey: string) => {
-    if (!selectedKey) return;
-    // find node by id
-    function find(nodes: AdminOrgTreeNode[]): AdminOrg | null {
+  useEffect(() => {
+    if (detailOrg) void loadPositions(detailOrg.id);
+    else setPositions([]);
+  }, [detailOrg, loadPositions]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [keyword, selectedTreeKey]);
+
+  const refresh = useCallback(() => {
+    void loadTree();
+    void loadOrgs();
+  }, [loadTree, loadOrgs]);
+
+  const treeData = useMemo(() => toTreeData(tree), [tree]);
+
+  /** 数据异步到达，defaultExpandAll 不会补展开 —— 由受控 expandedKeys 保证首屏全展开。 */
+  const allExpandableKeys = useMemo(() => {
+    const keys: string[] = [];
+    const walk = (nodes: OrgTreeNode[]) => {
       for (const n of nodes) {
-        if (String(n.id) === String(selectedKey)) {
-          const raw = n as unknown as {
-            parent_id?: number | null;
-            leader_id?: number | null;
-            leader_name?: string | null;
-            sort_order?: number;
-            member_count?: number;
-            position_count?: number;
-            created_at?: string;
-            updated_at?: string;
-          };
-          return {
-            id: n.id,
-            parentId: n.parentId ?? raw.parent_id ?? null,
-            code: n.code,
-            name: n.name,
-            type: n.type,
-            leaderId: n.leaderId ?? raw.leader_id ?? null,
-            leaderName: n.leaderName ?? raw.leader_name ?? null,
-            sortOrder: n.sortOrder ?? raw.sort_order ?? 0,
-            description: n.description,
-            memberCount: n.memberCount ?? raw.member_count ?? 0,
-            positionCount: n.positionCount ?? raw.position_count ?? 0,
-            createdAt: n.createdAt ?? raw.created_at ?? "",
-            updatedAt: n.updatedAt ?? raw.updated_at ?? "",
-          };
-        }
-        if (n.children?.length) {
-          const c = find(n.children);
-          if (c) return c;
-        }
+        if (n.children && n.children.length > 0) keys.push(n.key);
+        if (n.children?.length) walk(n.children);
       }
-      return null;
-    }
-    setSelected(find(tree));
-    setTab("positions");
-  };
+    };
+    walk(treeData);
+    return keys;
+  }, [treeData]);
 
+  useEffect(() => {
+    setExpandedKeys(allExpandableKeys);
+  }, [allExpandableKeys]);
+
+  const stats = useMemo(() => {
+    let deptCount = 0;
+    let rootCount = 0;
+    let memberTotal = 0;
+    for (const o of orgs) {
+      memberTotal += o.memberCount ?? 0;
+      if (o.type === 'DEPARTMENT') deptCount += 1;
+      if (o.parentId == null) rootCount += 1;
+    }
+    return { total: orgs.length, deptCount, rootCount, memberTotal };
+  }, [orgs]);
+
+  const openOrgDetail = useCallback(
+    (org: AdminOrg) => {
+      setDetailOrg(org);
+    },
+    [],
+  );
+
+  const onSelectTreeNode = useCallback(
+    (key: string) => {
+      if (!key) return;
+      setSelectedTreeKey(key);
+      const found = orgs.find((o) => String(o.id) === key);
+      if (found) openOrgDetail(found);
+    },
+    [orgs, openOrgDetail],
+  );
+
+  const filteredOrgs = useMemo(() => {
+    const kw = keyword.trim().toLowerCase();
+    let list = orgs;
+    if (selectedTreeKey) {
+      const id = Number(selectedTreeKey);
+      const allowed = new Set<number>();
+      if (Number.isFinite(id) && collectSubtreeIds(tree, id, allowed)) {
+        list = list.filter((o) => allowed.has(o.id));
+      }
+    }
+    if (!kw) return list;
+    return list.filter(
+      (o) => o.name.toLowerCase().includes(kw) || o.code.toLowerCase().includes(kw),
+    );
+  }, [orgs, keyword, selectedTreeKey, tree]);
+
+  const pagedOrgs = useMemo(
+    () => filteredOrgs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredOrgs, page],
+  );
+
+  const parentName = useCallback(
+    (parentId?: number | null): string =>
+      parentId == null ? '—' : (orgs.find((o) => o.id === parentId)?.name ?? `#${parentId}`),
+    [orgs],
+  );
+
+  const orgOptions = useMemo(
+    () => orgs.map((o) => ({ value: o.id, label: `${o.name}（${o.code}）` })),
+    [orgs],
+  );
+
+  // ── 组织 新建 / 编辑 ──
   const openCreateOrg = (parentId?: number | null) => {
     orgForm.reset();
-    if (parentId !== undefined) {
-      orgForm.setValue("parentId", parentId);
-    }
-    setOrgModal({ mode: "create", parentId });
+    if (parentId !== undefined && parentId !== null) orgForm.setValue('parentId', parentId);
+    setOrgDraft({ mode: 'create' });
   };
 
-  const openEditOrg = () => {
-    if (!selected) return;
+  const openEditOrg = (org: AdminOrg) => {
     orgForm.setValues({
-      parentId: selected.parentId ?? undefined,
-      code: selected.code,
-      name: selected.name,
-      type: selected.type,
-      sortOrder: selected.sortOrder,
-      description: selected.description ?? "",
+      parentId: org.parentId ?? undefined,
+      code: org.code,
+      name: org.name,
+      type: org.type,
+      sortOrder: org.sortOrder,
+      description: org.description ?? '',
     });
-    setOrgModal({ mode: "edit" });
+    setOrgDraft({ mode: 'edit', orgId: org.id });
   };
 
   const submitOrg = async () => {
-    const v = await orgForm.validate();
-    if (!orgModal) return;
+    const v = (await orgForm.validate()) as unknown as CreateOrgPayload;
+    if (!orgDraft) return;
+    setSaving(true);
     try {
-      if (orgModal.mode === "create") {
+      if (orgDraft.mode === 'create') {
         await createOrg(v);
-        Toast.success("组织已创建");
-      } else if (selected) {
-        await updateOrg(selected.id, v);
-        Toast.success("已更新");
+        Toast.success('组织已创建');
+      } else if (orgDraft.orgId !== undefined) {
+        await updateOrg(orgDraft.orgId, v);
+        Toast.success('已保存');
       }
-      setOrgModal(null);
-      loadTree();
-    } catch {
-      /* ignore */
+      setOrgDraft(null);
+      setDetailOrg(null);
+      refresh();
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
     }
   };
 
-  const removeOrg = async () => {
-    if (!selected) return;
+  const removeOrg = async (org: AdminOrg) => {
     try {
-      await deleteOrg(selected.id);
-      Toast.success("已删除");
-      setSelected(null);
-      loadTree();
-    } catch {
-      /* ignore */
+      await deleteOrg(org.id);
+      Toast.success(`已删除 ${org.name}`);
+      setDetailOrg(null);
+      setSelectedTreeKey(null);
+      refresh();
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
     }
   };
 
+  // ── 岗位 新建 / 编辑 / 删除 ──
   const openCreatePosition = () => {
+    if (!detailOrg) return;
     positionForm.reset();
-    if (selected) positionForm.setValue("orgId", selected.id);
-    setPositionModal({ mode: "create", orgId: selected?.id });
+    positionForm.setValue('orgId', detailOrg.id);
+    setPositionDraft({ mode: 'create' });
   };
 
   const openEditPosition = (p: AdminPosition) => {
@@ -219,303 +340,561 @@ export default function OrgsPage() {
       orgId: p.orgId,
       code: p.code,
       name: p.name,
-      level: p.level ?? "",
-      description: p.description ?? "",
+      level: p.level ?? '',
+      description: p.description ?? '',
     });
-    setPositionModal({ mode: "edit", orgId: p.orgId, positionId: p.id });
+    setPositionDraft({ mode: 'edit', positionId: p.id });
   };
 
   const submitPosition = async () => {
-    const v = await positionForm.validate();
-    if (!positionModal) return;
+    const v = (await positionForm.validate()) as unknown as CreatePositionPayload;
+    if (!positionDraft) return;
+    setSaving(true);
     try {
-      if (positionModal.mode === "create") {
+      if (positionDraft.mode === 'create') {
         await createPosition(v);
-        Toast.success("岗位已创建");
-      } else if (positionModal.positionId) {
-        await updatePosition(positionModal.positionId, v);
-        Toast.success("已更新");
+        Toast.success('岗位已创建');
+      } else if (positionDraft.positionId !== undefined) {
+        const payload: UpdatePositionPayload = {
+          name: v.name,
+          level: v.level,
+          description: v.description,
+        };
+        await updatePosition(positionDraft.positionId, payload);
+        Toast.success('已保存');
       }
-      setPositionModal(null);
-      if (selected) loadPositions(selected.id);
-    } catch {
-      /* ignore */
+      setPositionDraft(null);
+      if (detailOrg) void loadPositions(detailOrg.id);
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
     }
   };
 
-  const removePosition = async (id: number) => {
+  const removePosition = async (p: AdminPosition) => {
     try {
-      await deletePosition(id);
-      Toast.success("已删除");
-      if (selected) loadPositions(selected.id);
-    } catch {
-      /* ignore */
+      await deletePosition(p.id);
+      Toast.success(`已删除 ${p.name}`);
+      if (detailOrg) void loadPositions(detailOrg.id);
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
     }
   };
 
+  // ── 人员调岗 ──
   const submitTransfer = async () => {
-    const v = await transferForm.validate();
+    const v = (await transferForm.validate()) as unknown as TransferPayload;
+    setSaving(true);
     try {
       await transferEmployee(v);
-      Toast.success("调岗成功");
+      Toast.success('调岗成功');
       setTransferOpen(false);
       transferForm.reset();
-      loadTree();
-    } catch {
-      /* ignore */
+      refresh();
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
     }
   };
 
-  const treeData = useMemo(() => toTreeData(tree), [tree]);
-
-  const orgStats = useMemo(() => {
-    function walk(nodes: AdminOrgTreeNode[], acc: { total: number; deptCount: number; rootCount: number; memberTotal: number }) {
-      for (const n of nodes) {
-        const raw = n as unknown as { member_count?: number; parent_id?: number | null };
-        const memberCount = n.memberCount ?? raw.member_count ?? 0;
-        const parentId = n.parentId ?? raw.parent_id ?? null;
-        acc.total += 1;
-        acc.memberTotal += memberCount;
-        if (n.type === "DEPARTMENT") acc.deptCount += 1;
-        if (parentId == null) acc.rootCount += 1;
-        if (n.children?.length) walk(n.children, acc);
-      }
-    }
-    const acc = { total: 0, deptCount: 0, rootCount: 0, memberTotal: 0 };
-    walk(tree, acc);
-    return acc;
-  }, [tree]);
-
-  const positionColumns: ColumnProps<AdminPosition>[] = [
-    { title: "编码", dataIndex: "code" },
-    { title: "名称", dataIndex: "name" },
-    {
-      title: "级别",
-      dataIndex: "level",
-      render: (v?: string) => (v ? <Tag>{v}</Tag> : "—"),
-    },
-    { title: "描述", dataIndex: "description", render: (v?: string) => v ?? "—" },
-    {
-      title: "操作",
-      key: "actions",
-      width: 140,
-      render: (_v, r) => (
-        <Space spacing={4}>
-          <Button theme="borderless" size="small" icon={<EditOutlined />} onClick={() => openEditPosition(r)}>
-            编辑
-          </Button>
-          <Popconfirm title="确认删除？" onConfirm={() => removePosition(r.id)} okText="删除" okType="danger" cancelText="取消">
-            <Button theme="borderless" size="small" icon={<DeleteOutlined />} type="danger">
-              删除
+  const orgColumns = useMemo(
+    () => [
+      {
+        title: '组织',
+        dataIndex: 'name',
+        width: 240,
+        render: (_: unknown, row: AdminOrg) => (
+          <span className="mp-admin-cell">
+            <span className="mp-admin-cell-main">
+              <span className="mp-admin-cell-title">{row.name}</span>
+              <span className="mp-admin-cell-sub">{row.code}</span>
+            </span>
+          </span>
+        ),
+      },
+      {
+        title: '类型',
+        dataIndex: 'type',
+        width: 110,
+        render: (v: OrgType) => <Tag type="light">{ORG_TYPE_LABEL[v] ?? v}</Tag>,
+      },
+      {
+        title: '父组织',
+        dataIndex: 'parentId',
+        width: 200,
+        ellipsis: true,
+        render: (v: number | null | undefined) => (
+          <span className="mp-admin-muted">{parentName(v)}</span>
+        ),
+      },
+      {
+        title: '人数',
+        dataIndex: 'memberCount',
+        width: 90,
+        render: (v: number) => <span className="mp-admin-muted">{v ?? 0}</span>,
+      },
+      {
+        title: '岗位',
+        dataIndex: 'positionCount',
+        width: 90,
+        render: (v: number) => <span className="mp-admin-muted">{v ?? 0}</span>,
+      },
+      {
+        title: '',
+        dataIndex: '__actions__',
+        width: 150,
+        render: (_: unknown, row: AdminOrg) => (
+          <span className="mp-admin-row-actions">
+            <Button
+              theme="borderless"
+              type="primary"
+              size="small"
+              onClick={() => openOrgDetail(row)}
+            >
+              查看
             </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+            <Button
+              theme="borderless"
+              type="tertiary"
+              size="small"
+              icon={<Pencil size={15} strokeWidth={1.5} />}
+              onClick={() => openEditOrg(row)}
+            >
+              编辑
+            </Button>
+          </span>
+        ),
+      },
+    ],
+    // parentName / openOrgDetail / openEditOrg 为稳定闭包，随其读取的状态更新
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [parentName],
+  );
+
+  const positionColumns = useMemo(
+    () => [
+      {
+        title: '编码',
+        dataIndex: 'code',
+        width: 180,
+        render: (v: string) => <span className="mp-admin-mono">{v}</span>,
+      },
+      { title: '名称', dataIndex: 'name', width: 160 },
+      {
+        title: '级别',
+        dataIndex: 'level',
+        width: 100,
+        render: (v: string | null | undefined) =>
+          v ? <Tag type="light">{v}</Tag> : <span className="mp-admin-faint">—</span>,
+      },
+      {
+        title: '在岗',
+        dataIndex: 'holderCount',
+        width: 80,
+        render: (v: number) => <span className="mp-admin-muted">{v ?? 0}</span>,
+      },
+      {
+        title: '描述',
+        dataIndex: 'description',
+        ellipsis: true,
+        render: (v: string | null | undefined) => (
+          <span className="mp-admin-muted">{v || '—'}</span>
+        ),
+      },
+      {
+        title: '',
+        dataIndex: '__actions__',
+        width: 150,
+        render: (_: unknown, row: AdminPosition) => (
+          <span className="mp-admin-row-actions">
+            <Button
+              theme="borderless"
+              type="primary"
+              size="small"
+              icon={<Pencil size={15} strokeWidth={1.5} />}
+              onClick={() => openEditPosition(row)}
+            >
+              编辑
+            </Button>
+            <Popconfirm
+              title={`确认删除 ${row.name}？`}
+              content="该岗位下的任职关系会一并解除。"
+              okType="danger"
+              okText="删除"
+              cancelText="取消"
+              onConfirm={() => void removePosition(row)}
+            >
+              <Button
+                theme="borderless"
+                type="danger"
+                size="small"
+                icon={<Trash2 size={15} strokeWidth={1.5} />}
+              >
+                删除
+              </Button>
+            </Popconfirm>
+          </span>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const treePane = (
+    <>
+      <div className="mp-pane-title">组织树</div>
+      <div className="mp-pane-scroll">
+        {treeError ? (
+          <div className="mp-pane-block">
+            <EmptyState
+              illustration="failure"
+              title="组织树加载失败"
+              desc={treeError}
+              actions={
+                <Button theme="solid" type="primary" onClick={() => void loadTree()}>
+                  重试
+                </Button>
+              }
+            />
+          </div>
+        ) : treeData.length === 0 && !treeLoading ? (
+          <div className="mp-pane-block">
+            <EmptyState
+              illustration="no-content"
+              title="暂无组织"
+              desc="点击「新建组织」创建第一个节点。"
+            />
+          </div>
+        ) : (
+          <Tree
+            treeData={treeData}
+            showLine
+            value={selectedTreeKey ?? undefined}
+            expandedKeys={expandedKeys}
+            onExpand={(keys: string[]) => setExpandedKeys(keys)}
+            onSelect={(key: string) => onSelectTreeNode(key)}
+            renderLabel={(label: unknown, node: unknown) => {
+              const n = node as OrgTreeNode;
+              return (
+                <span className="mp-admin-cell">
+                  <span className="mp-admin-cell-title">{String(label)}</span>
+                  <Tag type="light">{n.memberCount ?? 0} 人</Tag>
+                </span>
+              );
+            }}
+          />
+        )}
+      </div>
+    </>
+  );
 
   return (
-    <AdminLayout
-      title="组织管理"
-      extra={
-        <Space>
-          <Button icon={<PlusOutlined />} onClick={() => openCreateOrg(undefined)}>
-            新建组织
-          </Button>
-          <Button icon={<SwapOutlined />} onClick={() => setTransferOpen(true)}>
-            人员调岗
-          </Button>
-        </Space>
-      }
-    >
-      <StatGrid>
-        <StatCard label="组织总数" value={orgStats.total} />
-        <StatCard label="部门数" value={orgStats.deptCount} />
-        <StatCard label="在职人数" value={orgStats.memberTotal} color="success" />
-        <StatCard label="根组织数" value={orgStats.rootCount} color="warning" />
-      </StatGrid>
-      <div style={{ display: "flex", gap: 16, height: "100%" }}>
-        <div
-          style={{
-            width: 320,
-            flexShrink: 0,
-            background: "var(--card)",
-            border: "1px solid var(--border)",
-            borderRadius: 8,
-            padding: 12,
-            overflow: "auto",
-          }}
-        >
-          {treeData.length === 0 ? (
-            <div style={{ color: "var(--muted-foreground)" }}>
-              {loading ? "加载中…" : "暂无组织"}
-            </div>
-          ) : (
-            <Tree
-              treeData={treeData}
-              defaultExpandAll
-              onSelect={onSelect}
-              showLine
-              renderLabel={(_label, treeNode) => {
-                const node = treeNode as unknown as OrgTreeDataNode;
-                return (
-                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <ApartmentOutlined />
-                    <span>{node.label}</span>
-                    <Tag style={{ marginLeft: "auto" }}>{node.memberCount} 人</Tag>
-                  </span>
-                );
+    <>
+      <PageHeader
+        title="组织与租户"
+        desc={`${stats.total} 个组织 · ${stats.deptCount} 个部门 · ${stats.memberTotal} 名成员`}
+        actions={
+          <>
+            <Button icon={<RefreshCw size={15} strokeWidth={1.5} />} loading={treeLoading} onClick={refresh}>
+              刷新
+            </Button>
+            <Button
+              icon={<ArrowRightLeft size={15} strokeWidth={1.5} />}
+              onClick={() => {
+                transferForm.reset();
+                setTransferOpen(true);
               }}
-            />
-          )}
-        </div>
+            >
+              人员调岗
+            </Button>
+            <Button
+              theme="solid"
+              type="primary"
+              icon={<Plus size={15} strokeWidth={1.5} />}
+              onClick={() => openCreateOrg(null)}
+            >
+              新建组织
+            </Button>
+          </>
+        }
+      />
 
-        <div
-          style={{
-            flex: 1,
-            background: "var(--card)",
-            border: "1px solid var(--border)",
-            borderRadius: 8,
-            padding: 16,
-            minWidth: 0,
-            overflow: "auto",
-          }}
-        >
-          {selected ? (
-            <>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div>
-                  <h3 style={{ margin: 0 }}>
-                    {selected.name} <Tag>{selected.type}</Tag>
-                  </h3>
-                  <div style={{ color: "var(--muted-foreground)", fontSize: 12, marginTop: 4 }}>
-                    编码 {selected.code} · {selected.memberCount} 名成员 · {selected.positionCount} 个岗位
-                  </div>
-                </div>
-                <Space>
-                  <Button onClick={openEditOrg} icon={<EditOutlined />}>
-                    编辑
-                  </Button>
-                  <Popconfirm title={"确认删除 " + selected.name + "？"} content="子组织将无法保留" onConfirm={removeOrg} okType="danger" okText="删除" cancelText="取消">
-                    <Button type="danger" icon={<DeleteOutlined />}>
-                      删除
-                    </Button>
-                  </Popconfirm>
-                  <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreatePosition}>
-                    新建岗位
-                  </Button>
-                </Space>
-              </div>
-
-              <Tabs
-                activeKey={tab}
-                onChange={(v) => setTab(v as "positions" | "members")}
-              >
-                <Tabs.TabPane itemKey="positions" tab="岗位">
-                  <Table
-                    rowKey="id"
-                    size="small"
-                    columns={positionColumns}
-                    dataSource={positions}
-                    pagination={false}
-                    empty="暂无岗位"
-                  />
-                </Tabs.TabPane>
-                <Tabs.TabPane itemKey="members" tab="成员">
-                  <div style={{ color: "var(--muted-foreground)" }}>
-                    成员列表（该组织下的 {selected.memberCount} 人）。调岗请使用顶部「人员调岗」按钮。
-                  </div>
-                </Tabs.TabPane>
-              </Tabs>
-            </>
-          ) : (
-            <div style={{ color: "var(--muted-foreground)", textAlign: "center", paddingTop: 60 }}>
-              请在左侧选择组织，或点击「新建组织」创建。
-            </div>
-          )}
-        </div>
+      <div className="mp-admin-kpis">
+        <Card>
+          <span className="mp-admin-kpi-label">组织总数</span>
+          <div className="mp-admin-kpi-value">{stats.total}</div>
+        </Card>
+        <Card>
+          <span className="mp-admin-kpi-label">部门数</span>
+          <div className="mp-admin-kpi-value">{stats.deptCount}</div>
+        </Card>
+        <Card>
+          <span className="mp-admin-kpi-label">在职人数</span>
+          <div className="mp-admin-kpi-value">{stats.memberTotal}</div>
+        </Card>
+        <Card>
+          <span className="mp-admin-kpi-label">根组织数</span>
+          <div className="mp-admin-kpi-value">{stats.rootCount}</div>
+        </Card>
       </div>
 
-      <Modal
-        title={orgModal?.mode === "edit" ? "编辑组织" : "新建组织"}
-        visible={!!orgModal}
-        onCancel={() => setOrgModal(null)}
-        onOk={submitOrg}
-        okText="保存"
-        cancelText="取消"
-      >
-        <Form form={orgForm}>
-          <Form.Select
-            field="parentId"
-            label="父组织"
-            showClear
-            placeholder="无（顶级组织）"
-            optionList={Array.isArray(tree) ? tree.map((n) => ({ value: n.id, label: n.name })) : []}
-            disabled={orgModal?.mode === "edit"}
-          />
-          <Form.Input field="code" label="编码" rules={[{ required: true, min: 1, max: 64 }]} />
-          <Form.Input field="name" label="名称" rules={[{ required: true }]} />
-          <Form.Select
-            field="type"
-            label="类型"
-            initValue="DEPARTMENT"
-            optionList={[
-              { value: "COMPANY", label: "公司" },
-              { value: "DEPARTMENT", label: "部门" },
-              { value: "TEAM", label: "团队" },
-              { value: "VIRTUAL", label: "虚拟组织" },
-            ]}
-          />
-          <Form.InputNumber field="sortOrder" label="排序" initValue={0} style={{ width: "100%" }} />
-          <Form.TextArea field="description" label="描述" autosize={{ minRows: 2 }} />
-        </Form>
-      </Modal>
+      <SplitPane ariaLabel="组织与租户" defaultWidth={300} pane={treePane}>
+        <FilterBar
+          search={{ value: keyword, onChange: setKeyword, placeholder: '搜索组织名称 / 编码…' }}
+          filters={
+            selectedTreeKey ? (
+              <Tag type="light" closable onClose={() => setSelectedTreeKey(null)}>
+                仅看该组织子树
+              </Tag>
+            ) : null
+          }
+        />
+        <DataTablePro<AdminOrg>
+          columns={orgColumns}
+          dataSource={pagedOrgs}
+          rowKey="id"
+          loading={orgsLoading}
+          pagination={{
+            currentPage: page,
+            pageSize: PAGE_SIZE,
+            total: filteredOrgs.length,
+            onChange: setPage,
+          }}
+          onRow={(record) => ({ onDoubleClick: () => openOrgDetail(record) })}
+          empty={
+            orgsError ? (
+              <EmptyState illustration="failure" title="组织列表加载失败" desc={orgsError} />
+            ) : (
+              <EmptyState
+                illustration="no-result"
+                title="没有匹配的组织"
+                desc="调整关键词，或在左侧选择其他组织。"
+              />
+            )
+          }
+        />
+      </SplitPane>
 
-      <Modal
-        title={positionModal?.mode === "edit" ? "编辑岗位" : "新建岗位"}
-        visible={!!positionModal}
-        onCancel={() => setPositionModal(null)}
-        onOk={submitPosition}
-        okText="保存"
-        cancelText="取消"
+      {/* 组织详情 */}
+      <SheetDetail
+        title={detailOrg ? `组织详情 · ${detailOrg.name}` : '组织详情'}
+        open={detailOrg !== null}
+        onClose={() => setDetailOrg(null)}
+        width={640}
+        footer={
+          <>
+            {detailOrg ? (
+              <Popconfirm
+                title={`确认删除 ${detailOrg.name}？`}
+                content="子组织将无法保留。"
+                okType="danger"
+                okText="删除"
+                cancelText="取消"
+                onConfirm={() => void removeOrg(detailOrg)}
+              >
+                <Button type="danger" icon={<Trash2 size={15} strokeWidth={1.5} />}>
+                  删除
+                </Button>
+              </Popconfirm>
+            ) : null}
+            <Button onClick={() => setDetailOrg(null)}>关闭</Button>
+            {detailOrg ? (
+              <>
+                <Button icon={<Pencil size={15} strokeWidth={1.5} />} onClick={() => openEditOrg(detailOrg)}>
+                  编辑组织
+                </Button>
+                <Button
+                  theme="solid"
+                  type="primary"
+                  icon={<Plus size={15} strokeWidth={1.5} />}
+                  onClick={openCreatePosition}
+                >
+                  新建岗位
+                </Button>
+              </>
+            ) : null}
+          </>
+        }
       >
-        <Form form={positionForm}>
-          <Form.Select
-            field="orgId"
-            label="所属组织"
-            rules={[{ required: true }]}
-            optionList={Array.isArray(tree) ? tree.map((n) => ({ value: n.id, label: n.name })) : []}
-            disabled={positionModal?.mode === "edit"}
-          />
-          <Form.Input field="code" label="编码" rules={[{ required: true }]} />
-          <Form.Input field="name" label="名称" rules={[{ required: true }]} />
-          <Form.Input field="level" label="级别" placeholder="如 P6 / M2" />
-          <Form.TextArea field="description" label="描述" autosize={{ minRows: 2 }} />
-        </Form>
-      </Modal>
+        {detailOrg ? (
+          <>
+            <Descriptions
+              column={1}
+              size="small"
+              data={[
+                { key: '编码', value: <span className="mp-admin-mono">{detailOrg.code}</span> },
+                { key: '名称', value: detailOrg.name },
+                { key: '类型', value: <Tag type="light">{ORG_TYPE_LABEL[detailOrg.type] ?? detailOrg.type}</Tag> },
+                { key: '父组织', value: parentName(detailOrg.parentId) },
+                { key: '负责人', value: detailOrg.leaderName || '—' },
+                { key: '成员数', value: `${detailOrg.memberCount ?? 0} 人` },
+                { key: '岗位数', value: `${detailOrg.positionCount ?? 0} 个` },
+                { key: '描述', value: detailOrg.description || '—' },
+              ]}
+            />
+            <div className="mp-admin-section">
+              <span className="mp-admin-section-label">岗位（{positions.length}）</span>
+              <DataTablePro<AdminPosition>
+                columns={positionColumns}
+                dataSource={positions}
+                rowKey="id"
+                loading={positionsLoading}
+                empty={
+                  positionsError ? (
+                    <EmptyState illustration="failure" title="岗位加载失败" desc={positionsError} />
+                  ) : (
+                    <EmptyState
+                      illustration="no-content"
+                      title="暂无岗位"
+                      desc="为该组织创建第一个岗位。"
+                    />
+                  )
+                }
+              />
+            </div>
+          </>
+        ) : null}
+      </SheetDetail>
 
-      <Modal
+      {/* 组织 新建 / 编辑 */}
+      <SheetDetail
+        title={orgDraft?.mode === 'edit' ? '编辑组织' : '新建组织'}
+        open={orgDraft !== null}
+        onClose={() => setOrgDraft(null)}
+        footer={
+          <>
+            <Button onClick={() => setOrgDraft(null)}>取消</Button>
+            <Button theme="solid" type="primary" loading={saving} onClick={() => void submitOrg()}>
+              保存
+            </Button>
+          </>
+        }
+      >
+        <div className="mp-admin-form">
+          <Form form={orgForm} labelPosition="left" labelWidth={92}>
+            <Form.Select
+              field="parentId"
+              label="父组织"
+              showClear
+              filter
+              disabled={orgDraft?.mode === 'edit'}
+              placeholder="无（顶级组织）"
+              optionList={orgOptions}
+            />
+            <Form.Input
+              field="code"
+              label="编码"
+              rules={[{ required: true, min: 1, max: 64, message: '请输入组织编码' }]}
+              disabled={orgDraft?.mode === 'edit'}
+              placeholder="platform"
+            />
+            <Form.Input
+              field="name"
+              label="名称"
+              rules={[{ required: true, message: '请输入组织名称' }]}
+              placeholder="平台组"
+            />
+            <Form.Select
+              field="type"
+              label="类型"
+              initValue="DEPARTMENT"
+              optionList={ORG_TYPE_OPTIONS}
+            />
+            <Form.InputNumber field="sortOrder" label="排序" initValue={0} />
+            <Form.TextArea field="description" label="描述" autosize={{ minRows: 2 }} />
+          </Form>
+        </div>
+      </SheetDetail>
+
+      {/* 岗位 新建 / 编辑 */}
+      <SheetDetail
+        title={positionDraft?.mode === 'edit' ? '编辑岗位' : '新建岗位'}
+        open={positionDraft !== null}
+        onClose={() => setPositionDraft(null)}
+        footer={
+          <>
+            <Button onClick={() => setPositionDraft(null)}>取消</Button>
+            <Button
+              theme="solid"
+              type="primary"
+              loading={saving}
+              onClick={() => void submitPosition()}
+            >
+              保存
+            </Button>
+          </>
+        }
+      >
+        <div className="mp-admin-form">
+          <Form form={positionForm} labelPosition="left" labelWidth={92}>
+            <Form.Select
+              field="orgId"
+              label="所属组织"
+              rules={[{ required: true, message: '请选择所属组织' }]}
+              disabled={positionDraft?.mode === 'edit'}
+              optionList={orgOptions}
+            />
+            <Form.Input
+              field="code"
+              label="编码"
+              rules={[{ required: true, message: '请输入岗位编码' }]}
+              disabled={positionDraft?.mode === 'edit'}
+              placeholder="backend_engineer"
+            />
+            <Form.Input
+              field="name"
+              label="名称"
+              rules={[{ required: true, message: '请输入岗位名称' }]}
+              placeholder="后端工程师"
+            />
+            <Form.Input field="level" label="级别" placeholder="如 P6 / M2" />
+            <Form.TextArea field="description" label="描述" autosize={{ minRows: 2 }} />
+          </Form>
+        </div>
+      </SheetDetail>
+
+      {/* 人员调岗 */}
+      <SheetDetail
         title="人员调岗"
-        visible={transferOpen}
-        onCancel={() => setTransferOpen(false)}
-        onOk={submitTransfer}
-        okText="调岗"
-        cancelText="取消"
+        open={transferOpen}
+        onClose={() => setTransferOpen(false)}
+        footer={
+          <>
+            <Button onClick={() => setTransferOpen(false)}>取消</Button>
+            <Button
+              theme="solid"
+              type="primary"
+              loading={saving}
+              onClick={() => void submitTransfer()}
+            >
+              调岗
+            </Button>
+          </>
+        }
       >
-        <Form form={transferForm}>
-          <Form.InputNumber field="userId" label="用户 ID" rules={[{ required: true }]} style={{ width: "100%" }} />
-          <Form.Select
-            field="targetOrgId"
-            label="目标组织"
-            rules={[{ required: true }]}
-            optionList={Array.isArray(tree) ? tree.map((n) => ({ value: n.id, label: n.name })) : []}
-            filter
-          />
-          <Form.InputNumber field="targetPositionId" label="目标岗位（留空自动取第一岗）" style={{ width: "100%" }} />
-          <Form.InputNumber field="reportsTo" label="汇报对象 user ID" style={{ width: "100%" }} />
-          <Form.TextArea field="reason" label="调岗原因" autosize={{ minRows: 2 }} />
-        </Form>
-      </Modal>
-    </AdminLayout>
+        <div className="mp-admin-form">
+          <Form form={transferForm} labelPosition="left" labelWidth={112}>
+            <Form.InputNumber
+              field="userId"
+              label="用户 ID"
+              rules={[{ required: true, message: '请输入用户 ID' }]}
+            />
+            <Form.Select
+              field="targetOrgId"
+              label="目标组织"
+              filter
+              rules={[{ required: true, message: '请选择目标组织' }]}
+              optionList={orgOptions}
+            />
+            <Form.InputNumber field="targetPositionId" label="目标岗位" />
+            <Form.InputNumber field="reportsTo" label="汇报对象 ID" />
+            <Form.TextArea field="reason" label="调岗原因" autosize={{ minRows: 2 }} />
+          </Form>
+        </div>
+      </SheetDetail>
+    </>
   );
 }

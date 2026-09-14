@@ -10,6 +10,9 @@ export interface DataTableProPagination {
   pageSize: number;
   total: number;
   onChange: (currentPage: number) => void;
+  /** 传入即启用「每页条数」切换（服务端分页的列表页通常需要） */
+  onPageSizeChange?: (pageSize: number) => void;
+  pageSizeOptions?: number[];
 }
 
 export interface DataTableProSelection<T> {
@@ -165,6 +168,9 @@ export default function DataTablePro<T extends object>({
               pageSize={pagination.pageSize}
               total={pagination.total}
               onPageChange={pagination.onChange}
+              showSizeChanger={Boolean(pagination.onPageSizeChange)}
+              pageSizeOpts={pagination.pageSizeOptions ?? [10, 20, 50, 100]}
+              onPageSizeChange={pagination.onPageSizeChange}
             />
           ) : null}
         </div>

@@ -9,6 +9,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import AppShell from './components/shell/AppShell';
 import { legacyRedirectRoutes } from './routes/legacy-redirects';
 import { ontologyRoutes } from './routes/ontology';
+import { adminRoutes } from './routes/admin';
 
 /**
  * 新信息架构（11 域 → 8 域，DESIGN-SPEC §2）。
@@ -27,17 +28,6 @@ const DashboardSettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'
 const DashboardDeliverablesPage = lazy(() => import('./pages/dashboard/DeliverablesPage'));
 
 // ---------- 平台管理 ----------
-const DashboardAdminUsersPage = lazy(() => import('./pages/dashboard/admin/UsersPage'));
-const DashboardAdminPermissionsPage = lazy(() => import('./pages/dashboard/admin/PermissionsPage'));
-const DashboardAdminOrgsPage = lazy(() => import('./pages/dashboard/admin/OrgsPage'));
-const DashboardAdminLogsPage = lazy(() => import('./pages/dashboard/admin/LogsPage'));
-const DashboardAdminConfigsPage = lazy(() => import('./pages/dashboard/admin/ConfigsPage'));
-const DashboardAdminAIProvidersPage = lazy(() => import('./pages/dashboard/admin/AIProvidersPage'));
-const DashboardAdminOperationsPage = lazy(() => import('./pages/dashboard/admin/OperationsPage'));
-const DashboardAdminAnalyticsPage = lazy(() => import('./pages/dashboard/admin/AnalyticsPage'));
-const DashboardAdminComponentDemoPage = lazy(() => import('./pages/dashboard/admin/ComponentDemoPage'));
-const DashboardAdminFlowgramDemoPage = lazy(() => import('./pages/dashboard/admin/FlowgramDemoPage'));
-const UiP0DemoPage = lazy(() => import('./routes/demo'));
 
 // ---------- 数字员工 ----------
 const AgentsLayout = lazy(() => import('./pages/agents/AgentsLayout'));
@@ -582,23 +572,8 @@ function AppRoutes() {
               }
             />
 
-            {/* ---------- 8. 平台管理 ---------- */}
-            <Route path="admin" element={<Navigate to="/admin/org/users" replace />} />
-            <Route path="admin/org" element={<Navigate to="/admin/org/users" replace />} />
-            <Route path="admin/org/users" element={<DashboardAdminUsersPage />} />
-            <Route path="admin/org/roles" element={<DashboardAdminPermissionsPage />} />
-            <Route path="admin/org/tenants" element={<DashboardAdminOrgsPage />} />
-            <Route path="admin/platform" element={<Navigate to="/admin/platform/configs" replace />} />
-            <Route path="admin/platform/configs" element={<DashboardAdminConfigsPage />} />
-            <Route path="admin/platform/ai-providers" element={<DashboardAdminAIProvidersPage />} />
-            <Route path="admin/platform/components" element={<DashboardAdminComponentDemoPage />} />
-            <Route path="admin/ops" element={<Navigate to="/admin/ops/logs" replace />} />
-            <Route path="admin/ops/logs" element={<DashboardAdminLogsPage />} />
-            <Route path="admin/ops/operations" element={<DashboardAdminOperationsPage />} />
-            <Route path="admin/ops/analytics" element={<DashboardAdminAnalyticsPage />} />
-            <Route path="admin/flowgram" element={<DashboardAdminFlowgramDemoPage />} />
-            {/* UI-P0 五骨架组件演示页 */}
-            <Route path="admin/demo" element={<UiP0DemoPage />} />
+            {/* ---------- 8. 平台管理（域路由见 src/routes/admin.tsx） ---------- */}
+            {adminRoutes}
 
             {/* ---------- 旧路由 301（集中在 src/routes/legacy-redirects.tsx） ---------- */}
             {legacyRedirectRoutes}
