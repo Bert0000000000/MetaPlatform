@@ -877,6 +877,9 @@ paths:
         [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       summary: List Individuals (mutable)
+      description: |
+        class_rid 接受 ObjectType rid（精确匹配）或 Interface rid（EXP-01 多态
+        浏览源：展开为实现类型 + 各自后代，与 ObjectSet/IR 查询路径同语义）。
       operationId: ontListV2Individuals
       x-mate-owner: ontology-platform
       x-mate-permission: ont.read

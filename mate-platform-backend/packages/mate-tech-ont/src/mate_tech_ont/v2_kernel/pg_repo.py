@@ -2076,20 +2076,59 @@ class PgOntologyRepository(OntologyRepository):
 
     def list_individuals(self, class_rid: ClassRef | None) -> list[Individual]:
         self._ensure_schema()
+        # EXP-01 补全（2026-09-14）：class_rid 是已注册 Interface 时展开为
+        # 实现类型 + 各自后代（与 ObjectSet/IR 查询路径同语义）；具体
+        # ObjectType 保持精确匹配（既有行为不变）。
+        class_filter: tuple[str, ...] | None = None
+        if class_rid is not None:
+            class_filter = self._list_source_allowed(class_rid.rid)
+            if class_filter is None:
+                class_filter = (class_rid.rid,)
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                if class_rid is None:
+                if class_filter is None:
                     cur.execute("SELECT * FROM ont_individual ORDER BY rid")
-                else:
+                elif len(class_filter) == 1:
                     cur.execute(
                         "SELECT * FROM ont_individual WHERE class_rid = %s ORDER BY rid",
-                        (class_rid.rid,),
+                        (class_filter[0],),
+                    )
+                else:
+                    cur.execute(
+                        "SELECT * FROM ont_individual WHERE class_rid = ANY(%s) "
+                        "ORDER BY class_rid, rid",
+                        (list(class_filter),),
                     )
                 rows = cur.fetchall()
             return [_row_to_individual(r) for r in rows]
         finally:
             conn.close()
+
+    def _list_source_allowed(self, source_rid: str) -> tuple[str, ...] | None:
+        """Interface 源 → 展开类集合；None = 非 Interface（精确匹配）。"""
+        target = source_rid
+        try:
+            ifcs = self.list_interfaces()
+        except Exception:
+            return None
+        if not any(i.rid.rid == target for i in ifcs):
+            return None
+        from mate_kernel.ontology.reasoning.engine import descendant_closure
+        from mate_kernel.ontology.types.interface import interface_source_rids
+
+        impl = interface_source_rids(target, self.list_object_types(limit=10000, offset=0))
+        closure = descendant_closure(
+            [
+                (t.rid.rid, t.parent_class.rid)
+                for t in self.list_object_types(limit=10000, offset=0)
+                if t.parent_class is not None
+            ]
+        )
+        allowed: set[str] = set(impl)
+        for b in impl:
+            allowed |= closure.get(b, set())
+        return tuple(sorted(allowed))
 
     def create_link_instance(self, li: LinkInstance) -> LinkInstance:
         self._ensure_schema()

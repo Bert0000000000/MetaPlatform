@@ -642,8 +642,20 @@ class InMemoryOntologyRepository(OntologyRepository):
     def list_individuals(self, class_rid: ClassRef | None) -> list[Individual]:
         items = self._individuals.values()
         if class_rid is not None:
-            items = [i for i in items if i.class_rid == class_rid]
+            allowed = self._list_source_allowed(class_rid.rid)
+            if allowed is None:
+                items = [i for i in items if i.class_rid == class_rid]
+            else:
+                # EXP-01 补全（2026-09-14）：Interface 源 → 实现类型 + 各自后代
+                #（与 ObjectSet/IR 查询路径同语义）；具体 ObjectType 保持精确匹配。
+                items = [i for i in items if i.class_rid.rid in allowed]
         return list(items)
+
+    def _list_source_allowed(self, source_rid: str) -> frozenset[str] | None:
+        """浏览源的允许类集合；None = 非 Interface（保持精确匹配的既有行为）。"""
+        if ClassRef(source_rid) not in self._interfaces:
+            return None
+        return self._allowed_source_set(source_rid)
 
     def create_link_instance(self, li: LinkInstance) -> LinkInstance:
         # EXP-03：注册 LinkType 的基数约束（未注册类型 legacy 宽松）

@@ -14,9 +14,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, Table, Tag } from '@douyinfe/semi-ui';
 import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
-import { ChevronRight, Hexagon, Loader2, Search, Sparkles } from 'lucide-react';
+import { ChevronRight, Hexagon, Layers, Loader2, Search, Sparkles } from 'lucide-react';
 import {
-  getTypeHierarchy, listIndividuals, listObjectTypes, propSlug, searchObjectsSemantic,
+  getTypeHierarchy, listIndividuals, listInterfaces, listObjectTypes, propSlug, searchObjectsSemantic,
+  type KernelInterface,
   type KernelIndividual, type KernelObjectType, type SemanticSearchCard,
   type TypeHierarchyNode,
 } from '@/api/ont/kernel';
@@ -28,6 +29,8 @@ interface FlatType {
   rid: string;
   label: string;
   depth: number;
+  /** EXP-01：Interface 多态浏览源（实例列表 = 实现类型 + 后代） */
+  isInterface?: boolean;
 }
 
 function flattenTree(nodes: TypeHierarchyNode[], depth = 0, out: FlatType[] = []): FlatType[] {
@@ -71,16 +74,24 @@ export default function ObjectDataPage() {
     let cancelled = false;
     (async () => {
       try {
-        const [ots, tree] = await Promise.all([
+        const [ots, tree, ifcs] = await Promise.all([
           listObjectTypes(),
           getTypeHierarchy().catch(() => [] as TypeHierarchyNode[]),
+          listInterfaces().catch(() => [] as KernelInterface[]),
         ]);
         if (cancelled) return;
         setTypes(ots);
         const flat = tree.length
           ? flattenTree(tree)
           : groupByDomain(ots);
-        setFlatTypes(flat);
+        // EXP-01：Interface 多态浏览源附在类型树后（选中即查实现类型+后代实例）
+        const ifcFlat: FlatType[] = ifcs.map((i) => ({
+          rid: i.rid,
+          label: `${propSlug(i.rid)} · 多态`,
+          depth: 0,
+          isInterface: true,
+        }));
+        setFlatTypes([...flat, ...ifcFlat]);
 
         // 初始选中：并发探测前 5 个类型（limit=1 只探「有无实例」），
         // 取第一个有实例的 —— 避免选中一个空类型后用户看到空表；
@@ -242,9 +253,11 @@ export default function ObjectDataPage() {
                       color: t.rid === selectedType ? 'var(--foreground)' : 'var(--muted-foreground)',
                       paddingLeft: 10 + t.depth * 14,
                     }}
-                    title={t.rid}
+                    title={t.isInterface ? `${t.rid}（Interface 多态源：实现类型 + 后代）` : t.rid}
                   >
-                    <Hexagon style={{ width: 12, height: 12, flexShrink: 0 }} />
+                    {t.isInterface
+                      ? <Layers style={{ width: 12, height: 12, flexShrink: 0, color: 'var(--primary)' }} />
+                      : <Hexagon style={{ width: 12, height: 12, flexShrink: 0 }} />}
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.label}</span>
                   </button>
                 </li>
