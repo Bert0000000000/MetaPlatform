@@ -2635,3 +2635,112 @@ components:
                             right: {}
                             resolved: {}
         "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
+  /api/v1/ont/v2/agent-metrics/summary:
+    get:
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
+      tags: [ont]
+      summary: AI Agent regression metrics summary (proposal acceptance)
+      description: |
+        ONT-AGENT-METRICS-01：proposal 接受率/状态分布/驳回原因分布/by-actor。
+        accepted = executed + reverted（都曾被采纳）；rejected = 显式 rejected 终态；
+        withdrawn/pending/confirmed 不入分母。created_by 现状仅 edit_set 写入，
+        其余归 (unattributed)。窗口 days=1..365 默认 30；数据基于 list_proposals
+        上游 LIMIT 200（最近 200 条）。
+      operationId: ontAgentMetricsSummary
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-AGENT-METRICS]
+      x-mate-implementation-status: implemented
+      parameters:
+        - in: query
+          name: days
+          required: false
+          schema: { type: integer, default: 30, minimum: 1, maximum: 365 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+                  by_status: { type: object, additionalProperties: { type: integer } }
+                  acceptance_rate:
+                    type: [number, "null"]
+                    description: accepted/(accepted+rejected)；分母 0 → null
+                  rejection_reasons:
+                    type: [array, "null"]
+                    description: 现状无 reason 字段 → null（不编造）
+                  by_actor:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        actor: { type: string }
+                        proposed: { type: integer }
+                        executed: { type: integer }
+                        acceptance_rate: { type: [number, "null"] }
+                  window_days: { type: integer }
+        "503": { $ref: ../common/errors.yaml#/components/responses/Error503 }
+  /api/v1/ont/v2/agent-metrics/trend:
+    get:
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
+      tags: [ont]
+      summary: AI Agent proposal trend by day
+      description: |
+        proposed 按 created_at 分桶；executed 以 confirmed_at 为代理（executed
+        无独立时间戳，confirm 紧邻 execute）；rejected 退化为 created_at。
+        UTC 零填充连续序列。
+      operationId: ontAgentMetricsTrend
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-AGENT-METRICS]
+      x-mate-implementation-status: implemented
+      parameters:
+        - in: query
+          name: days
+          required: false
+          schema: { type: integer, default: 30, minimum: 1, maximum: 365 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    date: { type: string, format: date }
+                    proposed: { type: integer }
+                    executed: { type: integer }
+                    rejected: { type: integer }
+        "503": { $ref: ../common/errors.yaml#/components/responses/Error503 }
+  /api/v1/ont/v2/agent-metrics/health:
+    get:
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
+      tags: [ont]
+      summary: Agent metrics data-source health probe
+      operationId: ontAgentMetricsHealth
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-AGENT-METRICS]
+      x-mate-implementation-status: implemented
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  source: { type: string }
+                  available: { type: boolean }
+                  proposal_count: { type: integer }

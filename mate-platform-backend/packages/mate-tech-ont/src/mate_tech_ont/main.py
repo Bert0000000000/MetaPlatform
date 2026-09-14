@@ -192,6 +192,10 @@ def create_app() -> FastAPI:
     app.include_router(shacl_router)
     app.include_router(federation_router)
     app.include_router(v2_kernel_router)
+    # ONT-AGENT-METRICS-01：AI Agent 回归指标（只读；proposal 接受率/趋势）
+    from .v2_kernel.agent_metrics import router as agent_metrics_router
+
+    app.include_router(agent_metrics_router)
 
     @app.get("/healthz")
     async def healthz() -> dict[str, str]:
