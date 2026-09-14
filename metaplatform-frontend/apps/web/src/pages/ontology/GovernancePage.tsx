@@ -1,6 +1,6 @@
 // GovernancePage - 治理面（ONT-UI-04，Palantir Ontology Manager Usage/History/Cleanup 对位）。
 //
-// 四个区块：
+// 五个区块：
 //   1. 版本与导入导出（G41）—— 类型版本操作（branch / diff / rollback）+
 //      Export/Import（JSON 下载 / 文件导入回灌）
 //   2. 类型使用量（GET /usage/types）—— Reads/Writes/ActiveDays + 生命周期操作
@@ -8,11 +8,14 @@
 //   3. 反模式 lint（GET /lint/anti-patterns）—— god_object / kitchen_sink /
 //      misnomer / action_sprawl
 //   4. 执行历史（GET /action-audit）—— actor/时间/结果/审计链倒序
+//   5. Agent 回归指标（GET /agent-metrics/*，ONT-AGENT-METRICS-01）—— AI
+//      proposal 接受率基线 / 按天趋势 SVG / 按提议方聚合；独立加载，
+//      接口失败仅本区块降级为「指标不可用」，不拖垮整页
 
-import { useCallback, useEffect, useState, type CSSProperties, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useState, type CSSProperties, type ChangeEvent, type ReactElement } from 'react';
 import { Card, Table, Tag } from '@douyinfe/semi-ui';
 import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
-import { AlertTriangle, BarChart3, Download, GitBranch, GitCompare, History, Loader2, ShieldAlert, Undo2, Upload } from 'lucide-react';
+import { AlertTriangle, BarChart3, Bot, Download, GitBranch, GitCompare, History, Loader2, ShieldAlert, Undo2, Upload } from 'lucide-react';
 import { toast } from '@mate/shared';
 import {
   applyLifecycle, branchObjectType, diffObjectTypes, exportObjectType,
@@ -20,6 +23,10 @@ import {
   listObjectTypes, rollbackObjectType, slugAndVersionOfObjectType,
   type ActionAuditRow, type KernelObjectType, type LintFinding, type UsageRow,
 } from '@/api/ont/kernel';
+import {
+  getAgentMetricsSummary, getAgentMetricsTrend,
+  type AgentMetricsSummary, type AgentMetricsTrendPoint,
+} from '@/api/ont/agentMetrics';
 import SchemaWipCard from './components/SchemaWipCard';
 import SecurityPolicyCard from './components/SecurityPolicyCard';
 
@@ -74,6 +81,109 @@ function verErrText(e: unknown, fallback: string): string {
   return detail ?? (e instanceof Error ? e.message : fallback);
 }
 
+// ── Agent 回归指标（ONT-AGENT-METRICS-01）─────────────────────────────
+
+/** 接受率格式化：null（分母 0，无已决策 proposal）→ '—'；否则百分比（1 位小数）。 */
+function fmtAgentRate(rate: number | null | undefined): string {
+  return typeof rate === 'number' && Number.isFinite(rate)
+    ? `${(rate * 100).toFixed(1)}%`
+    : '—';
+}
+
+/**
+ * Agent 提案趋势迷你柱状图（纯 SVG 零第三方库；做法对齐 components/ChartSvg.tsx：
+ * viewBox + width:100% 自适应、CSS 变量配色、<title> hover 精确值、首/中/尾 X 轴标签）。
+ * 每日一根 proposed 总量柱（var(--primary)）+ 底部 executed 已采纳堆叠段
+ * （var(--success)）。executed 日桶按 confirmed_at 锚定，极端时序下可能超过
+ * 当日 proposed，柱高按截断渲染（<title> 仍显示真实值）。
+ */
+function AgentTrendChart({ points }: { points: AgentMetricsTrendPoint[] }): ReactElement {
+  const W = 720;
+  const H = 190;
+  const padL = 38;
+  const padR = 8;
+  const padT = 10;
+  const padB = 24;
+  const iw = W - padL - padR;
+  const ih = H - padT - padB;
+  const els: ReactElement[] = [];
+
+  if (points.length === 0) {
+    els.push(
+      <text key="ph" x={W / 2} y={H / 2} textAnchor="middle" dominantBaseline="middle"
+        fontSize={12} fill="var(--muted-foreground)">暂无数据</text>,
+    );
+  } else {
+    const max = Math.max(...points.map((p) => Math.max(p.proposed, p.executed)), 0);
+    if (max <= 0) {
+      els.push(
+        <text key="ph" x={W / 2} y={H / 2} textAnchor="middle" dominantBaseline="middle"
+          fontSize={12} fill="var(--muted-foreground)">窗口内暂无提案</text>,
+      );
+    } else {
+      // 横向网格 + 纵轴刻度
+      const ticks = 4;
+      for (let i = 0; i <= ticks; i++) {
+        const v = (max / ticks) * i;
+        const y = padT + ih - (ih * i) / ticks;
+        els.push(
+          <line key={`grid${i}`} x1={padL} y1={y} x2={W - padR} y2={y}
+            stroke="var(--border)" strokeWidth={1} strokeDasharray={i === 0 ? undefined : '3 3'} />,
+        );
+        els.push(
+          <text key={`tick${i}`} x={padL - 6} y={y} textAnchor="end" dominantBaseline="middle"
+            fontSize={9} fill="var(--muted-foreground)">{Math.round(v)}</text>,
+        );
+      }
+      // 柱：外层 proposed 总量（primary），底部叠 executed 已采纳段（success）
+      const slot = iw / points.length;
+      const barW = Math.min(slot * 0.7, 14);
+      points.forEach((p, i) => {
+        if (p.proposed <= 0) return;
+        const title = `${p.date}：proposed ${p.proposed} · executed ${p.executed} · rejected ${p.rejected}`;
+        const x = padL + slot * i + (slot - barW) / 2;
+        const hTotal = (p.proposed / max) * ih;
+        els.push(
+          <rect key={`bar${i}`} x={x} y={padT + ih - hTotal} width={barW}
+            height={Math.max(hTotal, 1)} fill="var(--primary)" rx={2}>
+            <title>{title}</title>
+          </rect>,
+        );
+        const ex = Math.min(p.executed, p.proposed);
+        if (ex > 0) {
+          const hEx = (ex / max) * ih;
+          els.push(
+            <rect key={`ex${i}`} x={x} y={padT + ih - hEx} width={barW}
+              height={Math.max(hEx, 1)} fill="var(--success)">
+              <title>{title}</title>
+            </rect>,
+          );
+        }
+      });
+      // X 轴标签：首 / 中 / 尾（时间序，MM-DD）
+      const labelIdx = points.length <= 2
+        ? points.map((_, i) => i)
+        : [0, Math.floor((points.length - 1) / 2), points.length - 1];
+      labelIdx.forEach((i) => {
+        els.push(
+          <text key={`lab${i}`} x={padL + slot * i + slot / 2} y={padT + ih + 12}
+            fontSize={9} fill="var(--muted-foreground)"
+            textAnchor={i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle'}>
+            {points[i].date.slice(5)}
+          </text>,
+        );
+      });
+    }
+  }
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H}
+      style={{ display: 'block' }} role="img">
+      {els}
+    </svg>
+  );
+}
+
 export default function GovernancePage() {
   const [usage, setUsage] = useState<UsageRow[]>([]);
   const [lint, setLint] = useState<LintFinding[]>([]);
@@ -92,6 +202,13 @@ export default function GovernancePage() {
   const [verMsg, setVerMsg] = useState('');
   const [verErr, setVerErr] = useState('');
   const [importResult, setImportResult] = useState<{ ok: boolean; text: string } | null>(null);
+  // ── Agent 回归指标（ONT-AGENT-METRICS-01）：独立加载，失败仅本区块降级 ──
+  const [agentDays, setAgentDays] = useState(30);
+  const [agentSummary, setAgentSummary] = useState<AgentMetricsSummary | null>(null);
+  const [agentTrend, setAgentTrend] = useState<AgentMetricsTrendPoint[]>([]);
+  const [agentLoading, setAgentLoading] = useState(true);
+  /** summary + trend 全部失败 → 区块整体「指标不可用」。 */
+  const [agentDown, setAgentDown] = useState(false);
 
   const reloadTypes = useCallback(() => {
     listObjectTypes().then((ts) => {
@@ -119,6 +236,33 @@ export default function GovernancePage() {
   }, [reloadTypes]);
 
   useEffect(() => { void refresh(); }, [refresh]);
+
+  // Agent 指标独立拉取（不进 refresh：窗口切换即时刷新，失败不拖垮整页）。
+  useEffect(() => {
+    let alive = true;
+    setAgentLoading(true);
+    setAgentDown(false);
+    Promise.all([
+      getAgentMetricsSummary(agentDays)
+        .then((s) => ({ ok: true as const, s }))
+        .catch(() => ({ ok: false as const })),
+      getAgentMetricsTrend(agentDays)
+        .then((t) => ({ ok: true as const, t }))
+        .catch(() => ({ ok: false as const })),
+    ]).then(([a, b]) => {
+      if (!alive) return;
+      if (!a.ok && !b.ok) {
+        setAgentDown(true);
+        setAgentSummary(null);
+        setAgentTrend([]);
+      } else {
+        setAgentSummary(a.ok ? a.s : null);
+        setAgentTrend(b.ok ? b.t : []);
+      }
+      setAgentLoading(false);
+    });
+    return () => { alive = false; };
+  }, [agentDays]);
 
   /** 选中类型变化：diff 基准跟随当前选中（任务口径 from 默认当前选中）。 */
   const pickType = (rid: string) => {
@@ -502,6 +646,139 @@ export default function GovernancePage() {
             </div>
             <Table<ActionAuditRow> columns={auditCols} dataSource={audit} rowKey="audit_id"
               pagination={{ pageSize: 10 }} size="small" empty="暂无执行记录" />
+          </Card>
+
+          {/* Agent 回归指标（ONT-AGENT-METRICS-01）—— AI proposal 接受率基线，独立降级 */}
+          <Card bodyStyle={{ padding: 0 }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'center' }}>
+              <Bot style={{ width: 15, height: 15 }} />
+              <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Agent 回归指标</h4>
+              <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                AI proposal 接受率基线 · accepted = executed + reverted
+              </span>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexShrink: 0 }}>
+                {[7, 30, 90].map((d) => (
+                  <button key={d} type="button" onClick={() => setAgentDays(d)} disabled={agentLoading} style={{
+                    height: 24, padding: '0 10px', fontSize: 11, borderRadius: 'var(--radius)',
+                    border: `1px solid ${agentDays === d ? 'var(--primary)' : 'var(--border)'}`,
+                    background: agentDays === d ? 'var(--primary)' : 'var(--card)',
+                    color: agentDays === d ? 'var(--primary-foreground)' : 'var(--foreground)',
+                    cursor: agentLoading ? 'wait' : 'pointer',
+                  }}>{d} 天</button>
+                ))}
+              </div>
+            </div>
+            {agentLoading ? (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 32, justifyContent: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>
+                <Loader2 style={{ width: 14, height: 14, animation: 'osp-spin 1s linear infinite' }} /> 加载 Agent 指标…
+              </div>
+            ) : agentDown ? (
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: 24, fontSize: 12, color: 'var(--muted-foreground)' }}>
+                <AlertTriangle style={{ width: 13, height: 13, flexShrink: 0 }} />
+                指标不可用（后端未就绪或网络异常；切换窗口天数可重试）
+              </div>
+            ) : (
+              <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 14, width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                {/* 汇总接口单独失败（趋势仍在）时的局部降级提示 */}
+                {!agentSummary && (
+                  <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>汇总接口暂不可用，以下仅趋势数据</div>
+                )}
+                {/* 指标行：总提案数 / 接受率 / executed / rejected / pending */}
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', width: '100%' }}>
+                  {[
+                    { label: '总提案数', value: agentSummary ? String(agentSummary.total) : '—', color: 'var(--foreground)' },
+                    { label: '接受率', value: fmtAgentRate(agentSummary?.acceptance_rate), color: 'var(--foreground)' },
+                    { label: 'executed', value: agentSummary ? String(agentSummary.by_status.executed ?? 0) : '—', color: 'var(--success)' },
+                    { label: 'rejected', value: agentSummary ? String(agentSummary.by_status.rejected ?? 0) : '—', color: 'var(--destructive)' },
+                    { label: 'pending', value: agentSummary ? String(agentSummary.by_status.pending ?? 0) : '—', color: 'var(--warning)' },
+                  ].map((t) => (
+                    <div key={t.label} style={{
+                      flex: '1 1 110px', minWidth: 96, padding: '10px 14px',
+                      border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+                      background: 'var(--card)',
+                    }}>
+                      <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{t.label}</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2, color: t.color }}>{t.value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 趋势：纯 SVG 迷你柱状图（proposed 总量柱 + executed 底部堆叠段） */}
+                <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px 12px' }}>
+                  <div style={{ display: 'flex', gap: 14, alignItems: 'center', fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 6 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--primary)', flexShrink: 0 }} />
+                      proposed 提案
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--success)', flexShrink: 0 }} />
+                      executed 已采纳（含 reverted）
+                    </span>
+                  </div>
+                  <AgentTrendChart points={agentTrend} />
+                </div>
+
+                {/* 按提议方聚合 + 驳回原因分布（窄屏折行） */}
+                <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'stretch' }}>
+                  <div style={{ flex: '1 1 320px', minWidth: 0, border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr>
+                          {['提议方', '提案数', '已执行', '接受率'].map((h, i) => (
+                            <th key={h} style={{
+                              textAlign: i === 0 ? 'left' : 'right', padding: '7px 12px',
+                              borderBottom: '1px solid var(--border)',
+                              color: 'var(--muted-foreground)', fontWeight: 500, fontSize: 11,
+                              whiteSpace: 'nowrap',
+                            }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(agentSummary?.by_actor ?? []).length === 0 ? (
+                          <tr>
+                            <td colSpan={4} style={{ padding: '12px 12px', color: 'var(--muted-foreground)', fontSize: 12 }}>
+                              {agentSummary ? '窗口内无提案' : '—'}
+                            </td>
+                          </tr>
+                        ) : agentSummary?.by_actor.map((row) => (
+                          <tr key={row.actor}>
+                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)', fontFamily: 'monospace', fontSize: 11, wordBreak: 'break-all' }}>
+                              {row.actor}
+                            </td>
+                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{row.proposed}</td>
+                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{row.executed}</td>
+                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontWeight: 600 }}>
+                              {fmtAgentRate(row.acceptance_rate)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style={{ flex: '1 1 240px', minWidth: 0, border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px 12px' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>驳回原因分布</div>
+                    {!agentSummary ? (
+                      <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>—</div>
+                    ) : agentSummary.rejection_reasons == null ? (
+                      <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>驳回原因尚未记录（后端字段待接入）</div>
+                    ) : agentSummary.rejection_reasons.length === 0 ? (
+                      <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>窗口内无驳回记录</div>
+                    ) : agentSummary.rejection_reasons.map((r) => (
+                      <div key={r.reason} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 12, padding: '3px 0' }}>
+                        <span style={{ wordBreak: 'break-all' }}>{r.reason}</span>
+                        <span style={{ color: 'var(--muted-foreground)', flexShrink: 0 }}>{r.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                  口径：接受率 = accepted / (accepted + rejected)，accepted = executed + reverted；
+                  pending / confirmed（在途）与 withdrawn（自撤）不入分母；趋势按 UTC 日连续零填充。
+                </div>
+              </div>
+            )}
           </Card>
 
           {!loading && usage.length === 0 && (
