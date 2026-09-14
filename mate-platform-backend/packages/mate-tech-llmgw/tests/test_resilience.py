@@ -28,7 +28,7 @@ class _FakeRedis:
         self.store: dict[str, str] = {}
         self.ttls: dict[str, int] = {}
 
-    def get(self, key: str) -> str | None:
+    async def get(self, key: str) -> str | None:
         return self.store.get(key)
 
     async def eval(self, script: str, numkeys: int, *args: Any) -> list[int]:
@@ -77,10 +77,10 @@ async def test_cooldown_arms_after_allowed_fails() -> None:
 
     await manager.record_failure("doubao")
     await manager.record_failure("doubao")
-    assert manager.check("doubao") is None  # 2 fails ≤ allowed_fails=2
+    assert await manager.check("doubao") is None  # 2 fails ≤ allowed_fails=2
 
     await manager.record_failure("doubao")  # 3rd failure within the minute
-    remaining = manager.check("doubao")
+    remaining = await manager.check("doubao")
     assert remaining is not None and 0 < remaining <= 60
 
 
@@ -89,10 +89,10 @@ async def test_cooldown_success_resets_window() -> None:
     redis = _FakeRedis()
     manager = CooldownManager(redis, allowed_fails=1)
     await manager.record_failure("openai")
-    assert manager.check("openai") is None
+    assert await manager.check("openai") is None
     await manager.record_success("openai")
     await manager.record_failure("openai")  # counter restarted — still allowed
-    assert manager.check("openai") is None
+    assert await manager.check("openai") is None
 
 
 @pytest.mark.asyncio
@@ -100,7 +100,7 @@ async def test_cooldown_duration_priority_retry_after_over_default() -> None:
     redis = _FakeRedis()
     manager = CooldownManager(redis, allowed_fails=0, default_cooldown_sec=60)
     await manager.record_failure("qwen", retry_after_hint=7)
-    remaining = manager.check("qwen")
+    remaining = await manager.check("qwen")
     assert remaining is not None and remaining <= 7.0
 
 
@@ -260,7 +260,7 @@ def test_load_fallback_chain_env(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.asyncio
 async def test_cooldown_redis_down_is_noop() -> None:
     class _BrokenRedis:
-        def get(self, key: str) -> str | None:
+        async def get(self, key: str) -> str | None:
             raise ConnectionError("redis down")
 
         async def eval(self, *a: Any, **kw: Any) -> Any:
@@ -270,6 +270,6 @@ async def test_cooldown_redis_down_is_noop() -> None:
             raise ConnectionError("redis down")
 
     manager = CooldownManager(_BrokenRedis())
-    assert manager.check("openai") is None
+    assert await manager.check("openai") is None
     await manager.record_failure("openai")  # no raise
     await manager.record_success("openai")  # no raise

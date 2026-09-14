@@ -170,6 +170,28 @@ def test_probe_returns_fail_on_other_status(status_code: int) -> None:
     assert result.error == "bad_status"
 
 
+def test_probe_custom_404_counts_reachable() -> None:
+    """custom 通道 404（如 ARK Plan 无 /models）判可达 —— 只对 custom 生效。"""
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404)
+
+    original = httpx.AsyncClient.__init__
+
+    def _patched(self, *args, **kwargs):
+        kwargs["transport"] = _mock_handler(handler)
+        original(self, *args, **kwargs)
+
+    httpx.AsyncClient.__init__ = _patched  # type: ignore[assignment]
+    try:
+        result = _run(probe(provider="custom", base_url="https://ark.example/api/plan/v3"))
+    finally:
+        httpx.AsyncClient.__init__ = original  # type: ignore[assignment]
+    assert result.ok is True
+    assert result.status == 404
+    assert "Plan" in result.message
+
+
 def test_probe_handles_timeout() -> None:
     """Unreachable port (1) triggers connect error within timeout."""
 

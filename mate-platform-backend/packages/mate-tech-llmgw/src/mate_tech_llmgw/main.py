@@ -177,6 +177,32 @@ async def lifespan(app: FastAPI):
     if deps.pg_pool is not None:
         await ensure_schema(deps.pg_pool)
 
+    # --- Service identity (ARK key 正式托管：服务身份 reveal 读取 IAM 配置) ---
+    # embeddings/_fetch_iam_configs 与 providers 探测端点用它做服务间鉴权；
+    # 缺 KEYCLOAK_URL / client 凭据时降级为匿名（IAM 侧对 reveal fail-closed）。
+    try:
+        from mate_clients.security.bearer import BearerAuth
+
+        kc = os.getenv("KEYCLOAK_URL", "").rstrip("/")
+        cid = os.getenv("SERVICE_CLIENT_ID", "")
+        csec = os.getenv("SERVICE_CLIENT_SECRET", "")
+        if kc and cid and csec:
+            app.state.service_identity = BearerAuth(
+                token_uri=f"{kc}/realms/{os.getenv('KEYCLOAK_REALM', 'metaplatform')}"
+                "/protocol/openid-connect/token",
+                client_id=cid,
+                client_secret=csec,
+                scope=os.getenv("SERVICE_CLIENT_SCOPE", "platform.read"),
+            )
+            logger.info("mate-tech-llmgw.service_identity.ready")
+        else:
+            logger.warning(
+                "mate-tech-llmgw.service_identity.missing",
+                hint="set KEYCLOAK_URL/SERVICE_CLIENT_ID/SERVICE_CLIENT_SECRET",
+            )
+    except Exception as exc:
+        logger.warning("mate-tech-llmgw.service_identity.build_failed", error=str(exc))
+
     # --- Quota bucket (pre-existing wiring; P3: shared client + per-tenant limits) ---
     if get_quota_bucket() is None and _redis_quota_enabled():
         try:

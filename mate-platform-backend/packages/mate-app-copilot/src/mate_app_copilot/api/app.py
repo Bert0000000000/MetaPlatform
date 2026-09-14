@@ -720,7 +720,9 @@ def _get_client(request: Request) -> AsyncCopilotClient:
             client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),
             # P4: "stub" survives only in legacy-compat dev; production must
             # inject SERVICE_CLIENT_SECRET (hard rule 12).
-            scope="platform.read platform.write",
+            # scope 说明：本 realm 的服务 client 只接受默认/openid scope
+                # （platform.read 等自定义 scope 未注册，会 invalid_scope 400）。
+                scope=os.getenv("SERVICE_CLIENT_SCOPE", "openid"),
         ),
         provider=stub_provider,
         timeout_seconds=_copilot_client_timeout_seconds(),
@@ -1470,7 +1472,9 @@ async def chat_completions_stream(
                 client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),
                 # P4: "stub" survives only in legacy-compat dev; production must
                 # inject SERVICE_CLIENT_SECRET (hard rule 12).
-                scope="platform.read platform.write",
+                # scope 说明：本 realm 的服务 client 只接受默认/openid scope
+                # （platform.read 等自定义 scope 未注册，会 invalid_scope 400）。
+                scope=os.getenv("SERVICE_CLIENT_SCOPE", "openid"),
             ),
             tenant_id=tid,
             timeout_seconds=_llmgw_timeout_seconds(),
@@ -2215,7 +2219,9 @@ async def get_agent_tools(request: Request) -> dict[str, Any]:
                 client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),
                 # P4: "stub" survives only in legacy-compat dev; production must
                 # inject SERVICE_CLIENT_SECRET (hard rule 12).
-                scope="platform.read platform.write",
+                # scope 说明：本 realm 的服务 client 只接受默认/openid scope
+                # （platform.read 等自定义 scope 未注册，会 invalid_scope 400）。
+                scope=os.getenv("SERVICE_CLIENT_SCOPE", "openid"),
             ),
         )
         snapshot = await orchestrator_client.authorized_role_snapshot(
@@ -2349,7 +2355,9 @@ async def chat_agent_stream(
         client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),
         # P4: "stub" survives only in legacy-compat dev; production must
         # inject SERVICE_CLIENT_SECRET (hard rule 12).
-        scope="platform.read platform.write",
+        # scope 说明：本 realm 的服务 client 只接受默认/openid scope
+                # （platform.read 等自定义 scope 未注册，会 invalid_scope 400）。
+                scope=os.getenv("SERVICE_CLIENT_SCOPE", "openid"),
     )
     llmgw_client = LlmgwStreamClient(
         host=llmgw_host,

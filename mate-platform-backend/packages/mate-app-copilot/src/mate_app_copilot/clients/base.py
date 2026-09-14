@@ -205,34 +205,77 @@ class AsyncCopilotClient:
         """GET /api/v1/admin/configs → 取该 provider 的 base_url + api_key。
 
         返回 {base_url, api_key, default_model}（缺失字段为空串）。
+        reveal=1：copilot 以服务身份读取敏感项（api_key）真实值；
+        IAM 对人工管理员会话默认掩码返回。
         """
         import httpx
+        import os as _os
 
-        url = f"{self.base_url}/api/v1/admin/configs?pageSize=200"
-        headers = {"X-Tenant-Id": tenant_id}
-        if fallback_token:
-            headers["Authorization"] = f"Bearer {fallback_token}"
+        # ARK key 托管取数通道：service-read 以服务共享密钥守门，返回
+        # ai.provider.* 真实值（服务 client 无 PLATFORM_ADMIN role，
+        # 常规 admin 读取过不了 require_admin；用户 token 只能拿掩码）。
+        service_secret = _os.getenv("SERVICE_CLIENT_SECRET", "")
+        if service_secret:
+            # 租户进 query 参数；不带 X-Tenant-Id 头（服务 token 无租户
+            # claim，header 冲突会触发租户绑定守卫 403）
+            url = (
+                f"{self.base_url}/api/v1/admin/configs/service-read"
+                f"?prefix=ai.provider.&tenant={tenant_id}"
+            )
+            headers = {"X-Service-Secret": service_secret}
+            # 服务 token 直连（不注入 X-Tenant-Id 的 OutgoingAuthMiddleware）
+            try:
+                headers["Authorization"] = f"Bearer {self.auth.token()}"
+            except Exception:
+                pass
+        else:
+            url = f"{self.base_url}/api/v1/admin/configs?pageSize=200"
+            headers = {"X-Tenant-Id": tenant_id}
+            if fallback_token:
+                headers["Authorization"] = f"Bearer {fallback_token}"
         async with httpx.AsyncClient(
-            auth=self._middleware(tenant_id) if not fallback_token else None,
+            auth=self._middleware(tenant_id) if (not fallback_token and not service_secret) else None,
             timeout=self.timeout_seconds,
         ) as client:
             resp = await client.get(url, headers=headers)
         resp.raise_for_status()
         body = resp.json()
-        data = body.get("data", body)
-        items = data.get("items", []) if isinstance(data, dict) else []
-        result: dict[str, str] = {}
+        if service_secret:
+            flat: dict[str, str] = dict(body.get("data", {}) or {})
+        else:
+            data = body.get("data", body)
+            items = data.get("items", []) if isinstance(data, dict) else []
+            flat = {
+                str(c.get("key", "")): str(c.get("value") or "") for c in items
+            }
+        # default_active 间接寻址（生产 ARK key 正式托管）：
+        #   调用方历史上一律问 "custom"；当后台把 default_active 指向
+        #   另一个已配置好（base_url 非空且 key 就绪）的 OpenAI 兼容
+        #   provider（如 ark / custom_*）时，自动改读该 provider 的配置。
+        #   目标未配置完整时不切换，保持 legacy "custom" 行为。
+        if provider_id == "custom":
+            active = flat.get("ai.provider.default_active", "")
+            if (
+                active
+                and active not in ("custom", "disabled")
+                and flat.get(f"ai.provider.{active}.base_url", "")
+                and (
+                    flat.get(f"ai.provider.{active}.api_key", "")
+                    or active == "ollama"
+                )
+            ):
+                provider_id = active
+        result: dict[str, str] = {"provider_id": provider_id}
         prefix = f"ai.provider.{provider_id}."
-        for cfg in items:
-            key = str(cfg.get("key", ""))
+        for key, val in flat.items():
             if not key.startswith(prefix):
                 continue
             suffix = key[len(prefix) :]
-            val = str(cfg.get("value") or "")
             if suffix == "base_url":
                 result["base_url"] = val
             elif suffix == "api_key":
-                result["api_key"] = val
+                # 掩码值（非 reveal 读取）不是真实 key —— 丢弃，走无 key 降级
+                result["api_key"] = "" if val.strip() in ("***", "********") else val
             elif suffix == "default_model":
                 result["default_model"] = val
         return result

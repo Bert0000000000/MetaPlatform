@@ -74,7 +74,7 @@ async def call_with_resilience(
 
     for provider_name, call in candidates:
         if cooldown is not None:
-            remaining = cooldown.check(provider_name)
+            remaining = await cooldown.check(provider_name)
             if remaining is not None:
                 logger.warning(
                     "llmgw.cooldown.skip_candidate",

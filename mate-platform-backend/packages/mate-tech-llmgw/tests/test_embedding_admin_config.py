@@ -49,6 +49,11 @@ def _configs(items: list[dict]) -> dict:
     return {"code": 0, "data": {"items": items, "total": len(items)}}
 
 
+def _flat(mapping: dict) -> dict:
+    """service-read 信封：data 直接是 key→value 平铺（真实值）。"""
+    return {"code": 0, "data": mapping}
+
+
 @pytest.fixture(autouse=True)
 def _clean():
     reset_embedding_providers()
@@ -63,16 +68,13 @@ class TestResolveEffectiveEmbedding:
         respx.get(url__startswith=f"{IAM}/api/v1/admin/configs").mock(
             return_value=Response(
                 200,
-                json=_configs(
-                    [
-                        {"key": "ai.embedding.default_provider", "value": "custom_ark"},
-                        {"key": "ai.provider.custom_ark.base_url", "value": ARK},
-                        {"key": "ai.provider.custom_ark.api_key", "value": "ark-key-123"},
-                        {
-                            "key": "ai.provider.custom_ark.embedding_model",
-                            "value": "doubao-embedding-text-240715",
-                        },
-                    ]
+                json=_flat(
+                    {
+                        "ai.embedding.default_provider": "custom_ark",
+                        "ai.provider.custom_ark.base_url": ARK,
+                        "ai.provider.custom_ark.api_key": "ark-key-123",
+                        "ai.provider.custom_ark.embedding_model": "doubao-embedding-text-240715",
+                    }
                 ),
             )
         )
@@ -90,11 +92,7 @@ class TestResolveEffectiveEmbedding:
         respx.get(url__startswith=f"{IAM}/api/v1/admin/configs").mock(
             return_value=Response(
                 200,
-                json=_configs(
-                    [
-                        {"key": "ai.embedding.default_provider", "value": "disabled"},
-                    ]
-                ),
+                json=_flat({"ai.embedding.default_provider": "disabled"}),
             )
         )
         assert await resolve_effective_embedding(_fake_request(), "t1") == {}
@@ -112,12 +110,7 @@ class TestResolveEffectiveEmbedding:
         respx.get(url__startswith=f"{IAM}/api/v1/admin/configs").mock(
             return_value=Response(
                 200,
-                json=_configs(
-                    [
-                        {"key": "ai.embedding.default_provider", "value": "openai"},
-                        # no base_url configured → cannot use
-                    ]
-                ),
+                json=_flat({"ai.embedding.default_provider": "openai"}),  # no base_url → cannot use
             )
         )
         assert await resolve_effective_embedding(_fake_request(), "t1") == {}
@@ -144,16 +137,13 @@ class TestRunEmbeddingsUsesAdminConfig:
         respx.get(url__startswith=f"{IAM}/api/v1/admin/configs").mock(
             return_value=Response(
                 200,
-                json=_configs(
-                    [
-                        {"key": "ai.embedding.default_provider", "value": "custom_ark"},
-                        {"key": "ai.provider.custom_ark.base_url", "value": ARK},
-                        {"key": "ai.provider.custom_ark.api_key", "value": "ark-key-123"},
-                        {
-                            "key": "ai.provider.custom_ark.embedding_model",
-                            "value": "doubao-embedding-text-240715",
-                        },
-                    ]
+                json=_flat(
+                    {
+                        "ai.embedding.default_provider": "custom_ark",
+                        "ai.provider.custom_ark.base_url": ARK,
+                        "ai.provider.custom_ark.api_key": "ark-key-123",
+                        "ai.provider.custom_ark.embedding_model": "doubao-embedding-text-240715",
+                    }
                 ),
             )
         )

@@ -72,10 +72,15 @@ class CooldownManager:
         self._allowed_fails = allowed_fails
         self._default_cooldown = default_cooldown_sec
 
-    def check(self, provider: str) -> float | None:
-        """Remaining cooldown seconds, or None when the provider is free."""
+    async def check(self, provider: str) -> float | None:
+        """Remaining cooldown seconds, or None when the provider is free.
+
+        async：Redis 客户端是 redis.asyncio，get 返回 coroutine —— 同步
+        check 会拿到未 await 的 coroutine 并在 float() 处 TypeError（曾致
+        /chat/real 全链路 500）。调用方（resilience.call）需 await。
+        """
         try:
-            until = self._redis.get(f"llmgw:cd:{provider}:until")
+            until = await self._redis.get(f"llmgw:cd:{provider}:until")
         except Exception as exc:
             logger.warning("llmgw.cooldown.check_failed", provider=provider, error=str(exc))
             return None

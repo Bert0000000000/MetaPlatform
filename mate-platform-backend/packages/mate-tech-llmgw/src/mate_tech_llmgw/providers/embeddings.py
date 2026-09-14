@@ -370,14 +370,34 @@ async def _fetch_iam_configs(request, tenant_id: str) -> dict[str, str]:
             return {}
 
     iam_url = os.environ.get("IAM_URL", "http://localhost:8100").rstrip("/")
-    url = f"{iam_url}/api/v1/admin/configs?pageSize=200"
-    headers = {"X-Tenant-Id": tenant_id or "default"}
+    # ARK key 托管取数通道：/admin/configs/service-read 以服务共享密钥
+    # （X-Service-Secret）守门，返回 ai.provider.* 真实值 —— 服务 client
+    # 不带 PLATFORM_ADMIN role，常规 admin 读取过不了 require_admin。
+    service_secret = os.getenv("SERVICE_CLIENT_SECRET", "")
+    if service_secret:
+        url = (
+            f"{iam_url}/api/v1/admin/configs/service-read"
+            f"?prefix=ai.provider.&tenant={tenant_id or 'tenant-default'}"
+        )
+        # 租户走 query 参数（service-read 自身解析）；不带 X-Tenant-Id 头，
+        # 避免服务 token（无租户 claim）触发 install_auth 租户绑定守卫。
+        headers = {"X-Service-Secret": service_secret}
+    else:
+        # 无密钥（本地单测）：走普通读取（敏感项掩码 → 下游按未配置处理）
+        url = f"{iam_url}/api/v1/admin/configs?pageSize=200"
+        headers = {"X-Tenant-Id": tenant_id or "default"}
     auth_obj = getattr(app_state, "service_identity", None)
     try:
         import httpx
         from mate_clients.security import OutgoingAuthMiddleware
 
-        if auth_obj is not None:
+        if service_secret and auth_obj is not None:
+            # service-read 通道：服务 token 直连（BearerAuth.token()），
+            # 不经 OutgoingAuthMiddleware —— 它会注入 X-Tenant-Id 头，
+            # 与服务 token 的空租户 claim 冲突触发 403 租户绑定守卫。
+            headers["Authorization"] = f"Bearer {auth_obj.token()}"
+            client = httpx.AsyncClient(timeout=10.0)
+        elif auth_obj is not None:
             client = httpx.AsyncClient(
                 auth=OutgoingAuthMiddleware(auth_obj, tenant_id=tenant_id or "default"),
                 timeout=10.0,
@@ -388,6 +408,11 @@ async def _fetch_iam_configs(request, tenant_id: str) -> dict[str, str]:
             resp = await c.get(url, headers=headers)
         resp.raise_for_status()
         body = resp.json()
+        if service_secret:
+            data = body.get("data", {})
+            if isinstance(data, dict):
+                return dict(data)
+            return {}
         data = body.get("data", body)
         items = data.get("items", []) if isinstance(data, dict) else []
         return {str(it.get("key", "")): str(it.get("value") or "") for it in items}
@@ -412,10 +437,14 @@ async def resolve_effective_embedding(request, tenant_id: str) -> dict[str, str]
     base_url = cfg.get(f"{prefix}base_url", "")
     if not base_url:
         return {}
+    api_key = cfg.get(f"{prefix}api_key", "")
+    # 掩码值（非 reveal 读取）不是真实 key —— 视同未配置，走 env 回退路径
+    if api_key.strip() in ("***", "********"):
+        api_key = ""
     return {
         "provider": pid,
         "base_url": base_url,
-        "api_key": cfg.get(f"{prefix}api_key", ""),
+        "api_key": api_key,
         "model": cfg.get(f"{prefix}embedding_model", "") or cfg.get(f"{prefix}default_model", ""),
     }
 

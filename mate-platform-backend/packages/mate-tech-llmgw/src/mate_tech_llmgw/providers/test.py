@@ -174,6 +174,17 @@ async def probe(
             latency_ms=latency_ms,
             message="端点可达 (鉴权失败, 请检查 API Key)",
         )
+    if resp.status_code == 404 and provider == "custom":
+        # 自定义 OpenAI 兼容通道（如 ARK Plan /api/plan/v3）常不实现 /models；
+        # 404 已证明 DNS + TLS + HTTP 可达 —— 判可达并说明路径情况，
+        # 真实可用性由「获取模型」或实际对话验证。
+        return ProbeResult(
+            ok=True,
+            status=resp.status_code,
+            latency_ms=latency_ms,
+            message="端点可达（/models 未开放，Plan 专属通道常见）",
+            hint="该通道未实现 /models；对话/Embedding 能力以实际调用为准",
+        )
     # 404 / 405 / 5xx — endpoint resolved but did not accept the probe path.
     return ProbeResult(
         ok=False,

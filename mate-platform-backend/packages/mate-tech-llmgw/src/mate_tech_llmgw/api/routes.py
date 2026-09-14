@@ -1187,14 +1187,54 @@ class ProviderTestResponseAPI(BaseModel):
 _ALLOWED_PROVIDERS: frozenset[str] = frozenset({"openai", "azure", "ollama", "custom"})
 
 
+def _is_masked_key(api_key: str | None) -> bool:
+    """空值或掩码占位（IAM 敏感配置 read 端返回 "***"）→ 需服务端解析真实 key。"""
+    if not api_key:
+        return True
+    return api_key.strip() in {"***", "********"}
+
+
+async def _resolve_hosted_api_key(request: Request, provider: str) -> str | None:
+    """ADR-0019 托管模式：请求未携带 key（或只带掩码）时，从 IAM 后台配置解析。
+
+    IAM 对敏感配置默认掩码返回，浏览器侧永远拿不到真实 key；
+    llmgw 以服务身份 reveal 读取。解析顺序（与 copilot 间接寻址同口径）：
+      1) ai.provider.<provider>.api_key（请求指定的 provider）
+      2) ai.provider.<default_active>.api_key（如 ark 托管、前端归一成 custom 探测）
+    解析失败返回 None（探测继续走无鉴权路径，由上游返回 401 判定可达性）。
+    """
+    try:
+        from ..providers.embeddings import _fetch_iam_configs
+
+        tenant_id = ""
+        ctx = getattr(getattr(request, "state", None), "ctx", None)
+        if ctx is not None:
+            tenant_id = str(getattr(ctx, "tenant_id", "") or "")
+        cfg = await _fetch_iam_configs(request, tenant_id or "default")
+        candidates = [provider]
+        active = cfg.get("ai.provider.default_active", "")
+        if active and active not in ("disabled",) and active != provider:
+            candidates.append(active)
+        for pid in candidates:
+            key = cfg.get(f"ai.provider.{pid}.api_key", "")
+            if key and key.strip() not in {"***", "********"}:
+                return key
+        return None
+    except Exception:
+        return None
+
+
 @router.post("/providers/test", response_model=ProviderTestResponseAPI)
-async def providers_test_endpoint(req: ProviderTestRequest) -> ProviderTestResponseAPI:
+async def providers_test_endpoint(req: ProviderTestRequest, request: Request) -> ProviderTestResponseAPI:
     """ADR-0019: server-side AI provider connectivity probe.
 
     The endpoint resolves the probe URL (per provider) and runs a
     server-side GET against it. OK semantics: 200/401/403 all
     count as "endpoint reachable". Any other status or transport
     failure produces an ``ok: false`` body with a short error code.
+
+    API key 托管模式：请求 key 为空/掩码时从 IAM 后台配置解析真实 key，
+    前端无需（也无法）拿到明文 key。
     """
     provider = req.provider.lower().strip()
     if provider not in _ALLOWED_PROVIDERS:
@@ -1204,11 +1244,15 @@ async def providers_test_endpoint(req: ProviderTestRequest) -> ProviderTestRespo
         )
     from ..providers.test import probe as _probe  # local import to avoid cycle
 
+    api_key = req.api_key
+    if _is_masked_key(api_key):
+        api_key = await _resolve_hosted_api_key(request, provider)
+
     timeout_sec = max(1.0, min(req.timeout_sec, 30.0))
     result = await _probe(
         provider=provider,  # type: ignore[arg-type]
         base_url=req.base_url,
-        api_key=req.api_key,
+        api_key=api_key,
         timeout_sec=timeout_sec,
     )
     return ProviderTestResponseAPI(
@@ -1257,10 +1301,13 @@ class ProviderModelsResponse(BaseModel):
 
 
 @router.post("/providers/models", response_model=ProviderModelsResponse)
-async def providers_models_endpoint(req: ProviderModelsRequest) -> ProviderModelsResponse:
+async def providers_models_endpoint(
+    req: ProviderModelsRequest, request: Request
+) -> ProviderModelsResponse:
     """获取上游 provider 的模型清单（OpenAI 兼容 /models、Ollama /api/tags、Azure deployments）。
 
-    API key 在请求体传入，从不持久化（同 ADR-0019）。解析失败时返回空清单。
+    API key 托管模式：请求 key 为空/掩码时从 IAM 后台配置解析（同 /providers/test），
+    key 从不持久化（ADR-0019）。解析失败时返回空清单。
     """
     provider = req.provider.lower().strip()
     if provider not in _ALLOWED_PROVIDERS:
@@ -1272,11 +1319,15 @@ async def providers_models_endpoint(req: ProviderModelsRequest) -> ProviderModel
 
     from ..providers.test import default_probe_url
 
+    api_key = req.api_key
+    if _is_masked_key(api_key):
+        api_key = await _resolve_hosted_api_key(request, provider)
+
     timeout_sec = max(1.0, min(req.timeout_sec, 30.0))
     url = default_probe_url(provider, req.base_url)  # type: ignore[arg-type]
     headers = {"accept": "application/json"}
-    if req.api_key:
-        headers["authorization"] = f"Bearer {req.api_key}"
+    if api_key:
+        headers["authorization"] = f"Bearer {api_key}"
 
     try:
         async with _httpx.AsyncClient(timeout=timeout_sec) as client:
