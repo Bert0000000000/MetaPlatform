@@ -398,11 +398,53 @@ CONFIG_SEED: list[ConfigSpec] = [
         "category": ConfigCategory.AI_PROVIDER,
         "label": "自定义默认模型",
     },
+    # 火山方舟 ARK（ARK Plan 专属通道）—— 生产 key 正式托管位。
+    # key 值留空：真实 ARK_API_KEY 通过后台 AI Provider 页写入（敏感、掩码读），
+    # 不进 git / 不进 compose 明文 env。
+    {
+        "key": "ai.provider.ark.enabled",
+        "value": "false",
+        "value_type": "bool",
+        "category": ConfigCategory.AI_PROVIDER,
+        "label": "火山方舟 ARK 启用",
+        "description": "ARK Plan 专属通道（OpenAI 兼容协议，/api/plan/v3）",
+    },
+    {
+        "key": "ai.provider.ark.base_url",
+        "value": "https://ark.cn-beijing.volces.com/api/plan/v3",
+        "value_type": "string",
+        "category": ConfigCategory.AI_PROVIDER,
+        "label": "ARK Base URL",
+        "description": "ARK Plan 专属 base（注意非 /api/v3；embedding 可用模型以 models 接口为准）",
+    },
+    {
+        "key": "ai.provider.ark.api_key",
+        "value": "",
+        "value_type": "string",
+        "category": ConfigCategory.AI_PROVIDER,
+        "label": "ARK API Key",
+        "is_sensitive": True,
+    },
+    {
+        "key": "ai.provider.ark.default_model",
+        "value": "glm-5.3-flash",
+        "value_type": "string",
+        "category": ConfigCategory.AI_PROVIDER,
+        "label": "ARK 默认模型",
+    },
+    {
+        "key": "ai.provider.ark.embedding_model",
+        "value": "doubao-embedding-vision",
+        "value_type": "string",
+        "category": ConfigCategory.AI_PROVIDER,
+        "label": "ARK Embedding 模型",
+        "description": "text-240715 已退役；当前可用 embedding 模型为 doubao-embedding-vision",
+    },
     {
         "key": "ai.provider.default_active",
         "value": "openai",
         "value_type": "enum",
-        "enum_options": "openai,azure,ollama,custom,disabled",
+        "enum_options": "openai,azure,ollama,custom,ark,disabled",
         "category": ConfigCategory.AI_PROVIDER,
         "label": "默认生效的 AI 提供方",
         "description": "为 AI 助手 / Agent / 知识库检索等下游选择实际调用的 provider",
@@ -820,6 +862,12 @@ async def seed(session: AsyncSession, tenant_id: str = "tenant-default") -> None
     for spec in CONFIG_SEED:
         key = spec["key"]
         if key in existing_cfg:
+            existing = existing_cfg[key]
+            # 枚举选项漂移修复：seed 提供新 enum_options 时刷新已存行
+            # （如 default_active 增加 ark 选项），不动 value。
+            new_opts = spec.get("enum_options")
+            if new_opts and (existing.enum_options or "") != new_opts:
+                existing.enum_options = new_opts
             continue
         cfg = SystemConfig(
             tenant_id=tenant_id,
