@@ -1,0 +1,194 @@
+/*
+ * 工作台域共享样式（A 骨架 bento + E 骨架列表页）。
+ * 只做版式语义；表格/筛选/抽屉外壳一律走 P0 骨架组件。
+ */
+
+/* ---------- 概览 bento ---------- */
+.mp-home-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--mp-space-3);
+  margin-bottom: var(--mp-space-4);
+}
+
+@media (max-width: 1180px) {
+  .mp-home-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.mp-home-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+  min-width: 0;
+}
+
+.mp-home-kpi-label {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+}
+
+.mp-home-kpi-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--mp-space-2);
+}
+
+.mp-home-kpi-value {
+  font-size: 26px;
+  font-weight: 650;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--semi-color-text-0);
+}
+
+.mp-home-kpi-trend {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.mp-home-kpi-trend.is-up {
+  color: var(--semi-color-success);
+}
+
+.mp-home-kpi-trend.is-down {
+  color: var(--semi-color-warning);
+}
+
+/* 主列 / 侧列 */
+.mp-home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: var(--mp-space-4);
+  align-items: start;
+}
+
+@media (max-width: 1180px) {
+  .mp-home-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.mp-home-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
+  min-width: 0;
+}
+
+/* 动态 feed 的一行 */
+.mp-home-feed-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mp-space-3);
+  min-width: 0;
+}
+
+.mp-home-feed-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.mp-home-feed-title {
+  font-size: 13px;
+  color: var(--semi-color-text-0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-home-feed-meta {
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+  margin-top: 2px;
+}
+
+/* 快捷入口格 */
+.mp-home-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mp-space-2);
+}
+
+.mp-home-link {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  padding: var(--mp-space-2) var(--mp-space-3);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-bg-1);
+  color: var(--semi-color-text-1);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: border-color 0.12s, color 0.12s;
+}
+
+.mp-home-link:hover {
+  border-color: var(--semi-color-primary);
+  color: var(--semi-color-text-0);
+}
+
+/* 待办审批卡 */
+.mp-home-todo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--mp-space-3);
+  min-width: 0;
+}
+
+.mp-home-todo-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.mp-home-todo-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+  flex: none;
+}
+
+/* 数字员工状态行 */
+.mp-home-agent {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-3);
+  min-width: 0;
+}
+
+.mp-home-agent-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.mp-home-agent-name {
+  font-size: 13px;
+  color: var(--semi-color-text-0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-home-agent-type {
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+}
+
+/* 卡片内加载占位：加载中不要先渲染「空态」，否则会闪一次假空 */
+.mp-home-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mp-space-6);
+}

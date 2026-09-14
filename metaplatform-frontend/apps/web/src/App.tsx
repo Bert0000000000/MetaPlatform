@@ -10,22 +10,13 @@ import AppShell from './components/shell/AppShell';
 import { legacyRedirectRoutes } from './routes/legacy-redirects';
 import { ontologyRoutes } from './routes/ontology';
 import { adminRoutes } from './routes/admin';
+import { homeRoutes } from './routes/home';
 
 /**
  * 新信息架构（11 域 → 8 域，DESIGN-SPEC §2）。
  * 本文件只负责「新 IA 路由注册」；旧路径 301 全部集中在 src/routes/legacy-redirects.tsx。
  * 页内 tab 的定义在 src/components/shell/domains.tsx（单一事实源）。
  */
-
-// ---------- 工作台 ----------
-const DashboardDashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
-const DashboardMyAppsPage = lazy(() => import('./pages/dashboard/MyAppsPage'));
-const DashboardMessagesPage = lazy(() => import('./pages/dashboard/MessagesPage'));
-const DashboardPortalPage = lazy(() => import('./pages/dashboard/PortalPage'));
-const DashboardNotificationsPage = lazy(() => import('./pages/dashboard/NotificationsPage'));
-const DashboardAiOpsPage = lazy(() => import('./pages/dashboard/AiOpsPage'));
-const DashboardSettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'));
-const DashboardDeliverablesPage = lazy(() => import('./pages/dashboard/DeliverablesPage'));
 
 // ---------- 平台管理 ----------
 
@@ -239,15 +230,8 @@ function AppRoutes() {
           >
             <Route index element={<Navigate to="/home" replace />} />
 
-            {/* ---------- 1. 工作台 ---------- */}
-            <Route path="home" element={<DashboardDashboardPage />} />
-            <Route path="home/todos" element={<DashboardNotificationsPage />} />
-            <Route path="home/messages" element={<DashboardMessagesPage />} />
-            <Route path="home/deliverables" element={<DashboardDeliverablesPage />} />
-            <Route path="home/apps" element={<DashboardMyAppsPage />} />
-            <Route path="home/me" element={<DashboardSettingsPage />} />
-            <Route path="home/portal" element={<DashboardPortalPage />} />
-            <Route path="home/aiops" element={<DashboardAiOpsPage />} />
+            {/* ---------- 1. 工作台（域路由见 src/routes/home.tsx） ---------- */}
+            {homeRoutes}
 
             {/* ---------- 2. 本体（域路由见 src/routes/ontology.tsx） ---------- */}
             {ontologyRoutes}

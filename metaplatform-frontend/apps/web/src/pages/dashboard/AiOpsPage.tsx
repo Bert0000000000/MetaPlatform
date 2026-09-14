@@ -1,57 +1,58 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Card,
-  Table,
-  Tag,
   Button,
-  Space,
-  SideSheet,
-  Timeline,
-  Typography,
-  Tabs,
-  Modal,
+  Card,
+  Descriptions,
   Form,
-  Input,
-  InputNumber,
-  Select,
-  Switch,
+  Tabs,
+  Tag,
+  Timeline,
   Toast,
+  Typography,
 } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
-import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
+import { Eye, Pencil, Play, Plus, RefreshCw, Stethoscope, Trash2 } from 'lucide-react';
 import {
-  SearchOutlined,
-  MedicineBoxOutlined,
-  PlayCircleOutlined,
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-} from '@ant-design/icons';
-import { useAsync, useApiErrorBoundary } from '@mate/shared';
-// helper type used below; not exported from antd
-import type { NormalizedError } from '@mate/shared';
-import {
+  analyzeAnomaly,
+  createAnomalyRule,
+  deleteAnomalyRule,
   getAnomalies,
   getAnomalyRules,
-  analyzeAnomaly,
   remediateAnomaly,
-  createAnomalyRule,
   updateAnomalyRule,
-  deleteAnomalyRule,
 } from '@/api/anomaly';
 import type {
-  AnomalyEvent,
   AnomalyDetectionRule,
+  AnomalyEvent,
   AnomalySeverity,
   AnomalyStatus,
   RemediationResult,
   RootCauseAnalysisResult,
 } from '@/types';
-import { PageHeader, StateContainer } from '@/components/common';
+import {
+  DataTablePro,
+  EmptyState,
+  FilterBar,
+  PageHeader,
+  SheetDetail,
+  type DataTableProProps,
+} from '@/components/skeleton';
 import { useSettings } from '@/contexts/SettingsContext';
 import { formatRelative } from '@/utils/datetime';
+import './home.css';
 
-const { Text, Paragraph } = Typography;
+/**
+ * 工作台 · 智能运维（DESIGN-SPEC §5 版式 E：页头 + 筛选栏 + 表格 + 分页）。
+ *
+ * API 调用保持不变（@/api/anomaly：列表 / 规则 CRUD / 根因分析 / 自愈），
+ * 只把旧的 Table + StateContainer + 手绘 Stat/Row/Col 换成共享骨架：
+ *  - 列表 → DataTablePro（受控分页，点行 → 右侧非模态详情浮层）
+ *  - 详情 → SheetDetail（原 SideSheet）
+ *  - 新建 / 编辑规则 → SheetDetail 内的 Semi Form（原 Modal，改为右侧抽屉）
+ *  - 错误 → EmptyState(illustration="failure")，动作失败一律 Toast.error
+ */
+
+const PAGE_SIZE = 10;
 
 const SEVERITY_LABEL: Record<AnomalySeverity, { label: string; color: TagColor }> = {
   INFO: { label: '提示', color: 'blue' },
@@ -77,81 +78,128 @@ const METRIC_TYPE_LABEL: Record<string, string> = {
   ERROR_CODE: '错误码',
 };
 
-// 统计卡片（Statistic 无 Semi 等价物，自建 label + 大数字）
-function Stat({ title, value, valueStyle }: { title: string; value: string | number; valueStyle?: React.CSSProperties }) {
-  return (
-    <div>
-      <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginBottom: 4 }}>{title}</div>
-      <div style={{ fontSize: 24, fontWeight: 600, color: 'var(--foreground)', ...valueStyle }}>{value}</div>
-    </div>
-  );
-}
+const METRIC_TYPE_OPTIONS = [
+  { label: '错误率', value: 'ERROR_RATE' },
+  { label: 'P99 延迟', value: 'P99_LATENCY' },
+  { label: '错误码', value: 'ERROR_CODE' },
+];
+
+const CONDITION_OPTIONS = [
+  { label: '大于', value: 'GT' },
+  { label: '大于等于', value: 'GTE' },
+  { label: '小于', value: 'LT' },
+  { label: '小于等于', value: 'LTE' },
+  { label: '等于', value: 'EQ' },
+];
+
+const AGGREGATION_OPTIONS = [
+  { label: 'AVG', value: 'AVG' },
+  { label: 'SUM', value: 'SUM' },
+  { label: 'COUNT', value: 'COUNT' },
+  { label: 'MAX', value: 'MAX' },
+  { label: 'MIN', value: 'MIN' },
+];
+
+const SEVERITY_OPTIONS = [
+  { label: '提示', value: 'INFO' },
+  { label: '警告', value: 'WARNING' },
+  { label: '严重', value: 'CRITICAL' },
+];
 
 export default function AiOpsPage() {
-  const { report } = useApiErrorBoundary();
   const { settings } = useSettings();
+
   const [activeTab, setActiveTab] = useState('events');
+  const [query, setQuery] = useState('');
 
-  const {
-    data: events,
-    loading: eventsLoading,
-    error: eventsError,
-    reload: reloadEvents,
-  } = useAsync<AnomalyEvent[]>(() => getAnomalies(), []);
+  const [events, setEvents] = useState<AnomalyEvent[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [eventsError, setEventsError] = useState('');
+  const [eventsPage, setEventsPage] = useState(1);
 
-  const {
-    data: rules,
-    loading: rulesLoading,
-    error: rulesError,
-    reload: reloadRules,
-  } = useAsync<AnomalyDetectionRule[]>(() => getAnomalyRules(), []);
+  const [rules, setRules] = useState<AnomalyDetectionRule[]>([]);
+  const [rulesLoading, setRulesLoading] = useState(true);
+  const [rulesError, setRulesError] = useState('');
+  const [rulesPage, setRulesPage] = useState(1);
 
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<AnomalyEvent | null>(null);
   const [analysis, setAnalysis] = useState<RootCauseAnalysisResult | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [remediation, setRemediation] = useState<RemediationResult | null>(null);
-  const [remediating, setRemediating] = useState(false);
+  const [remediatingId, setRemediatingId] = useState<string | null>(null);
 
-  const [ruleModalOpen, setRuleModalOpen] = useState(false);
+  const [ruleOpen, setRuleOpen] = useState(false);
+  const [savingRule, setSavingRule] = useState(false);
   const [editingRule, setEditingRule] = useState<AnomalyDetectionRule | null>(null);
   const [ruleForm] = Form.useForm<RuleFormValues>();
 
-  const handleAnalyze = async (event: AnomalyEvent) => {
-    setAnalyzing(true);
+  const loadEvents = useCallback(async () => {
+    setEventsLoading(true);
+    setEventsError('');
     try {
-      const result = await analyzeAnomaly(event.id);
-      setAnalysis(result);
-      Toast.success('根因分析完成');
-      reloadEvents();
+      setEvents(await getAnomalies());
     } catch (e) {
-      report(e);
+      setEventsError(e instanceof Error ? e.message : String(e));
     } finally {
-      setAnalyzing(false);
+      setEventsLoading(false);
     }
-  };
+  }, []);
 
-  const handleRemediate = async (event: AnomalyEvent, mode: 'ADVISE' | 'AUTO') => {
-    setRemediating(true);
+  const loadRules = useCallback(async () => {
+    setRulesLoading(true);
+    setRulesError('');
     try {
-      const result = await remediateAnomaly(event.id, mode, event.remediationAction);
-      setRemediation(result);
-      Toast.info(result.executed ? '修复 Action 已执行' : '已生成修复建议');
-      if (result.executed) {
-        reloadEvents();
-      }
+      setRules(await getAnomalyRules());
     } catch (e) {
-      report(e);
+      setRulesError(e instanceof Error ? e.message : String(e));
     } finally {
-      setRemediating(false);
+      setRulesLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadEvents();
+    void loadRules();
+  }, [loadEvents, loadRules]);
+
+  const handleAnalyze = useCallback(
+    async (event: AnomalyEvent) => {
+      setAnalyzingId(event.id);
+      try {
+        const result = await analyzeAnomaly(event.id);
+        setAnalysis(result);
+        Toast.success('根因分析完成');
+        void loadEvents();
+      } catch (e) {
+        Toast.error(e instanceof Error ? e.message : String(e));
+      } finally {
+        setAnalyzingId(null);
+      }
+    },
+    [loadEvents],
+  );
+
+  const handleRemediate = useCallback(
+    async (event: AnomalyEvent, mode: 'ADVISE' | 'AUTO') => {
+      setRemediatingId(event.id);
+      try {
+        const result = await remediateAnomaly(event.id, mode, event.remediationAction);
+        setRemediation(result);
+        Toast.info(result.executed ? '修复 Action 已执行' : '已生成修复建议');
+        if (result.executed) void loadEvents();
+      } catch (e) {
+        Toast.error(e instanceof Error ? e.message : String(e));
+      } finally {
+        setRemediatingId(null);
+      }
+    },
+    [loadEvents],
+  );
 
   const openDetail = (event: AnomalyEvent) => {
     setSelectedEvent(event);
     setAnalysis(null);
     setRemediation(null);
-    setDrawerOpen(true);
   };
 
   const openCreateRule = () => {
@@ -166,7 +214,7 @@ export default function AiOpsPage() {
       severity: 'WARNING',
       enabled: true,
     });
-    setRuleModalOpen(true);
+    setRuleOpen(true);
   };
 
   const openEditRule = (rule: AnomalyDetectionRule) => {
@@ -181,318 +229,489 @@ export default function AiOpsPage() {
       severity: rule.severity,
       enabled: rule.enabled,
     });
-    setRuleModalOpen(true);
+    setRuleOpen(true);
   };
 
-  const handleSaveRule = async (values: RuleFormValues) => {
-    try {
-      if (editingRule) {
-        await updateAnomalyRule(editingRule.id, values);
-        Toast.success('规则已更新');
-      } else {
-        await createAnomalyRule(values);
-        Toast.success('规则已创建');
+  const handleSaveRule = useCallback(
+    async (values: RuleFormValues) => {
+      setSavingRule(true);
+      try {
+        if (editingRule) {
+          await updateAnomalyRule(editingRule.id, values);
+          Toast.success('规则已更新');
+        } else {
+          await createAnomalyRule(values);
+          Toast.success('规则已创建');
+        }
+        setRuleOpen(false);
+        void loadRules();
+      } catch (e) {
+        Toast.error(e instanceof Error ? e.message : String(e));
+      } finally {
+        setSavingRule(false);
       }
-      setRuleModalOpen(false);
-      reloadRules();
-    } catch (e) {
-      report(e);
-    }
+    },
+    [editingRule, loadRules],
+  );
+
+  const submitRule = async () => {
+    const values = await ruleForm.validate().catch(() => null);
+    if (!values) return; // 校验失败，Semi Form 已就地提示
+    await handleSaveRule(values);
   };
 
-  const handleDeleteRule = async (id: string) => {
-    try {
-      await deleteAnomalyRule(id);
-      Toast.success('规则已删除');
-      reloadRules();
-    } catch (e) {
-      report(e);
-    }
+  const handleDeleteRule = useCallback(
+    async (id: string) => {
+      try {
+        await deleteAnomalyRule(id);
+        Toast.success('规则已删除');
+        void loadRules();
+      } catch (e) {
+        Toast.error(e instanceof Error ? e.message : String(e));
+      }
+    },
+    [loadRules],
+  );
+
+  const handleQuery = (value: string) => {
+    setQuery(value);
+    setEventsPage(1);
+    setRulesPage(1);
   };
 
-  const eventColumns = [
+  const filteredEvents = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (q === '') return events;
+    return events.filter(
+      (e) =>
+        e.serviceName.toLowerCase().includes(q) ||
+        (METRIC_TYPE_LABEL[e.anomalyType] ?? e.anomalyType).toLowerCase().includes(q),
+    );
+  }, [events, query]);
+
+  const filteredRules = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (q === '') return rules;
+    return rules.filter((r) => r.name.toLowerCase().includes(q));
+  }, [rules, query]);
+
+  const pagedEvents = useMemo(
+    () => filteredEvents.slice((eventsPage - 1) * PAGE_SIZE, eventsPage * PAGE_SIZE),
+    [filteredEvents, eventsPage],
+  );
+
+  const pagedRules = useMemo(
+    () => filteredRules.slice((rulesPage - 1) * PAGE_SIZE, rulesPage * PAGE_SIZE),
+    [filteredRules, rulesPage],
+  );
+
+  const eventColumns: DataTableProProps<AnomalyEvent>['columns'] = [
     {
       title: '异常类型',
       dataIndex: 'anomalyType',
-      key: 'anomalyType',
-      render: (v: string) => METRIC_TYPE_LABEL[v] || v,
+      render: (v: string) => METRIC_TYPE_LABEL[v] ?? v,
     },
     {
       title: '严重级别',
       dataIndex: 'severity',
-      key: 'severity',
-      render: (v: AnomalySeverity) => <Tag color={SEVERITY_LABEL[v].color}>{SEVERITY_LABEL[v].label}</Tag>,
+      render: (v: AnomalySeverity) => (
+        <Tag color={SEVERITY_LABEL[v]?.color ?? 'grey'}>{SEVERITY_LABEL[v]?.label ?? v}</Tag>
+      ),
     },
-    { title: '服务', dataIndex: 'serviceName', key: 'serviceName' },
+    { title: '服务', dataIndex: 'serviceName' },
     {
       title: '状态',
       dataIndex: 'status',
-      key: 'status',
-      render: (v: AnomalyStatus) => <Tag color={STATUS_LABEL[v].color}>{STATUS_LABEL[v].label}</Tag>,
+      render: (v: AnomalyStatus) => (
+        <Tag color={STATUS_LABEL[v]?.color ?? 'grey'}>{STATUS_LABEL[v]?.label ?? v}</Tag>
+      ),
     },
     {
       title: '当前值',
       dataIndex: 'metricValue',
-      key: 'metricValue',
       render: (v: number, record: AnomalyEvent) =>
-        `${v}${record.anomalyType === 'ERROR_RATE' ? '%' : record.anomalyType === 'P99_LATENCY' ? 'ms' : ''}`,
+        `${v}${
+          record.anomalyType === 'ERROR_RATE'
+            ? '%'
+            : record.anomalyType === 'P99_LATENCY'
+              ? 'ms'
+              : ''
+        }`,
     },
     {
       title: '发生时间',
       dataIndex: 'detectedAt',
-      key: 'detectedAt',
       render: (v: string) => formatRelative(v, settings),
     },
     {
       title: '操作',
-      key: 'action',
       render: (_: unknown, record: AnomalyEvent) => (
-        <Space>
-          <Button theme="borderless" icon={<SearchOutlined />} onClick={() => openDetail(record)}>
+        <>
+          <Button
+            theme="borderless"
+            size="small"
+            icon={<Eye size={15} strokeWidth={1.5} />}
+            onClick={(e) => {
+              e.stopPropagation();
+              openDetail(record);
+            }}
+          >
             详情
           </Button>
-          <Button theme="borderless" icon={<MedicineBoxOutlined />} onClick={() => handleAnalyze(record)} loading={analyzing}>
+          <Button
+            theme="borderless"
+            size="small"
+            icon={<Stethoscope size={15} strokeWidth={1.5} />}
+            loading={analyzingId === record.id}
+            onClick={(e) => {
+              e.stopPropagation();
+              void handleAnalyze(record);
+            }}
+          >
             根因分析
           </Button>
-          {record.status !== 'RESOLVED' && (
+          {record.status !== 'RESOLVED' ? (
             <Button
               theme="borderless"
-              icon={<PlayCircleOutlined />}
-              onClick={() => handleRemediate(record, 'AUTO')}
-              loading={remediating}
+              size="small"
+              icon={<Play size={15} strokeWidth={1.5} />}
+              loading={remediatingId === record.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                void handleRemediate(record, 'AUTO');
+              }}
             >
               自动修复
             </Button>
-          )}
-        </Space>
+          ) : null}
+        </>
       ),
     },
   ];
 
-  const ruleColumns = [
-    { title: '规则名称', dataIndex: 'name', key: 'name' },
+  const ruleColumns: DataTableProProps<AnomalyDetectionRule>['columns'] = [
+    { title: '规则名称', dataIndex: 'name' },
     {
       title: '指标类型',
       dataIndex: 'metricType',
-      key: 'metricType',
-      render: (v: string) => METRIC_TYPE_LABEL[v] || v,
+      render: (v: string) => METRIC_TYPE_LABEL[v] ?? v,
     },
-    { title: '条件', dataIndex: 'conditionOperator', key: 'conditionOperator' },
-    { title: '阈值', dataIndex: 'threshold', key: 'threshold' },
-    { title: '聚合', dataIndex: 'aggregationFunction', key: 'aggregationFunction' },
+    { title: '条件', dataIndex: 'conditionOperator' },
+    { title: '阈值', dataIndex: 'threshold' },
+    { title: '聚合', dataIndex: 'aggregationFunction' },
     {
       title: '严重级别',
       dataIndex: 'severity',
-      key: 'severity',
-      render: (v: AnomalySeverity) => <Tag color={SEVERITY_LABEL[v].color}>{SEVERITY_LABEL[v].label}</Tag>,
+      render: (v: AnomalySeverity) => (
+        <Tag color={SEVERITY_LABEL[v]?.color ?? 'grey'}>{SEVERITY_LABEL[v]?.label ?? v}</Tag>
+      ),
     },
     {
       title: '启用',
       dataIndex: 'enabled',
-      key: 'enabled',
       render: (v: boolean) => <Tag color={v ? 'green' : 'grey'}>{v ? '是' : '否'}</Tag>,
     },
     {
       title: '操作',
-      key: 'action',
       render: (_: unknown, record: AnomalyDetectionRule) => (
-        <Space>
-          <Button theme="borderless" icon={<EditOutlined />} onClick={() => openEditRule(record)}>
+        <>
+          <Button
+            theme="borderless"
+            size="small"
+            icon={<Pencil size={15} strokeWidth={1.5} />}
+            onClick={() => openEditRule(record)}
+          >
             编辑
           </Button>
-          <Button theme="borderless" type="danger" icon={<DeleteOutlined />} onClick={() => handleDeleteRule(record.id)}>
+          <Button
+            theme="borderless"
+            type="danger"
+            size="small"
+            icon={<Trash2 size={15} strokeWidth={1.5} />}
+            onClick={() => void handleDeleteRule(record.id)}
+          >
             删除
           </Button>
-        </Space>
+        </>
       ),
     },
   ];
 
   return (
     <>
-      <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginBottom: 16 }}>异常自动检测、根因分析与自愈</div>
+      <PageHeader
+        title="智能运维"
+        desc="异常自动检测、根因分析与自愈"
+        actions={
+          <Button
+            icon={<RefreshCw size={15} strokeWidth={1.5} />}
+            loading={eventsLoading || rulesLoading}
+            onClick={() => {
+              void loadEvents();
+              void loadRules();
+            }}
+          >
+            刷新
+          </Button>
+        }
+      />
+
+      <FilterBar
+        search={{
+          value: query,
+          onChange: handleQuery,
+          placeholder: activeTab === 'events' ? '搜索服务名或异常类型' : '搜索规则名称',
+        }}
+        right={
+          activeTab === 'rules' ? (
+            <Button
+              theme="solid"
+              type="primary"
+              icon={<Plus size={15} strokeWidth={1.5} />}
+              onClick={openCreateRule}
+            >
+              新建规则
+            </Button>
+          ) : undefined
+        }
+      />
+
       <Card>
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
+        <Tabs activeKey={activeTab} onChange={(k) => setActiveTab(String(k))}>
           <Tabs.TabPane tab="异常事件" itemKey="events">
-            <StateContainer
-              loading={eventsLoading}
-              error={eventsError}
-              isEmpty={!eventsLoading && !eventsError && (events ?? []).length === 0}
-              emptyDescription="暂无异常事件"
-              onRetry={reloadEvents}
-            >
-              <Table
-                rowKey="id"
-                dataSource={events ?? []}
+            {eventsError ? (
+              <EmptyState
+                illustration="failure"
+                title="异常事件加载失败"
+                desc={eventsError}
+                actions={
+                  <Button theme="solid" type="primary" onClick={() => void loadEvents()}>
+                    重试
+                  </Button>
+                }
+              />
+            ) : (
+              <DataTablePro<AnomalyEvent>
                 columns={eventColumns}
-                pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
-            </StateContainer>
+                dataSource={pagedEvents}
+                rowKey="id"
+                loading={eventsLoading}
+                pagination={{
+                  currentPage: eventsPage,
+                  pageSize: PAGE_SIZE,
+                  total: filteredEvents.length,
+                  onChange: setEventsPage,
+                }}
+                onRow={(record) => ({ onClick: () => openDetail(record) })}
+                empty={
+                  <EmptyState
+                    illustration="no-content"
+                    title="暂无异常事件"
+                    desc="检测规则命中后，事件会在这里生成。"
+                  />
+                }
+              />
+            )}
           </Tabs.TabPane>
+
           <Tabs.TabPane tab="检测规则" itemKey="rules">
-            <Space style={{ marginBottom: 16 }}>
-              <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreateRule}>
-                新建规则
-              </Button>
-            </Space>
-            <StateContainer
-              loading={rulesLoading}
-              error={rulesError}
-              isEmpty={!rulesLoading && !rulesError && (rules ?? []).length === 0}
-              emptyDescription="暂无检测规则"
-              onRetry={reloadRules}
-            >
-              <Table rowKey="id" dataSource={rules ?? []} columns={ruleColumns} pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
-            </StateContainer>
+            {rulesError ? (
+              <EmptyState
+                illustration="failure"
+                title="检测规则加载失败"
+                desc={rulesError}
+                actions={
+                  <Button theme="solid" type="primary" onClick={() => void loadRules()}>
+                    重试
+                  </Button>
+                }
+              />
+            ) : (
+              <DataTablePro<AnomalyDetectionRule>
+                columns={ruleColumns}
+                dataSource={pagedRules}
+                rowKey="id"
+                loading={rulesLoading}
+                pagination={{
+                  currentPage: rulesPage,
+                  pageSize: PAGE_SIZE,
+                  total: filteredRules.length,
+                  onChange: setRulesPage,
+                }}
+                empty={
+                  <EmptyState
+                    illustration="no-content"
+                    title="暂无检测规则"
+                    desc="新建规则后，指标异常会被自动检测。"
+                  />
+                }
+              />
+            )}
           </Tabs.TabPane>
         </Tabs>
       </Card>
 
-      <SideSheet
+      <SheetDetail
         title="异常详情"
-        width={640}
-        visible={drawerOpen}
-        onCancel={() => setDrawerOpen(false)}
+        open={selectedEvent !== null}
+        onClose={() => setSelectedEvent(null)}
         footer={
-          selectedEvent &&
-          selectedEvent.status !== 'RESOLVED' && (
-            <Space>
-              <Button onClick={() => handleRemediate(selectedEvent, 'ADVISE')} loading={remediating}>
+          selectedEvent && selectedEvent.status !== 'RESOLVED' ? (
+            <>
+              <Button
+                onClick={() => void handleRemediate(selectedEvent, 'ADVISE')}
+                loading={remediatingId === selectedEvent.id}
+              >
                 生成修复建议
               </Button>
-              <Button theme="solid" type="primary" onClick={() => handleRemediate(selectedEvent, 'AUTO')} loading={remediating}>
+              <Button
+                theme="solid"
+                type="primary"
+                onClick={() => void handleRemediate(selectedEvent, 'AUTO')}
+                loading={remediatingId === selectedEvent.id}
+              >
                 执行自动修复
               </Button>
-            </Space>
-          )
+            </>
+          ) : undefined
         }
       >
-        {selectedEvent && (
-          <Space vertical style={{ width: '100%' }} spacing="loose">
-            <Row gutter={16}>
-              <Col span={8}>
-                <Stat title="服务" value={selectedEvent.serviceName} />
-              </Col>
-              <Col span={8}>
-                <Stat
-                  title="严重级别"
-                  value={SEVERITY_LABEL[selectedEvent.severity].label}
-                  valueStyle={{ color: selectedEvent.severity === 'CRITICAL' ? 'var(--destructive)' : 'var(--warning)' }}
-                />
-              </Col>
-              <Col span={8}>
-                <Stat title="状态" value={STATUS_LABEL[selectedEvent.status].label} />
-              </Col>
-            </Row>
+        {selectedEvent ? (
+          <>
+            <Descriptions
+              row
+              column={1}
+              data={[
+                { key: '服务', value: selectedEvent.serviceName },
+                {
+                  key: '严重级别',
+                  value: (
+                    <Tag color={SEVERITY_LABEL[selectedEvent.severity]?.color ?? 'grey'}>
+                      {SEVERITY_LABEL[selectedEvent.severity]?.label ?? selectedEvent.severity}
+                    </Tag>
+                  ),
+                },
+                {
+                  key: '状态',
+                  value: (
+                    <Tag color={STATUS_LABEL[selectedEvent.status]?.color ?? 'grey'}>
+                      {STATUS_LABEL[selectedEvent.status]?.label ?? selectedEvent.status}
+                    </Tag>
+                  ),
+                },
+                {
+                  key: 'Trace ID',
+                  value: <Typography.Text copyable>{selectedEvent.traceId || '-'}</Typography.Text>,
+                },
+              ]}
+            />
 
-            <div>
-              <Text strong>Trace ID</Text>
-              <Paragraph copyable>{selectedEvent.traceId || '-'}</Paragraph>
-            </div>
-
-            {analysis && (
+            {analysis ? (
               <>
-                <div>
-                  <Text strong>根因分析结论</Text>
-                  <Paragraph>{analysis.conclusion}</Paragraph>
-                </div>
-                <div>
-                  <Text strong>修复建议</Text>
-                  <Paragraph>
-                    {ACTION_LABEL[analysis.suggestedAction] || analysis.suggestedAction}
-                  </Paragraph>
-                </div>
-                {analysis.relatedLogs.length > 0 && (
-                  <div>
-                    <Text strong>关联日志</Text>
+                <Typography.Text strong>根因分析结论</Typography.Text>
+                <Typography.Paragraph>{analysis.conclusion}</Typography.Paragraph>
+                <Typography.Text strong>修复建议</Typography.Text>
+                <Typography.Paragraph>
+                  {ACTION_LABEL[analysis.suggestedAction] ?? analysis.suggestedAction}
+                </Typography.Paragraph>
+                {analysis.relatedLogs.length > 0 ? (
+                  <>
+                    <Typography.Text strong>关联日志</Typography.Text>
                     <Timeline
-                      style={{ marginTop: 12 }}
                       dataSource={analysis.relatedLogs.map((log) => ({
                         content: (
                           <>
                             <Tag color={log.level === 'ERROR' ? 'red' : 'grey'}>{log.level}</Tag>
-                            <Text type="secondary">{log.serviceName}</Text>
+                            <Typography.Text type="secondary">{log.serviceName}</Typography.Text>
                             <div>{log.message}</div>
                           </>
                         ),
                       }))}
                     />
-                  </div>
-                )}
+                  </>
+                ) : null}
               </>
-            )}
+            ) : null}
 
-            {remediation && (
-              <div>
-                <Text strong>修复结果</Text>
-                <Paragraph>
+            {remediation ? (
+              <>
+                <Typography.Text strong>修复结果</Typography.Text>
+                <Typography.Paragraph>
                   {remediation.executed ? '已执行' : '建议'}：
-                  {remediation.actionName || ACTION_LABEL[remediation.actionCode] || remediation.actionCode}
-                </Paragraph>
-                <Paragraph>{remediation.message}</Paragraph>
-                {remediation.executionId && <Text type="secondary">执行 ID: {remediation.executionId}</Text>}
-              </div>
-            )}
-          </Space>
-        )}
-      </SideSheet>
+                  {remediation.actionName ||
+                    ACTION_LABEL[remediation.actionCode] ||
+                    remediation.actionCode}
+                </Typography.Paragraph>
+                <Typography.Paragraph>{remediation.message}</Typography.Paragraph>
+                {remediation.executionId ? (
+                  <Typography.Text type="secondary">
+                    执行 ID: {remediation.executionId}
+                  </Typography.Text>
+                ) : null}
+              </>
+            ) : null}
+          </>
+        ) : null}
+      </SheetDetail>
 
-      <Modal
+      <SheetDetail
         title={editingRule ? '编辑检测规则' : '新建检测规则'}
-        visible={ruleModalOpen}
-        onCancel={() => setRuleModalOpen(false)}
-        onOk={() => ruleForm.submitForm()}
+        open={ruleOpen}
+        onClose={() => setRuleOpen(false)}
+        footer={
+          <>
+            <Button onClick={() => setRuleOpen(false)}>取消</Button>
+            <Button theme="solid" type="primary" loading={savingRule} onClick={() => void submitRule()}>
+              保存
+            </Button>
+          </>
+        }
       >
-        <Form form={ruleForm} onSubmit={handleSaveRule}>
-          <Form.Input field="name" label="规则名称" rules={[{ required: true, message: '请输入规则名称' }]} placeholder="例如：高错误率检测" />
+        <Form form={ruleForm} labelPosition="top">
+          <Form.Input
+            field="name"
+            label="规则名称"
+            rules={[{ required: true, message: '请输入规则名称' }]}
+            placeholder="例如：高错误率检测"
+          />
           <Form.Select
             field="metricType"
             label="指标类型"
             rules={[{ required: true }]}
-            optionList={[
-              { label: '错误率', value: 'ERROR_RATE' },
-              { label: 'P99 延迟', value: 'P99_LATENCY' },
-              { label: '错误码', value: 'ERROR_CODE' },
-            ]}
+            optionList={METRIC_TYPE_OPTIONS}
           />
           <Form.Select
             field="conditionOperator"
             label="比较运算符"
             rules={[{ required: true }]}
-            optionList={[
-              { label: '大于', value: 'GT' },
-              { label: '大于等于', value: 'GTE' },
-              { label: '小于', value: 'LT' },
-              { label: '小于等于', value: 'LTE' },
-              { label: '等于', value: 'EQ' },
-            ]}
+            optionList={CONDITION_OPTIONS}
           />
-          <Form.InputNumber field="threshold" label="阈值" rules={[{ required: true, message: '请输入阈值' }]} style={{ width: '100%' }} />
+          <Form.InputNumber
+            field="threshold"
+            label="阈值"
+            rules={[{ required: true, message: '请输入阈值' }]}
+          />
           <Form.Select
             field="aggregationFunction"
             label="聚合函数"
             rules={[{ required: true }]}
-            optionList={[
-              { label: 'AVG', value: 'AVG' },
-              { label: 'SUM', value: 'SUM' },
-              { label: 'COUNT', value: 'COUNT' },
-              { label: 'MAX', value: 'MAX' },
-              { label: 'MIN', value: 'MIN' },
-            ]}
+            optionList={AGGREGATION_OPTIONS}
           />
-          <Form.InputNumber field="timeWindowSeconds" label="时间窗口（秒）" rules={[{ required: true }]} style={{ width: '100%' }} min={60} />
+          <Form.InputNumber
+            field="timeWindowSeconds"
+            label="时间窗口（秒）"
+            rules={[{ required: true }]}
+            min={60}
+          />
           <Form.Select
             field="severity"
             label="严重级别"
             rules={[{ required: true }]}
-            optionList={[
-              { label: '提示', value: 'INFO' },
-              { label: '警告', value: 'WARNING' },
-              { label: '严重', value: 'CRITICAL' },
-            ]}
+            optionList={SEVERITY_OPTIONS}
           />
           <Form.Switch field="enabled" label="启用" />
         </Form>
-      </Modal>
+      </SheetDetail>
     </>
   );
 }
