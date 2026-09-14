@@ -336,3 +336,154 @@ class TestPreflightGateHttpE2E:
         )
         assert r2.status_code == 200, r2.text
         assert r2.json()["preflight"]["blocked"] is False
+
+
+class TestPostflightHttpE2E:
+    """ONT-POSTFLIGHT-01：execute 后不变式后验 + 自动补偿（create_instance）。"""
+
+    ORDER = "ont.acme.obj.ops.order.v1"
+
+    def _propose_confirm(self, client, pk: str) -> str:
+        r = client.post(
+            f"/api/v1/ont/v2/classes/{self.ORDER}/propose-instance",
+            json={"props": {"order-id": pk, "order-name": f"N-{pk}"}, "impact_summary": "pf"},
+        )
+        assert r.status_code == 200, r.text
+        pid = r.json()["proposal_id"]
+        c = client.post(
+            f"/api/v1/ont/v2/proposals/{pid}/confirm",
+            json={},
+            headers={"Idempotency-Key": f"pf-c-{pk}"},
+        )
+        assert c.status_code == 200, c.text
+        return pid
+
+    def test_clean_execute_reports_postflight_pass(self, client_with_ctx, pg_repo):
+        pg_repo.upsert_object_type(_ot(self.ORDER, "Order"))
+        pid = self._propose_confirm(client_with_ctx, "PF-1")
+        r = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{pid}/execute",
+            headers={"Idempotency-Key": "pf-e-1"},
+        )
+        assert r.status_code == 200, r.text
+        pf = r.json()["postflight"]
+        assert pf["checked"] is True
+        assert pf["blocked"] is False
+        assert pf["action_taken"] == "none"
+
+    def test_postflight_violation_auto_reverts_create_instance(
+        self, client_with_ctx, pg_repo, monkeypatch
+    ):
+        """后验违约 → create_instance 自动补偿（I1≃等价）：实例删除 + reverted。
+
+        用 monkeypatch 把后验用的 preflight_create_instance 固定为 blocked 报告
+        （预检闸与后验同引擎，正常流走到后验时已绿；此测试验证的是违约处置接线）。
+        """
+        pg_repo.upsert_object_type(_ot(self.ORDER, "Order"))
+        pid = self._propose_confirm(client_with_ctx, "PF-2")
+
+        import mate_kernel.ontology.preflight as pf_mod
+        import mate_tech_ont.v2_kernel.api as api_mod
+
+        real_fn = pf_mod.preflight_create_instance
+
+        def fake_blocked(ot, props, **kw):
+            real = real_fn(ot, props, **kw)
+            from dataclasses import replace
+
+            return replace(real, blocked=True, summary="后验注入：模拟并发违约")
+
+        monkeypatch.setattr(pf_mod, "preflight_create_instance", fake_blocked)
+
+        # 预检闸与后验同引擎：闸走通过桩（本次只测后验处置接线），后验吃注入
+        async def fake_preflight_pass(request, prop):
+            return {"blocked": False, "schema": {"checked": True, "errors": [], "warnings": []},
+                    "shacl": {"checked": False, "conforms": True, "violations": []},
+                    "axioms": [], "summary": "预检通过（桩）"}
+
+        monkeypatch.setattr(api_mod, "_proposal_preflight", fake_preflight_pass)
+
+        r = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{pid}/execute",
+            headers={"Idempotency-Key": "pf-e-2"},
+        )
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body["postflight"]["blocked"] is True
+        assert body["postflight"]["action_taken"] == "auto_reverted"
+        assert body["postflight"]["revert_receipt"]
+
+        # I1≃等价：实例已删；proposal 终态 reverted
+        from mate_kernel.ontology.identity import ClassRef as _CR2
+
+        inds = [i.primary_key for i in pg_repo.list_individuals(_CR2(self.ORDER))]
+        assert "PF-2" not in inds
+        assert pg_repo.get_proposal(pid).status.value == "reverted"
+
+
+class TestProvenanceHttpE2E:
+    """ONT-PROV-01：提案级溯源 → 实例记录级 provenance 落库 + 查询透出。"""
+
+    ORDER = "ont.acme.obj.ops.order.v1"
+
+    def test_proposal_provenance_lands_on_instance(self, client_with_ctx, pg_repo):
+        pg_repo.upsert_object_type(_ot(self.ORDER, "Order"))
+        r = client_with_ctx.post(
+            f"/api/v1/ont/v2/classes/{self.ORDER}/propose-instance",
+            json={
+                "props": {"order-id": "PV-1", "order-name": "Provenance One"},
+                "impact_summary": "prov",
+                "provenance": {
+                    "source": "ai",
+                    "confidence": 0.87,
+                    "model": "glm-5.3-flash",
+                    "agent_id": "ontology-modeler",
+                },
+            },
+        )
+        assert r.status_code == 200, r.text
+        pid = r.json()["proposal_id"]
+        c = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{pid}/confirm",
+            json={},
+            headers={"Idempotency-Key": "prov-c-1"},
+        )
+        assert c.status_code == 200
+        e = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{pid}/execute",
+            headers={"Idempotency-Key": "prov-e-1"},
+        )
+        assert e.status_code == 200, e.text
+
+        # 落库实例带记录级 provenance（调用方溯源 + 平台执行链证据合并）
+        ind = pg_repo.get_individual("ont.acme.ind.order.PV-1")
+        prov = ind.provenance
+        assert prov is not None
+        assert prov["source"] == "ai"
+        assert prov["confidence"] == 0.87
+        assert prov["model"] == "glm-5.3-flash"
+        assert prov["proposal_id"] == pid
+        assert prov["executed_at"]
+
+        # 查询透出：list individuals 响应携带 provenance
+        from mate_kernel.ontology.identity import ClassRef as _CR3
+
+        got = client_with_ctx.get(
+            f"/api/v1/ont/v2/individuals?class_rid={self.ORDER}"
+        )
+        assert got.status_code == 200, got.text
+        rows = got.json() if isinstance(got.json(), list) else got.json().get("items", [])
+        row = next(x for x in rows if x.get("primary_key") == "PV-1")
+        assert row["provenance"]["source"] == "ai"
+        assert row["provenance"]["proposal_id"] == pid
+
+    def test_no_provenance_still_works_backward_compatible(self, client_with_ctx, pg_repo):
+        """不带 provenance 的提案照常（字段可选，旧行为零影响）。"""
+        pg_repo.upsert_object_type(_ot(self.ORDER, "Order"))
+        r = client_with_ctx.post(
+            f"/api/v1/ont/v2/classes/{self.ORDER}/propose-instance",
+            json={"props": {"order-id": "PV-2", "order-name": "Plain"}, "impact_summary": "x"},
+        )
+        assert r.status_code == 200, r.text
+        pid = r.json()["proposal_id"]
+        assert r.json()["preflight"]["blocked"] is False

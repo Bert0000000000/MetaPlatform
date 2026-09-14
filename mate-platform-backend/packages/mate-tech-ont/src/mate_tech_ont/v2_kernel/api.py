@@ -141,6 +141,8 @@ class IndividualResponse(BaseModel):
     tenant_id: str
     created_at: str
     updated_at: str
+    # ONT-PROV-01：记录级溯源（AI proposal 落库带 source/confidence/proposal_id）
+    provenance: dict[str, Any] | None = None
 
 
 class ObjectSetDTO(BaseModel):
@@ -565,6 +567,7 @@ def _individual_to_response(i: Individual) -> IndividualResponse:
         tenant_id=i.tenant_id,
         created_at=i.created_at.isoformat(),
         updated_at=i.updated_at.isoformat(),
+        provenance=getattr(i, "provenance", None),
     )
 
 
@@ -2375,6 +2378,7 @@ async def list_individuals(
             tenant_id=i.tenant_id,
             created_at=i.created_at.isoformat(),
             updated_at=i.updated_at.isoformat(),
+            provenance=getattr(i, "provenance", None),
         )
         for i in items
     ]
@@ -2414,6 +2418,7 @@ async def evaluate_object_set(
             tenant_id=i.tenant_id,
             created_at=i.created_at.isoformat(),
             updated_at=i.updated_at.isoformat(),
+            provenance=getattr(i, "provenance", None),
         )
         for i in results
     ]
@@ -2620,6 +2625,114 @@ class ProposalResponse(BaseModel):
     preflight: dict[str, Any] | None = None
 
 
+async def _proposal_postflight(
+    request: Request, prop: Any, execution: dict[str, Any]
+) -> dict[str, Any]:
+    """ONT-POSTFLIGHT-01：execute 成功后的不变式后验（落库态复核）。
+
+    与预检同引擎（SHACL×Axiom），但校验对象是**已落库**的数据 —— 捕获
+    预检窗口与落库之间本体并发变化引入的违约。violation 处置：
+      - create_instance → 自动补偿（revert；I1≃等价：等价于从未创建）
+      - 其它 kind → needs_attention（数值不可逆；audit-only，人工介入）
+    返回 {checked, blocked, summary, action_taken, revert_receipt?}。
+    """
+    kind = str(getattr(prop, "kind", "action") or "action")
+    base = {
+        "checked": False,
+        "blocked": False,
+        "summary": "该 kind 不适用后验（action 后置态由 apply 事务内校验兜底）",
+        "action_taken": "none",
+    }
+    try:
+        from mate_kernel.ontology.identity.class_ref import ClassRef
+
+        axiom_records = await _call_scoped(
+            request, "list_axiom_records", _ctx(request).tenant_id, enabled_only=True
+        )
+        report: Any = None
+        if kind == "create_instance":
+            ind_rid = str(execution.get("individual_rid") or "")
+            if not ind_rid:
+                return base
+            ind = await _call_scoped(request, "get_individual", ind_rid)
+            ot = await _call_scoped(
+                request, "get_object_type", ClassRef(str(prop.action_rid))
+            )
+            all_types = await _call_scoped(request, "list_object_types", 10000, 0)
+            from mate_kernel.ontology.preflight import preflight_create_instance
+
+            # 水合形态三种：ClassRef 键 / 带 .rid=str 的键对象 / 纯 str 键
+            landed: dict[str, Any] = {}
+            for k, v in ind.props:
+                rk = getattr(k, "rid", k)
+                landed[str(getattr(rk, "rid", rk))] = v
+            report = preflight_create_instance(
+                ot, landed, axiom_records=axiom_records, all_types=all_types
+            )
+        elif kind == "model_type":
+            type_rid = str(
+                execution.get("type_rid") or (prop.parameters or {}).get("type_def", {}).get("rid")
+                or prop.action_rid
+            )
+            ot = await _call_scoped(request, "get_object_type", ClassRef(type_rid))
+            existing = await _call_scoped(request, "list_object_types", 10000, 0)
+            from mate_kernel.ontology.preflight import preflight_model_type
+
+            report = preflight_model_type(ot, existing_types=existing, axiom_records=axiom_records)
+        else:
+            return base
+
+        out: dict[str, Any] = {
+            "checked": True,
+            "blocked": report.blocked,
+            "summary": report.summary,
+            "action_taken": "none",
+        }
+        if report.blocked:
+            if kind == "create_instance":
+                # 自动补偿：revert（I1≃等价）；失败降级 needs_attention
+                try:
+                    receipt = await _call_scoped(
+                        request,
+                        "revert_proposal",
+                        str(prop.proposal_id),
+                        actor_id="system:postflight",
+                        idempotency_key=f"postflight-revert-{prop.proposal_id}",
+                    )
+                    out["action_taken"] = "auto_reverted"
+                    out["revert_receipt"] = receipt
+                except Exception as e:  # noqa: BLE001 —— 补偿失败不能吞掉执行回执
+                    _logger.error(
+                        "ont.postflight.auto_revert_failed",
+                        proposal_id=str(prop.proposal_id),
+                        error=str(e),
+                    )
+                    out["action_taken"] = "needs_attention"
+                    out["revert_error"] = str(e)
+            else:
+                out["action_taken"] = "needs_attention"
+            _logger.warning(
+                "ont.postflight.violation",
+                proposal_id=str(prop.proposal_id),
+                kind=kind,
+                action_taken=out["action_taken"],
+                summary=report.summary,
+            )
+        return out
+    except Exception as e:  # noqa: BLE001 —— 后验故障不能拖垮已成功的执行回执
+        import traceback as _tb
+
+        _logger.warning(
+            "ont.postflight.failed", error=str(e), tb=_tb.format_exc()[-2000:]
+        )
+        return {
+            "checked": False,
+            "blocked": False,
+            "summary": f"后验异常（不补偿，人工复核）: {e}",
+            "action_taken": "needs_attention",
+        }
+
+
 async def _proposal_preflight(request: Request, prop: Any) -> dict[str, Any] | None:
     """ONT-GATE-01：按 proposal kind 跑三闸门预检（无状态，数据实时取）。
 
@@ -2732,6 +2845,9 @@ class InstanceProposeDTO(BaseModel):
     props: dict[str, Any] = Field(default_factory=dict)
     impact_summary: str = ""
     expected_diff: dict[str, Any] = Field(default_factory=dict)
+    # ONT-PROV-01：提案级溯源（source: ai|user、confidence、model、agent_id…）。
+    # execute 时合并 proposal_id/actor/executed_at 落到实例记录级 provenance。
+    provenance: dict[str, Any] = Field(default_factory=dict)
 
 
 class TypeProposeDTO(BaseModel):
@@ -2755,6 +2871,11 @@ class ProposalExecuteResultDTO(BaseModel):
     target_rid: str | None = None
     affected_individuals: int | None = None
     affected_links: int | None = None
+    # ONT-POSTFLIGHT-01：落库后不变式后验（SHACL×Axiom 复核落库态）。
+    # violation → create_instance 自动补偿（revert，I1≃等价）；其它 kind 标记
+    # needs_attention（数值不可逆，audit-only）。checked=False 表示该 kind
+    # 不适用（action 的后置状态由 apply 事务内校验兜底）。
+    postflight: dict[str, Any] | None = None
 
 
 @router.post(
@@ -2786,6 +2907,7 @@ async def propose_instance(
             payload.props,
             payload.impact_summary,
             payload.expected_diff or None,
+            payload.provenance or None,
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -2937,6 +3059,8 @@ async def execute_proposal(
         raise HTTPException(status_code=409, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
+    # ONT-POSTFLIGHT-01：落库后不变式后验（不改变执行成败语义，只标注/补偿）
+    out["postflight"] = await _proposal_postflight(request, prop, out)
     return ProposalExecuteResultDTO(**out)
 
 
