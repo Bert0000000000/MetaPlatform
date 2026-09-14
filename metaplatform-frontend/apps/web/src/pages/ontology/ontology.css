@@ -1,0 +1,29 @@
+/*
+ * 本体域共享的排版工具类。
+ * 只做「文本层级」的语义化，不承载布局；布局由骨架组件与各页自己的 css 负责。
+ */
+.mp-onto-strong {
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+}
+
+.mp-onto-muted {
+  color: var(--semi-color-text-2);
+}
+
+.mp-onto-faint {
+  color: var(--semi-color-text-3);
+}
+
+.mp-onto-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 过渡期类型编辑器的顶部动作条（新建概念入口） */
+.mp-onto-editor-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--mp-space-2);
+  padding-bottom: var(--mp-space-3);
+}

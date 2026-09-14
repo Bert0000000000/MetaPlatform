@@ -201,6 +201,15 @@
   min-width: 0;
 }
 
+/*
+ * 全幅骨架页（§5 B 两栏浏览器 / F 全屏可视化）自带留白，接管 .mp-page 的 gutter。
+ * 用 :has() 让「页面声明自己全幅」这一件事只有一个事实源；不支持 :has 的浏览器
+ * 只是多留 24px 边距，不会破版。
+ */
+.mp-page:has(> .mp-page-full) {
+  padding: 0;
+}
+
 /* ---------- Copilot dock ---------- */
 .mp-dock {
   width: var(--mp-dock-w);

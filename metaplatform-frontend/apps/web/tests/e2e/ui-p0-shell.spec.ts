@@ -28,8 +28,9 @@ const LEGACY_REDIRECTS: Array<{ from: string; to: string; note?: string }> = [
 
   { from: '/ontology', to: '/ontology/explorer' },
   { from: '/ontology?tab=datacenter', to: '/ontology/datacenter' },
-  { from: '/ontology?tab=action', to: '/ontology/explorer?tab=action' },
-  { from: '/ontology/object-types', to: '/ontology/explorer' },
+  { from: '/ontology?tab=action', to: '/ontology/ops/actions' },   // UI-P1a 起 Action 编排归运维
+  { from: '/ontology?tab=concept', to: '/ontology/model' },
+  { from: '/ontology/object-types', to: '/ontology/model' },
   { from: '/ontology/datacenter', to: '/ontology/datacenter' },
 
   { from: '/dw/employees', to: '/agents/employees' },

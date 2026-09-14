@@ -1,0 +1,28 @@
+/*
+ * 本体域壳：只负责「助手入口的落位」与全幅页的高度约束。
+ * 页面自身的排版仍由各页 css 负责。
+ */
+
+.mp-onto-shell {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mp-onto-shell-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 助手入口：右下角浮动，避免挤占全幅画布/表格的工具条 */
+.mp-onto-ai-dock {
+  position: absolute;
+  right: var(--mp-space-5);
+  bottom: var(--mp-space-4);
+  z-index: 40;
+}

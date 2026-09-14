@@ -1,0 +1,107 @@
+/*
+ * 对象浏览器（B 骨架）样式。
+ * 全幅页：外层 .mp-page-full 让壳接管留白（见 shell.css 的 :has 规则）。
+ */
+
+.mp-explorer {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+/* ---------- 左：类型树 ---------- */
+.mp-explorer-tree {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.mp-explorer-tree-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mp-space-2);
+  padding: var(--mp-space-3) var(--mp-space-3) var(--mp-space-2);
+}
+
+.mp-explorer-tree-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+}
+
+.mp-explorer-type {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  min-width: 0;
+  width: 100%;
+}
+
+.mp-explorer-type-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-explorer-type-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--semi-color-text-3);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+/* ---------- 右：实例表 ---------- */
+.mp-explorer-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: var(--mp-space-4) var(--mp-space-5) var(--mp-space-5);
+}
+
+.mp-explorer-list-head {
+  flex: none;
+}
+
+.mp-explorer-list-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* ---------- 详情浮层 ---------- */
+.mp-explorer-detail-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mp-space-3);
+}
+
+.mp-explorer-detail-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+  word-break: break-all;
+}
+
+.mp-explorer-rel-group {
+  margin-bottom: var(--mp-space-3);
+}
+
+.mp-explorer-rel-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--semi-color-text-3);
+  margin-bottom: var(--mp-space-1);
+}
+
+.mp-explorer-rel-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mp-space-1);
+}

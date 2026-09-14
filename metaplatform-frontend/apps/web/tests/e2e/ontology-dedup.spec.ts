@@ -133,8 +133,8 @@ test.describe('本体创建去重 e2e (MP-DEDUP-01)', () => {
       `second POST 409 body must include slug_conflict / existing_rid`,
     ).toBeTruthy();
 
-    // 1. 进入 /ontology/model（UI-P0 新 IA：类型建模 tab 承载概念模型）
-    await page.goto('/ontology/model', { waitUntil: 'domcontentloaded' });
+    // 1. 进入类型编辑器（UI-P1a 新 IA：/ontology/model 是基元清单，编辑器在 /ontology/model/editor）
+    await page.goto('/ontology/model/editor', { waitUntil: 'domcontentloaded' });
     await expect(page.getByText('一级本体', { exact: true })).toBeVisible({ timeout: 15_000 });
     await page.screenshot({ path: `${SCREENSHOT_DIR}/ontology-dedup-01-initial.png`, fullPage: true });
 
@@ -146,8 +146,17 @@ test.describe('本体创建去重 e2e (MP-DEDUP-01)', () => {
     // 3. 填表：概念名称="客户", slug="customer-merge-via-ui", 领域默认 crm
     await page.locator('input[placeholder="例如：客户"]').fill(`客户_${seedTime}`);
     await page.locator('input[placeholder="例如：customer"]').fill(`customer-ui-${seedTime}`);
-    // 4. 点「创建」按钮
-    await clickByText(page, '.semi-sidesheet-footer button', '创建');
+    // 4. 点抽屉的提交按钮。
+    //    注意：ObjectTypeEditorV2Drawer 早已不是 Semi SideSheet（自定义抽屉、无类名），
+    //    旧选择器 '.semi-sidesheet-footer button' 永远匹配不到；这里按真实按钮文案点。
+    await clickByText(page, 'button', '保存（整体 upsert）');
+
+    // 4b. precheck 门禁：租户里已有「客户」，create 会先弹相似候选 Modal。
+    //     选「仍要新建」把这次创建走完（这正是 MP-DEDUP-01 的前半段语义）。
+    const stillCreateBtn = page.locator('button').filter({ hasText: '仍要新建' }).first();
+    if (await stillCreateBtn.isVisible().catch(() => false)) {
+      await clickByText(page, 'button', '仍要新建');
+    }
     await page.waitForTimeout(2500);
     await page.screenshot({ path: `${SCREENSHOT_DIR}/ontology-dedup-02-after-create-customer.png`, fullPage: true });
 

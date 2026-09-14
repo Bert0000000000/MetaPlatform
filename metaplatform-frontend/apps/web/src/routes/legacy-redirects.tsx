@@ -27,31 +27,31 @@ function ParamRedirect({ to, param }: { to: string; param: string }) {
   return <Navigate to={to.replace(`:${param}`, encodeURIComponent(value))} replace />;
 }
 
-/** `/ontology?tab=*` → `/ontology/{explorer,datacenter,model,ops}`（保留 tab / subTab）。 */
+/**
+ * `/ontology?tab=*` → 新 IA 的 4 个页内 tab。
+ * UI-P1a 起本体域的内容已重建，tab 语义随之收敛：
+ * 旧「总览/对象数据」→ 对象浏览器；旧「数据中心/知识图谱」→ 数据中心；
+ * 旧「类型管理」→ 类型建模；旧「Action 编排 / 治理 / 分析应用」→ 运维下的既有子页。
+ */
+const ONTOLOGY_TAB_TARGET: Record<string, string> = {
+  overview: '/ontology/explorer',
+  objects: '/ontology/explorer',
+  datacenter: '/ontology/datacenter',
+  data: '/ontology/datacenter',
+  graph: '/ontology/datacenter',
+  concept: '/ontology/model',
+  modeling: '/ontology/model',
+  model: '/ontology/model',
+  action: '/ontology/ops/actions',
+  governance: '/ontology/ops/governance',
+  analytics: '/ontology/ops/analytics',
+};
+
 function LegacyOntologyIndex() {
   const [searchParams] = useSearchParams();
-  const tab = (searchParams.get('tab') ?? '').toLowerCase();
-
-  let base = '/ontology/explorer';
-  let tabParam = tab || null;
-  if (tab === 'datacenter' || tab === 'data') {
-    base = '/ontology/datacenter';
-    tabParam = null;
-  } else if (tab === 'governance') {
-    base = '/ontology/ops';
-  } else if (tab === 'concept' || tab === 'modeling' || tab === 'model') {
-    base = '/ontology/model';
-    tabParam = 'concept';
-  } else if (!tab || tab === 'overview') {
-    base = '/ontology/explorer';
-    tabParam = null;
-  }
-
-  const next = new URLSearchParams(searchParams);
-  next.delete('tab');
-  if (tabParam) next.set('tab', tabParam);
-  const qs = next.toString();
-  return <Navigate to={qs ? `${base}?${qs}` : base} replace />;
+  const tab = (searchParams.get('tab') ?? '').trim().toLowerCase();
+  const target = ONTOLOGY_TAB_TARGET[tab] ?? '/ontology/explorer';
+  return <Navigate to={target} replace />;
 }
 
 /** `/apps?tab=*` → `/apps/{mine,market,templates,designer}`（保留 app/tid 等上下文）。 */
@@ -149,16 +149,16 @@ export const legacyRedirectRoutes: ReactElement[] = [
   r('dashboard/aiops', '/home/aiops'),
   r('dashboard/settings', '/home/me'),
 
-  /* ---------- 本体 ---------- */
+  /* ---------- 本体（UI-P1a：内容已重建，旧子路径全部落到新 tab） ---------- */
   <Route key="ontology-index" path="ontology" element={<LegacyOntologyIndex />} />,
-  r('ontology/action', '/ontology/explorer?tab=action'),
-  r('ontology/graph', '/ontology/explorer?tab=graph'),
-  r('ontology/objects', '/ontology/explorer?tab=objects'),
-  r('ontology/analytics', '/ontology/explorer?tab=analytics'),
-  r('ontology/relationship-types', '/ontology/explorer?tab=concept&subTab=relationship'),
-  r('ontology/actions', '/ontology/explorer?tab=concept&subTab=action'),
-  r('ontology/object-types', '/ontology/explorer'),
-  r('ontology/object-types/:rid', '/ontology/explorer'),
+  r('ontology/objects', '/ontology/explorer'),
+  r('ontology/object-types', '/ontology/model'),
+  r('ontology/object-types/:rid', '/ontology/model'),
+  r('ontology/relationship-types', '/ontology/model'),
+  r('ontology/graph', '/ontology/datacenter'),
+  r('ontology/action', '/ontology/ops/actions'),
+  r('ontology/actions', '/ontology/ops/actions'),
+  r('ontology/analytics', '/ontology/ops/analytics'),
 
   /* ---------- 数字员工（DW 并入） ---------- */
   r('dw/employees', '/agents/employees'),

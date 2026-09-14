@@ -66,8 +66,8 @@ test.describe('Ontology Agent 端到端 e2e (MP-ONT-PROPOSAL-01)', () => {
     expect(probe.status(), 'JWT 真有效（probe ont/v2/agent-tools）').toBe(200);
 
     // 1. 打开 AI 助手面板 + 输入 NL
-    // UI-P0 新 IA：/ontology 由新应用壳承载，类型建模（概念模型）落在 /ontology/model
-    await page.goto('/ontology/model', { waitUntil: 'domcontentloaded' });
+    // UI-P1a 新 IA：概念模型编辑器落在 /ontology/model/editor（AI 助手由本体域壳承载，全 tab 可用）
+    await page.goto('/ontology/model/editor', { waitUntil: 'domcontentloaded' });
     await expect(page.getByText('一级本体', { exact: true })).toBeVisible({ timeout: 15_000 });
 
     await page.locator('button.ai-assistant-trigger').click();

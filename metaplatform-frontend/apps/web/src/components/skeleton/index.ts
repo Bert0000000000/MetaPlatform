@@ -9,6 +9,7 @@ export {
   type DataTableProSelection,
 } from './DataTablePro';
 export { default as SheetDetail, type SheetDetailProps } from './SheetDetail';
+export { default as SplitPane, type SplitPaneProps } from './SplitPane';
 export {
   default as EmptyState,
   type EmptyStateProps,

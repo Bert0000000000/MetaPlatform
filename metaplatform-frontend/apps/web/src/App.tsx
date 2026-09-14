@@ -8,6 +8,7 @@ import { SettingsProvider } from './contexts/SettingsContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import AppShell from './components/shell/AppShell';
 import { legacyRedirectRoutes } from './routes/legacy-redirects';
+import { ontologyRoutes } from './routes/ontology';
 
 /**
  * 新信息架构（11 域 → 8 域，DESIGN-SPEC §2）。
@@ -37,9 +38,6 @@ const DashboardAdminAnalyticsPage = lazy(() => import('./pages/dashboard/admin/A
 const DashboardAdminComponentDemoPage = lazy(() => import('./pages/dashboard/admin/ComponentDemoPage'));
 const DashboardAdminFlowgramDemoPage = lazy(() => import('./pages/dashboard/admin/FlowgramDemoPage'));
 const UiP0DemoPage = lazy(() => import('./routes/demo'));
-
-// ---------- 本体 ----------
-const OntologyShellPage = lazy(() => import('./pages/ontology/OntologyShellPage'));
 
 // ---------- 数字员工 ----------
 const AgentsLayout = lazy(() => import('./pages/agents/AgentsLayout'));
@@ -261,11 +259,8 @@ function AppRoutes() {
             <Route path="home/portal" element={<DashboardPortalPage />} />
             <Route path="home/aiops" element={<DashboardAiOpsPage />} />
 
-            {/* ---------- 2. 本体 ---------- */}
-            <Route path="ontology/explorer" element={<OntologyShellPage defaultTab="objects" />} />
-            <Route path="ontology/datacenter" element={<OntologyShellPage defaultTab="datacenter" />} />
-            <Route path="ontology/model" element={<OntologyShellPage defaultTab="concept" />} />
-            <Route path="ontology/ops" element={<OntologyShellPage defaultTab="governance" />} />
+            {/* ---------- 2. 本体（域路由见 src/routes/ontology.tsx） ---------- */}
+            {ontologyRoutes}
 
             {/* ---------- 3. 数字员工 ---------- */}
             <Route path="agents" element={<AgentsLayout tabs={AGENTS_TABS_V2} />}>

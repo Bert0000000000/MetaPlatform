@@ -118,6 +118,110 @@
   gap: var(--mp-space-4);
 }
 
+/* ---------- SplitPane（两栏浏览器的可折叠 / 可拖宽分栏） ---------- */
+.mp-split {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.mp-split-pane {
+  width: var(--mp-split-w, 240px);
+  flex: none;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.18s ease;
+  border-right: 1px solid var(--semi-color-border);
+}
+
+.mp-split.is-collapsed .mp-split-pane {
+  border-right: 0;
+}
+
+.mp-split-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mp-split-resizer {
+  width: 1px;
+  flex: none;
+  background: var(--semi-color-border);
+  cursor: col-resize;
+  position: relative;
+  z-index: 2;
+}
+
+/* 加宽命中区，但不影响视觉宽度 */
+.mp-split-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  right: -4px;
+}
+
+.mp-split-resizer:hover {
+  background: var(--semi-color-primary);
+}
+
+.mp-split.is-collapsed .mp-split-resizer {
+  display: none;
+}
+
+.mp-split-fold {
+  position: absolute;
+  top: var(--mp-space-2);
+  left: calc(var(--mp-split-w, 240px) - 14px);
+  z-index: 3;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-small);
+  background: var(--semi-color-bg-1);
+  color: var(--semi-color-text-2);
+  cursor: pointer;
+  transition: left 0.18s ease, color 0.12s ease;
+}
+
+.mp-split-fold:hover {
+  color: var(--semi-color-primary);
+}
+
+.mp-split.is-collapsed .mp-split-fold {
+  left: var(--mp-space-1);
+}
+
+/* 面板内的通用小节标题 */
+.mp-pane-block {
+  padding: 0 var(--mp-space-3) var(--mp-space-2);
+}
+
+.mp-pane-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--semi-color-text-3);
+  padding: var(--mp-space-3) var(--mp-space-3) var(--mp-space-1);
+}
+
+.mp-pane-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-bottom: var(--mp-space-3);
+}
+
 /* ---------- EmptyState ---------- */
 .mp-empty {
   display: flex;

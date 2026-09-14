@@ -82,7 +82,6 @@ export const DOMAINS: DomainDef[] = [
     label: '本体',
     icon: <Share2 size={ICON_SIZE} strokeWidth={1.5} />,
     path: '/ontology/explorer',
-    ownsTabs: true,
     tabs: [
       { key: 'explorer', label: '对象浏览器', path: '/ontology/explorer' },
       { key: 'datacenter', label: '数据中心', path: '/ontology/datacenter' },
