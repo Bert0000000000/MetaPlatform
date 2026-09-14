@@ -44,7 +44,7 @@ import { testProvider, fetchProviderModels } from "@mate/shared/api";
 
 type ProviderId = string;
 
-const BUILTIN_PROVIDERS = ["openai", "azure", "ollama"];
+const BUILTIN_PROVIDERS = ["openai", "azure", "ollama", "ark"];
 
 const PROVIDER_META: Record<
   ProviderId,
@@ -85,6 +85,15 @@ const PROVIDER_META: Record<
     baseUrlExample: "http://localhost:11434",
     defaultModelExample: "llama3.2",
   },
+  ark: {
+    name: "火山方舟 ARK",
+    description: "ARK Plan 专属通道（OpenAI 兼容，生产 Key 正式托管位）",
+    docs: "https://www.volcengine.com/product/ark",
+    icon: <ThunderboltOutlined />,
+    color: "#0f6fff",
+    baseUrlExample: "https://ark.cn-beijing.volces.com/api/plan/v3",
+    defaultModelExample: "glm-5.3-flash",
+  },
   custom: {
     name: "自定义第三方",
     description: "任何 OpenAI 兼容 API（智谱 GLM、DeepSeek、自建网关等）",
@@ -98,6 +107,17 @@ const PROVIDER_META: Record<
 
 // 自定义 provider 的 metadata fallback（动态 instanceId 用）
 const customLabels: Record<string, string> = {};
+
+/**
+ * 托管模式下的 API key 下发规则（ADR-0019）：
+ * IAM 敏感配置读接口只返回掩码（***），真实 key 永不出后端 ——
+ * 掩码或空值都转 null，由 llmgw 服务端从 IAM 解析。
+ */
+function maskedAwareKey(value: unknown): string | null {
+  if (typeof value !== "string" || value.length === 0) return null;
+  const v = value.trim();
+  return v === "***" || v === "********" ? null : value;
+}
 
 function getProviderMeta(id: string) {
   if (PROVIDER_META[id as keyof typeof PROVIDER_META]) {
@@ -238,8 +258,9 @@ export default function AIProvidersPage() {
     }
   };
 
-  // provider ID → LLMGW provider type（自定义都映射为 custom）
-  const llmgwProvider = (id: string) => id.startsWith("custom") ? "custom" : id;
+  // llmgw 探测/模型拉取的 provider 归一：custom_* 与 ark 都是 OpenAI 兼容透传
+  const llmgwProvider = (id: string) =>
+    id.startsWith("custom") || id === "ark" ? "custom" : id;
 
   // 加载已配置的模型清单
   useEffect(() => {
@@ -254,7 +275,9 @@ export default function AIProvidersPage() {
         };
         for (const m of all) {
           const p = m.provider as ProviderId;
-          if (grouped[p]) grouped[p].push(m);
+          // 动态桶（ark / custom_*）懒建，避免模型被静默丢弃
+          grouped[p] = grouped[p] || [];
+          grouped[p].push(m);
         }
         setModels(grouped);
       } catch {
@@ -272,10 +295,8 @@ export default function AIProvidersPage() {
       return;
     }
     const apiKeyCfg = pickByKey(provider, "api_key");
-    const apiKeyValue =
-      apiKeyCfg && typeof apiKeyCfg.value === "string" && apiKeyCfg.value.length > 0
-        ? apiKeyCfg.value
-        : null;
+    // 托管模式：掩码值不下发，llmgw 服务端解析真实 key（同 handleTest）
+    const apiKeyValue = maskedAwareKey(apiKeyCfg?.value);
     const apiVersion = (() => {
       if (provider !== "azure") return undefined;
       const v = pickByKey(provider, "api_version");
@@ -284,7 +305,8 @@ export default function AIProvidersPage() {
     setFetchingModels((s) => ({ ...s, [provider]: true }));
     try {
       const result = await fetchProviderModels({
-        provider,
+        // 探测端点只认 openai/azure/ollama/custom；custom_* 与 ark 归一为 custom
+        provider: llmgwProvider(provider),
         base_url: baseUrl,
         api_key: apiKeyValue,
         api_version: apiVersion,
@@ -295,7 +317,10 @@ export default function AIProvidersPage() {
         return;
       }
       await saveAiModelsBulk(
-        llmgwProvider(provider),
+        // 模型桶按原始 provider id 存（ark / custom_* 各自独立），
+        // 与卡片渲染（models[id]）一致；此前归一到 custom 会导致
+        // 自定义 provider 卡片拉取后模型列表恒空。
+        provider,
         result.models.map((mid) => ({
           modelId: mid,
           displayName: result.display_names?.[mid] || undefined,
@@ -440,10 +465,9 @@ export default function AIProvidersPage() {
     }
     setTestStates((s) => ({ ...s, [provider]: { status: "loading" } }));
     const apiKeyCfg = pickByKey(provider, "api_key");
-    const apiKeyValue =
-      apiKeyCfg && typeof apiKeyCfg.value === "string" && apiKeyCfg.value.length > 0
-        ? apiKeyCfg.value
-        : null;
+    // 托管模式：IAM 对敏感配置只回掩码（***），真实 key 由 llmgw
+    // 服务端解析（ADR-0019）—— 掩码/空值一律不下发。
+    const apiKeyValue = maskedAwareKey(apiKeyCfg?.value);
     const apiVersion = (() => {
       if (provider !== "azure") return undefined;
       const v = pickByKey(provider, "api_version");
@@ -540,7 +564,9 @@ export default function AIProvidersPage() {
             <Input
               mode="password"
               data-cfg-key={apiKey?.key}
-              defaultValue={(apiKey?.value as string) ?? ""}
+              // 托管模式：敏感值永不回显（IAM 读接口只有掩码）——
+              // 有值（含掩码）时占位符提示"已设置"，留空保存 = 保持原值。
+              defaultValue=""
               placeholder={apiKey?.value ? "已设置（输入新值覆盖）" : "输入 API Key"}
               disabled={!isEnabled}
             />

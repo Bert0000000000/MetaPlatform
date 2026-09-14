@@ -536,10 +536,18 @@ services:
     environment:
       LEGACY_LOGIN_COMPAT: "false"
       SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
+      # 服务身份（ARK key 托管：reveal 读取 IAM 配置 + 服务间鉴权）
+      SERVICE_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-metaplatform-backend}
+      # 注意 scope：本 realm 的 metaplatform-backend client 只接受默认/openid
+      # scope（platform.read 等自定义 scope 未注册到 client，会 invalid_scope 400）
+      SERVICE_CLIENT_SCOPE: ${AGENT_SERVICE_SCOPE:-openid}
       INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       REDIS_URL: redis://redis:6379/0
       PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_kb
+      # ARK key 正式托管：embedding/探测端点从 IAM admin configs 解析 ai.provider.*，
+      # 走网关（携带 X-Service-Secret reveal）；env ARK_API_KEY 降级为兜底。
+      IAM_URL: http://mate-api-gateway:8100
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}

@@ -21,6 +21,13 @@ export default defineConfig({
   projects: [
     { name: 'auth-setup', testMatch: /(^|[\\/])auth\.setup\.ts$/, testIgnore: /integration[\\/]/ },
     {
+      // staging 实机演练：自登录（不依赖 auth-setup 的 storageState），
+      // UI + API 混合断言（ARK key 托管 / 本体 tab 收口）。
+      name: 'staging-ark-drill',
+      testMatch: /staging-ark-drill\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1600, height: 1000 } },
+    },
+    {
       name: 'ontology-loop-consistency',
       testMatch: /ontology-loop\/consistency\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], storageState: 'tests/e2e/.auth/state.json' },
