@@ -187,8 +187,40 @@ grep -rn "\.semi-" src --include="*.css" | wc -l             # 0
 
 ## 5. 用例基线
 
-| 套件 | 用例数 | 结果 |
-|------|--------|------|
+各套件在**批次各自收口时均跑到全绿**；最后一次「9 套件合并串行跑」（93 条）因本机 Node 进程连续崩溃只拿到 **90 passed / 3 failed**，3 条失败**全部落在导航/登录阶段，未触及任何 UI 断言**（详见下方环境说明）。
+
+| 套件 | 用例数 | 批次收口时 | 最后合并跑 |
+|------|--------|-----------|-----------|
+| `ui-p0-shell`（壳 / 新 IA / 301 / ⌘K / 五骨架 demo） | 46 | ✅ | ❌ 登录 POST 超时（单跑 3.6s 通过） |
+| `ui-p1a-ontology` | 5 | ✅ | ✅ |
+| `ui-p1b-home` | 4 | ✅ | ❌ worker 崩溃（见环境说明） |
+| `ui-p1c-agents` | 4 | ✅ | ✅ |
+| `ui-p1d-superai` | 4 | ✅ | ❌ worker 崩溃（见环境说明） |
+| `ui-p1e-admin` | 4 | ✅ | ✅ |
+| `ui-p2a-apps` | 5 | ✅ | ✅ |
+| `ui-p2b-ki` | 6 | ✅ | ✅ |
+| `ui-p3-acceptance` | 12 | ✅ | ✅ |
+| **合计** | **90** | — | **90 / 3 failed** |
+
+> 用例数从 93 校正为 90：`ui-p0-shell` 在 P2b 时退役了 1 条「过渡期」用例（`ownsTabs` 全站归零后该用例失去意义）。
+
+`pnpm build` 通过（tsc -b + vite build，多次复跑）。
+
+### 5.1 环境说明（这 3 条红与代码无关）
+
+本机在收口阶段出现**系统级不稳定**，三个独立现象同一时期出现：
+
+1. **vite dev server（9250）会自行崩溃退出**：启动正常（`ready in 1156 ms`）后在 ~24–70 秒内以退出码 `3221226505`（`0xC0000409`，Windows fail-fast）无输出死亡。清理 `node_modules/.vite` 缓存后复现，说明与构建缓存无关。
+2. **Playwright worker 以同一码崩溃**：`worker process exited unexpectedly (code=3221226505)`，整条 spec 停止。
+3. **浏览器报 `net::ERR_INSUFFICIENT_RESOURCES`**：页面动态 import 拉不动 chunk，落到 ErrorBoundary。同会话早些时候 bash 也报过 `fork: Resource temporarily unavailable`。
+
+判定依据：崩溃发生在**导航/登录**阶段（`page.goto` → `ERR_CONNECTION_REFUSED`、`#app` 未挂载、`apiRequestContext.post` 超时），不在任何 UI 断言上；且 `ui-p0-shell` 那条单跑 3.6s 通过。故这 3 条记为**环境噪声**，但**本档不宣称 93 全绿**——要在稳定机器上复跑一次 9 套件合并才算数。
+
+### 5.2 既知基线红（改动前即为红）
+
+`action-orchestration` / `ontology-agent-e2e` / `ontology-dedup` / `superai-routing` 四套用例依赖的后端接口在本地未全起（workflow-definitions 502、路由快照 `no_authorized_roles`），**改动前即为红**（见记忆档 `playwright-baseline-red-specs`）。
+
+------|--------|------|
 | `ui-p0-shell`（壳 / 新 IA / 301 / ⌘K / 五骨架 demo） | 47 | ✅ |
 | `ui-p1a-ontology` | 5 | ✅ |
 | `ui-p1b-home` | 4 | ✅ |
