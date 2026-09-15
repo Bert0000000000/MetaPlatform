@@ -1,31 +1,20 @@
-import { useEffect, useState } from 'react';
-import {
-  Card,
-  Table,
-  Button,
-  Space,
-  Modal,
-  Form,
-  Input,
-  Select,
-  Tag,
-  Toast,
-  Timeline,
-  Typography,
-  Tabs,
-} from '@douyinfe/semi-ui';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button, Descriptions, Form, Select, Tag, Timeline, Toast, Typography } from '@douyinfe/semi-ui';
+import { Check, MessageSquare, Play, Plus, RefreshCw, X } from 'lucide-react';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
-import { PlusOutlined, PlayCircleOutlined, CheckOutlined, CloseOutlined, CommentOutlined } from '@ant-design/icons';
 import {
-  listReviewTickets,
-  createReviewTicket,
-  startReviewTicket,
-  approveReviewTicket,
-  rejectReviewTicket,
   addReviewTicketComment,
+  approveReviewTicket,
+  createReviewTicket,
   listReviewTemplates,
+  listReviewTickets,
+  rejectReviewTicket,
+  startReviewTicket,
 } from '@/api/arch/governance';
 import type { ReviewTicket, ReviewTemplate, ReviewScoreItem } from '@/api/arch/types';
+import { DataTablePro, EmptyState, FilterBar, PageHeader, SheetDetail } from '@/components/skeleton';
+
+const PAGE_SIZE = 10;
 
 const STATUS_TAG: Record<string, { color: TagColor; label: string }> = {
   CREATED: { color: 'grey', label: '已创建' },
@@ -34,54 +23,117 @@ const STATUS_TAG: Record<string, { color: TagColor; label: string }> = {
   REJECTED: { color: 'red', label: '已驳回' },
 };
 
+type ActionType = 'approve' | 'reject' | 'comment';
+
+/**
+ * 治理 · 架构评审（/governance/review-tickets）。
+ * 列表承载评审工单；详情/评分/评审记录与通过、驳回、评论动作都在右侧非模态浮层完成。
+ */
 export default function ReviewPage() {
   const [tickets, setTickets] = useState<ReviewTicket[]>([]);
   const [templates, setTemplates] = useState<ReviewTemplate[]>([]);
   const [loading, setLoading] = useState(false);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [detail, setDetail] = useState<ReviewTicket | null>(null);
-  const [actionType, setActionType] = useState<'approve' | 'reject' | 'comment'>('comment');
-  const [actionModalOpen, setActionModalOpen] = useState(false);
-  const [ticketForm] = Form.useForm<Partial<ReviewTicket>>();
-  const [actionForm] = Form.useForm<{ reviewer: string; comment: string; decision: string; scores: string }>();
+  const [error, setError] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [status, setStatus] = useState<string | undefined>(undefined);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  const handlePageSizeChange = useCallback((next: number) => {
+    setPageSize(next);
+    setPage(1);
+  }, []);
 
-  const load = async () => {
+  const [createOpen, setCreateOpen] = useState(false);
+  const [detail, setDetail] = useState<ReviewTicket | null>(null);
+  const [actionType, setActionType] = useState<ActionType>('comment');
+  const [actionOpen, setActionOpen] = useState(false);
+  const [acting, setActing] = useState(false);
+  const [ticketForm] = Form.useForm<Partial<ReviewTicket>>();
+  const [actionForm] = Form.useForm<{
+    reviewer: string;
+    comment: string;
+    decision: string;
+    scores: string;
+  }>();
+
+  const load = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
-      const [t, tpl] = await Promise.all([listReviewTickets(), listReviewTemplates()]);
-      setTickets(Array.isArray(t) ? t : ((t as { items?: ReviewTicket[] }).items ?? []));
-      setTemplates(Array.isArray(tpl) ? tpl : ((tpl as { items?: ReviewTemplate[] }).items ?? []));
+      const [t, tpl] = await Promise.all([listReviewTickets(status), listReviewTemplates()]);
+      setTickets(t ?? []);
+      setTemplates(tpl ?? []);
+    } catch (e) {
+      setTickets([]);
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
+  }, [status]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [keyword, status]);
+
+  const filtered = useMemo(
+    () =>
+      tickets.filter((t) =>
+        keyword
+          ? `${t.title} ${t.applicant ?? ''} ${t.reviewer ?? ''}`.toLowerCase().includes(keyword.toLowerCase())
+          : true,
+      ),
+    [tickets, keyword],
+  );
+
+  const paged = useMemo(() => filtered.slice((page - 1) * pageSize, page * pageSize), [filtered, page, pageSize]);
+
+  const openCreate = () => {
+    ticketForm.reset();
+    setCreateOpen(true);
   };
 
-  useEffect(() => { load(); }, []);
-
-  const handleCreate = async () => {
-    const values = await ticketForm.validate();
-    await createReviewTicket(values);
-    Toast.success('提交成功');
-    setCreateModalOpen(false);
-    ticketForm.reset();
-    load();
+  const submitCreate = async () => {
+    setActing(true);
+    try {
+      const values = await ticketForm.validate();
+      await createReviewTicket(values);
+      Toast.success('已提交评审');
+      setCreateOpen(false);
+      ticketForm.reset();
+      await load();
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setActing(false);
+    }
   };
 
   const handleStart = async (ticket: ReviewTicket) => {
-    await startReviewTicket(ticket.id, ticket.reviewer || 'system');
-    Toast.success('评审已启动');
-    load();
+    try {
+      await startReviewTicket(ticket.id, ticket.reviewer || 'system');
+      Toast.success('评审已启动');
+      await load();
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
+    }
   };
 
-  const openAction = (ticket: ReviewTicket, type: 'approve' | 'reject' | 'comment') => {
+  const openAction = (ticket: ReviewTicket, type: ActionType) => {
     setDetail(ticket);
     setActionType(type);
     actionForm.reset();
-    setActionModalOpen(true);
+    setActionOpen(true);
   };
 
   const parseScores = (text: string, template: ReviewTemplate | undefined): ReviewScoreItem[] => {
-    const lines = text.split('\n').map((s) => s.trim()).filter(Boolean);
+    const lines = text
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
     const dimensions = template?.dimensions || [];
     return lines.map((line, index) => {
       const [dimPart, scorePart] = line.split(':');
@@ -91,26 +143,32 @@ export default function ReviewPage() {
     });
   };
 
-  const handleAction = async () => {
+  const submitAction = async () => {
     if (!detail) return;
-    const values = await actionForm.validate();
-    const template = templates.find((t) => t.id === detail.templateId);
-    const scores = parseScores(values.scores || '', template);
-
-    if (actionType === 'comment') {
-      await addReviewTicketComment(detail.id, values.reviewer, values.comment);
-      Toast.success('评论已添加');
-    } else if (actionType === 'approve') {
-      await approveReviewTicket(detail.id, values.reviewer, scores, values.comment, values.decision);
-      Toast.success('已通过');
-    } else {
-      await rejectReviewTicket(detail.id, values.reviewer, scores, values.comment, values.decision);
-      Toast.success('已驳回');
+    setActing(true);
+    try {
+      const values = await actionForm.validate();
+      const template = templates.find((t) => t.id === detail.templateId);
+      const scores = parseScores(values.scores || '', template);
+      if (actionType === 'comment') {
+        await addReviewTicketComment(detail.id, values.reviewer, values.comment);
+        Toast.success('评论已添加');
+      } else if (actionType === 'approve') {
+        await approveReviewTicket(detail.id, values.reviewer, scores, values.comment, values.decision);
+        Toast.success('已通过');
+      } else {
+        await rejectReviewTicket(detail.id, values.reviewer, scores, values.comment, values.decision);
+        Toast.success('已驳回');
+      }
+      setActionOpen(false);
+      setDetail(null);
+      actionForm.reset();
+      await load();
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setActing(false);
     }
-    setActionModalOpen(false);
-    setDetail(null);
-    actionForm.reset();
-    load();
   };
 
   const columns = [
@@ -118,118 +176,306 @@ export default function ReviewPage() {
       title: '标题',
       dataIndex: 'title',
       key: 'title',
-      render: (v: string, r: ReviewTicket) => <Typography.Text link onClick={() => setDetail(r)}>{v}</Typography.Text>,
+      width: 260,
+      ellipsis: true,
+      render: (v: string, row: ReviewTicket) => (
+        <Typography.Text link onClick={() => setDetail(row)}>
+          {v}
+        </Typography.Text>
+      ),
     },
-    { title: '模板', key: 'template', render: (_: unknown, r: ReviewTicket) => r.templateName || '-' },
-    { title: '申请人', dataIndex: 'applicant', key: 'applicant' },
-    { title: '评审人', dataIndex: 'reviewer', key: 'reviewer' },
+    {
+      title: '模板',
+      dataIndex: 'templateName',
+      key: 'templateName',
+      width: 160,
+      ellipsis: true,
+      render: (v?: string) => v || '—',
+    },
+    {
+      title: '申请人',
+      dataIndex: 'applicant',
+      key: 'applicant',
+      width: 120,
+      render: (v?: string) => v || '—',
+    },
+    {
+      title: '评审人',
+      dataIndex: 'reviewer',
+      key: 'reviewer',
+      width: 120,
+      render: (v?: string) => v || '—',
+    },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      render: (s: string) => <Tag color={STATUS_TAG[s]?.color}>{STATUS_TAG[s]?.label}</Tag>,
+      width: 110,
+      render: (s: string) => (
+        <Tag color={STATUS_TAG[s]?.color ?? 'grey'} type="light">
+          {STATUS_TAG[s]?.label ?? s}
+        </Tag>
+      ),
     },
     {
       title: '创建时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (v: string) => v ? new Date(v).toLocaleString('zh-CN') : '-',
+      width: 180,
+      render: (v?: string) => (v ? new Date(v).toLocaleString('zh-CN') : '—'),
     },
     {
-      title: '操作',
-      key: 'action',
-      render: (_: unknown, r: ReviewTicket) => (
-        <Space>
-          {r.status === 'CREATED' && (
-            <Button theme="borderless" type="primary" size="small" icon={<PlayCircleOutlined />} onClick={() => handleStart(r)}>启动</Button>
-          )}
-          {r.status === 'REVIEWING' && (
+      title: '',
+      dataIndex: '__actions__',
+      key: '__actions__',
+      width: 230,
+      render: (_: unknown, row: ReviewTicket) => (
+        <>
+          {row.status === 'CREATED' ? (
+            <Button
+              theme="borderless"
+              type="primary"
+              size="small"
+              icon={<Play size={14} strokeWidth={1.5} />}
+              onClick={() => void handleStart(row)}
+            >
+              启动
+            </Button>
+          ) : null}
+          {row.status === 'REVIEWING' ? (
             <>
-              <Button theme="borderless" type="primary" size="small" icon={<CommentOutlined />} onClick={() => openAction(r, 'comment')}>评论</Button>
-              <Button theme="borderless" type="primary" size="small" icon={<CheckOutlined />} onClick={() => openAction(r, 'approve')}>通过</Button>
-              <Button theme="borderless" type="danger" size="small" icon={<CloseOutlined />} onClick={() => openAction(r, 'reject')}>驳回</Button>
+              <Button
+                theme="borderless"
+                type="primary"
+                size="small"
+                icon={<MessageSquare size={14} strokeWidth={1.5} />}
+                onClick={() => openAction(row, 'comment')}
+              >
+                评论
+              </Button>
+              <Button
+                theme="borderless"
+                type="primary"
+                size="small"
+                icon={<Check size={14} strokeWidth={1.5} />}
+                onClick={() => openAction(row, 'approve')}
+              >
+                通过
+              </Button>
+              <Button
+                theme="borderless"
+                type="danger"
+                size="small"
+                icon={<X size={14} strokeWidth={1.5} />}
+                onClick={() => openAction(row, 'reject')}
+              >
+                驳回
+              </Button>
             </>
-          )}
-        </Space>
+          ) : null}
+        </>
       ),
     },
   ];
 
   const scoreColumns = [
-    { title: '维度', dataIndex: 'dimension', key: 'dimension' },
-    { title: '得分', dataIndex: 'score', key: 'score', render: (v?: number) => v ?? '-' },
+    { title: '维度', dataIndex: 'dimension', key: 'dimension', width: 200, ellipsis: true },
+    {
+      title: '得分',
+      dataIndex: 'score',
+      key: 'score',
+      width: 90,
+      render: (v?: number) => (v === undefined || v === null ? '—' : v),
+    },
   ];
 
   return (
-    <Card title="架构评审" headerExtraContent={<Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>提交评审</Button>}>
-      <Table rowKey="id" columns={columns} dataSource={tickets ?? []} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
+    <>
+      <PageHeader
+        title="架构评审"
+        desc={`${tickets.length} 张工单 · 提案经评审通过后方可落地`}
+        actions={
+          <>
+            <Button icon={<RefreshCw size={15} strokeWidth={1.5} />} loading={loading} onClick={() => void load()}>
+              刷新
+            </Button>
+            <Button theme="solid" type="primary" icon={<Plus size={15} strokeWidth={1.5} />} onClick={openCreate}>
+              提交评审
+            </Button>
+          </>
+        }
+      />
 
-      <Modal title="评审详情" visible={!!detail && !actionModalOpen} onCancel={() => setDetail(null)} footer={null} width={640}>
-        {detail && (
-          <Tabs defaultActiveKey="info">
-            <Tabs.TabPane tab="基本信息" itemKey="info">
-              <Typography.Title heading={5}>{detail.title}</Typography.Title>
-              <Typography.Paragraph type="tertiary">模板：{detail.templateName || '-'}</Typography.Paragraph>
-              <Typography.Paragraph type="tertiary">申请人：{detail.applicant || '-'}</Typography.Paragraph>
-              <Typography.Paragraph type="tertiary">评审人：{detail.reviewer || '-'}</Typography.Paragraph>
-              <Typography.Paragraph type="tertiary">状态：<Tag color={STATUS_TAG[detail.status]?.color}>{STATUS_TAG[detail.status]?.label}</Tag></Typography.Paragraph>
-              {detail.decision && <Typography.Paragraph type="tertiary">决议：{detail.decision}</Typography.Paragraph>}
-              {detail.scores.length > 0 && (
-                <>
-                  <Typography.Text strong>评分</Typography.Text>
-                  <Table rowKey="dimension" columns={scoreColumns} dataSource={detail.scores ?? []} size="small" pagination={false} scroll={{ x: 'max-content' }} />
-                </>
-              )}
-            </Tabs.TabPane>
-            <Tabs.TabPane tab="评审记录" itemKey="comments">
-              <Timeline
-                dataSource={detail.comments?.map((c) => ({
-                  color: c.action === 'APPROVE' ? 'green' : c.action === 'REJECT' ? 'red' : 'grey',
-                  content: (
-                    <div>
-                      <Typography.Text strong>{c.author || '匿名'}</Typography.Text> <Tag>{c.action}</Tag>
-                      <br />{c.content}
-                      <br />
-                      <Typography.Text type="tertiary" style={{ fontSize: 11 }}>
-                        {new Date(c.createdAt).toLocaleString('zh-CN')}
-                      </Typography.Text>
-                    </div>
-                  ),
-                })) || [{ content: '暂无评审记录' }]}
-              />
-            </Tabs.TabPane>
-          </Tabs>
-        )}
-      </Modal>
+      <FilterBar
+        search={{ value: keyword, onChange: setKeyword, placeholder: '搜索标题、申请人、评审人…' }}
+        filters={
+          <Select value={status ?? ''} onChange={(v) => setStatus(v ? String(v) : undefined)} placeholder="全部状态">
+            <Select.Option value="">全部状态</Select.Option>
+            {(Object.keys(STATUS_TAG) as string[]).map((s) => (
+              <Select.Option key={s} value={s}>
+                {STATUS_TAG[s].label}
+              </Select.Option>
+            ))}
+          </Select>
+        }
+      />
 
-      <Modal title="提交评审" visible={createModalOpen} onOk={handleCreate} onCancel={() => { setCreateModalOpen(false); ticketForm.reset(); }}>
-        <Form form={ticketForm}>
-          <Form.Input field="title" label="标题" rules={[{ required: true }]} />
-          <Form.Select field="templateId" label="评审模板" showClear placeholder="选择模板" optionList={templates.map((t) => ({ value: t.id, label: t.name }))} />
-          <Form.Input field="targetType" label="评审对象类型" placeholder="APPLICATION / TECH_STACK" />
-          <Form.Input field="targetId" label="评审对象 ID" />
-          <Form.Input field="applicant" label="申请人" />
-          <Form.Input field="reviewer" label="指定评审人" />
-        </Form>
-      </Modal>
+      <DataTablePro<ReviewTicket>
+        columns={columns}
+        dataSource={paged}
+        rowKey="id"
+        loading={loading}
+        pagination={{
+          currentPage: page,
+          pageSize,
+          total: filtered.length,
+          onChange: setPage,
+          onPageSizeChange: handlePageSizeChange,
+        }}
+        empty={
+          error ? (
+            <EmptyState illustration="failure" title="评审工单加载失败" desc={error} />
+          ) : (
+            <EmptyState
+              illustration="no-content"
+              title="暂无评审工单"
+              desc="提交架构提案，指定模板与评审人。"
+              actions={
+                <Button theme="solid" type="primary" onClick={openCreate}>
+                  提交评审
+                </Button>
+              }
+            />
+          )
+        }
+      />
 
-      <Modal
-        title={actionType === 'approve' ? '通过评审' : actionType === 'reject' ? '驳回评审' : '添加评论'}
-        visible={actionModalOpen}
-        onOk={handleAction}
-        onCancel={() => { setActionModalOpen(false); actionForm.reset(); }}
+      <SheetDetail
+        title={detail ? `评审详情 · ${detail.title}` : '评审详情'}
+        open={detail !== null && !actionOpen}
+        onClose={() => setDetail(null)}
+        footer={<Button onClick={() => setDetail(null)}>关闭</Button>}
       >
-        <Form form={actionForm}>
-          <Form.Input field="reviewer" label="评审人" rules={[{ required: true }]} initValue={detail?.reviewer || ''} />
-          {actionType !== 'comment' && (
-            <Form.TextArea field="scores" label="评分（每行：维度:得分）" rows={3} placeholder="可扩展性:90\n安全性:85" />
-          )}
-          {actionType !== 'comment' && (
-            <Form.Input field="decision" label="决议" placeholder="通过 / 有条件通过" />
-          )}
-          <Form.TextArea field="comment" label={actionType === 'comment' ? '评论' : '评审意见'} rules={[{ required: true }]} rows={3} />
+        {detail ? (
+          <div>
+            <Descriptions
+              row
+              data={[
+                { key: '标题', value: detail.title },
+                { key: '模板', value: detail.templateName || '—' },
+                { key: '申请人', value: detail.applicant || '—' },
+                { key: '评审人', value: detail.reviewer || '—' },
+                { key: '状态', value: STATUS_TAG[detail.status]?.label ?? detail.status },
+                { key: '决议', value: detail.decision || '—' },
+              ]}
+            />
+
+            <div>
+              <Typography.Text strong>评分</Typography.Text>
+              <DataTablePro<ReviewScoreItem>
+                columns={scoreColumns}
+                dataSource={detail.scores ?? []}
+                rowKey="dimension"
+                columnSettings={false}
+                empty={<EmptyState illustration="no-content" title="暂无评分" />}
+              />
+            </div>
+
+            <div>
+              <Typography.Text strong>评审记录</Typography.Text>
+              {(detail.comments ?? []).length === 0 ? (
+                <EmptyState illustration="no-content" title="暂无评审记录" />
+              ) : (
+                <Timeline
+                  dataSource={(detail.comments ?? []).map((c) => ({
+                    color: c.action === 'APPROVE' ? 'green' : c.action === 'REJECT' ? 'red' : 'grey',
+                    content: (
+                      <div>
+                        <Typography.Text strong>{c.author || '匿名'}</Typography.Text>{' '}
+                        <Tag type="light">{c.action}</Tag>
+                        <Typography.Paragraph>{c.content}</Typography.Paragraph>
+                        <Typography.Text type="tertiary">{new Date(c.createdAt).toLocaleString('zh-CN')}</Typography.Text>
+                      </div>
+                    ),
+                  }))}
+                />
+              )}
+            </div>
+          </div>
+        ) : null}
+      </SheetDetail>
+
+      <SheetDetail
+        title="提交评审"
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        footer={
+          <>
+            <Button onClick={() => setCreateOpen(false)}>取消</Button>
+            <Button theme="solid" type="primary" loading={acting} onClick={() => void submitCreate()}>
+              提交
+            </Button>
+          </>
+        }
+      >
+        <Form form={ticketForm} labelPosition="left" labelWidth={92}>
+          <Form.Input field="title" label="标题" rules={[{ required: true, message: '请输入标题' }]} placeholder="新增订单服务提案" />
+          <Form.Select
+            field="templateId"
+            label="评审模板"
+            showClear
+            placeholder="选择模板"
+            optionList={templates.map((t) => ({ value: t.id, label: t.name }))}
+          />
+          <Form.Input field="targetType" label="对象类型" placeholder="APPLICATION / TECH_STACK" />
+          <Form.Input field="targetId" label="对象 ID" placeholder="选填" />
+          <Form.Input field="applicant" label="申请人" placeholder="选填" />
+          <Form.Input field="reviewer" label="指定评审人" placeholder="选填" />
         </Form>
-      </Modal>
-    </Card>
+      </SheetDetail>
+
+      <SheetDetail
+        title={actionType === 'approve' ? '通过评审' : actionType === 'reject' ? '驳回评审' : '添加评论'}
+        open={actionOpen}
+        onClose={() => {
+          setActionOpen(false);
+          actionForm.reset();
+        }}
+        footer={
+          <>
+            <Button
+              onClick={() => {
+                setActionOpen(false);
+                actionForm.reset();
+              }}
+            >
+              取消
+            </Button>
+            <Button theme="solid" type="primary" loading={acting} onClick={() => void submitAction()}>
+              确认
+            </Button>
+          </>
+        }
+      >
+        <Form form={actionForm} labelPosition="left" labelWidth={92}>
+          <Form.Input
+            field="reviewer"
+            label="评审人"
+            rules={[{ required: true, message: '请输入评审人' }]}
+            initValue={detail?.reviewer || ''}
+          />
+          {actionType !== 'comment' ? (
+            <Form.TextArea field="scores" label="评分" rows={3} placeholder={'每行：维度:得分\n可扩展性:90\n安全性:85'} />
+          ) : null}
+          {actionType !== 'comment' ? <Form.Input field="decision" label="决议" placeholder="通过 / 有条件通过" /> : null}
+          <Form.TextArea
+            field="comment"
+            label={actionType === 'comment' ? '评论' : '评审意见'}
+            rules={[{ required: true, message: '请输入内容' }]}
+            rows={3}
+          />
+        </Form>
+      </SheetDetail>
+    </>
   );
 }

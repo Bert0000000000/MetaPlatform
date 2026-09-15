@@ -113,12 +113,14 @@ test.describe('UI-P0 · 应用壳与新 IA', () => {
     await expect(page).toHaveURL(/\/home\/deliverables$/);
   });
 
-  test('过渡期：域内旧 shell 的 tab 行已换成新 IA 路径（数据与治理）', async ({ page }) => {
-    await gotoApp(page, '/gov/business');
+  // UI-P2c 后「数据与治理」已迁到壳渲染，本用例改指尚未迁移的域（知识与集成），
+  // 待 P2b 完成后本用例失去意义，随 P2d 一并退役。
+  test('过渡期：域内旧 shell 的 tab 行仍自渲染，壳不叠加（知识与集成）', async ({ page }) => {
+    await gotoApp(page, '/ki/kb');
     const bar = page.locator('.mp-page .semi-tabs-tab');
-    await expect(bar.filter({ hasText: '技术架构' })).toBeVisible();
-    await bar.filter({ hasText: '技术架构' }).click();
-    await expect(page).toHaveURL(/\/gov\/tech$/);
+    await expect(bar.filter({ hasText: '检索测试' })).toBeVisible({ timeout: 20_000 });
+    await bar.filter({ hasText: '检索测试' }).click();
+    await expect(page).toHaveURL(/\/ki\/test$/);
     // 壳不叠加第二行 tab（DomainDef.ownsTabs）
     await expect(page.locator('.mp-pagetabs')).toHaveCount(0);
   });

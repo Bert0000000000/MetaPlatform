@@ -1,10 +1,33 @@
-import { useEffect, useState } from 'react';
-import { Card, Tree, Input, Select, Button, Space, SideSheet, Tag, Form, Modal, Toast, Popconfirm } from '@douyinfe/semi-ui';
-import { SearchOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
-import { getAssetCatalog, listAssets, createAsset, updateAsset, deleteAsset, listEntities } from '@/api/arch/dataArchitecture';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button, Descriptions, Form, Popconfirm, Select, Space, Tag, Toast, Tree } from '@douyinfe/semi-ui';
+import type { TreeNodeData } from '@douyinfe/semi-ui/lib/es/tree';
+import { Pencil, Plus, RefreshCw } from 'lucide-react';
+import {
+  createAsset,
+  deleteAsset,
+  getAssetCatalog,
+  listAssets,
+  listEntities,
+  updateAsset,
+} from '@/api/arch/dataArchitecture';
 import type { DataAsset, DataAssetCatalog, DataEntity } from '@/api/arch/types';
+import {
+  DataTablePro,
+  EmptyState,
+  FilterBar,
+  PageHeader,
+  SheetDetail,
+  SplitPane,
+} from '@/components/skeleton';
 
-interface DataAssetFormValues {
+const GROUP_OPTIONS = [
+  { label: '按系统类型', value: 'type' },
+  { label: '按主题域', value: 'classification' },
+  { label: '按标签', value: 'tag' },
+];
+
+interface AssetDraft {
+  id?: string;
   name: string;
   code: string;
   assetType: string;
@@ -14,176 +37,345 @@ interface DataAssetFormValues {
   description?: string;
 }
 
-const GROUP_OPTIONS = [
-  { label: '按系统类型', value: 'type' },
-  { label: '按主题域', value: 'classification' },
-  { label: '按标签', value: 'tag' },
-];
+interface AssetTreeNode extends TreeNodeData {
+  asset?: DataAsset;
+}
 
+/**
+ * 数据资产目录（DESIGN-SPEC §5 版式 B：左树右表 + 抽屉详情）。
+ * 数据面沿用 src/api/arch/dataArchitecture 的 catalog / assets。
+ */
 export default function DataAssetCatalogPage() {
   const [catalog, setCatalog] = useState<DataAssetCatalog | null>(null);
   const [assets, setAssets] = useState<DataAsset[]>([]);
   const [entities, setEntities] = useState<DataEntity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [groupBy, setGroupBy] = useState('type');
   const [keyword, setKeyword] = useState('');
   const [selectedAsset, setSelectedAsset] = useState<DataAsset | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<DataAsset | null>(null);
-  const [form] = Form.useForm<DataAssetFormValues>();
+  const [draft, setDraft] = useState<AssetDraft | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form] = Form.useForm<AssetDraft>();
 
-  const loadCatalog = async () => {
-    const data = await getAssetCatalog(groupBy);
-    setCatalog(data);
-  };
+  const loadCatalog = useCallback(async () => {
+    try {
+      setCatalog(await getAssetCatalog(groupBy));
+    } catch (e) {
+      setCatalog(null);
+      Toast.error(e instanceof Error ? e.message : String(e));
+    }
+  }, [groupBy]);
 
-  const loadAssets = async () => {
-    const data = await listAssets({ keyword: keyword || undefined });
-    setAssets(data);
-  };
+  const loadAssets = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      setAssets(await listAssets({ keyword: keyword || undefined }));
+    } catch (e) {
+      setAssets([]);
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [keyword]);
 
-  const loadEntities = async () => {
-    const data = await listEntities();
-    setEntities(data);
-  };
+  useEffect(() => {
+    void loadCatalog();
+  }, [loadCatalog]);
 
-  useEffect(() => { loadCatalog(); }, [groupBy]);
-  useEffect(() => { loadAssets(); loadEntities(); }, []);
+  useEffect(() => {
+    void loadAssets();
+  }, [loadAssets]);
+
+  useEffect(() => {
+    void listEntities()
+      .then((data) => setEntities(Array.isArray(data) ? data : []))
+      .catch(() => setEntities([]));
+  }, []);
+
+  const entityName = useCallback(
+    (id: string | undefined) => (id ? entities.find((e) => e.id === id)?.name ?? id : '—'),
+    [entities],
+  );
 
   const openCreate = () => {
-    setEditing(null);
+    setDraft({ name: '', code: '', assetType: '' });
     form.reset();
-    setModalOpen(true);
   };
 
   const openEdit = (asset: DataAsset) => {
-    setEditing(asset);
-    form.setValues({ ...asset, tags: asset.tags?.join(',') });
-    setModalOpen(true);
+    setDraft({
+      id: asset.id,
+      name: asset.name,
+      code: asset.code,
+      assetType: asset.assetType,
+      classification: asset.classification,
+      entityId: asset.entityId,
+      tags: (asset.tags ?? []).join(','),
+      description: asset.description,
+    });
   };
 
-  const handleSubmit = async () => {
-    const values = await form.validate();
+  const submit = async () => {
+    if (!draft) return;
+    let values: AssetDraft;
+    try {
+      values = (await form.validate()) as AssetDraft;
+    } catch {
+      return;
+    }
     const { tags, ...rest } = values;
     const payload = {
       ...rest,
       tags: tags ? tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
     };
-    if (editing) {
-      await updateAsset(editing.id, payload);
-      Toast.success('更新成功');
-    } else {
-      await createAsset(payload);
-      Toast.success('创建成功');
+    setSaving(true);
+    try {
+      if (draft.id) {
+        await updateAsset(draft.id, payload);
+        Toast.success('资产已更新');
+      } else {
+        await createAsset(payload);
+        Toast.success('资产已登记');
+      }
+      setDraft(null);
+      await Promise.all([loadCatalog(), loadAssets()]);
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
     }
-    setModalOpen(false);
-    form.reset();
-    loadCatalog();
-    loadAssets();
   };
 
-  const handleDelete = async (id: string) => {
-    await deleteAsset(id);
-    Toast.success('已删除');
-    loadCatalog();
-    loadAssets();
+  const remove = async (asset: DataAsset) => {
+    try {
+      await deleteAsset(asset.id);
+      Toast.success('资产已删除');
+      if (selectedAsset?.id === asset.id) setSelectedAsset(null);
+      await Promise.all([loadCatalog(), loadAssets()]);
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
+    }
   };
 
-  const treeData = catalog?.groups.map((g) => ({
-    label: `${g.label} (${g.assets.length})`,
-    key: g.key,
-    children: g.assets.map((a) => ({
-      label: a.name,
-      key: a.id,
-      isLeaf: true,
-      asset: a,
-    })),
-  })) || [];
+  const treeData = useMemo<AssetTreeNode[]>(
+    () =>
+      (catalog?.groups ?? []).map((g) => ({
+        key: g.key,
+        label: `${g.label}（${g.assets.length}）`,
+        children: g.assets.map((a) => ({ key: a.id, label: a.name, isLeaf: true, asset: a })),
+      })),
+    [catalog],
+  );
 
-  const filteredAssets = keyword
-    ? assets.filter((a) => a.name.toLowerCase().includes(keyword.toLowerCase()) || a.code.toLowerCase().includes(keyword.toLowerCase()))
-    : assets;
+  const columns = useMemo(
+    () => [
+      { title: '资产名称', dataIndex: 'name', key: 'name', width: 220, ellipsis: true },
+      { title: '编码', dataIndex: 'code', key: 'code', width: 160, ellipsis: true },
+      {
+        title: '系统类型',
+        dataIndex: 'assetType',
+        key: 'assetType',
+        width: 130,
+        render: (v: string | undefined) => (v ? <Tag type="light">{v}</Tag> : '—'),
+      },
+      {
+        title: '主题域',
+        dataIndex: 'classification',
+        key: 'classification',
+        width: 140,
+        ellipsis: true,
+        render: (v: string | undefined) => v || '—',
+      },
+      {
+        title: '关联实体',
+        dataIndex: '__entity__',
+        key: 'entity',
+        width: 180,
+        ellipsis: true,
+        render: (_: unknown, row: DataAsset) => entityName(row.entityId),
+      },
+      {
+        title: '标签',
+        dataIndex: '__tags__',
+        key: 'tags',
+        render: (_: unknown, row: DataAsset) => (
+          <Space>
+            {(row.tags ?? []).map((t) => (
+              <Tag key={t} type="light">
+                {t}
+              </Tag>
+            ))}
+          </Space>
+        ),
+      },
+      {
+        title: '',
+        dataIndex: '__actions__',
+        key: 'actions',
+        width: 140,
+        render: (_: unknown, row: DataAsset) => (
+          <Space>
+            <Button theme="borderless" type="primary" size="small" onClick={() => openEdit(row)}>
+              编辑
+            </Button>
+            <Popconfirm title="确认删除该资产？" onConfirm={() => void remove(row)}>
+              <Button theme="borderless" type="danger" size="small">
+                删除
+              </Button>
+            </Popconfirm>
+          </Space>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [entityName],
+  );
 
   return (
-    <Card
-      title="数据资产目录"
-      headerExtraContent={<Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreate}>登记资产</Button>}
-    >
-      <Space style={{ marginBottom: 16 }}>
-        <Input
-          placeholder="搜索资产"
-          prefix={<SearchOutlined />}
-          value={keyword}
-          onChange={(value) => setKeyword(value)}
-          onEnterPress={loadAssets}
-          style={{ width: 240 }}
+    <>
+      <PageHeader
+        title="资产目录"
+        desc={`${assets.length} 项资产 · 按分组浏览与检索已登记的数据资产`}
+        actions={
+          <>
+            <Button
+              icon={<RefreshCw size={15} strokeWidth={1.5} />}
+              loading={loading}
+              onClick={() => {
+                void loadCatalog();
+                void loadAssets();
+              }}
+            >
+              刷新
+            </Button>
+            <Button theme="solid" type="primary" icon={<Plus size={15} strokeWidth={1.5} />} onClick={openCreate}>
+              登记资产
+            </Button>
+          </>
+        }
+      />
+
+      <FilterBar
+        search={{ value: keyword, onChange: setKeyword, placeholder: '搜索资产名称、编码…' }}
+        filters={
+          <Select value={groupBy} onChange={(v) => setGroupBy(String(v))} optionList={GROUP_OPTIONS} />
+        }
+      />
+
+      <SplitPane
+        ariaLabel="资产分组"
+        pane={
+          <>
+            <div className="mp-pane-title">资产分组</div>
+            <div className="mp-pane-scroll">
+              {treeData.length > 0 ? (
+                <Tree
+                  treeData={treeData}
+                  defaultExpandAll
+                  onSelect={(_key, selected, node) => {
+                    const asset = (node as AssetTreeNode | undefined)?.asset;
+                    if (selected && asset) setSelectedAsset(asset);
+                  }}
+                />
+              ) : (
+                <EmptyState illustration="no-content" title="暂无分组" desc="登记资产后，分组树会自动生成。" />
+              )}
+            </div>
+          </>
+        }
+      >
+        <DataTablePro<DataAsset>
+          columns={columns}
+          dataSource={assets}
+          rowKey="id"
+          loading={loading}
+          onRow={(record) => ({ onDoubleClick: () => setSelectedAsset(record as DataAsset) })}
+          empty={
+            error ? (
+              <EmptyState illustration="failure" title="资产加载失败" desc={error} />
+            ) : (
+              <EmptyState
+                illustration="no-result"
+                title="没有匹配的资产"
+                desc="调整关键词，或登记第一项资产。"
+              />
+            )
+          }
         />
-        <Select value={groupBy} optionList={GROUP_OPTIONS} onChange={(v) => setGroupBy(v as string)} style={{ width: 160 }} />
-        <Button onClick={() => { loadAssets(); loadCatalog(); }}>刷新</Button>
-      </Space>
+      </SplitPane>
 
-      <div style={{ display: 'flex', gap: 24 }}>
-        <div style={{ width: 320 }}>
-          <Tree
-            treeData={treeData}
-            onSelect={(key, selected, node) => {
-              const asset = (node as unknown as { asset?: DataAsset })?.asset;
-              if (selected && asset) {
-                setSelectedAsset(asset);
-                setDrawerOpen(true);
-              }
-            }}
+      <SheetDetail
+        title={selectedAsset ? `资产详情 · ${selectedAsset.name}` : '资产详情'}
+        open={selectedAsset !== null}
+        onClose={() => setSelectedAsset(null)}
+        footer={
+          <>
+            {selectedAsset ? (
+              <Button
+                icon={<Pencil size={15} strokeWidth={1.5} />}
+                onClick={() => {
+                  openEdit(selectedAsset);
+                  setSelectedAsset(null);
+                }}
+              >
+                编辑
+              </Button>
+            ) : null}
+            <Button onClick={() => setSelectedAsset(null)}>关闭</Button>
+          </>
+        }
+      >
+        {selectedAsset ? (
+          <Descriptions
+            row
+            data={[
+              { key: '编码', value: selectedAsset.code },
+              { key: '系统类型', value: selectedAsset.assetType },
+              { key: '主题域', value: selectedAsset.classification ?? '—' },
+              { key: '关联实体', value: entityName(selectedAsset.entityId) },
+              { key: '描述', value: selectedAsset.description ?? '—' },
+            ]}
           />
-        </div>
-        <div style={{ flex: 1 }}>
-          {filteredAssets.map((asset) => (
-            <Card key={asset.id} bodyStyle={{ padding: 12 }} style={{ marginBottom: 12 }} shadows="hover">
-              <div onClick={() => { setSelectedAsset(asset); setDrawerOpen(true); }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <strong>{asset.name}</strong> <Tag>{asset.assetType}</Tag>
-                    <div style={{ color: 'var(--semi-color-text-2)', fontSize: 12 }}>{asset.code} {asset.classification ? `· ${asset.classification}` : ''}</div>
-                  </div>
-                  <Space>
-                    <Button theme="borderless" type="primary" size="small" onClick={(e) => { e.stopPropagation(); openEdit(asset); }}>编辑</Button>
-                    <Popconfirm title="确认删除？" onConfirm={(e) => { e?.stopPropagation(); handleDelete(asset.id); }}>
-                      <Button theme="borderless" type="danger" size="small" icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()}>删除</Button>
-                    </Popconfirm>
-                  </Space>
-                </div>
-                <div style={{ marginTop: 8 }}>
-                  {asset.tags?.map((tag) => <Tag key={tag} color="blue">{tag}</Tag>)}
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
+        ) : null}
+      </SheetDetail>
 
-      <SideSheet title={selectedAsset ? selectedAsset.name : '资产详情'} visible={drawerOpen} onCancel={() => setDrawerOpen(false)}>
-        {selectedAsset && (
-          <Space vertical style={{ width: '100%' }}>
-            <div><strong>编码：</strong>{selectedAsset.code}</div>
-            <div><strong>类型：</strong><Tag>{selectedAsset.assetType}</Tag></div>
-            <div><strong>主题域：</strong>{selectedAsset.classification || '-'}</div>
-            <div><strong>描述：</strong>{selectedAsset.description || '-'}</div>
-            <div><strong>关联实体：</strong>{entities.find((e) => e.id === selectedAsset.entityId)?.name || '-'}</div>
-            <div><strong>标签：</strong>{selectedAsset.tags?.map((t) => <Tag key={t}>{t}</Tag>) || '-'}</div>
-          </Space>
-        )}
-      </SideSheet>
-
-      <Modal title={editing ? '编辑资产' : '登记资产'} visible={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); form.reset(); }}>
-        <Form form={form}>
-          <Form.Input field="name" label="名称" rules={[{ required: true }]} />
-          <Form.Input field="code" label="编码" rules={[{ required: true }]} />
-          <Form.Input field="assetType" label="系统类型" rules={[{ required: true }]} placeholder="如 TABLE / API / TOPIC" />
-          <Form.Input field="classification" label="主题域" placeholder="如 L1 / 客户域" />
-          <Form.Select field="entityId" label="关联实体" showClear optionList={entities.map((e) => ({ label: e.name, value: e.id }))} />
-          <Form.Input field="tags" label="标签" placeholder="逗号分隔" />
-          <Form.TextArea field="description" label="描述" rows={2} />
-        </Form>
-      </Modal>
-    </Card>
+      <SheetDetail
+        title={draft?.id ? `编辑资产 · ${draft.name}` : '登记资产'}
+        open={draft !== null}
+        onClose={() => setDraft(null)}
+        footer={
+          <>
+            <Button onClick={() => setDraft(null)}>取消</Button>
+            <Button theme="solid" type="primary" loading={saving} onClick={() => void submit()}>
+              保存
+            </Button>
+          </>
+        }
+      >
+        {draft ? (
+          <Form form={form} key={draft.id ?? 'new'} initValues={draft} labelPosition="top">
+            <Form.Input field="name" label="名称" rules={[{ required: true, message: '请输入名称' }]} />
+            <Form.Input field="code" label="编码" rules={[{ required: true, message: '请输入编码' }]} />
+            <Form.Input
+              field="assetType"
+              label="系统类型"
+              rules={[{ required: true, message: '请输入系统类型' }]}
+              placeholder="如 TABLE / API / TOPIC"
+            />
+            <Form.Input field="classification" label="主题域" placeholder="如 L1 / 客户域" />
+            <Form.Select
+              field="entityId"
+              label="关联实体"
+              showClear
+              optionList={entities.map((e) => ({ label: e.name, value: e.id }))}
+            />
+            <Form.Input field="tags" label="标签" placeholder="逗号分隔" />
+            <Form.TextArea field="description" label="描述" rows={2} />
+          </Form>
+        ) : null}
+      </SheetDetail>
+    </>
   );
 }

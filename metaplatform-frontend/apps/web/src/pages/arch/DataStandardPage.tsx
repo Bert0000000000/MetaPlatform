@@ -1,110 +1,294 @@
-import { useEffect, useState } from 'react';
-import { Card, Button, Table, Space, Modal, Form, Input, Select, Tag, Toast, Popconfirm, SideSheet } from '@douyinfe/semi-ui';
-import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
-import { PlusOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
-import { listStandards, createStandard, updateStandard, deleteStandard } from '@/api/arch/dataArchitecture';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button, Descriptions, Form, Popconfirm, Select, Space, Tag, Toast } from '@douyinfe/semi-ui';
+import { Eye, Plus, RefreshCw } from 'lucide-react';
+import {
+  createStandard,
+  deleteStandard,
+  listStandards,
+  updateStandard,
+} from '@/api/arch/dataArchitecture';
 import type { DataStandard } from '@/api/arch/types';
+import {
+  DataTablePro,
+  EmptyState,
+  FilterBar,
+  PageHeader,
+  SheetDetail,
+} from '@/components/skeleton';
 
 const STANDARD_TYPES = ['format', 'enum', 'rule', 'range', 'regex'];
 
+const TYPE_COLOR: Record<string, 'blue' | 'green' | 'orange' | 'purple' | 'cyan'> = {
+  format: 'blue',
+  enum: 'green',
+  rule: 'orange',
+  range: 'purple',
+  regex: 'cyan',
+};
+
+interface StandardDraft {
+  id?: string;
+  code: string;
+  name: string;
+  standardType: string;
+  rule?: string;
+  description?: string;
+}
+
+/**
+ * 数据标准（DESIGN-SPEC §5 版式 E：表格页 + 抽屉表单/预览）。
+ * 数据面沿用 src/api/arch/dataArchitecture 的标准 CRUD。
+ */
 export default function DataStandardPage() {
   const [standards, setStandards] = useState<DataStandard[]>([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<DataStandard | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string | undefined>();
+  const [draft, setDraft] = useState<StandardDraft | null>(null);
   const [preview, setPreview] = useState<DataStandard | null>(null);
-  const [form] = Form.useForm<Partial<DataStandard>>();
+  const [saving, setSaving] = useState(false);
+  const [form] = Form.useForm<StandardDraft>();
 
-  const load = async () => {
-    const data = await listStandards();
-    setStandards(Array.isArray(data) ? data : ((data as { items?: DataStandard[] }).items ?? []));
-  };
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await listStandards();
+      setStandards(Array.isArray(data) ? data : ((data as { items?: DataStandard[] }).items ?? []));
+    } catch (e) {
+      setStandards([]);
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const openCreate = () => {
-    setEditing(null);
+    setDraft({ code: '', name: '', standardType: 'format' });
     form.reset();
-    setModalOpen(true);
   };
 
-  const openEdit = (record: DataStandard) => {
-    setEditing(record);
-    form.setValues(record);
-    setModalOpen(true);
+  const openEdit = (row: DataStandard) => {
+    setDraft({
+      id: row.id,
+      code: row.code,
+      name: row.name,
+      standardType: row.standardType,
+      rule: row.rule,
+      description: row.description,
+    });
   };
 
-  const handleSubmit = async () => {
-    const values = await form.validate();
-    if (editing) {
-      await updateStandard(editing.id, values);
-      Toast.success('更新成功');
-    } else {
-      await createStandard(values);
-      Toast.success('创建成功');
+  const submit = async () => {
+    if (!draft) return;
+    let values: StandardDraft;
+    try {
+      values = (await form.validate()) as StandardDraft;
+    } catch {
+      return;
     }
-    setModalOpen(false);
-    form.reset();
-    load();
+    setSaving(true);
+    try {
+      if (draft.id) {
+        await updateStandard(draft.id, values);
+        Toast.success('数据标准已更新');
+      } else {
+        await createStandard(values);
+        Toast.success('数据标准已创建');
+      }
+      setDraft(null);
+      await load();
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = async (id: string) => {
-    await deleteStandard(id);
-    Toast.success('已删除');
-    load();
+  const remove = async (row: DataStandard) => {
+    try {
+      await deleteStandard(row.id);
+      Toast.success('数据标准已删除');
+      await load();
+    } catch (e) {
+      Toast.error(e instanceof Error ? e.message : String(e));
+    }
   };
 
-  const typeColor: Record<string, TagColor> = { format: 'blue', enum: 'green', rule: 'orange', range: 'purple', regex: 'cyan' };
+  const visible = useMemo(() => {
+    let rows = standards;
+    if (typeFilter) rows = rows.filter((s) => s.standardType === typeFilter);
+    if (keyword) {
+      const q = keyword.toLowerCase();
+      rows = rows.filter(
+        (s) => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q),
+      );
+    }
+    return rows;
+  }, [standards, typeFilter, keyword]);
 
-  const columns = [
-    { title: '编码', dataIndex: 'code', key: 'code' },
-    { title: '名称', dataIndex: 'name', key: 'name' },
-    { title: '类型', dataIndex: 'standardType', key: 'standardType', render: (v: string) => <Tag color={typeColor[v] || 'grey'}>{v}</Tag> },
-    { title: '规则', dataIndex: 'rule', key: 'rule', ellipsis: true },
-    { title: '描述', dataIndex: 'description', key: 'description', ellipsis: true },
-    {
-      title: '操作',
-      key: 'action',
-      render: (_: unknown, r: DataStandard) => (
-        <Space>
-          <Button theme="borderless" type="primary" size="small" icon={<EyeOutlined />} onClick={() => setPreview(r)}>预览</Button>
-          <Button theme="borderless" type="primary" size="small" onClick={() => openEdit(r)}>编辑</Button>
-          <Popconfirm title="确认删除？" onConfirm={() => handleDelete(r.id)}>
-            <Button theme="borderless" type="danger" size="small" icon={<DeleteOutlined />}>删除</Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  const columns = useMemo(
+    () => [
+      { title: '编码', dataIndex: 'code', key: 'code', width: 170, ellipsis: true },
+      { title: '名称', dataIndex: 'name', key: 'name', width: 200, ellipsis: true },
+      {
+        title: '类型',
+        dataIndex: 'standardType',
+        key: 'standardType',
+        width: 110,
+        render: (v: string | undefined) =>
+          v ? (
+            <Tag color={TYPE_COLOR[v] ?? 'grey'} type="light">
+              {v}
+            </Tag>
+          ) : (
+            '—'
+          ),
+      },
+      { title: '规则', dataIndex: 'rule', key: 'rule', ellipsis: true },
+      { title: '描述', dataIndex: 'description', key: 'description', ellipsis: true },
+      {
+        title: '',
+        dataIndex: '__actions__',
+        key: 'actions',
+        width: 190,
+        render: (_: unknown, row: DataStandard) => (
+          <Space>
+            <Button theme="borderless" type="tertiary" size="small" onClick={() => setPreview(row)}>
+              预览
+            </Button>
+            <Button theme="borderless" type="primary" size="small" onClick={() => openEdit(row)}>
+              编辑
+            </Button>
+            <Popconfirm title="确认删除该标准？" onConfirm={() => void remove(row)}>
+              <Button theme="borderless" type="danger" size="small">
+                删除
+              </Button>
+            </Popconfirm>
+          </Space>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   return (
-    <Card
-      title="数据标准管理"
-      headerExtraContent={<Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建标准</Button>}
-    >
-      <Table rowKey="id" columns={columns} dataSource={standards ?? []} size="small" scroll={{ x: 'max-content' }} />
+    <>
+      <PageHeader
+        title="数据标准"
+        desc={`${standards.length} 条标准 · 定义字段的格式、枚举、规则与阈值`}
+        actions={
+          <>
+            <Button icon={<RefreshCw size={15} strokeWidth={1.5} />} loading={loading} onClick={() => void load()}>
+              刷新
+            </Button>
+            <Button theme="solid" type="primary" icon={<Plus size={15} strokeWidth={1.5} />} onClick={openCreate}>
+              新建标准
+            </Button>
+          </>
+        }
+      />
 
-      <Modal title={editing ? '编辑数据标准' : '新建数据标准'} visible={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); form.reset(); }}>
-        <Form form={form}>
-          <Form.Input field="code" label="编码" rules={[{ required: true }]} />
-          <Form.Input field="name" label="名称" rules={[{ required: true }]} />
-          <Form.Select field="standardType" label="类型" rules={[{ required: true }]} optionList={STANDARD_TYPES.map((t) => ({ label: t, value: t }))} />
-          <Form.TextArea field="rule" label="规则" rows={3} placeholder="如正则表达式、枚举值、阈值范围等" />
-          <Form.TextArea field="description" label="描述" rows={2} />
-        </Form>
-      </Modal>
+      <FilterBar
+        search={{ value: keyword, onChange: setKeyword, placeholder: '搜索标准名称、编码…' }}
+        filters={
+          <Select
+            value={typeFilter ?? ''}
+            onChange={(v) => setTypeFilter(v ? String(v) : undefined)}
+            placeholder="全部类型"
+          >
+            <Select.Option value="">全部类型</Select.Option>
+            {STANDARD_TYPES.map((t) => (
+              <Select.Option key={t} value={t}>
+                {t}
+              </Select.Option>
+            ))}
+          </Select>
+        }
+      />
 
-      <SideSheet title="规则预览" visible={!!preview} onCancel={() => setPreview(null)}>
-        {preview && (
-          <Space vertical style={{ width: '100%' }}>
-            <div><strong>编码：</strong>{preview.code}</div>
-            <div><strong>名称：</strong>{preview.name}</div>
-            <div><strong>类型：</strong><Tag color={typeColor[preview.standardType] || 'grey'}>{preview.standardType}</Tag></div>
-            <div><strong>规则：</strong></div>
-            <pre style={{ background: 'var(--semi-color-fill-0)', padding: 12, borderRadius: 4 }}>{preview.rule || '无'}</pre>
-            <div><strong>描述：</strong>{preview.description || '无'}</div>
-          </Space>
-        )}
-      </SideSheet>
-    </Card>
+      <DataTablePro<DataStandard>
+        columns={columns}
+        dataSource={visible}
+        rowKey="id"
+        loading={loading}
+        onRow={(record) => ({ onDoubleClick: () => openEdit(record as DataStandard) })}
+        empty={
+          error ? (
+            <EmptyState illustration="failure" title="数据标准加载失败" desc={error} />
+          ) : (
+            <EmptyState
+              illustration="no-result"
+              title="没有匹配的数据标准"
+              desc="调整类型或关键词，或新建一条标准。"
+            />
+          )
+        }
+      />
+
+      <SheetDetail
+        title="数据标准预览"
+        open={preview !== null}
+        onClose={() => setPreview(null)}
+        footer={
+          <>
+            {preview ? (
+              <Button icon={<Eye size={15} strokeWidth={1.5} />} onClick={() => openEdit(preview)}>
+                编辑
+              </Button>
+            ) : null}
+            <Button onClick={() => setPreview(null)}>关闭</Button>
+          </>
+        }
+      >
+        {preview ? (
+          <Descriptions
+            row
+            data={[
+              { key: '编码', value: preview.code },
+              { key: '名称', value: preview.name },
+              { key: '类型', value: preview.standardType ?? '—' },
+              { key: '规则', value: preview.rule || '无' },
+              { key: '描述', value: preview.description || '无' },
+            ]}
+          />
+        ) : null}
+      </SheetDetail>
+
+      <SheetDetail
+        title={draft?.id ? `编辑数据标准 · ${draft.name}` : '新建数据标准'}
+        open={draft !== null}
+        onClose={() => setDraft(null)}
+        footer={
+          <>
+            <Button onClick={() => setDraft(null)}>取消</Button>
+            <Button theme="solid" type="primary" loading={saving} onClick={() => void submit()}>
+              保存
+            </Button>
+          </>
+        }
+      >
+        {draft ? (
+          <Form form={form} key={draft.id ?? 'new'} initValues={draft} labelPosition="top">
+            <Form.Input field="code" label="编码" rules={[{ required: true, message: '请输入编码' }]} />
+            <Form.Input field="name" label="名称" rules={[{ required: true, message: '请输入名称' }]} />
+            <Form.Select
+              field="standardType"
+              label="类型"
+              rules={[{ required: true, message: '请选择类型' }]}
+              optionList={STANDARD_TYPES.map((t) => ({ label: t, value: t }))}
+            />
+            <Form.TextArea field="rule" label="规则" rows={3} placeholder="如正则表达式、枚举值、阈值范围等" />
+            <Form.TextArea field="description" label="描述" rows={2} />
+          </Form>
+        ) : null}
+      </SheetDetail>
+    </>
   );
 }

@@ -13,6 +13,7 @@ import { adminRoutes } from './routes/admin';
 import { homeRoutes } from './routes/home';
 import { agentsRoutes } from './routes/agents';
 import { superaiRoutes } from './routes/superai';
+import { govRoutes } from './routes/gov';
 const SuperaiOrderReviewPage = lazy(() => import('./pages/superai/OrderReviewPage'));
 
 /**
@@ -70,28 +71,6 @@ const McpAuditDetailPage = lazy(() => import('./pages/mcp/AuditDetailPage'));
 const McpAuditStatisticsPage = lazy(() => import('./pages/mcp/AuditStatisticsPage'));
 
 // ---------- 数据与治理 ----------
-const ArchLayout = lazy(() => import('./pages/arch/ArchLayout'));
-const ArchBusinessArchPage = lazy(() => import('./pages/arch/BusinessArchPage'));
-const ArchApplicationManagementPage = lazy(() => import('./pages/arch/ApplicationManagementPage'));
-const ArchCapabilityManagementPage = lazy(() => import('./pages/arch/CapabilityManagementPage'));
-const ArchValueStreamPage = lazy(() => import('./pages/arch/ValueStreamPage'));
-const ArchBusinessProcessPage = lazy(() => import('./pages/arch/BusinessProcessPage'));
-const ArchOrgRolePage = lazy(() => import('./pages/arch/OrgRolePage'));
-const ArchDataArchPage = lazy(() => import('./pages/arch/DataArchPage'));
-const ArchDataEntityDetailPage = lazy(() => import('./pages/arch/DataEntityDetailPage'));
-const ArchDataFlowPage = lazy(() => import('./pages/arch/DataFlowPage'));
-const ArchDataStandardPage = lazy(() => import('./pages/arch/DataStandardPage'));
-const ArchDataAssetCatalogPage = lazy(() => import('./pages/arch/DataAssetCatalogPage'));
-const ArchTechArchPage = lazy(() => import('./pages/arch/TechArchPage'));
-const ArchTechComponentPage = lazy(() => import('./pages/arch/TechComponentPage'));
-const ArchTechStackPage = lazy(() => import('./pages/arch/TechStackPage'));
-const ArchDeploymentTopologyPage = lazy(() => import('./pages/arch/DeploymentTopologyPage'));
-const ArchTechRadarPage = lazy(() => import('./pages/arch/TechRadarPage'));
-const ArchPrinciplesPage = lazy(() => import('./pages/arch/PrinciplesPage'));
-const ArchReviewTemplatePage = lazy(() => import('./pages/arch/ReviewTemplatePage'));
-const ArchReviewPage = lazy(() => import('./pages/arch/ReviewPage'));
-const ArchTechDebtPage = lazy(() => import('./pages/arch/TechDebtPage'));
-const ArchOntologyMappingPage = lazy(() => import('./pages/arch/OntologyMappingPage'));
 
 /* ---------- 域内二级 tab 定义（/gov、/ki、/agents 交给旧布局承载，但路径换新 IA） ---------- */
 const GOV_TABS: ModuleTab[] = [
@@ -287,183 +266,8 @@ function AppRoutes() {
               <Route path="skill-hub" element={<Navigate to="/ki/mcp/skill-hub" replace />} />
             </Route>
 
-            {/* ---------- 7. 数据与治理 ---------- */}
-            <Route
-              path="gov/business"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchBusinessArchPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/business/capabilities"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchCapabilityManagementPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/business/applications"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchApplicationManagementPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/business/value-streams"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchValueStreamPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/business/processes"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchBusinessProcessPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/business/org-roles"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchOrgRolePage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/data"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchDataArchPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/data/entities/:id"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchDataEntityDetailPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/data/flows"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchDataFlowPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/data/standards"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchDataStandardPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/data/assets"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchDataAssetCatalogPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/tech"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchTechArchPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/tech/components"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchTechComponentPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/tech/stacks"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchTechStackPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/tech/topologies"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchDeploymentTopologyPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/tech/radar"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchTechRadarPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/governance"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchPrinciplesPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/governance/principles"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchPrinciplesPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/governance/reviews"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchReviewPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/governance/review-templates"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchReviewTemplatePage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/governance/tech-debt"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchTechDebtPage />
-                </ArchLayout>
-              }
-            />
-            <Route
-              path="gov/governance/ontology-mapping"
-              element={
-                <ArchLayout tabs={GOV_TABS}>
-                  <ArchOntologyMappingPage />
-                </ArchLayout>
-              }
-            />
+            {/* ---------- 7. 数据与治理（域路由见 src/routes/gov.tsx） ---------- */}
+            {govRoutes}
 
             {/* ---------- 8. 平台管理（域路由见 src/routes/admin.tsx） ---------- */}
             {adminRoutes}

@@ -169,7 +169,6 @@ export const DOMAINS: DomainDef[] = [
     label: '数据与治理',
     icon: <ShieldCheck size={ICON_SIZE} strokeWidth={1.5} />,
     path: '/gov/business',
-    ownsTabs: true,
     tabs: [
       {
         key: 'business',

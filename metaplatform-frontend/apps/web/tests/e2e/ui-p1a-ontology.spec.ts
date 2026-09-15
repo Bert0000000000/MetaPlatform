@@ -104,9 +104,10 @@ test.describe('UI-P1a · 本体域', () => {
       .toBeGreaterThan(0);
 
     // 节点可选中并弹出详情卡。
-    // 点的是节点圆本身：<g> 的包围盒含上方文字标签，盒心不在圆心，force 点盒心会落空；
-    // 力导向逐帧重排又会让元素一直「不稳定」，故 force 跳过可操作性等待。
-    await page.locator('.mp-graph-node').first().locator('circle').click({ force: true });
+    // 走 DOM 派发而非坐标点击：节点 <g> 自带的 click 监听直接 selectNode(sim, i)，与点击坐标无关；
+    // 力导向在类型数达到数十个时会长时间重排，坐标点击会随节点位移落空（曾稳定失败）。
+    // 同时挑「可见」节点——类型过滤下隐藏的节点是 display:none，派发也不会选中。
+    await page.locator('.mp-graph-node:visible').first().locator('circle').dispatchEvent('click');
     await expect(page.locator('.mp-dc-card')).toBeVisible({ timeout: 10_000 });
 
     // 视图切换：血缘 / 资产
