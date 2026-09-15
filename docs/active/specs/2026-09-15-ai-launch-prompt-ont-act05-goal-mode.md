@@ -41,16 +41,19 @@
 
 1. **不绕过 13 条硬规则**（CLAUDE.md §13）：tenant 上下文守门 / 禁裸 httpx / production 禁 fallback / secret 不进 git。
 2. **测试只用 `mate-platform-backend/.venv`**（a2a-sdk 只在此；全局 Python 无依赖）：
-   ```
+
+   ```bash
    cd mate-platform-backend && .venv/Scripts/python.exe -m pytest packages/mate-kernel/tests packages/mate-tech-ont/tests packages/mate-app-copilot/tests -q
    ```
+
    开工首跑记录基线数字（预期 ≥1370 passed），此后任何提交不得低于基线。**三包合跑偶发抖动（~1/3 概率）——红了先单包复跑确认再修**。
 3. **网络操作走代理 7897**：`git -c http.proxy=http://127.0.0.1:7897 push`；`export https_proxy=http://127.0.0.1:7897 http_proxy=http://127.0.0.1:7897` 后用 `gh`。
 4. **Conventional Commits + 按文件 add**。⚠️ 工作区有 4 个 copilot 在途未提交文件（agent_loop.py / api/app.py / ontology_tools.py / test_agent_loop_ontology.py，聊天 evidence 持久化改动，+457 行）——**与本项目无关，严禁混入提交，严禁 `git add -A` / `git add .`**。
 5. **从 main 开分支 `feat/ont-act05-edit-set`** 做完四阶段；push 后开 PR（PR 描述引用 ADR-0064 + 涉及 operationId + 验收证据）。
 6. **提交顺序遵循仓库纪律**：contract 先行——`contracts/openapi/services/ont.yaml` 的 `function_ref` 可选化随 S1 同 commit 提交（S4 只做 bundle 验证与订正），不要等到最后才动契约。
 7. **容器生效方式**：`mate-tech-ont` 挂载主树 `mate-platform-backend/packages → /app/packages`（**不是 worktree**）；改码后必须 `docker restart mate-tech-ont` 才生效；重启后验证网关恢复：
-   ```
+
+   ```bash
    TOKEN=$(curl -s -X POST http://localhost:8100/api/v1/iam/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"admin123"}' | python -c "import sys,json;print(json.load(sys.stdin)['accessToken'])")
    curl -s -o /dev/null -w "%{http_code}" http://localhost:8100/api/v1/ont/v2/value-types -H "Authorization: Bearer $TOKEN"
    ```
@@ -69,6 +72,7 @@
 ## 任务 1（S1 · 模型层 + 契约）
 
 **步骤**：
+
 1. Failing tests 先行：`function_ref=None` + `declarative_edits` 非空 → 合法；两者并存 → 合法；两者都空 → 报错；serde 往返保留 `declarative_edits`。
 2. `ActionType.function_ref` 改 `ClassRef | None`（字段顺序注意补默认值）；约束改「至少声明一个」。
 3. `_row_to_at` 去掉 `ont.system.fn.noop.v1` 静默兜底；`ont_action_type.function_ref` 列保持 `NOT NULL DEFAULT ''`（空串 = 声明式）。
@@ -76,6 +80,7 @@
 5. 同 commit 更新 `contracts/openapi/services/ont.yaml`：`ActionTypeDTO.function_ref` 可选。
 
 **完成判据**：
+
 - [ ] 上述 4 条单元测试绿
 - [ ] 存量 27/27 ActionType 读回 `function_ref` 无变化（无 noop 残留）
 - [ ] 回归不低于基线
@@ -85,12 +90,14 @@
 ## 任务 2（S2 · 执行器统一 + 完整安全闸门）
 
 **步骤**：
+
 1. Failing tests：规约①（`{"edits":[...]}` → 直用 EditSet）；规约①混入普通字段 → 422；规约②（普通映射 → 按 parameters 映射 set_property，**结果与旧 function_result 回写一致**）；混合式（声明式 edits + function 返回值）→ 单事务两者都生效。
 2. 统一执行器：function 返回值按两规约解释 → 与声明式 edits 合并进同一事务应用；audit 事件打 `is_compat` 标记（走旧直接回写路径的才打）。
 3. 安全闸门接线：写入前逐 edit 过 ①行策略 ②列策略 ③marking 血缘合取门 ④scoped session 收窄；无策略/无 marking 配置 → 放行。**每类 ≥1 个拦截测试 + 1 个无配置零回归测试**。
 4. `function_result` 直接回写路径保留原样（D-5，只打标不改行为）。
 
 **完成判据**：
+
 - [ ] 混合式 ActionType 端到端（propose→confirm→execute→revert）绿
 - [ ] 行策略 / 列策略 / marking 拒写 / scoped 越界拒写 各 ≥1 测试绿
 - [ ] 无任何策略配置时执行结果与现状逐字节一致（27/27 兼容）
@@ -101,12 +108,14 @@
 ## 任务 3（S3 · 入口分派 + AI 面）
 
 **步骤**：
+
 1. Failing test：声明式 ActionType 调 `propose`（action 路径端点）→ 不再 500，按声明分派到 edit-set 执行；function 式调 `propose-edit-set` 同理对称。
 2. `propose` 按 ActionType 实际声明（declarative_edits / function_ref / 两者）分派；两条端点保留但行为统一（走错不再炸）；`FunctionNotRegistered` 场景映射 422。
 3. 修正 `edit_set.py:7` 与实际不符的注释（分派不再看 `proposal.kind`）。
 4. copilot `schema_gen.py` 的 `propose_action_<slug>` 工具描述更新为统一后语义（**不改名**，D-7）。
 
 **完成判据**：
+
 - [ ] 声明式 / function 式 / 混合式 各自从任一端点进入都能 execute 成功
 - [ ] 工具描述与实际行为一致（读 schema 断言）
 - [ ] 回归不低于基线
@@ -116,12 +125,14 @@
 ## 任务 4（S4 · 契约验证 + 部署冒烟 + 证据）
 
 **步骤**：
+
 1. OpenAPI bundle 验证（硬规则 1 门禁通过）。
 2. `docker restart mate-tech-ont` → 网关探活（硬约束 7 命令）→ 部署态冒烟：建一个**纯声明式** ActionType + 一个**混合式** ActionType，各自 propose→confirm→execute→revert 经网关跑通（写 `metaplatform` 库，验后清理或标注 drill- 前缀）。
 3. ACCEPTANCE 证据段落（可并入 `docs/active/delivery/evidence/` 或 ADR 追加 §8），含四阶段测试清单 + 部署态冒烟记录。
 4. 订正 `2026-09-09-ontology-gap-analysis-and-optimization.md` 中 G18/ONT-ACT-05 的「v1 1000」→ 10000，并在 §9 总账 G18 行注明「2026-09-15 ADR-0064 补齐」。
 
 **完成判据**：
+
 - [ ] OpenAPI CI 绿
 - [ ] 部署态两类 ActionType 冒烟通过
 - [ ] 证据段落落档
@@ -131,14 +142,15 @@
 
 ## 验证循环（每任务后必跑）
 
-```
+```text
 cd mate-platform-backend && .venv/Scripts/python.exe -m pytest packages/mate-kernel/tests packages/mate-tech-ont/tests packages/mate-app-copilot/tests -q
 ```
+
 低于基线 → 修复后再继续（先单包复跑排除抖动）。涉容器的任务加网关冒烟（硬约束 7）。
 
 ## 完成报告格式
 
-```
+```text
 ## ONT-ACT-05 Action 统一为 EditSet 完成报告
 - S1 模型层：<function_ref 可选化 / serde 往返 / noop 兜底移除 验证结果>
 - S2 执行器+安全闸门：<混合式 e2e / 四类拦截测试 / 27-27 零回归 验证结果>

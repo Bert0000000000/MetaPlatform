@@ -6,6 +6,11 @@ name: cowork-prd-ci
 #   - push 到 cowork/** 分支（本地迭代通道）
 # 不触发 ga-acceptance.yml 的 13 硬规则，避开历史债干扰。
 # 关联交付：docs/active/delivery/evidence/LOOP-ROLLOUT-01-ACCEPTANCE.md
+#
+# 2026-09-15 最终批修复（feat/final-batch-cleanup）：
+#   - 只检查**本次变更**的 md 文件（存量 ~2900 条历史格式债不追溯，新文件全规则把关）
+#   - pymarkdownlnt 版本修正为 0.9.40（原 pin 10.4 不存在 → 安装恒失败）；
+#     规则禁用是顶层参数（`pymarkdownlnt -d ... scan`），子命令不支持 --disable-rules
 
 on:
   workflow_dispatch:
@@ -33,34 +38,59 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # 1) Markdown lint（轻量）
+  # 1) Markdown lint（轻量；只查变更文件）
   md-lint:
     name: cowork md-lint (pymarkdownlnt)
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - name: Install pymarkdownlnt
-        run: pip install pymarkdownlnt==10.4
+        run: pip install pymarkdownlnt==0.9.40
       - name: Lint changed docs
         run: |
-          pymarkdownlnt scan --disable-rules md013,md041 \
-            docs/active/specs docs/active/delivery/evidence
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="origin/${{ github.base_ref }}"
+          else
+            BASE="HEAD~1"
+          fi
+          FILES=$(git diff --name-only "$BASE" -- docs/active/specs docs/active/delivery/evidence 2>/dev/null | grep '\.md$' || true)
+          if [ -z "$FILES" ]; then
+            echo "no changed markdown files; skip"
+            exit 0
+          fi
+          echo "linting:"; echo "$FILES"
+          # shellcheck disable=SC2086 —— 逐文件参数
+          pymarkdownlnt -d md013,md041 scan $FILES
 
-  # 2) PRD 骨架校验（强约束）
+  # 2) PRD 骨架校验（强约束；只查本次新增/修改的 PRD 与 ACCEPTANCE——
+  #    存量 GA 时代文件早于 LOOP-ROLLOUT-01 模板，不追溯）
   prd-skeleton:
     name: cowork PRD skeleton check
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - name: Run check_prd_skeleton.py
         run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="origin/${{ github.base_ref }}"
+          else
+            BASE="HEAD~1"
+          fi
+          FILES=$(git diff --name-only "$BASE" -- docs/active/specs docs/active/delivery/evidence 2>/dev/null | grep '\.md$' || true)
+          if [ -z "$FILES" ]; then
+            echo "no changed docs; skeleton check trivially passes"
+            python scripts/ci/check_prd_skeleton.py --prd-dir docs/active/specs --evidence-dir docs/active/delivery/evidence --strict --files
+            exit 0
+          fi
           python scripts/ci/check_prd_skeleton.py \
             --prd-dir docs/active/specs \
             --evidence-dir docs/active/delivery/evidence \
-            --strict
+            --strict --files $FILES

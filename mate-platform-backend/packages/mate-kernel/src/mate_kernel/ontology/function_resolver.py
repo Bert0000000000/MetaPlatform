@@ -12,6 +12,7 @@ dev 默认 ``InMemoryFunctionResolver``（registry in-process）。生产可替�
 from __future__ import annotations
 
 import re
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Protocol
@@ -105,9 +106,11 @@ class GitFunctionResolver:
         return lang, src
 
     def _git_show(self, sha: str, path: str) -> str:
+        # S607：partial path → which 解析为绝对路径（找不到再裸用，报错路径不变）
+        git_exe = shutil.which("git") or "git"
         try:
             proc = subprocess.run(
-                ["git", "show", f"{sha}:{path}"],
+                [git_exe, "show", f"{sha}:{path}"],
                 cwd=self._repo_root,
                 capture_output=True,
                 text=True,

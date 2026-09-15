@@ -466,7 +466,6 @@ class TestProvenanceHttpE2E:
         assert prov["executed_at"]
 
         # 查询透出：list individuals 响应携带 provenance
-        from mate_kernel.ontology.identity import ClassRef as _CR3
 
         got = client_with_ctx.get(
             f"/api/v1/ont/v2/individuals?class_rid={self.ORDER}"

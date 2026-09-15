@@ -6,7 +6,6 @@ from datetime import UTC, datetime
 
 import pytest
 
-from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 from mate_kernel.ontology import (
     ActionType,
     Axiom,
@@ -27,6 +26,7 @@ from mate_kernel.ontology import (
     Property,
     PropertyFormat,
 )
+from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 
 
 def _repo() -> InMemoryOntologyRepository:

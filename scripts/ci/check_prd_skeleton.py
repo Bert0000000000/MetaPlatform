@@ -93,6 +93,16 @@ def main() -> int:
         help="ACCEPTANCE 文件目录",
     )
     parser.add_argument(
+        "--files",
+        nargs="*",
+        default=None,
+        help=(
+            "只检查这些文件（CI 传 git diff 的变更清单）。"
+            "缺省时全目录扫描（本地手跑用）。2026-09-15 最终批：存量 GA 时代"
+            "文件早于 LOOP-ROLLOUT-01 模板，CI 侧只对新增/修改文件把关。"
+        ),
+    )
+    parser.add_argument(
         "--strict",
         action="store_true",
         help="严格模式：失败即非 0 退出（CI 默认开启）",
@@ -101,21 +111,41 @@ def main() -> int:
 
     errors: list[str] = []
 
-    prd_files = [p for p in args.prd_dir.glob("*-prd.md") if _RE_PRD_FILE.search(p.name)]
-    if not prd_files:
+    if args.files is not None:
+        # 变更文件模式：按文件名归类（prd / acceptance），其余跳过
+        prd_files = [
+            p for p in map(Path, args.files)
+            if _RE_PRD_FILE.search(p.name)
+            and str(p).startswith(str(args.prd_dir))
+        ]
+        acceptance_files = [
+            p for p in map(Path, args.files)
+            if _RE_ACCEPTANCE_FILE.search(p.name)
+            and str(p).startswith(str(args.evidence_dir))
+        ]
+    else:
+        prd_files = [p for p in args.prd_dir.glob("*-prd.md") if _RE_PRD_FILE.search(p.name)]
+        acceptance_files = [
+            p for p in args.evidence_dir.glob("*-ACCEPTANCE.md") if _RE_ACCEPTANCE_FILE.search(p.name)
+        ]
+
+    if args.files is None and not prd_files:
         errors.append(f"未发现 PRD 文件（{args.prd_dir}/**/*-prd.md）")
 
     for p in prd_files:
-        check_prd_file(p, errors)
+        if p.exists():
+            check_prd_file(p, errors)
+        else:
+            errors.append(f"{p}: 文件不存在（已删除？）")
 
-    acceptance_files = [
-        p for p in args.evidence_dir.glob("*-ACCEPTANCE.md") if _RE_ACCEPTANCE_FILE.search(p.name)
-    ]
-    if not acceptance_files:
+    if args.files is None and not acceptance_files:
         errors.append(f"未发现 ACCEPTANCE 文件（{args.evidence_dir}/**/*-ACCEPTANCE.md）")
 
     for p in acceptance_files:
-        check_acceptance_file(p, errors)
+        if p.exists():
+            check_acceptance_file(p, errors)
+        else:
+            errors.append(f"{p}: 文件不存在（已删除？）")
 
     if errors:
         print("❌ PRD 骨架校验失败：")

@@ -6,9 +6,10 @@ PG 表 ont_proposal 列集；口径详见 agent_metrics.py 模块 docstring。
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
-from typing import Any, Iterator
+from typing import Any
 
 import pytest
 from fastapi import FastAPI
@@ -317,7 +318,7 @@ class StubRepo:
 
     def tenant_scope(self, tenant_id: str) -> Any:
         @contextmanager
-        def _cm() -> Iterator["StubRepo"]:
+        def _cm() -> Iterator[StubRepo]:
             self.last_scope = tenant_id
             yield self
 

@@ -208,8 +208,9 @@ class AsyncCopilotClient:
         reveal=1：copilot 以服务身份读取敏感项（api_key）真实值；
         IAM 对人工管理员会话默认掩码返回。
         """
-        import httpx
         import os as _os
+
+        import httpx
 
         # ARK key 托管取数通道：service-read 以服务共享密钥守门，返回
         # ai.provider.* 真实值（服务 client 无 PLATFORM_ADMIN role，
