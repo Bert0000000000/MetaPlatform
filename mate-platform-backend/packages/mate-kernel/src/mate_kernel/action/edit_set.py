@@ -102,6 +102,8 @@ class EditSetResult:
     non_invertible: tuple[str, ...]  # 不可逆编辑的说明（revert 拒绝依据）
     created_rids: tuple[str, ...]  # create_object 实际生成的 rid
     dry_run: bool = False
+    # ADR-0064 S2：统一执行器元数据（is_compat / fn_spec / 组装统计）
+    meta: dict = field(default_factory=dict)
 
 
 # ─────────────────── 模板解析（ActionType.declarative_edits）───────────────────

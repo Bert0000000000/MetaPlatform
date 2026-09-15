@@ -31,11 +31,104 @@ __all__ = [
     "ColumnPolicy",
     "RowPolicy",
     "SecurityPolicySet",
+    "WritePolicyError",
+    "check_edit_permissions",
     "filter_by_markings",
     "filter_visible_individuals",
     "mask_property_values",
     "policy_applies",
 ]
+
+
+class WritePolicyError(ValueError):
+    """ADR-0064 S2：统一执行器写入闸门拒绝（行/列策略 / G6 marking 门 / scoped 收窄）。"""
+
+
+def check_edit_permissions(
+    ops: list[Any] | tuple[Any, ...],
+    *,
+    viewer_markings: tuple[str, ...] | list[str],
+    policies: SecurityPolicySet,
+    get_individual: Any,  # callable(rid) -> Individual | None
+    class_marking_of: Any,  # callable(class_rid) -> tuple[str, ...]
+    ancestors_of: Any,  # callable(class_rid) -> frozenset[str]
+) -> None:
+    """写入闸门：逐 edit 校验（无 viewer markings 时直通 —— 与读端点同口径）。
+
+    语义（与读侧 enforcement 对称）：
+    - **行策略**：set_property / delete_object / add_link 的目标实例若被行
+      策略过滤（不可见）→ 拒写（写一个你看不见的对象 = 泄漏写通道）；
+    - **列策略**：set_property 写入的属性若有 ColumnPolicy 且 viewer 缺
+      required_markings → 拒写（读侧是置 None，写侧直接拒绝）；
+    - **G6 marking 合取门**：实例自身 marking ∧ 所属类型 marking（含祖先）
+      ⊄ viewer markings → 拒写；
+    - **G7 scoped session**：viewer_markings 由 API 层完成收窄
+      （X-Scope-Markings ∩ param ∩ app claims），此处只消费最窄集；
+    - create_object：只做类型 marking 门（新实例尚无行状态可判）；
+      remove_link 的 link 本体不单独判（v1 边界，删除影响随端点对象判定）。
+
+    无策略 ∧ 实例无 marking → 全放行（零回归）。
+    拒绝信息带具体闸门名（row policy / column policy / marking）。
+    """
+    if not viewer_markings:
+        return
+    viewer = tuple(viewer_markings)
+
+    def _denied(kind: str, detail: str) -> WritePolicyError:
+        return WritePolicyError(f"write denied by {kind}: {detail}")
+
+    def _check_individual(ind: Any, what: str) -> None:
+        # G6：实例 marking ∧ 类型 marking（含祖先）⊆ viewer
+        if not set(getattr(ind, "marking", ()) or ()) <= set(viewer):
+            raise _denied("marking gate", f"{what} {ind.rid} marking not held by viewer")
+        cls = ind.class_rid.rid
+        if not set(class_marking_of(cls) or ()) <= set(viewer):
+            raise _denied("marking gate", f"{what} {ind.rid} class marking not held by viewer")
+        # 行策略：不可见 → 拒写
+        if policies.row_policies:
+            visible = filter_visible_individuals(
+                [ind], policies, viewer, ancestor_classes_of=ancestors_of
+            )
+            if not visible:
+                raise _denied("row policy", f"{what} {ind.rid} not visible under row policy")
+
+    def _check_column(property_rid: str, target: str) -> None:
+        if not policies.column_policies:
+            return
+        for p in policies.column_policies:
+            if p.property_rid != property_rid:
+                continue
+            if not _viewer_holds(viewer, p.required_markings):
+                raise _denied(
+                    "column policy",
+                    f"set_property {property_rid} on {target} requires markings "
+                    f"{list(p.required_markings)}",
+                )
+
+    for e in ops:
+        op = getattr(e, "op", "")
+        if op == "set_property":
+            ind = get_individual(e.target)
+            if ind is not None:
+                _check_individual(ind, "set_property target")
+            _check_column(e.property_rid, e.target)
+        elif op == "delete_object":
+            ind = get_individual(e.target)
+            if ind is not None:
+                _check_individual(ind, "delete_object target")
+        elif op == "create_object":
+            cls_markings = class_marking_of(e.class_rid) or ()
+            if not set(cls_markings) <= set(viewer):
+                raise _denied(
+                    "marking gate",
+                    f"create_object class {e.class_rid} marking not held by viewer",
+                )
+        elif op == "add_link":
+            for rid in (e.src, e.dst):
+                ind = get_individual(rid)
+                if ind is not None:
+                    _check_individual(ind, "add_link endpoint")
+        # remove_link：v1 不单独判（删除的可见性随端点对象语义走）
 
 
 @dataclass(frozen=True, slots=True)

@@ -511,19 +511,8 @@ class InMemoryOntologyRepository(OntologyRepository):
 
         ps = self._policy_set()
         if ps.row_policies:
-
-            def _ancestors(class_rid: str) -> frozenset[str]:
-                a = {class_rid}
-                for y, descs in closed.items():
-                    if class_rid in descs:
-                        a.add(y)
-                return frozenset(a)
-
-            from .reasoning.engine import descendant_closure
-
-            closed = descendant_closure(self._subclass_pairs())
             individuals = filter_visible_individuals(
-                individuals, ps, viewer_markings, ancestor_classes_of=_ancestors
+                individuals, ps, viewer_markings, ancestor_classes_of=self._ancestors_of_class
             )
         return filter_by_markings(
             individuals, viewer_markings, class_marking_of=self._class_markings_of
@@ -1065,7 +1054,9 @@ class InMemoryOntologyRepository(OntologyRepository):
             kind="model_type",
         )
 
-    def execute_proposal(self, proposal_id: str) -> Any:
+    def execute_proposal(
+        self, proposal_id: str, *, viewer_markings: tuple[str, ...] | list[str] = ()
+    ) -> Any:
         from datetime import UTC as _UTC
         from datetime import datetime as _dt
 
@@ -1077,34 +1068,17 @@ class InMemoryOntologyRepository(OntologyRepository):
                 f"proposal {proposal_id} is {p.status.value}; execute requires a confirmed proposal"
             )
         if p.kind == "action":
+            # ADR-0064 S3：声明式/混合式 ActionType 走统一执行器（edits 是本体）；
+            # 纯 function 式仍走 apply_action 协议路径（legacy，is_compat 观察中）。
+            at = self._action_types.get(ClassRef(str(p.action_rid)))
+            if at is not None and at.declarative_edits:
+                return self._execute_unified(p, viewer_markings=viewer_markings)
             raise ValueError(
                 "action-kind proposals execute via /action-types/{rid}/apply, not /execute"
             )
         if p.kind == "edit_set":
-            # ACT-05：声明式编辑集执行（confirmed 才到这；AI 流程 propose→confirm 前置）
-            from mate_kernel.action.edit_set import (
-                EDIT_BATCH_LIMIT,
-                resolve_edit_templates,
-            )
-
-            templates = p.parameters.get("edits") or []
-            # P1-6：上限引用 kernel 常量（10000）；分片由 _apply_edits 内部处理
-            if len(templates) > EDIT_BATCH_LIMIT:
-                raise ValueError(f"edit-set exceeds batch limit {EDIT_BATCH_LIMIT}")
-            ops = resolve_edit_templates(
-                templates,
-                target_iid=p.target_iid,
-                parameters=dict(p.parameters.get("parameters") or {}),
-                now_iso=_dt.now(_UTC).isoformat(),
-            )
-            result = self._apply_edits(
-                str(p.action_rid),
-                ops,
-                proposal_id=proposal_id,
-                actor=str(p.confirmed_by or ""),
-            )
-            self._action_service.mark_executed(proposal_id)
-            return result
+            # ACT-05 / ADR-0064 S2：统一执行器（声明式 + function 两规约合并单事务）
+            return self._execute_unified(p, viewer_markings=viewer_markings)
         if p.kind == "create_instance":
             ot = self.get_object_type(ClassRef(p.action_rid))
             props_in: dict[str, Any] = dict(p.parameters.get("props") or {})
@@ -1148,6 +1122,95 @@ class InMemoryOntologyRepository(OntologyRepository):
             self._action_service.mark_executed(proposal_id)
             return ot
         raise ValueError(f"unknown proposal kind: {p.kind!r}")
+
+    def _ancestors_of_class(self, class_rid: str) -> frozenset[str]:
+        """类的全部祖先（subclass 公理闭包；含自身）。"""
+        from .reasoning.engine import descendant_closure
+
+        closed = descendant_closure(self._subclass_pairs())
+        anc = {class_rid}
+        for y, descs in closed.items():
+            if class_rid in descs:
+                anc.add(y)
+        return frozenset(anc)
+
+    def _execute_unified(
+        self, p: Any, *, viewer_markings: tuple[str, ...] | list[str] = ()
+    ) -> Any:
+        """ADR-0064 S2：统一执行器（kind=edit_set / kind=action 声明式混合式共用）。
+
+        组装（assemble_unified_edits）→ 安全闸门 → 补偿式单批执行（_apply_edits）。
+        """
+        from datetime import UTC as _UTC
+        from datetime import datetime as _dt
+
+        from mate_kernel.action.unified import assemble_unified_edits
+        from mate_kernel.ontology.security_policies import check_edit_permissions
+
+        at = self._action_types.get(ClassRef(str(p.action_rid)))
+        # submission_criteria 求值（有 ActionType 时；与 legacy apply 同语义）
+        if at is not None:
+            target_props: dict[str, Any] = {}
+            if p.target_iid:
+                cur = self._individuals.get(p.target_iid)
+                if cur is not None:
+                    target_props = {k.rid: v for k, v in cur.props}
+            raw = dict(p.parameters or {})
+            inner = raw.get("parameters")
+            crit_params = (
+                dict(inner) if isinstance(inner, dict) and p.kind != "action" else raw
+            )
+            if p.kind == "action":
+                crit_params = {k: v for k, v in raw.items() if k != "provenance"}
+            for expr in at.submission_criteria:
+                if not self._action_service.evaluator.evaluate(expr, crit_params, target_props):
+                    raise ValueError(
+                        f"submission criteria not met: {expr!r} for action={at.rid.rid}"
+                    )
+
+        def _invoke(fn_rid: str, tgt: str | None, params: dict[str, Any]) -> Any:
+            return self._action_service.invoke_function(fn_rid, tgt, params)
+
+        assembly = assemble_unified_edits(
+            action_type=at,
+            proposal_kind=p.kind,
+            parameters_raw=dict(p.parameters or {}),
+            target_iid=p.target_iid,
+            invoke_function=_invoke if (at is not None and at.function_ref is not None) else None,
+            now_iso=_dt.now(_UTC).isoformat(),
+        )
+        ops = list(assembly.ops)
+        # 安全闸门：无 viewer markings 直通（与读端点同口径；无策略零回归）
+        check_edit_permissions(
+            ops,
+            viewer_markings=tuple(viewer_markings),
+            policies=self._policy_set(),
+            get_individual=lambda rid: self._individuals.get(rid),
+            class_marking_of=self._class_markings_of,
+            ancestors_of=self._ancestors_of_class,
+        )
+        result = self._apply_edits(
+            str(p.action_rid),
+            ops,
+            proposal_id=str(p.proposal_id),
+            actor=str(p.confirmed_by or ""),
+        )
+        # ADR-0064：统一 meta（is_compat 观察规约②采用率；D-5）
+        try:
+            from dataclasses import replace as _repl
+
+            result = _repl(
+                result,
+                meta={
+                    "is_compat": assembly.is_compat,
+                    "fn_spec": assembly.fn_spec,
+                    **assembly.stats,
+                },
+            )
+        except Exception:
+            pass
+        self._action_service.mark_executed(str(p.proposal_id))
+        return result
 
     # ───── ACT-05：声明式 edit-set（propose / apply-now / 原子执行）─────
 
