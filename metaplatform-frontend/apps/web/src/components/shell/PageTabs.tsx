@@ -12,8 +12,6 @@ export default function PageTabs() {
   const location = useLocation();
   const domain = resolveDomain(location.pathname);
   if (!domain) return null;
-  // 过渡期：域内旧 shell 自己渲染 tab 行时不叠加第二行（见 DomainDef.ownsTabs）
-  if (domain.ownsTabs) return null;
 
   const activeTab = resolveDomainTab(domain, location.pathname);
   const sub = resolveSubTab(domain, location.pathname);

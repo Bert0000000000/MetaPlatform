@@ -38,8 +38,10 @@ test.describe('UI-P1c · 数字员工域', () => {
   test('6 个域内 tab 全部打开且非白屏', async ({ page }) => {
     for (const [path, label] of DOMAIN_TABS) {
       await gotoApp(page, path);
-      const bar = page.locator('.mp-page .semi-tabs-tab');
+      // 页内主 tab 行由壳渲染（原 AgentsLayout 自带的 ModuleTabsLayout 已摘除）
+      const bar = page.locator('.mp-pagetabs-line .semi-tabs-tab');
       await expect(bar.filter({ hasText: label }).first()).toBeVisible({ timeout: 20_000 });
+      await expect(page.locator('.mp-page .mp-pagetabs')).toHaveCount(0);
       await expect(page.locator('body')).not.toContainText('出错了');
     }
   });

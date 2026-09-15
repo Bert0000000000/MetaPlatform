@@ -50,14 +50,6 @@ export interface DomainDef {
   /** 一级默认路由 */
   path: string;
   tabs: DomainTab[];
-  /**
-   * UI-P0 过渡开关：该域的页内 tab 行由域内页面自己渲染（未迁移的旧 shell：
-   * OntologyShellPage / ApphubShellPage / AgentsLayout / KnowledgeLayout / McpCenterLayout / ArchLayout）。
-   * 置 true 时应用壳不再叠加一层 tab 行，避免两行同名 tab。
-   * UI-P1/P2 逐个域替换内容后，把该开关摘掉即可切回壳统一渲染。
-   */
-  ownsTabs?: boolean;
-  /** 该域默认 tab（供 ⌘K 与面包屑使用；ownsTabs 为 true 时路径由域内页面自己决定） */
 }
 
 const ICON_SIZE = 18;
@@ -94,7 +86,6 @@ export const DOMAINS: DomainDef[] = [
     label: '数字员工',
     icon: <Bot size={ICON_SIZE} strokeWidth={1.5} />,
     path: '/agents',
-    ownsTabs: true,
     tabs: [
       { key: 'employees', label: '员工', path: '/agents' },
       { key: 'external', label: '外部员工 · A2A', path: '/agents/external' },
