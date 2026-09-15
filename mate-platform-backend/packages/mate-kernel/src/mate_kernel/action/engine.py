@@ -209,6 +209,48 @@ class ActionService:
     def set_resolver(self, resolver: Any) -> None:
         self._resolver = resolver
 
+    def invoke_function(self, function_ref: str, target_iid: str | None, parameters: dict[str, Any]) -> Any:
+        """ADR-0064 S2：单次 function 调用（统一执行器复用，无 proposal/副作用语义）。
+
+        与 apply() 的第 3 步同一段分派逻辑（executor→resolver 源码 / invoker 回落，
+        ADR-0063 起无 invoker 即 FunctionNotRegistered fail-fast）；返回值规约解释
+        （{"edits":[...]} / 普通映射）由统一执行器负责。
+        """
+        return self._dispatch_function(function_ref, target_iid, parameters)
+
+    def _dispatch_function(self, function_ref: str, target_iid: str | None, parameters: dict[str, Any]) -> Any:
+        executor = self._executors.get(function_ref)
+        if executor is not None and self._resolver is not None:
+            try:
+                from ..ontology.identity import ClassRef as _ClassRef
+
+                lang, source = self._resolver.resolve(_ClassRef(function_ref))
+                rc, out, err = executor.execute(source, (target_iid or "", parameters))
+                if rc != 0:
+                    raise FunctionExecutionError(
+                        f"function {function_ref!r} exited {rc}: stderr={err!r}"
+                    )
+                try:
+                    import json as _json
+
+                    parsed = _json.loads(out) if out else None
+                    return parsed.get("result", parsed) if isinstance(parsed, dict) else parsed
+                except Exception:
+                    return None
+            except (FunctionTimeout, FunctionExecutionError, FunctionNotRegistered):
+                raise
+            except Exception:
+                raise FunctionExecutionError(f"function {function_ref!r} crashed") from None
+        invoker = self._invokers.get(function_ref)
+        if invoker is None:
+            # ADR-0063 S2：删除静默兜底（此前"没有 invoker 时返回 parameters 当作
+            # 决策结果"会让未接线 Function 伪装成执行成功，失败不可观测）。
+            raise FunctionNotRegistered(
+                f"function {function_ref!r} has no registered invoker/executor "
+                "(ADR-0063 起不再回落 parameters)"
+            )
+        return invoker(target_iid, parameters)  # 异常裸抛（与原路径一致）
+
     # ───── proposal (HITL step before apply) ─────
 
     def propose(
@@ -364,74 +406,20 @@ class ActionService:
                 if eid is not None:
                     event_evidences.append((se, eid))
 
-        # 3) 调用 function_ref；失败 → rollback
+        # 3) 调用 function_ref；失败 → rollback（分派逻辑见 _dispatch_function；
+        #    executor 路径的 crash 包装在分派内部完成，invoker 路径异常裸抛）
         rolled_back = False
         function_result: Any = None
-        executor = self._executors.get(function_ref)
-        if executor is not None and self._resolver is not None:
-            try:
-                from ..ontology.identity import ClassRef as _ClassRef
-
-                lang, source = self._resolver.resolve(_ClassRef(function_ref))
-                rc, out, err = executor.execute(source, (target_iid or "", parameters))
-                if rc != 0:
-                    raise FunctionExecutionError(
-                        f"function {function_ref!r} exited {rc}: stderr={err!r}"
-                    )
+        try:
+            function_result = self._dispatch_function(function_ref, target_iid, parameters)
+        except Exception:
+            rolled_back = True
+            if rollback_hook is not None:
                 try:
-                    import json as _json
-
-                    parsed = _json.loads(out) if out else None
-                    function_result = (
-                        parsed.get("result", parsed) if isinstance(parsed, dict) else parsed
-                    )
+                    rollback_hook(target_iid, parameters)
                 except Exception:
-                    function_result = None
-            except FunctionTimeout:
-                rolled_back = True
-                if rollback_hook is not None:
-                    try:
-                        rollback_hook(target_iid, parameters)
-                    except Exception:
-                        pass
-                raise
-            except (FunctionExecutionError, FunctionNotRegistered):
-                rolled_back = True
-                if rollback_hook is not None:
-                    try:
-                        rollback_hook(target_iid, parameters)
-                    except Exception:
-                        pass
-                raise
-            except Exception:
-                rolled_back = True
-                if rollback_hook is not None:
-                    try:
-                        rollback_hook(target_iid, parameters)
-                    except Exception:
-                        pass
-                raise FunctionExecutionError(f"function {function_ref!r} crashed") from None
-        else:
-            invoker = self._invokers.get(function_ref)
-            if invoker is None:
-                # ADR-0063 S2：删除静默兜底。此前"没有 invoker/executor 时返回
-                # parameters 当作决策结果"，会让未接线的 Function 伪装成执行成功
-                # （apply 返回 200 却什么都没算），失败不可观测。现在一律 fail-fast。
-                raise FunctionNotRegistered(
-                    f"function {function_ref!r} has no registered invoker/executor "
-                    "(ADR-0063 起不再回落 parameters)"
-                )
-            else:
-                try:
-                    function_result = invoker(target_iid, parameters)
-                except Exception:
-                    rolled_back = True
-                    if rollback_hook is not None:
-                        try:
-                            rollback_hook(target_iid, parameters)
-                        except Exception:
-                            pass
-                    raise
+                    pass
+            raise
 
         outcome = ApplyOutcome(
             action_rid=action_rid,

@@ -1,6 +1,6 @@
 # ADR-0064：Action 统一为 EditSet（ONT-ACT-05 补齐）
 
-> **状态**：**Proposed**（待评审）
+> **状态**：**Accepted + 已实施**（2026-09-15 评审拍板；S1–S4 收口记录见 §8）
 > **日期**：2026-09-15
 > **作者**：Claude + 用户协作
 > **关联 ADR**：ADR-0021（Kernel 12 基元）、ADR-0040（沙箱架构 · Function L2）、ADR-0044（assisted action · HITL 唯一写路径）、ADR-0063（Function 源码解析）
@@ -67,6 +67,10 @@
 | **`function_result` 回写** | **保留为兼容路径**（设计明确要求，**不删**） |
 | **批量上限** | 沿用 **10000**（实现值，对齐 Palantir 真实上限）；**订正设计文档的 v1 1000** |
 | **HITL** | **不变**（D3+D7：AI 强制确认 / 人工预览即确认，同一条 proposal 管道） |
+| **兼容期（2026-09-15 拍板）** | `function_result` 回写**无限期保留**（长期兼容路径，不设废弃时间点）；audit 事件打 `is_compat` 标记观察采用率 |
+| **规约①边界（2026-09-15 拍板）** | **禁止混用**：function 返回 `{"edits":[...]}` 时必须是纯 edits 对象，多余字段 → **422** |
+| **编辑权限（2026-09-15 拍板）** | 统一执行器**完整接入**安全闸门：SEC-12 行/列策略 + G6 marking 血缘合取门 + G7 scoped session（X-Scope-Markings 收窄），写入前逐 edit 校验；无策略/无 marking 配置时默认放行（现网零行为变化） |
+| **AI 工具名（2026-09-15 拍板）** | `propose_action_<slug>` **不改名**；S3 仅更新工具描述与实际行为一致 |
 
 ### 2.1 关键子决策：不引入互斥约束
 
@@ -132,6 +136,8 @@
 | 端到端 | 声明式 ActionType：`propose → confirm → execute → revert`（2026-09-15 已实测通过，本 ADR 后须保持） |
 | 端到端 | **混合式** ActionType（声明式 edits + function 计算值）→ 单事务落库，两者都生效 |
 | 契约 | `contracts/openapi/services/ont.yaml` 的 `ActionTypeDTO.function_ref` 可选 + 重新 bundle |
+| 安全 | 行策略命中 → 该 edit 被拒（422/403，报具体策略）；列策略 → 属性写被拒；marking 合取门 → 拒写；X-Scope-Markings 收窄后越界 edit 被拒 |
+| 安全 | 无任何策略/marking 配置时，执行结果与现状完全一致（零回归，27/27 不受影响） |
 
 ---
 
@@ -140,7 +146,7 @@
 | 阶段 | 内容 | 出口 |
 | --- | --- | --- |
 | **S1 · 模型层** | `function_ref` 可选；约束改「至少一个」；`_row_to_at` 去静默兜底；serde 补 `declarative_edits` 往返 | 三条单元验证绿 |
-| **S2 · 执行器统一** | function 返回值按两规约解释 → 合并进 EditSet；声明式与 function-edits 同一事务 | 混合式 ActionType 端到端绿 |
+| **S2 · 执行器统一 + 安全闸门** | function 返回值按两规约解释（规约①必须纯 edits 对象，混用 422）→ 合并进 EditSet 同一事务；**写入前安全闸门完整接入**（行/列策略 + marking 合取门 + scoped session，逐 edit 校验）；audit 事件打 `is_compat` 标记 | 混合式 ActionType 端到端绿；策略拦截 / marking 拒写 / scoped 收窄各 ≥1 测试绿；无配置零回归 |
 | **S3 · 入口与 AI 面** | `propose` 按 ActionType 声明分派（不再要求走对端点）；`propose_action_*` 工具描述与实际一致 | 走错端点不再 500 |
 | **S4 · 契约与证据** | OpenAPI 更新 + ACCEPTANCE 段落 + 订正差距分析文档的 v1 1000 | 硬规则 2/10 覆盖 |
 
@@ -148,9 +154,34 @@
 
 ---
 
-## 7. 待评审问题（Open Questions）
+## 7. 评审结论（2026-09-15 用户拍板，原 Open Questions 已全部关闭）
 
-1. **过渡期长度**：`function_result` 直接回写保留多久？是否设废弃时间点？
-2. **规约①的边界**：function 返回 `{"edits":[...]}` 时，是否仍允许同时返回普通字段（即两种规约混用）？
-3. **编辑权限**：EditSet 可改 1 万对象，是否需要在统一执行器里加**行/列级策略**检查？（关联差距 G5，属 Wave 4 SEC-12）
-4. **AI 工具命名**：`propose_action_<slug>` 统一后是否改名（当前名暗示 action 路径，实际会走 edits）？
+| # | 问题 | 结论 |
+|---|---|---|
+| 1 | 过渡期长度：`function_result` 直接回写保留多久？ | **无限期保留**；不设废弃时间点；audit 打 `is_compat` 标记观察采用率（与 ADR-0061「迁移完成前不删 legacy」纪律一致） |
+| 2 | 规约①边界：返回 `{"edits":[...]}` 时可否混用普通字段？ | **禁止混用**；纯 edits 对象，多余字段 422 |
+| 3 | 编辑权限：统一执行器是否接行/列级策略检查？ | **完整接入**（行/列策略 + marking 血缘合取门 + scoped session），写入前逐 edit 校验；见 §2 决策表与 S2 出口标准 |
+| 4 | AI 工具命名：`propose_action_<slug>` 是否改名？ | **不改名**；S3 仅更新工具描述与实际行为一致 |
+
+---
+
+## 8. 实施记录（2026-09-15 S1–S4 收口）
+
+> 分支 `feat/ont-act05-edit-set`；测试 `packages/mate-tech-ont/tests/test_ont_act05_unified.py` 27 项；
+> 三包回归 **1410（基线）→ 1437**；契约 `contracts/tests` 34 绿 + bundle 重生成；
+> 部署态冒烟 `scripts/smoke/act05u_deploy_smoke.py` 经网关 **SMOKE PASS（0 失败）**。
+
+| 阶段 | Commit | 交付 |
+|---|---|---|
+| S1 模型层+契约 | `ec113971` | `function_ref: ClassRef \| None` + `__post_init__`「至少声明一个」；`_row_to_at` 去 noop 兜底；serde/DTO/契约（`ActionTypeV2`/`ActionTypeCreateV2`）可选化 + 补 `declarative_edits`/`title`/`description`（契约此前全缺） |
+| S2 统一执行器+闸门 | `b2e1c9d1` | kernel `action/unified.py` 组装器（显式 body edits = 全集跳过 function；两规约：①纯 edits 混字段报错、②映射转 set_property 打 `is_compat`）；`ActionService.invoke_function`；`check_edit_permissions`（行/列/G6/G7，空 viewer 直通零回归）；PG/InMemory 双仓统一；legacy 路径恒 `is_compat=True` |
+| S3 入口+AI 面 | `c717254a` | execute 端点 markings 参数 + `FunctionNotRegistered`/`WritePolicyError`→422；两 edit-set 端点只透传显式 edits（回落链在执行器）；InMemory 签名对齐；工具描述去端点绑死（D-7 不改名） |
+| S4 契约+部署+证据 | 本 commit | bundle 重生成 + contracts/tests 34 绿；容器重启 + 部署态 A（纯声明式 propose→confirm→execute→revert）/ B（混合式双声明 + 显式 edits 执行）全过；`revert_proposal` 修复——kind=action 经统一执行器的 execution 带 inverse 即按 edit_set 补偿（legacy 无 inverse 自然 audit-only） |
+
+**实测语义补充（实现固化）**：
+- 显式 body edits 视为**全集**（替换声明式模板且跳过 function）——function 的职责是产出 edits，
+  调用方自带时无需再算；kind=action 扁平参数恒走 ActionType 声明路径。
+- kind=action 且声明式/混合式 → execute 分派统一执行器（`result.kind="edit_set"`）；
+  纯 function 式 → legacy 回写（`result.kind="action"`, `is_compat=True`）。
+- 无任何策略/marking 配置时执行结果与现状一致（27/27 零回归；安全闸门空 viewer markings 直通，
+  与读端点 opt-in 同口径）。

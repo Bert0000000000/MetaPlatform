@@ -190,7 +190,8 @@ def action_propose_tool_schema(at: Any) -> dict[str, Any]:
     """AI-11：ActionType → propose_action_<slug> 写工具（强制 HITL 语义）。
 
     描述显式声明「只产生提案、须用户确认后执行」（B3/D3 决策）——
-    agent 调用 → /action-types/{rid}/propose-edit-set → ProposalConfirmDrawer。
+    ADR-0064 统一执行器后 /propose 与 /propose-edit-set 入口等价（按
+    ActionType 声明分派），工具名保持 propose_action_<slug> 不变（D-7）。
     parameters 直接映射 ActionType.parameters（Property 元数据）。
     """
     params: dict[str, Any] = {}

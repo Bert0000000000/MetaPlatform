@@ -197,7 +197,7 @@ Palantir Ontology 分层（调研材料 00 §二）：L0 数据支撑 / L1 安�
 
 | Batch | 内容 | 覆盖差距 | 关键设计 |
 |---|---|---|---|
-| **ONT-ACT-05 声明式 edit-set** | Action 升级为：parameters + **声明式 edits 列表**（`set_property` / `create_object` / `delete_object` / `add_link` / `remove_link`，每条带 target 选择器）+ 可选 function_ref（function 返回 edits）；单事务原子提交；批量对象上限（v1 1000） | G18 | 现有 function_result 回写模式保留为兼容路径；edit-set 先 dry-run 生成 expected_diff（复用 proposal preview），提交时同一事务落库 |
+| **ONT-ACT-05 声明式 edit-set** | Action 升级为：parameters + **声明式 edits 列表**（`set_property` / `create_object` / `delete_object` / `add_link` / `remove_link`，每条带 target 选择器）+ 可选 function_ref（function 返回 edits）；单事务原子提交；批量对象上限（10000，对齐 Palantir 真实上限；**2026-09-15 ADR-0064 订正**——原文"v1 1000"系笔误） | G18 | 现有 function_result 回写模式保留为兼容路径（**ADR-0064：无限期保留，audit 打 is_compat**）；edit-set 先 dry-run 生成 expected_diff（复用 proposal preview），提交时同一事务落库。**2026-09-15 ADR-0064 已统一执行器收口（S1–S4）** |
 | **ONT-ACT-06 校验体系** | ① 参数 schema 校验（必填/类型/范围/枚举）；② submission_criteria 从 mini-DSL 升级为结构化规则（复用 ObjectSet 的 Condition IR，支持 AND/OR 组合）；③ entry validation（编辑前置校验，如"目标对象状态必须为 X"） | G19 | SimpleRuleEvaluator 保留做兼容，新结构化规则并行；proposal preview 时预评估并展示"将违反的规则" |
 | **ONT-ACT-07 副作用投递 + revert** | ① outbox 事件 → 通知通道（站内/邮件/webhook）绑定 + webhook 签名与重试；② Action 级逆编辑记录（edit-set 的反操作自动生成，revert 端点执行） | G20, G21 | 逆编辑 = edit-set 的代数逆（set_property 存旧值 / add_link ↔ remove_link / create ↔ delete）；proposal revert（已有）与 action revert 统一到一个补偿框架 |
 | **ONT-ACT-08 Scenario 最小版** | 会话级本体状态 fork（内存 overlay repo：读穿透主库 + 写留在 overlay）+ merge-action（把 overlay 编辑作为单 edit-set 事务提交）+ TTL 清理 | G22 | Palantir 也是 Beta，故取最小集：**Temporary 形态**（会话内）优先，Persisted（情景即对象）看需求；rebase 简化为 merge 时冲突检测；overlay repo 实现 `OntologyRepository` 协议即可复用全部读路径 |
@@ -359,8 +359,7 @@ Batch 口径：后端 20/20 + UI 5/6 + 二轮 4/4 + 三轮 7 项（G7/G12/G13/G2
 | G15 Link 语义 | ✅ | EXP-03 | 两端命名+基数强制+searchAround；test_ont_exp03 |
 | G16 元数据 | ✅ | EXP-04 | description/status/type_group/render_hints 全链路 |
 | G17 时序存储 | ✅ | GOV-19 | ont_timeseries_point+窗口查询+UI sparkline |
-| G18 声明式 edit-set | ✅ | ACT-05 | 5 算子+模板+单事务+逆编辑；test_ont_act05 |
-| G19 校验体系 | ✅ | ACT-06 | 引用参数校验+RuleGroup；test_ont_act06_07 |
+| G18 声明式 edit-set | ✅ | ACT-05 | 5 算子+模板+单事务+逆编辑；test_ont_act05。**2026-09-15 ADR-0064 补齐**：统一执行器（function 两规约并入 EditSet）+ 完整安全闸门 + is_compat；test_ont_act05_unified || G19 校验体系 | ✅ | ACT-06 | 引用参数校验+RuleGroup；test_ont_act06_07 |
 | G20 副作用投递 | ✅ | 三轮 | webhook 订阅 + HMAC-SHA256 签名 + 1+3 退避重试 + 投递审计 + 幂等跳过（真 HTTP 服务验证）；webhook_delivery.py |
 | G21 revert | ✅ | ACT-07 | 逆编辑补偿+equivalence（PG 真库） |
 | G22 Scenario | ✅ | ACT-08 | Temporary overlay+受治理 merge；test_ont_act08 |

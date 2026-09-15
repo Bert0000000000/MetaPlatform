@@ -792,9 +792,10 @@ def _row_to_at(row: dict[str, Any]) -> ActionType:
         parameters=tuple(params),
         submission_criteria=tuple(row.get("submission_criteria") or []),
         side_effects=tuple(row.get("side_effects") or []),
-        function_ref=ClassRef(row["function_ref"])
-        if row.get("function_ref")
-        else ClassRef("ont.system.fn.noop.v1"),
+        # ADR-0064 S1：不再静默造 ont.system.fn.noop.v1（与 ADR-0063 S2 删除的
+        # 同类病）。空 function_ref = 纯声明式；空 + 空 declarative_edits 的行
+        # 由 ActionType「至少声明一个」校验 fail-fast。
+        function_ref=ClassRef(row["function_ref"]) if row.get("function_ref") else None,
         on=tuple(ClassRef(r) for r in row.get("target_object_types") or []),
         title=row.get("title") or "",
         description=row.get("description") or "",
@@ -1052,7 +1053,6 @@ class PgOntologyRepository(OntologyRepository):
         self._pending_notify: list[str] = []
         # GOVERN-05: FunctionResolver + FunctionExecutor 注入
         from mate_kernel.ontology.function_resolver import (
-            FunctionNotFoundError,
             GitFunctionResolver,
             InMemoryFunctionResolver,
         )
@@ -1951,7 +1951,8 @@ class PgOntologyRepository(OntologyRepository):
                         ),
                         json.dumps(list(at.submission_criteria)),
                         json.dumps(list(at.side_effects)),
-                        at.function_ref.rid,
+                        # 列保持 NOT NULL DEFAULT ''：空串 = 纯声明式（ADR-0064）
+                        at.function_ref.rid if at.function_ref is not None else "",
                         [c.rid for c in at.on],
                         at.title,
                         at.description,
@@ -3950,6 +3951,17 @@ class PgOntologyRepository(OntologyRepository):
         anc = _subclass_closure(pairs).get(class_rid, set())
         return frozenset({class_rid} | anc)
 
+    def _individual_by_rid(self, rid: str) -> Any:
+        """ADR-0064 S2：闸门用 —— rid → Individual | None（跨连接只读）。"""
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_individual WHERE rid = %s", (rid,))
+                row = cur.fetchone()
+                return _row_to_individual(row) if row is not None else None
+        finally:
+            conn.close()
+
     def _class_markings_of(self, class_rid: str) -> tuple[str, ...]:
         """G6：类型 marking（含祖先类型 —— schema 血缘传播）。"""
         anc = self._ancestors_of_class(class_rid)
@@ -4618,8 +4630,13 @@ class PgOntologyRepository(OntologyRepository):
         elif p.kind == "merge_suggestion":
             # merge 不可数值逆写 → audit-only（partial）
             compensated = {"note": "merge reversal is audit-only"}
-        elif p.kind == "edit_set":
-            # ACT-07：逆编辑补偿（执行期 invert_edits 已排除不可逆项）
+        elif p.kind == "edit_set" or (
+            p.kind == "action" and execution.get("inverse")
+        ):
+            # ACT-07 / ADR-0064：逆编辑补偿（执行期 invert_edits 已排除不可逆项）。
+            # kind=action 经统一执行器执行的声明式/混合式，execution 同样带 inverse
+            # —— 有逆编辑就按同一补偿路径（legacy function 式 execution 无 inverse，
+            # 自然落 audit-only partial）。
             inverse_edits = list(execution.get("inverse") or [])
             non_inv = list(execution.get("non_invertible") or [])
             if inverse_edits:
@@ -4870,6 +4887,7 @@ class PgOntologyRepository(OntologyRepository):
         actor_id: str,
         idempotency_key: str | None,
         request_fingerprint: str,
+        viewer_markings: tuple[str, ...] | list[str] = (),
     ) -> dict[str, Any]:
         """Execute one confirmed ActionType proposal with durable evidence.
 
@@ -4877,6 +4895,10 @@ class PgOntologyRepository(OntologyRepository):
         submission criteria. This repository owns the durable boundary: the
         target update, action audit, outbox evidence, proposal state,
         lifecycle event, idempotency row, and receipt commit together.
+
+        ADR-0064：本方法 = legacy function_result 回写兼容路径（D-5 无限期保留，
+        audit 打 is_compat 观察采用率）；viewer_markings 非空时同样过安全闸门
+        （写一个你看不见的对象 = 泄漏写通道）。
         """
         from mate_kernel.action.engine import ProposalNotConfirmed, SubmissionContext
 
@@ -4925,7 +4947,12 @@ class PgOntologyRepository(OntologyRepository):
                 outcome = self._action_service.apply(
                     action_rid=action_type.rid.rid,
                     submission_criteria=action_type.submission_criteria,
-                    function_ref=action_type.function_ref.rid,
+                    # ADR-0064：legacy action 路径遇到纯声明式 ActionType（无
+                    # function_ref）走 FunctionNotRegistered fail-fast——统一执行器
+                    # 在 S3 按 ActionType 声明分派后不再走到这里。
+                    function_ref=action_type.function_ref.rid
+                    if action_type.function_ref is not None
+                    else "",
                     on_rid=action_type.on[0].rid if action_type.on else "",
                     target_iid=target.rid,
                     parameters=dict(proposal.parameters),
@@ -4960,6 +4987,32 @@ class PgOntologyRepository(OntologyRepository):
                         resolved = parameter_rids.get(slug)
                         if resolved is not None and slug not in proposal.parameters:
                             merged_props[resolved] = value
+                # ADR-0064 S2：legacy 路径同样过安全闸门（viewer markings 非空时）。
+                # 写入面 = merged_props 相对 target_props 的变更集。
+                if viewer_markings:
+                    from mate_kernel.action.edit_set import EditOp
+                    from mate_kernel.ontology.security_policies import (
+                        check_edit_permissions,
+                    )
+
+                    gate_ops = [
+                        EditOp(
+                            op="set_property",
+                            target=target.rid,
+                            property_rid=rid,
+                            value=value,
+                        )
+                        for rid, value in merged_props.items()
+                        if target_props.get(rid) != value
+                    ]
+                    check_edit_permissions(
+                        gate_ops,
+                        viewer_markings=tuple(viewer_markings),
+                        policies=self._policy_set(),
+                        get_individual=lambda rid: self._individual_by_rid(rid),
+                        class_marking_of=self._class_markings_of,
+                        ancestors_of=self._ancestors_of_class,
+                    )
                 cur.execute(
                     """
                     UPDATE ont_individual
@@ -4978,6 +5031,8 @@ class PgOntologyRepository(OntologyRepository):
                     "audit_id": outcome.audit_id,
                     "outbox_event_ids": [event_id for _, event_id in outbox_evidence],
                     "side_effects_emitted": list(outcome.side_effects_emitted),
+                    # ADR-0064 D-5：legacy function_result 回写路径标记（观察采用率）
+                    "is_compat": True,
                 }
                 cur.execute(
                     """
@@ -5168,6 +5223,8 @@ class PgOntologyRepository(OntologyRepository):
         edit_templates: list[dict[str, Any]] | tuple[dict[str, Any], ...],
         actor: str,
         impact_summary: str = "",
+        *,
+        viewer_markings: tuple[str, ...] | list[str] = (),
     ) -> dict[str, Any]:
         """D7「预览即确认」：即时 proposal（confirmed）+ 事务执行 + 审计。"""
         prop = self._propose_edit_set_pg(
@@ -5182,6 +5239,7 @@ class PgOntologyRepository(OntologyRepository):
             prop.proposal_id,
             actor_id=actor,
             idempotency_key=f"editset-{prop.proposal_id}",
+            viewer_markings=viewer_markings,
         )
 
     def _execute_edit_set_proposal(
@@ -5191,36 +5249,80 @@ class PgOntologyRepository(OntologyRepository):
         actor_id: str,
         idempotency_key: str | None,
         request_fingerprint: str | None,
+        viewer_markings: tuple[str, ...] | list[str] = (),
     ) -> dict[str, Any]:
-        """kind=edit_set 的事务执行：编辑集 + 审计 + outbox 单事务。
+        """ADR-0064 S2：统一执行器 —— 声明式 edits + function 产物两规约合并单事务。
 
-        P1-6：批次上限引用 kernel ``EDIT_BATCH_LIMIT``（10000，对齐 Palantir）。
-        万行仍走**单事务**（原子性优先）；kernel ``EDIT_CHUNK_SIZE``（1000）是
-        执行器内部的分片粒度，后续如做批量 FETCH/EXECUTE 优化按此分片，
-        不改变单事务结构与「任一片失败 → 整体回滚」语义。
+        - kind=edit_set（propose-edit-set / apply-edit-set 入口）与 kind=action
+          中声明了 declarative_edits 的（S3 分派）共用本方法；
+        - function 返回值规约解释见 ``mate_kernel.action.unified``；规约②转换
+          打 ``is_compat`` 标记（D-5 观察采用率，legacy 直接回写路径恒 True）；
+        - viewer_markings 非空 → 完整安全闸门（行/列策略 + G6 marking 合取门 +
+          G7 scoped 收窄结果；空 = 与读端点同口径直通，零回归）；
+        - P1-6：批量上限 ``EDIT_BATCH_LIMIT``（10000）在组装器对合并后总数校验；
+          万行仍走**单事务**（原子性优先），分片不改变「任一片失败 → 整体回滚」。
         """
         import uuid as _uuid
         from dataclasses import replace as _replace
         from datetime import UTC as _UTC
         from datetime import datetime as _dt
 
-        from mate_kernel.action.edit_set import (
-            EDIT_BATCH_LIMIT,
-            EditSetError,
-            invert_edits,
-            resolve_edit_templates,
-        )
+        from mate_kernel.action.edit_set import EditSetError, invert_edits
+        from mate_kernel.action.unified import assemble_unified_edits
+        from mate_kernel.ontology.security_policies import check_edit_permissions
 
-        templates = list((p.parameters or {}).get("edits") or [])
-        params = dict((p.parameters or {}).get("parameters") or {})
-        # P1-6：声明上限 10000（超限在解析层 fail-fast）
-        if len(templates) > EDIT_BATCH_LIMIT:
-            raise EditSetError(f"edit-set exceeds batch limit {EDIT_BATCH_LIMIT}")
-        ops = resolve_edit_templates(
-            templates,
-            target_iid=p.target_iid,
-            parameters=params,
-            now_iso=_dt.now(_UTC).isoformat(),
+        # 统一装配：ActionType（ad-hoc 编辑可为 None）→ 声明式模板 + function
+        # 两规约产物 → 合并 EditOp 序列。
+        try:
+            at = self.get_action_type(ClassRef(p.action_rid))
+        except KeyError:
+            at = None
+
+        # submission_criteria（有 ActionType 时；与 legacy apply 同一求值器）
+        if at is not None:
+            target_props: dict[str, Any] = {}
+            if p.target_iid:
+                with suppress(KeyError):
+                    t = self.get_individual(p.target_iid)
+                    target_props = {k.rid: v for k, v in t.props}
+            raw_crit = dict(p.parameters or {})
+            if p.kind == "edit_set":
+                inner = raw_crit.get("parameters")
+                crit_params = dict(inner) if isinstance(inner, dict) else {}
+            else:
+                crit_params = {k: v for k, v in raw_crit.items() if k != "provenance"}
+            for expr in at.submission_criteria:
+                if not self._action_service.evaluator.evaluate(expr, crit_params, target_props):
+                    raise ValueError(
+                        f"submission criteria not met: {expr!r} for action={at.rid.rid}"
+                    )
+
+        def _invoke(fn_rid: str, tgt: str | None, fn_params: dict[str, Any]) -> Any:
+            return self._action_service.invoke_function(fn_rid, tgt, fn_params)
+
+        try:
+            assembly = assemble_unified_edits(
+                action_type=at,
+                proposal_kind=p.kind,
+                parameters_raw=dict(p.parameters or {}),
+                target_iid=p.target_iid,
+                invoke_function=(
+                    _invoke if (at is not None and at.function_ref is not None) else None
+                ),
+                now_iso=_dt.now(_UTC).isoformat(),
+            )
+        except EditSetError as e:
+            raise ValueError(str(e)) from e  # API 层统一 422
+
+        ops = list(assembly.ops)
+        # 安全闸门（空 viewer markings 内部直通；无策略零回归）
+        check_edit_permissions(
+            ops,
+            viewer_markings=tuple(viewer_markings),
+            policies=self._policy_set(),
+            get_individual=lambda rid: self._individual_by_rid(rid),
+            class_marking_of=self._class_markings_of,
+            ancestors_of=self._ancestors_of_class,
         )
         applied: list[Any] = []
         created_rids: list[str] = []
@@ -5345,6 +5447,10 @@ class PgOntologyRepository(OntologyRepository):
                     "applied_count": len(applied),
                     "created_rids": created_rids,
                     "non_invertible": list(non_invertible),
+                    # ADR-0064 S2：统一执行器元数据（规约②兼容转换观察 / fn 规约）
+                    "is_compat": assembly.is_compat,
+                    "fn_spec": assembly.fn_spec,
+                    "assembly": dict(assembly.stats),
                     "inverse": [
                         {
                             "op": i.op,
@@ -5424,8 +5530,14 @@ class PgOntologyRepository(OntologyRepository):
         proposal_id: str,
         actor_id: str = "",
         idempotency_key: str | None = None,
+        *,
+        viewer_markings: tuple[str, ...] | list[str] = (),
     ) -> dict[str, Any]:
-        """MP-SAL-04b：confirmed proposal 落库执行（create_instance / model_type）。"""
+        """MP-SAL-04b：confirmed proposal 落库执行（create_instance / model_type）。
+
+        ADR-0064 S2/S3：viewer_markings 非空时统一执行器走完整安全闸门
+        （行/列策略 + G6 marking 门 + scoped 收窄；空 = 与读端点同口径直通）。
+        """
         from datetime import UTC as _UTC
         from datetime import datetime as _dt
 
@@ -5455,11 +5567,26 @@ class PgOntologyRepository(OntologyRepository):
                 f"proposal {proposal_id} is {p.status.value}; execute requires a confirmed proposal"
             )
         if p.kind == "action":
+            # ADR-0064 S3：按 ActionType 声明分派 —— 声明式/混合式走统一执行器
+            # （edits 是本体），纯 function 式走 legacy 回写（D-5 兼容路径）。
+            try:
+                at_dispatch = self.get_action_type(ClassRef(p.action_rid))
+            except KeyError:
+                at_dispatch = None
+            if at_dispatch is not None and at_dispatch.declarative_edits:
+                return self._execute_edit_set_proposal(
+                    p,
+                    actor_id=actor_id,
+                    idempotency_key=key,
+                    request_fingerprint=fingerprint,
+                    viewer_markings=viewer_markings,
+                )
             return self._execute_action_kind_proposal(
                 p,
                 actor_id=actor_id,
                 idempotency_key=key,
                 request_fingerprint=fingerprint,
+                viewer_markings=viewer_markings,
             )
         if p.kind == "edit_set":
             result = self._execute_edit_set_proposal(
@@ -5467,6 +5594,7 @@ class PgOntologyRepository(OntologyRepository):
                 actor_id=actor_id,
                 idempotency_key=key,
                 request_fingerprint=fingerprint,
+                viewer_markings=viewer_markings,
             )
             return result
         if p.kind == "create_instance":

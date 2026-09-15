@@ -1,11 +1,14 @@
-"""ACT-05：声明式 edit-set —— Action 的结构化编辑集（D3/D7 拍板）。
+"""ACT-05 / ADR-0064：声明式 edit-set —— Action 的结构化编辑集（统一执行器内核）。
 
 Palantir 语义：Action = 参数 + 声明式 edits（对对象/属性/链接的一组修改，
 **单事务**原子提交；单次上限 10,000 对象）。Mate v2 上限对齐 10,000 条编辑，
 执行器内部按 ``EDIT_CHUNK_SIZE`` 分片（语义不变：全批成功才成功）。
 
-与 legacy function_result 回写并存：ActionType 声明 declarative_edits 时走
-本模块（模板解析 → EditSet → repo.apply_edit_set 单事务），否则走 legacy。
+ADR-0064：edits 是本体，function 是产生 edits 的一种 backing —— 两个来源
+（``declarative_edits`` / ``function_ref`` 产物）由统一执行器
+（``action/unified.py`` 组装 + repo 执行）**合并进同一事务**；纯 function 式
+ActionType 走 legacy ``function_result`` 直接回写兼容路径（audit 打 is_compat，
+D-5 无限期保留）。分派按 ActionType 声明（execute_proposal），与入口端点无关。
 
 编辑算子（op）：
 - set_property  (target, property_rid, value)
@@ -102,6 +105,8 @@ class EditSetResult:
     non_invertible: tuple[str, ...]  # 不可逆编辑的说明（revert 拒绝依据）
     created_rids: tuple[str, ...]  # create_object 实际生成的 rid
     dry_run: bool = False
+    # ADR-0064 S2：统一执行器元数据（is_compat / fn_spec / 组装统计）
+    meta: dict = field(default_factory=dict)
 
 
 # ─────────────────── 模板解析（ActionType.declarative_edits）───────────────────
