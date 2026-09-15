@@ -143,8 +143,6 @@ DDL: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_ot_tenant ON ont_object_type (tenant_id)",
-    # MP-SAL-01：类型级 marking（ADR-0043 §2.6）——旧库补列
-    "ALTER TABLE ont_individual ADD COLUMN IF NOT EXISTS provenance JSONB NULL",
     "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS marking TEXT[] NOT NULL DEFAULT '{}'",
     # MP-DEDUP-01：slug 列（从 rid 第 4 段派生）+ archived 列（merge 软删标记）
     "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS slug TEXT NOT NULL DEFAULT ''",
@@ -169,11 +167,16 @@ DDL: tuple[str, ...] = (
         primary_key  TEXT NOT NULL,
         marking      TEXT[] NOT NULL DEFAULT '{}',
         created_at   TIMESTAMPTZ NOT NULL,
-        updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+        updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        provenance   JSONB NULL
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_ind_tenant_class ON ont_individual (tenant_id, class_rid)",
     "CREATE INDEX IF NOT EXISTS ix_ont_ind_props ON ont_individual USING GIN (props)",
+    # MP-SAL-01：记录级溯源列 —— **必须排在 ont_individual 建表之后**。
+    # 2026-09-15 修复：此前该 ALTER 排在建表之前，全新库（CI ga-014 的
+    # metaplatform_ont_test）bootstrap 直接 UndefinedTable 炸掉整条 DDL 序列。
+    "ALTER TABLE ont_individual ADD COLUMN IF NOT EXISTS provenance JSONB NULL",
     """
     CREATE TABLE IF NOT EXISTS ont_action_type (
         rid                  TEXT PRIMARY KEY,
