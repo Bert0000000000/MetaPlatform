@@ -54,6 +54,8 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._outbox_writer: Any = None
         # MP-SAL-05: 流程编排定义持久化
         self._flow_definitions: dict[str, dict[str, Any]] = {}
+        # C7：proposal 执行结果（revert 补偿用；PG 侧落在 ont_proposal_execution）
+        self._proposal_executions: dict[str, Any] = {}
         # SEC-12：行列级安全策略
         self._security_policies: dict[str, dict[str, Any]] = {}
         # GOV-16：使用量计数器（P1-7：key 含 actor/source 维度）
@@ -1221,7 +1223,67 @@ class InMemoryOntologyRepository(OntologyRepository):
         except Exception:
             pass
         self._action_service.mark_executed(str(p.proposal_id))
+        self._proposal_executions[str(p.proposal_id)] = result
         return result
+
+    def revert_proposal(
+        self,
+        proposal_id: str,
+        actor_id: str = "",
+        idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
+        """C7：executed → reverted（人审撤销 + 补偿）—— 与 PG 侧同语义。
+
+        - edit_set / 经统一执行器的 action：逆编辑补偿（执行期 invert_edits 已
+          排除不可逆项）→ equivalence = equivalent / partial
+        - create_instance：删除实例（I1 ≃ 等价）
+        - 其它：audit-only partial
+        """
+        del idempotency_key  # InMemory 无幂等表（与 confirm/execute 同口径）
+        from mate_kernel.action.engine import ProposalStatus
+
+        p = self._action_service.get_proposal(proposal_id)
+        if p.status is not ProposalStatus.EXECUTED:
+            raise ValueError(
+                f"proposal {proposal_id} is {p.status.value}; revert requires executed"
+            )
+
+        execution = self._proposal_executions.get(proposal_id)
+        equivalence = "partial"
+        compensated: dict[str, Any] = {}
+
+        if p.kind == "create_instance":
+            ot = self._object_types.get(ClassRef(str(p.action_rid)))
+            props_in = dict((p.parameters or {}).get("props") or {})
+            if ot is not None:
+                pk_slug = ot.primary_key[0].rid.split(".")[3]
+                pk_value = props_in.get(pk_slug)
+                parts = ot.rid.rid.split(".")
+                tenant, cls_slug = parts[1], parts[4] if len(parts) >= 6 else parts[3]
+                ind_rid = f"ont.{tenant}.ind.{cls_slug}.{pk_value}"
+                existed = self._individuals.pop(ind_rid, None) is not None
+                equivalence = "equivalent" if existed else "partial"
+                compensated = {"deleted_individual": ind_rid, "rows": int(existed)}
+        elif execution is not None:
+            inverse = list(getattr(execution, "inverse", ()) or ())
+            non_inv = list(getattr(execution, "non_invertible", ()) or ())
+            if inverse:
+                self._apply_edits(
+                    str(p.action_rid),
+                    inverse,
+                    proposal_id=proposal_id,
+                    actor=actor_id or "revert",
+                )
+                equivalence = "equivalent" if not non_inv else "partial"
+                compensated = {"applied_count": len(inverse), "non_invertible": non_inv}
+            else:
+                compensated = {"note": "nothing invertible", "non_invertible": non_inv}
+        else:
+            # kind=action 的 legacy function 式 / merge 等：无逆编辑 → audit-only
+            compensated = {"note": "no execution record; audit-only revert"}
+
+        self._action_service.mark_reverted(proposal_id)
+        return {"equivalence": equivalence, "compensation": compensated}
 
     # ───── ACT-05：声明式 edit-set（propose / apply-now / 原子执行）─────
 
@@ -1289,12 +1351,20 @@ class InMemoryOntologyRepository(OntologyRepository):
             target_iid=target_iid,
             parameters=parameters,
         )
+        # C9：body 无 edits 时用 ActionType.declarative_edits 预装配预览 diff
+        preview_ops = ops
+        if not ops and at is not None and getattr(at, "declarative_edits", ()):
+            preview_ops = resolve_edit_templates(
+                [dict(t) for t in at.declarative_edits],
+                target_iid=target_iid,
+                parameters=parameters,
+            )
         prop = self._action_service.propose(
             action_rid=action_rid,
             parameters={"edits": list(edit_templates), "parameters": dict(parameters)},
             target_iid=target_iid,
-            impact_summary=impact_summary or f"edit-set: {len(ops)} edits",
-            expected_diff=self._dry_run_diff(ops),
+            impact_summary=impact_summary or f"edit-set: {len(preview_ops)} edits",
+            expected_diff=self._dry_run_diff(preview_ops),
             kind="edit_set",
         )
         self._action_service.confirm_proposal(prop.proposal_id, confirmed_by=actor)

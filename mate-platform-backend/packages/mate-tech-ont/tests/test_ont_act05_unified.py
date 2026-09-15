@@ -796,6 +796,39 @@ class TestS3ApiDispatch:
         assert ex.status_code == 200, ex.text
         assert r.get_individual(ALICE).get(ClassRef(P_LEVEL)) == "principal"
 
+    def test_inmemory_revert_restores(self, s3_client) -> None:
+        """C7：InMemory revert_proposal 与 PG 同语义（逆编辑补偿回旧值）。"""
+        client, r = s3_client
+        resp = client.post(
+            f"{BASE}/action-types/{ACT_PURE}/propose",
+            json={"parameters": {"new-status": "to-revert"}, "target_iid": ALICE},
+        )
+        pid = resp.json()["proposal_id"]
+        assert (
+            client.post(
+                f"{BASE}/proposals/{pid}/confirm",
+                json={},
+                headers={"Idempotency-Key": f"cfm-ir-{pid}"},
+            ).status_code
+            == 200
+        )
+        assert (
+            client.post(
+                f"{BASE}/proposals/{pid}/execute",
+                headers={"Idempotency-Key": f"exe-ir-{pid}"},
+            ).status_code
+            == 200
+        )
+        assert r.get_individual(ALICE).get(ClassRef(P_STATUS)) == "to-revert"
+        rv = client.post(
+            f"{BASE}/proposals/{pid}/revert",
+            json={},
+            headers={"Idempotency-Key": f"rv-ir-{pid}"},
+        )
+        assert rv.status_code == 200, rv.text
+        assert rv.json()["equivalence"] == "equivalent"
+        assert r.get_individual(ALICE).get(ClassRef(P_STATUS)) == "active"
+
     def test_function_not_registered_maps_422(self, s3_client) -> None:
         """混合式但 fn 未注册 → execute 422（不再 500）。"""
         client, _ = s3_client  # 未注册 FN

@@ -5189,6 +5189,20 @@ class PgOntologyRepository(OntologyRepository):
             target_iid=target_iid,
             parameters=parameters,
         )
+        # C9：body 未带 edits 时，用 ActionType.declarative_edits 预装配 diff ——
+        # 否则预览恒为 0 ops（真实 op 数在执行器装配时才产生）。function 产物
+        # 不在 propose 阶段求值（要真调函数，成本/副作用留到 execute）。
+        preview_ops = ops
+        preview_source = "body"
+        if not ops and at is not None and getattr(at, "declarative_edits", ()):
+            preview_ops = resolve_edit_templates(
+                [dict(t) for t in at.declarative_edits],
+                target_iid=target_iid,
+                parameters=parameters,
+            )
+            preview_source = "declarative"
+        elif not ops and at is not None and at.function_ref is not None:
+            preview_source = "function(deferred)"
         proposal_id = f"prop-{_uuid.uuid4().hex[:12]}"
         tenant_id = (
             self._current_tenant() or action_rid.split(".")[1]
@@ -5196,8 +5210,11 @@ class PgOntologyRepository(OntologyRepository):
             else "tenant-default"
         )
         expected_diff = {
-            "~ops": len(ops),
-            "ops": [e.op for e in ops],
+            "~ops": len(preview_ops),
+            "ops": [e.op for e in preview_ops],
+            # C9：预览来源（body=调用方自带 / declarative=类型模板预装配 /
+            # function(deferred)=执行期才有 op 列表）
+            "preview_source": preview_source,
         }
         conn, _ = self._connect()
         try:
