@@ -20,6 +20,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings as _TransportSecuritySettings
 from mcp.types import (
     GetPromptResult,
     Prompt,
@@ -47,10 +48,11 @@ class MateStreamableHttpServer(FastMCP):
         *,
         name: str = "mate-tech-mcp",
         default_tenant: str = "default",
+        settings: dict[str, Any] | None = None,
     ) -> None:
         self._mcp = mcp_server
         self._tenant = default_tenant
-        super().__init__(name)
+        super().__init__(name, **(settings or {}))
 
     # -- tools -----------------------------------------------------------
     async def list_tools(self) -> list[Tool]:
@@ -77,7 +79,12 @@ class MateStreamableHttpServer(FastMCP):
         return tools
 
     async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
-        args = arguments or {}
+        args = dict(arguments or {})
+        # HITL 边界加固（外部协议面）：__caller__ 是平台内部 origin 路由
+        # （用户会话）专用的声明通道，外部 MCP 客户端传来的 __caller__ 一律
+        # 剥除 —— 远端 AI 客户端永远按 agent 视角，HITL 工具
+        # （ont_confirm/reject/execute_proposal）在此面必然 PermissionError。
+        args.pop("__caller__", None)
         # 1. local handler
         try:
             return await self._mcp.call_tool(name, args)
@@ -154,6 +161,25 @@ class MateStreamableHttpServer(FastMCP):
 
 
 def build_streamable_http_app(mcp_server: Any):
-    """Return the Starlette streamable-http app for the MCPServer."""
-    server = MateStreamableHttpServer(mcp_server)
-    return server.streamable_http_app()
+    """Return the Starlette streamable-http app for the MCPServer.
+
+    server 实例挂到 app.mate_server —— Starlette mount 不执行子应用
+    lifespan，父应用必须用 server.session_manager.run() 托管会话管理器
+    （否则外部 POST 一律 "Task group is not initialized" 500）。
+    """
+    # DNS 防重绑定白名单：默认仅 localhost；经 API 网关转发时 Host 是
+    # upstream 服务名（mate-tech-mcp:8081）或对外域名 —— 由
+    # MCP_ALLOWED_HOSTS（逗号分隔）注入。"*" 关闭校验（仅限内网部署）。
+    import os as _os
+
+    allowed = _os.getenv("MCP_ALLOWED_HOSTS", "")
+    settings: dict[str, Any] = {}
+    if allowed:
+        settings["transport_security"] = _TransportSecuritySettings(
+            allowed_hosts=[h.strip() for h in allowed.split(",") if h.strip()],
+            allowed_origins=["*"],
+        )
+    server = MateStreamableHttpServer(mcp_server, settings=settings)
+    app = server.streamable_http_app()
+    app.mate_server = server  # type: ignore[attr-defined]
+    return app

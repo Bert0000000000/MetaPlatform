@@ -82,6 +82,49 @@ _share_federation_external_client(federation_external_client)
 # never emitted in production). In-memory for this batch; a SQL-backed
 # relay can drain it to Kafka at startup (OutboxRelay.drain_once).
 _outbox = InMemoryOutboxWriter()
+
+
+def _register_ontology_server_capability() -> None:
+    """MCP 中心平台能力登记（幂等）：本体引擎 MCP 服务。
+
+    把平台自己的 ontology 能力面登记进 external-agent 注册表，使
+    MCP 中心「服务端」tab 可见（endpoint 指向本服务的 streamable 协议端），
+    外部客户端（Codex / Claude Code 等）按同一入口接入。
+    """
+    from datetime import UTC, datetime
+
+    from .management_repo import ExternalAgent, get_external_agent, put_external_agent
+
+    server_id = "srv-ontology-engine"
+    if get_external_agent("tenant-default", server_id) is not None:
+        return
+    now = datetime.now(UTC).isoformat()
+    put_external_agent(
+        "tenant-default",
+        ExternalAgent(
+            id=server_id,
+            tenant_id="tenant-default",
+            name="Ontology Engine MCP",
+            description=(
+                "本体引擎能力面：类型发现/实例浏览(Interface 多态)/语义检索/"
+                "结构化查询/三闸门自检/提案(带溯源)/Agent 指标。"
+                "外部 AI 客户端经 streamable-http 接入，写路径全部走 "
+                "proposal+HITL（AI 永不直写）。"
+            ),
+            endpoint="/api/v1/mcp/protocol/mcp",
+            protocol_type="MCP",
+            status="ACTIVE",
+            trust_level="TRUSTED",
+            auth_type="bearer",
+            capabilities="ontology.read,ontology.write,proposal,hitl",
+            created_at=now,
+            updated_at=now,
+        ),
+    )
+    logger.info("mcp.capability.ontology_engine.registered", server_id=server_id)
+
+
+_register_ontology_server_capability()
 _share_federation_outbox(_outbox)
 
 # P3-W10 Fix-1: the 5 spec endpoints now live in the explicit
@@ -98,8 +141,13 @@ app = FastAPI(
     description="MCP (Model Context Protocol) HTTP bridge.",
 )
 
-# Hook 1 of 5: install SEC-IAM-01 auth middleware.
-install_auth(app)
+# Hook 1 of 5: install SEC-IAM-01 auth middleware. The optional
+# api_key_verifier (ADR-0062) is a second chance for long-lived external
+# client keys: sk-mcp-* bearers that the JWT verifier rejects fall through to
+# mcp_api_key_verifier. Every other token behaves exactly as before.
+from .security import mcp_api_key_verifier
+
+install_auth(app, api_key_verifier=mcp_api_key_verifier)
 
 # Bind the MCP server + per-tenant rate limiter onto app.state so the
 # origin router handlers (api/origin_routes.py) can resolve them without
@@ -131,13 +179,68 @@ from .protocol.streamable import build_streamable_http_app
 
 # Keep the protocol endpoint inside the canonical /api/v1/mcp namespace so
 # direct service callers and the API gateway expose the same contract.
-app.mount("/api/v1/mcp/protocol", build_streamable_http_app(mcp_server))
+_streamable_app = build_streamable_http_app(mcp_server)
+app.mount("/api/v1/mcp/protocol", _streamable_app)
+
+# Fix（2026-09-14）：Starlette mount 不执行子应用 lifespan —— FastMCP 的
+# streamable session manager（task group）从未启动，外部客户端 POST 一律
+# 500 "Task group is not initialized"。把子应用 lifespan 并入父应用；
+# 自定义 lifespan_context 生效后 Starlette 不再自动跑 on_startup/on_shutdown
+# 钩子，因此在 lifespan 内动态执行（含本文件后文注册的 startup 钩子）。
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def _lifespan_with_streamable(_app: FastAPI):
+    _streamable_server = _streamable_app.mate_server  # type: ignore[attr-defined]
+    async with _streamable_server.session_manager.run():
+        for hook in list(_app.router.on_startup):
+            await hook()
+        yield
+        for hook in list(_app.router.on_shutdown):
+            await hook()
+
+
+app.router.lifespan_context = _lifespan_with_streamable
 
 
 @app.get("/healthz")
 async def healthz() -> dict[str, Any]:
     """Liveness probe."""
     return {"status": "ok", "version": app.version, "tools": len(mcp_server._tools)}  # pyright: ignore[reportPrivateUsage]
+
+
+def _bootstrap_api_keys() -> None:
+    """Wire the long-lived MCP API key store (ADR-0062).
+
+    Gated on an explicit DSN, matching mate-tech-data's ``_bootstrap_sql``:
+    without ``MATE_DB_URL`` the store stays None and every ``sk-mcp-*`` token
+    is rejected (fail-closed) rather than silently falling back to a stray
+    local SQLite file.
+
+    Only ``mcp_api_keys`` is created here — not ``create_all()``, which would
+    also materialise the catalog tables without the tenant RLS policies that
+    the alembic chain attaches to them.
+    """
+    if not (os.environ.get("MATE_DB_URL") or os.environ.get("DATABASE_URL")):
+        logger.info("mcp.api_keys.disabled", reason="MATE_DB_URL unset")
+        return
+
+    from mate_tech_db.base import get_engine
+
+    from .repositories.sql_models import McpApiKeyORM
+    from .security import McpApiKeyStore, set_api_key_runtime
+
+    try:
+        McpApiKeyORM.__table__.create(bind=get_engine(), checkfirst=True)
+    except Exception:
+        # Never let key-store wiring take the whole service down: without a
+        # store the verifier fails closed, which is a safe degraded mode.
+        logger.exception("mcp.api_keys.bootstrap_failed")
+        return
+
+    set_api_key_runtime(McpApiKeyStore())
+    logger.info("mcp.api_keys.enabled")
 
 
 @app.on_event("startup")  # pyright: ignore[reportDeprecated]
@@ -159,6 +262,7 @@ async def on_startup() -> None:
         version=app.version,
         transport=os.getenv("MCP_TRANSPORT", "stdio"),
     )
+    _bootstrap_api_keys()
 
 
 def run_stdio() -> None:

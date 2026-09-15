@@ -939,6 +939,14 @@ services:
       KEYCLOAK_URL: http://keycloak:8080
       MCP_TRANSPORT: ${MCP_TRANSPORT:-http}
       MCP_SERVER_NAME: mate-tech-mcp
+      # ont 代理工具的出站服务凭证（client_credentials 换 JWT；KEYCLOAK_URL/REALM 已有）
+      TECH_ONT_TOKEN: ${KEYCLOAK_CLIENT_SECRET:-}
+      TECH_ONT_TENANT: tenant-default
+      # MCP streamable Host 白名单（DNS 防重绑定；网关转发 Host=upstream 服务名）
+      MCP_ALLOWED_HOSTS: localhost,127.0.0.1,mate-tech-mcp,mate-tech-mcp:8081,mate-api-gateway,localhost:8100,localhost:9250
+      # ADR-0062：长期 API Key（外部 MCP 客户端免每小时重登）需要 PG。
+      # 未设置则密钥存储不启用，sk-mcp-* 一律拒绝（fail-closed），JWT 路径不受影响。
+      MATE_DB_URL: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
       REDIS_URL: redis://redis:6379/0
       ONTOLOGY_URL: http://mate-tech-ont:8007
       RAG_URL: http://mate-tech-rag:8001
@@ -949,6 +957,8 @@ services:
       - "${MATE_MCP_PORT:-8081}:8081"
     depends_on:
       redis:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
       mate-tech-ont:
         condition: service_healthy

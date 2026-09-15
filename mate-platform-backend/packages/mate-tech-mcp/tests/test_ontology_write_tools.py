@@ -475,13 +475,19 @@ def test_write_tools_carry_metadata(tool_cls: type) -> None:
 
 
 def test_build_factory_returns_all_tools() -> None:
-    """factory 返回 10 件套：3 只读 + 4 写提议 + 3 HITL。"""
+    """factory 返回 15 件套：3 只读 + 5 客户端能力面 + 4 写提议 + 3 HITL。"""
     tools = build_ontology_proxy_tools()
     names = {t.name for t in tools}
     expected = {
         "ont_list_classes",
         "ont_inspect_class",
         "ont_object_query",
+        # 2026-09-14：外部 AI 客户端能力面（读 + 自检 + 指标）
+        "ont_list_individuals",
+        "ont_search_objects",
+        "ont_validate_preflight",
+        "ont_agent_metrics",
+        "ont_list_interfaces",
         "ont_propose_model_type",
         "ont_propose_instance",
         "ont_merge_objects",
@@ -491,4 +497,4 @@ def test_build_factory_returns_all_tools() -> None:
         "ont_execute_proposal",
     }
     assert names == expected
-    assert len(tools) == 10
+    assert len(tools) == 15

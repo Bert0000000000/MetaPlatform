@@ -2260,6 +2260,39 @@ requirements:
     tests: []
     implementationStatus: placeholder
     acceptanceStatus: notAccepted
+  FR-MCP-APIKEYS-CREATE:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+      - mcpPostMcpApiKeys
+    handler: mate_tech_mcp.main:app#mcpPostMcpApiKeys
+    tests:
+      - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+      - mate-platform-backend/packages/mate-tech-mcp/tests/test_mcp_api_keys.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-MCP-APIKEYS-DELETE:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+      - mcpDeleteMcpApiKeysKid
+    handler: mate_tech_mcp.main:app#mcpDeleteMcpApiKeysKid
+    tests:
+      - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+      - mate-platform-backend/packages/mate-tech-mcp/tests/test_mcp_api_keys.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-MCP-APIKEYS-LIST:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+      - mcpGetMcpApiKeys
+    handler: mate_tech_mcp.main:app#mcpGetMcpApiKeys
+    tests:
+      - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+      - mate-platform-backend/packages/mate-tech-mcp/tests/test_mcp_api_keys.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
   FR-MCP-FEDERATION-DELETE:
     prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
     service: mcp

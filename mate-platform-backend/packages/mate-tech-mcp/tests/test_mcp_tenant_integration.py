@@ -173,5 +173,8 @@ class TestMcpMainHasInstallAuth:
             / "main.py"
         )
         text = main_py.read_text(encoding="utf-8")
-        assert "install_auth(app)" in text, "install_auth not wired in mcp main.py"
+        assert "install_auth(app" in text, "install_auth not wired in mcp main.py"
+        assert "api_key_verifier=mcp_api_key_verifier" in text, (
+            "install_auth must carry the ADR-0062 api_key_verifier hook"
+        )
         assert "from mate_platform.auth import install_auth" in text

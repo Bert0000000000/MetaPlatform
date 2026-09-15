@@ -68,31 +68,79 @@ class OntologyProxyTool:
         timeout: float = 30.0,
         client: httpx.AsyncClient | None = None,
     ) -> None:
-        self._base_url = base_url or os.getenv(
-            "TECH_ONT_URL",
-            "http://localhost:8007",
+        # 服务身份（lazy）：TECH_ONT_TOKEN 兼容两种语义 ——
+        #   1) client_credentials secret（默认；运行时向 Keycloak 换 JWT）
+        #   2) 已签发的 Bearer JWT（以 "eyJ" 开头直接透传）
+        # 出站 401 时自动刷新一次（Keycloak token 过期自愈）。
+        self._auth_secret = os.getenv("TECH_ONT_TOKEN", "")
+        self._auth_client_id = os.getenv("TECH_ONT_CLIENT_ID", "metaplatform-backend")
+        self._kc_url = os.getenv("KEYCLOAK_URL", "http://keycloak:8080").rstrip("/")
+        self._kc_realm = os.getenv("KEYCLOAK_REALM", "metaplatform")
+        self._bearer: str = ""
+        self._bearer_exp: float = 0.0
+        # env 兼容两套命名：TECH_ONT_URL（历史）与 ONTOLOGY_URL（compose 现行）
+        self._base_url = (
+            base_url
+            or os.getenv("TECH_ONT_URL")
+            or os.getenv("ONTOLOGY_URL")
+            or "http://localhost:8007"
         )
         # dev/staging：技术本体代理的出站服务凭证。生产应改为逐请求透传
         # 调用方 token（见 MP-SAL-05 运行时接线的 token 透传）。
-        _token = os.getenv("TECH_ONT_TOKEN", "")
         _tenant = os.getenv("TECH_ONT_TENANT", "tenant-default")
-        _headers = {}
-        if _token:
-            _headers["Authorization"] = f"Bearer {_token}"
-            _headers["X-Tenant-Id"] = _tenant
         self._client = client or httpx.AsyncClient(
             base_url=self._base_url,
             timeout=timeout,
-            headers=_headers,
+            headers={"X-Tenant-Id": _tenant},
         )
 
+    async def _ensure_bearer(self) -> str:
+        """client_credentials → JWT（带 60s 提前刷新；失败回退空 = 匿名）。"""
+        import time as _time
+
+        if not self._auth_secret:
+            return ""
+        if self._auth_secret.startswith("eyJ"):
+            return self._auth_secret
+        if self._bearer and _time.time() < self._bearer_exp - 60:
+            return self._bearer
+        try:
+            async with httpx.AsyncClient(timeout=10) as c:
+                resp = await c.post(
+                    f"{self._kc_url}/realms/{self._kc_realm}/protocol/openid-connect/token",
+                    data={
+                        "grant_type": "client_credentials",
+                        "client_id": self._auth_client_id,
+                        "client_secret": self._auth_secret,
+                        "scope": "openid",
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                self._bearer = str(data["access_token"])
+                self._bearer_exp = _time.time() + float(data.get("expires_in", 300))
+        except Exception as exc:
+            logger.warning("mcp.ont_proxy.token_failed", error=str(exc))
+            self._bearer = ""
+        return self._bearer
+
     async def _get(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        resp = await self._client.get(path, params=params)
+        token = await self._ensure_bearer()
+        resp = await self._client.get(
+            path,
+            params=params,
+            headers={"Authorization": f"Bearer {token}"} if token else {},
+        )
         resp.raise_for_status()
         return resp.json()
 
     async def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
-        resp = await self._client.post(path, json=payload)
+        token = await self._ensure_bearer()
+        resp = await self._client.post(
+            path,
+            json=payload,
+            headers={"Authorization": f"Bearer {token}"} if token else {},
+        )
         resp.raise_for_status()
         return resp.json()
 
@@ -226,6 +274,7 @@ class OntProposeModelTypeTool(OntologyProxyTool):
         domain: str = "",
         properties: list[dict[str, Any]] | None = None,
         primary_key: list[str] | None = None,
+        client_provenance: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         # 组装完整 ObjectTypeDTO 透传给 tech-ont。rid 由调用方在 type_def 里
         # 显式给出（cross-tenant 校验在 tech-ont 侧做）；这里只负责构造
@@ -238,7 +287,16 @@ class OntProposeModelTypeTool(OntologyProxyTool):
             "interfaces": [],
             "marking": [domain] if domain else [],
         }
-        payload = {"type_def": type_def, "impact_summary": impact_summary}
+        payload = {
+            "type_def": type_def,
+            "impact_summary": impact_summary,
+            # ONT-PROV-01：外部 AI 客户端提案自动溯源
+            "provenance": {
+                "source": "ai",
+                "client": "mcp",
+                **(client_provenance or {}),
+            },
+        }
         return await self._post("/api/v1/ont/v2/object-types/propose", payload)
 
 
@@ -269,6 +327,10 @@ class OntProposeInstanceTool(OntologyProxyTool):
             },
             "impact_summary": {"type": "string", "description": "人类可读影响"},
             "expected_diff": {"type": "object", "description": "可选预期 diff"},
+            "client_provenance": {
+                "type": "object",
+                "description": "溯源补充（model/agent 标识等；source=ai 由平台强制）",
+            },
         },
         "required": ["class_rid", "fields", "impact_summary"],
     }
@@ -280,10 +342,18 @@ class OntProposeInstanceTool(OntologyProxyTool):
         fields: dict[str, Any],
         impact_summary: str,
         expected_diff: dict[str, Any] | None = None,
+        client_provenance: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "props": dict(fields),
             "impact_summary": impact_summary,
+            # ONT-PROV-01：外部 AI 客户端提案自动溯源（source=ai 恒有；
+            # client 侧可补充 model/agent 标识，显式键优先）
+            "provenance": {
+                "source": "ai",
+                "client": "mcp",
+                **(client_provenance or {}),
+            },
         }
         if expected_diff:
             payload["expected_diff"] = expected_diff
@@ -501,6 +571,150 @@ class OntExecuteProposalTool(_HitlProposalTool):
         )
 
 
+# ─────────────────── 2026-09-14 增量：外部 AI 客户端能力面 ───────────────────
+
+
+class OntListIndividualsTool(OntologyProxyTool):
+    """实例浏览（EXP-01 多态）：class_rid 接受 ObjectType 或 Interface rid。
+
+    Interface 源 = 实现类型 + 各自后代（与查询路径同语义）；响应含
+    provenance（AI 落库实例可识别来源与置信度）。
+    """
+
+    name = "ont_list_individuals"
+    description = (
+        "列出本体对象实例。class_rid 支持 ObjectType rid（精确匹配）或 "
+        "Interface rid（多态：实现类型+后代的实例一起返回）。"
+        "返回含 provenance（source=ai 的实例可溯源）。"
+    )
+    operation_id = "ontListV2Individuals"
+    capabilities: ClassVar[tuple[str, ...]] = ("ontology.read", "instances", "polymorphic")
+
+    input_schema: ClassVar[dict[str, Any]] = {
+        "type": "object",
+        "properties": {
+            "class_rid": {
+                "type": "string",
+                "description": "ObjectType rid 或 Interface rid（多态源）",
+            },
+        },
+        "required": ["class_rid"],
+    }
+
+    async def __call__(self, *, class_rid: str) -> list[dict[str, Any]]:
+        return await self._get(  # type: ignore[return-value]
+            "/api/v1/ont/v2/individuals",
+            params={"class_rid": class_rid},
+        )
+
+
+class OntSearchObjectsTool(OntologyProxyTool):
+    """语义搜索（向量检索实例）。"""
+
+    name = "ont_search_objects"
+    description = "自然语言语义搜索本体实例（向量检索），返回相似卡片列表。"
+    operation_id = "ontSearchV2Objects"
+    capabilities: ClassVar[tuple[str, ...]] = ("ontology.read", "semantic-search")
+
+    input_schema: ClassVar[dict[str, Any]] = {
+        "type": "object",
+        "properties": {
+            "text": {"type": "string", "description": "自然语言查询"},
+            "class_rid": {"type": "string", "description": "限定类型（可选）"},
+            "top_k": {"type": "integer", "description": "返回条数（默认 8）"},
+        },
+        "required": ["text"],
+    }
+
+    async def __call__(
+        self, *, text: str, class_rid: str = "", top_k: int = 8
+    ) -> Any:
+        payload: dict[str, Any] = {"text": text, "top_k": top_k}
+        if class_rid:
+            payload["class_rid"] = class_rid
+        return await self._post("/api/v1/ont/v2/object-search", payload)
+
+
+class OntValidatePreflightTool(OntologyProxyTool):
+    """三闸门干跑自检（schema×SHACL×Axiom）—— 不产提案、不落库。
+
+    外部 AI 客户端在 propose 之前可先自检字段合法性，减少被闸门阻断的
+    往返（propose 响应本身也会带完整 preflight 报告）。
+    """
+
+    name = "ont_validate_preflight"
+    description = (
+        "干跑校验实例字段（不产提案）：schema 校验 + SHACL 约束。"
+        "返回 {schema: {errors[]}, shacl: {conforms, violations[]}}。"
+    )
+    operation_id = "ontValidateV2Data"
+    capabilities: ClassVar[tuple[str, ...]] = ("ontology.read", "validation", "gate")
+
+    input_schema: ClassVar[dict[str, Any]] = {
+        "type": "object",
+        "properties": {
+            "class_rid": {"type": "string", "description": "目标 ObjectType rid"},
+            "fields": {"type": "object", "description": "字段值 dict（slug→值）"},
+        },
+        "required": ["class_rid", "fields"],
+    }
+
+    async def __call__(
+        self, *, class_rid: str, fields: dict[str, Any]
+    ) -> dict[str, Any]:
+        schema = await self._post(
+            "/api/v1/ont/v2/object-types/validate-data",
+            {"class_rid": class_rid, "props": dict(fields)},
+        )
+        try:
+            shacl = await self._post(
+                "/api/v1/ont/v2/shacl/validate",
+                {"target_class": class_rid},
+            )
+        except Exception:
+            shacl = {"conforms": None, "violations": [], "note": "shacl unavailable"}
+        return {"schema": schema, "shacl": shacl}
+
+
+class OntAgentMetricsTool(OntologyProxyTool):
+    """AI Agent 回归指标（proposal 接受率基线）。"""
+
+    name = "ont_agent_metrics"
+    description = (
+        "AI 提案回归指标：总数/状态分布/接受率（accepted=executed+reverted）/"
+        "by_actor。外部 Agent 可自省提案质量基线。"
+    )
+    operation_id = "ontAgentMetricsSummary"
+    capabilities: ClassVar[tuple[str, ...]] = ("ontology.read", "metrics")
+
+    input_schema: ClassVar[dict[str, Any]] = {
+        "type": "object",
+        "properties": {
+            "days": {"type": "integer", "description": "时间窗天数（默认 30）"},
+        },
+    }
+
+    async def __call__(self, *, days: int = 30) -> dict[str, Any]:
+        return await self._get(  # type: ignore[return-value]
+            "/api/v1/ont/v2/agent-metrics/summary",
+            params={"days": days},
+        )
+
+
+class OntListInterfacesTool(OntologyProxyTool):
+    """Interface 契约清单（多态查询源发现）。"""
+
+    name = "ont_list_interfaces"
+    description = "列出全部 Interface 契约（属性签名 + 实现类型数）。Interface rid 可作为多态查询/浏览源。"
+    operation_id = "ontListV2Interfaces"
+    capabilities: ClassVar[tuple[str, ...]] = ("ontology.read", "discovery", "interface")
+
+    input_schema: ClassVar[dict[str, Any]] = {"type": "object", "properties": {}}
+
+    async def __call__(self) -> list[dict[str, Any]]:
+        return await self._get("/api/v1/ont/v2/interfaces")  # type: ignore[return-value]
+
+
 def build_ontology_proxy_tools() -> tuple[OntologyProxyTool, ...]:
     """工厂：返回所有已注册的 ontology 代理工具。
 
@@ -510,6 +724,13 @@ def build_ontology_proxy_tools() -> tuple[OntologyProxyTool, ...]:
         OntListClassesTool(),
         OntInspectClassTool(),
         OntObjectQueryTool(),
+        # 2026-09-14：外部 AI 客户端能力面（读 + 自检 + 指标）
+        OntListIndividualsTool(),
+        OntSearchObjectsTool(),
+        OntValidatePreflightTool(),
+        OntAgentMetricsTool(),
+        OntListInterfacesTool(),
+        # 写提议（provenance 自动溯源）
         OntProposeModelTypeTool(),
         OntProposeInstanceTool(),
         OntMergeObjectsTool(),

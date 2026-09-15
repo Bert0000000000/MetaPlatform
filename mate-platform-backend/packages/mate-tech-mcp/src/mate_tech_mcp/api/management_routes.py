@@ -18,6 +18,7 @@ from typing import Any
 
 import structlog
 from fastapi import APIRouter, HTTPException, Query, Request, Response
+from mate_platform.tenancy import AuthMethod
 from mate_platform.tenancy.guards import require_tenant
 from pydantic import BaseModel, Field
 
@@ -44,6 +45,7 @@ from ..management_repo import (
     put_policy,
     put_trust,
 )
+from ..security import McpApiKeyRecord, get_api_key_store
 
 logger = structlog.get_logger(__name__)
 
@@ -647,7 +649,6 @@ async def list_servers_ep(
 # Integrations + API keys
 # ---------------------------------------------------------------------------
 _INTEGRATIONS: list[dict[str, Any]] = []
-_API_KEYS: list[dict[str, Any]] = []
 
 
 @router.get("/integrations")
@@ -682,28 +683,87 @@ async def delete_integration(request: Request, iid: str) -> dict[str, Any]:
     return {"deleted": iid}
 
 
+def _api_key_store_or_503() -> Any:
+    store = get_api_key_store()
+    if store is None:
+        raise HTTPException(
+            status_code=503,
+            detail="MCP API key storage is not enabled (MATE_DB_URL unset)",
+        )
+    return store
+
+
+def _api_key_tenant(request: Request) -> str:
+    """Tenant for key management, restricted to interactive users.
+
+    Deliberately stricter than llmgw's tenant-only management guard: a key
+    must not be able to mint further keys, otherwise a leaked key could
+    persist its own access indefinitely.
+    """
+    ctx = getattr(request.state, "ctx", None)
+    if getattr(ctx, "auth_method", None) == AuthMethod.API_KEY:
+        raise HTTPException(status_code=403, detail="api keys cannot manage api keys")
+    return _tid(request)
+
+
+def _api_key_payload(record: McpApiKeyRecord) -> dict[str, Any]:
+    """Shape matches the MCP center UI's ApiKey type. Never carries the
+    plaintext — that exists only in the create response."""
+    return {
+        "id": record.key_id,
+        "name": record.key_name,
+        "prefix": record.key_prefix,
+        "scopes": [],
+        "createdAt": record.created_at,
+        "lastUsedAt": record.last_active_at.isoformat() if record.last_active_at else None,
+        "expiresAt": record.expires_at.isoformat() if record.expires_at else None,
+        "enabled": not record.blocked,
+    }
+
+
+def _parse_expires_at(raw: Any) -> Any:
+    if not raw:
+        return None
+    from datetime import datetime
+
+    try:
+        parsed = datetime.fromisoformat(str(raw))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="invalid expiresAt") from exc
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
+
+
 @router.get("/api-keys")
 async def list_api_keys(request: Request) -> list[dict[str, Any]]:
-    _tid(request)
-    return _API_KEYS
+    tenant_id = _api_key_tenant(request)
+    store = _api_key_store_or_503()
+    return [_api_key_payload(record) for record in store.list_keys(tenant_id)]
 
 
 @router.post("/api-keys", status_code=201)
 async def create_api_key(request: Request) -> dict[str, Any]:
-    _tid(request)
+    tenant_id = _api_key_tenant(request)
+    store = _api_key_store_or_503()
     payload = await request.json()
-    item = {
-        "id": f"ak-{uuid.uuid4().hex[:8]}",
-        "name": payload.get("name", ""),
-        "scopes": payload.get("scopes", []),
-        "createdAt": _now(),
-    }
-    _API_KEYS.insert(0, item)
-    return item
+    name = str(payload.get("name", "") or "").strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="name is required")
+    record, plaintext = store.create(
+        tenant_id=tenant_id,
+        key_name=name,
+        expires_at=_parse_expires_at(payload.get("expiresAt")),
+        created_by=str(getattr(request.state.ctx, "user_id", "") or ""),
+    )
+    logger.info("mcp.api_key.created", key_id=record.key_id, tenant_id=tenant_id)
+    # `key` is the one and only time the plaintext is ever returned.
+    return {**_api_key_payload(record), "key": plaintext}
 
 
 @router.delete("/api-keys/{kid}")
 async def delete_api_key(request: Request, kid: str) -> dict[str, Any]:
-    global _API_KEYS
-    _API_KEYS = [k for k in _API_KEYS if k["id"] != kid]
+    tenant_id = _api_key_tenant(request)
+    store = _api_key_store_or_503()
+    if not store.revoke(tenant_id, kid):
+        raise HTTPException(status_code=404, detail="key not found")
+    logger.info("mcp.api_key.revoked", key_id=kid, tenant_id=tenant_id)
     return {"deleted": kid}

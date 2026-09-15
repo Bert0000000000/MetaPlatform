@@ -10,14 +10,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && \
 
 WORKDIR /app
 
-# Install MCP runtime deps via pip (Tsinghua mirror is fast)
-ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple/
+# Install MCP runtime deps via pip (Aliyun mirror; tuna 2026-09-14 不可达)
+ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
         fastapi 'uvicorn[standard]' pydantic pydantic-settings \
         httpx structlog redis 'pyjwt[crypto]' tenacity sse-starlette \
         'mcp<2.0' pybreaker opentelemetry-api opentelemetry-sdk \
-        opentelemetry-exporter-otlp-proto-grpc sqlalchemy sqlmodel
+        opentelemetry-exporter-otlp-proto-grpc sqlalchemy sqlmodel \
+        psycopg2-binary
 
 # Install mate-common (workspace dependency)
 COPY packages/mate-common /tmp/mate-common
@@ -25,6 +26,11 @@ RUN pip install --no-cache-dir /tmp/mate-common
 
 # Copy mate-platform source into site-packages
 COPY packages/mate-platform/src/mate_platform /usr/local/lib/python3.12/site-packages/mate_platform
+
+# ADR-0062: the long-lived API key store persists to Postgres through the
+# shared SQLAlchemy layer, so mate-tech-db (and a PG driver) are now runtime
+# dependencies of this service.
+COPY packages/mate-tech-db/src/mate_tech_db /usr/local/lib/python3.12/site-packages/mate_tech_db
 
 # Copy MCP source code (no need to chown - running as root)
 COPY packages/mate-tech-mcp/src/mate_tech_mcp /usr/local/lib/python3.12/site-packages/mate_tech_mcp

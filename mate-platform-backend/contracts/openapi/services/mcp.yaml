@@ -710,6 +710,108 @@ paths:
         - FR-MCP-PROTOCOL-POST
       # Same mount-invisible streamable-http surface as GET above.
       x-mate-implementation-status: placeholder
+  /api/v1/mcp/api-keys:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
+      summary: 列出本租户已签发的 MCP API Key
+      tags:
+        - mcp
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/McpApiKey"
+        "401":
+          description: 缺少有效凭证
+      operationId: mcpGetMcpApiKeys
+      description: 列出当前租户的长期 MCP API Key。仅返回前缀，明文不可再获取。
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.get
+      x-mate-requirements:
+        - FR-MCP-APIKEYS-LIST
+      x-mate-implementation-status: implemented
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
+      summary: 签发 MCP API Key（明文仅返回一次）
+      tags:
+        - mcp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMcpApiKeyRequest"
+      responses:
+        "201":
+          description: 创建成功，响应中的 key 为唯一一次明文
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/McpApiKeyCreated"
+        "401":
+          description: 缺少有效凭证
+        "403":
+          description: 非用户身份（API Key 不能自我繁殖）或跨租户
+        "503":
+          description: 密钥存储未启用
+      operationId: mcpPostMcpApiKeys
+      description: 为当前租户签发长期 API Key，供外部 MCP 客户端替代 1 小时 JWT 使用。
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.post
+      x-mate-requirements:
+        - FR-MCP-APIKEYS-CREATE
+      x-mate-implementation-status: implemented
+  /api/v1/mcp/api-keys/{kid}:
+    parameters:
+      - name: kid
+        in: path
+        required: true
+        schema:
+          type: string
+        description: API Key 记录 id
+    delete:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
+      summary: 吊销 MCP API Key
+      tags:
+        - mcp
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: string
+        "401":
+          description: 缺少有效凭证
+        "403":
+          description: 非用户身份或跨租户
+        "404":
+          description: key 不存在
+        "503":
+          description: 密钥存储未启用
+      operationId: mcpDeleteMcpApiKeysKid
+      description: 吊销指定 API Key；吊销后立即失效。
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.post
+      x-mate-requirements:
+        - FR-MCP-APIKEYS-DELETE
+      x-mate-implementation-status: implemented
 components:
   securitySchemes:
     bearerAuth:
@@ -904,3 +1006,61 @@ components:
       properties:
         arguments:
           type: object
+    McpApiKey:
+      type: object
+      required:
+        - id
+        - name
+        - prefix
+        - createdAt
+        - enabled
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        prefix:
+          type: string
+          description: 密钥前缀，用于在列表中辨识；完整明文不落库、不可再取
+        scopes:
+          type: array
+          items:
+            type: string
+          description: 预留字段。当前版本不对 per-key scope 做强制。
+        createdAt:
+          type: string
+        lastUsedAt:
+          type: ["string", "null"]
+        expiresAt:
+          type: ["string", "null"]
+          description: null 表示永不过期
+        enabled:
+          type: boolean
+    McpApiKeyCreated:
+      allOf:
+        - $ref: "#/components/schemas/McpApiKey"
+        - type: object
+          required:
+            - key
+          properties:
+            key:
+              type: string
+              description: 唯一一次返回的完整明文密钥，仅存 sha256，遗失只能重新签发
+    CreateMcpApiKeyRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: 人类可读备注，例如 cursor-ide
+        scopes:
+          type: array
+          items:
+            type: string
+          description: 预留字段。当前版本忽略该字段——签发即授予与 JWT 同等的权限范围（只读 + 提案），HITL 工具仍被门禁拒绝。
+        expiresAt:
+          type: ["string", "null"]
+          description: ISO 8601；省略或缺省表示永不过期

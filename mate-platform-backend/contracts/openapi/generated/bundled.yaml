@@ -10026,6 +10026,9 @@ paths:
       tags:
         - ont
       summary: List Individuals (mutable)
+      description: |
+        class_rid 接受 ObjectType rid（精确匹配）或 Interface rid（EXP-01 多态
+        浏览源：展开为实现类型 + 各自后代，与 ObjectSet/IR 查询路径同语义）。
       operationId: ontListV2Individuals
       x-mate-owner: ontology-platform
       x-mate-permission: ont.read
@@ -13386,6 +13389,12 @@ components:
           type: array
           items:
             type: string
+        provenance:
+          type:
+            - object
+            - 'null'
+          additionalProperties: true
+          description: ONT-PROV-01 记录级溯源（AI proposal 落库带 source/confidence/proposal_id）
     IndividualCreateV2:
       type: object
       additionalProperties: false

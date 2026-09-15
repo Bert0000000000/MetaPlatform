@@ -20,6 +20,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
+from mate_platform.tenancy import AuthMethod
 from pydantic import BaseModel, Field
 
 from ..auth import AuthError, verify_jwt_token
@@ -89,7 +90,14 @@ async def _require_bearer(request: Request) -> dict[str, Any]:
 
     Raises 401 on missing/malformed token (SEC-IAM-01 dev-profile inline
     check; production additionally enforces via ``install_auth`` middleware).
+
+    A long-lived ``sk-mcp-*`` key (ADR-0062) never reaches this file's JWT
+    parser: ``install_auth``'s api_key_verifier already verified it, so the
+    claims are read back off the established context.
     """
+    ctx = getattr(request.state, "ctx", None)
+    if getattr(ctx, "auth_method", None) == AuthMethod.API_KEY:
+        return {"sub": str(ctx.user_id), "tenant_id": str(ctx.tenant_id)}
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing Bearer token")
