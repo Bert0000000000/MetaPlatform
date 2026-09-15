@@ -3888,10 +3888,20 @@ class PgOntologyRepository(OntologyRepository):
             conn.close()
 
     def delete_security_policy(self, rid: str) -> bool:
+        """删除安全策略 —— 按当前租户过滤（ADR-0064 后同族守门实测发现：
+        policy rid 是 ``pol-`` 前缀，走不了 ``ont.{tenant}.`` 前缀守门，
+        必须在 SQL 层带 tenant 条件，否则可跨租户删除）。"""
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute("DELETE FROM ont_security_policy WHERE rid = %s", (rid,))
+                tenant = self._current_tenant()
+                if tenant:
+                    cur.execute(
+                        "DELETE FROM ont_security_policy WHERE rid = %s AND tenant_id = %s",
+                        (rid, tenant),
+                    )
+                else:
+                    cur.execute("DELETE FROM ont_security_policy WHERE rid = %s", (rid,))
                 deleted = cur.rowcount == 1
             conn.commit()
             return deleted
