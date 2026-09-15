@@ -294,7 +294,9 @@ def main() -> None:
     state = wa.start(flow, ctx, mgr, initial_parameters={"a": {"approver": "alice"}})
     print(f"  status: {state.status.value}")
     # 断言而非只打印 —— 否则 S3 删占位后流程静默退化成 aborted 也看不出来
-    assert state.status.value == "awaiting_user", f"expected awaiting_user, got {state.status.value}"
+    assert state.status.value == "awaiting_user", (
+        f"expected awaiting_user, got {state.status.value}"
+    )
     wa.abort(flow.flow_rid, ctx, reason="user cancel")
     print(f"  after abort: {wa.get_state(flow.flow_rid, ctx).status.value}")
 

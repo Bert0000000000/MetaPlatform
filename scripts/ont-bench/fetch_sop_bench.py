@@ -93,9 +93,7 @@ def main() -> int:
         meta = dest / "metadata.json"
         if meta.exists():
             info = json.loads(meta.read_text(encoding="utf-8"))
-            print(
-                f"  inputs={info.get('input_columns')} outputs={info.get('output_columns')}"
-            )
+            print(f"  inputs={info.get('input_columns')} outputs={info.get('output_columns')}")
     return 0
 
 

@@ -208,8 +208,9 @@ class AsyncCopilotClient:
         reveal=1：copilot 以服务身份读取敏感项（api_key）真实值；
         IAM 对人工管理员会话默认掩码返回。
         """
-        import httpx
         import os as _os
+
+        import httpx
 
         # ARK key 托管取数通道：service-read 以服务共享密钥守门，返回
         # ai.provider.* 真实值（服务 client 无 PLATFORM_ADMIN role，
@@ -234,7 +235,9 @@ class AsyncCopilotClient:
             if fallback_token:
                 headers["Authorization"] = f"Bearer {fallback_token}"
         async with httpx.AsyncClient(
-            auth=self._middleware(tenant_id) if (not fallback_token and not service_secret) else None,
+            auth=self._middleware(tenant_id)
+            if (not fallback_token and not service_secret)
+            else None,
             timeout=self.timeout_seconds,
         ) as client:
             resp = await client.get(url, headers=headers)
@@ -245,9 +248,7 @@ class AsyncCopilotClient:
         else:
             data = body.get("data", body)
             items = data.get("items", []) if isinstance(data, dict) else []
-            flat = {
-                str(c.get("key", "")): str(c.get("value") or "") for c in items
-            }
+            flat = {str(c.get("key", "")): str(c.get("value") or "") for c in items}
         # default_active 间接寻址（生产 ARK key 正式托管）：
         #   调用方历史上一律问 "custom"；当后台把 default_active 指向
         #   另一个已配置好（base_url 非空且 key 就绪）的 OpenAI 兼容
@@ -259,10 +260,7 @@ class AsyncCopilotClient:
                 active
                 and active not in ("custom", "disabled")
                 and flat.get(f"ai.provider.{active}.base_url", "")
-                and (
-                    flat.get(f"ai.provider.{active}.api_key", "")
-                    or active == "ollama"
-                )
+                and (flat.get(f"ai.provider.{active}.api_key", "") or active == "ollama")
             ):
                 provider_id = active
         result: dict[str, str] = {"provider_id": provider_id}

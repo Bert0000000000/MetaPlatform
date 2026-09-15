@@ -1,4 +1,5 @@
 """W6-2 kb edge tests (ST-6.2.x edge)."""
+
 from __future__ import annotations
 
 import pytest

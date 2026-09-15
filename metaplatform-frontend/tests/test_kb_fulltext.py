@@ -1,4 +1,5 @@
 """kb 全文检索 边角 (ST-6.2.11)."""
+
 from __future__ import annotations
 
 import pytest
@@ -7,7 +8,7 @@ import pytest
 def test_kb_fts_chinese_ngram() -> None:
     """中文 n-gram 分词."""
     query = "概念本体"
-    bigrams = [query[i:i+2] for i in range(len(query)-1)]
+    bigrams = [query[i : i + 2] for i in range(len(query) - 1)]
     assert "概念" in bigrams
     assert "念本" in bigrams
     assert "本体" in bigrams
@@ -16,6 +17,7 @@ def test_kb_fts_chinese_ngram() -> None:
 def test_kb_fts_english_tokenize() -> None:
     """英文分词."""
     import re
+
     text = "What is RAG? Knowledge retrieval."
     tokens = re.findall(r"\b[a-zA-Z]+\b", text)
     assert "What" in tokens

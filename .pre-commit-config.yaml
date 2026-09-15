@@ -53,7 +53,9 @@ repos:
       - id: prettier
         types_or: [yaml, json, markdown]
         files: \.(yml|yaml|json|md)$
-        exclude: ^(docs/|infra/helm/|acceptance/|\.pre-commit-config\.yaml|mate-platform-backend/contracts/openapi/generated/)
+        # 2026-09-15 最终批：pnpm-lock.yaml 是工具生成物（prettier 重排会与
+        # pnpm 自己写出的格式打架，且每次安装都会再改）——排除，不进 lint 范围
+        exclude: ^(docs/|infra/helm/|acceptance/|\.pre-commit-config\.yaml|mate-platform-backend/contracts/openapi/generated/|metaplatform-frontend/pnpm-lock\.yaml)
 
   - repo: https://github.com/hadolint/hadolint
     rev: v2.12.1-beta

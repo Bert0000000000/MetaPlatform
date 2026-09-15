@@ -626,9 +626,7 @@ class OntSearchObjectsTool(OntologyProxyTool):
         "required": ["text"],
     }
 
-    async def __call__(
-        self, *, text: str, class_rid: str = "", top_k: int = 8
-    ) -> Any:
+    async def __call__(self, *, text: str, class_rid: str = "", top_k: int = 8) -> Any:
         payload: dict[str, Any] = {"text": text, "top_k": top_k}
         if class_rid:
             payload["class_rid"] = class_rid
@@ -659,9 +657,7 @@ class OntValidatePreflightTool(OntologyProxyTool):
         "required": ["class_rid", "fields"],
     }
 
-    async def __call__(
-        self, *, class_rid: str, fields: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def __call__(self, *, class_rid: str, fields: dict[str, Any]) -> dict[str, Any]:
         schema = await self._post(
             "/api/v1/ont/v2/object-types/validate-data",
             {"class_rid": class_rid, "props": dict(fields)},
@@ -705,7 +701,9 @@ class OntListInterfacesTool(OntologyProxyTool):
     """Interface 契约清单（多态查询源发现）。"""
 
     name = "ont_list_interfaces"
-    description = "列出全部 Interface 契约（属性签名 + 实现类型数）。Interface rid 可作为多态查询/浏览源。"
+    description = (
+        "列出全部 Interface 契约（属性签名 + 实现类型数）。Interface rid 可作为多态查询/浏览源。"
+    )
     operation_id = "ontListV2Interfaces"
     capabilities: ClassVar[tuple[str, ...]] = ("ontology.read", "discovery", "interface")
 

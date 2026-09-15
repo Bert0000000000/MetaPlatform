@@ -457,9 +457,7 @@ async def resolve_effective_embedding(request, tenant_id: str) -> dict[str, str]
     # → 调用方回落到 env provider → ARK key 为空 → 401。
     # 回落到命名空间内真实存在的 `ai.provider.default_active`（iam/seed.py:444），
     # 与 copilot 客户端的取值方式一致（mate_app_copilot/clients/base.py:257）。
-    pid = cfg.get("ai.embedding.default_provider", "") or cfg.get(
-        "ai.provider.default_active", ""
-    )
+    pid = cfg.get("ai.embedding.default_provider", "") or cfg.get("ai.provider.default_active", "")
     if not pid or pid == "disabled":
         return {}
     prefix = f"ai.provider.{pid}."

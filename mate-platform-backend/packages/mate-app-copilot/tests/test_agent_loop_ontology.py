@@ -232,9 +232,7 @@ class TestOntologyEvidenceEvents:
     """本体工具结果 → 结构化 evidence 事件（供聊天渲染证据卡片）。"""
 
     @pytest.mark.asyncio
-    async def test_search_objects_maps_cards_to_ontology_objects(
-        self, monkeypatch: Any
-    ) -> None:
+    async def test_search_objects_maps_cards_to_ontology_objects(self, monkeypatch: Any) -> None:
         events = await _run_once(
             monkeypatch,
             tool_name="search_objects",
@@ -364,9 +362,7 @@ class TestOntologyEvidenceEvents:
         assert "o1" in items[0]["fragment"]
 
     @pytest.mark.asyncio
-    async def test_inspect_class_is_type_level_without_object_id(
-        self, monkeypatch: Any
-    ) -> None:
+    async def test_inspect_class_is_type_level_without_object_id(self, monkeypatch: Any) -> None:
         """inspect_class 是类型级证据，objectId 会诱导前端调实例接口。"""
         events = await _run_once(
             monkeypatch,
@@ -457,9 +453,7 @@ class TestOntologyProposalEvents:
         assert ev["kind"] == "create_instance"
 
     @pytest.mark.asyncio
-    async def test_non_proposal_tool_emits_no_proposal_event(
-        self, monkeypatch: Any
-    ) -> None:
+    async def test_non_proposal_tool_emits_no_proposal_event(self, monkeypatch: Any) -> None:
         events = await _run_once(
             monkeypatch,
             tool_name="list_classes",

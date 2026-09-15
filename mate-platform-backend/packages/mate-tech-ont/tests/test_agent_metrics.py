@@ -6,9 +6,10 @@ PG 表 ont_proposal 列集；口径详见 agent_metrics.py 模块 docstring。
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
-from typing import Any, Iterator
+from typing import Any
 
 import pytest
 from fastapi import FastAPI
@@ -73,7 +74,9 @@ def rec(
 
 def test_summarize_status_distribution_and_acceptance_rate() -> None:
     props = [
-        rec("executed", created_at=ago(hours=1), confirmed_at=ago(minutes=30), confirmed_by="alice"),
+        rec(
+            "executed", created_at=ago(hours=1), confirmed_at=ago(minutes=30), confirmed_by="alice"
+        ),
         rec("executed", created_at=ago(days=2), confirmed_at=ago(days=2)),
         rec("reverted", created_at=ago(days=3), confirmed_at=ago(days=3)),  # 曾被采纳 → accepted
         rec("rejected", created_at=ago(days=4)),
@@ -154,9 +157,21 @@ def test_summarize_rejection_reasons_distribution_when_present() -> None:
 def test_summarize_by_actor_with_unattributed_fallback() -> None:
     """created_by 仅 edit_set 路径记录 'ai-agent'；其余空串 → (unattributed) 桶。"""
     props = [
-        rec("executed", created_at=ago(hours=1), kind="edit_set", created_by="ai-agent", confirmed_at=ago(hours=1)),
+        rec(
+            "executed",
+            created_at=ago(hours=1),
+            kind="edit_set",
+            created_by="ai-agent",
+            confirmed_at=ago(hours=1),
+        ),
         rec("rejected", created_at=ago(hours=2), kind="edit_set", created_by="ai-agent"),
-        rec("executed", created_at=ago(hours=3), kind="edit_set", created_by="ai-agent", confirmed_at=ago(hours=3)),
+        rec(
+            "executed",
+            created_at=ago(hours=3),
+            kind="edit_set",
+            created_by="ai-agent",
+            confirmed_at=ago(hours=3),
+        ),
         rec("pending", created_at=ago(hours=4)),  # created_by 缺省 ""
         rec("executed", created_at=ago(hours=5), confirmed_at=ago(hours=5)),
     ]
@@ -270,7 +285,11 @@ def test_days_clamped_to_max_window() -> None:
 def test_iso_string_created_at_and_enum_status_tolerated() -> None:
     """入参容忍 ISO 字符串时间与 ProposalStatus 枚举状态（hydrate 后真实形态）。"""
     props = [
-        rec(ProposalStatus.EXECUTED, created_at=ago(hours=1).isoformat(), confirmed_at=ago(hours=1).isoformat()),
+        rec(
+            ProposalStatus.EXECUTED,
+            created_at=ago(hours=1).isoformat(),
+            confirmed_at=ago(hours=1).isoformat(),
+        ),
         rec(ProposalStatus.REJECTED, created_at="2026-09-14T10:00:00+00:00"),
     ]
     out = summarize(props, days=1, now=NOW)
@@ -317,7 +336,7 @@ class StubRepo:
 
     def tenant_scope(self, tenant_id: str) -> Any:
         @contextmanager
-        def _cm() -> Iterator["StubRepo"]:
+        def _cm() -> Iterator[StubRepo]:
             self.last_scope = tenant_id
             yield self
 
@@ -333,7 +352,9 @@ def stub_repo() -> StubRepo:
         [
             # 偏移用**秒级**：端点按 UTC 日期分桶，分钟级偏移在刚过 UTC 午夜时
             # 会落到前一天（实测 00:04 UTC 下 minutes=5 即跨天）。
-            _kernel_prop("p-1", ProposalStatus.EXECUTED, _recent(seconds=5), confirmed_at=_recent(seconds=3)),
+            _kernel_prop(
+                "p-1", ProposalStatus.EXECUTED, _recent(seconds=5), confirmed_at=_recent(seconds=3)
+            ),
             _kernel_prop("p-2", ProposalStatus.REJECTED, _recent(seconds=10)),
             # 跨租户行：X-Tenant-Id=acme 下必须不可见（GOVERN-06 第 2 层前缀过滤）。
             _kernel_prop(
@@ -355,7 +376,9 @@ def client(stub_repo: StubRepo) -> TestClient:
     return TestClient(app)
 
 
-def test_endpoint_summary_scopes_tenant_and_aggregates(client: TestClient, stub_repo: StubRepo) -> None:
+def test_endpoint_summary_scopes_tenant_and_aggregates(
+    client: TestClient, stub_repo: StubRepo
+) -> None:
     resp = client.get(
         "/api/v1/ont/v2/agent-metrics/summary",
         params={"days": 30},

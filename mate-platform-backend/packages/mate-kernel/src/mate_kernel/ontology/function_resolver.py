@@ -12,6 +12,7 @@ dev 默认 ``InMemoryFunctionResolver``（registry in-process）。生产可替�
 from __future__ import annotations
 
 import re
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Protocol
@@ -78,9 +79,7 @@ class GitFunctionResolver:
         self._refs: dict[str, tuple[FunctionLanguage, str]] = {}
         self._cache: dict[str, str] = {}
 
-    def register_ref(
-        self, function_rid: str, language: FunctionLanguage, source_ref: str
-    ) -> None:
+    def register_ref(self, function_rid: str, language: FunctionLanguage, source_ref: str) -> None:
         if not _GIT_REF_RE.match(source_ref):
             raise ValueError(
                 f"invalid git source_ref (need git:<40-hex-sha>:<path>): {source_ref!r}"
@@ -105,9 +104,11 @@ class GitFunctionResolver:
         return lang, src
 
     def _git_show(self, sha: str, path: str) -> str:
+        # S607：partial path → which 解析为绝对路径（找不到再裸用，报错路径不变）
+        git_exe = shutil.which("git") or "git"
         try:
             proc = subprocess.run(
-                ["git", "show", f"{sha}:{path}"],
+                [git_exe, "show", f"{sha}:{path}"],
                 cwd=self._repo_root,
                 capture_output=True,
                 text=True,

@@ -1,4 +1,5 @@
 """W6 coverage final tests (ST-6.6.2 comprehensive)."""
+
 from __future__ import annotations
 
 import pytest
@@ -6,7 +7,18 @@ import pytest
 
 def test_portal_pages_count() -> None:
     """portal 页面数."""
-    pages = ["admin", "agents", "apps", "arch", "dashboard", "knowledge", "mcp", "ontology", "superai", "LoginPage"]
+    pages = [
+        "admin",
+        "agents",
+        "apps",
+        "arch",
+        "dashboard",
+        "knowledge",
+        "mcp",
+        "ontology",
+        "superai",
+        "LoginPage",
+    ]
     assert len(pages) >= 9
 
 

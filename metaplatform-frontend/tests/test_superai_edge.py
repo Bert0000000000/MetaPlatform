@@ -1,4 +1,5 @@
 """W6-3 superai edge tests (ST-6.3.x edge)."""
+
 from __future__ import annotations
 
 import pytest

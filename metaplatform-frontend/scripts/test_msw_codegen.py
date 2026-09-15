@@ -1,4 +1,5 @@
 """MSW codegen test (ST-6.5.2 enhanced)."""
+
 from __future__ import annotations
 
 import subprocess

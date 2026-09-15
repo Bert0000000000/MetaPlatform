@@ -250,8 +250,10 @@ class TestSubclassCycle:
     def test_two_independent_cycles(self):
         out = run(
             subclass_axioms=[
-                ("x-a", "x-b"), ("x-b", "x-a"),
-                ("y-a", "y-b"), ("y-b", "y-a"),
+                ("x-a", "x-b"),
+                ("x-b", "x-a"),
+                ("y-a", "y-b"),
+                ("y-b", "y-a"),
             ]
         )
         assert len(out) == 2
@@ -283,8 +285,10 @@ class TestContract:
             equivalent_axioms=[("eq-1", "eq-2")],
             disjoint_axioms=[("cls-a", "cls-b"), ("eq-1", "eq-2")],
             type_assertions=[
-                ("inst-s", "cls-a"), ("inst-s", "cls-b"),
-                ("inst-t", "cls-x"), ("obj-o", "cls-y"),
+                ("inst-s", "cls-a"),
+                ("inst-s", "cls-b"),
+                ("inst-t", "cls-x"),
+                ("obj-o", "cls-y"),
             ],
             property_assertions=[{"property": "prop-p", "subject": "inst-t", "object": "obj-o"}],
             domain_range=[{"property": "prop-p", "domain": "dom-d", "range": "rng-r"}],

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+from shutil import which
 
 import pytest
 
@@ -19,11 +20,11 @@ from mate_kernel.ontology.function_resolver import (
 from mate_kernel.ontology.identity import ClassRef
 from mate_kernel.ontology.reasoning import FunctionLanguage
 
+_GIT = which("git") or "git"  # S607：绝对路径
+
 
 def _git(repo: Path, *args: str) -> str:
-    proc = subprocess.run(
-        ["git", *args], cwd=repo, capture_output=True, text=True, check=False
-    )
+    proc = subprocess.run([_GIT, *args], cwd=repo, capture_output=True, text=True, check=False)
     assert proc.returncode == 0, f"git {' '.join(args)} failed: {proc.stderr}"
     return proc.stdout.strip()
 

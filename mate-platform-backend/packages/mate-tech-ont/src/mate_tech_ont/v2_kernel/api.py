@@ -716,6 +716,46 @@ class BackingDatasourceDTO(BaseModel):
     priority: int = 100
 
 
+@router.delete(
+    "/object-types/{rid:path}",
+    response_model=dict,
+    operation_id="ontDeleteV2ObjectType",
+)
+async def delete_object_type(rid: str, request: Request, hard: bool = False) -> dict:
+    """C8：删除 ObjectType。默认软删（archived，与 merge 同口径）；
+    ``?hard=true`` 物理删（供清理演练残留）。
+
+    保护：近 30 天有读量 → 409（先 Deprecate）；hard 且仍有实例 → 409。
+    """
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant object type denied")
+    try:
+        return await _call_scoped(request, "delete_object_type", rid, hard=hard)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+
+
+@router.delete(
+    "/interfaces/{rid:path}",
+    response_model=dict,
+    operation_id="ontDeleteV2Interface",
+)
+async def delete_interface(rid: str, request: Request) -> dict:
+    """C8：删除 Interface（有实现该接口的类型 → 409 拒绝）。"""
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant interface denied")
+    try:
+        return await _call_scoped(request, "delete_interface", rid)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+
+
 @router.post(
     "/object-types/{rid:path}/datasources",
     response_model=dict,
@@ -984,7 +1024,9 @@ async def invoke_function(
     request: Request,
 ) -> dict:
     """G23：调用已注册 Function（invoker/stub/沙箱执行器）。"""
-    _ctx(request)
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant function denied")
     # 别名透传（alias → rid）
     target = rid
     try:
@@ -1489,6 +1531,8 @@ async def apply_schema_wip(
 ) -> ObjectTypeResponse:
     """G33：应用 WIP → 正式表（走与直接 upsert 相同的破坏性门禁）。"""
     ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant schema-wip denied")
     del confirm_name
     wip = await _call_scoped(request, "get_schema_wip", rid)
     dto = ObjectTypeDTO(**wip["payload"])
@@ -1504,6 +1548,9 @@ async def apply_schema_wip(
     operation_id="ontDiscardV2SchemaWip",
 )
 async def discard_schema_wip(rid: str, request: Request) -> dict:
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant schema-wip denied")
     ok = await _call_scoped(request, "delete_schema_wip", rid)
     return {"rid": rid, "discarded": bool(ok)}
 
@@ -1621,7 +1668,9 @@ async def list_interface_implementations(rid: str, request: Request) -> list[str
     """EXP-01：Interface rid → 实现它的全部 ObjectType rid（多态查询源展开结果）。"""
     from mate_kernel.ontology.types.interface import interface_source_rids
 
-    _ctx(request)
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant interface denied")
     ots = await _call_scoped(request, "list_object_types", 10000, 0)
     return interface_source_rids(rid, ots)
 
@@ -1715,7 +1764,9 @@ async def export_object_type(rid: str, request: Request, format: str = "jsonld")
     """ONT-G9/G20：导出类型定义为 JSON-LD 或 OWL/Turtle（@prefix 序列）。"""
     from mate_kernel.ontology.identity.class_ref import ClassRef
 
-    _ctx(request)
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant export denied")
     ot = await _call_scoped(request, "get_object_type", ClassRef(rid))
     props = [
         {
@@ -1863,7 +1914,9 @@ async def upsert_axiom(request: Request, payload: dict) -> dict:
     operation_id="ontDeleteV2Axiom",
 )
 async def delete_axiom(rid: str, request: Request) -> dict:
-    _ctx(request)
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant axiom denied")
     return {"deleted": await _call_scoped(request, "delete_axiom_record", rid)}
 
 
@@ -2202,7 +2255,9 @@ async def branch_object_type(
 )
 async def diff_object_type(rid: str, request: Request, against: str) -> dict:
     """ONT-G8：rid 与 against（同族另一版本）的属性级 diff。"""
-    _ctx(request)
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant diff denied")
     try:
         from mate_kernel.ontology.identity.class_ref import ClassRef
 
@@ -2282,7 +2337,9 @@ async def append_object_type_property(
     4. upsert_object_type 写回
     5. 返回更新后的 OT
     """
-    _ctx(request)
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant object type denied")
     try:
         existing = await _call_scoped(request, "get_object_type", ClassRef(rid))
     except KeyError as e:
@@ -2377,7 +2434,10 @@ async def list_individuals(
     # F8：显式传 tenant_id —— tenant_scope 的 thread-local 不跨 asyncio.to_thread，
     # 仅靠 repo 内 _current_tenant() 拿不到租户（会静默返回全库数据）。
     items = await _call_scoped(
-        request, "list_individuals", cls_ref, tenant_id=str(ctx.tenant_id)  # type: ignore[attr-defined]
+        request,
+        "list_individuals",
+        cls_ref,
+        tenant_id=str(ctx.tenant_id),  # type: ignore[attr-defined]
     )
     if class_rid:  # GOV-16：读打点（best-effort；P1-7 actor/source 维度）
         reader = str(getattr(ctx, "user_id", "") or "")
@@ -2699,9 +2759,7 @@ async def _proposal_postflight(
             if not ind_rid:
                 return base
             ind = await _call_scoped(request, "get_individual", ind_rid)
-            ot = await _call_scoped(
-                request, "get_object_type", ClassRef(str(prop.action_rid))
-            )
+            ot = await _call_scoped(request, "get_object_type", ClassRef(str(prop.action_rid)))
             all_types = await _call_scoped(request, "list_object_types", 10000, 0)
             from mate_kernel.ontology.preflight import preflight_create_instance
 
@@ -2715,7 +2773,8 @@ async def _proposal_postflight(
             )
         elif kind == "model_type":
             type_rid = str(
-                execution.get("type_rid") or (prop.parameters or {}).get("type_def", {}).get("rid")
+                execution.get("type_rid")
+                or (prop.parameters or {}).get("type_def", {}).get("rid")
                 or prop.action_rid
             )
             ot = await _call_scoped(request, "get_object_type", ClassRef(type_rid))
@@ -2766,9 +2825,7 @@ async def _proposal_postflight(
     except Exception as e:
         import traceback as _tb
 
-        _logger.warning(
-            "ont.postflight.failed", error=str(e), tb=_tb.format_exc()[-2000:]
-        )
+        _logger.warning("ont.postflight.failed", error=str(e), tb=_tb.format_exc()[-2000:])
         return {
             "checked": False,
             "blocked": False,
@@ -2796,9 +2853,7 @@ async def _proposal_preflight(request: Request, prop: Any) -> dict[str, Any] | N
         if kind == "create_instance":
             from mate_kernel.ontology.identity.class_ref import ClassRef
 
-            ot = await _call_scoped(
-                request, "get_object_type", ClassRef(str(prop.action_rid))
-            )
+            ot = await _call_scoped(request, "get_object_type", ClassRef(str(prop.action_rid)))
             axiom_records = await _call_scoped(
                 request, "list_axiom_records", _ctx(request).tenant_id, enabled_only=True
             )
@@ -2822,8 +2877,7 @@ async def _proposal_preflight(request: Request, prop: Any) -> dict[str, Any] | N
                 # 类型构造即失败（PK∉properties 等）→ 以 schema 闸呈现
                 return {
                     "blocked": True,
-                    "schema": {"checked": True, "errors": ["类型定义无法构造"],
-                               "warnings": []},
+                    "schema": {"checked": True, "errors": ["类型定义无法构造"], "warnings": []},
                     "shacl": {"checked": False, "conforms": True, "violations": []},
                     "axioms": [],
                     "summary": "预检阻断：类型定义无法构造",
@@ -2838,9 +2892,7 @@ async def _proposal_preflight(request: Request, prop: Any) -> dict[str, Any] | N
         if kind == "action":
             from mate_kernel.ontology.identity.class_ref import ClassRef
 
-            at = await _call_scoped(
-                request, "get_action_type", ClassRef(str(prop.action_rid))
-            )
+            at = await _call_scoped(request, "get_action_type", ClassRef(str(prop.action_rid)))
             return preflight_action(at, dict(prop.parameters or {})).to_dict()
         return None
     except KeyError:
@@ -3352,7 +3404,9 @@ class ActionFlowResponse(BaseModel):
 )
 async def get_action_flow(rid: str, request: Request) -> ActionFlowResponse:
     """MP-SAL-05：读取 ActionType 的流程编排定义（未保存 → 404）。"""
-    _ctx(request)
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant action flow denied")
     try:
         d = await _call_scoped(request, "get_flow_definition", ClassRef(rid))
     except KeyError as e:
@@ -4064,7 +4118,9 @@ async def list_action_types(
     operation_id="ontGetV2ActionType",
 )
 async def get_action_type(rid: str, request: Request) -> ActionTypeDTO:
-    _ctx(request)
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant action type denied")
     try:
         at = await _call_scoped(request, "get_action_type", ClassRef(rid))
     except KeyError as e:
@@ -4111,7 +4167,9 @@ async def list_link_types(
     operation_id="ontGetV2LinkType",
 )
 async def get_link_type(rid: str, request: Request) -> LinkTypeDTO:
-    _ctx(request)
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant link type denied")
     try:
         lt = await _call_scoped(request, "get_link_type", ClassRef(rid))
     except KeyError as e:
@@ -4162,7 +4220,9 @@ async def search_around(rid: str, request: Request, limit: int = 100) -> list[di
 
     按 (link_type, direction) 分组返回对端实例清单；limit 为对端总数上限。
     """
-    _ctx(request)
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant search-around denied")
     return await _call_scoped(request, "search_around", rid, limit)
 
 
@@ -4731,7 +4791,9 @@ async def list_link_instances(
     ctx = _ctx(request)
     # F8：显式传 tenant_id（理由同 list_individuals —— thread-local 不跨 to_thread）
     items = await _call_scoped(
-        request, "list_link_instances", tenant_id=str(ctx.tenant_id)  # type: ignore[attr-defined]
+        request,
+        "list_link_instances",
+        tenant_id=str(ctx.tenant_id),  # type: ignore[attr-defined]
     )
     return [_link_instance_to_response(i) for i in items]
 

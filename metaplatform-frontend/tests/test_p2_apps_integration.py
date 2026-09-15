@@ -1,4 +1,5 @@
 """W6 9 apps E2E integration tests (ST-6.6.2 enhanced)."""
+
 from __future__ import annotations
 
 import pytest

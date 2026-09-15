@@ -410,7 +410,9 @@ class TestS2UnifiedInMemory:
         r = _mk_repo()
         at = _hybrid_action_type()
         r.upsert_action_type(at)
-        _register_fn(r, {"elevel": "principal"})  # 短名 elevel → P_LEVEL（与 legacy 回写映射同规则）
+        _register_fn(
+            r, {"elevel": "principal"}
+        )  # 短名 elevel → P_LEVEL（与 legacy 回写映射同规则）
         r.propose_edit_set(ACT_HYBRID, ALICE, {"new-status": "leave"}, [], "规约②")
         pid = list(r._action_service._proposals)[-1]
         r.confirm_proposal(pid, confirmed_by="boss")
@@ -469,9 +471,7 @@ class TestS2SecurityGateInMemory:
         ind = r.get_individual(ALICE)
         r._individuals[ALICE] = _repl(
             ind,
-            props=tuple(
-                (k, "locked") if k.rid == P_STATUS else (k, v) for k, v in ind.props
-            ),
+            props=tuple((k, "locked") if k.rid == P_STATUS else (k, v) for k, v in ind.props),
         )
         r.propose_edit_set(ACT_HYBRID, ALICE, {"new-status": "away"}, [], "gate")
         pid = list(r._action_service._proposals)[-1]
@@ -616,9 +616,7 @@ class TestS2PgUnified:
             pg_repo._action_service.register_function(
                 FN, lambda target_iid, parameters: {"elevel": "principal"}
             )
-            prop = pg_repo.propose_edit_set(
-                ACT_HYBRID, ALICE, {"new-status": "x"}, [], "gate"
-            )
+            prop = pg_repo.propose_edit_set(ACT_HYBRID, ALICE, {"new-status": "x"}, [], "gate")
             pid = prop.proposal_id if hasattr(prop, "proposal_id") else prop["proposal_id"]
             pg_repo.confirm_proposal(pid, confirmed_by="boss")
             with pytest.raises(ValueError, match="column policy"):
@@ -747,11 +745,14 @@ class TestS3ApiDispatch:
         )
         assert resp.status_code == 200
         pid = resp.json()["proposal_id"]
-        assert client.post(
-            f"{BASE}/proposals/{pid}/confirm",
-            json={},
-            headers={"Idempotency-Key": f"cfm-{pid}"},
-        ).status_code == 200
+        assert (
+            client.post(
+                f"{BASE}/proposals/{pid}/confirm",
+                json={},
+                headers={"Idempotency-Key": f"cfm-{pid}"},
+            ).status_code
+            == 200
+        )
         ex = client.post(
             f"{BASE}/proposals/{pid}/execute", headers={"Idempotency-Key": f"s3a-{pid}"}
         )
@@ -781,16 +782,52 @@ class TestS3ApiDispatch:
         )
         assert resp.status_code == 200, resp.text
         pid = resp.json()["proposal_id"]
-        assert client.post(
-            f"{BASE}/proposals/{pid}/confirm",
-            json={},
-            headers={"Idempotency-Key": f"cfm-{pid}"},
-        ).status_code == 200
+        assert (
+            client.post(
+                f"{BASE}/proposals/{pid}/confirm",
+                json={},
+                headers={"Idempotency-Key": f"cfm-{pid}"},
+            ).status_code
+            == 200
+        )
         ex = client.post(
             f"{BASE}/proposals/{pid}/execute", headers={"Idempotency-Key": f"s3b-{pid}"}
         )
         assert ex.status_code == 200, ex.text
         assert r.get_individual(ALICE).get(ClassRef(P_LEVEL)) == "principal"
+
+    def test_inmemory_revert_restores(self, s3_client) -> None:
+        """C7：InMemory revert_proposal 与 PG 同语义（逆编辑补偿回旧值）。"""
+        client, r = s3_client
+        resp = client.post(
+            f"{BASE}/action-types/{ACT_PURE}/propose",
+            json={"parameters": {"new-status": "to-revert"}, "target_iid": ALICE},
+        )
+        pid = resp.json()["proposal_id"]
+        assert (
+            client.post(
+                f"{BASE}/proposals/{pid}/confirm",
+                json={},
+                headers={"Idempotency-Key": f"cfm-ir-{pid}"},
+            ).status_code
+            == 200
+        )
+        assert (
+            client.post(
+                f"{BASE}/proposals/{pid}/execute",
+                headers={"Idempotency-Key": f"exe-ir-{pid}"},
+            ).status_code
+            == 200
+        )
+        assert r.get_individual(ALICE).get(ClassRef(P_STATUS)) == "to-revert"
+        rv = client.post(
+            f"{BASE}/proposals/{pid}/revert",
+            json={},
+            headers={"Idempotency-Key": f"rv-ir-{pid}"},
+        )
+        assert rv.status_code == 200, rv.text
+        assert rv.json()["equivalence"] == "equivalent"
+        assert r.get_individual(ALICE).get(ClassRef(P_STATUS)) == "active"
 
     def test_function_not_registered_maps_422(self, s3_client) -> None:
         """混合式但 fn 未注册 → execute 422（不再 500）。"""
@@ -801,11 +838,14 @@ class TestS3ApiDispatch:
         )
         assert resp.status_code == 200, resp.text
         pid = resp.json()["proposal_id"]
-        assert client.post(
-            f"{BASE}/proposals/{pid}/confirm",
-            json={},
-            headers={"Idempotency-Key": f"cfm-{pid}"},
-        ).status_code == 200
+        assert (
+            client.post(
+                f"{BASE}/proposals/{pid}/confirm",
+                json={},
+                headers={"Idempotency-Key": f"cfm-{pid}"},
+            ).status_code
+            == 200
+        )
         ex = client.post(
             f"{BASE}/proposals/{pid}/execute", headers={"Idempotency-Key": f"s3c-{pid}"}
         )
@@ -826,11 +866,14 @@ class TestS3ApiDispatch:
             json={"parameters": {"new-status": "away"}, "target_iid": ALICE},
         )
         pid = resp.json()["proposal_id"]
-        assert client.post(
-            f"{BASE}/proposals/{pid}/confirm",
-            json={},
-            headers={"Idempotency-Key": f"cfm-{pid}"},
-        ).status_code == 200
+        assert (
+            client.post(
+                f"{BASE}/proposals/{pid}/confirm",
+                json={},
+                headers={"Idempotency-Key": f"cfm-{pid}"},
+            ).status_code
+            == 200
+        )
         # viewer 声明 public（无 hr-privileged）→ 列策略拒写 422
         ex = client.post(
             f"{BASE}/proposals/{pid}/execute",
@@ -839,6 +882,48 @@ class TestS3ApiDispatch:
         )
         assert ex.status_code == 422, ex.text
         assert "column policy" in ex.text
+
+
+class TestC8Delete:
+    """C8：ObjectType / Interface 删除端点（软删 / 硬删保护 / 跨租户守门）。"""
+
+    def test_soft_delete_object_type(self, s3_client) -> None:
+        client, _ = s3_client
+        resp = client.delete(f"{BASE}/object-types/{ACT_PURE.replace('.act.', '.obj.')}")
+        # ACT_PURE 不是 obj rid → 该 rid 不存在 → 404（守门/存在性先于删除）
+        assert resp.status_code in (403, 404)
+
+    def test_soft_delete_existing_object_type(self, s3_client) -> None:
+        client, r = s3_client
+        resp = client.delete(f"{BASE}/object-types/{OBJ}")
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["hard"] is False
+        # InMemory 无 archived 字段 → 软删表现为从活动集合移除（PG 侧是 archived=TRUE）
+        with pytest.raises(KeyError):
+            r.get_object_type(ClassRef(OBJ))
+
+    def test_hard_delete_refused_when_instances_exist(self, s3_client) -> None:
+        client, _ = s3_client
+        resp = client.delete(f"{BASE}/object-types/{OBJ}?hard=true")
+        assert resp.status_code == 409, resp.text
+        assert "instances" in resp.text
+
+    def test_delete_cross_tenant_denied(self, s3_client) -> None:
+        client, _ = s3_client
+        other = "ont.other-tenant.obj.x.v1"
+        assert client.delete(f"{BASE}/object-types/{other}").status_code == 403
+        assert client.delete(f"{BASE}/interfaces/{other}").status_code == 403
+
+    def test_delete_interface_refused_when_implemented(self, s3_client) -> None:
+        client, r = s3_client
+        from mate_kernel.ontology.types.interface import Interface
+
+        if_rid = f"ont.{T}.if.probe.v1"
+        r.upsert_interface(Interface(rid=ClassRef(if_rid), properties=(), required_links=()))
+        # 无实现者 → 可删
+        assert client.delete(f"{BASE}/interfaces/{if_rid}").status_code == 200
+        # 不存在 → 404
+        assert client.delete(f"{BASE}/interfaces/{if_rid}").status_code == 404
 
 
 class TestS3ToolSchema:

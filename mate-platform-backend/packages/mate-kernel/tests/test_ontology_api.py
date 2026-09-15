@@ -6,7 +6,6 @@ from datetime import UTC, datetime
 
 import pytest
 
-from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 from mate_kernel.ontology import (
     ActionType,
     Axiom,
@@ -27,6 +26,7 @@ from mate_kernel.ontology import (
     Property,
     PropertyFormat,
 )
+from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 
 
 def _repo() -> InMemoryOntologyRepository:
@@ -290,9 +290,7 @@ class TestQueryAndApply:
         repo = _repo()
         # ADR-0063 S2：kernel 不再有"未注册即回显 parameters"的隐式兜底 ——
         # 本用例关注 side_effects，故显式注册一个透传函数。
-        repo._action_service.register_function(
-            "ont.acme.fn.notify.v1", lambda _iid, params: params
-        )
+        repo._action_service.register_function("ont.acme.fn.notify.v1", lambda _iid, params: params)
         at = ActionType(
             rid=ClassRef("ont.acme.act.notify"),
             parameters=(),

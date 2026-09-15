@@ -143,8 +143,6 @@ DDL: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_ot_tenant ON ont_object_type (tenant_id)",
-    # MP-SAL-01：类型级 marking（ADR-0043 §2.6）——旧库补列
-    "ALTER TABLE ont_individual ADD COLUMN IF NOT EXISTS provenance JSONB NULL",
     "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS marking TEXT[] NOT NULL DEFAULT '{}'",
     # MP-DEDUP-01：slug 列（从 rid 第 4 段派生）+ archived 列（merge 软删标记）
     "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS slug TEXT NOT NULL DEFAULT ''",
@@ -169,11 +167,16 @@ DDL: tuple[str, ...] = (
         primary_key  TEXT NOT NULL,
         marking      TEXT[] NOT NULL DEFAULT '{}',
         created_at   TIMESTAMPTZ NOT NULL,
-        updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+        updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        provenance   JSONB NULL
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_ind_tenant_class ON ont_individual (tenant_id, class_rid)",
     "CREATE INDEX IF NOT EXISTS ix_ont_ind_props ON ont_individual USING GIN (props)",
+    # MP-SAL-01：记录级溯源列 —— **必须排在 ont_individual 建表之后**。
+    # 2026-09-15 修复：此前该 ALTER 排在建表之前，全新库（CI ga-014 的
+    # metaplatform_ont_test）bootstrap 直接 UndefinedTable 炸掉整条 DDL 序列。
+    "ALTER TABLE ont_individual ADD COLUMN IF NOT EXISTS provenance JSONB NULL",
     """
     CREATE TABLE IF NOT EXISTS ont_action_type (
         rid                  TEXT PRIMARY KEY,
@@ -612,7 +615,9 @@ def _assert_filter_fields_resolvable(cf: CompiledFilter, known_slugs: set[str]) 
     区分"没有匹配"与"字段名写错了"。空集比报错危险得多。
     只对非 rid 形态的字段严格：完整 rid 一律放行（含跨类/继承属性场景）。
     """
-    bad = sorted({f for f in _collect_filter_fields(cf) if not f.startswith("ont.") and f not in known_slugs})
+    bad = sorted(
+        {f for f in _collect_filter_fields(cf) if not f.startswith("ont.") and f not in known_slugs}
+    )
     if bad:
         raise ValueError(
             f"unknown filter field(s) {bad} —— 既非完整 Property rid，也不在已知 slug 中"
@@ -628,9 +633,7 @@ def _require_resolvable_field(field: str, known_slugs: set[str], *, kind: str) -
     """
     if field.startswith("ont.") or field in known_slugs:
         return
-    raise ValueError(
-        f"unknown {kind} field {field!r} —— 既非完整 Property rid，也不在已知 slug 中"
-    )
+    raise ValueError(f"unknown {kind} field {field!r} —— 既非完整 Property rid，也不在已知 slug 中")
 
 
 def _prop_slug(rid: str) -> str:
@@ -3551,6 +3554,65 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
+    def delete_object_type(self, rid: str, *, hard: bool = False) -> dict[str, Any]:
+        """C8：删除 ObjectType（默认软删；hard=True 物理删，供清理演练残留）。
+
+        保护（两级，与 GOV-17 同口径）：
+        - 近 30 天有读使用量 → 拒绝（先 Deprecate）；
+        - hard 删除且仍有实例 → 拒绝（避免对象宇宙出现悬空实例）。
+        """
+        from mate_kernel.ontology.identity.class_ref import ClassRef
+
+        self.get_object_type(ClassRef(rid))  # 不存在 → KeyError
+        usage = [
+            u for u in self.usage_summary(30) if u["class_rid"] == rid and (u.get("reads") or 0) > 0
+        ]
+        if usage:
+            raise ValueError(
+                f"delete protection: {rid} has {usage[0]['reads']} reads in last 30d; "
+                "deprecate first"
+            )
+        if not hard:
+            return self.apply_lifecycle(rid, "delete") | {"hard": False}
+
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT count(*) FROM ont_individual WHERE class_rid = %s", (rid,))
+                instances = cur.fetchone()[0]
+                if instances:
+                    raise ValueError(f"hard delete refused: {rid} still has {instances} instances")
+                cur.execute("DELETE FROM ont_axiom WHERE %s = ANY(operands)", (rid,))
+                cur.execute("DELETE FROM ont_object_type WHERE rid = %s", (rid,))
+                deleted = cur.rowcount
+            conn.commit()
+        finally:
+            conn.close()
+        return {"class_rid": rid, "action": "delete", "hard": True, "rows": deleted}
+
+    def delete_interface(self, rid: str) -> dict[str, Any]:
+        """C8：删除 Interface（物理删；实现该接口的类型不级联，仅解除引用由
+        ONT 层校验兜底 —— 有实现者时拒绝）。"""
+
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT 1 FROM ont_interface WHERE rid = %s", (rid,))
+                if cur.fetchone() is None:
+                    raise KeyError(f"interface not found: {rid}")
+                cur.execute(
+                    "SELECT count(*) FROM ont_object_type WHERE %s = ANY(interfaces)", (rid,)
+                )
+                impls = cur.fetchone()[0]
+                if impls:
+                    raise ValueError(f"delete refused: {rid} is implemented by {impls} types")
+                cur.execute("DELETE FROM ont_interface WHERE rid = %s", (rid,))
+                deleted = cur.rowcount
+            conn.commit()
+        finally:
+            conn.close()
+        return {"rid": rid, "deleted": deleted}
+
     def apply_lifecycle(self, class_rid: str, action: str, actor: str = "") -> dict[str, Any]:
         """GOV-17：Snooze/Deprecate/Delete 三级处置 + 删除保护。
 
@@ -3885,10 +3947,20 @@ class PgOntologyRepository(OntologyRepository):
             conn.close()
 
     def delete_security_policy(self, rid: str) -> bool:
+        """删除安全策略 —— 按当前租户过滤（ADR-0064 后同族守门实测发现：
+        policy rid 是 ``pol-`` 前缀，走不了 ``ont.{tenant}.`` 前缀守门，
+        必须在 SQL 层带 tenant 条件，否则可跨租户删除）。"""
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute("DELETE FROM ont_security_policy WHERE rid = %s", (rid,))
+                tenant = self._current_tenant()
+                if tenant:
+                    cur.execute(
+                        "DELETE FROM ont_security_policy WHERE rid = %s AND tenant_id = %s",
+                        (rid, tenant),
+                    )
+                else:
+                    cur.execute("DELETE FROM ont_security_policy WHERE rid = %s", (rid,))
                 deleted = cur.rowcount == 1
             conn.commit()
             return deleted
@@ -4630,9 +4702,7 @@ class PgOntologyRepository(OntologyRepository):
         elif p.kind == "merge_suggestion":
             # merge 不可数值逆写 → audit-only（partial）
             compensated = {"note": "merge reversal is audit-only"}
-        elif p.kind == "edit_set" or (
-            p.kind == "action" and execution.get("inverse")
-        ):
+        elif p.kind == "edit_set" or (p.kind == "action" and execution.get("inverse")):
             # ACT-07 / ADR-0064：逆编辑补偿（执行期 invert_edits 已排除不可逆项）。
             # kind=action 经统一执行器执行的声明式/混合式，execution 同样带 inverse
             # —— 有逆编辑就按同一补偿路径（legacy function 式 execution 无 inverse，
@@ -5178,6 +5248,20 @@ class PgOntologyRepository(OntologyRepository):
             target_iid=target_iid,
             parameters=parameters,
         )
+        # C9：body 未带 edits 时，用 ActionType.declarative_edits 预装配 diff ——
+        # 否则预览恒为 0 ops（真实 op 数在执行器装配时才产生）。function 产物
+        # 不在 propose 阶段求值（要真调函数，成本/副作用留到 execute）。
+        preview_ops = ops
+        preview_source = "body"
+        if not ops and at is not None and getattr(at, "declarative_edits", ()):
+            preview_ops = resolve_edit_templates(
+                [dict(t) for t in at.declarative_edits],
+                target_iid=target_iid,
+                parameters=parameters,
+            )
+            preview_source = "declarative"
+        elif not ops and at is not None and at.function_ref is not None:
+            preview_source = "function(deferred)"
         proposal_id = f"prop-{_uuid.uuid4().hex[:12]}"
         tenant_id = (
             self._current_tenant() or action_rid.split(".")[1]
@@ -5185,8 +5269,11 @@ class PgOntologyRepository(OntologyRepository):
             else "tenant-default"
         )
         expected_diff = {
-            "~ops": len(ops),
-            "ops": [e.op for e in ops],
+            "~ops": len(preview_ops),
+            "ops": [e.op for e in preview_ops],
+            # C9：预览来源（body=调用方自带 / declarative=类型模板预装配 /
+            # function(deferred)=执行期才有 op 列表）
+            "preview_source": preview_source,
         }
         conn, _ = self._connect()
         try:

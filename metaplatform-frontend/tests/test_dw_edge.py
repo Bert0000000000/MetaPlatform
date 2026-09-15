@@ -1,4 +1,5 @@
 """W6-3 dw edge tests (ST-6.3.x edge)."""
+
 from __future__ import annotations
 
 import pytest
@@ -7,8 +8,16 @@ import pytest
 def test_dw_node_categories() -> None:
     """ST-6.3.14: 节点库（10 个内置）."""
     node_types = [
-        "DB", "HTTP", "LLM", "Agent", "Branch",
-        "Filter", "Map", "Union", "Sink", "Source",
+        "DB",
+        "HTTP",
+        "LLM",
+        "Agent",
+        "Branch",
+        "Filter",
+        "Map",
+        "Union",
+        "Sink",
+        "Source",
     ]
     assert len(node_types) == 10
     assert "DB" in node_types

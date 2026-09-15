@@ -128,9 +128,7 @@ def _build_proxy(remote: ClientSession) -> Server:
         return await remote.list_prompts()
 
     @server.get_prompt()
-    async def _get_prompt(
-        name: str, arguments: dict[str, str] | None
-    ) -> types.GetPromptResult:
+    async def _get_prompt(name: str, arguments: dict[str, str] | None) -> types.GetPromptResult:
         return await remote.get_prompt(name, arguments)
 
     return server

@@ -113,7 +113,7 @@ def main() -> int:
         timeout=30,
     ) as r:
         TOKEN = json.load(r)["accessToken"]
-    print(f"login OK\n")
+    print("login OK\n")
 
     rows = list(csv.DictReader((DATA / "test_set_with_outputs.csv").open(encoding="utf-8")))
 
@@ -185,12 +185,22 @@ def main() -> int:
                 "src": f"ont.{TENANT}.ind.{DS}.{slugify(pid)}",
                 "dst": f"ont.{TENANT}.ind.{DS}-provider.{slugify(pn)}",
                 "props": {
-                    prop("policy-number")["rid"]: {"value": r["policy_number"].strip(), "type": "string"},
-                    prop("group-number")["rid"]: {"value": r["group_number"].strip(), "type": "string"},
-                    prop("coverage-start-date")["rid"]: {
-                        "value": r["coverage_start_date"].strip(), "type": "string"
+                    prop("policy-number")["rid"]: {
+                        "value": r["policy_number"].strip(),
+                        "type": "string",
                     },
-                    prop("insurance-type")["rid"]: {"value": r["insurance_type"].strip(), "type": "string"},
+                    prop("group-number")["rid"]: {
+                        "value": r["group_number"].strip(),
+                        "type": "string",
+                    },
+                    prop("coverage-start-date")["rid"]: {
+                        "value": r["coverage_start_date"].strip(),
+                        "type": "string",
+                    },
+                    prop("insurance-type")["rid"]: {
+                        "value": r["insurance_type"].strip(),
+                        "type": "string",
+                    },
                 },
             },
         )
@@ -212,11 +222,13 @@ def main() -> int:
 
     # ── 4) around 一跳遍历 ──
     pid0 = rows[0]["patient_id"].strip()
-    st, body = call("GET", f"/api/v1/ont/v2/individuals/ont.{TENANT}.ind.{DS}.{slugify(pid0)}/around")
+    st, body = call(
+        "GET", f"/api/v1/ont/v2/individuals/ont.{TENANT}.ind.{DS}.{slugify(pid0)}/around"
+    )
     groups = body if isinstance(body, list) else (body or {}).get("groups", [])
     found = isinstance(body, (list, dict)) and "insurance" in json.dumps(body, ensure_ascii=False)
     check(
-        f"around 一跳遍历（患者 → 保险对端）",
+        "around 一跳遍历（患者 → 保险对端）",
         st == 200 and found,
         f"status={st} groups={len(groups) if isinstance(groups, list) else '?'}",
     )

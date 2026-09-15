@@ -1,4 +1,5 @@
 """W6 集成 E2E 端到端 (9 apps 真实路径)."""
+
 from __future__ import annotations
 
 import pytest

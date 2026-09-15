@@ -37,7 +37,6 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from mate_kernel.action.engine import SubmissionCriteriaFailed
 from mate_kernel.ontology.identity import ClassRef
 from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
 from mate_kernel.ontology.instances import Individual
@@ -72,7 +71,9 @@ def P(slug: str) -> str:
     return f"ont.{TENANT}.prop.{slug}.v1"
 
 
-def _prop(slug: str, type_id: str, title: str, *, pk: bool = False, nullable: bool = False) -> Property:
+def _prop(
+    slug: str, type_id: str, title: str, *, pk: bool = False, nullable: bool = False
+) -> Property:
     fmt = PropertyFormat.INTEGER if type_id == "integer" else PropertyFormat.STRING
     return Property(
         rid=ClassRef(P(slug)),
@@ -201,9 +202,7 @@ def check(desc: str, ok: bool, detail: str = "") -> None:
 
 
 def stage_schema(repo: InMemoryOntologyRepository) -> None:
-    text_props = [
-        _prop(s, "string", c, nullable=True) for s, c in TEXT_SLUGS.items()
-    ]
+    text_props = [_prop(s, "string", c, nullable=True) for s, c in TEXT_SLUGS.items()]
     score_props = [_prop(s, "integer", s, nullable=True) for s in SCORE_SLUGS]
     pid_prop = _prop("product-id", "string", "product id", pk=True)
     hazard_props = [
@@ -252,11 +251,9 @@ def stage_version(repo: InMemoryOntologyRepository) -> None:
 
 
 def stage_functions(repo: InMemoryOntologyRepository, rows: list[dict]) -> None:
-    tables: dict[str, dict[str, float | None]] = {
-        slug: {} for slug in SCORE_SLUGS
-    }
+    tables: dict[str, dict[str, float | None]] = {slug: {} for slug in SCORE_SLUGS}
     for r in rows:
-        for slug, score in zip(SCORE_SLUGS, r["scores"]):
+        for slug, score in zip(SCORE_SLUGS, r["scores"], strict=False):
             tables[slug][r["pid"]] = score
 
     fn_rids = []
@@ -403,10 +400,7 @@ def run_pipeline(
                     {"product-id": r["pid"], list(TEXT_SLUGS)[i]: r["texts"][i]},
                     {"actor": "sopbench-pilot", "tenant_id": TENANT},
                 )
-        scores = {
-            slug: repo.get_individual(ind_rid).get(ClassRef(P(slug)))
-            for slug in SCORE_SLUGS
-        }
+        scores = {slug: repo.get_individual(ind_rid).get(ClassRef(P(slug))) for slug in SCORE_SLUGS}
         repo.apply_action(
             ClassRef(f"ont.{TENANT}.act.classify-danger.v1"),
             ind_rid,
@@ -476,7 +470,9 @@ def stage_objectset(repo: InMemoryOntologyRepository, rows: list[dict]) -> None:
             ObjectSet(class_rid=ClassRef(OBJ), filter_expr="hazard-score > 16")
         )
     )
-    check(f"ObjectSet 数值过滤 hazard-score > 16（期望 {gt_hi}）", got_hi == gt_hi, f"count={got_hi}")
+    check(
+        f"ObjectSet 数值过滤 hazard-score > 16（期望 {gt_hi}）", got_hi == gt_hi, f"count={got_hi}"
+    )
 
     # EXP-01：Interface 作为多态查询源
     got_if = len(
@@ -484,7 +480,9 @@ def stage_objectset(repo: InMemoryOntologyRepository, rows: list[dict]) -> None:
             ObjectSet(class_rid=ClassRef(IFACE), filter_expr="", paging_limit=10000)
         )
     )
-    check("Interface 多态查询源（scorable → dangerous-good）", got_if == len(rows), f"count={got_if}")
+    check(
+        "Interface 多态查询源（scorable → dangerous-good）", got_if == len(rows), f"count={got_if}"
+    )
 
 
 # ─────────────────── main ───────────────────
@@ -492,7 +490,9 @@ def stage_objectset(repo: InMemoryOntologyRepository, rows: list[dict]) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--sandbox-sample", type=int, default=8, help="SubprocessExecutor 抽样行数（0 跳过）")
+    ap.add_argument(
+        "--sandbox-sample", type=int, default=8, help="SubprocessExecutor 抽样行数（0 跳过）"
+    )
     args = ap.parse_args()
 
     if not (DATA / "test_set_with_outputs.csv").exists():
@@ -528,8 +528,8 @@ def main() -> int:
         print(line)
     print(f"{'=' * 72}")
     print(
-        f"基元覆盖 10/12（ClassRef/Version/Property/ObjectType/Interface/Individual/"
-        f"Function/ActionType/Axiom/ObjectSet；LinkType/LinkInstance 待关系型域）"
+        "基元覆盖 10/12（ClassRef/Version/Property/ObjectType/Interface/Individual/"
+        "Function/ActionType/Axiom/ObjectSet；LinkType/LinkInstance 待关系型域）"
     )
     print(f"总耗时 {total_dt:.1f}s · {len(CHECKS) - failed}/{len(CHECKS)} checks passed")
     return 1 if failed else 0

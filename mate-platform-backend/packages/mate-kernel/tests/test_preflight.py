@@ -128,9 +128,7 @@ class TestCreateInstanceGate:
         assert r.shacl["checked"] and not r.shacl["conforms"]
 
     def test_wrong_value_type_blocked(self):
-        r = preflight_create_instance(
-            _ot(), {CID: "o1", CNAME: "n", CAMT: "not-an-int"}
-        )
+        r = preflight_create_instance(_ot(), {CID: "o1", CNAME: "n", CAMT: "not-an-int"})
         assert r.blocked is True
         assert r.schema["errors"]
 
@@ -202,9 +200,7 @@ class TestReportHelper:
             {"checked": True, "conforms": False, "violations": [{"c": 1}]},
             [],
         ).blocked
-        assert _finish(
-            {"errors": []}, {"checked": False}, [{"severity": "violation"}]
-        ).blocked
+        assert _finish({"errors": []}, {"checked": False}, [{"severity": "violation"}]).blocked
         # warning 级不阻断
         r = _finish(
             {"errors": [], "warnings": ["w"]},

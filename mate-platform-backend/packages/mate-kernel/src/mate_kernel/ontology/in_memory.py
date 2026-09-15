@@ -54,6 +54,8 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._outbox_writer: Any = None
         # MP-SAL-05: 流程编排定义持久化
         self._flow_definitions: dict[str, dict[str, Any]] = {}
+        # C7：proposal 执行结果（revert 补偿用；PG 侧落在 ont_proposal_execution）
+        self._proposal_executions: dict[str, Any] = {}
         # SEC-12：行列级安全策略
         self._security_policies: dict[str, dict[str, Any]] = {}
         # GOV-16：使用量计数器（P1-7：key 含 actor/source 维度）
@@ -381,6 +383,44 @@ class InMemoryOntologyRepository(OntologyRepository):
             raise KeyError(f"wip not found: {rid}")
         return dict(self._schema_wip[rid])
 
+    def delete_object_type(self, rid: str, *, hard: bool = False) -> dict[str, Any]:
+        """C8：删除 ObjectType（默认软删；hard=True 物理删）—— 与 PG 同语义。"""
+        ot = self._object_types.get(ClassRef(rid))
+        if ot is None:
+            raise KeyError(f"object type not found: {rid}")
+        usage = [
+            u for u in self.usage_summary(30) if u["class_rid"] == rid and (u.get("reads") or 0) > 0
+        ]
+        if usage:
+            raise ValueError(
+                f"delete protection: {rid} has {usage[0]['reads']} reads in last 30d; "
+                "deprecate first"
+            )
+        if not hard:
+            # InMemory 无 archived 字段（PG 侧是表列）→ 软删以「从活动集合移除」
+            # 表达（list_object_types 不再返回），语义等价于 PG 的 archived=TRUE。
+            self._object_types.pop(ClassRef(rid), None)
+            return {"class_rid": rid, "action": "delete", "hard": False, "archived": True}
+
+        instances = [i for i in self._individuals.values() if i.class_rid.rid == rid]
+        if instances:
+            raise ValueError(f"hard delete refused: {rid} still has {len(instances)} instances")
+        self._object_types.pop(ClassRef(rid), None)
+        for ax_rid, ax in list(self._axioms.items()):
+            if any(op.rid == rid for op in ax.operands):
+                self._axioms.pop(ax_rid, None)
+        return {"class_rid": rid, "action": "delete", "hard": True, "rows": 1}
+
+    def delete_interface(self, rid: str) -> dict[str, Any]:
+        """C8：删除 Interface（有实现者 → 拒绝）—— 与 PG 同语义。"""
+        if ClassRef(rid) not in self._interfaces:
+            raise KeyError(f"interface not found: {rid}")
+        impls = [t for t in self._object_types.values() if any(i.rid == rid for i in t.interfaces)]
+        if impls:
+            raise ValueError(f"delete refused: {rid} is implemented by {len(impls)} types")
+        self._interfaces.pop(ClassRef(rid), None)
+        return {"rid": rid, "deleted": 1}
+
     def delete_schema_wip(self, rid: str) -> bool:
         return self._schema_wip.pop(rid, None) is not None
 
@@ -642,7 +682,7 @@ class InMemoryOntologyRepository(OntologyRepository):
                 items = [i for i in items if i.class_rid == class_rid]
             else:
                 # EXP-01 补全（2026-09-14）：Interface 源 → 实现类型 + 各自后代
-                #（与 ObjectSet/IR 查询路径同语义）；具体 ObjectType 保持精确匹配。
+                # （与 ObjectSet/IR 查询路径同语义）；具体 ObjectType 保持精确匹配。
                 items = [i for i in items if i.class_rid.rid in allowed]
         return list(items)
 
@@ -1119,7 +1159,11 @@ class InMemoryOntologyRepository(OntologyRepository):
                 tenant_id=tenant,
                 # ONT-PROV-01：提案级溯源落实例
                 provenance={
-                    **(dict(p.parameters.get("provenance") or {}) if isinstance(p.parameters, dict) else {}),
+                    **(
+                        dict(p.parameters.get("provenance") or {})
+                        if isinstance(p.parameters, dict)
+                        else {}
+                    ),
                     "proposal_id": proposal_id,
                     "executed_at": _dt.now(_UTC).isoformat(),
                 },
@@ -1145,9 +1189,7 @@ class InMemoryOntologyRepository(OntologyRepository):
                 anc.add(y)
         return frozenset(anc)
 
-    def _execute_unified(
-        self, p: Any, *, viewer_markings: tuple[str, ...] | list[str] = ()
-    ) -> Any:
+    def _execute_unified(self, p: Any, *, viewer_markings: tuple[str, ...] | list[str] = ()) -> Any:
         """ADR-0064 S2：统一执行器（kind=edit_set / kind=action 声明式混合式共用）。
 
         组装（assemble_unified_edits）→ 安全闸门 → 补偿式单批执行（_apply_edits）。
@@ -1168,9 +1210,7 @@ class InMemoryOntologyRepository(OntologyRepository):
                     target_props = {k.rid: v for k, v in cur.props}
             raw = dict(p.parameters or {})
             inner = raw.get("parameters")
-            crit_params = (
-                dict(inner) if isinstance(inner, dict) and p.kind != "action" else raw
-            )
+            crit_params = dict(inner) if isinstance(inner, dict) and p.kind != "action" else raw
             if p.kind == "action":
                 crit_params = {k: v for k, v in raw.items() if k != "provenance"}
             for expr in at.submission_criteria:
@@ -1221,7 +1261,67 @@ class InMemoryOntologyRepository(OntologyRepository):
         except Exception:
             pass
         self._action_service.mark_executed(str(p.proposal_id))
+        self._proposal_executions[str(p.proposal_id)] = result
         return result
+
+    def revert_proposal(
+        self,
+        proposal_id: str,
+        actor_id: str = "",
+        idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
+        """C7：executed → reverted（人审撤销 + 补偿）—— 与 PG 侧同语义。
+
+        - edit_set / 经统一执行器的 action：逆编辑补偿（执行期 invert_edits 已
+          排除不可逆项）→ equivalence = equivalent / partial
+        - create_instance：删除实例（I1 ≃ 等价）
+        - 其它：audit-only partial
+        """
+        del idempotency_key  # InMemory 无幂等表（与 confirm/execute 同口径）
+        from mate_kernel.action.engine import ProposalStatus
+
+        p = self._action_service.get_proposal(proposal_id)
+        if p.status is not ProposalStatus.EXECUTED:
+            raise ValueError(
+                f"proposal {proposal_id} is {p.status.value}; revert requires executed"
+            )
+
+        execution = self._proposal_executions.get(proposal_id)
+        equivalence = "partial"
+        compensated: dict[str, Any] = {}
+
+        if p.kind == "create_instance":
+            ot = self._object_types.get(ClassRef(str(p.action_rid)))
+            props_in = dict((p.parameters or {}).get("props") or {})
+            if ot is not None:
+                pk_slug = ot.primary_key[0].rid.split(".")[3]
+                pk_value = props_in.get(pk_slug)
+                parts = ot.rid.rid.split(".")
+                tenant, cls_slug = parts[1], parts[4] if len(parts) >= 6 else parts[3]
+                ind_rid = f"ont.{tenant}.ind.{cls_slug}.{pk_value}"
+                existed = self._individuals.pop(ind_rid, None) is not None
+                equivalence = "equivalent" if existed else "partial"
+                compensated = {"deleted_individual": ind_rid, "rows": int(existed)}
+        elif execution is not None:
+            inverse = list(getattr(execution, "inverse", ()) or ())
+            non_inv = list(getattr(execution, "non_invertible", ()) or ())
+            if inverse:
+                self._apply_edits(
+                    str(p.action_rid),
+                    inverse,
+                    proposal_id=proposal_id,
+                    actor=actor_id or "revert",
+                )
+                equivalence = "equivalent" if not non_inv else "partial"
+                compensated = {"applied_count": len(inverse), "non_invertible": non_inv}
+            else:
+                compensated = {"note": "nothing invertible", "non_invertible": non_inv}
+        else:
+            # kind=action 的 legacy function 式 / merge 等：无逆编辑 → audit-only
+            compensated = {"note": "no execution record; audit-only revert"}
+
+        self._action_service.mark_reverted(proposal_id)
+        return {"equivalence": equivalence, "compensation": compensated}
 
     # ───── ACT-05：声明式 edit-set（propose / apply-now / 原子执行）─────
 
@@ -1289,12 +1389,20 @@ class InMemoryOntologyRepository(OntologyRepository):
             target_iid=target_iid,
             parameters=parameters,
         )
+        # C9：body 无 edits 时用 ActionType.declarative_edits 预装配预览 diff
+        preview_ops = ops
+        if not ops and at is not None and getattr(at, "declarative_edits", ()):
+            preview_ops = resolve_edit_templates(
+                [dict(t) for t in at.declarative_edits],
+                target_iid=target_iid,
+                parameters=parameters,
+            )
         prop = self._action_service.propose(
             action_rid=action_rid,
             parameters={"edits": list(edit_templates), "parameters": dict(parameters)},
             target_iid=target_iid,
-            impact_summary=impact_summary or f"edit-set: {len(ops)} edits",
-            expected_diff=self._dry_run_diff(ops),
+            impact_summary=impact_summary or f"edit-set: {len(preview_ops)} edits",
+            expected_diff=self._dry_run_diff(preview_ops),
             kind="edit_set",
         )
         self._action_service.confirm_proposal(prop.proposal_id, confirmed_by=actor)

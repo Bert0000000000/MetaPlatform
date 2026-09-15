@@ -1,6 +1,7 @@
 import pathlib
-p = pathlib.Path('apps/web/src/pages/knowledge/KnowledgeBasePage.tsx')
-t = p.read_text(encoding='utf-8-sig')
+
+p = pathlib.Path("apps/web/src/pages/knowledge/KnowledgeBasePage.tsx")
+t = p.read_text(encoding="utf-8-sig")
 
 old = """import { SubTabs, type SubTabItem, useAsync, useLoadingState } from '@mate/shared';
 import { listKb, createKb, type KbEntity } from '@/api/kb';"""
@@ -10,7 +11,7 @@ import { listKb, createKb, type KbEntity } from '@/api/kb';
 
 const KB_LIST_KEY = 'kb:list';"""
 
-assert old in t, 'imports marker missing'
+assert old in t, "imports marker missing"
 t = t.replace(old, new)
 
 old_hooks = """export default function KnowledgeBasePage() {
@@ -49,7 +50,7 @@ new_hooks = """export default function KnowledgeBasePage() {
     { onChange: reloadTick },
   );"""
 
-assert old_hooks in t, 'hooks marker missing'
+assert old_hooks in t, "hooks marker missing"
 t = t.replace(old_hooks, new_hooks)
 
 old_create = """  const onCreate = async () => {
@@ -75,8 +76,8 @@ new_create = """  const onCreate = async () => {
     }
   };"""
 
-assert old_create in t, 'create marker missing'
+assert old_create in t, "create marker missing"
 t = t.replace(old_create, new_create)
 
-p.write_text(t, encoding='utf-8')
-print('OK', len(t))
+p.write_text(t, encoding="utf-8")
+print("OK", len(t))

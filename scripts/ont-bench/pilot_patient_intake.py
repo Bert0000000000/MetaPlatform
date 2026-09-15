@@ -31,7 +31,6 @@ import argparse
 import ast
 import csv
 import hashlib
-import json
 import re
 import sys
 import time
@@ -709,7 +708,11 @@ def stage_objectset(repo: InMemoryOntologyRepository, rows: list[dict]) -> None:
             ObjectSet(class_rid=ClassRef(PHARMACY), filter_expr="", paging_limit=10000)
         )
     )
-    check("ObjectSet 查询药房实体", n_ph == len({(r["pharmacy_name"], r["pharmacy_address"]) for r in rows}), f"count={n_ph}")
+    check(
+        "ObjectSet 查询药房实体",
+        n_ph == len({(r["pharmacy_name"], r["pharmacy_address"]) for r in rows}),
+        f"count={n_ph}",
+    )
 
     # 数组属性（EXP-02 多值）读取
     r_multi = next((r for r in rows if len(r["arrays"]["chronic-conditions"]) > 1), None)
@@ -732,7 +735,9 @@ def stage_lifestyle_formula(rows: list[dict]) -> None:
     ex = {"5+ times": -1, "3-4 times": 0, "1-2 times": 1, "None": 2}
     ok = bad = incomplete = 0
     for r in rows:
-        s, a, e = (r["texts"][k] for k in ("smoking-status", "alcohol-consumption", "exercise-frequency"))
+        s, a, e = (
+            r["texts"][k] for k in ("smoking-status", "alcohol-consumption", "exercise-frequency")
+        )
         if not (s and a and e) or s not in smoke or a not in alc or e not in ex:
             incomplete += 1
             continue
@@ -754,7 +759,9 @@ def stage_lifestyle_formula(rows: list[dict]) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--sandbox-sample", type=int, default=6, help="SubprocessExecutor 抽样行数（0 跳过）")
+    ap.add_argument(
+        "--sandbox-sample", type=int, default=6, help="SubprocessExecutor 抽样行数（0 跳过）"
+    )
     args = ap.parse_args()
 
     if not (DATA / "test_set_with_outputs.csv").exists():

@@ -95,7 +95,9 @@ def main() -> int:
 
     print("④ GET /individuals/{rid}  (看 outcome 是否被函数写入)")
     st, body = call("GET", f"/api/v1/ont/v2/individuals/{rid_ind}")
-    print(f"   status={st} -> {json.dumps(body, ensure_ascii=False)[:400] if isinstance(body, dict) else body}\n")
+    print(
+        f"   status={st} -> {json.dumps(body, ensure_ascii=False)[:400] if isinstance(body, dict) else body}\n"
+    )
 
     print("⑤ POST /object-sets/query  (filter_expr DSL)")
     for expr in ["", "raw-score == 7", "raw-score > 5", "raw-score > 100"]:

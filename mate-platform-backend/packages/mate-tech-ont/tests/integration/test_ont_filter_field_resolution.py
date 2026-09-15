@@ -21,9 +21,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-PG_DSN = os.environ.get(
-    "F4_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"
-)
+PG_DSN = os.environ.get("F4_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
 T = "f4-filter"
 
 
@@ -40,8 +38,8 @@ def _pg_available() -> bool:
 pytestmark = pytest.mark.skipif(not _pg_available(), reason=f"PG not reachable at {PG_DSN!r}")
 
 OBJ = f"ont.{T}.obj.x.v1"
-P_SIMPLE = f"ont.{T}.prop.simple.v1"          # 普通 slug → 'simple'
-P_DOTTED = f"ont.{T}.prop.type.sub.v1"        # 点状 slug → _prop_slug 得 'type'，_slug_of 得 'sub'
+P_SIMPLE = f"ont.{T}.prop.simple.v1"  # 普通 slug → 'simple'
+P_DOTTED = f"ont.{T}.prop.type.sub.v1"  # 点状 slug → _prop_slug 得 'type'，_slug_of 得 'sub'
 
 
 @pytest.fixture()
