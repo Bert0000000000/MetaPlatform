@@ -323,7 +323,7 @@ export default function PermissionsPage() {
               <span className="mp-admin-cell-sub">{row.description || '—'}</span>
             </span>
             {row.isBuiltin ? (
-              <Tag color="purple" type="light">
+              <Tag size="small" color="purple" type="light">
                 内置
               </Tag>
             ) : null}
@@ -335,7 +335,7 @@ export default function PermissionsPage() {
         dataIndex: 'dataScope',
         width: 160,
         render: (v: string) => (
-          <Tag type="light">{DATA_SCOPE_LABEL[v] ?? v}</Tag>
+          <Tag size="small" type="light">{DATA_SCOPE_LABEL[v] ?? v}</Tag>
         ),
       },
       {
@@ -343,7 +343,7 @@ export default function PermissionsPage() {
         dataIndex: 'permissionCount',
         width: 100,
         render: (v: number) => (
-          <Tag color="blue" type="light">
+          <Tag size="small" color="blue" type="light">
             {v ?? 0}
           </Tag>
         ),
@@ -353,7 +353,7 @@ export default function PermissionsPage() {
         dataIndex: 'userCount',
         width: 100,
         render: (v: number) => (
-          <Tag type="light">{v ?? 0}</Tag>
+          <Tag size="small" type="light">{v ?? 0}</Tag>
         ),
       },
       {
@@ -448,7 +448,7 @@ export default function PermissionsPage() {
           <span className="mp-admin-cell">
             <span className="mp-admin-cell-title">{row.name}</span>
             {row.isBuiltin ? (
-              <Tag color="purple" type="light">
+              <Tag size="small" color="purple" type="light">
                 内置
               </Tag>
             ) : null}

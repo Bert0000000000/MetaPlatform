@@ -167,7 +167,7 @@ export default function CollaborationMonitorPage() {
               <span className="mp-agent-line-label">—</span>
             ) : (
               (tags ?? []).map((tag) => (
-                <Tag key={tag} type="light">
+                <Tag key={tag} size="small" type="light">
                   {tag}
                 </Tag>
               ))
@@ -179,7 +179,7 @@ export default function CollaborationMonitorPage() {
         title: '负责员工',
         dataIndex: 'employeeId',
         width: 150,
-        render: (v: string) => <Tag type="light">{v}</Tag>,
+        render: (v: string) => <Tag size="small" type="light">{v}</Tag>,
       },
       {
         title: '依赖',
@@ -189,7 +189,7 @@ export default function CollaborationMonitorPage() {
           deps && deps.length > 0 ? (
             <span className="mp-agent-chips">
               {deps.map((d) => (
-                <Tag key={d} color="amber" type="light">
+                <Tag key={d} size="small" color="amber" type="light">
                   {subtasks.find((x) => x.id === d)?.title ?? d}
                 </Tag>
               ))}
@@ -203,7 +203,7 @@ export default function CollaborationMonitorPage() {
         dataIndex: 'status',
         width: 100,
         render: (v: SubTaskStatus) => (
-          <Tag color={SUB_STATUS_META[v]?.color ?? 'grey'} type="light">
+          <Tag size="small" color={SUB_STATUS_META[v]?.color ?? 'grey'} type="light">
             {SUB_STATUS_META[v]?.label ?? v}
           </Tag>
         ),

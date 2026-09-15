@@ -139,7 +139,7 @@ export default function ExecutionPlanPage() {
         title: '状态',
         dataIndex: 'status',
         width: 110,
-        render: (v: string) => <Tag type="light">{STATUS_LABEL[v] ?? v}</Tag>,
+        render: (v: string) => <Tag size="small" type="light">{STATUS_LABEL[v] ?? v}</Tag>,
       },
       {
         title: '步骤',

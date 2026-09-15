@@ -125,7 +125,7 @@ export default function CollaborationListPage() {
         title: '拆分策略',
         dataIndex: 'splitStrategy',
         width: 120,
-        render: (v: SplitStrategy) => <Tag type="light">{SPLIT_LABEL[v] ?? v}</Tag>,
+        render: (v: SplitStrategy) => <Tag size="small" type="light">{SPLIT_LABEL[v] ?? v}</Tag>,
       },
       {
         title: '子任务',
@@ -143,7 +143,7 @@ export default function CollaborationListPage() {
         dataIndex: 'status',
         width: 110,
         render: (v: CollabStatus) => (
-          <Tag color={STATUS_META[v]?.color ?? 'grey'} type="light">
+          <Tag size="small" color={STATUS_META[v]?.color ?? 'grey'} type="light">
             {STATUS_META[v]?.label ?? v}
           </Tag>
         ),

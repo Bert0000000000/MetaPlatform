@@ -45,7 +45,7 @@ export default function A2aIntegrationGuidePage() {
   }, []);
 
   const roleColumns = [
-    { title: '角色 slug', dataIndex: 'role', width: 160, render: (v: string) => <Tag color="blue">{v}</Tag> },
+    { title: '角色 slug', dataIndex: 'role', width: 160, render: (v: string) => <Tag size="small" color="blue">{v}</Tag> },
     { title: '名称', dataIndex: 'name', width: 200 },
     { title: 'Worker 类型', dataIndex: 'worker' },
   ];

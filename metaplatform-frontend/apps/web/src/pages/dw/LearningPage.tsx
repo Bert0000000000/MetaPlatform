@@ -83,7 +83,7 @@ export default function LearningPage() {
       render: (_: unknown, r: LearnedKnowledge) => {
         const meta = metaOf(TYPE_META, r.knowledgeType);
         return (
-          <Tag color={meta.color} type="light">
+          <Tag size="small" color={meta.color} type="light">
             {meta.label}
           </Tag>
         );
@@ -95,7 +95,7 @@ export default function LearningPage() {
       dataIndex: 'syncedToKb',
       width: 110,
       render: (_: unknown, r: LearnedKnowledge) => (
-        <Tag color={r.syncedToKb ? 'green' : 'grey'} type="light">
+        <Tag size="small" color={r.syncedToKb ? 'green' : 'grey'} type="light">
           {r.syncedToKb ? '已同步' : '未同步'}
         </Tag>
       ),

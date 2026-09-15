@@ -63,7 +63,7 @@ export default function EmployeesPage() {
       dataIndex: 'roleCategory',
       width: 130,
       render: (_: unknown, r: Employee) => (
-        <Tag type="light">{ROLE_CATEGORY_MAP[r.roleCategory]?.label ?? (r.roleCategory || '—')}</Tag>
+        <Tag size="small" type="light">{ROLE_CATEGORY_MAP[r.roleCategory]?.label ?? (r.roleCategory || '—')}</Tag>
       ),
     },
     {
@@ -73,7 +73,7 @@ export default function EmployeesPage() {
       render: (_: unknown, r: Employee) => {
         const meta = metaOf(STATUS_META, r.status);
         return (
-          <Tag color={meta.color} type="light">
+          <Tag size="small" color={meta.color} type="light">
             {meta.label}
           </Tag>
         );

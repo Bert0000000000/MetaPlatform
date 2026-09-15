@@ -88,11 +88,11 @@ export default function CategoryManagementModal({ open, onCancel }: CategoryMana
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button theme="borderless" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+          <Button size="small" theme="borderless" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
             编辑
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
-            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>
+            <Button size="small" theme="borderless" type="danger" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>

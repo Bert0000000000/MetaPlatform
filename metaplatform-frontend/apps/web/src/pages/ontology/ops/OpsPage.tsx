@@ -167,7 +167,7 @@ export default function OpsPage() {
               render: (_: unknown, row: SyncStatusRow) => (
                 <span>
                   <span className="mp-onto-strong">{ridTail(row.class_rid)}</span>{' '}
-                  <Tag type="light">{domainOfObjectType(row.class_rid)}</Tag>
+                  <Tag size="small" type="light">{domainOfObjectType(row.class_rid)}</Tag>
                 </span>
               ),
             },
@@ -201,11 +201,11 @@ export default function OpsPage() {
               width: 140,
               render: (v: string | undefined) =>
                 v ? (
-                  <Tag color="red" type="light">
+                  <Tag size="small" color="red" type="light">
                     失败
                   </Tag>
                 ) : (
-                  <Tag color="green" type="light">
+                  <Tag size="small" color="green" type="light">
                     正常
                   </Tag>
                 ),
@@ -296,7 +296,7 @@ export default function OpsPage() {
               dataIndex: 'result',
               width: 120,
               render: (v: Record<string, unknown>) => (
-                <Tag color={Object.keys(v ?? {}).length > 0 ? 'green' : 'grey'} type="light">
+                <Tag size="small" color={Object.keys(v ?? {}).length > 0 ? 'green' : 'grey'} type="light">
                   {Object.keys(v ?? {}).length > 0 ? '已落库' : '空'}
                 </Tag>
               ),

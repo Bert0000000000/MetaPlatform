@@ -207,12 +207,12 @@ export default function ApplicationManagementPage() {
         render: (_: unknown, row: ArchApplication) => (
           <Space>
             {(row.capabilityIds ?? []).slice(0, 3).map((id) => (
-              <Tag key={id} type="light">
+              <Tag size="small" key={id} type="light">
                 {capName(id)}
               </Tag>
             ))}
             {(row.capabilityIds ?? []).length > 3 ? (
-              <Tag type="light">+{row.capabilityIds.length - 3}</Tag>
+              <Tag size="small" type="light">+{row.capabilityIds.length - 3}</Tag>
             ) : null}
           </Space>
         ),
@@ -223,7 +223,7 @@ export default function ApplicationManagementPage() {
         key: 'status',
         width: 110,
         render: (v: ArchApplication['status']) => (
-          <Tag color={STATUS_META[v]?.color ?? 'grey'} type="light">
+          <Tag size="small" color={STATUS_META[v]?.color ?? 'grey'} type="light">
             {STATUS_META[v]?.label ?? v}
           </Tag>
         ),

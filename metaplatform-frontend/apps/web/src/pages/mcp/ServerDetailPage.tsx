@@ -143,7 +143,7 @@ export default function ServerDetailPage() {
     {
       title: '状态',
       dataIndex: 'enabled',
-      render: (v) => (v ? <Tag color="green">启用</Tag> : <Tag>禁用</Tag>),
+      render: (v) => (v ? <Tag size="small" color="green">启用</Tag> : <Tag size="small">禁用</Tag>),
     },
   ];
 

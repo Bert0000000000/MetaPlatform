@@ -154,7 +154,7 @@ export default function TrustManagementPage() {
       title: '信任等级',
       dataIndex: 'trustLevel',
       render: (v: AgentTrust['trustLevel']) => (
-        <Tag color={TRUST_MAP[v].color}>{TRUST_MAP[v].label}</Tag>
+        <Tag size="small" color={TRUST_MAP[v].color}>{TRUST_MAP[v].label}</Tag>
       ),
     },
     {
@@ -184,11 +184,11 @@ export default function TrustManagementPage() {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button theme="borderless" icon={<EditOutlined />} onClick={() => openEdit(record)}>
+          <Button size="small" theme="borderless" icon={<EditOutlined />} onClick={() => openEdit(record)}>
             编辑
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record)}>
-            <Button type="danger" theme="borderless" icon={<DeleteOutlined />}>
+            <Button size="small" type="danger" theme="borderless" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>

@@ -180,7 +180,7 @@ export default function PolicyManagementPage() {
       key: 'subject',
       render: (_, r) => (
         <span>
-          <Tag>{r.subjectType === 'USER' ? '用户' : '应用'}</Tag>
+          <Tag size="small">{r.subjectType === 'USER' ? '用户' : '应用'}</Tag>
           {r.subjectId}
         </span>
       ),
@@ -190,7 +190,7 @@ export default function PolicyManagementPage() {
       key: 'resource',
       render: (_, r) => (
         <span>
-          <Tag color="blue">{r.resourceType}</Tag>
+          <Tag size="small" color="blue">{r.resourceType}</Tag>
           {r.resourceIds.length > 3 ? `${r.resourceIds.slice(0, 3).join(', ')}...` : r.resourceIds.join(', ')}
         </span>
       ),
@@ -198,12 +198,12 @@ export default function PolicyManagementPage() {
     {
       title: '操作',
       dataIndex: 'action',
-      render: (v) => <Tag color="purple">{v}</Tag>,
+      render: (v) => <Tag size="small" color="purple">{v}</Tag>,
     },
     {
       title: '效果',
       dataIndex: 'effect',
-      render: (v) => <Tag color={v === 'ALLOW' ? 'green' : 'red'}>{v}</Tag>,
+      render: (v) => <Tag size="small" color={v === 'ALLOW' ? 'green' : 'red'}>{v}</Tag>,
     },
     {
       title: '生效时间',
@@ -218,14 +218,14 @@ export default function PolicyManagementPage() {
     {
       title: '启用',
       dataIndex: 'enabled',
-      render: (v) => (v ? <Tag color="green">是</Tag> : <Tag>否</Tag>),
+      render: (v) => (v ? <Tag size="small" color="green">是</Tag> : <Tag size="small">否</Tag>),
     },
     {
       title: '操作',
       key: 'actions',
       render: (_, r) => (
         <Space>
-          <Button theme="borderless" icon={<EditOutlined />} onClick={() => openEdit(r)}>
+          <Button size="small" theme="borderless" icon={<EditOutlined />} onClick={() => openEdit(r)}>
             编辑
           </Button>
           <Popconfirm
@@ -236,7 +236,7 @@ export default function PolicyManagementPage() {
               load();
             }}
           >
-            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>
+            <Button size="small" theme="borderless" type="danger" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>

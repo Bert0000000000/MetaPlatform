@@ -280,7 +280,7 @@ export default function BusinessProcessPage() {
         render: (_: unknown, row: BusinessProcess) => (
           <Space>
             {(row.capabilities ?? row.capabilityIds ?? []).slice(0, 3).map((id) => (
-              <Tag key={id} type="light">
+              <Tag size="small" key={id} type="light">
                 {capName(id)}
               </Tag>
             ))}
@@ -295,7 +295,7 @@ export default function BusinessProcessPage() {
         render: (v: string | undefined) => {
           const meta = STATUS_META[upper(v)];
           return (
-            <Tag color={meta?.color ?? 'grey'} type="light">
+            <Tag size="small" color={meta?.color ?? 'grey'} type="light">
               {meta?.label ?? (v ? upper(v) : '—')}
             </Tag>
           );

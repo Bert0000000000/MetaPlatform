@@ -178,7 +178,7 @@ export default function DataArchPage() {
         dataIndex: '__domain__',
         key: 'domain',
         width: 180,
-        render: (_: unknown, row: DataEntity) => <Tag type="light">{domainName(row.domainId)}</Tag>,
+        render: (_: unknown, row: DataEntity) => <Tag size="small" type="light">{domainName(row.domainId)}</Tag>,
       },
       {
         title: '字段数',

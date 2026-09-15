@@ -123,6 +123,7 @@ export default function DataTablePro<T extends object>({
       {settings ? <div className="mp-table-toolbar">{settings}</div> : null}
 
       <Table
+        className="mp-table"
         columns={visibleColumns}
         dataSource={dataSource}
         rowKey={rowKey}
@@ -131,7 +132,7 @@ export default function DataTablePro<T extends object>({
         resizable
         onRow={onRow}
         empty={empty}
-        scroll={scroll ?? { x: 'max-content' }}
+        scroll={scroll}
         rowSelection={
           rowSelection
             ? {

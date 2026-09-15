@@ -175,7 +175,11 @@ export default function DeliverablesPage() {
         title: '类型',
         dataIndex: 'type',
         width: 120,
-        render: (v: string) => <Tag type="light">{v}</Tag>,
+        render: (v: string) => (
+          <Tag size="small" type="light">
+            {v}
+          </Tag>
+        ),
       },
       { title: '格式', dataIndex: 'format', width: 90 },
       {
@@ -206,7 +210,7 @@ export default function DeliverablesPage() {
         dataIndex: 'status',
         width: 110,
         render: (v: string) => (
-          <Tag type="light" color={STATUS_COLOR[v] ?? 'grey'}>
+          <Tag size="small" type="light" color={STATUS_COLOR[v] ?? 'grey'}>
             {STATUS_LABEL[v] ?? v}
           </Tag>
         ),

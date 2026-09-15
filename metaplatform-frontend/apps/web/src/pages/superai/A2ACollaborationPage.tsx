@@ -77,7 +77,7 @@ export default function A2ACollaborationPage() {
         render: (v: string[]) => (
           <span className="mp-exec-chips">
             {(v ?? []).map((c) => (
-              <Tag key={c} type="light" color="blue">
+              <Tag key={c} size="small" type="light" color="blue">
                 {c}
               </Tag>
             ))}
@@ -88,7 +88,7 @@ export default function A2ACollaborationPage() {
         title: '状态',
         dataIndex: 'status',
         width: 110,
-        render: (v: string) => <Tag type="light">{v || 'unknown'}</Tag>,
+        render: (v: string) => <Tag size="small" type="light">{v || 'unknown'}</Tag>,
       },
       { title: '端点', dataIndex: 'endpoint', ellipsis: true },
       {

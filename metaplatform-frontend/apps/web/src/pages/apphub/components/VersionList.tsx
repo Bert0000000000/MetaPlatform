@@ -87,7 +87,7 @@ export default function VersionList({
           title: '状态',
           dataIndex: 'status',
           render: (v: unknown) => (
-            <Tag color={STATUS_MAP[v as AppVersion['status']].color}>
+            <Tag size="small" color={STATUS_MAP[v as AppVersion['status']].color}>
               {STATUS_MAP[v as AppVersion['status']].label}
             </Tag>
           ),
@@ -116,22 +116,22 @@ export default function VersionList({
           key: 'actions',
           render: (_: unknown, v: AppVersion) => (
             <Space wrap spacing="tight">
-              <Button theme="borderless" type="primary" icon={<EyeOutlined />} onClick={() => onPreview(v)}>
+              <Button size="small" theme="borderless" type="primary" icon={<EyeOutlined />} onClick={() => onPreview(v)}>
                 预览
               </Button>
               {v.status !== 'PUBLISHED' && (
-                <Button theme="borderless" type="primary" icon={<CloudUploadOutlined />} onClick={() => onPublish(v)}>
+                <Button size="small" theme="borderless" type="primary" icon={<CloudUploadOutlined />} onClick={() => onPublish(v)}>
                   发布
                 </Button>
               )}
               {v.status === 'OFFLINE' && (
-                <Button theme="borderless" type="primary" icon={<RollbackOutlined />} onClick={() => onRollback(v)}>
+                <Button size="small" theme="borderless" type="primary" icon={<RollbackOutlined />} onClick={() => onRollback(v)}>
                   回滚到此版本
                 </Button>
               )}
               {v.status === 'DRAFT' && (
                 <Popconfirm title="确定删除草稿？" onConfirm={() => onDelete(v)}>
-                  <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>删除</Button>
+                  <Button size="small" theme="borderless" type="danger" icon={<DeleteOutlined />}>删除</Button>
                 </Popconfirm>
               )}
             </Space>

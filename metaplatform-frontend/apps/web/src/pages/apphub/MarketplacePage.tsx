@@ -139,7 +139,7 @@ export default function MarketplacePage() {
               rowKey="id"
               pagination={false}
               columns={[
-                { title: '类型', dataIndex: 'kind', key: 'kind', render: (k: string) => <Tag color="blue">{k}</Tag> },
+                { title: '类型', dataIndex: 'kind', key: 'kind', render: (k: string) => <Tag size="small" color="blue">{k}</Tag> },
                 { title: 'Artifact ID', dataIndex: 'artifactId', key: 'artifactId', ellipsis: true },
                 { title: '版本', dataIndex: 'version', key: 'version', width: 100 },
                 {

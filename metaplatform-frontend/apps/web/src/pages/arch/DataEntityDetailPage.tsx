@@ -133,7 +133,7 @@ export default function DataEntityDetailPage() {
         key: 'name',
         width: 200,
         render: (v: string, _row: FieldRow, index: number) => (
-          <Input value={v} placeholder="字段名" onChange={(val) => updateField(index, { name: val })} />
+          <Input size="small" value={v} placeholder="字段名" onChange={(val) => updateField(index, { name: val })} />
         ),
       },
       {
@@ -143,6 +143,7 @@ export default function DataEntityDetailPage() {
         width: 150,
         render: (v: string, _row: FieldRow, index: number) => (
           <Select
+            size="small"
             value={v}
             optionList={FIELD_TYPES.map((t) => ({ label: t, value: t }))}
             onChange={(val) => updateField(index, { type: String(val) })}
@@ -181,7 +182,7 @@ export default function DataEntityDetailPage() {
         key: 'defaultValue',
         width: 160,
         render: (v: string | undefined, _row: FieldRow, index: number) => (
-          <Input value={v} placeholder="默认值" onChange={(val) => updateField(index, { defaultValue: val })} />
+          <Input size="small" value={v} placeholder="默认值" onChange={(val) => updateField(index, { defaultValue: val })} />
         ),
       },
       {
@@ -189,7 +190,7 @@ export default function DataEntityDetailPage() {
         dataIndex: 'description',
         key: 'description',
         render: (v: string | undefined, _row: FieldRow, index: number) => (
-          <Input value={v} placeholder="注释" onChange={(val) => updateField(index, { description: val })} />
+          <Input size="small" value={v} placeholder="注释" onChange={(val) => updateField(index, { description: val })} />
         ),
       },
       {

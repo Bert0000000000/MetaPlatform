@@ -106,7 +106,7 @@ export default function ExternalIntegrationPage() {
     {
       title: '启用',
       dataIndex: 'enabled',
-      render: (v) => (v ? <Tag color="green">是</Tag> : <Tag>否</Tag>),
+      render: (v) => (v ? <Tag size="small" color="green">是</Tag> : <Tag size="small">否</Tag>),
     },
     {
       title: '操作',
@@ -114,6 +114,7 @@ export default function ExternalIntegrationPage() {
       render: (_, i) => (
         <Space>
           <Button
+            size="small"
             theme="borderless"
             onClick={() => {
               setSelected(i);
@@ -122,6 +123,7 @@ export default function ExternalIntegrationPage() {
             查看
           </Button>
           <Button
+            size="small"
             theme="borderless"
             icon={<EditOutlined />}
             onClick={() => {
@@ -140,7 +142,7 @@ export default function ExternalIntegrationPage() {
               load();
             }}
           >
-            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>删除</Button>
+            <Button size="small" theme="borderless" type="danger" icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
       ),

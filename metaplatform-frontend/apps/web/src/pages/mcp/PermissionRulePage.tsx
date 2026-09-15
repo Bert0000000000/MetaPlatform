@@ -110,7 +110,7 @@ export default function PermissionRulePage() {
       key: 'subject',
       render: (_, r) => (
         <span>
-          <Tag>{r.subjectType}</Tag>
+          <Tag size="small">{r.subjectType}</Tag>
           {r.subject}
         </span>
       ),
@@ -120,7 +120,7 @@ export default function PermissionRulePage() {
       key: 'resource',
       render: (_, r) => (
         <span>
-          <Tag color="blue">{r.resourceType}</Tag>
+          <Tag size="small" color="blue">{r.resourceType}</Tag>
           {r.resourceId}
         </span>
       ),
@@ -128,19 +128,19 @@ export default function PermissionRulePage() {
     {
       title: '操作',
       dataIndex: 'actions',
-      render: (v: string[]) => v.map((a) => <Tag color="purple" key={a}>{a}</Tag>),
+      render: (v: string[]) => v.map((a) => <Tag size="small" color="purple" key={a}>{a}</Tag>),
     },
     {
       title: '效果',
       key: 'effect',
       render: (_, r) => (
-        <Tag color={r.effect === 'allow' ? 'green' : 'red'}>{r.effect}</Tag>
+        <Tag size="small" color={r.effect === 'allow' ? 'green' : 'red'}>{r.effect}</Tag>
       ),
     },
     {
       title: '启用',
       dataIndex: 'enabled',
-      render: (v) => (v ? <Tag color="green">是</Tag> : <Tag>否</Tag>),
+      render: (v) => (v ? <Tag size="small" color="green">是</Tag> : <Tag size="small">否</Tag>),
     },
     {
       title: '操作',
@@ -148,6 +148,7 @@ export default function PermissionRulePage() {
       render: (_, r) => (
         <Space>
           <Button
+            size="small"
             theme="borderless"
             icon={<EditOutlined />}
             onClick={() => {
@@ -162,7 +163,7 @@ export default function PermissionRulePage() {
             Toast.success('已删除');
             load();
           }}>
-            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>删除</Button>
+            <Button size="small" theme="borderless" type="danger" icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
       ),

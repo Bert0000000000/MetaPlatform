@@ -70,7 +70,7 @@ export default function ScheduleIntentPage() {
         dataIndex: 'detectedIntent',
         width: 110,
         render: (v: string) => (
-          <Tag type="light" color={v === 'scheduled' ? 'blue' : 'green'}>
+          <Tag size="small" type="light" color={v === 'scheduled' ? 'blue' : 'green'}>
             {v === 'scheduled' ? '定时' : v === 'immediate' ? '即时' : v || '—'}
           </Tag>
         ),
@@ -87,7 +87,7 @@ export default function ScheduleIntentPage() {
         render: (v: string[]) => (
           <span className="mp-exec-chips">
             {(v ?? []).map((e) => (
-              <Tag key={e} type="light" color="purple">
+              <Tag key={e} size="small" type="light" color="purple">
                 {e}
               </Tag>
             ))}

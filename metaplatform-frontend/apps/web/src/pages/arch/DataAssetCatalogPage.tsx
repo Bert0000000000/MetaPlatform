@@ -178,7 +178,7 @@ export default function DataAssetCatalogPage() {
         dataIndex: 'assetType',
         key: 'assetType',
         width: 130,
-        render: (v: string | undefined) => (v ? <Tag type="light">{v}</Tag> : '—'),
+        render: (v: string | undefined) => (v ? <Tag size="small" type="light">{v}</Tag> : '—'),
       },
       {
         title: '主题域',
@@ -203,7 +203,7 @@ export default function DataAssetCatalogPage() {
         render: (_: unknown, row: DataAsset) => (
           <Space>
             {(row.tags ?? []).map((t) => (
-              <Tag key={t} type="light">
+              <Tag size="small" key={t} type="light">
                 {t}
               </Tag>
             ))}

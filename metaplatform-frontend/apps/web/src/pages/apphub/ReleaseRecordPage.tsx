@@ -188,7 +188,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
       title: '发布策略',
       dataIndex: 'strategy',
       key: 'strategy',
-      render: (value: string) => <Tag>{STRATEGY_LABELS[value] ?? value}</Tag>,
+      render: (value: string) => <Tag size="small">{STRATEGY_LABELS[value] ?? value}</Tag>,
     },
     {
       title: '灰度比例',
@@ -207,7 +207,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
       key: 'status',
       render: (value: string) => {
         const item = STATUS_LABELS[value] ?? { label: value, color: 'grey' };
-        return <Tag color={item.color}>{item.label}</Tag>;
+        return <Tag size="small" color={item.color}>{item.label}</Tag>;
       },
     },
     {
@@ -216,7 +216,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
       key: 'approvalStatus',
       render: (value: string) => {
         const item = APPROVAL_LABELS[value] ?? { label: value, color: 'grey' };
-        return <Tag color={item.color}>{item.label}</Tag>;
+        return <Tag size="small" color={item.color}>{item.label}</Tag>;
       },
     },
     {
@@ -230,11 +230,11 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
       key: 'action',
       render: (_: unknown, record: ReleaseRecord) => (
         <Space>
-          <Button theme="borderless" type="primary" icon={<HistoryOutlined />} onClick={() => openDrawer(record, 'logs')}>
+          <Button size="small" theme="borderless" type="primary" icon={<HistoryOutlined />} onClick={() => openDrawer(record, 'logs')}>
             日志
           </Button>
           {record.status === 'PENDING_APPROVAL' && (
-            <Button theme="borderless" type="primary" onClick={() => openDrawer(record, 'approval')}>
+            <Button size="small" theme="borderless" type="primary" onClick={() => openDrawer(record, 'approval')}>
               审批
             </Button>
           )}

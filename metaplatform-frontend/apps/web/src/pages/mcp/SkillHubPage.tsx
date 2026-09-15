@@ -168,12 +168,12 @@ export default function SkillHubPage() {
       ) },
     { title: '版本', dataIndex: 'version', width: 80 },
     { title: '可见性', dataIndex: 'visibility', width: 90, render: (v) => (
-        <Tag color={v === 'public' ? 'green' : 'orange'}>{v === 'public' ? '公开' : '私有'}</Tag>
+        <Tag size="small" color={v === 'public' ? 'green' : 'orange'}>{v === 'public' ? '公开' : '私有'}</Tag>
       ) },
     { title: '作者租户', dataIndex: 'author_tenant', width: 140 },
     { title: '安装数', dataIndex: 'installs', width: 80 },
     { title: '状态', key: 'status', width: 90, render: (_, r) => (
-        installedIds.has(r.id) ? <Tag color="blue">已安装</Tag> : <Tag>未安装</Tag>
+        installedIds.has(r.id) ? <Tag size="small" color="blue">已安装</Tag> : <Tag size="small">未安装</Tag>
       ) },
     { title: '操作', key: 'actions', width: 260, render: (_, r) => (
         <Space>

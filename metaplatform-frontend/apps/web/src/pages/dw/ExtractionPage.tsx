@@ -72,7 +72,7 @@ export default function ExtractionPage() {
       render: (_: unknown, r: ExtractionItem) => {
         const meta = metaOf(TYPE_META, r.type);
         return (
-          <Tag color={meta.color} type="light">
+          <Tag size="small" color={meta.color} type="light">
             {meta.label}
           </Tag>
         );
@@ -85,7 +85,7 @@ export default function ExtractionPage() {
       render: (_: unknown, r: ExtractionItem) => {
         const meta = metaOf(STATUS_META, r.status);
         return (
-          <Tag color={meta.color} type="light">
+          <Tag size="small" color={meta.color} type="light">
             {meta.label}
           </Tag>
         );

@@ -67,7 +67,7 @@ export default function CostOptimizationPage() {
           <span className="mp-exec-step-head">
             <span className="mp-exec-step-title">{v}</span>
             {row.modelId === result?.recommendedModelId ? (
-              <Tag type="light" color="green">
+              <Tag size="small" type="light" color="green">
                 推荐
               </Tag>
             ) : null}

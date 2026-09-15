@@ -219,7 +219,7 @@ export default function DeploymentTopologyPage() {
       key: 'healthStatus',
       width: 120,
       render: (s: string) => (
-        <Tag color={HEALTH_MAP[s]?.color ?? 'grey'} type="light">
+        <Tag size="small" color={HEALTH_MAP[s]?.color ?? 'grey'} type="light">
           {HEALTH_MAP[s]?.label ?? s}
         </Tag>
       ),

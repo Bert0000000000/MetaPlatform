@@ -22,10 +22,10 @@ export default function A2aInternalAgentsPage() {
         <Typography.Text strong>{r.name}</Typography.Text>
       ) },
     { title: '编码', dataIndex: 'code', width: 160 },
-    { title: '角色', dataIndex: 'roleCategory', width: 140, render: (v) => <Tag>{v}</Tag> },
+    { title: '角色', dataIndex: 'roleCategory', width: 140, render: (v) => <Tag size="small">{v}</Tag> },
     { title: '身份', dataIndex: 'roleIdentity', width: 140 },
     { title: '状态', dataIndex: 'status', width: 100, render: (v) => (
-        <Tag color={v === 'ACTIVE' ? 'green' : v === 'DRAFT' ? 'orange' : 'grey'}>{v}</Tag>
+        <Tag size="small" color={v === 'ACTIVE' ? 'green' : v === 'DRAFT' ? 'orange' : 'grey'}>{v}</Tag>
       ) },
     { title: '内置', dataIndex: 'builtin', width: 70, render: (v) => (v ? '✓' : '') },
   ];

@@ -209,7 +209,7 @@ export default function DatacenterPage() {
         dataIndex: 'sourceType',
         width: 120,
         render: (v: BigDataSource['sourceType']) => (
-          <Tag type="light">{SOURCE_TYPE_META[v]?.label ?? v}</Tag>
+          <Tag size="small" type="light">{SOURCE_TYPE_META[v]?.label ?? v}</Tag>
         ),
       },
       {
@@ -231,7 +231,7 @@ export default function DatacenterPage() {
         dataIndex: 'status',
         width: 110,
         render: (v: BigDataSourceStatus) => (
-          <Tag color={STATUS_COLOR[v] ?? 'grey'} type="light">
+          <Tag size="small" color={STATUS_COLOR[v] ?? 'grey'} type="light">
             {v}
           </Tag>
         ),

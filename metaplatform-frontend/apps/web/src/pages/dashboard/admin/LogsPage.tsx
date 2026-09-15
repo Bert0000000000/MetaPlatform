@@ -158,14 +158,14 @@ export default function LogsPage() {
         dataIndex: 'module',
         width: 140,
         ellipsis: true,
-        render: (v: string) => <Tag type="light">{v}</Tag>,
+        render: (v: string) => <Tag size="small" type="light">{v}</Tag>,
       },
       {
         title: '动作',
         dataIndex: 'action',
         width: 120,
         render: (v: string) => (
-          <Tag color={ACTION_COLOR[v as AuditAction] ?? 'grey'} type="light">
+          <Tag size="small" color={ACTION_COLOR[v as AuditAction] ?? 'grey'} type="light">
             {v}
           </Tag>
         ),

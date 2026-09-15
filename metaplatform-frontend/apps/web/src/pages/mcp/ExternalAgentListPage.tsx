@@ -232,7 +232,7 @@ export default function ExternalAgentListPage() {
     {
       title: '协议',
       dataIndex: 'protocolType',
-      render: (v) => <Tag>{v}</Tag>,
+      render: (v) => <Tag size="small">{v}</Tag>,
     },
     {
       title: '端点',
@@ -248,14 +248,14 @@ export default function ExternalAgentListPage() {
       title: '状态',
       dataIndex: 'status',
       render: (v: ExternalAgent['status']) => (
-        <Tag color={STATUS_MAP[v].color}>{STATUS_MAP[v].label}</Tag>
+        <Tag size="small" color={STATUS_MAP[v].color}>{STATUS_MAP[v].label}</Tag>
       ),
     },
     {
       title: '信任等级',
       dataIndex: 'trustLevel',
       render: (v: ExternalAgent['trustLevel']) => (
-        <Tag color={TRUST_MAP[v].color}>{TRUST_MAP[v].label}</Tag>
+        <Tag size="small" color={TRUST_MAP[v].color}>{TRUST_MAP[v].label}</Tag>
       ),
     },
     {
@@ -268,10 +268,11 @@ export default function ExternalAgentListPage() {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button theme="borderless" onClick={() => setDetail(record)}>
+          <Button size="small" theme="borderless" onClick={() => setDetail(record)}>
             详情
           </Button>
           <Button
+            size="small"
             theme="borderless"
             icon={<ApiOutlined />}
             loading={testingId === record.id}
@@ -279,11 +280,11 @@ export default function ExternalAgentListPage() {
           >
             测试
           </Button>
-          <Button theme="borderless" icon={<EditOutlined />} onClick={() => openEdit(record)}>
+          <Button size="small" theme="borderless" icon={<EditOutlined />} onClick={() => openEdit(record)}>
             编辑
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record)}>
-            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>
+            <Button size="small" theme="borderless" type="danger" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>
@@ -317,7 +318,7 @@ export default function ExternalAgentListPage() {
                 key: 'name',
                 render: (_, record) => (
                   <Space>
-                    <Tag color="yellow">内部</Tag>
+                    <Tag size="small" color="yellow">内部</Tag>
                     <Typography.Text strong>{record.name}</Typography.Text>
                   </Space>
                 ),

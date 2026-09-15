@@ -311,7 +311,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
       title: "资源类型",
       key: "resource_type",
       width: 140,
-      render: (_v, p) => <Tag color="blue">{p ? getResourceType(p) : ''}</Tag>,
+      render: (_v, p) => <Tag size="small" color="blue">{p ? getResourceType(p) : ''}</Tag>,
       filters: resourceTypes.map((rt) => ({ text: rt, value: rt })),
       onFilter: (value, record) => (record ? getResourceType(record) === value : false),
     },
@@ -323,7 +323,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
       render: (actions: string[]) => (
         <Space spacing={2} wrap>
           {(actions ?? []).map((a) => (
-            <Tag key={a} className="mp-m-0 mp-text-xs" >
+            <Tag key={a} size="small" className="mp-m-0 mp-text-xs" >
               {a}
             </Tag>
           ))}

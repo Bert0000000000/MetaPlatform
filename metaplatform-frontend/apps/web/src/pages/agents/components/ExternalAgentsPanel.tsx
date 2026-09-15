@@ -463,7 +463,7 @@ export default function ExternalAgentsPanel() {
       dataIndex: 'status',
       width: 110,
       render: (v: DelegationStatus) => (
-        <Tag color={STATUS_LABEL[v]?.color ?? 'grey'} type="light">
+        <Tag size="small" color={STATUS_LABEL[v]?.color ?? 'grey'} type="light">
           {STATUS_LABEL[v]?.label ?? v}
         </Tag>
       ),

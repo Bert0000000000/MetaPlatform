@@ -103,13 +103,13 @@ export default function CollaborationAuditPage() {
     {
       title: '协议',
       dataIndex: 'protocolType',
-      render: (v) => <Tag>{v}</Tag>,
+      render: (v) => <Tag size="small">{v}</Tag>,
     },
     {
       title: '状态',
       dataIndex: 'status',
       render: (v: CollaborationAudit['status']) => (
-        <Tag color={STATUS_MAP[v].color}>{STATUS_MAP[v].label}</Tag>
+        <Tag size="small" color={STATUS_MAP[v].color}>{STATUS_MAP[v].label}</Tag>
       ),
     },
     {
@@ -132,7 +132,7 @@ export default function CollaborationAuditPage() {
       title: '操作',
       key: 'actions',
       render: (_, record) => (
-        <Button theme="borderless" icon={<EyeOutlined />} onClick={() => setDetail(record)}>
+        <Button size="small" theme="borderless" icon={<EyeOutlined />} onClick={() => setDetail(record)}>
           详情
         </Button>
       ),

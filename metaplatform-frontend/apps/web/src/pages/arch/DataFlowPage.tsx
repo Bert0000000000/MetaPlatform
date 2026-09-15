@@ -204,7 +204,7 @@ export default function DataFlowPage() {
         dataIndex: 'flowType',
         key: 'flowType',
         width: 120,
-        render: (v: string | undefined) => (v ? <Tag type="light">{v}</Tag> : '—'),
+        render: (v: string | undefined) => (v ? <Tag size="small" type="light">{v}</Tag> : '—'),
       },
       { title: '调度', dataIndex: 'schedule', key: 'schedule', width: 140, ellipsis: true },
       { title: '描述', dataIndex: 'description', key: 'description', ellipsis: true },

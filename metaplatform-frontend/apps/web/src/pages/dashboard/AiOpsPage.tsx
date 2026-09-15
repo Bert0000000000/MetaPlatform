@@ -315,7 +315,9 @@ export default function AiOpsPage() {
       title: '严重级别',
       dataIndex: 'severity',
       render: (v: AnomalySeverity) => (
-        <Tag color={SEVERITY_LABEL[v]?.color ?? 'grey'}>{SEVERITY_LABEL[v]?.label ?? v}</Tag>
+        <Tag size="small" color={SEVERITY_LABEL[v]?.color ?? 'grey'}>
+          {SEVERITY_LABEL[v]?.label ?? v}
+        </Tag>
       ),
     },
     { title: '服务', dataIndex: 'serviceName' },
@@ -323,7 +325,9 @@ export default function AiOpsPage() {
       title: '状态',
       dataIndex: 'status',
       render: (v: AnomalyStatus) => (
-        <Tag color={STATUS_LABEL[v]?.color ?? 'grey'}>{STATUS_LABEL[v]?.label ?? v}</Tag>
+        <Tag size="small" color={STATUS_LABEL[v]?.color ?? 'grey'}>
+          {STATUS_LABEL[v]?.label ?? v}
+        </Tag>
       ),
     },
     {
@@ -403,13 +407,19 @@ export default function AiOpsPage() {
       title: '严重级别',
       dataIndex: 'severity',
       render: (v: AnomalySeverity) => (
-        <Tag color={SEVERITY_LABEL[v]?.color ?? 'grey'}>{SEVERITY_LABEL[v]?.label ?? v}</Tag>
+        <Tag size="small" color={SEVERITY_LABEL[v]?.color ?? 'grey'}>
+          {SEVERITY_LABEL[v]?.label ?? v}
+        </Tag>
       ),
     },
     {
       title: '启用',
       dataIndex: 'enabled',
-      render: (v: boolean) => <Tag color={v ? 'green' : 'grey'}>{v ? '是' : '否'}</Tag>,
+      render: (v: boolean) => (
+        <Tag size="small" color={v ? 'green' : 'grey'}>
+          {v ? '是' : '否'}
+        </Tag>
+      ),
     },
     {
       title: '操作',

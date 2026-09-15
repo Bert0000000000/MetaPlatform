@@ -240,7 +240,7 @@ export default function OrgRolePage() {
         dataIndex: 'domain',
         key: 'domain',
         width: 120,
-        render: (v: string | undefined) => (v ? <Tag color="cyan" type="light">{v}</Tag> : '—'),
+        render: (v: string | undefined) => (v ? <Tag size="small" color="cyan" type="light">{v}</Tag> : '—'),
       },
       { title: '职责', dataIndex: 'responsibility', key: 'responsibility', ellipsis: true },
       {
@@ -250,7 +250,7 @@ export default function OrgRolePage() {
         width: 150,
         render: (_: unknown, row: ArchRole) =>
           (row.iamRoleIds ?? []).slice(0, 2).map((id) => (
-            <Tag key={id} type="light">
+            <Tag size="small" key={id} type="light">
               {id.slice(0, 8)}
             </Tag>
           )),

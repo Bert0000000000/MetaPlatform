@@ -418,7 +418,7 @@ export default function OrgsPage() {
         title: '类型',
         dataIndex: 'type',
         width: 110,
-        render: (v: OrgType) => <Tag type="light">{ORG_TYPE_LABEL[v] ?? v}</Tag>,
+        render: (v: OrgType) => <Tag size="small" type="light">{ORG_TYPE_LABEL[v] ?? v}</Tag>,
       },
       {
         title: '父组织',
@@ -487,7 +487,7 @@ export default function OrgsPage() {
         dataIndex: 'level',
         width: 100,
         render: (v: string | null | undefined) =>
-          v ? <Tag type="light">{v}</Tag> : <span className="mp-admin-faint">—</span>,
+          v ? <Tag size="small" type="light">{v}</Tag> : <span className="mp-admin-faint">—</span>,
       },
       {
         title: '在岗',

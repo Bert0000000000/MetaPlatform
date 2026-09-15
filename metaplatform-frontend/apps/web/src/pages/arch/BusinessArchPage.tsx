@@ -332,7 +332,7 @@ export default function BusinessArchPage() {
         render: (v: string | undefined) => {
           const meta = statusMeta(v);
           return (
-            <Tag type="light" color={meta.color}>
+            <Tag size="small" type="light" color={meta.color}>
               {meta.label}
             </Tag>
           );

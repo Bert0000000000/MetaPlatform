@@ -200,7 +200,7 @@ export default function TechDebtPage() {
       key: 'category',
       width: 140,
       ellipsis: true,
-      render: (c?: string) => (c ? <Tag type="light">{c}</Tag> : '—'),
+      render: (c?: string) => (c ? <Tag size="small" type="light">{c}</Tag> : '—'),
     },
     {
       title: '严重度',
@@ -208,7 +208,7 @@ export default function TechDebtPage() {
       key: 'severity',
       width: 100,
       render: (s: string) => (
-        <Tag color={SEVERITY_TAG[s]?.color ?? 'grey'} type="light">
+        <Tag size="small" color={SEVERITY_TAG[s]?.color ?? 'grey'} type="light">
           {SEVERITY_TAG[s]?.label ?? s}
         </Tag>
       ),
@@ -219,7 +219,7 @@ export default function TechDebtPage() {
       key: 'debtLevel',
       width: 110,
       render: (l: string) => (
-        <Tag color={LEVEL_TAG[l]?.color ?? 'grey'} type="light">
+        <Tag size="small" color={LEVEL_TAG[l]?.color ?? 'grey'} type="light">
           {LEVEL_TAG[l]?.label ?? l}
         </Tag>
       ),
@@ -230,7 +230,7 @@ export default function TechDebtPage() {
       key: 'status',
       width: 110,
       render: (s: string) => (
-        <Tag color={STATUS_TAG[s]?.color ?? 'grey'} type="light">
+        <Tag size="small" color={STATUS_TAG[s]?.color ?? 'grey'} type="light">
           {STATUS_TAG[s]?.label ?? s}
         </Tag>
       ),

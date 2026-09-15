@@ -289,7 +289,7 @@ export default function ValueStreamPage() {
         key: 'status',
         width: 100,
         render: (v: ValueStream['status']) => (
-          <Tag color={!v ? 'grey' : isActive(v) ? 'green' : 'grey'} type="light">
+          <Tag size="small" color={!v ? 'grey' : isActive(v) ? 'green' : 'grey'} type="light">
             {!v ? '—' : isActive(v) ? '生效' : '草稿'}
           </Tag>
         ),
@@ -328,7 +328,7 @@ export default function ValueStreamPage() {
         render: (_: unknown, row: ValueStreamStage) => (
           <Space>
             {(row.outputs ?? []).map((o) => (
-              <Tag key={o} type="light">
+              <Tag size="small" key={o} type="light">
                 {o}
               </Tag>
             ))}
@@ -342,7 +342,7 @@ export default function ValueStreamPage() {
         render: (_: unknown, row: ValueStreamStage) => (
           <Space>
             {(row.participantRoleIds ?? []).map((id) => (
-              <Tag key={id} type="light">
+              <Tag size="small" key={id} type="light">
                 {roleName(id)}
               </Tag>
             ))}

@@ -130,7 +130,7 @@ const PERMISSION_COLUMNS = [
     render: (actions: string[]) => (
       <Space wrap>
         {actions.map((a) => (
-          <Tag key={a} type="light">
+          <Tag key={a} size="small" type="light">
             {a}
           </Tag>
         ))}
@@ -143,7 +143,7 @@ const PERMISSION_COLUMNS = [
     key: 'effect',
     width: 100,
     render: (effect: string) => (
-      <Tag color={effect === 'DENY' ? 'red' : 'green'} type="light">
+      <Tag size="small" color={effect === 'DENY' ? 'red' : 'green'} type="light">
         {effect}
       </Tag>
     ),

@@ -278,7 +278,7 @@ export default function UsersPage() {
         width: 260,
         render: (_: unknown, row: AdminUser) => (
           <span className="mp-admin-cell">
-            <Avatar size="small" color="blue">
+            <Avatar size="extra-small" color="blue">
               {(row.realName ?? row.username).slice(0, 1)}
             </Avatar>
             <span className="mp-admin-cell-main">
@@ -295,13 +295,17 @@ export default function UsersPage() {
         render: (_: unknown, row: AdminUser) => (
           <span className="mp-admin-chips">
             {(row.roleIds ?? []).slice(0, 3).map((id) => (
-              <Tag key={id} type="light">
+              <Tag key={id} size="small" type="light">
                 {roleName(id)}
               </Tag>
             ))}
-            {(row.roleIds ?? []).length > 3 ? <Tag type="light">+{row.roleIds.length - 3}</Tag> : null}
+            {(row.roleIds ?? []).length > 3 ? (
+              <Tag size="small" type="light">
+                +{row.roleIds.length - 3}
+              </Tag>
+            ) : null}
             {row.isSuperAdmin ? (
-              <Tag color="amber" type="light">
+              <Tag color="amber" size="small" type="light">
                 超级管理员
               </Tag>
             ) : null}
@@ -320,7 +324,7 @@ export default function UsersPage() {
         dataIndex: 'status',
         width: 110,
         render: (v: UserStatus) => (
-          <Tag color={STATUS_META[v]?.color ?? 'grey'} type="light">
+          <Tag color={STATUS_META[v]?.color ?? 'grey'} size="small" type="light">
             {STATUS_META[v]?.label ?? v}
           </Tag>
         ),

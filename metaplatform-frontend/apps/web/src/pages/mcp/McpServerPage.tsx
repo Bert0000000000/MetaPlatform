@@ -120,19 +120,19 @@ export default function ServerListPage() {
         </Space>
       ),
     },
-    { title: '传输', dataIndex: 'transport', render: (v) => <Tag>{v}</Tag> },
+    { title: '传输', dataIndex: 'transport', render: (v) => <Tag size="small">{v}</Tag> },
     { title: '端点', dataIndex: 'endpoint', ellipsis: true },
     {
       title: '工具数',
       dataIndex: 'toolCount',
-      render: (v) => <Tag color="blue">{v ?? 0}</Tag>,
+      render: (v) => <Tag size="small" color="blue">{v ?? 0}</Tag>,
     },
     {
       title: '状态',
       key: 'status',
       render: (_, s) => (
         <Space vertical spacing={0}>
-          <Tag color={STATUS_MAP[s.status].color}>{STATUS_MAP[s.status].label}</Tag>
+          <Tag size="small" color={STATUS_MAP[s.status].color}>{STATUS_MAP[s.status].label}</Tag>
           {s.lastHeartbeatAt && (
             <Typography.Text type="tertiary" className="mp-text-sm">
               心跳 {new Date(s.lastHeartbeatAt).toLocaleString()}
@@ -146,20 +146,20 @@ export default function ServerListPage() {
       key: 'actions',
       render: (_, s) => (
         <Space>
-          <Button theme="borderless" icon={<EyeOutlined />} onClick={() => navigate(`/servers/${s.id}`)}>
+          <Button size="small" theme="borderless" icon={<EyeOutlined />} onClick={() => navigate(`/servers/${s.id}`)}>
             详情
           </Button>
           {s.status === 'offline' ? (
-            <Button theme="borderless" icon={<PlayCircleOutlined />} onClick={() => handleStart(s)}>
+            <Button size="small" theme="borderless" icon={<PlayCircleOutlined />} onClick={() => handleStart(s)}>
               启动
             </Button>
           ) : (
-            <Button theme="borderless" icon={<PauseCircleOutlined />} onClick={() => handleStop(s)}>
+            <Button size="small" theme="borderless" icon={<PauseCircleOutlined />} onClick={() => handleStop(s)}>
               停止
             </Button>
           )}
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(s)}>
-            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>
+            <Button size="small" theme="borderless" type="danger" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>

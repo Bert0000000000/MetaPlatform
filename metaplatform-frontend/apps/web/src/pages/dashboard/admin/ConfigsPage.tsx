@@ -44,7 +44,7 @@ function renderValue(cfg: AdminSystemConfig) {
   switch (cfg.valueType) {
     case 'bool':
       return (
-        <Tag color={cfg.value ? 'green' : 'grey'} type="light">
+        <Tag size="small" color={cfg.value ? 'green' : 'grey'} type="light">
           {cfg.value ? 'true' : 'false'}
         </Tag>
       );
@@ -52,7 +52,7 @@ function renderValue(cfg: AdminSystemConfig) {
       return <span className="mp-admin-mono">{String(cfg.value ?? '')}</span>;
     case 'enum':
       return (
-        <Tag color="blue" type="light">
+        <Tag size="small" color="blue" type="light">
           {String(cfg.value ?? '')}
         </Tag>
       );
@@ -192,7 +192,7 @@ export default function ConfigsPage() {
         dataIndex: 'category',
         width: 140,
         render: (v: ConfigCategory) => (
-          <Tag color={CATEGORY_COLOR[v] ?? 'grey'} type="light">
+          <Tag size="small" color={CATEGORY_COLOR[v] ?? 'grey'} type="light">
             {CATEGORY_LABEL[v] ?? v}
           </Tag>
         ),
@@ -207,7 +207,7 @@ export default function ConfigsPage() {
         dataIndex: 'valueType',
         width: 90,
         render: (v: string) => (
-          <Tag type="light">{v}</Tag>
+          <Tag size="small" type="light">{v}</Tag>
         ),
       },
       {
@@ -215,7 +215,7 @@ export default function ConfigsPage() {
         dataIndex: 'isSensitive',
         width: 80,
         render: (v: boolean) => (
-          <Tag color={v ? 'red' : 'grey'} type="light">
+          <Tag size="small" color={v ? 'red' : 'grey'} type="light">
             {v ? '是' : '否'}
           </Tag>
         ),

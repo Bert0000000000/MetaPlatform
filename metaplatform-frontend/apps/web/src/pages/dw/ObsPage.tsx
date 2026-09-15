@@ -69,7 +69,7 @@ export default function ObsPage() {
       render: (_: unknown, r: ObsSpan) => {
         const meta = metaOf(STATUS_META, r.status);
         return (
-          <Tag color={meta.color} type="light">
+          <Tag size="small" color={meta.color} type="light">
             {meta.label}
           </Tag>
         );

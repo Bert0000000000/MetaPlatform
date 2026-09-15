@@ -154,14 +154,14 @@ export default function KnowledgeBasePage() {
               title: '类型',
               dataIndex: 'kbKind',
               width: 110,
-              render: (v: string) => <Tag color={KIND_COLOR[v] ?? 'grey'}>{v}</Tag>,
+              render: (v: string) => <Tag size="small" color={KIND_COLOR[v] ?? 'grey'}>{v}</Tag>,
             },
             { title: '文档数', dataIndex: 'chunkCount', width: 100 },
             {
               title: '状态',
               dataIndex: 'enabled',
               width: 100,
-              render: (v: boolean) => <Tag color={v ? 'green' : 'red'}>{v ? '启用' : '禁用'}</Tag>,
+              render: (v: boolean) => <Tag size="small" color={v ? 'green' : 'red'}>{v ? '启用' : '禁用'}</Tag>,
             },
             { title: '描述', dataIndex: 'description', ellipsis: true, render: (v?: string) => v || '—' },
           ]}

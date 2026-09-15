@@ -30,6 +30,9 @@
   /* 浮层尺寸 */
   --mp-sheet-w: 456px; /* 详情 Preview Sheet（Foundry Selection Preview 范式）*/
 
+  /* 数据表格字号（DESIGN-SPEC §4.2 的 small 档；Semi 无对应 DSM 变量，见 skeleton.css） */
+  --mp-table-font-size: 13px;
+
   /* 内容容器 */
   --mp-page-max-w: 1440px;
   --mp-content-pad-x: var(--mp-space-7);

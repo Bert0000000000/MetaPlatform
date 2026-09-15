@@ -144,7 +144,7 @@ export default function TechComponentPage() {
       render: (t: TechnologyComponent['type']) => {
         const item = COMPONENT_TYPES.find((c) => c.value === t);
         return (
-          <Tag color={item?.color ?? 'grey'} type="light">
+          <Tag size="small" color={item?.color ?? 'grey'} type="light">
             {item?.label ?? t}
           </Tag>
         );
@@ -177,7 +177,7 @@ export default function TechComponentPage() {
       key: 'status',
       width: 110,
       render: (s: string) => (
-        <Tag color={STATUS_MAP[s]?.color ?? 'grey'} type="light">
+        <Tag size="small" color={STATUS_MAP[s]?.color ?? 'grey'} type="light">
           {STATUS_MAP[s]?.label ?? s}
         </Tag>
       ),

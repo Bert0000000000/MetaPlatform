@@ -224,7 +224,7 @@ export default function CapabilityManagementPage() {
         width: 110,
         render: (v: Capability['status']) =>
           v ? (
-            <Tag color={STATUS_META[v]?.color ?? 'grey'} type="light">
+            <Tag size="small" color={STATUS_META[v]?.color ?? 'grey'} type="light">
               {STATUS_META[v]?.label ?? v}
             </Tag>
           ) : (

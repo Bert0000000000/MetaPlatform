@@ -84,7 +84,7 @@ export default function ToolDetailPage() {
       render: (v, record) => (
         <Space>
           <Typography.Text strong>v{v}</Typography.Text>
-          {record.isCurrent && <Tag color="green">当前</Tag>}
+          {record.isCurrent && <Tag size="small" color="green">当前</Tag>}
         </Space>
       ),
     },
@@ -112,11 +112,12 @@ export default function ToolDetailPage() {
             content="当前工具 schema 与描述将被替换为该版本内容。"
             onConfirm={() => handleRollback(record.id)}
           >
-            <Button theme="borderless" icon={<RollbackOutlined />}>
+            <Button size="small" theme="borderless" icon={<RollbackOutlined />}>
               回滚
             </Button>
           </Popconfirm>
           <Button
+            size="small"
             theme="borderless"
             icon={<CheckCircleOutlined />}
             disabled={record.isCurrent}
@@ -126,6 +127,7 @@ export default function ToolDetailPage() {
           </Button>
           {index > 0 && (
             <Button
+              size="small"
               theme="borderless"
               icon={<SwapOutlined />}
               onClick={() => handleCompare(versions[index - 1]!.id, record.id)}

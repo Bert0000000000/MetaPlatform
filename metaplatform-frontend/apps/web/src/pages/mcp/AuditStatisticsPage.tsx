@@ -430,7 +430,7 @@ export default function AuditStatisticsPage() {
       render: (_, l) => {
         const meta: { label: string; color: TagColor } =
           STATUS_MAP[l.status] || { label: l.status, color: 'grey' };
-        return <Tag color={meta.color}>{meta.label}</Tag>;
+        return <Tag size="small" color={meta.color}>{meta.label}</Tag>;
       },
     },
     {
@@ -464,7 +464,7 @@ export default function AuditStatisticsPage() {
       title: '操作',
       key: 'actions',
       render: (_, l) => (
-        <Button theme="borderless" onClick={() => openDrawer(l)}>
+        <Button size="small" theme="borderless" onClick={() => openDrawer(l)}>
           详情
         </Button>
       ),
@@ -532,7 +532,7 @@ export default function AuditStatisticsPage() {
       title: '通知渠道',
       dataIndex: 'notifyChannels',
       render: (v: string[] | undefined) =>
-        (v || []).length > 0 ? v!.map((c) => <Tag key={c}>{c}</Tag>) : '-',
+        (v || []).length > 0 ? v!.map((c) => <Tag size="small" key={c}>{c}</Tag>) : '-',
     },
     {
       title: '启用',
@@ -544,11 +544,11 @@ export default function AuditStatisticsPage() {
       key: 'actions',
       render: (_, r) => (
         <Space>
-          <Button theme="borderless" icon={<EditOutlined />} onClick={() => openRuleModal(r)}>
+          <Button size="small" theme="borderless" icon={<EditOutlined />} onClick={() => openRuleModal(r)}>
             编辑
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDeleteRule(r)}>
-            <Button theme="borderless" type="danger">
+            <Button size="small" theme="borderless" type="danger">
               删除
             </Button>
           </Popconfirm>

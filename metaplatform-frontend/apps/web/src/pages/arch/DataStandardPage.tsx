@@ -143,7 +143,7 @@ export default function DataStandardPage() {
         width: 110,
         render: (v: string | undefined) =>
           v ? (
-            <Tag color={TYPE_COLOR[v] ?? 'grey'} type="light">
+            <Tag size="small" color={TYPE_COLOR[v] ?? 'grey'} type="light">
               {v}
             </Tag>
           ) : (

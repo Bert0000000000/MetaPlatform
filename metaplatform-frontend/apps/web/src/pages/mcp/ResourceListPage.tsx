@@ -78,7 +78,7 @@ export default function ResourceListPage() {
     {
       title: 'MIME',
       dataIndex: 'mimeType',
-      render: (v) => <Tag color={MIME_COLORS[v] || 'grey'}>{v}</Tag>,
+      render: (v) => <Tag size="small" color={MIME_COLORS[v] || 'grey'}>{v}</Tag>,
     },
     {
       title: '描述',
@@ -95,11 +95,11 @@ export default function ResourceListPage() {
       key: 'actions',
       render: (_, r) => (
         <Space>
-          <Button theme="borderless" icon={<EditOutlined />} onClick={() => navigate(`/resources/${r.id}`)}>
+          <Button size="small" theme="borderless" icon={<EditOutlined />} onClick={() => navigate(`/resources/${r.id}`)}>
             编辑
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(r)}>
-            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>
+            <Button size="small" theme="borderless" type="danger" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>

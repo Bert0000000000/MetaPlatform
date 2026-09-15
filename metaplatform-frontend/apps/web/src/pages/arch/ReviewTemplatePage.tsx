@@ -160,7 +160,7 @@ export default function ReviewTemplatePage() {
       render: (_: unknown, row: ReviewTemplate) => (
         <span>
           {(row.dimensions || []).map((d, idx) => (
-            <Tag key={`${d.name}-${idx}`} type="light">
+            <Tag size="small" key={`${d.name}-${idx}`} type="light">
               {d.name}
               {d.weight ? ` · 权重 ${d.weight}` : ''}
             </Tag>
@@ -177,7 +177,7 @@ export default function ReviewTemplatePage() {
       render: (_: unknown, row: ReviewTemplate) => (
         <span>
           {(row.experts || []).map((e, idx) => (
-            <Tag key={`${e.userId}-${idx}`} type="light">
+            <Tag size="small" key={`${e.userId}-${idx}`} type="light">
               {e.name}
               {e.role ? ` · ${e.role}` : ''}
             </Tag>

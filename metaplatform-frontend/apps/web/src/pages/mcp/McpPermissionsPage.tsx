@@ -153,7 +153,7 @@ export default function PermissionMatrixPage() {
           <Space>
             <SafetyOutlined />
             <Typography.Text strong>{r.subject.subjectName}</Typography.Text>
-            <Tag>{r.subject.subjectType === 'USER' ? '用户' : '应用'}</Tag>
+            <Tag size="small">{r.subject.subjectType === 'USER' ? '用户' : '应用'}</Tag>
           </Space>
         ),
       },
@@ -177,6 +177,7 @@ export default function PermissionMatrixPage() {
           const label = cellEffect === 'allow' ? '允许' : cellEffect === 'deny' ? '拒绝' : '继承';
           return (
             <Tag
+              size="small"
               color={color}
               className="mp-text-center mp-clickable mp-mcp-min-w-56"
               onClick={() => openEditCell(row, col)}

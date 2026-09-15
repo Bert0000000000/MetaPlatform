@@ -189,7 +189,7 @@ export default function ModelingPage() {
               render: (_: unknown, row: KernelObjectType) => (
                 <span>
                   <span className="mp-onto-strong">{row.display_name || ridTail(row.rid)}</span>{' '}
-                  <Tag type="light">{domainOfObjectType(row.rid)}</Tag>
+                  <Tag size="small" type="light">{domainOfObjectType(row.rid)}</Tag>
                 </span>
               ),
             },
@@ -219,7 +219,7 @@ export default function ModelingPage() {
               dataIndex: 'status',
               width: 120,
               render: (v: string | undefined) =>
-                v ? <Tag type="light">{v}</Tag> : <span className="mp-onto-muted">—</span>,
+                v ? <Tag size="small" type="light">{v}</Tag> : <span className="mp-onto-muted">—</span>,
             },
           ]}
           dataSource={pageOf(filteredObjects)}

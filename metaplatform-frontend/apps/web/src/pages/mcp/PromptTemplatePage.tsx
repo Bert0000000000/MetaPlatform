@@ -96,12 +96,12 @@ export default function PromptTemplatePage() {
         </Space>
       ),
     },
-    { title: '分类', dataIndex: 'category', render: (v) => <Tag>{v}</Tag> },
-    { title: '角色', dataIndex: 'role', render: (v) => <Tag color="blue">{v}</Tag> },
+    { title: '分类', dataIndex: 'category', render: (v) => <Tag size="small">{v}</Tag> },
+    { title: '角色', dataIndex: 'role', render: (v) => <Tag size="small" color="blue">{v}</Tag> },
     {
       title: '变量',
       key: 'variables',
-      render: (_, p) => <Tag color="purple">{p.variables.length} 个</Tag>,
+      render: (_, p) => <Tag size="small" color="purple">{p.variables.length} 个</Tag>,
     },
     {
       title: '更新时间',
@@ -113,10 +113,11 @@ export default function PromptTemplatePage() {
       key: 'actions',
       render: (_, p) => (
         <Space>
-          <Button theme="borderless" icon={<EyeOutlined />} onClick={() => setPreviewPrompt(p)}>
+          <Button size="small" theme="borderless" icon={<EyeOutlined />} onClick={() => setPreviewPrompt(p)}>
             预览
           </Button>
           <Button
+            size="small"
             theme="borderless"
             icon={<EditOutlined />}
             onClick={() => {
@@ -135,7 +136,7 @@ export default function PromptTemplatePage() {
               load();
             }}
           >
-            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>
+            <Button size="small" theme="borderless" type="danger" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>

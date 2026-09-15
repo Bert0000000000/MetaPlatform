@@ -77,6 +77,31 @@
   min-width: 0;
 }
 
+/*
+ * 表格文字档位（DESIGN-SPEC §4.2：表格用 small 档 = 13px）。
+ * Semi 的表格正文继承全局 $font-size-regular(14px)，且**官方变量只暴露了空态占位的字号**
+ * （$font-table_base-fontSize），没有单元格字号的 DSM 变量。这里用我们自己挂在
+ * Table 上的 .mp-table（Semi className 透传到 .semi-table-wrapper 同一元素）
+ * 提升一级作用域来收口 —— 不写任何 .semi-* 选择器。
+ */
+.mp-tablepro .mp-table {
+  font-size: var(--mp-table-font-size);
+}
+
+/*
+ * 单元格内的行内块（图标+文字的 inline-flex 包装）默认按基线对齐，会在行盒下方
+ * 多留 2–3px 的下沉空间，把 40px 的行撑成 43px。改成中部对齐 + 显式行高，
+ * 让内容盒严格等于 20px（= 40px 行高 − 2 × 10px 内距）。
+ * （用我们自己的 .mp-table 作用域，不写任何 .semi-* 选择器）
+ */
+.mp-tablepro .mp-table td > * {
+  vertical-align: middle;
+}
+
+.mp-tablepro .mp-table td {
+  line-height: 20px;
+}
+
 .mp-table-toolbar {
   display: flex;
   align-items: center;

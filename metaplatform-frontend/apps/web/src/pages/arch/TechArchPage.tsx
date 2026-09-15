@@ -195,7 +195,7 @@ export default function TechArchPage() {
       key: 'status',
       width: 120,
       render: (s: string) => (
-        <Tag color={STACK_STATUS[s]?.color ?? 'grey'} type="light">
+        <Tag size="small" color={STACK_STATUS[s]?.color ?? 'grey'} type="light">
           {STACK_STATUS[s]?.label ?? s}
         </Tag>
       ),
@@ -236,7 +236,7 @@ export default function TechArchPage() {
       key: 'status',
       width: 120,
       render: (s: string) => (
-        <Tag color={INFRA_STATUS[s]?.color ?? 'grey'} type="light">
+        <Tag size="small" color={INFRA_STATUS[s]?.color ?? 'grey'} type="light">
           {INFRA_STATUS[s]?.label ?? s}
         </Tag>
       ),

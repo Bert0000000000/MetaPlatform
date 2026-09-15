@@ -95,7 +95,7 @@ export default function ToolListPage() {
     {
       title: '分类',
       dataIndex: 'category',
-      render: (v) => <Tag color="blue">{v}</Tag>,
+      render: (v) => <Tag size="small" color="blue">{v}</Tag>,
     },
     {
       title: '参数',
@@ -105,12 +105,12 @@ export default function ToolListPage() {
     {
       title: '输出类型',
       dataIndex: 'outputType',
-      render: (v) => <Tag>{v}</Tag>,
+      render: (v) => <Tag size="small">{v}</Tag>,
     },
     {
       title: '版本',
       dataIndex: 'version',
-      render: (v) => <Tag color="purple">v{v}</Tag>,
+      render: (v) => <Tag size="small" color="purple">v{v}</Tag>,
     },
     {
       title: '启用',
@@ -125,6 +125,7 @@ export default function ToolListPage() {
       render: (_, t) => (
         <Space>
           <Button
+            size="small"
             theme="borderless"
             icon={<EditOutlined />}
             onClick={() => navigate(`/tools/${t.id}`)}
@@ -132,7 +133,7 @@ export default function ToolListPage() {
             详情
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(t)}>
-            <Button type="danger" theme="borderless" icon={<DeleteOutlined />}>
+            <Button size="small" type="danger" theme="borderless" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>

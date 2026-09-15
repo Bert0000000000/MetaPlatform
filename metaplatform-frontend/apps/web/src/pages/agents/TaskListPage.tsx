@@ -185,7 +185,7 @@ export default function TaskListPage() {
         dataIndex: 'employeeId',
         width: 180,
         ellipsis: true,
-        render: (v: string) => <Tag type="light">{employeeName(v)}</Tag>,
+        render: (v: string) => <Tag size="small" type="light">{employeeName(v)}</Tag>,
       },
       {
         title: '状态',
@@ -194,7 +194,7 @@ export default function TaskListPage() {
         render: (v: string) => {
           const meta = statusMeta(v);
           return (
-            <Tag color={meta.color} type="light">
+            <Tag size="small" color={meta.color} type="light">
               {meta.label}
             </Tag>
           );
@@ -206,7 +206,7 @@ export default function TaskListPage() {
         width: 100,
         render: (v?: string) =>
           v && PRIORITY_META[v] ? (
-            <Tag color={PRIORITY_META[v].color} type="light">
+            <Tag size="small" color={PRIORITY_META[v].color} type="light">
               {PRIORITY_META[v].label}
             </Tag>
           ) : (

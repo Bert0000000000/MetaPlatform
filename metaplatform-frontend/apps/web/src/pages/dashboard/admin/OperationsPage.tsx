@@ -94,7 +94,7 @@ export default function OperationsPage() {
         dataIndex: 'healthy',
         render: (v: boolean, row: OpsHealthReport['components'][number]) => (
           <span className="mp-admin-cell">
-            <Tag color={v ? 'green' : 'red'} type="light">
+            <Tag size="small" color={v ? 'green' : 'red'} type="light">
               {v ? '健康' : '异常'}
             </Tag>
             <span className="mp-admin-faint">{row.detail}</span>
@@ -126,7 +126,7 @@ export default function OperationsPage() {
         dataIndex: 'severity',
         width: 110,
         render: (v: string) => (
-          <Tag color={v === 'critical' ? 'red' : 'orange'} type="light">
+          <Tag size="small" color={v === 'critical' ? 'red' : 'orange'} type="light">
             {v}
           </Tag>
         ),

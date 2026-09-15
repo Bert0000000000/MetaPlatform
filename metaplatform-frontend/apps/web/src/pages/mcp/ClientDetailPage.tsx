@@ -139,18 +139,18 @@ export default function ClientDetailPage() {
     {
       title: '类型',
       dataIndex: 'toolType',
-      render: (v) => <Tag>{v || 'MCP'}</Tag>,
+      render: (v) => <Tag size="small">{v || 'MCP'}</Tag>,
     },
     {
       title: '状态',
       dataIndex: 'enabled',
-      render: (v) => (v ? <Tag color="green">启用</Tag> : <Tag>禁用</Tag>),
+      render: (v) => (v ? <Tag size="small" color="green">启用</Tag> : <Tag size="small">禁用</Tag>),
     },
     {
       title: '操作',
       key: 'actions',
       render: (_, t) => (
-        <Button theme="borderless" onClick={() => setSchemaTool(t)}>
+        <Button size="small" theme="borderless" onClick={() => setSchemaTool(t)}>
           查看 Schema
         </Button>
       ),

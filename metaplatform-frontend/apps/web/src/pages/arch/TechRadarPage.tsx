@@ -248,7 +248,7 @@ export default function TechRadarPage() {
       key: 'status',
       width: 110,
       render: (s: string) => (
-        <Tag color={STATUS_MAP[s]?.color ?? 'grey'} type="light">
+        <Tag size="small" color={STATUS_MAP[s]?.color ?? 'grey'} type="light">
           {STATUS_MAP[s]?.label ?? s}
         </Tag>
       ),
@@ -297,7 +297,7 @@ export default function TechRadarPage() {
       width: 90,
       render: (t?: string) =>
         t ? (
-          <Tag color={TREND_MAP[t]?.color ?? 'grey'} type="light">
+          <Tag size="small" color={TREND_MAP[t]?.color ?? 'grey'} type="light">
             {TREND_MAP[t]?.label ?? t}
           </Tag>
         ) : (

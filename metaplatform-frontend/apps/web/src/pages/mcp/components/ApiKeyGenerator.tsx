@@ -72,7 +72,7 @@ export default function ApiKeyGenerator() {
     {
       title: '权限范围',
       dataIndex: 'scopes',
-      render: (v: string[]) => v.map((s) => <Tag key={s}>{s}</Tag>),
+      render: (v: string[]) => v.map((s) => <Tag size="small" key={s}>{s}</Tag>),
     },
     {
       title: '创建时间',
@@ -82,7 +82,7 @@ export default function ApiKeyGenerator() {
     {
       title: '启用',
       dataIndex: 'enabled',
-      render: (v) => (v ? <Tag color="green">是</Tag> : <Tag>否</Tag>),
+      render: (v) => (v ? <Tag size="small" color="green">是</Tag> : <Tag size="small">否</Tag>),
     },
     {
       title: '操作',
@@ -93,7 +93,7 @@ export default function ApiKeyGenerator() {
           Toast.success('已删除');
           load();
         }}>
-          <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>删除</Button>
+          <Button size="small" theme="borderless" type="danger" icon={<DeleteOutlined />}>删除</Button>
         </Popconfirm>
       ),
     },

@@ -259,52 +259,6 @@ MCP 三页因后端未起报 500，但页面自行降级渲染，未崩到 Error
 四套用例依赖的后端接口在本地未全起（workflow-definitions 502、路由快照
 `no_authorized_roles`），见记忆档 `playwright-baseline-red-specs`。
 
-------|--------|-----------|-----------|
-| `ui-p0-shell`（壳 / 新 IA / 301 / ⌘K / 五骨架 demo） | 46 | ✅ | ❌ 登录 POST 超时（单跑 3.6s 通过） |
-| `ui-p1a-ontology` | 5 | ✅ | ✅ |
-| `ui-p1b-home` | 4 | ✅ | ❌ worker 崩溃（见环境说明） |
-| `ui-p1c-agents` | 4 | ✅ | ✅ |
-| `ui-p1d-superai` | 4 | ✅ | ❌ worker 崩溃（见环境说明） |
-| `ui-p1e-admin` | 4 | ✅ | ✅ |
-| `ui-p2a-apps` | 5 | ✅ | ✅ |
-| `ui-p2b-ki` | 6 | ✅ | ✅ |
-| `ui-p3-acceptance` | 12 | ✅ | ✅ |
-| **合计** | **90** | — | **90 / 3 failed** |
-
-> 用例数从 93 校正为 90：`ui-p0-shell` 在 P2b 时退役了 1 条「过渡期」用例（`ownsTabs` 全站归零后该用例失去意义）。
-
-`pnpm build` 通过（tsc -b + vite build，多次复跑）。
-
-### 5.1 环境说明（这 3 条红与代码无关）
-
-本机在收口阶段出现**系统级不稳定**，三个独立现象同一时期出现：
-
-1. **vite dev server（9250）会自行崩溃退出**：启动正常（`ready in 1156 ms`）后在 ~24–70 秒内以退出码 `3221226505`（`0xC0000409`，Windows fail-fast）无输出死亡。清理 `node_modules/.vite` 缓存后复现，说明与构建缓存无关。
-2. **Playwright worker 以同一码崩溃**：`worker process exited unexpectedly (code=3221226505)`，整条 spec 停止。
-3. **浏览器报 `net::ERR_INSUFFICIENT_RESOURCES`**：页面动态 import 拉不动 chunk，落到 ErrorBoundary。同会话早些时候 bash 也报过 `fork: Resource temporarily unavailable`。
-
-判定依据：崩溃发生在**导航/登录**阶段（`page.goto` → `ERR_CONNECTION_REFUSED`、`#app` 未挂载、`apiRequestContext.post` 超时），不在任何 UI 断言上；且 `ui-p0-shell` 那条单跑 3.6s 通过。故这 3 条记为**环境噪声**，但**本档不宣称 93 全绿**——要在稳定机器上复跑一次 9 套件合并才算数。
-
-### 5.2 既知基线红（改动前即为红）
-
-`action-orchestration` / `ontology-agent-e2e` / `ontology-dedup` / `superai-routing` 四套用例依赖的后端接口在本地未全起（workflow-definitions 502、路由快照 `no_authorized_roles`），**改动前即为红**（见记忆档 `playwright-baseline-red-specs`）。
-
-------|--------|------|
-| `ui-p0-shell`（壳 / 新 IA / 301 / ⌘K / 五骨架 demo） | 47 | ✅ |
-| `ui-p1a-ontology` | 5 | ✅ |
-| `ui-p1b-home` | 4 | ✅ |
-| `ui-p1c-agents` | 4 | ✅ |
-| `ui-p1d-superai` | 4 | ✅ |
-| `ui-p1e-admin` | 4 | ✅ |
-| `ui-p2a-apps` | 5 | ✅ |
-| `ui-p2b-ki` | 6 | ✅ |
-| `ui-p3-acceptance` | 12 | ✅ |
-| **合计** | **93** | **全绿** |
-
-`pnpm build` 通过（tsc -b + vite build）。
-
-> 既知噪声（非回归，见记忆档 `playwright-baseline-red-specs`）：`action-orchestration` / `ontology-agent-e2e` / `ontology-dedup` / `superai-routing` 四套用例依赖的后端接口在本地未全起（workflow-definitions 502、路由快照 `no_authorized_roles`），**改动前即为红**；全量串行跑时偶发一条 `socket hang up` 的登录抖动，单跑即过。
-
 ---
 
 ## 6. 与规范的偏差（如实登记）
@@ -312,6 +266,28 @@ MCP 三页因后端未起报 500，但页面自行降级渲染，未崩到 Error
 1. **应用卡片的「状态」与「使用次数」未显示**。后端 `GET /api/v1/apphub/apps` 只返回 `id/name/code/category/description/version/owner/tags`，无 status、无使用计数。按「不编造」纪律，卡片只渲染真实字段（图标/名称/编码/分类/版本/标签数）。**待后端补字段**。
 2. **知识库表格的「切片数、向量模型、检索 P95、重建进度」未建列**。`GET /api/v1/kb/collections` 只返回 `document_count / config.embedder / status`，且 `src/api/kb/index.ts` 的 mapper 未透出 `config.embedder`。API 层本批冻结，故不建列。**待后端/mapper 补字段**。
 3. **`mapApp` 字段失真**：`src/api/apphub/apps.ts` 把后端 `version` 映射进 `AppItem.updatedAt`，且 `status` 硬编码为 `PUBLISHED`。本批不动 API 层，前端以 `appVersion()` 单点读取并注释了耦合；**建议后续修 mapper**。
-4. **MCP 长期 API Key 的 UI 当前不可达**：`pages/mcp/components/ApiKeyGenerator.tsx`（含 ADR-0062 去掉 scope 选择器的改动）只被 `McpExternalPage.tsx` 引用，而后者未被任何路由挂载 —— P2b 拆掉 `McpCenterLayout` 三 HUB 后该入口悬空。**该 UI 已保留未删除**，需产品决定挂回 `/ki/mcp` 下哪个 tab。
+4. ~~MCP 长期 API Key 的 UI 不可达~~ → **已解决（2026-09-15）**：归位到 `/ki/mcp/clients`（客户端 tab，API Key 本质是客户端凭据），在 `McpClientPage.tsx` 表格下方渲染 `<ApiKeyGenerator />`；同批把它引用的两个不存在的颜色令牌（`--semi-color-warning-bg/-border`）换成真实令牌。
 5. **FlowGram 画布样式保留**：`App.css` 剩余 94 行是 `.gedit-*`（FlowGram 编辑器网格/端口/minimap）与 `.mp-loading`。画布按「只换壳不换画布」约束未动，其 `var(--background)` 一类旧引用已归一到 Semi 令牌（原引用未定义变量，等于一直没生效）。
 6. **数字员工域在 UI-P3 才摘掉 `ownsTabs`**：P1c 把内容换成 C 骨架但 tab 行仍由 `AgentsLayout`（`ModuleTabsLayout`）自渲染；本轮删除 `AgentsLayout.tsx` 与 `DomainDef.ownsTabs`，8 域至此**统一由壳渲染 tab 行**。
+
+---
+
+## 7. 全局表格样式归一（2026-09-15 追补）
+
+表格此前偏离规范四项，均按 **Semi 官方 DSM 变量 / 官方 props** 修（不写 `.semi-*` 选择器）：
+
+| 项 | 修前 | 修后 | 手段 |
+|----|------|------|------|
+| **字号** | 14px（继承全局 `$font-size-regular`） | **13px** | Semi 只暴露了空态占位的 `$font-table_base-fontSize`，**没有单元格字号的 DSM 变量**。故在 `DataTablePro` 给 Table 挂我们自己的 `.mp-table`（Semi `className` 透传到同一元素），用 `.mp-tablepro .mp-table { font-size: var(--mp-table-font-size) }` 收口 |
+| **表头分割线** | 2px（Semi 默认） | **1px** | DSM 变量 `$width-table_header_border` |
+| **列宽 / 横向滚动** | 列按内容宽排、表格不铺满容器 | **表宽 = 容器宽、无横向滚动、列铺满** | `DataTablePro` 去掉强制的 `scroll={{ x: 'max-content' }}` |
+| **行高** | 42–53px 参差 | **表头全站 41px；表体 43–45px** | ① 单元格内控件统一降为 `size="small"`（84 文件 / 222 处：Tag 173、Button 46、Select-Input 4，全部落在列定义 `render:` 内）② `$spacing-table_{tbody_rowCell-padding, middle-paddingY, small-paddingY}` 三档对齐 10/10/6px ③ 用户表头像 32→24px |
+
+**未达「恰 40px」的原因（如实登记）**：Semi 表格行高是**内容驱动**的（`td` 的 height 只是下限）。
+实测内容盒：纯文字格 22.75px、含 20px Tag 的格 20px、含 24px 按钮/头像的格 24px；
+叠加 2 × 10px 内距与 1px 下边框后落在 41–45px。要硬钉 40px 只有两条路——
+写 `.semi-*` 覆盖（规范明令禁止），或把单元格内所有组件压到 20px 以下（牺牲信息密度）。
+**本轮取「表头 41px、表体 43–45px 窄带」为收敛结果**，并已消除 53px 的离群行。
+
+复验方法：登录后在任一表格页读 `getComputedStyle(th).borderBottomWidth`（应为 1px）、
+`getComputedStyle(td).fontSize`（13px）、`table.getBoundingClientRect().width` 是否等于容器宽。

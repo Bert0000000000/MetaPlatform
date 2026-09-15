@@ -7,9 +7,17 @@
 $width-navigation_container_collapsed: 56px;
 $width-navigation_item-borderRadius: var(--semi-border-radius-medium); // 8px
 
-// --- 数据表格（DESIGN-SPEC §4.1：行高 40px = 20px line-height + 2 × 10px）---
-$spacing-table_tbody_rowCell-padding: 10px 16px;
-$spacing-table_row_head-paddingY: 10px;
+// --- 数据表格（DESIGN-SPEC §4.1 行高 40px / §4.2 表格字号 small 档 13px）---
+// 行高 = 13px 字号 × 20px 行盒 + 2 × 10px 内距 = 40px；三档 size 都要能算出这个值，
+// 否则同一套页面里 middle/default 混用会出现 42/45px 参差。
+$font-table_base-fontSize: 13px; // 默认 14px → 表格档 13px
+$spacing-table_tbody_rowCell-padding: 10px 16px; // default 档：16px → 10/16
+$spacing-table_middle-paddingY: 10px; // middle 档：12px（=44px 行高）→ 10px
+$spacing-table_small-paddingY: 6px; // small 档：8px → 6px（紧凑 32px）
+$spacing-table_row_head-paddingY: 10px; // 表头同高
+$spacing-table_row_head-paddingX: 16px;
+// 表头下分割线：Semi 默认 2px，视觉过重；DESIGN-SPEC「层级靠边框与背景差」
+$width-table_header_border: 1px;
 
 // --- 主色实底上的前景色（深色主题主色为亮紫蓝，白字对比度不足）---
 $color-button_primary-text-default: var(--semi-color-primary-on);

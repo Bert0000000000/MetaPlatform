@@ -73,7 +73,7 @@ export default function CollaborationReport({ collaborationId }: CollaborationRe
         title: '员工',
         dataIndex: 'employeeId',
         width: 220,
-        render: (v: string) => <Tag type="light">{v}</Tag>,
+        render: (v: string) => <Tag size="small" type="light">{v}</Tag>,
       },
       { title: '子任务数', dataIndex: 'subtaskCount', width: 110, align: 'right' as const },
       { title: '已完成', dataIndex: 'completedCount', width: 100, align: 'right' as const },

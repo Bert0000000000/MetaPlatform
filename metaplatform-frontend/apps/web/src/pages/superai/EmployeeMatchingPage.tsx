@@ -52,7 +52,7 @@ export default function EmployeeMatchingPage() {
         render: (v: number) => (
           <span className="mp-exec-step-head">
             <Progress percent={Math.round((v ?? 0) * 100)} size="small" showInfo={false} />
-            <Tag type="light">{((v ?? 0) * 100).toFixed(1)}%</Tag>
+            <Tag size="small" type="light">{((v ?? 0) * 100).toFixed(1)}%</Tag>
           </span>
         ),
       },

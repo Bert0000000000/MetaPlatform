@@ -195,7 +195,7 @@ export default function KnowledgeDocsPage() {
               width: 120,
               render: (value: string) => {
                 const status = STATUS_LABELS[value] ?? { label: value, color: 'grey' as TagColor };
-                return <Tag color={status.color}>{status.label}</Tag>;
+                return <Tag size="small" color={status.color}>{status.label}</Tag>;
               },
             },
             { title: '切片数', dataIndex: 'chunkCount', width: 100 },

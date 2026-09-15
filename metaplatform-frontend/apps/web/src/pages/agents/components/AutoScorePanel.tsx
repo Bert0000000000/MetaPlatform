@@ -152,7 +152,7 @@ export default function AutoScorePanel({
       title: '总分',
       dataIndex: 'overallScore',
       width: 100,
-      render: (v: number) => <Tag color={scoreTagColor(v)}>{v}</Tag>,
+      render: (v: number) => <Tag size="small" color={scoreTagColor(v)}>{v}</Tag>,
     },
     { title: '评分模式', dataIndex: 'mode', width: 110 },
     { title: '评分模型', dataIndex: 'evaluatorModel', ellipsis: true },

@@ -90,25 +90,25 @@ export default function ClientListPage() {
     {
       title: '类型',
       dataIndex: 'clientType',
-      render: (v) => <Tag>{v || 'custom'}</Tag>,
+      render: (v) => <Tag size="small">{v || 'custom'}</Tag>,
     },
     {
       title: '认证',
       dataIndex: 'authType',
-      render: (v) => <Tag>{v || 'none'}</Tag>,
+      render: (v) => <Tag size="small">{v || 'none'}</Tag>,
     },
     {
       title: '状态',
       key: 'status',
       render: (_, c) => {
         const s = normalizeStatus(c.status);
-        return <Tag color={STATUS_MAP[s].color}>{STATUS_MAP[s].label}</Tag>;
+        return <Tag size="small" color={STATUS_MAP[s].color}>{STATUS_MAP[s].label}</Tag>;
       },
     },
     {
       title: '发现工具',
       key: 'tools',
-      render: (_, c) => <Tag color="blue">{c.discoveredTools}</Tag>,
+      render: (_, c) => <Tag size="small" color="blue">{c.discoveredTools}</Tag>,
     },
     {
       title: '最后同步',
@@ -120,17 +120,17 @@ export default function ClientListPage() {
       key: 'actions',
       render: (_, c) => (
         <Space>
-          <Button theme="borderless" icon={<EyeOutlined />} onClick={() => navigate(`/clients/${c.id}`)}>
+          <Button size="small" theme="borderless" icon={<EyeOutlined />} onClick={() => navigate(`/clients/${c.id}`)}>
             详情
           </Button>
-          <Button theme="borderless" icon={<EditOutlined />} onClick={() => navigate(`/clients/${c.id}/edit`)}>
+          <Button size="small" theme="borderless" icon={<EditOutlined />} onClick={() => navigate(`/clients/${c.id}/edit`)}>
             编辑
           </Button>
-          <Button theme="borderless" icon={<SyncOutlined />} onClick={() => handleSync(c)}>
+          <Button size="small" theme="borderless" icon={<SyncOutlined />} onClick={() => handleSync(c)}>
             发现工具
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(c)}>
-            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>
+            <Button size="small" theme="borderless" type="danger" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>

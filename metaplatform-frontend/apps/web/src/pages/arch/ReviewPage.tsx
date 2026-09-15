@@ -212,7 +212,7 @@ export default function ReviewPage() {
       key: 'status',
       width: 110,
       render: (s: string) => (
-        <Tag color={STATUS_TAG[s]?.color ?? 'grey'} type="light">
+        <Tag size="small" color={STATUS_TAG[s]?.color ?? 'grey'} type="light">
           {STATUS_TAG[s]?.label ?? s}
         </Tag>
       ),

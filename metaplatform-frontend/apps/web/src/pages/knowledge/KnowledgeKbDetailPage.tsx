@@ -247,7 +247,7 @@ export default function KnowledgeKbDetailPage() {
                 width: 110,
                 render: (v: string) => {
                   const meta = STATUS_LABELS[v] ?? { label: v, color: 'grey' as TagColor };
-                  return <Tag color={meta.color}>{meta.label}</Tag>;
+                  return <Tag size="small" color={meta.color}>{meta.label}</Tag>;
                 },
               },
               { title: '切片数', dataIndex: 'chunkCount', width: 90 },

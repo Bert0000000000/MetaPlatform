@@ -94,7 +94,7 @@ export default function ConversationList({ employeeId, onSelect, selectedId }: C
       width: 110,
       render: (_: unknown, c: ConversationRecord) =>
         c.evaluatedBy ? (
-          <Tag color="green" type="light">
+          <Tag size="small" color="green" type="light">
             {c.evaluatedBy}
           </Tag>
         ) : (

@@ -161,7 +161,7 @@ export default function OrderReviewPage() {
         dataIndex: 'payment_status',
         width: 110,
         render: () => (
-          <Tag type="light" color="orange">
+          <Tag size="small" type="light" color="orange">
             未支付
           </Tag>
         ),
@@ -171,7 +171,7 @@ export default function OrderReviewPage() {
         dataIndex: 'review_status',
         width: 110,
         render: (value: ReviewOrder['review_status']) => (
-          <Tag type="light" color={value === 'approved' ? 'green' : 'orange'}>
+          <Tag size="small" type="light" color={value === 'approved' ? 'green' : 'orange'}>
             {statusLabel(value)}
           </Tag>
         ),

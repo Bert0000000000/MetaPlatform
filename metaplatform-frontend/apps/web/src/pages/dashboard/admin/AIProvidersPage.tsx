@@ -539,11 +539,11 @@ export default function AIProvidersPage() {
               <span className="mp-admin-cell-sub">{getProviderMeta(row.id).description}</span>
             </span>
             {row.isDefault ? (
-              <Tag color="blue" type="light">
+              <Tag size="small" color="blue" type="light">
                 默认
               </Tag>
             ) : null}
-            {row.kind === 'custom' ? <Tag type="light">自定义</Tag> : null}
+            {row.kind === 'custom' ? <Tag size="small" type="light">自定义</Tag> : null}
           </span>
         ),
       },
@@ -582,7 +582,7 @@ export default function AIProvidersPage() {
         dataIndex: 'modelCount',
         width: 90,
         render: (v: number) => (
-          <Tag type="light" color={v > 0 ? 'blue' : 'grey'}>
+          <Tag size="small" type="light" color={v > 0 ? 'blue' : 'grey'}>
             {v ?? 0}
           </Tag>
         ),
@@ -595,14 +595,14 @@ export default function AIProvidersPage() {
           const state = testStates[row.id] ?? { status: 'idle' as const };
           if (state.status === 'loading') {
             return (
-              <Tag type="light" color="blue" prefixIcon={<Loader2 size={12} strokeWidth={1.5} />}>
+              <Tag size="small" type="light" color="blue" prefixIcon={<Loader2 size={12} strokeWidth={1.5} />}>
                 测试中…
               </Tag>
             );
           }
           if (state.status === 'ok') {
             return (
-              <Tag type="light" color="green" prefixIcon={<CheckCircle2 size={12} strokeWidth={1.5} />}>
+              <Tag size="small" type="light" color="green" prefixIcon={<CheckCircle2 size={12} strokeWidth={1.5} />}>
                 {state.message}
                 {state.latencyMs ? ` · ${state.latencyMs}ms` : ''}
               </Tag>
@@ -610,7 +610,7 @@ export default function AIProvidersPage() {
           }
           if (state.status === 'fail') {
             return (
-              <Tag type="light" color="red" prefixIcon={<XCircle size={12} strokeWidth={1.5} />}>
+              <Tag size="small" type="light" color="red" prefixIcon={<XCircle size={12} strokeWidth={1.5} />}>
                 {state.message}
               </Tag>
             );

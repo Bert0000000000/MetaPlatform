@@ -92,7 +92,7 @@ export default function DemoPage() {
       render: (_: unknown, record: DemoRow) => {
         const meta = STATUS_META[record.status];
         return (
-          <Tag color={meta.color} type="light">
+          <Tag size="small" color={meta.color} type="light">
             {meta.label}
           </Tag>
         );

@@ -265,7 +265,7 @@ export default function OntologyMappingPage() {
       key: 'assetType',
       width: 120,
       render: (t: string) => (
-        <Tag color={ASSET_TYPE_TAG[t]?.color ?? 'grey'} type="light">
+        <Tag size="small" color={ASSET_TYPE_TAG[t]?.color ?? 'grey'} type="light">
           {ASSET_TYPE_TAG[t]?.label ?? t}
         </Tag>
       ),
@@ -297,7 +297,7 @@ export default function OntologyMappingPage() {
       key: 'mappingType',
       width: 120,
       render: (t: string) => (
-        <Tag color={MAPPING_TYPE_TAG[t]?.color ?? 'grey'} type="light">
+        <Tag size="small" color={MAPPING_TYPE_TAG[t]?.color ?? 'grey'} type="light">
           {MAPPING_TYPE_TAG[t]?.label ?? t}
         </Tag>
       ),
@@ -369,7 +369,7 @@ export default function OntologyMappingPage() {
       key: 'status',
       width: 110,
       render: (s: string) => (
-        <Tag color={s === 'PENDING' ? 'orange' : 'grey'} type="light">
+        <Tag size="small" color={s === 'PENDING' ? 'orange' : 'grey'} type="light">
           {s === 'PENDING' ? '待处理' : '已处理'}
         </Tag>
       ),

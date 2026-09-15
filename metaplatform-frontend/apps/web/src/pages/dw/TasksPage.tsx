@@ -68,7 +68,7 @@ export default function TasksPage() {
       render: (_: unknown, r: EmployeeTask) => {
         const meta = metaOf(STATUS_META, r.status);
         return (
-          <Tag color={meta.color} type="light">
+          <Tag size="small" color={meta.color} type="light">
             {meta.label}
           </Tag>
         );
@@ -81,7 +81,7 @@ export default function TasksPage() {
       render: (_: unknown, r: EmployeeTask) => {
         const meta = metaOf(PRIORITY_META, r.priority);
         return (
-          <Tag color={meta.color} type="light">
+          <Tag size="small" color={meta.color} type="light">
             {meta.label}
           </Tag>
         );

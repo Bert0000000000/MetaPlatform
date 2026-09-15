@@ -232,7 +232,7 @@ export default function PrinciplesPage() {
       key: 'priority',
       width: 100,
       render: (p: string) => (
-        <Tag color={PRIORITY_TAG[p]?.color ?? 'grey'} type="light">
+        <Tag size="small" color={PRIORITY_TAG[p]?.color ?? 'grey'} type="light">
           {PRIORITY_TAG[p]?.label ?? p}
         </Tag>
       ),
@@ -243,7 +243,7 @@ export default function PrinciplesPage() {
       key: 'status',
       width: 100,
       render: (s: string) => (
-        <Tag color={STATUS_TAG[s]?.color ?? 'grey'} type="light">
+        <Tag size="small" color={STATUS_TAG[s]?.color ?? 'grey'} type="light">
           {STATUS_TAG[s]?.label ?? s}
         </Tag>
       ),
