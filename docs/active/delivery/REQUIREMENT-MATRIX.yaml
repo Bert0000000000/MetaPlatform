@@ -2605,6 +2605,27 @@ requirements:
       - mate-platform-backend/contracts/tests/test_runtime_comparison.py
     implementationStatus: implemented
     acceptanceStatus: notAccepted
+  FR-ONT-C8-DELETEOBJECTTYPE:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+      - ontDeleteV2ObjectType
+    handler: mate_tech_ont.main:app#ontDeleteV2ObjectType
+    tests:
+      - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+      - mate-platform-backend/packages/mate-tech-ont/tests/test_ont_act05_unified.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-C8-DELETEINTERFACE:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+      - ontDeleteV2Interface
+    handler: mate_tech_ont.main:app#ontDeleteV2Interface
+    tests:
+      - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
   FR-ONT-KERNEL01-CREATEACTIONTYPE:
     prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
     service: ont

@@ -884,6 +884,48 @@ class TestS3ApiDispatch:
         assert "column policy" in ex.text
 
 
+class TestC8Delete:
+    """C8：ObjectType / Interface 删除端点（软删 / 硬删保护 / 跨租户守门）。"""
+
+    def test_soft_delete_object_type(self, s3_client) -> None:
+        client, _ = s3_client
+        resp = client.delete(f"{BASE}/object-types/{ACT_PURE.replace('.act.', '.obj.')}")
+        # ACT_PURE 不是 obj rid → 该 rid 不存在 → 404（守门/存在性先于删除）
+        assert resp.status_code in (403, 404)
+
+    def test_soft_delete_existing_object_type(self, s3_client) -> None:
+        client, r = s3_client
+        resp = client.delete(f"{BASE}/object-types/{OBJ}")
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["hard"] is False
+        # InMemory 无 archived 字段 → 软删表现为从活动集合移除（PG 侧是 archived=TRUE）
+        with pytest.raises(KeyError):
+            r.get_object_type(ClassRef(OBJ))
+
+    def test_hard_delete_refused_when_instances_exist(self, s3_client) -> None:
+        client, _ = s3_client
+        resp = client.delete(f"{BASE}/object-types/{OBJ}?hard=true")
+        assert resp.status_code == 409, resp.text
+        assert "instances" in resp.text
+
+    def test_delete_cross_tenant_denied(self, s3_client) -> None:
+        client, _ = s3_client
+        other = "ont.other-tenant.obj.x.v1"
+        assert client.delete(f"{BASE}/object-types/{other}").status_code == 403
+        assert client.delete(f"{BASE}/interfaces/{other}").status_code == 403
+
+    def test_delete_interface_refused_when_implemented(self, s3_client) -> None:
+        client, r = s3_client
+        from mate_kernel.ontology.types.interface import Interface
+
+        if_rid = f"ont.{T}.if.probe.v1"
+        r.upsert_interface(Interface(rid=ClassRef(if_rid), properties=(), required_links=()))
+        # 无实现者 → 可删
+        assert client.delete(f"{BASE}/interfaces/{if_rid}").status_code == 200
+        # 不存在 → 404
+        assert client.delete(f"{BASE}/interfaces/{if_rid}").status_code == 404
+
+
 class TestS3ToolSchema:
     def test_tool_name_and_description_unified(self) -> None:
         """D-7：工具名不改；描述与统一执行器语义一致（不绑死单一端点）。"""

@@ -716,6 +716,46 @@ class BackingDatasourceDTO(BaseModel):
     priority: int = 100
 
 
+@router.delete(
+    "/object-types/{rid:path}",
+    response_model=dict,
+    operation_id="ontDeleteV2ObjectType",
+)
+async def delete_object_type(rid: str, request: Request, hard: bool = False) -> dict:
+    """C8：删除 ObjectType。默认软删（archived，与 merge 同口径）；
+    ``?hard=true`` 物理删（供清理演练残留）。
+
+    保护：近 30 天有读量 → 409（先 Deprecate）；hard 且仍有实例 → 409。
+    """
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant object type denied")
+    try:
+        return await _call_scoped(request, "delete_object_type", rid, hard=hard)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+
+
+@router.delete(
+    "/interfaces/{rid:path}",
+    response_model=dict,
+    operation_id="ontDeleteV2Interface",
+)
+async def delete_interface(rid: str, request: Request) -> dict:
+    """C8：删除 Interface（有实现该接口的类型 → 409 拒绝）。"""
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant interface denied")
+    try:
+        return await _call_scoped(request, "delete_interface", rid)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+
+
 @router.post(
     "/object-types/{rid:path}/datasources",
     response_model=dict,

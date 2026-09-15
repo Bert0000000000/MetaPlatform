@@ -10463,6 +10463,50 @@ paths:
                 $ref: '#/components/schemas/ObjectTypeV2'
         '404':
           $ref: '#/components/responses/Error404'
+    delete:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Delete ObjectType (soft by default; hard=true removes row)
+      operationId: ontDeleteV2ObjectType
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-C8-DELETEOBJECTTYPE
+      x-mate-implementation-status: implemented
+      parameters:
+        - in: path
+          name: rid
+          required: true
+          schema:
+            type: string
+            pattern: ^ont\.[a-z0-9_-]{1,64}\.obj\.[a-z0-9_:\-.]+$
+        - in: query
+          name: hard
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: true = 物理删除（有实例则拒绝）；缺省软删（archived）
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          description: Delete protection (recent reads / remaining instances)
   /api/v1/ont/v2/object-types/{rid}/properties:
     parameters:
       - in: path
@@ -14042,6 +14086,12 @@ components:
             $ref: '#/components/schemas/schemas-ErrorResponse'
     Error409:
       description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/schemas-ErrorResponse'
+    Error403:
+      description: Forbidden
       content:
         application/json:
           schema:

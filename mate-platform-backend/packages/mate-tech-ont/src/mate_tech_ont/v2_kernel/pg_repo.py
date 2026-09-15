@@ -3554,6 +3554,70 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
+    def delete_object_type(self, rid: str, *, hard: bool = False) -> dict[str, Any]:
+        """C8：删除 ObjectType（默认软删；hard=True 物理删，供清理演练残留）。
+
+        保护（两级，与 GOV-17 同口径）：
+        - 近 30 天有读使用量 → 拒绝（先 Deprecate）；
+        - hard 删除且仍有实例 → 拒绝（避免对象宇宙出现悬空实例）。
+        """
+        from mate_kernel.ontology.identity.class_ref import ClassRef
+
+        self.get_object_type(ClassRef(rid))  # 不存在 → KeyError
+        usage = [
+            u
+            for u in self.usage_summary(30)
+            if u["class_rid"] == rid and (u.get("reads") or 0) > 0
+        ]
+        if usage:
+            raise ValueError(
+                f"delete protection: {rid} has {usage[0]['reads']} reads in last 30d; "
+                "deprecate first"
+            )
+        if not hard:
+            return self.apply_lifecycle(rid, "delete") | {"hard": False}
+
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT count(*) FROM ont_individual WHERE class_rid = %s", (rid,))
+                instances = cur.fetchone()[0]
+                if instances:
+                    raise ValueError(
+                        f"hard delete refused: {rid} still has {instances} instances"
+                    )
+                cur.execute("DELETE FROM ont_axiom WHERE %s = ANY(operands)", (rid,))
+                cur.execute("DELETE FROM ont_object_type WHERE rid = %s", (rid,))
+                deleted = cur.rowcount
+            conn.commit()
+        finally:
+            conn.close()
+        return {"class_rid": rid, "action": "delete", "hard": True, "rows": deleted}
+
+    def delete_interface(self, rid: str) -> dict[str, Any]:
+        """C8：删除 Interface（物理删；实现该接口的类型不级联，仅解除引用由
+        ONT 层校验兜底 —— 有实现者时拒绝）。"""
+        from mate_kernel.ontology.identity.class_ref import ClassRef
+
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT 1 FROM ont_interface WHERE rid = %s", (rid,))
+                if cur.fetchone() is None:
+                    raise KeyError(f"interface not found: {rid}")
+                cur.execute(
+                    "SELECT count(*) FROM ont_object_type WHERE %s = ANY(interfaces)", (rid,)
+                )
+                impls = cur.fetchone()[0]
+                if impls:
+                    raise ValueError(f"delete refused: {rid} is implemented by {impls} types")
+                cur.execute("DELETE FROM ont_interface WHERE rid = %s", (rid,))
+                deleted = cur.rowcount
+            conn.commit()
+        finally:
+            conn.close()
+        return {"rid": rid, "deleted": deleted}
+
     def apply_lifecycle(self, class_rid: str, action: str, actor: str = "") -> dict[str, Any]:
         """GOV-17：Snooze/Deprecate/Delete 三级处置 + 删除保护。
 

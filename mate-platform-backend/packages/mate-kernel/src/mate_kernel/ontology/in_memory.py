@@ -383,6 +383,44 @@ class InMemoryOntologyRepository(OntologyRepository):
             raise KeyError(f"wip not found: {rid}")
         return dict(self._schema_wip[rid])
 
+    def delete_object_type(self, rid: str, *, hard: bool = False) -> dict[str, Any]:
+        """C8：删除 ObjectType（默认软删；hard=True 物理删）—— 与 PG 同语义。"""
+        ot = self._object_types.get(ClassRef(rid))
+        if ot is None:
+            raise KeyError(f"object type not found: {rid}")
+        usage = [
+            u for u in self.usage_summary(30) if u["class_rid"] == rid and (u.get("reads") or 0) > 0
+        ]
+        if usage:
+            raise ValueError(
+                f"delete protection: {rid} has {usage[0]['reads']} reads in last 30d; "
+                "deprecate first"
+            )
+        if not hard:
+            # InMemory 无 archived 字段（PG 侧是表列）→ 软删以「从活动集合移除」
+            # 表达（list_object_types 不再返回），语义等价于 PG 的 archived=TRUE。
+            self._object_types.pop(ClassRef(rid), None)
+            return {"class_rid": rid, "action": "delete", "hard": False, "archived": True}
+
+        instances = [i for i in self._individuals.values() if i.class_rid.rid == rid]
+        if instances:
+            raise ValueError(f"hard delete refused: {rid} still has {len(instances)} instances")
+        self._object_types.pop(ClassRef(rid), None)
+        for ax_rid, ax in list(self._axioms.items()):
+            if any(op.rid == rid for op in ax.operands):
+                self._axioms.pop(ax_rid, None)
+        return {"class_rid": rid, "action": "delete", "hard": True, "rows": 1}
+
+    def delete_interface(self, rid: str) -> dict[str, Any]:
+        """C8：删除 Interface（有实现者 → 拒绝）—— 与 PG 同语义。"""
+        if ClassRef(rid) not in self._interfaces:
+            raise KeyError(f"interface not found: {rid}")
+        impls = [t for t in self._object_types.values() if any(i.rid == rid for i in t.interfaces)]
+        if impls:
+            raise ValueError(f"delete refused: {rid} is implemented by {len(impls)} types")
+        self._interfaces.pop(ClassRef(rid), None)
+        return {"rid": rid, "deleted": 1}
+
     def delete_schema_wip(self, rid: str) -> bool:
         return self._schema_wip.pop(rid, None) is not None
 
