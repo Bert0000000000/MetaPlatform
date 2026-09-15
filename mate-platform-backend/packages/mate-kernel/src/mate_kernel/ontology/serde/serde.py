@@ -146,10 +146,13 @@ def action_type_to_dict(at: ActionType) -> dict[str, Any]:
         "parameters": [property_to_dict(p) for p in at.parameters],
         "submission_criteria": list(at.submission_criteria),
         "side_effects": list(at.side_effects),
-        "function_ref": at.function_ref.rid,
+        # ADR-0064 S1：function_ref 可选（None = 纯声明式）；
+        # declarative_edits 必须往返（此前完全不含，序列化即丢编辑模板）。
+        "function_ref": at.function_ref.rid if at.function_ref is not None else None,
         "on": [t.rid for t in at.on],
         "title": at.title,
         "description": at.description,
+        "declarative_edits": [dict(t) for t in at.declarative_edits],
     }
 
 
@@ -159,10 +162,11 @@ def action_type_from_dict(d: dict[str, Any]) -> ActionType:
         parameters=tuple(property_from_dict(p) for p in d["parameters"]),
         submission_criteria=tuple(d["submission_criteria"]),
         side_effects=tuple(d["side_effects"]),
-        function_ref=ClassRef(d["function_ref"]),
+        function_ref=ClassRef(d["function_ref"]) if d.get("function_ref") else None,
         on=tuple(ClassRef(t) for t in d["on"]),
         title=d.get("title", ""),
         description=d.get("description", ""),
+        declarative_edits=tuple(dict(t) for t in d.get("declarative_edits", [])),
     )
 
 

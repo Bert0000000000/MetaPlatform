@@ -1553,7 +1553,9 @@ class InMemoryOntologyRepository(OntologyRepository):
         outcome = self._action_service.apply(
             action_rid=at.rid.rid,
             submission_criteria=at.submission_criteria,
-            function_ref=at.function_ref.rid,
+            # ADR-0064：function_ref 可选；legacy action 路径遇到纯声明式
+            # ActionType 走 FunctionNotRegistered fail-fast（统一执行器在 S3 分派）。
+            function_ref=at.function_ref.rid if at.function_ref is not None else "",
             on_rid=at.on[0].rid if at.on else "",
             target_iid=target_iid,
             parameters=parameters,

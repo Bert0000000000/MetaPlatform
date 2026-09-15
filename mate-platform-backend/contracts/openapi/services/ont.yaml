@@ -1906,7 +1906,7 @@ components:
     ActionTypeV2:
       type: object
       additionalProperties: false
-      required: [rid, parameters, function_ref, on]
+      required: [rid, parameters, on]
       properties:
         rid: { $ref: "#/components/schemas/RidString" }
         parameters:
@@ -1918,15 +1918,30 @@ components:
         side_effects:
           type: array
           items: { type: string }
-        function_ref: { $ref: "#/components/schemas/RidString" }
+        function_ref:
+          oneOf:
+            - $ref: "#/components/schemas/RidString"
+            - type: string
+              maxLength: 0
+          description: >-
+            引用的 Function rid（ADR-0064：可选 backing）。空串/缺省 = 纯声明式
+            Action；与 declarative_edits 至少声明一个，不互斥。
         on:
           type: array
           minItems: 1
           items: { $ref: "#/components/schemas/RidString" }
+        title: { type: string }
+        description: { type: string }
+        declarative_edits:
+          type: array
+          description: >-
+            声明式编辑模板（ACT-05/ADR-0064 统一执行器；占位符
+            $target / $param.<name> / $now）。
+          items: { type: object, additionalProperties: true }
     ActionTypeCreateV2:
       type: object
       additionalProperties: false
-      required: [rid, parameters, function_ref, on]
+      required: [rid, parameters, on]
       properties:
         rid: { $ref: "#/components/schemas/RidString" }
         parameters:
@@ -1938,11 +1953,26 @@ components:
         side_effects:
           type: array
           items: { type: string }
-        function_ref: { $ref: "#/components/schemas/RidString" }
+        function_ref:
+          oneOf:
+            - $ref: "#/components/schemas/RidString"
+            - type: string
+              maxLength: 0
+          description: >-
+            引用的 Function rid（ADR-0064：可选 backing）。空串/缺省 = 纯声明式
+            Action；与 declarative_edits 至少声明一个，不互斥。
         on:
           type: array
           minItems: 1
           items: { $ref: "#/components/schemas/RidString" }
+        title: { type: string }
+        description: { type: string }
+        declarative_edits:
+          type: array
+          description: >-
+            声明式编辑模板（ACT-05/ADR-0064 统一执行器；占位符
+            $target / $param.<name> / $now）。
+          items: { type: object, additionalProperties: true }
     ActionApplyRequest:
       type: object
       additionalProperties: false

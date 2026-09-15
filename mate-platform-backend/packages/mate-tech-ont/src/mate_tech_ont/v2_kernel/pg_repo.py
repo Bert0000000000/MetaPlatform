@@ -792,9 +792,10 @@ def _row_to_at(row: dict[str, Any]) -> ActionType:
         parameters=tuple(params),
         submission_criteria=tuple(row.get("submission_criteria") or []),
         side_effects=tuple(row.get("side_effects") or []),
-        function_ref=ClassRef(row["function_ref"])
-        if row.get("function_ref")
-        else ClassRef("ont.system.fn.noop.v1"),
+        # ADR-0064 S1：不再静默造 ont.system.fn.noop.v1（与 ADR-0063 S2 删除的
+        # 同类病）。空 function_ref = 纯声明式；空 + 空 declarative_edits 的行
+        # 由 ActionType「至少声明一个」校验 fail-fast。
+        function_ref=ClassRef(row["function_ref"]) if row.get("function_ref") else None,
         on=tuple(ClassRef(r) for r in row.get("target_object_types") or []),
         title=row.get("title") or "",
         description=row.get("description") or "",
@@ -1951,7 +1952,8 @@ class PgOntologyRepository(OntologyRepository):
                         ),
                         json.dumps(list(at.submission_criteria)),
                         json.dumps(list(at.side_effects)),
-                        at.function_ref.rid,
+                        # 列保持 NOT NULL DEFAULT ''：空串 = 纯声明式（ADR-0064）
+                        at.function_ref.rid if at.function_ref is not None else "",
                         [c.rid for c in at.on],
                         at.title,
                         at.description,
@@ -4925,7 +4927,12 @@ class PgOntologyRepository(OntologyRepository):
                 outcome = self._action_service.apply(
                     action_rid=action_type.rid.rid,
                     submission_criteria=action_type.submission_criteria,
-                    function_ref=action_type.function_ref.rid,
+                    # ADR-0064：legacy action 路径遇到纯声明式 ActionType（无
+                    # function_ref）走 FunctionNotRegistered fail-fast——统一执行器
+                    # 在 S3 按 ActionType 声明分派后不再走到这里。
+                    function_ref=action_type.function_ref.rid
+                    if action_type.function_ref is not None
+                    else "",
                     on_rid=action_type.on[0].rid if action_type.on else "",
                     target_iid=target.rid,
                     parameters=dict(proposal.parameters),

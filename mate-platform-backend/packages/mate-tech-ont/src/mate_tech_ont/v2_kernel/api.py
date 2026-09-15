@@ -183,11 +183,13 @@ class ActionTypeDTO(BaseModel):
     parameters: list[PropertyDTO] = Field(default_factory=list)
     submission_criteria: list[str] = Field(default_factory=list)
     side_effects: list[str] = Field(default_factory=list)
-    function_ref: str
+    # ADR-0064 S1：可选（空串 = 纯声明式 Action）；与 declarative_edits
+    # 至少声明一个（服务端 _dto_to_action_type 构造时校验）。
+    function_ref: str = ""
     on: list[str] = Field(default_factory=list)
     title: str = ""
     description: str = ""
-    # ACT-05：声明式编辑模板（非空时 apply 走 edit-set 单事务）
+    # ACT-05：声明式编辑模板（统一执行器与 function edits 合并单事务）
     declarative_edits: list[dict[str, Any]] = Field(default_factory=list)
 
 
@@ -451,7 +453,7 @@ def _dto_to_action_type(d: ActionTypeDTO) -> ActionType:
         parameters=tuple(_dto_to_prop(p) for p in d.parameters),
         submission_criteria=tuple(d.submission_criteria),
         side_effects=tuple(d.side_effects),
-        function_ref=ClassRef(d.function_ref),
+        function_ref=ClassRef(d.function_ref) if d.function_ref else None,
         on=tuple(ClassRef(o) for o in d.on),
         title=d.title,
         description=d.description,
@@ -465,7 +467,7 @@ def _action_type_to_dto(at: ActionType) -> ActionTypeDTO:
         parameters=[_prop_to_dto(p) for p in at.parameters],
         submission_criteria=list(at.submission_criteria),
         side_effects=list(at.side_effects),
-        function_ref=at.function_ref.rid,
+        function_ref=at.function_ref.rid if at.function_ref is not None else "",
         on=[c.rid for c in at.on],
         title=at.title,
         description=at.description,
