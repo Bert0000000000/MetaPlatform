@@ -339,9 +339,98 @@ async def policy_condition_syntax() -> dict[str, Any]:
     }
 
 
+def _policy_matrix_data(tid: str, type: str, action: str | None) -> dict[str, Any]:
+    """从策略存储聚合矩阵：行=主体、列=工具、格=效果（无策略=inherit）。
+
+    type=user-tool 只取 USER 主体；其余（app-tool）取非 USER 主体。
+    action 提供时按策略 action 精确过滤。工具名优先用注册表里的名字。
+    """
+    from ..repositories import list_tools
+
+    user_only = type == "user-tool"
+    tool_names = {t.id: (t.name or t.id) for t in list_tools(tid)}
+
+    columns: dict[str, dict[str, str]] = {}
+    rows: dict[tuple[str, str], dict[str, Any]] = {}
+    for p in list_policies(tid):
+        if not p.enabled or p.resource_type != "tool":
+            continue
+        if action and p.action != action:
+            continue
+        is_user = p.subject_type.upper() == "USER"
+        if user_only != is_user:
+            continue
+        row = rows.setdefault(
+            (p.subject_type, p.subject_id),
+            {
+                "subject": {
+                    "subjectId": p.subject_id,
+                    "subjectName": p.subject_id,
+                    "subjectType": p.subject_type,
+                },
+                "cells": {},
+            },
+        )
+        effect = "allow" if p.effect.upper() == "ALLOW" else "deny"
+        for rid in p.resource_ids:
+            columns.setdefault(
+                rid,
+                {
+                    "toolId": rid,
+                    "toolCode": rid,
+                    "toolName": tool_names.get(rid, rid),
+                },
+            )
+            row["cells"][rid] = effect
+    return {
+        "type": type,
+        "action": action or "",
+        "columns": list(columns.values()),
+        "rows": list(rows.values()),
+    }
+
+
 @router.get("/iam/policies/matrix")
-async def policy_matrix(type: str, action: str | None = None) -> dict[str, Any]:
-    return {"items": [], "total": 0}
+async def policy_matrix(request: Request, type: str, action: str | None = None) -> dict[str, Any]:
+    """策略矩阵（权限策略 tab 数据源，形状对齐前端 PolicyMatrix 契约）。"""
+    return _policy_matrix_data(_tid(request), type, action)
+
+
+@router.get("/iam/policies/matrix/export")
+async def policy_matrix_export(
+    request: Request,
+    type: str,
+    format: str = Query(default="csv", pattern="^(csv|xlsx)$"),
+    action: str | None = None,
+) -> Response:
+    """导出策略矩阵。csv 输出 UTF-8（带 BOM，Excel 直开不乱码）；xlsx 暂未实现。"""
+    if format != "csv":
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "E400", "message": "xlsx 导出暂未实现，请使用 csv"},
+        )
+    tid = _tid(request)
+    data = _policy_matrix_data(tid, type, action)
+    import csv
+    import io
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    header = ["主体类型", "主体 ID"] + [c["toolName"] for c in data["columns"]]
+    writer.writerow(header)
+    for row in data["rows"]:
+        subject = row["subject"]
+        writer.writerow(
+            [subject["subjectType"], subject["subjectId"]]
+            + [row["cells"].get(c["toolId"], "inherit") for c in data["columns"]]
+        )
+    return Response(
+        content="﻿" + buf.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="policy-matrix-{type}.csv"'
+        },
+    )
 
 
 @router.post("/iam/policies", status_code=201)

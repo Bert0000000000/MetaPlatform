@@ -141,7 +141,7 @@ export default function CollaborationAuditPage() {
 
   return (
     <div>
-      <PageHeader title={<><InteractionOutlined /> 协作审计</>} />
+      <PageHeader title={<><InteractionOutlined /> 调用审计</>} />
 
       <Space className="mp-mb-4" wrap>
         <Input
@@ -200,7 +200,7 @@ export default function CollaborationAuditPage() {
 
       <Card>
         {data?.items.length === 0 && !loading ? (
-          <Empty description="还没有协作记录" />
+          <Empty description="还没有调用记录" />
         ) : (
           <Table
             rowKey="id"
@@ -221,7 +221,7 @@ export default function CollaborationAuditPage() {
 
       <Modal
         visible={!!detail}
-        title="协作详情"
+        title="调用详情"
         onCancel={() => setDetail(null)}
         footer={null}
         width={720}

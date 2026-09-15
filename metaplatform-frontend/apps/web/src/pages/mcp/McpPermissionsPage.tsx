@@ -69,7 +69,11 @@ export default function PermissionMatrixPage() {
     setLoading(true);
     try {
       const data = await getPolicyMatrix(matrixType, action);
-      setMatrix(data);
+      // 形状防御：缺 columns/rows 的响应按无矩阵处理
+      setMatrix(data && Array.isArray(data.columns) && Array.isArray(data.rows) ? data : null);
+    } catch {
+      setMatrix(null);
+      Toast.error('权限矩阵加载失败');
     } finally {
       setLoading(false);
     }
@@ -81,7 +85,8 @@ export default function PermissionMatrixPage() {
 
   const toolNames = useMemo(() => {
     const map = new Map<string, string>();
-    matrix?.columns.forEach((col) => {
+    // 防御：后端形状异常（缺 columns/rows）时按空矩阵渲染，不崩整页
+    (matrix?.columns ?? []).forEach((col) => {
       map.set(col.toolId, col.toolName || col.toolCode || col.toolId);
     });
     return map;
@@ -100,6 +105,11 @@ export default function PermissionMatrixPage() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       Toast.success('导出成功');
+    } catch (e) {
+      // 400 detail（如 xlsx 未实现）与网络错误都给出可读提示，不再静默
+      const detail = (e as { response?: { data?: { detail?: { message?: string } | string } } })?.response?.data?.detail;
+      const message = typeof detail === 'string' ? detail : detail?.message;
+      Toast.error(message || '导出失败');
     } finally {
       setExporting(false);
     }
@@ -158,7 +168,7 @@ export default function PermissionMatrixPage() {
         ),
       },
     ];
-    matrix?.columns.forEach((col) => {
+    (matrix?.columns ?? []).forEach((col) => {
       const toolName = toolNames.get(col.toolId) || col.toolId;
       base.push({
         title: (
@@ -224,11 +234,11 @@ export default function PermissionMatrixPage() {
           className="mp-mb-4"
         />
 
-        {matrix && matrix.rows.length === 0 && !loading ? (
+        {(matrix?.rows ?? []).length === 0 && !loading ? (
           <Empty description="暂无权限矩阵数据" />
         ) : (
           <Table
-            rowKey={(r) => r?.subject.subjectId ?? ''}
+            rowKey={(r) => r?.subject?.subjectId ?? ''}
             dataSource={matrix?.rows || []}
             columns={columns}
             loading={loading}
