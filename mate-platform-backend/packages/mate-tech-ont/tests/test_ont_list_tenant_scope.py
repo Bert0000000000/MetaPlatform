@@ -131,6 +131,9 @@ def pg_repo():
             "ont_link_instance",
             "ont_object_type",
             "ont_link_type",
+            # upsert_object_type 会自动生成 ax.parent.<slug> 公理 —— 不清理会留库
+            # （实测泄漏到共享 metaplatform 库，并显示在建模页公理列表里）
+            "ont_axiom",
         ):
             cur.execute(f"DELETE FROM {tbl} WHERE tenant_id IN (%s, %s)", (TENANT_A, TENANT_B))
     conn.commit()

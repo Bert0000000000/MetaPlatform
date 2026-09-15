@@ -214,7 +214,13 @@ def pg_repo():
 
     conn = psycopg2.connect(PG_DSN)
     with conn.cursor() as cur:
-        for tbl in ("ont_individual", "ont_link_instance", "ont_object_type", "ont_link_type"):
+        for tbl in (
+            "ont_individual",
+            "ont_link_instance",
+            "ont_object_type",
+            "ont_link_type",
+            "ont_axiom",  # upsert_object_type 自动生成的父类公理，须一并清理
+        ):
             cur.execute(f"DELETE FROM {tbl} WHERE tenant_id=%s", (T,))
     conn.commit()
     conn.close()

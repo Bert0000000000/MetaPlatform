@@ -85,7 +85,7 @@ def repo():
 
     conn = psycopg2.connect(PG_DSN)
     with conn.cursor() as cur:
-        for tbl in ("ont_individual", "ont_object_type"):
+        for tbl in ("ont_individual", "ont_object_type", "ont_axiom"):
             cur.execute(f"DELETE FROM {tbl} WHERE tenant_id = %s", (T,))
     conn.commit()
     conn.close()

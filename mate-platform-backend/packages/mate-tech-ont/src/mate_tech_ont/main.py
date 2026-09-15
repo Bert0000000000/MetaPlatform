@@ -66,11 +66,16 @@ logger = structlog.get_logger(__name__)
 
 
 def _inject_function_executor(repo: object) -> None:
-    """GOVERN-05: 根据 FUNCTION_BACKEND 注入 FunctionExecutor。
+    """GOVERN-05: 根据 FUNCTION_BACKEND 注入 FunctionExecutor（3 种策略）。
 
     - memory（默认 dev）: _SimplePythonExecutor（无 subprocess，最快）
     - subprocess（CI/test）: SubprocessExecutor（真起 python -I 隔离）
-    - k8s（prod 占位）: 同 subprocess；K8s Job 提交归 SANDBOX-02 后续
+      —— **production profile 拒绝**（硬规则 5 / ADR-0040 §2.5.1「prod 绝不降级」）
+    - k8s（prod）: K8sJobExecutor（L2 K8s Job —— ADR-0040 §2.5.1 prod 唯一允许）
+
+    此前 `subprocess` 与 `k8s` 共用同一分支注入 SubprocessExecutor：
+    ① k8s 从未真正接到 K8sJobExecutor（名不副实）；
+    ② production 下 FUNCTION_BACKEND=subprocess 被放行，违反 ADR-0040。
     """
     backend = os.getenv("FUNCTION_BACKEND", "memory").lower()
     require_real_dependency("FUNCTION_BACKEND", backend != "memory")
@@ -78,7 +83,10 @@ def _inject_function_executor(repo: object) -> None:
         from mate_kernel.sandbox.k8s import _SimplePythonExecutor
 
         repo.set_function_executor(_SimplePythonExecutor())  # type: ignore[attr-defined]
-    elif backend in ("subprocess", "k8s"):
+    elif backend == "subprocess":
+        # subprocess ≠ 容器（无 cgroup/namespace 隔离）—— dev/smoke/pytest 可用，
+        # prod 绝不降级（ADR-0040 §2.5.1 + 硬规则 5）。
+        require_real_dependency("FUNCTION_BACKEND=subprocess", not is_production_profile())
         from mate_kernel.sandbox.k8s import SubprocessExecutor
 
         repo.set_function_executor(  # type: ignore[attr-defined]
@@ -87,6 +95,12 @@ def _inject_function_executor(repo: object) -> None:
                 timeout_seconds=int(os.getenv("FUNCTION_TIMEOUT_S", "10")),
             )
         )
+    elif backend == "k8s":
+        from mate_kernel.sandbox.k8s import K8sSandboxRunner
+
+        # 经 K8sSandboxRunner(backend="k8s") 取 K8sJobExecutor —— 与 kernel 既有
+        # 实现（sandbox/k8s.py:386）保持单一来源，勿在此另起一套。
+        repo.set_function_executor(K8sSandboxRunner(backend="k8s").executor)  # type: ignore[attr-defined]
     else:
         raise RuntimeError(f"unknown FUNCTION_BACKEND={backend!r}")
     logger.info("function_executor.initialized", backend=backend)

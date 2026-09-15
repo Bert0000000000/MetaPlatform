@@ -261,7 +261,25 @@ def main() -> None:
     banner("8. Workflow 员工")
     action_svc = ActionService()
     action_svc.register_function(f"ont.{tenant}.act.approve", lambda t, p: "approved")
-    wa = WorkflowAgent(action_svc)
+
+    # ADR-0063 S3：flow 的 ACTION 节点必须先解析 ActionType 声明的 function_ref，
+    # 故**必须注入 action_type_lookup**。此前靠 "action_rid 兼作 function_ref" 的
+    # 占位已按 ADR 删除 —— 不注入则节点 fail-fast，流程会直接 aborted（而非走到
+    # WAIT_USER）。这里用一个最小 ActionType 源演示该注入契约。
+    from mate_kernel.ontology.identity import ClassRef as _ClassRef
+    from mate_kernel.ontology.types.action_type import ActionType as _ActionType
+
+    def _action_type_lookup(action_rid: str) -> _ActionType:
+        return _ActionType(
+            rid=_ClassRef(action_rid),
+            parameters=(),
+            submission_criteria=(),
+            side_effects=(),
+            function_ref=_ClassRef(action_rid),
+            on=(),
+        )
+
+    wa = WorkflowAgent(action_svc, action_type_lookup=_action_type_lookup)
     flow = FlowDefinition(
         flow_rid=f"wfe.{tenant}.flow.order-approve.v1",
         nodes=(
@@ -275,6 +293,8 @@ def main() -> None:
     )
     state = wa.start(flow, ctx, mgr, initial_parameters={"a": {"approver": "alice"}})
     print(f"  status: {state.status.value}")
+    # 断言而非只打印 —— 否则 S3 删占位后流程静默退化成 aborted 也看不出来
+    assert state.status.value == "awaiting_user", f"expected awaiting_user, got {state.status.value}"
     wa.abort(flow.flow_rid, ctx, reason="user cancel")
     print(f"  after abort: {wa.get_state(flow.flow_rid, ctx).status.value}")
 
