@@ -1,0 +1,237 @@
+/*
+ * 应用中心域共享样式（C 骨架卡片网格 + 模板市场入口 banner）。
+ * 只做版式语义；筛选/表格/抽屉外壳一律走 P0 骨架组件。
+ * 间距只取 tokens.css 的 --mp-space-* 十档，颜色取 Semi 主题 token。
+ */
+
+/* ---------- 模板市场入口 banner ---------- */
+.mp-apps-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-4);
+  padding: var(--mp-space-4) var(--mp-space-5);
+  margin-bottom: var(--mp-space-5);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-large);
+  background: var(--semi-color-fill-0);
+}
+
+.mp-apps-banner-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-primary-light-default);
+  color: var(--semi-color-primary);
+}
+
+.mp-apps-banner-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.mp-apps-banner-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+}
+
+.mp-apps-banner-desc {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+
+/* ---------- 应用卡片网格（C 骨架） ---------- */
+.mp-apps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--mp-space-3);
+  align-items: stretch;
+}
+
+/* 虚线「创建应用」卡：与真实卡片同尺寸，视觉上明确是动作 */
+.mp-apps-new {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mp-space-2);
+  min-height: 176px;
+  border: 1px dashed var(--semi-color-border);
+  border-radius: var(--semi-border-radius-large);
+  background: transparent;
+  color: var(--semi-color-text-2);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+
+.mp-apps-new:hover {
+  border-color: var(--semi-color-primary);
+  color: var(--semi-color-primary);
+}
+
+.mp-apps-new-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-fill-0);
+}
+
+/* ---------- 应用卡 ---------- */
+.mp-app-card-wrap {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mp-app-head {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  min-width: 0;
+}
+
+.mp-app-icon {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-primary-light-default);
+  color: var(--semi-color-primary);
+  border: 1px solid var(--semi-color-border);
+}
+
+.mp-app-head-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.mp-app-name {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--semi-color-text-0);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-app-name:hover {
+  color: var(--semi-color-primary);
+}
+
+.mp-app-code {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-app-desc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--semi-color-text-2);
+  margin: var(--mp-space-2) 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* 卡片底部信息行：分类 / 版本 / 标签 */
+.mp-app-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  flex-wrap: wrap;
+  margin-top: var(--mp-space-3);
+  padding-top: var(--mp-space-3);
+  border-top: 1px solid var(--semi-color-border);
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+
+.mp-app-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+  min-width: 0;
+}
+
+/* 卡片底部操作行：三等份，通栏到卡片边缘 */
+.mp-app-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: var(--mp-space-3) calc(-1 * var(--mp-space-3)) calc(-1 * var(--mp-space-3));
+  border-top: 1px solid var(--semi-color-border);
+}
+
+.mp-app-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mp-space-1);
+  height: 32px;
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+  border-radius: 0;
+}
+
+.mp-app-action-mid {
+  border-left: 1px solid var(--semi-color-border);
+  border-right: 1px solid var(--semi-color-border);
+}
+
+.mp-app-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mp-space-8);
+}
+
+/* 核心业务场景入口卡（网格下方，与卡片网格拉开一档） */
+.mp-apps-scenario {
+  margin-top: var(--mp-space-6);
+}
+
+/* 应用详情内的二级视图行（详情 / 生命周期 / 版本） */
+.mp-app-subtabs {
+  margin-bottom: var(--mp-space-4);
+}
+
+/* ---------- 域壳 ---------- */
+.mp-apps-shell {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mp-apps-shell-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 助手入口：右下角浮动，避免挤占画布/设计器工具条 */
+.mp-apps-ai-dock {
+  position: absolute;
+  right: var(--mp-space-5);
+  bottom: var(--mp-space-4);
+  z-index: 40;
+}

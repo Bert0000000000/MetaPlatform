@@ -87,7 +87,7 @@ export default function AppLifecyclePage({ appId: appIdProp }: { appId?: string 
   return (
     <div>
       <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/${appId}`)}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/mine?app=${appId}`)}>
           返回
         </Button>
         <Tag color={STATUS_MAP[app.status].color}>{STATUS_MAP[app.status].label}</Tag>

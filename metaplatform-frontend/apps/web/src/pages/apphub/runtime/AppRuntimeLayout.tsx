@@ -119,7 +119,7 @@ export default function AppRuntimeLayout({
         >
           <button
             type="button"
-            onClick={() => navigate('/apps')}
+            onClick={() => navigate('/apps/mine')}
             style={{
               display: 'inline-flex',
               alignItems: 'center',

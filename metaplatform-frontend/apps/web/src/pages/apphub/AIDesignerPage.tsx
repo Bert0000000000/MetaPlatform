@@ -712,7 +712,7 @@ export default function AIDesignerPage() {
         }}
       >
         <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps')}>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps/mine')}>
             返回
           </Button>
           <Typography.Text strong style={{ fontSize: 16 }}>

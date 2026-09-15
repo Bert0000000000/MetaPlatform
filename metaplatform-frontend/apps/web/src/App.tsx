@@ -171,11 +171,11 @@ function AppRoutes() {
             {/* ---------- 4. SuperAI（域路由见 src/routes/superai.tsx） ---------- */}
             {superaiRoutes}
 
-            {/* ---------- 5. 应用中心 ---------- */}
-            <Route path="apps/mine" element={<ApphubShellPage defaultTab="list" />} />
-            <Route path="apps/market" element={<ApphubShellPage defaultTab="market" />} />
-            <Route path="apps/templates" element={<ApphubShellPage defaultTab="my-templates" />} />
-            <Route path="apps/designer" element={<ApphubShellPage defaultTab="ai-designer" />} />
+            {/* ---------- 5. 应用中心（主 tab 由路径驱动，见 pages/apphub/ApphubShellPage.tsx） ---------- */}
+            <Route path="apps/mine" element={<ApphubShellPage />} />
+            <Route path="apps/market" element={<ApphubShellPage />} />
+            <Route path="apps/templates" element={<ApphubShellPage />} />
+            <Route path="apps/designer" element={<ApphubShellPage />} />
             <Route path="apps/order-review" element={<SuperaiOrderReviewPage />} />
 
             {/* ---------- 6. 知识与集成 ---------- */}

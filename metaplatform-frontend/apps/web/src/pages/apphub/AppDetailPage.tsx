@@ -123,7 +123,7 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
     if (!appId) return;
     await deleteApp(appId);
     Toast.success('应用已删除');
-    navigate('/apps');
+    navigate('/apps/mine');
   };
 
   const handleCreateModule = async (values: ModuleCreateRequest) => {
@@ -247,7 +247,7 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
 
   return (
     <div>
-      <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps')} style={{ marginBottom: 16 }}>
+      <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps/mine')} style={{ marginBottom: 16 }}>
         返回列表
       </Button>
 
@@ -335,9 +335,9 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
                         key={module.moduleId}
                         onClick={() => {
                           if (module.type === 'FORM') {
-                            navigate(`/apps/${appId}/modules/${module.moduleId}/form-designer`);
+                            navigate(`/apps/mine?app=${appId}&module=${module.moduleId}&tab=form-designer`);
                           } else if (module.type === 'FLOW') {
-                            navigate(`/apps/${appId}/modules/${module.moduleId}/flow-designer`);
+                            navigate(`/apps/mine?app=${appId}&module=${module.moduleId}&tab=flow-designer`);
                           } else {
                             Toast.info('该类型设计器待实现');
                           }

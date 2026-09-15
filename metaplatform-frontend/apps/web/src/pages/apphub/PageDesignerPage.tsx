@@ -217,7 +217,7 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
   return (
     <div>
       <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps')}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps/mine')}>
           返回
         </Button>
         <Typography.Title heading={4} style={{ margin: 0 }}>

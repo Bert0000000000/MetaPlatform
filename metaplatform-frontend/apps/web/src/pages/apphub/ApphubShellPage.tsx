@@ -1,6 +1,6 @@
-import { useLocation, useSearchParams } from 'react-router-dom';
-import { Boxes, Store, FileText, Sparkles } from 'lucide-react';
-import { AIAssistantTrigger, AIAssistantWorkspace, PageRoot, SubTabs, usePageAssistant } from '@mate/shared';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Tabs } from '@douyinfe/semi-ui';
+import { AIAssistantTrigger, AIAssistantWorkspace, usePageAssistant } from '@mate/shared';
 import AppListPage from './AppListPage';
 import AppDetailPage from './AppDetailPage';
 import AppLifecyclePage from './AppLifecyclePage';
@@ -16,29 +16,34 @@ import MarketplaceDetailPage from './MarketplaceDetailPage';
 import MyTemplatesPage from './MyTemplatesPage';
 import TemplateSubmitPage from './TemplateSubmitPage';
 import AIDesignerPage from './AIDesignerPage';
+import './apps.css';
 
-type TabKey = 'list' | 'market' | 'my-templates' | 'ai-designer';
-
-const TABS: Array<{ key: TabKey; label: string; path: string; icon: typeof Boxes }> = [
-  { key: 'list', label: '我的应用', path: '/apps', icon: Boxes },
-  { key: 'market', label: '模板市场', path: '/apps?tab=market', icon: Store },
-  { key: 'my-templates', label: '我的模板', path: '/apps?tab=my-templates', icon: FileText },
-  { key: 'ai-designer', label: 'AI 设计器', path: '/apps?tab=ai-designer', icon: Sparkles },
-];
-
-function resolveTab(raw: string | null): TabKey {
-  if (raw === 'market' || raw === 'my-templates' || raw === 'ai-designer') return raw;
-  return 'list';
-}
+type TabKey = 'mine' | 'market' | 'templates' | 'designer';
 
 /**
- * @param defaultTab UI-P0 新 IA 桥接：`/apps/{mine,market,templates,designer}` 用路径表达主 tab，
- *   本页内部仍以 `?tab=` 为准；无 query 时用该默认值兜底，避免两套 tab 语义打架。
+ * 主 tab 由路径决定（DESIGN-SPEC §3：页内主 tab 切换即路由，tab 行由壳渲染）。
+ * `?tab=` 只承担「应用详情内的二级视图」，与主 tab 不再共用一套语义。
  */
-export default function ApphubShellPage({ defaultTab }: { defaultTab?: TabKey } = {}) {
+function tabFromPath(pathname: string): TabKey {
+  if (pathname.startsWith('/apps/market')) return 'market';
+  if (pathname.startsWith('/apps/templates')) return 'templates';
+  if (pathname.startsWith('/apps/designer')) return 'designer';
+  return 'mine';
+}
+
+/** 应用详情内的二级视图（`/apps/mine?app=x&tab=...`）。 */
+const APP_SUB_VIEWS = [
+  { key: 'detail', label: '详情' },
+  { key: 'lifecycle', label: '生命周期' },
+  { key: 'versions', label: '版本' },
+];
+
+export default function ApphubShellPage() {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const location = useLocation();
-  const activeTab = resolveTab(searchParams.get('tab') ?? defaultTab ?? null);
+
+  const tab = tabFromPath(pathname);
   const appId = searchParams.get('app');
   const tid = searchParams.get('tid');
   const vid = searchParams.get('vid');
@@ -46,8 +51,9 @@ export default function ApphubShellPage({ defaultTab }: { defaultTab?: TabKey } 
   const pageId = searchParams.get('page');
   const mp = searchParams.get('mp');
   const submit = searchParams.get('submit');
-    const requestedTab = searchParams.get('tab');
-    const appDetailTab = appId ? (requestedTab ?? 'detail') : undefined;
+  const requestedTab = searchParams.get('tab');
+  const appDetailTab = appId ? (requestedTab ?? 'detail') : undefined;
+
   const assistant = usePageAssistant({
     employeeId: 'application-designer',
     employeeName: '应用设计数字员工',
@@ -57,129 +63,77 @@ export default function ApphubShellPage({ defaultTab }: { defaultTab?: TabKey } 
     suggestions: ['帮我规划一个业务应用', '检查当前应用的发布准备度', '设计一个数据看板页面'],
   });
 
-  const subTabs = TABS.map((t) => ({
-    label: t.label,
-    path: t.path,
-    activePath: activeTab === t.key ? '/apps' : `/apps?tab=${t.key}`,
-  }));
-
-  const switchTab = (key: TabKey) => {
-    if (key === activeTab) return;
-    const next = new URLSearchParams();
-    if (key !== 'list') next.set('tab', key);
-    setSearchParams(next, { replace: false });
-  };
-
-  // 根据参数分发到具体 page
-  const renderBody = () => {
-    // 我的应用 + 选中应用 → 详情/子项
-      if (requestedTab === 'page' && pageId) {
-      return <PageDesignerPage pageId={pageId} />;
-    }
-    if (activeTab === 'list' && appId) {
-      if (vid) return <ReleaseRecordPage appId={appId} />;
-      if (moduleId) {
-        if (appDetailTab === 'form-designer') {
-          return <FormDesignerPage appId={appId} moduleId={moduleId} />;
-        }
-        if (appDetailTab === 'flow-designer') {
-          return <FlowDesignerPage appId={appId} moduleId={moduleId} />;
-        }
-      }
-      if (appDetailTab === 'lifecycle') return <AppLifecyclePage appId={appId} />;
-      if (appDetailTab === 'versions') return <VersionManagementPage appId={appId} />;
-      // 默认进应用详情
-      return <AppDetailPage appId={appId || undefined} />;
-    }
-    if (activeTab === 'list' && !appId) return <AppListPage />;
-    // 模板市场
-    if (activeTab === 'market') {
-      if (mp === '1' && tid) return <MarketplaceDetailPage />;
-      if (mp === '1') return <MarketplacePage />;
-      if (tid) return <TemplateDetailPage />;
-      return <MarketPage />;
-    }
-    // 我的模板
-    if (activeTab === 'my-templates') {
-      if (submit === '1') return <TemplateSubmitPage />;
-      return <MyTemplatesPage />;
-    }
-    // AI 设计器
-    if (activeTab === 'ai-designer') return <AIDesignerPage />;
-    return <AppListPage />;
-  };
-
-  // 详情子 tab：应用详情内嵌模块/基本信息/发布/短链 tab 由 AppDetailPage 自己管
-  // 这里只在选中应用时给一个二级 subtab 让用户能切到 lifecycle / versions / form-designer / flow-designer
-  const showAppSubtabs = activeTab === 'list' && !!appId;
-  const appSubtab = (key: string) => {
+  /** 详情二级视图切换：保留 app 上下文，只改 `?tab=`。 */
+  const switchAppView = (key: string) => {
     const next = new URLSearchParams(searchParams);
-    next.delete('mp'); next.delete('tid'); next.delete('vid'); next.delete('module'); next.delete('page'); next.delete('submit');
-    next.set('app', appId || '');
+    next.delete('mp');
+    next.delete('tid');
+    next.delete('vid');
+    next.delete('module');
+    next.delete('page');
+    next.delete('submit');
+    next.set('app', appId ?? '');
     if (key === 'detail') next.delete('tab');
     else next.set('tab', key);
     setSearchParams(next, { replace: false });
   };
 
-  const stickyHeader = (
-    <div
-      style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-        height: 64,
-        padding: '0 24px',
-        background: 'var(--background)',
-        borderBottom: '1px solid var(--border)',
-        flexShrink: 0,
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden' }}>
-        <SubTabs
-          items={subTabs}
-          activePath={activeTab === 'list' ? '/apps' : `/apps?tab=${activeTab}`}
-          embedded
-        />
-      </div>
-      <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
-    </div>
-  );
+  const renderBody = () => {
+    if (requestedTab === 'page' && pageId) {
+      return <PageDesignerPage pageId={pageId} />;
+    }
+
+    if (tab === 'mine') {
+      if (!appId) return <AppListPage />;
+      if (vid) return <ReleaseRecordPage appId={appId} />;
+      if (moduleId && appDetailTab === 'form-designer') {
+        return <FormDesignerPage appId={appId} moduleId={moduleId} />;
+      }
+      if (moduleId && appDetailTab === 'flow-designer') {
+        return <FlowDesignerPage appId={appId} moduleId={moduleId} />;
+      }
+      if (appDetailTab === 'lifecycle') return <AppLifecyclePage appId={appId} />;
+      if (appDetailTab === 'versions') return <VersionManagementPage appId={appId} />;
+      return <AppDetailPage appId={appId} />;
+    }
+
+    if (tab === 'market') {
+      if (mp === '1' && tid) return <MarketplaceDetailPage />;
+      if (mp === '1') return <MarketplacePage />;
+      if (tid) return <TemplateDetailPage />;
+      return <MarketPage />;
+    }
+
+    if (tab === 'templates') {
+      if (submit === '1') return <TemplateSubmitPage />;
+      return <MyTemplatesPage />;
+    }
+
+    return <AIDesignerPage />;
+  };
+
+  const showAppViews = tab === 'mine' && !!appId && !vid && !moduleId && requestedTab !== 'page';
 
   return (
-    <PageRoot header={stickyHeader}>
+    <div className="mp-apps-shell">
       <AIAssistantWorkspace assistant={assistant}>
-        {showAppSubtabs && (
-          <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 16, flexWrap: 'wrap' }}>
-          {[
-            { key: 'detail', label: '详情' },
-            { key: 'lifecycle', label: '生命周期' },
-            { key: 'versions', label: '版本' },
-          ].map((t) => (
-            <button
-              key={t.key}
-              onClick={() => appSubtab(t.key)}
-              style={{
-                padding: '8px 16px',
-                border: 'none',
-                background: 'transparent',
-                color: (appDetailTab === t.key || (t.key === 'detail' && appDetailTab === 'detail')) ? 'var(--primary)' : 'var(--muted-foreground)',
-                fontSize: 13,
-                fontWeight: (appDetailTab === t.key || (t.key === 'detail' && appDetailTab === 'detail')) ? 600 : 500,
-                cursor: 'pointer',
-                borderBottom: (appDetailTab === t.key || (t.key === 'detail' && appDetailTab === 'detail')) ? '2px solid var(--primary)' : '2px solid transparent',
-                marginBottom: -1,
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
-          </div>
-        )}
-        {renderBody()}
+        <div className="mp-apps-shell-main">
+          {showAppViews ? (
+            <Tabs
+              className="mp-app-subtabs"
+              type="button"
+              activeKey={appDetailTab ?? 'detail'}
+              tabList={APP_SUB_VIEWS.map((v) => ({ tab: v.label, itemKey: v.key }))}
+              onChange={switchAppView}
+            />
+          ) : null}
+          {renderBody()}
+        </div>
       </AIAssistantWorkspace>
-    </PageRoot>
+
+      <div className="mp-apps-ai-dock">
+        <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
+      </div>
+    </div>
   );
 }

@@ -107,7 +107,7 @@ export default function VersionManagementPage({ appId: appIdProp }: { appId?: st
   return (
     <div>
       <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/${appId}`)}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/mine?app=${appId}`)}>
           返回应用
         </Button>
       </Space>

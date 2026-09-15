@@ -648,7 +648,7 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
     <div style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/${appId}`)}>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/mine?app=${appId}`)}>
             返回
           </Button>
           <Typography.Title heading={5} style={{ margin: 0 }}>

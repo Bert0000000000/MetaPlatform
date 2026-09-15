@@ -1,458 +1,302 @@
 /**
- * AppListPage - 应用中心「已安装应用」列表
- * --------------------------------------------------
- * 布局（Semi 全宽单列表 + 筛选）：
- * ┌──────────────────────────────────────────────┐
- * │ Header: 「应用中心」 + 创建按钮(右上)         │
- * │ 筛选条: 搜索 / 分组 / 状态 / 排序             │
- * ├──────────────────────────────────────────────┤
- * │ Card 网格（已安装应用：DESIGNING + PUBLISHED）│
- * └──────────────────────────────────────────────┘
+ * AppListPage —— 应用中心「我的应用」（DESIGN-SPEC §5 版式 C：卡片网格）。
  *
- * 模板市场已迁到云市场，此页只展示已安装应用。
- * 点击卡片进入 AppDetailPage；点击「创建应用」进入 DesignFlowPage 全屏抽屉
- * （3 步：基本信息 / 业务对象 + 菜单 + 表单 + 流程 + 权限 / 发布配置）。
+ * 版式：页头 + 模板市场入口 banner + 筛选栏 + 卡片网格（+ 虚线新建卡）。
+ * 卡片字段全部来自后端 apphub 列表接口：名称 / 编码 / 分类 / 描述 / 版本 / 标签。
+ * 接口未暴露「状态」与「使用次数」，卡片不显示这两项（不编造）。
  */
-import { useEffect, useState, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
-import {
-  Button,
-  Card,
-  Empty,
-  Select,
-  Space,
-  Tag,
-  Typography,
-  Toast,
-  Popconfirm,
-  Dropdown,
-  Input,
-} from '@douyinfe/semi-ui';
-import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
-import {
-  PlusOutlined,
-  AppstoreOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  MoreOutlined,
-  FileTextOutlined,
-  SearchOutlined,
-  FilterOutlined,
-  CheckCircleOutlined,
-} from '@ant-design/icons';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Button, Card, Select, Spin, Tag, Typography, Toast, Popconfirm, Dropdown } from '@douyinfe/semi-ui';
+import { CheckCircle2, FileText, LayoutGrid, MoreHorizontal, Pencil, Plus, RefreshCw, Store, Trash2 } from 'lucide-react';
 import { listApps, deleteApp, listGroups } from '@/api/apphub/apps';
 import AppDesignSheet from './DesignFlowPage';
-import { PageRoot } from '@mate/shared';
-import type { AppItem, AppStatus } from '@/api/apphub/types';
-
-const STATUS_MAP: Record<AppStatus, { label: string; color: TagColor }> = {
-  DESIGNING: { label: '设计中', color: 'blue' },
-  PUBLISHED: { label: '已发布', color: 'green' },
-  OFFLINE: { label: '已下线', color: 'grey' },
-};
+import { EmptyState, FilterBar, PageHeader } from '@/components/skeleton';
+import type { AppItem } from '@/api/apphub/types';
+import './apps.css';
 
 const SORT_OPTIONS = [
-  { value: 'updated_desc', label: '最近更新' },
-  { value: 'updated_asc', label: '最旧更新' },
   { value: 'name_asc', label: '名称 A → Z' },
   { value: 'name_desc', label: '名称 Z → A' },
 ];
 
+/**
+ * 应用版本。src/api/apphub/apps.ts 的 mapApp 把后端 `version` 映射进了
+ * `AppItem.updatedAt`（字段命名失真，但 API 层本批不动）。这里集中一处读取，
+ * 将来 mapper 修正为真实 `version` 字段时只需改这里。
+ */
+function appVersion(app: AppItem): string {
+  return app.updatedAt || '—';
+}
+
 export default function AppListPage() {
   const navigate = useNavigate();
-  const [apps, setApps] = useState<AppItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [keyword, setKeyword] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
+  const [apps, setApps] = useState<AppItem[]>([]);
+  const [groups, setGroups] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [group, setGroup] = useState<string | undefined>();
+  const [sort, setSort] = useState('name_asc');
+
   const designOpen = searchParams.get('design') === '1';
   const designFromId = searchParams.get('from') ?? undefined;
-  const [group, setGroup] = useState<string>();
-  const [status, setStatus] = useState<string>();
-  const [sort, setSort] = useState<string>('updated_desc');
-  const [groups, setGroups] = useState<string[]>([]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
-      // 仅展示已安装应用（已发布 + 设计中），下线的收纳隐藏
-      const res = await listApps({ keyword, group });
-      const installed = res.items.filter((a) => a.status === 'DESIGNING' || a.status === 'PUBLISHED');
-      setApps(installed);
-    } catch {
-      Toast.error('加载应用列表失败');
+      const res = await listApps();
+      setApps(res.items);
+    } catch (e) {
+      setApps([]);
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    load();
-    listGroups().then(setGroups).catch(() => setGroups([]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const sortedApps = useMemo(() => {
-    const arr = [...apps];
-    arr.sort((a, b) => {
-      switch (sort) {
-        case 'updated_asc':
-          return a.updatedAt.localeCompare(b.updatedAt);
-        case 'name_asc':
-          return a.name.localeCompare(b.name);
-        case 'name_desc':
-          return b.name.localeCompare(a.name);
-        default:
-          return b.updatedAt.localeCompare(a.updatedAt);
-      }
-    });
-    return arr;
-  }, [apps, sort]);
+  useEffect(() => {
+    void load();
+    listGroups()
+      .then(setGroups)
+      .catch(() => setGroups([]));
+  }, [load]);
 
-  const handleDelete = async (app: AppItem) => {
+  const visible = useMemo(() => {
+    const kw = keyword.trim().toLowerCase();
+    const arr = apps.filter((a) => {
+      const hitKeyword =
+        !kw ||
+        a.name.toLowerCase().includes(kw) ||
+        a.code.toLowerCase().includes(kw) ||
+        (a.description ?? '').toLowerCase().includes(kw);
+      return hitKeyword && (!group || a.group === group);
+    });
+    return [...arr].sort((a, b) =>
+      sort === 'name_desc' ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name),
+    );
+  }, [apps, keyword, group, sort]);
+
+  const openDesign = (from?: string) => {
+    const next = new URLSearchParams();
+    next.set('design', '1');
+    if (from) next.set('from', from);
+    setSearchParams(next);
+  };
+
+  const closeDesign = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('design');
+    next.delete('from');
+    setSearchParams(next);
+  };
+
+  const remove = async (app: AppItem) => {
     try {
       await deleteApp(app.appId);
       Toast.success('应用已删除');
-      load();
+      void load();
     } catch {
       Toast.error('删除失败');
     }
   };
 
-  const formatTime = (v: string) => {
-    const d = new Date(v);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} 更新`;
-  };
+  const openApp = (appId: string) => navigate(`/apps/mine?app=${encodeURIComponent(appId)}`);
 
-  const stats = useMemo(() => {
-    const total = apps.length;
-    const published = apps.filter((a) => a.status === 'PUBLISHED').length;
-    const designing = apps.filter((a) => a.status === 'DESIGNING').length;
-    return { total, published, designing };
-  }, [apps]);
+  const renderCard = (app: AppItem) => (
+    <Card key={app.appId} shadows="hover">
+      <div className="mp-app-card-wrap">
+        <div className="mp-app-head">
+          <span className="mp-app-icon">
+            {app.icon === 'FileTextOutlined' ? (
+              <FileText size={18} strokeWidth={1.5} />
+            ) : (
+              <LayoutGrid size={18} strokeWidth={1.5} />
+            )}
+          </span>
+          <div className="mp-app-head-main">
+            <div className="mp-app-name" onClick={() => openApp(app.appId)}>
+              {app.name}
+            </div>
+            <div className="mp-app-code">{app.code}</div>
+          </div>
+        </div>
+
+        <p className="mp-app-desc">{app.description || '暂无描述'}</p>
+
+        <div className="mp-app-meta">
+          {app.group ? <Tag size="small">{app.group}</Tag> : null}
+          <Tag size="small" color="blue">
+            v{appVersion(app)}
+          </Tag>
+          <span className="mp-app-meta-item">{app.moduleCount} 标签</span>
+        </div>
+      </div>
+
+      <Dropdown
+        position="bottomRight"
+        render={
+          <Dropdown.Menu>
+            <Dropdown.Item icon={<Pencil size={14} strokeWidth={1.5} />} onClick={() => openApp(app.appId)}>
+              查看详情
+            </Dropdown.Item>
+            <Dropdown.Item icon={<Pencil size={14} strokeWidth={1.5} />} onClick={() => openDesign(app.appId)}>
+              重新设计
+            </Dropdown.Item>
+            <Dropdown.Divider />
+            <Dropdown.Item>
+              <Popconfirm
+                title="卸载应用"
+                content={`确定卸载「${app.name}」吗？`}
+                onConfirm={() => void remove(app)}
+              >
+                <span>
+                  <Trash2 size={14} strokeWidth={1.5} /> 卸载
+                </span>
+              </Popconfirm>
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        }
+      >
+        <Button theme="borderless" type="tertiary" icon={<MoreHorizontal size={16} strokeWidth={1.5} />} aria-label="更多操作" />
+      </Dropdown>
+    </Card>
+  );
 
   return (
     <>
-      <AppDesignSheet
-        visible={designOpen}
-        onClose={() => {
-          const next = new URLSearchParams(searchParams);
-          next.delete('design');
-          next.delete('from');
-          setSearchParams(next);
-        }}
-        onCreated={(appId) => navigate(`/apps/${appId}`)}
-        editingId={designFromId}
+      <PageHeader
+        title="应用中心"
+        desc={`${apps.length} 个已注册应用`}
+        actions={
+          <>
+            <Button
+              icon={<RefreshCw size={15} strokeWidth={1.5} />}
+              loading={loading}
+              onClick={() => void load()}
+            >
+              刷新
+            </Button>
+            <Button
+              theme="solid"
+              type="primary"
+              icon={<Plus size={15} strokeWidth={1.5} />}
+              onClick={() => openDesign()}
+            >
+              创建应用
+            </Button>
+          </>
+        }
       />
-      <PageRoot>
-        <div style={{ padding: '24px 32px 32px' }}>
-          {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <div>
-          <Typography.Title heading={3} style={{ margin: 0 }}>
-            应用中心
-          </Typography.Title>
-          <Typography.Text type="tertiary" style={{ fontSize: 13, marginTop: 4 }}>
-            管理已安装的应用：进入设计、查看运行状态、发布新版本
-          </Typography.Text>
+
+      <div className="mp-apps-banner">
+        <span className="mp-apps-banner-icon">
+          <Store size={18} strokeWidth={1.5} />
+        </span>
+        <div className="mp-apps-banner-main">
+          <div className="mp-apps-banner-title">模板市场</div>
+          <div className="mp-apps-banner-desc">安装现成模板，或用 AI 设计器从一句话生成应用骨架。</div>
         </div>
-        <Button
-          theme="solid"
-          type="primary"
-          size="large"
-          icon={<PlusOutlined />}
-          onClick={() => setSearchParams({ design: '1' })}
-        >
-          创建应用
-        </Button>
+        <Button onClick={() => navigate('/apps/market')}>浏览模板市场</Button>
       </div>
 
-      {/* 统计 */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
-        <Card style={{ flex: 1, padding: '14px 20px' }}>
-          <Typography.Text type="tertiary" size="small">已安装应用</Typography.Text>
-          <div style={{ fontSize: 24, fontWeight: 600, marginTop: 4 }}>{stats.total}</div>
-        </Card>
-        <Card style={{ flex: 1, padding: '14px 20px' }}>
-          <Typography.Text type="tertiary" size="small">已发布</Typography.Text>
-          <div style={{ fontSize: 24, fontWeight: 600, marginTop: 4, color: 'var(--semi-color-success)' }}>
-            {stats.published}
-          </div>
-        </Card>
-        <Card style={{ flex: 1, padding: '14px 20px' }}>
-          <Typography.Text type="tertiary" size="small">设计中</Typography.Text>
-          <div style={{ fontSize: 24, fontWeight: 600, marginTop: 4, color: 'var(--semi-color-primary)' }}>
-            {stats.designing}
-          </div>
-        </Card>
-      </div>
+      <FilterBar
+        search={{ value: keyword, onChange: setKeyword, placeholder: '搜索应用名称、编码或描述…' }}
+        filters={
+          <>
+            <Select value={group} onChange={(v) => setGroup(v as string | undefined)} placeholder="全部分类" showClear>
+              {groups.map((g) => (
+                <Select.Option key={g} value={g}>
+                  {g}
+                </Select.Option>
+              ))}
+            </Select>
+            <Select value={sort} onChange={(v) => setSort(v as string)}>
+              {SORT_OPTIONS.map((o) => (
+                <Select.Option key={o.value} value={o.value}>
+                  {o.label}
+                </Select.Option>
+              ))}
+            </Select>
+          </>
+        }
+        right={
+          <Button
+            theme="borderless"
+            onClick={() => {
+              setKeyword('');
+              setGroup(undefined);
+            }}
+          >
+            重置
+          </Button>
+        }
+      />
 
-      {/* 核心业务场景：入口复用平台内置能力，不伪装成可卸载的 AppHub 应用 */}
-      <Card title="核心业务场景" style={{ marginBottom: 20 }}>
-        <Card
-          data-testid="apphub-order-review"
-          shadows="hover"
-          style={{ maxWidth: 520, cursor: 'pointer' }}
-          title={
-            <Space>
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 6,
-                  background: 'var(--semi-color-success-light-default)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <CheckCircleOutlined style={{ color: 'var(--semi-color-success)' }} />
-              </div>
-              <div>
-                <Typography.Text strong>订单复核</Typography.Text>
-                <div>
-                  <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
-                    业务应用 · Ontology/RAG · 人工确认 · Action 写回
-                  </Typography.Text>
-                </div>
-              </div>
-            </Space>
+      {error ? (
+        <EmptyState
+          illustration="failure"
+          title="应用列表加载失败"
+          desc={error}
+          actions={
+            <Button theme="solid" type="primary" onClick={() => void load()}>
+              重试
+            </Button>
           }
-        >
-          <Typography.Text type="tertiary">
-            处理高价值未支付订单，生成复核建议并在确认后创建跟进单。
-          </Typography.Text>
-          <div style={{ marginTop: 12 }}>
-            <Button
-              data-testid="apphub-open-order-review"
-              theme="solid"
-              type="primary"
-              icon={<CheckCircleOutlined />}
-              onClick={() => navigate('/apps/order-review')}
-            >
-              打开订单复核
-            </Button>
-          </div>
-        </Card>
-      </Card>
-
-      {/* 筛选 */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          marginBottom: 20,
-          padding: '12px 16px',
-          background: 'var(--card)',
-          borderRadius: 6,
-          border: '1px solid var(--border)',
-        }}
-      >
-        <FilterOutlined style={{ color: 'var(--muted-foreground)' }} />
-        <Input
-          placeholder="搜索应用名称或编码"
-          showClear
-          value={keyword}
-          onChange={(v) => setKeyword(v)}
-          style={{ width: 240 }}
         />
-        <Select
-          placeholder="应用分组"
-          showClear
-          style={{ width: 160 }}
-          value={group}
-          onChange={(v) => setGroup(v as string | undefined)}
-        >
-          {groups.map((g) => (
-            <Select.Option key={g} value={g}>
-              {g}
-            </Select.Option>
-          ))}
-        </Select>
-        <Select
-          placeholder="应用状态"
-          showClear
-          style={{ width: 160 }}
-          value={status}
-          onChange={(v) => setStatus(v as string | undefined)}
-        >
-          <Select.Option value="DESIGNING">设计中</Select.Option>
-          <Select.Option value="PUBLISHED">已发布</Select.Option>
-        </Select>
-        <Select
-          value={sort}
-          onChange={(v) => setSort(v as string)}
-          style={{ width: 140 }}
-        >
-          {SORT_OPTIONS.map((o) => (
-            <Select.Option key={o.value} value={o.value}>
-              {o.label}
-            </Select.Option>
-          ))}
-        </Select>
-        <Button
-          theme="borderless"
-          onClick={() => {
-            setKeyword('');
-            setGroup(undefined);
-            setStatus(undefined);
-          }}
-        >
-          重置
-        </Button>
-      </div>
-
-      {/* 应用列表 */}
-      {loading && sortedApps.length === 0 ? (
-        <Empty description="正在加载应用..." />
-      ) : sortedApps.length === 0 ? (
-        <Empty
-          description="暂无已安装应用"
-          style={{ padding: '48px 0' }}
-        >
-          <Space spacing={12} style={{ marginTop: 16 }}>
-            <Button
-              theme="solid"
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setSearchParams({ design: '1' })}
-            >
-              从零创建
-            </Button>
-            <Button
-              icon={<SearchOutlined />}
-              onClick={() => navigate('/marketplace')}
-            >
-              前往云市场安装
-            </Button>
-          </Space>
-        </Empty>
+      ) : loading && apps.length === 0 ? (
+        <div className="mp-app-loading">
+          <Spin size="middle" />
+        </div>
+      ) : visible.length === 0 && !loading ? (
+        <EmptyState
+          illustration={apps.length === 0 ? 'no-content' : 'no-result'}
+          title={apps.length === 0 ? '还没有应用' : '没有匹配的应用'}
+          desc={apps.length === 0 ? '从零创建一个应用，或去模板市场安装一个。' : '调整关键词或分类。'}
+          actions={
+            <>
+              <Button theme="solid" type="primary" icon={<Plus size={15} strokeWidth={1.5} />} onClick={() => openDesign()}>
+                创建应用
+              </Button>
+              <Button onClick={() => navigate('/apps/market')}>前往模板市场</Button>
+            </>
+          }
+        />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-          {sortedApps.map((app) => (
-            <Card
-              key={app.appId}
-              shadows="hover"
-              className="app-list-card"
-              title={
-                <Space>
-                  <div
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 6,
-                      background: 'var(--semi-color-primary-light-default)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {app.icon === 'FileTextOutlined' ? (
-                      <FileTextOutlined style={{ color: 'var(--semi-color-primary)' }} />
-                    ) : (
-                      <AppstoreOutlined style={{ color: 'var(--semi-color-primary)' }} />
-                    )}
-                  </div>
-                  <div>
-                    <Typography.Text strong>{app.name}</Typography.Text>
-                    <div>
-                      <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
-                        {app.code}
-                      </Typography.Text>
-                    </div>
-                  </div>
-                </Space>
-              }
-              headerExtraContent={
-                <div onClick={(e) => e.stopPropagation()}>
-                  <Dropdown
-                    position="bottomRight"
-                    render={
-                      <Dropdown.Menu>
-                        <Dropdown.Item
-                          icon={<EditOutlined />}
-                          onClick={() => navigate(`/apps/${app.appId}`)}
-                        >
-                          查看详情
-                        </Dropdown.Item>
-                        <Dropdown.Item
-                          icon={<EditOutlined />}
-                          onClick={() => setSearchParams({ design: '1', from: app.appId })}
-                        >
-                          重新设计
-                        </Dropdown.Item>
-                        <Dropdown.Divider />
-                        <Dropdown.Item>
-                          <Popconfirm
-                            title="卸载应用"
-                            content={`确定卸载「${app.name}」吗？卸载后可在云市场重新安装。`}
-                            onConfirm={() => handleDelete(app)}
-                          >
-                            <span style={{ color: 'var(--semi-color-danger)' }}>
-                              <DeleteOutlined /> 卸载
-                            </span>
-                          </Popconfirm>
-                        </Dropdown.Item>
-                      </Dropdown.Menu>
-                    }
-                  >
-                    <Button
-                      theme="borderless"
-                      icon={<MoreOutlined />}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </Dropdown>
-                </div>
-              }
-            >
-              <div
-                style={{ cursor: 'pointer' }}
-                onClick={() => navigate(`/apps/${app.appId}`)}
-              >
-                <Typography.Text type="tertiary" ellipsis style={{ maxWidth: 260, fontSize: 13 }}>
-                  {app.description || '暂无描述'}
-                </Typography.Text>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginTop: 12,
-                    paddingTop: 12,
-                    borderTop: '1px solid var(--border)',
-                  }}
-                >
-                  <Space spacing={12}>
-                    <Tag color={STATUS_MAP[app.status].color}>{STATUS_MAP[app.status].label}</Tag>
-                    <Typography.Text type="tertiary" size="small">
-                      {String(app.moduleCount)} 模块
-                    </Typography.Text>
-                  </Space>
-                  <Typography.Text type="tertiary" size="small">
-                    {formatTime(app.updatedAt)}
-                  </Typography.Text>
-                </div>
-              </div>
-            </Card>
-          ))}
+        <div className="mp-apps-grid">
+          {visible.map(renderCard)}
+          <button type="button" className="mp-apps-new" onClick={() => openDesign()}>
+            <span className="mp-apps-new-icon">
+              <Plus size={18} strokeWidth={1.5} />
+            </span>
+            创建应用
+          </button>
         </div>
       )}
-    </div>
-    </PageRoot>
 
-    <AppDesignSheet
+      <Card className="mp-apps-scenario" title="核心业务场景">
+        <Typography.Paragraph type="tertiary">
+          订单复核：处理高价值未支付订单，生成复核建议并在人工确认后创建跟进单。
+        </Typography.Paragraph>
+        <Button
+          data-testid="apphub-open-order-review"
+          theme="solid"
+          type="primary"
+          icon={<CheckCircle2 size={15} strokeWidth={1.5} />}
+          onClick={() => navigate('/apps/order-review')}
+        >
+          打开订单复核
+        </Button>
+      </Card>
+
+      <AppDesignSheet
         visible={designOpen}
-        onClose={() => {
-          const next = new URLSearchParams(searchParams);
-          next.delete('design');
-          next.delete('from');
-          setSearchParams(next);
-        }}
-        onCreated={(appId) => navigate(`/apps/${appId}`)}
+        onClose={closeDesign}
+        onCreated={openApp}
         editingId={designFromId}
       />
-
     </>
   );
 }

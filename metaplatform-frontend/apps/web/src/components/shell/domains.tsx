@@ -122,7 +122,6 @@ export const DOMAINS: DomainDef[] = [
     label: '应用中心',
     icon: <LayoutGrid size={ICON_SIZE} strokeWidth={1.5} />,
     path: '/apps/mine',
-    ownsTabs: true,
     tabs: [
       { key: 'mine', label: '我的应用', path: '/apps/mine' },
       { key: 'market', label: '模板市场', path: '/apps/market' },
