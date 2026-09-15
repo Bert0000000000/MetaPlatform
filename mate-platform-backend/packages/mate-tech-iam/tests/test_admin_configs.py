@@ -212,7 +212,5 @@ async def test_ark_provider_seeded(client):
     assert "api/plan/v3" in str(base["value"])
 
     r = await client.get("/api/v1/admin/configs?keyword=ai.provider.default_active")
-    item = next(
-        c for c in r.json()["data"]["items"] if c["key"] == "ai.provider.default_active"
-    )
+    item = next(c for c in r.json()["data"]["items"] if c["key"] == "ai.provider.default_active")
     assert "ark" in (item.get("enum_options") or [])

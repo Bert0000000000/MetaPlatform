@@ -1,5 +1,6 @@
 import pathlib
-p = pathlib.Path('apps/web/src/pages/ontology/actions/executionHistory.ts')
+
+p = pathlib.Path("apps/web/src/pages/ontology/actions/executionHistory.ts")
 content = """/**
  * Action ?????? seed data.
  * ???? OntologyActionPage ????????? /api/v1/superai/actions/executions ???
@@ -20,5 +21,5 @@ export const SEED_EXECUTION_HISTORY: readonly SeedExecution[] = [
   { trigger: '????', time: '07-23 14:25:00', input: 'batch_id: 8921', output: '{success: true}', duration: '5.4s', status: 'success' },
 ];
 """
-p.write_text(content, encoding='utf-8')
-print('written', p)
+p.write_text(content, encoding="utf-8")
+print("written", p)

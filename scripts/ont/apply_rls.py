@@ -132,7 +132,9 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="只打印将执行的操作，不提交")
     ap.add_argument("--revert", action="store_true", help="关闭 RLS（回滚）")
     args = ap.parse_args()
-    print(f"DSN: {args.dsn}{'  [dry-run]' if args.dry_run else ''}{'  [revert]' if args.revert else ''}")
+    print(
+        f"DSN: {args.dsn}{'  [dry-run]' if args.dry_run else ''}{'  [revert]' if args.revert else ''}"
+    )
     return apply_rls(args.dsn, dry_run=args.dry_run, revert=args.revert)
 
 

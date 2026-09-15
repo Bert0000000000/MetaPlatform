@@ -427,9 +427,7 @@ async def policy_matrix_export(
     return Response(
         content="﻿" + buf.getvalue(),
         media_type="text/csv; charset=utf-8",
-        headers={
-            "Content-Disposition": f'attachment; filename="policy-matrix-{type}.csv"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="policy-matrix-{type}.csv"'},
     )
 
 

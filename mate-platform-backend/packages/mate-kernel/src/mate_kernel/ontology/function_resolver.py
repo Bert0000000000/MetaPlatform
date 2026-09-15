@@ -79,9 +79,7 @@ class GitFunctionResolver:
         self._refs: dict[str, tuple[FunctionLanguage, str]] = {}
         self._cache: dict[str, str] = {}
 
-    def register_ref(
-        self, function_rid: str, language: FunctionLanguage, source_ref: str
-    ) -> None:
+    def register_ref(self, function_rid: str, language: FunctionLanguage, source_ref: str) -> None:
         if not _GIT_REF_RE.match(source_ref):
             raise ValueError(
                 f"invalid git source_ref (need git:<40-hex-sha>:<path>): {source_ref!r}"

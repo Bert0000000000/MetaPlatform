@@ -33,9 +33,7 @@ def _make_client(tenant_id: str = "tenant-acme") -> TestClient:
     """management router + 直写 request.state.ctx 的假租户中间件。"""
 
     async def _fake_ctx(request: Request, call_next):
-        request.state.ctx = SimpleNamespace(
-            auth_method=AuthMethod.USER, tenant_id=tenant_id
-        )
+        request.state.ctx = SimpleNamespace(auth_method=AuthMethod.USER, tenant_id=tenant_id)
         return await call_next(request)
 
     app = FastAPI()
@@ -44,7 +42,15 @@ def _make_client(tenant_id: str = "tenant-acme") -> TestClient:
     return TestClient(app)
 
 
-def _seed_policy(tid: str, *, subject_type: str, subject_id: str, tool: str, effect: str = "ALLOW", action: str = "invoke") -> None:
+def _seed_policy(
+    tid: str,
+    *,
+    subject_type: str,
+    subject_id: str,
+    tool: str,
+    effect: str = "ALLOW",
+    action: str = "invoke",
+) -> None:
     repo.put_policy(
         tid,
         repo.Policy(

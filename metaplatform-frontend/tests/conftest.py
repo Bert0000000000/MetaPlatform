@@ -1,4 +1,5 @@
 """Conftest for metaplatform-frontend."""
+
 from __future__ import annotations
 
 import pytest

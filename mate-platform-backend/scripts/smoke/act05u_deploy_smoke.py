@@ -121,7 +121,9 @@ def main() -> int:
         "/action-types",
         {
             "rid": ACT_PURE,
-            "parameters": [prop(f"ont.{T}.prop.drill.{PFX}-newstatus.v1", "new-status", nullable=False)],
+            "parameters": [
+                prop(f"ont.{T}.prop.drill.{PFX}-newstatus.v1", "new-status", nullable=False)
+            ],
             "function_ref": "",
             "on": [OBJ],
             "title": "Drill Set Status (declarative)",
@@ -133,7 +135,9 @@ def main() -> int:
     code, out = call("GET", f"/action-types/{ACT_PURE}")
     check(
         "A2 读回 function_ref 为空串 + edits 保留",
-        code == 200 and out.get("function_ref") == "" and len(out.get("declarative_edits") or []) == 1,
+        code == 200
+        and out.get("function_ref") == ""
+        and len(out.get("declarative_edits") or []) == 1,
         out,
     )
 
@@ -168,7 +172,9 @@ def main() -> int:
         "/action-types",
         {
             "rid": ACT_HYBRID,
-            "parameters": [prop(f"ont.{T}.prop.drill.{PFX}-newstatus.v1", "new-status", nullable=False)],
+            "parameters": [
+                prop(f"ont.{T}.prop.drill.{PFX}-newstatus.v1", "new-status", nullable=False)
+            ],
             "function_ref": f"ont.{T}.fn.drill.{PFX}-compute.v1",  # 不注册执行体：冒烟走显式 edits 路径
             "on": [OBJ],
             "title": "Drill Promote (hybrid)",
@@ -216,7 +222,9 @@ def main() -> int:
     # ── 清理（drill 前缀）──
     for rid in (ACT_PURE, ACT_HYBRID, OBJ):
         call("DELETE", f"/object-types/{rid}")  # ont 无类型 DELETE 时忽略
-    print(f"\n{'=' * 50}\n{'SMOKE PASS' if not failures else 'SMOKE FAIL'}: {len(failures)} failures")
+    print(
+        f"\n{'=' * 50}\n{'SMOKE PASS' if not failures else 'SMOKE FAIL'}: {len(failures)} failures"
+    )
     for f in failures:
         print(" -", f)
     return 1 if failures else 0

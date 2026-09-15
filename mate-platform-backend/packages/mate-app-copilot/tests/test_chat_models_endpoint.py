@@ -18,9 +18,30 @@ from mate_app_copilot.api.app import _LEGACY_DEFAULT_MODEL, _resolve_chat_model
 from mate_app_copilot.clients.base import AsyncCopilotClient
 
 _REGISTRY: list[dict[str, Any]] = [
-    {"id": 1, "provider": "ark", "model_id": "glm-5.3-flash", "display_name": "GLM 5.3 Flash", "modality": "text", "enabled": True},
-    {"id": 2, "provider": "ark", "model_id": "glm-5.3-air", "display_name": None, "modality": "text", "enabled": True},
-    {"id": 3, "provider": "ollama", "model_id": "llama3.2:latest", "display_name": None, "modality": "text", "enabled": False},
+    {
+        "id": 1,
+        "provider": "ark",
+        "model_id": "glm-5.3-flash",
+        "display_name": "GLM 5.3 Flash",
+        "modality": "text",
+        "enabled": True,
+    },
+    {
+        "id": 2,
+        "provider": "ark",
+        "model_id": "glm-5.3-air",
+        "display_name": None,
+        "modality": "text",
+        "enabled": True,
+    },
+    {
+        "id": 3,
+        "provider": "ollama",
+        "model_id": "llama3.2:latest",
+        "display_name": None,
+        "modality": "text",
+        "enabled": False,
+    },
 ]
 
 _PROVIDER_CFG: dict[str, str] = {
@@ -34,7 +55,13 @@ _PROVIDER_CFG: dict[str, str] = {
 class _FakeClient(AsyncCopilotClient):
     """覆盖 list_ai_models / get_provider_config 的假 client。"""
 
-    def __init__(self, *, registry: list[dict[str, Any]] | None = None, provider_cfg: dict[str, str] | None = None, fail: bool = False):
+    def __init__(
+        self,
+        *,
+        registry: list[dict[str, Any]] | None = None,
+        provider_cfg: dict[str, str] | None = None,
+        fail: bool = False,
+    ):
         super().__init__(
             base_url="http://gateway.test:8100",
             auth=_dummy_auth(),
@@ -49,7 +76,9 @@ class _FakeClient(AsyncCopilotClient):
             raise RuntimeError("iam unavailable")
         return [dict(i) for i in self._registry]
 
-    async def get_provider_config(self, tenant_id, provider_id, fallback_token=None) -> dict[str, str]:
+    async def get_provider_config(
+        self, tenant_id, provider_id, fallback_token=None
+    ) -> dict[str, str]:
         if self._fail:
             raise RuntimeError("iam unavailable")
         return dict(self._provider_cfg)

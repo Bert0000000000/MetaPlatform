@@ -71,7 +71,9 @@ def login() -> str:
         return json.load(r)["accessToken"]
 
 
-def call(method: str, path: str, body: object | None = None, idem: str | None = None, timeout: int = 180):
+def call(
+    method: str, path: str, body: object | None = None, idem: str | None = None, timeout: int = 180
+):
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {TOKEN}",
@@ -482,9 +484,15 @@ def import_via_repo(name: str) -> dict:
 
 
 def verify_counts(m: DomainModel) -> dict:
-    st, body = call("POST", "/api/v1/ont/v2/object-sets/query", {
-        "class_rid": m.obj_rid, "filter_expr": "", "paging_limit": 10000,
-    })
+    st, body = call(
+        "POST",
+        "/api/v1/ont/v2/object-sets/query",
+        {
+            "class_rid": m.obj_rid,
+            "filter_expr": "",
+            "paging_limit": 10000,
+        },
+    )
     n = body.get("count") if isinstance(body, dict) else None
     return {"query_count": n, "csv_rows": len(m.rows), "match": n == len(m.rows)}
 
@@ -497,7 +505,8 @@ def verify_roundtrip(m: DomainModel, sample: int = 3) -> dict:
         pk_val = r[m.pk_col].strip() if m.pk_col else "row-00000"
         pk_slug = slugify(pk_val)
         st, body = call(
-            "GET", f"/api/v1/ont/v2/individuals/ont.{TENANT}.ind.sopbench-{m.name.replace('_','-')}.{pk_slug}"
+            "GET",
+            f"/api/v1/ont/v2/individuals/ont.{TENANT}.ind.sopbench-{m.name.replace('_', '-')}.{pk_slug}",
         )
         if st != 200 or not isinstance(body, dict):
             continue
@@ -523,13 +532,23 @@ def verify_filter(m: DomainModel) -> dict:
     target = max(set(values), key=values.count)
     expected = values.count(target)
     rid = m.prop_rid(col)
-    st, body = call("POST", "/api/v1/ont/v2/object-sets/query", {
-        "class_rid": m.obj_rid,
-        "filter_expr": f"{rid} == '{target}'",
-        "paging_limit": 10000,
-    })
+    st, body = call(
+        "POST",
+        "/api/v1/ont/v2/object-sets/query",
+        {
+            "class_rid": m.obj_rid,
+            "filter_expr": f"{rid} == '{target}'",
+            "paging_limit": 10000,
+        },
+    )
     got = body.get("count") if isinstance(body, dict) else None
-    return {"field": col, "value": target, "expected": expected, "got": got, "match": got == expected}
+    return {
+        "field": col,
+        "value": target,
+        "expected": expected,
+        "got": got,
+        "match": got == expected,
+    }
 
 
 def verify_tenant_isolation() -> dict:
@@ -600,15 +619,17 @@ def main() -> int:
             counts = verify_counts(m)
             rt = verify_roundtrip(m)
             flt = verify_filter(m)
-            res.update({
-                "object_type_ok": res["individuals_err"] == 0,
-                "function_ok": True,
-                "action_type_ok": True,
-                "query_count": counts.get("query_count"),
-                "count_match": counts.get("match"),
-                "roundtrip": rt,
-                "filter": flt,
-            })
+            res.update(
+                {
+                    "object_type_ok": res["individuals_err"] == 0,
+                    "function_ok": True,
+                    "action_type_ok": True,
+                    "query_count": counts.get("query_count"),
+                    "count_match": counts.get("match"),
+                    "roundtrip": rt,
+                    "filter": flt,
+                }
+            )
             stats["domains"][name] = res
             err = res["individuals_err"]
             flag = "OK " if (err == 0 and counts.get("match")) else "!! "

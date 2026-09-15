@@ -283,7 +283,6 @@ def _proposal_from_tool(name: str, result: dict[str, Any]) -> dict[str, Any] | N
     }
 
 
-
 async def _await_task_result(
     orchestrator_client: Any,
     result: dict[str, Any],

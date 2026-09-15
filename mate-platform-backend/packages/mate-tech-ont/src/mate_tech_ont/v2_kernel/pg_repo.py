@@ -612,7 +612,9 @@ def _assert_filter_fields_resolvable(cf: CompiledFilter, known_slugs: set[str]) 
     区分"没有匹配"与"字段名写错了"。空集比报错危险得多。
     只对非 rid 形态的字段严格：完整 rid 一律放行（含跨类/继承属性场景）。
     """
-    bad = sorted({f for f in _collect_filter_fields(cf) if not f.startswith("ont.") and f not in known_slugs})
+    bad = sorted(
+        {f for f in _collect_filter_fields(cf) if not f.startswith("ont.") and f not in known_slugs}
+    )
     if bad:
         raise ValueError(
             f"unknown filter field(s) {bad} —— 既非完整 Property rid，也不在已知 slug 中"
@@ -628,9 +630,7 @@ def _require_resolvable_field(field: str, known_slugs: set[str], *, kind: str) -
     """
     if field.startswith("ont.") or field in known_slugs:
         return
-    raise ValueError(
-        f"unknown {kind} field {field!r} —— 既非完整 Property rid，也不在已知 slug 中"
-    )
+    raise ValueError(f"unknown {kind} field {field!r} —— 既非完整 Property rid，也不在已知 slug 中")
 
 
 def _prop_slug(rid: str) -> str:
@@ -4630,9 +4630,7 @@ class PgOntologyRepository(OntologyRepository):
         elif p.kind == "merge_suggestion":
             # merge 不可数值逆写 → audit-only（partial）
             compensated = {"note": "merge reversal is audit-only"}
-        elif p.kind == "edit_set" or (
-            p.kind == "action" and execution.get("inverse")
-        ):
+        elif p.kind == "edit_set" or (p.kind == "action" and execution.get("inverse")):
             # ACT-07 / ADR-0064：逆编辑补偿（执行期 invert_edits 已排除不可逆项）。
             # kind=action 经统一执行器执行的声明式/混合式，execution 同样带 inverse
             # —— 有逆编辑就按同一补偿路径（legacy function 式 execution 无 inverse，

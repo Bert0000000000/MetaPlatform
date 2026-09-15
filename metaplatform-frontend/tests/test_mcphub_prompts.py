@@ -1,4 +1,5 @@
 """mcphub prompts + resources 边角 (ST-6.2.13/16/17)."""
+
 from __future__ import annotations
 
 import pytest

@@ -227,7 +227,6 @@ def pg_repo():
 
 
 class TestPgSameSemantics:
-
     def test_pg_cardinality_and_around(self, pg_repo) -> None:
         with pg_repo.tenant_scope(T):
             pg_repo.create_link_instance(

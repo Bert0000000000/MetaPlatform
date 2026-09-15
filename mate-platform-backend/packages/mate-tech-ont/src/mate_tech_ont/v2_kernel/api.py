@@ -2377,7 +2377,10 @@ async def list_individuals(
     # F8：显式传 tenant_id —— tenant_scope 的 thread-local 不跨 asyncio.to_thread，
     # 仅靠 repo 内 _current_tenant() 拿不到租户（会静默返回全库数据）。
     items = await _call_scoped(
-        request, "list_individuals", cls_ref, tenant_id=str(ctx.tenant_id)  # type: ignore[attr-defined]
+        request,
+        "list_individuals",
+        cls_ref,
+        tenant_id=str(ctx.tenant_id),  # type: ignore[attr-defined]
     )
     if class_rid:  # GOV-16：读打点（best-effort；P1-7 actor/source 维度）
         reader = str(getattr(ctx, "user_id", "") or "")
@@ -2699,9 +2702,7 @@ async def _proposal_postflight(
             if not ind_rid:
                 return base
             ind = await _call_scoped(request, "get_individual", ind_rid)
-            ot = await _call_scoped(
-                request, "get_object_type", ClassRef(str(prop.action_rid))
-            )
+            ot = await _call_scoped(request, "get_object_type", ClassRef(str(prop.action_rid)))
             all_types = await _call_scoped(request, "list_object_types", 10000, 0)
             from mate_kernel.ontology.preflight import preflight_create_instance
 
@@ -2715,7 +2716,8 @@ async def _proposal_postflight(
             )
         elif kind == "model_type":
             type_rid = str(
-                execution.get("type_rid") or (prop.parameters or {}).get("type_def", {}).get("rid")
+                execution.get("type_rid")
+                or (prop.parameters or {}).get("type_def", {}).get("rid")
                 or prop.action_rid
             )
             ot = await _call_scoped(request, "get_object_type", ClassRef(type_rid))
@@ -2766,9 +2768,7 @@ async def _proposal_postflight(
     except Exception as e:
         import traceback as _tb
 
-        _logger.warning(
-            "ont.postflight.failed", error=str(e), tb=_tb.format_exc()[-2000:]
-        )
+        _logger.warning("ont.postflight.failed", error=str(e), tb=_tb.format_exc()[-2000:])
         return {
             "checked": False,
             "blocked": False,
@@ -2796,9 +2796,7 @@ async def _proposal_preflight(request: Request, prop: Any) -> dict[str, Any] | N
         if kind == "create_instance":
             from mate_kernel.ontology.identity.class_ref import ClassRef
 
-            ot = await _call_scoped(
-                request, "get_object_type", ClassRef(str(prop.action_rid))
-            )
+            ot = await _call_scoped(request, "get_object_type", ClassRef(str(prop.action_rid)))
             axiom_records = await _call_scoped(
                 request, "list_axiom_records", _ctx(request).tenant_id, enabled_only=True
             )
@@ -2822,8 +2820,7 @@ async def _proposal_preflight(request: Request, prop: Any) -> dict[str, Any] | N
                 # 类型构造即失败（PK∉properties 等）→ 以 schema 闸呈现
                 return {
                     "blocked": True,
-                    "schema": {"checked": True, "errors": ["类型定义无法构造"],
-                               "warnings": []},
+                    "schema": {"checked": True, "errors": ["类型定义无法构造"], "warnings": []},
                     "shacl": {"checked": False, "conforms": True, "violations": []},
                     "axioms": [],
                     "summary": "预检阻断：类型定义无法构造",
@@ -2838,9 +2835,7 @@ async def _proposal_preflight(request: Request, prop: Any) -> dict[str, Any] | N
         if kind == "action":
             from mate_kernel.ontology.identity.class_ref import ClassRef
 
-            at = await _call_scoped(
-                request, "get_action_type", ClassRef(str(prop.action_rid))
-            )
+            at = await _call_scoped(request, "get_action_type", ClassRef(str(prop.action_rid)))
             return preflight_action(at, dict(prop.parameters or {})).to_dict()
         return None
     except KeyError:
@@ -4731,7 +4726,9 @@ async def list_link_instances(
     ctx = _ctx(request)
     # F8：显式传 tenant_id（理由同 list_individuals —— thread-local 不跨 to_thread）
     items = await _call_scoped(
-        request, "list_link_instances", tenant_id=str(ctx.tenant_id)  # type: ignore[attr-defined]
+        request,
+        "list_link_instances",
+        tenant_id=str(ctx.tenant_id),  # type: ignore[attr-defined]
     )
     return [_link_instance_to_response(i) for i in items]
 

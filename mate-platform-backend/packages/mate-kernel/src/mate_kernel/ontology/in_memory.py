@@ -642,7 +642,7 @@ class InMemoryOntologyRepository(OntologyRepository):
                 items = [i for i in items if i.class_rid == class_rid]
             else:
                 # EXP-01 补全（2026-09-14）：Interface 源 → 实现类型 + 各自后代
-                #（与 ObjectSet/IR 查询路径同语义）；具体 ObjectType 保持精确匹配。
+                # （与 ObjectSet/IR 查询路径同语义）；具体 ObjectType 保持精确匹配。
                 items = [i for i in items if i.class_rid.rid in allowed]
         return list(items)
 
@@ -1119,7 +1119,11 @@ class InMemoryOntologyRepository(OntologyRepository):
                 tenant_id=tenant,
                 # ONT-PROV-01：提案级溯源落实例
                 provenance={
-                    **(dict(p.parameters.get("provenance") or {}) if isinstance(p.parameters, dict) else {}),
+                    **(
+                        dict(p.parameters.get("provenance") or {})
+                        if isinstance(p.parameters, dict)
+                        else {}
+                    ),
                     "proposal_id": proposal_id,
                     "executed_at": _dt.now(_UTC).isoformat(),
                 },
@@ -1145,9 +1149,7 @@ class InMemoryOntologyRepository(OntologyRepository):
                 anc.add(y)
         return frozenset(anc)
 
-    def _execute_unified(
-        self, p: Any, *, viewer_markings: tuple[str, ...] | list[str] = ()
-    ) -> Any:
+    def _execute_unified(self, p: Any, *, viewer_markings: tuple[str, ...] | list[str] = ()) -> Any:
         """ADR-0064 S2：统一执行器（kind=edit_set / kind=action 声明式混合式共用）。
 
         组装（assemble_unified_edits）→ 安全闸门 → 补偿式单批执行（_apply_edits）。
@@ -1168,9 +1170,7 @@ class InMemoryOntologyRepository(OntologyRepository):
                     target_props = {k.rid: v for k, v in cur.props}
             raw = dict(p.parameters or {})
             inner = raw.get("parameters")
-            crit_params = (
-                dict(inner) if isinstance(inner, dict) and p.kind != "action" else raw
-            )
+            crit_params = dict(inner) if isinstance(inner, dict) and p.kind != "action" else raw
             if p.kind == "action":
                 crit_params = {k: v for k, v in raw.items() if k != "provenance"}
             for expr in at.submission_criteria:

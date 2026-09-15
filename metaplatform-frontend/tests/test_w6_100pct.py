@@ -1,4 +1,5 @@
 """W6 收尾至 100%."""
+
 from __future__ import annotations
 
 import pytest
@@ -45,7 +46,17 @@ def test_p1_p2_complete() -> None:
 
 
 def test_bff_aggregates() -> None:
-    routes = ["/api/v1/iam", "/api/v1/kb", "/api/v1/ont", "/api/v1/rag", "/api/v1/agent", "/api/v1/llmgw", "/api/v1/msg", "/api/v1/obs", "/api/v1/mcp"]
+    routes = [
+        "/api/v1/iam",
+        "/api/v1/kb",
+        "/api/v1/ont",
+        "/api/v1/rag",
+        "/api/v1/agent",
+        "/api/v1/llmgw",
+        "/api/v1/msg",
+        "/api/v1/obs",
+        "/api/v1/mcp",
+    ]
     assert len(routes) == 9
 
 

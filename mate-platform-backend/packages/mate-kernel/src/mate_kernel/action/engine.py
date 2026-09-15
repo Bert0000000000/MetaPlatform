@@ -209,7 +209,9 @@ class ActionService:
     def set_resolver(self, resolver: Any) -> None:
         self._resolver = resolver
 
-    def invoke_function(self, function_ref: str, target_iid: str | None, parameters: dict[str, Any]) -> Any:
+    def invoke_function(
+        self, function_ref: str, target_iid: str | None, parameters: dict[str, Any]
+    ) -> Any:
         """ADR-0064 S2：单次 function 调用（统一执行器复用，无 proposal/副作用语义）。
 
         与 apply() 的第 3 步同一段分派逻辑（executor→resolver 源码 / invoker 回落，
@@ -218,7 +220,9 @@ class ActionService:
         """
         return self._dispatch_function(function_ref, target_iid, parameters)
 
-    def _dispatch_function(self, function_ref: str, target_iid: str | None, parameters: dict[str, Any]) -> Any:
+    def _dispatch_function(
+        self, function_ref: str, target_iid: str | None, parameters: dict[str, Any]
+    ) -> Any:
         executor = self._executors.get(function_ref)
         if executor is not None and self._resolver is not None:
             try:

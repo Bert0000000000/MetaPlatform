@@ -17,9 +17,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-PG_DSN = os.environ.get(
-    "F2_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"
-)
+PG_DSN = os.environ.get("F2_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
 T = "f2-prov"
 
 
@@ -126,7 +124,9 @@ class TestProposalProvenance:
                 impact_summary="带溯源提案",
                 provenance={"source": "ai", "model": "test", "confidence": 0.9},
             )
-            assert "provenance" in p.parameters, "propose 应把 provenance 并入 parameters（ONT-PROV-01）"
+            assert "provenance" in p.parameters, (
+                "propose 应把 provenance 并入 parameters（ONT-PROV-01）"
+            )
             r.confirm_proposal(p.proposal_id, confirmed_by="reviewer")
             # 修复前：KeyError("unknown parameter 'provenance'")
             out = r.execute_proposal(p.proposal_id, actor_id="executor", idempotency_key="f2-1")

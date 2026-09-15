@@ -2706,7 +2706,8 @@ components:
                 type: object
                 properties:
                   total: { type: integer }
-                  by_status: { type: object, additionalProperties: { type: integer } }
+                  by_status:
+                    { type: object, additionalProperties: { type: integer } }
                   acceptance_rate:
                     type: [number, "null"]
                     description: accepted/(accepted+rejected)；分母 0 → null

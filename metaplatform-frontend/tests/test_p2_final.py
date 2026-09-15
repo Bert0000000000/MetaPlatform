@@ -1,4 +1,5 @@
 """W6 P2 batch 收尾 (apphub + arch + dw + superai)."""
+
 from __future__ import annotations
 
 import pytest

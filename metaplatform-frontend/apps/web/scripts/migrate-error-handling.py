@@ -1,10 +1,11 @@
 """Migrate every page from message.error(<err expr> instanceof Error ? <err>.message : ...)
-    to useApiErrorBoundary().report(<err expr>). Conservative rules.
+to useApiErrorBoundary().report(<err expr>). Conservative rules.
 """
+
 import pathlib
 import re
 
-ROOT = pathlib.Path('apps/web/src/pages')
+ROOT = pathlib.Path("apps/web/src/pages")
 
 # Match e/message.error(<X> instanceof Error ? <X>.message : ... )
 # Generous match: any variable name (err, error, e) used as the caught exception.
@@ -50,18 +51,18 @@ patterns = [
 def transform(match: re.Match) -> str:
     # Build a `report(<ident>)` invocation, preserving any friendly prefix.
     groups = match.groups()
-    ident = groups[-1] or groups[-2] or 'e'
-    return 'report(' + ident + ')'
+    ident = groups[-1] or groups[-2] or "e"
+    return "report(" + ident + ")"
 
 
 def migrate(text: str) -> tuple[str, int]:
-    if 'useApiErrorBoundary' in text:
+    if "useApiErrorBoundary" in text:
         return text, 0
     hits = 0
     new = text
 
     # 1) Inject import + hook binding if missing.
-    if 'useApiErrorBoundary' not in new:
+    if "useApiErrorBoundary" not in new:
         if "from '@mate/shared'" in new:
             new = new.replace(
                 "from '@mate/shared';",
@@ -75,7 +76,7 @@ def migrate(text: str) -> tuple[str, int]:
         new, n = pat.subn(transform, new)
         hits += n
 
-    if 'report(' in new and 'const { report }' not in new:
+    if "report(" in new and "const { report }" not in new:
         new = re.sub(
             r"(export default function \w+\([^)]*\)\s*\{)",
             r"\1\n  const { report } = useApiErrorBoundary();",
@@ -87,16 +88,16 @@ def migrate(text: str) -> tuple[str, int]:
 
 total_hits = 0
 total_files = 0
-for p in sorted(ROOT.rglob('*.tsx')):
-    text = p.read_text(encoding='utf-8-sig')
-    if 'message.error' not in text:
+for p in sorted(ROOT.rglob("*.tsx")):
+    text = p.read_text(encoding="utf-8-sig")
+    if "message.error" not in text:
         continue
-    if 'useApiErrorBoundary' in text:
+    if "useApiErrorBoundary" in text:
         continue
     new, hits = migrate(text)
     if hits > 0:
-        p.write_text(new, encoding='utf-8')
+        p.write_text(new, encoding="utf-8")
         total_files += 1
         total_hits += hits
-        print(f'OK {p} (+{hits})')
-print(f'TOTAL files={total_files} hits={total_hits}')
+        print(f"OK {p} (+{hits})")
+print(f"TOTAL files={total_files} hits={total_hits}")

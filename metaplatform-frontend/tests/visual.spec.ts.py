@@ -1,4 +1,5 @@
 """Visual regression placeholder (ST-6.6.3)."""
+
 # 视觉回归测试：P0 apps 加 snapshot
 # 误报率 < 5%
 import pytest

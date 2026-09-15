@@ -114,19 +114,21 @@ def main() -> int:
     if args.files is not None:
         # 变更文件模式：按文件名归类（prd / acceptance），其余跳过
         prd_files = [
-            p for p in map(Path, args.files)
-            if _RE_PRD_FILE.search(p.name)
-            and str(p).startswith(str(args.prd_dir))
+            p
+            for p in map(Path, args.files)
+            if _RE_PRD_FILE.search(p.name) and str(p).startswith(str(args.prd_dir))
         ]
         acceptance_files = [
-            p for p in map(Path, args.files)
-            if _RE_ACCEPTANCE_FILE.search(p.name)
-            and str(p).startswith(str(args.evidence_dir))
+            p
+            for p in map(Path, args.files)
+            if _RE_ACCEPTANCE_FILE.search(p.name) and str(p).startswith(str(args.evidence_dir))
         ]
     else:
         prd_files = [p for p in args.prd_dir.glob("*-prd.md") if _RE_PRD_FILE.search(p.name)]
         acceptance_files = [
-            p for p in args.evidence_dir.glob("*-ACCEPTANCE.md") if _RE_ACCEPTANCE_FILE.search(p.name)
+            p
+            for p in args.evidence_dir.glob("*-ACCEPTANCE.md")
+            if _RE_ACCEPTANCE_FILE.search(p.name)
         ]
 
     if args.files is None and not prd_files:

@@ -178,9 +178,7 @@ class TestPreflightGateHttpE2E:
     def _seed_order(self, pg_repo) -> None:
         pg_repo.upsert_object_type(_ot(self.ORDER, "Order"))
 
-    def test_bad_props_proposal_reports_blocked_and_execute_409(
-        self, client_with_ctx, pg_repo
-    ):
+    def test_bad_props_proposal_reports_blocked_and_execute_409(self, client_with_ctx, pg_repo):
         self._seed_order(pg_repo)
         # 缺 PK、amount 传字符串 —— schema 闸双错
         r = client_with_ctx.post(
@@ -321,8 +319,11 @@ class TestPreflightGateHttpE2E:
         # 缺必填参数 reason → 闸门阻断
         r = client_with_ctx.post(
             f"/api/v1/ont/v2/action-types/{action_rid}/propose",
-            json={"target_iid": "ont.acme.ind.order.77", "parameters": {},
-                  "impact_summary": "missing reason"},
+            json={
+                "target_iid": "ont.acme.ind.order.77",
+                "parameters": {},
+                "impact_summary": "missing reason",
+            },
         )
         assert r.status_code == 200, r.text
         assert r.json()["preflight"]["blocked"] is True
@@ -331,8 +332,11 @@ class TestPreflightGateHttpE2E:
         # 参数齐 → 通过
         r2 = client_with_ctx.post(
             f"/api/v1/ont/v2/action-types/{action_rid}/propose",
-            json={"target_iid": "ont.acme.ind.order.77",
-                  "parameters": {"reason": "done"}, "impact_summary": "ok"},
+            json={
+                "target_iid": "ont.acme.ind.order.77",
+                "parameters": {"reason": "done"},
+                "impact_summary": "ok",
+            },
         )
         assert r2.status_code == 200, r2.text
         assert r2.json()["preflight"]["blocked"] is False
@@ -397,9 +401,13 @@ class TestPostflightHttpE2E:
 
         # 预检闸与后验同引擎：闸走通过桩（本次只测后验处置接线），后验吃注入
         async def fake_preflight_pass(request, prop):
-            return {"blocked": False, "schema": {"checked": True, "errors": [], "warnings": []},
-                    "shacl": {"checked": False, "conforms": True, "violations": []},
-                    "axioms": [], "summary": "预检通过（桩）"}
+            return {
+                "blocked": False,
+                "schema": {"checked": True, "errors": [], "warnings": []},
+                "shacl": {"checked": False, "conforms": True, "violations": []},
+                "axioms": [],
+                "summary": "预检通过（桩）",
+            }
 
         monkeypatch.setattr(api_mod, "_proposal_preflight", fake_preflight_pass)
 
@@ -467,9 +475,7 @@ class TestProvenanceHttpE2E:
 
         # 查询透出：list individuals 响应携带 provenance
 
-        got = client_with_ctx.get(
-            f"/api/v1/ont/v2/individuals?class_rid={self.ORDER}"
-        )
+        got = client_with_ctx.get(f"/api/v1/ont/v2/individuals?class_rid={self.ORDER}")
         assert got.status_code == 200, got.text
         rows = got.json() if isinstance(got.json(), list) else got.json().get("items", [])
         row = next(x for x in rows if x.get("primary_key") == "PV-1")

@@ -1240,7 +1240,9 @@ async def _resolve_hosted_api_key(request: Request, provider: str) -> str | None
 
 
 @router.post("/providers/test", response_model=ProviderTestResponseAPI)
-async def providers_test_endpoint(req: ProviderTestRequest, request: Request) -> ProviderTestResponseAPI:
+async def providers_test_endpoint(
+    req: ProviderTestRequest, request: Request
+) -> ProviderTestResponseAPI:
     """ADR-0019: server-side AI provider connectivity probe.
 
     The endpoint resolves the probe URL (per provider) and runs a

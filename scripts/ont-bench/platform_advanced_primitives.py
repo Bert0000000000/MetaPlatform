@@ -185,12 +185,22 @@ def main() -> int:
                 "src": f"ont.{TENANT}.ind.{DS}.{slugify(pid)}",
                 "dst": f"ont.{TENANT}.ind.{DS}-provider.{slugify(pn)}",
                 "props": {
-                    prop("policy-number")["rid"]: {"value": r["policy_number"].strip(), "type": "string"},
-                    prop("group-number")["rid"]: {"value": r["group_number"].strip(), "type": "string"},
-                    prop("coverage-start-date")["rid"]: {
-                        "value": r["coverage_start_date"].strip(), "type": "string"
+                    prop("policy-number")["rid"]: {
+                        "value": r["policy_number"].strip(),
+                        "type": "string",
                     },
-                    prop("insurance-type")["rid"]: {"value": r["insurance_type"].strip(), "type": "string"},
+                    prop("group-number")["rid"]: {
+                        "value": r["group_number"].strip(),
+                        "type": "string",
+                    },
+                    prop("coverage-start-date")["rid"]: {
+                        "value": r["coverage_start_date"].strip(),
+                        "type": "string",
+                    },
+                    prop("insurance-type")["rid"]: {
+                        "value": r["insurance_type"].strip(),
+                        "type": "string",
+                    },
                 },
             },
         )
@@ -212,7 +222,9 @@ def main() -> int:
 
     # ── 4) around 一跳遍历 ──
     pid0 = rows[0]["patient_id"].strip()
-    st, body = call("GET", f"/api/v1/ont/v2/individuals/ont.{TENANT}.ind.{DS}.{slugify(pid0)}/around")
+    st, body = call(
+        "GET", f"/api/v1/ont/v2/individuals/ont.{TENANT}.ind.{DS}.{slugify(pid0)}/around"
+    )
     groups = body if isinstance(body, list) else (body or {}).get("groups", [])
     found = isinstance(body, (list, dict)) and "insurance" in json.dumps(body, ensure_ascii=False)
     check(

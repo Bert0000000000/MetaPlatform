@@ -118,7 +118,7 @@ def assemble_unified_edits(
                     # 规约①禁止混用：edits 必须是纯对象（ADR-0064 §7 Q2 拍板）
                     raise EditSetError(
                         "function returned 'edits' mixed with other fields "
-                        "(spec ① requires a pure {\"edits\": [...]} object)"
+                        '(spec ① requires a pure {"edits": [...]} object)'
                     )
                 fn_edits = [dict(t) for t in result["edits"]]
                 fn_spec = "edits"
@@ -131,9 +131,7 @@ def assemble_unified_edits(
                         "spec ② mapping requires a target_iid to attach set_property edits"
                     )
                 for slug, value in result.items():
-                    resolved = rid_map.get(slug) or (
-                        slug if slug.startswith("ont.") else None
-                    )
+                    resolved = rid_map.get(slug) or (slug if slug.startswith("ont.") else None)
                     if resolved is None:
                         continue
                     if slug in params:

@@ -1,4 +1,5 @@
 """W6 跨 app 集成 (portal + dashboard + kb + superai)."""
+
 from __future__ import annotations
 
 import pytest

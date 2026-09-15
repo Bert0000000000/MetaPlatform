@@ -1,4 +1,5 @@
 """Conftest for W6-2 P1 batch (ontstudio/kb/mcphub) — ST-6.2.1/7/18."""
+
 from __future__ import annotations
 
 import pytest

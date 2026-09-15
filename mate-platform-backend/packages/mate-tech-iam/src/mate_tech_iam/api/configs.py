@@ -203,9 +203,7 @@ async def list_configs(
         .limit(page_size)
     )
     rows = (await session.execute(stmt)).scalars().all()
-    items = [
-        _config_to_out(c, reveal=reveal).model_dump(mode="json") for c in rows
-    ]
+    items = [_config_to_out(c, reveal=reveal).model_dump(mode="json") for c in rows]
     return page(items=items, total=total, page=page_num, page_size=page_size)
 
 
@@ -233,7 +231,9 @@ async def service_read_configs(
     request: Request,
     session: SessionDep,
     tenant: str = Query(default="tenant-default", description="租户 ID"),
-    prefix: str = Query(default=_SERVICE_READ_PREFIX, description=f"必须以 {_SERVICE_READ_PREFIX} 开头"),
+    prefix: str = Query(
+        default=_SERVICE_READ_PREFIX, description=f"必须以 {_SERVICE_READ_PREFIX} 开头"
+    ),
 ) -> dict[str, Any]:
     """机器间配置读取（ARK key 正式托管的取数通道）。
 
@@ -256,13 +256,17 @@ async def service_read_configs(
     if not prefix.startswith(_SERVICE_READ_PREFIX):
         prefix = _SERVICE_READ_PREFIX
     rows = (
-        await session.execute(
-            select(SystemConfig).where(
-                SystemConfig.tenant_id == tenant,
-                SystemConfig.key.like(f"{prefix}%"),
+        (
+            await session.execute(
+                select(SystemConfig).where(
+                    SystemConfig.tenant_id == tenant,
+                    SystemConfig.key.like(f"{prefix}%"),
+                )
             )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return ok({r.key: r.value for r in rows})
 
 

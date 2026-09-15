@@ -24,9 +24,7 @@ _GIT = which("git") or "git"  # S607：绝对路径
 
 
 def _git(repo: Path, *args: str) -> str:
-    proc = subprocess.run(
-        [_GIT, *args], cwd=repo, capture_output=True, text=True, check=False
-    )
+    proc = subprocess.run([_GIT, *args], cwd=repo, capture_output=True, text=True, check=False)
     assert proc.returncode == 0, f"git {' '.join(args)} failed: {proc.stderr}"
     return proc.stdout.strip()
 

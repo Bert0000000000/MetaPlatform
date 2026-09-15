@@ -7,6 +7,7 @@ confirm → execute 后才落库。因此 proposal 的接受/驳回统计就是�
 挂载方式（主会话集成；本文件不修改 api.py / main.py）::
 
     from .agent_metrics import router as agent_metrics_router
+
     app.include_router(agent_metrics_router)
 
 契约对齐（13 硬规则 #1：Swagger 没有接口不写 route）：集成时需在
@@ -165,7 +166,9 @@ def _rejection_reason_of(p: dict[str, Any]) -> str:
     return ""
 
 
-def summarize(proposals: list[dict[str, Any]], *, days: int = DEFAULT_WINDOW_DAYS, now: datetime | None = None) -> dict[str, Any]:
+def summarize(
+    proposals: list[dict[str, Any]], *, days: int = DEFAULT_WINDOW_DAYS, now: datetime | None = None
+) -> dict[str, Any]:
     """窗口内 proposal 回归汇总（纯函数）。
 
     入参每条是归一化 dict：``status``（str|enum）、``created_at``（datetime|ISO）、
@@ -417,7 +420,12 @@ async def _load_records(request: Request, tenant: str) -> list[dict[str, Any]]:
 )
 async def agent_metrics_summary(
     request: Request,
-    days: int = Query(DEFAULT_WINDOW_DAYS, ge=1, le=MAX_WINDOW_DAYS, description="统计窗口天数（默认 30，上限 365）"),
+    days: int = Query(
+        DEFAULT_WINDOW_DAYS,
+        ge=1,
+        le=MAX_WINDOW_DAYS,
+        description="统计窗口天数（默认 30，上限 365）",
+    ),
 ) -> AgentMetricsSummary:
     """Agent proposal 回归汇总：总量 / 状态分布 / 接受率 / 驳回原因 / 按提议方。"""
     tenant = _tenant_id(request)
@@ -438,7 +446,12 @@ async def agent_metrics_summary(
 )
 async def agent_metrics_trend(
     request: Request,
-    days: int = Query(DEFAULT_WINDOW_DAYS, ge=1, le=MAX_WINDOW_DAYS, description="趋势窗口天数（默认 30，上限 365）"),
+    days: int = Query(
+        DEFAULT_WINDOW_DAYS,
+        ge=1,
+        le=MAX_WINDOW_DAYS,
+        description="趋势窗口天数（默认 30，上限 365）",
+    ),
 ) -> list[TrendPoint]:
     """Agent proposal 按天趋势：{date, proposed, executed, rejected}（UTC 零填充）。"""
     tenant = _tenant_id(request)

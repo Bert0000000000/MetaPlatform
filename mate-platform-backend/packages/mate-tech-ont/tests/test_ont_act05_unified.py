@@ -410,7 +410,9 @@ class TestS2UnifiedInMemory:
         r = _mk_repo()
         at = _hybrid_action_type()
         r.upsert_action_type(at)
-        _register_fn(r, {"elevel": "principal"})  # 短名 elevel → P_LEVEL（与 legacy 回写映射同规则）
+        _register_fn(
+            r, {"elevel": "principal"}
+        )  # 短名 elevel → P_LEVEL（与 legacy 回写映射同规则）
         r.propose_edit_set(ACT_HYBRID, ALICE, {"new-status": "leave"}, [], "规约②")
         pid = list(r._action_service._proposals)[-1]
         r.confirm_proposal(pid, confirmed_by="boss")
@@ -469,9 +471,7 @@ class TestS2SecurityGateInMemory:
         ind = r.get_individual(ALICE)
         r._individuals[ALICE] = _repl(
             ind,
-            props=tuple(
-                (k, "locked") if k.rid == P_STATUS else (k, v) for k, v in ind.props
-            ),
+            props=tuple((k, "locked") if k.rid == P_STATUS else (k, v) for k, v in ind.props),
         )
         r.propose_edit_set(ACT_HYBRID, ALICE, {"new-status": "away"}, [], "gate")
         pid = list(r._action_service._proposals)[-1]
@@ -616,9 +616,7 @@ class TestS2PgUnified:
             pg_repo._action_service.register_function(
                 FN, lambda target_iid, parameters: {"elevel": "principal"}
             )
-            prop = pg_repo.propose_edit_set(
-                ACT_HYBRID, ALICE, {"new-status": "x"}, [], "gate"
-            )
+            prop = pg_repo.propose_edit_set(ACT_HYBRID, ALICE, {"new-status": "x"}, [], "gate")
             pid = prop.proposal_id if hasattr(prop, "proposal_id") else prop["proposal_id"]
             pg_repo.confirm_proposal(pid, confirmed_by="boss")
             with pytest.raises(ValueError, match="column policy"):
@@ -747,11 +745,14 @@ class TestS3ApiDispatch:
         )
         assert resp.status_code == 200
         pid = resp.json()["proposal_id"]
-        assert client.post(
-            f"{BASE}/proposals/{pid}/confirm",
-            json={},
-            headers={"Idempotency-Key": f"cfm-{pid}"},
-        ).status_code == 200
+        assert (
+            client.post(
+                f"{BASE}/proposals/{pid}/confirm",
+                json={},
+                headers={"Idempotency-Key": f"cfm-{pid}"},
+            ).status_code
+            == 200
+        )
         ex = client.post(
             f"{BASE}/proposals/{pid}/execute", headers={"Idempotency-Key": f"s3a-{pid}"}
         )
@@ -781,11 +782,14 @@ class TestS3ApiDispatch:
         )
         assert resp.status_code == 200, resp.text
         pid = resp.json()["proposal_id"]
-        assert client.post(
-            f"{BASE}/proposals/{pid}/confirm",
-            json={},
-            headers={"Idempotency-Key": f"cfm-{pid}"},
-        ).status_code == 200
+        assert (
+            client.post(
+                f"{BASE}/proposals/{pid}/confirm",
+                json={},
+                headers={"Idempotency-Key": f"cfm-{pid}"},
+            ).status_code
+            == 200
+        )
         ex = client.post(
             f"{BASE}/proposals/{pid}/execute", headers={"Idempotency-Key": f"s3b-{pid}"}
         )
@@ -801,11 +805,14 @@ class TestS3ApiDispatch:
         )
         assert resp.status_code == 200, resp.text
         pid = resp.json()["proposal_id"]
-        assert client.post(
-            f"{BASE}/proposals/{pid}/confirm",
-            json={},
-            headers={"Idempotency-Key": f"cfm-{pid}"},
-        ).status_code == 200
+        assert (
+            client.post(
+                f"{BASE}/proposals/{pid}/confirm",
+                json={},
+                headers={"Idempotency-Key": f"cfm-{pid}"},
+            ).status_code
+            == 200
+        )
         ex = client.post(
             f"{BASE}/proposals/{pid}/execute", headers={"Idempotency-Key": f"s3c-{pid}"}
         )
@@ -826,11 +833,14 @@ class TestS3ApiDispatch:
             json={"parameters": {"new-status": "away"}, "target_iid": ALICE},
         )
         pid = resp.json()["proposal_id"]
-        assert client.post(
-            f"{BASE}/proposals/{pid}/confirm",
-            json={},
-            headers={"Idempotency-Key": f"cfm-{pid}"},
-        ).status_code == 200
+        assert (
+            client.post(
+                f"{BASE}/proposals/{pid}/confirm",
+                json={},
+                headers={"Idempotency-Key": f"cfm-{pid}"},
+            ).status_code
+            == 200
+        )
         # viewer 声明 public（无 hr-privileged）→ 列策略拒写 422
         ex = client.post(
             f"{BASE}/proposals/{pid}/execute",
