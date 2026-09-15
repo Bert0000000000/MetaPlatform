@@ -186,7 +186,7 @@ def summarize(proposals: list[dict[str, Any]], *, days: int = DEFAULT_WINDOW_DAY
         if created is not None and created >= cutoff:
             window.append(p)
 
-    by_status: dict[str, int] = {s: 0 for s in CANONICAL_STATUSES}
+    by_status: dict[str, int] = dict.fromkeys(CANONICAL_STATUSES, 0)
     for p in window:
         s = _status_value(p.get("status"))
         by_status[s] = by_status.get(s, 0) + 1  # 未知历史状态原样保留
@@ -469,7 +469,7 @@ async def agent_metrics_health(request: Request) -> AgentMetricsHealth:
     source = type(repo).__name__
     try:
         records = await _load_records(request, tenant)
-    except Exception as e:  # noqa: BLE001 —— 探针端点：任何失败都报告不可用而非 500
+    except Exception as e:
         _logger.warning("ont.agent_metrics.health_failed", source=source, error=str(e))
         return AgentMetricsHealth(source=source, available=False, proposal_count=0)
     return AgentMetricsHealth(source=source, available=True, proposal_count=len(records))

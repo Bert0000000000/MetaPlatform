@@ -47,10 +47,10 @@ from mate_kernel.objectset.ir import (
     TraversalStep,
 )
 from mate_kernel.ontology.api import OntologyRepository
+from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 from mate_kernel.ontology.identity import ClassRef
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.query import ObjectSet
-from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 from mate_kernel.ontology.reasoning import Axiom, AxiomKind, Function, FunctionLanguage
 from mate_kernel.ontology.types.action_type import ActionType
 from mate_kernel.ontology.types.interface import Interface
@@ -2745,7 +2745,7 @@ async def _proposal_postflight(
                     )
                     out["action_taken"] = "auto_reverted"
                     out["revert_receipt"] = receipt
-                except Exception as e:  # noqa: BLE001 —— 补偿失败不能吞掉执行回执
+                except Exception as e:
                     _logger.error(
                         "ont.postflight.auto_revert_failed",
                         proposal_id=str(prop.proposal_id),
@@ -2763,7 +2763,7 @@ async def _proposal_postflight(
                 summary=report.summary,
             )
         return out
-    except Exception as e:  # noqa: BLE001 —— 后验故障不能拖垮已成功的执行回执
+    except Exception as e:
         import traceback as _tb
 
         _logger.warning(
@@ -2810,7 +2810,7 @@ async def _proposal_preflight(request: Request, prop: Any) -> dict[str, Any] | N
                 all_types=all_types,
             ).to_dict()
         if kind == "model_type":
-            from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: F401
+            from mate_kernel.ontology.identity.class_ref import ClassRef
 
             type_def = dict((prop.parameters or {}).get("type_def") or {})
             if not type_def:
@@ -2855,7 +2855,7 @@ async def _proposal_preflight(request: Request, prop: Any) -> dict[str, Any] | N
         }
     except HTTPException:
         raise
-    except Exception as e:  # noqa: BLE001 —— 预检自身故障不能拖死 propose 主链路
+    except Exception as e:
         _logger.warning("ont.preflight.failed", error=str(e))
         return {
             "blocked": False,

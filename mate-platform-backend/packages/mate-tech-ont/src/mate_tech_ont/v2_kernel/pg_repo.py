@@ -1053,7 +1053,6 @@ class PgOntologyRepository(OntologyRepository):
         self._pending_notify: list[str] = []
         # GOVERN-05: FunctionResolver + FunctionExecutor 注入
         from mate_kernel.ontology.function_resolver import (
-            FunctionNotFoundError,
             GitFunctionResolver,
             InMemoryFunctionResolver,
         )

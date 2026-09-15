@@ -1906,7 +1906,7 @@ components:
     ActionTypeV2:
       type: object
       additionalProperties: false
-      required: [rid, parameters, on]
+      required: [rid, parameters, function_ref, on]
       properties:
         rid: { $ref: "#/components/schemas/RidString" }
         parameters:
@@ -1919,13 +1919,11 @@ components:
           type: array
           items: { type: string }
         function_ref:
-          oneOf:
-            - $ref: "#/components/schemas/RidString"
-            - type: string
-              maxLength: 0
+          type: string
+          pattern: '^(ont\.[a-z0-9_-]{1,64}\.[a-z]+\.[a-z0-9_:\-.]{1,200})?$'
           description: >-
-            引用的 Function rid（ADR-0064：可选 backing）。空串/缺省 = 纯声明式
-            Action；与 declarative_edits 至少声明一个，不互斥。
+            引用的 Function rid（ADR-0064：可选 backing）。恒出现在响应中；空串 =
+            纯声明式 Action（与 declarative_edits 至少声明一个，不互斥）。
         on:
           type: array
           minItems: 1
@@ -1954,13 +1952,11 @@ components:
           type: array
           items: { type: string }
         function_ref:
-          oneOf:
-            - $ref: "#/components/schemas/RidString"
-            - type: string
-              maxLength: 0
+          type: string
+          pattern: '^(ont\.[a-z0-9_-]{1,64}\.[a-z]+\.[a-z0-9_:\-.]{1,200})?$'
           description: >-
-            引用的 Function rid（ADR-0064：可选 backing）。空串/缺省 = 纯声明式
-            Action；与 declarative_edits 至少声明一个，不互斥。
+            引用的 Function rid（ADR-0064：可选 backing；请求可缺省）。空串/缺省 =
+            纯声明式 Action；与 declarative_edits 至少声明一个，不互斥。
         on:
           type: array
           minItems: 1

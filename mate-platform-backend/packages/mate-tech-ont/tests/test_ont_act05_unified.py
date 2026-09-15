@@ -213,9 +213,9 @@ class TestS1Dto:
 
     def test_dto_roundtrip_optional_function_ref(self) -> None:
         from mate_tech_ont.v2_kernel.api import (
+            ActionTypeDTO,
             _action_type_to_dto,
             _dto_to_action_type,
-            ActionTypeDTO,
         )
 
         dto = ActionTypeDTO(
@@ -814,7 +814,6 @@ class TestS3ApiDispatch:
     def test_execute_gate_denial_maps_422_with_scoped_header(self, s3_client) -> None:
         """闸门拒写 → 422；X-Scope-Markings 收窄参与判定（G7 端到端）。"""
         client, r = s3_client
-        from dataclasses import replace as _repl
 
         r.upsert_security_policy(
             {"kind": "column", "property_rid": P_LEVEL, "required_markings": ["hr-privileged"]}
