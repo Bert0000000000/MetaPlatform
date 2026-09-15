@@ -55,10 +55,17 @@ import {
   streamChat,
   streamAgentChat,
   listMultimodalModels,
+  listChatModels,
   multimodalUploadChat,
   parseRoutingDecisionEvent,
 } from '@/api/superai/chat';
+import type { AgentProposalEvent } from '@/api/superai/chat';
 import { RoutingDecisionPanel } from './components/RoutingDecisionPanel';
+import { EvidenceRenderer } from './components/EvidenceRenderer';
+import { ClaimRenderer } from './components/ClaimRenderer';
+import OntologyEvidencePanel from './components/OntologyEvidencePanel';
+import ProposalActionCard from './components/ProposalActionCard';
+import ProposalConfirmDrawer from '@/pages/ontology/components/ProposalConfirmDrawer';
 import { clearRoutingDecisionForStreamError } from './routingDecisionState';
 import {
   listConversations,
@@ -110,6 +117,19 @@ const EMPTY_HINTS: string[] = [];
 const MAX_CONTEXT_TURNS = 10;
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
 const MAX_IMAGE_SIZE_MB = 5;
+// AI 提案 kind → 中文标签（ProposalActionCard 与「详细讨论」共用）。
+const PROPOSAL_KIND_LABEL: Record<string, string> = {
+  action: '执行 Action',
+  create_instance: '创建实例',
+  model_type: '新建概念',
+  merge_suggestion: '合并建议',
+};
+// claim 类型 → 中文标签（回复里「AI 分析与建议」分节统计用）。
+const CLAIM_TYPE_LABEL: Record<string, string> = {
+  FACT: '事实',
+  INFERENCE: '推断',
+  RECOMMENDATION: '建议',
+};
 
 // ============ 工具函数 ============
 
@@ -195,19 +215,64 @@ function isSessionRunning(s: ChatSession): boolean {
   return s.messages.some((m) => m.streaming || m.status === 'loading' || m.status === 'updating');
 }
 
-/** 解析回答末尾的 claims JSON 块 */
+/**
+ * 解析回答末尾的 claims JSON 块。
+ *
+ * 模型输出形态不稳定：可能裸输出、可能包在 ```json 代码块里、可能前后带空白或
+ * 一句收尾话。这里用配对括号扫描定位 `{"claims": [ ... ]}`（而非宽松正则），
+ * 解析失败就原样返回、不吞正文。
+ */
 function extractClaims(content: string): { content: string; claims: Claim[] } {
-  const m = content.match(/\{"claims"\s*:\s*\[[\s\S]*?\]\s*\}(?:\s|$)/);
-  if (!m) return { content, claims: [] };
+  const start = content.indexOf('{"claims"');
+  if (start < 0) return { content, claims: [] };
+
+  let depth = 0;
+  let end = -1;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < content.length; i += 1) {
+    const ch = content[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (ch === '{') depth += 1;
+    else if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        end = i + 1;
+        break;
+      }
+    }
+  }
+  if (end < 0) return { content, claims: [] };
+
   try {
-    const parsed = JSON.parse(m[0]) as { claims?: Array<{ content: string; type: Claim['type']; confidence: number }> };
-    const claims: Claim[] = (parsed.claims ?? []).map((c) => ({
-      claimId: generateId(),
-      content: c.content,
-      type: c.type,
-      confidence: c.confidence,
-    }));
-    return { content: content.replace(m[0], '').trim(), claims };
+    const parsed = JSON.parse(content.slice(start, end)) as {
+      claims?: Array<{ content?: string; text?: string; type: Claim['type']; confidence?: number }>;
+    };
+    const claims: Claim[] = (parsed.claims ?? [])
+      .filter((c) => c && (c.content || c.text))
+      .map((c) => ({
+        claimId: generateId(),
+        content: c.content ?? c.text ?? '',
+        type: c.type,
+        confidence: c.confidence,
+      }));
+    if (claims.length === 0) return { content, claims: [] };
+    // 连同可能包裹它的 ```json 代码块一起剥掉，避免留下空围栏。
+    const before = content.slice(0, start).replace(/```(?:json)?\s*$/, '');
+    const after = content.slice(end).replace(/^\s*```/, '');
+    return { content: `${before}${after}`.trim(), claims };
   } catch {
     return { content, claims: [] };
   }
@@ -333,10 +398,17 @@ export default function ChatPage() {
   const [streamingMap, setStreamingMap] = useState<Record<string, string>>({});
   const [agentMode, setAgentMode] = useState(false);
   const [agentSteps, setAgentSteps] = useState<Record<string, any[]>>({});
+  // 本体证据 / 待确认提案：按 assistant 消息 id 归集，与 agentSteps 同构。
+  const [agentEvidence, setAgentEvidence] = useState<Record<string, Evidence[]>>({});
+  const [agentProposals, setAgentProposals] = useState<Record<string, AgentProposalEvent[]>>({});
+  // 点「同意」后打开确认抽屉的提案（抽屉负责 confirm + execute）。
+  const [pendingProposal, setPendingProposal] = useState<AgentProposalEvent | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [sessionPanelVisible, setSessionPanelVisible] = useState(true);
   const [currentModel, setCurrentModel] = useState('doubao-pro-32k');
+  // 用户手动改选过模型后，后台 default_model 加载完成不再覆盖选择
+  const modelTouchedRef = useRef(false);
   const [temperature, setTemperature] = useState(70);
   const [imageFiles, setImageFiles] = useState<FileItem[]>([]);
   const [isMultimodal, setIsMultimodal] = useState(false);
@@ -404,15 +476,25 @@ export default function ChatPage() {
       });
   }, [activeId]);
 
-  // --- 模型列表（含多模态模型） ---
+  // --- 模型列表：文本聊天走后台 AI Provider 配置（/models/chat），多模态单独加载 ---
   useEffect(() => {
-    listMultimodalModels()
-      .then((models) => {
-        setMultimodalModels(models);
-        setAvailableModels(models.map((m) => ({ label: m.displayName || m.modelCode, value: m.modelId })));
+    listChatModels()
+      .then((source) => {
+        setAvailableModels(source.items.map((m) => ({ label: m.name || m.modelId, value: m.modelId })));
+        // 默认选中后台配置的 default_model；用户已手动改选时不覆盖
+        if (source.defaultModel && !modelTouchedRef.current) {
+          setCurrentModel(source.defaultModel);
+        }
       })
       .catch(() => {
         // 模型列表加载失败：保持空可选列表，不伪造可用模型
+      });
+    listMultimodalModels()
+      .then((models) => {
+        setMultimodalModels(models);
+      })
+      .catch(() => {
+        // 多模态模型列表加载失败：上传分支选择时自行提示
       });
   }, []);
 
@@ -584,6 +666,10 @@ export default function ChatPage() {
               }));
             },
             onToolCall: (call) => {
+              // 只有 dispatch_employee 才是「调度数字员工」。本体工具调用
+              // （list_classes / query_* / propose_* …）由证据卡片和提案卡片
+              // 承载，不能在这里记成一次员工调度——那会谎报谁干了什么。
+              if (call.tool !== 'dispatch_employee') return;
               const target = (call.args.target_rid as string) ?? call.tool;
               const message = (call.args.message as string) || '';
               setAgentSteps((prev) => ({
@@ -652,6 +738,20 @@ export default function ChatPage() {
                 ...m,
                 metadata: clearRoutingDecisionForStreamError(m.metadata, message),
               }));
+            },
+            onEvidence: (ev) => {
+              if (ev.items.length === 0) return;
+              setAgentEvidence((prev) => ({
+                ...prev,
+                [assistantId]: [...(prev[assistantId] || []), ...ev.items],
+              }));
+            },
+            onProposal: (proposal) => {
+              setAgentProposals((prev) => {
+                const existing = prev[assistantId] || [];
+                if (existing.some((p) => p.proposalId === proposal.proposalId)) return prev;
+                return { ...prev, [assistantId]: [...existing, proposal] };
+              });
             },
             onDelta: (delta) => {
               setStreamingMap((m) => ({ ...m, [assistantId]: (m[assistantId] || '') + delta }));
@@ -757,6 +857,20 @@ export default function ChatPage() {
     abortRef.current?.abort();
     setLoading(false);
   }, []);
+
+  // 「详细讨论」：把提案上下文回填成追问，让 AI 带着上下文重新推理。
+  const handleDiscussProposal = useCallback(
+    (proposal: AgentProposalEvent) => {
+      const kindLabel = PROPOSAL_KIND_LABEL[proposal.kind] ?? proposal.kind;
+      const lines = [`我想详细讨论刚才这个提案（${kindLabel}，id: ${proposal.proposalId}）。`];
+      if (proposal.impactSummary) {
+        lines.push(`提案影响：${proposal.impactSummary}`);
+      }
+      lines.push('请先说明它的依据和潜在风险，再给出可选的修订方案。');
+      void handleSend(lines.join('\n'));
+    },
+    [handleSend],
+  );
 
   // --- 引用 / 建议 / 技能 / 模板 ---
   const handleReferenceDelete = useCallback((item: Reference) => {
@@ -901,9 +1015,6 @@ export default function ChatPage() {
         }
         if (text) {
           const annotations: Array<{ title: string; detail?: string; url?: string }> = [];
-          for (const ev of (msg.evidence ?? []).slice(0, 6)) {
-            annotations.push({ title: ev.title ?? ev.ref, detail: ev.fragment });
-          }
           for (const c of (msg.citations ?? []).slice(0, 6)) {
             annotations.push({ title: c.title, detail: c.snippet });
           }
@@ -919,6 +1030,21 @@ export default function ChatPage() {
             status: status === 'failed' ? 'failed' : status === 'incomplete' ? 'incomplete' : 'completed',
           });
         }
+        // AI 的分析与建议：把回答拆成 事实 / 推断 / 建议（带置信度），
+        // 放在正文之后、证据之前 —— 先给结论，再给支撑，最后给动作。
+        if (msg.claims && msg.claims.length > 0) {
+          contentItems.push({ type: 'claims', claims: msg.claims });
+        }
+        // 证据放在回答之后（引用面）：流式取证的本体对象 + onDone 汇总的
+        // citations / graph 证据。
+        const mergedEvidence = [...(msg.evidence ?? []), ...(agentEvidence[msg.id] ?? [])];
+        if (mergedEvidence.length > 0) {
+          contentItems.push({ type: 'evidence', evidence: mergedEvidence });
+        }
+        // 后续 action 计划：AI 提议 → 用户 同意/讨论/驳回。
+        for (const proposal of agentProposals[msg.id] ?? []) {
+          contentItems.push({ type: 'proposal', proposal });
+        }
         return {
           id: msg.id,
           role: msg.role === 'user' ? 'user' : 'assistant',
@@ -927,7 +1053,7 @@ export default function ChatPage() {
           createdAt: msg.createdAt ? Date.parse(msg.createdAt) : Date.now(),
         };
       }),
-    [activeSession?.messages, streamingMap, agentSteps],
+    [activeSession?.messages, streamingMap, agentSteps, agentEvidence, agentProposals],
   );
 
   const filteredSessions = useMemo(() => {
@@ -1053,6 +1179,78 @@ export default function ChatPage() {
                   ? <RoutingDecisionPanel decision={decisions} streamError={item.routingDecisionError} />
                   : null;
               },
+              claims: (item: { claims?: Claim[] }) => {
+                const list = item.claims ?? [];
+                if (list.length === 0) return null;
+                const counts = list.reduce<Record<string, number>>((acc, c) => {
+                  acc[c.type] = (acc[c.type] ?? 0) + 1;
+                  return acc;
+                }, {});
+                const summary = (['FACT', 'INFERENCE', 'RECOMMENDATION'] as const)
+                  .filter((t) => counts[t])
+                  .map((t) => `${CLAIM_TYPE_LABEL[t] ?? t} ${counts[t]}`)
+                  .join(' · ');
+                return (
+                  <div className="mp-claims-section">
+                    <div className="mp-evidence-section-title">
+                      AI 分析与建议{summary ? ` · ${summary}` : ''}
+                    </div>
+                    <div className="mp-claims-list">
+                      {list.map((c) => (
+                        <ClaimRenderer key={c.claimId} claim={c} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              },
+              evidence: (item: { evidence?: Evidence[] }) => {
+                const list = item.evidence ?? [];
+                if (list.length === 0) return null;
+                // 指向具体本体对象的证据 → 关系图 + 对象数据；
+                // 类型级 / 文档类证据仍平铺成卡片。
+                const objectEvidence = list.filter(
+                  (e) => e.type === 'ONTOLOGY_OBJECT' && e.objectId,
+                );
+                const restEvidence = list.filter(
+                  (e) => !(e.type === 'ONTOLOGY_OBJECT' && e.objectId),
+                );
+                return (
+                  <div className="mp-evidence-section">
+                    <div className="mp-evidence-section-title">本体证据 · {list.length}</div>
+                    <OntologyEvidencePanel evidence={objectEvidence} />
+                    {restEvidence.length > 0 ? (
+                      <EvidenceRenderer evidenceList={restEvidence} />
+                    ) : null}
+                  </div>
+                );
+              },
+              proposal: (item: { proposal?: AgentProposalEvent }) => {
+                const proposal = item.proposal;
+                if (!proposal) return null;
+                const resolvedStatus =
+                  proposal.status === 'executed' || proposal.status === 'rejected'
+                    ? proposal.status
+                    : null;
+                return (
+                  <ProposalActionCard
+                    proposal={proposal}
+                    resolvedStatus={resolvedStatus}
+                    onApprove={(p) => setPendingProposal(p)}
+                    onDiscuss={handleDiscussProposal}
+                    onRejected={(id) =>
+                      setAgentProposals((prev) => {
+                        const next: Record<string, AgentProposalEvent[]> = {};
+                        for (const [key, list] of Object.entries(prev)) {
+                          next[key] = list.map((p) =>
+                            p.proposalId === id ? { ...p, status: 'rejected' } : p,
+                          );
+                        }
+                        return next;
+                      })
+                    }
+                  />
+                );
+              },
             }}
             chats={semiMessages}
             hints={activeSession.messages.length === 0 ? WELCOME_PROMPTS : EMPTY_HINTS}
@@ -1094,7 +1292,14 @@ export default function ChatPage() {
           }}
           renderConfigureArea={() => (
             <>
-              <Configure.Select optionList={availableModels} field="model" initValue={currentModel} />
+              {/* key 使 default_model 异步加载完成后重挂载同步显示（initValue 仅挂载时生效）；
+                  选中交互在 dev 预览窗可能被 React 事件委托截断（既有环境怪癖），非本改动引入 */}
+              <Configure.Select
+                key={`model-${currentModel}`}
+                optionList={availableModels}
+                field="model"
+                initValue={currentModel}
+              />
               <Button
                 size="small"
                 type={agentMode ? 'primary' : 'tertiary'}
@@ -1118,8 +1323,12 @@ export default function ChatPage() {
             </>
           )}
           onConfigureChange={(value, changedValue) => {
-            if (changedValue.model != null) setCurrentModel(changedValue.model);
-            if (changedValue.thinkType != null) {
+            // Semi Configure.onRemove 以单参调用（无 changedValue），须可选链
+            if (changedValue?.model != null) {
+              modelTouchedRef.current = true;
+              setCurrentModel(changedValue.model);
+            }
+            if (changedValue?.thinkType != null) {
               setTemperature(changedValue.thinkType === 'super' ? 90 : changedValue.thinkType === 'think' ? 60 : 30);
             }
           }}
@@ -1238,6 +1447,25 @@ export default function ChatPage() {
           )}
         />
       )}
+
+      {/* 提案确认抽屉（复用本体域状态机：preview + preflight → confirm → execute） */}
+      <ProposalConfirmDrawer
+        open={pendingProposal !== null}
+        proposalId={pendingProposal?.proposalId ?? null}
+        initialKind={pendingProposal?.kind}
+        onExecuted={(proposalId) => {
+          setAgentProposals((prev) => {
+            const next: Record<string, AgentProposalEvent[]> = {};
+            for (const [key, list] of Object.entries(prev)) {
+              next[key] = list.map((p) =>
+                p.proposalId === proposalId ? { ...p, status: 'executed' } : p,
+              );
+            }
+            return next;
+          });
+        }}
+        onClosed={() => setPendingProposal(null)}
+      />
     </div>
   );
 }

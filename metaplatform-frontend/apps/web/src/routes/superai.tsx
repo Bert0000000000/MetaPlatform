@@ -12,7 +12,6 @@ import { Navigate, Route } from 'react-router-dom';
  * 因此把它并回计划页（计划详情已含每步起止与状态）。
  */
 const SuperaiChatPage = lazy(() => import('@/pages/superai/ChatPage'));
-const SuperaiAgentCopilotPage = lazy(() => import('@/pages/superai/AgentCopilotPage'));
 const SuperaiExecutionPlanPage = lazy(() => import('@/pages/superai/ExecutionPlanPage'));
 const SuperaiA2ACollaborationPage = lazy(() => import('@/pages/superai/A2ACollaborationPage'));
 const SuperaiOrchestrationConsolePage = lazy(() => import('@/pages/superai/OrchestrationConsolePage'));
@@ -36,7 +35,9 @@ export const superaiRoutes = (
 
     {/* 会话 */}
     <Route path="superai/chat" element={<SuperaiChatPage />} />
-    <Route path="superai/chat/copilot" element={<SuperaiAgentCopilotPage />} />
+    {/* 原「本体原生 Agent Run」独立页已下线：它打的 /api/v1/agent/runs/stream
+        后端并不存在。证据 + 提案确认已并入主聊天，旧链接转发过去。 */}
+    <Route path="superai/chat/copilot" element={<Navigate to="/superai/chat" replace />} />
 
     {/* 执行计划 */}
     <Route path="superai/plans" element={<SuperaiExecutionPlanPage />} />

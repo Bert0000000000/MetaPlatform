@@ -282,3 +282,244 @@
   border-radius: var(--semi-border-radius-medium);
   margin: 0;
 }
+
+/* ---------- AI 分析与建议（claim 分节） ---------- */
+.mp-claims-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+}
+
+.mp-claims-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+}
+
+/* ---------- 证据区（回答之后的引用面） ---------- */
+/* 卡片数量由后端单次工具调用限流兜底；这里不再加高度上限——关系图需要空间，
+   长的平铺列表由后端限流控制。 */
+.mp-evidence-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+}
+
+.mp-evidence-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--semi-color-text-2);
+}
+
+/* ---------- 本体证据面板（关系图 + 对象数据） ---------- */
+.mp-onto-ev {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+}
+
+.mp-onto-ev-chips {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+  flex-wrap: wrap;
+}
+
+.mp-onto-ev-chips-label {
+  font-size: 12px;
+}
+
+.mp-onto-ev-chip {
+  max-width: 160px;
+  padding: 2px var(--mp-space-2);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-small);
+  background: var(--semi-color-bg-1);
+  color: var(--semi-color-text-1);
+  font-size: 12px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-onto-ev-chip.is-active {
+  border-color: var(--semi-color-primary);
+  color: var(--semi-color-primary);
+  font-weight: 600;
+}
+
+.mp-onto-ev-error {
+  font-size: 12px;
+  color: var(--semi-color-danger);
+}
+
+.mp-onto-ev-pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+  padding: var(--mp-space-3);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-bg-1);
+}
+
+.mp-onto-ev-pane-title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--mp-space-2);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+}
+
+.mp-onto-ev-pane-sub {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.mp-onto-ev-obj,
+.mp-onto-ev-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+}
+
+.mp-onto-ev-group {
+  margin-top: var(--mp-space-2);
+}
+
+.mp-onto-ev-obj-head,
+.mp-onto-ev-group-head {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+}
+
+.mp-onto-ev-rid {
+  font-family: var(--mp-font-mono);
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+  word-break: break-all;
+}
+
+/* 两列键值表：display:contents 让每对 key/value 直接落进父级 grid */
+.mp-onto-ev-props {
+  display: grid;
+  grid-template-columns: minmax(120px, auto) 1fr;
+  gap: 2px var(--mp-space-3);
+  font-size: 12px;
+}
+
+.mp-onto-ev-prop {
+  display: contents;
+}
+
+.mp-onto-ev-prop-key {
+  color: var(--semi-color-text-2);
+}
+
+.mp-onto-ev-prop-val {
+  color: var(--semi-color-text-0);
+  word-break: break-word;
+}
+
+.mp-onto-ev-peer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: var(--mp-space-3);
+  border-left: 2px solid var(--semi-color-fill-0);
+}
+
+/* ---------- ProposalActionCard（聊天里的 action 计划卡片） ---------- */
+/* 按钮走原生 <button>：React 19 下 Semi Button 的 onClick 会被截成 noop。 */
+.mp-proposal-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+  padding: var(--mp-space-3);
+  border: 1px solid var(--semi-color-border);
+  border-left: 3px solid var(--semi-color-primary);
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-bg-1);
+}
+
+.mp-proposal-head {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+}
+
+.mp-proposal-kind {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--semi-color-primary);
+}
+
+.mp-proposal-id {
+  font-size: 12px;
+  font-family: var(--mp-font-mono);
+  color: var(--semi-color-text-2);
+}
+
+.mp-proposal-status {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+
+.mp-proposal-impact {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--semi-color-text-0);
+}
+
+.mp-proposal-error {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+  font-size: 12px;
+  color: var(--semi-color-danger);
+}
+
+.mp-proposal-actions {
+  display: flex;
+  gap: var(--mp-space-2);
+}
+
+.mp-proposal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mp-space-1);
+  height: 30px;
+  padding: 0 var(--mp-space-3);
+  font-size: 12px;
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-bg-1);
+  color: var(--semi-color-text-0);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mp-proposal-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.mp-proposal-btn--primary {
+  border: none;
+  background: var(--semi-color-primary);
+  color: var(--semi-color-white);
+}
+
+.mp-proposal-btn--danger {
+  border-color: var(--semi-color-danger);
+  background: transparent;
+  color: var(--semi-color-danger);
+}

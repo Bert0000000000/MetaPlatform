@@ -1348,10 +1348,18 @@ async def providers_models_endpoint(
         async with _httpx.AsyncClient(timeout=timeout_sec) as client:
             resp = await client.get(url, headers=headers)
         if resp.status_code != 200:
+            message = f"HTTP {resp.status_code}"
+            if resp.status_code == 404 and provider == "custom":
+                # 与 /providers/test 的 404 口径对齐：ARK Plan 等专属通道
+                # 常不实现 /models，属通道特性而非配置错误。
+                message = (
+                    "HTTP 404：该通道未实现 /models（Plan 专属通道常见），"
+                    "模型清单以 default_model 为准"
+                )
             return ProviderModelsResponse(
                 ok=False,
                 provider=provider,
-                message=f"HTTP {resp.status_code}",
+                message=message,
             )
         payload = resp.json()
     except Exception as exc:

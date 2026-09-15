@@ -1491,9 +1491,10 @@ async def chat_completions_stream(
         llm_provider = "custom" if provider_cfg.get("base_url") else "openai"
         llm_base_url = provider_cfg.get("base_url") or None
         llm_api_key = provider_cfg.get("api_key") or None
-        # 与 /chat/agent/stream 对齐：custom provider 的 default_model 优先。
+        # 与 /chat/agent/stream 对齐：显式选择的模型优先，缺省/遗留占位符
+        # 回退 provider default_model。
         # 用独立变量，避免在嵌套作用域重绑定外层的 model（UnboundLocalError）。
-        llm_model = provider_cfg.get("default_model") or model
+        llm_model = _resolve_chat_model(model, provider_cfg)
         try:
             async for line in stream_client.stream_chat_real(
                 messages=messages,
@@ -1552,7 +1553,7 @@ async def chat_completions_stream(
                 try:
                     data = await stream_client.chat_completion(
                         messages=messages,
-                        model=model,
+                        model=llm_model,
                         temperature=temperature,
                         provider=llm_provider,
                         base_url=llm_base_url,
@@ -1775,6 +1776,110 @@ async def get_knowledge_bases(request: Request) -> dict[str, Any]:
 
 
 # --- Models (1) -------------------------------------------------------------
+_LEGACY_DEFAULT_MODEL = "doubao-pro-32k"
+
+
+def _resolve_chat_model(requested: str | None, provider_cfg: dict[str, str]) -> str:
+    """聊天生效模型解析：用户显式选择的模型优先。
+
+    - 调用方显式传入的模型（非遗留占位符）直接生效；
+    - 缺省或遗留占位符 ``doubao-pro-32k``（chat.ts / EmbeddedChat 的
+      fallback）回退到后台 AI Provider 配置的 default_model；
+    - 两者皆无 → 保持遗留占位符（无 provider 配置的 dev 兼容）。
+    """
+    if requested and requested != _LEGACY_DEFAULT_MODEL:
+        return requested
+    return provider_cfg.get("default_model") or requested or _LEGACY_DEFAULT_MODEL
+
+
+def _request_bearer_token(request: Request) -> str:
+    """Extract the caller's bearer token (auth ctx first, raw header fallback)."""
+    token = str(getattr(request.state.ctx, "authorization", "") or "")
+    if not token:
+        auth_header = request.headers.get("authorization", "")
+        if auth_header.lower().startswith("bearer "):
+            token = auth_header[7:].strip()
+    return token
+
+
+async def _registry_model_items(request: Request) -> list[dict[str, Any]] | None:
+    """IAM ai_model 注册表条目（enabled 过滤后映射为前端字段）。
+
+    注册表为空或 IAM 不可用时返回 ``None``，由调用方自行回退。
+    """
+    try:
+        client = _get_client(request)
+        tid = _tid(request)
+        items = await client.list_ai_models(tid, _request_bearer_token(request) or None)
+    except Exception:
+        return None
+    if not items:
+        return None
+    return [
+        {
+            "modelId": i.get("model_id") or i.get("modelId") or "",
+            "name": i.get("display_name")
+            or i.get("displayName")
+            or i.get("model_id")
+            or i.get("modelId")
+            or "",
+            "provider": i.get("provider", ""),
+            "modality": i.get("modality", "text"),
+            "enabled": i.get("enabled", True),
+        }
+        for i in items
+        if i.get("enabled", True)
+    ]
+
+
+@router.get("/models/chat")
+async def get_chat_models(request: Request) -> dict[str, Any]:
+    """返回聊天可选模型清单与当前生效默认模型。
+
+    模型来自 IAM ai_model 注册表（后台 AI Provider「获取模型」配置的真实
+    模型）；注册表为空/不可用时回退为仅遗留默认模型。``default_model`` /
+    ``provider`` 取自当前生效 ai.provider.* 配置（default_active 间接寻址
+    后的真实 provider）；default_model 不在注册表时也补入清单，保证可选。
+    """
+    tid = _tid(request)
+    mapped = await _registry_model_items(request)
+    if mapped is None:
+        mapped = [
+            {
+                "modelId": _LEGACY_DEFAULT_MODEL,
+                "name": _LEGACY_DEFAULT_MODEL,
+                "provider": "",
+                "modality": "text",
+                "enabled": True,
+            }
+        ]
+    provider_cfg: dict[str, str] = {}
+    try:
+        provider_cfg = await _get_client(request).get_provider_config(
+            tid, "custom", _request_bearer_token(request) or None
+        )
+    except Exception:
+        provider_cfg = {}
+    default_model = provider_cfg.get("default_model", "")
+    if default_model and default_model not in {m["modelId"] for m in mapped}:
+        mapped.insert(
+            0,
+            {
+                "modelId": default_model,
+                "name": default_model,
+                "provider": provider_cfg.get("provider_id", ""),
+                "modality": "text",
+                "enabled": True,
+            },
+        )
+    return {
+        "items": mapped,
+        "total": len(mapped),
+        "default_model": default_model,
+        "provider": provider_cfg.get("provider_id", ""),
+    }
+
+
 @router.get("/models/multimodal")
 async def get_multimodal_models(request: Request) -> dict[str, Any]:
     """返回可用模型清单。
@@ -1782,35 +1887,10 @@ async def get_multimodal_models(request: Request) -> dict[str, Any]:
     优先读 IAM ai_model 注册表（后台「获取模型」配置的真实模型），
     IAM 不可用时回退到 in_memory seed（保持既有行为）。
     """
-    tid = _tid(request)
-    try:
-        client = _get_client(request)
-        fallback_token = str(getattr(request.state.ctx, "authorization", "") or "")
-        if not fallback_token:
-            auth_header = request.headers.get("authorization", "")
-            if auth_header.lower().startswith("bearer "):
-                fallback_token = auth_header[7:].strip()
-        items = await client.list_ai_models(tid, fallback_token or None)
-        if items:
-            mapped = [
-                {
-                    "modelId": i.get("model_id") or i.get("modelId") or "",
-                    "name": i.get("display_name")
-                    or i.get("displayName")
-                    or i.get("model_id")
-                    or i.get("modelId")
-                    or "",
-                    "provider": i.get("provider", ""),
-                    "modality": i.get("modality", "text"),
-                    "enabled": i.get("enabled", True),
-                }
-                for i in items
-                if i.get("enabled", True)
-            ]
-            return {"items": mapped, "total": len(mapped)}
-    except Exception:
-        pass
-    return _resp(list_models(tid))
+    mapped = await _registry_model_items(request)
+    if mapped is not None:
+        return {"items": mapped, "total": len(mapped)}
+    return _resp(list_models(_tid(request)))
 
 
 # --- Ontology (3) -----------------------------------------------------------
@@ -2341,6 +2421,32 @@ async def chat_agent_stream(
         else:
             messages = [{"role": "system", "content": marker.strip()}, *messages]
 
+    # 交互上下文（本体助手等宿主页面传入）：把当前页面与主体对象告诉 LLM，
+    # 让「这个对象最近怎么样」这类指代能落到具体对象上。缺字段不编造。
+    interaction_context = body.get("context")
+    if isinstance(interaction_context, dict) and interaction_context:
+        context_lines = ["\n\n[Interaction Context]"]
+        page = interaction_context.get("interaction")
+        if isinstance(page, dict):
+            for key in ("appCode", "pageCode", "pageUrl"):
+                if page.get(key):
+                    context_lines.append(f"- {key}: {page[key]}")
+        subject = interaction_context.get("subject")
+        if isinstance(subject, dict):
+            if subject.get("conceptCode"):
+                context_lines.append(f"- subject_concept: {subject['conceptCode']}")
+            if subject.get("objectId"):
+                context_lines.append(f"- subject_object_id: {subject['objectId']}")
+        if len(context_lines) > 1:
+            marker = "\n".join(context_lines)
+            if messages and messages[0].get("role") == "system":
+                messages = [
+                    {**messages[0], "content": messages[0].get("content", "") + marker},
+                    *messages[1:],
+                ]
+            else:
+                messages = [{"role": "system", "content": marker.strip()}, *messages]
+
     llmgw_host = os.getenv("MATE_LLMGW_HOST", "mate-tech-llmgw")
     llmgw_port = int(os.getenv("MATE_LLMGW_PORT", "8008"))
     user_token = str(getattr(request.state.ctx, "authorization", "") or "")
@@ -2380,8 +2486,9 @@ async def chat_agent_stream(
     llm_provider = "custom" if provider_cfg.get("base_url") else "openai"
     llm_base_url = provider_cfg.get("base_url") or None
     llm_api_key = provider_cfg.get("api_key") or None
-    if provider_cfg.get("default_model"):
-        model = provider_cfg["default_model"]
+    # 用户显式选择的模型优先；缺省/遗留占位符才回退 default_model
+    #（此前无条件覆盖导致聊天页选什么模型都不生效）。
+    model = _resolve_chat_model(model, provider_cfg)
 
     async def event_stream():
         agent_steps: list[dict[str, Any]] = []
@@ -2435,7 +2542,7 @@ async def chat_agent_stream(
 
             auth_headers = {"Authorization": f"Bearer {user_token or ''}", "X-Tenant-Id": tid}
             # ONT-PROV-01：AI 提案溯源上下文——propose×3 自动带 source=ai +
-            # 当前生效 LLM 模型名（provider default_model 已在上方覆盖 model）。
+            # 当前生效 LLM 模型名（已在上方按显式选择 / default_model 解析）。
             # agent_id/employee：本体工具运行于 SuperAI copilot 进程内，请求
             # 上下文无数字员工标识——按"有则带、无则省"口径省略，不编造。
             onto_repo = OntologyHttpRepo(
@@ -2518,7 +2625,8 @@ async def chat_agent_stream(
                 else:
                     # Persist reasoning / tool_call / tool_result events for the
                     # assistant message timeline (stored under metadata_json).
-                    if etype in ("reasoning", "tool_call", "tool_result"):
+                    # evidence / proposal 同样落库，刷新会话后卡片仍可重建。
+                    if etype in ("reasoning", "tool_call", "tool_result", "evidence", "proposal"):
                         agent_steps.append(event)
                     yield _agent_event(event)
         except RoutingAuditPersistenceError:

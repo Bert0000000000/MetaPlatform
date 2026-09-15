@@ -16,6 +16,13 @@ const CLAIM_META: Record<string, { cls: string; color: 'green' | 'blue' | 'orang
   RECOMMENDATION: { cls: 'is-recommendation', color: 'orange' },
 };
 
+/** claim 类型 → 中文标签（面向用户，不暴露内部枚举）。 */
+const CLAIM_LABEL: Record<string, string> = {
+  FACT: '事实',
+  INFERENCE: '推断',
+  RECOMMENDATION: '建议',
+};
+
 /**
  * P4.5 ClaimRenderer - 渲染单条 Claim（FACT / INFERENCE / RECOMMENDATION）：
  * 类型徽标 + 置信度 + 可点击的 evidence 引用。
@@ -35,6 +42,8 @@ export function ClaimRenderer({ claim, onEvidenceClick }: ClaimRendererProps) {
   })();
 
   const confidenceText = claim.confidence != null ? `${(claim.confidence * 100).toFixed(0)}%` : '-';
+  // 后端/解析层用 content 承载正文（extractClaims），运行时别名是 text。
+  const body = claim.text ?? claim.content ?? '';
 
   return (
     <div className="mp-claim" data-claim-id={claim.claimId}>
@@ -42,15 +51,15 @@ export function ClaimRenderer({ claim, onEvidenceClick }: ClaimRendererProps) {
       <div className="mp-claim-main">
         <div className="mp-claim-head">
           <Tag color={meta.color} type="light">
-            {claim.type}
+            {CLAIM_LABEL[claim.type] ?? claim.type}
           </Tag>
-          <Tooltip content={`Confidence: ${confidenceText}`}>
+          <Tooltip content={`置信度 ${confidenceText}`}>
             <Text type="tertiary" className="mp-claim-conf">
               {confidenceText}
             </Text>
           </Tooltip>
         </div>
-        <Text>{claim.text}</Text>
+        <Text>{body}</Text>
         {claim.evidenceRefs && claim.evidenceRefs.length > 0 ? (
           <div className="mp-claim-refs">
             <Text type="tertiary" className="mp-claim-conf">

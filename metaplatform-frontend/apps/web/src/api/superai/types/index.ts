@@ -109,7 +109,7 @@ export interface Claim {
   claimId?: string;
   type: ClaimType;
   content?: string;
-  /** 运行时别名（useAgentStream 形态）。 */
+  /** 文本别名（部分后端事件用 text 承载同一内容）。 */
   text?: string;
   confidence?: number;
   /** 支撑该论断的证据 ref 列表。 */
@@ -135,7 +135,7 @@ export interface Evidence {
   fragment?: string;
   score?: number;
   title?: string;
-  /** 运行时扩展字段（useAgentStream 形态）。 */
+  /** 本体证据的溯源字段：概念名 / 对象 rid / 取证时间 / 归属 run / 触发它的工具调用。 */
   concept?: string;
   objectId?: string;
   capturedAt?: string;
@@ -626,5 +626,3 @@ export interface DashboardGenResult {
   }>;
   apiExamples: Array<{ method: string; url: string; description: string; curl: string }>;
 }
-
-export * from '../../../pages/superai/hooks';

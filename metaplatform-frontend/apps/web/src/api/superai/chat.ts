@@ -9,6 +9,7 @@ export async function del<T>(url: string): Promise<T> { return data(await apiCli
 
 import type {
   Citation,
+  Evidence,
   MultimodalModel,
   RoutingCandidate,
   RoutingDecision,
@@ -41,12 +42,27 @@ export interface RoutingDecisionEvent {
 export interface RoutingDecisionErrorEvent {
   message: string;
 }
+/** 本体工具取证结果（供聊天渲染证据卡片）。 */
+export interface AgentEvidenceEvent {
+  toolCallId: string;
+  items: Evidence[];
+}
+/** AI 产出的待确认提案（供聊天渲染 action 计划卡片 + HITL 三按钮）。 */
+export interface AgentProposalEvent {
+  toolCallId: string;
+  proposalId: string;
+  kind: string;
+  status: string;
+  impactSummary: string;
+}
 export interface StreamAgentCallbacks {
   onReasoning?: (text: string) => void;
   onToolCall?: (call: AgentCallEvent) => void;
   onToolResult?: (result: AgentResultEvent) => void;
   onRoutingDecision?: (event: RoutingDecisionEvent) => void;
   onRoutingDecisionError?: (event: RoutingDecisionErrorEvent) => void;
+  onEvidence?: (event: AgentEvidenceEvent) => void;
+  onProposal?: (event: AgentProposalEvent) => void;
   onDelta: (text: string) => void;
   onDone: (content: string, citations: Citation[]) => void;
   onError: (message: string) => void;
@@ -81,6 +97,41 @@ export async function listMultimodalModels(): Promise<MultimodalModel[]> {
     enabled: m.enabled ?? (m.status === 'available'),
     description: m.description,
   }));
+}
+export interface ChatModelItem {
+  modelId: string;
+  name: string;
+  provider: string;
+  modality: string;
+  enabled: boolean;
+}
+export interface ChatModelSource {
+  items: ChatModelItem[];
+  /** 后台 AI Provider 配置的 default_model（空串 = 未配置）。 */
+  defaultModel: string;
+  /** 当前生效 provider（default_active 间接寻址后）。 */
+  provider: string;
+}
+/** 聊天可选模型 + 当前生效默认模型（后台 AI Provider 配置，GET /models/chat）。 */
+export async function listChatModels(): Promise<ChatModelSource> {
+  const resp = await get<{
+    items: Array<Record<string, unknown>>;
+    total: number;
+    default_model?: string;
+    provider?: string;
+  }>('/models/chat');
+  const items = (resp.items ?? []).map((m) => ({
+    modelId: String(m.modelId ?? m.id ?? ''),
+    name: String(m.name ?? m.displayName ?? m.modelId ?? ''),
+    provider: String(m.provider ?? ''),
+    modality: String(m.modality ?? 'text'),
+    enabled: m.enabled !== false,
+  }));
+  return {
+    items,
+    defaultModel: String(resp.default_model ?? ''),
+    provider: String(resp.provider ?? ''),
+  };
 }
 export async function multimodalUploadChat(params: {
   modelId: string;
@@ -199,7 +250,14 @@ export async function streamAgentChat(
   messages: StreamMessage[],
   callbacks: StreamAgentCallbacks,
   signal?: AbortSignal,
-  options?: { model?: string; temperature?: number; maxTokens?: number; conversationId?: string },
+  options?: {
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
+    conversationId?: string;
+    /** 交互上下文（页面 / 主体对象），后端折进 system prompt。 */
+    context?: Record<string, unknown>;
+  },
 ): Promise<void> {
   const token = getToken();
   const user = getUser();
@@ -219,6 +277,7 @@ export async function streamAgentChat(
         user: user?.id,
         appId: 'app-superai',
         ...(options?.conversationId ? { conversationId: options.conversationId } : {}),
+        ...(options?.context ? { context: options.context } : {}),
       }),
       signal,
     });
@@ -278,6 +337,25 @@ export async function streamAgentChat(
             status: parsed.status === 'error' ? 'error' : 'success',
             result: (parsed.result as Record<string, unknown>) ?? {},
           });
+        } else if (type === 'evidence') {
+          const items = Array.isArray(parsed.items) ? (parsed.items as Evidence[]) : [];
+          if (items.length > 0) {
+            callbacks.onEvidence?.({
+              toolCallId: String(parsed.toolCallId ?? ''),
+              items,
+            });
+          }
+        } else if (type === 'proposal') {
+          const proposalId = String(parsed.proposalId ?? '');
+          if (proposalId) {
+            callbacks.onProposal?.({
+              toolCallId: String(parsed.toolCallId ?? ''),
+              proposalId,
+              kind: String(parsed.kind ?? ''),
+              status: String(parsed.status ?? 'pending'),
+              impactSummary: String(parsed.impactSummary ?? ''),
+            });
+          }
         } else if (isContentDelta(parsed)) {
           const delta = parsed.choices[0].delta.content ?? '';
           fullContent += delta;

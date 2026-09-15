@@ -160,6 +160,130 @@ def _task_result_of(status: dict[str, Any]) -> dict[str, Any]:
     return {}
 
 
+# ────────────────── evidence / proposal 事件映射 ──────────────────
+
+_EVIDENCE_ROW_LIMIT = 10
+# 单次工具调用最多产出多少条证据：类型清单可能有几十个，全量渲染会把
+# 回答挤到屏幕外。超出部分不丢——LLM 仍拿得到完整 tool_result。
+_EVIDENCE_ITEM_LIMIT = 8
+_EVIDENCE_FRAGMENT_LIMIT = 500
+
+_PROPOSAL_KIND_BY_TOOL = {
+    "propose_action": "action",
+    "propose_create_instance": "create_instance",
+    "propose_model_type": "model_type",
+}
+
+
+def _row_identity(row: dict[str, Any]) -> str:
+    """对象查询行的**实例 rid**：优先 ``__rid__``（ont v2 object-query 的规范身份列），
+    其次 rid / individual_rid。**不**回退到业务主键（如 ``contract-id``）——
+    那种值不是 rid，拿去做 getIndividual / searchAround 只会 404。
+    """
+    for key in ("__rid__", "rid", "individual_rid"):
+        value = row.get(key)
+        if value:
+            return str(value)
+    return ""
+
+
+def _fragment_of(value: Any) -> str:
+    return json.dumps(value, ensure_ascii=False, default=str)[:_EVIDENCE_FRAGMENT_LIMIT]
+
+
+def _evidence_items(name: str, result: dict[str, Any]) -> list[dict[str, Any]]:
+    """本体工具结果 → 结构化证据条目。
+
+    忠实映射：只对结果里真实存在的字段取证，取不到就不产出条目。
+    """
+    items: list[dict[str, Any]] = []
+
+    if name == "search_objects":
+        for card in result.get("cards") or []:
+            if not isinstance(card, dict):
+                continue
+            rid = str(card.get("individual_rid") or "")
+            if not rid:
+                continue
+            items.append(
+                {
+                    "type": "ONTOLOGY_OBJECT",
+                    "ref": rid,
+                    "objectId": rid,
+                    "concept": str(card.get("class_rid") or "") or None,
+                    "fragment": str(card.get("card_text") or "") or None,
+                }
+            )
+    elif name == "list_classes":
+        for cls in result.get("classes") or []:
+            if not isinstance(cls, dict):
+                continue
+            rid = str(cls.get("rid") or "")
+            if not rid:
+                continue
+            items.append(
+                {
+                    "type": "ONTOLOGY_OBJECT",
+                    "ref": rid,
+                    "concept": str(cls.get("display_name") or cls.get("slug") or "") or None,
+                }
+            )
+    elif name == "inspect_class":
+        rid = str(result.get("class_rid") or "")
+        if rid:
+            # 类型级证据：ref 指向 ObjectType，**不设 objectId** —— 那是实例标识，
+            # 前端据此调 getIndividual / searchAround 会 404。
+            items.append(
+                {
+                    "type": "ONTOLOGY_OBJECT",
+                    "ref": rid,
+                    "concept": str(result.get("display_name") or "") or None,
+                }
+            )
+    elif name.startswith("query_"):
+        rows = [r for r in (result.get("rows") or []) if isinstance(r, dict)]
+        if result.get("kind") == "aggregates":
+            if rows:
+                items.append(
+                    {
+                        "type": "ONTOLOGY_METRIC",
+                        "ref": name,
+                        "concept": name,
+                        "fragment": _fragment_of(rows[:_EVIDENCE_ROW_LIMIT]),
+                    }
+                )
+        else:
+            for index, row in enumerate(rows[:_EVIDENCE_ROW_LIMIT]):
+                identity = _row_identity(row)
+                item: dict[str, Any] = {
+                    "type": "ONTOLOGY_OBJECT",
+                    "ref": identity or f"{name}[{index}]",
+                    "fragment": _fragment_of(row),
+                }
+                if identity:
+                    item["objectId"] = identity
+                items.append(item)
+
+    return items[:_EVIDENCE_ITEM_LIMIT]
+
+
+def _proposal_from_tool(name: str, result: dict[str, Any]) -> dict[str, Any] | None:
+    """propose_* 工具结果 → proposal 事件；非提案工具返回 None。"""
+    kind = _PROPOSAL_KIND_BY_TOOL.get(name)
+    if not kind:
+        return None
+    proposal_id = str(result.get("proposal_id") or "")
+    if not proposal_id:
+        return None
+    return {
+        "proposalId": proposal_id,
+        "kind": str(result.get("kind") or kind),
+        "status": str(result.get("status") or "pending"),
+        "impactSummary": str(result.get("impact_summary") or ""),
+    }
+
+
+
 async def _await_task_result(
     orchestrator_client: Any,
     result: dict[str, Any],
@@ -520,6 +644,23 @@ async def run_agent_loop(
                     "status": status,
                     "result": result,
                 }
+                # 工具成功时把真实结果映射成可渲染的证据 / 待确认提案；
+                # 失败不产证据（不编造）。
+                if status == "success" and isinstance(result, dict):
+                    evidence = _evidence_items(c["name"], result)
+                    if evidence:
+                        captured_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                        for index, item in enumerate(evidence):
+                            item["evidenceId"] = f"{c['call_id']}-e{index}"
+                            item["capturedAt"] = captured_at
+                        yield {
+                            "type": "evidence",
+                            "toolCallId": c["call_id"],
+                            "items": evidence,
+                        }
+                    proposal = _proposal_from_tool(c["name"], result)
+                    if proposal:
+                        yield {"type": "proposal", "toolCallId": c["call_id"], **proposal}
                 history.append(
                     {
                         "role": "tool",

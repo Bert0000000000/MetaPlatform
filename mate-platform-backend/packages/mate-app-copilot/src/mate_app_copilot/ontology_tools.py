@@ -201,6 +201,7 @@ def execute_ontology_tool(
             "proposal_id": prop.proposal_id,
             "kind": "create_instance",
             "status": prop.status.value,
+            "impact_summary": getattr(prop, "impact_summary", ""),
             "note": "已产出新建实例提议；等待用户确认后 execute 落库。",
         }
     if name == "propose_model_type":
@@ -212,6 +213,7 @@ def execute_ontology_tool(
             "proposal_id": prop.proposal_id,
             "kind": "model_type",
             "status": prop.status.value,
+            "impact_summary": getattr(prop, "impact_summary", ""),
             "note": "已产出建模提议；schema 变更需用户确认后 execute 落库。",
         }
     if name.startswith("query_"):
