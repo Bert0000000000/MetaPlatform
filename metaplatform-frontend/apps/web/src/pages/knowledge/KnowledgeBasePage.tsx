@@ -1,129 +1,226 @@
 /**
- * KnowledgeBasePage - 知识库列表
- * --------------------------------------------------
- * 路由: /knowledge
- * Phase 1: 從 apps/kb 的 KbListPage 迁入,改为真实 API(后端 TECH-KB),
- *          保留 4-tab 导航壳。
+ * KnowledgeBasePage —— 知识库列表（DESIGN-SPEC §5 版式 E：表格页 + 抽屉表单）。
+ *
+ * 数据面沿用 src/api/kb 的 listKb / createKb（本批不动）。
+ * 表格只渲染后端 collections 接口真实给出的字段：编码 / 名称 / 类型 / 文档数 /
+ * 状态 / 描述。切片数、向量模型、检索 P95、重建进度后端未暴露，故不建列（不编造）。
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Table, Button, Space, Tag, Modal, Form, Toast } from '@douyinfe/semi-ui';
-import { Plus, RefreshCw, Database } from 'lucide-react';
-import { PageRoot, useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
+import { Button, Descriptions, Form, Select, SideSheet, Tag, Toast } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
+import { Database, Plus, RefreshCw } from 'lucide-react';
+import { useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
+import { DataTablePro, EmptyState, FilterBar, PageHeader, SheetDetail } from '@/components/skeleton';
 import { listKb, createKb, type KbEntity } from '@/api/kb';
-
+import './kb.css';
 
 const KB_KIND_OPTIONS = [
   { value: 'GENERAL', label: '通用' },
-  { value: 'DOMAIN',  label: '领域' },
-  { value: 'FAQ',     label: '问答' },
-  { value: 'POLICY',  label: '制度' },
+  { value: 'DOMAIN', label: '领域' },
+  { value: 'FAQ', label: '问答' },
+  { value: 'POLICY', label: '制度' },
 ];
+
+const KIND_COLOR: Record<string, TagColor> = {
+  GENERAL: 'blue',
+  DOMAIN: 'green',
+  FAQ: 'orange',
+  POLICY: 'purple',
+};
+
+const FORM_DRAWER_W = 420;
 
 export default function KnowledgeBasePage() {
   const navigate = useNavigate();
   const { report } = useApiErrorBoundary();
   const [form] = Form.useForm();
-  const [open, setOpen] = useState(false);
-  const submit = useLoadingState();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [preview, setPreview] = useState<KbEntity | null>(null);
+  const [keyword, setKeyword] = useState('');
+  const [kindFilter, setKindFilter] = useState<string | undefined>();
   const [reloadTick, setReloadTick] = useState(0);
+  const submit = useLoadingState();
 
-  const { data: kbs, loading, error, reload } = useAsync<KbEntity[]>(
-    () => listKb().catch((e: Error) => {
-      report(e);
-      return [];
-    }),
+  const {
+    data: kbs,
+    loading,
+    error,
+    reload,
+  } = useAsync<KbEntity[]>(
+    () =>
+      listKb().catch((e: Error) => {
+        report(e);
+        return [];
+      }),
     [reloadTick],
     { initialData: [] },
   );
 
+  const visible = useMemo(() => {
+    const kw = keyword.trim().toLowerCase();
+    return (kbs ?? []).filter((kb) => {
+      const hit = !kw || kb.displayName.toLowerCase().includes(kw) || kb.kbCode.toLowerCase().includes(kw);
+      return hit && (!kindFilter || kb.kbKind === kindFilter);
+    });
+  }, [kbs, keyword, kindFilter]);
+
   const onCreate = async () => {
     const values = await form.validate();
     await submit.wrap(createKb(values));
-    setOpen(false);
+    setCreateOpen(false);
     form.reset();
     Toast.success('已创建知识库');
     setReloadTick((t) => t + 1);
   };
 
   return (
-    <PageRoot>
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
-        <Card
-          style={{ marginTop: 16 }}
-          title={
-            <Space>
-              <Database size={16} />
-              知识库列表
-            </Space>
+    <>
+      <PageHeader
+        title="知识库"
+        desc={`${kbs?.length ?? 0} 个知识库 · 向量检索 + RAG`}
+        actions={
+          <>
+            <Button icon={<RefreshCw size={15} strokeWidth={1.5} />} loading={loading} onClick={() => void reload()}>
+              刷新
+            </Button>
+            <Button theme="solid" type="primary" icon={<Plus size={15} strokeWidth={1.5} />} onClick={() => setCreateOpen(true)}>
+              新建知识库
+            </Button>
+          </>
+        }
+      />
+
+      <FilterBar
+        search={{ value: keyword, onChange: setKeyword, placeholder: '搜索名称或编码…' }}
+        filters={
+          <Select value={kindFilter} onChange={(v) => setKindFilter(v as string | undefined)} placeholder="全部类型" showClear>
+            {KB_KIND_OPTIONS.map((o) => (
+              <Select.Option key={o.value} value={o.value}>
+                {o.label}
+              </Select.Option>
+            ))}
+          </Select>
+        }
+      />
+
+      {error ? (
+        <EmptyState
+          illustration="failure"
+          title="知识库加载失败"
+          desc={error.message}
+          actions={
+            <Button theme="solid" type="primary" onClick={() => void reload()}>
+              重试
+            </Button>
           }
-          headerExtraContent={
-            <Space>
-              <Button
-                icon={<RefreshCw size={14} />}
-                onClick={reload}
-                loading={loading}
-              >
-                刷新
-              </Button>
-              <Button theme="solid" type="primary" icon={<Plus size={14} />} onClick={() => setOpen(true)}>
-                新建知识库
-              </Button>
-            </Space>
+        />
+      ) : !loading && visible.length === 0 ? (
+        <EmptyState
+          illustration={(kbs?.length ?? 0) === 0 ? 'no-content' : 'no-result'}
+          title={(kbs?.length ?? 0) === 0 ? '还没有知识库' : '没有匹配的知识库'}
+          desc={(kbs?.length ?? 0) === 0 ? '新建一个知识库，然后上传文档建立索引。' : '调整关键词或类型。'}
+          actions={
+            <Button theme="solid" type="primary" icon={<Plus size={15} strokeWidth={1.5} />} onClick={() => setCreateOpen(true)}>
+              新建知识库
+            </Button>
           }
-        >
-          {error && (
-            <div style={{ marginBottom: 12, color: 'var(--destructive, #dc2626)' }}>
-              加载失败: {error.message}
-            </div>
-          )}
-          <Table
-            rowKey="id"
-            dataSource={kbs ?? []}
-            loading={loading}
-            pagination={{ pageSize: 20 }}
-            columns={[
-              { title: '编码', dataIndex: 'kbCode', width: 200 },
-              { title: '名称', dataIndex: 'displayName', width: 200 },
-              { title: '类型', dataIndex: 'kbKind', width: 100, render: (k: string) => <Tag>{k}</Tag> },
-              { title: '切片数', dataIndex: 'chunkCount', width: 100 },
-              {
-                title: '状态', dataIndex: 'enabled', width: 100,
-                render: (e: boolean) => <Tag color={e ? 'green' : 'red'}>{e ? '启用' : '禁用'}</Tag>,
-              },
-              { title: '描述', dataIndex: 'description', ellipsis: true },
-              {
-                title: '操作',
-                width: 110,
-                render: (_: unknown, record: { id: string }) => (
-                  <Button
-                    size="small"
-                    theme="borderless"
-                    onClick={() => navigate(`/knowledge/kb/${encodeURIComponent(record.id)}`)}
-                  >
-                    查看详情
-                  </Button>
-                ),
-              },
+        />
+      ) : (
+        <DataTablePro<KbEntity>
+          rowKey="id"
+          loading={loading}
+          dataSource={visible}
+          onRow={(record) => ({ onClick: () => setPreview(record as KbEntity) })}
+          pagination={{
+            currentPage: 1,
+            pageSize: 20,
+            total: visible.length,
+            onChange: () => undefined,
+          }}
+          columns={[
+            {
+              title: '名称',
+              dataIndex: 'displayName',
+              render: (v: string, record: KbEntity) => (
+                <span className="mp-kb-name">
+                  <Database size={14} strokeWidth={1.5} />
+                  {v}
+                  <span className="mp-kb-code">{record.kbCode}</span>
+                </span>
+              ),
+            },
+            {
+              title: '类型',
+              dataIndex: 'kbKind',
+              width: 110,
+              render: (v: string) => <Tag color={KIND_COLOR[v] ?? 'grey'}>{v}</Tag>,
+            },
+            { title: '文档数', dataIndex: 'chunkCount', width: 100 },
+            {
+              title: '状态',
+              dataIndex: 'enabled',
+              width: 100,
+              render: (v: boolean) => <Tag color={v ? 'green' : 'red'}>{v ? '启用' : '禁用'}</Tag>,
+            },
+            { title: '描述', dataIndex: 'description', ellipsis: true, render: (v?: string) => v || '—' },
+          ]}
+        />
+      )}
+
+      <SideSheet
+        title="新建知识库"
+        visible={createOpen}
+        onCancel={() => setCreateOpen(false)}
+        width={FORM_DRAWER_W}
+        footer={
+          <>
+            <Button onClick={() => setCreateOpen(false)}>取消</Button>
+            <Button theme="solid" type="primary" loading={submit.loading} onClick={() => void onCreate()}>
+              创建
+            </Button>
+          </>
+        }
+      >
+        <Form form={form}>
+          <Form.Input field="kbCode" label="编码" rules={[{ required: true, message: '请输入编码' }]} placeholder="如：customer-policy-v1" />
+          <Form.Input field="displayName" label="名称" rules={[{ required: true, message: '请输入名称' }]} placeholder="如：客户政策知识库" />
+          <Form.Select field="kbKind" label="类型" initValue="GENERAL" optionList={KB_KIND_OPTIONS} />
+          <Form.TextArea field="description" label="描述" rows={3} />
+        </Form>
+      </SideSheet>
+
+      <SheetDetail
+        title={preview ? `知识库 · ${preview.displayName}` : '知识库详情'}
+        open={preview !== null}
+        onClose={() => setPreview(null)}
+        footer={
+          <>
+            <Button onClick={() => setPreview(null)}>关闭</Button>
+            <Button
+              theme="solid"
+              type="primary"
+              onClick={() => preview && navigate(`/ki/kb/${encodeURIComponent(preview.id)}`)}
+            >
+              进入知识库
+            </Button>
+          </>
+        }
+      >
+        {preview ? (
+          <Descriptions
+            row
+            size="small"
+            data={[
+              { key: '编码', value: preview.kbCode },
+              { key: '类型', value: <Tag color={KIND_COLOR[preview.kbKind] ?? 'grey'}>{preview.kbKind}</Tag> },
+              { key: '文档数', value: String(preview.chunkCount) },
+              { key: '状态', value: <Tag color={preview.enabled ? 'green' : 'red'}>{preview.enabled ? '启用' : '禁用'}</Tag> },
+              { key: '描述', value: preview.description || '—' },
             ]}
           />
-        </Card>
-
-        <Modal
-          title="新建知识库"
-          visible={open}
-          onCancel={() => setOpen(false)}
-          onOk={onCreate}
-          confirmLoading={submit.loading}
-        >
-          <Form form={form}>
-            <Form.Input field="kbCode" label="编码" rules={[{ required: true, message: '请输入编码' }]} placeholder="如：customer-policy-v1" />
-            <Form.Input field="displayName" label="名称" rules={[{ required: true, message: '请输入名称' }]} placeholder="如：客户政策知识库" />
-            <Form.Select field="kbKind" label="类型" initValue="GENERAL" optionList={KB_KIND_OPTIONS} />
-            <Form.TextArea field="description" label="描述" rows={3} />
-          </Form>
-        </Modal>
-      </div>
-    </PageRoot>
+        ) : null}
+      </SheetDetail>
+    </>
   );
 }

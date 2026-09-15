@@ -134,7 +134,6 @@ export const DOMAINS: DomainDef[] = [
     label: '知识与集成',
     icon: <BookOpen size={ICON_SIZE} strokeWidth={1.5} />,
     path: '/ki/kb',
-    ownsTabs: true,
     tabs: [
       { key: 'kb', label: '知识库', path: '/ki/kb' },
       {

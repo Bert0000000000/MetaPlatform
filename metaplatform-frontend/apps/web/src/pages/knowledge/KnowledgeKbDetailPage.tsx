@@ -121,7 +121,7 @@ export default function KnowledgeKbDetailPage() {
               <Button
                 icon={<ArrowLeft size={14} />}
                 theme="borderless"
-                onClick={() => navigate('/knowledge')}
+                onClick={() => navigate('/ki/kb')}
               />
               {kb?.displayName ?? kbId}
             </span>

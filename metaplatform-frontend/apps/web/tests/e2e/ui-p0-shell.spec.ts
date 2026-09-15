@@ -113,18 +113,6 @@ test.describe('UI-P0 · 应用壳与新 IA', () => {
     await expect(page).toHaveURL(/\/home\/deliverables$/);
   });
 
-  // UI-P2c 后「数据与治理」已迁到壳渲染，本用例改指尚未迁移的域（知识与集成），
-  // 待 P2b 完成后本用例失去意义，随 P2d 一并退役。
-  test('过渡期：域内旧 shell 的 tab 行仍自渲染，壳不叠加（知识与集成）', async ({ page }) => {
-    await gotoApp(page, '/ki/kb');
-    const bar = page.locator('.mp-page .semi-tabs-tab');
-    await expect(bar.filter({ hasText: '检索测试' })).toBeVisible({ timeout: 20_000 });
-    await bar.filter({ hasText: '检索测试' }).click();
-    await expect(page).toHaveURL(/\/ki\/test$/);
-    // 壳不叠加第二行 tab（DomainDef.ownsTabs）
-    await expect(page.locator('.mp-pagetabs')).toHaveCount(0);
-  });
-
   test('布局模式切换写 localStorage 并切换 rail / 顶栏 tab', async ({ page }) => {
     await gotoApp(page, '/home');
     await expect(page.locator('#app')).toHaveAttribute('data-nav', 'side');

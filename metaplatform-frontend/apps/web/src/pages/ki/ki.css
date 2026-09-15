@@ -1,0 +1,28 @@
+/*
+ * 知识与集成域壳：只负责助手入口的落位与全幅页的高度约束。
+ * 页面自身排版由各页 css / P0 骨架组件负责。
+ */
+
+.mp-ki-shell {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mp-ki-shell-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 助手入口：右下角浮动，避免挤占调试器/监控页的工具条 */
+.mp-ki-ai-dock {
+  position: absolute;
+  right: var(--mp-space-5);
+  bottom: var(--mp-space-4);
+  z-index: 40;
+}

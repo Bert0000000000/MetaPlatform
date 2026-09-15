@@ -1,0 +1,16 @@
+/*
+ * 知识库列表页样式：只做语义排版，表格/筛选/抽屉外壳一律走 P0 骨架组件。
+ * 间距取 --mp-space-* 十档，颜色取 Semi 主题 token。
+ */
+
+.mp-kb-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  min-width: 0;
+}
+
+.mp-kb-code {
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
