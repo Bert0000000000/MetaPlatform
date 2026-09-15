@@ -184,7 +184,11 @@ PROBES: list[tuple[str, str, dict | None]] = [
     ("POST", f"/object-types/{OBJ}/rollback", {"to_version": "v1"}),
     ("POST", f"/object-types/{OBJ}/lifecycle", {"action": "snooze"}),
     ("GET", f"/object-types/{OBJ}/datasources", None),
-    ("POST", f"/object-types/{OBJ}/datasources", {"class_rid": OBJ, "name": "p", "table": "t", "pk_column": "c"}),
+    (
+        "POST",
+        f"/object-types/{OBJ}/datasources",
+        {"class_rid": OBJ, "name": "p", "table": "t", "pk_column": "c"},
+    ),
     ("GET", f"/object-types/{OBJ}/materialization", None),
     ("POST", f"/object-types/wip/{WIP}/apply", {}),
     ("DELETE", f"/object-types/wip/{WIP}", None),
@@ -240,9 +244,7 @@ def main() -> int:
             if isinstance(payload, dict) and any(
                 k in payload for k in ("deleted", "discarded", "ok")
             ):
-                acted = any(
-                    payload.get(k) is True for k in ("deleted", "discarded", "ok")
-                )
+                acted = any(payload.get(k) is True for k in ("deleted", "discarded", "ok"))
                 if acted or SENTINEL in text:
                     status, bucket = "**LEAK**", leaks
                 else:

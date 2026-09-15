@@ -3565,9 +3565,7 @@ class PgOntologyRepository(OntologyRepository):
 
         self.get_object_type(ClassRef(rid))  # 不存在 → KeyError
         usage = [
-            u
-            for u in self.usage_summary(30)
-            if u["class_rid"] == rid and (u.get("reads") or 0) > 0
+            u for u in self.usage_summary(30) if u["class_rid"] == rid and (u.get("reads") or 0) > 0
         ]
         if usage:
             raise ValueError(
@@ -3583,9 +3581,7 @@ class PgOntologyRepository(OntologyRepository):
                 cur.execute("SELECT count(*) FROM ont_individual WHERE class_rid = %s", (rid,))
                 instances = cur.fetchone()[0]
                 if instances:
-                    raise ValueError(
-                        f"hard delete refused: {rid} still has {instances} instances"
-                    )
+                    raise ValueError(f"hard delete refused: {rid} still has {instances} instances")
                 cur.execute("DELETE FROM ont_axiom WHERE %s = ANY(operands)", (rid,))
                 cur.execute("DELETE FROM ont_object_type WHERE rid = %s", (rid,))
                 deleted = cur.rowcount

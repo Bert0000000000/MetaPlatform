@@ -71,9 +71,9 @@ def _ensure_role() -> None:
                 print(f"created role {APP_ROLE!r}")
             else:
                 cur.execute(
-                    sql.SQL(
-                        "ALTER ROLE {} WITH LOGIN PASSWORD %s NOSUPERUSER NOBYPASSRLS"
-                    ).format(sql.Identifier(APP_ROLE)),
+                    sql.SQL("ALTER ROLE {} WITH LOGIN PASSWORD %s NOSUPERUSER NOBYPASSRLS").format(
+                        sql.Identifier(APP_ROLE)
+                    ),
                     (APP_PASSWORD,),
                 )
                 print(f"role {APP_ROLE!r} present (re-asserted NOSUPERUSER NOBYPASSRLS)")
@@ -163,7 +163,9 @@ def _install_rls(db: str) -> None:
                     skipped.append(table)
                     continue
                 cur.execute(
-                    sql.SQL("ALTER TABLE {} ENABLE ROW LEVEL SECURITY").format(sql.Identifier(table))
+                    sql.SQL("ALTER TABLE {} ENABLE ROW LEVEL SECURITY").format(
+                        sql.Identifier(table)
+                    )
                 )
                 cur.execute(
                     sql.SQL("DROP POLICY IF EXISTS tenant_isolation ON {}").format(
@@ -180,8 +182,10 @@ def _install_rls(db: str) -> None:
                 cur.execute(
                     sql.SQL("ALTER TABLE {} FORCE ROW LEVEL SECURITY").format(sql.Identifier(table))
                 )
-            print(f"[{db}] RLS installed on {len(tables) - len(skipped)}/{len(tables)} tables"
-                  + (f"; skipped (no tenant_id): {skipped}" if skipped else ""))
+            print(
+                f"[{db}] RLS installed on {len(tables) - len(skipped)}/{len(tables)} tables"
+                + (f"; skipped (no tenant_id): {skipped}" if skipped else "")
+            )
     finally:
         conn.close()
 
@@ -210,8 +214,10 @@ def _check_db(db: str) -> list[str]:
             cur.execute("SET app.tenant_id = 'tenant-default'")
             cur.execute("SELECT count(*) FROM ont_individual")
             own = cur.fetchone()[0]
-            print(f"[{db}] role={user} super={is_super} bypass={bypass} "
-                  f"cross-tenant-rows={cross} own-tenant-rows={own}")
+            print(
+                f"[{db}] role={user} super={is_super} bypass={bypass} "
+                f"cross-tenant-rows={cross} own-tenant-rows={own}"
+            )
             if cross != 0:
                 failures.append(f"{db}: 跨租户可读 {cross} 行 —— RLS 未生效")
             if own == 0:
