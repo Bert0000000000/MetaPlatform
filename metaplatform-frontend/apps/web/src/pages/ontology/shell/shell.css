@@ -17,6 +17,22 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+  /* 非全幅页（类型建模 / 运维）的默认 gutter —— 取值与 `.mp-page` 的同名 padding
+     一致（其他域的普通页面就是靠它拿到 24px 留白）。 */
+  padding: var(--mp-space-6);
+}
+
+/*
+ * 全幅页（对象浏览器 / 数据中心）自带留白，接管本层 gutter。
+ * 与 shell.css 的 `.mp-page:has(> .mp-page-full)` 是**同一个惯用法**，只是下移一层。
+ *
+ * 此前该判断被加在**壳的包裹层**（OntologyDomainShell 的 .mp-page-full）上，
+ * 于是四个 tab 一律被 `.mp-page:has(> .mp-page-full){padding:0}` 抹掉 gutter：
+ * 建模/运维的内容因此贴到左边缘（实测 x=55，而顶部 tab 栏在 x=71、
+ * 其他域的普通页面在 x=80）——视觉上「内容比自己的 tab 栏还靠左」。
+ */
+.mp-onto-shell-main:has(> .mp-page-full) {
+  padding: 0;
 }
 
 /* 助手入口：右下角浮动，避免挤占全幅画布/表格的工具条 */

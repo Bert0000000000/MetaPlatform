@@ -640,6 +640,30 @@ export async function listInterfaceImplementations(rid: string): Promise<string[
   return list<string>(`/interfaces/${encodeURIComponent(rid)}/implementations`);
 }
 
+/** 公理（Axiom）—— 12 基元之 10。kind 见内核 AxiomKind。 */
+export interface KernelAxiom {
+  rid: string;
+  /** subclass / transitivity / property / same_as / disjoint / has_key / equivalent_class … */
+  kind: string;
+  /** 操作数：ClassRef rid 列表（subclass 为 [sub, sup]，has_key 为 [类型, 属性]）。 */
+  operands: string[];
+  /** 规则实现标识（builtin.* / parent_class …）。 */
+  rule_ref: string;
+  /** (key, value) 二元组列表。 */
+  metadata: string[][];
+}
+
+/**
+ * 公理清单（GET /axioms）。
+ *
+ * 注：建模页此前把 axiom 计数**硬编码为 0** 并显示「公理列表尚未开放」，
+ * 理由是「内核尚未暴露 Axiom 清单接口」——该判断已过时，接口早已可用
+ * （实测 54 条）。此处补上真实客户端。
+ */
+export async function listAxioms(): Promise<KernelAxiom[]> {
+  return list<KernelAxiom>('/axioms');
+}
+
 /** GOV-19：时序窗口查询。 */
 export interface TimeseriesPoint {
   ts: string;

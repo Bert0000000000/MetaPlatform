@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Tabs, Tag, Toast } from '@douyinfe/semi-ui';
+import { Button, Tabs, Tag } from '@douyinfe/semi-ui';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Wrench } from 'lucide-react';
 import {
   domainOfObjectType,
   listActionTypes,
+  listAxioms,
   listFunctions,
   listInterfaces,
   listLinkTypes,
   listObjectTypes,
   type KernelActionType,
+  type KernelAxiom,
   type KernelFunction,
   type KernelInterface,
   type KernelLinkType,
@@ -32,10 +34,27 @@ const KIND_LABEL: Record<KindKey, string> = {
   axiom: '公理',
 };
 
+/** 公理类型中文标签（内核 AxiomKind；未收录的原样显示）。 */
+const AXIOM_KIND_LABEL: Record<string, string> = {
+  subclass: '子类',
+  transitivity: '传递性',
+  property: '属性约束',
+  same_as: '同一性',
+  disjoint: '不相交',
+  has_key: '唯一键',
+  equivalent_class: '等价类',
+  property_domain: '定义域',
+  property_range: '值域',
+  functional: '函数性',
+  inverse_functional: '逆函数性',
+  transitive_property: '传递属性',
+  symmetric_property: '对称属性',
+  property_chain: '属性链',
+};
+
 /**
  * 类型建模（DESIGN-SPEC §5 版式 E）。
- * 12 基元的可读清单：对象 / 关系 / 动作 / 函数 / 接口 五种由本体内核直接提供；
- * 公理（Axiom）列表接口内核尚未暴露，如实呈现空状态而不是编造数据。
+ * 12 基元的可读清单：对象 / 关系 / 动作 / 函数 / 接口 / 公理 六种均由本体内核直接提供。
  *
  * 说明：ObjectType 的新建 / 编辑 / 去重合并仍走既有编辑器（含 precheck 门禁与
  * HITL 合并确认，约 150 行编排）。本批次不复制那套写路径，主操作跳到
@@ -54,6 +73,7 @@ export default function ModelingPage() {
   const [actionTypes, setActionTypes] = useState<KernelActionType[]>([]);
   const [functions, setFunctions] = useState<KernelFunction[]>([]);
   const [interfaces, setInterfaces] = useState<KernelInterface[]>([]);
+  const [axioms, setAxioms] = useState<KernelAxiom[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,14 +84,16 @@ export default function ModelingPage() {
       listActionTypes(),
       listFunctions(),
       listInterfaces(),
+      listAxioms(),
     ]);
-    const [ot, lt, at, fn, ifc] = results;
+    const [ot, lt, at, fn, ifc, ax] = results;
     if (ot.status === 'fulfilled') setObjectTypes(ot.value);
     else setError(ot.reason instanceof Error ? ot.reason.message : String(ot.reason));
     if (lt.status === 'fulfilled') setLinkTypes(lt.value);
     if (at.status === 'fulfilled') setActionTypes(at.value);
     if (fn.status === 'fulfilled') setFunctions(fn.value);
     if (ifc.status === 'fulfilled') setInterfaces(ifc.value);
+    if (ax.status === 'fulfilled') setAxioms(ax.value);
     setLoading(false);
   }, []);
 
@@ -89,7 +111,7 @@ export default function ModelingPage() {
     action: actionTypes.length,
     function: functions.length,
     interface: interfaces.length,
-    axiom: 0,
+    axiom: axioms.length,
   };
 
   const kw = keyword.trim().toLowerCase();
@@ -120,6 +142,12 @@ export default function ModelingPage() {
     () => interfaces.filter((i) => match(i.rid)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [interfaces, kw],
+  );
+  const filteredAxioms = useMemo(
+    () =>
+      axioms.filter((a) => match(`${a.kind} ${a.rid} ${a.rule_ref} ${a.operands.join(' ')}`)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [axioms, kw],
   );
 
   const pageOf = <T,>(rows: T[]) => rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -238,10 +266,15 @@ export default function ModelingPage() {
           columns={[
             {
               title: '关系',
-              dataIndex: '__label__',
+              // 此前 dataIndex: '__label__' —— 该字段从未被赋值，render 收到 undefined
+              // → ridTail(undefined) 抛 "Cannot read properties of undefined (reading 'split')"
+              // 整页崩溃。对齐「对象类型」表：取真实字段 + 从 row 取 rid。
+              dataIndex: 'rid',
               width: 200,
               ellipsis: true,
-              render: (v: string) => <span className="mp-onto-strong">{ridTail(v)}</span>,
+              render: (_: unknown, row: KernelLinkType) => (
+                <span className="mp-onto-strong">{ridTail(row.rid)}</span>
+              ),
             },
             {
               title: '源 → 目标',
@@ -321,10 +354,13 @@ export default function ModelingPage() {
           columns={[
             {
               title: '函数',
-              dataIndex: '__label__',
+              // 同「关系」列：__label__ 未赋值导致崩溃 —— 改取真实 rid。
+              dataIndex: 'rid',
               width: 240,
               ellipsis: true,
-              render: (v: string) => <span className="mp-onto-strong">{ridTail(v)}</span>,
+              render: (_: unknown, row: KernelFunction) => (
+                <span className="mp-onto-strong">{ridTail(row.rid)}</span>
+              ),
             },
             { title: 'rid', dataIndex: 'rid', width: 300, ellipsis: true },
             { title: '语言', dataIndex: 'language', width: 120 },
@@ -353,10 +389,13 @@ export default function ModelingPage() {
           columns={[
             {
               title: '接口',
-              dataIndex: '__label__',
+              // 同「关系」列：__label__ 未赋值导致崩溃 —— 改取真实 rid。
+              dataIndex: 'rid',
               width: 260,
               ellipsis: true,
-              render: (v: string) => <span className="mp-onto-strong">{ridTail(v)}</span>,
+              render: (_: unknown, row: KernelInterface) => (
+                <span className="mp-onto-strong">{ridTail(row.rid)}</span>
+              ),
             },
             { title: 'rid', dataIndex: 'rid', ellipsis: true },
             {
@@ -390,20 +429,58 @@ export default function ModelingPage() {
           empty={noData}
         />
       ) : (
-        <EmptyState
-          illustration="no-content"
-          title="公理列表尚未开放"
-          desc="内核已把 Axiom 纳入三闸门预检（schema × SHACL × Axiom），但还没有对外暴露 Axiom 清单接口；接入后本页直接列出。"
-          actions={
-            <Button
-              onClick={() => {
-                setKind('object');
-                Toast.info('先看对象类型');
-              }}
-            >
-              返回对象类型
-            </Button>
-          }
+        <DataTablePro<KernelAxiom>
+          columns={[
+            {
+              title: '公理',
+              dataIndex: 'rid',
+              width: 300,
+              ellipsis: true,
+              render: (_: unknown, row: KernelAxiom) => (
+                <span className="mp-onto-strong">{ridTail(row.rid)}</span>
+              ),
+            },
+            {
+              title: '类型',
+              dataIndex: 'kind',
+              width: 130,
+              render: (v: string) => (
+                <Tag size="small" type="light">
+                  {AXIOM_KIND_LABEL[v] ?? v}
+                </Tag>
+              ),
+            },
+            { title: '规则', dataIndex: 'rule_ref', width: 170, ellipsis: true },
+            {
+              title: '操作数',
+              dataIndex: 'operands',
+              ellipsis: true,
+              render: (v: string[]) =>
+                v.length ? v.map(ridTail).join(' → ') : <span className="mp-onto-muted">—</span>,
+            },
+            {
+              title: '元数据',
+              dataIndex: 'metadata',
+              width: 200,
+              ellipsis: true,
+              render: (v: string[][]) =>
+                v.length ? (
+                  v.map(([k, val]) => `${k}=${val}`).join('; ')
+                ) : (
+                  <span className="mp-onto-muted">—</span>
+                ),
+            },
+          ]}
+          dataSource={pageOf(filteredAxioms)}
+          rowKey="rid"
+          loading={loading}
+          pagination={{
+            currentPage: page,
+            pageSize: PAGE_SIZE,
+            total: filteredAxioms.length,
+            onChange: setPage,
+          }}
+          empty={noData}
         />
       )}
     </>
