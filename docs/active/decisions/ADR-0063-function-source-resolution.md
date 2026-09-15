@@ -1,7 +1,8 @@
 # ADR-0063：Function 源码解析与执行接线（GOVERN-05 收口）
 
-> **状态**：**Proposed** —— 核心决策 D1/D2/D3 已于 2026-09-14 拍板（见 §8），
-> 剩余 §7 三项待评审问题不影响进入实施
+> **状态**：**Accepted（已实施）** —— 核心决策 D1/D2/D3 于 2026-09-14 拍板，
+> §6 的 **S1–S5 已全部落地**，部署态 e2e 已跑通（`propose→confirm→execute` 200 + 属性真实回写）。
+> 剩余 §7 三项为后续优化项，不阻塞本 ADR 生效。
 > **日期**：2026-09-14
 > **作者**：Claude (Sonnet 5) + 用户协作
 > **关联 ADR**：ADR-0040（数字员工沙箱架构 · Function Sandbox L2）、ADR-0044（assisted action · HITL 唯一写路径）、ADR-0021（Kernel 12 基元 · Function 为第 11 基元）
@@ -255,18 +256,28 @@ ADR 决策：**保留两个变量但明确层级**——`FUNCTION_BACKEND` 是 o
 
 ---
 
-## 6. 分阶段实施（本 ADR 通过后）
+## 6. 分阶段实施（**S1–S5 已全部落地**，2026-09-14）
 
-| 阶段 | 内容 | 出口 |
-| --- | --- | --- |
-| **S1** | `GitFunctionResolver` 实现 + scheme 分派 + 单测（D3：只读 deploy key） | 按 SHA 取源码并执行 |
-| **S2** | 删除两处静默兜底（`pg_repo.py:2383` / `engine.py:412`）+ 清理依赖它们的测试与 seed | fail-fast 生效，测试全绿 |
-| **S3** | flow 路径解析真实 `function_ref`（`workflow.py:176` 去占位） | 编排路径执行 Action 声明的函数，而非 action rid |
-| **S4** | prod profile 拒绝 `inline://` + 文档/values 注释澄清 `FUNCTION_BACKEND` vs `SANDBOX_BACKEND` | 硬规则 5 覆盖执行期 |
-| **S5** | 端到端：`dangerous_goods` 经部署态 274/274 + ACCEPTANCE | 验收证据落地 |
+| 阶段 | 内容 | 出口 | 状态 |
+| --- | --- | --- | --- |
+| **S1** | `GitFunctionResolver` 实现 + scheme 分派 + 单测（D3：只读 deploy key） | 按 SHA 取源码并执行 | ✅ 6 测试 |
+| **S2** | 删除两处静默兜底（`pg_repo.py` 恒等函数 / `engine.py` 参数回显）+ 清理依赖它们的测试与 seed | fail-fast 生效，测试全绿 | ✅ 22 处连带清理 |
+| **S3** | flow 路径解析真实 `function_ref`（`workflow.py:176` 去占位） | 编排路径执行 Action 声明的函数 | ✅ |
+| **S4** | prod profile 拒绝 `inline://` | 硬规则 5 覆盖执行期 | ✅ |
+| **S5** | 部署态端到端（propose→confirm→execute + 属性回写） | 验收证据落地 | ✅ **已跑通** |
 
 > S2 与 S3 **必须同批**：只删兜底不改 flow 占位，会让编排路径从"静默假成功"
-> 变成"立刻全挂"。
+> 变成"立刻全挂"。（实施时确按同批交付。）
+
+### 6.1 实施中新发现（原 ADR 未预见，已一并修复）
+
+| 缺陷 | 说明 |
+| --- | --- |
+| PG `set_function_executor` 漏注册 | 它只赋值 executor，**从不给已有 Function 注册 `function_ref`**（InMemory 版本有遍历）。启动顺序是 `seed_demo()` → `_inject_function_executor()`，故 seed 创建的函数永远不被 ActionService 认知 → `FunctionNotRegistered`。 |
+| seed 回填不彻底 | 已升级为 `inline://` 的行走了 `continue`，只写 `_PG_INLINE_FUNCTIONS` 不调 `upsert_function`，而 **resolver 注册只发生在 upsert 里** → 新进程仍解析不到。 |
+| `audit_id` 撞主键 | `engine.py` 用进程内计数器 `audit-<n>`；容器重启后归零 → 撞 `ont_action_audit` 主键 → execute 500。加进程唯一前缀。 |
+
+> 后两条都是**部署后才暴露**的：本地/单测里 executor 与 upsert 的调用顺序不同，掩盖了问题。
 
 ---
 

@@ -191,3 +191,30 @@ mate-platform-backend/.venv/Scripts/python.exe scripts/ont-bench/pilot_patient_i
 | 内核 pilot（单实体） | `scripts/ont-bench/pilot_dangerous_goods.py` |
 | 内核 pilot（关系域） | `scripts/ont-bench/pilot_patient_intake.py` |
 | API 探针 | `scripts/ont-bench/probe_platform_api.py` / `probe_platform_api2.py` |
+
+---
+
+## 10. 修复进展（2026-09-14 晚收口）
+
+> 本报告是**时点快照**，保留当时发现。§5 列出的缺陷**已全部修复并验证**，
+> 详见 `docs/active/specs/2026-09-14-ontology-engine-defect-fix-plan.md` 与 `docs/active/decisions/ADR-0063-function-source-resolution.md`。
+
+| 原报告项 | 状态 | 关键结果 |
+|---|---|---|
+| F1 Function 源码不可注入 | ✅ | ADR-0063 S1–S5 落地；**部署态 e2e 跑通**（propose→confirm→execute 200 + 属性真实回写） |
+| F2 propose 的 provenance 污染 | ✅ | execute 跳过保留键 |
+| F3/F6 LinkInstance 重放 500 | ✅ | 传 `exclude_rid` + 409/422 映射 |
+| F4 filter_expr 语义 | ✅ | **结论已修正**：普通 slug 本就正常，真正缺陷是未知字段**静默空集** → 现 fail-fast 422 |
+| F5 embedding 401 | ✅ | 根因是 llmgw 取的 key 名不在 `ai.provider.` 命名空间（非凭证/URL/模型问题） |
+| — 实施中新发现 | ✅ | **F8 跨租户读取泄漏（P0）** —— 应用层谓词 + ContextVar 修复；另实测确认并修复 2 处端点缺守门（`/functions/{rid}/versions`、`/object-types/{rid}/datasources`）；F7 迁移静默 no-op；F9 `/axioms` 500；F10 `audit_id` 撞主键 |
+| — 复查更正 | ⚠️ | **RLS 在本环境不生效**（角色超级用户）；另发现 **16 处端点守门待审**（见修复计划 §5b F8） |
+
+**部署态副作用（已处理）**：为加载修复重启了 `mate-tech-ont`；对 `metaplatform` 实测开启 RLS（26/28 张 `ont_*` 表）；
+回填了 12 条历史 `ref://` 函数为 `inline://`（否则其 12 个 ActionType 会因 fail-fast 全部执行失败）。
+
+> ⚠️ **RLS 在本环境实为装饰性**（2026-09-14 二次核查）：应用角色 `meta` 是
+> `rolsuper+rolbypassrls`，PostgreSQL 超级用户**恒绕过 RLS**。开 RLS 前后行数一致是真的，
+> 但 canary 被挡住**靠的是应用层租户谓词，不是 RLS**。租户隔离目前**完全压在应用层**；
+> 需 GOVERN-09 的非特权角色才有第二道防线。详细更正见修复计划 §5b F8。
+
+**最终回归**：`mate-kernel`+`mate-tech-ont` 1167 passed / 0 failed；`mate-tech-llmgw` 278 passed / 0 failed。

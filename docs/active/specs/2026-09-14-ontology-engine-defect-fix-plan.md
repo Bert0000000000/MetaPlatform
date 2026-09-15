@@ -1,24 +1,30 @@
 # 本体引擎缺陷修复工作计划（P1–P3）
 
-> **日期**：2026-09-14
+> **日期**：2026-09-14（**当日晚收口**）
 > **来源**：`docs/active/specs/2026-09-14-ontology-data-validation-report.md` §8 建议
-> **范围**：5 个缺陷（F1–F6，其中 F3/F6 同源）
-> **总量**：约 6–8 人日
+> **范围**：原计划 5 个缺陷（F1–F6，其中 F3/F6 同源）**+ 实施中新增 4 个**（F7–F10）
+> **状态**：**9/9 已修复**；部署态 e2e 已跑通；回归 kernel+ont 1167 passed / llmgw 278 passed
 > **提交顺序**：遵循 CLAUDE.md 强约束 —— `docs/ADR → contract → failing tests → feature → infrastructure → deploy → acceptance evidence`
 
 ---
 
 ## 0. 总览
 
-| ID | 优先 | 缺陷 | 根因位置 | 修复面 | 工时 | 风险 |
-|---|---|---|---|---|---|---|
-| **F3+F6** | **P1** | LinkInstance 同 rid 重放被基数校验误判 → 500 | `pg_repo.py:2137` | 后端 1 行 + 异常映射 + 测试 | 0.5d | 低 |
-| **F2** | P1 | propose 把 `provenance` 并入 parameters，execute 报 unknown parameter | `pg_repo.py:4201-4205` + `api.py:3096-3104` | 后端参数清洗 | 0.5d | 低 |
-| **F4** | P1 | `filter_expr` 用 slug 静默返回 0 行（后端语义漂移） | `sql_compiler.py:30-37` | 字段归一化 + fail-fast | 1d | 中 |
-| **F5** | P2 | embedding 401 拖累每次写入 ~700ms（HTTP 路径 24× 慢） | `object_search.py:145-156` + `pg_repo.py:2058` | 配置修复 + 异步化 | 0.5–2d | 中 |
-| **F1** | P2 | 部署态 Function 源码不可注入，apply 不执行逻辑 | `pg_repo.py:55,58,2383` · `main.py:80` | resolver 实现 + 接线 + ADR | 3–5d | **高** |
+| ID | 优先 | 缺陷 | 根因位置 | 状态 |
+|---|---|---|---|---|
+| **F3+F6** | P1 | LinkInstance 同 rid 重放被基数校验误判 → 500 | `pg_repo.py:2137` | ✅ 已修 |
+| **F2** | P1 | propose 把 `provenance` 并入 parameters，execute 报 unknown parameter | `pg_repo.py:4201-4205` | ✅ 已修 |
+| **F4** | P1 | `filter_expr` 未知字段**静默返回空集**（非 slug 问题，见 §3 修正） | `sql_compiler.py` / `pg_repo.evaluate_object_set` | ✅ 已修 |
+| **F5** | P2 | embedding 401 拖累每次写入 ~700ms | `embeddings.py:433`（key 名不匹配） | ✅ 已修 |
+| **F1** | P1 | 部署态 Function 源码不可注入，apply 不执行逻辑 | `pg_repo.py:55/2383` · `engine.py:412` | ✅ 已修（S1–S5 全落地，ADR-0063） |
+| **F7** | P1 | RLS 迁移静默 no-op → 全库无 RLS（**F8 上游成因**） | `alembic/.../0013_ont_kernel_rls.py` | ✅ 已修（告警 + 幂等脚本） |
+| **F8** | **P0** | **跨租户读取泄漏**（RLS 未开 + 无租户谓词） | `pg_repo.list_individuals/list_link_instances` + 全库 RLS | ✅ 已修（应用层 + 数据库层） |
+| **F9** | P2 | `GET /axioms` 恒 500（空串 operand） | `pg_repo._row_to_ax` / 父类公理生成 | ✅ 已修 |
+| **F10** | P2 | `audit_id` 撞 `ont_action_audit` 主键 → execute 500 | `engine.py:436`（进程内计数器） | ✅ 已修 |
 
-> **排序说明**：上表按"严重度"排（F1 是功能缺口故列 P1/P2 之间）。**执行顺序见 §3**——按"确定性优先、架构性最后"排。
+> **F8 是实施过程中新发现的最严重项**（实测确认跨租户可读），优先级高于原计划的其余项。
+> **修复它们的两个前置条件**（不在原计划内，但缺了会打挂线上）：
+> ① `threading.local` → `contextvars.ContextVar`（否则 RLS 一开全站读空）；② 部署态需重启容器加载修复。
 
 ---
 
@@ -105,34 +111,32 @@ A 改动小、不动 schema，且保留 ONT-PROV-01 的审计可见性。
 
 `props` JSONB 的 key 是**完整 prop rid**（如 `ont.tenant-default.prop.x-y.v1`）。
 
-`sql_compiler._column_expr`（`sql_compiler.py:30-37`）在 `column_for_field` 未命中时直接退回 `(props ->> %s)` 并把**原样字段名**当 JSONB key：
+**修正后的准确定位（2026-09-14 实测）** —— 初版把本项描述为「slug 静默返回 0 行」，**不准确**：
 
-```python
-col = self._column_for_field.get(field_name)
-if col:
-    return col, params
-params.append(field_name)
-return "(props ->> %s)", params
-```
+| filter | 实测结果 |
+| --- | --- |
+| `simple == 'a'`（普通 slug） | **正常工作** ✓ —— `slug_to_rid` 用 `_prop_slug`（rid 第 4 段）归一化 |
+| `<完整 rid> == 'a'` | 正常工作 ✓ |
+| `nosuchfield == 'x'`（未知字段） | **0 行且不报错** ✗ ← **真正的缺陷** |
+| `type.sub == 'b'`（含点写法） | DSL 字段正则不允许 slug 含点 → 落到 truthy 分支 → 同样静默 ✗ |
 
-于是 `thing-id == 't1'` 渲染成 `props ->> 'thing-id'` → **恒 NULL → 0 行，且不报错**。
-但 `sql_compiler.py:23-24` 的 docstring **声称**接受完整 rid 或简写 slug——**文档与实现不符**；InMemory 侧 `compiler.py:95` 的 `FIELD = RID_FULL | SLUG` 确实两种都支持。
+即：**普通 slug 本来就是好的**（我最初的探针失败，是因为探针里的属性 rid 自身 slug 含点，第 4 段被截断 —— 探针写错了，不是平台的问题）。
+真正的缺陷只有一条：`_rewrite_filter_fields` 的注释原文「未命中原样保留」——**字段既非完整 rid、也非已知 slug 时，渲染成 `props ->> '<未知键>'` 恒 NULL → 静默返回空集**。
+**空集比报错危险得多**：调用方无法区分"没有匹配"与"字段名写错了"。
 
-### 修复
+### 修复（已实施）
 
-1. **归一化**：查询编译前把 slug 解析为目标 ObjectType 的属性 rid（查 `ont_object_type.properties`）。命中 → 用完整 rid；不命中 → 见下。
-2. **fail-fast**：无法解析的字段**不得静默返回空集**——抛 `422 Unresolved field: <name>`，附可选字段列表。（这是本次最关键的改动：静默空集比报错危险得多。）
-3. 修正 `sql_compiler.py:23-24` docstring，或补上 slug 归一化使文档成真（建议后者 + 保留 fail-fast 兜底）。
+1. **fail-fast**：`evaluate_object_set` 在归一化前调 `_assert_filter_fields_resolvable` —— 非 rid 且不在已知 slug 集合的字段 → `ValueError`，API 映射 **422**。
+2. 只对**非 rid 形态**的字段严格（完整 rid 一律放行，避免误伤继承/跨类属性场景）。
+3. **未采纳**：一度加过 `_slug_of` 别名（支持含点 slug）。实测发现那是投机性改动且可能引入 slug 冲突，**已撤掉** —— 含点字段不是归一化 bug，而是 DSL 语法边界。
 
 ### 测试
 
-- `test_filter_expr_accepts_slug_and_full_rid`：两种写法返回相同结果集。
-- `test_filter_expr_unknown_field_raises_422`：拼错字段 → 422（**不得** 200 + 空集）。
-- 后端一致性：InMemory / PG 同输入同结果。
+- `test_filter_field_resolution.py`（5 例）：普通 slug ✓ / 完整 rid ✓ / 6 段 rid 的 parts[3] 约定 / 含点写法 → 报错而非静默 / 未知字段 → 报错。
 
 ### 验收
 
-- slug 与完整 rid 等价 ✓；未知字段 422 ✓；两后端一致 ✓；`import_to_platform.py` 的 14/14 过滤校验在**两种写法**下均通过 ✓。
+- 未知字段 → `ValueError`（API 422）✓；普通 slug 与完整 rid 均正常 ✓；`test_rewrite_keeps_unknown_fields` 等既有单测不变 ✓。
 
 ---
 
@@ -209,7 +213,25 @@ _PG_INLINE_FUNCTIONS: dict[str, str] = {}      # 部署态为空
 
 **归因**：GOVERN-05 设计预留 `GitFunctionResolver` / `OCIImageResolver`（SANDBOX-02 / AGENT-EXT-01），当前未接线。
 
-### 修复（分两步，先方案后实现）
+### 修复（**已落地** —— ADR-0063 S1–S5）
+
+| 阶段 | 内容 | 结果 |
+|---|---|---|
+| **S1** | 新增 `GitFunctionResolver`（`git:<40位SHA>:<path>`，进程内缓存，fail-fast） | ✅ 6 测试 |
+| **S2** | 删除两处静默兜底（`pg_repo` 恒等函数 / `engine.py` 参数回显）+ 按 scheme 分派 + seed 改造 | ✅ 22 处连带清理 |
+| **S3** | flow 路径解析 ActionType 声明的真实 `function_ref`（不再拿 `action_rid` 占位） | ✅ |
+| **S4** | production profile 拒绝 `inline://`（硬规则 5） | ✅ |
+| **S5** | **部署态 e2e** | ✅ propose→confirm→execute 200，函数结果**真实回写实例属性** |
+
+> **决策澄清（评审产出）**：「源码从 Action 编排来」**不成立** —— 编排层只持 `action_rid` **指针**，
+> 不承载源码；而声明式写路径（`ActionType.declarative_edits` / edit-set）**根本不需要源码**。
+> 因此 ADR-0063 把作用域收敛到**代码轴**，并把 Function 定位为「声明式表达不了的复杂计算的例外通道」。
+
+> **部署后另暴露 2 处**（本地/单测跑不出来）：PG `set_function_executor` 漏注册已有 Function；
+> seed 回填只写 registry 不调 upsert（resolver 注册只发生在 upsert）。详见 §5b 末。
+
+<details>
+<summary>原始草案（已被上表取代，保留供对照）</summary>
 
 **Step 1 · 设计（先落 ADR）**
 - 决策点：源码来源（Git SHA / OCI digest / 受控 inline 注册端点）？信任边界与签名校验？与 Function Sandbox（ADR-0040，L2 K8s Job）的关系？
@@ -230,30 +252,100 @@ _PG_INLINE_FUNCTIONS: dict[str, str] = {}      # 部署态为空
 ### 验收
 
 - 部署态 apply **真正执行**业务逻辑 ✓；未知来源 fail-fast ✓；`dangerous_goods` 端到端复现 GT ✓（把本会话"内核层验证"升级为"平台层验证"）。
-- 交付 `docs/active/decisions/ADR-00xx-function-source-resolution.md` + ACCEPTANCE 证据。
+- 交付 `docs/active/decisions/ADR-0063-function-source-resolution.md`（实际文件名）+ ACCEPTANCE 证据。
+
+</details>
 
 ---
 
-## 6. 推荐执行顺序
+## 5b. F7–F10 · 实施中新发现（原计划外）
+
+### F7 · RLS 迁移静默 no-op（P1，F8 的上游成因）
+
+`alembic/versions/20260807_0013_ont_kernel_rls.py` 只对**当时已存在**的表开 RLS；而 `ont_*` 表由服务运行时 `pg_repo._ensure_schema()` 按需创建。若迁移先跑，它静默跳过，且注释**谎称**「下次 `alembic upgrade head` 会补上」—— **Alembic 按 revision 记账，已应用的 revision 不会重跑**。实测：`metaplatform` 库 28 张 `ont_*` 表 `rls=false`、零策略，连 `alembic_version` 表都不存在。
+
+**修复**：迁移改为**响亮告警**（列出缺哪些表 + 指向补开脚本），不再谎称会自动补；新增幂等脚本 `scripts/ont/apply_rls.py`（`--dry-run` / `--revert`，按实际存在的、带 `tenant_id` 列的表逐一张开）。
+
+### F8 · 跨租户读取泄漏（**P0**，实测确认）
+
+以 `tenant-default` 身份调 `GET /link-instances` / `GET /individuals`，**返回了 `tenant-canary` 的行**（已实测）。
+
+成因链（三者叠加）：
+1. `list_individuals` / `list_link_instances` 是 `SELECT *`，**无租户谓词**（同族 `list_object_types` 有 `WHERE tenant_id = %s`）；
+2. PG RLS 从未生效（F7）；
+3. 更深一层：`tenant_scope` 用 `threading.local`，**不跨 `asyncio.to_thread`** → API 路径下 `_current_tenant()` 恒为 `None` → `_install_rls` 从不执行（**GOVERN-06 第二层防线一直是死的**）。
+
+**修复（两层）**：
+- **应用层**：两个方法加 `tenant_id` 参数 + 谓词；API handler 显式传 `ctx.tenant_id`（`list_object_types` 早就是这个"深度防御"写法）；InMemory 与 Protocol 同步。
+- **前置**：`threading.local` → **`contextvars.ContextVar`**（实测跨 `to_thread` 可见）。
+- **数据库层**：对 `metaplatform` 实开 RLS —— **26/28** 张 `ont_*` 表 `ENABLE + FORCE` + `tenant_isolation` 策略。
+
+**验证**：开启前后行数**完全一致**（49/2176/69）；写入 200 且读回正确；canary 行不可见。
+
+#### ⚠️ 更正：RLS 在本环境**实际不生效**（2026-09-14 二次核查）
+
+后续抽查发现 `GET /object-types/{rid}/datasources` **仍然泄漏** —— 尽管 `ont_backing_datasource` 已开 RLS。根因：
 
 ```
-第 1 批（0.5–1.5d，确定性高、低风险，先拿绿）
-  F3+F6  →  F2
-   └─ 都是小改动 + 明确回归，适合建立"两后端一致性"测试脚手架
-
-第 2 批（1d，纠错价值最高）
-  F4  ← 依赖第 1 批建立的"两后端一致性"测试范式
-
-第 3 批（0.5–3d，含运维/架构）
-  F5（先修凭证 → 再异步化）
-  F1（先 ADR → 再实现）   ← 最后做，因为它改的是引擎执行语义
-
-贯穿：F3/F4 都要补 InMemory×PG 双后端一致性测试，这是本次暴露的系统性问题
+meta: rolsuper=True rolbypassrls=True
 ```
 
-**依赖**：
-- F4 的 fail-fast 需先确定"字段可解析性"的数据来源（ObjectType properties）——与 F1 无关，可独立做。
-- F5 的异步化若引入队列，与 F1 的 Function Sandbox 执行器**不同**，不要混在一起。
+**应用连接角色 `meta` 是超级用户 + BYPASSRLS**；PostgreSQL 中**超级用户恒绕过 RLS**，`FORCE ROW LEVEL SECURITY` 只作用于表 owner，管不住超级用户。
+因此：
+- 上一段的「canary 行不可见」**靠的是应用层租户谓词，不是 RLS**；把功劳记在 RLS 上是错的。
+- `apply_rls.py` 确实把 26 张表开到了 `rls=true force=true`，但**在当前角色下是装饰性的**。
+- 真正需要 RLS 生效，须等 **GOVERN-09 提供非特权应用角色**（`security/test_tenant_isolation_hard.py` 早就因此 skip，跳过原因原文即「role bypasses RLS (superuser / BYPASSRLS)」）。
+
+**推论**：**租户隔离目前完全依赖应用层**。凡缺少显式租户谓词/守门的端点即存在泄漏面。
+
+#### 端点守门审计（本次发现，部分已修）
+
+对 `api.py` 中带 `rid` 参数的端点做了启发式审计，**18 处源码层面看不到 rid 前缀守门**（对比 `list_versions` / `get_object_type` 等有）。
+其中**已实测确认泄漏并修复**的：
+
+| 端点 | 修复 |
+|---|---|
+| `GET /functions/{rid}/versions` | 补 rid 前缀守门 → 403（此前可读他租户函数版本元数据含 `source_ref`） |
+| `GET /object-types/{rid}/datasources` | 同上（此前可读他租户背挂数据源声明） |
+
+**其余 16 处待审**（`materialization` / `security-policies` / `datasources/sync|cdc` / `action-audit` / `timeseries` / `wip` / `export` / `reasoning/axioms` / `interfaces` 等）：
+本审计是**源码启发式**（可能是误报——守门或许在更深处），需逐个实测确认后再决定是否加守门。
+
+### F9 · `GET /axioms` 恒 500（P2）
+
+`_row_to_ax` 对每个 operand 直接构造 `ClassRef`，遇到非法值即抛。库中存在两类：
+① `upsert_object_type` 对**无父类**类型生成 `operands=[rid, '']`（空串占位）；
+② 闭包路径刻意支持的 **slug 形式** operand（`list_subclass_axioms` 按原始字符串消费，DTO 层无法表示）。
+
+**修复**：生成端不再写空串；读取端跳过无法表示的 operand；`list_axioms` 对单条坏行容错（列表端点不应因一行脏数据整体 500）。
+
+### F10 · `audit_id` 撞 `ont_action_audit` 主键（P2，**部署后暴露**）
+
+`engine.py:436` 用**进程内计数器** `audit-{len(self._audit)+1}`。容器重启后计数归零 → 生成 `audit-1` → 与库里既有行撞主键 → `execute` 500。
+
+**修复**：加进程唯一前缀 `audit-<6位hex>-<n>`（保留 `audit-` 前缀与计数器语义）。
+
+**部署后才暴露的还有 2 处**（本地/单测跑不出来，因 executor 与 upsert 的顺序不同）：
+- PG `set_function_executor` **只赋值 executor，从不给已有 Function 注册 `function_ref`**（InMemory 版本有遍历）。而启动顺序是 `seed_demo()` → `_inject_function_executor()`，seed 创建的函数永不被 ActionService 认知 → `FunctionNotRegistered`。
+- seed 的函数源码回填走了 `continue`，只写 `_PG_INLINE_FUNCTIONS` 不调 `upsert_function`，而 resolver 注册只发生在 upsert 里 → 新进程仍解析不到。
+
+---
+
+## 6. 推荐执行顺序（**实际执行序**）
+
+```
+第 1 批  F3+F6 → F2 → F4 → F9 → F8(应用层)   ✅ 全绿
+第 2 批  F5（根因：key 名不匹配，非凭证问题）  → 降级维度可配置 + degraded 标记  ✅
+第 3 批  F1（ADR-0063 S1–S5：Git resolver → 删兜底 → flow 路径 → prod 守门 → e2e）  ✅
+第 4 批  F10（部署后暴露）→ F7（迁移）→ F8 数据库层（RLS 实开）  ✅
+```
+
+**实施中的两个硬前置**（原计划未预见）：
+1. **`contextvars` 替换 `threading.local`** —— 不先做，开 RLS 会让全站读空；
+2. **容器重启加载修复** —— 容器挂载主工作目录的 `packages/`，但 Python 进程需重启才加载新代码。
+   中间窗口若已开 RLS，服务会读空 —— 故顺序必须是「先重启 → 再开 RLS」。
+
+**贯穿项**：InMemory×PG 双后端一致性测试（F3/F4 同源暴露）。仍未补齐的同类隐患：见 §9。
 
 ---
 
@@ -267,30 +359,46 @@ _PG_INLINE_FUNCTIONS: dict[str, str] = {}      # 部署态为空
 | 静态 | `ruff` + `pyright`（硬规则 #6） |
 | 证据 | 每项修复附 ACCEPTANCE 段落，更新 `HARD-RULES-MATRIX` / `FOLLOW-UP-BOARD` |
 
-**回归基线（当前值，修复后不得劣化）**：
-- 全量导入 `2154/2154`、`0 失败`、`14/14` 计数/过滤/回读
-- 平台高级基元 `9/9`
-- 内核 pilot `274/274`、`66×6`
+**回归基线（修复后实测值，不得劣化）**：
+- `mate-kernel` + `mate-tech-ont`：**1167 passed / 0 failed / 8 skipped**
+- `mate-tech-llmgw`：**278 passed / 0 failed**
+- 平台高级基元 `9/9`、内核 pilot `274/274` 与 `66×6`（未触及）
+- 部署态 e2e：`propose→confirm→execute` 200 + 属性回写 ✓
+
+> ⚠️ 三包**合在同一 pytest 进程**跑会多出 3 个 llmgw 失败（既有跨包隔离问题，见 §9），非本次引入。
 
 ---
 
-## 8. 里程碑
+## 8. 里程碑（**全部达成**）
 
-| 里程碑 | 内容 | 出口 |
-|---|---|---|
-| **M1 · 快修**（第 1 批） | F3+F6、F2 | 4 项测试绿；双后端一致性脚手架就位 |
-| **M2 · 纠错**（第 2 批） | F4 | slug/rid 等价 + 未知字段 422；导入回归仍 14/14 |
-| **M3 · 韧性**（第 3 批） | F5 | 写入延迟指标回落；embedder 故障不阻塞 |
-| **M4 · 能力**（第 3 批） | F1 | ADR 通过 + 部署态 apply 真执行 + `dangerous_goods` 274/274 平台层复现 |
+| 里程碑 | 内容 | 出口 | 结果 |
+|---|---|---|---|
+| **M1 · 快修** | F3+F6、F2、F9 | 测试绿 | ✅ 4+1 测试 |
+| **M2 · 纠错** | F4、F8（应用层） | 未知字段 422；不再跨租户泄漏 | ✅ 5+2 测试 |
+| **M3 · 韧性** | F5 | 根因修复 + 降级可辨识 | ✅ 4 测试 |
+| **M4 · 能力** | F1（S1–S5）、F10、F7、F8（数据库层） | 部署态 apply 真执行 | ✅ **部署态 e2e 跑通，属性真实回写** |
+
+**最终回归**：`mate-kernel` + `mate-tech-ont` **1167 passed / 0 failed**；`mate-tech-llmgw` **278 passed / 0 failed**。
 
 ---
 
-## 9. 本期不做（scope guard）
+## 9. 本期不做 / 已知遗留
 
+**不做（沿用）**：
 - 不引入外部编排/规则引擎框架（沿用自研约束）。
 - 不改 Function Sandbox 的 L2 K8s 执行路径（归 SANDBOX-02）。
 - 不重构 `propose` 的存储模型（F2 走方案 A）。
 - 不为 14 个 SOP 域补真实业务逻辑实现（那是数据集价值，不是引擎缺陷）。
+
+**已知遗留（本次未处理）**：
+| 项 | 说明 |
+|---|---|
+| **RLS 在本环境不生效** | 应用角色 `meta` 是 `rolsuper+rolbypassrls` → 超级用户恒绕过 RLS。26 张表虽已 `ENABLE+FORCE`，实为**装饰性**。**租户隔离完全压在应用层**。需 GOVERN-09 提供非特权角色才有第二道防线。 |
+| **16 处端点守门待审** | 带 `rid` 的端点中 18 处源码层面无前缀守门；已实测确认并修复 2 处（`/functions/{rid}/versions`、`/object-types/{rid}/datasources`），其余待逐个实测。见 §5b F8 末。 |
+| `ont_function_version` / `ont_type_version` 无 `tenant_id` 列 | ⚠️ **更正**：不是 `ont_function_alias`（它有 `tenant_id` 且已开 RLS）。这两张表无该列故无法行级隔离，读取依赖 **rid 内嵌的租户前缀** + 端点守门。 |
+| `FUNCTION_BACKEND` vs `SANDBOX_BACKEND` | 两个开关语义部分重叠，合并留待 GOVERN-01（ADR-0063 §2.5）。 |
+| ~~ObjectSet 其它静默路径~~ | ✅ **已修**：`sort` / `group_by` 未知字段现 fail-fast（`_require_resolvable_field`）。派生属性内部的 `continue` 保留（非用户输入，且已有 try 保护）。 |
+| ~~跨包测试隔离~~ | ✅ **已修**：`test_ont_l5_search_boost.py::TestHyDEEnrich` 两处 `os.environ.pop("SERVICE_CLIENT_SECRET")` **不还原**，永久污染 pytest 进程 → llmgw 运行时读到空。改用 `monkeypatch.delenv`（自动还原）。合跑 1449 passed / 0 failed。 |
 
 ---
 
@@ -299,5 +407,12 @@ _PG_INLINE_FUNCTIONS: dict[str, str] = {}      # 部署态为空
 | 项 | 路径 |
 |---|---|
 | 缺陷原始记录 | `docs/active/specs/2026-09-14-ontology-data-validation-report.md` §5 |
+| 决策记录（F1） | `docs/active/decisions/ADR-0063-function-source-resolution.md` |
 | 回归脚本 | `scripts/ont-bench/{import_to_platform,platform_advanced_primitives}.py` |
-| 双后端实现对比 | `mate-kernel/.../ontology/in_memory.py:660` vs `mate-tech-ont/.../v2_kernel/pg_repo.py:2133` |
+| RLS 幂等脚本（F7/F8） | `scripts/ont/apply_rls.py` |
+| 双后端实现对比 | `mate-kernel/.../ontology/in_memory.py` vs `mate-tech-ont/.../v2_kernel/pg_repo.py` |
+| F3/F8 回归测试 | `mate-tech-ont/tests/test_ont_exp03_link_semantics.py`、`tests/test_ont_list_tenant_scope.py` |
+| F2/F4 回归测试 | `mate-tech-ont/tests/integration/test_ont_proposal_provenance.py`、`test_ont_filter_field_resolution.py` |
+| F9 回归测试 | `mate-tech-ont/tests/test_ont_g21_closure_objectset.py::TestListAxiomsSafe` |
+| F5 回归测试 | `mate-tech-llmgw/tests/test_embedding_admin_config.py`、`test_llmgw_embeddings.py` |
+| F1-S1 回归测试 | `mate-kernel/tests/test_function_resolver_git.py` |
