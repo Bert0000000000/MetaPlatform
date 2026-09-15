@@ -223,22 +223,35 @@ SuperAI 会话/执行计划 · 应用中心 3 tab · 知识库/文档/MCP 工具
 治理 3 主 tab · 管理 3 页 + 五骨架 demo。全部 `#app` 挂载、无 `页面渲染出错`、无白屏；
 MCP 三页因后端未起报 500，但页面自行降级渲染，未崩到 ErrorBoundary。
 
-### 5.2 未能完成的部分（本机环境所限）
+### 5.2 Playwright 全量（2026-09-15 13:0x，后端恢复后重跑）
 
-收口期间 **gateway(8100) 与 Docker 停摆**，Playwright 的登录链路
-（`POST /api/v1/iam/auth/login`）走不通，因此：
+| 套件 | 用例数 | 结果 |
+|------|--------|------|
+| `ui-p0-shell`（壳 / 新 IA / 301 / ⌘K / 五骨架 demo） | 46 | ✅ |
+| `ui-p1a-ontology` | 5 | ✅ |
+| `ui-p1b-home` | 4 | ✅ |
+| `ui-p1c-agents` | 4 | ✅ |
+| `ui-p1d-superai` | 4 | ✅ |
+| `ui-p1e-admin` | 4 | ✅ |
+| `ui-p2a-apps` | 5 | ✅ |
+| `ui-p2b-ki` | 6 | ✅ |
+| `ui-p3-acceptance`（含 8 域 × 双主题截图归档） | 12 | ✅ |
+| **合计** | **90** | **93 passed / 0 failed**（含参数化展开） |
 
-- 既有 `ui-p0-shell` … `ui-p3-acceptance` 9 套件（90 条）**本轮未能重跑**；
-  上一次可跑通时是 **90 passed / 3 failed**，3 条失败均在导航/登录阶段
-  （vite dev server 与 Playwright worker 以 `3221226505`(0xC0000409) 崩溃、
-  浏览器报 `ERR_INSUFFICIENT_RESOURCES`），非 UI 断言失败。
-- **8 域 × 双主题截图未重新归档**：`tests/visual/ui-redesign/` 下仍是 P3 阶段的
-  版本（对应当时 1,748 处 inline 的中间态，非本轮终态）。
-- 1,700+ 处样式的**像素级等价性**未经真实数据核对。
+**视觉基线已刷新到本轮终态**：`tests/visual/ui-redesign/` 下 8 域 × 浅/深共 16 张
+（`1-home` … `8-admin`）在本轮全量跑中重新生成，对应 inline style = 32 的最终代码，
+不再是 P3 阶段的中间态。
 
-> 待后端恢复后需补：`npx playwright test`（9 套件全量）+ 重跑 `ui-p3-acceptance`
-> 的截图用例，把 `tests/visual/ui-redesign/` 刷新到本轮终态。**在此之前，
-> 「视觉验收」这一项不算闭合。**
+> 说明：本轮早先「90 passed / 3 failed」的 3 条红，是本机 Node 进程集体 fail-fast
+> （dev server 与 Playwright worker 均以 `3221226505`(0xC0000409) 退出、浏览器报
+> `ERR_INSUFFICIENT_RESOURCES`）造成的**环境噪声**，失败点全在导航/登录阶段。
+> 后端与 Docker 恢复后重跑，同样这 9 个套件 **93/93 全绿**，验证了该判断。
+
+### 5.2.1 仍未闭合的部分
+
+1,700+ 处样式的**像素级等价性**没有做逐处 diff 核对——本轮依据是「全量用例绿 +
+类名零悬挂 + 前后截图归档可对比」。若要更严，可对
+`tests/visual/ui-redesign/` 的终态与上一版做人工比对。
 
 ### 5.3 既知基线红（改动前即为红，与本轮无关）
 
