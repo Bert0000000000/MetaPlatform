@@ -961,6 +961,7 @@ class InMemoryOntologyRepository(OntologyRepository):
         target_iid: str | None,
         impact_summary: str,
         expected_diff: dict[str, Any] | None = None,
+        kind: str = "action",
         provenance: dict[str, Any] | None = None,
     ) -> Any:
         if action_rid not in self._action_types:
@@ -976,6 +977,7 @@ class InMemoryOntologyRepository(OntologyRepository):
             target_iid=target_iid,
             impact_summary=impact_summary,
             expected_diff=expected_diff,
+            kind=kind,
         )
 
     # ───── MP-SAL-04b: 文本→本体 ingest（kind=create_instance / model_type）─────
@@ -1055,10 +1057,19 @@ class InMemoryOntologyRepository(OntologyRepository):
         )
 
     def execute_proposal(
-        self, proposal_id: str, *, viewer_markings: tuple[str, ...] | list[str] = ()
+        self,
+        proposal_id: str,
+        actor_id: str = "",
+        idempotency_key: str | None = None,
+        *,
+        viewer_markings: tuple[str, ...] | list[str] = (),
     ) -> Any:
+        # actor_id/idempotency_key：与 PG 同签名（InMemory 无幂等表；actor 已随
+        # proposal.confirmed_by 记录）。viewer_markings → 统一执行器安全闸门。
         from datetime import UTC as _UTC
         from datetime import datetime as _dt
+
+        del actor_id, idempotency_key
 
         from mate_kernel.action.engine import ProposalNotConfirmed, ProposalStatus
 
@@ -1256,10 +1267,13 @@ class InMemoryOntologyRepository(OntologyRepository):
         edit_templates: list[dict[str, Any]] | tuple[dict[str, Any], ...],
         actor: str,
         impact_summary: str = "",
+        *,
+        viewer_markings: tuple[str, ...] | list[str] = (),
     ) -> Any:
         """D7「预览即确认」：即时 proposal（confirmed）+ 执行，同一条审计管道。
 
         人工表单入口用；AI 流程必须走 propose_edit_set → 显式 confirm。
+        viewer_markings 非空 → 安全闸门（ADR-0064 S2）。
         """
         from mate_kernel.action.edit_set import resolve_edit_templates
         from mate_kernel.action.validation import validate_referenced_parameters
@@ -1284,7 +1298,7 @@ class InMemoryOntologyRepository(OntologyRepository):
             kind="edit_set",
         )
         self._action_service.confirm_proposal(prop.proposal_id, confirmed_by=actor)
-        return self.execute_proposal(prop.proposal_id)
+        return self.execute_proposal(prop.proposal_id, viewer_markings=viewer_markings)
 
     def _dry_run_diff(self, ops: list[Any]) -> dict[str, Any]:
         """计算编辑集的预期 diff（不落库）。"""
@@ -1565,7 +1579,14 @@ class InMemoryOntologyRepository(OntologyRepository):
     def list_proposals(self) -> list[Any]:
         return list(self._action_service._proposals.values())  # pyright: ignore[reportPrivateUsage]
 
-    def confirm_proposal(self, proposal_id: str, confirmed_by: str = "") -> Any:
+    def confirm_proposal(
+        self,
+        proposal_id: str,
+        confirmed_by: str = "",
+        idempotency_key: str | None = None,
+    ) -> Any:
+        # idempotency_key：API 层与 PG 同签名（InMemory 无幂等表，接受即忽略）
+        del idempotency_key
         return self._action_service.confirm_proposal(proposal_id, confirmed_by=confirmed_by)
 
     def reject_proposal(self, proposal_id: str, confirmed_by: str = "") -> Any:

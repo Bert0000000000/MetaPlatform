@@ -2523,7 +2523,12 @@ async def propose_edit_set(
     payload: EditSetApplyBodyDTO,
     request: Request,
 ) -> dict:
-    """ACT-05：AI 路径 edit-set 提案（强制 HITL —— pending → 用户 confirm → execute）。"""
+    """ACT-05：AI 路径 edit-set 提案（强制 HITL —— pending → 用户 confirm → execute）。
+
+    ADR-0064 S3：与 /propose 入口等价（统一执行器按 ActionType 声明分派）。
+    edits 缺省时依次回落：body.edits → ActionType.declarative_edits →
+    function 产物（执行时两规约解释）；三者全空才 422。
+    """
     ctx = _ctx(request)
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant action denied")
@@ -2531,10 +2536,15 @@ async def propose_edit_set(
         at = await _call_scoped(request, "get_action_type", ClassRef(rid))
     except KeyError:
         raise HTTPException(status_code=404, detail=f"action type not found: {rid}") from None
-    edits = payload.edits or [dict(t) for t in at.declarative_edits]
-    if not edits:
+    # 只透传调用方显式给的 edits —— declarative 模板回落与 function 调用留给
+    # 统一执行器（显式 edits = 全集并跳过 function；ADR-0064 S2/S3）。
+    if not payload.edits and not at.declarative_edits and at.function_ref is None:
         raise HTTPException(
-            status_code=422, detail="no declarative_edits on action and no edits in body"
+            status_code=422,
+            detail=(
+                "no edits in body, no declarative_edits and no function_ref on action "
+                f"{rid} (ADR-0064: at least one edit source required)"
+            ),
         )
     try:
         prop = await _call_scoped(
@@ -2543,7 +2553,7 @@ async def propose_edit_set(
             rid,
             payload.target_iid or None,
             dict(payload.parameters),
-            edits,
+            list(payload.edits),
             payload.impact_summary or f"edit-set proposal for {rid}",
         )
     except ValueError as e:
@@ -2564,24 +2574,35 @@ async def apply_edit_set(
     rid: str,
     payload: EditSetApplyBodyDTO,
     request: Request,
+    markings: str = "",
 ) -> dict:
     """ACT-05 / D7：人工路径「预览即确认」—— 即时 proposal + 单事务执行 + 审计。
 
     expected_diff 预览在 proposal 记录中可查（GET /proposals/{id}/preview）。
+    ADR-0064 S3：edits 回落链同 propose-edit-set（body → declarative → function）；
+    markings 非空 → 安全闸门（行/列策略 + G6 合取门 + X-Scope-Markings 收窄）。
     """
     ctx = _ctx(request)
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant action denied")
     actor = str(ctx.user_id if hasattr(ctx, "user_id") else "") or "human-operator"
+    viewer = _app_scoped_markings(request, markings) if markings else ()
     try:
         at = await _call_scoped(request, "get_action_type", ClassRef(rid))
     except KeyError:
         raise HTTPException(status_code=404, detail=f"action type not found: {rid}") from None
-    edits = payload.edits or [dict(t) for t in at.declarative_edits]
-    if not edits:
+    # 同 propose-edit-set：只透传显式 edits（回落链在统一执行器内）
+    if not payload.edits and not at.declarative_edits and at.function_ref is None:
         raise HTTPException(
-            status_code=422, detail="no declarative_edits on action and no edits in body"
+            status_code=422,
+            detail=(
+                "no edits in body, no declarative_edits and no function_ref on action "
+                f"{rid} (ADR-0064: at least one edit source required)"
+            ),
         )
+    from mate_kernel.action.engine import FunctionNotRegistered
+    from mate_kernel.ontology.security_policies import WritePolicyError
+
     try:
         result = await _call_scoped(
             request,
@@ -2589,10 +2610,14 @@ async def apply_edit_set(
             rid,
             payload.target_iid or None,
             dict(payload.parameters),
-            edits,
+            list(payload.edits),
             actor,
             payload.impact_summary,
+            viewer_markings=viewer,
         )
+    except (FunctionNotRegistered, WritePolicyError) as e:
+        # 闸门拒写 / fn 未注册 → 422（可操作：补 markings / 注册 function）
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except ValueError as e:
         # ACT-06 校验 / 模板解析失败 / 编辑执行失败 → 422（可操作错误）
         raise HTTPException(status_code=422, detail=str(e)) from e
@@ -3035,19 +3060,24 @@ async def revert_proposal(
 async def execute_proposal(
     proposal_id: str,
     request: Request,
+    markings: str = "",
 ) -> ProposalExecuteResultDTO:
     """MP-SAL-04b / MP-DEDUP-01：confirmed proposal 落库执行。
 
     - create_instance → 新建实例
     - model_type → upsert 类型
     - merge_suggestion → 自动触发 merge_object_types，archived source
-    - action → 通过已确认的提案执行，并返回审计与 Outbox 凭据
+    - action / edit_set → ADR-0064 统一执行器（按 ActionType 声明分派：
+      声明式/混合式走 EditSet 单事务，纯 function 式走 legacy 回写 is_compat）
     - ONT-GATE-01：执行前**重跑**三闸门预检（schema×SHACL×Axiom）——
       propose 时的报告只是快照，本体在窗口期可能已变化；violation 级
       发现 → 409 阻断（机器预检是 HITL 之后的强制底线）。
+    - ADR-0064 S2/S3：markings 非空 → 完整安全闸门（行/列策略 + G6 合取门 +
+      X-Scope-Markings 收窄）；FunctionNotRegistered / 闸门拒写 → 422（不再 500）。
     """
     ctx = _ctx(request)
     idempotency_key = _require_idempotency_key(request)
+    viewer = _app_scoped_markings(request, markings) if markings else ()
     try:
         prop = await _call_scoped(request, "get_proposal", proposal_id)
     except KeyError as e:
@@ -3067,6 +3097,9 @@ async def execute_proposal(
                 "preflight": preflight,
             },
         )
+    from mate_kernel.action.engine import FunctionNotRegistered
+    from mate_kernel.ontology.security_policies import WritePolicyError
+
     try:
         out = await _call_scoped(
             request,
@@ -3074,13 +3107,30 @@ async def execute_proposal(
             proposal_id,
             actor_id=str(ctx.user_id),
             idempotency_key=idempotency_key,
+            viewer_markings=viewer,
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ProposalNotConfirmed as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
+    except (FunctionNotRegistered, WritePolicyError) as e:
+        # ADR-0064 S3：可操作错误 → 422（调用方可修：注册 function / 补 markings）
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
+    # InMemory repo 的 edit_set 执行返回 EditSetResult 对象（repo 级测试消费
+    # .applied/.meta）；API 层归一化为 PG 同形态 dict（DTO/postflight 共用）。
+    if out is not None and not isinstance(out, dict):
+        meta = getattr(out, "meta", None) or {}
+        out = {
+            "kind": "edit_set",
+            "action_rid": getattr(out, "action_rid", None),
+            "audit_id": None,
+            "applied_count": len(getattr(out, "applied", ()) or ()),
+            "created_rids": list(getattr(out, "created_rids", ()) or ()),
+            "is_compat": bool(meta.get("is_compat", False)),
+            "fn_spec": meta.get("fn_spec"),
+        }
     # ONT-POSTFLIGHT-01：落库后不变式后验（不改变执行成败语义，只标注/补偿）
     out["postflight"] = await _proposal_postflight(request, prop, out)
     return ProposalExecuteResultDTO(**out)

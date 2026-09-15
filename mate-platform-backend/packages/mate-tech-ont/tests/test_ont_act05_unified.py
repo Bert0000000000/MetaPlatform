@@ -651,3 +651,178 @@ class TestS2PgUnified:
             assert result["is_compat"] is True
             ind = pg_repo.get_individual(ALICE)
             assert ind.get(ClassRef(P_NEW_STATUS)) == "pg-legacy"  # legacy 回写：参数 rid 即落点
+
+
+# ─────────────────── S3 · 入口分派 + AI 面（API 级）───────────────────
+
+BASE = "/api/v1/ont/v2"
+
+
+def _api_app(repo: InMemoryOntologyRepository):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    import mate_tech_ont.v2_kernel.api as ont_api
+
+    app = FastAPI()
+
+    @app.middleware("http")
+    async def _fake_auth(request, call_next):
+        from mate_platform.tenancy.context import (
+            AuthMethod,
+            RequestContext,
+            TenantId,
+            UserId,
+        )
+
+        request.state.ctx = RequestContext(
+            request_id="s3-req",
+            trace_id="s3-trace",
+            tenant_id=TenantId(T),
+            user_id=UserId("tester"),
+            roles=frozenset({"editor"}),
+            permissions=frozenset({"ont.read", "ont.write"}),
+            scopes=frozenset(),
+            auth_method=AuthMethod.USER,
+        )
+        return await call_next(request)
+
+    app.state.kernel_repo = repo
+    app.include_router(ont_api.router)
+    return TestClient(app)
+
+
+@pytest.fixture()
+def s3_client():
+    r = _mk_repo()
+    r.upsert_action_type(_hybrid_action_type())
+    # 纯声明式（function_ref=None —— S1 起可建）
+    r.upsert_action_type(
+        ActionType(
+            rid=ClassRef(ACT_PURE),
+            parameters=(_param("new-status"),),
+            submission_criteria=(),
+            side_effects=(),
+            function_ref=None,
+            on=(ClassRef(OBJ),),
+            declarative_edits=(dict(EDIT_TMPL),),
+        )
+    )
+    return _api_app(r), r
+
+
+class TestS3ApiDispatch:
+    def test_declarative_via_propose_endpoint_e2e(self, s3_client) -> None:
+        """声明式 ActionType 调 /propose（action 端点）→ execute 不再 500。"""
+        client, _ = s3_client
+        resp = client.post(
+            f"{BASE}/action-types/{ACT_PURE}/propose",
+            json={"parameters": {"new-status": "away"}, "target_iid": ALICE},
+        )
+        assert resp.status_code == 200
+        pid = resp.json()["proposal_id"]
+        assert client.post(
+            f"{BASE}/proposals/{pid}/confirm",
+            json={},
+            headers={"Idempotency-Key": f"cfm-{pid}"},
+        ).status_code == 200
+        ex = client.post(
+            f"{BASE}/proposals/{pid}/execute", headers={"Idempotency-Key": f"s3a-{pid}"}
+        )
+        assert ex.status_code == 200, ex.text
+        client2, r = s3_client  # 同一 fixture repo
+        assert r.get_individual(ALICE).get(ClassRef(P_STATUS)) == "away"
+
+    def test_propose_edit_set_on_function_only_action(self, s3_client) -> None:
+        """对称：function 式 ActionType 调 propose-edit-set（空 edits）不再 422。"""
+        client, r = s3_client
+        r.upsert_action_type(
+            ActionType(
+                rid=ClassRef(ACT_FN_ONLY),
+                parameters=(_elevel_param(),),
+                submission_criteria=(),
+                side_effects=(),
+                function_ref=ClassRef(FN),
+                on=(ClassRef(OBJ),),
+            )
+        )
+        r._action_service.register_function(
+            FN, lambda target_iid, parameters: {"elevel": "principal"}
+        )
+        resp = client.post(
+            f"{BASE}/action-types/{ACT_FN_ONLY}/propose-edit-set",
+            json={"parameters": {}, "target_iid": ALICE},
+        )
+        assert resp.status_code == 200, resp.text
+        pid = resp.json()["proposal_id"]
+        assert client.post(
+            f"{BASE}/proposals/{pid}/confirm",
+            json={},
+            headers={"Idempotency-Key": f"cfm-{pid}"},
+        ).status_code == 200
+        ex = client.post(
+            f"{BASE}/proposals/{pid}/execute", headers={"Idempotency-Key": f"s3b-{pid}"}
+        )
+        assert ex.status_code == 200, ex.text
+        assert r.get_individual(ALICE).get(ClassRef(P_LEVEL)) == "principal"
+
+    def test_function_not_registered_maps_422(self, s3_client) -> None:
+        """混合式但 fn 未注册 → execute 422（不再 500）。"""
+        client, _ = s3_client  # 未注册 FN
+        resp = client.post(
+            f"{BASE}/action-types/{ACT_HYBRID}/propose-edit-set",
+            json={"parameters": {"new-status": "away"}, "target_iid": ALICE},
+        )
+        assert resp.status_code == 200, resp.text
+        pid = resp.json()["proposal_id"]
+        assert client.post(
+            f"{BASE}/proposals/{pid}/confirm",
+            json={},
+            headers={"Idempotency-Key": f"cfm-{pid}"},
+        ).status_code == 200
+        ex = client.post(
+            f"{BASE}/proposals/{pid}/execute", headers={"Idempotency-Key": f"s3c-{pid}"}
+        )
+        assert ex.status_code == 422, ex.text
+
+    def test_execute_gate_denial_maps_422_with_scoped_header(self, s3_client) -> None:
+        """闸门拒写 → 422；X-Scope-Markings 收窄参与判定（G7 端到端）。"""
+        client, r = s3_client
+        from dataclasses import replace as _repl
+
+        r.upsert_security_policy(
+            {"kind": "column", "property_rid": P_LEVEL, "required_markings": ["hr-privileged"]}
+        )
+        r._action_service.register_function(
+            FN, lambda target_iid, parameters: {"elevel": "principal"}
+        )
+        resp = client.post(
+            f"{BASE}/action-types/{ACT_HYBRID}/propose-edit-set",
+            json={"parameters": {"new-status": "away"}, "target_iid": ALICE},
+        )
+        pid = resp.json()["proposal_id"]
+        assert client.post(
+            f"{BASE}/proposals/{pid}/confirm",
+            json={},
+            headers={"Idempotency-Key": f"cfm-{pid}"},
+        ).status_code == 200
+        # viewer 声明 public（无 hr-privileged）→ 列策略拒写 422
+        ex = client.post(
+            f"{BASE}/proposals/{pid}/execute",
+            params={"markings": "public"},
+            headers={"Idempotency-Key": f"s3d-{pid}"},
+        )
+        assert ex.status_code == 422, ex.text
+        assert "column policy" in ex.text
+
+
+class TestS3ToolSchema:
+    def test_tool_name_and_description_unified(self) -> None:
+        """D-7：工具名不改；描述与统一执行器语义一致（不绑死单一端点）。"""
+        from mate_kernel.tooling.schema_gen import action_propose_tool_schema
+
+        schema = action_propose_tool_schema(_hybrid_action_type())
+        assert schema["function"]["name"] == "propose_action_promote_hybrid"
+        desc = schema["function"]["description"]
+        assert "HITL" in desc or "确认" in desc
+        assert "propose-edit-set" not in desc  # 不再绑死端点（统一后两入口等价）
