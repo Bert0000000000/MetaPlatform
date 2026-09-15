@@ -74,7 +74,7 @@ export default function EmployeeCloneButton({
             rules={[{ required: true }, { pattern: /^[A-Za-z][A-Za-z0-9_]*$/, message: '字母开头，仅含字母数字下划线' }]}
             placeholder="请输入新员工编码"
           />
-          <p style={{ color: 'var(--semi-color-text-2)', fontSize: 12, margin: 0 }}>
+          <p className="mp-m-0 mp-text-sm mp-text-2">
             将复制「{source.name}」的角色分类、能力配置、知识库绑定等全部设置。
           </p>
         </Form>

@@ -38,6 +38,7 @@ import type {
   OverviewTopTool,
   OverviewTrendPoint,
 } from '@/api/mcphub/types';
+import './mcp.css';
 
 const HOUR_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
   hour: '2-digit',
@@ -64,14 +65,14 @@ function Statistic({
   value,
   prefix,
   suffix,
-  valueStyle,
+  valueClass,
   precision,
 }: {
   title: React.ReactNode;
   value: number | string;
   prefix?: React.ReactNode;
   suffix?: React.ReactNode;
-  valueStyle?: React.CSSProperties;
+  valueClass?: string;
   precision?: number;
 }) {
   const display =
@@ -81,21 +82,17 @@ function Statistic({
   return (
     <div>
       <div
-        style={{
-          color: 'var(--semi-color-text-2)',
-          fontSize: 13,
-          marginBottom: 4,
-        }}
+        className="mp-mb-1 mp-text-body mp-text-2"
       >
         {title}
       </div>
-      <div style={{ fontSize: 24, fontWeight: 600, lineHeight: 1.3, ...valueStyle }}>
+      <div className={`mp-fw-600 mp-text-xl mp-mcp-lh-13${valueClass ? ` ${valueClass}` : ''}`}>
         {prefix ? (
-          <span style={{ marginRight: 6 }}>{prefix}</span>
+          <span className="mp-mr-1">{prefix}</span>
         ) : null}
         {display}
         {suffix ? (
-          <span style={{ fontSize: 14, fontWeight: 400, marginLeft: 2 }}>
+          <span className="mp-text-md mp-ml-1 mp-mcp-fw-400">
             {suffix}
           </span>
         ) : null}
@@ -115,7 +112,7 @@ function ServerStatsCard({ stats }: { stats: OverviewResponse['serverStats'] }) 
           <Statistic
             title="在线"
             value={stats.online}
-            valueStyle={{ color: 'var(--semi-color-success)' }}
+            valueClass="mp-text-success"
             prefix={<CheckCircleFilled />}
           />
         </Col>
@@ -123,7 +120,7 @@ function ServerStatsCard({ stats }: { stats: OverviewResponse['serverStats'] }) 
           <Statistic
             title="离线"
             value={stats.offline}
-            valueStyle={{ color: 'var(--semi-color-text-2)' }}
+            valueClass="mp-text-2"
             prefix={<CloseCircleFilled />}
           />
         </Col>
@@ -131,7 +128,7 @@ function ServerStatsCard({ stats }: { stats: OverviewResponse['serverStats'] }) 
           <Statistic
             title="异常"
             value={stats.error}
-            valueStyle={{ color: 'var(--semi-color-danger)' }}
+            valueClass="mp-text-danger"
             prefix={<ExclamationCircleFilled />}
           />
         </Col>
@@ -151,14 +148,14 @@ function ToolStatsCard({ stats }: { stats: OverviewResponse['toolStats'] }) {
           <Statistic
             title="已启用"
             value={stats.enabled}
-            valueStyle={{ color: 'var(--semi-color-success)' }}
+            valueClass="mp-text-success"
           />
         </Col>
         <Col span={8}>
           <Statistic
             title="已禁用"
             value={stats.disabled}
-            valueStyle={{ color: 'var(--semi-color-text-2)' }}
+            valueClass="mp-text-2"
           />
         </Col>
       </Row>
@@ -186,7 +183,7 @@ function CallStatsCard({
             value={stats.successRate}
             precision={2}
             suffix="%"
-            valueStyle={{ color: 'var(--semi-color-primary)' }}
+            valueClass="mp-text-primary"
           />
         </Col>
         <Col span={8}>
@@ -199,7 +196,7 @@ function CallStatsCard({
         </Col>
       </Row>
       {chartData.length > 0 ? (
-        <ResponsiveContainer width="100%" height={180} style={{ marginTop: 12 }}>
+        <ResponsiveContainer width="100%" height={180} className="mp-mt-3">
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--semi-color-border)" />
             <XAxis dataKey="time" />
@@ -209,7 +206,7 @@ function CallStatsCard({
           </LineChart>
         </ResponsiveContainer>
       ) : (
-        <Empty description="今日暂无调用" style={{ marginTop: 16 }} />
+        <Empty description="今日暂无调用" className="mp-mt-4" />
       )}
     </Card>
   );
@@ -236,12 +233,12 @@ function TokenStatsCard({
           <Statistic
             title="合计"
             value={stats.todayTotalTokens}
-            valueStyle={{ color: 'rgb(var(--semi-purple-5))' }}
+            valueClass="mp-mcp-text-purple"
           />
         </Col>
       </Row>
       {chartData.length > 0 ? (
-        <ResponsiveContainer width="100%" height={180} style={{ marginTop: 12 }}>
+        <ResponsiveContainer width="100%" height={180} className="mp-mt-3">
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--semi-color-border)" />
             <XAxis dataKey="time" />
@@ -251,7 +248,7 @@ function TokenStatsCard({
           </LineChart>
         </ResponsiveContainer>
       ) : (
-        <Empty description="今日暂无 Token 消耗" style={{ marginTop: 16 }} />
+        <Empty description="今日暂无 Token 消耗" className="mp-mt-4" />
       )}
     </Card>
   );
@@ -263,11 +260,11 @@ const LEVEL_META: Record<
 > = {
   error: {
     color: 'red',
-    icon: <CloseCircleFilled style={{ color: 'var(--semi-color-danger)' }} />,
+    icon: <CloseCircleFilled className="mp-text-danger" />,
   },
   warning: {
     color: 'orange',
-    icon: <WarningFilled style={{ color: 'var(--semi-color-warning)' }} />,
+    icon: <WarningFilled className="mp-text-warning" />,
   },
 };
 
@@ -276,7 +273,7 @@ function ErrorAlertsCard({ alerts }: { alerts: OverviewErrorAlert[] }) {
     <Card
       title={
         <span>
-          <AlertOutlined style={{ marginRight: 8, color: 'var(--semi-color-danger)' }} />
+          <AlertOutlined className="mp-text-danger mp-mr-2"  />
           近期错误告警
         </span>
       }
@@ -291,27 +288,22 @@ function ErrorAlertsCard({ alerts }: { alerts: OverviewErrorAlert[] }) {
             const meta = LEVEL_META[item.level] ?? LEVEL_META.error;
             return (
               <List.Item>
-                <div style={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
-                  <div style={{ marginRight: 8, marginTop: 2 }}>{meta.icon}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="mp-w-full mp-flex mp-items-start" >
+                  <div className="mp-mt-1 mp-mr-2" >{meta.icon}</div>
+                  <div className="mp-flex-1">
                     <Typography.Text strong>
                       {item.toolCode || '未知工具'}
-                      <Tag color={meta.color} style={{ marginLeft: 8 }}>
+                      <Tag color={meta.color} className="mp-ml-2">
                         {item.status}
                       </Tag>
-                      <Tag color={meta.color} style={{ marginLeft: 4 }}>
+                      <Tag color={meta.color} className="mp-ml-1">
                         {item.level}
                       </Tag>
                     </Typography.Text>
                     <div
-                      style={{
-                        color: 'var(--semi-color-text-2)',
-                        fontSize: 13,
-                        marginTop: 4,
-                        lineHeight: 1.6,
-                      }}
+                      className="mp-mt-1 mp-text-body mp-text-2 mp-lh-16" 
                     >
-                      <ClockCircleOutlined style={{ marginRight: 4 }} />
+                      <ClockCircleOutlined className="mp-mr-1" />
                       {item.calledAt ? new Date(item.calledAt).toLocaleString() : '-'}
                       {item.traceId ? ` · trace: ${item.traceId}` : ''}
                       <br />
@@ -388,12 +380,12 @@ export default function OverviewPage() {
   }, []);
 
   if (error) {
-    return <Banner type="danger" description={error} style={{ margin: 24 }} />;
+    return <Banner type="danger" description={error} className="mp-m-6" />;
   }
 
   if (loading || !data) {
     return (
-      <div style={{ textAlign: 'center', padding: 48 }}>
+      <div className="mp-text-center mp-p-9">
         <Spin tip="加载概览数据..." />
       </div>
     );
@@ -401,7 +393,7 @@ export default function OverviewPage() {
 
   return (
     <div>
-      <Typography.Title heading={4} style={{ marginTop: 0, marginBottom: 16 }}>
+      <Typography.Title heading={4} className="mp-mb-4 mp-mt-1" >
         MCP Hub 概览
       </Typography.Title>
       <Row gutter={[16, 16]}>

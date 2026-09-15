@@ -169,7 +169,7 @@ export default function PolicyManagementPage() {
           <Typography.Text strong>
             <SafetyOutlined /> {r.name}
           </Typography.Text>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" className="mp-text-sm">
             优先级 {r.priority} / 版本 {r.version}
           </Typography.Text>
         </Space>
@@ -209,7 +209,7 @@ export default function PolicyManagementPage() {
       title: '生效时间',
       key: 'effective',
       render: (_, r) => (
-        <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+        <Typography.Text type="tertiary" className="mp-text-sm">
           {r.effectiveStartAt ? dayjs(r.effectiveStartAt).format('YYYY-MM-DD HH:mm') : '不限'} ~{' '}
           {r.effectiveEndAt ? dayjs(r.effectiveEndAt).format('YYYY-MM-DD HH:mm') : '不限'}
         </Typography.Text>
@@ -300,13 +300,13 @@ export default function PolicyManagementPage() {
             placeholder="例如：销售部工作时间可调用报价工具"
           />
 
-          <Space style={{ display: 'flex' }}>
+          <Space className="mp-flex">
             <Form.Select
               field="subjectType"
               label="主体类型"
               rules={[{ required: true, message: '请选择主体类型' }]}
               optionList={SUBJECT_TYPE_OPTIONS}
-              style={{ width: 120 }}
+              className="mp-w-120"
             />
             <Form.Input
               field="subjectId"
@@ -317,20 +317,20 @@ export default function PolicyManagementPage() {
             />
           </Space>
 
-          <Space style={{ display: 'flex' }}>
+          <Space className="mp-flex">
             <Form.Select
               field="resourceType"
               label="资源类型"
               rules={[{ required: true, message: '请选择资源类型' }]}
               optionList={RESOURCE_TYPE_OPTIONS}
-              style={{ width: 120 }}
+              className="mp-w-120"
             />
             <Form.Select
               field="action"
               label="操作"
               rules={[{ required: true, message: '请选择操作' }]}
               optionList={ACTION_OPTIONS}
-              style={{ width: 160 }}
+              className="mp-w-160"
             />
             <Form.RadioGroup
               field="effect"
@@ -351,7 +351,7 @@ export default function PolicyManagementPage() {
             leafOnly
             defaultExpandAll
             placeholder="请选择工具（按分类）"
-            style={{ width: '100%' }}
+            className="mp-w-full"
             showClear
           />
 
@@ -364,14 +364,14 @@ export default function PolicyManagementPage() {
           />
 
           {syntax && (
-            <Typography.Paragraph type="tertiary" style={{ fontSize: 12 }}>
+            <Typography.Paragraph type="tertiary" className="mp-text-sm">
               语法：{syntax.syntax}；可用变量：{syntax.variables.join(', ')}
               <br />
               示例：{syntax.examples[0]}
             </Typography.Paragraph>
           )}
 
-          <Space style={{ display: 'flex' }}>
+          <Space className="mp-flex">
             <Form.DatePicker
               field="effectiveStartAt"
               label="生效开始时间"
@@ -386,7 +386,7 @@ export default function PolicyManagementPage() {
             />
           </Space>
 
-          <Space style={{ display: 'flex' }}>
+          <Space className="mp-flex">
             <Form.InputNumber
               field="priority"
               label="优先级"

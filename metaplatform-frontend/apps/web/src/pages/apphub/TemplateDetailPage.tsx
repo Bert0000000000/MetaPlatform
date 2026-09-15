@@ -18,6 +18,7 @@ import {
 import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import * as Icons from '@ant-design/icons';
+import './apps.css';
 import {
   OFFICIAL_TEMPLATES,
   CATEGORY_LABEL,
@@ -140,7 +141,7 @@ export default function TemplateDetailPage() {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: 48 }}>
+      <div className="mp-text-center mp-p-9">
         <Spin />
       </div>
     );
@@ -191,7 +192,7 @@ export default function TemplateDetailPage() {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Button icon={<Icons.ArrowLeftOutlined />} onClick={() => navigate('/market')}>
           返回市场
         </Button>
@@ -200,32 +201,22 @@ export default function TemplateDetailPage() {
       <Row gutter={16}>
         <Col xs={24} lg={16}>
           {/* 概览卡片 */}
-          <Card style={{ marginBottom: 16 }}>
+          <Card className="mp-mb-4">
             <Row gutter={16} align="middle">
               <Col>
                 <div
-                  style={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: 12,
-                    background: 'linear-gradient(135deg, var(--semi-color-primary) 0%, var(--semi-color-primary-light-hover) 100%)',
-                    color: 'var(--semi-color-white)',
-                    fontSize: 36,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+                  className="mp-justify-center mp-text-xl mp-flex-center mp-rounded-lg mp-app-cover-sm"
                 >
                   {renderIcon(template.icon)}
                 </div>
               </Col>
-              <Col style={{ flex: 'auto' }}>
-                <Typography.Title heading={5} style={{ margin: 0 }}>
+              <Col className="mp-app-flex-auto">
+                <Typography.Title heading={5} className="mp-m-0">
                   {template.name}
                 </Typography.Title>
-                <Space spacing="medium" style={{ marginTop: 8 }}>
+                <Space spacing="medium" className="mp-mt-2">
                   <Space>
-                    <Rating disabled value={ratingInfo.rating} allowHalf style={{ fontSize: 14 }} />
+                    <Rating disabled value={ratingInfo.rating} allowHalf className="mp-text-md" />
                     <Typography.Text strong>{ratingInfo.rating}</Typography.Text>
                     <Typography.Text type="tertiary">({ratingInfo.ratingCount} 人评分)</Typography.Text>
                   </Space>
@@ -248,7 +239,7 @@ export default function TemplateDetailPage() {
                 </Button>
               </Col>
             </Row>
-            <Typography.Paragraph style={{ marginTop: 16 }}>{template.description}</Typography.Paragraph>
+            <Typography.Paragraph className="mp-mt-4">{template.description}</Typography.Paragraph>
             <Space wrap>
               {template.tags.map((t) => (
                 <Tag key={t}>{t}</Tag>
@@ -257,7 +248,7 @@ export default function TemplateDetailPage() {
           </Card>
 
           {/* 截图预览 */}
-          <Card title="模板截图" style={{ marginBottom: 16 }}>
+          <Card title="模板截图" className="mp-mb-4">
             {template.screenshots.length === 0 ? (
               <Empty description="暂无截图" />
             ) : (
@@ -267,7 +258,7 @@ export default function TemplateDetailPage() {
                     <img
                       src={s}
                       alt={`截图 ${idx + 1}`}
-                      style={{ width: '100%', borderRadius: 8, border: '1px solid var(--semi-color-border)' }}
+                      className="mp-w-full mp-border mp-rounded" 
                     />
                   </Col>
                 ))}
@@ -276,7 +267,7 @@ export default function TemplateDetailPage() {
           </Card>
 
           {/* 字段预览 */}
-          <Card title={`字段预览（${template.fields.length} 个）`} style={{ marginBottom: 16 }}>
+          <Card title={`字段预览（${template.fields.length} 个）`} className="mp-mb-4">
             {template.fields.length === 0 ? (
               <Empty description="暂无字段定义" />
             ) : (
@@ -291,7 +282,7 @@ export default function TemplateDetailPage() {
                       <Tag color="blue">{FIELD_TYPE_LABEL[field.type] ?? field.type}</Tag>
                       {field.required ? <Tag color="red">必填</Tag> : null}
                       {field.options && field.options.length > 0 ? (
-                        <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                        <Typography.Text type="tertiary" className="mp-text-sm">
                           选项：{field.options.join(' / ')}
                         </Typography.Text>
                       ) : null}
@@ -303,7 +294,7 @@ export default function TemplateDetailPage() {
           </Card>
 
           {/* 流程预览 */}
-          <Card title={`流程预览（${template.flows.length} 个）`} style={{ marginBottom: 16 }}>
+          <Card title={`流程预览（${template.flows.length} 个）`} className="mp-mb-4">
             {template.flows.length === 0 ? (
               <Empty description="暂无流程定义" />
             ) : (
@@ -312,12 +303,12 @@ export default function TemplateDetailPage() {
                   key={idx}
                   title={flow.name}
                   headerExtraContent={flow.description ? <Typography.Text type="tertiary">{flow.description}</Typography.Text> : null}
-                  style={{ marginBottom: idx === template.flows.length - 1 ? 0 : 12 }}
+                  className="mp-app-flow-card"
                 >
                   <Timeline
                     dataSource={flow.nodes.map((node) => ({
                       color: NODE_TYPE_COLOR[node.type],
-                      dot: <Icons.CheckCircleOutlined style={{ fontSize: 16 }} />,
+                      dot: <Icons.CheckCircleOutlined className="mp-text-lg" />,
                       content: (
                         <Space vertical spacing={0}>
                           <Space>
@@ -325,7 +316,7 @@ export default function TemplateDetailPage() {
                             <Tag color={NODE_TYPE_COLOR[node.type]}>{node.type}</Tag>
                           </Space>
                           {node.assignee ? (
-                            <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                            <Typography.Text type="tertiary" className="mp-text-sm">
                               处理人：{node.assignee}
                             </Typography.Text>
                           ) : null}
@@ -341,7 +332,7 @@ export default function TemplateDetailPage() {
 
         {/* 右侧：评论 */}
         <Col xs={24} lg={8}>
-          <Card title="提交评论" style={{ marginBottom: 16 }}>
+          <Card title="提交评论" className="mp-mb-4">
             <Form
               form={form}
               layout="vertical"
@@ -379,12 +370,12 @@ export default function TemplateDetailPage() {
                       <>
                         <Space>
                           <Typography.Text>{item.userId}</Typography.Text>
-                          <Rating disabled value={item.rating} style={{ fontSize: 12 }} />
+                          <Rating disabled value={item.rating} className="mp-text-sm" />
                         </Space>
                         {item.comment ? (
-                          <Typography.Paragraph style={{ marginTop: 8 }}>{item.comment}</Typography.Paragraph>
+                          <Typography.Paragraph className="mp-mt-2">{item.comment}</Typography.Paragraph>
                         ) : null}
-                        <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                        <Typography.Text type="tertiary" className="mp-text-sm">
                           {new Date(item.createdAt).toLocaleString()}
                         </Typography.Text>
                       </>

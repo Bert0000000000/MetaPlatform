@@ -1,0 +1,13 @@
+/*
+ * Workflow 编排域样式（wfe）。
+ * 间距取 --mp-space-* 十档，颜色取 Semi 主题 token。
+ */
+
+/* ActionOrchestrationPage 撑满容器 */
+.mp-wfe-min-h-full { min-height: 100%; }
+
+/* 错误卡：危险描边 */
+.mp-wfe-card-danger { border-color: var(--semi-color-danger); }
+
+/* Plan 画布节点卡：选中态主色描边 */
+.mp-wfe-node-on { border: 2px solid var(--semi-color-primary); }

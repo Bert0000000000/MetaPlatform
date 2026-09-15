@@ -38,7 +38,7 @@ export default function AIProcessGenerate({ onApply }: AIProcessGenerateProps) {
 
   return (
     <Card title={<><PartitionOutlined /> AI 流程生成</>} bodyStyle={{ padding: 12 }}>
-      <Space vertical style={{ width: '100%' }}>
+      <Space vertical className="mp-w-full">
         <TextArea
           rows={3}
           placeholder="描述业务流程，例如：员工请假：员工提交→直属上级审批→HR 备案→结束"
@@ -67,7 +67,7 @@ export default function AIProcessGenerate({ onApply }: AIProcessGenerateProps) {
                 </Tag>
               ))}
             </Space>
-            <div style={{ marginTop: 12 }}>
+            <div className="mp-mt-3">
               <Button theme="solid" type="primary" onClick={handleApply}>
                 应用到流程设计器
               </Button>

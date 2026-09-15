@@ -1,6 +1,7 @@
 import { Card, Typography, Empty } from '@douyinfe/semi-ui';
 import { useMemo } from 'react';
 import type { McpResource } from '@/api/mcphub/types';
+import '../mcp.css';
 
 interface ContentPreviewProps {
   resource: McpResource;
@@ -32,17 +33,7 @@ export default function ContentPreview({ resource }: ContentPreviewProps) {
     <Card title={`预览 (${resource.mimeType})`}>
       <Typography.Paragraph copyable={{ content }}>
         <pre
-          style={{
-            background: 'var(--semi-color-bg-1)',
-            border: '1px solid var(--semi-color-border)',
-            padding: 12,
-            borderRadius: 4,
-            maxHeight: 400,
-            overflow: 'auto',
-            margin: 0,
-            fontFamily: 'Menlo, Consolas, monospace',
-            fontSize: 12,
-          }}
+          className="mp-overflow-auto mp-border mp-p-3 mp-m-0 mp-text-sm mp-bg-1 mp-rounded-sm mp-mcp-max-h-400 mp-mono"
         >
           {content}
         </pre>

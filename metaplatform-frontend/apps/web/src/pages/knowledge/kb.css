@@ -14,3 +14,23 @@
   font-size: 12px;
   color: var(--semi-color-text-2);
 }
+
+/* ---------- 检索配置页（KnowledgeConfigPage） ---------- */
+.mp-kb-title { letter-spacing: -0.02em; }
+
+.mp-kb-w-260 { width: 260px; }
+.mp-kb-w-300 { width: 300px; }
+
+/* 历史快照行：三列 + 分隔线（最后一行去线） */
+.mp-kb-hist-row {
+  grid-template-columns: 90px 200px 1fr;
+  border-bottom: 1px solid var(--semi-color-border);
+}
+.mp-kb-hist-row:last-child { border-bottom: none; }
+
+/* ---------- 召回测试页（KnowledgeTestPage） ---------- */
+.mp-kb-search-w { width: calc(100% - 240px - 96px - 8px); }
+.mp-kb-w-90 { width: 90px; }
+
+/* ---------- 知识库详情（KnowledgeKbDetailPage） ---------- */
+.mp-kb-pre-wrap { white-space: pre-wrap; }

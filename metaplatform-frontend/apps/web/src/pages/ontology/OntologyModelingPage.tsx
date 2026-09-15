@@ -21,6 +21,7 @@ import { getTenantId } from '@/utils/auth';
 import { actionDisplayName } from './actions/ActionTypeListPage';
 import OntologyMergeDrawer from './components/OntologyMergeDrawer';
 import ObjectTypeEditorV2Drawer, { type ObjectTypeEditorPrefill } from './components/ObjectTypeEditorV2Drawer';
+import './ontology.css';
 
 
 // 领域码 → 中文（rid 形如 ont.<tenant>.obj.<domain>.<slug>.v1）
@@ -37,10 +38,11 @@ const DOMAIN_LABELS: Record<string, string> = {
   'dw-digital-employee': '数字员工',
 };
 
-const statusDotStyle = (status: string) => ({
-  width: 6, height: 6, borderRadius: '50%', display: 'inline-block', flexShrink: 0,
-  background: status === 'connected' ? 'var(--semi-color-success)' : status === 'partial' ? 'var(--semi-color-warning)' : 'var(--semi-color-danger)',
-});
+const statusDotClass = (status: string) => (
+  status === 'connected' ? 'mp-onto-status-dot mp-onto-dot-success'
+    : status === 'partial' ? 'mp-onto-status-dot mp-onto-dot-warning'
+      : 'mp-onto-status-dot mp-onto-dot-danger'
+);
 
 const typeBadgeClass = (type: string) =>
   type === 'ENUM' ? 'type-badge enum' : type === 'DATETIME' ? 'type-badge datetime' : 'type-badge';
@@ -385,39 +387,39 @@ export default function OntologyModelingPage({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+    <div className="mp-flex mp-flex-1 mp-min-h-0 mp-flex-col" >
       <style>{`
-        .om-tree-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--semi-color-text-2);margin-bottom:2px}
+        .om-tree-item{display:flex;align-items:center;gap:var(--mp-space-2);padding:var(--mp-space-2) var(--mp-space-3);border-radius:var(--semi-border-radius-medium);cursor:pointer;font-size:13px;color:var(--semi-color-text-2);margin-bottom:var(--mp-space-1)}
         .om-tree-item:hover{background:var(--semi-color-fill-0);color:var(--semi-color-text-0)}
         .om-tree-item.active{background:var(--semi-color-fill-0);color:var(--semi-color-text-0)}
         .om-tree-item svg{width:16px;height:16px;flex-shrink:0}
-        .om-tree-item .count{margin-left:auto;font-size:11px;color:var(--semi-color-text-2);background:var(--semi-color-bg-0);padding:2px 6px;border-radius:4px}
+        .om-tree-item .count{margin-left:auto;font-size:11px;color:var(--semi-color-text-2);background:var(--semi-color-bg-0);padding:var(--mp-space-1) var(--mp-space-2);border-radius:var(--semi-border-radius-small)}
         .om-table{width:100%;border-collapse:collapse}
-        .om-table th{padding:10px 16px;font-size:12px;font-weight:500;color:var(--semi-color-text-2);text-align:left;border-bottom:1px solid var(--semi-color-border);white-space:nowrap}
-        .om-table td{padding:10px 16px;font-size:13px;border-bottom:1px solid var(--semi-color-border);vertical-align:middle}
+        .om-table th{padding:var(--mp-space-3) var(--mp-space-4);font-size:12px;font-weight:500;color:var(--semi-color-text-2);text-align:left;border-bottom:1px solid var(--semi-color-border);white-space:nowrap}
+        .om-table td{padding:var(--mp-space-3) var(--mp-space-4);font-size:13px;border-bottom:1px solid var(--semi-color-border);vertical-align:middle}
         .om-table tbody tr{cursor:pointer}
         .om-table tbody tr:hover{background:var(--semi-color-fill-0)}
         .om-table tbody tr.selected{background:var(--semi-color-fill-0)}
         .om-table tbody tr:last-child td{border-bottom:none}
         .om-attr-table{width:100%;border-collapse:collapse}
         .om-attr-table thead{background:var(--semi-color-fill-0)}
-        .om-attr-table th{padding:10px 16px;font-size:12px;font-weight:500;color:var(--semi-color-text-2);text-align:left;border-bottom:1px solid var(--semi-color-border);white-space:nowrap}
-        .om-attr-table td{padding:10px 16px;font-size:13px;border-bottom:1px solid var(--semi-color-border);vertical-align:middle}
+        .om-attr-table th{padding:var(--mp-space-3) var(--mp-space-4);font-size:12px;font-weight:500;color:var(--semi-color-text-2);text-align:left;border-bottom:1px solid var(--semi-color-border);white-space:nowrap}
+        .om-attr-table td{padding:var(--mp-space-3) var(--mp-space-4);font-size:13px;border-bottom:1px solid var(--semi-color-border);vertical-align:middle}
         .om-attr-table tbody tr:last-child td{border-bottom:none}
         .om-attr-table tbody tr:hover{background:var(--semi-color-fill-0)}
-        .om-relation-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:4px;font-size:13px;margin-bottom:2px;cursor:pointer;transition:background .15s}
+        .om-relation-item{display:flex;align-items:center;gap:var(--mp-space-2);padding:var(--mp-space-2);border-radius:var(--semi-border-radius-small);font-size:13px;margin-bottom:var(--mp-space-1);cursor:pointer;transition:background .15s}
         .om-relation-item:hover{background:var(--semi-color-fill-0)}
         .om-relation-label{font-weight:500;min-width:48px}
-        .om-relation-target{color:#60a5fa}
-        .om-relation-icon{width:28px;height:28px;border-radius:4px;background:var(--semi-color-fill-0);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .om-relation-target{color:var(--semi-color-primary)}
+        .om-relation-icon{width:28px;height:28px;border-radius:var(--semi-border-radius-small);background:var(--semi-color-fill-0);display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .om-relation-icon svg{width:14px;height:14px;color:var(--semi-color-text-2)}
-        .om-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
-        .om-stat-card{background:var(--semi-color-bg-1);border:1px solid var(--semi-color-border);border-radius:var(--semi-border-radius-medium);padding:16px}
+        .om-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--mp-space-3);margin-bottom:var(--mp-space-5)}
+        .om-stat-card{background:var(--semi-color-bg-1);border:1px solid var(--semi-color-border);border-radius:var(--semi-border-radius-medium);padding:var(--mp-space-4)}
         .om-stat-value{font-size:28px;font-weight:700;line-height:1;letter-spacing:-0.02em}
-        .om-stat-label{font-size:12px;color:var(--semi-color-text-2);margin-top:6px}
-        .mp-attr-badge{display:inline-block;font-size:10px;line-height:16px;padding:0 6px;border-radius:999px;border:1px solid var(--semi-color-text-2);color:var(--semi-color-text-2);white-space:nowrap}
+        .om-stat-label{font-size:12px;color:var(--semi-color-text-2);margin-top:var(--mp-space-1)}
+        .mp-attr-badge{display:inline-block;font-size:11px;line-height:16px;padding:0 var(--mp-space-2);border-radius:999px;border:1px solid var(--semi-color-text-2);color:var(--semi-color-text-2);white-space:nowrap}
       `}</style>
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
+      <div className="mp-flex-1 mp-overflow-y-auto mp-min-h-0 mp-pb-6" >
 
       {/* Stats（真实数据） */}
       <div className="om-stats-row">
@@ -437,16 +439,16 @@ export default function OntologyModelingPage({
 
       {/* AIAssistantWorkspace__content 是横向 flex 容器：子行必须 flex:1 + width:100%
           才能撑满可用宽度（此前缺省导致右侧约 1/3 空白）。 */}
-      <div style={{ display: 'flex', gap: 20, flex: 1, minWidth: 0, width: '100%' }}>
+      <div className="mp-w-full mp-flex mp-flex-1 mp-gap-5">
         {/* Left: 一级本体列表 */}
-        <div style={{ width: 240, flexShrink: 0 }}>
-          <Card style={{ height: 'fit-content' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>一级本体</h3>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        <div className="mp-shrink-0 mp-w-240" >
+          <Card className="mp-h-fit">
+            <h3 className="mp-fw-600 mp-mb-3 mp-text-md">一级本体</h3>
+            <ul className="mp-m-0 mp-p-1 mp-onto-list-plain">
               {loading ? (
-                <li style={{ padding: '8px 12px', fontSize: 12, color: 'var(--semi-color-text-2)' }}>加载中…</li>
+                <li className="mp-text-sm mp-text-2 mp-py-2 mp-px-3" >加载中…</li>
               ) : domains.length === 0 ? (
-                <li style={{ padding: '8px 12px', fontSize: 12, color: 'var(--semi-color-text-2)' }}>暂无本体</li>
+                <li className="mp-text-sm mp-text-2 mp-py-2 mp-px-3" >暂无本体</li>
               ) : (
                 domains.map((d) => (
                   <li
@@ -468,33 +470,27 @@ export default function OntologyModelingPage({
         </div>
 
         {/* Right: Concept Panel */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="mp-flex-1">
           {/* Search & Filter bar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-            <div style={{ flex: 1, maxWidth: 320, position: 'relative' }}>
-              <Search style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'var(--semi-color-text-2)' }} />
+          <div className="mp-mb-4 mp-flex-center mp-gap-2" >
+            <div className="mp-flex-1 mp-relative mp-onto-search-box">
+              <Search className="mp-icon-16 mp-text-2 mp-absolute mp-onto-search-icon" />
               <input
                 type="text"
                 placeholder="搜索概念名称 / rid..."
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                style={{ width: '100%', height: 34, background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', padding: '0 12px 0 34px', fontSize: 13, color: 'var(--semi-color-text-0)', outline: 'none' }}
+                className="mp-w-full mp-text-body mp-text-1 mp-border mp-rounded mp-bg-1 mp-onto-input mp-onto-input--search"
               />
             </div>
-            <div style={{ display: 'flex', gap: 0, border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', overflow: 'hidden' }}>
+            <div className="mp-flex mp-hidden mp-border mp-rounded mp-gap-1" >
               {(['connected', 'partial', 'disconnected'] as const).map((st) => (
                 <button
                   key={st}
                   onClick={() => setStatusFilter(statusFilter === st ? '' : st)}
-                  style={{
-                    height: 34, padding: '0 12px', fontSize: 12,
-                    color: statusFilter === st ? 'var(--semi-color-text-0)' : 'var(--semi-color-text-2)',
-                    background: statusFilter === st ? 'var(--semi-color-fill-0)' : 'transparent',
-                    border: 'none', borderLeft: '1px solid var(--semi-color-border)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                  }}
+                  className={`mp-clickable mp-gap-1 mp-text-sm mp-flex-center mp-border-none mp-onto-filter-btn${statusFilter === st ? ' mp-onto-filter-btn--active' : ''}`}
                 >
-                  <span style={statusDotStyle(st)} />
+                  <span className={statusDotClass(st)} />
                   {statusLabel(st)}
                 </button>
               ))}
@@ -502,20 +498,20 @@ export default function OntologyModelingPage({
           </div>
 
           {/* Concept Table */}
-          <Card style={{overflow: 'hidden'}} bodyStyle={{padding: 0}}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)' }}>
-              <h4 style={{ fontSize: 14, fontWeight: 600 }}>
+          <Card className="mp-hidden" bodyStyle={{padding: 0}}>
+            <div className="mp-border mp-py-3 mp-px-5" >
+              <h4 className="mp-fw-600 mp-text-md">
                 {DOMAIN_LABELS[selectedDomain] ?? (selectedDomain || '全部')} - 概念
               </h4>
             </div>
             {loading ? (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>加载概念中…</div>
+              <div className="mp-text-center mp-p-8 mp-text-body mp-text-2">加载概念中…</div>
             ) : filteredConcepts.length === 0 ? (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>当前一级本体下没有匹配的概念</div>
+              <div className="mp-text-center mp-p-8 mp-text-body mp-text-2">当前一级本体下没有匹配的概念</div>
             ) : (
               <table className="om-table">
                 <thead>
-                  <tr style={{ background: 'var(--semi-color-fill-0)' }}>
+                  <tr className="mp-bg-fill-0">
                     <th>显示名</th>
                     <th>slug</th>
                     <th>版本</th>
@@ -539,31 +535,31 @@ export default function OntologyModelingPage({
                         onClick={() => handleSelectConcept(ot.rid)}
                       >
                         <td>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <Hexagon style={{ width: 14, height: 14, color: 'var(--semi-color-text-2)' }} />
-                            <span style={{ fontWeight: 500 }}>{ot.display_name}</span>
+                          <span className="mp-inline-flex mp-items-center mp-gap-1" >
+                            <Hexagon className="mp-icon-14 mp-text-2" />
+                            <span className="mp-fw-500">{ot.display_name}</span>
                           </span>
                         </td>
-                        <td style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>{slug}</td>
-                        <td style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>{version || '—'}</td>
+                        <td className="mp-text-sm mp-text-2">{slug}</td>
+                        <td className="mp-text-sm mp-text-2">{version || '—'}</td>
                         <td>{DOMAIN_LABELS[domain] ?? domain}</td>
                         <td>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--semi-color-text-2)' }}>
-                            <Columns3 style={{ width: 14, height: 14 }} />{ot.properties.length}
+                          <span className="mp-inline-flex mp-items-center mp-gap-1 mp-text-2">
+                            <Columns3 className="mp-icon-14" />{ot.properties.length}
                           </span>
                         </td>
                         <td>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--semi-color-text-2)' }}>
-                            <LinkIcon style={{ width: 14, height: 14 }} />{relCount}
+                          <span className="mp-inline-flex mp-items-center mp-gap-1 mp-text-2">
+                            <LinkIcon className="mp-icon-14" />{relCount}
                           </span>
                         </td>
                         <td>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                            <span style={statusDotStyle(st)} /> {statusLabel(st)}
+                          <span className="mp-inline-flex mp-items-center mp-text-sm mp-gap-1" >
+                            <span className={statusDotClass(st)} /> {statusLabel(st)}
                           </span>
                         </td>
                         <td>
-                          <Button theme="light" type="secondary" style={{ height: 28, padding: '0 10px', fontSize: 12 }}
+                          <Button theme="light" type="secondary" className="mp-text-sm mp-onto-btn--sm"
                             onClick={(e) => { e.stopPropagation(); handleSelectConcept(ot.rid); }}
                           >
                             查看
@@ -579,38 +575,28 @@ export default function OntologyModelingPage({
 
           {/* Detail Section（下钻：属性表 + V2 编辑器入口 + 关联 Action + 关系） */}
           {selectedConceptDetail && (
-            <div ref={detailRef} style={{ display: 'flex', gap: 20, marginTop: 20, scrollMarginTop: 12, width: '100%' }}>
+            <div ref={detailRef} className="mp-w-full mp-flex mp-mt-5 mp-gap-5 mp-onto-scroll-anchor">
               {/* Attribute Table + V2 编辑器入口 + 关联 Action */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <Card style={{overflow: 'hidden'}} bodyStyle={{padding: 0}}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)' }}>
-                    <h4 style={{ fontSize: 14, fontWeight: 600 }}>{selectedConceptDetail.display_name} · 属性定义</h4>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div className="mp-flex-1">
+                <Card className="mp-hidden" bodyStyle={{padding: 0}}>
+                  <div className="mp-justify-between mp-flex-center mp-border mp-py-3 mp-px-5" >
+                    <h4 className="mp-fw-600 mp-text-md">{selectedConceptDetail.display_name} · 属性定义</h4>
+                    <div className="mp-gap-2 mp-flex-center">
                       <span className="mp-eyebrow">{selectedConceptDetail.properties.length} 个属性</span>
                       {/* 原生 button（dev 模式 Semi Button onClick 被截 noop） */}
                       <button
                         type="button"
                         onClick={() => openEditConcept({})}
-                        style={{
-                          height: 28, padding: '0 10px', fontSize: 12,
-                          background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
-                          border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-                          cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
-                        }}
+                        className="mp-inline-flex mp-items-center mp-clickable mp-border mp-rounded mp-gap-1 mp-text-sm mp-text-1 mp-bg-1 mp-onto-btn mp-onto-btn--sm"
                       >
                         编辑概念
                       </button>
                       <button
                         type="button"
                         onClick={() => openEditConcept({ addNewProp: true })}
-                        style={{
-                          height: 28, padding: '0 10px', fontSize: 12,
-                          background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
-                          border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-                          cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
-                        }}
+                        className="mp-inline-flex mp-items-center mp-clickable mp-border mp-rounded mp-gap-1 mp-text-sm mp-text-1 mp-bg-1 mp-onto-btn mp-onto-btn--sm"
                       >
-                        <Plus style={{ width: 14, height: 14 }} />新增属性
+                        <Plus className="mp-icon-14" />新增属性
                       </button>
                     </div>
                   </div>
@@ -635,13 +621,13 @@ export default function OntologyModelingPage({
                         const hasMarks = attr.array || attr.derived || attr.format === 'struct' || attr.shared;
                         return (
                           <tr key={attr.rid}>
-                            <td style={{ fontWeight: 500 }} title={attr.title || undefined}>{propSlug}</td>
-                            <td style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>{version || '—'}</td>
+                            <td className="mp-fw-500" title={attr.title || undefined}>{propSlug}</td>
+                            <td className="mp-text-sm mp-text-2">{version || '—'}</td>
                             <td><span className={typeBadgeClass(attr.type_id)} title={attr.format}>{attr.type_id}</span></td>
-                            <td><span style={{ color: attr.nullable ? 'var(--semi-color-text-2)' : 'var(--semi-color-success)', fontSize: 12 }}>{attr.nullable ? '否' : '是'}</span></td>
-                            <td><span style={{ color: attr.primary_key ? 'var(--semi-color-success)' : 'var(--semi-color-text-2)', fontSize: 12 }}>{attr.primary_key ? '是' : '否'}</span></td>
+                            <td><span className={`mp-text-sm ${attr.nullable ? 'mp-text-2' : 'mp-text-success'}`}>{attr.nullable ? '否' : '是'}</span></td>
+                            <td><span className={`mp-text-sm ${attr.primary_key ? 'mp-text-success' : 'mp-text-2'}`}>{attr.primary_key ? '是' : '否'}</span></td>
                             <td>
-                              <span style={{ display: 'inline-flex', gap: 4, flexWrap: 'wrap' }}>
+                              <span className="mp-inline-flex mp-gap-1 mp-wrap" >
                                 {attr.array && (
                                   <span className="mp-attr-badge" title={`array · reducer: ${attr.reducer ?? '未设置'}`}>数组{attr.reducer ? `·${attr.reducer}` : ''}</span>
                                 )}
@@ -652,22 +638,17 @@ export default function OntologyModelingPage({
                                   <span className="mp-attr-badge" title={`${attr.struct_fields?.length ?? 0} 个嵌套字段`}>struct·{attr.struct_fields?.length ?? 0}</span>
                                 )}
                                 {attr.shared && <span className="mp-attr-badge">共享</span>}
-                                {!hasMarks && <span style={{ color: 'var(--semi-color-text-2)', fontSize: 12 }}>—</span>}
+                                {!hasMarks && <span className="mp-text-sm mp-text-2">—</span>}
                               </span>
                             </td>
-                            <td style={{ color: 'var(--semi-color-text-2)', fontSize: 12, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={attr.description || attr.title || undefined}>
+                            <td className="mp-hidden mp-text-sm mp-text-2 mp-nowrap mp-ellipsis-text mp-onto-cell-truncate" title={attr.description || attr.title || undefined}>
                               {attr.description || attr.title || '—'}
                             </td>
                             <td>
                               <button
                                 type="button"
                                 onClick={() => openEditConcept({ expandPropRid: attr.rid })}
-                                style={{
-                                  height: 24, padding: '0 8px', fontSize: 12,
-                                  background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
-                                  border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-                                  cursor: 'pointer',
-                                }}
+                                className="mp-clickable mp-border mp-rounded mp-text-sm mp-text-1 mp-bg-1 mp-onto-btn mp-onto-btn--xs"
                               >
                                 编辑
                               </button>
@@ -681,17 +662,17 @@ export default function OntologyModelingPage({
 
                 {/* 关联 Action */}
                 {selectedActions.length > 0 && (
-                  <Card style={{overflow: 'hidden', marginTop: 16}} bodyStyle={{padding: 0}}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)' }}>
-                      <h4 style={{ fontSize: 14, fontWeight: 600 }}>关联 Action</h4>
+                  <Card className="mp-hidden mp-mt-4" bodyStyle={{padding: 0}}>
+                    <div className="mp-justify-between mp-flex-center mp-border mp-py-3 mp-px-5" >
+                      <h4 className="mp-fw-600 mp-text-md">关联 Action</h4>
                       <span className="mp-eyebrow">{selectedActions.length} 个</span>
                     </div>
-                    <div style={{ padding: '12px 20px' }}>
+                    <div className="mp-py-3 mp-px-5">
                       {selectedActions.map((at) => (
                         <div key={at.rid} className="om-relation-item">
-                          <div className="om-relation-icon"><Zap style={{ width: 14, height: 14 }} /></div>
+                          <div className="om-relation-icon"><Zap className="mp-icon-14" /></div>
                           <span className="om-relation-label">{actionDisplayName(at)}</span>
-                          <ArrowRight style={{ color: 'var(--semi-color-text-2)', fontSize: 12, flexShrink: 0, width: 14, height: 14 }} />
+                          <ArrowRight className="mp-icon-14 mp-text-sm mp-text-2 mp-shrink-0"  />
                           <span className="om-relation-target" title={at.description || at.rid}>
                             {at.description ? at.description : `side_effects: ${at.side_effects.join(', ') || '—'}`}
                           </span>
@@ -703,25 +684,25 @@ export default function OntologyModelingPage({
               </div>
 
               {/* Relation Panel */}
-              <div style={{ width: 300, flexShrink: 0 }}>
-                <Card style={{overflow: 'hidden', height: 'fit-content'}} bodyStyle={{padding: 0}}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)' }}>
-                    <h4 style={{ fontSize: 14, fontWeight: 600 }}>{selectedConceptDetail.display_name} - 关系定义</h4>
+              <div className="mp-shrink-0 mp-onto-relation-col">
+                <Card className="mp-hidden mp-h-fit"  bodyStyle={{padding: 0}}>
+                  <div className="mp-justify-between mp-flex-center mp-border mp-py-3 mp-px-5" >
+                    <h4 className="mp-fw-600 mp-text-md">{selectedConceptDetail.display_name} - 关系定义</h4>
                     <span className="mp-eyebrow">{selectedLinks.length} 个关系</span>
                   </div>
                   {selectedLinks.length === 0 ? (
-                    <div style={{ padding: '20px', color: 'var(--semi-color-text-2)', fontSize: 12 }}>暂无关系定义</div>
+                    <div className="mp-text-sm mp-text-2 mp-p-5">暂无关系定义</div>
                   ) : (
                     selectedLinks.map((lt) => (
-                      <div key={lt.rid} style={{ padding: '16px 20px', borderTop: '1px solid var(--semi-color-border)' }}>
-                        <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--semi-color-text-2)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <GitBranch style={{ width: 14, height: 14 }} />
+                      <div key={lt.rid} className="mp-border mp-py-4 mp-px-5" >
+                        <div className="mp-fw-500 mp-mb-3 mp-text-sm mp-text-2 mp-flex-center mp-gap-1" >
+                          <GitBranch className="mp-icon-14" />
                           {lt.src === selectedConceptDetail.rid ? '出向关系' : '入向关系'} ({lt.cardinality})
                         </div>
                         <div className="om-relation-item">
                           <div className="om-relation-icon"><LinkIcon /></div>
                           <span className="om-relation-label">{lt.rid.split('.').pop()}</span>
-                          <ArrowRight style={{ color: 'var(--semi-color-text-2)', fontSize: 12, flexShrink: 0, width: 14, height: 14 }} />
+                          <ArrowRight className="mp-icon-14 mp-text-sm mp-text-2 mp-shrink-0"  />
                           <span className="om-relation-target">{lt.src === selectedConceptDetail.rid ? lt.dst.split('.').pop() : lt.src.split('.').pop()}</span>
                         </div>
                       </div>
@@ -756,8 +737,8 @@ export default function OntologyModelingPage({
           zIndex 1500 —— 需盖过 V2 编辑器原生 overlay（1200）。 */}
       <Modal
         title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AlertTriangle style={{ width: 16, height: 16, color: 'var(--semi-color-warning)' }} />
+          <div className="mp-gap-2 mp-flex-center">
+            <AlertTriangle className="mp-icon-16 mp-text-warning" />
             <span>检测到相似概念</span>
           </div>
         }
@@ -767,46 +748,33 @@ export default function OntologyModelingPage({
         width={640}
         zIndex={1500}
       >
-        <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginBottom: 12, lineHeight: 1.6 }}>
-          概念名「<strong style={{ color: 'var(--semi-color-text-0)' }}>{precheckSource?.name}</strong>」与下方已有概念相似，
+        <div className="mp-mb-3 mp-text-sm mp-text-2 mp-lh-16" >
+          概念名「<strong className="mp-text-1">{precheckSource?.name}</strong>」与下方已有概念相似，
           请选择「合并到它」（走合并 drawer，迁移数据后软删源）或「仍要新建」
           {pendingCreatePayload ? '（忽略提示，直接创建新概念）' : '（忽略提示，回到编辑器继续填写）'}。
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="mp-flex mp-gap-2 mp-flex-col" >
           {candidates.map((c) => {
             const sim = Math.round(c.similarity * 100);
             return (
               <div
                 key={c.rid}
-                style={{
-                  border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-                  padding: 12, display: 'flex', alignItems: 'center', gap: 12,
-                  background: 'var(--semi-color-bg-1)',
-                }}
+                className="mp-border mp-rounded mp-gap-3 mp-p-3 mp-flex-center mp-bg-1" 
               >
-                <GitMerge style={{ width: 16, height: 16, color: 'var(--semi-color-text-2)', flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{c.display_name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginTop: 2 }}>
+                <GitMerge className="mp-icon-16 mp-text-2 mp-shrink-0"  />
+                <div className="mp-flex-1">
+                  <div className="mp-fw-500 mp-text-body">{c.display_name}</div>
+                  <div className="mp-text-xs mp-text-2 mp-mt-1" >
                     rid：<code>{c.rid}</code>
                   </div>
                 </div>
-                <div style={{
-                  flexShrink: 0, padding: '2px 8px', borderRadius: 4,
-                  background: sim >= 80 ? 'var(--semi-color-danger)' : sim >= 60 ? 'var(--semi-color-warning)' : 'var(--semi-color-fill-0)',
-                  color: sim >= 60 ? 'var(--semi-color-white)' : 'var(--semi-color-text-0)',
-                  fontSize: 11, fontWeight: 600,
-                }}>
+                <div className={`mp-fw-600 mp-shrink-0 mp-text-xs mp-py-1 mp-px-2 mp-rounded-sm mp-onto-sim-chip${sim >= 80 ? ' mp-onto-sim-chip--danger' : sim >= 60 ? ' mp-onto-sim-chip--warn' : ''}`}>
                   {sim}%
                 </div>
                 <button
                   type="button"
                   onClick={() => openMergeDrawerForCandidate(c)}
-                  style={{
-                    height: 30, padding: '0 12px', fontSize: 12,
-                    background: 'var(--semi-color-primary)', color: 'var(--semi-color-white)',
-                    border: 'none', borderRadius: 'var(--semi-border-radius-medium)', cursor: 'pointer',
-                  }}
+                  className="mp-clickable mp-rounded mp-text-sm mp-border-none mp-onto-btn mp-onto-btn--primary mp-onto-btn--md"
                 >
                   合并到它
                 </button>
@@ -814,29 +782,18 @@ export default function OntologyModelingPage({
             );
           })}
         </div>
-        <div style={{
-          display: 'flex', justifyContent: 'flex-end', gap: 8,
-          marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--semi-color-border)',
-        }}>
+        <div className="mp-flex mp-justify-end mp-border mp-mt-4 mp-gap-2 mp-pt-3" >
           <button
             type="button"
             onClick={cancelCandidateModal}
-            style={{
-              height: 34, padding: '0 14px', fontSize: 13,
-              background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
-              border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', cursor: 'pointer',
-            }}
+            className="mp-clickable mp-border mp-rounded mp-text-body mp-text-1 mp-bg-1 mp-onto-btn mp-onto-btn--lg"
           >
             取消
           </button>
           <button
             type="button"
             onClick={() => void continueCreateAnyway()}
-            style={{
-              height: 34, padding: '0 14px', fontSize: 13,
-              background: 'var(--semi-color-primary)', color: 'var(--semi-color-white)',
-              border: 'none', borderRadius: 'var(--semi-border-radius-medium)', cursor: 'pointer',
-            }}
+            className="mp-clickable mp-rounded mp-text-body mp-border-none mp-onto-btn mp-onto-btn--primary mp-onto-btn--lg"
           >
             仍要新建
           </button>

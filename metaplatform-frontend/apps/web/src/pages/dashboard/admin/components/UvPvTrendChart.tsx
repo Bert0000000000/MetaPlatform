@@ -15,6 +15,7 @@ import {
   type TooltipProps,
 } from 'recharts';
 import type { UvPvTrendPoint } from '@/types/analytics';
+import '../admin.css';
 
 interface Props {
   data: UvPvTrendPoint[];
@@ -42,29 +43,20 @@ function TrendTooltip({ active, payload, label }: TooltipProps<number, string>) 
   const app = payload.find((p) => p.dataKey === 'applications')?.value as number | undefined;
   return (
     <div
-      style={{
-        background: 'var(--semi-color-bg-1)',
-        border: '1px solid var(--semi-color-border)',
-        borderRadius: 8,
-        padding: '10px 14px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.32)',
-        fontSize: 12,
-        minWidth: 200,
-        color: 'var(--semi-color-text-0)',
-      }}
+      className="mp-border mp-text-sm mp-text-1 mp-py-2 mp-px-3 mp-bg-1 mp-rounded mp-admin-tooltip mp-admin-min-w-200"
     >
-      <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', color: COLOR_UV, marginBottom: 2 }}>
+      <div className="mp-fw-600 mp-mb-1" >{label}</div>
+      <div className="mp-flex mp-justify-between mp-mb-1" style={{ color: COLOR_UV }}>
         <span>UV</span>
-        <span style={{ fontWeight: 600 }}>{(uv ?? 0).toLocaleString()}</span>
+        <span className="mp-fw-600">{(uv ?? 0).toLocaleString()}</span>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', color: COLOR_PV, marginBottom: 2 }}>
+      <div className="mp-flex mp-justify-between mp-mb-1" style={{ color: COLOR_PV }}>
         <span>PV</span>
-        <span style={{ fontWeight: 600 }}>{(pv ?? 0).toLocaleString()}</span>
+        <span className="mp-fw-600">{(pv ?? 0).toLocaleString()}</span>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', color: COLOR_APP }}>
+      <div className="mp-flex mp-justify-between" style={{ color: COLOR_APP }}>
         <span>申请数</span>
-        <span style={{ fontWeight: 600 }}>{(app ?? 0).toLocaleString()}</span>
+        <span className="mp-fw-600">{(app ?? 0).toLocaleString()}</span>
       </div>
     </div>
   );
@@ -77,7 +69,7 @@ export default function UvPvTrendChart({ data, height = 300 }: Props) {
   }));
 
   return (
-    <div style={{ width: '100%', height }}>
+    <div className="mp-w-full" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 16, right: 24, left: 8, bottom: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--semi-color-border)" />

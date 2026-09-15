@@ -4,6 +4,7 @@ import { Nav, Layout, Tag } from '@douyinfe/semi-ui';
 import { ArrowLeft, Boxes } from 'lucide-react';
 import type { RenderNode } from '@/api/apphub/types';
 import { NODE_ICONS } from './treeUtils';
+import '../apps.css';
 
 /**
  * 应用运行时「应用壳」：全屏独立布局（不套平台 AppLayout），复用 global.css 主题 token。
@@ -67,70 +68,41 @@ export default function AppRuntimeLayout({
   const openKeys = collectOpenKeys(tree, '');
 
   return (
-    <Layout hasSider style={{ height: '100vh', background: 'var(--semi-color-bg-0)' }}>
-      <Layout.Sider style={{ width: 240, height: '100vh', background: 'var(--semi-color-nav-bg)' }}>
+    <Layout hasSider className="mp-apprt-root">
+      <Layout.Sider className="mp-w-240 mp-apprt-sider">
         {/* 应用标识 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 20px 12px' }}>
+        <div className="mp-flex-center mp-gap-2 mp-apprt-brand">
           <div
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 8,
-              background: 'var(--semi-color-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              flexShrink: 0,
-            }}
+            className="mp-justify-center mp-shrink-0 mp-flex-center mp-rounded mp-apprt-logo"
           >
             <Boxes size={20} strokeWidth={1.5} />
           </div>
-          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--semi-color-text-0)', letterSpacing: '0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span className="mp-hidden mp-text-lg mp-text-1 mp-nowrap mp-ellipsis-text mp-apprt-name">
             {appName}
           </span>
         </div>
 
         {/* 应用内菜单 */}
-        <div style={{ height: 'calc(100vh - 66px)', overflowY: 'auto', overflowX: 'hidden' }}>
+        <div className="mp-overflow-y-auto mp-apprt-menu">
           <Nav
             items={navItems}
             selectedKeys={selectedKey ? [selectedKey] : []}
             openKeys={openKeys}
             limitIndent={false}
             onClick={({ itemKey }) => onSelect(itemKey as string)}
-            style={{ borderRight: 'none', background: 'transparent', fontSize: 13 }}
+            className="mp-text-body mp-apprt-nav"
           />
         </div>
       </Layout.Sider>
 
-      <Layout style={{ height: '100vh', flex: 1, minWidth: 0, background: 'var(--semi-color-bg-0)', display: 'flex', flexDirection: 'column' }}>
+      <Layout className="mp-flex mp-flex-1 mp-flex-col mp-apprt-root">
         <Layout.Header
-          style={{
-            height: 56,
-            flexShrink: 0,
-            padding: '0 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: 'var(--semi-color-bg-1)',
-            borderBottom: '1px solid var(--semi-color-border)',
-          }}
+          className="mp-justify-between mp-border mp-shrink-0 mp-flex-center mp-bg-1 mp-apprt-header"
         >
           <button
             type="button"
             onClick={() => navigate('/apps/mine')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--semi-color-text-2)',
-              cursor: 'pointer',
-              fontSize: 13,
-              fontFamily: 'inherit',
-            }}
+            className="mp-inline-flex mp-items-center mp-clickable mp-gap-1 mp-text-body mp-text-2 mp-border-none mp-apprt-back"
           >
             <ArrowLeft size={16} /> 返回平台
           </button>
@@ -138,25 +110,11 @@ export default function AppRuntimeLayout({
         </Layout.Header>
 
         <Layout.Content
-          style={{
-            padding: 'var(--mp-space-6)',
-            flex: 1,
-            minHeight: 0,
-            overflow: 'auto',
-            background: 'var(--semi-color-bg-0)',
-          }}
+          className="mp-overflow-auto mp-min-h-0 mp-flex-1 mp-apprt-content"
         >
           {isDemo && (
             <div
-              style={{
-                marginBottom: 16,
-                padding: '8px 14px',
-                borderRadius: 'var(--semi-border-radius-medium)',
-                background: 'var(--semi-color-fill-0)',
-                border: '1px solid var(--semi-color-border)',
-                color: 'var(--semi-color-text-2)',
-                fontSize: 12,
-              }}
+              className="mp-border mp-rounded mp-mb-4 mp-text-sm mp-text-2 mp-py-2 mp-px-3 mp-bg-fill-0" 
             >
               演示模式：该应用后端尚未返回 render_tree，当前展示内置示例内容。
             </div>

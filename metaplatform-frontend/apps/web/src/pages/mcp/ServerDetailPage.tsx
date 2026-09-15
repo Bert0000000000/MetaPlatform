@@ -58,8 +58,8 @@ const CONNECTION_STATUS_MAP: Record<
 function StatCard({ title, value }: { title: string; value: React.ReactNode }) {
   return (
     <div>
-      <div style={{ fontSize: 14, color: 'var(--semi-color-text-2)' }}>{title}</div>
-      <div style={{ fontSize: 28, fontWeight: 600, color: 'var(--semi-color-text-0)' }}>{value}</div>
+      <div className="mp-text-md mp-text-2">{title}</div>
+      <div className="mp-fw-600 mp-text-1 mp-text-xl" >{value}</div>
     </div>
   );
 }
@@ -100,12 +100,12 @@ export default function ServerDetailPage() {
   }, [id]);
 
   if (error) {
-    return <Banner type="danger" description={error} style={{ margin: 24 }} />;
+    return <Banner type="danger" description={error} className="mp-m-6" />;
   }
 
   if (loading || !server) {
     return (
-      <div style={{ padding: 40, textAlign: 'center' }}>
+      <div className="mp-text-center mp-p-8">
         <Spin />
       </div>
     );
@@ -151,17 +151,17 @@ export default function ServerDetailPage() {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/servers')}>
           返回
         </Button>
-        <Typography.Title heading={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} className="mp-m-0">
           {server.name}
         </Typography.Title>
         <Tag color={STATUS_MAP[server.status].color}>{STATUS_MAP[server.status].label}</Tag>
       </Space>
 
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>
           编辑
         </Button>
@@ -258,14 +258,14 @@ export default function ServerDetailPage() {
                 <Descriptions
                   column={1}
                   size="small"
-                  style={{ marginTop: 16 }}
+                  className="mp-mt-4"
                   data={[
                     { key: '内部状态', value: status.status },
                     { key: '健康检查 URL', value: status.healthCheckUrl || '-' },
                     { key: '最后错误信息', value: status.lastErrorMessage || '-' },
                   ]}
                 />
-                <Button icon={<ReloadOutlined />} onClick={load} style={{ marginTop: 16 }}>
+                <Button icon={<ReloadOutlined />} onClick={load} className="mp-mt-4">
                   刷新状态
                 </Button>
               </>

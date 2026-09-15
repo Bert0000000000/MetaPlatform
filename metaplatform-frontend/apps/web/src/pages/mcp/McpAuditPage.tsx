@@ -17,6 +17,7 @@ import { EyeOutlined, InteractionOutlined } from '@ant-design/icons';
 import { listCollaborations } from '@/api/mcphub/collaborations';
 import type { CollaborationAudit, PageResponse } from '@/api/mcphub/types';
 import { PageHeader } from '@/components/skeleton';
+import './mcp.css';
 
 const PROTOCOL_OPTIONS = [
   { label: 'MCP', value: 'MCP' },
@@ -76,7 +77,7 @@ export default function CollaborationAuditPage() {
       render: (_, record) => (
         <Space vertical spacing={0}>
           <Typography.Text strong>{record.callerId}</Typography.Text>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" className="mp-text-sm">
             {record.callerType}
           </Typography.Text>
         </Space>
@@ -88,7 +89,7 @@ export default function CollaborationAuditPage() {
       render: (_, record) => (
         <Space vertical spacing={0}>
           <Typography.Text strong>{record.calleeId}</Typography.Text>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" className="mp-text-sm">
             {record.calleeType}
           </Typography.Text>
         </Space>
@@ -142,7 +143,7 @@ export default function CollaborationAuditPage() {
     <div>
       <PageHeader title={<><InteractionOutlined /> 协作审计</>} />
 
-      <Space style={{ marginBottom: 16 }} wrap>
+      <Space className="mp-mb-4" wrap>
         <Input
           placeholder="调用方 ID"
           showClear
@@ -153,7 +154,7 @@ export default function CollaborationAuditPage() {
               page: 1,
             }))
           }
-          style={{ width: 200 }}
+          className="mp-w-200"
         />
         <Input
           placeholder="被调用方 ID"
@@ -165,13 +166,13 @@ export default function CollaborationAuditPage() {
               page: 1,
             }))
           }
-          style={{ width: 200 }}
+          className="mp-w-200"
         />
         <Select
           placeholder="协议类型"
           showClear
           optionList={PROTOCOL_OPTIONS}
-          style={{ width: 140 }}
+          className="mp-w-140"
           value={filters.protocolType}
           onChange={(v) => setFilters((prev) => ({ ...prev, protocolType: v as string | undefined, page: 1 }))}
         />
@@ -179,7 +180,7 @@ export default function CollaborationAuditPage() {
           placeholder="状态"
           showClear
           optionList={STATUS_OPTIONS}
-          style={{ width: 140 }}
+          className="mp-w-140"
           value={filters.status}
           onChange={(v) => setFilters((prev) => ({ ...prev, status: v as string | undefined, page: 1 }))}
         />
@@ -193,7 +194,7 @@ export default function CollaborationAuditPage() {
               page: 1,
             }))
           }
-          style={{ width: 240 }}
+          className="mp-w-240"
         />
       </Space>
 
@@ -226,7 +227,7 @@ export default function CollaborationAuditPage() {
         width={720}
       >
         {detail && (
-          <Space vertical style={{ width: '100%' }}>
+          <Space vertical className="mp-w-full">
             <Typography.Paragraph>
               <Typography.Text strong>ID: </Typography.Text>
               {detail.id}
@@ -265,13 +266,13 @@ export default function CollaborationAuditPage() {
             </Typography.Paragraph>
             <Typography.Paragraph>
               <Typography.Text strong>请求: </Typography.Text>
-              <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+              <pre className="mp-break-all mp-mcp-pre-wrap">
                 {detail.requestPayload || '-'}
               </pre>
             </Typography.Paragraph>
             <Typography.Paragraph>
               <Typography.Text strong>响应: </Typography.Text>
-              <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+              <pre className="mp-break-all mp-mcp-pre-wrap">
                 {detail.responsePayload || '-'}
               </pre>
             </Typography.Paragraph>
@@ -280,7 +281,7 @@ export default function CollaborationAuditPage() {
                 <Typography.Text strong type="danger">
                   错误:
                 </Typography.Text>
-                <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                <pre className="mp-break-all mp-mcp-pre-wrap">
                   {detail.errorMessage}
                 </pre>
               </Typography.Paragraph>

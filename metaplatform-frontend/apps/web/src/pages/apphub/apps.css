@@ -235,3 +235,186 @@
   bottom: var(--mp-space-4);
   z-index: 40;
 }
+
+/* ---------- 运行时应用壳（AppRuntimeLayout，独立全屏布局） ---------- */
+.mp-apprt-root {
+  height: 100vh;
+  background: var(--semi-color-bg-0);
+}
+
+.mp-apprt-sider {
+  height: 100vh;
+  background: var(--semi-color-nav-bg);
+}
+
+.mp-apprt-brand {
+  padding: var(--mp-space-5) var(--mp-space-5) var(--mp-space-3);
+}
+
+.mp-apprt-logo {
+  width: 34px;
+  height: 34px;
+  background: var(--semi-color-primary);
+  color: var(--semi-color-white);
+}
+
+.mp-apprt-name {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.mp-apprt-menu {
+  height: calc(100vh - 66px);
+  overflow-x: hidden;
+}
+
+.mp-apprt-nav {
+  border-right: none;
+  background: transparent;
+}
+
+.mp-apprt-header {
+  height: 56px;
+  padding: 0 var(--mp-space-6);
+}
+
+.mp-apprt-back {
+  background: transparent;
+  font-family: inherit;
+}
+
+.mp-apprt-content {
+  padding: var(--mp-space-6);
+  background: var(--semi-color-bg-0);
+}
+
+/* ---------- 通用小件（模板/市场/运行时复用） ---------- */
+.mp-app-bg-none { background: transparent; }
+
+.mp-app-noselect { user-select: none; }
+
+.mp-app-fw-700 { font-weight: 700; }
+
+.mp-app-m-auto { margin: auto; }
+
+.mp-app-maxw-none { max-width: none; }
+
+.mp-app-w-100 { width: 100px; }
+
+.mp-app-w-420 { width: 420px; }
+
+.mp-app-max-480 { max-width: 480px; }
+
+.mp-app-mw-760 { max-width: 760px; }
+
+.mp-app-min-w-240 { min-width: 240px; }
+
+.mp-app-min-44 { min-height: 44px; }
+
+.mp-app-min-80 { min-height: 80px; }
+
+.mp-app-min-h-120 { min-height: 120px; }
+
+.mp-app-iframe { height: 240px; }
+
+.mp-app-pre-wrap { white-space: pre-wrap; }
+
+.mp-app-dashed { border-style: dashed; }
+
+.mp-app-designer-h { height: calc(100vh - 120px); }
+
+.mp-app-canvas-min { min-height: 500px; }
+
+.mp-app-flex-auto { flex: auto; }
+
+.mp-app-spin-center { margin: 120px auto; }
+
+/* 列表最后一项去掉底距 */
+.mp-app-flow-card { margin-bottom: var(--mp-space-3); }
+.mp-app-flow-card:last-child { margin-bottom: 0; }
+
+/* 会话列表项：选中态用 fill-0 底 */
+.mp-app-session {
+  background: transparent;
+  transition: background 0.15s;
+}
+.mp-app-session-active { background: var(--semi-color-fill-0); }
+
+/* 市场筛选胶囊 */
+.mp-app-chip {
+  color: var(--semi-color-text-2);
+  background: transparent;
+  user-select: none;
+}
+.mp-app-chip-on {
+  color: var(--semi-color-primary);
+  background: var(--semi-color-primary-light-default);
+}
+
+.mp-app-text-purple { color: rgb(var(--semi-purple-6)); }
+
+/* 拖动节点光标 */
+.mp-app-grab { cursor: grab; }
+.mp-app-grabbing { cursor: grabbing; }
+
+/* 卡片封面（模板 / 市场）：白图标 + 渐变底 */
+.mp-app-cover {
+  height: 120px;
+  color: var(--semi-color-white);
+  background: linear-gradient(135deg, var(--semi-color-primary) 0%, var(--semi-color-primary-light-default) 100%);
+}
+.mp-app-cover-hover {
+  background: linear-gradient(135deg, var(--semi-color-primary) 0%, var(--semi-color-primary-hover) 100%);
+}
+.mp-app-cover-purple {
+  background: linear-gradient(135deg, rgb(var(--semi-purple-6)) 0%, rgb(var(--semi-purple-3)) 100%);
+}
+.mp-app-cover-sm {
+  width: 80px;
+  height: 80px;
+  color: var(--semi-color-white);
+  background: linear-gradient(135deg, var(--semi-color-primary) 0%, var(--semi-color-primary-light-hover) 100%);
+}
+
+.mp-app-avatar-48 {
+  width: 48px;
+  height: 48px;
+  background: var(--semi-color-primary-light-default);
+}
+
+/* ---------- 网格辅助 ---------- */
+.mp-app-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mp-app-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mp-app-grid-12 { grid-template-columns: repeat(12, 1fr); }
+.mp-app-grid-auto-280 { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.mp-app-grid-auto-240 { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.mp-app-form-grid { gap: 0 var(--mp-space-4); }
+
+.mp-app-col-1 { grid-column: span 1; }
+.mp-app-col-2 { grid-column: span 2; }
+.mp-app-col-3 { grid-column: span 3; }
+.mp-app-col-4 { grid-column: span 4; }
+.mp-app-col-5 { grid-column: span 5; }
+.mp-app-col-6 { grid-column: span 6; }
+.mp-app-col-7 { grid-column: span 7; }
+.mp-app-col-8 { grid-column: span 8; }
+.mp-app-col-9 { grid-column: span 9; }
+.mp-app-col-10 { grid-column: span 10; }
+.mp-app-col-11 { grid-column: span 11; }
+.mp-app-col-12 { grid-column: span 12; }
+
+/* 表单字段宽度（FormDesigner 三档：100% / 50% / 33%） */
+.mp-app-w-100p { width: 100%; }
+.mp-app-w-50p { width: 50%; }
+.mp-app-w-33p { width: 33%; }
+
+/* 表单设计器画布字段卡 */
+.mp-app-field {
+  border: 2px dashed var(--semi-color-border);
+  background: var(--semi-color-bg-1);
+}
+.mp-app-field-on {
+  border-color: var(--semi-color-primary);
+  background: var(--semi-color-primary-light-default);
+}
+

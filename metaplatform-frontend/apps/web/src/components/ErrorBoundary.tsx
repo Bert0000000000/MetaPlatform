@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Button } from '@douyinfe/semi-ui';
+import './components.css';
 
 interface Props {
   children: ReactNode;
@@ -32,28 +33,13 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.error) {
       return (
         <div
-          style={{
-            padding: 32,
-            background: "var(--semi-color-bg-1)",
-            border: "1px solid var(--semi-color-border)",
-            borderRadius: 8,
-            color: "var(--semi-color-text-0)",
-          }}
+          className="mp-border mp-p-7 mp-text-1 mp-bg-1 mp-rounded" 
         >
-          <h2 style={{ marginTop: 0, color: "var(--semi-color-danger)" }}>
+          <h2 className="mp-text-danger mp-mt-1" >
             {this.props.fallbackTitle ?? "页面渲染出错"}
           </h2>
           <pre
-            style={{
-              fontSize: 12,
-              padding: 12,
-              background: "var(--semi-color-fill-0)",
-              border: "1px solid var(--semi-color-border)",
-              borderRadius: 4,
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-              color: "var(--semi-color-text-2)",
-            }}
+            className="mp-border mp-p-3 mp-text-sm mp-text-2 mp-bg-fill-0 mp-rounded-sm mp-pre-wrap mp-break-word"
           >
             {String(this.state.error.message ?? this.state.error)}
           </pre>

@@ -57,7 +57,7 @@ export default function AppLifecyclePage({ appId: appIdProp }: { appId?: string 
 
   if (loading || !app) {
     return (
-      <div style={{ padding: 40, textAlign: 'center' }}>
+      <div className="mp-text-center mp-p-8">
         <Spin />
       </div>
     );
@@ -86,14 +86,14 @@ export default function AppLifecyclePage({ appId: appIdProp }: { appId?: string 
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/mine?app=${appId}`)}>
           返回
         </Button>
         <Tag color={STATUS_MAP[app.status].color}>{STATUS_MAP[app.status].label}</Tag>
       </Space>
 
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         {app.status !== 'PUBLISHED' && (
           <Button
             theme="solid"
@@ -117,7 +117,7 @@ export default function AppLifecyclePage({ appId: appIdProp }: { appId?: string 
         )}
       </Space>
 
-      <Card title="生命周期阶段" style={{ marginBottom: 16 }}>
+      <Card title="生命周期阶段" className="mp-mb-4">
         <Steps current={currentStep} type="basic">
           <Steps.Step title="设计" icon={<ClockCircleOutlined/>} />
           <Steps.Step title="已发布" icon={<CloudUploadOutlined/>} />
@@ -145,7 +145,7 @@ export default function AppLifecyclePage({ appId: appIdProp }: { appId?: string 
         />
       </Card>
 
-      <Card title="操作记录" style={{ marginTop: 16 }}>
+      <Card title="操作记录" className="mp-mt-4">
         <Timeline
           dataSource={[
             {

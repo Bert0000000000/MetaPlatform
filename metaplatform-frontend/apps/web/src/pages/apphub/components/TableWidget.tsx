@@ -41,7 +41,7 @@ export default function TableWidget({ widget }: TableWidgetProps) {
     <Card title={widget.title} bodyStyle={{ padding: 12 }}>
       {widget.dataSource ? (
         loading ? (
-          <div style={{ textAlign: 'center', padding: 24 }}>
+          <div className="mp-text-center mp-p-6">
             <Spin />
           </div>
         ) : (

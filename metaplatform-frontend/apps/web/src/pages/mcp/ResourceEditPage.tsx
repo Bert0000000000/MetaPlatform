@@ -5,6 +5,7 @@ import { ArrowLeftOutlined, SaveOutlined, EyeOutlined } from '@ant-design/icons'
 import { createResource, getResource, updateResource } from '@/api/mcphub/resources';
 import ContentPreview from './components/ContentPreview';
 import type { McpResource, McpResourceCreateRequest } from '@/api/mcphub/types';
+import './mcp.css';
 
 const MIME_OPTIONS = [
   { label: 'text/plain', value: 'text/plain' },
@@ -59,11 +60,11 @@ export default function ResourceEditPage() {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/resources')}>
           返回
         </Button>
-        <Typography.Title heading={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} className="mp-m-0">
           {id ? `编辑资源：${resource?.name ?? ''}` : '添加资源'}
         </Typography.Title>
         <Button
@@ -80,7 +81,7 @@ export default function ResourceEditPage() {
         <ContentPreview resource={resource} />
       ) : (
         <Card>
-          <Form form={form} style={{ maxWidth: 800 }}>
+          <Form form={form} className="mp-mcp-max-w-800">
             <Form.Input
               field="uri"
               label="资源 URI"

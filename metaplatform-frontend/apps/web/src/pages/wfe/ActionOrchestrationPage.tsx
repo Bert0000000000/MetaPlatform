@@ -15,6 +15,7 @@ import {
 } from '@/api/wfe/workflowDefinitions';
 import { PlanCanvas } from './components/PlanCanvas';
 import { PlanInspector } from './components/PlanInspector';
+import './wfe.css';
 
 const defaultPlan = (): PlanDraft => ({
   nodes: [
@@ -178,11 +179,11 @@ export default function ActionOrchestrationPage() {
   };
 
   return (
-    <div ref={rootRef} style={{ padding: 24, minHeight: '100%' }}>
-      <Space vertical align="start" spacing="medium" style={{ width: '100%' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: 16, flexWrap: 'wrap' }}>
+    <div ref={rootRef} className="mp-p-6 mp-wfe-min-h-full">
+      <Space vertical align="start" spacing="medium" className="mp-w-full">
+        <div className="mp-w-full mp-flex mp-justify-between mp-gap-4 mp-wrap" >
           <div>
-            <Typography.Title heading={3} style={{ margin: 0 }}>行动编排</Typography.Title>
+            <Typography.Title heading={3} className="mp-m-0">行动编排</Typography.Title>
             <Typography.Text type="secondary">服务端版本化 Plan 定义 · 发布后按不可变版本运行</Typography.Text>
           </div>
           <Space>
@@ -194,7 +195,7 @@ export default function ActionOrchestrationPage() {
         </div>
         {definition && <Space><Tag color="blue">草稿 v{definition.version}</Tag>{definition.published_version && <Tag color="green">已发布 v{definition.published_version}</Tag>}</Space>}
         {error && (
-          <Card style={{ width: '100%', borderColor: 'var(--semi-color-danger)' }}>
+          <Card className="mp-w-full mp-wfe-card-danger">
             <Space>
               <Typography.Text type="danger">{error}</Typography.Text>
               {needsReload && <Button size="small" onClick={() => void load()}>重新加载</Button>}
@@ -202,15 +203,15 @@ export default function ActionOrchestrationPage() {
           </Card>
         )}
         {issues.length > 0 && (
-          <Card title="发布前需要处理" style={{ width: '100%' }}>
-            {issues.map((issue, index) => <Typography.Paragraph key={`${issue.code}-${index}`} type="danger" style={{ margin: '4px 0' }}>{issue.node_id ? `${issue.node_id}：` : ''}{issue.message}</Typography.Paragraph>)}
+          <Card title="发布前需要处理" className="mp-w-full">
+            {issues.map((issue, index) => <Typography.Paragraph key={`${issue.code}-${index}`} type="danger" className="mp-mt-1 mp-mb-1">{issue.node_id ? `${issue.node_id}：` : ''}{issue.message}</Typography.Paragraph>)}
           </Card>
         )}
-        <Card style={{ width: '100%' }}>
+        <Card className="mp-w-full">
           <Typography.Text strong>定义名称</Typography.Text>
-          <Input value={name} onChange={setName} disabled={loading} style={{ marginTop: 8 }} />
+          <Input value={name} onChange={setName} disabled={loading} className="mp-mt-2" />
         </Card>
-        <Row gutter={16} style={{ width: '100%' }}>
+        <Row gutter={16} className="mp-w-full">
           <Col span={17}><Card title="Plan 画布"><PlanCanvas plan={plan} selectedNodeId={selectedNodeId} onSelect={setSelectedNodeId} onDeleteNode={deleteNode} /></Card></Col>
           <Col span={7}><Card title="节点配置"><PlanInspector node={selectedNode} actionTypes={actionTypes} onChange={updateNode} /></Card></Col>
         </Row>

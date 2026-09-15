@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, Empty, Spin, Tag, Typography } from '@douyinfe/semi-ui';
 import { PlusOutlined, MinusOutlined, EditOutlined } from '@ant-design/icons';
 import { compareVersions } from '@/api/apphub/versions';
+import '../apps.css';
 
 interface VersionDiffProps {
   aId?: string;
@@ -39,7 +40,7 @@ export default function VersionDiff({ aId, bId }: VersionDiffProps) {
 
   return (
     <Card title="版本差异" bodyStyle={{ padding: 12 }}>
-      <div style={{ marginBottom: 12 }}>
+      <div className="mp-mb-3">
         <Tag prefixIcon={<PlusOutlined />} color="green">
           新增 {diff.added.length}
         </Tag>
@@ -50,13 +51,13 @@ export default function VersionDiff({ aId, bId }: VersionDiffProps) {
           修改 {diff.modified.length}
         </Tag>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+      <div className="mp-gap-2 mp-grid mp-app-grid-3">
         <Card title="新增" bordered={false} bodyStyle={{ padding: 12 }}>
           {diff.added.length === 0 ? (
             <Typography.Text type="tertiary">无</Typography.Text>
           ) : (
             diff.added.map((k) => (
-              <div key={k} style={{ color: 'var(--semi-color-success)' }}>+ {k}</div>
+              <div key={k} className="mp-text-success">+ {k}</div>
             ))
           )}
         </Card>
@@ -65,7 +66,7 @@ export default function VersionDiff({ aId, bId }: VersionDiffProps) {
             <Typography.Text type="tertiary">无</Typography.Text>
           ) : (
             diff.removed.map((k) => (
-              <div key={k} style={{ color: 'var(--semi-color-danger)' }}>- {k}</div>
+              <div key={k} className="mp-text-danger">- {k}</div>
             ))
           )}
         </Card>
@@ -74,7 +75,7 @@ export default function VersionDiff({ aId, bId }: VersionDiffProps) {
             <Typography.Text type="tertiary">无</Typography.Text>
           ) : (
             diff.modified.map((k) => (
-              <div key={k} style={{ color: 'var(--semi-color-warning)' }}>~ {k}</div>
+              <div key={k} className="mp-text-warning">~ {k}</div>
             ))
           )}
         </Card>

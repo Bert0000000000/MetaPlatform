@@ -19,6 +19,7 @@ import {
   StepForwardOutlined,
 } from '@ant-design/icons';
 import { getTraceDetail, type ObsSpan, type TraceDetail } from '@/api/dw/obs';
+import '../agents.css';
 
 interface ReplayPlayerProps {
   traceId: string;
@@ -183,7 +184,7 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
 
   if (loading) {
     return (
-      <div style={{ padding: 40, textAlign: 'center' }}>
+      <div className="mp-text-center mp-p-8">
         <Spin />
       </div>
     );
@@ -216,8 +217,8 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
 
   return (
     <Card title={`执行回放 - ${trace.traceId}`}>
-      <Space vertical style={{ width: '100%' }}>
-        <Space style={{ width: '100%', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+      <Space vertical className="mp-w-full">
+        <Space className="mp-w-full mp-justify-between mp-wrap" >
           <Space>
             <Button
               icon={<StepBackwardOutlined />}
@@ -241,7 +242,7 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
               value={speed}
               optionList={SPEED_OPTIONS}
               onChange={(v) => setSpeed(v as number)}
-              style={{ width: 80 }}
+              className="mp-agent-w-80"
             />
           </Space>
           <Typography.Text type="tertiary">
@@ -262,7 +263,7 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
           tipFormatter={(v) => `步骤 ${Number(v) + 1}`}
         />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="mp-gap-4 mp-grid mp-grid-2" >
           <Card title="时间轴">
             <Timeline>
               {steps.map((s) => (
@@ -271,12 +272,7 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
                   color={s.index === current ? 'var(--semi-color-danger)' : dotColorMap[s.type]}
                 >
                   <div
-                    style={{
-                      cursor: 'pointer',
-                      padding: 4,
-                      borderRadius: 4,
-                      background: s.index === current ? 'var(--semi-color-danger-light-default)' : 'transparent',
-                    }}
+                    className={`mp-clickable mp-p-1 mp-rounded-sm ${s.index === current ? 'mp-agent-replay-dot-on' : 'mp-agent-replay-dot'}`}
                     onClick={() => {
                       setCurrent(s.index);
                       setPlaying(false);
@@ -287,7 +283,7 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
                         {s.type === 'llm' ? 'AI' : s.type === 'tool' ? '工具' : '系统'}
                       </Tag>
                       <Typography.Text strong={s.index === current}>{s.title}</Typography.Text>
-                      <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                      <Typography.Text type="tertiary" className="mp-text-sm">
                         +{formatRelativeTime(s.timestamp)}
                       </Typography.Text>
                     </Space>
@@ -298,7 +294,7 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
           </Card>
 
           <Card title={`当前步骤：${step.title}`}>
-            <Space vertical style={{ width: '100%' }}>
+            <Space vertical className="mp-w-full">
               <Space>
                 <Tag color={colorMap[step.type]}>
                   {step.type === 'llm' ? 'AI 调用' : step.type === 'tool' ? '工具调用' : '系统调用'}
@@ -306,27 +302,18 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
                 <Tag color={step.status === 'ERROR' ? 'red' : 'green'}>{step.status}</Tag>
                 <Typography.Text type="tertiary">{step.subtitle}</Typography.Text>
               </Space>
-              <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+              <Typography.Text type="tertiary" className="mp-text-sm">
                 耗时 {formatDuration(step.durationUs)} · 相对开始时间{' '}
                 {formatRelativeTime(step.timestamp)}
               </Typography.Text>
 
               {step.input && (
                 <div>
-                  <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                  <Typography.Text type="tertiary" className="mp-text-sm">
                     输入
                   </Typography.Text>
                   <pre
-                    style={{
-                      margin: '4px 0 0 0',
-                      padding: 8,
-                      background: 'var(--semi-color-success-light-default)',
-                      borderRadius: 4,
-                      fontSize: 12,
-                      fontFamily: 'monospace',
-                      maxHeight: 160,
-                      overflow: 'auto',
-                    }}
+                    className="mp-overflow-auto mp-p-2 mp-text-sm mp-mono mp-rounded-sm mp-agent-pre mp-agent-pre-success"
                   >
                     {step.input}
                   </pre>
@@ -335,20 +322,11 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
 
               {step.output && (
                 <div>
-                  <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                  <Typography.Text type="tertiary" className="mp-text-sm">
                     输出
                   </Typography.Text>
                   <pre
-                    style={{
-                      margin: '4px 0 0 0',
-                      padding: 8,
-                      background: 'var(--semi-color-primary-light-default)',
-                      borderRadius: 4,
-                      fontSize: 12,
-                      fontFamily: 'monospace',
-                      maxHeight: 160,
-                      overflow: 'auto',
-                    }}
+                    className="mp-overflow-auto mp-p-2 mp-text-sm mp-mono mp-rounded-sm mp-agent-pre mp-agent-pre-primary"
                   >
                     {step.output}
                   </pre>

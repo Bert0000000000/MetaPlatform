@@ -12,7 +12,7 @@
 //      proposal 接受率基线 / 按天趋势 SVG / 按提议方聚合；独立加载，
 //      接口失败仅本区块降级为「指标不可用」，不拖垮整页
 
-import { useCallback, useEffect, useState, type CSSProperties, type ChangeEvent, type ReactElement } from 'react';
+import { useCallback, useEffect, useState, type ChangeEvent, type ReactElement } from 'react';
 import { Card, Table, Tag } from '@douyinfe/semi-ui';
 import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import { AlertTriangle, BarChart3, Bot, Download, GitBranch, GitCompare, History, Loader2, ShieldAlert, Undo2, Upload } from 'lucide-react';
@@ -29,6 +29,7 @@ import {
 } from '@/api/ont/agentMetrics';
 import SchemaWipCard from './components/SchemaWipCard';
 import SecurityPolicyCard from './components/SecurityPolicyCard';
+import './ontology.css';
 
 const PATTERN_LABEL: Record<string, string> = {
   god_object: '上帝对象',
@@ -55,24 +56,10 @@ const DIFF_LABEL: Record<string, string> = {
 };
 
 /** diff 数组值按 key 着色（新增绿 / 移除红 / 变更黄）。 */
-const DIFF_VALUE_COLOR: Record<string, string> = {
-  added: '#4ade80',
-  removed: '#f87171',
-  changed: '#fbbf24',
-};
-
-const verInputStyle: CSSProperties = {
-  height: 32, minWidth: 0, flex: 1, boxSizing: 'border-box',
-  background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
-  borderRadius: 6, padding: '0 10px', fontSize: 12,
-  color: 'var(--semi-color-text-0)', outline: 'none',
-  fontFamily: 'monospace',
-};
-
-const verBtnStyle: CSSProperties = {
-  height: 32, padding: '0 14px', fontSize: 12, borderRadius: 6,
-  border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)',
-  color: 'var(--semi-color-text-0)', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+const DIFF_VALUE_CLASS: Record<string, string> = {
+  added: 'mp-text-success',
+  removed: 'mp-text-danger',
+  changed: 'mp-text-warning',
 };
 
 /** 从 axios 错误中取 FastAPI detail（与页面既有 errText 口径一致）。 */
@@ -178,7 +165,7 @@ function AgentTrendChart({ points }: { points: AgentMetricsTrendPoint[] }): Reac
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H}
-      style={{ display: 'block' }} role="img">
+      className="mp-block" role="img">
       {els}
     </svg>
   );
@@ -383,70 +370,56 @@ export default function GovernancePage() {
 
   const usageCols: ColumnProps<UsageRow>[] = [
     { title: '类型', dataIndex: 'class_rid', render: (v: string) => (
-      <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{v}</span>) },
+      <span className="mp-text-sm mp-mono" >{v}</span>) },
     { title: '读（30d）', dataIndex: 'reads', width: 100 },
     { title: '写（30d）', dataIndex: 'writes', width: 100 },
     { title: '活跃天数', dataIndex: 'active_days', width: 90 },
     { title: '', dataIndex: '__ops', width: 170, render: (_: unknown, row: UsageRow) => (
-      <div style={{ display: 'flex', gap: 6 }}>
-        <button type="button" onClick={() => void doLifecycle(row.class_rid, 'deprecate')} style={{
-          padding: '2px 10px', fontSize: 12, borderRadius: 4,
-          border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)',
-          color: 'var(--semi-color-text-0)', cursor: 'pointer',
-        }}>废弃</button>
-        <button type="button" onClick={() => void doLifecycle(row.class_rid, 'delete')} style={{
-          padding: '2px 10px', fontSize: 12, borderRadius: 4,
-          border: '1px solid var(--semi-color-danger)', background: 'transparent',
-          color: 'var(--semi-color-danger)', cursor: 'pointer',
-        }}>删除</button>
+      <div className="mp-flex mp-gap-1" >
+        <button type="button" onClick={() => void doLifecycle(row.class_rid, 'deprecate')} className="mp-clickable mp-border mp-text-sm mp-text-1 mp-py-1 mp-px-2 mp-bg-1 mp-rounded-sm" >废弃</button>
+        <button type="button" onClick={() => void doLifecycle(row.class_rid, 'delete')} className="mp-clickable mp-text-sm mp-text-danger mp-py-1 mp-px-2 mp-rounded-sm mp-onto-btn--danger">删除</button>
       </div>
     ) },
   ];
 
   const auditCols: ColumnProps<ActionAuditRow>[] = [
     { title: '时间', dataIndex: 'created_at', width: 170, render: (v: string) => (
-      <span style={{ fontSize: 12 }}>{new Date(v).toLocaleString()}</span>) },
+      <span className="mp-text-sm">{new Date(v).toLocaleString()}</span>) },
     { title: '动作', dataIndex: 'action_rid', render: (v: string) => (
-      <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{v}</span>) },
+      <span className="mp-text-xs mp-mono" >{v}</span>) },
     { title: '执行者', dataIndex: 'actor_id', width: 110 },
     { title: '编辑数', dataIndex: 'result', width: 80, render: (v: Record<string, unknown>) => (
       <span>{String(v?.applied_count ?? '—')}</span>) },
     { title: '提案', dataIndex: 'proposal_id', render: (v: string) => (
-      <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{v}</span>) },
+      <span className="mp-text-xs mp-mono" >{v}</span>) },
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minWidth: 0, width: '100%' }}>
+    <div className="mp-w-full mp-flex mp-flex-1 mp-gap-4 mp-flex-col" >
       {msg && (
-        <div style={{
-          padding: '8px 14px', fontSize: 12, borderRadius: 6,
-          border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)',
-          color: 'var(--semi-color-text-0)',
-        }}>{msg}</div>
+        <div className="mp-border mp-text-sm mp-text-1 mp-py-2 mp-px-3 mp-bg-1 mp-rounded" >{msg}</div>
       )}
       {loading ? (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 40, justifyContent: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>
-          <Loader2 style={{ width: 14, height: 14, animation: 'osp-spin 1s linear infinite' }} /> 加载治理数据…
+        <div className="mp-gap-2 mp-p-8 mp-text-body mp-text-2 mp-flex-center mp-justify-center" >
+          <Loader2 className="mp-icon-14 mp-spin"  /> 加载治理数据…
         </div>
       ) : (
         <>
           {/* 版本与导入导出（G41） */}
           <Card bodyStyle={{ padding: 0 }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
-              <GitBranch style={{ width: 15, height: 15 }} />
-              <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>版本与导入导出</h4>
-              <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>类型版本分支 / 差异 / 回滚 · JSON 导出与导入</span>
+            <div className="mp-gap-2 mp-flex-center mp-border mp-py-3 mp-px-5" >
+              <GitBranch className="mp-icon-14" />
+              <h4 className="mp-fw-600 mp-m-0 mp-text-md">版本与导入导出</h4>
+              <span className="mp-text-xs mp-text-2">类型版本分支 / 差异 / 回滚 · JSON 导出与导入</span>
             </div>
-            <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="mp-flex mp-gap-3 mp-py-3 mp-px-5 mp-flex-col" >
               {/* 类型选择 */}
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)', flexShrink: 0 }}>目标类型</span>
+              <div className="mp-flex-center mp-gap-2" >
+                <span className="mp-text-sm mp-text-2 mp-shrink-0" >目标类型</span>
                 <select
                   value={verRid}
                   onChange={(e) => pickType(e.target.value)}
-                  style={{
-                    ...verInputStyle, flex: 1, fontFamily: 'monospace', cursor: 'pointer',
-                  }}
+                  className="mp-clickable mp-onto-input mp-onto-input--lg mp-onto-ver-input"
                 >
                   {types.length === 0 && <option value="">（暂无类型）</option>}
                   {types.map((ot) => {
@@ -461,57 +434,54 @@ export default function GovernancePage() {
               </div>
 
               {/* 类型版本操作 */}
-              <div style={{ border: '1px solid var(--semi-color-border)', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ fontSize: 12, fontWeight: 600 }}>类型版本操作</div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div className="mp-flex mp-border mp-gap-2 mp-py-3 mp-px-3 mp-flex-col mp-rounded" >
+                <div className="mp-fw-600 mp-text-sm">类型版本操作</div>
+                <div className="mp-gap-2 mp-flex-center">
                   <input
                     type="text"
                     placeholder="分支新 rid：ont.<租户>.obj.<域>.<slug>.vN"
                     value={branchRid}
                     onChange={(e) => setBranchRid(e.target.value)}
-                    style={verInputStyle}
+                    className="mp-onto-input mp-onto-input--lg mp-onto-ver-input"
                   />
-                  <button type="button" onClick={() => void doBranch()} disabled={verBusy === 'branch'} style={{ ...verBtnStyle, cursor: verBusy === 'branch' ? 'wait' : 'pointer' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <GitBranch style={{ width: 12, height: 12 }} />
+                  <button type="button" onClick={() => void doBranch()} disabled={verBusy === 'branch'} className="mp-onto-btn mp-onto-btn--lg">
+                    <span className="mp-inline-flex mp-items-center mp-gap-1" >
+                      <GitBranch className="mp-icon-12" />
                       {verBusy === 'branch' ? '创建中…' : '创建分支'}
                     </span>
                   </button>
                 </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div className="mp-gap-2 mp-flex-center">
                   <input
                     type="text"
                     placeholder="基准 rid（默认当前选中）"
                     value={diffBase}
                     onChange={(e) => setDiffBase(e.target.value)}
-                    style={verInputStyle}
+                    className="mp-onto-input mp-onto-input--lg mp-onto-ver-input"
                   />
                   <input
                     type="text"
                     placeholder="对比 rid（against）"
                     value={diffAgainst}
                     onChange={(e) => setDiffAgainst(e.target.value)}
-                    style={verInputStyle}
+                    className="mp-onto-input mp-onto-input--lg mp-onto-ver-input"
                   />
-                  <button type="button" onClick={() => void doDiff()} disabled={verBusy === 'diff'} style={{ ...verBtnStyle, cursor: verBusy === 'diff' ? 'wait' : 'pointer' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <GitCompare style={{ width: 12, height: 12 }} />
+                  <button type="button" onClick={() => void doDiff()} disabled={verBusy === 'diff'} className="mp-onto-btn mp-onto-btn--lg">
+                    <span className="mp-inline-flex mp-items-center mp-gap-1" >
+                      <GitCompare className="mp-icon-12" />
                       {verBusy === 'diff' ? '对比中…' : '对比差异'}
                     </span>
                   </button>
                 </div>
                 {diffResult && (
-                  <div style={{ border: '1px solid var(--semi-color-border)', borderRadius: 8, padding: '10px 12px', background: 'var(--semi-color-bg-1)' }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Diff 结果</div>
+                  <div className="mp-border mp-py-2 mp-px-3 mp-bg-1 mp-rounded" >
+                    <div className="mp-fw-600 mp-mb-2 mp-text-sm">Diff 结果</div>
                     {Object.entries(diffResult).map(([k, val]) => (
-                      <div key={k} style={{ display: 'flex', gap: 10, fontSize: 12, marginBottom: 4, alignItems: 'baseline' }}>
-                        <span style={{ color: 'var(--semi-color-text-2)', width: 76, flexShrink: 0 }}>
+                      <div key={k} className="mp-flex mp-mb-1 mp-text-sm mp-gap-2 mp-onto-baseline">
+                        <span className="mp-text-2 mp-shrink-0 mp-onto-diff-key">
                           {DIFF_LABEL[k] ?? k}
                         </span>
-                        <span style={{
-                          color: DIFF_VALUE_COLOR[k] ?? 'var(--semi-color-text-0)',
-                          wordBreak: 'break-all', fontFamily: k.endsWith('_rid') ? 'monospace' : undefined,
-                        }}>
+                        <span className={`mp-break-all ${DIFF_VALUE_CLASS[k] ?? 'mp-text-1'}${k.endsWith('_rid') ? ' mp-mono' : ''}`}>
                           {Array.isArray(val)
                             ? (val.length > 0 ? val.map(String).join('、') : '（无）')
                             : typeof val === 'boolean' ? (val ? '是' : '否') : String(val ?? '—')}
@@ -519,21 +489,21 @@ export default function GovernancePage() {
                       </div>
                     ))}
                     {diffResult.has_changes === false && (
-                      <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginTop: 4 }}>两版本属性定义一致</div>
+                      <div className="mp-mt-1 mp-text-xs mp-text-2">两版本属性定义一致</div>
                     )}
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div className="mp-gap-2 mp-flex-center">
                   <input
                     type="text"
                     placeholder="回滚来源 rid（同族旧版本，恢复其定义）"
                     value={rollbackFrom}
                     onChange={(e) => setRollbackFrom(e.target.value)}
-                    style={verInputStyle}
+                    className="mp-onto-input mp-onto-input--lg mp-onto-ver-input"
                   />
-                  <button type="button" onClick={() => void doRollback()} disabled={verBusy === 'rollback'} style={{ ...verBtnStyle, cursor: verBusy === 'rollback' ? 'wait' : 'pointer' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <Undo2 style={{ width: 12, height: 12 }} />
+                  <button type="button" onClick={() => void doRollback()} disabled={verBusy === 'rollback'} className="mp-onto-btn mp-onto-btn--lg">
+                    <span className="mp-inline-flex mp-items-center mp-gap-1" >
+                      <Undo2 className="mp-icon-12" />
                       {verBusy === 'rollback' ? '回滚中…' : '回滚'}
                     </span>
                   </button>
@@ -541,50 +511,38 @@ export default function GovernancePage() {
               </div>
 
               {/* 导入导出 */}
-              <div style={{ border: '1px solid var(--semi-color-border)', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ fontSize: 12, fontWeight: 600 }}>导入 / 导出</div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button type="button" onClick={() => void doExport()} disabled={verBusy === 'export'} style={{ ...verBtnStyle, cursor: verBusy === 'export' ? 'wait' : 'pointer' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <Download style={{ width: 12, height: 12 }} />
+              <div className="mp-flex mp-border mp-gap-2 mp-py-3 mp-px-3 mp-flex-col mp-rounded" >
+                <div className="mp-fw-600 mp-text-sm">导入 / 导出</div>
+                <div className="mp-gap-2 mp-flex-center mp-wrap" >
+                  <button type="button" onClick={() => void doExport()} disabled={verBusy === 'export'} className="mp-onto-btn mp-onto-btn--lg">
+                    <span className="mp-inline-flex mp-items-center mp-gap-1" >
+                      <Download className="mp-icon-12" />
                       {verBusy === 'export' ? '导出中…' : `导出当前类型（${verRid ? verRid.split('.')[3] ?? verRid : '—'}）`}
                     </span>
                   </button>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                    <Upload style={{ width: 12, height: 12, color: 'var(--semi-color-text-2)' }} />
+                  <span className="mp-inline-flex mp-items-center mp-text-sm mp-gap-1" >
+                    <Upload className="mp-icon-12 mp-text-2" />
                     <input
                       type="file"
                       accept="application/json,.json"
                       onChange={(e) => void onImportFile(e)}
                       disabled={verBusy === 'import'}
-                      style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}
+                      className="mp-text-sm mp-text-2"
                     />
                   </span>
                 </div>
                 {importResult && (
-                  <div style={{
-                    padding: '8px 12px', fontSize: 12, borderRadius: 6,
-                    border: `1px solid ${importResult.ok ? 'var(--semi-color-success)' : 'var(--semi-color-danger)'}`,
-                    color: importResult.ok ? 'var(--semi-color-success)' : 'var(--semi-color-danger)',
-                    wordBreak: 'break-all',
-                  }}>
+                  <div className={`mp-break-all mp-text-sm mp-py-2 mp-px-3 mp-rounded ${importResult.ok ? 'mp-onto-note-success' : 'mp-onto-note-danger'}`}>
                     {importResult.text}
                   </div>
                 )}
               </div>
 
               {verMsg && (
-                <div style={{
-                  padding: '8px 14px', fontSize: 12, borderRadius: 6,
-                  border: '1px solid var(--semi-color-success)', color: 'var(--semi-color-success)',
-                }}>{verMsg}</div>
+                <div className="mp-text-sm mp-text-success mp-py-2 mp-px-3 mp-rounded mp-onto-note-success">{verMsg}</div>
               )}
               {verErr && (
-                <div style={{
-                  padding: '8px 14px', fontSize: 12, borderRadius: 6,
-                  border: '1px solid var(--semi-color-danger)', color: 'var(--semi-color-danger)',
-                  wordBreak: 'break-all',
-                }}>{verErr}</div>
+                <div className="mp-break-all mp-text-sm mp-text-danger mp-py-2 mp-px-3 mp-rounded mp-onto-note-danger">{verErr}</div>
               )}
             </div>
           </Card>
@@ -594,10 +552,10 @@ export default function GovernancePage() {
 
           {/* 使用量 */}
           <Card bodyStyle={{ padding: 0 }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
-              <BarChart3 style={{ width: 15, height: 15 }} />
-              <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>类型使用量（近 30 天）</h4>
-              <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>变更影响评估 · 退役决策</span>
+            <div className="mp-gap-2 mp-flex-center mp-border mp-py-3 mp-px-5" >
+              <BarChart3 className="mp-icon-14" />
+              <h4 className="mp-fw-600 mp-m-0 mp-text-md">类型使用量（近 30 天）</h4>
+              <span className="mp-text-xs mp-text-2">变更影响评估 · 退役决策</span>
             </div>
             <Table<UsageRow> columns={usageCols} dataSource={usage} rowKey="class_rid"
               pagination={{ pageSize: 10 }} size="small" empty="暂无使用量数据" />
@@ -605,29 +563,26 @@ export default function GovernancePage() {
 
           {/* 反模式 lint */}
           <Card bodyStyle={{ padding: 0 }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
-              <ShieldAlert style={{ width: 15, height: 15, color: '#fbbf24' }} />
-              <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>反模式检查</h4>
-              <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>
+            <div className="mp-gap-2 mp-flex-center mp-border mp-py-3 mp-px-5" >
+              <ShieldAlert className="mp-icon-14 mp-text-warning" />
+              <h4 className="mp-fw-600 mp-m-0 mp-text-md">反模式检查</h4>
+              <span className="mp-text-xs mp-text-2">
                 {lint.length} 项发现（god_object / kitchen_sink / misnomer / action_sprawl）
               </span>
             </div>
             {lint.length === 0 ? (
-              <div style={{ padding: 24, fontSize: 12, color: 'var(--semi-color-text-2)' }}>✓ 未发现反模式</div>
+              <div className="mp-p-6 mp-text-sm mp-text-2">✓ 未发现反模式</div>
             ) : (
-              <div style={{ padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="mp-flex mp-gap-2 mp-py-2 mp-px-4 mp-flex-col" >
                 {lint.slice(0, 30).map((f, i) => (
-                  <div key={i} style={{
-                    display: 'flex', gap: 10, alignItems: 'flex-start',
-                    padding: '8px 12px', border: '1px solid var(--semi-color-border)', borderRadius: 8,
-                  }}>
+                  <div key={i} className="mp-flex mp-border mp-gap-2 mp-py-2 mp-px-3 mp-items-start mp-rounded" >
                     <Tag size="small" color={PATTERN_COLOR[f.pattern] ?? 'grey'}>
                       {PATTERN_LABEL[f.pattern] ?? f.pattern}
                     </Tag>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontSize: 12, fontFamily: 'monospace', wordBreak: 'break-all' }}>{f.subject}</div>
-                      <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>{f.detail}</div>
-                      <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginTop: 2 }}>💡 {f.hint}</div>
+                    <div className="mp-flex-1">
+                      <div className="mp-text-sm mp-break-all mp-mono" >{f.subject}</div>
+                      <div className="mp-text-sm mp-text-2">{f.detail}</div>
+                      <div className="mp-text-xs mp-text-2 mp-mt-1" >💡 {f.hint}</div>
                     </div>
                   </div>
                 ))}
@@ -640,9 +595,9 @@ export default function GovernancePage() {
 
           {/* 执行历史 */}
           <Card bodyStyle={{ padding: 0 }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
-              <History style={{ width: 15, height: 15 }} />
-              <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Action 执行历史</h4>
+            <div className="mp-gap-2 mp-flex-center mp-border mp-py-3 mp-px-5" >
+              <History className="mp-icon-14" />
+              <h4 className="mp-fw-600 mp-m-0 mp-text-md">Action 执行历史</h4>
             </div>
             <Table<ActionAuditRow> columns={auditCols} dataSource={audit} rowKey="audit_id"
               pagination={{ pageSize: 10 }} size="small" empty="暂无执行记录" />
@@ -650,68 +605,58 @@ export default function GovernancePage() {
 
           {/* Agent 回归指标（ONT-AGENT-METRICS-01）—— AI proposal 接受率基线，独立降级 */}
           <Card bodyStyle={{ padding: 0 }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
-              <Bot style={{ width: 15, height: 15 }} />
-              <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Agent 回归指标</h4>
-              <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>
+            <div className="mp-gap-2 mp-flex-center mp-border mp-py-3 mp-px-5" >
+              <Bot className="mp-icon-14" />
+              <h4 className="mp-fw-600 mp-m-0 mp-text-md">Agent 回归指标</h4>
+              <span className="mp-text-xs mp-text-2">
                 AI proposal 接受率基线 · accepted = executed + reverted
               </span>
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexShrink: 0 }}>
+              <div className="mp-flex mp-shrink-0 mp-ml-auto mp-gap-1" >
                 {[7, 30, 90].map((d) => (
-                  <button key={d} type="button" onClick={() => setAgentDays(d)} disabled={agentLoading} style={{
-                    height: 24, padding: '0 10px', fontSize: 11, borderRadius: 'var(--semi-border-radius-medium)',
-                    border: `1px solid ${agentDays === d ? 'var(--semi-color-primary)' : 'var(--semi-color-border)'}`,
-                    background: agentDays === d ? 'var(--semi-color-primary)' : 'var(--semi-color-bg-1)',
-                    color: agentDays === d ? 'var(--semi-color-white)' : 'var(--semi-color-text-0)',
-                    cursor: agentLoading ? 'wait' : 'pointer',
-                  }}>{d} 天</button>
+                  <button key={d} type="button" onClick={() => setAgentDays(d)} disabled={agentLoading} className={`mp-text-xs mp-onto-days-btn${agentDays === d ? ' mp-onto-days-btn--active' : ''}`}>{d} 天</button>
                 ))}
               </div>
             </div>
             {agentLoading ? (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 32, justifyContent: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>
-                <Loader2 style={{ width: 14, height: 14, animation: 'osp-spin 1s linear infinite' }} /> 加载 Agent 指标…
+              <div className="mp-gap-2 mp-p-7 mp-text-body mp-text-2 mp-flex-center mp-justify-center" >
+                <Loader2 className="mp-icon-14 mp-spin"  /> 加载 Agent 指标…
               </div>
             ) : agentDown ? (
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: 24, fontSize: 12, color: 'var(--semi-color-text-2)' }}>
-                <AlertTriangle style={{ width: 13, height: 13, flexShrink: 0 }} />
+              <div className="mp-p-6 mp-text-sm mp-text-2 mp-flex-center mp-gap-1" >
+                <AlertTriangle className="mp-shrink-0 mp-icon-12"  />
                 指标不可用（后端未就绪或网络异常；切换窗口天数可重试）
               </div>
             ) : (
-              <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 14, width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+              <div className="mp-w-full mp-flex mp-gap-3 mp-py-3 mp-px-5 mp-flex-col mp-min-w-0 mp-onto-border-box">
                 {/* 汇总接口单独失败（趋势仍在）时的局部降级提示 */}
                 {!agentSummary && (
-                  <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>汇总接口暂不可用，以下仅趋势数据</div>
+                  <div className="mp-text-xs mp-text-2">汇总接口暂不可用，以下仅趋势数据</div>
                 )}
                 {/* 指标行：总提案数 / 接受率 / executed / rejected / pending */}
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', width: '100%' }}>
+                <div className="mp-w-full mp-flex mp-wrap mp-gap-2" >
                   {[
-                    { label: '总提案数', value: agentSummary ? String(agentSummary.total) : '—', color: 'var(--semi-color-text-0)' },
-                    { label: '接受率', value: fmtAgentRate(agentSummary?.acceptance_rate), color: 'var(--semi-color-text-0)' },
-                    { label: 'executed', value: agentSummary ? String(agentSummary.by_status.executed ?? 0) : '—', color: 'var(--semi-color-success)' },
-                    { label: 'rejected', value: agentSummary ? String(agentSummary.by_status.rejected ?? 0) : '—', color: 'var(--semi-color-danger)' },
-                    { label: 'pending', value: agentSummary ? String(agentSummary.by_status.pending ?? 0) : '—', color: 'var(--semi-color-warning)' },
+                    { label: '总提案数', value: agentSummary ? String(agentSummary.total) : '—', cls: 'mp-text-1' },
+                    { label: '接受率', value: fmtAgentRate(agentSummary?.acceptance_rate), cls: 'mp-text-1' },
+                    { label: 'executed', value: agentSummary ? String(agentSummary.by_status.executed ?? 0) : '—', cls: 'mp-text-success' },
+                    { label: 'rejected', value: agentSummary ? String(agentSummary.by_status.rejected ?? 0) : '—', cls: 'mp-text-danger' },
+                    { label: 'pending', value: agentSummary ? String(agentSummary.by_status.pending ?? 0) : '—', cls: 'mp-text-warning' },
                   ].map((t) => (
-                    <div key={t.label} style={{
-                      flex: '1 1 110px', minWidth: 96, padding: '10px 14px',
-                      border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-                      background: 'var(--semi-color-bg-1)',
-                    }}>
-                      <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>{t.label}</div>
-                      <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2, color: t.color }}>{t.value}</div>
+                    <div key={t.label} className="mp-border mp-rounded mp-py-2 mp-px-3 mp-bg-1 mp-onto-metric-tile">
+                      <div className="mp-text-xs mp-text-2">{t.label}</div>
+                      <div className={`mp-text-xl mp-mt-1 mp-onto-metric-value ${t.cls}`}>{t.value}</div>
                     </div>
                   ))}
                 </div>
 
                 {/* 趋势：纯 SVG 迷你柱状图（proposed 总量柱 + executed 底部堆叠段） */}
-                <div style={{ border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', padding: '10px 12px' }}>
-                  <div style={{ display: 'flex', gap: 14, alignItems: 'center', fontSize: 11, color: 'var(--semi-color-text-2)', marginBottom: 6 }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--semi-color-primary)', flexShrink: 0 }} />
+                <div className="mp-border mp-rounded mp-py-2 mp-px-3" >
+                  <div className="mp-text-xs mp-text-2 mp-flex-center mp-mb-1 mp-gap-3" >
+                    <span className="mp-inline-flex mp-items-center mp-gap-1" >
+                      <span className="mp-shrink-0 mp-icon-12 mp-rounded-sm mp-onto-swatch-primary" />
                       proposed 提案
                     </span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--semi-color-success)', flexShrink: 0 }} />
+                    <span className="mp-inline-flex mp-items-center mp-gap-1" >
+                      <span className="mp-shrink-0 mp-icon-12 mp-rounded-sm mp-onto-swatch-success" />
                       executed 已采纳（含 reverted）
                     </span>
                   </div>
@@ -719,36 +664,31 @@ export default function GovernancePage() {
                 </div>
 
                 {/* 按提议方聚合 + 驳回原因分布（窄屏折行） */}
-                <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'stretch' }}>
-                  <div style={{ flex: '1 1 320px', minWidth: 0, border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <div className="mp-flex mp-wrap mp-gap-3 mp-onto-stretch">
+                  <div className="mp-hidden mp-border mp-rounded mp-min-w-0 mp-onto-actor-col">
+                    <table className="mp-w-full mp-text-sm mp-onto-table">
                       <thead>
                         <tr>
                           {['提议方', '提案数', '已执行', '接受率'].map((h, i) => (
-                            <th key={h} style={{
-                              textAlign: i === 0 ? 'left' : 'right', padding: '7px 12px',
-                              borderBottom: '1px solid var(--semi-color-border)',
-                              color: 'var(--semi-color-text-2)', fontWeight: 500, fontSize: 11,
-                              whiteSpace: 'nowrap',
-                            }}>{h}</th>
+                            <th key={h} className={`mp-fw-500 mp-nowrap mp-border mp-text-xs mp-text-2 mp-py-2 mp-px-3 ${i === 0 ? 'mp-text-left' : 'mp-text-right'}`}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {(agentSummary?.by_actor ?? []).length === 0 ? (
                           <tr>
-                            <td colSpan={4} style={{ padding: '12px 12px', color: 'var(--semi-color-text-2)', fontSize: 12 }}>
+                            <td colSpan={4} className="mp-text-sm mp-text-2 mp-py-3 mp-px-3" >
                               {agentSummary ? '窗口内无提案' : '—'}
                             </td>
                           </tr>
                         ) : agentSummary?.by_actor.map((row) => (
                           <tr key={row.actor}>
-                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--semi-color-border)', fontFamily: 'monospace', fontSize: 11, wordBreak: 'break-all' }}>
+                            <td className="mp-text-xs mp-break-all mp-border mp-py-1 mp-px-3 mp-mono" >
                               {row.actor}
                             </td>
-                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--semi-color-border)', textAlign: 'right' }}>{row.proposed}</td>
-                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--semi-color-border)', textAlign: 'right' }}>{row.executed}</td>
-                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--semi-color-border)', textAlign: 'right', fontWeight: 600 }}>
+                            <td className="mp-border mp-py-1 mp-px-3 mp-text-right" >{row.proposed}</td>
+                            <td className="mp-border mp-py-1 mp-px-3 mp-text-right" >{row.executed}</td>
+                            <td className="mp-fw-600 mp-border mp-py-1 mp-px-3 mp-text-right" >
                               {fmtAgentRate(row.acceptance_rate)}
                             </td>
                           </tr>
@@ -756,24 +696,24 @@ export default function GovernancePage() {
                       </tbody>
                     </table>
                   </div>
-                  <div style={{ flex: '1 1 240px', minWidth: 0, border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', padding: '10px 12px' }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>驳回原因分布</div>
+                  <div className="mp-border mp-rounded mp-py-2 mp-px-3 mp-min-w-0 mp-onto-reject-col">
+                    <div className="mp-fw-600 mp-text-sm mp-mb-1" >驳回原因分布</div>
                     {!agentSummary ? (
-                      <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>—</div>
+                      <div className="mp-text-sm mp-text-2">—</div>
                     ) : agentSummary.rejection_reasons == null ? (
-                      <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>驳回原因尚未记录（后端字段待接入）</div>
+                      <div className="mp-text-sm mp-text-2">驳回原因尚未记录（后端字段待接入）</div>
                     ) : agentSummary.rejection_reasons.length === 0 ? (
-                      <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>窗口内无驳回记录</div>
+                      <div className="mp-text-sm mp-text-2">窗口内无驳回记录</div>
                     ) : agentSummary.rejection_reasons.map((r) => (
-                      <div key={r.reason} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 12, padding: '3px 0' }}>
-                        <span style={{ wordBreak: 'break-all' }}>{r.reason}</span>
-                        <span style={{ color: 'var(--semi-color-text-2)', flexShrink: 0 }}>{r.count}</span>
+                      <div key={r.reason} className="mp-flex mp-justify-between mp-text-sm mp-gap-2 mp-py-1">
+                        <span className="mp-break-all">{r.reason}</span>
+                        <span className="mp-text-2 mp-shrink-0" >{r.count}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>
+                <div className="mp-text-xs mp-text-2">
                   口径：接受率 = accepted / (accepted + rejected)，accepted = executed + reverted；
                   pending / confirmed（在途）与 withdrawn（自撤）不入分母；趋势按 UTC 日连续零填充。
                 </div>
@@ -782,8 +722,8 @@ export default function GovernancePage() {
           </Card>
 
           {!loading && usage.length === 0 && (
-            <div style={{ display: 'flex', gap: 6, fontSize: 12, color: 'var(--semi-color-text-2)', alignItems: 'center' }}>
-              <AlertTriangle style={{ width: 13, height: 13 }} />
+            <div className="mp-text-sm mp-text-2 mp-flex-center mp-gap-1" >
+              <AlertTriangle className="mp-icon-12" />
               使用量在读写时自动打点（GET /individuals 按类读、apply-edit-set 写）
             </div>
           )}

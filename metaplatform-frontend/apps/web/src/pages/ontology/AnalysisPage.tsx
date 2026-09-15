@@ -25,6 +25,7 @@ import {
 } from '@/api/ont/kernel';
 import ChartSvg, { formatChartNumber, type ChartDatum, type ChartType } from './components/ChartSvg';
 import { saveAnalysisPin } from './components/analysisPins';
+import './ontology.css';
 
 /** 可作分组字段的格式（string/date/timestamp；后两者自动切趋势线）。 */
 const DIMENSION_FORMATS = new Set(['string', 'date', 'timestamp']);
@@ -42,27 +43,6 @@ const CHART_TABS: Array<{ key: ChartType; label: string }> = [
   { key: 'line', label: '趋势线' },
 ];
 
-const selectStyle = {
-  height: 32, minWidth: 0, flex: 1, boxSizing: 'border-box',
-  background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
-  borderRadius: 6, padding: '0 8px', fontSize: 12,
-  color: 'var(--semi-color-text-0)', outline: 'none', cursor: 'pointer',
-} as const;
-
-const runBtnStyle = {
-  height: 32, padding: '0 18px', fontSize: 12, borderRadius: 6, whiteSpace: 'nowrap',
-  border: '1px solid var(--semi-color-primary)', background: 'var(--semi-color-primary)',
-  color: 'var(--semi-color-white)', cursor: 'pointer', flexShrink: 0,
-} as const;
-
-const chartTabStyle = (active: boolean) => ({
-  height: 30, padding: '0 14px', fontSize: 12, borderRadius: 6, whiteSpace: 'nowrap',
-  border: `1px solid ${active ? 'var(--semi-color-primary)' : 'var(--semi-color-border)'}`,
-  background: active ? 'var(--semi-color-primary)' : 'var(--semi-color-bg-1)',
-  color: active ? 'var(--semi-color-white)' : 'var(--semi-color-text-0)',
-  cursor: 'pointer',
-}) as const;
-
 function isDimensionProp(p: KernelProperty): boolean {
   return DIMENSION_FORMATS.has(p.format);
 }
@@ -72,14 +52,12 @@ function isMetricProp(p: KernelProperty): boolean {
 }
 
 /** 属性清单行的格式徽标色。 */
-function propChipStyle(kind: 'dim' | 'metric' | 'geo' | 'plain') {
-  const color = kind === 'dim' ? '#3b82f6' : kind === 'metric' ? '#10b981'
-    : kind === 'geo' ? '#f59e0b' : 'var(--semi-color-text-2)';
-  return {
-    fontSize: 10, padding: '1px 6px', borderRadius: 4, flexShrink: 0,
-    border: `1px solid ${color}`, color, fontFamily: 'monospace',
-  } as const;
-}
+const PROP_CHIP_CLASS: Record<'dim' | 'metric' | 'geo' | 'plain', string> = {
+  dim: 'mp-onto-chip-dim',
+  metric: 'mp-onto-chip-metric',
+  geo: 'mp-onto-chip-geo',
+  plain: '',
+};
 
 export default function AnalysisPage() {
   // ── 左栏：类型 + 属性清单 ──
@@ -226,40 +204,31 @@ export default function AnalysisPage() {
   };
 
   return (
-    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flex: 1, minWidth: 0, width: '100%' }}>
+    <div className="mp-w-full mp-flex mp-flex-1 mp-gap-5 mp-items-start" >
       {/* 左栏：数据源选择 */}
-      <div style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <Card style={{ height: 'fit-content' }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, marginBottom: 12 }}>数据源（ObjectType）</h3>
+      <div className="mp-flex mp-gap-4 mp-shrink-0 mp-flex-col mp-onto-side-col">
+        <Card className="mp-h-fit">
+          <h3 className="mp-fw-600 mp-mb-3 mp-m-0 mp-text-md">数据源（ObjectType）</h3>
           {loadingTypes ? (
-            <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', padding: '8px 0', display: 'flex', gap: 8, alignItems: 'center' }}>
-              <Loader2 style={{ width: 12, height: 12, animation: 'osp-spin 1s linear infinite' }} /> 加载中…
+            <div className="mp-gap-2 mp-text-sm mp-text-2 mp-flex-center mp-py-2">
+              <Loader2 className="mp-icon-12 mp-spin"  /> 加载中…
             </div>
           ) : typeError ? (
-            <div style={{ fontSize: 12, color: 'var(--semi-color-danger)' }}>{typeError}</div>
+            <div className="mp-text-sm mp-text-danger">{typeError}</div>
           ) : types.length === 0 ? (
-            <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>暂无类型</div>
+            <div className="mp-text-sm mp-text-2">暂无类型</div>
           ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: 300, overflowY: 'auto' }}>
+            <ul className="mp-m-0 mp-overflow-y-auto mp-p-1 mp-onto-list-plain mp-onto-list-scroll">
               {types.map((t) => (
                 <li key={t.rid}>
                   <button
                     type="button"
                     onClick={() => setSelectedType(t.rid)}
                     title={t.rid}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', gap: 6,
-                      padding: '6px 10px', fontSize: 12, textAlign: 'left',
-                      border: 'none', borderRadius: 6, cursor: 'pointer',
-                      background: t.rid === selectedType ? 'var(--semi-color-fill-0)' : 'transparent',
-                      color: t.rid === selectedType ? 'var(--semi-color-text-0)' : 'var(--semi-color-text-2)',
-                    }}
+                    className={`mp-w-full mp-clickable mp-gap-1 mp-text-sm mp-flex-center mp-py-1 mp-px-2 mp-text-left mp-border-none mp-rounded mp-onto-pick-row${t.rid === selectedType ? ' mp-onto-pick-row--active' : ''}`}
                   >
-                    <span style={{
-                      width: 8, height: 8, borderRadius: 2, flexShrink: 0,
-                      background: t.rid === selectedType ? 'var(--semi-color-primary)' : 'var(--semi-color-text-2)',
-                    }} />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span className={`mp-shrink-0 mp-icon-12 mp-rounded-sm mp-onto-pick-dot${t.rid === selectedType ? ' mp-onto-pick-dot--on' : ''}`} />
+                    <span className="mp-hidden mp-nowrap mp-ellipsis-text" >
                       {t.display_name || t.rid}
                     </span>
                   </button>
@@ -270,43 +239,36 @@ export default function AnalysisPage() {
         </Card>
 
         {/* 属性清单 */}
-        <Card style={{ height: 'fit-content' }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, marginBottom: 8 }}>
+        <Card className="mp-h-fit">
+          <h3 className="mp-fw-600 mp-mb-2 mp-m-0 mp-text-md">
             属性清单
-            <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--semi-color-text-2)', marginLeft: 6 }}>
+            <span className="mp-text-xs mp-text-2 mp-ml-1 mp-onto-fw-normal">
               {detail ? `${detail.properties.length} 项` : ''}
             </span>
           </h3>
-          <div style={{ fontSize: 10, color: 'var(--semi-color-text-2)', marginBottom: 8 }}>
-            <span style={propChipStyle('dim')}>维度</span> 可分组 ·
-            <span style={propChipStyle('metric')}>度量</span> 可聚合
+          <div className="mp-mb-2 mp-text-2 mp-text-xs" >
+            <span className="mp-onto-prop-chip mp-onto-chip-dim">维度</span> 可分组 ·
+            <span className="mp-onto-prop-chip mp-onto-chip-metric">度量</span> 可聚合
           </div>
           {detailBusy ? (
-            <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', padding: '8px 0', display: 'flex', gap: 8, alignItems: 'center' }}>
-              <Loader2 style={{ width: 12, height: 12, animation: 'osp-spin 1s linear infinite' }} /> 加载中…
+            <div className="mp-gap-2 mp-text-sm mp-text-2 mp-flex-center mp-py-2">
+              <Loader2 className="mp-icon-12 mp-spin"  /> 加载中…
             </div>
           ) : !detail || detail.properties.length === 0 ? (
-            <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>该类型暂无属性</div>
+            <div className="mp-text-sm mp-text-2">该类型暂无属性</div>
           ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: 320, overflowY: 'auto' }}>
+            <ul className="mp-m-0 mp-overflow-y-auto mp-p-1 mp-max-h-320 mp-onto-list-plain">
               {detail.properties.map((p) => {
                 const slug = propSlug(p.rid);
                 const kind: 'dim' | 'metric' | 'geo' | 'plain' = isDimensionProp(p)
                   ? 'dim' : isMetricProp(p) ? 'metric'
                     : p.format === 'latlon' || p.format === 'geojson' ? 'geo' : 'plain';
                 return (
-                  <li key={p.rid} style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '5px 4px', fontSize: 12,
-                    borderBottom: '1px solid var(--semi-color-border)',
-                  }}>
-                    <span style={{
-                      flex: 1, minWidth: 0, overflow: 'hidden',
-                      textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }} title={`${p.title || slug}（${p.rid}）`}>
+                  <li key={p.rid} className="mp-border mp-gap-2 mp-text-sm mp-flex-center mp-py-1 mp-px-1" >
+                    <span className="mp-ellipsis mp-flex-1" title={`${p.title || slug}（${p.rid}）`}>
                       {p.title || slug}
                     </span>
-                    <span style={propChipStyle(kind)}>{p.format}</span>
+                    <span className={`mp-onto-prop-chip ${PROP_CHIP_CLASS[kind]}`}>{p.format}</span>
                   </li>
                 );
               })}
@@ -316,15 +278,15 @@ export default function AnalysisPage() {
       </div>
 
       {/* 中间：分析画布 */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="mp-flex mp-flex-1 mp-gap-4 mp-flex-col" >
         {/* 配置行 */}
         <Card bodyStyle={{ padding: '14px 16px' }}>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)', flexShrink: 0 }}>分组字段</span>
+          <div className="mp-flex-center mp-wrap mp-gap-2" >
+            <span className="mp-text-sm mp-text-2 mp-shrink-0" >分组字段</span>
             <select
               value={dimension}
               onChange={(e) => onDimensionChange(e.target.value)}
-              style={{ ...selectStyle, width: 170 }}
+              className="mp-onto-query-select mp-onto-query-select--dim"
             >
               {dimProps.length === 0 && <option value="">（无可分组属性）</option>}
               {dimProps.map((p) => {
@@ -333,20 +295,20 @@ export default function AnalysisPage() {
               })}
             </select>
 
-            <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)', flexShrink: 0 }}>聚合</span>
+            <span className="mp-text-sm mp-text-2 mp-shrink-0" >聚合</span>
             <select
               value={fn}
               onChange={(e) => setFn(e.target.value)}
-              style={{ ...selectStyle, width: 90 }}
+              className="mp-onto-query-select mp-onto-query-select--fn"
             >
               {FNS.map((f) => <option key={f} value={f}>{FN_LABEL[f]}</option>)}
             </select>
 
-            <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)', flexShrink: 0 }}>度量字段</span>
+            <span className="mp-text-sm mp-text-2 mp-shrink-0" >度量字段</span>
             <select
               value={metric}
               onChange={(e) => setMetric(e.target.value)}
-              style={{ ...selectStyle, width: 170 }}
+              className="mp-onto-query-select mp-onto-query-select--dim"
             >
               <option value="">（实例计数 count *）</option>
               {metricProps.map((p) => {
@@ -359,10 +321,10 @@ export default function AnalysisPage() {
               type="button"
               onClick={() => void runAnalysis()}
               disabled={!canRun || busy}
-              style={{ ...runBtnStyle, opacity: !canRun || busy ? 0.5 : 1, cursor: !canRun || busy ? 'not-allowed' : 'pointer' }}
+              className="mp-onto-btn mp-onto-btn--primary mp-onto-btn--lg"
             >
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                <PlayCircle style={{ width: 13, height: 13 }} />
+              <span className="mp-inline-flex mp-items-center mp-gap-1" >
+                <PlayCircle className="mp-icon-12" />
                 {busy ? '分析中…' : '运行分析'}
               </span>
             </button>
@@ -371,20 +333,20 @@ export default function AnalysisPage() {
 
         {/* 图表 */}
         <Card bodyStyle={{ padding: '14px 16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <h4 style={{ fontSize: 14, fontWeight: 600, margin: 0, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div className="mp-gap-2 mp-flex-center mp-mb-2" >
+            <h4 className="mp-hidden mp-fw-600 mp-flex-1 mp-m-0 mp-text-md mp-nowrap mp-ellipsis-text" >
               {result
                 ? `${detail?.display_name ?? selectedType}：${dimTitle} × ${FN_LABEL[fn] ?? fn}${metric ? `（${metricTitle}）` : ''}`
                 : '分析画布'}
             </h4>
             {/* 图表切换按钮组 */}
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div className="mp-flex mp-gap-1" >
               {CHART_TABS.map((t) => (
                 <button
                   key={t.key}
                   type="button"
                   onClick={() => setChartType(t.key)}
-                  style={chartTabStyle(chartType === t.key)}
+                  className={`mp-onto-tab${chartType === t.key ? ' mp-onto-tab--active' : ''}`}
                 >
                   {t.label}
                 </button>
@@ -392,14 +354,10 @@ export default function AnalysisPage() {
             </div>
           </div>
           {err ? (
-            <div style={{
-              padding: '10px 14px', fontSize: 12, borderRadius: 6,
-              border: '1px solid var(--semi-color-danger)', color: 'var(--semi-color-danger)',
-              wordBreak: 'break-all',
-            }}>{err}</div>
+            <div className="mp-break-all mp-text-sm mp-text-danger mp-py-2 mp-px-3 mp-rounded mp-onto-note-danger">{err}</div>
           ) : busy ? (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', padding: 48, color: 'var(--semi-color-text-2)', fontSize: 13 }}>
-              <Loader2 style={{ width: 14, height: 14, animation: 'osp-spin 1s linear infinite' }} /> 聚合查询中…
+            <div className="mp-gap-2 mp-p-9 mp-text-body mp-text-2 mp-flex-center mp-justify-center" >
+              <Loader2 className="mp-icon-14 mp-spin"  /> 聚合查询中…
             </div>
           ) : (
             <ChartSvg type={chartType} data={result?.data ?? []} baseWidth={720} height={300} />
@@ -409,22 +367,17 @@ export default function AnalysisPage() {
         {/* 结论 + Pin */}
         {result && (
           <Card bodyStyle={{ padding: '12px 16px' }}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginBottom: 4 }}>分析结论（自动生成）</div>
-                <div style={{ fontSize: 13 }}>{summary || '无数据行'}</div>
+            <div className="mp-gap-3 mp-flex-center">
+              <div className="mp-flex-1">
+                <div className="mp-mb-1 mp-text-xs mp-text-2">分析结论（自动生成）</div>
+                <div className="mp-text-body">{summary || '无数据行'}</div>
               </div>
               <button
                 type="button"
                 onClick={pinToDashboard}
-                style={{
-                  height: 32, padding: '0 16px', fontSize: 12, borderRadius: 6, flexShrink: 0,
-                  border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)',
-                  color: 'var(--semi-color-text-0)', cursor: 'pointer',
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                }}
+                className="mp-inline-flex mp-items-center mp-clickable mp-border mp-shrink-0 mp-gap-1 mp-text-sm mp-text-1 mp-bg-1 mp-rounded mp-onto-btn mp-onto-btn--lg"
               >
-                <Pin style={{ width: 13, height: 13 }} /> Pin 到仪表盘
+                <Pin className="mp-icon-12" /> Pin 到仪表盘
               </button>
             </div>
           </Card>

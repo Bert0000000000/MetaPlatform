@@ -115,7 +115,7 @@ export default function RuleEditor({
         <Form.InputNumber
           field="priority"
           label="优先级（数字越小优先级越高）"
-          style={{ width: '100%' }}
+          className="mp-w-full"
         />
         <Form.Switch field="enabled" label="启用" />
       </Form>

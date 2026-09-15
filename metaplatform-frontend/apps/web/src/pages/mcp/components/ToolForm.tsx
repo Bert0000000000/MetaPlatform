@@ -101,9 +101,9 @@ export default function ToolForm({
         <ArrayField field="inputSchema">
           {({ arrayFields, addWithInitValue }) => (
             <>
-              <div style={{ marginBottom: 8, fontWeight: 600 }}>输入参数</div>
+              <div className="mp-fw-600 mp-mb-2">输入参数</div>
               {arrayFields.map((f) => (
-                <Space key={f.key} style={{ marginBottom: 8 }} wrap>
+                <Space key={f.key} className="mp-mb-2" wrap>
                   <Form.Input
                     field={`${f.field}[name]`}
                     rules={[{ required: true, message: '名称' }]}
@@ -112,7 +112,7 @@ export default function ToolForm({
                   <Form.Select
                     field={`${f.field}[type]`}
                     initValue="string"
-                    style={{ width: 120 }}
+                    className="mp-w-120"
                     optionList={TYPE_OPTIONS}
                   />
                   <Form.Switch
@@ -124,7 +124,7 @@ export default function ToolForm({
                   <Form.Input
                     field={`${f.field}[description]`}
                     placeholder="描述（可选）"
-                    style={{ width: 200 }}
+                    className="mp-w-200"
                   />
                   <Button type="danger" icon={<DeleteOutlined />} onClick={f.remove} />
                 </Space>
@@ -146,7 +146,7 @@ export default function ToolForm({
         <Form.Select
           field="tags"
           label="标签"
-          style={{ marginTop: 16 }}
+          className="mp-mt-4"
           multiple
           placeholder="输入标签后回车"
           optionList={[]}

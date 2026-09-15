@@ -26,17 +26,18 @@ import {
 import type { FlowTestResult, FlowTestStep } from '@/api/apphub/types';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { IconTick, IconClose, IconAlertTriangle } from '@douyinfe/semi-icons';
+import '../apps.css';
 
 interface FlowTestPanelProps {
   result: FlowTestResult;
 }
 
 const ACTION_ICONS: Record<FlowTestStep['action'], ReactNode> = {
-  submit: <PlayCircleOutlined style={{ color: '#1677ff' }} />,
-  approve: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
-  reject: <CloseCircleOutlined style={{ color: '#f5222d' }} />,
-  condition_check: <BranchesOutlined style={{ color: '#faad14' }} />,
-  complete: <FlagOutlined style={{ color: '#722ed1' }} />,
+  submit: <PlayCircleOutlined className="mp-text-primary" />,
+  approve: <CheckCircleOutlined className="mp-text-success" />,
+  reject: <CloseCircleOutlined className="mp-text-danger" />,
+  condition_check: <BranchesOutlined className="mp-text-warning" />,
+  complete: <FlagOutlined className="mp-app-text-purple" />,
 };
 
 const NODE_TYPE_TAGS: Record<string, { color: TagColor; label: string }> = {
@@ -64,14 +65,14 @@ export default function FlowTestPanel({ result }: FlowTestPanelProps) {
             type={finalStatusType}
             title={
               result.finalStatus === 'approved'
-                ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><IconTick /> 流程测试通过</span>
+                ? <span className="mp-inline-flex mp-items-center mp-gap-1" ><IconTick /> 流程测试通过</span>
                 : result.finalStatus === 'rejected'
-                  ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><IconClose /> 流程测试被拒绝</span>
-                  : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><IconAlertTriangle /> 流程测试异常</span>
+                  ? <span className="mp-inline-flex mp-items-center mp-gap-1" ><IconClose /> 流程测试被拒绝</span>
+                  : <span className="mp-inline-flex mp-items-center mp-gap-1" ><IconAlertTriangle /> 流程测试异常</span>
             }
             description={`共 ${result.steps.length} 步，耗时 ${result.duration}ms`}
             icon={null}
-            style={{ marginBottom: 16 }}
+            className="mp-mb-4"
           />
 
           <Steps
@@ -98,11 +99,11 @@ export default function FlowTestPanel({ result }: FlowTestPanelProps) {
                       <Typography.Text>{step.actionLabel}</Typography.Text>
                     </Space>
                     {step.assignee && (
-                      <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                      <Typography.Text type="tertiary" className="mp-text-sm">
                         审批人：{step.assignee}
                       </Typography.Text>
                     )}
-                    <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                    <Typography.Text type="tertiary" className="mp-text-sm">
                       {new Date(step.timestamp).toLocaleString()}
                     </Typography.Text>
                   </Space>
@@ -114,7 +115,7 @@ export default function FlowTestPanel({ result }: FlowTestPanelProps) {
       </Tabs.TabPane>
       <Tabs.TabPane tab="模拟推进" itemKey="simulate">
         <Card>
-          <div style={{ maxWidth: 480 }}>
+          <div className="mp-app-max-480">
             <Form.Slot label="模拟审批人">
               <Select
                 value={approver}
@@ -140,7 +141,7 @@ export default function FlowTestPanel({ result }: FlowTestPanelProps) {
             <Form.Slot label="附加意见">
               <TextArea rows={3} placeholder="审批意见..." />
             </Form.Slot>
-            <div style={{ marginTop: 8 }}>
+            <div className="mp-mt-2">
               <Button
                 type="primary"
                 icon={<ForwardOutlined />}

@@ -15,6 +15,7 @@ import {
   type TooltipProps,
 } from 'recharts';
 import type { DistributionItem } from '@/types/analytics';
+import '../admin.css';
 
 const { Text } = Typography;
 
@@ -37,24 +38,16 @@ function BarTip({ active, payload }: TooltipProps<number, string>) {
   if (!item) return null;
   return (
     <div
-      style={{
-        background: 'var(--semi-color-bg-1)',
-        border: '1px solid var(--semi-color-border)',
-        borderRadius: 8,
-        padding: '8px 12px',
-        fontSize: 12,
-        color: 'var(--semi-color-text-0)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.32)',
-      }}
+      className="mp-border mp-text-sm mp-text-1 mp-py-2 mp-px-3 mp-bg-1 mp-rounded mp-admin-tooltip"
     >
-      <div style={{ fontWeight: 600, marginBottom: 4 }}>{item.label}</div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', minWidth: 140 }}>
-        <span style={{ color: 'var(--semi-color-text-2)' }}>数值</span>
-        <span style={{ fontWeight: 600 }}>{item.value.toLocaleString()}</span>
+      <div className="mp-fw-600 mp-mb-1">{item.label}</div>
+      <div className="mp-flex mp-justify-between mp-admin-min-w-140">
+        <span className="mp-text-2">数值</span>
+        <span className="mp-fw-600">{item.value.toLocaleString()}</span>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <span style={{ color: 'var(--semi-color-text-2)' }}>占比</span>
-        <span style={{ fontWeight: 600 }}>{(item.ratio * 100).toFixed(1)}%</span>
+      <div className="mp-flex mp-justify-between">
+        <span className="mp-text-2">占比</span>
+        <span className="mp-fw-600">{(item.ratio * 100).toFixed(1)}%</span>
       </div>
     </div>
   );
@@ -71,28 +64,28 @@ export default function DistributionCard({
   const sliced = safeData.slice(0, topN);
   const total = sliced.reduce((acc, it) => acc + it.value, 0);
   return (
-    <Space vertical style={{ width: '100%' }} spacing={8}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text strong style={{ fontSize: 14 }}>
+    <Space vertical className="mp-w-full" spacing={8}>
+      <div className="mp-justify-between mp-flex-center">
+        <Text strong className="mp-text-md">
           {title}
         </Text>
         <Tag color="grey">Top {sliced.length}</Tag>
       </div>
       {loading ? (
-        <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
+        <div className="mp-flex-center mp-justify-center" style={{ height }}>
+          <Text type="secondary" className="mp-text-sm">
             加载中…
           </Text>
         </div>
       ) : sliced.length === 0 ? (
-        <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
+        <div className="mp-flex-center mp-justify-center" style={{ height }}>
+          <Text type="secondary" className="mp-text-sm">
             暂无数据
           </Text>
         </div>
       ) : (
         <>
-          <div style={{ width: '100%', height }}>
+          <div className="mp-w-full" style={{ height }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={sliced}
@@ -121,20 +114,12 @@ export default function DistributionCard({
           </div>
           <Space spacing={6} wrap>
             {sliced.map((it, idx) => (
-              <Tag key={it.key} color="grey" style={{ fontSize: 11 }}>
+              <Tag key={it.key} color="grey" className="mp-text-xs">
                 <span
-                  style={{
-                    display: 'inline-block',
-                    width: 8,
-                    height: 8,
-                    borderRadius: 2,
-                    background: COLORS[idx % COLORS.length],
-                    marginRight: 6,
-                    verticalAlign: 'middle',
-                  }}
+                  className="mp-mr-1 mp-icon-12 mp-rounded-sm" style={{ display: 'inline-block', background: COLORS[idx % COLORS.length], verticalAlign: 'middle' }}
                 />
                 {it.label}{' '}
-                <span style={{ color: 'var(--semi-color-text-2)' }}>
+                <span className="mp-text-2">
                   {total > 0 ? ((it.value / total) * 100).toFixed(1) : 0}%
                 </span>
               </Tag>

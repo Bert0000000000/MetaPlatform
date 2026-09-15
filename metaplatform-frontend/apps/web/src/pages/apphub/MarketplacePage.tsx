@@ -10,6 +10,7 @@ import TemplateCard from './components/TemplateCard';
 import CategoryFilter from './components/CategoryFilter';
 import SearchBar from './components/SearchBar';
 import type { TemplateItem, InstallResult, InstalledItem } from '@/api/apphub/marketplace';
+import './apps.css';
 
 // Semi Badge type 仅支持 primary/secondary/tertiary/danger/warning/success
 const INSTALL_STATE_MAP: Record<string, { label: string; badge: 'primary' | 'secondary' | 'tertiary' | 'danger' | 'warning' | 'success' }> = {
@@ -85,7 +86,7 @@ export default function MarketplacePage() {
   return (
     <div>
 
-      <Space vertical style={{ marginBottom: 16 }}>
+      <Space vertical className="mp-mb-4">
         <SearchBar
           keyword={keyword}
           onKeywordChange={setKeyword}
@@ -96,15 +97,15 @@ export default function MarketplacePage() {
       </Space>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40 }}>
+        <div className="mp-text-center mp-p-8">
           <Spin tip="加载中..." />
         </div>
       ) : error ? (
-        <div style={{ textAlign: 'center', padding: 40 }}>
-          <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--semi-color-danger)', marginBottom: 8 }}>
+        <div className="mp-text-center mp-p-8">
+          <div className="mp-fw-600 mp-mb-2 mp-text-xl mp-text-danger">
             加载失败
           </div>
-          <div style={{ color: 'var(--semi-color-text-2)', marginBottom: 16 }}>{error.message}</div>
+          <div className="mp-mb-4 mp-text-2">{error.message}</div>
           <Button theme="solid" type="primary" icon={<ReloadOutlined />} onClick={load}>
             重试
           </Button>
@@ -113,11 +114,7 @@ export default function MarketplacePage() {
         <Empty description="没有匹配的模板" />
       ) : (
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: 16,
-          }}
+          className="mp-grid mp-gap-4 mp-app-grid-auto-280"
         >
           {templates.map((t) => (
             <TemplateCard
@@ -131,7 +128,7 @@ export default function MarketplacePage() {
       )}
 
       {/* 我的安装 */}
-      <Card title={`我的安装 (${installed.length})`} style={{ marginTop: 24 }}>
+      <Card title={`我的安装 (${installed.length})`} className="mp-mt-6">
         <Spin spinning={installedLoading}>
           {installed.length === 0 ? (
             <Empty description="还没有安装记录，安装后的本体/Agent/MCP 会显示在这里" />
@@ -153,7 +150,7 @@ export default function MarketplacePage() {
                   render: (s: string) => {
                     const m = INSTALL_STATE_MAP[s] ?? { label: s, badge: 'tertiary' as const };
                     return (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <span className="mp-inline-flex mp-items-center mp-gap-1" >
                         <Badge type={m.badge} dot />
                         <span>{m.label}</span>
                       </span>
@@ -181,7 +178,7 @@ export default function MarketplacePage() {
         width={680}
       >
         {previewing && (
-          <Space vertical style={{ width: '100%' }}>
+          <Space vertical className="mp-w-full">
             <Card>
               <Typography.Paragraph>{previewing.description}</Typography.Paragraph>
               <Space wrap>
@@ -190,7 +187,7 @@ export default function MarketplacePage() {
                   <Tag key={t}>{t}</Tag>
                 ))}
               </Space>
-              <div style={{ marginTop: 12 }}>
+              <div className="mp-mt-3">
                 <Typography.Text>评分：</Typography.Text>
                 {previewing.rating} / 5 · 安装 {previewing.downloadCount} 次
               </div>

@@ -99,7 +99,7 @@ export default function PermissionRulePage() {
           <Typography.Text strong>
             <SafetyOutlined /> {r.name}
           </Typography.Text>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" className="mp-text-sm">
             优先级 {r.priority}
           </Typography.Text>
         </Space>

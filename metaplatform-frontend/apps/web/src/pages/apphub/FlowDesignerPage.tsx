@@ -32,6 +32,7 @@ import AIProcessGenerate from './components/AIProcessGenerate';
 import type { ModuleItem, FlowConfig, FlowNode, FlowEdge, FlowNodeType, FlowValidationResult, FlowTestResult, FormFieldBinding, ProcessGenResult } from '@/api/apphub/types';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { IconTick } from '@douyinfe/semi-icons';
+import './apps.css';
 
 const NODE_DEFS: { type: FlowNodeType; label: string; icon: ReactNode; color: string; tagColor: TagColor; width: number; height: number }[] = [
   { type: 'start', label: '开始', icon: '▶', color: '#52c41a', tagColor: 'green', width: 100, height: 60 },
@@ -391,7 +392,7 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
     return (
       <g
         key={node.id}
-        style={{ cursor: dragging?.nodeId === node.id ? 'grabbing' : 'grab' }}
+        className={dragging?.nodeId === node.id ? 'mp-app-grabbing' : 'mp-app-grab'}
         onMouseDown={(e) => handleNodeDragStart(node.id, e)}
         onClick={(e) => handleNodeClick(node.id, e)}
       >
@@ -403,7 +404,7 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
           fontSize={13}
           fill="var(--semi-color-text-0)"
           fontWeight={600}
-          style={{ pointerEvents: 'none', userSelect: 'none' }}
+          className="mp-pe-none mp-app-noselect"
         >
           {node.name}
         </text>
@@ -413,7 +414,7 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
           textAnchor="middle"
           fontSize={16}
           fill={def.color}
-          style={{ pointerEvents: 'none', userSelect: 'none' }}
+          className="mp-pe-none mp-app-noselect"
         >
           {typeof def.icon === 'string' ? def.icon : null}
         </text>
@@ -424,7 +425,7 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
               cy={node.position.y + size.height + 12}
               r={6}
               fill="#f5222d"
-              style={{ cursor: 'pointer' }}
+              className="mp-clickable"
               onClick={(e) => {
                 e.stopPropagation();
                 handleDeleteNode(node.id);
@@ -436,7 +437,7 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
               textAnchor="middle"
               fontSize={10}
               fill="#fff"
-              style={{ pointerEvents: 'none' }}
+              className="mp-pe-none"
             >
               ×
             </text>
@@ -463,7 +464,7 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
     const midY = (y1 + y2) / 2;
 
     return (
-      <g key={edge.id} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setSelectedEdgeId(edge.id); setSelectedNodeId(null); }}>
+      <g key={edge.id} className="mp-clickable" onClick={(e) => { e.stopPropagation(); setSelectedEdgeId(edge.id); setSelectedNodeId(null); }}>
         <line
           x1={x1}
           y1={y1}
@@ -479,7 +480,7 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
           </text>
         )}
         {isSelected && (
-          <circle cx={midX} cy={midY} r={8} fill="#f5222d" style={{ cursor: 'pointer' }}
+          <circle cx={midX} cy={midY} r={8} fill="#f5222d" className="mp-clickable"
             onClick={(e) => { e.stopPropagation(); handleDeleteEdge(edge.id); }} />
         )}
       </g>
@@ -515,7 +516,7 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
             placeholder="流程名称"
             value={config.name}
             onChange={(value) => setConfig((prev) => ({ ...prev, name: value }))}
-            style={{ marginBottom: 8 }}
+            className="mp-mb-2"
           />
           <TextArea
             rows={3}
@@ -523,7 +524,7 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
             value={config.description || ''}
             onChange={(value) => setConfig((prev) => ({ ...prev, description: value }))}
           />
-          <Typography.Paragraph type="tertiary" style={{ marginTop: 12, fontSize: 12 }}>
+          <Typography.Paragraph type="tertiary" className="mp-mt-3 mp-text-sm">
             点击节点查看属性，点击节点底部红色按钮删除节点。选择两个节点可以连线。
           </Typography.Paragraph>
         </div>
@@ -537,7 +538,7 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
           placeholder="节点名称"
           value={selectedNode.name}
           onChange={(value) => handleUpdateNode(selectedNode.id, { name: value })}
-          style={{ marginBottom: 8 }}
+          className="mp-mb-2"
         />
         <Tag color={NODE_DEFS.find((d) => d.type === selectedNode.type)?.tagColor}>
           {NODE_DEFS.find((d) => d.type === selectedNode.type)?.label}
@@ -570,7 +571,7 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
           icon={<DeleteOutlined />}
           onClick={() => handleDeleteNode(selectedNode.id)}
           block
-          style={{ marginTop: 12 }}
+          className="mp-mt-3"
         >
           删除节点
         </Button>
@@ -579,17 +580,17 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
   };
 
   if (!module) {
-    return <div style={{ padding: 40, textAlign: 'center' }}>加载中...</div>;
+    return <div className="mp-text-center mp-p-8">加载中...</div>;
   }
 
   return (
-    <div style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+    <div className="mp-flex mp-flex-col mp-app-designer-h">
+      <div className="mp-justify-between mp-mb-4 mp-flex-center">
         <Space>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/mine?app=${appId}`)}>
             返回
           </Button>
-          <Typography.Title heading={5} style={{ margin: 0 }}>
+          <Typography.Title heading={5} className="mp-m-0">
             {module.name} - 流程设计器
           </Typography.Title>
         </Space>
@@ -629,9 +630,9 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
         <PublishValidation result={validationResult} onPublish={handlePublish} publishing={submitting} />
       )}
 
-      <div style={{ flex: 1, display: 'flex', gap: 16, overflow: 'hidden' }}>
-        <Card title="节点面板" style={{ width: 180, overflow: 'auto' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="mp-flex mp-hidden mp-flex-1 mp-gap-4">
+        <Card title="节点面板" className="mp-overflow-auto mp-w-180" >
+          <div className="mp-flex mp-gap-2 mp-flex-col" >
             {NODE_DEFS.map((def) => (
               <Button
                 key={def.type}
@@ -643,16 +644,16 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
               </Button>
             ))}
           </div>
-          <Typography.Text type="tertiary" style={{ fontSize: 12, display: 'block', marginTop: 16 }}>
+          <Typography.Text type="tertiary" className="mp-mt-4 mp-text-sm mp-block" >
             流程统计：{config.nodes.length} 节点 / {config.edges.length} 连线
           </Typography.Text>
         </Card>
 
         <div
-          style={{ flex: 1, overflow: 'auto' }}
+          className="mp-flex-1 mp-overflow-auto" 
           onClick={() => { setSelectedNodeId(null); setSelectedEdgeId(null); }}
         >
-          <Card title="流程画布" style={{ height: '100%' }}>
+          <Card title="流程画布" className="mp-h-full">
             {config.nodes.length === 0 ? (
               <Empty description="点击左侧节点添加到画布" />
             ) : (
@@ -660,7 +661,7 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
                 ref={svgRef}
                 width="100%"
                 height="100%"
-                style={{ minHeight: 500, background: 'var(--semi-color-bg-1)', borderRadius: 8 }}
+                className="mp-bg-1 mp-rounded mp-app-canvas-min"
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
@@ -679,7 +680,7 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
         </div>
 
         <div onClick={(e) => e.stopPropagation()}>
-          <Card title="属性配置" style={{ width: 320, overflow: 'auto' }}>
+          <Card title="属性配置" className="mp-overflow-auto mp-w-320" >
             {renderPropertyPanel()}
           </Card>
         </div>
@@ -765,23 +766,23 @@ function ConditionConfigEditor({
   };
 
   return (
-    <div style={{ marginTop: 12 }}>
+    <div className="mp-mt-3">
       <Typography.Text strong>条件分支</Typography.Text>
       {branches.map((branch) => (
-        <div key={branch.id} style={{ marginBottom: 8, display: 'flex', gap: 4 }}>
+        <div key={branch.id} className="mp-flex mp-mb-2 mp-gap-1">
           <Input
             size="small"
             placeholder="分支标签"
             value={branch.label}
             onChange={(value) => handleUpdateBranch(branch.id, { label: value })}
-            style={{ width: 100 }}
+            className="mp-app-w-100"
           />
           <Input
             size="small"
             placeholder="条件表达式，如：amount > 10000"
             value={branch.condition}
             onChange={(value) => handleUpdateBranch(branch.id, { condition: value })}
-            style={{ flex: 1 }}
+            className="mp-flex-1"
           />
           <Button size="small" type="danger" icon={<DeleteOutlined />} onClick={() => handleDeleteBranch(branch.id)} />
         </div>

@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card, Switch, InputNumber, Select, Slider, Toast, Spin, Button, Tag, Collapse, Empty } from '@douyinfe/semi-ui';
 import { Settings, Save, RefreshCw, History } from 'lucide-react';
 import { useApiErrorBoundary } from '@mate/shared';
+import './kb.css';
 import {
   getRetrievalConfig,
   getRetrievalConfigHistory,
@@ -158,41 +159,38 @@ export default function KnowledgeConfigPage() {
   };
 
   if (!config) {
-    return <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><Spin /></div>;
+    return <div className="mp-flex mp-justify-center mp-p-10" ><Spin /></div>;
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
+    <div className="mp-flex mp-flex-1 mp-min-h-0 mp-flex-col" >
+      <div className="mp-flex-1 mp-overflow-y-auto mp-min-h-0 mp-pb-6" >
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 24 }}>
+        <div className="mp-justify-between mp-mt-6 mp-mb-6 mp-flex-center">
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <h1 className="mp-fw-600 mp-flex-center mp-gap-2 mp-text-xl mp-kb-title">
               检索配置
               {/* P1.8: 当前 config 的单调递增 version。配置从未保存过时为 v1,首次保存后变 v2。 */}
-              <Tag color="blue" shape="circle" style={{ marginLeft: 4 }}>v{version}</Tag>
+              <Tag color="blue" shape="circle" className="mp-ml-1">v{version}</Tag>
               {dirty && (
-                <span style={{
-                  fontSize: 12, fontWeight: 500, color: 'var(--semi-color-danger)',
-                  display: 'inline-flex', alignItems: 'center', gap: 4,
-                }}>
+                <span className="mp-inline-flex mp-items-center mp-fw-500 mp-gap-1 mp-text-sm mp-text-danger">
                   ● 待保存
                 </span>
               )}
             </h1>
-            <div style={{ fontSize: 13, color: 'var(--semi-color-text-2)', marginTop: 4 }}>
+            <div className="mp-mt-1 mp-text-body mp-text-2">
               全局检索策略、Top-K、Reranker、分块策略的统一管理（租户级）
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="mp-flex mp-gap-2">
             <Button icon={<RefreshCw size={14} />} onClick={onReset} theme="light">恢复前端默认值</Button>
             <Button icon={<Save size={14} />} onClick={onSave} loading={saving} theme="solid" type="primary">保存配置</Button>
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="mp-flex mp-gap-4 mp-flex-col" >
           {/* P1.8: 配置历史只读折叠面板 — 仅展示最近 5 条,不支持回滚(后端未实现)。 */}
-          <Card style={{ padding: 18 }}>
+          <Card className="mp-p-4">
             <Collapse
               keepDOM={false}
               defaultActiveKey={history.length > 0 ? ['history'] : []}
@@ -200,21 +198,21 @@ export default function KnowledgeConfigPage() {
               <Collapse.Panel
                 itemKey="history"
                 header={
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                    <History size={14} style={{ width: 14, height: 14, color: 'var(--semi-color-text-2)' }} />
-                    <span style={{ fontSize: 14, fontWeight: 600 }}>配置历史</span>
-                    <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>
+                  <span className="mp-inline-flex mp-items-center mp-gap-2">
+                    <History size={14} className="mp-icon-14 mp-text-2" />
+                    <span className="mp-fw-600 mp-text-md">配置历史</span>
+                    <span className="mp-text-sm mp-text-2">
                       最近 {Math.min(history.length, 5)} 条 · 只读 · 不支持回滚
                     </span>
                   </span>
                 }
               >
                 {!historyLoaded ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}><Spin /></div>
+                  <div className="mp-flex mp-p-6 mp-justify-center" ><Spin /></div>
                 ) : history.length === 0 ? (
                   <Empty
                     description="尚无历史快照;每次点击「保存配置」时,保存前的旧版本会被记录下来"
-                    style={{ padding: '12px 0' }}
+                    className="mp-py-3"
                   />
                 ) : (
                   <HistoryList snapshots={history.slice(0, 5)} />
@@ -224,10 +222,10 @@ export default function KnowledgeConfigPage() {
           </Card>
 
           {/* 检索策略 */}
-          <Card style={{ padding: 18 }}>
+          <Card className="mp-p-4">
             <GroupHeader title="检索策略" desc="召回模式与混合权重（权重在 RAG_MODE=hybrid/full 下生效）" />
             <div style={rowStyle}><div style={labelStyle}>检索模式</div>
-              <Select style={{ width: 260 }} value={config.mode} optionList={MODE_OPTIONS}
+              <Select className="mp-kb-w-260" value={config.mode} optionList={MODE_OPTIONS}
                 onChange={(v) => update('mode', v as RetrievalMode)} /></div>
             <div style={rowStyle}><div style={labelStyle}>向量召回权重</div>
               <Slider value={config.vectorWeight} min={0} max={1} step={0.1} onChange={(v) => update('vectorWeight', typeof v === 'number' ? v : Number(v))} /></div>
@@ -242,7 +240,7 @@ export default function KnowledgeConfigPage() {
           </Card>
 
           {/* Top-K 与阈值 */}
-          <Card style={{ padding: 18 }}>
+          <Card className="mp-p-4">
             <GroupHeader title="Top-K 与阈值" desc="控制返回片段数量与相似度下限" />
             <div style={rowStyle}><div style={labelStyle}>Top-K</div>
               <InputNumber min={1} max={100} value={config.topK} onChange={(v) => update('topK', typeof v === 'number' ? v : 10)} /></div>
@@ -257,27 +255,27 @@ export default function KnowledgeConfigPage() {
           </Card>
 
           {/* Reranker */}
-          <Card style={{ padding: 18 }}>
+          <Card className="mp-p-4">
             <GroupHeader title="Reranker" desc="对 Top-K 结果二次精排（keyword 策略支持中文）" />
             <div style={rowStyle}><div style={labelStyle}>启用 Reranker</div>
               <Switch checked={config.rerankerEnabled} onChange={(v) => update('rerankerEnabled', v)} /></div>
             <div style={rowStyle}><div style={labelStyle}>Reranker 策略</div>
-              <Select style={{ width: 300 } as React.CSSProperties} value={config.rerankStrategy} optionList={RERANK_OPTIONS}
+              <Select className="mp-kb-w-300" value={config.rerankStrategy} optionList={RERANK_OPTIONS}
                 onChange={(v) => update('rerankStrategy', v as RerankStrategy)} disabled={!config.rerankerEnabled} /></div>
           </Card>
 
           {/* 引用与可解释 */}
-          <Card style={{ padding: 18 }}>
+          <Card className="mp-p-4">
             <GroupHeader title="引用与可解释" desc="返回结果是否附带来源引用" />
             <div style={rowStyle}><div style={labelStyle}>显示引用来源</div>
               <Switch checked={config.showCitations} onChange={(v) => update('showCitations', v)} /></div>
           </Card>
 
           {/* 分块策略 */}
-          <Card style={{ padding: 18 }}>
+          <Card className="mp-p-4">
             <GroupHeader title="分块策略" desc="文档切片策略与大小（在文档入库时生效）" />
             <div style={rowStyle}><div style={labelStyle}>切片策略</div>
-              <Select style={{ width: 300 } as React.CSSProperties} value={config.chunkStrategy} optionList={CHUNK_OPTIONS}
+              <Select className="mp-kb-w-300" value={config.chunkStrategy} optionList={CHUNK_OPTIONS}
                 onChange={(v) => update('chunkStrategy', v as ChunkStrategy)} /></div>
             <div style={rowStyle}><div style={labelStyle}>分块最大长度</div>
               <InputNumber min={64} max={2048} value={config.chunkSize} suffix="chars"
@@ -302,11 +300,11 @@ export default function KnowledgeConfigPage() {
 
 function GroupHeader({ title, desc }: { title: string; desc: string }) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Settings size={14} style={{ width: 14, height: 14, color: 'var(--semi-color-text-2)' }} />{title}
+    <div className="mp-mb-3">
+      <div className="mp-fw-600 mp-gap-2 mp-text-md mp-flex-center">
+        <Settings size={14} className="mp-icon-14 mp-text-2" />{title}
       </div>
-      <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginTop: 2 }}>{desc}</div>
+      <div className="mp-text-sm mp-text-2 mp-mt-1" >{desc}</div>
     </div>
   );
 }
@@ -315,27 +313,19 @@ function GroupHeader({ title, desc }: { title: string; desc: string }) {
  *  只读展示,刻意不渲染 form-input,防止误以为可以回滚。 */
 function HistoryList({ snapshots }: { snapshots: RetrievalConfigSnapshot[] }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+    <div className="mp-flex mp-gap-1 mp-flex-col" >
       {snapshots.map((s, idx) => (
         <div
           key={s.id}
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '90px 200px 1fr',
-            gap: 12,
-            alignItems: 'center',
-            padding: '10px 4px',
-            borderBottom: idx === snapshots.length - 1 ? 'none' : '1px solid var(--semi-color-border)',
-            fontSize: 13,
-          }}
+          className="mp-grid mp-items-center mp-gap-3 mp-text-body mp-py-2 mp-px-1 mp-kb-hist-row"
         >
           <div>
             <Tag color="blue" shape="circle" size="small">v{s.version}</Tag>
           </div>
-          <div style={{ color: 'var(--semi-color-text-2)', fontVariantNumeric: 'tabular-nums' }}>
+          <div className="mp-num mp-text-2">
             {s.snapshotAt || '—'}
           </div>
-          <div style={{ fontFamily: 'var(--semi-font-mono, monospace)', fontSize: 12 }}>
+          <div className="mp-text-sm mp-mono">
             {s.rerankStrategy}/{s.topK} · vector {Number(s.vectorWeight).toFixed(2)} · kw {Number(s.keywordWeight).toFixed(2)}
           </div>
         </div>

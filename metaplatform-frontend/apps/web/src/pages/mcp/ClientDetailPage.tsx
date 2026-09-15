@@ -26,6 +26,7 @@ import {
 } from '@ant-design/icons';
 import { getClient, listClientTools, discoverClientTools, testConnection } from '@/api/mcphub/clients';
 import type { McpClient, McpDiscoveredTool } from '@/api/mcphub/types';
+import './mcp.css';
 
 function normalizeStatus(status: string): McpClient['status'] {
   const s = status.toLowerCase();
@@ -123,7 +124,7 @@ export default function ClientDetailPage() {
       render: (v, t) => (
         <Space>
           <Typography.Text strong>{v}</Typography.Text>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" className="mp-text-sm">
             <CodeOutlined /> {t.code}
           </Typography.Text>
         </Space>
@@ -157,12 +158,12 @@ export default function ClientDetailPage() {
   ];
 
   if (error) {
-    return <Banner type="danger" description={error} style={{ margin: 24 }} />;
+    return <Banner type="danger" description={error} className="mp-m-6" />;
   }
 
   if (loading || !client) {
     return (
-      <div style={{ padding: 40, textAlign: 'center' }}>
+      <div className="mp-text-center mp-p-8">
         <Spin />
       </div>
     );
@@ -172,17 +173,17 @@ export default function ClientDetailPage() {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/clients')}>
           返回
         </Button>
-        <Typography.Title heading={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} className="mp-m-0">
           {client.name}
         </Typography.Title>
         <Tag color={STATUS_MAP[status].color}>{STATUS_MAP[status].label}</Tag>
       </Space>
 
-      <Space wrap style={{ marginBottom: 16 }}>
+      <Space wrap className="mp-mb-4">
         <Button icon={<ReloadOutlined />} onClick={load}>
           刷新
         </Button>
@@ -199,7 +200,7 @@ export default function ClientDetailPage() {
         </Tooltip>
       </Space>
 
-      <Card style={{ marginBottom: 16 }}>
+      <Card className="mp-mb-4">
         <Descriptions column={2} size="small">
           <Descriptions.Item itemKey="ID">{client.id}</Descriptions.Item>
           <Descriptions.Item itemKey="名称">{client.name}</Descriptions.Item>
@@ -240,13 +241,7 @@ export default function ClientDetailPage() {
         onCancel={() => setSchemaTool(null)}
       >
         <pre
-          style={{
-            background: 'var(--semi-color-fill-0)',
-            padding: 16,
-            borderRadius: 8,
-            overflow: 'auto',
-            maxHeight: '70vh',
-          }}
+          className="mp-overflow-auto mp-p-4 mp-bg-fill-0 mp-rounded mp-mcp-max-h-70vh"
         >
           <code>{formatSchema(schemaTool?.inputSchema)}</code>
         </pre>

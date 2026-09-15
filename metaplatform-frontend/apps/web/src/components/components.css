@@ -1,0 +1,28 @@
+/*
+ * src/components 共享组件样式（Calm Density）。
+ * 只放跨页复用的窄工具类；颜色/间距取 Semi 与 --mp-space-* 令牌。
+ */
+
+/* 文本换行辅助（ErrorBoundary 的错误详情） */
+.mp-pre-wrap { white-space: pre-wrap; }
+.mp-break-word { word-break: break-word; }
+
+/* ---------- SemiGraphCanvas（DOM 关系图画布） ---------- */
+/* 视口：绝对定位铺满容器；光标/选择行为随拖拽态切换 */
+.mp-sgc-viewport { inset: 0; }
+.mp-sgc-idle { cursor: default; user-select: auto; }
+.mp-sgc-panning { cursor: grabbing; user-select: none; }
+
+/* 世界层 SVG：压在最底层、允许溢出 */
+.mp-sgc-svg {
+  left: 0;
+  top: 0;
+  z-index: 0;
+  overflow: visible;
+}
+
+/* 点阵网格背景（showGrid） */
+.mp-sgc-grid {
+  background-image: radial-gradient(circle, var(--semi-color-border) 1px, transparent 1px);
+  background-size: 16px 16px;
+}

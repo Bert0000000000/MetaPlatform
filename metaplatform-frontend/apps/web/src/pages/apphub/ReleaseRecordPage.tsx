@@ -196,7 +196,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
       key: 'grayPercent',
       render: (value: number, record: ReleaseRecord) =>
         record.strategy === 'GRAYSCALE' ? (
-          <Progress percent={value} size="small" style={{ width: 120 }} />
+          <Progress percent={value} size="small" className="mp-w-120" />
         ) : (
           '-'
         ),
@@ -257,7 +257,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
             <Steps.Step key={title} title={title}/>
           ))}
         </Steps>
-        <Typography.Title heading={5} style={{ marginTop: 24 }}>
+        <Typography.Title heading={5} className="mp-mt-6">
           待处理任务
         </Typography.Title>
         {tasksLoading ? (
@@ -265,7 +265,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
         ) : activeTasks.length === 0 ? (
           <Empty description="暂无待处理审批任务" />
         ) : (
-          <Space vertical style={{ width: '100%' }}>
+          <Space vertical className="mp-w-full">
             {activeTasks.map((task) => (
               <TaskApprovalCard
                 key={task.id}
@@ -302,7 +302,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
   return (
     <div>
       <Card loading={loading}>
-        <Space style={{ marginBottom: 16 }}>
+        <Space className="mp-mb-4">
           <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={handleOpenCreate}>
             创建发布
           </Button>
@@ -396,7 +396,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
         visible={drawerOpen}
         onCancel={() => setDrawerOpen(false)}
       >
-        <Space style={{ marginBottom: 16 }}>
+        <Space className="mp-mb-4">
           <Button
             theme={drawerTab === 'approval' ? 'solid' : 'light'}
             type="primary"
@@ -433,7 +433,7 @@ function TaskApprovalCard({ task, onComplete }: TaskApprovalCardProps) {
         placeholder="审批意见（可选）"
         value={comment}
         onChange={(v) => setComment(v)}
-        style={{ marginTop: 12, marginBottom: 12 }}
+        className="mp-mt-3 mp-mb-3"
       />
       <Space>
         <Button

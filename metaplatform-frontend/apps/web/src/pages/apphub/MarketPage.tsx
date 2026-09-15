@@ -11,6 +11,7 @@ import {
   type TemplateCategory,
 } from './data/templates';
 import { listTemplates, installTemplate, type TemplateItem } from '@/api/apphub/marketplace';
+import './apps.css';
 
 type SortBy = 'newest' | 'popular' | 'rating';
 
@@ -37,16 +38,7 @@ function CheckableTag({
   return (
     <span
       onClick={onChange}
-      style={{
-        padding: '4px 12px',
-        border: '1px solid var(--semi-color-border)',
-        borderRadius: 4,
-        cursor: 'pointer',
-        fontSize: 13,
-        color: checked ? 'var(--semi-color-primary)' : 'var(--semi-color-text-2)',
-        background: checked ? 'var(--semi-color-primary-light-default)' : 'transparent',
-        userSelect: 'none',
-      }}
+      className={`mp-clickable mp-border mp-text-body mp-py-1 mp-px-3 mp-rounded-sm mp-app-chip${checked ? ' mp-app-chip-on' : ''}`}
     >
       {children}
     </span>
@@ -107,9 +99,9 @@ export default function MarketPage() {
 
   return (
     <div>
-      <Card style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
+      <Card className="mp-mb-4">
+        <div className="mp-gap-3 mp-flex-center">
+          <div className="mp-flex-1">
             <Input
               prefix={<Icons.SearchOutlined />}
               placeholder="按名称、描述、标签搜索模板"
@@ -121,7 +113,7 @@ export default function MarketPage() {
           <Select
             value={sortBy}
             onChange={(v) => setSortBy(v as SortBy)}
-            style={{ width: 140 }}
+            className="mp-w-140"
             optionList={[
               { label: '最新', value: 'newest' },
               { label: '最热', value: 'popular' },
@@ -129,7 +121,7 @@ export default function MarketPage() {
             ]}
           />
         </div>
-        <div style={{ marginTop: 12 }}>
+        <div className="mp-mt-3">
           <Space wrap>
             <CheckableTag checked={!category} onChange={() => setCategory(undefined)}>
               全部
@@ -147,12 +139,12 @@ export default function MarketPage() {
         </div>
       </Card>
 
-      <Typography.Text type="tertiary" style={{ display: 'block', marginBottom: 12 }}>
+      <Typography.Text type="tertiary" className="mp-mb-3 mp-block" >
         共 {filtered.length} 个模板
       </Typography.Text>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 48 }}>
+        <div className="mp-text-center mp-p-9">
           <Spin />
         </div>
       ) : filtered.length === 0 ? (
@@ -167,15 +159,7 @@ export default function MarketPage() {
                   shadows="hover"
                   cover={
                     <div
-                      style={{
-                        height: 120,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'linear-gradient(135deg, var(--semi-color-primary) 0%, var(--semi-color-primary-hover) 100%)',
-                        color: 'var(--semi-color-white)',
-                        fontSize: 48,
-                      }}
+                      className="mp-justify-center mp-text-xl mp-flex-center mp-app-cover mp-app-cover-hover"
                       onClick={() => navigate(`/market/${t.templateId}`)}
                     >
                       {renderIcon(t.icon)}
@@ -219,23 +203,23 @@ export default function MarketPage() {
                         <Typography.Paragraph
                           type="tertiary"
                           ellipsis={{ rows: 2 }}
-                          style={{ minHeight: 44, marginBottom: 8 }}
+                          className="mp-mb-2 mp-app-min-44"
                         >
                           {t.description}
                         </Typography.Paragraph>
-                        <Space spacing={4} wrap style={{ marginBottom: 4 }}>
+                        <Space spacing={4} wrap className="mp-mb-1">
                           {t.tags.map((tag) => (
                             <Tag key={tag}>{tag}</Tag>
                           ))}
                         </Space>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Rating disabled value={t.rating} allowHalf style={{ fontSize: 12 }} />
-                          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                        <div className="mp-justify-between mp-flex-center">
+                          <Rating disabled value={t.rating} allowHalf className="mp-text-sm" />
+                          <Typography.Text type="tertiary" className="mp-text-sm">
                             {t.usageCount ?? t.downloadCount} 次使用
                           </Typography.Text>
                         </div>
                         {t.author && (
-                          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                          <Typography.Text type="tertiary" className="mp-text-sm">
                             作者：{t.author}
                           </Typography.Text>
                         )}

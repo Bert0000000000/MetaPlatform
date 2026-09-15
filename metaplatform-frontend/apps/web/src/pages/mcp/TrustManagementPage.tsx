@@ -144,7 +144,7 @@ export default function TrustManagementPage() {
           <Typography.Text strong>
             <SafetyOutlined /> {record.agentName || record.agentId}
           </Typography.Text>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" className="mp-text-sm">
             {record.agentId}
           </Typography.Text>
         </Space>
@@ -208,12 +208,12 @@ export default function TrustManagementPage() {
         }
       />
 
-      <Space style={{ marginBottom: 16 }} wrap>
+      <Space className="mp-mb-4" wrap>
         <Select
           placeholder="选择 Agent"
           showClear
           filter
-          style={{ width: 240 }}
+          className="mp-w-240"
           value={filters.agentId}
           optionList={agents.map((a) => ({ label: a.name, value: a.id }))}
           onChange={(v) => setFilters((prev) => ({ ...prev, agentId: v as string | undefined, page: 1 }))}
@@ -222,7 +222,7 @@ export default function TrustManagementPage() {
           placeholder="信任等级"
           showClear
           optionList={TRUST_LEVEL_OPTIONS}
-          style={{ width: 140 }}
+          className="mp-w-140"
           value={filters.trustLevel}
           onChange={(v) => setFilters((prev) => ({ ...prev, trustLevel: v as string | undefined, page: 1 }))}
         />
@@ -236,7 +236,7 @@ export default function TrustManagementPage() {
               page: 1,
             }))
           }
-          style={{ width: 240 }}
+          className="mp-w-240"
         />
       </Space>
 
@@ -301,7 +301,7 @@ export default function TrustManagementPage() {
             type="dateTime"
             format="yyyy-MM-dd HH:mm:ss"
             placeholder="不限"
-            style={{ width: '100%' }}
+            className="mp-w-full"
           />
         </Form>
       </Modal>

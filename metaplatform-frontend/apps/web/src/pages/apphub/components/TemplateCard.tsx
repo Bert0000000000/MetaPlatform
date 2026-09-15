@@ -6,6 +6,7 @@ import {
   AppstoreOutlined,
 } from '@ant-design/icons';
 import type { TemplateItem } from '@/api/apphub/marketplace';
+import '../apps.css';
 
 interface TemplateCardProps {
   template: TemplateItem;
@@ -28,15 +29,7 @@ export default function TemplateCard({ template, onPreview, onInstall }: Templat
       shadows="hover"
       cover={
         <div
-          style={{
-            height: 120,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'linear-gradient(135deg, var(--semi-color-primary) 0%, var(--semi-color-primary-light-default) 100%)',
-            color: 'var(--semi-color-white)',
-            fontSize: 48,
-          }}
+          className="mp-justify-center mp-text-xl mp-flex-center mp-app-cover"
         >
           <AppstoreOutlined />
         </div>
@@ -74,7 +67,7 @@ export default function TemplateCard({ template, onPreview, onInstall }: Templat
             <Typography.Paragraph
               type="tertiary"
               ellipsis={{ rows: 2 }}
-              style={{ minHeight: 44, marginBottom: 8 }}
+              className="mp-mb-2 mp-app-min-44"
             >
               {template.description}
             </Typography.Paragraph>
@@ -83,9 +76,9 @@ export default function TemplateCard({ template, onPreview, onInstall }: Templat
                 <Tag key={t}>{t}</Tag>
               ))}
             </Space>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+            <div className="mp-flex mp-justify-between mp-mt-2">
               <Rating disabled defaultValue={template.rating} allowHalf />
-              <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+              <Typography.Text type="tertiary" className="mp-text-sm">
                 {template.downloadCount} 安装
               </Typography.Text>
             </div>

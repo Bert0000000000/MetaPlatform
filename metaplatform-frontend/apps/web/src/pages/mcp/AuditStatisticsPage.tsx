@@ -81,6 +81,7 @@ import type {
   McpClient,
   TrendPoint,
 } from '@/api/mcphub/types';
+import './mcp.css';
 
 const STATUS_OPTIONS = [
   { label: '成功', value: 'success' },
@@ -136,35 +137,30 @@ function StatCard({
   title,
   value,
   suffix,
-  valueStyle,
+  valueClass,
 }: {
   icon?: React.ReactNode;
   title: string;
   value: string;
   suffix?: string;
-  valueStyle?: React.CSSProperties;
+  valueClass?: string;
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <span style={{ fontSize: 14, color: 'var(--semi-color-text-2)' }}>
+    <div className="mp-flex mp-gap-1 mp-flex-col" >
+      <span className="mp-text-md mp-text-2">
         {icon && (
-          <span style={{ marginRight: 6, verticalAlign: -2 }}>
+          <span className="mp-mr-1 mp-mcp-valign">
             {icon}
           </span>
         )}
         {title}
       </span>
       <span
-        style={{
-          fontSize: 28,
-          fontWeight: 600,
-          color: 'var(--semi-color-text-0)',
-          ...valueStyle,
-        }}
+        className={`mp-fw-600 mp-text-xl mp-text-1${valueClass ? ` ${valueClass}` : ''}`}
       >
         {value}
         {suffix && (
-          <span style={{ fontSize: 14, fontWeight: 400, marginLeft: 2 }}>
+          <span className="mp-text-md mp-ml-1 mp-mcp-fw-400">
             {suffix}
           </span>
         )}
@@ -422,7 +418,7 @@ export default function AuditStatisticsPage() {
           <Typography.Text strong>
             <AuditOutlined /> {l.toolName}
           </Typography.Text>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" className="mp-text-sm">
             {l.method}
           </Typography.Text>
         </Space>
@@ -446,7 +442,7 @@ export default function AuditStatisticsPage() {
       title: 'Token',
       key: 'tokens',
       render: (_, l) => (
-        <Space vertical spacing={0} style={{ fontSize: 12 }}>
+        <Space vertical spacing={0} className="mp-text-sm">
           <span>输入：{l.inputTokens || 0}</span>
           <span>输出：{l.outputTokens || 0}</span>
           <Typography.Text strong>总计：{l.totalTokens || 0}</Typography.Text>
@@ -491,7 +487,7 @@ export default function AuditStatisticsPage() {
       title: '错误数',
       dataIndex: 'errorCount',
       align: 'right',
-      render: (v) => <span style={{ color: 'var(--semi-color-danger)' }}>{formatNumber(v)}</span>,
+      render: (v) => <span className="mp-text-danger">{formatNumber(v)}</span>,
     },
     {
       title: 'Token 消耗',
@@ -513,7 +509,7 @@ export default function AuditStatisticsPage() {
       dataIndex: 'name',
       render: (v) => (
         <Typography.Text strong>
-          <WarningOutlined style={{ marginRight: 8, color: 'var(--semi-color-warning)' }} />
+          <WarningOutlined className="mp-text-warning mp-mr-2"  />
           {v}
         </Typography.Text>
       ),
@@ -574,7 +570,7 @@ export default function AuditStatisticsPage() {
   );
 
   const renderTrendsTab = () => (
-    <Space vertical style={{ width: '100%' }} spacing="loose">
+    <Space vertical className="mp-w-full" spacing="loose">
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
           <Card title="调用量 / 错误数趋势" loading={loadingTrends}>
@@ -681,7 +677,7 @@ export default function AuditStatisticsPage() {
         <Select
           value={dimension}
           onChange={(v) => setDimension(v as string)}
-          style={{ width: 140 }}
+          className="mp-w-140"
           optionList={[
             { label: '按工具', value: 'tool' },
             { label: '按 Server', value: 'server' },
@@ -755,7 +751,7 @@ export default function AuditStatisticsPage() {
         }
       />
 
-      <Space style={{ marginBottom: 16 }} wrap>
+      <Space className="mp-mb-4" wrap>
         <DatePicker
           type="dateTimeRange"
           format="YYYY-MM-DD HH:mm"
@@ -766,12 +762,12 @@ export default function AuditStatisticsPage() {
               setTimeRange([dayjs(arr[0]), dayjs(arr[1])]);
             }
           }}
-          style={{ width: 360 }}
+          className="mp-w-360"
         />
         <Select
           placeholder="工具"
           showClear
-          style={{ width: 180 }}
+          className="mp-w-180"
           value={toolId}
           onChange={(v) => setToolId(v as string)}
           optionList={tools.map((t) => ({ label: t.name, value: t.id }))}
@@ -779,7 +775,7 @@ export default function AuditStatisticsPage() {
         <Select
           placeholder="Server"
           showClear
-          style={{ width: 180 }}
+          className="mp-w-180"
           value={serverId}
           onChange={(v) => setServerId(v as string)}
           optionList={servers.map((s) => ({ label: s.name, value: s.id }))}
@@ -787,7 +783,7 @@ export default function AuditStatisticsPage() {
         <Select
           placeholder="Client"
           showClear
-          style={{ width: 180 }}
+          className="mp-w-180"
           value={clientId}
           onChange={(v) => setClientId(v as string)}
           optionList={clients.map((c) => ({ label: c.name, value: c.id }))}
@@ -795,14 +791,14 @@ export default function AuditStatisticsPage() {
         <Select
           placeholder="状态"
           showClear
-          style={{ width: 120 }}
+          className="mp-w-120"
           value={status}
           onChange={(v) => setStatus(v as string)}
           optionList={STATUS_OPTIONS}
         />
         <Select
           placeholder="粒度"
-          style={{ width: 120 }}
+          className="mp-w-120"
           value={granularity}
           onChange={(v) => setGranularity(v as string)}
           optionList={[
@@ -812,7 +808,7 @@ export default function AuditStatisticsPage() {
         />
       </Space>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+      <Row gutter={[16, 16]} className="mp-mb-4">
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loadingStats}>
             <StatCard
@@ -828,7 +824,7 @@ export default function AuditStatisticsPage() {
               title="成功率"
               value={((statistics?.successRate || 0) * 100).toFixed(2)}
               suffix="%"
-              valueStyle={{ color: 'var(--semi-color-success)' }}
+              valueClass="mp-text-success"
             />
           </Card>
         </Col>
@@ -848,7 +844,7 @@ export default function AuditStatisticsPage() {
               icon={<BugOutlined />}
               title="Token 消耗"
               value={formatNumber(statistics?.totalTokens || 0)}
-              valueStyle={{ color: '#722ed1' }}
+              valueClass="mp-mcp-text-purple"
             />
           </Card>
         </Col>
@@ -871,7 +867,7 @@ export default function AuditStatisticsPage() {
 
       <SideSheet
         title={
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <span className="mp-inline-flex mp-items-center mp-gap-2">
             调用详情
             {selectedLog?.traceId ? (
               <Tag>
@@ -885,7 +881,7 @@ export default function AuditStatisticsPage() {
         onCancel={closeDrawer}
       >
         {selectedLog && (
-          <Space vertical style={{ width: '100%' }} spacing="loose">
+          <Space vertical className="mp-w-full" spacing="loose">
             <Card title="基本信息">
               <Row gutter={[16, 8]}>
                 <Col span={12}>工具：{selectedLog.toolName}</Col>
@@ -924,12 +920,12 @@ export default function AuditStatisticsPage() {
                         <Typography.Text strong>
                           {l.toolName || '调用节点'}
                         </Typography.Text>
-                        <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                        <Typography.Text type="tertiary" className="mp-text-sm">
                           {l.method || '-'} · {l.duration} ms ·{' '}
                           {STATUS_MAP[l.status]?.label || l.status}
                         </Typography.Text>
                         {l.errorMessage && (
-                          <Typography.Text type="danger" style={{ fontSize: 12 }}>
+                          <Typography.Text type="danger" className="mp-text-sm">
                             {l.errorMessage}
                           </Typography.Text>
                         )}
@@ -977,7 +973,7 @@ export default function AuditStatisticsPage() {
             field="threshold"
             label="阈值"
             rules={[{ required: true, message: '请输入阈值' }]}
-            style={{ width: '100%' }}
+            className="mp-w-full"
             placeholder="例如：0.05"
           />
           <Form.InputNumber
@@ -985,7 +981,7 @@ export default function AuditStatisticsPage() {
             label="统计窗口（分钟）"
             rules={[{ required: true, message: '请输入窗口时间' }]}
             min={1}
-            style={{ width: '100%' }}
+            className="mp-w-full"
             placeholder="例如：5"
           />
           <Form.Input

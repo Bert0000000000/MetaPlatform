@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Card, Empty, Space, TextArea, Typography } from '@douyinfe/semi-ui';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import type { PromptTemplate } from '@/api/mcphub/types';
+import '../mcp.css';
 
 interface PreviewPanelProps {
   template: PromptTemplate;
@@ -25,34 +26,26 @@ export default function PreviewPanel({ template }: PreviewPanelProps) {
   const emptyVars = template.variables.length === 0;
 
   return (
-    <Space vertical spacing="medium" style={{ width: '100%' }}>
+    <Space vertical spacing="medium" className="mp-w-full">
       {emptyVars ? (
         <Card title="预览">
           <Empty description="该模板无变量" />
           <pre
-            style={{
-              background: 'var(--semi-color-bg-1)',
-              border: '1px solid var(--semi-color-border)',
-              padding: 12,
-              borderRadius: 4,
-              fontFamily: 'Menlo, Consolas, monospace',
-              fontSize: 12,
-              whiteSpace: 'pre-wrap',
-            }}
+            className="mp-border mp-p-3 mp-text-sm mp-bg-1 mp-rounded-sm mp-mono mp-mcp-pre-wrap"
           >
             {template.template}
           </pre>
         </Card>
       ) : (
         <Card title="填写变量">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="mp-flex mp-gap-4 mp-flex-col" >
             {template.variables.map((v) => (
               <div key={v.name}>
-                <div style={{ marginBottom: 4 }}>
+                <div className="mp-mb-1">
                   <span>{v.name}</span>
-                  {v.required && <span style={{ color: 'var(--semi-color-danger)' }}>*</span>}
+                  {v.required && <span className="mp-text-danger">*</span>}
                   {v.description && (
-                    <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--semi-color-text-2)' }}>
+                    <span className="mp-text-sm mp-text-2 mp-ml-2" >
                       {v.description}
                     </span>
                   )}
@@ -78,16 +71,7 @@ export default function PreviewPanel({ template }: PreviewPanelProps) {
       >
         <Typography.Paragraph copyable={{ content: rendered }}>
           <pre
-            style={{
-              background: 'var(--semi-color-bg-1)',
-              border: '1px solid var(--semi-color-border)',
-              padding: 12,
-              borderRadius: 4,
-              fontFamily: 'Menlo, Consolas, monospace',
-              fontSize: 12,
-              whiteSpace: 'pre-wrap',
-              margin: 0,
-            }}
+            className="mp-border mp-p-3 mp-m-0 mp-text-sm mp-bg-1 mp-rounded-sm mp-mono mp-mcp-pre-wrap"
           >
             {rendered}
           </pre>

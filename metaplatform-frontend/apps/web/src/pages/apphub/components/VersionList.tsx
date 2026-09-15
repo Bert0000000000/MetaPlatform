@@ -77,7 +77,7 @@ export default function VersionList({
           render: (_: unknown, v: AppVersion) => (
             <Space vertical spacing={0}>
               <Typography.Text strong>v{v.version}</Typography.Text>
-              <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+              <Typography.Text type="tertiary" className="mp-text-sm">
                 {v.changeLog || '无变更说明'}
               </Typography.Text>
             </Space>
@@ -101,7 +101,7 @@ export default function VersionList({
           title: '发布/回滚',
           key: 'dates',
           render: (_: unknown, v: AppVersion) => (
-            <Space vertical spacing={0} style={{ fontSize: 12 }}>
+            <Space vertical spacing={0} className="mp-text-sm">
               {v.publishedAt && (
                 <span>发布: {new Date(v.publishedAt).toLocaleString()}</span>
               )}

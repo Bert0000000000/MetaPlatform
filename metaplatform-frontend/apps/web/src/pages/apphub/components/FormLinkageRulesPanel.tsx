@@ -104,13 +104,13 @@ export default function FormLinkageRulesPanel({ config, onChange }: FormLinkageR
       {rules.map((rule, idx) => (
         <Card
           key={rule.id}
-          style={{ marginBottom: 12 }}
+          className="mp-mb-3"
           title={
             <Input
               value={rule.name}
               onChange={(value) => updateRule(idx, { name: value })}
               placeholder="规则名称"
-              style={{ width: 200 }}
+              className="mp-w-200"
             />
           }
           headerExtraContent={
@@ -118,8 +118,8 @@ export default function FormLinkageRulesPanel({ config, onChange }: FormLinkageR
           }
         >
           <Space wrap align="start" spacing="medium">
-            <Card title="当" style={{ width: 320 }}>
-              <div style={{ marginBottom: 16 }}>
+            <Card title="当" className="mp-w-320">
+              <div className="mp-mb-4">
                 <Form.Label style={FIELD_LABEL_STYLE}>字段</Form.Label>
                 <Select
                   size="small"
@@ -127,17 +127,17 @@ export default function FormLinkageRulesPanel({ config, onChange }: FormLinkageR
                   onChange={(v) => updateWhen(idx, { fieldKey: v as string })}
                   optionList={fieldOptions}
                   placeholder="选择字段"
-                  style={{ width: '100%' }}
+                  className="mp-w-full"
                 />
               </div>
-              <div style={{ marginBottom: 16 }}>
+              <div className="mp-mb-4">
                 <Form.Label style={FIELD_LABEL_STYLE}>运算符</Form.Label>
                 <Select
                   size="small"
                   value={rule.when.operator || 'eq'}
                   onChange={(v) => updateWhen(idx, { operator: v as LinkageRuleCondition['operator'] })}
                   optionList={OPERATORS}
-                  style={{ width: '100%' }}
+                  className="mp-w-full"
                 />
               </div>
               <div>
@@ -150,8 +150,8 @@ export default function FormLinkageRulesPanel({ config, onChange }: FormLinkageR
                 />
               </div>
             </Card>
-            <Card title="则" style={{ width: 320 }}>
-              <div style={{ marginBottom: 16 }}>
+            <Card title="则" className="mp-w-320">
+              <div className="mp-mb-4">
                 <Form.Label style={FIELD_LABEL_STYLE}>字段</Form.Label>
                 <Select
                   size="small"
@@ -159,21 +159,21 @@ export default function FormLinkageRulesPanel({ config, onChange }: FormLinkageR
                   onChange={(v) => updateThen(idx, { fieldKey: v as string })}
                   optionList={fieldOptions}
                   placeholder="选择字段"
-                  style={{ width: '100%' }}
+                  className="mp-w-full"
                 />
               </div>
-              <div style={{ marginBottom: 16 }}>
+              <div className="mp-mb-4">
                 <Form.Label style={FIELD_LABEL_STYLE}>动作</Form.Label>
                 <Select
                   size="small"
                   value={rule.then.action}
                   onChange={(v) => updateThen(idx, { action: v as LinkageRuleAction['action'] })}
                   optionList={ACTIONS}
-                  style={{ width: '100%' }}
+                  className="mp-w-full"
                 />
               </div>
               {rule.then.action === 'setValue' && (
-                <div style={{ marginBottom: 16 }}>
+                <div className="mp-mb-4">
                   <Form.Label style={FIELD_LABEL_STYLE}>设置值</Form.Label>
                   <Input
                     size="small"
@@ -184,7 +184,7 @@ export default function FormLinkageRulesPanel({ config, onChange }: FormLinkageR
                 </div>
               )}
               {rule.then.action === 'setOptions' && (
-                <div style={{ marginBottom: 16 }}>
+                <div className="mp-mb-4">
                   <Form.Label style={FIELD_LABEL_STYLE}>选项（每行 标签:值）</Form.Label>
                   <TextArea
                     rows={3}

@@ -177,40 +177,21 @@ export default function ProposalConfirmDrawer({
 
   return (
     <div>
-      <style>{`
-        @keyframes osp-spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
       <div
         onClick={() => state !== 'confirming' && state !== 'executing' && close('cancel')}
-        style={{
-          position: 'fixed', inset: 0, zIndex: 1100,
-          background: 'rgba(0,0,0,0.45)',
-          display: 'flex', justifyContent: 'flex-end',
-        }}
+        className="mp-flex mp-justify-end mp-onto-drawer-mask"
       >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '66.666%', minWidth: 720, maxWidth: 960,
-          height: '100%',
-          background: 'var(--semi-color-bg-0)',
-          boxShadow: '-8px 0 24px rgba(0,0,0,0.18)',
-          display: 'flex', flexDirection: 'column',
-        }}
+        className="mp-h-full mp-flex-col mp-onto-drawer-panel mp-onto-drawer-panel--wide"
       >
         {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '16px 24px', borderBottom: '1px solid var(--semi-color-border)',
-          flexShrink: 0,
-        }}>
+        <div className="mp-justify-between mp-border mp-shrink-0 mp-flex-center mp-py-4 mp-px-6" >
           <div>
-            <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginBottom: 2 }}>
+            <div className="mp-text-xs mp-text-2 mp-mb-1" >
               AI 提案 · {statusLabel[serverStatus] ?? serverStatus}
             </div>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
+            <h3 className="mp-fw-600 mp-m-0 mp-text-lg">
               {preview?.title ?? kindLabel}
             </h3>
           </div>
@@ -218,41 +199,27 @@ export default function ProposalConfirmDrawer({
             type="button"
             onClick={() => close('cancel')}
             disabled={state === 'confirming' || state === 'executing'}
-            style={{
-              width: 32, height: 32, borderRadius: 4, border: '1px solid var(--semi-color-border)',
-              background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-2)',
-              cursor: state === 'confirming' || state === 'executing' ? 'not-allowed' : 'pointer',
-              fontSize: 14,
-              opacity: state === 'confirming' || state === 'executing' ? 0.5 : 1,
-            }}
+            className="mp-border mp-text-md mp-text-2 mp-bg-1 mp-rounded-sm mp-onto-close-btn"
             aria-label="关闭抽屉"
           >
-            <X style={{ width: 14, height: 14, margin: 'auto', display: 'block' }} />
+            <X className="mp-icon-14" />
           </button>
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+        <div className="mp-flex-1 mp-overflow-y-auto mp-py-5 mp-px-6" >
           {state === 'loading' && (
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: 10, padding: 60, color: 'var(--semi-color-text-2)', fontSize: 13,
-            }}>
-              <Loader2 style={{ width: 16, height: 16, animation: 'osp-spin 1s linear infinite' }} />
+            <div className="mp-justify-center mp-gap-2 mp-p-10 mp-text-body mp-text-2 mp-flex-center">
+              <Loader2 className="mp-icon-16 mp-spin"  />
               正在加载 staging 预览…
             </div>
           )}
 
           {state === 'error' && (
-            <div style={{
-              padding: '12px 16px', borderRadius: 'var(--semi-border-radius-medium)',
-              background: 'rgba(239,68,68,0.08)', border: '1px solid var(--semi-color-danger)',
-              color: 'var(--semi-color-danger)', fontSize: 13,
-              display: 'flex', alignItems: 'flex-start', gap: 10,
-            }}>
-              <AlertTriangle style={{ width: 16, height: 16, flexShrink: 0, marginTop: 1 }} />
+            <div className="mp-flex mp-rounded mp-gap-2 mp-text-body mp-text-danger mp-py-3 mp-px-4 mp-items-start mp-onto-banner-danger">
+              <AlertTriangle className="mp-icon-16 mp-shrink-0 mp-mt-1"  />
               <div>
-                <strong style={{ display: 'block', marginBottom: 4 }}>加载失败</strong>
+                <strong className="mp-mb-1 mp-block" >加载失败</strong>
                 <div>{errorMsg ?? '未知错误'}</div>
                 <button
                   type="button"
@@ -271,11 +238,7 @@ export default function ProposalConfirmDrawer({
                       }
                     })();
                   }}
-                  style={{
-                    marginTop: 10, height: 30, padding: '0 12px', fontSize: 12,
-                    background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
-                    borderRadius: 'var(--semi-border-radius-medium)', cursor: 'pointer',
-                  }}
+                  className="mp-mt-2 mp-onto-btn mp-onto-btn--md"
                 >
                   重试
                 </button>
@@ -289,25 +252,19 @@ export default function ProposalConfirmDrawer({
 
           {/* ONT-GATE-01 三闸门预检横幅（schema × SHACL × Axiom） */}
           {state !== 'done' && preflight && (
-            <div style={{
-              marginTop: 16, padding: '12px 16px',
-              background: preflight.blocked ? 'rgba(239,68,68,0.10)' : 'rgba(16,185,129,0.10)',
-              border: `1px solid ${preflight.blocked ? 'var(--semi-color-danger)' : 'var(--semi-color-success)'}`,
-              borderRadius: 'var(--semi-border-radius-medium)', fontSize: 13,
-              display: 'flex', alignItems: 'flex-start', gap: 10,
-            }}>
+            <div className={`mp-flex mp-rounded mp-mt-4 mp-gap-2 mp-text-body mp-py-3 mp-px-4 mp-items-start ${preflight.blocked ? 'mp-onto-banner-danger' : 'mp-onto-banner-success'}`}>
               {preflight.blocked
-                ? <AlertTriangle style={{ width: 18, height: 18, color: 'var(--semi-color-danger)', flexShrink: 0, marginTop: 1 }} />
-                : <CheckCircle2 style={{ width: 18, height: 18, color: 'var(--semi-color-success)', flexShrink: 0, marginTop: 1 }} />}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                ? <AlertTriangle className="mp-icon-18 mp-text-danger mp-shrink-0 mp-mt-1"  />
+                : <CheckCircle2 className="mp-icon-18 mp-text-success mp-shrink-0 mp-mt-1"  />}
+              <div className="mp-flex-1">
+                <div className="mp-fw-600 mp-mb-1">
                   机器预检{preflight.blocked ? '阻断' : '通过'}
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>
+                <div className="mp-text-sm mp-text-2">
                   {preflight.summary}
                 </div>
                 {preflight.blocked && (
-                  <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 12, color: 'var(--semi-color-text-2)' }}>
+                  <ul className="mp-text-sm mp-text-2 mp-onto-list-indent">
                     {(preflight.schema?.errors ?? []).slice(0, 4).map((e, i) => (
                       <li key={`s${i}`}>schema：{e}</li>
                     ))}
@@ -325,19 +282,13 @@ export default function ProposalConfirmDrawer({
 
           {/* 执行结果横幅 */}
           {state === 'done' && executeResult && (
-            <div style={{
-              marginTop: 16, padding: '12px 16px',
-              background: 'rgba(16,185,129,0.10)', border: '1px solid var(--semi-color-success)',
-              borderRadius: 'var(--semi-border-radius-medium)',
-              display: 'flex', alignItems: 'flex-start', gap: 10,
-              fontSize: 13, color: 'var(--semi-color-text-0)',
-            }}>
-              <CheckCircle2 style={{ width: 18, height: 18, color: 'var(--semi-color-success)', flexShrink: 0, marginTop: 1 }} />
-              <div style={{ flex: 1 }}>
-                <strong style={{ display: 'block', marginBottom: 4, color: 'var(--semi-color-success)' }}>
+            <div className="mp-flex mp-rounded mp-mt-4 mp-gap-2 mp-text-body mp-text-1 mp-py-3 mp-px-4 mp-items-start mp-onto-banner-success">
+              <CheckCircle2 className="mp-icon-18 mp-text-success mp-shrink-0 mp-mt-1"  />
+              <div className="mp-flex-1">
+                <strong className="mp-mb-1 mp-text-success mp-block" >
                   已执行成功
                 </strong>
-                <div style={{ color: 'var(--semi-color-text-2)', lineHeight: 1.6 }}>
+                <div className="mp-text-2 mp-lh-16" >
                   <>
                     服务端状态：<code>{serverStatus}</code><br />
                   </>
@@ -368,40 +319,25 @@ export default function ProposalConfirmDrawer({
           )}
 
           {errorMsg && state !== 'error' && state !== 'loading' && (
-            <div style={{
-              marginTop: 16, padding: '10px 14px',
-              background: 'rgba(239,68,68,0.08)', border: '1px solid var(--semi-color-danger)',
-              borderRadius: 'var(--semi-border-radius-medium)',
-              color: 'var(--semi-color-danger)', fontSize: 12,
-              display: 'flex', alignItems: 'flex-start', gap: 8,
-            }}>
-              <AlertTriangle style={{ width: 14, height: 14, flexShrink: 0, marginTop: 1 }} />
+            <div className="mp-flex mp-rounded mp-mt-4 mp-gap-2 mp-text-sm mp-text-danger mp-py-2 mp-px-3 mp-items-start mp-onto-banner-danger">
+              <AlertTriangle className="mp-icon-14 mp-shrink-0 mp-mt-1"  />
               {errorMsg}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-          padding: '14px 24px', borderTop: '1px solid var(--semi-color-border)',
-          flexShrink: 0,
-        }}>
-          <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>
+        <div className="mp-justify-between mp-border mp-shrink-0 mp-gap-2 mp-flex-center mp-py-3 mp-px-6" >
+          <div className="mp-text-xs mp-text-2">
             {state === 'loaded' && '取消后状态保持 pending，可下次再确认'}
             {state === 'done' && '已生效，可关闭抽屉'}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="mp-flex-center mp-gap-2" >
             {state === 'done' ? (
               <button
                 type="button"
                 onClick={() => close('execute')}
-                style={{
-                  height: 34, padding: '0 14px', fontSize: 13,
-                  background: 'var(--semi-color-primary)', color: 'var(--semi-color-white)',
-                  border: 'none', borderRadius: 'var(--semi-border-radius-medium)',
-                  cursor: 'pointer',
-                }}
+                className="mp-onto-btn mp-onto-btn--lg mp-onto-btn--primary"
               >
                 关闭
               </button>
@@ -411,13 +347,7 @@ export default function ProposalConfirmDrawer({
                   type="button"
                   onClick={() => close('cancel')}
                   disabled={state === 'confirming' || state === 'executing'}
-                  style={{
-                    height: 34, padding: '0 14px', fontSize: 13,
-                    background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
-                    border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-                    cursor: state === 'confirming' || state === 'executing' ? 'not-allowed' : 'pointer',
-                    opacity: state === 'confirming' || state === 'executing' ? 0.5 : 1,
-                  }}
+                  className="mp-onto-btn mp-onto-btn--lg"
                 >
                   取消
                 </button>
@@ -425,13 +355,7 @@ export default function ProposalConfirmDrawer({
                   type="button"
                   onClick={handleReject}
                   disabled={state === 'confirming' || state === 'executing'}
-                  style={{
-                    height: 34, padding: '0 14px', fontSize: 13,
-                    background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-danger)',
-                    border: '1px solid var(--semi-color-danger)', borderRadius: 'var(--semi-border-radius-medium)',
-                    cursor: state === 'confirming' || state === 'executing' ? 'not-allowed' : 'pointer',
-                    opacity: state === 'confirming' || state === 'executing' ? 0.5 : 1,
-                  }}
+                  className="mp-onto-btn mp-onto-btn--lg mp-onto-btn--danger"
                 >
                   {state === 'confirming' ? '处理中…' : '拒绝'}
                 </button>
@@ -440,13 +364,7 @@ export default function ProposalConfirmDrawer({
                   onClick={handleConfirm}
                   disabled={state === 'confirming' || state === 'executing' || preflight?.blocked === true}
                   title={preflight?.blocked === true ? '预检阻断（schema/SHACL/Axiom violation），需先修正提案' : undefined}
-                  style={{
-                    height: 34, padding: '0 14px', fontSize: 13, fontWeight: 500,
-                    background: 'var(--semi-color-primary)', color: 'var(--semi-color-white)',
-                    border: 'none', borderRadius: 'var(--semi-border-radius-medium)',
-                    cursor: state === 'confirming' || state === 'executing' || preflight?.blocked === true ? 'not-allowed' : 'pointer',
-                    opacity: state === 'confirming' || state === 'executing' || preflight?.blocked === true ? 0.6 : 1,
-                  }}
+                  className="mp-fw-500 mp-onto-btn mp-onto-btn--lg mp-onto-btn--primary"
                 >
                   {state === 'executing' ? '执行中…' : state === 'confirming' ? '确认中…' : preflight?.blocked === true ? '预检阻断，不可执行' : '确认并执行'}
                 </button>

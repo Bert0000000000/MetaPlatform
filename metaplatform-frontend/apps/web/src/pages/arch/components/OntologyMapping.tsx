@@ -4,6 +4,7 @@ import SemiGraphCanvas, { type GraphNodeSpec, type GraphEdgeSpec } from '@/compo
 import type { OntologyMapping } from '@/api/arch/types';
 import { analyzeImpact } from '@/api/arch/ontologyMapping';
 import type { ImpactAnalysisResult } from '@/api/arch/types';
+import '../arch.css';
 
 interface Props {
   mappings: OntologyMapping[];
@@ -64,7 +65,7 @@ export default function OntologyMappingGraph({ mappings, onImpact }: Props) {
   }, [mappings]);
 
   if (!Array.isArray(mappings) || mappings.length === 0) {
-    return <div style={{ width: '100%', height: 400, border: '1px solid var(--semi-color-border)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>暂无映射数据</div>;
+    return <div className="mp-w-full mp-text-body mp-text-2 mp-flex-center mp-justify-center mp-border mp-rounded mp-arch-map-h">暂无映射数据</div>;
   }
 
   return (
@@ -84,7 +85,7 @@ export default function OntologyMappingGraph({ mappings, onImpact }: Props) {
           }
         }}
       />
-      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--semi-color-text-2)' }}>双击能力节点可查看影响分析</div>
+      <div className="mp-mt-2 mp-text-sm mp-text-2">双击能力节点可查看影响分析</div>
     </div>
   );
 }

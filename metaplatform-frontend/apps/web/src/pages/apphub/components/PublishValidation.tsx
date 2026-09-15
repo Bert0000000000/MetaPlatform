@@ -16,30 +16,23 @@ interface PublishValidationProps {
   publishing: boolean;
 }
 
-/** Semi 无 Statistic，自建：label + 大数字（可选前缀图标与颜色） */
 function StatTile({
   title,
   value,
   prefix,
-  color,
+  tone,
 }: {
   title: string;
   value: ReactNode;
   prefix?: ReactNode;
-  color?: string;
+  /** 语义色类名（mp-text-success / -danger / -warning / -2） */
+  tone?: string;
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <span style={{ fontSize: 13, color: 'var(--semi-color-text-2)' }}>{title}</span>
+    <div className="mp-flex mp-gap-1 mp-flex-col" >
+      <span className="mp-text-body mp-text-2">{title}</span>
       <div
-        style={{
-          fontSize: 24,
-          fontWeight: 600,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          color,
-        }}
+        className={`mp-fw-600 mp-gap-1 mp-text-xl mp-flex-center${tone ? ` ${tone}` : ''}`}
       >
         {prefix}
         {value}
@@ -50,13 +43,13 @@ function StatTile({
 
 export default function PublishValidation({ result, onPublish, publishing }: PublishValidationProps) {
   return (
-    <Card bodyStyle={{ padding: 12 }} style={{ marginBottom: 16 }}>
-      <Row gutter={16} style={{ marginBottom: 12 }}>
+    <Card bodyStyle={{ padding: 12 }} className="mp-mb-4">
+      <Row gutter={16} className="mp-mb-3">
         <Col span={8}>
           <StatTile
             title="通过"
-            value={result.valid ? <IconTick style={{ color: 'var(--semi-color-success)' }} /> : <IconClose style={{ color: 'var(--semi-color-danger)' }} />}
-            color={result.valid ? 'var(--semi-color-success)' : 'var(--semi-color-danger)'}
+            value={result.valid ? <IconTick className="mp-text-success" /> : <IconClose className="mp-text-danger" />}
+            tone={result.valid ? 'mp-text-success' : 'mp-text-danger'}
           />
         </Col>
         <Col span={8}>
@@ -64,7 +57,7 @@ export default function PublishValidation({ result, onPublish, publishing }: Pub
             title="错误"
             value={result.errors.length}
             prefix={<CloseCircleOutlined />}
-            color={result.errors.length > 0 ? 'var(--semi-color-danger)' : 'var(--semi-color-text-2)'}
+            tone={result.errors.length > 0 ? 'mp-text-danger' : 'mp-text-2'}
           />
         </Col>
         <Col span={8}>
@@ -72,14 +65,14 @@ export default function PublishValidation({ result, onPublish, publishing }: Pub
             title="警告"
             value={result.warnings.length}
             prefix={<WarningOutlined />}
-            color={result.warnings.length > 0 ? 'var(--semi-color-warning)' : 'var(--semi-color-text-2)'}
+            tone={result.warnings.length > 0 ? 'mp-text-warning' : 'mp-text-2'}
           />
         </Col>
       </Row>
 
-      <Space vertical spacing="tight" style={{ width: '100%' }}>
+      <Space vertical spacing="tight" className="mp-w-full">
         {/* Banner 无 action 插槽，发布按钮放到右侧 */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+        <div className="mp-flex mp-gap-2 mp-items-start" >
           <Banner
             type={result.valid ? 'success' : 'danger'}
             icon={result.valid ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
@@ -88,7 +81,7 @@ export default function PublishValidation({ result, onPublish, publishing }: Pub
                 ? '流程校验通过，可以发布'
                 : `流程校验失败：${result.errors.length} 个错误`
             }
-            style={{ flex: 1 }}
+            className="mp-flex-1"
           />
           {result.valid && (
             <Button
@@ -109,14 +102,14 @@ export default function PublishValidation({ result, onPublish, publishing }: Pub
             <Typography.Text type="danger" strong>
               <CloseCircleOutlined /> 错误（{result.errors.length}）
             </Typography.Text>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div className="mp-flex mp-gap-1 mp-flex-col" >
               {result.errors.map((error) => (
-                <div key={error.code} style={{ padding: '4px 0' }}>
+                <div key={error.code} className="mp-py-1">
                   <Space>
                     <Tag color="red">{error.code}</Tag>
                     <Typography.Text>{error.message}</Typography.Text>
                     {error.nodeId && (
-                      <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                      <Typography.Text type="tertiary" className="mp-text-sm">
                         [节点: {error.nodeId}]
                       </Typography.Text>
                     )}
@@ -132,9 +125,9 @@ export default function PublishValidation({ result, onPublish, publishing }: Pub
             <Typography.Text type="warning" strong>
               <WarningOutlined /> 警告（{result.warnings.length}）
             </Typography.Text>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div className="mp-flex mp-gap-1 mp-flex-col" >
               {result.warnings.map((warning) => (
-                <div key={warning.code} style={{ padding: '4px 0' }}>
+                <div key={warning.code} className="mp-py-1">
                   <Space>
                     <Tag color="orange">{warning.code}</Tag>
                     <Typography.Text>{warning.message}</Typography.Text>

@@ -43,6 +43,7 @@ import {
   updatePermission,
   deletePermission,
 } from "@/api/admin/permissions";
+import "./admin.css";
 
 interface Props {
   catalog: AdminPermission[];
@@ -71,12 +72,10 @@ function SearchInput({
   value,
   onChange,
   placeholder,
-  style,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
-  style?: React.CSSProperties;
 }) {
   return (
     <Input
@@ -84,8 +83,8 @@ function SearchInput({
       value={value}
       onChange={onChange}
       showClear
-      suffix={<SearchOutlined style={{ cursor: "pointer" }} />}
-      style={{ width: 280, ...style }}
+      suffix={<SearchOutlined className="mp-clickable" />}
+      className="mp-w-280"
     />
   );
 }
@@ -299,7 +298,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
       key: "code",
       width: 220,
       render: (v: string) => (
-        <span style={{ fontFamily: "var(--mp-font-mono)", fontSize: 12 }}>{v}</span>
+        <span className="mp-text-sm mp-mono" >{v}</span>
       ),
     },
     {
@@ -324,7 +323,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
       render: (actions: string[]) => (
         <Space spacing={2} wrap>
           {(actions ?? []).map((a) => (
-            <Tag key={a} style={{ fontSize: 10, margin: 0 }}>
+            <Tag key={a} className="mp-m-0 mp-text-xs" >
               {a}
             </Tag>
           ))}
@@ -336,7 +335,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
       dataIndex: "description",
       key: "description",
       ellipsis: true,
-      render: (v) => (v ? v : <span style={{ color: "var(--semi-color-text-2)" }}>—</span>),
+      render: (v) => (v ? v : <span className="mp-text-2">—</span>),
     },
     {
       title: "操作",
@@ -384,38 +383,25 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
 
   return (
     <div
-      style={{
-        background: "var(--semi-color-bg-1)",
-        border: "1px solid var(--semi-color-border)",
-        borderRadius: 8,
-        padding: 16,
-      }}
+      className="mp-border mp-p-4 mp-bg-1 mp-rounded" 
     >
       {/* 顶部工具栏 */}
       <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 8,
-          alignItems: "center",
-          marginBottom: 12,
-          paddingBottom: 12,
-          borderBottom: "1px solid var(--semi-color-border)",
-        }}
+        className="mp-wrap mp-border mp-mb-3 mp-gap-2 mp-flex-center mp-pb-3" 
       >
         <Select
           placeholder="选择目标角色"
           value={selectedRoleId ?? undefined}
           onChange={(v) => setSelectedRoleId((v as number) ?? null)}
-          style={{ minWidth: 240 }}
+          className="mp-admin-min-w-240"
           showClear
           optionList={roles.map((r) => ({
             value: r.id,
             label: (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <span className="mp-inline-flex mp-items-center mp-gap-1" >
                 {r.name}
                 {r.isBuiltin && (
-                  <Tag color="purple" style={{ marginLeft: 0, marginRight: 0, fontSize: 10 }}>
+                  <Tag color="purple" className="mp-text-xs mp-ml-1 mp-mr-1" >
                     内置
                   </Tag>
                 )}
@@ -428,7 +414,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
           showClear
           value={resourceTypeFilter}
           onChange={(v) => setResourceTypeFilter(v as string | undefined)}
-          style={{ minWidth: 160 }}
+          className="mp-admin-min-w-160"
           optionList={resourceTypes.map((rt) => ({ value: rt, label: rt }))}
         />
         <SearchInput
@@ -436,10 +422,10 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
           value={keyword}
           onChange={(v) => setKeyword(v)}
         />
-        <span style={{ color: "var(--semi-color-text-2)", fontSize: 12 }}>
+        <span className="mp-text-sm mp-text-2">
           已选 {selectedCount} / {totalCount}
         </span>
-        <div style={{ flex: 1 }} />
+        <div className="mp-flex-1" />
         <Tooltip content="全选（当前筛选范围）">
           <Button icon={<CheckSquareOutlined />} onClick={selectAll} size="small">
             全选
@@ -486,7 +472,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
 
       {/* 表格区 */}
       {loadingRole ? (
-        <div style={{ padding: 32, textAlign: "center" }}>
+        <div className="mp-text-center mp-p-7">
           <Spin />
         </div>
       ) : filtered.length === 0 ? (

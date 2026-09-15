@@ -22,6 +22,7 @@ import {
   type TemplateFlowNode,
 } from './data/templates';
 import { getUser } from '@mate/shared';
+import './apps.css';
 
 interface FieldFormValue {
   fieldKey: string;
@@ -152,11 +153,11 @@ export default function TemplateSubmitPage() {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/my-templates')}>
           返回我的模板
         </Button>
-        <Typography.Title heading={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} className="mp-m-0">
           投稿新模板
         </Typography.Title>
       </Space>
@@ -173,7 +174,7 @@ export default function TemplateSubmitPage() {
           flows: [],
         }}
       >
-        <Card title="基础信息" style={{ marginBottom: 16 }}>
+        <Card title="基础信息" className="mp-mb-4">
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Input
@@ -215,7 +216,7 @@ export default function TemplateSubmitPage() {
           </Row>
         </Card>
 
-        <Card title="模板截图" style={{ marginBottom: 16 }}>
+        <Card title="模板截图" className="mp-mb-4">
           <Upload
             draggable
             listType="picture"
@@ -245,12 +246,12 @@ export default function TemplateSubmitPage() {
           />
         </Card>
 
-        <Card title="字段定义" style={{ marginBottom: 16 }}>
+        <Card title="字段定义" className="mp-mb-4">
           <ArrayField field="fields">
             {({ arrayFields, add }) => (
               <>
                 {arrayFields.map((item) => (
-                  <Row key={item.key} gutter={8} align="middle" style={{ marginBottom: 8 }}>
+                  <Row key={item.key} gutter={8} align="middle" className="mp-mb-2">
                     <Col xs={24} md={6}>
                       <Form.Input
                         field={`${item.field}[fieldKey]`}
@@ -281,12 +282,12 @@ export default function TemplateSubmitPage() {
                     <Col xs={12} md={1}>
                       <MinusCircleOutlined
                         onClick={() => item.remove()}
-                        style={{ color: 'var(--semi-color-danger)', fontSize: 18 }}
+                        className="mp-text-danger mp-text-lg" 
                       />
                     </Col>
                   </Row>
                 ))}
-                <Button block onClick={() => add()} icon={<PlusOutlined />} style={{ borderStyle: 'dashed' }}>
+                <Button block onClick={() => add()} icon={<PlusOutlined />} className="mp-app-dashed">
                   添加字段
                 </Button>
               </>
@@ -294,7 +295,7 @@ export default function TemplateSubmitPage() {
           </ArrayField>
         </Card>
 
-        <Card title="流程定义" style={{ marginBottom: 16 }}>
+        <Card title="流程定义" className="mp-mb-4">
           <ArrayField field="flows">
             {({ arrayFields, add }) => (
               <>
@@ -305,10 +306,10 @@ export default function TemplateSubmitPage() {
                     headerExtraContent={
                       <MinusCircleOutlined
                         onClick={() => flowItem.remove()}
-                        style={{ color: 'var(--semi-color-danger)', fontSize: 18 }}
+                        className="mp-text-danger mp-text-lg" 
                       />
                     }
-                    style={{ marginBottom: 12 }}
+                    className="mp-mb-3"
                   >
                     <Row gutter={8}>
                       <Col xs={24} md={8}>
@@ -331,7 +332,7 @@ export default function TemplateSubmitPage() {
                       {({ arrayFields: nodeFields, add: addNode }) => (
                         <>
                           {nodeFields.map((nodeItem) => (
-                            <Row key={nodeItem.key} gutter={8} align="middle" style={{ marginBottom: 8 }}>
+                            <Row key={nodeItem.key} gutter={8} align="middle" className="mp-mb-2">
                               <Col xs={24} md={8}>
                                 <Form.Input
                                   field={`${nodeItem.field}[name]`}
@@ -356,12 +357,12 @@ export default function TemplateSubmitPage() {
                               <Col xs={24} md={2}>
                                 <MinusCircleOutlined
                                   onClick={() => nodeItem.remove()}
-                                  style={{ color: 'var(--semi-color-danger)', fontSize: 18 }}
+                                  className="mp-text-danger mp-text-lg" 
                                 />
                               </Col>
                             </Row>
                           ))}
-                          <Button block onClick={() => addNode()} icon={<PlusOutlined />} style={{ borderStyle: 'dashed' }}>
+                          <Button block onClick={() => addNode()} icon={<PlusOutlined />} className="mp-app-dashed">
                             添加流程节点
                           </Button>
                         </>
@@ -369,7 +370,7 @@ export default function TemplateSubmitPage() {
                     </ArrayField>
                   </Card>
                 ))}
-                <Button block onClick={() => add()} icon={<PlusOutlined />} style={{ borderStyle: 'dashed' }}>
+                <Button block onClick={() => add()} icon={<PlusOutlined />} className="mp-app-dashed">
                   添加流程
                 </Button>
               </>

@@ -10,7 +10,7 @@ const DashboardPage = lazy(() => import('./DashboardPage'));
 const MapPage = lazy(() => import('./MapPage'));
 
 const LAZY_FALLBACK = (
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, color: 'var(--semi-color-text-2)', fontSize: 13 }}>
+  <div className="mp-p-9 mp-text-body mp-text-2 mp-flex-center mp-justify-center" >
     加载中…
   </div>
 );
@@ -46,14 +46,9 @@ export default function AnalyticsTab({ initialSub }: AnalyticsTabProps) {
   const [sub, setSub] = useState<SubKey>(normalizeSub(initialSub));
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', flex: 1, minWidth: 0 }}>
+    <div className="mp-w-full mp-flex mp-flex-1 mp-gap-3 mp-flex-col" >
       <div
-        style={{
-          display: 'flex',
-          gap: 8,
-          borderBottom: '1px solid var(--semi-color-border)',
-          paddingBottom: 8,
-        }}
+        className="mp-flex mp-border mp-gap-2 mp-pb-2" 
       >
         {SUB_KEYS.map((k) => (
           <button
@@ -71,7 +66,7 @@ export default function AnalyticsTab({ initialSub }: AnalyticsTabProps) {
           </button>
         ))}
       </div>
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+      <div className="mp-flex mp-flex-1 mp-flex-col" >
         {sub === 'analysis' && (
           <Suspense fallback={LAZY_FALLBACK}>
             <AnalysisPage />

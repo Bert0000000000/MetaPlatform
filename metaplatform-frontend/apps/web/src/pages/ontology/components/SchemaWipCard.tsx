@@ -10,7 +10,7 @@
 //
 // dev 模式 Semi 交互组件 onClick 被截 noop —— 交互元素全部原生 + 内联样式。
 
-import { useCallback, useEffect, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Card } from '@douyinfe/semi-ui';
 import { AlertTriangle, Inbox } from 'lucide-react';
 import { toast } from '@mate/shared';
@@ -19,24 +19,7 @@ import {
   listSchemaWip, type DestructiveConfirmDetail, type SchemaWipEntry,
 } from '@/api/ont/kernel';
 
-const btnStyle: CSSProperties = {
-  height: 26, padding: '0 10px', fontSize: 12, borderRadius: 4,
-  border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)',
-  color: 'var(--semi-color-text-0)', cursor: 'pointer', whiteSpace: 'nowrap',
-};
-
-const destructiveBtnStyle: CSSProperties = {
-  ...btnStyle,
-  border: '1px solid var(--semi-color-danger)', background: 'transparent',
-  color: 'var(--semi-color-danger)',
-};
-
-const confirmInputStyle: CSSProperties = {
-  height: 28, flex: 1, minWidth: 0, boxSizing: 'border-box',
-  background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
-  borderRadius: 6, padding: '0 10px', fontSize: 12,
-  color: 'var(--semi-color-text-0)', outline: 'none', fontFamily: 'monospace',
-};
+// 按钮 / 输入统一走 mp-onto-* 类（见 pages/ontology/ontology.css）。
 
 export default function SchemaWipCard() {
   const [wips, setWips] = useState<SchemaWipEntry[]>([]);
@@ -109,51 +92,43 @@ export default function SchemaWipCard() {
 
   return (
     <Card bodyStyle={{ padding: 0 }}>
-      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
-        <Inbox style={{ width: 15, height: 15 }} />
-        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Schema 暂存（WIP）</h4>
-        <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>编辑器暂存的 schema 变更 · 应用走破坏性门禁 · 他人不可见</span>
+      <div className="mp-gap-2 mp-flex-center mp-border mp-py-3 mp-px-5" >
+        <Inbox className="mp-icon-14" />
+        <h4 className="mp-fw-600 mp-m-0 mp-text-md">Schema 暂存（WIP）</h4>
+        <span className="mp-text-xs mp-text-2">编辑器暂存的 schema 变更 · 应用走破坏性门禁 · 他人不可见</span>
       </div>
-      <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className="mp-flex mp-gap-2 mp-py-3 mp-px-5 mp-flex-col" >
         {msg && (
-          <div style={{
-            padding: '8px 14px', fontSize: 12, borderRadius: 6,
-            border: '1px solid var(--semi-color-success)', color: 'var(--semi-color-success)',
-            wordBreak: 'break-all',
-          }}>{msg}</div>
+          <div className="mp-break-all mp-text-sm mp-text-success mp-py-2 mp-px-3 mp-rounded mp-onto-box-success">{msg}</div>
         )}
         {err && (
-          <div style={{
-            padding: '8px 14px', fontSize: 12, borderRadius: 6,
-            border: '1px solid var(--semi-color-danger)', color: 'var(--semi-color-danger)',
-            wordBreak: 'break-all',
-          }}>{err}</div>
+          <div className="mp-break-all mp-text-sm mp-text-danger mp-py-2 mp-px-3 mp-rounded mp-onto-box-danger">{err}</div>
         )}
         {loading ? (
-          <div style={{ padding: 24, textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 12 }}>加载 WIP 暂存…</div>
+          <div className="mp-text-center mp-p-6 mp-text-sm mp-text-2">加载 WIP 暂存…</div>
         ) : wips.length === 0 ? (
-          <div style={{ padding: 24, textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 12 }}>
+          <div className="mp-text-center mp-p-6 mp-text-sm mp-text-2">
             无暂存变更 —— 编辑器保存到 WIP 后在此审阅（他人不可见）
           </div>
         ) : (
           wips.map((w) => {
             const busy = busyRid === w.rid;
             return (
-              <div key={w.rid} style={{ border: '1px solid var(--semi-color-border)', borderRadius: 8, padding: '10px 12px' }}>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontFamily: 'monospace', fontSize: 12, wordBreak: 'break-all' }}>{w.rid}</span>
-                  <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)', flexShrink: 0 }}>
+              <div key={w.rid} className="mp-border mp-py-2 mp-px-3 mp-rounded" >
+                <div className="mp-flex-center mp-wrap mp-gap-2" >
+                  <span className="mp-text-sm mp-break-all mp-mono" >{w.rid}</span>
+                  <span className="mp-text-xs mp-text-2 mp-shrink-0" >
                     {w.author || '—'}
                   </span>
-                  <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)', flexShrink: 0 }}>
+                  <span className="mp-text-xs mp-text-2 mp-shrink-0" >
                     {w.created_at ? new Date(w.created_at).toLocaleString() : '—'}
                   </span>
-                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <div className="mp-flex mp-shrink-0 mp-ml-auto mp-gap-1" >
                     <button
                       type="button"
                       onClick={() => void doApply(w.rid)}
                       disabled={busy}
-                      style={{ ...btnStyle, cursor: busy ? 'wait' : 'pointer' }}
+                      className="mp-onto-btn mp-onto-btn--xs"
                     >
                       {busy ? '处理中…' : '应用'}
                     </button>
@@ -161,7 +136,7 @@ export default function SchemaWipCard() {
                       type="button"
                       onClick={() => void doDiscard(w.rid)}
                       disabled={busy}
-                      style={{ ...destructiveBtnStyle, cursor: busy ? 'wait' : 'pointer' }}
+                      className="mp-onto-btn mp-onto-btn--xs mp-onto-btn--danger"
                     >
                       丢弃
                     </button>
@@ -169,41 +144,38 @@ export default function SchemaWipCard() {
                 </div>
                 {/* 破坏性 409 二段确认区（仅该行展开） */}
                 {confirmRid === w.rid && confirmInfo && (
-                  <div style={{
-                    marginTop: 10, borderTop: '1px dashed var(--semi-color-border)', paddingTop: 10,
-                    display: 'flex', flexDirection: 'column', gap: 8,
-                  }}>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12, fontWeight: 600, color: 'var(--semi-color-danger)' }}>
-                      <AlertTriangle style={{ width: 13, height: 13, flexShrink: 0 }} />
+                  <div className="mp-flex-col mp-mt-2 mp-gap-2 mp-pt-2 mp-onto-dashed-top">
+                    <div className="mp-fw-600 mp-text-sm mp-text-danger mp-flex-center mp-gap-1" >
+                      <AlertTriangle className="mp-shrink-0 mp-icon-12"  />
                       应用被拦截：包含破坏性变更，需确认后重发
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <div className="mp-flex mp-gap-1 mp-flex-col" >
                       {confirmInfo.changes.map((c, i) => (
-                        <div key={i} style={{ fontSize: 11, color: 'var(--semi-color-danger)', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                        <div key={i} className="mp-text-xs mp-text-danger mp-break-all mp-mono" >
                           · {c}
                         </div>
                       ))}
                     </div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <div className="mp-gap-2 mp-flex-center">
                       <input
                         type="text"
                         value={confirmInput}
                         placeholder={`输入 ${confirmInfo.confirm_with} 以确认`}
                         onChange={(e) => setConfirmInput(e.target.value)}
-                        style={confirmInputStyle}
+                        className="mp-flex-1 mp-min-w-0 mp-mono mp-onto-input mp-onto-input--sm"
                       />
                       <button
                         type="button"
                         onClick={() => void doApply(w.rid, confirmInput.trim())}
                         disabled={busy || !confirmInput.trim()}
-                        style={{ ...destructiveBtnStyle, cursor: busy ? 'wait' : 'pointer', flexShrink: 0 }}
+                        className="mp-shrink-0 mp-onto-btn mp-onto-btn--xs mp-onto-btn--danger"
                       >
                         {busy ? '重发中…' : '重发（确认）'}
                       </button>
                       <button
                         type="button"
                         onClick={clearConfirm}
-                        style={{ ...btnStyle, flexShrink: 0 }}
+                        className="mp-shrink-0 mp-onto-btn mp-onto-btn--xs"
                       >
                         取消
                       </button>

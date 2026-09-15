@@ -102,7 +102,7 @@ export default function ServerForm({
         />
         <Form.Input field="endpoint" label="访问端点" rules={[{ required: true }]} placeholder="例如：/mcp/sse/main" />
         <Form.Input field="host" label="监听地址" placeholder="例如：0.0.0.0 或 127.0.0.1" />
-        <Form.InputNumber field="port" label="监听端口" min={1} max={65535} style={{ width: '100%' }} placeholder="例如：8080" />
+        <Form.InputNumber field="port" label="监听端口" min={1} max={65535} className="mp-w-full" placeholder="例如：8080" />
         <Form.Input field="sseEndpoint" label="SSE 端点" placeholder="例如：/sse" />
         <Form.Select
           field="authType"
@@ -118,8 +118,8 @@ export default function ServerForm({
             placeholder='例如：{ "apiKey": "xxx" }'
           />
         )}
-        <Form.InputNumber field="timeoutMs" label="超时时间（ms）" min={1} style={{ width: '100%' }} placeholder="例如：30000" />
-        <Form.InputNumber field="maxConcurrentCalls" label="最大并发调用数" min={1} style={{ width: '100%' }} placeholder="例如：100" />
+        <Form.InputNumber field="timeoutMs" label="超时时间（ms）" min={1} className="mp-w-full" placeholder="例如：30000" />
+        <Form.InputNumber field="maxConcurrentCalls" label="最大并发调用数" min={1} className="mp-w-full" placeholder="例如：100" />
         <Form.Input field="healthCheckUrl" label="健康检查 URL" placeholder="例如：http://localhost:8080/health" />
         <Form.Select
           field="toolIds"

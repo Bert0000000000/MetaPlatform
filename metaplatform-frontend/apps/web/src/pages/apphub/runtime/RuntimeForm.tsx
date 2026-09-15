@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button, Card, Empty, Form, Toast } from '@douyinfe/semi-ui';
 import type { FormConfig, FormField } from '@/api/apphub/types';
 import { runScript } from '../utils/safeScriptRunner';
+import '../apps.css';
 
 /**
  * 表单运行时渲染器：从 FormDesignerPage 的 renderRuntimeField / handlePreviewSubmit 提取。
@@ -25,7 +26,7 @@ export default function RuntimeForm({ config }: RuntimeFormProps) {
       case 'textarea':
         return <Form.TextArea field={field.fieldKey} label={field.label} rules={rules} placeholder={field.placeholder} rows={3} disabled={disabled} />;
       case 'number':
-        return <Form.InputNumber field={field.fieldKey} label={field.label} rules={rules} placeholder={field.placeholder} disabled={disabled} style={{ width: '100%' }} />;
+        return <Form.InputNumber field={field.fieldKey} label={field.label} rules={rules} placeholder={field.placeholder} disabled={disabled} className="mp-w-full" />;
       case 'radio':
         return <Form.Select field={field.fieldKey} label={field.label} rules={rules} placeholder={field.placeholder} disabled={disabled} optionList={(field.options || []).map((o) => ({ value: o.value, label: o.label }))} />;
       case 'checkbox':
@@ -39,9 +40,9 @@ export default function RuntimeForm({ config }: RuntimeFormProps) {
       case 'upload':
         return <Form.Slot label={field.label}><Button disabled={disabled}>上传附件</Button></Form.Slot>;
       case 'divider':
-        return <div style={{ borderTop: '1px solid var(--semi-color-border)', paddingTop: 8, marginBottom: 16 }}>{field.label}</div>;
+        return <div className="mp-mb-4 mp-border mp-pt-2" >{field.label}</div>;
       case 'group':
-        return <Card title={field.label} style={{ background: 'var(--semi-color-fill-0)', marginBottom: 16 }} />;
+        return <Card title={field.label} className="mp-mb-4 mp-bg-fill-0"  />;
       default:
         return <Form.Input field={field.fieldKey} label={field.label} rules={rules} placeholder={field.placeholder} disabled={disabled} />;
     }
@@ -66,24 +67,24 @@ export default function RuntimeForm({ config }: RuntimeFormProps) {
   };
 
   if (!config?.fields?.length) {
-    return <Empty description="该表单暂无字段" style={{ padding: 48 }} />;
+    return <Empty description="该表单暂无字段" className="mp-p-9" />;
   }
 
   return (
-    <Card title={config.name} style={{ maxWidth: 760 }}>
+    <Card title={config.name} className="mp-app-mw-760">
       {config.description && (
-        <div style={{ color: 'var(--semi-color-text-2)', fontSize: 13, marginBottom: 16 }}>{config.description}</div>
+        <div className="mp-mb-4 mp-text-body mp-text-2">{config.description}</div>
       )}
-      <Form form={form} labelPosition="top" style={{ width: '100%' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+      <Form form={form} labelPosition="top" className="mp-w-full">
+        <div className="mp-grid mp-grid-2 mp-app-form-grid">
           {config.fields.map((f) => {
             const node = renderField(f);
             if (!node) return null;
             const full = f.width === '100%' || f.type === 'divider' || f.type === 'group' || f.type === 'textarea';
-            return <div key={f.id} style={{ gridColumn: full ? 'span 2' : 'span 1' }}>{node}</div>;
+            return <div key={f.id} className={full ? 'mp-app-col-2' : 'mp-app-col-1'}>{node}</div>;
           })}
         </div>
-        <div style={{ marginTop: 8 }}>
+        <div className="mp-mt-2">
           <Button theme="solid" type="primary" loading={submitting} onClick={onSubmit}>
             {config.submitText || '提交'}
           </Button>

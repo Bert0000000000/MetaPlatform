@@ -114,7 +114,7 @@ export default function ServerListPage() {
           <Typography.Text strong>
             <ClusterOutlined /> {s.name}
           </Typography.Text>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" className="mp-text-sm">
             {s.code}
           </Typography.Text>
         </Space>
@@ -134,7 +134,7 @@ export default function ServerListPage() {
         <Space vertical spacing={0}>
           <Tag color={STATUS_MAP[s.status].color}>{STATUS_MAP[s.status].label}</Tag>
           {s.lastHeartbeatAt && (
-            <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+            <Typography.Text type="tertiary" className="mp-text-sm">
               心跳 {new Date(s.lastHeartbeatAt).toLocaleString()}
             </Typography.Text>
           )}
@@ -179,42 +179,42 @@ export default function ServerListPage() {
         }
       />
 
-      <Row gutter={16} style={{ marginBottom: 16 }}>
+      <Row gutter={16} className="mp-mb-4">
         <Col span={6}>
           <Card bordered={false}>
             <div className="mp-stat-label">总数</div>
-            <div className="mp-stat-value" style={{ fontSize: 24 }}>{stats.total}</div>
+            <div className="mp-stat-value mp-text-xl" >{stats.total}</div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
             <div className="mp-stat-label">在线</div>
-            <div className="mp-stat-value" style={{ fontSize: 24, color: 'var(--semi-color-success)' }}>{stats.online}</div>
+            <div className="mp-stat-value mp-text-success mp-text-xl" >{stats.online}</div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
             <div className="mp-stat-label">离线</div>
-            <div className="mp-stat-value" style={{ fontSize: 24, color: 'var(--semi-color-text-2)' }}>{stats.offline}</div>
+            <div className="mp-stat-value mp-text-2 mp-text-xl" >{stats.offline}</div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
             <div className="mp-stat-label">异常</div>
-            <div className="mp-stat-value" style={{ fontSize: 24, color: 'var(--semi-color-danger)' }}>{stats.error}</div>
+            <div className="mp-stat-value mp-text-danger mp-text-xl" >{stats.error}</div>
           </Card>
         </Col>
       </Row>
 
-      <Space style={{ marginBottom: 16 }} wrap>
+      <Space className="mp-mb-4" wrap>
         <Input
           placeholder="搜索名称/编码"
           showClear
           value={query}
           onChange={(v) => setQuery(v)}
           onEnterPress={() => setKeyword(query)}
-          suffix={<SearchOutlined style={{ color: 'var(--semi-color-text-2)', cursor: 'pointer' }} onClick={() => setKeyword(query)} />}
-          style={{ width: 240 }}
+          suffix={<SearchOutlined className="mp-text-2 mp-clickable"  onClick={() => setKeyword(query)} />}
+          className="mp-w-240"
         />
       </Space>
 
@@ -227,13 +227,13 @@ export default function ServerListPage() {
             loading
             pagination={false} scroll={{ x: 'max-content' }} />
         ) : error ? (
-          <div style={{ textAlign: 'center', padding: 48 }}>
-            <ExclamationCircleFilled style={{ fontSize: 48, color: 'var(--semi-color-danger)' }} />
-            <Typography.Title heading={4} style={{ marginTop: 16 }}>
+          <div className="mp-text-center mp-p-9">
+            <ExclamationCircleFilled className="mp-text-danger mp-text-xl"  />
+            <Typography.Title heading={4} className="mp-mt-4">
               加载失败
             </Typography.Title>
             <Typography.Text type="tertiary">{error.message}</Typography.Text>
-            <div style={{ marginTop: 24 }}>
+            <div className="mp-mt-6">
               <Button theme="solid" type="primary" icon={<ReloadOutlined />} onClick={load}>
                 重试
               </Button>

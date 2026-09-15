@@ -20,6 +20,7 @@ import { generateServerIdeConfig } from '@/api/mcphub/ide-config';
 import { listServers } from '@/api/mcphub/servers';
 import type { IdeConfigResponse, IdeType, McpServer } from '@/api/mcphub/types';
 import { PageHeader } from '@/components/skeleton';
+import './mcp.css';
 
 SyntaxHighlighter.registerLanguage('json', json);
 
@@ -102,7 +103,7 @@ export default function IdeConfigPage() {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: 48 }}>
+      <div className="mp-text-center mp-p-9">
         <Spin tip="加载 Server 列表..." />
       </div>
     );
@@ -110,12 +111,12 @@ export default function IdeConfigPage() {
 
   if (error) {
     return (
-      <div style={{ textAlign: 'center', padding: 48 }}>
-        <CloseCircleOutlined style={{ fontSize: 48, color: 'var(--semi-color-danger)' }} />
-        <Typography.Title heading={4} style={{ marginTop: 16 }}>
+      <div className="mp-text-center mp-p-9">
+        <CloseCircleOutlined className="mp-text-danger mp-text-xl"  />
+        <Typography.Title heading={4} className="mp-mt-4">
           加载失败
         </Typography.Title>
-        <Typography.Paragraph type="tertiary" style={{ marginTop: 8 }}>
+        <Typography.Paragraph type="tertiary" className="mp-mt-2">
           {error.message}
         </Typography.Paragraph>
         <Button
@@ -123,7 +124,7 @@ export default function IdeConfigPage() {
           type="primary"
           icon={<ReloadOutlined />}
           onClick={load}
-          style={{ marginTop: 16 }}
+          className="mp-mt-4"
         >
           重试
         </Button>
@@ -135,7 +136,7 @@ export default function IdeConfigPage() {
     <div>
       <PageHeader title="IDE 配置模板" />
 
-      <Card style={{ marginBottom: 16 }}>
+      <Card className="mp-mb-4">
         <Form>
           <Form.Label required>选择 Server</Form.Label>
           <Select
@@ -144,9 +145,9 @@ export default function IdeConfigPage() {
             value={serverId || undefined}
             onChange={(v) => setServerId(v as string)}
             optionList={servers.map((s) => ({ label: `${s.name} (${s.code})`, value: s.id }))}
-            style={{ maxWidth: 480 }}
+            className="mp-mcp-max-w-480"
           />
-          <Form.Label required style={{ marginTop: 16 }}>
+          <Form.Label required className="mp-mt-4">
             IDE 类型
           </Form.Label>
           <RadioGroup
@@ -160,7 +161,7 @@ export default function IdeConfigPage() {
               </Radio>
             ))}
           </RadioGroup>
-          <div style={{ marginTop: 16 }}>
+          <div className="mp-mt-4">
             <Button theme="solid" type="primary" loading={generating} onClick={handleGenerate}>
               生成配置
             </Button>
@@ -173,7 +174,7 @@ export default function IdeConfigPage() {
           title={
             <Space>
               <span>生成结果</span>
-              <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+              <Typography.Text type="tertiary" className="mp-text-sm">
                 {config.fileName}
               </Typography.Text>
             </Space>
@@ -192,7 +193,7 @@ export default function IdeConfigPage() {
           <Banner
             type="info"
             description={`当前为 ${IDE_OPTIONS.find((i) => i.value === config.ideType)?.label || config.ideType} 配置格式，请按对应 IDE 的文档放置到正确位置。`}
-            style={{ marginBottom: 16 }}
+            className="mp-mb-4"
           />
           <SyntaxHighlighter language="json" style={oneLight} customStyle={{ margin: 0 }}>
             {config.content}

@@ -27,6 +27,7 @@ import type {
   DataSourceType,
 } from '@/api/apphub/pages';
 import type { DashboardGenResult } from '@/api/apphub/types';
+import './apps.css';
 
 const DATA_SOURCE_TYPE_OPTIONS: Array<{ label: string; value: DataSourceType }> = [
   { label: '本体 (TECH-ONT)', value: 'ontology' },
@@ -169,10 +170,10 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
             <iframe
               title={w.title}
               src={url}
-              style={{ width: '100%', height: 240, border: 'none' }}
+              className="mp-w-full mp-border-none mp-app-iframe"
             />
           ) : (
-            <div style={{ color: 'var(--semi-color-text-2)', padding: 24, textAlign: 'center' }}>
+            <div className="mp-text-center mp-p-6 mp-text-2">
               请在 config.url 中配置嵌入地址
             </div>
           )}
@@ -183,7 +184,7 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
       const content = (w.config?.content as string) || '';
       return (
         <Card title={w.title}>
-          <div style={{ minHeight: 80, padding: 12, whiteSpace: 'pre-wrap' }}>
+          <div className="mp-p-3 mp-app-min-80 mp-app-pre-wrap">
             {content || '富文本内容为空'}
           </div>
         </Card>
@@ -192,7 +193,7 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
     if (w.type === 'stat') {
       return (
         <Card title={w.title}>
-          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--semi-color-primary)' }}>
+          <div className="mp-text-primary mp-text-xl mp-app-fw-700">
             {Math.floor(Math.random() * 10000)}
           </div>
           <Typography.Text type="tertiary">同比 +12%</Typography.Text>
@@ -201,14 +202,14 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
     }
     return (
       <Card title={w.title}>
-        <div style={{ minHeight: 80, padding: 12 }}>{(w.config?.text as string) || '文本'}</div>
+        <div className="mp-p-3 mp-app-min-80">{(w.config?.text as string) || '文本'}</div>
       </Card>
     );
   };
 
   if (loading) {
     return (
-      <div style={{ padding: 40, textAlign: 'center' }}>
+      <div className="mp-text-center mp-p-8">
         <Spin />
       </div>
     );
@@ -216,11 +217,11 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps/mine')}>
           返回
         </Button>
-        <Typography.Title heading={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} className="mp-m-0">
           页面设计器 - {config.name}
         </Typography.Title>
         <Button
@@ -257,15 +258,15 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
           itemKey="settings"
           children={
             <Card>
-              <div style={{ maxWidth: 720 }}>
-                <div style={{ marginBottom: 16 }}>
+              <div className="mp-max-w-720">
+                <div className="mp-mb-4">
                   <Form.Label>页面名称</Form.Label>
                   <Input
                     value={config.name}
                     onChange={(v) => setConfig({ ...config, name: v })}
                   />
                 </div>
-                <div style={{ marginBottom: 16 }}>
+                <div className="mp-mb-4">
                   <Form.Label>描述</Form.Label>
                   <TextArea
                     rows={2}
@@ -292,13 +293,13 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
           itemKey="scripts"
           children={
             <Card>
-              <div style={{ maxWidth: 720 }}>
+              <div className="mp-max-w-720">
                 <Typography.Paragraph type="tertiary">
                   编辑页面生命周期脚本（onLoad / onShow）。脚本以字符串形式保存，运行时通过
                   <code> new Function('context', script) </code>
                   执行，<code>context</code> 包含当前页面配置与 message（兼容 antd message API，基于 Semi Toast）。
                 </Typography.Paragraph>
-                <div style={{ marginBottom: 16 }}>
+                <div className="mp-mb-4">
                   <Form.Label>onLoad（页面加载时执行）</Form.Label>
                   <TextArea
                     rows={8}
@@ -307,7 +308,7 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
                     onChange={(v) => handleUpdateScripts('onLoad', v)}
                   />
                 </div>
-                <div style={{ marginBottom: 16 }}>
+                <div className="mp-mb-4">
                   <Form.Label>onShow（页面显示时执行）</Form.Label>
                   <TextArea
                     rows={6}
@@ -331,14 +332,14 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
           itemKey="datasource"
           children={
             <Card>
-              <div style={{ maxWidth: 720 }}>
+              <div className="mp-max-w-720">
                 {config.widgets.length === 0 ? (
                   <Typography.Text type="tertiary">
                     画布暂无组件，请先在「设计」Tab 添加组件。
                   </Typography.Text>
                 ) : (
                   <>
-                    <div style={{ marginBottom: 16 }}>
+                    <div className="mp-mb-4">
                       <Form.Label>选择组件</Form.Label>
                       <Select
                         value={selectedDsWidget?.id}
@@ -351,7 +352,7 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
                     </div>
                     {selectedDsWidget && (
                       <>
-                        <div style={{ marginBottom: 16 }}>
+                        <div className="mp-mb-4">
                           <Form.Label>数据源类型</Form.Label>
                           <Select
                             value={selectedDsWidget.dataSource?.type || 'static'}
@@ -361,7 +362,7 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
                             }
                           />
                         </div>
-                        <div style={{ marginBottom: 16 }}>
+                        <div className="mp-mb-4">
                           <Form.Label>sourceId（本体概念ID / RAG知识库ID / 数据源ID / API URL）</Form.Label>
                           <Input
                             value={selectedDsWidget.dataSource?.sourceId || ''}
@@ -373,7 +374,7 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
                             }
                           />
                         </div>
-                        <div style={{ marginBottom: 16 }}>
+                        <div className="mp-mb-4">
                           <Form.Label>query（查询语句或 PromQL）</Form.Label>
                           <TextArea
                             rows={3}
@@ -386,7 +387,7 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
                             }
                           />
                         </div>
-                        <div style={{ marginBottom: 16 }}>
+                        <div className="mp-mb-4">
                           <Form.Label>refreshInterval（秒，0 = 不自动刷新）</Form.Label>
                           <InputNumber
                             min={0}
@@ -396,7 +397,7 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
                                 refreshInterval: typeof v === 'number' ? v : 0,
                               })
                             }
-                            style={{ width: 200 }}
+                            className="mp-w-200"
                           />
                         </div>
                         <Typography.Text type="tertiary">
@@ -424,14 +425,10 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
           itemKey="preview"
           children={
             <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(12, 1fr)',
-                gap: 12,
-              }}
+              className="mp-grid mp-gap-3 mp-app-grid-12"
             >
               {config.widgets.map((w) => (
-                <div key={w.id} style={{ gridColumn: `span ${w.position.w}` }}>
+                <div key={w.id} className={`mp-app-col-${w.position.w}`}>
                   {renderWidget(w)}
                 </div>
               ))}
@@ -443,7 +440,7 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
       {previewing && (
         <Card
           title={`预览：${previewing.title}`}
-          style={{ marginTop: 16 }}
+          className="mp-mt-4"
         >
           {renderWidget(previewing)}
         </Card>

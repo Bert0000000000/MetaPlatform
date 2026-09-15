@@ -16,6 +16,7 @@ import { PlusOutlined, CopyOutlined, DeleteOutlined, KeyOutlined } from '@ant-de
 import { IconAlertTriangle } from '@douyinfe/semi-icons';
 import { createApiKey, deleteApiKey, listApiKeys } from '@/api/mcphub/integrations';
 import type { ApiKey } from '@/api/mcphub/types';
+import '../mcp.css';
 
 const SCOPE_OPTIONS = [
   { label: 'tools:invoke', value: 'tools:invoke' },
@@ -114,13 +115,9 @@ export default function ApiKeyGenerator() {
     >
       {revealed && (
         <Card
-          style={{
-            marginBottom: 16,
-            background: 'var(--semi-color-warning-bg)',
-            border: '1px solid var(--semi-color-warning-border)',
-          }}
+          className="mp-mb-4 mp-mcp-warn-card"
         >
-          <Typography.Paragraph style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Typography.Paragraph className="mp-mb-2 mp-flex-center mp-gap-1" >
             <IconAlertTriangle size="small" /> 请立即复制保存，新生成的 Key 只会完整显示一次：
           </Typography.Paragraph>
           <Space>

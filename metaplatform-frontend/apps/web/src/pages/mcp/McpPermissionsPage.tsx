@@ -28,6 +28,7 @@ import type {
   PolicyMatrixColumn,
   PolicyMatrixRow,
 } from '@/api/mcphub/types';
+import './mcp.css';
 
 const ACTION_OPTIONS = [
   { label: '调用 (invoke)', value: 'invoke' },
@@ -162,7 +163,7 @@ export default function PermissionMatrixPage() {
       base.push({
         title: (
           <span title={toolName}>
-            <Typography.Text ellipsis style={{ maxWidth: 120 }}>
+            <Typography.Text ellipsis className="mp-mcp-max-w-120">
               {toolName}
             </Typography.Text>
           </span>
@@ -177,7 +178,7 @@ export default function PermissionMatrixPage() {
           return (
             <Tag
               color={color}
-              style={{ cursor: 'pointer', minWidth: 56, textAlign: 'center' }}
+              className="mp-text-center mp-clickable mp-mcp-min-w-56"
               onClick={() => openEditCell(row, col)}
             >
               {label}
@@ -199,7 +200,7 @@ export default function PermissionMatrixPage() {
                     value={action}
                     optionList={ACTION_OPTIONS}
                     onChange={(v) => setAction(v as string)}
-                    style={{ width: 160 }}
+                    className="mp-w-160"
                   />
                   <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
                     刷新
@@ -219,7 +220,7 @@ export default function PermissionMatrixPage() {
           activeKey={matrixType}
           onChange={(k) => setMatrixType(k as 'user-tool' | 'app-tool')}
           tabList={MATRIX_TYPE_OPTIONS.map((t) => ({ itemKey: t.key, tab: t.label }))}
-          style={{ marginBottom: 16 }}
+          className="mp-mb-4"
         />
 
         {matrix && matrix.rows.length === 0 && !loading ? (

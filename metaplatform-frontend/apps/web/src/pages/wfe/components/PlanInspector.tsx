@@ -16,12 +16,12 @@ export function PlanInspector({ node, actionTypes, onChange }: PlanInspectorProp
   const firstRequiredInput = currentAction?.required_inputs[0] || 'order_id';
   const input = node.input || {};
   return (
-    <Space vertical align="start" style={{ width: '100%' }}>
+    <Space vertical align="start" className="mp-w-full">
       <Typography.Text type="secondary">节点 ID：{node.id}</Typography.Text>
       <Typography.Text strong>ActionType</Typography.Text>
       <Select
         value={node.action_type}
-        style={{ width: '100%' }}
+        className="mp-w-full"
         optionList={actionTypes.map((item) => ({ label: item.action_type, value: item.action_type }))}
         onChange={(value) => {
           const action = actionTypes.find((item) => item.action_type === value);

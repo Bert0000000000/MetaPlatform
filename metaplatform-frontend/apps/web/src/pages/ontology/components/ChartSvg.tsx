@@ -300,7 +300,7 @@ export default function ChartSvg({
 }: Props): ReactElement {
   return (
     <svg viewBox={`0 0 ${baseWidth} ${height}`} width="100%" height={height}
-      style={{ display: 'block' }} role="img">
+      className="mp-block" role="img">
       {data.length === 0
         ? placeholder(baseWidth, height, '暂无数据')
         : type === 'bar'

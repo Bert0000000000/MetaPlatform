@@ -41,6 +41,7 @@ import {
 import { defaultFixedSemiMaterials } from '@flowgram.ai/fixed-semi-materials';
 import '@flowgram.ai/free-layout-editor/index.css';
 import '@flowgram.ai/fixed-layout-editor/index.css';
+import './ontology-action.css';
 // 后续使用：<Field label="..."> —— 用 @mate/shared 的 FormFields.Field
 import { FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
 import {
@@ -533,9 +534,9 @@ function FlowFullscreenEditor({
           const liveVal = activeData[f.label] || (activeNodeJson?.data as Record<string, unknown> | undefined)?.[f.label];
           const value = (liveVal != null ? String(liveVal) : f.value) || f.value;
           return (
-            <div key={`${f.label}-${i}`} style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: palette.panelTextMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                {f.required && <span style={{ color: 'var(--semi-color-danger, #f56565)' }}>*</span>}
+            <div key={`${f.label}-${i}`} className="mp-mb-4">
+              <div className="mp-text-xs mp-flex-center mp-mb-1 mp-gap-1 mp-flow-field-label">
+                {f.required && <span className="mp-text-danger">*</span>}
                 <span>{f.label}</span>
               </div>
               {f.type === 'json' ? (
@@ -543,26 +544,13 @@ function FlowFullscreenEditor({
                   value={value}
                   readOnly
                   rows={5}
-                  style={{
-                    width: '100%', boxSizing: 'border-box', margin: 0, padding: '10px 12px',
-                    background: palette.panelMuted,
-                    border: `1px solid ${palette.modalBorder}`,
-                    borderRadius: 6, resize: 'vertical',
-                    fontFamily: 'var(--mp-font-mono)', fontSize: 12, color: palette.panelText,
-                    whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.6, outline: 'none',
-                  }}
+                  className="mp-w-full mp-m-0 mp-text-sm mp-py-2 mp-px-3 mp-mono mp-lh-16 mp-rounded mp-flow-textarea"
                 />
               ) : (
                 <input
                   value={value}
                   readOnly
-                  style={{
-                    width: '100%', boxSizing: 'border-box', padding: '8px 12px',
-                    background: palette.panelMuted,
-                    border: `1px solid ${palette.modalBorder}`,
-                    borderRadius: 6, fontSize: 13, color: palette.panelText,
-                    fontFamily: f.mono ? 'var(--mp-font-mono)' : 'var(--mp-font-sans)', outline: 'none',
-                  }}
+                  className={`mp-w-full mp-text-body mp-py-2 mp-px-3 mp-rounded mp-flow-input${f.mono ? ' mp-flow-input--mono' : ' mp-sans'}`}
                 />
               )}
             </div>
@@ -608,30 +596,30 @@ function FlowFullscreenEditor({
       const value = getVal(k);
       const label = getLabel(k);
       return (
-        <div key={k} style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: palette.panelTextMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            {k === 'id' && <Hash style={{ width: 12, height: 12 }} />}
-            {k === 'timeout' && <Clock style={{ width: 12, height: 12 }} />}
-            {k === 'retry' && <RefreshCw style={{ width: 12, height: 12 }} />}
-            {k === 'prompt' && <FileText style={{ width: 12, height: 12 }} />}
-            {k === 'model' && <Cpu style={{ width: 12, height: 12 }} />}
-            {k === 'temperature' && <Sliders style={{ width: 12, height: 12 }} />}
-            {k === 'maxTokens' && <Sliders style={{ width: 12, height: 12 }} />}
-            {k === 'inputMap' && <Code2 style={{ width: 12, height: 12 }} />}
-            {k === 'outputMap' && <Code2 style={{ width: 12, height: 12 }} />}
-            {k === 'schema' && <Code2 style={{ width: 12, height: 12 }} />}
-            {k === 'sample' && <Code2 style={{ width: 12, height: 12 }} />}
-            {k === 'source' && <Database style={{ width: 12, height: 12 }} />}
-            {k === 'target' && <Database style={{ width: 12, height: 12 }} />}
-            {k === 'tool' && <Plug style={{ width: 12, height: 12 }} />}
-            {k === 'expression' && <Diamond style={{ width: 12, height: 12 }} />}
-            {k === 'trueLabel' && <GitBranch style={{ width: 12, height: 12 }} />}
-            {k === 'falseLabel' && <GitBranch style={{ width: 12, height: 12 }} />}
-            {k === 'branches' && <GitBranch style={{ width: 12, height: 12 }} />}
-            {k === 'writeMode' && <Database style={{ width: 12, height: 12 }} />}
-            {k === 'format' && <FileText style={{ width: 12, height: 12 }} />}
-            {k === 'threshold' && <Sliders style={{ width: 12, height: 12 }} />}
-            {k === 'maxRetries' && <RefreshCw style={{ width: 12, height: 12 }} />}
+        <div key={k} className="mp-mb-4">
+          <div className="mp-text-xs mp-flex-center mp-mb-1 mp-gap-1 mp-flow-field-label">
+            {k === 'id' && <Hash className="mp-icon-12" />}
+            {k === 'timeout' && <Clock className="mp-icon-12" />}
+            {k === 'retry' && <RefreshCw className="mp-icon-12" />}
+            {k === 'prompt' && <FileText className="mp-icon-12" />}
+            {k === 'model' && <Cpu className="mp-icon-12" />}
+            {k === 'temperature' && <Sliders className="mp-icon-12" />}
+            {k === 'maxTokens' && <Sliders className="mp-icon-12" />}
+            {k === 'inputMap' && <Code2 className="mp-icon-12" />}
+            {k === 'outputMap' && <Code2 className="mp-icon-12" />}
+            {k === 'schema' && <Code2 className="mp-icon-12" />}
+            {k === 'sample' && <Code2 className="mp-icon-12" />}
+            {k === 'source' && <Database className="mp-icon-12" />}
+            {k === 'target' && <Database className="mp-icon-12" />}
+            {k === 'tool' && <Plug className="mp-icon-12" />}
+            {k === 'expression' && <Diamond className="mp-icon-12" />}
+            {k === 'trueLabel' && <GitBranch className="mp-icon-12" />}
+            {k === 'falseLabel' && <GitBranch className="mp-icon-12" />}
+            {k === 'branches' && <GitBranch className="mp-icon-12" />}
+            {k === 'writeMode' && <Database className="mp-icon-12" />}
+            {k === 'format' && <FileText className="mp-icon-12" />}
+            {k === 'threshold' && <Sliders className="mp-icon-12" />}
+            {k === 'maxRetries' && <RefreshCw className="mp-icon-12" />}
             <span>{label}</span>
           </div>
           {(k === 'prompt' || k === 'schema' || k === 'sample') ? (
@@ -639,26 +627,13 @@ function FlowFullscreenEditor({
               value={value}
               onChange={(e) => updateField(k, e.target.value)}
               rows={5}
-              style={{
-                width: '100%', boxSizing: 'border-box', margin: 0, padding: '10px 12px',
-                background: palette.panelMuted,
-                border: `1px solid ${palette.modalBorder}`,
-                borderRadius: 6, resize: 'vertical',
-                fontFamily: 'var(--mp-font-mono)', fontSize: 12, color: palette.panelText,
-                whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.6, outline: 'none',
-              }}
+              className="mp-w-full mp-m-0 mp-text-sm mp-py-2 mp-px-3 mp-mono mp-lh-16 mp-rounded mp-flow-textarea"
             />
           ) : (
             <input
               value={value}
               onChange={(e) => updateField(k, e.target.value)}
-              style={{
-                width: '100%', boxSizing: 'border-box', padding: '8px 12px',
-                background: palette.panelMuted,
-                border: `1px solid ${palette.modalBorder}`,
-                borderRadius: 6, fontSize: 13, color: palette.panelText,
-                fontFamily: 'inherit', outline: 'none',
-              }}
+              className="mp-w-full mp-text-body mp-py-2 mp-px-3 mp-rounded mp-flow-input mp-flow-input--inherit"
             />
           )}
         </div>
@@ -687,59 +662,34 @@ function FlowFullscreenEditor({
   return (
     <div
       onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: palette.modalBg, backdropFilter: 'blur(4px)',
-        display: 'flex', alignItems: 'stretch', justifyContent: 'stretch',
-        animation: 'fadeIn .2s ease-out',
-      }}
+      className="mp-flex mp-flow-overlay"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          flex: 1, display: 'flex', flexDirection: 'column',
-          background: palette.modalPanel,
-          border: `1px solid ${palette.modalBorder}`,
-          margin: 16, borderRadius: 'var(--semi-border-radius-medium)', overflow: 'hidden',
-        }}
+        className="mp-hidden mp-rounded mp-flex-col mp-flex-1 mp-m-4 mp-flow-shell"
       >
         {/* 顶部工具栏 */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px',
-          background: palette.panelHeader, borderBottom: `1px solid ${palette.modalBorder}`,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: palette.panelText, fontSize: 14, fontWeight: 600 }}>
-            <Workflow style={{ width: 16, height: 16, color: palette.lineSelected }} />
+        <div className="mp-gap-3 mp-flex-center mp-py-3 mp-px-5 mp-flow-toolbar">
+          <div className="mp-fw-600 mp-gap-2 mp-text-md mp-flex-center mp-flow-toolbar-title">
+            <Workflow className="mp-icon-16 mp-flow-accent-text" />
             流程编排 · 全屏编辑
           </div>
           {/* 布局切换 segmented control */}
-          <div style={{ display: 'flex', background: palette.panelMuted, borderRadius: 6, padding: 2, gap: 2 }}>
+          <div className="mp-flex mp-gap-1 mp-p-1 mp-rounded mp-flow-segmented">
             <button
               onClick={() => setLayoutMode('fixed')}
-              style={{
-                padding: '4px 10px', fontSize: 11, fontWeight: 500,
-                background: layoutMode === 'fixed' ? palette.lineSelected : 'transparent',
-                color: layoutMode === 'fixed' ? '#ffffff' : palette.panelTextMuted,
-                border: 'none', borderRadius: 4, cursor: 'pointer',
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-              }}
+              className={`mp-inline-flex mp-items-center mp-fw-500 mp-clickable mp-gap-1 mp-text-xs mp-py-1 mp-px-2 mp-border-none mp-rounded-sm mp-flow-seg-btn${layoutMode === 'fixed' ? ' mp-flow-seg-btn--active' : ''}`}
               title="固定布局：节点位置由 BPMN 引擎自动布局（BPMN 风格，适合审批/业务流程）"
-            ><Grid3x3 style={{ width: 12, height: 12 }} />固定布局</button>
+            ><Grid3x3 className="mp-icon-12" />固定布局</button>
             <button
               onClick={() => setLayoutMode('free')}
-              style={{
-                padding: '4px 10px', fontSize: 11, fontWeight: 500,
-                background: layoutMode === 'free' ? palette.lineSelected : 'transparent',
-                color: layoutMode === 'free' ? '#ffffff' : palette.panelTextMuted,
-                border: 'none', borderRadius: 4, cursor: 'pointer',
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-              }}
+              className={`mp-inline-flex mp-items-center mp-fw-500 mp-clickable mp-gap-1 mp-text-xs mp-py-1 mp-px-2 mp-border-none mp-rounded-sm mp-flow-seg-btn${layoutMode === 'free' ? ' mp-flow-seg-btn--active' : ''}`}
               title="自由布局：节点可任意拖动（适合 AI 协同流程）"
-            ><MousePointerSquareDashed style={{ width: 12, height: 12 }} />自由布局</button>
+            ><MousePointerSquareDashed className="mp-icon-12" />自由布局</button>
           </div>
-          <div style={{ width: 1, height: 20, background: palette.modalBorder }} />
+          <div className="mp-flow-divider-v" />
           <select
-            style={{ background: palette.panelMuted, border: `1px solid ${palette.modalBorder}`, borderRadius: 6, color: palette.panelText, fontSize: 13, padding: '6px 12px', outline: 'none', fontFamily: 'var(--mp-font-sans)', cursor: 'pointer' }}
+            className="mp-text-body mp-clickable mp-py-1 mp-px-3 mp-sans mp-rounded mp-flow-select"
             defaultValue="客户数据清洗 Action"
           >
             <option>客户数据清洗 Action</option>
@@ -747,30 +697,30 @@ function FlowFullscreenEditor({
           </select>
           {/* 撤销/重做 官方组件 —— 必须在 Provider 内 */}
           <div ref={(el) => setFlowgramSlot('undoSlot', el)}></div>
-          <div style={{ flex: 1 }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12, color: palette.panelTextMuted }}>
+          <div className="mp-flex-1" />
+          <div className="mp-gap-4 mp-text-sm mp-flex-center mp-flow-text-muted">
             <div ref={(el) => setFlowgramSlot('counterSlot', el)}></div>
           </div>
-          <div style={{ width: 1, height: 20, background: palette.modalBorder }} />
-          <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', background: palette.panelMuted, border: `1px solid ${palette.modalBorder}`, color: palette.panelText, borderRadius: 6, cursor: 'pointer', fontSize: 12 }}><Play style={{ width: 14, height: 14 }} />运行调试</button>
-          <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', background: palette.panelMuted, border: `1px solid ${palette.modalBorder}`, color: palette.panelText, borderRadius: 6, cursor: 'pointer', fontSize: 12 }}><Download style={{ width: 14, height: 14 }} />导出</button>
+          <div className="mp-flow-divider-v" />
+          <button className="mp-inline-flex mp-items-center mp-text-sm mp-clickable mp-gap-1 mp-rounded mp-flow-btn"><Play className="mp-icon-14" />运行调试</button>
+          <button className="mp-inline-flex mp-items-center mp-text-sm mp-clickable mp-gap-1 mp-rounded mp-flow-btn"><Download className="mp-icon-14" />导出</button>
           <button
             onClick={() => {
               const flow = (docRef.current as { toJSON?: () => WorkflowJSON } | null)?.toJSON?.() || initialData;
               void onSave(flow, nodeConfig);
             }}
             disabled={saving}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 600, boxShadow: '0 1px 2px rgba(0,0,0,0.2)', opacity: saving ? 0.6 : 1 }}
-          ><Save style={{ width: 14, height: 14, color: '#ffffff' }} />{saving ? '保存中…' : '保存'}</button>
+            className="mp-inline-flex mp-items-center mp-fw-600 mp-text-sm mp-gap-1 mp-border-none mp-rounded mp-flow-btn-cta"
+          ><Save className="mp-icon-14 mp-flow-on-accent" />{saving ? '保存中…' : '保存'}</button>
           <button
             onClick={onClose}
             title="退出全屏"
-            style={{ width: 32, height: 32, border: `1px solid ${palette.modalBorder}`, background: palette.panelMuted, color: palette.panelText, borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          ><Minimize2 style={{ width: 14, height: 14 }} /></button>
+            className="mp-flex-center mp-justify-center mp-clickable mp-rounded mp-flow-icon-btn"
+          ><Minimize2 className="mp-icon-14" /></button>
         </div>
 
         {/* 主体：左侧节点库 + 中间大画布 + 右侧节点属性面板 */}
-        <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+        <div className="mp-flex mp-flex-1 mp-min-h-0" >
           {/* 画布（左侧节点库作为 Provider 的 leftSlot 传入）—— 根据 layoutMode 切换 fixed / free */}
           {layoutMode === 'fixed' ? (
             <FixedLayoutEditor
@@ -794,75 +744,64 @@ function FlowFullscreenEditor({
 
           {/* 节点属性面板（右侧）—— 默认隐藏，点击节点才显示 */}
           {activeNodeId && (
-          <div style={{
-            width: 380, flexShrink: 0, background: palette.modalPanel,
-            borderLeft: `1px solid ${palette.modalBorder}`,
-            display: 'flex', flexDirection: 'column', zIndex: 30,
-          }}>
+          <div className="mp-shrink-0 mp-flex-col mp-flow-inspector">
             {/* 头部：节点标识 */}
-            <div style={{ padding: '16px 20px', borderBottom: `1px solid ${palette.modalBorder}`, background: palette.panelHeader }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: palette.panelText, fontSize: 15, fontWeight: 600 }}>
-                  <Settings style={{ width: 16, height: 16, color: palette.lineSelected }} />
+            <div className="mp-py-4 mp-px-5 mp-flow-panel-head">
+              <div className="mp-justify-between mp-mb-2 mp-flex-center">
+                <div className="mp-fw-600 mp-gap-2 mp-flex-center mp-text-md mp-flow-panel-title">
+                  <Settings className="mp-icon-16 mp-flow-accent-text" />
                   节点配置
                 </div>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 4, background: palette.panelMuted, color: palette.panelText, fontSize: 11, fontWeight: 500 }}>
-                  <TypeIcon style={{ width: 12, height: 12 }} />
+                <span className="mp-inline-flex mp-items-center mp-fw-500 mp-gap-1 mp-text-xs mp-py-1 mp-px-2 mp-rounded-sm mp-flow-badge">
+                  <TypeIcon className="mp-icon-12" />
                   {meta.category}
                 </span>
                 <button
                   onClick={() => setActiveNodeId(null)}
                   title="关闭面板"
-                  style={{ width: 24, height: 24, border: 'none', background: 'transparent', color: palette.panelTextMuted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4 }}
+                  className="mp-flex-center mp-justify-center mp-clickable mp-icon-20 mp-border-none mp-rounded-sm mp-flow-icon-btn-ghost"
                   onMouseEnter={(e) => { e.currentTarget.style.background = palette.panelMuted; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                ><X style={{ width: 14, height: 14 }} /></button>
+                ><X className="mp-icon-14" /></button>
               </div>
               {/* v1.5 R1.6：title/desc 走 liveData（FlowGram document），新拖入节点也能显示 */}
               <input
                 value={String(activeData.title || '')}
                 placeholder="节点标题"
                 onChange={(e) => updateField('title', e.target.value)}
-                style={{ width: '100%', padding: '4px 8px', boxSizing: 'border-box', background: palette.panelMuted, color: palette.panelText, border: 'none', borderRadius: 4, fontSize: 13, fontWeight: 500, outline: 'none', marginTop: 4, fontFamily: 'inherit' }}
+                className="mp-w-full mp-fw-500 mp-mt-1 mp-text-body mp-py-1 mp-px-2 mp-border-none mp-rounded-sm mp-flow-input-plain"
               />
               <input
                 value={String(activeData.desc || '')}
                 placeholder="节点描述"
                 onChange={(e) => updateField('desc', e.target.value)}
-                style={{ width: '100%', padding: '4px 8px', boxSizing: 'border-box', background: palette.panelMuted, color: palette.panelTextMuted, border: 'none', borderRadius: 4, fontSize: 12, outline: 'none', marginTop: 4, fontFamily: 'inherit' }}
+                className="mp-w-full mp-mt-1 mp-text-sm mp-py-1 mp-px-2 mp-border-none mp-rounded-sm mp-flow-input-plain mp-flow-input-plain--muted"
               />
             </div>
 
             {/* 分组 Section tab */}
-            <div style={{ display: 'flex', gap: 4, padding: '10px 16px', borderBottom: `1px solid ${palette.modalBorder}`, overflowX: 'auto' }}>
+            <div className="mp-flex mp-gap-1 mp-py-2 mp-px-4 mp-flow-sectionbar">
               {meta.sections.map((s) => {
                 const active = activeSection === s;
                 return (
                   <button
                     key={s}
                     onClick={() => setActiveSection(s)}
-                    style={{
-                      padding: '6px 12px', fontSize: 12,
-                      color: active ? palette.panelText : palette.panelTextMuted,
-                      background: active ? palette.panelMuted : 'transparent',
-                      border: `1px solid ${active ? palette.modalBorder : 'transparent'}`,
-                      borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap',
-                      fontWeight: active ? 600 : 500,
-                    }}
+                    className={`mp-clickable mp-nowrap mp-text-sm mp-py-1 mp-px-3 mp-rounded mp-flow-sectab${active ? ' mp-flow-sectab--active' : ''}`}
                   >{s}</button>
                 );
               })}
             </div>
 
             {/* 字段内容 */}
-            <div style={{ flex: 1, padding: '16px 20px', overflow: 'auto' }}>
+            <div className="mp-flex-1 mp-overflow-auto mp-py-4 mp-px-5" >
               {renderSectionFields(activeSection)}
             </div>
 
             {/* 底部操作 */}
-            <div style={{ display: 'flex', gap: 8, padding: '12px 20px', borderTop: `1px solid ${palette.modalBorder}`, background: palette.panelHeader }}>
-              <button onClick={copyActiveNode} style={{ flex: 1, height: 32, padding: '0 12px', background: palette.panelMuted, border: `1px solid ${palette.modalBorder}`, color: palette.panelText, borderRadius: 6, cursor: 'pointer', fontSize: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Copy style={{ width: 14, height: 14 }} />复制节点</button>
-              <button onClick={deleteActiveNode} style={{ flex: 1, height: 32, padding: '0 12px', background: palette.panelMuted, border: `1px solid ${palette.modalBorder}`, color: palette.panelText, borderRadius: 6, cursor: 'pointer', fontSize: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Trash2 style={{ width: 14, height: 14 }} />删除节点</button>
+            <div className="mp-flex mp-gap-2 mp-py-3 mp-px-5 mp-flow-panel-foot">
+              <button onClick={copyActiveNode} className="mp-inline-flex mp-items-center mp-flex-1 mp-text-sm mp-justify-center mp-clickable mp-gap-1 mp-rounded mp-flow-btn"><Copy className="mp-icon-14" />复制节点</button>
+              <button onClick={deleteActiveNode} className="mp-inline-flex mp-items-center mp-flex-1 mp-text-sm mp-justify-center mp-clickable mp-gap-1 mp-rounded mp-flow-btn"><Trash2 className="mp-icon-14" />删除节点</button>
             </div>
           </div>
           )}
@@ -910,20 +849,7 @@ function MyNodePanelRenderer(props: NodePanelRenderProps & { palette: FlowPalett
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      style={{
-        position: 'absolute',
-        background: palette.modalPanel,
-        border: `1px solid ${palette.modalBorder}`,
-        borderRadius: 8,
-        padding: 6,
-        boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-        zIndex: 100,
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, minmax(120px, 1fr))',
-        gap: 4,
-        minWidth: 380,
-        pointerEvents: 'auto',
-      }}
+      className="mp-grid mp-absolute mp-gap-1 mp-p-1 mp-rounded mp-flow-nodepanel"
     >
       {NODE_LIBRARY.map((n) => {
         const Icon = n.icon;
@@ -945,36 +871,20 @@ function MyNodePanelRenderer(props: NodePanelRenderProps & { palette: FlowPalett
               void node; // 抑制未用警告；document.addNode 是真实落地
               onClose();
             }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '8px 10px', borderRadius: 6,
-              background: palette.panelMuted,
-              border: `1px solid ${palette.modalBorder}`,
-              cursor: 'pointer', color: palette.panelText, fontSize: 12,
-            }}
+            className="mp-clickable mp-gap-2 mp-text-sm mp-flex-center mp-py-2 mp-px-2 mp-rounded mp-flow-nodepanel-item"
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = palette.lineSelected; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = palette.modalBorder; }}
           >
-            <div style={{
-              width: 22, height: 22, borderRadius: 5,
-              background: palette.typeColor(n.type.replace('flow-', '')) + '20',
-              color: palette.typeColor(n.type.replace('flow-', '')),
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}>
-              <Icon style={{ width: 12, height: 12 }} />
+            <div className={`mp-justify-center mp-shrink-0 mp-flex-center mp-icon-20 mp-rounded mp-flow-type-tile mp-flow-type-tile--${n.type.replace('flow-', '')}`}>
+              <Icon className="mp-icon-12" />
             </div>
-            <span style={{ fontWeight: 500 }}>{n.title}</span>
+            <span className="mp-fw-500">{n.title}</span>
           </div>
         );
       })}
       <button
         onClick={onClose}
-        style={{
-          gridColumn: '1 / -1',
-          padding: '6px',
-          background: 'transparent', color: palette.panelTextMuted,
-          border: 'none', cursor: 'pointer', fontSize: 11,
-        }}
+        className="mp-clickable mp-text-xs mp-border-none mp-py-1 mp-px-1 mp-flow-nodepanel-cancel"
       >取消 (Esc)</button>
     </div>
   );
@@ -989,14 +899,7 @@ function makeBtn(palette: FlowPalette, title: string, icon: React.ReactNode, onC
       title={title}
       onClick={onClick}
       disabled={disabled}
-      style={{
-        width: 32, height: 32,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: palette.panelMuted,
-        border: `1px solid ${palette.modalBorder}`,
-        color: disabled ? palette.panelTextMuted : palette.panelText,
-        borderRadius: 6, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1,
-      }}
+      className="mp-justify-center mp-flex-center mp-rounded mp-flow-icon-btn"
     >{icon}</button>
   );
 }
@@ -1039,20 +942,16 @@ function ZoomToolsInner() {
   if (!palette || !zoomSlot) return null;
   return ReactDOM_createPortal(
     <div
-      style={{
-        display: 'flex', gap: 4, alignItems: 'center',
-        padding: 4, background: palette.modalPanel, border: `1px solid ${palette.modalBorder}`,
-        borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-      }}
+      className="mp-gap-1 mp-p-1 mp-flex-center mp-rounded mp-flow-float"
     >
-      {makeBtn(palette, '缩小 (Cmd+-)', <ZoomOut style={{ width: 14, height: 14 }} />, handleZoom(() => tools.zoomout()))}
-      <div style={{ minWidth: 36, textAlign: 'center', fontSize: 11, color: palette.panelTextMuted, fontFamily: 'var(--mp-font-mono)' }}>
+      {makeBtn(palette, '缩小 (Cmd+-)', <ZoomOut className="mp-icon-14" />, handleZoom(() => tools.zoomout()))}
+      <div className="mp-text-center mp-text-xs mp-mono mp-flow-zoom-label">
         {Math.round(zoom * 100)}%
       </div>
-      {makeBtn(palette, '放大 (Cmd+=)', <ZoomIn style={{ width: 14, height: 14 }} />, handleZoom(() => tools.zoomin()))}
-      <div style={{ width: 1, height: 20, background: palette.modalBorder }} />
-      {makeBtn(palette, '适应画布', <Maximize2 style={{ width: 14, height: 14 }} />, handleZoom(() => tools.fitView()))}
-      {makeBtn(palette, '自动布局', <Grid3x3 style={{ width: 14, height: 14 }} />, handleZoom(() => tools.autoLayout()))}
+      {makeBtn(palette, '放大 (Cmd+=)', <ZoomIn className="mp-icon-14" />, handleZoom(() => tools.zoomin()))}
+      <div className="mp-flow-divider-v" />
+      {makeBtn(palette, '适应画布', <Maximize2 className="mp-icon-14" />, handleZoom(() => tools.fitView()))}
+      {makeBtn(palette, '自动布局', <Grid3x3 className="mp-icon-14" />, handleZoom(() => tools.autoLayout()))}
     </div>,
     zoomSlot
   );
@@ -1105,47 +1004,23 @@ function FixedBaseNode() {
 
   return (
     <div
-      className="fixed-base-node"
-      style={{
-        width: nodeWidth, minHeight: 80,
-        background: '#0a0a0a',
-        border: `1px solid ${isSelected ? tColor : 'rgba(255,255,255,0.12)'}`,
-        borderRadius: 8,
-        padding: '10px 12px',
-        cursor: 'grab',
-        color: '#fafafa',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        gap: 5,
-        fontFamily: 'var(--mp-font-sans)',
-        boxShadow: isSelected
+      className="fixed-base-node mp-justify-center mp-flex-col mp-gap-1 mp-py-2 mp-px-3 mp-sans mp-rounded"
+      style={{ width: nodeWidth, minHeight: 80, background: '#0a0a0a', border: `1px solid ${isSelected ? tColor : 'rgba(255,255,255,0.12)'}`, cursor: 'grab', color: '#fafafa', boxShadow: isSelected
           ? `0 0 0 2px ${tColor}50, 0 0 0 1px ${tColor}, 0 0 28px ${tColor}50, 0 6px 16px rgba(0,0,0,0.45)`
           : isActivated
           ? `0 0 0 1px ${tColor}70, 0 4px 12px rgba(0,0,0,0.3)`
-          : '0 1px 2px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.04)',
-        transition: 'box-shadow .18s, border-color .18s, transform .12s',
-        transform: isSelected ? 'translateY(-1px)' : 'translateY(0)',
-        opacity: nodeRender.dragging ? 0.35 : 1,
-      }}
+          : '0 1px 2px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.04)', transition: 'box-shadow .18s, border-color .18s, transform .12s', transform: isSelected ? 'translateY(-1px)' : 'translateY(0)', opacity: nodeRender.dragging ? 0.35 : 1 }}
       onMouseDown={(e) => {
         onSelect?.(n.id);
         nodeRender.startDrag(e);
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className="mp-gap-2 mp-flex-center">
         {/* 节点类型 pill —— 官方深色风格：半透明背景 + 类型色文字 */}
-        <div style={{
-          width: 26, height: 22, borderRadius: 5,
-          background: labelInfo.bg,
-          color: labelInfo.text,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          fontWeight: 700, fontSize: 11, letterSpacing: '0.02em',
-        }}>{labelInfo.label}</div>
-        <div style={{
-          fontSize: 13, fontWeight: 600, color: '#fafafa', flex: 1, minWidth: 0,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>{display.title || n.id}</div>
+        <div className="mp-justify-center mp-shrink-0 mp-text-xs mp-flex-center mp-rounded" style={{ width: 26, height: 22, background: labelInfo.bg, color: labelInfo.text, fontWeight: 700, letterSpacing: '0.02em' }}>{labelInfo.label}</div>
+        <div className="mp-fw-600 mp-ellipsis mp-flex-1 mp-text-body mp-flow-node-title">{display.title || n.id}</div>
       </div>
-      <div style={{ fontSize: 11, color: 'rgba(250,250,250,0.55)', lineHeight: 1.4 }}>{display.desc || ' '}</div>
+      <div className="mp-text-xs mp-flow-node-sub">{display.desc || ' '}</div>
     </div>
   );
 }
@@ -1175,9 +1050,9 @@ function FixedLayoutEditor({
     <FlowPaletteContext.Provider value={palette}>
       <FixedActiveContext.Provider value={activeId}>
         <SelectionContext.Provider value={handleSelect}>
-          <div style={{ display: 'flex', width: '100%', height: '100%' }}>
+          <div className="mp-w-full mp-h-full mp-flex">
             {leftSlot}
-            <div style={{ flex: 1, minWidth: 0, position: 'relative', background: palette.modalPanel }}>
+            <div className="mp-flex-1 mp-relative mp-flow-canvas-bg">
               {/* 注入 fixed-layout 深色主题 CSS（官方默认白底覆盖为黑底+圆点网格） */}
               <FixedLayoutDarkCSS />
               <FixedLayoutEditorProvider
@@ -1209,10 +1084,10 @@ function FixedLayoutEditor({
                   }, 10);
                 }}
               >
-                <div style={{ display: 'flex', width: '100%', height: '100%' }}>
-                  <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-                    <EditorRenderer style={{ width: '100%', height: '100%' }} />
-                    <div ref={(el) => setFlowgramSlot('zoomSlot', el)} style={{ position: 'absolute', top: 12, left: 0, right: 0, pointerEvents: 'none', display: 'flex', justifyContent: 'center', zIndex: 50 }}></div>
+                <div className="mp-w-full mp-h-full mp-flex">
+                  <div className="mp-flex-1 mp-relative" >
+                    <EditorRenderer className="mp-w-full mp-h-full" />
+                    <div ref={(el) => setFlowgramSlot('zoomSlot', el)} className="mp-flex mp-justify-center mp-absolute mp-pe-none mp-flow-zoom-slot"></div>
                   </div>
                 </div>
                 <FixedToolsWithProvider />
@@ -1342,7 +1217,7 @@ function FullscreenFlowEditor({
             ctx.tools.fitView(false);
           }}
         >
-          <div style={{ display: 'flex', width: '100%', height: '100%' }}>
+          <div className="mp-w-full mp-h-full mp-flex">
             {/* leftSlot 必须在 Provider 内（依赖 useService/usePlayground） */}
             {leftSlot}
             <FreeLayoutDropZone
@@ -1376,7 +1251,7 @@ function FreeLayoutDropZone({
   return (
     <div
       data-flowgram-dropzone
-      style={{ flex: 1, minWidth: 0, position: 'relative' }}
+      className="mp-flex-1 mp-relative" 
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes('application/flowgram-node')) {
           e.preventDefault();
@@ -1440,9 +1315,9 @@ function FreeLayoutDropZone({
         }
       }}
     >
-      <EditorRenderer style={{ width: '100%', height: '100%' }} />
+      <EditorRenderer className="mp-w-full mp-h-full" />
       {/* 缩放/适应/自动布局 —— 画布顶部悬浮 */}
-      <div ref={(el) => setFlowgramSlot('zoomSlot', el)} style={{ position: 'absolute', top: 12, left: 0, right: 0, pointerEvents: 'none', display: 'flex', justifyContent: 'center', zIndex: 50 }}></div>
+      <div ref={(el) => setFlowgramSlot('zoomSlot', el)} className="mp-flex mp-justify-center mp-absolute mp-pe-none mp-flow-zoom-slot"></div>
     </div>
   );
 }
@@ -1472,9 +1347,9 @@ function UndoRedoInner() {
   }, []);
   if (!palette || !undoSlot) return null;
   return ReactDOM_createPortal(
-    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-      {makeBtn(palette, '撤销 (Cmd+Z)', <Undo2 style={{ width: 14, height: 14 }} />, undoRedo.undo, !undoRedo.canUndo)}
-      {makeBtn(palette, '重做 (Cmd+Shift+Z)', <Redo2 style={{ width: 14, height: 14 }} />, undoRedo.redo, !undoRedo.canRedo)}
+    <div className="mp-gap-1 mp-flex-center">
+      {makeBtn(palette, '撤销 (Cmd+Z)', <Undo2 className="mp-icon-14" />, undoRedo.undo, !undoRedo.canUndo)}
+      {makeBtn(palette, '重做 (Cmd+Shift+Z)', <Redo2 className="mp-icon-14" />, undoRedo.redo, !undoRedo.canRedo)}
     </div>,
     undoSlot
   );
@@ -1506,15 +1381,15 @@ function FlowCounterInner() {
   if (!palette || !counterSlot) return null;
   return ReactDOM_createPortal(
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <Boxes style={{ width: 12, height: 12 }} />
+      <div className="mp-gap-1 mp-flex-center">
+        <Boxes className="mp-icon-12" />
         <span>节点</span>
-        <span style={{ fontFamily: 'var(--mp-font-mono)', color: palette.panelText, fontWeight: 600 }}>{nodeCount}</span>
+        <span className="mp-fw-600 mp-mono mp-flow-text">{nodeCount}</span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <Activity style={{ width: 12, height: 12 }} />
+      <div className="mp-gap-1 mp-flex-center">
+        <Activity className="mp-icon-12" />
         <span>连线</span>
-        <span style={{ fontFamily: 'var(--mp-font-mono)', color: palette.panelText, fontWeight: 600 }}>{edgeCount}</span>
+        <span className="mp-fw-600 mp-mono mp-flow-text">{edgeCount}</span>
       </div>
     </>,
     counterSlot
@@ -1536,25 +1411,15 @@ function NodeLibrary({
   addNode: (node: typeof NODE_LIBRARY[number]) => void;
 }) {
   return (
-    <div style={{
-      width: 240, flexShrink: 0, background: palette.modalPanel,
-      borderRight: `1px solid ${palette.modalBorder}`,
-      display: 'flex', flexDirection: 'column',
-      // MP-SAL：节点库是 flow-lines-container 的同级子元素，但 svg absolute
-      // 浮在 zIndex 2000+。flow-lines 在 EditorRoot 下创建了新的 stacking context，
-      // 普通 zIndex 没用。最稳：节点库从 EditorRoot 拖出，自己一个层。
-      // (正方案：改 FreeLayoutEditorProvider 的 root zIndex，但 risk 高)
-      // 临时：position fixed 拉出来，避免被 flow-lines svg 拦截
-      position: 'relative', zIndex: 9999,
-    }}>
-      <div style={{ padding: '14px 16px', borderBottom: `1px solid ${palette.modalBorder}`, background: palette.panelHeader }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: palette.panelText, fontSize: 13, fontWeight: 600 }}>
-          <Boxes style={{ width: 14, height: 14, color: palette.lineSelected }} />
+    <div className="mp-shrink-0 mp-flex-col mp-w-240 mp-flow-nodelib">
+      <div className="mp-py-3 mp-px-4 mp-flow-nodelib-head">
+        <div className="mp-fw-600 mp-text-body mp-flex-center mp-gap-1 mp-flow-text">
+          <Boxes className="mp-icon-14 mp-flow-accent-text" />
           节点库
         </div>
-        <div style={{ fontSize: 11, color: palette.panelTextMuted, marginTop: 4 }}>点击或拖拽节点到画布</div>
+        <div className="mp-mt-1 mp-text-xs mp-flow-text-muted">点击或拖拽节点到画布</div>
       </div>
-      <div style={{ flex: 1, padding: 12, overflow: 'auto' }}>
+      <div className="mp-flex-1 mp-p-3 mp-overflow-auto" >
         {/* scenario 名需与 NODE_LIBRARY 实际数据一致：'业务流' / '审批流' / 'AI'。
             之前的 'AI 协同' 字面量与 scenario: 'AI' 不匹配，导致 AI 分组整段 return null 静默丢失。 */}
         {(['业务流', '审批流', 'AI'] as const).map((scenario) => {
@@ -1562,16 +1427,11 @@ function NodeLibrary({
           const items = NODE_LIBRARY.filter((n) => n.scenario === scenario);
           if (items.length === 0) return null;
           return (
-            <div key={scenario} style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, padding: '0 4px' }}>
-                <div style={{
-                  width: 8, height: 8, borderRadius: '50%',
-                  background: scenario === '业务流' ? '#3b82f6'
-                    : scenario === '审批流' ? '#22c55e'
-                    : '#a78bfa',
-                }} />
-                <div style={{ fontSize: 11, fontWeight: 600, color: palette.panelText, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{scenario}</div>
-                <div style={{ fontSize: 10, color: palette.panelTextMuted }}>({items.length})</div>
+            <div key={scenario} className="mp-mb-5">
+              <div className="mp-mb-2 mp-flex-center mp-gap-1 mp-flow-nodelib-group">
+                <div className={`mp-icon-12 mp-flow-scenario-dot${scenario === '业务流' ? ' mp-flow-scenario-dot--biz' : scenario === '审批流' ? ' mp-flow-scenario-dot--approval' : ' mp-flow-scenario-dot--ai'}`} />
+                <div className="mp-fw-600 mp-text-xs mp-flow-scenario-name">{scenario}</div>
+                <div className="mp-text-xs mp-flow-text-muted">({items.length})</div>
               </div>
               {items.map((n) => {
                 const Icon = n.icon;
@@ -1584,30 +1444,17 @@ function NodeLibrary({
                       e.dataTransfer.effectAllowed = 'copy';
                     }}
                     onClick={() => addNode(n)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '7px 10px', marginBottom: 3, marginLeft: 14,
-                      background: palette.panelMuted,
-                      border: `1px solid ${palette.modalBorder}`,
-                      borderRadius: 6, cursor: 'grab',
-                      userSelect: 'none',
-                      transition: 'border-color .15s, background .15s',
-                    }}
+                    className="mp-mb-1 mp-gap-2 mp-flex-center mp-ml-3 mp-py-2 mp-px-2 mp-rounded mp-flow-nodelib-item"
                     onMouseEnter={(e) => { e.currentTarget.style.borderColor = palette.lineSelected; e.currentTarget.style.background = palette.modalPanel; }}
                     onMouseLeave={(e) => { e.currentTarget.style.borderColor = palette.modalBorder; e.currentTarget.style.background = palette.panelMuted; }}
                     title={`拖拽「${n.title}」到画布`}
                   >
-                    <div style={{
-                      width: 22, height: 22, borderRadius: 5,
-                      background: palette.typeColor(n.type.replace('flow-', '')) + '20',
-                      color: palette.typeColor(n.type.replace('flow-', '')),
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    }}>
-                      <Icon style={{ width: 12, height: 12 }} />
+                    <div className={`mp-justify-center mp-shrink-0 mp-flex-center mp-icon-20 mp-rounded mp-flow-type-tile mp-flow-type-tile--${n.type.replace('flow-', '')}`}>
+                      <Icon className="mp-icon-12" />
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 500, color: palette.panelText }}>{n.title}</div>
-                      <div style={{ fontSize: 10, color: palette.panelTextMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.desc}</div>
+                    <div className="mp-flex-1">
+                      <div className="mp-fw-500 mp-text-sm mp-flow-text">{n.title}</div>
+                      <div className="mp-hidden mp-nowrap mp-text-xs mp-ellipsis-text mp-flow-text-muted">{n.desc}</div>
                     </div>
                   </div>
                 );
@@ -1616,7 +1463,7 @@ function NodeLibrary({
           );
         })}
       </div>
-      <div style={{ padding: '8px 16px', borderTop: `1px solid ${palette.modalBorder}`, fontSize: 10, color: palette.panelTextMuted, background: palette.panelHeader }}>
+      <div className="mp-text-xs mp-py-2 mp-px-4 mp-flow-nodelib-foot">
         提示：点击或拖拽节点到画布
       </div>
     </div>
@@ -1683,9 +1530,9 @@ function FixedUndoRedoInner() {
   }, []);
   if (!palette || !undoSlot) return null;
   return ReactDOM_createPortal(
-    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-      {makeBtn(palette, '撤销 (Cmd+Z)', <Undo2 style={{ width: 14, height: 14 }} />, () => tools.undo(), !tools.canUndo)}
-      {makeBtn(palette, '重做 (Cmd+Shift+Z)', <Redo2 style={{ width: 14, height: 14 }} />, () => tools.redo(), !tools.canRedo)}
+    <div className="mp-gap-1 mp-flex-center">
+      {makeBtn(palette, '撤销 (Cmd+Z)', <Undo2 className="mp-icon-14" />, () => tools.undo(), !tools.canUndo)}
+      {makeBtn(palette, '重做 (Cmd+Shift+Z)', <Redo2 className="mp-icon-14" />, () => tools.redo(), !tools.canRedo)}
     </div>,
     undoSlot
   );
@@ -1743,15 +1590,15 @@ function FixedCounterInner() {
   if (!palette || !counterSlot) return null;
   return ReactDOM_createPortal(
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <Boxes style={{ width: 12, height: 12 }} />
+      <div className="mp-gap-1 mp-flex-center">
+        <Boxes className="mp-icon-12" />
         <span>节点</span>
-        <span style={{ fontFamily: 'var(--mp-font-mono)', color: palette.panelText, fontWeight: 600 }}>{nodeCount}</span>
+        <span className="mp-fw-600 mp-mono mp-flow-text">{nodeCount}</span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <Activity style={{ width: 12, height: 12 }} />
+      <div className="mp-gap-1 mp-flex-center">
+        <Activity className="mp-icon-12" />
         <span>连线</span>
-        <span style={{ fontFamily: 'var(--mp-font-mono)', color: palette.panelText, fontWeight: 600 }}>{edgeCount}</span>
+        <span className="mp-fw-600 mp-mono mp-flow-text">{edgeCount}</span>
       </div>
     </>,
     counterSlot
@@ -1776,20 +1623,16 @@ function FixedZoomToolsInner() {
   if (!palette || !zoomSlot) return null;
   return ReactDOM_createPortal(
     <div
-      style={{
-        display: 'flex', gap: 4, alignItems: 'center',
-        padding: 4, background: palette.modalPanel, border: `1px solid ${palette.modalBorder}`,
-        borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.4)', pointerEvents: 'auto',
-      }}
+      className="mp-gap-1 mp-p-1 mp-flex-center mp-rounded mp-flow-float mp-flow-float--interactive"
     >
-      {makeBtn(palette, '缩小 (Cmd+-)', <ZoomOut style={{ width: 14, height: 14 }} />, handleAction(() => tools.zoomout()))}
-      <div style={{ minWidth: 36, textAlign: 'center', fontSize: 11, color: palette.panelTextMuted, fontFamily: 'var(--mp-font-mono)' }}>
+      {makeBtn(palette, '缩小 (Cmd+-)', <ZoomOut className="mp-icon-14" />, handleAction(() => tools.zoomout()))}
+      <div className="mp-text-center mp-text-xs mp-mono mp-flow-zoom-label">
         {Math.round(tools.zoom * 100)}%
       </div>
-      {makeBtn(palette, '放大 (Cmd+=)', <ZoomIn style={{ width: 14, height: 14 }} />, handleAction(() => tools.zoomin()))}
-      <div style={{ width: 1, height: 20, background: palette.modalBorder }} />
-      {makeBtn(palette, '适应画布', <Maximize2 style={{ width: 14, height: 14 }} />, handleAction(() => tools.fitView()))}
-      {makeBtn(palette, '切换布局', <Grid3x3 style={{ width: 14, height: 14 }} />, handleAction(() => tools.changeLayout()))}
+      {makeBtn(palette, '放大 (Cmd+=)', <ZoomIn className="mp-icon-14" />, handleAction(() => tools.zoomin()))}
+      <div className="mp-flow-divider-v" />
+      {makeBtn(palette, '适应画布', <Maximize2 className="mp-icon-14" />, handleAction(() => tools.fitView()))}
+      {makeBtn(palette, '切换布局', <Grid3x3 className="mp-icon-14" />, handleAction(() => tools.changeLayout()))}
     </div>,
     zoomSlot
   );
@@ -1854,7 +1697,7 @@ function CanvasDropZone({
         // 居中（节点 ~220x80），减半宽高
         onDrop(nodeType, cx - 110, cy - 40);
       }}
-      style={{ flex: 1, minWidth: 0, background: palette.modalPanel, position: 'relative', display: 'flex' }}
+      className="mp-flex mp-flex-1 mp-relative mp-flow-canvas-bg"
     >
       {children}
     </div>
@@ -1904,54 +1747,24 @@ function FullscreenBaseNode({ onSelect }: { onSelect?: (id: string) => void } = 
         nodeRender.startDrag(e);
         e.stopPropagation();
       }}
-      style={{
-        width: '100%', height: '100%',
-        background: palette.nodeBg,
-        border: `2px solid ${isSel ? tColor : palette.nodeBorder}`,
-        borderRadius: 10,
-        padding: 12,
-        cursor: 'grab',
-        transition: 'box-shadow .15s, border-color .15s, transform .15s',
-        boxShadow: isSel
+      className="mp-w-full mp-h-full mp-p-3 mp-sans mp-rounded-lg" style={{ background: palette.nodeBg, border: `2px solid ${isSel ? tColor : palette.nodeBorder}`, cursor: 'grab', transition: 'box-shadow .15s, border-color .15s, transform .15s', boxShadow: isSel
           ? `0 0 0 3px ${tColor}, 0 0 0 6px ${tColor}40, 0 8px 24px ${tColor}80`
           : isHover
             ? `0 4px 16px ${tColor}40, 0 0 0 1px ${tColor}60`
-            : palette.nodeShadow,
-        boxSizing: 'border-box',
-        color: palette.nodeText,
-        fontFamily: 'var(--mp-font-sans)',
-        pointerEvents: 'auto',
-        userSelect: 'none',
-        opacity: 1,
-      }}
+            : palette.nodeShadow, boxSizing: 'border-box', color: palette.nodeText, pointerEvents: 'auto', userSelect: 'none', opacity: 1 }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <div style={{
-          width: 24, height: 24, borderRadius: 6,
-          background: labelInfo.bg, color: labelInfo.text,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0, fontWeight: 700, fontSize: 11,
-        }}>{labelInfo.label}</div>
-        <div style={{
-          fontSize: 12, fontWeight: 600, color: palette.nodeText,
-          flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>{data.title || data.title || '未命名'}</div>
+      <div className="mp-gap-2 mp-flex-center mp-mb-1" >
+        <div className="mp-justify-center mp-shrink-0 mp-text-xs mp-flex-center mp-icon-20 mp-rounded" style={{ background: labelInfo.bg, color: labelInfo.text, fontWeight: 700 }}>{labelInfo.label}</div>
+        <div className="mp-fw-600 mp-ellipsis mp-flex-1 mp-text-sm" style={{ color: palette.nodeText }}>{data.title || data.title || '未命名'}</div>
         {(isHover || isSel) && (
           <button
             onClick={doDelete}
             title="删除节点"
-            style={{
-              border: 'none', background: 'transparent', padding: 2,
-              cursor: 'pointer', color: palette.nodeDesc, opacity: 0.7,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
+            className="mp-justify-center mp-clickable mp-p-1 mp-flex-center mp-border-none mp-opacity-70" style={{ background: 'transparent', color: palette.nodeDesc }}
           >✕</button>
         )}
       </div>
-      <div style={{
-        fontSize: 10, color: palette.nodeDesc, lineHeight: 1.4,
-        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-      }}>{data.desc || ' '}</div>
+      <div className="mp-ellipsis mp-text-xs" style={{ color: palette.nodeDesc, lineHeight: 1.4 }}>{data.desc || ' '}</div>
     </div>
   );
 }
@@ -1994,40 +1807,20 @@ function CustomBaseNode() {
         nodeRender.startDrag(e);
         e.stopPropagation();
       }}
-      style={{
-        width: '100%', height: '100%',
-        background: '#111111',
-        border: `2px solid ${isSel ? c.border : isHover ? c.text : c.border}`,
-        borderRadius: 8,
-        padding: 12,
-        cursor: 'grab',
-        transition: 'box-shadow .15s, transform .15s, border-color .15s',
-        boxShadow: isSel ? `0 0 0 2px ${c.border}, 0 0 16px ${c.bg}` : isHover ? `0 0 0 1px ${c.text}80` : `0 0 0 1px ${c.bg}`,
-        boxSizing: 'border-box',
-        color: '#fafafa',
-        fontFamily: 'var(--mp-font-sans)',
-        pointerEvents: 'auto',
-        userSelect: 'none',
-        opacity: 1,
-      }}
+      className="mp-w-full mp-h-full mp-p-3 mp-sans mp-rounded" style={{ background: '#111111', border: `2px solid ${isSel ? c.border : isHover ? c.text : c.border}`, cursor: 'grab', transition: 'box-shadow .15s, transform .15s, border-color .15s', boxShadow: isSel ? `0 0 0 2px ${c.border}, 0 0 16px ${c.bg}` : isHover ? `0 0 0 1px ${c.text}80` : `0 0 0 1px ${c.bg}`, boxSizing: 'border-box', color: '#fafafa', pointerEvents: 'auto', userSelect: 'none', opacity: 1 }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <div style={{ width: 22, height: 22, borderRadius: 5, background: c.bg, color: c.text, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 600, fontSize: 10 }}>{c.label}</div>
-        <div style={{ fontSize: 12, fontWeight: 600, color: '#fafafa', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{data?.title || '未命名'}</div>
+      <div className="mp-gap-2 mp-flex-center mp-mb-1" >
+        <div className="mp-fw-600 mp-flex-center mp-justify-center mp-shrink-0 mp-text-xs mp-icon-20 mp-rounded" style={{ background: c.bg, color: c.text }}>{c.label}</div>
+        <div className="mp-hidden mp-fw-600 mp-flex-1 mp-text-sm mp-nowrap mp-ellipsis-text mp-flow-node-title">{data?.title || '未命名'}</div>
         {(isHover || isSel) && (
           <button
             onClick={doDelete}
             title="删除节点"
-            style={{
-              border: 'none', background: 'transparent', padding: 2,
-              cursor: 'pointer', color: '#a1a1aa', opacity: 0.7,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 14, lineHeight: 1,
-            }}
+            className="mp-justify-center mp-clickable mp-p-1 mp-text-md mp-flex-center mp-border-none mp-opacity-70 mp-flow-node-close-alt"
           >✕</button>
         )}
       </div>
-      <div style={{ fontSize: 10, color: '#a1a1aa', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{data?.desc || ' '}</div>
+      <div className="mp-hidden mp-nowrap mp-text-xs mp-ellipsis-text mp-flow-node-sub-alt">{data?.desc || ' '}</div>
     </div>
   );
 }
@@ -2129,11 +1922,6 @@ export default function OntologyActionPage() {
     { type: 'flow-output',    meta: { size: { width: 220, height: 80 }, defaultPorts: [{ type: 'input' }] } },
   ];
 
-  const codeStyle: React.CSSProperties = {
-    fontFamily: 'var(--mp-font-mono)', fontSize: 12, color: 'var(--semi-color-text-0)',
-    background: 'var(--semi-color-fill-0)', padding: '2px 6px', borderRadius: 3,
-  };
-
   // 详情区子 tab（包含流程编排作为只读预览 tab）
   type DetailTab = 'basic' | 'io' | 'relations' | 'flow';
   const [detailTab, setDetailTab] = useState<DetailTab>('basic');
@@ -2141,44 +1929,44 @@ export default function OntologyActionPage() {
   const [flowFullscreen, setFlowFullscreen] = useState(false);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
+    <div className="mp-flex mp-flex-1 mp-min-h-0 mp-flex-col" >
+      <div className="mp-flex-1 mp-overflow-y-auto mp-min-h-0 mp-pb-6" >
 
       {/* Toolbar（Shell 已统一全局 AI 助手；此处只保留 tab-specific 操作） */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: 24, marginBottom: 16 }}>
-          <Button theme="light" type="secondary" ><TestTube style={{ width: 16, height: 16 }} />测试运行</Button>
-          <Button theme="solid" type="primary" onClick={() => setDrawerOpen(true)} style={{ marginLeft: 8 }}><Plus style={{ width: 16, height: 16 }} />新建 Action</Button>
+      <div className="mp-justify-end mp-mt-6 mp-mb-4 mp-flex-center">
+          <Button theme="light" type="secondary" ><TestTube className="mp-icon-16" />测试运行</Button>
+          <Button theme="solid" type="primary" onClick={() => setDrawerOpen(true)} className="mp-ml-2"><Plus className="mp-icon-16" />新建 Action</Button>
         </div>
 
       {/* Stats（真实 kernel 数据） */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
-        <div style={{ flex: 1, background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', padding: '16px 20px' }}>
-          <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{loadingKernel ? '…' : stats.total}</div>
-          <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginTop: 4 }}>Action 总数</div>
+      <div className="mp-flex mp-mb-6 mp-gap-4">
+        <div className="mp-flex-1 mp-border mp-rounded mp-py-4 mp-px-5 mp-bg-1" >
+          <div className="mp-text-xl mp-flow-stat-value">{loadingKernel ? '…' : stats.total}</div>
+          <div className="mp-mt-1 mp-text-sm mp-text-2">Action 总数</div>
         </div>
-        <div style={{ flex: 1, background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', padding: '16px 20px' }}>
-          <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{loadingKernel ? '…' : stats.targets}</div>
-          <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginTop: 4 }}>作用对象数</div>
+        <div className="mp-flex-1 mp-border mp-rounded mp-py-4 mp-px-5 mp-bg-1" >
+          <div className="mp-text-xl mp-flow-stat-value">{loadingKernel ? '…' : stats.targets}</div>
+          <div className="mp-mt-1 mp-text-sm mp-text-2">作用对象数</div>
         </div>
-        <div style={{ flex: 1, background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', padding: '16px 20px' }}>
-          <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{loadingKernel ? '…' : stats.params}</div>
-          <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginTop: 4 }}>输入参数总数</div>
+        <div className="mp-flex-1 mp-border mp-rounded mp-py-4 mp-px-5 mp-bg-1" >
+          <div className="mp-text-xl mp-flow-stat-value">{loadingKernel ? '…' : stats.params}</div>
+          <div className="mp-mt-1 mp-text-sm mp-text-2">输入参数总数</div>
         </div>
-        <div style={{ flex: 1, background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', padding: '16px 20px' }}>
-          <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{loadingKernel ? '…' : stats.functions}</div>
-          <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginTop: 4 }}>引用 Function 数</div>
+        <div className="mp-flex-1 mp-border mp-rounded mp-py-4 mp-px-5 mp-bg-1" >
+          <div className="mp-text-xl mp-flow-stat-value">{loadingKernel ? '…' : stats.functions}</div>
+          <div className="mp-mt-1 mp-text-sm mp-text-2">引用 Function 数</div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 16, alignItems: 'stretch' }}>
+      <div className="mp-flex mp-gap-4 mp-flow-items-stretch">
         {/* Left: Action List */}
-        <div style={{ width: 240, flexShrink: 0 }}>
-          <Card style={{ height: 'fit-content' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Actions</h3>
+        <div className="mp-shrink-0 mp-w-240" >
+          <Card className="mp-h-fit">
+            <h3 className="mp-fw-600 mp-mb-4 mp-text-md">Actions</h3>
             {loadingKernel ? (
-              <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--semi-color-text-2)' }}>加载中…</div>
+              <div className="mp-text-sm mp-text-2 mp-py-2 mp-px-3" >加载中…</div>
             ) : actionTypes.length === 0 ? (
-              <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--semi-color-text-2)' }}>暂无 ActionType</div>
+              <div className="mp-text-sm mp-text-2 mp-py-2 mp-px-3" >暂无 ActionType</div>
             ) : actionTypes.map((a) => {
               const isSel = a.rid === selectedActionRid;
               return (
@@ -2186,22 +1974,16 @@ export default function OntologyActionPage() {
                   key={a.rid}
                   onClick={() => setSelectedActionRid(a.rid)}
                   title={a.rid}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
-                    borderRadius: 4, cursor: 'pointer', fontSize: 13,
-                    color: isSel ? 'var(--semi-color-text-0)' : 'var(--semi-color-text-2)',
-                    background: isSel ? 'var(--semi-color-fill-0)' : 'transparent',
-                    marginBottom: 2, transition: 'background .15s',
-                  }}
+                  className={`mp-clickable mp-mb-1 mp-gap-2 mp-text-body mp-flex-center mp-py-2 mp-px-3 mp-rounded-sm mp-flow-list-item${isSel ? ' mp-flow-list-item--active' : ''}`}
                 >
-                  <Zap style={{ width: 16, height: 16, flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{actionDisplayName(a)}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                      <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'var(--semi-color-bg-0)', color: 'var(--semi-color-text-2)' }}>
+                  <Zap className="mp-icon-16 mp-shrink-0"  />
+                  <div className="mp-flex-1">
+                    <div className="mp-hidden mp-text-body mp-nowrap mp-ellipsis-text" >{actionDisplayName(a)}</div>
+                    <div className="mp-flex-center mp-mt-1 mp-gap-1" >
+                      <span className="mp-text-2 mp-text-xs mp-py-1 mp-px-1 mp-rounded-sm mp-flow-chip">
                         {a.on.length > 0 ? otDisplayName(a.on[0]) : '未绑定对象'}
                       </span>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: 'var(--semi-color-success)' }} />
+                      <span className="mp-shrink-0 mp-icon-12 mp-flow-dot-success" />
                     </div>
                   </div>
                 </div>
@@ -2211,20 +1993,20 @@ export default function OntologyActionPage() {
         </div>
 
         {/* Right: Detail */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          <Card style={{marginBottom: 20, overflow: 'hidden'}} bodyStyle={{padding: 0}}>
+        <div className="mp-flex mp-flex-1 mp-flex-col" >
+          <Card className="mp-hidden mp-mb-5" bodyStyle={{padding: 0}}>
             {/* Header: title + actions */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--semi-color-border)' }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600 }}>{selectedAction ? actionDisplayName(selectedAction) : '未选择 Action'}</h3>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <Button theme="light" type="secondary" style={{ height: 32, padding: '0 12px', fontSize: 12 }}><Copy style={{ width: 14, height: 14 }} />复制</Button>
-                <Button theme="light" type="secondary" style={{ height: 32, padding: '0 12px', fontSize: 12 }}><Trash2 style={{ width: 14, height: 14 }} />删除</Button>
-                <Button theme="solid" type="primary" style={{ height: 32, padding: '0 12px', fontSize: 12 }}><Save style={{ width: 14, height: 14 }} />保存</Button>
+            <div className="mp-justify-between mp-flex-center mp-border mp-py-4 mp-px-5" >
+              <h3 className="mp-fw-600 mp-text-lg">{selectedAction ? actionDisplayName(selectedAction) : '未选择 Action'}</h3>
+              <div className="mp-flex mp-gap-2">
+                <Button theme="light" type="secondary" className="mp-text-sm mp-flow-btn-sm"><Copy className="mp-icon-14" />复制</Button>
+                <Button theme="light" type="secondary" className="mp-text-sm mp-flow-btn-sm"><Trash2 className="mp-icon-14" />删除</Button>
+                <Button theme="solid" type="primary" className="mp-text-sm mp-flow-btn-sm"><Save className="mp-icon-14" />保存</Button>
               </div>
             </div>
 
             {/* 子 Tab */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 16px', borderBottom: '1px solid var(--semi-color-border)' }}>
+            <div className="mp-gap-1 mp-flex-center mp-border mp-px-4">
               {([
                 { key: 'basic', label: '基本信息' },
                 { key: 'io', label: '输入输出' },
@@ -2237,21 +2019,9 @@ export default function OntologyActionPage() {
                   <button
                     key={t.key}
                     onClick={() => setDetailTab(t.key as DetailTab)}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                      padding: '12px 14px',
-                      fontSize: 13,
-                      color: active ? 'var(--semi-color-text-0)' : 'var(--semi-color-text-2)',
-                      background: 'transparent',
-                      border: 'none',
-                      borderBottom: `2px solid ${active ? 'var(--semi-color-primary)' : 'transparent'}`,
-                      marginBottom: -1,
-                      cursor: 'pointer',
-                      fontWeight: active ? 600 : 500,
-                      transition: 'color .15s, border-color .15s',
-                    }}
+                    className={`mp-inline-flex mp-items-center mp-clickable mp-gap-1 mp-text-body mp-py-3 mp-px-3 mp-border-none mp-flow-tab${active ? ' mp-flow-tab--active' : ''}`}
                   >
-                    {Icon ? <Icon style={{ width: 14, height: 14 }} /> : null}
+                    {Icon ? <Icon className="mp-icon-14" /> : null}
                     {t.label}
                   </button>
                 );
@@ -2259,34 +2029,34 @@ export default function OntologyActionPage() {
             </div>
 
             {/* 子 Tab 内容 */}
-            <div style={{ padding: 20 }}>
+            <div className="mp-p-5">
               {detailTab === 'basic' && (
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: 12 }}>基本信息</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '12px 16px', alignItems: 'start' }}>
-                    <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', paddingTop: 3 }}>名称</div>
-                    <div style={{ fontSize: 13, color: 'var(--semi-color-text-0)' }}>{selectedAction ? actionDisplayName(selectedAction) : '—'}</div>
-                    <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', paddingTop: 3 }}>标识符</div>
-                    <div style={{ fontSize: 13, color: 'var(--semi-color-text-0)' }}><code style={codeStyle}>{selectedAction?.rid ?? '—'}</code></div>
-                    <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', paddingTop: 3 }}>Function 引用</div>
-                    <div style={{ fontSize: 13, color: 'var(--semi-color-text-0)' }}><code style={codeStyle}>{selectedAction?.function_ref ?? '—'}</code></div>
-                    <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', paddingTop: 3 }}>描述</div>
-                    <div style={{ fontSize: 13, color: 'var(--semi-color-text-0)', lineHeight: 1.6 }}>{selectedAction?.description || '（未填写描述）'}</div>
+                  <div className="mp-fw-600 mp-mb-3 mp-text-body mp-text-1">基本信息</div>
+                  <div className="mp-grid mp-flow-kv-grid">
+                    <div className="mp-text-sm mp-text-2 mp-pt-1" >名称</div>
+                    <div className="mp-text-body mp-text-1">{selectedAction ? actionDisplayName(selectedAction) : '—'}</div>
+                    <div className="mp-text-sm mp-text-2 mp-pt-1" >标识符</div>
+                    <div className="mp-text-body mp-text-1"><code className="mp-flow-code mp-text-sm">{selectedAction?.rid ?? '—'}</code></div>
+                    <div className="mp-text-sm mp-text-2 mp-pt-1" >Function 引用</div>
+                    <div className="mp-text-body mp-text-1"><code className="mp-flow-code mp-text-sm">{selectedAction?.function_ref ?? '—'}</code></div>
+                    <div className="mp-text-sm mp-text-2 mp-pt-1" >描述</div>
+                    <div className="mp-text-body mp-text-1 mp-lh-16" >{selectedAction?.description || '（未填写描述）'}</div>
                   </div>
                 </div>
               )}
 
               {detailTab === 'io' && (
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: 12 }}>输入参数</div>
+                  <div className="mp-fw-600 mp-mb-3 mp-text-body mp-text-1">输入参数</div>
                   {selectedAction && selectedAction.parameters.length > 0 ? (
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 20 }}>
+                  <table className="mp-w-full mp-mb-5 mp-text-sm mp-flow-table">
                     <thead>
                       <tr>
-                        <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: 11, fontWeight: 500, color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)' }}>参数名</th>
-                        <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: 11, fontWeight: 500, color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)' }}>类型</th>
-                        <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: 11, fontWeight: 500, color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)' }}>必填</th>
-                        <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: 11, fontWeight: 500, color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)' }}>说明</th>
+                        <th className="mp-fw-500 mp-text-xs mp-text-2 mp-border mp-py-1 mp-px-2 mp-text-left" >参数名</th>
+                        <th className="mp-fw-500 mp-text-xs mp-text-2 mp-border mp-py-1 mp-px-2 mp-text-left" >类型</th>
+                        <th className="mp-fw-500 mp-text-xs mp-text-2 mp-border mp-py-1 mp-px-2 mp-text-left" >必填</th>
+                        <th className="mp-fw-500 mp-text-xs mp-text-2 mp-border mp-py-1 mp-px-2 mp-text-left" >说明</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2294,21 +2064,21 @@ export default function OntologyActionPage() {
                         const name = p.rid.split('.').slice(-2, -1)[0] ?? p.rid;
                         return (
                         <tr key={p.rid}>
-                          <td style={{ padding: '6px 10px', fontFamily: 'var(--mp-font-mono)', borderBottom: '1px solid var(--semi-color-border)' }}>{name}</td>
-                          <td style={{ padding: '6px 10px', fontFamily: 'var(--mp-font-mono)', color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)' }}>{p.type_id}</td>
-                          <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--semi-color-border)' }}>{p.nullable ? '否' : '是'}</td>
-                          <td style={{ padding: '6px 10px', color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)' }}>{p.title || '—'}</td>
+                          <td className="mp-border mp-py-1 mp-px-2 mp-mono" >{name}</td>
+                          <td className="mp-text-2 mp-border mp-py-1 mp-px-2 mp-mono" >{p.type_id}</td>
+                          <td className="mp-border mp-py-1 mp-px-2" >{p.nullable ? '否' : '是'}</td>
+                          <td className="mp-text-2 mp-border mp-py-1 mp-px-2" >{p.title || '—'}</td>
                         </tr>
                         );
                       })}
                     </tbody>
                   </table>
                   ) : (
-                    <div style={{ padding: '12px 0 20px', fontSize: 12, color: 'var(--semi-color-text-2)' }}>该 Action 无输入参数</div>
+                    <div className="mp-text-sm mp-text-2 mp-py-3 mp-pb-5">该 Action 无输入参数</div>
                   )}
 
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: 12 }}>副作用与提交规则</div>
-                  <div style={{ background: 'var(--semi-color-fill-0)', borderRadius: 'var(--semi-border-radius-medium)', padding: '12px 16px', fontFamily: 'var(--mp-font-mono)', fontSize: 12, color: 'var(--semi-color-text-2)', lineHeight: 1.8 }}>
+                  <div className="mp-fw-600 mp-mb-3 mp-text-body mp-text-1">副作用与提交规则</div>
+                  <div className="mp-text-sm mp-text-2 mp-rounded mp-py-3 mp-px-4 mp-mono mp-bg-fill-0 mp-flow-lh-18">
                     <div>side_effects: {selectedAction && selectedAction.side_effects.length > 0 ? selectedAction.side_effects.join(', ') : '[]'}</div>
                     <div>submission_criteria: {selectedAction && selectedAction.submission_criteria.length > 0 ? selectedAction.submission_criteria.join('; ') : '[]'}</div>
                     <div>apply: POST /ont/v2/action-types/&#123;rid&#125;/apply</div>
@@ -2318,21 +2088,21 @@ export default function OntologyActionPage() {
 
               {detailTab === 'relations' && (
                 <div>
-                  <div style={{ marginBottom: 20 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: 12 }}>关联本体概念（作用对象）</div>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <div className="mp-mb-5">
+                    <div className="mp-fw-600 mp-mb-3 mp-text-body mp-text-1">关联本体概念（作用对象）</div>
+                    <div className="mp-flex mp-wrap mp-gap-1" >
                       {selectedAction && selectedAction.on.length > 0 ? selectedAction.on.map((rid) => (
-                        <span key={rid} title={rid} style={{ padding: '4px 10px', background: 'var(--semi-color-fill-0)', border: '1px solid var(--semi-color-border)', borderRadius: 4, fontSize: 12, color: 'var(--semi-color-text-0)', cursor: 'pointer' }}>{otDisplayName(rid)}</span>
+                        <span key={rid} title={rid} className="mp-text-sm mp-text-1 mp-clickable mp-border mp-py-1 mp-px-2 mp-bg-fill-0 mp-rounded-sm" >{otDisplayName(rid)}</span>
                       )) : (
-                        <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>该 Action 未绑定作用对象</span>
+                        <span className="mp-text-sm mp-text-2">该 Action 未绑定作用对象</span>
                       )}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: 12 }}>Function 实现引用</div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--semi-color-fill-0)', border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', fontSize: 12, color: 'var(--semi-color-text-0)' }}>
-                        <GitBranch style={{ width: 14, height: 14, color: 'var(--semi-color-text-2)' }} />{selectedAction?.function_ref ?? '—'}
+                    <div className="mp-fw-600 mp-mb-3 mp-text-body mp-text-1">Function 实现引用</div>
+                    <div className="mp-flex mp-gap-2 mp-wrap" >
+                      <span className="mp-inline-flex mp-items-center mp-text-sm mp-text-1 mp-border mp-rounded mp-gap-1 mp-py-1 mp-px-3 mp-bg-fill-0" >
+                        <GitBranch className="mp-icon-14 mp-text-2" />{selectedAction?.function_ref ?? '—'}
                       </span>
                     </div>
                   </div>
@@ -2341,36 +2111,21 @@ export default function OntologyActionPage() {
 
               {detailTab === 'flow' && (
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div className="mp-justify-between mp-mb-3 mp-flex-center">
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--semi-color-text-0)' }}>流程编排</div>
-                      <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginTop: 4 }}>当前 Action 包含 <span style={{ fontFamily: 'var(--mp-font-mono)', color: 'var(--semi-color-text-0)' }}>7</span> 个节点 / <span style={{ fontFamily: 'var(--mp-font-mono)', color: 'var(--semi-color-text-0)' }}>7</span> 条连线</div>
+                      <div className="mp-fw-600 mp-text-body mp-text-1">流程编排</div>
+                      <div className="mp-mt-1 mp-text-sm mp-text-2">当前 Action 包含 <span className="mp-text-1 mp-mono" >7</span> 个节点 / <span className="mp-text-1 mp-mono" >7</span> 条连线</div>
                     </div>
                     <button
                       type="button"
                       onClick={() => setFlowFullscreen(true)}
                       data-testid="enter-fullscreen-editor"
-                      style={{
-                        height: 32,
-                        padding: '0 12px',
-                        fontSize: 12,
-                        fontWeight: 500,
-                        fontFamily: 'inherit',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        background: 'var(--semi-color-primary)',
-                        color: 'var(--semi-color-white)',
-                        border: 'none',
-                        borderRadius: 'var(--semi-border-radius-medium)',
-                        cursor: 'pointer',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                      }}
+                      className="mp-inline-flex mp-items-center mp-fw-500 mp-clickable mp-rounded mp-gap-1 mp-text-sm mp-border-none mp-flow-btn-primary"
                     >
-                      <Maximize2 style={{ width: 14, height: 14 }} />进入全屏编辑
+                      <Maximize2 className="mp-icon-14" />进入全屏编辑
                     </button>
                   </div>
-                  <div style={{ height: 360, background: 'var(--semi-color-bg-0)', borderRadius: 'var(--semi-border-radius-medium)', border: '1px solid var(--semi-color-border)', overflow: 'hidden', position: 'relative' }}>
+                  <div className="mp-hidden mp-relative mp-border mp-rounded mp-flow-preview">
                     <FreeLayoutEditorProvider
                       initialData={initialData}
                       nodeRegistries={nodeRegistries}
@@ -2393,7 +2148,7 @@ export default function OntologyActionPage() {
                         ctx.tools.fitView(false);
                       }}
                     >
-                      <EditorRenderer style={{ width: '100%', height: '100%' }} />
+                      <EditorRenderer className="mp-w-full mp-h-full" />
                     </FreeLayoutEditorProvider>
                   </div>
                 </div>
@@ -2403,12 +2158,12 @@ export default function OntologyActionPage() {
 
           {/* Execution history */}
           <Card>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 600 }}>执行历史</h3>
+            <div className="mp-justify-between mp-mb-4 mp-flex-center">
+              <h3 className="mp-fw-600 mp-text-md">执行历史</h3>
             </div>
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>
+            <div className="mp-text-center mp-p-8 mp-text-body mp-text-2">
               暂无执行记录
-              <div style={{ fontSize: 12, marginTop: 6 }}>
+              <div className="mp-text-sm mp-mt-1" >
                 kernel 尚未提供执行历史查询；在概念详情或 SuperAI 编排中触发 ActionType.apply 后可在此回看
               </div>
             </div>

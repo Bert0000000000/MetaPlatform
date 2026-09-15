@@ -29,11 +29,11 @@ function propSlug(prop: KernelProperty): string {
   return (parts[parts.length - 2] ?? prop.rid).replace(/^(prop|prp)\./, '');
 }
 
-const KIND_META: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
-  model_type:        { label: '新建概念 (model_type)',   color: 'var(--semi-color-primary)', bg: 'rgba(99,102,241,0.12)',  icon: <Box /> },
-  create_instance:   { label: '创建实例 (create_instance)', color: 'var(--semi-color-success)', bg: 'rgba(16,185,129,0.12)', icon: <Columns3 /> },
-  merge_suggestion:  { label: '合并建议 (merge_suggestion)', color: 'var(--semi-color-warning)', bg: 'rgba(245,158,11,0.12)', icon: <GitMerge /> },
-  action:            { label: '执行 Action (action)',    color: 'var(--semi-color-danger)', bg: 'rgba(239,68,68,0.12)',  icon: <Zap /> },
+const KIND_META: Record<string, { label: string; tone: string; icon: React.ReactNode }> = {
+  model_type:        { label: '新建概念 (model_type)',   tone: 'primary', icon: <Box /> },
+  create_instance:   { label: '创建实例 (create_instance)', tone: 'success', icon: <Columns3 /> },
+  merge_suggestion:  { label: '合并建议 (merge_suggestion)', tone: 'warning', icon: <GitMerge /> },
+  action:            { label: '执行 Action (action)',    tone: 'danger',  icon: <Zap /> },
 };
 
 // 跨 schema 引用：rid → 简短的 rid 末段。返回 {rid, shortLabel, type}，type 推断 obj/at/lt/...
@@ -53,72 +53,30 @@ function ridKind(rid: string): string {
 export default function OntologyStagingPreview({ preview }: OntologyStagingPreviewProps) {
   const meta = KIND_META[preview.kind] ?? {
     label: preview.kind,
-    color: 'var(--semi-color-text-2)',
-    bg: 'var(--semi-color-fill-0)',
+    tone: 'muted',
     icon: <Layers />,
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <style>{`
-        .osp-table {
-          width: 100%;
-          border-collapse: collapse;
-          border: 1px solid var(--semi-color-border);
-          border-radius: var(--semi-border-radius-medium);
-          overflow: hidden;
-          background: var(--semi-color-bg-1);
-        }
-        .osp-table thead { background: var(--semi-color-fill-0); }
-        .osp-table th {
-          padding: 10px 14px;
-          font-size: 12px;
-          font-weight: 500;
-          color: var(--semi-color-text-2);
-          text-align: left;
-          border-bottom: 1px solid var(--semi-color-border);
-          white-space: nowrap;
-        }
-        .osp-table td {
-          padding: 10px 14px;
-          font-size: 13px;
-          border-bottom: 1px solid var(--semi-color-border);
-          vertical-align: middle;
-        }
-        .osp-table tbody tr:last-child td { border-bottom: none; }
-        .osp-section { display: flex; flex-direction: column; gap: 4px; }
-      `}</style>
+    <div className="mp-flex mp-gap-4 mp-flex-col" >
       {/* Kind 标签 + 摘要 */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 16px',
-        border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-        background: meta.bg,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ color: meta.color, display: 'inline-flex' }}>{meta.icon}</span>
-          <span style={{ fontWeight: 600, color: meta.color, fontSize: 13 }}>{meta.label}</span>
-          <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>
-            id：<code style={{ fontSize: 11 }}>{preview.id}</code>
+      <div className={`mp-justify-between mp-border mp-rounded mp-flex-center mp-py-3 mp-px-4 mp-onto-kind--${meta.tone}`}>
+        <div className="mp-flex-center mp-gap-2" >
+          <span className="mp-inline-flex">{meta.icon}</span>
+          <span className="mp-fw-600 mp-text-body">{meta.label}</span>
+          <span className="mp-text-sm mp-text-2">
+            id：<code className="mp-text-xs">{preview.id}</code>
           </span>
         </div>
         {preview.status && (
-          <span style={{
-            fontSize: 11, fontWeight: 500, padding: '2px 8px',
-            background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
-            borderRadius: 4,
-          }}>
+          <span className="mp-fw-500 mp-border mp-text-xs mp-py-1 mp-px-2 mp-bg-1 mp-rounded-sm" >
             {preview.status}
           </span>
         )}
       </div>
 
       {preview.summary && (
-        <div style={{
-          padding: '10px 14px', borderRadius: 'var(--semi-border-radius-medium)',
-          background: 'var(--semi-color-fill-0)', fontSize: 13, color: 'var(--semi-color-text-0)',
-          borderLeft: `3px solid ${meta.color}`, lineHeight: 1.6,
-        }}>
+        <div className={`mp-rounded mp-text-body mp-text-1 mp-py-2 mp-px-3 mp-bg-fill-0 mp-lh-16 mp-onto-kind-accent--${meta.tone}`}>
           {preview.summary}
         </div>
       )}
@@ -147,7 +105,7 @@ export default function OntologyStagingPreview({ preview }: OntologyStagingPrevi
 
 function ModelTypeSection({ preview }: { preview: ModelTypePreview }) {
   return (
-    <div className="osp-section">
+    <div className="mp-onto-preview-section">
       <SectionHeader icon={<Box />} title="概念定义" />
       <KV label="rid" value={preview.rid} />
       <KV label="display_name" value={preview.display_name} />
@@ -156,15 +114,15 @@ function ModelTypeSection({ preview }: { preview: ModelTypePreview }) {
       <KV label="primary_key" value={preview.primary_key.join(', ')} />
       <KV label="interfaces" value={preview.interfaces.length > 0 ? preview.interfaces.join(', ') : '—'} />
 
-      <h5 style={{ fontSize: 13, fontWeight: 600, marginTop: 14, marginBottom: 6 }}>
+      <h5 className="mp-fw-600 mp-text-body mp-mt-3 mp-mb-1" >
         属性列表（{preview.properties.length}）
       </h5>
       {preview.properties.length === 0 ? (
-        <div style={{ padding: 14, color: 'var(--semi-color-text-2)', fontSize: 12, background: 'var(--semi-color-fill-0)', borderRadius: 'var(--semi-border-radius-medium)' }}>
+        <div className="mp-text-sm mp-text-2 mp-rounded mp-p-3 mp-bg-fill-0" >
           此概念暂无属性定义
         </div>
       ) : (
-        <table className="osp-table">
+        <table className="mp-onto-preview-table">
           <thead>
             <tr>
               <th>slug</th>
@@ -177,11 +135,11 @@ function ModelTypeSection({ preview }: { preview: ModelTypePreview }) {
           <tbody>
             {preview.properties.map((p) => (
               <tr key={p.rid}>
-                <td style={{ fontWeight: 500 }}>{propSlug(p)}</td>
+                <td className="mp-fw-500">{propSlug(p)}</td>
                 <td><span className="type-badge">{p.type_id}</span></td>
                 <td>{p.primary_key ? '✓' : '—'}</td>
                 <td>{p.nullable ? '✓' : '✗'}</td>
-                <td style={{ color: 'var(--semi-color-text-2)' }}>{p.title}</td>
+                <td className="mp-text-2">{p.title}</td>
               </tr>
             ))}
           </tbody>
@@ -195,23 +153,17 @@ function ModelTypeSection({ preview }: { preview: ModelTypePreview }) {
 
 function CreateInstanceSection({ preview }: { preview: CreateInstancePreview }) {
   return (
-    <div className="osp-section">
+    <div className="mp-onto-preview-section">
       <SectionHeader icon={<Hash />} title="实例字段值" />
       <KV label="class_rid" value={preview.class_rid} />
       <KV label="primary_key" value={preview.primary_key} />
 
       {preview.validation_errors && preview.validation_errors.length > 0 && (
-        <div style={{
-          marginTop: 10, padding: '8px 12px',
-          background: 'rgba(245,158,11,0.10)',
-          border: '1px solid var(--semi-color-warning)',
-          borderRadius: 'var(--semi-border-radius-medium)', fontSize: 12, color: 'var(--semi-color-warning)',
-          display: 'flex', alignItems: 'flex-start', gap: 8,
-        }}>
-          <AlertTriangle style={{ width: 14, height: 14, flexShrink: 0, marginTop: 1 }} />
+        <div className="mp-flex mp-rounded mp-mt-2 mp-gap-2 mp-text-sm mp-text-warning mp-py-2 mp-px-3 mp-items-start mp-onto-banner-warning">
+          <AlertTriangle className="mp-icon-14 mp-shrink-0 mp-mt-1"  />
           <div>
-            <strong style={{ display: 'block', marginBottom: 2 }}>校验未通过</strong>
-            <ul style={{ margin: 0, paddingLeft: 18 }}>
+            <strong className="mp-block mp-mb-1">校验未通过</strong>
+            <ul className="mp-onto-list-indent">
               {preview.validation_errors.map((e, i) => (
                 <li key={i}>{e}</li>
               ))}
@@ -220,26 +172,23 @@ function CreateInstanceSection({ preview }: { preview: CreateInstancePreview }) 
         </div>
       )}
 
-      <h5 style={{ fontSize: 13, fontWeight: 600, marginTop: 14, marginBottom: 6 }}>
+      <h5 className="mp-fw-600 mp-text-body mp-mt-3 mp-mb-1" >
         字段值（{Object.keys(preview.props).length}）
       </h5>
-      <div style={{
-        border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-        background: 'var(--semi-color-bg-1)', overflow: 'hidden',
-      }}>
+      <div className="mp-hidden mp-border mp-rounded mp-bg-1" >
         {Object.entries(preview.props).length === 0 ? (
-          <div style={{ padding: 14, color: 'var(--semi-color-text-2)', fontSize: 12 }}>暂无字段值</div>
+          <div className="mp-text-sm mp-text-2 mp-p-3" >暂无字段值</div>
         ) : (
-          <table className="osp-table">
+          <table className="mp-onto-preview-table">
             <thead>
               <tr><th>key</th><th>value</th></tr>
             </thead>
             <tbody>
               {Object.entries(preview.props).map(([k, v]) => (
                 <tr key={k}>
-                  <td style={{ fontWeight: 500 }}>{k}</td>
-                  <td style={{ color: 'var(--semi-color-text-2)' }}>
-                    <code style={{ fontSize: 12 }}>
+                  <td className="mp-fw-500">{k}</td>
+                  <td className="mp-text-2">
+                    <code className="mp-text-sm">
                       {typeof v === 'string' ? v : JSON.stringify(v)}
                     </code>
                   </td>
@@ -257,25 +206,21 @@ function CreateInstanceSection({ preview }: { preview: CreateInstancePreview }) 
 
 function MergeSuggestionSection({ preview }: { preview: MergeSuggestionPreview }) {
   return (
-    <div className="osp-section">
+    <div className="mp-onto-preview-section">
       <SectionHeader icon={<GitMerge />} title="合并对照" />
-      <div style={{
-        display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 12, alignItems: 'center',
-        padding: '12px 16px', background: 'var(--semi-color-fill-0)', borderRadius: 'var(--semi-border-radius-medium)',
-        border: '1px solid var(--semi-color-border)',
-      }}>
+      <div className="mp-grid mp-items-center mp-border mp-rounded mp-gap-3 mp-py-3 mp-px-4 mp-bg-fill-0 mp-onto-grid-merge">
         <div>
-          <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginBottom: 4 }}>source</div>
-          <div style={{ fontWeight: 600 }}>{preview.source_display_name ?? shortRidLabel(preview.source_rid)}</div>
-          <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginTop: 2 }}>
+          <div className="mp-mb-1 mp-text-xs mp-text-2">source</div>
+          <div className="mp-fw-600">{preview.source_display_name ?? shortRidLabel(preview.source_rid)}</div>
+          <div className="mp-text-xs mp-text-2 mp-mt-1" >
             <code>{preview.source_rid}</code>
           </div>
         </div>
-        <ArrowRight style={{ width: 20, height: 20, color: 'var(--semi-color-text-2)' }} />
+        <ArrowRight className="mp-icon-20 mp-text-2" />
         <div>
-          <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginBottom: 4 }}>target</div>
-          <div style={{ fontWeight: 600 }}>{preview.target_display_name ?? shortRidLabel(preview.target_rid)}</div>
-          <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginTop: 2 }}>
+          <div className="mp-mb-1 mp-text-xs mp-text-2">target</div>
+          <div className="mp-fw-600">{preview.target_display_name ?? shortRidLabel(preview.target_rid)}</div>
+          <div className="mp-text-xs mp-text-2 mp-mt-1" >
             <code>{preview.target_rid}</code>
           </div>
         </div>
@@ -284,28 +229,28 @@ function MergeSuggestionSection({ preview }: { preview: MergeSuggestionPreview }
         <KV label="similarity" value={`${(preview.similarity * 100).toFixed(1)}%`} />
       )}
 
-      <h5 style={{ fontSize: 13, fontWeight: 600, marginTop: 14, marginBottom: 6 }}>
+      <h5 className="mp-fw-600 mp-text-body mp-mt-3 mp-mb-1" >
         属性映射（{preview.mapping.length}）
       </h5>
       {preview.mapping.length === 0 ? (
-        <div style={{ padding: 14, color: 'var(--semi-color-text-2)', fontSize: 12, background: 'var(--semi-color-fill-0)', borderRadius: 'var(--semi-border-radius-medium)' }}>
+        <div className="mp-text-sm mp-text-2 mp-rounded mp-p-3 mp-bg-fill-0" >
           无属性映射，后端按 slug 兜底
         </div>
       ) : (
-        <table className="osp-table">
+        <table className="mp-onto-preview-table">
           <thead>
             <tr>
               <th>source 属性</th>
-              <th style={{ width: 40, textAlign: 'center' }}>→</th>
+              <th className="mp-text-center mp-onto-col-40">→</th>
               <th>target 属性</th>
             </tr>
           </thead>
           <tbody>
             {preview.mapping.map((m, i) => (
               <tr key={`${m.source_rid}-${i}`}>
-                <td><code style={{ fontSize: 11 }}>{shortRidLabel(m.source_rid)}</code></td>
-                <td style={{ textAlign: 'center', color: 'var(--semi-color-text-2)' }}>→</td>
-                <td><code style={{ fontSize: 11 }}>{shortRidLabel(m.target_rid)}</code></td>
+                <td><code className="mp-text-xs">{shortRidLabel(m.source_rid)}</code></td>
+                <td className="mp-text-center mp-text-2">→</td>
+                <td><code className="mp-text-xs">{shortRidLabel(m.target_rid)}</code></td>
               </tr>
             ))}
           </tbody>
@@ -319,44 +264,32 @@ function MergeSuggestionSection({ preview }: { preview: MergeSuggestionPreview }
 
 function ActionSection({ preview }: { preview: ActionPreview }) {
   return (
-    <div className="osp-section">
+    <div className="mp-onto-preview-section">
       <SectionHeader icon={<Zap />} title="Action 预览" />
       <KV label="action_rid" value={preview.action_rid} />
 
-      <h5 style={{ fontSize: 13, fontWeight: 600, marginTop: 14, marginBottom: 6 }}>
+      <h5 className="mp-fw-600 mp-text-body mp-mt-3 mp-mb-1" >
         target_objects（{preview.target_objects.length}）
       </h5>
       {preview.target_objects.length === 0 ? (
-        <div style={{ padding: 14, color: 'var(--semi-color-text-2)', fontSize: 12, background: 'var(--semi-color-fill-0)', borderRadius: 'var(--semi-border-radius-medium)' }}>
+        <div className="mp-text-sm mp-text-2 mp-rounded mp-p-3 mp-bg-fill-0" >
           无目标对象
         </div>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <ul className="mp-flex mp-m-0 mp-gap-1 mp-p-1 mp-flex-col mp-onto-list-plain">
           {preview.target_objects.map((o, i) => (
-            <li key={`${o.rid}-${i}`} style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '8px 12px', border: '1px solid var(--semi-color-border)',
-              borderRadius: 'var(--semi-border-radius-medium)', background: 'var(--semi-color-bg-1)', fontSize: 12,
-            }}>
-              <Target style={{ width: 14, height: 14, color: 'var(--semi-color-primary)' }} />
-              <code style={{ fontSize: 11 }}>{o.rid}</code>
-              <ArrowRight style={{ width: 12, height: 12, color: 'var(--semi-color-text-2)' }} />
-              <span style={{ fontWeight: 500 }}>{o.primary_key}</span>
+            <li key={`${o.rid}-${i}`} className="mp-border mp-rounded mp-gap-2 mp-text-sm mp-flex-center mp-py-2 mp-px-3 mp-bg-1" >
+              <Target className="mp-icon-14 mp-text-primary" />
+              <code className="mp-text-xs">{o.rid}</code>
+              <ArrowRight className="mp-icon-12 mp-text-2" />
+              <span className="mp-fw-500">{o.primary_key}</span>
             </li>
           ))}
         </ul>
       )}
 
-      <h5 style={{ fontSize: 13, fontWeight: 600, marginTop: 14, marginBottom: 6 }}>参数</h5>
-      <pre style={{
-        margin: 0, padding: 12,
-        background: 'var(--semi-color-fill-0)', border: '1px solid var(--semi-color-border)',
-        borderRadius: 'var(--semi-border-radius-medium)',
-        fontSize: 12, color: 'var(--semi-color-text-0)',
-        fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-        whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-        maxHeight: 240, overflowY: 'auto',
-      }}>
+      <h5 className="mp-fw-600 mp-text-body mp-mt-3 mp-mb-1" >参数</h5>
+      <pre className="mp-overflow-y-auto mp-border mp-rounded mp-p-3 mp-m-0 mp-text-sm mp-text-1 mp-bg-fill-0 mp-onto-code-block">
         {JSON.stringify(preview.parameters, null, 2)}
       </pre>
     </div>
@@ -368,49 +301,39 @@ function ActionSection({ preview }: { preview: ActionPreview }) {
 function ImpactSection({ impact }: { impact: ImpactSummary }) {
   const total = impact.affected_individuals + impact.affected_link_instances;
   return (
-    <div style={{
-      padding: '14px 18px', borderRadius: 'var(--semi-border-radius-medium)',
-      border: '1px dashed var(--semi-color-border)',
-      background: total > 0 ? 'rgba(239,68,68,0.05)' : 'var(--semi-color-fill-0)',
-      fontSize: 12, color: 'var(--semi-color-text-0)', lineHeight: 1.7,
-    }}>
-      <div style={{ fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <AlertTriangle style={{ width: 14, height: 14, color: total > 0 ? 'var(--semi-color-danger)' : 'var(--semi-color-text-2)' }} />
+    <div className={`mp-rounded mp-text-sm mp-text-1 mp-py-3 mp-px-4 mp-onto-impact ${total > 0 ? 'mp-onto-impact--alert' : 'mp-onto-impact--calm'}`}>
+      <div className="mp-fw-600 mp-mb-2 mp-flex-center mp-gap-1" >
+        <AlertTriangle className={`mp-icon-14 ${total > 0 ? 'mp-text-danger' : 'mp-text-2'}`} />
         影响说明
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div className="mp-grid mp-gap-2 mp-grid-2" >
         <ImpactMetric
           icon={<Box />}
           label="受影响 Individual"
           value={impact.affected_individuals}
-          color="var(--semi-color-primary)"
+          tone="primary"
         />
         <ImpactMetric
           icon={<Link2 />}
           label="受影响 LinkInstance"
           value={impact.affected_link_instances}
-          color="var(--semi-color-warning)"
+          tone="warning"
         />
       </div>
       {impact.cross_schema_refs && impact.cross_schema_refs.length > 0 && (
-        <div style={{ marginTop: 12 }}>
-          <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginBottom: 6 }}>
+        <div className="mp-mt-3">
+          <div className="mp-text-xs mp-text-2 mp-mb-1" >
             跨 schema 引用（{impact.cross_schema_refs.length}）
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <div className="mp-flex mp-wrap mp-gap-1" >
             {impact.cross_schema_refs.map((ref, i) => (
               <span
                 key={`${ref}-${i}`}
                 title={ref}
-                style={{
-                  fontSize: 11, padding: '2px 8px',
-                  background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
-                  borderRadius: 4,
-                  display: 'inline-flex', alignItems: 'center', gap: 4,
-                }}
+                className="mp-inline-flex mp-items-center mp-border mp-gap-1 mp-text-xs mp-py-1 mp-px-2 mp-bg-1 mp-rounded-sm" 
               >
-                <ListTree style={{ width: 10, height: 10, color: 'var(--semi-color-text-2)' }} />
-                <code style={{ fontSize: 10 }}>{ridKind(ref)}:{shortRidLabel(ref)}</code>
+                <ListTree className="mp-text-2 mp-icon-12"  />
+                <code className="mp-text-xs">{ridKind(ref)}:{shortRidLabel(ref)}</code>
               </span>
             ))}
           </div>
@@ -421,23 +344,19 @@ function ImpactSection({ impact }: { impact: ImpactSummary }) {
 }
 
 function ImpactMetric({
-  icon, label, value, color,
+  icon, label, value, tone,
 }: {
   icon: React.ReactNode;
   label: string;
   value: number;
-  color: string;
+  tone: 'primary' | 'warning';
 }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 10,
-      padding: '8px 12px', background: 'var(--semi-color-bg-1)',
-      border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-    }}>
-      <span style={{ color, display: 'inline-flex' }}>{icon}</span>
+    <div className="mp-border mp-rounded mp-gap-2 mp-flex-center mp-py-2 mp-px-3 mp-bg-1" >
+      <span className={`mp-inline-flex mp-text-${tone}`}>{icon}</span>
       <div>
-        <div style={{ fontSize: 18, fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
-        <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginTop: 2 }}>{label}</div>
+        <div className={`mp-text-lg mp-onto-metric-value mp-text-${tone}`}>{value}</div>
+        <div className="mp-text-xs mp-text-2 mp-mt-1" >{label}</div>
       </div>
     </div>
   );
@@ -447,12 +366,8 @@ function ImpactMetric({
 
 function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      fontSize: 14, fontWeight: 600, marginBottom: 10,
-      paddingBottom: 8, borderBottom: '1px solid var(--semi-color-border)',
-    }}>
-      <span style={{ color: 'var(--semi-color-primary)', display: 'inline-flex' }}>{icon}</span>
+    <div className="mp-fw-600 mp-border mp-mb-2 mp-gap-2 mp-text-md mp-flex-center mp-pb-2" >
+      <span className="mp-inline-flex mp-text-primary">{icon}</span>
       {title}
     </div>
   );
@@ -460,17 +375,11 @@ function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }
 
 function KV({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'baseline', gap: 12,
-      padding: '4px 0', fontSize: 12,
-    }}>
-      <span style={{
-        minWidth: 120, color: 'var(--semi-color-text-2)',
-        fontWeight: 500,
-      }}>
+    <div className="mp-flex mp-gap-3 mp-text-sm mp-onto-kv">
+      <span className="mp-fw-500 mp-text-2 mp-onto-kv-label">
         {label}
       </span>
-      <span style={{ color: 'var(--semi-color-text-0)', fontFamily: 'ui-monospace, SFMono-Regular, monospace', wordBreak: 'break-all' }}>
+      <span className="mp-text-1 mp-break-all mp-mono">
         {value || '—'}
       </span>
     </div>

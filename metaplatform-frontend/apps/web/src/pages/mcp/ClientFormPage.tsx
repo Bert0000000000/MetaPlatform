@@ -4,6 +4,7 @@ import { Button, Card, Form, Space, Toast, Typography } from '@douyinfe/semi-ui'
 import { ArrowLeftOutlined, SaveOutlined, ApiOutlined } from '@ant-design/icons';
 import { createClient, getClient, testConnection, updateClient } from '@/api/mcphub/clients';
 import type { McpClient, McpClientCreateRequest } from '@/api/mcphub/types';
+import './mcp.css';
 
 const CLIENT_TYPE_OPTIONS = [
   { label: 'Cursor', value: 'cursor' },
@@ -98,11 +99,11 @@ export default function ClientFormPage() {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/clients')}>
           返回
         </Button>
-        <Typography.Title heading={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} className="mp-m-0">
           {id ? `编辑 Client：${client?.name ?? ''}` : '添加 MCP Client'}
         </Typography.Title>
       </Space>
@@ -113,7 +114,7 @@ export default function ClientFormPage() {
         <Form
           form={form}
           layout="vertical"
-          style={{ maxWidth: 640 }}
+          className="mp-mcp-max-w-640"
           render={({ values }) => (
             <>
               <Form.Input
@@ -161,7 +162,7 @@ export default function ClientFormPage() {
                 min={1000}
                 max={300000}
                 step={1000}
-                style={{ width: '100%' }}
+                className="mp-w-full"
               />
               <Form.TextArea
                 field="headers"

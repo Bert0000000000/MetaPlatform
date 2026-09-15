@@ -132,9 +132,9 @@ export default function EmployeeCreateDrawer({ open, onClose, onCreated }: Emplo
           </Col>
         </Row>
         <Row gutter={16}>
-          <Col span={8}><Form.InputNumber field="temperature" label="Temperature" min={0} max={1} step={0.1} style={{ width: '100%' }} /></Col>
-          <Col span={8}><Form.InputNumber field="maxTokens" label="Max Tokens" min={100} max={8192} style={{ width: '100%' }} /></Col>
-          <Col span={8}><Form.InputNumber field="topP" label="Top P" min={0.1} max={1} step={0.05} style={{ width: '100%' }} /></Col>
+          <Col span={8}><Form.InputNumber field="temperature" label="Temperature" min={0} max={1} step={0.1} className="mp-w-full" /></Col>
+          <Col span={8}><Form.InputNumber field="maxTokens" label="Max Tokens" min={100} max={8192} className="mp-w-full" /></Col>
+          <Col span={8}><Form.InputNumber field="topP" label="Top P" min={0.1} max={1} step={0.05} className="mp-w-full" /></Col>
         </Row>
         <Form.CheckboxGroup
           field="tools"
@@ -177,7 +177,7 @@ export default function EmployeeCreateDrawer({ open, onClose, onCreated }: Emplo
               ]}
             />
           </Col>
-          <Col span={8}><Form.InputNumber field="topK" label="Top-K" min={1} max={20} style={{ width: '100%' }} /></Col>
+          <Col span={8}><Form.InputNumber field="topK" label="Top-K" min={1} max={20} className="mp-w-full" /></Col>
           <Col span={8}><Form.Switch field="rerank" label="重排序" /></Col>
         </Row>
       </Form>

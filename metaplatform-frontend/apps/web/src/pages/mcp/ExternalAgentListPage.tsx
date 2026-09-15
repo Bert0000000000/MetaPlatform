@@ -223,7 +223,7 @@ export default function ExternalAgentListPage() {
           <Typography.Text strong>
             <RobotOutlined /> {record.name}
           </Typography.Text>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" className="mp-text-sm">
             {record.description || record.endpoint}
           </Typography.Text>
         </Space>
@@ -304,7 +304,7 @@ export default function ExternalAgentListPage() {
       />
 
       {internalAgents.length > 0 && (
-        <Card title="内部数字员工" style={{ marginBottom: 16 }}>
+        <Card title="内部数字员工" className="mp-mb-4">
           <Table<A2ACard>
             rowKey="agentId"
             dataSource={internalAgents}
@@ -327,7 +327,7 @@ export default function ExternalAgentListPage() {
                 title: '端点',
                 dataIndex: 'endpoint',
                 key: 'endpoint',
-                render: (v: string) => <Typography.Text type="tertiary" style={{ fontSize: 12 }}>{v || '-'}</Typography.Text>,
+                render: (v: string) => <Typography.Text type="tertiary" className="mp-text-sm">{v || '-'}</Typography.Text>,
               },
               {
                 title: '操作',
@@ -344,12 +344,12 @@ export default function ExternalAgentListPage() {
         </Card>
       )}
 
-      <Space wrap style={{ marginBottom: 16 }}>
+      <Space wrap className="mp-mb-4">
         <Input
           placeholder="搜索名称/端点"
           showClear
           prefix={<SearchOutlined />}
-          style={{ width: 240 }}
+          className="mp-w-240"
           onEnterPress={(e) =>
             setFilters((prev) => ({ ...prev, keyword: (e.target as HTMLInputElement).value, page: 1 }))
           }
@@ -358,7 +358,7 @@ export default function ExternalAgentListPage() {
           placeholder="协议类型"
           showClear
           optionList={PROTOCOL_OPTIONS}
-          style={{ width: 140 }}
+          className="mp-w-140"
           value={filters.protocolType}
           onChange={(v) => setFilters((prev) => ({ ...prev, protocolType: v as string | undefined, page: 1 }))}
         />
@@ -366,7 +366,7 @@ export default function ExternalAgentListPage() {
           placeholder="状态"
           showClear
           optionList={STATUS_OPTIONS}
-          style={{ width: 140 }}
+          className="mp-w-140"
           value={filters.status}
           onChange={(v) => setFilters((prev) => ({ ...prev, status: v as string | undefined, page: 1 }))}
         />
@@ -374,7 +374,7 @@ export default function ExternalAgentListPage() {
           placeholder="信任等级"
           showClear
           optionList={TRUST_LEVEL_OPTIONS}
-          style={{ width: 140 }}
+          className="mp-w-140"
           value={filters.trustLevel}
           onChange={(v) => setFilters((prev) => ({ ...prev, trustLevel: v as string | undefined, page: 1 }))}
         />
@@ -460,7 +460,7 @@ export default function ExternalAgentListPage() {
         width={640}
       >
         {detail && (
-          <Space vertical style={{ width: '100%' }}>
+          <Space vertical className="mp-w-full">
             <Typography.Paragraph>
               <Typography.Text strong>ID: </Typography.Text>
               {detail.id}

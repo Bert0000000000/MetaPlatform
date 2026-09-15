@@ -41,38 +41,38 @@ function StatusTag({ status }: { status: ConnectionStatus['connectionStatus'] })
 function ConnectionCard({ item }: { item: ConnectionStatus }) {
   const isServer = item.type === 'server';
   return (
-    <Card style={{ marginBottom: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+    <Card className="mp-mb-3">
+      <div className="mp-flex mp-justify-between mp-items-start" >
         <div>
           <Typography.Text strong>
             {isServer ? <ClusterOutlined /> : <LinkOutlined />} {item.name}
           </Typography.Text>
-          <div style={{ marginTop: 4 }}>
+          <div className="mp-mt-1">
             <Tag>{item.transportType || '-'}</Tag>
             <StatusTag status={item.connectionStatus} />
           </div>
         </div>
         {item.latencyMs !== undefined && (
-          <div style={{ textAlign: 'right' }}>
+          <div className="mp-text-right">
             <div className="mp-stat-label">超时/延迟</div>
-            <div className="mp-stat-value" style={{ fontSize: 16 }}>{item.latencyMs} ms</div>
+            <div className="mp-stat-value mp-text-lg" >{item.latencyMs} ms</div>
           </div>
         )}
       </div>
-      <div style={{ marginTop: 12 }}>
+      <div className="mp-mt-3">
         {item.endpoint && (
-          <Typography.Paragraph type="tertiary" ellipsis style={{ marginBottom: 4 }}>
+          <Typography.Paragraph type="tertiary" ellipsis className="mp-mb-1">
             端点: {item.endpoint}
           </Typography.Paragraph>
         )}
         {item.lastHeartbeatAt && (
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
-            <ClockCircleOutlined style={{ marginRight: 4 }} />
+          <Typography.Text type="tertiary" className="mp-text-sm">
+            <ClockCircleOutlined className="mp-mr-1" />
             最后心跳: {new Date(item.lastHeartbeatAt).toLocaleString()}
           </Typography.Text>
         )}
         {item.lastErrorMessage && (
-          <Typography.Paragraph type="danger" ellipsis={{ rows: 2 }} style={{ marginBottom: 0, marginTop: 4 }}>
+          <Typography.Paragraph type="danger" ellipsis={{ rows: 2 }} className="mp-mt-1 mp-mb-1" >
             {item.lastErrorMessage}
           </Typography.Paragraph>
         )}
@@ -107,7 +107,7 @@ export default function ConnectionMonitorPage() {
 
   if (loading && !data) {
     return (
-      <div style={{ textAlign: 'center', padding: 48 }}>
+      <div className="mp-text-center mp-p-9">
         <Spin tip="加载连接监控..." />
       </div>
     );
@@ -115,13 +115,13 @@ export default function ConnectionMonitorPage() {
 
   if (error && !data) {
     return (
-      <div style={{ textAlign: 'center', padding: 48 }}>
-        <ExclamationCircleFilled style={{ fontSize: 48, color: 'var(--semi-color-danger)' }} />
-        <Typography.Title heading={4} style={{ marginTop: 16 }}>
+      <div className="mp-text-center mp-p-9">
+        <ExclamationCircleFilled className="mp-text-danger mp-text-xl"  />
+        <Typography.Title heading={4} className="mp-mt-4">
           加载失败
         </Typography.Title>
         <Typography.Text type="tertiary">{error.message}</Typography.Text>
-        <div style={{ marginTop: 24 }}>
+        <div className="mp-mt-6">
           <Button theme="solid" type="primary" icon={<ReloadOutlined />} onClick={load}>
             重试
           </Button>
@@ -147,36 +147,36 @@ export default function ConnectionMonitorPage() {
         }
       />
 
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+      <Row gutter={[16, 16]} className="mp-mb-4">
         <Col span={6}>
           <Card bordered={false}>
             <div className="mp-stat-label">Server 总数</div>
-            <div className="mp-stat-value" style={{ fontSize: 24 }}>
-              <ClusterOutlined style={{ fontSize: 16, color: 'var(--semi-color-text-2)' }} /> {summary.totalServers}
+            <div className="mp-stat-value mp-text-xl" >
+              <ClusterOutlined className="mp-text-lg mp-text-2" /> {summary.totalServers}
             </div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
             <div className="mp-stat-label">Server 在线</div>
-            <div className="mp-stat-value" style={{ fontSize: 24, color: 'var(--semi-color-success)' }}>
-              <CheckCircleFilled style={{ fontSize: 16 }} /> {summary.onlineServers}
+            <div className="mp-stat-value mp-text-success mp-text-xl" >
+              <CheckCircleFilled className="mp-text-lg" /> {summary.onlineServers}
             </div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
             <div className="mp-stat-label">Client 总数</div>
-            <div className="mp-stat-value" style={{ fontSize: 24 }}>
-              <LinkOutlined style={{ fontSize: 16, color: 'var(--semi-color-text-2)' }} /> {summary.totalClients}
+            <div className="mp-stat-value mp-text-xl" >
+              <LinkOutlined className="mp-text-lg mp-text-2" /> {summary.totalClients}
             </div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
             <div className="mp-stat-label">Client 已连接</div>
-            <div className="mp-stat-value" style={{ fontSize: 24, color: 'var(--semi-color-success)' }}>
-              <CheckCircleFilled style={{ fontSize: 16 }} /> {summary.connectedClients}
+            <div className="mp-stat-value mp-text-success mp-text-xl" >
+              <CheckCircleFilled className="mp-text-lg" /> {summary.connectedClients}
             </div>
           </Card>
         </Col>

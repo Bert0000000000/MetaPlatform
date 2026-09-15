@@ -3,6 +3,7 @@ import { Button, Card, Empty, Input, Space, Toast, Typography } from '@douyinfe/
 import { ThunderboltOutlined } from '@ant-design/icons';
 import type { Integration, JsonRpcResponse } from '@/api/mcphub/types';
 import { callJsonRpc } from '@/api/mcphub/jsonrpc';
+import '../mcp.css';
 
 interface OnlineTesterProps {
   integration: Integration;
@@ -38,18 +39,18 @@ export default function OnlineTester({ integration }: OnlineTesterProps) {
 
   return (
     <Card title="在线测试">
-      <Space vertical spacing="medium" style={{ width: '100%' }}>
+      <Space vertical spacing="medium" className="mp-w-full">
         <Space>
           <Input
             value={method}
             onChange={(val) => setMethod(val)}
-            style={{ width: 200 }}
+            className="mp-w-200"
           />
           <Input
             value={params}
             onChange={(val) => setParams(val)}
             placeholder="params (JSON)"
-            style={{ width: 400 }}
+            className="mp-mcp-w-400"
           />
           <Button
             theme="solid"

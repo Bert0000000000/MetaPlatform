@@ -45,12 +45,12 @@ export default function AuditDetailPage() {
   }, [id]);
 
   if (error) {
-    return <Banner type="danger" description={error} style={{ margin: 24 }} />;
+    return <Banner type="danger" description={error} className="mp-m-6" />;
   }
 
   if (loading || !log) {
     return (
-      <div style={{ padding: 40, textAlign: 'center' }}>
+      <div className="mp-text-center mp-p-8">
         <Spin />
       </div>
     );
@@ -58,11 +58,11 @@ export default function AuditDetailPage() {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/audit')}>
           返回
         </Button>
-        <Typography.Title heading={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} className="mp-m-0">
           审计详情：{log.toolName}
         </Typography.Title>
         <Tag color={STATUS_MAP[log.status].color}>{STATUS_MAP[log.status].label}</Tag>
@@ -110,7 +110,7 @@ export default function AuditDetailPage() {
         />
       </Card>
 
-      <Card style={{ marginTop: 16 }}>
+      <Card className="mp-mt-4">
         <Tabs>
           <TabPane tab="请求参数" itemKey="params">
             <pre style={jsonStyle}>

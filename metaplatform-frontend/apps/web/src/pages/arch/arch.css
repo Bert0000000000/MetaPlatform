@@ -1,0 +1,6 @@
+/*
+ * 架构映射域样式（arch）。
+ * 间距取 --mp-space-* 十档，颜色取 Semi 主题 token。
+ */
+
+.mp-arch-map-h { height: 400px; }

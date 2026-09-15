@@ -22,6 +22,7 @@ import {
 } from './data/templates';
 import { listTemplates, type TemplateItem } from '@/api/apphub/marketplace';
 import { getUser } from '@mate/shared';
+import './apps.css';
 
 // Semi Tag 颜色名与 antd 色名差异修正（gold → yellow）
 const SEMI_TAG_COLOR: Record<string, string> = { gold: 'yellow', default: 'grey' };
@@ -91,15 +92,7 @@ export default function MyTemplatesPage() {
                   shadows="hover"
                   cover={
                     <div
-                      style={{
-                        height: 120,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'linear-gradient(135deg, rgb(var(--semi-purple-6)) 0%, rgb(var(--semi-purple-3)) 100%)',
-                        color: 'var(--semi-color-white)',
-                        fontSize: 48,
-                      }}
+                      className="mp-justify-center mp-text-xl mp-flex-center mp-app-cover mp-app-cover-purple"
                     >
                       {renderIcon(t.icon)}
                     </div>
@@ -140,22 +133,22 @@ export default function MyTemplatesPage() {
                         <Typography.Paragraph
                           type="tertiary"
                           ellipsis={{ rows: 2 }}
-                          style={{ minHeight: 44, marginBottom: 8, marginTop: 8 }}
+                          className="mp-mt-2 mp-mb-2 mp-app-min-44"
                         >
                           {t.description}
                         </Typography.Paragraph>
-                        <Space spacing={4} wrap style={{ marginBottom: 4 }}>
+                        <Space spacing={4} wrap className="mp-mb-1">
                           {t.tags.map((tag) => (
                             <Tag key={tag}>{tag}</Tag>
                           ))}
                         </Space>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Rating disabled value={t.rating} allowHalf style={{ fontSize: 12 }} />
-                          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                        <div className="mp-justify-between mp-flex-center">
+                          <Rating disabled value={t.rating} allowHalf className="mp-text-sm" />
+                          <Typography.Text type="tertiary" className="mp-text-sm">
                             {t.usageCount ?? 0} 次使用
                           </Typography.Text>
                         </div>
-                        <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                        <Typography.Text type="tertiary" className="mp-text-sm">
                           创建于：{new Date(t.createdAt).toLocaleDateString()}
                         </Typography.Text>
                       </div>

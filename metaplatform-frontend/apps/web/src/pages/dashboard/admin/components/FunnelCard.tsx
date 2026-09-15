@@ -38,40 +38,35 @@ export default function FunnelCard({ data, loading = false }: Props) {
   const top = safeData[0]?.value ?? 0;
   if (!loading && safeData.length === 0) {
     return (
-      <Text type="secondary" style={{ fontSize: 12 }}>
+      <Text type="secondary" className="mp-text-sm">
         暂无漏斗数据
       </Text>
     );
   }
   return (
-    <Space vertical style={{ width: '100%' }} spacing={14}>
+    <Space vertical className="mp-w-full" spacing={14}>
       {safeData.map((step, idx) => {
         const widthPct = top > 0 ? (step.value / top) * 100 : 0;
         const color = STAGE_COLORS[step.key];
         return (
           <div key={step.key}>
             <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: 6,
-              }}
+              className="mp-justify-between mp-mb-1 mp-flex-center"
             >
               <Space spacing={8}>
-                <Tag color="grey" style={{ marginRight: 0 }}>
+                <Tag color="grey" className="mp-mr-1">
                   {idx + 1}
                 </Tag>
-                <Text style={{ fontSize: 13 }}>{step.label}</Text>
+                <Text className="mp-text-body">{step.label}</Text>
                 {idx > 0 && (
                   <Tooltip content="与上一阶段的转化率">
-                    <Tag color="blue" style={{ marginRight: 0 }}>
+                    <Tag color="blue" className="mp-mr-1">
                       转化 {formatPercent(step.conversion)}
                     </Tag>
                   </Tooltip>
                 )}
               </Space>
-              <Text style={{ fontSize: 13, fontWeight: 600 }}>
+              <Text className="mp-fw-600 mp-text-body">
                 {formatNumber(step.value)}
               </Text>
             </div>

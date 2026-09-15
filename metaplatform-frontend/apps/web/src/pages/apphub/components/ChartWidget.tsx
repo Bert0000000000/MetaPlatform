@@ -20,6 +20,7 @@ import {
   Legend,
   ZAxis,
 } from 'recharts';
+import '../apps.css';
 import type { DashboardWidget } from '@/api/apphub/pages';
 import { useDataSource } from './DashboardCanvas';
 
@@ -63,7 +64,7 @@ function GaugeView({ value }: { value: number }) {
   const arcLength = Math.PI * radius;
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', padding: 12 }}>
+    <div className="mp-flex mp-p-3 mp-justify-center" >
       <svg width={200} height={120} viewBox="0 0 200 120">
         <path
           d="M 20 100 A 80 80 0 0 1 180 100"
@@ -78,9 +79,7 @@ function GaugeView({ value }: { value: number }) {
           stroke="var(--semi-color-primary)"
           strokeWidth={12}
           strokeLinecap="round"
-          style={{
-            strokeDasharray: `${(safeValue / 100) * arcLength} ${arcLength}`,
-          }}
+          strokeDasharray={`${(safeValue / 100) * arcLength} ${arcLength}`}
         />
         <line x1={cx} y1={cy} x2={needleX} y2={needleY} stroke="var(--semi-color-text-0)" strokeWidth={2} />
         <circle cx={cx} cy={cy} r={4} fill="var(--semi-color-text-0)" />
@@ -102,7 +101,7 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
   const renderChart = () => {
     if (loading) {
       return (
-        <div style={{ textAlign: 'center', padding: 40 }}>
+        <div className="mp-text-center mp-p-8">
           <Spin />
         </div>
       );
@@ -111,7 +110,7 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
     let errorBanner: ReactNode = null;
     if (error) {
       errorBanner = (
-        <Typography.Text type="warning" style={{ display: 'block', padding: '4px 0' }}>
+        <Typography.Text type="warning" className="mp-block mp-py-1">
           {error}
         </Typography.Text>
       );

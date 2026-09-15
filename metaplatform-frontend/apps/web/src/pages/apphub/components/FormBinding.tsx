@@ -59,15 +59,15 @@ export default function FormBinding({ formModules, bindings, onChange }: FormBin
   };
 
   return (
-    <div style={{ marginTop: 12 }}>
+    <div className="mp-mt-3">
       <Typography.Title heading={5}>表单字段绑定</Typography.Title>
 
       {formModules.length > 0 && (
-        <Space spacing="tight" style={{ marginBottom: 12 }}>
+        <Space spacing="tight" className="mp-mb-3">
           <Typography.Text type="tertiary">关联表单：</Typography.Text>
           <Select
             placeholder="选择表单模块"
-            style={{ width: 200 }}
+            className="mp-w-200"
             optionList={formModules.map((m) => ({ label: m.name, value: m.moduleId }))}
           />
         </Space>

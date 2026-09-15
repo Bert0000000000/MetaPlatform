@@ -37,6 +37,7 @@ import { listModules, createModule, updateModule, deleteModule } from '@/api/app
 import { QRCodeSVG } from 'qrcode.react';
 import AppForm from './components/AppForm';
 import ModuleForm from './components/ModuleForm';
+import './apps.css';
 import ReleaseRecordPage from './ReleaseRecordPage';
 import type { AppItem, ModuleItem, ModuleCreateRequest, ModuleUpdateRequest, AppStatus, Shortlink } from '@/api/apphub/types';
 
@@ -242,12 +243,12 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
   };
 
   if (!app) {
-    return <div style={{ padding: 40, textAlign: 'center' }}>加载中...</div>;
+    return <div className="mp-text-center mp-p-8">加载中...</div>;
   }
 
   return (
     <div>
-      <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps/mine')} style={{ marginBottom: 16 }}>
+      <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps/mine')} className="mp-mb-4">
         返回列表
       </Button>
 
@@ -256,24 +257,15 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
         title={
           <Space>
             <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 8,
-                background: 'var(--semi-color-primary-light-default)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 24,
-              }}
+              className="mp-justify-center mp-text-xl mp-flex-center mp-rounded mp-app-avatar-48"
             >
               <AppstoreOutlined />
             </div>
             <div>
-              <Typography.Text strong style={{ fontSize: 18, display: 'block' }}>
+              <Typography.Text strong className="mp-block mp-text-lg">
                 {app.name}
               </Typography.Text>
-              <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+              <Typography.Text type="tertiary" className="mp-text-sm">
                 {app.code}
               </Typography.Text>
             </div>
@@ -305,13 +297,13 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
             itemKey="modules"
             children={
               <div>
-                <Space style={{ marginBottom: 16 }}>
+                <Space className="mp-mb-4">
                   <Input
                     showClear
                     prefix={<Search size={16} />}
                     placeholder="搜索模块名称"
                     onEnterPress={(e) => setModuleKeyword((e.target as HTMLInputElement).value)}
-                    style={{ width: 240 }}
+                    className="mp-w-240"
                   />
                   <Button
                     theme="solid"
@@ -329,7 +321,7 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
                 {filteredModules.length === 0 ? (
                   <Empty description="还没有模块，点击创建第一个模块吧" />
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
+                  <div className="mp-gap-4 mp-grid mp-app-grid-auto-240">
                     {filteredModules.map((module) => (
                       <div
                         key={module.moduleId}
@@ -342,10 +334,10 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
                             Toast.info('该类型设计器待实现');
                           }
                         }}
-                        style={{ cursor: 'pointer' }}
+                        className="mp-clickable"
                       >
                         <Card shadows="hover">
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div className="mp-flex mp-justify-between mp-items-start" >
                             <Space>
                               {MODULE_TYPE_ICONS[module.type]}
                               <div>
@@ -363,10 +355,10 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
                               </Dropdown>
                             </span>
                           </div>
-                          <Typography.Text type="tertiary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+                          <Typography.Text type="tertiary" className="mp-mt-2 mp-text-sm mp-block" >
                             {module.description || '-'}
                           </Typography.Text>
-                          <Typography.Text type="tertiary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+                          <Typography.Text type="tertiary" className="mp-mt-2 mp-text-sm mp-block" >
                             {formatTime(module.updatedAt)}
                           </Typography.Text>
                         </Card>
@@ -407,11 +399,11 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
             itemKey="shortlink"
             children={
               app.status === 'PUBLISHED' ? (
-                <div style={{ maxWidth: 480 }}>
+                <div className="mp-app-max-480">
                   <Typography.Paragraph type="tertiary">
                     为已发布的应用生成短链，便于快速访问与分享。访问短链无需登录鉴权（自决权限）。
                   </Typography.Paragraph>
-                  <Space vertical spacing="medium" style={{ width: '100%' }}>
+                  <Space vertical spacing="medium" className="mp-w-full">
                     <Button
                       theme="solid"
                       type="primary"
@@ -423,7 +415,7 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
                     </Button>
                     {shortlink && (
                       <Card>
-                        <Space vertical spacing="tight" style={{ width: '100%' }}>
+                        <Space vertical spacing="tight" className="mp-w-full">
                           <div>
                             <Typography.Text type="tertiary">短链 Code：</Typography.Text>
                             <Typography.Text copyable code>
@@ -439,14 +431,14 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
                           <Button size="small" icon={<CopyOutlined />} onClick={handleCopyShortlink}>
                             复制链接
                           </Button>
-                          <div style={{ textAlign: 'center', marginTop: 8 }}>
+                          <div className="mp-text-center mp-mt-2">
                             <QRCodeSVG
                               value={`${window.location.origin}/s/${shortlink.code}`}
                               size={160}
                               level="M"
                               marginSize={4}
                             />
-                            <Typography.Text type="tertiary" style={{ display: 'block', marginTop: 4 }}>
+                            <Typography.Text type="tertiary" className="mp-mt-1 mp-block" >
                               扫码访问
                             </Typography.Text>
                           </div>

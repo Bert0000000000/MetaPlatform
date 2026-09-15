@@ -223,3 +223,16 @@
   justify-content: center;
   padding: var(--mp-space-8);
 }
+
+/* ---------- 回放播放器（ReplayPlayer） ---------- */
+.mp-agent-w-80 { width: 80px; }
+
+.mp-agent-replay-dot { background: transparent; }
+.mp-agent-replay-dot-on { background: var(--semi-color-danger-light-default); }
+
+.mp-agent-pre {
+  margin-top: var(--mp-space-1);
+  max-height: 160px;
+}
+.mp-agent-pre-success { background: var(--semi-color-success-light-default); }
+.mp-agent-pre-primary { background: var(--semi-color-primary-light-default); }

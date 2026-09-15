@@ -49,9 +49,18 @@ import type {
   LinkageRule,
   FormScripts,
 } from '@/api/apphub/types';
+import './apps.css';
 
 
 const DESIGNER_IMPORT_KEY = 'metaplatform:designer:import';
+
+/** 字段宽度（画布/预览三档）→ 类名；非表内值回退 100% */
+const FIELD_WIDTH_CLS: Record<string, string> = {
+  '100%': 'mp-app-w-100p',
+  '50%': 'mp-app-w-50p',
+  '33%': 'mp-app-w-33p',
+};
+const fieldWidthCls = (w?: string) => FIELD_WIDTH_CLS[w || '100%'] || 'mp-app-w-100p';
 
 type ActiveTab = 'fields' | 'settings' | 'linkage' | 'scripts';
 
@@ -328,7 +337,6 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
 
   const renderCanvasField = (field: FormField) => {
     const isSelected = selectedId === field.id;
-    const width = field.width || '100%';
     return (
       <div
         key={field.id}
@@ -336,18 +344,9 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
           e.stopPropagation();
           setSelectedId(field.id);
         }}
-        style={{
-          width,
-          padding: 12,
-          border: `2px dashed ${isSelected ? 'var(--semi-color-primary)' : 'var(--semi-color-border)'}`,
-          borderRadius: 8,
-          marginBottom: 8,
-          background: isSelected ? 'var(--semi-color-primary-light-default)' : 'var(--semi-color-bg-1)',
-          cursor: 'pointer',
-          position: 'relative',
-        }}
+        className={`mp-clickable mp-relative mp-mb-2 mp-p-3 mp-rounded mp-app-field ${fieldWidthCls(field.width)}${isSelected ? ' mp-app-field-on' : ''}`}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="mp-justify-between mp-flex-center">
           <Typography.Text strong>{field.label}</Typography.Text>
           {isSelected && (
             <Space spacing="tight">
@@ -358,10 +357,10 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
             </Space>
           )}
         </div>
-        <div style={{ marginTop: 8, pointerEvents: 'none' }}>
+        <div className="mp-mt-2 mp-pe-none" >
           {renderFieldPreview(field)}
         </div>
-        {field.required && <Tag color="red" style={{ marginTop: 4 }}>必填</Tag>}
+        {field.required && <Tag color="red" className="mp-mt-1">必填</Tag>}
       </div>
     );
   };
@@ -371,7 +370,7 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
       case 'textarea':
         return <TextArea placeholder={field.placeholder} rows={3} />;
       case 'number':
-        return <InputNumber style={{ width: '100%' }} placeholder={field.placeholder} />;
+        return <InputNumber className="mp-w-full" placeholder={field.placeholder} />;
       case 'radio':
         return (
           <Space>
@@ -391,7 +390,7 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
       case 'select':
         return (
           <Select
-            style={{ width: '100%' }}
+            className="mp-w-full"
             placeholder={field.placeholder}
             optionList={(field.options || []).map((opt) => ({ value: opt.value, label: opt.label }))}
           />
@@ -403,9 +402,9 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
       case 'upload':
         return <Button>上传附件</Button>;
       case 'divider':
-        return <div style={{ borderTop: '1px solid var(--semi-color-border)', paddingTop: 8 }}>{field.label}</div>;
+        return <div className="mp-border mp-pt-2" >{field.label}</div>;
       case 'group':
-        return <Card title={field.label} style={{ background: 'var(--semi-color-fill-0)' }} />;
+        return <Card title={field.label} className="mp-bg-fill-0" />;
       default:
         return <Input placeholder={field.placeholder} />;
     }
@@ -546,7 +545,7 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
             rules={rules}
             placeholder={field.placeholder}
             disabled={disabled}
-            style={{ width: '100%' }}
+            className="mp-w-full"
           />
         );
       case 'radio':
@@ -609,9 +608,9 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
           </Form.Slot>
         );
       case 'divider':
-        return <div style={{ borderTop: '1px solid var(--semi-color-border)', paddingTop: 8, marginBottom: 16 }}>{field.label}</div>;
+        return <div className="mp-mb-4 mp-border mp-pt-2" >{field.label}</div>;
       case 'group':
-        return <Card title={field.label} style={{ background: 'var(--semi-color-fill-0)', marginBottom: 16 }} />;
+        return <Card title={field.label} className="mp-mb-4 mp-bg-fill-0"  />;
       default:
         return (
           <Form.Input
@@ -641,17 +640,17 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
   };
 
   if (!module) {
-    return <div style={{ padding: 40, textAlign: 'center' }}>加载中...</div>;
+    return <div className="mp-text-center mp-p-8">加载中...</div>;
   }
 
   return (
-    <div style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+    <div className="mp-flex mp-flex-col mp-app-designer-h">
+      <div className="mp-justify-between mp-mb-4 mp-flex-center">
         <Space>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/mine?app=${appId}`)}>
             返回
           </Button>
-          <Typography.Title heading={5} style={{ margin: 0 }}>
+          <Typography.Title heading={5} className="mp-m-0">
             {module.name} - 表单设计器
           </Typography.Title>
         </Space>
@@ -669,22 +668,22 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
         </Space>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', gap: 16, overflow: 'hidden' }}>
-        <Card title="组件面板" style={{ width: 240, overflow: 'auto' }}>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+      <div className="mp-flex mp-hidden mp-flex-1 mp-gap-4">
+        <Card title="组件面板" className="mp-overflow-auto mp-w-240" >
+          <Typography.Text type="tertiary" className="mp-text-sm">
             基础组件
           </Typography.Text>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+          <div className="mp-flex mp-mt-2 mp-gap-2 mp-flex-col" >
             {COMPONENT_DEFINITIONS.filter((c) => c.category === 'basic').map((c) => (
               <Button key={c.type} onClick={() => handleAddField(c)} block>
                 {c.label}
               </Button>
             ))}
           </div>
-          <Typography.Text type="tertiary" style={{ fontSize: 12, display: 'block', marginTop: 16 }}>
+          <Typography.Text type="tertiary" className="mp-mt-4 mp-text-sm mp-block" >
             布局组件
           </Typography.Text>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+          <div className="mp-flex mp-mt-2 mp-gap-2 mp-flex-col" >
             {COMPONENT_DEFINITIONS.filter((c) => c.category === 'layout').map((c) => (
               <Button key={c.type} onClick={() => handleAddField(c)} block>
                 {c.label}
@@ -694,14 +693,14 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
         </Card>
 
         <div
-          style={{ flex: 1, overflow: 'auto' }}
+          className="mp-flex-1 mp-overflow-auto" 
           onClick={() => setSelectedId(null)}
         >
-          <Card title="表单画布" style={{ height: '100%' }}>
+          <Card title="表单画布" className="mp-h-full">
             {config.fields.length === 0 ? (
               <Empty description="点击左侧组件添加到画布" />
             ) : (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <div className="mp-flex mp-gap-2 mp-wrap" >
                 {config.fields.map(renderCanvasField)}
               </div>
             )}
@@ -710,7 +709,7 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
 
         <Card
           title="属性配置"
-          style={{ width: 360, overflow: 'auto', display: 'flex', flexDirection: 'column' }}
+          className="mp-flex mp-overflow-auto mp-w-360 mp-flex-col" 
           bodyStyle={{ flex: 1, overflow: 'auto' }}
         >
           <Tabs activeKey={activeTab} onChange={(k) => setActiveTab(k as ActiveTab)}>
@@ -719,7 +718,7 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
             <Tabs.TabPane tab="数据联动" itemKey="linkage" />
             <Tabs.TabPane tab="表单脚本" itemKey="scripts" />
           </Tabs>
-          <div style={{ marginTop: 12 }}>{renderRightPanel()}</div>
+          <div className="mp-mt-3">{renderRightPanel()}</div>
         </Card>
       </div>
 
@@ -744,7 +743,7 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
           }}
         >
           {displayFields.map((field) => (
-            <div key={field.id} style={{ width: field.width || '100%' }}>
+            <div key={field.id} className={fieldWidthCls(field.width)}>
               {renderRuntimeField(field)}
             </div>
           ))}

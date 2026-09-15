@@ -19,13 +19,13 @@ export default function ParameterForm({ tool, value, onChange }: ParameterFormPr
 
   return (
     <Card title={`参数（${tool.inputSchema.length}）`}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="mp-flex mp-gap-4 mp-flex-col" >
         {tool.inputSchema.map((p) => {
           const current = value[p.name];
           const label = (
             <>
-              {p.name} {p.required && <span style={{ color: 'var(--semi-color-danger)' }}>*</span>}
-              <Typography.Text type="tertiary" style={{ fontSize: 12, marginLeft: 8 }}>
+              {p.name} {p.required && <span className="mp-text-danger">*</span>}
+              <Typography.Text type="tertiary" className="mp-text-sm mp-ml-2" >
                 {p.type}
               </Typography.Text>
             </>
@@ -38,7 +38,7 @@ export default function ParameterForm({ tool, value, onChange }: ParameterFormPr
                 value={current as string | undefined}
                 onChange={(v) => handleFieldChange(p.name, v)}
                 optionList={p.enumValues.map((v) => ({ label: v, value: v }))}
-                style={{ width: '100%' }}
+                className="mp-w-full"
               />
             );
           } else if (p.type === 'number') {
@@ -46,7 +46,7 @@ export default function ParameterForm({ tool, value, onChange }: ParameterFormPr
               <InputNumber
                 value={current as number | undefined}
                 onChange={(v) => handleFieldChange(p.name, v)}
-                style={{ width: '100%' }}
+                className="mp-w-full"
               />
             );
           } else if (p.type === 'boolean') {
@@ -68,10 +68,10 @@ export default function ParameterForm({ tool, value, onChange }: ParameterFormPr
 
           return (
             <div key={p.name}>
-              <div style={{ marginBottom: 4 }}>
+              <div className="mp-mb-1">
                 {label}
                 {p.description && (
-                  <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--semi-color-text-2)' }}>
+                  <span className="mp-text-sm mp-text-2 mp-ml-2" >
                     {p.description}
                   </span>
                 )}

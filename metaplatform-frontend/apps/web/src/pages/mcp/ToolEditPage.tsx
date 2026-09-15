@@ -53,17 +53,17 @@ export default function ToolEditPage() {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/tools')}>
           返回
         </Button>
-        <Typography.Title heading={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} className="mp-m-0">
           {id ? `编辑工具：${tool?.name ?? ''}` : '创建工具'}
         </Typography.Title>
       </Space>
 
       <Card>
-        <Form form={form} style={{ maxWidth: 720 }}>
+        <Form form={form} className="mp-max-w-720">
           <Form.Input
             field="name"
             label="工具名称"

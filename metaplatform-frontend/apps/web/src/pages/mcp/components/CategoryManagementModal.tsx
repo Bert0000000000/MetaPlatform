@@ -113,18 +113,18 @@ export default function CategoryManagementModal({ open, onCancel }: CategoryMana
         </Button>,
       ]}
     >
-      <Space vertical style={{ width: '100%' }}>
-        <Form form={form} labelPosition="left" style={{ marginBottom: 16 }}>
+      <Space vertical className="mp-w-full">
+        <Form form={form} labelPosition="left" className="mp-mb-4">
           <Form.Input field="name" label="名称" rules={[{ required: true }]} placeholder="分类名称" />
           <Form.Input field="code" label="编码" rules={[{ required: true }]} placeholder="分类编码" disabled={!!editing} />
           <Form.Input field="description" label="描述" placeholder="描述" />
           <Form.Input field="sortOrder" label="排序" type="number" placeholder="0" />
-          <div style={{ marginTop: 12 }}>
+          <div className="mp-mt-3">
             <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={handleSubmit}>
               {editing ? '更新' : '添加'}
             </Button>
             {editing && (
-              <Button style={{ marginLeft: 8 }} onClick={() => { form.reset(); setEditing(null); }}>
+              <Button className="mp-ml-2" onClick={() => { form.reset(); setEditing(null); }}>
                 取消
               </Button>
             )}

@@ -14,7 +14,6 @@
 //
 // dev 模式 Semi 交互组件 onClick 被截 noop —— 全部原生元素 + 内联样式。
 
-import type { CSSProperties } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import {
   propSlug,
@@ -22,39 +21,8 @@ import {
   type KernelValueType,
 } from '@/api/ont/kernel';
 
-// ─────────────────── 样式（与 ActionFormDrawer / OntologyModelingPage 对齐） ───────────────────
-
-const inputStyle: CSSProperties = {
-  height: 30, width: '100%', boxSizing: 'border-box',
-  background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
-  borderRadius: 'var(--semi-border-radius-medium)', padding: '0 10px', fontSize: 12,
-  color: 'var(--semi-color-text-0)', outline: 'none',
-};
-
-const textareaStyle: CSSProperties = {
-  ...inputStyle, height: 'auto', minHeight: 56, padding: '6px 10px',
-  resize: 'vertical', lineHeight: 1.5,
-};
-
-const labelStyle: CSSProperties = {
-  fontSize: 12, color: 'var(--semi-color-text-2)', marginBottom: 4,
-};
-
-const sectionBoxStyle: CSSProperties = {
-  border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-  padding: 12, background: 'var(--semi-color-fill-0)',
-};
-
-const smallBtnStyle: CSSProperties = {
-  height: 26, padding: '0 8px', fontSize: 12,
-  background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
-  border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-  cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
-};
-
-const hintStyle: CSSProperties = {
-  fontSize: 11, color: 'var(--semi-color-text-2)', lineHeight: 1.6,
-};
+// ─────────────────── 样式 ───────────────────
+// 全部静态样式走 mp-onto-* 类（见 pages/ontology/ontology.css），不再内联。
 
 // ─────────────────── 草稿模型（draft） ───────────────────
 
@@ -291,48 +259,43 @@ export default function PropertyEditorV2({
   const nestedFormats = Array.from(new Set(vts.map((vt) => vt.format))).sort();
   const typeKnown = vts.some((v) => v.type_id === draft.typeId);
 
-  const checkboxLabelStyle: CSSProperties = {
-    display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12,
-    color: 'var(--semi-color-text-0)', cursor: 'pointer',
-  };
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div className="mp-flex mp-gap-3 mp-flex-col" >
       {/* 行 1：属性名（slug）+ 显示名 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div className="mp-grid mp-gap-2 mp-grid-2" >
         <div>
-          <div style={labelStyle}>属性名（slug）{draft.isNew ? '' : '（已有属性不可改）'}</div>
+          <div className="mp-onto-field-label mp-onto-field-label--stacked">属性名（slug）{draft.isNew ? '' : '（已有属性不可改）'}</div>
           <input
             type="text"
             value={draft.name}
             disabled={!draft.isNew}
             placeholder="例如 dept_name"
             onChange={(e) => set({ name: e.target.value })}
-            style={{ ...inputStyle, ...(draft.isNew ? {} : { opacity: 0.6 }) }}
+            className="mp-w-full mp-onto-input mp-onto-input--md"
           />
         </div>
         <div>
-          <div style={labelStyle}>显示名（title）</div>
+          <div className="mp-onto-field-label mp-onto-field-label--stacked">显示名（title）</div>
           <input
             type="text"
             value={draft.title}
             placeholder="例如 部门名称"
             onChange={(e) => set({ title: e.target.value })}
-            style={inputStyle}
+            className="mp-w-full mp-onto-input mp-onto-input--md"
           />
         </div>
       </div>
-      <div style={{ ...hintStyle, fontFamily: 'monospace' }}>
+      <div className="mp-mono mp-onto-hint">
         rid：<code>{draft.rid || '（待填属性名）'}</code>
       </div>
 
       {/* 行 2：值类型（注册表联动 format） */}
       <div>
-        <div style={labelStyle}>值类型（type_id → format 联动）</div>
+        <div className="mp-onto-field-label mp-onto-field-label--stacked">值类型（type_id → format 联动）</div>
         <select
           value={draft.typeId}
           onChange={(e) => setType(e.target.value)}
-          style={inputStyle}
+          className="mp-w-full mp-onto-input mp-onto-input--md"
         >
           {!typeKnown && draft.typeId && (
             <option value={draft.typeId}>{draft.typeId}（未注册 legacy）</option>
@@ -343,15 +306,15 @@ export default function PropertyEditorV2({
             </option>
           ))}
         </select>
-        <div style={{ ...hintStyle, marginTop: 4 }}>
+        <div className="mp-mt-1 mp-onto-hint">
           当前 format：<code>{format}</code>
           {format === 'struct' && '（在下方编辑嵌套字段，至少 1 项）'}
         </div>
       </div>
 
       {/* 行 3：布尔项 */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18 }}>
-        <label style={checkboxLabelStyle}>
+      <div className="mp-flex mp-wrap mp-gap-4" >
+        <label className="mp-onto-check-label">
           <input
             type="checkbox"
             checked={draft.nullable}
@@ -359,7 +322,7 @@ export default function PropertyEditorV2({
           />
           允许为空（nullable）
         </label>
-        <label style={{ ...checkboxLabelStyle, ...(draft.derivedEnabled ? { opacity: 0.5 } : {}) }} title={draft.derivedEnabled ? '派生属性不可作为主键（互斥）' : undefined}>
+        <label className={`mp-onto-check-label${draft.derivedEnabled ? ' mp-opacity-60' : ''}`} title={draft.derivedEnabled ? '派生属性不可作为主键（互斥）' : undefined}>
           <input
             type="checkbox"
             checked={draft.primaryKey}
@@ -368,7 +331,7 @@ export default function PropertyEditorV2({
           />
           主键（primary_key）
         </label>
-        <label style={checkboxLabelStyle}>
+        <label className="mp-onto-check-label">
           <input
             type="checkbox"
             checked={draft.array}
@@ -376,7 +339,7 @@ export default function PropertyEditorV2({
           />
           数组（array）
         </label>
-        <label style={checkboxLabelStyle}>
+        <label className="mp-onto-check-label">
           <input
             type="checkbox"
             checked={draft.shared}
@@ -386,7 +349,7 @@ export default function PropertyEditorV2({
         </label>
       </div>
       {draft.derivedEnabled && (
-        <div style={{ ...hintStyle, color: '#fbbf24' }}>
+        <div className="mp-onto-hint mp-onto-hint--warning">
           派生属性不可作为主键：已自动取消并锁定主键勾选。
         </div>
       )}
@@ -394,11 +357,11 @@ export default function PropertyEditorV2({
       {/* 行 4：数组归约（仅 array 勾选时显示） */}
       {draft.array && (
         <div>
-          <div style={labelStyle}>多值归约（reducer）——数组属性必选</div>
+          <div className="mp-onto-field-label mp-onto-field-label--stacked">多值归约（reducer）——数组属性必选</div>
           <select
             value={draft.reducer}
             onChange={(e) => set({ reducer: e.target.value === 'latest' ? 'latest' : e.target.value === 'first' ? 'first' : '' })}
-            style={{ ...inputStyle, width: 220 }}
+            className="mp-onto-input mp-onto-input--md mp-onto-select--reducer"
           >
             <option value="">请选择…</option>
             <option value="first">first（取首值）</option>
@@ -408,8 +371,8 @@ export default function PropertyEditorV2({
       )}
 
       {/* 行 5：派生属性配置 */}
-      <div style={sectionBoxStyle}>
-        <label style={{ ...checkboxLabelStyle, marginBottom: draft.derivedEnabled ? 10 : 0 }}>
+      <div className="mp-onto-section-box">
+        <label className={`mp-onto-check-label${draft.derivedEnabled ? ' mp-mb-2' : ''}`}>
           <input
             type="checkbox"
             checked={draft.derivedEnabled}
@@ -418,16 +381,16 @@ export default function PropertyEditorV2({
           派生属性（derived：跨关系声明式聚合，与主键互斥）
         </label>
         {draft.derivedEnabled && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 10 }}>
+          <div className="mp-flex mp-gap-2 mp-flex-col" >
+            <div className="mp-grid mp-gap-2 mp-onto-grid-fn">
               <div>
-                <div style={labelStyle}>聚合函数（fn）</div>
+                <div className="mp-onto-field-label mp-onto-field-label--stacked">聚合函数（fn）</div>
                 <select
                   value={draft.derivedFn}
                   onChange={(e) => set({
                     derivedFn: e.target.value === 'sum' || e.target.value === 'avg' ? e.target.value : 'count',
                   })}
-                  style={inputStyle}
+                  className="mp-w-full mp-onto-input mp-onto-input--md"
                 >
                   <option value="count">count（计数）</option>
                   <option value="sum">sum（求和）</option>
@@ -435,11 +398,11 @@ export default function PropertyEditorV2({
                 </select>
               </div>
               <div>
-                <div style={labelStyle}>聚合关系（over_link）</div>
+                <div className="mp-onto-field-label mp-onto-field-label--stacked">聚合关系（over_link）</div>
                 <select
                   value={draft.derivedOverLink}
                   onChange={(e) => set({ derivedOverLink: e.target.value })}
-                  style={inputStyle}
+                  className="mp-w-full mp-onto-input mp-onto-input--md"
                 >
                   <option value="">请选择关系类型…</option>
                   {linkTypes.map((lt) => (
@@ -451,7 +414,7 @@ export default function PropertyEditorV2({
               </div>
             </div>
             <div>
-              <div style={labelStyle}>
+              <div className="mp-onto-field-label mp-onto-field-label--stacked">
                 对端属性完整 rid（field）
                 {draft.derivedFn === 'count' ? ' —— count 无需 field，可留空' : ' —— 必填'}
               </div>
@@ -460,27 +423,23 @@ export default function PropertyEditorV2({
                 value={draft.derivedField}
                 placeholder="ont.<租户>.prop.<对端类型slug>.<属性名>.v1"
                 onChange={(e) => set({ derivedField: e.target.value })}
-                style={{ ...inputStyle, fontFamily: 'monospace' }}
+                className="mp-w-full mp-mono mp-onto-input mp-onto-input--md"
                 disabled={draft.derivedFn === 'count'}
               />
               {overLink && (
-                <div style={{ ...hintStyle, marginTop: 6 }}>
+                <div className="mp-mt-1 mp-onto-hint">
                   对端类型：{peerType ? `${peerType.display_name}（${ridTail(peerRid)}）` : ridTail(peerRid) || '—'}
                   {draft.derivedFn !== 'count' && (
                     peerType && peerType.properties.length > 0 ? (
                       <>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                        <div className="mp-flex mp-wrap mp-mt-1 mp-gap-1" >
                           {peerType.properties.map((pp) => (
                             <button
                               key={pp.rid}
                               type="button"
                               title={pp.rid}
                               onClick={() => set({ derivedField: pp.rid })}
-                              style={{
-                                ...smallBtnStyle, height: 22, fontSize: 11,
-                                fontFamily: 'monospace', maxWidth: 300, overflow: 'hidden',
-                                textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                              }}
+                              className="mp-ellipsis mp-mono mp-onto-chip-btn"
                             >
                               {propSlug(pp.rid)}
                             </button>
@@ -499,22 +458,22 @@ export default function PropertyEditorV2({
 
       {/* 行 6：struct 嵌套字段（仅 format=struct 时显示） */}
       {format === 'struct' && (
-        <div style={sectionBoxStyle}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{ ...labelStyle, marginBottom: 0 }}>嵌套字段（struct_fields，至少 1 项）</span>
+        <div className="mp-onto-section-box">
+          <div className="mp-justify-between mp-mb-2 mp-flex-center">
+            <span className="mp-onto-field-label mp-onto-field-label--stacked">嵌套字段（struct_fields，至少 1 项）</span>
             <button type="button" onClick={() => set({
               structFields: [...draft.structFields, { key: crypto.randomUUID(), title: '', format: 'string' }],
-            })} style={smallBtnStyle}>
-              <Plus style={{ width: 12, height: 12 }} />添加嵌套字段
+            })} className="mp-onto-btn mp-onto-btn--xs">
+              <Plus className="mp-icon-12" />添加嵌套字段
             </button>
           </div>
           {draft.structFields.length === 0 && (
-            <div style={{ ...hintStyle, color: 'var(--semi-color-danger)' }}>
+            <div className="mp-text-danger mp-onto-hint">
               struct 属性至少需要 1 个嵌套字段，否则无法保存。
             </div>
           )}
           {draft.structFields.map((f) => (
-            <div key={f.key} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+            <div key={f.key} className="mp-mb-2 mp-gap-2 mp-flex-center">
               <input
                 type="text"
                 value={f.title}
@@ -522,14 +481,14 @@ export default function PropertyEditorV2({
                 onChange={(e) => set({
                   structFields: draft.structFields.map((x) => (x.key === f.key ? { ...x, title: e.target.value } : x)),
                 })}
-                style={{ ...inputStyle, flex: 1 }}
+                className="mp-flex-1 mp-onto-input mp-onto-input--md"
               />
               <select
                 value={f.format}
                 onChange={(e) => set({
                   structFields: draft.structFields.map((x) => (x.key === f.key ? { ...x, format: e.target.value } : x)),
                 })}
-                style={{ ...inputStyle, width: 150 }}
+                className="mp-onto-input mp-onto-input--md mp-onto-select--struct"
                 title={f.rid}
               >
                 {!nestedFormats.includes(f.format) && (
@@ -543,14 +502,14 @@ export default function PropertyEditorV2({
                 type="button"
                 aria-label="删除嵌套字段"
                 onClick={() => set({ structFields: draft.structFields.filter((x) => x.key !== f.key) })}
-                style={{ ...smallBtnStyle, color: 'var(--semi-color-danger)' }}
+                className="mp-text-danger mp-onto-btn mp-onto-btn--xs"
               >
-                <Trash2 style={{ width: 12, height: 12 }} />
+                <Trash2 className="mp-icon-12" />
               </button>
             </div>
           ))}
           {draft.structFields.length > 0 && (
-            <div style={hintStyle}>
+            <div className="mp-onto-hint">
               嵌套字段 rid 自动生成：<code>{draft.rid ? `${draft.rid.replace(/\.v\d+$/, '')}.<字段名>.v1` : '（待填属性名）'}</code>
             </div>
           )}
@@ -559,12 +518,12 @@ export default function PropertyEditorV2({
 
       {/* 行 7：描述 */}
       <div>
-        <div style={labelStyle}>描述（description）</div>
+        <div className="mp-onto-field-label mp-onto-field-label--stacked">描述（description）</div>
         <textarea
           value={draft.description}
           placeholder="可选；说明属性的语义与用途"
           onChange={(e) => set({ description: e.target.value })}
-          style={textareaStyle}
+          className="mp-onto-textarea mp-onto-textarea--md"
         />
       </div>
     </div>

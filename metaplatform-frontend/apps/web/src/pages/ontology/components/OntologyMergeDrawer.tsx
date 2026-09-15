@@ -97,40 +97,24 @@ export default function OntologyMergeDrawer({
   return (
     <div
       onClick={cancel}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1100,
-        background: 'rgba(0,0,0,0.45)',
-        display: 'flex', justifyContent: 'flex-end',
-      }}
+      className="mp-flex mp-justify-end mp-onto-drawer-mask"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '66.666%', minWidth: 720, height: '100%',
-          background: 'var(--semi-color-bg-0)',
-          boxShadow: '-8px 0 24px rgba(0,0,0,0.18)',
-          display: 'flex', flexDirection: 'column',
-        }}
+        className="mp-h-full mp-flex-col mp-onto-drawer-panel mp-onto-drawer-panel--fluid"
       >
         {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '16px 24px', borderBottom: '1px solid var(--semi-color-border)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <GitMerge style={{ width: 18, height: 18, color: 'var(--semi-color-primary)' }} />
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
+        <div className="mp-justify-between mp-border mp-flex-center mp-py-4 mp-px-6" >
+          <div className="mp-flex-center mp-gap-2" >
+            <GitMerge className="mp-icon-18 mp-text-primary" />
+            <h3 className="mp-fw-600 mp-m-0 mp-text-lg">
               合并概念 · {source.display_name} → {target.display_name}
             </h3>
           </div>
           <button
             type="button"
             onClick={cancel}
-            style={{
-              width: 32, height: 32, borderRadius: 4, border: '1px solid var(--semi-color-border)',
-              background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-2)',
-              cursor: 'pointer', fontSize: 14,
-            }}
+            className="mp-border mp-text-md mp-text-2 mp-bg-1 mp-rounded-sm mp-onto-close-btn"
             aria-label="关闭合并 drawer"
           >
             ×
@@ -138,33 +122,30 @@ export default function OntologyMergeDrawer({
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
-          <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginBottom: 16, lineHeight: 1.6 }}>
+        <div className="mp-flex-1 mp-overflow-y-auto mp-py-5 mp-px-6" >
+          <div className="mp-mb-4 mp-text-sm mp-text-2 mp-lh-16" >
             <div>source rid：<code>{source.rid}</code></div>
             <div>target rid：<code>{target.rid}</code></div>
-            <div style={{ marginTop: 6 }}>
+            <div className="mp-mt-1">
               下方表格中，为 source 的每个属性选择 target 中对应的属性；
               未勾选的 source 属性不会参与合并（数据迁移时被丢弃）。
               后端会按 Individual.props 的键名重映射到 target 的 Property rid。
             </div>
           </div>
 
-          <table className="om-merge-table" style={{
-            width: '100%', borderCollapse: 'collapse',
-            border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', overflow: 'hidden',
-          }}>
+          <table className="om-merge-table mp-w-full mp-hidden mp-border mp-rounded mp-onto-table">
             <thead>
-              <tr style={{ background: 'var(--semi-color-fill-0)' }}>
-                <th style={thStyle}>source 属性（slug）</th>
-                <th style={thStyle}>类型</th>
-                <th style={{ ...thStyle, width: 64, textAlign: 'center' }}>映射</th>
-                <th style={thStyle}>target 属性（slug）</th>
+              <tr className="mp-bg-fill-0">
+                <th className="mp-onto-th">source 属性（slug）</th>
+                <th className="mp-onto-th">类型</th>
+                <th className="mp-text-center mp-onto-th mp-onto-col-64">映射</th>
+                <th className="mp-onto-th">target 属性（slug）</th>
               </tr>
             </thead>
             <tbody>
               {source.properties.length === 0 ? (
                 <tr>
-                  <td colSpan={4} style={{ ...tdStyle, color: 'var(--semi-color-text-2)', textAlign: 'center' }}>
+                  <td colSpan={4} className="mp-text-center mp-text-2 mp-onto-td">
                     source 没有属性定义，无需映射
                   </td>
                 </tr>
@@ -174,43 +155,31 @@ export default function OntologyMergeDrawer({
                 const matchedTarget = target.properties.find((p) => p.rid === mapped);
                 return (
                   <tr key={sp.rid}>
-                    <td style={tdStyle}>
-                      <div style={{ fontWeight: 500 }}>{srcSlug}</div>
-                      <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>{sp.rid}</div>
+                    <td className="mp-onto-td">
+                      <div className="mp-fw-500">{srcSlug}</div>
+                      <div className="mp-text-xs mp-text-2">{sp.rid}</div>
                     </td>
-                    <td style={tdStyle}>
+                    <td className="mp-onto-td">
                       <span className="type-badge">{sp.type_id}</span>
                     </td>
-                    <td style={{ ...tdStyle, textAlign: 'center' }}>
+                    <td className="mp-text-center mp-onto-td">
                       <button
                         type="button"
                         onClick={() => setCell(sp.rid, matchedTarget ? '' : (targetSlugSet.values().next().value ?? ''))}
                         title={matchedTarget ? '取消映射' : '映射到默认'}
                         disabled={target.properties.length === 0}
-                        style={{
-                          width: 28, height: 28, borderRadius: 4,
-                          border: '1px solid var(--semi-color-border)',
-                          background: matchedTarget ? 'var(--semi-color-primary)' : 'var(--semi-color-bg-1)',
-                          color: matchedTarget ? 'var(--semi-color-white)' : 'var(--semi-color-text-2)',
-                          cursor: matchedTarget || target.properties.length === 0 ? 'pointer' : 'not-allowed',
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        }}
+                        className={`mp-inline-flex mp-items-center mp-justify-center mp-border mp-rounded-sm mp-onto-map-btn${matchedTarget ? ' mp-onto-map-btn--on' : ''}`}
                         aria-label={matchedTarget ? '取消映射' : '勾选映射'}
                       >
-                        <ArrowRight style={{ width: 14, height: 14 }} />
+                        <ArrowRight className="mp-icon-14" />
                       </button>
                     </td>
-                    <td style={tdStyle}>
+                    <td className="mp-onto-td">
                       <select
                         value={mapped}
                         onChange={(e) => setCell(sp.rid, e.target.value)}
                         disabled={target.properties.length === 0}
-                        style={{
-                          width: '100%', height: 32,
-                          background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
-                          borderRadius: 'var(--semi-border-radius-medium)', padding: '0 10px', fontSize: 12,
-                          color: 'var(--semi-color-text-0)', outline: 'none',
-                        }}
+                        className="mp-w-full mp-onto-input mp-onto-input--lg"
                       >
                         <option value="">— 不映射（丢弃） —</option>
                         {target.properties.map((tp) => (
@@ -226,12 +195,8 @@ export default function OntologyMergeDrawer({
             </tbody>
           </table>
 
-          <div style={{
-            marginTop: 16, padding: 12, borderRadius: 'var(--semi-border-radius-medium)',
-            border: '1px dashed var(--semi-color-border)', background: 'var(--semi-color-fill-0)',
-            fontSize: 12, color: 'var(--semi-color-text-2)', lineHeight: 1.6,
-          }}>
-            <strong style={{ color: 'var(--semi-color-text-0)' }}>合并影响：</strong>
+          <div className="mp-rounded mp-mt-4 mp-p-3 mp-text-sm mp-text-2 mp-bg-fill-0 mp-lh-16 mp-onto-box-dashed">
+            <strong className="mp-text-1">合并影响：</strong>
             source 的所有 Individual（实体）会被改写 class_rid 指向 target；
             LinkInstance 的 src/dst 引用同步替换；
             source ObjectType 本身会被软删（archived=true），slug 释放后可复用。
@@ -239,19 +204,11 @@ export default function OntologyMergeDrawer({
         </div>
 
         {/* Footer */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10,
-          padding: '12px 24px', borderTop: '1px solid var(--semi-color-border)',
-        }}>
+        <div className="mp-justify-end mp-border mp-gap-2 mp-flex-center mp-py-3 mp-px-6" >
           <button
             type="button"
             onClick={cancel}
-            style={{
-              height: 34, padding: '0 14px', fontSize: 13,
-              background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
-              border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-              cursor: 'pointer',
-            }}
+            className="mp-onto-btn mp-onto-btn--lg"
           >
             取消
           </button>
@@ -259,13 +216,7 @@ export default function OntologyMergeDrawer({
             type="button"
             onClick={submit}
             disabled={!!submitting}
-            style={{
-              height: 34, padding: '0 14px', fontSize: 13,
-              background: 'var(--semi-color-primary)', color: 'var(--semi-color-white)',
-              border: 'none', borderRadius: 'var(--semi-border-radius-medium)',
-              cursor: submitting ? 'not-allowed' : 'pointer',
-              opacity: submitting ? 0.6 : 1,
-            }}
+            className="mp-onto-btn mp-onto-btn--lg mp-onto-btn--primary"
           >
             {submitting ? '合并中…' : '确认合并'}
           </button>
@@ -274,14 +225,3 @@ export default function OntologyMergeDrawer({
     </div>
   );
 }
-
-const thStyle: React.CSSProperties = {
-  padding: '10px 14px', fontSize: 12, fontWeight: 500,
-  color: 'var(--semi-color-text-2)', textAlign: 'left',
-  borderBottom: '1px solid var(--semi-color-border)', whiteSpace: 'nowrap',
-};
-
-const tdStyle: React.CSSProperties = {
-  padding: '10px 14px', fontSize: 13,
-  borderBottom: '1px solid var(--semi-color-border)', verticalAlign: 'middle',
-};

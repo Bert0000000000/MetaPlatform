@@ -15,6 +15,7 @@ import {
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { ArrowLeft, FileText, RefreshCw, Search, Upload as UploadIcon } from 'lucide-react';
 import { useApiErrorBoundary, useAsync } from '@mate/shared';
+import './kb.css';
 import {
   getKbDetail, listDocuments, getDocumentChunks, uploadDocumentToKb,
   type KbDocument, type KbEntity, type DocumentChunk,
@@ -112,12 +113,12 @@ export default function KnowledgeKbDetailPage() {
   const expandedRowKeys = activeDoc ? [activeDoc] : [];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
+    <div className="mp-flex mp-flex-1 mp-min-h-0 mp-flex-col" >
+      <div className="mp-flex-1 mp-overflow-y-auto mp-min-h-0 mp-pb-6" >
         <Card
-          style={{ marginTop: 16 }}
+          className="mp-mt-4"
           title={
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <span className="mp-inline-flex mp-items-center mp-gap-2">
               <Button
                 icon={<ArrowLeft size={14} />}
                 theme="borderless"
@@ -164,7 +165,7 @@ export default function KnowledgeKbDetailPage() {
             <Descriptions
               row
               size="small"
-              style={{ marginBottom: 4 }}
+              className="mp-mb-1"
             >
               <Descriptions.Item itemKey="ID">{kbId}</Descriptions.Item>
               <Descriptions.Item itemKey="类型">
@@ -182,7 +183,7 @@ export default function KnowledgeKbDetailPage() {
           </Spin>
         </Card>
 
-        <Card title={`文档列表（${documents.length}）`} style={{ marginTop: 16 }}>
+        <Card title={`文档列表（${documents.length}）`} className="mp-mt-4">
           <Input
             aria-label="搜索文档"
             placeholder="搜索文档名称"
@@ -190,7 +191,7 @@ export default function KnowledgeKbDetailPage() {
             value={keyword}
             onChange={setKeyword}
             showClear
-            style={{ width: 320, marginBottom: 12 }}
+            className="mp-mb-3 mp-w-320" 
           />
           <Table<KbDocument>
             rowKey="id"
@@ -207,20 +208,20 @@ export default function KnowledgeKbDetailPage() {
               if (!doc) return null;
               const chunks = chunksByDoc[doc.id];
               if (loadingChunks && !chunks) {
-                return <div style={{ padding: 12 }}><Spin /></div>;
+                return <div className="mp-p-3"><Spin /></div>;
               }
               if (!chunks || chunks.length === 0) {
-                return <Empty description="暂无切片内容（文档可能未索引，或服务为内存模式重启后清空）" style={{ padding: 12 }} />;
+                return <Empty description="暂无切片内容（文档可能未索引，或服务为内存模式重启后清空）" className="mp-p-3" />;
               }
               return (
-                <Collapse style={{ background: 'var(--semi-color-bg-1)' }} defaultActiveKey={chunks[0]?.chunkId}>
+                <Collapse className="mp-bg-1" defaultActiveKey={chunks[0]?.chunkId}>
                   {chunks.map((c, i) => (
                     <Collapse.Panel
                       header={`切片 ${i + 1} · ${c.chunkId.slice(0, 8)}…`}
                       itemKey={c.chunkId}
                       key={c.chunkId}
                     >
-                      <Typography.Paragraph copyable style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+                      <Typography.Paragraph copyable className="mp-m-0 mp-kb-pre-wrap">
                         {c.text}
                       </Typography.Paragraph>
                     </Collapse.Panel>
@@ -234,7 +235,7 @@ export default function KnowledgeKbDetailPage() {
                 title: '文档',
                 dataIndex: 'title',
                 render: (t: string) => (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <span className="mp-inline-flex mp-items-center mp-gap-2">
                     <FileText size={14} />
                     {t}
                   </span>

@@ -41,6 +41,7 @@ import type {
 import type { FormField, FlowNode } from '@/api/apphub/types';
 import type { DashboardWidget } from '@/api/apphub/pages';
 import { PageRoot } from '@mate/shared';
+import './apps.css';
 
 const { Sider, Content } = Layout;
 const SESSIONS_KEY = 'metaplatform:ai-designer:sessions';
@@ -347,7 +348,7 @@ type TemplateFieldType =
 function renderFormPreview(artifact: AIFormArtifact) {
   const cfg = artifact.config;
   return (
-    <Space vertical style={{ width: '100%' }}>
+    <Space vertical className="mp-w-full">
       <Typography.Text strong>{cfg.name}</Typography.Text>
       <Typography.Paragraph type="tertiary">
         {cfg.description || artifact.description}
@@ -367,7 +368,7 @@ function renderFormPreview(artifact: AIFormArtifact) {
 function renderFlowPreview(artifact: AIFlowArtifact) {
   const cfg = artifact.config;
   return (
-    <Space vertical style={{ width: '100%' }}>
+    <Space vertical className="mp-w-full">
       <Typography.Text strong>{cfg.name}</Typography.Text>
       <Typography.Paragraph type="tertiary">
         {cfg.description || artifact.description}
@@ -391,7 +392,7 @@ function renderFlowPreview(artifact: AIFlowArtifact) {
 function renderPagePreview(artifact: AIPageArtifact) {
   const cfg = artifact.config;
   return (
-    <Space vertical style={{ width: '100%' }}>
+    <Space vertical className="mp-w-full">
       <Typography.Text strong>{cfg.name}</Typography.Text>
       <Typography.Paragraph type="tertiary">
         {cfg.description || artifact.description}
@@ -429,15 +430,15 @@ function renderAppPreview(
   return (
     <Timeline
       mode="left"
-      style={{ marginTop: 8 }}
+      className="mp-mt-2"
       dataSource={[
         {
           time: '表单',
           dot: <FileTextOutlined />,
           content: (
-            <Space vertical spacing="tight" style={{ width: '100%' }}>
+            <Space vertical spacing="tight" className="mp-w-full">
               <Typography.Text strong>{form.config.name}</Typography.Text>
-              <Typography.Paragraph type="tertiary" style={{ margin: 0 }}>
+              <Typography.Paragraph type="tertiary" className="mp-m-0">
                 {form.config.description}
               </Typography.Paragraph>
               <Space wrap>
@@ -454,9 +455,9 @@ function renderAppPreview(
           time: '流程',
           dot: <NodeIndexOutlined />,
           content: (
-            <Space vertical spacing="tight" style={{ width: '100%' }}>
+            <Space vertical spacing="tight" className="mp-w-full">
               <Typography.Text strong>{flow.config.name}</Typography.Text>
-              <Typography.Paragraph type="tertiary" style={{ margin: 0 }}>
+              <Typography.Paragraph type="tertiary" className="mp-m-0">
                 {flow.config.description}
               </Typography.Paragraph>
               <Space wrap>
@@ -476,7 +477,7 @@ function renderAppPreview(
                 ))}
               </Space>
               {boundFieldLabels.length > 0 && (
-                <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                <Typography.Text type="tertiary" className="mp-text-sm">
                   流程引用字段：{boundFieldLabels.join('、')}
                 </Typography.Text>
               )}
@@ -487,9 +488,9 @@ function renderAppPreview(
           time: '页面',
           dot: <LayoutOutlined />,
           content: (
-            <Space vertical spacing="tight" style={{ width: '100%' }}>
+            <Space vertical spacing="tight" className="mp-w-full">
               <Typography.Text strong>{page.config.name}</Typography.Text>
-              <Typography.Paragraph type="tertiary" style={{ margin: 0 }}>
+              <Typography.Paragraph type="tertiary" className="mp-m-0">
                 {page.config.description}
               </Typography.Paragraph>
               <Space wrap>
@@ -500,7 +501,7 @@ function renderAppPreview(
                 ))}
               </Space>
               {statusWidgets.length > 0 && (
-                <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                <Typography.Text type="tertiary" className="mp-text-sm">
                   流程状态看板：
                   {statusWidgets.map((w) => w.title).join('、')}
                 </Typography.Text>
@@ -704,18 +705,13 @@ export default function AIDesignerPage() {
   return (
     <PageRoot>
       <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-        }}
+        className="mp-justify-between mp-mb-4 mp-flex-center"
       >
         <Space>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps/mine')}>
             返回
           </Button>
-          <Typography.Text strong style={{ fontSize: 16 }}>
+          <Typography.Text strong className="mp-text-lg">
             <RobotOutlined /> AI 设计器
           </Typography.Text>
         </Space>
@@ -752,12 +748,12 @@ export default function AIDesignerPage() {
         </Space>
       </div>
 
-      <Layout style={{ flex: 1, overflow: 'hidden', background: 'transparent' }}>
+      <Layout className="mp-hidden mp-flex-1 mp-app-bg-none">
         <Sider
-          style={{ width: 240, background: 'transparent', marginRight: 16 }}
+          className="mp-mr-4 mp-w-240 mp-app-bg-none"
         >
           {/* 会话列表（替代旧 antd Conversations）：新建 + 列表项 */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, height: '100%' }}>
+          <div className="mp-h-full mp-flex mp-gap-2 mp-flex-col" >
             <Button
               type="primary"
               icon={<AppstoreAddOutlined />}
@@ -766,31 +762,19 @@ export default function AIDesignerPage() {
             >
               新建对话
             </Button>
-            <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+            <div className="mp-flex-1 mp-overflow-auto mp-min-h-0" >
               {sessions.map((s) => (
                 <div
                   key={s.key}
                   onClick={() => handleActiveChange(s.key)}
                   title={s.label}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 4,
-                    cursor: 'pointer',
-                    marginBottom: 2,
-                    background: s.key === activeKey ? 'var(--semi-color-fill-0)' : 'transparent',
-                    color: 'var(--semi-color-text-0)',
-                    fontSize: 13,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    transition: 'background .15s',
-                  }}
+                  className={`mp-clickable mp-ellipsis mp-mb-1 mp-text-body mp-text-1 mp-py-2 mp-px-3 mp-rounded-sm mp-app-session${s.key === activeKey ? ' mp-app-session-active' : ''}`}
                 >
                   {s.label}
                 </div>
               ))}
               {sessions.length === 0 && (
-                <Typography.Text type="tertiary" style={{ fontSize: 12, display: 'block', textAlign: 'center', padding: '16px 0' }}>
+                <Typography.Text type="tertiary" className="mp-text-center mp-text-sm mp-block mp-py-4">
                   暂无对话
                 </Typography.Text>
               )}
@@ -798,15 +782,15 @@ export default function AIDesignerPage() {
           </div>
         </Sider>
 
-        <Content style={{ display: 'flex', gap: 16, minWidth: 0 }}>
+        <Content className="mp-flex mp-gap-4 mp-min-w-0" >
           <Card
             bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column' }}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+            className="mp-flex mp-flex-1 mp-flex-col" 
           >
             {currentSession ? (
               <Chat
                 key={currentSession.key}
-                style={{ flex: 1, minHeight: 0, width: '100%', maxWidth: 'none', paddingTop: 0, paddingBottom: 0 }}
+                className="mp-w-full mp-flex-1 mp-min-h-0 mp-pb-1 mp-pt-1 mp-app-maxw-none"
                 align="leftRight"
                 mode="bubble"
                 chats={displayChats}
@@ -829,14 +813,14 @@ export default function AIDesignerPage() {
                 sendHotKey="enter"
               />
             ) : (
-              <Empty description="请选择或新建对话" style={{ margin: 'auto' }} />
+              <Empty description="请选择或新建对话" className="mp-app-m-auto" />
             )}
           </Card>
 
           <Card
             title="产物与应用预览"
             bodyStyle={{ overflow: 'auto' }}
-            style={{ width: 420, overflow: 'auto' }}
+            className="mp-overflow-auto mp-app-w-420"
           >
             {currentArtifacts.length === 0 ? (
               <Empty description="暂无产物，与 AI 对话生成" />

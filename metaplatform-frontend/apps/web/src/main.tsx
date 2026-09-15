@@ -10,6 +10,8 @@ import 'prismjs';
 import 'prismjs/themes/prism.css';
 // 平台布局令牌（--mp-*）：早于业务样式加载，供应用壳与共享组件引用
 import './styles/tokens.css';
+// 令牌工具类（mp-flex / mp-p-N / mp-text-* 等）：业务页面已大量引用，须先于业务样式加载
+import './styles/utilities.css';
 import '../../../packages/shared/src/global.css';
 import './App.css';
 

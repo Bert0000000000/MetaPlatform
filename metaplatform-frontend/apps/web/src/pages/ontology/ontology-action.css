@@ -1,0 +1,514 @@
+/*
+ * OntologyActionPage（/ontology/ops/actions 过渡期画布页）专用样式。
+ * ------------------------------------------------------------------
+ * 只承载该页的「UI chrome」：全屏编辑器外壳、属性面板、表单控件、
+ * 节点库、浮层工具条、页面主体的展示类。
+ *
+ * 边界（与 DESIGN-SPEC 一致）：
+ *   1. FlowGram 画布节点与 SVG 仍由 JS 的 palette 对象驱动（画布不动），
+ *      本文件不接管节点的 geometry / palette 值；只有节点内**固定字面量**
+ *      的那几处（标题/描述/关闭按钮）收敛成下面的 --mp-flow-node-* 变量。
+ *   2. 颜色只取 Semi 主题 token（--semi-color-*）或本文件定义的 --mp-flow-* 变量；
+ *      间距只取 --mp-space-1..10。
+ *   3. 不写 .semi-* 选择器。
+ */
+
+/* ---------- chrome 主题变量（默认浅色；深色由 body[theme-mode] 覆盖） ---------- */
+:root {
+  --mp-flow-modal-bg: rgba(255, 255, 255, 0.92);
+  --mp-flow-panel: #fafafa;
+  --mp-flow-line: #e4e4e7;
+  --mp-flow-bar: #f4f4f5;
+  --mp-flow-text: #18181b;
+  --mp-flow-text-muted: #71717a;
+  --mp-flow-fill: #f4f4f5;
+  --mp-flow-accent: #7c3aed;
+  /* 全屏面板保存按钮的实心紫：与画布 lineSelected 浅色版同值，保持不随主题漂移 */
+  --mp-flow-cta: #7c3aed;
+
+  --mp-flow-shadow-soft: rgba(0, 0, 0, 0.2);
+  --mp-flow-shadow-float: rgba(0, 0, 0, 0.4);
+  --mp-flow-shadow-panel: rgba(0, 0, 0, 0.5);
+
+  /* 画布节点内的固定字面量（该页画布恒为深色，不随主题切换） */
+  --mp-flow-node-text: #fafafa;
+  --mp-flow-node-sub: rgba(250, 250, 250, 0.55);
+  --mp-flow-node-muted: #a1a1aa;
+
+  /* 节点类型色（与 JS palette.typeColor 深色档同值） */
+  --mp-flow-tc-default: #a1a1aa;
+  --mp-flow-tc-input: #3b82f6;
+  --mp-flow-tc-llm: #8b5cf6;
+  --mp-flow-tc-condition: #eab308;
+  --mp-flow-tc-tool: #22c55e;
+  --mp-flow-tc-loop: #f97316;
+
+  /* 节点库分组色 */
+  --mp-flow-scenario-biz: #3b82f6;
+  --mp-flow-scenario-approval: #22c55e;
+  --mp-flow-scenario-ai: #a78bfa;
+}
+
+body[theme-mode='dark'] {
+  --mp-flow-modal-bg: rgba(0, 0, 0, 0.92);
+  --mp-flow-panel: #0a0a0a;
+  --mp-flow-line: #262626;
+  --mp-flow-bar: #171717;
+  --mp-flow-text: #fafafa;
+  --mp-flow-text-muted: #a1a1aa;
+  --mp-flow-fill: #1a1a1a;
+  --mp-flow-accent: #a78bfa;
+}
+
+/* ---------- 文本语义 ---------- */
+.mp-flow-text {
+  color: var(--mp-flow-text);
+}
+
+.mp-flow-text-muted {
+  color: var(--mp-flow-text-muted);
+}
+
+.mp-flow-accent-text {
+  color: var(--mp-flow-accent);
+}
+
+.mp-flow-on-accent {
+  color: var(--semi-color-white);
+}
+
+.mp-flow-field-label {
+  color: var(--mp-flow-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mp-flow-lh-18 {
+  line-height: 1.8;
+}
+
+.mp-flow-stat-value {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.mp-flow-items-stretch {
+  align-items: stretch;
+}
+
+/* 行内 code（Action rid / function_ref） */
+.mp-flow-code {
+  font-family: var(--mp-font-mono);
+  color: var(--semi-color-text-0);
+  background: var(--semi-color-fill-0);
+  padding: 0 var(--mp-space-1);
+  border-radius: var(--semi-border-radius-small);
+}
+
+/* ---------- 全屏编辑器：外壳 / 工具栏 ---------- */
+.mp-flow-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--mp-flow-modal-bg);
+  backdrop-filter: blur(4px);
+  align-items: stretch;
+  justify-content: stretch;
+  animation: fadeIn .2s ease-out;
+}
+
+.mp-flow-shell {
+  background: var(--mp-flow-panel);
+  border: 1px solid var(--mp-flow-line);
+}
+
+.mp-flow-toolbar {
+  background: var(--mp-flow-bar);
+  border-bottom: 1px solid var(--mp-flow-line);
+}
+
+.mp-flow-toolbar-title {
+  color: var(--mp-flow-text);
+}
+
+.mp-flow-segmented {
+  background: var(--mp-flow-fill);
+}
+
+.mp-flow-seg-btn {
+  background: transparent;
+  color: var(--mp-flow-text-muted);
+}
+
+.mp-flow-seg-btn--active {
+  background: var(--mp-flow-accent);
+  color: var(--semi-color-white);
+}
+
+.mp-flow-divider-v {
+  width: 1px;
+  height: 20px;
+  background: var(--mp-flow-line);
+}
+
+.mp-flow-select {
+  background: var(--mp-flow-fill);
+  border: 1px solid var(--mp-flow-line);
+  color: var(--mp-flow-text);
+  outline: none;
+}
+
+/* ---------- 按钮 ---------- */
+.mp-flow-btn {
+  height: 32px;
+  padding: 0 var(--mp-space-3);
+  background: var(--mp-flow-fill);
+  border: 1px solid var(--mp-flow-line);
+  color: var(--mp-flow-text);
+}
+
+/* Semi Button 上的尺寸收敛（背景/前景仍由 Semi 负责） */
+.mp-flow-btn-sm {
+  height: 32px;
+  padding: 0 var(--mp-space-3);
+}
+
+.mp-flow-btn-cta {
+  height: 32px;
+  padding: 0 var(--mp-space-3);
+  background: var(--mp-flow-cta);
+  color: var(--semi-color-white);
+  box-shadow: 0 1px 2px var(--mp-flow-shadow-soft);
+}
+
+.mp-flow-btn-cta:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.mp-flow-btn-primary {
+  height: 32px;
+  padding: 0 var(--mp-space-3);
+  font-family: inherit;
+  background: var(--semi-color-primary);
+  color: var(--semi-color-white);
+  box-shadow: 0 1px 2px var(--mp-flow-shadow-soft);
+}
+
+.mp-flow-icon-btn {
+  width: 32px;
+  height: 32px;
+  background: var(--mp-flow-fill);
+  border: 1px solid var(--mp-flow-line);
+  color: var(--mp-flow-text);
+}
+
+.mp-flow-icon-btn:disabled {
+  color: var(--mp-flow-text-muted);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.mp-flow-icon-btn-ghost {
+  background: transparent;
+  color: var(--mp-flow-text-muted);
+}
+
+/* ---------- 属性面板 / 分组 ---------- */
+.mp-flow-inspector {
+  width: 380px;
+  background: var(--mp-flow-panel);
+  border-left: 1px solid var(--mp-flow-line);
+  z-index: 30;
+}
+
+.mp-flow-panel-head {
+  border-bottom: 1px solid var(--mp-flow-line);
+  background: var(--mp-flow-bar);
+}
+
+.mp-flow-panel-foot {
+  border-top: 1px solid var(--mp-flow-line);
+  background: var(--mp-flow-bar);
+}
+
+.mp-flow-panel-title {
+  color: var(--mp-flow-text);
+}
+
+.mp-flow-badge {
+  background: var(--mp-flow-fill);
+  color: var(--mp-flow-text);
+}
+
+.mp-flow-sectionbar {
+  border-bottom: 1px solid var(--mp-flow-line);
+  overflow-x: auto;
+}
+
+.mp-flow-sectab {
+  color: var(--mp-flow-text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  font-weight: 500;
+}
+
+.mp-flow-sectab--active {
+  color: var(--mp-flow-text);
+  background: var(--mp-flow-fill);
+  border-color: var(--mp-flow-line);
+  font-weight: 600;
+}
+
+/* ---------- 表单控件 ---------- */
+.mp-flow-input {
+  box-sizing: border-box;
+  background: var(--mp-flow-fill);
+  border: 1px solid var(--mp-flow-line);
+  color: var(--mp-flow-text);
+  outline: none;
+}
+
+.mp-flow-input--mono {
+  font-family: var(--mp-font-mono);
+}
+
+.mp-flow-input--inherit {
+  font-family: inherit;
+}
+
+.mp-flow-textarea {
+  box-sizing: border-box;
+  resize: vertical;
+  background: var(--mp-flow-fill);
+  border: 1px solid var(--mp-flow-line);
+  color: var(--mp-flow-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  outline: none;
+}
+
+.mp-flow-input-plain {
+  box-sizing: border-box;
+  font-family: inherit;
+  background: var(--mp-flow-fill);
+  color: var(--mp-flow-text);
+  outline: none;
+}
+
+.mp-flow-input-plain--muted {
+  color: var(--mp-flow-text-muted);
+}
+
+/* ---------- 浮层（缩放条 / 节点面板） ---------- */
+.mp-flow-float {
+  background: var(--mp-flow-panel);
+  border: 1px solid var(--mp-flow-line);
+  box-shadow: 0 4px 12px var(--mp-flow-shadow-float);
+}
+
+.mp-flow-float--interactive {
+  pointer-events: auto;
+}
+
+.mp-flow-zoom-label {
+  min-width: 36px;
+  color: var(--mp-flow-text-muted);
+}
+
+/* 画布顶部的浮层挂载点（位置由页面语义决定，不是画布本身） */
+.mp-flow-zoom-slot {
+  top: var(--mp-space-3);
+  left: 0;
+  right: 0;
+  z-index: 50;
+}
+
+.mp-flow-nodepanel {
+  background: var(--mp-flow-panel);
+  border: 1px solid var(--mp-flow-line);
+  box-shadow: 0 8px 24px var(--mp-flow-shadow-panel);
+  z-index: 100;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  min-width: 380px;
+  pointer-events: auto;
+}
+
+.mp-flow-nodepanel-item {
+  background: var(--mp-flow-fill);
+  border: 1px solid var(--mp-flow-line);
+  color: var(--mp-flow-text);
+}
+
+.mp-flow-nodepanel-cancel {
+  grid-column: 1 / -1;
+  background: transparent;
+  color: var(--mp-flow-text-muted);
+}
+
+/* 节点类型色块（节点面板 / 节点库共用；背景取类型色的低透明度） */
+.mp-flow-type-tile {
+  --mp-flow-tc: var(--mp-flow-tc-default);
+  background: color-mix(in srgb, var(--mp-flow-tc) 13%, transparent);
+  color: var(--mp-flow-tc);
+}
+
+.mp-flow-type-tile--input,
+.mp-flow-type-tile--output {
+  --mp-flow-tc: var(--mp-flow-tc-input);
+}
+
+.mp-flow-type-tile--llm {
+  --mp-flow-tc: var(--mp-flow-tc-llm);
+}
+
+.mp-flow-type-tile--condition {
+  --mp-flow-tc: var(--mp-flow-tc-condition);
+}
+
+.mp-flow-type-tile--tool {
+  --mp-flow-tc: var(--mp-flow-tc-tool);
+}
+
+.mp-flow-type-tile--loop {
+  --mp-flow-tc: var(--mp-flow-tc-loop);
+}
+
+/* ---------- 节点库 ---------- */
+/* 节点库是 flow-lines-container 的同级子元素，且 flow-lines 的 svg 是
+ * absolute 浮层（zIndex 2000+）。普通 zIndex 无效，故节点库自建层：
+ * position: relative + 高 zIndex 把它抬到连线之上（MP-SAL 临时方案）。 */
+.mp-flow-nodelib {
+  background: var(--mp-flow-panel);
+  border-right: 1px solid var(--mp-flow-line);
+  position: relative;
+  z-index: 9999;
+}
+
+.mp-flow-nodelib-head {
+  border-bottom: 1px solid var(--mp-flow-line);
+  background: var(--mp-flow-bar);
+}
+
+.mp-flow-nodelib-foot {
+  border-top: 1px solid var(--mp-flow-line);
+  color: var(--mp-flow-text-muted);
+  background: var(--mp-flow-bar);
+}
+
+.mp-flow-nodelib-group {
+  padding: 0 var(--mp-space-1);
+}
+
+.mp-flow-scenario-dot {
+  border-radius: 50%;
+}
+
+.mp-flow-scenario-dot--biz {
+  background: var(--mp-flow-scenario-biz);
+}
+
+.mp-flow-scenario-dot--approval {
+  background: var(--mp-flow-scenario-approval);
+}
+
+.mp-flow-scenario-dot--ai {
+  background: var(--mp-flow-scenario-ai);
+}
+
+.mp-flow-scenario-name {
+  color: var(--mp-flow-text);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.mp-flow-nodelib-item {
+  background: var(--mp-flow-fill);
+  border: 1px solid var(--mp-flow-line);
+  cursor: grab;
+  user-select: none;
+  transition: border-color .15s, background .15s;
+}
+
+/* ---------- 页面主体 ---------- */
+.mp-flow-list-item {
+  color: var(--semi-color-text-2);
+  background: transparent;
+  transition: background .15s;
+}
+
+.mp-flow-list-item--active {
+  color: var(--semi-color-text-0);
+  background: var(--semi-color-fill-0);
+}
+
+.mp-flow-chip {
+  background: var(--semi-color-bg-0);
+}
+
+.mp-flow-dot-success {
+  border-radius: 50%;
+  background: var(--semi-color-success);
+}
+
+.mp-flow-tab {
+  color: var(--semi-color-text-2);
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-weight: 500;
+  transition: color .15s, border-color .15s;
+}
+
+.mp-flow-tab--active {
+  color: var(--semi-color-text-0);
+  border-bottom-color: var(--semi-color-primary);
+  font-weight: 600;
+}
+
+.mp-flow-kv-grid {
+  grid-template-columns: 100px 1fr;
+  gap: var(--mp-space-3) var(--mp-space-4);
+  align-items: start;
+}
+
+.mp-flow-table {
+  border-collapse: collapse;
+}
+
+.mp-flow-preview {
+  height: 360px;
+  background: var(--semi-color-bg-0);
+}
+
+/* ---------- 画布容器背景（panel 变量，非节点内部配色） ---------- */
+.mp-flow-canvas-bg {
+  background: var(--mp-flow-panel);
+}
+
+/* ---------- 画布节点内的固定字面量 ---------- */
+.mp-flow-node-title {
+  color: var(--mp-flow-node-text);
+}
+
+.mp-flow-node-sub {
+  color: var(--mp-flow-node-sub);
+  line-height: 1.4;
+}
+
+.mp-flow-node-sub-alt {
+  color: var(--mp-flow-node-muted);
+  line-height: 1.4;
+}
+
+.mp-flow-node-close {
+  background: transparent;
+  color: var(--mp-flow-node-sub);
+}
+
+.mp-flow-node-close-alt {
+  background: transparent;
+  color: var(--mp-flow-node-muted);
+  line-height: 1;
+}

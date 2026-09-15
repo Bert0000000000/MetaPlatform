@@ -9,7 +9,7 @@
 // 语义：无策略 = 全可见；行策略过滤实例、列策略置空属性值（单元格级）。
 // dev 模式 Semi 交互组件 onClick 被截 noop —— 交互元素全部原生 + 内联样式。
 
-import { useCallback, useEffect, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Card, Table, Tag } from '@douyinfe/semi-ui';
 import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import { ShieldCheck } from 'lucide-react';
@@ -21,24 +21,7 @@ import {
 
 const ROW_OPS = ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'startswith', 'contains', 'in', 'truthy'] as const;
 
-const inputStyle: CSSProperties = {
-  height: 30, minWidth: 0, flex: 1, boxSizing: 'border-box',
-  background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
-  borderRadius: 6, padding: '0 10px', fontSize: 12,
-  color: 'var(--semi-color-text-0)', outline: 'none',
-};
-
-const monoInputStyle: CSSProperties = { ...inputStyle, fontFamily: 'monospace' };
-
-const labelStyle: CSSProperties = {
-  fontSize: 12, color: 'var(--semi-color-text-2)', flexShrink: 0, width: 88,
-};
-
-const btnStyle: CSSProperties = {
-  height: 28, padding: '0 12px', fontSize: 12, borderRadius: 6,
-  border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)',
-  color: 'var(--semi-color-text-0)', cursor: 'pointer', whiteSpace: 'nowrap',
-};
+// 表单样式统一走 mp-onto-* 类（见 pages/ontology/ontology.css）。
 
 /** 逗号分隔文本 → markings 数组（兼容中文逗号，去空白）。 */
 function splitMarkings(s: string): string[] {
@@ -129,22 +112,22 @@ export default function SecurityPolicyCard() {
 
   const cols: ColumnProps<KernelSecurityPolicy>[] = [
     { title: 'rid', dataIndex: 'rid', render: (v: string) => (
-      <span style={{ fontFamily: 'monospace', fontSize: 11, wordBreak: 'break-all' }}>{v}</span>) },
+      <span className="mp-text-xs mp-break-all mp-mono" >{v}</span>) },
     { title: '类型', dataIndex: 'kind', width: 70, render: (v: string) => (
       <Tag size="small" color={v === 'row' ? 'blue' : 'violet'}>{v === 'row' ? '行' : '列'}</Tag>) },
     { title: '类型 rid', dataIndex: 'class_rid', render: (v: string) => (
-      <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{v || '—'}</span>) },
+      <span className="mp-text-xs mp-mono" >{v || '—'}</span>) },
     { title: '属性 rid', dataIndex: 'property_rid', render: (v: string) => (
-      <span style={{ fontFamily: 'monospace', fontSize: 11, wordBreak: 'break-all' }}>{v || '—'}</span>) },
+      <span className="mp-text-xs mp-break-all mp-mono" >{v || '—'}</span>) },
     { title: '字段', dataIndex: 'field', width: 110, render: (v: string) => v || '—' },
     { title: '操作符', dataIndex: 'op', width: 90, render: (v: string) => (
-      <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{v || '—'}</span>) },
+      <span className="mp-text-xs mp-mono" >{v || '—'}</span>) },
     { title: '值', dataIndex: 'value', width: 110, render: (v: unknown) => {
       if (v === null || v === undefined || v === '') return '—';
       return typeof v === 'string' ? v : JSON.stringify(v);
     } },
     { title: '标记', dataIndex: 'markings', render: (v: string[]) => (
-      <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>
+      <span className="mp-text-xs mp-text-2">
         {v && v.length > 0 ? v.join('、') : '—'}
       </span>) },
     { title: '', dataIndex: '__ops', width: 64, render: (_: unknown, row: KernelSecurityPolicy) => (
@@ -152,36 +135,24 @@ export default function SecurityPolicyCard() {
         type="button"
         onClick={() => void doDelete(row.rid)}
         disabled={busy}
-        style={{
-          padding: '2px 10px', fontSize: 12, borderRadius: 4,
-          border: '1px solid var(--semi-color-danger)', background: 'transparent',
-          color: 'var(--semi-color-danger)', cursor: busy ? 'wait' : 'pointer',
-        }}
+        className="mp-text-danger mp-onto-btn mp-onto-btn--xs mp-onto-btn--danger"
       >删除</button>
     ) },
   ];
 
   return (
     <Card bodyStyle={{ padding: 0 }}>
-      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
-        <ShieldCheck style={{ width: 15, height: 15 }} />
-        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>安全策略（行/列）</h4>
-        <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>行策略过滤实例 · 列策略置空属性值（单元格级）</span>
+      <div className="mp-gap-2 mp-flex-center mp-border mp-py-3 mp-px-5" >
+        <ShieldCheck className="mp-icon-14" />
+        <h4 className="mp-fw-600 mp-m-0 mp-text-md">安全策略（行/列）</h4>
+        <span className="mp-text-xs mp-text-2">行策略过滤实例 · 列策略置空属性值（单元格级）</span>
       </div>
-      <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div className="mp-flex mp-gap-3 mp-py-3 mp-px-5 mp-flex-col" >
         {msg && (
-          <div style={{
-            padding: '8px 14px', fontSize: 12, borderRadius: 6,
-            border: '1px solid var(--semi-color-success)', color: 'var(--semi-color-success)',
-            wordBreak: 'break-all',
-          }}>{msg}</div>
+          <div className="mp-break-all mp-text-sm mp-text-success mp-py-2 mp-px-3 mp-rounded mp-onto-box-success">{msg}</div>
         )}
         {err && (
-          <div style={{
-            padding: '8px 14px', fontSize: 12, borderRadius: 6,
-            border: '1px solid var(--semi-color-danger)', color: 'var(--semi-color-danger)',
-            wordBreak: 'break-all',
-          }}>{err}</div>
+          <div className="mp-break-all mp-text-sm mp-text-danger mp-py-2 mp-px-3 mp-rounded mp-onto-box-danger">{err}</div>
         )}
         <Table<KernelSecurityPolicy>
           columns={cols}
@@ -194,14 +165,14 @@ export default function SecurityPolicyCard() {
         />
 
         {/* 新建表单（原生元素） */}
-        <div style={{ border: '1px solid var(--semi-color-border)', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontSize: 12, fontWeight: 600 }}>新建策略</div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <span style={labelStyle}>策略类型</span>
+        <div className="mp-flex mp-border mp-gap-2 mp-py-3 mp-px-3 mp-flex-col mp-rounded" >
+          <div className="mp-fw-600 mp-text-sm">新建策略</div>
+          <div className="mp-flex-center mp-gap-2" >
+            <span className="mp-onto-field-label mp-onto-field-label--rid">策略类型</span>
             <select
               value={kind}
               onChange={(e) => setKind(e.target.value === 'column' ? 'column' : 'row')}
-              style={{ ...inputStyle, flex: '0 0 260px', cursor: 'pointer' }}
+              className="mp-clickable mp-onto-input mp-onto-input--md mp-onto-select--kind"
             >
               <option value="row">行策略（row）—— 按条件过滤实例</option>
               <option value="column">列策略（column）—— 按标记置空属性值</option>
@@ -209,79 +180,79 @@ export default function SecurityPolicyCard() {
           </div>
           {kind === 'row' ? (
             <>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <span style={labelStyle}>类型 rid *</span>
+              <div className="mp-flex-center mp-gap-2" >
+                <span className="mp-onto-field-label mp-onto-field-label--rid">类型 rid *</span>
                 <input
                   type="text"
                   placeholder="ont.<租户>.obj.<域>.<slug>.v1"
                   value={classRid}
                   onChange={(e) => setClassRid(e.target.value)}
-                  style={monoInputStyle}
+                  className="mp-flex-1 mp-min-w-0 mp-mono mp-onto-input mp-onto-input--md"
                 />
               </div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <span style={labelStyle}>字段（field）*</span>
+              <div className="mp-flex-center mp-gap-2" >
+                <span className="mp-onto-field-label mp-onto-field-label--rid">字段（field）*</span>
                 <input
                   type="text"
                   placeholder="过滤字段（属性 slug 或标记字段）"
                   value={field}
                   onChange={(e) => setField(e.target.value)}
-                  style={monoInputStyle}
+                  className="mp-flex-1 mp-min-w-0 mp-mono mp-onto-input mp-onto-input--md"
                 />
-                <span style={{ ...labelStyle, width: 62 }}>操作符 *</span>
+                <span className="mp-onto-field-label mp-onto-field-label--op">操作符 *</span>
                 <select
                   value={op}
                   onChange={(e) => setOp(e.target.value)}
-                  style={{ ...inputStyle, flex: '0 0 130px', fontFamily: 'monospace', cursor: 'pointer' }}
+                  className="mp-clickable mp-mono mp-onto-input mp-onto-input--md mp-onto-select--op"
                 >
                   {ROW_OPS.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
-                <span style={{ ...labelStyle, width: 42 }}>值</span>
+                <span className="mp-onto-field-label mp-onto-field-label--val">值</span>
                 <input
                   type="text"
                   placeholder="比较值（truthy 可留空）"
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
-                  style={inputStyle}
+                  className="mp-flex-1 mp-min-w-0 mp-onto-input mp-onto-input--md"
                 />
               </div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <span style={labelStyle}>bypass 标记</span>
+              <div className="mp-flex-center mp-gap-2" >
+                <span className="mp-onto-field-label mp-onto-field-label--rid">bypass 标记</span>
                 <input
                   type="text"
                   placeholder="bypass_markings，逗号分隔（持这些标记的用户绕过本行策略）"
                   value={bypassMarkings}
                   onChange={(e) => setBypassMarkings(e.target.value)}
-                  style={inputStyle}
+                  className="mp-flex-1 mp-min-w-0 mp-onto-input mp-onto-input--md"
                 />
               </div>
             </>
           ) : (
             <>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <span style={labelStyle}>属性 rid *</span>
+              <div className="mp-flex-center mp-gap-2" >
+                <span className="mp-onto-field-label mp-onto-field-label--rid">属性 rid *</span>
                 <input
                   type="text"
                   placeholder="ont.<租户>.prop.<域>.<slug>.v1"
                   value={propertyRid}
                   onChange={(e) => setPropertyRid(e.target.value)}
-                  style={monoInputStyle}
+                  className="mp-flex-1 mp-min-w-0 mp-mono mp-onto-input mp-onto-input--md"
                 />
               </div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <span style={labelStyle}>必需标记</span>
+              <div className="mp-flex-center mp-gap-2" >
+                <span className="mp-onto-field-label mp-onto-field-label--rid">必需标记</span>
                 <input
                   type="text"
                   placeholder="required_markings，逗号分隔（不满足的单元格被置空）"
                   value={requiredMarkings}
                   onChange={(e) => setRequiredMarkings(e.target.value)}
-                  style={inputStyle}
+                  className="mp-flex-1 mp-min-w-0 mp-onto-input mp-onto-input--md"
                 />
               </div>
             </>
           )}
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button type="button" onClick={() => void doCreate()} disabled={busy} style={{ ...btnStyle, cursor: busy ? 'wait' : 'pointer' }}>
+          <div className="mp-flex mp-justify-end">
+            <button type="button" onClick={() => void doCreate()} disabled={busy} className="mp-onto-btn mp-onto-btn--sm">
               {busy ? '保存中…' : '保存策略'}
             </button>
           </div>

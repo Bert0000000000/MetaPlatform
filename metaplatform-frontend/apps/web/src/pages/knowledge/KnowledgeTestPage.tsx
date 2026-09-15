@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react';
 import { Card, Input, Button, Select, Space, Empty, Tag, Typography, Toast, InputNumber } from '@douyinfe/semi-ui';
 import { Search, FileText, Zap, Filter } from 'lucide-react';
 import { useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
+import './kb.css';
 import { listKb, search, getRetrievalConfig, type KbEntity, type Evidence, type RerankStrategy } from '@/api/kb';
 
 
@@ -89,10 +90,10 @@ export default function KnowledgeTestPage() {
     : '全量搜索（不限定 KB，将跨所有可见知识库检索）';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
+    <div className="mp-flex mp-flex-1 mp-min-h-0 mp-flex-col" >
+      <div className="mp-flex-1 mp-overflow-y-auto mp-min-h-0 mp-pb-6" >
         <Card
-          style={{ marginTop: 16 }}
+          className="mp-mt-4"
           title={
             <Space>
               <Zap size={16} />
@@ -101,10 +102,10 @@ export default function KnowledgeTestPage() {
           }
           headerExtraContent={<Tag color="blue">Hybrid: BM25 + 向量</Tag>}
         >
-          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+          <div className="mp-w-full mp-flex mp-gap-2">
             <Select
               placeholder="选择 KB"
-              style={{ width: 240 }}
+              className="mp-w-240"
               value={kbId}
               onChange={(value) => setKbId(value as string | undefined)}
               showClear
@@ -115,7 +116,7 @@ export default function KnowledgeTestPage() {
               value={query}
               onChange={(value: string) => setQuery(value)}
               onEnterPress={onSearch}
-              style={{ width: 'calc(100% - 240px - 96px - 8px)' }}
+              className="mp-kb-search-w"
               prefix={<Search size={14} />}
             />
             <Button theme="solid" type="primary" onClick={onSearch} loading={run.loading}>
@@ -127,80 +128,70 @@ export default function KnowledgeTestPage() {
               且会把实际发给后端的 kb_id（如果有）也打出来。 */}
           <div
             data-testid="kb-filter-hint"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              marginTop: 10, fontSize: 12, color: 'var(--semi-color-text-2)',
-            }}
+            className="mp-mt-2 mp-gap-1 mp-text-sm mp-text-2 mp-flex-center"
           >
             <Filter size={12} />
-            <span style={{ fontFamily: 'var(--semi-font-mono, monospace)' }}>{filterHint}</span>
+            <span className="mp-mono">{filterHint}</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginTop: 16, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)', whiteSpace: 'nowrap' }}>检索模式</span>
+          <div className="mp-mt-4 mp-gap-6 mp-flex-center mp-wrap" >
+            <div className="mp-gap-2 mp-flex-center">
+              <span className="mp-text-sm mp-text-2 mp-nowrap" >检索模式</span>
               <Select
-                style={{ width: 200 }}
+                className="mp-w-200"
                 value={mode}
                 onChange={(value) => setMode(value as string)}
                 optionList={MODE_OPTIONS}
               />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)', whiteSpace: 'nowrap' }}>Reranker</span>
+            <div className="mp-gap-2 mp-flex-center">
+              <span className="mp-text-sm mp-text-2 mp-nowrap" >Reranker</span>
               <Select
-                style={{ width: 180 }}
+                className="mp-w-180"
                 value={rerankStrategy}
                 onChange={(value) => setRerankStrategy(value as string)}
                 optionList={RERANK_OPTIONS}
               />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)', whiteSpace: 'nowrap' }}>Top-K</span>
+            <div className="mp-gap-2 mp-flex-center">
+              <span className="mp-text-sm mp-text-2 mp-nowrap" >Top-K</span>
               <InputNumber
                 min={1}
                 max={100}
                 value={topK}
                 onChange={(v) => setTopK(typeof v === 'number' ? v : 10)}
-                style={{ width: 90 }}
+                className="mp-kb-w-90"
               />
             </div>
           </div>
         </Card>
 
-        <Card title={`命中 ${evidences.length} 条`} style={{ marginTop: 16 }}>
+        <Card title={`命中 ${evidences.length} 条`} className="mp-mt-4">
           {evidences.length === 0 ? (
             <Empty description="暂无命中，输入 query 开始检索" />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="mp-flex mp-gap-2 mp-flex-col" >
               {evidences.map((ev) => (
                 <div
                   key={ev.evidenceId}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                    padding: '12px 0',
-                    borderBottom: '1px solid var(--semi-color-border)',
-                  }}
+                  className="mp-flex mp-justify-between mp-border mp-gap-3 mp-items-start mp-py-3"
                 >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1, minWidth: 0 }}>
-                    <div style={{ flexShrink: 0 }}>
+                  <div className="mp-flex mp-flex-1 mp-gap-3 mp-items-start" >
+                    <div className="mp-shrink-0">
                       <FileText size={24} color="var(--semi-color-primary)" />
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="mp-flex-1">
                       <div>
                         <Typography.Text strong>{ev.title ?? ev.documentId}</Typography.Text>
                       </div>
-                      <div style={{ color: 'var(--semi-color-text-2)', fontSize: 12, marginTop: 4 }}>
-                        <Typography.Paragraph ellipsis={{ rows: 3 }} style={{ marginBottom: 0 }}>
+                      <div className="mp-mt-1 mp-text-sm mp-text-2">
+                        <Typography.Paragraph ellipsis={{ rows: 3 }} className="mp-mb-1">
                           {ev.fragment}
                         </Typography.Paragraph>
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <div className="mp-flex mp-gap-2 mp-shrink-0" >
                     <Tag color="green">score {ev.score.toFixed(3)}</Tag>
                     <Tag>{ev.type}</Tag>
                   </div>

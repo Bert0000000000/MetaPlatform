@@ -23,7 +23,7 @@ export default function CategoryFilter({ value, onChange }: CategoryFilterProps)
         type="button"
         value={value ?? '全部'}
         onChange={(e) => onChange(e.target.value === '全部' ? undefined : e.target.value)}
-        style={{ marginLeft: 12 }}
+        className="mp-ml-3"
       >
         <Space>
           {CATEGORIES.map((c) => (

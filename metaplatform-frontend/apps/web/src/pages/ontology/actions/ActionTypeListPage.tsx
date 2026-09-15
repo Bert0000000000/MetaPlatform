@@ -71,59 +71,59 @@ export default function ActionTypeListPage() {
   }, [items, keyword]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
+    <div className="mp-flex mp-flex-1 mp-min-h-0 mp-flex-col" >
+      <div className="mp-flex-1 mp-overflow-y-auto mp-min-h-0 mp-pb-6" >
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 24, marginBottom: 16 }}>
-          <div style={{ flex: 1, maxWidth: 320, position: 'relative' }}>
-            <Search style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'var(--semi-color-text-2)' }} />
+        <div className="mp-mt-6 mp-mb-4 mp-flex-center mp-gap-2" >
+          <div className="mp-flex-1 mp-relative mp-onto-search-box">
+            <Search className="mp-icon-16 mp-text-2 mp-absolute mp-onto-search-icon" />
             <input
               type="text"
               placeholder="搜索名称 / rid / function_ref..."
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              style={{ width: '100%', height: 34, background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', padding: '0 12px 0 34px', fontSize: 13, color: 'var(--semi-color-text-0)', outline: 'none' }}
+              className="mp-w-full mp-onto-input mp-onto-input--search"
             />
           </div>
         </div>
 
-        <Card style={{overflow: 'hidden'}} bodyStyle={{padding: 0}}>
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h4 style={{ fontSize: 14, fontWeight: 600 }}>ActionType 列表</h4>
-            <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>{items.length} 个动作类型</span>
+        <Card className="mp-hidden" bodyStyle={{padding: 0}}>
+          <div className="mp-justify-between mp-flex-center mp-border mp-py-3 mp-px-5" >
+            <h4 className="mp-fw-600 mp-text-md">ActionType 列表</h4>
+            <span className="mp-text-sm mp-text-2">{items.length} 个动作类型</span>
           </div>
           {loading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>加载中…</div>
+            <div className="mp-text-center mp-p-8 mp-text-body mp-text-2">加载中…</div>
           ) : filtered.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>暂无 ActionType</div>
+            <div className="mp-text-center mp-p-8 mp-text-body mp-text-2">暂无 ActionType</div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className="mp-w-full mp-onto-table">
               <thead>
-                <tr style={{ background: 'var(--semi-color-fill-0)' }}>
+                <tr className="mp-bg-fill-0">
                   {['名称', '描述', '作用对象', '参数', '副作用', 'rid'].map((h) => (
-                    <th key={h} style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--semi-color-text-2)', textAlign: 'left', borderBottom: '1px solid var(--semi-color-border)' }}>{h}</th>
+                    <th key={h} className="mp-fw-500 mp-text-sm mp-text-2 mp-border mp-py-2 mp-px-4 mp-text-left" >{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((at) => (
                   <tr key={at.rid}>
-                    <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 500, borderBottom: '1px solid var(--semi-color-border)' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        <Zap style={{ width: 14, height: 14, color: 'var(--semi-color-text-2)' }} />{actionDisplayName(at)}
+                    <td className="mp-fw-500 mp-text-body mp-border mp-py-2 mp-px-4" >
+                      <span className="mp-inline-flex mp-items-center mp-gap-1" >
+                        <Zap className="mp-icon-14 mp-text-2" />{actionDisplayName(at)}
                       </span>
                     </td>
-                    <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)', maxWidth: 320 }}>{at.description || '—'}</td>
-                    <td style={{ padding: '10px 16px', fontSize: 12, borderBottom: '1px solid var(--semi-color-border)' }}>
-                      {at.on.length === 0 ? <span style={{ color: 'var(--semi-color-text-2)' }}>—</span> : at.on.map((rid) => (
-                        <Tag key={rid} style={{ marginRight: 4 }}>{otName(rid)}</Tag>
+                    <td className="mp-text-sm mp-text-2 mp-border mp-py-2 mp-px-4 mp-onto-col-320">{at.description || '—'}</td>
+                    <td className="mp-text-sm mp-border mp-py-2 mp-px-4" >
+                      {at.on.length === 0 ? <span className="mp-text-2">—</span> : at.on.map((rid) => (
+                        <Tag key={rid} className="mp-mr-1">{otName(rid)}</Tag>
                       ))}
                     </td>
-                    <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)' }}>{at.parameters.length}</td>
-                    <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)' }}>
+                    <td className="mp-text-sm mp-text-2 mp-border mp-py-2 mp-px-4" >{at.parameters.length}</td>
+                    <td className="mp-text-sm mp-text-2 mp-border mp-py-2 mp-px-4" >
                       {at.side_effects.length === 0 ? '—' : at.side_effects.join(', ')}
                     </td>
-                    <td style={{ padding: '10px 16px', fontSize: 11, fontFamily: 'var(--mp-font-mono)', color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)' }}>{at.rid}</td>
+                    <td className="mp-text-xs mp-text-2 mp-border mp-py-2 mp-px-4 mp-mono" >{at.rid}</td>
                   </tr>
                 ))}
               </tbody>
@@ -131,13 +131,13 @@ export default function ActionTypeListPage() {
           )}
         </Card>
 
-        <Card style={{overflow: 'hidden', marginTop: 16}} bodyStyle={{padding: 0}}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)' }}>
-            <h4 style={{ fontSize: 14, fontWeight: 600 }}>执行历史</h4>
+        <Card className="mp-hidden mp-mt-4" bodyStyle={{padding: 0}}>
+          <div className="mp-justify-between mp-flex-center mp-border mp-py-3 mp-px-5" >
+            <h4 className="mp-fw-600 mp-text-md">执行历史</h4>
           </div>
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>
+          <div className="mp-text-center mp-p-8 mp-text-body mp-text-2">
             暂无执行记录
-            <div style={{ fontSize: 12, marginTop: 6 }}>
+            <div className="mp-text-sm mp-mt-1" >
               在概念详情页或 SuperAI 编排中触发 ActionType.apply 后，执行记录将在此展示
             </div>
           </div>

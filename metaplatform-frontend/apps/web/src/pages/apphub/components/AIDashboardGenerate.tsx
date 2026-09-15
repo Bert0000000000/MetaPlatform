@@ -51,7 +51,7 @@ export default function AIDashboardGenerate({ onApply }: AIDashboardGenerateProp
 
   return (
     <div>
-      <Space vertical style={{ width: '100%' }}>
+      <Space vertical className="mp-w-full">
         <Typography.Title heading={5}>
           <BarChartOutlined /> AI 仪表盘生成
         </Typography.Title>
@@ -75,7 +75,7 @@ export default function AIDashboardGenerate({ onApply }: AIDashboardGenerateProp
         </Button>
 
         {loading && (
-          <div style={{ textAlign: 'center', padding: 40 }}>
+          <div className="mp-text-center mp-p-8">
             <Spin />
           </div>
         )}
@@ -98,21 +98,15 @@ export default function AIDashboardGenerate({ onApply }: AIDashboardGenerateProp
             {result.apiExamples.length > 0 && (
               <Card title="API 示例">
                 {result.apiExamples.map((ex: DashboardGenResult['apiExamples'][number], i: number) => (
-                  <Card key={i} style={{ marginBottom: 8 }}>
+                  <Card key={i} className="mp-mb-2">
                     <Typography.Text strong>
                       {ex.method} {ex.url}
                     </Typography.Text>
-                    <Typography.Paragraph style={{ color: 'var(--semi-color-text-2)', fontSize: 12, marginBottom: 4 }}>
+                    <Typography.Paragraph className="mp-mb-1 mp-text-sm mp-text-2">
                       {ex.description}
                     </Typography.Paragraph>
                     <pre
-                      style={{
-                        background: 'var(--semi-color-fill-0)',
-                        padding: 8,
-                        borderRadius: 4,
-                        fontSize: 11,
-                        margin: 0,
-                      }}
+                      className="mp-p-2 mp-m-0 mp-text-xs mp-bg-fill-0 mp-rounded-sm" 
                     >
                       <code>{ex.curl}</code>
                     </pre>

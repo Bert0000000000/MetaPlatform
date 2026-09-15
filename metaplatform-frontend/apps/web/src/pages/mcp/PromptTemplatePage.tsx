@@ -30,6 +30,7 @@ import VariableEditor from './components/VariableEditor';
 import PreviewPanel from './components/PreviewPanel';
 import type { PromptTemplate, PromptTemplateCreateRequest } from '@/api/mcphub/types';
 import { PageHeader } from '@/components/skeleton';
+import './mcp.css';
 
 const FormVariableEditor = withField(
   VariableEditor as React.ComponentType<Partial<React.ComponentProps<typeof VariableEditor>>>
@@ -89,7 +90,7 @@ export default function PromptTemplatePage() {
           <Typography.Text strong>
             <AppstoreOutlined /> {p.name}
           </Typography.Text>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" className="mp-text-sm">
             {p.description}
           </Typography.Text>
         </Space>
@@ -163,15 +164,15 @@ export default function PromptTemplatePage() {
         }
       />
 
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Input
           placeholder="搜索名称/分类"
           showClear
           value={query}
           onChange={(v) => setQuery(v)}
           onEnterPress={() => setKeyword(query)}
-          suffix={<SearchOutlined style={{ color: 'var(--semi-color-text-2)', cursor: 'pointer' }} onClick={() => setKeyword(query)} />}
-          style={{ width: 240 }}
+          suffix={<SearchOutlined className="mp-text-2 mp-clickable"  onClick={() => setKeyword(query)} />}
+          className="mp-w-240"
         />
       </Space>
 
@@ -240,14 +241,7 @@ export default function PromptTemplatePage() {
             </Tabs.TabPane>
             <Tabs.TabPane itemKey="raw" tab="原始模板">
               <pre
-                style={{
-                  background: 'var(--semi-color-fill-0)',
-                  padding: 12,
-                  borderRadius: 4,
-                  fontFamily: 'Menlo, Consolas, monospace',
-                  fontSize: 12,
-                  whiteSpace: 'pre-wrap',
-                }}
+                className="mp-p-3 mp-text-sm mp-bg-fill-0 mp-rounded-sm mp-mono mp-mcp-pre-wrap"
               >
                 {previewPrompt.template}
               </pre>

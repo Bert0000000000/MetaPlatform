@@ -31,7 +31,7 @@ export default function FormGlobalSettingsPanel({ config, onChange }: FormGlobal
 
   return (
     <Card title="表单全局设置">
-      <div style={{ marginBottom: 16 }}>
+      <div className="mp-mb-4">
         <Form.Label style={FIELD_LABEL_STYLE}>表单标题</Form.Label>
         <Input
           value={settings.title}
@@ -39,7 +39,7 @@ export default function FormGlobalSettingsPanel({ config, onChange }: FormGlobal
           placeholder="请输入表单标题"
         />
       </div>
-      <div style={{ marginBottom: 16 }}>
+      <div className="mp-mb-4">
         <Form.Label style={FIELD_LABEL_STYLE}>表单描述</Form.Label>
         <TextArea
           rows={3}
@@ -48,7 +48,7 @@ export default function FormGlobalSettingsPanel({ config, onChange }: FormGlobal
           placeholder="请输入表单描述"
         />
       </div>
-      <div style={{ marginBottom: 16 }}>
+      <div className="mp-mb-4">
         <Form.Label style={FIELD_LABEL_STYLE}>标签页模式</Form.Label>
         <Select
           value={settings.tabMode || 'none'}
@@ -58,10 +58,10 @@ export default function FormGlobalSettingsPanel({ config, onChange }: FormGlobal
             { label: '标签页', value: 'tab' },
             { label: '步骤条', value: 'step' },
           ]}
-          style={{ width: '100%' }}
+          className="mp-w-full"
         />
       </div>
-      <div style={{ marginBottom: 16 }}>
+      <div className="mp-mb-4">
         <Form.Label style={FIELD_LABEL_STYLE}>提交文案</Form.Label>
         <Input
           value={settings.submitText || '提交'}
@@ -69,7 +69,7 @@ export default function FormGlobalSettingsPanel({ config, onChange }: FormGlobal
           placeholder="例如：提交、保存、确认"
         />
       </div>
-      <div style={{ marginBottom: 16 }}>
+      <div className="mp-mb-4">
         <Form.Label style={FIELD_LABEL_STYLE}>布局密度</Form.Label>
         <Select
           value={settings.layoutDensity || 'default'}
@@ -79,10 +79,10 @@ export default function FormGlobalSettingsPanel({ config, onChange }: FormGlobal
             { label: '紧凑', value: 'compact' },
             { label: '宽松', value: 'loose' },
           ]}
-          style={{ width: '100%' }}
+          className="mp-w-full"
         />
       </div>
-      <div style={{ marginBottom: 16 }}>
+      <div className="mp-mb-4">
         <Form.Label style={FIELD_LABEL_STYLE}>提交后动作</Form.Label>
         <Select
           value={config.submitAction || 'toast'}
@@ -92,17 +92,17 @@ export default function FormGlobalSettingsPanel({ config, onChange }: FormGlobal
             { label: '跳转到指定页面', value: 'redirect' },
             { label: '发起流程', value: 'flow' },
           ]}
-          style={{ width: '100%' }}
+          className="mp-w-full"
         />
       </div>
-      <div style={{ marginBottom: 16 }}>
+      <div className="mp-mb-4">
         <Form.Label style={FIELD_LABEL_STYLE}>允许撤回</Form.Label>
         <Switch
           checked={config.allowWithdraw ?? false}
           onChange={(c) => onChange({ ...config, allowWithdraw: c })}
         />
       </div>
-      <div style={{ marginBottom: 16 }}>
+      <div className="mp-mb-4">
         <Form.Label style={FIELD_LABEL_STYLE}>允许编辑已提交</Form.Label>
         <Switch
           checked={config.allowEdit ?? false}

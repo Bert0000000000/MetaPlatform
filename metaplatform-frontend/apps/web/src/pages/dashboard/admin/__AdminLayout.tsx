@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { PageRoot, ModuleTabsLayout, type ModuleTab } from "@mate/shared";
+import './admin.css';
 
 /** 后台管理 11 个 tab（侧边栏只保留一级「后台管理」，二级移到内容区） */
 const ADMIN_TABS: ModuleTab[] = [
@@ -29,7 +30,7 @@ export function AdminLayout({ extra, children }: AdminLayoutProps) {
     <PageRoot>
       <ModuleTabsLayout tabs={ADMIN_TABS}>
         {extra && (
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 12 }}>
+          <div className="mp-flex mp-justify-end mp-mb-3 mp-gap-2">
             {extra}
           </div>
         )}
@@ -46,26 +47,18 @@ interface StatCardProps {
 }
 
 export function StatCard({ label, value, color = "default" }: StatCardProps) {
-  const colorMap: Record<string, string> = {
-    default: "var(--semi-color-text-0)",
-    success: "var(--semi-color-success)",
-    warning: "var(--semi-color-warning)",
-    destructive: "var(--semi-color-danger)",
+  const colorCls: Record<string, string> = {
+    default: "mp-text-1",
+    success: "mp-text-success",
+    warning: "mp-text-warning",
+    destructive: "mp-text-danger",
   };
   return (
     <div
-      style={{
-        background: "var(--semi-color-bg-1)",
-        border: "1px solid var(--semi-color-border)",
-        borderRadius: "var(--semi-border-radius-medium)",
-        padding: "16px 20px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 6,
-      }}
+      className="mp-border mp-rounded mp-flex-col mp-gap-1 mp-py-4 mp-px-5 mp-bg-1" 
     >
-      <span style={{ fontSize: 12, color: "var(--semi-color-text-2)", fontWeight: 500 }}>{label}</span>
-      <span style={{ fontSize: 26, fontWeight: 600, color: colorMap[color], letterSpacing: "-0.02em" }}>
+      <span className="mp-fw-500 mp-text-sm mp-text-2">{label}</span>
+      <span className={`mp-fw-600 mp-text-xl mp-admin-stat ${colorCls[color]}`}>
         {value}
       </span>
     </div>
@@ -74,7 +67,7 @@ export function StatCard({ label, value, color = "default" }: StatCardProps) {
 
 export function StatGrid({ children }: { children: ReactNode }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
+    <div className="mp-mb-5 mp-gap-3 mp-grid mp-admin-stat-grid">
       {children}
     </div>
   );

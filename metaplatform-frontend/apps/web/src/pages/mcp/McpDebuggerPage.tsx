@@ -38,6 +38,7 @@ import {
 import ParameterForm from './components/ParameterForm';
 import type { McpDebugSession, McpServer, McpTool, McpDebugCompareResult } from '@/api/mcphub/types';
 import { PageHeader } from '@/components/skeleton';
+import './mcp.css';
 
 const METHOD_OPTIONS = [
   { label: 'tools/call', value: 'tools/call' },
@@ -262,7 +263,7 @@ export default function DebuggerPage() {
         </span>
       ),
       content: currentSession ? (
-        <Space vertical style={{ width: '100%' }}>
+        <Space vertical className="mp-w-full">
           <Card title="请求报文">
             <Editor
               height="180px"
@@ -292,7 +293,7 @@ export default function DebuggerPage() {
         </span>
       ),
       content: currentSession ? (
-        <Space vertical style={{ width: '100%' }}>
+        <Space vertical className="mp-w-full">
           <Card>
             <Row gutter={16}>
               <Col span={12}>
@@ -340,7 +341,7 @@ export default function DebuggerPage() {
           )}
           {currentSession.breakpoint && (
             <Card>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div className="mp-gap-2 mp-flex-center">
                 <Badge type="warning" dot />
                 <Typography.Text>断点调试：请求已暂停，可点击历史记录中的回放继续执行</Typography.Text>
               </div>
@@ -371,7 +372,7 @@ export default function DebuggerPage() {
                     <Typography.Text>{item.method}</Typography.Text>
                   </Space>
                   <div>
-                    <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                    <Typography.Text type="tertiary" className="mp-text-sm">
                       {`${item.createdAt ?? ''} · ${item.durationMs ?? '-'} ms · ${item.traceId ?? ''}`}
                     </Typography.Text>
                   </div>
@@ -406,7 +407,7 @@ export default function DebuggerPage() {
         </span>
       ),
       content: (
-        <Space vertical style={{ width: '100%' }}>
+        <Space vertical className="mp-w-full">
           <Card title="差异字段">
             {compareResult.differences.length > 0 ? (
               compareResult.differences.map((d) => <Tag key={d}>{d}</Tag>)
@@ -464,38 +465,29 @@ export default function DebuggerPage() {
   }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div className="mp-h-full mp-flex mp-flex-col" >
       <PageHeader title={<><ThunderboltOutlined /> MCP 调试器</>} />
 
-      <Row gutter={16} style={{ flex: 1, minHeight: 0, marginTop: 16 }}>
-        <Col span={5} style={{ height: '100%' }}>
+      <Row gutter={16} className="mp-flex-1 mp-mt-4 mp-min-h-0" >
+        <Col span={5} className="mp-h-full">
           <Card
             title="Server / 工具"
-            style={{ height: '100%', overflow: 'auto' }}
+            className="mp-h-full mp-overflow-auto" 
           >
             {loadingResources ? (
               <Spin />
             ) : (
-              <Space vertical style={{ width: '100%' }}>
+              <Space vertical className="mp-w-full">
                 <div>
-                  <Typography.Text strong style={{ fontSize: 12 }}>
+                  <Typography.Text strong className="mp-text-sm">
                     MCP Server
                   </Typography.Text>
-                  <div style={{ maxHeight: 220, overflow: 'auto', marginTop: 8 }}>
+                  <div className="mp-mt-2 mp-overflow-auto mp-mcp-max-h-220">
                     {servers.map((s) => (
                       <div
                         key={s.id}
                         onClick={() => handleServerClick(s)}
-                        style={{
-                          padding: 8,
-                          borderRadius: 4,
-                          cursor: 'pointer',
-                          background:
-                            selectedServerId === s.id
-                              ? 'var(--semi-color-primary-light-default)'
-                              : 'transparent',
-                          marginBottom: 4,
-                        }}
+                        className={`mp-clickable mp-mb-1 mp-p-2 mp-rounded-sm ${selectedServerId === s.id ? 'mp-mcp-listitem-on' : 'mp-mcp-listitem'}`}
                       >
                         <Typography.Text strong>{s.name}</Typography.Text>
                         <div>
@@ -508,29 +500,20 @@ export default function DebuggerPage() {
                   </div>
                 </div>
                 <div>
-                  <Typography.Text strong style={{ fontSize: 12 }}>
+                  <Typography.Text strong className="mp-text-sm">
                     工具
                   </Typography.Text>
-                  <div style={{ maxHeight: 320, overflow: 'auto', marginTop: 8 }}>
+                  <div className="mp-mt-2 mp-overflow-auto mp-max-h-320" >
                     {displayedTools.map((t) => (
                       <div
                         key={t.id}
                         onClick={() => handleToolClick(t)}
-                        style={{
-                          padding: 8,
-                          borderRadius: 4,
-                          cursor: 'pointer',
-                          background:
-                            selectedToolId === t.id
-                              ? 'var(--semi-color-primary-light-default)'
-                              : 'transparent',
-                          marginBottom: 4,
-                        }}
+                        className={`mp-clickable mp-mb-1 mp-p-2 mp-rounded-sm ${selectedToolId === t.id ? 'mp-mcp-listitem-on' : 'mp-mcp-listitem'}`}
                       >
                         <Typography.Text strong>{t.name}</Typography.Text>
                         <div>
                           <Tag color="blue">{t.category}</Tag>
-                          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                          <Typography.Text type="tertiary" className="mp-text-sm">
                             <CodeOutlined /> {t.code}
                           </Typography.Text>
                         </div>
@@ -543,9 +526,9 @@ export default function DebuggerPage() {
           </Card>
         </Col>
 
-        <Col span={10} style={{ height: '100%' }}>
-          <Card title="请求编辑器" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Space wrap style={{ marginBottom: 12 }}>
+        <Col span={10} className="mp-h-full">
+          <Card title="请求编辑器" className="mp-h-full mp-flex mp-flex-col" >
+            <Space wrap className="mp-mb-3">
               <Select
                 value={method}
                 onChange={(m) => {
@@ -555,7 +538,7 @@ export default function DebuggerPage() {
                     setSelectedToolId(undefined);
                   }
                 }}
-                style={{ width: 180 }}
+                className="mp-w-180"
                 optionList={METHOD_OPTIONS}
               />
               <Button
@@ -575,7 +558,7 @@ export default function DebuggerPage() {
               />
             </Space>
 
-            <div style={{ flex: 1, minHeight: 0, marginBottom: 12 }}>
+            <div className="mp-flex-1 mp-mb-3 mp-min-h-0" >
               <Editor
                 height="calc(100vh - 420px)"
                 defaultLanguage="json"
@@ -594,8 +577,8 @@ export default function DebuggerPage() {
           </Card>
         </Col>
 
-        <Col span={9} style={{ height: '100%' }}>
-          <Card style={{ height: '100%' }}>
+        <Col span={9} className="mp-h-full">
+          <Card className="mp-h-full">
             <Tabs activeKey={activeTab} onChange={setActiveTab}>
               {tabItems.map((t) => (
                 <Tabs.TabPane itemKey={t.itemKey} tab={t.tab} key={t.itemKey}>

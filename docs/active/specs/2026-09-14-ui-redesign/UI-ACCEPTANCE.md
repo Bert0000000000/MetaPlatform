@@ -28,39 +28,61 @@
 
 ## 2. 指标对照
 
-| 指标 | 基线（2026-09-14） | 现状（2026-09-15） | 目标 | 状态 |
+| 指标 | 基线（2026-09-14） | 终值（2026-09-15） | 目标 | 状态 |
 |------|--------------------|----------------|------|------|
-| inline `style={{}}` | 4,526 | **1,748** | < 100 | ❌ 未达（-61%） |
+| inline `style={{}}` | 4,526 | **32** | < 100 | ✅ |
 | `v-*` 自建类 | 261 | **0** | 0 | ✅ |
 | `.semi-*` CSS 覆盖 | 0 | **0** | 0 | ✅ |
-| 私有 CSS 变量（`--muted/--accent/#hex` 直写） | 与 Semi 令牌并行 | **0 处未定义引用** | 单一令牌体系 | ✅ |
+| 私有 CSS 变量（`--muted/--accent/#hex` 直写） | 与 Semi 令牌并行（915 处引用已全站无定义） | **0** | 单一令牌体系 | ✅ |
 | `src/App.css` | 185 行（含 ~90 行 `v-portal-*` 死样式） | **94 行** | 退役 | ✅ |
 | 顶级路由域 | 11 域 / 100+ 路由 | **8 域**，域内 tab 化 | 8 域 | ✅ |
 | `src` 下 ts/tsx 文件 | 484 | **393**（删 94 个不可达文件） | 无孤儿 | ✅ |
+| 引用类是否有样式落地 | 未校验 | **692/692 有定义**（0 悬挂） | — | ✅ |
 
 复现命令：
 
 ```bash
-grep -rh "style={{}}" src --include="*.tsx" | wc -l      # 1748
-grep -rho "\bv-[a-z][a-z-]*" src --include="*.tsx" | wc -l  # 0
-grep -rn "\.semi-" src --include="*.css" | wc -l             # 0
+grep -rh "style={{" src --include="*.tsx" | wc -l            # 32
+grep -rhoE "\bv-[a-z][a-z-]*" src --include="*.tsx" | wc -l  # 0
+grep -rn "\.semi-" src --include="*.css" | wc -l            # 0（仅 1 处注释提及）
+node scripts/check_classes.mjs                               # OK：所有引用的类都有 CSS 定义
 ```
 
-### 2.1 差距说明：inline style 未达 < 100
+### 2.1 残留的 32 处：全部是不可静态化的运行时值
 
-**未达成的部分集中在 P1a 的「过渡期」本体页**，也就是本轮明确只换壳、不重写内部的两类：
+| 文件 | 处数 | 为何必须留在 JS |
+|------|------|-----------------|
+| `components/SemiGraphCanvas.tsx` | 9 | DOM 关系图：节点 x/y/w/h、缩放、transform 由数据与 props 驱动 |
+| `pages/ontology/OntologyActionPage.tsx` | 9 | FlowGram 节点渲染器：`nodeWidth`/`tColor`/选中态 boxShadow 属画布内部 |
+| `pages/dashboard/admin/components/UvPvTrendChart.tsx` | 4 | Recharts 序列色 + 数据驱动高度 |
+| `pages/dashboard/admin/components/DistributionCard.tsx` | 4 | 同上 |
+| `pages/wfe/components/PlanCanvas.tsx` | 2 | 画布容器 minHeight/minWidth |
+| `pages/ontology/MapPage.tsx` | 2 | 瓦片与弹层的运行时 left/top |
+| 其余 3 个文件 | 3 | 单点动态值（AnalyticsTab / FunnelCard 等） |
 
-| 文件 | inline 数 | 性质 |
-|------|-----------|------|
-| `pages/ontology/OntologyActionPage.tsx` | 241 | 旧 Action 编排画布（拖拽节点 + JS palette 对象，含 `#hex` 字面量） |
-| `pages/ontology/GovernancePage.tsx` | 112 | 旧治理页 |
-| `pages/ontology/OntologyModelingPage.tsx` | 80 | 类型编辑器（过渡子路由 `/ontology/model/editor`） |
-| `pages/ontology/DashboardPage.tsx` | 70 | 旧分析看板 |
-| 其余（含 mcp / knowledge / apphub 的仪表盘与设计器壳） | 合计 ~1,245 | 分散在 60+ 文件，多为布局微调 |
+这些都命中 UI-P2a/b/c 的「只换壳不换画布」约束，或本质上是数据驱动的数值，**没有静态类可表达**。
 
-这些文件**在上表 8 域的入口 tab 之外**（属域内深链子路由），P2 各批的「只换壳不换画布」约束直接把它们排除在重写范围外。把 inline 压到 < 100 需要重写这批画布类页面，**不是本次范围**。
+### 2.2 收敛方法（可复现）
 
-结论：该指标本轮**未达成**，且差距是**已定位的、有范围的**，不是散落的遗漏。
+1. **令牌工具层**：新建 `src/styles/utilities.css`（190 个类），把旧页面里重复上千次的
+   `marginBottom: 16` / `width: '100%'` / `fontSize: 12` 之类收敛成一份令牌类；
+   非令牌数值**吸附到最近的 10 档令牌**（DESIGN-SPEC §4.1）。
+2. **codemod**：`scripts/codemod_style.mjs`（5 轮，共 1,747 → 473）。安全设计：
+   只在同一 JSX 标签属性区内找已有 className（掩掉嵌套 `{…}`，避免把类名并到子元素上）、
+   动态 className 一律跳过、每个文件改完用 tsc 语法校验，不合法就整文件回退。
+3. **逐页语义化**：剩余长尾按域拆给 4 个并行批次人工抽取为
+   `mp-onto-*` / `mp-flow-*` / `mp-app-*` / `mp-kb-*` 等语义类，写进各域 css。
+
+### 2.3 本文档的验证边界（请知悉）
+
+本轮的**代码级**证据是完整的：`tsc -b` 零错误、`pnpm build` 通过、
+`scripts/check_classes.mjs` 确认 692 个引用类零悬挂、25 条代表性路由无崩溃渲染（见 §5）。
+
+但**像素级观感核对未能完整做**：收口期间本机的 gateway(8100) 与 Docker 停摆，
+Playwright 的登录链路（`POST /api/v1/iam/auth/login`）走不通，因此带真实数据的
+双主题截图与既有 ui-*.spec 无法重跑。已做的替代验证是「无后端冒烟」（占位 token
+绕过 AuthGuard，逐个路径检查是否崩到 ErrorBoundary / 白屏）。
+**1,700+ 处样式的观感等价性，需要在后端恢复后跑一次全量 Playwright 才算闭合。**
 
 ---
 
@@ -185,12 +207,46 @@ grep -rn "\.semi-" src --include="*.css" | wc -l             # 0
 
 ---
 
-## 5. 用例基线
+## 5. 验证记录
 
-各套件在**批次各自收口时均跑到全绿**；最后一次「9 套件合并串行跑」（93 条）因本机 Node 进程连续崩溃只拿到 **90 passed / 3 failed**，3 条失败**全部落在导航/登录阶段，未触及任何 UI 断言**（详见下方环境说明）。
+### 5.1 代码级（本轮全部实际跑过）
 
-| 套件 | 用例数 | 批次收口时 | 最后合并跑 |
-|------|--------|-----------|-----------|
+| 检查 | 命令 | 结果 |
+|------|------|------|
+| 类型 | `npx tsc -b --noEmit` | **0 error**（P2c / P2a / P2b / P2d 各阶段分别复跑） |
+| 构建 | `pnpm build` | **✓ built**（tsc -b + vite build） |
+| 类名悬挂 | `node scripts/check_classes.mjs` | **692/692 引用类都有 CSS 定义** |
+| 无后端冒烟 | 占位 token 绕过 AuthGuard，逐路径查崩溃/白屏 | **25/25 通过**（8 域代表作 + 五骨架 demo） |
+
+冒烟覆盖的 25 条路径：工作台 · 本体 4 主 tab + Action 编排 + 治理 · 数字员工 ·
+SuperAI 会话/执行计划 · 应用中心 3 tab · 知识库/文档/MCP 工具/MCP 客户端/A2A ·
+治理 3 主 tab · 管理 3 页 + 五骨架 demo。全部 `#app` 挂载、无 `页面渲染出错`、无白屏；
+MCP 三页因后端未起报 500，但页面自行降级渲染，未崩到 ErrorBoundary。
+
+### 5.2 未能完成的部分（本机环境所限）
+
+收口期间 **gateway(8100) 与 Docker 停摆**，Playwright 的登录链路
+（`POST /api/v1/iam/auth/login`）走不通，因此：
+
+- 既有 `ui-p0-shell` … `ui-p3-acceptance` 9 套件（90 条）**本轮未能重跑**；
+  上一次可跑通时是 **90 passed / 3 failed**，3 条失败均在导航/登录阶段
+  （vite dev server 与 Playwright worker 以 `3221226505`(0xC0000409) 崩溃、
+  浏览器报 `ERR_INSUFFICIENT_RESOURCES`），非 UI 断言失败。
+- **8 域 × 双主题截图未重新归档**：`tests/visual/ui-redesign/` 下仍是 P3 阶段的
+  版本（对应当时 1,748 处 inline 的中间态，非本轮终态）。
+- 1,700+ 处样式的**像素级等价性**未经真实数据核对。
+
+> 待后端恢复后需补：`npx playwright test`（9 套件全量）+ 重跑 `ui-p3-acceptance`
+> 的截图用例，把 `tests/visual/ui-redesign/` 刷新到本轮终态。**在此之前，
+> 「视觉验收」这一项不算闭合。**
+
+### 5.3 既知基线红（改动前即为红，与本轮无关）
+
+`action-orchestration` / `ontology-agent-e2e` / `ontology-dedup` / `superai-routing`
+四套用例依赖的后端接口在本地未全起（workflow-definitions 502、路由快照
+`no_authorized_roles`），见记忆档 `playwright-baseline-red-specs`。
+
+------|--------|-----------|-----------|
 | `ui-p0-shell`（壳 / 新 IA / 301 / ⌘K / 五骨架 demo） | 46 | ✅ | ❌ 登录 POST 超时（单跑 3.6s 通过） |
 | `ui-p1a-ontology` | 5 | ✅ | ✅ |
 | `ui-p1b-home` | 4 | ✅ | ❌ worker 崩溃（见环境说明） |

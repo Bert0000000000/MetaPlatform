@@ -9,6 +9,7 @@ import {
 } from '@ant-design/icons';
 import { get, post } from '@/api/apphub/client';
 import type { PageDesignerConfig, DashboardWidget, DashboardWidgetType, DataSourceBinding } from '@/api/apphub/pages';
+import '../apps.css';
 
 interface DashboardCanvasProps {
   config: PageDesignerConfig;
@@ -148,7 +149,7 @@ export default function DashboardCanvas({ config, onChange, onPreview }: Dashboa
 
   return (
     <div>
-      <Card title="添加组件" style={{ marginBottom: 16 }}>
+      <Card title="添加组件" className="mp-mb-4">
         <Space wrap>
           {(Object.keys(TYPE_LABELS) as DashboardWidgetType[]).map((t) => (
             <Button key={t} icon={<PlusOutlined />} onClick={() => handleAdd(t)}>
@@ -162,19 +163,12 @@ export default function DashboardCanvas({ config, onChange, onPreview }: Dashboa
         <Empty description="画布为空，点击上方按钮添加组件" />
       ) : (
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(12, 1fr)',
-            gap: 12,
-          }}
+          className="mp-grid mp-gap-3 mp-app-grid-12"
         >
           {config.widgets.map((w) => (
             <Card
               key={w.id}
-              style={{
-                gridColumn: `span ${w.position.w}`,
-                minHeight: 120,
-              }}
+              className={`mp-app-col-${w.position.w} mp-app-min-h-120`}
               title={
                 <Space>
                   <BorderOutlined />
@@ -201,12 +195,7 @@ export default function DashboardCanvas({ config, onChange, onPreview }: Dashboa
               }
             >
               <div
-                style={{
-                  color: 'var(--semi-color-text-2)',
-                  fontSize: 12,
-                  padding: '24px 0',
-                  textAlign: 'center',
-                }}
+                className="mp-text-center mp-text-sm mp-text-2 mp-py-6"
               >
                 {describeDataSource(w.dataSource) ? (
                   <code>{describeDataSource(w.dataSource)}</code>

@@ -51,6 +51,7 @@ import {
 } from '@douyinfe/semi-icons';
 import { createApp, getApp } from '@/api/apphub/apps';
 import type { AppCreateRequest } from '@/api/apphub/types';
+import './apps.css';
 
 interface BusinessObject {
   id: string;
@@ -202,7 +203,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
   };
 
   const renderStep1 = () => (
-    <Card style={{ marginBottom: 16 }} title="基本信息">
+    <Card className="mp-mb-4" title="基本信息">
       <Form
         form={basicForm}
         labelPosition="left"
@@ -257,7 +258,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
           {businessObjects.length === 0 ? (
             <Empty description="暂无业务对象，点击右上角添加" />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="mp-flex mp-gap-3 mp-flex-col" >
               {businessObjects.map((obj, i) => (
                 <Card
                   key={obj.id}
@@ -271,7 +272,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
                     />
                   }
                 >
-                  <Space spacing={12} style={{ width: '100%' }}>
+                  <Space spacing={12} className="mp-w-full">
                     <Typography.Text type="tertiary">名称</Typography.Text>
                     <Input
                       value={obj.name}
@@ -280,7 +281,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
                         next[i] = { ...obj, name: v };
                         setBusinessObjects(next);
                       }}
-                      style={{ width: 200 }}
+                      className="mp-w-200"
                     />
                     <Typography.Text type="tertiary">描述</Typography.Text>
                     <Input
@@ -291,7 +292,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
                         setBusinessObjects(next);
                       }}
                       placeholder="描述字段、关联等"
-                      style={{ flex: 1 }}
+                      className="mp-flex-1"
                     />
                   </Space>
                 </Card>
@@ -319,7 +320,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
           {menus.length === 0 ? (
             <Empty description="暂无菜单，菜单对应应用内导航" />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="mp-flex mp-gap-2 mp-flex-col" >
               {menus.map((m, i) => (
                 <Card key={m.id}>
                   <Space spacing={12} wrap>
@@ -331,7 +332,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
                         setMenus(next);
                       }}
                       placeholder="菜单名称"
-                      style={{ width: 160 }}
+                      className="mp-w-160"
                     />
                     <Input
                       value={m.path}
@@ -341,7 +342,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
                         setMenus(next);
                       }}
                       placeholder="/path"
-                      style={{ width: 160 }}
+                      className="mp-w-160"
                     />
                     <Select
                       value={m.icon}
@@ -351,7 +352,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
                         setMenus(next);
                       }}
                       optionList={ICON_OPTIONS}
-                      style={{ width: 140 }}
+                      className="mp-w-140"
                     />
                     <Button
                       type="danger"
@@ -386,10 +387,10 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
           {forms.length === 0 ? (
             <Empty description="暂无表单" />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="mp-flex mp-gap-2 mp-flex-col" >
               {forms.map((f, i) => (
                 <Card key={f.id}>
-                  <Space spacing={12} wrap style={{ width: '100%' }}>
+                  <Space spacing={12} wrap className="mp-w-full">
                     <Input
                       value={f.name}
                       onChange={(v) => {
@@ -398,7 +399,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
                         setForms(next);
                       }}
                       placeholder="表单名称"
-                      style={{ width: 200 }}
+                      className="mp-w-200"
                     />
                     <Input
                       value={f.fields}
@@ -408,7 +409,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
                         setForms(next);
                       }}
                       placeholder="字段列表（逗号分隔）"
-                      style={{ flex: 1, minWidth: 240 }}
+                      className="mp-flex-1 mp-app-min-w-240"
                     />
                     <Button
                       type="danger"
@@ -443,7 +444,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
           {flows.length === 0 ? (
             <Empty description="暂无流程，引用 Flowable / BPMN 引擎" />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="mp-flex mp-gap-2 mp-flex-col" >
               {flows.map((f, i) => (
                 <Card key={f.id}>
                   <Space spacing={12} wrap>
@@ -455,7 +456,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
                         setFlows(next);
                       }}
                       placeholder="流程名称"
-                      style={{ width: 200 }}
+                      className="mp-w-200"
                     />
                     <Select
                       value={f.type}
@@ -465,7 +466,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
                         setFlows(next);
                       }}
                       optionList={FLOW_TYPES}
-                      style={{ width: 160 }}
+                      className="mp-w-160"
                     />
                     <Button
                       type="danger"
@@ -500,7 +501,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
           {permissions.length === 0 ? (
             <Empty description="暂无角色权限" />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="mp-flex mp-gap-2 mp-flex-col" >
               {permissions.map((p, i) => (
                 <Card key={p.id}>
                   <Space spacing={12} wrap>
@@ -512,7 +513,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
                         setPermissions(next);
                       }}
                       placeholder="角色名"
-                      style={{ width: 140 }}
+                      className="mp-w-140"
                     />
                     <Input
                       value={p.resource}
@@ -522,7 +523,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
                         setPermissions(next);
                       }}
                       placeholder="资源（* 表示所有）"
-                      style={{ width: 200 }}
+                      className="mp-w-200"
                     />
                     <Select
                       multiple
@@ -533,7 +534,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
                         setPermissions(next);
                       }}
                       optionList={PERMISSION_ACTIONS.map((a) => ({ value: a, label: a }))}
-                      style={{ minWidth: 240 }}
+                      className="mp-app-min-w-240"
                     />
                     <Button
                       type="danger"
@@ -554,7 +555,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
 
   const renderStep3 = () => (
     <>
-      <Card style={{ marginBottom: 16 }} title="应用摘要">
+      <Card className="mp-mb-4" title="应用摘要">
         <Form form={basicForm} labelPosition="left" labelWidth={120} disabled>
           <Form.Input field="name" label="应用名称" />
           <Form.Input field="code" label="应用编码" />
@@ -591,9 +592,9 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
       placement="right"
       keepDOM={false}
       title={
-        <Space spacing={12} style={{ width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Space spacing={12} className="mp-w-full mp-items-center mp-justify-between">
           <Space spacing={12}>
-            <Typography.Title heading={4} style={{ margin: 0 }}>
+            <Typography.Title heading={4} className="mp-m-0">
               {targetId ? '重新设计应用' : '创建应用'}
             </Typography.Title>
             <Tag color="blue">步骤 {currentStep}/3</Tag>
@@ -614,13 +615,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
       bodyStyle={{ padding: '24px 32px' }}
       footer={
         <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '12px 24px',
-            borderTop: '1px solid var(--semi-color-border)',
-          }}
+          className="mp-justify-between mp-border mp-flex-center mp-py-3 mp-px-6" 
         >
           <Typography.Text type="tertiary">
             {currentStep === 1 && '填写应用的基本信息'}
@@ -644,7 +639,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
         </div>
       }
     >
-      <Steps type="basic" current={currentStep} size="default" style={{ marginBottom: 24 }}>
+      <Steps type="basic" current={currentStep} size="default" className="mp-mb-6">
         {steps.map((s) => (
           <Steps.Step key={s.title} title={s.title} description={s.desc} />
         ))}

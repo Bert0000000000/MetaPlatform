@@ -28,6 +28,7 @@ import ToolCategoryTree from './components/ToolCategoryTree';
 import CategoryManagementModal from './components/CategoryManagementModal';
 import type { McpTool, McpToolCategory } from '@/api/mcphub/types';
 import { PageHeader } from '@/components/skeleton';
+import './mcp.css';
 
 export default function ToolListPage() {
   const navigate = useNavigate();
@@ -85,7 +86,7 @@ export default function ToolListPage() {
       render: (_, t) => (
         <Space vertical spacing={0}>
           <Typography.Text strong>{t.name}</Typography.Text>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" className="mp-text-sm">
             <CodeOutlined /> {t.code}
           </Typography.Text>
         </Space>
@@ -161,24 +162,24 @@ export default function ToolListPage() {
         }
       />
 
-      <Space style={{ marginBottom: 16 }} wrap>
+      <Space className="mp-mb-4" wrap>
         <Input
           placeholder="搜索工具名称/编码"
           showClear
           onEnterPress={(e) => setKeyword((e.target as HTMLInputElement).value)}
-          style={{ width: 240 }}
+          className="mp-w-240"
         />
         <Select
           placeholder="分类"
           showClear
-          style={{ width: 160 }}
+          className="mp-w-160"
           value={category}
           onChange={(v) => setCategory(v as string | undefined)}
           optionList={categories.map((c) => ({ label: c.name, value: c.code }))}
         />
       </Space>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16 }}>
+      <div className="mp-gap-4 mp-grid mp-mcp-grid-260">
         <Card title="按分类浏览" bodyStyle={{ padding: 8 }}>
           {tools.length === 0 ? (
             <Empty description="暂无工具" />

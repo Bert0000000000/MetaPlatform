@@ -4,6 +4,7 @@ import { createApiClient, apiPath } from '@mate/shared/api';
 import { searchAgentCards, type ExternalAgent as A2ACard } from '@/api/dw/a2a';
 import { listExternalAgents as listMcpExternalAgents } from '@/api/mcphub/external-agents';
 import { PageHeader } from '@/components/skeleton';
+import './mcp.css';
 
 const GATEWAY = 'http://localhost:8100';
 
@@ -58,13 +59,13 @@ export default function A2aIntegrationGuidePage() {
         }
       />
 
-      <Space wrap style={{ marginBottom: 16 }}>
+      <Space wrap className="mp-mb-4">
         <Stat label="内部数字员工" value={internalCount} />
         <Stat label="外部 Agent" value={externalCount} />
         <Stat label="编排角色" value={roleCount} />
       </Space>
 
-      <Card title="1 · 服务发现（Service Discovery）" style={{ marginBottom: 16 }}>
+      <Card title="1 · 服务发现（Service Discovery）" className="mp-mb-4">
         <Typography.Paragraph>
           任何外部 Agent / MCP 客户端 / CLI 先通过 A2A 注册中心的发现端点查询可协作的 Agent 卡片（内部数字员工 + 外部联邦 Agent 合并返回）。
         </Typography.Paragraph>        <EndpointRow method="GET" path="/api/v1/a2a/agent-cards/search" desc="发现 Agent 卡片（含 source: internal/external、role、capabilities）" />
@@ -74,8 +75,8 @@ export default function A2aIntegrationGuidePage() {
         <EndpointRow method="GET" path="/api/v1/orchestrator/roles" desc="列出可被 SuperAI 调度的数字员工角色" />
       </Card>
 
-      <Card title="2 · 外部 Agent 注册（A2A / MCP / BOTH）" style={{ marginBottom: 16 }}>
-        <div style={{ marginBottom: 12 }}>
+      <Card title="2 · 外部 Agent 注册（A2A / MCP / BOTH）" className="mp-mb-4">
+        <div className="mp-mb-3">
           <Tag color="green">A2A</Tag> 外部 Agent 直接注册到 A2A 注册中心；<Tag color="purple">MCP</Tag>{' '}
           走 MCP 服务中心目录；两者都要可在 SuperAI 调度里被发现，建议同时在编排层注册角色。
         </div>
@@ -89,13 +90,13 @@ export default function A2aIntegrationGuidePage() {
         <CodeBlock lang="bash" code={`curl -s -X POST "${GATEWAY}/api/v1/orchestrator/roles" \\
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \\
   -d '{"role":"workflow","name":"Workflow Employee","capabilities":[{"name":"delegate_run","worker_kind":"a2a","ref":"agent-recon"}]}'`} />
-        <div style={{ marginTop: 12 }}>
+        <div className="mp-mt-3">
           <Typography.Text strong>当前编排角色：</Typography.Text>
         </div>
-        <Table rowKey="role" columns={roleColumns} dataSource={roles} pagination={false} size="small" style={{ marginTop: 8 }} />
+        <Table rowKey="role" columns={roleColumns} dataSource={roles} pagination={false} size="small" className="mp-mt-2" />
       </Card>
 
-      <Card title="3 · 委派与任务（Delegation）" style={{ marginBottom: 16 }}>
+      <Card title="3 · 委派与任务（Delegation）" className="mp-mb-4">
         <Typography.Paragraph>
           SuperAI 对话调度走 <code>/api/v1/copilot/chat/agent/stream</code>（LLM 自主决策 → orchestrator dispatch）。
           外部系统也可直接委派：W3C 消息异步建任务（<code>/messages</code>）或同步执行（<code>/execute</code>）。
@@ -113,7 +114,7 @@ export default function A2aIntegrationGuidePage() {
         <EndpointRow method="GET" path="/api/v1/a2a/tasks/{task_id}" desc="查询任务状态（含 result artifacts）" />
       </Card>
 
-      <Card title="4 · CLI 快速接入" style={{ marginBottom: 16 }}>
+      <Card title="4 · CLI 快速接入" className="mp-mb-4">
         <CodeBlock lang="bash" code={`# 1. 获取 token（管理员）
 TOKEN=$(curl -s -X POST "${GATEWAY}/api/v1/iam/auth/login" -H "Content-Type: application/json" \\
   -d '{"username":"admin","password":"admin123"}' | python3 -c "import sys,json;print(json.load(sys.stdin)['accessToken'])")
@@ -150,8 +151,8 @@ function Stat({ label, value }: { label: string; value: number | null }) {
   return (
     <Card bodyStyle={{ padding: '8px 20px' }}>
       <Space vertical spacing={0} align="center">
-        <Typography.Text type="tertiary" style={{ fontSize: 12 }}>{label}</Typography.Text>
-        <Typography.Text strong style={{ fontSize: 22 }}>{value ?? '—'}</Typography.Text>
+        <Typography.Text type="tertiary" className="mp-text-sm">{label}</Typography.Text>
+        <Typography.Text strong className="mp-text-xl">{value ?? '—'}</Typography.Text>
       </Space>
     </Card>
   );
@@ -160,7 +161,7 @@ function Stat({ label, value }: { label: string; value: number | null }) {
 function EndpointRow({ method, path, desc }: { method: string; path: string; desc: string }) {
   const color = method === 'GET' ? 'green' : method === 'POST' ? 'blue' : 'orange';
   return (
-    <div style={{ marginBottom: 8, display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
+    <div className="mp-flex mp-mb-2 mp-gap-2 mp-wrap mp-mcp-baseline">
       <Tag color={color}>{method}</Tag>
       <code>{path}</code>
       <Typography.Text type="tertiary">{desc}</Typography.Text>

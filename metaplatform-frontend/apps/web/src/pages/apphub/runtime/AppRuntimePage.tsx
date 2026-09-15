@@ -12,6 +12,7 @@ import RuntimePageCmp from './RuntimePage';
 import RuntimePlaceholder from './RuntimePlaceholder';
 import { DEMO_RENDER_TREE } from './demoData';
 import { flattenLeaves } from './treeUtils';
+import '../apps.css';
 
 /**
  * 应用运行时入口（/s/:code）：全屏独立应用壳。
@@ -86,9 +87,9 @@ export default function AppRuntimePage() {
     }
   };
 
-  if (loading) return <Spin size="large" style={{ display: 'block', margin: '120px auto' }} />;
-  if (error) return <Banner type="danger" description={error} style={{ margin: 24 }} />;
-  if (!current) return <Banner type="info" description="该应用暂无可用页面" style={{ margin: 24 }} />;
+  if (loading) return <Spin size="large" className="mp-block mp-app-spin-center" />;
+  if (error) return <Banner type="danger" description={error} className="mp-m-6" />;
+  if (!current) return <Banner type="info" description="该应用暂无可用页面" className="mp-m-6" />;
 
   return (
     <AppRuntimeLayout

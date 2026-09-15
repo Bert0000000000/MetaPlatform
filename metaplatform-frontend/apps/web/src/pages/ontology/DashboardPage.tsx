@@ -25,21 +25,7 @@ import {
 } from '@/api/ont/kernel';
 import ChartSvg, { type ChartDatum, type ChartType } from './components/ChartSvg';
 import { readAnalysisPins, removeAnalysisPin, type AnalysisPin } from './components/analysisPins';
-
-const GRID_STYLE = {
-  display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16,
-} as const;
-
-const CARD_HEAD_STYLE = {
-  display: 'flex', alignItems: 'center', gap: 8,
-  padding: '12px 16px', borderBottom: '1px solid var(--semi-color-border)',
-} as const;
-
-const opBtnStyle = {
-  width: 24, height: 24, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-  border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)', borderRadius: 6,
-  color: 'var(--semi-color-text-2)', cursor: 'pointer', padding: 0, flexShrink: 0,
-} as const;
+import './ontology.css';
 
 /** rid 尾段（版本号前一段）作短名。 */
 function shortRid(rid: string): string {
@@ -95,33 +81,33 @@ function PinCard({
   useEffect(() => { void load(); }, [load, reloadKey]);
 
   return (
-    <Card bodyStyle={{ padding: 0 }} style={{ overflow: 'hidden', flex: 1, minWidth: 0, width: '100%' }}>
-      <div style={CARD_HEAD_STYLE}>
-        <Pin style={{ width: 13, height: 13, color: 'var(--semi-color-primary)', flexShrink: 0 }} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={pin.title}>
+    <Card bodyStyle={{ padding: 0 }} className="mp-w-full mp-hidden mp-flex-1">
+      <div className="mp-onto-card-head">
+        <Pin className="mp-text-primary mp-shrink-0 mp-icon-12"  />
+        <div className="mp-flex-1">
+          <div className="mp-hidden mp-fw-600 mp-text-body mp-nowrap mp-ellipsis-text"  title={pin.title}>
             {pin.title}
           </div>
-          <div style={{ fontSize: 10, color: 'var(--semi-color-text-2)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div className="mp-hidden mp-text-2 mp-nowrap mp-text-xs mp-mono mp-ellipsis-text" >
             {typeNames[pin.config.source] ?? shortRid(pin.config.source)} · {pin.config.dimension}
           </div>
         </div>
-        <button type="button" title="刷新" onClick={() => void load()} style={opBtnStyle}>
-          <RefreshCw style={{ width: 12, height: 12 }} />
+        <button type="button" title="刷新" onClick={() => void load()} className="mp-onto-icon-btn">
+          <RefreshCw className="mp-icon-12" />
         </button>
-        <button type="button" title="移除" onClick={() => onRemove(pin.id)} style={opBtnStyle}>
-          <X style={{ width: 12, height: 12 }} />
+        <button type="button" title="移除" onClick={() => onRemove(pin.id)} className="mp-onto-icon-btn">
+          <X className="mp-icon-12" />
         </button>
       </div>
-      <div style={{ padding: '10px 12px' }}>
+      <div className="mp-py-2 mp-px-3">
         {busy ? (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', height: 150, color: 'var(--semi-color-text-2)', fontSize: 12 }}>
-            <Loader2 style={{ width: 13, height: 13, animation: 'osp-spin 1s linear infinite' }} /> 加载中…
+          <div className="mp-gap-2 mp-text-sm mp-text-2 mp-flex-center mp-justify-center mp-onto-card-fill">
+            <Loader2 className="mp-icon-12 mp-spin" /> 加载中…
           </div>
         ) : err ? (
-          <div style={{ height: 150, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ fontSize: 12, color: 'var(--semi-color-danger)', padding: '0 12px', textAlign: 'center', wordBreak: 'break-all' }}>{err}</div>
-            <button type="button" onClick={() => void load()} style={{ ...opBtnStyle, width: 'auto', height: 26, padding: '0 12px', fontSize: 11 }}>重试</button>
+          <div className="mp-gap-2 mp-flex-center mp-justify-center mp-flex-col mp-onto-card-fill">
+            <div className="mp-text-center mp-text-sm mp-text-danger mp-break-all mp-px-3">{err}</div>
+            <button type="button" onClick={() => void load()} className="mp-text-xs mp-onto-icon-btn mp-onto-icon-btn--wide">重试</button>
           </div>
         ) : (
           <ChartSvg
@@ -168,21 +154,21 @@ function TypeStatsCard({ types, reloadKey }: { types: KernelObjectType[]; reload
   );
 
   return (
-    <Card bodyStyle={{ padding: 0 }} style={{ overflow: 'hidden' }}>
-      <div style={CARD_HEAD_STYLE}>
-        <BarChart3 style={{ width: 14, height: 14 }} />
-        <h4 style={{ margin: 0, fontSize: 13, fontWeight: 600, flex: 1 }}>类型统计</h4>
-        <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>
+    <Card bodyStyle={{ padding: 0 }} className="mp-hidden">
+      <div className="mp-onto-card-head">
+        <BarChart3 className="mp-icon-14" />
+        <h4 className="mp-fw-600 mp-flex-1 mp-m-0 mp-text-body">类型统计</h4>
+        <span className="mp-text-xs mp-text-2">
           {types.length} 类型 · {total} 实例
         </span>
       </div>
-      <div style={{ padding: '10px 12px' }}>
+      <div className="mp-py-2 mp-px-3">
         {counts === null ? (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', height: 150, color: 'var(--semi-color-text-2)', fontSize: 12 }}>
-            <Loader2 style={{ width: 13, height: 13, animation: 'osp-spin 1s linear infinite' }} /> 统计中…
+          <div className="mp-gap-2 mp-text-sm mp-text-2 mp-flex-center mp-justify-center mp-onto-card-fill">
+            <Loader2 className="mp-icon-12 mp-spin" /> 统计中…
           </div>
         ) : err ? (
-          <div style={{ height: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--semi-color-danger)' }}>{err}</div>
+          <div className="mp-text-sm mp-text-danger mp-flex-center mp-justify-center mp-onto-card-fill">{err}</div>
         ) : (
           <ChartSvg type="bar" data={counts.slice(0, 12)} baseWidth={320} height={190} mini />
         )}
@@ -209,43 +195,40 @@ function RecentActionsCard({ reloadKey }: { reloadKey: number }) {
   }, [reloadKey]);
 
   return (
-    <Card bodyStyle={{ padding: 0 }} style={{ overflow: 'hidden' }}>
-      <div style={CARD_HEAD_STYLE}>
-        <History style={{ width: 14, height: 14 }} />
-        <h4 style={{ margin: 0, fontSize: 13, fontWeight: 600, flex: 1 }}>最近 Action</h4>
-        <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>近 10 条</span>
+    <Card bodyStyle={{ padding: 0 }} className="mp-hidden">
+      <div className="mp-onto-card-head">
+        <History className="mp-icon-14" />
+        <h4 className="mp-fw-600 mp-flex-1 mp-m-0 mp-text-body">最近 Action</h4>
+        <span className="mp-text-xs mp-text-2">近 10 条</span>
       </div>
-      <div style={{ padding: '8px 16px 12px', maxHeight: 210, overflowY: 'auto' }}>
+      <div className="mp-overflow-y-auto mp-pt-2 mp-px-4 mp-pb-3 mp-onto-list-panel">
         {rows === null ? (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', height: 150, color: 'var(--semi-color-text-2)', fontSize: 12 }}>
-            <Loader2 style={{ width: 13, height: 13, animation: 'osp-spin 1s linear infinite' }} /> 加载中…
+          <div className="mp-gap-2 mp-text-sm mp-text-2 mp-flex-center mp-justify-center mp-onto-card-fill">
+            <Loader2 className="mp-icon-12 mp-spin" /> 加载中…
           </div>
         ) : err ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 150, fontSize: 12, color: 'var(--semi-color-danger)' }}>{err}</div>
+          <div className="mp-text-sm mp-text-danger mp-flex-center mp-justify-center mp-onto-card-fill">{err}</div>
         ) : rows.length === 0 ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 150, fontSize: 12, color: 'var(--semi-color-text-2)' }}>暂无执行记录</div>
+          <div className="mp-text-sm mp-text-2 mp-flex-center mp-justify-center mp-onto-card-fill">暂无执行记录</div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="mp-flex mp-flex-col" >
             {rows.map((r, i) => (
-              <div key={r.audit_id} style={{ display: 'flex', gap: 10 }}>
+              <div key={r.audit_id} className="mp-flex mp-gap-2" >
                 {/* 时间线：竖线 + 圆点 */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, width: 12 }}>
-                  <span style={{
-                    width: 8, height: 8, borderRadius: '50%', marginTop: 6,
-                    background: 'var(--semi-color-primary)', boxShadow: '0 0 0 2px var(--semi-color-bg-1), 0 0 0 3px var(--semi-color-border)',
-                  }} />
-                  {i < rows.length - 1 && <span style={{ width: 1, flex: 1, background: 'var(--semi-color-border)' }} />}
+                <div className="mp-flex-center mp-shrink-0 mp-flex-col mp-onto-timeline-rail">
+                  <span className="mp-mt-1 mp-icon-12 mp-onto-timeline-dot" />
+                  {i < rows.length - 1 && <span className="mp-flex-1 mp-onto-timeline-line" />}
                 </div>
-                <div style={{ flex: 1, minWidth: 0, padding: '4px 0 10px' }}>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.action_rid}>
+                <div className="mp-flex-1 mp-pt-1 mp-pb-2">
+                  <div className="mp-flex mp-gap-2 mp-onto-baseline">
+                    <span className="mp-hidden mp-fw-600 mp-text-sm mp-nowrap mp-mono mp-ellipsis-text"  title={r.action_rid}>
                       {shortRid(r.action_rid)}
                     </span>
-                    <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginLeft: 'auto', flexShrink: 0 }}>
+                    <span className="mp-text-xs mp-text-2 mp-shrink-0 mp-ml-auto" >
                       {r.created_at ? new Date(r.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}
                     </span>
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>
+                  <div className="mp-text-xs mp-text-2">
                     {`执行者 ${r.actor_id || '—'} · 编辑 ${String((r.result as Record<string, unknown> | null)?.applied_count ?? '—')} 条`}
                   </div>
                 </div>
@@ -262,19 +245,21 @@ function RecentActionsCard({ reloadKey }: { reloadKey: number }) {
 
 type LightLevel = 'green' | 'yellow' | 'red';
 
-const LIGHT_COLOR: Record<LightLevel, string> = {
-  green: 'var(--semi-color-success)',
-  yellow: 'var(--semi-color-warning)',
-  red: 'var(--semi-color-danger)',
+const LIGHT_DOT_CLASS: Record<LightLevel, string> = {
+  green: 'mp-onto-dot-success',
+  yellow: 'mp-onto-dot-warning',
+  red: 'mp-onto-dot-danger',
+};
+const LIGHT_TEXT_CLASS: Record<LightLevel, string> = {
+  green: 'mp-text-success',
+  yellow: 'mp-text-warning',
+  red: 'mp-text-danger',
 };
 const LIGHT_LABEL: Record<LightLevel, string> = { green: '健康', yellow: '关注', red: '异常' };
 
 function LightDot({ level }: { level: LightLevel }) {
   return (
-    <span style={{
-      width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-      background: LIGHT_COLOR[level], display: 'inline-block',
-    }} />
+    <span className={`mp-shrink-0 mp-icon-12 mp-onto-light-dot ${LIGHT_DOT_CLASS[level]}`} />
   );
 }
 
@@ -314,25 +299,25 @@ function HealthCard({ reloadKey }: { reloadKey: number }) {
   const overall: LightLevel = syncLevel === 'red' ? 'red' : lintLevel;
 
   const lightRow = (level: LightLevel, label: string, detail: string, key: string) => (
-    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+    <div key={key} className="mp-gap-2 mp-text-sm mp-flex-center">
       <LightDot level={level} />
-      <span style={{ fontWeight: 600 }}>{label}</span>
-      <span style={{ color: 'var(--semi-color-text-2)', marginLeft: 'auto', textAlign: 'right' }}>{detail}</span>
+      <span className="mp-fw-600">{label}</span>
+      <span className="mp-text-2 mp-ml-auto mp-text-right" >{detail}</span>
     </div>
   );
 
   return (
-    <Card bodyStyle={{ padding: 0 }} style={{ overflow: 'hidden' }}>
-      <div style={CARD_HEAD_STYLE}>
-        <ShieldCheck style={{ width: 14, height: 14 }} />
-        <h4 style={{ margin: 0, fontSize: 13, fontWeight: 600, flex: 1 }}>健康度</h4>
-        <span style={{ fontSize: 11, color: LIGHT_COLOR[overall] }}>{LIGHT_LABEL[overall]}</span>
+    <Card bodyStyle={{ padding: 0 }} className="mp-hidden">
+      <div className="mp-onto-card-head">
+        <ShieldCheck className="mp-icon-14" />
+        <h4 className="mp-fw-600 mp-flex-1 mp-m-0 mp-text-body">健康度</h4>
+        <span className={`mp-text-xs ${LIGHT_TEXT_CLASS[overall]}`}>{LIGHT_LABEL[overall]}</span>
       </div>
-      <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 210, overflowY: 'auto' }}>
-        {err && <div style={{ fontSize: 12, color: 'var(--semi-color-danger)' }}>{err}</div>}
+      <div className="mp-flex mp-overflow-y-auto mp-gap-2 mp-py-3 mp-px-4 mp-flex-col mp-onto-list-panel">
+        {err && <div className="mp-text-sm mp-text-danger">{err}</div>}
         {sync === null || lint === null ? (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', height: 120, color: 'var(--semi-color-text-2)', fontSize: 12 }}>
-            <Loader2 style={{ width: 13, height: 13, animation: 'osp-spin 1s linear infinite' }} /> 检查中…
+          <div className="mp-gap-2 mp-text-sm mp-text-2 mp-flex-center mp-justify-center mp-onto-card-fill-sm">
+            <Loader2 className="mp-icon-12 mp-spin" /> 检查中…
           </div>
         ) : (
           <>
@@ -346,14 +331,14 @@ function HealthCard({ reloadKey }: { reloadKey: number }) {
             {lightRow(overall, '综合健康度', overall === 'red' ? '同步存在失败' : overall === 'yellow' ? '存在反模式' : '一切正常', 'overall')}
             {/* 各数据源最近同步明细 */}
             {sync.length > 0 && (
-              <div style={{ borderTop: '1px solid var(--semi-color-border)', paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div className="mp-flex mp-border mp-gap-1 mp-pt-2 mp-flex-col" >
                 {sync.slice(0, 6).map((r) => (
-                  <div key={`${r.tenant_id}/${r.class_rid}`} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
+                  <div key={`${r.tenant_id}/${r.class_rid}`} className="mp-gap-2 mp-text-xs mp-flex-center">
                     <LightDot level={(r.consecutive_failures ?? 0) > 0 || (r.last_error ?? '') !== '' ? 'red' : 'green'} />
-                    <span style={{ fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.class_rid}>
+                    <span className="mp-hidden mp-nowrap mp-mono mp-ellipsis-text"  title={r.class_rid}>
                       {shortRid(r.class_rid)}
                     </span>
-                    <span style={{ color: 'var(--semi-color-text-2)', marginLeft: 'auto', flexShrink: 0 }}>
+                    <span className="mp-text-2 mp-shrink-0 mp-ml-auto" >
                       {r.last_run_at ? new Date(r.last_run_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '未同步'}
                     </span>
                   </div>
@@ -395,42 +380,34 @@ export default function DashboardPage() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="mp-flex mp-gap-4 mp-flex-col" >
       {/* 头部 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <LayoutDashboard style={{ width: 16, height: 16 }} />
-        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>本体仪表盘</h3>
-        <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>
+      <div className="mp-gap-2 mp-flex-center">
+        <LayoutDashboard className="mp-icon-16" />
+        <h3 className="mp-fw-600 mp-m-0 mp-text-md" >本体仪表盘</h3>
+        <span className="mp-text-sm mp-text-2">
           分析卡片实时聚合 + 类型 / Action / 健康度概览
         </span>
         <button
           type="button"
           onClick={() => setReloadKey((k) => k + 1)}
-          style={{
-            marginLeft: 'auto', height: 30, padding: '0 14px', fontSize: 12, borderRadius: 6,
-            border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)',
-            color: 'var(--semi-color-text-0)', cursor: 'pointer',
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-          }}
+          className="mp-inline-flex mp-items-center mp-clickable mp-border mp-ml-auto mp-gap-1 mp-text-sm mp-text-1 mp-bg-1 mp-rounded mp-onto-btn mp-onto-btn--md"
         >
-          <RefreshCw style={{ width: 12, height: 12 }} /> 刷新全部
+          <RefreshCw className="mp-icon-12" /> 刷新全部
         </button>
       </div>
 
       {/* 我的分析卡片 */}
       {pins.length === 0 ? (
-        <div style={{
-          border: '1px dashed var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-          padding: '36px 24px', textAlign: 'center',
-        }}>
-          <Pin style={{ width: 22, height: 22, color: 'var(--semi-color-text-2)' }} />
-          <div style={{ fontSize: 14, fontWeight: 600, marginTop: 10 }}>还没有分析卡片</div>
-          <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginTop: 6 }}>
+        <div className="mp-text-center mp-rounded mp-py-7 mp-px-6 mp-onto-box-dashed">
+          <Pin className="mp-text-2 mp-icon-20"  />
+          <div className="mp-fw-600 mp-text-md mp-mt-2" >还没有分析卡片</div>
+          <div className="mp-text-sm mp-text-2 mp-mt-1" >
             先去分析工作台创建图表，然后 Pin 过来
           </div>
         </div>
       ) : (
-        <div style={GRID_STYLE}>
+        <div className="mp-onto-grid-fill">
           {pins.map((pin) => (
             <PinCard key={pin.id} pin={pin} typeNames={typeNames} reloadKey={reloadKey} onRemove={removePin} />
           ))}
@@ -438,11 +415,11 @@ export default function DashboardPage() {
       )}
 
       {/* 系统卡片 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <MapPin style={{ width: 14, height: 14, color: 'var(--semi-color-text-2)' }} />
-        <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>系统概览（自动展示）</span>
+      <div className="mp-gap-2 mp-flex-center">
+        <MapPin className="mp-icon-14 mp-text-2" />
+        <span className="mp-text-sm mp-text-2">系统概览（自动展示）</span>
       </div>
-      <div style={GRID_STYLE}>
+      <div className="mp-onto-grid-fill">
         <TypeStatsCard types={types} reloadKey={reloadKey} />
         <RecentActionsCard reloadKey={reloadKey} />
         <HealthCard reloadKey={reloadKey} />

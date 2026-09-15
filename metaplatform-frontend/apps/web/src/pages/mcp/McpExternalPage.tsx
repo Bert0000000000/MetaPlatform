@@ -96,7 +96,7 @@ export default function ExternalIntegrationPage() {
           <Typography.Text strong>
             <GlobalOutlined /> {i.name}
           </Typography.Text>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" className="mp-text-sm">
             {i.platform}
           </Typography.Text>
         </Space>

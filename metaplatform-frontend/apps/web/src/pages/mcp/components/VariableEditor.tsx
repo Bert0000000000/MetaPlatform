@@ -27,24 +27,24 @@ export default function VariableEditor({ value, onChange }: VariableEditorProps)
   return (
     <div>
       {vars.map((v, idx) => (
-        <Space key={idx} style={{ marginBottom: 8 }} wrap>
+        <Space key={idx} className="mp-mb-2" wrap>
           <Input
             placeholder="变量名 (如 name)"
             value={v.name}
             onChange={(val) => updateVar(idx, { name: val })}
-            style={{ width: 140 }}
+            className="mp-w-140"
           />
           <Input
             placeholder="描述"
             value={v.description || ''}
             onChange={(val) => updateVar(idx, { description: val })}
-            style={{ width: 200 }}
+            className="mp-w-200"
           />
           <Input
             placeholder="默认值"
             value={v.defaultValue || ''}
             onChange={(val) => updateVar(idx, { defaultValue: val })}
-            style={{ width: 160 }}
+            className="mp-w-160"
           />
           <Space>
             <Switch

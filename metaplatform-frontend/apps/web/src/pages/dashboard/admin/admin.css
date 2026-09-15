@@ -159,3 +159,19 @@
   color: var(--semi-color-text-0);
   margin-top: var(--mp-space-1);
 }
+
+/* ---------- 长尾补全 ---------- */
+.mp-admin-stat { letter-spacing: -0.02em; }
+
+.mp-admin-stat-grid { grid-template-columns: repeat(4, 1fr); }
+
+/* 悬浮卡（图表 tooltip / 图例浮层） */
+.mp-admin-tooltip { box-shadow: var(--semi-shadow-elevated); }
+
+.mp-admin-min-w-140 { min-width: 140px; }
+.mp-admin-min-w-160 { min-width: 160px; }
+.mp-admin-min-w-200 { min-width: 200px; }
+.mp-admin-min-w-240 { min-width: 240px; }
+
+.mp-admin-lh-18 { line-height: 1.8; }
+.mp-admin-lh-20 { line-height: 2; }

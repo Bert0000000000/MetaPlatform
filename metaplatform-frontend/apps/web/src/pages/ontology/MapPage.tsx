@@ -25,6 +25,7 @@ import {
   errDetailText, getObjectQueryRows, getObjectType, listObjectTypes, propSlug,
   type KernelObjectType, type KernelProperty,
 } from '@/api/ont/kernel';
+import './ontology.css';
 
 // ── 常量 ──
 
@@ -161,18 +162,6 @@ function shortRid(rid: string): string {
   const parts = rid.split('.');
   return parts.length >= 2 ? parts[parts.length - 2]! : rid;
 }
-
-const selectStyle = {
-  height: 30, background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
-  borderRadius: 6, padding: '0 8px', fontSize: 12,
-  color: 'var(--semi-color-text-0)', outline: 'none', cursor: 'pointer',
-} as const;
-
-const zoomBtnStyle = {
-  width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-  border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)', borderRadius: 6,
-  color: 'var(--semi-color-text-0)', cursor: 'pointer', padding: 0,
-} as const;
 
 export default function MapPage() {
   // ── 类型 / 属性 / 实例数据 ──
@@ -452,19 +441,19 @@ export default function MapPage() {
   const typeListLoading = loadingTypes;
 
   return (
-    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+    <div className="mp-flex mp-gap-5 mp-items-start" >
       {/* 左栏：类型选择 */}
-      <div style={{ width: 240, flexShrink: 0 }}>
-        <Card style={{ height: 'fit-content' }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, marginBottom: 12 }}>对象类型</h3>
+      <div className="mp-shrink-0 mp-w-240" >
+        <Card className="mp-h-fit">
+          <h3 className="mp-fw-600 mp-mb-3 mp-m-0 mp-text-md">对象类型</h3>
           {typeListLoading ? (
-            <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', padding: '8px 0', display: 'flex', gap: 8, alignItems: 'center' }}>
-              <Loader2 style={{ width: 12, height: 12, animation: 'osp-spin 1s linear infinite' }} /> 加载中…
+            <div className="mp-gap-2 mp-text-sm mp-text-2 mp-flex-center mp-py-2">
+              <Loader2 className="mp-icon-12 mp-spin"  /> 加载中…
             </div>
           ) : types.length === 0 ? (
-            <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>暂无类型</div>
+            <div className="mp-text-sm mp-text-2">暂无类型</div>
           ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: 520, overflowY: 'auto' }}>
+            <ul className="mp-m-0 mp-overflow-y-auto mp-p-1 mp-onto-list-plain mp-onto-list-tall">
               {types.map((t) => {
                 const hasGeo = t.properties.some(isGeoProp);
                 return (
@@ -473,18 +462,12 @@ export default function MapPage() {
                       type="button"
                       onClick={() => setSelectedType(t.rid)}
                       title={t.rid}
-                      style={{
-                        width: '100%', display: 'flex', alignItems: 'center', gap: 6,
-                        padding: '6px 10px', fontSize: 12, textAlign: 'left',
-                        border: 'none', borderRadius: 6, cursor: 'pointer',
-                        background: t.rid === selectedType ? 'var(--semi-color-fill-0)' : 'transparent',
-                        color: t.rid === selectedType ? 'var(--semi-color-text-0)' : 'var(--semi-color-text-2)',
-                      }}
+                      className={`mp-w-full mp-clickable mp-gap-1 mp-text-sm mp-flex-center mp-py-1 mp-px-2 mp-text-left mp-border-none mp-rounded mp-onto-pick-row${t.rid === selectedType ? ' mp-onto-pick-row--active' : ''}`}
                     >
                       {hasGeo
-                        ? <MapPin style={{ width: 12, height: 12, flexShrink: 0, color: '#f59e0b' }} />
-                        : <span style={{ width: 12, height: 12, flexShrink: 0, borderRadius: 2, background: 'var(--semi-color-text-2)', opacity: 0.4 }} />}
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        ? <MapPin className="mp-icon-12 mp-shrink-0 mp-text-warning" />
+                        : <span className="mp-icon-12 mp-shrink-0 mp-rounded-sm mp-onto-dot-muted" />}
+                      <span className="mp-hidden mp-nowrap mp-ellipsis-text" >
                         {t.display_name || t.rid}
                       </span>
                     </button>
@@ -497,21 +480,18 @@ export default function MapPage() {
       </div>
 
       {/* 右栏：地图 */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <Card bodyStyle={{ padding: 0 }} style={{ overflow: 'hidden' }}>
+      <div className="mp-flex-1">
+        <Card bodyStyle={{ padding: 0 }} className="mp-hidden">
           {/* 工具栏 */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '10px 16px', borderBottom: '1px solid var(--semi-color-border)', flexWrap: 'wrap',
-          }}>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>
+          <div className="mp-wrap mp-border mp-gap-2 mp-flex-center mp-py-2 mp-px-4" >
+            <span className="mp-fw-600 mp-text-body">
               {detail?.display_name ?? '地图'}
             </span>
             {geoProps.length > 1 && (
               <select
                 value={geoSlug}
                 onChange={(e) => { setGeoSlug(e.target.value); setSelected(null); }}
-                style={selectStyle}
+                className="mp-onto-map-select"
                 title="地理属性"
               >
                 {geoProps.map((p) => {
@@ -520,29 +500,25 @@ export default function MapPage() {
                 })}
               </select>
             )}
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <button type="button" title="缩小" onClick={() => zoomAt(vpSize.w / 2, vpSize.h / 2, -1)} style={zoomBtnStyle}>
-                <Minus style={{ width: 14, height: 14 }} />
+            <div className="mp-flex-center mp-gap-1" >
+              <button type="button" title="缩小" onClick={() => zoomAt(vpSize.w / 2, vpSize.h / 2, -1)} className="mp-onto-zoom-btn">
+                <Minus className="mp-icon-14" />
               </button>
-              <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)', minWidth: 30, textAlign: 'center' }}>
+              <span className="mp-text-center mp-text-xs mp-text-2 mp-onto-zoom-label">
                 z{view.z}
               </span>
-              <button type="button" title="放大" onClick={() => zoomAt(vpSize.w / 2, vpSize.h / 2, 1)} style={zoomBtnStyle}>
-                <Plus style={{ width: 14, height: 14 }} />
+              <button type="button" title="放大" onClick={() => zoomAt(vpSize.w / 2, vpSize.h / 2, 1)} className="mp-onto-zoom-btn">
+                <Plus className="mp-icon-14" />
               </button>
             </div>
             {tilesOffline ? (
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11,
-                color: 'var(--semi-color-warning)', border: '1px solid var(--semi-color-warning)',
-                borderRadius: 4, padding: '1px 8px',
-              }}>
-                <WifiOff style={{ width: 11, height: 11 }} /> 离线网格模式
+              <span className="mp-inline-flex mp-items-center mp-gap-1 mp-text-xs mp-text-warning mp-py-1 mp-px-2 mp-rounded-sm mp-onto-chip-warning">
+                <WifiOff className="mp-icon-12" /> 离线网格模式
               </span>
             ) : (
-              <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>OSM 瓦片</span>
+              <span className="mp-text-xs mp-text-2">OSM 瓦片</span>
             )}
-            <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginLeft: 'auto' }}>
+            <span className="mp-text-xs mp-text-2 mp-ml-auto" >
               {`${points.length} 点 · ${polygons.length} 面 · 拖拽平移 / 滚轮缩放`}
             </span>
           </div>
@@ -550,11 +526,7 @@ export default function MapPage() {
           {/* 地图视口 */}
           <div
             ref={viewportRef}
-            style={{
-              position: 'relative', overflow: 'hidden', height: VIEWPORT_H,
-              background: 'var(--semi-color-fill-0)', cursor: dragging ? 'grabbing' : 'grab',
-              touchAction: 'none', userSelect: 'none',
-            }}
+            className={`mp-hidden mp-relative mp-bg-fill-0 mp-onto-map-viewport${dragging ? ' mp-onto-map-viewport--dragging' : ''}`}
             onPointerDown={(e) => {
               dragRef.current = { x: e.clientX, y: e.clientY, ox: view.ox, oy: view.oy };
               dragMovedRef.current = false;
@@ -585,10 +557,7 @@ export default function MapPage() {
                 alt=""
                 draggable={false}
                 onError={() => setTilesOffline(true)}
-                style={{
-                  position: 'absolute', left: t.left, top: t.top,
-                  width: TILE, height: TILE, userSelect: 'none', pointerEvents: 'none',
-                }}
+                className="mp-absolute mp-pe-none mp-onto-map-tile" style={{ left: t.left, top: t.top }}
               />
             ))}
 
@@ -596,7 +565,7 @@ export default function MapPage() {
             <svg
               width={vpSize.w}
               height={vpSize.h}
-              style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none' }}
+              className="mp-absolute mp-pe-none mp-onto-svg-overlay"
             >
               {/* 离线降级：经纬网格线 + 刻度 */}
               {graticule && (
@@ -628,10 +597,8 @@ export default function MapPage() {
                   <path
                     key={poly.rid}
                     d={d}
-                    fill="rgba(59, 130, 246, 0.16)"
-                    stroke="#3b82f6"
                     strokeWidth={1.5}
-                    style={{ pointerEvents: 'visiblePainted', cursor: 'pointer' }}
+                    className="mp-clickable mp-onto-polygon mp-onto-visible-painted"
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={(e) => { e.stopPropagation(); setSelected(poly); }}
                   >
@@ -650,8 +617,8 @@ export default function MapPage() {
                   <g key={p.rid || `pt${i}`}>
                     <circle
                       cx={sx} cy={sy} r={isSel ? 7 : 5.5}
-                      fill="var(--semi-color-danger)" stroke="#fff" strokeWidth={isSel ? 2.5 : 2}
-                      style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                      strokeWidth={isSel ? 2.5 : 2}
+                      className="mp-clickable mp-onto-pin mp-onto-pe-auto"
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => { e.stopPropagation(); setSelected(p); }}
                     >
@@ -661,7 +628,7 @@ export default function MapPage() {
                       <text
                         x={sx} y={sy + 17} textAnchor="middle" fontSize={10}
                         fill="var(--semi-color-text-0)" stroke="var(--semi-color-bg-1)" strokeWidth={3} paintOrder="stroke"
-                        style={{ pointerEvents: 'none' }}
+                        className="mp-pe-none"
                       >
                         {p.label.length > 14 ? `${p.label.slice(0, 14)}…` : p.label}
                       </text>
@@ -673,74 +640,50 @@ export default function MapPage() {
 
             {/* 空态 / 加载 / 错误覆盖层 */}
             {err ? (
-              <div style={{
-                position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'var(--semi-color-bg-0)', fontSize: 12, color: 'var(--semi-color-danger)', padding: 24, textAlign: 'center',
-              }}>
+              <div className="mp-justify-center mp-text-center mp-absolute mp-p-6 mp-text-sm mp-text-danger mp-flex-center mp-onto-overlay">
                 {err}
               </div>
             ) : !selectedTypeHasGeo && !loadingRows && detail ? (
-              <div style={{
-                position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', gap: 8,
-                alignItems: 'center', justifyContent: 'center', background: 'var(--semi-color-bg-0)',
-              }}>
-                <MapPin style={{ width: 22, height: 22, color: 'var(--semi-color-text-2)' }} />
-                <div style={{ fontSize: 13, fontWeight: 600 }}>该类型无 latlon/geojson 属性</div>
-                <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>在左栏选择带 MapPin 标记的类型</div>
+              <div className="mp-items-center mp-justify-center mp-absolute mp-flex-col mp-gap-2 mp-onto-overlay">
+                <MapPin className="mp-text-2 mp-icon-20"  />
+                <div className="mp-fw-600 mp-text-body">该类型无 latlon/geojson 属性</div>
+                <div className="mp-text-sm mp-text-2">在左栏选择带 MapPin 标记的类型</div>
               </div>
             ) : loadingRows ? (
-              <div style={{
-                position: 'absolute', inset: 0, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center',
-                background: 'var(--semi-color-bg-0)', color: 'var(--semi-color-text-2)', fontSize: 12,
-              }}>
-                <Loader2 style={{ width: 14, height: 14, animation: 'osp-spin 1s linear infinite' }} /> 拉取实例中…
+              <div className="mp-justify-center mp-absolute mp-gap-2 mp-text-sm mp-text-2 mp-flex-center mp-onto-overlay">
+                <Loader2 className="mp-icon-14 mp-spin"  /> 拉取实例中…
               </div>
             ) : points.length + polygons.length === 0 && geoSlug ? (
-              <div style={{
-                position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 12, color: 'var(--semi-color-text-2)', background: 'var(--semi-color-bg-0)',
-              }}>
+              <div className="mp-justify-center mp-absolute mp-text-sm mp-text-2 mp-flex-center mp-onto-overlay">
                 该类型实例无可定位的地理数据
               </div>
             ) : null}
 
             {/* 属性摘要卡（点击 pin / 多边形弹出） */}
             {selected && selAnchor && (
-              <div style={{
-                position: 'absolute',
-                left: Math.min(Math.max(8, lonToX(selAnchor.lon, view.z) - view.ox + 14), Math.max(8, vpSize.w - 248)),
-                top: Math.min(Math.max(8, latToY(selAnchor.lat, view.z) - view.oy - 10), Math.max(8, vpSize.h - 240)),
-                width: 240, zIndex: 10,
-                background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
-                borderRadius: 'var(--semi-border-radius-medium)', boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
-              }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '8px 12px', borderBottom: '1px solid var(--semi-color-border)',
-                }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div className="mp-absolute mp-border mp-rounded mp-w-240 mp-bg-1 mp-shadow-card mp-onto-popup" style={{ left: Math.min(Math.max(8, lonToX(selAnchor.lon, view.z) - view.ox + 14), Math.max(8, vpSize.w - 248)), top: Math.min(Math.max(8, latToY(selAnchor.lat, view.z) - view.oy - 10), Math.max(8, vpSize.h - 240)) }}>
+                <div className="mp-border mp-gap-1 mp-flex-center mp-py-2 mp-px-3" >
+                  <span className="mp-hidden mp-fw-600 mp-flex-1 mp-text-sm mp-nowrap mp-ellipsis-text" >
                     {selected.label}
                   </span>
                   <button
                     type="button"
                     onClick={() => setSelected(null)}
-                    style={{
-                      ...zoomBtnStyle, width: 20, height: 20, border: 'none', background: 'transparent',
-                    }}
+                    className="mp-onto-popup-close"
                   >
-                    <X style={{ width: 13, height: 13 }} />
+                    <X className="mp-icon-12" />
                   </button>
                 </div>
-                <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div className="mp-flex mp-gap-1 mp-py-2 mp-px-3 mp-flex-col" >
                   {popupProps.map((pp) => (
-                    <div key={pp.title} style={{ display: 'flex', gap: 8, fontSize: 11, alignItems: 'baseline' }}>
-                      <span style={{ color: 'var(--semi-color-text-2)', flexShrink: 0, maxWidth: 96, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={pp.title}>
+                    <div key={pp.title} className="mp-flex mp-gap-2 mp-text-xs mp-onto-baseline">
+                      <span className="mp-hidden mp-text-2 mp-nowrap mp-shrink-0 mp-ellipsis-text mp-onto-popup-key" title={pp.title}>
                         {pp.title}
                       </span>
-                      <span style={{ wordBreak: 'break-all', textAlign: 'right' }}>{pp.value.length > 60 ? `${pp.value.slice(0, 60)}…` : pp.value}</span>
+                      <span className="mp-break-all mp-text-right" >{pp.value.length > 60 ? `${pp.value.slice(0, 60)}…` : pp.value}</span>
                     </div>
                   ))}
-                  <div style={{ fontSize: 10, color: 'var(--semi-color-text-2)', fontFamily: 'monospace', wordBreak: 'break-all', borderTop: '1px solid var(--semi-color-border)', paddingTop: 6 }}>
+                  <div className="mp-text-2 mp-break-all mp-border mp-text-xs mp-pt-1 mp-mono" >
                     {selected.rid}
                   </div>
                 </div>
@@ -750,15 +693,15 @@ export default function MapPage() {
         </Card>
 
         {/* 图例 / 说明 */}
-        <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginTop: 10, fontSize: 11, color: 'var(--semi-color-text-2)' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--semi-color-danger)', display: 'inline-block' }} /> latlon 实例
+        <div className="mp-text-xs mp-text-2 mp-flex-center mp-mt-2 mp-gap-3" >
+          <span className="mp-inline-flex mp-items-center mp-gap-1">
+            <span className="mp-icon-12 mp-onto-legend-pin" /> latlon 实例
           </span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ width: 10, height: 8, background: 'rgba(59, 130, 246, 0.16)', border: '1px solid #3b82f6', display: 'inline-block' }} /> geojson Polygon
+          <span className="mp-inline-flex mp-items-center mp-gap-1">
+            <span className="mp-onto-legend-poly" /> geojson Polygon
           </span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <Layers style={{ width: 11, height: 11 }} /> tile.openstreetmap.org · 仅拉取最多 1000 实例
+          <span className="mp-inline-flex mp-items-center mp-gap-1">
+            <Layers className="mp-icon-12" /> tile.openstreetmap.org · 仅拉取最多 1000 实例
           </span>
         </div>
       </div>

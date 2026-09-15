@@ -55,7 +55,7 @@ export default function AIGenerateButton({
         okButtonProps={{ disabled: !result }}
         width={680}
       >
-        <Space vertical style={{ width: '100%' }}>
+        <Space vertical className="mp-w-full">
           <TextArea
             rows={3}
             placeholder={promptPlaceholder}

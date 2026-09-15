@@ -62,7 +62,7 @@ export default function VersionManagementPage({ appId: appIdProp }: { appId?: st
 
   if (loading || !app) {
     return (
-      <div style={{ padding: 40, textAlign: 'center' }}>
+      <div className="mp-text-center mp-p-8">
         <Spin />
       </div>
     );
@@ -106,13 +106,13 @@ export default function VersionManagementPage({ appId: appIdProp }: { appId?: st
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/mine?app=${appId}`)}>
           返回应用
         </Button>
       </Space>
 
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Button
           theme="solid"
           type="primary"
@@ -123,8 +123,8 @@ export default function VersionManagementPage({ appId: appIdProp }: { appId?: st
         </Button>
       </Space>
 
-      <Card style={{ marginBottom: 16 }}>
-        <Space style={{ marginBottom: 12 }}>
+      <Card className="mp-mb-4">
+        <Space className="mp-mb-3">
           <DiffOutlined />
           <Typography.Text>
             选中两个版本（A 和 B）查看差异。当前线上版本：

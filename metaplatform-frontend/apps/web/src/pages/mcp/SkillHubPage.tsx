@@ -31,6 +31,7 @@ import {
   uploadSkill,
   type Skill,
 } from '@/api/mcphub/skills';
+import './mcp.css';
 
 /** SKILL HUB — 公开 SKILL 的浏览 / 上传 / 下载 / 安装（marketplace kind="skill"）。 */
 export default function SkillHubPage() {
@@ -162,7 +163,7 @@ export default function SkillHubPage() {
     { title: 'SKILL', dataIndex: 'name', render: (v, r) => (
         <Space vertical spacing={0}>
           <Typography.Text strong>{v}</Typography.Text>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>{r.description}</Typography.Text>
+          <Typography.Text type="tertiary" className="mp-text-sm">{r.description}</Typography.Text>
         </Space>
       ) },
     { title: '版本', dataIndex: 'version', width: 80 },
@@ -200,7 +201,7 @@ export default function SkillHubPage() {
           <Input
             placeholder="搜索 SKILL"
             showClear
-            style={{ width: 220 }}
+            className="mp-mcp-w-220"
             onEnterPress={(e) => {
               setKeyword((e.target as HTMLInputElement).value);
               void load();

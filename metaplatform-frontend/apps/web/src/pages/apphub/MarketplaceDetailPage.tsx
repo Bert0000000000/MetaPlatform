@@ -23,6 +23,7 @@ import {
   listTemplateComments,
 } from '@/api/apphub/marketplace';
 import type { TemplateComment, TemplateItem, InstallResult } from '@/api/apphub/marketplace';
+import './apps.css';
 
 interface CommentFormValues {
   rating: number;
@@ -63,7 +64,7 @@ export default function MarketplaceDetailPage() {
 
   if (loading) {
     return (
-      <div style={{ padding: 40, textAlign: 'center' }}>
+      <div className="mp-text-center mp-p-8">
         <Spin />
       </div>
     );
@@ -105,11 +106,11 @@ export default function MarketplaceDetailPage() {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/marketplace')}>
           返回
         </Button>
-        <Typography.Title heading={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} className="mp-m-0">
           {template.name}
         </Typography.Title>
         <Tag color="blue">{template.category}</Tag>
@@ -119,33 +120,33 @@ export default function MarketplaceDetailPage() {
         ) : null}
       </Space>
 
-      <Card style={{ marginBottom: 16 }}>
+      <Card className="mp-mb-4">
         <Typography.Paragraph>{template.description}</Typography.Paragraph>
         <Space wrap>
           {template.tags.map((t) => (
             <Tag key={t}>{t}</Tag>
           ))}
         </Space>
-        <div style={{ marginTop: 16 }}>
+        <div className="mp-mt-4">
           <Typography.Text>已安装 {template.downloadCount} 次</Typography.Text>
         </div>
         <Button
           theme="solid"
           type="primary"
           icon={<DownloadOutlined />}
-          style={{ marginTop: 16 }}
+          className="mp-mt-4"
           onClick={handleInstall}
         >
           安装到本体引擎
         </Button>
         {lastInstall?.success && lastInstall.installId && (
-          <div style={{ marginTop: 12, fontSize: 12 }}>
+          <div className="mp-mt-3 mp-text-sm">
             <Typography.Text type="success">
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <span className="mp-inline-flex mp-items-center mp-gap-1">
                 <IconTick size="small" /> 已安装到本体引擎（Install ID: {lastInstall.installId}）
               </span>
             </Typography.Text>
-            <div style={{ marginTop: 4 }}>
+            <div className="mp-mt-1">
               <Typography.Text type="tertiary">
                 可在「云市场 → 我的安装」中查看安装记录与状态。
               </Typography.Text>
@@ -154,7 +155,7 @@ export default function MarketplaceDetailPage() {
         )}
       </Card>
 
-      <Card title="评分与评论" style={{ marginBottom: 16 }}>
+      <Card title="评分与评论" className="mp-mb-4">
         <Form
           form={form}
           onSubmit={handleSubmitComment}
@@ -181,20 +182,20 @@ export default function MarketplaceDetailPage() {
               dataSource={comments}
               renderItem={(item) => (
                 <List.Item key={item.id}>
-                  <div style={{ display: 'flex', gap: 12, padding: '12px 0' }}>
+                  <div className="mp-flex mp-gap-3 mp-py-3">
                     <Avatar>
                       <UserOutlined />
                     </Avatar>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ marginBottom: 4 }}>
+                    <div className="mp-flex-1">
+                      <div className="mp-mb-1">
                         <Typography.Text strong>{item.userId}</Typography.Text>
-                        <Typography.Text type="tertiary" style={{ marginLeft: 8, fontSize: 12 }}>
+                        <Typography.Text type="tertiary" className="mp-text-sm mp-ml-2" >
                           {new Date(item.updatedAt).toLocaleString()}
                         </Typography.Text>
                       </div>
-                      <Rating disabled value={item.rating} style={{ fontSize: 12 }} />
+                      <Rating disabled value={item.rating} className="mp-text-sm" />
                       {item.comment ? (
-                        <Typography.Paragraph style={{ marginTop: 8, marginBottom: 0 }}>
+                        <Typography.Paragraph className="mp-mt-2 mp-mb-1" >
                           {item.comment}
                         </Typography.Paragraph>
                       ) : null}

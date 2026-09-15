@@ -27,42 +27,12 @@ import PropertyEditorV2, {
 
 // ─────────────────── 样式 ───────────────────
 
-const inputStyle: React.CSSProperties = {
-  height: 32, width: '100%', boxSizing: 'border-box',
-  background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
-  borderRadius: 'var(--semi-border-radius-medium)', padding: '0 10px', fontSize: 13,
-  color: 'var(--semi-color-text-0)', outline: 'none',
-};
-
-const textareaStyle: React.CSSProperties = {
-  ...inputStyle, height: 'auto', minHeight: 60, padding: '6px 10px',
-  resize: 'vertical', lineHeight: 1.5,
-};
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 12, color: 'var(--semi-color-text-2)', marginBottom: 4,
-};
-
-const sectionTitleStyle: React.CSSProperties = {
-  fontSize: 13, fontWeight: 600, color: 'var(--semi-color-text-0)',
-  paddingBottom: 8, borderBottom: '1px solid var(--semi-color-border)', marginBottom: 12,
-};
-
-const smallBtnStyle: React.CSSProperties = {
-  height: 26, padding: '0 8px', fontSize: 12,
-  background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
-  border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-  cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
-};
-
+// 属性徽标的色值随草稿状态动态变化（format / 主键 / 派生 / 数组 / 共享），
+// 保留为按色值生成的动态行内样式；其余静态样式一律走 mp-onto-* 类。
 const badge = (color: string): React.CSSProperties => ({
   display: 'inline-block', fontSize: 10, lineHeight: '16px', padding: '0 6px',
   borderRadius: 999, border: `1px solid ${color}`, color, flexShrink: 0,
 });
-
-const hintStyle: React.CSSProperties = {
-  fontSize: 11, color: 'var(--semi-color-text-2)', lineHeight: 1.6, marginTop: 4,
-};
 
 // ─────────────────── Props ───────────────────
 
@@ -322,85 +292,68 @@ export default function ObjectTypeEditorV2Drawer({
   return (
     <div
       onClick={() => !submitting && onClose()}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1200,
-        background: 'rgba(0,0,0,0.45)',
-        display: 'flex', justifyContent: 'flex-end',
-      }}
+      className="mp-flex mp-justify-end mp-onto-drawer-mask mp-onto-drawer-mask--top"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: 720, height: '100%', background: 'var(--semi-color-bg-0)',
-          boxShadow: '-8px 0 24px rgba(0,0,0,0.18)',
-          display: 'flex', flexDirection: 'column',
-        }}
+        className="mp-h-full mp-flex-col mp-onto-drawer-panel mp-onto-drawer-panel--fixed"
       >
         {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', flexShrink: 0,
-        }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginBottom: 2 }}>
+        <div className="mp-justify-between mp-border mp-shrink-0 mp-flex-center mp-py-3 mp-px-5" >
+          <div className="mp-min-w-0">
+            <div className="mp-text-xs mp-text-2 mp-mb-1" >
               类型 / 属性编辑器 v2 · 整体 upsert（POST /ont/v2/object-types）
             </div>
-            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>
+            <h3 className="mp-fw-600 mp-m-0 mp-text-md" >
               {mode === 'create' ? '新建概念（ObjectType）' : `编辑概念：${objectType?.display_name ?? ''}`}
             </h3>
           </div>
-          <button type="button" onClick={onClose} aria-label="关闭" style={{
-            width: 30, height: 30, borderRadius: 4, border: '1px solid var(--semi-color-border)',
-            background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-2)', cursor: 'pointer',
-          }}>
-            <X style={{ width: 14, height: 14, margin: 'auto', display: 'block' }} />
+          <button type="button" onClick={onClose} aria-label="关闭" className="mp-border mp-text-2 mp-bg-1 mp-rounded-sm mp-onto-close-btn mp-onto-close-btn--sm">
+            <X className="mp-icon-14" />
           </button>
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+        <div className="mp-flex-1 mp-overflow-y-auto mp-py-4 mp-px-5" >
           {/* ── 基础信息 ── */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={sectionTitleStyle}>基础信息</div>
+          <div className="mp-mb-5">
+            <div className="mp-onto-section-title">基础信息</div>
             {mode === 'create' ? (
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: 10 }}>
+              <div className="mp-grid mp-gap-2 mp-onto-grid-3">
                 <div>
-                  <div style={labelStyle}>概念名称 *</div>
-                  <div style={{ position: 'relative' }}>
+                  <div className="mp-onto-field-label mp-onto-field-label--stacked">概念名称 *</div>
+                  <div className="mp-relative">
                     <input
                       type="text"
                       value={displayName}
                       placeholder="例如：客户"
                       onChange={(e) => setDisplayName(e.target.value)}
                       onBlur={() => onCreateNameBlur?.(displayName.trim(), slug.trim(), domain)}
-                      style={inputStyle}
+                      className="mp-w-full mp-onto-input mp-onto-input--lg"
                     />
                     {prechecking && (
-                      <span style={{
-                        position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                        fontSize: 11, color: 'var(--semi-color-text-2)',
-                      }}>
+                      <span className="mp-text-xs mp-text-2 mp-onto-precheck-hint">
                         相似扫描中…
                       </span>
                     )}
                   </div>
                 </div>
                 <div>
-                  <div style={labelStyle}>slug（rid 末段）*</div>
+                  <div className="mp-onto-field-label mp-onto-field-label--stacked">slug（rid 末段）*</div>
                   <input
                     type="text"
                     value={slug}
                     placeholder="例如：customer"
                     onChange={(e) => setSlug(e.target.value)}
-                    style={inputStyle}
+                    className="mp-w-full mp-onto-input mp-onto-input--lg"
                   />
                 </div>
                 <div>
-                  <div style={labelStyle}>领域</div>
+                  <div className="mp-onto-field-label mp-onto-field-label--stacked">领域</div>
                   <select
                     value={domain}
                     onChange={(e) => setDomain(e.target.value)}
-                    style={inputStyle}
+                    className="mp-w-full mp-onto-input mp-onto-input--lg"
                   >
                     {domainOptions.map((d) => (
                       <option key={d.code} value={d.code}>{d.label}</option>
@@ -410,18 +363,18 @@ export default function ObjectTypeEditorV2Drawer({
               </div>
             ) : (
               <>
-                <div style={labelStyle}>概念显示名 *</div>
+                <div className="mp-onto-field-label mp-onto-field-label--stacked">概念显示名 *</div>
                 <input
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  style={inputStyle}
+                  className="mp-w-full mp-onto-input mp-onto-input--lg"
                 />
-                <div style={{ ...hintStyle, fontFamily: 'monospace' }}>rid：<code>{objectType?.rid}</code>（整体 upsert，不可改）</div>
+                <div className="mp-mono mp-onto-hint">rid：<code>{objectType?.rid}</code>（整体 upsert，不可改）</div>
               </>
             )}
             {mode === 'create' && (
-              <div style={{ ...hintStyle, fontFamily: 'monospace' }}>
+              <div className="mp-mono mp-onto-hint">
                 生成 rid：<code>ont.{tenant}.obj.{domain}.{slug.trim() || '<slug>'}.v1</code>
                 ；主键属性自动创建：<code>ont.{tenant}.prop.{domain}.{slug.trim() || '<slug>'}-id.v1</code>
               </div>
@@ -429,15 +382,15 @@ export default function ObjectTypeEditorV2Drawer({
           </div>
 
           {/* ── 类型元数据（v2）── */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={sectionTitleStyle}>类型元数据（EXP-01 层级 / EXP-04 治理）</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+          <div className="mp-mb-5">
+            <div className="mp-onto-section-title">类型元数据（EXP-01 层级 / EXP-04 治理）</div>
+            <div className="mp-grid mp-mb-2 mp-gap-2 mp-grid-2" >
               <div>
-                <div style={labelStyle}>父类型（parent_class，限 1 层）</div>
+                <div className="mp-onto-field-label mp-onto-field-label--stacked">父类型（parent_class，限 1 层）</div>
                 <select
                   value={parentClass}
                   onChange={(e) => setParentClass(e.target.value)}
-                  style={inputStyle}
+                  className="mp-w-full mp-onto-input mp-onto-input--lg"
                 >
                   <option value="">无（顶层类型）</option>
                   {parentOptions.map((ot) => (
@@ -448,11 +401,11 @@ export default function ObjectTypeEditorV2Drawer({
                 </select>
               </div>
               <div>
-                <div style={labelStyle}>生命周期状态（status）</div>
+                <div className="mp-onto-field-label mp-onto-field-label--stacked">生命周期状态（status）</div>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  style={inputStyle}
+                  className="mp-w-full mp-onto-input mp-onto-input--lg"
                 >
                   {STATUS_OPTIONS.map((s) => (
                     <option key={s.value} value={s.value}>{s.label}</option>
@@ -460,97 +413,94 @@ export default function ObjectTypeEditorV2Drawer({
                 </select>
               </div>
             </div>
-            <div style={{ marginBottom: 10 }}>
-              <div style={labelStyle}>实现 Interface（多选，多态契约）</div>
+            <div className="mp-mb-2">
+              <div className="mp-onto-field-label mp-onto-field-label--stacked">实现 Interface（多选，多态契约）</div>
               <select
                 multiple
                 value={interfacesSel}
                 onChange={(e) => setInterfacesSel(Array.from(e.target.selectedOptions, (o) => o.value))}
-                style={{
-                  ...inputStyle, height: Math.min(132, Math.max(64, interfaces.length * 26 + 10)),
-                  padding: '4px 6px',
-                }}
+                className="mp-onto-input mp-onto-input--multi"
               >
                 {interfaces.map((i) => (
-                  <option key={i.rid} value={i.rid} title={i.rid} style={{ padding: '2px 4px' }}>
+                  <option key={i.rid} value={i.rid} title={i.rid} className="mp-py-1 mp-px-1">
                     {propSlug(i.rid)}（{i.properties.length} 属性契约）
                   </option>
                 ))}
               </select>
-              <div style={hintStyle}>
+              <div className="mp-onto-hint">
                 {interfaces.length === 0
                   ? '暂无 Interface（可先不选，选项来自 GET /ont/v2/interfaces）'
                   : `按住 Ctrl / Cmd 可多选；当前已选 ${interfacesSel.length} 个`}
               </div>
             </div>
-            <div style={{ marginBottom: 10 }}>
-              <div style={labelStyle}>类型分组（type_group）</div>
+            <div className="mp-mb-2">
+              <div className="mp-onto-field-label mp-onto-field-label--stacked">类型分组（type_group）</div>
               <input
                 type="text"
                 value={typeGroup}
                 placeholder="例如 核心域 / 参考数据"
                 onChange={(e) => setTypeGroup(e.target.value)}
-                style={inputStyle}
+                className="mp-w-full mp-onto-input mp-onto-input--lg"
               />
             </div>
-            <div style={{ marginBottom: 10 }}>
-              <div style={labelStyle}>描述（description）</div>
+            <div className="mp-mb-2">
+              <div className="mp-onto-field-label mp-onto-field-label--stacked">描述（description）</div>
               <textarea
                 value={description}
                 placeholder="可选；概念的业务语义说明"
                 onChange={(e) => setDescription(e.target.value)}
-                style={textareaStyle}
+                className="mp-onto-textarea mp-onto-textarea--lg"
               />
             </div>
             <div>
-              <div style={{ ...labelStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="mp-justify-between mp-flex-center mp-onto-field-label mp-onto-field-label--stacked">
                 <span>渲染提示（render_hints，key/value）</span>
                 <button
                   type="button"
                   onClick={() => setRenderHints((rs) => [...rs, { key: crypto.randomUUID(), k: '', v: '' }])}
-                  style={smallBtnStyle}
+                  className="mp-onto-btn mp-onto-btn--xs"
                 >
-                  <Plus style={{ width: 12, height: 12 }} />添加
+                  <Plus className="mp-icon-12" />添加
                 </button>
               </div>
               {renderHints.map((h) => (
-                <div key={h.key} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+                <div key={h.key} className="mp-mb-2 mp-gap-2 mp-flex-center">
                   <input
                     type="text"
                     value={h.k}
                     placeholder="key，例如 icon"
                     onChange={(e) => setRenderHints((rs) => rs.map((x) => (x.key === h.key ? { ...x, k: e.target.value } : x)))}
-                    style={{ ...inputStyle, flex: 1, fontFamily: 'monospace' }}
+                    className="mp-flex-1 mp-mono mp-onto-input mp-onto-input--lg"
                   />
                   <input
                     type="text"
                     value={h.v}
                     placeholder="value，例如 user"
                     onChange={(e) => setRenderHints((rs) => rs.map((x) => (x.key === h.key ? { ...x, v: e.target.value } : x)))}
-                    style={{ ...inputStyle, flex: 1 }}
+                    className="mp-flex-1 mp-onto-input mp-onto-input--lg"
                   />
                   <button
                     type="button"
                     aria-label="删除此行"
                     onClick={() => setRenderHints((rs) => rs.filter((x) => x.key !== h.key))}
-                    style={{ ...smallBtnStyle, color: 'var(--semi-color-danger)' }}
+                    className="mp-text-danger mp-onto-btn mp-onto-btn--xs"
                   >
-                    <Trash2 style={{ width: 12, height: 12 }} />
+                    <Trash2 className="mp-icon-12" />
                   </button>
                 </div>
               ))}
               {renderHints.length === 0 && (
-                <div style={hintStyle}>暂无渲染提示；key 必填，空 key 行提交时会被忽略。</div>
+                <div className="mp-onto-hint">暂无渲染提示；key 必填，空 key 行提交时会被忽略。</div>
               )}
             </div>
           </div>
 
           {/* ── 属性定义 ── */}
           <div>
-            <div style={{ ...sectionTitleStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="mp-justify-between mp-flex-center mp-onto-section-title">
               <span>属性定义（{propDrafts.length} 个，主键 {propDrafts.filter((d) => d.primaryKey).length} 个）</span>
-              <button type="button" onClick={addPropDraft} style={smallBtnStyle}>
-                <Plus style={{ width: 12, height: 12 }} />添加属性
+              <button type="button" onClick={addPropDraft} className="mp-onto-btn mp-onto-btn--xs">
+                <Plus className="mp-icon-12" />添加属性
               </button>
             </div>
             {propDrafts.map((d, i) => {
@@ -559,46 +509,43 @@ export default function ObjectTypeEditorV2Drawer({
               return (
                 <div
                   key={d.uid}
-                  style={{
-                    border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-                    background: 'var(--semi-color-bg-1)', marginBottom: 10, overflow: 'hidden',
-                  }}
+                  className="mp-hidden mp-border mp-rounded mp-mb-2 mp-bg-1" 
                 >
                   <div
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', cursor: 'pointer' }}
+                    className="mp-gap-2 mp-flex-center mp-clickable mp-py-2 mp-px-3" 
                     onClick={() => setExpanded(isOpen ? null : d.uid)}
                   >
                     {isOpen
-                      ? <ChevronDown style={{ width: 14, height: 14, color: 'var(--semi-color-text-2)', flexShrink: 0 }} />
-                      : <ChevronRight style={{ width: 14, height: 14, color: 'var(--semi-color-text-2)', flexShrink: 0 }} />}
-                    <span style={{ fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
-                      {d.name || <span style={{ color: 'var(--semi-color-danger)' }}>（未命名）</span>}
+                      ? <ChevronDown className="mp-icon-14 mp-text-2 mp-shrink-0"  />
+                      : <ChevronRight className="mp-icon-14 mp-text-2 mp-shrink-0"  />}
+                    <span className="mp-fw-600 mp-text-sm mp-shrink-0" >
+                      {d.name || <span className="mp-text-danger">（未命名）</span>}
                     </span>
                     {d.title && (
-                      <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)', flexShrink: 0 }}>{d.title}</span>
+                      <span className="mp-text-xs mp-text-2 mp-shrink-0" >{d.title}</span>
                     )}
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', minWidth: 0 }}>
+                    <div className="mp-flex mp-gap-1 mp-wrap mp-min-w-0" >
                       {propBadges(d).map((b) => (
                         <span key={b.text} style={badge(b.color)}>{b.text}</span>
                       ))}
                     </div>
                     {!isOpen && errs.length > 0 && (
-                      <span style={{ fontSize: 11, color: 'var(--semi-color-danger)', flexShrink: 0 }}>待修正 {errs.length}</span>
+                      <span className="mp-text-xs mp-text-danger mp-shrink-0" >待修正 {errs.length}</span>
                     )}
-                    <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                    <div className="mp-shrink-0 mp-ml-auto">
                       <button
                         type="button"
                         aria-label={`删除属性 ${d.name || i + 1}`}
                         onClick={(e) => { e.stopPropagation(); removePropDraft(d.uid); }}
-                        style={{ ...smallBtnStyle, color: 'var(--semi-color-danger)' }}
+                        className="mp-text-danger mp-onto-btn mp-onto-btn--xs"
                         title={d.primaryKey ? '删除主键属性后需保证仍有主键' : undefined}
                       >
-                        <Trash2 style={{ width: 12, height: 12 }} />
+                        <Trash2 className="mp-icon-12" />
                       </button>
                     </div>
                   </div>
                   {isOpen && (
-                    <div style={{ padding: '10px 12px 12px', borderTop: '1px solid var(--semi-color-border)' }}>
+                    <div className="mp-border mp-onto-prop-body">
                       <PropertyEditorV2
                         draft={d}
                         onChange={(next) => updatePropDraft(d.uid, next)}
@@ -616,48 +563,38 @@ export default function ObjectTypeEditorV2Drawer({
         </div>
 
         {/* Footer */}
-        <div style={{ borderTop: '1px solid var(--semi-color-border)', padding: '12px 20px', flexShrink: 0 }}>
+        <div className="mp-border mp-shrink-0 mp-py-3 mp-px-5" >
           {/* G33：破坏性变更二段确认区（409 destructive_confirm_required） */}
           {destructive && (
-            <div style={{
-              marginBottom: 10, padding: 10, fontSize: 12, lineHeight: 1.6,
-              border: '1px solid var(--semi-color-danger)', borderRadius: 6,
-              background: 'var(--semi-color-bg-1)',
-            }}>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center', color: 'var(--semi-color-danger)', fontWeight: 600, marginBottom: 6 }}>
-                <AlertTriangle style={{ width: 13, height: 13, flexShrink: 0 }} />
+            <div className="mp-mb-2 mp-p-2 mp-text-sm mp-bg-1 mp-lh-16 mp-rounded mp-onto-box-danger">
+              <div className="mp-fw-600 mp-text-danger mp-flex-center mp-mb-1 mp-gap-1" >
+                <AlertTriangle className="mp-shrink-0 mp-icon-12"  />
                 保存被拦截：检测到破坏性变更，需二次确认
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginBottom: 8 }}>
+              <div className="mp-flex mp-mb-2 mp-gap-1 mp-flex-col" >
                 {destructive.changes.map((c, i) => (
-                  <div key={i} style={{ color: 'var(--semi-color-danger)', fontFamily: 'monospace', fontSize: 11, wordBreak: 'break-all' }}>
+                  <div key={i} className="mp-text-xs mp-text-danger mp-break-all mp-mono" >
                     · {c}
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginBottom: 8 }}>
-                输入 <code style={{ color: 'var(--semi-color-danger)' }}>{destructive.confirm_with}</code>
+              <div className="mp-mb-2 mp-text-xs mp-text-2">
+                输入 <code className="mp-text-danger">{destructive.confirm_with}</code>
                 （该类型当前显示名）以确认执行；确认重发会在提交体顶层附带 confirm_name。
               </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div className="mp-gap-2 mp-flex-center">
                 <input
                   type="text"
                   value={confirmInput}
                   placeholder={`输入 ${destructive.confirm_with} 以确认`}
                   onChange={(e) => setConfirmInput(e.target.value)}
-                  style={{ ...inputStyle, height: 30, fontSize: 12, fontFamily: 'monospace' }}
+                  className="mp-flex-1 mp-min-w-0 mp-mono mp-onto-input mp-onto-input--md"
                 />
                 <button
                   type="button"
                   onClick={() => void submit(confirmInput.trim())}
                   disabled={submitting || !confirmInput.trim()}
-                  style={{
-                    height: 30, padding: '0 14px', fontSize: 12, fontWeight: 600, flexShrink: 0,
-                    background: submitting ? 'var(--semi-color-fill-0)' : 'var(--semi-color-danger)',
-                    color: submitting ? 'var(--semi-color-text-2)' : '#fff',
-                    border: 'none', borderRadius: 'var(--semi-border-radius-medium)',
-                    cursor: submitting ? 'wait' : 'pointer',
-                  }}
+                  className="mp-fw-600 mp-onto-btn mp-onto-btn--md mp-onto-btn--solid-danger"
                 >
                   {submitting ? '重发中…' : '确认重发'}
                 </button>
@@ -665,12 +602,7 @@ export default function ObjectTypeEditorV2Drawer({
                   type="button"
                   onClick={() => { setDestructive(null); setConfirmInput(''); }}
                   disabled={submitting}
-                  style={{
-                    height: 30, padding: '0 12px', fontSize: 12, flexShrink: 0,
-                    background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
-                    border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-                    cursor: 'pointer',
-                  }}
+                  className="mp-onto-btn mp-onto-btn--md"
                 >
                   取消
                 </button>
@@ -678,26 +610,17 @@ export default function ObjectTypeEditorV2Drawer({
             </div>
           )}
           {error && (
-            <div style={{
-              marginBottom: 10, padding: 10, fontSize: 12, lineHeight: 1.6,
-              border: '1px solid var(--semi-color-danger)', borderRadius: 6,
-              color: 'var(--semi-color-danger)', display: 'flex', gap: 6, alignItems: 'flex-start',
-            }}>
-              <AlertTriangle style={{ width: 13, height: 13, flexShrink: 0, marginTop: 2 }} />
+            <div className="mp-flex mp-mb-2 mp-gap-1 mp-p-2 mp-text-sm mp-text-danger mp-items-start mp-lh-16 mp-rounded mp-onto-box-danger">
+              <AlertTriangle className="mp-shrink-0 mp-mt-1 mp-icon-12"  />
               <span>{error}</span>
             </div>
           )}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <div className="mp-flex mp-justify-end mp-gap-2">
             <button
               type="button"
               onClick={onClose}
               disabled={submitting}
-              style={{
-                height: 34, padding: '0 14px', fontSize: 13,
-                background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
-                border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
-                cursor: submitting ? 'wait' : 'pointer',
-              }}
+              className="mp-onto-btn mp-onto-btn--lg"
             >
               取消
             </button>
@@ -705,13 +628,7 @@ export default function ObjectTypeEditorV2Drawer({
               type="button"
               onClick={() => void submit()}
               disabled={submitting}
-              style={{
-                height: 34, padding: '0 16px', fontSize: 13, fontWeight: 600,
-                background: submitting ? 'var(--semi-color-fill-0)' : 'var(--semi-color-text-0)',
-                color: submitting ? 'var(--semi-color-text-2)' : 'var(--semi-color-bg-0)',
-                border: 'none', borderRadius: 'var(--semi-border-radius-medium)',
-                cursor: submitting ? 'wait' : 'pointer',
-              }}
+              className="mp-fw-600 mp-onto-btn mp-onto-btn--lg mp-onto-btn--solid"
             >
               {submitting ? '保存中…' : '保存（整体 upsert）'}
             </button>

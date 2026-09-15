@@ -69,7 +69,7 @@ export default function ResourceListPage() {
           <Typography.Text strong>
             <FileTextOutlined /> {r.name}
           </Typography.Text>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" className="mp-text-sm">
             <code>{r.uri}</code>
           </Typography.Text>
         </Space>
@@ -119,14 +119,14 @@ export default function ResourceListPage() {
         }
       />
 
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Input
           placeholder="搜索名称/URI"
           showClear
           value={searchText}
           onChange={(v) => setSearchText(v)}
           onEnterPress={() => setKeyword(searchText)}
-          style={{ width: 240 }}
+          className="mp-w-240"
         />
       </Space>
 

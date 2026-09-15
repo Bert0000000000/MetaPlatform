@@ -1,0 +1,357 @@
+/*
+ * 令牌工具层（Calm Density）
+ * ------------------------------------------------------------------
+ * 只做三件事，且每一条都直接等于一个设计令牌，不引入新的取值：
+ *   1. 布局原语：flex / inline-flex / column / 居中 / flex:1
+ *   2. 间距：margin-top / margin-bottom / gap 的 10 档（= --mp-space-1..10）
+ *   3. 文字层级：DESIGN-SPEC §4.2 的 6 级字号 + 语义色
+ *
+ * 存在的理由：这些片段在旧页面里以 inline style 的形式重复了上千次
+ * （`marginBottom: 16` 97 次、`width: '100%'` 74 次、`fontSize: 12` 59 次…），
+ * 逐页手抄 CSS 类会得到几十份同义类名。这里收敛成一份，页面的**业务排版**
+ * 仍放在各自的 domain css 里。
+ *
+ * 边界：不放颜色字面量、不放非令牌的像素值（图标尺寸除外，见 .mp-icon-*）。
+ */
+
+/* ---------- 布局原语 ---------- */
+.mp-flex {
+  display: flex;
+}
+
+.mp-flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.mp-inline-flex {
+  display: inline-flex;
+}
+
+.mp-items-center {
+  align-items: center;
+}
+
+.mp-justify-between {
+  justify-content: space-between;
+}
+
+.mp-justify-end {
+  justify-content: flex-end;
+}
+
+/* flex 容器 + 子项居中（最常用的一行式组合） */
+.mp-flex-center {
+  display: flex;
+  align-items: center;
+}
+
+.mp-flex-1 {
+  flex: 1;
+  min-width: 0;
+}
+
+.mp-w-full {
+  width: 100%;
+}
+
+.mp-h-full {
+  height: 100%;
+}
+
+.mp-text-center {
+  text-align: center;
+}
+
+.mp-hidden {
+  overflow: hidden;
+}
+
+/* 页面主滚动容器（旧页面里反复出现的 flex column + 可滚动 + 底部留白） */
+.mp-scroll-y {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.mp-scroll-pad {
+  padding-bottom: var(--mp-space-6);
+}
+
+/* ---------- 间距（10 档令牌） ---------- */
+
+.mp-m-0 {
+  margin: 0;
+}
+
+.mp-mt-1 { margin-top: var(--mp-space-1); }
+.mp-mt-2 { margin-top: var(--mp-space-2); }
+.mp-mt-3 { margin-top: var(--mp-space-3); }
+.mp-mt-4 { margin-top: var(--mp-space-4); }
+.mp-mt-5 { margin-top: var(--mp-space-5); }
+.mp-mt-6 { margin-top: var(--mp-space-6); }
+.mp-mt-7 { margin-top: var(--mp-space-7); }
+.mp-mt-8 { margin-top: var(--mp-space-8); }
+.mp-mt-9 { margin-top: var(--mp-space-9); }
+.mp-mt-10 { margin-top: var(--mp-space-10); }
+
+.mp-mb-1 { margin-bottom: var(--mp-space-1); }
+.mp-mb-2 { margin-bottom: var(--mp-space-2); }
+.mp-mb-3 { margin-bottom: var(--mp-space-3); }
+.mp-mb-4 { margin-bottom: var(--mp-space-4); }
+.mp-mb-5 { margin-bottom: var(--mp-space-5); }
+.mp-mb-6 { margin-bottom: var(--mp-space-6); }
+.mp-mb-7 { margin-bottom: var(--mp-space-7); }
+.mp-mb-8 { margin-bottom: var(--mp-space-8); }
+.mp-mb-9 { margin-bottom: var(--mp-space-9); }
+.mp-mb-10 { margin-bottom: var(--mp-space-10); }
+
+.mp-gap-1 { gap: var(--mp-space-1); }
+.mp-gap-2 { gap: var(--mp-space-2); }
+.mp-gap-3 { gap: var(--mp-space-3); }
+.mp-gap-4 { gap: var(--mp-space-4); }
+.mp-gap-5 { gap: var(--mp-space-5); }
+.mp-gap-6 { gap: var(--mp-space-6); }
+.mp-gap-7 { gap: var(--mp-space-7); }
+.mp-gap-8 { gap: var(--mp-space-8); }
+.mp-gap-9 { gap: var(--mp-space-9); }
+.mp-gap-10 { gap: var(--mp-space-10); }
+
+.mp-p-1 { padding: var(--mp-space-1); }
+.mp-p-2 { padding: var(--mp-space-2); }
+.mp-p-3 { padding: var(--mp-space-3); }
+.mp-p-4 { padding: var(--mp-space-4); }
+.mp-p-5 { padding: var(--mp-space-5); }
+.mp-p-6 { padding: var(--mp-space-6); }
+.mp-p-7 { padding: var(--mp-space-7); }
+.mp-p-8 { padding: var(--mp-space-8); }
+.mp-p-9 { padding: var(--mp-space-9); }
+.mp-p-10 { padding: var(--mp-space-10); }
+/* 旧页面里反复出现的「空态容器」内距 */
+.mp-empty-block {
+  padding: var(--mp-space-8) var(--mp-space-5);
+  text-align: center;
+}
+
+/* ---------- 文字层级（DESIGN-SPEC §4.2） ---------- */
+.mp-text-xs { font-size: 11px; }   /* 标签 / 眉标 */
+.mp-text-sm { font-size: 12px; }   /* 辅助说明、时间戳 */
+.mp-text-body { font-size: 13px; } /* 表格、导航 */
+.mp-text-md { font-size: 14px; }   /* 正文 */
+.mp-text-lg { font-size: 16px; }   /* 区块标题 */
+.mp-text-xl { font-size: 20px; }   /* 页面标题 */
+
+.mp-fw-500 { font-weight: 500; }
+.mp-fw-600 { font-weight: 600; }
+
+.mp-text-1 { color: var(--semi-color-text-0); }
+.mp-text-2 { color: var(--semi-color-text-2); }
+.mp-text-3 { color: var(--semi-color-text-3); }
+.mp-text-danger { color: var(--semi-color-danger); }
+.mp-text-success { color: var(--semi-color-success); }
+.mp-text-warning { color: var(--semi-color-warning); }
+.mp-text-primary { color: var(--semi-color-primary); }
+
+.mp-num { font-variant-numeric: tabular-nums; }
+
+/* ---------- 图标尺寸（旧页面里 width/height 成对出现最多的一类） ---------- */
+.mp-icon-12 { width: 12px; height: 12px; }
+.mp-icon-14 { width: 14px; height: 14px; }
+.mp-icon-16 { width: 16px; height: 16px; }
+.mp-icon-18 { width: 18px; height: 18px; }
+.mp-icon-20 { width: 20px; height: 20px; }
+
+/* ---------- 盒模型 / 分隔线 ---------- */
+.mp-shrink-0 {
+  flex: none;
+}
+
+.mp-min-h-0 {
+  min-height: 0;
+}
+
+.mp-max-w-full {
+  max-width: 100%;
+}
+
+.mp-wrap {
+  flex-wrap: wrap;
+}
+
+.mp-justify-center {
+  justify-content: center;
+}
+
+.mp-block {
+  display: block;
+}
+
+.mp-grid {
+  display: grid;
+}
+
+.mp-relative {
+  position: relative;
+}
+
+.mp-absolute {
+  position: absolute;
+}
+
+.mp-ml-auto {
+  margin-left: auto;
+}
+
+/* 分隔线一律用 Semi 边框令牌，不写颜色字面量 */
+.mp-border {
+  border: 1px solid var(--semi-color-border);
+}
+
+.mp-border-t {
+  border-top: 1px solid var(--semi-color-border);
+}
+
+.mp-border-b {
+  border-bottom: 1px solid var(--semi-color-border);
+}
+
+.mp-rounded {
+  border-radius: var(--semi-border-radius-medium);
+}
+
+.mp-rounded-lg {
+  border-radius: var(--semi-border-radius-large);
+}
+
+/* ---------- 文本溢出 / 滚动 ---------- */
+.mp-clickable {
+  cursor: pointer;
+}
+
+.mp-nowrap {
+  white-space: nowrap;
+}
+
+.mp-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-overflow-auto {
+  overflow: auto;
+}
+
+.mp-overflow-y-auto {
+  overflow-y: auto;
+}
+
+.mp-break-all {
+  word-break: break-all;
+}
+
+/* ---------- 轴向间距 / 外边距 ---------- */
+.mp-px-1 { padding-inline: var(--mp-space-1); }
+.mp-px-2 { padding-inline: var(--mp-space-2); }
+.mp-px-3 { padding-inline: var(--mp-space-3); }
+.mp-px-4 { padding-inline: var(--mp-space-4); }
+.mp-px-5 { padding-inline: var(--mp-space-5); }
+.mp-px-6 { padding-inline: var(--mp-space-6); }
+.mp-px-7 { padding-inline: var(--mp-space-7); }
+.mp-px-8 { padding-inline: var(--mp-space-8); }
+.mp-px-9 { padding-inline: var(--mp-space-9); }
+.mp-px-10 { padding-inline: var(--mp-space-10); }
+.mp-py-1 { padding-block: var(--mp-space-1); }
+.mp-py-2 { padding-block: var(--mp-space-2); }
+.mp-py-3 { padding-block: var(--mp-space-3); }
+.mp-py-4 { padding-block: var(--mp-space-4); }
+.mp-py-5 { padding-block: var(--mp-space-5); }
+.mp-py-6 { padding-block: var(--mp-space-6); }
+.mp-py-7 { padding-block: var(--mp-space-7); }
+.mp-py-8 { padding-block: var(--mp-space-8); }
+.mp-py-9 { padding-block: var(--mp-space-9); }
+.mp-py-10 { padding-block: var(--mp-space-10); }
+.mp-pb-1 { padding-bottom: var(--mp-space-1); }
+.mp-pb-2 { padding-bottom: var(--mp-space-2); }
+.mp-pb-3 { padding-bottom: var(--mp-space-3); }
+.mp-pb-4 { padding-bottom: var(--mp-space-4); }
+.mp-pb-5 { padding-bottom: var(--mp-space-5); }
+.mp-pb-6 { padding-bottom: var(--mp-space-6); }
+.mp-pb-7 { padding-bottom: var(--mp-space-7); }
+.mp-pb-8 { padding-bottom: var(--mp-space-8); }
+.mp-pb-9 { padding-bottom: var(--mp-space-9); }
+.mp-pb-10 { padding-bottom: var(--mp-space-10); }
+.mp-pt-1 { padding-top: var(--mp-space-1); }
+.mp-pt-2 { padding-top: var(--mp-space-2); }
+.mp-pt-3 { padding-top: var(--mp-space-3); }
+.mp-pt-4 { padding-top: var(--mp-space-4); }
+.mp-pt-5 { padding-top: var(--mp-space-5); }
+.mp-pt-6 { padding-top: var(--mp-space-6); }
+.mp-pt-7 { padding-top: var(--mp-space-7); }
+.mp-pt-8 { padding-top: var(--mp-space-8); }
+.mp-pt-9 { padding-top: var(--mp-space-9); }
+.mp-pt-10 { padding-top: var(--mp-space-10); }
+.mp-ml-1 { margin-left: var(--mp-space-1); }
+.mp-ml-2 { margin-left: var(--mp-space-2); }
+.mp-ml-3 { margin-left: var(--mp-space-3); }
+.mp-ml-4 { margin-left: var(--mp-space-4); }
+.mp-ml-5 { margin-left: var(--mp-space-5); }
+.mp-ml-6 { margin-left: var(--mp-space-6); }
+.mp-mr-1 { margin-right: var(--mp-space-1); }
+.mp-mr-2 { margin-right: var(--mp-space-2); }
+.mp-mr-3 { margin-right: var(--mp-space-3); }
+.mp-mr-4 { margin-right: var(--mp-space-4); }
+.mp-mr-5 { margin-right: var(--mp-space-5); }
+.mp-mr-6 { margin-right: var(--mp-space-6); }
+.mp-m-2 { margin: var(--mp-space-2); }
+.mp-m-3 { margin: var(--mp-space-3); }
+.mp-m-4 { margin: var(--mp-space-4); }
+.mp-m-5 { margin: var(--mp-space-5); }
+.mp-m-6 { margin: var(--mp-space-6); }
+
+/* ---------- 固定宽度（旧页面里反复出现的输入框 / 下拉宽度） ---------- */
+.mp-w-120 { width: 120px; }
+.mp-w-140 { width: 140px; }
+.mp-w-160 { width: 160px; }
+.mp-w-180 { width: 180px; }
+.mp-w-200 { width: 200px; }
+.mp-w-240 { width: 240px; }
+.mp-w-280 { width: 280px; }
+.mp-w-320 { width: 320px; }
+.mp-w-360 { width: 360px; }
+.mp-max-w-720 { max-width: 720px; }
+
+/* ---------- 杂项原语 ---------- */
+.mp-mono { font-family: var(--mp-font-mono); }
+.mp-sans { font-family: var(--mp-font-sans); }
+.mp-items-start { align-items: flex-start; }
+.mp-items-end { align-items: flex-end; }
+.mp-h-fit { height: fit-content; }
+.mp-lh-16 { line-height: 1.6; }
+.mp-ellipsis-text { text-overflow: ellipsis; }
+.mp-grid-2 { display: grid; grid-template-columns: 1fr 1fr; }
+.mp-bg-1 { background: var(--semi-color-bg-1); }
+.mp-bg-fill-0 { background: var(--semi-color-fill-0); }
+.mp-bg-fill-1 { background: var(--semi-color-fill-1); }
+
+/* 加载指示：Semi 无此动画名，沿用旧页面的 keyframes，但收敛成一个类 */
+@keyframes mp-spin {
+  to { transform: rotate(360deg); }
+}
+.mp-spin { animation: mp-spin 1s linear infinite; }
+
+/* ---------- 第五轮补全 ---------- */
+.mp-rounded-sm { border-radius: var(--semi-border-radius-small); }
+.mp-text-right { text-align: right; }
+.mp-text-left { text-align: left; }
+.mp-pe-none { pointer-events: none; }
+.mp-border-none { border: none; }
+.mp-shadow-card { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06); }
+.mp-opacity-60 { opacity: 0.6; }
+.mp-opacity-70 { opacity: 0.7; }
+.mp-max-h-320 { max-height: 320px; }
+.mp-max-h-480 { max-height: 480px; }
+.mp-min-w-0 { min-width: 0; }
+.mp-grid-auto { display: grid; grid-auto-flow: column; }

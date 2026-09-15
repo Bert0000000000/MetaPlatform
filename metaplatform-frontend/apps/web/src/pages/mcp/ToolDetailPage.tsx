@@ -29,6 +29,7 @@ import {
   setCurrentToolVersion,
 } from '@/api/mcphub/tools';
 import type { McpTool, McpToolVersion, McpToolVersionCompareResult } from '@/api/mcphub/types';
+import './mcp.css';
 
 export default function ToolDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -139,11 +140,11 @@ export default function ToolDetailPage() {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/tools')}>
           返回
         </Button>
-        <Typography.Title heading={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} className="mp-m-0">
           {tool?.name ?? '工具详情'}
         </Typography.Title>
         <Button
@@ -207,7 +208,7 @@ export default function ToolDetailPage() {
         onCancel={() => setCompareOpen(false)}
       >
         {compareResult && (
-          <Space vertical style={{ width: '100%' }}>
+          <Space vertical className="mp-w-full">
             <Space>
               <Tag color="blue">差异项</Tag>
               {compareResult.differences.map((d) => (
@@ -216,9 +217,9 @@ export default function ToolDetailPage() {
                 </Tag>
               ))}
             </Space>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="mp-gap-4 mp-grid mp-grid-2" >
               <Card title={`v${compareResult.left.version}`}>
-                <pre style={{ maxHeight: 360, overflow: 'auto' }}>
+                <pre className="mp-overflow-auto mp-mcp-max-h-360">
                   {JSON.stringify(
                     {
                       description: compareResult.left.description,
@@ -231,7 +232,7 @@ export default function ToolDetailPage() {
                 </pre>
               </Card>
               <Card title={`v${compareResult.right.version}`}>
-                <pre style={{ maxHeight: 360, overflow: 'auto' }}>
+                <pre className="mp-overflow-auto mp-mcp-max-h-360">
                   {JSON.stringify(
                     {
                       description: compareResult.right.description,

@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Card } from '@douyinfe/semi-ui';
+import './components.css';
 
 export interface GraphNodeSpec {
   id: string;
@@ -210,34 +211,26 @@ export default function SemiGraphCanvas({
 
   return (
     <div
-      style={{
-        position: 'relative', overflow: 'hidden', width: width ?? '100%', height,
-        border: '1px solid var(--semi-color-border)', borderRadius: 8,
-        background: background ?? 'var(--semi-color-bg-2)',
-        backgroundImage: showGrid
-          ? 'radial-gradient(circle, var(--semi-color-border) 1px, transparent 1px)'
-          : undefined,
-        backgroundSize: showGrid ? '16px 16px' : undefined,
-        ...style,
-      }}
+      className={`mp-hidden mp-relative mp-border mp-rounded${showGrid ? ' mp-sgc-grid' : ''}`}
+      style={{ width: width ?? '100%', height, backgroundColor: background ?? 'var(--semi-color-bg-2)', ...style }}
     >
       <div
         ref={containerRef}
-        style={{ position: 'absolute', inset: 0, overflow: 'auto', cursor: panning ? 'grabbing' : 'default', userSelect: panning ? 'none' : 'auto' }}
+        className={`mp-overflow-auto mp-absolute mp-sgc-viewport ${panning ? 'mp-sgc-panning' : 'mp-sgc-idle'}`}
         onMouseDown={onCanvasMouseDown}
         onMouseMove={onCanvasMouseMove}
         onMouseUp={onCanvasMouseUp}
         onMouseLeave={onCanvasMouseUp}
       >
-        <div style={{ position: 'relative', width: worldWidth * zoom, height: worldHeight * zoom }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, width: worldWidth, height: worldHeight, transform: `scale(${zoom})`, transformOrigin: '0 0' }}>
-            <svg width={worldWidth} height={worldHeight} style={{ position: 'absolute', left: 0, top: 0, zIndex: 0, pointerEvents: 'none', overflow: 'visible' }}>
+        <div className="mp-relative" style={{ width: worldWidth * zoom, height: worldHeight * zoom }}>
+          <div className="mp-absolute" style={{ top: 0, left: 0, width: worldWidth, height: worldHeight, transform: `scale(${zoom})`, transformOrigin: '0 0' }}>
+            <svg width={worldWidth} height={worldHeight} className="mp-absolute mp-pe-none mp-sgc-svg">
               <defs>
                 <marker id={`${uid}-arrow`} markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
-                  <path d="M 0 0 L 9 4.5 L 0 9 Z" style={{ fill: 'var(--semi-color-border)' }} />
+                  <path d="M 0 0 L 9 4.5 L 0 9 Z" fill="var(--semi-color-border)" />
                 </marker>
                 <marker id={`${uid}-arrow-active`} markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
-                  <path d="M 0 0 L 9 4.5 L 0 9 Z" style={{ fill: 'var(--semi-color-primary)' }} />
+                  <path d="M 0 0 L 9 4.5 L 0 9 Z" fill="var(--semi-color-primary)" />
                 </marker>
               </defs>
               {edges.map((e, i) => {
@@ -277,22 +270,12 @@ export default function SemiGraphCanvas({
                   <div key={n.id} data-node-id={n.id}
                     onClick={(e) => { e.stopPropagation(); handleNodeClick(n.id); }}
                     title={n.title ?? n.label}
-                    style={{
-                      position: 'absolute', left: n.x - rx, top: n.y - ry, width: w,
-                      zIndex: n.selected ? 3 : 2, opacity: n.dim ? 0.25 : 1, cursor: 'pointer',
-                    }}>
-                    <div style={{
-                      width: w, height: h, borderRadius: '50%',
-                      background: n.solid ? color : `${color}33`,
-                      border: `${n.selected ? 3 : 2}px ${n.dashed ? 'dashed' : 'solid'} ${color}`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 11, fontWeight: 600, overflow: 'hidden',
-                      color: 'var(--semi-color-text-0)', padding: 2, textAlign: 'center',
-                    }}>
+                    className="mp-clickable mp-absolute" style={{ left: n.x - rx, top: n.y - ry, width: w, zIndex: n.selected ? 3 : 2, opacity: n.dim ? 0.25 : 1 }}>
+                    <div className="mp-justify-center mp-text-center mp-hidden mp-fw-600 mp-p-1 mp-text-xs mp-text-1 mp-flex-center" style={{ width: w, height: h, borderRadius: '50%', background: n.solid ? color : `${color}33`, border: `${n.selected ? 3 : 2}px ${n.dashed ? 'dashed' : 'solid'} ${color}` }}>
                       {n.label.length > 8 ? n.label.slice(0, 7) + '…' : n.label}
                     </div>
                     {n.labelBelow && (
-                      <div style={{ fontSize: 11, textAlign: 'center', marginTop: 4, color: 'var(--semi-color-text-2)', fontWeight: n.solid ? 600 : 400, whiteSpace: 'nowrap' }}>
+                      <div className={`mp-text-center mp-mt-1 mp-text-xs mp-text-2 mp-nowrap${n.solid ? ' mp-fw-600' : ''}`}>
                         {n.label.length > 12 ? n.label.slice(0, 11) + '…' : n.label}
                       </div>
                     )}
@@ -303,10 +286,7 @@ export default function SemiGraphCanvas({
                 <div key={n.id} data-node-id={n.id}
                   onClick={(e) => { e.stopPropagation(); handleNodeClick(n.id); }}
                   title={n.title ?? n.label}
-                  style={{
-                    position: 'absolute', left: n.x - w / 2, top: n.y - h / 2,
-                    zIndex: n.selected ? 3 : 2, opacity: n.dim ? 0.25 : 1, cursor: 'pointer',
-                  }}>
+                  className="mp-clickable mp-absolute" style={{ left: n.x - w / 2, top: n.y - h / 2, zIndex: n.selected ? 3 : 2, opacity: n.dim ? 0.25 : 1 }}>
                   <Card
                     bordered
                     style={{
@@ -318,12 +298,9 @@ export default function SemiGraphCanvas({
                     }}
                     bodyStyle={{ padding: '6px 10px', textAlign: 'center' }}
                   >
-                    <div style={{
-                      fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                      color: n.solid ? '#fff' : (n.color ?? 'var(--semi-color-text-0)'),
-                    }}>{n.label}</div>
+                    <div className="mp-fw-600 mp-ellipsis mp-text-sm" style={{ color: n.solid ? 'var(--semi-color-white)' : (n.color ?? 'var(--semi-color-text-0)') }}>{n.label}</div>
                     {n.sublabel && (
-                      <div style={{ fontSize: 10, color: n.solid ? 'rgba(255,255,255,0.8)' : 'var(--semi-color-text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div className="mp-hidden mp-nowrap mp-text-xs mp-ellipsis-text" style={{ color: n.solid ? 'rgba(255,255,255,0.8)' : 'var(--semi-color-text-2)' }}>
                         {n.sublabel}
                       </div>
                     )}

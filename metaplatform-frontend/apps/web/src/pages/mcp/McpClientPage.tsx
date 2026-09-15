@@ -23,6 +23,7 @@ import {
 import { listClients, deleteClient, discoverClientTools } from '@/api/mcphub/clients';
 import type { McpClient } from '@/api/mcphub/types';
 import { PageHeader } from '@/components/skeleton';
+import ApiKeyGenerator from './components/ApiKeyGenerator';
 
 function normalizeStatus(status: string): McpClient['status'] {
   const s = status.toLowerCase();
@@ -80,7 +81,7 @@ export default function ClientListPage() {
           <Typography.Text strong>
             <LinkOutlined /> {c.name}
           </Typography.Text>
-          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" className="mp-text-sm">
             {c.endpoint}
           </Typography.Text>
         </Space>
@@ -161,6 +162,13 @@ export default function ClientListPage() {
             pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
         )}
       </Card>
+
+      {/* 长期 API Key（ADR-0062）：外部客户端 / IDE 用 sk-mcp- 密钥免登录调用平台能力。
+          原先挂在 McpExternalPage（旧 McpCenterLayout 的「外部应用集成」hub），
+          P2b 拆掉三 HUB 后该入口悬空，现归位到「客户端」tab —— API Key 本质是客户端凭据。 */}
+      <div className="mp-mt-6">
+        <ApiKeyGenerator />
+      </div>
     </div>
   );
 }
