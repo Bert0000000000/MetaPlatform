@@ -281,6 +281,7 @@ MCP 三页因后端未起报 500，但页面自行降级渲染，未崩到 Error
 | **字号** | 14px（继承全局 `$font-size-regular`） | **13px** | Semi 只暴露了空态占位的 `$font-table_base-fontSize`，**没有单元格字号的 DSM 变量**。故在 `DataTablePro` 给 Table 挂我们自己的 `.mp-table`（Semi `className` 透传到同一元素），用 `.mp-tablepro .mp-table { font-size: var(--mp-table-font-size) }` 收口 |
 | **表头分割线** | 2px（Semi 默认） | **1px** | DSM 变量 `$width-table_header_border` |
 | **列宽 / 横向滚动** | 列按内容宽排、表格不铺满容器 | **表宽 = 容器宽、无横向滚动、列铺满** | `DataTablePro` 去掉强制的 `scroll={{ x: 'max-content' }}` |
+| **列宽拖拽把手** | 每个可调列右缘一条 **9px 实心竖条**（Semi 默认 `$width-table_react_resizable_handle`，背景直接用表格边框色，在表头里像一块宽块） | **4px**（读起来像分隔线，仍可抓取） | DSM 变量 `$width-table_react_resizable_handle` |
 | **行高** | 42–53px 参差 | **表头全站 41px；表体 43–45px** | ① 单元格内控件统一降为 `size="small"`（84 文件 / 222 处：Tag 173、Button 46、Select-Input 4，全部落在列定义 `render:` 内）② `$spacing-table_{tbody_rowCell-padding, middle-paddingY, small-paddingY}` 三档对齐 10/10/6px ③ 用户表头像 32→24px |
 
 **未达「恰 40px」的原因（如实登记）**：Semi 表格行高是**内容驱动**的（`td` 的 height 只是下限）。

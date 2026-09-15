@@ -18,6 +18,9 @@ $spacing-table_row_head-paddingY: 10px; // 表头同高
 $spacing-table_row_head-paddingX: 16px;
 // 表头下分割线：Semi 默认 2px，视觉过重；DESIGN-SPEC「层级靠边框与背景差」
 $width-table_header_border: 1px;
+// 列宽拖拽把手：Semi 默认 9px 实心竖条（背景=表格边框色），在表头里像一块宽块；
+// 收细到 4px，既保留可抓取的热区，又读起来像一条分隔线。
+$width-table_react_resizable_handle: 4px;
 
 // --- 主色实底上的前景色（深色主题主色为亮紫蓝，白字对比度不足）---
 $color-button_primary-text-default: var(--semi-color-primary-on);
