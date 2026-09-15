@@ -275,6 +275,11 @@ export const legacyRedirectRoutes: ReactElement[] = [
 
   /* ---------- 平台管理 ---------- */
   r('admin', '/admin/org/users'),
+  // 三个分组根（壳的主 tab 指向 domains.tsx 的组 path）：转发到各组第一个子 tab，
+  // 否则命中 App.tsx 的 * 兜底被甩回 /home（「平台」「运维」tab 点了跳首页的根因）。
+  r('admin/org', '/admin/org/users'),
+  r('admin/platform', '/admin/platform/configs'),
+  r('admin/ops', '/admin/ops/logs'),
   r('admin/users', '/admin/org/users'),
   r('admin/permissions', '/admin/org/roles'),
   r('admin/orgs', '/admin/org/tenants'),
