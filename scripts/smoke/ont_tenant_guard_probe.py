@@ -77,13 +77,13 @@ def call(method: str, path: str, body: dict | None = None) -> tuple[int, object]
             raw = r.read()
             try:
                 return r.status, json.loads(raw or b"{}")
-            except Exception:  # noqa: BLE001
+            except Exception:
                 return r.status, raw[:200]
     except urllib.error.HTTPError as e:
         raw = e.read()
         try:
             return e.code, json.loads(raw or b"{}")
-        except Exception:  # noqa: BLE001
+        except Exception:
             return e.code, raw[:200]
 
 

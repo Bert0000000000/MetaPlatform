@@ -3597,7 +3597,6 @@ class PgOntologyRepository(OntologyRepository):
     def delete_interface(self, rid: str) -> dict[str, Any]:
         """C8：删除 Interface（物理删；实现该接口的类型不级联，仅解除引用由
         ONT 层校验兜底 —— 有实现者时拒绝）。"""
-        from mate_kernel.ontology.identity.class_ref import ClassRef
 
         conn, _ = self._connect()
         try:

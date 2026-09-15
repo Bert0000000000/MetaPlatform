@@ -191,7 +191,7 @@ def _check_db(db: str) -> list[str]:
     app_dsn = f"postgresql://{APP_ROLE}:{APP_PASSWORD}@localhost:5432/{db}"
     try:
         conn = psycopg2.connect(app_dsn, connect_timeout=5)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"[{db}] FAIL: 非特权角色无法连接：{e}")
         return [f"{db}: 连接失败"]
     try:
@@ -223,7 +223,7 @@ def _check_db(db: str) -> list[str]:
             ):
                 try:
                     cur.execute(ddl)
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     first = str(e).strip().splitlines()[0]
                     failures.append(f"{db}: DDL 权限不足（容器 bootstrap 会失败）：{first}")
                     break

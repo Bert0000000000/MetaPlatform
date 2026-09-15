@@ -31,7 +31,6 @@ import argparse
 import ast
 import csv
 import hashlib
-import json
 import re
 import sys
 import time

@@ -37,7 +37,6 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from mate_kernel.action.engine import SubmissionCriteriaFailed
 from mate_kernel.ontology.identity import ClassRef
 from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
 from mate_kernel.ontology.instances import Individual
@@ -254,7 +253,7 @@ def stage_version(repo: InMemoryOntologyRepository) -> None:
 def stage_functions(repo: InMemoryOntologyRepository, rows: list[dict]) -> None:
     tables: dict[str, dict[str, float | None]] = {slug: {} for slug in SCORE_SLUGS}
     for r in rows:
-        for slug, score in zip(SCORE_SLUGS, r["scores"]):
+        for slug, score in zip(SCORE_SLUGS, r["scores"], strict=False):
             tables[slug][r["pid"]] = score
 
     fn_rids = []
@@ -529,8 +528,8 @@ def main() -> int:
         print(line)
     print(f"{'=' * 72}")
     print(
-        f"基元覆盖 10/12（ClassRef/Version/Property/ObjectType/Interface/Individual/"
-        f"Function/ActionType/Axiom/ObjectSet；LinkType/LinkInstance 待关系型域）"
+        "基元覆盖 10/12（ClassRef/Version/Property/ObjectType/Interface/Individual/"
+        "Function/ActionType/Axiom/ObjectSet；LinkType/LinkInstance 待关系型域）"
     )
     print(f"总耗时 {total_dt:.1f}s · {len(CHECKS) - failed}/{len(CHECKS)} checks passed")
     return 1 if failed else 0

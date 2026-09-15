@@ -113,7 +113,7 @@ def main() -> int:
         timeout=30,
     ) as r:
         TOKEN = json.load(r)["accessToken"]
-    print(f"login OK\n")
+    print("login OK\n")
 
     rows = list(csv.DictReader((DATA / "test_set_with_outputs.csv").open(encoding="utf-8")))
 
@@ -228,7 +228,7 @@ def main() -> int:
     groups = body if isinstance(body, list) else (body or {}).get("groups", [])
     found = isinstance(body, (list, dict)) and "insurance" in json.dumps(body, ensure_ascii=False)
     check(
-        f"around 一跳遍历（患者 → 保险对端）",
+        "around 一跳遍历（患者 → 保险对端）",
         st == 200 and found,
         f"status={st} groups={len(groups) if isinstance(groups, list) else '?'}",
     )

@@ -33,7 +33,7 @@ try:
     import psycopg2
 except ImportError:  # pragma: no cover
     print("psycopg2 required (use the backend venv)", file=sys.stderr)
-    raise SystemExit(2)
+    raise SystemExit(2) from None
 
 DEFAULT_DSN = "postgresql://meta:meta@localhost:5432/metaplatform"
 POLICY = "tenant_isolation"
