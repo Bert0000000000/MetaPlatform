@@ -49,7 +49,7 @@ function fmtValue(d: ChartDatum): string {
 function placeholder(W: number, H: number, text: string): ReactElement {
   return (
     <text x={W / 2} y={H / 2} textAnchor="middle" dominantBaseline="middle"
-      fontSize={12} fill="var(--muted-foreground)">
+      fontSize={12} fill="var(--semi-color-text-2)">
       {text}
     </text>
   );
@@ -87,11 +87,11 @@ function BarChart({ data, W, H, mini }: SubProps): ReactElement {
     const y = padT + ih - (ih * i) / ticks;
     els.push(
       <line key={`grid${i}`} x1={padL} y1={y} x2={W - padR} y2={y}
-        stroke="var(--border)" strokeWidth={1} strokeDasharray={i === 0 ? undefined : '3 3'} />,
+        stroke="var(--semi-color-border)" strokeWidth={1} strokeDasharray={i === 0 ? undefined : '3 3'} />,
     );
     els.push(
       <text key={`tick${i}`} x={padL - 6} y={y} textAnchor="end" dominantBaseline="middle"
-        fontSize={mini ? 8 : 10} fill="var(--muted-foreground)">
+        fontSize={mini ? 8 : 10} fill="var(--semi-color-text-2)">
         {formatChartNumber(v)}
       </text>,
     );
@@ -114,7 +114,7 @@ function BarChart({ data, W, H, mini }: SubProps): ReactElement {
       if (rotate) {
         els.push(
           <text key={`lab${i}`} x={lx - 3} y={ly} fontSize={mini ? 8 : 10}
-            fill="var(--muted-foreground)" textAnchor="end"
+            fill="var(--semi-color-text-2)" textAnchor="end"
             transform={`rotate(-32 ${lx - 3} ${ly})`}>
             {trunc(d.label, mini ? 6 : 10)}
           </text>,
@@ -122,7 +122,7 @@ function BarChart({ data, W, H, mini }: SubProps): ReactElement {
       } else {
         els.push(
           <text key={`lab${i}`} x={lx} y={ly} fontSize={mini ? 8 : 10}
-            fill="var(--muted-foreground)" textAnchor="middle">
+            fill="var(--semi-color-text-2)" textAnchor="middle">
             {trunc(d.label, mini ? 6 : 12)}
           </text>,
         );
@@ -164,7 +164,7 @@ function PieChart({ data, W, H, mini }: SubProps): ReactElement {
     legendItems.push({
       label: `其他 ${sorted.length - legendMax} 项`,
       pct: (rest / total) * 100,
-      color: 'var(--muted-foreground)',
+      color: 'var(--semi-color-text-2)',
     });
   }
   const itemH = mini ? 15 : 20;
@@ -187,7 +187,7 @@ function PieChart({ data, W, H, mini }: SubProps): ReactElement {
       els.push(
         <path key={`slice${i}`}
           d={`M ${cx} ${cy} L ${p0.x} ${p0.y} A ${r} ${r} 0 ${large} 1 ${p1.x} ${p1.y} Z`}
-          fill={color} stroke="var(--card)" strokeWidth={1}>
+          fill={color} stroke="var(--semi-color-bg-1)" strokeWidth={1}>
           <title>{title}</title>
         </path>,
       );
@@ -202,11 +202,11 @@ function PieChart({ data, W, H, mini }: SubProps): ReactElement {
         <rect x={legendX} y={ly - (mini ? 4 : 5)} width={mini ? 8 : 10} height={mini ? 8 : 10}
           rx={2} fill={it.color} />
         <text x={legendX + (mini ? 12 : 16)} y={ly} dominantBaseline="middle"
-          fontSize={mini ? 9 : 11} fill="var(--muted-foreground)">
+          fontSize={mini ? 9 : 11} fill="var(--semi-color-text-2)">
           {trunc(it.label, mini ? 8 : 14)}
         </text>
         <text x={W - 4} y={ly} textAnchor="end" dominantBaseline="middle"
-          fontSize={mini ? 9 : 11} fill="var(--foreground)" fontWeight={600}>
+          fontSize={mini ? 9 : 11} fill="var(--semi-color-text-0)" fontWeight={600}>
           {`${it.pct.toFixed(0)}%`}
         </text>
       </g>,
@@ -243,11 +243,11 @@ function LineChart({ data, W, H, mini }: SubProps): ReactElement {
     const y = yAt(v);
     els.push(
       <line key={`grid${i}`} x1={padL} y1={y} x2={W - padR} y2={y}
-        stroke="var(--border)" strokeWidth={1} strokeDasharray={i === 0 ? undefined : '3 3'} />,
+        stroke="var(--semi-color-border)" strokeWidth={1} strokeDasharray={i === 0 ? undefined : '3 3'} />,
     );
     els.push(
       <text key={`tick${i}`} x={padL - 6} y={y} textAnchor="end" dominantBaseline="middle"
-        fontSize={mini ? 8 : 10} fill="var(--muted-foreground)">
+        fontSize={mini ? 8 : 10} fill="var(--semi-color-text-2)">
         {formatChartNumber(v)}
       </text>,
     );
@@ -256,13 +256,13 @@ function LineChart({ data, W, H, mini }: SubProps): ReactElement {
   els.push(
     <polyline key="line"
       points={data.map((d, i) => `${xAt(i)},${yAt(d.value)}`).join(' ')}
-      fill="none" stroke="var(--primary)" strokeWidth={mini ? 1.6 : 2}
+      fill="none" stroke="var(--semi-color-primary)" strokeWidth={mini ? 1.6 : 2}
       strokeLinejoin="round" strokeLinecap="round" />,
   );
   data.forEach((d, i) => {
     els.push(
       <circle key={`pt${i}`} cx={xAt(i)} cy={yAt(d.value)} r={mini ? 2.5 : 3.5}
-        fill="var(--primary)" stroke="var(--card)" strokeWidth={1.5}>
+        fill="var(--semi-color-primary)" stroke="var(--semi-color-bg-1)" strokeWidth={1.5}>
         <title>{`${d.label}：${fmtValue(d)}`}</title>
       </circle>,
     );
@@ -275,7 +275,7 @@ function LineChart({ data, W, H, mini }: SubProps): ReactElement {
   labelIdx.forEach((i) => {
     els.push(
       <text key={`lab${i}`} x={xAt(i)} y={padT + ih + (mini ? 10 : 14)}
-        fontSize={mini ? 8 : 10} fill="var(--muted-foreground)"
+        fontSize={mini ? 8 : 10} fill="var(--semi-color-text-2)"
         textAnchor={i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle'}>
         {trunc(data[i].label, mini ? 7 : 12)}
       </text>,

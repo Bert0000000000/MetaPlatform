@@ -33,8 +33,8 @@ export default function TemplateCard({ template, onPreview, onInstall }: Templat
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'linear-gradient(135deg, var(--primary) 0%, var(--semi-color-primary-light-default) 100%)',
-            color: 'var(--primary-foreground)',
+            background: 'linear-gradient(135deg, var(--semi-color-primary) 0%, var(--semi-color-primary-light-default) 100%)',
+            color: 'var(--semi-color-white)',
             fontSize: 48,
           }}
         >

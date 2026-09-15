@@ -39,9 +39,9 @@ export default function RuntimeForm({ config }: RuntimeFormProps) {
       case 'upload':
         return <Form.Slot label={field.label}><Button disabled={disabled}>上传附件</Button></Form.Slot>;
       case 'divider':
-        return <div style={{ borderTop: '1px solid var(--border)', paddingTop: 8, marginBottom: 16 }}>{field.label}</div>;
+        return <div style={{ borderTop: '1px solid var(--semi-color-border)', paddingTop: 8, marginBottom: 16 }}>{field.label}</div>;
       case 'group':
-        return <Card title={field.label} style={{ background: 'var(--muted)', marginBottom: 16 }} />;
+        return <Card title={field.label} style={{ background: 'var(--semi-color-fill-0)', marginBottom: 16 }} />;
       default:
         return <Form.Input field={field.fieldKey} label={field.label} rules={rules} placeholder={field.placeholder} disabled={disabled} />;
     }

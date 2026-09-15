@@ -11,101 +11,10 @@
   font-size: 14px;
 }
 
-.v-portal-home {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.v-portal-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-  margin-top: 24px;
-}
-
-@media (max-width: 1200px) {
-  .v-portal-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 992px) {
-  .v-portal-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 576px) {
-  .v-portal-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.v-portal-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  text-decoration: none;
-  transition: background 0.15s ease, border-color 0.15s ease;
-  cursor: pointer;
-}
-
-.v-portal-card:hover {
-  background: var(--muted);
-  border-color: #404040;
-}
-
-.v-portal-card-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius);
-  background: var(--muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--foreground);
-  flex-shrink: 0;
-}
-
-.v-portal-card:hover .v-portal-card-icon {
-  background: var(--accent);
-}
-
-.v-portal-card-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.v-portal-card-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--foreground);
-  margin-bottom: 6px;
-}
-
-.v-portal-card-arrow {
-  color: var(--muted-foreground);
-  transition: color 0.15s ease;
-}
-
-.v-portal-card:hover .v-portal-card-arrow {
-  color: var(--foreground);
-}
-
-.v-portal-card-desc {
-  font-size: 13px;
-  color: var(--muted-foreground);
-  line-height: 1.5;
-}
-
 /* FlowGram.AI 暗色主题覆盖 */
 .gedit-playground,
 .gedit-flow-background-layer {
-  background-color: var(--background) !important;
+  background-color: var(--semi-color-bg-0) !important;
 }
 
 /* 强制 canvas 有高度（父级有 min-height:540，playground 自身取 0 需强制撑开）*/
@@ -118,7 +27,7 @@
 
 /* 网格点改暗色 */
 .gedit-grid-svg circle {
-  stroke: var(--border, #262626) !important;
+  stroke: var(--semi-color-border) !important;
   fill-opacity: 0.6 !important;
 }
 
@@ -147,11 +56,11 @@
 
 /* 滚动条 */
 .gedit-playground ::-webkit-scrollbar { width: 8px; height: 8px; }
-.gedit-playground ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.gedit-playground ::-webkit-scrollbar-thumb { background: var(--semi-color-border); border-radius: 4px; }
 
 /* 拖拽视觉反馈 */
 .gedit-playground.gedit-drop-active {
-  outline: 2px dashed var(--primary, #a78bfa) !important;
+  outline: 2px dashed var(--semi-color-primary) !important;
   outline-offset: -8px;
   background-color: rgba(167, 139, 250, 0.04) !important;
   transition: background-color .15s;
@@ -160,8 +69,8 @@
 /* Minimap 暗色主题（覆盖 minimap-plugin 默认白色） */
 .gedit-minimap-panel,
 .minimap-panel {
-  background: var(--card, #171717) !important;
-  border: 1px solid var(--border, #262626) !important;
+  background: var(--semi-color-bg-1) !important;
+  border: 1px solid var(--semi-color-border) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
   z-index: 20 !important; /* 在属性面板之前 */
 }
@@ -172,14 +81,14 @@
 
 /* 节点 port 小圆点（FlowGram 默认小圆点颜色 + 大小） */
 .gedit-flow-activity-node .gedit-port {
-  background: var(--primary, #a78bfa) !important;
-  border: 2px solid var(--background, #0a0a0a) !important;
+  background: var(--semi-color-primary) !important;
+  border: 2px solid var(--semi-color-bg-0) !important;
   width: 10px !important;
   height: 10px !important;
   border-radius: 50% !important;
-  box-shadow: 0 0 0 1px var(--border, #262626) !important;
+  box-shadow: 0 0 0 1px var(--semi-color-border) !important;
 }
 .gedit-flow-activity-node .gedit-port:hover {
   transform: scale(1.3);
-  background: var(--primary, #c4b5fd) !important;
+  background: var(--semi-color-primary) !important;
 }

@@ -20,14 +20,15 @@ import {
 } from '@ant-design/icons';
 import { getConnectionMonitor } from '@/api/mcphub/ide-config';
 import type { ConnectionMonitorResponse, ConnectionStatus } from '@/api/mcphub/types';
+import { PageHeader } from '@/components/skeleton';
 
 const STATUS_META: Record<
   ConnectionStatus['connectionStatus'],
   { label: string; color: TagColor; valueColor: string; icon: React.ReactNode }
 > = {
-  online: { label: '在线', color: 'green', valueColor: 'var(--success)', icon: <CheckCircleFilled /> },
-  offline: { label: '离线', color: 'grey', valueColor: 'var(--muted-foreground)', icon: <CloseCircleFilled /> },
-  error: { label: '异常', color: 'red', valueColor: 'var(--destructive)', icon: <ExclamationCircleFilled /> },
+  online: { label: '在线', color: 'green', valueColor: 'var(--semi-color-success)', icon: <CheckCircleFilled /> },
+  offline: { label: '离线', color: 'grey', valueColor: 'var(--semi-color-text-2)', icon: <CloseCircleFilled /> },
+  error: { label: '异常', color: 'red', valueColor: 'var(--semi-color-danger)', icon: <ExclamationCircleFilled /> },
 };
 
 const POLL_INTERVAL_MS = 10000;
@@ -53,8 +54,8 @@ function ConnectionCard({ item }: { item: ConnectionStatus }) {
         </div>
         {item.latencyMs !== undefined && (
           <div style={{ textAlign: 'right' }}>
-            <div className="v-stat-label">超时/延迟</div>
-            <div className="v-stat-value" style={{ fontSize: 16 }}>{item.latencyMs} ms</div>
+            <div className="mp-stat-label">超时/延迟</div>
+            <div className="mp-stat-value" style={{ fontSize: 16 }}>{item.latencyMs} ms</div>
           </div>
         )}
       </div>
@@ -115,7 +116,7 @@ export default function ConnectionMonitorPage() {
   if (error && !data) {
     return (
       <div style={{ textAlign: 'center', padding: 48 }}>
-        <ExclamationCircleFilled style={{ fontSize: 48, color: 'var(--destructive)' }} />
+        <ExclamationCircleFilled style={{ fontSize: 48, color: 'var(--semi-color-danger)' }} />
         <Typography.Title heading={4} style={{ marginTop: 16 }}>
           加载失败
         </Typography.Title>
@@ -137,44 +138,44 @@ export default function ConnectionMonitorPage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          连接状态监控
-        </Typography.Title>
-        <Button icon={<ReloadOutlined />} loading={loading} onClick={load}>
-          刷新
-        </Button>
-      </div>
+      <PageHeader
+        title="连接状态监控"
+        actions={
+          <Button icon={<ReloadOutlined />} loading={loading} onClick={load}>
+                  刷新
+                </Button>
+        }
+      />
 
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col span={6}>
           <Card bordered={false}>
-            <div className="v-stat-label">Server 总数</div>
-            <div className="v-stat-value" style={{ fontSize: 24 }}>
-              <ClusterOutlined style={{ fontSize: 16, color: 'var(--muted-foreground)' }} /> {summary.totalServers}
+            <div className="mp-stat-label">Server 总数</div>
+            <div className="mp-stat-value" style={{ fontSize: 24 }}>
+              <ClusterOutlined style={{ fontSize: 16, color: 'var(--semi-color-text-2)' }} /> {summary.totalServers}
             </div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
-            <div className="v-stat-label">Server 在线</div>
-            <div className="v-stat-value" style={{ fontSize: 24, color: 'var(--success)' }}>
+            <div className="mp-stat-label">Server 在线</div>
+            <div className="mp-stat-value" style={{ fontSize: 24, color: 'var(--semi-color-success)' }}>
               <CheckCircleFilled style={{ fontSize: 16 }} /> {summary.onlineServers}
             </div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
-            <div className="v-stat-label">Client 总数</div>
-            <div className="v-stat-value" style={{ fontSize: 24 }}>
-              <LinkOutlined style={{ fontSize: 16, color: 'var(--muted-foreground)' }} /> {summary.totalClients}
+            <div className="mp-stat-label">Client 总数</div>
+            <div className="mp-stat-value" style={{ fontSize: 24 }}>
+              <LinkOutlined style={{ fontSize: 16, color: 'var(--semi-color-text-2)' }} /> {summary.totalClients}
             </div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
-            <div className="v-stat-label">Client 已连接</div>
-            <div className="v-stat-value" style={{ fontSize: 24, color: 'var(--success)' }}>
+            <div className="mp-stat-label">Client 已连接</div>
+            <div className="mp-stat-value" style={{ fontSize: 24, color: 'var(--semi-color-success)' }}>
               <CheckCircleFilled style={{ fontSize: 16 }} /> {summary.connectedClients}
             </div>
           </Card>

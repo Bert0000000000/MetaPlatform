@@ -47,24 +47,24 @@ interface StatCardProps {
 
 export function StatCard({ label, value, color = "default" }: StatCardProps) {
   const colorMap: Record<string, string> = {
-    default: "var(--foreground)",
-    success: "var(--success)",
-    warning: "var(--warning)",
-    destructive: "var(--destructive)",
+    default: "var(--semi-color-text-0)",
+    success: "var(--semi-color-success)",
+    warning: "var(--semi-color-warning)",
+    destructive: "var(--semi-color-danger)",
   };
   return (
     <div
       style={{
-        background: "var(--card)",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius)",
+        background: "var(--semi-color-bg-1)",
+        border: "1px solid var(--semi-color-border)",
+        borderRadius: "var(--semi-border-radius-medium)",
         padding: "16px 20px",
         display: "flex",
         flexDirection: "column",
         gap: 6,
       }}
     >
-      <span style={{ fontSize: 12, color: "var(--muted-foreground)", fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: 12, color: "var(--semi-color-text-2)", fontWeight: 500 }}>{label}</span>
       <span style={{ fontSize: 26, fontWeight: 600, color: colorMap[color], letterSpacing: "-0.02em" }}>
         {value}
       </span>

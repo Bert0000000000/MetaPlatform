@@ -29,6 +29,7 @@ import { listPrompts, createPrompt, updatePrompt, deletePrompt } from '@/api/mcp
 import VariableEditor from './components/VariableEditor';
 import PreviewPanel from './components/PreviewPanel';
 import type { PromptTemplate, PromptTemplateCreateRequest } from '@/api/mcphub/types';
+import { PageHeader } from '@/components/skeleton';
 
 const FormVariableEditor = withField(
   VariableEditor as React.ComponentType<Partial<React.ComponentProps<typeof VariableEditor>>>
@@ -144,23 +145,23 @@ export default function PromptTemplatePage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          Prompt 模板
-        </Typography.Title>
-        <Button
-          theme="solid"
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setEditing(null);
-            form.reset();
-            setFormOpen(true);
-          }}
-        >
-          创建模板
-        </Button>
-      </div>
+      <PageHeader
+        title="Prompt 模板"
+        actions={
+          <Button
+                  theme="solid"
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    setEditing(null);
+                    form.reset();
+                    setFormOpen(true);
+                  }}
+                >
+                  创建模板
+                </Button>
+        }
+      />
 
       <Space style={{ marginBottom: 16 }}>
         <Input
@@ -169,7 +170,7 @@ export default function PromptTemplatePage() {
           value={query}
           onChange={(v) => setQuery(v)}
           onEnterPress={() => setKeyword(query)}
-          suffix={<SearchOutlined style={{ color: 'var(--muted-foreground)', cursor: 'pointer' }} onClick={() => setKeyword(query)} />}
+          suffix={<SearchOutlined style={{ color: 'var(--semi-color-text-2)', cursor: 'pointer' }} onClick={() => setKeyword(query)} />}
           style={{ width: 240 }}
         />
       </Space>
@@ -240,7 +241,7 @@ export default function PromptTemplatePage() {
             <Tabs.TabPane itemKey="raw" tab="原始模板">
               <pre
                 style={{
-                  background: 'var(--muted)',
+                  background: 'var(--semi-color-fill-0)',
                   padding: 12,
                   borderRadius: 4,
                   fontFamily: 'Menlo, Consolas, monospace',

@@ -21,21 +21,21 @@ import {
 
 const btnStyle: CSSProperties = {
   height: 26, padding: '0 10px', fontSize: 12, borderRadius: 4,
-  border: '1px solid var(--border)', background: 'var(--card)',
-  color: 'var(--foreground)', cursor: 'pointer', whiteSpace: 'nowrap',
+  border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)',
+  color: 'var(--semi-color-text-0)', cursor: 'pointer', whiteSpace: 'nowrap',
 };
 
 const destructiveBtnStyle: CSSProperties = {
   ...btnStyle,
-  border: '1px solid var(--destructive)', background: 'transparent',
-  color: 'var(--destructive)',
+  border: '1px solid var(--semi-color-danger)', background: 'transparent',
+  color: 'var(--semi-color-danger)',
 };
 
 const confirmInputStyle: CSSProperties = {
   height: 28, flex: 1, minWidth: 0, boxSizing: 'border-box',
-  background: 'var(--card)', border: '1px solid var(--border)',
+  background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
   borderRadius: 6, padding: '0 10px', fontSize: 12,
-  color: 'var(--foreground)', outline: 'none', fontFamily: 'monospace',
+  color: 'var(--semi-color-text-0)', outline: 'none', fontFamily: 'monospace',
 };
 
 export default function SchemaWipCard() {
@@ -109,43 +109,43 @@ export default function SchemaWipCard() {
 
   return (
     <Card bodyStyle={{ padding: 0 }}>
-      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
         <Inbox style={{ width: 15, height: 15 }} />
         <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Schema 暂存（WIP）</h4>
-        <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>编辑器暂存的 schema 变更 · 应用走破坏性门禁 · 他人不可见</span>
+        <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>编辑器暂存的 schema 变更 · 应用走破坏性门禁 · 他人不可见</span>
       </div>
       <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {msg && (
           <div style={{
             padding: '8px 14px', fontSize: 12, borderRadius: 6,
-            border: '1px solid var(--success)', color: 'var(--success)',
+            border: '1px solid var(--semi-color-success)', color: 'var(--semi-color-success)',
             wordBreak: 'break-all',
           }}>{msg}</div>
         )}
         {err && (
           <div style={{
             padding: '8px 14px', fontSize: 12, borderRadius: 6,
-            border: '1px solid var(--destructive)', color: 'var(--destructive)',
+            border: '1px solid var(--semi-color-danger)', color: 'var(--semi-color-danger)',
             wordBreak: 'break-all',
           }}>{err}</div>
         )}
         {loading ? (
-          <div style={{ padding: 24, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 12 }}>加载 WIP 暂存…</div>
+          <div style={{ padding: 24, textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 12 }}>加载 WIP 暂存…</div>
         ) : wips.length === 0 ? (
-          <div style={{ padding: 24, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 12 }}>
+          <div style={{ padding: 24, textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 12 }}>
             无暂存变更 —— 编辑器保存到 WIP 后在此审阅（他人不可见）
           </div>
         ) : (
           wips.map((w) => {
             const busy = busyRid === w.rid;
             return (
-              <div key={w.rid} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px' }}>
+              <div key={w.rid} style={{ border: '1px solid var(--semi-color-border)', borderRadius: 8, padding: '10px 12px' }}>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{ fontFamily: 'monospace', fontSize: 12, wordBreak: 'break-all' }}>{w.rid}</span>
-                  <span style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)', flexShrink: 0 }}>
                     {w.author || '—'}
                   </span>
-                  <span style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)', flexShrink: 0 }}>
                     {w.created_at ? new Date(w.created_at).toLocaleString() : '—'}
                   </span>
                   <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexShrink: 0 }}>
@@ -170,16 +170,16 @@ export default function SchemaWipCard() {
                 {/* 破坏性 409 二段确认区（仅该行展开） */}
                 {confirmRid === w.rid && confirmInfo && (
                   <div style={{
-                    marginTop: 10, borderTop: '1px dashed var(--border)', paddingTop: 10,
+                    marginTop: 10, borderTop: '1px dashed var(--semi-color-border)', paddingTop: 10,
                     display: 'flex', flexDirection: 'column', gap: 8,
                   }}>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12, fontWeight: 600, color: 'var(--destructive)' }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12, fontWeight: 600, color: 'var(--semi-color-danger)' }}>
                       <AlertTriangle style={{ width: 13, height: 13, flexShrink: 0 }} />
                       应用被拦截：包含破坏性变更，需确认后重发
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                       {confirmInfo.changes.map((c, i) => (
-                        <div key={i} style={{ fontSize: 11, color: 'var(--destructive)', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                        <div key={i} style={{ fontSize: 11, color: 'var(--semi-color-danger)', fontFamily: 'monospace', wordBreak: 'break-all' }}>
                           · {c}
                         </div>
                       ))}

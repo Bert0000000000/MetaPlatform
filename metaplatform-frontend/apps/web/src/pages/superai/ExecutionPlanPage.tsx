@@ -246,7 +246,7 @@ export default function ExecutionPlanPage() {
                     {selected.stepNames.map((name, i) => (
                       <Steps.Step
                         key={`${name}-${i}`}
-                        title={<span className="mp-exec-step-title">{name}</span>}
+                        title={<><span className="mp-exec-step-title">{name}</span></>}
                         description={
                           <span className="mp-exec-step-body">
                             第 {i + 1} 步 · 状态与耗时由后端逐步执行接口提供（当前不可得）

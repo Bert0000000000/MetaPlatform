@@ -10,7 +10,7 @@ const DashboardPage = lazy(() => import('./DashboardPage'));
 const MapPage = lazy(() => import('./MapPage'));
 
 const LAZY_FALLBACK = (
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, color: 'var(--muted-foreground)', fontSize: 13 }}>
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, color: 'var(--semi-color-text-2)', fontSize: 13 }}>
     加载中…
   </div>
 );
@@ -29,7 +29,7 @@ const BTN_BASE: CSSProperties = {
   padding: '6px 16px',
   fontSize: 13,
   borderRadius: 6,
-  border: '1px solid var(--border)',
+  border: '1px solid var(--semi-color-border)',
   cursor: 'pointer',
   whiteSpace: 'nowrap',
 };
@@ -51,7 +51,7 @@ export default function AnalyticsTab({ initialSub }: AnalyticsTabProps) {
         style={{
           display: 'flex',
           gap: 8,
-          borderBottom: '1px solid var(--border)',
+          borderBottom: '1px solid var(--semi-color-border)',
           paddingBottom: 8,
         }}
       >
@@ -62,8 +62,8 @@ export default function AnalyticsTab({ initialSub }: AnalyticsTabProps) {
             onClick={() => setSub(k)}
             style={{
               ...BTN_BASE,
-              background: sub === k ? 'var(--foreground)' : 'var(--card)',
-              color: sub === k ? 'var(--background)' : 'var(--muted-foreground)',
+              background: sub === k ? 'var(--semi-color-text-0)' : 'var(--semi-color-bg-1)',
+              color: sub === k ? 'var(--semi-color-bg-0)' : 'var(--semi-color-text-2)',
               fontWeight: sub === k ? 600 : 400,
             }}
           >

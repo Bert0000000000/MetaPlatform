@@ -26,3 +26,17 @@
   bottom: var(--mp-space-4);
   z-index: 40;
 }
+
+/* ---------- KPI 小卡（连接监控 / 服务端列表的统计行） ---------- */
+.mp-stat-label {
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+
+.mp-stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--semi-color-text-0);
+}

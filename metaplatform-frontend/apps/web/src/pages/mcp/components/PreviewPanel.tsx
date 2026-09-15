@@ -31,8 +31,8 @@ export default function PreviewPanel({ template }: PreviewPanelProps) {
           <Empty description="该模板无变量" />
           <pre
             style={{
-              background: 'var(--card)',
-              border: '1px solid var(--border)',
+              background: 'var(--semi-color-bg-1)',
+              border: '1px solid var(--semi-color-border)',
               padding: 12,
               borderRadius: 4,
               fontFamily: 'Menlo, Consolas, monospace',
@@ -50,9 +50,9 @@ export default function PreviewPanel({ template }: PreviewPanelProps) {
               <div key={v.name}>
                 <div style={{ marginBottom: 4 }}>
                   <span>{v.name}</span>
-                  {v.required && <span style={{ color: 'var(--destructive)' }}>*</span>}
+                  {v.required && <span style={{ color: 'var(--semi-color-danger)' }}>*</span>}
                   {v.description && (
-                    <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--muted-foreground)' }}>
+                    <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--semi-color-text-2)' }}>
                       {v.description}
                     </span>
                   )}
@@ -79,8 +79,8 @@ export default function PreviewPanel({ template }: PreviewPanelProps) {
         <Typography.Paragraph copyable={{ content: rendered }}>
           <pre
             style={{
-              background: 'var(--card)',
-              border: '1px solid var(--border)',
+              background: 'var(--semi-color-bg-1)',
+              border: '1px solid var(--semi-color-border)',
               padding: 12,
               borderRadius: 4,
               fontFamily: 'Menlo, Consolas, monospace',

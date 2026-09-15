@@ -34,4 +34,13 @@
   --mp-page-max-w: 1440px;
   --mp-content-pad-x: var(--mp-space-7);
   --mp-content-pad-y: var(--mp-space-6);
+
+  /*
+   * 字族（DESIGN-SPEC §4.2，不引入网络字体）。
+   * Semi 未暴露字族令牌，业务代码里需要等宽/正文族时引用这两个；字面量只出现在这里。
+   */
+  --mp-font-sans: -apple-system, "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei",
+    sans-serif;
+  --mp-font-mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, "Liberation Mono",
+    monospace;
 }

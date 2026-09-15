@@ -30,6 +30,7 @@ import ApiKeyGenerator from './components/ApiKeyGenerator';
 import IntegrationDocViewer from './components/IntegrationDocViewer';
 import OnlineTester from './components/OnlineTester';
 import type { Integration, IntegrationCreateRequest } from '@/api/mcphub/types';
+import { PageHeader } from '@/components/skeleton';
 
 const PLATFORMS: { label: string; value: Integration['platform'] }[] = [
   { label: 'Cursor', value: 'cursor' },
@@ -148,24 +149,24 @@ export default function ExternalIntegrationPage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          外部应用集成
-        </Typography.Title>
-        <Button
-          theme="solid"
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setEditing(null);
-            form.reset();
-            form.setValues({ platform: 'cursor', enabled: true, endpoint: '/api/v1/mcp/sse/main' });
-            setEditorOpen(true);
-          }}
-        >
-          新建集成
-        </Button>
-      </div>
+      <PageHeader
+        title="外部应用集成"
+        actions={
+          <Button
+                  theme="solid"
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    setEditing(null);
+                    form.reset();
+                    form.setValues({ platform: 'cursor', enabled: true, endpoint: '/api/v1/mcp/sse/main' });
+                    setEditorOpen(true);
+                  }}
+                >
+                  新建集成
+                </Button>
+        }
+      />
 
       <Tabs>
         <Tabs.TabPane itemKey="list" tab="集成列表">

@@ -60,17 +60,17 @@ const CHUNK_OPTIONS: Array<{ value: ChunkStrategy; label: string }> = [
   { value: 'sliding', label: 'sliding · 滑动窗口' },
 ];
 
-const labelStyle: React.CSSProperties = { fontSize: 13, color: 'var(--foreground)' };
+const labelStyle: React.CSSProperties = { fontSize: 13, color: 'var(--semi-color-text-0)' };
 const rowStyle: React.CSSProperties = {
   display: 'grid', gridTemplateColumns: '220px 1fr', gap: 16, alignItems: 'center',
-  padding: '10px 0', borderBottom: '1px solid var(--border)',
+  padding: '10px 0', borderBottom: '1px solid var(--semi-color-border)',
 };
 /** 卡片内的说明脚注：与 rowStyle 的 label 列对齐，纯文字不占交互 */
 const hintStyle: React.CSSProperties = {
-  fontSize: 12, color: 'var(--muted-foreground)', paddingTop: 10, lineHeight: 1.7,
+  fontSize: 12, color: 'var(--semi-color-text-2)', paddingTop: 10, lineHeight: 1.7,
 };
 const warnStyle: React.CSSProperties = {
-  fontSize: 12, color: 'var(--destructive, #f5222d)', paddingTop: 6, lineHeight: 1.7,
+  fontSize: 12, color: 'var(--semi-color-danger)', paddingTop: 6, lineHeight: 1.7,
 };
 
 /** 分块重叠的安全上限比例：overlap 超过 chunkSize 的 80% 会产生大量重复片段 */
@@ -173,14 +173,14 @@ export default function KnowledgeConfigPage() {
               <Tag color="blue" shape="circle" style={{ marginLeft: 4 }}>v{version}</Tag>
               {dirty && (
                 <span style={{
-                  fontSize: 12, fontWeight: 500, color: 'var(--destructive, #f5222d)',
+                  fontSize: 12, fontWeight: 500, color: 'var(--semi-color-danger)',
                   display: 'inline-flex', alignItems: 'center', gap: 4,
                 }}>
                   ● 待保存
                 </span>
               )}
             </h1>
-            <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>
+            <div style={{ fontSize: 13, color: 'var(--semi-color-text-2)', marginTop: 4 }}>
               全局检索策略、Top-K、Reranker、分块策略的统一管理（租户级）
             </div>
           </div>
@@ -201,9 +201,9 @@ export default function KnowledgeConfigPage() {
                 itemKey="history"
                 header={
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                    <History size={14} style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />
+                    <History size={14} style={{ width: 14, height: 14, color: 'var(--semi-color-text-2)' }} />
                     <span style={{ fontSize: 14, fontWeight: 600 }}>配置历史</span>
-                    <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+                    <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>
                       最近 {Math.min(history.length, 5)} 条 · 只读 · 不支持回滚
                     </span>
                   </span>
@@ -304,9 +304,9 @@ function GroupHeader({ title, desc }: { title: string; desc: string }) {
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Settings size={14} style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />{title}
+        <Settings size={14} style={{ width: 14, height: 14, color: 'var(--semi-color-text-2)' }} />{title}
       </div>
-      <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>{desc}</div>
+      <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginTop: 2 }}>{desc}</div>
     </div>
   );
 }
@@ -325,14 +325,14 @@ function HistoryList({ snapshots }: { snapshots: RetrievalConfigSnapshot[] }) {
             gap: 12,
             alignItems: 'center',
             padding: '10px 4px',
-            borderBottom: idx === snapshots.length - 1 ? 'none' : '1px solid var(--border)',
+            borderBottom: idx === snapshots.length - 1 ? 'none' : '1px solid var(--semi-color-border)',
             fontSize: 13,
           }}
         >
           <div>
             <Tag color="blue" shape="circle" size="small">v{s.version}</Tag>
           </div>
-          <div style={{ color: 'var(--muted-foreground)', fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ color: 'var(--semi-color-text-2)', fontVariantNumeric: 'tabular-nums' }}>
             {s.snapshotAt || '—'}
           </div>
           <div style={{ fontFamily: 'var(--semi-font-mono, monospace)', fontSize: 12 }}>

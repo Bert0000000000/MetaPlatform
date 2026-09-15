@@ -37,6 +37,7 @@ import {
 } from '@/api/mcphub/debug';
 import ParameterForm from './components/ParameterForm';
 import type { McpDebugSession, McpServer, McpTool, McpDebugCompareResult } from '@/api/mcphub/types';
+import { PageHeader } from '@/components/skeleton';
 
 const METHOD_OPTIONS = [
   { label: 'tools/call', value: 'tools/call' },
@@ -464,11 +465,7 @@ export default function DebuggerPage() {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          <ThunderboltOutlined /> MCP 调试器
-        </Typography.Title>
-      </div>
+      <PageHeader title={<><ThunderboltOutlined /> MCP 调试器</>} />
 
       <Row gutter={16} style={{ flex: 1, minHeight: 0, marginTop: 16 }}>
         <Col span={5} style={{ height: '100%' }}>

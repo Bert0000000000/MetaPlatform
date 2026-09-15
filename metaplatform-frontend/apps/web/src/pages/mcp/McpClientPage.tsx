@@ -22,6 +22,7 @@ import {
 } from '@ant-design/icons';
 import { listClients, deleteClient, discoverClientTools } from '@/api/mcphub/clients';
 import type { McpClient } from '@/api/mcphub/types';
+import { PageHeader } from '@/components/skeleton';
 
 function normalizeStatus(status: string): McpClient['status'] {
   const s = status.toLowerCase();
@@ -139,14 +140,14 @@ export default function ClientListPage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          MCP Client 管理
-        </Typography.Title>
-        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => navigate('/clients/new')}>
-          添加 Client
-        </Button>
-      </div>
+      <PageHeader
+        title="MCP Client 管理"
+        actions={
+          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => navigate('/clients/new')}>
+                  添加 Client
+                </Button>
+        }
+      />
 
       <Card>
         {clients.length === 0 && !loading ? (

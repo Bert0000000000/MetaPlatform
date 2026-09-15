@@ -56,7 +56,7 @@ export default function VersionDiff({ aId, bId }: VersionDiffProps) {
             <Typography.Text type="tertiary">无</Typography.Text>
           ) : (
             diff.added.map((k) => (
-              <div key={k} style={{ color: 'var(--success)' }}>+ {k}</div>
+              <div key={k} style={{ color: 'var(--semi-color-success)' }}>+ {k}</div>
             ))
           )}
         </Card>
@@ -65,7 +65,7 @@ export default function VersionDiff({ aId, bId }: VersionDiffProps) {
             <Typography.Text type="tertiary">无</Typography.Text>
           ) : (
             diff.removed.map((k) => (
-              <div key={k} style={{ color: 'var(--destructive)' }}>- {k}</div>
+              <div key={k} style={{ color: 'var(--semi-color-danger)' }}>- {k}</div>
             ))
           )}
         </Card>
@@ -74,7 +74,7 @@ export default function VersionDiff({ aId, bId }: VersionDiffProps) {
             <Typography.Text type="tertiary">无</Typography.Text>
           ) : (
             diff.modified.map((k) => (
-              <div key={k} style={{ color: 'var(--warning)' }}>~ {k}</div>
+              <div key={k} style={{ color: 'var(--semi-color-warning)' }}>~ {k}</div>
             ))
           )}
         </Card>

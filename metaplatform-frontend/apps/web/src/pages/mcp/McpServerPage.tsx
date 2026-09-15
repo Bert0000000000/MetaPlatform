@@ -30,6 +30,7 @@ import { listServers, deleteServer, startServer, stopServer, createServer } from
 import { listTools } from '@/api/mcphub/tools';
 import ServerForm from './components/ServerForm';
 import type { McpServer, McpTool } from '@/api/mcphub/types';
+import { PageHeader } from '@/components/skeleton';
 
 const STATUS_MAP: Record<McpServer['status'], { label: string; color: TagColor }> = {
   online: { label: '在线', color: 'green' },
@@ -169,38 +170,38 @@ export default function ServerListPage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          MCP Server 管理
-        </Typography.Title>
-        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-          创建 Server
-        </Button>
-      </div>
+      <PageHeader
+        title="MCP Server 管理"
+        actions={
+          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+                  创建 Server
+                </Button>
+        }
+      />
 
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col span={6}>
           <Card bordered={false}>
-            <div className="v-stat-label">总数</div>
-            <div className="v-stat-value" style={{ fontSize: 24 }}>{stats.total}</div>
+            <div className="mp-stat-label">总数</div>
+            <div className="mp-stat-value" style={{ fontSize: 24 }}>{stats.total}</div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
-            <div className="v-stat-label">在线</div>
-            <div className="v-stat-value" style={{ fontSize: 24, color: 'var(--success)' }}>{stats.online}</div>
+            <div className="mp-stat-label">在线</div>
+            <div className="mp-stat-value" style={{ fontSize: 24, color: 'var(--semi-color-success)' }}>{stats.online}</div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
-            <div className="v-stat-label">离线</div>
-            <div className="v-stat-value" style={{ fontSize: 24, color: 'var(--muted-foreground)' }}>{stats.offline}</div>
+            <div className="mp-stat-label">离线</div>
+            <div className="mp-stat-value" style={{ fontSize: 24, color: 'var(--semi-color-text-2)' }}>{stats.offline}</div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
-            <div className="v-stat-label">异常</div>
-            <div className="v-stat-value" style={{ fontSize: 24, color: 'var(--destructive)' }}>{stats.error}</div>
+            <div className="mp-stat-label">异常</div>
+            <div className="mp-stat-value" style={{ fontSize: 24, color: 'var(--semi-color-danger)' }}>{stats.error}</div>
           </Card>
         </Col>
       </Row>
@@ -212,7 +213,7 @@ export default function ServerListPage() {
           value={query}
           onChange={(v) => setQuery(v)}
           onEnterPress={() => setKeyword(query)}
-          suffix={<SearchOutlined style={{ color: 'var(--muted-foreground)', cursor: 'pointer' }} onClick={() => setKeyword(query)} />}
+          suffix={<SearchOutlined style={{ color: 'var(--semi-color-text-2)', cursor: 'pointer' }} onClick={() => setKeyword(query)} />}
           style={{ width: 240 }}
         />
       </Space>
@@ -227,7 +228,7 @@ export default function ServerListPage() {
             pagination={false} scroll={{ x: 'max-content' }} />
         ) : error ? (
           <div style={{ textAlign: 'center', padding: 48 }}>
-            <ExclamationCircleFilled style={{ fontSize: 48, color: 'var(--destructive)' }} />
+            <ExclamationCircleFilled style={{ fontSize: 48, color: 'var(--semi-color-danger)' }} />
             <Typography.Title heading={4} style={{ marginTop: 16 }}>
               加载失败
             </Typography.Title>

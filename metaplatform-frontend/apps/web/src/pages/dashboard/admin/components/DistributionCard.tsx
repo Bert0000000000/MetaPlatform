@@ -38,22 +38,22 @@ function BarTip({ active, payload }: TooltipProps<number, string>) {
   return (
     <div
       style={{
-        background: 'var(--card)',
-        border: '1px solid var(--border)',
+        background: 'var(--semi-color-bg-1)',
+        border: '1px solid var(--semi-color-border)',
         borderRadius: 8,
         padding: '8px 12px',
         fontSize: 12,
-        color: 'var(--foreground)',
+        color: 'var(--semi-color-text-0)',
         boxShadow: '0 4px 12px rgba(0,0,0,0.32)',
       }}
     >
       <div style={{ fontWeight: 600, marginBottom: 4 }}>{item.label}</div>
       <div style={{ display: 'flex', justifyContent: 'space-between', minWidth: 140 }}>
-        <span style={{ color: 'var(--muted-foreground)' }}>数值</span>
+        <span style={{ color: 'var(--semi-color-text-2)' }}>数值</span>
         <span style={{ fontWeight: 600 }}>{item.value.toLocaleString()}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <span style={{ color: 'var(--muted-foreground)' }}>占比</span>
+        <span style={{ color: 'var(--semi-color-text-2)' }}>占比</span>
         <span style={{ fontWeight: 600 }}>{(item.ratio * 100).toFixed(1)}%</span>
       </div>
     </div>
@@ -104,12 +104,12 @@ export default function DistributionCard({
                   dataKey="label"
                   type="category"
                   width={70}
-                  tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
-                  stroke="var(--border)"
+                  tick={{ fontSize: 12, fill: 'var(--semi-color-text-2)' }}
+                  stroke="var(--semi-color-border)"
                 />
                 <Tooltip
                   content={<BarTip />}
-                  cursor={{ fill: 'var(--muted)' }}
+                  cursor={{ fill: 'var(--semi-color-fill-0)' }}
                 />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                   {sliced.map((_, idx) => (
@@ -134,7 +134,7 @@ export default function DistributionCard({
                   }}
                 />
                 {it.label}{' '}
-                <span style={{ color: 'var(--muted-foreground)' }}>
+                <span style={{ color: 'var(--semi-color-text-2)' }}>
                   {total > 0 ? ((it.value / total) * 100).toFixed(1) : 0}%
                 </span>
               </Tag>

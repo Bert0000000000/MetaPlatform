@@ -39,11 +39,11 @@ function CheckableTag({
       onClick={onChange}
       style={{
         padding: '4px 12px',
-        border: '1px solid var(--border)',
+        border: '1px solid var(--semi-color-border)',
         borderRadius: 4,
         cursor: 'pointer',
         fontSize: 13,
-        color: checked ? 'var(--primary)' : 'var(--muted-foreground)',
+        color: checked ? 'var(--semi-color-primary)' : 'var(--semi-color-text-2)',
         background: checked ? 'var(--semi-color-primary-light-default)' : 'transparent',
         userSelect: 'none',
       }}
@@ -172,7 +172,7 @@ export default function MarketPage() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        background: 'linear-gradient(135deg, var(--primary) 0%, var(--semi-color-primary-hover) 100%)',
+                        background: 'linear-gradient(135deg, var(--semi-color-primary) 0%, var(--semi-color-primary-hover) 100%)',
                         color: 'var(--semi-color-white)',
                         fontSize: 48,
                       }}

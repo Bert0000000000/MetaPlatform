@@ -102,12 +102,12 @@ export default function AIDashboardGenerate({ onApply }: AIDashboardGenerateProp
                     <Typography.Text strong>
                       {ex.method} {ex.url}
                     </Typography.Text>
-                    <Typography.Paragraph style={{ color: 'var(--muted-foreground)', fontSize: 12, marginBottom: 4 }}>
+                    <Typography.Paragraph style={{ color: 'var(--semi-color-text-2)', fontSize: 12, marginBottom: 4 }}>
                       {ex.description}
                     </Typography.Paragraph>
                     <pre
                       style={{
-                        background: 'var(--muted)',
+                        background: 'var(--semi-color-fill-0)',
                         padding: 8,
                         borderRadius: 4,
                         fontSize: 11,

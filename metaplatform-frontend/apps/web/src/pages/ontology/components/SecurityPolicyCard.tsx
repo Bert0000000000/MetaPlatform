@@ -23,21 +23,21 @@ const ROW_OPS = ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'startswith', 'contains',
 
 const inputStyle: CSSProperties = {
   height: 30, minWidth: 0, flex: 1, boxSizing: 'border-box',
-  background: 'var(--card)', border: '1px solid var(--border)',
+  background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
   borderRadius: 6, padding: '0 10px', fontSize: 12,
-  color: 'var(--foreground)', outline: 'none',
+  color: 'var(--semi-color-text-0)', outline: 'none',
 };
 
 const monoInputStyle: CSSProperties = { ...inputStyle, fontFamily: 'monospace' };
 
 const labelStyle: CSSProperties = {
-  fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0, width: 88,
+  fontSize: 12, color: 'var(--semi-color-text-2)', flexShrink: 0, width: 88,
 };
 
 const btnStyle: CSSProperties = {
   height: 28, padding: '0 12px', fontSize: 12, borderRadius: 6,
-  border: '1px solid var(--border)', background: 'var(--card)',
-  color: 'var(--foreground)', cursor: 'pointer', whiteSpace: 'nowrap',
+  border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)',
+  color: 'var(--semi-color-text-0)', cursor: 'pointer', whiteSpace: 'nowrap',
 };
 
 /** 逗号分隔文本 → markings 数组（兼容中文逗号，去空白）。 */
@@ -144,7 +144,7 @@ export default function SecurityPolicyCard() {
       return typeof v === 'string' ? v : JSON.stringify(v);
     } },
     { title: '标记', dataIndex: 'markings', render: (v: string[]) => (
-      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+      <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>
         {v && v.length > 0 ? v.join('、') : '—'}
       </span>) },
     { title: '', dataIndex: '__ops', width: 64, render: (_: unknown, row: KernelSecurityPolicy) => (
@@ -154,8 +154,8 @@ export default function SecurityPolicyCard() {
         disabled={busy}
         style={{
           padding: '2px 10px', fontSize: 12, borderRadius: 4,
-          border: '1px solid var(--destructive)', background: 'transparent',
-          color: 'var(--destructive)', cursor: busy ? 'wait' : 'pointer',
+          border: '1px solid var(--semi-color-danger)', background: 'transparent',
+          color: 'var(--semi-color-danger)', cursor: busy ? 'wait' : 'pointer',
         }}
       >删除</button>
     ) },
@@ -163,23 +163,23 @@ export default function SecurityPolicyCard() {
 
   return (
     <Card bodyStyle={{ padding: 0 }}>
-      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
         <ShieldCheck style={{ width: 15, height: 15 }} />
         <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>安全策略（行/列）</h4>
-        <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>行策略过滤实例 · 列策略置空属性值（单元格级）</span>
+        <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>行策略过滤实例 · 列策略置空属性值（单元格级）</span>
       </div>
       <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         {msg && (
           <div style={{
             padding: '8px 14px', fontSize: 12, borderRadius: 6,
-            border: '1px solid var(--success)', color: 'var(--success)',
+            border: '1px solid var(--semi-color-success)', color: 'var(--semi-color-success)',
             wordBreak: 'break-all',
           }}>{msg}</div>
         )}
         {err && (
           <div style={{
             padding: '8px 14px', fontSize: 12, borderRadius: 6,
-            border: '1px solid var(--destructive)', color: 'var(--destructive)',
+            border: '1px solid var(--semi-color-danger)', color: 'var(--semi-color-danger)',
             wordBreak: 'break-all',
           }}>{err}</div>
         )}
@@ -194,7 +194,7 @@ export default function SecurityPolicyCard() {
         />
 
         {/* 新建表单（原生元素） */}
-        <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ border: '1px solid var(--semi-color-border)', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ fontSize: 12, fontWeight: 600 }}>新建策略</div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <span style={labelStyle}>策略类型</span>

@@ -84,8 +84,6 @@ export default function MarketplacePage() {
 
   return (
     <div>
-      <div className="v-page-header" style={{ marginBottom: 16 }}>
-      </div>
 
       <Space vertical style={{ marginBottom: 16 }}>
         <SearchBar
@@ -103,10 +101,10 @@ export default function MarketplacePage() {
         </div>
       ) : error ? (
         <div style={{ textAlign: 'center', padding: 40 }}>
-          <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--destructive)', marginBottom: 8 }}>
+          <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--semi-color-danger)', marginBottom: 8 }}>
             加载失败
           </div>
-          <div style={{ color: 'var(--muted-foreground)', marginBottom: 16 }}>{error.message}</div>
+          <div style={{ color: 'var(--semi-color-text-2)', marginBottom: 16 }}>{error.message}</div>
           <Button theme="solid" type="primary" icon={<ReloadOutlined />} onClick={load}>
             重试
           </Button>

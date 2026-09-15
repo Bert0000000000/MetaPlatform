@@ -548,7 +548,7 @@ function FlowFullscreenEditor({
                     background: palette.panelMuted,
                     border: `1px solid ${palette.modalBorder}`,
                     borderRadius: 6, resize: 'vertical',
-                    fontFamily: 'var(--font-mono)', fontSize: 12, color: palette.panelText,
+                    fontFamily: 'var(--mp-font-mono)', fontSize: 12, color: palette.panelText,
                     whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.6, outline: 'none',
                   }}
                 />
@@ -561,7 +561,7 @@ function FlowFullscreenEditor({
                     background: palette.panelMuted,
                     border: `1px solid ${palette.modalBorder}`,
                     borderRadius: 6, fontSize: 13, color: palette.panelText,
-                    fontFamily: f.mono ? 'var(--font-mono)' : 'var(--font-sans)', outline: 'none',
+                    fontFamily: f.mono ? 'var(--mp-font-mono)' : 'var(--mp-font-sans)', outline: 'none',
                   }}
                 />
               )}
@@ -644,7 +644,7 @@ function FlowFullscreenEditor({
                 background: palette.panelMuted,
                 border: `1px solid ${palette.modalBorder}`,
                 borderRadius: 6, resize: 'vertical',
-                fontFamily: 'var(--font-mono)', fontSize: 12, color: palette.panelText,
+                fontFamily: 'var(--mp-font-mono)', fontSize: 12, color: palette.panelText,
                 whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.6, outline: 'none',
               }}
             />
@@ -700,7 +700,7 @@ function FlowFullscreenEditor({
           flex: 1, display: 'flex', flexDirection: 'column',
           background: palette.modalPanel,
           border: `1px solid ${palette.modalBorder}`,
-          margin: 16, borderRadius: 'var(--radius)', overflow: 'hidden',
+          margin: 16, borderRadius: 'var(--semi-border-radius-medium)', overflow: 'hidden',
         }}
       >
         {/* 顶部工具栏 */}
@@ -739,7 +739,7 @@ function FlowFullscreenEditor({
           </div>
           <div style={{ width: 1, height: 20, background: palette.modalBorder }} />
           <select
-            style={{ background: palette.panelMuted, border: `1px solid ${palette.modalBorder}`, borderRadius: 6, color: palette.panelText, fontSize: 13, padding: '6px 12px', outline: 'none', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
+            style={{ background: palette.panelMuted, border: `1px solid ${palette.modalBorder}`, borderRadius: 6, color: palette.panelText, fontSize: 13, padding: '6px 12px', outline: 'none', fontFamily: 'var(--mp-font-sans)', cursor: 'pointer' }}
             defaultValue="客户数据清洗 Action"
           >
             <option>客户数据清洗 Action</option>
@@ -1046,7 +1046,7 @@ function ZoomToolsInner() {
       }}
     >
       {makeBtn(palette, '缩小 (Cmd+-)', <ZoomOut style={{ width: 14, height: 14 }} />, handleZoom(() => tools.zoomout()))}
-      <div style={{ minWidth: 36, textAlign: 'center', fontSize: 11, color: palette.panelTextMuted, fontFamily: 'var(--font-mono)' }}>
+      <div style={{ minWidth: 36, textAlign: 'center', fontSize: 11, color: palette.panelTextMuted, fontFamily: 'var(--mp-font-mono)' }}>
         {Math.round(zoom * 100)}%
       </div>
       {makeBtn(palette, '放大 (Cmd+=)', <ZoomIn style={{ width: 14, height: 14 }} />, handleZoom(() => tools.zoomin()))}
@@ -1116,7 +1116,7 @@ function FixedBaseNode() {
         color: '#fafafa',
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
         gap: 5,
-        fontFamily: 'var(--font-sans)',
+        fontFamily: 'var(--mp-font-sans)',
         boxShadow: isSelected
           ? `0 0 0 2px ${tColor}50, 0 0 0 1px ${tColor}, 0 0 28px ${tColor}50, 0 6px 16px rgba(0,0,0,0.45)`
           : isActivated
@@ -1509,12 +1509,12 @@ function FlowCounterInner() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <Boxes style={{ width: 12, height: 12 }} />
         <span>节点</span>
-        <span style={{ fontFamily: 'var(--font-mono)', color: palette.panelText, fontWeight: 600 }}>{nodeCount}</span>
+        <span style={{ fontFamily: 'var(--mp-font-mono)', color: palette.panelText, fontWeight: 600 }}>{nodeCount}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <Activity style={{ width: 12, height: 12 }} />
         <span>连线</span>
-        <span style={{ fontFamily: 'var(--font-mono)', color: palette.panelText, fontWeight: 600 }}>{edgeCount}</span>
+        <span style={{ fontFamily: 'var(--mp-font-mono)', color: palette.panelText, fontWeight: 600 }}>{edgeCount}</span>
       </div>
     </>,
     counterSlot
@@ -1746,12 +1746,12 @@ function FixedCounterInner() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <Boxes style={{ width: 12, height: 12 }} />
         <span>节点</span>
-        <span style={{ fontFamily: 'var(--font-mono)', color: palette.panelText, fontWeight: 600 }}>{nodeCount}</span>
+        <span style={{ fontFamily: 'var(--mp-font-mono)', color: palette.panelText, fontWeight: 600 }}>{nodeCount}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <Activity style={{ width: 12, height: 12 }} />
         <span>连线</span>
-        <span style={{ fontFamily: 'var(--font-mono)', color: palette.panelText, fontWeight: 600 }}>{edgeCount}</span>
+        <span style={{ fontFamily: 'var(--mp-font-mono)', color: palette.panelText, fontWeight: 600 }}>{edgeCount}</span>
       </div>
     </>,
     counterSlot
@@ -1783,7 +1783,7 @@ function FixedZoomToolsInner() {
       }}
     >
       {makeBtn(palette, '缩小 (Cmd+-)', <ZoomOut style={{ width: 14, height: 14 }} />, handleAction(() => tools.zoomout()))}
-      <div style={{ minWidth: 36, textAlign: 'center', fontSize: 11, color: palette.panelTextMuted, fontFamily: 'var(--font-mono)' }}>
+      <div style={{ minWidth: 36, textAlign: 'center', fontSize: 11, color: palette.panelTextMuted, fontFamily: 'var(--mp-font-mono)' }}>
         {Math.round(tools.zoom * 100)}%
       </div>
       {makeBtn(palette, '放大 (Cmd+=)', <ZoomIn style={{ width: 14, height: 14 }} />, handleAction(() => tools.zoomin()))}
@@ -1919,7 +1919,7 @@ function FullscreenBaseNode({ onSelect }: { onSelect?: (id: string) => void } = 
             : palette.nodeShadow,
         boxSizing: 'border-box',
         color: palette.nodeText,
-        fontFamily: 'var(--font-sans)',
+        fontFamily: 'var(--mp-font-sans)',
         pointerEvents: 'auto',
         userSelect: 'none',
         opacity: 1,
@@ -2005,7 +2005,7 @@ function CustomBaseNode() {
         boxShadow: isSel ? `0 0 0 2px ${c.border}, 0 0 16px ${c.bg}` : isHover ? `0 0 0 1px ${c.text}80` : `0 0 0 1px ${c.bg}`,
         boxSizing: 'border-box',
         color: '#fafafa',
-        fontFamily: 'var(--font-sans)',
+        fontFamily: 'var(--mp-font-sans)',
         pointerEvents: 'auto',
         userSelect: 'none',
         opacity: 1,
@@ -2130,8 +2130,8 @@ export default function OntologyActionPage() {
   ];
 
   const codeStyle: React.CSSProperties = {
-    fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--foreground)',
-    background: 'var(--muted)', padding: '2px 6px', borderRadius: 3,
+    fontFamily: 'var(--mp-font-mono)', fontSize: 12, color: 'var(--semi-color-text-0)',
+    background: 'var(--semi-color-fill-0)', padding: '2px 6px', borderRadius: 3,
   };
 
   // 详情区子 tab（包含流程编排作为只读预览 tab）
@@ -2152,21 +2152,21 @@ export default function OntologyActionPage() {
 
       {/* Stats（真实 kernel 数据） */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
-        <div style={{ flex: 1, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px 20px' }}>
+        <div style={{ flex: 1, background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', padding: '16px 20px' }}>
           <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{loadingKernel ? '…' : stats.total}</div>
-          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>Action 总数</div>
+          <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginTop: 4 }}>Action 总数</div>
         </div>
-        <div style={{ flex: 1, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px 20px' }}>
+        <div style={{ flex: 1, background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', padding: '16px 20px' }}>
           <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{loadingKernel ? '…' : stats.targets}</div>
-          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>作用对象数</div>
+          <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginTop: 4 }}>作用对象数</div>
         </div>
-        <div style={{ flex: 1, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px 20px' }}>
+        <div style={{ flex: 1, background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', padding: '16px 20px' }}>
           <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{loadingKernel ? '…' : stats.params}</div>
-          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>输入参数总数</div>
+          <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginTop: 4 }}>输入参数总数</div>
         </div>
-        <div style={{ flex: 1, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px 20px' }}>
+        <div style={{ flex: 1, background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', padding: '16px 20px' }}>
           <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{loadingKernel ? '…' : stats.functions}</div>
-          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>引用 Function 数</div>
+          <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginTop: 4 }}>引用 Function 数</div>
         </div>
       </div>
 
@@ -2176,9 +2176,9 @@ export default function OntologyActionPage() {
           <Card style={{ height: 'fit-content' }}>
             <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Actions</h3>
             {loadingKernel ? (
-              <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--muted-foreground)' }}>加载中…</div>
+              <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--semi-color-text-2)' }}>加载中…</div>
             ) : actionTypes.length === 0 ? (
-              <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--muted-foreground)' }}>暂无 ActionType</div>
+              <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--semi-color-text-2)' }}>暂无 ActionType</div>
             ) : actionTypes.map((a) => {
               const isSel = a.rid === selectedActionRid;
               return (
@@ -2189,8 +2189,8 @@ export default function OntologyActionPage() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
                     borderRadius: 4, cursor: 'pointer', fontSize: 13,
-                    color: isSel ? 'var(--foreground)' : 'var(--muted-foreground)',
-                    background: isSel ? 'var(--muted)' : 'transparent',
+                    color: isSel ? 'var(--semi-color-text-0)' : 'var(--semi-color-text-2)',
+                    background: isSel ? 'var(--semi-color-fill-0)' : 'transparent',
                     marginBottom: 2, transition: 'background .15s',
                   }}
                 >
@@ -2198,10 +2198,10 @@ export default function OntologyActionPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{actionDisplayName(a)}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                      <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'var(--background)', color: 'var(--muted-foreground)' }}>
+                      <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'var(--semi-color-bg-0)', color: 'var(--semi-color-text-2)' }}>
                         {a.on.length > 0 ? otDisplayName(a.on[0]) : '未绑定对象'}
                       </span>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: 'var(--success)' }} />
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: 'var(--semi-color-success)' }} />
                     </div>
                   </div>
                 </div>
@@ -2214,7 +2214,7 @@ export default function OntologyActionPage() {
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           <Card style={{marginBottom: 20, overflow: 'hidden'}} bodyStyle={{padding: 0}}>
             {/* Header: title + actions */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--semi-color-border)' }}>
               <h3 style={{ fontSize: 16, fontWeight: 600 }}>{selectedAction ? actionDisplayName(selectedAction) : '未选择 Action'}</h3>
               <div style={{ display: 'flex', gap: 8 }}>
                 <Button theme="light" type="secondary" style={{ height: 32, padding: '0 12px', fontSize: 12 }}><Copy style={{ width: 14, height: 14 }} />复制</Button>
@@ -2224,7 +2224,7 @@ export default function OntologyActionPage() {
             </div>
 
             {/* 子 Tab */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 16px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 16px', borderBottom: '1px solid var(--semi-color-border)' }}>
               {([
                 { key: 'basic', label: '基本信息' },
                 { key: 'io', label: '输入输出' },
@@ -2241,10 +2241,10 @@ export default function OntologyActionPage() {
                       display: 'inline-flex', alignItems: 'center', gap: 6,
                       padding: '12px 14px',
                       fontSize: 13,
-                      color: active ? 'var(--foreground)' : 'var(--muted-foreground)',
+                      color: active ? 'var(--semi-color-text-0)' : 'var(--semi-color-text-2)',
                       background: 'transparent',
                       border: 'none',
-                      borderBottom: `2px solid ${active ? 'var(--primary)' : 'transparent'}`,
+                      borderBottom: `2px solid ${active ? 'var(--semi-color-primary)' : 'transparent'}`,
                       marginBottom: -1,
                       cursor: 'pointer',
                       fontWeight: active ? 600 : 500,
@@ -2262,31 +2262,31 @@ export default function OntologyActionPage() {
             <div style={{ padding: 20 }}>
               {detailTab === 'basic' && (
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12 }}>基本信息</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: 12 }}>基本信息</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '12px 16px', alignItems: 'start' }}>
-                    <div style={{ fontSize: 12, color: 'var(--muted-foreground)', paddingTop: 3 }}>名称</div>
-                    <div style={{ fontSize: 13, color: 'var(--foreground)' }}>{selectedAction ? actionDisplayName(selectedAction) : '—'}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted-foreground)', paddingTop: 3 }}>标识符</div>
-                    <div style={{ fontSize: 13, color: 'var(--foreground)' }}><code style={codeStyle}>{selectedAction?.rid ?? '—'}</code></div>
-                    <div style={{ fontSize: 12, color: 'var(--muted-foreground)', paddingTop: 3 }}>Function 引用</div>
-                    <div style={{ fontSize: 13, color: 'var(--foreground)' }}><code style={codeStyle}>{selectedAction?.function_ref ?? '—'}</code></div>
-                    <div style={{ fontSize: 12, color: 'var(--muted-foreground)', paddingTop: 3 }}>描述</div>
-                    <div style={{ fontSize: 13, color: 'var(--foreground)', lineHeight: 1.6 }}>{selectedAction?.description || '（未填写描述）'}</div>
+                    <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', paddingTop: 3 }}>名称</div>
+                    <div style={{ fontSize: 13, color: 'var(--semi-color-text-0)' }}>{selectedAction ? actionDisplayName(selectedAction) : '—'}</div>
+                    <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', paddingTop: 3 }}>标识符</div>
+                    <div style={{ fontSize: 13, color: 'var(--semi-color-text-0)' }}><code style={codeStyle}>{selectedAction?.rid ?? '—'}</code></div>
+                    <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', paddingTop: 3 }}>Function 引用</div>
+                    <div style={{ fontSize: 13, color: 'var(--semi-color-text-0)' }}><code style={codeStyle}>{selectedAction?.function_ref ?? '—'}</code></div>
+                    <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', paddingTop: 3 }}>描述</div>
+                    <div style={{ fontSize: 13, color: 'var(--semi-color-text-0)', lineHeight: 1.6 }}>{selectedAction?.description || '（未填写描述）'}</div>
                   </div>
                 </div>
               )}
 
               {detailTab === 'io' && (
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12 }}>输入参数</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: 12 }}>输入参数</div>
                   {selectedAction && selectedAction.parameters.length > 0 ? (
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 20 }}>
                     <thead>
                       <tr>
-                        <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>参数名</th>
-                        <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>类型</th>
-                        <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>必填</th>
-                        <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>说明</th>
+                        <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: 11, fontWeight: 500, color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)' }}>参数名</th>
+                        <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: 11, fontWeight: 500, color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)' }}>类型</th>
+                        <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: 11, fontWeight: 500, color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)' }}>必填</th>
+                        <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: 11, fontWeight: 500, color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)' }}>说明</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2294,21 +2294,21 @@ export default function OntologyActionPage() {
                         const name = p.rid.split('.').slice(-2, -1)[0] ?? p.rid;
                         return (
                         <tr key={p.rid}>
-                          <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', borderBottom: '1px solid var(--border)' }}>{name}</td>
-                          <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{p.type_id}</td>
-                          <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)' }}>{p.nullable ? '否' : '是'}</td>
-                          <td style={{ padding: '6px 10px', color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{p.title || '—'}</td>
+                          <td style={{ padding: '6px 10px', fontFamily: 'var(--mp-font-mono)', borderBottom: '1px solid var(--semi-color-border)' }}>{name}</td>
+                          <td style={{ padding: '6px 10px', fontFamily: 'var(--mp-font-mono)', color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)' }}>{p.type_id}</td>
+                          <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--semi-color-border)' }}>{p.nullable ? '否' : '是'}</td>
+                          <td style={{ padding: '6px 10px', color: 'var(--semi-color-text-2)', borderBottom: '1px solid var(--semi-color-border)' }}>{p.title || '—'}</td>
                         </tr>
                         );
                       })}
                     </tbody>
                   </table>
                   ) : (
-                    <div style={{ padding: '12px 0 20px', fontSize: 12, color: 'var(--muted-foreground)' }}>该 Action 无输入参数</div>
+                    <div style={{ padding: '12px 0 20px', fontSize: 12, color: 'var(--semi-color-text-2)' }}>该 Action 无输入参数</div>
                   )}
 
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12 }}>副作用与提交规则</div>
-                  <div style={{ background: 'var(--muted)', borderRadius: 'var(--radius)', padding: '12px 16px', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.8 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: 12 }}>副作用与提交规则</div>
+                  <div style={{ background: 'var(--semi-color-fill-0)', borderRadius: 'var(--semi-border-radius-medium)', padding: '12px 16px', fontFamily: 'var(--mp-font-mono)', fontSize: 12, color: 'var(--semi-color-text-2)', lineHeight: 1.8 }}>
                     <div>side_effects: {selectedAction && selectedAction.side_effects.length > 0 ? selectedAction.side_effects.join(', ') : '[]'}</div>
                     <div>submission_criteria: {selectedAction && selectedAction.submission_criteria.length > 0 ? selectedAction.submission_criteria.join('; ') : '[]'}</div>
                     <div>apply: POST /ont/v2/action-types/&#123;rid&#125;/apply</div>
@@ -2319,20 +2319,20 @@ export default function OntologyActionPage() {
               {detailTab === 'relations' && (
                 <div>
                   <div style={{ marginBottom: 20 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12 }}>关联本体概念（作用对象）</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: 12 }}>关联本体概念（作用对象）</div>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                       {selectedAction && selectedAction.on.length > 0 ? selectedAction.on.map((rid) => (
-                        <span key={rid} title={rid} style={{ padding: '4px 10px', background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 4, fontSize: 12, color: 'var(--foreground)', cursor: 'pointer' }}>{otDisplayName(rid)}</span>
+                        <span key={rid} title={rid} style={{ padding: '4px 10px', background: 'var(--semi-color-fill-0)', border: '1px solid var(--semi-color-border)', borderRadius: 4, fontSize: 12, color: 'var(--semi-color-text-0)', cursor: 'pointer' }}>{otDisplayName(rid)}</span>
                       )) : (
-                        <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>该 Action 未绑定作用对象</span>
+                        <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>该 Action 未绑定作用对象</span>
                       )}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12 }}>Function 实现引用</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--semi-color-text-0)', marginBottom: 12 }}>Function 实现引用</div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 12, color: 'var(--foreground)' }}>
-                        <GitBranch style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />{selectedAction?.function_ref ?? '—'}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--semi-color-fill-0)', border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', fontSize: 12, color: 'var(--semi-color-text-0)' }}>
+                        <GitBranch style={{ width: 14, height: 14, color: 'var(--semi-color-text-2)' }} />{selectedAction?.function_ref ?? '—'}
                       </span>
                     </div>
                   </div>
@@ -2343,8 +2343,8 @@ export default function OntologyActionPage() {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>流程编排</div>
-                      <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>当前 Action 包含 <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--foreground)' }}>7</span> 个节点 / <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--foreground)' }}>7</span> 条连线</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--semi-color-text-0)' }}>流程编排</div>
+                      <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginTop: 4 }}>当前 Action 包含 <span style={{ fontFamily: 'var(--mp-font-mono)', color: 'var(--semi-color-text-0)' }}>7</span> 个节点 / <span style={{ fontFamily: 'var(--mp-font-mono)', color: 'var(--semi-color-text-0)' }}>7</span> 条连线</div>
                     </div>
                     <button
                       type="button"
@@ -2359,10 +2359,10 @@ export default function OntologyActionPage() {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: 6,
-                        background: 'var(--primary, #7c3aed)',
-                        color: 'var(--primary-foreground, #fff)',
+                        background: 'var(--semi-color-primary)',
+                        color: 'var(--semi-color-white)',
                         border: 'none',
-                        borderRadius: 'var(--radius)',
+                        borderRadius: 'var(--semi-border-radius-medium)',
                         cursor: 'pointer',
                         boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
                       }}
@@ -2370,7 +2370,7 @@ export default function OntologyActionPage() {
                       <Maximize2 style={{ width: 14, height: 14 }} />进入全屏编辑
                     </button>
                   </div>
-                  <div style={{ height: 360, background: 'var(--background)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', overflow: 'hidden', position: 'relative' }}>
+                  <div style={{ height: 360, background: 'var(--semi-color-bg-0)', borderRadius: 'var(--semi-border-radius-medium)', border: '1px solid var(--semi-color-border)', overflow: 'hidden', position: 'relative' }}>
                     <FreeLayoutEditorProvider
                       initialData={initialData}
                       nodeRegistries={nodeRegistries}
@@ -2406,7 +2406,7 @@ export default function OntologyActionPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <h3 style={{ fontSize: 14, fontWeight: 600 }}>执行历史</h3>
             </div>
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>
               暂无执行记录
               <div style={{ fontSize: 12, marginTop: 6 }}>
                 kernel 尚未提供执行历史查询；在概念详情或 SuperAI 编排中触发 ActionType.apply 后可在此回看

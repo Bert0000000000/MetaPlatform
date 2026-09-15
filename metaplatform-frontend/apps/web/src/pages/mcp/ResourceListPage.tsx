@@ -22,6 +22,7 @@ import {
 } from '@ant-design/icons';
 import { listResources, deleteResource } from '@/api/mcphub/resources';
 import type { McpResource } from '@/api/mcphub/types';
+import { PageHeader } from '@/components/skeleton';
 
 const MIME_COLORS: Record<string, TagColor> = {
   'text/plain': 'blue',
@@ -109,14 +110,14 @@ export default function ResourceListPage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          MCP Resources
-        </Typography.Title>
-        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => navigate('/resources/new')}>
-          添加资源
-        </Button>
-      </div>
+      <PageHeader
+        title="MCP Resources"
+        actions={
+          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => navigate('/resources/new')}>
+                  添加资源
+                </Button>
+        }
+      />
 
       <Space style={{ marginBottom: 16 }}>
         <Input

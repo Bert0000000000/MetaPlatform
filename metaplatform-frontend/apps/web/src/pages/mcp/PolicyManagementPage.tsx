@@ -29,6 +29,7 @@ import {
 } from '@/api/mcphub/policies';
 import { listTools } from '@/api/mcphub/tools';
 import type { Policy, PolicyCreateRequest, PolicyUpdateRequest, McpTool, ConditionSyntax } from '@/api/mcphub/types';
+import { PageHeader } from '@/components/skeleton';
 
 const SUBJECT_TYPE_OPTIONS = [
   { label: '用户', value: 'USER' },
@@ -246,14 +247,14 @@ export default function PolicyManagementPage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          ABAC 权限策略
-        </Typography.Title>
-        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          创建策略
-        </Button>
-      </div>
+      <PageHeader
+        title="ABAC 权限策略"
+        actions={
+          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                  创建策略
+                </Button>
+        }
+      />
 
       <Card>
         {policies.length === 0 && !loading ? (

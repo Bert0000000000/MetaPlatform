@@ -339,10 +339,10 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
         style={{
           width,
           padding: 12,
-          border: `2px dashed ${isSelected ? 'var(--semi-color-primary)' : 'var(--border)'}`,
+          border: `2px dashed ${isSelected ? 'var(--semi-color-primary)' : 'var(--semi-color-border)'}`,
           borderRadius: 8,
           marginBottom: 8,
-          background: isSelected ? 'var(--semi-color-primary-light-default)' : 'var(--card)',
+          background: isSelected ? 'var(--semi-color-primary-light-default)' : 'var(--semi-color-bg-1)',
           cursor: 'pointer',
           position: 'relative',
         }}
@@ -403,9 +403,9 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
       case 'upload':
         return <Button>上传附件</Button>;
       case 'divider':
-        return <div style={{ borderTop: '1px solid var(--border)', paddingTop: 8 }}>{field.label}</div>;
+        return <div style={{ borderTop: '1px solid var(--semi-color-border)', paddingTop: 8 }}>{field.label}</div>;
       case 'group':
-        return <Card title={field.label} style={{ background: 'var(--muted)' }} />;
+        return <Card title={field.label} style={{ background: 'var(--semi-color-fill-0)' }} />;
       default:
         return <Input placeholder={field.placeholder} />;
     }
@@ -609,9 +609,9 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
           </Form.Slot>
         );
       case 'divider':
-        return <div style={{ borderTop: '1px solid var(--border)', paddingTop: 8, marginBottom: 16 }}>{field.label}</div>;
+        return <div style={{ borderTop: '1px solid var(--semi-color-border)', paddingTop: 8, marginBottom: 16 }}>{field.label}</div>;
       case 'group':
-        return <Card title={field.label} style={{ background: 'var(--muted)', marginBottom: 16 }} />;
+        return <Card title={field.label} style={{ background: 'var(--semi-color-fill-0)', marginBottom: 16 }} />;
       default:
         return (
           <Form.Input

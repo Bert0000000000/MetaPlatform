@@ -107,7 +107,7 @@ export default function OntologyMergeDrawer({
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '66.666%', minWidth: 720, height: '100%',
-          background: 'var(--background)',
+          background: 'var(--semi-color-bg-0)',
           boxShadow: '-8px 0 24px rgba(0,0,0,0.18)',
           display: 'flex', flexDirection: 'column',
         }}
@@ -115,10 +115,10 @@ export default function OntologyMergeDrawer({
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '16px 24px', borderBottom: '1px solid var(--border)',
+          padding: '16px 24px', borderBottom: '1px solid var(--semi-color-border)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <GitMerge style={{ width: 18, height: 18, color: 'var(--primary)' }} />
+            <GitMerge style={{ width: 18, height: 18, color: 'var(--semi-color-primary)' }} />
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
               合并概念 · {source.display_name} → {target.display_name}
             </h3>
@@ -127,8 +127,8 @@ export default function OntologyMergeDrawer({
             type="button"
             onClick={cancel}
             style={{
-              width: 32, height: 32, borderRadius: 4, border: '1px solid var(--border)',
-              background: 'var(--card)', color: 'var(--muted-foreground)',
+              width: 32, height: 32, borderRadius: 4, border: '1px solid var(--semi-color-border)',
+              background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-2)',
               cursor: 'pointer', fontSize: 14,
             }}
             aria-label="关闭合并 drawer"
@@ -139,7 +139,7 @@ export default function OntologyMergeDrawer({
 
         {/* Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
-          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 16, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', marginBottom: 16, lineHeight: 1.6 }}>
             <div>source rid：<code>{source.rid}</code></div>
             <div>target rid：<code>{target.rid}</code></div>
             <div style={{ marginTop: 6 }}>
@@ -151,10 +151,10 @@ export default function OntologyMergeDrawer({
 
           <table className="om-merge-table" style={{
             width: '100%', borderCollapse: 'collapse',
-            border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden',
+            border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', overflow: 'hidden',
           }}>
             <thead>
-              <tr style={{ background: 'var(--muted)' }}>
+              <tr style={{ background: 'var(--semi-color-fill-0)' }}>
                 <th style={thStyle}>source 属性（slug）</th>
                 <th style={thStyle}>类型</th>
                 <th style={{ ...thStyle, width: 64, textAlign: 'center' }}>映射</th>
@@ -164,7 +164,7 @@ export default function OntologyMergeDrawer({
             <tbody>
               {source.properties.length === 0 ? (
                 <tr>
-                  <td colSpan={4} style={{ ...tdStyle, color: 'var(--muted-foreground)', textAlign: 'center' }}>
+                  <td colSpan={4} style={{ ...tdStyle, color: 'var(--semi-color-text-2)', textAlign: 'center' }}>
                     source 没有属性定义，无需映射
                   </td>
                 </tr>
@@ -176,7 +176,7 @@ export default function OntologyMergeDrawer({
                   <tr key={sp.rid}>
                     <td style={tdStyle}>
                       <div style={{ fontWeight: 500 }}>{srcSlug}</div>
-                      <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{sp.rid}</div>
+                      <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>{sp.rid}</div>
                     </td>
                     <td style={tdStyle}>
                       <span className="type-badge">{sp.type_id}</span>
@@ -189,9 +189,9 @@ export default function OntologyMergeDrawer({
                         disabled={target.properties.length === 0}
                         style={{
                           width: 28, height: 28, borderRadius: 4,
-                          border: '1px solid var(--border)',
-                          background: matchedTarget ? 'var(--primary)' : 'var(--card)',
-                          color: matchedTarget ? 'var(--primary-foreground, #fff)' : 'var(--muted-foreground)',
+                          border: '1px solid var(--semi-color-border)',
+                          background: matchedTarget ? 'var(--semi-color-primary)' : 'var(--semi-color-bg-1)',
+                          color: matchedTarget ? 'var(--semi-color-white)' : 'var(--semi-color-text-2)',
                           cursor: matchedTarget || target.properties.length === 0 ? 'pointer' : 'not-allowed',
                           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                         }}
@@ -207,9 +207,9 @@ export default function OntologyMergeDrawer({
                         disabled={target.properties.length === 0}
                         style={{
                           width: '100%', height: 32,
-                          background: 'var(--card)', border: '1px solid var(--border)',
-                          borderRadius: 'var(--radius)', padding: '0 10px', fontSize: 12,
-                          color: 'var(--foreground)', outline: 'none',
+                          background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
+                          borderRadius: 'var(--semi-border-radius-medium)', padding: '0 10px', fontSize: 12,
+                          color: 'var(--semi-color-text-0)', outline: 'none',
                         }}
                       >
                         <option value="">— 不映射（丢弃） —</option>
@@ -227,11 +227,11 @@ export default function OntologyMergeDrawer({
           </table>
 
           <div style={{
-            marginTop: 16, padding: 12, borderRadius: 'var(--radius)',
-            border: '1px dashed var(--border)', background: 'var(--muted)',
-            fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.6,
+            marginTop: 16, padding: 12, borderRadius: 'var(--semi-border-radius-medium)',
+            border: '1px dashed var(--semi-color-border)', background: 'var(--semi-color-fill-0)',
+            fontSize: 12, color: 'var(--semi-color-text-2)', lineHeight: 1.6,
           }}>
-            <strong style={{ color: 'var(--foreground)' }}>合并影响：</strong>
+            <strong style={{ color: 'var(--semi-color-text-0)' }}>合并影响：</strong>
             source 的所有 Individual（实体）会被改写 class_rid 指向 target；
             LinkInstance 的 src/dst 引用同步替换；
             source ObjectType 本身会被软删（archived=true），slug 释放后可复用。
@@ -241,15 +241,15 @@ export default function OntologyMergeDrawer({
         {/* Footer */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10,
-          padding: '12px 24px', borderTop: '1px solid var(--border)',
+          padding: '12px 24px', borderTop: '1px solid var(--semi-color-border)',
         }}>
           <button
             type="button"
             onClick={cancel}
             style={{
               height: 34, padding: '0 14px', fontSize: 13,
-              background: 'var(--card)', color: 'var(--foreground)',
-              border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+              background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
+              border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
               cursor: 'pointer',
             }}
           >
@@ -261,8 +261,8 @@ export default function OntologyMergeDrawer({
             disabled={!!submitting}
             style={{
               height: 34, padding: '0 14px', fontSize: 13,
-              background: 'var(--primary)', color: 'var(--primary-foreground, #fff)',
-              border: 'none', borderRadius: 'var(--radius)',
+              background: 'var(--semi-color-primary)', color: 'var(--semi-color-white)',
+              border: 'none', borderRadius: 'var(--semi-border-radius-medium)',
               cursor: submitting ? 'not-allowed' : 'pointer',
               opacity: submitting ? 0.6 : 1,
             }}
@@ -277,11 +277,11 @@ export default function OntologyMergeDrawer({
 
 const thStyle: React.CSSProperties = {
   padding: '10px 14px', fontSize: 12, fontWeight: 500,
-  color: 'var(--muted-foreground)', textAlign: 'left',
-  borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap',
+  color: 'var(--semi-color-text-2)', textAlign: 'left',
+  borderBottom: '1px solid var(--semi-color-border)', whiteSpace: 'nowrap',
 };
 
 const tdStyle: React.CSSProperties = {
   padding: '10px 14px', fontSize: 13,
-  borderBottom: '1px solid var(--border)', verticalAlign: 'middle',
+  borderBottom: '1px solid var(--semi-color-border)', verticalAlign: 'middle',
 };

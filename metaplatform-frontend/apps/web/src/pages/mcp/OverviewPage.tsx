@@ -82,7 +82,7 @@ function Statistic({
     <div>
       <div
         style={{
-          color: 'var(--muted-foreground)',
+          color: 'var(--semi-color-text-2)',
           fontSize: 13,
           marginBottom: 4,
         }}
@@ -115,7 +115,7 @@ function ServerStatsCard({ stats }: { stats: OverviewResponse['serverStats'] }) 
           <Statistic
             title="在线"
             value={stats.online}
-            valueStyle={{ color: 'var(--success)' }}
+            valueStyle={{ color: 'var(--semi-color-success)' }}
             prefix={<CheckCircleFilled />}
           />
         </Col>
@@ -123,7 +123,7 @@ function ServerStatsCard({ stats }: { stats: OverviewResponse['serverStats'] }) 
           <Statistic
             title="离线"
             value={stats.offline}
-            valueStyle={{ color: 'var(--muted-foreground)' }}
+            valueStyle={{ color: 'var(--semi-color-text-2)' }}
             prefix={<CloseCircleFilled />}
           />
         </Col>
@@ -131,7 +131,7 @@ function ServerStatsCard({ stats }: { stats: OverviewResponse['serverStats'] }) 
           <Statistic
             title="异常"
             value={stats.error}
-            valueStyle={{ color: 'var(--destructive)' }}
+            valueStyle={{ color: 'var(--semi-color-danger)' }}
             prefix={<ExclamationCircleFilled />}
           />
         </Col>
@@ -151,14 +151,14 @@ function ToolStatsCard({ stats }: { stats: OverviewResponse['toolStats'] }) {
           <Statistic
             title="已启用"
             value={stats.enabled}
-            valueStyle={{ color: 'var(--success)' }}
+            valueStyle={{ color: 'var(--semi-color-success)' }}
           />
         </Col>
         <Col span={8}>
           <Statistic
             title="已禁用"
             value={stats.disabled}
-            valueStyle={{ color: 'var(--muted-foreground)' }}
+            valueStyle={{ color: 'var(--semi-color-text-2)' }}
           />
         </Col>
       </Row>
@@ -186,7 +186,7 @@ function CallStatsCard({
             value={stats.successRate}
             precision={2}
             suffix="%"
-            valueStyle={{ color: 'var(--primary)' }}
+            valueStyle={{ color: 'var(--semi-color-primary)' }}
           />
         </Col>
         <Col span={8}>
@@ -201,11 +201,11 @@ function CallStatsCard({
       {chartData.length > 0 ? (
         <ResponsiveContainer width="100%" height={180} style={{ marginTop: 12 }}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--semi-color-border)" />
             <XAxis dataKey="time" />
             <YAxis allowDecimals={false} />
             <Tooltip />
-            <Line type="monotone" dataKey="calls" stroke="var(--primary)" strokeWidth={2} />
+            <Line type="monotone" dataKey="calls" stroke="var(--semi-color-primary)" strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
       ) : (
@@ -243,7 +243,7 @@ function TokenStatsCard({
       {chartData.length > 0 ? (
         <ResponsiveContainer width="100%" height={180} style={{ marginTop: 12 }}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--semi-color-border)" />
             <XAxis dataKey="time" />
             <YAxis allowDecimals={false} />
             <Tooltip />
@@ -263,11 +263,11 @@ const LEVEL_META: Record<
 > = {
   error: {
     color: 'red',
-    icon: <CloseCircleFilled style={{ color: 'var(--destructive)' }} />,
+    icon: <CloseCircleFilled style={{ color: 'var(--semi-color-danger)' }} />,
   },
   warning: {
     color: 'orange',
-    icon: <WarningFilled style={{ color: 'var(--warning)' }} />,
+    icon: <WarningFilled style={{ color: 'var(--semi-color-warning)' }} />,
   },
 };
 
@@ -276,7 +276,7 @@ function ErrorAlertsCard({ alerts }: { alerts: OverviewErrorAlert[] }) {
     <Card
       title={
         <span>
-          <AlertOutlined style={{ marginRight: 8, color: 'var(--destructive)' }} />
+          <AlertOutlined style={{ marginRight: 8, color: 'var(--semi-color-danger)' }} />
           近期错误告警
         </span>
       }
@@ -305,7 +305,7 @@ function ErrorAlertsCard({ alerts }: { alerts: OverviewErrorAlert[] }) {
                     </Typography.Text>
                     <div
                       style={{
-                        color: 'var(--muted-foreground)',
+                        color: 'var(--semi-color-text-2)',
                         fontSize: 13,
                         marginTop: 4,
                         lineHeight: 1.6,

@@ -273,7 +273,7 @@
 
 .mp-evidence-code {
   font-size: 13px;
-  font-family: var(--font-mono);
+  font-family: var(--mp-font-mono);
 }
 
 .mp-evidence-fragment-box {

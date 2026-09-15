@@ -195,7 +195,7 @@ export default function ProposalConfirmDrawer({
         style={{
           width: '66.666%', minWidth: 720, maxWidth: 960,
           height: '100%',
-          background: 'var(--background)',
+          background: 'var(--semi-color-bg-0)',
           boxShadow: '-8px 0 24px rgba(0,0,0,0.18)',
           display: 'flex', flexDirection: 'column',
         }}
@@ -203,11 +203,11 @@ export default function ProposalConfirmDrawer({
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '16px 24px', borderBottom: '1px solid var(--border)',
+          padding: '16px 24px', borderBottom: '1px solid var(--semi-color-border)',
           flexShrink: 0,
         }}>
           <div>
-            <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 2 }}>
+            <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginBottom: 2 }}>
               AI 提案 · {statusLabel[serverStatus] ?? serverStatus}
             </div>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
@@ -219,8 +219,8 @@ export default function ProposalConfirmDrawer({
             onClick={() => close('cancel')}
             disabled={state === 'confirming' || state === 'executing'}
             style={{
-              width: 32, height: 32, borderRadius: 4, border: '1px solid var(--border)',
-              background: 'var(--card)', color: 'var(--muted-foreground)',
+              width: 32, height: 32, borderRadius: 4, border: '1px solid var(--semi-color-border)',
+              background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-2)',
               cursor: state === 'confirming' || state === 'executing' ? 'not-allowed' : 'pointer',
               fontSize: 14,
               opacity: state === 'confirming' || state === 'executing' ? 0.5 : 1,
@@ -236,7 +236,7 @@ export default function ProposalConfirmDrawer({
           {state === 'loading' && (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: 10, padding: 60, color: 'var(--muted-foreground)', fontSize: 13,
+              gap: 10, padding: 60, color: 'var(--semi-color-text-2)', fontSize: 13,
             }}>
               <Loader2 style={{ width: 16, height: 16, animation: 'osp-spin 1s linear infinite' }} />
               正在加载 staging 预览…
@@ -245,9 +245,9 @@ export default function ProposalConfirmDrawer({
 
           {state === 'error' && (
             <div style={{
-              padding: '12px 16px', borderRadius: 'var(--radius)',
-              background: 'rgba(239,68,68,0.08)', border: '1px solid var(--destructive)',
-              color: 'var(--destructive)', fontSize: 13,
+              padding: '12px 16px', borderRadius: 'var(--semi-border-radius-medium)',
+              background: 'rgba(239,68,68,0.08)', border: '1px solid var(--semi-color-danger)',
+              color: 'var(--semi-color-danger)', fontSize: 13,
               display: 'flex', alignItems: 'flex-start', gap: 10,
             }}>
               <AlertTriangle style={{ width: 16, height: 16, flexShrink: 0, marginTop: 1 }} />
@@ -273,8 +273,8 @@ export default function ProposalConfirmDrawer({
                   }}
                   style={{
                     marginTop: 10, height: 30, padding: '0 12px', fontSize: 12,
-                    background: 'var(--card)', border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius)', cursor: 'pointer',
+                    background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
+                    borderRadius: 'var(--semi-border-radius-medium)', cursor: 'pointer',
                   }}
                 >
                   重试
@@ -292,22 +292,22 @@ export default function ProposalConfirmDrawer({
             <div style={{
               marginTop: 16, padding: '12px 16px',
               background: preflight.blocked ? 'rgba(239,68,68,0.10)' : 'rgba(16,185,129,0.10)',
-              border: `1px solid ${preflight.blocked ? 'var(--destructive)' : 'var(--success)'}`,
-              borderRadius: 'var(--radius)', fontSize: 13,
+              border: `1px solid ${preflight.blocked ? 'var(--semi-color-danger)' : 'var(--semi-color-success)'}`,
+              borderRadius: 'var(--semi-border-radius-medium)', fontSize: 13,
               display: 'flex', alignItems: 'flex-start', gap: 10,
             }}>
               {preflight.blocked
-                ? <AlertTriangle style={{ width: 18, height: 18, color: 'var(--destructive)', flexShrink: 0, marginTop: 1 }} />
-                : <CheckCircle2 style={{ width: 18, height: 18, color: 'var(--success)', flexShrink: 0, marginTop: 1 }} />}
+                ? <AlertTriangle style={{ width: 18, height: 18, color: 'var(--semi-color-danger)', flexShrink: 0, marginTop: 1 }} />
+                : <CheckCircle2 style={{ width: 18, height: 18, color: 'var(--semi-color-success)', flexShrink: 0, marginTop: 1 }} />}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, marginBottom: 4 }}>
                   机器预检{preflight.blocked ? '阻断' : '通过'}
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+                <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>
                   {preflight.summary}
                 </div>
                 {preflight.blocked && (
-                  <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 12, color: 'var(--muted-foreground)' }}>
+                  <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 12, color: 'var(--semi-color-text-2)' }}>
                     {(preflight.schema?.errors ?? []).slice(0, 4).map((e, i) => (
                       <li key={`s${i}`}>schema：{e}</li>
                     ))}
@@ -327,17 +327,17 @@ export default function ProposalConfirmDrawer({
           {state === 'done' && executeResult && (
             <div style={{
               marginTop: 16, padding: '12px 16px',
-              background: 'rgba(16,185,129,0.10)', border: '1px solid var(--success)',
-              borderRadius: 'var(--radius)',
+              background: 'rgba(16,185,129,0.10)', border: '1px solid var(--semi-color-success)',
+              borderRadius: 'var(--semi-border-radius-medium)',
               display: 'flex', alignItems: 'flex-start', gap: 10,
-              fontSize: 13, color: 'var(--foreground)',
+              fontSize: 13, color: 'var(--semi-color-text-0)',
             }}>
-              <CheckCircle2 style={{ width: 18, height: 18, color: 'var(--success)', flexShrink: 0, marginTop: 1 }} />
+              <CheckCircle2 style={{ width: 18, height: 18, color: 'var(--semi-color-success)', flexShrink: 0, marginTop: 1 }} />
               <div style={{ flex: 1 }}>
-                <strong style={{ display: 'block', marginBottom: 4, color: 'var(--success)' }}>
+                <strong style={{ display: 'block', marginBottom: 4, color: 'var(--semi-color-success)' }}>
                   已执行成功
                 </strong>
-                <div style={{ color: 'var(--muted-foreground)', lineHeight: 1.6 }}>
+                <div style={{ color: 'var(--semi-color-text-2)', lineHeight: 1.6 }}>
                   <>
                     服务端状态：<code>{serverStatus}</code><br />
                   </>
@@ -370,9 +370,9 @@ export default function ProposalConfirmDrawer({
           {errorMsg && state !== 'error' && state !== 'loading' && (
             <div style={{
               marginTop: 16, padding: '10px 14px',
-              background: 'rgba(239,68,68,0.08)', border: '1px solid var(--destructive)',
-              borderRadius: 'var(--radius)',
-              color: 'var(--destructive)', fontSize: 12,
+              background: 'rgba(239,68,68,0.08)', border: '1px solid var(--semi-color-danger)',
+              borderRadius: 'var(--semi-border-radius-medium)',
+              color: 'var(--semi-color-danger)', fontSize: 12,
               display: 'flex', alignItems: 'flex-start', gap: 8,
             }}>
               <AlertTriangle style={{ width: 14, height: 14, flexShrink: 0, marginTop: 1 }} />
@@ -384,10 +384,10 @@ export default function ProposalConfirmDrawer({
         {/* Footer */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-          padding: '14px 24px', borderTop: '1px solid var(--border)',
+          padding: '14px 24px', borderTop: '1px solid var(--semi-color-border)',
           flexShrink: 0,
         }}>
-          <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+          <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>
             {state === 'loaded' && '取消后状态保持 pending，可下次再确认'}
             {state === 'done' && '已生效，可关闭抽屉'}
           </div>
@@ -398,8 +398,8 @@ export default function ProposalConfirmDrawer({
                 onClick={() => close('execute')}
                 style={{
                   height: 34, padding: '0 14px', fontSize: 13,
-                  background: 'var(--primary)', color: 'var(--primary-foreground, #fff)',
-                  border: 'none', borderRadius: 'var(--radius)',
+                  background: 'var(--semi-color-primary)', color: 'var(--semi-color-white)',
+                  border: 'none', borderRadius: 'var(--semi-border-radius-medium)',
                   cursor: 'pointer',
                 }}
               >
@@ -413,8 +413,8 @@ export default function ProposalConfirmDrawer({
                   disabled={state === 'confirming' || state === 'executing'}
                   style={{
                     height: 34, padding: '0 14px', fontSize: 13,
-                    background: 'var(--card)', color: 'var(--foreground)',
-                    border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+                    background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
+                    border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
                     cursor: state === 'confirming' || state === 'executing' ? 'not-allowed' : 'pointer',
                     opacity: state === 'confirming' || state === 'executing' ? 0.5 : 1,
                   }}
@@ -427,8 +427,8 @@ export default function ProposalConfirmDrawer({
                   disabled={state === 'confirming' || state === 'executing'}
                   style={{
                     height: 34, padding: '0 14px', fontSize: 13,
-                    background: 'var(--card)', color: 'var(--destructive)',
-                    border: '1px solid var(--destructive)', borderRadius: 'var(--radius)',
+                    background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-danger)',
+                    border: '1px solid var(--semi-color-danger)', borderRadius: 'var(--semi-border-radius-medium)',
                     cursor: state === 'confirming' || state === 'executing' ? 'not-allowed' : 'pointer',
                     opacity: state === 'confirming' || state === 'executing' ? 0.5 : 1,
                   }}
@@ -442,8 +442,8 @@ export default function ProposalConfirmDrawer({
                   title={preflight?.blocked === true ? '预检阻断（schema/SHACL/Axiom violation），需先修正提案' : undefined}
                   style={{
                     height: 34, padding: '0 14px', fontSize: 13, fontWeight: 500,
-                    background: 'var(--primary)', color: 'var(--primary-foreground, #fff)',
-                    border: 'none', borderRadius: 'var(--radius)',
+                    background: 'var(--semi-color-primary)', color: 'var(--semi-color-white)',
+                    border: 'none', borderRadius: 'var(--semi-border-radius-medium)',
                     cursor: state === 'confirming' || state === 'executing' || preflight?.blocked === true ? 'not-allowed' : 'pointer',
                     opacity: state === 'confirming' || state === 'executing' || preflight?.blocked === true ? 0.6 : 1,
                   }}

@@ -134,8 +134,8 @@ export default function AuditDetailPage() {
 }
 
 const jsonStyle: React.CSSProperties = {
-  background: 'var(--card)',
-  border: '1px solid var(--border)',
+  background: 'var(--semi-color-bg-1)',
+  border: '1px solid var(--semi-color-border)',
   padding: 12,
   borderRadius: 4,
   fontFamily: 'Menlo, Consolas, monospace',

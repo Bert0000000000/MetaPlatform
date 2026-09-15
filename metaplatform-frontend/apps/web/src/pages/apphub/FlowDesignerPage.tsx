@@ -401,7 +401,7 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
           y={node.position.y + size.height / 2 + 5}
           textAnchor="middle"
           fontSize={13}
-          fill="var(--foreground)"
+          fill="var(--semi-color-text-0)"
           fontWeight={600}
           style={{ pointerEvents: 'none', userSelect: 'none' }}
         >
@@ -469,12 +469,12 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
           y1={y1}
           x2={x2}
           y2={y2}
-          stroke={isSelected ? '#f5222d' : 'var(--border)'}
+          stroke={isSelected ? '#f5222d' : 'var(--semi-color-border)'}
           strokeWidth={isSelected ? 2.5 : 1.5}
           markerEnd="url(#flow-arrow)"
         />
         {edge.label && (
-          <text x={midX} y={midY - 4} textAnchor="middle" fontSize={10} fill="var(--muted-foreground)">
+          <text x={midX} y={midY - 4} textAnchor="middle" fontSize={10} fill="var(--semi-color-text-2)">
             {edge.label}
           </text>
         )}
@@ -660,14 +660,14 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
                 ref={svgRef}
                 width="100%"
                 height="100%"
-                style={{ minHeight: 500, background: 'var(--card)', borderRadius: 8 }}
+                style={{ minHeight: 500, background: 'var(--semi-color-bg-1)', borderRadius: 8 }}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
               >
                 <defs>
                   <marker id="flow-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-                    <polygon points="0 0, 8 3, 0 6" fill="var(--border)" />
+                    <polygon points="0 0, 8 3, 0 6" fill="var(--semi-color-border)" />
                   </marker>
                 </defs>
 

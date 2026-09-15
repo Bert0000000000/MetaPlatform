@@ -24,7 +24,7 @@ export default function ParameterForm({ tool, value, onChange }: ParameterFormPr
           const current = value[p.name];
           const label = (
             <>
-              {p.name} {p.required && <span style={{ color: 'var(--destructive)' }}>*</span>}
+              {p.name} {p.required && <span style={{ color: 'var(--semi-color-danger)' }}>*</span>}
               <Typography.Text type="tertiary" style={{ fontSize: 12, marginLeft: 8 }}>
                 {p.type}
               </Typography.Text>
@@ -71,7 +71,7 @@ export default function ParameterForm({ tool, value, onChange }: ParameterFormPr
               <div style={{ marginBottom: 4 }}>
                 {label}
                 {p.description && (
-                  <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--muted-foreground)' }}>
+                  <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--semi-color-text-2)' }}>
                     {p.description}
                   </span>
                 )}

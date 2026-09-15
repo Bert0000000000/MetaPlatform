@@ -44,22 +44,22 @@ const CHART_TABS: Array<{ key: ChartType; label: string }> = [
 
 const selectStyle = {
   height: 32, minWidth: 0, flex: 1, boxSizing: 'border-box',
-  background: 'var(--card)', border: '1px solid var(--border)',
+  background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
   borderRadius: 6, padding: '0 8px', fontSize: 12,
-  color: 'var(--foreground)', outline: 'none', cursor: 'pointer',
+  color: 'var(--semi-color-text-0)', outline: 'none', cursor: 'pointer',
 } as const;
 
 const runBtnStyle = {
   height: 32, padding: '0 18px', fontSize: 12, borderRadius: 6, whiteSpace: 'nowrap',
-  border: '1px solid var(--primary)', background: 'var(--primary)',
-  color: 'var(--primary-foreground)', cursor: 'pointer', flexShrink: 0,
+  border: '1px solid var(--semi-color-primary)', background: 'var(--semi-color-primary)',
+  color: 'var(--semi-color-white)', cursor: 'pointer', flexShrink: 0,
 } as const;
 
 const chartTabStyle = (active: boolean) => ({
   height: 30, padding: '0 14px', fontSize: 12, borderRadius: 6, whiteSpace: 'nowrap',
-  border: `1px solid ${active ? 'var(--primary)' : 'var(--border)'}`,
-  background: active ? 'var(--primary)' : 'var(--card)',
-  color: active ? 'var(--primary-foreground)' : 'var(--foreground)',
+  border: `1px solid ${active ? 'var(--semi-color-primary)' : 'var(--semi-color-border)'}`,
+  background: active ? 'var(--semi-color-primary)' : 'var(--semi-color-bg-1)',
+  color: active ? 'var(--semi-color-white)' : 'var(--semi-color-text-0)',
   cursor: 'pointer',
 }) as const;
 
@@ -74,7 +74,7 @@ function isMetricProp(p: KernelProperty): boolean {
 /** 属性清单行的格式徽标色。 */
 function propChipStyle(kind: 'dim' | 'metric' | 'geo' | 'plain') {
   const color = kind === 'dim' ? '#3b82f6' : kind === 'metric' ? '#10b981'
-    : kind === 'geo' ? '#f59e0b' : 'var(--muted-foreground)';
+    : kind === 'geo' ? '#f59e0b' : 'var(--semi-color-text-2)';
   return {
     fontSize: 10, padding: '1px 6px', borderRadius: 4, flexShrink: 0,
     border: `1px solid ${color}`, color, fontFamily: 'monospace',
@@ -232,13 +232,13 @@ export default function AnalysisPage() {
         <Card style={{ height: 'fit-content' }}>
           <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, marginBottom: 12 }}>数据源（ObjectType）</h3>
           {loadingTypes ? (
-            <div style={{ fontSize: 12, color: 'var(--muted-foreground)', padding: '8px 0', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', padding: '8px 0', display: 'flex', gap: 8, alignItems: 'center' }}>
               <Loader2 style={{ width: 12, height: 12, animation: 'osp-spin 1s linear infinite' }} /> 加载中…
             </div>
           ) : typeError ? (
-            <div style={{ fontSize: 12, color: 'var(--destructive)' }}>{typeError}</div>
+            <div style={{ fontSize: 12, color: 'var(--semi-color-danger)' }}>{typeError}</div>
           ) : types.length === 0 ? (
-            <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>暂无类型</div>
+            <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>暂无类型</div>
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: 300, overflowY: 'auto' }}>
               {types.map((t) => (
@@ -251,13 +251,13 @@ export default function AnalysisPage() {
                       width: '100%', display: 'flex', alignItems: 'center', gap: 6,
                       padding: '6px 10px', fontSize: 12, textAlign: 'left',
                       border: 'none', borderRadius: 6, cursor: 'pointer',
-                      background: t.rid === selectedType ? 'var(--muted)' : 'transparent',
-                      color: t.rid === selectedType ? 'var(--foreground)' : 'var(--muted-foreground)',
+                      background: t.rid === selectedType ? 'var(--semi-color-fill-0)' : 'transparent',
+                      color: t.rid === selectedType ? 'var(--semi-color-text-0)' : 'var(--semi-color-text-2)',
                     }}
                   >
                     <span style={{
                       width: 8, height: 8, borderRadius: 2, flexShrink: 0,
-                      background: t.rid === selectedType ? 'var(--primary)' : 'var(--muted-foreground)',
+                      background: t.rid === selectedType ? 'var(--semi-color-primary)' : 'var(--semi-color-text-2)',
                     }} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {t.display_name || t.rid}
@@ -273,20 +273,20 @@ export default function AnalysisPage() {
         <Card style={{ height: 'fit-content' }}>
           <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, marginBottom: 8 }}>
             属性清单
-            <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--muted-foreground)', marginLeft: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--semi-color-text-2)', marginLeft: 6 }}>
               {detail ? `${detail.properties.length} 项` : ''}
             </span>
           </h3>
-          <div style={{ fontSize: 10, color: 'var(--muted-foreground)', marginBottom: 8 }}>
+          <div style={{ fontSize: 10, color: 'var(--semi-color-text-2)', marginBottom: 8 }}>
             <span style={propChipStyle('dim')}>维度</span> 可分组 ·
             <span style={propChipStyle('metric')}>度量</span> 可聚合
           </div>
           {detailBusy ? (
-            <div style={{ fontSize: 12, color: 'var(--muted-foreground)', padding: '8px 0', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', padding: '8px 0', display: 'flex', gap: 8, alignItems: 'center' }}>
               <Loader2 style={{ width: 12, height: 12, animation: 'osp-spin 1s linear infinite' }} /> 加载中…
             </div>
           ) : !detail || detail.properties.length === 0 ? (
-            <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>该类型暂无属性</div>
+            <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>该类型暂无属性</div>
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: 320, overflowY: 'auto' }}>
               {detail.properties.map((p) => {
@@ -298,7 +298,7 @@ export default function AnalysisPage() {
                   <li key={p.rid} style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '5px 4px', fontSize: 12,
-                    borderBottom: '1px solid var(--border)',
+                    borderBottom: '1px solid var(--semi-color-border)',
                   }}>
                     <span style={{
                       flex: 1, minWidth: 0, overflow: 'hidden',
@@ -320,7 +320,7 @@ export default function AnalysisPage() {
         {/* 配置行 */}
         <Card bodyStyle={{ padding: '14px 16px' }}>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }}>分组字段</span>
+            <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)', flexShrink: 0 }}>分组字段</span>
             <select
               value={dimension}
               onChange={(e) => onDimensionChange(e.target.value)}
@@ -333,7 +333,7 @@ export default function AnalysisPage() {
               })}
             </select>
 
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }}>聚合</span>
+            <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)', flexShrink: 0 }}>聚合</span>
             <select
               value={fn}
               onChange={(e) => setFn(e.target.value)}
@@ -342,7 +342,7 @@ export default function AnalysisPage() {
               {FNS.map((f) => <option key={f} value={f}>{FN_LABEL[f]}</option>)}
             </select>
 
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }}>度量字段</span>
+            <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)', flexShrink: 0 }}>度量字段</span>
             <select
               value={metric}
               onChange={(e) => setMetric(e.target.value)}
@@ -394,11 +394,11 @@ export default function AnalysisPage() {
           {err ? (
             <div style={{
               padding: '10px 14px', fontSize: 12, borderRadius: 6,
-              border: '1px solid var(--destructive)', color: 'var(--destructive)',
+              border: '1px solid var(--semi-color-danger)', color: 'var(--semi-color-danger)',
               wordBreak: 'break-all',
             }}>{err}</div>
           ) : busy ? (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', padding: 48, color: 'var(--muted-foreground)', fontSize: 13 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', padding: 48, color: 'var(--semi-color-text-2)', fontSize: 13 }}>
               <Loader2 style={{ width: 14, height: 14, animation: 'osp-spin 1s linear infinite' }} /> 聚合查询中…
             </div>
           ) : (
@@ -411,7 +411,7 @@ export default function AnalysisPage() {
           <Card bodyStyle={{ padding: '12px 16px' }}>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 4 }}>分析结论（自动生成）</div>
+                <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginBottom: 4 }}>分析结论（自动生成）</div>
                 <div style={{ fontSize: 13 }}>{summary || '无数据行'}</div>
               </div>
               <button
@@ -419,8 +419,8 @@ export default function AnalysisPage() {
                 onClick={pinToDashboard}
                 style={{
                   height: 32, padding: '0 16px', fontSize: 12, borderRadius: 6, flexShrink: 0,
-                  border: '1px solid var(--border)', background: 'var(--card)',
-                  color: 'var(--foreground)', cursor: 'pointer',
+                  border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)',
+                  color: 'var(--semi-color-text-0)', cursor: 'pointer',
                   display: 'inline-flex', alignItems: 'center', gap: 6,
                 }}
               >

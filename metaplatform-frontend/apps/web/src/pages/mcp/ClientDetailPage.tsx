@@ -241,7 +241,7 @@ export default function ClientDetailPage() {
       >
         <pre
           style={{
-            background: 'var(--muted)',
+            background: 'var(--semi-color-fill-0)',
             padding: 16,
             borderRadius: 8,
             overflow: 'auto',

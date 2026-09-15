@@ -26,9 +26,9 @@ import {
 
 const inputStyle: CSSProperties = {
   height: 30, width: '100%', boxSizing: 'border-box',
-  background: 'var(--card)', border: '1px solid var(--border)',
-  borderRadius: 'var(--radius)', padding: '0 10px', fontSize: 12,
-  color: 'var(--foreground)', outline: 'none',
+  background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
+  borderRadius: 'var(--semi-border-radius-medium)', padding: '0 10px', fontSize: 12,
+  color: 'var(--semi-color-text-0)', outline: 'none',
 };
 
 const textareaStyle: CSSProperties = {
@@ -37,23 +37,23 @@ const textareaStyle: CSSProperties = {
 };
 
 const labelStyle: CSSProperties = {
-  fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 4,
+  fontSize: 12, color: 'var(--semi-color-text-2)', marginBottom: 4,
 };
 
 const sectionBoxStyle: CSSProperties = {
-  border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-  padding: 12, background: 'var(--muted)',
+  border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
+  padding: 12, background: 'var(--semi-color-fill-0)',
 };
 
 const smallBtnStyle: CSSProperties = {
   height: 26, padding: '0 8px', fontSize: 12,
-  background: 'var(--card)', color: 'var(--foreground)',
-  border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+  background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
+  border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
   cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
 };
 
 const hintStyle: CSSProperties = {
-  fontSize: 11, color: 'var(--muted-foreground)', lineHeight: 1.6,
+  fontSize: 11, color: 'var(--semi-color-text-2)', lineHeight: 1.6,
 };
 
 // ─────────────────── 草稿模型（draft） ───────────────────
@@ -293,7 +293,7 @@ export default function PropertyEditorV2({
 
   const checkboxLabelStyle: CSSProperties = {
     display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12,
-    color: 'var(--foreground)', cursor: 'pointer',
+    color: 'var(--semi-color-text-0)', cursor: 'pointer',
   };
 
   return (
@@ -509,7 +509,7 @@ export default function PropertyEditorV2({
             </button>
           </div>
           {draft.structFields.length === 0 && (
-            <div style={{ ...hintStyle, color: 'var(--destructive)' }}>
+            <div style={{ ...hintStyle, color: 'var(--semi-color-danger)' }}>
               struct 属性至少需要 1 个嵌套字段，否则无法保存。
             </div>
           )}
@@ -543,7 +543,7 @@ export default function PropertyEditorV2({
                 type="button"
                 aria-label="删除嵌套字段"
                 onClick={() => set({ structFields: draft.structFields.filter((x) => x.key !== f.key) })}
-                style={{ ...smallBtnStyle, color: 'var(--destructive)' }}
+                style={{ ...smallBtnStyle, color: 'var(--semi-color-danger)' }}
               >
                 <Trash2 style={{ width: 12, height: 12 }} />
               </button>

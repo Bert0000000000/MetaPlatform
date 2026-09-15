@@ -202,7 +202,7 @@ export default function DashboardCanvas({ config, onChange, onPreview }: Dashboa
             >
               <div
                 style={{
-                  color: 'var(--muted-foreground)',
+                  color: 'var(--semi-color-text-2)',
                   fontSize: 12,
                   padding: '24px 0',
                   textAlign: 'center',

@@ -63,16 +63,16 @@ const DIFF_VALUE_COLOR: Record<string, string> = {
 
 const verInputStyle: CSSProperties = {
   height: 32, minWidth: 0, flex: 1, boxSizing: 'border-box',
-  background: 'var(--card)', border: '1px solid var(--border)',
+  background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
   borderRadius: 6, padding: '0 10px', fontSize: 12,
-  color: 'var(--foreground)', outline: 'none',
+  color: 'var(--semi-color-text-0)', outline: 'none',
   fontFamily: 'monospace',
 };
 
 const verBtnStyle: CSSProperties = {
   height: 32, padding: '0 14px', fontSize: 12, borderRadius: 6,
-  border: '1px solid var(--border)', background: 'var(--card)',
-  color: 'var(--foreground)', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+  border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)',
+  color: 'var(--semi-color-text-0)', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
 };
 
 /** 从 axios 错误中取 FastAPI detail（与页面既有 errText 口径一致）。 */
@@ -93,8 +93,8 @@ function fmtAgentRate(rate: number | null | undefined): string {
 /**
  * Agent 提案趋势迷你柱状图（纯 SVG 零第三方库；做法对齐 components/ChartSvg.tsx：
  * viewBox + width:100% 自适应、CSS 变量配色、<title> hover 精确值、首/中/尾 X 轴标签）。
- * 每日一根 proposed 总量柱（var(--primary)）+ 底部 executed 已采纳堆叠段
- * （var(--success)）。executed 日桶按 confirmed_at 锚定，极端时序下可能超过
+ * 每日一根 proposed 总量柱（var(--semi-color-primary)）+ 底部 executed 已采纳堆叠段
+ * （var(--semi-color-success)）。executed 日桶按 confirmed_at 锚定，极端时序下可能超过
  * 当日 proposed，柱高按截断渲染（<title> 仍显示真实值）。
  */
 function AgentTrendChart({ points }: { points: AgentMetricsTrendPoint[] }): ReactElement {
@@ -111,14 +111,14 @@ function AgentTrendChart({ points }: { points: AgentMetricsTrendPoint[] }): Reac
   if (points.length === 0) {
     els.push(
       <text key="ph" x={W / 2} y={H / 2} textAnchor="middle" dominantBaseline="middle"
-        fontSize={12} fill="var(--muted-foreground)">暂无数据</text>,
+        fontSize={12} fill="var(--semi-color-text-2)">暂无数据</text>,
     );
   } else {
     const max = Math.max(...points.map((p) => Math.max(p.proposed, p.executed)), 0);
     if (max <= 0) {
       els.push(
         <text key="ph" x={W / 2} y={H / 2} textAnchor="middle" dominantBaseline="middle"
-          fontSize={12} fill="var(--muted-foreground)">窗口内暂无提案</text>,
+          fontSize={12} fill="var(--semi-color-text-2)">窗口内暂无提案</text>,
       );
     } else {
       // 横向网格 + 纵轴刻度
@@ -128,11 +128,11 @@ function AgentTrendChart({ points }: { points: AgentMetricsTrendPoint[] }): Reac
         const y = padT + ih - (ih * i) / ticks;
         els.push(
           <line key={`grid${i}`} x1={padL} y1={y} x2={W - padR} y2={y}
-            stroke="var(--border)" strokeWidth={1} strokeDasharray={i === 0 ? undefined : '3 3'} />,
+            stroke="var(--semi-color-border)" strokeWidth={1} strokeDasharray={i === 0 ? undefined : '3 3'} />,
         );
         els.push(
           <text key={`tick${i}`} x={padL - 6} y={y} textAnchor="end" dominantBaseline="middle"
-            fontSize={9} fill="var(--muted-foreground)">{Math.round(v)}</text>,
+            fontSize={9} fill="var(--semi-color-text-2)">{Math.round(v)}</text>,
         );
       }
       // 柱：外层 proposed 总量（primary），底部叠 executed 已采纳段（success）
@@ -145,7 +145,7 @@ function AgentTrendChart({ points }: { points: AgentMetricsTrendPoint[] }): Reac
         const hTotal = (p.proposed / max) * ih;
         els.push(
           <rect key={`bar${i}`} x={x} y={padT + ih - hTotal} width={barW}
-            height={Math.max(hTotal, 1)} fill="var(--primary)" rx={2}>
+            height={Math.max(hTotal, 1)} fill="var(--semi-color-primary)" rx={2}>
             <title>{title}</title>
           </rect>,
         );
@@ -154,7 +154,7 @@ function AgentTrendChart({ points }: { points: AgentMetricsTrendPoint[] }): Reac
           const hEx = (ex / max) * ih;
           els.push(
             <rect key={`ex${i}`} x={x} y={padT + ih - hEx} width={barW}
-              height={Math.max(hEx, 1)} fill="var(--success)">
+              height={Math.max(hEx, 1)} fill="var(--semi-color-success)">
               <title>{title}</title>
             </rect>,
           );
@@ -167,7 +167,7 @@ function AgentTrendChart({ points }: { points: AgentMetricsTrendPoint[] }): Reac
       labelIdx.forEach((i) => {
         els.push(
           <text key={`lab${i}`} x={padL + slot * i + slot / 2} y={padT + ih + 12}
-            fontSize={9} fill="var(--muted-foreground)"
+            fontSize={9} fill="var(--semi-color-text-2)"
             textAnchor={i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle'}>
             {points[i].date.slice(5)}
           </text>,
@@ -391,13 +391,13 @@ export default function GovernancePage() {
       <div style={{ display: 'flex', gap: 6 }}>
         <button type="button" onClick={() => void doLifecycle(row.class_rid, 'deprecate')} style={{
           padding: '2px 10px', fontSize: 12, borderRadius: 4,
-          border: '1px solid var(--border)', background: 'var(--card)',
-          color: 'var(--foreground)', cursor: 'pointer',
+          border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)',
+          color: 'var(--semi-color-text-0)', cursor: 'pointer',
         }}>废弃</button>
         <button type="button" onClick={() => void doLifecycle(row.class_rid, 'delete')} style={{
           padding: '2px 10px', fontSize: 12, borderRadius: 4,
-          border: '1px solid var(--destructive)', background: 'transparent',
-          color: 'var(--destructive)', cursor: 'pointer',
+          border: '1px solid var(--semi-color-danger)', background: 'transparent',
+          color: 'var(--semi-color-danger)', cursor: 'pointer',
         }}>删除</button>
       </div>
     ) },
@@ -420,27 +420,27 @@ export default function GovernancePage() {
       {msg && (
         <div style={{
           padding: '8px 14px', fontSize: 12, borderRadius: 6,
-          border: '1px solid var(--border)', background: 'var(--card)',
-          color: 'var(--foreground)',
+          border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)',
+          color: 'var(--semi-color-text-0)',
         }}>{msg}</div>
       )}
       {loading ? (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 40, justifyContent: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 40, justifyContent: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>
           <Loader2 style={{ width: 14, height: 14, animation: 'osp-spin 1s linear infinite' }} /> 加载治理数据…
         </div>
       ) : (
         <>
           {/* 版本与导入导出（G41） */}
           <Card bodyStyle={{ padding: 0 }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
               <GitBranch style={{ width: 15, height: 15 }} />
               <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>版本与导入导出</h4>
-              <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>类型版本分支 / 差异 / 回滚 · JSON 导出与导入</span>
+              <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>类型版本分支 / 差异 / 回滚 · JSON 导出与导入</span>
             </div>
             <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
               {/* 类型选择 */}
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <span style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }}>目标类型</span>
+                <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)', flexShrink: 0 }}>目标类型</span>
                 <select
                   value={verRid}
                   onChange={(e) => pickType(e.target.value)}
@@ -461,7 +461,7 @@ export default function GovernancePage() {
               </div>
 
               {/* 类型版本操作 */}
-              <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ border: '1px solid var(--semi-color-border)', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ fontSize: 12, fontWeight: 600 }}>类型版本操作</div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input
@@ -501,15 +501,15 @@ export default function GovernancePage() {
                   </button>
                 </div>
                 {diffResult && (
-                  <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', background: 'var(--card)' }}>
+                  <div style={{ border: '1px solid var(--semi-color-border)', borderRadius: 8, padding: '10px 12px', background: 'var(--semi-color-bg-1)' }}>
                     <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Diff 结果</div>
                     {Object.entries(diffResult).map(([k, val]) => (
                       <div key={k} style={{ display: 'flex', gap: 10, fontSize: 12, marginBottom: 4, alignItems: 'baseline' }}>
-                        <span style={{ color: 'var(--muted-foreground)', width: 76, flexShrink: 0 }}>
+                        <span style={{ color: 'var(--semi-color-text-2)', width: 76, flexShrink: 0 }}>
                           {DIFF_LABEL[k] ?? k}
                         </span>
                         <span style={{
-                          color: DIFF_VALUE_COLOR[k] ?? 'var(--foreground)',
+                          color: DIFF_VALUE_COLOR[k] ?? 'var(--semi-color-text-0)',
                           wordBreak: 'break-all', fontFamily: k.endsWith('_rid') ? 'monospace' : undefined,
                         }}>
                           {Array.isArray(val)
@@ -519,7 +519,7 @@ export default function GovernancePage() {
                       </div>
                     ))}
                     {diffResult.has_changes === false && (
-                      <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 4 }}>两版本属性定义一致</div>
+                      <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginTop: 4 }}>两版本属性定义一致</div>
                     )}
                   </div>
                 )}
@@ -541,7 +541,7 @@ export default function GovernancePage() {
               </div>
 
               {/* 导入导出 */}
-              <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ border: '1px solid var(--semi-color-border)', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ fontSize: 12, fontWeight: 600 }}>导入 / 导出</div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <button type="button" onClick={() => void doExport()} disabled={verBusy === 'export'} style={{ ...verBtnStyle, cursor: verBusy === 'export' ? 'wait' : 'pointer' }}>
@@ -551,21 +551,21 @@ export default function GovernancePage() {
                     </span>
                   </button>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                    <Upload style={{ width: 12, height: 12, color: 'var(--muted-foreground)' }} />
+                    <Upload style={{ width: 12, height: 12, color: 'var(--semi-color-text-2)' }} />
                     <input
                       type="file"
                       accept="application/json,.json"
                       onChange={(e) => void onImportFile(e)}
                       disabled={verBusy === 'import'}
-                      style={{ fontSize: 12, color: 'var(--muted-foreground)' }}
+                      style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}
                     />
                   </span>
                 </div>
                 {importResult && (
                   <div style={{
                     padding: '8px 12px', fontSize: 12, borderRadius: 6,
-                    border: `1px solid ${importResult.ok ? 'var(--success)' : 'var(--destructive)'}`,
-                    color: importResult.ok ? 'var(--success)' : 'var(--destructive)',
+                    border: `1px solid ${importResult.ok ? 'var(--semi-color-success)' : 'var(--semi-color-danger)'}`,
+                    color: importResult.ok ? 'var(--semi-color-success)' : 'var(--semi-color-danger)',
                     wordBreak: 'break-all',
                   }}>
                     {importResult.text}
@@ -576,13 +576,13 @@ export default function GovernancePage() {
               {verMsg && (
                 <div style={{
                   padding: '8px 14px', fontSize: 12, borderRadius: 6,
-                  border: '1px solid var(--success)', color: 'var(--success)',
+                  border: '1px solid var(--semi-color-success)', color: 'var(--semi-color-success)',
                 }}>{verMsg}</div>
               )}
               {verErr && (
                 <div style={{
                   padding: '8px 14px', fontSize: 12, borderRadius: 6,
-                  border: '1px solid var(--destructive)', color: 'var(--destructive)',
+                  border: '1px solid var(--semi-color-danger)', color: 'var(--semi-color-danger)',
                   wordBreak: 'break-all',
                 }}>{verErr}</div>
               )}
@@ -594,10 +594,10 @@ export default function GovernancePage() {
 
           {/* 使用量 */}
           <Card bodyStyle={{ padding: 0 }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
               <BarChart3 style={{ width: 15, height: 15 }} />
               <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>类型使用量（近 30 天）</h4>
-              <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>变更影响评估 · 退役决策</span>
+              <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>变更影响评估 · 退役决策</span>
             </div>
             <Table<UsageRow> columns={usageCols} dataSource={usage} rowKey="class_rid"
               pagination={{ pageSize: 10 }} size="small" empty="暂无使用量数据" />
@@ -605,29 +605,29 @@ export default function GovernancePage() {
 
           {/* 反模式 lint */}
           <Card bodyStyle={{ padding: 0 }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
               <ShieldAlert style={{ width: 15, height: 15, color: '#fbbf24' }} />
               <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>反模式检查</h4>
-              <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+              <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>
                 {lint.length} 项发现（god_object / kitchen_sink / misnomer / action_sprawl）
               </span>
             </div>
             {lint.length === 0 ? (
-              <div style={{ padding: 24, fontSize: 12, color: 'var(--muted-foreground)' }}>✓ 未发现反模式</div>
+              <div style={{ padding: 24, fontSize: 12, color: 'var(--semi-color-text-2)' }}>✓ 未发现反模式</div>
             ) : (
               <div style={{ padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {lint.slice(0, 30).map((f, i) => (
                   <div key={i} style={{
                     display: 'flex', gap: 10, alignItems: 'flex-start',
-                    padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8,
+                    padding: '8px 12px', border: '1px solid var(--semi-color-border)', borderRadius: 8,
                   }}>
                     <Tag size="small" color={PATTERN_COLOR[f.pattern] ?? 'grey'}>
                       {PATTERN_LABEL[f.pattern] ?? f.pattern}
                     </Tag>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div style={{ fontSize: 12, fontFamily: 'monospace', wordBreak: 'break-all' }}>{f.subject}</div>
-                      <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{f.detail}</div>
-                      <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 }}>💡 {f.hint}</div>
+                      <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>{f.detail}</div>
+                      <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginTop: 2 }}>💡 {f.hint}</div>
                     </div>
                   </div>
                 ))}
@@ -640,7 +640,7 @@ export default function GovernancePage() {
 
           {/* 执行历史 */}
           <Card bodyStyle={{ padding: 0 }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
               <History style={{ width: 15, height: 15 }} />
               <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Action 执行历史</h4>
             </div>
@@ -650,30 +650,30 @@ export default function GovernancePage() {
 
           {/* Agent 回归指标（ONT-AGENT-METRICS-01）—— AI proposal 接受率基线，独立降级 */}
           <Card bodyStyle={{ padding: 0 }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', display: 'flex', gap: 8, alignItems: 'center' }}>
               <Bot style={{ width: 15, height: 15 }} />
               <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Agent 回归指标</h4>
-              <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+              <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>
                 AI proposal 接受率基线 · accepted = executed + reverted
               </span>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexShrink: 0 }}>
                 {[7, 30, 90].map((d) => (
                   <button key={d} type="button" onClick={() => setAgentDays(d)} disabled={agentLoading} style={{
-                    height: 24, padding: '0 10px', fontSize: 11, borderRadius: 'var(--radius)',
-                    border: `1px solid ${agentDays === d ? 'var(--primary)' : 'var(--border)'}`,
-                    background: agentDays === d ? 'var(--primary)' : 'var(--card)',
-                    color: agentDays === d ? 'var(--primary-foreground)' : 'var(--foreground)',
+                    height: 24, padding: '0 10px', fontSize: 11, borderRadius: 'var(--semi-border-radius-medium)',
+                    border: `1px solid ${agentDays === d ? 'var(--semi-color-primary)' : 'var(--semi-color-border)'}`,
+                    background: agentDays === d ? 'var(--semi-color-primary)' : 'var(--semi-color-bg-1)',
+                    color: agentDays === d ? 'var(--semi-color-white)' : 'var(--semi-color-text-0)',
                     cursor: agentLoading ? 'wait' : 'pointer',
                   }}>{d} 天</button>
                 ))}
               </div>
             </div>
             {agentLoading ? (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 32, justifyContent: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 32, justifyContent: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>
                 <Loader2 style={{ width: 14, height: 14, animation: 'osp-spin 1s linear infinite' }} /> 加载 Agent 指标…
               </div>
             ) : agentDown ? (
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: 24, fontSize: 12, color: 'var(--muted-foreground)' }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: 24, fontSize: 12, color: 'var(--semi-color-text-2)' }}>
                 <AlertTriangle style={{ width: 13, height: 13, flexShrink: 0 }} />
                 指标不可用（后端未就绪或网络异常；切换窗口天数可重试）
               </div>
@@ -681,37 +681,37 @@ export default function GovernancePage() {
               <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 14, width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
                 {/* 汇总接口单独失败（趋势仍在）时的局部降级提示 */}
                 {!agentSummary && (
-                  <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>汇总接口暂不可用，以下仅趋势数据</div>
+                  <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>汇总接口暂不可用，以下仅趋势数据</div>
                 )}
                 {/* 指标行：总提案数 / 接受率 / executed / rejected / pending */}
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', width: '100%' }}>
                   {[
-                    { label: '总提案数', value: agentSummary ? String(agentSummary.total) : '—', color: 'var(--foreground)' },
-                    { label: '接受率', value: fmtAgentRate(agentSummary?.acceptance_rate), color: 'var(--foreground)' },
-                    { label: 'executed', value: agentSummary ? String(agentSummary.by_status.executed ?? 0) : '—', color: 'var(--success)' },
-                    { label: 'rejected', value: agentSummary ? String(agentSummary.by_status.rejected ?? 0) : '—', color: 'var(--destructive)' },
-                    { label: 'pending', value: agentSummary ? String(agentSummary.by_status.pending ?? 0) : '—', color: 'var(--warning)' },
+                    { label: '总提案数', value: agentSummary ? String(agentSummary.total) : '—', color: 'var(--semi-color-text-0)' },
+                    { label: '接受率', value: fmtAgentRate(agentSummary?.acceptance_rate), color: 'var(--semi-color-text-0)' },
+                    { label: 'executed', value: agentSummary ? String(agentSummary.by_status.executed ?? 0) : '—', color: 'var(--semi-color-success)' },
+                    { label: 'rejected', value: agentSummary ? String(agentSummary.by_status.rejected ?? 0) : '—', color: 'var(--semi-color-danger)' },
+                    { label: 'pending', value: agentSummary ? String(agentSummary.by_status.pending ?? 0) : '—', color: 'var(--semi-color-warning)' },
                   ].map((t) => (
                     <div key={t.label} style={{
                       flex: '1 1 110px', minWidth: 96, padding: '10px 14px',
-                      border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-                      background: 'var(--card)',
+                      border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
+                      background: 'var(--semi-color-bg-1)',
                     }}>
-                      <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{t.label}</div>
+                      <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>{t.label}</div>
                       <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2, color: t.color }}>{t.value}</div>
                     </div>
                   ))}
                 </div>
 
                 {/* 趋势：纯 SVG 迷你柱状图（proposed 总量柱 + executed 底部堆叠段） */}
-                <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px 12px' }}>
-                  <div style={{ display: 'flex', gap: 14, alignItems: 'center', fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 6 }}>
+                <div style={{ border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', padding: '10px 12px' }}>
+                  <div style={{ display: 'flex', gap: 14, alignItems: 'center', fontSize: 11, color: 'var(--semi-color-text-2)', marginBottom: 6 }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--primary)', flexShrink: 0 }} />
+                      <span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--semi-color-primary)', flexShrink: 0 }} />
                       proposed 提案
                     </span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--success)', flexShrink: 0 }} />
+                      <span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--semi-color-success)', flexShrink: 0 }} />
                       executed 已采纳（含 reverted）
                     </span>
                   </div>
@@ -720,15 +720,15 @@ export default function GovernancePage() {
 
                 {/* 按提议方聚合 + 驳回原因分布（窄屏折行） */}
                 <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'stretch' }}>
-                  <div style={{ flex: '1 1 320px', minWidth: 0, border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+                  <div style={{ flex: '1 1 320px', minWidth: 0, border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', overflow: 'hidden' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                       <thead>
                         <tr>
                           {['提议方', '提案数', '已执行', '接受率'].map((h, i) => (
                             <th key={h} style={{
                               textAlign: i === 0 ? 'left' : 'right', padding: '7px 12px',
-                              borderBottom: '1px solid var(--border)',
-                              color: 'var(--muted-foreground)', fontWeight: 500, fontSize: 11,
+                              borderBottom: '1px solid var(--semi-color-border)',
+                              color: 'var(--semi-color-text-2)', fontWeight: 500, fontSize: 11,
                               whiteSpace: 'nowrap',
                             }}>{h}</th>
                           ))}
@@ -737,18 +737,18 @@ export default function GovernancePage() {
                       <tbody>
                         {(agentSummary?.by_actor ?? []).length === 0 ? (
                           <tr>
-                            <td colSpan={4} style={{ padding: '12px 12px', color: 'var(--muted-foreground)', fontSize: 12 }}>
+                            <td colSpan={4} style={{ padding: '12px 12px', color: 'var(--semi-color-text-2)', fontSize: 12 }}>
                               {agentSummary ? '窗口内无提案' : '—'}
                             </td>
                           </tr>
                         ) : agentSummary?.by_actor.map((row) => (
                           <tr key={row.actor}>
-                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)', fontFamily: 'monospace', fontSize: 11, wordBreak: 'break-all' }}>
+                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--semi-color-border)', fontFamily: 'monospace', fontSize: 11, wordBreak: 'break-all' }}>
                               {row.actor}
                             </td>
-                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{row.proposed}</td>
-                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>{row.executed}</td>
-                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)', textAlign: 'right', fontWeight: 600 }}>
+                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--semi-color-border)', textAlign: 'right' }}>{row.proposed}</td>
+                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--semi-color-border)', textAlign: 'right' }}>{row.executed}</td>
+                            <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--semi-color-border)', textAlign: 'right', fontWeight: 600 }}>
                               {fmtAgentRate(row.acceptance_rate)}
                             </td>
                           </tr>
@@ -756,24 +756,24 @@ export default function GovernancePage() {
                       </tbody>
                     </table>
                   </div>
-                  <div style={{ flex: '1 1 240px', minWidth: 0, border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px 12px' }}>
+                  <div style={{ flex: '1 1 240px', minWidth: 0, border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)', padding: '10px 12px' }}>
                     <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>驳回原因分布</div>
                     {!agentSummary ? (
-                      <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>—</div>
+                      <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>—</div>
                     ) : agentSummary.rejection_reasons == null ? (
-                      <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>驳回原因尚未记录（后端字段待接入）</div>
+                      <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>驳回原因尚未记录（后端字段待接入）</div>
                     ) : agentSummary.rejection_reasons.length === 0 ? (
-                      <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>窗口内无驳回记录</div>
+                      <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>窗口内无驳回记录</div>
                     ) : agentSummary.rejection_reasons.map((r) => (
                       <div key={r.reason} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 12, padding: '3px 0' }}>
                         <span style={{ wordBreak: 'break-all' }}>{r.reason}</span>
-                        <span style={{ color: 'var(--muted-foreground)', flexShrink: 0 }}>{r.count}</span>
+                        <span style={{ color: 'var(--semi-color-text-2)', flexShrink: 0 }}>{r.count}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>
                   口径：接受率 = accepted / (accepted + rejected)，accepted = executed + reverted；
                   pending / confirmed（在途）与 withdrawn（自撤）不入分母；趋势按 UTC 日连续零填充。
                 </div>
@@ -782,7 +782,7 @@ export default function GovernancePage() {
           </Card>
 
           {!loading && usage.length === 0 && (
-            <div style={{ display: 'flex', gap: 6, fontSize: 12, color: 'var(--muted-foreground)', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 6, fontSize: 12, color: 'var(--semi-color-text-2)', alignItems: 'center' }}>
               <AlertTriangle style={{ width: 13, height: 13 }} />
               使用量在读写时自动打点（GET /individuals 按类读、apply-edit-set 写）
             </div>

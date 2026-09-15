@@ -3,6 +3,7 @@ import { Card, Space, Tag, Typography, Table } from '@douyinfe/semi-ui';
 import { createApiClient, apiPath } from '@mate/shared/api';
 import { searchAgentCards, type ExternalAgent as A2ACard } from '@/api/dw/a2a';
 import { listExternalAgents as listMcpExternalAgents } from '@/api/mcphub/external-agents';
+import { PageHeader } from '@/components/skeleton';
 
 const GATEWAY = 'http://localhost:8100';
 
@@ -50,12 +51,12 @@ export default function A2aIntegrationGuidePage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          A2A 接入说明
-        </Typography.Title>
-        <Typography.Text type="tertiary">外部 Agent / MCP / CLI 的注册与服务发现指南</Typography.Text>
-      </div>
+      <PageHeader
+        title="A2A 接入说明"
+        actions={
+          <Typography.Text type="tertiary">外部 Agent / MCP / CLI 的注册与服务发现指南</Typography.Text>
+        }
+      />
 
       <Space wrap style={{ marginBottom: 16 }}>
         <Stat label="内部数字员工" value={internalCount} />
@@ -176,8 +177,8 @@ function CodeBlock({ code }: { code: string; lang?: string }) {
 }
 
 const codeStyle: React.CSSProperties = {
-  background: 'var(--card)',
-  border: '1px solid var(--border)',
+  background: 'var(--semi-color-bg-1)',
+  border: '1px solid var(--semi-color-border)',
   padding: 12,
   borderRadius: 4,
   fontFamily: 'Menlo, Consolas, monospace',

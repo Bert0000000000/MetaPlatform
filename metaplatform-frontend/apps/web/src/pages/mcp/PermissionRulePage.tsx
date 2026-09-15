@@ -18,6 +18,7 @@ import { listServers } from '@/api/mcphub/servers';
 import { listResources } from '@/api/mcphub/resources';
 import { listPrompts } from '@/api/mcphub/prompts';
 import RuleEditor from './components/RuleEditor';
+import { PageHeader } from '@/components/skeleton';
 import type {
   PermissionRule,
   PermissionRuleCreateRequest,
@@ -170,22 +171,22 @@ export default function PermissionRulePage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          权限规则
-        </Typography.Title>
-        <Button
-          theme="solid"
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setEditing(null);
-            setEditorOpen(true);
-          }}
-        >
-          创建规则
-        </Button>
-      </div>
+      <PageHeader
+        title="权限规则"
+        actions={
+          <Button
+                  theme="solid"
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    setEditing(null);
+                    setEditorOpen(true);
+                  }}
+                >
+                  创建规则
+                </Button>
+        }
+      />
 
       <Card>
         {rules.length === 0 && !loading ? (

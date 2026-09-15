@@ -21,6 +21,7 @@ import { listTrusts, createTrust, updateTrust, deleteTrust } from '@/api/mcphub/
 import { listExternalAgents } from '@/api/mcphub/external-agents';
 import type { AgentTrust, AgentTrustCreateRequest, ExternalAgent, PageResponse } from '@/api/mcphub/types';
 import dayjs from 'dayjs';
+import { PageHeader } from '@/components/skeleton';
 
 const TRUST_LEVEL_OPTIONS = [
   { label: '已信任', value: 'TRUSTED' },
@@ -198,14 +199,14 @@ export default function TrustManagementPage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          信任管理
-        </Typography.Title>
-        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          添加信任关系
-        </Button>
-      </div>
+      <PageHeader
+        title="信任管理"
+        actions={
+          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                  添加信任关系
+                </Button>
+        }
+      />
 
       <Space style={{ marginBottom: 16 }} wrap>
         <Select

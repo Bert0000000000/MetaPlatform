@@ -30,7 +30,7 @@ function StatTile({
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>{title}</span>
+      <span style={{ fontSize: 13, color: 'var(--semi-color-text-2)' }}>{title}</span>
       <div
         style={{
           fontSize: 24,
@@ -55,8 +55,8 @@ export default function PublishValidation({ result, onPublish, publishing }: Pub
         <Col span={8}>
           <StatTile
             title="通过"
-            value={result.valid ? <IconTick style={{ color: 'var(--success)' }} /> : <IconClose style={{ color: 'var(--destructive)' }} />}
-            color={result.valid ? 'var(--success)' : 'var(--destructive)'}
+            value={result.valid ? <IconTick style={{ color: 'var(--semi-color-success)' }} /> : <IconClose style={{ color: 'var(--semi-color-danger)' }} />}
+            color={result.valid ? 'var(--semi-color-success)' : 'var(--semi-color-danger)'}
           />
         </Col>
         <Col span={8}>
@@ -64,7 +64,7 @@ export default function PublishValidation({ result, onPublish, publishing }: Pub
             title="错误"
             value={result.errors.length}
             prefix={<CloseCircleOutlined />}
-            color={result.errors.length > 0 ? 'var(--destructive)' : 'var(--muted-foreground)'}
+            color={result.errors.length > 0 ? 'var(--semi-color-danger)' : 'var(--semi-color-text-2)'}
           />
         </Col>
         <Col span={8}>
@@ -72,7 +72,7 @@ export default function PublishValidation({ result, onPublish, publishing }: Pub
             title="警告"
             value={result.warnings.length}
             prefix={<WarningOutlined />}
-            color={result.warnings.length > 0 ? 'var(--warning)' : 'var(--muted-foreground)'}
+            color={result.warnings.length > 0 ? 'var(--semi-color-warning)' : 'var(--semi-color-text-2)'}
           />
         </Col>
       </Row>

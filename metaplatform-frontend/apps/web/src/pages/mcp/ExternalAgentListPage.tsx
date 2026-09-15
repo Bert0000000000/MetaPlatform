@@ -35,6 +35,7 @@ import {
 } from '@/api/mcphub/external-agents';
 import type { ExternalAgent, ExternalAgentCreateRequest, PageResponse } from '@/api/mcphub/types';
 import { searchAgentCards, type ExternalAgent as A2ACard } from '@/api/dw/a2a';
+import { PageHeader } from '@/components/skeleton';
 
 const PROTOCOL_OPTIONS = [
   { label: 'MCP', value: 'MCP' },
@@ -293,14 +294,14 @@ export default function ExternalAgentListPage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          外部 Agent 目录
-        </Typography.Title>
-        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          添加 Agent
-        </Button>
-      </div>
+      <PageHeader
+        title="外部 Agent 目录"
+        actions={
+          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                  添加 Agent
+                </Button>
+        }
+      />
 
       {internalAgents.length > 0 && (
         <Card title="内部数字员工" style={{ marginBottom: 16 }}>

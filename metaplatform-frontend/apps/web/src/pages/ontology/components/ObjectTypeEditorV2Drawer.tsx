@@ -29,9 +29,9 @@ import PropertyEditorV2, {
 
 const inputStyle: React.CSSProperties = {
   height: 32, width: '100%', boxSizing: 'border-box',
-  background: 'var(--card)', border: '1px solid var(--border)',
-  borderRadius: 'var(--radius)', padding: '0 10px', fontSize: 13,
-  color: 'var(--foreground)', outline: 'none',
+  background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
+  borderRadius: 'var(--semi-border-radius-medium)', padding: '0 10px', fontSize: 13,
+  color: 'var(--semi-color-text-0)', outline: 'none',
 };
 
 const textareaStyle: React.CSSProperties = {
@@ -40,18 +40,18 @@ const textareaStyle: React.CSSProperties = {
 };
 
 const labelStyle: React.CSSProperties = {
-  fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 4,
+  fontSize: 12, color: 'var(--semi-color-text-2)', marginBottom: 4,
 };
 
 const sectionTitleStyle: React.CSSProperties = {
-  fontSize: 13, fontWeight: 600, color: 'var(--foreground)',
-  paddingBottom: 8, borderBottom: '1px solid var(--border)', marginBottom: 12,
+  fontSize: 13, fontWeight: 600, color: 'var(--semi-color-text-0)',
+  paddingBottom: 8, borderBottom: '1px solid var(--semi-color-border)', marginBottom: 12,
 };
 
 const smallBtnStyle: React.CSSProperties = {
   height: 26, padding: '0 8px', fontSize: 12,
-  background: 'var(--card)', color: 'var(--foreground)',
-  border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+  background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
+  border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
   cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
 };
 
@@ -61,7 +61,7 @@ const badge = (color: string): React.CSSProperties => ({
 });
 
 const hintStyle: React.CSSProperties = {
-  fontSize: 11, color: 'var(--muted-foreground)', lineHeight: 1.6, marginTop: 4,
+  fontSize: 11, color: 'var(--semi-color-text-2)', lineHeight: 1.6, marginTop: 4,
 };
 
 // ─────────────────── Props ───────────────────
@@ -244,7 +244,7 @@ export default function ObjectTypeEditorV2Drawer({
   const propBadges = (d: PropertyDraft): Array<{ text: string; color: string }> => {
     const fmt = draftFormat(d, vts);
     const out: Array<{ text: string; color: string }> = [{ text: fmt, color: '#62d178' }];
-    if (d.primaryKey) out.push({ text: '主键', color: 'var(--success)' });
+    if (d.primaryKey) out.push({ text: '主键', color: 'var(--semi-color-success)' });
     if (d.derivedEnabled) out.push({ text: `派生·${d.derivedFn}`, color: '#fbbf24' });
     if (d.array) out.push({ text: `数组·${d.reducer || '未选归约'}`, color: '#c084fc' });
     if (d.shared) out.push({ text: '共享', color: '#60a5fa' });
@@ -331,7 +331,7 @@ export default function ObjectTypeEditorV2Drawer({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: 720, height: '100%', background: 'var(--background)',
+          width: 720, height: '100%', background: 'var(--semi-color-bg-0)',
           boxShadow: '-8px 0 24px rgba(0,0,0,0.18)',
           display: 'flex', flexDirection: 'column',
         }}
@@ -339,10 +339,10 @@ export default function ObjectTypeEditorV2Drawer({
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '14px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0,
+          padding: '14px 20px', borderBottom: '1px solid var(--semi-color-border)', flexShrink: 0,
         }}>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 2 }}>
+            <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginBottom: 2 }}>
               类型 / 属性编辑器 v2 · 整体 upsert（POST /ont/v2/object-types）
             </div>
             <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>
@@ -350,8 +350,8 @@ export default function ObjectTypeEditorV2Drawer({
             </h3>
           </div>
           <button type="button" onClick={onClose} aria-label="关闭" style={{
-            width: 30, height: 30, borderRadius: 4, border: '1px solid var(--border)',
-            background: 'var(--card)', color: 'var(--muted-foreground)', cursor: 'pointer',
+            width: 30, height: 30, borderRadius: 4, border: '1px solid var(--semi-color-border)',
+            background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-2)', cursor: 'pointer',
           }}>
             <X style={{ width: 14, height: 14, margin: 'auto', display: 'block' }} />
           </button>
@@ -378,7 +378,7 @@ export default function ObjectTypeEditorV2Drawer({
                     {prechecking && (
                       <span style={{
                         position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                        fontSize: 11, color: 'var(--muted-foreground)',
+                        fontSize: 11, color: 'var(--semi-color-text-2)',
                       }}>
                         相似扫描中…
                       </span>
@@ -533,7 +533,7 @@ export default function ObjectTypeEditorV2Drawer({
                     type="button"
                     aria-label="删除此行"
                     onClick={() => setRenderHints((rs) => rs.filter((x) => x.key !== h.key))}
-                    style={{ ...smallBtnStyle, color: 'var(--destructive)' }}
+                    style={{ ...smallBtnStyle, color: 'var(--semi-color-danger)' }}
                   >
                     <Trash2 style={{ width: 12, height: 12 }} />
                   </button>
@@ -560,8 +560,8 @@ export default function ObjectTypeEditorV2Drawer({
                 <div
                   key={d.uid}
                   style={{
-                    border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-                    background: 'var(--card)', marginBottom: 10, overflow: 'hidden',
+                    border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
+                    background: 'var(--semi-color-bg-1)', marginBottom: 10, overflow: 'hidden',
                   }}
                 >
                   <div
@@ -569,13 +569,13 @@ export default function ObjectTypeEditorV2Drawer({
                     onClick={() => setExpanded(isOpen ? null : d.uid)}
                   >
                     {isOpen
-                      ? <ChevronDown style={{ width: 14, height: 14, color: 'var(--muted-foreground)', flexShrink: 0 }} />
-                      : <ChevronRight style={{ width: 14, height: 14, color: 'var(--muted-foreground)', flexShrink: 0 }} />}
+                      ? <ChevronDown style={{ width: 14, height: 14, color: 'var(--semi-color-text-2)', flexShrink: 0 }} />
+                      : <ChevronRight style={{ width: 14, height: 14, color: 'var(--semi-color-text-2)', flexShrink: 0 }} />}
                     <span style={{ fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
-                      {d.name || <span style={{ color: 'var(--destructive)' }}>（未命名）</span>}
+                      {d.name || <span style={{ color: 'var(--semi-color-danger)' }}>（未命名）</span>}
                     </span>
                     {d.title && (
-                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }}>{d.title}</span>
+                      <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)', flexShrink: 0 }}>{d.title}</span>
                     )}
                     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', minWidth: 0 }}>
                       {propBadges(d).map((b) => (
@@ -583,14 +583,14 @@ export default function ObjectTypeEditorV2Drawer({
                       ))}
                     </div>
                     {!isOpen && errs.length > 0 && (
-                      <span style={{ fontSize: 11, color: 'var(--destructive)', flexShrink: 0 }}>待修正 {errs.length}</span>
+                      <span style={{ fontSize: 11, color: 'var(--semi-color-danger)', flexShrink: 0 }}>待修正 {errs.length}</span>
                     )}
                     <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
                       <button
                         type="button"
                         aria-label={`删除属性 ${d.name || i + 1}`}
                         onClick={(e) => { e.stopPropagation(); removePropDraft(d.uid); }}
-                        style={{ ...smallBtnStyle, color: 'var(--destructive)' }}
+                        style={{ ...smallBtnStyle, color: 'var(--semi-color-danger)' }}
                         title={d.primaryKey ? '删除主键属性后需保证仍有主键' : undefined}
                       >
                         <Trash2 style={{ width: 12, height: 12 }} />
@@ -598,7 +598,7 @@ export default function ObjectTypeEditorV2Drawer({
                     </div>
                   </div>
                   {isOpen && (
-                    <div style={{ padding: '10px 12px 12px', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ padding: '10px 12px 12px', borderTop: '1px solid var(--semi-color-border)' }}>
                       <PropertyEditorV2
                         draft={d}
                         onChange={(next) => updatePropDraft(d.uid, next)}
@@ -616,27 +616,27 @@ export default function ObjectTypeEditorV2Drawer({
         </div>
 
         {/* Footer */}
-        <div style={{ borderTop: '1px solid var(--border)', padding: '12px 20px', flexShrink: 0 }}>
+        <div style={{ borderTop: '1px solid var(--semi-color-border)', padding: '12px 20px', flexShrink: 0 }}>
           {/* G33：破坏性变更二段确认区（409 destructive_confirm_required） */}
           {destructive && (
             <div style={{
               marginBottom: 10, padding: 10, fontSize: 12, lineHeight: 1.6,
-              border: '1px solid var(--destructive)', borderRadius: 6,
-              background: 'var(--card)',
+              border: '1px solid var(--semi-color-danger)', borderRadius: 6,
+              background: 'var(--semi-color-bg-1)',
             }}>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center', color: 'var(--destructive)', fontWeight: 600, marginBottom: 6 }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', color: 'var(--semi-color-danger)', fontWeight: 600, marginBottom: 6 }}>
                 <AlertTriangle style={{ width: 13, height: 13, flexShrink: 0 }} />
                 保存被拦截：检测到破坏性变更，需二次确认
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginBottom: 8 }}>
                 {destructive.changes.map((c, i) => (
-                  <div key={i} style={{ color: 'var(--destructive)', fontFamily: 'monospace', fontSize: 11, wordBreak: 'break-all' }}>
+                  <div key={i} style={{ color: 'var(--semi-color-danger)', fontFamily: 'monospace', fontSize: 11, wordBreak: 'break-all' }}>
                     · {c}
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 8 }}>
-                输入 <code style={{ color: 'var(--destructive)' }}>{destructive.confirm_with}</code>
+              <div style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginBottom: 8 }}>
+                输入 <code style={{ color: 'var(--semi-color-danger)' }}>{destructive.confirm_with}</code>
                 （该类型当前显示名）以确认执行；确认重发会在提交体顶层附带 confirm_name。
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -653,9 +653,9 @@ export default function ObjectTypeEditorV2Drawer({
                   disabled={submitting || !confirmInput.trim()}
                   style={{
                     height: 30, padding: '0 14px', fontSize: 12, fontWeight: 600, flexShrink: 0,
-                    background: submitting ? 'var(--muted)' : 'var(--destructive)',
-                    color: submitting ? 'var(--muted-foreground)' : '#fff',
-                    border: 'none', borderRadius: 'var(--radius)',
+                    background: submitting ? 'var(--semi-color-fill-0)' : 'var(--semi-color-danger)',
+                    color: submitting ? 'var(--semi-color-text-2)' : '#fff',
+                    border: 'none', borderRadius: 'var(--semi-border-radius-medium)',
                     cursor: submitting ? 'wait' : 'pointer',
                   }}
                 >
@@ -667,8 +667,8 @@ export default function ObjectTypeEditorV2Drawer({
                   disabled={submitting}
                   style={{
                     height: 30, padding: '0 12px', fontSize: 12, flexShrink: 0,
-                    background: 'var(--card)', color: 'var(--foreground)',
-                    border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+                    background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
+                    border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
                     cursor: 'pointer',
                   }}
                 >
@@ -680,8 +680,8 @@ export default function ObjectTypeEditorV2Drawer({
           {error && (
             <div style={{
               marginBottom: 10, padding: 10, fontSize: 12, lineHeight: 1.6,
-              border: '1px solid var(--destructive)', borderRadius: 6,
-              color: 'var(--destructive)', display: 'flex', gap: 6, alignItems: 'flex-start',
+              border: '1px solid var(--semi-color-danger)', borderRadius: 6,
+              color: 'var(--semi-color-danger)', display: 'flex', gap: 6, alignItems: 'flex-start',
             }}>
               <AlertTriangle style={{ width: 13, height: 13, flexShrink: 0, marginTop: 2 }} />
               <span>{error}</span>
@@ -694,8 +694,8 @@ export default function ObjectTypeEditorV2Drawer({
               disabled={submitting}
               style={{
                 height: 34, padding: '0 14px', fontSize: 13,
-                background: 'var(--card)', color: 'var(--foreground)',
-                border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+                background: 'var(--semi-color-bg-1)', color: 'var(--semi-color-text-0)',
+                border: '1px solid var(--semi-color-border)', borderRadius: 'var(--semi-border-radius-medium)',
                 cursor: submitting ? 'wait' : 'pointer',
               }}
             >
@@ -707,9 +707,9 @@ export default function ObjectTypeEditorV2Drawer({
               disabled={submitting}
               style={{
                 height: 34, padding: '0 16px', fontSize: 13, fontWeight: 600,
-                background: submitting ? 'var(--muted)' : 'var(--foreground)',
-                color: submitting ? 'var(--muted-foreground)' : 'var(--background)',
-                border: 'none', borderRadius: 'var(--radius)',
+                background: submitting ? 'var(--semi-color-fill-0)' : 'var(--semi-color-text-0)',
+                color: submitting ? 'var(--semi-color-text-2)' : 'var(--semi-color-bg-0)',
+                border: 'none', borderRadius: 'var(--semi-border-radius-medium)',
                 cursor: submitting ? 'wait' : 'pointer',
               }}
             >

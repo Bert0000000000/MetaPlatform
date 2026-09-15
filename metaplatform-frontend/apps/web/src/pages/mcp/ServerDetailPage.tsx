@@ -58,8 +58,8 @@ const CONNECTION_STATUS_MAP: Record<
 function StatCard({ title, value }: { title: string; value: React.ReactNode }) {
   return (
     <div>
-      <div style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>{title}</div>
-      <div style={{ fontSize: 28, fontWeight: 600, color: 'var(--foreground)' }}>{value}</div>
+      <div style={{ fontSize: 14, color: 'var(--semi-color-text-2)' }}>{title}</div>
+      <div style={{ fontSize: 28, fontWeight: 600, color: 'var(--semi-color-text-0)' }}>{value}</div>
     </div>
   );
 }

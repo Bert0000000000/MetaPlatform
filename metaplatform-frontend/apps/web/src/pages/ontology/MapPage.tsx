@@ -163,15 +163,15 @@ function shortRid(rid: string): string {
 }
 
 const selectStyle = {
-  height: 30, background: 'var(--card)', border: '1px solid var(--border)',
+  height: 30, background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
   borderRadius: 6, padding: '0 8px', fontSize: 12,
-  color: 'var(--foreground)', outline: 'none', cursor: 'pointer',
+  color: 'var(--semi-color-text-0)', outline: 'none', cursor: 'pointer',
 } as const;
 
 const zoomBtnStyle = {
   width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-  border: '1px solid var(--border)', background: 'var(--card)', borderRadius: 6,
-  color: 'var(--foreground)', cursor: 'pointer', padding: 0,
+  border: '1px solid var(--semi-color-border)', background: 'var(--semi-color-bg-1)', borderRadius: 6,
+  color: 'var(--semi-color-text-0)', cursor: 'pointer', padding: 0,
 } as const;
 
 export default function MapPage() {
@@ -458,11 +458,11 @@ export default function MapPage() {
         <Card style={{ height: 'fit-content' }}>
           <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, marginBottom: 12 }}>对象类型</h3>
           {typeListLoading ? (
-            <div style={{ fontSize: 12, color: 'var(--muted-foreground)', padding: '8px 0', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)', padding: '8px 0', display: 'flex', gap: 8, alignItems: 'center' }}>
               <Loader2 style={{ width: 12, height: 12, animation: 'osp-spin 1s linear infinite' }} /> 加载中…
             </div>
           ) : types.length === 0 ? (
-            <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>暂无类型</div>
+            <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>暂无类型</div>
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: 520, overflowY: 'auto' }}>
               {types.map((t) => {
@@ -477,13 +477,13 @@ export default function MapPage() {
                         width: '100%', display: 'flex', alignItems: 'center', gap: 6,
                         padding: '6px 10px', fontSize: 12, textAlign: 'left',
                         border: 'none', borderRadius: 6, cursor: 'pointer',
-                        background: t.rid === selectedType ? 'var(--muted)' : 'transparent',
-                        color: t.rid === selectedType ? 'var(--foreground)' : 'var(--muted-foreground)',
+                        background: t.rid === selectedType ? 'var(--semi-color-fill-0)' : 'transparent',
+                        color: t.rid === selectedType ? 'var(--semi-color-text-0)' : 'var(--semi-color-text-2)',
                       }}
                     >
                       {hasGeo
                         ? <MapPin style={{ width: 12, height: 12, flexShrink: 0, color: '#f59e0b' }} />
-                        : <span style={{ width: 12, height: 12, flexShrink: 0, borderRadius: 2, background: 'var(--muted-foreground)', opacity: 0.4 }} />}
+                        : <span style={{ width: 12, height: 12, flexShrink: 0, borderRadius: 2, background: 'var(--semi-color-text-2)', opacity: 0.4 }} />}
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {t.display_name || t.rid}
                       </span>
@@ -502,7 +502,7 @@ export default function MapPage() {
           {/* 工具栏 */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
-            padding: '10px 16px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap',
+            padding: '10px 16px', borderBottom: '1px solid var(--semi-color-border)', flexWrap: 'wrap',
           }}>
             <span style={{ fontSize: 13, fontWeight: 600 }}>
               {detail?.display_name ?? '地图'}
@@ -524,7 +524,7 @@ export default function MapPage() {
               <button type="button" title="缩小" onClick={() => zoomAt(vpSize.w / 2, vpSize.h / 2, -1)} style={zoomBtnStyle}>
                 <Minus style={{ width: 14, height: 14 }} />
               </button>
-              <span style={{ fontSize: 11, color: 'var(--muted-foreground)', minWidth: 30, textAlign: 'center' }}>
+              <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)', minWidth: 30, textAlign: 'center' }}>
                 z{view.z}
               </span>
               <button type="button" title="放大" onClick={() => zoomAt(vpSize.w / 2, vpSize.h / 2, 1)} style={zoomBtnStyle}>
@@ -534,15 +534,15 @@ export default function MapPage() {
             {tilesOffline ? (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11,
-                color: 'var(--warning)', border: '1px solid var(--warning)',
+                color: 'var(--semi-color-warning)', border: '1px solid var(--semi-color-warning)',
                 borderRadius: 4, padding: '1px 8px',
               }}>
                 <WifiOff style={{ width: 11, height: 11 }} /> 离线网格模式
               </span>
             ) : (
-              <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>OSM 瓦片</span>
+              <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)' }}>OSM 瓦片</span>
             )}
-            <span style={{ fontSize: 11, color: 'var(--muted-foreground)', marginLeft: 'auto' }}>
+            <span style={{ fontSize: 11, color: 'var(--semi-color-text-2)', marginLeft: 'auto' }}>
               {`${points.length} 点 · ${polygons.length} 面 · 拖拽平移 / 滚轮缩放`}
             </span>
           </div>
@@ -552,7 +552,7 @@ export default function MapPage() {
             ref={viewportRef}
             style={{
               position: 'relative', overflow: 'hidden', height: VIEWPORT_H,
-              background: 'var(--muted)', cursor: dragging ? 'grabbing' : 'grab',
+              background: 'var(--semi-color-fill-0)', cursor: dragging ? 'grabbing' : 'grab',
               touchAction: 'none', userSelect: 'none',
             }}
             onPointerDown={(e) => {
@@ -603,14 +603,14 @@ export default function MapPage() {
                 <g>
                   {graticule.vLines.map((l, i) => (
                     <g key={`v${i}`}>
-                      <line x1={l.x} y1={0} x2={l.x} y2={vpSize.h} stroke="var(--border)" strokeWidth={1} />
-                      <text x={l.x + 3} y={12} fontSize={9} fill="var(--muted-foreground)">{l.label}</text>
+                      <line x1={l.x} y1={0} x2={l.x} y2={vpSize.h} stroke="var(--semi-color-border)" strokeWidth={1} />
+                      <text x={l.x + 3} y={12} fontSize={9} fill="var(--semi-color-text-2)">{l.label}</text>
                     </g>
                   ))}
                   {graticule.hLines.map((l, i) => (
                     <g key={`h${i}`}>
-                      <line x1={0} y1={l.y} x2={vpSize.w} y2={l.y} stroke="var(--border)" strokeWidth={1} />
-                      <text x={4} y={l.y - 3} fontSize={9} fill="var(--muted-foreground)">{l.label}</text>
+                      <line x1={0} y1={l.y} x2={vpSize.w} y2={l.y} stroke="var(--semi-color-border)" strokeWidth={1} />
+                      <text x={4} y={l.y - 3} fontSize={9} fill="var(--semi-color-text-2)">{l.label}</text>
                     </g>
                   ))}
                 </g>
@@ -650,7 +650,7 @@ export default function MapPage() {
                   <g key={p.rid || `pt${i}`}>
                     <circle
                       cx={sx} cy={sy} r={isSel ? 7 : 5.5}
-                      fill="var(--destructive)" stroke="#fff" strokeWidth={isSel ? 2.5 : 2}
+                      fill="var(--semi-color-danger)" stroke="#fff" strokeWidth={isSel ? 2.5 : 2}
                       style={{ pointerEvents: 'auto', cursor: 'pointer' }}
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => { e.stopPropagation(); setSelected(p); }}
@@ -660,7 +660,7 @@ export default function MapPage() {
                     {i < LABEL_LIMIT && (
                       <text
                         x={sx} y={sy + 17} textAnchor="middle" fontSize={10}
-                        fill="var(--foreground)" stroke="var(--card)" strokeWidth={3} paintOrder="stroke"
+                        fill="var(--semi-color-text-0)" stroke="var(--semi-color-bg-1)" strokeWidth={3} paintOrder="stroke"
                         style={{ pointerEvents: 'none' }}
                       >
                         {p.label.length > 14 ? `${p.label.slice(0, 14)}…` : p.label}
@@ -675,30 +675,30 @@ export default function MapPage() {
             {err ? (
               <div style={{
                 position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'var(--background)', fontSize: 12, color: 'var(--destructive)', padding: 24, textAlign: 'center',
+                background: 'var(--semi-color-bg-0)', fontSize: 12, color: 'var(--semi-color-danger)', padding: 24, textAlign: 'center',
               }}>
                 {err}
               </div>
             ) : !selectedTypeHasGeo && !loadingRows && detail ? (
               <div style={{
                 position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', gap: 8,
-                alignItems: 'center', justifyContent: 'center', background: 'var(--background)',
+                alignItems: 'center', justifyContent: 'center', background: 'var(--semi-color-bg-0)',
               }}>
-                <MapPin style={{ width: 22, height: 22, color: 'var(--muted-foreground)' }} />
+                <MapPin style={{ width: 22, height: 22, color: 'var(--semi-color-text-2)' }} />
                 <div style={{ fontSize: 13, fontWeight: 600 }}>该类型无 latlon/geojson 属性</div>
-                <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>在左栏选择带 MapPin 标记的类型</div>
+                <div style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>在左栏选择带 MapPin 标记的类型</div>
               </div>
             ) : loadingRows ? (
               <div style={{
                 position: 'absolute', inset: 0, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center',
-                background: 'var(--background)', color: 'var(--muted-foreground)', fontSize: 12,
+                background: 'var(--semi-color-bg-0)', color: 'var(--semi-color-text-2)', fontSize: 12,
               }}>
                 <Loader2 style={{ width: 14, height: 14, animation: 'osp-spin 1s linear infinite' }} /> 拉取实例中…
               </div>
             ) : points.length + polygons.length === 0 && geoSlug ? (
               <div style={{
                 position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 12, color: 'var(--muted-foreground)', background: 'var(--background)',
+                fontSize: 12, color: 'var(--semi-color-text-2)', background: 'var(--semi-color-bg-0)',
               }}>
                 该类型实例无可定位的地理数据
               </div>
@@ -711,12 +711,12 @@ export default function MapPage() {
                 left: Math.min(Math.max(8, lonToX(selAnchor.lon, view.z) - view.ox + 14), Math.max(8, vpSize.w - 248)),
                 top: Math.min(Math.max(8, latToY(selAnchor.lat, view.z) - view.oy - 10), Math.max(8, vpSize.h - 240)),
                 width: 240, zIndex: 10,
-                background: 'var(--card)', border: '1px solid var(--border)',
-                borderRadius: 'var(--radius)', boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+                background: 'var(--semi-color-bg-1)', border: '1px solid var(--semi-color-border)',
+                borderRadius: 'var(--semi-border-radius-medium)', boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
               }}>
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '8px 12px', borderBottom: '1px solid var(--border)',
+                  padding: '8px 12px', borderBottom: '1px solid var(--semi-color-border)',
                 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {selected.label}
@@ -734,13 +734,13 @@ export default function MapPage() {
                 <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {popupProps.map((pp) => (
                     <div key={pp.title} style={{ display: 'flex', gap: 8, fontSize: 11, alignItems: 'baseline' }}>
-                      <span style={{ color: 'var(--muted-foreground)', flexShrink: 0, maxWidth: 96, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={pp.title}>
+                      <span style={{ color: 'var(--semi-color-text-2)', flexShrink: 0, maxWidth: 96, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={pp.title}>
                         {pp.title}
                       </span>
                       <span style={{ wordBreak: 'break-all', textAlign: 'right' }}>{pp.value.length > 60 ? `${pp.value.slice(0, 60)}…` : pp.value}</span>
                     </div>
                   ))}
-                  <div style={{ fontSize: 10, color: 'var(--muted-foreground)', fontFamily: 'monospace', wordBreak: 'break-all', borderTop: '1px solid var(--border)', paddingTop: 6 }}>
+                  <div style={{ fontSize: 10, color: 'var(--semi-color-text-2)', fontFamily: 'monospace', wordBreak: 'break-all', borderTop: '1px solid var(--semi-color-border)', paddingTop: 6 }}>
                     {selected.rid}
                   </div>
                 </div>
@@ -750,9 +750,9 @@ export default function MapPage() {
         </Card>
 
         {/* 图例 / 说明 */}
-        <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginTop: 10, fontSize: 11, color: 'var(--muted-foreground)' }}>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginTop: 10, fontSize: 11, color: 'var(--semi-color-text-2)' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--destructive)', display: 'inline-block' }} /> latlon 实例
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--semi-color-danger)', display: 'inline-block' }} /> latlon 实例
           </span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
             <span style={{ width: 10, height: 8, background: 'rgba(59, 130, 246, 0.16)', border: '1px solid #3b82f6', display: 'inline-block' }} /> geojson Polygon

@@ -34,25 +34,25 @@ export class ErrorBoundary extends Component<Props, State> {
         <div
           style={{
             padding: 32,
-            background: "var(--card)",
-            border: "1px solid var(--border)",
+            background: "var(--semi-color-bg-1)",
+            border: "1px solid var(--semi-color-border)",
             borderRadius: 8,
-            color: "var(--foreground)",
+            color: "var(--semi-color-text-0)",
           }}
         >
-          <h2 style={{ marginTop: 0, color: "var(--destructive)" }}>
+          <h2 style={{ marginTop: 0, color: "var(--semi-color-danger)" }}>
             {this.props.fallbackTitle ?? "页面渲染出错"}
           </h2>
           <pre
             style={{
               fontSize: 12,
               padding: 12,
-              background: "var(--muted)",
-              border: "1px solid var(--border)",
+              background: "var(--semi-color-fill-0)",
+              border: "1px solid var(--semi-color-border)",
               borderRadius: 4,
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
-              color: "var(--muted-foreground)",
+              color: "var(--semi-color-text-2)",
             }}
           >
             {String(this.state.error.message ?? this.state.error)}

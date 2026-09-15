@@ -240,8 +240,8 @@ export default function ClientFormPage() {
                       style={
                         testResult
                           ? {
-                              borderColor: testResult.ok ? 'var(--success)' : 'var(--destructive)',
-                              color: testResult.ok ? 'var(--success)' : 'var(--destructive)',
+                              borderColor: testResult.ok ? 'var(--semi-color-success)' : 'var(--semi-color-danger)',
+                              color: testResult.ok ? 'var(--semi-color-success)' : 'var(--semi-color-danger)',
                             }
                           : undefined
                       }

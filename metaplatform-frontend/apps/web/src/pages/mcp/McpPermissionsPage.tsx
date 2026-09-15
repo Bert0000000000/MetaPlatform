@@ -20,6 +20,7 @@ import {
   SafetyOutlined,
 } from '@ant-design/icons';
 import { getPolicyMatrix, exportPolicyMatrix, createPolicy } from '@/api/mcphub/policies';
+import { PageHeader } from '@/components/skeleton';
 import type {
   MatrixCellEffect,
   PolicyCreateRequest,
@@ -190,28 +191,28 @@ export default function PermissionMatrixPage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          权限矩阵
-        </Typography.Title>
-        <Space>
-          <Select
-            value={action}
-            optionList={ACTION_OPTIONS}
-            onChange={(v) => setAction(v as string)}
-            style={{ width: 160 }}
-          />
-          <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
-            刷新
-          </Button>
-          <Button icon={<DownloadOutlined />} loading={exporting} onClick={() => handleExport('csv')}>
-            导出 CSV
-          </Button>
-          <Button icon={<DownloadOutlined />} loading={exporting} onClick={() => handleExport('xlsx')}>
-            导出 Excel
-          </Button>
-        </Space>
-      </div>
+      <PageHeader
+        title="权限矩阵"
+        actions={
+          <Space>
+                  <Select
+                    value={action}
+                    optionList={ACTION_OPTIONS}
+                    onChange={(v) => setAction(v as string)}
+                    style={{ width: 160 }}
+                  />
+                  <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
+                    刷新
+                  </Button>
+                  <Button icon={<DownloadOutlined />} loading={exporting} onClick={() => handleExport('csv')}>
+                    导出 CSV
+                  </Button>
+                  <Button icon={<DownloadOutlined />} loading={exporting} onClick={() => handleExport('xlsx')}>
+                    导出 Excel
+                  </Button>
+                </Space>
+        }
+      />
 
       <Card>
         <Tabs

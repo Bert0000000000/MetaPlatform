@@ -140,7 +140,7 @@ export default function SchedulePlanCardPage() {
                 {plan.steps.map((s) => (
                   <Steps.Step
                     key={s.key}
-                    title={<span className="mp-exec-step-title">{s.name}</span>}
+                    title={<><span className="mp-exec-step-title">{s.name}</span></>}
                     description={
                       <span className="mp-exec-chips">
                         {s.employeeId ? (

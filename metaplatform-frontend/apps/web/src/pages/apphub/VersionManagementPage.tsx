@@ -207,7 +207,7 @@ export default function VersionManagementPage({ appId: appIdProp }: { appId?: st
 }
 
 const codeStyle: CSSProperties = {
-  background: 'var(--muted)',
+  background: 'var(--semi-color-fill-0)',
   padding: 12,
   borderRadius: 4,
   fontFamily: 'Menlo, Consolas, monospace',

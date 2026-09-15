@@ -299,7 +299,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
       key: "code",
       width: 220,
       render: (v: string) => (
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>{v}</span>
+        <span style={{ fontFamily: "var(--mp-font-mono)", fontSize: 12 }}>{v}</span>
       ),
     },
     {
@@ -336,7 +336,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
       dataIndex: "description",
       key: "description",
       ellipsis: true,
-      render: (v) => (v ? v : <span style={{ color: "var(--muted-foreground)" }}>—</span>),
+      render: (v) => (v ? v : <span style={{ color: "var(--semi-color-text-2)" }}>—</span>),
     },
     {
       title: "操作",
@@ -385,8 +385,8 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
   return (
     <div
       style={{
-        background: "var(--card)",
-        border: "1px solid var(--border)",
+        background: "var(--semi-color-bg-1)",
+        border: "1px solid var(--semi-color-border)",
         borderRadius: 8,
         padding: 16,
       }}
@@ -400,7 +400,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
           alignItems: "center",
           marginBottom: 12,
           paddingBottom: 12,
-          borderBottom: "1px solid var(--border)",
+          borderBottom: "1px solid var(--semi-color-border)",
         }}
       >
         <Select
@@ -436,7 +436,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
           value={keyword}
           onChange={(v) => setKeyword(v)}
         />
-        <span style={{ color: "var(--muted-foreground)", fontSize: 12 }}>
+        <span style={{ color: "var(--semi-color-text-2)", fontSize: 12 }}>
           已选 {selectedCount} / {totalCount}
         </span>
         <div style={{ flex: 1 }} />

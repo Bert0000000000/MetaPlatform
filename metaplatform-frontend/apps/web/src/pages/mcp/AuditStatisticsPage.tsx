@@ -68,6 +68,7 @@ import {
 import { listTools } from '@/api/mcphub/tools';
 import { listServers } from '@/api/mcphub/servers';
 import { listClients } from '@/api/mcphub/clients';
+import { PageHeader } from '@/components/skeleton';
 import type {
   AnalyticsItem,
   AuditLog,
@@ -145,7 +146,7 @@ function StatCard({
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <span style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>
+      <span style={{ fontSize: 14, color: 'var(--semi-color-text-2)' }}>
         {icon && (
           <span style={{ marginRight: 6, verticalAlign: -2 }}>
             {icon}
@@ -157,7 +158,7 @@ function StatCard({
         style={{
           fontSize: 28,
           fontWeight: 600,
-          color: 'var(--foreground)',
+          color: 'var(--semi-color-text-0)',
           ...valueStyle,
         }}
       >
@@ -490,7 +491,7 @@ export default function AuditStatisticsPage() {
       title: '错误数',
       dataIndex: 'errorCount',
       align: 'right',
-      render: (v) => <span style={{ color: 'var(--destructive)' }}>{formatNumber(v)}</span>,
+      render: (v) => <span style={{ color: 'var(--semi-color-danger)' }}>{formatNumber(v)}</span>,
     },
     {
       title: 'Token 消耗',
@@ -512,7 +513,7 @@ export default function AuditStatisticsPage() {
       dataIndex: 'name',
       render: (v) => (
         <Typography.Text strong>
-          <WarningOutlined style={{ marginRight: 8, color: 'var(--warning)' }} />
+          <WarningOutlined style={{ marginRight: 8, color: 'var(--semi-color-warning)' }} />
           {v}
         </Typography.Text>
       ),
@@ -737,22 +738,22 @@ export default function AuditStatisticsPage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          <BarChartOutlined /> 调用审计统计
-        </Typography.Title>
-        <Space>
-          <Button icon={<ReloadOutlined />} onClick={() => loadStatistics()} loading={loadingStats}>
-            刷新
-          </Button>
-          <Button icon={<FileTextOutlined />} onClick={() => handleExport('csv')}>
-            导出 CSV
-          </Button>
-          <Button icon={<FileExcelOutlined />} onClick={() => handleExport('xlsx')}>
-            导出 Excel
-          </Button>
-        </Space>
-      </div>
+      <PageHeader
+        title={<><BarChartOutlined /> 调用审计统计</>}
+        actions={
+          <Space>
+                  <Button icon={<ReloadOutlined />} onClick={() => loadStatistics()} loading={loadingStats}>
+                    刷新
+                  </Button>
+                  <Button icon={<FileTextOutlined />} onClick={() => handleExport('csv')}>
+                    导出 CSV
+                  </Button>
+                  <Button icon={<FileExcelOutlined />} onClick={() => handleExport('xlsx')}>
+                    导出 Excel
+                  </Button>
+                </Space>
+        }
+      />
 
       <Space style={{ marginBottom: 16 }} wrap>
         <DatePicker
@@ -827,7 +828,7 @@ export default function AuditStatisticsPage() {
               title="成功率"
               value={((statistics?.successRate || 0) * 100).toFixed(2)}
               suffix="%"
-              valueStyle={{ color: 'var(--success)' }}
+              valueStyle={{ color: 'var(--semi-color-success)' }}
             />
           </Card>
         </Col>

@@ -19,6 +19,7 @@ import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { generateServerIdeConfig } from '@/api/mcphub/ide-config';
 import { listServers } from '@/api/mcphub/servers';
 import type { IdeConfigResponse, IdeType, McpServer } from '@/api/mcphub/types';
+import { PageHeader } from '@/components/skeleton';
 
 SyntaxHighlighter.registerLanguage('json', json);
 
@@ -132,11 +133,7 @@ export default function IdeConfigPage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          IDE 配置模板
-        </Typography.Title>
-      </div>
+      <PageHeader title="IDE 配置模板" />
 
       <Card style={{ marginBottom: 16 }}>
         <Form>

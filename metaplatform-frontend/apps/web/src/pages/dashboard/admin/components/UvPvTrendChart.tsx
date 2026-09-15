@@ -43,14 +43,14 @@ function TrendTooltip({ active, payload, label }: TooltipProps<number, string>) 
   return (
     <div
       style={{
-        background: 'var(--card)',
-        border: '1px solid var(--border)',
+        background: 'var(--semi-color-bg-1)',
+        border: '1px solid var(--semi-color-border)',
         borderRadius: 8,
         padding: '10px 14px',
         boxShadow: '0 4px 12px rgba(0,0,0,0.32)',
         fontSize: 12,
         minWidth: 200,
-        color: 'var(--foreground)',
+        color: 'var(--semi-color-text-0)',
       }}
     >
       <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
@@ -80,16 +80,16 @@ export default function UvPvTrendChart({ data, height = 300 }: Props) {
     <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 16, right: 24, left: 8, bottom: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--semi-color-border)" />
           <XAxis
             dataKey="shortDate"
             fontSize={11}
-            stroke="var(--muted-foreground)"
+            stroke="var(--semi-color-text-2)"
             interval="preserveStartEnd"
           />
-          <YAxis fontSize={11} stroke="var(--muted-foreground)" />
+          <YAxis fontSize={11} stroke="var(--semi-color-text-2)" />
           <Tooltip content={<TrendTooltip />} />
-          <Legend wrapperStyle={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
+          <Legend wrapperStyle={{ fontSize: 12, color: 'var(--semi-color-text-2)' }} />
           <Line
             type="monotone"
             dataKey="uv"

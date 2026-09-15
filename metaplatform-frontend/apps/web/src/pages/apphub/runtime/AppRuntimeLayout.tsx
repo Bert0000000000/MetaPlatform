@@ -67,8 +67,8 @@ export default function AppRuntimeLayout({
   const openKeys = collectOpenKeys(tree, '');
 
   return (
-    <Layout hasSider style={{ height: '100vh', background: 'var(--background)' }}>
-      <Layout.Sider style={{ width: 240, height: '100vh', background: 'var(--sidebar)' }}>
+    <Layout hasSider style={{ height: '100vh', background: 'var(--semi-color-bg-0)' }}>
+      <Layout.Sider style={{ width: 240, height: '100vh', background: 'var(--semi-color-nav-bg)' }}>
         {/* 应用标识 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 20px 12px' }}>
           <div
@@ -76,7 +76,7 @@ export default function AppRuntimeLayout({
               width: 34,
               height: 34,
               borderRadius: 8,
-              background: 'var(--primary)',
+              background: 'var(--semi-color-primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -86,7 +86,7 @@ export default function AppRuntimeLayout({
           >
             <Boxes size={20} strokeWidth={1.5} />
           </div>
-          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--foreground)', letterSpacing: '0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--semi-color-text-0)', letterSpacing: '0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {appName}
           </span>
         </div>
@@ -104,7 +104,7 @@ export default function AppRuntimeLayout({
         </div>
       </Layout.Sider>
 
-      <Layout style={{ height: '100vh', flex: 1, minWidth: 0, background: 'var(--background)', display: 'flex', flexDirection: 'column' }}>
+      <Layout style={{ height: '100vh', flex: 1, minWidth: 0, background: 'var(--semi-color-bg-0)', display: 'flex', flexDirection: 'column' }}>
         <Layout.Header
           style={{
             height: 56,
@@ -113,8 +113,8 @@ export default function AppRuntimeLayout({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: 'var(--card)',
-            borderBottom: '1px solid var(--border)',
+            background: 'var(--semi-color-bg-1)',
+            borderBottom: '1px solid var(--semi-color-border)',
           }}
         >
           <button
@@ -139,11 +139,11 @@ export default function AppRuntimeLayout({
 
         <Layout.Content
           style={{
-            padding: 'var(--mate-content-padding)',
+            padding: 'var(--mp-space-6)',
             flex: 1,
             minHeight: 0,
             overflow: 'auto',
-            background: 'var(--background)',
+            background: 'var(--semi-color-bg-0)',
           }}
         >
           {isDemo && (
@@ -151,9 +151,9 @@ export default function AppRuntimeLayout({
               style={{
                 marginBottom: 16,
                 padding: '8px 14px',
-                borderRadius: 'var(--radius)',
-                background: 'var(--muted)',
-                border: '1px solid var(--border)',
+                borderRadius: 'var(--semi-border-radius-medium)',
+                background: 'var(--semi-color-fill-0)',
+                border: '1px solid var(--semi-color-border)',
                 color: 'var(--semi-color-text-2)',
                 fontSize: 12,
               }}

@@ -19,6 +19,14 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 小节标签（如「N 个属性」）：比正文小一档，只表层级 */
+.mp-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--semi-color-text-3);
+}
+
 /* 过渡期类型编辑器的顶部动作条（新建概念入口） */
 .mp-onto-editor-bar {
   display: flex;

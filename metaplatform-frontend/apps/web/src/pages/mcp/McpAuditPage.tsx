@@ -16,6 +16,7 @@ import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { EyeOutlined, InteractionOutlined } from '@ant-design/icons';
 import { listCollaborations } from '@/api/mcphub/collaborations';
 import type { CollaborationAudit, PageResponse } from '@/api/mcphub/types';
+import { PageHeader } from '@/components/skeleton';
 
 const PROTOCOL_OPTIONS = [
   { label: 'MCP', value: 'MCP' },
@@ -139,11 +140,7 @@ export default function CollaborationAuditPage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          <InteractionOutlined /> 协作审计
-        </Typography.Title>
-      </div>
+      <PageHeader title={<><InteractionOutlined /> 协作审计</>} />
 
       <Space style={{ marginBottom: 16 }} wrap>
         <Input

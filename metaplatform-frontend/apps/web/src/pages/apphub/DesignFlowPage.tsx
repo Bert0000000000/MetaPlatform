@@ -610,7 +610,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
           </RadioGroup>
         </Space>
       }
-      headerStyle={{ borderBottom: '1px solid var(--border)' }}
+      headerStyle={{ borderBottom: '1px solid var(--semi-color-border)' }}
       bodyStyle={{ padding: '24px 32px' }}
       footer={
         <div
@@ -619,7 +619,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '12px 24px',
-            borderTop: '1px solid var(--border)',
+            borderTop: '1px solid var(--semi-color-border)',
           }}
         >
           <Typography.Text type="tertiary">

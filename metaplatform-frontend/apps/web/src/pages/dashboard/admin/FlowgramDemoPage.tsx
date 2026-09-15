@@ -51,7 +51,7 @@ export default function FlowgramDemoPage() {
       </SectionCard>
 
       <SectionCard title="场景说明">
-        <div style={{ fontSize: 13, lineHeight: 1.8, color: "var(--foreground)" }}>
+        <div style={{ fontSize: 13, lineHeight: 1.8, color: "var(--semi-color-text-0)" }}>
           <p style={{ margin: "0 0 8px" }}>
             <b>顺序示例</b>：供应商注册事件 → AI 风险分析(LLM) → 查企业征信(MCP) → 是否高风险(条件分支)
             → 高风险走经理审批(Flowable) / 低风险直达 → 人工确认准入(HITL) → 写入供应商库 → 结束
@@ -60,7 +60,7 @@ export default function FlowgramDemoPage() {
             <b>并行示例</b>：供应商注册事件 → AI 风险分析(LLM) → 并行核验（查合规库 / 查征信 MCP /
             通知财务 三路并行）→ 汇聚写入供应商库 → 结束
           </p>
-          <p style={{ margin: "0 0 8px", color: "var(--muted-foreground)" }}>
+          <p style={{ margin: "0 0 8px", color: "var(--semi-color-text-2)" }}>
             同一画布上自由组合四类节点 + 官方复合容器（condition / multiOutputs / 循环 / TryCatch），
             执行时按节点类型分流：AI / 业务节点自动执行，并行容器展开各分支执行，
             审批节点暂停等待 Flowable 审批，HITL 节点暂停展示 proposal 等待人工确认。
@@ -69,7 +69,7 @@ export default function FlowgramDemoPage() {
       </SectionCard>
 
       <SectionCard title="操作指引">
-        <div style={{ fontSize: 13, lineHeight: 2, color: "var(--muted-foreground)" }}>
+        <div style={{ fontSize: 13, lineHeight: 2, color: "var(--semi-color-text-2)" }}>
           <div>① 点击「运行」，观察节点逐个高亮推进（执行中=蓝 / 已完成=绿）</div>
           <div>② 左侧节点库「并行与条件」分组可拖入：条件/并行分支、多输出、多输入、循环、Try/Catch</div>
           <div>③ 到达 <b>经理审批</b> 节点：弹出 Flowable 审批弹层，可「通过」或「驳回」</div>

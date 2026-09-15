@@ -129,7 +129,7 @@ export default function KnowledgeTestPage() {
             data-testid="kb-filter-hint"
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              marginTop: 10, fontSize: 12, color: 'var(--muted-foreground)',
+              marginTop: 10, fontSize: 12, color: 'var(--semi-color-text-2)',
             }}
           >
             <Filter size={12} />
@@ -138,7 +138,7 @@ export default function KnowledgeTestPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginTop: 16, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>检索模式</span>
+              <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)', whiteSpace: 'nowrap' }}>检索模式</span>
               <Select
                 style={{ width: 200 }}
                 value={mode}
@@ -147,7 +147,7 @@ export default function KnowledgeTestPage() {
               />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>Reranker</span>
+              <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)', whiteSpace: 'nowrap' }}>Reranker</span>
               <Select
                 style={{ width: 180 }}
                 value={rerankStrategy}
@@ -156,7 +156,7 @@ export default function KnowledgeTestPage() {
               />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>Top-K</span>
+              <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)', whiteSpace: 'nowrap' }}>Top-K</span>
               <InputNumber
                 min={1}
                 max={100}
@@ -182,7 +182,7 @@ export default function KnowledgeTestPage() {
                     justifyContent: 'space-between',
                     gap: 12,
                     padding: '12px 0',
-                    borderBottom: '1px solid var(--border)',
+                    borderBottom: '1px solid var(--semi-color-border)',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1, minWidth: 0 }}>
@@ -193,7 +193,7 @@ export default function KnowledgeTestPage() {
                       <div>
                         <Typography.Text strong>{ev.title ?? ev.documentId}</Typography.Text>
                       </div>
-                      <div style={{ color: 'var(--muted-foreground)', fontSize: 12, marginTop: 4 }}>
+                      <div style={{ color: 'var(--semi-color-text-2)', fontSize: 12, marginTop: 4 }}>
                         <Typography.Paragraph ellipsis={{ rows: 3 }} style={{ marginBottom: 0 }}>
                           {ev.fragment}
                         </Typography.Paragraph>

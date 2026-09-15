@@ -27,6 +27,7 @@ import ToolForm from './components/ToolForm';
 import ToolCategoryTree from './components/ToolCategoryTree';
 import CategoryManagementModal from './components/CategoryManagementModal';
 import type { McpTool, McpToolCategory } from '@/api/mcphub/types';
+import { PageHeader } from '@/components/skeleton';
 
 export default function ToolListPage() {
   const navigate = useNavigate();
@@ -141,24 +142,24 @@ export default function ToolListPage() {
 
   return (
     <div>
-      <div className="v-page-header">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          工具注册中心
-        </Typography.Title>
-        <Space>
-          <Button icon={<FolderOutlined />} onClick={() => setCategoryModalOpen(true)}>
-            分类管理
-          </Button>
-          <Button
-            theme="solid"
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate('/tools/new')}
-          >
-            创建工具
-          </Button>
-        </Space>
-      </div>
+      <PageHeader
+        title="工具注册中心"
+        actions={
+          <Space>
+                  <Button icon={<FolderOutlined />} onClick={() => setCategoryModalOpen(true)}>
+                    分类管理
+                  </Button>
+                  <Button
+                    theme="solid"
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => navigate('/tools/new')}
+                  >
+                    创建工具
+                  </Button>
+                </Space>
+        }
+      />
 
       <Space style={{ marginBottom: 16 }} wrap>
         <Input
