@@ -46,6 +46,10 @@ def pg_repo() -> Any:
 
     r = PgOntologyRepository(dsn=PG_DSN)
     r.set_embedder(HashEmbedder())
+    # ADR-0063 S2：不再有隐式兜底 —— 显式注册 action 用的透传函数
+    r._action_service.register_function(
+        "ont.acme.fn.ops.review-order.v1", lambda _iid, params: params
+    )
     r._ensure_schema()
     return r
 
@@ -119,6 +123,10 @@ def _init_kernel_repo():
 
     r = PgOntologyRepository(dsn=PG_DSN)
     r.set_embedder(HashEmbedder())
+    # ADR-0063 S2：不再有隐式兜底 —— 显式注册 action 用的透传函数
+    r._action_service.register_function(
+        "ont.acme.fn.ops.review-order.v1", lambda _iid, params: params
+    )
     app.state.kernel_repo = r
     yield
     app.state.kernel_repo = None

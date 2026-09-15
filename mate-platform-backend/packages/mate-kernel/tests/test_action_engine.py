@@ -46,7 +46,12 @@ class TestActionService:
         )
 
     def _service(self) -> ActionService:
-        return ActionService()
+        s = ActionService()
+        # ADR-0063 S2：kernel 不再有"未注册即回显 parameters"的隐式兜底 ——
+        # 这些用例关注 apply/audit 机制本身，故显式注册一个透传函数。
+        for ref in ("ont.acme.fn.approve.v1", "ont.acme.fn.a.v1", "ont.acme.fn.b.v1"):
+            s.register_function(ref, lambda _iid, params: params)
+        return s
 
     def test_propose(self) -> None:
         s = self._service()
@@ -113,8 +118,10 @@ class TestActionService:
         )
         audit = s.get_audit()
         assert len(audit) == 2
-        assert audit[0].audit_id == "audit-1"
-        assert audit[1].audit_id == "audit-2"
+        # F10：audit_id 现为 audit-<进程唯一前缀>-<计数器>，保证跨进程/重启不撞主键
+        assert audit[0].audit_id.startswith("audit-") and audit[0].audit_id.endswith("-1")
+        assert audit[1].audit_id.startswith("audit-") and audit[1].audit_id.endswith("-2")
+        assert audit[0].audit_id != audit[1].audit_id
 
     def test_rollback_on_failure(self) -> None:
         s = self._service()

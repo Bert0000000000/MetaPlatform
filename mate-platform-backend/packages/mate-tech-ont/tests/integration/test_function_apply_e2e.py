@@ -116,6 +116,15 @@ def _fn() -> Function:
     )
 
 
+_SRC_APPROVED = "def main(target, params):\n    return {'decision': 'approved'}\n"
+
+
+def _seed_fn(repo, source: str = _SRC_APPROVED) -> None:
+    """ADR-0063 S2：先显式登记 inline 源码，再 upsert（不再回落恒等函数）。"""
+    repo.register_function_source("ont.acme.fn.approve.v1", source)
+    repo.upsert_function(_fn())
+
+
 def test_function_apply_round_trip_inmemory() -> None:
     from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
 
@@ -124,13 +133,7 @@ def test_function_apply_round_trip_inmemory() -> None:
     decision_prop = _decision_prop()
     repo.upsert_object_type(_po_ot())
     repo.upsert_action_type(_at(decision_prop))
-    repo.upsert_function(_fn())
-    # 必须在 upsert_function 之后注册源码（upsert 会注册占位源码）
-    repo._function_resolver.register(
-        FunctionLanguage.PYTHON,
-        "inline://ont.acme.fn.approve.v1",
-        "def main(target, params):\n    return {'decision': 'approved'}\n",
-    )
+    _seed_fn(repo)
     repo._action_service.register_function_ref(
         "ont.acme.fn.approve.v1",
         repo._function_executor,
@@ -158,13 +161,8 @@ def test_function_apply_no_callable_raises_inmemory() -> None:
     decision_prop = _decision_prop()
     repo.upsert_object_type(_po_ot())
     repo.upsert_action_type(_at(decision_prop))
-    repo.upsert_function(_fn())
     # 没 main 也没 handler
-    repo._function_resolver.register(
-        FunctionLanguage.PYTHON,
-        "inline://ont.acme.fn.approve.v1",
-        "x = 1\n",
-    )
+    _seed_fn(repo, "x = 1\n")
     repo._action_service.register_function_ref(
         "ont.acme.fn.approve.v1",
         repo._function_executor,
@@ -182,28 +180,27 @@ def test_function_apply_no_callable_raises_inmemory() -> None:
 
 
 def test_function_apply_unknown_function_ref_raises_inmemory() -> None:
-    """未注册 executor / invoker / source → 不静默 fallback，而是抛 FunctionNotRegistered。"""
+    """未注册 executor / invoker / source → 抛 FunctionNotRegistered（ADR-0063 S2）。
+
+    此前 ActionService 在"没有 invoker/executor"时 fallback 到 parameters 并写回
+    target.props —— 该隐式兜底已删除（它把"配置缺陷"伪装成"执行成功"）。
+    """
+    from mate_kernel.action.engine import FunctionNotRegistered
     from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
 
     repo = InMemoryOntologyRepository()
-    # 没调 set_function_executor；ActionService 内 _executors 空，
-    # 但 ActionService.apply 现在的 fallback 让它返回 parameters —— 所以此测
-    # 只验证：未注入 executor 时不抛异常；并写回 parameters。
     decision_prop = _decision_prop()
     repo.upsert_object_type(_po_ot())
     repo.upsert_action_type(_at(decision_prop))
     repo.create_individual(_individual("ont.acme.ind.po.0"))
 
-    _, side_effects = repo.apply_action(
-        action_rid=ClassRef("ont.acme.act.approve.v1"),
-        target_iid="ont.acme.ind.po.0",
-        parameters={"decision": "manual"},
-        provenance={"actor": "alice"},
-    )
-    assert side_effects == []
-    got = repo.get_individual("ont.acme.ind.po.0")
-    decision_value = next(v for k, v in got.props if k.rid == "ont.acme.prop.decision.v1")
-    assert decision_value == "manual"
+    with pytest.raises(FunctionNotRegistered):
+        repo.apply_action(
+            action_rid=ClassRef("ont.acme.act.approve.v1"),
+            target_iid="ont.acme.ind.po.0",
+            parameters={"decision": "manual"},
+            provenance={"actor": "alice"},
+        )
 
 
 def test_function_apply_explicit_parameters_take_precedence_inmemory() -> None:
@@ -215,12 +212,7 @@ def test_function_apply_explicit_parameters_take_precedence_inmemory() -> None:
     decision_prop = _decision_prop()
     repo.upsert_object_type(_po_ot())
     repo.upsert_action_type(_at(decision_prop))
-    repo.upsert_function(_fn())
-    repo._function_resolver.register(
-        FunctionLanguage.PYTHON,
-        "inline://ont.acme.fn.approve.v1",
-        "def main(target, params):\n    return {'decision': 'from_fn'}\n",
-    )
+    _seed_fn(repo, "def main(target, params):\n    return {'decision': 'from_fn'}\n")
     repo._action_service.register_function_ref(
         "ont.acme.fn.approve.v1",
         repo._function_executor,
@@ -278,12 +270,10 @@ def test_function_apply_round_trip_pg(pg_repo) -> None:
     decision_prop = _decision_prop()
     pg_repo.upsert_object_type(_po_ot())
     pg_repo.upsert_action_type(_at(decision_prop))
-    pg_repo.upsert_function(_fn())
-    pg_repo._function_resolver.register(
-        FunctionLanguage.PYTHON,
-        "inline://ont.acme.fn.approve.v1",
-        "def main(target, params):\n    return {'decision': 'approved'}\n",
+    pg_repo.register_function_source(
+        "ont.acme.fn.approve.v1", "def main(target, params):\n    return {'decision': 'approved'}\n"
     )
+    pg_repo.upsert_function(_fn())
     pg_repo._action_service.register_function_ref(
         "ont.acme.fn.approve.v1",
         pg_repo._function_executor,
@@ -310,12 +300,8 @@ def test_function_apply_no_callable_raises_pg(pg_repo) -> None:
     decision_prop = _decision_prop()
     pg_repo.upsert_object_type(_po_ot())
     pg_repo.upsert_action_type(_at(decision_prop))
+    pg_repo.register_function_source("ont.acme.fn.approve.v1", "x = 1\n")
     pg_repo.upsert_function(_fn())
-    pg_repo._function_resolver.register(
-        FunctionLanguage.PYTHON,
-        "inline://ont.acme.fn.approve.v1",
-        "x = 1\n",
-    )
     pg_repo._action_service.register_function_ref(
         "ont.acme.fn.approve.v1",
         pg_repo._function_executor,
@@ -339,12 +325,10 @@ def test_function_apply_inmemory_parity_pg(pg_repo) -> None:
     decision_prop = _decision_prop()
     pg_repo.upsert_object_type(_po_ot())
     pg_repo.upsert_action_type(_at(decision_prop))
-    pg_repo.upsert_function(_fn())
-    pg_repo._function_resolver.register(
-        FunctionLanguage.PYTHON,
-        "inline://ont.acme.fn.approve.v1",
-        "def main(target, params):\n    return {'decision': 'parity'}\n",
+    pg_repo.register_function_source(
+        "ont.acme.fn.approve.v1", "def main(target, params):\n    return {'decision': 'parity'}\n"
     )
+    pg_repo.upsert_function(_fn())
     pg_repo._action_service.register_function_ref(
         "ont.acme.fn.approve.v1",
         pg_repo._function_executor,

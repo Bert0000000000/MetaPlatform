@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import hashlib
 import json
 import re
@@ -28,6 +29,7 @@ from mate_kernel.objectset.compiler import CompiledFilter, FilterCompiler, indiv
 from mate_kernel.objectset.ir import Condition, ObjectSetQuery, QueryOp, QueryResult
 from mate_kernel.objectset.sql_compiler import SQLCompiler
 from mate_kernel.ontology.api import OntologyRepository
+from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 from mate_kernel.ontology.identity import ClassRef, Version
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.query import ObjectSet
@@ -56,6 +58,20 @@ _PG_DEFAULT_INLINE_FN = "def main(target, params):\n    return params\n"
 
 # source_ref → source 命名注册表（seed / 测试可用）
 _PG_INLINE_FUNCTIONS: dict[str, str] = {}
+
+# F2：proposal.parameters 中的保留键 —— 由 propose_action 注入的平台元数据，
+# 非 action 声明的参数。execute 必须跳过它们，不得当作未知参数报错。
+_RESERVED_PARAM_KEYS: frozenset[str] = frozenset({"provenance"})
+
+# F8/F7：当前请求的租户（GOVERN-06 第 2 层防线）。
+# **必须是 ContextVar 而非 threading.local** —— API 路径经 `asyncio.to_thread`
+# 把 repo 调用推到工作线程，threading.local 不跨线程（实测工作线程里恒为 None），
+# 于是 `_install_rls` 被跳过、`SET LOCAL app.tenant_id` 从不执行；
+# 一旦 PG 层 RLS 生效，策略会因 tenant 未设而拒绝所有行 → 全站读空。
+# contextvars 会被 `asyncio.to_thread` 复制进工作线程（Python 3.12 实测）。
+_TENANT_CTX: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "ont_current_tenant", default=None
+)
 
 
 class SlugConflictError(Exception):
@@ -579,6 +595,44 @@ def _slug_of(rid: str) -> str:
     return parts[3] if len(parts) >= 5 else parts[-1]
 
 
+def _collect_filter_fields(cf: CompiledFilter) -> list[str]:
+    """递归收集 CompiledFilter 里出现过的字段名（F4 校验用）。"""
+    out: list[str] = []
+    if cf.field_name:
+        out.append(cf.field_name)
+    for c in cf.children:
+        out.extend(_collect_filter_fields(c))
+    return out
+
+
+def _assert_filter_fields_resolvable(cf: CompiledFilter, known_slugs: set[str]) -> None:
+    """F4：字段既不是完整 rid、也不在已知 slug 集合 → fail-fast。
+
+    否则 `props ->> '<未知键>'` 恒 NULL，过滤**静默返回空集** —— 调用方无法
+    区分"没有匹配"与"字段名写错了"。空集比报错危险得多。
+    只对非 rid 形态的字段严格：完整 rid 一律放行（含跨类/继承属性场景）。
+    """
+    bad = sorted({f for f in _collect_filter_fields(cf) if not f.startswith("ont.") and f not in known_slugs})
+    if bad:
+        raise ValueError(
+            f"unknown filter field(s) {bad} —— 既非完整 Property rid，也不在已知 slug 中"
+        )
+
+
+def _require_resolvable_field(field: str, known_slugs: set[str], *, kind: str) -> None:
+    """F4 同族：sort / group_by / 聚合字段既非完整 rid 也不在已知 slug → fail-fast。
+
+    此前这些位置一律 `slug_to_rid.get(f, f)` 静默回落 —— `props ->> '<未知键>'`
+    恒 NULL，表现为「排序/分组无效果」而不是报错，与 filter 的静默空集同病。
+    完整 rid 一律放行（避免误伤继承/跨类属性）。
+    """
+    if field.startswith("ont.") or field in known_slugs:
+        return
+    raise ValueError(
+        f"unknown {kind} field {field!r} —— 既非完整 Property rid，也不在已知 slug 中"
+    )
+
+
 def _prop_slug(rid: str) -> str:
     """rid 第 4 段作 slug（与 kernel ``individual_to_row`` 同一规则）。"""
     parts = rid.split(".")
@@ -931,10 +985,21 @@ def _row_to_ax(row: dict[str, Any]) -> Axiom:
     for item in metadata_raw:
         if isinstance(item, (list, tuple)) and len(item) == 2:
             metadata.append((str(item[0]), str(item[1])))
+    # F9：operand 不保证是完整 rid —— ① 无父类的 parent 公理曾写空串占位
+    # （见 upsert_object_type）；② 闭包路径（list_subclass_axioms）刻意按
+    # **原始字符串**消费 operand，支持 slug 写法（G21 测试的两种写法）。
+    # 而 Axiom.operands 是 ClassRef（严格 rid 正则）——无法表示的 operand
+    # 只能跳过，否则整个 list_axioms / GET /axioms 一并 500。
+    operands: list[ClassRef] = []
+    for o in row.get("operands") or []:
+        try:
+            operands.append(ClassRef(o))
+        except ValueError:
+            continue
     return Axiom(
         rid=ClassRef(row["rid"]),
         kind=AxiomKind(row["kind"]),
-        operands=tuple(ClassRef(o) for o in row.get("operands") or []),
+        operands=tuple(operands),
         rule_ref=row.get("rule_ref") or "",
         metadata=tuple(metadata),
     )
@@ -979,16 +1044,22 @@ class PgOntologyRepository(OntologyRepository):
         # GOVERN-06: 线程局部的 tenant_id 上下文；通过 tenant_scope() 临时绑定。
         # 默认 None 表示"无租户"—— _install_rls 在这种情况下跳过，保留旧行为
         # （便于一次性脚本 / 迁移场景）。生产请求必须经 tenant_scope() 注入。
-        self._tenant_local = threading.local()
+        # F8：租户上下文用模块级 ContextVar（跨 asyncio.to_thread 可见），见 _TENANT_CTX。
         from mate_kernel.action.engine import ActionService
 
         self._action_service = ActionService()
         # P1-5：事务提交后待 pg_notify 的事件 ID（WS LISTEN/NOTIFY 即时推）
         self._pending_notify: list[str] = []
         # GOVERN-05: FunctionResolver + FunctionExecutor 注入
-        from mate_kernel.ontology.function_resolver import InMemoryFunctionResolver
+        from mate_kernel.ontology.function_resolver import (
+            FunctionNotFoundError,
+            GitFunctionResolver,
+            InMemoryFunctionResolver,
+        )
 
         self._function_resolver: InMemoryFunctionResolver = InMemoryFunctionResolver()
+        # ADR-0063 S1：git: 来源的 resolver（未注入时 upsert_function 遇 git: fail-fast）
+        self._git_resolver: GitFunctionResolver | None = None
         self._function_executor: object | None = None
         # MP-SAL-02: 对象语义检索 embedder（env 未配置时为 None → 索引跳过）
         from .object_search import build_env_embedder
@@ -1014,7 +1085,8 @@ class PgOntologyRepository(OntologyRepository):
             )
 
     def _current_tenant(self) -> str | None:
-        return getattr(self._tenant_local, "tenant_id", None)
+        """当前请求租户（ContextVar，跨 asyncio.to_thread 可见；F8）。"""
+        return _TENANT_CTX.get()
 
     @contextmanager
     def tenant_scope(self, tenant_id: str) -> Iterator[PgOntologyRepository]:
@@ -1026,20 +1098,56 @@ class PgOntologyRepository(OntologyRepository):
                 result = repo.upsert_object_type(...)
 
         嵌套调用沿用最内层 tenant；退出 with 自动还原。
+        F8：实现为 ContextVar.set/reset —— `asyncio.to_thread` 会复制 context，
+        因此工作线程内的 `_connect()` 也能拿到 tenant（threading.local 不能）。
         """
-        prev = getattr(self._tenant_local, "tenant_id", None)
-        self._tenant_local.tenant_id = tenant_id
+        token = _TENANT_CTX.set(tenant_id)
         try:
             yield self
         finally:
-            self._tenant_local.tenant_id = prev
+            _TENANT_CTX.reset(token)
 
     def set_function_executor(self, executor: object) -> None:
-        """GOVERN-05: 注入 FunctionExecutor；同步到 ActionService 内 _executors + _resolver。"""
+        """GOVERN-05: 注入 FunctionExecutor；同步到 ActionService 内 _executors + _resolver。
+
+        ADR-0063：**必须同时为已存在的 Function 注册 function_ref**。启动顺序是
+        `seed_demo()` → `_inject_function_executor()`，即函数通常在 executor
+        就位**之前**就已 upsert；此时 `upsert_function` 内的 `register_function_ref`
+        被 `_function_executor is None` 跳过。若不在此处补齐，ActionService 永远
+        不认识这些函数，apply 会 fail-fast（FunctionNotRegistered）。
+        （InMemory 版本早就在 __init__ 里遍历注册；PG 版本此前缺这一步。）
+        """
         self._function_executor = executor
-        # 注册已知 function_ref 到 ActionService；upsert_function 时也会调。
-        # 同步 resolver 让 register_function_ref 内部能找到
         self._action_service.set_resolver(self._function_resolver)
+        try:
+            for f in self.list_functions():
+                self._action_service.register_function_ref(
+                    f.rid.rid, executor, self._function_resolver
+                )
+        except Exception:  # 表尚未创建等 → 留待 upsert_function 时注册
+            pass
+
+    def set_git_resolver(self, resolver: object) -> None:
+        """ADR-0063 S1：注入 GitFunctionResolver，使 ``git:<sha>:<path>`` 来源可解析。
+
+        未注入时 `upsert_function` 遇到 git: source_ref 会 fail-fast（不静默）。
+        """
+        self._git_resolver = resolver  # type: ignore[assignment]
+
+    def register_function_source(self, function_rid: str, source: str) -> None:
+        """ADR-0063：显式登记 inline 源码（dev/test/seed）。
+
+        `upsert_function` 不再回落恒等函数，故须先登记（key 为
+        ``inline://<rid>``）再 upsert，否则 fail-fast。
+        **同时登记进 resolver** —— 只写 `_PG_INLINE_FUNCTIONS` 时，源码要到
+        下一次 `upsert_function` 才进 resolver；若调用方只 register 不 upsert，
+        解析会失败。
+        """
+        ref = f"inline://{function_rid}"
+        _PG_INLINE_FUNCTIONS[ref] = source
+        from mate_kernel.ontology.reasoning import FunctionLanguage
+
+        self._function_resolver.register(FunctionLanguage.PYTHON, ref, source)
 
     def _connect(self):
         """建立 psycopg2 连接；GOVERN-06: 连接建立后立即 install_rls。
@@ -1308,10 +1416,13 @@ class PgOntologyRepository(OntologyRepository):
                         enabled=True,
                     )
                 else:
+                    # F9：无父类时**不得**写空串 operand —— 它违反 ClassRef rid
+                    # 正则，`_row_to_ax` 读回即抛 ValueError（/axioms 恒 500）。
+                    # 禁用公理只需自身 rid 即可表达"暂无父类"。
                     self.upsert_axiom_record(
                         ax_rid,
                         "subclass",
-                        [row["rid"], ""],
+                        [row["rid"]],
                         rule_ref="parent_class",
                         tenant_id=row["tenant_id"],
                         enabled=False,
@@ -2074,8 +2185,14 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
-    def list_individuals(self, class_rid: ClassRef | None) -> list[Individual]:
+    def list_individuals(
+        self, class_rid: ClassRef | None, tenant_id: str | None = None
+    ) -> list[Individual]:
         self._ensure_schema()
+        # F8：必须显式按租户过滤（与 list_object_types 对齐）。tenant_scope 的
+        # thread-local 不跨 asyncio.to_thread —— API 路径下 _current_tenant()
+        # 恒为 None，仅靠它是拿不到租户的，故 API handler 须显式传 tenant_id。
+        tenant = tenant_id or self._current_tenant()
         # EXP-01 补全（2026-09-14）：class_rid 是已注册 Interface 时展开为
         # 实现类型 + 各自后代（与 ObjectSet/IR 查询路径同语义）；具体
         # ObjectType 保持精确匹配（既有行为不变）。
@@ -2087,19 +2204,25 @@ class PgOntologyRepository(OntologyRepository):
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                if class_filter is None:
-                    cur.execute("SELECT * FROM ont_individual ORDER BY rid")
-                elif len(class_filter) == 1:
-                    cur.execute(
-                        "SELECT * FROM ont_individual WHERE class_rid = %s ORDER BY rid",
-                        (class_filter[0],),
-                    )
-                else:
-                    cur.execute(
-                        "SELECT * FROM ont_individual WHERE class_rid = ANY(%s) "
-                        "ORDER BY class_rid, rid",
-                        (list(class_filter),),
-                    )
+                where: list[str] = []
+                params: list[Any] = []
+                order = "rid"
+                if tenant:
+                    where.append("tenant_id = %s")
+                    params.append(tenant)
+                if class_filter is not None:
+                    if len(class_filter) == 1:
+                        where.append("class_rid = %s")
+                        params.append(class_filter[0])
+                    else:
+                        where.append("class_rid = ANY(%s)")
+                        params.append(list(class_filter))
+                        order = "class_rid, rid"
+                sql = "SELECT * FROM ont_individual"
+                if where:
+                    sql += " WHERE " + " AND ".join(where)
+                sql += f" ORDER BY {order}"
+                cur.execute(sql, tuple(params))
                 rows = cur.fetchall()
             return [_row_to_individual(r) for r in rows]
         finally:
@@ -2133,8 +2256,13 @@ class PgOntologyRepository(OntologyRepository):
     def create_link_instance(self, li: LinkInstance) -> LinkInstance:
         self._ensure_schema()
         row = _li_to_row(li)
-        # EXP-03：基数校验（LinkType 已注册时强制；未注册类型保持 legacy 宽松）
-        self._check_link_cardinality(row["link_type_rid"], row["src"], row["dst"])
+        # EXP-03：基数校验（LinkType 已注册时强制；未注册类型保持 legacy 宽松）。
+        # F3：必须传 exclude_rid —— 下方 INSERT 是 ON CONFLICT (rid) DO UPDATE
+        # （upsert 语义），同一条链接重放不应被当成"第二条件边"。不传会导致
+        # 幂等重放误报 cardinality 违规并冒泡成 500（in_memory 路径已正确排除）。
+        self._check_link_cardinality(
+            row["link_type_rid"], row["src"], row["dst"], exclude_rid=row["rid"]
+        )
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
@@ -2270,12 +2398,20 @@ class PgOntologyRepository(OntologyRepository):
                 entry["peers"].append(individual_to_row(ind))
         return list(grouped.values())
 
-    def list_link_instances(self) -> list[LinkInstance]:
+    def list_link_instances(self, tenant_id: str | None = None) -> list[LinkInstance]:
         self._ensure_schema()
+        # F8：必须显式按租户过滤（与 list_object_types 对齐），理由同 list_individuals。
+        tenant = tenant_id or self._current_tenant()
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute("SELECT * FROM ont_link_instance ORDER BY rid")
+                if tenant:
+                    cur.execute(
+                        "SELECT * FROM ont_link_instance WHERE tenant_id = %s ORDER BY rid",
+                        (tenant,),
+                    )
+                else:
+                    cur.execute("SELECT * FROM ont_link_instance ORDER BY rid")
                 rows = cur.fetchall()
             return [_row_to_li(r) for r in rows]
         finally:
@@ -2322,7 +2458,16 @@ class PgOntologyRepository(OntologyRepository):
             with self._cursor(conn) as cur:
                 cur.execute("SELECT * FROM ont_axiom ORDER BY rid")
                 rows = cur.fetchall()
-            return [_row_to_ax(r) for r in rows]
+            # F9：单条脏行不得让整个列表端点 500 —— 转换失败的（如历史写入的
+            # 非法 rid / operand）跳过。库中确实存在此类遗留行（例如
+            # ont.*.obj.*#parent 这种合成的非 rid 形式）。
+            out: list[Axiom] = []
+            for r in rows:
+                try:
+                    out.append(_row_to_ax(r))
+                except ValueError:
+                    continue
+            return out
         finally:
             conn.close()
 
@@ -2378,19 +2523,47 @@ class PgOntologyRepository(OntologyRepository):
                     ),
                 )
             conn.commit()
-            # GOVERN-05: 同步注册到 FunctionResolver + ActionService
-            if f.source_ref.startswith("inline://"):
-                self._function_resolver.register(
-                    f.language,
-                    f.source_ref,
-                    _PG_INLINE_FUNCTIONS.get(f.source_ref, _PG_DEFAULT_INLINE_FN),
-                )
+            # ADR-0063 S2：按 source_ref scheme 分派注册。**未知 scheme / 未登记
+            # 源码一律 fail-fast** —— 不再回落恒等函数（那会把"配置缺陷"伪装成
+            # "正常执行"：apply 返回 200 却什么也没算，失败不可观测）。
+            ref = f.source_ref
+            if ref.startswith("inline://"):
+                # ADR-0063 S4 / 硬规则 5：production profile 拒绝 inline 来源
+                from mate_platform.runtime import is_production_profile
+
+                if is_production_profile():
+                    raise FunctionNotFoundError(
+                        f"inline:// source_ref 在 production profile 被拒绝：{ref!r}"
+                        "（硬规则 5：prod 禁 fallback；请改用 git:<sha>:<path>）"
+                    )
+                src = _PG_INLINE_FUNCTIONS.get(ref)
+                if src is None:
+                    raise FunctionNotFoundError(
+                        f"inline source not registered for {ref!r} —— ADR-0063 起不再回落恒等函数"
+                    )
+                self._function_resolver.register(f.language, ref, src)
                 if self._function_executor is not None:
                     self._action_service.register_function_ref(
                         f.rid.rid,
                         self._function_executor,
                         self._function_resolver,
                     )
+            elif ref.startswith("git:"):
+                if self._git_resolver is None:
+                    raise FunctionNotFoundError(
+                        f"git source_ref {ref!r} 需要先注入 GitFunctionResolver（见 ADR-0063 S1）"
+                    )
+                self._git_resolver.register_ref(f.rid.rid, f.language, ref)
+                if self._function_executor is not None:
+                    self._action_service.register_function_ref(
+                        f.rid.rid,
+                        self._function_executor,
+                        self._git_resolver,
+                    )
+            else:
+                raise FunctionNotFoundError(
+                    f"unknown source_ref scheme: {ref!r}（支持 inline:// / git:<sha>:<path>）"
+                )
             return f
         finally:
             conn.close()
@@ -2524,6 +2697,7 @@ class PgOntologyRepository(OntologyRepository):
                     slug_to_rid[_prop_slug(p.rid.rid)] = p.rid.rid
                     rid_type[p.rid.rid] = p.type_id
         if slug_to_rid:
+            _assert_filter_fields_resolvable(compiled, set(slug_to_rid))
             compiled = _rewrite_filter_fields(compiled, slug_to_rid)
 
         sqlc = _RepoSQLCompiler()
@@ -2541,6 +2715,9 @@ class PgOntologyRepository(OntologyRepository):
             key = slug_to_rid.get(field_name, field_name)
             if not _SAFE_JSON_KEY.match(key):
                 raise ValueError(f"unsafe sort field {field_name!r}")
+            # 同族静默路径修复：未知字段此前静默回落 → 排序"无效果"不报错。
+            # 放在字符集校验**之后** —— 注入类字段仍报 "unsafe sort field"。
+            _require_resolvable_field(field_name, set(slug_to_rid), kind="sort")
             cast = "::numeric" if rid_type.get(key) in _NUMERIC_TYPE_IDS else "::text"
             direction = "DESC" if reverse else "ASC"
             order_by = f" ORDER BY (props ->> '{key}'){cast} {direction}"
@@ -2728,6 +2905,7 @@ class PgOntologyRepository(OntologyRepository):
         order_parts: list[str] = []
         for key in q.sort:
             field_name = slug_to_rid.get(key.field, key.field)
+            _require_resolvable_field(key.field, set(slug_to_rid), kind="sort")
             if not _SAFE_JSON_KEY.match(field_name):
                 raise ValueError(f"unsafe sort field {key.field!r}")
             cast = "::numeric" if rid_type.get(field_name) in _NUMERIC_TYPE_IDS else "::text"
@@ -2970,6 +3148,7 @@ class PgOntologyRepository(OntologyRepository):
         group_parts: list[str] = []
         for f in agg.group_by:
             key = slug_to_rid.get(f, f)
+            _require_resolvable_field(f, set(slug_to_rid), kind="group_by")
             if not _SAFE_JSON_KEY.match(key):
                 raise ValueError(f"unsafe group_by field {f!r}")
             select_parts.append(f"(props ->> '{key}') AS \"{f}\"")
@@ -3860,9 +4039,9 @@ class PgOntologyRepository(OntologyRepository):
     ) -> list[dict[str, Any]]:
         """语义检索 → 对象卡片（带 rid 可追溯；G6 marking 过滤可选）。
 
-        tenant_id 显式传入优先（``_call_scoped`` 经 asyncio.to_thread 执行，
-        tenant_scope 的 threading.local 在工作线程不可见 —— 显式参数是
-        RLS 之外的第二道防线，13 硬规则 #3）。
+        tenant_id 显式传入优先（``_call_scoped`` 经 asyncio.to_thread 执行；
+        F8 后 tenant 走 ContextVar 已能跨线程，但显式参数仍是 RLS 之外的
+        第二道防线，13 硬规则 #3）。
         """
         if self._embedder is None:
             return []
@@ -4764,6 +4943,12 @@ class PgOntologyRepository(OntologyRepository):
                     slug = parts[-2] if parts[-1].startswith("v") else parts[-1]
                     parameter_rids[slug] = parameter.rid.rid
                 for key, value in proposal.parameters.items():
+                    # F2：`provenance` 是 propose 注入的**平台元数据**（ONT-PROV-01，
+                    # 见 propose_action 的 params["provenance"] 合并），不是 action
+                    # 声明的参数。此处必须跳过 —— 否则 execute 恒报
+                    # "unknown parameter 'provenance'"（实测 404）。
+                    if key in _RESERVED_PARAM_KEYS:
+                        continue
                     resolved = key if key.startswith("ont.") else parameter_rids.get(key)
                     if resolved is None:
                         raise KeyError(

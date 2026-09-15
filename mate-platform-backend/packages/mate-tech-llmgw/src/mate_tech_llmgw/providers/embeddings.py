@@ -42,6 +42,19 @@ _DEFAULT_MODEL = "text-embedding-3-small"
 _DEFAULT_DIM = 384
 
 
+def _fallback_dim() -> int:
+    """降级 hash 向量的维度（F5）。
+
+    默认 384；**部署时应设为与真实模型一致**（如 ARK doubao-embedding-vision
+    为 2048），否则上游故障时写入的向量与目标列维度错配 —— 此前该值是硬编码
+    384 而 `ONT_VECTOR_DIM=2048`，构成潜在维度错配缺陷。
+    """
+    try:
+        return int(os.getenv("EMBEDDING_FALLBACK_DIM", str(_DEFAULT_DIM)))
+    except ValueError:
+        return _DEFAULT_DIM
+
+
 @dataclass(frozen=True, slots=True)
 class EmbeddingResult:
     """单条文本嵌入结果."""
@@ -49,6 +62,9 @@ class EmbeddingResult:
     embedding: list[float]
     model: str
     usage: dict[str, int] = field(default_factory=dict)
+    # F5：True = 上游调用失败，返回的是确定性 hash 占位向量（非真实语义向量）。
+    # 此前上游失败仍返回 HTTP 200 且 model 字段标为目标模型，调用方无法区分。
+    degraded: bool = False
 
 
 def _hash_embedding(text: str, dim: int = _DEFAULT_DIM) -> list[float]:
@@ -116,14 +132,15 @@ class OpenAIEmbeddingProvider:
         model: str = _DEFAULT_MODEL,
         base_url: str | None = None,
         timeout: float = 30.0,
-        dim: int = _DEFAULT_DIM,
+        dim: int | None = None,
         allow_fallback: bool | None = None,
     ) -> None:
         self.model = model
         self._api_key = api_key
         self._base_url = base_url or os.getenv("OPENAI_BASE_URL", _OPENAI_BASE_URL)
         self._timeout = timeout
-        self._dim = dim
+        # F5：默认取 EMBEDDING_FALLBACK_DIM（应与真实模型维度一致），而非硬编码 384
+        self._dim = dim if dim is not None else _fallback_dim()
         self._allow_fallback = not is_production_profile() and (
             True if allow_fallback is None else allow_fallback
         )
@@ -180,6 +197,7 @@ class OpenAIEmbeddingProvider:
                 embedding=_hash_embedding(text, self._dim),
                 model=target_model,
                 usage={"prompt_tokens": tokens, "total_tokens": tokens},
+                degraded=True,  # F5：显式标记降级，调用方/响应可区分
             )
 
         payload: dict[str, Any] = {"model": target_model, "input": text}
@@ -200,6 +218,7 @@ class OpenAIEmbeddingProvider:
                 embedding=_hash_embedding(text, self._dim),
                 model=target_model,
                 usage={"prompt_tokens": tokens, "total_tokens": tokens},
+                degraded=True,  # F5：显式标记降级，调用方/响应可区分
             )
         except httpx.HTTPError as e:
             logger.warning(
@@ -214,6 +233,7 @@ class OpenAIEmbeddingProvider:
                 embedding=_hash_embedding(text, self._dim),
                 model=target_model,
                 usage={"prompt_tokens": tokens, "total_tokens": tokens},
+                degraded=True,  # F5：显式标记降级，调用方/响应可区分
             )
 
         try:
@@ -233,6 +253,7 @@ class OpenAIEmbeddingProvider:
                 embedding=_hash_embedding(text, self._dim),
                 model=target_model,
                 usage={"prompt_tokens": tokens, "total_tokens": tokens},
+                degraded=True,  # F5：显式标记降级，调用方/响应可区分
             )
 
         usage = data.get("usage", {})
@@ -430,10 +451,21 @@ async def resolve_effective_embedding(request, tenant_id: str) -> dict[str, str]
     the caller then falls back to the request/env provider path.
     """
     cfg = await _fetch_iam_configs(request, tenant_id)
-    pid = cfg.get("ai.embedding.default_provider", "")
+    # F5 根因修复：service-read 只覆盖 `ai.provider.*` 命名空间（IAM 侧
+    # configs.py 的 _SERVICE_READ_PREFIX 强制钳回），因此
+    # `ai.embedding.default_provider` **永远取不到** → 本函数恒返回 {}
+    # → 调用方回落到 env provider → ARK key 为空 → 401。
+    # 回落到命名空间内真实存在的 `ai.provider.default_active`（iam/seed.py:444），
+    # 与 copilot 客户端的取值方式一致（mate_app_copilot/clients/base.py:257）。
+    pid = cfg.get("ai.embedding.default_provider", "") or cfg.get(
+        "ai.provider.default_active", ""
+    )
     if not pid or pid == "disabled":
         return {}
     prefix = f"ai.provider.{pid}."
+    # 显式关闭的 provider 不参与解析
+    if str(cfg.get(f"{prefix}enabled", "true")).strip().lower() in ("false", "0", "no"):
+        return {}
     base_url = cfg.get(f"{prefix}base_url", "")
     if not base_url:
         return {}

@@ -32,6 +32,8 @@ def _fn(version: int = 1) -> Function:
 
 def _repo() -> InMemoryOntologyRepository:
     r = InMemoryOntologyRepository()
+    # ADR-0063 S2：显式登记 inline 源码（不再回落恒等函数）
+    r.register_function_source(FN, "def handler(target, params):\n    return params\n")
     r.upsert_function(_fn(1))
     return r
 

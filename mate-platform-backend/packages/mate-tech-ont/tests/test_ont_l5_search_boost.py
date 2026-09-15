@@ -63,21 +63,24 @@ class TestBM25Rerank:
 
 
 class TestHyDEEnrich:
-    def test_hyde_degrades_to_none(self) -> None:
-        # 无 SERVICE_CLIENT_SECRET / llmgw 时返回 None（不抛）
+    def test_hyde_degrades_to_none(self, monkeypatch) -> None:
+        # 无 SERVICE_CLIENT_SECRET / llmgw 时返回 None（不抛）。
+        # 注意：必须用 monkeypatch.delenv（用例结束自动还原）—— 直接
+        # `os.environ.pop` 会**永久删除整个 pytest 进程**的该变量，污染后续
+        # 用例（实测：会让 llmgw 的 _fetch_iam_configs 读到空 → 3 个用例失败）。
         from mate_tech_ont.v2_kernel.search_boost import hyde_expand
 
-        os.environ.pop("SERVICE_CLIENT_SECRET", None)
-        os.environ.pop("LLMGW_CHAT_URL", None)
-        os.environ.pop("LLMGW_EMBED_URL", None)
+        monkeypatch.delenv("SERVICE_CLIENT_SECRET", raising=False)
+        monkeypatch.delenv("LLMGW_CHAT_URL", raising=False)
+        monkeypatch.delenv("LLMGW_EMBED_URL", raising=False)
         result = hyde_expand("test query")
         assert result is None
 
-    def test_enrich_degrades_to_stopwords_removed(self) -> None:
+    def test_enrich_degrades_to_stopwords_removed(self, monkeypatch) -> None:
         from mate_tech_ont.v2_kernel.search_boost import enrich_query
 
-        os.environ.pop("SERVICE_CLIENT_SECRET", None)
-        os.environ.pop("LLMGW_CHAT_URL", None)
-        os.environ.pop("LLMGW_EMBED_URL", None)
+        monkeypatch.delenv("SERVICE_CLIENT_SECRET", raising=False)
+        monkeypatch.delenv("LLMGW_CHAT_URL", raising=False)
+        monkeypatch.delenv("LLMGW_EMBED_URL", raising=False)
         result = enrich_query("find the order status")
         assert "the" not in result.lower().split() or result == "find the order status"

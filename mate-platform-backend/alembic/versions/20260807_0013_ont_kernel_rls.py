@@ -72,9 +72,17 @@ def upgrade() -> None:
 
     # ------------------------------------------------------------------
     # 0. Verify each table exists; if it doesn't yet (pg_repo hasn't
-    #    connected), skip silently — pg_repo.DDL will create them with
-    #    a tenant_id column and the next ``alembic upgrade head`` after
-    #    the service has started will pick them up.
+    #    connected), we CANNOT enable RLS on it.
+    #
+    #    F7 修正（2026-09-14）：**这里不能"静默跳过"**，也**不能**声称
+    #    "下次 alembic upgrade head 会补上" —— Alembic 按 revision 记账，
+    #    已应用的 revision **不会重跑**，所以静默跳过 = RLS 永久缺失
+    #    （实测：metaplatform 库 28 张 ont_* 表 rls=false、无策略、且
+    #    alembic_version 表都不存在）。
+    #
+    #    正确做法：本迁移跑完若仍有缺表，响亮告警并提示用幂等脚本补开：
+    #        python scripts/ont/apply_rls.py
+    #    （该脚本按实际存在的表逐一 ENABLE/FORCE RLS + 建策略，可反复执行）
     # ------------------------------------------------------------------
     raw = bind.exec_driver_sql(
         "SELECT tablename FROM pg_tables "
@@ -82,6 +90,18 @@ def upgrade() -> None:
         f"AND tablename IN ({','.join(repr(t) for t in KERNEL01_V2_TABLES)})"
     )
     existing: set[str] = {row[0] for row in raw.fetchall()}
+    missing = sorted(set(KERNEL01_V2_TABLES) - existing)
+    if missing:
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "ont_kernel_rls: %d/%d tables not created yet (%s) — RLS NOT applied to them. "
+            "Alembic will NOT retry this revision. Run `python scripts/ont/apply_rls.py` "
+            "after the ontology service has created the tables.",
+            len(missing),
+            len(KERNEL01_V2_TABLES),
+            ", ".join(missing),
+        )
 
     # ------------------------------------------------------------------
     # 1. Backfill NULL tenant_id rows to 'system' (safety net; DDL

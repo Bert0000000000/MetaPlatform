@@ -50,7 +50,10 @@ pytestmark = pytest.mark.skipif(
 def repo() -> object:
     from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 
-    return PgOntologyRepository(dsn=PG_DSN)
+    r = PgOntologyRepository(dsn=PG_DSN)
+    # ADR-0063 S2：kernel 不再有"未注册即回显 parameters"的隐式兜底 —— 显式注册
+    r._action_service.register_function("ont.acme.fn.approve.v1", lambda _iid, params: params)
+    return r
 
 
 @pytest.fixture(autouse=True)
@@ -389,11 +392,15 @@ def test_list_axioms_returns_seeded(repo) -> None:
 
 
 def test_upsert_function_round_trip(repo) -> None:
+    # ADR-0063 S2：source_ref 须为已登记来源的 scheme
+    repo.register_function_source(
+        "ont.acme.fn.approve.v1", "def handler(target, params):\n    return params\n"
+    )
     f = Function(
         rid=ClassRef("ont.acme.fn.approve.v1"),
         language=FunctionLanguage.PYTHON,
         version=1,
-        source_ref="git:sha-abc123",
+        source_ref="inline://ont.acme.fn.approve.v1",
         signatures=(("approve", "(target, parameters) -> bool"),),
     )
     repo.upsert_function(f)
@@ -403,17 +410,53 @@ def test_upsert_function_round_trip(repo) -> None:
     assert got.rid == f.rid
     assert got.language == FunctionLanguage.PYTHON
     assert got.version == 1
-    assert got.source_ref == "git:sha-abc123"
+    assert got.source_ref == "inline://ont.acme.fn.approve.v1"
     assert ("approve", "(target, parameters) -> bool") in got.signatures
 
 
+def test_upsert_function_unknown_scheme_rejected(repo) -> None:
+    """ADR-0063 S2：未知 source_ref scheme 必须 fail-fast（不再静默回落恒等）。"""
+    from mate_kernel.ontology.function_resolver import FunctionNotFoundError
+
+    with pytest.raises(FunctionNotFoundError):
+        repo.upsert_function(
+            Function(
+                rid=ClassRef("ont.acme.fn.oci.v1"),
+                language=FunctionLanguage.SQL,
+                version=1,
+                source_ref="oci:foo@sha256:deadbeef",
+            )
+        )
+
+
+def test_production_rejects_inline_function_source(repo, monkeypatch) -> None:
+    """ADR-0063 S4 / 硬规则 5：production profile 拒绝 inline:// 来源。"""
+    from mate_kernel.ontology.function_resolver import FunctionNotFoundError
+
+    repo.register_function_source(
+        "ont.acme.fn.inline.v1", "def handler(target, params):\n    return params\n"
+    )
+    monkeypatch.setenv("MATE_PROFILE", "production")
+    with pytest.raises(FunctionNotFoundError, match="production"):
+        repo.upsert_function(
+            Function(
+                rid=ClassRef("ont.acme.fn.inline.v1"),
+                language=FunctionLanguage.PYTHON,
+                version=1,
+                source_ref="inline://ont.acme.fn.inline.v1",
+            )
+        )
+
+
 def test_list_functions_returns_seeded(repo) -> None:
+    for rid in ("ont.acme.fn.a.v1", "ont.acme.fn.b.v1"):
+        repo.register_function_source(rid, "def handler(target, params):\n    return params\n")
     repo.upsert_function(
         Function(
             rid=ClassRef("ont.acme.fn.a.v1"),
             language=FunctionLanguage.PYTHON,
             version=1,
-            source_ref="git:sha-a",
+            source_ref="inline://ont.acme.fn.a.v1",
         )
     )
     repo.upsert_function(
@@ -421,7 +464,7 @@ def test_list_functions_returns_seeded(repo) -> None:
             rid=ClassRef("ont.acme.fn.b.v1"),
             language=FunctionLanguage.SQL,
             version=2,
-            source_ref="oci:foo@sha256:deadbeef",
+            source_ref="inline://ont.acme.fn.b.v1",
         )
     )
     items = repo.list_functions()

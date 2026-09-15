@@ -88,6 +88,55 @@ class TestResolveEffectiveEmbedding:
 
     @respx.mock
     @pytest.mark.asyncio
+    async def test_resolves_from_provider_namespace_only(self) -> None:
+        """F5 契约回归：service-read 只返回 `ai.provider.*`，**没有**
+        `ai.embedding.default_provider`（IAM 侧 _SERVICE_READ_PREFIX 强制钳回）。
+        上一版测试的信封自带该键，造成"单测全绿、线上必挂"——本用例锁死真实信封。
+        """
+        respx.get(url__startswith=f"{IAM}/api/v1/admin/configs").mock(
+            return_value=Response(
+                200,
+                json=_flat(
+                    {
+                        # 真实 service-read 能给出的全部键（注意：无 ai.embedding.*）
+                        "ai.provider.default_active": "ark",
+                        "ai.provider.ark.enabled": "true",
+                        "ai.provider.ark.base_url": ARK,
+                        "ai.provider.ark.api_key": "ark-real-key",
+                        "ai.provider.ark.embedding_model": "doubao-embedding-vision",
+                    }
+                ),
+            )
+        )
+        resolved = await resolve_effective_embedding(_fake_request(), "tenant-default")
+        assert resolved == {
+            "provider": "ark",
+            "base_url": ARK,
+            "api_key": "ark-real-key",
+            "model": "doubao-embedding-vision",
+        }
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_explicitly_disabled_provider_returns_empty(self) -> None:
+        """provider 显式 enabled=false 时不参与解析。"""
+        respx.get(url__startswith=f"{IAM}/api/v1/admin/configs").mock(
+            return_value=Response(
+                200,
+                json=_flat(
+                    {
+                        "ai.provider.default_active": "ark",
+                        "ai.provider.ark.enabled": "false",
+                        "ai.provider.ark.base_url": ARK,
+                        "ai.provider.ark.api_key": "k",
+                    }
+                ),
+            )
+        )
+        assert await resolve_effective_embedding(_fake_request(), "t1") == {}
+
+    @respx.mock
+    @pytest.mark.asyncio
     async def test_disabled_returns_empty(self) -> None:
         respx.get(url__startswith=f"{IAM}/api/v1/admin/configs").mock(
             return_value=Response(

@@ -33,6 +33,16 @@ def ago(**kwargs: int) -> datetime:
     return NOW - timedelta(**kwargs)
 
 
+def _recent(**kwargs: int) -> datetime:
+    """相对**真实当前时间**——供 HTTP 端点用例。
+
+    端点按"真实 now"切分趋势窗口/分桶，而 `NOW` 是硬编码的测试基准
+    （2026-09-14 12:00 UTC）。二者跨天即错位：实测 2026-09-15 零点后
+    `test_endpoint_trend_shape` 挂（`assert '2026-09-15' == '2026-09-14'`）。
+    """
+    return datetime.now(UTC) - timedelta(**kwargs)
+
+
 def rec(
     status: str | ProposalStatus,
     *,
@@ -321,14 +331,16 @@ class StubRepo:
 def stub_repo() -> StubRepo:
     return StubRepo(
         [
-            _kernel_prop("p-1", ProposalStatus.EXECUTED, ago(hours=1), confirmed_at=ago(minutes=30)),
-            _kernel_prop("p-2", ProposalStatus.REJECTED, ago(hours=2)),
+            # 偏移用**秒级**：端点按 UTC 日期分桶，分钟级偏移在刚过 UTC 午夜时
+            # 会落到前一天（实测 00:04 UTC 下 minutes=5 即跨天）。
+            _kernel_prop("p-1", ProposalStatus.EXECUTED, _recent(seconds=5), confirmed_at=_recent(seconds=3)),
+            _kernel_prop("p-2", ProposalStatus.REJECTED, _recent(seconds=10)),
             # 跨租户行：X-Tenant-Id=acme 下必须不可见（GOVERN-06 第 2 层前缀过滤）。
             _kernel_prop(
                 "p-3",
                 ProposalStatus.EXECUTED,
-                ago(hours=3),
-                confirmed_at=ago(hours=3),
+                _recent(seconds=15),
+                confirmed_at=_recent(seconds=15),
                 action_rid="ont.other-tenant.action.sneaky.v1",
             ),
         ]
@@ -374,7 +386,8 @@ def test_endpoint_trend_shape(client: TestClient) -> None:
     assert resp.status_code == 200
     pts = resp.json()
     assert len(pts) == 2  # days=1 → [NOW-1d, NOW]
-    assert pts[-1]["date"] == NOW.date().isoformat()
+    # 端点按**真实 now** 分桶（不能用硬编码 NOW，见 _recent 的注释）
+    assert pts[-1]["date"] == datetime.now(UTC).date().isoformat()
     assert pts[-1]["proposed"] == 2  # p-1 / p-2（跨租户 p-3 排除）
     assert pts[-1]["executed"] == 1
     assert pts[-1]["rejected"] == 1

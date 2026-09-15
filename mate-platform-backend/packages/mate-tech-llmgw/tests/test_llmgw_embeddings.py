@@ -63,6 +63,51 @@ class TestHashEmbedding:
         assert len(_hash_embedding("x")) == 384
         assert len(_hash_embedding("x", dim=128)) == 128
 
+
+class TestFallbackDimAndDegraded:
+    """F5：降级向量维度可配置 + 降级可识别。
+
+    此前降级 hash 向量硬编码 384 维，而 `ONT_VECTOR_DIM=2048` —— 上游故障时
+    写入的向量与目标列维度错配；且响应 model 字段仍标为目标模型，
+    调用方无法区分真实向量与占位向量。
+    """
+
+    def test_fallback_dim_reads_env(self, monkeypatch) -> None:
+        from mate_tech_llmgw.providers.embeddings import _fallback_dim
+
+        monkeypatch.setenv("EMBEDDING_FALLBACK_DIM", "2048")
+        assert _fallback_dim() == 2048
+        monkeypatch.delenv("EMBEDDING_FALLBACK_DIM")
+        assert _fallback_dim() == 384
+
+    def test_provider_dim_follows_env(self, monkeypatch) -> None:
+        monkeypatch.setenv("EMBEDDING_FALLBACK_DIM", "2048")
+        p = OpenAIEmbeddingProvider(api_key="k", base_url="http://x")
+        assert p.dim == 2048
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_upstream_failure_marks_degraded(self, monkeypatch) -> None:
+        monkeypatch.setenv("EMBEDDING_FALLBACK_DIM", "2048")
+        respx.post("http://x/embeddings").mock(return_value=Response(401, json={}))
+        p = OpenAIEmbeddingProvider(api_key="k", base_url="http://x", allow_fallback=True)
+        r = await p.embed("hello")
+        assert r.degraded is True, "上游失败必须标记降级，不得静默返回 hash 向量"
+        assert len(r.embedding) == 2048, "降级向量维度应跟随 EMBEDDING_FALLBACK_DIM"
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_success_is_not_degraded(self) -> None:
+        respx.post("http://x/embeddings").mock(
+            return_value=Response(
+                200, json={"data": [{"embedding": [0.1, 0.2, 0.3]}], "usage": {"prompt_tokens": 1}}
+            )
+        )
+        p = OpenAIEmbeddingProvider(api_key="k", base_url="http://x", allow_fallback=True)
+        r = await p.embed("hello")
+        assert r.degraded is False
+        assert r.embedding == [0.1, 0.2, 0.3]
+
     def test_unit_normalized(self) -> None:
         vec = _hash_embedding("normalize me")
         norm = math.sqrt(sum(v * v for v in vec))

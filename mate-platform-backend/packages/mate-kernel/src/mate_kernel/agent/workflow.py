@@ -12,9 +12,11 @@ M3 范围：内存版流程引擎（不接 Flowable 8.0；Flowable 由 mate-tech
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
+from typing import Any
 
 from mate_kernel.action.engine import ActionService, SubmissionContext, SubmissionCriteriaFailed
 from mate_kernel.agent.orchestrator import AgentSelector
@@ -80,10 +82,30 @@ class WorkflowAgent:
         self,
         action_service: ActionService,
         selector: AgentSelector | None = None,
+        action_type_lookup: Callable[[str], Any] | None = None,
     ) -> None:
         self.actions = action_service
         self.selector = selector or AgentSelector()
+        # ADR-0063 S3：解析 ACTION 节点声明的 function_ref 用（传 ActionType rid →
+        # ActionType 对象，取不到返回 None）。缺省时 ACTION 节点会 fail-fast，
+        # 而不再拿 action_rid 充当 function_ref 占位（那会绕过 Action 声明的函数）。
+        self._action_type_lookup = action_type_lookup
         self._states: dict[str, FlowState] = {}
+
+    def _resolve_function_ref(self, action_rid: str) -> str | None:
+        """ADR-0063 S3：从 ActionType 解析其声明的 function_ref rid；取不到返回 None。"""
+        if self._action_type_lookup is None:
+            return None
+        try:
+            at = self._action_type_lookup(action_rid)
+        except Exception:
+            return None
+        if at is None:
+            return None
+        ref = getattr(at, "function_ref", None)
+        if ref is None:
+            return None
+        return getattr(ref, "rid", None) or str(ref)
 
     def start(
         self,
@@ -169,11 +191,22 @@ class WorkflowAgent:
                     state.history.append(f"action node missing action_rid: {node.node_id}")
                     break
                 params = parameters_by_node.get(node.node_id, {})
+                # ADR-0063 S3：必须解析 ActionType 声明的 function_ref 再 apply ——
+                # 此前拿 action_rid 充当 function_ref 占位，等于绕过 Action 声明的
+                # 函数（叠加当时的静默兜底才"跑通"）。
+                function_ref_rid = self._resolve_function_ref(node.action_rid)
+                if function_ref_rid is None:
+                    state.status = FlowStatus.ABORTED
+                    state.history.append(
+                        f"action node {node.node_id}: cannot resolve function_ref "
+                        f"for {node.action_rid}（ADR-0063 S3）"
+                    )
+                    break
                 try:
                     self.actions.apply(
                         action_rid=node.action_rid,
                         submission_criteria=(),  # 流程级节点不做 criteria
-                        function_ref=node.action_rid,  # 同 rid 作为 function 占位
+                        function_ref=function_ref_rid,
                         on_rid=node.action_rid,
                         target_iid=None,
                         parameters=params,

@@ -511,11 +511,17 @@ class TestAxiomFunctionE2E:
 
     def test_function_upsert_list(self, client_with_ctx):
         c = client_with_ctx
+        # ADR-0063 S2：source_ref 须为已登记来源 —— 先触发 startup 拿 repo，
+        # 再显式登记 inline 源码（不再回落恒等函数）。
+        c.get("/api/v1/ont/v2/functions")
+        c.app.state.kernel_repo.register_function_source(
+            "ont.acme.fn.approve-leave.v1", "def handler(target, params):\n    return params\n"
+        )
         fn = {
             "rid": "ont.acme.fn.approve-leave.v1",
             "language": "python",
             "version": 1,
-            "source_ref": "ref://approve_leave",
+            "source_ref": "inline://ont.acme.fn.approve-leave.v1",
             "signatures": [["decision", "string"]],
         }
         r = c.post("/api/v1/ont/v2/functions", json=fn)
@@ -525,6 +531,21 @@ class TestAxiomFunctionE2E:
         r2 = c.get("/api/v1/ont/v2/functions")
         assert r2.status_code == 200
         assert "ont.acme.fn.approve-leave.v1" in {x["rid"] for x in r2.json()}
+
+    def test_function_upsert_unknown_scheme_returns_422(self, client_with_ctx):
+        """ADR-0063 S2：未知 source_ref scheme → 422（不再静默回落恒等函数）。"""
+        c = client_with_ctx
+        r = c.post(
+            "/api/v1/ont/v2/functions",
+            json={
+                "rid": "ont.acme.fn.bad.v1",
+                "language": "python",
+                "version": 1,
+                "source_ref": "ref://approve_leave",
+                "signatures": [["decision", "string"]],
+            },
+        )
+        assert r.status_code == 422, r.text
 
 
 # ─────────────────── 9) ObjectSet query（契约路径） ───────────────────

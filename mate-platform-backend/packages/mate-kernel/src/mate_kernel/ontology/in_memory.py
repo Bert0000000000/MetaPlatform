@@ -13,6 +13,7 @@ from mate_kernel.ontology.query import ObjectSet
 if TYPE_CHECKING:
     from mate_kernel.objectset.ir import ObjectSetQuery, QueryResult
 from mate_kernel.action.engine import ActionService, SubmissionContext
+from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 from mate_kernel.ontology.reasoning import Axiom, Function
 from mate_kernel.ontology.types import (
     ActionType,
@@ -639,8 +640,13 @@ class InMemoryOntologyRepository(OntologyRepository):
     def get_individual(self, rid: str) -> Individual:
         return self._individuals[rid]
 
-    def list_individuals(self, class_rid: ClassRef | None) -> list[Individual]:
-        items = self._individuals.values()
+    def list_individuals(
+        self, class_rid: ClassRef | None, tenant_id: str | None = None
+    ) -> list[Individual]:
+        items = list(self._individuals.values())
+        if tenant_id is not None:
+            # F8：与 PG 侧同语义 —— 显式租户过滤（API handler 传 ctx.tenant_id）
+            items = [i for i in items if i.tenant_id == tenant_id]
         if class_rid is not None:
             allowed = self._list_source_allowed(class_rid.rid)
             if allowed is None:
@@ -736,8 +742,12 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._edit_overlay = {(r, p) for r, p in self._edit_overlay if r != rid}
         return True
 
-    def list_link_instances(self) -> list[LinkInstance]:
-        return list(self._link_instances.values())
+    def list_link_instances(self, tenant_id: str | None = None) -> list[LinkInstance]:
+        items = list(self._link_instances.values())
+        if tenant_id is not None:
+            # F8：与 PG 侧同语义 —— 显式租户过滤
+            items = [x for x in items if x.tenant_id == tenant_id]
+        return items
 
     # ───── reasoning ─────
 
@@ -760,14 +770,20 @@ class InMemoryOntologyRepository(OntologyRepository):
                 }
             )
         self._functions[f.rid] = f
-        # GOVERN-05: source_ref 形如 ``inline://<rid>`` → source 来自 _inline_sources；
-        # 默认占位 main（仅返回参数 dict），让 dev 没注册源码时也能 apply。
-        # 真实源码走 seed_demo / register_function_source 注入。
+        # ADR-0063 S2：按 scheme 注册；**未登记源码一律 fail-fast** —— 不再回落
+        # 恒等函数（那会把"配置缺陷"伪装成"正常执行"）。dev/测试须显式登记
+        # `_INLINE_FUNCTIONS[rid] = source` 后再 upsert_function。
         if f.source_ref.startswith("inline://"):
-            self._function_resolver.register(
-                f.language,
-                f.source_ref,
-                _INLINE_FUNCTIONS.get(f.rid.rid, _DEFAULT_INLINE_FN),
+            src = _INLINE_FUNCTIONS.get(f.rid.rid)
+            if src is None:
+                raise FunctionNotFoundError(
+                    f"inline source not registered for {f.rid.rid} —— ADR-0063 起不再回落恒等函数"
+                )
+            self._function_resolver.register(f.language, f.source_ref, src)
+        else:
+            raise FunctionNotFoundError(
+                f"unknown source_ref scheme: {f.source_ref!r}"
+                "（InMemory 仅支持 inline://；git: 需经 PgOntologyRepository + GitFunctionResolver）"
             )
         return f
 
@@ -775,6 +791,14 @@ class InMemoryOntologyRepository(OntologyRepository):
         return list(self._functions.values())
 
     # ───── G23：Function 别名/版本/调用（InMemory 同语义）─────
+
+    def register_function_source(self, function_rid: str, source: str) -> None:
+        """ADR-0063：显式登记 inline 源码（dev/test）。
+
+        `upsert_function` 不再回落恒等函数，故须先登记再 upsert。
+        登记后可对**已存在**的 Function 重新 upsert 使其生效。
+        """
+        _INLINE_FUNCTIONS[function_rid] = source
 
     def register_function_alias(self, alias: str, function_rid: str) -> dict[str, Any]:
         self._function_aliases[alias] = function_rid

@@ -271,20 +271,20 @@ class TestSortCompilation:
         sql, _ = cur.executed[-1]
         assert f"(props ->> 'ont.{_T}.prop.status.v1')::text ASC" in sql
 
-    def test_unknown_sort_field_defaults_to_text(
+    def test_unknown_sort_field_rejected(
         self,
         capture_repo: tuple[PgOntologyRepository, _CaptureCursor],
     ) -> None:
-        repo, cur = capture_repo
-        repo.evaluate_object_set(
-            ObjectSet(
-                class_rid=_ot().rid,
-                filter_expr="",
-                sort=("mystery",),
+        """F4 同族：未知字段此前**静默回落**成 `::text`（排序无效果且不报错），现应 fail-fast。"""
+        repo, _cur = capture_repo
+        with pytest.raises(ValueError, match="unknown sort field"):
+            repo.evaluate_object_set(
+                ObjectSet(
+                    class_rid=_ot().rid,
+                    filter_expr="",
+                    sort=("mystery",),
+                )
             )
-        )
-        sql, _ = cur.executed[-1]
-        assert "(props ->> 'mystery')::text ASC" in sql
 
     def test_unsafe_sort_field_rejected(
         self,

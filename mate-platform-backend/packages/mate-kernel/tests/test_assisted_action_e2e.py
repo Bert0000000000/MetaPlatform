@@ -84,6 +84,10 @@ def _setup_repo() -> InMemoryOntologyRepository:
             on=(ClassRef(f"ont.{_T}.obj.order.v1"),),
         )
     )
+    # ADR-0063 S2：不再有隐式兜底 —— 显式注册函数（本用例关注 proposal 全链留痕）
+    repo._action_service.register_function(
+        f"ont.{_T}.fn.flag.v1", lambda _iid, params: params
+    )
     return repo
 
 

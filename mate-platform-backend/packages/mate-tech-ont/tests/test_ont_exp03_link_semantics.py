@@ -38,6 +38,7 @@ OBJ_A = f"ont.{T}.obj.core.alpha.v1"
 OBJ_B = f"ont.{T}.obj.core.beta.v1"
 LINK_11 = f"ont.{T}.link.core.a-b-one-one.v1"
 LINK_NN = f"ont.{T}.link.core.a-b-many-many.v1"
+LINK_N1 = f"ont.{T}.link.core.a-b-many-one.v1"
 P_NAME = f"ont.{T}.prop.ename.v1"
 
 
@@ -102,6 +103,7 @@ def repo() -> InMemoryOntologyRepository:
     r.upsert_object_type(_ot(OBJ_B, "beta"))
     r.upsert_link_type(_lt(LINK_11, Cardinality.ONE_TO_ONE))
     r.upsert_link_type(_lt(LINK_NN, Cardinality.MANY_TO_MANY))
+    r.upsert_link_type(_lt(LINK_N1, Cardinality.MANY_TO_ONE))
     for i, cls in [(1, OBJ_A), (2, OBJ_A), (3, OBJ_B), (4, OBJ_B)]:
         slug = {OBJ_A: "alpha", OBJ_B: "beta"}[cls]
         r.create_individual(_ind(f"ont.{T}.ind.{slug}.{i}", cls, f"n{i}"))
@@ -187,34 +189,38 @@ class TestSearchAround:
 PG_DSN = os.environ.get("EXP03_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
 
 
+@pytest.fixture()
+def pg_repo():
+    """真库 PG repo（模块级 —— 多个测试类共用，不可达时 skip）。"""
+    pytest.importorskip("psycopg2")
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+
+    r = PgOntologyRepository(dsn=PG_DSN)
+    try:
+        r._ensure_schema()
+    except Exception as e:
+        pytest.skip(f"PG unavailable: {e}")
+    with r.tenant_scope(T):
+        r.upsert_object_type(_ot(OBJ_A, "alpha"))
+        r.upsert_object_type(_ot(OBJ_B, "beta"))
+        r.upsert_link_type(_lt(LINK_11, Cardinality.ONE_TO_ONE))
+        r.upsert_link_type(_lt(LINK_NN, Cardinality.MANY_TO_MANY))
+        r.upsert_link_type(_lt(LINK_N1, Cardinality.MANY_TO_ONE))
+        for i, cls in [(1, OBJ_A), (2, OBJ_A), (3, OBJ_B), (4, OBJ_B)]:
+            slug = {OBJ_A: "alpha", OBJ_B: "beta"}[cls]
+            r.create_individual(_ind(f"ont.{T}.ind.{slug}.{i}", cls, f"n{i}"))
+    yield r
+    import psycopg2
+
+    conn = psycopg2.connect(PG_DSN)
+    with conn.cursor() as cur:
+        for tbl in ("ont_individual", "ont_link_instance", "ont_object_type", "ont_link_type"):
+            cur.execute(f"DELETE FROM {tbl} WHERE tenant_id=%s", (T,))
+    conn.commit()
+    conn.close()
+
+
 class TestPgSameSemantics:
-    @pytest.fixture()
-    def pg_repo(self):
-        pytest.importorskip("psycopg2")
-        from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
-
-        r = PgOntologyRepository(dsn=PG_DSN)
-        try:
-            r._ensure_schema()
-        except Exception as e:
-            pytest.skip(f"PG unavailable: {e}")
-        with r.tenant_scope(T):
-            r.upsert_object_type(_ot(OBJ_A, "alpha"))
-            r.upsert_object_type(_ot(OBJ_B, "beta"))
-            r.upsert_link_type(_lt(LINK_11, Cardinality.ONE_TO_ONE))
-            r.upsert_link_type(_lt(LINK_NN, Cardinality.MANY_TO_MANY))
-            for i, cls in [(1, OBJ_A), (2, OBJ_A), (3, OBJ_B), (4, OBJ_B)]:
-                slug = {OBJ_A: "alpha", OBJ_B: "beta"}[cls]
-                r.create_individual(_ind(f"ont.{T}.ind.{slug}.{i}", cls, f"n{i}"))
-        yield r
-        import psycopg2
-
-        conn = psycopg2.connect(PG_DSN)
-        with conn.cursor() as cur:
-            for tbl in ("ont_individual", "ont_link_instance", "ont_object_type", "ont_link_type"):
-                cur.execute(f"DELETE FROM {tbl} WHERE tenant_id=%s", (T,))
-        conn.commit()
-        conn.close()
 
     def test_pg_cardinality_and_around(self, pg_repo) -> None:
         with pg_repo.tenant_scope(T):
@@ -231,3 +237,46 @@ class TestPgSameSemantics:
             assert len(around) == 1
             assert around[0]["link_display"] == "betas"
             assert around[0]["peers"][0]["ename"] == "n3"
+
+
+class TestLinkReplayIdempotent:
+    """F3/F6 回归：同一 rid 重放必须幂等（SQL 明写 ON CONFLICT upsert 语义）。
+
+    此前 `pg_repo.create_link_instance` 调 `_check_link_cardinality` 时漏传
+    `exclude_rid`，同一条链接重放被误判为「第二条件边」→ `ValueError`
+    → HTTP 500；InMemory 路径正确排除同 rid。两后端必须一致。
+    """
+
+    def test_n1_second_edge_rejected(self, repo) -> None:
+        """N:1：同 src 的第二条边（不同 rid）必须被拒。"""
+        repo.create_link_instance(_li(1, LINK_N1, f"ont.{T}.ind.alpha.1", f"ont.{T}.ind.beta.3"))
+        with pytest.raises(ValueError, match="N:1 violated: src"):
+            repo.create_link_instance(
+                _li(2, LINK_N1, f"ont.{T}.ind.alpha.1", f"ont.{T}.ind.beta.4")
+            )
+
+    def test_same_rid_replay_is_idempotent(self, repo) -> None:
+        li = _li(1, LINK_N1, f"ont.{T}.ind.alpha.1", f"ont.{T}.ind.beta.3")
+        repo.create_link_instance(li)
+        repo.create_link_instance(li)  # 重放同 rid：不抛
+        assert len(repo.list_link_instances()) == 1
+
+    def test_pg_n1_second_edge_rejected(self, pg_repo) -> None:
+        with pg_repo.tenant_scope(T):
+            pg_repo.create_link_instance(
+                _li(1, LINK_N1, f"ont.{T}.ind.alpha.1", f"ont.{T}.ind.beta.3")
+            )
+            with pytest.raises(ValueError, match="N:1 violated: src"):
+                pg_repo.create_link_instance(
+                    _li(2, LINK_N1, f"ont.{T}.ind.alpha.1", f"ont.{T}.ind.beta.4")
+                )
+
+    def test_pg_same_rid_replay_is_idempotent(self, pg_repo) -> None:
+        """回归 F3：PG 侧曾漏传 exclude_rid，本用例此前失败。"""
+        with pg_repo.tenant_scope(T):
+            li = _li(1, LINK_N1, f"ont.{T}.ind.alpha.1", f"ont.{T}.ind.beta.3")
+            pg_repo.create_link_instance(li)
+            pg_repo.create_link_instance(li)  # ← 修复前抛 ValueError
+            # 注意：list_link_instances() 不过滤租户（见下方 F8），故按 rid 前缀计数
+            mine = [x for x in pg_repo.list_link_instances() if x.rid == li.rid]
+            assert len(mine) == 1

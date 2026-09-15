@@ -50,6 +50,7 @@ from mate_kernel.ontology.api import OntologyRepository
 from mate_kernel.ontology.identity import ClassRef
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.query import ObjectSet
+from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 from mate_kernel.ontology.reasoning import Axiom, AxiomKind, Function, FunctionLanguage
 from mate_kernel.ontology.types.action_type import ActionType
 from mate_kernel.ontology.types.interface import Interface
@@ -741,7 +742,12 @@ async def upsert_backing_datasource(
 )
 async def list_backing_datasources(rid: str, request: Request) -> list[dict]:
     """B5：类型的背挂数据源声明清单（priority 序）。"""
-    _ctx(request)
+    ctx = _ctx(request)
+    # F8 同族修复：rid 前缀租户守门此前缺失 —— 实测可读他租户的背挂数据源声明。
+    # 注意：**不能指望 RLS 兜底** —— 应用连接角色 `meta` 是 rolsuper+rolbypassrls，
+    # PG 超级用户恒绕过 RLS（FORCE 也管不住）。租户隔离目前只能靠应用层谓词/守门。
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant access denied")
     return await _call_scoped(request, "list_backing_datasources", rid)
 
 
@@ -957,7 +963,11 @@ async def register_function_alias(
 )
 async def list_function_versions(rid: str, request: Request) -> list[dict]:
     """G23：版本快照倒序（被覆盖的历史版本）。"""
-    _ctx(request)
+    ctx = _ctx(request)
+    # F8 同族修复：rid 前缀租户守门此前缺失 —— 实测可读他租户函数版本元数据
+    # （含 source_ref）。同族的 list_versions 早已有此守门。
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant access denied")
     return await _call_scoped(request, "list_function_versions", rid)
 
 
@@ -2362,7 +2372,11 @@ async def list_individuals(
     cls_ref = ClassRef(class_rid) if class_rid else None
     if cls_ref and not cls_ref.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant access denied")
-    items = await _call_scoped(request, "list_individuals", cls_ref)
+    # F8：显式传 tenant_id —— tenant_scope 的 thread-local 不跨 asyncio.to_thread，
+    # 仅靠 repo 内 _current_tenant() 拿不到租户（会静默返回全库数据）。
+    items = await _call_scoped(
+        request, "list_individuals", cls_ref, tenant_id=str(ctx.tenant_id)  # type: ignore[attr-defined]
+    )
     if class_rid:  # GOV-16：读打点（best-effort；P1-7 actor/source 维度）
         reader = str(getattr(ctx, "user_id", "") or "")
         await _call_scoped(request, "record_usage", class_rid, "read", 1, reader, "api")
@@ -4168,7 +4182,14 @@ async def upsert_function(
     f = _dto_to_function(payload)
     if not f.rid.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant function denied")
-    saved = await _call_scoped(request, "upsert_function", f)
+    try:
+        saved = await _call_scoped(request, "upsert_function", f)
+    except FunctionNotFoundError as e:
+        # ADR-0063 S2：未知 source_ref scheme / 未登记 inline 源码 → 422（客户端契约错误），
+        # 而非 500；也不再静默回落恒等函数。
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
     return _function_to_dto(saved)
 
 
@@ -4209,7 +4230,12 @@ async def query_object_set(
         paging_offset=payload.paging_offset,
         paging_limit=payload.paging_limit,
     )
-    results = await _call_scoped(request, "evaluate_object_set", os_)
+    try:
+        results = await _call_scoped(request, "evaluate_object_set", os_)
+    except ValueError as e:
+        # F4：filter_expr 字段无法解析（既非完整 rid 也非已知 slug）→ 422，
+        # 而非静默空集或 500。
+        raise HTTPException(status_code=422, detail=str(e)) from e
     items = [_individual_to_response(i) for i in results]
     return ObjectSetResult(results=items, count=len(items))
 
@@ -4631,7 +4657,14 @@ async def create_link_instance(
         tenant_id=tenant_id,
         marking=tuple(payload.marking),
     )
-    saved = await _call_scoped(request, "create_link_instance", li)
+    try:
+        saved = await _call_scoped(request, "create_link_instance", li)
+    except ValueError as e:
+        # F6：值错误此前冒泡成 500。基数违规是"冲突"语义 → 409；
+        # 其余 LinkInstance 校验（如 src == dst）是"入参非法" → 422。
+        msg = str(e)
+        status = 409 if "cardinality" in msg else 422
+        raise HTTPException(status_code=status, detail=msg) from e
     return _link_instance_to_response(saved)
 
 
@@ -4643,8 +4676,11 @@ async def create_link_instance(
 async def list_link_instances(
     request: Request,
 ) -> list[LinkInstanceResponse]:
-    _ctx(request)
-    items = await _call_scoped(request, "list_link_instances")
+    ctx = _ctx(request)
+    # F8：显式传 tenant_id（理由同 list_individuals —— thread-local 不跨 to_thread）
+    items = await _call_scoped(
+        request, "list_link_instances", tenant_id=str(ctx.tenant_id)  # type: ignore[attr-defined]
+    )
     return [_link_instance_to_response(i) for i in items]
 
 

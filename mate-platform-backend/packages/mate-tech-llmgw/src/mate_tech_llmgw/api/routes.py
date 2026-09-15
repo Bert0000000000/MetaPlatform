@@ -425,6 +425,9 @@ class EmbeddingResponse(BaseModel):
     dimensions: int = 0
     data: list[dict[str, Any]]
     usage: dict[str, int] = {}
+    # F5：True = 上游失败，返回的是确定性 hash 占位向量。此前上游故障仍返回
+    # 200 且 model 标为目标模型，调用方无法区分真实向量与占位向量。
+    degraded: bool = False
 
 
 def _infer_embedding_provider(model: str, explicit: str) -> str:
@@ -479,10 +482,21 @@ async def _run_embeddings(
 
     data: list[dict[str, Any]] = []
     total_tokens = 0
+    degraded = False
     for i, text in enumerate(req.input):
         result = await provider.embed(text, model=effective_model, tenant_id=req.tenant_id)
         data.append({"index": i, "embedding": result.embedding})
         total_tokens += result.usage.get("prompt_tokens", 0)
+        degraded = degraded or bool(getattr(result, "degraded", False))
+
+    if degraded:
+        # F5：上游失败会静默降级为 hash 向量 —— 必须留痕，否则"失败被吞"重演
+        logger.warning(
+            "llmgw.embeddings.degraded",
+            model=effective_model,
+            tenant_id=getattr(req, "tenant_id", ""),
+            items=len(req.input),
+        )
 
     dimensions = len(data[0]["embedding"]) if data else 0
     return EmbeddingResponse(
@@ -490,6 +504,7 @@ async def _run_embeddings(
         dimensions=dimensions,
         data=data,
         usage={"prompt_tokens": total_tokens},
+        degraded=degraded,
     )
 
 

@@ -11,6 +11,9 @@ dev 默认 ``InMemoryFunctionResolver``（registry in-process）。生产可替�
 
 from __future__ import annotations
 
+import re
+import subprocess
+from pathlib import Path
 from typing import Protocol
 
 from .identity.class_ref import ClassRef
@@ -49,3 +52,72 @@ class InMemoryFunctionResolver:
             if ref.endswith(function_ref.rid) or ref == function_ref.rid:
                 return lang, src
         raise FunctionNotFoundError(f"function not registered: {function_ref.rid}")
+
+
+# ─────────────────── GOVERN-05+1: Git 来源（ADR-0063）───────────────────
+
+# `git:<40 位 commit SHA>:<仓库相对路径>`。**强制完整 SHA** —— branch/tag
+# 可移动，会破坏"当时执行的是哪份代码"的可复现性与审计。
+_GIT_REF_RE = re.compile(r"^git:(?P<sha>[0-9a-f]{40}):(?P<path>[^\s][^\s]*)$")
+
+
+class GitFunctionResolver:
+    """ADR-0063 S1：按 ``git:<sha>:<path>`` 从仓库取源码。
+
+    - 只接受**完整 40 位 commit SHA** 锚定的 source_ref；
+    - 进程内按 ``<sha>:<path>`` 缓存；Function 新版本 → 新 SHA → 自然失效；
+    - 取不到（SHA/路径不存在、git 不可用）→ ``FunctionNotFoundError``，**fail-fast**。
+
+    与 ``InMemoryFunctionResolver`` 的差别：后者登记的是**源码本身**，本实现
+    登记的是 **rid → source_ref 映射**，源码按需从 git 拉取。
+    """
+
+    def __init__(self, repo_root: str | Path, *, timeout: float = 10.0) -> None:
+        self._repo_root = str(repo_root)
+        self._timeout = timeout
+        self._refs: dict[str, tuple[FunctionLanguage, str]] = {}
+        self._cache: dict[str, str] = {}
+
+    def register_ref(
+        self, function_rid: str, language: FunctionLanguage, source_ref: str
+    ) -> None:
+        if not _GIT_REF_RE.match(source_ref):
+            raise ValueError(
+                f"invalid git source_ref (need git:<40-hex-sha>:<path>): {source_ref!r}"
+            )
+        self._refs[function_rid] = (language, source_ref)
+
+    def resolve(self, function_ref: ClassRef) -> tuple[FunctionLanguage, str]:
+        entry = self._refs.get(function_ref.rid)
+        if entry is None:
+            raise FunctionNotFoundError(f"function not registered: {function_ref.rid}")
+        lang, ref = entry
+        m = _GIT_REF_RE.match(ref)
+        if m is None:  # pragma: no cover — register_ref 已挡
+            raise FunctionNotFoundError(f"invalid git source_ref: {ref!r}")
+        sha, path = m.group("sha"), m.group("path")
+        key = f"{sha}:{path}"
+        cached = self._cache.get(key)
+        if cached is not None:
+            return lang, cached
+        src = self._git_show(sha, path)
+        self._cache[key] = src
+        return lang, src
+
+    def _git_show(self, sha: str, path: str) -> str:
+        try:
+            proc = subprocess.run(
+                ["git", "show", f"{sha}:{path}"],
+                cwd=self._repo_root,
+                capture_output=True,
+                text=True,
+                timeout=self._timeout,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError) as e:
+            raise FunctionNotFoundError(f"git unavailable for {sha}:{path}: {e}") from e
+        if proc.returncode != 0:
+            raise FunctionNotFoundError(
+                f"git show failed for {sha}:{path}: {proc.stderr.strip()[:200]}"
+            )
+        return proc.stdout

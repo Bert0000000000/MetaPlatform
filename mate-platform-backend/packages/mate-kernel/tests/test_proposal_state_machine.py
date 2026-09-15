@@ -19,6 +19,9 @@ from mate_kernel.action.engine import (
 
 def _svc_with_action() -> ActionService:
     svc = ActionService()
+    # ADR-0063 S2：kernel 不再有"未注册即回显 parameters"的隐式兜底 —— 显式注册
+    for ref in ("fn-flag", "fn"):
+        svc.register_function(ref, lambda _iid, params: params)
     return svc
 
 

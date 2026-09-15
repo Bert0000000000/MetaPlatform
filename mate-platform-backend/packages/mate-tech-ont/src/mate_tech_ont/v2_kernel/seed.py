@@ -57,13 +57,25 @@ def _ind(
     )
 
 
-def _function_placeholder(t: str, slug: str) -> Function:
-    return Function(
-        rid=ClassRef(f"ont.{t}.fn.{slug}"),
-        language=FunctionLanguage.PYTHON,
-        version=1,
-        source_ref=f"ref://{slug.replace('.', '_')}",
-        signatures=(("decision", "string"),),
+# ADR-0063：demo Function 的显式 inline 源码。upsert_function 不再回落恒等
+# 函数，故必须先 register_function_source 再 upsert。
+_DEMO_FN_SOURCE = "def handler(target, params):\n    return params\n"
+
+
+def _seed_function(repo: OntologyRepository, t: str, slug: str) -> None:
+    """登记 inline 源码并 upsert demo Function（ADR-0063 S2）。"""
+    rid = f"ont.{t}.fn.{slug}"
+    register = getattr(repo, "register_function_source", None)
+    if register is not None:
+        register(rid, _DEMO_FN_SOURCE)
+    repo.upsert_function(
+        Function(
+            rid=ClassRef(rid),
+            language=FunctionLanguage.PYTHON,
+            version=1,
+            source_ref=f"inline://{rid}",
+            signatures=(("decision", "string"),),
+        )
     )
 
 
@@ -89,13 +101,43 @@ def _seed_order_review_resources(repo: OntologyRepository, t: str) -> int:
         repo.upsert_action_type(_order_review_action_type(t))
         created += 1
     if function_rid not in {function.rid for function in repo.list_functions()}:
-        repo.upsert_function(_function_placeholder(t, "order-review-confirm.v1"))
+        _seed_function(repo, t, "order-review-confirm.v1")
         created += 1
     return created
 
 
+def _backfill_function_sources(repo: OntologyRepository) -> int:
+    """ADR-0063 S2：把历史遗留的非 inline/git source_ref 就地升级为 ``inline://``。
+
+    早期 seed 写的是 ``ref://<slug>`` 占位；S2 删除静默兜底后，这些函数的
+    ActionType 会在 apply 时 fail-fast（``FunctionNotRegistered``）。而 seed 的
+    幂等分支会跳过其余资源，旧行永远得不到修复 —— 故本回填**无条件执行**。
+    """
+    from dataclasses import replace as _replace
+
+    register = getattr(repo, "register_function_source", None)
+    if register is None:  # pragma: no cover — InMemory/PG 均已实现
+        return 0
+    n = 0
+    for f in repo.list_functions():
+        ref = f.source_ref or ""
+        if ref.startswith("git:"):
+            continue
+        register(f.rid.rid, _DEMO_FN_SOURCE)
+        # 无论 ref 是否改过都要 upsert —— resolver 的登记只发生在 upsert_function
+        # 内部（register_function_source 仅写 _PG_INLINE_FUNCTIONS）。只 register
+        # 不 upsert 会让已升级的行在新进程里依然解析不出来。
+        if not ref.startswith("inline://"):
+            f = _replace(f, source_ref=f"inline://{f.rid.rid}")
+            n += 1
+        repo.upsert_function(f)
+    return n
+
+
 def seed_demo(repo: OntologyRepository, tenant_id: str = TENANT) -> int:
     """幂等注入请假审批场景；返回创建资源数（已存在返回 0）。"""
+    # ADR-0063 S2：函数源码回填必须**先于**幂等分支执行（见 _backfill_function_sources）
+    _backfill_function_sources(repo)
     if repo.list_object_types(limit=1, offset=0):
         return _seed_order_review_resources(repo, tenant_id)
 
@@ -232,8 +274,8 @@ def seed_demo(repo: OntologyRepository, tenant_id: str = TENANT) -> int:
     order_review_created = _seed_order_review_resources(repo, t)
 
     # ── Function / LinkType / LinkInstance ──
-    repo.upsert_function(_function_placeholder(t, "approve-leave.v1"))
-    repo.upsert_function(_function_placeholder(t, "close-ticket.v1"))
+    _seed_function(repo, t, "approve-leave.v1")
+    _seed_function(repo, t, "close-ticket.v1")
     repo.upsert_link_type(
         LinkType(
             rid=ClassRef(f"ont.{t}.link.employee-leave.v1"),
@@ -408,7 +450,7 @@ def _seed_enterprise_ontology(
             description="对客户合同进行审批流转（批准 / 驳回），邮件通知相关方并记录审计日志",
         )
     )
-    repo.upsert_function(_function_placeholder(t, "approve-contract.v1"))
+    _seed_function(repo, t, "approve-contract.v1")
     created += 2
 
     # 关联 LinkType：customer→order 1:N、organization→person 1:N

@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 from mate_kernel.ontology import (
     ActionType,
     Axiom,
@@ -229,15 +230,32 @@ class TestReasoningCRUD:
 
     def test_upsert_function(self) -> None:
         repo = _repo()
+        # ADR-0063 S2：须先显式登记 inline 源码（不再回落恒等函数）
+        repo.register_function_source(
+            "ont.acme.fn.notify.v1", "def handler(target, params):\n    return params\n"
+        )
         f = Function(
             rid=ClassRef("ont.acme.fn.notify.v1"),
             language=FunctionLanguage.PYTHON,
             version="1.0.0",
-            source_ref="s3://acme/fn/notify.py",
+            source_ref="inline://ont.acme.fn.notify.v1",
             signatures=(("approve_order", "ActionType"),),
         )
         repo.upsert_function(f)
         assert repo.list_functions()[0].language == FunctionLanguage.PYTHON
+
+    def test_upsert_function_unknown_scheme_rejected(self) -> None:
+        """ADR-0063 S2：未知 source_ref scheme 必须 fail-fast（不再静默回落）。"""
+        repo = _repo()
+        with pytest.raises(FunctionNotFoundError):
+            repo.upsert_function(
+                Function(
+                    rid=ClassRef("ont.acme.fn.bad.v1"),
+                    language=FunctionLanguage.PYTHON,
+                    version="1.0.0",
+                    source_ref="s3://acme/fn/bad.py",
+                )
+            )
 
 
 # ───── query / apply (3 tests) ─────
@@ -270,6 +288,11 @@ class TestQueryAndApply:
 
     def test_apply_action_returns_side_effects(self) -> None:
         repo = _repo()
+        # ADR-0063 S2：kernel 不再有"未注册即回显 parameters"的隐式兜底 ——
+        # 本用例关注 side_effects，故显式注册一个透传函数。
+        repo._action_service.register_function(
+            "ont.acme.fn.notify.v1", lambda _iid, params: params
+        )
         at = ActionType(
             rid=ClassRef("ont.acme.act.notify"),
             parameters=(),

@@ -156,3 +156,34 @@ class TestInferredObjectSet:
                     tenant_id=T,
                     enabled=True,
                 )
+
+
+class TestListAxiomsSafe:
+    """F9 回归：`list_axioms()` 不得因空串 operand 崩溃。
+
+    背景：`upsert_object_type` 对**无父类**的类型会写一条 `operands=[rid, '']`
+    的 disabled 公理（`pg_repo.py:1310-1318`，留审计用）；而 `_row_to_ax`
+    对每个 operand 直接构造 `ClassRef`，空串违反 rid 正则 → `ValueError`
+    → `GET /api/v1/ont/v2/axioms` 恒 **500**（实测）。
+    """
+
+    def test_list_axioms_survives_parentless_type(self, repo) -> None:
+        axs = repo.list_axioms()
+        assert isinstance(axs, list)
+        # 每条读回的公理，operand 必须是合法 ClassRef（非空、带 ont. 前缀）
+        for a in axs:
+            for o in a.operands:
+                assert o.rid, f"空 operand 出现在公理 {a.rid}"
+                assert o.rid.startswith("ont."), f"非法 operand {o.rid!r} 在 {a.rid}"
+
+    def test_parent_axiom_has_single_operand_when_parentless(self, repo) -> None:
+        """无父类时生成的 parent 公理只保留自身 rid，不写空串占位。"""
+        axs = {a.rid: a for a in repo.list_axioms()}
+        # fixture 建的 3 个类型都没有 parent_class
+        for obj in (OBJ_P, OBJ_E, OBJ_M):
+            ax_rid = obj.replace(".obj.", ".ax.parent.")
+            ax = axs.get(ax_rid)
+            if ax is None:
+                continue  # 该类型未生成公理（容忍）
+            assert len(ax.operands) >= 1
+            assert all(o.rid for o in ax.operands), f"{ax_rid} 含空 operand"

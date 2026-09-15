@@ -36,7 +36,12 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture
 def repo():
-    return PgOntologyRepository(dsn=PG_DSN)
+    r = PgOntologyRepository(dsn=PG_DSN)
+    # ADR-0063 S2：不再有隐式兜底 —— 显式注册 proposal action 用的透传函数
+    r._action_service.register_function(
+        "ont.acme.fn.proposal-action.v1", lambda _iid, params: params
+    )
+    return r
 
 
 @pytest.fixture(autouse=True)

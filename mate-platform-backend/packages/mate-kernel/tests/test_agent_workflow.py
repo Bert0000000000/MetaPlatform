@@ -63,8 +63,29 @@ class TestWorkflowAgent:
     def _mgr(self) -> Manager:
         return Manager(_ctx())
 
+    def _wa(self) -> WorkflowAgent:
+        """ADR-0063 S3：flow 须经 lookup 解析 ActionType 声明的 function_ref。
+
+        此前 flow 拿 action_rid 直接充当 function_ref 占位；现在必须显式提供
+        ActionType 查找器，否则 ACTION 节点 fail-fast。
+        """
+        from mate_kernel.ontology.identity import ClassRef
+        from mate_kernel.ontology.types.action_type import ActionType
+
+        def lookup(action_rid: str):
+            return ActionType(
+                rid=ClassRef(action_rid),
+                parameters=(),
+                submission_criteria=(),
+                side_effects=(),
+                function_ref=ClassRef(action_rid),
+                on=(ClassRef("ont.acme.obj.x.v1"),),
+            )
+
+        return WorkflowAgent(self._svc(), action_type_lookup=lookup)
+
     def test_simple_action_flow_completes(self) -> None:
-        wa = WorkflowAgent(self._svc())
+        wa = self._wa()
         flow = FlowDefinition(
             flow_rid="wfe.acme.flow.approve.v1",
             nodes=(
@@ -80,7 +101,7 @@ class TestWorkflowAgent:
         assert state.finished_at is not None
 
     def test_wait_user_pauses(self) -> None:
-        wa = WorkflowAgent(self._svc())
+        wa = self._wa()
         flow = FlowDefinition(
             flow_rid="wfe.acme.flow.review.v1",
             nodes=(
@@ -104,7 +125,7 @@ class TestWorkflowAgent:
         assert state.status == FlowStatus.AWAITING_USER
 
     def test_resume_after_wait_user(self) -> None:
-        wa = WorkflowAgent(self._svc())
+        wa = self._wa()
         flow = FlowDefinition(
             flow_rid="wfe.acme.flow.review2.v1",
             nodes=(
@@ -123,7 +144,7 @@ class TestWorkflowAgent:
         assert s2.status == FlowStatus.ABORTED
 
     def test_abort(self) -> None:
-        wa = WorkflowAgent(self._svc())
+        wa = self._wa()
         flow = FlowDefinition(
             flow_rid="wfe.acme.flow.x.v1",
             nodes=(_node("s", NodeKind.START),),
@@ -142,7 +163,7 @@ class TestWorkflowAgent:
             )
 
     def test_records_action_change(self) -> None:
-        wa = WorkflowAgent(self._svc())
+        wa = self._wa()
         mgr = self._mgr()
         flow = FlowDefinition(
             flow_rid="wfe.acme.flow.z.v1",
@@ -158,7 +179,7 @@ class TestWorkflowAgent:
         assert any(c.target_rid == "ont.acme.act.approve" for c in changes)
 
     def test_get_state_unknown_raises(self) -> None:
-        wa = WorkflowAgent(self._svc())
+        wa = self._wa()
         with pytest.raises(KeyError):
             wa.get_state("wfe.acme.flow.never.v1", _ctx())
 

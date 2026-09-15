@@ -17,6 +17,7 @@ GOVERN-05 扩展：
 
 from __future__ import annotations
 
+import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
@@ -24,6 +25,10 @@ from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 from ..sandbox.k8s import FunctionExecutor
+
+# F10：audit_id 此前是纯进程内计数器（`audit-<n>`），进程重启后从 1 重来，
+# 与库里既有行撞 `ont_action_audit` 主键 → execute 500。加进程唯一前缀。
+_AUDIT_TAG = uuid.uuid4().hex[:6]
 
 
 class SubmissionCriteriaFailed(RuntimeError):
@@ -409,10 +414,13 @@ class ActionService:
         else:
             invoker = self._invokers.get(function_ref)
             if invoker is None:
-                # GOVERN-05: 默认 fallback —— 没有 invoker/executor 时返回 parameters
-                # 当作"决策结果"，让 dev/未注册源码的 ActionType 仍可 apply。
-                # 测试用 register_function 显式注入可覆盖。
-                function_result = parameters
+                # ADR-0063 S2：删除静默兜底。此前"没有 invoker/executor 时返回
+                # parameters 当作决策结果"，会让未接线的 Function 伪装成执行成功
+                # （apply 返回 200 却什么都没算），失败不可观测。现在一律 fail-fast。
+                raise FunctionNotRegistered(
+                    f"function {function_ref!r} has no registered invoker/executor "
+                    "(ADR-0063 起不再回落 parameters)"
+                )
             else:
                 try:
                     function_result = invoker(target_iid, parameters)
@@ -430,7 +438,7 @@ class ActionService:
             target_iid=target_iid,
             applied_at=datetime.now(UTC),
             side_effects_emitted=emitted,
-            audit_id=f"audit-{len(self._audit) + 1}",
+            audit_id=f"audit-{_AUDIT_TAG}-{len(self._audit) + 1}",
             rolled_back=rolled_back,
             function_result=function_result,
             proposal_id=proposal_id,
