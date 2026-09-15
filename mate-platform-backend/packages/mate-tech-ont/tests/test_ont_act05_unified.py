@@ -652,6 +652,32 @@ class TestS2PgUnified:
             ind = pg_repo.get_individual(ALICE)
             assert ind.get(ClassRef(P_NEW_STATUS)) == "pg-legacy"  # legacy 回写：参数 rid 即落点
 
+    def test_pg_declarative_action_kind_revert_restores(self, pg_repo) -> None:
+        """S4 修复：kind=action 声明式经统一执行器 → revert 消费 inverse 回旧值。"""
+        with pg_repo.tenant_scope(T):
+            at = ActionType(
+                rid=ClassRef(ACT_PURE),
+                parameters=(_param("new-status"),),
+                submission_criteria=(),
+                side_effects=(),
+                function_ref=None,
+                on=(ClassRef(OBJ),),
+                declarative_edits=(dict(EDIT_TMPL),),
+            )
+            pg_repo.upsert_action_type(at)
+            prop = pg_repo.propose_action(
+                ClassRef(ACT_PURE), {"new-status": "revert-me"}, ALICE, "declarative"
+            )
+            pid = prop.proposal_id if hasattr(prop, "proposal_id") else prop["proposal_id"]
+            pg_repo.confirm_proposal(pid, confirmed_by="boss")
+            result = pg_repo.execute_proposal(pid, idempotency_key=f"drv-{pid}")
+            assert result["kind"] == "edit_set"  # 统一执行器
+            assert result["is_compat"] is False
+            assert pg_repo.get_individual(ALICE).get(ClassRef(P_STATUS)) == "revert-me"
+            out = pg_repo.revert_proposal(pid, actor_id="boss")
+            assert out["equivalence"] == "equivalent"
+            assert pg_repo.get_individual(ALICE).get(ClassRef(P_STATUS)) == "active"
+
 
 # ─────────────────── S3 · 入口分派 + AI 面（API 级）───────────────────
 

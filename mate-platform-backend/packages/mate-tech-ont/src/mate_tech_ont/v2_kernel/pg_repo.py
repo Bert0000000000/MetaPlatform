@@ -4631,8 +4631,13 @@ class PgOntologyRepository(OntologyRepository):
         elif p.kind == "merge_suggestion":
             # merge 不可数值逆写 → audit-only（partial）
             compensated = {"note": "merge reversal is audit-only"}
-        elif p.kind == "edit_set":
-            # ACT-07：逆编辑补偿（执行期 invert_edits 已排除不可逆项）
+        elif p.kind == "edit_set" or (
+            p.kind == "action" and execution.get("inverse")
+        ):
+            # ACT-07 / ADR-0064：逆编辑补偿（执行期 invert_edits 已排除不可逆项）。
+            # kind=action 经统一执行器执行的声明式/混合式，execution 同样带 inverse
+            # —— 有逆编辑就按同一补偿路径（legacy function 式 execution 无 inverse，
+            # 自然落 audit-only partial）。
             inverse_edits = list(execution.get("inverse") or [])
             non_inv = list(execution.get("non_invertible") or [])
             if inverse_edits:
@@ -5219,6 +5224,8 @@ class PgOntologyRepository(OntologyRepository):
         edit_templates: list[dict[str, Any]] | tuple[dict[str, Any], ...],
         actor: str,
         impact_summary: str = "",
+        *,
+        viewer_markings: tuple[str, ...] | list[str] = (),
     ) -> dict[str, Any]:
         """D7「预览即确认」：即时 proposal（confirmed）+ 事务执行 + 审计。"""
         prop = self._propose_edit_set_pg(
@@ -5233,6 +5240,7 @@ class PgOntologyRepository(OntologyRepository):
             prop.proposal_id,
             actor_id=actor,
             idempotency_key=f"editset-{prop.proposal_id}",
+            viewer_markings=viewer_markings,
         )
 
     def _execute_edit_set_proposal(
