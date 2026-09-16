@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMatch, useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  Empty,
   Input,
   Space,
   Table,
@@ -28,9 +27,11 @@ import {
 } from '@ant-design/icons';
 import { listServers, deleteServer, startServer, stopServer, createServer } from '@/api/mcphub/servers';
 import { listTools } from '@/api/mcphub/tools';
-import ServerForm from './components/ServerForm';
+import ServerDrawer from './components/ServerDrawer';
 import type { McpServer, McpTool } from '@/api/mcphub/types';
-import { PageHeader } from '@/components/skeleton';
+import { EmptyState, PageHeader } from '@/components/skeleton';
+
+const SERVERS_PATH = '/ki/mcp/servers';
 
 const STATUS_MAP: Record<McpServer['status'], { label: string; color: TagColor }> = {
   online: { label: '在线', color: 'green' },
@@ -46,8 +47,12 @@ export default function ServerListPage() {
   const [error, setError] = useState<Error | null>(null);
   const [keyword, setKeyword] = useState('');
   const [query, setQuery] = useState('');
-  const [formOpen, setFormOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+
+  // 表单抽屉由路由驱动，与工具/客户端/资源三个列表页同一套写法。
+  const createMatch = useMatch(`${SERVERS_PATH}/new`);
+  const editMatch = useMatch(`${SERVERS_PATH}/:id/edit`);
+  const editingId = createMatch ? null : (editMatch?.params.id ?? null);
+  const drawerOpen = !!createMatch || editingId !== null;
 
   const load = async () => {
     setLoading(true);
@@ -146,7 +151,7 @@ export default function ServerListPage() {
       key: 'actions',
       render: (_, s) => (
         <Space>
-          <Button size="small" theme="borderless" icon={<EyeOutlined />} onClick={() => navigate(`/servers/${s.id}`)}>
+          <Button size="small" theme="borderless" icon={<EyeOutlined />} onClick={() => navigate(`/ki/mcp/servers/${s.id}`)}>
             详情
           </Button>
           {s.status === 'offline' ? (
@@ -173,7 +178,12 @@ export default function ServerListPage() {
       <PageHeader
         title="MCP Server 管理"
         actions={
-          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+          <Button
+            theme="solid"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate(`${SERVERS_PATH}/new`)}
+          >
                   创建 Server
                 </Button>
         }
@@ -225,7 +235,7 @@ export default function ServerListPage() {
             dataSource={[]}
             columns={columns}
             loading
-            pagination={false} scroll={{ x: 'max-content' }} />
+            pagination={false} />
         ) : error ? (
           <div className="mp-text-center mp-p-9">
             <ExclamationCircleFilled className="mp-text-danger mp-text-xl"  />
@@ -240,34 +250,22 @@ export default function ServerListPage() {
             </div>
           </div>
         ) : servers.length === 0 ? (
-          <Empty description="还没有 MCP Server，点击右上角创建" />
+          <EmptyState title="还没有 MCP Server，点击右上角创建" />
         ) : (
           <Table
             rowKey="id"
             dataSource={servers}
             columns={columns}
-            pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
+            pagination={{ pageSize: 10 }} />
         )}
       </Card>
 
-      <ServerForm
-        open={formOpen}
+      <ServerDrawer
+        open={drawerOpen}
+        serverId={editingId}
         availableTools={tools.map((t) => ({ id: t.id, name: t.name }))}
-        onOk={async (values) => {
-          setSubmitting(true);
-          try {
-            await createServer(values);
-            Toast.success('Server 已创建');
-            setFormOpen(false);
-            load();
-          } catch (err) {
-            Toast.error(err instanceof Error ? err.message : '创建失败');
-          } finally {
-            setSubmitting(false);
-          }
-        }}
-        onCancel={() => setFormOpen(false)}
-        confirmLoading={submitting}
+        onClose={() => navigate(SERVERS_PATH)}
+        onSaved={load}
       />
     </div>
   );

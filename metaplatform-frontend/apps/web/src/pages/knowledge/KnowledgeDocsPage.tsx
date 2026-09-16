@@ -7,22 +7,14 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Button, Descriptions, Select, Tag, Toast, Upload } from '@douyinfe/semi-ui';
-import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { FileText, RefreshCw, Upload as UploadIcon } from 'lucide-react';
 import { useAsync, useApiErrorBoundary } from '@mate/shared';
 import { DataTablePro, EmptyState, FilterBar, PageHeader, SheetDetail } from '@/components/skeleton';
 import { listDocuments, listKb, uploadDocumentToKb, type KbDocument, type KbEntity } from '@/api/kb';
+import { kbStatusMeta } from './kbStatus';
 import './kb.css';
 
-const STATUS_LABELS: Record<string, { label: string; color: TagColor }> = {
-  indexed: { label: '已索引', color: 'green' },
-  uploaded: { label: '已上传', color: 'blue' },
-  processing: { label: '处理中', color: 'blue' },
-  PROCESSED: { label: '已处理', color: 'green' },
-  PROCESSING: { label: '处理中', color: 'blue' },
-  PENDING: { label: '待处理', color: 'grey' },
-  FAILED: { label: '失败', color: 'red' },
-};
+const PAGE_SIZE = 20;
 
 function formatBytes(value?: number) {
   if (value == null) return '—';
@@ -37,6 +29,7 @@ export default function KnowledgeDocsPage() {
   const [keyword, setKeyword] = useState('');
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<KbDocument | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const {
     data: kbs = [],
@@ -86,9 +79,21 @@ export default function KnowledgeDocsPage() {
     return documents.filter((d) => d.title.toLocaleLowerCase().includes(normalized));
   }, [documents, keyword]);
 
+  // 换知识库或改关键词都回到第 1 页。
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [kbId, keyword]);
+
+  // 真·客户端分页：切片喂给表格，分页控件不再是空操作。
+  const pageCount = Math.max(1, Math.ceil(filteredDocuments.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, pageCount);
+  const paged = useMemo(
+    () => filteredDocuments.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [filteredDocuments, safePage],
+  );
+
   const uploadButton = (
     <Upload
-      action="/api/v1/kb/upload"
       accept=".pdf,.doc,.docx,.txt,.md"
       multiple
       showUploadList={false}
@@ -164,13 +169,13 @@ export default function KnowledgeDocsPage() {
         <DataTablePro<KbDocument>
           rowKey="id"
           loading={loadingDocuments}
-          dataSource={filteredDocuments}
+          dataSource={paged}
           onRow={(record) => ({ onClick: () => setPreview(record as KbDocument) })}
           pagination={{
-            currentPage: 1,
-            pageSize: 20,
+            currentPage: safePage,
+            pageSize: PAGE_SIZE,
             total: filteredDocuments.length,
-            onChange: () => undefined,
+            onChange: setCurrentPage,
           }}
           columns={[
             {
@@ -194,7 +199,7 @@ export default function KnowledgeDocsPage() {
               dataIndex: 'status',
               width: 120,
               render: (value: string) => {
-                const status = STATUS_LABELS[value] ?? { label: value, color: 'grey' as TagColor };
+                const status = kbStatusMeta(value);
                 return <Tag size="small" color={status.color}>{status.label}</Tag>;
               },
             },
@@ -225,9 +230,7 @@ export default function KnowledgeDocsPage() {
               {
                 key: '状态',
                 value: (
-                  <Tag color={(STATUS_LABELS[preview.status] ?? { color: 'grey' as TagColor }).color}>
-                    {(STATUS_LABELS[preview.status] ?? { label: preview.status }).label}
-                  </Tag>
+                  <Tag color={kbStatusMeta(preview.status).color}>{kbStatusMeta(preview.status).label}</Tag>
                 ),
               },
               { key: '切片数', value: String(preview.chunkCount ?? 0) },

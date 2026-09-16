@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMatch, useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  Empty,
   Popconfirm,
   Space,
   Table,
@@ -22,8 +21,11 @@ import {
 } from '@ant-design/icons';
 import { listClients, deleteClient, discoverClientTools } from '@/api/mcphub/clients';
 import type { McpClient } from '@/api/mcphub/types';
-import { PageHeader } from '@/components/skeleton';
+import { PageHeader, EmptyState } from '@/components/skeleton';
 import ApiKeyGenerator from './components/ApiKeyGenerator';
+import ClientDrawer from './components/ClientDrawer';
+
+const CLIENTS_PATH = '/ki/mcp/clients';
 
 function normalizeStatus(status: string): McpClient['status'] {
   const s = status.toLowerCase();
@@ -45,6 +47,13 @@ export default function ClientListPage() {
   const navigate = useNavigate();
   const [clients, setClients] = useState<McpClient[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // 表单抽屉由路由驱动：/clients/new 与 /clients/:id/edit 都渲染本列表页，只有抽屉是开的。
+  // 这样深链可分享、浏览器后退能直接关掉抽屉，页面上的按钮也不必改成 setState 调用。
+  const createMatch = useMatch(`${CLIENTS_PATH}/new`);
+  const editMatch = useMatch(`${CLIENTS_PATH}/:id/edit`);
+  const editingId = createMatch ? null : (editMatch?.params.id ?? null);
+  const drawerOpen = !!createMatch || editingId !== null;
 
   const load = async () => {
     setLoading(true);
@@ -120,10 +129,10 @@ export default function ClientListPage() {
       key: 'actions',
       render: (_, c) => (
         <Space>
-          <Button size="small" theme="borderless" icon={<EyeOutlined />} onClick={() => navigate(`/clients/${c.id}`)}>
+          <Button size="small" theme="borderless" icon={<EyeOutlined />} onClick={() => navigate(`/ki/mcp/clients/${c.id}`)}>
             详情
           </Button>
-          <Button size="small" theme="borderless" icon={<EditOutlined />} onClick={() => navigate(`/clients/${c.id}/edit`)}>
+          <Button size="small" theme="borderless" icon={<EditOutlined />} onClick={() => navigate(`/ki/mcp/clients/${c.id}/edit`)}>
             编辑
           </Button>
           <Button size="small" theme="borderless" icon={<SyncOutlined />} onClick={() => handleSync(c)}>
@@ -144,7 +153,7 @@ export default function ClientListPage() {
       <PageHeader
         title="MCP Client 管理"
         actions={
-          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => navigate('/clients/new')}>
+          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => navigate('/ki/mcp/clients/new')}>
                   添加 Client
                 </Button>
         }
@@ -152,14 +161,28 @@ export default function ClientListPage() {
 
       <Card>
         {clients.length === 0 && !loading ? (
-          <Empty description="还没有 MCP Client" />
+          <EmptyState
+            illustration="no-content"
+            title="还没有 MCP Client"
+            desc="添加一个 Client，把外部 MCP 服务的工具接进平台。"
+            actions={
+              <Button
+                theme="solid"
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => navigate('/ki/mcp/clients/new')}
+              >
+                添加 Client
+              </Button>
+            }
+          />
         ) : (
           <Table
             rowKey="id"
             dataSource={clients}
             columns={columns}
             loading={loading}
-            pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
+            pagination={{ pageSize: 10 }} />
         )}
       </Card>
 
@@ -169,6 +192,13 @@ export default function ClientListPage() {
       <div className="mp-mt-6">
         <ApiKeyGenerator />
       </div>
+
+      <ClientDrawer
+        open={drawerOpen}
+        clientId={editingId}
+        onClose={() => navigate(CLIENTS_PATH)}
+        onSaved={load}
+      />
     </div>
   );
 }

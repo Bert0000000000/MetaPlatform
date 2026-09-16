@@ -31,12 +31,9 @@ const McpOverviewPage = lazy(() => import('@/pages/mcp/OverviewPage'));
 const McpSkillHubPage = lazy(() => import('@/pages/mcp/SkillHubPage'));
 const McpConnectionMonitorPage = lazy(() => import('@/pages/mcp/ConnectionMonitorPage'));
 const McpToolDetailPage = lazy(() => import('@/pages/mcp/ToolDetailPage'));
-const McpToolEditPage = lazy(() => import('@/pages/mcp/ToolEditPage'));
 const McpServerDetailPage = lazy(() => import('@/pages/mcp/ServerDetailPage'));
 const McpClientDetailPage = lazy(() => import('@/pages/mcp/ClientDetailPage'));
-const McpClientFormPage = lazy(() => import('@/pages/mcp/ClientFormPage'));
 const McpResourceListPage = lazy(() => import('@/pages/mcp/ResourceListPage'));
-const McpResourceEditPage = lazy(() => import('@/pages/mcp/ResourceEditPage'));
 const McpPromptTemplatePage = lazy(() => import('@/pages/mcp/PromptTemplatePage'));
 const McpPermissionRulePage = lazy(() => import('@/pages/mcp/PermissionRulePage'));
 const McpPolicyManagementPage = lazy(() => import('@/pages/mcp/PolicyManagementPage'));
@@ -67,18 +64,23 @@ export const kiRoutes = (
     <Route path="mcp/overview" element={<McpOverviewPage />} />
     <Route path="mcp/skill-hub" element={<McpSkillHubPage />} />
     <Route path="mcp/tools" element={<McpToolsPage />} />
+    <Route path="mcp/tools/new" element={<McpToolsPage />} />
     <Route path="mcp/tools/:id" element={<McpToolDetailPage />} />
-    <Route path="mcp/tools/:id/edit" element={<McpToolEditPage />} />
+    <Route path="mcp/tools/:id/edit" element={<McpToolsPage />} />
     <Route path="mcp/resources" element={<McpResourceListPage />} />
-    <Route path="mcp/resources/:id" element={<McpResourceEditPage />} />
+    <Route path="mcp/resources/new" element={<McpResourceListPage />} />
+    <Route path="mcp/resources/:id" element={<McpResourceListPage />} />
     <Route path="mcp/prompts" element={<McpPromptTemplatePage />} />
     <Route path="mcp/debugger" element={<McpDebuggerPage />} />
     <Route path="mcp/ide-config" element={<McpIdeConfigPage />} />
     <Route path="mcp/servers" element={<McpServerPage />} />
+    <Route path="mcp/servers/new" element={<McpServerPage />} />
     <Route path="mcp/servers/:id" element={<McpServerDetailPage />} />
+    <Route path="mcp/servers/:id/edit" element={<McpServerPage />} />
     <Route path="mcp/clients" element={<McpClientPage />} />
-    <Route path="mcp/clients/new" element={<McpClientFormPage />} />
+    <Route path="mcp/clients/new" element={<McpClientPage />} />
     <Route path="mcp/clients/:id" element={<McpClientDetailPage />} />
+    <Route path="mcp/clients/:id/edit" element={<McpClientPage />} />
     <Route path="mcp/permissions" element={<McpPermissionsPage />} />
     <Route path="mcp/permissions/rules" element={<McpPermissionRulePage />} />
     <Route path="mcp/policies" element={<McpPolicyManagementPage />} />

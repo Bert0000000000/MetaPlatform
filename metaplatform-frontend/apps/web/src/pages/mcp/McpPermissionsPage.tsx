@@ -2,10 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Card,
-  Empty,
   Form,
-  Modal,
   Select,
+  SideSheet,
   Space,
   Table,
   Tabs,
@@ -20,7 +19,7 @@ import {
   SafetyOutlined,
 } from '@ant-design/icons';
 import { getPolicyMatrix, exportPolicyMatrix, createPolicy } from '@/api/mcphub/policies';
-import { PageHeader } from '@/components/skeleton';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 import type {
   MatrixCellEffect,
   PolicyCreateRequest,
@@ -35,6 +34,8 @@ const ACTION_OPTIONS = [
   { label: '读取 (read)', value: 'read' },
   { label: '管理 (admin)', value: 'admin' },
 ];
+
+const FORM_DRAWER_W = 420;
 
 const MATRIX_TYPE_OPTIONS = [
   { label: '用户 × 工具', key: 'user-tool' },
@@ -235,14 +236,13 @@ export default function PermissionMatrixPage() {
         />
 
         {(matrix?.rows ?? []).length === 0 && !loading ? (
-          <Empty description="暂无权限矩阵数据" />
+          <EmptyState title="暂无权限矩阵数据" />
         ) : (
           <Table
             rowKey={(r) => r?.subject?.subjectId ?? ''}
             dataSource={matrix?.rows || []}
             columns={columns}
             loading={loading}
-            scroll={{ x: 'max-content' }}
             pagination={false}
             size="small"
             bordered
@@ -250,12 +250,19 @@ export default function PermissionMatrixPage() {
         )}
       </Card>
 
-      <Modal
+      <SideSheet
         title="编辑矩阵单元格"
         visible={!!editing}
-        confirmLoading={submitting}
+        width={FORM_DRAWER_W}
         onCancel={() => setEditing(null)}
-        onOk={() => form.submitForm()}
+        footer={
+          <>
+            <Button onClick={() => setEditing(null)}>取消</Button>
+            <Button theme="solid" type="primary" loading={submitting} onClick={() => form.submitForm()}>
+              确定
+            </Button>
+          </>
+        }
       >
         {editing && (
           <Form form={form} layout="vertical" onSubmit={handleCellSubmit}>
@@ -293,7 +300,7 @@ export default function PermissionMatrixPage() {
             />
           </Form>
         )}
-      </Modal>
+      </SideSheet>
     </div>
   );
 }

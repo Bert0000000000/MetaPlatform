@@ -1,6 +1,7 @@
-import { Card, Empty, InputNumber, Select, Switch, TextArea, Typography } from '@douyinfe/semi-ui';
+import { Card, InputNumber, Select, Switch, TextArea, Typography } from '@douyinfe/semi-ui';
 import type { ReactNode } from 'react';
 import type { McpTool } from '@/api/mcphub/types';
+import { EmptyState } from '@/components/skeleton';
 
 interface ParameterFormProps {
   tool: McpTool;
@@ -10,7 +11,7 @@ interface ParameterFormProps {
 
 export default function ParameterForm({ tool, value, onChange }: ParameterFormProps) {
   if (tool.inputSchema.length === 0) {
-    return <Empty description="该工具无需参数" />;
+    return <EmptyState title="该工具无需参数" />;
   }
 
   const handleFieldChange = (name: string, v: unknown) => {

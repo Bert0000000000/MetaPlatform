@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
-  Empty,
   Popconfirm,
   Space,
   Table,
@@ -18,7 +17,7 @@ import { listServers } from '@/api/mcphub/servers';
 import { listResources } from '@/api/mcphub/resources';
 import { listPrompts } from '@/api/mcphub/prompts';
 import RuleEditor from './components/RuleEditor';
-import { PageHeader } from '@/components/skeleton';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 import type {
   PermissionRule,
   PermissionRuleCreateRequest,
@@ -191,14 +190,14 @@ export default function PermissionRulePage() {
 
       <Card>
         {rules.length === 0 && !loading ? (
-          <Empty description="还没有权限规则" />
+          <EmptyState title="还没有权限规则" />
         ) : (
           <Table
             rowKey="id"
             dataSource={rules}
             columns={columns}
             loading={loading}
-            pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
+            pagination={{ pageSize: 10 }} />
         )}
       </Card>
 

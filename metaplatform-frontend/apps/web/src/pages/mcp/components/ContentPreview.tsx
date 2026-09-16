@@ -1,6 +1,7 @@
-import { Card, Typography, Empty } from '@douyinfe/semi-ui';
+import { Card, Typography } from '@douyinfe/semi-ui';
 import { useMemo } from 'react';
 import type { McpResource } from '@/api/mcphub/types';
+import { EmptyState } from '@/components/skeleton';
 import '../mcp.css';
 
 interface ContentPreviewProps {
@@ -24,7 +25,7 @@ export default function ContentPreview({ resource }: ContentPreviewProps) {
   if (!isText) {
     return (
       <Card title="预览">
-        <Empty description={`不支持直接预览 ${resource.mimeType} 类型，请下载查看`} />
+        <EmptyState title={`不支持直接预览 ${resource.mimeType} 类型，请下载查看`} />
       </Card>
     );
   }

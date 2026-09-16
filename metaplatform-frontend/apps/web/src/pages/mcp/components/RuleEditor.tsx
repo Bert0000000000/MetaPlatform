@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Form, InputNumber, Modal } from '@douyinfe/semi-ui';
+import { Button, Form, InputNumber, SideSheet } from '@douyinfe/semi-ui';
 import type { PermissionRule, PermissionRuleCreateRequest } from '@/api/mcphub/types';
 
 interface RuleEditorProps {
@@ -35,6 +35,8 @@ const EFFECT_OPTIONS = [
   { label: '拒绝', value: 'deny' },
 ];
 
+const FORM_DRAWER_W = 420;
+
 export default function RuleEditor({
   open,
   initial,
@@ -67,12 +69,19 @@ export default function RuleEditor({
   };
 
   return (
-    <Modal
+    <SideSheet
       visible={open}
       title={initial ? '编辑权限规则' : '创建权限规则'}
-      onOk={handleOk}
       onCancel={onCancel}
-      confirmLoading={confirmLoading}
+      width={FORM_DRAWER_W}
+      footer={
+        <>
+          <Button onClick={onCancel}>取消</Button>
+          <Button theme="solid" type="primary" loading={confirmLoading} onClick={() => void handleOk()}>
+            {initial ? '保存' : '创建'}
+          </Button>
+        </>
+      }
     >
       <Form form={form}>
         <Form.Input field="name" label="规则名称" rules={[{ required: true }]} />
@@ -119,6 +128,6 @@ export default function RuleEditor({
         />
         <Form.Switch field="enabled" label="启用" />
       </Form>
-    </Modal>
+    </SideSheet>
   );
 }

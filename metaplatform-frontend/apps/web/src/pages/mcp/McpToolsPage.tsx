@@ -1,13 +1,10 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useMatch, useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  Empty,
-  Input,
   Select,
   Space,
-  Table,
   Tag,
   Toast,
   Typography,
@@ -23,12 +20,15 @@ import {
   FolderOutlined,
 } from '@ant-design/icons';
 import { listTools, listCategories, deleteTool, updateTool } from '@/api/mcphub/tools';
-import ToolForm from './components/ToolForm';
 import ToolCategoryTree from './components/ToolCategoryTree';
+import ToolDrawer from './components/ToolDrawer';
 import CategoryManagementModal from './components/CategoryManagementModal';
 import type { McpTool, McpToolCategory } from '@/api/mcphub/types';
-import { PageHeader } from '@/components/skeleton';
+import { DataTablePro, EmptyState, FilterBar, PageHeader } from '@/components/skeleton';
 import './mcp.css';
+
+const TOOLS_PATH = '/ki/mcp/tools';
+const PAGE_SIZE = 10;
 
 export default function ToolListPage() {
   const navigate = useNavigate();
@@ -37,18 +37,22 @@ export default function ToolListPage() {
   const [loading, setLoading] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState<string>();
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<McpTool | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [page, setPage] = useState(1);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+
+  // 表单抽屉由路由驱动：/tools/new 与 /tools/:id/edit 都渲染本列表页，只有抽屉是开的。
+  // 这样深链可分享、浏览器后退能直接关掉抽屉，页面上的按钮也不必改成 setState 调用。
+  const createMatch = useMatch(`${TOOLS_PATH}/new`);
+  const editMatch = useMatch(`${TOOLS_PATH}/:id/edit`);
+  const editingId = createMatch ? null : (editMatch?.params.id ?? null);
+  const drawerOpen = !!createMatch || editingId !== null;
 
   const load = async () => {
     setLoading(true);
     try {
-      const res = await listTools({ keyword, category });
+      const res = await listTools();
       setTools(res.items);
-      const cs = await listCategories();
-      setCategories(cs);
+      setCategories(await listCategories());
     } finally {
       setLoading(false);
     }
@@ -56,7 +60,33 @@ export default function ToolListPage() {
 
   useEffect(() => {
     load();
+  }, []);
+
+  // 工具侧的分类字段是列表页唯一可靠的分类来源（/tool-categories 目前可能为空），
+  // 与「分类管理」登记的集合取并集后给筛选下拉用。
+  const categoryOptions = useMemo(() => {
+    const names = new Set<string>();
+    for (const t of tools) if (t.category) names.add(t.category);
+    for (const c of categories) if (c.code) names.add(c.code);
+    return [...names].sort();
+  }, [tools, categories]);
+
+  const visible = useMemo(() => {
+    const kw = keyword.trim().toLowerCase();
+    return tools.filter((t) => {
+      const hit = !kw || t.name.toLowerCase().includes(kw) || (t.code ?? '').toLowerCase().includes(kw);
+      return hit && (!category || t.category === category);
+    });
+  }, [tools, keyword, category]);
+
+  useEffect(() => {
+    setPage(1);
   }, [keyword, category]);
+
+  const paged = useMemo(
+    () => visible.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [visible, page],
+  );
 
   const handleDelete = async (tool: McpTool) => {
     await deleteTool(tool.id);
@@ -95,42 +125,54 @@ export default function ToolListPage() {
     {
       title: '分类',
       dataIndex: 'category',
+      width: 140,
       render: (v) => <Tag size="small" color="blue">{v}</Tag>,
     },
     {
       title: '参数',
       key: 'params',
+      width: 90,
       render: (_, t) => `${t.inputSchema.length} 个`,
     },
     {
       title: '输出类型',
       dataIndex: 'outputType',
+      width: 110,
       render: (v) => <Tag size="small">{v}</Tag>,
     },
     {
       title: '版本',
       dataIndex: 'version',
+      width: 90,
       render: (v) => <Tag size="small" color="purple">v{v}</Tag>,
     },
     {
       title: '启用',
       key: 'enabled',
-      render: (_, t) => (
-        <Switch checked={t.enabled} onChange={(v) => handleToggle(t, v)} />
-      ),
+      width: 90,
+      render: (_, t) => <Switch checked={t.enabled} onChange={(v) => handleToggle(t, v)} />,
     },
     {
       title: '操作',
       key: 'actions',
+      width: 200,
       render: (_, t) => (
         <Space>
           <Button
             size="small"
             theme="borderless"
             icon={<EditOutlined />}
-            onClick={() => navigate(`/tools/${t.id}`)}
+            onClick={() => navigate(`${TOOLS_PATH}/${t.id}`)}
           >
             详情
+          </Button>
+          <Button
+            size="small"
+            theme="borderless"
+            icon={<EditOutlined />}
+            onClick={() => navigate(`${TOOLS_PATH}/${t.id}/edit`)}
+          >
+            编辑
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(t)}>
             <Button size="small" type="danger" theme="borderless" icon={<DeleteOutlined />}>
@@ -146,88 +188,86 @@ export default function ToolListPage() {
     <div>
       <PageHeader
         title="工具注册中心"
+        desc={`${tools.length} 个工具 · ${categoryOptions.length} 个分类`}
         actions={
           <Space>
-                  <Button icon={<FolderOutlined />} onClick={() => setCategoryModalOpen(true)}>
-                    分类管理
-                  </Button>
-                  <Button
-                    theme="solid"
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => navigate('/tools/new')}
-                  >
-                    创建工具
-                  </Button>
-                </Space>
+            <Button icon={<FolderOutlined />} onClick={() => setCategoryModalOpen(true)}>
+              分类管理
+            </Button>
+            <Button
+              theme="solid"
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate(`${TOOLS_PATH}/new`)}
+            >
+              创建工具
+            </Button>
+          </Space>
         }
       />
 
-      <Space className="mp-mb-4" wrap>
-        <Input
-          placeholder="搜索工具名称/编码"
-          showClear
-          onEnterPress={(e) => setKeyword((e.target as HTMLInputElement).value)}
-          className="mp-w-240"
-        />
-        <Select
-          placeholder="分类"
-          showClear
-          className="mp-w-160"
-          value={category}
-          onChange={(v) => setCategory(v as string | undefined)}
-          optionList={categories.map((c) => ({ label: c.name, value: c.code }))}
-        />
-      </Space>
+      <FilterBar
+        search={{ value: keyword, onChange: setKeyword, placeholder: '搜索工具名称/编码…' }}
+        filters={
+          <Select
+            placeholder="全部分类"
+            showClear
+            className="mp-w-160"
+            value={category}
+            onChange={(v) => setCategory(v as string | undefined)}
+            optionList={categoryOptions.map((c) => ({ label: c, value: c }))}
+          />
+        }
+      />
 
       <div className="mp-gap-4 mp-grid mp-mcp-grid-260">
         <Card title="按分类浏览" bodyStyle={{ padding: 8 }}>
           {tools.length === 0 ? (
-            <Empty description="暂无工具" />
+            <EmptyState illustration="no-content" title="暂无工具" />
           ) : (
-            <ToolCategoryTree tools={tools} onSelect={(id) => navigate(`/tools/${id}`)} />
+            <ToolCategoryTree tools={visible} onSelect={(id) => navigate(`${TOOLS_PATH}/${id}`)} />
           )}
         </Card>
-        <Card>
-          {tools.length === 0 && !loading ? (
-            <Empty description="还没有工具，点击右上角创建" />
-          ) : (
-            <Table
-              rowKey="id"
-              dataSource={tools}
-              columns={columns}
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-              size="middle"
-              scroll={{ x: 'max-content' }}
-            />
-          )}
-        </Card>
+
+        {!loading && visible.length === 0 ? (
+          <EmptyState
+            illustration={tools.length === 0 ? 'no-content' : 'no-result'}
+            title={tools.length === 0 ? '还没有工具' : '没有匹配的工具'}
+            desc={tools.length === 0 ? '注册一个工具，让数字员工可以调用它。' : '调整关键词或分类。'}
+            actions={
+              tools.length === 0 ? (
+                <Button
+                  theme="solid"
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => navigate(`${TOOLS_PATH}/new`)}
+                >
+                  创建工具
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : (
+          <DataTablePro<McpTool>
+            rowKey="id"
+            dataSource={paged}
+            columns={columns}
+            loading={loading}
+            pagination={{
+              currentPage: page,
+              pageSize: PAGE_SIZE,
+              total: visible.length,
+              onChange: setPage,
+            }}
+          />
+        )}
       </div>
 
-      <ToolForm
-        open={formOpen}
-        initial={editing}
-        categories={categories.map((c) => c.name)}
-        onOk={async (values) => {
-          if (editing) {
-            setSubmitting(true);
-            try {
-              await updateTool(editing.id, values);
-              Toast.success('已更新');
-            } finally {
-              setSubmitting(false);
-            }
-          }
-          setFormOpen(false);
-          setEditing(null);
-          load();
-        }}
-        onCancel={() => {
-          setFormOpen(false);
-          setEditing(null);
-        }}
-        confirmLoading={submitting}
+      <ToolDrawer
+        open={drawerOpen}
+        toolId={editingId}
+        onClose={() => navigate(TOOLS_PATH)}
+        onSaved={load}
       />
 
       <CategoryManagementModal

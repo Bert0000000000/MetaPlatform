@@ -221,30 +221,80 @@ async def create_collaboration(request: Request, req: CollaborationCreate) -> di
 # ---------------------------------------------------------------------------
 # Tools /versions 系列 — 工具版本管理（stub）
 # ---------------------------------------------------------------------------
-@router.get("/tools/{name}")
-async def get_tool_detail(request: Request, name: str) -> dict[str, Any]:
-    """工具详情（origin_routes.py 只有 POST/PUT/DELETE，前端
-    ToolDetailPage / ToolEditPage 调 GET，name == frontend id）。"""
-    tid = _tid(request)
-    from ..repositories import get_tool_by_name
+def _tool_detail_from_catalog(tool: Any) -> dict[str, Any]:
+    """租户目录（动态注册）工具 → 详情响应。
 
-    tool = get_tool_by_name(tid, name)
-    if tool is None:
-        raise HTTPException(status_code=404, detail=f"tool '{name}' not found")
+    ``McpTool`` 只声明了 id/tenant_id/name/description/input_schema/
+    enabled/endpoint/时间戳，CRUD 展示字段并不存在；用 ``getattr`` 取默认值，
+    既修掉 AttributeError，也为将来给 dataclass 补字段留出透传口。
+    """
     return {
         "id": tool.name,
         "name": tool.name,
         "code": tool.name,
-        "category": tool.category,
-        "version": tool.version,
+        "category": getattr(tool, "category", ""),
+        "version": getattr(tool, "version", "1"),
         "description": tool.description,
         "inputSchema": tool.input_schema,
-        "outputSchema": tool.output_schema,
-        "toolType": tool.tool_type,
+        "outputSchema": getattr(tool, "output_schema", ""),
+        "toolType": getattr(tool, "tool_type", "MCP"),
         "endpoint": tool.endpoint,
-        "beanClass": tool.bean_class,
+        "beanClass": getattr(tool, "bean_class", ""),
         "enabled": tool.enabled,
     }
+
+
+def _tool_detail_from_registry(entry: dict[str, Any]) -> dict[str, Any]:
+    """静态注册表条目（``MCPServer.list_tools()``）→ 详情响应。
+
+    注意 ``inputSchema`` 在这里是 JSON Schema **对象**（不是字符串），
+    与动态工具的 dict 形态一致，原样透传即可（前端 ``fromBackendTool``
+    两种形态都认）。静态条目没有 category/version/toolType/beanClass，
+    用合理默认值补齐而不是省略 key。
+    """
+    name = str(entry.get("name", ""))
+    return {
+        "id": name,
+        "name": name,
+        "code": name,
+        "category": entry.get("category", ""),
+        "version": "1",
+        "description": entry.get("description", ""),
+        "inputSchema": entry.get("inputSchema", {}),
+        "outputSchema": "",
+        "toolType": "MCP",
+        "endpoint": "",
+        "beanClass": "",
+        "enabled": True,
+    }
+
+
+@router.get("/tools/{name}")
+async def get_tool_detail(request: Request, name: str) -> dict[str, Any]:
+    """工具详情（origin_routes.py 只有 POST/PUT/DELETE，前端
+    ToolDetailPage / ToolEditPage 调 GET，name == frontend id）。
+
+    查找顺序：租户目录（``POST /tools`` 动态注册）→ 静态注册表
+    （``MCPServer`` 启动期注册的 ARK 工具，即 ``GET /tools`` 列表的主体）
+    → 404。旧实现只查目录、且读了 dataclass 上不存在的属性
+    （category / version / output_schema / tool_type / bean_class），
+    所以凡是在 ``GET /tools`` 里看得见的工具，详情页必然 500（目录命中）
+    或 404（静态工具根本不在目录里）。
+    """
+    tid = _tid(request)
+    from ..repositories import get_tool_by_name
+
+    tool = get_tool_by_name(tid, name)
+    if tool is not None:
+        return _tool_detail_from_catalog(tool)
+
+    server = getattr(request.app.state, "mcp_server", None)
+    if server is not None:
+        entry = next((t for t in await server.list_tools() if t.get("name") == name), None)
+        if entry is not None:
+            return _tool_detail_from_registry(entry)
+
+    raise HTTPException(status_code=404, detail=f"tool '{name}' not found")
 
 
 @router.get("/tools/{tid}/versions")

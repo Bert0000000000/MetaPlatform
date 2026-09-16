@@ -143,7 +143,7 @@ export default function ToolDetailPage() {
   return (
     <div>
       <Space className="mp-mb-4">
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/tools')}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/ki/mcp/tools')}>
           返回
         </Button>
         <Typography.Title heading={4} className="mp-m-0">
@@ -153,7 +153,7 @@ export default function ToolDetailPage() {
           theme="solid"
           type="primary"
           icon={<EditOutlined />}
-          onClick={() => navigate(`/tools/${id}/edit`)}
+          onClick={() => navigate(`/ki/mcp/tools/${id}/edit`)}
         >
           编辑
         </Button>
@@ -196,7 +196,6 @@ export default function ToolDetailPage() {
               loading={loading}
               pagination={{ pageSize: 10 }}
               size="middle"
-              scroll={{ x: 'max-content' }}
             />
           </Card>
         </Tabs.TabPane>

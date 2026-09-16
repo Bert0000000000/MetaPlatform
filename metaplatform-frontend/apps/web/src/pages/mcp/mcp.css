@@ -32,8 +32,71 @@
 .mp-mcp-listitem { background: transparent; }
 .mp-mcp-listitem-on { background: var(--semi-color-primary-light-default); }
 
+/* ---------- 工具表单（ToolDrawer） ---------- */
+/*
+ * 字段自适应铺满：窄屏一列、宽屏依次排到 4 列，单列不窄于 320px。
+ * 只补列间距，行距仍由 Semi 表单项自身的下边距给。
+ */
+.mp-mcp-form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 0 var(--mp-space-4);
+}
+
+/* 入参行：名称 / 类型 / 必填 / 描述 / 删除，按容器宽度分配，不写死像素 */
+.mp-mcp-param-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) minmax(72px, auto) minmax(0, 2fr) auto;
+  align-items: center;
+  gap: var(--mp-space-2);
+  margin-bottom: var(--mp-space-2);
+}
+
+/* 「测试连接」按钮的结果着色（按状态切换类名，不写 inline style） */
+.mp-mcp-test-ok {
+  border-color: var(--semi-color-success);
+  color: var(--semi-color-success);
+}
+
+.mp-mcp-test-fail {
+  border-color: var(--semi-color-danger);
+  color: var(--semi-color-danger);
+}
+
+/* 保住挂载但不可见（资源抽屉的预览态用它隐藏表单，而不是卸载表单） */
+.mp-mcp-hidden { display: none; }
+
 /* 一次性密钥警示卡 */
 .mp-mcp-warn-card {
   background: var(--semi-color-warning-light-default);
   border: 1px solid var(--semi-color-warning);
+}
+
+/* 接入说明页的 curl 样例块 */
+.mp-mcp-code-block {
+  background: var(--semi-color-bg-1);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-small);
+  padding: var(--mp-space-3);
+  margin: 0;
+  font-family: var(--mp-font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* 审计详情的 JSON / 堆栈展示块（不换行，整块横滚） */
+.mp-mcp-json {
+  background: var(--semi-color-bg-1);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-small);
+  padding: var(--mp-space-3);
+  margin: 0;
+  font-family: var(--mp-font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 400px;
+  overflow: auto;
 }

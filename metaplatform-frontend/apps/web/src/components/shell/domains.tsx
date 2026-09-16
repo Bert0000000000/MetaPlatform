@@ -126,7 +126,16 @@ export const DOMAINS: DomainDef[] = [
     icon: <BookOpen size={ICON_SIZE} strokeWidth={1.5} />,
     path: '/ki/kb',
     tabs: [
-      { key: 'kb', label: '知识库', path: '/ki/kb' },
+      {
+        key: 'kb',
+        label: '知识库',
+        path: '/ki/kb',
+        children: [
+          { key: 'bases', label: '知识库', path: '/ki/kb' },
+          { key: 'docs', label: '文档', path: '/ki/kb/docs' },
+          { key: 'config', label: '检索配置', path: '/ki/kb/config' },
+        ],
+      },
       {
         key: 'mcp',
         label: 'MCP 工具',

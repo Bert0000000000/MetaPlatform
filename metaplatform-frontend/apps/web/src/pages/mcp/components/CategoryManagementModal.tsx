@@ -137,7 +137,6 @@ export default function CategoryManagementModal({ open, onCancel }: CategoryMana
           columns={columns}
           loading={loading}
           pagination={{ pageSize: 8 }}
-          scroll={{ x: 'max-content' }}
         />
       </Space>
     </Modal>
