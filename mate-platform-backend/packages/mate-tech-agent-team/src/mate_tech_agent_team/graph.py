@@ -215,6 +215,9 @@ def build_brain_graph(
 
         # 闸门放行的工具面**就是**运行时能绑的那一份（不是两处各说各话）。
         subtask["granted_tools"] = sorted(outcome.envelope.tools)
+        # 1.4 任务 1：四维一起发下去。只发工具面的话，action_rids / kb_ids /
+        # markings 三维在执行侧无人认领——判完就没人再看一眼。
+        subtask["granted_envelope"] = outcome.envelope.as_state()
         result = await runtime.run(subtask=subtask, tenant_id=tenant_id)
         # ``results`` 仍按**计划内标签**归类（``t1``…）：那是计划里的位置，
         # 不是实例身份；调用方要投递时读回执里的 ``team_task_id``。

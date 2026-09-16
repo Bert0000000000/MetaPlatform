@@ -23,6 +23,7 @@ __all__ = [
     "agent_tool_schemas",
     "inspect_class_tool_schema",
     "list_classes_tool_schema",
+    "markings_satisfied",
     "object_query_tool_schema",
     "semantic_search_tool_schema",
     "slug_of_property_rid",
@@ -57,13 +58,29 @@ def tool_name_for(ot: ObjectType) -> str:
     return f"query_{slug_of_rid(ot.rid.rid).replace('-', '_')}"
 
 
+def markings_satisfied(
+    required: tuple[str, ...] | list[str] | str | None,
+    held: tuple[str, ...] | list[str],
+) -> bool:
+    """标记合取门：**要求 ⊆ 持有**才算过（无要求恒过）。
+
+    这是本仓 marking 可见性的**唯一**判定式——``visible_object_types`` 与
+    agent 运行时的执行侧闸门都调它。把判定抽出来而不是各写一遍，是因为
+    两份实现漂移的方向恰好是"一边放行、一边以为另一边拦住了"。
+    """
+    if required is None:
+        return True
+    if isinstance(required, str):
+        required = (required,) if required else ()
+    return set(required) <= set(held)
+
+
 def visible_object_types(
     object_types: tuple[ObjectType, ...] | list[ObjectType],
     agent_markings: tuple[str, ...] | list[str],
 ) -> tuple[ObjectType, ...]:
     """可见 = 类型 marking ⊆ agent markings（无标记类型恒可见）。"""
-    held = set(agent_markings)
-    return tuple(t for t in object_types if set(t.marking) <= held)
+    return tuple(t for t in object_types if markings_satisfied(t.marking, agent_markings))
 
 
 def list_classes_tool_schema() -> dict[str, Any]:
