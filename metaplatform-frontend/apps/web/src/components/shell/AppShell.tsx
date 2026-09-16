@@ -32,7 +32,7 @@ function ShellFrame() {
       data-nav={navMode}
       data-copilot={copilotOpen ? 'open' : 'closed'}
     >
-      <Layout hasSider>
+      <Layout hasSider className="mp-shell">
         <Layout.Sider className="mp-rail-sider">
           <IconRail active={domain} />
         </Layout.Sider>

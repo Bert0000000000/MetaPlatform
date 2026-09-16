@@ -12,6 +12,22 @@
   background: var(--semi-color-bg-0);
 }
 
+/*
+ * 壳层必须始终撑满 #app，不能被同级元素压缩。
+ *
+ * 原因：Semi 的浮层（SideSheet / Modal 等）会把 portal 容器直接追加到
+ * #app 下。若放任它作为 flex item 参与收缩，壳层会被按浮层宽度挤窄，
+ * 而 .mp-dock 的收起态是靠 margin-right:-dock_w 把它推到容器右边界之外
+ * 实现的 —— 壳一窄，这个负边距就够不到视口右缘，已收起的 Copilot 面板
+ * 会被顶回屏幕内，和刚打开的浮层叠在一起。
+ *
+ * 给定 min-width 后，浮层容器被压到 0 宽；浮层本身是 position:absolute，
+ * 不依赖这个容器的宽度，照常定位。
+ */
+.mp-app > .mp-shell {
+  min-width: 100%;
+}
+
 /* 顶栏导航模式下隐藏一级图标栏 */
 .mp-app[data-nav='top'] .mp-rail-sider {
   display: none;
