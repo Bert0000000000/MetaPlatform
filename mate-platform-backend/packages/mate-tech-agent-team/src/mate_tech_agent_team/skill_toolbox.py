@@ -14,7 +14,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from .skills import SkillCatalog, SkillNotFound
-from .toolbox import ToolNotAllowed
+from .toolbox import ToolNotAllowed, to_openai_schema
 
 SKILL_TOOL_NAMES: frozenset[str] = frozenset({"read_skill", "search_skill"})
 
@@ -52,19 +52,21 @@ class SkillToolbox:
         self._catalog = catalog
         self._tenant_id = tenant_id
 
-    async def schemas(self, *, allowed: Sequence[str]) -> list[dict[str, Any]]:
+    async def descriptors(self, *, allowed: Sequence[str]) -> list[dict[str, Any]]:
+        """与 MCP 工具面同形的描述符（``inputSchema`` 口径），供 LangChain 工具化。"""
         return [
             {
-                "type": "function",
-                "function": {
-                    "name": e["name"],
-                    "description": e["description"],
-                    "parameters": e["parameters"],
-                },
+                "name": e["name"],
+                "description": e["description"],
+                "inputSchema": e["parameters"],
+                "agentInvokable": True,
             }
             for e in _CATALOG
             if e["name"] in allowed
         ]
+
+    async def schemas(self, *, allowed: Sequence[str]) -> list[dict[str, Any]]:
+        return [to_openai_schema(d) for d in await self.descriptors(allowed=allowed)]
 
     async def invoke(self, *, name: str, arguments: dict[str, Any], allowed: Sequence[str]) -> Any:
         if name not in allowed:

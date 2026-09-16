@@ -16,9 +16,15 @@ from typing import Annotated, Any, TypedDict
 
 
 class SubTask(TypedDict, total=False):
-    """一个被派出去的子任务（= 派给某个数字员工的一句话）。"""
+    """一个被派出去的子任务（= 派给某个数字员工的一句话）。
+
+    ``task_id`` 是**计划内标签**（``t1``/``t2``…），只在本轮计划里有意义；
+    ``team_task_id`` 是**实例身份**（``team_task`` 表的主键），由派活侧在
+    运行时给，跨运行唯一。追问子员工投递的是后者。
+    """
 
     task_id: str
+    team_task_id: str
     profile_id: str
     instruction: str
     depends_on: list[str]
@@ -28,6 +34,7 @@ class SubTaskResult(TypedDict, total=False):
     """子任务回执。``source`` 区分真实执行与假回执，供 D-10 断言使用。"""
 
     task_id: str
+    team_task_id: str
     profile_id: str
     status: str  # ok | error | rejected
     output: str

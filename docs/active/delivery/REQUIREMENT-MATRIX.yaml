@@ -3678,6 +3678,16 @@ requirements:
     handler: null
     implementationStatus: planned
     acceptanceStatus: notAccepted
+  FR-AGENT-TEAM-AGENTTEAMPOSTTASKMESSAGE:
+    prd: docs/active/specs/2026-09-16-ai-launch-prompt-agent-product-layer-1.2-goal-mode.md
+    service: agent-team
+    operationIds:
+      - agentTeamPostTaskMessage
+    handler: mate_tech_agent_team.main:app#agentTeamPostTaskMessage
+    tests:
+      - mate-platform-backend/packages/mate-tech-agent-team/tests/test_team_messages.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
   FR-AGENT-TEAM-AGENTTEAMGETPROFILES:
     prd: docs/active/specs/2026-09-16-agent-product-layer-1.0.md
     service: agent-team

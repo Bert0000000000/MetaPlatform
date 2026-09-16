@@ -20,9 +20,7 @@
       "firstName": "Platform",
       "lastName": "Admin",
       "attributes": {
-        "tenant_id": [
-          "tenant-default"
-        ]
+        "tenant_id": ["tenant-default"]
       },
       "credentials": [
         {
@@ -31,10 +29,7 @@
           "temporary": false
         }
       ],
-      "realmRoles": [
-        "PLATFORM_ADMIN",
-        "user"
-      ]
+      "realmRoles": ["PLATFORM_ADMIN", "user"]
     },
     {
       "username": "metaplatform",
@@ -44,9 +39,7 @@
       "firstName": "Meta",
       "lastName": "User",
       "attributes": {
-        "tenant_id": [
-          "tenant-default"
-        ]
+        "tenant_id": ["tenant-default"]
       },
       "credentials": [
         {
@@ -55,9 +48,7 @@
           "temporary": false
         }
       ],
-      "realmRoles": [
-        "user"
-      ]
+      "realmRoles": ["user"]
     }
   ],
   "roles": {
@@ -92,12 +83,8 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,
-      "redirectUris": [
-        "*"
-      ],
-      "webOrigins": [
-        "*"
-      ],
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
       "protocol": "openid-connect",
       "protocolMappers": [
         {
@@ -126,9 +113,7 @@
           }
         }
       ],
-      "optionalClientScopes": [
-        "tenant_switch_enabled"
-      ]
+      "optionalClientScopes": ["tenant_switch_enabled"]
     }
   ]
 }

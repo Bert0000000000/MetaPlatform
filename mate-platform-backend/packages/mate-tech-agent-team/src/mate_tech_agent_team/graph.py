@@ -76,8 +76,15 @@ def build_brain_graph(
         return {"subtasks": subtasks, "status": "running", "results": {}}
 
     async def worker_node(state: dict[str, Any]) -> dict[str, Any]:
-        subtask = state["subtask"]
+        subtask = dict(state["subtask"])
+        # 实例身份**按运行唯一**：拆解器每次都给同样的 ``t1``/``t2``/``t3``，
+        # 直接拿它当 ``team_task`` 主键，同租户的两次运行就会共用同一行——
+        # 上一轮的终态会挡住新一轮（``send`` 误判 409），并发时更糟：两轮
+        # **共用同一个信箱**，A 轮的追问会被 B 轮吃掉。
+        subtask["team_task_id"] = f"{state['run_id'][:8]}-{subtask['task_id']}"
         result = await runtime.run(subtask=subtask, tenant_id=state["tenant_id"])
+        # ``results`` 仍按**计划内标签**归类（``t1``…）：那是计划里的位置，
+        # 不是实例身份；调用方要投递时读回执里的 ``team_task_id``。
         return {"results": {subtask["task_id"]: result}}
 
     async def gate_node(state: BrainState) -> dict[str, Any]:

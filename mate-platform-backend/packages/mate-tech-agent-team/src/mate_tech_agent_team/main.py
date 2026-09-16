@@ -17,8 +17,15 @@ from fastapi import FastAPI
 
 from mate_platform.auth import install_auth
 
-from .api.app import router, set_brain_service, set_profile_registry, set_skill_catalog
+from .api.app import (
+    router,
+    set_brain_service,
+    set_profile_registry,
+    set_skill_catalog,
+    set_team_bus,
+)
 from .brain import BrainService
+from .team_bus import TeamBus
 
 SERVICE_NAME = "mate-tech-agent-team"
 
@@ -31,26 +38,37 @@ def _healthz() -> dict[str, str]:
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     from .wiring import build_registry, build_service, build_skill_catalog, build_team_bus
 
-    service = build_service()
-    set_brain_service(service)
     # 1.1 任务 3：名册接 PG —— 建出来的员工随重启/多副本一致（内置定义仍在代码里）。
     # 名册只有一份：HTTP 面与派活闸门读同一个。
     registry = build_registry()
+    # 1.2 任务 2：派活闸门同时是消息通道。**先建它再建服务**——HTTP 的 send 与
+    # 员工侧的 drain 必须落在同一个实例上，否则等于两个信箱。
+    bus = build_team_bus(registry)
+    service = build_service(registry=registry, team_bus=bus)
+    set_brain_service(service)
     set_profile_registry(registry)
     set_skill_catalog(build_skill_catalog())
+    set_team_bus(bus)
     app.state.brain_service = service
-    app.state.team_bus = build_team_bus(registry)
+    app.state.team_bus = bus
     yield
     set_brain_service(None)
     set_profile_registry(None)
     set_skill_catalog(None)
+    set_team_bus(None)
 
 
-def create_app(service: BrainService | None = None, *, with_wiring: bool = False) -> FastAPI:
+def create_app(
+    service: BrainService | None = None,
+    *,
+    with_wiring: bool = False,
+    team_bus: TeamBus | None = None,
+) -> FastAPI:
     """构造应用。
 
     ``service`` 省略时不装配服务层（便于单测自行注入）；
     ``with_wiring=True`` 时由 lifespan 按环境变量装配生产实现。
+    ``team_bus`` 给测试注入消息通道（省略时依赖 lifespan 或 ``set_team_bus``）。
     """
     app = FastAPI(
         title=SERVICE_NAME,
@@ -63,6 +81,8 @@ def create_app(service: BrainService | None = None, *, with_wiring: bool = False
     app.include_router(router)
     if service is not None:
         set_brain_service(service)
+    if team_bus is not None:
+        set_team_bus(team_bus)
     return app
 
 
