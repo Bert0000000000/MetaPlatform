@@ -17,10 +17,10 @@ HELM = REPO / "helm"
 MANIFEST = REPO.parent / "mate-platform-backend" / "contracts" / "openapi" / "manifest.yaml"
 
 
-def test_manifest_has_the_canonical_21_runtime_services() -> None:
+def test_manifest_has_the_canonical_22_runtime_services() -> None:
     services = load_manifest_service_ids(MANIFEST)
 
-    assert len(services) == 21
+    assert len(services) == 22
     assert len(set(services)) == len(services)
 
 

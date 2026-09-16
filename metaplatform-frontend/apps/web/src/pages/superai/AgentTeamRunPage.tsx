@@ -185,7 +185,7 @@ export default function AgentTeamRunPage() {
       {!run ? (
         <EmptyState
           title="还没有运行"
-          description="在上面输入一句话，点「拆解并派活」即可看到任务图与各员工产出。"
+          desc="在上面输入一句话，点「拆解并派活」即可看到任务图与各员工产出。"
         />
       ) : null}
     </>

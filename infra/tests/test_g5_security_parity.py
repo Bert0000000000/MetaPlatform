@@ -343,12 +343,13 @@ def test_secured_endpoint_inventory_non_empty() -> None:
     )
 
 
-def test_all_twenty_one_services_present() -> None:
-    """The gate inventory is the canonical 21-service OpenAPI contract set."""
+def test_all_twenty_two_services_present() -> None:
+    """The gate inventory is the canonical 22-service OpenAPI contract set."""
     names = {p.stem for p in SERVICES_DIR.glob("*.yaml")}
     expected = {
         "a2a",
         "agent",
+        "agent-team",
         "analytics",
         "apphub",
         "arch",

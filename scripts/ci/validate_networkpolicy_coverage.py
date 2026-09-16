@@ -19,6 +19,9 @@ REPO = Path(__file__).resolve().parents[2]
 MANIFEST = REPO / "mate-platform-backend" / "contracts" / "openapi" / "manifest.yaml"
 HELM_VALUES = REPO / "infra" / "helm" / "values.yaml"
 
+#: OpenAPI manifest 里带 runtimeModule 的服务数（= Helm applicationServices 条数）
+EXPECTED_RUNTIME_SERVICES = 22
+
 
 def _load_yaml(path: Path) -> dict[str, Any]:
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -157,9 +160,13 @@ def validate_inventory(repo_root: Path = REPO) -> list[str]:
     )
     helm_services = load_helm_service_ids(repo_root / "infra" / "helm" / "values.yaml")
     violations: list[str] = []
-    if len(manifest_services) != 21:
+    # 服务数上限跟着 OpenAPI manifest 的 runtimeModule 条目走：新增服务时
+    # 这里、infra/helm/values.yaml 的 applicationServices 必须同步 +1
+    # （agent-team 使 21 → 22）。
+    if len(manifest_services) != EXPECTED_RUNTIME_SERVICES:
         violations.append(
-            f"canonical runtime inventory has {len(manifest_services)} services; expected 21"
+            f"canonical runtime inventory has {len(manifest_services)} services; "
+            f"expected {EXPECTED_RUNTIME_SERVICES}"
         )
     if len(set(manifest_services)) != len(manifest_services):
         violations.append("canonical runtime inventory contains duplicate service ids")

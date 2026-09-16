@@ -221,6 +221,7 @@ applicationServices:
   - analytics
   - deep-research
   - orchestrator
+  - agent-team
   - marketplace
 
 # -----------------------------------------------------------------------------

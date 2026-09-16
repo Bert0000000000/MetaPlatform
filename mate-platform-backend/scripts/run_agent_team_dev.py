@@ -26,7 +26,9 @@ for pkg in (
 ):
     sys.path.insert(0, str(ROOT / "packages" / pkg / "src"))
 
-os.environ.setdefault("MATE_AGENT_TEAM_ADMIN_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform")
+os.environ.setdefault(
+    "MATE_AGENT_TEAM_ADMIN_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform"
+)
 os.environ.setdefault(
     "MATE_AGENT_TEAM_DSN", "postgresql://mate_app:mate_app@127.0.0.1:5432/metaplatform"
 )

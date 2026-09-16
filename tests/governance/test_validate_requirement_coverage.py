@@ -30,7 +30,7 @@ def test_current_manifest_covers_all_service_contracts() -> None:
                 REPO / "mate-platform-backend/contracts/openapi/manifest.yaml"
             )
         )
-        == 21
+        == 22
     )
 
 
