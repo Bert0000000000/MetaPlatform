@@ -465,6 +465,27 @@ def test_a_run_within_its_deadline_is_left_alone() -> None:
     )
 
 
+def test_the_effective_deadline_is_readable_through_the_api() -> None:
+    """本轮的有效超时与**绝对**截止时刻是 API 可读的（契约里那两个新字段）。
+
+    没有它，"这轮什么时候会超时"只能靠猜；有了它，重启后是否仍按原值裁决也
+    不必翻日志——直接读这一轮的状态。
+    """
+    client = _app()
+    run = _start_run(client, timeout_seconds=30)
+    body = client.get(f"{BASE}/runs/{run['run_id']}", headers=_headers()).json()
+    assert body["timeout_seconds"] == 30
+    assert body["deadline_at"] > time.time(), "截止时刻应当是**绝对**的（未来的某一刻）"
+
+
+def test_the_receipt_records_attempts_through_the_api() -> None:
+    """回执里的 ``attempts``（1.5 契约新增）要真的出得来——一次过手就是 1。"""
+    client = _app()
+    run = _start_run(client)
+    body = client.get(f"{BASE}/runs/{run['run_id']}", headers=_headers()).json()
+    assert body["results"]["t1"]["attempts"] == 1
+
+
 # ── 超时值持久化（1.5 任务 2）───────────────────────────────────────────
 
 
