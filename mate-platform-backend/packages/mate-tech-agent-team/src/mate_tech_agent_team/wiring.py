@@ -27,6 +27,7 @@ from .profile_store import ProfileStore
 from .profiles import ProfileRegistry
 from .skill_toolbox import SKILL_TOOL_NAMES, SkillToolbox
 from .skills import SkillCatalog
+from .team_bus import DEFAULT_MAX_DEPTH, TeamBus
 from .toolbox import CompositeToolbox, McpToolbox
 
 DEFAULT_LLMGW_URL = "http://localhost:8008"
@@ -82,6 +83,18 @@ def build_skill_catalog() -> SkillCatalog:
 def build_registry() -> ProfileRegistry:
     """员工名册：内置定义 + 本租户落库的行（1.1 任务 3）。"""
     return ProfileRegistry(store=ProfileStore(required_dsn(), schema=CHECKPOINT_SCHEMA))
+
+
+def build_team_bus(registry: ProfileRegistry | None = None) -> TeamBus:
+    """派活闸门（1.1 任务 4/5）：包络衰减 + 深度闸门。
+
+    深度的默认值对齐 Codex 的 ``agents.max_depth`` 与 Claude Code 的 3 层；
+    可用 ``MATE_AGENT_TEAM_MAX_DEPTH`` 覆盖。
+    """
+    return TeamBus(
+        registry=registry or build_registry(),
+        max_depth=int(os.getenv("MATE_AGENT_TEAM_MAX_DEPTH", str(DEFAULT_MAX_DEPTH))),
+    )
 
 
 def build_service() -> BrainService:
@@ -168,6 +181,7 @@ def build_service() -> BrainService:
 
 __all__ = [
     "build_registry",
+    "build_team_bus",
     "build_service",
     "build_skill_catalog",
     "required_admin_dsn",

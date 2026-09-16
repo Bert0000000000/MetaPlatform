@@ -29,7 +29,7 @@ def _healthz() -> dict[str, str]:
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
-    from .wiring import build_registry, build_service, build_skill_catalog
+    from .wiring import build_registry, build_service, build_skill_catalog, build_team_bus
 
     service = build_service()
     set_brain_service(service)
@@ -37,6 +37,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     set_profile_registry(build_registry())
     set_skill_catalog(build_skill_catalog())
     app.state.brain_service = service
+    app.state.team_bus = build_team_bus()
     yield
     set_brain_service(None)
     set_profile_registry(None)

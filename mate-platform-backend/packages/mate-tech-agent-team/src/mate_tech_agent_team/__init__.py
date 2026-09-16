@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from .authority import AuthorityError, DepthExceeded, Envelope
 from .brain import BrainService, RunContext, RunNotAwaitingApproval, RunNotFound
 from .checkpoint import (
     InMemoryCheckpointerProvider,
@@ -22,11 +23,16 @@ from .runtime import EmployeeRuntime
 from .skill_toolbox import SkillToolbox
 from .skills import SkillCatalog, SkillManifestEntry, SkillNotFound
 from .state import BrainState, SubTask, SubTaskResult
+from .team_bus import DEFAULT_MAX_DEPTH, SpawnOutcome, SpawnRequest, TeamBus
 from .toolbox import CompositeToolbox, McpToolbox, ToolNotAllowed, to_openai_schema
 
 __all__ = [
+    "AuthorityError",
     "BrainService",
     "CompositeToolbox",
+    "DEFAULT_MAX_DEPTH",
+    "DepthExceeded",
+    "Envelope",
     "BrainState",
     "EmployeeProfile",
     "EmployeeRuntime",
@@ -47,7 +53,10 @@ __all__ = [
     "SkillToolbox",
     "SkillManifestEntry",
     "SkillNotFound",
+    "SpawnOutcome",
+    "SpawnRequest",
     "StaticPlanner",
+    "TeamBus",
     "SubTask",
     "SubTaskResult",
     "ToolNotAllowed",
