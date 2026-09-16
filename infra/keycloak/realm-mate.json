@@ -20,7 +20,9 @@
       "firstName": "Platform",
       "lastName": "Admin",
       "attributes": {
-        "tenant_id": ["tenant-default"]
+        "tenant_id": [
+          "tenant-default"
+        ]
       },
       "credentials": [
         {
@@ -29,7 +31,10 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["PLATFORM_ADMIN", "user"]
+      "realmRoles": [
+        "PLATFORM_ADMIN",
+        "user"
+      ]
     },
     {
       "username": "metaplatform",
@@ -39,7 +44,9 @@
       "firstName": "Meta",
       "lastName": "User",
       "attributes": {
-        "tenant_id": ["tenant-default"]
+        "tenant_id": [
+          "tenant-default"
+        ]
       },
       "credentials": [
         {
@@ -48,18 +55,33 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["user"]
+      "realmRoles": [
+        "user"
+      ]
     }
   ],
   "roles": {
     "realm": [
-      { "name": "user", "description": "Default user role" },
+      {
+        "name": "user",
+        "description": "Default user role"
+      },
       {
         "name": "PLATFORM_ADMIN",
         "description": "Platform administrator (maps to mate-tech-iam admin guard)"
       }
     ]
   },
+  "clientScopes": [
+    {
+      "name": "tenant_switch_enabled",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    }
+  ],
   "clients": [
     {
       "clientId": "metaplatform-backend",
@@ -70,8 +92,12 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,
-      "redirectUris": ["*"],
-      "webOrigins": ["*"],
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
       "protocol": "openid-connect",
       "protocolMappers": [
         {
@@ -99,6 +125,9 @@
             "multivalued": "false"
           }
         }
+      ],
+      "optionalClientScopes": [
+        "tenant_switch_enabled"
       ]
     }
   ]

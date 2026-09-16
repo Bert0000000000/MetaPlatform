@@ -80,6 +80,11 @@ class OntologyProxyTool:
         self._kc_realm = os.getenv("KEYCLOAK_REALM", "metaplatform")
         self._bearer: str = ""
         self._bearer_exp: float = 0.0
+        # 需要「代调用方指名租户」时额外申请的 scope（见 _ensure_bearer）。
+        self._bearer_switch: str = ""
+        self._bearer_switch_exp: float = 0.0
+        # 空字符串 = 不申请（realm 未开该 scope 时的关闭开关）。
+        self._switch_scope = os.getenv("TECH_ONT_SWITCH_SCOPE", "tenant_switch_enabled").strip()
         # env 兼容两套命名：TECH_ONT_URL（历史）与 ONTOLOGY_URL（compose 现行）
         self._base_url = (
             base_url
@@ -95,16 +100,30 @@ class OntologyProxyTool:
             timeout=timeout,
         )
 
-    async def _ensure_bearer(self) -> str:
-        """client_credentials → JWT（带 60s 提前刷新；失败回退空 = 匿名）。"""
+    async def _ensure_bearer(self, *, request_tenant_switch: bool = False) -> str:
+        """client_credentials → JWT（带 60s 提前刷新；失败回退空 = 匿名）。
+
+        ``request_tenant_switch=True`` 时额外申请 ``TECH_ONT_SWITCH_SCOPE``
+        （默认 ``tenant_switch_enabled``）——本体引擎只在令牌带该 scope 时才认
+        ``X-Tenant-Id``。它对应 realm 里一个**可选** client scope：不申请就拿不到，
+        所以其余服务不受影响；realm 没开时把该 env 置空即可（Keycloak 对未注册的
+        scope 会直接 400 invalid_scope，所以这必须是显式配置而非默认硬编码）。
+        """
         import time as _time
 
         if not self._auth_secret:
             return ""
         if self._auth_secret.startswith("eyJ"):
             return self._auth_secret
-        if self._bearer and _time.time() < self._bearer_exp - 60:
+        use_switch = request_tenant_switch and bool(self._switch_scope)
+        if use_switch:
+            if self._bearer_switch and _time.time() < self._bearer_switch_exp - 60:
+                return self._bearer_switch
+        elif self._bearer and _time.time() < self._bearer_exp - 60:
             return self._bearer
+        scope = "openid"
+        if use_switch:
+            scope += f" {self._switch_scope}"
         try:
             async with httpx.AsyncClient(timeout=10) as c:
                 resp = await c.post(
@@ -113,13 +132,18 @@ class OntologyProxyTool:
                         "grant_type": "client_credentials",
                         "client_id": self._auth_client_id,
                         "client_secret": self._auth_secret,
-                        "scope": "openid",
+                        "scope": scope,
                     },
                 )
                 resp.raise_for_status()
                 data = resp.json()
-                self._bearer = str(data["access_token"])
-                self._bearer_exp = _time.time() + float(data.get("expires_in", 300))
+                token = str(data["access_token"])
+                exp = _time.time() + float(data.get("expires_in", 300))
+                if use_switch:
+                    self._bearer_switch, self._bearer_switch_exp = token, exp
+                else:
+                    self._bearer, self._bearer_exp = token, exp
+                return token
         except Exception as exc:
             logger.warning("mcp.ont_proxy.token_failed", error=str(exc))
             self._bearer = ""
@@ -135,13 +159,18 @@ class OntologyProxyTool:
 
         An ``sk-mcp-*`` client key is a MCP-centre-only credential that no
         other service can verify; the surfaces therefore bind an *empty*
-        token for those callers, and the hop falls back to the service
-        identity while still naming the caller's tenant in ``X-Tenant-Id``.
+        token for those callers. That path has no user token to forward, so
+        the hop goes out as the platform service **naming the caller's
+        tenant** — which the ontology engine honours only for a token
+        carrying the tenant-switch scope. See :meth:`_ensure_bearer`.
         """
         caller = current_caller()
         if caller is not None:
             headers = {"X-Tenant-Id": caller.tenant_id}
-            token = caller.bearer_token or await self._ensure_bearer()
+            if caller.bearer_token:
+                headers["Authorization"] = f"Bearer {caller.bearer_token}"
+                return headers
+            token = await self._ensure_bearer(request_tenant_switch=True)
             if token:
                 headers["Authorization"] = f"Bearer {token}"
             return headers

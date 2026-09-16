@@ -165,3 +165,85 @@ async def test_api_key_caller_falls_back_to_service_identity(
     request = route.calls[0].request
     assert request.headers["authorization"] == "Bearer eyJ.service.token"
     assert request.headers["x-tenant-id"] == "tenant-acme"
+
+
+# --- 服务身份代指名租户（realm 的可选 scope）-----------------------------
+_KEYCLOAK = "http://keycloak.test:8080"
+
+
+def _kc_router() -> respx.Route:
+    """Mock Keycloak's token endpoint; returns the route for inspection."""
+    return respx.post(f"{_KEYCLOAK}/realms/metaplatform/protocol/openid-connect/token").mock(
+        return_value=Response(200, json={"access_token": "eyJ.minted", "expires_in": 300})
+    )
+
+
+def _scope_of(route: respx.Route) -> str:
+    from urllib.parse import parse_qs
+
+    body = parse_qs(route.calls.last.request.content.decode())
+    return body["scope"][0]
+
+
+@respx.mock
+@pytest.mark.asyncio
+async def test_api_key_caller_requests_the_tenant_switch_scope(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """sk-mcp 调用方没有用户 token 可透传 → 用服务身份**代它指名租户**。
+
+    本体引擎只在令牌带 ``tenant_switch_enabled`` 时才认 ``X-Tenant-Id``，
+    所以这条路径必须显式申请该 scope。
+    """
+    monkeypatch.setenv("TECH_ONT_TOKEN", "mcp-service-secret")
+    monkeypatch.setenv("KEYCLOAK_URL", _KEYCLOAK)
+    kc = _kc_router()
+    ont = respx.get(f"{ONT_BASE}/api/v1/ont/v2/object-types").mock(
+        return_value=Response(200, json=[])
+    )
+    tool = OntListClassesTool(base_url=ONT_BASE)
+    with bind_caller(tenant_id="tenant-acme", bearer_token=""):
+        await tool()
+    await tool.aclose()
+
+    assert "tenant_switch_enabled" in _scope_of(kc)
+    assert ont.calls[0].request.headers["x-tenant-id"] == "tenant-acme"
+    assert ont.calls[0].request.headers["authorization"] == "Bearer eyJ.minted"
+
+
+@respx.mock
+@pytest.mark.asyncio
+async def test_user_token_caller_does_not_touch_keycloak(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """用户令牌路径是纯透传，不换令牌、也不申请额外 scope。"""
+    monkeypatch.setenv("TECH_ONT_TOKEN", "mcp-service-secret")
+    monkeypatch.setenv("KEYCLOAK_URL", _KEYCLOAK)
+    kc = _kc_router()
+    ont = respx.get(f"{ONT_BASE}/api/v1/ont/v2/object-types").mock(
+        return_value=Response(200, json=[])
+    )
+    tool = _list_tool()
+    with bind_caller(tenant_id="tenant-acme", bearer_token=USER_JWT):
+        await tool()
+    await tool.aclose()
+
+    assert not kc.called
+    assert ont.calls[0].request.headers["authorization"] == f"Bearer {USER_JWT}"
+
+
+@respx.mock
+@pytest.mark.asyncio
+async def test_switch_scope_is_configurable(monkeypatch: pytest.MonkeyPatch) -> None:
+    """realm 未开该 scope 时置空即可关闭——Keycloak 对未注册 scope 会 400。"""
+    monkeypatch.setenv("TECH_ONT_TOKEN", "mcp-service-secret")
+    monkeypatch.setenv("KEYCLOAK_URL", _KEYCLOAK)
+    monkeypatch.setenv("TECH_ONT_SWITCH_SCOPE", "")
+    kc = _kc_router()
+    respx.get(f"{ONT_BASE}/api/v1/ont/v2/object-types").mock(return_value=Response(200, json=[]))
+    tool = _list_tool()
+    with bind_caller(tenant_id="tenant-acme", bearer_token=""):
+        await tool()
+    await tool.aclose()
+
+    assert _scope_of(kc) == "openid"

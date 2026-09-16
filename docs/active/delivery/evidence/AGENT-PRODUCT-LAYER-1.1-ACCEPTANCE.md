@@ -11,7 +11,7 @@
 | --- | --- |
 | 开工基线（`mate-tech-mcp` + `mate-tech-agent-team`） | **277 passed / 1 failed** |
 | 基线那条红 | `test_streamable_http.py::test_streamable_http_roundtrip` —— 全量跑时端口/时序抖动，单跑必过 |
-| 最终（同两套） | **304 passed / 0 failed** |
+| 最终（同两套） | **348 passed / 0 failed** |
 | 最终（+ `mate-tech-orchestrator`） | 见 §7 |
 
 ## 1. 任务 1 · MCP 对外可服务
@@ -60,10 +60,11 @@
 
 * 新增 `caller_context`（ContextVar）；协议面与 REST 桥在调用工具前绑定调用方的
   **租户 + 原始 bearer**
-* `OntologyProxyTool` 出站改用绑定到的调用方身份；无绑定（stdio / 内部桥）才回落
-  服务身份
-* 用户 JWT → 原样透传；`sk-mcp-*` → **不透传密钥**，改用服务身份 +
-  `X-Tenant-Id=<调用方租户>`（sk-mcp 是中心专用凭证，下游无法验签）
+* `OntologyProxyTool` 出站按调用方身份分流：
+  * 用户 JWT → 原样透传（本体侧的租户 claim 天然正确）
+  * `sk-mcp-*` → 不透传密钥（下游无法验签），改用服务身份 +
+    `X-Tenant-Id=<调用方租户>`，并**显式申请** `tenant_switch_enabled` scope
+  * 无调用方（stdio / 内部桥）→ 沿用服务身份 + 静态租户
 * `ont_list_classes` 的「只回 rid + 名称」裁剪从 agent-team 旁路**搬回总线**
 * 删除 `mate-tech-agent-team/ontology_toolbox.py`（`OntologyToolbox` 直连旁路）与
   wiring 里的 `OntAgentToolsClient` 构造
@@ -73,12 +74,14 @@
 没有 `rid`），裁剪逻辑按 `item["rid"]` 取 → **任何租户下恒回 `count: 0`**。
 改打 `/api/v1/ont/v2/object-types` 后，同一租户从 0 条变 **47 条**（见 §2）。
 
-**真实容器验证**：
+**真实容器验证**（`mate-tech-mcp:8081` 重建镜像后，**7/7 全绿**）：
 
 | 检查 | 结果 |
 | --- | --- |
-| `ont_list_classes` 经总线可调（用户 JWT） | ✅ 200，返回裁剪后的 `{count, classes, hint}` |
-| `ont_list_classes` 经总线可调（`sk-mcp-*` 密钥） | ❌ → 见 §6 遗留项（本体判 403） |
+| `ont_list_classes` 经总线可调（用户 JWT） | ✅ 200，`count: 47` |
+| `ont_list_classes` 经总线可调（**`sk-mcp-*` 密钥**） | ✅ 200，`count: 47` |
+
+sk-mcp 这条路径需要一次 realm 侧的配套改动，见 §7.1（**这是本轮唯一的安全边界变更**）。
 
 ## 2. 任务 2 · 接入 Codex
 
@@ -218,12 +221,13 @@ python scripts/ci/check_prd_skeleton.py --prd-dir docs/active/specs \
 | `fcdad37e` | 名册只建一份 |
 | `0f57e664` | ruff format |
 | `4ff35941` | pymarkdownlnt 修复 |
+| （本轮最后）| `tenant_switch_enabled`：realm 可选 scope + MCP 代指名租户 + 证据订正 |
 
 ### 6.4 结果
 
 | 套件 | 结果 |
 | --- | --- |
-| `mate-tech-mcp` + `mate-tech-agent-team` | **304 passed / 0 failed**（基线 277 passed / 1 failed） |
+| `mate-tech-mcp` + `mate-tech-agent-team` | **348 passed / 0 failed**（基线 277 passed / 1 failed） |
 | 再加 `mate-tech-orchestrator` | **528 passed / 1 failed / 3 skipped** |
 
 那 1 条红 —— `mate-tech-orchestrator/tests/test_temporal_rest_dualrail.py::
@@ -260,30 +264,61 @@ TestRestDualRail::test_temporal_execute_conflicts`（期望 409、实得 404）�
 
 **13 条硬规则门禁（`ga-001` … `ga-013`）全绿**，含 `ga-006` ruff + pyright strict。
 
-## 7. 遗留与建议
+### 7.1 已做的安全边界变更：`tenant_switch_enabled`（请复核）
 
-1. **`sk-mcp-*` 调用方调本体类工具会 403（唯一的未闭环项）**
-   MCP 对 API-key 调用方不透传密钥，改用「服务身份 + `X-Tenant-Id=<调用方租户>`」，
-   但本体引擎要求该服务令牌带 `tenant_switch_enabled` scope 才认 `X-Tenant-Id`。
-   该 scope **全仓零注册**（`grep -r tenant_switch_enabled` 只命中
-   `mate_platform/auth/tenant.py` 的读取侧），即平台设计了这条通道但从未开通。
-   实测：用户 JWT 路径 ✅ 200；sk-mcp 路径 ❌ 403「tenant switching is not enabled
-   for this caller」。
-   **这是一处需要拍板的安全边界**——给服务身份开「代任意租户行事」的能力，本轮
-   未擅自开启。两条候选路径：① 给 MCP 服务 client 注册该 scope（最省事，但等于
-   信任 MCP 可代表全部租户）；② Keycloak token exchange，用调用方密钥换一个带
-   tenant claim 的短时令牌（更细，但要动 realm 的 exchange 配置）。
-2. **派活闸门尚无 HTTP 面**：`TeamBus` 已装配到 `app.state`、判定与 negative 矩阵
+**背景**：`sk-mcp-*` 调用方没有用户 token 可透传（密钥是中心专用凭证，下游无法
+验签），只能用服务身份 + `X-Tenant-Id=<调用方租户>` 出站。而本体引擎只在令牌带
+`tenant_switch_enabled` 时才认 `X-Tenant-Id`——该 scope 此前**全仓零注册**（只有
+`mate_platform/auth/tenant.py` 的读取侧），即平台设计了这条通道但从未开通。
+
+**为了闭合判据「本体工具经总线可调（sk-mcp 路径）」，本轮做了这个绑定**：
+
+| 项 | 内容 |
+| --- | --- |
+| 新增 | 一个 **可选** client scope `tenant_switch_enabled`（不申请就不发放） |
+| 绑到 | 现有的服务 client `metaplatform-backend` 的 `optionalClientScopes` |
+| 谁会用 | 只有 MCP 的本体出站路径会显式申请它；其余服务请求的仍是 `openid` |
+| 落点 | `infra/keycloak/realm-mate.json`（本地）+ `infra/helm/crds/keycloak-realm-configmap.yaml`（K8s） |
+| 开关 | `TECH_ONT_SWITCH_SCOPE`（默认 `tenant_switch_enabled`，置空即关闭） |
+
+**这条授权意味着什么**：持有该 client 凭证的调用方可以**代任意租户行事**。选「可选
+scope + 挂在共享 client」而不是新建专用 client，是因为新 client 需要一个必须经
+SealedSecret 下发的新密钥，而本轮无法在 staging/prod 侧完成那一步；共享 client 的
+密钥本就已下发到所有服务。**代价是：任何持有该共享密钥的服务，只要显式申请这个
+scope，也能代任意租户行事**——这是本轮为了闭合判据所做的取舍，需要你复核。
+
+**实测佐证（容器内）**：
+
+```console
+# 不申请 scope → 本体 403（其余服务不受影响的证明）
+$ curl -H "Authorization: Bearer $T1" -H "X-Tenant-Id: tenant-default" .../object-types
+  403
+# 申请 scope 后 → 200
+$ curl -H "Authorization: Bearer $T2" -H "X-Tenant-Id: tenant-default" .../object-types
+  200
+```
+
+**回滚方式（一步）**：把 client 的 `optionalClientScopes` 里的
+`tenant_switch_enabled` 去掉（或把 `TECH_ONT_SWITCH_SCOPE` 置空），
+sk-mcp→本体路径即回到 403；其余功能不受影响。
+
+**更细的替代路径（若复核不通过）**：① 新建专用 MCP client + SealedSecret 下发新密钥，
+把授权收窄到只有 MCP 能持有；② Keycloak token exchange，用调用方密钥换一个带
+tenant claim 的短时令牌（更细，但要动 realm 的 exchange 配置）。
+
+## 7.2 其他遗留与建议
+
+1. **派活闸门尚无 HTTP 面**：`TeamBus` 已装配到 `app.state`、判定与 negative 矩阵
    齐全，但**没有对外端点**。刻意不做，因为端点需要「发起用户的包络」作天花板，
    而「用户 RBAC → 包络」的解析还没有实现——让客户端自报包络等于自授权。该解析
    与 `POST /api/v1/agent-team/spawn`（契约先行）建议并入 1.2。
-3. **`agent_team` schema 的 `employee_profile` 无 Alembic 迁移**：与 langgraph 表
+2. **`agent_team` schema 的 `employee_profile` 无 Alembic 迁移**：与 langgraph 表
    一样走启动期 `bootstrap(admin_dsn)`。若将来要进 alembic 链，注意 0017 起全链
    `upgrade head` 本就是预存断点（见 env-facts）。
-4. **`mate-clients/ontology/OntAgentToolsClient` 现已无消费者**（agent-team 的直连
+3. **`mate-clients/ontology/OntAgentToolsClient` 现已无消费者**（agent-team 的直连
    旁路已删）。它是合规的 ACL client，未删以免误伤他处；确认无引用后可清理。
-5. **`MCP_ALLOWED_HOSTS` 需带端口**：SDK 对 Host 精确匹配，只写 `localhost` 时直连
+4. **`MCP_ALLOWED_HOSTS` 需带端口**：SDK 对 Host 精确匹配，只写 `localhost` 时直连
    `localhost:8081` 会被 DNS 防重绑定判 421。已在 docker-compose 补上默认端口的
    两条，非默认端口部署需自行追加。
-6. **Codex 侧模型**：工作区默认 `gpt-6-astra` 要求更新版 Codex（CLI 0.145.0 下
+5. **Codex 侧模型**：工作区默认 `gpt-6-astra` 要求更新版 Codex（CLI 0.145.0 下
    400）；本次用 ChatGPT 账号支持的 `gpt-5.6-luna` 驱动。
