@@ -30,12 +30,14 @@
 **要迁共 377 行**：`employee.py`（224，手写"调模型→调工具→回灌"循环 + `LlmGateway`）＋ `toolbox.py`（153，MCP 描述符手工转 OpenAI schema）。
 
 **迁四项**：
+
 1. `LlmEmployeeRuntime` → **`create_agent`**
 2. `toolbox.py` schema 转换 → **`langchain_core.tools`**
 3. `LlmGateway` → **`BaseChatModel`** 实现（底层仍打 `LlmgwClient`）
 4. 装 **`langchain-mcp-adapters`**，MCP 工具改走它（1.1 刚把本体工具收回总线，正好接）
 
 **判据（四条都要）**：
+
 - 执行链路**真的经过 `create_agent`**（断言，不能只是 import）
 - `summarization` **真的生效**：长上下文 → 证明被压缩（而非原样堆进 prompt）
 - **TeamBus 公开契约零 LangChain 类型**（R10 守卫，CI 断言 import 边界）
