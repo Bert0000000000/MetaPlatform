@@ -673,7 +673,13 @@ paths:
           tenantHeader: []
           oidcScopes: [platform.read]
       summary: MCP streamable-http SSE 流（W4 外部 MCP 客户端）
-      description: MCP 协议标准端点 — initialize / tools/list / tools/call 经 streamable HTTP (JSON-RPC + SSE)。
+      description: |
+        MCP 协议标准端点 — initialize / tools/list / tools/call 经 streamable HTTP (JSON-RPC + SSE)。
+
+        租户绑定（ADR-0062 / 1.1）：每一次消息的租户取自**认证到的调用方**
+        （`sk-mcp-*` 长效密钥或用户 bearer token），写死在协议面的 `default`
+        已移除。tools/list 与 tools/call 只呈现该租户的工具面；请求进入时
+        若无法解析出租户，直接 fail-closed 拒绝，不再回落到 `default`。
       tags: [mcp]
       responses:
         "200":
@@ -696,7 +702,11 @@ paths:
           oidcScopes: [platform.write]
       x-required-scopes: [platform.write]
       summary: MCP streamable-http JSON-RPC 端点（W4）
-      description: MCP 协议标准端点 — 外部 MCP 客户端（Claude Desktop / Cursor 等）经此发现与调用服务中心工具。
+      description: |
+        MCP 协议标准端点 — 外部 MCP 客户端（Claude Desktop / Codex / Cursor 等）经此发现与调用服务中心工具。
+
+        租户绑定（ADR-0062 / 1.1）：租户取自认证到的调用方（`sk-mcp-*` 密钥
+        或用户 bearer token），工具面按该租户过滤；无租户上下文时拒绝调用。
       tags: [mcp]
       responses:
         "200":

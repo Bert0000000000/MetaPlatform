@@ -80,9 +80,51 @@ async def test_call_tool_unknown_raises() -> None:
 
 
 # --- integration --------------------------------------------------------
+def _authed_app(server: object) -> object:
+    """Mount the protocol surface behind an auth middleware.
+
+    1.1 task 1a: the surface resolves the tenant from ``request.state.ctx``
+    and fails closed without it, so a round-trip needs the same middleware
+    shape ``main.py`` installs via ``install_auth``.
+    """
+    from contextlib import asynccontextmanager
+
+    from fastapi import FastAPI
+    from mate_platform.tenancy import AuthMethod, RequestContext, TenantId, UserId
+    from starlette.middleware.base import BaseHTTPMiddleware
+
+    class StubAuth(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):  # type: ignore[no-untyped-def]
+            request.state.ctx = RequestContext(
+                request_id="",
+                trace_id="",
+                tenant_id=TenantId("default"),
+                user_id=UserId("test-user"),
+                roles=frozenset(),
+                permissions=frozenset(),
+                scopes=frozenset(),
+                client_id="test",
+                auth_method=AuthMethod.API_KEY,
+            )
+            return await call_next(request)
+
+    sub_app = build_streamable_http_app(server)
+    app = FastAPI()
+    app.add_middleware(StubAuth)
+    app.mount("/api/v1/mcp/protocol", sub_app)
+
+    @asynccontextmanager
+    async def _lifespan(_app: FastAPI):
+        async with sub_app.mate_server.session_manager.run():  # type: ignore[attr-defined]
+            yield
+
+    app.router.lifespan_context = _lifespan
+    return app
+
+
 def test_streamable_http_roundtrip() -> None:
     """Official MCP client <-> streamable-http surface end-to-end."""
-    app = build_streamable_http_app(_build_server())
+    app = _authed_app(_build_server())
     cfg = uvicorn.Config(app, host="127.0.0.1", port=18601, log_level="error")
     u = uvicorn.Server(cfg)
     threading.Thread(target=u.run, daemon=True).start()
@@ -93,7 +135,11 @@ def test_streamable_http_roundtrip() -> None:
 
     async def run() -> tuple[list[str], object]:
         async with (
-            streamablehttp_client("http://127.0.0.1:18601/mcp") as (read, write, _sid),
+            streamablehttp_client("http://127.0.0.1:18601/api/v1/mcp/protocol/mcp") as (
+                read,
+                write,
+                _sid,
+            ),
             ClientSession(read, write) as session,
         ):
             await session.initialize()

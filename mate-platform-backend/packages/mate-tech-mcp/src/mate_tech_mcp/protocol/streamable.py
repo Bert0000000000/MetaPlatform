@@ -8,10 +8,17 @@ transport.
 The surface is a ``FastMCP`` subclass whose ``list_tools`` /
 ``call_tool`` / resources / prompts delegate to the ``MCPServer``
 runtime registry — so it reflects the W2 dynamic registry and the
-federation fallback, not a static snapshot. Tenant resolution for the
-dynamic/federation layers uses the ``default`` tenant (the MCP protocol
-carries no tenant header; the outer ``install_auth`` middleware gates
-the mount path).
+federation fallback, not a static snapshot.
+
+Tenant binding (ADR-0062 / 1.1 task 1a)
+---------------------------------------
+Every message on this surface is resolved against the **authenticated
+caller's** tenant, read from ``request.state.ctx`` — the context
+``mate_platform.auth.install_auth`` installs before the Starlette mount
+is reached. ``default_tenant`` is only a fallback for callers with no
+HTTP request at all (stdio, direct unit invocation); inside a request a
+missing tenant context **fails closed** rather than silently resolving
+against ``default``.
 """
 
 from __future__ import annotations
@@ -51,12 +58,51 @@ class MateStreamableHttpServer(FastMCP):
         settings: dict[str, Any] | None = None,
     ) -> None:
         self._mcp = mcp_server
-        self._tenant = default_tenant
+        self._default_tenant = default_tenant
         super().__init__(name, **(settings or {}))
+
+    # -- tenant binding ---------------------------------------------------
+    def _request_tenant(self) -> str | None:
+        """Tenant of the authenticated caller, or None outside a request.
+
+        ``request`` is the Starlette request of the in-flight HTTP message;
+        Starlette backs ``request.state`` with ``scope['state']``, which
+        survives the parent app's mount into this sub-app.
+        """
+        try:
+            request_context = self._mcp_server.request_context
+        except LookupError:
+            return None
+        request = getattr(request_context, "request", None)
+        if request is None:
+            return None
+        ctx = getattr(getattr(request, "state", None), "ctx", None)
+        tenant = str(getattr(ctx, "tenant_id", "") or "")
+        return tenant or None
+
+    async def _resolve_tenant(self) -> str:
+        """Resolve the tenant for this message; fail closed inside a request."""
+        tenant = self._request_tenant()
+        if tenant:
+            return tenant
+        if self._in_request():
+            raise PermissionError(
+                "MCP protocol calls require an authenticated tenant context; "
+                "present an sk-mcp-* key or a user bearer token"
+            )
+        return self._default_tenant
+
+    def _in_request(self) -> bool:
+        """True when this call is running inside an HTTP MCP message."""
+        try:
+            return self._mcp_server.request_context is not None
+        except LookupError:
+            return False
 
     # -- tools -----------------------------------------------------------
     async def list_tools(self) -> list[Tool]:
-        static = await self._mcp.list_tools()
+        tenant = await self._resolve_tenant()
+        static = await self._mcp.list_tools(tenant)
         known = {t["name"] for t in static}
         tools = [
             Tool(
@@ -66,8 +112,8 @@ class MateStreamableHttpServer(FastMCP):
             )
             for t in static
         ]
-        # W2 dynamic registry (default tenant).
-        for d in list_dynamic_tools(self._tenant):
+        # W2 dynamic registry, scoped to the authenticated tenant.
+        for d in list_dynamic_tools(tenant):
             if d.name not in known and d.enabled:
                 tools.append(
                     Tool(
@@ -79,6 +125,7 @@ class MateStreamableHttpServer(FastMCP):
         return tools
 
     async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
+        tenant = await self._resolve_tenant()
         args = dict(arguments or {})
         # HITL 边界加固（外部协议面）：__caller__ 是平台内部 origin 路由
         # （用户会话）专用的声明通道，外部 MCP 客户端传来的 __caller__ 一律
@@ -87,15 +134,15 @@ class MateStreamableHttpServer(FastMCP):
         args.pop("__caller__", None)
         # 1. local handler
         try:
-            return await self._mcp.call_tool(name, args)
+            return await self._mcp.call_tool(name, args, tenant_id=tenant)
         except KeyError:
             pass
         # 2. W2 dynamic forwarding tool
-        dyn = get_tool_by_name(self._tenant, name)
+        dyn = get_tool_by_name(tenant, name)
         if dyn is not None and dyn.enabled and dyn.endpoint:
             try:
                 return await get_dynamic_invoker().invoke(
-                    tenant_id=self._tenant,
+                    tenant_id=tenant,
                     name=name,
                     endpoint=dyn.endpoint,
                     arguments=args,
@@ -105,7 +152,7 @@ class MateStreamableHttpServer(FastMCP):
         # 3. federation fallback
         try:
             remote = await federation_router.route(
-                tenant_id=self._tenant,
+                tenant_id=tenant,
                 tool_name=name,
                 arguments=args,
             )
