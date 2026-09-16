@@ -3680,14 +3680,18 @@ requirements:
     service: agent-team
     operationIds:
       - agentTeamGetProfileSkills
-    handler: null
-    implementationStatus: planned
+    handler: mate_tech_agent_team.main:app#agentTeamGetProfileSkills
+    tests:
+      - mate-platform-backend/packages/mate-tech-agent-team/tests/test_skills.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-AGENT-TEAM-AGENTTEAMGETPROFILESKILLCONTENT:
     prd: docs/active/specs/2026-09-16-agent-product-layer-1.0.md
     service: agent-team
     operationIds:
       - agentTeamGetProfileSkillContent
-    handler: null
-    implementationStatus: planned
+    handler: mate_tech_agent_team.main:app#agentTeamGetProfileSkillContent
+    tests:
+      - mate-platform-backend/packages/mate-tech-agent-team/tests/test_skills.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted

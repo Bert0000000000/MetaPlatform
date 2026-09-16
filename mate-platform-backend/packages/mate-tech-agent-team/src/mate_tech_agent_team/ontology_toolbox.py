@@ -25,6 +25,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
+from .skill_toolbox import SKILL_TOOL_NAMES
 from .toolbox import ToolNotAllowed
 
 ONTOLOGY_TOOL_NAMES: frozenset[str] = frozenset(
@@ -180,9 +181,11 @@ class OntologyToolbox:
 class CompositeToolbox:
     """按工具名把调用路由到不同的工具面。
 
-    本体的工具走 :class:`OntologyToolbox`（带用户 token 直达本体既有面），
-    其余工具（kb_search / search_skill / read_skill …）走 MCP 中心。
-    **白名单闸门对两条路一视同仁**——路由不构成放行。
+    * 本体工具 → :class:`OntologyToolbox`（带用户 token 直达本体既有面）
+    * 技能工具 → :class:`~mate_tech_agent_team.skill_toolbox.SkillToolbox`（读 SkillHub）
+    * 其余（kb_search …）→ MCP 中心
+
+    **白名单闸门对每条路一视同仁**——路由不构成放行。
     """
 
     def __init__(
@@ -190,15 +193,21 @@ class CompositeToolbox:
         *,
         ontology: OntologyToolbox | None = None,
         mcp: Any = None,
+        skills: Any = None,
         ontology_names: frozenset[str] = ONTOLOGY_TOOL_NAMES,
+        skill_names: frozenset[str] = SKILL_TOOL_NAMES,
     ) -> None:
         self._ontology = ontology
         self._mcp = mcp
+        self._skills = skills
         self._ontology_names = ontology_names
+        self._skill_names = skill_names
 
     def _route(self, name: str) -> Any:
         if name in self._ontology_names and self._ontology is not None:
             return self._ontology
+        if name in self._skill_names and self._skills is not None:
+            return self._skills
         return self._mcp
 
     async def schemas(self, *, allowed: Sequence[str]) -> list[dict[str, Any]]:
@@ -224,7 +233,7 @@ class CompositeToolbox:
         return await toolbox.invoke(name=name, arguments=arguments, allowed=allowed)
 
     async def aclose(self) -> None:
-        for toolbox in (self._ontology, self._mcp):
+        for toolbox in (self._ontology, self._skills, self._mcp):
             close = getattr(toolbox, "aclose", None)
             if close is not None:
                 await close()

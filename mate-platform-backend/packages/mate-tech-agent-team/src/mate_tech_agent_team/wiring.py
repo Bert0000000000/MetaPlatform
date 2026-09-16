@@ -22,6 +22,7 @@ from .employee import LlmEmployeeRuntime
 from .llm_planner import LlmPlanner
 from .ontology_toolbox import CompositeToolbox, OntologyToolbox
 from .profiles import ProfileRegistry, builtin_profiles
+from .skill_toolbox import SkillToolbox
 from .skills import SkillCatalog
 from .toolbox import McpToolbox
 
@@ -71,6 +72,11 @@ def required_admin_dsn() -> str:
     return dsn
 
 
+def build_skill_catalog() -> SkillCatalog:
+    """技能目录（SkillHub 读取侧）。HTTP 面与员工运行时共用同一个构建方式。"""
+    return SkillCatalog(SkillHubStore())
+
+
 def build_service() -> BrainService:
     """按环境变量装配。容器启动时调用一次。"""
     registry = ProfileRegistry(builtin_profiles())
@@ -81,7 +87,7 @@ def build_service() -> BrainService:
     gateway_url = os.getenv("MATE_GATEWAY_URL", DEFAULT_GATEWAY_URL)
 
     bootstrap(required_admin_dsn())
-    skills = SkillCatalog(SkillHubStore())
+    skills = build_skill_catalog()
 
     def _provider_config(tenant_id: str, user_token: str):
         """惰性取租户当前生效的上游 provider 配置。
@@ -126,7 +132,9 @@ def build_service() -> BrainService:
         mcp = McpToolbox(
             McpToolsClient(mcp_url, auth=bearer, tenant_id=ctx.tenant_id, user_token=ctx.user_token)
         )
-        return CompositeToolbox(ontology=ontology, mcp=mcp)
+        return CompositeToolbox(
+            ontology=ontology, mcp=mcp, skills=SkillToolbox(skills, tenant_id=ctx.tenant_id)
+        )
 
     def planner_for(ctx: RunContext) -> LlmPlanner:
         return LlmPlanner(llm_factory=_llm_for(ctx), roster=registry.list())
@@ -147,4 +155,4 @@ def build_service() -> BrainService:
     )
 
 
-__all__ = ["build_service", "required_admin_dsn", "required_dsn"]
+__all__ = ["build_service", "build_skill_catalog", "required_admin_dsn", "required_dsn"]

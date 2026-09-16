@@ -15,13 +15,17 @@ from fastapi import APIRouter, HTTPException, Request
 from mate_platform.tenancy.guards import require_tenant
 
 from ..brain import AWAITING, BrainService, RunNotAwaitingApproval, RunNotFound
-from ..profiles import ProfileRegistry
+from ..profiles import ProfileNotFound, ProfileRegistry
+from ..skills import SkillCatalog, SkillNotFound
 from ..state import BrainState
 from .schemas import (
     ApproveRequest,
     EmployeeProfileModel,
     ProfileListModel,
     RunStateModel,
+    SkillContentModel,
+    SkillManifestEntryModel,
+    SkillManifestModel,
     StartRunRequest,
 )
 
@@ -29,6 +33,7 @@ router = APIRouter(prefix="/api/v1/agent-team", tags=["agent-team"])
 
 _service: BrainService | None = None
 _registry: ProfileRegistry | None = None
+_catalog: SkillCatalog | None = None
 
 
 def set_brain_service(service: BrainService | None) -> None:
@@ -53,6 +58,18 @@ def get_profile_registry() -> ProfileRegistry:
     if _registry is None:
         raise RuntimeError("ProfileRegistry 未装配：请先 set_profile_registry(...)")
     return _registry
+
+
+def set_skill_catalog(catalog: SkillCatalog | None) -> None:
+    """装配/重置技能目录（测试 DI 缝）。"""
+    global _catalog
+    _catalog = catalog
+
+
+def get_skill_catalog() -> SkillCatalog:
+    if _catalog is None:
+        raise RuntimeError("SkillCatalog 未装配：请先 set_skill_catalog(...)")
+    return _catalog
 
 
 def _tid(request: Request) -> str:
@@ -140,11 +157,54 @@ async def agentTeamGetProfiles(request: Request) -> ProfileListModel:
     )
 
 
+@router.get("/profiles/{profile_id}/skills", response_model=SkillManifestModel)
+async def agentTeamGetProfileSkills(request: Request, profile_id: str) -> SkillManifestModel:
+    """技能清单（渐进加载第 1 层：只出名字与一句话描述，**不含正文**）。"""
+    require_tenant(request.state.ctx)
+    try:
+        profile = get_profile_registry().get(profile_id)
+    except ProfileNotFound as exc:
+        raise HTTPException(status_code=404, detail="profile not found") from exc
+    catalog = get_skill_catalog()
+    entries = catalog.manifest(profile.skills)
+    return SkillManifestModel(
+        profile_id=profile.profile_id,
+        entries=[
+            SkillManifestEntryModel(skill_id=e.skill_id, name=e.name, description=e.description)
+            for e in entries
+        ],
+        manifest_chars=catalog.manifest_size(profile.skills),
+        budget_chars=catalog.budget_chars,
+    )
+
+
+@router.get("/profiles/{profile_id}/skills/{skill_id}", response_model=SkillContentModel)
+async def agentTeamGetProfileSkillContent(
+    request: Request, profile_id: str, skill_id: str
+) -> SkillContentModel:
+    """技能正文（渐进加载第 2 层：**选中之后**才读）。"""
+    require_tenant(request.state.ctx)
+    try:
+        profile = get_profile_registry().get(profile_id)
+    except ProfileNotFound as exc:
+        raise HTTPException(status_code=404, detail="profile not found") from exc
+    if skill_id not in profile.skills:
+        # 没挂在这个员工身上就不给读——清单是闭集，不是"全仓库随便读"
+        raise HTTPException(status_code=404, detail="skill not bound to this profile")
+    try:
+        content = get_skill_catalog().read(skill_id)
+    except SkillNotFound as exc:
+        raise HTTPException(status_code=404, detail="skill not found") from exc
+    return SkillContentModel(skill_id=skill_id, content=content)
+
+
 __all__ = [
     "AWAITING",
     "get_brain_service",
     "get_profile_registry",
+    "get_skill_catalog",
     "router",
     "set_brain_service",
     "set_profile_registry",
+    "set_skill_catalog",
 ]

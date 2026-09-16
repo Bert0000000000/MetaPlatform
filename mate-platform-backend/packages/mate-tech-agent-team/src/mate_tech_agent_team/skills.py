@@ -81,6 +81,33 @@ class SkillCatalog:
             raise SkillNotFound(skill_id)
         return skill.content
 
+    def manifest_size(self, skill_ids: tuple[str, ...] | list[str]) -> int:
+        """清单渲染后的字符数——调用方据此断言"没超预算"。"""
+        return len(self.render(skill_ids))
+
+    def search(self, query: str, *, tenant_id: str, limit: int = 5) -> list[SkillManifestEntry]:
+        """清单外兜底：按关键词在 SkillHub 里找。
+
+        只回 ``SkillManifestEntry``（不出正文）——兜底也不能把正文灌进上下文。
+        """
+        text = (query or "").strip().lower()
+        if not text:
+            return []
+        found: list[SkillManifestEntry] = []
+        for skill in self._store.list(tenant_id):  # type: ignore[attr-defined]
+            haystack = f"{skill.name} {getattr(skill, 'description', '')}".lower()
+            if text in haystack:
+                found.append(
+                    SkillManifestEntry(
+                        skill_id=skill.id,
+                        name=skill.name,
+                        description=_one_line(getattr(skill, "description", "")),
+                    )
+                )
+            if len(found) >= limit:
+                break
+        return found
+
 
 __all__ = [
     "MANIFEST_BUDGET_CHARS",

@@ -180,12 +180,18 @@ class LlmEmployeeRuntime:
             entry["allowed"] = True
             content = _clip(result)
         except ToolNotAllowed as exc:
-            # 闸门拒绝：记下来，并且**没有**真的打到 MCP 中心
+            # 闸门拒绝：记下来，并且**没有**真的打到后端
             entry["allowed"] = False
             entry["rejected"] = exc.reason
             content = json.dumps(
                 {"error": f"tool '{name}' rejected: {exc.reason}"}, ensure_ascii=False
             )
+        except Exception as exc:
+            # 工具**执行**失败（多为参数不合后端 schema）——把错误原文回灌给模型，
+            # 让它自己改参数重试，而不是把一次手滑升级成整轮失败。
+            entry["allowed"] = True
+            entry["error"] = f"{type(exc).__name__}: {exc}"
+            content = _clip({"error": f"tool '{name}' failed: {exc}", "hint": "修正参数后重试"})
         return entry, {
             "role": "tool",
             "tool_call_id": str(call.get("id") or name),

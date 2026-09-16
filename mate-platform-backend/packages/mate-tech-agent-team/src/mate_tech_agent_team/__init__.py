@@ -19,6 +19,7 @@ from .ontology_toolbox import CompositeToolbox, OntologyToolbox
 from .planner import PlanError, Planner, StaticPlanner
 from .profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry, builtin_profiles
 from .runtime import EmployeeRuntime
+from .skill_toolbox import SkillToolbox
 from .skills import SkillCatalog, SkillManifestEntry, SkillNotFound
 from .state import BrainState, SubTask, SubTaskResult
 from .toolbox import McpToolbox, ToolNotAllowed, to_openai_schema
@@ -43,6 +44,7 @@ __all__ = [
     "RunNotFound",
     "RunNotAwaitingApproval",
     "SkillCatalog",
+    "SkillToolbox",
     "SkillManifestEntry",
     "SkillNotFound",
     "StaticPlanner",

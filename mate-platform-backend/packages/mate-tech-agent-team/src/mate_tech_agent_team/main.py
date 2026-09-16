@@ -17,7 +17,7 @@ from fastapi import FastAPI
 
 from mate_platform.auth import install_auth
 
-from .api.app import router, set_brain_service, set_profile_registry
+from .api.app import router, set_brain_service, set_profile_registry, set_skill_catalog
 from .brain import BrainService
 
 SERVICE_NAME = "mate-tech-agent-team"
@@ -30,15 +30,17 @@ def _healthz() -> dict[str, str]:
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     from .profiles import ProfileRegistry, builtin_profiles
-    from .wiring import build_service
+    from .wiring import build_service, build_skill_catalog
 
     service = build_service()
     set_brain_service(service)
     set_profile_registry(ProfileRegistry(builtin_profiles()))
+    set_skill_catalog(build_skill_catalog())
     app.state.brain_service = service
     yield
     set_brain_service(None)
     set_profile_registry(None)
+    set_skill_catalog(None)
 
 
 def create_app(service: BrainService | None = None, *, with_wiring: bool = False) -> FastAPI:
