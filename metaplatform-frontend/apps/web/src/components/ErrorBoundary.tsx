@@ -33,7 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.error) {
       return (
         <div
-          className="mp-border mp-p-7 mp-text-1 mp-bg-1 mp-rounded"
+          className="mp-border mp-p-7 mp-text-1 mp-bg-1 mp-rounded" 
         >
           <h2 className="mp-text-danger mp-mt-1" >
             {this.props.fallbackTitle ?? "页面渲染出错"}
