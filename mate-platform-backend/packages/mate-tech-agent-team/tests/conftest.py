@@ -16,7 +16,7 @@ import asyncio
 import os
 import sys
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 
 import pytest
 
@@ -42,28 +42,33 @@ RLS_TEST_SCHEMA = "agent_team_rls_test"
 _JWT_SECRET = "test-secret"
 
 
-def make_token(*, tenant_id: str = "tenant-acme") -> str:
+def make_token(
+    *,
+    tenant_id: str = "tenant-acme",
+    roles: list[str] | None = None,
+    permissions: list[str] | None = None,
+) -> str:
     import jwt as pyjwt
 
+    realm_roles = ["PLATFORM_SUPER_ADMIN"] if roles is None else roles
     now = int(time.time())
-    return pyjwt.encode(
-        {
-            "sub": "u-1",
-            "iss": "http://localhost:8080/realms/metaplatform",
-            "aud": "metaplatform-backend",
-            "azp": "metaplatform-backend",
-            "preferred_username": "u-1",
-            "realm_access": {"roles": ["PLATFORM_SUPER_ADMIN"]},
-            "scope": "platform.read platform.write",
-            "attributes": {"tenant_id": [tenant_id]},
-            "tenant_id": tenant_id,
-            "roles": ["PLATFORM_SUPER_ADMIN"],
-            "iat": now,
-            "exp": now + 3600,
-        },
-        _JWT_SECRET,
-        algorithm="HS256",
-    )
+    claims: dict[str, object] = {
+        "sub": "u-1",
+        "iss": "http://localhost:8080/realms/metaplatform",
+        "aud": "metaplatform-backend",
+        "azp": "metaplatform-backend",
+        "preferred_username": "u-1",
+        "realm_access": {"roles": realm_roles},
+        "scope": "platform.read platform.write",
+        "attributes": {"tenant_id": [tenant_id]},
+        "tenant_id": tenant_id,
+        "roles": realm_roles,
+        "iat": now,
+        "exp": now + 3600,
+    }
+    if permissions is not None:
+        claims["permissions"] = permissions
+    return pyjwt.encode(claims, _JWT_SECRET, algorithm="HS256")
 
 
 @pytest.fixture
@@ -74,6 +79,23 @@ def auth_headers() -> dict[str, str]:
 @pytest.fixture
 def other_tenant_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {make_token(tenant_id='tenant-other')}"}
+
+
+@pytest.fixture
+def admin_token() -> str:
+    """默认管理员令牌 —— 角色 ``PLATFORM_SUPER_ADMIN`` → 平台内置能力全集。
+
+    直接调服务层（不经 HTTP）的用例也要带它：1.3 轨 1 起**发起用户的包络
+    从令牌解析**，没有令牌就建立不起链根，包络为空（fail-closed），派活一律
+    转成待授权提案、一个员工都不会跑。
+    """
+    return make_token()
+
+
+@pytest.fixture
+def issue_token() -> Callable[..., str]:
+    """自造令牌（改角色 / 加权限标记），用于闸门的正负例。"""
+    return make_token
 
 
 def _pg_available() -> bool:

@@ -12,9 +12,13 @@ from __future__ import annotations
 import pytest
 from mate_tech_agent_team import (
     BrainService,
+    EmployeeProfile,
     InMemoryCheckpointerProvider,
+    InMemoryTeamTasks,
+    ProfileRegistry,
     RunNotAwaitingApproval,
     SubTaskResult,
+    TeamBus,
 )
 
 
@@ -51,6 +55,25 @@ class CountingPlanner:
         ][:max_parallel]
 
 
+def _bus() -> TeamBus:
+    """派活闸门：名册里放 ``CountingPlanner`` 会派的那三个员工。
+
+    闸门要在**真实派活路径**上判"员工在不在本租户名册"，所以名册不能空——
+    名册里没有 = 跨租户 = 硬拒（1.3 轨 1 起的行为）。
+    """
+    profiles = [
+        EmployeeProfile(
+            profile_id=f"EMP-{i}",
+            name=f"员工 {i}",
+            base_role="ontology",
+            system_prompt="你是员工。",
+            tools=("ont_object_query",),
+        )
+        for i in (1, 2, 3)
+    ]
+    return TeamBus(registry=ProfileRegistry(profiles), tasks=InMemoryTeamTasks())
+
+
 def _service() -> tuple[BrainService, CountingRuntime, CountingPlanner]:
     runtime = CountingRuntime()
     planner = CountingPlanner()
@@ -58,14 +81,15 @@ def _service() -> tuple[BrainService, CountingRuntime, CountingPlanner]:
         planner_for=lambda _ctx: planner,
         runtime_for=lambda _ctx: runtime,
         checkpointer=InMemoryCheckpointerProvider(),
+        team_bus=_bus(),
     )
     return service, runtime, planner
 
 
 @pytest.mark.asyncio
-async def test_gate_stops_before_summarizing() -> None:
+async def test_gate_stops_before_summarizing(admin_token: str) -> None:
     service, runtime, _ = _service()
-    run = await service.start(tenant_id="tenant-a", goal="目标")
+    run = await service.start(user_token=admin_token, tenant_id="tenant-a", goal="目标")
 
     assert run["status"] == "awaiting_approval"
     assert run["hitl_reason"]
@@ -74,14 +98,16 @@ async def test_gate_stops_before_summarizing() -> None:
 
 
 @pytest.mark.asyncio
-async def test_approval_completes_without_rerunning_anything() -> None:
+async def test_approval_completes_without_rerunning_anything(admin_token: str) -> None:
     """D-6 的核心：恢复后已完成节点的调用次数**不变**。"""
     service, runtime, planner = _service()
-    run = await service.start(tenant_id="tenant-a", goal="目标")
+    run = await service.start(user_token=admin_token, tenant_id="tenant-a", goal="目标")
     before_runtime = dict(runtime.by_task)
     before_plan_calls = planner.calls
 
-    done = await service.resume(tenant_id="tenant-a", run_id=run["run_id"], approved=True)
+    done = await service.resume(
+        user_token=admin_token, tenant_id="tenant-a", run_id=run["run_id"], approved=True
+    )
 
     assert done["status"] == "completed"
     assert done["summary"]
@@ -92,12 +118,14 @@ async def test_approval_completes_without_rerunning_anything() -> None:
 
 
 @pytest.mark.asyncio
-async def test_rejection_stops_without_summarizing() -> None:
+async def test_rejection_stops_without_summarizing(admin_token: str) -> None:
     service, runtime, _ = _service()
-    run = await service.start(tenant_id="tenant-a", goal="目标")
+    run = await service.start(user_token=admin_token, tenant_id="tenant-a", goal="目标")
     before = dict(runtime.by_task)
 
-    done = await service.resume(tenant_id="tenant-a", run_id=run["run_id"], approved=False)
+    done = await service.resume(
+        user_token=admin_token, tenant_id="tenant-a", run_id=run["run_id"], approved=False
+    )
 
     assert done["status"] == "failed"
     assert "人工确认未通过" in done["error"]
@@ -106,25 +134,30 @@ async def test_rejection_stops_without_summarizing() -> None:
 
 
 @pytest.mark.asyncio
-async def test_approving_twice_is_refused() -> None:
+async def test_approving_twice_is_refused(admin_token: str) -> None:
     service, _, _ = _service()
-    run = await service.start(tenant_id="tenant-a", goal="目标")
-    await service.resume(tenant_id="tenant-a", run_id=run["run_id"], approved=True)
+    run = await service.start(user_token=admin_token, tenant_id="tenant-a", goal="目标")
+    await service.resume(
+        user_token=admin_token, tenant_id="tenant-a", run_id=run["run_id"], approved=True
+    )
     with pytest.raises(RunNotAwaitingApproval):
-        await service.resume(tenant_id="tenant-a", run_id=run["run_id"], approved=True)
+        await service.resume(
+            user_token=admin_token, tenant_id="tenant-a", run_id=run["run_id"], approved=True
+        )
 
 
 @pytest.mark.asyncio
-async def test_gate_node_has_no_side_effects() -> None:
+async def test_gate_node_has_no_side_effects(admin_token: str) -> None:
     """闸门是纯路由节点——反复经过它不该产生任何员工调用。"""
     service, runtime, _ = _service()
-    run = await service.start(tenant_id="tenant-a", goal="目标")
+    run = await service.start(user_token=admin_token, tenant_id="tenant-a", goal="目标")
     after_first_pass = dict(runtime.by_task)
 
     service2 = BrainService(
         planner_for=lambda _ctx: CountingPlanner(),
         runtime_for=lambda _ctx: runtime,
         checkpointer=service._checkpointer,
+        team_bus=_bus(),
     )
     # 同一个检查点器上再查一次状态：只是读，不该触发任何节点
     await service2.get(tenant_id="tenant-a", run_id=run["run_id"])

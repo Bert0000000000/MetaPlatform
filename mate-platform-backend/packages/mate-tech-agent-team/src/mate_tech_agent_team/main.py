@@ -21,10 +21,14 @@ from .api.app import (
     router,
     set_brain_service,
     set_profile_registry,
+    set_profile_store,
+    set_run_control,
     set_skill_catalog,
     set_team_bus,
 )
 from .brain import BrainService
+from .profile_store import ProfileStore
+from .profiles import ProfileRegistry
 from .team_bus import TeamBus
 
 SERVICE_NAME = "mate-tech-agent-team"
@@ -36,11 +40,18 @@ def _healthz() -> dict[str, str]:
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
-    from .wiring import build_registry, build_service, build_skill_catalog, build_team_bus
+    from .wiring import (
+        build_profile_store,
+        build_registry,
+        build_service,
+        build_skill_catalog,
+        build_team_bus,
+    )
 
     # 1.1 任务 3：名册接 PG —— 建出来的员工随重启/多副本一致（内置定义仍在代码里）。
     # 名册只有一份：HTTP 面与派活闸门读同一个。
-    registry = build_registry()
+    store = build_profile_store()
+    registry = build_registry(store)
     # 1.2 任务 2：派活闸门同时是消息通道。**先建它再建服务**——HTTP 的 send 与
     # 员工侧的 drain 必须落在同一个实例上，否则等于两个信箱。
     bus = build_team_bus(registry)
@@ -49,6 +60,9 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     set_profile_registry(registry)
     set_skill_catalog(build_skill_catalog())
     set_team_bus(bus)
+    # 1.3 轨 2：建/改数字员工的落库面（与名册读的是同一张表）。
+    set_profile_store(store)
+    set_run_control(None)  # 按当前服务层现建：运行控制面没有独立状态要注入
     app.state.brain_service = service
     app.state.team_bus = bus
     yield
@@ -56,6 +70,8 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     set_profile_registry(None)
     set_skill_catalog(None)
     set_team_bus(None)
+    set_profile_store(None)
+    set_run_control(None)
 
 
 def create_app(
@@ -63,12 +79,15 @@ def create_app(
     *,
     with_wiring: bool = False,
     team_bus: TeamBus | None = None,
+    profile_store: ProfileStore | None = None,
+    profile_registry: ProfileRegistry | None = None,
 ) -> FastAPI:
     """构造应用。
 
     ``service`` 省略时不装配服务层（便于单测自行注入）；
     ``with_wiring=True`` 时由 lifespan 按环境变量装配生产实现。
-    ``team_bus`` 给测试注入消息通道（省略时依赖 lifespan 或 ``set_team_bus``）。
+    ``team_bus`` 给测试注入消息通道（省略时依赖 lifespan 或 ``set_team_bus``）；
+    ``profile_store`` / ``profile_registry`` 注入员工读写面与名册。
     """
     app = FastAPI(
         title=SERVICE_NAME,
@@ -83,6 +102,10 @@ def create_app(
         set_brain_service(service)
     if team_bus is not None:
         set_team_bus(team_bus)
+    if profile_registry is not None:
+        set_profile_registry(profile_registry)
+    if profile_store is not None:
+        set_profile_store(profile_store)
     return app
 
 

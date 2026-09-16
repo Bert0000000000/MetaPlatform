@@ -13,25 +13,33 @@ thread_id 的调用方都能读到别人的状态；只有 GUC 而 thread_id 不
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 from uuid import uuid4
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
 
+from .authority import Envelope, resolve_initiator_envelope
 from .checkpoint import thread_id_for
 from .graph import build_brain_graph
 from .planner import Planner
 from .runtime import EmployeeRuntime
 from .state import BrainState
+from .team_bus import TeamBus
 
 
 @dataclass(frozen=True, slots=True)
 class RunContext:
-    """一次运行的调用方上下文（**不含**会话状态，只是当次授权）。"""
+    """一次运行的调用方上下文（**不含**会话状态，只是当次授权）。
+
+    ``initiator_envelope`` 是 ADR-0066 §3.3 的**链根**：派活的每一层都对着它
+    比，而不是对着"父 agent 当时拿到了什么"比。它从发起用户的令牌解析，且
+    与令牌一样**不进图状态**（状态会落库）。
+    """
 
     tenant_id: str
     user_token: str = ""
+    initiator_envelope: Envelope = field(default_factory=Envelope)
 
 
 class CheckpointerProvider(Protocol):
@@ -54,6 +62,11 @@ class RunNotAwaitingApproval(RuntimeError):
 
 AWAITING = "awaiting_approval"
 
+#: 终态：到了这里就不再变（取消 / 超时也落进来，见 1.3 轨 2 的运行控制面）。
+TERMINAL_STATUSES: frozenset[str] = frozenset(
+    {"completed", "failed", "rejected", "cancelled", "timeout"}
+)
+
 
 class BrainService:
     def __init__(
@@ -62,11 +75,15 @@ class BrainService:
         planner_for: PlannerFactory,
         runtime_for: RuntimeFactory,
         checkpointer: CheckpointerProvider,
+        team_bus: TeamBus,
         max_parallel: int = 3,
     ) -> None:
         self._planner_for = planner_for
         self._runtime_for = runtime_for
         self._checkpointer = checkpointer
+        #: 派活闸门：**派活的唯一入口**（包络衰减 + 深度闸门 + 越权转提案）。
+        #: 刻意没有默认值——漏接它，闸门就退回空转，而且不会有任何报错。
+        self._team_bus = team_bus
         self._max_parallel = max_parallel
 
     def _config(self, tenant_id: str, run_id: str) -> dict:
@@ -76,7 +93,9 @@ class BrainService:
         return build_brain_graph(
             planner=self._planner_for(ctx),
             runtime=self._runtime_for(ctx),
+            bus=self._team_bus,
             checkpointer=saver,
+            initiator_envelope=ctx.initiator_envelope,
             max_parallel=max_parallel,
         )
 
@@ -91,7 +110,7 @@ class BrainService:
         """一句话 → 拆图 → 并行派活 → 停在人工确认闸门。"""
         run_id = uuid4().hex
         cfg = self._config(tenant_id, run_id)
-        ctx = RunContext(tenant_id=tenant_id, user_token=user_token)
+        ctx = self._context(tenant_id=tenant_id, user_token=user_token)
         parallel = max_parallel or self._max_parallel
         async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
             graph = await self._graph_for(saver, ctx, parallel)
@@ -100,6 +119,14 @@ class BrainService:
                 cfg,
             )
         return dict(out)
+
+    def _context(self, *, tenant_id: str, user_token: str = "") -> RunContext:
+        """解析本次运行的链根。**没有令牌 = 空包络**（fail-closed）。"""
+        return RunContext(
+            tenant_id=tenant_id,
+            user_token=user_token,
+            initiator_envelope=resolve_initiator_envelope(user_token),
+        )
 
     async def resume(
         self,
@@ -111,7 +138,7 @@ class BrainService:
     ) -> BrainState:
         """人工确认后续跑。已完成的节点不会被重跑（D-6）。"""
         cfg = self._config(tenant_id, run_id)
-        ctx = RunContext(tenant_id=tenant_id, user_token=user_token)
+        ctx = self._context(tenant_id=tenant_id, user_token=user_token)
         async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
             graph = await self._graph_for(saver, ctx, self._max_parallel)
             snapshot = await graph.aget_state(cfg)
@@ -125,7 +152,7 @@ class BrainService:
 
     async def get(self, *, tenant_id: str, run_id: str) -> BrainState:
         cfg = self._config(tenant_id, run_id)
-        ctx = RunContext(tenant_id=tenant_id)
+        ctx = self._context(tenant_id=tenant_id)
         async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
             graph = await self._graph_for(saver, ctx, self._max_parallel)
             snapshot = await graph.aget_state(cfg)
@@ -133,9 +160,68 @@ class BrainService:
             raise RunNotFound(run_id)
         return dict(snapshot.values)
 
+    # -- 运行控制面（1.3 轨 2）---------------------------------------------
+    async def mark_terminal(self, *, tenant_id: str, run_id: str, status: str) -> BrainState:
+        """把 run 置为终态（取消 / 超时）。
+
+        **写进检查点**而不是只在控制面记一份：``GET /runs/{id}`` 读的就是检查点，
+        另记一份等于两个真相，重启/多副本立刻互相打脸。已经是终态时原样返回
+        （幂等），不覆盖更早的终态。
+        """
+        if status not in TERMINAL_STATUSES:
+            raise ValueError(f"mark_terminal 只接受终态，收到 {status!r}")
+        cfg = self._config(tenant_id, run_id)
+        ctx = self._context(tenant_id=tenant_id)
+        async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
+            graph = await self._graph_for(saver, ctx, self._max_parallel)
+            snapshot = await graph.aget_state(cfg)
+            if not snapshot.values:
+                raise RunNotFound(run_id)
+            if str(snapshot.values.get("status", "")) in TERMINAL_STATUSES:
+                return dict(snapshot.values)
+            await graph.aupdate_state(cfg, {"status": status})
+            snapshot = await graph.aget_state(cfg)
+        return dict(snapshot.values)
+
+    async def history(self, *, tenant_id: str, run_id: str, limit: int = 100) -> list[dict]:
+        """检查点里的**步骤快照**（最早 → 最新），供事件流回放。
+
+        每条 = 图推进一步时的那一刻状态 + 那一步**跑了哪些节点**。租户隔离与
+        :meth:`get` 同一条路（thread_id 前缀 + 连接上的 GUC）。
+
+        "这步跑了谁"由**上一条快照的 ``next``** 反推（本版 langgraph 的
+        ``metadata`` 里已经没有 ``writes``，实测确认）：快照 N 记的是"接下来要跑
+        谁"，所以快照 N-1 的 ``next`` 就是快照 N 之前真的跑掉的那些节点。
+        """
+        cfg = self._config(tenant_id, run_id)
+        ctx = self._context(tenant_id=tenant_id)
+        async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
+            graph = await self._graph_for(saver, ctx, self._max_parallel)
+            snapshots = [snap async for snap in graph.aget_state_history(cfg, limit=limit)]
+        if not snapshots:
+            raise RunNotFound(run_id)
+        snapshots.reverse()
+        steps: list[dict] = []
+        pending: tuple[str, ...] = ()
+        for snapshot in snapshots:
+            metadata = snapshot.metadata or {}
+            values = snapshot.values or {}
+            steps.append(
+                {
+                    "step": int(metadata.get("step", 0)),
+                    "ran": [name for name in pending if not name.startswith("__")],
+                    "next": [name for name in (snapshot.next or ()) if not name.startswith("__")],
+                    "status": str(values.get("status", "")),
+                    "at": str(snapshot.created_at or ""),
+                }
+            )
+            pending = tuple(snapshot.next or ())
+        return steps
+
 
 __all__ = [
     "AWAITING",
+    "TERMINAL_STATUSES",
     "BrainService",
     "CheckpointerProvider",
     "PlannerFactory",
