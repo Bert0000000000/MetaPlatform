@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from .brain import BrainService, RunNotAwaitingApproval, RunNotFound
+from .brain import BrainService, RunContext, RunNotAwaitingApproval, RunNotFound
 from .checkpoint import (
     InMemoryCheckpointerProvider,
     PgCheckpointerProvider,
@@ -15,6 +15,7 @@ from .checkpoint import (
 )
 from .employee import LlmEmployeeRuntime
 from .llm_planner import LlmPlanner
+from .ontology_toolbox import CompositeToolbox, OntologyToolbox
 from .planner import PlanError, Planner, StaticPlanner
 from .profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry, builtin_profiles
 from .runtime import EmployeeRuntime
@@ -24,18 +25,21 @@ from .toolbox import McpToolbox, ToolNotAllowed, to_openai_schema
 
 __all__ = [
     "BrainService",
+    "CompositeToolbox",
     "BrainState",
     "EmployeeProfile",
     "EmployeeRuntime",
     "InMemoryCheckpointerProvider",
     "LlmEmployeeRuntime",
     "LlmPlanner",
+    "OntologyToolbox",
     "McpToolbox",
     "PgCheckpointerProvider",
     "PlanError",
     "Planner",
     "ProfileNotFound",
     "ProfileRegistry",
+    "RunContext",
     "RunNotFound",
     "RunNotAwaitingApproval",
     "SkillCatalog",

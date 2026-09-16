@@ -38,8 +38,8 @@ class _TinyRuntime:
 
 def _service(app_dsn: str, schema: str) -> BrainService:
     return BrainService(
-        planner=StaticPlanner(),
-        runtime=_TinyRuntime(),
+        planner_for=lambda _ctx: StaticPlanner(),
+        runtime_for=lambda _ctx: _TinyRuntime(),
         checkpointer=PgCheckpointerProvider(app_dsn, schema=schema),
     )
 

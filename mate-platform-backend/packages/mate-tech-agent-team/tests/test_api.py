@@ -33,8 +33,8 @@ class _Runtime:
 @pytest.fixture
 def client() -> TestClient:
     service = BrainService(
-        planner=StaticPlanner(),
-        runtime=_Runtime(),
+        planner_for=lambda _ctx: StaticPlanner(),
+        runtime_for=lambda _ctx: _Runtime(),
         checkpointer=InMemoryCheckpointerProvider(),
     )
     return TestClient(create_app(service=service))

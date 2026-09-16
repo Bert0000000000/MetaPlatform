@@ -59,6 +59,19 @@ def _tid(request: Request) -> str:
     return str(require_tenant(request.state.ctx))
 
 
+def _user_token(request: Request) -> str:
+    """发起用户的原始 Bearer。
+
+    本体面按 token 的 tenant claim 解析租户，服务身份 token 不带该 claim 会被拒；
+    而 ADR-0066 §3.3 要求权限包络的链根是**发起用户**，所以这里透传用户令牌。
+    """
+    ctx_token = str(getattr(request.state.ctx, "authorization", "") or "")
+    if ctx_token:
+        return ctx_token
+    header = request.headers.get("authorization", "")
+    return header[7:].strip() if header.lower().startswith("bearer ") else ""
+
+
 def _to_model(state: BrainState) -> RunStateModel:
     return RunStateModel.model_validate({**state, "status": state.get("status", "")})
 
@@ -68,7 +81,10 @@ async def agentTeamPostRuns(request: Request, body: StartRunRequest) -> RunState
     tenant_id = _tid(request)
     try:
         state = await get_brain_service().start(
-            tenant_id=tenant_id, goal=body.goal, max_parallel=body.max_parallel
+            tenant_id=tenant_id,
+            goal=body.goal,
+            user_token=_user_token(request),
+            max_parallel=body.max_parallel,
         )
     except ValueError as exc:  # 拆不出 ≥2 个可并行子任务
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -91,7 +107,10 @@ async def agentTeamPostRunApprove(
     tenant_id = _tid(request)
     try:
         state = await get_brain_service().resume(
-            tenant_id=tenant_id, run_id=run_id, approved=body.approved
+            tenant_id=tenant_id,
+            run_id=run_id,
+            approved=body.approved,
+            user_token=_user_token(request),
         )
     except RunNotFound as exc:
         raise HTTPException(status_code=404, detail="run not found") from exc

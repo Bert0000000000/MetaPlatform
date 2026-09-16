@@ -83,6 +83,12 @@ class LlmEmployeeRuntime:
     def _system_prompt(self, profile: EmployeeProfile) -> str:
         """身份提示词 + **技能清单**（只出名字与一句话描述，不出正文）。"""
         parts = [profile.system_prompt.strip()]
+        if "ont_" in " ".join(profile.tools):
+            parts.append(
+                "【本体使用规则】涉及本体对象时，rid 必须来自 ont_list_classes 的返回："
+                "先列清单、从中挑选，**禁止凭业务名词自己拼造 rid**（拼出来的必 404）。"
+                "清单里没有你要的类型，就如实说没有，不要换一个名字再试。"
+            )
         if self._skills is not None and profile.skills:
             manifest = self._skills.render(profile.skills)
             if manifest:
@@ -117,9 +123,9 @@ class LlmEmployeeRuntime:
 
         llm = self._llm_factory(tenant_id)
         toolbox = self._toolbox_factory(tenant_id)
+        llm_calls = 0
         try:
             schemas = await toolbox.schemas(allowed=allowed)
-            llm_calls = 0
             content = ""
             for _ in range(self._max_tool_rounds + 1):
                 reply = await llm.chat_with_tools(
@@ -143,6 +149,7 @@ class LlmEmployeeRuntime:
         except Exception as exc:  # 运行期故障（网关/中心/网络）不应炸掉整轮编排
             result["error"] = f"{type(exc).__name__}: {exc}"
             result["tool_calls"] = tool_log
+            result["llm_calls"] = llm_calls
             return result
         finally:
             await aclose_quietly(llm)

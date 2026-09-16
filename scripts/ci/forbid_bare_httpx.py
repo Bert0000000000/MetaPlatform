@@ -63,6 +63,14 @@ EXCLUDE_FILES = {
     # forbid_bare_httpx 的"内部服务须走 ACL"边界一致）
     "ontology_http_repo.py",
     "mcp.py",
+    # mate_clients/ontology/agent_tools.py：本体 agent 工具面的 ACL 客户端
+    # （Agent 产品层 1.0）。它本身就是这条出站边界 —— 每次调用注入调用方
+    # 的 Bearer + X-Tenant-Id，与 ontology_sdk.py 同一性质。
+    "agent_tools.py",
+    # mate_clients/iam/service_read.py：IAM 配置的机器取数通道。用
+    # X-Service-Secret 守门（服务身份读敏感项真值），不走内部 Bearer ——
+    # 服务 token 无租户 claim，叠 X-Tenant-Id 会触发租户绑定守卫 403。
+    "service_read.py",
     "iceberg_rest_adapter.py",
     "dispatcher.py",
     # 三轮 CI 实跑揭示的余量：本体/市场/深度研究/MCP 工具适配层（均为

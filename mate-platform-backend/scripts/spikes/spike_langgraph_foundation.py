@@ -128,7 +128,11 @@ def main() -> int:
     cfg = {"configurable": {"thread_id": thread_for("tenant-a", "hitl-1")}}
 
     graph.invoke({"tenant": "tenant-a", "approved": False}, cfg)
-    check("未批准时停在 gate，不执行 execute", CALLS["execute"] == 0, f"execute 调用 {CALLS['execute']} 次")
+    check(
+        "未批准时停在 gate，不执行 execute",
+        CALLS["execute"] == 0,
+        f"execute 调用 {CALLS['execute']} 次",
+    )
     check("analyze 已跑过", CALLS["analyze"] == 1, f"analyze 调用 {CALLS['analyze']} 次")
 
     # 外部批准（我们的 proposal 确认通道对应这一步）
@@ -181,7 +185,7 @@ def main() -> int:
     # ── 汇总 ─────────────────────────────────────────────────────────
     print("\n=== 汇总 ===")
     failed = [n for n, ok, _ in RESULTS if not ok]
-    for name, ok, detail in RESULTS:
+    for name, ok, _detail in RESULTS:
         print(f"  {'PASS' if ok else 'FAIL'}  {name}")
     print(f"\n{len(RESULTS) - len(failed)}/{len(RESULTS)} 通过")
     return 1 if failed else 0

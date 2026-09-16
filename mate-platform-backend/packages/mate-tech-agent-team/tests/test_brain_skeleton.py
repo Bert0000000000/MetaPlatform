@@ -61,8 +61,8 @@ class RecordingRuntime:
 def _service(runtime: RecordingRuntime | None = None) -> tuple[BrainService, RecordingRuntime]:
     rt = runtime or RecordingRuntime()
     service = BrainService(
-        planner=StaticPlanner(),
-        runtime=rt,
+        planner_for=lambda _ctx: StaticPlanner(),
+        runtime_for=lambda _ctx: rt,
         checkpointer=InMemoryCheckpointerProvider(),
     )
     return service, rt

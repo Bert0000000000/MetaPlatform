@@ -32,8 +32,10 @@ os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-ADMIN_DSN = "postgresql://meta:meta@localhost:5432/metaplatform"
-APP_DSN = "postgresql://mate_app:mate_app@localhost:5432/metaplatform"
+# 用 127.0.0.1 而不是 localhost：Windows 上 localhost 会先试 ::1，
+# 而 Docker 的端口映射在 ::1 上常表现为"连上后被立刻关闭"，白等一个超时。
+ADMIN_DSN = "postgresql://meta:meta@127.0.0.1:5432/metaplatform"
+APP_DSN = "postgresql://mate_app:mate_app@127.0.0.1:5432/metaplatform"
 
 RLS_TEST_SCHEMA = "agent_team_rls_test"
 

@@ -36,12 +36,12 @@ class EmployeeProfile:
         return tool_name in self.tools
 
 
-#: 只读的本体工具面（写操作走 proposal，见 :mod:`.toolbox` 的 agentInvokable 闸门）
+#: 只读的本体工具面。**只列本服务真的能供的**——把工具写进白名单却没接上，
+#: 模型一旦选中就变成一次 500，比不给它更糟。
 _ONT_READ_TOOLS: tuple[str, ...] = (
     "ont_list_classes",
     "ont_inspect_class",
     "ont_object_query",
-    "ont_search_objects",
 )
 
 _SKILL_TOOLS: tuple[str, ...] = ("search_skill", "read_skill")

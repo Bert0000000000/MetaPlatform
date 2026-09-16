@@ -1,30 +1,34 @@
-"""生产装配：把大脑接上真实的 llmgw / MCP 中心 / SkillHub / PG 检查点。
+"""生产装配：把大脑接上真实的 llmgw / MCP 中心 / 本体 / SkillHub / PG 检查点。
 
 **刻意没有静默回落**（硬规则 #5 的同一精神）：缺 ``MATE_AGENT_TEAM_DSN``
-时**直接启动失败**，而不是悄悄退回内存检查点器——那会让"租户隔离由数据库强制"
-变成一句空话，而且只在多实例部署时才暴露。
+或 ``MATE_AGENT_TEAM_ADMIN_DSN`` 时**直接启动失败**，而不是悄悄退回内存
+检查点器或用服务身份冒名建表——那会让"租户隔离由数据库强制"变成一句空话。
 """
 
 from __future__ import annotations
 
 import os
-from typing import Any
 
+from mate_clients.iam import IamServiceReadClient
 from mate_clients.llmgw import LlmgwClient
 from mate_clients.mcp.tools import McpToolsClient
+from mate_clients.ontology import OntAgentToolsClient
 from mate_clients.security import BearerAuth
 from mate_platform.marketplace.skillhub.store import SkillHubStore
 
-from .brain import BrainService
+from .brain import BrainService, RunContext
 from .checkpoint import PgCheckpointerProvider, bootstrap
 from .employee import LlmEmployeeRuntime
 from .llm_planner import LlmPlanner
+from .ontology_toolbox import CompositeToolbox, OntologyToolbox
 from .profiles import ProfileRegistry, builtin_profiles
 from .skills import SkillCatalog
 from .toolbox import McpToolbox
 
 DEFAULT_LLMGW_URL = "http://localhost:8008"
 DEFAULT_MCP_URL = "http://localhost:8081"
+DEFAULT_ONT_URL = "http://localhost:8007"
+DEFAULT_GATEWAY_URL = "http://localhost:8100"
 
 
 def _bearer() -> BearerAuth:
@@ -73,27 +77,71 @@ def build_service() -> BrainService:
     bearer = _bearer()
     llmgw_url = os.getenv("MATE_LLMGW_URL", DEFAULT_LLMGW_URL)
     mcp_url = os.getenv("MATE_MCP_URL", DEFAULT_MCP_URL)
-
-    def llm_factory(tenant_id: str) -> LlmgwClient:
-        return LlmgwClient(llmgw_url, auth=bearer, tenant_id=tenant_id)
-
-    def toolbox_factory(tenant_id: str) -> McpToolbox:
-        client: Any = McpToolsClient(mcp_url, auth=bearer, tenant_id=tenant_id)
-        return McpToolbox(client)
+    ont_url = os.getenv("MATE_ONT_URL", DEFAULT_ONT_URL)
+    gateway_url = os.getenv("MATE_GATEWAY_URL", DEFAULT_GATEWAY_URL)
 
     bootstrap(required_admin_dsn())
-
     skills = SkillCatalog(SkillHubStore())
-    planner = LlmPlanner(llm_factory=llm_factory, roster=registry.list())
-    runtime = LlmEmployeeRuntime(
-        registry=registry,
-        llm_factory=llm_factory,
-        toolbox_factory=toolbox_factory,
-        skills=skills,
-    )
+
+    def _provider_config(tenant_id: str, user_token: str):
+        """惰性取租户当前生效的上游 provider 配置。
+
+        不带 base_url/api_key 时 llmgw 会走 stub-fallback（把输入回显），那正是
+        D-10 要治的"假回执"，所以生产必须喂这两项。
+
+        **认证用发起用户的令牌**：服务身份 token 的 ``iss`` 由换发它的 Keycloak
+        地址决定，网关与 llmgw 校验的地址不一致时会被判 401；用户令牌本就是
+        网关签发的，两端都认。服务密钥（``X-Service-Secret``）仍是取敏感值的闸门。
+        """
+
+        async def _resolve() -> dict[str, str]:
+            client = IamServiceReadClient(
+                gateway_url,
+                service_secret=os.getenv("SERVICE_CLIENT_SECRET", ""),
+                token=user_token,
+            )
+            try:
+                return await client.get_provider_config(tenant_id)
+            finally:
+                await client.aclose()
+
+        return _resolve
+
+    def _llm_for(ctx: RunContext):
+        def _make(tenant_id: str) -> LlmgwClient:
+            return LlmgwClient(
+                llmgw_url,
+                auth=bearer,
+                tenant_id=tenant_id,
+                user_token=ctx.user_token,
+                provider_config=_provider_config(tenant_id, ctx.user_token),
+            )
+
+        return _make
+
+    def _toolbox(ctx: RunContext) -> CompositeToolbox:
+        ontology = OntologyToolbox(
+            OntAgentToolsClient(ont_url, token=ctx.user_token, tenant_id=ctx.tenant_id)
+        )
+        mcp = McpToolbox(
+            McpToolsClient(mcp_url, auth=bearer, tenant_id=ctx.tenant_id, user_token=ctx.user_token)
+        )
+        return CompositeToolbox(ontology=ontology, mcp=mcp)
+
+    def planner_for(ctx: RunContext) -> LlmPlanner:
+        return LlmPlanner(llm_factory=_llm_for(ctx), roster=registry.list())
+
+    def runtime_for(ctx: RunContext) -> LlmEmployeeRuntime:
+        return LlmEmployeeRuntime(
+            registry=registry,
+            llm_factory=_llm_for(ctx),
+            toolbox_factory=lambda tenant_id: _toolbox(ctx),
+            skills=skills,
+        )
+
     return BrainService(
-        planner=planner,
-        runtime=runtime,
+        planner_for=planner_for,
+        runtime_for=runtime_for,
         checkpointer=PgCheckpointerProvider(required_dsn()),
         max_parallel=int(os.getenv("MATE_AGENT_TEAM_MAX_PARALLEL", "3")),
     )
