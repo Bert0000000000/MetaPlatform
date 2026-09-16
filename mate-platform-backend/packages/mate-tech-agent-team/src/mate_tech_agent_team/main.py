@@ -29,12 +29,12 @@ def _healthz() -> dict[str, str]:
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
-    from .profiles import ProfileRegistry, builtin_profiles
-    from .wiring import build_service, build_skill_catalog
+    from .wiring import build_registry, build_service, build_skill_catalog
 
     service = build_service()
     set_brain_service(service)
-    set_profile_registry(ProfileRegistry(builtin_profiles()))
+    # 1.1 任务 3：名册接 PG —— 建出来的员工随重启/多副本一致（内置定义仍在代码里）。
+    set_profile_registry(build_registry())
     set_skill_catalog(build_skill_catalog())
     app.state.brain_service = service
     yield

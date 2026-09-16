@@ -16,6 +16,7 @@ from .checkpoint import (
 from .employee import LlmEmployeeRuntime
 from .llm_planner import LlmPlanner
 from .planner import PlanError, Planner, StaticPlanner
+from .profile_store import ProfileStore
 from .profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry, builtin_profiles
 from .runtime import EmployeeRuntime
 from .skill_toolbox import SkillToolbox
@@ -38,6 +39,7 @@ __all__ = [
     "Planner",
     "ProfileNotFound",
     "ProfileRegistry",
+    "ProfileStore",
     "RunContext",
     "RunNotFound",
     "RunNotAwaitingApproval",

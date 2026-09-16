@@ -13,11 +13,15 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Awaitable, Callable
 
 from .employee import LlmFactory, aclose_quietly
 from .planner import PlanError
 from .profiles import DEFAULT_MODEL, EmployeeProfile
 from .state import SubTask
+
+#: 按租户现取名册（1.1 任务 3：名册是租户相关的）。
+RosterProvider = Callable[[str], Awaitable[list[EmployeeProfile]]]
 
 _JSON_BLOCK = re.compile(r"\{.*\}", re.DOTALL)
 
@@ -48,16 +52,28 @@ class LlmPlanner:
         roster: list[EmployeeProfile],
         model: str = DEFAULT_MODEL,
         temperature: float = 0.0,
+        roster_provider: RosterProvider | None = None,
     ) -> None:
         self._llm_factory = llm_factory
         self._roster = roster
+        self._roster_provider = roster_provider
         self._model = model
         self._temperature = temperature
 
-    def _roster_text(self) -> str:
+    async def _resolve_roster(self, tenant_id: str) -> list[EmployeeProfile]:
+        """本租户的名册：接了 provider 就现取（含本租户落库的员工）。
+
+        1.1 任务 3 起名册是租户相关的（内置 + 该租户在 PG 里的行），所以拆解时
+        要按**当前租户**取，而不是构造时快照。
+        """
+        if self._roster_provider is None:
+            return self._roster
+        return await self._roster_provider(tenant_id)
+
+    @staticmethod
+    def _roster_text(roster: list[EmployeeProfile]) -> str:
         return "\n".join(
-            f"- {p.profile_id}（{p.name}）：{p.system_prompt.splitlines()[0][:60]}"
-            for p in self._roster
+            f"- {p.profile_id}（{p.name}）：{p.system_prompt.splitlines()[0][:60]}" for p in roster
         )
 
     def _parse(self, raw: str, allowed_ids: set[str], max_parallel: int) -> list[SubTask]:
@@ -101,10 +117,13 @@ class LlmPlanner:
         return subtasks
 
     async def plan(self, *, goal: str, max_parallel: int, tenant_id: str) -> list[SubTask]:
+        roster = await self._resolve_roster(tenant_id)
         messages = [
             {
                 "role": "system",
-                "content": _SYSTEM.format(max_parallel=max_parallel, roster=self._roster_text()),
+                "content": _SYSTEM.format(
+                    max_parallel=max_parallel, roster=self._roster_text(roster)
+                ),
             },
             {"role": "user", "content": goal},
         ]
@@ -120,9 +139,9 @@ class LlmPlanner:
             await aclose_quietly(llm)
         return self._parse(
             str(reply.get("content") or ""),
-            {p.profile_id for p in self._roster},
+            {p.profile_id for p in roster},
             max_parallel,
         )
 
 
-__all__ = ["LlmPlanner"]
+__all__ = ["LlmPlanner", "RosterProvider"]

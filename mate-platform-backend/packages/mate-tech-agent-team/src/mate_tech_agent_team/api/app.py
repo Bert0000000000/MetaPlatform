@@ -141,7 +141,7 @@ async def agentTeamPostRunApprove(
 @router.get("/profiles", response_model=ProfileListModel)
 async def agentTeamGetProfiles(request: Request) -> ProfileListModel:
     """列数字员工（身份 = 提示词 + 技能清单 + 工具白名单）。"""
-    require_tenant(request.state.ctx)  # 硬规则 #3：先过租户守门再碰数据
+    tenant_id = str(require_tenant(request.state.ctx))  # 硬规则 #3
     return ProfileListModel(
         profiles=[
             EmployeeProfileModel(
@@ -152,7 +152,7 @@ async def agentTeamGetProfiles(request: Request) -> ProfileListModel:
                 skills=list(p.skills),
                 tools=list(p.tools),
             )
-            for p in get_profile_registry().list()
+            for p in await get_profile_registry().list(tenant_id)
         ]
     )
 
@@ -160,9 +160,9 @@ async def agentTeamGetProfiles(request: Request) -> ProfileListModel:
 @router.get("/profiles/{profile_id}/skills", response_model=SkillManifestModel)
 async def agentTeamGetProfileSkills(request: Request, profile_id: str) -> SkillManifestModel:
     """技能清单（渐进加载第 1 层：只出名字与一句话描述，**不含正文**）。"""
-    require_tenant(request.state.ctx)
+    tenant_id = str(require_tenant(request.state.ctx))
     try:
-        profile = get_profile_registry().get(profile_id)
+        profile = await get_profile_registry().get(profile_id, tenant_id)
     except ProfileNotFound as exc:
         raise HTTPException(status_code=404, detail="profile not found") from exc
     catalog = get_skill_catalog()
@@ -183,9 +183,9 @@ async def agentTeamGetProfileSkillContent(
     request: Request, profile_id: str, skill_id: str
 ) -> SkillContentModel:
     """技能正文（渐进加载第 2 层：**选中之后**才读）。"""
-    require_tenant(request.state.ctx)
+    tenant_id = str(require_tenant(request.state.ctx))
     try:
-        profile = get_profile_registry().get(profile_id)
+        profile = await get_profile_registry().get(profile_id, tenant_id)
     except ProfileNotFound as exc:
         raise HTTPException(status_code=404, detail="profile not found") from exc
     if skill_id not in profile.skills:

@@ -19,10 +19,12 @@ from mate_clients.security import BearerAuth
 from mate_platform.marketplace.skillhub.store import SkillHubStore
 
 from .brain import BrainService, RunContext
+from .checkpoint import SCHEMA as CHECKPOINT_SCHEMA
 from .checkpoint import PgCheckpointerProvider, bootstrap
 from .employee import LlmEmployeeRuntime
 from .llm_planner import LlmPlanner
-from .profiles import ProfileRegistry, builtin_profiles
+from .profile_store import ProfileStore
+from .profiles import ProfileRegistry
 from .skill_toolbox import SKILL_TOOL_NAMES, SkillToolbox
 from .skills import SkillCatalog
 from .toolbox import CompositeToolbox, McpToolbox
@@ -77,9 +79,14 @@ def build_skill_catalog() -> SkillCatalog:
     return SkillCatalog(SkillHubStore())
 
 
+def build_registry() -> ProfileRegistry:
+    """员工名册：内置定义 + 本租户落库的行（1.1 任务 3）。"""
+    return ProfileRegistry(store=ProfileStore(required_dsn(), schema=CHECKPOINT_SCHEMA))
+
+
 def build_service() -> BrainService:
     """按环境变量装配。容器启动时调用一次。"""
-    registry = ProfileRegistry(builtin_profiles())
+    registry = build_registry()
     bearer = _bearer()
     llmgw_url = os.getenv("MATE_LLMGW_URL", DEFAULT_LLMGW_URL)
     mcp_url = os.getenv("MATE_MCP_URL", DEFAULT_MCP_URL)
@@ -137,7 +144,11 @@ def build_service() -> BrainService:
         )
 
     def planner_for(ctx: RunContext) -> LlmPlanner:
-        return LlmPlanner(llm_factory=_llm_for(ctx), roster=registry.list())
+        return LlmPlanner(
+            llm_factory=_llm_for(ctx),
+            roster=[],
+            roster_provider=lambda tenant_id: registry.list(tenant_id),
+        )
 
     def runtime_for(ctx: RunContext) -> LlmEmployeeRuntime:
         return LlmEmployeeRuntime(
@@ -155,4 +166,10 @@ def build_service() -> BrainService:
     )
 
 
-__all__ = ["build_service", "build_skill_catalog", "required_admin_dsn", "required_dsn"]
+__all__ = [
+    "build_registry",
+    "build_service",
+    "build_skill_catalog",
+    "required_admin_dsn",
+    "required_dsn",
+]
