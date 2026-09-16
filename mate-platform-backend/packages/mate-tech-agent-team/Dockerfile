@@ -16,7 +16,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 
 COPY packages/ /tmp/build/packages/
 
-ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple/
+# PyPI 镜像做成 ARG：各镜像源在不同网络下可用性不同（实测本机 tsinghua 会
+# SSL EOF，aliyun / pypi.org 可用）。用 --build-arg PIP_INDEX_URL=... 覆盖。
+ARG PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+ENV PIP_INDEX_URL=${PIP_INDEX_URL}
 # langgraph + langgraph-checkpoint-postgres 是本服务的编排/持久化底座；
 # psycopg[binary] 供 RLS 连接（同步建表 + 异步图跑）。
 RUN pip install --no-cache-dir \
