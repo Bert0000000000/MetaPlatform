@@ -240,10 +240,10 @@ TestRestDualRail::test_temporal_execute_conflicts`（期望 409、实得 404）�
 
 ### 6.5 PR CI 状态
 
-`gh pr checks` 在本 PR 上：**通过 23 / 失败 3 / 待定 5**（`mergeStateStatus: UNSTABLE`
-= 非阻塞项红，可合并）。
+本 PR 的失败项**没有一条是本轮引入的**：全部是仓库已登记的 `continue-on-error`
+债务，或因本轮改了某个路径而**首次触发**了那条本就红的工作流。
 
-首轮我曾引入 3 条真失败，均已修复：
+首轮我确实引入过 3 条真失败，均已修复：
 
 | 失败项 | 根因 | 处置 |
 | --- | --- | --- |
@@ -251,18 +251,26 @@ TestRestDualRail::test_temporal_execute_conflicts`（期望 409、实得 404）�
 | `cowork md-lint` | 新增 md 里以 `+` 开头的续行 / 连续空行 / 围栏未标语言 | 逐条修，本地用 `pymarkdownlnt==0.9.40` 复跑 CI 原命令清零 |
 | `cowork PRD skeleton check` | 新增的 `*-ACCEPTANCE.md` 缺 `ga-001..ga-013` 与「命令」「commit」字段 | 补 §6.1/§6.2/§6.3，本地复跑通过 |
 
-剩余 3 条失败**全部是仓库已登记的预存债务**（workflow 里写着
-`continue-on-error: true` + 「债务登记 2026-09-10：预存红，不阻塞合并」）：
-`Architecture kernel governance`（292 个 pyright strict 报错落在
-`mate-platform/tests/test_workflow_temporal_boundary.py`，本轮未改该文件）、
-`boot ontology-loop stack`、`playwright ontology-loop e2e`
-（后两条是 `docker-compose.override.yml` 把 build context 指到 CI 上不存在的
-`.tmp-build-context` —— 该 override 是本地 Windows 构建的既有 workaround）。
-`ga pre-commit` 里的 `trim trailing whitespace` / `prettier` 亦然：报的全是
-`metaplatform-frontend/**` 与 `docs/active/decisions/ADR-0065-*.md`，
-`git diff origin/main --name-only` 里这二者命中数为 0。
+其余失败项的定性（逐条核过 workflow 源码与 job 日志）：
+
+| 失败项 | 为什么不是本轮引入 |
+| --- | --- |
+| `Architecture kernel governance` | workflow 内 `continue-on-error: true` + 「债务登记 2026-09-10」；292 个 pyright 报错全落在 `mate-platform/tests/test_workflow_temporal_boundary.py`，本轮未改该文件 |
+| `boot ontology-loop stack` / `playwright ontology-loop e2e` | 同上，`continue-on-error: true`；根因是 `docker-compose.override.yml` 把 build context 指到 CI 上不存在的 `.tmp-build-context`（本地 Windows 构建的既有 workaround） |
+| `ga pre-commit` 的 `trim trailing whitespace` / `prettier` | 报的全是 `metaplatform-frontend/**` 与 `docs/active/decisions/ADR-0065-*.md`；`git diff origin/main --name-only` 里这二者命中数为 **0** |
+| `helm template + kubeconform` | workflow 内 `continue-on-error: true` + 「债务登记 2026-09-11：CRD schema 缺失」；日志是 6 个 CRD（DataProduct/Dataset/PrometheusRule…）"could not find schema"，**Valid 96 / Invalid 0** |
+| `helm-unittest` | 同上，「债务登记：quintush/helm-unittest@0.7.2 上游撤版」；日志就是 "requested version 0.7.2 does not exist" |
+| `helm-docs sync` | 同上，「债务登记：helm-docs tar 下载源失效」；日志是 "tar: This does not look like a tar archive" |
+| `Static chart checks` | 同上，「债务登记：infra tests 缺 sqlalchemy」；日志是 `ModuleNotFoundError: No module named 'sqlalchemy'` |
+| `kind cluster helm install + smoke` / `kind cluster lineage staging smoke` | `g4-kind-e2e.yml` / `g4-d1-staging-e2e.yml` 在 **main 上同样是 failure**（本轮未触及） |
+
+**这几条 helm 作业为什么"以前绿、现在红"**：`platform-k8s-ci.yml` 的 `paths` 过滤是
+`infra/helm/**`——PR #42 没动过 `infra/helm/`，作业根本没跑（workflow 记为 success）；
+本轮动了 `infra/helm/crds/`，它们才第一次被执行，于是各自那条**预存债务**显形。
 
 **13 条硬规则门禁（`ga-001` … `ga-013`）全绿**，含 `ga-006` ruff + pyright strict。
+
+## 7. 遗留与建议
 
 ### 7.1 已做的安全边界变更：`tenant_switch_enabled`（请复核）
 
