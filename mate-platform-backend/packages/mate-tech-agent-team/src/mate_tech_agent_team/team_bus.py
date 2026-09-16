@@ -27,11 +27,39 @@ from dataclasses import dataclass
 from typing import Any
 
 from .authority import DepthExceeded, Envelope
+from .team_task_store import (
+    TERMINAL_STATUSES,
+    ChannelMessage,
+    InMemoryTeamTasks,
+    TeamTask,
+    TeamTasks,
+)
 
 DEFAULT_MAX_DEPTH = 3
 
 #: 空包络：未获批准前，子任务什么都碰不了（fail-closed）。
 _NO_AUTHORITY = Envelope()
+
+
+class TaskNotFound(LookupError):
+    """该租户下查无此任务。
+
+    **跨租户与不存在同码**——报 403 等于承认这个 task_id 存在（存在性泄露），
+    与 1.1 ``RunNotFound`` 同一条口径。
+    """
+
+
+class TaskTerminal(RuntimeError):
+    """任务已到终态，不再接受投递（映射 409）。
+
+    ADR-0066 §5.5：终态 ``send`` 返回冲突，**不隐式起新轮**——想继续就新开
+    一个任务，而不是把一条消息变成"续命"。
+    """
+
+    def __init__(self, task_id: str, status: str) -> None:
+        self.task_id = task_id
+        self.status = status
+        super().__init__(f"任务 {task_id} 已终态（{status}），不再接受消息")
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,10 +105,14 @@ class _TaskState:
 
 
 class TeamBus:
-    """派活闸门 + 任务作用域的授权登记。
+    """派活闸门 + 任务作用域的授权登记 + 双向消息通道。
 
-    授权登记在**内存**里、按 task_id 索引：授权随任务生灭，不落库、不写回员工
-    定义。任务终态后由 sweep 回收（ADR-0066 F6）。
+    **授权**登记在**内存**里、按 task_id 索引：授权随任务生灭，不落库、不写回
+    员工定义。任务终态后由 sweep 回收（ADR-0066 F6）。
+
+    **任务实例**（``team_task``：租户 / 状态 / inbox）走 :class:`TeamTasks`
+    存储面——生产落 PG（RLS 强制），单测用内存实现。1.2 起 ``send`` 写的就是
+    它的 ``inbox``。
     """
 
     def __init__(
@@ -88,12 +120,14 @@ class TeamBus:
         *,
         registry: Any,
         max_depth: int = DEFAULT_MAX_DEPTH,
+        tasks: TeamTasks | None = None,
     ) -> None:
         if max_depth < 0:
             raise ValueError("max_depth 不得为负")
         self._registry = registry
         self.max_depth = max_depth
         self._tasks: dict[str, _TaskState] = {}
+        self._task_records: TeamTasks = tasks or InMemoryTeamTasks()
 
     # -- 判据 -------------------------------------------------------------
     async def spawn(self, request: SpawnRequest) -> SpawnOutcome:
@@ -112,6 +146,18 @@ class TeamBus:
         escalations = child.escalations_over(request.initiator_envelope)
 
         task_id = f"task-{uuid.uuid4().hex[:12]}"
+        await self._task_records.create(
+            TeamTask(
+                task_id=task_id,
+                tenant_id=request.tenant_id,
+                profile_id=request.profile_id,
+                parent_task_id=request.parent_task_id,
+                root_task_id=await self._root_for(
+                    request.tenant_id, request.parent_task_id, task_id
+                ),
+                depth=request.depth,
+            )
+        )
         if not escalations:
             self._tasks[task_id] = _TaskState(
                 depth=request.depth, base_envelope=child, approved=True
@@ -175,5 +221,62 @@ class TeamBus:
     def task_ids(self) -> list[str]:
         return list(self._tasks)
 
+    # -- 双向消息（ADR-0066 §5.5）-----------------------------------------
+    async def task(self, *, task_id: str, tenant_id: str) -> TeamTask | None:
+        """按租户取任务实例（跨租户 = None，不泄露存在性）。"""
+        return await self._task_records.get(tenant_id, task_id)
 
-__all__ = ["DEFAULT_MAX_DEPTH", "SpawnOutcome", "SpawnRequest", "TeamBus"]
+    async def finish(self, *, task_id: str, tenant_id: str, status: str) -> None:
+        """把任务置为终态。之后再 ``send`` 一律 409。"""
+        if status not in TERMINAL_STATUSES:
+            raise ValueError(f"finish 只接受终态，收到 {status!r}")
+        await self._task_records.set_status(tenant_id, task_id, status)
+
+    async def send(
+        self,
+        *,
+        task_id: str,
+        tenant_id: str,
+        message: str,
+        sender: str = "user",
+    ) -> ChannelMessage:
+        """往目标任务 inbox 投一条消息（**不做任何唤醒**）。
+
+        子 agent 在**下一轮迭代边界**自己来取（:meth:`consume_inbox`）；
+        终态任务直接 :class:`TaskTerminal`（409），不隐式起新轮。
+        子 agent 回问父级走的就是同一个方法，只是 ``task_id`` 换成父任务。
+        """
+        task = await self._require(task_id=task_id, tenant_id=tenant_id)
+        if task.is_terminal:
+            raise TaskTerminal(task_id, task.status)
+        entry = ChannelMessage(sender=sender, text=message)
+        await self._task_records.append(tenant_id, task_id, entry)
+        return entry
+
+    async def consume_inbox(self, *, task_id: str, tenant_id: str) -> list[ChannelMessage]:
+        """取走待消费消息并**清空**（消费即清空）。"""
+        await self._require(task_id=task_id, tenant_id=tenant_id)
+        return await self._task_records.drain(tenant_id, task_id)
+
+    async def _require(self, *, task_id: str, tenant_id: str) -> TeamTask:
+        task = await self._task_records.get(tenant_id, task_id)
+        if task is None:
+            raise TaskNotFound(task_id)
+        return task
+
+    async def _root_for(self, tenant_id: str, parent_task_id: str | None, task_id: str) -> str:
+        """链根：有父任务就继承它的根，否则自己就是根。"""
+        if not parent_task_id:
+            return task_id
+        parent = await self._task_records.get(tenant_id, parent_task_id)
+        return parent.root_task_id or parent.task_id if parent is not None else task_id
+
+
+__all__ = [
+    "DEFAULT_MAX_DEPTH",
+    "SpawnOutcome",
+    "SpawnRequest",
+    "TaskNotFound",
+    "TaskTerminal",
+    "TeamBus",
+]

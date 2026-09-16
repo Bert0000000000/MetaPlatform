@@ -129,6 +129,27 @@ components:
         comment:
           type: string
           default: ""
+    SendMessageRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        sender:
+          type: string
+          default: user
+          description: 投递方标识；子 agent 回问时填自己的 task_id
+    ChannelMessage:
+      type: object
+      required: [sender, text, at]
+      properties:
+        sender:
+          type: string
+        text:
+          type: string
+        at:
+          type: string
+          description: 投递时刻（ISO8601）
     EmployeeProfile:
       type: object
       required: [profile_id, name, base_role]
@@ -280,6 +301,47 @@ paths:
       x-mate-owner: agent-product-layer
       x-mate-permission: agent-team.write
       x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMPOSTRUNAPPROVE]
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/tasks/{task_id}/messages:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
+      summary: 给运行中的子 agent 投递一条消息（写入 team_task inbox）
+      description: |
+        ADR-0066 §5.5 的 send：消息写进目标任务的 inbox，子 agent 在**下一轮
+        迭代边界**自己取走（消费即清空）。投递**不做唤醒**；任务已终态时返回
+        409，**不隐式起新轮**。子 agent 回问父级走同一个接口，只是 task_id
+        换成父任务——通道同一条，方向相反。
+      tags: [agent-team]
+      operationId: agentTeamPostTaskMessage
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageRequest"
+      responses:
+        "202":
+          description: 已投递（不唤醒，等下一轮迭代边界被取走）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChannelMessage"
+        "404":
+          description: 该租户下不存在此任务（跨租户与不存在同码，不泄露存在性）
+        "409":
+          description: 任务已终态（E_TASK_TERMINAL），不隐式起新轮
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.write
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMPOSTTASKMESSAGE]
       x-mate-implementation-status: implemented
   /api/v1/agent-team/profiles:
     get:

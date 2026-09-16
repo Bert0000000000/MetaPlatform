@@ -23,12 +23,27 @@ from .runtime import EmployeeRuntime
 from .skill_toolbox import SkillToolbox
 from .skills import SkillCatalog, SkillManifestEntry, SkillNotFound
 from .state import BrainState, SubTask, SubTaskResult
-from .team_bus import DEFAULT_MAX_DEPTH, SpawnOutcome, SpawnRequest, TeamBus
+from .team_bus import (
+    DEFAULT_MAX_DEPTH,
+    SpawnOutcome,
+    SpawnRequest,
+    TaskNotFound,
+    TaskTerminal,
+    TeamBus,
+)
+from .team_task_store import (
+    ChannelMessage,
+    InMemoryTeamTasks,
+    PgTeamTasks,
+    TeamTask,
+    bootstrap_tasks,
+)
 from .toolbox import CompositeToolbox, McpToolbox, ToolNotAllowed, to_openai_schema
 
 __all__ = [
     "AuthorityError",
     "BrainService",
+    "ChannelMessage",
     "CompositeToolbox",
     "DEFAULT_MAX_DEPTH",
     "DepthExceeded",
@@ -37,10 +52,12 @@ __all__ = [
     "EmployeeProfile",
     "EmployeeRuntime",
     "InMemoryCheckpointerProvider",
+    "InMemoryTeamTasks",
     "LlmEmployeeRuntime",
     "LlmPlanner",
     "McpToolbox",
     "PgCheckpointerProvider",
+    "PgTeamTasks",
     "PlanError",
     "Planner",
     "ProfileNotFound",
@@ -56,11 +73,15 @@ __all__ = [
     "SpawnOutcome",
     "SpawnRequest",
     "StaticPlanner",
+    "TaskNotFound",
+    "TaskTerminal",
     "TeamBus",
+    "TeamTask",
     "SubTask",
     "SubTaskResult",
     "ToolNotAllowed",
     "bootstrap",
+    "bootstrap_tasks",
     "builtin_profiles",
     "thread_id_for",
     "to_openai_schema",

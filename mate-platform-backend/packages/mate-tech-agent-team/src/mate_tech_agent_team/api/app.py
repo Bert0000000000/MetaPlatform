@@ -18,11 +18,14 @@ from ..brain import AWAITING, BrainService, RunNotAwaitingApproval, RunNotFound
 from ..profiles import ProfileNotFound, ProfileRegistry
 from ..skills import SkillCatalog, SkillNotFound
 from ..state import BrainState
+from ..team_bus import TaskNotFound, TaskTerminal, TeamBus
 from .schemas import (
     ApproveRequest,
+    ChannelMessageModel,
     EmployeeProfileModel,
     ProfileListModel,
     RunStateModel,
+    SendMessageRequest,
     SkillContentModel,
     SkillManifestEntryModel,
     SkillManifestModel,
@@ -34,6 +37,7 @@ router = APIRouter(prefix="/api/v1/agent-team", tags=["agent-team"])
 _service: BrainService | None = None
 _registry: ProfileRegistry | None = None
 _catalog: SkillCatalog | None = None
+_bus: TeamBus | None = None
 
 
 def set_brain_service(service: BrainService | None) -> None:
@@ -70,6 +74,18 @@ def get_skill_catalog() -> SkillCatalog:
     if _catalog is None:
         raise RuntimeError("SkillCatalog 未装配：请先 set_skill_catalog(...)")
     return _catalog
+
+
+def set_team_bus(bus: TeamBus | None) -> None:
+    """装配/重置派活闸门 + 消息通道（测试 DI 缝）。"""
+    global _bus
+    _bus = bus
+
+
+def get_team_bus() -> TeamBus:
+    if _bus is None:
+        raise RuntimeError("TeamBus 未装配：请先 set_team_bus(...)")
+    return _bus
 
 
 def _tid(request: Request) -> str:
@@ -138,6 +154,32 @@ async def agentTeamPostRunApprove(
     return _to_model(state)
 
 
+@router.post("/tasks/{task_id}/messages", response_model=ChannelMessageModel, status_code=202)
+async def agentTeamPostTaskMessage(
+    request: Request, task_id: str, body: SendMessageRequest
+) -> ChannelMessageModel:
+    """给运行中的子 agent 投递一条消息（ADR-0066 §5.5）。
+
+    投递只写 inbox，**不做唤醒**——子 agent 在下一轮迭代边界自己取。
+    终态任务返回 409：想继续就新开一个任务，不靠一条消息"续命"。
+    """
+    try:
+        entry = await get_team_bus().send(
+            task_id=task_id,
+            tenant_id=_tid(request),
+            message=body.message,
+            sender=body.sender,
+        )
+    except TaskNotFound as exc:
+        raise HTTPException(status_code=404, detail="task not found") from exc
+    except TaskTerminal as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "E_TASK_TERMINAL", "taskId": task_id, "status": exc.status},
+        ) from exc
+    return ChannelMessageModel(sender=entry.sender, text=entry.text, at=entry.at)
+
+
 @router.get("/profiles", response_model=ProfileListModel)
 async def agentTeamGetProfiles(request: Request) -> ProfileListModel:
     """列数字员工（身份 = 提示词 + 技能清单 + 工具白名单）。"""
@@ -203,8 +245,10 @@ __all__ = [
     "get_brain_service",
     "get_profile_registry",
     "get_skill_catalog",
+    "get_team_bus",
     "router",
     "set_brain_service",
     "set_profile_registry",
     "set_skill_catalog",
+    "set_team_bus",
 ]

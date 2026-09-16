@@ -78,11 +78,27 @@ class SkillContentModel(BaseModel):
     content: str
 
 
+class SendMessageRequest(BaseModel):
+    """给运行中的子 agent 投递一条消息（ADR-0066 §5.5）。"""
+
+    message: str = Field(min_length=1)
+    #: 投递方标识；子 agent 回问父级时填自己的 task_id。
+    sender: str = "user"
+
+
+class ChannelMessageModel(BaseModel):
+    sender: str
+    text: str
+    at: str
+
+
 __all__ = [
     "ApproveRequest",
+    "ChannelMessageModel",
     "EmployeeProfileModel",
     "ProfileListModel",
     "RunStateModel",
+    "SendMessageRequest",
     "SkillContentModel",
     "SkillManifestEntryModel",
     "SkillManifestModel",

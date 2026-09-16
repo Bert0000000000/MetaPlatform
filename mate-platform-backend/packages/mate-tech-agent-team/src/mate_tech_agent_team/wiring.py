@@ -28,7 +28,8 @@ from .profile_store import ProfileStore
 from .profiles import ProfileRegistry
 from .skill_toolbox import SKILL_TOOL_NAMES, SkillToolbox
 from .skills import SkillCatalog
-from .team_bus import DEFAULT_MAX_DEPTH, TeamBus
+from .team_bus import DEFAULT_MAX_DEPTH, TaskNotFound, TeamBus
+from .team_task_store import PgTeamTasks
 from .toolbox import CompositeToolbox, McpToolbox
 
 DEFAULT_LLMGW_URL = "http://localhost:8008"
@@ -88,21 +89,51 @@ def build_registry() -> ProfileRegistry:
     return ProfileRegistry(store=ProfileStore(required_dsn(), schema=CHECKPOINT_SCHEMA))
 
 
-def build_team_bus(registry: ProfileRegistry | None = None) -> TeamBus:
-    """派活闸门（1.1 任务 4/5）：包络衰减 + 深度闸门。
+def build_team_bus(registry: ProfileRegistry | None = None, *, dsn: str | None = None) -> TeamBus:
+    """派活闸门（1.1 任务 4/5）+ 消息通道（1.2 任务 2）。
 
     深度的默认值对齐 Codex 的 ``agents.max_depth`` 与 Claude Code 的 3 层；
     可用 ``MATE_AGENT_TEAM_MAX_DEPTH`` 覆盖。
+
+    任务实例（含 ``inbox``）落 PG：HTTP 面的 ``send`` 与员工侧的 drain 可能
+    不在同一个进程里跑，内存版会让消息投进虚空。
     """
     return TeamBus(
         registry=registry or build_registry(),
         max_depth=int(os.getenv("MATE_AGENT_TEAM_MAX_DEPTH", str(DEFAULT_MAX_DEPTH))),
+        tasks=PgTeamTasks(dsn or required_dsn(), schema=CHECKPOINT_SCHEMA),
     )
 
 
-def build_service() -> BrainService:
-    """按环境变量装配。容器启动时调用一次。"""
-    registry = build_registry()
+def _inbox_for(ctx: RunContext, bus: TeamBus | None):
+    """把派活闸门的 inbox 接成员工运行时的取信箱。
+
+    **查无此任务 = 这个 run 没有信箱，不是错误**：脑图的子任务 id（``s1``/``s2``）
+    与派活闸门的 task_id（``task-<hex>``）目前是两套 id。1.2 只做通道机制，
+    两套 id 的统一留作后续——所以这里把 ``TaskNotFound`` 收敛成"没有待消费
+    消息"，而不是让整轮员工执行炸掉。
+    """
+    if bus is None:
+        return None
+
+    async def _drain(tenant_id: str, task_id: str) -> list[Any]:
+        try:
+            return list(await bus.consume_inbox(task_id=task_id, tenant_id=tenant_id))
+        except TaskNotFound:
+            return []
+
+    return _drain
+
+
+def build_service(
+    *, registry: ProfileRegistry | None = None, team_bus: TeamBus | None = None
+) -> BrainService:
+    """按环境变量装配。容器启动时调用一次。
+
+    ``team_bus`` 必须与 HTTP 面用的是**同一个实例**——投递方往它的 inbox 写、
+    员工从它的 inbox 取，两个实例等于两个信箱。
+    """
+    registry = registry or build_registry()
     bearer = _bearer()
     llmgw_url = os.getenv("MATE_LLMGW_URL", DEFAULT_LLMGW_URL)
     mcp_url = os.getenv("MATE_MCP_URL", DEFAULT_MCP_URL)
@@ -199,6 +230,8 @@ def build_service() -> BrainService:
             skills=skills,
             max_tool_rounds=int(os.getenv("MATE_AGENT_TEAM_MAX_TOOL_ROUNDS", "3")),
             summarization_trigger=("tokens", summary_tokens) if summary_tokens > 0 else None,
+            # 1.2：外部投递的消息在**每一轮模型调用的边界**被取走（消费即清空）。
+            inbox_for=_inbox_for(ctx, team_bus),
         )
 
     return BrainService(

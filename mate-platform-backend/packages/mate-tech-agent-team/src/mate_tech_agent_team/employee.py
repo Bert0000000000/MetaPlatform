@@ -28,11 +28,12 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from typing import Any, Protocol
 
 from langchain.agents import create_agent
 from langchain.agents.middleware import (
+    AgentMiddleware,
     ContextEditingMiddleware,
     SummarizationMiddleware,
 )
@@ -74,6 +75,8 @@ class LlmGateway(Protocol):
 
 LlmFactory = Callable[[str], LlmGateway]
 ToolboxFactory = Callable[[str], Toolbox]
+#: ``(tenant_id, task_id) -> 待消费的 inbox 消息``（消费即清空交给实现方）。
+InboxDrainer = Callable[[str, str], Awaitable[list[Any]]]
 
 
 async def aclose_quietly(client: object) -> None:
@@ -126,6 +129,50 @@ class _RejectedCalls:
         return entries
 
 
+class InboxMiddleware(AgentMiddleware):
+    """在**每一轮模型调用的边界**把外部投递的消息并入会话，消费即清空。
+
+    ADR-0066 §5.5 的 runtime 中立表述："下一轮迭代边界"就是这里——每次
+    模型调用之前。取一次就清空（drain 语义），所以同一批消息只回灌一轮，
+    不会每轮重复出现。
+
+    **为什么不塞进 AgentMiddleware 之外的地方**：``send`` 与消费是两件事，
+    投递方不做唤醒（任务终态后投递直接 409），消费方自己来取——两者解耦，
+    子 agent 回问父级也只是换一个 task_id 走同一条通道。
+    """
+
+    def __init__(self, *, drain: Callable[[], Awaitable[list[Any]]]) -> None:
+        super().__init__()
+        self._drain = drain
+        self.consumed: list[str] = []
+
+    async def abefore_model(self, state: Any, runtime: Any = None) -> dict[str, Any] | None:
+        pending = await self._drain()
+        if not pending:
+            return None
+        texts = [_render_inbox_message(m) for m in pending]
+        self.consumed.extend(texts)
+        return {"messages": [HumanMessage(content=text) for text in texts]}
+
+
+def _render_inbox_message(message: Any) -> str:
+    """把一条 inbox 消息渲染成给模型看的一行（不带框架/存储类型进契约）。"""
+    if isinstance(message, str):
+        return message
+    sender = str(getattr(message, "sender", "") or "user")
+    text = str(getattr(message, "text", "") or message)
+    return f"【来自 {sender} 的补充消息】{text}"
+
+
+def _inbox_drainer(
+    source: InboxDrainer, tenant_id: str, task_id: str
+) -> Callable[[], Awaitable[list[Any]]]:
+    async def _drain() -> list[Any]:
+        return await source(tenant_id, task_id)
+
+    return _drain
+
+
 def _final_text(messages: Sequence[BaseMessage]) -> str:
     """最后一条 AI 消息的文本（没有 AI 消息就是空串）。"""
     for message in reversed(list(messages)):
@@ -157,6 +204,7 @@ class LlmEmployeeRuntime:
         summarization_keep: tuple[str, Any] = DEFAULT_SUMMARY_KEEP,
         summary_prompt: str | None = None,
         context_editing: bool = True,
+        inbox_for: InboxDrainer | None = None,
     ) -> None:
         self._registry = registry
         self._llm_factory = llm_factory
@@ -168,6 +216,8 @@ class LlmEmployeeRuntime:
         self._summarization_keep = summarization_keep
         self._summary_prompt = summary_prompt
         self._context_editing = context_editing
+        #: ``(tenant_id, task_id) -> 待消费消息``；给了就启用双向消息通道。
+        self._inbox_for = inbox_for
 
     def _system_prompt(self, profile: EmployeeProfile) -> str:
         """身份提示词 + **技能清单**（只出名字与一句话描述，不出正文）。"""
@@ -295,11 +345,17 @@ class LlmEmployeeRuntime:
                 trace=trace,
             )
             rejected = _RejectedCalls(known=known, reason_for=_reason_for)
+            middleware = self._middleware(chat=chat)
+            task_id = str(subtask.get("task_id") or "")
+            if self._inbox_for is not None and task_id:
+                middleware.append(
+                    InboxMiddleware(drain=_inbox_drainer(self._inbox_for, tenant_id, task_id))
+                )
             agent = create_agent(
                 model=chat,
                 tools=tools,
                 system_prompt=self._system_prompt(profile),
-                middleware=self._middleware(chat=chat),
+                middleware=middleware,
             )
             state = None
             try:
