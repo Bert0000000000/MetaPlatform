@@ -164,22 +164,21 @@ def _to_model(state: BrainState) -> RunStateModel:
 
 @router.post("/runs", response_model=RunStateModel)
 async def agentTeamPostRuns(request: Request, body: StartRunRequest) -> RunStateModel:
+    """起一轮运行。**由运行控制面起**（不是直接调服务层）：控制面要在开跑前
+    认领这轮运行，执行中的它才在取消范围内（1.5 任务 1）；本轮的截止时间也
+    在同一处登记。
+    """
     tenant_id = _tid(request)
     try:
-        state = await get_brain_service().start(
+        state = await get_run_control().start(
             tenant_id=tenant_id,
             goal=body.goal,
             user_token=_user_token(request),
             max_parallel=body.max_parallel,
+            timeout_seconds=body.timeout_seconds,
         )
     except ValueError as exc:  # 拆不出 ≥2 个可并行子任务
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    # 运行级截止时间：登记在控制面上，到点由读路径裁决成终态（1.3 轨 2）。
-    get_run_control().register(
-        tenant_id=tenant_id,
-        run_id=str(state["run_id"]),
-        timeout_seconds=body.timeout_seconds,
-    )
     return _to_model(state)
 
 
@@ -267,7 +266,8 @@ async def agentTeamPostRunApprove(
     except RunNotFound as exc:
         raise HTTPException(status_code=404, detail="run not found") from exc
     try:
-        state = await get_brain_service().resume(
+        # 续跑也走控制面：它同样"有请求在等它"，执行中同样可被取消（1.5 任务 1）。
+        state = await get_run_control().resume(
             tenant_id=tenant_id,
             run_id=run_id,
             approved=body.approved,

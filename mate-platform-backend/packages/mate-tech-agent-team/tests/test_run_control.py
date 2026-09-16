@@ -11,17 +11,19 @@
 的检查点里（``GET /runs/{id}`` 读的就是它）。控制面另记一份就等于两个真相，
 重启/多副本时立刻互相打脸。
 
-**边界（诚实登记）**：取消作用于**停在闸门**的 run——那正是本产品真正会
-"挂着"的形态（执行中的 run 有请求在等它，超时由运行级兜底）；事件流是
-**回放**检查点里的步骤快照后收流，不做长连接尾随（见 1.4 候选）。
+**执行中的 run 也能取消**（1.5 任务 1）：请求还在等它，所以取消不是"外部杀"
+——图在**节点边界**自查取消标志，在途的那一波跑完就不再往下走。
 """
 
 from __future__ import annotations
 
+import asyncio
 import time
 from typing import Any
 
+import httpx
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from mate_tech_agent_team import (
     BrainService,
@@ -30,9 +32,11 @@ from mate_tech_agent_team import (
     ProfileRegistry,
     ProfileStore,
     StaticPlanner,
+    SubTask,
     SubTaskResult,
     TeamBus,
 )
+from mate_tech_agent_team.audit import AUDIT_SPAWN
 from mate_tech_agent_team.main import create_app
 from mate_tech_agent_team.profile_store import bootstrap_profiles
 from mate_tech_agent_team.profiles import EmployeeProfile
@@ -80,6 +84,44 @@ class _Runtime:
         )
 
 
+class _BlockingRuntime:
+    """执行到一半停住，等测试放行 —— 模拟"请求还在等它"的执行中 run。"""
+
+    def __init__(self) -> None:
+        self.entered = asyncio.Event()
+        self.release = asyncio.Event()
+        self.started: list[str] = []
+
+    async def run(self, *, subtask: SubTask, tenant_id: str) -> SubTaskResult:
+        self.started.append(subtask["task_id"])
+        self.entered.set()
+        await self.release.wait()
+        return SubTaskResult(
+            task_id=subtask["task_id"],
+            team_task_id=subtask.get("team_task_id", ""),
+            profile_id=subtask["profile_id"],
+            status="ok",
+            output=f"{tenant_id}|{subtask['profile_id']}|已处理",
+            llm_calls=1,
+            source="llm",
+        )
+
+
+class _TwoWavePlanner:
+    """两波计划：``t1``/``t2`` 并行，``t3`` 依赖 ``t1``（= 第二波）。
+
+    取消要证明的是"**不再推进**"，所以计划必须真有下一波可以不再派出去。
+    """
+
+    async def plan(self, *, goal: str, max_parallel: int, tenant_id: str) -> list[SubTask]:
+        del goal, max_parallel, tenant_id
+        return [
+            SubTask(task_id="t1", profile_id="EMP-ANALYST", instruction="a", depends_on=[]),
+            SubTask(task_id="t2", profile_id="EMP-AUDITOR", instruction="b", depends_on=[]),
+            SubTask(task_id="t3", profile_id="EMP-RESEARCHER", instruction="c", depends_on=["t1"]),
+        ]
+
+
 class _MemoryStore:
     """内存版落库面（**测试替身**）。
 
@@ -112,18 +154,40 @@ def _service(
     store: Any = None,
     bus: TeamBus | None = None,
     checkpointer: Any = None,
+    runtime: Any = None,
+    planner: Any = None,
 ) -> tuple[BrainService, TeamBus, Any]:
     store = store if store is not None else _MemoryStore()
     registry = ProfileRegistry(store=store)
     bus = bus if bus is not None else TeamBus(registry=registry, tasks=InMemoryTeamTasks())
     checkpointer = checkpointer if checkpointer is not None else InMemoryCheckpointerProvider()
     service = BrainService(
-        planner_for=lambda _ctx: StaticPlanner(),
-        runtime_for=lambda _ctx: _Runtime(),
+        planner_for=lambda _ctx: planner if planner is not None else StaticPlanner(),
+        runtime_for=lambda _ctx: runtime if runtime is not None else _Runtime(),
         checkpointer=checkpointer,
         team_bus=bus,
     )
     return service, bus, store
+
+
+def _app_obj(
+    *,
+    store: Any = None,
+    bus: TeamBus | None = None,
+    checkpointer: Any = None,
+    runtime: Any = None,
+    planner: Any = None,
+) -> FastAPI:
+    """ASGI 应用对象（异步用例要直接喂给 ``httpx.ASGITransport``）。"""
+    service, bus, store = _service(
+        store=store, bus=bus, checkpointer=checkpointer, runtime=runtime, planner=planner
+    )
+    return create_app(
+        service=service,
+        team_bus=bus,
+        profile_store=store,
+        profile_registry=ProfileRegistry(store=store),
+    )
 
 
 def _app(
@@ -131,14 +195,16 @@ def _app(
     store: Any = None,
     bus: TeamBus | None = None,
     checkpointer: Any = None,
+    runtime: Any = None,
+    planner: Any = None,
 ) -> TestClient:
-    service, bus, store = _service(store=store, bus=bus, checkpointer=checkpointer)
     return TestClient(
-        create_app(
-            service=service,
-            team_bus=bus,
-            profile_store=store,
-            profile_registry=ProfileRegistry(store=store),
+        _app_obj(
+            store=store,
+            bus=bus,
+            checkpointer=checkpointer,
+            runtime=runtime,
+            planner=planner,
         )
     )
 
@@ -281,6 +347,84 @@ def test_cancel_from_another_tenant_is_not_found() -> None:
     run = _start_run(client)
     response = client.post(f"{BASE}/runs/{run['run_id']}/cancel", headers=_headers("tenant-other"))
     assert response.status_code == 404
+
+
+def test_cancel_does_not_overwrite_an_earlier_terminal_state() -> None:
+    """取消幂等，且**不覆盖更早的终态**（1.3 已定语义，1.5 别破）。
+
+    这里用"人工驳回后的 ``failed``"当更早的终态：取消一个已经结束的 run 不该
+    把它改写成 ``cancelled``——终态只有一个，谁先到谁说了算。
+    """
+    client = _app()
+    run = _start_run(client)
+    rejected = client.post(
+        f"{BASE}/runs/{run['run_id']}/approve", json={"approved": False}, headers=_headers()
+    )
+    assert rejected.json()["status"] == "failed"
+
+    cancelled = client.post(f"{BASE}/runs/{run['run_id']}/cancel", headers=_headers())
+    assert cancelled.status_code == 200, cancelled.text
+    assert cancelled.json()["status"] == "failed"
+
+
+# ── 执行中的取消（1.5 任务 1）────────────────────────────────────────────
+
+
+def _spawn_run_id(bus: TeamBus) -> str:
+    """从**派活审计行**认领执行中的 run_id。
+
+    ``POST /runs`` 是同步的：run 还在跑的时候，HTTP 那边还没有返回值可用，
+    所以测试要从别处认出这轮 run。派活的审计行（硬规则 #9）带 ``run_id``，
+    正好是"这一轮已经开始执行"的公开证据。
+    """
+    rows = bus.audit.records(tenant_id=TENANT, action=AUDIT_SPAWN)
+    assert rows, "还没有派活审计行：run 还没执行到派活那一步"
+    return rows[-1].run_id
+
+
+@pytest.mark.asyncio
+async def test_cancel_stops_an_executing_run() -> None:
+    """执行中的 run 也能取消：图在**节点边界**自查取消标志，落终态 ``cancelled``。
+
+    请求还在等它（``POST /runs`` 同步），所以取消不能靠"外部杀"：在途的那一波
+    允许跑完（不硬断），跑完之后图自己不再往下走——第二波一个员工都不派。
+    """
+    runtime = _BlockingRuntime()
+    service, bus, store = _service(runtime=runtime, planner=_TwoWavePlanner())
+    app = create_app(
+        service=service,
+        team_bus=bus,
+        profile_store=store,
+        profile_registry=ProfileRegistry(store=store),
+    )
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        started = asyncio.create_task(
+            client.post(f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=_headers())
+        )
+        await asyncio.wait_for(runtime.entered.wait(), 5)
+        run_id = _spawn_run_id(bus)
+
+        cancelling = asyncio.create_task(
+            client.post(f"{BASE}/runs/{run_id}/cancel", headers=_headers())
+        )
+        await asyncio.sleep(0.1)  # 让取消请求先落地（置标志）
+        runtime.release.set()  # 放行在途调用：允许它跑完，但不再往下走
+
+        cancelled = await asyncio.wait_for(cancelling, 5)
+        first = await asyncio.wait_for(started, 5)
+        approve = await client.post(
+            f"{BASE}/runs/{run_id}/approve", json={"approved": True}, headers=_headers()
+        )
+
+    assert cancelled.status_code == 200, cancelled.text
+    assert cancelled.json()["status"] == "cancelled"
+    # 终态是**图自己写进检查点**的：发起那边看到的也是同一份
+    assert first.json()["status"] == "cancelled"
+    # 不再推进：第二波（t3）没有被派出去；已完成的第一波不重跑
+    assert runtime.started == ["t1", "t2"], runtime.started
+    # 终态之后 approve 一律 409（1.3 已定语义）
+    assert approve.status_code == 409, approve.text
 
 
 # ── 超时 ────────────────────────────────────────────────────────────────

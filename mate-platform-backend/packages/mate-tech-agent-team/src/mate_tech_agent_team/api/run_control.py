@@ -14,9 +14,9 @@
 
 **边界登记（诚实说清，别当成没做）**：
 
-1. 取消针对的是**停在闸门**的 run —— 那正是本产品真正会"挂着"的形态。执行中的
-   run 有请求在等它（``POST /runs`` 是同步的），取消它需要图在节点边界自查，
-   属 1.4 候选。
+1. 取消信号是**进程内**的：只有与运行中的图**同进程**时才精确生效（那正是
+   ``POST /runs`` / ``approve`` 在等它的那个进程）。跨副本取消执行中的 run 需要
+   共享信号通道，属后续候选；停在闸门的 run 跨副本取消仍然有效（终态写在检查点）。
 2. 每轮的超时值记在**进程内**；进程重启后回落到 ``MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS``
    这个默认值（0 = 不设超时）。
 3. 事件流是**回放**已有步骤后收流，不做长连接尾随。
@@ -29,7 +29,8 @@ import json
 import os
 import time
 from collections.abc import AsyncIterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from uuid import uuid4
 
 from ..brain import TERMINAL_STATUSES, BrainService, RunNotFound
 
@@ -45,6 +46,26 @@ class _RunRecord:
     started_at: float
 
 
+@dataclass
+class _LiveRun:
+    """一个**正在跑**的 run（有请求在等它）。
+
+    这不是第二份 run 状态——run 状态仍然只在检查点里。这里只有两件**即时信号**：
+
+    * ``cancel_requested`` —— 图在节点边界读它（1.5 任务 1）。历史里不留痕，
+      所以它不该进图状态。
+    * ``finished`` —— 图跑完时置位。取消要**等它停**再回话：``POST /cancel``
+      返回时，这轮已经不再推进了，而不是"请求已受理、请稍后再查"。
+    """
+
+    cancel_requested: bool = False
+    finished: asyncio.Event = field(default_factory=asyncio.Event)
+
+    def cancelled(self) -> bool:
+        """给图看的取消标志读取函数。"""
+        return self.cancel_requested
+
+
 class RunControl:
     """按租户管理 run 的取消 / 超时 / 事件。状态一律落在检查点上。"""
 
@@ -52,6 +73,7 @@ class RunControl:
         self._service = service
         self._default_timeout = default_timeout
         self._runs: dict[tuple[str, str], _RunRecord] = {}
+        self._live: dict[tuple[str, str], _LiveRun] = {}
 
     @classmethod
     def from_env(cls, service: BrainService) -> RunControl:
@@ -62,12 +84,80 @@ class RunControl:
             default_timeout = 0.0
         return cls(service, default_timeout=max(default_timeout, 0.0))
 
+    # -- 起跑 / 续跑 --------------------------------------------------------
+    async def start(
+        self,
+        *,
+        tenant_id: str,
+        goal: str,
+        user_token: str = "",
+        max_parallel: int | None = None,
+        timeout_seconds: float | None = None,
+    ) -> dict:
+        """起一轮运行，并**在开跑之前**认领它（这样执行中的它也能被取消）。
+
+        run_id 由控制面生成：图要能在自己开跑前就拿到"这轮会不会被取消"的
+        读取函数，而那个函数按 run_id 索引。
+        """
+        run_id = uuid4().hex
+        live = self._open(tenant_id=tenant_id, run_id=run_id)
+        self._runs[(tenant_id, run_id)] = _RunRecord(
+            timeout_seconds=self._effective_timeout(timeout_seconds), started_at=time.time()
+        )
+        try:
+            return await self._service.start(
+                tenant_id=tenant_id,
+                run_id=run_id,
+                goal=goal,
+                user_token=user_token,
+                max_parallel=max_parallel,
+                should_cancel=live.cancelled,
+            )
+        finally:
+            self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+
+    async def resume(
+        self,
+        *,
+        tenant_id: str,
+        run_id: str,
+        approved: bool = True,
+        user_token: str = "",
+    ) -> dict:
+        """人工确认后续跑。续跑同样"有请求在等它"，因此同样可被取消。"""
+        live = self._open(tenant_id=tenant_id, run_id=run_id)
+        try:
+            return await self._service.resume(
+                tenant_id=tenant_id,
+                run_id=run_id,
+                approved=approved,
+                user_token=user_token,
+                should_cancel=live.cancelled,
+            )
+        finally:
+            self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+
+    def _open(self, *, tenant_id: str, run_id: str) -> _LiveRun:
+        live = _LiveRun()
+        self._live[(tenant_id, run_id)] = live
+        return live
+
+    def _close(self, *, tenant_id: str, run_id: str, live: _LiveRun) -> None:
+        # 先置位再摘牌：正在 await 的取消请求要能被唤醒。
+        live.finished.set()
+        self._live.pop((tenant_id, run_id), None)
+
+    def _effective_timeout(self, timeout_seconds: float | None) -> float:
+        """这一轮实际生效的超时值：调用方没给就用部署默认值。"""
+        if timeout_seconds is None:
+            return self._default_timeout
+        return max(timeout_seconds, 0.0)
+
     # -- 登记 --------------------------------------------------------------
     def register(self, *, tenant_id: str, run_id: str, timeout_seconds: float | None) -> None:
         """记下这一轮的截止时间。``timeout_seconds=None`` 用部署默认值。"""
-        timeout = self._default_timeout if timeout_seconds is None else max(timeout_seconds, 0.0)
         self._runs[(tenant_id, run_id)] = _RunRecord(
-            timeout_seconds=timeout, started_at=time.time()
+            timeout_seconds=self._effective_timeout(timeout_seconds), started_at=time.time()
         )
 
     def is_due(self, *, tenant_id: str, run_id: str) -> bool:
@@ -94,7 +184,16 @@ class RunControl:
         return state
 
     async def cancel(self, *, tenant_id: str, run_id: str) -> dict:
-        """取消一轮运行（幂等）。跨租户与不存在同码：:class:`RunNotFound`。"""
+        """取消一轮运行（幂等）。跨租户与不存在同码：:class:`RunNotFound`。
+
+        **执行中的 run**（有请求在等它）走的是另一条路：置取消标志 → 等图在
+        节点边界自己停下 → 回话。不硬断在途调用（那一波允许跑完），也不重跑
+        已完成的节点。等在闸门的 run 没有 live 记录，直接落终态即可（1.3 语义）。
+        """
+        live = self._live.get((tenant_id, run_id))
+        if live is not None:
+            live.cancel_requested = True
+            await live.finished.wait()
         return await self._service.mark_terminal(
             tenant_id=tenant_id, run_id=run_id, status="cancelled"
         )

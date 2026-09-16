@@ -131,7 +131,8 @@ components:
               timeout,
             ]
           description: |
-            `cancelled` = 被 `POST /runs/{run_id}/cancel` 取消；
+            `cancelled` = 被 `POST /runs/{run_id}/cancel` 取消（正在执行的 run
+            由**图自己在节点边界**落成这个状态，不是因为外部把它杀掉）；
             `timeout` = 超过本轮截止时间（`timeout_seconds` 或部署默认值）后落到
             的终态。两者都是**终态**：之后再 `approve` 一律 409。
         subtasks:
@@ -475,6 +476,11 @@ paths:
         把 run 写进终态 `cancelled`——**写进检查点**，因此 `GET /runs/{id}` 与
         后续 `approve` 都看得到（确认一个已作废的计划一律 409）。重复取消不会
         覆盖更早的终态。跨租户与不存在同码 404，不泄露存在性。
+
+        **执行中的 run 也能取消**（1.5）：取消不靠外部杀——图在节点边界自查取消
+        标志，看到就自己落终态。粒度是**波与波之间**：在途的那一波允许跑完
+        （不硬断），已完成节点不重跑，下一波一个员工都不派。本调用**等图停下
+        再回**，所以 200 时该 run 已经不再推进。
       tags: [agent-team]
       operationId: agentTeamPostRunCancel
       parameters:

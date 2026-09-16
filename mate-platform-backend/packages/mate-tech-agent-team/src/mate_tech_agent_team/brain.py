@@ -97,7 +97,13 @@ class BrainService:
     def _config(self, tenant_id: str, run_id: str) -> dict:
         return {"configurable": {"thread_id": thread_id_for(tenant_id, run_id)}}
 
-    async def _graph_for(self, saver: BaseCheckpointSaver, ctx: RunContext, max_parallel: int):
+    async def _graph_for(
+        self,
+        saver: BaseCheckpointSaver,
+        ctx: RunContext,
+        max_parallel: int,
+        should_cancel: Callable[[], bool] | None = None,
+    ):
         return build_brain_graph(
             planner=self._planner_for(ctx),
             runtime=self._runtime_for(ctx),
@@ -106,6 +112,7 @@ class BrainService:
             initiator_envelope=ctx.initiator_envelope,
             actor=ctx.actor,
             max_parallel=max_parallel,
+            should_cancel=should_cancel,
         )
 
     async def start(
@@ -115,14 +122,23 @@ class BrainService:
         goal: str,
         user_token: str = "",
         max_parallel: int | None = None,
+        run_id: str | None = None,
+        should_cancel: Callable[[], bool] | None = None,
     ) -> BrainState:
-        """一句话 → 拆图 → 并行派活 → 停在人工确认闸门。"""
-        run_id = uuid4().hex
+        """一句话 → 拆图 → 并行派活 → 停在人工确认闸门。
+
+        ``run_id`` 由调用方给时就用它：运行控制面需要**在开跑之前**就认领这轮
+        运行，才能把它纳入取消范围（1.5 任务 1）。不给则现生成一个。
+
+        ``should_cancel`` 是取消标志的读取函数（同样是运行控制面的），图在节点
+        边界自查；与令牌一样**不进状态**（状态会落库）。
+        """
+        run_id = run_id or uuid4().hex
         cfg = self._config(tenant_id, run_id)
         ctx = self._context(tenant_id=tenant_id, user_token=user_token)
         parallel = max_parallel or self._max_parallel
         async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
-            graph = await self._graph_for(saver, ctx, parallel)
+            graph = await self._graph_for(saver, ctx, parallel, should_cancel)
             out = await graph.ainvoke(
                 {"run_id": run_id, "tenant_id": tenant_id, "goal": goal},
                 cfg,
@@ -145,12 +161,16 @@ class BrainService:
         run_id: str,
         approved: bool = True,
         user_token: str = "",
+        should_cancel: Callable[[], bool] | None = None,
     ) -> BrainState:
-        """人工确认后续跑。已完成的节点不会被重跑（D-6）。"""
+        """人工确认后续跑。已完成的节点不会被重跑（D-6）。
+
+        续跑也是"执行中的 run"（有请求在等它），所以同样把取消标志交给图。
+        """
         cfg = self._config(tenant_id, run_id)
         ctx = self._context(tenant_id=tenant_id, user_token=user_token)
         async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
-            graph = await self._graph_for(saver, ctx, self._max_parallel)
+            graph = await self._graph_for(saver, ctx, self._max_parallel, should_cancel)
             snapshot = await graph.aget_state(cfg)
             if not snapshot.values:
                 raise RunNotFound(run_id)
