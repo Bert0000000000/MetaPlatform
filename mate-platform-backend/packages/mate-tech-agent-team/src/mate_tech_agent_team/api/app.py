@@ -15,12 +15,20 @@ from fastapi import APIRouter, HTTPException, Request
 from mate_platform.tenancy.guards import require_tenant
 
 from ..brain import AWAITING, BrainService, RunNotAwaitingApproval, RunNotFound
+from ..profiles import ProfileRegistry
 from ..state import BrainState
-from .schemas import ApproveRequest, RunStateModel, StartRunRequest
+from .schemas import (
+    ApproveRequest,
+    EmployeeProfileModel,
+    ProfileListModel,
+    RunStateModel,
+    StartRunRequest,
+)
 
 router = APIRouter(prefix="/api/v1/agent-team", tags=["agent-team"])
 
 _service: BrainService | None = None
+_registry: ProfileRegistry | None = None
 
 
 def set_brain_service(service: BrainService | None) -> None:
@@ -33,6 +41,18 @@ def get_brain_service() -> BrainService:
     if _service is None:
         raise RuntimeError("BrainService 未装配：请先 set_brain_service(...)")
     return _service
+
+
+def set_profile_registry(registry: ProfileRegistry | None) -> None:
+    """装配/重置员工名册（测试 DI 缝）。"""
+    global _registry
+    _registry = registry
+
+
+def get_profile_registry() -> ProfileRegistry:
+    if _registry is None:
+        raise RuntimeError("ProfileRegistry 未装配：请先 set_profile_registry(...)")
+    return _registry
 
 
 def _tid(request: Request) -> str:
@@ -82,4 +102,30 @@ async def agentTeamPostRunApprove(
     return _to_model(state)
 
 
-__all__ = ["AWAITING", "get_brain_service", "router", "set_brain_service"]
+@router.get("/profiles", response_model=ProfileListModel)
+async def agentTeamGetProfiles(request: Request) -> ProfileListModel:
+    """列数字员工（身份 = 提示词 + 技能清单 + 工具白名单）。"""
+    require_tenant(request.state.ctx)  # 硬规则 #3：先过租户守门再碰数据
+    return ProfileListModel(
+        profiles=[
+            EmployeeProfileModel(
+                profile_id=p.profile_id,
+                name=p.name,
+                base_role=p.base_role,
+                system_prompt=p.system_prompt,
+                skills=list(p.skills),
+                tools=list(p.tools),
+            )
+            for p in get_profile_registry().list()
+        ]
+    )
+
+
+__all__ = [
+    "AWAITING",
+    "get_brain_service",
+    "get_profile_registry",
+    "router",
+    "set_brain_service",
+    "set_profile_registry",
+]

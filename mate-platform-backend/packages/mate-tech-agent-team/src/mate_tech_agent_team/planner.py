@@ -14,16 +14,24 @@ from typing import Protocol
 from .state import SubTask
 
 
+class PlanError(ValueError):
+    """拆解失败（模型没给出可用的任务图）。"""
+
+
 class Planner(Protocol):
     """把一句话拆成可并行的子任务清单。"""
 
-    def plan(self, *, goal: str, max_parallel: int) -> list[SubTask]:
-        """返回 ≥2 个子任务；不足 2 个视为无法并行拆解。"""
+    async def plan(self, *, goal: str, max_parallel: int, tenant_id: str) -> list[SubTask]:
+        """返回 ≥2 个子任务；不足 2 个视为无法并行拆解。
+
+        ``tenant_id`` 是必需的：真实拆解要调模型，而模型走哪家 provider
+        是**租户配置**（llmgw 按 X-Tenant-Id 取），不是进程级常量。
+        """
         ...
 
 
 class StaticPlanner:
-    """确定性拆解：把目标拆成"分析/核对/汇总"三类角度，供测试与离线演示。"""
+    """确定性拆解：把目标拆成"分析/核对/补充"三类角度，供测试与离线演示。"""
 
     #: 三个角色各出一份产出，天然并行、互不依赖
     _ANGLES: tuple[tuple[str, str], ...] = (
@@ -32,7 +40,8 @@ class StaticPlanner:
         ("EMP-RESEARCHER", "从背景角度补充：{goal}"),
     )
 
-    def plan(self, *, goal: str, max_parallel: int) -> list[SubTask]:
+    async def plan(self, *, goal: str, max_parallel: int, tenant_id: str) -> list[SubTask]:
+        del tenant_id
         count = max(2, min(max_parallel, len(self._ANGLES)))
         return [
             SubTask(
@@ -45,4 +54,4 @@ class StaticPlanner:
         ]
 
 
-__all__ = ["Planner", "StaticPlanner"]
+__all__ = ["PlanError", "Planner", "StaticPlanner"]

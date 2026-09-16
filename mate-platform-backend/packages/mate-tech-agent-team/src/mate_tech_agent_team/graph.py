@@ -21,7 +21,7 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
-from .planner import Planner
+from .planner import PlanError, Planner
 from .runtime import EmployeeRuntime
 from .state import BrainState
 
@@ -61,7 +61,12 @@ def build_brain_graph(
 
     async def plan_node(state: BrainState) -> dict[str, Any]:
         goal = state["goal"]
-        subtasks = planner.plan(goal=goal, max_parallel=max_parallel)
+        try:
+            subtasks = await planner.plan(
+                goal=goal, max_parallel=max_parallel, tenant_id=state["tenant_id"]
+            )
+        except PlanError as exc:
+            return {"status": "failed", "error": str(exc), "subtasks": []}
         if len(subtasks) < 2:
             return {
                 "status": "failed",

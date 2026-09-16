@@ -1,0 +1,90 @@
+"""技能渐进加载（任务 6 的核心，1.0 只做两层）。
+
+**两层**：
+
+* 第 1 层「清单」——常驻提示词，每条只有 ``skill_id / name / 一句话描述``，
+  **不含正文**。员工一多、技能一多，撑爆提示词的从来是正文。
+* 第 2 层「正文」——员工觉得需要时，用 ``read_skill(skill_id)`` 现拉。
+
+数据源是既有 SkillHub（``mate_platform.marketplace.skillhub.store``），
+本模块只是**读取侧**的薄封装，不新建存储。
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+#: 清单预算：上下文 2% ≈ 8000 字符（1.0 取固定上限，不做动态窗口）
+MANIFEST_BUDGET_CHARS = 8000
+
+
+class SkillNotFound(LookupError):
+    """SkillHub 里没有这个 skill。"""
+
+
+@dataclass(frozen=True, slots=True)
+class SkillManifestEntry:
+    skill_id: str
+    name: str
+    description: str
+
+
+def _one_line(text: str) -> str:
+    return " ".join((text or "").split())
+
+
+class SkillCatalog:
+    """把员工挂的 skill id 清单渲染成预算内的清单 + 按需取正文。"""
+
+    def __init__(self, store: object, *, budget_chars: int = MANIFEST_BUDGET_CHARS) -> None:
+        self._store = store
+        self._budget = budget_chars
+
+    @property
+    def budget_chars(self) -> int:
+        return self._budget
+
+    def manifest(self, skill_ids: tuple[str, ...] | list[str]) -> list[SkillManifestEntry]:
+        """清单条目。查不到的 skill 跳过（名册写错不该让整轮跑挂）。"""
+        entries: list[SkillManifestEntry] = []
+        for skill_id in skill_ids:
+            skill = self._store.get(skill_id)  # type: ignore[attr-defined]
+            if skill is None:
+                continue
+            entries.append(
+                SkillManifestEntry(
+                    skill_id=skill.id,
+                    name=skill.name,
+                    description=_one_line(getattr(skill, "description", "")),
+                )
+            )
+        return entries
+
+    def render(self, skill_ids: tuple[str, ...] | list[str]) -> str:
+        """渲染成提示词里的一段。**超预算的条目直接不列**，绝不退化成列正文。"""
+        lines: list[str] = []
+        used = 0
+        entries = self.manifest(skill_ids)
+        for entry in entries:
+            line = f"- {entry.skill_id}（{entry.name}）：{entry.description}"
+            if used + len(line) + 1 > self._budget:
+                lines.append(f"- （其余 {len(entries) - len(lines)} 个技能因超出预算未列出）")
+                break
+            lines.append(line)
+            used += len(line) + 1
+        return "\n".join(lines)
+
+    def read(self, skill_id: str) -> str:
+        """第 2 层：取正文。"""
+        skill = self._store.get(skill_id)  # type: ignore[attr-defined]
+        if skill is None:
+            raise SkillNotFound(skill_id)
+        return skill.content
+
+
+__all__ = [
+    "MANIFEST_BUDGET_CHARS",
+    "SkillCatalog",
+    "SkillManifestEntry",
+    "SkillNotFound",
+]

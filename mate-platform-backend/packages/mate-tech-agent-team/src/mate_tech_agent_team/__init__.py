@@ -13,22 +13,40 @@ from .checkpoint import (
     bootstrap,
     thread_id_for,
 )
-from .planner import Planner, StaticPlanner
+from .employee import LlmEmployeeRuntime
+from .llm_planner import LlmPlanner
+from .planner import PlanError, Planner, StaticPlanner
+from .profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry, builtin_profiles
 from .runtime import EmployeeRuntime
+from .skills import SkillCatalog, SkillManifestEntry, SkillNotFound
 from .state import BrainState, SubTask, SubTaskResult
+from .toolbox import McpToolbox, ToolNotAllowed, to_openai_schema
 
 __all__ = [
     "BrainService",
     "BrainState",
+    "EmployeeProfile",
     "EmployeeRuntime",
     "InMemoryCheckpointerProvider",
+    "LlmEmployeeRuntime",
+    "LlmPlanner",
+    "McpToolbox",
     "PgCheckpointerProvider",
+    "PlanError",
     "Planner",
+    "ProfileNotFound",
+    "ProfileRegistry",
     "RunNotFound",
     "RunNotAwaitingApproval",
+    "SkillCatalog",
+    "SkillManifestEntry",
+    "SkillNotFound",
     "StaticPlanner",
     "SubTask",
     "SubTaskResult",
+    "ToolNotAllowed",
     "bootstrap",
+    "builtin_profiles",
     "thread_id_for",
+    "to_openai_schema",
 ]
