@@ -36,6 +36,117 @@ class SandboxTier(StrEnum):
     L3_MICROVM = "l3_microvm"
 
 
+class CodeOrigin(StrEnum):
+    """一段代码是哪来的 —— **ADR-0040 §2.1 v1.1 的分层键**。
+
+    v1.0 按「谁出品的」分层（内置 → L2、第三方 → L3），那是安全缺陷：内置员工的
+    提示词里完全可以长出模型现场生成的代码，而第三方 Agent 也可以是人审过的静态
+    代码。可信度跟着**代码来源**走，不跟着组织边界走。
+    """
+
+    #: LLM 现场生成（Function 提议 / 脚本 / 拼装出来的可执行体）。
+    MODEL_GENERATED = "model_generated"
+    #: 子员工执行期装配或转交给下游的代码（子员工不可信，与父级身份无关）。
+    SUBAGENT = "subagent"
+    #: 外部 / Marketplace 引入、未经本平台校验。
+    EXTERNAL = "external"
+    #: 人工编写且入参已按 schema 校验。
+    HUMAN_REVIEWED = "human_reviewed"
+
+
+#: 等级强弱序（比较用；StrEnum 的字面量排序在这里是巧合，别依赖它）。
+_TIER_RANK: dict[SandboxTier, int] = {
+    SandboxTier.L1_PROCESS: 0,
+    SandboxTier.L2_CONTAINER: 1,
+    SandboxTier.L3_MICROVM: 2,
+}
+
+
+def tier_rank(tier: SandboxTier) -> int:
+    return _TIER_RANK[tier]
+
+
+#: **分层键**：代码来源 → 沙箱等级（ADR-0040 §2.1 v1.1）。厂商身份不再是判据。
+ORIGIN_TIERS: dict[CodeOrigin, SandboxTier] = {
+    CodeOrigin.MODEL_GENERATED: SandboxTier.L3_MICROVM,
+    CodeOrigin.SUBAGENT: SandboxTier.L3_MICROVM,
+    CodeOrigin.EXTERNAL: SandboxTier.L3_MICROVM,
+    CodeOrigin.HUMAN_REVIEWED: SandboxTier.L2_CONTAINER,
+}
+
+
+class SandboxIsolationError(RuntimeError):
+    """声明的隔离等级弱于代码来源要求的等级 —— 拒绝执行（fail-closed）。"""
+
+
+@dataclass(frozen=True, slots=True)
+class SandboxIsolation:
+    """一个等级**实际**给出的隔离面（用于渲染 Job manifest 与断言）。"""
+
+    tier: SandboxTier
+    run_as_non_root: bool
+    run_as_user: int
+    read_only_root_fs: bool
+    allow_privilege_escalation: bool
+    drop_all_capabilities: bool
+    seccomp_profile: str
+    #: 是否**允许声明** egress allowlist。``False`` = 一律 deny-all，不接受白名单
+    #: （来源不可信时连"我保证只连这几个"都不采信）。``True`` 也不是放开：白名单
+    #: 为空仍是 deny-all（ADR-0040 §2.2 硬要求 2）。
+    allow_network: bool
+    #: 独立内核运行时（MicroVM）。``None`` = 用集群默认（runc 容器）。
+    runtime_class: str | None
+
+
+#: 等级 → 隔离面。L3 与 L2 的差别是**独立内核**：L2 的同名加固字段仍在，
+#: 但它与宿主机共内核，容器逃逸面远大于 L3。
+ISOLATION_BY_TIER: dict[SandboxTier, SandboxIsolation] = {
+    SandboxTier.L3_MICROVM: SandboxIsolation(
+        tier=SandboxTier.L3_MICROVM,
+        run_as_non_root=True,
+        run_as_user=65534,  # nobody
+        read_only_root_fs=True,
+        allow_privilege_escalation=False,
+        drop_all_capabilities=True,
+        seccomp_profile="RuntimeDefault",
+        allow_network=False,
+        runtime_class="kata",
+    ),
+    SandboxTier.L2_CONTAINER: SandboxIsolation(
+        tier=SandboxTier.L2_CONTAINER,
+        run_as_non_root=True,
+        run_as_user=65534,
+        read_only_root_fs=True,
+        allow_privilege_escalation=False,
+        drop_all_capabilities=True,
+        seccomp_profile="RuntimeDefault",
+        allow_network=True,
+        runtime_class=None,
+    ),
+    SandboxTier.L1_PROCESS: SandboxIsolation(
+        tier=SandboxTier.L1_PROCESS,
+        run_as_non_root=True,
+        run_as_user=65534,
+        read_only_root_fs=False,
+        allow_privilege_escalation=False,
+        drop_all_capabilities=False,
+        seccomp_profile="Unconfined",
+        allow_network=True,
+        runtime_class=None,
+    ),
+}
+
+
+def tier_for_origin(origin: CodeOrigin | str) -> SandboxTier:
+    """代码来源 → 沙箱等级（**唯一**的分层函数）。"""
+    return ORIGIN_TIERS[CodeOrigin(origin)]
+
+
+def isolation_for(origin: CodeOrigin | str) -> SandboxIsolation:
+    """代码来源 → 该走哪一档隔离。"""
+    return ISOLATION_BY_TIER[tier_for_origin(origin)]
+
+
 class JobPhase(StrEnum):
     PENDING = "pending"
     RUNNING = "running"
@@ -102,6 +213,12 @@ class K8sSandboxSpec:
     image: str = "python:3.12-slim"
     service_account: str = "sandbox-runner"
     labels: dict[str, str] = field(default_factory=dict)
+    #: 这段代码是哪来的 —— ADR-0040 §2.1 v1.1 的分层键。默认按人审处理；
+    #: 模型生成 / 子员工转交 / 外部引入的代码必须**显式**声明来源，否则会被
+    #: 当成 L2 放行——那正是 v1.0 的缺陷形态。
+    code_origin: CodeOrigin = CodeOrigin.HUMAN_REVIEWED
+    #: 调用方声明的目标等级。可以等于或高于来源要求的等级；**低于则拒绝**。
+    declared_tier: SandboxTier | None = None
 
     def __post_init__(self) -> None:
         if self.resource_limits.cpu_millicores <= 0:
@@ -110,6 +227,22 @@ class K8sSandboxSpec:
             raise ValueError("memory_mb must be > 0")
         if self.resource_limits.timeout_seconds <= 0:
             raise ValueError("timeout_seconds must be > 0")
+        isolation = isolation_for(self.code_origin)
+        if self.declared_tier is not None and tier_rank(self.declared_tier) < tier_rank(
+            isolation.tier
+        ):
+            raise SandboxIsolationError(
+                f"代码来源 {self.code_origin.value} 要求 {isolation.tier.value}，"
+                f"声明的 {self.declared_tier.value} 更弱 —— 拒绝执行（ADR-0040 §2.1 v1.1）"
+            )
+        if not isolation.allow_network and self.network_policy.egress_allow_cidrs:
+            raise SandboxIsolationError(
+                f"代码来源 {self.code_origin.value} 的隔离是禁网的，"
+                f"不接受 egress allowlist {list(self.network_policy.egress_allow_cidrs)}"
+            )
+
+    def isolation(self) -> SandboxIsolation:
+        return isolation_for(self.code_origin)
 
 
 @dataclass(frozen=True, slots=True)
@@ -230,14 +363,20 @@ class K8sJobExecutor:
         namespace: str = "mate-sandbox",
         poll_interval: float = 1.0,
         _runner: Any = None,  # 测试注入（默认 subprocess.run）
+        code_origin: CodeOrigin = CodeOrigin.HUMAN_REVIEWED,
     ) -> None:
         self._kubectl = kubectl
         self._namespace = namespace
         self._poll_interval = poll_interval
         self._run = _runner or subprocess.run
+        #: 这个执行器跑的代码是哪来的 —— 决定 Job 的隔离档（ADR-0040 §2.1 v1.1）。
+        #: 装配方按 `function_ref` 的来源选执行器：模型生成 / 子员工转交的代码
+        #: 必须换到 `CodeOrigin.MODEL_GENERATED` / `SUBAGENT` 的执行器上。
+        self._code_origin = code_origin
 
     def render_job_manifest(self, spec: K8sSandboxSpec, job_name: str) -> dict[str, Any]:
         limits = spec.resource_limits
+        isolation = spec.isolation()
         driver = (
             "import sys, json\n"
             "_args = json.loads(sys.argv[1])\n"
@@ -253,8 +392,45 @@ class K8sJobExecutor:
         labels = {
             "app.kubernetes.io/managed-by": "mate-sandbox",
             "mate.metaplatform/function-ref": spec.function_ref.replace(".", "-"),
+            # 分层键是代码来源（ADR-0040 §2.1 v1.1）；厂商/出品方降级为标签。
+            "mate.metaplatform/code-origin": spec.code_origin.value,
+            "mate.metaplatform/sandbox-tier": isolation.tier.value,
             **{f"mate.metaplatform/{k}": v for k, v in spec.labels.items()},
         }
+        pod: dict[str, Any] = {
+            "restartPolicy": "Never",
+            "serviceAccountName": spec.service_account,
+            # 沙箱不需要 API server 凭证：自动挂载的 token 是容器逃逸后的现成弹药。
+            "automountServiceAccountToken": False,
+            "containers": [
+                {
+                    "name": "fn",
+                    "image": spec.image,
+                    "command": ["python", "-c", driver],
+                    "args": [json.dumps(list(spec.arguments), default=str)],
+                    "securityContext": {
+                        "runAsNonRoot": isolation.run_as_non_root,
+                        "runAsUser": isolation.run_as_user,
+                        "allowPrivilegeEscalation": isolation.allow_privilege_escalation,
+                        "readOnlyRootFilesystem": isolation.read_only_root_fs,
+                        "capabilities": {
+                            "drop": ["ALL"] if isolation.drop_all_capabilities else [],
+                        },
+                        "seccompProfile": {"type": isolation.seccomp_profile},
+                    },
+                    "resources": {
+                        "limits": {
+                            "cpu": f"{limits.cpu_millicores}m",
+                            "memory": f"{limits.memory_mb}Mi",
+                            "ephemeral-storage": f"{limits.ephemeral_storage_mb}Mi",
+                        },
+                    },
+                }
+            ],
+        }
+        if isolation.runtime_class is not None:
+            # 独立内核（MicroVM）：模型生成 / 子员工转交 / 外部引入的代码走这里。
+            pod["runtimeClassName"] = isolation.runtime_class
         return {
             "apiVersion": "batch/v1",
             "kind": "Job",
@@ -271,27 +447,14 @@ class K8sJobExecutor:
                             "mate.metaplatform/egress-allow": ",".join(
                                 spec.network_policy.egress_allow_cidrs
                             ),
+                            # 最强档**不接受**白名单，显式写明 deny-all：控制器据此
+                            # 忽略上面那条（来源不可信时连"只连这几个"都不采信）。
+                            "mate.metaplatform/egress-deny-all": (
+                                "false" if isolation.allow_network else "true"
+                            ),
                         },
                     },
-                    "spec": {
-                        "restartPolicy": "Never",
-                        "serviceAccountName": spec.service_account,
-                        "containers": [
-                            {
-                                "name": "fn",
-                                "image": spec.image,
-                                "command": ["python", "-c", driver],
-                                "args": [json.dumps(list(spec.arguments), default=str)],
-                                "resources": {
-                                    "limits": {
-                                        "cpu": f"{limits.cpu_millicores}m",
-                                        "memory": f"{limits.memory_mb}Mi",
-                                        "ephemeral-storage": f"{limits.ephemeral_storage_mb}Mi",
-                                    },
-                                },
-                            }
-                        ],
-                    },
+                    "spec": pod,
                 },
             },
         }
@@ -304,6 +467,7 @@ class K8sJobExecutor:
             arguments=args,
             resource_limits=ResourceLimits(),
             network_policy=NetworkPolicy(),
+            code_origin=self._code_origin,
         )
         job_name = f"sandbox-fn-{uuid.uuid4().hex[:10]}"
         manifest = self.render_job_manifest(spec, job_name)
@@ -421,13 +585,21 @@ class K8sSandboxRunner:
 
 
 __all__ = [
+    "ISOLATION_BY_TIER",
+    "ORIGIN_TIERS",
+    "CodeOrigin",
     "JobPhase",
     "K8sJobExecutor",
     "K8sSandboxRunner",
     "K8sSandboxSpec",
     "NetworkPolicy",
     "ResourceLimits",
+    "SandboxIsolation",
+    "SandboxIsolationError",
     "SandboxResult",
     "SandboxTier",
     "SubprocessExecutor",
+    "isolation_for",
+    "tier_for_origin",
+    "tier_rank",
 ]

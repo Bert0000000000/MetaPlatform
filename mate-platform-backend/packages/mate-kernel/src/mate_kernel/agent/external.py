@@ -54,9 +54,12 @@ class ExtAgentManifest:
 
     def __post_init__(self) -> None:
         if self.sandbox != SandboxTier.L3_MICROVM:
-            # 决策 B1：Marketplace 必须 L3；这里只 warn 层面拒绝
+            # ADR-0040 §2.1 v1.1：分层键是**代码来源**。第三方代码走 L3 的理由
+            # 不再是"它是外人做的"，而是它属于 `external` 来源——未经本平台
+            # 校验的可执行体。出品方标签（vendor）不再参与分层。
             raise ValueError(
-                f"Marketplace agent must use L3_MICROVM (decision B1); got {self.sandbox}"
+                "externally sourced code (CodeOrigin.EXTERNAL) must use "
+                f"L3_MICROVM (ADR-0040 §2.1 v1.1); got {self.sandbox}"
             )
         if not self.capabilities:
             raise ValueError("ExtAgentManifest.capabilities must be non-empty")
