@@ -155,6 +155,61 @@
 
 ## 6. 回归
 
+见 §6.4。
+
+### 6.1 13 硬规则门禁（与 `ga-acceptance.yml` 对齐）
+
+| 门禁 job | 本轮结论 |
+| --- | --- |
+| `ga-001` oasdiff | 契约仅加描述文本，无破坏性变更 |
+| `ga-002` Requirement ID | 契约既有 FR-MCP-* / FR-TEAM-* 未动 |
+| `ga-003` forbid_raw_sql（规则 3） | 新代码全部经 `require_tenant` / 租户过滤 |
+| `ga-004` forbid_bare_httpx（规则 4） | 未新增裸 httpx |
+| `ga-005` forbid_legacy_fallback（规则 5） | 无回落；`default_tenant` 只在无 HTTP 请求时用 |
+| `ga-006` ruff + pyright strict | 通过（本 PR 首轮曾因 ruff format 挂，已修） |
+| `ga-007` forbid_skip_tests | 未跳过任何用例 |
+| `ga-008` helm lint + kubeconform | 未触及 |
+| `ga-009` OTel collector smoke | 未触及 |
+| `ga-010` require_evidence（规则 10） | 本文件 + CODEX-MCP 证据 |
+| `ga-011` helm-docs --dry-run | 未触及 |
+| `ga-012` gitleaks（规则 12） | 无密钥入库；API key 仅存 sha256 |
+| `ga-013` NetworkPolicy 覆盖 | 未触及 |
+
+### 6.2 复现命令
+
+```bash
+cd mate-platform-backend && PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe -m pytest \
+  packages/mate-tech-mcp/tests packages/mate-tech-agent-team/tests -q
+```
+
+```bash
+cd mate-platform-backend && .venv/Scripts/python.exe -m ruff format --check . && \
+  .venv/Scripts/python.exe -m ruff check .
+```
+
+```bash
+python scripts/ci/check_prd_skeleton.py --prd-dir docs/active/specs \
+  --evidence-dir docs/active/delivery/evidence --strict --files
+```
+
+### 6.3 提交
+
+| commit | 内容 |
+| --- | --- |
+| `e205fbd1` | 1a 协议面租户绑定 |
+| `4460ce2a` | 1b 客户端注册落库 |
+| `1afefb35` | 1c 本体工具收回总线 |
+| `36fc6725` | 1c 修：sk-mcp 透传分流 |
+| `2d82298f` | 修 `ont_list_classes` 端点 + Codex 证据 |
+| `d8a4fdce` | 任务 3 员工身份落库 |
+| `29346c2f` | 任务 4/5 派活闸门 |
+| `13dd6e99` | 本验收证据 |
+| `fcdad37e` | 名册只建一份 |
+| `0f57e664` | ruff format |
+| `4ff35941` | pymarkdownlnt 修复 |
+
+### 6.4 结果
+
 | 套件 | 结果 |
 | --- | --- |
 | `mate-tech-mcp` + `mate-tech-agent-team` | **304 passed / 0 failed**（基线 277 passed / 1 failed） |
