@@ -120,7 +120,11 @@ components:
           description: 用户那句话
         status:
           type: string
-          enum: [planning, running, awaiting_approval, completed, failed]
+          enum: [planning, running, awaiting_approval, completed, failed, cancelled, timeout]
+          description: |
+            `cancelled` = 被 `POST /runs/{run_id}/cancel` 取消；
+            `timeout` = 超过本轮截止时间（`timeout_seconds` 或部署默认值）后落到
+            的终态。两者都是**终态**：之后再 `approve` 一律 409。
         subtasks:
           type: array
           items:
@@ -148,6 +152,13 @@ components:
           type: integer
           default: 3
           description: 本轮最多并行派出的员工数（≥2）
+        timeout_seconds:
+          type: number
+          minimum: 0
+          description: |
+            本轮的运行级截止时间（秒）。省略时用部署默认值
+            （`MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS`，0 = 不设超时）。到点后运行
+            落终态 `timeout`，不会一直停在闸门上等人。
     ApproveRequest:
       type: object
       properties:
@@ -201,6 +212,67 @@ components:
           items:
             type: string
           description: 工具白名单（MCP 工具名）；白名单外调用被拒
+        action_rids:
+          type: array
+          items:
+            type: string
+          description: 权限包络 · 可写的 Action rid（ADR-0066 §3.3）
+        kb_ids:
+          type: array
+          items:
+            type: string
+          description: 权限包络 · 可读的知识库 id
+        markings:
+          type: array
+          items:
+            type: string
+          description: 权限包络 · 可见的数据标记
+        model:
+          type: string
+          description: 该员工使用的模型（llmgw 侧的名字）
+        origin:
+          type: string
+          description: builtin = 代码里的内置定义；instantiated = 本租户建出来的行
+    ProfileWriteRequest:
+      type: object
+      required: [name]
+      properties:
+        profile_id:
+          type: string
+          description: |
+            省略时现生成 `EMP-XXXXXXXX`；给了就是**幂等 upsert**——同一个 id
+            再提交一次即覆盖，不需要先查再建。
+        name:
+          type: string
+          minLength: 1
+        base_role:
+          type: string
+          default: ontology
+          description: kernel AgentRole 枚举之一
+        system_prompt:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        tools:
+          type: array
+          items:
+            type: string
+        action_rids:
+          type: array
+          items:
+            type: string
+        kb_ids:
+          type: array
+          items:
+            type: string
+        markings:
+          type: array
+          items:
+            type: string
+        model:
+          type: string
     SkillManifestEntry:
       type: object
       required: [skill_id, name]
@@ -330,6 +402,73 @@ paths:
       x-mate-permission: agent-team.write
       x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMPOSTRUNAPPROVE]
       x-mate-implementation-status: implemented
+  /api/v1/agent-team/runs/{run_id}/cancel:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
+      summary: 取消一轮运行（落终态，幂等）
+      description: |
+        把 run 写进终态 `cancelled`——**写进检查点**，因此 `GET /runs/{id}` 与
+        后续 `approve` 都看得到（确认一个已作废的计划一律 409）。重复取消不会
+        覆盖更早的终态。跨租户与不存在同码 404，不泄露存在性。
+      tags: [agent-team]
+      operationId: agentTeamPostRunCancel
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 取消后的运行状态（status = cancelled）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunState"
+        "404":
+          description: 该租户下不存在此 run（跨租户与不存在同码）
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.write
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMPOSTRUNCANCEL]
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/runs/{run_id}/events:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
+      summary: 步骤级事件流（SSE）
+      description: |
+        `text/event-stream`：逐个步骤快照往外发，每条是 `event: step` +
+        `data: {seq, step, ran, next, status, at}`（`ran` = 这一步真的跑掉的
+        节点）。回放完已有步骤后发一条 `event: end` 收流。
+
+        **边界**：回放后收流，不做长连接尾随；到期的 run 会先落成终态再回放，
+        所以事件流里能看到它已经结束。
+      tags: [agent-team]
+      operationId: agentTeamGetRunEvents
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: SSE 流（text/event-stream）
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "404":
+          description: 该租户下不存在此 run
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETRUNEVENTS]
+      x-mate-implementation-status: implemented
   /api/v1/agent-team/tasks/{task_id}/messages:
     post:
       security:
@@ -395,6 +534,105 @@ paths:
       x-mate-owner: agent-product-layer
       x-mate-permission: agent-team.read
       x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETPROFILES]
+      x-mate-implementation-status: implemented
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
+      summary: 实例化一个数字员工（定义落库）
+      description: |
+        落库走 `profile_store.upsert`（PG + RLS 强制租户隔离），因此"建出来就
+        只属于本租户"是数据库说的，不是应用层记得过滤；重启与多副本都一致。
+
+        **不得提权**（ADR-0066 §3.7）：定义的权限包络必须 ⊆ **创建者**包络，
+        否则 403（`detail.escalations` 列出越权的维度）。
+      tags: [agent-team]
+      operationId: agentTeamPostProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileWriteRequest"
+      responses:
+        "201":
+          description: 建好的员工定义
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeProfile"
+        "403":
+          description: 定义的权限包络超出创建者包络（E_AUTHORITY_ESCALATION）
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.write
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMPOSTPROFILE]
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/profiles/{profile_id}:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
+      summary: 读一个数字员工的完整定义
+      tags: [agent-team]
+      operationId: agentTeamGetProfile
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 员工定义
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeProfile"
+        "404":
+          description: 该租户下不存在此员工（跨租户与不存在同码）
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETPROFILE]
+      x-mate-implementation-status: implemented
+    put:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
+      summary: 改一个数字员工（upsert 语义：提交即覆盖）
+      description: |
+        只能改**本租户**的员工——拿别人的 id 来改读不到就是 404，与"不存在"同码。
+        同样受 ADR-0066 §3.7 的提权检查约束。
+      tags: [agent-team]
+      operationId: agentTeamPutProfile
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileWriteRequest"
+      responses:
+        "200":
+          description: 改完的员工定义
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeProfile"
+        "403":
+          description: 定义的权限包络超出创建者包络
+        "404":
+          description: 该租户下不存在此员工
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.write
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMPUTPROFILE]
       x-mate-implementation-status: implemented
   /api/v1/agent-team/profiles/{profile_id}/skills:
     get:

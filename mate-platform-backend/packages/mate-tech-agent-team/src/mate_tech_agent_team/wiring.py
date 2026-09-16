@@ -84,9 +84,14 @@ def build_skill_catalog() -> SkillCatalog:
     return SkillCatalog(SkillHubStore())
 
 
-def build_registry() -> ProfileRegistry:
+def build_profile_store() -> ProfileStore:
+    """员工身份落库面（建/改入口与名册读的是同一张表，1.3 轨 2）。"""
+    return ProfileStore(required_dsn(), schema=CHECKPOINT_SCHEMA)
+
+
+def build_registry(store: ProfileStore | None = None) -> ProfileRegistry:
     """员工名册：内置定义 + 本租户落库的行（1.1 任务 3）。"""
-    return ProfileRegistry(store=ProfileStore(required_dsn(), schema=CHECKPOINT_SCHEMA))
+    return ProfileRegistry(store=store or build_profile_store())
 
 
 def build_team_bus(registry: ProfileRegistry | None = None, *, dsn: str | None = None) -> TeamBus:
@@ -225,6 +230,7 @@ def build_service(
 
 
 __all__ = [
+    "build_profile_store",
     "build_registry",
     "build_team_bus",
     "build_service",

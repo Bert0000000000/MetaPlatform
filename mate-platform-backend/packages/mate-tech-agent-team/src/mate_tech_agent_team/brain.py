@@ -62,6 +62,11 @@ class RunNotAwaitingApproval(RuntimeError):
 
 AWAITING = "awaiting_approval"
 
+#: 终态：到了这里就不再变（取消 / 超时也落进来，见 1.3 轨 2 的运行控制面）。
+TERMINAL_STATUSES: frozenset[str] = frozenset(
+    {"completed", "failed", "rejected", "cancelled", "timeout"}
+)
+
 
 class BrainService:
     def __init__(
@@ -155,9 +160,68 @@ class BrainService:
             raise RunNotFound(run_id)
         return dict(snapshot.values)
 
+    # -- 运行控制面（1.3 轨 2）---------------------------------------------
+    async def mark_terminal(self, *, tenant_id: str, run_id: str, status: str) -> BrainState:
+        """把 run 置为终态（取消 / 超时）。
+
+        **写进检查点**而不是只在控制面记一份：``GET /runs/{id}`` 读的就是检查点，
+        另记一份等于两个真相，重启/多副本立刻互相打脸。已经是终态时原样返回
+        （幂等），不覆盖更早的终态。
+        """
+        if status not in TERMINAL_STATUSES:
+            raise ValueError(f"mark_terminal 只接受终态，收到 {status!r}")
+        cfg = self._config(tenant_id, run_id)
+        ctx = self._context(tenant_id=tenant_id)
+        async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
+            graph = await self._graph_for(saver, ctx, self._max_parallel)
+            snapshot = await graph.aget_state(cfg)
+            if not snapshot.values:
+                raise RunNotFound(run_id)
+            if str(snapshot.values.get("status", "")) in TERMINAL_STATUSES:
+                return dict(snapshot.values)
+            await graph.aupdate_state(cfg, {"status": status})
+            snapshot = await graph.aget_state(cfg)
+        return dict(snapshot.values)
+
+    async def history(self, *, tenant_id: str, run_id: str, limit: int = 100) -> list[dict]:
+        """检查点里的**步骤快照**（最早 → 最新），供事件流回放。
+
+        每条 = 图推进一步时的那一刻状态 + 那一步**跑了哪些节点**。租户隔离与
+        :meth:`get` 同一条路（thread_id 前缀 + 连接上的 GUC）。
+
+        "这步跑了谁"由**上一条快照的 ``next``** 反推（本版 langgraph 的
+        ``metadata`` 里已经没有 ``writes``，实测确认）：快照 N 记的是"接下来要跑
+        谁"，所以快照 N-1 的 ``next`` 就是快照 N 之前真的跑掉的那些节点。
+        """
+        cfg = self._config(tenant_id, run_id)
+        ctx = self._context(tenant_id=tenant_id)
+        async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
+            graph = await self._graph_for(saver, ctx, self._max_parallel)
+            snapshots = [snap async for snap in graph.aget_state_history(cfg, limit=limit)]
+        if not snapshots:
+            raise RunNotFound(run_id)
+        snapshots.reverse()
+        steps: list[dict] = []
+        pending: tuple[str, ...] = ()
+        for snapshot in snapshots:
+            metadata = snapshot.metadata or {}
+            values = snapshot.values or {}
+            steps.append(
+                {
+                    "step": int(metadata.get("step", 0)),
+                    "ran": [name for name in pending if not name.startswith("__")],
+                    "next": [name for name in (snapshot.next or ()) if not name.startswith("__")],
+                    "status": str(values.get("status", "")),
+                    "at": str(snapshot.created_at or ""),
+                }
+            )
+            pending = tuple(snapshot.next or ())
+        return steps
+
 
 __all__ = [
     "AWAITING",
+    "TERMINAL_STATUSES",
     "BrainService",
     "CheckpointerProvider",
     "PlannerFactory",

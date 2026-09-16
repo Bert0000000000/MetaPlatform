@@ -3718,3 +3718,53 @@ requirements:
       - mate-platform-backend/packages/mate-tech-agent-team/tests/test_skills.py
     implementationStatus: implemented
     acceptanceStatus: notAccepted
+  FR-AGENT-TEAM-AGENTTEAMPOSTPROFILE:
+    prd: docs/active/specs/2026-09-16-agent-product-layer-1.0.md
+    service: agent-team
+    operationIds:
+      - agentTeamPostProfile
+    handler: mate_tech_agent_team.main:app#agentTeamPostProfile
+    tests:
+      - mate-platform-backend/packages/mate-tech-agent-team/tests/test_run_control.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-AGENT-TEAM-AGENTTEAMGETPROFILE:
+    prd: docs/active/specs/2026-09-16-agent-product-layer-1.0.md
+    service: agent-team
+    operationIds:
+      - agentTeamGetProfile
+    handler: mate_tech_agent_team.main:app#agentTeamGetProfile
+    tests:
+      - mate-platform-backend/packages/mate-tech-agent-team/tests/test_run_control.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-AGENT-TEAM-AGENTTEAMPUTPROFILE:
+    prd: docs/active/specs/2026-09-16-agent-product-layer-1.0.md
+    service: agent-team
+    operationIds:
+      - agentTeamPutProfile
+    handler: mate_tech_agent_team.main:app#agentTeamPutProfile
+    tests:
+      - mate-platform-backend/packages/mate-tech-agent-team/tests/test_run_control.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-AGENT-TEAM-AGENTTEAMPOSTRUNCANCEL:
+    prd: docs/active/specs/2026-09-16-agent-product-layer-1.0.md
+    service: agent-team
+    operationIds:
+      - agentTeamPostRunCancel
+    handler: mate_tech_agent_team.main:app#agentTeamPostRunCancel
+    tests:
+      - mate-platform-backend/packages/mate-tech-agent-team/tests/test_run_control.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-AGENT-TEAM-AGENTTEAMGETRUNEVENTS:
+    prd: docs/active/specs/2026-09-16-agent-product-layer-1.0.md
+    service: agent-team
+    operationIds:
+      - agentTeamGetRunEvents
+    handler: mate_tech_agent_team.main:app#agentTeamGetRunEvents
+    tests:
+      - mate-platform-backend/packages/mate-tech-agent-team/tests/test_run_control.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted

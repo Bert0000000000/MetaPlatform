@@ -3,27 +3,41 @@
   - POST /api/v1/agent-team/runs                      — 一句话启动
   - GET  /api/v1/agent-team/runs/{run_id}             — 任务图/员工状态/结果
   - POST /api/v1/agent-team/runs/{run_id}/approve     — 人工确认闸门
+  - POST /api/v1/agent-team/runs/{run_id}/cancel      — 取消（落终态）
+  - GET  /api/v1/agent-team/runs/{run_id}/events      — 步骤级事件流（SSE）
+  - GET/POST/PUT /api/v1/agent-team/profiles…         — 数字员工读写
 
 每个 handler 先过 ``require_tenant``（硬规则 #3）再碰服务层；服务层再把它落到
 thread_id 前缀与连接的 ``app.tenant_id`` 上，由 RLS 强制。
+
+**读 run 一律走 RunControl.refresh**（而不是直接 ``service.get``）：超时是
+"到点落终态"，裁决必须发生在读路径上，否则到期的 run 会一直显示成
+``awaiting_approval``。
 """
 
 from __future__ import annotations
 
+from uuid import uuid4
+
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import StreamingResponse
 
 from mate_platform.tenancy.guards import require_tenant
 
+from ..authority import Envelope, resolve_initiator_envelope
 from ..brain import AWAITING, BrainService, RunNotAwaitingApproval, RunNotFound
-from ..profiles import ProfileNotFound, ProfileRegistry
+from ..profile_store import ProfileStore
+from ..profiles import DEFAULT_MODEL, EmployeeProfile, ProfileNotFound, ProfileRegistry
 from ..skills import SkillCatalog, SkillNotFound
 from ..state import BrainState
 from ..team_bus import TaskNotFound, TaskTerminal, TeamBus
+from .run_control import RunControl
 from .schemas import (
     ApproveRequest,
     ChannelMessageModel,
     EmployeeProfileModel,
     ProfileListModel,
+    ProfileWriteRequest,
     RunStateModel,
     SendMessageRequest,
     SkillContentModel,
@@ -38,12 +52,15 @@ _service: BrainService | None = None
 _registry: ProfileRegistry | None = None
 _catalog: SkillCatalog | None = None
 _bus: TeamBus | None = None
+_control: RunControl | None = None
+_store: ProfileStore | None = None
 
 
 def set_brain_service(service: BrainService | None) -> None:
-    """装配/重置服务层（测试 DI 缝）。"""
-    global _service
+    """装配/重置服务层（测试 DI 缝）。运行控制面跟着服务层走，一并重置。"""
+    global _service, _control
     _service = service
+    _control = None
 
 
 def get_brain_service() -> BrainService:
@@ -88,6 +105,36 @@ def get_team_bus() -> TeamBus:
     return _bus
 
 
+def set_run_control(control: RunControl | None) -> None:
+    """装配/重置运行控制面（取消 / 超时 / 事件流）。"""
+    global _control
+    _control = control
+
+
+def get_run_control() -> RunControl:
+    """运行控制面；没装配就**现按当前服务层建一个**。
+
+    它没有独立状态需要注入（run 状态在检查点里，只有截止时间记在进程内），
+    所以默认构造是安全的——测试与生产都不必记得多装配一样东西。
+    """
+    global _control
+    if _control is None:
+        _control = RunControl.from_env(get_brain_service())
+    return _control
+
+
+def set_profile_store(store: ProfileStore | None) -> None:
+    """装配/重置员工落库面（建/改数字员工用）。"""
+    global _store
+    _store = store
+
+
+def get_profile_store() -> ProfileStore:
+    if _store is None:
+        raise RuntimeError("ProfileStore 未装配：请先 set_profile_store(...)")
+    return _store
+
+
 def _tid(request: Request) -> str:
     return str(require_tenant(request.state.ctx))
 
@@ -121,16 +168,52 @@ async def agentTeamPostRuns(request: Request, body: StartRunRequest) -> RunState
         )
     except ValueError as exc:  # 拆不出 ≥2 个可并行子任务
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    # 运行级截止时间：登记在控制面上，到点由读路径裁决成终态（1.3 轨 2）。
+    get_run_control().register(
+        tenant_id=tenant_id,
+        run_id=str(state["run_id"]),
+        timeout_seconds=body.timeout_seconds,
+    )
     return _to_model(state)
 
 
 @router.get("/runs/{run_id}", response_model=RunStateModel)
 async def agentTeamGetRun(request: Request, run_id: str) -> RunStateModel:
     try:
-        state = await get_brain_service().get(tenant_id=_tid(request), run_id=run_id)
+        state = await get_run_control().refresh(tenant_id=_tid(request), run_id=run_id)
     except RunNotFound as exc:
         raise HTTPException(status_code=404, detail="run not found") from exc
     return _to_model(state)
+
+
+@router.post("/runs/{run_id}/cancel", response_model=RunStateModel)
+async def agentTeamPostRunCancel(request: Request, run_id: str) -> RunStateModel:
+    """取消一轮运行，**落终态**（幂等）。
+
+    取消后 ``approve`` 一律 409：闸门已经不在，确认一个已作废的计划不该有任何
+    效果。跨租户与不存在同码 404（不泄露存在性）。
+    """
+    try:
+        state = await get_run_control().cancel(tenant_id=_tid(request), run_id=run_id)
+    except RunNotFound as exc:
+        raise HTTPException(status_code=404, detail="run not found") from exc
+    return _to_model(state)
+
+
+@router.get("/runs/{run_id}/events")
+async def agentTeamGetRunEvents(request: Request, run_id: str) -> StreamingResponse:
+    """步骤级事件流（SSE）：回放检查点里的推进，最后一条 ``end`` 收流。"""
+    tenant_id = _tid(request)
+    control = get_run_control()
+    try:
+        await control.refresh(tenant_id=tenant_id, run_id=run_id)
+    except RunNotFound as exc:
+        raise HTTPException(status_code=404, detail="run not found") from exc
+    return StreamingResponse(
+        control.events(tenant_id=tenant_id, run_id=run_id),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.post("/runs/{run_id}/approve", response_model=RunStateModel)
@@ -138,6 +221,11 @@ async def agentTeamPostRunApprove(
     request: Request, run_id: str, body: ApproveRequest
 ) -> RunStateModel:
     tenant_id = _tid(request)
+    # 先让控制面裁决超时：到期的计划不该还能被确认续跑。
+    try:
+        await get_run_control().refresh(tenant_id=tenant_id, run_id=run_id)
+    except RunNotFound as exc:
+        raise HTTPException(status_code=404, detail="run not found") from exc
     try:
         state = await get_brain_service().resume(
             tenant_id=tenant_id,
@@ -180,23 +268,109 @@ async def agentTeamPostTaskMessage(
     return ChannelMessageModel(sender=entry.sender, text=entry.text, at=entry.at)
 
 
+def _profile_model(profile: EmployeeProfile) -> EmployeeProfileModel:
+    return EmployeeProfileModel(
+        profile_id=profile.profile_id,
+        name=profile.name,
+        base_role=profile.base_role,
+        system_prompt=profile.system_prompt,
+        skills=list(profile.skills),
+        tools=list(profile.tools),
+        action_rids=list(profile.action_rids),
+        kb_ids=list(profile.kb_ids),
+        markings=list(profile.markings),
+        model=profile.model,
+        origin=profile.origin,
+    )
+
+
+def _write_request_to_profile(body: ProfileWriteRequest, profile_id: str) -> EmployeeProfile:
+    return EmployeeProfile(
+        profile_id=profile_id,
+        name=body.name,
+        base_role=body.base_role,
+        system_prompt=body.system_prompt,
+        skills=tuple(body.skills),
+        tools=tuple(body.tools),
+        model=body.model or DEFAULT_MODEL,
+        action_rids=tuple(body.action_rids),
+        kb_ids=tuple(body.kb_ids),
+        markings=tuple(body.markings),
+        origin="instantiated",
+    )
+
+
+def _reject_escalating_definition(profile: EmployeeProfile, request: Request) -> None:
+    """ADR-0066 §3.7：定义出来的包络必须 ⊆ **创建者**包络，否则 403。
+
+    没有这道门，定义一个"带平台没发布的能力"的员工就等于把包络闸门绕开一半
+    ——派活时仍会转 proposal，但那是一次本该在定义期就被拒绝的越权。
+    """
+    initiator = resolve_initiator_envelope(_user_token(request))
+    escalations = Envelope.of(profile).escalations_over(initiator)
+    if escalations:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "E_AUTHORITY_ESCALATION",
+                "message": "员工定义的权限包络超出创建者包络（ADR-0066 §3.7）",
+                "escalations": list(escalations),
+            },
+        )
+
+
 @router.get("/profiles", response_model=ProfileListModel)
 async def agentTeamGetProfiles(request: Request) -> ProfileListModel:
-    """列数字员工（身份 = 提示词 + 技能清单 + 工具白名单）。"""
+    """列数字员工（身份 = 提示词 + 技能清单 + 工具白名单 + 权限包络）。"""
     tenant_id = str(require_tenant(request.state.ctx))  # 硬规则 #3
     return ProfileListModel(
-        profiles=[
-            EmployeeProfileModel(
-                profile_id=p.profile_id,
-                name=p.name,
-                base_role=p.base_role,
-                system_prompt=p.system_prompt,
-                skills=list(p.skills),
-                tools=list(p.tools),
-            )
-            for p in await get_profile_registry().list(tenant_id)
-        ]
+        profiles=[_profile_model(p) for p in await get_profile_registry().list(tenant_id)]
     )
+
+
+@router.get("/profiles/{profile_id}", response_model=EmployeeProfileModel)
+async def agentTeamGetProfile(request: Request, profile_id: str) -> EmployeeProfileModel:
+    tenant_id = str(require_tenant(request.state.ctx))
+    try:
+        profile = await get_profile_registry().get(profile_id, tenant_id)
+    except ProfileNotFound as exc:
+        raise HTTPException(status_code=404, detail="profile not found") from exc
+    return _profile_model(profile)
+
+
+@router.post("/profiles", response_model=EmployeeProfileModel, status_code=201)
+async def agentTeamPostProfile(request: Request, body: ProfileWriteRequest) -> EmployeeProfileModel:
+    """**实例化**一个数字员工（ADR-0066 §3.1）：定义落库，重启/多副本一致。
+
+    落库走 ``profile_store.upsert``（PG + RLS 强制租户隔离），因此"建出来就
+    只属于本租户"是数据库说的，不是应用层记得过滤。
+    """
+    tenant_id = str(require_tenant(request.state.ctx))
+    profile_id = body.profile_id.strip() or f"EMP-{uuid4().hex[:8].upper()}"
+    profile = _write_request_to_profile(body, profile_id)
+    _reject_escalating_definition(profile, request)
+    await get_profile_store().upsert(tenant_id, profile)
+    return _profile_model(profile)
+
+
+@router.put("/profiles/{profile_id}", response_model=EmployeeProfileModel)
+async def agentTeamPutProfile(
+    request: Request, profile_id: str, body: ProfileWriteRequest
+) -> EmployeeProfileModel:
+    """改一个数字员工（同一个 upsert 语义：提交即覆盖）。
+
+    只能改**本租户**的员工——跨租户拿别人的 id 来改，读不到就是 404，
+    与"不存在"同码（不泄露存在性）。
+    """
+    tenant_id = str(require_tenant(request.state.ctx))
+    try:
+        await get_profile_registry().get(profile_id, tenant_id)
+    except ProfileNotFound as exc:
+        raise HTTPException(status_code=404, detail="profile not found") from exc
+    profile = _write_request_to_profile(body, profile_id)
+    _reject_escalating_definition(profile, request)
+    await get_profile_store().upsert(tenant_id, profile)
+    return _profile_model(profile)
 
 
 @router.get("/profiles/{profile_id}/skills", response_model=SkillManifestModel)
@@ -244,11 +418,15 @@ __all__ = [
     "AWAITING",
     "get_brain_service",
     "get_profile_registry",
+    "get_profile_store",
+    "get_run_control",
     "get_skill_catalog",
     "get_team_bus",
     "router",
     "set_brain_service",
     "set_profile_registry",
+    "set_profile_store",
+    "set_run_control",
     "set_skill_catalog",
     "set_team_bus",
 ]

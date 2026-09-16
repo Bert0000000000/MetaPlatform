@@ -6,10 +6,15 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from ..profiles import DEFAULT_MODEL
+
 
 class StartRunRequest(BaseModel):
     goal: str = Field(min_length=1)
     max_parallel: int = Field(default=3, ge=2, le=8)
+    #: 运行级截止时间（秒）。省略则用部署默认值（``MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS``，
+    #: 0 = 不设超时）。到点后运行落终态 ``timeout``，不会一直停在闸门上。
+    timeout_seconds: float | None = Field(default=None, ge=0)
 
 
 class ApproveRequest(BaseModel):
@@ -60,6 +65,32 @@ class EmployeeProfileModel(BaseModel):
     system_prompt: str = ""
     skills: list[str] = Field(default_factory=list)
     tools: list[str] = Field(default_factory=list)
+    #: 权限包络的另外三维（ADR-0066 §3.3）。只出 tools 的话，读回来的员工
+    #: 定义与实际生效的包络对不上。
+    action_rids: list[str] = Field(default_factory=list)
+    kb_ids: list[str] = Field(default_factory=list)
+    markings: list[str] = Field(default_factory=list)
+    model: str = DEFAULT_MODEL
+    origin: str = "builtin"
+
+
+class ProfileWriteRequest(BaseModel):
+    """建/改一个数字员工（ADR-0066 §3.1 的"实例化"入口）。
+
+    ``profile_id`` 省略时现生成一个（``EMP-XXXXXXXX``）；给了就是**幂等 upsert**
+    ——同一个 id 再提交一次即覆盖，不需要先查再建。
+    """
+
+    profile_id: str = ""
+    name: str = Field(min_length=1)
+    base_role: str = "ontology"
+    system_prompt: str = ""
+    skills: list[str] = Field(default_factory=list)
+    tools: list[str] = Field(default_factory=list)
+    action_rids: list[str] = Field(default_factory=list)
+    kb_ids: list[str] = Field(default_factory=list)
+    markings: list[str] = Field(default_factory=list)
+    model: str = DEFAULT_MODEL
 
 
 class ProfileListModel(BaseModel):
@@ -103,6 +134,7 @@ __all__ = [
     "ChannelMessageModel",
     "EmployeeProfileModel",
     "ProfileListModel",
+    "ProfileWriteRequest",
     "RunStateModel",
     "SendMessageRequest",
     "SkillContentModel",
