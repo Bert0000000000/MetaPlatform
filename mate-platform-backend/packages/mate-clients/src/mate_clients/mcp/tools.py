@@ -28,29 +28,48 @@ class McpToolsClient:
         timeout: float = 30.0,
         auth: Any = None,  # token provider: BearerAuth | ServiceIdentity (.token())
         tenant_id: str = "",
+        user_token: str = "",
     ) -> None:
         self.base_url = (base_url or self.DEFAULT_URL).rstrip("/")
         self._client = httpx.AsyncClient(timeout=timeout)
-        if auth is not None and tenant_id:
-            self._client.auth = OutgoingAuthMiddleware(auth, tenant_id=tenant_id)
         self._auth = auth
         self._tenant_id = tenant_id
+        self._user_token = user_token
+        if auth is not None and tenant_id and not user_token:
+            self._client.auth = OutgoingAuthMiddleware(auth, tenant_id=tenant_id)
+
+    def _headers(self) -> dict[str, str]:
+        """带发起用户令牌时手工注入。
+
+        服务身份 token 的 ``iss`` 取决于换发它的 Keycloak 地址，中心校验的地址
+        不一致时会 401；发起用户的登录令牌两端都认（同 :mod:`mate_clients.llmgw`）。
+        """
+        if not self._user_token:
+            return {}
+        headers = {"Authorization": f"Bearer {self._user_token}"}
+        if self._tenant_id:
+            headers["X-Tenant-Id"] = self._tenant_id
+        return headers
 
     def set_tenant(self, tenant_id: str) -> None:
         self._tenant_id = tenant_id
-        if self._auth is not None and tenant_id:
+        if self._auth is not None and tenant_id and not self._user_token:
             self._client.auth = OutgoingAuthMiddleware(self._auth, tenant_id=tenant_id)
 
     async def call_tool(self, *, name: str, arguments: dict[str, Any]) -> Any:
         """Invoke an MCP tool at the center; returns the ``result`` body."""
         url = f"{self.base_url}/api/v1/mcp/tools/{name}"
-        r = await self._client.post(url, json={"arguments": arguments})
+        r = await self._client.post(
+            url, json={"arguments": arguments}, headers=self._headers() or None
+        )
         r.raise_for_status()
         return r.json().get("result", r.json())
 
     async def list_tools(self) -> list[dict[str, Any]]:
         """List tools visible to the tenant at the center."""
-        r = await self._client.get(f"{self.base_url}/api/v1/mcp/tools")
+        r = await self._client.get(
+            f"{self.base_url}/api/v1/mcp/tools", headers=self._headers() or None
+        )
         r.raise_for_status()
         return r.json().get("tools", [])
 

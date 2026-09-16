@@ -28,6 +28,7 @@ const SuperaiCostOptimizationPage = lazy(() => import('@/pages/superai/CostOptim
 const SuperaiDataAnalysisPage = lazy(() => import('@/pages/superai/DataAnalysisPage'));
 const SuperaiReportExportPage = lazy(() => import('@/pages/superai/ReportExportPage'));
 const SuperaiTaskTemplatePage = lazy(() => import('@/pages/superai/TaskTemplatePage'));
+const AgentTeamRunPage = lazy(() => import('@/pages/superai/AgentTeamRunPage'));
 
 export const superaiRoutes = (
   <>
@@ -64,5 +65,8 @@ export const superaiRoutes = (
 
     {/* 任务模板 */}
     <Route path="superai/templates" element={<SuperaiTaskTemplatePage />} />
+
+    {/* Agent 产品层：超级大脑 + 数字员工一条主链（只读演示） */}
+    <Route path="superai/team" element={<AgentTeamRunPage />} />
   </>
 );

@@ -10,6 +10,22 @@ const proxyHost = process.env.VITE_PROXY_HOST ?? '127.0.0.1';
 const proxyTarget = (port: number) => `http://${proxyHost}:${port}`;
 // v3.2 unified backend port (all app packages mounted on one server)
 const BACKEND_PORT = Number(process.env.VITE_BACKEND_PORT ?? 8100);
+// Agent 产品层服务（mate-tech-agent-team, 8013）尚未进 compose。本地联调时
+// 设 VITE_AGENT_TEAM_PORT=8013 即可让 dev server 直连本机跑的实例；
+// 不设时行为与之前完全一致（走网关）。
+const AGENT_TEAM_PORT = process.env.VITE_AGENT_TEAM_PORT;
+
+// 浏览器头透传：vite 默认不转 Authorization/X-Tenant-Id，不转就 401。
+const forwardAuth = {
+  configure: (proxy: {
+    on: (event: string, cb: (target: { setHeader: (k: string, v: string) => void }, req: { headers: Record<string, string | undefined> }) => void) => void;
+  }) => {
+    proxy.on('proxyReq', (proxyReq, req) => {
+      if (req.headers.authorization) proxyReq.setHeader('Authorization', req.headers.authorization);
+      if (req.headers['x-tenant-id']) proxyReq.setHeader('X-Tenant-Id', req.headers['x-tenant-id']);
+    });
+  },
+};
 
 export default defineConfig({
   // Semi 官方主题定制：DSM 主题包（构建期替换官方 SCSS 变量）。
@@ -26,16 +42,18 @@ export default defineConfig({
     // 与 E2E（playwright.config.ts）和 UI-P0 设计规范约定的 dev 端口保持一致
     port: 9250,
     proxy: {
+      // 更具体的前缀必须排在 '/api/v1' 之前，否则会被兜底规则吃掉
+      ...(AGENT_TEAM_PORT
+        ? {
+            '/api/v1/agent-team': {
+              target: proxyTarget(Number(AGENT_TEAM_PORT)),
+              changeOrigin: true,
+              ...forwardAuth,
+            },
+          }
+        : {}),
       // v3.2: all routes proxy to unified backend on BACKEND_PORT (default 8100)
-      '/api/v1': { target: proxyTarget(BACKEND_PORT), changeOrigin: true,
-        // MP-SAL: 透传浏览器 Authorization/X-Tenant-Id 头（默认 vite 不转，否则 401）
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq, req) => {
-            if (req.headers.authorization) proxyReq.setHeader('Authorization', req.headers.authorization);
-            if (req.headers['x-tenant-id']) proxyReq.setHeader('X-Tenant-Id', req.headers['x-tenant-id']);
-          });
-        },
-      },
+      '/api/v1': { target: proxyTarget(BACKEND_PORT), changeOrigin: true, ...forwardAuth },
     },
   },
   optimizeDeps: {

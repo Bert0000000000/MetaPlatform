@@ -87,12 +87,13 @@ class TestServiceSecuritySegments:
         )
 
 
-def test_all_twenty_one_services_covered() -> None:
-    """Guard against silent contract drift in the canonical 21-service set."""
+def test_all_twenty_two_services_covered() -> None:
+    """Guard against silent contract drift in the canonical 22-service set."""
     names = {p.stem for p in SERVICE_FILES}
     expected = {
         "a2a",
         "agent",
+        "agent-team",
         "analytics",
         "apphub",
         "arch",

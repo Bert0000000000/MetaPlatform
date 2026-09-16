@@ -100,6 +100,11 @@ domains:
     owner: ai-protocols
     visibility: external
     runtimeModule: mate_tech_orchestrator.main:app
+  agent-team:
+    contract: services/agent-team.yaml
+    owner: agent-product-layer
+    visibility: external
+    runtimeModule: mate_tech_agent_team.main:app
   marketplace:
     contract: services/marketplace.yaml
     owner: marketplace-consumer

@@ -3641,3 +3641,57 @@ requirements:
       - mate-platform-backend/contracts/tests/test_runtime_comparison.py
     implementationStatus: implemented
     acceptanceStatus: notAccepted
+  FR-AGENT-TEAM-AGENTTEAMPOSTRUNS:
+    prd: docs/active/specs/2026-09-16-agent-product-layer-1.0.md
+    service: agent-team
+    operationIds:
+      - agentTeamPostRuns
+    handler: null
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-AGENT-TEAM-AGENTTEAMGETRUN:
+    prd: docs/active/specs/2026-09-16-agent-product-layer-1.0.md
+    service: agent-team
+    operationIds:
+      - agentTeamGetRun
+    handler: null
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-AGENT-TEAM-AGENTTEAMPOSTRUNAPPROVE:
+    prd: docs/active/specs/2026-09-16-agent-product-layer-1.0.md
+    service: agent-team
+    operationIds:
+      - agentTeamPostRunApprove
+    handler: null
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-AGENT-TEAM-AGENTTEAMGETPROFILES:
+    prd: docs/active/specs/2026-09-16-agent-product-layer-1.0.md
+    service: agent-team
+    operationIds:
+      - agentTeamGetProfiles
+    handler: mate_tech_agent_team.main:app#agentTeamGetProfiles
+    tests:
+      - mate-platform-backend/packages/mate-tech-agent-team/tests/test_employee_runtime.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-AGENT-TEAM-AGENTTEAMGETPROFILESKILLS:
+    prd: docs/active/specs/2026-09-16-agent-product-layer-1.0.md
+    service: agent-team
+    operationIds:
+      - agentTeamGetProfileSkills
+    handler: mate_tech_agent_team.main:app#agentTeamGetProfileSkills
+    tests:
+      - mate-platform-backend/packages/mate-tech-agent-team/tests/test_skills.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-AGENT-TEAM-AGENTTEAMGETPROFILESKILLCONTENT:
+    prd: docs/active/specs/2026-09-16-agent-product-layer-1.0.md
+    service: agent-team
+    operationIds:
+      - agentTeamGetProfileSkillContent
+    handler: mate_tech_agent_team.main:app#agentTeamGetProfileSkillContent
+    tests:
+      - mate-platform-backend/packages/mate-tech-agent-team/tests/test_skills.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted

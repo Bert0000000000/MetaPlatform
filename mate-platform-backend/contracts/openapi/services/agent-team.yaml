@@ -1,0 +1,369 @@
+openapi: 3.1.0
+info:
+  title: Mate Platform agent-team API
+  version: 1.0.0
+  x-mate-owner: agent-product-layer
+  description: >-
+    Agent 产品层 1.0 —— 超级大脑（langgraph 任务图）+ 数字员工。
+    一句话 → 拆任务图 → 并行派给 ≥2 个数字员工（各有提示词与工具白名单）→ 真实执行
+    → 中途一处人工确认 → 汇总。全程租户隔离由数据库 RLS 强制
+    （thread_id = "<租户ID>|<任务ID>"，每连接设 app.tenant_id）。
+  contact:
+    name: Mate Platform Team
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://keycloak.local/realms/metaplatform/protocol/openid-connect/token
+          scopes:
+            platform.read: read access
+            platform.write: write access
+            platform.admin: admin access
+  schemas:
+    SubTask:
+      type: object
+      required: [task_id, profile_id, instruction]
+      properties:
+        task_id:
+          type: string
+          description: 子任务 id（在一次 run 内唯一）
+        profile_id:
+          type: string
+          description: 承接该子任务的数字员工 id
+        instruction:
+          type: string
+          description: 下发给该员工的指令（已按 §5.4 裁剪，不是主上下文全量）
+        depends_on:
+          type: array
+          items:
+            type: string
+          default: []
+    SubTaskResult:
+      type: object
+      properties:
+        task_id:
+          type: string
+        profile_id:
+          type: string
+        status:
+          type: string
+          enum: [ok, error, rejected]
+        output:
+          type: string
+          description: 员工真实产出（非原话回填）
+        tool_calls:
+          type: array
+          items:
+            type: object
+          description: 该员工实际发起的工具调用记录（审计用）
+        llm_calls:
+          type: integer
+          description: 该子任务消耗的模型调用次数
+        source:
+          type: string
+          enum: [llm, stub]
+          description: llm = 真实模型产出；stub = 未接线（供 D-10 "假回执" 断言）
+        error:
+          type: string
+    RunState:
+      type: object
+      required: [run_id, tenant_id, goal, status]
+      properties:
+        run_id:
+          type: string
+        tenant_id:
+          type: string
+        goal:
+          type: string
+          description: 用户那句话
+        status:
+          type: string
+          enum: [planning, running, awaiting_approval, completed, failed]
+        subtasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubTask"
+        results:
+          type: object
+          description: task_id → SubTaskResult
+          additionalProperties:
+            $ref: "#/components/schemas/SubTaskResult"
+        summary:
+          type: string
+        hitl_reason:
+          type: string
+        error:
+          type: string
+    StartRunRequest:
+      type: object
+      required: [goal]
+      properties:
+        goal:
+          type: string
+          description: 用户的一句话目标
+          minLength: 1
+        max_parallel:
+          type: integer
+          default: 3
+          description: 本轮最多并行派出的员工数（≥2）
+    ApproveRequest:
+      type: object
+      properties:
+        approved:
+          type: boolean
+          default: true
+        comment:
+          type: string
+          default: ""
+    EmployeeProfile:
+      type: object
+      required: [profile_id, name, base_role]
+      properties:
+        profile_id:
+          type: string
+        name:
+          type: string
+        base_role:
+          type: string
+          description: kernel AgentRole 枚举之一
+        system_prompt:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+          description: 绑定的 skillhub skill id（只出清单，正文按需读）
+        tools:
+          type: array
+          items:
+            type: string
+          description: 工具白名单（MCP 工具名）；白名单外调用被拒
+    SkillManifestEntry:
+      type: object
+      required: [skill_id, name]
+      properties:
+        skill_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          description: 一句话描述（清单层只出这个，不出正文）
+    SkillManifest:
+      type: object
+      required: [profile_id, entries, manifest_chars, budget_chars]
+      properties:
+        profile_id:
+          type: string
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillManifestEntry"
+        manifest_chars:
+          type: integer
+          description: 清单实际字符数
+        budget_chars:
+          type: integer
+          description: 预算上限（默认 8000，即上下文 2%）
+    SkillContent:
+      type: object
+      required: [skill_id, content]
+      properties:
+        skill_id:
+          type: string
+        content:
+          type: string
+          description: skill 正文（渐进加载第 2 层，选中后才读）
+paths:
+  /api/v1/agent-team/runs:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
+      summary: 提交一句话，拆任务图并并行派活（到人工确认闸门暂停）
+      tags: [agent-team]
+      operationId: agentTeamPostRuns
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartRunRequest"
+      responses:
+        "200":
+          description: 本次运行状态（通常停在 awaiting_approval）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunState"
+        "422":
+          description: 目标为空或无法拆解
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.write
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMPOSTRUNS]
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/runs/{run_id}:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
+      summary: 查任务图、各员工状态与最终结果
+      tags: [agent-team]
+      operationId: agentTeamGetRun
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 运行状态
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunState"
+        "404":
+          description: 该租户下不存在此 run（跨租户与不存在同码，不泄露存在性）
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETRUN]
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/runs/{run_id}/approve:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
+      summary: 人工确认闸门（批准则继续执行，拒绝则中止）
+      tags: [agent-team]
+      operationId: agentTeamPostRunApprove
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApproveRequest"
+      responses:
+        "200":
+          description: 恢复后的运行状态
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunState"
+        "404":
+          description: 该租户下不存在此 run
+        "409":
+          description: 该 run 不在待确认状态（E_RUN_NOT_AWAITING_APPROVAL）
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.write
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMPOSTRUNAPPROVE]
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/profiles:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
+      summary: 列数字员工（身份 = 提示词 + 技能清单 + 工具白名单）
+      tags: [agent-team]
+      operationId: agentTeamGetProfiles
+      responses:
+        "200":
+          description: 员工清单
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profiles:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/EmployeeProfile"
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETPROFILES]
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/profiles/{profile_id}/skills:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
+      summary: 技能清单（渐进加载第 1 层：只出名字与一句话描述，不含正文）
+      tags: [agent-team]
+      operationId: agentTeamGetProfileSkills
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 技能清单
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillManifest"
+        "404":
+          description: 员工不存在
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETPROFILESKILLS]
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/profiles/{profile_id}/skills/{skill_id}:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
+      summary: 读技能正文（渐进加载第 2 层：选中后才读）
+      tags: [agent-team]
+      operationId: agentTeamGetProfileSkillContent
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: skill_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 技能正文
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillContent"
+        "404":
+          description: 员工或技能不存在
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETPROFILESKILLCONTENT]
+      x-mate-implementation-status: implemented

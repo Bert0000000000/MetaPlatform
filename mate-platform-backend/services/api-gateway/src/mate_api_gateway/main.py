@@ -44,6 +44,8 @@ SERVICES: dict[str, str] = {
     "scheduler": os.getenv("SCHEDULER_URL", "http://mate-tech-scheduler:8023"),
     "metrics": os.getenv("METRICS_URL", "http://mate-tech-metrics:8024"),
     "wfe": os.getenv("WFE_URL", "http://mate-app-wfe:8510"),
+    # Agent 产品层 1.0：超级大脑（langgraph 任务图）+ 数字员工
+    "agent-team": os.getenv("AGENT_TEAM_URL", "http://mate-tech-agent-team:8013"),
 }
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -55,6 +57,8 @@ MAX_BODY_BYTES = int(os.getenv("GATEWAY_MAX_BODY_BYTES", str(1024 * 1024)))
 # Path prefix -> upstream service name
 ROUTE_MAP: list[tuple[str, str]] = [
     ("/api/v1/rag/", "rag"),
+    # 放在 "/api/v1/agent/" 之前：前缀匹配取更具体的那条
+    ("/api/v1/agent-team/", "agent-team"),
     ("/api/v1/agent/", "agent"),
     ("/api/v1/llm/", "llmgw"),
     ("/api/v1/llmgw/", "llmgw"),
