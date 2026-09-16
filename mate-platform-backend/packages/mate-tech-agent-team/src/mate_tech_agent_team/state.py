@@ -83,6 +83,11 @@ class BrainState(TypedDict, total=False):
 
     ``results`` 带 reducer：并行 worker 节点各自写入自己的子任务回执，
     由 :func:`merge_results` 合并，而不是互相覆盖。
+
+    ``timeout_seconds`` / ``deadline_at`` 是**本轮的运行级截止时间**（1.5 任务 2）：
+    它们随 run 落进检查点，所以重启/多副本仍按**本轮**定下的值裁决，而不是
+    回落成"当前进程的默认值"。``deadline_at`` 存**绝对时刻**——存"还剩多少秒"
+    的话重启一次就又变成相对的了。
     """
 
     run_id: str
@@ -95,6 +100,10 @@ class BrainState(TypedDict, total=False):
     summary: str
     hitl_reason: str
     error: str
+    #: 本轮实际生效的超时值（秒；0 = 不设超时）。
+    timeout_seconds: float
+    #: 本轮截止的绝对时刻（epoch 秒；0 = 无截止）。
+    deadline_at: float
 
 
 __all__ = ["BrainState", "SubTask", "SubTaskResult", "merge_results"]

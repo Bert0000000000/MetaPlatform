@@ -56,6 +56,10 @@ class RunStateModel(BaseModel):
     summary: str = ""
     hitl_reason: str = ""
     error: str = ""
+    #: 本轮实际生效的运行级超时（秒；0 = 不设超时）与它的绝对截止时刻（epoch 秒；
+    #: 0 = 无截止）。两者都**随 run 落库**：重启后仍按本轮的值裁决（1.5 任务 2）。
+    timeout_seconds: float = 0.0
+    deadline_at: float = 0.0
 
 
 class EmployeeProfileModel(BaseModel):

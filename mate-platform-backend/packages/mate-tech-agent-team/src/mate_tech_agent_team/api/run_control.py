@@ -17,9 +17,7 @@
 1. 取消信号是**进程内**的：只有与运行中的图**同进程**时才精确生效（那正是
    ``POST /runs`` / ``approve`` 在等它的那个进程）。跨副本取消执行中的 run 需要
    共享信号通道，属后续候选；停在闸门的 run 跨副本取消仍然有效（终态写在检查点）。
-2. 每轮的超时值记在**进程内**；进程重启后回落到 ``MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS``
-   这个默认值（0 = 不设超时）。
-3. 事件流是**回放**已有步骤后收流，不做长连接尾随。
+2. 事件流是**回放**已有步骤后收流，不做长连接尾随。
 """
 
 from __future__ import annotations
@@ -32,18 +30,14 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from uuid import uuid4
 
-from ..brain import TERMINAL_STATUSES, BrainService, RunNotFound
+from ..brain import TERMINAL_STATUSES, BrainService
+from ..state import BrainState
 
 #: 运行级超时的默认值（秒）。0 = 不设超时：不是所有部署都想让长跑的计划自己过期。
 DEFAULT_TIMEOUT_ENV = "MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS"
 
-
-@dataclass
-class _RunRecord:
-    """一轮运行的截止信息。**只在进程内**——它不参与状态判定，只喂超时裁决。"""
-
-    timeout_seconds: float
-    started_at: float
+#: 尾随事件流时两次轮询之间的间隔（秒）。
+DEFAULT_POLL_INTERVAL = 0.2
 
 
 @dataclass
@@ -69,10 +63,16 @@ class _LiveRun:
 class RunControl:
     """按租户管理 run 的取消 / 超时 / 事件。状态一律落在检查点上。"""
 
-    def __init__(self, service: BrainService, *, default_timeout: float = 0.0) -> None:
+    def __init__(
+        self,
+        service: BrainService,
+        *,
+        default_timeout: float = 0.0,
+        poll_interval: float = DEFAULT_POLL_INTERVAL,
+    ) -> None:
         self._service = service
         self._default_timeout = default_timeout
-        self._runs: dict[tuple[str, str], _RunRecord] = {}
+        self._poll_interval = poll_interval
         self._live: dict[tuple[str, str], _LiveRun] = {}
 
     @classmethod
@@ -97,13 +97,11 @@ class RunControl:
         """起一轮运行，并**在开跑之前**认领它（这样执行中的它也能被取消）。
 
         run_id 由控制面生成：图要能在自己开跑前就拿到"这轮会不会被取消"的
-        读取函数，而那个函数按 run_id 索引。
+        读取函数，而那个函数按 run_id 索引。超时值在这里定下，由服务层连同
+        绝对截止时刻一起写进状态（**随 run 走，不留在进程里**）。
         """
         run_id = uuid4().hex
         live = self._open(tenant_id=tenant_id, run_id=run_id)
-        self._runs[(tenant_id, run_id)] = _RunRecord(
-            timeout_seconds=self._effective_timeout(timeout_seconds), started_at=time.time()
-        )
         try:
             return await self._service.start(
                 tenant_id=tenant_id,
@@ -112,6 +110,7 @@ class RunControl:
                 user_token=user_token,
                 max_parallel=max_parallel,
                 should_cancel=live.cancelled,
+                timeout_seconds=self._effective_timeout(timeout_seconds),
             )
         finally:
             self._close(tenant_id=tenant_id, run_id=run_id, live=live)
@@ -153,31 +152,22 @@ class RunControl:
             return self._default_timeout
         return max(timeout_seconds, 0.0)
 
-    # -- 登记 --------------------------------------------------------------
-    def register(self, *, tenant_id: str, run_id: str, timeout_seconds: float | None) -> None:
-        """记下这一轮的截止时间。``timeout_seconds=None`` 用部署默认值。"""
-        self._runs[(tenant_id, run_id)] = _RunRecord(
-            timeout_seconds=self._effective_timeout(timeout_seconds), started_at=time.time()
-        )
-
-    def is_due(self, *, tenant_id: str, run_id: str) -> bool:
-        record = self._runs.get((tenant_id, run_id))
-        if record is None or record.timeout_seconds <= 0:
-            return False
-        return time.time() - record.started_at >= record.timeout_seconds
-
     # -- 裁决 --------------------------------------------------------------
+    def is_due(self, state: BrainState) -> bool:
+        """本轮是否已经过了截止时刻。
+
+        读的是**状态里**的 ``deadline_at``（开跑时写进去的绝对时刻），不是
+        进程里的计时器——所以换个进程来裁决也不会"忘了"这轮的约定。
+        """
+        deadline_at = float(state.get("deadline_at") or 0.0)
+        return deadline_at > 0 and time.time() >= deadline_at
+
     async def refresh(self, *, tenant_id: str, run_id: str) -> dict:
         """查状态：**到期就先落终态**，再返回。所有读路径都该走它。"""
-        try:
-            state = await self._service.get(tenant_id=tenant_id, run_id=run_id)
-        except RunNotFound:
-            self._runs.pop((tenant_id, run_id), None)
-            raise
+        state = await self._service.get(tenant_id=tenant_id, run_id=run_id)
         if str(state.get("status", "")) in TERMINAL_STATUSES:
-            self._runs.pop((tenant_id, run_id), None)  # 终态了，截止信息没用了
             return state
-        if self.is_due(tenant_id=tenant_id, run_id=run_id):
+        if self.is_due(state):
             return await self._service.mark_terminal(
                 tenant_id=tenant_id, run_id=run_id, status="timeout"
             )

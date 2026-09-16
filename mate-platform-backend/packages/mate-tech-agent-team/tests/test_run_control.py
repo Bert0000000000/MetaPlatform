@@ -36,6 +36,7 @@ from mate_tech_agent_team import (
     SubTaskResult,
     TeamBus,
 )
+from mate_tech_agent_team.api.run_control import DEFAULT_TIMEOUT_ENV
 from mate_tech_agent_team.audit import AUDIT_SPAWN
 from mate_tech_agent_team.main import create_app
 from mate_tech_agent_team.profile_store import bootstrap_profiles
@@ -430,18 +431,23 @@ async def test_cancel_stops_an_executing_run() -> None:
 # ── 超时 ────────────────────────────────────────────────────────────────
 
 
+def _wait_status(client: TestClient, run_id: str, expected: str, timeout: float = 5.0) -> str:
+    """轮询到出现期望状态为止（超时返回最后看到的状态，由调用方断言）。"""
+    deadline = time.monotonic() + timeout
+    status = ""
+    while time.monotonic() < deadline:
+        status = client.get(f"{BASE}/runs/{run_id}", headers=_headers()).json()["status"]
+        if status == expected:
+            return status
+        time.sleep(0.02)
+    return status
+
+
 def test_run_times_out_into_a_terminal_state() -> None:
     client = _app()
     run = _start_run(client, timeout_seconds=0.05)
 
-    deadline = time.monotonic() + 5
-    status = ""
-    while time.monotonic() < deadline:
-        status = client.get(f"{BASE}/runs/{run['run_id']}", headers=_headers()).json()["status"]
-        if status == "timeout":
-            break
-        time.sleep(0.02)
-
+    status = _wait_status(client, run["run_id"], "timeout")
     assert status == "timeout", f"超时后仍停在 {status!r} —— 运行挂着不落终态"
     approve = client.post(
         f"{BASE}/runs/{run['run_id']}/approve", json={"approved": True}, headers=_headers()
@@ -454,6 +460,65 @@ def test_a_run_within_its_deadline_is_left_alone() -> None:
     run = _start_run(client, timeout_seconds=30)
     assert (
         client.get(f"{BASE}/runs/{run['run_id']}", headers=_headers()).json()["status"]
+        == "awaiting_approval"
+    )
+
+
+# ── 超时值持久化（1.5 任务 2）───────────────────────────────────────────
+
+
+def _checkpointer_and_bus() -> tuple[InMemoryCheckpointerProvider, TeamBus]:
+    """一套可跨"重启"复用的检查点器 + 闸门（内存版，重启 = 新建一套对象）。"""
+    return (
+        InMemoryCheckpointerProvider(),
+        TeamBus(registry=ProfileRegistry(), tasks=InMemoryTeamTasks()),
+    )
+
+
+def test_a_non_default_timeout_survives_a_restart() -> None:
+    """超时值**随 run 落检查点**：换个进程（同一检查点器）来裁决，仍按原值。
+
+    1.3 把每轮的截止时间记在**进程内**，重启后那条记录就没了——运行于是永远
+    停在闸门上"挂着"，而不是按本轮定下的截止时间落 ``timeout``。
+    """
+    checkpointer, bus = _checkpointer_and_bus()
+    client = _app(checkpointer=checkpointer, bus=bus)
+    run = _start_run(client, timeout_seconds=0.1)
+
+    # 模拟"重启"：全新一套对象，进程内什么都不剩
+    restarted = _app(checkpointer=checkpointer, bus=bus)
+    status = _wait_status(restarted, run["run_id"], "timeout")
+    assert status == "timeout", f"重启后没按本轮记下的超时值裁决，停在 {status!r}"
+
+
+def test_the_deployment_default_is_recorded_with_the_run(monkeypatch: pytest.MonkeyPatch) -> None:
+    """省略 ``timeout_seconds`` 时用的是**开跑那一刻**的部署默认值，它也随 run 落库。
+
+    重启后的进程把默认值调大，不该让已经开跑的这一轮"跟着变长"——那等于本轮
+    的截止时间由重启后的配置决定。
+    """
+    checkpointer, bus = _checkpointer_and_bus()
+    monkeypatch.setenv(DEFAULT_TIMEOUT_ENV, "0.1")
+    client = _app(checkpointer=checkpointer, bus=bus)
+    run = _start_run(client)  # 不带 timeout_seconds → 用部署默认值 0.1
+
+    monkeypatch.setenv(DEFAULT_TIMEOUT_ENV, "30")
+    restarted = _app(checkpointer=checkpointer, bus=bus)
+    status = _wait_status(restarted, run["run_id"], "timeout", timeout=3.0)
+    assert status == "timeout", f"重启后用了新的默认值裁决，停在 {status!r}"
+
+
+def test_a_restart_does_not_shorten_a_longer_deadline(monkeypatch: pytest.MonkeyPatch) -> None:
+    """反向：重启后的默认值**不能覆盖**本轮已记下的（更长）截止时间。"""
+    checkpointer, bus = _checkpointer_and_bus()
+    client = _app(checkpointer=checkpointer, bus=bus)
+    run = _start_run(client, timeout_seconds=30)
+
+    monkeypatch.setenv(DEFAULT_TIMEOUT_ENV, "0.05")
+    restarted = _app(checkpointer=checkpointer, bus=bus)
+    time.sleep(0.2)  # 足够超过重启后的默认值 0.05s
+    assert (
+        restarted.get(f"{BASE}/runs/{run['run_id']}", headers=_headers()).json()["status"]
         == "awaiting_approval"
     )
 

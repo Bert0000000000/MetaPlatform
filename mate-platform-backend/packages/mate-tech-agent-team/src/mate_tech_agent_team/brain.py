@@ -12,6 +12,7 @@ thread_id 的调用方都能读到别人的状态；只有 GUC 而 thread_id 不
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Protocol
@@ -124,6 +125,7 @@ class BrainService:
         max_parallel: int | None = None,
         run_id: str | None = None,
         should_cancel: Callable[[], bool] | None = None,
+        timeout_seconds: float = 0.0,
     ) -> BrainState:
         """一句话 → 拆图 → 并行派活 → 停在人工确认闸门。
 
@@ -132,15 +134,27 @@ class BrainService:
 
         ``should_cancel`` 是取消标志的读取函数（同样是运行控制面的），图在节点
         边界自查；与令牌一样**不进状态**（状态会落库）。
+
+        ``timeout_seconds`` 是**本轮**生效的运行级超时值（0 = 不设），它和由它
+        算出的绝对截止时刻一起**写进状态**（1.5 任务 2）：重启后仍按本轮的约定
+        裁决，而不是回落成当时的部署默认值。
         """
         run_id = run_id or uuid4().hex
         cfg = self._config(tenant_id, run_id)
         ctx = self._context(tenant_id=tenant_id, user_token=user_token)
         parallel = max_parallel or self._max_parallel
+        timeout = max(timeout_seconds, 0.0)
+        deadline_at = time.time() + timeout if timeout > 0 else 0.0
         async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
             graph = await self._graph_for(saver, ctx, parallel, should_cancel)
             out = await graph.ainvoke(
-                {"run_id": run_id, "tenant_id": tenant_id, "goal": goal},
+                {
+                    "run_id": run_id,
+                    "tenant_id": tenant_id,
+                    "goal": goal,
+                    "timeout_seconds": timeout,
+                    "deadline_at": deadline_at,
+                },
                 cfg,
             )
         return dict(out)

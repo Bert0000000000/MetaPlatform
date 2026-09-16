@@ -150,6 +150,17 @@ components:
           type: string
         error:
           type: string
+        timeout_seconds:
+          type: number
+          description: |
+            本轮**实际生效**的运行级超时（秒；0 = 不设超时）。请求省略
+            `timeout_seconds` 时这里落的是开跑那一刻的部署默认值。
+        deadline_at:
+          type: number
+          description: |
+            本轮截止的**绝对时刻**（Unix 秒；0 = 无截止）。
+            `timeout_seconds` 与 `deadline_at` 都随 run 落库：服务重启后仍按
+            **本轮**定下的值裁决，不会回落到重启后进程的默认值。
     StartRunRequest:
       type: object
       required: [goal]
@@ -169,6 +180,9 @@ components:
             本轮的运行级截止时间（秒）。省略时用部署默认值
             （`MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS`，0 = 不设超时）。到点后运行
             落终态 `timeout`，不会一直停在闸门上等人。
+
+            生效值**随 run 落库**（见 `RunState.timeout_seconds` / `deadline_at`），
+            服务重启后仍按本轮的值裁决。
     ApproveRequest:
       type: object
       properties:
