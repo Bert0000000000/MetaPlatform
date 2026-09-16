@@ -23,6 +23,7 @@ from typing import Any
 
 import httpx
 import pytest
+import uvicorn
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from mate_tech_agent_team import (
@@ -527,8 +528,14 @@ def test_a_restart_does_not_shorten_a_longer_deadline(monkeypatch: pytest.Monkey
 
 
 def test_events_stream_carries_step_level_events() -> None:
+    """回放：终态的 run 连上去，历史步骤一条不少，最后 ``end`` 收流。"""
     client = _app()
     run = _start_run(client)
+    # 先让它到终态：回放完就该收流，不然读的是"还在尾随"的那条流
+    rejected = client.post(
+        f"{BASE}/runs/{run['run_id']}/approve", json={"approved": False}, headers=_headers()
+    )
+    assert rejected.json()["status"] == "failed"
 
     response = client.get(f"{BASE}/runs/{run['run_id']}/events", headers=_headers())
     assert response.status_code == 200, response.text
@@ -547,6 +554,105 @@ def test_events_from_another_tenant_are_not_found() -> None:
     run = _start_run(client)
     response = client.get(f"{BASE}/runs/{run['run_id']}/events", headers=_headers("tenant-other"))
     assert response.status_code == 404
+
+
+# ── 事件流尾随（1.5 任务 3）─────────────────────────────────────────────
+
+
+async def _read_until(lines: Any, needle: str, timeout: float = 8.0) -> str:
+    """读到**完整事件**里出现 ``needle`` 为止（整体超时）。返回读到的全部内容。
+
+    以空行为事件边界：只匹配到事件的第一行不算——那会让"plan 到了"变成
+    "刚收到 ``event: step``"，等于没读。
+    """
+    done: list[str] = []
+    pending: list[str] = []
+
+    async def _pump() -> None:
+        async for line in lines:
+            if line:
+                pending.append(line)
+                continue
+            done.append("\n".join(pending))
+            pending.clear()
+            if needle in "\n".join(done):
+                return
+
+    try:
+        await asyncio.wait_for(_pump(), timeout)
+    except TimeoutError:
+        pass
+    return "\n".join(done)
+
+
+@pytest.mark.asyncio
+async def test_events_stream_tails_new_steps_until_the_run_is_terminal() -> None:
+    """回放 + **尾随**：连上先补历史，之后新步骤自己推过来，终态后关流。
+
+    只回放的话，连上之后发生的推进要靠重连才看得到——那与"步骤级事件流"
+    这个名分不符，也做不出"边跑边看"。所以判据是：**连上之后**图又走了几步，
+    这些步骤要能在这条流里到达；run 到终态后流自己关掉（``end``），不挂死。
+
+    **必须起真服务**：``ASGITransport`` 会把响应体收完才返回（实测），
+    长连接在它那里永远"没完"——那样测不出尾随，只会挂住。
+    """
+    runtime = _BlockingRuntime()
+    service, bus, store = _service(runtime=runtime, planner=_TwoWavePlanner())
+    app = create_app(
+        service=service,
+        team_bus=bus,
+        profile_store=store,
+        profile_registry=ProfileRegistry(store=store),
+    )
+    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=0, log_level="warning"))
+    serve = asyncio.create_task(server.serve())
+    try:
+        for _ in range(250):  # 等服务真的起来
+            if server.started:
+                break
+            await asyncio.sleep(0.02)
+        assert server.started, "uvicorn 没起来"
+        port = server.servers[0].sockets[0].getsockname()[1]
+
+        async with httpx.AsyncClient(base_url=f"http://127.0.0.1:{port}") as client:
+            started = asyncio.create_task(
+                client.post(f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=_headers())
+            )
+            await asyncio.wait_for(runtime.entered.wait(), 5)
+            run_id = _spawn_run_id(bus)
+
+            async with client.stream(
+                "GET", f"{BASE}/runs/{run_id}/events", headers=_headers()
+            ) as response:
+                assert response.status_code == 200, response.text
+                assert response.headers["content-type"].startswith("text/event-stream")
+                lines = response.aiter_lines()
+
+                # 1) 回放：此刻图还卡在第一波里，先补出来的必须是已有历史
+                replayed = await _read_until(lines, '"plan"')
+                assert "event: step" in replayed and '"plan"' in replayed, replayed[:400]
+
+                # 2) 尾随：放行第一波 → 后续推进应当自己到达这条流
+                runtime.release.set()
+                tailed = await _read_until(lines, "awaiting_approval")
+                assert "awaiting_approval" in tailed, f"后续推进没尾随过来：{tailed[:400]}"
+                # 还没终态：这条流**不该**已经收掉（收到 end 就说明只回放不尾随）
+                assert "event: end" not in tailed, tailed[-400:]
+
+                # 3) 终态后正常关闭：取消 → 落 cancelled → 流发 end 收流，不挂死
+                cancelled = await client.post(f"{BASE}/runs/{run_id}/cancel", headers=_headers())
+                assert cancelled.json()["status"] == "cancelled"
+                closed = await _read_until(lines, "event: end")
+                assert "event: end" in closed, f"终态后没收流：{closed[-400:]}"
+
+            # 发起那条请求是在它停在闸门时返回的；取消发生在之后，所以终态要看**现在**查
+            first = await asyncio.wait_for(started, 5)
+            assert first.json()["status"] == "awaiting_approval"
+            after = await client.get(f"{BASE}/runs/{run_id}", headers=_headers())
+            assert after.json()["status"] == "cancelled"
+    finally:
+        server.should_exit = True
+        await asyncio.wait_for(serve, 10)
 
 
 # ── 落库 + 跨租户（需要 PG）─────────────────────────────────────────────

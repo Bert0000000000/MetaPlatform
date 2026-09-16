@@ -522,14 +522,16 @@ paths:
         - bearerAuth: []
           tenantHeader: []
           oidcScopes: [platform.read]
-      summary: 步骤级事件流（SSE）
+      summary: 步骤级事件流（SSE：回放 + 尾随）
       description: |
-        `text/event-stream`：逐个步骤快照往外发，每条是 `event: step` +
-        `data: {seq, step, ran, next, status, at}`（`ran` = 这一步真的跑掉的
-        节点）。回放完已有步骤后发一条 `event: end` 收流。
+        `text/event-stream`。连上先**回放**已有步骤（历史一条不少），再**尾随**
+        新步骤：之后图每推进一步就往外推一条，直到 run 落终态才发 `event: end`
+        收流。每条是 `event: step` + `data: {seq, step, ran, next, status, at}`
+        （`ran` = 这一步真的跑掉的节点）。
 
-        **边界**：回放后收流，不做长连接尾随；到期的 run 会先落成终态再回放，
-        所以事件流里能看到它已经结束。
+        **实现边界**：尾随靠轮询检查点（没有引入消息总线），新步骤最多晚一个
+        轮询间隔（当前 250ms）到达。终态判定与流关闭是同一个事实——停在
+        `awaiting_approval` 的运行**不会**自己关流，它在等人确认。
       tags: [agent-team]
       operationId: agentTeamGetRunEvents
       parameters:

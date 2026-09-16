@@ -17,7 +17,8 @@
 1. 取消信号是**进程内**的：只有与运行中的图**同进程**时才精确生效（那正是
    ``POST /runs`` / ``approve`` 在等它的那个进程）。跨副本取消执行中的 run 需要
    共享信号通道，属后续候选；停在闸门的 run 跨副本取消仍然有效（终态写在检查点）。
-2. 事件流是**回放**已有步骤后收流，不做长连接尾随。
+2. 事件流是**回放 + 尾随**：连上先补历史，之后新步骤即推送，直到 run 终态才
+   关流。尾随靠**轮询**检查点（没有引入消息总线），代价见 :meth:`RunControl.events`。
 """
 
 from __future__ import annotations
@@ -37,7 +38,7 @@ from ..state import BrainState
 DEFAULT_TIMEOUT_ENV = "MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS"
 
 #: 尾随事件流时两次轮询之间的间隔（秒）。
-DEFAULT_POLL_INTERVAL = 0.2
+DEFAULT_POLL_INTERVAL = 0.25
 
 
 @dataclass
@@ -190,16 +191,28 @@ class RunControl:
 
     # -- 事件流 ------------------------------------------------------------
     async def events(self, *, tenant_id: str, run_id: str) -> AsyncIterator[str]:
-        """SSE：逐个步骤快照往外发，最后一条 ``end`` 收流。
+        """SSE：先**回放**已有步骤，再**尾随**后续步骤，直到 run 终态才收流。
 
-        先 ``refresh`` 再回放：到期的运行要能在事件流里看到它已经落成终态。
+        只回放的话，连上之后发生的推进要靠重连才看得到——"步骤级事件流"这个
+        名分就落空了。所以连上先补历史（到此刻为止一条不少），之后每有新步骤
+        就推，run 落终态才发 ``end``。
+
+        尾随靠**轮询检查点**，没有引入消息总线（不新增基础设施，也就没有
+        "两个真相"的余地）。代价写在这里：新步骤最多晚一个
+        :data:`DEFAULT_POLL_INTERVAL` 才推出去，且每轮轮询开一次检查点连接。
+        终态也一并从状态里读——"run 落终态"与"流关掉"因此是同一个事实。
         """
         await self.refresh(tenant_id=tenant_id, run_id=run_id)
-        steps = await self._service.history(tenant_id=tenant_id, run_id=run_id)
-        for index, step in enumerate(steps, start=1):
-            payload = json.dumps({"seq": index, **step}, ensure_ascii=False)
-            yield f"event: step\ndata: {payload}\n\n"
-            await asyncio.sleep(0)  # 让出事件循环：这是流，不是一次性响应
+        seq = 0
+        while True:
+            steps = await self._service.history(tenant_id=tenant_id, run_id=run_id)
+            for step in steps[seq:]:
+                seq += 1
+                payload = json.dumps({"seq": seq, **step}, ensure_ascii=False)
+                yield f"event: step\ndata: {payload}\n\n"
+            if steps and str(steps[-1].get("status", "")) in TERMINAL_STATUSES:
+                break
+            await asyncio.sleep(self._poll_interval)
         yield "event: end\ndata: {}\n\n"
 
 
