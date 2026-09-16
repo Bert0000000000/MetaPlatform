@@ -26,6 +26,7 @@ EXPECTED = {
     "deep-research",
     "orchestrator",
     "marketplace",
+    "agent-team",
 }
 
 
