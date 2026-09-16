@@ -110,6 +110,17 @@
 | 身份三要素 + 包络四维往返 | ✅ |
 | 空租户 fail-closed | ✅ 读空、写 `ValueError` |
 
+**活服务复验**（`mate-tech-agent-team:8013` 容器 + `agent_team` schema）：
+
+1. `bootstrap` 在启动期建出 `employee_profile`（与 langgraph 四表同 schema）；
+2. 以 `mate_app` 写入 `EMP-E2E-PROBE`（租户 `tenant-default`）→
+   `GET /api/v1/agent-team/profiles` 返回
+   `['EMP-ANALYST','EMP-AUDITOR','EMP-E2E-PROBE','EMP-RESEARCHER']`；
+3. **`docker compose up -d --force-recreate` 重启容器**后重查，
+   `EMP-E2E-PROBE` 仍在列；
+4. 同一行用 `mate_app` 直连库（非 superuser）：
+   `tenant-default` 数到 1、`tenant-bigo` 数到 0、**不设租户数到 0**（fail-closed）。
+
 ## 4. 任务 4 · 权限包络衰减
 
 包络 = `(tools, action_rids, kb_ids, markings)`。不变量 **子 ⊆ 发起用户**
@@ -222,6 +233,32 @@ TestRestDualRail::test_temporal_execute_conflicts`（期望 409、实得 404）�
 
 基线那条红（`test_streamable_http_roundtrip`）本轮已**转绿**：它原先假设协议面
 无需租户上下文，与新契约冲突；改为经认证中间件挂载后确定性通过。
+
+### 6.5 PR CI 状态
+
+`gh pr checks` 在本 PR 上：**通过 23 / 失败 3 / 待定 5**（`mergeStateStatus: UNSTABLE`
+= 非阻塞项红，可合并）。
+
+首轮我曾引入 3 条真失败，均已修复：
+
+| 失败项 | 根因 | 处置 |
+| --- | --- | --- |
+| `Lint (ruff)` | `test_authority_envelope.py` 一行超长未折叠 | `ruff format` 修，本地 `ruff format --check .` 清零 |
+| `cowork md-lint` | 新增 md 里以 `+` 开头的续行 / 连续空行 / 围栏未标语言 | 逐条修，本地用 `pymarkdownlnt==0.9.40` 复跑 CI 原命令清零 |
+| `cowork PRD skeleton check` | 新增的 `*-ACCEPTANCE.md` 缺 `ga-001..ga-013` 与「命令」「commit」字段 | 补 §6.1/§6.2/§6.3，本地复跑通过 |
+
+剩余 3 条失败**全部是仓库已登记的预存债务**（workflow 里写着
+`continue-on-error: true` + 「债务登记 2026-09-10：预存红，不阻塞合并」）：
+`Architecture kernel governance`（292 个 pyright strict 报错落在
+`mate-platform/tests/test_workflow_temporal_boundary.py`，本轮未改该文件）、
+`boot ontology-loop stack`、`playwright ontology-loop e2e`
+（后两条是 `docker-compose.override.yml` 把 build context 指到 CI 上不存在的
+`.tmp-build-context` —— 该 override 是本地 Windows 构建的既有 workaround）。
+`ga pre-commit` 里的 `trim trailing whitespace` / `prettier` 亦然：报的全是
+`metaplatform-frontend/**` 与 `docs/active/decisions/ADR-0065-*.md`，
+`git diff origin/main --name-only` 里这二者命中数为 0。
+
+**13 条硬规则门禁（`ga-001` … `ga-013`）全绿**，含 `ga-006` ruff + pyright strict。
 
 ## 7. 遗留与建议
 
