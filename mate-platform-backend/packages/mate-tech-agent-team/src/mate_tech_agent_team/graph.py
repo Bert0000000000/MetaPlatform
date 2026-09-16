@@ -86,6 +86,7 @@ def build_brain_graph(
     bus: TeamBus,
     checkpointer: BaseCheckpointSaver,
     initiator_envelope: Envelope | None = None,
+    actor: str = "",
     max_parallel: int = 3,
     depth: int = ROOT_DISPATCH_DEPTH,
 ) -> Any:
@@ -93,6 +94,7 @@ def build_brain_graph(
 
     ``initiator_envelope`` 是**发起用户**的包络（ADR-0066 §3.3 的链根），刻意
     与令牌一样**不进图状态**：状态会落进 PG，而它是当次调用的授权，用完即散。
+    ``actor``（发起用户标识）同样不进状态，只随派活写进审计行（硬规则 #9）。
     """
     root_envelope = initiator_envelope if initiator_envelope is not None else Envelope()
 
@@ -181,6 +183,9 @@ def build_brain_graph(
                     tool_scope=tuple(subtask.get("tool_scope") or ()),
                     depth=depth,
                     task_id=subtask["team_task_id"],
+                    # 审计用：谁派的、属于哪一轮（硬规则 #9）。
+                    actor=actor,
+                    run_id=run_id,
                 )
             )
         except DepthExceeded as exc:

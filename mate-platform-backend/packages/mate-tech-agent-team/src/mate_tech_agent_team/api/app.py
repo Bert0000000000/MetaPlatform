@@ -22,7 +22,11 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
-from mate_platform.tenancy.guards import require_tenant
+from mate_platform.tenancy.guards import (
+    ApprovalRoleError,
+    require_approver,
+    require_tenant,
+)
 
 from ..authority import Envelope, resolve_initiator_envelope
 from ..brain import AWAITING, BrainService, RunNotAwaitingApproval, RunNotFound
@@ -34,6 +38,8 @@ from ..team_bus import TaskNotFound, TaskTerminal, TeamBus
 from .run_control import RunControl
 from .schemas import (
     ApproveRequest,
+    AuditListModel,
+    AuditRecordModel,
     ChannelMessageModel,
     EmployeeProfileModel,
     ProfileListModel,
@@ -216,10 +222,44 @@ async def agentTeamGetRunEvents(request: Request, run_id: str) -> StreamingRespo
     )
 
 
+@router.get("/runs/{run_id}/audit", response_model=AuditListModel)
+async def agentTeamGetRunAudit(request: Request, run_id: str) -> AuditListModel:
+    """一轮运行的审计行（硬规则 #9）：派活 / 越权转 proposal / 审批。
+
+    "落了吗"要能看见，否则等于没落。先按 run 的存在性判 404（跨租户同码），
+    再只回**本租户**的行——审计行不能成为一条绕过 run 隔离的读路径。
+    """
+    tenant_id = _tid(request)
+    try:
+        await get_run_control().refresh(tenant_id=tenant_id, run_id=run_id)
+    except RunNotFound as exc:
+        raise HTTPException(status_code=404, detail="run not found") from exc
+    rows = get_brain_service().audit.records(tenant_id=tenant_id, run_id=run_id)
+    return AuditListModel(items=[AuditRecordModel(**row.to_dict()) for row in rows])
+
+
 @router.post("/runs/{run_id}/approve", response_model=RunStateModel)
 async def agentTeamPostRunApprove(
     request: Request, run_id: str, body: ApproveRequest
 ) -> RunStateModel:
+    """人工确认闸门（需要**审批角色**，不是任意登录用户）。
+
+    审批角色复用平台既有的 ``require_*`` 守卫做法（``RequestContext.roles``）：
+    ``agent_admin`` 或平台管理员。没有角色 → 403 且**不落审计行**——没发生的
+    动作不记账，否则账本上会混进一堆"被拒的尝试"把真事件淹掉。
+    """
+    try:
+        require_approver(request.state.ctx)
+    except ApprovalRoleError as exc:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "E_NOT_APPROVER",
+                "message": "approve 需要审批角色（agent_admin / platform_admin）",
+                "roles": sorted(exc.roles),
+            },
+        ) from exc
+
     tenant_id = _tid(request)
     # 先让控制面裁决超时：到期的计划不该还能被确认续跑。
     try:

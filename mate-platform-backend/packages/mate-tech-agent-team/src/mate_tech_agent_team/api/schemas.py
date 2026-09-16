@@ -129,8 +129,29 @@ class ChannelMessageModel(BaseModel):
     at: str
 
 
+class AuditRecordModel(BaseModel):
+    """一行审计（硬规则 #9）：派活 / 越权转 proposal / 审批。"""
+
+    audit_id: str
+    action: str
+    tenant_id: str
+    actor: str = ""
+    task_id: str = ""
+    run_id: str = ""
+    profile_id: str = ""
+    outcome: str = ""
+    detail: dict[str, Any] = Field(default_factory=dict)
+    at: str
+
+
+class AuditListModel(BaseModel):
+    items: list[AuditRecordModel] = Field(default_factory=list)
+
+
 __all__ = [
     "ApproveRequest",
+    "AuditListModel",
+    "AuditRecordModel",
     "ChannelMessageModel",
     "EmployeeProfileModel",
     "ProfileListModel",

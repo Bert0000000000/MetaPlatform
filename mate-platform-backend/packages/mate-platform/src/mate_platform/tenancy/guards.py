@@ -100,3 +100,56 @@ def assert_same_tenant(claimed: TenantId, ctx: RequestContext) -> None:
         raise TenantAccessError(
             f"path tenant {claimed!r} does not match request tenant {ctx.tenant_id!r}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Approval role guard (ADR-0066 §3.7 / ADR-0044 HITL)
+# ---------------------------------------------------------------------------
+
+#: Roles allowed to approve an AI-authored plan or an authority escalation.
+#:
+#: Same shape as ``is_cross_tenant_admin``: the answer comes from the
+#: session's realm roles, never from anything the caller sends in the
+#: body. ``agent_admin`` is ADR-0066 §3.7's profile-definition role; the
+#: platform admin roles are included because approving is a strictly
+#: smaller authority than defining what may be approved.
+APPROVER_ROLES: frozenset[str] = frozenset(
+    {
+        "agent_admin",
+        "platform_admin",
+        "PLATFORM_ADMIN",
+        "PLATFORM_SUPER_ADMIN",
+    }
+)
+
+
+class ApprovalRoleError(TenantAccessError):
+    """Raised when a caller without an approval role tries to approve.
+
+    A subclass of :class:`TenantAccessError` so existing handlers that
+    already map that error keep working; callers that want to tell
+    "wrong role" from "no tenant" catch this one.
+    """
+
+    def __init__(self, roles: frozenset[str]) -> None:
+        self.roles = roles
+        super().__init__(
+            "caller lacks an approval role; approving requires one of "
+            f"{sorted(APPROVER_ROLES)} (got {sorted(roles)})"
+        )
+
+
+def is_approver(ctx: RequestContext) -> bool:
+    """Whether the caller may approve (HITL confirm) — roles only.
+
+    Admins approve; every other authenticated session does not. This is
+    deliberately **not** the same question as "is the caller logged in":
+    1.3 let any authenticated user confirm a plan.
+    """
+    return bool(ctx.roles & APPROVER_ROLES)
+
+
+def require_approver(ctx: RequestContext) -> None:
+    """Raise :class:`ApprovalRoleError` unless the caller may approve."""
+    if not is_approver(ctx):
+        raise ApprovalRoleError(ctx.roles)

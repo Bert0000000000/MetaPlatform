@@ -198,6 +198,50 @@ components:
         at:
           type: string
           description: 投递时刻（ISO8601）
+    AuditRecord:
+      type: object
+      required: [audit_id, action, tenant_id, task_id, outcome, at]
+      properties:
+        audit_id:
+          type: string
+          description: 审计行 id（进程内唯一，落一行一行）
+        action:
+          type: string
+          enum:
+            - agent_team.spawn
+            - agent_team.authority_escalation
+            - agent_team.approval
+          description: |
+            被审计的动作。**派活**（每次派活一行）、**越权转 proposal**
+            （包络超出链根 → 转人审）、**审批**（run 级闸门或任务级授权）。
+        tenant_id:
+          type: string
+        actor:
+          type: string
+          description: 发起用户（令牌 sub）；解析不出就是空串
+        task_id:
+          type: string
+        run_id:
+          type: string
+        profile_id:
+          type: string
+        outcome:
+          type: string
+          description: 该动作的结果（granted / proposal / approved / rejected …）
+        detail:
+          type: object
+          additionalProperties: true
+        at:
+          type: string
+          description: 记录时刻（ISO8601）
+    AuditList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditRecord"
     EmployeeProfile:
       type: object
       required: [profile_id, name, base_role]
@@ -382,6 +426,13 @@ paths:
           tenantHeader: []
           oidcScopes: [platform.write]
       summary: 人工确认闸门（批准则继续执行，拒绝则中止）
+      description: |
+        **不是任意登录用户都能确认**：approve 需要审批角色
+        （`agent_admin` / `platform_admin` / `PLATFORM_ADMIN` /
+        `PLATFORM_SUPER_ADMIN`；复用平台既有的 `require_*` 守卫做法）。
+        无审批角色 → 403 `E_NOT_APPROVER`，且**不落审计行**（没发生的动作不记账）。
+
+        审批本身落审计行（`agent_team.approval`，硬规则 #9），带 actor 与结果。
       tags: [agent-team]
       operationId: agentTeamPostRunApprove
       parameters:
@@ -405,6 +456,8 @@ paths:
                 $ref: "#/components/schemas/RunState"
         "404":
           description: 该租户下不存在此 run
+        "403":
+          description: 调用方没有审批角色（E_NOT_APPROVER）
         "409":
           description: 该 run 不在待确认状态（E_RUN_NOT_AWAITING_APPROVAL）
       x-mate-owner: agent-product-layer
@@ -477,6 +530,38 @@ paths:
       x-mate-owner: agent-product-layer
       x-mate-permission: agent-team.read
       x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETRUNEVENTS]
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/runs/{run_id}/audit:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
+      summary: 一轮运行的审计行（派活 / 越权转 proposal / 审批）
+      description: |
+        硬规则 #9：每次**派活**、**越权转 proposal**、**审批**都落一行审计。
+        这里把该 run 的行读出来当证据——"落了吗"要能看见，否则等于没落。
+        只回本租户的行（跨租户不可见，与 run 的同一条隔离口径）。
+      tags: [agent-team]
+      operationId: agentTeamGetRunAudit
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 审计行（时间序）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditList"
+        "404":
+          description: 该租户下不存在此 run
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETRUNAUDIT]
       x-mate-implementation-status: implemented
   /api/v1/agent-team/tasks/{task_id}/messages:
     post:
