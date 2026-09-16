@@ -3,9 +3,7 @@ import {
   Button,
   Card,
   DatePicker,
-  Empty,
   Form,
-  Modal,
   Select,
   SideSheet,
   Space,
@@ -68,7 +66,7 @@ import {
 import { listTools } from '@/api/mcphub/tools';
 import { listServers } from '@/api/mcphub/servers';
 import { listClients } from '@/api/mcphub/clients';
-import { PageHeader } from '@/components/skeleton';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 import type {
   AnalyticsItem,
   AuditLog,
@@ -575,7 +573,7 @@ export default function AuditStatisticsPage() {
         <Col xs={24} lg={12}>
           <Card title="调用量 / 错误数趋势" loading={loadingTrends}>
             {trendChartData.length === 0 ? (
-              <Empty description="暂无数据" />
+              <EmptyState title="暂无数据" />
             ) : (
               <ResponsiveContainer width="100%" height={280}>
                 <AreaChart data={trendChartData}>
@@ -617,7 +615,7 @@ export default function AuditStatisticsPage() {
         <Col xs={24} lg={12}>
           <Card title="Token 消耗趋势" loading={loadingTrends}>
             {trendChartData.length === 0 ? (
-              <Empty description="暂无数据" />
+              <EmptyState title="暂无数据" />
             ) : (
               <ResponsiveContainer width="100%" height={280}>
                 <AreaChart data={trendChartData}>
@@ -646,7 +644,7 @@ export default function AuditStatisticsPage() {
         <Col xs={24} lg={12}>
           <Card title="平均耗时趋势" loading={loadingTrends}>
             {trendChartData.length === 0 ? (
-              <Empty description="暂无数据" />
+              <EmptyState title="暂无数据" />
             ) : (
               <ResponsiveContainer width="100%" height={280}>
                 <LineChart data={trendChartData}>
@@ -692,8 +690,7 @@ export default function AuditStatisticsPage() {
         dataSource={analytics}
         columns={analyticsColumns}
         pagination={false}
-        empty={<Empty description="暂无数据" />}
-        scroll={{ x: 'max-content' }}
+        empty={<EmptyState title="暂无数据" />}
       />
     </Card>
   );
@@ -713,8 +710,7 @@ export default function AuditStatisticsPage() {
         dataSource={alertRules}
         columns={ruleColumns}
         pagination={false}
-        empty={<Empty description="还没有告警规则" />}
-        scroll={{ x: 'max-content' }}
+        empty={<EmptyState title="还没有告警规则" />}
       />
     </Card>
   );
@@ -726,8 +722,7 @@ export default function AuditStatisticsPage() {
         dataSource={logs}
         columns={logColumns}
         pagination={{ pageSize: 10 }}
-        empty={<Empty description="暂无调用日志" />}
-        scroll={{ x: 'max-content' }}
+        empty={<EmptyState title="暂无调用日志" />}
       />
     </Card>
   );
@@ -909,7 +904,7 @@ export default function AuditStatisticsPage() {
 
             <Card title="执行链路" loading={loadingTrace}>
               {traceLogs.length === 0 ? (
-                <Empty description="无链路信息" />
+                <EmptyState title="无链路信息" />
               ) : (
                 <Timeline
                   mode="left"
@@ -945,16 +940,36 @@ export default function AuditStatisticsPage() {
         )}
       </SideSheet>
 
-      <Modal
+      <SideSheet
         title={editingRule ? '编辑告警规则' : '创建告警规则'}
         visible={ruleModalOpen}
-        onOk={() => ruleForm.submitForm()}
+        width={420}
         onCancel={() => {
           setRuleModalOpen(false);
           setEditingRule(null);
           ruleForm.reset();
         }}
-        confirmLoading={submittingRule}
+        footer={
+          <>
+            <Button
+              onClick={() => {
+                setRuleModalOpen(false);
+                setEditingRule(null);
+                ruleForm.reset();
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              theme="solid"
+              type="primary"
+              loading={submittingRule}
+              onClick={() => ruleForm.submitForm()}
+            >
+              保存
+            </Button>
+          </>
+        }
       >
         <Form form={ruleForm} onSubmit={handleRuleSubmit}>
           <Form.Input
@@ -991,7 +1006,7 @@ export default function AuditStatisticsPage() {
           />
           <Form.Switch field="enabled" label="启用" />
         </Form>
-      </Modal>
+      </SideSheet>
     </div>
   );
 }

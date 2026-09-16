@@ -3,11 +3,10 @@ import type { ComponentProps } from 'react';
 import {
   Button,
   Card,
-  Empty,
   Form,
-  Modal,
   Popconfirm,
   Radio,
+  SideSheet,
   Space,
   Table,
   Tag,
@@ -29,7 +28,7 @@ import {
 } from '@/api/mcphub/policies';
 import { listTools } from '@/api/mcphub/tools';
 import type { Policy, PolicyCreateRequest, PolicyUpdateRequest, McpTool, ConditionSyntax } from '@/api/mcphub/types';
-import { PageHeader } from '@/components/skeleton';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 
 const SUBJECT_TYPE_OPTIONS = [
   { label: '用户', value: 'USER' },
@@ -50,6 +49,8 @@ const ACTION_OPTIONS = [
 ];
 
 const MonacoField = withField(Editor);
+
+const FORM_DRAWER_W = 560;
 
 type PolicyFormValues = Omit<PolicyCreateRequest, 'effectiveStartAt' | 'effectiveEndAt'> & {
   version?: number;
@@ -258,27 +259,40 @@ export default function PolicyManagementPage() {
 
       <Card>
         {policies.length === 0 && !loading ? (
-          <Empty description="还没有 ABAC 策略" />
+          <EmptyState title="还没有 ABAC 策略" />
         ) : (
           <Table
             rowKey="id"
             dataSource={policies}
             columns={columns}
             loading={loading}
-            pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
+            pagination={{ pageSize: 10 }} />
         )}
       </Card>
 
-      <Modal
+      <SideSheet
         title={editing ? '编辑策略' : '创建策略'}
         visible={editorOpen}
-        width={720}
+        width={FORM_DRAWER_W}
         onCancel={() => {
           setEditorOpen(false);
           setEditing(null);
         }}
-        confirmLoading={submitting}
-        onOk={() => form.submitForm()}
+        footer={
+          <>
+            <Button
+              onClick={() => {
+                setEditorOpen(false);
+                setEditing(null);
+              }}
+            >
+              取消
+            </Button>
+            <Button theme="solid" type="primary" loading={submitting} onClick={() => form.submitForm()}>
+              {editing ? '保存' : '创建'}
+            </Button>
+          </>
+        }
       >
         <Form
           form={form}
@@ -397,7 +411,7 @@ export default function PolicyManagementPage() {
             <Form.Switch field="enabled" label="启用" />
           </Space>
         </Form>
-      </Modal>
+      </SideSheet>
     </div>
   );
 }

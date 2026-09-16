@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
-  Empty,
   Input,
   Modal,
   Select,
+  SideSheet,
   Space,
   Table,
   Tabs,
@@ -29,12 +29,14 @@ import { listPrompts, createPrompt, updatePrompt, deletePrompt } from '@/api/mcp
 import VariableEditor from './components/VariableEditor';
 import PreviewPanel from './components/PreviewPanel';
 import type { PromptTemplate, PromptTemplateCreateRequest } from '@/api/mcphub/types';
-import { PageHeader } from '@/components/skeleton';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 import './mcp.css';
 
 const FormVariableEditor = withField(
   VariableEditor as React.ComponentType<Partial<React.ComponentProps<typeof VariableEditor>>>
 );
+
+const FORM_DRAWER_W = 560;
 
 export default function PromptTemplatePage() {
   const [prompts, setPrompts] = useState<PromptTemplate[]>([]);
@@ -179,27 +181,40 @@ export default function PromptTemplatePage() {
 
       <Card>
         {prompts.length === 0 && !loading ? (
-          <Empty description="还没有 Prompt 模板" />
+          <EmptyState title="还没有 Prompt 模板" />
         ) : (
           <Table
             rowKey="id"
             dataSource={prompts}
             columns={columns}
             loading={loading}
-            pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
+            pagination={{ pageSize: 10 }} />
         )}
       </Card>
 
-      <Modal
+      <SideSheet
         visible={formOpen}
         title={editing ? '编辑 Prompt' : '创建 Prompt'}
         onCancel={() => {
           setFormOpen(false);
           setEditing(null);
         }}
-        onOk={handleSubmit}
-        width={760}
-        confirmLoading={submitting}
+        width={FORM_DRAWER_W}
+        footer={
+          <>
+            <Button
+              onClick={() => {
+                setFormOpen(false);
+                setEditing(null);
+              }}
+            >
+              取消
+            </Button>
+            <Button theme="solid" type="primary" loading={submitting} onClick={() => void handleSubmit()}>
+              {editing ? '保存' : '创建'}
+            </Button>
+          </>
+        }
       >
         <Form form={form}>
           <Form.Input field="name" label="模板名称" rules={[{ required: true }]} />
@@ -226,7 +241,7 @@ export default function PromptTemplatePage() {
           <FormVariableEditor field="variables" label="变量定义" initValue={[]} />
           <Form.TagInput field="tags" label="标签" placeholder="输入后回车" />
         </Form>
-      </Modal>
+      </SideSheet>
 
       <Modal
         visible={!!previewPrompt}

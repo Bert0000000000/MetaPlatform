@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
-  Empty,
   Spin,
   Tag,
   Typography,
@@ -20,7 +19,7 @@ import {
 } from '@ant-design/icons';
 import { getConnectionMonitor } from '@/api/mcphub/ide-config';
 import type { ConnectionMonitorResponse, ConnectionStatus } from '@/api/mcphub/types';
-import { PageHeader } from '@/components/skeleton';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 
 const STATUS_META: Record<
   ConnectionStatus['connectionStatus'],
@@ -131,7 +130,7 @@ export default function ConnectionMonitorPage() {
   }
 
   if (!data) {
-    return <Empty description="暂无监控数据" />;
+    return <EmptyState title="暂无监控数据" />;
   }
 
   const { summary } = data;
@@ -186,7 +185,7 @@ export default function ConnectionMonitorPage() {
         <Col xs={24} lg={12}>
           <Card title="MCP Server 状态">
             {data.servers.length === 0 ? (
-              <Empty description="暂无 Server" />
+              <EmptyState title="暂无 Server" />
             ) : (
               data.servers.map((s) => <ConnectionCard key={s.id} item={s} />)
             )}
@@ -195,7 +194,7 @@ export default function ConnectionMonitorPage() {
         <Col xs={24} lg={12}>
           <Card title="MCP Client 状态">
             {data.clients.length === 0 ? (
-              <Empty description="暂无 Client" />
+              <EmptyState title="暂无 Client" />
             ) : (
               data.clients.map((c) => <ConnectionCard key={c.id} item={c} />)
             )}

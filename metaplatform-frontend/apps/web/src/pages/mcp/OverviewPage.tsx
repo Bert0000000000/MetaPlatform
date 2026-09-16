@@ -10,18 +10,18 @@ import {
   WarningFilled,
 } from '@ant-design/icons';
 import {
+  Button,
   Card,
-  Empty,
   List,
   Spin,
   Table,
   Tag,
   Typography,
-  Banner,
 } from '@douyinfe/semi-ui';
 import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { Col, Row } from '@douyinfe/semi-ui/lib/es/grid';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 import {
   CartesianGrid,
   Line,
@@ -206,7 +206,7 @@ function CallStatsCard({
           </LineChart>
         </ResponsiveContainer>
       ) : (
-        <Empty description="今日暂无调用" className="mp-mt-4" />
+        <EmptyState title="今日暂无调用" className="mp-mt-4" />
       )}
     </Card>
   );
@@ -248,7 +248,7 @@ function TokenStatsCard({
           </LineChart>
         </ResponsiveContainer>
       ) : (
-        <Empty description="今日暂无 Token 消耗" className="mp-mt-4" />
+        <EmptyState title="今日暂无 Token 消耗" className="mp-mt-4" />
       )}
     </Card>
   );
@@ -279,11 +279,11 @@ function ErrorAlertsCard({ alerts }: { alerts: OverviewErrorAlert[] }) {
       }
     >
       {alerts.length === 0 ? (
-        <Empty description="近期无错误告警" />
+        <EmptyState title="近期无错误告警" illustration="success" />
       ) : (
         <List
           dataSource={alerts}
-          emptyContent={<Empty description="近期无错误告警" />}
+          emptyContent={<EmptyState title="近期无错误告警" illustration="success" />}
           renderItem={(item) => {
             const meta = LEVEL_META[item.level] ?? LEVEL_META.error;
             return (
@@ -301,7 +301,7 @@ function ErrorAlertsCard({ alerts }: { alerts: OverviewErrorAlert[] }) {
                       </Tag>
                     </Typography.Text>
                     <div
-                      className="mp-mt-1 mp-text-body mp-text-2 mp-lh-16" 
+                      className="mp-mt-1 mp-text-body mp-text-2 mp-lh-16"
                     >
                       <ClockCircleOutlined className="mp-mr-1" />
                       {item.calledAt ? new Date(item.calledAt).toLocaleString() : '-'}
@@ -344,12 +344,10 @@ function TopToolsCard({ tools }: { tools: OverviewTopTool[] }) {
     <Card title="Top Tools 调用排行">
       <Table
         rowKey={(item) => item!.toolCode}
-        size="small"
         pagination={false}
         columns={columns}
         dataSource={tools}
-        empty={<Empty description="今日暂无调用" />}
-        scroll={{ x: 'max-content' }}
+        empty={<EmptyState title="今日暂无调用" />}
       />
     </Card>
   );
@@ -359,6 +357,7 @@ export default function OverviewPage() {
   const [data, setData] = useState<OverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -377,45 +376,49 @@ export default function OverviewPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  if (error) {
-    return <Banner type="danger" description={error} className="mp-m-6" />;
-  }
-
-  if (loading || !data) {
-    return (
-      <div className="mp-text-center mp-p-9">
-        <Spin tip="加载概览数据..." />
-      </div>
-    );
-  }
+  }, [reloadTick]);
 
   return (
     <div>
-      <Typography.Title heading={4} className="mp-mb-4 mp-mt-1" >
-        MCP Hub 概览
-      </Typography.Title>
-      <Row gutter={[16, 16]}>
-        <Col span={24}>
-          <ServerStatsCard stats={data.serverStats} />
-        </Col>
-        <Col xs={24} lg={12}>
-          <ToolStatsCard stats={data.toolStats} />
-        </Col>
-        <Col xs={24} lg={12}>
-          <CallStatsCard stats={data.callStats} trend={data.callTrend} />
-        </Col>
-        <Col xs={24} lg={12}>
-          <TokenStatsCard stats={data.tokenStats} trend={data.tokenTrend} />
-        </Col>
-        <Col xs={24} lg={12}>
-          <TopToolsCard tools={data.topTools} />
-        </Col>
-        <Col span={24}>
-          <ErrorAlertsCard alerts={data.errorAlerts} />
-        </Col>
-      </Row>
+      <PageHeader title="MCP Hub 概览" desc="服务器 / 工具 / 调用与 Token 的实时运行态。" />
+
+      {error ? (
+        <EmptyState
+          illustration="failure"
+          title="概览数据加载失败"
+          desc={error}
+          actions={
+            <Button theme="solid" type="primary" onClick={() => setReloadTick((t) => t + 1)}>
+              重试
+            </Button>
+          }
+        />
+      ) : loading || !data ? (
+        <div className="mp-text-center mp-p-9">
+          <Spin size="large" />
+        </div>
+      ) : (
+        <Row gutter={[16, 16]}>
+          <Col span={24}>
+            <ServerStatsCard stats={data.serverStats} />
+          </Col>
+          <Col xs={24} lg={12}>
+            <ToolStatsCard stats={data.toolStats} />
+          </Col>
+          <Col xs={24} lg={12}>
+            <CallStatsCard stats={data.callStats} trend={data.callTrend} />
+          </Col>
+          <Col xs={24} lg={12}>
+            <TokenStatsCard stats={data.tokenStats} trend={data.tokenTrend} />
+          </Col>
+          <Col xs={24} lg={12}>
+            <TopToolsCard tools={data.topTools} />
+          </Col>
+          <Col span={24}>
+            <ErrorAlertsCard alerts={data.errorAlerts} />
+          </Col>
+        </Row>
+      )}
     </div>
   );
 }

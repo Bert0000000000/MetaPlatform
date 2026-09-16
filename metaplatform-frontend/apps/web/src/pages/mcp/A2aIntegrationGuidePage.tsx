@@ -6,7 +6,11 @@ import { listExternalAgents as listMcpExternalAgents } from '@/api/mcphub/extern
 import { PageHeader } from '@/components/skeleton';
 import './mcp.css';
 
-const GATEWAY = 'http://localhost:8100';
+/**
+ * curl 样例里的网关地址取当前站点 origin：dev 下走 Vite 代理、生产下就是真实域名，
+ * 不把 localhost:8100 这种开发地址固化进用户可见的文档。
+ */
+const GATEWAY = typeof window === 'undefined' ? '' : window.location.origin;
 
 /** A2A 注册中心 — 接入说明：外部 Agent / MCP / CLI 的注册与服务发现指南。 */
 export default function A2aIntegrationGuidePage() {
@@ -54,9 +58,7 @@ export default function A2aIntegrationGuidePage() {
     <div>
       <PageHeader
         title="A2A 接入说明"
-        actions={
-          <Typography.Text type="tertiary">外部 Agent / MCP / CLI 的注册与服务发现指南</Typography.Text>
-        }
+        desc="外部 Agent / MCP / CLI 的注册与服务发现指南"
       />
 
       <Space wrap className="mp-mb-4">
@@ -171,21 +173,8 @@ function EndpointRow({ method, path, desc }: { method: string; path: string; des
 
 function CodeBlock({ code }: { code: string; lang?: string }) {
   return (
-    <pre style={codeStyle}>
+    <pre className="mp-mcp-code-block">
       <code>{code}</code>
     </pre>
   );
 }
-
-const codeStyle: React.CSSProperties = {
-  background: 'var(--semi-color-bg-1)',
-  border: '1px solid var(--semi-color-border)',
-  padding: 12,
-  borderRadius: 4,
-  fontFamily: 'Menlo, Consolas, monospace',
-  fontSize: 12,
-  maxHeight: 320,
-  overflow: 'auto',
-  whiteSpace: 'pre-wrap',
-  wordBreak: 'break-all',
-};

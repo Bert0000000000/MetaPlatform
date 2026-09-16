@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   Checkbox,
-  Empty,
   List,
   Select,
   Space,
@@ -37,7 +36,7 @@ import {
 } from '@/api/mcphub/debug';
 import ParameterForm from './components/ParameterForm';
 import type { McpDebugSession, McpServer, McpTool, McpDebugCompareResult } from '@/api/mcphub/types';
-import { PageHeader } from '@/components/skeleton';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 import './mcp.css';
 
 const METHOD_OPTIONS = [
@@ -252,7 +251,7 @@ export default function DebuggerPage() {
           options={{ readOnly: true, minimap: { enabled: false } }}
         />
       ) : (
-        <Empty description="尚未执行调用" />
+        <EmptyState title="尚未执行调用" />
       ),
     },
     {
@@ -282,7 +281,7 @@ export default function DebuggerPage() {
           </Card>
         </Space>
       ) : (
-        <Empty description="尚未执行调用" />
+        <EmptyState title="尚未执行调用" />
       ),
     },
     {
@@ -349,7 +348,7 @@ export default function DebuggerPage() {
           )}
         </Space>
       ) : (
-        <Empty description="尚未执行调用" />
+        <EmptyState title="尚未执行调用" />
       ),
     },
     {
@@ -472,7 +471,7 @@ export default function DebuggerPage() {
         <Col span={5} className="mp-h-full">
           <Card
             title="Server / 工具"
-            className="mp-h-full mp-overflow-auto" 
+            className="mp-h-full mp-overflow-auto"
           >
             {loadingResources ? (
               <Spin />
@@ -572,7 +571,7 @@ export default function DebuggerPage() {
               <ParameterForm tool={selectedTool} value={params} onChange={handleParamsChange} />
             )}
             {method === 'tools/call' && !selectedTool && (
-              <Empty description="请选择左侧工具" />
+              <EmptyState title="请选择左侧工具" />
             )}
           </Card>
         </Col>

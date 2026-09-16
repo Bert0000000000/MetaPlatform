@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMatch, useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  Empty,
   Input,
   Space,
   Table,
@@ -21,8 +20,11 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons';
 import { listResources, deleteResource } from '@/api/mcphub/resources';
+import ResourceDrawer from './components/ResourceDrawer';
 import type { McpResource } from '@/api/mcphub/types';
-import { PageHeader } from '@/components/skeleton';
+import { EmptyState, PageHeader } from '@/components/skeleton';
+
+const RESOURCES_PATH = '/ki/mcp/resources';
 
 const MIME_COLORS: Record<string, TagColor> = {
   'text/plain': 'blue',
@@ -39,6 +41,14 @@ export default function ResourceListPage() {
   const [keyword, setKeyword] = useState('');
   // Semi 无 Input.Search，用受控 Input + Enter 触发搜索（交互与原 onSearch 一致）
   const [searchText, setSearchText] = useState('');
+
+  // 表单抽屉由路由驱动：/resources/new 与 /resources/:id 都渲染本列表页，只有抽屉是开的。
+  // 这样深链可分享、浏览器后退能直接关掉抽屉，页面上的按钮也不必改成 setState 调用。
+  // 注意 :id 也能匹配字面量 new，故静态匹配优先（createMatch 命中时不取 editMatch）。
+  const createMatch = useMatch(`${RESOURCES_PATH}/new`);
+  const editMatch = useMatch(`${RESOURCES_PATH}/:id`);
+  const editingId = createMatch ? null : (editMatch?.params.id ?? null);
+  const drawerOpen = !!createMatch || editingId !== null;
 
   const load = async () => {
     setLoading(true);
@@ -95,7 +105,7 @@ export default function ResourceListPage() {
       key: 'actions',
       render: (_, r) => (
         <Space>
-          <Button size="small" theme="borderless" icon={<EditOutlined />} onClick={() => navigate(`/resources/${r.id}`)}>
+          <Button size="small" theme="borderless" icon={<EditOutlined />} onClick={() => navigate(`/ki/mcp/resources/${r.id}`)}>
             编辑
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(r)}>
@@ -113,7 +123,7 @@ export default function ResourceListPage() {
       <PageHeader
         title="MCP Resources"
         actions={
-          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => navigate('/resources/new')}>
+          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => navigate('/ki/mcp/resources/new')}>
                   添加资源
                 </Button>
         }
@@ -132,11 +142,18 @@ export default function ResourceListPage() {
 
       <Card>
         {resources.length === 0 && !loading ? (
-          <Empty description="还没有 MCP 资源" />
+          <EmptyState title="还没有 MCP 资源" />
         ) : (
-          <Table rowKey="id" dataSource={resources} columns={columns} loading={loading} scroll={{ x: 'max-content' }} />
+          <Table rowKey="id" dataSource={resources} columns={columns} loading={loading} />
         )}
       </Card>
+
+      <ResourceDrawer
+        open={drawerOpen}
+        resourceId={editingId}
+        onClose={() => navigate(RESOURCES_PATH)}
+        onSaved={load}
+      />
     </div>
   );
 }

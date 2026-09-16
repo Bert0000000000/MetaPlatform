@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
-  Empty,
   Form,
   Input,
-  Modal,
   Popconfirm,
   Radio,
+  SideSheet,
   Space,
   Table,
   Tabs,
@@ -31,7 +30,10 @@ import {
   uploadSkill,
   type Skill,
 } from '@/api/mcphub/skills';
+import { EmptyState } from '@/components/skeleton';
 import './mcp.css';
+
+const FORM_DRAWER_W = 480;
 
 /** SKILL HUB — 公开 SKILL 的浏览 / 上传 / 下载 / 安装（marketplace kind="skill"）。 */
 export default function SkillHubPage() {
@@ -223,7 +225,7 @@ export default function SkillHubPage() {
             columns={columns}
             dataSource={skills}
             loading={loading}
-            empty={<Empty description="还没有 SKILL，点击右上角上传" />}
+            empty={<EmptyState title="还没有 SKILL，点击右上角上传" />}
             pagination={{ pageSize: 10 }}
           />
         </Tabs.TabPane>
@@ -233,18 +235,25 @@ export default function SkillHubPage() {
             columns={columns}
             dataSource={installed}
             loading={loading}
-            empty={<Empty description="还没有已安装的 SKILL" />}
+            empty={<EmptyState title="还没有已安装的 SKILL" />}
             pagination={{ pageSize: 10 }}
           />
         </Tabs.TabPane>
       </Tabs>
 
-      <Modal
+      <SideSheet
         title={editingSkill ? `编辑 SKILL「${editingSkill.name}」` : '上传 SKILL'}
         visible={uploadOpen}
-        onOk={() => void doSubmit()}
-        confirmLoading={submitting}
+        width={FORM_DRAWER_W}
         onCancel={() => { setUploadOpen(false); setEditingSkill(null); }}
+        footer={
+          <>
+            <Button onClick={() => { setUploadOpen(false); setEditingSkill(null); }}>取消</Button>
+            <Button theme="solid" type="primary" loading={submitting} onClick={() => void doSubmit()}>
+              {editingSkill ? '保存' : '上传'}
+            </Button>
+          </>
+        }
       >
         <Form form={form}>
           <Form.Input field="name" label="SKILL 名称" rules={[{ required: true, message: '请输入名称' }]} placeholder="如：kb-extractor" />
@@ -256,7 +265,7 @@ export default function SkillHubPage() {
           </Form.RadioGroup>
           <Form.TextArea field="content" label="SKILL 内容（SKILL.md / YAML）" rules={[{ required: true, message: '请输入内容' }]} rows={6} placeholder={'---\nname: my-skill\ndescription: ...\n---\n# Skill 内容'} />
         </Form>
-      </Modal>
+      </SideSheet>
     </Card>
   );
 }

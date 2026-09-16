@@ -105,7 +105,7 @@ export default function ClientDetailPage() {
 
   const handleDebug = () => {
     if (!client) return;
-    navigate(`/debugger?endpoint=${encodeURIComponent(client.endpoint)}`);
+    navigate(`/ki/mcp/debugger?endpoint=${encodeURIComponent(client.endpoint)}`);
   };
 
   const formatSchema = (schema?: string) => {
@@ -174,7 +174,7 @@ export default function ClientDetailPage() {
   return (
     <div>
       <Space className="mp-mb-4">
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/clients')}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/ki/mcp/clients')}>
           返回
         </Button>
         <Typography.Title heading={4} className="mp-m-0">
@@ -230,7 +230,6 @@ export default function ClientDetailPage() {
           columns={columns}
           pagination={{ pageSize: 10 }}
           empty="暂无已发现工具，点击「同步工具」获取"
-          scroll={{ x: 'max-content' }}
         />
       </Card>
 

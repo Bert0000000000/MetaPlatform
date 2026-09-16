@@ -59,7 +59,7 @@ export default function AuditDetailPage() {
   return (
     <div>
       <Space className="mp-mb-4">
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/audit')}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/ki/mcp/audit')}>
           返回
         </Button>
         <Typography.Title heading={4} className="mp-m-0">
@@ -113,16 +113,14 @@ export default function AuditDetailPage() {
       <Card className="mp-mt-4">
         <Tabs>
           <TabPane tab="请求参数" itemKey="params">
-            <pre style={jsonStyle}>
-              {JSON.stringify(log.requestParams, null, 2)}
-            </pre>
+            <pre className="mp-mcp-json">{JSON.stringify(log.requestParams, null, 2)}</pre>
           </TabPane>
           <TabPane tab="响应" itemKey="response">
-            <pre style={jsonStyle}>{JSON.stringify(log.response, null, 2)}</pre>
+            <pre className="mp-mcp-json">{JSON.stringify(log.response, null, 2)}</pre>
           </TabPane>
           <TabPane tab="堆栈" itemKey="stack">
             {log.stackTrace ? (
-              <pre style={jsonStyle}>{log.stackTrace}</pre>
+              <pre className="mp-mcp-json">{log.stackTrace}</pre>
             ) : (
               <Typography.Text type="tertiary">无堆栈信息</Typography.Text>
             )}
@@ -132,14 +130,3 @@ export default function AuditDetailPage() {
     </div>
   );
 }
-
-const jsonStyle: React.CSSProperties = {
-  background: 'var(--semi-color-bg-1)',
-  border: '1px solid var(--semi-color-border)',
-  padding: 12,
-  borderRadius: 4,
-  fontFamily: 'Menlo, Consolas, monospace',
-  fontSize: 12,
-  maxHeight: 400,
-  overflow: 'auto',
-};

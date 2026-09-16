@@ -2,11 +2,10 @@ import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
-  Empty,
   Form,
   Input,
-  Modal,
   Select,
+  SideSheet,
   Space,
   Table,
   Tag,
@@ -21,13 +20,15 @@ import { listTrusts, createTrust, updateTrust, deleteTrust } from '@/api/mcphub/
 import { listExternalAgents } from '@/api/mcphub/external-agents';
 import type { AgentTrust, AgentTrustCreateRequest, ExternalAgent, PageResponse } from '@/api/mcphub/types';
 import dayjs from 'dayjs';
-import { PageHeader } from '@/components/skeleton';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 
 const TRUST_LEVEL_OPTIONS = [
   { label: '已信任', value: 'TRUSTED' },
   { label: '未信任', value: 'UNTRUSTED' },
   { label: '已屏蔽', value: 'BLOCKED' },
 ];
+
+const FORM_DRAWER_W = 420;
 
 const TRUST_MAP: Record<AgentTrust['trustLevel'], { label: string; color: TagColor }> = {
   TRUSTED: { label: '已信任', color: 'green' },
@@ -242,7 +243,7 @@ export default function TrustManagementPage() {
 
       <Card>
         {data?.items.length === 0 && !loading ? (
-          <Empty description="还没有信任关系" />
+          <EmptyState title="还没有信任关系" />
         ) : (
           <Table
             rowKey="id"
@@ -256,21 +257,38 @@ export default function TrustManagementPage() {
               showSizeChanger: true,
               onChange: (page, size) => setFilters((prev) => ({ ...prev, page, size })),
             }}
-            scroll={{ x: 'max-content' }}
           />
         )}
       </Card>
 
-      <Modal
+      <SideSheet
         visible={editorOpen}
         title={editing ? '编辑信任关系' : '添加信任关系'}
         onCancel={() => {
           setEditorOpen(false);
           setEditing(null);
         }}
-        onOk={() => form.validate().then(handleSubmit)}
-        confirmLoading={submitting}
-        width={640}
+        width={FORM_DRAWER_W}
+        footer={
+          <>
+            <Button
+              onClick={() => {
+                setEditorOpen(false);
+                setEditing(null);
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              theme="solid"
+              type="primary"
+              loading={submitting}
+              onClick={() => void form.validate().then(handleSubmit)}
+            >
+              {editing ? '保存' : '添加'}
+            </Button>
+          </>
+        }
       >
         <Form form={form}>
           <Form.Select
@@ -304,7 +322,7 @@ export default function TrustManagementPage() {
             className="mp-w-full"
           />
         </Form>
-      </Modal>
+      </SideSheet>
     </div>
   );
 }

@@ -17,19 +17,24 @@ import type {
   PageResponse,
   ToolParam,
 } from './types';
+/**
+ * GET /tools 返回的是 MCP 注册表形态（name 即标识，inputSchema 是 JSON Schema 对象），
+ * 只有 GET /tools/{name} 才补出 id/code/version 这些 CRUD 字段。这里统一补齐，
+ * 让列表页不必区分两个端点的形状。
+ */
 interface BackendTool {
-  id: string;
+  id?: string;
   name: string;
-  code: string;
-  category: string;
-  version: string;
-  description: string;
-  inputSchema: string;
-  outputSchema: string;
-  toolType: string;
-  endpoint: string;
-  beanClass: string;
-  enabled: boolean;
+  code?: string;
+  category?: string;
+  version?: string;
+  description?: string;
+  inputSchema?: string | Record<string, unknown>;
+  outputSchema?: string;
+  toolType?: string;
+  endpoint?: string;
+  beanClass?: string;
+  enabled?: boolean;
   serverId?: string;
   tags?: string[];
   createdAt?: string;
@@ -46,29 +51,49 @@ interface BackendVersion {
   createdAt: string;
   createdBy: string;
 }
+/** JSON Schema 对象（注册表形态）→ 前端 ToolParam[]。 */
+function paramsFromJsonSchema(schema: unknown): ToolParam[] {
+  if (!schema || typeof schema !== 'object') return [];
+  const { properties, required } = schema as {
+    properties?: Record<string, { type?: string; description?: string } | undefined>;
+    required?: unknown;
+  };
+  if (!properties || typeof properties !== 'object') return [];
+  const req = new Set(Array.isArray(required) ? (required as string[]) : []);
+  return Object.entries(properties).map(([name, def]) => ({
+    name,
+    type: (def?.type ?? 'string') as ToolParam['type'],
+    required: req.has(name),
+    description: def?.description ?? '',
+  }));
+}
+
 function parseSchema(schema: string | unknown): ToolParam[] {
-  if (typeof schema !== 'string' || !schema) return [];
-  try {
-    const parsed = JSON.parse(schema);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+  if (typeof schema === 'string') {
+    if (!schema) return [];
+    try {
+      const parsed = JSON.parse(schema);
+      return Array.isArray(parsed) ? parsed : paramsFromJsonSchema(parsed);
+    } catch {
+      return [];
+    }
   }
+  return paramsFromJsonSchema(schema);
 }
 function stringifySchema(schema: ToolParam[]): string {
   return JSON.stringify(schema ?? []);
 }
 function fromBackendTool(data: BackendTool): McpTool {
   return {
-    id: data.id,
+    id: data.id ?? data.name,
     name: data.name,
-    code: data.code,
-    category: data.category,
-    version: data.version,
-    description: data.description,
+    code: data.code ?? data.name,
+    category: data.category ?? '',
+    version: data.version ?? '1',
+    description: data.description ?? '',
     inputSchema: parseSchema(data.inputSchema),
     outputType: 'json',
-    enabled: data.enabled,
+    enabled: data.enabled ?? true,
     serverId: data.serverId,
     tags: data.tags ?? [],
     createdAt: data.createdAt,

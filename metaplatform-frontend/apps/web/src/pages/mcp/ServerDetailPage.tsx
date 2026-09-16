@@ -28,7 +28,6 @@ import {
 } from '@ant-design/icons';
 import {
   getServer,
-  updateServer,
   startServer,
   stopServer,
   restartServer,
@@ -36,8 +35,7 @@ import {
   getServerStatus,
 } from '@/api/mcphub/servers';
 import { listTools } from '@/api/mcphub/tools';
-import ServerForm from './components/ServerForm';
-import type { McpServer, McpServerCreateRequest, McpTool, McpServerStatus } from '@/api/mcphub/types';
+import type { McpServer, McpTool, McpServerStatus } from '@/api/mcphub/types';
 
 const STATUS_MAP: Record<McpServer['status'], { label: string; color: TagColor }> = {
   online: { label: '在线', color: 'green' },
@@ -72,8 +70,6 @@ export default function ServerDetailPage() {
   const [status, setStatus] = useState<McpServerStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editOpen, setEditOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
   const load = async () => {
     if (!id) return;
@@ -132,7 +128,7 @@ export default function ServerDetailPage() {
   const handleDelete = async () => {
     await deleteServer(server.id);
     Toast.success('已删除');
-    navigate('/servers');
+    navigate('/ki/mcp/servers');
   };
 
   const toolColumns: ColumnProps<McpTool>[] = [
@@ -152,7 +148,7 @@ export default function ServerDetailPage() {
   return (
     <div>
       <Space className="mp-mb-4">
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/servers')}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/ki/mcp/servers')}>
           返回
         </Button>
         <Typography.Title heading={4} className="mp-m-0">
@@ -162,7 +158,7 @@ export default function ServerDetailPage() {
       </Space>
 
       <Space className="mp-mb-4">
-        <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>
+        <Button icon={<EditOutlined />} onClick={() => navigate(`/ki/mcp/servers/${server.id}/edit`)}>
           编辑
         </Button>
         {server.status === 'offline' ? (
@@ -222,7 +218,6 @@ export default function ServerDetailPage() {
               columns={toolColumns}
               pagination={false}
               empty="该 Server 未暴露任何工具"
-              scroll={{ x: 'max-content' }}
             />
           </Card>
         </TabPane>
@@ -275,25 +270,6 @@ export default function ServerDetailPage() {
           </Card>
         </TabPane>
       </Tabs>
-
-      <ServerForm
-        open={editOpen}
-        initial={server}
-        availableTools={tools.map((t) => ({ id: t.id, name: t.name }))}
-        onOk={async (values: McpServerCreateRequest) => {
-          setSubmitting(true);
-          try {
-            await updateServer(server.id, values);
-            Toast.success('已更新');
-            setEditOpen(false);
-            load();
-          } finally {
-            setSubmitting(false);
-          }
-        }}
-        onCancel={() => setEditOpen(false)}
-        confirmLoading={submitting}
-      />
     </div>
   );
 }

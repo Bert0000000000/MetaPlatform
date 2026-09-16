@@ -16,20 +16,52 @@
 }
 
 /* ---------- 检索配置页（KnowledgeConfigPage） ---------- */
-.mp-kb-title { letter-spacing: -0.02em; }
-
 .mp-kb-w-260 { width: 260px; }
 .mp-kb-w-300 { width: 300px; }
 
-/* 历史快照行：三列 + 分隔线（最后一行去线） */
+/* 历史快照行：三列 + 分隔线（最后一行去线）。
+   三列都取 auto/1fr 而不是硬编码像素——时间戳长度随内容自适应，不再被截断。 */
 .mp-kb-hist-row {
-  grid-template-columns: 90px 200px 1fr;
+  grid-template-columns: minmax(0, auto) minmax(0, auto) minmax(0, 1fr);
   border-bottom: 1px solid var(--semi-color-border);
 }
 .mp-kb-hist-row:last-child { border-bottom: none; }
 
+/* 配置项行：左标签列右控件列。原先的 10px 纵向内距不在间距十档上，收口到 --mp-space-3。 */
+.mp-kb-config-row {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: var(--mp-space-4);
+  align-items: center;
+  padding: var(--mp-space-3) 0;
+  border-bottom: 1px solid var(--semi-color-border);
+}
+/* 末行去线（脚注 div 在 DOM 里排在行之后，故用 :last-of-type 判定行本体） */
+.mp-kb-config-row:last-of-type { border-bottom: none; }
+
+.mp-kb-config-label {
+  font-size: 13px;
+  color: var(--semi-color-text-0);
+}
+
+/* 卡片脚注：与 .mp-kb-config-row 的标签列对齐，纯文字不占交互 */
+.mp-kb-config-hint {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--semi-color-text-2);
+  padding-top: var(--mp-space-3);
+}
+
+.mp-kb-config-warn {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--semi-color-danger);
+  padding-top: var(--mp-space-2);
+}
+
 /* ---------- 召回测试页（KnowledgeTestPage） ---------- */
-.mp-kb-search-w { width: calc(100% - 240px - 96px - 8px); }
+/* 搜索框吃掉 KB 选择器与检索按钮之外的全部剩余宽度；min-width:0 保证窄视口下不被撑破 */
+.mp-kb-search-w { flex: 1; min-width: 0; }
 .mp-kb-w-90 { width: 90px; }
 
 /* ---------- 知识库详情（KnowledgeKbDetailPage） ---------- */

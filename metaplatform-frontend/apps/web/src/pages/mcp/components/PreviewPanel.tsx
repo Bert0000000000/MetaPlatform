@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Card, Empty, Space, TextArea, Typography } from '@douyinfe/semi-ui';
+import { Card, Space, TextArea, Typography } from '@douyinfe/semi-ui';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import type { PromptTemplate } from '@/api/mcphub/types';
+import { EmptyState } from '@/components/skeleton';
 import '../mcp.css';
 
 interface PreviewPanelProps {
@@ -29,7 +30,7 @@ export default function PreviewPanel({ template }: PreviewPanelProps) {
     <Space vertical spacing="medium" className="mp-w-full">
       {emptyVars ? (
         <Card title="预览">
-          <Empty description="该模板无变量" />
+          <EmptyState title="该模板无变量" />
           <pre
             className="mp-border mp-p-3 mp-text-sm mp-bg-1 mp-rounded-sm mp-mono mp-mcp-pre-wrap"
           >

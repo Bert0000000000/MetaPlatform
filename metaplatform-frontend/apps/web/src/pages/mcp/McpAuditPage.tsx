@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
-  Empty,
   Input,
-  Modal,
   Select,
+  SideSheet,
   Space,
   Table,
   Tag,
@@ -16,13 +15,15 @@ import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { EyeOutlined, InteractionOutlined } from '@ant-design/icons';
 import { listCollaborations } from '@/api/mcphub/collaborations';
 import type { CollaborationAudit, PageResponse } from '@/api/mcphub/types';
-import { PageHeader } from '@/components/skeleton';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 import './mcp.css';
 
 const PROTOCOL_OPTIONS = [
   { label: 'MCP', value: 'MCP' },
   { label: 'A2A', value: 'A2A' },
 ];
+
+const DETAIL_DRAWER_W = 560;
 
 const STATUS_OPTIONS = [
   { label: 'SUCCESS', value: 'SUCCESS' },
@@ -200,7 +201,7 @@ export default function CollaborationAuditPage() {
 
       <Card>
         {data?.items.length === 0 && !loading ? (
-          <Empty description="还没有调用记录" />
+          <EmptyState title="还没有调用记录" />
         ) : (
           <Table
             rowKey="id"
@@ -214,17 +215,16 @@ export default function CollaborationAuditPage() {
               showSizeChanger: true,
               onChange: (page, size) => setFilters((prev) => ({ ...prev, page, size })),
             }}
-            scroll={{ x: 'max-content' }}
           />
         )}
       </Card>
 
-      <Modal
+      <SideSheet
         visible={!!detail}
         title="调用详情"
+        width={DETAIL_DRAWER_W}
         onCancel={() => setDetail(null)}
-        footer={null}
-        width={720}
+        footer={<Button onClick={() => setDetail(null)}>关闭</Button>}
       >
         {detail && (
           <Space vertical className="mp-w-full">
@@ -288,7 +288,7 @@ export default function CollaborationAuditPage() {
             )}
           </Space>
         )}
-      </Modal>
+      </SideSheet>
     </div>
   );
 }

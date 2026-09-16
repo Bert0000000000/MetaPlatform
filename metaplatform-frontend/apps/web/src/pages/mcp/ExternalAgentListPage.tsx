@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  Empty,
   Form,
   Input,
-  Modal,
   Select,
+  SideSheet,
   Space,
   Table,
   Tag,
@@ -35,7 +33,7 @@ import {
 } from '@/api/mcphub/external-agents';
 import type { ExternalAgent, ExternalAgentCreateRequest, PageResponse } from '@/api/mcphub/types';
 import { searchAgentCards, type ExternalAgent as A2ACard } from '@/api/dw/a2a';
-import { PageHeader } from '@/components/skeleton';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 
 const PROTOCOL_OPTIONS = [
   { label: 'MCP', value: 'MCP' },
@@ -103,7 +101,6 @@ function AuthConfigField() {
 }
 
 export default function ExternalAgentListPage() {
-  const navigate = useNavigate();
   const [data, setData] = useState<PageResponse<ExternalAgent> | null>(null);
   const [loading, setLoading] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -120,6 +117,10 @@ export default function ExternalAgentListPage() {
   });
   const [form] = Form.useForm<ExternalAgentCreateRequest>();
   const [detail, setDetail] = useState<ExternalAgent | null>(null);
+  // 内部数字员工来自 A2A agent card（结构与 mcphub 的 ExternalAgent 不同），
+  // 而且 card 的 agentId 不是平台员工 id，跳 /agents/:id 会落到一个不存在的员工上，
+  // 所以这里就地用浮层展示卡片内容。
+  const [cardDetail, setCardDetail] = useState<A2ACard | null>(null);
   const [internalAgents, setInternalAgents] = useState<A2ACard[]>([]);
 
   const loadInternal = async () => {
@@ -335,7 +336,7 @@ export default function ExternalAgentListPage() {
                 key: 'actions',
                 width: 120,
                 render: (_, record) => (
-                  <Button theme="borderless" size="small" onClick={() => navigate(`/agents/${record.agentId}`)}>
+                  <Button theme="borderless" size="small" onClick={() => setCardDetail(record)}>
                     查看详情
                   </Button>
                 ),
@@ -383,7 +384,16 @@ export default function ExternalAgentListPage() {
 
       <Card>
         {data?.items.length === 0 && !loading ? (
-          <Empty description="还没有外部 Agent" />
+          <EmptyState
+            illustration="no-content"
+            title="还没有外部 Agent"
+            desc="注册一个外部 A2A / MCP Agent，让 SuperAI 可以委派任务给它。"
+            actions={
+              <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => setEditorOpen(true)}>
+                添加外部 Agent
+              </Button>
+            }
+          />
         ) : (
           <Table
             rowKey="id"
@@ -397,21 +407,38 @@ export default function ExternalAgentListPage() {
               showSizeChanger: true,
               onChange: (page, size) => setFilters((prev) => ({ ...prev, page, size })),
             }}
-            scroll={{ x: 'max-content' }}
           />
         )}
       </Card>
 
-      <Modal
+      <SideSheet
         visible={editorOpen}
         title={editing ? '编辑外部 Agent' : '添加外部 Agent'}
+        width={560}
         onCancel={() => {
           setEditorOpen(false);
           setEditing(null);
         }}
-        onOk={handleSubmit}
-        confirmLoading={submitting}
-        width={640}
+        footer={
+          <>
+            <Button
+              onClick={() => {
+                setEditorOpen(false);
+                setEditing(null);
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              theme="solid"
+              type="primary"
+              loading={submitting}
+              onClick={() => void handleSubmit()}
+            >
+              保存
+            </Button>
+          </>
+        }
       >
         <Form form={form}>
           <Form.Input
@@ -451,14 +478,14 @@ export default function ExternalAgentListPage() {
             }}
           />
         </Form>
-      </Modal>
+      </SideSheet>
 
-      <Modal
+      <SideSheet
         visible={!!detail}
         title="Agent 详情"
+        width={560}
         onCancel={() => setDetail(null)}
-        footer={null}
-        width={640}
+        footer={<Button onClick={() => setDetail(null)}>关闭</Button>}
       >
         {detail && (
           <Space vertical className="mp-w-full">
@@ -510,7 +537,68 @@ export default function ExternalAgentListPage() {
             </Typography.Paragraph>
           </Space>
         )}
-      </Modal>
+      </SideSheet>
+
+      <SideSheet
+        visible={!!cardDetail}
+        title="A2A Agent 卡片"
+        width={560}
+        onCancel={() => setCardDetail(null)}
+        footer={<Button onClick={() => setCardDetail(null)}>关闭</Button>}
+      >
+        {cardDetail && (
+          <Space vertical className="mp-w-full">
+            <Typography.Paragraph>
+              <Typography.Text strong>Agent ID: </Typography.Text>
+              {cardDetail.agentId}
+            </Typography.Paragraph>
+            <Typography.Paragraph>
+              <Typography.Text strong>名称: </Typography.Text>
+              {cardDetail.name}
+            </Typography.Paragraph>
+            {cardDetail.role ? (
+              <Typography.Paragraph>
+                <Typography.Text strong>角色: </Typography.Text>
+                <Tag size="small">{cardDetail.role}</Tag>
+              </Typography.Paragraph>
+            ) : null}
+            <Typography.Paragraph>
+              <Typography.Text strong>描述: </Typography.Text>
+              {cardDetail.description || '-'}
+            </Typography.Paragraph>
+            <Typography.Paragraph>
+              <Typography.Text strong>端点: </Typography.Text>
+              {cardDetail.endpoint || '-'}
+            </Typography.Paragraph>
+            <Typography.Paragraph>
+              <Typography.Text strong>状态: </Typography.Text>
+              <Tag
+                color={
+                  cardDetail.status === 'online'
+                    ? 'green'
+                    : cardDetail.status === 'error'
+                      ? 'red'
+                      : 'grey'
+                }
+              >
+                {cardDetail.status}
+              </Tag>
+            </Typography.Paragraph>
+            <Typography.Paragraph>
+              <Typography.Text strong>认证: </Typography.Text>
+              {cardDetail.authType || 'none'}
+            </Typography.Paragraph>
+            <Typography.Paragraph>
+              <Typography.Text strong>能力: </Typography.Text>
+              {cardDetail.capabilities?.length ? cardDetail.capabilities.join('、') : '-'}
+            </Typography.Paragraph>
+            <Typography.Paragraph>
+              <Typography.Text strong>累计委托: </Typography.Text>
+              {cardDetail.totalDelegations ?? 0}
+            </Typography.Paragraph>
+          </Space>
+        )}
+      </SideSheet>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import {
   Button,
   Card,
   Form,
-  Modal,
+  SideSheet,
   Space,
   Table,
   Tag,
@@ -17,6 +17,8 @@ import { IconAlertTriangle } from '@douyinfe/semi-icons';
 import { createApiKey, deleteApiKey, listApiKeys } from '@/api/mcphub/integrations';
 import type { ApiKey } from '@/api/mcphub/types';
 import '../mcp.css';
+
+const FORM_DRAWER_W = 420;
 
 const SCOPE_OPTIONS = [
   { label: 'tools:invoke', value: 'tools:invoke' },
@@ -141,15 +143,21 @@ export default function ApiKeyGenerator() {
         columns={columns}
         loading={loading}
         pagination={false}
-        scroll={{ x: 'max-content' }}
       />
 
-      <Modal
+      <SideSheet
         visible={modalOpen}
         title="生成 API Key"
+        width={FORM_DRAWER_W}
         onCancel={() => setModalOpen(false)}
-        onOk={handleCreate}
-        confirmLoading={loading}
+        footer={
+          <>
+            <Button onClick={() => setModalOpen(false)}>取消</Button>
+            <Button theme="solid" type="primary" loading={loading} onClick={() => void handleCreate()}>
+              生成
+            </Button>
+          </>
+        }
       >
         <Form form={form}>
           <Form.Input field="name" label="名称" rules={[{ required: true }]} placeholder="例如：cursor-ide" />
@@ -162,7 +170,7 @@ export default function ApiKeyGenerator() {
             placeholder="选择权限"
           />
         </Form>
-      </Modal>
+      </SideSheet>
     </Card>
   );
 }

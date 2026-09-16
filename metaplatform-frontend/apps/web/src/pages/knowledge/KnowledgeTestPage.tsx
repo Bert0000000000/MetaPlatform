@@ -1,7 +1,7 @@
 /**
  * KnowledgeTestPage - 检索测试
  * --------------------------------------------------
- * 路由: /knowledge/test
+ * 路由: /ki/test（历史别名 /ki/kb/test 仍保留，见 routes/ki.tsx）
  * Phase 1: 從 apps/kb 的 SearchTestPage 迁入,真实走 /api/v1/rag/search。
  *          保留 4-tab 导航壳。
  *
@@ -10,14 +10,13 @@
  * v3.0 接 P2.9: Reranker 选项加上 heuristic_cross(中文友好、零外部依赖)。
  */
 import { useState, useEffect } from 'react';
-import { Card, Input, Button, Select, Space, Empty, Tag, Typography, Toast, InputNumber } from '@douyinfe/semi-ui';
-import { Search, FileText, Zap, Filter } from 'lucide-react';
-import { useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
+import { Card, Input, Button, Select, Tag, Typography, Toast, InputNumber } from '@douyinfe/semi-ui';
+import { Search, FileText, Filter } from 'lucide-react';
+import { useAsync, useLoadingState, useApiErrorBoundary, getTenantId } from '@mate/shared';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 import './kb.css';
 import { listKb, search, getRetrievalConfig, type KbEntity, type Evidence, type RerankStrategy } from '@/api/kb';
 
-
-const DEFAULT_TENANT = 'tenant-default';
 
 const MODE_OPTIONS = [
   { value: 'AUTO', label: 'AUTO · 自动路由' },
@@ -67,7 +66,8 @@ export default function KnowledgeTestPage() {
     try {
       const resp = await run.wrap(
         search({
-          tenantId: DEFAULT_TENANT,
+          // 取会话租户，不再写死；后端仍以 JWT 的 tenant 为准
+          tenantId: getTenantId() ?? 'tenant-default',
           kbId,
           query: q,
           mode: mode as 'AUTO' | 'FACTUAL' | 'ENTITY' | 'THEMATIC',
@@ -90,117 +90,116 @@ export default function KnowledgeTestPage() {
     : '全量搜索（不限定 KB，将跨所有可见知识库检索）';
 
   return (
-    <div className="mp-flex mp-flex-1 mp-min-h-0 mp-flex-col" >
-      <div className="mp-flex-1 mp-overflow-y-auto mp-min-h-0 mp-pb-6" >
-        <Card
-          className="mp-mt-4"
-          title={
-            <Space>
-              <Zap size={16} />
-              检索测试
-            </Space>
-          }
-          headerExtraContent={<Tag color="blue">Hybrid: BM25 + 向量</Tag>}
+    <>
+      <PageHeader
+        title="检索测试"
+        desc={filterHint}
+        actions={<Tag color="blue" shape="circle">Hybrid: BM25 + 向量</Tag>}
+      />
+
+      <Card>
+        <div className="mp-w-full mp-flex mp-gap-2">
+          <Select
+            placeholder="选择 KB"
+            className="mp-w-240"
+            value={kbId}
+            onChange={(value) => setKbId(value as string | undefined)}
+            showClear
+            optionList={(kbs ?? []).map((kb) => ({ value: kb.id, label: kb.displayName }))}
+          />
+          <Input
+            placeholder="输入检索内容"
+            value={query}
+            onChange={(value: string) => setQuery(value)}
+            onEnterPress={onSearch}
+            className="mp-kb-search-w"
+            prefix={<Search size={14} />}
+          />
+          <Button theme="solid" type="primary" onClick={onSearch} loading={run.loading}>
+            检索
+          </Button>
+        </div>
+
+        {/* v3.0 P0.3: KB 过滤提示。用户能直接看到「这次检索走的是 KB 限定还是全量」,
+            且会把实际发给后端的 kb_id（如果有）也打出来。 */}
+        <div
+          data-testid="kb-filter-hint"
+          className="mp-mt-2 mp-gap-1 mp-text-sm mp-text-2 mp-flex-center"
         >
-          <div className="mp-w-full mp-flex mp-gap-2">
+          <Filter size={12} />
+          <span className="mp-mono">{filterHint}</span>
+        </div>
+
+        <div className="mp-mt-4 mp-gap-6 mp-flex-center mp-wrap">
+          <div className="mp-gap-2 mp-flex-center">
+            <span className="mp-text-sm mp-text-2 mp-nowrap">检索模式</span>
             <Select
-              placeholder="选择 KB"
-              className="mp-w-240"
-              value={kbId}
-              onChange={(value) => setKbId(value as string | undefined)}
-              showClear
-              optionList={(kbs ?? []).map((kb) => ({ value: kb.id, label: kb.displayName }))}
+              className="mp-w-200"
+              value={mode}
+              onChange={(value) => setMode(value as string)}
+              optionList={MODE_OPTIONS}
             />
-            <Input
-              placeholder="输入检索内容"
-              value={query}
-              onChange={(value: string) => setQuery(value)}
-              onEnterPress={onSearch}
-              className="mp-kb-search-w"
-              prefix={<Search size={14} />}
+          </div>
+          <div className="mp-gap-2 mp-flex-center">
+            <span className="mp-text-sm mp-text-2 mp-nowrap">Reranker</span>
+            <Select
+              className="mp-w-180"
+              value={rerankStrategy}
+              onChange={(value) => setRerankStrategy(value as string)}
+              optionList={RERANK_OPTIONS}
             />
-            <Button theme="solid" type="primary" onClick={onSearch} loading={run.loading}>
-              检索
-            </Button>
           </div>
-
-          {/* v3.0 P0.3: KB 过滤提示。用户能直接看到「这次检索走的是 KB 限定还是全量」,
-              且会把实际发给后端的 kb_id（如果有）也打出来。 */}
-          <div
-            data-testid="kb-filter-hint"
-            className="mp-mt-2 mp-gap-1 mp-text-sm mp-text-2 mp-flex-center"
-          >
-            <Filter size={12} />
-            <span className="mp-mono">{filterHint}</span>
+          <div className="mp-gap-2 mp-flex-center">
+            <span className="mp-text-sm mp-text-2 mp-nowrap">Top-K</span>
+            <InputNumber
+              min={1}
+              max={100}
+              value={topK}
+              onChange={(v) => setTopK(typeof v === 'number' ? v : 10)}
+              className="mp-kb-w-90"
+            />
           </div>
+        </div>
+      </Card>
 
-          <div className="mp-mt-4 mp-gap-6 mp-flex-center mp-wrap" >
-            <div className="mp-gap-2 mp-flex-center">
-              <span className="mp-text-sm mp-text-2 mp-nowrap" >检索模式</span>
-              <Select
-                className="mp-w-200"
-                value={mode}
-                onChange={(value) => setMode(value as string)}
-                optionList={MODE_OPTIONS}
-              />
-            </div>
-            <div className="mp-gap-2 mp-flex-center">
-              <span className="mp-text-sm mp-text-2 mp-nowrap" >Reranker</span>
-              <Select
-                className="mp-w-180"
-                value={rerankStrategy}
-                onChange={(value) => setRerankStrategy(value as string)}
-                optionList={RERANK_OPTIONS}
-              />
-            </div>
-            <div className="mp-gap-2 mp-flex-center">
-              <span className="mp-text-sm mp-text-2 mp-nowrap" >Top-K</span>
-              <InputNumber
-                min={1}
-                max={100}
-                value={topK}
-                onChange={(v) => setTopK(typeof v === 'number' ? v : 10)}
-                className="mp-kb-w-90"
-              />
-            </div>
-          </div>
-        </Card>
-
-        <Card title={`命中 ${evidences.length} 条`} className="mp-mt-4">
-          {evidences.length === 0 ? (
-            <Empty description="暂无命中，输入 query 开始检索" />
-          ) : (
-            <div className="mp-flex mp-gap-2 mp-flex-col" >
-              {evidences.map((ev) => (
-                <div
-                  key={ev.evidenceId}
-                  className="mp-flex mp-justify-between mp-border mp-gap-3 mp-items-start mp-py-3"
-                >
-                  <div className="mp-flex mp-flex-1 mp-gap-3 mp-items-start" >
-                    <div className="mp-shrink-0">
-                      <FileText size={24} color="var(--semi-color-primary)" />
-                    </div>
-                    <div className="mp-flex-1">
-                      <div>
-                        <Typography.Text strong>{ev.title ?? ev.documentId}</Typography.Text>
-                      </div>
-                      <div className="mp-mt-1 mp-text-sm mp-text-2">
-                        <Typography.Paragraph ellipsis={{ rows: 3 }} className="mp-mb-1">
-                          {ev.fragment}
-                        </Typography.Paragraph>
-                      </div>
-                    </div>
+      <Card title={`命中 ${evidences.length} 条`} className="mp-mt-4">
+        {evidences.length === 0 ? (
+          <EmptyState
+            illustration="no-content"
+            title="暂无命中"
+            desc="输入检索内容后点击「检索」，命中的片段会显示在这里。"
+          />
+        ) : (
+          <div className="mp-flex mp-gap-2 mp-flex-col">
+            {evidences.map((ev) => (
+              <div
+                key={ev.evidenceId}
+                className="mp-flex mp-justify-between mp-border mp-gap-3 mp-items-start mp-py-3"
+              >
+                <div className="mp-flex mp-flex-1 mp-gap-3 mp-items-start">
+                  <div className="mp-shrink-0">
+                    <FileText size={24} color="var(--semi-color-primary)" />
                   </div>
-                  <div className="mp-flex mp-gap-2 mp-shrink-0" >
-                    <Tag color="green">score {ev.score.toFixed(3)}</Tag>
-                    <Tag>{ev.type}</Tag>
+                  <div className="mp-flex-1">
+                    <div>
+                      <Typography.Text strong>{ev.title ?? ev.documentId}</Typography.Text>
+                    </div>
+                    <div className="mp-mt-1 mp-text-sm mp-text-2">
+                      <Typography.Paragraph ellipsis={{ rows: 3 }} className="mp-mb-1">
+                        {ev.fragment}
+                      </Typography.Paragraph>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </Card>
-      </div>
-    </div>
+                <div className="mp-flex mp-gap-2 mp-shrink-0">
+                  <Tag color="green">score {ev.score.toFixed(3)}</Tag>
+                  <Tag>{ev.type}</Tag>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </>
   );
 }

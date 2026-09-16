@@ -5,7 +5,7 @@
  * 表格只渲染后端 collections 接口真实给出的字段：编码 / 名称 / 类型 / 文档数 /
  * 状态 / 描述。切片数、向量模型、检索 P95、重建进度后端未暴露，故不建列（不编造）。
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Descriptions, Form, Select, SideSheet, Tag, Toast } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
@@ -30,6 +30,7 @@ const KIND_COLOR: Record<string, TagColor> = {
 };
 
 const FORM_DRAWER_W = 420;
+const PAGE_SIZE = 20;
 
 export default function KnowledgeBasePage() {
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ export default function KnowledgeBasePage() {
   const [keyword, setKeyword] = useState('');
   const [kindFilter, setKindFilter] = useState<string | undefined>();
   const [reloadTick, setReloadTick] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const submit = useLoadingState();
 
   const {
@@ -64,6 +66,20 @@ export default function KnowledgeBasePage() {
       return hit && (!kindFilter || kb.kbKind === kindFilter);
     });
   }, [kbs, keyword, kindFilter]);
+
+  // 筛选条件一变就回到第 1 页，否则用户会停在一个已被筛空的页码上。
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [keyword, kindFilter]);
+
+  // 真·客户端分页：切片喂给表格，分页控件不再是空操作。
+  // safePage 兜住「当前页因数据变少而越界」的情况（如删除后页码超界）。
+  const pageCount = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, pageCount);
+  const paged = useMemo(
+    () => visible.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [visible, safePage],
+  );
 
   const onCreate = async () => {
     const values = await form.validate();
@@ -130,13 +146,13 @@ export default function KnowledgeBasePage() {
         <DataTablePro<KbEntity>
           rowKey="id"
           loading={loading}
-          dataSource={visible}
+          dataSource={paged}
           onRow={(record) => ({ onClick: () => setPreview(record as KbEntity) })}
           pagination={{
-            currentPage: 1,
-            pageSize: 20,
+            currentPage: safePage,
+            pageSize: PAGE_SIZE,
             total: visible.length,
-            onChange: () => undefined,
+            onChange: setCurrentPage,
           }}
           columns={[
             {
@@ -173,6 +189,7 @@ export default function KnowledgeBasePage() {
         visible={createOpen}
         onCancel={() => setCreateOpen(false)}
         width={FORM_DRAWER_W}
+        getPopupContainer={() => document.getElementById('app') ?? document.body}
         footer={
           <>
             <Button onClick={() => setCreateOpen(false)}>取消</Button>
