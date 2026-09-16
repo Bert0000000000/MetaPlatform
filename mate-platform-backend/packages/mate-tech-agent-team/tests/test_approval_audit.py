@@ -120,7 +120,9 @@ def viewer_headers(issue_token) -> dict[str, str]:
 def test_approve_without_an_approver_role_is_forbidden(
     client: TestClient, auth_headers: dict[str, str], viewer_headers: dict[str, str]
 ) -> None:
-    run = client.post(f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=auth_headers).json()
+    run = client.post(
+        f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=auth_headers
+    ).json()
 
     denied = client.post(
         f"{BASE}/runs/{run['run_id']}/approve", json={"approved": True}, headers=viewer_headers
@@ -133,7 +135,9 @@ def test_a_denied_approval_does_not_change_the_run(
     client: TestClient, auth_headers: dict[str, str], viewer_headers: dict[str, str]
 ) -> None:
     """403 之后 run 仍在待确认——拒绝不是"悄悄批准"。"""
-    run = client.post(f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=auth_headers).json()
+    run = client.post(
+        f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=auth_headers
+    ).json()
     client.post(
         f"{BASE}/runs/{run['run_id']}/approve", json={"approved": True}, headers=viewer_headers
     )
@@ -141,10 +145,10 @@ def test_a_denied_approval_does_not_change_the_run(
     assert state["status"] == "awaiting_approval"
 
 
-def test_an_approver_can_still_approve(
-    client: TestClient, auth_headers: dict[str, str]
-) -> None:
-    run = client.post(f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=auth_headers).json()
+def test_an_approver_can_still_approve(client: TestClient, auth_headers: dict[str, str]) -> None:
+    run = client.post(
+        f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=auth_headers
+    ).json()
     approved = client.post(
         f"{BASE}/runs/{run['run_id']}/approve", json={"approved": True}, headers=auth_headers
     )
@@ -309,10 +313,10 @@ def test_audit_record_carries_a_stable_id_and_timestamp() -> None:
 # ── HTTP：审计行读得出来（"落了吗"要能看见）────────────────────────────
 
 
-def test_run_audit_endpoint_returns_rows(
-    client: TestClient, auth_headers: dict[str, str]
-) -> None:
-    run = client.post(f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=auth_headers).json()
+def test_run_audit_endpoint_returns_rows(client: TestClient, auth_headers: dict[str, str]) -> None:
+    run = client.post(
+        f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=auth_headers
+    ).json()
     client.post(
         f"{BASE}/runs/{run['run_id']}/approve", json={"approved": True}, headers=auth_headers
     )
@@ -331,7 +335,9 @@ def test_run_audit_endpoint_returns_rows(
 def test_run_audit_is_tenant_scoped(
     client: TestClient, auth_headers: dict[str, str], other_tenant_headers: dict[str, str]
 ) -> None:
-    run = client.post(f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=auth_headers).json()
+    run = client.post(
+        f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=auth_headers
+    ).json()
     assert (
         client.get(f"{BASE}/runs/{run['run_id']}/audit", headers=other_tenant_headers).status_code
         == 404

@@ -119,7 +119,9 @@ async def test_action_rid_list_outside_the_envelope_is_rejected() -> None:
     with pytest.raises(ToolNotAllowed) as excinfo:
         await _gate(toolbox).invoke(
             name="ont_batch_actions",
-            arguments={"action_rids": ["ont.acme.action.approve-order.v1", "ont.acme.action.wipe.v1"]},
+            arguments={
+                "action_rids": ["ont.acme.action.approve-order.v1", "ont.acme.action.wipe.v1"]
+            },
             allowed=("ont_batch_actions",),
         )
     assert excinfo.value.reason == "authority_envelope:action_rids"

@@ -33,6 +33,7 @@ AUDIT_SPAWN = "agent_team.spawn"
 AUDIT_ESCALATION = "agent_team.authority_escalation"
 AUDIT_APPROVAL = "agent_team.approval"
 
+
 #: 记录时间的可序列化形态（与 ``CrossTenantAccess.timestamp`` 同口径）。
 def _now() -> str:
     return datetime.now(UTC).isoformat()

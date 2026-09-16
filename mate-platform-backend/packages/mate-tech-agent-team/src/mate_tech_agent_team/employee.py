@@ -341,9 +341,7 @@ class LlmEmployeeRuntime:
         # 在执行侧拦人。包络取派活闸门**四维一起发放**的那份；没走闸门的直调
         # 退回员工定义自己的包络——退回空包络会把每次直调变成全拒。
         granted = subtask.get("granted_envelope")
-        envelope = (
-            Envelope.of_state(granted) if granted is not None else Envelope.of(profile)
-        )
+        envelope = Envelope.of_state(granted) if granted is not None else Envelope.of(profile)
         toolbox = EnvelopeGate(toolbox=toolbox, envelope=envelope)
         trace = RunTrace()
         # 实例身份 = 派活侧给的 ``team_task_id``（按运行唯一，外部就投这个 id）。
