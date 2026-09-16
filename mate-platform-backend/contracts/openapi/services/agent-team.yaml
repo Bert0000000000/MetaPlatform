@@ -120,7 +120,16 @@ components:
           description: 用户那句话
         status:
           type: string
-          enum: [planning, running, awaiting_approval, completed, failed, cancelled, timeout]
+          enum:
+            [
+              planning,
+              running,
+              awaiting_approval,
+              completed,
+              failed,
+              cancelled,
+              timeout,
+            ]
           description: |
             `cancelled` = 被 `POST /runs/{run_id}/cancel` 取消；
             `timeout` = 超过本轮截止时间（`timeout_seconds` 或部署默认值）后落到
