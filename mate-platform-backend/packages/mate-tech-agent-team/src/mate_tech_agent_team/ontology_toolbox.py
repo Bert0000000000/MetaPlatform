@@ -147,9 +147,13 @@ class OntologyToolbox:
     def _compact_classes(raw: Any) -> dict[str, Any]:
         """把对象类型的完整定义压成「rid + 名称」清单。
 
-        本体返回的每个类型都带全部属性定义（几十个字段），47 个类型一次塞给
-        模型会把它淹没——实测它翻不到「订单」就**开始自己拼 rid**，然后 404。
-        这里只回清单，让模型在可控的 token 预算内挑得动。
+        本体返回的每个类型都带全部属性定义（几十个字段）。两件事都实测过：
+
+        * 直接回原样 → 模型翻不到「订单」，**开始自己拼 rid**，然后 404；
+        * 连属性名一起回 → 47 个类型加起来超过单条工具结果的裁剪上限，
+          模型只看得到前几个类型，实测因此**挑错了订单类**。
+
+        所以清单只回 rid + 名称；要属性再调 ``ont_inspect_class``。
         """
         items = raw if isinstance(raw, list) else (raw or {}).get("items", [])
         classes = []
@@ -163,14 +167,13 @@ class OntologyToolbox:
                 {
                     "rid": rid,
                     "name": rid.rsplit(".", 2)[-2] if "." in rid else rid,
-                    "properties": [
-                        str(p.get("rid", "")).rsplit(".", 2)[-2]
-                        for p in (item.get("properties") or [])
-                        if isinstance(p, dict)
-                    ],
                 }
             )
-        return {"count": len(classes), "classes": classes}
+        return {
+            "count": len(classes),
+            "classes": classes,
+            "hint": "要看某个类型的属性与链接，用 ont_inspect_class(class_rid=…)。",
+        }
 
     async def aclose(self) -> None:
         close = getattr(self._client, "aclose", None)

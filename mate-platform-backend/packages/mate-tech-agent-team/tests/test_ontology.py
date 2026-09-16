@@ -60,7 +60,9 @@ async def test_list_classes_is_compacted_for_the_model() -> None:
     assert result["count"] == 1
     assert result["classes"][0]["rid"] == "ont.tenant-default.obj.sopbench-order-fulfillment.v1"
     assert result["classes"][0]["name"] == "sopbench-order-fulfillment"
-    assert "properties" in result["classes"][0]
+    # 属性**不**进清单：47 个类型连属性一起回会超过单条工具结果的裁剪上限，
+    # 模型只看得到前几个类型（实测因此挑错了订单类）。要属性调 ont_inspect_class。
+    assert "properties" not in result["classes"][0]
 
 
 @pytest.mark.asyncio

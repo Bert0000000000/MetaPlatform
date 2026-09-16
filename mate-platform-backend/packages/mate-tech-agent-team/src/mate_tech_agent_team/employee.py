@@ -25,8 +25,11 @@ from .skills import SkillCatalog
 from .state import SubTask, SubTaskResult
 from .toolbox import Toolbox, ToolNotAllowed
 
-#: 一条工具结果最多回灌多少字符——上下文裁剪（ADR-0066 §5.4）的最小形态
-TOOL_RESULT_CHARS = 4000
+#: 一条工具结果最多回灌多少字符——上下文裁剪（ADR-0066 §5.4）的最小形态。
+#: 取 8000 而非更小：本体的对象类型清单有 47 条、压到 rid+名称仍有 ~4400 字符，
+#: 上限太小会把清单一刀切掉，模型只看得到前几个类型（实测因此挑错了订单类）。
+#: 8000 与技能清单预算同口径（上下文 2%）。
+TOOL_RESULT_CHARS = 8000
 
 
 class LlmGateway(Protocol):
