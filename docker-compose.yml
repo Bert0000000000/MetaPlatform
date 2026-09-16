@@ -838,6 +838,51 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8505/healthz || exit 1"]
+
+  # mate-tech-agent-team: Agent 产品层 1.0 —— 超级大脑（langgraph 任务图）+ 数字员工。
+  # 租户隔离由 PG RLS 强制：thread_id = "<租户ID>|<任务ID>"，每连接 set app.tenant_id。
+  # 建表用 admin DSN（表 owner 会绕过 RLS，必须用非服务角色建表）。
+  mate-tech-agent-team:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-tech-agent-team/Dockerfile
+    image: mate-tech-agent-team:dev
+    container_name: mate-tech-agent-team
+    environment:
+      LEGACY_LOGIN_COMPAT: "false"
+      INSECURE_SKIP_SIGNATURE: "false"
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: metaplatform
+      SERVICE_CLIENT_ID: ${SERVICE_CLIENT_ID:-metaplatform-backend}
+      SERVICE_CLIENT_SECRET: ${SERVICE_CLIENT_SECRET:-}
+      MATE_AGENT_TEAM_ADMIN_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
+      MATE_AGENT_TEAM_DSN: postgresql://mate_app:mate_app@postgres:5432/metaplatform
+      MATE_AGENT_TEAM_MODEL: ${MATE_AGENT_TEAM_MODEL:-glm-5.3-flash}
+      MATE_LLMGW_URL: http://mate-tech-llmgw:8008
+      MATE_ONT_URL: http://mate-tech-ont:8007
+      MATE_MCP_URL: http://mate-tech-mcp:8081
+      MATE_GATEWAY_URL: http://mate-api-gateway:8100
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-tech-agent-team
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TZ: Asia/Shanghai
+      PYTHONPATH: "/app/packages/mate-tech-agent-team/src:/app/packages/mate-tech-db/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src"
+    ports:
+      - "${MATE_AGENT_TEAM_PORT:-8013}:8013"
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mate-tech-llmgw:
+        condition: service_started
+      mate-tech-ont:
+        condition: service_healthy
+      mate-api-gateway:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8013/healthz || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
