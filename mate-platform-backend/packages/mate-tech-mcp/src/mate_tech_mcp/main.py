@@ -218,9 +218,9 @@ def _bootstrap_api_keys() -> None:
     is rejected (fail-closed) rather than silently falling back to a stray
     local SQLite file.
 
-    Only ``mcp_api_keys`` is created here — not ``create_all()``, which would
-    also materialise the catalog tables without the tenant RLS policies that
-    the alembic chain attaches to them.
+    Only ``mcp_api_keys`` / ``mcp_clients`` are created here — not
+    ``create_all()``, which would also materialise the catalog tables without
+    the tenant RLS policies that the alembic chain attaches to them.
     """
     if not (os.environ.get("MATE_DB_URL") or os.environ.get("DATABASE_URL")):
         logger.info("mcp.api_keys.disabled", reason="MATE_DB_URL unset")
@@ -228,11 +228,12 @@ def _bootstrap_api_keys() -> None:
 
     from mate_tech_db.base import get_engine
 
-    from .repositories.sql_models import McpApiKeyORM
+    from .repositories.sql_models import McpApiKeyORM, McpClientORM
     from .security import McpApiKeyStore, set_api_key_runtime
 
     try:
-        McpApiKeyORM.__table__.create(bind=get_engine(), checkfirst=True)
+        for orm in (McpApiKeyORM, McpClientORM):
+            orm.__table__.create(bind=get_engine(), checkfirst=True)
     except Exception:
         # Never let key-store wiring take the whole service down: without a
         # store the verifier fails closed, which is a safe degraded mode.

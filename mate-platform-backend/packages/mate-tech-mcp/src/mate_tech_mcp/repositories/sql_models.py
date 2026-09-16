@@ -8,8 +8,41 @@ from __future__ import annotations
 from datetime import datetime
 
 from mate_tech_db.base import Base
-from sqlalchemy import Boolean, DateTime, String, Text
+from sqlalchemy import Boolean, DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
+
+
+class McpClientORM(Base):
+    """External MCP server connection managed from the MCP center UI.
+
+    Was a module-level dict until 1.1 task 1b: the center's client list
+    vanished on every restart and was per-replica. ``tenant_id`` carries the
+    isolation; reads always filter by it.
+    """
+
+    __tablename__ = "mcp_clients"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(256), default="")
+    endpoint: Mapped[str] = mapped_column(String(512), default="")
+    base_url: Mapped[str] = mapped_column(String(512), default="")
+    client_type: Mapped[str] = mapped_column(String(32), default="REMOTE")
+    transport_type: Mapped[str] = mapped_column(String(32), default="HTTP")
+    auth_type: Mapped[str] = mapped_column(String(32), default="none")
+    # Outbound credential for the *remote* server. Never logged, never
+    # returned in a list payload other than to its own tenant.
+    auth_token: Mapped[str] = mapped_column(Text, default="")
+    timeout_ms: Mapped[int] = mapped_column(Integer, default=30000)
+    headers: Mapped[str] = mapped_column(Text, default="")
+    server_ids: Mapped[str] = mapped_column(Text, default="")
+    config: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(32), default="disconnected")
+    discovered_tools: Mapped[int] = mapped_column(Integer, default=0)
+    last_connected_at: Mapped[str] = mapped_column(String(64), default="")
+    last_sync_at: Mapped[str] = mapped_column(String(64), default="")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
 
 
 class McpToolORM(Base):
