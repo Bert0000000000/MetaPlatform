@@ -96,7 +96,7 @@
 ## 3. 任务 3 · 员工身份落库（ADR-0066 S0）
 
 新增 `agent_team.employee_profile`：身份三要素（提示词 / 技能清单 / 工具白名单）
-+ 权限包络四维（`tools` / `action_rids` / `kb_ids` / `markings`）。
+与权限包络四维（`tools` / `action_rids` / `kb_ids` / `markings`）。
 建表走 admin DSN + RLS 策略 + `FORCE ROW LEVEL SECURITY`；未设 `app.tenant_id`
 时一行都读不到（fail-closed）。`ProfileRegistry` 变租户相关：内置定义 +
 本租户在 PG 里的行，库里的行按 `profile_id` 覆盖内置。
@@ -167,7 +167,6 @@ TestRestDualRail::test_temporal_execute_conflicts`（期望 409、实得 404）�
 
 基线那条红（`test_streamable_http_roundtrip`）本轮已**转绿**：它原先假设协议面
 无需租户上下文，与新契约冲突；改为经认证中间件挂载后确定性通过。
-
 
 ## 7. 遗留与建议
 

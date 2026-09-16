@@ -31,7 +31,7 @@ disabled_tools = ["ont_confirm_proposal", "ont_reject_proposal", "ont_execute_pr
 
 解析确认：
 
-```
+```console
 $ codex mcp get mate-ontology
 mate-ontology
   enabled: true
@@ -50,7 +50,7 @@ mate-ontology
 
 ### 2.1 成功调用 —— `ont_list_classes`
 
-```
+```console
 $ codex exec -m gpt-5.6-luna "Call the MCP tool 'ont_list_classes' … report JSON keys, count, first three rid"
 mcp: mate-ontology/ont_list_classes started
 mcp: mate-ontology/ont_list_classes (completed)
@@ -65,7 +65,7 @@ codex
 
 ### 2.2 成功调用 —— `ont_object_query`
 
-```
+```console
 $ codex exec -m gpt-5.6-luna "Call ont_object_query with source='ont.tenant-default.obj.crm.contract.v1' and paging_limit=3 …"
 mcp: mate-ontology/ont_object_query started
 mcp: mate-ontology/ont_object_query (completed)
@@ -78,7 +78,7 @@ Rows returned: `0`.
 
 ### 2.3 工具过滤 —— 越权工具被挡在 Codex 之外
 
-```
+```console
 $ codex exec -m gpt-5.6-luna "List every tool from mate-ontology by exact name; is ont_object_query / ont_confirm_proposal available?"
 codex
 Available tools from `mate-ontology`:
