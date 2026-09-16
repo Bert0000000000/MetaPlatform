@@ -111,7 +111,7 @@ class LlmEmployeeRuntime:
             tool_calls=[],
         )
         try:
-            profile = self._registry.get(subtask["profile_id"])
+            profile = await self._registry.get(subtask["profile_id"], tenant_id)
         except ProfileNotFound:
             result["error"] = f"员工不存在：{subtask['profile_id']}（租户 {tenant_id}）"
             return result

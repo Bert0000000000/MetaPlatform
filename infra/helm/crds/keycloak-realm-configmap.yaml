@@ -63,6 +63,16 @@ data:
           {"name": "PLATFORM_ADMIN", "description": "Platform administrator (maps to mate-tech-iam admin guard)"}
         ]
       },
+      "clientScopes": [
+        {
+          "name": "tenant_switch_enabled",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true",
+            "display.on.consent.screen": "false"
+          }
+        }
+      ],
       "clients": [
         {
           "clientId": "metaplatform-backend",
@@ -73,6 +83,7 @@ data:
           "standardFlowEnabled": true,
           "directAccessGrantsEnabled": true,
           "serviceAccountsEnabled": true,
+          "optionalClientScopes": ["tenant_switch_enabled"],
           "redirectUris": ["*"],
           "webOrigins": ["*"],
           "protocol": "openid-connect",

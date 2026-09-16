@@ -20,6 +20,10 @@ class MCPServer:
         self.name = name
         self._server: Any | None = None
         self._tools: list[Any] = []
+        # Tool name -> owning tenant. Tools registered without a tenant are
+        # platform-wide and visible to every tenant (back-compat for the
+        # tools wired at import time in main.py).
+        self._tool_tenants: dict[str, str] = {}
         self._resources: list[Any] = []
         self._prompts: list[Any] = []
 
@@ -32,10 +36,18 @@ class MCPServer:
             logger.info("mcp.server.created", name=self.name)
         return self._server
 
-    def register_tool(self, tool: Any) -> None:
-        """Register tool (lazy registration to MCP server)."""
+    def register_tool(self, tool: Any, *, tenant: str | None = None) -> None:
+        """Register tool (lazy registration to MCP server).
+
+        ``tenant`` scopes the tool to a single tenant; omitted (the default,
+        and what every import-time registration in ``main.py`` uses) makes it
+        platform-wide.
+        """
         self._tools.append(tool)
-        logger.info("mcp.tool.registered", name=getattr(tool, "name", "?"))
+        tool_name = getattr(tool, "name", "")
+        if tenant and tool_name:
+            self._tool_tenants[tool_name] = tenant
+        logger.info("mcp.tool.registered", name=tool_name or "?", tenant=tenant or "*")
 
     def register_resource(self, resource: Any) -> None:
         """注册资源."""
@@ -47,7 +59,14 @@ class MCPServer:
         self._prompts.append(prompt)
         logger.info("mcp.prompt.registered", name=getattr(prompt, "name", "?"))
 
-    async def list_tools(self) -> list[dict[str, Any]]:
+    async def list_tools(self, tenant_id: str | None = None) -> list[dict[str, Any]]:
+        """List registered tools.
+
+        ``tenant_id`` filters out tools registered for a *different* tenant.
+        Omitted (the REST bridge's behaviour) returns the full platform
+        surface; the MCP protocol surface always passes the authenticated
+        tenant so an external client never sees another tenant's tools.
+        """
         return [
             {
                 "name": getattr(t, "name", "?"),
@@ -61,7 +80,14 @@ class MCPServer:
                 "readonlyByUser": bool(getattr(t, "readonly_by_user", False)),
             }
             for t in self._tools
+            if self._visible_to(getattr(t, "name", "?"), tenant_id)
         ]
+
+    def _visible_to(self, tool_name: str, tenant_id: str | None) -> bool:
+        owner = self._tool_tenants.get(tool_name)
+        if owner is None or tenant_id is None:
+            return True
+        return owner == tenant_id
 
     async def list_resources(self) -> list[dict[str, Any]]:
         return [
@@ -74,11 +100,21 @@ class MCPServer:
             for p in self._prompts
         ]
 
-    async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
+    async def call_tool(
+        self,
+        name: str,
+        arguments: dict[str, Any],
+        *,
+        tenant_id: str | None = None,
+    ) -> Any:
         """调用已注册工具.
 
         MP-SAL-04 / ADR-0044 HITL 边界：若 ``agent_invokable=False``，必须由
         caller 显式声明 ``__caller__="user"``；agent 调用（默认）会被拒。
+
+        ``tenant_id`` mirrors :meth:`list_tools` — a tool registered for
+        another tenant is indistinguishable from an unknown tool (KeyError),
+        so the caller's dynamic/federation fallbacks still run.
         """
         if isinstance(arguments, dict):
             caller = arguments.pop("__caller__", None)
@@ -86,6 +122,8 @@ class MCPServer:
             caller = None
         for tool in self._tools:
             if getattr(tool, "name", None) == name:
+                if not self._visible_to(name, tenant_id):
+                    raise KeyError(f"Tool '''{name}''' not found")
                 # HITL 闸门：agent_invokable=False 仅允许 user caller
                 if not bool(getattr(tool, "agent_invokable", True)):
                     if caller != "user":

@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from .authority import AuthorityError, DepthExceeded, Envelope
 from .brain import BrainService, RunContext, RunNotAwaitingApproval, RunNotFound
 from .checkpoint import (
     InMemoryCheckpointerProvider,
@@ -15,31 +16,36 @@ from .checkpoint import (
 )
 from .employee import LlmEmployeeRuntime
 from .llm_planner import LlmPlanner
-from .ontology_toolbox import CompositeToolbox, OntologyToolbox
 from .planner import PlanError, Planner, StaticPlanner
+from .profile_store import ProfileStore
 from .profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry, builtin_profiles
 from .runtime import EmployeeRuntime
 from .skill_toolbox import SkillToolbox
 from .skills import SkillCatalog, SkillManifestEntry, SkillNotFound
 from .state import BrainState, SubTask, SubTaskResult
-from .toolbox import McpToolbox, ToolNotAllowed, to_openai_schema
+from .team_bus import DEFAULT_MAX_DEPTH, SpawnOutcome, SpawnRequest, TeamBus
+from .toolbox import CompositeToolbox, McpToolbox, ToolNotAllowed, to_openai_schema
 
 __all__ = [
+    "AuthorityError",
     "BrainService",
     "CompositeToolbox",
+    "DEFAULT_MAX_DEPTH",
+    "DepthExceeded",
+    "Envelope",
     "BrainState",
     "EmployeeProfile",
     "EmployeeRuntime",
     "InMemoryCheckpointerProvider",
     "LlmEmployeeRuntime",
     "LlmPlanner",
-    "OntologyToolbox",
     "McpToolbox",
     "PgCheckpointerProvider",
     "PlanError",
     "Planner",
     "ProfileNotFound",
     "ProfileRegistry",
+    "ProfileStore",
     "RunContext",
     "RunNotFound",
     "RunNotAwaitingApproval",
@@ -47,7 +53,10 @@ __all__ = [
     "SkillToolbox",
     "SkillManifestEntry",
     "SkillNotFound",
+    "SpawnOutcome",
+    "SpawnRequest",
     "StaticPlanner",
+    "TeamBus",
     "SubTask",
     "SubTaskResult",
     "ToolNotAllowed",

@@ -85,4 +85,69 @@ class McpToolbox:
         return await self._client.call_tool(name=name, arguments=arguments)
 
 
-__all__ = ["McpToolbox", "ToolNotAllowed", "Toolbox", "to_openai_schema"]
+class CompositeToolbox:
+    """按工具名把调用路由到不同的工具面。
+
+    * 技能工具 → :class:`~mate_tech_agent_team.skill_toolbox.SkillToolbox`（读 SkillHub）
+    * 其余（本体 ``ont_*``、``kb_search`` …）→ MCP 中心
+
+    **本体不再有旁路**（1.1 task 1c）：1.0 时本体工具直连本体引擎，因为当时
+    MCP 的代理用服务身份 token 出去、本体不认。1.1 把 MCP 代理改成逐请求
+    透传调用方 token + 租户后，本体工具与其它工具走同一条总线——单一工具面，
+    包络判定与审计只需做一处。
+
+    **白名单闸门对每条路一视同仁**——路由不构成放行。
+    """
+
+    def __init__(
+        self,
+        *,
+        mcp: Any = None,
+        skills: Any = None,
+        skill_names: frozenset[str] = frozenset(),
+    ) -> None:
+        self._mcp = mcp
+        self._skills = skills
+        self._skill_names = skill_names
+
+    def _route(self, name: str) -> Any:
+        if name in self._skill_names and self._skills is not None:
+            return self._skills
+        return self._mcp
+
+    async def schemas(self, *, allowed: Sequence[str]) -> list[dict[str, Any]]:
+        out: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for name in allowed:
+            toolbox = self._route(name)
+            if toolbox is None:
+                continue
+            for schema in await toolbox.schemas(allowed=[name]):
+                key = schema["function"]["name"]
+                if key not in seen:
+                    seen.add(key)
+                    out.append(schema)
+        return out
+
+    async def invoke(self, *, name: str, arguments: dict[str, Any], allowed: Sequence[str]) -> Any:
+        if name not in allowed:
+            raise ToolNotAllowed(name, "not_in_employee_tool_whitelist")
+        toolbox = self._route(name)
+        if toolbox is None:
+            raise ToolNotAllowed(name, "no_toolbox_for_tool")
+        return await toolbox.invoke(name=name, arguments=arguments, allowed=allowed)
+
+    async def aclose(self) -> None:
+        for toolbox in (self._skills, self._mcp):
+            close = getattr(toolbox, "aclose", None)
+            if close is not None:
+                await close()
+
+
+__all__ = [
+    "CompositeToolbox",
+    "McpToolbox",
+    "ToolNotAllowed",
+    "Toolbox",
+    "to_openai_schema",
+]

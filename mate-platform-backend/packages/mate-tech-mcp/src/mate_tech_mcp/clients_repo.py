@@ -1,8 +1,22 @@
-"""In-memory repository for MCP external clients (联调 integration).
+"""Persistent repository for MCP external clients (联调 integration).
 
 Entities: McpClient (external MCP server connection managed from the
-MCP center UI). Follows the same tenant-scoped store pattern as
-``in_memory.py`` (tools/resources/prompts).
+MCP center UI).
+
+Was a module-level ``dict`` until 1.1 task 1b — the MCP center's client list
+was per-process, so it disappeared on restart and diverged across replicas.
+It is now a tenant-scoped table (``mcp_clients``), following the same
+SQLAlchemy pattern as ``repositories/sql_store.py``.
+
+Tenant isolation
+----------------
+Every read and write filters on ``tenant_id``; the caller's tenant comes
+from ``require_tenant(request.state.ctx)`` in ``api/clients_routes.py``
+(hard rule 3). A row belonging to another tenant is indistinguishable from
+a missing one — no existence oracle. PostgreSQL additionally carries a
+``tenant_isolation`` RLS policy with ``FORCE ROW LEVEL SECURITY`` (migration
+``0020_mcp_clients``), so the filter holds even for a caller that reaches
+the database without going through this module.
 """
 
 from __future__ import annotations
@@ -11,6 +25,24 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
+
+from mate_tech_db.base import get_session
+from sqlalchemy import delete, select
+
+
+def _model() -> Any:
+    """Lazily resolve the ORM class.
+
+    Deliberately not a module-level import (same reason as
+    ``security/api_keys.py``): ``mate_tech_mcp.main`` imports this module and
+    test fixtures re-import the package after evicting it from ``sys.modules``.
+    A module-level ORM import would re-execute ``sql_models`` on that
+    re-import and re-register its tables on the shared ``Base``, which
+    SQLAlchemy rejects with "Table already defined".
+    """
+    from .repositories.sql_models import McpClientORM
+
+    return McpClientORM
 
 
 def _now_iso() -> str:
@@ -44,29 +76,105 @@ class McpClient:
     updated_at: str = ""
 
 
-_CLIENTS: dict[str, dict[str, McpClient]] = {}
-
-
-def _normalize_id(value: str) -> str:
-    """Accept either the client id or an SSE/ws endpoint as the key."""
-    return value
+def _to_client(row: Any) -> McpClient:
+    return McpClient(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        name=row.name or "",
+        endpoint=row.endpoint or "",
+        base_url=row.base_url or "",
+        client_type=row.client_type or "REMOTE",
+        transport_type=row.transport_type or "HTTP",
+        auth_type=row.auth_type or "none",
+        auth_token=row.auth_token or "",
+        timeout_ms=row.timeout_ms if row.timeout_ms is not None else 30000,
+        headers=row.headers or "",
+        server_ids=row.server_ids or "",
+        config=row.config or "",
+        status=row.status or "disconnected",
+        discovered_tools=row.discovered_tools or 0,
+        last_connected_at=row.last_connected_at or "",
+        last_sync_at=row.last_sync_at or "",
+        created_at=row.created_at or "",
+        updated_at=row.updated_at or "",
+    )
 
 
 def list_clients(tenant_id: str) -> list[McpClient]:
     if not tenant_id:
         return []
-    return sorted(_CLIENTS.get(tenant_id, {}).values(), key=lambda c: c.created_at, reverse=True)
+    model = _model()
+    session = get_session()
+    try:
+        rows = (
+            session.execute(
+                select(model)
+                .where(model.tenant_id == tenant_id)
+                .order_by(model.created_at.desc(), model.id)
+            )
+            .scalars()
+            .all()
+        )
+        return [_to_client(r) for r in rows]
+    finally:
+        session.close()
 
 
 def get_client(tenant_id: str, cid: str) -> McpClient | None:
     if not tenant_id:
         return None
-    return _CLIENTS.get(tenant_id, {}).get(cid)
+    model = _model()
+    session = get_session()
+    try:
+        row = session.execute(
+            select(model).where(
+                model.id == cid,
+                model.tenant_id == tenant_id,
+            )
+        ).scalar_one_or_none()
+        return _to_client(row) if row is not None else None
+    finally:
+        session.close()
 
 
 def put_client(tenant_id: str, client: McpClient) -> McpClient:
-    _CLIENTS.setdefault(tenant_id, {})[client.id] = client
-    return client
+    """Upsert ``client`` under ``tenant_id`` (idempotent by id)."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    model = _model()
+    session = get_session()
+    try:
+        row = session.get(model, client.id)
+        if row is None:
+            row = model(id=client.id, tenant_id=tenant_id)
+            session.add(row)
+        elif row.tenant_id != tenant_id:
+            # Refuse to re-home a row onto another tenant.
+            raise ValueError(f"client {client.id!r} belongs to another tenant")
+        for field in (
+            "name",
+            "endpoint",
+            "base_url",
+            "client_type",
+            "transport_type",
+            "auth_type",
+            "auth_token",
+            "timeout_ms",
+            "headers",
+            "server_ids",
+            "config",
+            "status",
+            "discovered_tools",
+            "last_connected_at",
+            "last_sync_at",
+            "created_at",
+            "updated_at",
+        ):
+            setattr(row, field, getattr(client, field))
+        session.commit()
+        return _to_client(row)
+    finally:
+        session.close()
 
 
 def create_client(tenant_id: str, **fields: Any) -> McpClient:
@@ -128,11 +236,19 @@ def update_client(tenant_id: str, cid: str, **fields: Any) -> McpClient | None:
 def delete_client(tenant_id: str, cid: str) -> bool:
     if not tenant_id:
         return False
-    store = _CLIENTS.get(tenant_id)
-    if not store or cid not in store:
-        return False
-    del store[cid]
-    return True
+    model = _model()
+    session = get_session()
+    try:
+        result = session.execute(
+            delete(model).where(
+                model.id == cid,
+                model.tenant_id == tenant_id,
+            )
+        )
+        session.commit()
+        return bool(result.rowcount)
+    finally:
+        session.close()
 
 
 def mark_client_connected(tenant_id: str, cid: str, tools: int) -> McpClient | None:
@@ -148,4 +264,10 @@ def mark_client_connected(tenant_id: str, cid: str, tools: int) -> McpClient | N
 
 
 def reset_store() -> None:
-    _CLIENTS.clear()
+    """Delete every client row. Test helper — not exposed over HTTP."""
+    session = get_session()
+    try:
+        session.execute(delete(_model()))
+        session.commit()
+    finally:
+        session.close()
