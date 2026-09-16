@@ -855,7 +855,10 @@ services:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: metaplatform
       SERVICE_CLIENT_ID: ${SERVICE_CLIENT_ID:-metaplatform-backend}
-      SERVICE_CLIENT_SECRET: ${SERVICE_CLIENT_SECRET:-}
+      # 与栈内其它服务同源取密钥：本栈的 .env 只定义 KEYCLOAK_CLIENT_SECRET，
+      # 写成 ${SERVICE_CLIENT_SECRET:-} 会解析成**空串**，而 LEGACY_LOGIN_COMPAT
+      # 已是 false —— 启动期直接 RuntimeError，容器进 restart 循环（重建后暴露）。
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
       MATE_AGENT_TEAM_ADMIN_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
       MATE_AGENT_TEAM_DSN: postgresql://mate_app:mate_app@postgres:5432/metaplatform
       MATE_AGENT_TEAM_MODEL: ${MATE_AGENT_TEAM_MODEL:-glm-5.3-flash}
