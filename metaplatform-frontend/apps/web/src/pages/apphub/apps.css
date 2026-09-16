@@ -46,10 +46,19 @@
 
 /* ---------- 应用卡片网格（C 骨架） ---------- */
 .mp-apps-grid {
+  /* 真实卡片与虚线「创建应用」卡共用一个高度下限，两者始终等高。
+     描述折成两行时真实卡片自行长高；虚线卡常是行内唯一项，拉伸对它无效，
+     所以只能靠这个下限对齐。 */
+  --mp-app-card-min-h: 132px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: var(--mp-space-3);
   align-items: stretch;
+}
+
+.mp-apps-grid > .mp-app-card,
+.mp-apps-new {
+  min-height: var(--mp-app-card-min-h);
 }
 
 /* 虚线「创建应用」卡：与真实卡片同尺寸，视觉上明确是动作 */
@@ -59,7 +68,6 @@
   align-items: center;
   justify-content: center;
   gap: var(--mp-space-2);
-  min-height: 176px;
   border: 1px dashed var(--semi-color-border);
   border-radius: var(--semi-border-radius-large);
   background: transparent;
@@ -78,8 +86,8 @@
 .mp-apps-new-icon {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--semi-border-radius-medium);
   background: var(--semi-color-fill-0);
 }
@@ -99,8 +107,8 @@
 }
 
 .mp-app-icon {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   flex: none;
   display: grid;
   place-items: center;
@@ -142,21 +150,23 @@
   font-size: 12px;
   line-height: 1.5;
   color: var(--semi-color-text-2);
-  margin: var(--mp-space-2) 0 0;
+  margin: var(--mp-space-2) 0 var(--mp-space-3);
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  /* 卡片压到 240px 后描述更容易折行；限死 1 行才能让同排卡片等高。 */
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
 }
 
-/* 卡片底部信息行：分类 / 版本 / 标签 */
+/* 卡片底部信息行：分类 / 版本 / 标签 + 右侧「更多操作」。
+   margin-top:auto 让信息行贴卡片底边，同一行内卡片描述行数不同也保持底部对齐。 */
 .mp-app-meta {
   display: flex;
   align-items: center;
   gap: var(--mp-space-2);
   flex-wrap: wrap;
-  margin-top: var(--mp-space-3);
+  margin-top: auto;
   padding-top: var(--mp-space-3);
   border-top: 1px solid var(--semi-color-border);
   font-size: 12px;
@@ -170,28 +180,10 @@
   min-width: 0;
 }
 
-/* 卡片底部操作行：三等份，通栏到卡片边缘 */
-.mp-app-actions {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  margin: var(--mp-space-3) calc(-1 * var(--mp-space-3)) calc(-1 * var(--mp-space-3));
-  border-top: 1px solid var(--semi-color-border);
-}
-
-.mp-app-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--mp-space-1);
-  height: 32px;
-  font-size: 12px;
-  color: var(--semi-color-text-2);
-  border-radius: 0;
-}
-
-.mp-app-action-mid {
-  border-left: 1px solid var(--semi-color-border);
-  border-right: 1px solid var(--semi-color-border);
+/* 更多操作：吸到信息行右端，避免单独占一行 */
+.mp-app-more {
+  margin-left: auto;
+  flex: none;
 }
 
 .mp-app-loading {
@@ -351,6 +343,85 @@
   background: var(--semi-color-primary-light-default);
 }
 
+/* ---------- 业务域 tab（Semi Tabs type="card"） ----------
+   只给容器留间距、给页签内的名字+计数排版；页签外观交给 Semi，
+   不覆盖 .semi-* 内部类（间距/字号仍只取 --mp-space-* 与设计规范六档）。 */
+.mp-domain-tabs {
+  /* 页签栏的 min-content 宽度 = 所有页签之和，不设限会把整列撑宽，
+     窄屏下被外层 overflow:hidden 裁掉。限住宽度后交给 Semi 的
+     collapsible 折叠成左右箭头。 */
+  min-width: 0;
+  max-width: 100%;
+  margin-bottom: var(--mp-space-3);
+}
+
+.mp-domain-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+}
+
+.mp-domain-tab-count {
+  color: var(--semi-color-text-3);
+  font-size: 12px;
+}
+
+/* ---------- 业务域管理抽屉 ---------- */
+.mp-domain-create {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: var(--mp-space-2);
+  margin-bottom: var(--mp-space-4);
+}
+
+.mp-domain-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mp-space-8);
+}
+
+.mp-domain-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mp-domain-row {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+  padding: var(--mp-space-2) 0;
+  border-bottom: 1px solid var(--semi-color-border);
+}
+
+.mp-domain-row:last-child {
+  border-bottom: 0;
+}
+
+.mp-domain-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.mp-domain-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--semi-color-text-0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-domain-code {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .mp-app-text-purple { color: rgb(var(--semi-purple-6)); }
 
 /* 拖动节点光标 */
@@ -417,4 +488,3 @@
   border-color: var(--semi-color-primary);
   background: var(--semi-color-primary-light-default);
 }
-

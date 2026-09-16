@@ -1,7 +1,8 @@
 """SQL-backed repository for the apphub — SQLAlchemy 2.0 (P3-W3 TD-5).
 
-Provides read + write for the 5 apphub entity types
-(ApphubApp / ApphubGroup / ApphubModule / ApphubPage / ApphubTemplate).
+Provides read + write for the 6 apphub entity types
+(ApphubApp / ApphubGroup / ApphubDomain / ApphubModule / ApphubPage /
+ApphubTemplate).
 
 Tuple fields (``tags``) are serialised as newline-separated TEXT.
 Dict fields (``content``) are JSON-serialised to TEXT.
@@ -22,6 +23,7 @@ from ..shortlink.repository import ShortlinkEntry
 from . import sql_models as models
 from .in_memory import (
     ApphubApp,
+    ApphubDomain,
     ApphubGroup,
     ApphubModule,
     ApphubPage,
@@ -75,11 +77,23 @@ def _orm_to_app(row: models.ApphubAppORM) -> ApphubApp:
         version=row.version or "1.0.0",
         owner=row.owner or "platform-team",
         tags=_split_lines(row.tags or ""),
+        business_domain=row.business_domain or "",
     )
 
 
 def _orm_to_group(row: models.ApphubGroupORM) -> ApphubGroup:
     return ApphubGroup(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        name=row.name,
+        code=row.code,
+        icon=row.icon or "",
+        sort_order=row.sort_order,
+    )
+
+
+def _orm_to_domain(row: models.ApphubDomainORM) -> ApphubDomain:
+    return ApphubDomain(
         id=row.id,
         tenant_id=row.tenant_id,
         name=row.name,
@@ -187,6 +201,39 @@ def get_group(tenant_id: str, group_id: str) -> ApphubGroup | None:
         )
     ).scalar_one_or_none()
     return _orm_to_group(row) if row else None
+
+
+# ---------------------------------------------------------------------------
+# Read API — business domains
+# ---------------------------------------------------------------------------
+def list_domains(tenant_id: str) -> list[ApphubDomain]:
+    if not tenant_id:
+        return []
+    s = _session()
+    rows = (
+        s.execute(
+            select(models.ApphubDomainORM)
+            .where(models.ApphubDomainORM.tenant_id == tenant_id)
+            .order_by(models.ApphubDomainORM.sort_order, models.ApphubDomainORM.code)
+        )
+        .scalars()
+        .all()
+    )
+    return [_orm_to_domain(r) for r in rows]
+
+
+def get_domain(tenant_id: str, code: str) -> ApphubDomain | None:
+    """Look up a domain by ``code`` (the key apps reference), not by id."""
+    if not tenant_id:
+        return None
+    s = _session()
+    row = s.execute(
+        select(models.ApphubDomainORM).where(
+            models.ApphubDomainORM.tenant_id == tenant_id,
+            models.ApphubDomainORM.code == code,
+        )
+    ).scalar_one_or_none()
+    return _orm_to_domain(row) if row else None
 
 
 # ---------------------------------------------------------------------------
@@ -304,6 +351,7 @@ def put_app(tenant_id: str, app: ApphubApp) -> ApphubApp:
         existing.version = app.version
         existing.owner = app.owner
         existing.tags = tags_str
+        existing.business_domain = app.business_domain
     else:
         s.add(
             models.ApphubAppORM(
@@ -316,6 +364,7 @@ def put_app(tenant_id: str, app: ApphubApp) -> ApphubApp:
                 version=app.version,
                 owner=app.owner,
                 tags=tags_str,
+                business_domain=app.business_domain,
             )
         )
     s.commit()
@@ -347,6 +396,34 @@ def put_group(tenant_id: str, group: ApphubGroup) -> ApphubGroup:
         )
     s.commit()
     return group
+
+
+# ---------------------------------------------------------------------------
+# Write API — business domains
+# ---------------------------------------------------------------------------
+def put_domain(tenant_id: str, domain: ApphubDomain) -> ApphubDomain:
+    if not tenant_id:
+        return domain
+    s = _session()
+    existing = s.get(models.ApphubDomainORM, domain.id)
+    if existing:
+        # ``code`` is immutable — only display attributes are updated.
+        existing.name = domain.name
+        existing.icon = domain.icon
+        existing.sort_order = domain.sort_order
+    else:
+        s.add(
+            models.ApphubDomainORM(
+                id=domain.id,
+                tenant_id=tenant_id,
+                name=domain.name,
+                code=domain.code,
+                icon=domain.icon,
+                sort_order=domain.sort_order,
+            )
+        )
+    s.commit()
+    return domain
 
 
 # ---------------------------------------------------------------------------
@@ -450,6 +527,7 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     counts: dict[str, int] = {}
     counts["apps"] = len([put_app(tenant_id, a) for a in mem.list_apps(tenant_id)])
     counts["groups"] = len([put_group(tenant_id, g) for g in mem.list_groups(tenant_id)])
+    counts["domains"] = len([put_domain(tenant_id, d) for d in mem.list_domains(tenant_id)])
     counts["modules"] = len([put_module(tenant_id, m) for m in mem.list_modules(tenant_id)])
     counts["pages"] = len([put_page(tenant_id, p) for p in mem.list_pages(tenant_id)])
     counts["templates"] = len([put_template(tenant_id, t) for t in mem.list_templates(tenant_id)])

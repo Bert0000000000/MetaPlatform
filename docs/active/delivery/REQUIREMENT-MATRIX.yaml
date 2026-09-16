@@ -111,7 +111,10 @@ requirements:
     operationIds:
       - apphubPostApphubGroups
       - apphubDeleteApphubGroupsCode
-    handler: mate_app_hub.main:app#apphubDeleteApphubGroupsCode
+      - apphubPostApphubDomains
+      - apphubPatchApphubDomainsCode
+      - apphubDeleteApphubDomainsCode
+    handler: mate_app_hub.main:app#apphubDeleteApphubDomainsCode
     tests:
       - mate-platform-backend/contracts/tests/test_runtime_comparison.py
     implementationStatus: implemented
@@ -132,6 +135,16 @@ requirements:
     operationIds:
       - apphubGetApphubApps
     handler: mate_app_hub.main:app#apphubGetApphubApps
+    tests:
+      - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBGETAPPHUBAPPSDOMAINS:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+      - apphubGetApphubAppsDomains
+    handler: mate_app_hub.main:app#apphubGetApphubAppsDomains
     tests:
       - mate-platform-backend/contracts/tests/test_runtime_comparison.py
     implementationStatus: implemented

@@ -10,10 +10,42 @@ export interface AppItem {
   description?: string;
   icon?: string;
   group?: string;
+  /**
+   * 业务域码，指向 `BusinessDomain.code`。空串表示未归类。
+   * 与 `group`（技术分类 platform/knowledge/data/business）是两条独立的分类轴。
+   */
+  businessDomain: string;
   status: AppStatus;
   moduleCount: number;
   createdAt: string;
   updatedAt: string;
+}
+
+/** 业务域（应用中心业务域 tab 的分类实体，可增 / 可改 / 可删）。 */
+export interface BusinessDomain {
+  id: string;
+  tenant_id?: string;
+  name: string;
+  code: string;
+  icon: string;
+  sort_order: number;
+}
+
+export interface DomainCreateRequest {
+  name: string;
+  code: string;
+  icon?: string;
+  sort_order?: number;
+}
+
+/**
+ * 业务域更新。`code` 不在其中 —— 它是应用引用的键，不可变；
+ * 改名改的是 `name`。
+ */
+export interface DomainUpdateRequest {
+  name?: string;
+  icon?: string;
+  sort_order?: number;
 }
 
 export interface AppCreateRequest {

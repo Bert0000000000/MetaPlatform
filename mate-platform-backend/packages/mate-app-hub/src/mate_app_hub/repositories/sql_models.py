@@ -30,10 +30,23 @@ class ApphubAppORM(Base):
     version: Mapped[str] = mapped_column(String(32), default="1.0.0")
     owner: Mapped[str] = mapped_column(String(128), default="platform-team")
     tags: Mapped[str] = mapped_column(Text, default="")  # newline-separated
+    # 业务域码，指向 ApphubDomainORM.code；空串表示未归类。
+    business_domain: Mapped[str] = mapped_column(String(64), default="")
 
 
 class ApphubGroupORM(Base):
     __tablename__ = "apphub_groups"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    code: Mapped[str] = mapped_column(String(64), nullable=False)
+    icon: Mapped[str] = mapped_column(String(64), default="")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class ApphubDomainORM(Base):
+    __tablename__ = "apphub_domains"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)

@@ -139,6 +139,43 @@ paths:
       x-mate-requirements:
         - FR-APPHUB-APPHUBGETAPPHUBAPPSGROUPS
       x-mate-implementation-status: implemented
+  /api/v1/apphub/apps/domains:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - apphub
+      summary: /v1/apphub/apps/domains
+      operationId: apphubGetApphubAppsDomains
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+      description: /v1/apphub/apps/domains
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.get
+      x-mate-requirements:
+        - FR-APPHUB-APPHUBGETAPPHUBAPPSDOMAINS
+      x-mate-implementation-status: implemented
   /api/v1/apphub/modules:
     get:
       security:
@@ -521,6 +558,113 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
       description: Delete a group (blocked if apps reference its category).
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.write
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - FR-APP-HUB
+  /api/v1/apphub/domains:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - apphub
+      summary: Create business domain
+      operationId: apphubPostApphubDomains
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApiResponse"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      description: Create a new business domain.
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.write
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - FR-APP-HUB
+  /api/v1/apphub/domains/{code}:
+    patch:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - apphub
+      summary: Update business domain
+      operationId: apphubPatchApphubDomainsCode
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApiResponse"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      description: Rename a business domain. The code is immutable.
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.write
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - FR-APP-HUB
+    delete:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - apphub
+      summary: Delete business domain
+      operationId: apphubDeleteApphubDomainsCode
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      description: Delete a domain (blocked if apps still reference it).
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-implementation-status: implemented

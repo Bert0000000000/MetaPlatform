@@ -122,16 +122,25 @@ test.describe('UI-P1a · 本体域', () => {
     await gotoApp(page, '/ontology/model');
     const tabs = page.locator('.mp-page .semi-tabs-tab');
     for (const label of ['对象类型', '关系类型', '动作类型', '函数', '接口', '公理']) {
-      await expect(tabs.filter({ hasText: label })).toBeVisible({ timeout: 20_000 });
+      const tab = tabs.filter({ hasText: label });
+      await expect(tab).toBeVisible({ timeout: 20_000 });
+      // 标题形如「<名称> · <条数>」。计数初值是 0，接口回来后变正数；
+      // 用会重试的断言等它，别一次性读 innerText（会读到加载中的 0）。
+      // 这条正则正是「公理计数曾被写死为 0」那个回归的锁。
+      await expect(tab).toContainText(/·\s*[1-9]\d*/, { timeout: 20_000 });
     }
+
     // 对象类型清单非空
     await expect(page.locator('.mp-tablepro .semi-table-tbody .semi-table-row').first()).toBeVisible({
       timeout: 20_000,
     });
 
-    // 公理：内核未暴露清单接口 → 如实空状态（不是空白页）
+    // 公理：内核已暴露清单接口，与其它子 tab 一样出真实表格。
+    // （此前的断言是「公理列表尚未开放」空状态，接口接上后该断言已过期。）
     await tabs.filter({ hasText: '公理' }).click();
-    await expect(page.locator('.mp-empty')).toContainText('公理列表尚未开放');
+    await expect(page.locator('.mp-tablepro .semi-table-tbody .semi-table-row').first()).toBeVisible({
+      timeout: 20_000,
+    });
   });
 
   test('运维：三个子 tab 都在真实运维面上', async ({ page }) => {
