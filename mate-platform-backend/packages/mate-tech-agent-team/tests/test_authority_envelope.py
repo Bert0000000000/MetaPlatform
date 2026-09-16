@@ -139,9 +139,7 @@ async def test_identical_envelope_is_not_an_escalation() -> None:
 @pytest.mark.asyncio
 async def test_tool_scope_can_only_narrow() -> None:
     """``tool_scope`` 是收窄通道——写进一个上级没有的工具不会因此拿到它。"""
-    outcome = await _bus().spawn(
-        _request(tool_scope=("ont_object_query", "ont_merge_objects"))
-    )
+    outcome = await _bus().spawn(_request(tool_scope=("ont_object_query", "ont_merge_objects")))
     assert outcome.requires_approval is False
     assert outcome.envelope.tools == frozenset({"ont_object_query"})
     assert "ont_merge_objects" not in outcome.envelope.tools
