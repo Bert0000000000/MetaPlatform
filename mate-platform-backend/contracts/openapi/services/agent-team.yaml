@@ -8,6 +8,8 @@ info:
     一句话 → 拆任务图 → 并行派给 ≥2 个数字员工（各有提示词与工具白名单）→ 真实执行
     → 中途一处人工确认 → 汇总。全程租户隔离由数据库 RLS 强制
     （thread_id = "<租户ID>|<任务ID>"，每连接设 app.tenant_id）。
+    派活一律过 TeamBus 闸门（1.3 轨 1）：子员工权限包络必须 ⊆ **发起用户**
+    从自身令牌解析出的包络，越权转 proposal、深度超限与跨租户硬拒。
   contact:
     name: Mate Platform Team
 security:
@@ -52,6 +54,10 @@ components:
           items:
             type: string
           default: []
+          description: |
+            本节点的前置节点（**同一计划内**的 task_id）。依赖全部产出回执后
+            本节点才会被派出去；无依赖 = 第一波。指向计划外的 id 或成环时，
+            整轮在计划期判失败（不会静默挂住）。
     SubTaskResult:
       type: object
       properties:
@@ -86,6 +92,21 @@ components:
           description: llm = 真实模型产出；stub = 未接线（供 D-10 "假回执" 断言）
         error:
           type: string
+        error_code:
+          type: string
+          description: |
+            可判定的失败类别——`status` 里 `rejected`/`error` 分不开的三种情形
+            靠它区分：
+            - `E_AUTHORITY_ESCALATION`：派活越权，已转 proposal，**该子任务未执行**
+              （授权只限本次任务，人工同意后才跑）；
+            - `E_DEPTH_EXCEEDED`：嵌套层数超上限，硬拒，整轮判失败；
+            - `E_PROFILE_NOT_FOUND`：员工不在本租户名册（跨租户 = 不存在），同上。
+        proposal:
+          type: object
+          description: |
+            越权时的人审提案（ADR-0066 §3.4）：`escalations` 是越权的维度、
+            `requested` 是各维度实际超出的能力、`scope=this_task_only` 声明
+            授权范围**只作用于本次任务**（不写回员工定义）。
     RunState:
       type: object
       required: [run_id, tenant_id, goal, status]

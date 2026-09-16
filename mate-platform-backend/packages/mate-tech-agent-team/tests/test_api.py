@@ -10,8 +10,11 @@ from fastapi.testclient import TestClient
 from mate_tech_agent_team import (
     BrainService,
     InMemoryCheckpointerProvider,
+    InMemoryTeamTasks,
+    ProfileRegistry,
     StaticPlanner,
     SubTaskResult,
+    TeamBus,
 )
 from mate_tech_agent_team.main import create_app
 
@@ -36,6 +39,7 @@ def client() -> TestClient:
         planner_for=lambda _ctx: StaticPlanner(),
         runtime_for=lambda _ctx: _Runtime(),
         checkpointer=InMemoryCheckpointerProvider(),
+        team_bus=TeamBus(registry=ProfileRegistry(), tasks=InMemoryTeamTasks()),
     )
     return TestClient(create_app(service=service))
 

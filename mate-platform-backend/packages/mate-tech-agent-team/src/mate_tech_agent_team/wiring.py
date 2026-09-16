@@ -219,6 +219,7 @@ def build_service(
         planner_for=planner_for,
         runtime_for=runtime_for,
         checkpointer=PgCheckpointerProvider(required_dsn()),
+        team_bus=team_bus or build_team_bus(registry),
         max_parallel=int(os.getenv("MATE_AGENT_TEAM_MAX_PARALLEL", "3")),
     )
 

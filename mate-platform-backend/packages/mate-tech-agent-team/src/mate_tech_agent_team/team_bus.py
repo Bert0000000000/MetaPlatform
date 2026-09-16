@@ -69,6 +69,10 @@ class SpawnRequest:
 
     ``depth`` 是**子任务自己的层号**：根任务 0、它的子员工 1，依此类推。
     ``initiator_envelope`` 是链根（发起用户）的包络——不是父 agent 的。
+
+    ``task_id`` 由调用方指定时，派活闸门与执行侧（``start``/``finish``）落在
+    **同一行** ``team_task`` 上；不指定就现生成一个。脑图给的是
+    ``<run_id 前 8 位>-<计划内标签>``，于是"这一行是谁派出去的"在库里直接可读。
     """
 
     tenant_id: str
@@ -78,6 +82,7 @@ class SpawnRequest:
     tool_scope: tuple[str, ...] = ()
     depth: int = 1
     parent_task_id: str | None = None
+    task_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,7 +151,7 @@ class TeamBus:
         child = Envelope.of(profile).narrow_tools(request.tool_scope)
         escalations = child.escalations_over(request.initiator_envelope)
 
-        task_id = f"task-{uuid.uuid4().hex[:12]}"
+        task_id = request.task_id or f"task-{uuid.uuid4().hex[:12]}"
         await self._task_records.create(
             TeamTask(
                 task_id=task_id,
@@ -230,10 +235,10 @@ class TeamBus:
         越权转提案），需要发起用户的包络；``start`` 是**实例层**（建行、置
         running、清空信箱），执行侧只知道自己要跑哪个 id。
 
-        **风险登记**：1.1 的包络闸门目前**没有**走在真实派活路径上（脑图的
-        worker 直接调运行时，不经过 ``spawn``）——因为"发起用户的包络从哪来"
-        还没有答案（RunContext 只有租户与令牌）。在补上之前，``start`` 明确
-        **不做**权限判定，别把它当成``spawn``用。
+        1.3 轨 1 起，脑图的派活**先过 ``spawn``**（闸门在真实路径上），
+        ``start`` 落在同一行上把状态重置为「这一轮从现在开始跑」。所以
+        ``start`` 本身仍**不做**权限判定 —— 它只负责实例登记，别把它当
+        ``spawn`` 用。
         """
         task = TeamTask(task_id=task_id, tenant_id=tenant_id, profile_id=profile_id, status=RUNNING)
         await self._task_records.create(task)

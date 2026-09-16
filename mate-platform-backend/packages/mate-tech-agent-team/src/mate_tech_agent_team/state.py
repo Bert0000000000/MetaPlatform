@@ -21,6 +21,13 @@ class SubTask(TypedDict, total=False):
     ``task_id`` 是**计划内标签**（``t1``/``t2``…），只在本轮计划里有意义；
     ``team_task_id`` 是**实例身份**（``team_task`` 表的主键），由派活侧在
     运行时给，跨运行唯一。追问子员工投递的是后者。
+
+    ``depends_on`` 是**同一计划内**的标签列表：列在这里的节点必须先把回执
+    写进 ``results``，本节点才够格被派出去（1.3 轨 1 起图真的读它）。
+
+    ``tool_scope`` 是调用方给的收窄面（只能收窄，不能扩，ADR-0066 §5.2）；
+    ``granted_tools`` 是派活闸门判完之后**实际发放**的工具面——运行时按它绑
+    工具，所以"闸门放行"与"员工能调什么"是同一份数据，不是两处各说各话。
     """
 
     task_id: str
@@ -28,10 +35,19 @@ class SubTask(TypedDict, total=False):
     profile_id: str
     instruction: str
     depends_on: list[str]
+    tool_scope: list[str]
+    granted_tools: list[str]
 
 
 class SubTaskResult(TypedDict, total=False):
-    """子任务回执。``source`` 区分真实执行与假回执，供 D-10 断言使用。"""
+    """子任务回执。``source`` 区分真实执行与假回执，供 D-10 断言使用。
+
+    ``error_code`` 是**可判定的失败类别**（闸门硬拒 / 越权待授权 / 员工报错
+    都是 ``status`` 里的同几个词，只有它分得开）：
+
+    * ``E_AUTHORITY_ESCALATION`` —— 越权，已转 proposal，**未执行**；
+    * ``E_DEPTH_EXCEEDED`` / ``E_PROFILE_NOT_FOUND`` —— 硬拒，整轮判失败。
+    """
 
     task_id: str
     team_task_id: str
@@ -42,6 +58,9 @@ class SubTaskResult(TypedDict, total=False):
     llm_calls: int
     source: str  # "llm" = 真实模型产出；"stub" = 未接线
     error: str
+    error_code: str
+    #: 越权时的人审提案（ADR-0066 §3.4）；授权范围只限本次任务。
+    proposal: dict[str, Any]
 
 
 def merge_results(

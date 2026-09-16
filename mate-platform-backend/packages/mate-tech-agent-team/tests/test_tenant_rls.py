@@ -17,10 +17,13 @@ import psycopg
 import pytest
 from mate_tech_agent_team import (
     BrainService,
+    InMemoryTeamTasks,
     PgCheckpointerProvider,
+    ProfileRegistry,
     RunNotFound,
     StaticPlanner,
     SubTaskResult,
+    TeamBus,
 )
 
 
@@ -41,6 +44,7 @@ def _service(app_dsn: str, schema: str) -> BrainService:
         planner_for=lambda _ctx: StaticPlanner(),
         runtime_for=lambda _ctx: _TinyRuntime(),
         checkpointer=PgCheckpointerProvider(app_dsn, schema=schema),
+        team_bus=TeamBus(registry=ProfileRegistry(), tasks=InMemoryTeamTasks()),
     )
 
 
@@ -59,9 +63,13 @@ async def _visible_checkpoints(app_dsn: str, schema: str, tenant_id: str | None)
 
 
 @pytest.mark.asyncio
-async def test_tenant_sees_own_rows_but_not_others(pg_dsns, rls_schema: str) -> None:
+async def test_tenant_sees_own_rows_but_not_others(
+    pg_dsns, rls_schema: str, admin_token: str
+) -> None:
     _, app_dsn = pg_dsns
-    run = await _service(app_dsn, rls_schema).start(tenant_id="tenant-a", goal="甲的异常订单")
+    run = await _service(app_dsn, rls_schema).start(
+        user_token=admin_token, tenant_id="tenant-a", goal="甲的异常订单"
+    )
     assert run["status"] == "awaiting_approval"
 
     assert await _visible_checkpoints(app_dsn, rls_schema, "tenant-a") > 0
@@ -69,17 +77,25 @@ async def test_tenant_sees_own_rows_but_not_others(pg_dsns, rls_schema: str) -> 
 
 
 @pytest.mark.asyncio
-async def test_missing_tenant_context_reads_nothing(pg_dsns, rls_schema: str) -> None:
+async def test_missing_tenant_context_reads_nothing(
+    pg_dsns, rls_schema: str, admin_token: str
+) -> None:
     """fail-closed：不设 ``app.tenant_id`` 时策略匹配不到任何行。"""
     _, app_dsn = pg_dsns
-    await _service(app_dsn, rls_schema).start(tenant_id="tenant-a", goal="甲的异常订单")
+    await _service(app_dsn, rls_schema).start(
+        user_token=admin_token, tenant_id="tenant-a", goal="甲的异常订单"
+    )
     assert await _visible_checkpoints(app_dsn, rls_schema, None) == 0
 
 
 @pytest.mark.asyncio
-async def test_cross_tenant_read_of_known_thread_is_not_found(pg_dsns, rls_schema: str) -> None:
+async def test_cross_tenant_read_of_known_thread_is_not_found(
+    pg_dsns, rls_schema: str, admin_token: str
+) -> None:
     _, app_dsn = pg_dsns
-    run = await _service(app_dsn, rls_schema).start(tenant_id="tenant-a", goal="甲的异常订单")
+    run = await _service(app_dsn, rls_schema).start(
+        user_token=admin_token, tenant_id="tenant-a", goal="甲的异常订单"
+    )
     got = await _service(app_dsn, rls_schema).get(tenant_id="tenant-a", run_id=run["run_id"])
     assert got["goal"] == "甲的异常订单"
     with pytest.raises(RunNotFound):
@@ -87,9 +103,13 @@ async def test_cross_tenant_read_of_known_thread_is_not_found(pg_dsns, rls_schem
 
 
 @pytest.mark.asyncio
-async def test_thread_id_shape_matches_rls_policy(pg_dsns, rls_schema: str) -> None:
+async def test_thread_id_shape_matches_rls_policy(
+    pg_dsns, rls_schema: str, admin_token: str
+) -> None:
     _, app_dsn = pg_dsns
-    run = await _service(app_dsn, rls_schema).start(tenant_id="tenant-a", goal="目标")
+    run = await _service(app_dsn, rls_schema).start(
+        user_token=admin_token, tenant_id="tenant-a", goal="目标"
+    )
     conn = await psycopg.AsyncConnection.connect(app_dsn, autocommit=True)
     try:
         await conn.execute(f"SET search_path TO {rls_schema}")
@@ -104,7 +124,7 @@ async def test_thread_id_shape_matches_rls_policy(pg_dsns, rls_schema: str) -> N
 
 
 @pytest.mark.asyncio
-async def test_no_prefix_write_is_rejected(pg_dsns, rls_schema: str) -> None:
+async def test_no_prefix_write_is_rejected(pg_dsns, rls_schema: str, admin_token: str) -> None:
     """WITH CHECK：写一条不带租户前缀的 thread 必须被策略拒掉。"""
     _, app_dsn = pg_dsns
     conn = await psycopg.AsyncConnection.connect(app_dsn, autocommit=True)

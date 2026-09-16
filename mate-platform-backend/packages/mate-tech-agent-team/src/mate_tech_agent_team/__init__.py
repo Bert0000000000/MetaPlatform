@@ -6,7 +6,15 @@
 
 from __future__ import annotations
 
-from .authority import AuthorityError, DepthExceeded, Envelope
+from .authority import (
+    AuthorityError,
+    DepthExceeded,
+    Envelope,
+    EnvelopeState,
+    claims_of,
+    envelope_from_claims,
+    resolve_initiator_envelope,
+)
 from .brain import BrainService, RunContext, RunNotAwaitingApproval, RunNotFound
 from .checkpoint import (
     InMemoryCheckpointerProvider,
@@ -48,6 +56,7 @@ __all__ = [
     "DEFAULT_MAX_DEPTH",
     "DepthExceeded",
     "Envelope",
+    "EnvelopeState",
     "BrainState",
     "EmployeeProfile",
     "EmployeeRuntime",
@@ -83,6 +92,9 @@ __all__ = [
     "bootstrap",
     "bootstrap_tasks",
     "builtin_profiles",
+    "claims_of",
+    "envelope_from_claims",
+    "resolve_initiator_envelope",
     "thread_id_for",
     "to_openai_schema",
 ]

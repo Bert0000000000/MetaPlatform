@@ -26,6 +26,7 @@ from mate_tech_agent_team import (
     StaticPlanner,
     SubTaskResult,
     TeamBus,
+    builtin_profiles,
 )
 from mate_tech_agent_team.profiles import EmployeeProfile, ProfileNotFound
 from mate_tech_agent_team.team_task_store import InMemoryTeamTasks
@@ -43,13 +44,22 @@ PROFILE = EmployeeProfile(
 
 
 class _Registry:
+    """测试名册：自定义的 ``EMP-CHILD`` + 三个内置员工。
+
+    内置的那三个是必需的——脑图侧用 ``StaticPlanner`` 派的就是它们，而 1.3
+    轨 1 起派活要**过闸门**，名册里没有 = 跨租户 = 硬拒。
+    """
+
+    def __init__(self) -> None:
+        self._profiles = {p.profile_id: p for p in [PROFILE, *builtin_profiles()]}
+
     async def get(self, profile_id: str, tenant_id: str = "") -> EmployeeProfile:
-        if profile_id != PROFILE.profile_id or tenant_id != TENANT:
+        if tenant_id != TENANT or profile_id not in self._profiles:
             raise ProfileNotFound(profile_id)
-        return PROFILE
+        return self._profiles[profile_id]
 
     async def list(self, tenant_id: str = "") -> list[EmployeeProfile]:
-        return [PROFILE] if tenant_id == TENANT else []
+        return list(self._profiles.values()) if tenant_id == TENANT else []
 
 
 def _bus() -> TeamBus:
@@ -243,16 +253,17 @@ def _service(bus: TeamBus):
             planner_for=lambda _ctx: StaticPlanner(),
             runtime_for=lambda _ctx: rt,
             checkpointer=InMemoryCheckpointerProvider(),
+            team_bus=bus,
         ),
         rt,
     )
 
 
 @pytest.mark.asyncio
-async def test_brain_run_gives_every_subtask_a_sendable_unique_id() -> None:
+async def test_brain_run_gives_every_subtask_a_sendable_unique_id(admin_token: str) -> None:
     bus = _bus()
     service, rt = _service(bus)
-    state = await service.start(tenant_id=TENANT, goal="分析本月异常订单")
+    state = await service.start(user_token=admin_token, tenant_id=TENANT, goal="分析本月异常订单")
 
     # 计划内标签不变（既有判据/API 值不回归）
     assert sorted(state["results"]) == ["t1", "t2", "t3"], state["results"]
@@ -268,11 +279,11 @@ async def test_brain_run_gives_every_subtask_a_sendable_unique_id() -> None:
 
 
 @pytest.mark.asyncio
-async def test_subtask_ids_carry_the_run_so_two_runs_never_collide() -> None:
+async def test_subtask_ids_carry_the_run_so_two_runs_never_collide(admin_token: str) -> None:
     bus = _bus()
     service, _rt = _service(bus)
-    first = await service.start(tenant_id=TENANT, goal="分析本月异常订单")
-    second = await service.start(tenant_id=TENANT, goal="分析本月异常订单")
+    first = await service.start(user_token=admin_token, tenant_id=TENANT, goal="分析本月异常订单")
+    second = await service.start(user_token=admin_token, tenant_id=TENANT, goal="分析本月异常订单")
 
     ids_first = {first["results"][k]["team_task_id"] for k in ("t1", "t2", "t3")}
     ids_second = {second["results"][k]["team_task_id"] for k in ("t1", "t2", "t3")}

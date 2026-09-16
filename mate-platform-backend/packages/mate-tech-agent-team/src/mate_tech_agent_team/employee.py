@@ -328,7 +328,9 @@ class LlmEmployeeRuntime:
             return result
 
         result["profile_id"] = profile.profile_id
-        allowed = profile.tools
+        # 工具面取**派活闸门实际发放**的那一份（= 员工白名单 ∩ 发起用户包络 ∩
+        # 调用方 tool_scope）。没走闸门的直调（单测、离线）退回员工白名单。
+        allowed = tuple(subtask.get("granted_tools") or profile.tools)
         tool_log: list[dict[str, Any]] = []
 
         llm = self._llm_factory(tenant_id)

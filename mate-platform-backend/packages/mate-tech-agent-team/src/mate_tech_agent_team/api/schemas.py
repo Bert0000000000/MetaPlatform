@@ -34,6 +34,11 @@ class SubTaskResultModel(BaseModel):
     llm_calls: int = 0
     source: str = "stub"
     error: str = ""
+    #: 可判定的失败类别：越权待授权（E_AUTHORITY_ESCALATION）与硬拒
+    #: （E_DEPTH_EXCEEDED / E_PROFILE_NOT_FOUND）在 ``status`` 里长得一样。
+    error_code: str = ""
+    #: 越权时的人审提案（ADR-0066 §3.4），授权范围只限本次任务。
+    proposal: dict[str, Any] = Field(default_factory=dict)
 
 
 class RunStateModel(BaseModel):

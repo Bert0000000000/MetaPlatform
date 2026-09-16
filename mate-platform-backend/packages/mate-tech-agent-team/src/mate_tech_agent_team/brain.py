@@ -13,25 +13,33 @@ thread_id 的调用方都能读到别人的状态；只有 GUC 而 thread_id 不
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 from uuid import uuid4
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
 
+from .authority import Envelope, resolve_initiator_envelope
 from .checkpoint import thread_id_for
 from .graph import build_brain_graph
 from .planner import Planner
 from .runtime import EmployeeRuntime
 from .state import BrainState
+from .team_bus import TeamBus
 
 
 @dataclass(frozen=True, slots=True)
 class RunContext:
-    """一次运行的调用方上下文（**不含**会话状态，只是当次授权）。"""
+    """一次运行的调用方上下文（**不含**会话状态，只是当次授权）。
+
+    ``initiator_envelope`` 是 ADR-0066 §3.3 的**链根**：派活的每一层都对着它
+    比，而不是对着"父 agent 当时拿到了什么"比。它从发起用户的令牌解析，且
+    与令牌一样**不进图状态**（状态会落库）。
+    """
 
     tenant_id: str
     user_token: str = ""
+    initiator_envelope: Envelope = field(default_factory=Envelope)
 
 
 class CheckpointerProvider(Protocol):
@@ -62,11 +70,15 @@ class BrainService:
         planner_for: PlannerFactory,
         runtime_for: RuntimeFactory,
         checkpointer: CheckpointerProvider,
+        team_bus: TeamBus,
         max_parallel: int = 3,
     ) -> None:
         self._planner_for = planner_for
         self._runtime_for = runtime_for
         self._checkpointer = checkpointer
+        #: 派活闸门：**派活的唯一入口**（包络衰减 + 深度闸门 + 越权转提案）。
+        #: 刻意没有默认值——漏接它，闸门就退回空转，而且不会有任何报错。
+        self._team_bus = team_bus
         self._max_parallel = max_parallel
 
     def _config(self, tenant_id: str, run_id: str) -> dict:
@@ -76,7 +88,9 @@ class BrainService:
         return build_brain_graph(
             planner=self._planner_for(ctx),
             runtime=self._runtime_for(ctx),
+            bus=self._team_bus,
             checkpointer=saver,
+            initiator_envelope=ctx.initiator_envelope,
             max_parallel=max_parallel,
         )
 
@@ -91,7 +105,7 @@ class BrainService:
         """一句话 → 拆图 → 并行派活 → 停在人工确认闸门。"""
         run_id = uuid4().hex
         cfg = self._config(tenant_id, run_id)
-        ctx = RunContext(tenant_id=tenant_id, user_token=user_token)
+        ctx = self._context(tenant_id=tenant_id, user_token=user_token)
         parallel = max_parallel or self._max_parallel
         async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
             graph = await self._graph_for(saver, ctx, parallel)
@@ -100,6 +114,14 @@ class BrainService:
                 cfg,
             )
         return dict(out)
+
+    def _context(self, *, tenant_id: str, user_token: str = "") -> RunContext:
+        """解析本次运行的链根。**没有令牌 = 空包络**（fail-closed）。"""
+        return RunContext(
+            tenant_id=tenant_id,
+            user_token=user_token,
+            initiator_envelope=resolve_initiator_envelope(user_token),
+        )
 
     async def resume(
         self,
@@ -111,7 +133,7 @@ class BrainService:
     ) -> BrainState:
         """人工确认后续跑。已完成的节点不会被重跑（D-6）。"""
         cfg = self._config(tenant_id, run_id)
-        ctx = RunContext(tenant_id=tenant_id, user_token=user_token)
+        ctx = self._context(tenant_id=tenant_id, user_token=user_token)
         async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
             graph = await self._graph_for(saver, ctx, self._max_parallel)
             snapshot = await graph.aget_state(cfg)
@@ -125,7 +147,7 @@ class BrainService:
 
     async def get(self, *, tenant_id: str, run_id: str) -> BrainState:
         cfg = self._config(tenant_id, run_id)
-        ctx = RunContext(tenant_id=tenant_id)
+        ctx = self._context(tenant_id=tenant_id)
         async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
             graph = await self._graph_for(saver, ctx, self._max_parallel)
             snapshot = await graph.aget_state(cfg)

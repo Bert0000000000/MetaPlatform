@@ -17,9 +17,12 @@ import pytest
 from mate_tech_agent_team import (
     BrainService,
     InMemoryCheckpointerProvider,
+    InMemoryTeamTasks,
+    ProfileRegistry,
     RunNotFound,
     StaticPlanner,
     SubTaskResult,
+    TeamBus,
     thread_id_for,
 )
 
@@ -60,10 +63,12 @@ class RecordingRuntime:
 
 def _service(runtime: RecordingRuntime | None = None) -> tuple[BrainService, RecordingRuntime]:
     rt = runtime or RecordingRuntime()
+    bus = TeamBus(registry=ProfileRegistry(), tasks=InMemoryTeamTasks())
     service = BrainService(
         planner_for=lambda _ctx: StaticPlanner(),
         runtime_for=lambda _ctx: rt,
         checkpointer=InMemoryCheckpointerProvider(),
+        team_bus=bus,
     )
     return service, rt
 
@@ -72,28 +77,32 @@ def _service(runtime: RecordingRuntime | None = None) -> tuple[BrainService, Rec
 
 
 @pytest.mark.asyncio
-async def test_three_parallel_subtasks_all_execute() -> None:
+async def test_three_parallel_subtasks_all_execute(admin_token: str) -> None:
     service, rt = _service()
-    state = await service.start(tenant_id="tenant-a", goal="把本月的异常订单找出来")
+    state = await service.start(
+        user_token=admin_token, tenant_id="tenant-a", goal="把本月的异常订单找出来"
+    )
     assert len(state["subtasks"]) == 3, state
     assert sorted(rt.calls) == ["t1", "t2", "t3"], rt.calls
     assert sorted(state["results"]) == ["t1", "t2", "t3"], state["results"]
 
 
 @pytest.mark.asyncio
-async def test_workers_actually_run_in_parallel() -> None:
+async def test_workers_actually_run_in_parallel(admin_token: str) -> None:
     """并行不是"循环里 await"——观测到的最大并发必须 ≥2。"""
     service, rt = _service()
-    await service.start(tenant_id="tenant-a", goal="分析本月异常订单")
+    await service.start(user_token=admin_token, tenant_id="tenant-a", goal="分析本月异常订单")
     assert rt.max_active >= 2, f"最大并发只有 {rt.max_active}，说明是串行执行的"
 
 
 @pytest.mark.asyncio
-async def test_summary_aggregates_every_subtask() -> None:
+async def test_summary_aggregates_every_subtask(admin_token: str) -> None:
     service, _ = _service()
-    run = await service.start(tenant_id="tenant-a", goal="分析本月异常订单")
+    run = await service.start(user_token=admin_token, tenant_id="tenant-a", goal="分析本月异常订单")
     assert run["status"] == "awaiting_approval"
-    done = await service.resume(tenant_id="tenant-a", run_id=run["run_id"], approved=True)
+    done = await service.resume(
+        user_token=admin_token, tenant_id="tenant-a", run_id=run["run_id"], approved=True
+    )
     assert done["status"] == "completed"
     for task_id in ("t1", "t2", "t3"):
         assert task_id in done["summary"], f"{task_id} 的产出没进汇总：{done['summary']}"
@@ -103,19 +112,19 @@ async def test_summary_aggregates_every_subtask() -> None:
 
 
 @pytest.mark.asyncio
-async def test_other_tenant_cannot_read_the_run() -> None:
+async def test_other_tenant_cannot_read_the_run(admin_token: str) -> None:
     service, _ = _service()
-    run = await service.start(tenant_id="tenant-a", goal="甲租户的目标")
+    run = await service.start(user_token=admin_token, tenant_id="tenant-a", goal="甲租户的目标")
     # B 租户拿 A 的 run_id 去查 —— 必须查不到（不泄露存在性）
     with pytest.raises(RunNotFound):
         await service.get(tenant_id="tenant-b", run_id=run["run_id"])
 
 
 @pytest.mark.asyncio
-async def test_same_run_id_under_two_tenants_are_different_states() -> None:
+async def test_same_run_id_under_two_tenants_are_different_states(admin_token: str) -> None:
     service, _ = _service()
-    a = await service.start(tenant_id="tenant-a", goal="甲的目标")
-    b = await service.start(tenant_id="tenant-b", goal="乙的目标")
+    a = await service.start(user_token=admin_token, tenant_id="tenant-a", goal="甲的目标")
+    b = await service.start(user_token=admin_token, tenant_id="tenant-b", goal="乙的目标")
     got_a = await service.get(tenant_id="tenant-a", run_id=a["run_id"])
     got_b = await service.get(tenant_id="tenant-b", run_id=b["run_id"])
     assert got_a["goal"] == "甲的目标"
@@ -142,14 +151,16 @@ def test_thread_id_rejects_pipe_in_tenant() -> None:
 
 
 @pytest.mark.asyncio
-async def test_every_key_the_graph_writes_survives_the_checkpointer() -> None:
+async def test_every_key_the_graph_writes_survives_the_checkpointer(admin_token: str) -> None:
     """图写过的键必须都能读回来。
 
     裸 dict / 漏声明字段时，langgraph 会**静默丢弃**写入——这里逐键断言，
     任何新加的键忘了进 ``BrainState`` 都会在这里红。
     """
     service, _ = _service()
-    state = await service.start(tenant_id="tenant-a", goal="分析本月异常订单")
+    state = await service.start(
+        user_token=admin_token, tenant_id="tenant-a", goal="分析本月异常订单"
+    )
     for key in (
         "run_id",
         "tenant_id",
