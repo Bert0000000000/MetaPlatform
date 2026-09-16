@@ -53,13 +53,17 @@ class LlmgwClient:
         base_url: str | None = None,
         *,
         timeout: float = 120.0,
+        transport: httpx.AsyncBaseTransport | None = None,
         auth: Any = None,  # BearerAuth / ServiceIdentity（需有 .token()）
         tenant_id: str = "",
         user_token: str = "",
         provider_config: ProviderConfigResolver | None = None,
     ) -> None:
         self.base_url = (base_url or self.DEFAULT_URL).rstrip("/")
-        self._client = httpx.AsyncClient(timeout=timeout)
+        # ``transport`` 是**测试注入点**：没有它，测失败分类只能去改私有属性
+        # （``client._client``），而那正是 pyright strict 判 reportPrivateUsage
+        # 的写法——用假传输比破坏封装更省事，也更诚实。
+        self._client = httpx.AsyncClient(timeout=timeout, transport=transport)
         self._auth = auth
         self._tenant_id = tenant_id
         self._user_token = user_token

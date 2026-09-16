@@ -8,18 +8,20 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 
 import httpx
 import pytest
 
 from mate_clients.llmgw.client import RETRYABLE_STATUS, LlmgwClient, LlmgwError
 
+#: 假传输的处理器形状与 ``httpx.MockTransport`` 收的一致。
+Handler = Callable[[httpx.Request], httpx.Response]
 
-def _client(handler: object) -> LlmgwClient:
-    client = LlmgwClient("http://mate-tech-llmgw.test:8008")
-    # 换掉传输层，其余（URL 拼装 / 解析）走真代码。
-    client._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))  # type: ignore[arg-type]
-    return client
+
+def _client(handler: Handler) -> LlmgwClient:
+    # 只换传输层，其余（URL 拼装 / 状态码 / 解析）走真代码。
+    return LlmgwClient("http://mate-tech-llmgw.test:8008", transport=httpx.MockTransport(handler))
 
 
 def _call(client: LlmgwClient) -> dict:
