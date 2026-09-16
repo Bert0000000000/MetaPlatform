@@ -86,6 +86,7 @@ def build_brain_graph(
     bus: TeamBus,
     checkpointer: BaseCheckpointSaver,
     initiator_envelope: Envelope | None = None,
+    actor: str = "",
     max_parallel: int = 3,
     depth: int = ROOT_DISPATCH_DEPTH,
 ) -> Any:
@@ -93,6 +94,7 @@ def build_brain_graph(
 
     ``initiator_envelope`` 是**发起用户**的包络（ADR-0066 §3.3 的链根），刻意
     与令牌一样**不进图状态**：状态会落进 PG，而它是当次调用的授权，用完即散。
+    ``actor``（发起用户标识）同样不进状态，只随派活写进审计行（硬规则 #9）。
     """
     root_envelope = initiator_envelope if initiator_envelope is not None else Envelope()
 
@@ -181,6 +183,9 @@ def build_brain_graph(
                     tool_scope=tuple(subtask.get("tool_scope") or ()),
                     depth=depth,
                     task_id=subtask["team_task_id"],
+                    # 审计用：谁派的、属于哪一轮（硬规则 #9）。
+                    actor=actor,
+                    run_id=run_id,
                 )
             )
         except DepthExceeded as exc:
@@ -215,6 +220,9 @@ def build_brain_graph(
 
         # 闸门放行的工具面**就是**运行时能绑的那一份（不是两处各说各话）。
         subtask["granted_tools"] = sorted(outcome.envelope.tools)
+        # 1.4 任务 1：四维一起发下去。只发工具面的话，action_rids / kb_ids /
+        # markings 三维在执行侧无人认领——判完就没人再看一眼。
+        subtask["granted_envelope"] = outcome.envelope.as_state()
         result = await runtime.run(subtask=subtask, tenant_id=tenant_id)
         # ``results`` 仍按**计划内标签**归类（``t1``…）：那是计划里的位置，
         # 不是实例身份；调用方要投递时读回执里的 ``team_task_id``。

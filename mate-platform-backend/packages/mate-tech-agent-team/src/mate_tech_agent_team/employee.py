@@ -42,7 +42,9 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.tools import StructuredTool
 from langgraph.errors import GraphRecursionError
 
+from .authority import Envelope
 from .chat_model import LlmgwChatModel, RunTrace
+from .envelope_gate import EnvelopeGate
 from .profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry
 from .runtime import TaskChannel
 from .skills import SkillCatalog
@@ -335,6 +337,12 @@ class LlmEmployeeRuntime:
 
         llm = self._llm_factory(tenant_id)
         toolbox = self._toolbox_factory(tenant_id)
+        # 1.4 任务 1：`tools` 之外的三维（action_rids / kb_ids / markings）也要
+        # 在执行侧拦人。包络取派活闸门**四维一起发放**的那份；没走闸门的直调
+        # 退回员工定义自己的包络——退回空包络会把每次直调变成全拒。
+        granted = subtask.get("granted_envelope")
+        envelope = Envelope.of_state(granted) if granted is not None else Envelope.of(profile)
+        toolbox = EnvelopeGate(toolbox=toolbox, envelope=envelope)
         trace = RunTrace()
         # 实例身份 = 派活侧给的 ``team_task_id``（按运行唯一，外部就投这个 id）。
         # 兜底用计划内标签 ``task_id``：直接调运行时、不经图的场景没有前者。

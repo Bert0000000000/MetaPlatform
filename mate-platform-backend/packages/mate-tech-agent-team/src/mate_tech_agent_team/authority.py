@@ -248,6 +248,20 @@ def resolve_initiator_envelope(token: str) -> Envelope:
     return envelope_from_claims(roles=_roles_of(claims), permissions=_permissions_of(claims))
 
 
+def actor_of(token: str) -> str:
+    """发起用户的标识（``sub``，回落 ``preferred_username``）—— 只给审计行用。
+
+    解不出就是空串：审计行宁可记"不知道是谁"，也不要记一个猜出来的名字。
+    """
+    claims = claims_of(token)
+    return str(claims.get("sub") or claims.get("preferred_username") or "")
+
+
+def roles_of(token: str) -> frozenset[str]:
+    """令牌里的角色集合（**不验签**，同 :func:`claims_of` 的前提）。"""
+    return _roles_of(claims_of(token))
+
+
 __all__ = [
     "DIMENSIONS",
     "PERMISSION_DIMENSION_PREFIXES",
@@ -255,7 +269,9 @@ __all__ = [
     "DepthExceeded",
     "Envelope",
     "EnvelopeState",
+    "actor_of",
     "claims_of",
     "envelope_from_claims",
     "resolve_initiator_envelope",
+    "roles_of",
 ]

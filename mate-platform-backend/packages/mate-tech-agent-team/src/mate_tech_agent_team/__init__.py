@@ -6,11 +6,21 @@
 
 from __future__ import annotations
 
+from mate_platform.tenancy.guards import APPROVER_ROLES
+
+from .audit import (
+    AUDIT_APPROVAL,
+    AUDIT_ESCALATION,
+    AUDIT_SPAWN,
+    AuditLog,
+    AuditRecord,
+)
 from .authority import (
     AuthorityError,
     DepthExceeded,
     Envelope,
     EnvelopeState,
+    actor_of,
     claims_of,
     envelope_from_claims,
     resolve_initiator_envelope,
@@ -49,6 +59,12 @@ from .team_task_store import (
 from .toolbox import CompositeToolbox, McpToolbox, ToolNotAllowed, to_openai_schema
 
 __all__ = [
+    "AUDIT_APPROVAL",
+    "AUDIT_ESCALATION",
+    "AUDIT_SPAWN",
+    "APPROVER_ROLES",
+    "AuditLog",
+    "AuditRecord",
     "AuthorityError",
     "BrainService",
     "ChannelMessage",
@@ -89,6 +105,7 @@ __all__ = [
     "SubTask",
     "SubTaskResult",
     "ToolNotAllowed",
+    "actor_of",
     "bootstrap",
     "bootstrap_tasks",
     "builtin_profiles",

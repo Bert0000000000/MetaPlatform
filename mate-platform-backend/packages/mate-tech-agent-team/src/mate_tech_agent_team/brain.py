@@ -19,7 +19,8 @@ from uuid import uuid4
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
 
-from .authority import Envelope, resolve_initiator_envelope
+from .audit import AUDIT_APPROVAL, AuditLog
+from .authority import Envelope, actor_of, resolve_initiator_envelope
 from .checkpoint import thread_id_for
 from .graph import build_brain_graph
 from .planner import Planner
@@ -35,11 +36,14 @@ class RunContext:
     ``initiator_envelope`` 是 ADR-0066 §3.3 的**链根**：派活的每一层都对着它
     比，而不是对着"父 agent 当时拿到了什么"比。它从发起用户的令牌解析，且
     与令牌一样**不进图状态**（状态会落库）。
+
+    ``actor`` 是发起用户的标识（令牌 ``sub``），**只用于审计行**（硬规则 #9）。
     """
 
     tenant_id: str
     user_token: str = ""
     initiator_envelope: Envelope = field(default_factory=Envelope)
+    actor: str = ""
 
 
 class CheckpointerProvider(Protocol):
@@ -77,6 +81,7 @@ class BrainService:
         checkpointer: CheckpointerProvider,
         team_bus: TeamBus,
         max_parallel: int = 3,
+        audit: AuditLog | None = None,
     ) -> None:
         self._planner_for = planner_for
         self._runtime_for = runtime_for
@@ -85,6 +90,9 @@ class BrainService:
         #: 刻意没有默认值——漏接它，闸门就退回空转，而且不会有任何报错。
         self._team_bus = team_bus
         self._max_parallel = max_parallel
+        #: 审计账本（硬规则 #9）。默认复用闸门那一本——派活 / 越权 / 审批落在
+        #: 同一本账上，读的时候不必记得去两个地方捞。
+        self.audit: AuditLog = audit if audit is not None else team_bus.audit
 
     def _config(self, tenant_id: str, run_id: str) -> dict:
         return {"configurable": {"thread_id": thread_id_for(tenant_id, run_id)}}
@@ -96,6 +104,7 @@ class BrainService:
             bus=self._team_bus,
             checkpointer=saver,
             initiator_envelope=ctx.initiator_envelope,
+            actor=ctx.actor,
             max_parallel=max_parallel,
         )
 
@@ -126,6 +135,7 @@ class BrainService:
             tenant_id=tenant_id,
             user_token=user_token,
             initiator_envelope=resolve_initiator_envelope(user_token),
+            actor=actor_of(user_token),
         )
 
     async def resume(
@@ -148,6 +158,16 @@ class BrainService:
                 raise RunNotAwaitingApproval(run_id)
             await graph.aupdate_state(cfg, {"approved": approved}, as_node="gate")
             out = await graph.ainvoke(None, cfg)
+        # 审批落审计行（硬规则 #9）：谁批的、批的是哪一轮、批还是驳。
+        # 记在**闸门真的动了之后**——被 409 挡下的确认不是一次审批。
+        self.audit.append(
+            action=AUDIT_APPROVAL,
+            tenant_id=tenant_id,
+            actor=ctx.actor,
+            run_id=run_id,
+            outcome="approved" if approved else "rejected",
+            detail={"scope": "run", "level": "plan_gate"},
+        )
         return dict(out)
 
     async def get(self, *, tenant_id: str, run_id: str) -> BrainState:

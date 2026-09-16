@@ -12,6 +12,8 @@ from __future__ import annotations
 
 from typing import Annotated, Any, TypedDict
 
+from .authority import EnvelopeState
+
 # ── 状态里的结构化值（用 TypedDict 而非 dataclass：checkpointer 序列化最稳）──
 
 
@@ -28,6 +30,10 @@ class SubTask(TypedDict, total=False):
     ``tool_scope`` 是调用方给的收窄面（只能收窄，不能扩，ADR-0066 §5.2）；
     ``granted_tools`` 是派活闸门判完之后**实际发放**的工具面——运行时按它绑
     工具，所以"闸门放行"与"员工能调什么"是同一份数据，不是两处各说各话。
+
+    ``granted_envelope`` 是同一份发放的**四维**形态（1.4 任务 1）：只带
+    ``granted_tools`` 时，``action_rids`` / ``kb_ids`` / ``markings`` 三维在
+    执行侧无人认领——判定过了就没人再看一眼，等于没拦。
     """
 
     task_id: str
@@ -37,6 +43,7 @@ class SubTask(TypedDict, total=False):
     depends_on: list[str]
     tool_scope: list[str]
     granted_tools: list[str]
+    granted_envelope: EnvelopeState
 
 
 class SubTaskResult(TypedDict, total=False):

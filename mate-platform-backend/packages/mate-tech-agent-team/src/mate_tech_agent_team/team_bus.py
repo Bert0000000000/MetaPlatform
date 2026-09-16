@@ -26,6 +26,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
+from .audit import AUDIT_APPROVAL, AUDIT_ESCALATION, AUDIT_SPAWN, AuditLog
 from .authority import DepthExceeded, Envelope
 from .team_task_store import (
     RUNNING,
@@ -73,6 +74,8 @@ class SpawnRequest:
     ``task_id`` 由调用方指定时，派活闸门与执行侧（``start``/``finish``）落在
     **同一行** ``team_task`` 上；不指定就现生成一个。脑图给的是
     ``<run_id 前 8 位>-<计划内标签>``，于是"这一行是谁派出去的"在库里直接可读。
+
+    ``actor`` / ``run_id`` 只用于**审计行**（硬规则 #9）：谁派的、属于哪一轮。
     """
 
     tenant_id: str
@@ -83,6 +86,8 @@ class SpawnRequest:
     depth: int = 1
     parent_task_id: str | None = None
     task_id: str = ""
+    actor: str = ""
+    run_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,6 +113,10 @@ class _TaskState:
     escalations: tuple[str, ...] = ()
     approved: bool = False
     proposal: dict[str, Any] | None = None
+    #: 审计用：谁派的、属于哪一轮、哪个租户（``grant`` 补记审批行时要带上）。
+    tenant_id: str = ""
+    actor: str = ""
+    run_id: str = ""
 
 
 class TeamBus:
@@ -127,6 +136,7 @@ class TeamBus:
         registry: Any,
         max_depth: int = DEFAULT_MAX_DEPTH,
         tasks: TeamTasks | None = None,
+        audit: AuditLog | None = None,
     ) -> None:
         if max_depth < 0:
             raise ValueError("max_depth 不得为负")
@@ -134,6 +144,9 @@ class TeamBus:
         self.max_depth = max_depth
         self._tasks: dict[str, _TaskState] = {}
         self._task_records: TeamTasks = tasks or InMemoryTeamTasks()
+        #: 审计账本（硬规则 #9）：派活 / 越权转 proposal / 审批各落一行。
+        #: 由本闸门持有——它同时是这三件事的必经之路；``BrainService`` 复用同一份。
+        self.audit: AuditLog = audit or AuditLog()
 
     # -- 判据 -------------------------------------------------------------
     async def spawn(self, request: SpawnRequest) -> SpawnOutcome:
@@ -166,7 +179,21 @@ class TeamBus:
         )
         if not escalations:
             self._tasks[task_id] = _TaskState(
-                depth=request.depth, base_envelope=child, approved=True
+                depth=request.depth,
+                base_envelope=child,
+                approved=True,
+                tenant_id=request.tenant_id,
+                actor=request.actor,
+                run_id=request.run_id,
+            )
+            self.audit.append(
+                action=AUDIT_SPAWN,
+                tenant_id=request.tenant_id,
+                actor=request.actor,
+                task_id=task_id,
+                run_id=request.run_id,
+                profile_id=request.profile_id,
+                outcome="granted",
             )
             return SpawnOutcome(
                 task_id=task_id,
@@ -194,6 +221,25 @@ class TeamBus:
             base_envelope=child,
             escalations=escalations,
             proposal=proposal,
+            tenant_id=request.tenant_id,
+            actor=request.actor,
+            run_id=request.run_id,
+        )
+        # 越权转 proposal 是最需要事后追责的一类动作：单记一行，与"派活成功"
+        # 分开。合并成一行会让"这次派活到底跑没跑"在账本上读不出来。
+        self.audit.append(
+            action=AUDIT_ESCALATION,
+            tenant_id=request.tenant_id,
+            actor=request.actor,
+            task_id=task_id,
+            run_id=request.run_id,
+            profile_id=request.profile_id,
+            outcome="proposal",
+            detail={
+                "escalations": list(escalations),
+                "requested": proposal["requested"],
+                "scope": proposal["scope"],
+            },
         )
         return SpawnOutcome(
             task_id=task_id,
@@ -205,12 +251,21 @@ class TeamBus:
         )
 
     # -- 授权登记（任务作用域）--------------------------------------------
-    async def grant(self, task_id: str) -> None:
+    async def grant(self, task_id: str, *, approver: str = "") -> None:
         """人审通过：把这次派活的包络放行。**只对这一个 task 生效。**"""
         state = self._tasks.get(task_id)
         if state is None:
             raise KeyError(f"未知任务：{task_id}")
         state.approved = True
+        self.audit.append(
+            action=AUDIT_APPROVAL,
+            tenant_id=state.tenant_id,
+            actor=approver,
+            task_id=task_id,
+            run_id=state.run_id,
+            outcome="approved",
+            detail={"scope": "this_task_only", "granted_by": approver},
+        )
 
     def revoke(self, task_id: str) -> None:
         state = self._tasks.get(task_id)
