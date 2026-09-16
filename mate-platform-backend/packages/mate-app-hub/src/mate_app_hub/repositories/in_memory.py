@@ -1,7 +1,7 @@
 """In-memory repository for the apphub (P2-W2 batch).
 
 Data shape:
-    _APPS / _GROUPS / _MODULES / _PAGES / _TEMPLATES:
+    _APPS / _GROUPS / _DOMAINS / _MODULES / _PAGES / _TEMPLATES:
         outer key = tenant_id (string)
         inner key = entity_id (string)
         value    = entity dataclass
@@ -12,10 +12,12 @@ that don't belong to that tenant. This is the layer at which the
 ADR-0014 cross-tenant rule is enforced.
 
 Seed data:
-    >= 15 apps (kb / rag / llmgw / mcp / obs / msg / ont / agent /
-    arch / copilot / dashboard / dw / a2a / wfe / data),
-    3 groups, 8 modules, 12 pages, 6 templates per tenant. Tests
-    rely on these minima; bumping them is allowed but tests
+    >= 20 apps (15 平台底座 kb / rag / llmgw / mcp / obs / msg / ont /
+    agent / arch / copilot / dashboard / dw / a2a / wfe / data，外加
+    5 个业务应用 order-review / supplier-perf / customer-recovery /
+    product-qa / expense-draft),
+    4 groups, 6 domains, 8 modules, 12 pages, 6 templates per tenant.
+    Tests rely on these minima; bumping them is allowed but tests
     assert `>= N` rather than equality.
 """
 
@@ -36,10 +38,24 @@ class ApphubApp:
     version: str = "1.0.0"
     owner: str = "platform-team"
     tags: tuple[str, ...] = field(default_factory=tuple)
+    # 业务域码，指向 ApphubDomain.code。空串表示未归类。
+    # category 是技术分类（platform/knowledge/data/business），business_domain
+    # 是业务分类，两者是独立的分类轴。
+    business_domain: str = ""
 
 
 @dataclass(frozen=True)
 class ApphubGroup:
+    id: str
+    tenant_id: str
+    name: str
+    code: str
+    icon: str
+    sort_order: int = 0
+
+
+@dataclass(frozen=True)
+class ApphubDomain:
     id: str
     tenant_id: str
     name: str
@@ -85,22 +101,60 @@ class ApphubTemplate:
 # Seed builders
 # ---------------------------------------------------------------------------
 def _seed_apps(tenant_id: str) -> dict[str, ApphubApp]:
-    catalog: list[tuple[str, str, str, str]] = [
-        ("kb", "Knowledge Base", "knowledge", "向量检索 + RAG 知识库"),
-        ("rag", "RAG Pipeline", "knowledge", "检索增强生成管道"),
-        ("llmgw", "LLM Gateway", "platform", "统一 LLM 网关"),
-        ("mcp", "MCP Servers", "platform", "Model Context Protocol 服务市场"),
-        ("obs", "Observability", "platform", "日志 / 指标 / 链路追踪"),
-        ("msg", "Messaging", "platform", "Kafka / RabbitMQ 事件总线"),
-        ("ont", "Ontology", "knowledge", "业务本体概念库"),
-        ("agent", "Agent Runtime", "knowledge", "Agent 编排执行"),
-        ("arch", "Architecture Center", "platform", "应用 / 数据 / 流程治理"),
-        ("copilot", "Copilot", "knowledge", "AI 业务助手"),
-        ("dashboard", "Dashboard", "platform", "工作台 / 仪表盘"),
-        ("dw", "Data Warehouse", "data", "湖仓 ADS / DWD / DWS"),
-        ("a2a", "A2A Protocol", "platform", "Agent-to-Agent 协议"),
-        ("wfe", "Workflow Engine", "platform", "Flowable BPMN 引擎"),
-        ("data", "Data Assets", "data", "D0-D8 数据资产注册"),
+    # (code, name, category, description, business_domain)
+    catalog: list[tuple[str, str, str, str, str]] = [
+        # --- 平台底座：15 个既有平台组件 ---
+        ("kb", "Knowledge Base", "knowledge", "向量检索 + RAG 知识库", "platform-base"),
+        ("rag", "RAG Pipeline", "knowledge", "检索增强生成管道", "platform-base"),
+        ("llmgw", "LLM Gateway", "platform", "统一 LLM 网关", "platform-base"),
+        ("mcp", "MCP Servers", "platform", "Model Context Protocol 服务市场", "platform-base"),
+        ("obs", "Observability", "platform", "日志 / 指标 / 链路追踪", "platform-base"),
+        ("msg", "Messaging", "platform", "Kafka / RabbitMQ 事件总线", "platform-base"),
+        ("ont", "Ontology", "knowledge", "业务本体概念库", "platform-base"),
+        ("agent", "Agent Runtime", "knowledge", "Agent 编排执行", "platform-base"),
+        ("arch", "Architecture Center", "platform", "应用 / 数据 / 流程治理", "platform-base"),
+        ("copilot", "Copilot", "knowledge", "AI 业务助手", "platform-base"),
+        ("dashboard", "Dashboard", "platform", "工作台 / 仪表盘", "platform-base"),
+        ("dw", "Data Warehouse", "data", "湖仓 ADS / DWD / DWS", "platform-base"),
+        ("a2a", "A2A Protocol", "platform", "Agent-to-Agent 协议", "platform-base"),
+        ("wfe", "Workflow Engine", "platform", "Flowable BPMN 引擎", "platform-base"),
+        ("data", "Data Assets", "data", "D0-D8 数据资产注册", "platform-base"),
+        # --- 业务应用：让业务域分类有真实内容 ---
+        (
+            "order-review",
+            "订单复核",
+            "business",
+            "处理高价值未支付订单，生成复核建议并在人工确认后创建跟进单。",
+            "order",
+        ),
+        (
+            "supplier-perf",
+            "供应商绩效看板",
+            "business",
+            "供应商交付 / 质量 / 成本三维评分，数据来自本体实时查询。",
+            "supply-chain",
+        ),
+        (
+            "customer-recovery",
+            "客户挽回工作台",
+            "business",
+            "流失风险队列 + 挽回方案审批，写回需人工二次确认。",
+            "customer",
+        ),
+        (
+            "product-qa",
+            "产品知识问答",
+            "knowledge",
+            "面向客服团队的产品手册检索与引用回链。",
+            "knowledge-svc",
+        ),
+        (
+            "expense-draft",
+            "报销流程草稿",
+            "business",
+            "由 AI 设计器从需求描述生成，含报销表单与审批流草稿。",
+            "finance",
+        ),
     ]
     return {
         code: ApphubApp(
@@ -111,8 +165,31 @@ def _seed_apps(tenant_id: str) -> dict[str, ApphubApp]:
             category=category,
             description=desc,
             tags=(category, "p2w2"),
+            business_domain=business_domain,
         )
-        for code, name, category, desc in catalog
+        for code, name, category, desc, business_domain in catalog
+    }
+
+
+def _seed_domains(tenant_id: str) -> dict[str, ApphubDomain]:
+    catalog: list[tuple[str, str, str, int]] = [
+        ("platform-base", "平台底座", "server", 10),
+        ("order", "订单域", "shopping-cart", 20),
+        ("supply-chain", "供应链域", "truck", 30),
+        ("customer", "客户域", "users", 40),
+        ("knowledge-svc", "知识域", "book", 50),
+        ("finance", "财务域", "wallet", 60),
+    ]
+    return {
+        code: ApphubDomain(
+            id=f"dom-{code}",
+            tenant_id=tenant_id,
+            name=name,
+            code=code,
+            icon=icon,
+            sort_order=sort_order,
+        )
+        for code, name, icon, sort_order in catalog
     }
 
 
@@ -141,6 +218,14 @@ def _seed_groups(tenant_id: str) -> dict[str, ApphubGroup]:
             code="data",
             icon="database",
             sort_order=30,
+        ),
+        "business": ApphubGroup(
+            id="grp-business",
+            tenant_id=tenant_id,
+            name="Business",
+            code="business",
+            icon="briefcase",
+            sort_order=40,
         ),
     }
 
@@ -225,6 +310,7 @@ def _seed_templates(tenant_id: str) -> dict[str, ApphubTemplate]:
 # ---------------------------------------------------------------------------
 _APPS: dict[str, dict[str, ApphubApp]] = {}
 _GROUPS: dict[str, dict[str, ApphubGroup]] = {}
+_DOMAINS: dict[str, dict[str, ApphubDomain]] = {}
 _MODULES: dict[str, dict[str, ApphubModule]] = {}
 _PAGES: dict[str, dict[str, ApphubPage]] = {}
 _TEMPLATES: dict[str, dict[str, ApphubTemplate]] = {}
@@ -238,6 +324,8 @@ def _ensure_tenant(tenant_id: str) -> None:
         _APPS[tenant_id] = _seed_apps(tenant_id)
     if tenant_id not in _GROUPS:
         _GROUPS[tenant_id] = _seed_groups(tenant_id)
+    if tenant_id not in _DOMAINS:
+        _DOMAINS[tenant_id] = _seed_domains(tenant_id)
     if tenant_id not in _MODULES:
         _MODULES[tenant_id] = _seed_modules(tenant_id)
     if tenant_id not in _PAGES:
@@ -263,6 +351,14 @@ def list_groups(tenant_id: str) -> list[ApphubGroup]:
         return []
     _ensure_tenant(tenant_id)
     return sorted(_GROUPS[tenant_id].values(), key=lambda g: g.sort_order)
+
+
+def list_domains(tenant_id: str) -> list[ApphubDomain]:
+    """Return the business domains for a tenant."""
+    if not tenant_id:
+        return []
+    _ensure_tenant(tenant_id)
+    return sorted(_DOMAINS[tenant_id].values(), key=lambda d: (d.sort_order, d.code))
 
 
 def list_modules(tenant_id: str) -> list[ApphubModule]:
@@ -348,6 +444,34 @@ def delete_group(tenant_id: str, code: str) -> bool:
     return True
 
 
+def get_domain(tenant_id: str, code: str) -> ApphubDomain | None:
+    """Return a single business domain by code, or None."""
+    if not tenant_id:
+        return None
+    _ensure_tenant(tenant_id)
+    return _DOMAINS[tenant_id].get(code)
+
+
+def put_domain(tenant_id: str, domain: ApphubDomain) -> ApphubDomain:
+    """Insert or replace a business domain."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    _ensure_tenant(tenant_id)
+    _DOMAINS[tenant_id][domain.code] = domain
+    return domain
+
+
+def delete_domain(tenant_id: str, code: str) -> bool:
+    """Delete a business domain by code. Returns True if deleted."""
+    if not tenant_id:
+        return False
+    _ensure_tenant(tenant_id)
+    if code not in _DOMAINS[tenant_id]:
+        return False
+    del _DOMAINS[tenant_id][code]
+    return True
+
+
 def get_module(tenant_id: str, code: str) -> ApphubModule | None:
     """Return a single module by code, or None."""
     if not tenant_id:
@@ -398,6 +522,7 @@ def reset_store() -> None:
     """Drop all seeded data. Used by tests to keep cases isolated."""
     _APPS.clear()
     _GROUPS.clear()
+    _DOMAINS.clear()
     _MODULES.clear()
     _PAGES.clear()
     _TEMPLATES.clear()

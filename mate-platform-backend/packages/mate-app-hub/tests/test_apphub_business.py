@@ -5,6 +5,7 @@ Covers the P0 business logic added in the second batch:
   - App category validation (must match an existing group)
   - App CRUD (register / update / delete)
   - Group CRUD (create / delete with referential integrity guard)
+  - 业务域 CRUD (create / update / delete with referential integrity guard)
   - Module CRUD (app_code must reference existing app)
   - Page CRUD (module_code must reference existing module)
   - Template CRUD (template_type validation)
@@ -307,6 +308,106 @@ def test_delete_empty_group_success(client: TestClient, auth_headers_acme: dict[
         headers=auth_headers_acme,
     )
     assert r.status_code == 200, r.text
+
+
+# ---------------------------------------------------------------------------
+# 业务域 CRUD
+# ---------------------------------------------------------------------------
+def test_create_domain_success(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
+    """POST /domains creates a new business domain."""
+    r = client.post(
+        "/api/v1/apphub/domains",
+        json={"name": "研发域", "code": "rnd", "icon": "code", "sort_order": 70},
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["code"] == "rnd"
+    assert body["name"] == "研发域"
+    assert body["sort_order"] == 70
+
+    # 新域立刻出现在 facet 列表里。
+    codes = {
+        d["code"]
+        for d in client.get("/api/v1/apphub/apps/domains", headers=auth_headers_acme).json()[
+            "items"
+        ]
+    }
+    assert "rnd" in codes
+
+
+def test_create_domain_duplicate(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
+    """POST /domains with an existing code -> 409."""
+    r = client.post(
+        "/api/v1/apphub/domains",
+        json={"name": "重复", "code": "order"},
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 409, r.text
+
+
+def test_update_domain_success(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
+    """PATCH /domains/{code} renames a domain; code stays immutable."""
+    r = client.patch(
+        "/api/v1/apphub/domains/order",
+        json={"name": "订单与履约域", "sort_order": 15},
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["code"] == "order", "code 是不可变的"
+    assert body["name"] == "订单与履约域"
+    assert body["sort_order"] == 15
+    # 未提供的字段保持原值。
+    assert body["icon"] == "shopping-cart"
+
+    # 改名后 app 的归属不受影响。
+    apps = client.get("/api/v1/apphub/apps", headers=auth_headers_acme).json()["items"]
+    assert {a["business_domain"] for a in apps if a["code"] == "order-review"} == {"order"}
+
+
+def test_update_domain_not_found(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
+    """PATCH /domains/{code} on an unknown code -> 404."""
+    r = client.patch(
+        "/api/v1/apphub/domains/nope",
+        json={"name": "x"},
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 404, r.text
+
+
+def test_delete_domain_with_apps_rejected(
+    client: TestClient, auth_headers_acme: dict[str, str]
+) -> None:
+    """DELETE /domains/{code} rejected while apps still reference it."""
+    # platform-base owns the 15 seeded platform components.
+    r = client.delete(
+        "/api/v1/apphub/domains/platform-base",
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 409, r.text
+    assert "apps reference it" in r.json()["detail"]
+
+
+def test_delete_empty_domain_success(client: TestClient, auth_headers_acme: dict[str, str]) -> None:
+    """DELETE /domains/{code} succeeds for a domain with no apps."""
+    client.post(
+        "/api/v1/apphub/domains",
+        json={"name": "临时域", "code": "tmp-domain"},
+        headers=auth_headers_acme,
+    )
+    r = client.delete(
+        "/api/v1/apphub/domains/tmp-domain",
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["deleted"] == "tmp-domain"
+
+    # 删完就不能再删。
+    assert (
+        client.delete("/api/v1/apphub/domains/tmp-domain", headers=auth_headers_acme).status_code
+        == 404
+    )
 
 
 # ---------------------------------------------------------------------------

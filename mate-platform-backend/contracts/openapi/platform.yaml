@@ -137,6 +137,8 @@ paths:
     $ref: ./services/agent.yaml#/paths/~1api~1v1~1agent~1state~1{thread_id}
   /api/v1/apphub/apps:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps
+  /api/v1/apphub/apps/domains:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1domains
   /api/v1/apphub/apps/groups:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1groups
   /api/v1/apphub/apps/{appId}/publish:
@@ -147,6 +149,10 @@ paths:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{appId}~1runtime~1execute
   /api/v1/apphub/apps/{code}:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{code}
+  /api/v1/apphub/domains:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1domains
+  /api/v1/apphub/domains/{code}:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1domains~1{code}
   /api/v1/apphub/groups:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1groups
   /api/v1/apphub/groups/{code}:

@@ -11,12 +11,23 @@ async function post<T>(url: string, body?: unknown): Promise<T> {
 async function put<T>(url: string, body?: unknown): Promise<T> {
   return data(await client.put<T>(url, body));
 }
+async function patch<T>(url: string, body?: unknown): Promise<T> {
+  return data(await client.patch<T>(url, body));
+}
 async function del<T>(url: string): Promise<T> {
   return data(await client.delete<T>(url));
 }
 
 
-import type { AppItem, AppCreateRequest, AppUpdateRequest, PageResponse } from './types';
+import type {
+  AppItem,
+  AppCreateRequest,
+  AppUpdateRequest,
+  BusinessDomain,
+  DomainCreateRequest,
+  DomainUpdateRequest,
+  PageResponse,
+} from './types';
 
 /** Raw shape returned by the backend mate-app-hub /api/v1/apphub/apps endpoint. */
 interface ApphubAppRaw {
@@ -28,6 +39,7 @@ interface ApphubAppRaw {
   version?: string;
   owner?: string;
   tags?: string[];
+  business_domain?: string;
 }
 
 /** Map backend snake_case app record to the frontend AppItem shape. */
@@ -38,6 +50,7 @@ function mapApp(raw: ApphubAppRaw): AppItem {
     code: raw.code,
     description: raw.description,
     group: raw.category,
+    businessDomain: raw.business_domain ?? '',
     status: 'PUBLISHED',
     moduleCount: raw.tags?.length ?? 0,
     createdAt: raw.version ?? '',
@@ -83,4 +96,28 @@ export async function listGroups(): Promise<string[]> {
   const res = await get<{ items: Array<{ name?: string; code?: string }> }>('/apps/groups');
   const items = res?.items ?? [];
   return items.map((g) => g.code ?? g.name ?? '');
+}
+
+// ---------------------------------------------------------------------------
+// 业务域（业务域 tab 的分类实体，可增 / 可改 / 可删）
+// ---------------------------------------------------------------------------
+export async function listDomains(): Promise<BusinessDomain[]> {
+  const res = await get<{ items?: BusinessDomain[] }>('/apps/domains');
+  return res?.items ?? [];
+}
+
+export async function createDomain(request: DomainCreateRequest): Promise<BusinessDomain> {
+  return post<BusinessDomain>('/domains', request);
+}
+
+/** 改名 / 图标 / 排序。`code` 不可变，改的是 `name`。 */
+export async function updateDomain(
+  code: string,
+  request: DomainUpdateRequest,
+): Promise<BusinessDomain> {
+  return patch<BusinessDomain>(`/domains/${encodeURIComponent(code)}`, request);
+}
+
+export async function deleteDomain(code: string): Promise<void> {
+  await del<void>(`/domains/${encodeURIComponent(code)}`);
 }

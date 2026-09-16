@@ -39,22 +39,27 @@ from mate_platform.tenancy.guards import require_tenant
 
 from ..repositories import (
     ApphubApp,
+    ApphubDomain,
     ApphubGroup,
     ApphubModule,
     ApphubPage,
     ApphubTemplate,
     delete_app,
+    delete_domain,
     delete_group,
     get_app,
+    get_domain,
     get_group,
     get_module,
     get_template,
     list_apps,
+    list_domains,
     list_groups,
     list_modules,
     list_pages,
     list_templates,
     put_app,
+    put_domain,
     put_group,
     put_module,
     put_page,
@@ -76,7 +81,7 @@ from ..shortlink import (
 router = APIRouter(prefix="/api/v1/apphub", tags=["apphub"])
 
 # Valid categories (must match an existing group code).
-_VALID_CATEGORIES = frozenset({"knowledge", "platform", "data"})
+_VALID_CATEGORIES = frozenset({"knowledge", "platform", "data", "business"})
 
 # Valid template types.
 _VALID_TEMPLATE_TYPES = frozenset({"workflow", "form", "approval"})
@@ -150,6 +155,17 @@ async def list_registered_apps(
 async def list_app_groups(request: Request) -> dict:
     tenant_id = _tenant_id(request)
     items = _serialize(list_groups(tenant_id))
+    return {"items": items, "total": len(items)}
+
+
+@router.get("/apps/domains")
+async def list_app_domains(request: Request) -> dict:
+    """业务域列表（应用中心业务域 tab 的候选来源）。
+
+    必须声明在 `/apps/{app_id}` 之前，否则会被路径参数吃掉。
+    """
+    tenant_id = _tenant_id(request)
+    items = _serialize(list_domains(tenant_id))
     return {"items": items, "total": len(items)}
 
 
@@ -230,6 +246,7 @@ class AppRegisterRequest(BaseModel):
     version: Annotated[str, Field(default="1.0.0")]
     owner: Annotated[str, Field(default="platform-team")]
     tags: Annotated[list[str], Field(default_factory=list)]
+    business_domain: Annotated[str, Field(default="", max_length=64)]
 
 
 class AppUpdateRequest(BaseModel):
@@ -239,6 +256,7 @@ class AppUpdateRequest(BaseModel):
     description: Annotated[str | None, Field(default=None, max_length=2048)]
     version: Annotated[str | None, Field(default=None)]
     owner: Annotated[str | None, Field(default=None, max_length=256)]
+    business_domain: Annotated[str | None, Field(default=None, max_length=64)]
 
 
 @router.post("/apps", status_code=201)
@@ -286,6 +304,7 @@ async def register_app(
         version=body.version,
         owner=body.owner,
         tags=tuple(body.tags),
+        business_domain=body.business_domain,
     )
     put_app(tid, app)
     _emit(
@@ -334,6 +353,9 @@ async def update_app(
         version=new_version,
         owner=body.owner if body.owner is not None else app.owner,
         tags=app.tags,
+        business_domain=(
+            body.business_domain if body.business_domain is not None else app.business_domain
+        ),
     )
     put_app(tid, updated)
     _emit(
@@ -412,6 +434,110 @@ async def delete_group_endpoint(request: Request, code: str) -> dict:
         )
     delete_group(tid, code)
     _emit(request, "apphub.group.deleted", code, {"code": code}, tid)
+    return {"deleted": code}
+
+
+# ---------------------------------------------------------------------------
+# 业务域 CRUD
+# ---------------------------------------------------------------------------
+class DomainCreateRequest(BaseModel):
+    """Body schema for POST /domains."""
+
+    name: Annotated[str, Field(min_length=1, max_length=256)]
+    code: Annotated[str, Field(min_length=1, max_length=64)]
+    icon: Annotated[str, Field(default="folder", max_length=64)]
+    sort_order: Annotated[int, Field(default=0, ge=0)]
+
+
+class DomainUpdateRequest(BaseModel):
+    """Body schema for PATCH /domains/{code}.
+
+    ``code`` is intentionally absent: it is the key apps reference, so it is
+    immutable. Renaming a domain changes ``name``, not ``code``.
+    """
+
+    name: Annotated[str | None, Field(default=None, min_length=1, max_length=256)]
+    icon: Annotated[str | None, Field(default=None, max_length=64)]
+    sort_order: Annotated[int | None, Field(default=None, ge=0)]
+
+
+@router.post("/domains", status_code=201)
+async def create_domain(
+    request: Request,
+    body: DomainCreateRequest,
+) -> dict:
+    """Create a new business domain."""
+    tid = _tenant_id(request)
+    if get_domain(tid, body.code) is not None:
+        raise HTTPException(status_code=409, detail=f"domain '{body.code}' already exists")
+    domain = ApphubDomain(
+        id=f"dom-{body.code}",
+        tenant_id=tid,
+        name=body.name,
+        code=body.code,
+        icon=body.icon,
+        sort_order=body.sort_order,
+    )
+    put_domain(tid, domain)
+    _emit(
+        request,
+        "apphub.domain.created",
+        body.code,
+        {"code": body.code, "name": body.name},
+        tid,
+    )
+    return asdict(domain)
+
+
+@router.patch("/domains/{code}")
+async def update_domain(
+    request: Request,
+    code: str,
+    body: DomainUpdateRequest,
+) -> dict:
+    """Update a business domain's display attributes. ``code`` is immutable."""
+    tid = _tenant_id(request)
+    existing = get_domain(tid, code)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="domain not found")
+    updated = ApphubDomain(
+        id=existing.id,
+        tenant_id=existing.tenant_id,
+        name=body.name if body.name is not None else existing.name,
+        code=existing.code,
+        icon=body.icon if body.icon is not None else existing.icon,
+        sort_order=body.sort_order if body.sort_order is not None else existing.sort_order,
+    )
+    put_domain(tid, updated)
+    _emit(
+        request,
+        "apphub.domain.updated",
+        code,
+        {"code": code, "name": updated.name},
+        tid,
+    )
+    return asdict(updated)
+
+
+@router.delete("/domains/{code}")
+async def delete_domain_endpoint(request: Request, code: str) -> dict:
+    """Delete a business domain.
+
+    A domain that still has apps classified under it cannot be deleted — the
+    caller must reclassify those apps first. Mirrors the group delete rule.
+    """
+    tid = _tenant_id(request)
+    domain = get_domain(tid, code)
+    if domain is None:
+        raise HTTPException(status_code=404, detail="domain not found")
+    apps = [a for a in list_apps(tid) if a.business_domain == code]
+    if apps:
+        raise HTTPException(
+            status_code=409,
+            detail=f"cannot delete domain '{code}'; {len(apps)} apps reference it",
+        )
+    delete_domain(tid, code)
+    _emit(request, "apphub.domain.deleted", code, {"code": code}, tid)
     return {"deleted": code}
 
 
@@ -623,6 +749,7 @@ async def publish_app(app_id: str, request: Request) -> dict:
         version="1.0.0",
         owner=app.owner,
         tags=app.tags,
+        business_domain=app.business_domain,
     )
     put_app(tenant_id, published)
     _emit(
