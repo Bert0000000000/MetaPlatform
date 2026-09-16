@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any
 
 from mate_clients.iam import IamServiceReadClient
 from mate_clients.llmgw import LlmgwClient
@@ -33,6 +34,8 @@ from .toolbox import CompositeToolbox, McpToolbox
 DEFAULT_LLMGW_URL = "http://localhost:8008"
 DEFAULT_MCP_URL = "http://localhost:8081"
 DEFAULT_GATEWAY_URL = "http://localhost:8100"
+#: MCP 中心的标准协议面（streamable-http），1.1 起对外客户端就走这条。
+DEFAULT_MCP_PROTOCOL_PATH = "/api/v1/mcp/protocol/mcp"
 
 
 def _bearer() -> BearerAuth:
@@ -104,6 +107,7 @@ def build_service() -> BrainService:
     llmgw_url = os.getenv("MATE_LLMGW_URL", DEFAULT_LLMGW_URL)
     mcp_url = os.getenv("MATE_MCP_URL", DEFAULT_MCP_URL)
     gateway_url = os.getenv("MATE_GATEWAY_URL", DEFAULT_GATEWAY_URL)
+    protocol_url = os.getenv("MATE_MCP_PROTOCOL_URL", f"{mcp_url}{DEFAULT_MCP_PROTOCOL_PATH}")
 
     bootstrap(required_admin_dsn())
     skills = build_skill_catalog()
@@ -147,14 +151,37 @@ def build_service() -> BrainService:
     def _toolbox(ctx: RunContext) -> CompositeToolbox:
         # 1.1 task 1c: 本体工具不再走旁路 —— MCP 的本体代理已改为逐请求透传
         # 调用方 token + 租户，本体与其它工具共用同一条总线（单一工具面）。
+        #
+        # 1.2: 派发经**标准 MCP 协议面**（langchain-mcp-adapters 建会话），
+        # 但发现/闸门仍在 REST 面 —— 协议面的 tools/list 不带 agentInvokable，
+        # 跟着换会让人工闸门工具重新摆到模型面前。
         mcp = McpToolbox(
-            McpToolsClient(mcp_url, auth=bearer, tenant_id=ctx.tenant_id, user_token=ctx.user_token)
+            McpToolsClient(
+                mcp_url, auth=bearer, tenant_id=ctx.tenant_id, user_token=ctx.user_token
+            ),
+            protocol=_protocol_connection(ctx),
         )
         return CompositeToolbox(
             mcp=mcp,
             skills=SkillToolbox(skills, tenant_id=ctx.tenant_id),
             skill_names=SKILL_TOOL_NAMES,
         )
+
+    def _protocol_connection(ctx: RunContext) -> dict[str, Any] | None:
+        """协议面连接配置；没有发起用户令牌时不启用。
+
+        协议面按 token 的 tenant claim 解析租户，服务身份 token 不带该 claim
+        （env-facts §3）。没有用户令牌就退回 ACL 客户端，而不是拿服务身份去撞。
+        ``X-Tenant-Id`` 刻意不传：协议面要求它与 token 的租户一致，不一致直接
+        403——租户由令牌唯一决定，多带一个头只会制造不一致的机会。
+        """
+        if not ctx.user_token:
+            return None
+        return {
+            "transport": "streamable_http",
+            "url": protocol_url,
+            "headers": {"Authorization": f"Bearer {ctx.user_token}"},
+        }
 
     def planner_for(ctx: RunContext) -> LlmPlanner:
         return LlmPlanner(
@@ -164,11 +191,14 @@ def build_service() -> BrainService:
         )
 
     def runtime_for(ctx: RunContext) -> LlmEmployeeRuntime:
+        summary_tokens = int(os.getenv("MATE_AGENT_TEAM_SUMMARY_TOKENS", "100000"))
         return LlmEmployeeRuntime(
             registry=registry,
             llm_factory=_llm_for(ctx),
             toolbox_factory=lambda tenant_id: _toolbox(ctx),
             skills=skills,
+            max_tool_rounds=int(os.getenv("MATE_AGENT_TEAM_MAX_TOOL_ROUNDS", "3")),
+            summarization_trigger=("tokens", summary_tokens) if summary_tokens > 0 else None,
         )
 
     return BrainService(

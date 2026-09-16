@@ -11,6 +11,13 @@
 
 两条都拒绝时抛 :class:`ToolNotAllowed`，由运行时记进回执的 ``tool_calls``，
 **并且这次调用不会真的打到 MCP 中心**。
+
+**MCP 传输走标准协议面**（1.2）：派发经 ``langchain-mcp-adapters`` 把描述符
+转成 LangChain 工具，由它按 MCP streamable-http 建会话调用中心。但**发现面
+仍走中心的 REST 面**——因为协议面的 ``tools/list`` 不携带 ``agentInvokable``
+（实测：协议面会把 ``ont_confirm_proposal`` / ``ont_execute_proposal`` /
+``ont_reject_proposal`` 一并列出来）。发现面若跟着换成协议面，人工闸门就会
+从"**不摆到模型面前**"退化成"只靠中心运行期拒绝"——纵深少了一层。
 """
 
 from __future__ import annotations
@@ -33,6 +40,8 @@ class Toolbox(Protocol):
 
     async def schemas(self, *, allowed: Sequence[str]) -> list[dict[str, Any]]: ...
 
+    async def descriptors(self, *, allowed: Sequence[str]) -> list[dict[str, Any]]: ...
+
     async def invoke(
         self, *, name: str, arguments: dict[str, Any], allowed: Sequence[str]
     ) -> Any: ...
@@ -51,12 +60,33 @@ def to_openai_schema(descriptor: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _as_mcp_tool(descriptor: dict[str, Any]) -> Any:
+    """描述符 → 官方 MCP SDK 的 ``Tool``（适配器只认这个类型）。"""
+    from mcp.types import Tool
+
+    return Tool(
+        name=descriptor["name"],
+        description=descriptor.get("description", ""),
+        inputSchema=descriptor.get("inputSchema") or {"type": "object"},
+    )
+
+
 class McpToolbox:
     """走既有 MCP 中心（``mate_clients.mcp.McpToolsClient``）的工具面。"""
 
-    def __init__(self, client: Any, *, descriptors: list[dict[str, Any]] | None = None) -> None:
+    def __init__(
+        self,
+        client: Any,
+        *,
+        descriptors: list[dict[str, Any]] | None = None,
+        protocol: dict[str, Any] | None = None,
+    ) -> None:
         self._client = client
         self._descriptors: dict[str, dict[str, Any]] = {d["name"]: d for d in (descriptors or [])}
+        #: 标准 MCP 协议面连接配置；给了就走 ``langchain-mcp-adapters`` 派发，
+        #: 没给（单测里的假客户端）就落回 ACL 客户端——同一个闸门，两条传输。
+        self._protocol = protocol
+        self._adapter_tools: dict[str, Any] = {}
 
     async def _ensure_descriptors(self) -> None:
         if self._descriptors:
@@ -64,16 +94,33 @@ class McpToolbox:
         tools = await self._client.list_tools()
         self._descriptors = {t["name"]: t for t in tools}
 
-    async def schemas(self, *, allowed: Sequence[str]) -> list[dict[str, Any]]:
-        """只出白名单里、且中心确实有、且允许 agent 调用的工具。"""
+    async def _adapter_tool(self, descriptor: dict[str, Any]) -> Any:
+        """把 MCP 描述符转成 LangChain 工具（经 ``langchain-mcp-adapters``）。"""
+        from langchain_mcp_adapters.tools import convert_mcp_tool_to_langchain_tool
+
+        name = descriptor["name"]
+        cached = self._adapter_tools.get(name)
+        if cached is not None:
+            return cached
+        tool = convert_mcp_tool_to_langchain_tool(
+            None, _as_mcp_tool(descriptor), connection=self._protocol
+        )
+        self._adapter_tools[name] = tool
+        return tool
+
+    async def descriptors(self, *, allowed: Sequence[str]) -> list[dict[str, Any]]:
+        """白名单里、中心确实有、且允许 agent 调用的工具描述符。"""
         await self._ensure_descriptors()
         out: list[dict[str, Any]] = []
         for name in allowed:
             descriptor = self._descriptors.get(name)
             if descriptor is None or not descriptor.get("agentInvokable", True):
                 continue
-            out.append(to_openai_schema(descriptor))
+            out.append(descriptor)
         return out
+
+    async def schemas(self, *, allowed: Sequence[str]) -> list[dict[str, Any]]:
+        return [to_openai_schema(d) for d in await self.descriptors(allowed=allowed)]
 
     async def invoke(self, *, name: str, arguments: dict[str, Any], allowed: Sequence[str]) -> Any:
         if name not in allowed:
@@ -82,6 +129,9 @@ class McpToolbox:
         descriptor = self._descriptors.get(name)
         if descriptor is not None and not descriptor.get("agentInvokable", True):
             raise ToolNotAllowed(name, "center_marks_not_agent_invokable")
+        if descriptor is not None and self._protocol is not None:
+            tool = await self._adapter_tool(descriptor)
+            return await tool.ainvoke(arguments)
         return await self._client.call_tool(name=name, arguments=arguments)
 
 
@@ -115,19 +165,22 @@ class CompositeToolbox:
             return self._skills
         return self._mcp
 
-    async def schemas(self, *, allowed: Sequence[str]) -> list[dict[str, Any]]:
+    async def descriptors(self, *, allowed: Sequence[str]) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []
         seen: set[str] = set()
         for name in allowed:
             toolbox = self._route(name)
             if toolbox is None:
                 continue
-            for schema in await toolbox.schemas(allowed=[name]):
-                key = schema["function"]["name"]
+            for descriptor in await toolbox.descriptors(allowed=[name]):
+                key = descriptor["name"]
                 if key not in seen:
                     seen.add(key)
-                    out.append(schema)
+                    out.append(descriptor)
         return out
+
+    async def schemas(self, *, allowed: Sequence[str]) -> list[dict[str, Any]]:
+        return [to_openai_schema(d) for d in await self.descriptors(allowed=allowed)]
 
     async def invoke(self, *, name: str, arguments: dict[str, Any], allowed: Sequence[str]) -> Any:
         if name not in allowed:
