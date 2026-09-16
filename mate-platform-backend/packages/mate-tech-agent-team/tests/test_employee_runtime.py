@@ -292,3 +292,51 @@ async def test_skill_manifest_goes_into_prompt_but_content_does_not() -> None:
     assert "sk-order-anomaly" in system
     assert "异常订单识别" in system
     assert "阈值 = 3σ" not in system, "技能正文不该常驻提示词（渐进加载第 1 层只出清单）"
+
+
+# ── 工具预算耗尽也必须给结论（否则是另一种"空回执"）────────────────────
+
+
+class AlwaysToolsLlm:
+    """永远要工具、从不给最终答复的模型——用来把工具轮次预算耗光。"""
+
+    def __init__(self) -> None:
+        self.calls: list[dict[str, Any]] = []
+
+    async def chat_with_tools(self, *, messages, model, tools=None, temperature=0.7):
+        self.calls.append({"tools": tools})
+        if tools:
+            return {
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": f"c{len(self.calls)}",
+                        "type": "function",
+                        "function": {"name": "ont_list_classes", "arguments": "{}"},
+                    }
+                ],
+            }
+        return {"content": "预算用尽后的最终答复。", "tool_calls": []}
+
+
+@pytest.mark.asyncio
+async def test_exhausted_tool_budget_still_yields_a_final_answer() -> None:
+    """工具轮次用尽时，必须再要一次**纯文本**答复。
+
+    否则员工会以 status=ok 返回空产出——跑是跑完了，但什么也没说，
+    这本身就是另一种"假回执"（实测：研究员连调 8 次知识库后产出为空字符串）。
+    """
+    llm = AlwaysToolsLlm()
+    runtime = LlmEmployeeRuntime(
+        registry=ProfileRegistry(builtin_profiles()),
+        llm_factory=lambda _t: llm,
+        toolbox_factory=lambda _t: McpToolbox(FakeMcp(DESCRIPTORS)),
+        max_tool_rounds=2,
+    )
+    result = await runtime.run(subtask=_subtask("EMP-ANALYST"), tenant_id="tenant-a")
+
+    assert result["status"] == "ok"
+    assert result["output"].strip(), "预算耗尽的员工不该返回空产出"
+    assert result["output"] == "预算用尽后的最终答复。"
+    # 最后一次调用必须**不带工具**——那正是逼它给结论的手段
+    assert llm.calls[-1]["tools"] is None

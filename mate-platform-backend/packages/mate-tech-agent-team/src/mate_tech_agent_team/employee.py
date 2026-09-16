@@ -146,6 +146,18 @@ class LlmEmployeeRuntime:
                     )
                     tool_log.append(entry)
                     messages.append(tool_message)
+            else:
+                # 工具轮次用尽、模型仍在要工具：再要一次**纯文本**答复（不给工具）。
+                # 否则员工会以 status=ok 返回空产出——跑是跑完了却什么也没说，
+                # 这本身就是另一种"假回执"（实测：研究员连调 8 次知识库后产出为空串）。
+                final = await llm.chat_with_tools(
+                    messages=messages,
+                    model=profile.model,
+                    tools=None,
+                    temperature=self._temperature,
+                )
+                llm_calls += 1
+                content = str(final.get("content") or "")
         except Exception as exc:  # 运行期故障（网关/中心/网络）不应炸掉整轮编排
             result["error"] = f"{type(exc).__name__}: {exc}"
             result["tool_calls"] = tool_log
