@@ -28,6 +28,7 @@ from typing import Any
 
 from .authority import DepthExceeded, Envelope
 from .team_task_store import (
+    RUNNING,
     TERMINAL_STATUSES,
     ChannelMessage,
     InMemoryTeamTasks,
@@ -222,6 +223,22 @@ class TeamBus:
         return list(self._tasks)
 
     # -- 双向消息（ADR-0066 §5.5）-----------------------------------------
+    async def start(self, *, task_id: str, tenant_id: str, profile_id: str = "") -> TeamTask:
+        """登记一个**执行侧**的任务实例（开跑时调用，幂等且重置）。
+
+        与 :meth:`spawn` 的分工：``spawn`` 是**权限层**（包络衰减 + 深度闸门 +
+        越权转提案），需要发起用户的包络；``start`` 是**实例层**（建行、置
+        running、清空信箱），执行侧只知道自己要跑哪个 id。
+
+        **风险登记**：1.1 的包络闸门目前**没有**走在真实派活路径上（脑图的
+        worker 直接调运行时，不经过 ``spawn``）——因为"发起用户的包络从哪来"
+        还没有答案（RunContext 只有租户与令牌）。在补上之前，``start`` 明确
+        **不做**权限判定，别把它当成``spawn``用。
+        """
+        task = TeamTask(task_id=task_id, tenant_id=tenant_id, profile_id=profile_id, status=RUNNING)
+        await self._task_records.create(task)
+        return task
+
     async def task(self, *, task_id: str, tenant_id: str) -> TeamTask | None:
         """按租户取任务实例（跨租户 = None，不泄露存在性）。"""
         return await self._task_records.get(tenant_id, task_id)

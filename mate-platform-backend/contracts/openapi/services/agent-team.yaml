@@ -57,6 +57,13 @@ components:
       properties:
         task_id:
           type: string
+        team_task_id:
+          type: string
+          description: |
+            该员工这次运行的**实例 id**（`team_task` 主键，跨运行唯一）。
+            **追问该员工就投这个 id** —— `POST /tasks/{task_id}/messages` 收的
+            是它；`task_id`（如 `t1`）只是计划内标签，两次运行会重复，投给它
+            会被拒（终态）或投错运行。
         profile_id:
           type: string
         status:

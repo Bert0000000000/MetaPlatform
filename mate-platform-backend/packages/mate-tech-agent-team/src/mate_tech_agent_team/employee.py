@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Awaitable, Callable, Sequence
+from contextlib import suppress
 from typing import Any, Protocol
 
 from langchain.agents import create_agent
@@ -43,6 +44,7 @@ from langgraph.errors import GraphRecursionError
 
 from .chat_model import LlmgwChatModel, RunTrace
 from .profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry
+from .runtime import TaskChannel
 from .skills import SkillCatalog
 from .state import SubTask, SubTaskResult
 from .toolbox import Toolbox, ToolNotAllowed
@@ -75,8 +77,6 @@ class LlmGateway(Protocol):
 
 LlmFactory = Callable[[str], LlmGateway]
 ToolboxFactory = Callable[[str], Toolbox]
-#: ``(tenant_id, task_id) -> 待消费的 inbox 消息``（消费即清空交给实现方）。
-InboxDrainer = Callable[[str, str], Awaitable[list[Any]]]
 
 
 async def aclose_quietly(client: object) -> None:
@@ -164,11 +164,11 @@ def _render_inbox_message(message: Any) -> str:
     return f"【来自 {sender} 的补充消息】{text}"
 
 
-def _inbox_drainer(
-    source: InboxDrainer, tenant_id: str, task_id: str
+def _channel_drainer(
+    channel: TaskChannel, tenant_id: str, task_id: str
 ) -> Callable[[], Awaitable[list[Any]]]:
     async def _drain() -> list[Any]:
-        return await source(tenant_id, task_id)
+        return list(await channel.consume_inbox(task_id=task_id, tenant_id=tenant_id))
 
     return _drain
 
@@ -204,7 +204,7 @@ class LlmEmployeeRuntime:
         summarization_keep: tuple[str, Any] = DEFAULT_SUMMARY_KEEP,
         summary_prompt: str | None = None,
         context_editing: bool = True,
-        inbox_for: InboxDrainer | None = None,
+        channel: TaskChannel | None = None,
     ) -> None:
         self._registry = registry
         self._llm_factory = llm_factory
@@ -216,8 +216,8 @@ class LlmEmployeeRuntime:
         self._summarization_keep = summarization_keep
         self._summary_prompt = summary_prompt
         self._context_editing = context_editing
-        #: ``(tenant_id, task_id) -> 待消费消息``；给了就启用双向消息通道。
-        self._inbox_for = inbox_for
+        #: 实例层通道（建行 / 取信箱 / 收尾）；给了就能被 ``send`` 追问到。
+        self._channel = channel
 
     def _system_prompt(self, profile: EmployeeProfile) -> str:
         """身份提示词 + **技能清单**（只出名字与一句话描述，不出正文）。"""
@@ -300,6 +300,18 @@ class LlmEmployeeRuntime:
             middleware.append(ContextEditingMiddleware())
         return middleware
 
+    async def _close_channel(self, task_id: str, tenant_id: str, status: str) -> None:
+        """把任务实例置终态（尽力而为）。
+
+        **刻意不抛出**：终态标记是次要产物，运行结果才是主要产物——收尾出错
+        不该把一份已经跑出来的回执变成异常。代价是任务可能留在 ``running``，
+        表现成"还能再投递一次"，可在任务列表上看出来。
+        """
+        if self._channel is None or not task_id:
+            return
+        with suppress(Exception):
+            await self._channel.finish(task_id=task_id, tenant_id=tenant_id, status=status)
+
     async def run(self, *, subtask: SubTask, tenant_id: str) -> SubTaskResult:
         result = SubTaskResult(
             task_id=subtask.get("task_id", ""),
@@ -322,7 +334,17 @@ class LlmEmployeeRuntime:
         llm = self._llm_factory(tenant_id)
         toolbox = self._toolbox_factory(tenant_id)
         trace = RunTrace()
+        # 实例身份 = 派活侧给的 ``team_task_id``（按运行唯一，外部就投这个 id）。
+        # 兜底用计划内标签 ``task_id``：直接调运行时、不经图的场景没有前者。
+        team_task_id = str(subtask.get("team_task_id") or subtask.get("task_id") or "")
+        result["team_task_id"] = team_task_id
         try:
+            if self._channel is not None and team_task_id:
+                # **先登记再开跑**：没有这一行，外部 ``send`` 只会 404——
+                # 通道等于不存在，"追问正在干活的员工"就是句空话。
+                await self._channel.start(
+                    task_id=team_task_id, tenant_id=tenant_id, profile_id=profile.profile_id
+                )
             descriptors = await toolbox.descriptors(allowed=allowed)
             known = {d["name"] for d in descriptors}
 
@@ -346,10 +368,9 @@ class LlmEmployeeRuntime:
             )
             rejected = _RejectedCalls(known=known, reason_for=_reason_for)
             middleware = self._middleware(chat=chat)
-            task_id = str(subtask.get("task_id") or "")
-            if self._inbox_for is not None and task_id:
+            if self._channel is not None and team_task_id:
                 middleware.append(
-                    InboxMiddleware(drain=_inbox_drainer(self._inbox_for, tenant_id, task_id))
+                    InboxMiddleware(drain=_channel_drainer(self._channel, tenant_id, team_task_id))
                 )
             agent = create_agent(
                 model=chat,
@@ -386,11 +407,13 @@ class LlmEmployeeRuntime:
             result["error"] = f"{type(exc).__name__}: {exc}"
             result["tool_calls"] = tool_log
             result["llm_calls"] = trace.calls
+            await self._close_channel(team_task_id, tenant_id, "failed")
             return result
         finally:
             await aclose_quietly(llm)
             await aclose_quietly(toolbox)
 
+        await self._close_channel(team_task_id, tenant_id, "completed")
         result["status"] = "ok"
         result["output"] = content
         result["llm_calls"] = trace.calls

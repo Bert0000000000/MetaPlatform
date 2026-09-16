@@ -26,6 +26,7 @@ class SubTaskModel(BaseModel):
 
 class SubTaskResultModel(BaseModel):
     task_id: str = ""
+    team_task_id: str = ""
     profile_id: str = ""
     status: str = "ok"
     output: str = ""

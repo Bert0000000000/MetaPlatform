@@ -28,7 +28,7 @@ from .profile_store import ProfileStore
 from .profiles import ProfileRegistry
 from .skill_toolbox import SKILL_TOOL_NAMES, SkillToolbox
 from .skills import SkillCatalog
-from .team_bus import DEFAULT_MAX_DEPTH, TaskNotFound, TeamBus
+from .team_bus import DEFAULT_MAX_DEPTH, TeamBus
 from .team_task_store import PgTeamTasks
 from .toolbox import CompositeToolbox, McpToolbox
 
@@ -103,26 +103,6 @@ def build_team_bus(registry: ProfileRegistry | None = None, *, dsn: str | None =
         max_depth=int(os.getenv("MATE_AGENT_TEAM_MAX_DEPTH", str(DEFAULT_MAX_DEPTH))),
         tasks=PgTeamTasks(dsn or required_dsn(), schema=CHECKPOINT_SCHEMA),
     )
-
-
-def _inbox_for(ctx: RunContext, bus: TeamBus | None):
-    """把派活闸门的 inbox 接成员工运行时的取信箱。
-
-    **查无此任务 = 这个 run 没有信箱，不是错误**：脑图的子任务 id（``s1``/``s2``）
-    与派活闸门的 task_id（``task-<hex>``）目前是两套 id。1.2 只做通道机制，
-    两套 id 的统一留作后续——所以这里把 ``TaskNotFound`` 收敛成"没有待消费
-    消息"，而不是让整轮员工执行炸掉。
-    """
-    if bus is None:
-        return None
-
-    async def _drain(tenant_id: str, task_id: str) -> list[Any]:
-        try:
-            return list(await bus.consume_inbox(task_id=task_id, tenant_id=tenant_id))
-        except TaskNotFound:
-            return []
-
-    return _drain
 
 
 def build_service(
@@ -230,8 +210,9 @@ def build_service(
             skills=skills,
             max_tool_rounds=int(os.getenv("MATE_AGENT_TEAM_MAX_TOOL_ROUNDS", "3")),
             summarization_trigger=("tokens", summary_tokens) if summary_tokens > 0 else None,
-            # 1.2：外部投递的消息在**每一轮模型调用的边界**被取走（消费即清空）。
-            inbox_for=_inbox_for(ctx, team_bus),
+            # 1.2：实例层通道 —— 开跑前登记 team_task、每轮边界取走外部投递的
+            # 消息（消费即清空）、跑完置终态。`TeamBus` 结构上就满足 TaskChannel。
+            channel=team_bus,
         )
 
     return BrainService(

@@ -211,11 +211,24 @@ class PgTeamTasks:
             await conn.close()
 
     async def create(self, task: TeamTask) -> None:
+        """登记一个任务实例。同 ``(tenant_id, task_id)`` 已存在时**重置**。
+
+        重置而不是 DO NOTHING：执行侧在开跑时用它登记（``TeamBus.start``），
+        语义是"这一轮从现在开始跑"。留着上一轮的状态会让新一轮一开跑就是
+        终态（``send`` 直接 409），且残留的信箱会被新一轮吃掉。
+        """
         async with self._conn(task.tenant_id) as conn:
             await conn.execute(
                 f"INSERT INTO {TABLE} ({', '.join(_COLUMNS)}, updated_at)"
                 f" VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb, now())"
-                " ON CONFLICT (tenant_id, task_id) DO NOTHING",
+                " ON CONFLICT (tenant_id, task_id) DO UPDATE SET"
+                " profile_id = EXCLUDED.profile_id,"
+                " parent_task_id = EXCLUDED.parent_task_id,"
+                " root_task_id = EXCLUDED.root_task_id,"
+                " depth = EXCLUDED.depth,"
+                " status = EXCLUDED.status,"
+                " inbox = EXCLUDED.inbox,"
+                " updated_at = now()",
                 (
                     task.task_id,
                     task.tenant_id,

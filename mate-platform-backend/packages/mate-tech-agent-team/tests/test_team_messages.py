@@ -137,9 +137,7 @@ def _runtime(gateway: Any, bus: TeamBus):
         registry=ProfileRegistry([PROFILE]),
         llm_factory=lambda _t: gateway,
         toolbox_factory=lambda _t: McpToolbox(_NoopMcp()),
-        inbox_for=lambda tenant_id, task_id: bus.consume_inbox(
-            task_id=task_id, tenant_id=tenant_id
-        ),
+        channel=bus,
     )
 
 
