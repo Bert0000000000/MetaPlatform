@@ -18,9 +18,23 @@ from mate_clients.security import OutgoingAuthMiddleware
 #: 惰性取回租户的上游 provider 配置（base_url / api_key / default_model）
 ProviderConfigResolver = Callable[[], Awaitable[dict[str, str]]]
 
+#: 上游状态码里"**可能自己好**"的那几个：限流与上游故障。4xx 是请求本身的问题，
+#: 重试多少次都是一样的结果，所以不在表里。
+RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
+
 
 class LlmgwError(RuntimeError):
-    """llmgw 调用失败（传输 / 状态码 / 反序列化）。"""
+    """llmgw 调用失败（传输 / 状态码 / 反序列化）。
+
+    ``retryable`` 说明这次失败**是不是可能自己好**：传输错（连不上 / 被断开）、
+    429（限流）、5xx（上游故障）标 ``True``；4xx（请求本身的问题）与响应不是
+    JSON 标 ``False``。调用方据此决定要不要重试——同一句话重试一次和重试十次
+    没区别的失败，不该拿去重试。
+    """
+
+    def __init__(self, message: str, *, retryable: bool = False) -> None:
+        super().__init__(message)
+        self.retryable = retryable
 
 
 class LlmgwClient:
@@ -160,9 +174,13 @@ class LlmgwClient:
                 f"{self.base_url}{path}", json=body, headers=self._headers() or None
             )
         except httpx.HTTPError as exc:
-            raise LlmgwError(f"llmgw transport error: {exc}") from exc
+            # 传输层失败（连不上 / 被断开）：下一次可能就好了。
+            raise LlmgwError(f"llmgw transport error: {exc}", retryable=True) from exc
         if resp.status_code != 200:
-            raise LlmgwError(f"llmgw returned {resp.status_code}: {resp.text[:200]}")
+            raise LlmgwError(
+                f"llmgw returned {resp.status_code}: {resp.text[:200]}",
+                retryable=resp.status_code in RETRYABLE_STATUS,
+            )
         try:
             return resp.json()
         except ValueError as exc:
@@ -172,4 +190,4 @@ class LlmgwClient:
         await self._client.aclose()
 
 
-__all__ = ["LlmgwClient", "LlmgwError"]
+__all__ = ["RETRYABLE_STATUS", "LlmgwClient", "LlmgwError"]

@@ -53,7 +53,12 @@ class SubTaskResult(TypedDict, total=False):
     都是 ``status`` 里的同几个词，只有它分得开）：
 
     * ``E_AUTHORITY_ESCALATION`` —— 越权，已转 proposal，**未执行**；
-    * ``E_DEPTH_EXCEEDED`` / ``E_PROFILE_NOT_FOUND`` —— 硬拒，整轮判失败。
+    * ``E_DEPTH_EXCEEDED`` / ``E_PROFILE_NOT_FOUND`` —— 硬拒，整轮判失败；
+    * ``E_RUNTIME_UNAVAILABLE`` —— 可重试失败重试用尽（1.5 任务 4），**只是
+      这一件没干成**，不是整轮失败。
+
+    ``attempts`` 是这一件**真正发起了几次**运行时调用（含重试；1 = 一次没过手；
+    没被执行的（越权 / 硬拒）为 0）。它是"重试真的发生过"的可读证据。
     """
 
     task_id: str
@@ -68,6 +73,8 @@ class SubTaskResult(TypedDict, total=False):
     error_code: str
     #: 越权时的人审提案（ADR-0066 §3.4）；授权范围只限本次任务。
     proposal: dict[str, Any]
+    #: 真正发起的运行时调用次数（含重试）。
+    attempts: int
 
 
 def merge_results(

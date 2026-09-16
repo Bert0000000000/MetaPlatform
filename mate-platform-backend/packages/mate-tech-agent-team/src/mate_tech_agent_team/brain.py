@@ -25,6 +25,7 @@ from .authority import Envelope, actor_of, resolve_initiator_envelope
 from .checkpoint import thread_id_for
 from .graph import build_brain_graph
 from .planner import Planner
+from .retry import RetryPolicy
 from .runtime import EmployeeRuntime
 from .state import BrainState
 from .team_bus import TeamBus
@@ -83,6 +84,7 @@ class BrainService:
         team_bus: TeamBus,
         max_parallel: int = 3,
         audit: AuditLog | None = None,
+        retry_policy: RetryPolicy | None = None,
     ) -> None:
         self._planner_for = planner_for
         self._runtime_for = runtime_for
@@ -91,6 +93,9 @@ class BrainService:
         #: 刻意没有默认值——漏接它，闸门就退回空转，而且不会有任何报错。
         self._team_bus = team_bus
         self._max_parallel = max_parallel
+        #: 失败节点的重试策略（1.5 任务 4）：只作用于员工运行时那一次调用，
+        #: 派活（副作用）不在重试范围内。
+        self._retry_policy = retry_policy if retry_policy is not None else RetryPolicy()
         #: 审计账本（硬规则 #9）。默认复用闸门那一本——派活 / 越权 / 审批落在
         #: 同一本账上，读的时候不必记得去两个地方捞。
         self.audit: AuditLog = audit if audit is not None else team_bus.audit
@@ -114,6 +119,7 @@ class BrainService:
             actor=ctx.actor,
             max_parallel=max_parallel,
             should_cancel=should_cancel,
+            retry_policy=self._retry_policy,
         )
 
     async def start(

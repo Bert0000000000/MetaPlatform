@@ -46,7 +46,7 @@ from .authority import Envelope
 from .chat_model import LlmgwChatModel, RunTrace
 from .envelope_gate import EnvelopeGate
 from .profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry
-from .runtime import TaskChannel
+from .runtime import TaskChannel, TransientRunError
 from .skills import SkillCatalog
 from .state import SubTask, SubTaskResult
 from .toolbox import Toolbox, ToolNotAllowed
@@ -414,6 +414,12 @@ class LlmEmployeeRuntime:
                 final = await chat.ainvoke(messages)
                 content = str(getattr(final, "content", "") or "")
         except Exception as exc:  # 运行期故障（网关/中心/网络）不应炸掉整轮编排
+            # 1.5 任务 4：**上游可能自己好**的失败（传输错 / 429 / 5xx，由报错方用
+            # ``retryable`` 标注）且**还没有任何工具调用落地**时，抛给图按策略重试。
+            # 已经调过工具的不重试——那可能有副作用，"再试一次"得先确认它可重复。
+            # 这里是全链路上**唯一**允许重试的地方：再往上就是整轮编排，重跑会重派活。
+            if not tool_log and getattr(exc, "retryable", False):
+                raise TransientRunError(f"{type(exc).__name__}: {exc}") from exc
             result["error"] = f"{type(exc).__name__}: {exc}"
             result["tool_calls"] = tool_log
             result["llm_calls"] = trace.calls

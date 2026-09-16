@@ -20,10 +20,13 @@ from mate_tech_agent_team import (
     SkillCatalog,
     SubTask,
     ToolNotAllowed,
+    TransientRunError,
     builtin_profiles,
     to_openai_schema,
 )
 from mate_tech_agent_team.toolbox import McpToolbox
+
+from mate_clients.llmgw import LlmgwError
 
 # ── 替身 ────────────────────────────────────────────────────────────────
 
@@ -340,3 +343,86 @@ async def test_exhausted_tool_budget_still_yields_a_final_answer() -> None:
     assert result["output"] == "预算用尽后的最终答复。"
     # 最后一次调用必须**不带工具**——那正是逼它给结论的手段
     assert llm.calls[-1]["tools"] is None
+
+
+# ── 1.5 任务 4：运行期故障的**可重试分类** ──────────────────────────────
+
+
+class ExplodingLlm(FakeLlm):
+    """一上来就抛给定的异常（模拟网关 5xx / 传输错 / 请求不合法）。"""
+
+    def __init__(self, exc: Exception) -> None:
+        super().__init__([])
+        self.exc = exc
+
+    async def chat_with_tools(self, *, messages, model, tools=None, temperature=0.7):
+        raise self.exc
+
+
+class ToolThenExplodeLlm(FakeLlm):
+    """先派一次工具，之后再抛错——用来验"已经调过工具就不重试"。"""
+
+    def __init__(self, exc: Exception) -> None:
+        super().__init__(
+            [
+                {
+                    "content": "",
+                    "tool_calls": [
+                        {
+                            "id": "c1",
+                            "type": "function",
+                            "function": {
+                                "name": "ont_object_query",
+                                "arguments": '{"q": "订单"}',
+                            },
+                        }
+                    ],
+                }
+            ]
+        )
+        self.exc = exc
+
+    async def chat_with_tools(self, *, messages, model, tools=None, temperature=0.7):
+        if not self.script:
+            raise self.exc
+        return await super().chat_with_tools(
+            messages=messages, model=model, tools=tools, temperature=temperature
+        )
+
+
+@pytest.mark.asyncio
+async def test_a_retryable_upstream_failure_is_signalled_to_the_graph() -> None:
+    """上游**可能自己好**的失败（传输错 / 429 / 5xx）抛 ``TransientRunError``，
+    由图按策略重试——不是吞成一条"这件没干成"。"""
+    llm = ExplodingLlm(LlmgwError("llmgw returned 503: upstream busy", retryable=True))
+    with pytest.raises(TransientRunError):
+        await _runtime(llm, FakeMcp(DESCRIPTORS)).run(
+            subtask=_subtask("EMP-ANALYST"), tenant_id="tenant-a"
+        )
+
+
+@pytest.mark.asyncio
+async def test_a_permanent_upstream_failure_stays_a_normal_error_receipt() -> None:
+    """4xx 这种"重试多少次都一样"的失败照旧记 error 回执，不抛。"""
+    llm = ExplodingLlm(LlmgwError("llmgw returned 400: bad request"))
+    result = await _runtime(llm, FakeMcp(DESCRIPTORS)).run(
+        subtask=_subtask("EMP-ANALYST"), tenant_id="tenant-a"
+    )
+    assert result["status"] == "error"
+    assert "400" in result["error"]
+
+
+@pytest.mark.asyncio
+async def test_a_failure_after_a_tool_call_is_not_signalled_as_retryable() -> None:
+    """**已经调过工具**之后才炸 → 不抛 TransientRunError，记 error 回执。
+
+    这是"已产生副作用的节点不得盲目重跑"在执行侧的那一半：工具可能已经写过
+    东西，重试等于把它再做一遍。
+    """
+    mcp = FakeMcp(DESCRIPTORS)
+    llm = ToolThenExplodeLlm(LlmgwError("llmgw transport error: gone", retryable=True))
+    result = await _runtime(llm, mcp).run(subtask=_subtask("EMP-ANALYST"), tenant_id="tenant-a")
+
+    assert mcp.invoked, "前置条件：这次运行真的调过工具"
+    assert result["status"] == "error"
+    assert result["tool_calls"], "失败回执要带上已经发生的工具调用"

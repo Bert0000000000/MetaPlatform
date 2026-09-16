@@ -95,18 +95,27 @@ components:
         error_code:
           type: string
           description: |
-            可判定的失败类别——`status` 里 `rejected`/`error` 分不开的三种情形
+            可判定的失败类别——`status` 里 `rejected`/`error` 分不开的几种情形
             靠它区分：
             - `E_AUTHORITY_ESCALATION`：派活越权，已转 proposal，**该子任务未执行**
               （授权只限本次任务，人工同意后才跑）；
             - `E_DEPTH_EXCEEDED`：嵌套层数超上限，硬拒，整轮判失败；
-            - `E_PROFILE_NOT_FOUND`：员工不在本租户名册（跨租户 = 不存在），同上。
+            - `E_PROFILE_NOT_FOUND`：员工不在本租户名册（跨租户 = 不存在），同上；
+            - `E_RUNTIME_UNAVAILABLE`：**可重试**失败（模型 5xx / 网络抖动这类）
+              按策略重试后仍不成功。只是**这一件**没干成，不是整轮失败。
         proposal:
           type: object
           description: |
             越权时的人审提案（ADR-0066 §3.4）：`escalations` 是越权的维度、
             `requested` 是各维度实际超出的能力、`scope=this_task_only` 声明
             授权范围**只作用于本次任务**（不写回员工定义）。
+        attempts:
+          type: integer
+          default: 0
+          description: |
+            这一件**真正发起了几次**运行时调用（含重试；1 = 一次过手）。
+            没被执行的（越权转 proposal / 硬拒）为 0。重试只作用于**运行时那一次
+            调用**：派活（建任务行、落审计、转 proposal）是副作用，不会被重做。
     RunState:
       type: object
       required: [run_id, tenant_id, goal, status]
@@ -385,6 +394,13 @@ paths:
           tenantHeader: []
           oidcScopes: [platform.write]
       summary: 提交一句话，拆任务图并并行派活（到人工确认闸门暂停）
+      description: |
+        一句话 → 拆任务图 → 并行派给 ≥2 个数字员工 → 停在人工确认闸门。
+
+        **可重试的员工故障会按策略重试**（1.5）：员工运行时那一次调用遇到"可能
+        自己好"的失败（模型 5xx / 限流 / 网络抖动）时重试（次数与退避由部署
+        配置决定），重试用尽才把这一件记成 `E_RUNTIME_UNAVAILABLE`。**派活**
+        （建任务行、落审计、越权转 proposal）不重试——它是副作用。
       tags: [agent-team]
       operationId: agentTeamPostRuns
       requestBody:

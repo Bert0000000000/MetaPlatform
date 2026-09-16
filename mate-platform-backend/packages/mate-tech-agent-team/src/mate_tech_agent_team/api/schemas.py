@@ -44,6 +44,8 @@ class SubTaskResultModel(BaseModel):
     error_code: str = ""
     #: 越权时的人审提案（ADR-0066 §3.4），授权范围只限本次任务。
     proposal: dict[str, Any] = Field(default_factory=dict)
+    #: 真正发起的运行时调用次数（含重试）；没被执行的（越权 / 硬拒）为 0。
+    attempts: int = 0
 
 
 class RunStateModel(BaseModel):

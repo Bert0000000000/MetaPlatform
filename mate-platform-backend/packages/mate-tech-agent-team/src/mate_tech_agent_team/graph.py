@@ -30,6 +30,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
 from typing import Any
 
@@ -40,7 +41,8 @@ from langgraph.types import Send
 from .authority import DepthExceeded, Envelope
 from .planner import PlanError, Planner
 from .profiles import ProfileNotFound
-from .runtime import EmployeeRuntime
+from .retry import RetryPolicy
+from .runtime import EmployeeRuntime, TransientRunError
 from .state import BrainState, SubTask, SubTaskResult
 from .team_bus import SpawnRequest, TeamBus
 
@@ -61,7 +63,7 @@ def _cancel_update() -> dict[str, Any]:
     }
 
 
-def _failure(subtask: SubTask, code: str, message: str) -> SubTaskResult:
+def _failure(subtask: SubTask, code: str, message: str, *, attempts: int = 0) -> SubTaskResult:
     return SubTaskResult(
         task_id=subtask.get("task_id", ""),
         team_task_id=subtask.get("team_task_id", ""),
@@ -72,7 +74,42 @@ def _failure(subtask: SubTask, code: str, message: str) -> SubTaskResult:
         error=message,
         error_code=code,
         proposal={},
+        attempts=attempts,
     )
+
+
+async def _invoke_employee(
+    runtime: EmployeeRuntime,
+    *,
+    subtask: SubTask,
+    tenant_id: str,
+    policy: RetryPolicy,
+) -> SubTaskResult:
+    """调运行时，按策略重试**可重试**的失败（1.5 任务 4）。
+
+    重试循环**只包住这一次调用**：派活（副作用）在调用方，已经发生过一次，
+    绝不因为重试再发生一次。回执里记 ``attempts`` = 真正发起了几次。
+
+    重试用尽仍失败 → 这一件记 ``E_RUNTIME_UNAVAILABLE`` 的错误回执，整轮不被
+    一件抖动拖垮（"这件没干成"与"整轮崩了"是两件事）。
+    """
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            result = await runtime.run(subtask=subtask, tenant_id=tenant_id)
+        except TransientRunError as exc:
+            if attempt >= policy.max_attempts:
+                return _failure(
+                    subtask,
+                    "E_RUNTIME_UNAVAILABLE",
+                    f"可重试失败，重试 {attempt} 次仍不成功：{exc}",
+                    attempts=attempt,
+                )
+            await asyncio.sleep(policy.delay_for(attempt))
+            continue
+        result["attempts"] = attempt
+        return result
 
 
 def _validate_dependencies(subtasks: list[SubTask]) -> str:
@@ -107,6 +144,7 @@ def build_brain_graph(
     max_parallel: int = 3,
     depth: int = ROOT_DISPATCH_DEPTH,
     should_cancel: Callable[[], bool] | None = None,
+    retry_policy: RetryPolicy | None = None,
 ) -> Any:
     """编译大脑图。依赖（拆解器 / 员工运行时 / 派活闸门 / 检查点）全部注入。
 
@@ -117,8 +155,13 @@ def build_brain_graph(
     ``should_cancel`` 是运行控制面的取消标志（1.5 任务 1）。**刻意不进图状态**：
     它是"现在这一刻要不要停"的即时信号，不是这一轮的历史；状态里存它反而会
     被 checkpointer 落库、被后续读取当成事实。没给就永不取消。
+
+    ``retry_policy`` 是失败节点的重试策略（1.5 任务 4）。它只作用在**运行时那次
+    调用**上——派活（副作用）在循环外面，重试不会把它再做一遍。刻意不用
+    langgraph 的节点级 ``RetryPolicy``，理由见 :mod:`mate_tech_agent_team.retry`。
     """
     root_envelope = initiator_envelope if initiator_envelope is not None else Envelope()
+    policy = retry_policy if retry_policy is not None else RetryPolicy()
 
     def _cancelled() -> bool:
         return should_cancel is not None and should_cancel()
@@ -264,7 +307,11 @@ def build_brain_graph(
         # 1.4 任务 1：四维一起发下去。只发工具面的话，action_rids / kb_ids /
         # markings 三维在执行侧无人认领——判完就没人再看一眼。
         subtask["granted_envelope"] = outcome.envelope.as_state()
-        result = await runtime.run(subtask=subtask, tenant_id=tenant_id)
+        # 1.5 任务 4：**到这里**才有重试。派活已经在上面发生过一次（建行、落审计、
+        # 越权转 proposal 都是副作用），重试只包住员工运行时那一次调用。
+        result = await _invoke_employee(
+            runtime, subtask=subtask, tenant_id=tenant_id, policy=policy
+        )
         # ``results`` 仍按**计划内标签**归类（``t1``…）：那是计划里的位置，
         # 不是实例身份；调用方要投递时读回执里的 ``team_task_id``。
         return {"results": {subtask["task_id"]: result}}
