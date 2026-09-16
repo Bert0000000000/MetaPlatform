@@ -39,6 +39,7 @@ from mcp.types import (
 )
 from pydantic import AnyUrl
 
+from ..caller_context import bind_caller
 from ..federation_routes import federation_router
 from ..prompts.templates import list_prompts as list_prompt_templates
 from ..prompts.templates import render_prompt
@@ -62,23 +63,37 @@ class MateStreamableHttpServer(FastMCP):
         super().__init__(name, **(settings or {}))
 
     # -- tenant binding ---------------------------------------------------
-    def _request_tenant(self) -> str | None:
-        """Tenant of the authenticated caller, or None outside a request.
+    def _request_object(self) -> Any | None:
+        """The Starlette request of the in-flight HTTP message, if any.
 
-        ``request`` is the Starlette request of the in-flight HTTP message;
-        Starlette backs ``request.state`` with ``scope['state']``, which
-        survives the parent app's mount into this sub-app.
+        ``request.state`` is backed by ``scope['state']``, which survives the
+        parent app's mount into this sub-app.
         """
         try:
             request_context = self._mcp_server.request_context
         except LookupError:
             return None
-        request = getattr(request_context, "request", None)
+        return getattr(request_context, "request", None)
+
+    def _request_tenant(self) -> str | None:
+        """Tenant of the authenticated caller, or None outside a request."""
+        request = self._request_object()
         if request is None:
             return None
         ctx = getattr(getattr(request, "state", None), "ctx", None)
         tenant = str(getattr(ctx, "tenant_id", "") or "")
         return tenant or None
+
+    def _request_bearer(self) -> str:
+        """The caller's raw bearer token, forwarded to downstream services."""
+        request = self._request_object()
+        header = getattr(getattr(request, "headers", None), "get", lambda *_: "")("authorization")
+        if not header:
+            return ""
+        parts = str(header).split(None, 1)
+        if len(parts) == 2 and parts[0].lower() == "bearer":
+            return parts[1].strip()
+        return ""
 
     async def _resolve_tenant(self) -> str:
         """Resolve the tenant for this message; fail closed inside a request."""
@@ -132,6 +147,11 @@ class MateStreamableHttpServer(FastMCP):
         # 剥除 —— 远端 AI 客户端永远按 agent 视角，HITL 工具
         # （ont_confirm/reject/execute_proposal）在此面必然 PermissionError。
         args.pop("__caller__", None)
+        # 1.1 task 1c: downstream proxies (ontology) must go out as the caller.
+        with bind_caller(tenant_id=tenant, bearer_token=self._request_bearer()):
+            return await self._dispatch(name, args, tenant)
+
+    async def _dispatch(self, name: str, args: dict[str, Any], tenant: str) -> Any:
         # 1. local handler
         try:
             return await self._mcp.call_tool(name, args, tenant_id=tenant)

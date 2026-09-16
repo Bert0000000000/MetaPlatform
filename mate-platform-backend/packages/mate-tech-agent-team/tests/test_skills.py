@@ -13,6 +13,7 @@ from dataclasses import dataclass
 import pytest
 from fastapi.testclient import TestClient
 from mate_tech_agent_team import (
+    CompositeToolbox,
     EmployeeProfile,
     LlmEmployeeRuntime,
     ProfileRegistry,
@@ -22,7 +23,6 @@ from mate_tech_agent_team import (
 )
 from mate_tech_agent_team.api.app import set_profile_registry, set_skill_catalog
 from mate_tech_agent_team.main import create_app
-from mate_tech_agent_team.ontology_toolbox import CompositeToolbox
 from mate_tech_agent_team.skills import MANIFEST_BUDGET_CHARS
 
 LONG_BODY = "正文：先取上月同期基线，再按仓维度算偏离，超过 3σ 记异常。" * 200
@@ -102,7 +102,7 @@ async def test_twenty_skills_enter_the_prompt_as_a_list_only() -> None:
     runtime = LlmEmployeeRuntime(
         registry=ProfileRegistry([profile]),
         llm_factory=lambda _t: llm,
-        toolbox_factory=lambda _t: CompositeToolbox(ontology=None, mcp=None),
+        toolbox_factory=lambda _t: CompositeToolbox(mcp=None),
         skills=_catalog(),
     )
     await runtime.run(

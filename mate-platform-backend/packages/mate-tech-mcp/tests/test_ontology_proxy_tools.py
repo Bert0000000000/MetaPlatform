@@ -23,11 +23,20 @@ ONT_BASE = "http://mock-tech-ont:8007"
 
 @respx.mock
 def test_list_classes_proxies_agent_tools_endpoint() -> None:
+    """1.1 task 1c: the proxied list is compacted to rid + name.
+
+    Returning the engine's raw type definitions makes the model pick the
+    wrong class (47 types' field lists blow past the per-result truncation
+    limit) — see the env-facts card §6.
+    """
     route = respx.get(f"{ONT_BASE}/api/v1/ont/v2/agent-tools").mock(
         return_value=httpx.Response(
             200,
             json=[
-                {"name": "query_order", "class_rid": "ont.t.obj.order.v1"},
+                {
+                    "rid": "ont.tenant-default.obj.order-fulfillment.v1",
+                    "properties": [{"rid": "ont.tenant-default.prop.order-id.v1"}],
+                },
             ],
         ),
     )
@@ -42,7 +51,10 @@ def test_list_classes_proxies_agent_tools_endpoint() -> None:
     out = asyncio.run(run())
     assert route.called
     assert route.calls.last.request.url.params["markings"] == "domain:finance"
-    assert out[0]["name"] == "query_order"
+    assert out["count"] == 1
+    assert out["classes"] == [
+        {"rid": "ont.tenant-default.obj.order-fulfillment.v1", "name": "order-fulfillment"}
+    ]
 
 
 @respx.mock

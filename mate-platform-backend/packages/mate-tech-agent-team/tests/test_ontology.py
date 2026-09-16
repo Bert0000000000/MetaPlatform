@@ -1,11 +1,17 @@
-"""任务 3 · 打通本体的验收用例。
+"""任务 3 验收（1.1 修订）· 本体工具经 MCP 总线。
 
-判据：让员工"查本月异常订单" → 返回真实数据。
+1.0 时 MCP 的本体代理用**服务身份** client_credentials token 出去，而该
+token 不带 tenant claim，本体 ``AuthMiddleware`` 直接 401；agent-team 因此
+绕过总线、带用户 token 直连本体。1.1 task 1c 修好了透传（MCP 侧逐请求带上
+调用方 token + 租户），于是直连旁路被删除。
 
-单元层面守住三件事：
-  1. 员工能用的是**本体既有工具面**（不是新造的一套交互）；
-  2. 工具调用真的打到本体客户端，参数按既有端点签名传；
-  3. **写只到 proposal**——confirm / reject / execute 三个工具根本不存在于员工面。
+本文件守住三件事：
+
+  1. 本体工具与其它工具**走同一条总线**（MCP 中心），不再有第二套客户端；
+  2. 直连旁路（``OntologyToolbox`` / ``mate_clients.ontology``）已从
+     agent-team 消失；
+  3. **写只到 proposal**——confirm / reject / execute 在总线处即被
+     ``agentInvokable=False`` 拒绝，写进白名单也不给。
 """
 
 from __future__ import annotations
@@ -13,176 +19,128 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from mate_tech_agent_team import OntologyToolbox, ToolNotAllowed
-from mate_tech_agent_team.ontology_toolbox import CompositeToolbox
+from mate_tech_agent_team import CompositeToolbox, McpToolbox, ToolNotAllowed
 
-ALL_READ = ("ont_list_classes", "ont_inspect_class", "ont_object_query")
-ALL_ALLOWED = (*ALL_READ, "ont_propose_instance")
-
-
-class FakeOntClient:
-    """本体客户端的替身：记录调用，回真形状的结果。"""
-
-    def __init__(self) -> None:
-        self.calls: list[tuple[str, Any]] = []
-
-    async def list_classes(self, limit: int = 200) -> Any:
-        self.calls.append(("list_classes", limit))
-        return [
-            {
-                "rid": "ont.tenant-default.obj.sopbench-order-fulfillment.v1",
-                "properties": [
-                    {"rid": "ont.tenant-default.prop.sopbench-order-fulfillment-order-id.v1"}
-                ],
-            }
-        ]
-
-    async def inspect_class(self, class_rid: str) -> Any:
-        self.calls.append(("inspect_class", class_rid))
-        return {"class_rid": class_rid, "properties": [{"name": "order-id"}]}
-
-    async def object_query(self, payload: dict[str, Any]) -> Any:
-        self.calls.append(("object_query", payload))
-        return {"kind": "objects", "rows": [{"__rid__": "ont.x.ind.ord", "order-id": "ORD006"}]}
-
-    async def propose_instance(self, class_rid: str, props: dict, impact_summary: str = "") -> Any:
-        self.calls.append(("propose_instance", (class_rid, props, impact_summary)))
-        return {"proposal_id": "p-1", "status": "pending"}
+READ_TOOLS = ("ont_list_classes", "ont_inspect_class", "ont_object_query")
+WRITE_TOOLS = ("ont_propose_instance",)
 
 
-@pytest.mark.asyncio
-async def test_list_classes_is_compacted_for_the_model() -> None:
-    """47 个类型的完整定义会淹没模型——只回 rid + 名称 + 属性名。"""
-    client = FakeOntClient()
-    result = await OntologyToolbox(client).invoke(
-        name="ont_list_classes", arguments={}, allowed=ALL_ALLOWED
-    )
-    assert result["count"] == 1
-    assert result["classes"][0]["rid"] == "ont.tenant-default.obj.sopbench-order-fulfillment.v1"
-    assert result["classes"][0]["name"] == "sopbench-order-fulfillment"
-    # 属性**不**进清单：47 个类型连属性一起回会超过单条工具结果的裁剪上限，
-    # 模型只看得到前几个类型（实测因此挑错了订单类）。要属性调 ont_inspect_class。
-    assert "properties" not in result["classes"][0]
+def _descriptor(name: str, *, agent_invokable: bool = True) -> dict[str, Any]:
+    return {
+        "name": name,
+        "description": f"{name} descriptor",
+        "inputSchema": {"type": "object", "properties": {}},
+        "agentInvokable": agent_invokable,
+    }
+
+
+class FakeCenter:
+    """MCP 中心客户端替身：回工具清单，记录调用。"""
+
+    def __init__(self, descriptors: list[dict[str, Any]]) -> None:
+        self._descriptors = descriptors
+        self.calls: list[tuple[str, dict[str, Any]]] = []
+
+    async def list_tools(self) -> list[dict[str, Any]]:
+        return list(self._descriptors)
+
+    async def call_tool(self, *, name: str, arguments: dict[str, Any]) -> Any:
+        self.calls.append((name, arguments))
+        return {"ok": True, "tool": name}
+
+
+def _center() -> FakeCenter:
+    descriptors = [_descriptor(n) for n in (*READ_TOOLS, *WRITE_TOOLS)]
+    descriptors.append(_descriptor("kb_search"))
+    # 中心把人工闸门工具标为 agentInvokable=False（ADR-0044）。
+    descriptors.append(_descriptor("ont_confirm_proposal", agent_invokable=False))
+    return FakeCenter(descriptors)
+
+
+# ── 总线：本体与其它工具同路 ────────────────────────────────────────────
 
 
 @pytest.mark.asyncio
-async def test_object_query_passes_through_to_the_real_endpoint() -> None:
-    client = FakeOntClient()
-    result = await OntologyToolbox(client).invoke(
-        name="ont_object_query",
-        arguments={
-            "source": "ont.tenant-default.obj.sopbench-order-fulfillment.v1",
-            "paging_limit": 5,
-        },
-        allowed=ALL_ALLOWED,
-    )
-    assert client.calls == [
-        (
-            "object_query",
-            {"source": "ont.tenant-default.obj.sopbench-order-fulfillment.v1", "paging_limit": 5},
-        )
-    ]
-    assert result["rows"][0]["order-id"] == "ORD006"
+async def test_ontology_tools_are_dispatched_through_the_center() -> None:
+    center = _center()
+    composite = CompositeToolbox(mcp=McpToolbox(center))
+    allowed = ("ont_list_classes", "ont_object_query", "kb_search")
+
+    schemas = await composite.schemas(allowed=allowed)
+    assert {s["function"]["name"] for s in schemas} == set(allowed)
+
+    await composite.invoke(name="ont_list_classes", arguments={}, allowed=allowed)
+    await composite.invoke(name="kb_search", arguments={"query": "x"}, allowed=allowed)
+
+    assert [c[0] for c in center.calls] == ["ont_list_classes", "kb_search"]
 
 
 @pytest.mark.asyncio
-async def test_none_arguments_are_dropped_before_the_call() -> None:
-    client = FakeOntClient()
-    await OntologyToolbox(client).invoke(
-        name="ont_object_query",
-        arguments={"source": "rid-1", "filters": None, "aggregation": None},
-        allowed=ALL_ALLOWED,
-    )
-    _, payload = client.calls[0]
-    assert payload == {"source": "rid-1"}
-
-
-@pytest.mark.asyncio
-async def test_propose_is_allowed_but_never_applies() -> None:
-    client = FakeOntClient()
-    result = await OntologyToolbox(client).invoke(
+async def test_write_proposal_tool_travels_the_same_bus() -> None:
+    center = _center()
+    composite = CompositeToolbox(mcp=McpToolbox(center))
+    await composite.invoke(
         name="ont_propose_instance",
         arguments={"class_rid": "rid-1", "props": {"order-id": "ORD999"}},
-        allowed=ALL_ALLOWED,
+        allowed=(*READ_TOOLS, *WRITE_TOOLS),
     )
-    assert result["status"] == "pending"
-    assert client.calls[0][0] == "propose_instance"
+    assert center.calls == [
+        ("ont_propose_instance", {"class_rid": "rid-1", "props": {"order-id": "ORD999"}})
+    ]
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "forbidden", ["ont_confirm_proposal", "ont_reject_proposal", "ont_execute_proposal"]
-)
-async def test_human_gate_tools_are_not_part_of_the_employee_surface(forbidden: str) -> None:
-    """写只有 proposal 一步；确认/驳回/执行**不在员工面上**，写进白名单也不给。"""
-    client = FakeOntClient()
-    toolbox = OntologyToolbox(client)
-    with pytest.raises(ToolNotAllowed):
+async def test_whitelist_gate_applies_before_the_bus() -> None:
+    center = _center()
+    composite = CompositeToolbox(mcp=McpToolbox(center))
+    with pytest.raises(ToolNotAllowed) as excinfo:
+        await composite.invoke(name="ont_object_query", arguments={}, allowed=("kb_search",))
+    assert excinfo.value.reason == "not_in_employee_tool_whitelist"
+    assert center.calls == [], "闸门拒绝的调用不该打到中心"
+
+
+# ── 直连旁路已删除 ──────────────────────────────────────────────────────
+
+
+def test_no_direct_ontology_bypass_remains_in_agent_team() -> None:
+    """旁路删除的守门：模块与客户端都不该再被 agent-team 引用。"""
+    import importlib
+
+    import mate_tech_agent_team
+
+    assert not hasattr(mate_tech_agent_team, "OntologyToolbox")
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("mate_tech_agent_team.ontology_toolbox")
+
+    # 运行时装配也不该再构造本体客户端。
+    import inspect
+
+    from mate_tech_agent_team import wiring
+
+    source = inspect.getsource(wiring)
+    assert "OntAgentToolsClient" not in source
+    assert "OntologyToolbox" not in source
+
+
+# ── 人工闸门仍在（中心标志） ────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_human_gate_tools_are_rejected_even_when_whitelisted() -> None:
+    center = _center()
+    toolbox = McpToolbox(center)
+    with pytest.raises(ToolNotAllowed) as excinfo:
         await toolbox.invoke(
-            name=forbidden,
+            name="ont_confirm_proposal",
             arguments={"proposal_id": "p-1"},
-            allowed=(*ALL_ALLOWED, forbidden),
+            allowed=(*READ_TOOLS, "ont_confirm_proposal"),
         )
-    assert client.calls == [], "人工闸门类工具不该产生任何本体调用"
+    assert excinfo.value.reason == "center_marks_not_agent_invokable"
+    assert center.calls == [], "人工闸门类工具不该产生任何中心调用"
 
 
 @pytest.mark.asyncio
 async def test_human_gate_tools_are_not_offered_in_schemas() -> None:
-    toolbox = OntologyToolbox(FakeOntClient())
+    toolbox = McpToolbox(_center())
     schemas = await toolbox.schemas(allowed=("ont_confirm_proposal", "ont_object_query"))
     assert [s["function"]["name"] for s in schemas] == ["ont_object_query"]
-
-
-@pytest.mark.asyncio
-async def test_whitelist_gate_applies_to_the_ontology_path_too() -> None:
-    client = FakeOntClient()
-    with pytest.raises(ToolNotAllowed) as excinfo:
-        await OntologyToolbox(client).invoke(
-            name="ont_object_query", arguments={"source": "rid-1"}, allowed=("ont_list_classes",)
-        )
-    assert excinfo.value.reason == "not_in_employee_tool_whitelist"
-    assert client.calls == []
-
-
-# ── 路由：本体走本体面，其余走 MCP 中心 ─────────────────────────────────
-
-
-class _RecordingMcp:
-    def __init__(self) -> None:
-        self.invoked: list[str] = []
-
-    async def schemas(self, *, allowed):
-        return [
-            {"type": "function", "function": {"name": n, "description": "", "parameters": {}}}
-            for n in allowed
-            if n == "kb_search"
-        ]
-
-    async def invoke(self, *, name, arguments, allowed):
-        self.invoked.append(name)
-        return {"hits": []}
-
-
-@pytest.mark.asyncio
-async def test_composite_routes_ontology_to_ontology_and_the_rest_to_mcp() -> None:
-    ont_client = FakeOntClient()
-    mcp = _RecordingMcp()
-    composite = CompositeToolbox(ontology=OntologyToolbox(ont_client), mcp=mcp)
-    allowed = ("ont_list_classes", "kb_search")
-
-    schemas = await composite.schemas(allowed=allowed)
-    assert {s["function"]["name"] for s in schemas} == {"ont_list_classes", "kb_search"}
-
-    await composite.invoke(name="ont_list_classes", arguments={}, allowed=allowed)
-    await composite.invoke(name="kb_search", arguments={"query": "x"}, allowed=allowed)
-    assert [c[0] for c in ont_client.calls] == ["list_classes"]
-    assert mcp.invoked == ["kb_search"]
-
-
-@pytest.mark.asyncio
-async def test_composite_enforces_the_whitelist_before_routing() -> None:
-    ont_client = FakeOntClient()
-    composite = CompositeToolbox(ontology=OntologyToolbox(ont_client), mcp=_RecordingMcp())
-    with pytest.raises(ToolNotAllowed):
-        await composite.invoke(name="ont_object_query", arguments={}, allowed=("kb_search",))
-    assert ont_client.calls == []

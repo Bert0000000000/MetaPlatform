@@ -24,6 +24,7 @@ from mate_platform.tenancy import AuthMethod
 from pydantic import BaseModel, Field
 
 from ..auth import AuthError, verify_jwt_token
+from ..caller_context import bind_caller
 from ..federation_routes import federation_router
 from ..prompts.templates import list_prompts, render_prompt
 from ..repositories import (
@@ -83,6 +84,12 @@ def _trace_id(request: Request) -> str:
     """Best-effort trace id from request.state.ctx (absent in tests)."""
     ctx = getattr(request.state, "ctx", None)
     return getattr(ctx, "trace_id", "") if ctx is not None else ""
+
+
+def _bearer_token(request: Request) -> str:
+    """The caller's raw bearer token, for downstream token passthrough."""
+    auth = request.headers.get("Authorization", "")
+    return auth[len("Bearer ") :].strip() if auth.startswith("Bearer ") else ""
 
 
 async def _require_bearer(request: Request) -> dict[str, Any]:
@@ -310,11 +317,14 @@ async def call_tool_endpoint(
         raise HTTPException(status_code=422, detail="arguments must be an object")
 
     server = _mcp_server(request)
-    try:
-        result = await server.call_tool(name, arguments)
-        return {"tool": name, "result": result, "source": "local"}
-    except KeyError:
-        pass  # not a local handler — try dynamic / federation below
+    # 1.1 task 1c: downstream proxies (ontology) must go out as the caller —
+    # their token and their tenant — not as this service's identity.
+    with bind_caller(tenant_id=tenant_id, bearer_token=_bearer_token(request)):
+        try:
+            result = await server.call_tool(name, arguments)
+            return {"tool": name, "result": result, "source": "local"}
+        except KeyError:
+            pass  # not a local handler — try dynamic / federation below
 
     # W2: tenant dynamic tool (forwarding endpoint).
     dynamic = get_tool_by_name(tenant_id, name)

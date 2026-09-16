@@ -1,4 +1,7 @@
-"""生产装配：把大脑接上真实的 llmgw / MCP 中心 / 本体 / SkillHub / PG 检查点。
+"""生产装配：把大脑接上真实的 llmgw / MCP 中心 / SkillHub / PG 检查点。
+
+本体不在这里单接：本体工具经 MCP 总线（1.1 task 1c 起 MCP 代理逐请求透传
+调用方 token + 租户）。
 
 **刻意没有静默回落**（硬规则 #5 的同一精神）：缺 ``MATE_AGENT_TEAM_DSN``
 或 ``MATE_AGENT_TEAM_ADMIN_DSN`` 时**直接启动失败**，而不是悄悄退回内存
@@ -12,7 +15,6 @@ import os
 from mate_clients.iam import IamServiceReadClient
 from mate_clients.llmgw import LlmgwClient
 from mate_clients.mcp.tools import McpToolsClient
-from mate_clients.ontology import OntAgentToolsClient
 from mate_clients.security import BearerAuth
 from mate_platform.marketplace.skillhub.store import SkillHubStore
 
@@ -20,15 +22,13 @@ from .brain import BrainService, RunContext
 from .checkpoint import PgCheckpointerProvider, bootstrap
 from .employee import LlmEmployeeRuntime
 from .llm_planner import LlmPlanner
-from .ontology_toolbox import CompositeToolbox, OntologyToolbox
 from .profiles import ProfileRegistry, builtin_profiles
-from .skill_toolbox import SkillToolbox
+from .skill_toolbox import SKILL_TOOL_NAMES, SkillToolbox
 from .skills import SkillCatalog
-from .toolbox import McpToolbox
+from .toolbox import CompositeToolbox, McpToolbox
 
 DEFAULT_LLMGW_URL = "http://localhost:8008"
 DEFAULT_MCP_URL = "http://localhost:8081"
-DEFAULT_ONT_URL = "http://localhost:8007"
 DEFAULT_GATEWAY_URL = "http://localhost:8100"
 
 
@@ -83,7 +83,6 @@ def build_service() -> BrainService:
     bearer = _bearer()
     llmgw_url = os.getenv("MATE_LLMGW_URL", DEFAULT_LLMGW_URL)
     mcp_url = os.getenv("MATE_MCP_URL", DEFAULT_MCP_URL)
-    ont_url = os.getenv("MATE_ONT_URL", DEFAULT_ONT_URL)
     gateway_url = os.getenv("MATE_GATEWAY_URL", DEFAULT_GATEWAY_URL)
 
     bootstrap(required_admin_dsn())
@@ -126,14 +125,15 @@ def build_service() -> BrainService:
         return _make
 
     def _toolbox(ctx: RunContext) -> CompositeToolbox:
-        ontology = OntologyToolbox(
-            OntAgentToolsClient(ont_url, token=ctx.user_token, tenant_id=ctx.tenant_id)
-        )
+        # 1.1 task 1c: 本体工具不再走旁路 —— MCP 的本体代理已改为逐请求透传
+        # 调用方 token + 租户，本体与其它工具共用同一条总线（单一工具面）。
         mcp = McpToolbox(
             McpToolsClient(mcp_url, auth=bearer, tenant_id=ctx.tenant_id, user_token=ctx.user_token)
         )
         return CompositeToolbox(
-            ontology=ontology, mcp=mcp, skills=SkillToolbox(skills, tenant_id=ctx.tenant_id)
+            mcp=mcp,
+            skills=SkillToolbox(skills, tenant_id=ctx.tenant_id),
+            skill_names=SKILL_TOOL_NAMES,
         )
 
     def planner_for(ctx: RunContext) -> LlmPlanner:

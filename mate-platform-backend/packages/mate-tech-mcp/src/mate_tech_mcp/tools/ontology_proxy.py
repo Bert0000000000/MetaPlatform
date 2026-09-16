@@ -35,6 +35,8 @@ from typing import Any, ClassVar
 import httpx
 import structlog
 
+from ..caller_context import current_caller
+
 logger = structlog.get_logger(__name__)
 
 
@@ -85,13 +87,12 @@ class OntologyProxyTool:
             or os.getenv("ONTOLOGY_URL")
             or "http://localhost:8007"
         )
-        # dev/staging：技术本体代理的出站服务凭证。生产应改为逐请求透传
-        # 调用方 token（见 MP-SAL-05 运行时接线的 token 透传）。
-        _tenant = os.getenv("TECH_ONT_TENANT", "tenant-default")
+        # dev/staging 兜底：无调用方上下文时（stdio / 内部桥）用服务身份 + 静态
+        # 租户。有调用方时逐请求透传其 token 与租户（1.1 task 1c）。
+        self._tenant = os.getenv("TECH_ONT_TENANT", "tenant-default")
         self._client = client or httpx.AsyncClient(
             base_url=self._base_url,
             timeout=timeout,
-            headers={"X-Tenant-Id": _tenant},
         )
 
     async def _ensure_bearer(self) -> str:
@@ -124,23 +125,34 @@ class OntologyProxyTool:
             self._bearer = ""
         return self._bearer
 
-    async def _get(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def _outbound_headers(self) -> dict[str, str]:
+        """Auth + tenant for the outbound call.
+
+        1.1 task 1c: when a caller is bound to this request, go out **as that
+        caller** — their bearer token and their tenant. The service-identity
+        ``client_credentials`` token carries no ``tenant`` claim and its ``iss``
+        depends on the Keycloak address that minted it, so the ontology
+        engine's ``AuthMiddleware`` rejects it (measured: 401).
+        """
+        caller = current_caller()
+        if caller is not None:
+            headers = {"X-Tenant-Id": caller.tenant_id}
+            if caller.bearer_token:
+                headers["Authorization"] = f"Bearer {caller.bearer_token}"
+            return headers
+        headers = {"X-Tenant-Id": self._tenant}
         token = await self._ensure_bearer()
-        resp = await self._client.get(
-            path,
-            params=params,
-            headers={"Authorization": f"Bearer {token}"} if token else {},
-        )
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        return headers
+
+    async def _get(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        resp = await self._client.get(path, params=params, headers=await self._outbound_headers())
         resp.raise_for_status()
         return resp.json()
 
     async def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
-        token = await self._ensure_bearer()
-        resp = await self._client.post(
-            path,
-            json=payload,
-            headers={"Authorization": f"Bearer {token}"} if token else {},
-        )
+        resp = await self._client.post(path, json=payload, headers=await self._outbound_headers())
         resp.raise_for_status()
         return resp.json()
 
@@ -153,7 +165,11 @@ class OntologyProxyTool:
 
 class OntListClassesTool(OntologyProxyTool):
     name = "ont_list_classes"
-    description = "列出租户可见的本体对象类型(含 marking),发现可查询的类型"
+    description = (
+        "列出租户可见的本体对象类型的**清单**（rid + 名称 + marking）。"
+        "这是发现可查询类型的唯一入口：**必须先调它，并从返回里原样挑 rid**，"
+        "禁止凭业务名词自己拼造 rid（拼出来的 rid 一律 404）。"
+    )
     operation_id = "ontListV2AgentTools"
     capabilities: ClassVar[tuple[str, ...]] = ("ontology.read", "discovery")
     input_schema: ClassVar[dict[str, Any]] = {
@@ -166,11 +182,46 @@ class OntListClassesTool(OntologyProxyTool):
         },
     }
 
-    async def __call__(self, markings: str = "") -> list[dict[str, Any]]:
-        return await self._get(  # type: ignore[return-value]
+    async def __call__(self, markings: str = "") -> dict[str, Any]:
+        raw = await self._get(
             "/api/v1/ont/v2/agent-tools",
             params={"markings": markings} if markings else None,
         )
+        return _compact_classes(raw)
+
+
+def _compact_classes(raw: Any) -> dict[str, Any]:
+    """把对象类型的完整定义压成「rid + 名称」清单。
+
+    本体返回的每个类型都带全部属性定义（几十个字段）。两件事都实测过：
+
+    * 直接回原样 → 模型翻不到「订单」，**开始自己拼 rid**，然后 404；
+    * 连属性名一起回 → 47 个类型加起来超过单条工具结果的裁剪上限，
+      模型只看得到前几个类型，实测因此**挑错了订单类**。
+
+    所以清单只回 rid + 名称；要属性再调 ``ont_inspect_class``。
+    （1.1 task 1c 之前这段逻辑在 agent-team 的直连旁路里；本体工具面收回
+    MCP 总线后，裁剪必须跟着搬回来，否则 1.0 的教训就丢了。）
+    """
+    items = raw if isinstance(raw, list) else (raw or {}).get("items", [])
+    classes = []
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        rid = str(item.get("rid") or "")
+        if not rid:
+            continue
+        classes.append(
+            {
+                "rid": rid,
+                "name": rid.rsplit(".", 2)[-2] if "." in rid else rid,
+            }
+        )
+    return {
+        "count": len(classes),
+        "classes": classes,
+        "hint": "要看某个类型的属性与链接，用 ont_inspect_class(class_rid=…)。",
+    }
 
 
 class OntInspectClassTool(OntologyProxyTool):
