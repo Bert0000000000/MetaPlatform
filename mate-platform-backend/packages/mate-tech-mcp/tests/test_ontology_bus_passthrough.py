@@ -80,7 +80,7 @@ async def test_outbound_uses_the_callers_token_and_tenant() -> None:
 @respx.mock
 @pytest.mark.asyncio
 async def test_two_callers_do_not_share_a_token() -> None:
-    route = respx.get(f"{ONT_BASE}/api/v1/ont/v2/agent-tools").mock(
+    route = respx.get(f"{ONT_BASE}/api/v1/ont/v2/object-types").mock(
         return_value=Response(200, json=[])
     )
     tool = _list_tool()
@@ -104,7 +104,7 @@ async def test_without_a_caller_it_falls_back_to_service_identity(
     """Internal callers (stdio, REST bridge without a user) keep working."""
     monkeypatch.setenv("TECH_ONT_TOKEN", "eyJ.service.token")
     monkeypatch.setenv("TECH_ONT_TENANT", "tenant-default")
-    route = respx.get(f"{ONT_BASE}/api/v1/ont/v2/agent-tools").mock(
+    route = respx.get(f"{ONT_BASE}/api/v1/ont/v2/object-types").mock(
         return_value=Response(200, json=[])
     )
     tool = OntListClassesTool(base_url=ONT_BASE)
@@ -126,7 +126,7 @@ async def test_list_classes_is_compacted_to_rid_and_name() -> None:
             "properties": [{"rid": "ont.tenant-default.prop.order-id.v1"}],
         }
     ]
-    respx.get(f"{ONT_BASE}/api/v1/ont/v2/agent-tools").mock(return_value=Response(200, json=raw))
+    respx.get(f"{ONT_BASE}/api/v1/ont/v2/object-types").mock(return_value=Response(200, json=raw))
     tool = _list_tool()
     result: Any = await tool()
     await tool.aclose()
@@ -154,7 +154,7 @@ async def test_api_key_caller_falls_back_to_service_identity(
     """
     monkeypatch.setenv("TECH_ONT_TOKEN", "eyJ.service.token")
     monkeypatch.setenv("TECH_ONT_TENANT", "tenant-default")
-    route = respx.get(f"{ONT_BASE}/api/v1/ont/v2/agent-tools").mock(
+    route = respx.get(f"{ONT_BASE}/api/v1/ont/v2/object-types").mock(
         return_value=Response(200, json=[])
     )
     tool = _list_tool()

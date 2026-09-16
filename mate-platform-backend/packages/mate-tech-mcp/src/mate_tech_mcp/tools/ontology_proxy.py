@@ -171,26 +171,27 @@ class OntologyProxyTool:
 class OntListClassesTool(OntologyProxyTool):
     name = "ont_list_classes"
     description = (
-        "列出租户可见的本体对象类型的**清单**（rid + 名称 + marking）。"
+        "列出租户可见的本体对象类型的**清单**（rid + 名称）。"
         "这是发现可查询类型的唯一入口：**必须先调它，并从返回里原样挑 rid**，"
         "禁止凭业务名词自己拼造 rid（拼出来的 rid 一律 404）。"
     )
-    operation_id = "ontListV2AgentTools"
+    operation_id = "ontListV2ObjectTypes"
     capabilities: ClassVar[tuple[str, ...]] = ("ontology.read", "discovery")
     input_schema: ClassVar[dict[str, Any]] = {
         "type": "object",
         "properties": {
-            "markings": {
-                "type": "string",
-                "description": "逗号分隔的 agent markings(可见性过滤,可空)",
-            },
+            "limit": {"type": "integer", "description": "返回条数上限(默认 100)"},
         },
     }
 
-    async def __call__(self, markings: str = "") -> dict[str, Any]:
+    async def __call__(self, limit: int = 100) -> dict[str, Any]:
+        # 2026-09-16 修复：原先打 /agent-tools —— 那个端点回的是**工具**清单
+        # （query_<slug> / search_objects …，字段是 name/class_rid），没有 rid，
+        # 于是下面的裁剪恒为 0 条，「列类型」这个工具实际一直是空手而归。
+        # 列对象类型要走 /object-types（回 ObjectTypeResponse，带 rid）。
         raw = await self._get(
-            "/api/v1/ont/v2/agent-tools",
-            params={"markings": markings} if markings else None,
+            "/api/v1/ont/v2/object-types",
+            params={"limit": limit},
         )
         return _compact_classes(raw)
 

@@ -22,14 +22,19 @@ ONT_BASE = "http://mock-tech-ont:8007"
 
 
 @respx.mock
-def test_list_classes_proxies_agent_tools_endpoint() -> None:
-    """1.1 task 1c: the proxied list is compacted to rid + name.
+def test_list_classes_proxies_object_types_endpoint() -> None:
+    """1.1 task 1c: list the tenant's *object types*, compacted to rid + name.
 
-    Returning the engine's raw type definitions makes the model pick the
-    wrong class (47 types' field lists blow past the per-result truncation
-    limit) — see the env-facts card §6.
+    Regression guard: this tool used to call ``/agent-tools``, which returns
+    the virtual *tool* registry (``query_<slug>`` …) — rows with no ``rid`` —
+    so the compaction below produced ``count: 0`` on every call. The class
+    list comes from ``/object-types``.
+
+    Returning the engine's raw type definitions is also wrong: 47 types'
+    field lists blow past the per-result truncation limit and the model then
+    picks the wrong class (see the env-facts card §6).
     """
-    route = respx.get(f"{ONT_BASE}/api/v1/ont/v2/agent-tools").mock(
+    route = respx.get(f"{ONT_BASE}/api/v1/ont/v2/object-types").mock(
         return_value=httpx.Response(
             200,
             json=[
@@ -44,13 +49,13 @@ def test_list_classes_proxies_agent_tools_endpoint() -> None:
     async def run() -> dict:
         tool = OntListClassesTool(base_url=ONT_BASE)
         try:
-            return await tool(markings="domain:finance")
+            return await tool(limit=50)
         finally:
             await tool.aclose()
 
     out = asyncio.run(run())
     assert route.called
-    assert route.calls.last.request.url.params["markings"] == "domain:finance"
+    assert route.calls.last.request.url.params["limit"] == "50"
     assert out["count"] == 1
     assert out["classes"] == [
         {"rid": "ont.tenant-default.obj.order-fulfillment.v1", "name": "order-fulfillment"}
