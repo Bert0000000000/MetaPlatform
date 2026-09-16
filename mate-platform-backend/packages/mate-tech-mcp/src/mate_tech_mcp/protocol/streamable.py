@@ -26,6 +26,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
+from mate_platform.tenancy import AuthMethod
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings as _TransportSecuritySettings
 from mcp.types import (
@@ -85,9 +86,20 @@ class MateStreamableHttpServer(FastMCP):
         return tenant or None
 
     def _request_bearer(self) -> str:
-        """The caller's raw bearer token, forwarded to downstream services."""
+        """The caller's raw bearer token, forwarded to downstream services.
+
+        Only a real (JWT) bearer is forwarded: an ``sk-mcp-*`` key is a
+        MCP-centre-only credential that no other service can verify, so for
+        API-key callers the proxy falls back to the service identity while
+        still naming the caller's tenant. See
+        :class:`~mate_tech_mcp.caller_context.CallerContext`.
+        """
         request = self._request_object()
-        header = getattr(getattr(request, "headers", None), "get", lambda *_: "")("authorization")
+        state = getattr(request, "state", None)
+        if getattr(getattr(state, "ctx", None), "auth_method", None) == AuthMethod.API_KEY:
+            return ""
+        headers = getattr(request, "headers", None)
+        header = headers.get("authorization") if headers is not None else None
         if not header:
             return ""
         parts = str(header).split(None, 1)

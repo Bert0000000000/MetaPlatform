@@ -130,15 +130,20 @@ class OntologyProxyTool:
 
         1.1 task 1c: when a caller is bound to this request, go out **as that
         caller** — their bearer token and their tenant. The service-identity
-        ``client_credentials`` token carries no ``tenant`` claim and its ``iss``
-        depends on the Keycloak address that minted it, so the ontology
-        engine's ``AuthMiddleware`` rejects it (measured: 401).
+        ``client_credentials`` token carries no ``tenant`` claim, so the
+        ontology engine's tenant guard rejects it (measured: 403).
+
+        An ``sk-mcp-*`` client key is a MCP-centre-only credential that no
+        other service can verify; the surfaces therefore bind an *empty*
+        token for those callers, and the hop falls back to the service
+        identity while still naming the caller's tenant in ``X-Tenant-Id``.
         """
         caller = current_caller()
         if caller is not None:
             headers = {"X-Tenant-Id": caller.tenant_id}
-            if caller.bearer_token:
-                headers["Authorization"] = f"Bearer {caller.bearer_token}"
+            token = caller.bearer_token or await self._ensure_bearer()
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
             return headers
         headers = {"X-Tenant-Id": self._tenant}
         token = await self._ensure_bearer()

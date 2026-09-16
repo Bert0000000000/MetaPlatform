@@ -61,8 +61,8 @@ async def test_bind_caller_is_scoped_to_the_block() -> None:
 
 
 # --- outbound token passthrough -----------------------------------------
-@pytest.mark.asyncio
 @respx.mock
+@pytest.mark.asyncio
 async def test_outbound_uses_the_callers_token_and_tenant() -> None:
     route = respx.post(f"{ONT_BASE}/api/v1/ont/v2/object-query").mock(
         return_value=Response(200, json={"kind": "objects", "rows": []})
@@ -77,8 +77,8 @@ async def test_outbound_uses_the_callers_token_and_tenant() -> None:
     assert request.headers["x-tenant-id"] == "tenant-acme"
 
 
-@pytest.mark.asyncio
 @respx.mock
+@pytest.mark.asyncio
 async def test_two_callers_do_not_share_a_token() -> None:
     route = respx.get(f"{ONT_BASE}/api/v1/ont/v2/agent-tools").mock(
         return_value=Response(200, json=[])
@@ -96,8 +96,8 @@ async def test_two_callers_do_not_share_a_token() -> None:
     assert sent == [("Bearer eyJ.a", "tenant-a"), ("Bearer eyJ.b", "tenant-b")]
 
 
-@pytest.mark.asyncio
 @respx.mock
+@pytest.mark.asyncio
 async def test_without_a_caller_it_falls_back_to_service_identity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -117,8 +117,8 @@ async def test_without_a_caller_it_falls_back_to_service_identity(
 
 
 # --- compaction (1.0 lesson, moved onto the bus) -------------------------
-@pytest.mark.asyncio
 @respx.mock
+@pytest.mark.asyncio
 async def test_list_classes_is_compacted_to_rid_and_name() -> None:
     raw = [
         {
@@ -138,3 +138,30 @@ async def test_list_classes_is_compacted_to_rid_and_name() -> None:
     # blow past the per-result truncation limit and the model then picks the
     # wrong class (measured — see the env-facts card §6).
     assert "properties" not in result["classes"][0]
+
+
+# --- sk-mcp callers cannot forward their key -----------------------------
+@respx.mock
+@pytest.mark.asyncio
+async def test_api_key_caller_falls_back_to_service_identity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An ``sk-mcp-*`` key is centre-only: name the tenant, use our identity.
+
+    Forwarding the raw key produces an unverifiable bearer at the ontology
+    engine (measured: 401). The surfaces bind an empty token for API-key
+    callers; the tenant still comes from the caller, never from the env.
+    """
+    monkeypatch.setenv("TECH_ONT_TOKEN", "eyJ.service.token")
+    monkeypatch.setenv("TECH_ONT_TENANT", "tenant-default")
+    route = respx.get(f"{ONT_BASE}/api/v1/ont/v2/agent-tools").mock(
+        return_value=Response(200, json=[])
+    )
+    tool = _list_tool()
+    with bind_caller(tenant_id="tenant-acme", bearer_token=""):
+        await tool()
+    await tool.aclose()
+
+    request = route.calls[0].request
+    assert request.headers["authorization"] == "Bearer eyJ.service.token"
+    assert request.headers["x-tenant-id"] == "tenant-acme"

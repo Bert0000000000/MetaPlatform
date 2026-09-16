@@ -175,6 +175,62 @@ async def test_platform_wide_static_tool_visible_to_all_tenants() -> None:
         assert "add" in {x.name for x in await surf.list_tools()}
 
 
+# --- downstream token passthrough ----------------------------------------
+class _CtxWithAuth:
+    def __init__(self, tenant_id: str, auth_method: object) -> None:
+        self.tenant_id = tenant_id
+        self.auth_method = auth_method
+
+
+class _StateWithAuth:
+    def __init__(self, ctx: _CtxWithAuth) -> None:
+        self.ctx = ctx
+
+
+class _RequestWithHeaders:
+    def __init__(self, ctx: _CtxWithAuth, token: str) -> None:
+        self.state = _StateWithAuth(ctx)
+        self.headers = {"authorization": f"Bearer {token}"} if token else {}
+
+
+class _RcWithHeaders:
+    def __init__(self, request: _RequestWithHeaders) -> None:
+        self.request = request
+
+
+@pytest.mark.asyncio
+async def test_user_token_is_forwarded_downstream() -> None:
+    from mate_platform.tenancy import AuthMethod
+    from mcp.server.lowlevel.server import request_ctx
+
+    surf = MateStreamableHttpServer(_build_server())
+    ctx = _CtxWithAuth("tenant-a", AuthMethod.USER)
+    token = request_ctx.set(  # type: ignore[arg-type]
+        _RcWithHeaders(_RequestWithHeaders(ctx, "eyJ.user.jwt"))
+    )
+    try:
+        assert surf._request_bearer() == "eyJ.user.jwt"  # pyright: ignore[reportPrivateUsage]
+    finally:
+        request_ctx.reset(token)
+
+
+@pytest.mark.asyncio
+async def test_api_key_token_is_not_forwarded_downstream() -> None:
+    """sk-mcp keys are centre-only; other services cannot verify them."""
+    from mate_platform.tenancy import AuthMethod
+    from mcp.server.lowlevel.server import request_ctx
+
+    surf = MateStreamableHttpServer(_build_server())
+    ctx = _CtxWithAuth("tenant-a", AuthMethod.API_KEY)
+    token = request_ctx.set(  # type: ignore[arg-type]
+        _RcWithHeaders(_RequestWithHeaders(ctx, "sk-mcp-secret"))
+    )
+    try:
+        assert surf._request_bearer() == ""  # pyright: ignore[reportPrivateUsage]
+    finally:
+        request_ctx.reset(token)
+
+
 # --- real round-trip across the mount ------------------------------------
 def test_mounted_surface_resolves_tenant_from_auth_middleware() -> None:
     """End-to-end: auth middleware -> Starlette mount -> protocol surface."""

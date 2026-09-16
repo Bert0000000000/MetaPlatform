@@ -87,7 +87,15 @@ def _trace_id(request: Request) -> str:
 
 
 def _bearer_token(request: Request) -> str:
-    """The caller's raw bearer token, for downstream token passthrough."""
+    """The caller's raw bearer token, for downstream token passthrough.
+
+    Empty for ``sk-mcp-*`` callers: that key is a MCP-centre-only credential
+    no other service can verify, so the proxy uses its service identity and
+    names the tenant explicitly instead (1.1 task 1c).
+    """
+    ctx = getattr(request.state, "ctx", None)
+    if getattr(ctx, "auth_method", None) == AuthMethod.API_KEY:
+        return ""
     auth = request.headers.get("Authorization", "")
     return auth[len("Bearer ") :].strip() if auth.startswith("Bearer ") else ""
 
