@@ -45,6 +45,7 @@ from langgraph.errors import GraphRecursionError
 from .authority import Envelope
 from .chat_model import LlmgwChatModel, RunTrace
 from .envelope_gate import EnvelopeGate
+from .evidence import as_mapping, evidence_items, utc_now
 from .profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry
 from .runtime import TaskChannel, TransientRunError
 from .skills import SkillCatalog
@@ -166,6 +167,32 @@ def _render_inbox_message(message: Any) -> str:
     return f"【来自 {sender} 的补充消息】{text}"
 
 
+class _EvidenceCollector:
+    """把工具结果**忠实映射**成证据条目（1.6 任务 1）。
+
+    编号（``evidenceId``）在**捕获时**定死，不在事件流读取时现算：证据随回执落进
+    检查点，而事件流与 ``GET /runs/{id}`` 读的是同一份——编号若在读取时重算，
+    两次读之间就可能对不上号，前端按 id 去重/追加会错乱。
+
+    取不到字段就不产出条目（:func:`~mate_tech_agent_team.evidence.evidence_items`
+    的既有原则），所以"工具成功了但没证据"是**正常结果**，不是异常。
+    """
+
+    def __init__(self, prefix: str) -> None:
+        self._prefix = prefix
+        self.items: list[dict[str, Any]] = []
+
+    def capture(self, name: str, result: Any) -> None:
+        items = evidence_items(name, as_mapping(result))
+        if not items:
+            return
+        captured_at = utc_now()
+        for item in items:
+            item["evidenceId"] = f"{self._prefix}-e{len(self.items)}"
+            item["capturedAt"] = captured_at
+            self.items.append(item)
+
+
 def _channel_drainer(
     channel: TaskChannel, tenant_id: str, task_id: str
 ) -> Callable[[], Awaitable[list[Any]]]:
@@ -246,6 +273,7 @@ class LlmEmployeeRuntime:
         allowed: tuple[str, ...],
         toolbox: Toolbox,
         log: list[dict[str, Any]],
+        evidence: _EvidenceCollector,
     ) -> StructuredTool:
         """把一个工具描述符包成 LangChain 工具，闸门仍在**派发处**。"""
         name = descriptor["name"]
@@ -271,6 +299,9 @@ class LlmEmployeeRuntime:
                 return _clip({"error": f"tool '{name}' failed: {exc}", "hint": "修正参数后重试"})
             entry["allowed"] = True
             log.append(entry)
+            # 只有**成功**的工具结果才映射成证据：失败/被拒的结果里没有可取证的事实，
+            # 对它取证就是编造。
+            evidence.capture(name, result)
             return _clip(result)
 
         return StructuredTool(
@@ -322,6 +353,7 @@ class LlmEmployeeRuntime:
             source="llm",
             llm_calls=0,
             tool_calls=[],
+            evidence=[],
         )
         try:
             profile = await self._registry.get(subtask["profile_id"], tenant_id)
@@ -348,6 +380,11 @@ class LlmEmployeeRuntime:
         # 兜底用计划内标签 ``task_id``：直接调运行时、不经图的场景没有前者。
         team_task_id = str(subtask.get("team_task_id") or subtask.get("task_id") or "")
         result["team_task_id"] = team_task_id
+        # 证据编号前缀取**实例身份**（按运行唯一）；没有实例身份的直调退回计划内标签。
+        # 与 ``result["evidence"]`` 绑同一个 list 对象：捕获处 append，回执侧就看得见，
+        # 出错早退的那条路也一样带上（已经取到的证据不该因为后面的失败而消失）。
+        evidence = _EvidenceCollector(team_task_id or profile.profile_id)
+        result["evidence"] = evidence.items
         try:
             if self._channel is not None and team_task_id:
                 # **先登记再开跑**：没有这一行，外部 ``send`` 只会 404——
@@ -367,7 +404,9 @@ class LlmEmployeeRuntime:
                 )
 
             tools = [
-                self._gated_tool(d, allowed=allowed, toolbox=toolbox, log=tool_log)
+                self._gated_tool(
+                    d, allowed=allowed, toolbox=toolbox, log=tool_log, evidence=evidence
+                )
                 for d in descriptors
             ]
             chat = LlmgwChatModel(

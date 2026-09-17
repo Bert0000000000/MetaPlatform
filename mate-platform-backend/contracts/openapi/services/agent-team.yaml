@@ -116,6 +116,25 @@ components:
             这一件**真正发起了几次**运行时调用（含重试；1 = 一次过手）。
             没被执行的（越权转 proposal / 硬拒）为 0。重试只作用于**运行时那一次
             调用**：派活（建任务行、落审计、转 proposal）是副作用，不会被重做。
+        evidence:
+          type: array
+          description: |
+            该员工工具调用结果映射出的**结构化证据**（1.6）。形状与 copilot 的
+            证据条目**完全一致**——同一平台里"证据"只有一种样子：
+
+            - `type`：`ONTOLOGY_OBJECT`（对象/类型级）或 `ONTOLOGY_METRIC`（聚合指标）；
+            - `ref`：可寻址引用（实例 rid / 类型 rid / 指标名）；
+            - `objectId`：**仅实例证据**有；类型级与指标级不设（拿它调实例接口会 404）；
+            - `concept`：人读的名字（可缺）；
+            - `fragment`：结果片段（可缺）；
+            - `evidenceId`：运行内唯一，供前端去重/追加；
+            - `capturedAt`：抓取时刻（UTC，`%Y-%m-%dT%H:%M:%SZ`）。
+
+            **忠实映射**：只对结果里真实存在的字段取证，取不到就**不产出条目**
+            （工具成功但无证据是正常结果，不是异常）。被闸门拒绝或执行失败的工具
+            调用**不产证据**——那种结果里没有可取证的事实。
+          items:
+            type: object
     RunState:
       type: object
       required: [run_id, tenant_id, goal, status]
@@ -542,8 +561,13 @@ paths:
       description: |
         `text/event-stream`。连上先**回放**已有步骤（历史一条不少），再**尾随**
         新步骤：之后图每推进一步就往外推一条，直到 run 落终态才发 `event: end`
-        收流。每条是 `event: step` + `data: {seq, step, ran, next, status, at}`
-        （`ran` = 这一步真的跑掉的节点）。
+        收流。每条是 `event: step` +
+        `data: {seq, step, ran, next, status, at, evidence}`（`ran` = 这一步真的
+        跑掉的节点）。
+
+        `evidence` 是**这一步新出现的**证据条目（形状见 `SubTaskResult.evidence`），
+        按 `evidenceId` 去重后顺序 append 即可。只出增量是刻意的：回执整份都在
+        检查点里，整份重发的话每来一步都要重传全部历史证据。
 
         **实现边界**：尾随靠轮询检查点（没有引入消息总线），新步骤最多晚一个
         轮询间隔（当前 250ms）到达。终态判定与流关闭是同一个事实——停在

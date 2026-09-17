@@ -15,7 +15,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import uuid4
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -72,6 +72,26 @@ AWAITING = "awaiting_approval"
 TERMINAL_STATUSES: frozenset[str] = frozenset(
     {"completed", "failed", "rejected", "cancelled", "timeout"}
 )
+
+
+def _new_evidence(results: Any, emitted: set[str]) -> list[dict[str, Any]]:
+    """从这一份快照的 ``results`` 里挑出**还没出过**的证据条目（1.6 任务 1）。
+
+    按 ``evidenceId`` 去重；没有编号的条目（正常不会出现）退回"任务 + 位置"的
+    确定性编号，避免它每步都被重发一遍。
+    """
+    fresh: list[dict[str, Any]] = []
+    for task_id in sorted(results or {}):
+        row = (results or {}).get(task_id) or {}
+        for index, item in enumerate(row.get("evidence") or []):
+            if not isinstance(item, dict):
+                continue
+            key = str(item.get("evidenceId") or f"{task_id}:{index}")
+            if key in emitted:
+                continue
+            emitted.add(key)
+            fresh.append(item)
+    return fresh
 
 
 class BrainService:
@@ -246,12 +266,18 @@ class BrainService:
     async def history(self, *, tenant_id: str, run_id: str, limit: int = 100) -> list[dict]:
         """检查点里的**步骤快照**（最早 → 最新），供事件流回放。
 
-        每条 = 图推进一步时的那一刻状态 + 那一步**跑了哪些节点**。租户隔离与
-        :meth:`get` 同一条路（thread_id 前缀 + 连接上的 GUC）。
+        每条 = 图推进一步时的那一刻状态 + 那一步**跑了哪些节点** + 那一步**新
+        出现的证据**。租户隔离与 :meth:`get` 同一条路（thread_id 前缀 + 连接上
+        的 GUC）。
 
         "这步跑了谁"由**上一条快照的 ``next``** 反推（本版 langgraph 的
         ``metadata`` 里已经没有 ``writes``，实测确认）：快照 N 记的是"接下来要跑
         谁"，所以快照 N-1 的 ``next`` 就是快照 N 之前真的跑掉的那些节点。
+
+        **证据按增量出**（1.6 任务 1）：回执整份都在快照里，整份重发的话，连上后
+        每来一步都要重传全部历史证据。这里只出**这一步新增的**（按 ``evidenceId``
+        去重），前端顺序 append 即可；重复读同一份检查点得到的增量也完全一样，
+        因为证据的编号是在**捕获时**定死的，不是读的时候现算的。
         """
         cfg = self._config(tenant_id, run_id)
         ctx = self._context(tenant_id=tenant_id)
@@ -263,6 +289,7 @@ class BrainService:
         snapshots.reverse()
         steps: list[dict] = []
         pending: tuple[str, ...] = ()
+        emitted: set[str] = set()
         for snapshot in snapshots:
             metadata = snapshot.metadata or {}
             values = snapshot.values or {}
@@ -273,6 +300,7 @@ class BrainService:
                     "next": [name for name in (snapshot.next or ()) if not name.startswith("__")],
                     "status": str(values.get("status", "")),
                     "at": str(snapshot.created_at or ""),
+                    "evidence": _new_evidence(values.get("results"), emitted),
                 }
             )
             pending = tuple(snapshot.next or ())

@@ -46,6 +46,10 @@ class SubTaskResultModel(BaseModel):
     proposal: dict[str, Any] = Field(default_factory=dict)
     #: 真正发起的运行时调用次数（含重试）；没被执行的（越权 / 硬拒）为 0。
     attempts: int = 0
+    #: 工具结果映射出的**结构化证据**（1.6 任务 1）。形状与 copilot 的
+    #: ``_evidence_items`` 一致：``type`` / ``ref`` / ``objectId?`` / ``concept?``
+    #: / ``fragment?``，外加运行内唯一的 ``evidenceId`` 与抓取时刻 ``capturedAt``。
+    evidence: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class RunStateModel(BaseModel):
