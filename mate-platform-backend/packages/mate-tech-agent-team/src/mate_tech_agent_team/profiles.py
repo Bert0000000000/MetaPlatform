@@ -17,9 +17,33 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any
 
 DEFAULT_MODEL = os.getenv("MATE_AGENT_TEAM_MODEL", "glm-5.3-flash")
+
+
+class RuntimeKind(StrEnum):
+    """一个 profile 可以跑在哪个执行面上（ADR-0066 §5.8）。
+
+    「角色」与「运行时」是**正交两轴**：``base_role`` 决定它是谁（kernel 语义、
+    默认提示词），``RuntimeKind`` 决定它在哪跑。同一个「本体核对员」既可以由
+    本仓的 ``superai`` 执行，也可以下投给外部客户端执行——身份不变，执行面变。
+
+    **枚举值进公开契约**（TeamBus / `team_task.runtime_kind`），所以它是
+    ``StrEnum``：进 JSON 不必 ``.value``。**runtime 的框架类型绝不进这里**
+    （R10）——这里只有"在哪跑"的名字。
+    """
+
+    #: 本仓原生：``LlmEmployeeRuntime``（llmgw + MCP 工具面）。
+    SUPERAI = "superai"
+    #: 外部客户端：Claude Code CLI（ADR-0066 §5.8 的 ``CLAUDE_CODE``，本切片实现）。
+    #: ADR 同时预留了 ``DSH`` / ``CODEX``——它们只是再加一个 adapter，不动协议。
+    CLAUDE_CODE = "claude_code"
+    #: 外部 A2A agent（ADR-0066 §9-D 明写「保留 A2A 作为 ``runtime_kind=external_a2a``
+    #: 的一种 runtime」）。与 ``CLAUDE_CODE`` 同性质：**跨系统的执行面**，因此
+    #: 同样没有深度/父子语义、同样不能在运行中收消息（见 :mod:`mate_tech_agent_team.a2a`）。
+    EXTERNAL_A2A = "external_a2a"
 
 
 class ProfileNotFound(LookupError):
@@ -42,6 +66,16 @@ class EmployeeProfile:
     kb_ids: tuple[str, ...] = ()
     markings: tuple[str, ...] = ()
     origin: str = "builtin"
+    #: 允许的**执行面**（ADR-0066 §5.8）。默认 ``(SUPERAI,)`` 是刻意选的：
+    #: 存量调用方（库里的行、HTTP 建出来的员工、测试里的构造）**一个都不传**
+    #: 这个字段，默认值要是空元组，"没配 runtimes 的员工"就会变成谁都跑不了。
+    #:
+    #: **边界登记**（本切片没做的两件事，都会让"配了 runtimes"暂时落不到库/接口）：
+    #: ① ``profile_store`` 的建表与读写**没有这一列**（该文件不在本切片可改范围），
+    #: 所以落库的员工读回来一定是默认值；② HTTP 的 profile 读写模型同样没有这个
+    #: 字段。两处补齐前，``runtimes`` 只在**进程内构造**（测试 / 未来 import 面）时
+    #: 生效——这正是本轨的验证口径。
+    runtimes: tuple[RuntimeKind, ...] = (RuntimeKind.SUPERAI,)
 
     def allows(self, tool_name: str) -> bool:
         """工具白名单判定（D-8）。白名单是**闭集**：未列出即拒绝。"""
@@ -167,5 +201,6 @@ __all__ = [
     "EmployeeProfile",
     "ProfileNotFound",
     "ProfileRegistry",
+    "RuntimeKind",
     "builtin_profiles",
 ]
