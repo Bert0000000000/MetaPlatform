@@ -259,6 +259,8 @@ CREDENTIAL / PRIVATE 逐个名字找，全 0）。
 | **C2** | **`git add -u` 的教训再次适用**：本批全程按文件 `add` | 开工时工作树里有别人的在途文件（两份 roadmap 的修改、两份未跟踪文档），**一次都没有被带进提交** |
 | **C3** | 沙箱 Job 里仍看得到 `KUBERNETES_SERVICE_HOST/PORT` | `enableServiceLinks: false` 关掉了**同命名空间 Service 的自动注入**，但 API server 那一条由 kubelet 直接给，关不掉。它是**地址**不是凭据，且 `automountServiceAccountToken: false` 已经让那个地址无 token 可用 |
 | **C4** | 运行 Pod 的探针曾让 2 个副本重启过一次 | 首次部署时 liveness 早于 startupProbe 生效（`startupProbe` 期间 liveness 本不该跑，但探针参数偏紧）。已把 startup 的 `periodSeconds` 调到 5 / `failureThreshold` 60；后续 `helm upgrade --wait` 与 rollout 均一次通过 |
+| **C5** | **CI 抓到两条真问题**（本机全绿、CI 红） | ① `cancel` 里 `status == CANCELLING` 的短路是错的：状态是 `cancelling` 只说明"信号已置且未终态"，**不说明有人在跑**——停在闸门等人的 run 正是这样，于是第二次取消永远回 `cancelling` 而**没人落终态**，那一轮卡死。本机没红是因为本地那条既有用例走的是"信号还没置"的路径；本批新增的「在途不清、终态后归档」用例把它逼出来了。② A2A 的常跑 E2E 在**没装 `a2a-sdk`** 的环境里抛 `ImportError`（CI 与开发机的 SDK 安装情况不同）。两条都已修，见 `0cd95983` |
+| **C6** | **本批第一次触发了 `infra/helm/**` 路径过滤的几条 workflow**，于是"发现"了一批**预存红** | 逐条核过根因，**没有一条是本批引入的**：`helm-unittest` 卡在**插件安装**（`requested version "0.7.2" does not exist`，chart 都还没跑）；`helm template + kubeconform` 的 6 条 `could not find schema` 全来自 datahub / starrocks / observability-alerts / postgresql 的 **CRD**（本 chart 只出 Deployment/Service/ConfigMap/ServiceAccount/NetworkPolicy/Job 这些核心 kind，且汇总行是 `Invalid: 0`）；`Static chart checks` 是 workflow 头部**自己登记过的**债务（`infra tests 缺 sqlalchemy`，`continue-on-error: true`）；`kind cluster helm install + smoke` 失败在 `failed to install CRD crds/keycloak-realm-configmap.yaml: namespaces "metaplatform" not found`（装的是 keycloak 的 CRD，与 agent-team 无关）；`boot ontology-loop stack` 是 `.env.local not found`（CI 环境变量）；`Architecture kernel governance` 是 2.1-A §4-B7 已量过的 pyright 预存债（294 errors）。**完整清单见 §5.7** |
 
 ## 5. 回归
 
@@ -272,7 +274,7 @@ CREDENTIAL / PRIVATE 逐个名字找，全 0）。
 | ga-004 forbid_bare_httpx | 本批**没有**新的外部 HTTP 调用（K8s 访问走 `kubectl`/`ctr`，不在服务代码里） |
 | ga-005 forbid_legacy_fallback | 新增的三处"读不出来就取默认"全部是**收窄方向**（`ApprovalGate.from_dict` 读不出→退回旧语义；`control_dsn` 没配→回落 admin 的**本地形态**；`role` 没配→`all`） |
 | ga-006 ruff + pyright | `ruff check` / `ruff format --check` 全绿（agent-team 92 文件） |
-| ga-007 forbid_skip_tests | 本批新增 86 条用例，`0 skipped`；**外部依赖类**（K8s / A2A）按 1.8 的做法写成"回执如实"常跑用例 |
+| ga-007 forbid_skip_tests | 本批新增 86 条用例；本机 `0 skipped`。**CI 上是 3 skipped** —— 那 3 条是**既有的** `importorskip`（CI 的 venv 没装 `a2a-sdk`，开发机装了），规则 7 明确放行 `importorskip`。本批**新加**的用例一条都不 skip |
 | ga-008 helm | `helm dependency update` + `helm lint`（umbrella + 新 chart）通过；`infra/tests` 2192 passed |
 | ga-009 OTel | 未触及 |
 | ga-010 require_evidence | 本文件 |
@@ -333,8 +335,48 @@ $ kubectl logs … | grep -ciE "DSN|SECRET|PASSWORD|TOKEN|KEYCLOAK|POSTGRES|CRED
 | `43645e81` | B-6 HITL gate 统一协议（多级 / 会签 / 超时） |
 | `f2832e02` | 前置 MP-REPLICA-READINESS-01 + B-8 沙箱 Job |
 | `23749e7c` | B-4 Admin DSN 移出运行 Pod + 独立控制面身份 |
+| `69556fa2` | 本文件（2.1-B 验收证据） |
+| `0cd95983` | CI 抓出的两条真问题的修复（cancel 短路 / A2A 无 SDK 环境的落点） |
 
-共 8 个 commit，49 个文件，+6288 / −196。
+共 10 个 commit，50 个文件。
+
+### 5.7 CI 实跑：required 全绿 + 预存红清单
+
+**11 条 required check 全部 pass**（`gh pr checks 61` 实取）：
+
+```text
+Architecture tests (import-linter + four-layer guardrails)  pass
+Frontend (metaplatform-frontend)                            pass
+Lint (ruff)                                                 pass
+Type check (pyright strict)                                 pass
+Validate compose + Dockerfiles                              pass
+agent-team pytest (mate-tech-agent-team)                    pass   ← 第一轮红过，见 §4-C5①
+ga format (pre-commit: rules 3 / 4 / 5 / 7 / 10 / 12)       pass
+ga tests (infra + mate-platform + mate-app-kb + governance) pass
+ga-014 Ontology PostgreSQL RLS isolation                    pass
+lint-and-bundle                                             pass
+traceability                                                pass
+```
+
+**第一轮 `agent-team pytest` 红过**，根因是本批自己的两条代码 bug（§4-C5）——
+**门禁真的在本批的代码上抓到了东西**，与 2.1-A 的结论一致。
+
+**非 required 的预存红（逐条核过，没有一条由本批引入）**：
+
+| job | 根因 | 与本批的关系 |
+| --- | --- | --- |
+| `helm-unittest` | `helm plugin install … --version 0.7.2` → `requested version "0.7.2" does not exist`。卡在**装插件**，chart 一个都没跑 | 无关（工作流自身坏） |
+| `helm template + kubeconform` | 6 条 `could not find schema for {Dataset,DataProduct,PrometheusRule,DataJob,ServiceMonitor,SealedSecret}` —— 全是他 chart 的 CRD；汇总 `Invalid: 0` | 无关（本 chart 只出核心 kind） |
+| `Static chart checks (Python + YAML)` | `ModuleNotFoundError: No module named 'sqlalchemy'`（`infra/tests/test_data_d0_d8_d1.py`）—— workflow 头部**自己登记过**的债务，`continue-on-error: true` | 无关（预存） |
+| `kind cluster helm install + smoke` | `failed to install CRD crds/keycloak-realm-configmap.yaml: namespaces "metaplatform" not found` | 无关（装的是 keycloak CRD） |
+| `boot ontology-loop stack` / `playwright ontology-loop e2e` | `.env.local not found`（CI 环境变量缺失） | 无关 |
+| `Architecture kernel governance` | `Pyright strict (kernel + tests)` 294 errors —— 2.1-A §4-B7 已量过（当时 295），`continue-on-error: true` | 无关（预存债） |
+| `helm-docs sync` | `continue-on-error: true`（helm-docs 下载源失效，workflow 头部登记） | 无关 |
+
+> **为什么这些"红"以前没出现过**：`platform-k8s-ci.yml` 等几条 workflow 带
+> `paths: [infra/helm/**, …]` 过滤——**本批是近期第一个动 `infra/helm/**` 的 PR**，
+> 于是把它们唤醒了。这与 2.1-A §4-B6/B7 是同一类现象（预存红只在特定路径被触发时
+> 才显形），**不是本批引入的回归**。逐条根因见上表。
 
 ## 6. 遗留与建议
 
