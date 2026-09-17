@@ -2273,6 +2273,16 @@ requirements:
     tests: []
     implementationStatus: placeholder
     acceptanceStatus: notAccepted
+  FR-LLMGW-LLMGWPOSTLLMGWCHATREAL:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: llmgw
+    operationIds:
+      - llmgwPostLlmgwChatReal
+    handler: mate_tech_llmgw.main:app#llmgwPostLlmgwChatReal
+    tests:
+      - mate-platform-backend/packages/mate-tech-llmgw/tests/test_real_chat_contract.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
   FR-MCP-APIKEYS-CREATE:
     prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
     service: mcp

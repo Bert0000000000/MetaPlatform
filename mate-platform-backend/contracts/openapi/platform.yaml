@@ -435,6 +435,8 @@ paths:
     $ref: ./services/llmgw.yaml#/paths/~1api~1v1~1llmgw~1chat
   /api/v1/llmgw/chat/multimodal:
     $ref: ./services/llmgw.yaml#/paths/~1api~1v1~1llmgw~1chat~1multimodal
+  /api/v1/llmgw/chat/real:
+    $ref: ./services/llmgw.yaml#/paths/~1api~1v1~1llmgw~1chat~1real
   /api/v1/llmgw/chat/stream:
     $ref: ./services/llmgw.yaml#/paths/~1api~1v1~1llmgw~1chat~1stream
   /api/v1/llmgw/embeddings:
