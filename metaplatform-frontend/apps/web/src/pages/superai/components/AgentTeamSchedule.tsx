@@ -15,8 +15,10 @@ import { SheetDetail } from '@/components/skeleton';
 import {
   STATUS_TAG,
   computeWaves,
+  countStubFallbacks,
   formatBytes,
   formatDeadline,
+  isStubFallback,
   subtaskState,
   toolCallLabel,
 } from '../agentTeamRunView';
@@ -59,6 +61,7 @@ export default function AgentTeamSchedule({
   const status = run ? STATUS_TAG[run.status] : null;
   const results = useMemo(() => Object.values(run?.results ?? {}), [run]);
   const evidenceCount = results.reduce((sum, r) => sum + (r.evidence?.length ?? 0), 0);
+  const fallbackCount = countStubFallbacks(results);
   const waves = useMemo(() => computeWaves(run?.subtasks ?? []), [run]);
   const waveCount = useMemo(
     () => (run?.subtasks.length ? Math.max(...run.subtasks.map((s) => waves[s.task_id])) + 1 : 0),
@@ -167,13 +170,20 @@ export default function AgentTeamSchedule({
       title: '状态',
       dataIndex: 'status',
       width: 110,
-      render: (value: SubTaskResult['status']) => (
-        <Tag
-          color={value === 'ok' ? 'green' : value === 'rejected' ? 'amber' : 'red'}
-          type="light"
-        >
-          {value === 'ok' ? '已完成' : value === 'rejected' ? '转待授权' : '失败'}
-        </Tag>
+      render: (value: SubTaskResult['status'], record: SubTaskResult) => (
+        <span className="mp-team-chips">
+          <Tag
+            color={value === 'ok' ? 'green' : value === 'rejected' ? 'amber' : 'red'}
+            type="light"
+          >
+            {value === 'ok' ? '已完成' : value === 'rejected' ? '转待授权' : '失败'}
+          </Tag>
+          {isStubFallback(record.output) ? (
+            <Tag color="amber" type="light" size="small" data-stub-fallback>
+              回显
+            </Tag>
+          ) : null}
+        </span>
       ),
     },
     {
@@ -281,6 +291,14 @@ export default function AgentTeamSchedule({
                 {artifacts.length}
               </span>
             </div>
+            {fallbackCount > 0 ? (
+              <div className="mp-exec-kpi">
+                <span className="mp-exec-kpi-label">回显</span>
+                <span className="mp-exec-kpi-value" data-testid="agent-team-fallback-count">
+                  {fallbackCount} / {results.length}
+                </span>
+              </div>
+            ) : null}
           </div>
 
           <span className="mp-team-meta">
@@ -400,6 +418,15 @@ export default function AgentTeamSchedule({
                         );
                       })}
                     </span>
+                  ) : null}
+
+                  {isStubFallback(result.output) ? (
+                    <Banner
+                      type="warning"
+                      closeIcon={null}
+                      data-testid={`agent-team-fallback-${result.task_id}`}
+                      description="这条产出是 llmgw 的 stub-fallback **回显**——它把指令原样抄了回来，不是模型答复。员工状态仍是 ok，但这段文字不能当结论看。"
+                    />
                   ) : null}
 
                   <Typography.Paragraph className="mp-team-output">

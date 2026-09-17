@@ -72,3 +72,20 @@ export function toolCallLabel(call: Record<string, unknown>): { text: string; co
   if (call.error) return { text: `${name}（出错）`, color: 'amber' };
   return { text: name, color: 'grey' };
 }
+
+/**
+ * 产出正文是不是 llmgw 的 **stub-fallback 回显**。
+ *
+ * llmgw 在上游不可用时会把**输入原样抄回来**并打上 `[stub-fallback]` 前缀
+ * （两个来源：请求没带 base_url/api_key；或上游 30s 超时）。此时员工的
+ * `status` 仍是 `ok`——**光看状态会被骗**，所以 UI 必须把这种产出显式标出来，
+ * 否则人看到"有结论"就信了。前端只是**如实标注**，不替后端决定要不要回显。
+ */
+export function isStubFallback(output: string | null | undefined): boolean {
+  return (output ?? '').includes('[stub-fallback]');
+}
+
+/** 本轮有几名员工的产出是回显（用来在面板上给一个总数，不必逐个点开看）。 */
+export function countStubFallbacks(results: SubTaskResult[]): number {
+  return results.filter((r) => isStubFallback(r.output)).length;
+}

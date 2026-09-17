@@ -629,6 +629,12 @@
   color: var(--semi-color-text-1);
 }
 
+/* 回显计数：不能和普通计数长一样——它是"这条产出不可信"的信号。 */
+.mp-schedpanel-kpi--warn {
+  color: var(--semi-color-warning);
+  font-weight: 600;
+}
+
 .mp-schedpanel-section {
   display: flex;
   flex-direction: column;

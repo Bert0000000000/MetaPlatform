@@ -3,7 +3,7 @@ import { Space, Tag, Typography } from '@douyinfe/semi-ui';
 import type { RunState } from '@/api/agentTeam';
 import { SheetDetail } from '@/components/skeleton';
 import AgentTeamSchedule from './AgentTeamSchedule';
-import { STATUS_TAG, computeWaves, subtaskState } from '../agentTeamRunView';
+import { STATUS_TAG, computeWaves, countStubFallbacks, subtaskState } from '../agentTeamRunView';
 
 /**
  * 调度任务 · **紧凑面板**（会话页右上角，会话历史栏里「新建会话」之上）。
@@ -39,6 +39,7 @@ export default function AgentTeamSchedulePanel({
   const waves = useMemo(() => computeWaves(run?.subtasks ?? []), [run]);
   const evidenceCount = results.reduce((sum, r) => sum + (r.evidence?.length ?? 0), 0);
   const artifactCount = results.reduce((sum, r) => sum + (r.artifacts?.length ?? 0), 0);
+  const fallbackCount = countStubFallbacks(results);
   const status = run ? STATUS_TAG[run.status] : null;
   const canCancel =
     !!onCancel &&
@@ -103,6 +104,11 @@ export default function AgentTeamSchedulePanel({
                 <span className="mp-schedpanel-kpi">波次 {run.subtasks.length ? Math.max(...run.subtasks.map((s) => waves[s.task_id])) + 1 : 0}</span>
                 <span className="mp-schedpanel-kpi">证据 {evidenceCount}</span>
                 <span className="mp-schedpanel-kpi">交付物 {artifactCount}</span>
+                {fallbackCount > 0 ? (
+                  <span className="mp-schedpanel-kpi mp-schedpanel-kpi--warn" data-testid="chat-schedule-fallback">
+                    回显 {fallbackCount}/{results.length}
+                  </span>
+                ) : null}
               </div>
 
               <div className="mp-schedpanel-section" data-testid="chat-schedule-graph">

@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { computeWaves, subtaskState } from './agentTeamRunView';
+import { computeWaves, countStubFallbacks, isStubFallback, subtaskState } from './agentTeamRunView';
 import type { SubTask, SubTaskResult } from '@/api/agentTeam';
 
 function task(task_id: string, depends_on: string[] = []): SubTask {
   return { task_id, profile_id: `EMP-${task_id}`, instruction: `do ${task_id}`, depends_on };
 }
 
-function result(status: SubTaskResult['status']): SubTaskResult {
+function result(status: SubTaskResult['status'], output = ''): SubTaskResult {
   return {
     task_id: 't1',
     team_task_id: 'tt1',
     profile_id: 'EMP-t1',
     status,
-    output: '',
+    output,
     tool_calls: [],
     llm_calls: 1,
     source: 'llm',
@@ -76,5 +76,38 @@ describe('subtaskState', () => {
       label: '已完成',
       done: true,
     });
+  });
+});
+
+describe('isStubFallback', () => {
+  it('认出 llmgw 的回显正文', () => {
+    expect(isStubFallback('[stub-fallback] OpenAI unavailable. Echo: 查一下订单')).toBe(true);
+  });
+
+  it('真实答复不算回显', () => {
+    expect(isStubFallback('本月共 128 笔订单，其中异常 7 笔。')).toBe(false);
+  });
+
+  it('空产出与空值不算回显', () => {
+    expect(isStubFallback('')).toBe(false);
+    expect(isStubFallback(null)).toBe(false);
+    expect(isStubFallback(undefined)).toBe(false);
+  });
+});
+
+describe('countStubFallbacks', () => {
+  it('只数回显的那几个，status=ok 也照数', () => {
+    // 关键：回显的产出**状态仍是 ok** —— 光看 status 会被骗，所以要单独计数
+    const results = [
+      result('ok', '真实答复一'),
+      result('ok', '[stub-fallback] OpenAI unavailable. Echo: 指令'),
+      result('error', ''),
+      result('ok', '[stub-fallback] OpenAI unavailable. Echo: 指令'),
+    ];
+    expect(countStubFallbacks(results)).toBe(2);
+  });
+
+  it('没有回显时是 0', () => {
+    expect(countStubFallbacks([result('ok', '正常产出')])).toBe(0);
   });
 });
