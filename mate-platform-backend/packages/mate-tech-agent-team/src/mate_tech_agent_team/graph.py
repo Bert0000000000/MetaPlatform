@@ -20,10 +20,18 @@
 恢复 = ``update_state(as_node="gate")`` + ``invoke(None, cfg)`` 从检查点续跑。
 闸门节点本身**不做任何副作用**（不调模型、不调工具），只读状态做路由——
 这样重跑它也不会产生重复调用。
+
+**取消在节点边界自查**（1.5 任务 1）：执行中的 run 有请求在等它，取消不能靠
+"外部杀"。图在 ``plan`` / ``dispatch`` / ``gather`` 三个边界查一次
+:func:`should_cancel`，看到标志就把自己写成终态 ``cancelled`` 并走到 END。
+粒度是**波与波之间**：在途的那一波允许跑完（不硬断），下一波一个员工都不派。
+``worker`` 里刻意不查——同一波是并行发出的，逐个自查会让"停在哪"变成竞态。
 """
 
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Callable
 from typing import Any
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -33,7 +41,8 @@ from langgraph.types import Send
 from .authority import DepthExceeded, Envelope
 from .planner import PlanError, Planner
 from .profiles import ProfileNotFound
-from .runtime import EmployeeRuntime
+from .retry import RetryPolicy
+from .runtime import EmployeeRuntime, TransientRunError
 from .state import BrainState, SubTask, SubTaskResult
 from .team_bus import SpawnRequest, TeamBus
 
@@ -43,8 +52,18 @@ ROOT_DISPATCH_DEPTH = 1
 #: 硬拒（不是"等授权"）：出现在任何一个子任务上，整轮就是失败。
 HARD_REJECT_CODES = frozenset({"E_DEPTH_EXCEEDED", "E_PROFILE_NOT_FOUND"})
 
+CANCELLED_STATUS = "cancelled"
 
-def _failure(subtask: SubTask, code: str, message: str) -> SubTaskResult:
+
+def _cancel_update() -> dict[str, Any]:
+    """取消时写进状态的更新。每次返回新 dict——状态更新不该被两处共用同一个对象。"""
+    return {
+        "status": CANCELLED_STATUS,
+        "error": "运行已取消：图在节点边界看到取消标志，不再推进",
+    }
+
+
+def _failure(subtask: SubTask, code: str, message: str, *, attempts: int = 0) -> SubTaskResult:
     return SubTaskResult(
         task_id=subtask.get("task_id", ""),
         team_task_id=subtask.get("team_task_id", ""),
@@ -55,7 +74,42 @@ def _failure(subtask: SubTask, code: str, message: str) -> SubTaskResult:
         error=message,
         error_code=code,
         proposal={},
+        attempts=attempts,
     )
+
+
+async def _invoke_employee(
+    runtime: EmployeeRuntime,
+    *,
+    subtask: SubTask,
+    tenant_id: str,
+    policy: RetryPolicy,
+) -> SubTaskResult:
+    """调运行时，按策略重试**可重试**的失败（1.5 任务 4）。
+
+    重试循环**只包住这一次调用**：派活（副作用）在调用方，已经发生过一次，
+    绝不因为重试再发生一次。回执里记 ``attempts`` = 真正发起了几次。
+
+    重试用尽仍失败 → 这一件记 ``E_RUNTIME_UNAVAILABLE`` 的错误回执，整轮不被
+    一件抖动拖垮（"这件没干成"与"整轮崩了"是两件事）。
+    """
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            result = await runtime.run(subtask=subtask, tenant_id=tenant_id)
+        except TransientRunError as exc:
+            if attempt >= policy.max_attempts:
+                return _failure(
+                    subtask,
+                    "E_RUNTIME_UNAVAILABLE",
+                    f"可重试失败，重试 {attempt} 次仍不成功：{exc}",
+                    attempts=attempt,
+                )
+            await asyncio.sleep(policy.delay_for(attempt))
+            continue
+        result["attempts"] = attempt
+        return result
 
 
 def _validate_dependencies(subtasks: list[SubTask]) -> str:
@@ -89,14 +143,32 @@ def build_brain_graph(
     actor: str = "",
     max_parallel: int = 3,
     depth: int = ROOT_DISPATCH_DEPTH,
+    should_cancel: Callable[[], bool] | None = None,
+    retry_policy: RetryPolicy | None = None,
 ) -> Any:
     """编译大脑图。依赖（拆解器 / 员工运行时 / 派活闸门 / 检查点）全部注入。
 
     ``initiator_envelope`` 是**发起用户**的包络（ADR-0066 §3.3 的链根），刻意
     与令牌一样**不进图状态**：状态会落进 PG，而它是当次调用的授权，用完即散。
     ``actor``（发起用户标识）同样不进状态，只随派活写进审计行（硬规则 #9）。
+
+    ``should_cancel`` 是运行控制面的取消标志（1.5 任务 1）。**刻意不进图状态**：
+    它是"现在这一刻要不要停"的即时信号，不是这一轮的历史；状态里存它反而会
+    被 checkpointer 落库、被后续读取当成事实。没给就永不取消。
+
+    ``retry_policy`` 是失败节点的重试策略（1.5 任务 4）。它只作用在**运行时那次
+    调用**上——派活（副作用）在循环外面，重试不会把它再做一遍。刻意不用
+    langgraph 的节点级 ``RetryPolicy``，理由见 :mod:`mate_tech_agent_team.retry`。
     """
     root_envelope = initiator_envelope if initiator_envelope is not None else Envelope()
+    policy = retry_policy if retry_policy is not None else RetryPolicy()
+
+    def _cancelled() -> bool:
+        return should_cancel is not None and should_cancel()
+
+    def _stopped(state: BrainState) -> bool:
+        """已经没必要往下走了（计划失败 / 被取消）。"""
+        return str(state.get("status", "")) in {"failed", CANCELLED_STATUS}
 
     def _done(state: BrainState) -> set[str]:
         return set(state.get("results", {}))
@@ -112,6 +184,9 @@ def build_brain_graph(
         ]
 
     def _fan_out(state: BrainState) -> list[Send]:
+        # 停下来了（取消 / 计划失败）就一个 ``Send`` 都不发：没有下一波 = 图到此为止。
+        if _stopped(state):
+            return []
         tenant_id = state["tenant_id"]
         return [
             Send(
@@ -127,11 +202,14 @@ def build_brain_graph(
 
     def _route_after_plan(state: BrainState) -> str:
         # 计划失败（拆不出 / 依赖不成立）时不再派活，图自然结束。
-        if state.get("status") == "failed":
+        # 被取消同理：取消是终态，不该再被派活覆盖成 running。
+        if _stopped(state):
             return END
         return "dispatch" if _ready(state) else "gate"
 
     def _route_after_gather(state: BrainState) -> str:
+        if _stopped(state):
+            return END
         return "dispatch" if _ready(state) else "gate"
 
     def _route_after_gate(state: BrainState) -> str:
@@ -142,6 +220,8 @@ def build_brain_graph(
         return END
 
     async def plan_node(state: BrainState) -> dict[str, Any]:
+        if _cancelled():
+            return _cancel_update()
         goal = state["goal"]
         try:
             subtasks = await planner.plan(
@@ -162,6 +242,10 @@ def build_brain_graph(
 
     async def dispatch_node(state: BrainState) -> dict[str, Any]:
         # 扇出节点本身不做事：选择权在 ``_fan_out`` 里（它读 state 算这一波）。
+        # 但它是**每一波开始前的边界**，取消要在这里被看见——在途的一波跑完
+        # 之后，下一波不该再发出去。
+        if _cancelled():
+            return _cancel_update()
         return {}
 
     async def worker_node(payload: dict[str, Any]) -> dict[str, Any]:
@@ -223,13 +307,21 @@ def build_brain_graph(
         # 1.4 任务 1：四维一起发下去。只发工具面的话，action_rids / kb_ids /
         # markings 三维在执行侧无人认领——判完就没人再看一眼。
         subtask["granted_envelope"] = outcome.envelope.as_state()
-        result = await runtime.run(subtask=subtask, tenant_id=tenant_id)
+        # 1.5 任务 4：**到这里**才有重试。派活已经在上面发生过一次（建行、落审计、
+        # 越权转 proposal 都是副作用），重试只包住员工运行时那一次调用。
+        result = await _invoke_employee(
+            runtime, subtask=subtask, tenant_id=tenant_id, policy=policy
+        )
         # ``results`` 仍按**计划内标签**归类（``t1``…）：那是计划里的位置，
         # 不是实例身份；调用方要投递时读回执里的 ``team_task_id``。
         return {"results": {subtask["task_id"]: result}}
 
     async def gather_node(state: BrainState) -> dict[str, Any]:
         # 汇合点：等这一波全部回来，再决定有没有下一波。
+        # 这也是**一波结束后的边界**：最后的取消机会——单波计划不会再经过
+        # ``dispatch``，漏掉这里的自查会让"取消执行中的 run"对单波无效。
+        if _cancelled():
+            return _cancel_update()
         return {}
 
     async def gate_node(state: BrainState) -> dict[str, Any]:
@@ -284,10 +376,13 @@ def build_brain_graph(
     graph.add_conditional_edges(
         "plan", _route_after_plan, {"dispatch": "dispatch", "gate": "gate", END: END}
     )
+    # 被取消 / 计划失败时 ``_fan_out`` 一个 ``Send`` 都不发（终态已经写进状态）。
     graph.add_conditional_edges("dispatch", _fan_out, ["worker"])
     graph.add_edge("worker", "gather")
     graph.add_conditional_edges(
-        "gather", _route_after_gather, {"dispatch": "dispatch", "gate": "gate"}
+        "gather",
+        _route_after_gather,
+        {"dispatch": "dispatch", "gate": "gate", END: END},
     )
     graph.add_conditional_edges(
         "gate",
@@ -299,4 +394,4 @@ def build_brain_graph(
     return graph.compile(checkpointer=checkpointer)
 
 
-__all__ = ["HARD_REJECT_CODES", "ROOT_DISPATCH_DEPTH", "build_brain_graph"]
+__all__ = ["CANCELLED_STATUS", "HARD_REJECT_CODES", "ROOT_DISPATCH_DEPTH", "build_brain_graph"]

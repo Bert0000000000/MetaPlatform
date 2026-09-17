@@ -26,6 +26,7 @@ from .employee import LlmEmployeeRuntime
 from .llm_planner import LlmPlanner
 from .profile_store import ProfileStore
 from .profiles import ProfileRegistry
+from .retry import DEFAULT_BACKOFF_SECONDS, DEFAULT_MAX_ATTEMPTS, RetryPolicy
 from .skill_toolbox import SKILL_TOOL_NAMES, SkillToolbox
 from .skills import SkillCatalog
 from .team_bus import DEFAULT_MAX_DEPTH, TeamBus
@@ -226,12 +227,29 @@ def build_service(
         checkpointer=PgCheckpointerProvider(required_dsn()),
         team_bus=team_bus or build_team_bus(registry),
         max_parallel=int(os.getenv("MATE_AGENT_TEAM_MAX_PARALLEL", "3")),
+        # 1.5 任务 4：失败节点（运行时那一次调用）的重试策略。
+        retry_policy=build_retry_policy(),
+    )
+
+
+def build_retry_policy() -> RetryPolicy:
+    """重试策略（次数 / 退避基数）从环境变量来，缺省即可用。
+
+    ``MATE_AGENT_TEAM_RETRY_ATTEMPTS`` 含首次尝试（1 = 不重试）；退避按
+    ``base * 2^(n-1)`` 指数增长。
+    """
+    return RetryPolicy(
+        max_attempts=int(os.getenv("MATE_AGENT_TEAM_RETRY_ATTEMPTS", str(DEFAULT_MAX_ATTEMPTS))),
+        base_delay=float(
+            os.getenv("MATE_AGENT_TEAM_RETRY_BACKOFF_SECONDS", str(DEFAULT_BACKOFF_SECONDS))
+        ),
     )
 
 
 __all__ = [
     "build_profile_store",
     "build_registry",
+    "build_retry_policy",
     "build_team_bus",
     "build_service",
     "build_skill_catalog",

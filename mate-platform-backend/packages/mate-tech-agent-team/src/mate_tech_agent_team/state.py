@@ -53,7 +53,12 @@ class SubTaskResult(TypedDict, total=False):
     都是 ``status`` 里的同几个词，只有它分得开）：
 
     * ``E_AUTHORITY_ESCALATION`` —— 越权，已转 proposal，**未执行**；
-    * ``E_DEPTH_EXCEEDED`` / ``E_PROFILE_NOT_FOUND`` —— 硬拒，整轮判失败。
+    * ``E_DEPTH_EXCEEDED`` / ``E_PROFILE_NOT_FOUND`` —— 硬拒，整轮判失败；
+    * ``E_RUNTIME_UNAVAILABLE`` —— 可重试失败重试用尽（1.5 任务 4），**只是
+      这一件没干成**，不是整轮失败。
+
+    ``attempts`` 是这一件**真正发起了几次**运行时调用（含重试；1 = 一次没过手；
+    没被执行的（越权 / 硬拒）为 0）。它是"重试真的发生过"的可读证据。
     """
 
     task_id: str
@@ -68,6 +73,8 @@ class SubTaskResult(TypedDict, total=False):
     error_code: str
     #: 越权时的人审提案（ADR-0066 §3.4）；授权范围只限本次任务。
     proposal: dict[str, Any]
+    #: 真正发起的运行时调用次数（含重试）。
+    attempts: int
 
 
 def merge_results(
@@ -83,6 +90,11 @@ class BrainState(TypedDict, total=False):
 
     ``results`` 带 reducer：并行 worker 节点各自写入自己的子任务回执，
     由 :func:`merge_results` 合并，而不是互相覆盖。
+
+    ``timeout_seconds`` / ``deadline_at`` 是**本轮的运行级截止时间**（1.5 任务 2）：
+    它们随 run 落进检查点，所以重启/多副本仍按**本轮**定下的值裁决，而不是
+    回落成"当前进程的默认值"。``deadline_at`` 存**绝对时刻**——存"还剩多少秒"
+    的话重启一次就又变成相对的了。
     """
 
     run_id: str
@@ -95,6 +107,10 @@ class BrainState(TypedDict, total=False):
     summary: str
     hitl_reason: str
     error: str
+    #: 本轮实际生效的超时值（秒；0 = 不设超时）。
+    timeout_seconds: float
+    #: 本轮截止的绝对时刻（epoch 秒；0 = 无截止）。
+    deadline_at: float
 
 
 __all__ = ["BrainState", "SubTask", "SubTaskResult", "merge_results"]

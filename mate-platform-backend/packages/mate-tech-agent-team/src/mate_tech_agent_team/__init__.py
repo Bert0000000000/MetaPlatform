@@ -37,7 +37,8 @@ from .llm_planner import LlmPlanner
 from .planner import PlanError, Planner, StaticPlanner
 from .profile_store import ProfileStore
 from .profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry, builtin_profiles
-from .runtime import EmployeeRuntime
+from .retry import RetryPolicy
+from .runtime import EmployeeRuntime, TransientRunError
 from .skill_toolbox import SkillToolbox
 from .skills import SkillCatalog, SkillManifestEntry, SkillNotFound
 from .state import BrainState, SubTask, SubTaskResult
@@ -88,6 +89,7 @@ __all__ = [
     "ProfileNotFound",
     "ProfileRegistry",
     "ProfileStore",
+    "RetryPolicy",
     "RunContext",
     "RunNotFound",
     "RunNotAwaitingApproval",
@@ -105,6 +107,7 @@ __all__ = [
     "SubTask",
     "SubTaskResult",
     "ToolNotAllowed",
+    "TransientRunError",
     "actor_of",
     "bootstrap",
     "bootstrap_tasks",

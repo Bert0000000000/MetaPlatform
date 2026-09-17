@@ -27,6 +27,9 @@ dev = [
     "ruff>=0.8.0",
     "pyright>=1.1.390",
     "httpx>=0.28.0",
+    # 事件流用例要**真服务**：httpx 的 ASGITransport 会把响应体收完才返回，
+    # 长连接在它那里永远"没完"（本服务本身就由 uvicorn 跑，见 Dockerfile）。
+    "uvicorn>=0.30.0",
 ]
 
 [build-system]

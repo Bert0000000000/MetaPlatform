@@ -95,18 +95,27 @@ components:
         error_code:
           type: string
           description: |
-            可判定的失败类别——`status` 里 `rejected`/`error` 分不开的三种情形
+            可判定的失败类别——`status` 里 `rejected`/`error` 分不开的几种情形
             靠它区分：
             - `E_AUTHORITY_ESCALATION`：派活越权，已转 proposal，**该子任务未执行**
               （授权只限本次任务，人工同意后才跑）；
             - `E_DEPTH_EXCEEDED`：嵌套层数超上限，硬拒，整轮判失败；
-            - `E_PROFILE_NOT_FOUND`：员工不在本租户名册（跨租户 = 不存在），同上。
+            - `E_PROFILE_NOT_FOUND`：员工不在本租户名册（跨租户 = 不存在），同上；
+            - `E_RUNTIME_UNAVAILABLE`：**可重试**失败（模型 5xx / 网络抖动这类）
+              按策略重试后仍不成功。只是**这一件**没干成，不是整轮失败。
         proposal:
           type: object
           description: |
             越权时的人审提案（ADR-0066 §3.4）：`escalations` 是越权的维度、
             `requested` 是各维度实际超出的能力、`scope=this_task_only` 声明
             授权范围**只作用于本次任务**（不写回员工定义）。
+        attempts:
+          type: integer
+          default: 0
+          description: |
+            这一件**真正发起了几次**运行时调用（含重试；1 = 一次过手）。
+            没被执行的（越权转 proposal / 硬拒）为 0。重试只作用于**运行时那一次
+            调用**：派活（建任务行、落审计、转 proposal）是副作用，不会被重做。
     RunState:
       type: object
       required: [run_id, tenant_id, goal, status]
@@ -131,7 +140,8 @@ components:
               timeout,
             ]
           description: |
-            `cancelled` = 被 `POST /runs/{run_id}/cancel` 取消；
+            `cancelled` = 被 `POST /runs/{run_id}/cancel` 取消（正在执行的 run
+            由**图自己在节点边界**落成这个状态，不是因为外部把它杀掉）；
             `timeout` = 超过本轮截止时间（`timeout_seconds` 或部署默认值）后落到
             的终态。两者都是**终态**：之后再 `approve` 一律 409。
         subtasks:
@@ -149,6 +159,17 @@ components:
           type: string
         error:
           type: string
+        timeout_seconds:
+          type: number
+          description: |
+            本轮**实际生效**的运行级超时（秒；0 = 不设超时）。请求省略
+            `timeout_seconds` 时这里落的是开跑那一刻的部署默认值。
+        deadline_at:
+          type: number
+          description: |
+            本轮截止的**绝对时刻**（Unix 秒；0 = 无截止）。
+            `timeout_seconds` 与 `deadline_at` 都随 run 落库：服务重启后仍按
+            **本轮**定下的值裁决，不会回落到重启后进程的默认值。
     StartRunRequest:
       type: object
       required: [goal]
@@ -168,6 +189,9 @@ components:
             本轮的运行级截止时间（秒）。省略时用部署默认值
             （`MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS`，0 = 不设超时）。到点后运行
             落终态 `timeout`，不会一直停在闸门上等人。
+
+            生效值**随 run 落库**（见 `RunState.timeout_seconds` / `deadline_at`），
+            服务重启后仍按本轮的值裁决。
     ApproveRequest:
       type: object
       properties:
@@ -370,6 +394,13 @@ paths:
           tenantHeader: []
           oidcScopes: [platform.write]
       summary: 提交一句话，拆任务图并并行派活（到人工确认闸门暂停）
+      description: |
+        一句话 → 拆任务图 → 并行派给 ≥2 个数字员工 → 停在人工确认闸门。
+
+        **可重试的员工故障会按策略重试**（1.5）：员工运行时那一次调用遇到"可能
+        自己好"的失败（模型 5xx / 限流 / 网络抖动）时重试（次数与退避由部署
+        配置决定），重试用尽才把这一件记成 `E_RUNTIME_UNAVAILABLE`。**派活**
+        （建任务行、落审计、越权转 proposal）不重试——它是副作用。
       tags: [agent-team]
       operationId: agentTeamPostRuns
       requestBody:
@@ -475,6 +506,11 @@ paths:
         把 run 写进终态 `cancelled`——**写进检查点**，因此 `GET /runs/{id}` 与
         后续 `approve` 都看得到（确认一个已作废的计划一律 409）。重复取消不会
         覆盖更早的终态。跨租户与不存在同码 404，不泄露存在性。
+
+        **执行中的 run 也能取消**（1.5）：取消不靠外部杀——图在节点边界自查取消
+        标志，看到就自己落终态。粒度是**波与波之间**：在途的那一波允许跑完
+        （不硬断），已完成节点不重跑，下一波一个员工都不派。本调用**等图停下
+        再回**，所以 200 时该 run 已经不再推进。
       tags: [agent-team]
       operationId: agentTeamPostRunCancel
       parameters:
@@ -502,14 +538,16 @@ paths:
         - bearerAuth: []
           tenantHeader: []
           oidcScopes: [platform.read]
-      summary: 步骤级事件流（SSE）
+      summary: 步骤级事件流（SSE：回放 + 尾随）
       description: |
-        `text/event-stream`：逐个步骤快照往外发，每条是 `event: step` +
-        `data: {seq, step, ran, next, status, at}`（`ran` = 这一步真的跑掉的
-        节点）。回放完已有步骤后发一条 `event: end` 收流。
+        `text/event-stream`。连上先**回放**已有步骤（历史一条不少），再**尾随**
+        新步骤：之后图每推进一步就往外推一条，直到 run 落终态才发 `event: end`
+        收流。每条是 `event: step` + `data: {seq, step, ran, next, status, at}`
+        （`ran` = 这一步真的跑掉的节点）。
 
-        **边界**：回放后收流，不做长连接尾随；到期的 run 会先落成终态再回放，
-        所以事件流里能看到它已经结束。
+        **实现边界**：尾随靠轮询检查点（没有引入消息总线），新步骤最多晚一个
+        轮询间隔（当前 250ms）到达。终态判定与流关闭是同一个事实——停在
+        `awaiting_approval` 的运行**不会**自己关流，它在等人确认。
       tags: [agent-team]
       operationId: agentTeamGetRunEvents
       parameters:

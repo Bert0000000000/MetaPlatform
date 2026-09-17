@@ -44,6 +44,8 @@ class SubTaskResultModel(BaseModel):
     error_code: str = ""
     #: 越权时的人审提案（ADR-0066 §3.4），授权范围只限本次任务。
     proposal: dict[str, Any] = Field(default_factory=dict)
+    #: 真正发起的运行时调用次数（含重试）；没被执行的（越权 / 硬拒）为 0。
+    attempts: int = 0
 
 
 class RunStateModel(BaseModel):
@@ -56,6 +58,10 @@ class RunStateModel(BaseModel):
     summary: str = ""
     hitl_reason: str = ""
     error: str = ""
+    #: 本轮实际生效的运行级超时（秒；0 = 不设超时）与它的绝对截止时刻（epoch 秒；
+    #: 0 = 无截止）。两者都**随 run 落库**：重启后仍按本轮的值裁决（1.5 任务 2）。
+    timeout_seconds: float = 0.0
+    deadline_at: float = 0.0
 
 
 class EmployeeProfileModel(BaseModel):
