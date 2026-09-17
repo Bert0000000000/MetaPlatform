@@ -414,9 +414,21 @@ def test_bootstrap_coordination_installs_the_signal_table_with_rls(
         conn.execute(f"SET search_path TO {rls_schema}")
         bootstrap_coordination(conn, app_role="mate_app")  # 再建一次：幂等
     with psycopg.connect(app_dsn, autocommit=True) as conn:
-        conn.execute(f"SET search_path TO {rls_schema}")
+        # 按 **schema 过滤**，别只按 relname 查。
+        #
+        # `pg_class` 是**全库**系统目录，`SET search_path` 对它无效 —— 只写
+        # `WHERE relname = 'cancel_signals'` 等于在断言"**全库**只有这一张"。
+        # 开发机上只要跑过真服务（启动引导会在自己的 schema 建同名表），
+        # 这里就会数到 2 而失败，且现象与本用例要验的东西毫无关系。
+        # CI 用全新 PG 所以一直没暴露 —— 别把它留成"只有本地才炸"的陷阱。
         rows = conn.execute(
-            "SELECT relrowsecurity FROM pg_class WHERE relname = 'cancel_signals'"
+            """
+            SELECT c.relrowsecurity
+            FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE c.relname = 'cancel_signals' AND n.nspname = %s
+            """,
+            (rls_schema,),
         ).fetchall()
     assert rows == [(True,)], rows
 
