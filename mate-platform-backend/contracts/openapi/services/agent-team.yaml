@@ -85,11 +85,29 @@ components:
           description: 该员工实际发起的工具调用记录（审计用）
         llm_calls:
           type: integer
-          description: 该子任务消耗的模型调用次数
+          description: |
+            **本地**模型轮次。B-7（`MP-EXTERNAL-RUNTIME-E2E-01`）起，出站到外部
+            agent 的往返**不再计入这里**——远端的 token 不是本平台花的。它单独记在
+            `external_agent_calls`。
+        external_agent_calls:
+          type: integer
+          description: |
+            出站到外部 agent 的**往返次数**（成功与失败都算：成本口径问的是
+            "打出去几次"）。当前只有 A2A 出站这一类。
+        runtime_calls:
+          type: integer
+          description: |
+            运行时**派发次数**（含重试）。与 `llm_calls` 分开：一次派发可能一次模型
+            都没调（外部 runtime），一次模型轮次也可能在多次派发里发生
+            （重试用尽后成功）。
+          # 工具调用数**不另设标量**：`tool_calls` 那张清单就是记录，数出来的
+          # 长度才是计数。同一个事实两个来源在本项目是明令禁止的。
         source:
           type: string
-          enum: [llm, stub]
-          description: llm = 真实模型产出；stub = 未接线（供 D-10 "假回执" 断言）
+          enum: [llm, external, stub]
+          description: |
+            llm = 本地模型产出；external = 外部 agent 产出（A2A 出站）；
+            stub = 未接线（供 D-10 "假回执" 断言）。
         error:
           type: string
         error_code:

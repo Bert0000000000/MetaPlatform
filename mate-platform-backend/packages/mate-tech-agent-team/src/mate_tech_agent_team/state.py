@@ -88,7 +88,21 @@ class SubTaskResult(TypedDict, total=False):
     output: str
     tool_calls: list[dict[str, Any]]
     llm_calls: int
-    source: str  # "llm" = 真实模型产出；"stub" = 未接线
+    #: B-7 / `MP-EXTERNAL-RUNTIME-E2E-01`：**计量拆开**。
+    #:
+    #: 2.1-B 之前，一次外部 agent 往返被记成 ``llm_calls=1`` + ``source="llm"``
+    #: ——远端 agent 的 token 不是我们花的，本地一次模型调用都没发生，成本指标
+    #: 因此失真。四类现在分开：
+    #:
+    #: * ``llm_calls`` —— **本地**模型轮次（``ChatModel`` 数出来的）；
+    #: * ``external_agent_calls`` —— 出站到外部 agent 的往返次数；
+    #: * ``runtime_calls`` —— 运行时派发次数（含重试）；
+    #: * 工具调用数 —— 就是 ``len(tool_calls)``。**不另存一个标量**：那会让同一
+    #:   个事实有两个来源，正是本项目反复立的规矩（``tool_calls`` 那张清单本身
+    #:   就是记录，数出来的长度才是计数）。
+    external_agent_calls: int
+    runtime_calls: int
+    source: str  # "llm" = 本地模型产出；"external" = 外部 agent 产出；"stub" = 未接线
     error: str
     error_code: str
     #: 越权时的人审提案（ADR-0066 §3.4）；授权范围只限本次任务。

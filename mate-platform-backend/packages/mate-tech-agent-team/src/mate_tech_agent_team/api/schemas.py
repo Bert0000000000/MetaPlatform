@@ -37,6 +37,10 @@ class SubTaskResultModel(BaseModel):
     output: str = ""
     tool_calls: list[dict[str, Any]] = Field(default_factory=list)
     llm_calls: int = 0
+    #: B-7 / `MP-EXTERNAL-RUNTIME-E2E-01`：计量拆开（本地模型轮次 / 外部 agent
+    #: 往返 / 运行时派发）。工具调用数看 ``len(tool_calls)``，不另存标量。
+    external_agent_calls: int = 0
+    runtime_calls: int = 0
     source: str = "stub"
     error: str = ""
     #: 可判定的失败类别：越权待授权（E_AUTHORITY_ESCALATION）与硬拒

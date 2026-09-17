@@ -24,8 +24,14 @@
 * 出站**没有**深度/父子信息可传，因此**跨系统的深度闸门不存在**；调用方若需要
   "不许再往外派"，只能在本地策略里拦（本切片没做）。
 * **没有** heartbeat / 长任务轮询：一次 ``delegate`` 就是一次同步往返。
+  B-7 的"长任务部分"因此**缓做**——本机没有真实对端（compose 里
+  ``a2a-external-agent`` 整段被注释），给不存在的对端写状态轮询/中途取消是空转。
+  已做的是**计量拆分**（下面那段），因为那是个真 bug 而不是新功能。
 * 远端产物**不做**证据映射（``evidence=[]``）：A2A 的 artifact 不是本仓工具结果，
   按本仓证据形状硬套就是编造。
+* **计量拆开**（B-7 / `MP-EXTERNAL-RUNTIME-E2E-01`）：出站往返记
+  ``external_agent_calls`` / ``runtime_calls``，**不再**记 ``llm_calls``——
+  远端的 token 不是我们花的，本地一次模型调用都没发生。
 """
 
 from __future__ import annotations
@@ -222,6 +228,8 @@ class A2AOutboundRuntime:
             output="",
             tool_calls=[],
             llm_calls=0,
+            external_agent_calls=0,
+            runtime_calls=0,
             source="stub",
             error="",
             evidence=[],
@@ -257,15 +265,22 @@ class A2AOutboundRuntime:
             result["error"] = f"{type(exc).__name__}: {exc}"
             return result
 
+        # 出站往返**发生过**了（不管远端判成功还是失败）——计量记在拿到返回值
+        # 之后、判定之前。成本口径问的是"打出去几次"，不是"成功几次"。
+        result["external_agent_calls"] = 1
+        result["runtime_calls"] = 1
+
         if not outcome.ok:
             result["error"] = outcome.error or "A2A 出站失败"
             return result
 
         result["status"] = "ok"
         result["output"] = outcome.text
-        # 远端产物是真实产出；``llm_calls`` 记 1（一次出站往返），不是本地模型轮次。
-        result["source"] = "llm"
-        result["llm_calls"] = 1
+        # **计量拆开**（B-7 / `MP-EXTERNAL-RUNTIME-E2E-01`）：这一次是**出站到
+        # 外部 agent**，不是本地模型轮次。记成 ``llm_calls=1`` 会让成本指标失真
+        # ——远端的 token 不是我们花的，本地一次模型调用都没发生。
+        result["source"] = "external"
+        result["llm_calls"] = 0
         result["tool_calls"] = [
             {
                 "name": "a2a.delegate",
