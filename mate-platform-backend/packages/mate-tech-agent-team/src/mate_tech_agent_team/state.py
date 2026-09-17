@@ -108,6 +108,10 @@ class BrainState(TypedDict, total=False):
     它们随 run 落进检查点，所以重启/多副本仍按**本轮**定下的值裁决，而不是
     回落成"当前进程的默认值"。``deadline_at`` 存**绝对时刻**——存"还剩多少秒"
     的话重启一次就又变成相对的了。
+
+    ``plan_round`` / ``max_rounds`` 是**重规划的轮次**（1.8 轨 3）。``max_rounds``
+    跟着状态走（而不是只看进程里的配置）：续跑/多副本裁决时读的是**这一轮**定下的
+    上界，与 ``timeout_seconds`` 同一个理由。
     """
 
     run_id: str
@@ -124,6 +128,10 @@ class BrainState(TypedDict, total=False):
     timeout_seconds: float
     #: 本轮截止的绝对时刻（epoch 秒；0 = 无截止）。
     deadline_at: float
+    #: 已经走到第几轮规划（首轮 = 1）；只有具备重规划能力的拆解器才会写它。
+    plan_round: int
+    #: 这一轮允许的规划轮数上界（1 = 一次定型，即 1.0 的行为）。
+    max_rounds: int
 
 
 __all__ = ["BrainState", "SubTask", "SubTaskResult", "merge_results"]
