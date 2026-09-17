@@ -1,7 +1,8 @@
 # ADR-0065：SuperAI Context-Awareness 协议（UI 状态 → Agent 的分层通道）
 
-> **状态**：**Proposed（草案，待评审）**
-> **日期**：2026-09-15
+> **状态**：**Accepted**（2026-09-18 评审通过；评审记录与 **4 条实施条件 R1–R4** 见
+> `docs/active/decisions/ADR-REVIEW-2026-09-18-0065.md`。**S1–S3 的收口证据必须逐条对位 R1–R4**）
+> **日期**：2026-09-15（提出）· 2026-09-18（评审转 Accepted）
 > **作者**：Claude + 用户协作
 > **关联 ADR**：ADR-0021（Kernel 12 基元）、ADR-0043（all-in-one 集成核心 · AI proposal 管道）、ADR-0064（Action 统一 EditSet · propose_action 工具）
 > **来源**：2026-09-15 开源调研 BuilderIO/agent-native（agent-native.com）Context-Awareness 协议——**引原理不引组件**（同 cordis 范式，ADR-0042 先例）
@@ -179,7 +180,21 @@ assistant.sendWithContext('把这段改得更有力', { pendingSelection: { text
 
 ## 8. 收口记录
 
-> 待评审后补：实施 commit、验收证据链接（`docs/active/delivery/evidence/`）。
+> **2026-09-18 评审转 Accepted**（记录：`ADR-REVIEW-2026-09-18-0065.md`）。
+> 评审对原文做了 **4 处订正/收窄**，实施时以那 4 条**条件 R1–R4** 为准：
+>
+> | # | 条件 | 与原文的关系 |
+> | --- | --- | --- |
+> | **R1** | 宿主自由文本（`selection[].label` / `pendingSelection.text` / `navigation.view`）进 prompt 前**截断**并按**数据**框定，附注入用例 | 原文"状态键只影响 prompt 渲染"**不完整**——自由文本进 system prompt 就是指令通道，§4 那句只挡住了工具参数 |
+> | **R2** | `capturedAt` 的**陈旧阈值 + 超阈值行为**成文 | 判据 2 是**观察性**的（§2.1-2 只对齐意愿不对齐行为），不能替代不变量 |
+> | **R3** | 旧宿主（只发 `interaction`/`subject`）的 system prompt **逐字节**快照等价 | §7-4 原来只是验收项，提到"条件"级 |
+> | **R4** | `navigate.target.path` **白名单校验**后再渲染为可点击，附 negative 用例 | 原文只约束"谁来跳"，没约束"跳到哪"——模型可控字符串直接给路由是注入面 |
+>
+> **v2 仍 deferred**（§2.1-3 维持）：**不**把 context 落库。C-1 落的"会话↔run"是**持久关系**，
+> context 是**一次性 UI 态**，两者语义不同，不要合并成一张表。
+>
+> 实施 commit / 验收证据（S1–S3）实施后补于此处，指向
+> `docs/active/delivery/evidence/AGENT-PRODUCT-LAYER-2.1-C-ACCEPTANCE.md`。
 
 ---
 
