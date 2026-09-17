@@ -31,7 +31,7 @@ from .profile_store import ProfileStore
 from .profiles import ProfileNotFound, ProfileRegistry, RuntimeKind
 from .retry import DEFAULT_BACKOFF_SECONDS, DEFAULT_MAX_ATTEMPTS, RetryPolicy
 from .runtime import EmployeeRuntime
-from .runtimes import ClaudeCodeProjection, ClaudeCodeRuntime
+from .runtimes import ClaudeCodeProjection, ClaudeCodeRuntime, configured_allowlist
 from .skill_toolbox import SKILL_TOOL_NAMES, SkillToolbox
 from .skills import SkillCatalog
 from .state import SubTask, SubTaskResult
@@ -271,6 +271,10 @@ def build_runtime_router(
     if RuntimeKind.SUPERAI in kinds:
         runtimes[RuntimeKind.SUPERAI] = superai
     if RuntimeKind.CLAUDE_CODE in kinds:
+        # A-4 / MP-AGENT-SANDBOX-ISOLATION-01：外部子进程只拿白名单环境。运维追加的
+        # 白名单在**启动期**校验一次——写了凭据类名字就起不来（无静默回落，
+        # 与 required_dsn 同一条精神）。
+        configured_allowlist()
         runtimes[RuntimeKind.CLAUDE_CODE] = ClaudeCodeRuntime(
             registry=registry,
             projection=ClaudeCodeProjection(skills=skills),
