@@ -108,6 +108,30 @@ class _SlowRuntime:
         )
 
 
+class _ChainPlanner(StaticPlanner):
+    """两件**串成一条链**（t2 依赖 t1）—— 造出一个可确定复现的崩溃点：
+    第一波（t1）已经跑完、第二波（t2）在途。这正是"已完成的不重跑"要验的时刻。
+    """
+
+    def __init__(self, counter: list[int]) -> None:
+        self._counter = counter
+
+    async def plan(self, *, goal: str, max_parallel: int, tenant_id: str) -> list[SubTask]:
+        del max_parallel, tenant_id
+        self._counter[0] += 1
+        return [
+            SubTask(
+                task_id="t1", profile_id="EMP-ANALYST", instruction=f"分析：{goal}", depends_on=[]
+            ),
+            SubTask(
+                task_id="t2",
+                profile_id="EMP-AUDITOR",
+                instruction=f"复核：{goal}",
+                depends_on=["t1"],
+            ),
+        ]
+
+
 class _CountingPlanner(StaticPlanner):
     """数 ``plan()`` 被调了几次 —— "已完成的不重跑"的可读证据。"""
 
@@ -168,12 +192,14 @@ def _close_test_clients() -> Iterator[None]:
 
 
 def _service(
-    *, runtime: Any = None, counter: list[int] | None = None
+    *, runtime: Any = None, counter: list[int] | None = None, planner: Any = None
 ) -> tuple[BrainService, Any, list[int]]:
+    """``planner`` 给的是**类**（拿计数器现建），这样用例还能数到 ``plan()`` 次数。"""
     counts = counter if counter is not None else [0]
     rt = runtime if runtime is not None else _SlowRuntime()
+    plan = planner(counts) if planner is not None else _CountingPlanner(counts)
     service = BrainService(
-        planner_for=lambda _ctx: _CountingPlanner(counts),
+        planner_for=lambda _ctx: plan,
         runtime_for=lambda _ctx: rt,
         checkpointer=InMemoryCheckpointerProvider(),
         team_bus=TeamBus(registry=ProfileRegistry(), tasks=InMemoryTeamTasks()),
@@ -209,29 +235,40 @@ async def _settle(service: BrainService, run_id: str, *, timeout: float = 8.0) -
 # ── 续跑 ────────────────────────────────────────────────────────────────
 
 
-def test_an_in_flight_run_is_continued_from_its_checkpoint_after_a_restart() -> None:
-    """**轨 1 主判据**：起 run → 执行中重启 → 续跑到停下来；已完成的不重跑。
+def test_an_in_flight_run_is_continued_from_its_checkpoint_after_a_restart(admin_token) -> None:
+    """**轨 1 主判据**：起 run → 执行中重启 → 续跑；**已完成的不重跑**。
 
     "重启"在这里是忠实的模拟：``shutdown()`` 拆掉在途的后台任务（= 进程没了），
     检查点留着（= PG 还在），再拿一个**新的控制面实例**做启动扫描。
+
+    用例刻意用**串成一条链**的两件（t2 依赖 t1），好把崩溃点钉在"第一波已经
+    跑完、第二波在途"这一刻——"已完成的不重跑"才有东西可验。整轮三件事：
+    ① 不再卡在 ``running``；② 已完成的拆解与员工一个都不重跑；③ 续跑那一波
+    没有链根包络时 **fail-closed 转提案**，而不是伪造一份"跑完了"。
+
+    第 ③ 条是**安全性质**，不是妥协：发起用户的令牌刻意不落库（状态进 PG），
+    所以重启之后没有授权可用；宁可停下来等人，也不能拿一份来路不明的授权接着跑。
     """
 
     async def _scenario() -> None:
-        service, _runtime, counts = _service()
+        runtime = _SlowRuntime()
+        service, _runtime, counts = _service(runtime=runtime, planner=_ChainPlanner)
         before = RunControl(service)
-        accepted = await before.submit(tenant_id=TENANT, goal="分析本月异常订单", user_token="")
+        accepted = await before.submit(
+            tenant_id=TENANT, goal="分析本月异常订单", user_token=admin_token
+        )
         run_id = accepted["run_id"]
 
-        # 等 plan 把检查点落下来（subtasks 有值 = 拆解这一步已完成）。
-        planned = await _until(
-            lambda: _has_subtasks(service, run_id),
-        )
-        assert planned, "plan 没有落检查点，用例前提不成立"
+        # 等第一波（t1）跑完 —— 此刻第二波（t2）在途。
+        first_wave = await _until(lambda: _has_result(service, run_id, "t1"))
+        assert first_wave, "第一波没有落检查点，用例前提不成立"
 
         # 进程没了：在途的后台任务被拆掉，检查点留在原地。
         await before.shutdown()
         stuck = await service.get(tenant_id=TENANT, run_id=run_id)
         assert stuck["status"] == "running", "该死在这一轮的执行中，而不是别的状态"
+        assert stuck["results"]["t1"]["status"] == "ok", stuck["results"]
+        t1_output = stuck["results"]["t1"]["output"]
 
         # 新进程启动：扫出没跑完的 run，从它自己的检查点接着跑。
         index = _FakeIndex([(TENANT, run_id)])
@@ -243,20 +280,59 @@ def test_an_in_flight_run_is_continued_from_its_checkpoint_after_a_restart() -> 
         assert index.seen_statuses == [RESUMABLE_STATUSES]
 
         body = await _settle(service, run_id)
+        # ① 不再卡住：这一轮走到了它的落脚点。
         assert body["status"] == "awaiting_approval", body
-        assert len(body["results"]) == 3, "续跑没有把剩下的员工跑完"
+        # ② 已完成的不重跑：拆解一次，t1 也只跑了一次、产出原样。
         assert counts[0] == 1, f"plan() 跑了 {counts[0]} 次 —— 已完成的节点被重跑了"
+        assert body["results"]["t1"]["output"] == t1_output, "已完成的那件被重跑了"
+        assert runtime.started.count("t1") == 1, f"t1 被跑了多次：{runtime.started}"
+        # ③ 续跑那一波没有授权 → 转提案，不伪造产出。
+        assert body["results"]["t2"]["status"] == "rejected", body["results"]["t2"]
+        assert body["results"]["t2"]["error_code"] == "E_AUTHORITY_ESCALATION"
 
     asyncio.run(_scenario())
 
 
-def test_a_settled_run_is_not_touched_by_the_startup_scan() -> None:
+def test_a_run_interrupted_before_any_worker_finishes_still_leaves_running(
+    admin_token,
+) -> None:
+    """死在第一波在途（还没有任何回执）时，续跑同样把它带出 ``running``。
+
+    这一条对应"没有任何已完成的产出可保留"的极端：图上没有断点可续，于是整波
+    重派；同样因为令牌不落库而 fail-closed 转提案。**关键是它不再永远停在
+    ``running``** —— 那正是受理制留下的坑。
+    """
+
+    async def _scenario() -> None:
+        service, _runtime, counts = _service()
+        before = RunControl(service)
+        run_id = (
+            await before.submit(tenant_id=TENANT, goal="分析本月异常订单", user_token=admin_token)
+        )["run_id"]
+        assert await _until(lambda: _has_subtasks(service, run_id))
+        await before.shutdown()
+        assert (await service.get(tenant_id=TENANT, run_id=run_id))["status"] == "running"
+
+        after = RunControl(service, run_index=_FakeIndex([(TENANT, run_id)]))
+        assert await after.recover() == [run_id]
+        body = await _settle(service, run_id)
+
+        assert body["status"] == "awaiting_approval", body
+        assert len(body["results"]) == 3, "续跑没有把该派的那一波派出去"
+        assert counts[0] == 1, f"已完成的拆解被重跑了 {counts[0]} 次"
+
+    asyncio.run(_scenario())
+
+
+def test_a_settled_run_is_not_touched_by_the_startup_scan(admin_token) -> None:
     """停在闸门上的 run 是**等人**，不是没跑完 —— 扫描不许把它再推一遍。"""
 
     async def _scenario() -> None:
         service, _runtime, counts = _service()
         before = RunControl(service)
-        run_id = (await before.submit(tenant_id=TENANT, goal="分析本月异常订单"))["run_id"]
+        run_id = (
+            await before.submit(tenant_id=TENANT, goal="分析本月异常订单", user_token=admin_token)
+        )["run_id"]
         settled = await _settle(service, run_id)
         assert settled["status"] == "awaiting_approval", settled
 
@@ -272,13 +348,15 @@ def test_a_settled_run_is_not_touched_by_the_startup_scan() -> None:
     asyncio.run(_scenario())
 
 
-def test_the_scan_skips_runs_that_are_already_live_in_this_process() -> None:
+def test_the_scan_skips_runs_that_are_already_live_in_this_process(admin_token) -> None:
     """同进程内已经在跑的那一轮不许被扫描再认领一次（否则一波员工派两遍）。"""
 
     async def _scenario() -> None:
         service, _runtime, _counts = _service()
         control = RunControl(service, run_index=_FakeIndex([(TENANT, "whatever")]))
-        run_id = (await control.submit(tenant_id=TENANT, goal="分析本月异常订单"))["run_id"]
+        run_id = (
+            await control.submit(tenant_id=TENANT, goal="分析本月异常订单", user_token=admin_token)
+        )["run_id"]
         # 把索引换成"确实报这一轮没跑完"，再扫一次：它正活着，应当跳过。
         control._run_index = _FakeIndex([(TENANT, run_id)])
         assert await control.recover() == []
@@ -309,13 +387,15 @@ def test_a_run_that_vanished_from_the_checkpoints_is_skipped_quietly() -> None:
     asyncio.run(_scenario())
 
 
-def test_shutdown_cancels_the_in_flight_background_work() -> None:
+def test_shutdown_cancels_the_in_flight_background_work(admin_token) -> None:
     """``shutdown()`` 是"进程收尾"的正面入口：在途任务被拆掉、不再推进。"""
 
     async def _scenario() -> None:
         service, runtime, _counts = _service()
         control = RunControl(service)
-        run_id = (await control.submit(tenant_id=TENANT, goal="分析本月异常订单"))["run_id"]
+        run_id = (
+            await control.submit(tenant_id=TENANT, goal="分析本月异常订单", user_token=admin_token)
+        )["run_id"]
         await _until(lambda: _has_subtasks(service, run_id), timeout=5.0)
         await control.shutdown()
         # 收尾之后这一轮不再推进：员工不再被调起来。
@@ -334,6 +414,15 @@ async def _has_subtasks(service: BrainService, run_id: str) -> bool:
     return bool(state.get("subtasks"))
 
 
+async def _has_result(service: BrainService, run_id: str, task_id: str) -> bool:
+    """某个子任务是不是已经落回执了 —— 用来把崩溃点钉在"某一波已跑完"。"""
+    try:
+        state = await service.get(tenant_id=TENANT, run_id=run_id)
+    except RunNotFound:
+        return False
+    return task_id in (state.get("results") or {})
+
+
 async def _checkpoint_exists(service: BrainService, run_id: str) -> bool:
     """这一轮在检查点里有没有落脚（= 进程死了之后还找不找得回它）。"""
     try:
@@ -346,14 +435,17 @@ async def _checkpoint_exists(service: BrainService, run_id: str) -> bool:
 # ── 重启后从 HTTP 面看到的仍是同一轮（不另建真相）──────────────────────
 
 
-def test_the_run_id_from_before_the_restart_still_addresses_the_same_run() -> None:
+def test_the_run_id_from_before_the_restart_still_addresses_the_same_run(admin_token) -> None:
     """受理回执给的 run_id 在重启后**仍然是那一轮**——状态只有一个来源。"""
 
     async def _scenario() -> None:
         service, _runtime, _counts = _service()
         before = RunControl(service)
         accepted = await before.submit(
-            tenant_id=TENANT, goal="分析本月异常订单", idempotency_key="k-restart"
+            tenant_id=TENANT,
+            goal="分析本月异常订单",
+            user_token=admin_token,
+            idempotency_key="k-restart",
         )
         run_id = accepted["run_id"]
         await _until(lambda: _has_subtasks(service, run_id))
@@ -367,7 +459,10 @@ def test_the_run_id_from_before_the_restart_still_addresses_the_same_run() -> No
 
         # 幂等键在重启后仍映射回同一轮（确定性 run_id + 查检查点）。
         again = await after.submit(
-            tenant_id=TENANT, goal="分析本月异常订单", idempotency_key="k-restart"
+            tenant_id=TENANT,
+            goal="分析本月异常订单",
+            user_token=admin_token,
+            idempotency_key="k-restart",
         )
         assert again["run_id"] == run_id
         assert again["deduplicated"] is True
@@ -386,7 +481,9 @@ def test_the_terminal_state_set_covers_every_status_the_graph_can_park_on() -> N
     assert frozenset() == RESUMABLE_STATUSES & TERMINAL_STATUSES
 
 
-def test_list_unfinished_reads_the_checkpoint_table_by_status(pg_dsns, rls_schema) -> None:
+def test_list_unfinished_reads_the_checkpoint_table_by_status(
+    pg_dsns, rls_schema, admin_token
+) -> None:
     """真库上验扫描本身：JSONB 取状态、每个 thread 只取最新一条、前缀拆租户。
 
     PG 不可用时 skip（见 conftest）。这条用例是"扫描 SQL 真的对"的唯一证据——
@@ -414,7 +511,9 @@ def test_list_unfinished_reads_the_checkpoint_table_by_status(pg_dsns, rls_schem
         #    （见 :class:`_SlowPlanner`）。
         first_service = _build(plan_delay=1.0, run_delay=0.0)
         control = RunControl(first_service)
-        run_id = (await control.submit(tenant_id=TENANT, goal="分析本月异常订单"))["run_id"]
+        run_id = (
+            await control.submit(tenant_id=TENANT, goal="分析本月异常订单", user_token=admin_token)
+        )["run_id"]
         assert await _until(lambda: _checkpoint_exists(first_service, run_id), timeout=10.0)
         await control.shutdown()
 
