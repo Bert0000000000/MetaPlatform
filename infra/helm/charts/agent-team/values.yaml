@@ -67,15 +67,30 @@ config:
   gateRequiredApprovals: "1"
 
 #: Secret keys the operator must provision (SealedSecret / ExternalSecret):
-#:   MATE_AGENT_TEAM_ADMIN_DSN        — 建表 + 跨租户扫描（B-4 起要移出运行 Pod）
-#:   MATE_AGENT_TEAM_DSN              — 受 RLS 约束的 app 角色
+#:   MATE_AGENT_TEAM_ADMIN_DSN        — **只给迁移 Job**（B-4）：bootstrapping
+#:   MATE_AGENT_TEAM_DSN              — 受 RLS 约束的 app 角色（上业务面）
+#:   MATE_AGENT_TEAM_CONTROL_DSN      — 控制面身份：只读检查点，跨租户恢复扫描
 #:   SERVICE_CLIENT_SECRET            — Keycloak 服务密钥
+#:
+#: 运行 Pod 的 Deployment **只注入后三个**。admin DSN 只出现在一次性迁移 Job 里
+#: ——它是能建表能授权的整库钥匙，留在长期进程里等于 RLS 那道墙不存在。
 secretRef:
   name: agent-team-secret
   keys:
     adminDsn: MATE_AGENT_TEAM_ADMIN_DSN
     appDsn: MATE_AGENT_TEAM_DSN
+    controlDsn: MATE_AGENT_TEAM_CONTROL_DSN
     serviceClientSecret: SERVICE_CLIENT_SECRET
+
+#: B-4：迁移 Job（建 schema / 表 / RLS 策略 / 三个角色的 GRANT）。
+#: 每次 `helm upgrade` 都会重跑一次——`bootstrap` 是幂等的，跑 N 次等于跑一次。
+migration:
+  enabled: true
+  #: 控制面角色名（迁移 Job 建它，并授"只读 checkpoints"）。
+  controlRole: mate_control
+  #: 控制面角色的口令。本地验证用 `--set migration.controlPassword=...`；
+  #: 生产请改成从 Secret 引用（见 ACCEPTANCE 的边界登记）。
+  controlPassword: ""
 
 service:
   type: ClusterIP

@@ -23,6 +23,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from typing import Any
 
 import psycopg
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -55,11 +56,22 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON {table} TO {app_role};
 """
 
 
-def bootstrap(admin_dsn: str, app_role: str = "mate_app", schema: str = SCHEMA) -> None:
+def bootstrap(
+    admin_dsn: str,
+    app_role: str = "mate_app",
+    schema: str = SCHEMA,
+    control_role: str = "",
+    control_password: str = "",
+) -> None:
     """建 schema + langgraph 表 + 员工身份表 + 任务实例表 + 产出物表 + 协作面表 +
     审计账本表 + RLS 策略。幂等。
 
     必须以 **admin** 身份调用——见模块 docstring 第 1 条。
+
+    ``control_role`` 非空时额外建一个**只读控制面身份**（B-4）：它只能读
+    ``checkpoints``，靠一条 permissive 策略越过租户边界（RLS 的多条策略是 **OR**
+    关系，所以 ``mate_app`` 那条租户策略一个字不用改）。跨租户的恢复扫描用它，
+    于是"能看几个租户"这件事回到**数据库角色**上，而不是运行 Pod 里的一个布尔。
     """
     from .artifact_store import bootstrap_artifacts
     from .audit import bootstrap_audit
@@ -96,6 +108,54 @@ def bootstrap(admin_dsn: str, app_role: str = "mate_app", schema: str = SCHEMA) 
         bootstrap_run_leases(conn, app_role=app_role)
         # B-2 / MP-RUN-EVENTS-01：Run 事件日志（观察模型；执行恢复仍以检查点为准）。
         bootstrap_run_events(conn, app_role=app_role)
+        # B-4：独立控制面身份（只读检查点，跨租户）。空 = 不建（测试与本地形态）。
+        if control_role:
+            _bootstrap_control_role(
+                conn,
+                schema=schema,
+                control_role=control_role,
+                password=control_password,
+            )
+
+
+#: B-4：控制面身份的授权。**只给 SELECT，且只给 checkpoints 这一张**——
+#: 恢复扫描需要的就是 ``(thread_id, status)``，给多了它就不再是"最小控制面"。
+_CONTROL_ROLE_DDL = """
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{role}') THEN
+        EXECUTE 'CREATE ROLE "{role}" LOGIN';
+    END IF;
+END
+$$;
+GRANT USAGE ON SCHEMA {schema} TO "{role}";
+GRANT SELECT ON {schema}.checkpoints TO "{role}";
+DROP POLICY IF EXISTS control_plane_read ON {schema}.checkpoints;
+CREATE POLICY control_plane_read ON {schema}.checkpoints
+  FOR SELECT TO "{role}" USING (true);
+"""
+
+
+def _bootstrap_control_role(
+    conn: psycopg.Connection[Any],
+    *,
+    schema: str,
+    control_role: str,
+    password: str = "",
+) -> None:
+    """建控制面只读角色 + 策略（幂等）。``conn`` 必须是 **admin** 连接。
+
+    角色名会拼进 DDL（``CREATE ROLE`` 不接受参数绑定），所以先用
+    :func:`~mate_tech_agent_team.tenant_db.checked_schema` 那套标识符校验挡住。
+    """
+    from .tenant_db import checked_schema
+
+    role = checked_schema(control_role)
+    conn.execute(_CONTROL_ROLE_DDL.format(role=role, schema=checked_schema(schema)))
+    if password:
+        # 口令同样只能拼字面量——按 PG 的规则把单引号翻倍。
+        escaped = password.replace("'", "''")
+        conn.execute(f"ALTER ROLE \"{role}\" WITH PASSWORD '{escaped}'")
 
 
 def _guc_statement(tenant_id: str) -> tuple[str, tuple[str]]:

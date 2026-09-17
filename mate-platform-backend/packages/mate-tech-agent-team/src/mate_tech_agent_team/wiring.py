@@ -127,6 +127,9 @@ def required_admin_dsn() -> str:
     用服务自己的 DSN 建表会让该角色成为**表 owner**，而 PG 的表 owner
     默认绕过 RLS —— 隔离会**静默失效**（不报错、只是看不见墙）。所以这里
     不给默认值，缺了就启动失败。
+
+    **B-4 起只在非 ``api`` 角色下被调用**：运行 Pod 不该有这个 DSN，
+    建表交给迁移 Job（见 :mod:`mate_tech_agent_team.migrate`）。
     """
     dsn = os.getenv("MATE_AGENT_TEAM_ADMIN_DSN", "")
     if not dsn:
@@ -135,6 +138,32 @@ def required_admin_dsn() -> str:
             "否则该角色成为表 owner 会绕过 RLS，租户隔离静默失效。"
         )
     return dsn
+
+
+#: 本进程的**运行角色**（B-4）。默认 ``all`` = 单进程形态，与加它之前逐字一致。
+#: ``api`` = 只跑服务，**不建表、也拒绝 admin DSN**——建表归迁移 Job。
+ROLE_ENV = "MATE_AGENT_TEAM_ROLE"
+ROLE_ALL = "all"
+ROLE_API = "api"
+
+
+def runtime_role() -> str:
+    return os.getenv(ROLE_ENV, ROLE_ALL).strip().lower() or ROLE_ALL
+
+
+def _refuse_admin_dsn_in_api_role() -> None:
+    """``api`` 角色下**带着 admin DSN 就启动失败**（硬规则 #5 的同一精神）。
+
+    B-4 要的是"运行 Pod 的 env 里没有 admin DSN"。配了却不报错 = 那句要求
+    变成一句没人执行的话：某天有人图省事把它写回去，谁也不会发现。
+    """
+    if os.getenv("MATE_AGENT_TEAM_ADMIN_DSN", "").strip():
+        raise RuntimeError(
+            f"{ROLE_ENV}=api 的进程**不该**持有 MATE_AGENT_TEAM_ADMIN_DSN："
+            "建表/授权归迁移 Job（python -m mate_tech_agent_team.migrate）。"
+            "把它从运行 Pod 的环境里去掉——它是能建表能授权的整库钥匙，"
+            "RLS 在它面前等于不存在。"
+        )
 
 
 def build_skill_catalog() -> SkillCatalog:
@@ -458,7 +487,13 @@ def build_service(
     gateway_url = os.getenv("MATE_GATEWAY_URL", DEFAULT_GATEWAY_URL)
     protocol_url = os.getenv("MATE_MCP_PROTOCOL_URL", f"{mcp_url}{DEFAULT_MCP_PROTOCOL_PATH}")
 
-    bootstrap(required_admin_dsn())
+    # B-4：``api`` 角色下**不建表**，且**拒绝** admin DSN —— 建表/授权归迁移 Job
+    # （``python -m mate_tech_agent_team.migrate``，它带 admin 跑一次就退出）。
+    # 其余角色（默认 ``all``）保持原样：单进程形态与加这一条之前逐字一致。
+    if runtime_role() == ROLE_API:
+        _refuse_admin_dsn_in_api_role()
+    else:
+        bootstrap(required_admin_dsn())
     skills = build_skill_catalog()
 
     def _provider_config(tenant_id: str, user_token: str):
@@ -619,6 +654,7 @@ __all__ = [
     "build_run_control",
     "build_outbox_writer",
     "build_runtime_router",
+    "runtime_role",
     "build_team_bus",
     "build_service",
     "build_skill_catalog",

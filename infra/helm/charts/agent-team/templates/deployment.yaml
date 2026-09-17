@@ -57,16 +57,22 @@ spec:
             - name: INSECURE_SKIP_SIGNATURE
               value: "false"
             # 硬规则 12：DSN 与客户端密钥**只从 Secret 来**，不写进 values。
-            - name: MATE_AGENT_TEAM_ADMIN_DSN
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.secretRef.name }}
-                  key: {{ .Values.secretRef.keys.adminDsn }}
+            #
+            # B-4：运行 Pod **没有** MATE_AGENT_TEAM_ADMIN_DSN —— 建表/授权归
+            # 迁移 Job。这里只有"受 RLS 约束的业务身份"与"只读检查点的控制面
+            # 身份"两把**小**钥匙。配了 admin 反而启动失败（见 wiring）。
+            - name: MATE_AGENT_TEAM_ROLE
+              value: "api"
             - name: MATE_AGENT_TEAM_DSN
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.secretRef.name }}
                   key: {{ .Values.secretRef.keys.appDsn }}
+            - name: MATE_AGENT_TEAM_CONTROL_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretRef.name }}
+                  key: {{ .Values.secretRef.keys.controlDsn }}
             - name: SERVICE_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:

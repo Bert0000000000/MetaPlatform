@@ -67,7 +67,14 @@ secretRef:
   keys:
     adminDsn: MATE_AGENT_TEAM_ADMIN_DSN
     appDsn: MATE_AGENT_TEAM_DSN
+    controlDsn: MATE_AGENT_TEAM_CONTROL_DSN
     serviceClientSecret: SERVICE_CLIENT_SECRET
+
+#: B-4：本地也把建表交给迁移 Job（判据就是"运行 Pod 的 env 里没有 admin DSN"）。
+migration:
+  enabled: true
+  controlRole: mate_control
+  controlPassword: mate_control_pw
 
 #: 本地命名空间里只有我们自己，入站限制挡住的会是探针本身。
 networkPolicy:

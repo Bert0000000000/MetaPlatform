@@ -78,7 +78,13 @@ helm template agent-team . | grep -A1 'kind: Deployment' -A3 | grep replicas
 | `config.leaseTtlSeconds`                           | string | `"30"`                 | B-1：租约 TTL（秒）                                                  |
 | `config.gateRequiredRoles`                         | string | `""`                   | B-6：HITL 闸门层级（逗号分隔）；留空 = 单级任意角色                  |
 | `config.gateRequiredApprovals`                     | string | `"1"`                  | B-6：每级需要的不同审批人数（>1 = 会签）                             |
-| `secretRef.name`                                   | string | `"agent-team-secret"`  | 装着两个 DSN 与 SERVICE_CLIENT_SECRET 的 Secret                      |
+| `secretRef.name`                                   | string | `"agent-team-secret"`  | 装着两个 DSN、控制面 DSN 与 SERVICE_CLIENT_SECRET 的 Secret          |
+| `secretRef.keys.appDsn`                            | string | `"MATE_AGENT_TEAM_DSN"` | 受 RLS 约束的 app 角色（上业务面）                                   |
+| `secretRef.keys.controlDsn`                        | string | `"MATE_AGENT_TEAM_CONTROL_DSN"` | 控制面身份：只读检查点，跨租户恢复扫描                        |
+| `secretRef.keys.adminDsn`                          | string | `"MATE_AGENT_TEAM_ADMIN_DSN"` | **只给迁移 Job**（B-4）；运行 Pod 里没有它                     |
+| `migration.enabled`                                | bool   | `true`                 | B-4：渲染建表/授权的一次性 Job（pre-install/pre-upgrade hook）        |
+| `migration.controlRole`                            | string | `"mate_control"`       | 控制面角色名（迁移 Job 建它并授"只读 checkpoints"）                  |
+| `migration.controlPassword`                        | string | `""`                   | 控制面角色口令（本地验证用；生产应改走 Secret 引用）                 |
 | `service.type`                                     | string | `"ClusterIP"`          | Service 类型                                                         |
 | `service.port`                                     | int    | `8013`                 | HTTP 端口                                                            |
 | `serviceAccount.create`                            | bool   | `true`                 | 建 ServiceAccount                                                    |

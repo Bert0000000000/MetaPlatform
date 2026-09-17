@@ -113,6 +113,11 @@ DEFAULT_TIMEOUT_ENV = "MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS"
 #: 而检查点表的 RLS 是 fail-closed —— 拿 app 角色读只会"一行都扫不到"。
 ADMIN_DSN_ENV = "MATE_AGENT_TEAM_ADMIN_DSN"
 
+#: 跨租户恢复扫描用的 **控制面 DSN**（B-4）。它比 admin 小得多：只能读
+#: ``checkpoints``，靠一条 permissive 策略越过租户边界。**运行 Pod 只该有这个**，
+#: 不该有 admin——那是"能建表能授权"的整库钥匙。
+CONTROL_DSN_ENV = "MATE_AGENT_TEAM_CONTROL_DSN"
+
 #: 协作面（取消信号 / 幂等认领）用的 app DSN。它按租户读写，所以**必须**是受
 #: RLS 约束的那个角色；没配就不建跨副本实现，退回进程内实现（单副本的默认形态）。
 DSN_ENV = "MATE_AGENT_TEAM_DSN"
@@ -344,12 +349,16 @@ class RunControl:
         except ValueError:
             default_timeout = 0.0
         admin_dsn = os.getenv(ADMIN_DSN_ENV, "")
+        control_dsn = os.getenv(CONTROL_DSN_ENV, "")
         dsn = os.getenv(DSN_ENV, "")
         ttl = configured_claim_ttl()
+        # 恢复扫描优先走**控制面**身份（B-4）：它只需要读检查点，不该拿 admin。
+        # 没配控制面 DSN 时才回落到 admin DSN——那是本地/单进程的旧形态。
+        index_dsn = control_dsn or admin_dsn
         return cls(
             service,
             default_timeout=max(default_timeout, 0.0),
-            run_index=PgRunIndex(admin_dsn) if admin_dsn else None,
+            run_index=PgRunIndex(index_dsn) if index_dsn else None,
             # 协作面与租约都是**按租户**读写的，走 app 角色（RLS 强制）；建表另走 admin。
             signals=PgCancelSignals(dsn, schema=CHECKPOINT_SCHEMA) if dsn else None,
             claims=PgRunClaims(dsn, schema=CHECKPOINT_SCHEMA, ttl=ttl) if dsn else None,
@@ -1082,6 +1091,8 @@ class RunControl:
 
 __all__ = [
     "ADMIN_DSN_ENV",
+    "CANCELLING",
+    "CONTROL_DSN_ENV",
     "DEFAULT_POLL_INTERVAL",
     "DEFAULT_READY_TIMEOUT",
     "DEFAULT_TIMEOUT_ENV",
