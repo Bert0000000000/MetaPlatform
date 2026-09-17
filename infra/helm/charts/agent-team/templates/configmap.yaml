@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "agent-team.fullname" . }}
+  labels:
+    {{- include "agent-team.labels" . | nindent 4 }}
+data:
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  TZ: {{ .Values.config.timezone | quote }}
+  KEYCLOAK_URL: {{ .Values.config.keycloak.url | quote }}
+  KEYCLOAK_REALM: {{ .Values.config.keycloak.realm | quote }}
+  SERVICE_CLIENT_ID: {{ .Values.config.serviceClientId | quote }}
+  MATE_LLMGW_URL: {{ .Values.config.llmgwUrl | quote }}
+  MATE_ONT_URL: {{ .Values.config.ontUrl | quote }}
+  MATE_MCP_URL: {{ .Values.config.mcpUrl | quote }}
+  MATE_GATEWAY_URL: {{ .Values.config.gatewayUrl | quote }}
+  MATE_AGENT_TEAM_MODEL: {{ .Values.config.model | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.config.otelEndpoint | quote }}
+  OTEL_SERVICE_NAME: "mate-tech-agent-team"
+  PYTHONPATH: {{ .Values.config.pythonPath | quote }}
+  # B-5：连接池上限（租户安全 checkout）。
+  MATE_AGENT_TEAM_POOL_MAX: {{ .Values.config.poolMax | quote }}
+  # B-1：租约 TTL（可配 + 带续租）。
+  MATE_AGENT_TEAM_LEASE_TTL_SECONDS: {{ .Values.config.leaseTtlSeconds | quote }}
+  # B-6：HITL 闸门形态（留空角色 = 单级任意角色）。
+  MATE_AGENT_TEAM_GATE_REQUIRED_ROLES: {{ .Values.config.gateRequiredRoles | quote }}
+  MATE_AGENT_TEAM_GATE_REQUIRED_APPROVALS: {{ .Values.config.gateRequiredApprovals | quote }}

@@ -1,0 +1,74 @@
+# =============================================================================
+# 本地多副本验证用的自带 Postgres（MP-REPLICA-READINESS-01）
+# =============================================================================
+# 为什么不用 compose 那个：kind 集群与 compose 网络不互通，而 `host.docker.internal`
+# 在 kind 的 network 里不成立。一个一次性 PG 让这次验证**自成一体**。
+#
+# 应用前先建 app 角色（B-5/B-4 都要求运行态用的是受 RLS 约束的 mate_app）：
+#
+#   kubectl exec -n mate-agent-team agent-team-pg-0 -- \
+#     psql -U meta -d metaplatform -c \
+#     "CREATE ROLE mate_app LOGIN PASSWORD 'mate_app'; \
+#      GRANT CONNECT ON DATABASE metaplatform TO mate_app;"
+# =============================================================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: agent-team-pg
+type: Opaque
+stringData:
+  POSTGRES_USER: meta
+  POSTGRES_PASSWORD: meta
+  POSTGRES_DB: metaplatform
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: agent-team-pg
+spec:
+  serviceName: agent-team-pg
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agent-team-pg
+  template:
+    metadata:
+      labels:
+        app: agent-team-pg
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: agent-team-pg
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "meta"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-team-pg
+spec:
+  selector:
+    app: agent-team-pg
+  ports:
+    - port: 5432
+      targetPort: 5432

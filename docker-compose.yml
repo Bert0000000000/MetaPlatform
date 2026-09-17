@@ -848,7 +848,21 @@ services:
       context: ./mate-platform-backend
       dockerfile: packages/mate-tech-agent-team/Dockerfile
     image: mate-tech-agent-team:dev
-    container_name: mate-tech-agent-team
+    # **刻意没有 container_name**（MP-REPLICA-READINESS-01）。
+    #
+    # 固定容器名让"起第二个副本"这件事**物理上做不到**：compose 会直接报
+    # 名字冲突。而在它之前，本服务的租约 / 跨副本取消 / 事件续传这些性质
+    # 全是"只在单进程下成立"的——多副本从来没有真实存在过。
+    #
+    # 去掉之后 `docker compose up -d --scale mate-tech-agent-team=3` 即可。
+    # 服务名仍是网络别名（别的服务按 `mate-tech-agent-team:8013` 找它不受影响），
+    # 只有容器名变成 compose 生成的 `<项目>-mate-tech-agent-team-N`。
+    #
+    # ⚠️ 注意：**不要**再给这个服务加 `ports:` 的固定宿主端口后再 scale
+    # —— 多个副本抢同一个宿主端口会冲突。本地多副本请走上面那条 scale 命令
+    # （不发布宿主端口，副本之间通过服务名互访）。
+    deploy:
+      replicas: 1
     environment:
       LEGACY_LOGIN_COMPAT: "false"
       INSECURE_SKIP_SIGNATURE: "false"

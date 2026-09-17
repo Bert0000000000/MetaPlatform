@@ -1,0 +1,33 @@
+apiVersion: v2
+name: agent-team
+description: |
+  Mate Platform Agent 产品层（mate-tech-agent-team）：超级大脑（langgraph 任务图）
+  + 数字员工运行时。本 chart 是 `MP-REPLICA-READINESS-01` 的交付——在此之前
+  这个服务**从来没能起过第二个副本**（compose 用固定 container_name、
+  `infra/helm/charts/` 下没有它的 chart、K8s 集群上零 MetaPlatform workload）。
+
+  它同时是 B-2/B-1/B-3 判据的前置：租约、跨副本取消、事件续传这些性质，
+  只有在"真的有两个以上副本同时在跑"时才有意义。
+
+type: application
+version: 0.1.0
+appVersion: "2.1.0"
+
+home: https://github.com/Bert0000000000/MetaPlatform
+sources:
+  - https://github.com/Bert0000000000/MetaPlatform
+
+keywords:
+  - agent
+  - agent-team
+  - langgraph
+  - hitl
+  - mateplatform
+
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local
+
+annotations:
+  category: AI
+  licenses: Apache-2.0

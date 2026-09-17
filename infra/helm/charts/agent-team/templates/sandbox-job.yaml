@@ -1,0 +1,95 @@
+{{- if .Values.sandboxJob.enabled }}
+# =============================================================================
+# B-8 / MP-AGENT-SANDBOX-ISOLATION-01: 外部 Runtime 的 K8s Job
+# =============================================================================
+# 每次外部 CLI 任务一个**独立 Job**。与 A-4 的近端 subprocess 形态是**同一套
+# 断言**——判据还是"子进程看不到任何宿主凭据"，只是这回那个"子进程"是一个
+# 一次性 Pod：
+#
+#   * **独立 ServiceAccount**，且 automountServiceAccountToken: false
+#     （拿不到 API server 的 token，也就无法反过来读别的 Secret）
+#   * 环境变量**只有白名单那几项**（由 sandbox_env.SAFE_ENV_ALLOWLIST 定义）
+#     —— 这里刻意**不** envFrom 服务自己的 ConfigMap / Secret：
+#     宿主 DSN 与 Service Secret 根本不出现在这个 Pod 的定义里
+#   * 只读根 + emptyDir 工作区 / seccomp RuntimeDefault / 非 root / drop ALL
+#   * CPU / 内存限额 + activeDeadlineSeconds（超时即杀）
+#   * 配套的 NetworkPolicy 在上面那个文件里：**默认拒绝一切出站**
+# =============================================================================
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.sandboxJob.name }}
+  labels:
+    {{- include "agent-team.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ .Values.sandboxJob.name }}
+spec:
+  backoffLimit: {{ .Values.sandboxJob.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.sandboxJob.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: {{ .Values.sandboxJob.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.sandboxJob.name }}
+        {{- include "agent-team.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      #: **独立** ServiceAccount，且不挂 API token。
+      serviceAccountName: {{ .Values.sandboxJob.name }}
+      automountServiceAccountToken: false
+      #: **关掉 K8s 自动注入的服务发现环境变量**。这是实跑抓出来的：不关的话
+      #: 沙箱里会凭空多出 `<SVC>_SERVICE_HOST` / `<SVC>_PORT_<n>_TCP` 一大串，
+      #: 把同命名空间里有哪些服务、各自什么地址**原样告诉一段不受信的代码**。
+      #: 它们不是凭据（值里没有口令），但那是本不该给出去的信息。
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: sandbox
+          image: "{{ .Values.sandboxJob.image.registry }}/{{ .Values.sandboxJob.image.repository }}:{{ .Values.sandboxJob.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            {{- toYaml .Values.sandboxJob.command | nindent 12 }}
+          args:
+            {{- toYaml .Values.sandboxJob.args | nindent 12 }}
+          #: **白名单**（`sandbox_env.SAFE_ENV_ALLOWLIST` 的 K8s 侧对应物）。
+          #: 刻意只有编码 / 路径这类**不是凭据**的东西——A-4 的用例会按名按值
+          #: 双断言子进程里没有 DSN / Service Secret / Keycloak 配置。
+          env:
+            - name: HOME
+              value: /workspace
+            - name: TMPDIR
+              value: /tmp
+            - name: PYTHONIOENCODING
+              value: utf-8
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            - name: MATE_SANDBOX_TASK_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['job-name']
+          envFrom: []
+          resources:
+            {{- toYaml .Values.sandboxJob.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+{{- end }}

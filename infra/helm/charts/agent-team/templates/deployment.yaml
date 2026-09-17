@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agent-team.fullname" . }}
+  labels:
+    {{- include "agent-team.labels" . | nindent 4 }}
+    app.kubernetes.io/component: superbrain
+spec:
+  # **不是 1**：本 chart 存在的理由就是让这个服务能起多个副本。
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "agent-team.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: superbrain
+  template:
+    metadata:
+      labels:
+        {{- include "agent-team.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: superbrain
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "agent-team.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      {{- if .Values.topologySpreadConstraints.enabled }}
+      topologySpreadConstraints:
+        - maxSkew: {{ .Values.topologySpreadConstraints.maxSkew }}
+          topologyKey: {{ .Values.topologySpreadConstraints.topologyKey }}
+          whenUnsatisfiable: {{ .Values.topologySpreadConstraints.whenUnsatisfiable }}
+          labelSelector:
+            matchLabels:
+              {{- include "agent-team.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: superbrain
+      {{- end }}
+      containers:
+        - name: agent-team
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "agent-team.fullname" . }}
+          env:
+            # 硬规则 5：生产 profile 不许回落到 legacy 登录 / 跳过签名校验。
+            - name: LEGACY_LOGIN_COMPAT
+              value: "false"
+            - name: INSECURE_SKIP_SIGNATURE
+              value: "false"
+            # 硬规则 12：DSN 与客户端密钥**只从 Secret 来**，不写进 values。
+            - name: MATE_AGENT_TEAM_ADMIN_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretRef.name }}
+                  key: {{ .Values.secretRef.keys.adminDsn }}
+            - name: MATE_AGENT_TEAM_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretRef.name }}
+                  key: {{ .Values.secretRef.keys.appDsn }}
+            - name: SERVICE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretRef.name }}
+                  key: {{ .Values.secretRef.keys.serviceClientSecret }}
+          {{- if .Values.healthcheck.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.healthcheck.path }}
+              port: {{ .Values.healthcheck.port }}
+            initialDelaySeconds: {{ .Values.healthcheck.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.healthcheck.startup.periodSeconds }}
+            failureThreshold: {{ .Values.healthcheck.startup.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.healthcheck.path }}
+              port: {{ .Values.healthcheck.port }}
+            initialDelaySeconds: {{ .Values.healthcheck.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.healthcheck.readiness.periodSeconds }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.healthcheck.path }}
+              port: {{ .Values.healthcheck.port }}
+            initialDelaySeconds: {{ .Values.healthcheck.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.healthcheck.liveness.periodSeconds }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
