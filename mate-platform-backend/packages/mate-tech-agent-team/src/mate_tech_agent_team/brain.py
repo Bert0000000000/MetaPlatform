@@ -25,8 +25,13 @@ from uuid import uuid4
 from langgraph.checkpoint.base import BaseCheckpointSaver
 
 from .artifact_store import ArtifactStore
-from .audit import AUDIT_APPROVAL, AuditLog
-from .authority import Envelope, actor_of, resolve_initiator_envelope
+from .audit import AUDIT_APPROVAL, AuditSink
+from .authority import (
+    AUTHORITY_POLICY_VERSION,
+    Envelope,
+    actor_of,
+    resolve_initiator_envelope,
+)
 from .checkpoint import thread_id_for
 from .delegation import DELEGATION_STATE_KEY, RunDelegation, configured_ttl
 from .graph import build_brain_graph
@@ -115,7 +120,7 @@ class BrainService:
         team_bus: TeamBus,
         artifacts: ArtifactStore,
         max_parallel: int = 3,
-        audit: AuditLog | None = None,
+        audit: AuditSink | None = None,
         retry_policy: RetryPolicy | None = None,
     ) -> None:
         self._planner_for = planner_for
@@ -133,7 +138,7 @@ class BrainService:
         self._retry_policy = retry_policy if retry_policy is not None else RetryPolicy()
         #: 审计账本（硬规则 #9）。默认复用闸门那一本——派活 / 越权 / 审批落在
         #: 同一本账上，读的时候不必记得去两个地方捞。
-        self.audit: AuditLog = audit if audit is not None else team_bus.audit
+        self.audit: AuditSink = audit if audit is not None else team_bus.audit
 
     def _config(self, tenant_id: str, run_id: str) -> dict:
         return {"configurable": {"thread_id": thread_id_for(tenant_id, run_id)}}
@@ -287,12 +292,15 @@ class BrainService:
             out = await graph.ainvoke(None, cfg)
         # 审批落审计行（硬规则 #9）：谁批的、批的是哪一轮、批还是驳。
         # 记在**闸门真的动了之后**——被 409 挡下的确认不是一次审批。
-        self.audit.append(
+        await self.audit.append(
             action=AUDIT_APPROVAL,
             tenant_id=tenant_id,
             actor=ctx.actor,
             run_id=run_id,
             outcome="approved" if approved else "rejected",
+            decision="approved" if approved else "rejected",
+            approver_id=ctx.actor,
+            policy_version=AUTHORITY_POLICY_VERSION,
             detail={"scope": "run", "level": "plan_gate"},
         )
         return dict(out)

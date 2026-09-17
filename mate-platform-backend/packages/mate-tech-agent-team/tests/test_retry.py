@@ -234,7 +234,7 @@ async def test_retrying_does_not_dispatch_the_task_again() -> None:
     state = await service.start(tenant_id=TENANT, goal="分析本月异常订单", user_token=ADMIN_TOKEN)
     assert state["results"]["t1"]["attempts"] == 3  # 真的重试了
 
-    spawns = bus.audit.records(tenant_id=TENANT, action=AUDIT_SPAWN)
+    spawns = await bus.audit.records(tenant_id=TENANT, action=AUDIT_SPAWN)
     assert len(spawns) == 2, f"派活行数 = {len(spawns)}，重试把派活也重跑了"
     task_ids = sorted(row.task_id for row in spawns)
     assert task_ids == sorted(
@@ -262,7 +262,7 @@ async def test_an_escalated_node_is_not_re_executed() -> None:
     # 运行时一次都没碰它：越权 = 未执行，与重试无关
     assert "t2" not in runtime.calls, runtime.calls
     # 越权审计**只落一行**（重跑一次就会变两行）
-    escalations = bus.audit.records(tenant_id=TENANT, action=AUDIT_ESCALATION)
+    escalations = await bus.audit.records(tenant_id=TENANT, action=AUDIT_ESCALATION)
     assert len(escalations) == 1, f"越权审计行 = {len(escalations)}，节点被重跑了"
 
 

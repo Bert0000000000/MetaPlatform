@@ -277,13 +277,17 @@ async def agentTeamGetRunAudit(request: Request, run_id: str) -> AuditListModel:
 
     "落了吗"要能看见，否则等于没落。先按 run 的存在性判 404（跨租户同码），
     再只回**本租户**的行——审计行不能成为一条绕过 run 隔离的读路径。
+
+    A-1 起这批行来自**持久账本**（带哈希链）而不是进程内列表：重启后再查同一轮，
+    拿到的是同一批行。租户取自令牌（``_tid``），不是查询参数——所以这里没有
+    "换一个 tenant_id 就能读别人"的入口。
     """
     tenant_id = _tid(request)
     try:
         await get_run_control().refresh(tenant_id=tenant_id, run_id=run_id)
     except RunNotFound as exc:
         raise HTTPException(status_code=404, detail="run not found") from exc
-    rows = get_brain_service().audit.records(tenant_id=tenant_id, run_id=run_id)
+    rows = await get_brain_service().audit.records(tenant_id=tenant_id, run_id=run_id)
     return AuditListModel(items=[AuditRecordModel(**row.to_dict()) for row in rows])
 
 

@@ -186,7 +186,12 @@ class ChannelMessageModel(BaseModel):
 
 
 class AuditRecordModel(BaseModel):
-    """一行审计（硬规则 #9）：派活 / 越权转 proposal / 审批。"""
+    """一行审计（硬规则 #9）：派活 / 越权转 proposal / 审批。
+
+    A-1（`MP-AUDIT-LEDGER-01`）起这批字段是**可取证**的那一份：``sequence`` /
+    ``previous_hash`` / ``event_hash`` 构成按租户的哈希链——审计员拿到整批行
+    可以自己重算摘要，任何一行被改过都对不上。
+    """
 
     audit_id: str
     action: str
@@ -198,6 +203,17 @@ class AuditRecordModel(BaseModel):
     outcome: str = ""
     detail: dict[str, Any] = Field(default_factory=dict)
     at: str
+    sequence: int = 0
+    event_id: str = ""
+    agent_profile_revision: str = ""
+    decision: str = ""
+    approver_id: str = ""
+    authority_before: dict[str, Any] = Field(default_factory=dict)
+    authority_after: dict[str, Any] = Field(default_factory=dict)
+    policy_version: str = ""
+    trace_id: str = ""
+    previous_hash: str = ""
+    event_hash: str = ""
 
 
 class AuditListModel(BaseModel):

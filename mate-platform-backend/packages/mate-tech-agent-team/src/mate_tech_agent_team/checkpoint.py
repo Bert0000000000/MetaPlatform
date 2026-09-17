@@ -55,11 +55,12 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON {table} TO {app_role};
 
 def bootstrap(admin_dsn: str, app_role: str = "mate_app", schema: str = SCHEMA) -> None:
     """建 schema + langgraph 表 + 员工身份表 + 任务实例表 + 产出物表 + 协作面表 +
-    RLS 策略。幂等。
+    审计账本表 + RLS 策略。幂等。
 
     必须以 **admin** 身份调用——见模块 docstring 第 1 条。
     """
     from .artifact_store import bootstrap_artifacts
+    from .audit import bootstrap_audit
     from .coordination import bootstrap_coordination
     from .profile_store import bootstrap_profiles
     from .team_task_store import bootstrap_tasks
@@ -82,6 +83,8 @@ def bootstrap(admin_dsn: str, app_role: str = "mate_app", schema: str = SCHEMA) 
         # 它的表名不带 schema 前缀，落在上面的 search_path 里——**建表位置只有
         # 这一处说了算**，``coordination`` 那份默认值只用于不指定 schema 的调用。
         bootstrap_coordination(conn, app_role=app_role)
+        # A-1 / MP-AUDIT-LEDGER-01：持久审计账本（append-only + 按租户哈希链）。
+        bootstrap_audit(conn, app_role=app_role)
 
 
 def _guc_statement(tenant_id: str) -> tuple[str, tuple[str]]:

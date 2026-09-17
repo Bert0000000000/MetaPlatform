@@ -316,6 +316,45 @@ components:
         at:
           type: string
           description: 记录时刻（ISO8601）
+        sequence:
+          type: integer
+          description: |
+            租户内单调序号（A-1 起）。链按租户成链，序号是链接起来的骨架：
+            断号 = 有行被删。
+        event_id:
+          type: string
+          description: 事件 id（投递到 Outbox 时用它做幂等键）
+        agent_profile_revision:
+          type: string
+          description: 判定发生时该员工定义的修订号（空串 = 该员工无修订号）
+        decision:
+          type: string
+          description: 判定结论（granted / escalated / approved / rejected …）
+        approver_id:
+          type: string
+          description: 审批人（令牌 sub）；非审批动作是空串
+        authority_before:
+          type: object
+          additionalProperties: true
+          description: 判定**之前**的权限包络（四维定序）
+        authority_after:
+          type: object
+          additionalProperties: true
+          description: 判定**之后**的权限包络（收窄后的那一份）
+        policy_version:
+          type: string
+          description: 依哪一版判定口径判的（改口径就加版号，历史行仍可解释）
+        trace_id:
+          type: string
+          description: OTel trace id（硬规则 #9：审计与 trace 可互查）
+        previous_hash:
+          type: string
+          description: 该租户上一条的 event_hash（链首为 64 个 0）
+        event_hash:
+          type: string
+          description: |
+            sha256(previous_hash ‖ 规范化正文)。**改这一行就对不上**——审计员
+            可以用这一列自己重算，不必信任服务端结论。
     AuditList:
       type: object
       required: [items]
@@ -724,6 +763,8 @@ paths:
         硬规则 #9：每次**派活**、**越权转 proposal**、**审批**都落一行审计。
         这里把该 run 的行读出来当证据——"落了吗"要能看见，否则等于没落。
         只回本租户的行（跨租户不可见，与 run 的同一条隔离口径）。
+        A-1 起这批行来自**持久账本**：重启后同一轮仍查得到，且按租户带哈希链
+        （`sequence` / `previous_hash` / `event_hash`）——任何一行被改过都可检出。
       tags: [agent-team]
       operationId: agentTeamGetRunAudit
       parameters:

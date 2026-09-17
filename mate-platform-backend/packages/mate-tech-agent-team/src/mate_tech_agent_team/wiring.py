@@ -19,9 +19,11 @@ from mate_clients.llmgw import LlmgwClient
 from mate_clients.mcp.tools import McpToolsClient
 from mate_clients.security import BearerAuth
 from mate_platform.marketplace.skillhub.store import SkillHubStore
+from mate_platform.messaging.outbox import OutboxWriter
 
 from .a2a.outbound import A2AOutboundRuntime, build_a2a_outbound_client
 from .artifact_store import PgArtifacts
+from .audit import AuditSink, PgAuditLedger
 from .brain import BrainService, RunContext
 from .checkpoint import SCHEMA as CHECKPOINT_SCHEMA
 from .checkpoint import PgCheckpointerProvider, bootstrap
@@ -101,7 +103,12 @@ def build_registry(store: ProfileStore | None = None) -> ProfileRegistry:
     return ProfileRegistry(store=store or build_profile_store())
 
 
-def build_team_bus(registry: ProfileRegistry | None = None, *, dsn: str | None = None) -> TeamBus:
+def build_team_bus(
+    registry: ProfileRegistry | None = None,
+    *,
+    dsn: str | None = None,
+    audit: AuditSink | None = None,
+) -> TeamBus:
     """派活闸门（1.1 任务 4/5）+ 消息通道（1.2 任务 2）。
 
     深度的默认值对齐 Codex 的 ``agents.max_depth`` 与 Claude Code 的 3 层；
@@ -109,12 +116,26 @@ def build_team_bus(registry: ProfileRegistry | None = None, *, dsn: str | None =
 
     任务实例（含 ``inbox``）落 PG：HTTP 面的 ``send`` 与员工侧的 drain 可能
     不在同一个进程里跑，内存版会让消息投进虚空。
+
+    ``audit`` 默认是进程内账本（与 1.4 起逐字一致）；生产由 :func:`build_service`
+    换成 PG 账本（A-1）。
     """
     return TeamBus(
         registry=registry or build_registry(),
         max_depth=int(os.getenv("MATE_AGENT_TEAM_MAX_DEPTH", str(DEFAULT_MAX_DEPTH))),
         tasks=PgTeamTasks(dsn or required_dsn(), schema=CHECKPOINT_SCHEMA),
+        audit=audit,
     )
+
+
+def build_audit_ledger(*, outbox: OutboxWriter | None = None) -> PgAuditLedger:
+    """持久审计账本（A-1 / `MP-AUDIT-LEDGER-01`）。
+
+    投递**复用平台既有 Outbox**（PLATFORM-EVENT-01 的 ``OutboxWriter`` 接口）：
+    本服务不新造总线，也不自带一张 outbox 表——要往外广播就在装配时注入一个
+    写入器；没注入就只落库（仍然可查、可取证，只是不广播）。
+    """
+    return PgAuditLedger(required_dsn(), schema=CHECKPOINT_SCHEMA, outbox=outbox)
 
 
 def build_artifact_store() -> PgArtifacts:
@@ -430,11 +451,15 @@ def build_service(
             working_root=os.getenv("MATE_AGENT_TEAM_RUNTIME_ROOT") or None,
         )
 
+    #: 一本账：闸门与大脑**共享同一个**审计账本实例。两个实例 = 派活与审批
+    #: 落在两本账上，读的时候就得记得去两处捞（且哈希链会断成两条）。
+    bus = team_bus or build_team_bus(registry, audit=build_audit_ledger())
     return BrainService(
         planner_for=planner_for,
         runtime_for=runtime_for,
         checkpointer=PgCheckpointerProvider(required_dsn()),
-        team_bus=team_bus or build_team_bus(registry),
+        team_bus=bus,
+        audit=bus.audit,
         artifacts=artifacts or build_artifact_store(),
         max_parallel=int(os.getenv("MATE_AGENT_TEAM_MAX_PARALLEL", "3")),
         # 1.5 任务 4：失败节点（运行时那一次调用）的重试策略。
@@ -461,6 +486,7 @@ __all__ = [
     "RuntimeRouter",
     "build_a2a_outbound_runtime",
     "build_artifact_store",
+    "build_audit_ledger",
     "build_profile_store",
     "build_registry",
     "build_retry_policy",
