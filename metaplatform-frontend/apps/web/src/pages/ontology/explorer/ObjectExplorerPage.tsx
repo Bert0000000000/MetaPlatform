@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Descriptions, Input, Tag, Timeline, Toast, Tree } from '@douyinfe/semi-ui';
 import { useSearchParams } from 'react-router-dom';
-import { Copy, Download, ExternalLink, RefreshCw, Search } from 'lucide-react';
+import { ArrowLeft, Copy, Download, ExternalLink, Play, RefreshCw, Search } from 'lucide-react';
 import {
   domainOfObjectType,
   getIndividual,
@@ -17,6 +17,8 @@ import {
   type SearchAroundGroup,
 } from '@/api/ont/kernel';
 import { DataTablePro, EmptyState, FilterBar, SheetDetail, SplitPane } from '@/components/skeleton';
+import ActionFormDrawer from './ActionFormDrawer';
+import ProposalConfirmDrawer from '../components/ProposalConfirmDrawer';
 import './explorer.css';
 import '../ontology.css';
 
@@ -62,6 +64,10 @@ export default function ObjectExplorerPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [relations, setRelations] = useState<SearchAroundGroup[]>([]);
   const [audit, setAudit] = useState<ActionAuditRow[]>([]);
+  /** 沿关系跳转的返回栈（面包屑）：栈顶是来处。 */
+  const [trail, setTrail] = useState<KernelIndividual[]>([]);
+  const [actionOpen, setActionOpen] = useState(false);
+  const [actionProposalId, setActionProposalId] = useState<string | null>(null);
 
   const selectedType = useMemo(
     () => types.find((t) => t.rid === selectedRid) ?? null,
@@ -202,9 +208,8 @@ export default function ObjectExplorerPage() {
     ];
   }, [selectedType]);
 
-  // ── 详情浮层数据 ──
-  const openDetail = useCallback(async (row: KernelIndividual) => {
-    setDetail(row);
+  /** 拉取某对象的关系与变更记录（打开、跳转、提案执行后共用）。 */
+  const reloadDetail = useCallback(async (row: KernelIndividual) => {
     setDetailLoading(true);
     setRelations([]);
     setAudit([]);
@@ -220,10 +225,49 @@ export default function ObjectExplorerPage() {
     }
   }, []);
 
+  // ── 详情浮层数据 ──
+  const openDetail = useCallback(
+    (row: KernelIndividual) => {
+      setDetail(row);
+      setTrail([]);
+      void reloadDetail(row);
+    },
+    [reloadDetail],
+  );
+
+  /** 沿关系跳到关联对象：把当前对象压栈，便于返回。 */
+  const openRelated = useCallback(
+    async (peerRid: string) => {
+      if (!detail || !peerRid) return;
+      const from = detail;
+      try {
+        const one = await getIndividual(peerRid);
+        setTrail((prev) => [...prev, from]);
+        setDetail(one);
+        void reloadDetail(one);
+      } catch (e) {
+        Toast.error(e instanceof Error ? e.message : '关联对象打开失败');
+      }
+    },
+    [detail, reloadDetail],
+  );
+
+  /** 返回上一个对象（出栈）。 */
+  const goBack = useCallback(() => {
+    setTrail((prev) => {
+      if (prev.length === 0) return prev;
+      const prevItem = prev[prev.length - 1];
+      setDetail(prevItem);
+      void reloadDetail(prevItem);
+      return prev.slice(0, -1);
+    });
+  }, [reloadDetail]);
+
   const closeDetail = useCallback(() => {
     setDetail(null);
     setRelations([]);
     setAudit([]);
+    setTrail([]);
   }, []);
 
   const exportCsv = useCallback(() => {
@@ -407,20 +451,49 @@ export default function ObjectExplorerPage() {
       </SplitPane>
 
       <SheetDetail
-        title="对象详情"
+        title={
+          trail.length > 0 ? (
+            <span className="mp-explorer-trail">
+              {trail.map((t) => (
+                <span key={t.rid} className="mp-explorer-trail-step">
+                  {t.primary_key || t.rid}
+                </span>
+              ))}
+              <span className="mp-explorer-trail-current">{detail?.primary_key || detail?.rid}</span>
+            </span>
+          ) : (
+            '对象详情'
+          )
+        }
         open={detail !== null}
         onClose={closeDetail}
         footer={
           <>
+            {trail.length > 0 ? (
+              <Button
+                icon={<ArrowLeft size={15} strokeWidth={1.5} />}
+                onClick={goBack}
+              >
+                返回
+              </Button>
+            ) : (
+              <Button
+                icon={<Copy size={15} strokeWidth={1.5} />}
+                onClick={() => {
+                  if (!detail) return;
+                  void navigator.clipboard?.writeText(detail.rid);
+                  Toast.success('RID 已复制');
+                }}
+              >
+                复制 RID
+              </Button>
+            )}
             <Button
-              icon={<Copy size={15} strokeWidth={1.5} />}
-              onClick={() => {
-                if (!detail) return;
-                void navigator.clipboard?.writeText(detail.rid);
-                Toast.success('RID 已复制');
-              }}
+              icon={<Play size={15} strokeWidth={1.5} />}
+              disabled={!detail}
+              onClick={() => setActionOpen(true)}
             >
-              复制 RID
+              执行动作
             </Button>
             <Button
               theme="solid"
@@ -493,6 +566,24 @@ export default function ObjectExplorerPage() {
           </>
         ) : null}
       </SheetDetail>
+
+      {/* 人工执行动作：只收参数并建提案，确认与执行复用同一条 HITL 管道 */}
+      <ActionFormDrawer
+        open={actionOpen}
+        target={detail}
+        onClose={() => setActionOpen(false)}
+        onProposed={(pid) => setActionProposalId(pid)}
+      />
+      <ProposalConfirmDrawer
+        open={actionProposalId !== null}
+        proposalId={actionProposalId}
+        initialKind="action"
+        onExecuted={() => {
+          setActionProposalId(null);
+          if (detail) void reloadDetail(detail);
+        }}
+        onClosed={() => setActionProposalId(null)}
+      />
     </div>
   );
 
@@ -508,11 +599,25 @@ export default function ObjectExplorerPage() {
               {g.link_display || g.link_type_rid} · {g.direction === 'out' ? '出' : '入'} · {g.peers.length}
             </div>
             <div className="mp-explorer-rel-chips">
-              {g.peers.slice(0, 12).map((peer, index) => (
-                <Tag key={String(peer.__rid__ ?? index)} type="light">
-                  {String(peer.__display_name__ ?? peer.__rid__ ?? `#${index + 1}`)}
-                </Tag>
-              ))}
+              {g.peers.slice(0, 12).map((peer, index) => {
+                const peerRid = peer.__rid__ ? String(peer.__rid__) : '';
+                const label = String(peer.__display_name__ ?? peerRid ?? `#${index + 1}`);
+                return peerRid ? (
+                  <button
+                    key={peerRid}
+                    type="button"
+                    className="mp-explorer-rel-chip"
+                    title={peerRid}
+                    onClick={() => void openRelated(peerRid)}
+                  >
+                    {label}
+                  </button>
+                ) : (
+                  <Tag key={index} type="light">
+                    {label}
+                  </Tag>
+                );
+              })}
               {g.peers.length > 12 ? <Tag type="light">+{g.peers.length - 12}</Tag> : null}
             </div>
           </div>

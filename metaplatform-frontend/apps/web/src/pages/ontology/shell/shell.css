@@ -1,5 +1,5 @@
 /*
- * 本体域壳：只负责「助手入口的落位」与全幅页的高度约束。
+ * 本体域壳：只负责全幅页的高度约束与默认留白。
  * 页面自身的排版仍由各页 css 负责。
  */
 
@@ -33,12 +33,4 @@
  */
 .mp-onto-shell-main:has(> .mp-page-full) {
   padding: 0;
-}
-
-/* 助手入口：右下角浮动，避免挤占全幅画布/表格的工具条 */
-.mp-onto-ai-dock {
-  position: absolute;
-  right: var(--mp-space-5);
-  bottom: var(--mp-space-4);
-  z-index: 40;
 }

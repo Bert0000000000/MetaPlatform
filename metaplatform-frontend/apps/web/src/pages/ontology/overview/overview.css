@@ -1,0 +1,252 @@
+/*
+ * 本体概览（A 骨架 bento）。只做版式语义；颜色/圆角/字号走 Semi 与 --mp-space-*。
+ */
+
+/* ---------- KPI bento ---------- */
+.mp-onto-ov-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--mp-space-3);
+  margin-bottom: var(--mp-space-4);
+}
+
+@media (max-width: 1180px) {
+  .mp-onto-ov-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .mp-onto-ov-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.mp-onto-ov-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+  min-width: 0;
+  padding: var(--mp-space-4);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-bg-1);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease;
+}
+
+.mp-onto-ov-kpi:hover {
+  border-color: var(--semi-color-primary);
+}
+
+.mp-onto-ov-kpi-label {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+}
+
+.mp-onto-ov-kpi-value {
+  font-size: 26px;
+  font-weight: 650;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--semi-color-text-0);
+}
+
+.mp-onto-ov-kpi-hint {
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 主列 / 侧列 ---------- */
+.mp-onto-ov-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: var(--mp-space-4);
+  align-items: start;
+}
+
+@media (max-width: 1180px) {
+  .mp-onto-ov-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.mp-onto-ov-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
+  min-width: 0;
+}
+
+/* ---------- 卡片 ---------- */
+.mp-onto-ov-card {
+  padding: var(--mp-space-4);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-bg-1);
+}
+
+.mp-onto-ov-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mp-space-3);
+  margin-bottom: var(--mp-space-3);
+}
+
+.mp-onto-ov-card-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+}
+
+.mp-onto-ov-empty {
+  font-size: 13px;
+  color: var(--semi-color-text-3);
+  padding: var(--mp-space-3) 0;
+}
+
+/* ---------- 最近变更列表 ---------- */
+.mp-onto-ov-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mp-onto-ov-list-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.4fr) auto;
+  align-items: baseline;
+  gap: var(--mp-space-3);
+  padding: var(--mp-space-2) 0;
+  border-bottom: 1px solid var(--semi-color-fill-0);
+}
+
+.mp-onto-ov-list-row:last-child {
+  border-bottom: none;
+}
+
+.mp-onto-ov-list-main {
+  font-size: 13px;
+  color: var(--semi-color-text-0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-onto-ov-list-sub {
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-onto-ov-list-time {
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- 快捷入口 ---------- */
+.mp-onto-ov-jumps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--mp-space-3);
+}
+
+@media (max-width: 760px) {
+  .mp-onto-ov-jumps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.mp-onto-ov-jump {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+  padding: var(--mp-space-3);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-bg-0);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease;
+}
+
+.mp-onto-ov-jump:hover {
+  border-color: var(--semi-color-primary);
+}
+
+.mp-onto-ov-jump-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mp-space-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+}
+
+.mp-onto-ov-jump-desc {
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+}
+
+/* ---------- 侧列：同步健康 / AI 回归 ---------- */
+.mp-onto-ov-sync {
+  display: flex;
+  align-items: baseline;
+  gap: var(--mp-space-4);
+  margin-bottom: var(--mp-space-2);
+}
+
+.mp-onto-ov-sync-ok {
+  font-size: 20px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--semi-color-success);
+}
+
+.mp-onto-ov-sync-bad {
+  font-size: 20px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--semi-color-danger);
+}
+
+.mp-onto-ov-sync-none {
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+}
+
+.mp-onto-ov-fail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--mp-space-2) 0;
+  border-top: 1px solid var(--semi-color-fill-0);
+}
+
+.mp-onto-ov-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mp-space-2);
+}
+
+/* ---------- 骨架占位 ---------- */
+.mp-onto-ov-skeleton {
+  min-height: 320px;
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-fill-0);
+}

@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Card, Checkbox, Dropdown, Input, Tabs, Tag, Toast } from '@douyinfe/semi-ui';
-import { Filter, RefreshCw, Search, Tag as TagIcon } from 'lucide-react';
+import { Button, Tabs, Tag } from '@douyinfe/semi-ui';
+import { RefreshCw } from 'lucide-react';
 import {
   domainOfObjectType,
-  listLinkTypes,
-  listObjectTypes,
-  propSlug,
-  type KernelLinkType,
-  type KernelObjectType,
+  getDatasourceSyncStatus,
+  type SyncStatusRow,
 } from '@/api/ont/kernel';
 import {
   deriveLineageGraph,
@@ -18,24 +15,16 @@ import {
   type BigDataSource,
   type BigDataSourceStatus,
 } from '@/api/ontology-bigdata';
-import { ForceGraph, LineageGraph, type ForceGraphNode, type LineageLayer } from '@/components/graph';
-import { DataTablePro, EmptyState } from '@/components/skeleton';
+import { LineageGraph, type LineageLayer } from '@/components/graph';
+import { DataTablePro, EmptyState, FilterBar, PageHeader } from '@/components/skeleton';
+import BackingDatasourcePanel from './BackingDatasourcePanel';
 import { ridTail } from '../rid';
+import '../canvas.css';
 import './datacenter.css';
 import '../ontology.css';
 
-/** 分类配色：对象域 → 5 个语义/分类 token（DESIGN-SPEC §4.3 分类两色 + 语义三色）。 */
-const DOMAIN_COLORS = [
-  'var(--semi-color-primary)',
-  'var(--semi-color-purple)',
-  'var(--semi-color-cyan)',
-  'var(--semi-color-warning)',
-  'var(--semi-color-success)',
-  'var(--semi-color-danger)',
-];
-
 const VIEWS = {
-  graph: { title: '知识图谱', hint: '拖拽节点可固定位置 · 悬停高亮邻接 · 点击查看详情' },
+  ingest: { title: '数据接入', hint: '同步健康与背挂数据源声明' },
   lineage: { title: '数据血缘', hint: '源系统 → 接入 → Paimon → Iceberg · 端到端数据流' },
   assets: { title: '资产清单', hint: '数据平台控制面登记的数据源' },
 } as const;
@@ -50,48 +39,36 @@ const STATUS_COLOR: Record<BigDataSourceStatus, 'green' | 'red' | 'amber' | 'gre
   DELETED: 'grey',
 };
 
-
 /**
  * 数据中心（DESIGN-SPEC §5 版式 F：工具条 + 全幅画布 + 浮层详情卡）。
- * 三个视图全部由真实数据驱动：
- *  - 知识图谱：ObjectType 为节点、LinkType 为边（本体即图谱）
- *  - 数据血缘：数据平台控制面 source/CDC/product 派生（deriveLineageGraph）
- *  - 资产清单：listBigDataSources 的表格
- * 原「知识图谱 / 数据中心」两个旧 tab 收敛到这里。
+ *
+ * 2026-09-17 IA 重排：
+ *  - 原「知识图谱」视图迁去「概念建模」（图里画的是模型层，不是数据层）；
+ *  - 原在「运维」的「数据接入」迁入本 tab —— 它是数据面的事，不是治理的事；
+ *  - 本 tab 因此收敛为纯数据面：接入 / 血缘 / 资产。
  */
 export default function DatacenterPage() {
-  const [view, setView] = useState<ViewKey>('graph');
+  const [view, setView] = useState<ViewKey>('ingest');
 
-  const [types, setTypes] = useState<KernelObjectType[]>([]);
-  const [links, setLinks] = useState<KernelLinkType[]>([]);
-  const [ontologyError, setOntologyError] = useState('');
-  const [ontologyLoading, setOntologyLoading] = useState(true);
+  const [syncRows, setSyncRows] = useState<SyncStatusRow[]>([]);
+  const [syncLoading, setSyncLoading] = useState(true);
 
   const [sources, setSources] = useState<BigDataSource[]>([]);
-  const [lineage, setLineage] = useState<{ nodes: ReturnType<typeof deriveLineageGraph>['nodes']; edges: ReturnType<typeof deriveLineageGraph>['edges'] }>({ nodes: [], edges: [] });
+  const [lineage, setLineage] = useState<{
+    nodes: ReturnType<typeof deriveLineageGraph>['nodes'];
+    edges: ReturnType<typeof deriveLineageGraph>['edges'];
+  }>({ nodes: [], edges: [] });
   const [assetsError, setAssetsError] = useState('');
   const [assetsLoading, setAssetsLoading] = useState(true);
 
-  const [query, setQuery] = useState('');
-  const [hiddenDomains, setHiddenDomains] = useState<string[]>([]);
-  const [showEdgeLabels, setShowEdgeLabels] = useState(false);
-  const [relayoutToken, setRelayoutToken] = useState(0);
-  const [selected, setSelected] = useState<ForceGraphNode | null>(null);
+  const [syncKeyword, setSyncKeyword] = useState('');
 
-  // 两条加载链路刻意分开：知识图谱只依赖本体内核，不该被数据平台接口拖住；
-  // 数据平台慢/挂时血缘与资产清单各自降级为空态，图谱照常可用。
-  const loadOntology = useCallback(async () => {
-    setOntologyLoading(true);
-    setOntologyError('');
-    const [typesRes, linksRes] = await Promise.allSettled([listObjectTypes(), listLinkTypes()]);
-    if (typesRes.status === 'fulfilled') {
-      setTypes(typesRes.value);
-    } else {
-      setTypes([]);
-      setOntologyError(typesRes.reason instanceof Error ? typesRes.reason.message : String(typesRes.reason));
-    }
-    setLinks(linksRes.status === 'fulfilled' ? linksRes.value : []);
-    setOntologyLoading(false);
+  // 三条链路刻意分开：同步健康只依赖本体内核，不该被数据平台接口拖住。
+  const loadSync = useCallback(async () => {
+    setSyncLoading(true);
+    const res = await getDatasourceSyncStatus();
+    setSyncRows(res);
+    setSyncLoading(false);
   }, []);
 
   const loadDataPlatform = useCallback(async () => {
@@ -119,53 +96,14 @@ export default function DatacenterPage() {
     setAssetsLoading(false);
   }, []);
 
-  const reloadAll = useCallback(() => {
-    void loadOntology();
-    void loadDataPlatform();
-  }, [loadOntology, loadDataPlatform]);
-
   useEffect(() => {
-    void loadOntology();
-  }, [loadOntology]);
+    void loadSync();
+  }, [loadSync]);
 
   useEffect(() => {
     void loadDataPlatform();
   }, [loadDataPlatform]);
 
-  // ── 本体 → 图谱 ──
-  const domains = useMemo(() => {
-    const set = new Set<string>();
-    for (const t of types) set.add(domainOfObjectType(t.rid) || 'other');
-    return Array.from(set).sort();
-  }, [types]);
-
-  const graphTypes = useMemo(
-    () =>
-      Object.fromEntries(
-        domains.map((d, i) => [d, { label: d, color: DOMAIN_COLORS[i % DOMAIN_COLORS.length] }]),
-      ) as Record<string, { label: string; color: string }>,
-    [domains],
-  );
-
-  const graphData = useMemo(() => {
-    const nodes: ForceGraphNode[] = types.map((t) => ({
-      id: t.rid,
-      label: t.display_name || propSlug(t.rid),
-      type: domainOfObjectType(t.rid) || 'other',
-    }));
-    const known = new Set(nodes.map((n) => n.id));
-    const edges = links
-      .filter((l) => known.has(l.src) && known.has(l.dst))
-      .map((l) => ({ source: l.src, target: l.dst, label: ridTail(l.rid) }));
-    return { nodes, edges };
-  }, [types, links]);
-
-  const selectedType = useMemo(
-    () => types.find((t) => t.rid === selected?.id) ?? null,
-    [types, selected],
-  );
-
-  // ── 血缘 → 分层 ──
   const lineageLayers = useMemo<LineageLayer[]>(() => {
     const titles: Record<string, string> = {
       source: '源系统',
@@ -190,6 +128,16 @@ export default function DatacenterPage() {
     [lineage],
   );
 
+  const filteredSync = useMemo(() => {
+    const kw = syncKeyword.trim().toLowerCase();
+    if (!kw) return syncRows;
+    return syncRows.filter((r) =>
+      `${r.class_rid} ${domainOfObjectType(r.class_rid)} ${r.last_error ?? ''}`
+        .toLowerCase()
+        .includes(kw),
+    );
+  }, [syncRows, syncKeyword]);
+
   const assetsColumns = useMemo(
     () => [
       {
@@ -200,7 +148,7 @@ export default function DatacenterPage() {
         render: (_: unknown, row: BigDataSource) => (
           <span>
             <span className="mp-onto-strong">{row.name}</span>
-            {row.description ? <span className="mp-dc-card-sub"> · {row.description}</span> : null}
+            {row.description ? <span className="mp-onto-canvas-card-sub"> · {row.description}</span> : null}
           </span>
         ),
       },
@@ -242,196 +190,137 @@ export default function DatacenterPage() {
     [],
   );
 
+  const meta = VIEWS[view];
+  const syncFailures = syncRows.filter((r) => (r.consecutive_failures ?? 0) > 0).length;
+
   return (
-    <div className="mp-page-full mp-datacenter">
-      <div className="mp-dc-toolbar">
-        <h2 className="mp-dc-title">{VIEWS[view].title}</h2>
-        <span className="mp-dc-meta">
-          {view === 'graph'
-            ? `${graphData.nodes.length} 类型 · ${graphData.edges.length} 关系 · 实时读取本体内核`
+    <>
+      <PageHeader
+        title={meta.title}
+        desc={
+          view === 'ingest'
+            ? syncRows.length === 0
+              ? '还没有同步记录'
+              : `${syncRows.length} 个类型的同步健康快照 · ${syncFailures} 个异常`
             : view === 'lineage'
               ? `${lineage.nodes.length} 节点 · ${lineage.edges.length} 条流 · 派生自数据平台控制面`
-              : `${sources.length} 个数据源`}
-        </span>
-
-        <Tabs
-          type="button"
-          activeKey={view}
-          tabList={[
-            { tab: '知识图谱', itemKey: 'graph' },
-            { tab: '数据血缘', itemKey: 'lineage' },
-            { tab: '资产清单', itemKey: 'assets' },
-          ]}
-          onChange={(key) => setView(key as ViewKey)}
-        />
-
-        {view === 'graph' ? (
-          <Input
-            className="mp-dc-search"
-            prefix={<Search size={14} strokeWidth={1.5} />}
-            placeholder="搜索节点…"
-            value={query}
-            onChange={setQuery}
-            showClear
-          />
-        ) : null}
-
-        <span className="mp-dc-grow" />
-
-        {view === 'graph' ? (
-          <>
-            {/* 对象域数量随租户增长（本例 27 个），做成下拉而不是铺一行 chip，守住控件预算纪律 */}
-            <Dropdown
-              trigger="click"
-              position="bottomRight"
-              render={
-                <div className="mp-dc-legend-menu">
-                  <div className="mp-dc-legend-head">
-                    <span className="mp-dc-legend-title">对象域过滤</span>
-                    <Button
-                      theme="borderless"
-                      type="primary"
-                      size="small"
-                      onClick={() => setHiddenDomains([])}
-                    >
-                      全选
-                    </Button>
-                  </div>
-                  <div className="mp-dc-legend-list">
-                    {domains.map((d) => (
-                      <Checkbox
-                        key={d}
-                        checked={!hiddenDomains.includes(d)}
-                        onChange={() =>
-                          setHiddenDomains((prev) =>
-                            prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d],
-                          )
-                        }
-                      >
-                        <span className="mp-dc-legend-chip">
-                          <span
-                            className="mp-dc-legend-dot"
-                            ref={(el) => {
-                              if (el) {
-                                el.style.setProperty('--mp-dc-dot', graphTypes[d]?.color ?? DOMAIN_COLORS[0]);
-                              }
-                            }}
-                          />
-                          {d}
-                        </span>
-                      </Checkbox>
-                    ))}
-                  </div>
-                </div>
-              }
-            >
-              <Button icon={<Filter size={15} strokeWidth={1.5} />}>
-                域过滤 · {domains.length - hiddenDomains.length}/{domains.length}
-              </Button>
-            </Dropdown>
-            <Button
-              icon={<TagIcon size={15} strokeWidth={1.5} />}
-              theme={showEdgeLabels ? 'solid' : 'light'}
-              type={showEdgeLabels ? 'primary' : 'tertiary'}
-              onClick={() => setShowEdgeLabels((v) => !v)}
-            >
-              关系标签
-            </Button>
-            <Button
-              icon={<RefreshCw size={15} strokeWidth={1.5} />}
-              onClick={() => {
-                setRelayoutToken((n) => n + 1);
-                Toast.info('已重新布局');
-              }}
-            >
-              重新布局
-            </Button>
-          </>
-        ) : (
+              : `${sources.length} 个数据源`
+        }
+        actions={
           <Button
             icon={<RefreshCw size={15} strokeWidth={1.5} />}
-            onClick={reloadAll}
-            loading={ontologyLoading}
+            loading={view === 'ingest' ? syncLoading : assetsLoading}
+            onClick={() => {
+              if (view === 'ingest') void loadSync();
+              else void loadDataPlatform();
+            }}
           >
             刷新
           </Button>
-        )}
-      </div>
+        }
+      />
 
-      <div className="mp-dc-stage">
-        {view === 'graph' ? (
-          graphData.nodes.length === 0 ? (
-            <div className="mp-dc-stage-scroll">
-              <EmptyState
-                illustration={ontologyError ? 'failure' : 'no-content'}
-                title={ontologyError ? '本体内核读取失败' : '本体里还没有对象类型'}
-                desc={ontologyError || '先在「类型建模」里创建 ObjectType 与 LinkType，图谱会自动长出来。'}
-                actions={
-                  <Button theme="solid" type="primary" onClick={() => void loadOntology()}>
-                    重试
-                  </Button>
+      <Tabs
+        type="button"
+        activeKey={view}
+        tabList={[
+          { tab: '数据接入', itemKey: 'ingest' },
+          { tab: '数据血缘', itemKey: 'lineage' },
+          { tab: '资产清单', itemKey: 'assets' },
+        ]}
+        onChange={(key) => setView(key as ViewKey)}
+      />
+
+      <div className="mp-onto-canvas-stage">
+        {view === 'ingest' ? (
+          <div className="mp-onto-canvas-scroll">
+            <section className="mp-dc-section">
+              <h3 className="mp-dc-section-title">背挂数据源</h3>
+              <p className="mp-dc-section-desc">{VIEWS.ingest.hint}</p>
+              <BackingDatasourcePanel />
+            </section>
+
+            <section className="mp-dc-section">
+              <h3 className="mp-dc-section-title">同步健康</h3>
+              <p className="mp-dc-section-desc">
+                每个对象类型的最近一轮同步结果；调度器未启动时为空。
+              </p>
+              <FilterBar
+                search={{
+                  value: syncKeyword,
+                  onChange: setSyncKeyword,
+                  placeholder: '过滤类型、域或错误信息',
+                }}
+              />
+              <DataTablePro<SyncStatusRow>
+                columns={[
+                  {
+                    title: '对象类型',
+                    dataIndex: 'class_rid',
+                    width: 320,
+                    ellipsis: true,
+                    render: (_: unknown, row: SyncStatusRow) => (
+                      <span>
+                        <span className="mp-onto-strong">{ridTail(row.class_rid)}</span>{' '}
+                        <Tag size="small" type="light">{domainOfObjectType(row.class_rid)}</Tag>
+                      </span>
+                    ),
+                  },
+                  {
+                    title: '最近同步',
+                    dataIndex: 'last_run_at',
+                    width: 190,
+                    ellipsis: true,
+                    render: (v: string | undefined) => (
+                      <span className="mp-onto-muted">{v ?? '从未'}</span>
+                    ),
+                  },
+                  {
+                    title: '耗时',
+                    dataIndex: 'last_duration_ms',
+                    width: 110,
+                    render: (v: number | undefined) =>
+                      v === undefined || v === null ? (
+                        <span className="mp-onto-faint">—</span>
+                      ) : (
+                        `${v} ms`
+                      ),
+                  },
+                  {
+                    title: '连续失败',
+                    dataIndex: 'consecutive_failures',
+                    width: 110,
+                    sorter: (a: SyncStatusRow, b: SyncStatusRow) =>
+                      (a.consecutive_failures ?? 0) - (b.consecutive_failures ?? 0),
+                    render: (v: number | undefined) => <span className="mp-onto-num">{v ?? 0}</span>,
+                  },
+                  {
+                    title: '最近错误',
+                    dataIndex: 'last_error',
+                    ellipsis: true,
+                    render: (v: string | undefined) => (
+                      <span className="mp-onto-muted">{v || '—'}</span>
+                    ),
+                  },
+                ]}
+                dataSource={filteredSync}
+                rowKey="class_rid"
+                loading={syncLoading}
+                empty={
+                  <EmptyState
+                    illustration="no-content"
+                    title="还没有同步记录"
+                    desc="在上方声明背挂数据源并触发同步后，这里会出现健康快照。"
+                  />
                 }
               />
-            </div>
-          ) : (
-            <>
-              <ForceGraph
-                nodes={graphData.nodes}
-                edges={graphData.edges}
-                types={graphTypes}
-                hiddenTypes={hiddenDomains}
-                showEdgeLabels={showEdgeLabels}
-                searchQuery={query}
-                relayoutToken={relayoutToken}
-                selectedId={selected?.id}
-                onSelect={setSelected}
-                height={640}
-              />
-              <div className="mp-dc-stage-hint">{VIEWS.graph.hint}</div>
-              {selected ? (
-                <Card
-                  className="mp-dc-card"
-                  title={
-                    <span className="mp-dc-card-head">
-                      <span className="mp-dc-card-name">{selected.label}</span>
-                      <Button
-                        theme="borderless"
-                        type="tertiary"
-                        size="small"
-                        onClick={() => setSelected(null)}
-                      >
-                        关闭
-                      </Button>
-                    </span>
-                  }
-                >
-                  <div className="mp-dc-card-sub">
-                    {graphTypes[selected.type]?.label ?? selected.type} ·{' '}
-                    {graphData.edges.filter((e) => e.source === selected.id || e.target === selected.id).length} 个关系
-                  </div>
-                  <div className="mp-dc-card-props">
-                    {selectedType ? (
-                      <>
-                        <Tag type="light">{selectedType.properties.length} 属性</Tag>
-                        <Tag type="light">{selectedType.primary_key.join(' + ') || '无主键'}</Tag>
-                        {selectedType.status ? <Tag type="light">{selectedType.status}</Tag> : null}
-                        {(selectedType.interfaces ?? []).slice(0, 3).map((i) => (
-                          <Tag key={i} type="light">
-                            {ridTail(i)}
-                          </Tag>
-                        ))}
-                      </>
-                    ) : null}
-                  </div>
-                </Card>
-              ) : null}
-            </>
-          )
+            </section>
+          </div>
         ) : null}
 
         {view === 'lineage' ? (
           lineageLayers.length === 0 ? (
-            <div className="mp-dc-stage-scroll">
+            <div className="mp-onto-canvas-scroll">
               <EmptyState
                 illustration="no-content"
                 title="暂无可派生的血缘"
@@ -441,13 +330,13 @@ export default function DatacenterPage() {
           ) : (
             <>
               <LineageGraph layers={lineageLayers} flows={lineageFlows} />
-              <div className="mp-dc-stage-hint">{VIEWS.lineage.hint}</div>
+              <div className="mp-onto-canvas-hint">{VIEWS.lineage.hint}</div>
             </>
           )
         ) : null}
 
         {view === 'assets' ? (
-          <div className="mp-dc-stage-scroll">
+          <div className="mp-onto-canvas-scroll">
             <DataTablePro<BigDataSource>
               columns={assetsColumns}
               dataSource={sources}
@@ -457,13 +346,17 @@ export default function DatacenterPage() {
                 assetsError ? (
                   <EmptyState illustration="failure" title="数据源加载失败" desc={assetsError} />
                 ) : (
-                  <EmptyState illustration="no-content" title="还没有登记数据源" desc="在数据平台接入第一份数据源后，这里会出现资产清单。" />
+                  <EmptyState
+                    illustration="no-content"
+                    title="还没有登记数据源"
+                    desc="在数据平台接入第一份数据源后，这里会出现资产清单。"
+                  />
                 )
               }
             />
           </div>
         ) : null}
       </div>
-    </div>
+    </>
   );
 }

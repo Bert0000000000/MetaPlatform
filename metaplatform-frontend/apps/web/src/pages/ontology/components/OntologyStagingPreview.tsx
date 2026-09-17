@@ -1,11 +1,12 @@
 // OntologyStagingPreview - 渲染 ProposalPreview 的可视化预览
 // (MP-ONT-PROPOSAL-01)。
 //
-// 根据 preview.kind 走 4 个分支：
+// 根据 preview.kind 走分支：
 //   - model_type:        属性表 + 主键 + interfaces + 反向引用
 //   - create_instance:   字段值 + class 关联 + 验证状态
 //   - merge_suggestion:  source/target 对比 + 属性映射
 //   - action:            target_objects + 参数预览
+//   - edit_set:          人工 Action 表单的即时提案（字段平铺在 preview 顶层）
 //
 // 每个分支底部挂一份 ImpactSummary（受影响 Individual / LinkInstance / 跨 schema 引用）。
 // 严格使用 CSS variables + 原生 <button> / <input> / <select>，不引 Semi Button（dev 模式 onClick 截 noop）。
@@ -15,7 +16,7 @@ import {
   Layers, Link2, ListTree, Target, Zap,
 } from 'lucide-react';
 import type {
-  ActionPreview, CreateInstancePreview, ImpactSummary, KernelProperty,
+  ActionPreview, CreateInstancePreview, EditSetDiff, ImpactSummary, KernelProperty,
   MergeSuggestionPreview, ModelTypePreview, ProposalPreview,
 } from '@/api/ont/kernel';
 
@@ -34,6 +35,7 @@ const KIND_META: Record<string, { label: string; tone: string; icon: React.React
   create_instance:   { label: '创建实例 (create_instance)', tone: 'success', icon: <Columns3 /> },
   merge_suggestion:  { label: '合并建议 (merge_suggestion)', tone: 'warning', icon: <GitMerge /> },
   action:            { label: '执行 Action (action)',    tone: 'danger',  icon: <Zap /> },
+  edit_set:          { label: '执行动作 (edit_set)',     tone: 'danger',  icon: <Zap /> },
 };
 
 // 跨 schema 引用：rid → 简短的 rid 末段。返回 {rid, shortLabel, type}，type 推断 obj/at/lt/...
@@ -65,7 +67,7 @@ export default function OntologyStagingPreview({ preview }: OntologyStagingPrevi
           <span className="mp-inline-flex">{meta.icon}</span>
           <span className="mp-fw-600 mp-text-body">{meta.label}</span>
           <span className="mp-text-sm mp-text-2">
-            id：<code className="mp-text-xs">{preview.id}</code>
+            id：<code className="mp-text-xs">{preview.id ?? preview.proposal_id}</code>
           </span>
         </div>
         {preview.status && (
@@ -94,6 +96,7 @@ export default function OntologyStagingPreview({ preview }: OntologyStagingPrevi
       {preview.kind === 'action' && preview.action && (
         <ActionSection preview={preview.action} />
       )}
+      {preview.kind === 'edit_set' && <EditSetSection preview={preview} />}
 
       {/* 通用影响说明（4 种 kind 都可能附带） */}
       {preview.impact && <ImpactSection impact={preview.impact} />}
@@ -292,6 +295,80 @@ function ActionSection({ preview }: { preview: ActionPreview }) {
       <pre className="mp-overflow-y-auto mp-border mp-rounded mp-p-3 mp-m-0 mp-text-sm mp-text-1 mp-bg-fill-0 mp-onto-code-block">
         {JSON.stringify(preview.parameters, null, 2)}
       </pre>
+    </div>
+  );
+}
+
+// ────────── edit_set（人工 Action 表单） ──────────
+//
+// 后端把 edit_set 的字段**平铺**在 preview 顶层（不像前四种套在子对象里），
+// 且 expected_diff 通常是 deferred —— 真正的操作集由函数在执行时决定。
+
+function EditSetSection({ preview }: { preview: ProposalPreview }) {
+  const params =
+    preview.parameters && typeof preview.parameters === 'object'
+      ? ((preview.parameters as { parameters?: Record<string, unknown> }).parameters ?? {})
+      : {};
+  const paramEntries = Object.entries(params);
+  const diff: EditSetDiff | undefined = preview.expected_diff;
+  const impact =
+    preview.impact_summary && typeof preview.impact_summary === 'object'
+      ? preview.impact_summary
+      : undefined;
+  const opsCount = diff?.ops?.length ?? 0;
+  const deferred = diff?.preview_source?.includes('deferred') ?? false;
+
+  return (
+    <div className="mp-onto-preview-section">
+      <SectionHeader icon={<Zap />} title="执行动作" />
+      <KV label="目标动作" value={preview.target_rid ? shortRidLabel(preview.target_rid) : '—'} />
+      {preview.action_type ? <KV label="apply 方式" value={preview.action_type} /> : null}
+
+      <h5 className="mp-fw-600 mp-text-body mp-mt-3 mp-mb-1">输入参数</h5>
+      {paramEntries.length === 0 ? (
+        <div className="mp-text-sm mp-text-2 mp-rounded mp-p-3 mp-bg-fill-0">该动作没有参数</div>
+      ) : (
+        <div className="mp-flex mp-gap-1 mp-flex-col">
+          {paramEntries.map(([k, v]) => (
+            <div
+              key={k}
+              className="mp-border mp-rounded mp-gap-2 mp-text-sm mp-flex-center mp-py-2 mp-px-3 mp-bg-1"
+            >
+              <code className="mp-text-xs mp-text-2">{shortRidLabel(k)}</code>
+              <ArrowRight className="mp-icon-12 mp-text-2" />
+              <span className="mp-fw-500">{String(v)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <h5 className="mp-fw-600 mp-text-body mp-mt-3 mp-mb-1">变更预览</h5>
+      <div className="mp-text-sm mp-text-2 mp-rounded mp-p-3 mp-bg-fill-0">
+        {deferred || opsCount === 0 ? (
+          <>
+            具体变更由动作函数在执行时决定（<code className="mp-text-xs">preview_source=deferred</code>），
+            确认前无法逐条列出。
+          </>
+        ) : (
+          <>待执行操作 {opsCount} 条</>
+        )}
+      </div>
+
+      {impact ? (
+        <>
+          <h5 className="mp-fw-600 mp-text-body mp-mt-3 mp-mb-1">影响预估</h5>
+          <div className="mp-text-sm mp-text-2 mp-rounded mp-p-3 mp-bg-fill-0">
+            预计影响 Individual：{impact.affected_individuals_estimate ?? '未知'}
+            {(impact.warnings ?? []).length > 0 ? (
+              <ul className="mp-mt-2">
+                {(impact.warnings ?? []).map((w, i) => (
+                  <li key={i}>{w}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

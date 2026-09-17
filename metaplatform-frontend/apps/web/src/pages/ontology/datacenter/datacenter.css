@@ -1,152 +1,67 @@
 /*
- * 数据中心（F 骨架 · 全屏可视化）样式。
+ * 数据中心（数据面：接入 / 血缘 / 资产）页面级样式。
+ * 画布通用件（stage / 浮层卡 / 图例）在 ../canvas.css 共享。
  */
 
-.mp-datacenter {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
+/* ---------- 分节 ---------- */
+.mp-dc-section + .mp-dc-section {
+  margin-top: var(--mp-space-6);
+  padding-top: var(--mp-space-5);
+  border-top: 1px solid var(--semi-color-border);
 }
 
-.mp-dc-toolbar {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: var(--mp-space-2);
-  flex-wrap: wrap;
-  padding: var(--mp-space-3) var(--mp-space-5) var(--mp-space-2);
-}
-
-.mp-dc-title {
-  margin: 0;
-  font-size: 15px;
+.mp-dc-section-title {
+  margin: 0 0 var(--mp-space-1);
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: -0.01em;
   color: var(--semi-color-text-0);
 }
 
-.mp-dc-meta {
+.mp-dc-section-desc {
+  margin: 0 0 var(--mp-space-3);
   font-size: 12px;
   color: var(--semi-color-text-3);
 }
 
-.mp-dc-grow {
-  flex: 1;
-  min-width: var(--mp-space-2);
-}
-
-.mp-dc-legend-menu {
-  padding: var(--mp-space-2);
-  min-width: 220px;
-  max-height: 320px;
-  overflow: auto;
-}
-
-.mp-dc-legend-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--mp-space-2);
-  padding: 0 var(--mp-space-1) var(--mp-space-1);
-}
-
-.mp-dc-legend-title {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--semi-color-text-3);
-}
-
-.mp-dc-legend-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mp-space-1);
-}
-
-.mp-dc-legend-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--mp-space-2);
-  font-size: 12.5px;
-  color: var(--semi-color-text-1);
-}
-
-.mp-dc-legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 3px;
-  flex: none;
-  background: var(--mp-dc-dot, currentColor);
-}
-
-.mp-dc-search {
-  width: 190px;
-}
-
-.mp-dc-stage {
-  flex: 1;
-  min-height: 0;
-  margin: 0 var(--mp-space-5) var(--mp-space-5);
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--semi-color-border);
-  border-radius: var(--semi-border-radius-large);
-  background: var(--semi-color-bg-1);
-  display: flex;
-  flex-direction: column;
-}
-
-.mp-dc-stage-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  padding: var(--mp-space-4);
-}
-
-.mp-dc-stage-hint {
-  position: absolute;
-  left: var(--mp-space-4);
-  bottom: var(--mp-space-3);
-  z-index: 3;
-  font-size: 11px;
-  color: var(--semi-color-text-3);
-  pointer-events: none;
-}
-
-/* 选中节点卡片（浮在画布右上角） */
-.mp-dc-card {
-  position: absolute;
-  top: var(--mp-space-4);
-  right: var(--mp-space-4);
-  width: 272px;
-  z-index: 4;
-}
-
-.mp-dc-card-head {
+/* ---------- 数据接入工具条 ---------- */
+.mp-dc-ingest-bar {
   display: flex;
   align-items: center;
   gap: var(--mp-space-2);
-  min-width: 0;
-}
-
-.mp-dc-card-name {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--semi-color-text-0);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.mp-dc-card-sub {
-  font-size: 11.5px;
-  color: var(--semi-color-text-3);
-}
-
-.mp-dc-card-props {
-  display: flex;
   flex-wrap: wrap;
-  gap: var(--mp-space-1);
-  margin-top: var(--mp-space-2);
+  margin-bottom: var(--mp-space-3);
+}
+
+.mp-dc-ingest-select {
+  min-width: 320px;
+}
+
+/* ---------- 声明数据源表单 ---------- */
+.mp-dc-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
+}
+
+.mp-dc-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+}
+
+.mp-dc-field-label {
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+
+.mp-dc-map-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--mp-space-2);
+}
+
+.mp-dc-map-arrow {
+  font-size: 12px;
+  color: var(--semi-color-text-3);
 }
