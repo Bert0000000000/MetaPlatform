@@ -67,7 +67,15 @@ from ..brain import (
 )
 from ..checkpoint import SCHEMA as CHECKPOINT_SCHEMA
 from ..checkpoint import UnfinishedRun, list_unfinished
-from ..coordination import CancelSignals, InMemoryCancelSignals, PgCancelSignals
+from ..coordination import (
+    CancelSignals,
+    InMemoryCancelSignals,
+    InMemoryRunClaims,
+    PgCancelSignals,
+    PgRunClaims,
+    RunClaims,
+    configured_claim_ttl,
+)
 from ..state import BrainState
 
 #: 运行级超时的默认值（秒）。0 = 不设超时：不是所有部署都想让长跑的计划自己过期。
@@ -182,6 +190,7 @@ class RunControl:
         poll_interval: float = DEFAULT_POLL_INTERVAL,
         run_index: RunIndex | None = None,
         signals: CancelSignals | None = None,
+        claims: RunClaims | None = None,
     ) -> None:
         self._service = service
         self._default_timeout = default_timeout
@@ -192,6 +201,10 @@ class RunControl:
         #: 取消信号的**共享通道**（1.9 任务 2）。不给就是进程内实现：单副本部署
         #: 与加这个模块之前逐字一致，多副本由 ``from_env`` 按 DSN 装配 PG 实现。
         self._signals: CancelSignals = signals if signals is not None else InMemoryCancelSignals()
+        #: 幂等认领的**共享通道**（1.9 任务 3）。同上：不给就是进程内实现。
+        self._claims: RunClaims = (
+            claims if claims is not None else InMemoryRunClaims(configured_claim_ttl())
+        )
         self._live: dict[tuple[str, str], _LiveRun] = {}
         #: 后台任务的强引用。受理制之后"跑"在请求之外，引用丢了会被 GC 掉，
         #: 表现为这一轮**静默**停在半路——没有任何报错。
@@ -206,12 +219,14 @@ class RunControl:
             default_timeout = 0.0
         admin_dsn = os.getenv(ADMIN_DSN_ENV, "")
         dsn = os.getenv(DSN_ENV, "")
+        ttl = configured_claim_ttl()
         return cls(
             service,
             default_timeout=max(default_timeout, 0.0),
             run_index=PgRunIndex(admin_dsn) if admin_dsn else None,
             # 协作面是**按租户**读写的，走 app 角色（RLS 强制）；建表另走 admin。
             signals=PgCancelSignals(dsn, schema=CHECKPOINT_SCHEMA) if dsn else None,
+            claims=PgRunClaims(dsn, schema=CHECKPOINT_SCHEMA, ttl=ttl) if dsn else None,
         )
 
     def _cancel_check(self, *, tenant_id: str, run_id: str) -> Callable[[], Awaitable[bool]]:
@@ -251,9 +266,19 @@ class RunControl:
            那个函数按 run_id 索引；执行中的它因此落在取消范围内（1.5 任务 1）。
         3. **截止时间** —— 在这里定下，由服务层连同绝对截止时刻写进状态。
 
-        **幂等的两道**：进程内用 ``_live`` 占坑（无 await，原子）；跨进程/重启用
-        确定性 run_id 查检查点。命中的那次**不新起一轮**，原样回同一个 run_id 并
-        置 ``deduplicated``。
+        **幂等的三道**（1.9 任务 3 补齐第三道）：
+
+        1. **进程内** ``_live`` 占坑 —— 无 await，原子；
+        2. **跨副本** 共享认领（:class:`RunClaims`）—— "谁先来"由数据库那一条
+           ``INSERT ... ON CONFLICT ... WHERE`` 定，不再有"两边都还没查到对方"
+           的读后写窗口；
+        3. **跨进程/重启** 确定性 run_id + 查检查点 —— 已经在库里跑过的那一轮
+           不重起。
+
+        第 2 道是 1.9 新加的：只靠第 3 道时，两个副本**同时**提交同一个键会各自
+        查到"还没有"，于是**都开跑**（键收敛到同一个地址这件事一直是对的，错的
+        是跑了两轮）。命中的那一次**不新起一轮**，原样回同一个 run_id 并置
+        ``deduplicated``。
         """
         run_id = run_id_for(tenant_id, idempotency_key) if idempotency_key else uuid4().hex
         if (tenant_id, run_id) in self._live:
@@ -261,8 +286,16 @@ class RunControl:
             return _accepted(tenant_id, run_id, deduplicated=True)
 
         live = self._open(tenant_id=tenant_id, run_id=run_id)
+        if idempotency_key and not await self._claims.claim(
+            tenant_id=tenant_id, key=idempotency_key, run_id=run_id
+        ):
+            # 另一个副本正占着这把钥匙（或者刚刚占过、还没跑完）。
+            self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+            return _accepted(tenant_id, run_id, deduplicated=True)
         if idempotency_key and await self._exists(tenant_id=tenant_id, run_id=run_id):
-            # 已经跑过的一轮（进程重启、或换个副本来的重复提交）。
+            # 已经跑过的一轮（进程重启、或换个副本来的重复提交）。认领**还回去**
+            # ——留着它会白占一把已经被用掉的钥匙，直到寿命到期。
+            await self._claims.release(tenant_id=tenant_id, key=idempotency_key)
             self._close(tenant_id=tenant_id, run_id=run_id, live=live)
             return _accepted(tenant_id, run_id, deduplicated=True)
 
@@ -274,6 +307,7 @@ class RunControl:
                 user_token=user_token,
                 max_parallel=max_parallel,
                 timeout_seconds=timeout_seconds,
+                idempotency_key=idempotency_key,
                 live=live,
             )
         )
@@ -293,6 +327,7 @@ class RunControl:
         max_parallel: int | None,
         timeout_seconds: float | None,
         live: _LiveRun,
+        idempotency_key: str = "",
     ) -> None:
         """后台把这一轮跑完。异常落成终态 ``failed``，绝不是"悄悄没了"。"""
         try:
@@ -312,6 +347,11 @@ class RunControl:
             await self._mark_failed(tenant_id=tenant_id, run_id=run_id, error=exc)
         finally:
             self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+            if idempotency_key:
+                # 认领随执行结束归还，桌面上只留**在途**的那几把钥匙（不然这张表
+                # 会随"用过的键的个数"一直涨）。被拆掉/崩掉时这一步可能没跑成，
+                # 那也没关系——认领有寿命，到期可以被接管。
+                await self._claims.release(tenant_id=tenant_id, key=idempotency_key)
 
     async def _mark_failed(self, *, tenant_id: str, run_id: str, error: Exception) -> None:
         """把后台跑挂的这一轮落成终态 ``failed``，并把错因写进状态。

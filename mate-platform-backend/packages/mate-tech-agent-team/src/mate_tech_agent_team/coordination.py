@@ -28,6 +28,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -37,6 +38,27 @@ import psycopg
 
 SCHEMA = "agent_team"
 CANCEL_TABLE = "cancel_signals"
+CLAIMS_TABLE = "run_claims"
+
+#: 认领的寿命（秒）：超过它的占坑可以被接管。0 = 立刻可接管。
+#:
+#: 为什么要有寿命：占坑随执行结束释放，但**硬崩**（进程被杀）时那条释放语句根本
+#: 没机会跑。没有寿命的话，那把钥匙就被永久锁死了——重提只会被去重到一个压根
+#: 没有检查点的 run_id（查它永远是 404），比原来那个竞态更糟。
+#:
+#: 默认 30 秒：它只需要盖住"受理 → 第一次落检查点"那段窗口（实测毫秒级，
+#: ``DEFAULT_READY_TIMEOUT`` 也才等 5 秒）。认领过期**不会**让同一把钥匙起第二轮
+#: ——到期接管之后还要再过一道"查检查点"，真跑过的那一轮照样被去重。
+DEFAULT_CLAIM_TTL_SECONDS = 30.0
+CLAIM_TTL_ENV = "MATE_AGENT_TEAM_CLAIM_TTL_SECONDS"
+
+
+def configured_claim_ttl() -> float:
+    try:
+        return max(0.0, float(os.getenv(CLAIM_TTL_ENV, str(DEFAULT_CLAIM_TTL_SECONDS))))
+    except ValueError:
+        return DEFAULT_CLAIM_TTL_SECONDS
+
 
 _CANCEL_DDL = f"""
 CREATE TABLE IF NOT EXISTS {CANCEL_TABLE} (
@@ -47,8 +69,31 @@ CREATE TABLE IF NOT EXISTS {CANCEL_TABLE} (
 )
 """
 
+_CLAIMS_DDL = f"""
+CREATE TABLE IF NOT EXISTS {CLAIMS_TABLE} (
+    tenant_id       TEXT NOT NULL,
+    idempotency_key TEXT NOT NULL,
+    run_id          TEXT NOT NULL,
+    claimed_at      DOUBLE PRECISION NOT NULL,
+    PRIMARY KEY (tenant_id, idempotency_key)
+)
+"""
+
+#: 抢坑的那**一条**语句：没有就插、过期就接管、新鲜就让位，全在一次往返里完成。
+#: 条件是挂在 ``DO UPDATE`` 上的——不成立时那一行**既不更新也不返回**，于是
+#: ``RETURNING`` 空手而归 = 别人正占着。写成"先 SELECT 再 INSERT"就会把窗口还
+#: 回去，而这个模块存在的理由正是堵住它。
+_CLAIM_SQL = (
+    f"INSERT INTO {CLAIMS_TABLE} (tenant_id, idempotency_key, run_id, claimed_at)"
+    " VALUES (%s, %s, %s, %s)"
+    " ON CONFLICT (tenant_id, idempotency_key) DO UPDATE"
+    "   SET run_id = EXCLUDED.run_id, claimed_at = EXCLUDED.claimed_at"
+    f"   WHERE {CLAIMS_TABLE}.claimed_at < %s"
+    " RETURNING run_id"
+)
+
 #: 与 ``team_task`` / ``artifact`` 用的是**同一套**策略写法：按 ``tenant_id`` 列
-#: 直接比 GUC（不用 thread_id 前缀——这张表不是 langgraph 的表）。
+#: 直接比 GUC（不用 thread_id 前缀——这两张表不是 langgraph 的表）。
 _RLS_DDL = """
 ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;
 ALTER TABLE {table} FORCE ROW LEVEL SECURITY;
@@ -63,7 +108,9 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON {table} TO {app_role};
 def bootstrap_coordination(conn: psycopg.Connection[Any], app_role: str = "mate_app") -> None:
     """建协作面的表 + RLS 策略（幂等）。``conn`` 必须是 **admin** 连接。"""
     conn.execute(_CANCEL_DDL)
-    conn.execute(_RLS_DDL.format(table=CANCEL_TABLE, app_role=app_role))
+    conn.execute(_CLAIMS_DDL)
+    for table in (CANCEL_TABLE, CLAIMS_TABLE):
+        conn.execute(_RLS_DDL.format(table=table, app_role=app_role))
 
 
 class CancelSignals(Protocol):
@@ -131,10 +178,86 @@ class PgCancelSignals:
             return await cur.fetchone() is not None
 
 
+class RunClaims(Protocol):
+    """幂等认领的共享通道：谁先认领到 ``(租户, 幂等键)``，谁负责真去跑那一轮。
+
+    ``claim`` 必须是**原子**的：先查一次再写一次会留一个读后写窗口，两个副本
+    正好都在窗口里就都拿到了——那正是这个模块要治的东西。
+    """
+
+    async def claim(self, *, tenant_id: str, key: str, run_id: str) -> bool: ...
+
+    async def release(self, *, tenant_id: str, key: str) -> None: ...
+
+
+class InMemoryRunClaims:
+    """进程内实现：单副本部署与测试的默认。
+
+    两个 ``RunControl`` 实例**共享同一个它**时，就等于"两个副本共享一把锁"——
+    多副本用例就是这么模拟的。
+    """
+
+    def __init__(self, ttl: float = DEFAULT_CLAIM_TTL_SECONDS) -> None:
+        self._ttl = max(0.0, ttl)
+        self._rows: dict[tuple[str, str], float] = {}
+
+    async def claim(self, *, tenant_id: str, key: str, run_id: str) -> bool:
+        del run_id  # 认领只回答"谁先来"；地址由确定性 run_id 单独保证
+        now = time.time()
+        held_since = self._rows.get((tenant_id, key))
+        if held_since is not None and now - held_since < self._ttl:
+            return False
+        self._rows[(tenant_id, key)] = now
+        return True
+
+    async def release(self, *, tenant_id: str, key: str) -> None:
+        self._rows.pop((tenant_id, key), None)
+
+
+class PgRunClaims:
+    """PG 实现：真·多副本共享，认领的原子性由**那一条 SQL** 保证。"""
+
+    def __init__(self, dsn: str, schema: str = SCHEMA, ttl: float = DEFAULT_CLAIM_TTL_SECONDS):
+        self._dsn = dsn
+        self._schema = schema
+        self._ttl = max(0.0, ttl)
+
+    @asynccontextmanager
+    async def _conn(self, tenant_id: str) -> AsyncIterator[psycopg.AsyncConnection[Any]]:
+        conn = await psycopg.AsyncConnection.connect(self._dsn, autocommit=True)
+        try:
+            await conn.execute(f"SET search_path TO {self._schema}")
+            await conn.execute("select set_config('app.tenant_id', %s, false)", (tenant_id,))
+            yield conn
+        finally:
+            await conn.close()
+
+    async def claim(self, *, tenant_id: str, key: str, run_id: str) -> bool:
+        """抢坑（原子）。返回 ``True`` = 这一个副本负责真去跑那一轮。"""
+        now = time.time()
+        async with self._conn(tenant_id) as conn:
+            cur = await conn.execute(_CLAIM_SQL, (tenant_id, key, run_id, now, now - self._ttl))
+            return await cur.fetchone() is not None
+
+    async def release(self, *, tenant_id: str, key: str) -> None:
+        async with self._conn(tenant_id) as conn:
+            await conn.execute(
+                f"DELETE FROM {CLAIMS_TABLE} WHERE tenant_id = %s AND idempotency_key = %s",
+                (tenant_id, key),
+            )
+
+
 __all__ = [
     "CANCEL_TABLE",
+    "CLAIMS_TABLE",
+    "CLAIM_TTL_ENV",
+    "DEFAULT_CLAIM_TTL_SECONDS",
     "CancelSignals",
     "InMemoryCancelSignals",
+    "InMemoryRunClaims",
     "PgCancelSignals",
+    "PgRunClaims",
+    "RunClaims",
     "bootstrap_coordination",
+    "configured_claim_ttl",
 ]

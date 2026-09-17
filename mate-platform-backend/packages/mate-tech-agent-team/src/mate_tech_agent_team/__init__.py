@@ -43,7 +43,10 @@ from .checkpoint import (
 from .coordination import (
     CancelSignals,
     InMemoryCancelSignals,
+    InMemoryRunClaims,
     PgCancelSignals,
+    PgRunClaims,
+    RunClaims,
     bootstrap_coordination,
 )
 from .delegation import DelegationState, RunDelegation
@@ -99,6 +102,7 @@ __all__ = [
     "InMemoryArtifacts",
     "InMemoryCancelSignals",
     "InMemoryCheckpointerProvider",
+    "InMemoryRunClaims",
     "InMemoryTeamTasks",
     "LlmEmployeeRuntime",
     "LlmPlanner",
@@ -106,6 +110,7 @@ __all__ = [
     "PgArtifacts",
     "PgCancelSignals",
     "PgCheckpointerProvider",
+    "PgRunClaims",
     "PgTeamTasks",
     "PlanError",
     "Planner",
@@ -113,6 +118,7 @@ __all__ = [
     "ProfileRegistry",
     "ProfileStore",
     "RetryPolicy",
+    "RunClaims",
     "RunContext",
     "RunDelegation",
     "RunNotFound",
