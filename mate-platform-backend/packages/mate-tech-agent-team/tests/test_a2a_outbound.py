@@ -271,13 +271,21 @@ async def test_a2a_round_trip_reports_the_truth_about_the_configured_endpoint() 
 
     对端真起来之后这条**一个字都不用改**就会走上面那一支：它验的是语义，
     不是环境。这正是 1.8 立下的"外部依赖写常跑用例、如实回执"的做法。
+
+    **SDK 不在时也照样在跑**（不是 skip）：真传输面（``a2a-sdk``）没装时，
+    "连上真对端"这条路物理上不存在，但**"对端不可达时回执如实"这条路仍然在**——
+    换一个"连不上"的传输替身走同一条代码路径，断言同一组不变量。CI 上装的
+    a2a-sdk 与开发机不同，这一条因此在两种环境里都验得到东西。
     """
-    runtime = A2AOutboundRuntime(
-        registry=_registry(),
-        client=build_a2a_outbound_client(
+    try:
+        client = build_a2a_outbound_client(
             endpoint=os.getenv("MATE_AGENT_TEAM_A2A_URL", DEFAULT_A2A_ENDPOINT)
-        ),
-    )
+        )
+    except ImportError:
+        # 真传输面不可用 → 如实降级成"一个连不上的对端"，**不 skip**。
+        client = build_a2a_outbound_client(transport=_UnreachableTransport())
+
+    runtime = A2AOutboundRuntime(registry=_registry(), client=client)
     result = await runtime.run(subtask=_subtask(), tenant_id="tenant-acme")
 
     assert result["llm_calls"] == 0, "外部往返永远不该记成本地模型轮次"
@@ -289,6 +297,16 @@ async def test_a2a_round_trip_reports_the_truth_about_the_configured_endpoint() 
         assert result["output"] == "", "报失败却编了产出"
         assert result["error"], "报失败却没说为什么"
         assert result["source"] == "stub", "没跑成就不许标成真实产出"
+        # 出站**尝试过**（连不上不等于没打出去）——计量照记。
+        assert result["external_agent_calls"] == 1
+
+
+class _UnreachableTransport:
+    """一个"连不上"的真传输替身：模拟对端不可达（判据 ④ 在无 SDK 环境下的落点）。"""
+
+    async def send(self, *, endpoint: str, request: A2AOutboundRequest) -> A2AOutboundResult:
+        del endpoint, request
+        raise ConnectionError("对端不可达（测试替身）")
 
 
 @pytest.mark.asyncio

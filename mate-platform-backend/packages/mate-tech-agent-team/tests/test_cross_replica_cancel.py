@@ -47,6 +47,7 @@ from mate_tech_agent_team.coordination import (
     bootstrap_coordination,
 )
 from mate_tech_agent_team.main import create_app
+from mate_tech_agent_team.run_lease import InMemoryRunLeases
 
 BASE = "/api/v1/agent-team"
 TENANT = "tenant-acme"
@@ -330,21 +331,55 @@ def test_the_signal_store_is_shared_and_keyed_by_tenant_and_run() -> None:
     asyncio.run(_scenario())
 
 
-def test_the_signal_is_sticky_not_cleared_by_a_second_cancel(admin_token) -> None:
-    """第二次取消**不**把信号抹掉：抹掉的话，置清之间正好走到边界的图就看不到它。"""
+def test_the_signal_is_sticky_until_terminal_and_archived_after(admin_token) -> None:
+    """信号**只置不清**（在途期间），终态之后被**归档**。
+
+    两半各治一个毛病，缺一不可：
+
+    * **没终态就清掉** → 置清之间正好走到边界的图就看不到它（1.9 立这条的理由，
+      仍然成立）；
+    * **终态之后还留着** → 这张表会随"被取消过的 run 数"一直涨（B-3 加的归档）。
+
+    所以这里断言的是**时机**：在途时不动它，落终态后下一次读把它清掉。
+    （B-3 起清只发生在读路径看到终态时，`cancel` 自己只置。）
+    """
 
     async def _scenario() -> None:
         service, _rt = _service()
         signals = InMemoryCancelSignals()
-        replica_a = RunControl(service, signals=signals)
-        replica_b = RunControl(service, signals=signals)
+        #: 显式给租约表：下面要**等它释放**再取消（见「前提」那句）。
+        leases = InMemoryRunLeases(ttl=30.0)
+        control = RunControl(service, signals=signals, leases=leases)
 
-        run_id = (await replica_a.submit(tenant_id=TENANT, goal="分析本月异常订单"))["run_id"]
+        run_id = (await control.submit(tenant_id=TENANT, goal="分析本月异常订单"))["run_id"]
         await _settle(service, run_id)
 
-        await replica_a.cancel(tenant_id=TENANT, run_id=run_id)
-        await replica_b.cancel(tenant_id=TENANT, run_id=run_id)
-        assert await signals.is_requested(tenant_id=TENANT, run_id=run_id) is True
+        # **前提**：这一轮此刻没有人在跑（租约已释放）。
+        # 不显式等它的话会踩一个真的竞态：`service.get` 先看到 `awaiting_approval`
+        # 而后台任务的 finally 还没跑完（租约还没归还），于是取消走"有人在跑"
+        # 那条支路、回 `cancelling`——那是**对的行为遇到错的测试前提**。
+        async def _lease_released() -> bool:
+            return await leases.get(tenant_id=TENANT, run_id=run_id) is None
+
+        assert await _until(_lease_released, timeout=5.0) is not None, (
+            "这一轮迟迟不释放租约，后面的断言前提不成立"
+        )
+
+        # ① 在途（还没落终态）：信号**只置不清**
+        await signals.request(tenant_id=TENANT, run_id=run_id)
+        probe = await control.refresh(tenant_id=TENANT, run_id=run_id)
+        assert probe["status"] == "cancelling", "中间态应该可观测"
+        assert await signals.is_requested(tenant_id=TENANT, run_id=run_id) is True, (
+            "还没落终态就把信号清掉了——置清之间走到边界的图会看不到它"
+        )
+
+        # ② 落终态之后：下一次读把它归档掉
+        await control.cancel(tenant_id=TENANT, run_id=run_id)
+        settled = await control.refresh(tenant_id=TENANT, run_id=run_id)
+        assert settled["status"] == "cancelled"
+        assert await signals.is_requested(tenant_id=TENANT, run_id=run_id) is False, (
+            "终态之后信号没被归档，这张表会只增不减"
+        )
 
     asyncio.run(_scenario())
 

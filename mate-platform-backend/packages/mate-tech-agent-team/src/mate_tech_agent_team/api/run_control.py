@@ -955,9 +955,15 @@ class RunControl:
             return _cancel_receipt(tenant_id, run_id, status=status)
 
         await self._signals.request(tenant_id=tenant_id, run_id=run_id)
-        if status == CANCELLING or await self._someone_is_running(
-            tenant_id=tenant_id, run_id=run_id
-        ):
+        # **只看"有没有人在跑"**（B-1 的租约），不看 ``refresh`` 报出来的状态。
+        #
+        # 这里曾经还带一个 ``status == CANCELLING`` 的短路，那是错的：状态是
+        # ``cancelling`` 只说明"信号已置且还没终态"，**不说明有人在跑**。
+        # 停在闸门等人的 run 正是这个样子——于是第二次取消（或者任何一次在信号
+        # 已置之后的取消）会永远回 ``cancelling`` 而**没有人去落终态**，
+        # 那一轮就卡死在等人上了。这条是 ``test_cross_replica_cancel`` 的
+        # 「sticky until terminal」新用例抓出来的。
+        if await self._someone_is_running(tenant_id=tenant_id, run_id=run_id):
             await self._await_local_stop(tenant_id=tenant_id, run_id=run_id)
             settled = await self._service.get(tenant_id=tenant_id, run_id=run_id)
             settled_status = str(settled.get("status", ""))
