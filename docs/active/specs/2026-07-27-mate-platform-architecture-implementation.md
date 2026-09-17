@@ -3,6 +3,7 @@
 > **版本**：v3.1-implementation.4 | **日期**：2026-08-25 | **状态**：实施基线 + Temporal 目标态已接受（迁移未完成）
 >
 > **配套文档**：
+>
 > - 技术栈定稿：`2026-07-27-mate-platform-tech-stack-confirmed.md`
 > - 交付版本计划：`2026-07-27-mate-platform-delivery-roadmap.md`
 > - Workflow 决策：`../decisions/ADR-0061-temporal-as-workflow-engine.md`
@@ -173,7 +174,8 @@ flowchart LR
 ### 2.1 Hexagonal Architecture（端口与适配器）
 
 **四层结构**：
-```
+
+```text
 domain            -> 纯 Python，无外部依赖
 application       -> 用例编排，通过 ports 调用 domain
 infrastructure    -> 实现 ports：persistence + clients
@@ -181,6 +183,7 @@ api               -> FastAPI routes + DTO
 ```
 
 **约束**：
+
 - `domain` 不依赖任何外部包
 - `application` 只依赖 `domain` 和 `ports`
 - `infrastructure` 实现 `ports`
@@ -199,6 +202,7 @@ api               -> FastAPI routes + DTO
 | App | mate-app-kb | Application, Module |
 
 **上下文映射**：
+
 - Knowledge <-> Ontology：Customer/Supplier
 - Agent <-> Workflow：Open-Host Service
 - Knowledge <-> Workflow：Shared Kernel
@@ -213,7 +217,8 @@ api               -> FastAPI routes + DTO
 ### 2.4 Event-Driven + Outbox Pattern
 
 **核心流程**：
-```
+
+```text
 Command Handler 写入业务表（同一事务）
         |
         v
@@ -231,6 +236,7 @@ Outbox Publisher 读取 outbox 表，发送到 Kafka
 ### 2.6 Anti-Corruption Layer (ACL)
 
 每个外部服务一个 Client。以下 Flowable Client 是双轨期 legacy 示例：
+
 ```python
 # packages/mate-tech-rag/clients/flowable_client.py
 class FlowableClient:
@@ -264,6 +270,7 @@ Temporal 不使用上述 HTTP ACL 模式；通过官方 SDK 实现 `TemporalClie
 ### 2.7 Resilience Patterns
 
 **Circuit Breaker**（pybreaker）：
+
 ```python
 @circuit_breaker(failure_threshold=5, recovery_timeout=30)
 async def call_flowable(self, request: dict) -> dict:
@@ -271,6 +278,7 @@ async def call_flowable(self, request: dict) -> dict:
 ```
 
 **Bulkhead**（httpx 独立连接池）：
+
 ```python
 flowable_pool = httpx.AsyncClient(limits=httpx.Limits(max_connections=20))
 drools_pool = httpx.AsyncClient(limits=httpx.Limits(max_connections=20))
@@ -278,6 +286,7 @@ lightrag_pool = httpx.AsyncClient(limits=httpx.Limits(max_connections=30))
 ```
 
 **Retry with Exponential Backoff**（tenacity）：
+
 ```python
 @retry(
     stop=stop_after_attempt(3),
@@ -304,6 +313,7 @@ async def call_with_retry(self, url: str) -> dict:
 | 库 | `python-keycloak` + 自研 httpx |
 
 **提供能力**：
+
 - OIDC 鉴权（所有语言统一）
 - JWT 颁发 + 校验
 - Realm / Client / Role / User 管理
@@ -368,7 +378,7 @@ async def call_with_retry(self, url: str) -> dict:
 
 ### 4.2 项目结构
 
-```
+```text
 mate-platform-backend/                    # Python 主后端 monorepo（uv）
 |-- pyproject.toml                        # uv 管理 + 所有依赖
 |-- ruff.toml                             # 代码规范
@@ -415,6 +425,7 @@ mate-platform-backend/                    # Python 主后端 monorepo（uv）
 ### 4.3 关键代码模式
 
 **Pydantic v2（严格模式）**：
+
 ```python
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Annotated, Literal
@@ -430,6 +441,7 @@ class DocumentMeta(BaseModel):
 ```
 
 **SQLModel（类型安全 ORM）**：
+
 ```python
 from sqlmodel import SQLModel, Field as SQLField
 
@@ -443,6 +455,7 @@ class Document(SQLModel, table=True):
 ```
 
 **FastAPI 路由（legacy Flowable 兼容入口）**：
+
 ```python
 from fastapi import FastAPI, Depends
 
@@ -488,7 +501,7 @@ async def generate_workflow(
 
 ### 5.2 应用清单
 
-```
+```text
 metaplatform-frontend/
 |-- apps/
 |   |-- portal/         # 主入口
@@ -574,7 +587,8 @@ flowchart LR
 | 服务发现 | Traefik Nacos provider |
 
 **中间件链**：
-```
+
+```text
 Traefik -> rate-limit -> forward-auth (-> AuthService) -> trace-id 透传 -> Python 服务
 ```
 
