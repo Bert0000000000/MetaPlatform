@@ -62,6 +62,17 @@ config:
   poolMax: "8"
   #: 租约 TTL / 心跳（B-1）。心跳硬夹在 TTL/3 以内。
   leaseTtlSeconds: "30"
+  #: **周期接管扫描**（2.1-C）：多久重扫一次"有没有孤儿 run"（秒）。
+  #:
+  #: 没有它，接管是一条**只跑一次**的路径——每个副本只在启动时扫一遍，于是杀了
+  #: 一个副本之后幸存的副本永远不会发现（真集群实测 166s 零接管）。0 = 关（单副本形态）。
+  #: 取**显著小于接管预算**的值，否则扫描本身就吃掉预算。
+  rescanSeconds: "10"
+  #: "心跳已停"的宽限（秒）。**留空 = 跟随 TTL**：`expires_at = heartbeat_at + TTL`，
+  #: 过期那刻 `now − heartbeat_at` 恰好 = TTL，宽限 == TTL 时判据正好通过。
+  #: 想更快接管就把 TTL 与它一起调小（例如 TTL=15 / rescan=5）；**只调 TTL 不调它**
+  #: 会被这个宽限反过来压住——那正是 2.1-C 之前固定 30 的坑。
+  heartbeatGraceSeconds: ""
   #: HITL 闸门（B-6）。留空 = 单级、任意审批角色（与旧语义等价）。
   gateRequiredRoles: ""
   gateRequiredApprovals: "1"

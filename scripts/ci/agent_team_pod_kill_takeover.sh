@@ -61,6 +61,12 @@ CLUSTER_NAME="${CLUSTER_NAME:-mate-agent-team-e2e}"
 NAMESPACE="${NAMESPACE:-mate-agent-team}"
 RELEASE="${RELEASE:-agent-team}"
 CHART_DIR="${CHART_DIR:-infra/helm/charts/agent-team}"
+#: 判据参数。**默认只报不判**（见第 8 节的说明）；要在 CI 当门就 `REQUIRE_TAKEOVER=1`。
+TAKEOVER_BUDGET_SECONDS="${TAKEOVER_BUDGET_SECONDS:-30}"
+REQUIRE_TAKEOVER="${REQUIRE_TAKEOVER:-0}"
+#: 只用于打印"预算是怎么来的"，不影响判定。默认值与 chart/代码的默认一致。
+LEASE_TTL_HINT="${LEASE_TTL_HINT:-30}"
+RESCAN_HINT="${RESCAN_HINT:-10}"
 
 #: kind 的 node 是 Docker 容器，它眼里的"宿主机"是 kind 网络的网关 —— 宿主机上
 #: compose 那套服务都发布在 0.0.0.0，所以从这个地址能摸到（2.1-B 已实测）。
@@ -174,6 +180,8 @@ helm upgrade --install "$RELEASE" "$CHART_DIR" \
   --set "config.gatewayUrl=http://${HOST_GW}:${GATEWAY_PORT}" \
   --set "networkPolicy.enabled=false" \
   --set "migration.controlPassword=mate_control_pw" \
+  --set "config.leaseTtlSeconds=${LEASE_TTL_HINT}" \
+  --set "config.rescanSeconds=${RESCAN_HINT}" \
   --wait --timeout 6m >/dev/null
 kubectl -n "$NAMESPACE" rollout status deploy/mate-tech-agent-team --timeout=300s
 
@@ -281,6 +289,7 @@ sleep "$POLL_SECONDS"
 note "  杀后立刻查一次：lease=[$(lease_row "$RUN_ID")] status=$(run_status "$RUN_ID") ckpt=$(ckpt_id "$RUN_ID")"
 
 taken=""
+taken_signal=""
 for i in $(seq 1 $((OBSERVE_1_SECONDS / POLL_SECONDS))); do
   sleep "$POLL_SECONDS"
   elapsed="$(since "$T0")"
@@ -288,14 +297,27 @@ for i in $(seq 1 $((OBSERVE_1_SECONDS / POLL_SECONDS))); do
   epoch="$(printf '%s' "$row" | cut -d'|' -f2)"
   ck="$(ckpt_id "$RUN_ID")"
   note "  t+${elapsed}s  lease=[${row}]  ckpt=${ck}"
+  #: **两个信号，命中任一即算接管**（只认 epoch 会漏掉最常见的那种成功）：
+  #:
+  #: * `lease_epoch` 前进 —— 换手了，新持有者还在跑；
+  #: * **检查点越过基线** —— 执行继续了。这一条更重要，因为**接管成功后续跑往往很快
+  #:   就结束**（这一轮本来就快跑完 / 起来就撞上 llmgw 403），结束时 `_close` 会把
+  #:   租约**释放**掉——于是 `lease=[]`，只看 epoch 的判据会把"已经接管并跑完"
+  #:   活活读成"没有接管"。实测踩到过：t+31.2s 租约变空 **且**检查点从
+  #:   `1f1b2c54-…` 前进到 `1f1b2c56-…`，脚本却报"120s 内没有接管"。
   if [[ -n "$epoch" && -n "$phase1_epoch_before" && "$epoch" != "$phase1_epoch_before" ]]; then
-    taken="$elapsed"
-    note "  >>> 接管发生：epoch ${phase1_epoch_before} → ${epoch}，t+${elapsed}s"
+    taken="$elapsed"; taken_signal="lease_epoch ${phase1_epoch_before}→${epoch}"
+    note "  >>> 接管发生（换手）：t+${elapsed}s  ${taken_signal}"
+    break
+  fi
+  if [[ -n "$ck" && -n "$CKPT_BEFORE" && "$ck" != "$CKPT_BEFORE" ]]; then
+    taken="$elapsed"; taken_signal="检查点越过基线（执行继续）"
+    note "  >>> 接管发生（执行继续）：t+${elapsed}s  ${CKPT_BEFORE} → ${ck}"
     break
   fi
 done
 if [[ -z "$taken" ]]; then
-  note "  >>> 阶段 1 结论：${OBSERVE_1_SECONDS}s 内**没有**接管（lease_epoch 未前进）"
+  note "  >>> 阶段 1 结论：${OBSERVE_1_SECONDS}s 内**没有**接管（租约未换手且检查点未前进）"
 fi
 
 # ── 6. 阶段 2（可选）：让所有副本重启，看机制本身能不能接管 ─────────────────
@@ -310,8 +332,15 @@ if [[ -z "$taken" && "$DO_PHASE_2" == "1" ]]; then
     epoch="$(printf '%s' "$row" | cut -d'|' -f2)"
     ck="$(ckpt_id "$RUN_ID")"
     note "  t+${elapsed}s  lease=[${row}]  ckpt=${ck}"
+    #: 与阶段 1 同样的两个信号（只认 epoch 会漏掉"接管后很快跑完并释放租约"）。
     if [[ -n "$epoch" && -n "$phase1_epoch_before" && "$epoch" != "$phase1_epoch_before" ]]; then
-      note "  >>> 阶段 2 接管：epoch ${phase1_epoch_before} → ${epoch}，t+${elapsed}s"
+      taken="$elapsed"; taken_signal="阶段 2 换手 epoch ${phase1_epoch_before}→${epoch}"
+      note "  >>> ${taken_signal}，t+${elapsed}s"
+      break
+    fi
+    if [[ -n "$ck" && -n "$CKPT_BEFORE" && "$ck" != "$CKPT_BEFORE" ]]; then
+      taken="$elapsed"; taken_signal="阶段 2 检查点越过基线"
+      note "  >>> ${taken_signal}，t+${elapsed}s"
       break
     fi
   done
@@ -321,5 +350,20 @@ log "7. 收官状态"
 note "  run=${RUN_ID}"
 note "  最终 lease=[$(lease_row "$RUN_ID")]"
 note "  最终 ckpt=$(ckpt_id "$RUN_ID")"
-note "  最终 status=$(api "$(kubectl -n "$NAMESPACE" get pods -l app.kubernetes.io/component=superbrain -o jsonpath='{.items[0].metadata.name}')" GET "/api/v1/agent-team/runs/${RUN_ID}")"
+note "  最终 status=$(api "$(kubectl -n "$NAMESPACE" get pods -l app.kubernetes.io/component=superbrain --field-selector=status.phase=Running -o jsonpath='{.items[0].metadata.name}')" GET "/api/v1/agent-team/runs/${RUN_ID}")"
 note "  证据目录：${ARTDIR}"
+
+# ── 8. 判据门 ────────────────────────────────────────────────────────────────
+#: 默认**只报不判**（`REQUIRE_TAKEOVER=0`）：这个脚本的价值有一半是"如实打印每一秒"，
+#: 把它变成必过的门会诱导下一个人去粉饰。要在 CI 里当门时显式开。
+log "8. 判据"
+note "  接管：${taken:-未发生}${taken_signal:+（${taken_signal}）}"
+note "  预算：${TAKEOVER_BUDGET_SECONDS}s（TTL=${LEASE_TTL_HINT}s + 扫描间隔=${RESCAN_HINT}s 决定下限）"
+if [[ "$REQUIRE_TAKEOVER" == "1" ]]; then
+  [[ -n "$taken" ]] || die "判据不成立：${OBSERVE_1_SECONDS}s 内没有被接管"
+  awk -v t="$taken" -v b="$TAKEOVER_BUDGET_SECONDS" 'BEGIN{exit !(t+0 <= b+0)}' \
+    || die "接管发生但超预算：t+${taken}s > ${TAKEOVER_BUDGET_SECONDS}s"
+  echo "=== POD-KILL TAKEOVER PASS（t+${taken}s ≤ ${TAKEOVER_BUDGET_SECONDS}s）==="
+else
+  echo "=== POD-KILL TAKEOVER 记录完毕（REQUIRE_TAKEOVER=0，只报不判）==="
+fi

@@ -118,7 +118,7 @@ else
   #: 你以为在验当前源码，其实在验几小时前的。实测踩过一次（改完的 `start_rescanner`
   #: 根本不在跑起来的镜像里，白白追了一轮"为什么没接管"）。
   #: 要验当前源码就显式 `BUILD_IMAGE=1`。
-  echo "  复用已存在的本地镜像 ${IMAGE}（构建于 $(docker image inspect -f '{{.Created}}' "$IMAGE" 2>/dev/null））"
+  echo "  复用已存在的本地镜像 ${IMAGE}（构建于 $(docker image inspect -f '{{.Created}}' "$IMAGE" 2>/dev/null || echo 未知)）"
   echo "  ⚠️  验当前源码请用 BUILD_IMAGE=1；否则你验的是这个时刻的镜像"
 fi
 if [[ "$LOAD_IMAGES" == "1" ]]; then
@@ -182,9 +182,16 @@ echo "readyReplicas=${READY}（期望 ${REPLICAS}）"
 [[ "$READY" -eq "$REPLICAS" ]] || die "readyReplicas=${READY}，期望 ${REPLICAS}"
 
 # 逐个副本打 /healthz —— 断言的是"每个副本都是活的进程"，不是"有一个副本活着"。
-PODS="$(kubectl -n "$NAMESPACE" get pods -l app.kubernetes.io/component=superbrain -o name)"
+#
+# **只看 Running 的**：滚动更新时旧 ReplicaSet 的 Pod 会以 `Terminating` 状态多留
+# 一会儿，只按 label 数会让这条判据在**部署正确**的情况下随机假红（实测踩到：
+# readyReplicas=3 是对的，Pod 数=4 因为有一个还在 Terminating）。同理要排掉 migrate /
+# 沙箱 probe 那两个 **Job** 的 Pod —— 它们跑完是 `Completed`，而这个 label 也挂在
+# 它们身上。
+PODS="$(kubectl -n "$NAMESPACE" get pods -l app.kubernetes.io/component=superbrain \
+  --field-selector=status.phase=Running -o name)"
 COUNT="$(printf '%s\n' "$PODS" | grep -c . || true)"
-echo "superbrain Pod 数=${COUNT}"
+echo "superbrain Pod 数=${COUNT}（只数 Running；Terminating / Completed 不算）"
 [[ "$COUNT" -eq "$REPLICAS" ]] || die "Pod 数=${COUNT}，期望 ${REPLICAS}"
 
 for pod in $PODS; do
