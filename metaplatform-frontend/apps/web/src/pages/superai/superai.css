@@ -585,6 +585,17 @@
   word-break: break-word;
 }
 
+/* ---------- 会话页标题行（ChatPage） ---------- */
+/* 取「页内标题行」令牌 --mp-tabbar-h（与壳层 tab 行同一个），好让这条与右侧
+   「会话历史」标题**同高**——否则两条底边对不齐，右栏标题会突出一截。
+   column 方向：让里面的 Row 保持整宽（stretch），同时垂直居中。 */
+.mp-chat-titlebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: var(--mp-tabbar-h);
+}
+
 /* ---------- 会话页调度面板（ChatPage 右上角 × AgentTeamSchedulePanel） ---------- */
 /* 位置：会话历史栏里「新建会话」之上。竖排 + 限高滚动，不挤占对话区。 */
 .mp-schedpanel {

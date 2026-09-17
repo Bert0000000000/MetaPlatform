@@ -1196,29 +1196,34 @@ export default function ChatPage() {
     <div className="mp-split mp-page-full">
       {/* ===== 左：对话区 ===== */}
       <div className="mp-split-main">
-        {/* chat-topbar：侧栏开关 + 对话标题 + 运行状态 */}
+        {/* chat-topbar：侧栏开关 + 对话标题 + 运行状态。
+            内层 `mp-chat-titlebar` 取页内标题行令牌（--mp-tabbar-h）并垂直居中，
+            好让这条与右侧「会话历史」标题**同高**——否则两条底边对不齐，
+            右栏标题会突出一截。 */}
         <div className="mp-pagetabs">
-          <Row type="flex" align="middle" justify="space-between">
-            <Col span={19}>
-              <Typography.Text strong ellipsis={{ showTooltip: true }}>
-                {activeSession.title}
-              </Typography.Text>
-            </Col>
-            <Space align="center" spacing={8}>
-              {isSessionRunning(activeSession) && (
-                <Tag color="blue" size="small" prefixIcon={<span className="mp-exec-dot is-running" />}>
-                  运行中
-                </Tag>
-              )}
-              <Button
-                theme="borderless"
-                size="small"
-                icon={sessionPanelVisible ? <IconChevronRight /> : <IconChevronLeft />}
-                title={sessionPanelVisible ? '收起会话侧栏' : '展开会话侧栏'}
-                onClick={() => setSessionPanelVisible((v) => !v)}
-              />
-            </Space>
-          </Row>
+          <div className="mp-chat-titlebar">
+            <Row type="flex" align="middle" justify="space-between">
+              <Col span={19}>
+                <Typography.Text strong ellipsis={{ showTooltip: true }}>
+                  {activeSession.title}
+                </Typography.Text>
+              </Col>
+              <Space align="center" spacing={8}>
+                {isSessionRunning(activeSession) && (
+                  <Tag color="blue" size="small" prefixIcon={<span className="mp-exec-dot is-running" />}>
+                    运行中
+                  </Tag>
+                )}
+                <Button
+                  theme="borderless"
+                  size="small"
+                  icon={sessionPanelVisible ? <IconChevronRight /> : <IconChevronLeft />}
+                  title={sessionPanelVisible ? '收起会话侧栏' : '展开会话侧栏'}
+                  onClick={() => setSessionPanelVisible((v) => !v)}
+                />
+              </Space>
+            </Row>
+          </div>
         </div>
 
         {/* 消息流（官方 AIChatDialogue：左右布局 + reasoning + annotations） */}
