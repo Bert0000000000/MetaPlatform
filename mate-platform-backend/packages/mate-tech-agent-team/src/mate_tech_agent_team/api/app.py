@@ -232,7 +232,13 @@ async def agentTeamPostRunCancel(request: Request, run_id: str) -> RunStateModel
 
 @router.get("/runs/{run_id}/events")
 async def agentTeamGetRunEvents(request: Request, run_id: str) -> StreamingResponse:
-    """步骤级事件流（SSE）：回放检查点里的推进，最后一条 ``end`` 收流。"""
+    """步骤级事件流（SSE）：按 ``Last-Event-ID`` 补发，最后一条 ``end`` 收流。
+
+    ``Last-Event-ID`` 是 SSE 规范里的**断线重连游标**：浏览器自己带回来，服务端
+    从"它看过的最后一条"之后接着发。B-2 之前 ``seq`` 是每流内存计数，流一断归零
+    ——重连必然丢事件。非法值当 0 处理（从头补发），不报错：一个坏游标不该让
+    订阅彻底失败。
+    """
     tenant_id = _tid(request)
     control = get_run_control()
     try:
@@ -240,10 +246,25 @@ async def agentTeamGetRunEvents(request: Request, run_id: str) -> StreamingRespo
     except RunNotFound as exc:
         raise HTTPException(status_code=404, detail="run not found") from exc
     return StreamingResponse(
-        control.events(tenant_id=tenant_id, run_id=run_id),
+        control.events(
+            tenant_id=tenant_id,
+            run_id=run_id,
+            last_event_id=_last_event_id(request),
+        ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+def _last_event_id(request: Request) -> int:
+    """SSE 的续传游标。缺省 / 非法一律 0（从头补发）。"""
+    raw = request.headers.get("last-event-id", "").strip()
+    if not raw:
+        return 0
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 0
 
 
 @router.get("/runs/{run_id}/artifacts", response_model=ArtifactListModel)

@@ -30,8 +30,11 @@
    自己看到。剩下的两条小边界：跨副本取消时 B **不保证**"回话那一刻图已经停了"
    （它没有 A 的 live 记录，无法等），它保证的是终态与信号都已落下；取消信号是
    **粘性**的（只置不清），留一张只增不减的小表。
-2. 事件流是**回放 + 尾随**：连上先补历史，之后新步骤即推送，直到 run 终态才
-   关流。尾随靠**轮询**检查点（没有引入消息总线），代价见 :meth:`RunControl.events`。
+2. 事件流是**按游标补发 + 尾随**（B-2 起）：连上先补（``Last-Event-ID`` 之后一条
+   不少），之后新步骤即推送，直到 run 终态才关流。生产形态读**追加式事件日志**
+   （被 PG ``NOTIFY`` 唤醒，代价与订阅方数量无关）；没配 PG 时退回"轮询检查点"的
+   老路径，但同样按游标补发。**执行恢复的真相源仍是检查点**——事件日志只是产品
+   观察模型，丢了它不影响续跑。
 3. **幂等靠"确定性 run_id + 查检查点 + 共享认领"**（1.9 任务 3）：进程内用同一张
    ``_live`` 表占坑，跨副本用共享的 ``RunClaims``。同键并发提交**只产生一个 run**，
    且这一条现在**跨副本也成立**——1.7 自标的"极小竞态"已消除。
@@ -76,6 +79,13 @@ from ..coordination import (
     PgRunClaims,
     RunClaims,
     configured_claim_ttl,
+)
+from ..run_events import (
+    DEFAULT_BATCH,
+    PgRunEvents,
+    RunEventStore,
+    configured_fallback_poll,
+    configured_retention,
 )
 from ..run_lease import (
     DEFAULT_HEARTBEAT_GRACE_SECONDS,
@@ -160,6 +170,13 @@ class _LiveRun:
     finished: asyncio.Event = field(default_factory=asyncio.Event)
     lease_epoch: int = 0
     heartbeat: asyncio.Task[None] | None = None
+    #: 事件记录器（B-2）。**每轮一个**，与订阅方数量无关——这正是"连接数 ×
+    #: 每秒 4 次读检查点"被消掉的地方：以前每个 SSE 连接各自轮询检查点，
+    #: 现在是记录器一个人写事件日志，订阅方只读日志（且被 NOTIFY 唤醒）。
+    recorder: asyncio.Task[None] | None = None
+    #: 记录游标：已经写进事件日志的步骤数，以及上次见到的检查点 id。
+    recorded: int = 0
+    last_step: str = ""
 
 
 class RunIndex(Protocol):
@@ -214,11 +231,14 @@ class RunControl:
         claims: RunClaims | None = None,
         leases: RunLeases | None = None,
         tool_ledger: ToolLedger | None = None,
+        run_events: RunEventStore | None = None,
         step_reader: Callable[[str, str], Awaitable[str]] | None = None,
         instance_id: str = "",
         lease_ttl: float | None = None,
         heartbeat_interval: float | None = None,
         heartbeat_grace: float = DEFAULT_HEARTBEAT_GRACE_SECONDS,
+        event_retention: float | None = None,
+        event_fallback_poll: float | None = None,
     ) -> None:
         self._service = service
         self._default_timeout = default_timeout
@@ -241,6 +261,16 @@ class RunControl:
         #: 工具调用账本（A-3）。**只**用于接管判定里"有没有在途调用"那一问；
         #: 不给就当作"没有在途调用"（单进程默认，与加这个查询之前一致）。
         self._tool_ledger = tool_ledger
+        #: Run 事件日志（B-2）。**不给就是 None** —— 那时事件流退回"回放 + 尾随
+        #: 检查点"的老路径，单副本 / 不接 PG 的形态与加它之前逐字一致（唯一差别
+        #: 是断线重连现在也按 ``Last-Event-ID`` 补发，那是纯改进）。
+        self._run_events: RunEventStore | None = run_events
+        self._event_retention = (
+            event_retention if event_retention is not None else configured_retention()
+        )
+        self._event_fallback_poll = (
+            event_fallback_poll if event_fallback_poll is not None else configured_fallback_poll()
+        )
         #: 读"检查点走到哪了"的函数。心跳用它续租，接管判定用它比"有没有进展"。
         #: 不给就留空串——那时"检查点未进展"这条判据退化成"不比"，如实记在
         #: :func:`~mate_tech_agent_team.run_lease.decide_takeover` 的注释里。
@@ -288,6 +318,7 @@ class RunControl:
             signals=PgCancelSignals(dsn, schema=CHECKPOINT_SCHEMA) if dsn else None,
             claims=PgRunClaims(dsn, schema=CHECKPOINT_SCHEMA, ttl=ttl) if dsn else None,
             leases=PgRunLeases(dsn, schema=CHECKPOINT_SCHEMA) if dsn else None,
+            run_events=PgRunEvents(dsn, schema=CHECKPOINT_SCHEMA) if dsn else None,
             tool_ledger=tool_ledger,
             step_reader=step_reader,
         )
@@ -494,6 +525,10 @@ class RunControl:
         if self._run_index is None:
             return []
         found = await self._run_index.unfinished(statuses=RESUMABLE_STATUSES)
+        # 保留期：对本次扫到的租户顺带清一次过期事件（B-2）。低频、按租户、
+        # 失败不影响恢复——见 :meth:`prune_events` 里为什么不挂后台定时器。
+        for tenant_id in {run.tenant_id for run in found}:
+            await self.prune_events(tenant_id=tenant_id)
         claimed: list[str] = []
         for run in found:
             if (run.tenant_id, run.run_id) in self._live:
@@ -527,6 +562,26 @@ class RunControl:
             task.add_done_callback(self._tasks.discard)
             claimed.append(run.run_id)
         return claimed
+
+    async def prune_events(self, *, tenant_id: str) -> int:
+        """清掉本租户过期的 Run 事件（B-2 的保留期）。返回删掉的行数。
+
+        **按租户清**，因为事件表是 RLS 强制的表——跨租户清理是控制面的活
+        （``MATE_AGENT_TEAM_ADMIN_DSN`` 那条路），B-4 再谈。
+
+        调用点是启动扫描里**顺带对每个有未完成 run 的租户清一次**，不是后台
+        定时器：与运行级超时同一条教训——定时器在进程重启后消失，反而制造
+        "有时管用"的错觉。清不动**不吞也不炸**：保留期是运维关切，
+        不是这一轮能不能跑的前提。
+        """
+        if self._run_events is None or self._event_retention <= 0 or not tenant_id:
+            return 0
+        try:
+            return await self._run_events.prune(
+                tenant_id=tenant_id, older_than=time.time() - self._event_retention
+            )
+        except Exception:
+            return 0
 
     async def _is_resumable(self, run: UnfinishedRun) -> bool:
         """这一轮现在**还**值得续吗（按当下的检查点，而不是扫描时的快照）。
@@ -569,11 +624,16 @@ class RunControl:
         后者会让重启前的每一轮都凭空消失。
         """
         tasks = list(self._tasks)
-        if not tasks:
-            return
         for task in tasks:
             task.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+        # 事件日志的 LISTEN 连接是进程级的，要显式关（它不挂在任何任务上）。
+        if self._run_events is not None:
+            try:
+                await self._run_events.aclose()
+            except Exception:
+                pass
 
     async def resume(
         self,
@@ -623,7 +683,58 @@ class RunControl:
                 tenant_id=tenant_id, run_id=run_id, epoch=lease.lease_epoch, live=live
             )
         )
+        self._start_recorder(tenant_id=tenant_id, run_id=run_id, live=live)
         return lease
+
+    # -- 事件记录（B-2）------------------------------------------------------
+    def _start_recorder(self, *, tenant_id: str, run_id: str, live: _LiveRun) -> None:
+        """起这一轮的事件记录器。没配事件日志时是 no-op。"""
+        if self._run_events is None or live.recorder is not None:
+            return
+        live.recorder = asyncio.create_task(
+            self._record_loop(tenant_id=tenant_id, run_id=run_id, live=live)
+        )
+
+    async def _record_once(self, *, tenant_id: str, run_id: str, live: _LiveRun) -> bool:
+        """把**新出现的**步骤写进事件日志。返回本轮是否已到终态。
+
+        两步走是为了便宜：先只看**检查点 id**（一条走索引的查询），它没变就
+        什么都不做。只有它变了才去读整份历史——``history()`` 要把图建起来，
+        是本模块最贵的一步，而绝大多数轮询它是没必要的。
+
+        **记录是观察，不是执行**：这里出任何错都不该影响这一轮本身，所以
+        读不到就跳过。丢了事件只影响"回放得全不全"，**不影响续跑**——检查点
+        才是执行恢复的真相源。
+        """
+        assert self._run_events is not None
+        try:
+            step = await self._latest_step(tenant_id, run_id)
+            if not step or step == live.last_step:
+                return False
+            live.last_step = step
+            steps = await self._service.history(tenant_id=tenant_id, run_id=run_id)
+            for entry in steps[live.recorded :]:
+                await self._run_events.append(
+                    tenant_id=tenant_id,
+                    run_id=run_id,
+                    event_type="step",
+                    payload=dict(entry),
+                    checkpoint_id=step,
+                )
+            live.recorded = len(steps)
+            status = str(steps[-1].get("status", "")) if steps else ""
+            return status in TERMINAL_STATUSES
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            return False
+
+    async def _record_loop(self, *, tenant_id: str, run_id: str, live: _LiveRun) -> None:
+        """每轮一个的后台记录器（见 :meth:`_record_once` 的两步走说明）。"""
+        while not live.finished.is_set():
+            if await self._record_once(tenant_id=tenant_id, run_id=run_id, live=live):
+                return
+            await asyncio.sleep(self._poll_interval)
 
     async def _heartbeat_loop(
         self, *, tenant_id: str, run_id: str, epoch: int, live: _LiveRun
@@ -704,6 +815,14 @@ class RunControl:
         if live.heartbeat is not None:
             live.heartbeat.cancel()
             live.heartbeat = None
+        if live.recorder is not None:
+            live.recorder.cancel()
+            live.recorder = None
+            # **收尾补一次**：记录器是被取消的，最后那一步（常常正是落终态的
+            # 那一步）可能还没被写进事件日志。补这一次，事件流才有"结束"可言。
+            # 它失败也不影响这一轮——事件只是观察。
+            if self._run_events is not None:
+                await self._record_once(tenant_id=tenant_id, run_id=run_id, live=live)
         self._live.pop((tenant_id, run_id), None)
         if live.lease_epoch:
             # 带着 epoch 释放：**换过手就什么都不做**（见 ``RunLeases.release``）。
@@ -773,30 +892,102 @@ class RunControl:
         )
 
     # -- 事件流 ------------------------------------------------------------
-    async def events(self, *, tenant_id: str, run_id: str) -> AsyncIterator[str]:
-        """SSE：先**回放**已有步骤，再**尾随**后续步骤，直到 run 终态才收流。
+    async def events(
+        self, *, tenant_id: str, run_id: str, last_event_id: int = 0
+    ) -> AsyncIterator[str]:
+        """SSE：先按游标**补发**，再**尾随**，到终态发 ``end``。
 
-        只回放的话，连上之后发生的推进要靠重连才看得到——"步骤级事件流"这个
-        名分就落空了。所以连上先补历史（到此刻为止一条不少），之后每有新步骤
-        就推，run 落终态才发 ``end``。
+        ``last_event_id`` 就是 SSE 的 ``Last-Event-ID``：浏览器断线重连时自己带
+        回来，于是补发从"它看过的最后一条"开始——**断线不丢事件**。B-2 之前
+        ``seq`` 是每流内存计数（流一断归零），重连必然从头再来或者干脆丢中间段。
 
-        尾随靠**轮询检查点**，没有引入消息总线（不新增基础设施，也就没有
-        "两个真相"的余地）。代价写在这里：新步骤最多晚一个
-        :data:`DEFAULT_POLL_INTERVAL` 才推出去，且每轮轮询开一次检查点连接。
-        终态也一并从状态里读——"run 落终态"与"流关掉"因此是同一个事实。
+        尾随有两条路径，按是否配了事件日志分流：
+
+        * **有日志**（生产形态）—— 读 ``run_event``，被 PG ``NOTIFY`` 唤醒。
+          代价与**订阅方数量无关**：写日志的是每轮一个的记录器，订阅方只读日志。
+        * **没日志**（单副本 / 不接 PG）—— 保持原来的"轮询检查点历史"，
+          但同样按 ``last_event_id`` 补发。与加 B-2 之前逐字一致。
         """
         await self.refresh(tenant_id=tenant_id, run_id=run_id)
-        seq = 0
+        if self._run_events is None:
+            async for frame in self._tail_checkpoints(
+                tenant_id=tenant_id, run_id=run_id, start=last_event_id
+            ):
+                yield frame
+            return
+        async for frame in self._tail_log(tenant_id=tenant_id, run_id=run_id, start=last_event_id):
+            yield frame
+
+    async def _tail_checkpoints(
+        self, *, tenant_id: str, run_id: str, start: int
+    ) -> AsyncIterator[str]:
+        """没有事件日志时的退路：回放 + 尾随**检查点历史**（B-2 之前的老路径）。
+
+        改进只有一处：游标从 ``Last-Event-ID`` 起步而不是从 0 —— 重连因此
+        不再把整轮历史重发一遍。
+        """
+        seq = max(0, start)
         while True:
             steps = await self._service.history(tenant_id=tenant_id, run_id=run_id)
             for step in steps[seq:]:
                 seq += 1
                 payload = json.dumps({"seq": seq, **step}, ensure_ascii=False)
-                yield f"event: step\ndata: {payload}\n\n"
+                yield f"id: {seq}\nevent: step\ndata: {payload}\n\n"
             if steps and str(steps[-1].get("status", "")) in TERMINAL_STATUSES:
                 break
             await asyncio.sleep(self._poll_interval)
         yield "event: end\ndata: {}\n\n"
+
+    async def _tail_log(self, *, tenant_id: str, run_id: str, start: int) -> AsyncIterator[str]:
+        """有事件日志时的主路径：订阅 NOTIFY，只读事件表。
+
+        补发与尾随用**同一个游标**（``after``），所以"重连补发"与"实时推送"
+        之间没有缝：补发到哪，就从哪继续等通知。
+        """
+        assert self._run_events is not None
+        after = max(0, start)
+        wakeups = self._run_events.wakeups(
+            tenant_id=tenant_id, run_id=run_id, fallback_interval=self._event_fallback_poll
+        )
+        try:
+            while True:
+                events = await self._run_events.since(
+                    tenant_id=tenant_id, run_id=run_id, after=after, limit=DEFAULT_BATCH
+                )
+                for event in events:
+                    after = event.sequence
+                    payload = json.dumps(
+                        {"seq": event.sequence, **dict(event.payload)}, ensure_ascii=False
+                    )
+                    yield f"id: {event.sequence}\nevent: {event.event_type}\ndata: {payload}\n\n"
+                    if str(event.payload.get("status", "")) in TERMINAL_STATUSES:
+                        yield "event: end\ndata: {}\n\n"
+                        return
+                if not events:
+                    # 空闲时才做一次状态读（**不读历史**）。有事件在流的时候
+                    # 完全不碰检查点——这正是"连接数 × 每秒 4 次读检查点"消失
+                    # 的地方。记录器会把终态那一步写进日志，届时上面那一支就收流。
+                    state = await self.refresh(tenant_id=tenant_id, run_id=run_id)
+                    if str(state.get("status", "")) in TERMINAL_STATUSES:
+                        # 收尾补发：终态那一步可能刚写进日志，先把它读完再关。
+                        tail = await self._run_events.since(
+                            tenant_id=tenant_id, run_id=run_id, after=after
+                        )
+                        for event in tail:
+                            after = event.sequence
+                            payload = json.dumps(
+                                {"seq": event.sequence, **dict(event.payload)}, ensure_ascii=False
+                            )
+                            yield (
+                                f"id: {event.sequence}\nevent: {event.event_type}"
+                                f"\ndata: {payload}\n\n"
+                            )
+                        yield "event: end\ndata: {}\n\n"
+                        return
+                async for _tick in wakeups:
+                    break
+        finally:
+            await wakeups.aclose()
 
 
 __all__ = [

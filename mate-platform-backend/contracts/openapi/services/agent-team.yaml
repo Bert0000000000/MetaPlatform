@@ -731,21 +731,30 @@ paths:
         - bearerAuth: []
           tenantHeader: []
           oidcScopes: [platform.read]
-      summary: 步骤级事件流（SSE：回放 + 尾随）
+      summary: 步骤级事件流（SSE：按 Last-Event-ID 补发 + 尾随）
       description: |
-        `text/event-stream`。连上先**回放**已有步骤（历史一条不少），再**尾随**
-        新步骤：之后图每推进一步就往外推一条，直到 run 落终态才发 `event: end`
-        收流。每条是 `event: step` +
+        `text/event-stream`。连上先**补发**（从 `Last-Event-ID` 之后一条不少），
+        再**尾随**新步骤：之后图每推进一步就往外推一条，直到 run 落终态才发
+        `event: end` 收流。每条是 `event: step` + `id: <sequence>` +
         `data: {seq, step, ran, next, status, at, evidence}`（`ran` = 这一步真的
         跑掉的节点）。
+
+        **断线重连不丢事件**：每条事件都带 SSE 标准的 `id:`；浏览器重连时自动
+        把它作为 `Last-Event-ID` 请求头发回来，服务端从那条之后接着补发。
+        省略该头（或值非法）则从头补发——一个坏游标不该让订阅彻底失败。
 
         `evidence` 是**这一步新出现的**证据条目（形状见 `SubTaskResult.evidence`），
         按 `evidenceId` 去重后顺序 append 即可。只出增量是刻意的：回执整份都在
         检查点里，整份重发的话每来一步都要重传全部历史证据。
 
-        **实现边界**：尾随靠轮询检查点（没有引入消息总线），新步骤最多晚一个
-        轮询间隔（当前 250ms）到达。终态判定与流关闭是同一个事实——停在
-        `awaiting_approval` 的运行**不会**自己关流，它在等人确认。
+        **推送机制（B-2 起）**：事件写进追加式的 `run_event` 表并 `NOTIFY`，
+        订阅方由通知唤醒、只读事件表。**执行恢复的真相源仍是检查点**，事件日志
+        只是产品观察模型——丢了事件不影响续跑。没配 PG 的部署退回"轮询检查点"
+        的老路径（同样按 `Last-Event-ID` 补发）。
+
+        **实现边界**：尾随在无通知时按兜底间隔（默认 2s）看一眼表。终态判定与
+        流关闭是同一个事实——停在 `awaiting_approval` 的运行**不会**自己关流，
+        它在等人确认。
 
         **调用方必须带 `Accept: text/event-stream`**：网关按这个头决定走不走
         "边收边发"的转发路径（它没有声明就等于不要流式，网关会把整份响应读完再
@@ -759,6 +768,16 @@ paths:
           required: true
           schema:
             type: string
+        - name: Last-Event-ID
+          in: header
+          required: false
+          schema:
+            type: string
+          description: |
+            SSE 标准的断线重连游标（浏览器 `EventSource` 自动带回）。值是上一条
+            已处理事件的 `id`（= 这一轮内的 `sequence`）。省略或非法按 0 处理。
+            它**不是**审计账本里那个 `sequence`——那是跨租户哈希链的序号，
+            与"这一轮流到第几条事件"无关。
       responses:
         "200":
           description: SSE 流（text/event-stream）

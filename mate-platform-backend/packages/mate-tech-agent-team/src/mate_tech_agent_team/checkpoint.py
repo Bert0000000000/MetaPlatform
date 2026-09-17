@@ -65,6 +65,7 @@ def bootstrap(admin_dsn: str, app_role: str = "mate_app", schema: str = SCHEMA) 
     from .audit import bootstrap_audit
     from .coordination import bootstrap_coordination
     from .profile_store import bootstrap_profiles
+    from .run_events import bootstrap_run_events
     from .run_lease import bootstrap_run_leases
     from .team_task_store import bootstrap_tasks
     from .tool_ledger import bootstrap_tool_ledger
@@ -93,6 +94,8 @@ def bootstrap(admin_dsn: str, app_role: str = "mate_app", schema: str = SCHEMA) 
         bootstrap_tool_ledger(conn, app_role=app_role)
         # B-1 / MP-RUN-LEASE-01：活跃 run 租约表（多副本"谁在跑"的唯一来源）。
         bootstrap_run_leases(conn, app_role=app_role)
+        # B-2 / MP-RUN-EVENTS-01：Run 事件日志（观察模型；执行恢复仍以检查点为准）。
+        bootstrap_run_events(conn, app_role=app_role)
 
 
 def _guc_statement(tenant_id: str) -> tuple[str, tuple[str]]:

@@ -65,7 +65,7 @@ def configured_pool_max() -> int:
     return max(0, value)
 
 
-def _checked_schema(schema: str) -> str:
+def checked_schema(schema: str) -> str:
     if not _IDENTIFIER.match(schema):
         raise ValueError(f"schema 必须是普通标识符：{schema!r}")
     return schema
@@ -124,12 +124,22 @@ class TenantConnections:
         max_size: int = DEFAULT_MAX_SIZE,
     ) -> None:
         self._dsn = dsn
-        self._schema = _checked_schema(schema)
+        self._schema = checked_schema(schema)
         self._autocommit = autocommit
         self._max_size = max(0, max_size)
         self._pool: Any = None
 
     # -- 构造 / 收尾 --------------------------------------------------------
+    @property
+    def dsn(self) -> str:
+        """连接串。**只给必须自开连接的场景**（LISTEN 是连接级状态，池里的连接
+        被复用会让订阅互相串台，所以事件订阅只能自己开一条）。"""
+        return self._dsn
+
+    @property
+    def schema(self) -> str:
+        return self._schema
+
     @property
     def pooled(self) -> bool:
         return self._pool is not None
@@ -246,6 +256,7 @@ __all__ = [
     "SCHEMA",
     "TENANT_GUC",
     "TenantConnections",
+    "checked_schema",
     "configured_pool_max",
     "tenant_connections",
 ]

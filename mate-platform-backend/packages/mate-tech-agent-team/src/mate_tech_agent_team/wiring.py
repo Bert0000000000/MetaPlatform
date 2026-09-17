@@ -177,14 +177,45 @@ def build_team_bus(
     )
 
 
+def build_outbox_writer() -> OutboxWriter | None:
+    """审计事件的对外广播通道（平台既有 Outbox，PLATFORM-EVENT-01）。
+
+    **接线点就位；具体 writer 缺位——原因是分层，不是漏做。** 唯一的具体实现
+    ``SqlOutboxWriter`` 住在 ``mate-app-copilot``（**app 层**），而 tech 层反向依赖
+    app 层会被四层守卫（import-linter contracts）直接拒。把它下沉到
+    ``mate_platform.messaging.outbox`` 是一步独立的小改，归平台批次。
+
+    在那之前这里如实返回 ``None``：审计**照常落库**（A-1 的判据落在"落库 +
+    哈希链可检篡改"，本就不依赖广播），只是不往外投递。
+
+    ``MATE_AGENT_TEAM_OUTBOX_ENABLED`` 是**显式开关**：开了却没有可用 writer
+    就**启动失败**——与 :func:`required_dsn` 同一条精神（硬规则 #5：不许静默回落，
+    否则"我配了广播"会变成一句没有任何回执的话）。
+    """
+    if os.getenv("MATE_AGENT_TEAM_OUTBOX_ENABLED", "").lower() not in {"1", "true", "yes"}:
+        return None
+    raise RuntimeError(
+        "MATE_AGENT_TEAM_OUTBOX_ENABLED 已开，但本服务拿不到可用的 OutboxWriter："
+        "唯一的实现 SqlOutboxWriter 在 mate-app-copilot（app 层），tech 层不能依赖它。"
+        "把它的**表写入部分**下沉到 mate_platform.messaging.outbox 之后即可接上。"
+    )
+
+
 def build_audit_ledger(*, outbox: OutboxWriter | None = None) -> PgAuditLedger:
     """持久审计账本（A-1 / `MP-AUDIT-LEDGER-01`）。
 
     投递**复用平台既有 Outbox**（PLATFORM-EVENT-01 的 ``OutboxWriter`` 接口）：
     本服务不新造总线，也不自带一张 outbox 表——要往外广播就在装配时注入一个
     写入器；没注入就只落库（仍然可查、可取证，只是不广播）。
+
+    B-2 起默认走 :func:`build_outbox_writer`（它现在返回 ``None``，理由见那条
+    的说明）；调用方仍可显式注入一个。
     """
-    return PgAuditLedger(required_dsn(), schema=CHECKPOINT_SCHEMA, outbox=outbox)
+    return PgAuditLedger(
+        required_dsn(),
+        schema=CHECKPOINT_SCHEMA,
+        outbox=outbox if outbox is not None else build_outbox_writer(),
+    )
 
 
 def build_artifact_store() -> PgArtifacts:
@@ -586,6 +617,7 @@ __all__ = [
     "build_registry",
     "build_retry_policy",
     "build_run_control",
+    "build_outbox_writer",
     "build_runtime_router",
     "build_team_bus",
     "build_service",
