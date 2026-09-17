@@ -5,16 +5,21 @@ vi.mock('@/utils/auth', () => ({ getToken: () => 'test-token' }));
 
 const postMock = vi.fn();
 const getMock = vi.fn();
+const putMock = vi.fn();
 vi.mock('./client', () => ({
   get: (...args: unknown[]) => getMock(...args),
   post: (...args: unknown[]) => postMock(...args),
+  put: (...args: unknown[]) => putMock(...args),
 }));
 
 import {
   listConversationRuns,
+  listProfiles,
   newIdempotencyKey,
   startRun,
   streamRunEvents,
+  updateProfileRuntimes,
+  type EmployeeProfile,
   type RunStep,
 } from './agentTeam';
 
@@ -256,5 +261,70 @@ describe('newIdempotencyKey', () => {
   it('每次都不一样 —— 不然两次提交会被当成同一轮', () => {
     const keys = new Set(Array.from({ length: 50 }, () => newIdempotencyKey()));
     expect(keys.size).toBe(50);
+  });
+});
+
+describe('listProfiles / updateProfileRuntimes', () => {
+  const base: EmployeeProfile = {
+    profile_id: 'EMP-ANALYST',
+    name: '数据分析师',
+    base_role: 'ontology',
+    system_prompt: '你是数据分析师。',
+    skills: ['sk-order-anomaly'],
+    tools: ['ont_object_query'],
+    action_rids: ['ont.acme.action.1'],
+    kb_ids: ['kb-1'],
+    markings: ['internal'],
+    model: 'glm-5.3-flash',
+    runtimes: ['superai'],
+  };
+
+  it('列员工：交回来的是那一串 profiles', async () => {
+    getMock.mockResolvedValue({ profiles: [base] });
+    expect(await listProfiles()).toEqual([base]);
+    expect(getMock).toHaveBeenCalledWith('/agent-team/profiles');
+  });
+
+  it('改执行面：**整份定义**回传，不能只发 runtimes', async () => {
+    // 这是 PUT/upsert 不是 patch——只发 runtimes 会把提示词、技能、工具白名单、
+    // 权限包络全清空。这条用例钉的就是"没漏字段"。
+    putMock.mockResolvedValue({ ...base, runtimes: ['superai', 'claude_code'] });
+
+    const saved = await updateProfileRuntimes(base, ['superai', 'claude_code']);
+
+    expect(saved.runtimes).toEqual(['superai', 'claude_code']);
+    const [url, body] = putMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(url).toBe('/agent-team/profiles/EMP-ANALYST');
+    expect(body).toMatchObject({
+      profile_id: 'EMP-ANALYST',
+      name: '数据分析师',
+      base_role: 'ontology',
+      system_prompt: '你是数据分析师。',
+      skills: ['sk-order-anomaly'],
+      tools: ['ont_object_query'],
+      action_rids: ['ont.acme.action.1'],
+      kb_ids: ['kb-1'],
+      markings: ['internal'],
+      model: 'glm-5.3-flash',
+      runtimes: ['superai', 'claude_code'],
+    });
+  });
+
+  it('老数据没有 runtimes 字段时补空数组，而不是 undefined', async () => {
+    // 后端把 undefined 当"没给"→ 回落默认值，那正是"静默切换"的一种。
+    // 明确发空数组，语义是"这个人一个执行面都没配"。
+    const legacy = { ...base } as EmployeeProfile;
+    delete legacy.runtimes;
+    putMock.mockResolvedValue(base);
+
+    await updateProfileRuntimes(legacy, []);
+
+    const [, body] = putMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(body.runtimes).toEqual([]);
+  });
+
+  it('后端的拒绝原样抛出去（不许静默回落）', async () => {
+    putMock.mockRejectedValue(new Error('E_INVALID_RUNTIME'));
+    await expect(updateProfileRuntimes(base, ['not-a-runtime'])).rejects.toThrow('E_INVALID_RUNTIME');
   });
 });

@@ -1,4 +1,4 @@
-import { get, post } from './client';
+import { get, post, put } from './client';
 import { getToken } from '@/utils/auth';
 import type { Evidence } from './superai/types';
 
@@ -322,4 +322,84 @@ export async function listRunArtifacts(runId: string): Promise<Artifact[]> {
 /** 按 id 取回产出物正文——"可寻址、可取回"的取回那半边。 */
 export async function getArtifact(artifactId: string): Promise<ArtifactContent> {
   return get<ArtifactContent>(`/agent-team/artifacts/${artifactId}`);
+}
+
+/**
+ * 一个数字员工的**执行面**（ADR-0066 §5.8 的 `RuntimeKind`）。
+ *
+ * 与 `base_role` 是**正交两轴**：`base_role` 决定它是谁，这里决定它在哪跑。
+ * 同一个「本体核对员」可以既在本仓 `superai` 上跑，也可以下投给外部 CLI。
+ */
+export const RUNTIME_KINDS = ['superai', 'claude_code', 'external_a2a'] as const;
+export type RuntimeKind = (typeof RUNTIME_KINDS)[number];
+
+/** UI 上给每档执行面一句人话（取值本身进契约，说明只在界面上）。 */
+export const RUNTIME_LABELS: Record<RuntimeKind, string> = {
+  superai: '本仓 SuperAI',
+  claude_code: 'Claude Code CLI',
+  external_a2a: '外部 A2A Agent',
+};
+
+/**
+ * 一个数字员工的定义（`GET /agent-team/profiles`）。
+ *
+ * `runtimes` 是**允许的执行面**：省略或为空时后端回落到默认（`superai`）。
+ * C-5 之前这个字段只在进程内构造时生效（库与 HTTP 都没有它），所以这里当
+ * **可选**读——老数据读回来就是 undefined，不是错误。
+ */
+export interface EmployeeProfile {
+  profile_id: string;
+  name: string;
+  base_role: string;
+  system_prompt?: string;
+  skills?: string[];
+  tools?: string[];
+  action_rids?: string[];
+  kb_ids?: string[];
+  markings?: string[];
+  model?: string;
+  origin?: string;
+  runtimes?: string[];
+}
+
+/** 列数字员工（身份 = 提示词 + 技能清单 + 工具白名单 + 权限包络）。 */
+export async function listProfiles(): Promise<EmployeeProfile[]> {
+  const page = await get<{ profiles: EmployeeProfile[] }>('/agent-team/profiles');
+  return page.profiles ?? [];
+}
+
+/**
+ * 改一个数字员工（同一个 upsert 语义：提交即覆盖）。
+ *
+ * **必须回传整份定义**：这是 `PUT`/upsert，不是 patch——只发 `runtimes` 会把
+ * 提示词、技能、工具白名单、权限包络**全清空**。所以调用方先 `listProfiles()`
+ * 拿到那一份，改一个字段再整体发回来（见 `updateProfileRuntimes`）。
+ */
+export async function putProfile(profile: EmployeeProfile): Promise<EmployeeProfile> {
+  return put<EmployeeProfile>(`/agent-team/profiles/${profile.profile_id}`, {
+    profile_id: profile.profile_id,
+    name: profile.name,
+    base_role: profile.base_role,
+    system_prompt: profile.system_prompt ?? '',
+    skills: profile.skills ?? [],
+    tools: profile.tools ?? [],
+    action_rids: profile.action_rids ?? [],
+    kb_ids: profile.kb_ids ?? [],
+    markings: profile.markings ?? [],
+    model: profile.model,
+    runtimes: profile.runtimes ?? [],
+  });
+}
+
+/**
+ * 只改一个员工的**执行面**（其余字段原样回传）。
+ *
+ * 后端对非法取值**拒绝**（不是静默回落默认值）——"不许静默切换 Runtime"是
+ * 本条的锁死决策，所以这里把后端的话原样抛给调用方，由界面显示出来。
+ */
+export async function updateProfileRuntimes(
+  profile: EmployeeProfile,
+  runtimes: string[],
+): Promise<EmployeeProfile> {
+  return putProfile({ ...profile, runtimes });
 }
