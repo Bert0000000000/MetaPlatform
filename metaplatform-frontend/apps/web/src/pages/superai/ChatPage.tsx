@@ -60,7 +60,14 @@ import {
   parseRoutingDecisionEvent,
 } from '@/api/superai/chat';
 import type { AgentProposalEvent } from '@/api/superai/chat';
-import { approveRun, cancelRun, newIdempotencyKey, startRun, type RunState } from '@/api/agentTeam';
+import {
+  approveRun,
+  cancelRun,
+  listConversationRuns,
+  newIdempotencyKey,
+  startRun,
+  type RunState,
+} from '@/api/agentTeam';
 import AgentTeamSchedulePanel from './components/AgentTeamSchedulePanel';
 import { useAgentTeamRun } from './useAgentTeamRun';
 import { RoutingDecisionPanel } from './components/RoutingDecisionPanel';
@@ -151,9 +158,14 @@ function isBackendConversation(id: string): boolean {
 /**
  * 会话 ↔ 本轮 agent-team run 的关联键。
  *
- * 后端没有「会话 ↔ run」这张表（那是新增后端功能，本批明确不做），所以关联落在
- * **浏览器本地**——刷新页面后靠它去 `GET /runs/{id}` 把调度视图恢复回来。换一台
- * 机器打开同一个会话看不到上一轮的调度，这是本地存储的固有限制，不假装没有。
+ * **这只是缓存**。真值在后端（`conversation_run` 表 + `GET /runs?conversation=`，
+ * C-1 落地）：换一台机器、清一次浏览器缓存之后，后端仍答得出来"这次对话里跑过
+ * 哪几轮"。本地这份的作用是**先画一帧**，省掉一次往返时调度面板的空白。
+ *
+ * 两处刻意的行为，别当成 bug：
+ * 1. 后端答了就以**后端**为准（本地那份可能是别的机器留下的、或早于本功能）；
+ * 2. 后端答**空**时保留本地那份——那是 C-1 之前起过的老 run，后端根本没有它的
+ *    关系记录。丢掉它等于把用户能看见的历史凭空删掉。
  */
 const RUN_STORE_PREFIX = 'mp-agent-team-run:';
 
@@ -514,10 +526,33 @@ export default function ChatPage() {
       });
   }, [activeId]);
 
-  // --- 调度视图恢复：切会话 / 刷新页面后，从本地记的 run_id 去 GET /runs/{id} 取回 ---
+  // --- 调度视图恢复：切会话 / 刷新页面后，把这一轮的 run_id 找回来 ---
+  //
+  // 两步走，顺序是有意的：
+  // 1. **先**用本地缓存画一帧（省掉往返期间面板的空白）；
+  // 2. **再**问后端 `GET /runs?conversation=`，它答什么就以它为准（C-1：后端是
+  //    唯一关系源）。后端答空说明这一轮没有关系记录（本功能之前起的老 run），
+  //    这时**保留**缓存那一份；请求失败同理。
   useEffect(() => {
+    let cancelled = false;
     setTeamRun(null);
-    setTeamRunId(loadStoredRunId(activeId));
+    const cached = loadStoredRunId(activeId);
+    setTeamRunId(cached);
+    if (!activeId) return () => { cancelled = true; };
+
+    listConversationRuns(activeId)
+      .then((runs) => {
+        if (cancelled || runs.length === 0) return;
+        const latest = runs[0].run_id; // 后端回的是新→旧
+        setTeamRunId(latest);
+        if (latest !== cached) storeRunId(activeId, latest);
+      })
+      .catch(() => {
+        // 后端不可达时不影响这一轮：缓存那份已经在上面画出来了
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [activeId, setTeamRun]);
 
   // --- 模型列表：文本聊天走后台 AI Provider 配置（/models/chat），多模态单独加载 ---
@@ -639,7 +674,15 @@ export default function ChatPage() {
           title: s.title === '新对话' ? trimmed.slice(0, 24) || '新对话' : s.title,
         }));
         try {
-          const accepted = await startRun(trimmed, 3, newIdempotencyKey());
+          // 带 `conversation_id` 提交：关系由**后端**记（C-1）。`turn_id` 用这条
+          // 助手消息的 id——它在会话内唯一，正好表示"这一轮"。
+          const accepted = await startRun(
+            trimmed,
+            3,
+            newIdempotencyKey(),
+            sessionId,
+            assistantMessage.id,
+          );
           storeRunId(sessionId, accepted.run_id);
           setTeamRun(null);
           setTeamRunId(accepted.run_id);

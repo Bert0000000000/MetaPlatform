@@ -140,14 +140,57 @@ export async function startRun(
   goal: string,
   maxParallel = 3,
   idempotencyKey?: string,
+  conversationId?: string,
+  turnId?: string,
 ): Promise<RunAccepted> {
   // 受理制之后这里不再需要长超时：请求立刻回，拆图与派活在后台跑。
+  //
+  // `conversation_id` 是 **C-1 那条关系的落库入口**：给了它就由后端记住"这一轮
+  // 属于哪次会话"。不给只是不起这层关系（工作台直接起一轮、脚本），不是错误。
   return post<RunAccepted>(
     '/agent-team/runs',
-    { goal, max_parallel: maxParallel },
+    {
+      goal,
+      max_parallel: maxParallel,
+      ...(conversationId ? { conversation_id: conversationId } : {}),
+      ...(turnId ? { turn_id: turnId } : {}),
+    },
     undefined,
     idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
   );
+}
+
+/**
+ * 一个会话里的一轮 run（`GET /runs?conversation=` 的一项）。
+ *
+ * `status` / `goal` 来自该轮**自己的检查点**（与 `GET /runs/{id}` 同一份事实），
+ * 不是后端另存的一份状态——所以列表与详情不会各说各话。
+ */
+export interface ConversationRun {
+  conversation_id: string;
+  run_id: string;
+  turn_id: string;
+  created_by: string;
+  relation_type: string;
+  created_at: string;
+  /** 该轮此刻的状态；已受理但还没落第一个检查点时为空串。 */
+  status: string;
+  goal: string;
+}
+
+/**
+ * 列一个会话里的各轮 run（**新→旧**）。
+ *
+ * **后端是唯一关系源**（C-1）。这条关系以前只写在 localStorage——换个机器、
+ * 清一次缓存就没了。本地那份现在只是**缓存**：用它先画一帧，真值以这里为准。
+ */
+export async function listConversationRuns(conversationId: string): Promise<ConversationRun[]> {
+  if (!conversationId) return [];
+  const body = await get<{ conversation_id: string; items: ConversationRun[] }>(
+    '/agent-team/runs',
+    { conversation: conversationId },
+  );
+  return body.items ?? [];
 }
 
 export async function getRun(runId: string): Promise<RunState> {

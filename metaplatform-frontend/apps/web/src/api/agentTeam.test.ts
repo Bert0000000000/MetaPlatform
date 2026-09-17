@@ -4,12 +4,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/utils/auth', () => ({ getToken: () => 'test-token' }));
 
 const postMock = vi.fn();
+const getMock = vi.fn();
 vi.mock('./client', () => ({
-  get: vi.fn(),
+  get: (...args: unknown[]) => getMock(...args),
   post: (...args: unknown[]) => postMock(...args),
 }));
 
-import { newIdempotencyKey, startRun, streamRunEvents, type RunStep } from './agentTeam';
+import {
+  listConversationRuns,
+  newIdempotencyKey,
+  startRun,
+  streamRunEvents,
+  type RunStep,
+} from './agentTeam';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -195,6 +202,53 @@ describe('startRun', () => {
 
     const [, , , headers] = postMock.mock.calls[0] as [unknown, unknown, unknown, unknown];
     expect(headers).toBeUndefined();
+  });
+
+  it('带会话 id 时把 conversation_id / turn_id 交给后端（C-1 的关系落库入口）', async () => {
+    postMock.mockResolvedValue({ run_id: 'r', tenant_id: 't', status: 'running', deduplicated: false });
+
+    await startRun('目标', 3, 'key-1', 'conv-1', 'turn-1');
+
+    const [, body] = postMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(body).toMatchObject({ conversation_id: 'conv-1', turn_id: 'turn-1' });
+  });
+
+  it('不给会话时**不**发空串字段 —— 空串会被后端当成"有会话"', async () => {
+    postMock.mockResolvedValue({ run_id: 'r', tenant_id: 't', status: 'running', deduplicated: false });
+
+    await startRun('目标');
+
+    const [, body] = postMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(body).not.toHaveProperty('conversation_id');
+    expect(body).not.toHaveProperty('turn_id');
+  });
+});
+
+describe('listConversationRuns', () => {
+  it('按 conversation 查后端，把 items 交出来（后端是唯一关系源）', async () => {
+    const items = [
+      { conversation_id: 'conv-1', run_id: 'run-2', turn_id: 't2', status: 'completed', goal: 'b' },
+      { conversation_id: 'conv-1', run_id: 'run-1', turn_id: 't1', status: 'failed', goal: 'a' },
+    ];
+    getMock.mockResolvedValue({ conversation_id: 'conv-1', items });
+
+    const out = await listConversationRuns('conv-1');
+
+    expect(getMock).toHaveBeenCalledWith('/agent-team/runs', { conversation: 'conv-1' });
+    expect(out.map((r) => r.run_id)).toEqual(['run-2', 'run-1']); // 新→旧，原样透传
+  });
+
+  it('没有会话 id 就**不问**后端 —— 那会变成"列全租户的 run"', async () => {
+    const out = await listConversationRuns('');
+
+    expect(out).toEqual([]);
+    expect(getMock).not.toHaveBeenCalled();
+  });
+
+  it('后端没给 items 时不炸，回空数组', async () => {
+    getMock.mockResolvedValue({ conversation_id: 'conv-1' });
+
+    expect(await listConversationRuns('conv-1')).toEqual([]);
   });
 });
 
