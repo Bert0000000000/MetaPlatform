@@ -60,6 +60,10 @@ import {
   parseRoutingDecisionEvent,
 } from '@/api/superai/chat';
 import type { AgentProposalEvent } from '@/api/superai/chat';
+import { approveRun, cancelRun, newIdempotencyKey, startRun, type RunState } from '@/api/agentTeam';
+import AgentTeamSchedule from './components/AgentTeamSchedule';
+import { STATUS_TAG } from './agentTeamRunView';
+import { useAgentTeamRun } from './useAgentTeamRun';
 import { RoutingDecisionPanel } from './components/RoutingDecisionPanel';
 import { EvidenceRenderer } from './components/EvidenceRenderer';
 import { ClaimRenderer } from './components/ClaimRenderer';
@@ -143,6 +147,34 @@ function now(): string {
 
 function isBackendConversation(id: string): boolean {
   return id.startsWith('conv-');
+}
+
+/**
+ * 会话 ↔ 本轮 agent-team run 的关联键。
+ *
+ * 后端没有「会话 ↔ run」这张表（那是新增后端功能，本批明确不做），所以关联落在
+ * **浏览器本地**——刷新页面后靠它去 `GET /runs/{id}` 把调度视图恢复回来。换一台
+ * 机器打开同一个会话看不到上一轮的调度，这是本地存储的固有限制，不假装没有。
+ */
+const RUN_STORE_PREFIX = 'mp-agent-team-run:';
+
+function loadStoredRunId(sessionId: string): string {
+  if (!sessionId) return '';
+  try {
+    return localStorage.getItem(RUN_STORE_PREFIX + sessionId) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function storeRunId(sessionId: string, runId: string): void {
+  if (!sessionId) return;
+  try {
+    if (runId) localStorage.setItem(RUN_STORE_PREFIX + sessionId, runId);
+    else localStorage.removeItem(RUN_STORE_PREFIX + sessionId);
+  } catch {
+    // 本地存不了就退化成"刷新后不恢复"，不影响本轮调度本身
+  }
 }
 
 function createMessage(
@@ -397,6 +429,14 @@ export default function ChatPage() {
   const [activeId, setActiveId] = useState<string>(() => '');
   const [streamingMap, setStreamingMap] = useState<Record<string, string>>({});
   const [agentMode, setAgentMode] = useState(false);
+  // Agent 产品层（agent-team run）：一句话 → 拆任务图 → 派数字员工 → 真实执行 →
+  // 停人工确认。调度过程**常驻在会话历史之上**，不散在每条消息里。
+  const [teamMode, setTeamMode] = useState(false);
+  const [teamRunId, setTeamRunId] = useState('');
+  const [teamBusy, setTeamBusy] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(true);
+  const { run: teamRun, setRun: setTeamRun, live: teamRunLive, refresh: refreshTeamRun } =
+    useAgentTeamRun(teamRunId);
   const [agentSteps, setAgentSteps] = useState<Record<string, any[]>>({});
   // 本体证据 / 待确认提案：按 assistant 消息 id 归集，与 agentSteps 同构。
   const [agentEvidence, setAgentEvidence] = useState<Record<string, Evidence[]>>({});
@@ -475,6 +515,12 @@ export default function ChatPage() {
         Toast.warning('会话历史加载失败，保留本地消息');
       });
   }, [activeId]);
+
+  // --- 调度视图恢复：切会话 / 刷新页面后，从本地记的 run_id 去 GET /runs/{id} 取回 ---
+  useEffect(() => {
+    setTeamRun(null);
+    setTeamRunId(loadStoredRunId(activeId));
+  }, [activeId, setTeamRun]);
 
   // --- 模型列表：文本聊天走后台 AI Provider 配置（/models/chat），多模态单独加载 ---
   useEffect(() => {
@@ -578,6 +624,39 @@ export default function ChatPage() {
           }));
         } finally {
           setLoading(false);
+        }
+        return;
+      }
+
+      // Agent 产品层分支：一句话交给 agent-team，拆任务图 → 派数字员工 → 真实执行
+      // → 停人工确认。**调度过程落在上方常驻的调度区域**，消息里只留一条受理回执
+      // ——这是"两套调度表示合一"的关键：调度不再散在每条消息里。
+      if (teamMode) {
+        const userMessage = createMessage('user', trimmed, { status: 'local' });
+        const assistantMessage = createMessage('assistant', '', { status: 'loading' });
+        updateSession(sessionId, (s) => ({
+          ...s,
+          messages: [...s.messages, userMessage, assistantMessage],
+          updatedAt: now(),
+          title: s.title === '新对话' ? trimmed.slice(0, 24) || '新对话' : s.title,
+        }));
+        setScheduleOpen(true);
+        try {
+          const accepted = await startRun(trimmed, 3, newIdempotencyKey());
+          storeRunId(sessionId, accepted.run_id);
+          setTeamRun(null);
+          setTeamRunId(accepted.run_id);
+          updateMessage(sessionId, assistantMessage.id, (m) => ({
+            ...m,
+            status: 'success',
+            content: `已受理这一轮（run_id：${accepted.run_id}）。任务图、员工状态与产出见上方「Agent 产品层调度」区域。`,
+          }));
+        } catch (error) {
+          updateMessage(sessionId, assistantMessage.id, (m) => ({
+            ...m,
+            content: `[警告] 提交 Agent 产品层失败：${error instanceof Error ? error.message : '未知错误'}`,
+            status: 'error',
+          }));
         }
         return;
       }
@@ -850,7 +929,24 @@ export default function ChatPage() {
         { model: currentModel, temperature: temperature / 100, conversationId },
       );
     },
-    [activeSession, loading, updateSession, updateMessage, isMultimodal, selectedModelId, imageFiles, currentModel, temperature, agentMode],
+    [activeSession, loading, updateSession, updateMessage, isMultimodal, selectedModelId, imageFiles, currentModel, temperature, agentMode, teamMode],
+  );
+
+  /** 人工确认闸门 / 取消：控制面调用会等图停下再回话，所以单独一个 busy。 */
+  const callTeam = useCallback(
+    async (fn: (id: string) => Promise<RunState>, failMsg: string) => {
+      if (!teamRunId) return;
+      setTeamBusy(true);
+      try {
+        setTeamRun(await fn(teamRunId));
+        await refreshTeamRun();
+      } catch (e) {
+        Toast.error(`${failMsg}：${e instanceof Error ? e.message : String(e)}`);
+      } finally {
+        setTeamBusy(false);
+      }
+    },
+    [teamRunId, refreshTeamRun, setTeamRun],
   );
 
   const handleCancel = useCallback(() => {
@@ -1128,6 +1224,59 @@ export default function ChatPage() {
           </Row>
         </div>
 
+        {/* 常驻调度区域：会话历史**之上**的那一块。任务图 / 员工状态 / 波次 /
+            终态 / 证据 / 交付物都在这里，不再散在每条消息里。 */}
+        <div className="mp-schedule-region" data-testid="chat-schedule-region">
+          <div className="mp-schedule-head">
+            <span className="mp-evidence-section-title">Agent 产品层调度</span>
+            <span className="mp-team-chips">
+              {teamRun ? (
+                <Tag
+                  color={teamRun.status === 'awaiting_approval' ? 'amber' : teamRun.status === 'running' ? 'blue' : teamRun.status === 'completed' ? 'green' : 'grey'}
+                  type="light"
+                  data-testid="chat-schedule-status"
+                >
+                  {STATUS_TAG[teamRun.status].label}
+                </Tag>
+              ) : null}
+              {teamRunLive ? (
+                <Tag color="blue" type="light" data-testid="chat-schedule-live">
+                  实时
+                </Tag>
+              ) : null}
+              <button
+                type="button"
+                className="mp-proposal-btn"
+                onClick={() => setScheduleOpen((v) => !v)}
+                data-testid="chat-schedule-toggle"
+              >
+                {scheduleOpen ? '收起' : '展开'}
+              </button>
+            </span>
+          </div>
+          {scheduleOpen ? (
+            teamRun || teamRunId ? (
+              <AgentTeamSchedule
+                run={teamRun}
+                runId={teamRunId}
+                live={teamRunLive}
+                busy={teamBusy}
+                onApprove={(approved) =>
+                  void callTeam(
+                    (id) => approveRun(id, approved),
+                    approved ? '确认失败' : '驳回失败',
+                  )
+                }
+                onCancel={() => void callTeam((id) => cancelRun(id), '取消失败')}
+              />
+            ) : (
+              <Typography.Text type="tertiary" data-testid="chat-schedule-empty">
+                打开下方「Agent 产品层」后发一句话，这里会实时显示任务图、员工状态与波次。
+              </Typography.Text>
+            )
+          ) : null}
+        </div>
+
         {/* 消息流（官方 AIChatDialogue：左右布局 + reasoning + annotations） */}
         <div className="mp-split-main">
           <AIChatDialogue
@@ -1308,6 +1457,17 @@ export default function ChatPage() {
               >
                 {agentMode ? 'Agent 调度中' : 'Agent 调度'}
               </Button>
+              {/* Agent 产品层：走 agent-team run（任务图 / 派数字员工 / 人工确认），
+                  调度过程显示在上方的常驻区域。用原生 button —— dev 预览窗里
+                  Semi Button 的 onClick 会被 React 事件委托截断（既有环境怪癖）。 */}
+              <button
+                type="button"
+                className={`mp-proposal-btn${teamMode ? ' mp-proposal-btn--primary' : ''}`}
+                onClick={() => setTeamMode((v) => !v)}
+                data-testid="chat-team-mode"
+              >
+                {teamMode ? 'Agent 产品层 · 开' : 'Agent 产品层'}
+              </button>
               <Configure.Button icon={<IconBolt />} field="thinking">
                 深度思考
               </Configure.Button>

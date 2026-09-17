@@ -584,3 +584,26 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* ---------- 会话页常驻调度区域（ChatPage × AgentTeamSchedule） ---------- */
+/* 位置：会话历史**之上**。可滚动，不把对话挤出屏幕。 */
+.mp-schedule-region {
+  flex: 0 0 auto;
+  max-height: 46vh;
+  overflow: auto;
+  padding: var(--mp-space-3);
+  border-bottom: 1px solid var(--semi-color-border);
+  background: var(--semi-color-fill-0);
+}
+
+.mp-schedule-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mp-space-2);
+}
+
+.mp-schedule-region .mp-team-subsection:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
