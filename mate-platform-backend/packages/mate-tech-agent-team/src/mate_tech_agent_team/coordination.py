@@ -36,6 +36,8 @@ from typing import Any, Protocol
 
 import psycopg
 
+from .tenant_db import TenantConnections, tenant_connections
+
 SCHEMA = "agent_team"
 CANCEL_TABLE = "cancel_signals"
 CLAIMS_TABLE = "run_claims"
@@ -145,20 +147,14 @@ class InMemoryCancelSignals:
 class PgCancelSignals:
     """PG 实现：真·多副本共享。连接随每次调用开闭（信号是低频操作）。"""
 
-    def __init__(self, dsn: str, schema: str = SCHEMA) -> None:
-        self._dsn = dsn
-        self._schema = schema
+    def __init__(self, dsn: str | TenantConnections, schema: str = SCHEMA) -> None:
+        self._conns = tenant_connections(dsn, schema=schema)
 
     @asynccontextmanager
     async def _conn(self, tenant_id: str) -> AsyncIterator[psycopg.AsyncConnection[Any]]:
-        conn = await psycopg.AsyncConnection.connect(self._dsn, autocommit=True)
-        try:
-            await conn.execute(f"SET search_path TO {self._schema}")
-            # set_config() 而非 SET x = %s：后者不接受参数绑定。
-            await conn.execute("select set_config('app.tenant_id', %s, false)", (tenant_id,))
+        # 租户上下文走 tenant_db：**事务级** GUC + 归还前 RESET（B-5）。
+        async with self._conns.for_tenant(tenant_id) as conn:
             yield conn
-        finally:
-            await conn.close()
 
     async def request(self, *, tenant_id: str, run_id: str) -> None:
         """置位（幂等）：**不覆盖**更早的时刻——先到的那个才是"什么时候想停的"。"""
@@ -217,20 +213,20 @@ class InMemoryRunClaims:
 class PgRunClaims:
     """PG 实现：真·多副本共享，认领的原子性由**那一条 SQL** 保证。"""
 
-    def __init__(self, dsn: str, schema: str = SCHEMA, ttl: float = DEFAULT_CLAIM_TTL_SECONDS):
-        self._dsn = dsn
-        self._schema = schema
+    def __init__(
+        self,
+        dsn: str | TenantConnections,
+        schema: str = SCHEMA,
+        ttl: float = DEFAULT_CLAIM_TTL_SECONDS,
+    ):
+        self._conns = tenant_connections(dsn, schema=schema)
         self._ttl = max(0.0, ttl)
 
     @asynccontextmanager
     async def _conn(self, tenant_id: str) -> AsyncIterator[psycopg.AsyncConnection[Any]]:
-        conn = await psycopg.AsyncConnection.connect(self._dsn, autocommit=True)
-        try:
-            await conn.execute(f"SET search_path TO {self._schema}")
-            await conn.execute("select set_config('app.tenant_id', %s, false)", (tenant_id,))
+        # 租户上下文走 tenant_db：**事务级** GUC + 归还前 RESET（B-5）。
+        async with self._conns.for_tenant(tenant_id) as conn:
             yield conn
-        finally:
-            await conn.close()
 
     async def claim(self, *, tenant_id: str, key: str, run_id: str) -> bool:
         """抢坑（原子）。返回 ``True`` = 这一个副本负责真去跑那一轮。"""

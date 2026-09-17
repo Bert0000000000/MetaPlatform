@@ -122,6 +122,18 @@ def pg_dsns() -> tuple[str, str]:
 
 
 @pytest.fixture
+def app_dsn(pg_dsns: tuple[str, str]) -> str:
+    """受 RLS 约束的 app 角色 DSN（``mate_app``）——隔离断言的正确落点。"""
+    return pg_dsns[1]
+
+
+@pytest.fixture
+def admin_dsn(pg_dsns: tuple[str, str]) -> str:
+    """admin DSN：建表与跨租户扫描用（表 owner 默认绕过 RLS）。"""
+    return pg_dsns[0]
+
+
+@pytest.fixture
 def rls_schema(pg_dsns: tuple[str, str]) -> Iterator[str]:
     """装好 langgraph 表 + RLS 的独立 schema，用完拆掉。"""
     import psycopg

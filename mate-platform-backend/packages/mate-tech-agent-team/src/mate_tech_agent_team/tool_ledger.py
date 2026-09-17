@@ -47,6 +47,8 @@ from typing import Any, Protocol
 
 import psycopg
 
+from .tenant_db import TenantConnections, tenant_connections
+
 SCHEMA = "agent_team"
 TOOL_INVOCATIONS_TABLE = "tool_invocations"
 
@@ -318,21 +320,20 @@ class PgToolLedger:
     """PG 实现：跨副本、跨重启共读同一本账。"""
 
     def __init__(
-        self, dsn: str, schema: str = SCHEMA, *, lease: float = DEFAULT_LEASE_SECONDS
+        self,
+        dsn: str | TenantConnections,
+        schema: str = SCHEMA,
+        *,
+        lease: float = DEFAULT_LEASE_SECONDS,
     ) -> None:
-        self._dsn = dsn
-        self._schema = schema
+        self._conns = tenant_connections(dsn, schema=schema)
         self._lease = max(0.0, lease)
 
     @asynccontextmanager
     async def _conn(self, tenant_id: str) -> AsyncIterator[psycopg.AsyncConnection[Any]]:
-        conn = await psycopg.AsyncConnection.connect(self._dsn, autocommit=True)
-        try:
-            await conn.execute(f"SET search_path TO {self._schema}")
-            await conn.execute("select set_config('app.tenant_id', %s, false)", (tenant_id,))
+        # 租户上下文走 tenant_db：**事务级** GUC + 归还前 RESET（B-5）。
+        async with self._conns.for_tenant(tenant_id) as conn:
             yield conn
-        finally:
-            await conn.close()
 
     async def begin(
         self,

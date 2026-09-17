@@ -30,6 +30,8 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
+from .tenant_db import TenantConnections, tenant_connections
+
 SCHEMA = "agent_team"
 
 # langgraph 建的表里，前三张以 thread_id 为首列（RLS 可按前缀过滤）；
@@ -91,7 +93,11 @@ def bootstrap(admin_dsn: str, app_role: str = "mate_app", schema: str = SCHEMA) 
 
 
 def _guc_statement(tenant_id: str) -> tuple[str, tuple[str]]:
-    """用 set_config() 而非 ``SET x = %s``：后者不接受参数绑定。"""
+    """**仅用于** autocommit 路径（langgraph 的 checkpointer）的会话级 GUC 语句。
+
+    演示/测试仍在用；生产路径——包括本模块的 checkpointer——统一走
+    :class:`mate_tech_agent_team.tenant_db.TenantConnections`（B-5）。
+    """
     if "|" in tenant_id:
         raise ValueError("tenant_id 不得含 '|'（会破坏 thread_id 前缀约定）")
     return "select set_config('app.tenant_id', %s, false)", (tenant_id,)
@@ -168,22 +174,22 @@ class PgCheckpointerProvider:
 
     连接随 context manager 生命周期开闭；HITL 的暂停/恢复是两次独立请求，
     各自开连接——状态在 PG 里，不在连接里。
+
+    **这条是本模块唯一的会话级 GUC 例外，理由写在这里**：langgraph 的
+    ``AsyncPostgresSaver`` 要 ``autocommit=True`` 的原始连接，它自己管事务边界
+    （``aput`` 里成对地开事务、写 checkpoint_writes），外头再套一层事务会把它的
+    语义改掉。所以这里走 :class:`TenantConnections` 的 **autocommit 形态**：
+    GUC 是会话级的，安全性由**归还前 RESET**（池的 putback 钩子）保证——
+    不池化时连接被真关掉，会话级设置随连接一起消失，同样不泄漏。
     """
 
-    def __init__(self, dsn: str, schema: str = SCHEMA) -> None:
-        self._dsn = dsn
-        self._schema = schema
+    def __init__(self, dsn: str | TenantConnections, schema: str = SCHEMA) -> None:
+        self._conns = tenant_connections(dsn, schema=schema, autocommit=True)
 
     @asynccontextmanager
     async def for_tenant(self, tenant_id: str) -> AsyncIterator[BaseCheckpointSaver]:
-        conn = await psycopg.AsyncConnection.connect(self._dsn, autocommit=True)
-        try:
-            await conn.execute(f"SET search_path TO {self._schema}")
-            stmt, params = _guc_statement(tenant_id)
-            await conn.execute(stmt, params)
+        async with self._conns.for_tenant(tenant_id) as conn:
             yield AsyncPostgresSaver(conn)
-        finally:
-            await conn.close()
 
 
 class InMemoryCheckpointerProvider:

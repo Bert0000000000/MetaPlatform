@@ -26,6 +26,8 @@ from typing import Any, Protocol
 
 import psycopg
 
+from .tenant_db import TenantConnections, tenant_connections
+
 SCHEMA = "agent_team"
 TABLE = "team_task"
 
@@ -194,21 +196,14 @@ def _to_task(row: Sequence[Any]) -> TeamTask:
 class PgTeamTasks:
     """``team_task`` 的 PG 实现。连接随 context manager 生命周期开闭。"""
 
-    def __init__(self, dsn: str, schema: str = SCHEMA) -> None:
-        self._dsn = dsn
-        self._schema = schema
+    def __init__(self, dsn: str | TenantConnections, schema: str = SCHEMA) -> None:
+        self._conns = tenant_connections(dsn, schema=schema)
 
     @asynccontextmanager
     async def _conn(self, tenant_id: str) -> AsyncIterator[psycopg.AsyncConnection[Any]]:
-        conn = await psycopg.AsyncConnection.connect(self._dsn, autocommit=True)
-        try:
-            await conn.execute(f"SET search_path TO {self._schema}")
-            if tenant_id:
-                # set_config() 而非 SET x = %s：后者不接受参数绑定。
-                await conn.execute("select set_config('app.tenant_id', %s, false)", (tenant_id,))
+        # 租户上下文走 tenant_db：**事务级** GUC + 归还前 RESET（B-5）。
+        async with self._conns.for_tenant(tenant_id) as conn:
             yield conn
-        finally:
-            await conn.close()
 
     async def create(self, task: TeamTask) -> None:
         """登记一个任务实例。同 ``(tenant_id, task_id)`` 已存在时**重置**。
