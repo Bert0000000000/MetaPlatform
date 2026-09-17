@@ -143,7 +143,9 @@ utf-8 解码回执，不放它中文会被打碎（POSIX 上同理由 `LANG`/`LC
 | **B2** | required check 收紧：本次只加了**已验证在 `main` 上绿**的那些 | 把一个当前红的 job 设为 required = 立刻冻结所有合并。`main` 上 `ga pre-commit + infra pytest + mate-platform pytest` 是红的（本批已拆开并修绿，但**要先合并**才生效） | 本 PR 合并后把 `ga-format` 与 `ga-tests` 加进 required（命令见 §5.5） |
 | **B3** | CODEOWNERS 只**立归属**，没开「≥1 / ≥2 approve」规则 | 本仓只有**一个** collaborator（`Bert0000000000`）。GitHub 不允许作者批自己的 PR —— 开了 required review，**所有 PR 立刻不可合并**（包括人自己开的） | 加第二个评审人 / bot 账号后，再开规则集：普通路径 1 个、敏感路径 2 个（CODEOWNERS 已把敏感档分好） |
 | **B4** | 前端**单测**没进 required | `apps/web` 有一条**预存红**（`ProposalConfirmDrawer.test.tsx`，本批未触及）。把带预存红的套件设成 required = 冻结合并 | 修掉那条预存红（平台计划 Sprint 0 的 `MP-QA-BASELINE-01`）后把 `pnpm test:unit` 加进去 |
-| **B5** | `test_recovery.py::test_list_unfinished_reads_the_checkpoint_table_by_status` **在本批的某一次 CI 上红过一次**，本机连跑 3 次 + 后续 CI 均绿 | **判定为既有 flaky**（PG 共享 schema 的用例互相干扰，见 `test_recovery` 里"扫描到别的用例遗留的 run"这一类断言）。它**不是本批引入的**：同一条用例在本批早一轮 CI（head `5b7f5527`）是绿的，而那一轮已包含 A-1/A-2/A-3/A-6 全部改动 | 该断言写的是"扫描结果 == `[]`"，隐含"这个 schema 里只有我这一轮"——应改成按 `run_id` 过滤后再断言。归 `MP-QA-BASELINE-01`（与 B4 同一处收口） |
+| **B5** | `test_recovery.py::test_list_unfinished_reads_the_checkpoint_table_by_status` **在本批的某一次 CI 上红过一次**，本机连跑 3 次 + 后续 CI 均绿 | **判定为既有 flaky**（PG 共享 schema 的用例互相干扰：那条断言写的是"扫描结果 == `[]`"，隐含"这个 schema 里只有我这一轮"。它**不是本批引入的**——同一用例在本批早一轮 CI（head `5b7f5527`，已含 A-1/A-2/A-3/A-6 全部改动）是绿的 | 断言改成"按 `run_id` 过滤后再比"，别假设 schema 里只有自己。归 `MP-QA-BASELINE-01`（与 B4 同一处收口） |
+| **B6** | `cowork md-lint (pymarkdownlnt)` 红（**非 required**） | 它只查 `docs/active/specs` 与 `docs/active/delivery/evidence` 下**变更的** .md，只关掉了 md013/md041。本批落档的 2.1 路线图被 MD004（它期望无序列表用 `+`、本仓文档一律用 `-`）/MD024/MD025 判红；`architecture-implementation.md` 的 MD031/MD040 在**我没碰的** 491/577 行（预存） | 两件事要分开定：① 是本仓文档改用 `+`，还是把 MD004 关掉——这是**风格决策**，不该由本批顺手改掉几十处列表；② 491/577 行的围栏补语言与空行属预存格式债。归 `MP-QA-BASELINE-01` |
+| **B7** | `Architecture kernel governance` 红（**非 required**） | **`main` 上就是红的**（`24976a4c` 的同一 job 同为 failure），本批未触及 | 预存债，非本批引入 |
 
 ### C. 复核与建议
 
@@ -240,7 +242,22 @@ PR：[#59](https://github.com/Bert0000000000/MetaPlatform/pull/59)。
 | `ga tests (infra + mate-platform + mate-app-kb + governance)` | **success** |
 | `agent-team pytest (mate-tech-agent-team)` | **success** |
 
-**④ 去探针后全绿**（head `7d3cf222`）：`ga-acceptance` 的 **19 个 job 全 success**。
+**④ 去探针后全绿**（head `7d3cf222` / 最终 `832c7a74`）：`ga-acceptance` 的
+**19 个 job 全 success**；**9 条 required check 全 pass**（`gh pr checks 59` 实取：
+
+```
+Architecture tests (import-linter + four-layer guardrails)  pass
+Frontend (metaplatform-frontend)                            pass
+Lint (ruff)                                                 pass
+Type check (pyright strict)                                 pass
+Validate compose + Dockerfiles                              pass
+agent-team pytest (mate-tech-agent-team)                    pass
+ga-014 Ontology PostgreSQL RLS isolation                    pass
+lint-and-bundle                                             pass
+traceability                                                pass
+```
+
+）。另有两条**非 required** 的红，逐条登记在 §4-B（B6 / B7）。
 
 ### 5.5 required check：本批做了什么、还差什么
 
