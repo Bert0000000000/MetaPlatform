@@ -99,6 +99,11 @@ class RunStateModel(BaseModel):
     #: 0 = 无截止）。两者都**随 run 落库**：重启后仍按本轮的值裁决（1.5 任务 2）。
     timeout_seconds: float = 0.0
     deadline_at: float = 0.0
+    #: **HITL 闸门的统一协议**（B-6 / `MP-APPROVAL-GATE-ABI-01`）：闸门地址、
+    #: 层级、会签人数、待批内容、过期时刻与已收到的决定。**统一审批中心消费的就是
+    #: 它**（列 ``pending`` 的闸门 + 按 ``gate_id`` 做决定）。
+    #: 老 run（B-6 之前落的检查点）没有这个键，因此这里是空 dict。
+    approval_gate: dict[str, Any] = Field(default_factory=dict)
 
 
 class RunCancelAcceptedModel(BaseModel):

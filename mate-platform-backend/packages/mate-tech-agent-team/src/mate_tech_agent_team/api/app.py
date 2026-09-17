@@ -181,6 +181,16 @@ def _user_token(request: Request) -> str:
     return header[7:].strip() if header.lower().startswith("bearer ") else ""
 
 
+def _approver_roles(request: Request) -> tuple[str, ...]:
+    """审批人**实际持有的**角色（来自令牌的 ``RequestContext.roles``）。
+
+    刻意**不是**请求体里让调用方填的角色：多级审批靠角色归级，而"我自称是什么
+    角色"是可以随便写的。闸门拿到的必须是签出来的那一个。
+    """
+    roles = getattr(request.state.ctx, "roles", None) or ()
+    return tuple(str(role) for role in roles)
+
+
 def _to_model(state: BrainState) -> RunStateModel:
     return RunStateModel.model_validate({**state, "status": state.get("status", "")})
 
@@ -350,11 +360,15 @@ async def agentTeamPostRunApprove(
         raise HTTPException(status_code=404, detail="run not found") from exc
     try:
         # 续跑也走控制面：它同样"有请求在等它"，执行中同样可被取消（1.5 任务 1）。
+        # B-6：把**审批人实际持有的角色**（来自令牌，不是他自称的）一起交给闸门
+        # ——多级审批靠它归级；``comment`` 进闸门的 decisions 与审计。
         state = await get_run_control().resume(
             tenant_id=tenant_id,
             run_id=run_id,
             approved=body.approved,
             user_token=_user_token(request),
+            approver_roles=_approver_roles(request),
+            comment=body.comment,
         )
     except RunNotFound as exc:
         raise HTTPException(status_code=404, detail="run not found") from exc

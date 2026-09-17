@@ -156,6 +156,14 @@ class BrainState(TypedDict, total=False):
     status: str  # planning | running | awaiting_approval | completed | failed
     summary: str
     hitl_reason: str
+    #: **HITL 闸门的统一协议**（B-6 / `MP-APPROVAL-GATE-ABI-01`）。
+    #: 形状见 :class:`mate_tech_agent_team.approval_gate.ApprovalGate`——
+    #: ``gate_id / gate_type / required_roles / required_approvals / payload /
+    #: editable_fields / expires_at / decisions``。
+    #:
+    #: 它随 run 落检查点（所以重启后闸门还在，不需要第二个真相源）。
+    #: **老检查点里没有这个键**是正常的：那时按"只有单布尔审批"的旧语义处理。
+    approval_gate: dict[str, Any]
     error: str
     #: 本轮的派活授权（链根）。**不是凭据**，只有包络四维与它的归属。
     delegation: DelegationState

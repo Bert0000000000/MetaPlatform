@@ -219,6 +219,13 @@ components:
           description: |
             本轮**实际生效**的运行级超时（秒；0 = 不设超时）。请求省略
             `timeout_seconds` 时这里落的是开跑那一刻的部署默认值。
+        approval_gate:
+          allOf:
+            - $ref: "#/components/schemas/ApprovalGate"
+          description: |
+            **HITL 闸门的统一协议**（B-6）。停在 `awaiting_approval` 时它描述待批
+            的是什么、还差几级几个人、什么时候过期。**老 run**（B-6 之前落的检查点）
+            没有这个键，读到的是空对象——那时按单布尔审批的旧语义处理。
         deadline_at:
           type: number
           description: |
@@ -243,6 +250,77 @@ components:
         cancel_requested:
           type: boolean
           description: 恒为 `true`：能回话就说明这次取消已经记下了。
+    ApprovalGate:
+      type: object
+      description: |
+        **HITL 闸门的统一协议**（B-6 / `MP-APPROVAL-GATE-ABI-01`）。它是"图怎么
+        暂停恢复"之外的那件事——**闸门长什么样**。在它之前闸门只有一个布尔
+        `approved`，说不清"谁批的、还差几级、什么时候过期"。
+
+        统一审批中心（`MP-APPROVAL-INBOX-01`）只需要两件事就能消费它：
+        按 `state` 筛出 `pending` 的闸门列待办；按 `gate_id`（**稳定地址**：
+        同 run 同类型永远是同一个）做一次决定。
+
+        三种能力都表达在这份协议里：
+        - **多级审批** —— `required_roles` 有序，逐级判；第 N 级没凑齐仍是 `pending`；
+        - **会签** —— `required_approvals > 1`，且按 `actor` **去重**（同一个人
+          批两次不算两票）；
+        - **超时** —— 到 `expires_at` 还没凑齐 → `expired`，由读路径落终态
+          （与运行级超时是同一个事实）。
+      properties:
+        gate_id:
+          type: string
+          description: 稳定地址（`<run_id>:<gate_type>`）。审批中心拿它当主键。
+        run_id:
+          type: string
+        tenant_id:
+          type: string
+        gate_type:
+          type: string
+          enum: [plan_gate]
+        required_roles:
+          type: array
+          items:
+            type: string
+          description: |
+            **有序**的审批层级。空数组 = 单级、任意审批角色（缺省形态）。
+            `*` 表示"这一级不限定角色"。
+        required_approvals:
+          type: integer
+          description: 每一级需要的**不同审批人**数。1 = 单人；>1 = 会签。
+        payload:
+          type: object
+          description: 待批的内容（缺省闸门里是目标与各员工回执的摘要）。
+        editable_fields:
+          type: array
+          items:
+            type: string
+          description: 审批人在批准时可以一并修订的字段名。
+        expires_at:
+          type: number
+          description: 过期时刻（epoch 秒；0 = 不过期）。缺省取本轮的运行级截止时刻。
+        created_at:
+          type: number
+        decisions:
+          type: array
+          items:
+            type: object
+            properties:
+              actor:
+                type: string
+                description: 审批人标识（会签去重按它）。
+              role:
+                type: string
+                description: |
+                  这次决定**以哪个角色**作出——**来自令牌**，不是调用方自称的。
+                  一个都归不上时为空串（绝不冒充）。
+              decision:
+                type: string
+                enum: [approved, rejected]
+              comment:
+                type: string
+              decided_at:
+                type: number
     RunAccepted:
       type: object
       required: [run_id, tenant_id, status]

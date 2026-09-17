@@ -50,6 +50,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -57,6 +58,7 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
+from .approval_gate import GATE_PLAN, ApprovalGate, new_gate_id
 from .artifact_store import ArtifactStore, artifact_for_task
 from .authority import DepthExceeded, Envelope
 from .planner import PlanError, Planner
@@ -224,6 +226,26 @@ def _validate_replan(existing: list[SubTask], extra: list[SubTask]) -> str:
     if collided:
         return "重规划复用了已存在的计划内标签：" + "、".join(collided)
     return _validate_dependencies([*existing, *extra])
+
+
+def configured_gate_spec() -> tuple[tuple[str, ...], int]:
+    """部署策略：计划闸门要几级、每级要几个人（B-6）。
+
+    * ``MATE_AGENT_TEAM_GATE_REQUIRED_ROLES`` —— 逗号分隔的**有序层级**
+      （例：``agent_admin,platform_admin`` = 先 agent_admin 再 platform_admin）。
+      留空 = 单级、任意审批角色（与 B-6 之前逐字一致）。
+    * ``MATE_AGENT_TEAM_GATE_REQUIRED_APPROVALS`` —— **每一级**需要的不同审批人数
+      （>1 = 会签）。缺省 1。
+
+    读在**建闸门那一刻**（而不是启动时缓存）：改配置重启即可生效，不需要重建图。
+    """
+    raw_roles = os.getenv("MATE_AGENT_TEAM_GATE_REQUIRED_ROLES", "").strip()
+    roles = tuple(part.strip() for part in raw_roles.split(",") if part.strip())
+    try:
+        approvals = max(1, int(os.getenv("MATE_AGENT_TEAM_GATE_REQUIRED_APPROVALS", "1")))
+    except ValueError:
+        approvals = 1
+    return roles, approvals
 
 
 def build_brain_graph(
@@ -542,9 +564,37 @@ def build_brain_graph(
             return _cancel_update()
         pending = state.get("approved") is None
         if pending:
+            # B-6：闸门不再是"一个布尔"，而是统一协议描述的一个对象。
+            # 默认形态与旧语义**逐字等价**（单级、任意审批角色、1 个人同意即可）；
+            # 多级 / 会签由部署策略给（见 :func:`configured_gate_spec`）。
+            # 过期时刻直接取本轮的运行级截止时间——"到点没批"与"跑超时"是同一件事。
+            roles, approvals = configured_gate_spec()
+            gate = ApprovalGate(
+                gate_id=new_gate_id(run_id=state.get("run_id", ""), gate_type=GATE_PLAN),
+                run_id=state.get("run_id", ""),
+                tenant_id=state.get("tenant_id", ""),
+                gate_type=GATE_PLAN,
+                required_roles=roles,
+                required_approvals=approvals,
+                payload={
+                    "goal": state.get("goal", ""),
+                    "results": {
+                        tid: {
+                            "profile_id": r.get("profile_id", ""),
+                            "status": r.get("status", ""),
+                            "output": r.get("output", ""),
+                        }
+                        for tid, r in (state.get("results") or {}).items()
+                    },
+                },
+                editable_fields=("summary",),
+                expires_at=float(state.get("deadline_at") or 0.0),
+                created_at=time.time(),
+            )
             return {
                 "status": "awaiting_approval",
                 "hitl_reason": f"{len(state.get('results', {}))} 个员工已产出，等待人工确认后汇总",
+                "approval_gate": gate.to_dict(),
             }
         return {}
 

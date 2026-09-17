@@ -60,7 +60,7 @@ import json
 import logging
 import os
 import time
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Protocol
 from uuid import uuid4
@@ -678,6 +678,8 @@ class RunControl:
         run_id: str,
         approved: bool = True,
         user_token: str = "",
+        approver_roles: Sequence[str] = (),
+        comment: str = "",
     ) -> dict:
         """人工确认后续跑。续跑同样"有请求在等它"，因此同样可被取消。"""
         live = self._open(tenant_id=tenant_id, run_id=run_id)
@@ -689,6 +691,8 @@ class RunControl:
                 approved=approved,
                 user_token=user_token,
                 should_cancel=self._cancel_check(tenant_id=tenant_id, run_id=run_id),
+                approver_roles=approver_roles,
+                comment=comment,
             )
         finally:
             await self._close(tenant_id=tenant_id, run_id=run_id, live=live)

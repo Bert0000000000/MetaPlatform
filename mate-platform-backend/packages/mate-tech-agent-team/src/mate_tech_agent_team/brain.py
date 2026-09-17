@@ -17,13 +17,20 @@ thread_id 的调用方都能读到别人的状态；只有 GUC 而 thread_id 不
 from __future__ import annotations
 
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 from uuid import uuid4
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
 
+from .approval_gate import (
+    PENDING,
+    ApprovalGate,
+    GateOutcome,
+    evaluate_gate,
+    record_decision,
+)
 from .artifact_store import ArtifactStore
 from .audit import AUDIT_APPROVAL, AUDIT_DELEGATION, AuditSink
 from .authority import (
@@ -307,13 +314,28 @@ class BrainService:
         approved: bool = True,
         user_token: str = "",
         should_cancel: Callable[[], Awaitable[bool]] | None = None,
+        approver_roles: Sequence[str] = (),
+        comment: str = "",
     ) -> BrainState:
-        """人工确认后续跑。已完成的节点不会被重跑（D-6）。
+        """对闸门做一次**审批决定**，够了就续跑。已完成的节点不会被重跑（D-6）。
+
+        B-6 起这里不再只是"翻一个布尔"：它把决定记进闸门（``decisions``）、
+        重新评估协议，然后按结论分三路走——
+
+        * ``approved``（所有层级凑齐）→ 写 ``approved=True``，图从检查点续跑；
+        * ``rejected``（任何人驳回，终局）→ 写 ``approved=False``，图落 ``failed``；
+        * **仍 ``pending```（会签还差人 / 多级还差一层）→ **只把闸门写回去，
+          图不动**。这一轮继续停在等人，而不是被一次不完整的同意推下去。
+
+        超时不在这里裁决（``expired``）：它由读路径按 ``deadline_at`` 落 ``timeout``
+        ——与运行级超时是同一个事实，不该有两处各自计时。
 
         续跑也是"执行中的 run"（有请求在等它），所以同样把取消标志交给图。
         """
         cfg = self._config(tenant_id, run_id)
         ctx = self._context(tenant_id=tenant_id, user_token=user_token)
+        gate_now: ApprovalGate | None = None
+        outcome: GateOutcome | None = None
         async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
             graph = await self._graph_for(saver, ctx, self._max_parallel, should_cancel)
             snapshot = await graph.aget_state(cfg)
@@ -321,8 +343,41 @@ class BrainService:
                 raise RunNotFound(run_id)
             if snapshot.values.get("status") != AWAITING:
                 raise RunNotAwaitingApproval(run_id)
-            await graph.aupdate_state(cfg, {"approved": approved}, as_node="gate")
-            out = await graph.ainvoke(None, cfg)
+
+            gate = ApprovalGate.from_dict(snapshot.values.get("approval_gate"))
+            if gate is None:
+                # 老检查点（B-6 之前落的）没有闸门协议——退回单布尔语义，
+                # 与加这一条之前**逐字一致**。
+                await graph.aupdate_state(cfg, {"approved": approved}, as_node="gate")
+                out = await graph.ainvoke(None, cfg)
+            else:
+                gate_now = record_decision(
+                    gate,
+                    actor=ctx.actor,
+                    roles=tuple(approver_roles),
+                    approved=approved,
+                    comment=comment,
+                )
+                outcome = evaluate_gate(gate_now, now=time.time())
+                if outcome.state == PENDING:
+                    # 不够。**只写闸门，不推图**——继续停在闸门上等人。
+                    await graph.aupdate_state(cfg, {"approval_gate": gate_now.to_dict()})
+                    # 回读一次而不是回 ``snapshot.values``：后者是**写之前**的快照，
+                    # 回给调用方的决定列表会是空的（"我明明批了，回执说没人批"）。
+                    refreshed = await graph.aget_state(cfg)
+                    out = refreshed.values or snapshot.values
+                else:
+                    await graph.aupdate_state(
+                        cfg,
+                        {"approval_gate": gate_now.to_dict(), "approved": outcome.satisfied},
+                        as_node="gate",
+                    )
+                    out = await graph.ainvoke(None, cfg)
+
+        if outcome is not None and outcome.state == PENDING:
+            # 一次"还没批完"的同意**不是**一次审批——不落审计行（与 409 同理）。
+            return dict(out)
+
         # 审批落审计行（硬规则 #9）：谁批的、批的是哪一轮、批还是驳。
         # 记在**闸门真的动了之后**——被 409 挡下的确认不是一次审批。
         await self.audit.append(
@@ -334,7 +389,13 @@ class BrainService:
             decision="approved" if approved else "rejected",
             approver_id=ctx.actor,
             policy_version=AUTHORITY_POLICY_VERSION,
-            detail={"scope": "run", "level": "plan_gate"},
+            detail={
+                "scope": "run",
+                "level": gate_now.gate_type if gate_now is not None else "plan_gate",
+                # B-6：把闸门的结论一并记下——审批中心只看审计也能答"还差几级"。
+                "gate": outcome.to_dict() if outcome is not None else {},
+                "comment": comment,
+            },
         )
         return dict(out)
 
