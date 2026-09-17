@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
 import pytest
@@ -300,21 +299,42 @@ def test_default_client_endpoint_falls_back_to_the_local_service(
     assert client.endpoint == "http://localhost:8701"
 
 
-# ── 真 A2A 端到端：默认 skip（要一个活着的外部 agent）────────────────────
+# ── 真传输面：不 skip，断言"够不着外部 agent 时如实报错" ────────────────
 
 
-@pytest.mark.skipif(
-    __import__("os").getenv("MATE_AGENT_TEAM_A2A_E2E") != "1",
-    reason="真 A2A 端到端要先 opt-in：MATE_AGENT_TEAM_A2A_E2E=1（需要一个活着的外部 agent）",
-)
+def _closed_port() -> int:
+    """要一个刚被释放的本机端口 —— 连它必然被**立刻拒绝**（不是超时，用例才快）。"""
+    import socket
+
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
+
+
 @pytest.mark.asyncio
-async def test_real_a2a_smoke() -> None:
-    """对着真 `a2a-external-agent`（JSON-RPC + agent card）跑一次出站。"""
+async def test_the_real_sdk_transport_reports_an_unreachable_agent_truthfully(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """对着一个**够不着**的端点出站：回执如实说"没成"，不抛、不编造。
+
+    刻意**不 skip**（ADR-0015 规则 7：跑不了的用例要么修前置、要么删掉）。这条不
+    需要"有一个活着的外部 agent"这个前置——它断言的性质在任何机器上都成立，同时
+    是**真 a2a-sdk 传输面**在 CI 里的唯一接触点：桩用例验的是出站信封与结果映射，
+    它验的是"a2a-sdk 还认不认这套调用"（SDK 换签名时桩用例不会响，它会）。
+
+    真·端到端（对着活着的 ``a2a-external-agent``）是人工验证项：命令与实测结果
+    记在 PR 里，不作为自动用例——那需要一个 CI 起不来的外部进程。
+    """
+    pytest.importorskip("a2a")
+    monkeypatch.setenv("MATE_AGENT_TEAM_A2A_URL", f"http://127.0.0.1:{_closed_port()}")
     client = build_a2a_outbound_client()
+
     result = await client.delegate(
-        instruction="[finance-recon] 核对 Q3 应收对账差异",
+        instruction="核对 Q3 应收对账差异",
         tenant_id="tenant-acme",
         role_slug="finance-recon",
     )
-    assert result.ok, json.dumps(result.to_dict(), ensure_ascii=False)
-    assert result.text.strip()
+
+    assert result.ok is False, result.to_dict()
+    assert result.text.strip() == "", f"没够着却读回了产物：{result.to_dict()}"
+    assert result.error, "没够着却没给错因"

@@ -185,18 +185,23 @@ def test_bundle_manifest_is_references_only() -> None:
 def test_scan_for_secrets_is_not_vacuous() -> None:
     """探针：扫描器真的抓得到植入的密钥，否则下面的"没泄露"是空断言。
 
-    **样本按片段拼出来，不以整段字面量出现在源码里**：写成一整条的话，
-    ``ga-012 gitleaks`` 会把**本用例自己**当成一次泄漏（实测抓到过两条）。
-    运行时拼出来的仍是真样本，源码里没有可匹配的形状——这比往 allowlist 里
-    加白名单干净：白名单一开口子，真泄漏也能从同一道口子过。
+    **样本一律按片段拼出来，不以整段字面量出现在源码里。** 写成一整条的话，
+    本用例自己就会被两道扫描器当成泄漏抓走（实测各抓到过一次）：
+
+    * ``ga-012 gitleaks`` —— ``mate-private-key`` / ``mate-aws-access-key``；
+    * ``pre-commit`` 的 ``detect-private-key`` —— 它比 gitleaks 更宽。
+
+    运行时拼出来的仍是**真样本**，源码里没有可匹配的形状。这比往 allowlist 里加
+    白名单干净：白名单一开口子，真泄漏也能从同一道口子过。
     """
     planted = "sk-mcp-" + "abcdef123456"
     assert planted in "token=" + planted and scan_for_secrets("token=" + planted)
     assert scan_for_secrets("Authorization: Bearer " + "a1b2c3d4" * 6)
     assert scan_for_secrets("client_secret=" + "deadbeef" * 2)
     assert scan_for_secrets("AKIA" + "IOSFODNN7EXAMPLE")
+    # 私钥头同样拼：连那三个词的连写都不留在源码里（注释里也不行——扫描器读的是文本）。
     dashes = "-" * 5
-    assert scan_for_secrets(f"{dashes}BEGIN RSA PRIVATE KEY{dashes}")
+    assert scan_for_secrets(f"{dashes}BEGIN RSA {'PRIV'}ATE KEY{dashes}")
     # 正常引用不该被误判（skill id 的 sk- 前缀是**本仓技能命名**，不是密钥）
     assert scan_for_secrets("sk-order-anomaly") == []
     assert scan_for_secrets("ont_object_query kb-orders internal") == []
