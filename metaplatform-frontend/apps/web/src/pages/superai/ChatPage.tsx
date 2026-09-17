@@ -61,8 +61,7 @@ import {
 } from '@/api/superai/chat';
 import type { AgentProposalEvent } from '@/api/superai/chat';
 import { approveRun, cancelRun, newIdempotencyKey, startRun, type RunState } from '@/api/agentTeam';
-import AgentTeamSchedule from './components/AgentTeamSchedule';
-import { STATUS_TAG } from './agentTeamRunView';
+import AgentTeamSchedulePanel from './components/AgentTeamSchedulePanel';
 import { useAgentTeamRun } from './useAgentTeamRun';
 import { RoutingDecisionPanel } from './components/RoutingDecisionPanel';
 import { EvidenceRenderer } from './components/EvidenceRenderer';
@@ -434,7 +433,6 @@ export default function ChatPage() {
   const [teamMode, setTeamMode] = useState(false);
   const [teamRunId, setTeamRunId] = useState('');
   const [teamBusy, setTeamBusy] = useState(false);
-  const [scheduleOpen, setScheduleOpen] = useState(true);
   const { run: teamRun, setRun: setTeamRun, live: teamRunLive, refresh: refreshTeamRun } =
     useAgentTeamRun(teamRunId);
   const [agentSteps, setAgentSteps] = useState<Record<string, any[]>>({});
@@ -640,7 +638,6 @@ export default function ChatPage() {
           updatedAt: now(),
           title: s.title === '新对话' ? trimmed.slice(0, 24) || '新对话' : s.title,
         }));
-        setScheduleOpen(true);
         try {
           const accepted = await startRun(trimmed, 3, newIdempotencyKey());
           storeRunId(sessionId, accepted.run_id);
@@ -1224,59 +1221,6 @@ export default function ChatPage() {
           </Row>
         </div>
 
-        {/* 常驻调度区域：会话历史**之上**的那一块。任务图 / 员工状态 / 波次 /
-            终态 / 证据 / 交付物都在这里，不再散在每条消息里。 */}
-        <div className="mp-schedule-region" data-testid="chat-schedule-region">
-          <div className="mp-schedule-head">
-            <span className="mp-evidence-section-title">Agent 产品层调度</span>
-            <span className="mp-team-chips">
-              {teamRun ? (
-                <Tag
-                  color={teamRun.status === 'awaiting_approval' ? 'amber' : teamRun.status === 'running' ? 'blue' : teamRun.status === 'completed' ? 'green' : 'grey'}
-                  type="light"
-                  data-testid="chat-schedule-status"
-                >
-                  {STATUS_TAG[teamRun.status].label}
-                </Tag>
-              ) : null}
-              {teamRunLive ? (
-                <Tag color="blue" type="light" data-testid="chat-schedule-live">
-                  实时
-                </Tag>
-              ) : null}
-              <button
-                type="button"
-                className="mp-proposal-btn"
-                onClick={() => setScheduleOpen((v) => !v)}
-                data-testid="chat-schedule-toggle"
-              >
-                {scheduleOpen ? '收起' : '展开'}
-              </button>
-            </span>
-          </div>
-          {scheduleOpen ? (
-            teamRun || teamRunId ? (
-              <AgentTeamSchedule
-                run={teamRun}
-                runId={teamRunId}
-                live={teamRunLive}
-                busy={teamBusy}
-                onApprove={(approved) =>
-                  void callTeam(
-                    (id) => approveRun(id, approved),
-                    approved ? '确认失败' : '驳回失败',
-                  )
-                }
-                onCancel={() => void callTeam((id) => cancelRun(id), '取消失败')}
-              />
-            ) : (
-              <Typography.Text type="tertiary" data-testid="chat-schedule-empty">
-                打开下方「Agent 产品层」后发一句话，这里会实时显示任务图、员工状态与波次。
-              </Typography.Text>
-            )
-          ) : null}
-        </div>
-
         {/* 消息流（官方 AIChatDialogue：左右布局 + reasoning + annotations） */}
         <div className="mp-split-main">
           <AIChatDialogue
@@ -1509,6 +1453,21 @@ export default function ChatPage() {
           options={[{ key: 'toolbar', icon: null, name: null }]}
           renderOptionItem={() => (
             <>
+              {/* 调度任务：页面右上角的独立区域（在「新建会话」之上）。紧凑竖排，
+                  点「详情」用 SheetDetail 打开与工作台同一个完整视图。 */}
+              <AgentTeamSchedulePanel
+                run={teamRun}
+                runId={teamRunId}
+                live={teamRunLive}
+                busy={teamBusy}
+                onApprove={(approved) =>
+                  void callTeam(
+                    (id) => approveRun(id, approved),
+                    approved ? '确认失败' : '驳回失败',
+                  )
+                }
+                onCancel={() => void callTeam((id) => cancelRun(id), '取消失败')}
+              />
               <Button theme="solid" type="primary" icon={<IconPlus />} block onClick={() => void handleNewConversation()}>
                 新建会话
               </Button>

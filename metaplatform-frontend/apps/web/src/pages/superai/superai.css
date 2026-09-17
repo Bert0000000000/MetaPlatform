@@ -585,25 +585,86 @@
   word-break: break-word;
 }
 
-/* ---------- 会话页常驻调度区域（ChatPage × AgentTeamSchedule） ---------- */
-/* 位置：会话历史**之上**。可滚动，不把对话挤出屏幕。 */
-.mp-schedule-region {
-  flex: 0 0 auto;
-  max-height: 46vh;
+/* ---------- 会话页调度面板（ChatPage 右上角 × AgentTeamSchedulePanel） ---------- */
+/* 位置：会话历史栏里「新建会话」之上。竖排 + 限高滚动，不挤占对话区。 */
+.mp-schedpanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+  max-height: 42vh;
   overflow: auto;
+  margin-bottom: var(--mp-space-3);
   padding: var(--mp-space-3);
-  border-bottom: 1px solid var(--semi-color-border);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-medium);
   background: var(--semi-color-fill-0);
 }
 
-.mp-schedule-head {
+.mp-schedpanel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--mp-space-2);
+  gap: var(--mp-space-1);
 }
 
-.mp-schedule-region .mp-team-subsection:first-of-type {
-  border-top: none;
-  padding-top: 0;
+.mp-schedpanel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+}
+
+.mp-schedpanel-actions {
+  display: flex;
+  gap: var(--mp-space-1);
+}
+
+.mp-schedpanel-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mp-space-1) var(--mp-space-2);
+}
+
+.mp-schedpanel-kpi {
+  font-size: 12px;
+  color: var(--semi-color-text-1);
+}
+
+.mp-schedpanel-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+}
+
+.mp-schedpanel-label {
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+
+.mp-schedpanel-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mp-schedpanel-row {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+  min-width: 0;
+}
+
+.mp-schedpanel-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.mp-schedpanel-gate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+  padding-top: var(--mp-space-2);
+  border-top: 1px solid var(--semi-color-border);
 }
