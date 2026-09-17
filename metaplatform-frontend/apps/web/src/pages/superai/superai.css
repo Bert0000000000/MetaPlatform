@@ -584,3 +584,104 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* ---------- 会话页标题行（ChatPage） ---------- */
+/* 取「页内标题行」令牌 --mp-tabbar-h（与壳层 tab 行同一个），好让这条与右侧
+   「会话历史」标题**同高**——否则两条底边对不齐，右栏标题会突出一截。
+   column 方向：让里面的 Row 保持整宽（stretch），同时垂直居中。 */
+.mp-chat-titlebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: var(--mp-tabbar-h);
+}
+
+/* ---------- 会话页调度面板（ChatPage 右上角 × AgentTeamSchedulePanel） ---------- */
+/* 位置：会话历史栏里「新建会话」之上。竖排 + 限高滚动，不挤占对话区。 */
+.mp-schedpanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+  max-height: 42vh;
+  overflow: auto;
+  margin-bottom: var(--mp-space-3);
+  padding: var(--mp-space-3);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-fill-0);
+}
+
+.mp-schedpanel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mp-space-1);
+}
+
+.mp-schedpanel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+}
+
+.mp-schedpanel-actions {
+  display: flex;
+  gap: var(--mp-space-1);
+}
+
+.mp-schedpanel-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mp-space-1) var(--mp-space-2);
+}
+
+.mp-schedpanel-kpi {
+  font-size: 12px;
+  color: var(--semi-color-text-1);
+}
+
+/* 回显计数：不能和普通计数长一样——它是"这条产出不可信"的信号。 */
+.mp-schedpanel-kpi--warn {
+  color: var(--semi-color-warning);
+  font-weight: 600;
+}
+
+.mp-schedpanel-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+}
+
+.mp-schedpanel-label {
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+
+.mp-schedpanel-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mp-schedpanel-row {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-1);
+  min-width: 0;
+}
+
+.mp-schedpanel-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.mp-schedpanel-gate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+  padding-top: var(--mp-space-2);
+  border-top: 1px solid var(--semi-color-border);
+}

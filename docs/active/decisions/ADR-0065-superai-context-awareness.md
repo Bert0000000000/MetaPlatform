@@ -137,7 +137,7 @@ BuilderIO/agent-native（4.8K stars / MIT / 2026-03 创建）的核心论点与�
 ```ts
 // 动态 navigation：随路由/深链变化自动更新（替换现静态 baseContext）
 const assistant = useOntologyAssistant({
-  ..., 
+  ...,
   getNavigationState: () => ({ view, tab, openRecordIds, url }),
 });
 // 划词/右键"问 AI"入口
