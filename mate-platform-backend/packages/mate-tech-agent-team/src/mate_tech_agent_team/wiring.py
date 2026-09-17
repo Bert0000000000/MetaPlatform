@@ -43,6 +43,7 @@ from .delegated_identity import (
 )
 from .employee import LlmEmployeeRuntime
 from .llm_planner import LlmPlanner
+from .observability import FAILURE_RUNTIME_UNAVAILABLE, LoggingSpanRecorder
 from .profile_store import ProfileStore
 from .profiles import ProfileNotFound, ProfileRegistry, RuntimeKind
 from .retry import DEFAULT_BACKOFF_SECONDS, DEFAULT_MAX_ATTEMPTS, RetryPolicy
@@ -356,6 +357,7 @@ class RuntimeRouter:
                     tool_calls=[],
                     evidence=[],
                     error=f"员工不存在：{subtask['profile_id']}（租户 {tenant_id}）",
+                    failure_category="profile_not_found",
                 )
             return await self._default.run(subtask=subtask, tenant_id=tenant_id)
 
@@ -382,6 +384,9 @@ class RuntimeRouter:
                 f"本部署可用的是：{'、'.join(str(k) for k in self.available) or '（空）'}。"
                 "（不会换一个执行面代跑——那样执行面的沙箱/权限假设就失效了）"
             ),
+            # C-7：这一件**没有任何运行时跑过**，所以 ``runtime_kind`` 留空、
+            # 类别记"运行时不可用"——不编一个"大概是在 superai 上失败"。
+            failure_category=FAILURE_RUNTIME_UNAVAILABLE,
         )
 
 
@@ -594,6 +599,9 @@ def build_service(
             channel=team_bus,
             # A-3：工具调用级幂等账本。工具执行到一半被杀，恢复后不会再执行一次。
             tool_ledger=build_tool_ledger(),
+            # C-7：观测记录器（``llm`` / ``tool`` 两层）。**运行期没有第二个开关**：
+            # 记录就是一行 JSON 日志，运维按 logger 名决定收不收。
+            recorder=LoggingSpanRecorder(),
         )
         # 1.8 轨 2：执行面路由（ADR-0066 §5.8）。**默认关闭** —— 没配
         # `MATE_AGENT_TEAM_RUNTIMES` 的部署拿到的还是上面那个 superai 运行时，
@@ -624,6 +632,8 @@ def build_service(
         retry_policy=build_retry_policy(),
         # A-2 / ADR-0067：续跑时的运行期委托身份（默认不签发）。
         delegation_issuer=build_delegation_issuer(),
+        # C-7：图这一层的观测（plan / wave / subagent / artifact / approval / agent.run）。
+        recorder=LoggingSpanRecorder(),
     )
 
 

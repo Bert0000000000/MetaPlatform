@@ -61,13 +61,27 @@ from langgraph.types import Send
 from .approval_gate import GATE_PLAN, ApprovalGate, new_gate_id
 from .artifact_store import ArtifactStore, artifact_for_task
 from .authority import DepthExceeded, Envelope
+from .observability import (
+    FAILURE_AUTHORITY,
+    SPAN_AGENT_RUN,
+    SPAN_APPROVAL,
+    SPAN_ARTIFACT,
+    SPAN_PLAN,
+    SPAN_SUBAGENT,
+    SPAN_WAVE,
+    Correlation,
+    SpanRecorder,
+    category_for_error_code,
+    elapsed_ms,
+    emit,
+)
 from .planner import PlanError, Planner
 from .profiles import ProfileNotFound
 from .retry import RetryPolicy
 from .runtime import EmployeeRuntime, TransientRunError
 from .state import BrainState, SubTask, SubTaskResult
 from .team_bus import SpawnRequest, TeamBus
-from .versioning import AgentProfileSnapshot
+from .versioning import AGENT_RUNTIME_VERSION, AgentProfileSnapshot
 
 #: 根 run 派出去的子任务层号（根任务 0，它的子员工 1）。
 ROOT_DISPATCH_DEPTH = 1
@@ -112,6 +126,8 @@ def _failure(subtask: SubTask, code: str, message: str, *, attempts: int = 0) ->
         attempts=attempts,
         evidence=[],
         artifacts=[],
+        # C-7：可判定的失败类别里，这几条是**派活侧**就知道的（不是运行时报的）。
+        failure_category=category_for_error_code(code),
     )
 
 
@@ -134,6 +150,9 @@ async def _persist_artifact(
 
     落库失败**不吞**：产出拿得到却在回执里给不出地址，等于另一种"假回执"。
     宁可让这一轮明确失败，也不要交付一份查无实据的清单。
+
+    ``provenance`` 记**产出流程的版本**（``AGENT_RUNTIME_VERSION``）：产出物落
+    哪一版运行时的账，是"这份东西是谁造的"里唯一不随 run 变的那一维。
     """
     output = str(result.get("output") or "")
     if result.get("status") != "ok" or not output.strip():
@@ -145,6 +164,7 @@ async def _persist_artifact(
             task_id=task_id,
             profile_id=str(result.get("profile_id") or ""),
             content=output,
+            provenance=AGENT_RUNTIME_VERSION,
         )
     )
     result["artifacts"] = [artifact.to_dict()]
@@ -262,6 +282,7 @@ def build_brain_graph(
     should_cancel: Callable[[], Awaitable[bool]] | None = None,
     retry_policy: RetryPolicy | None = None,
     max_rounds: int | None = None,
+    recorder: SpanRecorder | None = None,
 ) -> Any:
     """编译大脑图。依赖（拆解器 / 员工运行时 / 派活闸门 / 产出物存储 / 检查点）全部注入。
 
@@ -281,6 +302,12 @@ def build_brain_graph(
     ``max_rounds`` 是这一轮的规划轮数上界（1.8 轨 3；``None`` = 取部署默认值）。
     它由 ``plan`` 节点连同 ``plan_round`` 一起写进**状态**：续跑与多副本裁决读的
     是这一轮定下的上界，与 ``timeout_seconds`` 同一个理由。
+
+    ``recorder`` 是 C-7 的观测记录器（``None`` = 不记，既有行为逐字不变）。
+    图这一层负责 ``plan`` / ``wave`` / ``subagent`` / ``artifact`` / ``approval``
+    与终态 ``agent.run`` 六层——``llm`` / ``tool`` 在运行时里（那儿才知道模型与
+    工具的真实边界）。``conversation_id`` 在图里恒为空：会话↔run 的关系在运行
+    控制面（C-1），图拿不到，**留空而不是编一个**。
     """
     root_envelope = initiator_envelope if initiator_envelope is not None else Envelope()
     policy = retry_policy if retry_policy is not None else RetryPolicy()
@@ -290,6 +317,35 @@ def build_brain_graph(
     #: 签名不该因为这次增量被迫改。
     replan_fn = getattr(planner, "replan", None)
     can_replan = callable(replan_fn)
+
+    def _correlation(state: BrainState, task_id: str = "") -> Correlation:
+        """这一轮（或它的一件子任务）的关联键。"""
+        return Correlation(
+            tenant_id=str(state.get("tenant_id") or ""),
+            run_id=str(state.get("run_id") or ""),
+            task_id=task_id,
+            trace_id=str(state.get("trace_id") or ""),
+        )
+
+    def _emit(
+        state: BrainState,
+        kind: str,
+        *,
+        task_id: str = "",
+        name: str = "",
+        duration_ms: int = 0,
+        status: str = "ok",
+        **attributes: Any,
+    ) -> None:
+        emit(
+            recorder,
+            kind,
+            correlation=_correlation(state, task_id),
+            name=name,
+            duration_ms=duration_ms,
+            status=status,
+            attributes=attributes,
+        )
 
     async def _cancelled() -> bool:
         """图在**节点边界**问的那一句：现在要不要停。
@@ -331,6 +387,8 @@ def build_brain_graph(
                     "subtask": subtask,
                     "tenant_id": tenant_id,
                     "run_id": state["run_id"],
+                    # C-7：关联键跟着 payload 走（worker 拿到的是 payload，不是整份状态）。
+                    "trace_id": str(state.get("trace_id") or ""),
                 },
             )
             for subtask in _ready(state)
@@ -387,6 +445,7 @@ def build_brain_graph(
             subtask["profile_snapshot"] = AgentProfileSnapshot.capture(profile).as_state()
 
     async def plan_node(state: BrainState) -> dict[str, Any]:
+        started = time.perf_counter()
         if await _cancelled():
             return _cancel_update()
         goal = state["goal"]
@@ -395,8 +454,24 @@ def build_brain_graph(
                 goal=goal, max_parallel=max_parallel, tenant_id=state["tenant_id"]
             )
         except PlanError as exc:
+            _emit(
+                state,
+                SPAN_PLAN,
+                duration_ms=elapsed_ms(started),
+                status="failed",
+                subtasks=0,
+                error=str(exc),
+            )
             return {"status": "failed", "error": str(exc), "subtasks": []}
         if len(subtasks) < 2:
+            _emit(
+                state,
+                SPAN_PLAN,
+                duration_ms=elapsed_ms(started),
+                status="failed",
+                subtasks=len(subtasks),
+                error="too_few_subtasks",
+            )
             return {
                 "status": "failed",
                 "error": "无法拆出 ≥2 个可并行子任务",
@@ -404,6 +479,14 @@ def build_brain_graph(
             }
         invalid = _validate_dependencies(subtasks)
         if invalid:
+            _emit(
+                state,
+                SPAN_PLAN,
+                duration_ms=elapsed_ms(started),
+                status="failed",
+                subtasks=len(subtasks),
+                error=invalid,
+            )
             return {"status": "failed", "error": invalid, "subtasks": subtasks}
         update: dict[str, Any] = {"subtasks": subtasks, "status": "running", "results": {}}
         await _pin_snapshots(subtasks, tenant_id=state["tenant_id"])
@@ -412,6 +495,13 @@ def build_brain_graph(
             # 状态形状与 1.0 一个字都不差（免得多出一个永远不动的字段）。
             update["plan_round"] = 1
             update["max_rounds"] = rounds
+        _emit(
+            state,
+            SPAN_PLAN,
+            duration_ms=elapsed_ms(started),
+            subtasks=len(subtasks),
+            planRound=1 if can_replan else 0,
+        )
         return update
 
     async def dispatch_node(state: BrainState) -> dict[str, Any]:
@@ -426,6 +516,32 @@ def build_brain_graph(
         subtask = dict(payload["subtask"])
         run_id = payload["run_id"]
         tenant_id = payload["tenant_id"]
+        task_label = str(subtask["task_id"])
+        #: 这一件子任务的关联键（payload 带着 trace_id 一路传下来，见 ``_fan_out``）。
+        task_correlation = Correlation(
+            tenant_id=tenant_id,
+            run_id=run_id,
+            task_id=task_label,
+            trace_id=str(payload.get("trace_id") or ""),
+        )
+
+        def _emit_task(
+            *,
+            kind: str = SPAN_SUBAGENT,
+            status: str = "ok",
+            duration_ms: int = 0,
+            **attributes: Any,
+        ) -> None:
+            emit(
+                recorder,
+                kind,
+                correlation=task_correlation,
+                duration_ms=duration_ms,
+                status=status,
+                attributes=attributes,
+            )
+
+        started = time.perf_counter()
         # 实例身份**按运行唯一**：拆解器每次都给同样的 ``t1``/``t2``/``t3``，
         # 直接拿它当 ``team_task`` 主键，同租户的两次运行就会共用同一行——
         # 上一轮的终态会挡住新一轮（``send`` 误判 409），并发时更糟：两轮
@@ -450,16 +566,28 @@ def build_brain_graph(
                 )
             )
         except DepthExceeded as exc:
+            _emit_task(
+                status="failed", duration_ms=elapsed_ms(started), errorCode="E_DEPTH_EXCEEDED"
+            )
             return {
                 "results": {subtask["task_id"]: _failure(subtask, "E_DEPTH_EXCEEDED", str(exc))}
             }
         except ProfileNotFound as exc:
+            _emit_task(
+                status="failed", duration_ms=elapsed_ms(started), errorCode="E_PROFILE_NOT_FOUND"
+            )
             return {
                 "results": {subtask["task_id"]: _failure(subtask, "E_PROFILE_NOT_FOUND", str(exc))}
             }
         if outcome.requires_approval:
             # 越权：转 proposal，**不执行**。授权只作用本次任务，未批就没有权限。
             proposal = dict(outcome.proposal or {})
+            _emit_task(
+                status="rejected",
+                duration_ms=elapsed_ms(started),
+                errorCode="E_AUTHORITY_ESCALATION",
+                failureCategory=FAILURE_AUTHORITY,
+            )
             return {
                 "results": {
                     subtask["task_id"]: SubTaskResult(
@@ -475,6 +603,7 @@ def build_brain_graph(
                         ),
                         error_code="E_AUTHORITY_ESCALATION",
                         proposal=proposal,
+                        failure_category=FAILURE_AUTHORITY,
                     )
                 }
             }
@@ -491,11 +620,33 @@ def build_brain_graph(
         result = await _invoke_employee(
             runtime, subtask=subtask, tenant_id=tenant_id, policy=policy
         )
+        _emit_task(
+            status=str(result.get("status") or "ok"),
+            duration_ms=elapsed_ms(started),
+            runtimeKind=str(result.get("runtime_kind") or ""),
+            source=str(result.get("source") or ""),
+            llmCalls=int(result.get("llm_calls") or 0),
+            errorCode=str(result.get("error_code") or ""),
+            failureCategory=str(result.get("failure_category") or ""),
+        )
         # 1.6 任务 2：产出落成可寻址 artifact，地址挂回回执。**在重试之后**做：
         # 重试可能把这一件跑两遍，落在这里就只落一次（且 id 确定性 → 幂等 upsert）。
         result = await _persist_artifact(
             artifacts, result=result, run_id=run_id, tenant_id=tenant_id, task_id=subtask["task_id"]
         )
+        for ref in result.get("artifacts") or []:
+            emit(
+                recorder,
+                SPAN_ARTIFACT,
+                correlation=task_correlation,
+                name=str(ref.get("artifact_id") or ""),
+                attributes={
+                    "artifactVersion": int(ref.get("version") or 0),
+                    "size": int(ref.get("size") or 0),
+                    "kind": str(ref.get("kind") or ""),
+                    "storageUri": str(ref.get("storage_uri") or ""),
+                },
+            )
         # ``results`` 仍按**计划内标签**归类（``t1``…）：那是计划里的位置，
         # 不是实例身份；调用方要投递时读回执里的 ``team_task_id``。
         return {"results": {subtask["task_id"]: result}}
@@ -506,6 +657,10 @@ def build_brain_graph(
         # ``dispatch``，漏掉这里的自查会让"取消执行中的 run"对单波无效。
         if await _cancelled():
             return _cancel_update()
+        # C-7：``wave`` 记在这一波的**收口处**（dispatch → 全部回来）。耗时**不量**：
+        # 起点（dispatch）不随状态走，硬记一个从"上一次记录"起的差会得到一个
+        # 编出来的数——只报这一波回来时累计了几件。
+        _emit(state, SPAN_WAVE, completed=len(state.get("results", {})))
         return {}
 
     async def replan_node(state: BrainState) -> dict[str, Any]:
@@ -591,6 +746,16 @@ def build_brain_graph(
                 expires_at=float(state.get("deadline_at") or 0.0),
                 created_at=time.time(),
             )
+            # C-7：闸门**建起来**的那一刻（决定那一条在 ``BrainService.resume``）。
+            _emit(
+                state,
+                SPAN_APPROVAL,
+                name=GATE_PLAN,
+                status="pending",
+                gateType=GATE_PLAN,
+                requiredRoles=list(roles),
+                requiredApprovals=approvals,
+            )
             return {
                 "status": "awaiting_approval",
                 "hitl_reason": f"{len(state.get('results', {}))} 个员工已产出，等待人工确认后汇总",
@@ -611,6 +776,7 @@ def build_brain_graph(
         if rejected:
             # 硬拒不是"这件没干成"——没有授权路径可走，整轮就是失败。
             codes = sorted({str(r["error_code"]) for r in rejected.values()})
+            _emit(state, SPAN_AGENT_RUN, status="failed", results=len(results), errorCodes=codes)
             return {
                 "status": "failed",
                 "summary": summary,
@@ -622,9 +788,26 @@ def build_brain_graph(
         if pending:
             # 待授权项**必须出现在汇总里**，否则人会以为三个员工都跑完了。
             summary += "\n\n待授权（未执行，需人工同意后才派活）：" + "、".join(sorted(pending))
+        # C-7：``agent.run`` 的终态记录。它**不是**一个跨请求的耗时 span（图跑在
+        # 后台、受理与完成是两次 HTTP），而是"这一轮到此收官"的那一条记录——
+        # 说得出终态、跑了几件、几件没成。
+        _emit(
+            state,
+            SPAN_AGENT_RUN,
+            status="completed",
+            results=len(results),
+            failed=len(pending),
+        )
         return {"status": "completed", "summary": summary}
 
     async def reject_node(state: BrainState) -> dict[str, Any]:
+        _emit(
+            state,
+            SPAN_AGENT_RUN,
+            status="failed",
+            results=len(state.get("results", {})),
+            rejected=True,
+        )
         return {"status": "failed", "error": "人工确认未通过，已中止"}
 
     graph = StateGraph(BrainState)

@@ -3,6 +3,11 @@
 1.0 的 ``ProfileRegistry`` 是纯进程内名册：建出来的员工只活在内存里，重启即丢、
 多副本各看各的。本模块把「身份三要素 + 权限包络」落进 ``agent_team.employee_profile``。
 
+**C-5 起 ``runtimes`` 也落库**（`MP-AGENT-PROFILE-MGMT-01`）：此前 ``EmployeeProfile``
+有这个字段、库里没有这一列，于是"配了执行面"重启后就退回默认——**静默**地。
+现在它有列、读写都带上，且**陌生值一律拒绝**（:func:`parse_runtime_kinds`），
+不回落默认（"不许静默切换 Runtime"）。
+
 **租户隔离两道**（同 :mod:`mate_tech_agent_team.checkpoint` 的教训）：
 
 1. 应用层每条 SQL 都带 ``tenant_id``；
@@ -23,13 +28,16 @@ from typing import Any
 
 import psycopg
 
-from .profiles import DEFAULT_MODEL, EmployeeProfile
+from .profiles import DEFAULT_MODEL, DEFAULT_RUNTIMES, EmployeeProfile, parse_runtime_kinds
 from .tenant_db import TenantConnections, tenant_connections
 
 SCHEMA = "agent_team"
 TABLE = "employee_profile"
 
-#: 权限包络的四个维度都存成 text[]（ADR-0066 §3.3）。
+#: ``runtimes`` 列的默认值，从 :data:`DEFAULT_RUNTIMES` 派生（不写第二份字面量）。
+_DEFAULT_RUNTIMES_SQL = "{" + ",".join(str(kind) for kind in DEFAULT_RUNTIMES) + "}"
+
+#: 权限包络的四个维度都存成 text[]（ADR-0066 §3.3）；``runtimes`` 同形。
 _COLUMNS = (
     "profile_id",
     "tenant_id",
@@ -39,6 +47,7 @@ _COLUMNS = (
     "skills",
     "tools",
     "model",
+    "runtimes",
     "action_rids",
     "kb_ids",
     "markings",
@@ -55,6 +64,7 @@ CREATE TABLE IF NOT EXISTS {TABLE} (
     skills        TEXT[] NOT NULL DEFAULT '{{}}',
     tools         TEXT[] NOT NULL DEFAULT '{{}}',
     model         TEXT NOT NULL DEFAULT '{DEFAULT_MODEL}',
+    runtimes      TEXT[] NOT NULL DEFAULT '{_DEFAULT_RUNTIMES_SQL}',
     action_rids   TEXT[] NOT NULL DEFAULT '{{}}',
     kb_ids        TEXT[] NOT NULL DEFAULT '{{}}',
     markings      TEXT[] NOT NULL DEFAULT '{{}}',
@@ -63,6 +73,14 @@ CREATE TABLE IF NOT EXISTS {TABLE} (
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (tenant_id, profile_id)
 )
+"""
+
+#: 老表（2.1-B 及以前）的迁移：**只加列，不丢行**。
+#: ``ADD COLUMN IF NOT EXISTS … DEFAULT`` 幂等，既有行当场读到默认（``{superai}``）
+#: ——这正是"列存在之前写下的行，默认值仍被保留"的落地形态。
+_MIGRATE_DDL = f"""
+ALTER TABLE {TABLE} ADD COLUMN IF NOT EXISTS
+    runtimes TEXT[] NOT NULL DEFAULT '{_DEFAULT_RUNTIMES_SQL}';
 """
 
 _RLS_DDL = f"""
@@ -77,8 +95,9 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON {TABLE} TO {{app_role}};
 
 
 def bootstrap_profiles(conn: psycopg.Connection[Any], app_role: str = "mate_app") -> None:
-    """建员工表 + RLS 策略（幂等）。``conn`` 必须是 **admin** 连接且已设好 search_path。"""
+    """建员工表 + RLS 策略 + **老表迁移**（幂等）。``conn`` 必须是 **admin** 连接且已设好 search_path。"""
     conn.execute(_TABLE_DDL)
+    conn.execute(_MIGRATE_DDL)
     conn.execute(_RLS_DDL.format(app_role=app_role))
 
 
@@ -92,6 +111,7 @@ def _to_profile(row: tuple[Any, ...]) -> EmployeeProfile:
         skills,
         tools,
         model,
+        runtimes,
         action_rids,
         kb_ids,
         markings,
@@ -105,6 +125,9 @@ def _to_profile(row: tuple[Any, ...]) -> EmployeeProfile:
         skills=tuple(skills or ()),
         tools=tuple(tools or ()),
         model=model or DEFAULT_MODEL,
+        # 陌生值**在这里就抛**（而不是落回默认）：库里存了个拼错的执行面，读的人
+        # 必须当场知道，否则它会静默跑在另一个沙箱上。
+        runtimes=parse_runtime_kinds(runtimes or ()),
         action_rids=tuple(action_rids or ()),
         kb_ids=tuple(kb_ids or ()),
         markings=tuple(markings or ()),
@@ -127,6 +150,10 @@ class ProfileStore:
     async def upsert(self, tenant_id: str, profile: EmployeeProfile) -> EmployeeProfile:
         if not tenant_id:
             raise ValueError("tenant_id is required to persist an employee profile")
+        # 写侧也解析一次：`EmployeeProfile.runtimes` 是 dataclass 字段，运行时**不**
+        # 校验类型，直接塞一个 "claude-code" 进来也进得去。落库前拦住它，免得库里
+        # 攒下一行读的时候才炸的记录（读侧同样会抛，见 :func:`_to_profile`）。
+        runtimes = parse_runtime_kinds(profile.runtimes)
         values = (
             profile.profile_id,
             tenant_id,
@@ -136,6 +163,7 @@ class ProfileStore:
             list(profile.skills),
             list(profile.tools),
             profile.model,
+            [str(kind) for kind in runtimes],
             list(profile.action_rids),
             list(profile.kb_ids),
             list(profile.markings),

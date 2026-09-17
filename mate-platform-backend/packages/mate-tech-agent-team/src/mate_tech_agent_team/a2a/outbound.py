@@ -37,12 +37,20 @@
 from __future__ import annotations
 
 import os
+import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, NoReturn, Protocol
 
-from ..profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry
+from ..observability import (
+    FAILURE_MODEL_ERROR,
+    FAILURE_PROFILE_NOT_FOUND,
+    FAILURE_RUNTIME_UNAVAILABLE,
+    elapsed_ms,
+)
+from ..profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry, RuntimeKind
 from ..state import SubTask, SubTaskResult
+from ..versioning import prompt_digest_of
 
 #: 默认端点 = 既有的 ``a2a-external-agent`` 服务（skills: finance-recon /
 #: kb-curator / data-analyst）。可用 ``MATE_AGENT_TEAM_A2A_URL`` 覆盖。
@@ -233,21 +241,26 @@ class A2AOutboundRuntime:
             source="stub",
             error="",
             evidence=[],
+            # C-7：执行面是**已知**的（这个类就是外部 A2A 的实现）。token 一律 0:
+            # 远端 agent 花的 token 不经过本平台，这里拿不到也**不该猜**。
+            runtime_kind=str(RuntimeKind.EXTERNAL_A2A),
         )
 
     async def run(self, *, subtask: SubTask, tenant_id: str) -> SubTaskResult:
+        started = time.perf_counter()
         result = self._receipt(subtask)
         if not tenant_id:
             # 硬规则 #3：没有租户上下文就**不出站**（连员工都不查）。
             result["error"] = "缺少租户上下文（硬规则 #3）：A2A 出站被拒"
-            return result
+            return self._finish(result, started, FAILURE_MODEL_ERROR)
         try:
             profile = await self._registry.get(subtask["profile_id"], tenant_id)
         except ProfileNotFound:
             result["error"] = f"员工不存在：{subtask['profile_id']}（租户 {tenant_id}）"
-            return result
+            return self._finish(result, started, FAILURE_PROFILE_NOT_FOUND)
 
         result["profile_id"] = profile.profile_id
+        result["prompt_digest"] = prompt_digest_of(profile)
         allowed = tuple(subtask.get("granted_tools") or profile.tools)
         try:
             outcome = await self._client.delegate(
@@ -263,7 +276,7 @@ class A2AOutboundRuntime:
             )
         except ValueError as exc:
             result["error"] = f"{type(exc).__name__}: {exc}"
-            return result
+            return self._finish(result, started, FAILURE_RUNTIME_UNAVAILABLE)
 
         # 出站往返**发生过**了（不管远端判成功还是失败）——计量记在拿到返回值
         # 之后、判定之前。成本口径问的是"打出去几次"，不是"成功几次"。
@@ -272,7 +285,7 @@ class A2AOutboundRuntime:
 
         if not outcome.ok:
             result["error"] = outcome.error or "A2A 出站失败"
-            return result
+            return self._finish(result, started, FAILURE_RUNTIME_UNAVAILABLE)
 
         result["status"] = "ok"
         result["output"] = outcome.text
@@ -291,6 +304,14 @@ class A2AOutboundRuntime:
                 "state": outcome.state,
             }
         ]
+        return self._finish(result, started)
+
+    @staticmethod
+    def _finish(result: SubTaskResult, started: float, failure_category: str = "") -> SubTaskResult:
+        """收口计量（C-7）：**每次 return 前都过一下**，含早退路径。"""
+        result["latency_ms"] = elapsed_ms(started)
+        if failure_category:
+            result["failure_category"] = failure_category
         return result
 
 

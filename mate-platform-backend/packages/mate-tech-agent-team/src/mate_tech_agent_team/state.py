@@ -113,6 +113,30 @@ class SubTaskResult(TypedDict, total=False):
     evidence: list[dict[str, Any]]
     #: 产出物的**元数据**（不含正文）；正文按 ``artifact_id`` 另取。
     artifacts: list[dict[str, Any]]
+    # ── C-7 计量（`MP-OBSERVABILITY-DEEPEN-01`）────────────────────────────
+    #
+    # **只放"真的拿得到"的值**。token 三类来自 llmgw 回包的 ``usage``；耗时是
+    # 本进程量的；``runtime_kind`` / ``model`` / ``prompt_digest`` 由运行时在派发
+    # 那一刻就知道。拿不到的（``provider`` 上游解析结果、``model_cost``、
+    # ``replan_reason``）**一个都没加**——加一个恒为空的字段只会让人以为它有值。
+    #
+    # 耗时三个是**独立测量**，不是"总 = 模型 + 工具"的拆解：模型轮次之间还有
+    # 编排开销（中间件、消息裁剪），硬凑成加法会得到一个编出来的数。
+    input_tokens: int
+    output_tokens: int
+    cached_tokens: int
+    latency_ms: int
+    llm_latency_ms: int
+    tool_latency_ms: int
+    #: 跑它的执行面（``superai`` / ``claude_code`` / ``external_a2a``）。
+    runtime_kind: str
+    #: 这一件实际用的模型名（superai = 员工定义的模型；外部运行时可能为空）。
+    model: str
+    #: 员工定义的**提示词摘要**（A-6 的 ``prompt_digest_of``）：同一轮里两件回执
+    #: 的 prompt_digest 不同，就说明它们不是同一版员工跑的。
+    prompt_digest: str
+    #: 低基数的失败类别（见 :mod:`mate_tech_agent_team.observability`）；成功时为空串。
+    failure_category: str
 
 
 def merge_results(
@@ -145,6 +169,10 @@ class BrainState(TypedDict, total=False):
     最后四个 ``*_version`` 是 **A-6 的版本化**（``MP-AGENT-VERSIONING-01``）：
     写下这一轮时，状态 schema / 图定义 / 员工运行时 / 检查点编码各是哪一版。
     老检查点里读不到就是空串——**只加字段，既有判定一个字都不变**。
+
+    ``trace_id`` 是 **C-7 的关联键**（``MP-OBSERVABILITY-DEEPEN-01``）：开跑那一刻
+    生成一个，随状态落检查点。于是**重启后续跑**的那些 span 仍带着同一个 trace，
+    跨进程把一轮交付的记录拼得回来——这是它比"进程内随机 id"强的地方。
     """
 
     run_id: str
@@ -156,6 +184,8 @@ class BrainState(TypedDict, total=False):
     status: str  # planning | running | awaiting_approval | completed | failed
     summary: str
     hitl_reason: str
+    #: C-7：这一轮的观测关联键（见上）。老检查点读不到 = 空串。
+    trace_id: str
     #: **HITL 闸门的统一协议**（B-6 / `MP-APPROVAL-GATE-ABI-01`）。
     #: 形状见 :class:`mate_tech_agent_team.approval_gate.ApprovalGate`——
     #: ``gate_id / gate_type / required_roles / required_approvals / payload /

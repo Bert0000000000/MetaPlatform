@@ -28,6 +28,7 @@
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import Awaitable, Callable, Sequence
 from contextlib import suppress
 from typing import Any, Protocol
@@ -46,13 +47,22 @@ from .authority import Envelope
 from .chat_model import LlmgwChatModel, RunTrace
 from .envelope_gate import EnvelopeGate
 from .evidence import as_mapping, evidence_items, utc_now
-from .profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry
+from .observability import (
+    FAILURE_MODEL_ERROR,
+    FAILURE_PROFILE_NOT_FOUND,
+    SPAN_TOOL,
+    Correlation,
+    SpanRecorder,
+    elapsed_ms,
+    emit,
+)
+from .profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry, RuntimeKind
 from .runtime import TaskChannel, TransientRunError
 from .skills import SkillCatalog
 from .state import SubTask, SubTaskResult
 from .tool_ledger import ToolCallAdmission, ToolLedger, call_id, new_lease_owner
 from .toolbox import Toolbox, ToolNotAllowed
-from .versioning import profile_for_subtask
+from .versioning import profile_for_subtask, prompt_digest_of
 
 #: 一条工具结果最多回灌多少字符——上下文裁剪（ADR-0066 §5.4）的最小形态。
 #: 取 8000 而非更小：本体的对象类型清单有 47 条、压到 rid+名称仍有 ~4400 字符，
@@ -219,6 +229,38 @@ def _wants_tools(messages: Sequence[BaseMessage]) -> bool:
     return False
 
 
+class _Accounting:
+    """一次运行的**观测累加器**（C-7）。
+
+    工具耗时在这里累计（模型耗时由 :class:`RunTrace` 累计）：跨 ``_gated_tool``
+    的闭包共享同一个可变对象，比往回调链上一路塞参数干净。
+
+    **两个耗时是独立测量**，不是"总 = 模型 + 工具"的拆解：模型轮次之间还有编排
+    开销，硬凑加法会得到一个编出来的数。
+    """
+
+    __slots__ = ("tool_ms",)
+
+    def __init__(self) -> None:
+        self.tool_ms = 0
+
+
+def _fill_accounting(
+    result: SubTaskResult, trace: RunTrace, accounting: _Accounting, started: float
+) -> None:
+    """把观测计量写进回执（C-7）。
+
+    **成功与失败两条出口共用这一个入口**：写两份迟早漂移成两种口径，而"这一件
+    花了多少"恰恰是要跨成败一起聚合的。
+    """
+    result["input_tokens"] = trace.input_tokens
+    result["output_tokens"] = trace.output_tokens
+    result["cached_tokens"] = trace.cached_tokens
+    result["llm_latency_ms"] = trace.latency_ms
+    result["tool_latency_ms"] = accounting.tool_ms
+    result["latency_ms"] = elapsed_ms(started)
+
+
 class LlmEmployeeRuntime:
     """把一份子任务真的跑完的员工运行时（执行循环由 ``create_agent`` 驱动）。"""
 
@@ -237,6 +279,7 @@ class LlmEmployeeRuntime:
         context_editing: bool = True,
         channel: TaskChannel | None = None,
         tool_ledger: ToolLedger | None = None,
+        recorder: SpanRecorder | None = None,
     ) -> None:
         self._registry = registry
         self._llm_factory = llm_factory
@@ -253,6 +296,8 @@ class LlmEmployeeRuntime:
         #: 工具调用级幂等账本（A-3 / ADR 见 :mod:`.tool_ledger`）。**默认不记账**——
         #: 没接的部署行为与 A-3 之前逐字一致；生产由 ``wiring`` 接 PG 账本。
         self._tool_ledger = tool_ledger
+        #: C-7 观测记录器（``llm`` / ``tool`` 两层在这里落点）。**默认不记**。
+        self._recorder = recorder
         self._lease_owner = new_lease_owner()
 
     async def _admit(
@@ -326,6 +371,8 @@ class LlmEmployeeRuntime:
         toolbox: Toolbox,
         log: list[dict[str, Any]],
         evidence: _EvidenceCollector,
+        correlation: Correlation | None = None,
+        accounting: _Accounting | None = None,
         tenant_id: str = "",
         run_id: str = "",
         task_id: str = "",
@@ -335,63 +382,89 @@ class LlmEmployeeRuntime:
         A-3 起，这一步还是**幂等账本**的落点：执行前先落一条 ``running`` 意图，
         执行后落回执。于是"工具已经执行了、回执还没落"那个窗口里死掉的进程，
         恢复后**不会**把这一次工具调用再执行一遍（:mod:`.tool_ledger`）。
+
+        C-7 起它同时是 ``tool`` 那层 span 的落点：耗时与结果都在这里量、这里记
+        （``finally`` 保证被拒/失败的路也留下一条）。
         """
         name = descriptor["name"]
 
         async def _call(**arguments: Any) -> str:
             entry: dict[str, Any] = {"name": name, "arguments": arguments}
-            admission = await self._admit(
-                name=name,
-                arguments=arguments,
-                tenant_id=tenant_id,
-                run_id=run_id,
-                task_id=task_id,
-            )
-            if admission is not None and not admission.execute:
-                # **不执行**：要么回放已记下的结果，要么这一次已经开过头（in_flight）。
-                entry["allowed"] = True
-                entry["deduplicated"] = admission.reason
-                entry["invocation_id"] = (
-                    admission.invocation.invocation_id if admission.invocation else ""
-                )
-                log.append(entry)
-                if admission.reason == "already_completed":
-                    evidence.capture(name, admission.reuse)
-                    return _clip(admission.reuse)
-                return json.dumps(
-                    {
-                        "error": f"tool '{name}' not re-executed: {admission.reason}",
-                        "hint": "这一次调用此前已经开始过，幂等账本不允许重复执行",
-                    },
-                    ensure_ascii=False,
-                )
+            started_call = time.perf_counter()
+            tool_status = "ok"
             try:
-                result = await toolbox.invoke(name=name, arguments=arguments, allowed=allowed)
-            except ToolNotAllowed as exc:
-                # 闸门拒绝：记下来，并且**没有**真的打到后端
-                entry["allowed"] = False
-                entry["rejected"] = exc.reason
-                log.append(entry)
-                await self._settle(admission, result=None, error=f"rejected:{exc.reason}")
-                return json.dumps(
-                    {"error": f"tool '{name}' rejected: {exc.reason}"}, ensure_ascii=False
+                admission = await self._admit(
+                    name=name,
+                    arguments=arguments,
+                    tenant_id=tenant_id,
+                    run_id=run_id,
+                    task_id=task_id,
                 )
-            except Exception as exc:
-                # 工具**执行**失败（多为参数不合后端 schema）——把错误原文回灌给模型，
-                # 让它自己改参数重试，而不是把一次手滑升级成整轮失败。
+                if admission is not None and not admission.execute:
+                    # **不执行**：要么回放已记下的结果，要么这一次已经开过头（in_flight）。
+                    entry["allowed"] = True
+                    entry["deduplicated"] = admission.reason
+                    entry["invocation_id"] = (
+                        admission.invocation.invocation_id if admission.invocation else ""
+                    )
+                    log.append(entry)
+                    tool_status = f"deduplicated:{admission.reason}"
+                    if admission.reason == "already_completed":
+                        evidence.capture(name, admission.reuse)
+                        return _clip(admission.reuse)
+                    return json.dumps(
+                        {
+                            "error": f"tool '{name}' not re-executed: {admission.reason}",
+                            "hint": "这一次调用此前已经开始过，幂等账本不允许重复执行",
+                        },
+                        ensure_ascii=False,
+                    )
+                try:
+                    result = await toolbox.invoke(name=name, arguments=arguments, allowed=allowed)
+                except ToolNotAllowed as exc:
+                    # 闸门拒绝：记下来，并且**没有**真的打到后端
+                    entry["allowed"] = False
+                    entry["rejected"] = exc.reason
+                    log.append(entry)
+                    tool_status = f"rejected:{exc.reason}"
+                    await self._settle(admission, result=None, error=f"rejected:{exc.reason}")
+                    return json.dumps(
+                        {"error": f"tool '{name}' rejected: {exc.reason}"}, ensure_ascii=False
+                    )
+                except Exception as exc:
+                    # 工具**执行**失败（多为参数不合后端 schema）——把错误原文回灌给模型，
+                    # 让它自己改参数重试，而不是把一次手滑升级成整轮失败。
+                    entry["allowed"] = True
+                    entry["error"] = f"{type(exc).__name__}: {exc}"
+                    log.append(entry)
+                    tool_status = "error"
+                    # 失败 = 这次没落地：账本记 failed，允许下一次重来。
+                    await self._settle(admission, result=None, error=f"{type(exc).__name__}: {exc}")
+                    return _clip(
+                        {"error": f"tool '{name}' failed: {exc}", "hint": "修正参数后重试"}
+                    )
                 entry["allowed"] = True
-                entry["error"] = f"{type(exc).__name__}: {exc}"
                 log.append(entry)
-                # 失败 = 这次没落地：账本记 failed，允许下一次重来。
-                await self._settle(admission, result=None, error=f"{type(exc).__name__}: {exc}")
-                return _clip({"error": f"tool '{name}' failed: {exc}", "hint": "修正参数后重试"})
-            entry["allowed"] = True
-            log.append(entry)
-            await self._settle(admission, result=result, error="")
-            # 只有**成功**的工具结果才映射成证据：失败/被拒的结果里没有可取证的事实，
-            # 对它取证就是编造。
-            evidence.capture(name, result)
-            return _clip(result)
+                await self._settle(admission, result=result, error="")
+                # 只有**成功**的工具结果才映射成证据：失败/被拒的结果里没有可取证的事实，
+                # 对它取证就是编造。
+                evidence.capture(name, result)
+                return _clip(result)
+            finally:
+                spent = elapsed_ms(started_call)
+                # 两个新参数**都给默认**：直接调它的调用方（工具账本的用例就是
+                # 这么用的）不必被迫多传两样东西；计量是附加物，不是新前置条件。
+                if accounting is not None:
+                    accounting.tool_ms += spent
+                emit(
+                    self._recorder,
+                    SPAN_TOOL,
+                    correlation=correlation or Correlation(),
+                    name=name,
+                    duration_ms=spent,
+                    status=tool_status,
+                    attributes={"tool": name},
+                )
 
         return StructuredTool(
             name=name,
@@ -435,6 +508,7 @@ class LlmEmployeeRuntime:
             await self._channel.finish(task_id=task_id, tenant_id=tenant_id, status=status)
 
     async def run(self, *, subtask: SubTask, tenant_id: str) -> SubTaskResult:
+        started_run = time.perf_counter()
         result = SubTaskResult(
             task_id=subtask.get("task_id", ""),
             profile_id=subtask.get("profile_id", ""),
@@ -443,6 +517,8 @@ class LlmEmployeeRuntime:
             llm_calls=0,
             tool_calls=[],
             evidence=[],
+            # C-7：执行面在这里是**已知**的（这个类就是 superai 的实现）。
+            runtime_kind=str(RuntimeKind.SUPERAI),
         )
         try:
             # A-6：**有快照就用快照**那一份定义。名册里的现值之后被谁改了，
@@ -450,13 +526,25 @@ class LlmEmployeeRuntime:
             profile = await profile_for_subtask(subtask, self._registry, tenant_id)
         except ProfileNotFound:
             result["error"] = f"员工不存在：{subtask['profile_id']}（租户 {tenant_id}）"
+            result["failure_category"] = FAILURE_PROFILE_NOT_FOUND
             return result
 
         result["profile_id"] = profile.profile_id
+        # C-7 计量：模型名与提示词摘要在**解析出定义之后**就有值了（都在 profile 上）。
+        result["model"] = profile.model
+        result["prompt_digest"] = prompt_digest_of(profile)
         # 工具面取**派活闸门实际发放**的那一份（= 员工白名单 ∩ 发起用户包络 ∩
         # 调用方 tool_scope）。没走闸门的直调（单测、离线）退回员工白名单。
         allowed = tuple(subtask.get("granted_tools") or profile.tools)
         tool_log: list[dict[str, Any]] = []
+        accounting = _Accounting()
+        # 这一件子任务的关联键（``trace_id`` 由派活侧随子任务带下来；直调时为空）。
+        correlation = Correlation(
+            tenant_id=tenant_id,
+            run_id=str(subtask.get("run_id") or ""),
+            task_id=str(subtask.get("task_id") or ""),
+            trace_id=str(subtask.get("trace_id") or ""),
+        )
 
         llm = self._llm_factory(tenant_id)
         toolbox = self._toolbox_factory(tenant_id)
@@ -501,6 +589,8 @@ class LlmEmployeeRuntime:
                     toolbox=toolbox,
                     log=tool_log,
                     evidence=evidence,
+                    correlation=correlation,
+                    accounting=accounting,
                     tenant_id=tenant_id,
                     # 幂等键要的 run/任务身份（A-3）：run 从派活那一刻就写进子任务，
                     # task_id 用计划内标签——两者都在重启后原样读得回来。
@@ -514,6 +604,10 @@ class LlmEmployeeRuntime:
                 llm_model=profile.model,
                 temperature=self._temperature,
                 trace=trace,
+                # C-7：``llm`` 那层 span 在模型调用点上记（那儿才知道单轮的耗时与
+                # token）。关联键随子任务走，于是同一轮的记录拼得回一次交付。
+                recorder=self._recorder,
+                correlation=correlation,
             )
             rejected = _RejectedCalls(known=known, reason_for=_reason_for)
             middleware = self._middleware(chat=chat)
@@ -560,8 +654,12 @@ class LlmEmployeeRuntime:
             if not tool_log and getattr(exc, "retryable", False):
                 raise TransientRunError(f"{type(exc).__name__}: {exc}") from exc
             result["error"] = f"{type(exc).__name__}: {exc}"
+            # C-7：走到这里的是模型面/编排面的故障（工具面的异常在 ``_gated_tool``
+            # 里就地消化了），所以类别记 ``model_error``——不按错误文本猜。
+            result["failure_category"] = FAILURE_MODEL_ERROR
             result["tool_calls"] = tool_log
             result["llm_calls"] = trace.calls
+            _fill_accounting(result, trace, accounting, started_run)
             await self._close_channel(team_task_id, tenant_id, "failed")
             return result
         finally:
@@ -573,6 +671,7 @@ class LlmEmployeeRuntime:
         result["output"] = content
         result["llm_calls"] = trace.calls
         result["tool_calls"] = tool_log
+        _fill_accounting(result, trace, accounting, started_run)
         return result
 
 

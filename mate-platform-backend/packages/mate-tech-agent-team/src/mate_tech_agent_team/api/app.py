@@ -33,7 +33,13 @@ from ..artifact_store import ArtifactStore
 from ..authority import Envelope, resolve_initiator_envelope
 from ..brain import AWAITING, BrainService, RunNotAwaitingApproval, RunNotFound
 from ..profile_store import ProfileStore
-from ..profiles import DEFAULT_MODEL, EmployeeProfile, ProfileNotFound, ProfileRegistry
+from ..profiles import (
+    DEFAULT_MODEL,
+    EmployeeProfile,
+    ProfileNotFound,
+    ProfileRegistry,
+    parse_runtime_kinds,
+)
 from ..skills import SkillCatalog, SkillNotFound
 from ..state import BrainState
 from ..team_bus import TaskNotFound, TaskTerminal, TeamBus
@@ -339,13 +345,18 @@ async def agentTeamGetRunArtifacts(request: Request, run_id: str) -> ArtifactLis
 
 
 @router.get("/artifacts/{artifact_id}", response_model=ArtifactContentModel)
-async def agentTeamGetArtifact(request: Request, artifact_id: str) -> ArtifactContentModel:
-    """按 id 取回一件产出物的**正文**（1.6 任务 2）。
+async def agentTeamGetArtifact(
+    request: Request, artifact_id: str, version: int | None = Query(default=None, ge=1)
+) -> ArtifactContentModel:
+    """按 id 取回一件产出物的**正文**（1.6 任务 2；C-4 起可按版本取）。
+
+    不带 ``version`` 取**最新**一版；带上就取那一版——于是"第一次交付的是什么"
+    可以直接取回来验（``?version=1``），而不是只能靠列表里的元数据相信它。
 
     跨租户与不存在同码 404：产出物的地址是**租户内**的地址，拿别人的 id
     来取读不到，也不该读出"这个 id 存在过"。
     """
-    artifact = await get_artifact_store().get(_tid(request), artifact_id)
+    artifact = await get_artifact_store().get(_tid(request), artifact_id, version)
     if artifact is None:
         raise HTTPException(status_code=404, detail="artifact not found")
     return ArtifactContentModel.model_validate(artifact.to_content_dict())
@@ -458,6 +469,9 @@ def _profile_model(profile: EmployeeProfile) -> EmployeeProfileModel:
         kb_ids=list(profile.kb_ids),
         markings=list(profile.markings),
         model=profile.model,
+        # C-5：执行面是**定义的一部分**，读模型必须出它——不出的话，前端与运维
+        # 看到的就是"这个员工跑在哪"这件事永远查不到。
+        runtimes=[str(kind) for kind in profile.runtimes],
         origin=profile.origin,
     )
 
@@ -471,6 +485,9 @@ def _write_request_to_profile(body: ProfileWriteRequest, profile_id: str) -> Emp
         skills=tuple(body.skills),
         tools=tuple(body.tools),
         model=body.model or DEFAULT_MODEL,
+        # 请求模型已经用 ``parse_runtime_kinds`` 拦过一遍（陌生值 422）；这里再解析
+        # 一次是把"字符串"翻成枚举本身，落库存的就是这一份。
+        runtimes=parse_runtime_kinds(body.runtimes),
         action_rids=tuple(body.action_rids),
         kb_ids=tuple(body.kb_ids),
         markings=tuple(body.markings),
