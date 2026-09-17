@@ -15,6 +15,8 @@ append-only ＋ 可列举）。
 
 from __future__ import annotations
 
+import time
+from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any
 
@@ -102,7 +104,7 @@ class _Runtime:
 
 
 @pytest.fixture
-def client() -> TestClient:
+def client() -> Iterator[TestClient]:
     service = BrainService(
         planner_for=lambda _ctx: StaticPlanner(),
         runtime_for=lambda _ctx: _Runtime(),
@@ -110,7 +112,29 @@ def client() -> TestClient:
         team_bus=TeamBus(registry=ProfileRegistry(), tasks=InMemoryTeamTasks()),
         artifacts=InMemoryArtifacts(),
     )
-    return TestClient(create_app(service=service))
+    # **必须用 `with` 进 TestClient**：不带上下文时 Starlette 每个请求现起一个事件
+    # 循环、请求完就关，而 1.7 起 ``POST /runs`` 是受理制（图在后台跑）——后台
+    # 任务会在响应返回的瞬间被拆掉，run 永远停在 running。
+    with TestClient(create_app(service=service)) as client:
+        yield client
+
+
+#: run 停下来的状态：闸门（等人）或任何终态。
+_SETTLED = frozenset({"awaiting_approval", "completed", "failed", "cancelled", "timeout"})
+
+
+def _start_run(client: TestClient, headers: dict[str, str]) -> str:
+    """受理一轮并**等它停下来**，回 ``run_id``（1.7：提交不再同步返回状态）。"""
+    accepted = client.post(f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=headers)
+    assert accepted.status_code == 202, accepted.text
+    run_id = str(accepted.json()["run_id"])
+    deadline = time.monotonic() + 8.0
+    while time.monotonic() < deadline:
+        body = client.get(f"{BASE}/runs/{run_id}", headers=headers).json()
+        if body.get("status") in _SETTLED:
+            break
+        time.sleep(0.02)
+    return run_id
 
 
 @pytest.fixture
@@ -122,12 +146,10 @@ def viewer_headers(issue_token) -> dict[str, str]:
 def test_approve_without_an_approver_role_is_forbidden(
     client: TestClient, auth_headers: dict[str, str], viewer_headers: dict[str, str]
 ) -> None:
-    run = client.post(
-        f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=auth_headers
-    ).json()
+    run_id = _start_run(client, auth_headers)
 
     denied = client.post(
-        f"{BASE}/runs/{run['run_id']}/approve", json={"approved": True}, headers=viewer_headers
+        f"{BASE}/runs/{run_id}/approve", json={"approved": True}, headers=viewer_headers
     )
     assert denied.status_code == 403, denied.text
     assert denied.json()["detail"]["code"] == "E_NOT_APPROVER"
@@ -137,22 +159,16 @@ def test_a_denied_approval_does_not_change_the_run(
     client: TestClient, auth_headers: dict[str, str], viewer_headers: dict[str, str]
 ) -> None:
     """403 之后 run 仍在待确认——拒绝不是"悄悄批准"。"""
-    run = client.post(
-        f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=auth_headers
-    ).json()
-    client.post(
-        f"{BASE}/runs/{run['run_id']}/approve", json={"approved": True}, headers=viewer_headers
-    )
-    state = client.get(f"{BASE}/runs/{run['run_id']}", headers=auth_headers).json()
+    run_id = _start_run(client, auth_headers)
+    client.post(f"{BASE}/runs/{run_id}/approve", json={"approved": True}, headers=viewer_headers)
+    state = client.get(f"{BASE}/runs/{run_id}", headers=auth_headers).json()
     assert state["status"] == "awaiting_approval"
 
 
 def test_an_approver_can_still_approve(client: TestClient, auth_headers: dict[str, str]) -> None:
-    run = client.post(
-        f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=auth_headers
-    ).json()
+    run_id = _start_run(client, auth_headers)
     approved = client.post(
-        f"{BASE}/runs/{run['run_id']}/approve", json={"approved": True}, headers=auth_headers
+        f"{BASE}/runs/{run_id}/approve", json={"approved": True}, headers=auth_headers
     )
     assert approved.status_code == 200, approved.text
     assert approved.json()["status"] == "completed"
@@ -318,33 +334,26 @@ def test_audit_record_carries_a_stable_id_and_timestamp() -> None:
 
 
 def test_run_audit_endpoint_returns_rows(client: TestClient, auth_headers: dict[str, str]) -> None:
-    run = client.post(
-        f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=auth_headers
-    ).json()
-    client.post(
-        f"{BASE}/runs/{run['run_id']}/approve", json={"approved": True}, headers=auth_headers
-    )
+    run_id = _start_run(client, auth_headers)
+    client.post(f"{BASE}/runs/{run_id}/approve", json={"approved": True}, headers=auth_headers)
 
-    response = client.get(f"{BASE}/runs/{run['run_id']}/audit", headers=auth_headers)
+    response = client.get(f"{BASE}/runs/{run_id}/audit", headers=auth_headers)
     assert response.status_code == 200, response.text
     items = response.json()["items"]
     # 该 run 的每一行都在（派活 + 审批），且都带租户与 run 归属。
     assert all(i["tenant_id"] == TENANT for i in items)
     assert AUDIT_APPROVAL in [i["action"] for i in items]
     approval = [i for i in items if i["action"] == AUDIT_APPROVAL][0]
-    assert approval["run_id"] == run["run_id"]
+    assert approval["run_id"] == run_id
     assert approval["outcome"] == "approved"
 
 
 def test_run_audit_is_tenant_scoped(
     client: TestClient, auth_headers: dict[str, str], other_tenant_headers: dict[str, str]
 ) -> None:
-    run = client.post(
-        f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=auth_headers
-    ).json()
+    run_id = _start_run(client, auth_headers)
     assert (
-        client.get(f"{BASE}/runs/{run['run_id']}/audit", headers=other_tenant_headers).status_code
-        == 404
+        client.get(f"{BASE}/runs/{run_id}/audit", headers=other_tenant_headers).status_code == 404
     )
 
 

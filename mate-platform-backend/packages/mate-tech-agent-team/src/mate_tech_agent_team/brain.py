@@ -69,6 +69,10 @@ class RunNotAwaitingApproval(RuntimeError):
 
 AWAITING = "awaiting_approval"
 
+#: 已经受理、还没有任何节点落过结论时的状态（1.7 任务 1）。受理回执给的就是
+#: 它——"这一轮开始了"，而不是"这一轮有结果了"。
+RUNNING = "running"
+
 #: 终态：到了这里就不再变（取消 / 超时也落进来，见 1.3 轨 2 的运行控制面）。
 TERMINAL_STATUSES: frozenset[str] = frozenset(
     {"completed", "failed", "rejected", "cancelled", "timeout"}
@@ -184,6 +188,9 @@ class BrainService:
                     "run_id": run_id,
                     "tenant_id": tenant_id,
                     "goal": goal,
+                    # 受理的那一刻起这一轮就已经在跑了（1.7 任务 1）：先落一个
+                    # ``running``，别让"已受理"和"查不到"之间有个空窗期。
+                    "status": RUNNING,
                     "timeout_seconds": timeout,
                     "deadline_at": deadline_at,
                 },
@@ -247,12 +254,18 @@ class BrainService:
         return dict(snapshot.values)
 
     # -- 运行控制面（1.3 轨 2）---------------------------------------------
-    async def mark_terminal(self, *, tenant_id: str, run_id: str, status: str) -> BrainState:
-        """把 run 置为终态（取消 / 超时）。
+    async def mark_terminal(
+        self, *, tenant_id: str, run_id: str, status: str, error: str = ""
+    ) -> BrainState:
+        """把 run 置为终态（取消 / 超时 / 后台跑挂）。
 
         **写进检查点**而不是只在控制面记一份：``GET /runs/{id}`` 读的就是检查点，
         另记一份等于两个真相，重启/多副本立刻互相打脸。已经是终态时原样返回
         （幂等），不覆盖更早的终态。
+
+        ``error`` 给"后台跑挂了"这类终态带上错因（1.7 任务 1）：受理制把执行挪出
+        了请求，失败必须能在 ``GET /runs/{id}`` 里看出来，否则读的人只知道它结束了，
+        不知道它为什么结束。
         """
         if status not in TERMINAL_STATUSES:
             raise ValueError(f"mark_terminal 只接受终态，收到 {status!r}")
@@ -265,7 +278,11 @@ class BrainService:
                 raise RunNotFound(run_id)
             if str(snapshot.values.get("status", "")) in TERMINAL_STATUSES:
                 return dict(snapshot.values)
-            await graph.aupdate_state(cfg, {"status": status})
+            patch: dict = {"status": status}
+            # 只在给了错因时才写 error：取消/超时不该把状态里已有的错因抹掉。
+            if error:
+                patch["error"] = error
+            await graph.aupdate_state(cfg, patch)
             snapshot = await graph.aget_state(cfg)
         return dict(snapshot.values)
 
@@ -315,6 +332,7 @@ class BrainService:
 
 __all__ = [
     "AWAITING",
+    "RUNNING",
     "TERMINAL_STATUSES",
     "BrainService",
     "CheckpointerProvider",

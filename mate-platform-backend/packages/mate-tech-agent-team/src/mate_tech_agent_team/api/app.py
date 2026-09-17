@@ -48,6 +48,7 @@ from .schemas import (
     EmployeeProfileModel,
     ProfileListModel,
     ProfileWriteRequest,
+    RunAcceptedModel,
     RunStateModel,
     SendMessageRequest,
     SkillContentModel,
@@ -179,24 +180,27 @@ def _to_model(state: BrainState) -> RunStateModel:
     return RunStateModel.model_validate({**state, "status": state.get("status", "")})
 
 
-@router.post("/runs", response_model=RunStateModel)
-async def agentTeamPostRuns(request: Request, body: StartRunRequest) -> RunStateModel:
-    """起一轮运行。**由运行控制面起**（不是直接调服务层）：控制面要在开跑前
-    认领这轮运行，执行中的它才在取消范围内（1.5 任务 1）；本轮的截止时间也
-    在同一处登记。
+@router.post("/runs", response_model=RunAcceptedModel, status_code=202)
+async def agentTeamPostRuns(request: Request, body: StartRunRequest) -> RunAcceptedModel:
+    """**受理**一轮运行（1.7 任务 1）：立刻回 202 + run_id，图在后台跑。
+
+    改受理制是为了根治 1.6 抓出的那个坑：同步返回时拆图 + 派活要跑分钟级，网关
+    60s 读超时会回 504，**而这一轮其实已经建好了**——客户端拿不到 run_id，重试
+    一次就多跑一轮。现在提交立刻拿到地址，终态从 ``GET /runs/{run_id}`` 或事件流取。
+
+    重复提交怎么办：带 ``Idempotency-Key`` 时同一个键（**同租户内**）永远映射到
+    同一轮；重复提交原样回同一个 run_id 并置 ``deduplicated``。
     """
     tenant_id = _tid(request)
-    try:
-        state = await get_run_control().start(
-            tenant_id=tenant_id,
-            goal=body.goal,
-            user_token=_user_token(request),
-            max_parallel=body.max_parallel,
-            timeout_seconds=body.timeout_seconds,
-        )
-    except ValueError as exc:  # 拆不出 ≥2 个可并行子任务
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return _to_model(state)
+    accepted = await get_run_control().submit(
+        tenant_id=tenant_id,
+        goal=body.goal,
+        user_token=_user_token(request),
+        max_parallel=body.max_parallel,
+        timeout_seconds=body.timeout_seconds,
+        idempotency_key=request.headers.get("idempotency-key", "").strip(),
+    )
+    return RunAcceptedModel.model_validate(accepted)
 
 
 @router.get("/runs/{run_id}", response_model=RunStateModel)

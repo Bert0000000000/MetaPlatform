@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import asyncio
 import time
+from collections.abc import Iterator
+from contextlib import ExitStack
 from typing import Any
 
 import httpx
@@ -39,7 +41,6 @@ from mate_tech_agent_team import (
     TeamBus,
 )
 from mate_tech_agent_team.api.run_control import DEFAULT_TIMEOUT_ENV
-from mate_tech_agent_team.audit import AUDIT_SPAWN
 from mate_tech_agent_team.main import create_app
 from mate_tech_agent_team.profile_store import bootstrap_profiles
 from mate_tech_agent_team.profiles import EmployeeProfile
@@ -194,6 +195,22 @@ def _app_obj(
     )
 
 
+_clients: ExitStack = ExitStack()
+
+
+@pytest.fixture(autouse=True)
+def _close_test_clients() -> Iterator[None]:
+    """测试结束后关掉本轮开出去的 TestClient。
+
+    **必须用 ``with`` 进 TestClient**（1.7 任务 1）：不带上下文管理器时，Starlette
+    为**每个请求**现起一个事件循环、请求一完就关——``POST /runs`` 里
+    ``create_task`` 出去的后台执行会在响应返回的瞬间被拆掉，run 永远停在
+    ``running``。带上下文时循环跨请求存活（生产里 uvicorn 本来就是一个常驻循环）。
+    """
+    yield
+    _clients.close()
+
+
 def _app(
     *,
     store: Any = None,
@@ -202,13 +219,15 @@ def _app(
     runtime: Any = None,
     planner: Any = None,
 ) -> TestClient:
-    return TestClient(
-        _app_obj(
-            store=store,
-            bus=bus,
-            checkpointer=checkpointer,
-            runtime=runtime,
-            planner=planner,
+    return _clients.enter_context(
+        TestClient(
+            _app_obj(
+                store=store,
+                bus=bus,
+                checkpointer=checkpointer,
+                runtime=runtime,
+                planner=planner,
+            )
         )
     )
 
@@ -310,12 +329,38 @@ def test_creating_a_profile_beyond_the_creator_envelope_is_forbidden() -> None:
 # ── 取消 ────────────────────────────────────────────────────────────────
 
 
-def _start_run(client: TestClient, **extra: Any) -> dict[str, Any]:
+def _submit(client: TestClient, **extra: Any) -> str:
+    """受理一轮运行并回 ``run_id``（1.7 契约：``202`` + run_id，不再同步返回状态）。"""
     response = client.post(
         f"{BASE}/runs", json={"goal": "分析本月异常订单", **extra}, headers=_headers()
     )
-    assert response.status_code == 200, response.text
-    return response.json()
+    assert response.status_code == 202, response.text
+    return response.json()["run_id"]
+
+
+def _start_run(client: TestClient, **extra: Any) -> dict[str, Any]:
+    """受理一轮并**等到它停下来**，返回停下来那一刻的状态。
+
+    受理制把"提交"与"等结果"拆开了（1.7 任务 1），而 1.3~1.6 的用例关心的是
+    "跑完之后的语义"。这里把两步合起来，让那些断言照旧针对**最终状态**。
+    """
+    return _wait_settled(client, _submit(client, **extra))
+
+
+#: run 停下来的状态：闸门（等人）或任何终态。
+_SETTLED = frozenset({"awaiting_approval", "completed", "failed", "cancelled", "timeout"})
+
+
+def _wait_settled(client: TestClient, run_id: str, timeout: float = 8.0) -> dict[str, Any]:
+    """轮询到 run 停下来（闸门或终态）为止。超时返回最后看到的那份状态。"""
+    deadline = time.monotonic() + timeout
+    body: dict[str, Any] = {}
+    while time.monotonic() < deadline:
+        body = client.get(f"{BASE}/runs/{run_id}", headers=_headers()).json()
+        if body.get("status") in _SETTLED:
+            return body
+        time.sleep(0.02)
+    return body
 
 
 def test_cancel_moves_the_run_to_a_terminal_state() -> None:
@@ -374,24 +419,15 @@ def test_cancel_does_not_overwrite_an_earlier_terminal_state() -> None:
 # ── 执行中的取消（1.5 任务 1）────────────────────────────────────────────
 
 
-def _spawn_run_id(bus: TeamBus) -> str:
-    """从**派活审计行**认领执行中的 run_id。
-
-    ``POST /runs`` 是同步的：run 还在跑的时候，HTTP 那边还没有返回值可用，
-    所以测试要从别处认出这轮 run。派活的审计行（硬规则 #9）带 ``run_id``，
-    正好是"这一轮已经开始执行"的公开证据。
-    """
-    rows = bus.audit.records(tenant_id=TENANT, action=AUDIT_SPAWN)
-    assert rows, "还没有派活审计行：run 还没执行到派活那一步"
-    return rows[-1].run_id
-
-
 @pytest.mark.asyncio
 async def test_cancel_stops_an_executing_run() -> None:
     """执行中的 run 也能取消：图在**节点边界**自查取消标志，落终态 ``cancelled``。
 
-    请求还在等它（``POST /runs`` 同步），所以取消不能靠"外部杀"：在途的那一波
-    允许跑完（不硬断），跑完之后图自己不再往下走——第二波一个员工都不派。
+    受理制（1.7 任务 1）之后这条更好证：``POST /runs`` 立刻回 run_id，测试拿着它
+    就能取消一轮**正在跑**的 run，不必再从派活审计行里反认 run_id。
+
+    取消不能靠"外部杀"：在途的那一波允许跑完（不硬断），跑完之后图自己不再往下走
+    ——第二波一个员工都不派。
     """
     runtime = _BlockingRuntime()
     service, bus, store = _service(runtime=runtime, planner=_TwoWavePlanner())
@@ -403,12 +439,14 @@ async def test_cancel_stops_an_executing_run() -> None:
     )
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        started = asyncio.create_task(
-            client.post(f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=_headers())
+        accepted = await client.post(
+            f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=_headers()
         )
-        await asyncio.wait_for(runtime.entered.wait(), 5)
-        run_id = _spawn_run_id(bus)
+        assert accepted.status_code == 202, accepted.text
+        run_id = accepted.json()["run_id"]
 
+        # 等图真的进到员工调用里，再去取消它
+        await asyncio.wait_for(runtime.entered.wait(), 5)
         cancelling = asyncio.create_task(
             client.post(f"{BASE}/runs/{run_id}/cancel", headers=_headers())
         )
@@ -416,15 +454,15 @@ async def test_cancel_stops_an_executing_run() -> None:
         runtime.release.set()  # 放行在途调用：允许它跑完，但不再往下走
 
         cancelled = await asyncio.wait_for(cancelling, 5)
-        first = await asyncio.wait_for(started, 5)
+        after = await client.get(f"{BASE}/runs/{run_id}", headers=_headers())
         approve = await client.post(
             f"{BASE}/runs/{run_id}/approve", json={"approved": True}, headers=_headers()
         )
 
     assert cancelled.status_code == 200, cancelled.text
     assert cancelled.json()["status"] == "cancelled"
-    # 终态是**图自己写进检查点**的：发起那边看到的也是同一份
-    assert first.json()["status"] == "cancelled"
+    # 终态是**图自己写进检查点**的：换个读路径看到的也是同一份
+    assert after.json()["status"] == "cancelled"
     # 不再推进：第二波（t3）没有被派出去；已完成的第一波不重跑
     assert runtime.started == ["t1", "t2"], runtime.started
     # 终态之后 approve 一律 409（1.3 已定语义）
@@ -638,11 +676,14 @@ async def test_events_stream_tails_new_steps_until_the_run_is_terminal() -> None
         port = server.servers[0].sockets[0].getsockname()[1]
 
         async with httpx.AsyncClient(base_url=f"http://127.0.0.1:{port}") as client:
-            started = asyncio.create_task(
-                client.post(f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=_headers())
+            accepted = await client.post(
+                f"{BASE}/runs", json={"goal": "分析本月异常订单"}, headers=_headers()
             )
+            assert accepted.status_code == 202, accepted.text
+            run_id = accepted.json()["run_id"]
+
+            # 等图真的进到员工调用里，再去订阅——这样"回放"补的确实是**已有**历史
             await asyncio.wait_for(runtime.entered.wait(), 5)
-            run_id = _spawn_run_id(bus)
 
             async with client.stream(
                 "GET", f"{BASE}/runs/{run_id}/events", headers=_headers()
@@ -668,9 +709,6 @@ async def test_events_stream_tails_new_steps_until_the_run_is_terminal() -> None
                 closed = await _read_until(lines, "event: end")
                 assert "event: end" in closed, f"终态后没收流：{closed[-400:]}"
 
-            # 发起那条请求是在它停在闸门时返回的；取消发生在之后，所以终态要看**现在**查
-            first = await asyncio.wait_for(started, 5)
-            assert first.json()["status"] == "awaiting_approval"
             after = await client.get(f"{BASE}/runs/{run_id}", headers=_headers())
             assert after.json()["status"] == "cancelled"
     finally:

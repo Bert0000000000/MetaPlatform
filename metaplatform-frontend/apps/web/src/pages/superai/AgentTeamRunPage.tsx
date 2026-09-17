@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Banner,
   Button,
@@ -16,7 +16,9 @@ import {
   getArtifact,
   getRun,
   listRunArtifacts,
+  newIdempotencyKey,
   startRun,
+  streamRunEvents,
   type Artifact,
   type ArtifactContent,
   type RunState,
@@ -44,6 +46,12 @@ import './superai.css';
  * 只做读：所有状态都来自后端 run 状态，前端不拼装、不伪造产出。证据直接用
  * SuperAI 那一个 `EvidenceRenderer`——agent-team 产出的是同一种形状的条目，
  * 所以同一平台里的"证据"在 UI 上也只有一种样子。
+ *
+ * **实时（1.7 任务 2）**：提交走受理制（立刻拿 run_id），之后**订阅事件流**
+ * （`fetch` + `ReadableStream`，不用 `EventSource`——它带不了 `Authorization`）。
+ * 流负责说"有推进了"，`GET /runs/{id}` 负责给"现在长什么样"：任务图、员工状态、
+ * 证据、交付物、终态都由同一条推送驱动刷新。**没有任何轮询定时器**——先前那个
+ * 每 2 秒打一次的 `setTimeout` 已经拆掉。
  */
 
 const STATUS_TAG: Record<RunStatus, { color: 'grey' | 'blue' | 'amber' | 'green' | 'red'; label: string }> = {
@@ -85,11 +93,14 @@ function toolCallLabel(call: Record<string, unknown>): { text: string; color: 'g
 
 export default function AgentTeamRunPage() {
   const [goal, setGoal] = useState('把本月的异常订单找出来，逐个分析原因，给我一份汇总');
+  const [runId, setRunId] = useState('');
   const [run, setRun] = useState<RunState | null>(null);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [activeArtifact, setActiveArtifact] = useState<ArtifactContent | null>(null);
   const [loadingArtifactId, setLoadingArtifactId] = useState('');
   const [busy, setBusy] = useState(false);
+  /** 事件流连着没有——UI 上要说实话，别让人以为"不动"就是"没在跑"。 */
+  const [live, setLive] = useState(false);
 
   const status = run ? STATUS_TAG[run.status] : null;
 
@@ -98,12 +109,57 @@ export default function AgentTeamRunPage() {
   const receiptArtifacts = results.flatMap((r) => r.artifacts ?? []);
 
   /** 拉一次 run 状态；顺带把交付物清单一起取回来。 */
-  const refresh = useCallback(async (runId: string) => {
-    const next = await getRun(runId);
+  const refresh = useCallback(async (id: string) => {
+    const next = await getRun(id);
     setRun(next);
-    setArtifacts(await listRunArtifacts(runId).catch(() => []));
+    setArtifacts(await listRunArtifacts(id).catch(() => []));
     return next;
   }, []);
+
+  // 事件流每一步都会来敲一次；把密集的敲门**合并**成一次拉取（前一次还没回来
+  // 就只记个待办），既不丢推送也不打出一串并发请求。
+  const pullingRef = useRef(false);
+  const pendingRef = useRef(false);
+  const pull = useCallback(
+    async (id: string) => {
+      if (pullingRef.current) {
+        pendingRef.current = true;
+        return;
+      }
+      pullingRef.current = true;
+      try {
+        do {
+          pendingRef.current = false;
+          await refresh(id);
+        } while (pendingRef.current);
+      } catch {
+        // 读失败不该打断这条流：下一次推送会再来敲
+      } finally {
+        pullingRef.current = false;
+      }
+    },
+    [refresh],
+  );
+
+  // 订阅步骤级事件流：回放 + 尾随，run 落终态时服务端发 end 收流。
+  // 停在闸门的 run **不会**自己收流——所以人工确认之后的推进仍从同一条流到达。
+  useEffect(() => {
+    if (!runId) return;
+    setLive(false);
+    const stop = streamRunEvents(runId, {
+      onOpen: () => setLive(true),
+      onStep: () => void pull(runId),
+      onEnd: () => {
+        setLive(false);
+        void pull(runId);
+      },
+      onError: () => setLive(false),
+    });
+    return () => {
+      stop();
+      setLive(false);
+    };
+  }, [runId, pull]);
 
   const call = useCallback(
     async (fn: () => Promise<RunState>, failMsg: string) => {
@@ -120,6 +176,24 @@ export default function AgentTeamRunPage() {
     [refresh],
   );
 
+  /** 提交：受理制下这只是**一次受理**，不是"等结果"（1.7 任务 1）。 */
+  const submit = useCallback(async () => {
+    setBusy(true);
+    try {
+      // 带幂等键：网络层重试/超时重发不会多起一轮（后端按同键回同一轮）
+      const accepted = await startRun(goal.trim(), 3, newIdempotencyKey());
+      setRun(null);
+      setArtifacts([]);
+      setActiveArtifact(null);
+      setRunId(accepted.run_id);
+      await pull(accepted.run_id);
+    } catch (e) {
+      Toast.error(`提交失败：${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  }, [goal, pull]);
+
   // 交付物详情按 id 现取：列表里只有元数据，正文不跟着列表一起拖过来。
   const openArtifact = useCallback(async (artifactId: string) => {
     setLoadingArtifactId(artifactId);
@@ -131,15 +205,6 @@ export default function AgentTeamRunPage() {
       setLoadingArtifactId('');
     }
   }, []);
-
-  // 停在闸门之前时自动跟一下：执行中的 run 是异步推进的，不刷新就看不到新步骤。
-  useEffect(() => {
-    if (!run || (run.status !== 'running' && run.status !== 'planning')) return;
-    const timer = window.setTimeout(() => {
-      void refresh(run.run_id).catch(() => undefined);
-    }, 2000);
-    return () => window.clearTimeout(timer);
-  }, [run, refresh]);
 
   const subtaskColumns: ColumnProps<SubTask>[] = [
     { title: '子任务', dataIndex: 'task_id', width: 90 },
@@ -233,15 +298,15 @@ export default function AgentTeamRunPage() {
             icon={<Play size={14} />}
             loading={busy}
             disabled={!goal.trim()}
-            onClick={() => void call(() => startRun(goal.trim()), '提交失败')}
+            onClick={() => void submit()}
             data-testid="agent-team-start"
           >
             拆解并派活
           </Button>
-          {run ? (
+          {runId ? (
             <Button
               icon={<RefreshCw size={14} />}
-              onClick={() => void refresh(run.run_id).catch(() => undefined)}
+              onClick={() => void pull(runId)}
               data-testid="agent-team-refresh"
             >
               刷新
@@ -259,7 +324,20 @@ export default function AgentTeamRunPage() {
           <Card
             className="mp-team-gap"
             title="② 运行总览"
-            headerExtraContent={status ? <Tag color={status.color} type="light">{status.label}</Tag> : null}
+            headerExtraContent={
+              <span className="mp-team-chips">
+                {live ? (
+                  <Tag color="blue" type="light" data-testid="agent-team-live">
+                    实时
+                  </Tag>
+                ) : null}
+                {status ? (
+                  <Tag color={status.color} type="light">
+                    {status.label}
+                  </Tag>
+                ) : null}
+              </span>
+            }
           >
             <div className="mp-exec-kpis" data-testid="agent-team-overview">
               <div className="mp-exec-kpi">
@@ -453,11 +531,15 @@ export default function AgentTeamRunPage() {
         </>
       ) : null}
 
-      {!run ? (
+      {!run && !runId ? (
         <EmptyState
           title="还没有运行"
           desc="在上面输入一句话，点「拆解并派活」即可看到任务图、各员工证据与交付物。"
         />
+      ) : null}
+
+      {!run && runId ? (
+        <EmptyState title="已受理" desc={`run_id：${runId} —— 正在取回这一轮的状态…`} />
       ) : null}
 
       <SheetDetail
