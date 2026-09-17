@@ -55,6 +55,72 @@ export interface AgentProposalEvent {
   status: string;
   impactSummary: string;
 }
+/**
+ * `navigate` 回向事件（ADR-0065 §3.3）：agent 建议用户去哪，UI 渲染成可点击卡片。
+ *
+ * `path` / `label` 都是**模型产出的字符串**——`path` 在渲染成可点击之前必须过
+ * :func:`isAllowedNavigatePath`（评审条件 R4），否则一个模型可控的字符串就等于
+ * 把路由交给模型（开放重定向 / `javascript:` 注入面）。
+ */
+export interface AgentNavigateEvent {
+  target: { path: string; label: string };
+}
+
+/**
+ * 应用内已知路由的顶层前缀白名单（R4）。
+ *
+ * 取"顶层命名空间"这一粒度而不是逐条路由表：路由表会持续增删，把白名单钉死在
+ * 每条具体路径上会立刻腐化。这里要挡的是**跳到应用外**（`https://…` / `//evil.com`
+ * / `javascript:`）和**未知前缀**，不是"这条深链是否恰好存在"。
+ */
+export const NAVIGATE_ALLOWED_PREFIXES = [
+  '/home',
+  '/ontology',
+  '/superai',
+  '/agents',
+  '/gov',
+  '/ki',
+  '/kb',
+  '/mcp',
+  '/a2a',
+  '/admin',
+  '/apps',
+  '/marketplace',
+  '/arch',
+  '/login',
+] as const;
+
+/**
+ * 校验一条 `navigate.target.path` 是否允许渲染为可点击（R4）。
+ *
+ * 规则（全部满足才算通过）：
+ *  1. 非空字符串，且**不含**空白 / 控制字符（换行、制表、NUL 等）；
+ *  2. 以单个 `/` 开头——这一条直接排掉 `https://…`、`javascript:`、`data:` 等
+ *     带 scheme 的写法（它们都不以 `/` 开头）；
+ *  3. **不以 `//` 开头**（协议相对 URL：`//evil.com` 会被浏览器当成外站）；
+ *  4. 不含反斜杠（`/\evil.com` 在部分解析器里等价于 `//evil.com`）；
+ *  5. 去掉 query / hash 后，第一段必须落在 :data:`NAVIGATE_ALLOWED_PREFIXES` 里；
+ *  6. 路径段里没有 `.` / `..`（路径穿越卫生，路由虽不走服务端，但不给它机会）。
+ *
+ * 不过 `%2F` 之类编码不再单独解——编码后的非法首段（如 `/%2F%2Fevil.com`）会因为
+ * 首段不在白名单里被第 5 条挡下，无需额外规则。
+ */
+export function isAllowedNavigatePath(path: unknown): path is string {
+  if (typeof path !== 'string') return false;
+  if (path.length === 0 || path.length > 512) return false;
+  // 空白 / 控制字符：既可能是拼接痕迹，也会让"首段"判断失真
+  if (/[\s\u0000-\u001f\u007f]/.test(path)) return false;
+  if (!path.startsWith('/')) return false;
+  if (path.startsWith('//')) return false;
+  if (path.includes('\\')) return false;
+  const pathname = path.split(/[?#]/, 1)[0];
+  const segments = pathname.split('/').filter((segment) => segment.length > 0);
+  if (segments.some((segment) => segment === '.' || segment === '..')) return false;
+  const first = segments[0];
+  if (!first) return false;
+  return NAVIGATE_ALLOWED_PREFIXES.some((prefix) => `/${first}` === prefix);
+}
+
 export interface StreamAgentCallbacks {
   onReasoning?: (text: string) => void;
   onToolCall?: (call: AgentCallEvent) => void;
@@ -63,6 +129,8 @@ export interface StreamAgentCallbacks {
   onRoutingDecisionError?: (event: RoutingDecisionErrorEvent) => void;
   onEvidence?: (event: AgentEvidenceEvent) => void;
   onProposal?: (event: AgentProposalEvent) => void;
+  /** agent 建议跳转（ADR-0065 §3.3）；`path` 由模型产出，渲染前须过 R4 白名单。 */
+  onNavigate?: (event: AgentNavigateEvent) => void;
   onDelta: (text: string) => void;
   onDone: (content: string, citations: Citation[]) => void;
   onError: (message: string) => void;
@@ -354,6 +422,18 @@ export async function streamAgentChat(
               kind: String(parsed.kind ?? ''),
               status: String(parsed.status ?? 'pending'),
               impactSummary: String(parsed.impactSummary ?? ''),
+            });
+          }
+        } else if (type === 'navigate') {
+          // 只做**结构**搬运：原样把模型给的 path/label 交给 UI 层，
+          // 白名单校验（R4）在渲染成可点击卡片那一步做——那是唯一的渲染点。
+          const target = parsed.target;
+          if (isObjectRecord(target)) {
+            callbacks.onNavigate?.({
+              target: {
+                path: String(target.path ?? ''),
+                label: String(target.label ?? ''),
+              },
             });
           }
         } else if (isContentDelta(parsed)) {

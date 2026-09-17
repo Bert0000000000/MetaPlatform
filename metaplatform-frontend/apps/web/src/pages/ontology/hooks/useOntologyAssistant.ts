@@ -12,11 +12,26 @@
 //
 // 注：本 hook 原先打在一个后端不存在的端点（/api/v1/agent/runs/stream，实测 404）
 // 上，已改接真实可用的 copilot agent 流。
+//
+// 2026-09-18（ADR-0065 / `MP-CONTEXT-AWARE-01` S2）：上下文从**静态三键**升级为
+// **分层状态键**（navigation / selection / pendingSelection），并新增 `sendWithContext`
+// 入口。旧宿主（只给 `baseContext.interaction`）的 payload **逐字节不变**——分层键
+// 只在真的有内容时才落（见 `buildAssistantContextEnvelope`）。
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
 import type { PageAssistantController, AssistantMessage } from '@mate/shared';
 import { streamAgentChat } from '@/api/superai/chat';
+import {
+  buildAssistantContextEnvelope,
+  getOntologyContextSnapshot,
+  type AssistantInteractionContext,
+  type AssistantNavigationState,
+  type AssistantPendingSelection,
+  type AssistantSelection,
+} from './assistantContext';
+
+export type { AssistantInteractionContext } from './assistantContext';
 
 export interface ProposalFromStream {
   proposal_id: string;
@@ -26,13 +41,6 @@ export interface ProposalFromStream {
   summary?: string;
 }
 
-/** 宿主页面上下文（后端折进 system prompt，让指代能落到具体页面/对象）。 */
-export interface AssistantInteractionContext {
-  appCode: string;
-  pageCode: string;
-  pageUrl: string;
-}
-
 export interface UseOntologyAssistantOptions {
   employeeId: string;
   employeeName: string;
@@ -40,12 +48,33 @@ export interface UseOntologyAssistantOptions {
   moduleLabel: string;
   welcomeMessage: string;
   suggestions: string[];
-  /** Agent run 的 base context（含 appCode / pageCode / pageUrl）。 */
+  /** Agent run 的 base context（appCode / pageCode / pageUrl）。 */
   baseContext: { interaction: AssistantInteractionContext };
+  /**
+   * 动态 navigation（ADR-0065 §3.4）：每次发问时现取，所以路由/深链变了自动跟上。
+   * 不传时退化为读本体域 store（宿主页与助手常不在同一 React 树，见 `assistantContext`）。
+   */
+  getNavigationState?: () => AssistantNavigationState | null;
+  /** 动态 selection：同上，不传时读本体域 store。 */
+  getSelection?: () => AssistantSelection | null;
   /** 流里出现 proposal 时触发（弹 drawer）。 */
   onProposal?: (proposal: ProposalFromStream) => void;
   /** 流跑失败的回调（可选，用于 toast）。 */
   onError?: (message: string) => void;
+}
+
+/** 在一次发送上附加的一次性上下文。 */
+export interface SendWithContextOptions {
+  /** 覆盖本次的选中态（不传则用 getSelection / store）。 */
+  selection?: AssistantSelection | null;
+  /** 一次性划词上下文——**消费即弃**，不写回任何状态。 */
+  pendingSelection?: AssistantPendingSelection | null;
+}
+
+/** `usePageAssistant` 的控制器 + 分层上下文入口。 */
+export interface OntologyAssistantController extends PageAssistantController {
+  /** 带上下文发一句（划词/右键"问 AI"、选中后追问的入口）。 */
+  sendWithContext: (text: string, options?: SendWithContextOptions) => void;
 }
 
 const createMessage = (role: AssistantMessage['role'], content: string): AssistantMessage => ({
@@ -57,7 +86,7 @@ const createMessage = (role: AssistantMessage['role'], content: string): Assista
 
 const createSessionId = (employeeId: string) => `${employeeId}-${nanoid(10)}`;
 
-export function useOntologyAssistant(options: UseOntologyAssistantOptions): PageAssistantController {
+export function useOntologyAssistant(options: UseOntologyAssistantOptions): OntologyAssistantController {
   const {
     employeeId, employeeName, employeeDescription, moduleLabel,
     welcomeMessage, suggestions, baseContext, onProposal, onError,
@@ -86,10 +115,20 @@ export function useOntologyAssistant(options: UseOntologyAssistantOptions): Page
   const baseContextRef = useRef(baseContext);
   useEffect(() => { baseContextRef.current = baseContext; }, [baseContext]);
 
+  // 动态取数函数放进 ref：发送时现取，避免把它们写进 useCallback 依赖导致重建。
+  const getNavigationStateRef = useRef(options.getNavigationState);
+  const getSelectionRef = useRef(options.getSelection);
+  useEffect(() => { getNavigationStateRef.current = options.getNavigationState; }, [options.getNavigationState]);
+  useEffect(() => { getSelectionRef.current = options.getSelection; }, [options.getSelection]);
+
   const streamingRef = useRef(false);
   useEffect(() => { streamingRef.current = streaming; }, [streaming]);
 
-  const sendMessage = useCallback((rawContent: string) => {
+  /** 发送内核：`sendMessage` 与 `sendWithContext` 共用，差别只在本次附带的上下文。 */
+  const sendInternal = useCallback((
+    rawContent: string,
+    extra?: SendWithContextOptions,
+  ) => {
     const content = rawContent.trim();
     if (!content || streamingRef.current) return;
 
@@ -112,6 +151,22 @@ export function useOntologyAssistant(options: UseOntologyAssistantOptions): Page
         prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + text } : m)),
       );
     };
+
+    // 上下文在**发送这一刻**组装：navigation 随路由、selection 随选中，都是一次性请求态。
+    const store = getOntologyContextSnapshot();
+    const navigation = getNavigationStateRef.current
+      ? getNavigationStateRef.current()
+      : store.navigation;
+    const selection = extra?.selection !== undefined
+      ? extra.selection
+      : (getSelectionRef.current ? getSelectionRef.current() : store.selection);
+
+    const context = buildAssistantContextEnvelope({
+      interaction: baseContextRef.current.interaction,
+      navigation,
+      selection,
+      pendingSelection: extra?.pendingSelection ?? null,
+    });
 
     void streamAgentChat(
       history,
@@ -152,9 +207,16 @@ export function useOntologyAssistant(options: UseOntologyAssistantOptions): Page
         },
       },
       controller.signal,
-      { context: baseContextRef.current },
+      { context },
     );
   }, []);
+
+  const sendMessage = useCallback((rawContent: string) => sendInternal(rawContent), [sendInternal]);
+
+  const sendWithContext = useCallback(
+    (rawContent: string, sendOptions?: SendWithContextOptions) => sendInternal(rawContent, sendOptions),
+    [sendInternal],
+  );
 
   const clearSession = useCallback(() => {
     abortRef.current?.abort();
@@ -190,6 +252,7 @@ export function useOntologyAssistant(options: UseOntologyAssistantOptions): Page
     close: () => setIsOpen(false),
     toggle: () => setIsOpen((current) => !current),
     sendMessage,
+    sendWithContext,
     clearSession,
   };
 }

@@ -14,6 +14,7 @@
  * 后端对接：copilot stream（LLM 流式）/ conversations（会话 CRUD + 历史）/ 多模态。
  */
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AIChatDialogue,
   AIChatInput,
@@ -59,7 +60,7 @@ import {
   multimodalUploadChat,
   parseRoutingDecisionEvent,
 } from '@/api/superai/chat';
-import type { AgentProposalEvent } from '@/api/superai/chat';
+import type { AgentNavigateEvent, AgentProposalEvent } from '@/api/superai/chat';
 import {
   approveRun,
   cancelRun,
@@ -75,6 +76,7 @@ import { EvidenceRenderer } from './components/EvidenceRenderer';
 import { ClaimRenderer } from './components/ClaimRenderer';
 import OntologyEvidencePanel from './components/OntologyEvidencePanel';
 import ProposalActionCard from './components/ProposalActionCard';
+import NavigateCard from './components/NavigateCard';
 import ProposalConfirmDrawer from '@/pages/ontology/components/ProposalConfirmDrawer';
 import { clearRoutingDecisionForStreamError } from './routingDecisionState';
 import {
@@ -451,6 +453,8 @@ export default function ChatPage() {
   // 本体证据 / 待确认提案：按 assistant 消息 id 归集，与 agentSteps 同构。
   const [agentEvidence, setAgentEvidence] = useState<Record<string, Evidence[]>>({});
   const [agentProposals, setAgentProposals] = useState<Record<string, AgentProposalEvent[]>>({});
+  // agent 建议跳转（ADR-0065 §3.3）：按 assistant 消息 id 归集，与 evidence/proposal 同构。
+  const [agentNavigations, setAgentNavigations] = useState<Record<string, AgentNavigateEvent[]>>({});
   // 点「同意」后打开确认抽屉的提案（抽屉负责 confirm + execute）。
   const [pendingProposal, setPendingProposal] = useState<AgentProposalEvent | null>(null);
   const [loading, setLoading] = useState(false);
@@ -474,6 +478,8 @@ export default function ChatPage() {
 
   // 对话角色名取当前登录用户（无登录态时退化为中性称呼，不写死 Admin）
   const currentUserName = useMemo(() => getUser()?.username ?? '我', []);
+  // navigate 卡片点击后真正跳转的执行者——宿主持有 router，卡片只发意图。
+  const navigate = useNavigate();
 
   // activeId 初始化（挂载后取第一个会话）
   useEffect(() => {
@@ -872,6 +878,14 @@ export default function ChatPage() {
                 return { ...prev, [assistantId]: [...existing, proposal] };
               });
             },
+            onNavigate: (event) => {
+              // 卡片由 `renderDialogueContentItem.navigate` 渲染——白名单校验在那张
+              // 卡片里做（R4），这里只归集，不做任何"看起来能点"的判断。
+              setAgentNavigations((prev) => ({
+                ...prev,
+                [assistantId]: [...(prev[assistantId] || []), event],
+              }));
+            },
             onDelta: (delta) => {
               setStreamingMap((m) => ({ ...m, [assistantId]: (m[assistantId] || '') + delta }));
             },
@@ -1181,6 +1195,10 @@ export default function ChatPage() {
         for (const proposal of agentProposals[msg.id] ?? []) {
           contentItems.push({ type: 'proposal', proposal });
         }
+        // agent 建议跳转（ADR-0065 §3.3）：可点击导航卡片，点击才跳转。
+        for (const nav of agentNavigations[msg.id] ?? []) {
+          contentItems.push({ type: 'navigate', target: nav.target });
+        }
         return {
           id: msg.id,
           role: msg.role === 'user' ? 'user' : 'assistant',
@@ -1189,7 +1207,7 @@ export default function ChatPage() {
           createdAt: msg.createdAt ? Date.parse(msg.createdAt) : Date.now(),
         };
       }),
-    [activeSession?.messages, streamingMap, agentSteps, agentEvidence, agentProposals],
+    [activeSession?.messages, streamingMap, agentSteps, agentEvidence, agentProposals, agentNavigations],
   );
 
   const filteredSessions = useMemo(() => {
@@ -1391,6 +1409,12 @@ export default function ChatPage() {
                     }
                   />
                 );
+              },
+              navigate: (item: { target?: { path: string; label: string } }) => {
+                const target = item.target;
+                if (!target) return null;
+                // 白名单校验（R4）在 NavigateCard 内部做：不合规的渲染成纯文本块。
+                return <NavigateCard target={target} onNavigate={(path) => navigate(path)} />;
               },
             }}
             chats={semiMessages}

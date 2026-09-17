@@ -17,6 +17,7 @@ import {
   type SearchAroundGroup,
 } from '@/api/ont/kernel';
 import { DataTablePro, EmptyState, FilterBar, SheetDetail, SplitPane } from '@/components/skeleton';
+import { setOntologySelection } from '../hooks/assistantContext';
 import ActionFormDrawer from './ActionFormDrawer';
 import ProposalConfirmDrawer from '../components/ProposalConfirmDrawer';
 import './explorer.css';
@@ -174,6 +175,29 @@ export default function ObjectExplorerPage() {
     () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
     [filtered, page],
   );
+
+  // ── 发布列表**选中态**给域级 store（ADR-0065 S2）──
+  //
+  // 选中态 = 表格的行选中（`selectedKeys`）——这是本页唯一能被称作"用户此刻在看
+  // 哪些对象"的语义。**只发标识**：rid（供 agent 水合）+ 主键当 label（人可读）。
+  // `capturedAt` 记这批选中被确认的时刻（**毫秒**），服务端按它判陈旧（R2）。
+  //
+  // 注意"选中"与"打开"是两回事：打开的对象走 navigation.openRecordIds（由域壳按
+  // `?id=` 深链发布），这里只管勾选。
+  useEffect(() => {
+    const items = selectedKeys
+      .map((key) => individuals.find((row) => row.rid === String(key)))
+      .filter((row): row is KernelIndividual => Boolean(row))
+      .map((row) => ({ rid: row.rid, label: row.primary_key || row.rid }));
+    setOntologySelection(
+      items.length > 0
+        ? { kind: 'ontology.instances', items, capturedAt: Date.now() }
+        : null,
+    );
+  }, [selectedKeys, individuals]);
+
+  // 离开对象浏览器时清空：v1 请求作用域，过期选中态不该被下一次发问带上。
+  useEffect(() => () => setOntologySelection(null), []);
 
   // ── 列：主键 + 该类型前 6 个属性 + 更新时间 ──
   const columns = useMemo<Column[]>(() => {
