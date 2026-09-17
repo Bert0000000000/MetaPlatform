@@ -201,11 +201,9 @@ PR：[#56](https://github.com/Bert0000000000/MetaPlatform/pull/56)（分支 `fea
 两者**合一**：
 
 1. 会话页新增「Agent 产品层」模式：一句话 → `POST /runs` → 拆任务图 → 派数字员工
-
    → 真实执行 → 停在人工确认闸门 → 确认后汇总。
 
 2. 调度可视化**常驻在会话历史之上**（一个区域，不再散在消息里）：任务图（含
-
    **波次**）/ 员工状态 / 证据 / 交付物 / 终态。
 
 3. 证据与交付物**沿用既有渲染器**（`EvidenceRenderer` + 交付物按 id 取回），未另造。
@@ -250,11 +248,25 @@ dev server 由本会话自起（配置的 9251 被占，实际落在 `60707`）�
 区域底边 ≤ 对话区顶边、且整体在输入框之上 —— 「历史之上常驻」成立。区域
 `overflow: auto`，长任务图自行滚动，不挤压对话。
 
-**必须如实说明的一点**：这一轮的员工产出正文是 **llmgw 的 stub-fallback 回显**
-（`[stub-fallback] OpenAI unavailable. Echo: …`），不是真实模型答复 —— 这是本机
-llmgw 未配 provider 时的既有行为（见 `agent-product-layer-env-facts.md` §4）。
+**关于模型产出（订正于 2026-09-17，先前记录有误）**：
+
+第一轮跑出来的产出正文里混着 **llmgw 的 stub-fallback 回显**
+（`[stub-fallback] OpenAI unavailable. Echo: …`）。我最初把它归因成"本机 llmgw 未配
+provider"——**这是错的**。逐项查证后的事实是：
+
+| 查证 | 结果 |
+| --- | --- |
+| `ai.provider.*` 是否配了 | **配了**。service-read（`X-Service-Secret` + Bearer）实取：`ai.provider.default_active=ark`，`ark.api_key` / `ark.base_url=https://ark.cn-beijing.volces.com/api/plan/v3` / `ark.default_model=glm-5.3-flash` / `ark.enabled=true` |
+| 直连 llmgw（带该配置） | **HTTP 200 / 8.09s / 真实中文答案 / 无 stub-fallback** —— 通道完全正常 |
+| 那为什么会回显 | llmgw 日志：`llmgw.real.openai.timeout`（`model=glm-5.3-flash`）**紧接着** `llmgw.chat.real.fallback` |
+| 根因 | `RealOpenAIProvider` 的上游超时是 **30s**；`glm-5.3-flash` 是 **reasoning 模型**（实测 390 reasoning / 57 content tokens），而员工那次调用 prompt 很大（工具 schema + 单条上限 8000 字符的工具结果）→ 超过 30s → 该 provider 允许 fallback（`allow_fallback=not is_production_profile() and not req.tools`），**恰好不带 tools 的那次收尾调用**允许 → 回显输入 |
+
+**重跑一轮复核**（`run_id = e90c38a5d067879a56bbd9c4342857c4`）：3 名员工 **2 个真实产出、
+1 个 fallback**，同一条 `timeout → fallback` 日志紧跟其后。所以这是**间歇性的超时**，
+不是配置缺失——这也意味着"员工产出是不是真的"在本机会**随机**，取决于那次调用跑没跑进 30s。
+
 **跑通的是链路**（真实拆图、真实派活、真实调本体工具 `ont_list_classes` /
-`ont_inspect_class`、真实 19 条证据与 3 件交付物），**不是模型质量**。
+`ont_inspect_class`、真实 19 条证据与 3 件交付物）——这一点第一轮就成立，不变。
 
 ### 5.4 本轨没做的（诚实边界）
 
@@ -267,20 +279,21 @@ llmgw 未配 provider 时的既有行为（见 `agent-product-layer-env-facts.md
 ## 6. 遗留与建议
 
 1. **1.0 / 1.2~1.9 缺独立验收文件** —— 本文件把它们统一收了，但不为它们**补写**
-
    独立 `*-ACCEPTANCE.md`：那需要重建当时的判据与原始输出，事后补写等于编造证据。
    建议**从 2.1 起每版一份**，别再积累。
 
 2. **`agent-team.yaml` 未进前端类型生成** —— 前端 `api/agentTeam.ts` 是手写的。
-
    契约再变时这里会漂移。建议把 agent-team 纳入 `pnpm openapi:gen`。
 
-3. **本机 llmgw 未配 provider** —— 所有员工产出都是 stub-fallback 回显，导致
-
-   「员工真的会干活」在本机**验不了**，只能验到链路。要验模型质量需配好
-   `ai.provider.*`（env-facts §4 的 service-read 路径）。
+3. **员工产出会间歇性变成 stub-fallback 回显，而 run 仍报成功**（本轮新发现，见 §5.3）。
+   **不是我先前误记的"provider 没配"**——provider 配了且通道正常，成因是 llmgw 的
+   **30s 上游超时**撞上 reasoning 模型（`glm-5.3-flash`）。两个建议分开看：
+   - **llmgw 侧**：上游超时应当可配/放宽（reasoning 模型天然慢），并且**不该让"会回显
+     输入"的 fallback 出现在员工执行路径上**——员工 `status=ok` 而产出是回显，正是 1.0
+     立项时要治的「假回执」，只是这次成因不是缺配置。属于后端改动，**本批不做**。
+   - **前端侧**：产出里出现 `[stub-fallback]` 时应显著标出（现在当普通正文渲染），
+     否则人看到"有结论"就信了。**本批未做**。
 
 4. **`Process` 级取消的 UI 面** —— 会话页现在能发取消（`POST /runs/{id}/cancel`），
-
    但 1.9 自标的「跨副本取消不保证回话那刻图已停」（B-3）意味着按钮返回时图可能
    还在收尾。UI 上没有把这件事说出来。要么在提示里说明，要么等 B-3 解决。

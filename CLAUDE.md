@@ -272,4 +272,4 @@ AGENT-ORCH-01    ┘         RAG-ONT-01         ┘         AGENT-EXT-01
 **仍未做（别当成已完成）**：
 - **10 条边界仍开着**（清单与「要做的条件」见 2.0 验收 §3）——含 1.9 四条（续跑无用户令牌 / 取消粘性 / 跨副本取消不回话 / 认领靠 TTL）、1.8 两条、`tenant_switch_enabled` 待复核等。
 - **ADR-0065（SuperAI 上下文感知）仍是 Proposed**，2.0 明确不升格；v6（dsh）未启动，两者另立批次。
-- **本机 llmgw 未配 provider** → 员工产出全是 stub-fallback 回显；链路是真的，**模型质量在本机验不了**。
+- **员工产出会间歇性变成 stub-fallback 回显（run 仍报成功）** —— 成因是 llmgw 的 **30s 上游超时**撞上 reasoning 模型（`glm-5.3-flash`）。**不是 provider 没配**：`ai.provider.ark.*` 已配好且直连 llmgw 能拿到真实答案。核验方法见 `AGENT-PRODUCT-LAYER-2.0-ACCEPTANCE.md` §5.3。

@@ -99,7 +99,6 @@ cd mate-platform-backend && PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe -m p
 ```text
 ## Agent 产品层 1.0 完成报告
 - 任务 1 大脑骨架 / 任务 2 数字员工 / 任务 3 本体 / 任务 4 人工确认 / 任务 5 前端 / 任务 6 技能：
-
   <各自验证结果>
 - 地基回归：<任务 0 两 spike 结果>
 - 回归：<基线 → 最终> | commits：<hash 列表> | PR：<链接>

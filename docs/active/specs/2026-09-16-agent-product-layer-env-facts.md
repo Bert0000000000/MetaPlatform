@@ -34,7 +34,11 @@
 
 | 事实 | 细节 |
 |---|---|
-| **llmgw 静默 stub-fallback** | 不带 `base_url`/`api_key` 时 llmgw **把输入原样回显**（`fallback: true`）——看着像模型答了，实际是**假回执**。真值要经 `GET /api/v1/admin/configs/service-read?prefix=ai.provider.&tenant=<tid>`（头带 `X-Service-Secret`）取 `ai.provider.<default_active>.{base_url,api_key,default_model}`；响应是**扁平 key→value 的 `data` 字典**，不是列表 |
+| **llmgw 静默 stub-fallback** | 不带 `base_url`/`api_key` 时 llmgw **把输入原样回显**（`fallback: true`）——看着像模型答了，实际是**假回执**。真值要经 `GET /api/v1/admin/configs/service-read?prefix=ai.provider.&tenant=<tid>` 取 `ai.provider.<default_active>.{base_url,api_key,default_model}`；响应是**扁平 key→value 的 `data` 字典**，不是列表 |
+| **service-read 要两个头，不是一个（2026-09-17 实测）** | 只带 `X-Service-Secret` 会回 `{"error":"unauthorized","detail":"missing bearer token"}`——**还要 `Authorization: Bearer <用户 JWT>`**（服务 token 的 `iss` 与网关不一致，别用它） |
+| **回显有两个来源，别只认第一个（2026-09-17 补齐）** | ② 之外还有 **①：`RealOpenAIProvider` 的 30s 上游超时**。超时同样落到会回显的 fallback（`allow_fallback=not is_production_profile() and not req.tools`——**恰好不带 tools 的那次收尾调用允许**）。员工 `status=ok`、产出却是回显，就是这个。**本机 `glm-5.3-flash` 是 reasoning 模型**（实测一次 390 reasoning / 57 content tokens），prompt 一大就顶到 30s |
+| **本机 provider 是配好的（别再当成没配）** | 实值：`ai.provider.default_active=ark`、`ark.base_url=https://ark.cn-beijing.volces.com/api/plan/v3`、`ark.default_model=glm-5.3-flash`、`enabled=true`。**判断"通道通不通"要直连 `POST /api/v1/llmgw/chat/real`**（带 `provider=custom` + 该 base_url/api_key），不要从员工产出的正文反推——那会被超时误导 |
+| **看 llmgw 到底怎么了** | `docker logs mate-tech-llmgw` 是**结构化 JSON 行**，按 `event` 字段筛：`llmgw.real.openai.timeout`（上游超时，带 `model`）、`llmgw.chat.real.fallback`（带 `provider`）、`cost.recorded`。**`timeout` 紧跟着 `fallback` 就是超时成因**；只有 `fallback` 没有 `timeout` 才是缺配置 |
 | async 图 | 必须配 `AsyncPostgresSaver`；同步 saver + `ainvoke` 抛 `NotImplementedError`；Windows 上 psycopg async 要 `WindowsSelectorEventLoopPolicy` |
 
 ## 5. 平台侧
