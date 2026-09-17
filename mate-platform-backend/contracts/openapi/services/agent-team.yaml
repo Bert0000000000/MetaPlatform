@@ -687,6 +687,11 @@ paths:
         **实现边界**：尾随靠轮询检查点（没有引入消息总线），新步骤最多晚一个
         轮询间隔（当前 250ms）到达。终态判定与流关闭是同一个事实——停在
         `awaiting_approval` 的运行**不会**自己关流，它在等人确认。
+
+        **调用方必须带 `Accept: text/event-stream`**：网关按这个头决定走不走
+        "边收边发"的转发路径（它没有声明就等于不要流式，网关会把整份响应读完再
+        回话，这条流就永远到不了）。浏览器 `fetch` / `EventSource` 天然会发；
+        用 `curl` 试要写 `curl -N -H 'Accept: text/event-stream'`。
       tags: [agent-team]
       operationId: agentTeamGetRunEvents
       parameters:

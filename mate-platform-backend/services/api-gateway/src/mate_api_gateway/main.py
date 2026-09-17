@@ -10,15 +10,32 @@ from __future__ import annotations
 import asyncio
 import os
 import time
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 from typing import Any
 
 import httpx
 import structlog
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 logger = structlog.get_logger(__name__)
+
+#: 转发时要丢掉的逐跳头（请求与响应两侧同一套）。
+_HOP_BY_HOP: frozenset[str] = frozenset(
+    {
+        "host",
+        "content-length",
+        "connection",
+        "keep-alive",
+        "proxy-authenticate",
+        "proxy-authorization",
+        "te",
+        "trailers",
+        "transfer-encoding",
+        "upgrade",
+    }
+)
 
 
 # ---- Service registry (env-overridable) ----
@@ -123,6 +140,64 @@ def _upstream_timeout(service: str) -> httpx.Timeout:
     """这个上游该等多久。长跑服务用宽超时，其余沿用全局值。"""
     seconds = LONG_RUN_TIMEOUT_SEC if service in LONG_RUN_SERVICES else UPSTREAM_TIMEOUT_SEC
     return httpx.Timeout(seconds, connect=5.0)
+
+
+def _wants_event_stream(request: Request) -> bool:
+    """这个请求要的是不是 SSE。
+
+    判据取客户端的 ``Accept``：`text/event-stream` 就是"我要流式"。**刻意不看
+    上游回什么 content-type**——普通转发路径是 ``await client.request(...)``，
+    它会把整份 body 读完才返回，等看到上游的 content-type 时已经晚了。
+
+    取 Accept 而不是改成"先流式连上游、再按 content-type 分流"，是为了**不动**
+    既有转发路径（C4 陈旧 keepalive 重试、限流、body 上限都挂在那条路上）。
+    代价：客户端**必须**声明 Accept（浏览器 fetch / EventSource 天然会发；
+    `curl` 要 `-N -H 'Accept: text/event-stream'`）。契约里对这条有明确说明。
+    """
+    return "text/event-stream" in (request.headers.get("accept") or "").lower()
+
+
+async def _relay_event_stream(
+    *,
+    client: httpx.AsyncClient,
+    request: Request,
+    target_url: str,
+    headers: dict[str, str],
+    service: str,
+    body: bytes,
+) -> StreamingResponse:
+    """把 SSE **边收边发**地转出去（1.7 任务 2 修）。
+
+    ``client.request(...)`` 会把整个响应体收完再返回。agent-team 的事件流在 run
+    停在人工确认闸门时**不会关流**（那是刻意的），于是那条流在网关这里永远攒不
+    到头——浏览器连响应头都拿不到。实测：直连 8013 首个事件 +0.12s 到达；经 8100
+    则连响应头都收不到，前端"实时步骤"一条都到不了。
+
+    改走 ``send(stream=True)`` + ``StreamingResponse``：上游一有字节就往下漏。
+    响应头里的 ``content-length`` 属于逐跳头，已经丢掉（流式响应本来也不该有）。
+
+    **不做重试**：流已经往外发过字节就没法重放（重放会重复投递步骤）。陈旧
+    keepalive 的桥接只覆盖普通请求——事件流断了由客户端自己重连。
+    """
+    upstream_request = client.build_request(
+        method=request.method,
+        url=target_url,
+        params=request.url.query,
+        headers=headers,
+        content=body,
+        timeout=_upstream_timeout(service),
+    )
+    upstream = await client.send(upstream_request, stream=True)
+    resp_headers = {k: v for k, v in upstream.headers.items() if k.lower() not in _HOP_BY_HOP}
+
+    async def relay() -> AsyncIterator[bytes]:
+        try:
+            async for chunk in upstream.aiter_raw():
+                yield chunk
+        finally:
+            await upstream.aclose()
+
+    return StreamingResponse(relay(), status_code=upstream.status_code, headers=resp_headers)
 
 
 # ---- Lifespan: shared httpx.AsyncClient + Redis ----
@@ -284,19 +359,7 @@ async def proxy(path: str, request: Request) -> Response:
     target_url = _build_target_url(target_base, request.url.path)
 
     # Forward headers, drop hop-by-hop
-    skip = {
-        "host",
-        "content-length",
-        "connection",
-        "keep-alive",
-        "proxy-authenticate",
-        "proxy-authorization",
-        "te",
-        "trailers",
-        "transfer-encoding",
-        "upgrade",
-    }
-    headers = {k: v for k, v in request.headers.items() if k.lower() not in skip}
+    headers = {k: v for k, v in request.headers.items() if k.lower() not in _HOP_BY_HOP}
     headers["X-Forwarded-By"] = "mate-api-gateway"
     headers["X-Forwarded-Host"] = request.headers.get("host", "")
     headers["X-Real-IP"] = request.client.host if request.client else ""
@@ -314,6 +377,17 @@ async def proxy(path: str, request: Request) -> Response:
             ),
         )
     try:
+        # SSE 必须边收边发：普通路径的 `client.request(...)` 会把整份响应读完才
+        # 返回，流式端点（agent-team 的 run 事件流）会因此在网关这里永远攒不到头。
+        if _wants_event_stream(request):
+            return await _relay_event_stream(
+                client=client,
+                request=request,
+                target_url=target_url,
+                headers=headers,
+                service=matched_service,
+                body=body,
+            )
         # C4：陈旧 keepalive 连接重试 —— 上游容器重启后池内死连接的两种表现：
         # ① ConnectError / RemoteProtocolError（连接即断，任何方法重试安全）；
         # ② ReadTimeout（Windows docker-proxy 黑洞，请求写入无响应）——仅对
@@ -355,7 +429,7 @@ async def proxy(path: str, request: Request) -> Response:
             latency_ms=latency_ms,
         )
         # Drop hop-by-hop from upstream response too
-        resp_headers = {k: v for k, v in upstream.headers.items() if k.lower() not in skip}
+        resp_headers = {k: v for k, v in upstream.headers.items() if k.lower() not in _HOP_BY_HOP}
         return Response(
             content=upstream.content,
             status_code=upstream.status_code,
