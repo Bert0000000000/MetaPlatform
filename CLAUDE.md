@@ -262,9 +262,10 @@ AGENT-ORCH-01    ┘         RAG-ONT-01         ┘         AGENT-EXT-01
 | 2.0 | 收尾（落档/统一验收/边界表/状态同步）+ **会话页接 Agent 产品层** |
 
 **会话页整合（2.0 轨 B）**：`/superai/chat` 新增「Agent 产品层」模式，调度可视化
-（任务图 / 员工状态 / **波次** / 终态 / 证据 / 交付物）**常驻在会话历史之上**——
-调度不再散在每条消息里。共享组件 `AgentTeamSchedule`（工作台与会话页同一个），
-证据沿用同一个 `EvidenceRenderer`。
+（任务图 / 员工状态 / **波次** / 终态 / 证据 / 交付物）放在**页面右上角、独立于消息流**
+的区域——`会话历史`栏里「新建会话」之上的紧凑面板，点「详情」开完整视图；调度不再
+散在每条消息里。共享组件 `AgentTeamSchedule`（工作台与会话页同一个），证据沿用同一个
+`EvidenceRenderer`。**回显（`[stub-fallback]`）会被显式标注**（面板「回显 n/m」+ 详情警告条）。
 
 **开工前必读**：`docs/active/specs/2026-09-16-agent-product-layer-env-facts.md`（踩坑卡）、
 `docs/active/specs/2026-09-16-agent-product-layer-roadmap.md`（逐版交接）。
