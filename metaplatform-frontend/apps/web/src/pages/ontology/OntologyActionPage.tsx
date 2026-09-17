@@ -1251,7 +1251,7 @@ function FreeLayoutDropZone({
   return (
     <div
       data-flowgram-dropzone
-      className="mp-flex-1 mp-relative" 
+      className="mp-flex-1 mp-relative"
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes('application/flowgram-node')) {
           e.preventDefault();

@@ -785,7 +785,7 @@ export default function AIDesignerPage() {
         <Content className="mp-flex mp-gap-4 mp-min-w-0" >
           <Card
             bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column' }}
-            className="mp-flex mp-flex-1 mp-flex-col" 
+            className="mp-flex mp-flex-1 mp-flex-col"
           >
             {currentSession ? (
               <Chat

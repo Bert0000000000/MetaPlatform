@@ -509,10 +509,10 @@ export default function ObjectTypeEditorV2Drawer({
               return (
                 <div
                   key={d.uid}
-                  className="mp-hidden mp-border mp-rounded mp-mb-2 mp-bg-1" 
+                  className="mp-hidden mp-border mp-rounded mp-mb-2 mp-bg-1"
                 >
                   <div
-                    className="mp-gap-2 mp-flex-center mp-clickable mp-py-2 mp-px-3" 
+                    className="mp-gap-2 mp-flex-center mp-clickable mp-py-2 mp-px-3"
                     onClick={() => setExpanded(isOpen ? null : d.uid)}
                   >
                     {isOpen

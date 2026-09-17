@@ -615,7 +615,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
       bodyStyle={{ padding: '24px 32px' }}
       footer={
         <div
-          className="mp-justify-between mp-border mp-flex-center mp-py-3 mp-px-6" 
+          className="mp-justify-between mp-border mp-flex-center mp-py-3 mp-px-6"
         >
           <Typography.Text type="tertiary">
             {currentStep === 1 && '填写应用的基本信息'}

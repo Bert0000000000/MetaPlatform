@@ -282,7 +282,7 @@ export default function TemplateSubmitPage() {
                     <Col xs={12} md={1}>
                       <MinusCircleOutlined
                         onClick={() => item.remove()}
-                        className="mp-text-danger mp-text-lg" 
+                        className="mp-text-danger mp-text-lg"
                       />
                     </Col>
                   </Row>
@@ -306,7 +306,7 @@ export default function TemplateSubmitPage() {
                     headerExtraContent={
                       <MinusCircleOutlined
                         onClick={() => flowItem.remove()}
-                        className="mp-text-danger mp-text-lg" 
+                        className="mp-text-danger mp-text-lg"
                       />
                     }
                     className="mp-mb-3"
@@ -357,7 +357,7 @@ export default function TemplateSubmitPage() {
                               <Col xs={24} md={2}>
                                 <MinusCircleOutlined
                                   onClick={() => nodeItem.remove()}
-                                  className="mp-text-danger mp-text-lg" 
+                                  className="mp-text-danger mp-text-lg"
                                 />
                               </Col>
                             </Row>

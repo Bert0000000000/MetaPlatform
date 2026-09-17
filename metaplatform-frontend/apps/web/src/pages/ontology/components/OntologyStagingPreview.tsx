@@ -407,7 +407,7 @@ function ImpactSection({ impact }: { impact: ImpactSummary }) {
               <span
                 key={`${ref}-${i}`}
                 title={ref}
-                className="mp-inline-flex mp-items-center mp-border mp-gap-1 mp-text-xs mp-py-1 mp-px-2 mp-bg-1 mp-rounded-sm" 
+                className="mp-inline-flex mp-items-center mp-border mp-gap-1 mp-text-xs mp-py-1 mp-px-2 mp-bg-1 mp-rounded-sm"
               >
                 <ListTree className="mp-text-2 mp-icon-12"  />
                 <code className="mp-text-xs">{ridKind(ref)}:{shortRidLabel(ref)}</code>

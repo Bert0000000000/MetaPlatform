@@ -30,7 +30,7 @@ export function PlanCanvas({ plan, selectedNodeId, onSelect, onDeleteNode }: Pla
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') onSelect(node.id);
               }}
-              className="mp-clickable mp-w-180" 
+              className="mp-clickable mp-w-180"
             >
             <Card
               shadows="hover"

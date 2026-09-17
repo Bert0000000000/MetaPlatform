@@ -106,7 +106,7 @@ export default function AIDashboardGenerate({ onApply }: AIDashboardGenerateProp
                       {ex.description}
                     </Typography.Paragraph>
                     <pre
-                      className="mp-p-2 mp-m-0 mp-text-xs mp-bg-fill-0 mp-rounded-sm" 
+                      className="mp-p-2 mp-m-0 mp-text-xs mp-bg-fill-0 mp-rounded-sm"
                     >
                       <code>{ex.curl}</code>
                     </pre>

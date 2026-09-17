@@ -55,7 +55,7 @@ export function StatCard({ label, value, color = "default" }: StatCardProps) {
   };
   return (
     <div
-      className="mp-border mp-rounded mp-flex-col mp-gap-1 mp-py-4 mp-px-5 mp-bg-1" 
+      className="mp-border mp-rounded mp-flex-col mp-gap-1 mp-py-4 mp-px-5 mp-bg-1"
     >
       <span className="mp-fw-500 mp-text-sm mp-text-2">{label}</span>
       <span className={`mp-fw-600 mp-text-xl mp-admin-stat ${colorCls[color]}`}>
