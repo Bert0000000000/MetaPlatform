@@ -25,9 +25,15 @@ from uuid import uuid4
 from langgraph.checkpoint.base import BaseCheckpointSaver
 
 from .artifact_store import ArtifactStore
-from .audit import AUDIT_APPROVAL, AuditLog
-from .authority import Envelope, actor_of, resolve_initiator_envelope
+from .audit import AUDIT_APPROVAL, AUDIT_DELEGATION, AuditSink
+from .authority import (
+    AUTHORITY_POLICY_VERSION,
+    Envelope,
+    actor_of,
+    resolve_initiator_envelope,
+)
 from .checkpoint import thread_id_for
+from .delegated_identity import DelegationIssuer, UnconfiguredIssuer
 from .delegation import DELEGATION_STATE_KEY, RunDelegation, configured_ttl
 from .graph import build_brain_graph
 from .planner import Planner
@@ -35,6 +41,12 @@ from .retry import RetryPolicy
 from .runtime import EmployeeRuntime
 from .state import BrainState
 from .team_bus import TeamBus
+from .versioning import (
+    AGENT_RUNTIME_VERSION,
+    CHECKPOINT_CODEC_VERSION,
+    GRAPH_DEFINITION_VERSION,
+    STATE_SCHEMA_VERSION,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,6 +65,10 @@ class RunContext:
     user_token: str = ""
     initiator_envelope: Envelope = field(default_factory=Envelope)
     actor: str = ""
+    #: 续跑时 `user_token` 的来源（A-2 / ADR-0067）。空 = 不是委托来的。
+    delegation_source: str = ""
+    #: 没签出委托令牌时的**原因**（N4：签不出就不假装，但要说得出为什么）。
+    delegation_reason: str = ""
 
 
 class CheckpointerProvider(Protocol):
@@ -115,8 +131,9 @@ class BrainService:
         team_bus: TeamBus,
         artifacts: ArtifactStore,
         max_parallel: int = 3,
-        audit: AuditLog | None = None,
+        audit: AuditSink | None = None,
         retry_policy: RetryPolicy | None = None,
+        delegation_issuer: DelegationIssuer | None = None,
     ) -> None:
         self._planner_for = planner_for
         self._runtime_for = runtime_for
@@ -133,7 +150,11 @@ class BrainService:
         self._retry_policy = retry_policy if retry_policy is not None else RetryPolicy()
         #: 审计账本（硬规则 #9）。默认复用闸门那一本——派活 / 越权 / 审批落在
         #: 同一本账上，读的时候不必记得去两个地方捞。
-        self.audit: AuditLog = audit if audit is not None else team_bus.audit
+        self.audit: AuditSink = audit if audit is not None else team_bus.audit
+        #: 运行期委托身份的签发面（A-2 / ADR-0067）。**默认是"不签发"**——
+        #: 没配 token exchange 的部署，续跑行为与 2.0 逐字一致（没有用户身份），
+        #: 而不是偷偷退回服务身份。
+        self._delegation_issuer: DelegationIssuer = delegation_issuer or UnconfiguredIssuer()
 
     def _config(self, tenant_id: str, run_id: str) -> dict:
         return {"configurable": {"thread_id": thread_id_for(tenant_id, run_id)}}
@@ -197,6 +218,9 @@ class BrainService:
             envelope=ctx.initiator_envelope,
             granted_by=ctx.actor,
             ttl=configured_ttl(),
+            # A-2：快照自己要说得出"这是谁的、按哪一版口径判的、什么时候签的"。
+            tenant_id=tenant_id,
+            policy_version=AUTHORITY_POLICY_VERSION,
         )
         async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
             graph = await self._graph_for(saver, ctx, parallel, should_cancel)
@@ -211,6 +235,12 @@ class BrainService:
                     "timeout_seconds": timeout,
                     "deadline_at": deadline_at,
                     DELEGATION_STATE_KEY: delegation.as_state(),
+                    # A-6：这一轮是按哪一版写下的。四个版本随 run 落进检查点，
+                    # 于是"这份状态该用什么读法"从状态自身读得出来。
+                    "state_schema_version": STATE_SCHEMA_VERSION,
+                    "graph_definition_version": GRAPH_DEFINITION_VERSION,
+                    "agent_runtime_version": AGENT_RUNTIME_VERSION,
+                    "checkpoint_codec_version": CHECKPOINT_CODEC_VERSION,
                 },
                 cfg,
             )
@@ -225,7 +255,7 @@ class BrainService:
             actor=actor_of(user_token),
         )
 
-    def _context_from_delegation(
+    async def _context_from_delegation(
         self,
         *,
         tenant_id: str,
@@ -246,19 +276,27 @@ class BrainService:
           "不能跨 run 复用"落到实处的地方；
         * 授权过期了。
 
-        ``user_token`` 刻意留空：续跑**没有**令牌，也不该有（硬规则 #12）。
-        上游按令牌解析租户的那几处因此拿不到用户身份——这是 1.8 就存在的边界，
-        本批只解决"派活授权的链根"，不假装解决了它。
+        **A-2 追加**：链根成立之后，再向 :class:`DelegationIssuer` 要一份**per-run
+        短期委托令牌**，把它放进 ``user_token``——于是续跑时 llmgw / MCP 拿到的是
+        **发起用户的身份**，而不是服务身份。签发不走（未配置 / 换不到 / 换回的权限
+        超出快照 / 权限已被撤空）时，``user_token`` 保持空并带上 ``delegation_reason``
+        ——**绝不退回服务身份**（ADR-0067 N4）。这一步同时是 N3 的落点：每次续跑都
+        现签一次，所以权限撤销当场生效。
         """
         state = state or {}
         delegation = RunDelegation.of_state(state.get(DELEGATION_STATE_KEY))
         if delegation is None or not delegation.authorizes(run_id, now=now):
             return self._context(tenant_id=tenant_id)
+
+        outcome = await self._delegation_issuer.issue(delegation, now=now)
+        credential = outcome.credential
         return RunContext(
             tenant_id=tenant_id,
-            user_token="",
+            user_token=credential.token if credential is not None else "",
             initiator_envelope=delegation.envelope,
             actor=delegation.granted_by,
+            delegation_source=credential.source if credential is not None else "",
+            delegation_reason="" if credential is not None else outcome.reason,
         )
 
     async def resume(
@@ -287,15 +325,42 @@ class BrainService:
             out = await graph.ainvoke(None, cfg)
         # 审批落审计行（硬规则 #9）：谁批的、批的是哪一轮、批还是驳。
         # 记在**闸门真的动了之后**——被 409 挡下的确认不是一次审批。
-        self.audit.append(
+        await self.audit.append(
             action=AUDIT_APPROVAL,
             tenant_id=tenant_id,
             actor=ctx.actor,
             run_id=run_id,
             outcome="approved" if approved else "rejected",
+            decision="approved" if approved else "rejected",
+            approver_id=ctx.actor,
+            policy_version=AUTHORITY_POLICY_VERSION,
             detail={"scope": "run", "level": "plan_gate"},
         )
         return dict(out)
+
+    async def _audit_delegation(self, *, tenant_id: str, run_id: str, ctx: RunContext) -> None:
+        """续跑时那次委托的签发结果落一行（硬规则 #9 / ADR-0067 §8）。
+
+        **只在这一轮真的续跑时记**（终态的 run 在上面就返回了）——否则每次扫描
+        恢复都给已经跑完的 run 记一行，账本会被噪声淹掉。
+
+        没走委托的那条路（没有授权 / 授权不成立）不记：那不是一次"签发被拒"，
+        而是**根本没有签发这一步**。
+        """
+        if not ctx.delegation_source and not ctx.delegation_reason:
+            return
+        issued = bool(ctx.user_token)
+        await self.audit.append(
+            action=AUDIT_DELEGATION,
+            tenant_id=tenant_id,
+            actor=ctx.actor,
+            run_id=run_id,
+            outcome="issued" if issued else "denied",
+            decision="issued" if issued else "denied",
+            policy_version=AUTHORITY_POLICY_VERSION,
+            # 细节里**没有令牌**（N1 在审计这一侧的落点）。
+            detail={"source": ctx.delegation_source, "reason": ctx.delegation_reason},
+        )
 
     async def continue_run(
         self,
@@ -327,13 +392,16 @@ class BrainService:
             # 先读一份状态值：**图是拿 ctx 建的，而 ctx 要从状态里读**——顺序上
             # 只能先读后建（``aget_tuple`` 是检查点器的公开读法，不建图）。
             stored = await self._stored_state(saver, tenant_id=tenant_id, run_id=run_id)
-            ctx = self._context_from_delegation(tenant_id=tenant_id, state=stored, run_id=run_id)
+            ctx = await self._context_from_delegation(
+                tenant_id=tenant_id, state=stored, run_id=run_id
+            )
             graph = await self._graph_for(saver, ctx, self._max_parallel, should_cancel)
             snapshot = await graph.aget_state(cfg)
             if not snapshot.values:
                 raise RunNotFound(run_id)
             if str(snapshot.values.get("status", "")) in TERMINAL_STATUSES:
                 return dict(snapshot.values)
+            await self._audit_delegation(tenant_id=tenant_id, run_id=run_id, ctx=ctx)
             out = await graph.ainvoke(None, cfg)
         return dict(out)
 

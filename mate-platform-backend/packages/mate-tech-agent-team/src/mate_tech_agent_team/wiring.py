@@ -19,25 +19,40 @@ from mate_clients.llmgw import LlmgwClient
 from mate_clients.mcp.tools import McpToolsClient
 from mate_clients.security import BearerAuth
 from mate_platform.marketplace.skillhub.store import SkillHubStore
+from mate_platform.messaging.outbox import OutboxWriter
 
 from .a2a.outbound import A2AOutboundRuntime, build_a2a_outbound_client
 from .artifact_store import PgArtifacts
+from .audit import AuditSink, PgAuditLedger
 from .brain import BrainService, RunContext
 from .checkpoint import SCHEMA as CHECKPOINT_SCHEMA
 from .checkpoint import PgCheckpointerProvider, bootstrap
+from .delegated_identity import (
+    AUDIENCE_ENV as TOKEN_EXCHANGE_AUDIENCE_ENV,
+)
+from .delegated_identity import (
+    ENABLE_ENV as TOKEN_EXCHANGE_ENABLE_ENV,
+)
+from .delegated_identity import (
+    DelegationIssuer,
+    KeycloakTokenExchangeIssuer,
+    UnconfiguredIssuer,
+)
 from .employee import LlmEmployeeRuntime
 from .llm_planner import LlmPlanner
 from .profile_store import ProfileStore
 from .profiles import ProfileNotFound, ProfileRegistry, RuntimeKind
 from .retry import DEFAULT_BACKOFF_SECONDS, DEFAULT_MAX_ATTEMPTS, RetryPolicy
 from .runtime import EmployeeRuntime
-from .runtimes import ClaudeCodeProjection, ClaudeCodeRuntime
+from .runtimes import ClaudeCodeProjection, ClaudeCodeRuntime, configured_allowlist
 from .skill_toolbox import SKILL_TOOL_NAMES, SkillToolbox
 from .skills import SkillCatalog
 from .state import SubTask, SubTaskResult
 from .team_bus import DEFAULT_MAX_DEPTH, TeamBus
 from .team_task_store import PgTeamTasks
+from .tool_ledger import PgToolLedger
 from .toolbox import CompositeToolbox, McpToolbox
+from .versioning import profile_for_subtask
 
 DEFAULT_LLMGW_URL = "http://localhost:8008"
 DEFAULT_MCP_URL = "http://localhost:8081"
@@ -46,17 +61,50 @@ DEFAULT_GATEWAY_URL = "http://localhost:8100"
 DEFAULT_MCP_PROTOCOL_PATH = "/api/v1/mcp/protocol/mcp"
 
 
-def _bearer() -> BearerAuth:
-    token_uri = (
+def _keycloak_token_uri() -> str:
+    """realm 的 token 端点。签发面与出站服务身份**共用同一处**推导——
+    两处各算一遍迟早会漂移成两个 realm。"""
+    return (
         f"{os.getenv('KEYCLOAK_URL', 'http://localhost:8080')}"
         "/realms/metaplatform/protocol/openid-connect/token"
     )
+
+
+def _bearer() -> BearerAuth:
+    token_uri = _keycloak_token_uri()
     # scope 说明：本 realm 的服务 client 只接受默认/openid（自定义 scope 未注册）。
     return BearerAuth(
         token_uri=token_uri,
         client_id=os.getenv("SERVICE_CLIENT_ID", "metaplatform-backend"),
         client_secret=os.environ["SERVICE_CLIENT_SECRET"],
         scope=os.getenv("SERVICE_CLIENT_SCOPE", "openid"),
+    )
+
+
+def build_delegation_issuer() -> DelegationIssuer:
+    """运行期委托身份的签发面（A-2 / ADR-0067）。
+
+    **默认不签发**：没配 ``MATE_AGENT_TEAM_TOKEN_EXCHANGE`` 的部署拿到的是
+    :class:`UnconfiguredIssuer`——续跑不带用户身份（与 2.0 逐字一致），
+    而不是悄悄退回服务身份（N4）。
+
+    配了开关却没有服务密钥 → **启动失败**，与 :func:`required_dsn` 同一条精神：
+    配了一半的委托身份比不配更危险（它看起来是开着的）。
+    """
+    enabled = os.getenv(TOKEN_EXCHANGE_ENABLE_ENV, "").strip().lower()
+    if enabled not in {"1", "true", "yes", "on", "keycloak"}:
+        return UnconfiguredIssuer()
+    secret = os.getenv("SERVICE_CLIENT_SECRET", "")
+    if not secret:
+        raise RuntimeError(
+            f"{TOKEN_EXCHANGE_ENABLE_ENV} 已开启但没有 SERVICE_CLIENT_SECRET："
+            "签发委托令牌要用服务身份做 token exchange，缺密钥就换不到。"
+        )
+    return KeycloakTokenExchangeIssuer(
+        token_uri=_keycloak_token_uri(),
+        client_id=os.getenv("SERVICE_CLIENT_ID", "metaplatform-backend"),
+        client_secret=secret,
+        audience=os.getenv(TOKEN_EXCHANGE_AUDIENCE_ENV, ""),
     )
 
 
@@ -101,7 +149,12 @@ def build_registry(store: ProfileStore | None = None) -> ProfileRegistry:
     return ProfileRegistry(store=store or build_profile_store())
 
 
-def build_team_bus(registry: ProfileRegistry | None = None, *, dsn: str | None = None) -> TeamBus:
+def build_team_bus(
+    registry: ProfileRegistry | None = None,
+    *,
+    dsn: str | None = None,
+    audit: AuditSink | None = None,
+) -> TeamBus:
     """派活闸门（1.1 任务 4/5）+ 消息通道（1.2 任务 2）。
 
     深度的默认值对齐 Codex 的 ``agents.max_depth`` 与 Claude Code 的 3 层；
@@ -109,12 +162,26 @@ def build_team_bus(registry: ProfileRegistry | None = None, *, dsn: str | None =
 
     任务实例（含 ``inbox``）落 PG：HTTP 面的 ``send`` 与员工侧的 drain 可能
     不在同一个进程里跑，内存版会让消息投进虚空。
+
+    ``audit`` 默认是进程内账本（与 1.4 起逐字一致）；生产由 :func:`build_service`
+    换成 PG 账本（A-1）。
     """
     return TeamBus(
         registry=registry or build_registry(),
         max_depth=int(os.getenv("MATE_AGENT_TEAM_MAX_DEPTH", str(DEFAULT_MAX_DEPTH))),
         tasks=PgTeamTasks(dsn or required_dsn(), schema=CHECKPOINT_SCHEMA),
+        audit=audit,
     )
+
+
+def build_audit_ledger(*, outbox: OutboxWriter | None = None) -> PgAuditLedger:
+    """持久审计账本（A-1 / `MP-AUDIT-LEDGER-01`）。
+
+    投递**复用平台既有 Outbox**（PLATFORM-EVENT-01 的 ``OutboxWriter`` 接口）：
+    本服务不新造总线，也不自带一张 outbox 表——要往外广播就在装配时注入一个
+    写入器；没注入就只落库（仍然可查、可取证，只是不广播）。
+    """
+    return PgAuditLedger(required_dsn(), schema=CHECKPOINT_SCHEMA, outbox=outbox)
 
 
 def build_artifact_store() -> PgArtifacts:
@@ -210,7 +277,9 @@ class RuntimeRouter:
 
     async def run(self, *, subtask: SubTask, tenant_id: str) -> SubTaskResult:
         try:
-            profile = await self._registry.get(subtask["profile_id"], tenant_id)
+            # A-6：路由也读**快照**那一份定义——执行面是定义的一部分，
+            # 名册里改了 runtimes 也不该把在途的这一波换到别的沙箱上去。
+            profile = await profile_for_subtask(subtask, self._registry, tenant_id)
         except ProfileNotFound:
             if self._default is None:
                 return SubTaskResult(
@@ -271,6 +340,10 @@ def build_runtime_router(
     if RuntimeKind.SUPERAI in kinds:
         runtimes[RuntimeKind.SUPERAI] = superai
     if RuntimeKind.CLAUDE_CODE in kinds:
+        # A-4 / MP-AGENT-SANDBOX-ISOLATION-01：外部子进程只拿白名单环境。运维追加的
+        # 白名单在**启动期**校验一次——写了凭据类名字就起不来（无静默回落，
+        # 与 required_dsn 同一条精神）。
+        configured_allowlist()
         runtimes[RuntimeKind.CLAUDE_CODE] = ClaudeCodeRuntime(
             registry=registry,
             projection=ClaudeCodeProjection(skills=skills),
@@ -291,6 +364,15 @@ def build_a2a_outbound_runtime(*, registry: ProfileRegistry) -> A2AOutboundRunti
     """
     client = build_a2a_outbound_client()
     return A2AOutboundRuntime(registry=registry, client=client)
+
+
+def build_tool_ledger() -> PgToolLedger:
+    """工具调用级幂等账本（A-3 / `MP-TOOL-IDEMPOTENCY-01`）。
+
+    与检查点 / 员工定义 / 审计**同库同 schema**：租户隔离靠同一套 RLS 强制。
+    每一次工具调用多一次往返——换来的是"工具执行到一半被杀，恢复后不会再来一次"。
+    """
+    return PgToolLedger(required_dsn(), schema=CHECKPOINT_SCHEMA)
 
 
 def build_service(
@@ -411,6 +493,8 @@ def build_service(
             # 1.2：实例层通道 —— 开跑前登记 team_task、每轮边界取走外部投递的
             # 消息（消费即清空）、跑完置终态。`TeamBus` 结构上就满足 TaskChannel。
             channel=team_bus,
+            # A-3：工具调用级幂等账本。工具执行到一半被杀，恢复后不会再执行一次。
+            tool_ledger=build_tool_ledger(),
         )
         # 1.8 轨 2：执行面路由（ADR-0066 §5.8）。**默认关闭** —— 没配
         # `MATE_AGENT_TEAM_RUNTIMES` 的部署拿到的还是上面那个 superai 运行时，
@@ -426,15 +510,21 @@ def build_service(
             working_root=os.getenv("MATE_AGENT_TEAM_RUNTIME_ROOT") or None,
         )
 
+    #: 一本账：闸门与大脑**共享同一个**审计账本实例。两个实例 = 派活与审批
+    #: 落在两本账上，读的时候就得记得去两处捞（且哈希链会断成两条）。
+    bus = team_bus or build_team_bus(registry, audit=build_audit_ledger())
     return BrainService(
         planner_for=planner_for,
         runtime_for=runtime_for,
         checkpointer=PgCheckpointerProvider(required_dsn()),
-        team_bus=team_bus or build_team_bus(registry),
+        team_bus=bus,
+        audit=bus.audit,
         artifacts=artifacts or build_artifact_store(),
         max_parallel=int(os.getenv("MATE_AGENT_TEAM_MAX_PARALLEL", "3")),
         # 1.5 任务 4：失败节点（运行时那一次调用）的重试策略。
         retry_policy=build_retry_policy(),
+        # A-2 / ADR-0067：续跑时的运行期委托身份（默认不签发）。
+        delegation_issuer=build_delegation_issuer(),
     )
 
 
@@ -457,6 +547,8 @@ __all__ = [
     "RuntimeRouter",
     "build_a2a_outbound_runtime",
     "build_artifact_store",
+    "build_audit_ledger",
+    "build_delegation_issuer",
     "build_profile_store",
     "build_registry",
     "build_retry_policy",
@@ -464,6 +556,7 @@ __all__ = [
     "build_team_bus",
     "build_service",
     "build_skill_catalog",
+    "build_tool_ledger",
     "enabled_runtime_kinds",
     "required_admin_dsn",
     "required_dsn",

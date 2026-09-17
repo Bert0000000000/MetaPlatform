@@ -97,7 +97,7 @@ export default function ApprovalConfig({ config, onChange }: ApprovalConfigProps
             <Space key={index} spacing="tight" className="mp-w-full">
               <Select
                 size="small"
-                className="mp-flex-1 mp-w-200" 
+                className="mp-flex-1 mp-w-200"
                 value={id || undefined}
                 onChange={(v) => handleUpdateAssignee(index, v as string)}
                 optionList={MOCK_ASSIGNEES[config.assigneeType]}

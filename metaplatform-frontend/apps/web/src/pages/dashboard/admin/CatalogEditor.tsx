@@ -383,11 +383,11 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
 
   return (
     <div
-      className="mp-border mp-p-4 mp-bg-1 mp-rounded" 
+      className="mp-border mp-p-4 mp-bg-1 mp-rounded"
     >
       {/* 顶部工具栏 */}
       <div
-        className="mp-wrap mp-border mp-mb-3 mp-gap-2 mp-flex-center mp-pb-3" 
+        className="mp-wrap mp-border mp-mb-3 mp-gap-2 mp-flex-center mp-pb-3"
       >
         <Select
           placeholder="选择目标角色"

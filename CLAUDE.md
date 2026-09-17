@@ -1,9 +1,9 @@
 # CLAUDE.md
 
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> **最近更新**：2026-09-17（Agent 产品层 1.0~2.0 交付：会话页与 agent-team run 合一 + 1.0~1.9 统一验收与边界登记）；上一版 2026-09-09（Sprint-Final 收口）
+> **最近更新**：2026-09-17（Agent 产品层 2.1-A 生产安全收口：进程隔离 / 持久审计 / 委托身份 / 工具幂等 / 版本化 / 门禁 / 口径订正）；上一版同日（1.0~2.0 交付：会话页与 agent-team run 合一 + 1.0~1.9 统一验收与边界登记）
 >
-> **当前架构版本**：**v3.0 GA + v3.1/v4 增量**；ADR-0061 已接受 **Temporal 作为业务 Workflow 可靠编排控制面**，PlanRunner 为 DSL 翻译层；Sprint 1A 迁移尚未完成，Flowable 仅作为双轨期 legacy
+> **当前架构版本**：**v3.0 GA + v3.1/v4 增量**；ADR-0061 已接受 **Temporal 作为业务 Workflow 可靠编排控制面**，PlanRunner 为 DSL 翻译层。**Sprint 1A 已交付并 Accepted**（2026-09-07~08，M1/M2/M3 三份证据 `TEMPORAL-1A-M{1,2,3}-ACCEPTANCE.md`）；**双轨仍在**——`WORKFLOW_ENGINE` 默认仍是 `legacy`，按 `DUAL-RAIL-COMPARISON.md` §4 灰度后切主，legacy 保底一个版本。**别把"容器在跑"当已上线证据**，也别把"尚未切流"读成"尚未开始"
 >
 > **平台运行环境（2026-09-09 实测）**：
 >
@@ -244,22 +244,34 @@ AGENT-ORCH-01    ┘         RAG-ONT-01         ┘         AGENT-EXT-01
 3. 提交风格遵循 Conventional Commits；PR 引用 ADR-0021 + operationId + `MP-ONT-KERNEL-01-ACCEPTANCE.md`
 4. v0.5 任务：补抓 Palantir 官方 7 个核心页正文，替换"可证伪"行
 
-## Agent 产品层（v3.2 增量 · 2026-09-16 ~ 09-17 · 1.0~2.0 已交付）
+## Agent 产品层（v3.2 增量 · 2026-09-16 ~ 09-17 · 1.0~2.0 已交付；**2.1-A 生产安全收口**）
 
 > **一句话**：**超级大脑拆任务图 → 并行派给数字员工 → 真实执行 → 人工确认 → 汇总交付**。
 > 服务 **`mate-tech-agent-team`**（8013，`/api/v1/agent-team/*`）；身份/协同设计见 ADR-0066。
 
 **交付**：1.0 ~ 2.0 全部在 `main`（→ `2a74df8d` 为 1.9 收口；2.0 = 收尾 + 会话页整合）。
+2.1-A（生产硬化第一批）见
+`docs/active/delivery/evidence/AGENT-PRODUCT-LAYER-2.1-A-ACCEPTANCE.md`。
 **统一验收 + 边界登记表**：`docs/active/delivery/evidence/AGENT-PRODUCT-LAYER-2.0-ACCEPTANCE.md`
 （1.0~1.9 逐版判据 / commit / 自标边界，含出处；**唯一一份独立证据仍是 1.1 那份**）。
-**测试基线**：`packages/mate-tech-agent-team/tests` = **357 passed / 0 skipped**。
+**测试基线**：`packages/mate-tech-agent-team/tests` = **415 passed / 0 skipped**（2.1-A 收口值）。
 
-| 版本 | 主题 |
-|---|---|
+**版本口径（别再拿一个模糊的"2.1"代表全部）**：
+
+| 口径         | 值                             | 权威位置                                                                                             |
+| ------------ | ------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| 产品能力版本 | Agent Product Layer 2.1        | 本文件 / 2.1 路线图                                                                                  |
+| 服务版本     | `mate-tech-agent-team` 2.1.x   | `packages/mate-tech-agent-team/pyproject.toml` + `main.py`（FastAPI `version`）+ 契约 `info.version` |
+| 图定义版本   | `agent-team-graph/v3`          | `versioning.GRAPH_DEFINITION_VERSION`（随 run 落检查点）                                             |
+| 状态版本     | `brain-state/v2`               | `versioning.STATE_SCHEMA_VERSION`（同上）                                                            |
+| API 版本     | `v1`（`/api/v1/agent-team/*`） | 契约路径                                                                                             |
+
+| 版本    | 主题                                                                         |
+| ------- | ---------------------------------------------------------------------------- |
 | 1.0~1.3 | 一条主链端到端 → MCP 对外/身份/权限 → LangChain 迁移 → 派活加固 + 运行控制面 |
-| 1.4~1.6 | 安全收敛（沙箱按**代码来源**分层）→ 运行控制补全 → 证据/交付/CI 门禁/工作台 |
+| 1.4~1.6 | 安全收敛（沙箱按**代码来源**分层）→ 运行控制补全 → 证据/交付/CI 门禁/工作台  |
 | 1.7~1.9 | 异步化 + SSE 实时流（经网关）→ 重启续跑/外联/重规划 → 多副本与重启下的正确性 |
-| 2.0 | 收尾（落档/统一验收/边界表/状态同步）+ **会话页接 Agent 产品层** |
+| 2.0     | 收尾（落档/统一验收/边界表/状态同步）+ **会话页接 Agent 产品层**             |
 
 **会话页整合（2.0 轨 B）**：`/superai/chat` 新增「Agent 产品层」模式，调度可视化
 （任务图 / 员工状态 / **波次** / 终态 / 证据 / 交付物）放在**页面右上角、独立于消息流**
@@ -271,6 +283,7 @@ AGENT-ORCH-01    ┘         RAG-ONT-01         ┘         AGENT-EXT-01
 `docs/active/specs/2026-09-16-agent-product-layer-roadmap.md`（逐版交接）。
 
 **仍未做（别当成已完成）**：
+
 - **10 条边界仍开着**（清单与「要做的条件」见 2.0 验收 §3）——含 1.9 四条（续跑无用户令牌 / 取消粘性 / 跨副本取消不回话 / 认领靠 TTL）、1.8 两条、`tenant_switch_enabled` 待复核等。
 - **ADR-0065（SuperAI 上下文感知）仍是 Proposed**，2.0 明确不升格；v6（dsh）未启动，两者另立批次。
 - **员工产出会间歇性变成 stub-fallback 回显（run 仍报成功）** —— 成因是 llmgw 的 **30s 上游超时**撞上 reasoning 模型（`glm-5.3-flash`）。**不是 provider 没配**：`ai.provider.ark.*` 已配好且直连 llmgw 能拿到真实答案。核验方法见 `AGENT-PRODUCT-LAYER-2.0-ACCEPTANCE.md` §5.3。

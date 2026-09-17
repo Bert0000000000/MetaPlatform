@@ -226,7 +226,7 @@ async def test_every_spawn_writes_an_audit_row() -> None:
     bus = TeamBus(registry=_Registry([_profile("EMP-CHILD")]))
     outcome = await bus.spawn(_request(actor="u-1"))
 
-    rows = bus.audit.records(tenant_id=TENANT)
+    rows = await bus.audit.records(tenant_id=TENANT)
     assert [r.action for r in rows] == [AUDIT_SPAWN]
     assert rows[0].task_id == outcome.task_id
     assert rows[0].actor == "u-1"
@@ -242,7 +242,7 @@ async def test_escalation_writes_its_own_audit_row() -> None:
     )
     await bus.spawn(_request(actor="u-1"))
 
-    rows = bus.audit.records(tenant_id=TENANT)
+    rows = await bus.audit.records(tenant_id=TENANT)
     escalation = [r for r in rows if r.action == AUDIT_ESCALATION]
     assert len(escalation) == 1, rows
     assert escalation[0].outcome == "proposal"
@@ -258,8 +258,9 @@ async def test_granting_an_escalated_task_writes_an_approval_row() -> None:
     pending = await bus.spawn(_request(actor="u-1"))
     await bus.grant(pending.task_id)
 
-    approvals = [r for r in bus.audit.records(tenant_id=TENANT) if r.action == AUDIT_APPROVAL]
-    assert len(approvals) == 1, bus.audit.records(tenant_id=TENANT)
+    rows = await bus.audit.records(tenant_id=TENANT)
+    approvals = [r for r in rows if r.action == AUDIT_APPROVAL]
+    assert len(approvals) == 1, rows
     assert approvals[0].task_id == pending.task_id
     assert approvals[0].outcome == "approved"
 
@@ -277,8 +278,9 @@ async def test_run_level_approval_is_audited() -> None:
     state = await service.start(tenant_id=TENANT, goal="分析本月异常订单", user_token="")
     await service.resume(tenant_id=TENANT, run_id=str(state["run_id"]), approved=True)
 
-    approvals = [r for r in service.audit.records(tenant_id=TENANT) if r.action == AUDIT_APPROVAL]
-    assert len(approvals) == 1, service.audit.records(tenant_id=TENANT)
+    rows = await service.audit.records(tenant_id=TENANT)
+    approvals = [r for r in rows if r.action == AUDIT_APPROVAL]
+    assert len(approvals) == 1, rows
     assert approvals[0].run_id == state["run_id"]
     assert approvals[0].outcome == "approved"
 
@@ -295,13 +297,15 @@ async def test_rejecting_is_audited_as_rejected() -> None:
     state = await service.start(tenant_id=TENANT, goal="分析本月异常订单", user_token="")
     await service.resume(tenant_id=TENANT, run_id=str(state["run_id"]), approved=False)
 
-    approvals = [r for r in service.audit.records(tenant_id=TENANT) if r.action == AUDIT_APPROVAL]
+    rows = await service.audit.records(tenant_id=TENANT)
+    approvals = [r for r in rows if r.action == AUDIT_APPROVAL]
     assert approvals[0].outcome == "rejected"
 
 
-def test_audit_rows_are_tenant_scoped() -> None:
+@pytest.mark.asyncio
+async def test_audit_rows_are_tenant_scoped() -> None:
     log = AuditLog()
-    log.append(
+    await log.append(
         action=AUDIT_SPAWN,
         tenant_id="tenant-a",
         actor="u-1",
@@ -310,13 +314,14 @@ def test_audit_rows_are_tenant_scoped() -> None:
         profile_id="EMP-X",
         outcome="granted",
     )
-    assert len(log.records(tenant_id="tenant-a")) == 1
-    assert log.records(tenant_id="tenant-b") == []
+    assert len(await log.records(tenant_id="tenant-a")) == 1
+    assert await log.records(tenant_id="tenant-b") == []
 
 
-def test_audit_record_carries_a_stable_id_and_timestamp() -> None:
+@pytest.mark.asyncio
+async def test_audit_record_carries_a_stable_id_and_timestamp() -> None:
     log = AuditLog()
-    record = log.append(
+    record = await log.append(
         action=AUDIT_SPAWN,
         tenant_id="tenant-a",
         actor="u-1",
@@ -327,7 +332,7 @@ def test_audit_record_carries_a_stable_id_and_timestamp() -> None:
     )
     assert record.audit_id
     assert record.at
-    assert log.records(tenant_id="tenant-a", run_id="r1")[0].audit_id == record.audit_id
+    assert (await log.records(tenant_id="tenant-a", run_id="r1"))[0].audit_id == record.audit_id
 
 
 # ── HTTP：审计行读得出来（"落了吗"要能看见）────────────────────────────

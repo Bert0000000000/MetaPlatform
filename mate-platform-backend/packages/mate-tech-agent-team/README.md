@@ -1,6 +1,6 @@
 # mate-tech-agent-team
 
-**Agent 产品层 1.0** —— 超级大脑 + 数字员工。
+**Agent 产品层 2.1** —— 超级大脑 + 数字员工。
 
 > 设计依据：`docs/active/specs/2026-09-16-agent-product-layer-1.0.md`（1.0 定义）
 >

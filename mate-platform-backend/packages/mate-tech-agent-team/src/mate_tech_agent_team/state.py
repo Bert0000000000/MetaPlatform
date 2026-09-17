@@ -14,6 +14,7 @@ from typing import Annotated, Any, TypedDict
 
 from .authority import EnvelopeState
 from .delegation import DelegationState
+from .versioning import AgentProfileSnapshotState
 
 # ── 状态里的结构化值（用 TypedDict 而非 dataclass：checkpointer 序列化最稳）──
 
@@ -35,10 +36,19 @@ class SubTask(TypedDict, total=False):
     ``granted_envelope`` 是同一份发放的**四维**形态（1.4 任务 1）：只带
     ``granted_tools`` 时，``action_rids`` / ``kb_ids`` / ``markings`` 三维在
     执行侧无人认领——判定过了就没人再看一眼，等于没拦。
+
+    ``run_id`` 是这一轮 run 的身份（A-3 起由派活节点写入）：工具调用级幂等键
+    ``run_id + task_id + tool_call_id`` 的第一段，重启后从检查点原样读得回来。
+
+    ``profile_snapshot`` 是**派活那一刻的员工定义快照**（A-6）。它一写进来，
+    这一波用的就是**这一份**——名册里那份后来改成什么样都不影响本轮（续跑亦然）。
+    见 :mod:`mate_tech_agent_team.versioning`。
     """
 
     task_id: str
     team_task_id: str
+    run_id: str
+    profile_snapshot: AgentProfileSnapshotState
     profile_id: str
     instruction: str
     depends_on: list[str]
@@ -117,6 +127,10 @@ class BrainState(TypedDict, total=False):
     ``delegation`` 是**这一轮的派活授权**（1.9 任务 1）。它随 run 落库，续跑时
     读回来当链根——**令牌仍然不进状态**，落地的只是"这一轮能碰什么"那份集合。
     见 :mod:`mate_tech_agent_team.delegation`。
+
+    最后四个 ``*_version`` 是 **A-6 的版本化**（``MP-AGENT-VERSIONING-01``）：
+    写下这一轮时，状态 schema / 图定义 / 员工运行时 / 检查点编码各是哪一版。
+    老检查点里读不到就是空串——**只加字段，既有判定一个字都不变**。
     """
 
     run_id: str
@@ -139,6 +153,11 @@ class BrainState(TypedDict, total=False):
     plan_round: int
     #: 这一轮允许的规划轮数上界（1 = 一次定型，即 1.0 的行为）。
     max_rounds: int
+    # ── A-6 版本化（只加字段；老检查点读不到就是空串）────────────────────
+    state_schema_version: str
+    graph_definition_version: str
+    agent_runtime_version: str
+    checkpoint_codec_version: str
 
 
 __all__ = ["BrainState", "SubTask", "SubTaskResult", "merge_results"]

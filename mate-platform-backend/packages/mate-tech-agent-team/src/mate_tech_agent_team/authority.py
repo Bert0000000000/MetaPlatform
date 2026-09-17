@@ -28,6 +28,11 @@ from typing import Any, TypedDict
 #: 包络四维的固定顺序 —— 越权报告按此顺序出，便于断言与审计阅读。
 DIMENSIONS: tuple[str, ...] = ("tools", "action_rids", "kb_ids", "markings")
 
+#: **判定口径的版本号**。审计行要能回答"这一次派活是按哪一版规则判的"——
+#: 改了判定逻辑（天花板怎么算、哪一维参与比较）就把它往上加一位，于是历史
+#: 审计行仍然可解释：它们记的是**判当时**的版本。
+AUTHORITY_POLICY_VERSION = "authority-envelope/v1"
+
 
 class AuthorityError(Exception):
     """派活闸门拒绝。"""
@@ -263,6 +268,7 @@ def roles_of(token: str) -> frozenset[str]:
 
 
 __all__ = [
+    "AUTHORITY_POLICY_VERSION",
     "DIMENSIONS",
     "PERMISSION_DIMENSION_PREFIXES",
     "AuthorityError",

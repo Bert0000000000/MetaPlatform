@@ -26,8 +26,8 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
-from .audit import AUDIT_APPROVAL, AUDIT_ESCALATION, AUDIT_SPAWN, AuditLog
-from .authority import DepthExceeded, Envelope
+from .audit import AUDIT_APPROVAL, AUDIT_ESCALATION, AUDIT_SPAWN, AuditLog, AuditSink
+from .authority import AUTHORITY_POLICY_VERSION, DepthExceeded, Envelope
 from .team_task_store import (
     RUNNING,
     TERMINAL_STATUSES,
@@ -36,6 +36,7 @@ from .team_task_store import (
     TeamTask,
     TeamTasks,
 )
+from .versioning import revision_of
 
 DEFAULT_MAX_DEPTH = 3
 
@@ -136,7 +137,7 @@ class TeamBus:
         registry: Any,
         max_depth: int = DEFAULT_MAX_DEPTH,
         tasks: TeamTasks | None = None,
-        audit: AuditLog | None = None,
+        audit: AuditSink | None = None,
     ) -> None:
         if max_depth < 0:
             raise ValueError("max_depth 不得为负")
@@ -146,7 +147,8 @@ class TeamBus:
         self._task_records: TeamTasks = tasks or InMemoryTeamTasks()
         #: 审计账本（硬规则 #9）：派活 / 越权转 proposal / 审批各落一行。
         #: 由本闸门持有——它同时是这三件事的必经之路；``BrainService`` 复用同一份。
-        self.audit: AuditLog = audit or AuditLog()
+        #: 单副本/测试默认进程内实现；生产由 ``wiring`` 换成 PG 账本（A-1）。
+        self.audit: AuditSink = audit or AuditLog()
 
     # -- 判据 -------------------------------------------------------------
     async def spawn(self, request: SpawnRequest) -> SpawnOutcome:
@@ -186,7 +188,7 @@ class TeamBus:
                 actor=request.actor,
                 run_id=request.run_id,
             )
-            self.audit.append(
+            await self.audit.append(
                 action=AUDIT_SPAWN,
                 tenant_id=request.tenant_id,
                 actor=request.actor,
@@ -194,6 +196,13 @@ class TeamBus:
                 run_id=request.run_id,
                 profile_id=request.profile_id,
                 outcome="granted",
+                decision="granted",
+                # 取证三件：按哪一版策略判的、判之前发起用户能碰什么、判之后子员工能碰什么。
+                policy_version=AUTHORITY_POLICY_VERSION,
+                authority_before=dict(request.initiator_envelope.as_state()),
+                authority_after=dict(child.as_state()),
+                # A-6：判定用的是**哪一版**员工定义（与计划期那份快照同源）。
+                agent_profile_revision=revision_of(profile),
             )
             return SpawnOutcome(
                 task_id=task_id,
@@ -227,7 +236,7 @@ class TeamBus:
         )
         # 越权转 proposal 是最需要事后追责的一类动作：单记一行，与"派活成功"
         # 分开。合并成一行会让"这次派活到底跑没跑"在账本上读不出来。
-        self.audit.append(
+        await self.audit.append(
             action=AUDIT_ESCALATION,
             tenant_id=request.tenant_id,
             actor=request.actor,
@@ -235,6 +244,12 @@ class TeamBus:
             run_id=request.run_id,
             profile_id=request.profile_id,
             outcome="proposal",
+            decision="escalated",
+            policy_version=AUTHORITY_POLICY_VERSION,
+            agent_profile_revision=revision_of(profile),
+            authority_before=dict(request.initiator_envelope.as_state()),
+            # 记**申请到的**包络（不是放行后的空包络）：事后要能看出"它当时想碰什么"。
+            authority_after=dict(child.as_state()),
             detail={
                 "escalations": list(escalations),
                 "requested": proposal["requested"],
@@ -257,13 +272,19 @@ class TeamBus:
         if state is None:
             raise KeyError(f"未知任务：{task_id}")
         state.approved = True
-        self.audit.append(
+        await self.audit.append(
             action=AUDIT_APPROVAL,
             tenant_id=state.tenant_id,
             actor=approver,
             task_id=task_id,
             run_id=state.run_id,
             outcome="approved",
+            decision="approved",
+            approver_id=approver,
+            policy_version=AUTHORITY_POLICY_VERSION,
+            # 人审放行的那一次：授权**之前**空（fail-closed），之后是子任务那份包络。
+            authority_before=dict(_NO_AUTHORITY.as_state()),
+            authority_after=dict(state.base_envelope.as_state()),
             detail={"scope": "this_task_only", "granted_by": approver},
         )
 

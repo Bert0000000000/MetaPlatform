@@ -650,7 +650,7 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
         </Card>
 
         <div
-          className="mp-flex-1 mp-overflow-auto" 
+          className="mp-flex-1 mp-overflow-auto"
           onClick={() => { setSelectedNodeId(null); setSelectedEdgeId(null); }}
         >
           <Card title="流程画布" className="mp-h-full">

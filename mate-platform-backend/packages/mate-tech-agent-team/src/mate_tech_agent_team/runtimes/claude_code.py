@@ -26,6 +26,10 @@
 * **工具名未必是 CLI 认识的工具**：投影下来的工具名来自 MCP 工具面，CLI 侧要真的
   能调需要把它们配成 MCP server（``--mcp-config``）——本切片没接。
 
+* **子进程只拿到白名单环境**：**不再** ``{**os.environ, ...}`` —— 宿主进程里的
+  DB DSN / Service Secret / Keycloak 配置一律不下放（:mod:`.sandbox_env`）。
+  CLI 的登录态走它自己的凭据文件（``~/.claude``），不靠继承宿主 env。
+
 **不编造**：CLI 没起得来 / 超时 / 非零退出 / JSON 解不出来，一律返回
 ``status="error"`` 且 ``output=""``；``source`` 只在**模型真的跑过**时才是 ``"llm"``。
 """
@@ -46,6 +50,7 @@ from ..profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry
 from ..runtime import TaskChannel
 from ..state import SubTask, SubTaskResult
 from .projection import ClaudeCodeProjection, ProjectionAdapter, RuntimeBundle
+from .sandbox_env import build_child_env, configured_allowlist
 
 #: 一次 CLI 调用的默认上限（秒）。给得宽是因为真跑一轮 agent 要分钟级；测试用桩
 #: 脚本时它根本用不到。
@@ -118,12 +123,19 @@ class ClaudeCodeRuntime:
         self._cli_model = cli_model or os.getenv("MATE_AGENT_TEAM_CLAUDE_MODEL", "")
         self._timeout = timeout
         self._channel = channel
+        #: 显式注入给子进程的少量配置。**不是**继承宿主的入口——下放集合由
+        #: :meth:`child_env` 按白名单构造（见 :mod:`.sandbox_env`）。
         self._env = dict(env or {})
 
     # -- 工作区 -------------------------------------------------------------
 
     def workspace_for(self, *, tenant_id: str, task_id: str) -> Path:
-        """该租户该任务的工作区。**租户是第一段路径**——隔离在文件系统层成立。"""
+        """该租户该任务的工作区。**租户是第一段路径**——隔离在文件系统层成立。
+
+        但**这不构成安全边界**：同一宿主上的子进程（尤其 root 或同 uid 的）可以
+        直接读别的租户目录。真正的隔离靠 ① 子进程拿不到宿主凭据（:mod:`.sandbox_env`）
+        ② 远端形态进独立 Job/命名空间（B-8）。这里只做**目录归属**，别把它当墙。
+        """
         return (
             self._working_root
             / _safe_segment(tenant_id, field="tenant_id")
@@ -180,14 +192,26 @@ class ClaudeCodeRuntime:
             command += ["--model", self._cli_model]
         return command
 
+    def child_env(self) -> dict[str, str]:
+        """下放给 CLI 子进程的环境——**白名单构造**，不是继承宿主。
+
+        公开可读：运维要能核对"到底下放了什么"，测试要能断言"宿主凭据一条都没下去"。
+        构造规则见 :mod:`.sandbox_env`；运维追加非敏感名用
+        ``MATE_AGENT_TEAM_RUNTIME_ENV_ALLOWLIST``。
+        """
+        return build_child_env(explicit=self._env, allow=configured_allowlist())
+
     def _invoke(self, command: Sequence[str], *, cwd: Path) -> subprocess.CompletedProcess[str]:
         """同步调用（由 :func:`asyncio.to_thread` 丢到线程里跑）。
 
         **刻意不用 ``asyncio.create_subprocess_exec``**：Windows 的
         ``SelectorEventLoop``（本仓测试夹具强制切换的那一个，psycopg 要求）不支持
         子进程 transport，会直接 ``NotImplementedError``。丢线程对两种事件循环都成立。
+
+        **刻意不用 ``{**os.environ, ...}``**：那会把宿主的 DB DSN / Service Secret /
+        Keycloak 配置原样交给一个跑模型生成指令的执行面（A-4 / ADR-0040）。
         """
-        env = {**os.environ, **self._env}
+        env = self.child_env()
         return subprocess.run(
             list(command),
             cwd=str(cwd),

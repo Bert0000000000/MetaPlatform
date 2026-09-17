@@ -258,7 +258,7 @@ export default function TemplateDetailPage() {
                     <img
                       src={s}
                       alt={`截图 ${idx + 1}`}
-                      className="mp-w-full mp-border mp-rounded" 
+                      className="mp-w-full mp-border mp-rounded"
                     />
                   </Col>
                 ))}

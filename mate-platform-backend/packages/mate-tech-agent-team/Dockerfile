@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # =============================================================================
-# mate-tech-agent-team : Agent 产品层 1.0（超级大脑 + 数字员工）
+# mate-tech-agent-team : Agent 产品层 2.1（超级大脑 + 数字员工）
 # Base: python:3.12
 # Build context: ./mate-platform-backend
 # =============================================================================

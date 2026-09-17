@@ -1,10 +1,10 @@
 openapi: 3.1.0
 info:
   title: Mate Platform agent-team API
-  version: 1.0.0
+  version: 2.1.0
   x-mate-owner: agent-product-layer
   description: >-
-    Agent 产品层 1.0 —— 超级大脑（langgraph 任务图）+ 数字员工。
+    Agent 产品层 2.1 —— 超级大脑（langgraph 任务图）+ 数字员工。
     一句话 → 拆任务图 → 并行派给 ≥2 个数字员工（各有提示词与工具白名单）→ 真实执行
     → 中途一处人工确认 → 汇总。全程租户隔离由数据库 RLS 强制
     （thread_id = "<租户ID>|<任务ID>"，每连接设 app.tenant_id）。
@@ -293,9 +293,11 @@ components:
             - agent_team.spawn
             - agent_team.authority_escalation
             - agent_team.approval
+            - agent_team.delegation
           description: |
             被审计的动作。**派活**（每次派活一行）、**越权转 proposal**
-            （包络超出链根 → 转人审）、**审批**（run 级闸门或任务级授权）。
+            （包络超出链根 → 转人审）、**审批**（run 级闸门或任务级授权）、
+            **委托签发**（A-2 起：续跑时那次运行期委托的签发或拒绝）。
         tenant_id:
           type: string
         actor:
@@ -316,6 +318,45 @@ components:
         at:
           type: string
           description: 记录时刻（ISO8601）
+        sequence:
+          type: integer
+          description: |
+            租户内单调序号（A-1 起）。链按租户成链，序号是链接起来的骨架：
+            断号 = 有行被删。
+        event_id:
+          type: string
+          description: 事件 id（投递到 Outbox 时用它做幂等键）
+        agent_profile_revision:
+          type: string
+          description: 判定发生时该员工定义的修订号（空串 = 该员工无修订号）
+        decision:
+          type: string
+          description: 判定结论（granted / escalated / approved / rejected …）
+        approver_id:
+          type: string
+          description: 审批人（令牌 sub）；非审批动作是空串
+        authority_before:
+          type: object
+          additionalProperties: true
+          description: 判定**之前**的权限包络（四维定序）
+        authority_after:
+          type: object
+          additionalProperties: true
+          description: 判定**之后**的权限包络（收窄后的那一份）
+        policy_version:
+          type: string
+          description: 依哪一版判定口径判的（改口径就加版号，历史行仍可解释）
+        trace_id:
+          type: string
+          description: OTel trace id（硬规则 #9：审计与 trace 可互查）
+        previous_hash:
+          type: string
+          description: 该租户上一条的 event_hash（链首为 64 个 0）
+        event_hash:
+          type: string
+          description: |
+            sha256(previous_hash ‖ 规范化正文)。**改这一行就对不上**——审计员
+            可以用这一列自己重算，不必信任服务端结论。
     AuditList:
       type: object
       required: [items]
@@ -724,6 +765,8 @@ paths:
         硬规则 #9：每次**派活**、**越权转 proposal**、**审批**都落一行审计。
         这里把该 run 的行读出来当证据——"落了吗"要能看见，否则等于没落。
         只回本租户的行（跨租户不可见，与 run 的同一条隔离口径）。
+        A-1 起这批行来自**持久账本**：重启后同一轮仍查得到，且按租户带哈希链
+        （`sequence` / `previous_hash` / `event_hash`）——任何一行被改过都可检出。
       tags: [agent-team]
       operationId: agentTeamGetRunAudit
       parameters:

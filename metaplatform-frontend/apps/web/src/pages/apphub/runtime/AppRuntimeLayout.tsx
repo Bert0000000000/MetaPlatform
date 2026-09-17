@@ -114,7 +114,7 @@ export default function AppRuntimeLayout({
         >
           {isDemo && (
             <div
-              className="mp-border mp-rounded mp-mb-4 mp-text-sm mp-text-2 mp-py-2 mp-px-3 mp-bg-fill-0" 
+              className="mp-border mp-rounded mp-mb-4 mp-text-sm mp-text-2 mp-py-2 mp-px-3 mp-bg-fill-0"
             >
               演示模式：该应用后端尚未返回 render_tree，当前展示内置示例内容。
             </div>

@@ -1,0 +1,58 @@
+# CODEOWNERS —— 谁必须看哪一类改动（A-5 / MP-MAIN-GATE-01）
+#
+# **为什么要有它**：本仓的改动大量由 AI 会话产出。此前 main 上
+# `required_pull_request_reviews` 是空的——**一个 approve 都不要求**，任何改动
+# 只要 CI 绿就合得进去。CI 能证明"测试过了"，证明不了"有人看过权限判定"。
+#
+# 分两档（第二档由分支规则/规则集施加"≥2 个 approve"，本文件只声明归属）：
+#
+# | 档 | 范围 | 要求 |
+# | --- | --- | --- |
+# | 普通 | 其余路径 | ≥1 个非作者 approve |
+# | 敏感 | **权限 / Runtime / RLS / 审批** | ≥2 个非作者 approve |
+#
+# 归属人：本仓目前只有一个账号（`@Bert0000000000`）。**这不是"可以不设"的理由**——
+# 文件先立起来，第二个评审人或 bot 账号一到位，规则集就能直接生效；反过来
+# （先开规则再补文件）会把所有 PR 卡死。
+#
+# 语法说明：后面的模式**覆盖**前面的，所以敏感路径放在 `*` 之后。
+
+# 默认：任何改动都需要 owner 过目
+*                           @Bert0000000000
+
+# ── 敏感档 1：权限判定与派活闸门 ────────────────────────────────────────
+# 包络衰减、深度闸门、越权转 proposal —— 改动这里等于改动"谁能干什么"。
+/mate-platform-backend/packages/mate-tech-agent-team/src/mate_tech_agent_team/authority.py       @Bert0000000000
+/mate-platform-backend/packages/mate-tech-agent-team/src/mate_tech_agent_team/envelope_gate.py   @Bert0000000000
+/mate-platform-backend/packages/mate-tech-agent-team/src/mate_tech_agent_team/team_bus.py       @Bert0000000000
+
+# ── 敏感档 2：执行面隔离与外部进程 ──────────────────────────────────────
+# 子进程环境白名单、投影、以及各外部执行面 adapter。
+/mate-platform-backend/packages/mate-tech-agent-team/src/mate_tech_agent_team/runtimes/          @Bert0000000000
+
+# ── 敏感档 3：运行期委托身份 / 审计 / 幂等账本 ──────────────────────────
+/mate-platform-backend/packages/mate-tech-agent-team/src/mate_tech_agent_team/delegated_identity.py @Bert0000000000
+/mate-platform-backend/packages/mate-tech-agent-team/src/mate_tech_agent_team/delegation.py         @Bert0000000000
+/mate-platform-backend/packages/mate-tech-agent-team/src/mate_tech_agent_team/audit.py              @Bert0000000000
+/mate-platform-backend/packages/mate-tech-agent-team/src/mate_tech_agent_team/tool_ledger.py        @Bert0000000000
+/mate-platform-backend/packages/mate-tech-agent-team/src/mate_tech_agent_team/coordination.py       @Bert0000000000
+
+# ── 敏感档 4：租户隔离（RLS）与数据库访问面 ────────────────────────────
+/mate-platform-backend/packages/mate-tech-agent-team/src/mate_tech_agent_team/checkpoint.py       @Bert0000000000
+/mate-platform-backend/packages/mate-platform/src/mate_platform/tenancy/                          @Bert0000000000
+/mate-platform-backend/packages/mate-platform/src/mate_platform/messaging/                        @Bert0000000000
+
+# ── 敏感档 5：审批 / 人工闸门（ADR-0044 唯一写路径）────────────────────
+/mate-platform-backend/packages/mate-tech-agent-team/src/mate_tech_agent_team/api/                @Bert0000000000
+
+# ── 敏感档 6：门禁本身 ──────────────────────────────────────────────────
+# 改 CI / 钩子 / 契约校验脚本 = 改"谁被拦"。这一档最该有人看。
+/.github/workflows/                 @Bert0000000000
+/.github/CODEOWNERS                 @Bert0000000000
+/scripts/ci/                        @Bert0000000000
+/.pre-commit-config.yaml            @Bert0000000000
+/mate-platform-backend/contracts/openapi/  @Bert0000000000
+
+# ── 敏感档 7：集群与网络策略 ────────────────────────────────────────────
+/infra/helm/                        @Bert0000000000
+/infra/                           @Bert0000000000

@@ -937,7 +937,7 @@ export default function OntologyModelingPage({
             return (
               <div
                 key={c.rid}
-                className="mp-border mp-rounded mp-gap-3 mp-p-3 mp-flex-center mp-bg-1" 
+                className="mp-border mp-rounded mp-gap-3 mp-p-3 mp-flex-center mp-bg-1"
               >
                 <GitMerge className="mp-icon-16 mp-text-2 mp-shrink-0"  />
                 <div className="mp-flex-1">

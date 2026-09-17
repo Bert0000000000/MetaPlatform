@@ -693,7 +693,7 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
         </Card>
 
         <div
-          className="mp-flex-1 mp-overflow-auto" 
+          className="mp-flex-1 mp-overflow-auto"
           onClick={() => setSelectedId(null)}
         >
           <Card title="表单画布" className="mp-h-full">
@@ -709,7 +709,7 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
 
         <Card
           title="属性配置"
-          className="mp-flex mp-overflow-auto mp-w-360 mp-flex-col" 
+          className="mp-flex mp-overflow-auto mp-w-360 mp-flex-col"
           bodyStyle={{ flex: 1, overflow: 'auto' }}
         >
           <Tabs activeKey={activeTab} onChange={(k) => setActiveTab(k as ActiveTab)}>

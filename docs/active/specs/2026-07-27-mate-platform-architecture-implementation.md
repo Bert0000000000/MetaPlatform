@@ -3,13 +3,14 @@
 > **版本**：v3.1-implementation.4 | **日期**：2026-08-25 | **状态**：实施基线 + Temporal 目标态已接受（迁移未完成）
 >
 > **配套文档**：
+>
 > - 技术栈定稿：`2026-07-27-mate-platform-tech-stack-confirmed.md`
 > - 交付版本计划：`2026-07-27-mate-platform-delivery-roadmap.md`
 > - Workflow 决策：`../decisions/ADR-0061-temporal-as-workflow-engine.md`
 > - Workflow 迁移计划：`../V1.0-RELEASE-PLAN.md` §2.2 Sprint 1A
 > - 历史决策归档：`archive/2026-07-27-mate-platform-technical-architecture-v2.1.md`
 >
-> **阅读优先级**：本文件 §1.3 与附录 B 是 ADR-0061 的目标架构覆盖层；正文中的 Flowable 部署细节描述迁移前/双轨期 legacy 运行时。发生冲突时，以 ADR-0061、§1.3 和附录 B 为准。Temporal 已完成架构选型，但 Sprint 1A 当前仍为 `Not Started`，不得把目标态写成已上线事实。
+> **阅读优先级**：本文件 §1.3 与附录 B 是 ADR-0061 的目标架构覆盖层；正文中的 Flowable 部署细节描述迁移前/双轨期 legacy 运行时。发生冲突时，以 ADR-0061、§1.3 和附录 B 为准。**Sprint 1A 的完成度以证据为准（2026-09-17 订正）**：M1/M2/M3 已交付并 Accepted（`docs/active/delivery/evidence/TEMPORAL-1A-M1…M3-ACCEPTANCE.md`，2026-09-07~08），**双轨仍在**（`WORKFLOW_ENGINE` 默认 `legacy`，切流按 `DUAL-RAIL-COMPARISON.md` §4 灰度推进）。本行此前写的 `Not Started` 与事实不符——订正为"引擎已接入、切流未做"，两件事别混成一件。
 
 ---
 
@@ -164,7 +165,7 @@ flowchart LR
 
 **确定性边界**：Workflow 代码只做确定性编排；HTTP、数据库、LLM、文件和随机/外部时间等调用必须放入幂等 Activity。Temporal SDK 直接接入，不通过通用 httpx ACL 模拟。
 
-**迁移状态**：ADR-0061 已 `Accepted`；Sprint 1A 尚未完成。迁移期保留 `WORKFLOW_ENGINE=temporal|legacy` 和 plan 镜像表，按 `plan_id` 灰度。Flowable 只作为 legacy BPMN 运行时保留，不再承接新增业务 Workflow；达到 ADR-0061 验收门槛后退出主运行时。
+**迁移状态**（2026-09-17 订正）：ADR-0061 已 `Accepted`；**Sprint 1A 已交付并 Accepted**（M1/M2/M3，证据在 `docs/active/delivery/evidence/TEMPORAL-1A-M{1,2,3}-ACCEPTANCE.md`），引擎接入已完成；**切流未做** —— `WORKFLOW_ENGINE` 默认仍是 `legacy`，双轨保留 `WORKFLOW_ENGINE=temporal|legacy` 和 plan 镜像表，按 `plan_id` 灰度（`DUAL-RAIL-COMPARISON.md` §4）。Flowable 只作为 legacy BPMN 运行时保留，不再承接新增业务 Workflow；达到 ADR-0061 验收门槛后退出主运行时。
 
 ---
 
@@ -173,7 +174,8 @@ flowchart LR
 ### 2.1 Hexagonal Architecture（端口与适配器）
 
 **四层结构**：
-```
+
+```text
 domain            -> 纯 Python，无外部依赖
 application       -> 用例编排，通过 ports 调用 domain
 infrastructure    -> 实现 ports：persistence + clients
@@ -181,6 +183,7 @@ api               -> FastAPI routes + DTO
 ```
 
 **约束**：
+
 - `domain` 不依赖任何外部包
 - `application` 只依赖 `domain` 和 `ports`
 - `infrastructure` 实现 `ports`
@@ -199,6 +202,7 @@ api               -> FastAPI routes + DTO
 | App | mate-app-kb | Application, Module |
 
 **上下文映射**：
+
 - Knowledge <-> Ontology：Customer/Supplier
 - Agent <-> Workflow：Open-Host Service
 - Knowledge <-> Workflow：Shared Kernel
@@ -213,7 +217,8 @@ api               -> FastAPI routes + DTO
 ### 2.4 Event-Driven + Outbox Pattern
 
 **核心流程**：
-```
+
+```text
 Command Handler 写入业务表（同一事务）
         |
         v
@@ -231,6 +236,7 @@ Outbox Publisher 读取 outbox 表，发送到 Kafka
 ### 2.6 Anti-Corruption Layer (ACL)
 
 每个外部服务一个 Client。以下 Flowable Client 是双轨期 legacy 示例：
+
 ```python
 # packages/mate-tech-rag/clients/flowable_client.py
 class FlowableClient:
@@ -264,6 +270,7 @@ Temporal 不使用上述 HTTP ACL 模式；通过官方 SDK 实现 `TemporalClie
 ### 2.7 Resilience Patterns
 
 **Circuit Breaker**（pybreaker）：
+
 ```python
 @circuit_breaker(failure_threshold=5, recovery_timeout=30)
 async def call_flowable(self, request: dict) -> dict:
@@ -271,6 +278,7 @@ async def call_flowable(self, request: dict) -> dict:
 ```
 
 **Bulkhead**（httpx 独立连接池）：
+
 ```python
 flowable_pool = httpx.AsyncClient(limits=httpx.Limits(max_connections=20))
 drools_pool = httpx.AsyncClient(limits=httpx.Limits(max_connections=20))
@@ -278,6 +286,7 @@ lightrag_pool = httpx.AsyncClient(limits=httpx.Limits(max_connections=30))
 ```
 
 **Retry with Exponential Backoff**（tenacity）：
+
 ```python
 @retry(
     stop=stop_after_attempt(3),
@@ -304,6 +313,7 @@ async def call_with_retry(self, url: str) -> dict:
 | 库 | `python-keycloak` + 自研 httpx |
 
 **提供能力**：
+
 - OIDC 鉴权（所有语言统一）
 - JWT 颁发 + 校验
 - Realm / Client / Role / User 管理
@@ -368,7 +378,7 @@ async def call_with_retry(self, url: str) -> dict:
 
 ### 4.2 项目结构
 
-```
+```text
 mate-platform-backend/                    # Python 主后端 monorepo（uv）
 |-- pyproject.toml                        # uv 管理 + 所有依赖
 |-- ruff.toml                             # 代码规范
@@ -415,6 +425,7 @@ mate-platform-backend/                    # Python 主后端 monorepo（uv）
 ### 4.3 关键代码模式
 
 **Pydantic v2（严格模式）**：
+
 ```python
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Annotated, Literal
@@ -430,6 +441,7 @@ class DocumentMeta(BaseModel):
 ```
 
 **SQLModel（类型安全 ORM）**：
+
 ```python
 from sqlmodel import SQLModel, Field as SQLField
 
@@ -443,6 +455,7 @@ class Document(SQLModel, table=True):
 ```
 
 **FastAPI 路由（legacy Flowable 兼容入口）**：
+
 ```python
 from fastapi import FastAPI, Depends
 
@@ -488,7 +501,7 @@ async def generate_workflow(
 
 ### 5.2 应用清单
 
-```
+```text
 metaplatform-frontend/
 |-- apps/
 |   |-- portal/         # 主入口
@@ -574,7 +587,8 @@ flowchart LR
 | 服务发现 | Traefik Nacos provider |
 
 **中间件链**：
-```
+
+```text
 Traefik -> rate-limit -> forward-auth (-> AuthService) -> trace-id 透传 -> Python 服务
 ```
 
@@ -850,7 +864,7 @@ flowchart LR
 ### B.1 决策与状态
 
 - 决策源：`docs/active/decisions/ADR-0061-temporal-as-workflow-engine.md`（Accepted，2026-08-21）。
-- 交付源：`docs/active/V1.0-RELEASE-PLAN.md` §2.2 Sprint 1A（当前 `Not Started`）。
+- 交付源：`docs/active/V1.0-RELEASE-PLAN.md` §2.2 Sprint 1A（**Accepted，终验 2026-09-08**）+ 证据 `docs/active/delivery/evidence/TEMPORAL-1A-M{1,2,3}-ACCEPTANCE.md`；**双轨仍在，切流未做**（`WORKFLOW_ENGINE` 默认 `legacy`）。
 - 目标：Temporal 接管业务 Workflow 的持久化执行；PlanRunner 保留为 LLM-friendly `plan JSON` → Workflow 的 DSL 翻译层。
 - 非目标：不以 Temporal 替换 FastAPI CRUD、Kafka/Outbox、Flink/Airflow 计算与数据 DAG、LangGraph/AgentLoop 内部推理、Drools 规则求值或 K8s 沙箱。
 

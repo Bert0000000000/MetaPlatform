@@ -71,6 +71,11 @@ EXCLUDE_FILES = {
     # X-Service-Secret 守门（服务身份读敏感项真值），不走内部 Bearer ——
     # 服务 token 无租户 claim，叠 X-Tenant-Id 会触发租户绑定守卫 403。
     "service_read.py",
+    # mate_clients/iam/token_exchange.py：IAM 的令牌交换通道（RFC 8693，
+    # Agent 产品层 2.1-A / ADR-0067）。与 identity.py 同一条理由：换令牌这一步
+    # **必须**直接对 IdP 说话——它要用一枚服务令牌去换一枚用户令牌，不存在
+    # "用内部 Bearer 就能换"的替代路径。本文件**就是**那条出站边界。
+    "token_exchange.py",
     "iceberg_rest_adapter.py",
     "dispatcher.py",
     # 三轮 CI 实跑揭示的余量：本体/市场/深度研究/MCP 工具适配层（均为

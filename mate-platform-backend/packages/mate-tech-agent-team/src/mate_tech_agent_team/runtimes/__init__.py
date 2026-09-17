@@ -6,6 +6,7 @@
 | --- | --- |
 | :mod:`.projection` | ``RuntimeBundle`` + ``ProjectionAdapter``：把 profile 压成执行面能吃的东西 |
 | :mod:`.claude_code` | ``RuntimeKind.CLAUDE_CODE`` 的实现：投影落盘 → 起 CLI → 解析回执 |
+| :mod:`.sandbox_env` | 外部子进程的**环境变量白名单**（A-4）：宿主凭据一律不下放 |
 
 **为什么单独成包**：ADR-0066 把「角色」与「运行时」定成正交两轴，接入 dsh / Codex
 就是**再加一个 adapter**，不动 TeamBus 协议与前端（R10）。这个包就是那条"只加
@@ -32,15 +33,27 @@ from .projection import (
     narrow_tools,
     scan_for_secrets,
 )
+from .sandbox_env import (
+    ALLOWLIST_ENV,
+    SAFE_ENV_ALLOWLIST,
+    build_child_env,
+    configured_allowlist,
+    is_sensitive_name,
+)
 
 __all__ = [
+    "ALLOWLIST_ENV",
+    "SAFE_ENV_ALLOWLIST",
     "ClaudeCodeProjection",
     "ClaudeCodeRuntime",
     "ProjectionAdapter",
     "RuntimeBundle",
     "SkillRef",
     "SuperAiProjection",
+    "build_child_env",
+    "configured_allowlist",
     "default_cli_command",
+    "is_sensitive_name",
     "narrow_tools",
     "scan_for_secrets",
 ]
