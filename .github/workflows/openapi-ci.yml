@@ -11,12 +11,11 @@ on:
       - "docs/swagger/**"
       - ".github/workflows/openapi-ci.yml"
   pull_request:
-    paths:
-      - "mate-platform-backend/contracts/**"
-      - "mate-platform-backend/packages/**/src/**"
-      - "mate-platform-backend/services/**/src/**"
-      - "docs/active/prd/**"
-      - "docs/swagger/**"
+    # **刻意不加 `paths:` 过滤**（A-5 收紧 required 的前提，同 1.7 对
+    # `python-ci.yml` 的处理）：`breaking-change`（契约破坏性变更门禁）是
+    # `main` 的 required check。工作流级 `paths:` 会让不碰契约的 PR 根本不触发
+    # 本工作流，那条 required check 就永远停在 "Expected — Waiting for status
+    # to be reported"，PR 永久卡 pending。代价是文档类 PR 也跑一遍契约检查。
 
 jobs:
   lint-and-bundle:

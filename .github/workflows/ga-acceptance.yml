@@ -13,12 +13,13 @@ on:
       - ".pre-commit-config.yaml"
   pull_request:
     branches: [main, codex/**]
-    paths:
-      - "infra/helm/**"
-      - "infra/tests/**"
-      - "mate-platform-backend/**"
-      - "scripts/ci/**"
-      - ".pre-commit-config.yaml"
+    # **刻意不加 `paths:` 过滤**（A-5 收紧 required 的前提，同 1.7 对
+    # `python-ci.yml` 的处理）：本工作流的 `agent-team pytest` 与
+    # `ga-014 Ontology RLS` 是 `main` 的 required check。工作流级的 `paths:`
+    # 会让不碰后端/脚本的 PR **根本不触发本工作流**——那两个 required check
+    # 于是永远停在 "Expected — Waiting for status to be reported"，PR 永久卡
+    # 在 pending（连只改文档的 PR 也一样）。代价是文档类 PR 也跑一遍
+    # （缓存命中后几分钟），用"永远 pending"换它不值。
 
 permissions:
   contents: read
@@ -199,9 +200,35 @@ jobs:
       - run: pip install pre-commit
       - run: python scripts/ci/forbid_legacy_fallback.py
 
-  # rule 3 + 4 + 5 + 7 + 10: pre-commit hooks + pytest (all in one)
-  ga-hooks-and-tests:
-    name: ga pre-commit + infra pytest + mate-platform pytest
+  # rule 3 + 4 + 5 + 7 + 10 + 12：**格式门禁单独成一个 job**（A-5 / MP-MAIN-GATE-01）。
+  #
+  # 为什么必须拆开：原先格式检查与功能测试在**同一个 job 的相邻 step** 里，
+  # 于是 pre-commit 一红（`main` 上就是被 `CLAUDE.md` 的 Prettier 卡住的），
+  # 后面 4 个 step 全部 `skipped` —— 其中一条是
+  # `mate-platform/tests (SEC-IAM-01 + SEC-TENANT-01 + PLATFORM-EVENT-01)`。
+  # 结果是：**格式红灯把真正的 GA 回归测试整条吞掉了**，而看板只显示"一个 job 红了"。
+  #
+  # 拆开之后两条独立：格式红灯**照样拦合并**（它是 required check），
+  # 但功能验收的结论**一定拿得到**（跑或红，不会"因为前面红了所以没跑"）。
+  ga-format:
+    name: "ga format (pre-commit: rules 3 / 4 / 5 / 7 / 10 / 12)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: install pre-commit
+        run: python -m pip install pre-commit
+      - name: pre-commit run --all-files (rules 3 / 4 / 5 / 7 / 10 / 12)
+        # SKIP=no-commit-to-branch：--all-files 模式下该 hook 对 main 直推工作流误报
+        # （分支保护由 GitHub 分支规则 + ga-010 证据链承担）
+        run: SKIP=no-commit-to-branch pre-commit run --all-files
+
+  # 功能验收：**与格式门禁无依赖**（`needs:` 一个都不写）。
+  # 谁在前面红都不该让这里变成 skipped —— 那正是拆分要保住的东西。
+  ga-tests:
+    name: ga tests (infra + mate-platform + mate-app-kb + governance)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -209,20 +236,16 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - name: install uv + pytest
-        run: python -m pip install uv pre-commit pytest pytest-asyncio pyyaml sqlalchemy pydantic httpx structlog fastapi tenacity pyjwt python-multipart opentelemetry-api opentelemetry-sdk temporalio alembic
+        run: python -m pip install uv pytest pytest-asyncio pyyaml sqlalchemy pydantic httpx structlog fastapi tenacity pyjwt python-multipart opentelemetry-api opentelemetry-sdk temporalio alembic
       # 依赖闭包一次性安装：uv sync --frozen 从 workspace 锁文件解全部
       # runtime+dev 依赖（手工 pip 清单连续 6 轮暴露缺口：fastapi→pyjwt→
       # otel→temporalio→alembic…），与 ga-014 同一验证过的路径
       - name: sync workspace deps (frozen, complete closure)
         run: uv sync --directory mate-platform-backend --package mate-platform --package mate-app-kb --dev --frozen
-      - name: pre-commit run --all-files (rules 3 / 4 / 5 / 7 / 10 / 12)
-        # SKIP=no-commit-to-branch：--all-files 模式下该 hook 对 main 直推工作流误报
-        # （分支保护由 GitHub 分支规则 + ga-010 证据链承担）
-        run: SKIP=no-commit-to-branch pre-commit run --all-files
       - name: infra/tests (PLATFORM-K8S-01 regression, rule 8 contract)
         run: pytest -q
         working-directory: infra/tests
-      # 后端两套件走 uv venv（完整闭包；系统 pip 只保 infra tests + pre-commit）
+      # 后端两套件走 uv venv（完整闭包；系统 pip 只保 infra tests）
       - name: mate-platform/tests (SEC-IAM-01 + SEC-TENANT-01 + PLATFORM-EVENT-01)
         run: uv run --directory mate-platform-backend/packages/mate-platform pytest -q
       - name: mate-app-kb/tests (TECH-SERVICES canonical)
