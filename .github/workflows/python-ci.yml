@@ -11,14 +11,19 @@ on:
       - "docker-compose.yml"
       - ".github/workflows/python-ci.yml"
       - "ruff.toml"
-      - ".github/workflows/python-ci.yml"
   pull_request:
     branches: [main, master, develop]
-    paths:
-      - "mate-platform-backend/**"
-      - "pyproject.toml"
-      - "uv.lock"
-      - "ruff.toml"
+    # **刻意不加 `paths:` 过滤**（1.7 任务 3）。
+    #
+    # 这几个 job 是 `main` 分支保护上的 required check。工作流级的 `paths:` 会让
+    # 不碰后端的 PR **根本不触发本工作流**——那些 required check 于是永远是
+    # "Expected — Waiting for status to be reported"，PR **永久卡在 pending**，
+    # 谁都合不进去（连只改文档的 PR 也一样）。
+    #
+    # 代价是文档类 PR 也会跑这四个 job（约 2 分钟，缓存命中后更快）。用"job 总是
+    # 运行、内部按变更快速跳过"可以把这点省掉，但那要在每个 job 里重复一段
+    # 变更探测 + 多一次全历史 checkout；对"required check 绝不能漏报"这条来说，
+    # 少的这几分钟不值那个复杂度与失败面。`push` 侧保留过滤（推送不参与保护）。
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
