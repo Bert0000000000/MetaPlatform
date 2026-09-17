@@ -37,6 +37,10 @@ class SubTaskResultModel(BaseModel):
     output: str = ""
     tool_calls: list[dict[str, Any]] = Field(default_factory=list)
     llm_calls: int = 0
+    #: B-7 / `MP-EXTERNAL-RUNTIME-E2E-01`：计量拆开（本地模型轮次 / 外部 agent
+    #: 往返 / 运行时派发）。工具调用数看 ``len(tool_calls)``，不另存标量。
+    external_agent_calls: int = 0
+    runtime_calls: int = 0
     source: str = "stub"
     error: str = ""
     #: 可判定的失败类别：越权待授权（E_AUTHORITY_ESCALATION）与硬拒
@@ -95,6 +99,32 @@ class RunStateModel(BaseModel):
     #: 0 = 无截止）。两者都**随 run 落库**：重启后仍按本轮的值裁决（1.5 任务 2）。
     timeout_seconds: float = 0.0
     deadline_at: float = 0.0
+    #: **HITL 闸门的统一协议**（B-6 / `MP-APPROVAL-GATE-ABI-01`）：闸门地址、
+    #: 层级、会签人数、待批内容、过期时刻与已收到的决定。**统一审批中心消费的就是
+    #: 它**（列 ``pending`` 的闸门 + 按 ``gate_id`` 做决定）。
+    #: 老 run（B-6 之前落的检查点）没有这个键，因此这里是空 dict。
+    approval_gate: dict[str, Any] = Field(default_factory=dict)
+
+
+class RunCancelAcceptedModel(BaseModel):
+    """`POST /runs/{run_id}/cancel` 的**受理回执**（B-3）。
+
+    与 `RunAcceptedModel` 同一个道理：取消**不承诺**"回话那刻图已经停了"。
+    跨副本时回话的那个副本根本没有跑这一轮，它保证的是**信号已落 + 状态如实**。
+
+    ``status`` 是**观察到的**：
+
+    * ``cancelled`` —— 已经落终态（本来就已经结束，或本请求落的）；
+    * ``cancelling`` —— 已受理，图还没停。客户端接着看
+      `GET /runs/{run_id}`，它会一直报 ``cancelling`` 直到真的 `cancelled`。
+    """
+
+    run_id: str
+    tenant_id: str
+    #: ``cancelled``（已终止）或 ``cancelling``（已受理、仍在收敛）。
+    status: str
+    #: 恒为 ``true``：这是受理回执，能回话就说明请求已经记下了。
+    cancel_requested: bool = False
 
 
 class RunAcceptedModel(BaseModel):

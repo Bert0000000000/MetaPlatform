@@ -85,11 +85,29 @@ components:
           description: 该员工实际发起的工具调用记录（审计用）
         llm_calls:
           type: integer
-          description: 该子任务消耗的模型调用次数
+          description: |
+            **本地**模型轮次。B-7（`MP-EXTERNAL-RUNTIME-E2E-01`）起，出站到外部
+            agent 的往返**不再计入这里**——远端的 token 不是本平台花的。它单独记在
+            `external_agent_calls`。
+        external_agent_calls:
+          type: integer
+          description: |
+            出站到外部 agent 的**往返次数**（成功与失败都算：成本口径问的是
+            "打出去几次"）。当前只有 A2A 出站这一类。
+        runtime_calls:
+          type: integer
+          description: |
+            运行时**派发次数**（含重试）。与 `llm_calls` 分开：一次派发可能一次模型
+            都没调（外部 runtime），一次模型轮次也可能在多次派发里发生
+            （重试用尽后成功）。
+          # 工具调用数**不另设标量**：`tool_calls` 那张清单就是记录，数出来的
+          # 长度才是计数。同一个事实两个来源在本项目是明令禁止的。
         source:
           type: string
-          enum: [llm, stub]
-          description: llm = 真实模型产出；stub = 未接线（供 D-10 "假回执" 断言）
+          enum: [llm, external, stub]
+          description: |
+            llm = 本地模型产出；external = 外部 agent 产出（A2A 出站）；
+            stub = 未接线（供 D-10 "假回执" 断言）。
         error:
           type: string
         error_code:
@@ -164,16 +182,23 @@ components:
               planning,
               running,
               awaiting_approval,
+              cancelling,
               completed,
               failed,
               cancelled,
               timeout,
             ]
           description: |
+            `cancelling` = **中间态**（B-3 起）：取消信号已落、这一轮还没收敛。
+            它**不是**检查点里的一个状态，而是读路径**推**出来的（收到信号
+            且未终态），所以不会出现"检查点说 running、信号表说已取消"这种两处
+            打架。客户端看到它就继续观察，直到变成 `cancelled`。
+
             `cancelled` = 被 `POST /runs/{run_id}/cancel` 取消（正在执行的 run
             由**图自己在节点边界**落成这个状态，不是因为外部把它杀掉）；
             `timeout` = 超过本轮截止时间（`timeout_seconds` 或部署默认值）后落到
-            的终态。两者都是**终态**：之后再 `approve` 一律 409。
+            的终态。`cancelled` / `timeout` 与另外三个都是**终态**：之后再
+            `approve` 一律 409。
         subtasks:
           type: array
           items:
@@ -194,12 +219,108 @@ components:
           description: |
             本轮**实际生效**的运行级超时（秒；0 = 不设超时）。请求省略
             `timeout_seconds` 时这里落的是开跑那一刻的部署默认值。
+        approval_gate:
+          allOf:
+            - $ref: "#/components/schemas/ApprovalGate"
+          description: |
+            **HITL 闸门的统一协议**（B-6）。停在 `awaiting_approval` 时它描述待批
+            的是什么、还差几级几个人、什么时候过期。**老 run**（B-6 之前落的检查点）
+            没有这个键，读到的是空对象——那时按单布尔审批的旧语义处理。
         deadline_at:
           type: number
           description: |
             本轮截止的**绝对时刻**（Unix 秒；0 = 无截止）。
             `timeout_seconds` 与 `deadline_at` 都随 run 落库：服务重启后仍按
             **本轮**定下的值裁决，不会回落到重启后进程的默认值。
+    RunCancelAccepted:
+      type: object
+      required: [run_id, tenant_id, status]
+      description: |
+        `POST /runs/{run_id}/cancel` 的**受理回执**（B-3）。与 `RunAccepted` 同
+        一个道理：取消**不承诺**"回话那刻图已经停了"。`status` 是**观察到的**——
+        `cancelled`（已终止）或 `cancelling`（已受理、仍在收敛）。
+      properties:
+        run_id:
+          type: string
+        tenant_id:
+          type: string
+        status:
+          type: string
+          enum: [cancelled, cancelling]
+        cancel_requested:
+          type: boolean
+          description: 恒为 `true`：能回话就说明这次取消已经记下了。
+    ApprovalGate:
+      type: object
+      description: |
+        **HITL 闸门的统一协议**（B-6 / `MP-APPROVAL-GATE-ABI-01`）。它是"图怎么
+        暂停恢复"之外的那件事——**闸门长什么样**。在它之前闸门只有一个布尔
+        `approved`，说不清"谁批的、还差几级、什么时候过期"。
+
+        统一审批中心（`MP-APPROVAL-INBOX-01`）只需要两件事就能消费它：
+        按 `state` 筛出 `pending` 的闸门列待办；按 `gate_id`（**稳定地址**：
+        同 run 同类型永远是同一个）做一次决定。
+
+        三种能力都表达在这份协议里：
+        - **多级审批** —— `required_roles` 有序，逐级判；第 N 级没凑齐仍是 `pending`；
+        - **会签** —— `required_approvals > 1`，且按 `actor` **去重**（同一个人
+          批两次不算两票）；
+        - **超时** —— 到 `expires_at` 还没凑齐 → `expired`，由读路径落终态
+          （与运行级超时是同一个事实）。
+      properties:
+        gate_id:
+          type: string
+          description: 稳定地址（`<run_id>:<gate_type>`）。审批中心拿它当主键。
+        run_id:
+          type: string
+        tenant_id:
+          type: string
+        gate_type:
+          type: string
+          enum: [plan_gate]
+        required_roles:
+          type: array
+          items:
+            type: string
+          description: |
+            **有序**的审批层级。空数组 = 单级、任意审批角色（缺省形态）。
+            `*` 表示"这一级不限定角色"。
+        required_approvals:
+          type: integer
+          description: 每一级需要的**不同审批人**数。1 = 单人；>1 = 会签。
+        payload:
+          type: object
+          description: 待批的内容（缺省闸门里是目标与各员工回执的摘要）。
+        editable_fields:
+          type: array
+          items:
+            type: string
+          description: 审批人在批准时可以一并修订的字段名。
+        expires_at:
+          type: number
+          description: 过期时刻（epoch 秒；0 = 不过期）。缺省取本轮的运行级截止时刻。
+        created_at:
+          type: number
+        decisions:
+          type: array
+          items:
+            type: object
+            properties:
+              actor:
+                type: string
+                description: 审批人标识（会签去重按它）。
+              role:
+                type: string
+                description: |
+                  这次决定**以哪个角色**作出——**来自令牌**，不是调用方自称的。
+                  一个都归不上时为空串（绝不冒充）。
+              decision:
+                type: string
+                enum: [approved, rejected]
+              comment:
+                type: string
+              decided_at:
+                type: number
     RunAccepted:
       type: object
       required: [run_id, tenant_id, status]
@@ -676,16 +797,25 @@ paths:
         - bearerAuth: []
           tenantHeader: []
           oidcScopes: [platform.write]
-      summary: 取消一轮运行（落终态，幂等）
+      summary: 受理一次取消（202 cancel_requested，幂等）
       description: |
-        把 run 写进终态 `cancelled`——**写进检查点**，因此 `GET /runs/{id}` 与
-        后续 `approve` 都看得到（确认一个已作废的计划一律 409）。重复取消不会
-        覆盖更早的终态。跨租户与不存在同码 404，不泄露存在性。
+        **受理制**取消（B-3 起）。回 202 + **当前观察到的**状态，**不承诺**"回话
+        那一刻图已经停了"——那个保证只在单副本下成立（跨副本时回话的副本根本没在
+        跑这一轮）。
 
-        **执行中的 run 也能取消**（1.5）：取消不靠外部杀——图在节点边界自查取消
-        标志，看到就自己落终态。粒度是**波与波之间**：在途的那一波允许跑完
-        （不硬断），已完成节点不重跑，下一波一个员工都不派。本调用**等图停下
-        再回**，所以 200 时该 run 已经不再推进。
+        `status` 是 `cancelled`（已落终态：本来就已经结束，或本请求落的）或
+        `cancelling`（已受理、图还在收敛）。客户端拿到 `cancelling` 就接着看
+        `GET /runs/{run_id}`，它会一直报 `cancelling` 直到真的 `cancelled`。
+
+        **"有没有人在跑"由活跃 Run 注册表（租约）回答**：没有活跃租约 = 这一轮
+        没人执行（停在闸门等人 / 进程崩过），终态由本请求落；有活跃租约时**绝不
+        代庖**——否则正在跑的那一侧下一步会用它自己那份状态把终态盖回去。
+
+        **执行中的 run 也能取消**：取消不靠外部杀——图在节点边界自查取消标志，
+        看到就自己落终态。粒度是**波与波之间**：在途的那一波允许跑完（不硬断），
+        已完成节点不重跑，下一波一个员工都不派。
+
+        幂等：已经终态的直接回当前终态，不覆盖更早的终态。跨租户与不存在同码 404。
       tags: [agent-team]
       operationId: agentTeamPostRunCancel
       parameters:
@@ -695,12 +825,12 @@ paths:
           schema:
             type: string
       responses:
-        "200":
-          description: 取消后的运行状态（status = cancelled）
+        "202":
+          description: 已受理（status = cancelled | cancelling）
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RunState"
+                $ref: "#/components/schemas/RunCancelAccepted"
         "404":
           description: 该租户下不存在此 run（跨租户与不存在同码）
       x-mate-owner: agent-product-layer
@@ -713,21 +843,30 @@ paths:
         - bearerAuth: []
           tenantHeader: []
           oidcScopes: [platform.read]
-      summary: 步骤级事件流（SSE：回放 + 尾随）
+      summary: 步骤级事件流（SSE：按 Last-Event-ID 补发 + 尾随）
       description: |
-        `text/event-stream`。连上先**回放**已有步骤（历史一条不少），再**尾随**
-        新步骤：之后图每推进一步就往外推一条，直到 run 落终态才发 `event: end`
-        收流。每条是 `event: step` +
+        `text/event-stream`。连上先**补发**（从 `Last-Event-ID` 之后一条不少），
+        再**尾随**新步骤：之后图每推进一步就往外推一条，直到 run 落终态才发
+        `event: end` 收流。每条是 `event: step` + `id: <sequence>` +
         `data: {seq, step, ran, next, status, at, evidence}`（`ran` = 这一步真的
         跑掉的节点）。
+
+        **断线重连不丢事件**：每条事件都带 SSE 标准的 `id:`；浏览器重连时自动
+        把它作为 `Last-Event-ID` 请求头发回来，服务端从那条之后接着补发。
+        省略该头（或值非法）则从头补发——一个坏游标不该让订阅彻底失败。
 
         `evidence` 是**这一步新出现的**证据条目（形状见 `SubTaskResult.evidence`），
         按 `evidenceId` 去重后顺序 append 即可。只出增量是刻意的：回执整份都在
         检查点里，整份重发的话每来一步都要重传全部历史证据。
 
-        **实现边界**：尾随靠轮询检查点（没有引入消息总线），新步骤最多晚一个
-        轮询间隔（当前 250ms）到达。终态判定与流关闭是同一个事实——停在
-        `awaiting_approval` 的运行**不会**自己关流，它在等人确认。
+        **推送机制（B-2 起）**：事件写进追加式的 `run_event` 表并 `NOTIFY`，
+        订阅方由通知唤醒、只读事件表。**执行恢复的真相源仍是检查点**，事件日志
+        只是产品观察模型——丢了事件不影响续跑。没配 PG 的部署退回"轮询检查点"
+        的老路径（同样按 `Last-Event-ID` 补发）。
+
+        **实现边界**：尾随在无通知时按兜底间隔（默认 2s）看一眼表。终态判定与
+        流关闭是同一个事实——停在 `awaiting_approval` 的运行**不会**自己关流，
+        它在等人确认。
 
         **调用方必须带 `Accept: text/event-stream`**：网关按这个头决定走不走
         "边收边发"的转发路径（它没有声明就等于不要流式，网关会把整份响应读完再
@@ -741,6 +880,16 @@ paths:
           required: true
           schema:
             type: string
+        - name: Last-Event-ID
+          in: header
+          required: false
+          schema:
+            type: string
+          description: |
+            SSE 标准的断线重连游标（浏览器 `EventSource` 自动带回）。值是上一条
+            已处理事件的 `id`（= 这一轮内的 `sequence`）。省略或非法按 0 处理。
+            它**不是**审计账本里那个 `sequence`——那是跨租户哈希链的序号，
+            与"这一轮流到第几条事件"无关。
       responses:
         "200":
           description: SSE 流（text/event-stream）

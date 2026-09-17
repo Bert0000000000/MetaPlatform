@@ -14,10 +14,12 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 import pytest
 from mate_tech_agent_team.a2a import (
+    DEFAULT_A2A_ENDPOINT,
     A2AOutboundClient,
     A2AOutboundRequest,
     A2AOutboundResult,
@@ -225,8 +227,11 @@ async def test_runtime_maps_the_remote_artifact_into_a_subtask_result() -> None:
     result = await _runtime(transport).run(subtask=_subtask(), tenant_id="tenant-acme")
 
     assert result["status"] == "ok"
-    assert result["source"] == "llm", "远端产物是真实产出，不是占位"
-    assert result["llm_calls"] == 1
+    assert result["source"] == "external", "远端产物是外部 agent 产出的，不是我们的模型"
+    # **判据 ④**：外部往返**不再计入** llm_calls。它单列在 external_agent_calls。
+    assert result["llm_calls"] == 0, "外部 agent 的往返被记成本地模型轮次了（成本指标失真）"
+    assert result["external_agent_calls"] == 1
+    assert result["runtime_calls"] == 1
     assert result["output"] == "对账结论：差异 3 笔，均为跨月挂账。"
     assert result["output"] != _subtask()["instruction"]
     # 溯源：这一次产出是**经 A2A 出站**拿到的，地址可查
@@ -246,7 +251,62 @@ async def test_runtime_reports_remote_failure_as_an_error_receipt() -> None:
     assert result["status"] == "error"
     assert result["output"] == "", "失败不许编造产出"
     assert result["llm_calls"] == 0
+    # 成本口径问的是"打出去几次"，不是"成功几次"：往返已经发生过，就该记一次。
+    assert result["external_agent_calls"] == 1
     assert "boom" in result["error"]
+
+
+@pytest.mark.asyncio
+async def test_a2a_round_trip_reports_the_truth_about_the_configured_endpoint() -> None:
+    """**回执如实**的常跑用例 —— 不 skip、不伪造（判据 ④ 的外联面）。
+
+    本机**没有真实对端**：``docker-compose.yml`` 里 ``a2a-external-agent`` 整段
+    被注释，agent-team 也没设 ``MATE_AGENT_TEAM_A2A_URL``，于是默认端点指向一个
+    不存在的服务。所以这条**不**断言"一定成功"——那是伪造证据。
+
+    它断言的是**回执与事实一致**，两支都合法、都不许编造：
+
+    * 通了 → ``status="ok"``、产出非空、计量记在 ``external_agent_calls``；
+    * 没通 → ``status="error"``、``output`` 为空、``error`` 有值。
+
+    对端真起来之后这条**一个字都不用改**就会走上面那一支：它验的是语义，
+    不是环境。这正是 1.8 立下的"外部依赖写常跑用例、如实回执"的做法。
+
+    **SDK 不在时也照样在跑**（不是 skip）：真传输面（``a2a-sdk``）没装时，
+    "连上真对端"这条路物理上不存在，但**"对端不可达时回执如实"这条路仍然在**——
+    换一个"连不上"的传输替身走同一条代码路径，断言同一组不变量。CI 上装的
+    a2a-sdk 与开发机不同，这一条因此在两种环境里都验得到东西。
+    """
+    try:
+        client = build_a2a_outbound_client(
+            endpoint=os.getenv("MATE_AGENT_TEAM_A2A_URL", DEFAULT_A2A_ENDPOINT)
+        )
+    except ImportError:
+        # 真传输面不可用 → 如实降级成"一个连不上的对端"，**不 skip**。
+        client = build_a2a_outbound_client(transport=_UnreachableTransport())
+
+    runtime = A2AOutboundRuntime(registry=_registry(), client=client)
+    result = await runtime.run(subtask=_subtask(), tenant_id="tenant-acme")
+
+    assert result["llm_calls"] == 0, "外部往返永远不该记成本地模型轮次"
+    if result["status"] == "ok":
+        assert result["output"], "报成功却没有产出"
+        assert result["external_agent_calls"] == 1
+        assert result["source"] == "external"
+    else:
+        assert result["output"] == "", "报失败却编了产出"
+        assert result["error"], "报失败却没说为什么"
+        assert result["source"] == "stub", "没跑成就不许标成真实产出"
+        # 出站**尝试过**（连不上不等于没打出去）——计量照记。
+        assert result["external_agent_calls"] == 1
+
+
+class _UnreachableTransport:
+    """一个"连不上"的真传输替身：模拟对端不可达（判据 ④ 在无 SDK 环境下的落点）。"""
+
+    async def send(self, *, endpoint: str, request: A2AOutboundRequest) -> A2AOutboundResult:
+        del endpoint, request
+        raise ConnectionError("对端不可达（测试替身）")
 
 
 @pytest.mark.asyncio

@@ -299,3 +299,69 @@ async def test_pg_a_recorded_result_is_replayed_after_restart(
     assert not recorded.execute
     assert recorded.reason == "already_completed"
     assert json_rows(recorded.reuse) == json_rows(receipt)
+
+
+# ── 7. B-1 接管判定要的那一问：这一轮还有几条在途调用 ─────────────────
+
+
+@pytest.mark.asyncio
+async def test_in_memory_running_invocations_counts_only_in_flight() -> None:
+    """``running_invocations`` 只数**在途**的那些：完了的不算、失败的不算。"""
+    ledger = InMemoryToolLedger()
+    await ledger.begin(
+        tenant_id=TENANT,
+        run_id=RUN,
+        task_id=TASK,
+        tool_call_id=call_id(TOOL, {"i": 1}),
+        tool_name=TOOL,
+        arguments={"i": 1},
+    )
+    done = await ledger.begin(
+        tenant_id=TENANT,
+        run_id=RUN,
+        task_id=TASK,
+        tool_call_id=call_id(TOOL, {"i": 2}),
+        tool_name=TOOL,
+        arguments={"i": 2},
+    )
+    await ledger.complete(tenant_id=TENANT, invocation=done.invocation, result={"ok": True})
+    failed = await ledger.begin(
+        tenant_id=TENANT,
+        run_id=RUN,
+        task_id=TASK,
+        tool_call_id=call_id(TOOL, {"i": 3}),
+        tool_name=TOOL,
+        arguments={"i": 3},
+    )
+    await ledger.fail(tenant_id=TENANT, invocation=failed.invocation, error="boom")
+
+    assert await ledger.running_invocations(tenant_id=TENANT, run_id=RUN) == 1
+    assert await ledger.running_invocations(tenant_id=TENANT, run_id="other-run") == 0
+
+
+@pytest.mark.asyncio
+async def test_pg_running_invocations_is_tenant_scoped(rls_schema: str, pg_dsns) -> None:
+    """PG 版同样只数在途，且按租户隔离（硬规则 3）。"""
+    _, app_dsn = pg_dsns
+    ledger = PgToolLedger(app_dsn, schema=rls_schema)
+    await ledger.begin(
+        tenant_id=TENANT,
+        run_id=RUN,
+        task_id=TASK,
+        tool_call_id=call_id(TOOL, {"x": 1}),
+        tool_name=TOOL,
+        arguments={"x": 1},
+    )
+    finished = await ledger.begin(
+        tenant_id=TENANT,
+        run_id=RUN,
+        task_id=TASK,
+        tool_call_id=call_id(TOOL, {"x": 2}),
+        tool_name=TOOL,
+        arguments={"x": 2},
+    )
+    await ledger.complete(tenant_id=TENANT, invocation=finished.invocation, result="ok")
+
+    assert await ledger.running_invocations(tenant_id=TENANT, run_id=RUN) == 1
+    assert await ledger.running_invocations(tenant_id=TENANT, run_id="nope") == 0
+    assert await ledger.running_invocations(tenant_id=OTHER, run_id=RUN) == 0

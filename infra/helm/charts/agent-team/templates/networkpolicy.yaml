@@ -1,0 +1,71 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "agent-team.fullname" . }}
+  labels:
+    {{- include "agent-team.labels" . | nindent 4 }}
+  annotations:
+    policy.description: |
+      Default-deny for the Agent product layer (hard rule 13). Ingress is
+      restricted to the platform / gateway namespaces on the HTTP port;
+      egress is restricted to DNS plus the in-cluster service ports this
+      service actually talks to (Postgres, llmgw, ontology, MCP, gateway,
+      OTel). Outbound A2A / model traffic goes through the gateway, not
+      directly from these pods.
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "agent-team.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: superbrain
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        {{- range .Values.networkPolicy.allowedIngressNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.port }}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - namespaceSelector: {}
+      ports:
+        {{- range .Values.networkPolicy.allowedEgressPorts }}
+        - protocol: TCP
+          port: {{ . }}
+        {{- end }}
+{{- end }}
+{{- if and .Values.networkPolicy.enabled .Values.sandboxJob.enabled }}
+---
+#: B-8：沙箱 Job 的 Pod **不许出站**（默认拒绝），只留 DNS。
+#: 外部 Runtime 的运行不需要网络——它需要的是"拿不到宿主凭据"。
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.sandboxJob.name }}-deny-egress
+  labels:
+    {{- include "agent-team.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.sandboxJob.name }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress: []
+{{- end }}

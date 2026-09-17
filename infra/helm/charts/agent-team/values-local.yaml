@@ -1,0 +1,95 @@
+# =============================================================================
+# agent-team sub-chart values — **本地多副本验证**（MP-REPLICA-READINESS-01）
+# =============================================================================
+# 这不是生产值。它给的是"在一台开发机上真的起 3 个副本"所需的最小一套：
+# 集群内一个自带的 Postgres + 一个装着 DSN 的 Secret。
+#
+# 用法（kind）：
+#
+#   kind create cluster --name mate-agent --image kindest/node:v1.36.1
+#   docker save postgres:16-alpine -o pg.tar
+#   docker save mate-tech-agent-team:dev -o agent-team.tar
+#   docker cp pg.tar mate-agent-control-plane:/pg.tar
+#   docker cp agent-team.tar mate-agent-control-plane:/agent-team.tar
+#   docker exec mate-agent-control-plane ctr -n k8s.io images import /pg.tar
+#   docker exec mate-agent-control-plane ctr -n k8s.io images import /agent-team.tar
+#
+#   # PG（见 verify/postgres.yaml）+ 建 mate_app 角色
+#   # Secret（见 verify/secret.example.yaml）
+#   helm upgrade --install agent-team . -n mate-agent-team --create-namespace \
+#     -f values-local.yaml --set sandboxJob.enabled=true
+#
+# 之所以要这套：Docker Desktop 内置 K8s 的 containerd 镜像源在本机是坏的
+# （`registry-mirror:1273` 对 library 镜像回 500），而 kind 的 node 镜像本地有缓存。
+# =============================================================================
+
+fullnameOverride: mate-tech-agent-team
+
+image:
+  registry: docker.io
+  repository: library/mate-tech-agent-team
+  tag: dev
+  #: 镜像是用 `ctr images import` 直接塞进节点的，没有可拉的仓库。
+  pullPolicy: Never
+
+#: 判据就是它：**真的三个副本同时跑**。
+replicaCount: 3
+
+#: 单节点 kind：摊到不同节点做不到，先关掉（生产 values 默认开）。
+topologySpreadConstraints:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 768Mi
+
+config:
+  #: 本地没有集群内的 Keycloak / llmgw / ont / mcp / gateway —— 它们只在被
+  #: 真正调用时才需要（JWKS 是惰性取的，/healthz 匿名）。指一个不存在的地址
+  #: 就够了：本验证只关心"三个副本起得来 + 租约语义正确"。
+  keycloak:
+    url: http://keycloak:8080
+    realm: metaplatform
+  llmgwUrl: http://mate-tech-llmgw:8008
+  ontUrl: http://mate-tech-ont:8007
+  mcpUrl: http://mate-tech-mcp:8081
+  gatewayUrl: http://mate-api-gateway:8100
+  #: 短 TTL 便于观察接管（判据 ⑦ 的 30s 量级）。
+  leaseTtlSeconds: "30"
+  poolMax: "8"
+
+secretRef:
+  name: agent-team-secret
+  keys:
+    adminDsn: MATE_AGENT_TEAM_ADMIN_DSN
+    appDsn: MATE_AGENT_TEAM_DSN
+    controlDsn: MATE_AGENT_TEAM_CONTROL_DSN
+    serviceClientSecret: SERVICE_CLIENT_SECRET
+
+#: B-4：本地也把建表交给迁移 Job（判据就是"运行 Pod 的 env 里没有 admin DSN"）。
+migration:
+  enabled: true
+  controlRole: mate_control
+  controlPassword: mate_control_pw
+
+#: 本地命名空间里只有我们自己，入站限制挡住的会是探针本身。
+networkPolicy:
+  enabled: true
+  allowedIngressNamespaces:
+    - mate-agent-team
+  allowedEgressPorts:
+    - 5432
+
+sandboxJob:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: library/mate-tech-agent-team
+    tag: dev
+  #: 默认 300s 太短——`kubectl logs` 那条**实跑层**证据会在用例跑到之前就被
+  #: TTL 清掉（实测踩过：Job 没了，日志读不到，只剩模板层）。留一小时。
+  ttlSecondsAfterFinished: 3600

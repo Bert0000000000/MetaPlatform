@@ -36,6 +36,8 @@ from typing import Any, Protocol
 
 import psycopg
 
+from .tenant_db import TenantConnections, tenant_connections
+
 SCHEMA = "agent_team"
 CANCEL_TABLE = "cancel_signals"
 CLAIMS_TABLE = "run_claims"
@@ -124,6 +126,16 @@ class CancelSignals(Protocol):
 
     async def is_requested(self, *, tenant_id: str, run_id: str) -> bool: ...
 
+    async def clear(self, *, tenant_id: str, run_id: str) -> None:
+        """**归档**：只在该轮已落终态之后调用（B-3）。
+
+        信号"只置不清"是对的——置清之间的窗口里，另一副本的图正好走到边界就
+        看不到它。但轮子跑完之后它就没有意义了，留着会让这张表随"被取消过的
+        run 数"一直涨。清的条件因此不是"多久之后"，而是"**这一轮已经不可能
+        再有人问它了**"（终态）。
+        """
+        ...
+
 
 class InMemoryCancelSignals:
     """进程内实现：单副本部署与测试的默认。
@@ -141,24 +153,21 @@ class InMemoryCancelSignals:
     async def is_requested(self, *, tenant_id: str, run_id: str) -> bool:
         return (tenant_id, run_id) in self._requested
 
+    async def clear(self, *, tenant_id: str, run_id: str) -> None:
+        self._requested.discard((tenant_id, run_id))
+
 
 class PgCancelSignals:
     """PG 实现：真·多副本共享。连接随每次调用开闭（信号是低频操作）。"""
 
-    def __init__(self, dsn: str, schema: str = SCHEMA) -> None:
-        self._dsn = dsn
-        self._schema = schema
+    def __init__(self, dsn: str | TenantConnections, schema: str = SCHEMA) -> None:
+        self._conns = tenant_connections(dsn, schema=schema)
 
     @asynccontextmanager
     async def _conn(self, tenant_id: str) -> AsyncIterator[psycopg.AsyncConnection[Any]]:
-        conn = await psycopg.AsyncConnection.connect(self._dsn, autocommit=True)
-        try:
-            await conn.execute(f"SET search_path TO {self._schema}")
-            # set_config() 而非 SET x = %s：后者不接受参数绑定。
-            await conn.execute("select set_config('app.tenant_id', %s, false)", (tenant_id,))
+        # 租户上下文走 tenant_db：**事务级** GUC + 归还前 RESET（B-5）。
+        async with self._conns.for_tenant(tenant_id) as conn:
             yield conn
-        finally:
-            await conn.close()
 
     async def request(self, *, tenant_id: str, run_id: str) -> None:
         """置位（幂等）：**不覆盖**更早的时刻——先到的那个才是"什么时候想停的"。"""
@@ -176,6 +185,14 @@ class PgCancelSignals:
                 (tenant_id, run_id),
             )
             return await cur.fetchone() is not None
+
+    async def clear(self, *, tenant_id: str, run_id: str) -> None:
+        """归档一行的信号（**只在那一轮已落终态之后调**，见 Protocol 的说明）。"""
+        async with self._conn(tenant_id) as conn:
+            await conn.execute(
+                f"DELETE FROM {CANCEL_TABLE} WHERE tenant_id = %s AND run_id = %s",
+                (tenant_id, run_id),
+            )
 
 
 class RunClaims(Protocol):
@@ -217,20 +234,20 @@ class InMemoryRunClaims:
 class PgRunClaims:
     """PG 实现：真·多副本共享，认领的原子性由**那一条 SQL** 保证。"""
 
-    def __init__(self, dsn: str, schema: str = SCHEMA, ttl: float = DEFAULT_CLAIM_TTL_SECONDS):
-        self._dsn = dsn
-        self._schema = schema
+    def __init__(
+        self,
+        dsn: str | TenantConnections,
+        schema: str = SCHEMA,
+        ttl: float = DEFAULT_CLAIM_TTL_SECONDS,
+    ):
+        self._conns = tenant_connections(dsn, schema=schema)
         self._ttl = max(0.0, ttl)
 
     @asynccontextmanager
     async def _conn(self, tenant_id: str) -> AsyncIterator[psycopg.AsyncConnection[Any]]:
-        conn = await psycopg.AsyncConnection.connect(self._dsn, autocommit=True)
-        try:
-            await conn.execute(f"SET search_path TO {self._schema}")
-            await conn.execute("select set_config('app.tenant_id', %s, false)", (tenant_id,))
+        # 租户上下文走 tenant_db：**事务级** GUC + 归还前 RESET（B-5）。
+        async with self._conns.for_tenant(tenant_id) as conn:
             yield conn
-        finally:
-            await conn.close()
 
     async def claim(self, *, tenant_id: str, key: str, run_id: str) -> bool:
         """抢坑（原子）。返回 ``True`` = 这一个副本负责真去跑那一轮。"""

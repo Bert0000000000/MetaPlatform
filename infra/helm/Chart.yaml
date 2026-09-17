@@ -81,3 +81,8 @@ dependencies:
   - name: observability-alerts
     version: 0.1.0
     condition: observability-alerts.enabled
+  # MP-REPLICA-READINESS-01：Agent 产品层终于有了 chart（此前它只有 compose 服务，
+  # 而且带固定 container_name —— 起不了第二个副本）。
+  - name: agent-team
+    version: 0.1.0
+    condition: agent-team.enabled

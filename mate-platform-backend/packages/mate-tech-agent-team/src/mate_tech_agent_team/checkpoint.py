@@ -23,12 +23,15 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from typing import Any
 
 import psycopg
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+
+from .tenant_db import TenantConnections, checked_schema, tenant_connections
 
 SCHEMA = "agent_team"
 
@@ -53,16 +56,29 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON {table} TO {app_role};
 """
 
 
-def bootstrap(admin_dsn: str, app_role: str = "mate_app", schema: str = SCHEMA) -> None:
+def bootstrap(
+    admin_dsn: str,
+    app_role: str = "mate_app",
+    schema: str = SCHEMA,
+    control_role: str = "",
+    control_password: str = "",
+) -> None:
     """建 schema + langgraph 表 + 员工身份表 + 任务实例表 + 产出物表 + 协作面表 +
     审计账本表 + RLS 策略。幂等。
 
     必须以 **admin** 身份调用——见模块 docstring 第 1 条。
+
+    ``control_role`` 非空时额外建一个**只读控制面身份**（B-4）：它只能读
+    ``checkpoints``，靠一条 permissive 策略越过租户边界（RLS 的多条策略是 **OR**
+    关系，所以 ``mate_app`` 那条租户策略一个字不用改）。跨租户的恢复扫描用它，
+    于是"能看几个租户"这件事回到**数据库角色**上，而不是运行 Pod 里的一个布尔。
     """
     from .artifact_store import bootstrap_artifacts
     from .audit import bootstrap_audit
     from .coordination import bootstrap_coordination
     from .profile_store import bootstrap_profiles
+    from .run_events import bootstrap_run_events
+    from .run_lease import bootstrap_run_leases
     from .team_task_store import bootstrap_tasks
     from .tool_ledger import bootstrap_tool_ledger
 
@@ -88,10 +104,66 @@ def bootstrap(admin_dsn: str, app_role: str = "mate_app", schema: str = SCHEMA) 
         bootstrap_audit(conn, app_role=app_role)
         # A-3 / MP-TOOL-IDEMPOTENCY-01：工具调用级幂等账本（同库同 schema，同一套守门）。
         bootstrap_tool_ledger(conn, app_role=app_role)
+        # B-1 / MP-RUN-LEASE-01：活跃 run 租约表（多副本"谁在跑"的唯一来源）。
+        bootstrap_run_leases(conn, app_role=app_role)
+        # B-2 / MP-RUN-EVENTS-01：Run 事件日志（观察模型；执行恢复仍以检查点为准）。
+        bootstrap_run_events(conn, app_role=app_role)
+        # B-4：独立控制面身份（只读检查点，跨租户）。空 = 不建（测试与本地形态）。
+        if control_role:
+            _bootstrap_control_role(
+                conn,
+                schema=schema,
+                control_role=control_role,
+                password=control_password,
+            )
+
+
+#: B-4：控制面身份的授权。**只给 SELECT，且只给 checkpoints 这一张**——
+#: 恢复扫描需要的就是 ``(thread_id, status)``，给多了它就不再是"最小控制面"。
+_CONTROL_ROLE_DDL = """
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{role}') THEN
+        EXECUTE 'CREATE ROLE "{role}" LOGIN';
+    END IF;
+END
+$$;
+GRANT USAGE ON SCHEMA {schema} TO "{role}";
+GRANT SELECT ON {schema}.checkpoints TO "{role}";
+DROP POLICY IF EXISTS control_plane_read ON {schema}.checkpoints;
+CREATE POLICY control_plane_read ON {schema}.checkpoints
+  FOR SELECT TO "{role}" USING (true);
+"""
+
+
+def _bootstrap_control_role(
+    conn: psycopg.Connection[Any],
+    *,
+    schema: str,
+    control_role: str,
+    password: str = "",
+) -> None:
+    """建控制面只读角色 + 策略（幂等）。``conn`` 必须是 **admin** 连接。
+
+    角色名会拼进 DDL（``CREATE ROLE`` 不接受参数绑定），所以先用
+    :func:`~mate_tech_agent_team.tenant_db.checked_schema` 那套标识符校验挡住。
+    """
+    from .tenant_db import checked_schema
+
+    role = checked_schema(control_role)
+    conn.execute(_CONTROL_ROLE_DDL.format(role=role, schema=checked_schema(schema)))
+    if password:
+        # 口令同样只能拼字面量——按 PG 的规则把单引号翻倍。
+        escaped = password.replace("'", "''")
+        conn.execute(f"ALTER ROLE \"{role}\" WITH PASSWORD '{escaped}'")
 
 
 def _guc_statement(tenant_id: str) -> tuple[str, tuple[str]]:
-    """用 set_config() 而非 ``SET x = %s``：后者不接受参数绑定。"""
+    """**仅用于** autocommit 路径（langgraph 的 checkpointer）的会话级 GUC 语句。
+
+    演示/测试仍在用；生产路径——包括本模块的 checkpointer——统一走
+    :class:`mate_tech_agent_team.tenant_db.TenantConnections`（B-5）。
+    """
     if "|" in tenant_id:
         raise ValueError("tenant_id 不得含 '|'（会破坏 thread_id 前缀约定）")
     return "select set_config('app.tenant_id', %s, false)", (tenant_id,)
@@ -168,22 +240,40 @@ class PgCheckpointerProvider:
 
     连接随 context manager 生命周期开闭；HITL 的暂停/恢复是两次独立请求，
     各自开连接——状态在 PG 里，不在连接里。
+
+    **这条是本模块唯一的会话级 GUC 例外，理由写在这里**：langgraph 的
+    ``AsyncPostgresSaver`` 要 ``autocommit=True`` 的原始连接，它自己管事务边界
+    （``aput`` 里成对地开事务、写 checkpoint_writes），外头再套一层事务会把它的
+    语义改掉。所以这里走 :class:`TenantConnections` 的 **autocommit 形态**：
+    GUC 是会话级的，安全性由**归还前 RESET**（池的 putback 钩子）保证——
+    不池化时连接被真关掉，会话级设置随连接一起消失，同样不泄漏。
     """
 
-    def __init__(self, dsn: str, schema: str = SCHEMA) -> None:
-        self._dsn = dsn
+    def __init__(self, dsn: str | TenantConnections, schema: str = SCHEMA) -> None:
         self._schema = schema
+        self._conns = tenant_connections(dsn, schema=schema, autocommit=True)
+
+    async def latest_step(self, tenant_id: str, run_id: str) -> str:
+        """这一轮**最新检查点 id**（租约心跳与接管判定用）。
+
+        langgraph 的 ``checkpoint_id`` 是 UUIDv6（时间有序），所以**字符串序 =
+        时间序**：租约里记下这个值，接管方再读一次一比，就知道"租约失效之后
+        检查点还动没动"——这是"检查点未进展"那条判据的比对方式，不需要额外
+        维护时间戳列（检查点表是 langgraph 的，我们不加列）。
+        """
+        sql = (
+            f"SELECT checkpoint_id FROM {checked_schema(self._schema)}.checkpoints"
+            " WHERE thread_id = %s AND checkpoint_ns = '' ORDER BY checkpoint_id DESC LIMIT 1"
+        )
+        async with self._conns.for_tenant(tenant_id) as conn:
+            cur = await conn.execute(sql, (thread_id_for(tenant_id, run_id),))
+            row = await cur.fetchone()
+        return str(row[0]) if row else ""
 
     @asynccontextmanager
     async def for_tenant(self, tenant_id: str) -> AsyncIterator[BaseCheckpointSaver]:
-        conn = await psycopg.AsyncConnection.connect(self._dsn, autocommit=True)
-        try:
-            await conn.execute(f"SET search_path TO {self._schema}")
-            stmt, params = _guc_statement(tenant_id)
-            await conn.execute(stmt, params)
+        async with self._conns.for_tenant(tenant_id) as conn:
             yield AsyncPostgresSaver(conn)
-        finally:
-            await conn.close()
 
 
 class InMemoryCheckpointerProvider:

@@ -1,0 +1,163 @@
+# =============================================================================
+# mate-tech-agent-team sub-chart values
+# =============================================================================
+# `MP-REPLICA-READINESS-01`: this chart exists so the Agent product layer can
+# run **more than one replica**. Everything in 2.1-B (leases, cross-replica
+# cancel, event resume) only means something once that is true.
+#
+# Secrets (DB DSNs, Keycloak client secret) are referenced via
+# `secretRef` — never inlined (hard rule 12).
+# =============================================================================
+
+# Pin the Service DNS name so gateway / copilot keep resolving it.
+fullnameOverride: mate-tech-agent-team
+
+image:
+  registry: docker.io
+  repository: meta-agent-team
+  tag: dev
+  pullPolicy: IfNotPresent
+
+#: **3**, not 1 — the whole point of this chart (see the multi-replica
+#: acceptance: 3 replicas concurrently, no double claim).
+replicaCount: 3
+
+#: Pods may be spread across nodes so a single node loss does not take out
+#: every replica (the lease takeover criterion assumes the survivor exists).
+topologySpreadConstraints:
+  enabled: true
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: ScheduleAnyway
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+autoScaling:
+  enabled: false
+
+#: Non-secret runtime config (mirrors docker-compose.yml).
+config:
+  logLevel: INFO
+  timezone: Asia/Shanghai
+  keycloak:
+    url: http://keycloak:8080
+    realm: metaplatform
+  serviceClientId: metaplatform-backend
+  #: 平台内其它服务的地址（同一个集群 / 命名空间）。
+  llmgwUrl: http://mate-tech-llmgw:8008
+  ontUrl: http://mate-tech-ont:8007
+  mcpUrl: http://mate-tech-mcp:8081
+  gatewayUrl: http://mate-api-gateway:8100
+  model: glm-5.3-flash
+  otelEndpoint: http://otel-collector:4317
+  #: 根路径前缀 —— 与 compose 里那行长串一致（单层 PYTHONPATH，不含包根）。
+  pythonPath: /app/packages/mate-tech-agent-team/src:/app/packages/mate-tech-db/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src
+  #: 连接池上限（B-5）。0 = 不池化。
+  poolMax: "8"
+  #: 租约 TTL / 心跳（B-1）。心跳硬夹在 TTL/3 以内。
+  leaseTtlSeconds: "30"
+  #: HITL 闸门（B-6）。留空 = 单级、任意审批角色（与旧语义等价）。
+  gateRequiredRoles: ""
+  gateRequiredApprovals: "1"
+
+#: Secret keys the operator must provision (SealedSecret / ExternalSecret):
+#:   MATE_AGENT_TEAM_ADMIN_DSN        — **只给迁移 Job**（B-4）：bootstrapping
+#:   MATE_AGENT_TEAM_DSN              — 受 RLS 约束的 app 角色（上业务面）
+#:   MATE_AGENT_TEAM_CONTROL_DSN      — 控制面身份：只读检查点，跨租户恢复扫描
+#:   SERVICE_CLIENT_SECRET            — Keycloak 服务密钥
+#:
+#: 运行 Pod 的 Deployment **只注入后三个**。admin DSN 只出现在一次性迁移 Job 里
+#: ——它是能建表能授权的整库钥匙，留在长期进程里等于 RLS 那道墙不存在。
+secretRef:
+  name: agent-team-secret
+  keys:
+    adminDsn: MATE_AGENT_TEAM_ADMIN_DSN
+    appDsn: MATE_AGENT_TEAM_DSN
+    controlDsn: MATE_AGENT_TEAM_CONTROL_DSN
+    serviceClientSecret: SERVICE_CLIENT_SECRET
+
+#: B-4：迁移 Job（建 schema / 表 / RLS 策略 / 三个角色的 GRANT）。
+#: 每次 `helm upgrade` 都会重跑一次——`bootstrap` 是幂等的，跑 N 次等于跑一次。
+migration:
+  enabled: true
+  #: 控制面角色名（迁移 Job 建它，并授"只读 checkpoints"）。
+  controlRole: mate_control
+  #: 控制面角色的口令。本地验证用 `--set migration.controlPassword=...`；
+  #: 生产请改成从 Secret 引用（见 ACCEPTANCE 的边界登记）。
+  controlPassword: ""
+
+service:
+  type: ClusterIP
+  port: 8013
+
+serviceAccount:
+  create: true
+  name: ""
+  #: 服务自身**不挂** API token：它不需要跟 API server 说话。
+  automountServiceAccountToken: false
+
+healthcheck:
+  enabled: true
+  path: /healthz
+  port: 8013
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 30
+  startup:
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    failureThreshold: 60
+
+networkPolicy:
+  enabled: true
+  allowedIngressNamespaces:
+    - metaplatform
+    - api-gateway
+  #: 出站只放 DNS + 集群内服务端口（PG）。外联（A2A / LLM）走网关。
+  allowedEgressPorts:
+    - 5432
+    - 8008
+    - 8007
+    - 8081
+    - 8100
+    - 4317
+
+# -----------------------------------------------------------------------------
+# B-8 / MP-AGENT-SANDBOX-ISOLATION-01: 外部 Runtime 的 K8s Job 模板
+# -----------------------------------------------------------------------------
+# 每次外部 CLI 任务一个 **独立 Job**，而不是在服务 Pod 里 fork 子进程。
+# 与 A-4 的近端形态**同一套断言**（sandbox_env.py 的白名单），只是换到 Job 里跑：
+#   * 独立 ServiceAccount + **不挂** API token
+#   * 最小环境变量白名单（由 sandbox_env.build_child_env 构造，Job 只管把它落地）
+#   * 只读根 + emptyDir 工作区、seccomp RuntimeDefault、非 root、drop ALL
+#   * CPU / 内存 / 超时限额
+#   * NetworkPolicy：默认拒绝出站
+sandboxJob:
+  enabled: false
+  name: agent-team-sandbox-probe
+  image:
+    registry: docker.io
+    repository: meta-agent-team
+    tag: dev
+  #: 默认只打印自己的环境（= A-4 的断言桩换到 Job 里）。真任务由服务填。
+  command: ["sh", "-c"]
+  args: ["env | sort"]
+  ttlSecondsAfterFinished: 300
+  activeDeadlineSeconds: 300
+  backoffLimit: 0
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi

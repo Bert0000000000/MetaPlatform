@@ -1,0 +1,94 @@
+{{- if .Values.migration.enabled }}
+# =============================================================================
+# B-4 / MP-RUNTIME-DB-POOL-01: 建表 / 策略 / 权限的**迁移 Job**
+# =============================================================================
+# `bootstrap` 要建 schema、建表、开 RLS、建策略、GRANT —— 那需要**能建表能授权**
+# 的角色。在 B-4 之前那个角色就是运行 Pod 的环境变量，于是"任何能读这个 Pod
+# 环境的人"都拿到了整库钥匙，RLS 那道墙在它面前等于不存在。
+#
+# 拆完之后：admin DSN **只出现在这个一次性 Job 里**，运行 Pod 只有两把小钥匙
+# （受 RLS 约束的 app 角色 + 只读检查点的控制面角色）。
+#
+# 幂等：`bootstrap` 里全是 `IF NOT EXISTS` / `DROP POLICY IF EXISTS`，
+# 所以 `helm upgrade` 每次重跑它都是安全的。
+# =============================================================================
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "agent-team.fullname" . }}-migrate
+  labels:
+    {{- include "agent-team.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migration
+  annotations:
+    #: 跟着 ConfigMap 走：配置变了就重跑一次迁移。
+    checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    #: 每次 `helm upgrade` 重建（Job 的 spec 不可变，带随机后缀才升得动）。
+    #:
+    #: **pre- 而不是 post-**：schema 必须先于运行 Pod 存在。post-hook 的话，
+    #: Deployment 会先起来、带着一个还不存在的 schema 跑（`/healthz` 是匿名的，
+    #: 于是它照样 Ready），第一轮恢复扫描必然落空——那是个"看起来没问题"的坑。
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        {{- include "agent-team.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ include "agent-team.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migrate
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "-m", "mate_tech_agent_team.migrate"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "agent-team.fullname" . }}
+          env:
+            #: **整个 chart 里唯一出现 admin DSN 的地方。**
+            - name: MATE_AGENT_TEAM_ADMIN_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretRef.name }}
+                  key: {{ .Values.secretRef.keys.adminDsn }}
+            - name: MATE_AGENT_TEAM_CONTROL_ROLE
+              value: {{ .Values.migration.controlRole | quote }}
+            {{- if .Values.migration.controlPassword }}
+            - name: MATE_AGENT_TEAM_CONTROL_PASSWORD
+              value: {{ .Values.migration.controlPassword | quote }}
+            {{- end }}
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

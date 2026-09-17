@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "agent-team.fullname" . }}
+  labels:
+    {{- include "agent-team.labels" . | nindent 4 }}
+    app.kubernetes.io/component: superbrain
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "agent-team.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: superbrain
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP

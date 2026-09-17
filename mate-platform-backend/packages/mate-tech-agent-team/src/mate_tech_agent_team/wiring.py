@@ -12,7 +12,10 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:  # 只在类型检查期引入：装配函数内部才真正 import（避免装配环）
+    from .api.run_control import RunControl
 
 from mate_clients.iam import IamServiceReadClient
 from mate_clients.llmgw import LlmgwClient
@@ -124,6 +127,9 @@ def required_admin_dsn() -> str:
     用服务自己的 DSN 建表会让该角色成为**表 owner**，而 PG 的表 owner
     默认绕过 RLS —— 隔离会**静默失效**（不报错、只是看不见墙）。所以这里
     不给默认值，缺了就启动失败。
+
+    **B-4 起只在非 ``api`` 角色下被调用**：运行 Pod 不该有这个 DSN，
+    建表交给迁移 Job（见 :mod:`mate_tech_agent_team.migrate`）。
     """
     dsn = os.getenv("MATE_AGENT_TEAM_ADMIN_DSN", "")
     if not dsn:
@@ -132,6 +138,32 @@ def required_admin_dsn() -> str:
             "否则该角色成为表 owner 会绕过 RLS，租户隔离静默失效。"
         )
     return dsn
+
+
+#: 本进程的**运行角色**（B-4）。默认 ``all`` = 单进程形态，与加它之前逐字一致。
+#: ``api`` = 只跑服务，**不建表、也拒绝 admin DSN**——建表归迁移 Job。
+ROLE_ENV = "MATE_AGENT_TEAM_ROLE"
+ROLE_ALL = "all"
+ROLE_API = "api"
+
+
+def runtime_role() -> str:
+    return os.getenv(ROLE_ENV, ROLE_ALL).strip().lower() or ROLE_ALL
+
+
+def _refuse_admin_dsn_in_api_role() -> None:
+    """``api`` 角色下**带着 admin DSN 就启动失败**（硬规则 #5 的同一精神）。
+
+    B-4 要的是"运行 Pod 的 env 里没有 admin DSN"。配了却不报错 = 那句要求
+    变成一句没人执行的话：某天有人图省事把它写回去，谁也不会发现。
+    """
+    if os.getenv("MATE_AGENT_TEAM_ADMIN_DSN", "").strip():
+        raise RuntimeError(
+            f"{ROLE_ENV}=api 的进程**不该**持有 MATE_AGENT_TEAM_ADMIN_DSN："
+            "建表/授权归迁移 Job（python -m mate_tech_agent_team.migrate）。"
+            "把它从运行 Pod 的环境里去掉——它是能建表能授权的整库钥匙，"
+            "RLS 在它面前等于不存在。"
+        )
 
 
 def build_skill_catalog() -> SkillCatalog:
@@ -174,14 +206,45 @@ def build_team_bus(
     )
 
 
+def build_outbox_writer() -> OutboxWriter | None:
+    """审计事件的对外广播通道（平台既有 Outbox，PLATFORM-EVENT-01）。
+
+    **接线点就位；具体 writer 缺位——原因是分层，不是漏做。** 唯一的具体实现
+    ``SqlOutboxWriter`` 住在 ``mate-app-copilot``（**app 层**），而 tech 层反向依赖
+    app 层会被四层守卫（import-linter contracts）直接拒。把它下沉到
+    ``mate_platform.messaging.outbox`` 是一步独立的小改，归平台批次。
+
+    在那之前这里如实返回 ``None``：审计**照常落库**（A-1 的判据落在"落库 +
+    哈希链可检篡改"，本就不依赖广播），只是不往外投递。
+
+    ``MATE_AGENT_TEAM_OUTBOX_ENABLED`` 是**显式开关**：开了却没有可用 writer
+    就**启动失败**——与 :func:`required_dsn` 同一条精神（硬规则 #5：不许静默回落，
+    否则"我配了广播"会变成一句没有任何回执的话）。
+    """
+    if os.getenv("MATE_AGENT_TEAM_OUTBOX_ENABLED", "").lower() not in {"1", "true", "yes"}:
+        return None
+    raise RuntimeError(
+        "MATE_AGENT_TEAM_OUTBOX_ENABLED 已开，但本服务拿不到可用的 OutboxWriter："
+        "唯一的实现 SqlOutboxWriter 在 mate-app-copilot（app 层），tech 层不能依赖它。"
+        "把它的**表写入部分**下沉到 mate_platform.messaging.outbox 之后即可接上。"
+    )
+
+
 def build_audit_ledger(*, outbox: OutboxWriter | None = None) -> PgAuditLedger:
     """持久审计账本（A-1 / `MP-AUDIT-LEDGER-01`）。
 
     投递**复用平台既有 Outbox**（PLATFORM-EVENT-01 的 ``OutboxWriter`` 接口）：
     本服务不新造总线，也不自带一张 outbox 表——要往外广播就在装配时注入一个
     写入器；没注入就只落库（仍然可查、可取证，只是不广播）。
+
+    B-2 起默认走 :func:`build_outbox_writer`（它现在返回 ``None``，理由见那条
+    的说明）；调用方仍可显式注入一个。
     """
-    return PgAuditLedger(required_dsn(), schema=CHECKPOINT_SCHEMA, outbox=outbox)
+    return PgAuditLedger(
+        required_dsn(),
+        schema=CHECKPOINT_SCHEMA,
+        outbox=outbox if outbox is not None else build_outbox_writer(),
+    )
 
 
 def build_artifact_store() -> PgArtifacts:
@@ -375,6 +438,36 @@ def build_tool_ledger() -> PgToolLedger:
     return PgToolLedger(required_dsn(), schema=CHECKPOINT_SCHEMA)
 
 
+def build_run_control(service: BrainService) -> RunControl:
+    """运行控制面（B-1 起，租约 / 心跳 / 接管都挂在这里）。
+
+    两件装配缺一不可，而且都**只在配了 app DSN 时才接**：
+
+    * ``step_reader`` —— 读"检查点走到哪了"。心跳用它写租约的 ``current_step``，
+      接管判定用它比"租约失效后检查点还动没动"。它读的是**该租户自己那一轮**的
+      进度，所以走 app 角色（RLS 强制），不是 ``PgRunIndex`` 那条跨租户扫描。
+    * ``tool_ledger`` —— 接管判定的第四条（有没有在途工具调用）。
+
+    没配 DSN 时不接这两样：控制面退化成单副本形态（内存租约 + 不做恢复），
+    与加租约之前**逐字一致**——本地演示与不碰 PG 的测试因此不受影响。
+    """
+    from .api.run_control import RunControl
+
+    dsn = os.getenv("MATE_AGENT_TEAM_DSN", "")
+    if not dsn:
+        return RunControl.from_env(service)
+    provider = PgCheckpointerProvider(dsn, schema=CHECKPOINT_SCHEMA)
+
+    async def _step(tenant_id: str, run_id: str) -> str:
+        return await provider.latest_step(tenant_id, run_id)
+
+    return RunControl.from_env(
+        service,
+        step_reader=_step,
+        tool_ledger=PgToolLedger(dsn, schema=CHECKPOINT_SCHEMA),
+    )
+
+
 def build_service(
     *,
     registry: ProfileRegistry | None = None,
@@ -394,7 +487,13 @@ def build_service(
     gateway_url = os.getenv("MATE_GATEWAY_URL", DEFAULT_GATEWAY_URL)
     protocol_url = os.getenv("MATE_MCP_PROTOCOL_URL", f"{mcp_url}{DEFAULT_MCP_PROTOCOL_PATH}")
 
-    bootstrap(required_admin_dsn())
+    # B-4：``api`` 角色下**不建表**，且**拒绝** admin DSN —— 建表/授权归迁移 Job
+    # （``python -m mate_tech_agent_team.migrate``，它带 admin 跑一次就退出）。
+    # 其余角色（默认 ``all``）保持原样：单进程形态与加这一条之前逐字一致。
+    if runtime_role() == ROLE_API:
+        _refuse_admin_dsn_in_api_role()
+    else:
+        bootstrap(required_admin_dsn())
     skills = build_skill_catalog()
 
     def _provider_config(tenant_id: str, user_token: str):
@@ -552,7 +651,10 @@ __all__ = [
     "build_profile_store",
     "build_registry",
     "build_retry_policy",
+    "build_run_control",
+    "build_outbox_writer",
     "build_runtime_router",
+    "runtime_role",
     "build_team_bus",
     "build_service",
     "build_skill_catalog",

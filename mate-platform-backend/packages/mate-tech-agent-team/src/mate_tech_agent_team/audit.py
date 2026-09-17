@@ -55,6 +55,8 @@ import psycopg
 from mate_platform.messaging.events import Event
 from mate_platform.messaging.outbox import OutboxWriter
 
+from .tenant_db import TenantConnections, tenant_connections
+
 logger = logging.getLogger("metaplatform.audit.agent_team")
 
 #: 被审计的动作。
@@ -503,27 +505,21 @@ class PgAuditLedger:
 
     def __init__(
         self,
-        dsn: str,
+        dsn: str | TenantConnections,
         schema: str = SCHEMA,
         *,
         outbox: OutboxWriter | None = None,
     ) -> None:
-        self._dsn = dsn
-        self._schema = schema
+        #: 审计成链要**显式事务**（advisory lock → 读链头 → 插入），所以它的连接源
+        #: 是非 autocommit 的事务形态：`for_tenant` 给的正是"一个租户事务"（B-5）。
+        self._conns = tenant_connections(dsn, schema=schema)
         self._outbox = outbox
 
     @asynccontextmanager
-    async def _conn(
-        self, tenant_id: str, *, autocommit: bool = True
-    ) -> AsyncIterator[psycopg.AsyncConnection[Any]]:
-        conn = await psycopg.AsyncConnection.connect(self._dsn, autocommit=autocommit)
-        try:
-            await conn.execute(f"SET search_path TO {self._schema}")
-            # set_config() 而非 SET x = %s：后者不接受参数绑定。
-            await conn.execute("select set_config('app.tenant_id', %s, false)", (tenant_id,))
+    async def _conn(self, tenant_id: str) -> AsyncIterator[psycopg.AsyncConnection[Any]]:
+        # 租户上下文走 tenant_db：**事务级** GUC + 归还前 RESET（B-5）。
+        async with self._conns.for_tenant(tenant_id) as conn:
             yield conn
-        finally:
-            await conn.close()
 
     async def append(
         self,
@@ -566,7 +562,7 @@ class PgAuditLedger:
             policy_version=policy_version,
             trace_id=trace_id,
         )
-        async with self._conn(tenant_id, autocommit=False) as conn:
+        async with self._conn(tenant_id) as conn:
             await conn.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (tenant_id,))
             cur = await conn.execute(_SELECT_HEAD_SQL, (tenant_id,))
             head = await cur.fetchone()
@@ -598,7 +594,7 @@ class PgAuditLedger:
                     record.at,
                 ),
             )
-            await conn.commit()
+            # 不再显式 commit：`for_tenant` 的块本身就是一个事务，出块即提交（B-5）。
 
         logger.info(record.action, extra=record.to_dict())
         self._deliver(record)

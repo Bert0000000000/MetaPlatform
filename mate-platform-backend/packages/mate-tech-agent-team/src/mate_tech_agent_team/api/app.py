@@ -49,6 +49,7 @@ from .schemas import (
     ProfileListModel,
     ProfileWriteRequest,
     RunAcceptedModel,
+    RunCancelAcceptedModel,
     RunStateModel,
     SendMessageRequest,
     SkillContentModel,
@@ -131,7 +132,11 @@ def get_run_control() -> RunControl:
     """
     global _control
     if _control is None:
-        _control = RunControl.from_env(get_brain_service())
+        # 生产装配在 wiring（租约 / 心跳 / 接管要 DSN 与账本）；没配 DSN 时
+        # 它自己退回单副本形态，与本函数原来直接调 from_env 的行为一致。
+        from ..wiring import build_run_control
+
+        _control = build_run_control(get_brain_service())
     return _control
 
 
@@ -176,6 +181,16 @@ def _user_token(request: Request) -> str:
     return header[7:].strip() if header.lower().startswith("bearer ") else ""
 
 
+def _approver_roles(request: Request) -> tuple[str, ...]:
+    """审批人**实际持有的**角色（来自令牌的 ``RequestContext.roles``）。
+
+    刻意**不是**请求体里让调用方填的角色：多级审批靠角色归级，而"我自称是什么
+    角色"是可以随便写的。闸门拿到的必须是签出来的那一个。
+    """
+    roles = getattr(request.state.ctx, "roles", None) or ()
+    return tuple(str(role) for role in roles)
+
+
 def _to_model(state: BrainState) -> RunStateModel:
     return RunStateModel.model_validate({**state, "status": state.get("status", "")})
 
@@ -212,23 +227,32 @@ async def agentTeamGetRun(request: Request, run_id: str) -> RunStateModel:
     return _to_model(state)
 
 
-@router.post("/runs/{run_id}/cancel", response_model=RunStateModel)
-async def agentTeamPostRunCancel(request: Request, run_id: str) -> RunStateModel:
-    """取消一轮运行，**落终态**（幂等）。
+@router.post("/runs/{run_id}/cancel", response_model=RunCancelAcceptedModel, status_code=202)
+async def agentTeamPostRunCancel(request: Request, run_id: str) -> RunCancelAcceptedModel:
+    """**受理**取消一轮运行（B-3：202 ``cancel_requested``，幂等）。
+
+    不再承诺"回话那一刻图已经停了"——那个保证只在单副本下成立。客户端拿到
+    ``cancelling`` 就接着看 ``GET /runs/{run_id}``，直到它变成 ``cancelled``。
 
     取消后 ``approve`` 一律 409：闸门已经不在，确认一个已作废的计划不该有任何
     效果。跨租户与不存在同码 404（不泄露存在性）。
     """
     try:
-        state = await get_run_control().cancel(tenant_id=_tid(request), run_id=run_id)
+        receipt = await get_run_control().cancel(tenant_id=_tid(request), run_id=run_id)
     except RunNotFound as exc:
         raise HTTPException(status_code=404, detail="run not found") from exc
-    return _to_model(state)
+    return RunCancelAcceptedModel.model_validate(receipt)
 
 
 @router.get("/runs/{run_id}/events")
 async def agentTeamGetRunEvents(request: Request, run_id: str) -> StreamingResponse:
-    """步骤级事件流（SSE）：回放检查点里的推进，最后一条 ``end`` 收流。"""
+    """步骤级事件流（SSE）：按 ``Last-Event-ID`` 补发，最后一条 ``end`` 收流。
+
+    ``Last-Event-ID`` 是 SSE 规范里的**断线重连游标**：浏览器自己带回来，服务端
+    从"它看过的最后一条"之后接着发。B-2 之前 ``seq`` 是每流内存计数，流一断归零
+    ——重连必然丢事件。非法值当 0 处理（从头补发），不报错：一个坏游标不该让
+    订阅彻底失败。
+    """
     tenant_id = _tid(request)
     control = get_run_control()
     try:
@@ -236,10 +260,25 @@ async def agentTeamGetRunEvents(request: Request, run_id: str) -> StreamingRespo
     except RunNotFound as exc:
         raise HTTPException(status_code=404, detail="run not found") from exc
     return StreamingResponse(
-        control.events(tenant_id=tenant_id, run_id=run_id),
+        control.events(
+            tenant_id=tenant_id,
+            run_id=run_id,
+            last_event_id=_last_event_id(request),
+        ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+def _last_event_id(request: Request) -> int:
+    """SSE 的续传游标。缺省 / 非法一律 0（从头补发）。"""
+    raw = request.headers.get("last-event-id", "").strip()
+    if not raw:
+        return 0
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 0
 
 
 @router.get("/runs/{run_id}/artifacts", response_model=ArtifactListModel)
@@ -321,11 +360,15 @@ async def agentTeamPostRunApprove(
         raise HTTPException(status_code=404, detail="run not found") from exc
     try:
         # 续跑也走控制面：它同样"有请求在等它"，执行中同样可被取消（1.5 任务 1）。
+        # B-6：把**审批人实际持有的角色**（来自令牌，不是他自称的）一起交给闸门
+        # ——多级审批靠它归级；``comment`` 进闸门的 decisions 与审计。
         state = await get_run_control().resume(
             tenant_id=tenant_id,
             run_id=run_id,
             approved=body.approved,
             user_token=_user_token(request),
+            approver_roles=_approver_roles(request),
+            comment=body.comment,
         )
     except RunNotFound as exc:
         raise HTTPException(status_code=404, detail="run not found") from exc
