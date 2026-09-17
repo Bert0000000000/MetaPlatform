@@ -19,6 +19,7 @@ from mate_clients.mcp.tools import McpToolsClient
 from mate_clients.security import BearerAuth
 from mate_platform.marketplace.skillhub.store import SkillHubStore
 
+from .artifact_store import PgArtifacts
 from .brain import BrainService, RunContext
 from .checkpoint import SCHEMA as CHECKPOINT_SCHEMA
 from .checkpoint import PgCheckpointerProvider, bootstrap
@@ -111,13 +112,26 @@ def build_team_bus(registry: ProfileRegistry | None = None, *, dsn: str | None =
     )
 
 
+def build_artifact_store() -> PgArtifacts:
+    """产出物（artifact）落库面（1.6 任务 2）。
+
+    与检查点 / 员工定义 / 任务实例**同库同 schema**：租户隔离靠同一套 RLS 强制，
+    不必为"交付物"另建一条隔离路径（理由详见 :mod:`.artifact_store` 的模块注释）。
+    """
+    return PgArtifacts(required_dsn(), schema=CHECKPOINT_SCHEMA)
+
+
 def build_service(
-    *, registry: ProfileRegistry | None = None, team_bus: TeamBus | None = None
+    *,
+    registry: ProfileRegistry | None = None,
+    team_bus: TeamBus | None = None,
+    artifacts: PgArtifacts | None = None,
 ) -> BrainService:
     """按环境变量装配。容器启动时调用一次。
 
     ``team_bus`` 必须与 HTTP 面用的是**同一个实例**——投递方往它的 inbox 写、
-    员工从它的 inbox 取，两个实例等于两个信箱。
+    员工从它的 inbox 取，两个实例等于两个信箱。``artifacts`` 同理：图往里写、
+    接口从它读，两个实例等于两个库。
     """
     registry = registry or build_registry()
     bearer = _bearer()
@@ -226,6 +240,7 @@ def build_service(
         runtime_for=runtime_for,
         checkpointer=PgCheckpointerProvider(required_dsn()),
         team_bus=team_bus or build_team_bus(registry),
+        artifacts=artifacts or build_artifact_store(),
         max_parallel=int(os.getenv("MATE_AGENT_TEAM_MAX_PARALLEL", "3")),
         # 1.5 任务 4：失败节点（运行时那一次调用）的重试策略。
         retry_policy=build_retry_policy(),
@@ -247,6 +262,7 @@ def build_retry_policy() -> RetryPolicy:
 
 
 __all__ = [
+    "build_artifact_store",
     "build_profile_store",
     "build_registry",
     "build_retry_policy",

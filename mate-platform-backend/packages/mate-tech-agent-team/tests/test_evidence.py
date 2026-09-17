@@ -23,6 +23,7 @@ import pytest
 from fastapi.testclient import TestClient
 from mate_tech_agent_team import (
     BrainService,
+    InMemoryArtifacts,
     InMemoryCheckpointerProvider,
     InMemoryTeamTasks,
     LlmEmployeeRuntime,
@@ -278,6 +279,7 @@ def _app(*, empty: bool = False) -> TestClient:
         runtime_for=lambda _ctx: _runtime(empty=empty),
         checkpointer=InMemoryCheckpointerProvider(),
         team_bus=bus,
+        artifacts=InMemoryArtifacts(),
     )
     return TestClient(create_app(service=service, team_bus=bus, profile_registry=registry))
 

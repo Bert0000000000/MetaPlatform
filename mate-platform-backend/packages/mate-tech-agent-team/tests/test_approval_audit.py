@@ -27,6 +27,7 @@ from mate_tech_agent_team import (
     AUDIT_SPAWN,
     AuditLog,
     BrainService,
+    InMemoryArtifacts,
     InMemoryCheckpointerProvider,
     InMemoryTeamTasks,
     ProfileRegistry,
@@ -107,6 +108,7 @@ def client() -> TestClient:
         runtime_for=lambda _ctx: _Runtime(),
         checkpointer=InMemoryCheckpointerProvider(),
         team_bus=TeamBus(registry=ProfileRegistry(), tasks=InMemoryTeamTasks()),
+        artifacts=InMemoryArtifacts(),
     )
     return TestClient(create_app(service=service))
 
@@ -254,6 +256,7 @@ async def test_run_level_approval_is_audited() -> None:
         runtime_for=lambda _ctx: _Runtime(),
         checkpointer=InMemoryCheckpointerProvider(),
         team_bus=TeamBus(registry=ProfileRegistry(), tasks=InMemoryTeamTasks()),
+        artifacts=InMemoryArtifacts(),
     )
     state = await service.start(tenant_id=TENANT, goal="分析本月异常订单", user_token="")
     await service.resume(tenant_id=TENANT, run_id=str(state["run_id"]), approved=True)
@@ -271,6 +274,7 @@ async def test_rejecting_is_audited_as_rejected() -> None:
         runtime_for=lambda _ctx: _Runtime(),
         checkpointer=InMemoryCheckpointerProvider(),
         team_bus=TeamBus(registry=ProfileRegistry(), tasks=InMemoryTeamTasks()),
+        artifacts=InMemoryArtifacts(),
     )
     state = await service.start(tenant_id=TENANT, goal="分析本月异常订单", user_token="")
     await service.resume(tenant_id=TENANT, run_id=str(state["run_id"]), approved=False)

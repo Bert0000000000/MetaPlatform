@@ -50,6 +50,35 @@ class SubTaskResultModel(BaseModel):
     #: ``_evidence_items`` 一致：``type`` / ``ref`` / ``objectId?`` / ``concept?``
     #: / ``fragment?``，外加运行内唯一的 ``evidenceId`` 与抓取时刻 ``capturedAt``。
     evidence: list[dict[str, Any]] = Field(default_factory=list)
+    #: 该员工产出的**可寻址交付物**的元数据（1.6 任务 2）；正文按 ``artifact_id``
+    #: 走 ``GET /artifacts/{artifact_id}`` 另取。
+    artifacts: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class ArtifactModel(BaseModel):
+    """一件产出物的**元数据**（不含正文）。"""
+
+    artifact_id: str
+    run_id: str = ""
+    task_id: str = ""
+    profile_id: str = ""
+    #: 产出物种类（当前只有 ``report``：员工的自由文本产出）。
+    kind: str = "report"
+    title: str = ""
+    content_type: str = "text/markdown"
+    #: 正文的**字节数**。
+    size: int = 0
+    created_at: str = ""
+
+
+class ArtifactContentModel(ArtifactModel):
+    """元数据 + **正文**（按 id 取回时用）。"""
+
+    content: str = ""
+
+
+class ArtifactListModel(BaseModel):
+    items: list[ArtifactModel] = Field(default_factory=list)
 
 
 class RunStateModel(BaseModel):
@@ -160,6 +189,9 @@ class AuditListModel(BaseModel):
 
 __all__ = [
     "ApproveRequest",
+    "ArtifactContentModel",
+    "ArtifactListModel",
+    "ArtifactModel",
     "AuditListModel",
     "AuditRecordModel",
     "ChannelMessageModel",

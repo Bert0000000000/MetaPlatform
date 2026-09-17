@@ -24,6 +24,7 @@ import pytest
 from mate_tech_agent_team import (
     BrainService,
     Envelope,
+    InMemoryArtifacts,
     InMemoryCheckpointerProvider,
     InMemoryTeamTasks,
     Planner,
@@ -159,6 +160,7 @@ def _service(
         runtime_for=lambda _ctx: runtime,
         checkpointer=InMemoryCheckpointerProvider(),
         team_bus=bus or _bus(),
+        artifacts=InMemoryArtifacts(),
     )
 
 

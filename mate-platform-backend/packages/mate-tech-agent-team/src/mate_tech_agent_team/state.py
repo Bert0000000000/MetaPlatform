@@ -64,6 +64,10 @@ class SubTaskResult(TypedDict, total=False):
     形状与 copilot 的 ``_evidence_items`` 一致（见 :mod:`.evidence`）。放进状态
     是有意的：它随检查点落库，于是**回执可查**（``GET /runs/{id}``）与**事件流
     可回放**（SSE）读的是同一份事实，不是两处各攒一份。
+
+    ``artifacts`` 是该员工产出的**可寻址交付物**（1.6 任务 2）的元数据——正文
+    落在 :mod:`.artifact_store`（PG + RLS），这里只记地址与摘要。状态里**不存
+    正文**：正文可能很长，而检查点每一波都会整份写一次。
     """
 
     task_id: str
@@ -82,6 +86,8 @@ class SubTaskResult(TypedDict, total=False):
     attempts: int
     #: 工具结果映射出的结构化证据条目（形状同 copilot，见 ``evidence`` 模块）。
     evidence: list[dict[str, Any]]
+    #: 产出物的**元数据**（不含正文）；正文按 ``artifact_id`` 另取。
+    artifacts: list[dict[str, Any]]
 
 
 def merge_results(

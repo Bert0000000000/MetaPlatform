@@ -17,6 +17,7 @@ import psycopg
 import pytest
 from mate_tech_agent_team import (
     BrainService,
+    InMemoryArtifacts,
     InMemoryTeamTasks,
     PgCheckpointerProvider,
     ProfileRegistry,
@@ -45,6 +46,7 @@ def _service(app_dsn: str, schema: str) -> BrainService:
         runtime_for=lambda _ctx: _TinyRuntime(),
         checkpointer=PgCheckpointerProvider(app_dsn, schema=schema),
         team_bus=TeamBus(registry=ProfileRegistry(), tasks=InMemoryTeamTasks()),
+        artifacts=InMemoryArtifacts(),
     )
 
 

@@ -20,6 +20,7 @@ from uuid import uuid4
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
 
+from .artifact_store import ArtifactStore
 from .audit import AUDIT_APPROVAL, AuditLog
 from .authority import Envelope, actor_of, resolve_initiator_envelope
 from .checkpoint import thread_id_for
@@ -102,6 +103,7 @@ class BrainService:
         runtime_for: RuntimeFactory,
         checkpointer: CheckpointerProvider,
         team_bus: TeamBus,
+        artifacts: ArtifactStore,
         max_parallel: int = 3,
         audit: AuditLog | None = None,
         retry_policy: RetryPolicy | None = None,
@@ -112,6 +114,9 @@ class BrainService:
         #: 派活闸门：**派活的唯一入口**（包络衰减 + 深度闸门 + 越权转提案）。
         #: 刻意没有默认值——漏接它，闸门就退回空转，而且不会有任何报错。
         self._team_bus = team_bus
+        #: 产出物的落地存储（1.6 任务 2）。同样**刻意没有默认值**——漏接它，
+        #: 员工照跑照出报告，只是交付物一件都不落库，"跑完了却交不出东西"。
+        self._artifacts = artifacts
         self._max_parallel = max_parallel
         #: 失败节点的重试策略（1.5 任务 4）：只作用于员工运行时那一次调用，
         #: 派活（副作用）不在重试范围内。
@@ -135,6 +140,7 @@ class BrainService:
             runtime=self._runtime_for(ctx),
             bus=self._team_bus,
             checkpointer=saver,
+            artifacts=self._artifacts,
             initiator_envelope=ctx.initiator_envelope,
             actor=ctx.actor,
             max_parallel=max_parallel,

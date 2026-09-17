@@ -28,6 +28,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from mate_tech_agent_team import (
     BrainService,
+    InMemoryArtifacts,
     InMemoryCheckpointerProvider,
     InMemoryTeamTasks,
     ProfileRegistry,
@@ -168,6 +169,7 @@ def _service(
         runtime_for=lambda _ctx: runtime if runtime is not None else _Runtime(),
         checkpointer=checkpointer,
         team_bus=bus,
+        artifacts=InMemoryArtifacts(),
     )
     return service, bus, store
 

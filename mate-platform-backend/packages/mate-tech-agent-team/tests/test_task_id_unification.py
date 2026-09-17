@@ -21,6 +21,7 @@ from typing import Any
 import pytest
 from mate_tech_agent_team import (
     BrainService,
+    InMemoryArtifacts,
     InMemoryCheckpointerProvider,
     ProfileRegistry,
     StaticPlanner,
@@ -254,6 +255,7 @@ def _service(bus: TeamBus):
             runtime_for=lambda _ctx: rt,
             checkpointer=InMemoryCheckpointerProvider(),
             team_bus=bus,
+            artifacts=InMemoryArtifacts(),
         ),
         rt,
     )

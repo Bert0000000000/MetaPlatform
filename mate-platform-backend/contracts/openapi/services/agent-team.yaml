@@ -135,6 +135,17 @@ components:
             调用**不产证据**——那种结果里没有可取证的事实。
           items:
             type: object
+        artifacts:
+          type: array
+          description: |
+            该员工产出的**可寻址交付物**的元数据（1.6 任务 2，形状见
+            `Artifact`）；正文按 `artifact_id` 另取。
+
+            只有 `status=ok` 且产出**非空白**才有一条——空产出不是交付物。
+            落库失败**不吞**：产出拿得到却在回执里给不出地址，等于另一种
+            "假回执"，宁可让这一轮明确失败。
+          items:
+            $ref: "#/components/schemas/Artifact"
     RunState:
       type: object
       required: [run_id, tenant_id, goal, status]
@@ -285,6 +296,61 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AuditRecord"
+    Artifact:
+      type: object
+      required: [artifact_id]
+      description: |
+        一件**产出物**的元数据（1.6 任务 2）。正文不在列表里——按
+        `artifact_id` 走 `GET /artifacts/{artifact_id}` 另取。
+
+        落地存储是 **PG**（不是 MinIO）：租户隔离只有 PG 这条路是数据库强制的
+        （RLS），且"可寻址"要的主键 PG 直接给；产出物是 KB 级文本，对象存储的
+        强项用不上。理由全文见服务端 `artifact_store` 模块注释。
+      properties:
+        artifact_id:
+          type: string
+          description: |
+            产出物地址，形状 `{run_id 前 8 位}-{计划内标签}`。按运行唯一，所以
+            同一个员工在同一轮里的主交付物**只有一个地址**（重放不会攒出第二条）。
+        run_id:
+          type: string
+        task_id:
+          type: string
+        profile_id:
+          type: string
+          description: 产出它的数字员工
+        kind:
+          type: string
+          description: |
+            产出物种类。当前只有 `report`（员工的自由文本产出）。种类由**生产方**
+            声明，不按正文内容猜。
+        title:
+          type: string
+        content_type:
+          type: string
+          description: 正文的媒体类型（当前恒为 `text/markdown`）
+        size:
+          type: integer
+          description: 正文的**字节数**
+        created_at:
+          type: string
+          description: 落库时刻（ISO8601）
+    ArtifactContent:
+      allOf:
+        - $ref: "#/components/schemas/Artifact"
+        - type: object
+          properties:
+            content:
+              type: string
+              description: 正文原文
+    ArtifactList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Artifact"
     EmployeeProfile:
       type: object
       required: [profile_id, name, base_role]
@@ -624,6 +690,73 @@ paths:
       x-mate-owner: agent-product-layer
       x-mate-permission: agent-team.read
       x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETRUNAUDIT]
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/runs/{run_id}/artifacts:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
+      summary: 列出一轮运行产出的交付物（元数据）
+      description: |
+        这一轮里各个数字员工**真正交付出来**的产出物（1.6 任务 2）。只出元数据
+        ——正文按 `artifact_id` 另取，列表不该把每份报告全文都拖过来。
+
+        先按 run 的存在性判 404（跨租户与不存在同码），再只回本租户的行：产出物
+        不能成为一条绕过 run 隔离的读路径。
+      tags: [agent-team]
+      operationId: agentTeamGetRunArtifacts
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 该 run 的产出物元数据（按任务标签序）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtifactList"
+        "404":
+          description: 该租户下不存在此 run
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETRUNARTIFACTS]
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/artifacts/{artifact_id}:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
+      summary: 按 id 取回一件产出物的正文
+      description: |
+        "可寻址、可取回"的取回那半边（1.6 任务 2）。
+
+        跨租户与不存在同码 404：产出物的地址是**租户内**的地址，拿别人的 id 来取
+        读不到，也不该读出"这个 id 存在过"。
+      tags: [agent-team]
+      operationId: agentTeamGetArtifact
+      parameters:
+        - name: artifact_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 产出物元数据 + 正文
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtifactContent"
+        "404":
+          description: 该租户下不存在此产出物
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETARTIFACT]
       x-mate-implementation-status: implemented
   /api/v1/agent-team/tasks/{task_id}/messages:
     post:

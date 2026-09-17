@@ -38,6 +38,7 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
+from .artifact_store import ArtifactStore, artifact_for_task
 from .authority import DepthExceeded, Envelope
 from .planner import PlanError, Planner
 from .profiles import ProfileNotFound
@@ -75,7 +76,45 @@ def _failure(subtask: SubTask, code: str, message: str, *, attempts: int = 0) ->
         error_code=code,
         proposal={},
         attempts=attempts,
+        evidence=[],
+        artifacts=[],
     )
+
+
+async def _persist_artifact(
+    store: ArtifactStore,
+    *,
+    result: SubTaskResult,
+    run_id: str,
+    tenant_id: str,
+    task_id: str,
+) -> SubTaskResult:
+    """把一次员工产出落成**可寻址 artifact**（1.6 任务 2），并把地址挂回回执。
+
+    两条判据都在这里守着：
+
+    * 只有 ``status == "ok"`` 且产出**非空白**才落——空产出不是交付物，给它
+      建一条记录只会让"这轮交付了什么"变成一句空话；
+    * **先落库再挂地址**。反过来的话，落库失败会留下一个取不回的地址，那正是
+      1.6 要治的"看着交付了、其实取不回来"。
+
+    落库失败**不吞**：产出拿得到却在回执里给不出地址，等于另一种"假回执"。
+    宁可让这一轮明确失败，也不要交付一份查无实据的清单。
+    """
+    output = str(result.get("output") or "")
+    if result.get("status") != "ok" or not output.strip():
+        return result
+    artifact = await store.put(
+        artifact_for_task(
+            tenant_id=tenant_id,
+            run_id=run_id,
+            task_id=task_id,
+            profile_id=str(result.get("profile_id") or ""),
+            content=output,
+        )
+    )
+    result["artifacts"] = [artifact.to_dict()]
+    return result
 
 
 async def _invoke_employee(
@@ -139,6 +178,7 @@ def build_brain_graph(
     runtime: EmployeeRuntime,
     bus: TeamBus,
     checkpointer: BaseCheckpointSaver,
+    artifacts: ArtifactStore,
     initiator_envelope: Envelope | None = None,
     actor: str = "",
     max_parallel: int = 3,
@@ -146,7 +186,7 @@ def build_brain_graph(
     should_cancel: Callable[[], bool] | None = None,
     retry_policy: RetryPolicy | None = None,
 ) -> Any:
-    """编译大脑图。依赖（拆解器 / 员工运行时 / 派活闸门 / 检查点）全部注入。
+    """编译大脑图。依赖（拆解器 / 员工运行时 / 派活闸门 / 产出物存储 / 检查点）全部注入。
 
     ``initiator_envelope`` 是**发起用户**的包络（ADR-0066 §3.3 的链根），刻意
     与令牌一样**不进图状态**：状态会落进 PG，而它是当次调用的授权，用完即散。
@@ -311,6 +351,11 @@ def build_brain_graph(
         # 越权转 proposal 都是副作用），重试只包住员工运行时那一次调用。
         result = await _invoke_employee(
             runtime, subtask=subtask, tenant_id=tenant_id, policy=policy
+        )
+        # 1.6 任务 2：产出落成可寻址 artifact，地址挂回回执。**在重试之后**做：
+        # 重试可能把这一件跑两遍，落在这里就只落一次（且 id 确定性 → 幂等 upsert）。
+        result = await _persist_artifact(
+            artifacts, result=result, run_id=run_id, tenant_id=tenant_id, task_id=subtask["task_id"]
         )
         # ``results`` 仍按**计划内标签**归类（``t1``…）：那是计划里的位置，
         # 不是实例身份；调用方要投递时读回执里的 ``team_task_id``。
