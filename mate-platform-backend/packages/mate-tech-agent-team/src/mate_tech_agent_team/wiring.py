@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from typing import Any
 
 from mate_clients.iam import IamServiceReadClient
@@ -19,6 +20,7 @@ from mate_clients.mcp.tools import McpToolsClient
 from mate_clients.security import BearerAuth
 from mate_platform.marketplace.skillhub.store import SkillHubStore
 
+from .a2a.outbound import A2AOutboundRuntime, build_a2a_outbound_client
 from .artifact_store import PgArtifacts
 from .brain import BrainService, RunContext
 from .checkpoint import SCHEMA as CHECKPOINT_SCHEMA
@@ -26,10 +28,13 @@ from .checkpoint import PgCheckpointerProvider, bootstrap
 from .employee import LlmEmployeeRuntime
 from .llm_planner import LlmPlanner
 from .profile_store import ProfileStore
-from .profiles import ProfileRegistry
+from .profiles import ProfileNotFound, ProfileRegistry, RuntimeKind
 from .retry import DEFAULT_BACKOFF_SECONDS, DEFAULT_MAX_ATTEMPTS, RetryPolicy
+from .runtime import EmployeeRuntime
+from .runtimes import ClaudeCodeProjection, ClaudeCodeRuntime
 from .skill_toolbox import SKILL_TOOL_NAMES, SkillToolbox
 from .skills import SkillCatalog
+from .state import SubTask, SubTaskResult
 from .team_bus import DEFAULT_MAX_DEPTH, TeamBus
 from .team_task_store import PgTeamTasks
 from .toolbox import CompositeToolbox, McpToolbox
@@ -119,6 +124,173 @@ def build_artifact_store() -> PgArtifacts:
     不必为"交付物"另建一条隔离路径（理由详见 :mod:`.artifact_store` 的模块注释）。
     """
     return PgArtifacts(required_dsn(), schema=CHECKPOINT_SCHEMA)
+
+
+# ── 执行面路由（ADR-0066 §5.8：角色 × 运行时正交两轴）──────────────────────
+
+#: env 里能写出来的执行面名字 → ``RuntimeKind``。**这是白名单**：写错一个名字
+#: 直接启动失败，而不是"看不懂就当你没配"（后者会让一个已经下放给外部执行面的
+#: 员工悄悄跑回 superai）。
+ROUTABLE_RUNTIMES: Mapping[str, RuntimeKind] = {
+    "superai": RuntimeKind.SUPERAI,
+    "claude_code": RuntimeKind.CLAUDE_CODE,
+    "external_a2a": RuntimeKind.EXTERNAL_A2A,
+}
+
+
+def enabled_runtime_kinds() -> tuple[RuntimeKind, ...]:
+    """从 ``MATE_AGENT_TEAM_RUNTIMES`` 读**允许被路由到**的执行面（逗号分隔）。
+
+    **默认空 = 不启用路由**：没配这个变量的部署，``runtime_for`` 仍旧直接返回
+    ``LlmEmployeeRuntime``——行为与加这个特性之前逐字一致（这是"存量不动"的保证）。
+    """
+    raw = os.getenv("MATE_AGENT_TEAM_RUNTIMES", "").strip()
+    if not raw:
+        return ()
+    kinds: list[RuntimeKind] = []
+    for token in raw.split(","):
+        name = token.strip().lower()
+        if not name:
+            continue
+        kind = ROUTABLE_RUNTIMES.get(name)
+        if kind is None:
+            raise RuntimeError(
+                f"MATE_AGENT_TEAM_RUNTIMES 里有未知的执行面：{name!r}"
+                f"（可选：{sorted(ROUTABLE_RUNTIMES)}）"
+            )
+        if kind not in kinds:
+            kinds.append(kind)
+    return tuple(kinds)
+
+
+class RuntimeRouter:
+    """按 ``profile.runtimes`` 挑执行面的路由器（``EmployeeRuntime`` 协议）。
+
+    **为什么需要它**：`EmployeeProfile` 同时带「角色」与「执行面」两轴（§5.8）。
+    没有路由器时，员工声明 ``runtimes=(CLAUDE_CODE,)`` 也只会跑在 superai 上——
+    声明变成了装饰品。
+
+    **不做静默回落**：员工声明的执行面一个都没装配 → 如实报 ``status="error"``，
+    **不**换个执行面把它跑掉。悄悄换地方跑会让"这个员工跑在哪"失去意义，而且不同
+    执行面的沙箱与权限假设完全不同（外部 CLI 拿不到本仓的 ``EnvelopeGate``）。
+
+    ``ProfileNotFound`` 交给 ``default``（= superai）去报：错误措辞与既有回执逐字
+    一致，不在这里另造一种"员工不存在"。
+    """
+
+    def __init__(
+        self,
+        *,
+        registry: ProfileRegistry,
+        runtimes: Mapping[RuntimeKind, EmployeeRuntime],
+        default: EmployeeRuntime | None = None,
+    ) -> None:
+        self._registry = registry
+        self._runtimes = dict(runtimes)
+        self._default = default
+
+    @property
+    def available(self) -> tuple[RuntimeKind, ...]:
+        """已装配的执行面（可读，便于运维核对 env 配对了没）。"""
+        return tuple(self._runtimes)
+
+    def _kind_of(self, raw: Any) -> RuntimeKind | None:
+        """容忍 profile 里存的是字符串（库里/JSON 来的 ``"claude_code"``）。
+
+        ``RuntimeKind`` 是 ``StrEnum``，字典按 hash 查字符串键本来就成立；这里显式
+        转一次是为了让"库里存了拼错的枚举值"变成一次可读的 TypeError，而不是静默
+        选不中。
+        """
+        if isinstance(raw, RuntimeKind):
+            return raw
+        try:
+            return RuntimeKind(str(raw))
+        except ValueError:
+            return None
+
+    async def run(self, *, subtask: SubTask, tenant_id: str) -> SubTaskResult:
+        try:
+            profile = await self._registry.get(subtask["profile_id"], tenant_id)
+        except ProfileNotFound:
+            if self._default is None:
+                return SubTaskResult(
+                    task_id=subtask.get("task_id", ""),
+                    team_task_id=subtask.get("team_task_id", ""),
+                    profile_id=subtask.get("profile_id", ""),
+                    status="error",
+                    output="",
+                    source="stub",
+                    llm_calls=0,
+                    tool_calls=[],
+                    evidence=[],
+                    error=f"员工不存在：{subtask['profile_id']}（租户 {tenant_id}）",
+                )
+            return await self._default.run(subtask=subtask, tenant_id=tenant_id)
+
+        declared = profile.runtimes or (RuntimeKind.SUPERAI,)
+        for raw in declared:
+            kind = self._kind_of(raw)
+            runtime = None if kind is None else self._runtimes.get(kind)
+            if runtime is not None:
+                return await runtime.run(subtask=subtask, tenant_id=tenant_id)
+
+        names = "、".join(str(r) for r in declared)
+        return SubTaskResult(
+            task_id=subtask.get("task_id", ""),
+            team_task_id=subtask.get("team_task_id", ""),
+            profile_id=profile.profile_id,
+            status="error",
+            output="",
+            source="stub",
+            llm_calls=0,
+            tool_calls=[],
+            evidence=[],
+            error=(
+                f"该员工声明的执行面都没有装配：{names}；"
+                f"本部署可用的是：{'、'.join(str(k) for k in self.available) or '（空）'}。"
+                "（不会换一个执行面代跑——那样执行面的沙箱/权限假设就失效了）"
+            ),
+        )
+
+
+def build_runtime_router(
+    *,
+    registry: ProfileRegistry,
+    superai: EmployeeRuntime,
+    kinds: tuple[RuntimeKind, ...],
+    skills: SkillCatalog | None = None,
+    working_root: str | os.PathLike[str] | None = None,
+) -> RuntimeRouter:
+    """按 ``kinds`` 装配路由器。
+
+    ``superai`` 由调用方传入（它是既有那个 ``LlmEmployeeRuntime`` 实例，必须与
+    HTTP 面看到的是同一个）；``claude_code`` / ``external_a2a`` 在这里现建——
+    它们的依赖（投影 / 出站客户端）只有这里知道怎么接。
+    """
+    runtimes: dict[RuntimeKind, EmployeeRuntime] = {}
+    if RuntimeKind.SUPERAI in kinds:
+        runtimes[RuntimeKind.SUPERAI] = superai
+    if RuntimeKind.CLAUDE_CODE in kinds:
+        runtimes[RuntimeKind.CLAUDE_CODE] = ClaudeCodeRuntime(
+            registry=registry,
+            projection=ClaudeCodeProjection(skills=skills),
+            working_root=working_root,
+            cli_model=os.getenv("MATE_AGENT_TEAM_CLAUDE_MODEL", ""),
+            timeout=float(os.getenv("MATE_AGENT_TEAM_CLAUDE_TIMEOUT", "300")),
+        )
+    if RuntimeKind.EXTERNAL_A2A in kinds:
+        runtimes[RuntimeKind.EXTERNAL_A2A] = build_a2a_outbound_runtime(registry=registry)
+    return RuntimeRouter(registry=registry, runtimes=runtimes, default=superai)
+
+
+def build_a2a_outbound_runtime(*, registry: ProfileRegistry) -> A2AOutboundRuntime:
+    """外部 A2A agent 的运行时（ADR-0066 §9-D 的 ``runtime_kind=external_a2a``）。
+
+    端点取 ``MATE_AGENT_TEAM_A2A_URL``（默认指向既有的 ``a2a-external-agent``）。
+    出站客户端本身是惰性的（``a2a-sdk`` 只在真正发消息时才会被 import）。
+    """
+    client = build_a2a_outbound_client()
+    return A2AOutboundRuntime(registry=registry, client=client)
 
 
 def build_service(
@@ -221,9 +393,9 @@ def build_service(
             roster_provider=lambda tenant_id: registry.list(tenant_id),
         )
 
-    def runtime_for(ctx: RunContext) -> LlmEmployeeRuntime:
+    def runtime_for(ctx: RunContext) -> EmployeeRuntime:
         summary_tokens = int(os.getenv("MATE_AGENT_TEAM_SUMMARY_TOKENS", "100000"))
-        return LlmEmployeeRuntime(
+        superai = LlmEmployeeRuntime(
             registry=registry,
             llm_factory=_llm_for(ctx),
             toolbox_factory=lambda tenant_id: _toolbox(ctx),
@@ -233,6 +405,19 @@ def build_service(
             # 1.2：实例层通道 —— 开跑前登记 team_task、每轮边界取走外部投递的
             # 消息（消费即清空）、跑完置终态。`TeamBus` 结构上就满足 TaskChannel。
             channel=team_bus,
+        )
+        # 1.8 轨 2：执行面路由（ADR-0066 §5.8）。**默认关闭** —— 没配
+        # `MATE_AGENT_TEAM_RUNTIMES` 的部署拿到的还是上面那个 superai 运行时，
+        # 行为与加这个特性之前逐字一致。
+        kinds = enabled_runtime_kinds()
+        if not kinds:
+            return superai
+        return build_runtime_router(
+            registry=registry,
+            superai=superai,
+            kinds=kinds,
+            skills=skills,
+            working_root=os.getenv("MATE_AGENT_TEAM_RUNTIME_ROOT") or None,
         )
 
     return BrainService(
@@ -262,13 +447,18 @@ def build_retry_policy() -> RetryPolicy:
 
 
 __all__ = [
+    "ROUTABLE_RUNTIMES",
+    "RuntimeRouter",
+    "build_a2a_outbound_runtime",
     "build_artifact_store",
     "build_profile_store",
     "build_registry",
     "build_retry_policy",
+    "build_runtime_router",
     "build_team_bus",
     "build_service",
     "build_skill_catalog",
+    "enabled_runtime_kinds",
     "required_admin_dsn",
     "required_dsn",
 ]

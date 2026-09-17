@@ -243,6 +243,38 @@ class BrainService:
         )
         return dict(out)
 
+    async def continue_run(
+        self,
+        *,
+        tenant_id: str,
+        run_id: str,
+        should_cancel: Callable[[], bool] | None = None,
+    ) -> BrainState:
+        """从**检查点**接着跑一轮没跑完的 run（1.8 轨 1）。
+
+        与 :meth:`resume` 的区别只有一处：``resume`` 是**人确认之后**的续跑，
+        要 ``awaiting_approval`` 这道前置；这里是**进程重启之后**的续跑，
+        没有人在场，也不该改状态——它只是把图从它自己停下的地方推下去。
+
+        **必须是 ``ainvoke(None, cfg)``**：实跑确认过，``None`` 才是"从检查点
+        续跑"（已完成的节点一个都不重跑）；换成重投一份输入，langgraph 会把它
+        当成新一轮从 START 重来——``plan`` 重跑、``results`` 被清空，那就不是
+        "接着跑"而是"从头再跑一遍"了。
+
+        已经是终态的 run **原样返回**，不动它：续跑只治"卡住"，不治"跑完了"。
+        """
+        cfg = self._config(tenant_id, run_id)
+        ctx = self._context(tenant_id=tenant_id)
+        async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
+            graph = await self._graph_for(saver, ctx, self._max_parallel, should_cancel)
+            snapshot = await graph.aget_state(cfg)
+            if not snapshot.values:
+                raise RunNotFound(run_id)
+            if str(snapshot.values.get("status", "")) in TERMINAL_STATUSES:
+                return dict(snapshot.values)
+            out = await graph.ainvoke(None, cfg)
+        return dict(out)
+
     async def get(self, *, tenant_id: str, run_id: str) -> BrainState:
         cfg = self._config(tenant_id, run_id)
         ctx = self._context(tenant_id=tenant_id)
