@@ -344,6 +344,23 @@ jobs:
       - name: mate-tech-agent-team/tests
         run: uv run --directory mate-platform-backend/packages/mate-tech-agent-team pytest -q
 
+  # API 网关是全平台的入口热点，改动没有门禁等于没写。这套件同样此前不在
+  # 任何 workflow 里。少而快（MockTransport，不起真上游），放进同一个文件。
+  api-gateway-tests:
+    name: api-gateway pytest (mate-api-gateway)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install uv
+        run: python -m pip install uv
+      - name: Install gateway workspace dependencies (frozen)
+        run: uv sync --directory mate-platform-backend --package mate-api-gateway --dev --frozen
+      - name: mate-api-gateway/tests
+        run: uv run --directory mate-platform-backend/services/api-gateway pytest -q
+
   # rule 7: 契约或集成测试跳过不标记 Accepted（forbid_skip_tests）
   ga-007-skip-tests:
     name: ga-007 forbid_skip_tests (rule 7)
