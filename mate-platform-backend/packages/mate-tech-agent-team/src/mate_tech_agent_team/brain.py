@@ -8,12 +8,16 @@ thread_id 的调用方都能读到别人的状态；只有 GUC 而 thread_id 不
 **发起用户的 token 也在这里传递**，走 :class:`RunContext` —— 且**刻意不进图状态**：
 状态会被 checkpointer 落进 PG，令牌不该落库（硬规则 #12 的同一精神）。
 它只在本次调用构建图时被闭包捕获，用完即散。
+
+**令牌不落库，但授权落库**（1.9 任务 1）：开跑那一刻把链根发成一份**与令牌
+分离**的派活授权（:mod:`mate_tech_agent_team.delegation`）写进状态，续跑时读回来。
+没有它，进程重启后那一轮就永远停"等人授权"——因为它根本没有链根可用。
 """
 
 from __future__ import annotations
 
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 from uuid import uuid4
@@ -24,6 +28,7 @@ from .artifact_store import ArtifactStore
 from .audit import AUDIT_APPROVAL, AuditLog
 from .authority import Envelope, actor_of, resolve_initiator_envelope
 from .checkpoint import thread_id_for
+from .delegation import DELEGATION_STATE_KEY, RunDelegation, configured_ttl
 from .graph import build_brain_graph
 from .planner import Planner
 from .retry import RetryPolicy
@@ -37,8 +42,9 @@ class RunContext:
     """一次运行的调用方上下文（**不含**会话状态，只是当次授权）。
 
     ``initiator_envelope`` 是 ADR-0066 §3.3 的**链根**：派活的每一层都对着它
-    比，而不是对着"父 agent 当时拿到了什么"比。它从发起用户的令牌解析，且
-    与令牌一样**不进图状态**（状态会落库）。
+    比，而不是对着"父 agent 当时拿到了什么"比。它由发起用户的令牌解析而来
+    （续跑时由那一轮的派活授权还原，见 :meth:`BrainService._context_from_delegation`），
+    本身**不进图状态**——进状态的是那份不带凭据的授权。
 
     ``actor`` 是发起用户的标识（令牌 ``sub``），**只用于审计行**（硬规则 #9）。
     """
@@ -137,7 +143,7 @@ class BrainService:
         saver: BaseCheckpointSaver,
         ctx: RunContext,
         max_parallel: int,
-        should_cancel: Callable[[], bool] | None = None,
+        should_cancel: Callable[[], Awaitable[bool]] | None = None,
     ):
         return build_brain_graph(
             planner=self._planner_for(ctx),
@@ -160,7 +166,7 @@ class BrainService:
         user_token: str = "",
         max_parallel: int | None = None,
         run_id: str | None = None,
-        should_cancel: Callable[[], bool] | None = None,
+        should_cancel: Callable[[], Awaitable[bool]] | None = None,
         timeout_seconds: float = 0.0,
     ) -> BrainState:
         """一句话 → 拆图 → 并行派活 → 停在人工确认闸门。
@@ -174,6 +180,11 @@ class BrainService:
         ``timeout_seconds`` 是**本轮**生效的运行级超时值（0 = 不设），它和由它
         算出的绝对截止时刻一起**写进状态**（1.5 任务 2）：重启后仍按本轮的约定
         裁决，而不是回落成当时的部署默认值。
+
+        **链根在这一刻发成一份授权写进状态**（1.9 任务 1）：续跑要能真跑就得有
+        链根，而令牌不落库，所以落地的必须是**与令牌分离**的那一份（只有包络
+        四维与它的归属，没有凭据）。无令牌起的那一轮发的是一份空包络授权——
+        与"没有授权"完全等价。
         """
         run_id = run_id or uuid4().hex
         cfg = self._config(tenant_id, run_id)
@@ -181,6 +192,12 @@ class BrainService:
         parallel = max_parallel or self._max_parallel
         timeout = max(timeout_seconds, 0.0)
         deadline_at = time.time() + timeout if timeout > 0 else 0.0
+        delegation = RunDelegation.issue(
+            run_id=run_id,
+            envelope=ctx.initiator_envelope,
+            granted_by=ctx.actor,
+            ttl=configured_ttl(),
+        )
         async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
             graph = await self._graph_for(saver, ctx, parallel, should_cancel)
             out = await graph.ainvoke(
@@ -193,6 +210,7 @@ class BrainService:
                     "status": RUNNING,
                     "timeout_seconds": timeout,
                     "deadline_at": deadline_at,
+                    DELEGATION_STATE_KEY: delegation.as_state(),
                 },
                 cfg,
             )
@@ -207,6 +225,42 @@ class BrainService:
             actor=actor_of(user_token),
         )
 
+    def _context_from_delegation(
+        self,
+        *,
+        tenant_id: str,
+        state: dict,
+        run_id: str,
+        now: float | None = None,
+    ) -> RunContext:
+        """**续跑**用的调用方上下文：链根取自这一轮自己的派活授权（1.9 任务 1）。
+
+        与 :meth:`_context` 的区别只在链根从哪儿来：那条要令牌，这条要**本轮
+        状态里那份授权**——重启之后没有令牌可用，只有它。
+
+        三条判定，任一不成立就走空包络（fail-closed，与 :meth:`_context` 收到
+        没有令牌时同一条路）：
+
+        * 状态里没有这一项 / 形态认不出来（老检查点、被改坏的值）；
+        * 授权不是发给**这一轮**的（``authorizes`` 里比 ``run_id``）——这是
+          "不能跨 run 复用"落到实处的地方；
+        * 授权过期了。
+
+        ``user_token`` 刻意留空：续跑**没有**令牌，也不该有（硬规则 #12）。
+        上游按令牌解析租户的那几处因此拿不到用户身份——这是 1.8 就存在的边界，
+        本批只解决"派活授权的链根"，不假装解决了它。
+        """
+        state = state or {}
+        delegation = RunDelegation.of_state(state.get(DELEGATION_STATE_KEY))
+        if delegation is None or not delegation.authorizes(run_id, now=now):
+            return self._context(tenant_id=tenant_id)
+        return RunContext(
+            tenant_id=tenant_id,
+            user_token="",
+            initiator_envelope=delegation.envelope,
+            actor=delegation.granted_by,
+        )
+
     async def resume(
         self,
         *,
@@ -214,7 +268,7 @@ class BrainService:
         run_id: str,
         approved: bool = True,
         user_token: str = "",
-        should_cancel: Callable[[], bool] | None = None,
+        should_cancel: Callable[[], Awaitable[bool]] | None = None,
     ) -> BrainState:
         """人工确认后续跑。已完成的节点不会被重跑（D-6）。
 
@@ -248,7 +302,7 @@ class BrainService:
         *,
         tenant_id: str,
         run_id: str,
-        should_cancel: Callable[[], bool] | None = None,
+        should_cancel: Callable[[], Awaitable[bool]] | None = None,
     ) -> BrainState:
         """从**检查点**接着跑一轮没跑完的 run（1.8 轨 1）。
 
@@ -262,10 +316,18 @@ class BrainService:
         "接着跑"而是"从头再跑一遍"了。
 
         已经是终态的 run **原样返回**，不动它：续跑只治"卡住"，不治"跑完了"。
+
+        **链根来自这一轮自己的派活授权**（1.9 任务 1）：没有它，重启后续跑那一波
+        会因为包络为空而 fail-closed 转成待授权提案——那一轮就永远跑不完。授权
+        读不出来（老检查点 / 形态认不出 / 不是发给这一轮的 / 已过期）时退回空包络，
+        与"没有令牌"完全一样，不会退化成"默认全给"。
         """
         cfg = self._config(tenant_id, run_id)
-        ctx = self._context(tenant_id=tenant_id)
         async with self._checkpointer.for_tenant(tenant_id) as saver:  # type: ignore[attr-defined]
+            # 先读一份状态值：**图是拿 ctx 建的，而 ctx 要从状态里读**——顺序上
+            # 只能先读后建（``aget_tuple`` 是检查点器的公开读法，不建图）。
+            stored = await self._stored_state(saver, tenant_id=tenant_id, run_id=run_id)
+            ctx = self._context_from_delegation(tenant_id=tenant_id, state=stored, run_id=run_id)
             graph = await self._graph_for(saver, ctx, self._max_parallel, should_cancel)
             snapshot = await graph.aget_state(cfg)
             if not snapshot.values:
@@ -274,6 +336,19 @@ class BrainService:
                 return dict(snapshot.values)
             out = await graph.ainvoke(None, cfg)
         return dict(out)
+
+    async def _stored_state(
+        self, saver: BaseCheckpointSaver, *, tenant_id: str, run_id: str
+    ) -> dict:
+        """检查点里**最新那一份**状态值（不建图、不推进）。
+
+        ``channel_values`` 就是状态值的所在——``checkpoint.py`` 的启动扫描读的是
+        同一处（那边走 SQL，这边走 langgraph 的公开读法 ``aget_tuple``）。
+        """
+        tup = await saver.aget_tuple(self._config(tenant_id, run_id))
+        if tup is None:
+            return {}
+        return dict((tup.checkpoint or {}).get("channel_values") or {})
 
     async def get(self, *, tenant_id: str, run_id: str) -> BrainState:
         cfg = self._config(tenant_id, run_id)

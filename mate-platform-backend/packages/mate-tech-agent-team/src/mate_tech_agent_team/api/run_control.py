@@ -24,15 +24,17 @@
 
 **边界登记（诚实说清，别当成没做）**：
 
-1. 取消信号是**进程内**的：只有与运行中的图**同进程**时才精确生效（受理制下
-   那个进程就是受理这条请求的进程，后台任务跑在同一个事件循环里）。跨副本取消
-   执行中的 run 需要共享信号通道，属后续候选；停在闸门的 run 跨副本取消仍然
-   有效（终态写在检查点）。
+1. 取消信号走**共享通道**（1.9 任务 2，:mod:`mate_tech_agent_team.coordination`）：
+   单副本是进程内实现，多副本由 ``wiring`` 按 DSN 装配 PG 实现，于是"副本 A 起的
+   run，副本 B 取消得到"——B 把信号放进通道，A 上正在跑的图在**下一个波边界**
+   自己看到。剩下的两条小边界：跨副本取消时 B **不保证**"回话那一刻图已经停了"
+   （它没有 A 的 live 记录，无法等），它保证的是终态与信号都已落下；取消信号是
+   **粘性**的（只置不清），留一张只增不减的小表。
 2. 事件流是**回放 + 尾随**：连上先补历史，之后新步骤即推送，直到 run 终态才
    关流。尾随靠**轮询**检查点（没有引入消息总线），代价见 :meth:`RunControl.events`。
-3. **幂等的跨进程面靠"确定性 run_id + 查检查点"**，进程内靠同一张 ``_live`` 表
-   占坑。同进程内的并发重复提交是精确幂等的；跨副本的**同时**提交有极小竞态
-   （两边都还没查到对方），与边界 1 同源。
+3. **幂等靠"确定性 run_id + 查检查点 + 共享认领"**（1.9 任务 3）：进程内用同一张
+   ``_live`` 表占坑，跨副本用共享的 ``RunClaims``。同键并发提交**只产生一个 run**，
+   且这一条现在**跨副本也成立**——1.7 自标的"极小竞态"已消除。
 4. **后台任务里的异常落成终态 ``failed``**：不然"终态只能从事件流/查询取"就成了
    空话——任务炸了而 run 永远停在 ``running``，客户端会一直等下去。
 5. **进程重启后的续跑靠"扫检查点"**（1.8 轨 1，:meth:`RunControl.recover`）：
@@ -40,8 +42,9 @@
    真相**——扫的就是检查点表本身，续跑用的是 ``ainvoke(None, cfg)``（从检查点
    的 ``next`` 接着跑，已完成的节点不重跑）。两个诚实的边界：检查点写在**超步
    边界**上，所以进程死在某一波员工在途时，**那一波**会被重跑；发起用户的令牌
-   刻意不进状态，所以重启后续跑没有链根包络，需要授权的那一步会 fail-closed
-   转成待授权提案，而不是拿一份来路不明的授权接着跑。
+   仍然不进状态，续跑用的是随这一轮落库的**派活授权**（1.9 任务 1，见
+   :mod:`mate_tech_agent_team.delegation`）——它只有包络四维，没有凭据，且只对
+   发出去的那一轮作数。
 """
 
 from __future__ import annotations
@@ -51,7 +54,7 @@ import hashlib
 import json
 import os
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Protocol
 from uuid import uuid4
@@ -64,6 +67,15 @@ from ..brain import (
 )
 from ..checkpoint import SCHEMA as CHECKPOINT_SCHEMA
 from ..checkpoint import UnfinishedRun, list_unfinished
+from ..coordination import (
+    CancelSignals,
+    InMemoryCancelSignals,
+    InMemoryRunClaims,
+    PgCancelSignals,
+    PgRunClaims,
+    RunClaims,
+    configured_claim_ttl,
+)
 from ..state import BrainState
 
 #: 运行级超时的默认值（秒）。0 = 不设超时：不是所有部署都想让长跑的计划自己过期。
@@ -72,6 +84,10 @@ DEFAULT_TIMEOUT_ENV = "MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS"
 #: 建表用的 admin DSN。启动扫描要跨租户读检查点表（见 :class:`PgRunIndex`），
 #: 而检查点表的 RLS 是 fail-closed —— 拿 app 角色读只会"一行都扫不到"。
 ADMIN_DSN_ENV = "MATE_AGENT_TEAM_ADMIN_DSN"
+
+#: 协作面（取消信号 / 幂等认领）用的 app DSN。它按租户读写，所以**必须**是受
+#: RLS 约束的那个角色；没配就不建跨副本实现，退回进程内实现（单副本的默认形态）。
+DSN_ENV = "MATE_AGENT_TEAM_DSN"
 
 #: 尾随事件流时两次轮询之间的间隔（秒）。
 DEFAULT_POLL_INTERVAL = 0.25
@@ -111,20 +127,18 @@ def _accepted(tenant_id: str, run_id: str, *, deduplicated: bool) -> dict:
 class _LiveRun:
     """一个**正在跑**的 run（有请求在等它）。
 
-    这不是第二份 run 状态——run 状态仍然只在检查点里。这里只有两件**即时信号**：
+    这不是第二份 run 状态——run 状态仍然只在检查点里。取消标志也**不在这里**了
+    （1.9 任务 2）：它挪进了共享通道，跨副本才看得见。留在这里的只有一件**即时
+    信号**：
 
-    * ``cancel_requested`` —— 图在节点边界读它（1.5 任务 1）。历史里不留痕，
-      所以它不该进图状态。
     * ``finished`` —— 图跑完时置位。取消要**等它停**再回话：``POST /cancel``
       返回时，这轮已经不再推进了，而不是"请求已受理、请稍后再查"。
+
+    只有**本进程起的那一轮**才在这里有记录，所以"等它停"这件事只对本进程成立的
+    那部分负责——跨副本取消另有交代，见 :meth:`RunControl.cancel`。
     """
 
-    cancel_requested: bool = False
     finished: asyncio.Event = field(default_factory=asyncio.Event)
-
-    def cancelled(self) -> bool:
-        """给图看的取消标志读取函数。"""
-        return self.cancel_requested
 
 
 class RunIndex(Protocol):
@@ -175,6 +189,8 @@ class RunControl:
         default_timeout: float = 0.0,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
         run_index: RunIndex | None = None,
+        signals: CancelSignals | None = None,
+        claims: RunClaims | None = None,
     ) -> None:
         self._service = service
         self._default_timeout = default_timeout
@@ -182,6 +198,13 @@ class RunControl:
         #: "哪些 run 没跑完"的索引（1.8 轨 1）。**没有默认值就不恢复**——
         #: 本地/测试形态不该被迫接一个 PG 才能构造控制面。
         self._run_index = run_index
+        #: 取消信号的**共享通道**（1.9 任务 2）。不给就是进程内实现：单副本部署
+        #: 与加这个模块之前逐字一致，多副本由 ``from_env`` 按 DSN 装配 PG 实现。
+        self._signals: CancelSignals = signals if signals is not None else InMemoryCancelSignals()
+        #: 幂等认领的**共享通道**（1.9 任务 3）。同上：不给就是进程内实现。
+        self._claims: RunClaims = (
+            claims if claims is not None else InMemoryRunClaims(configured_claim_ttl())
+        )
         self._live: dict[tuple[str, str], _LiveRun] = {}
         #: 后台任务的强引用。受理制之后"跑"在请求之外，引用丢了会被 GC 掉，
         #: 表现为这一轮**静默**停在半路——没有任何报错。
@@ -195,11 +218,29 @@ class RunControl:
         except ValueError:
             default_timeout = 0.0
         admin_dsn = os.getenv(ADMIN_DSN_ENV, "")
+        dsn = os.getenv(DSN_ENV, "")
+        ttl = configured_claim_ttl()
         return cls(
             service,
             default_timeout=max(default_timeout, 0.0),
             run_index=PgRunIndex(admin_dsn) if admin_dsn else None,
+            # 协作面是**按租户**读写的，走 app 角色（RLS 强制）；建表另走 admin。
+            signals=PgCancelSignals(dsn, schema=CHECKPOINT_SCHEMA) if dsn else None,
+            claims=PgRunClaims(dsn, schema=CHECKPOINT_SCHEMA, ttl=ttl) if dsn else None,
         )
+
+    def _cancel_check(self, *, tenant_id: str, run_id: str) -> Callable[[], Awaitable[bool]]:
+        """给图看的取消标志读取函数（1.9 任务 2 起是 **async** 的）。
+
+        读的是**共享通道**，不是本进程的那张表：跨副本取消时标志是**另一个进程**
+        写进去的，只有真去读一次才看得见。置位那条路（:meth:`cancel`）走的也是
+        同一个通道，所以没有第二条要维护的路径。
+        """
+
+        async def _check() -> bool:
+            return await self._signals.is_requested(tenant_id=tenant_id, run_id=run_id)
+
+        return _check
 
     # -- 受理 / 续跑 --------------------------------------------------------
     async def submit(
@@ -225,9 +266,19 @@ class RunControl:
            那个函数按 run_id 索引；执行中的它因此落在取消范围内（1.5 任务 1）。
         3. **截止时间** —— 在这里定下，由服务层连同绝对截止时刻写进状态。
 
-        **幂等的两道**：进程内用 ``_live`` 占坑（无 await，原子）；跨进程/重启用
-        确定性 run_id 查检查点。命中的那次**不新起一轮**，原样回同一个 run_id 并
-        置 ``deduplicated``。
+        **幂等的三道**（1.9 任务 3 补齐第三道）：
+
+        1. **进程内** ``_live`` 占坑 —— 无 await，原子；
+        2. **跨副本** 共享认领（:class:`RunClaims`）—— "谁先来"由数据库那一条
+           ``INSERT ... ON CONFLICT ... WHERE`` 定，不再有"两边都还没查到对方"
+           的读后写窗口；
+        3. **跨进程/重启** 确定性 run_id + 查检查点 —— 已经在库里跑过的那一轮
+           不重起。
+
+        第 2 道是 1.9 新加的：只靠第 3 道时，两个副本**同时**提交同一个键会各自
+        查到"还没有"，于是**都开跑**（键收敛到同一个地址这件事一直是对的，错的
+        是跑了两轮）。命中的那一次**不新起一轮**，原样回同一个 run_id 并置
+        ``deduplicated``。
         """
         run_id = run_id_for(tenant_id, idempotency_key) if idempotency_key else uuid4().hex
         if (tenant_id, run_id) in self._live:
@@ -235,8 +286,16 @@ class RunControl:
             return _accepted(tenant_id, run_id, deduplicated=True)
 
         live = self._open(tenant_id=tenant_id, run_id=run_id)
+        if idempotency_key and not await self._claims.claim(
+            tenant_id=tenant_id, key=idempotency_key, run_id=run_id
+        ):
+            # 另一个副本正占着这把钥匙（或者刚刚占过、还没跑完）。
+            self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+            return _accepted(tenant_id, run_id, deduplicated=True)
         if idempotency_key and await self._exists(tenant_id=tenant_id, run_id=run_id):
-            # 已经跑过的一轮（进程重启、或换个副本来的重复提交）。
+            # 已经跑过的一轮（进程重启、或换个副本来的重复提交）。认领**还回去**
+            # ——留着它会白占一把已经被用掉的钥匙，直到寿命到期。
+            await self._claims.release(tenant_id=tenant_id, key=idempotency_key)
             self._close(tenant_id=tenant_id, run_id=run_id, live=live)
             return _accepted(tenant_id, run_id, deduplicated=True)
 
@@ -248,6 +307,7 @@ class RunControl:
                 user_token=user_token,
                 max_parallel=max_parallel,
                 timeout_seconds=timeout_seconds,
+                idempotency_key=idempotency_key,
                 live=live,
             )
         )
@@ -267,6 +327,7 @@ class RunControl:
         max_parallel: int | None,
         timeout_seconds: float | None,
         live: _LiveRun,
+        idempotency_key: str = "",
     ) -> None:
         """后台把这一轮跑完。异常落成终态 ``failed``，绝不是"悄悄没了"。"""
         try:
@@ -276,7 +337,7 @@ class RunControl:
                 goal=goal,
                 user_token=user_token,
                 max_parallel=max_parallel,
-                should_cancel=live.cancelled,
+                should_cancel=self._cancel_check(tenant_id=tenant_id, run_id=run_id),
                 timeout_seconds=self._effective_timeout(timeout_seconds),
             )
         except asyncio.CancelledError:
@@ -286,6 +347,11 @@ class RunControl:
             await self._mark_failed(tenant_id=tenant_id, run_id=run_id, error=exc)
         finally:
             self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+            if idempotency_key:
+                # 认领随执行结束归还，桌面上只留**在途**的那几把钥匙（不然这张表
+                # 会随"用过的键的个数"一直涨）。被拆掉/崩掉时这一步可能没跑成，
+                # 那也没关系——认领有寿命，到期可以被接管。
+                await self._claims.release(tenant_id=tenant_id, key=idempotency_key)
 
     async def _mark_failed(self, *, tenant_id: str, run_id: str, error: Exception) -> None:
         """把后台跑挂的这一轮落成终态 ``failed``，并把错因写进状态。
@@ -387,7 +453,9 @@ class RunControl:
         """后台把续跑跑完。与 :meth:`_execute` 同形：异常落终态 ``failed``。"""
         try:
             await self._service.continue_run(
-                tenant_id=tenant_id, run_id=run_id, should_cancel=live.cancelled
+                tenant_id=tenant_id,
+                run_id=run_id,
+                should_cancel=self._cancel_check(tenant_id=tenant_id, run_id=run_id),
             )
         except asyncio.CancelledError:
             raise
@@ -430,7 +498,7 @@ class RunControl:
                 run_id=run_id,
                 approved=approved,
                 user_token=user_token,
-                should_cancel=live.cancelled,
+                should_cancel=self._cancel_check(tenant_id=tenant_id, run_id=run_id),
             )
         finally:
             self._close(tenant_id=tenant_id, run_id=run_id, live=live)
@@ -475,13 +543,29 @@ class RunControl:
     async def cancel(self, *, tenant_id: str, run_id: str) -> dict:
         """取消一轮运行（幂等）。跨租户与不存在同码：:class:`RunNotFound`。
 
-        **执行中的 run**（有请求在等它）走的是另一条路：置取消标志 → 等图在
-        节点边界自己停下 → 回话。不硬断在途调用（那一波允许跑完），也不重跑
+        **执行中的 run**（有请求在等它）走的是另一条路：置信号 → 等图在节点
+        边界自己停下 → 回话。不硬断在途调用（那一波允许跑完），也不重跑
         已完成的节点。等在闸门的 run 没有 live 记录，直接落终态即可（1.3 语义）。
+
+        **信号总是先置、且置进共享通道**（1.9 任务 2）：跨副本取消之所以原来
+        不生效，就是因为 B 那侧只往检查点写了个终态，而在途的图攥着自己那份状态
+        继续跑、下一步把终态盖回去。现在标志放进通道，**另一个副本**上正在跑的
+        图会在下一个波边界看到它。
+
+        顺序是有讲究的：**先确认这一轮存在**（不存在/跨租户直接
+        :class:`RunNotFound`，一个字节都不写），再置信号，最后等本进程那一轮停下
+        再落终态。置信号在终态判定**之后**，所以取消一个已经结束的 run 不会留下
+        一条无人认领的信号行。
+
+        跨副本时 B 没有 A 的 live 记录，"等它停"这一步它做不到——它能保证的是
+        **终态与信号都已经落下**，A 上的图会在下一个波边界收敛到同一个终态。
         """
+        state = await self.refresh(tenant_id=tenant_id, run_id=run_id)
+        if str(state.get("status", "")) in TERMINAL_STATUSES:
+            return state  # 幂等：不覆盖更早的终态（1.3 语义）
+        await self._signals.request(tenant_id=tenant_id, run_id=run_id)
         live = self._live.get((tenant_id, run_id))
         if live is not None:
-            live.cancel_requested = True
             await live.finished.wait()
         return await self._service.mark_terminal(
             tenant_id=tenant_id, run_id=run_id, status="cancelled"

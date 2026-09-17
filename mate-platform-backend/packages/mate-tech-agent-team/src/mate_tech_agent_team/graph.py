@@ -34,17 +34,23 @@
 这样重跑它也不会产生重复调用。
 
 **取消在节点边界自查**（1.5 任务 1）：执行中的 run 有请求在等它，取消不能靠
-"外部杀"。图在 ``plan`` / ``dispatch`` / ``gather`` / ``replan`` 四个边界查一次
-:func:`should_cancel`，看到标志就把自己写成终态 ``cancelled`` 并走到 END。
-粒度是**波与波之间**：在途的那一波允许跑完（不硬断），下一波一个员工都不派。
-``worker`` 里刻意不查——同一波是并行发出的，逐个自查会让"停在哪"变成竞态。
+"外部杀"。图在 ``plan`` / ``dispatch`` / ``gather`` / ``replan`` / ``gate``
+五个边界查一次 :func:`should_cancel`，看到标志就把自己写成终态 ``cancelled``
+并走到 END。粒度是**波与波之间**：在途的那一波允许跑完（不硬断），下一波一个
+员工都不派。``worker`` 里刻意不查——同一波是并行发出的，逐个自查会让"停在哪"
+变成竞态。
+
+``gate`` 那个边界是 1.9 任务 2 补的：取消信号挪进了**共享通道**（跨副本可见），
+而 ``gate`` 是"还没停下来的那一步"的最后一道门——不在这里看一眼，"另一副本的
+图刚跑完最后一波、正要落 ``awaiting_approval``"就会把别处刚落下的 ``cancelled``
+盖掉。它同样不做任何副作用，重跑它不产生重复调用。
 """
 
 from __future__ import annotations
 
 import asyncio
 import os
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -230,7 +236,7 @@ def build_brain_graph(
     actor: str = "",
     max_parallel: int = 3,
     depth: int = ROOT_DISPATCH_DEPTH,
-    should_cancel: Callable[[], bool] | None = None,
+    should_cancel: Callable[[], Awaitable[bool]] | None = None,
     retry_policy: RetryPolicy | None = None,
     max_rounds: int | None = None,
 ) -> Any:
@@ -240,7 +246,8 @@ def build_brain_graph(
     与令牌一样**不进图状态**：状态会落进 PG，而它是当次调用的授权，用完即散。
     ``actor``（发起用户标识）同样不进状态，只随派活写进审计行（硬规则 #9）。
 
-    ``should_cancel`` 是运行控制面的取消标志（1.5 任务 1）。**刻意不进图状态**：
+    ``should_cancel`` 是运行控制面的取消标志读取函数（1.5 任务 1；1.9 任务 2 起
+    是 **async** 的——信号在共享通道里，得真去读一次）。**刻意不进图状态**：
     它是"现在这一刻要不要停"的即时信号，不是这一轮的历史；状态里存它反而会
     被 checkpointer 落库、被后续读取当成事实。没给就永不取消。
 
@@ -261,8 +268,16 @@ def build_brain_graph(
     replan_fn = getattr(planner, "replan", None)
     can_replan = callable(replan_fn)
 
-    def _cancelled() -> bool:
-        return should_cancel is not None and should_cancel()
+    async def _cancelled() -> bool:
+        """图在**节点边界**问的那一句：现在要不要停。
+
+        ``await`` 是必须的，不是风格问题：取消信号在**共享通道**里（1.9 任务 2），
+        跨副本取消时它是**另一个进程**写进去的，只有真去读一次才看得见。进程内的
+        即时标志仍然走得通——调用方给的就是一个 async 闭包，快路径在它那一侧。
+        """
+        if should_cancel is None:
+            return False
+        return await should_cancel()
 
     def _stopped(state: BrainState) -> bool:
         """已经没必要往下走了（计划失败 / 被取消）。"""
@@ -327,7 +342,7 @@ def build_brain_graph(
         return END
 
     async def plan_node(state: BrainState) -> dict[str, Any]:
-        if _cancelled():
+        if await _cancelled():
             return _cancel_update()
         goal = state["goal"]
         try:
@@ -357,7 +372,7 @@ def build_brain_graph(
         # 扇出节点本身不做事：选择权在 ``_fan_out`` 里（它读 state 算这一波）。
         # 但它是**每一波开始前的边界**，取消要在这里被看见——在途的一波跑完
         # 之后，下一波不该再发出去。
-        if _cancelled():
+        if await _cancelled():
             return _cancel_update()
         return {}
 
@@ -438,7 +453,7 @@ def build_brain_graph(
         # 汇合点：等这一波全部回来，再决定有没有下一波。
         # 这也是**一波结束后的边界**：最后的取消机会——单波计划不会再经过
         # ``dispatch``，漏掉这里的自查会让"取消执行中的 run"对单波无效。
-        if _cancelled():
+        if await _cancelled():
             return _cancel_update()
         return {}
 
@@ -461,7 +476,7 @@ def build_brain_graph(
         那是计划错误，按 1.0 "拆解不合法 = 这一轮失败"的口径处理，不把它
         伪装成"不需要补活"。
         """
-        if _cancelled():
+        if await _cancelled():
             return _cancel_update()
         if _stopped(state) or not can_replan:
             return {}
@@ -489,6 +504,10 @@ def build_brain_graph(
 
     async def gate_node(state: BrainState) -> dict[str, Any]:
         # 纯路由节点：只读状态、写"等人确认"这个事实，不产生外部副作用。
+        # 取消也要在这里看一眼（1.9 任务 2）：这是"还没停下来"的最后一道门，
+        # 漏掉它，别处刚落下的 cancelled 会被这里的 awaiting_approval 盖掉。
+        if await _cancelled():
+            return _cancel_update()
         pending = state.get("approved") is None
         if pending:
             return {
