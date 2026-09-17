@@ -104,6 +104,15 @@ kubectl wait --for=condition=Ready node --all --timeout=180s
 load_image_into_node() {
   local image="$1"
   local node="${CLUSTER_NAME}-control-plane"
+  #: **先确保本地有这个镜像**。CI runner 上没有任何预装镜像，直接 `docker save`
+  #: 会报 `Error response from daemon: reference does not exist`，接着 `ctr` 收到
+  #: 空输入再报 `unrecognized image format`——CI 第一次跑就死在这（本地开发机
+  #: 有 postgres 镜像，所以本地看不出来）。**这类"只在干净环境炸"的路径正是
+  #: 把脚本收进 CI 的价值**。
+  if ! docker image inspect "$image" >/dev/null 2>&1; then
+    echo "  本地没有 ${image}，先 pull"
+    docker pull "$image"
+  fi
   echo "  载入 ${image} → ${node}"
   docker save "$image" | docker exec -i "$node" ctr -n k8s.io images import - >/dev/null
 }
