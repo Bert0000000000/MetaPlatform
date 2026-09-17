@@ -484,15 +484,64 @@ $ LEASE_TTL_HINT=15 RESCAN_HINT=5 REQUIRE_TAKEOVER=1 bash scripts/ci/agent_team_
 | `76c3fa32` | 会话页旧入口标 Legacy |
 | `34375d2a` | 两个 kind 脚本按文档跑不起来的三处 |
 | `4033856f` | 接管时延旋钮进 chart + pod-kill 脚本变成可判的门 |
+| `1304b8ad` | 本文件（首次落档） |
+| `2bee5bae` | CI 抓到的第 1 条：golden 基线 JSON 过 prettier |
+| `6e040a95` | CI 抓到的第 2 条：多副本 job 的镜像灌入要先确保本地有 |
 
-共 **16 个 commit**，**74 个文件**（+10545 / −258）。
+共 **20 个 commit**（含本文件），**75 个文件**（+10969 / −258）。
 
-### 5.9 CI 状态
+### 5.9 CI 实跑（PR #63）
 
-> **本节待补**：PR 开出后由 CI 实跑填充（required checks 的实际结果、以及预存红清单）。
-> 本批改动路径较广（`contracts/`、`infra/helm/`、`apps/web/`），按 2.1-B 的经验，
-> `infra/helm/**` 一被触碰就会唤醒那几条 workflow —— 逐条核根因时**先看是不是预存红**
-> （2.1-B §5.7 的"怎么一眼看出是登记债而不是新回归"三条查法可直接照抄）。
+**13 条硬规则门禁全绿**：`ga-001 oasdiff` / `ga-002 requirement IDs` / `ga-003 forbid_raw_sql` /
+`ga-004 forbid_bare_httpx` / `ga-005 forbid_legacy_fallback` / `ga-006 ruff + pyright strict` /
+`ga-007 forbid_skip_tests` / `ga-008 helm lint + kubeconform` / `ga-009 OTel collector smoke` /
+`ga-010 require_evidence` / `ga-011 helm-docs --dry-run` / `ga-012 gitleaks` /
+`ga-013 NetworkPolicy coverage` / `ga-014 Ontology PostgreSQL RLS isolation`。
+
+其余 required 同样全绿：`agent-team pytest` / `pyright strict` / `Lint (ruff)` /
+`Frontend` / `Validate compose + Dockerfiles` / `lint-and-bundle` / `traceability` /
+`runtime-parity` / `breaking-change` / `ga tests` / `ga format (pre-commit)`。
+`mergeStateStatus = UNSTABLE`（不是 `BLOCKED`）——即 required 全过，挂着的都是非 required。
+
+**本批新增的 CI job 也真的跑起来了**：
+
+```text
+SUCCESS   agent-team 3 replicas actually come up (kind)   3m24s
+```
+
+这是 2.1-B 建议 2 的**闭环**：以前"真的起得来多副本"是手敲的结论，现在它是 CI 里
+一条会红的判据。它第一次跑**就抓到一条只在新环境显形的问题**（见下），这正是把它
+收进 CI 的价值。
+
+**CI 抓到的两条真问题（都是本批引入的，都已修）**：
+
+| # | 症状 | 根因 | 修 |
+| --- | --- | --- | --- |
+| 1 | `ga format (pre-commit)` 红：prettier `files were modified by this hook` | `eval/baseline-2026-09-18.json` 没过 prettier（**只这一个文件**；同 job 其余 20+ 钩子全 Passed） | 重排该 JSON（`2bee5bae`）。语义不变，`json.load` 后 11 项指标俱在 |
+| 2 | 新 job `agent-team 3 replicas…` 红：`reference does not exist` → `ctr: unrecognized image format` | `load_image_into_node` 直接 `docker save`，而 **CI runner 上没有任何预装镜像**（`postgres:16-alpine` 本地不存在）。本地开发机有这个镜像，所以本地两次实跑都过 | save 前先 `docker image inspect`，没有就 `docker pull`（`6e040a95`） |
+
+> **本地检查的一处假阳性（记下来免得下次被吓到）**：Windows 工作树里那两个新增
+> YAML（`agent-team.yaml` / `golden_dataset.yaml`）本地跑 prettier 也会报不通过，
+> 但那是 **CRLF** 造成的——把 `git show HEAD:<file>`（LF）拿出来跑，两个都是
+> "All matched files use Prettier code style"。**别按本地的报错去重排契约文件**，
+> 那会造出一份整文件级别的假 diff。
+
+**非 required 的预存红（9 条，逐条核过，没有一条由本批引入）**：
+
+| job | 根因（出处） |
+| --- | --- |
+| `Architecture kernel governance` | pyright strict 预存债，2.1-A §4-B7 已量过（`continue-on-error: true`） |
+| `Static chart checks (Python + YAML)` | `infra/tests` 缺 `sqlalchemy`，workflow 头部自己登记过 |
+| `helm-unittest` | 卡在**装插件**（`requested version "0.7.2" does not exist`），chart 一个都没跑 |
+| `helm template + kubeconform` | 6 条 `could not find schema` 全来自他 chart 的 CRD；汇总行 `Invalid: 0` |
+| `helm-docs sync` | helm-docs 下载源失效 |
+| `kind cluster helm install + smoke` | 装的是 **keycloak 的 CRD**，而它要的 `metaplatform` 命名空间还没建 |
+| `boot ontology-loop stack` / `playwright ontology-loop e2e` | `.env.local not found`（CI 环境变量缺失） |
+| `cowork md-lint (pymarkdownlnt)` | 既有的 md-lint 债（见 `ci-preexisting-red-checks` 登记） |
+
+以上九条与 2.1-B §5.7 的登记表**逐条对得上**（`cowork md-lint` 见 2.1-A/跟进批的登记）。
+判断"是登记债还是新回归"的三条查法沿用 2.1-B（先看 `continue-on-error`、再看
+合并前的 `main` 上红不红、最后核因果），本批按这三条核过。
 
 ## 6. 遗留与建议
 
