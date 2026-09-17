@@ -40,6 +40,7 @@ from .checkpoint import (
     bootstrap,
     thread_id_for,
 )
+from .delegation import DelegationState, RunDelegation
 from .employee import LlmEmployeeRuntime
 from .llm_planner import LlmPlanner
 from .planner import PlanError, Planner, StaticPlanner
@@ -82,6 +83,7 @@ __all__ = [
     "CompositeToolbox",
     "DEFAULT_MAX_DEPTH",
     "DepthExceeded",
+    "DelegationState",
     "Envelope",
     "EnvelopeState",
     "BrainState",
@@ -103,6 +105,7 @@ __all__ = [
     "ProfileStore",
     "RetryPolicy",
     "RunContext",
+    "RunDelegation",
     "RunNotFound",
     "RunNotAwaitingApproval",
     "SkillCatalog",

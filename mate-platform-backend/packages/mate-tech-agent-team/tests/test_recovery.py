@@ -19,9 +19,10 @@ run，用 ``ainvoke(None, cfg)`` 从**它自己的检查点**续跑。
 1. 续跑是**从检查点接着跑**，不是"什么都不重跑"。检查点写在**超步边界**上：
    进程死在某一波员工在途时，那一波会被重跑（已完成的前面几波不会）。这就是
    "已完成的不重跑"的准确含义。
-2. 发起用户的令牌**刻意不进状态**（状态会落库），因此重启后续跑**没有**链根
-   包络——重跑的那一波员工若需要发包络，会 fail-closed 转成待授权提案。这是
-   设计如此：宁可停下来等人，也不要拿一份来路不明的授权接着跑。
+2. 发起用户的令牌**刻意不进状态**（状态会落库），但**链根会**——1.9 任务 1 把
+   它发成一份与令牌分离的 per-run 派活授权随 run 落库，续跑读它当链根。所以
+   重启后续跑**能真跑**；令牌本身仍然一个字节不落库。开跑时就没有令牌的那一轮
+   拿到的是一份空包络授权，续跑照样 fail-closed 转提案（见 test_delegation.py）。
 3. ``submit()`` 与"图写下第检查点"之间有一个**微秒级窗口**：死在这个窗口里的
    run 没有任何检查点，也就没有任何痕迹可续（"状态以检查点为准"的必然结果）。
 """
@@ -244,10 +245,13 @@ def test_an_in_flight_run_is_continued_from_its_checkpoint_after_a_restart(admin
     用例刻意用**串成一条链**的两件（t2 依赖 t1），好把崩溃点钉在"第一波已经
     跑完、第二波在途"这一刻——"已完成的不重跑"才有东西可验。整轮三件事：
     ① 不再卡在 ``running``；② 已完成的拆解与员工一个都不重跑；③ 续跑那一波
-    没有链根包络时 **fail-closed 转提案**，而不是伪造一份"跑完了"。
+    **真的跑完了**（回执 ``ok`` + 有产出）。
 
-    第 ③ 条是**安全性质**，不是妥协：发起用户的令牌刻意不落库（状态进 PG），
-    所以重启之后没有授权可用；宁可停下来等人，也不能拿一份来路不明的授权接着跑。
+    第 ③ 条在 1.8 时是反过来的：那时续跑没有链根包络，需要授权的那一步
+    fail-closed 转成待授权提案。1.9 任务 1 把链根发成一份**与令牌分离**的
+    per-run 授权随 run 落库（:mod:`mate_tech_agent_team.delegation`），于是
+    续跑有链根可用、真能跑完；令牌本身仍然一个字节都不落库。"无令牌那一轮
+    重启后照样 fail-closed"由 test_delegation.py 的负例守着。
     """
 
     async def _scenario() -> None:
@@ -286,9 +290,10 @@ def test_an_in_flight_run_is_continued_from_its_checkpoint_after_a_restart(admin
         assert counts[0] == 1, f"plan() 跑了 {counts[0]} 次 —— 已完成的节点被重跑了"
         assert body["results"]["t1"]["output"] == t1_output, "已完成的那件被重跑了"
         assert runtime.started.count("t1") == 1, f"t1 被跑了多次：{runtime.started}"
-        # ③ 续跑那一波没有授权 → 转提案，不伪造产出。
-        assert body["results"]["t2"]["status"] == "rejected", body["results"]["t2"]
-        assert body["results"]["t2"]["error_code"] == "E_AUTHORITY_ESCALATION"
+        # ③ 续跑那一波**真的跑完了**：本轮的派活授权随 run 落库，链根还在。
+        assert body["results"]["t2"]["status"] == "ok", body["results"]["t2"]
+        assert body["results"]["t2"]["output"].strip(), "回了 ok 却没有产出（假回执）"
+        assert "t2" in runtime.started, f"员工根本没被调起来：{runtime.started}"
 
     asyncio.run(_scenario())
 
@@ -299,8 +304,8 @@ def test_a_run_interrupted_before_any_worker_finishes_still_leaves_running(
     """死在第一波在途（还没有任何回执）时，续跑同样把它带出 ``running``。
 
     这一条对应"没有任何已完成的产出可保留"的极端：图上没有断点可续，于是整波
-    重派；同样因为令牌不落库而 fail-closed 转提案。**关键是它不再永远停在
-    ``running``** —— 那正是受理制留下的坑。
+    重派。**关键是它不再永远停在 ``running``** —— 那正是受理制留下的坑。有了
+    随 run 落库的派活授权（1.9 任务 1），重派的这一波还真能跑完。
     """
 
     async def _scenario() -> None:

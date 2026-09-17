@@ -13,6 +13,7 @@ from __future__ import annotations
 from typing import Annotated, Any, TypedDict
 
 from .authority import EnvelopeState
+from .delegation import DelegationState
 
 # ── 状态里的结构化值（用 TypedDict 而非 dataclass：checkpointer 序列化最稳）──
 
@@ -112,6 +113,10 @@ class BrainState(TypedDict, total=False):
     ``plan_round`` / ``max_rounds`` 是**重规划的轮次**（1.8 轨 3）。``max_rounds``
     跟着状态走（而不是只看进程里的配置）：续跑/多副本裁决时读的是**这一轮**定下的
     上界，与 ``timeout_seconds`` 同一个理由。
+
+    ``delegation`` 是**这一轮的派活授权**（1.9 任务 1）。它随 run 落库，续跑时
+    读回来当链根——**令牌仍然不进状态**，落地的只是"这一轮能碰什么"那份集合。
+    见 :mod:`mate_tech_agent_team.delegation`。
     """
 
     run_id: str
@@ -124,6 +129,8 @@ class BrainState(TypedDict, total=False):
     summary: str
     hitl_reason: str
     error: str
+    #: 本轮的派活授权（链根）。**不是凭据**，只有包络四维与它的归属。
+    delegation: DelegationState
     #: 本轮实际生效的超时值（秒；0 = 不设超时）。
     timeout_seconds: float
     #: 本轮截止的绝对时刻（epoch 秒；0 = 无截止）。
