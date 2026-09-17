@@ -15,6 +15,38 @@ class StartRunRequest(BaseModel):
     #: 运行级截止时间（秒）。省略则用部署默认值（``MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS``，
     #: 0 = 不设超时）。到点后运行落终态 ``timeout``，不会一直停在闸门上。
     timeout_seconds: float | None = Field(default=None, ge=0)
+    #: 发起这一轮的会话（C-1）。给了就**落后端**（``conversation_run``），于是换机器 /
+    #: 清浏览器之后仍查得到"这次对话里跑过哪几轮"。省略则不起这层关系——不是所有
+    #: 调用方都有会话（工作台直接起一轮、CI 压测、脚本）。
+    conversation_id: str = ""
+    #: 这一轮是会话里的**第几次发言**（前端生成，用于把多轮排成时间序）。
+    turn_id: str = ""
+
+
+class ConversationRunModel(BaseModel):
+    """一个会话里的一轮 run（C-1）。
+
+    它是**关系 + 该轮状态**的组合：关系字段来自 ``conversation_run``（本服务是
+    唯一关系源），``status`` / ``goal`` 来自该轮自己的检查点——**不在这里复制
+    一份 run 状态**，否则列表与单轮视图会各说各话。
+    """
+
+    conversation_id: str
+    run_id: str
+    turn_id: str = ""
+    created_by: str = ""
+    relation_type: str = "initiated"
+    created_at: str = ""
+    #: 该轮此刻的状态。读不到检查点（受理了但还没落第一个检查点）时留空。
+    status: str = ""
+    goal: str = ""
+
+
+class RunListModel(BaseModel):
+    """``GET /runs?conversation=`` 的回执：**新→旧**。"""
+
+    conversation_id: str
+    items: list[ConversationRunModel] = Field(default_factory=list)
 
 
 class ApproveRequest(BaseModel):
@@ -258,10 +290,12 @@ __all__ = [
     "AuditListModel",
     "AuditRecordModel",
     "ChannelMessageModel",
+    "ConversationRunModel",
     "EmployeeProfileModel",
     "ProfileListModel",
     "ProfileWriteRequest",
     "RunAcceptedModel",
+    "RunListModel",
     "RunStateModel",
     "SendMessageRequest",
     "SkillContentModel",

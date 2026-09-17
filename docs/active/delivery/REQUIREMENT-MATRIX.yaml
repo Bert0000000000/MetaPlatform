@@ -3768,6 +3768,16 @@ requirements:
       - mate-platform-backend/packages/mate-tech-agent-team/tests/test_run_control.py
     implementationStatus: implemented
     acceptanceStatus: notAccepted
+  FR-AGENT-TEAM-AGENTTEAMGETRUNS:
+    prd: docs/active/specs/2026-09-16-agent-product-layer-1.0.md
+    service: agent-team
+    operationIds:
+      - agentTeamGetRuns
+    handler: mate_tech_agent_team.main:app#agentTeamGetRuns
+    tests:
+      - mate-platform-backend/packages/mate-tech-agent-team/tests/test_conversation_link.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
   FR-AGENT-TEAM-AGENTTEAMGETRUNEVENTS:
     prd: docs/active/specs/2026-09-16-agent-product-layer-1.0.md
     service: agent-team

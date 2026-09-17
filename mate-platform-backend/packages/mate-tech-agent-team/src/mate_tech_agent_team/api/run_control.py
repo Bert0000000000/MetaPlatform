@@ -73,6 +73,12 @@ from ..brain import (
 )
 from ..checkpoint import SCHEMA as CHECKPOINT_SCHEMA
 from ..checkpoint import UnfinishedRun, list_unfinished
+from ..conversation_link import (
+    RELATION_INITIATED,
+    ConversationRuns,
+    InMemoryConversationRuns,
+    PgConversationRuns,
+)
 from ..coordination import (
     CancelSignals,
     InMemoryCancelSignals,
@@ -108,6 +114,12 @@ logger = logging.getLogger("metaplatform.agent_team.run_control")
 
 #: 运行级超时的默认值（秒）。0 = 不设超时：不是所有部署都想让长跑的计划自己过期。
 DEFAULT_TIMEOUT_ENV = "MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS"
+
+#: ``GET /runs?conversation=`` 一次最多回多少轮。列表里每一轮都要读一次检查点
+#: （见 :meth:`RunControl.runs_in_conversation`），所以这个数同时是那次请求的
+#: 检查点读次数上限。取 200：会话页要显示的历史轮次远小于它，而真正的"我要
+#: 全量"应该走别的面。
+MAX_CONVERSATION_RUNS = 200
 
 #: 建表用的 admin DSN。启动扫描要跨租户读检查点表（见 :class:`PgRunIndex`），
 #: 而检查点表的 RLS 是 fail-closed —— 拿 app 角色读只会"一行都扫不到"。
@@ -270,6 +282,7 @@ class RunControl:
         leases: RunLeases | None = None,
         tool_ledger: ToolLedger | None = None,
         run_events: RunEventStore | None = None,
+        conversations: ConversationRuns | None = None,
         step_reader: Callable[[str, str], Awaitable[str]] | None = None,
         instance_id: str = "",
         lease_ttl: float | None = None,
@@ -304,6 +317,12 @@ class RunControl:
         #: 检查点"的老路径，单副本 / 不接 PG 的形态与加它之前逐字一致（唯一差别
         #: 是断线重连现在也按 ``Last-Event-ID`` 补发，那是纯改进）。
         self._run_events: RunEventStore | None = run_events
+        #: 会话 ↔ run 关系（C-1）。**后端是唯一关系源**：不给就是进程内实现，
+        #: 单副本与测试行为一致；多副本与重启下的一致性由 ``from_env`` 按 DSN
+        #: 装配 PG 实现给出。它只记"哪一轮属于哪次对话"，不记 run 状态。
+        self._conversations: ConversationRuns = (
+            conversations if conversations is not None else InMemoryConversationRuns()
+        )
         self._event_retention = (
             event_retention if event_retention is not None else configured_retention()
         )
@@ -364,6 +383,7 @@ class RunControl:
             claims=PgRunClaims(dsn, schema=CHECKPOINT_SCHEMA, ttl=ttl) if dsn else None,
             leases=PgRunLeases(dsn, schema=CHECKPOINT_SCHEMA) if dsn else None,
             run_events=PgRunEvents(dsn, schema=CHECKPOINT_SCHEMA) if dsn else None,
+            conversations=PgConversationRuns(dsn, schema=CHECKPOINT_SCHEMA) if dsn else None,
             tool_ledger=tool_ledger,
             step_reader=step_reader,
         )
@@ -391,6 +411,9 @@ class RunControl:
         max_parallel: int | None = None,
         timeout_seconds: float | None = None,
         idempotency_key: str = "",
+        conversation_id: str = "",
+        turn_id: str = "",
+        created_by: str = "",
     ) -> dict:
         """**受理**一轮运行并立刻回话（1.7 任务 1）：图在后台跑。
 
@@ -404,6 +427,10 @@ class RunControl:
         2. **认领**（``_live``）—— 图要在自己开跑前拿到取消标志的读取函数，而
            那个函数按 run_id 索引；执行中的它因此落在取消范围内（1.5 任务 1）。
         3. **截止时间** —— 在这里定下，由服务层连同绝对截止时刻写进状态。
+
+        带 ``conversation_id`` 时**先落关系再往下走**（C-1）：下面几条去重路径
+        都会提前 return，把关联放在它们之前，才能保证"回执里那个 run_id 一定能
+        从这个会话查到"。关联本身幂等，重复提交不会攒出第二条。
 
         **幂等的三道**（1.9 任务 3 补齐第三道）：
 
@@ -420,6 +447,18 @@ class RunControl:
         ``deduplicated``。
         """
         run_id = run_id_for(tenant_id, idempotency_key) if idempotency_key else uuid4().hex
+        if conversation_id:
+            # C-1：会话 ↔ run 落后端。这一步**没有**放在图跑起来之后——图上跑着
+            # 的 run 才是最难补记的那种，而这里的失败会让整个 submit 抛出去，
+            # 是刻意的：记不下关系就不该假装受理成功。
+            await self._conversations.link(
+                tenant_id=tenant_id,
+                conversation_id=conversation_id,
+                run_id=run_id,
+                turn_id=turn_id,
+                created_by=created_by,
+                relation_type=RELATION_INITIATED,
+            )
         if (tenant_id, run_id) in self._live:
             # 同一轮正在跑（受理回执还没摘牌）——不能再起一轮。
             return _accepted(tenant_id, run_id, deduplicated=True)
@@ -923,6 +962,47 @@ class RunControl:
             return {**state, "status": CANCELLING}
         return state
 
+    @property
+    def conversations(self) -> ConversationRuns:
+        """会话 ↔ run 关系面（``GET /runs?conversation=`` 读的就是它）。"""
+        return self._conversations
+
+    async def runs_in_conversation(
+        self, *, tenant_id: str, conversation_id: str, limit: int = MAX_CONVERSATION_RUNS
+    ) -> list[dict]:
+        """一个会话里的各轮 run（**新→旧**），每项 = 关系字段 + 该轮状态。
+
+        **状态仍走 :meth:`refresh`**，不另读一份——列表视图与单轮视图必须看到
+        同一个状态，否则"列表说 running、点进去说 timeout"就成了第二个真相。
+        代价是 N 轮 = N 次检查点读，所以有 ``limit``：会话页一次要显示的历史轮次
+        是十数量级，超过这个数说明调用方在做别的事。
+
+        关联指向的 run 在检查点里读不到时（受理了但还没落第一个检查点，或这一轮
+        从来没跑起来）**照样出这一项**，``status`` 留空——关系是真的，把它藏起来
+        反而会让"我明明发起过这一轮"变成一个无法解释的现象。
+        """
+        if not tenant_id or not conversation_id:
+            return []
+        links = await self._conversations.by_conversation(tenant_id, conversation_id)
+        if limit > 0:
+            links = links[-limit:]  # 新→旧取最近 limit 条，读检查点的次数随之封顶
+        rows: list[dict] = []
+        for link in links:
+            state: dict = {}
+            try:
+                state = await self.refresh(tenant_id=tenant_id, run_id=link.run_id)
+            except RunNotFound:
+                state = {}
+            rows.append(
+                {
+                    **link.to_dict(),
+                    "status": str(state.get("status", "")),
+                    "goal": str(state.get("goal", "")),
+                }
+            )
+        rows.reverse()  # 会话页要的次序是"最近一轮在最上面"
+        return rows
+
     async def _archive_signal(self, *, tenant_id: str, run_id: str) -> None:
         """归档一格取消信号（**只在终态之后调**，见 :meth:`refresh`）。"""
         try:
@@ -1102,6 +1182,7 @@ __all__ = [
     "DEFAULT_POLL_INTERVAL",
     "DEFAULT_READY_TIMEOUT",
     "DEFAULT_TIMEOUT_ENV",
+    "MAX_CONVERSATION_RUNS",
     "RESUMABLE_STATUSES",
     "PgRunIndex",
     "RunControl",

@@ -371,6 +371,68 @@ components:
 
             生效值**随 run 落库**（见 `RunState.timeout_seconds` / `deadline_at`），
             服务重启后仍按本轮的值裁决。
+        conversation_id:
+          type: string
+          default: ""
+          description: |
+            发起这一轮的**会话 id**（C-1 / `MP-SESSION-RUN-LINK-01`）。给了就落
+            后端（`conversation_run` 表），于是换机器 / 清浏览器之后仍查得到
+            "这次对话里跑过哪几轮"（见 `GET /runs?conversation=`）。
+
+            **后端是唯一关系源**：前端那份 `localStorage` 只是缓存。省略则不起
+            这层关系——不是所有调用方都有会话（工作台直接起一轮、脚本、压测）。
+        turn_id:
+          type: string
+          default: ""
+          description: |
+            这一轮是会话里的**第几次发言**（调用方生成，用于把多轮排成时间序）。
+            仅在该轮有 `conversation_id` 时有意义。
+    ConversationRun:
+      type: object
+      required: [conversation_id, run_id]
+      properties:
+        conversation_id:
+          type: string
+        run_id:
+          type: string
+        turn_id:
+          type: string
+          default: ""
+        created_by:
+          type: string
+          default: ""
+          description: 发起者的 subject（取自令牌，不是请求体）
+        relation_type:
+          type: string
+          default: initiated
+          description: |
+            关系种类。当前只有 `initiated`（这一轮由该会话发起）；"被引用"是
+            另一种关系，出现时走契约新增。
+        created_at:
+          type: string
+          default: ""
+        status:
+          type: string
+          default: ""
+          description: |
+            该轮**此刻**的状态。它来自该轮自己的检查点（与 `GET /runs/{run_id}`
+            同一份事实），本表不复制 run 状态。读不到检查点（已受理、尚未落第一个
+            检查点）时为空串。
+        goal:
+          type: string
+          default: ""
+    RunList:
+      type: object
+      required: [conversation_id]
+      properties:
+        conversation_id:
+          type: string
+        items:
+          type: array
+          default: []
+          description: 该会话里的各轮 run，**新→旧**。
+          items:
+            $ref: "#/components/schemas/ConversationRun"
     ApproveRequest:
       type: object
       properties:
@@ -717,6 +779,51 @@ paths:
       x-mate-owner: agent-product-layer
       x-mate-permission: agent-team.write
       x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMPOSTRUNS]
+      x-mate-implementation-status: implemented
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
+      summary: 列一个会话里的各轮 run（新→旧，后端是唯一关系源）
+      description: |
+        **C-1 / `MP-SESSION-RUN-LINK-01`**：会话与 run 的关系以前只写在浏览器
+        `localStorage`（`mp-agent-team-run:<会话id>` → run_id），换个机器就没了。
+        现在这条关系落在本服务的库里，本接口是它的唯一读法。
+
+        **为什么 `conversation` 是必填**：去掉它这个端点就变成"列出全租户的
+        run"，那既不是它的用途，也会把这个读路径的代价放大到不可控。要按租户
+        全量列 run 是另一个面（且需要分页），不在本批次。
+
+        **状态不在这里复制**：每一项的 `status` / `goal` 来自该轮自己的检查点，
+        与 `GET /runs/{run_id}` 是同一份事实、同一条读取路径（含超时裁决），
+        所以列表与详情不会各说各话。代价是 N 轮 = N 次检查点读，服务端因此有
+        条数上限。
+
+        租户取自**令牌**，不是查询参数：拿别的租户的 `conversation_id` 来查
+        只会查到空，不泄露"这个 id 存在过"。
+      tags: [agent-team]
+      operationId: agentTeamGetRuns
+      parameters:
+        - name: conversation
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: 会话 id（与 `POST /runs` 的 `conversation_id` 同一个值）
+      responses:
+        "200":
+          description: 该会话里的各轮 run，**新→旧**
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunList"
+        "422":
+          description: 缺少 `conversation` 查询参数
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETRUNS]
       x-mate-implementation-status: implemented
   /api/v1/agent-team/runs/{run_id}:
     get:

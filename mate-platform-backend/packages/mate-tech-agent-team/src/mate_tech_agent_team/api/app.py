@@ -1,6 +1,7 @@
 """agent-team HTTP surface（contracts/openapi/services/agent-team.yaml）。
 
   - POST /api/v1/agent-team/runs                      — 一句话启动
+  - GET  /api/v1/agent-team/runs?conversation=…       — 一个会话里的各轮 run（C-1）
   - GET  /api/v1/agent-team/runs/{run_id}             — 任务图/员工状态/结果
   - POST /api/v1/agent-team/runs/{run_id}/approve     — 人工确认闸门
   - POST /api/v1/agent-team/runs/{run_id}/cancel      — 取消（落终态）
@@ -19,7 +20,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
 from mate_platform.tenancy.guards import (
@@ -45,11 +46,13 @@ from .schemas import (
     AuditListModel,
     AuditRecordModel,
     ChannelMessageModel,
+    ConversationRunModel,
     EmployeeProfileModel,
     ProfileListModel,
     ProfileWriteRequest,
     RunAcceptedModel,
     RunCancelAcceptedModel,
+    RunListModel,
     RunStateModel,
     SendMessageRequest,
     SkillContentModel,
@@ -168,6 +171,15 @@ def _tid(request: Request) -> str:
     return str(require_tenant(request.state.ctx))
 
 
+def _actor(request: Request) -> str:
+    """发起者的 **subject**（写进会话关系的 ``created_by``）。
+
+    取自**令牌解析出来的** ``RequestContext``，不是请求体里的字段——"这轮是谁
+    发起的"是可以被审计追问的事实，不接受调用方自称。
+    """
+    return str(getattr(request.state.ctx, "user_id", "") or "")
+
+
 def _user_token(request: Request) -> str:
     """发起用户的原始 Bearer。
 
@@ -205,6 +217,10 @@ async def agentTeamPostRuns(request: Request, body: StartRunRequest) -> RunAccep
 
     重复提交怎么办：带 ``Idempotency-Key`` 时同一个键（**同租户内**）永远映射到
     同一轮；重复提交原样回同一个 run_id 并置 ``deduplicated``。
+
+    带 ``conversation_id`` 时**同一件事顺带落库**（C-1）：这一轮属于哪次会话由
+    后端记，前端那份 localStorage 只是缓存。于是换机器 / 清浏览器之后，"这次
+    对话里跑过哪几轮"仍查得到（`GET /runs?conversation=`）。
     """
     tenant_id = _tid(request)
     accepted = await get_run_control().submit(
@@ -214,8 +230,33 @@ async def agentTeamPostRuns(request: Request, body: StartRunRequest) -> RunAccep
         max_parallel=body.max_parallel,
         timeout_seconds=body.timeout_seconds,
         idempotency_key=request.headers.get("idempotency-key", "").strip(),
+        conversation_id=body.conversation_id.strip(),
+        turn_id=body.turn_id.strip(),
+        created_by=_actor(request),
     )
     return RunAcceptedModel.model_validate(accepted)
+
+
+@router.get("/runs", response_model=RunListModel)
+async def agentTeamGetRuns(
+    request: Request, conversation: str = Query(min_length=1)
+) -> RunListModel:
+    """列一个会话里的各轮 run（C-1，**新→旧**）。
+
+    **后端是唯一关系源**：这份关系以前只写在浏览器 localStorage 里，换个机器
+    就没了。``conversation`` 必填——没有它就变成"列出全租户的 run"，
+    那既不是本端点的用途，也会把这个读路径的代价放大到不可控。
+
+    租户取自令牌（``_tid``），**不是查询参数**：拿别人的 conversation_id 来查
+    只会查到空（那是另一个租户的命名空间），不泄露"这个 id 存在过"。
+    """
+    rows = await get_run_control().runs_in_conversation(
+        tenant_id=_tid(request), conversation_id=conversation
+    )
+    return RunListModel(
+        conversation_id=conversation,
+        items=[ConversationRunModel.model_validate(row) for row in rows],
+    )
 
 
 @router.get("/runs/{run_id}", response_model=RunStateModel)
