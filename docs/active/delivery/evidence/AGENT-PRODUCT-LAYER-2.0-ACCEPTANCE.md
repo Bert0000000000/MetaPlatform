@@ -176,7 +176,9 @@ cd metaplatform-frontend/apps/web && pnpm test:unit && pnpm typecheck
 | commit | 内容 |
 | --- | --- |
 | `b64f5633` | 轨 B：会话页接 Agent 产品层 + 调度可视化常驻历史之上 |
-| （本文件所在提交） | 轨 A：落档 14 份文档 + 统一验收 + 边界表 + 状态同步 |
+| `b17fc80d` | 轨 A：落档 14 份文档 + 统一验收 + 边界表 + 状态同步 |
+
+PR：[#56](https://github.com/Bert0000000000/MetaPlatform/pull/56)（分支 `feat/agent-product-layer-2.0`，基线 `2a74df8d`）。
 
 ### 4.4 结果
 

@@ -162,7 +162,7 @@
 
 ---
 
-### 2.0 —— 收尾 + 会话页整合（✅）
+### 2.0 —— 收尾 + 会话页整合（✅ PR #56 → `b17fc80d`）
 
 **交付**：轨 B `b64f5633`；轨 A（落档 / 统一验收 / 边界表 / 状态同步）同批。
 **统一验收与边界表**：`docs/active/delivery/evidence/AGENT-PRODUCT-LAYER-2.0-ACCEPTANCE.md`
