@@ -75,26 +75,48 @@ class _SlowRuntime:
         )
 
 
-class _ChainPlanner(StaticPlanner):
+def _chain(goal: str) -> list[SubTask]:
     """两件**串成一条链**（t2 依赖 t1）—— 把崩溃点钉在"第一波跑完、第二波在途"。"""
+    return [
+        SubTask(task_id="t1", profile_id="EMP-ANALYST", instruction=f"分析：{goal}", depends_on=[]),
+        SubTask(
+            task_id="t2",
+            profile_id="EMP-AUDITOR",
+            instruction=f"复核：{goal}",
+            depends_on=["t1"],
+        ),
+    ]
 
+
+class _ChainPlanner(StaticPlanner):
     def __init__(self, counter: list[int]) -> None:
         self._counter = counter
 
     async def plan(self, *, goal: str, max_parallel: int, tenant_id: str) -> list[SubTask]:
         del max_parallel, tenant_id
         self._counter[0] += 1
-        return [
-            SubTask(
-                task_id="t1", profile_id="EMP-ANALYST", instruction=f"分析：{goal}", depends_on=[]
-            ),
-            SubTask(
-                task_id="t2",
-                profile_id="EMP-AUDITOR",
-                instruction=f"复核：{goal}",
-                depends_on=["t1"],
-            ),
-        ]
+        return _chain(goal)
+
+
+class _SlowPlanner(_ChainPlanner):
+    """拆解慢一点 —— 把"死在拆解这一步"钉成一个**确定**的崩溃点。
+
+    比"死在员工波次在途"稳得多，而且是无令牌用例**只能**选的那种：无令牌那一轮的
+    员工根本不会被调起来（越权直接转提案，毫秒级），它不会停在某一波里等着被撞见
+    ——靠"跑得快慢去撞一个窗口"的用例在慢一点的机器上会变成"还没崩，它已经跑到
+    闸门了"（实测：本批两条用例在 CI 上就是这么红的）。
+    """
+
+    def __init__(self, counter: list[int], delay: float) -> None:
+        super().__init__(counter)
+        self._delay = delay
+
+    async def plan(self, *, goal: str, max_parallel: int, tenant_id: str) -> list[SubTask]:
+        # 先计数再睡：被中断的那一次也算"发起过"，否则看不出续跑时它被重跑了。
+        self._counter[0] += 1
+        await asyncio.sleep(self._delay)
+        del max_parallel, tenant_id
+        return _chain(goal)
 
 
 class _FakeIndex:
@@ -236,13 +258,17 @@ def test_a_run_started_without_a_token_still_fails_closed_after_a_restart() -> N
     """
 
     async def _scenario() -> None:
-        service, _runtime, counts = _service()
+        counts = [0]
+        service, _runtime, _counts = _service(
+            planner=lambda c: _SlowPlanner(c, 1.0), counter=counts
+        )
         before = RunControl(service)
         run_id = (
             await before.submit(tenant_id=TENANT, goal="分析本月异常订单")  # 刻意不带令牌
         )["run_id"]
-        assert await _until(lambda: _has_result(service, run_id, "t1"))
         await before.shutdown()
+        stuck = await service.get(tenant_id=TENANT, run_id=run_id)
+        assert stuck["status"] == "running", "该死在这一轮的执行中，而不是别的状态"
 
         after = RunControl(service, run_index=_FakeIndex([(TENANT, run_id)]))
         assert await after.recover() == [run_id]
@@ -252,7 +278,9 @@ def test_a_run_started_without_a_token_still_fails_closed_after_a_restart() -> N
         t2 = body["results"]["t2"]
         assert t2["status"] == "rejected", t2
         assert t2["error_code"] == "E_AUTHORITY_ESCALATION", t2
-        assert counts[0] == 1, f"agent() 被重跑了 {counts[0]} 次"
+        # 拆解**没跑完**（死在中途），所以续跑把它重跑了一次——这正是"已完成的
+        # 不重跑"的另一面：它当时根本没完成。
+        assert counts[0] == 2, f"没跑完的拆解应当被重跑一次，实际 {counts[0]} 次"
 
     asyncio.run(_scenario())
 
@@ -291,10 +319,17 @@ def test_a_tokenless_run_does_not_inherit_a_neighbouring_runs_authority(admin_to
 
     这是"不能跨 run 复用"的端到端形态——两轮**同时**被扫描认领、同一个进程、
     同一个闸门实例：第二轮没有因为第一轮拿到了授权就跟着一起拿到。
+
+    崩溃点是**构造**出来的（两轮都停在慢拆解器里），不是靠跑得快慢去撞一个窗口：
+    无令牌那一轮的员工根本不会被调起来（越权直接转提案），它不会停在某一波里等
+    你撞见。
     """
 
     async def _scenario() -> None:
-        service, _runtime, _counts = _service()
+        counts = [0]
+        service, _runtime, _counts = _service(
+            planner=lambda c: _SlowPlanner(c, 1.0), counter=counts
+        )
         before = RunControl(service)
         authorized = (
             await before.submit(tenant_id=TENANT, goal="分析本月异常订单", user_token=admin_token)
@@ -303,10 +338,10 @@ def test_a_tokenless_run_does_not_inherit_a_neighbouring_runs_authority(admin_to
             await before.submit(tenant_id=TENANT, goal="盘点本月库存")  # 不带令牌
         )["run_id"]
 
-        # 两轮都进到"第一波已落回执"这一刻，再一起重启。
-        assert await _until(lambda: _has_result(service, authorized, "t1"))
-        assert await _until(lambda: _has_result(service, anonymous, "t1"))
         await before.shutdown()
+        for run_id in (authorized, anonymous):
+            state = await service.get(tenant_id=TENANT, run_id=run_id)
+            assert state["status"] == "running", state
 
         after = RunControl(
             service, run_index=_FakeIndex([(TENANT, authorized), (TENANT, anonymous)])
