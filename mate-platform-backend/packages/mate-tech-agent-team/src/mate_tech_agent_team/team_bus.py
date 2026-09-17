@@ -36,6 +36,7 @@ from .team_task_store import (
     TeamTask,
     TeamTasks,
 )
+from .versioning import revision_of
 
 DEFAULT_MAX_DEPTH = 3
 
@@ -200,6 +201,8 @@ class TeamBus:
                 policy_version=AUTHORITY_POLICY_VERSION,
                 authority_before=dict(request.initiator_envelope.as_state()),
                 authority_after=dict(child.as_state()),
+                # A-6：判定用的是**哪一版**员工定义（与计划期那份快照同源）。
+                agent_profile_revision=revision_of(profile),
             )
             return SpawnOutcome(
                 task_id=task_id,
@@ -243,6 +246,7 @@ class TeamBus:
             outcome="proposal",
             decision="escalated",
             policy_version=AUTHORITY_POLICY_VERSION,
+            agent_profile_revision=revision_of(profile),
             authority_before=dict(request.initiator_envelope.as_state()),
             # 记**申请到的**包络（不是放行后的空包络）：事后要能看出"它当时想碰什么"。
             authority_after=dict(child.as_state()),

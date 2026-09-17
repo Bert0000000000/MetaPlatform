@@ -41,6 +41,12 @@ from .retry import RetryPolicy
 from .runtime import EmployeeRuntime
 from .state import BrainState
 from .team_bus import TeamBus
+from .versioning import (
+    AGENT_RUNTIME_VERSION,
+    CHECKPOINT_CODEC_VERSION,
+    GRAPH_DEFINITION_VERSION,
+    STATE_SCHEMA_VERSION,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -229,6 +235,12 @@ class BrainService:
                     "timeout_seconds": timeout,
                     "deadline_at": deadline_at,
                     DELEGATION_STATE_KEY: delegation.as_state(),
+                    # A-6：这一轮是按哪一版写下的。四个版本随 run 落进检查点，
+                    # 于是"这份状态该用什么读法"从状态自身读得出来。
+                    "state_schema_version": STATE_SCHEMA_VERSION,
+                    "graph_definition_version": GRAPH_DEFINITION_VERSION,
+                    "agent_runtime_version": AGENT_RUNTIME_VERSION,
+                    "checkpoint_codec_version": CHECKPOINT_CODEC_VERSION,
                 },
                 cfg,
             )

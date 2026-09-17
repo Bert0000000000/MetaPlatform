@@ -52,6 +52,7 @@ from .team_bus import DEFAULT_MAX_DEPTH, TeamBus
 from .team_task_store import PgTeamTasks
 from .tool_ledger import PgToolLedger
 from .toolbox import CompositeToolbox, McpToolbox
+from .versioning import profile_for_subtask
 
 DEFAULT_LLMGW_URL = "http://localhost:8008"
 DEFAULT_MCP_URL = "http://localhost:8081"
@@ -276,7 +277,9 @@ class RuntimeRouter:
 
     async def run(self, *, subtask: SubTask, tenant_id: str) -> SubTaskResult:
         try:
-            profile = await self._registry.get(subtask["profile_id"], tenant_id)
+            # A-6：路由也读**快照**那一份定义——执行面是定义的一部分，
+            # 名册里改了 runtimes 也不该把在途的这一波换到别的沙箱上去。
+            profile = await profile_for_subtask(subtask, self._registry, tenant_id)
         except ProfileNotFound:
             if self._default is None:
                 return SubTaskResult(

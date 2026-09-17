@@ -65,6 +65,7 @@ from .retry import RetryPolicy
 from .runtime import EmployeeRuntime, TransientRunError
 from .state import BrainState, SubTask, SubTaskResult
 from .team_bus import SpawnRequest, TeamBus
+from .versioning import AgentProfileSnapshot
 
 #: 根 run 派出去的子任务层号（根任务 0，它的子员工 1）。
 ROOT_DISPATCH_DEPTH = 1
@@ -341,6 +342,28 @@ def build_brain_graph(
             return "reject"
         return END
 
+    async def _pin_snapshots(subtasks: list[SubTask], *, tenant_id: str) -> None:
+        """把**此刻**的员工定义拍成快照钉在每一件子任务上（A-6）。
+
+        拍在**计划期**而不是派活时：续跑会**重新派活**（要再过一次闸门），
+        派活时才拍的话，每次续跑用的都是"当下的定义"——那正是本批要治的
+        「Run 中途改员工定义，本轮行为就变了」。
+
+        员工不存在时**不在这里判失败**：那是闸门的事，它有一条更准确的错误回执
+        （``E_PROFILE_NOT_FOUND``），在这里提前失败会把措辞变成两种。
+        """
+        registry = getattr(bus, "_registry", None)
+        if registry is None:
+            return
+        for subtask in subtasks:
+            if subtask.get("profile_snapshot"):
+                continue
+            try:
+                profile = await registry.get(str(subtask.get("profile_id") or ""), tenant_id)
+            except ProfileNotFound:
+                continue
+            subtask["profile_snapshot"] = AgentProfileSnapshot.capture(profile).as_state()
+
     async def plan_node(state: BrainState) -> dict[str, Any]:
         if await _cancelled():
             return _cancel_update()
@@ -361,6 +384,7 @@ def build_brain_graph(
         if invalid:
             return {"status": "failed", "error": invalid, "subtasks": subtasks}
         update: dict[str, Any] = {"subtasks": subtasks, "status": "running", "results": {}}
+        await _pin_snapshots(subtasks, tenant_id=state["tenant_id"])
         if can_replan:
             # 只有**会**再规划的拆解器才在状态里留下轮次：没有这个能力的链路，
             # 状态形状与 1.0 一个字都不差（免得多出一个永远不动的字段）。
@@ -438,6 +462,8 @@ def build_brain_graph(
         # 1.4 任务 1：四维一起发下去。只发工具面的话，action_rids / kb_ids /
         # markings 三维在执行侧无人认领——判完就没人再看一眼。
         subtask["granted_envelope"] = outcome.envelope.as_state()
+        # 注意：``profile_snapshot`` **不在这里覆盖**。它是计划期钉下的那一份
+        # （A-6），续跑重新派活时也不该被"此刻的名册"顶掉——那正是要治的事。
         # 1.5 任务 4：**到这里**才有重试。派活已经在上面发生过一次（建行、落审计、
         # 越权转 proposal 都是副作用），重试只包住员工运行时那一次调用。
         result = await _invoke_employee(
@@ -503,6 +529,9 @@ def build_brain_graph(
         invalid = _validate_replan(existing, extra)
         if invalid:
             return {"status": "failed", "error": invalid}
+        # A-6：重规划新加的那几件同样要钉快照——否则它们会用"当下的定义"跑，
+        # 与同一轮里早先那几件不是同一版。
+        await _pin_snapshots(list(extra), tenant_id=state["tenant_id"])
         return {"subtasks": [*existing, *list(extra)], "plan_round": round_index + 1}
 
     async def gate_node(state: BrainState) -> dict[str, Any]:

@@ -52,6 +52,7 @@ from .skills import SkillCatalog
 from .state import SubTask, SubTaskResult
 from .tool_ledger import ToolCallAdmission, ToolLedger, call_id, new_lease_owner
 from .toolbox import Toolbox, ToolNotAllowed
+from .versioning import profile_for_subtask
 
 #: 一条工具结果最多回灌多少字符——上下文裁剪（ADR-0066 §5.4）的最小形态。
 #: 取 8000 而非更小：本体的对象类型清单有 47 条、压到 rid+名称仍有 ~4400 字符，
@@ -444,7 +445,9 @@ class LlmEmployeeRuntime:
             evidence=[],
         )
         try:
-            profile = await self._registry.get(subtask["profile_id"], tenant_id)
+            # A-6：**有快照就用快照**那一份定义。名册里的现值之后被谁改了，
+            # 这一轮（含续跑重建的那一波）跑的仍然是派活当时那一份。
+            profile = await profile_for_subtask(subtask, self._registry, tenant_id)
         except ProfileNotFound:
             result["error"] = f"员工不存在：{subtask['profile_id']}（租户 {tenant_id}）"
             return result
