@@ -53,10 +53,11 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON {table} TO {app_role};
 
 
 def bootstrap(admin_dsn: str, app_role: str = "mate_app", schema: str = SCHEMA) -> None:
-    """建 schema + langgraph 表 + 员工身份表 + 任务实例表 + RLS 策略。幂等。
+    """建 schema + langgraph 表 + 员工身份表 + 任务实例表 + 产出物表 + RLS 策略。幂等。
 
     必须以 **admin** 身份调用——见模块 docstring 第 1 条。
     """
+    from .artifact_store import bootstrap_artifacts
     from .profile_store import bootstrap_profiles
     from .team_task_store import bootstrap_tasks
 
@@ -72,6 +73,8 @@ def bootstrap(admin_dsn: str, app_role: str = "mate_app", schema: str = SCHEMA) 
         bootstrap_profiles(conn, app_role=app_role)
         # 1.2 任务 2：任务实例（含 inbox）同库同 schema，同一套守门。
         bootstrap_tasks(conn, app_role=app_role)
+        # 1.6 任务 2：产出物（artifact）同库同 schema，同一套守门。
+        bootstrap_artifacts(conn, app_role=app_role)
 
 
 def _guc_statement(tenant_id: str) -> tuple[str, tuple[str]]:

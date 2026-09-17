@@ -116,6 +116,36 @@ components:
             这一件**真正发起了几次**运行时调用（含重试；1 = 一次过手）。
             没被执行的（越权转 proposal / 硬拒）为 0。重试只作用于**运行时那一次
             调用**：派活（建任务行、落审计、转 proposal）是副作用，不会被重做。
+        evidence:
+          type: array
+          description: |
+            该员工工具调用结果映射出的**结构化证据**（1.6）。形状与 copilot 的
+            证据条目**完全一致**——同一平台里"证据"只有一种样子：
+
+            - `type`：`ONTOLOGY_OBJECT`（对象/类型级）或 `ONTOLOGY_METRIC`（聚合指标）；
+            - `ref`：可寻址引用（实例 rid / 类型 rid / 指标名）；
+            - `objectId`：**仅实例证据**有；类型级与指标级不设（拿它调实例接口会 404）；
+            - `concept`：人读的名字（可缺）；
+            - `fragment`：结果片段（可缺）；
+            - `evidenceId`：运行内唯一，供前端去重/追加；
+            - `capturedAt`：抓取时刻（UTC，`%Y-%m-%dT%H:%M:%SZ`）。
+
+            **忠实映射**：只对结果里真实存在的字段取证，取不到就**不产出条目**
+            （工具成功但无证据是正常结果，不是异常）。被闸门拒绝或执行失败的工具
+            调用**不产证据**——那种结果里没有可取证的事实。
+          items:
+            type: object
+        artifacts:
+          type: array
+          description: |
+            该员工产出的**可寻址交付物**的元数据（1.6 任务 2，形状见
+            `Artifact`）；正文按 `artifact_id` 另取。
+
+            只有 `status=ok` 且产出**非空白**才有一条——空产出不是交付物。
+            落库失败**不吞**：产出拿得到却在回执里给不出地址，等于另一种
+            "假回执"，宁可让这一轮明确失败。
+          items:
+            $ref: "#/components/schemas/Artifact"
     RunState:
       type: object
       required: [run_id, tenant_id, goal, status]
@@ -266,6 +296,61 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AuditRecord"
+    Artifact:
+      type: object
+      required: [artifact_id]
+      description: |
+        一件**产出物**的元数据（1.6 任务 2）。正文不在列表里——按
+        `artifact_id` 走 `GET /artifacts/{artifact_id}` 另取。
+
+        落地存储是 **PG**（不是 MinIO）：租户隔离只有 PG 这条路是数据库强制的
+        （RLS），且"可寻址"要的主键 PG 直接给；产出物是 KB 级文本，对象存储的
+        强项用不上。理由全文见服务端 `artifact_store` 模块注释。
+      properties:
+        artifact_id:
+          type: string
+          description: |
+            产出物地址，形状 `{run_id 前 8 位}-{计划内标签}`。按运行唯一，所以
+            同一个员工在同一轮里的主交付物**只有一个地址**（重放不会攒出第二条）。
+        run_id:
+          type: string
+        task_id:
+          type: string
+        profile_id:
+          type: string
+          description: 产出它的数字员工
+        kind:
+          type: string
+          description: |
+            产出物种类。当前只有 `report`（员工的自由文本产出）。种类由**生产方**
+            声明，不按正文内容猜。
+        title:
+          type: string
+        content_type:
+          type: string
+          description: 正文的媒体类型（当前恒为 `text/markdown`）
+        size:
+          type: integer
+          description: 正文的**字节数**
+        created_at:
+          type: string
+          description: 落库时刻（ISO8601）
+    ArtifactContent:
+      allOf:
+        - $ref: "#/components/schemas/Artifact"
+        - type: object
+          properties:
+            content:
+              type: string
+              description: 正文原文
+    ArtifactList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Artifact"
     EmployeeProfile:
       type: object
       required: [profile_id, name, base_role]
@@ -542,8 +627,13 @@ paths:
       description: |
         `text/event-stream`。连上先**回放**已有步骤（历史一条不少），再**尾随**
         新步骤：之后图每推进一步就往外推一条，直到 run 落终态才发 `event: end`
-        收流。每条是 `event: step` + `data: {seq, step, ran, next, status, at}`
-        （`ran` = 这一步真的跑掉的节点）。
+        收流。每条是 `event: step` +
+        `data: {seq, step, ran, next, status, at, evidence}`（`ran` = 这一步真的
+        跑掉的节点）。
+
+        `evidence` 是**这一步新出现的**证据条目（形状见 `SubTaskResult.evidence`），
+        按 `evidenceId` 去重后顺序 append 即可。只出增量是刻意的：回执整份都在
+        检查点里，整份重发的话每来一步都要重传全部历史证据。
 
         **实现边界**：尾随靠轮询检查点（没有引入消息总线），新步骤最多晚一个
         轮询间隔（当前 250ms）到达。终态判定与流关闭是同一个事实——停在
@@ -600,6 +690,73 @@ paths:
       x-mate-owner: agent-product-layer
       x-mate-permission: agent-team.read
       x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETRUNAUDIT]
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/runs/{run_id}/artifacts:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
+      summary: 列出一轮运行产出的交付物（元数据）
+      description: |
+        这一轮里各个数字员工**真正交付出来**的产出物（1.6 任务 2）。只出元数据
+        ——正文按 `artifact_id` 另取，列表不该把每份报告全文都拖过来。
+
+        先按 run 的存在性判 404（跨租户与不存在同码），再只回本租户的行：产出物
+        不能成为一条绕过 run 隔离的读路径。
+      tags: [agent-team]
+      operationId: agentTeamGetRunArtifacts
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 该 run 的产出物元数据（按任务标签序）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtifactList"
+        "404":
+          description: 该租户下不存在此 run
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETRUNARTIFACTS]
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/artifacts/{artifact_id}:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
+      summary: 按 id 取回一件产出物的正文
+      description: |
+        "可寻址、可取回"的取回那半边（1.6 任务 2）。
+
+        跨租户与不存在同码 404：产出物的地址是**租户内**的地址，拿别人的 id 来取
+        读不到，也不该读出"这个 id 存在过"。
+      tags: [agent-team]
+      operationId: agentTeamGetArtifact
+      parameters:
+        - name: artifact_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 产出物元数据 + 正文
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtifactContent"
+        "404":
+          description: 该租户下不存在此产出物
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETARTIFACT]
       x-mate-implementation-status: implemented
   /api/v1/agent-team/tasks/{task_id}/messages:
     post:

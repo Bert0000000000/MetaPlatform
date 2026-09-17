@@ -21,6 +21,7 @@ from mate_tech_agent_team import (
     AUDIT_ESCALATION,
     AUDIT_SPAWN,
     BrainService,
+    InMemoryArtifacts,
     InMemoryCheckpointerProvider,
     InMemoryTeamTasks,
     Planner,
@@ -150,6 +151,7 @@ def _service(
         runtime_for=lambda _ctx: runtime,
         checkpointer=InMemoryCheckpointerProvider(),
         team_bus=bus or _bus(),
+        artifacts=InMemoryArtifacts(),
         retry_policy=policy or RetryPolicy(max_attempts=3, base_delay=0.0),
     )
 

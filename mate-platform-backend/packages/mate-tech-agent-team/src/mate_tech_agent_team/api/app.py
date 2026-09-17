@@ -28,6 +28,7 @@ from mate_platform.tenancy.guards import (
     require_tenant,
 )
 
+from ..artifact_store import ArtifactStore
 from ..authority import Envelope, resolve_initiator_envelope
 from ..brain import AWAITING, BrainService, RunNotAwaitingApproval, RunNotFound
 from ..profile_store import ProfileStore
@@ -38,6 +39,9 @@ from ..team_bus import TaskNotFound, TaskTerminal, TeamBus
 from .run_control import RunControl
 from .schemas import (
     ApproveRequest,
+    ArtifactContentModel,
+    ArtifactListModel,
+    ArtifactModel,
     AuditListModel,
     AuditRecordModel,
     ChannelMessageModel,
@@ -60,6 +64,7 @@ _catalog: SkillCatalog | None = None
 _bus: TeamBus | None = None
 _control: RunControl | None = None
 _store: ProfileStore | None = None
+_artifacts: ArtifactStore | None = None
 
 
 def set_brain_service(service: BrainService | None) -> None:
@@ -141,6 +146,18 @@ def get_profile_store() -> ProfileStore:
     return _store
 
 
+def set_artifact_store(store: ArtifactStore | None) -> None:
+    """装配/重置产出物存储（1.6 任务 2）。"""
+    global _artifacts
+    _artifacts = store
+
+
+def get_artifact_store() -> ArtifactStore:
+    if _artifacts is None:
+        raise RuntimeError("ArtifactStore 未装配：请先 set_artifact_store(...)")
+    return _artifacts
+
+
 def _tid(request: Request) -> str:
     return str(require_tenant(request.state.ctx))
 
@@ -219,6 +236,35 @@ async def agentTeamGetRunEvents(request: Request, run_id: str) -> StreamingRespo
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@router.get("/runs/{run_id}/artifacts", response_model=ArtifactListModel)
+async def agentTeamGetRunArtifacts(request: Request, run_id: str) -> ArtifactListModel:
+    """列出一轮运行产出的交付物（1.6 任务 2，**只出元数据**）。
+
+    先按 run 的存在性判 404（跨租户与不存在同码），再只回**本租户**的行——
+    产出物不能成为一条绕过 run 隔离的读路径。
+    """
+    tenant_id = _tid(request)
+    try:
+        await get_run_control().refresh(tenant_id=tenant_id, run_id=run_id)
+    except RunNotFound as exc:
+        raise HTTPException(status_code=404, detail="run not found") from exc
+    rows = await get_artifact_store().list(tenant_id, run_id)
+    return ArtifactListModel(items=[ArtifactModel.model_validate(row.to_dict()) for row in rows])
+
+
+@router.get("/artifacts/{artifact_id}", response_model=ArtifactContentModel)
+async def agentTeamGetArtifact(request: Request, artifact_id: str) -> ArtifactContentModel:
+    """按 id 取回一件产出物的**正文**（1.6 任务 2）。
+
+    跨租户与不存在同码 404：产出物的地址是**租户内**的地址，拿别人的 id
+    来取读不到，也不该读出"这个 id 存在过"。
+    """
+    artifact = await get_artifact_store().get(_tid(request), artifact_id)
+    if artifact is None:
+        raise HTTPException(status_code=404, detail="artifact not found")
+    return ArtifactContentModel.model_validate(artifact.to_content_dict())
 
 
 @router.get("/runs/{run_id}/audit", response_model=AuditListModel)
@@ -456,6 +502,7 @@ async def agentTeamGetProfileSkillContent(
 
 __all__ = [
     "AWAITING",
+    "get_artifact_store",
     "get_brain_service",
     "get_profile_registry",
     "get_profile_store",
@@ -463,6 +510,7 @@ __all__ = [
     "get_skill_catalog",
     "get_team_bus",
     "router",
+    "set_artifact_store",
     "set_brain_service",
     "set_profile_registry",
     "set_profile_store",

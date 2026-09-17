@@ -523,3 +523,64 @@
   background: transparent;
   color: var(--semi-color-danger);
 }
+
+/* ---------- Agent 产品层工作台（AgentTeamRunPage） ---------- */
+.mp-team-gap {
+  margin-top: var(--mp-space-4);
+}
+
+.mp-team-gap-sm {
+  margin-top: var(--mp-space-2);
+}
+
+.mp-team-input {
+  display: flex;
+  gap: var(--mp-space-2);
+  align-items: center;
+}
+
+.mp-team-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mp-space-1);
+}
+
+.mp-team-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mp-space-3);
+  margin-top: var(--mp-space-2);
+}
+
+.mp-team-actions {
+  display: flex;
+  gap: var(--mp-space-2);
+  margin-top: var(--mp-space-3);
+}
+
+.mp-team-employee + .mp-team-employee {
+  margin-top: var(--mp-space-3);
+}
+
+.mp-team-output {
+  white-space: pre-wrap;
+  margin: var(--mp-space-2) 0 0;
+}
+
+.mp-team-subsection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+  margin-top: var(--mp-space-3);
+  padding-top: var(--mp-space-3);
+  border-top: 1px solid var(--semi-color-border);
+}
+
+/* 交付物正文：长文本要能滚，否则 Sheet 会被一份报告撑到屏幕外。 */
+.mp-team-artifact-body {
+  max-height: 52vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

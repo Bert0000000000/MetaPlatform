@@ -13,6 +13,7 @@ import pytest
 from mate_tech_agent_team import (
     BrainService,
     EmployeeProfile,
+    InMemoryArtifacts,
     InMemoryCheckpointerProvider,
     InMemoryTeamTasks,
     ProfileRegistry,
@@ -82,6 +83,7 @@ def _service() -> tuple[BrainService, CountingRuntime, CountingPlanner]:
         runtime_for=lambda _ctx: runtime,
         checkpointer=InMemoryCheckpointerProvider(),
         team_bus=_bus(),
+        artifacts=InMemoryArtifacts(),
     )
     return service, runtime, planner
 
@@ -158,6 +160,7 @@ async def test_gate_node_has_no_side_effects(admin_token: str) -> None:
         runtime_for=lambda _ctx: runtime,
         checkpointer=service._checkpointer,
         team_bus=_bus(),
+        artifacts=InMemoryArtifacts(),
     )
     # 同一个检查点器上再查一次状态：只是读，不该触发任何节点
     await service2.get(tenant_id="tenant-a", run_id=run["run_id"])

@@ -8,6 +8,14 @@ from __future__ import annotations
 
 from mate_platform.tenancy.guards import APPROVER_ROLES
 
+from .artifact_store import (
+    Artifact,
+    ArtifactStore,
+    InMemoryArtifacts,
+    PgArtifacts,
+    artifact_for_task,
+    bootstrap_artifacts,
+)
 from .audit import (
     AUDIT_APPROVAL,
     AUDIT_ESCALATION,
@@ -64,6 +72,8 @@ __all__ = [
     "AUDIT_ESCALATION",
     "AUDIT_SPAWN",
     "APPROVER_ROLES",
+    "Artifact",
+    "ArtifactStore",
     "AuditLog",
     "AuditRecord",
     "AuthorityError",
@@ -77,11 +87,13 @@ __all__ = [
     "BrainState",
     "EmployeeProfile",
     "EmployeeRuntime",
+    "InMemoryArtifacts",
     "InMemoryCheckpointerProvider",
     "InMemoryTeamTasks",
     "LlmEmployeeRuntime",
     "LlmPlanner",
     "McpToolbox",
+    "PgArtifacts",
     "PgCheckpointerProvider",
     "PgTeamTasks",
     "PlanError",
@@ -109,7 +121,9 @@ __all__ = [
     "ToolNotAllowed",
     "TransientRunError",
     "actor_of",
+    "artifact_for_task",
     "bootstrap",
+    "bootstrap_artifacts",
     "bootstrap_tasks",
     "builtin_profiles",
     "claims_of",

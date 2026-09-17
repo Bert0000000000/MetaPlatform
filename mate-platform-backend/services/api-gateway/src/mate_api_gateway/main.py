@@ -51,6 +51,15 @@ SERVICES: dict[str, str] = {
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 RATE_LIMIT_PER_MIN = int(os.getenv("RATE_LIMIT_PER_MIN", "600"))
 UPSTREAM_TIMEOUT_SEC = float(os.getenv("UPSTREAM_TIMEOUT_SEC", "60"))
+#: **同步长跑**的上游要单独放宽读超时。agent-team 的 ``POST /api/v1/agent-team/runs``
+#: 是同步接口：一个请求等整轮编排跑完（拆解 + 并行派活 + 汇合，实测约 60s，
+#: 员工多 / 工具多时更长），正好压在全局 60s 上，表现为间歇性 504——而且 run
+#: 其实**已经建好了**，只是调用方拿不到 run_id。
+#:
+#: 按服务名单独放宽，而不是把全局读超时一起抬高：后者会让真正卡住的上游
+#: 多占几倍的连接。
+LONG_RUN_TIMEOUT_SEC = float(os.getenv("LONG_RUN_TIMEOUT_SEC", "300"))
+LONG_RUN_SERVICES: frozenset[str] = frozenset({"agent-team"})
 # 请求体上限（安全测试组发现：无限制时 1MB body 令上游挂起至 504，构成 DoS 面）
 MAX_BODY_BYTES = int(os.getenv("GATEWAY_MAX_BODY_BYTES", str(1024 * 1024)))
 
@@ -102,6 +111,12 @@ ROUTE_MAP: list[tuple[str, str]] = [
     ("/api/v1/orders/", "orchestrator"),
     ("/api/v1/orders", "orchestrator"),
 ]
+
+
+def _upstream_timeout(service: str) -> httpx.Timeout:
+    """这个上游该等多久。长跑服务用宽超时，其余沿用全局值。"""
+    seconds = LONG_RUN_TIMEOUT_SEC if service in LONG_RUN_SERVICES else UPSTREAM_TIMEOUT_SEC
+    return httpx.Timeout(seconds, connect=5.0)
 
 
 # ---- Lifespan: shared httpx.AsyncClient + Redis ----
@@ -308,6 +323,8 @@ async def proxy(path: str, request: Request) -> Response:
                     params=request.url.query,
                     headers=headers,
                     content=body,
+                    # 同步长跑的上游（agent-team）放宽读超时，见 _upstream_timeout。
+                    timeout=_upstream_timeout(matched_service),
                 )
                 break
             except _retriable as _exc:

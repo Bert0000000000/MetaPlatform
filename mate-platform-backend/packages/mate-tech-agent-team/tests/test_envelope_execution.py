@@ -16,6 +16,7 @@ import pytest
 from mate_tech_agent_team import (
     BrainService,
     EmployeeProfile,
+    InMemoryArtifacts,
     InMemoryCheckpointerProvider,
     InMemoryTeamTasks,
     LlmEmployeeRuntime,
@@ -284,6 +285,7 @@ def _service(runtime: RecordingRuntime) -> BrainService:
         runtime_for=lambda ctx: runtime,
         checkpointer=InMemoryCheckpointerProvider(),
         team_bus=bus,
+        artifacts=InMemoryArtifacts(),
     )
 
 

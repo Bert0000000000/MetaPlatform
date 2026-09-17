@@ -16,6 +16,7 @@ import asyncio
 import pytest
 from mate_tech_agent_team import (
     BrainService,
+    InMemoryArtifacts,
     InMemoryCheckpointerProvider,
     InMemoryTeamTasks,
     ProfileRegistry,
@@ -69,6 +70,7 @@ def _service(runtime: RecordingRuntime | None = None) -> tuple[BrainService, Rec
         runtime_for=lambda _ctx: rt,
         checkpointer=InMemoryCheckpointerProvider(),
         team_bus=bus,
+        artifacts=InMemoryArtifacts(),
     )
     return service, rt
 

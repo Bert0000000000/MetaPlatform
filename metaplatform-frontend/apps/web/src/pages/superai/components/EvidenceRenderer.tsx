@@ -127,10 +127,12 @@ export function EvidenceRenderer({ evidenceList, emptyText }: EvidenceRendererPr
               <div className="mp-evidence-field-label">Captured at</div>
               <Text>{activeEvidence.capturedAt}</Text>
             </div>
-            <div>
-              <div className="mp-evidence-field-label">Envelope</div>
-              <code className="mp-evidence-code">{activeEvidence.envelopeId}</code>
-            </div>
+            {activeEvidence.envelopeId ? (
+              <div>
+                <div className="mp-evidence-field-label">Envelope</div>
+                <code className="mp-evidence-code">{activeEvidence.envelopeId}</code>
+              </div>
+            ) : null}
             {activeEvidence.toolCallId ? (
               <div>
                 <div className="mp-evidence-field-label">Tool call</div>
