@@ -97,6 +97,23 @@ class RunStateModel(BaseModel):
     deadline_at: float = 0.0
 
 
+class RunAcceptedModel(BaseModel):
+    """`POST /runs` 的**受理回执**（1.7 任务 1）：只回受理事实，不回运行结果。
+
+    拆图 + 并行派活实测量级是分钟，让 HTTP 请求等它只会换来网关 504——而那一轮
+    其实已经建好了，重试一次就多跑一轮。改成受理制之后，提交立刻拿到 ``run_id``，
+    终态从 ``GET /runs/{run_id}`` 或事件流取。
+    """
+
+    run_id: str
+    tenant_id: str
+    #: 受理那一刻的状态（通常是 ``running``），**不是终态**。
+    status: str
+    #: 这次提交是否**没有新起一轮**：带了同一个 ``Idempotency-Key`` 且该键已经
+    #: 对应到某一轮时，原样回那一轮并置真。
+    deduplicated: bool = False
+
+
 class EmployeeProfileModel(BaseModel):
     profile_id: str
     name: str
@@ -198,6 +215,7 @@ __all__ = [
     "EmployeeProfileModel",
     "ProfileListModel",
     "ProfileWriteRequest",
+    "RunAcceptedModel",
     "RunStateModel",
     "SendMessageRequest",
     "SkillContentModel",

@@ -16,6 +16,9 @@
 
 from __future__ import annotations
 
+import time
+from collections.abc import Iterator
+from contextlib import ExitStack
 from typing import Any
 
 import pytest
@@ -105,6 +108,25 @@ class _SilentRuntime:
         )
 
 
+_clients: ExitStack = ExitStack()
+
+#: run 停下来的状态：闸门（等人）或任何终态。
+_SETTLED = frozenset({"awaiting_approval", "completed", "failed", "cancelled", "timeout"})
+
+
+@pytest.fixture(autouse=True)
+def _close_test_clients() -> Iterator[None]:
+    """关掉本测试开出去的 TestClient。
+
+    只有 ``with`` 进 TestClient 才有**跨请求存活**的事件循环；不带上下文时
+    Starlette 每个请求现起一个循环、请求一完就关，``POST /runs``（1.7 起是受理制）
+    里 ``create_task`` 出去的后台执行会在响应返回的瞬间被拆掉，run 永远停在
+    ``running``。完整说明见 ``test_async_runs.py``。
+    """
+    yield
+    _clients.close()
+
+
 def _app(*, runtime: Any = None, artifacts: Any = None) -> tuple[TestClient, Any]:
     registry = ProfileRegistry()
     bus = TeamBus(registry=registry, tasks=InMemoryTeamTasks())
@@ -116,24 +138,42 @@ def _app(*, runtime: Any = None, artifacts: Any = None) -> tuple[TestClient, Any
         team_bus=bus,
         artifacts=store,
     )
-    client = TestClient(
-        create_app(
-            service=service,
-            team_bus=bus,
-            profile_registry=registry,
-            artifact_store=store,
+    client = _clients.enter_context(
+        TestClient(
+            create_app(
+                service=service,
+                team_bus=bus,
+                profile_registry=registry,
+                artifact_store=store,
+            )
         )
     )
     return client, store
 
 
+def _wait_settled(client: TestClient, run_id: str, timeout: float = 8.0) -> dict[str, Any]:
+    """轮询到 run 停下来（闸门或终态）为止——受理制下"提交"与"有结果"是两件事。"""
+    deadline = time.monotonic() + timeout
+    body: dict[str, Any] = {}
+    while time.monotonic() < deadline:
+        body = client.get(f"{BASE}/runs/{run_id}", headers=_headers()).json()
+        if body.get("status") in _SETTLED:
+            return body
+        time.sleep(0.02)
+    return body
+
+
 def _run_to_terminal(client: TestClient) -> str:
-    run = client.post(f"{BASE}/runs", json={"goal": "找出本月异常订单"}, headers=_headers()).json()
+    """受理一轮、等它停下来，再驳回闸门把它推到终态（1.7：提交不再同步返回状态）。"""
+    accepted = client.post(f"{BASE}/runs", json={"goal": "找出本月异常订单"}, headers=_headers())
+    assert accepted.status_code == 202, accepted.text
+    run_id = str(accepted.json()["run_id"])
+    _wait_settled(client, run_id)
     rejected = client.post(
-        f"{BASE}/runs/{run['run_id']}/approve", json={"approved": False}, headers=_headers()
+        f"{BASE}/runs/{run_id}/approve", json={"approved": False}, headers=_headers()
     )
     assert rejected.status_code == 200, rejected.text
-    return str(run["run_id"])
+    return run_id
 
 
 # ── 存储面：落地 + 可寻址 ───────────────────────────────────────────────

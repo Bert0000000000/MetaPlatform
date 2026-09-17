@@ -200,6 +200,34 @@ components:
             本轮截止的**绝对时刻**（Unix 秒；0 = 无截止）。
             `timeout_seconds` 与 `deadline_at` 都随 run 落库：服务重启后仍按
             **本轮**定下的值裁决，不会回落到重启后进程的默认值。
+    RunAccepted:
+      type: object
+      required: [run_id, tenant_id, status]
+      description: |
+        `POST /runs` 的受理回执（1.7）：**只回受理事实，不回运行结果**。
+
+        起一轮运行要拆图 + 并行派活，实测量级是**分钟**，而网关读超时是 60s。
+        同步返回时客户端拿到的是 504，且**这一轮其实已经建好了**——重试一次
+        就多跑一轮。改成受理制之后：提交立刻拿到 `run_id`，终态**只能**从
+        `GET /runs/{run_id}` 或事件流取。
+      properties:
+        run_id:
+          type: string
+          description: 本轮运行的地址；`GET /runs/{run_id}` 与事件流都用它
+        tenant_id:
+          type: string
+        status:
+          type: string
+          description: |
+            受理那一刻的状态（通常是 `running`）。**不是终态**：终态要订阅
+            事件流或轮询 `GET /runs/{run_id}` 才拿得到。
+        deduplicated:
+          type: boolean
+          default: false
+          description: |
+            这次提交是否**没有新起一轮**：请求带了同一个 `Idempotency-Key`
+            且该键已经对应到一个 run，此时原样返回那轮的 `run_id`。
+            重试因此不会多跑一轮——这正是同步版 504 之后那个坑的根治办法。
     StartRunRequest:
       type: object
       required: [goal]
@@ -478,9 +506,19 @@ paths:
         - bearerAuth: []
           tenantHeader: []
           oidcScopes: [platform.write]
-      summary: 提交一句话，拆任务图并并行派活（到人工确认闸门暂停）
+      summary: 提交一句话，受理后**异步**拆任务图并并行派活（返回 202 + run_id）
       description: |
         一句话 → 拆任务图 → 并行派给 ≥2 个数字员工 → 停在人工确认闸门。
+
+        **受理制（1.7）**：本接口**不再同步等图跑完**。拆图 + 并行派活实测量级
+        是分钟，而网关读超时是 60s——同步返回时客户端只会拿到 504，且这一轮
+        其实已经建好，重试一次就多跑一轮。现在提交**立刻**返回 `202` +
+        `run_id`；终态只能从 `GET /runs/{run_id}` 或 `GET /runs/{run_id}/events`
+        取。返回时该 `run_id` **已经可查**（首次检查点已落），所以拿到就能订阅。
+
+        **重复提交不产生重复 run**：带上 `Idempotency-Key` 时，同一个键（同租户
+        内）永远映射到同一轮运行；重复提交原样回同一个 `run_id`，并置
+        `deduplicated: true`，**不会再起一轮**。不带该头则每次都起新一轮。
 
         **可重试的员工故障会按策略重试**（1.5）：员工运行时那一次调用遇到"可能
         自己好"的失败（模型 5xx / 限流 / 网络抖动）时重试（次数与退避由部署
@@ -488,6 +526,16 @@ paths:
         （建任务行、落审计、越权转 proposal）不重试——它是副作用。
       tags: [agent-team]
       operationId: agentTeamPostRuns
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+          description: |
+            提交幂等键。同一个键（**同一租户内**）重复提交只会有一轮运行：
+            第二次起原样回第一次的 `run_id`。省略则不受幂等保护。
       requestBody:
         required: true
         content:
@@ -495,12 +543,13 @@ paths:
             schema:
               $ref: "#/components/schemas/StartRunRequest"
       responses:
-        "200":
-          description: 本次运行状态（通常停在 awaiting_approval）
+        "202":
+          description: |
+            已受理。`run_id` 立即可查（首次检查点已落），终态请订阅事件流或轮询。
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RunState"
+                $ref: "#/components/schemas/RunAccepted"
         "422":
           description: 目标为空或无法拆解
       x-mate-owner: agent-product-layer

@@ -1,9 +1,14 @@
-"""运行控制面：取消 / 超时 / Run 事件流（1.3 轨 2 建面；1.5 补全）。
+"""运行控制面：受理 / 取消 / 超时 / Run 事件流（1.3 轨 2 建面；1.5 补全；1.7 受理制）。
 
 三件事都围着**检查点**做，而不是另建一套 run 存储：``GET /runs/{id}`` 读的就是
 检查点里的状态，控制面再记一份等于两个真相。控制面自己只持有**即时信号**
 （取消标志、正在跑的 run 集合），不持有任何 run 历史。
 
+* **受理**（1.7 任务 1）—— 起一轮运行改成**受理制**：提交立刻拿 ``run_id``，
+  图在后台跑。同步版实测量级是分钟，而网关读超时 60s，客户端拿到 504 时这一轮
+  其实已经建好了，重试一次就多跑一轮。受理制把"提交"与"等结果"拆开：终态只能
+  从 :meth:`refresh`（``GET /runs/{id}``）或 :meth:`events` 取。带
+  ``Idempotency-Key`` 时同一个键（同租户内）永远映射到同一轮运行。
 * **取消** —— 把 run 写进终态 ``cancelled``。之后 ``approve`` 一律 409（闸门已
   经不在了）。取消是幂等的：重复取消不会把更早的终态覆盖掉。
   **执行中的 run 也能取消**（1.5 任务 1）：不靠外部杀——图在节点边界自查取消
@@ -19,16 +24,23 @@
 
 **边界登记（诚实说清，别当成没做）**：
 
-1. 取消信号是**进程内**的：只有与运行中的图**同进程**时才精确生效（那正是
-   ``POST /runs`` / ``approve`` 在等它的那个进程）。跨副本取消执行中的 run 需要
-   共享信号通道，属后续候选；停在闸门的 run 跨副本取消仍然有效（终态写在检查点）。
+1. 取消信号是**进程内**的：只有与运行中的图**同进程**时才精确生效（受理制下
+   那个进程就是受理这条请求的进程，后台任务跑在同一个事件循环里）。跨副本取消
+   执行中的 run 需要共享信号通道，属后续候选；停在闸门的 run 跨副本取消仍然
+   有效（终态写在检查点）。
 2. 事件流是**回放 + 尾随**：连上先补历史，之后新步骤即推送，直到 run 终态才
    关流。尾随靠**轮询**检查点（没有引入消息总线），代价见 :meth:`RunControl.events`。
+3. **幂等的跨进程面靠"确定性 run_id + 查检查点"**，进程内靠同一张 ``_live`` 表
+   占坑。同进程内的并发重复提交是精确幂等的；跨副本的**同时**提交有极小竞态
+   （两边都还没查到对方），与边界 1 同源。
+4. **后台任务里的异常落成终态 ``failed``**：不然"终态只能从事件流/查询取"就成了
+   空话——任务炸了而 run 永远停在 ``running``，客户端会一直等下去。
 """
 
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
 import time
@@ -36,7 +48,7 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from uuid import uuid4
 
-from ..brain import TERMINAL_STATUSES, BrainService
+from ..brain import RUNNING, TERMINAL_STATUSES, BrainService, RunNotFound
 from ..state import BrainState
 
 #: 运行级超时的默认值（秒）。0 = 不设超时：不是所有部署都想让长跑的计划自己过期。
@@ -44,6 +56,31 @@ DEFAULT_TIMEOUT_ENV = "MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS"
 
 #: 尾随事件流时两次轮询之间的间隔（秒）。
 DEFAULT_POLL_INTERVAL = 0.25
+
+#: 受理时等"第一次落检查点"的上限（秒）。等不到也照样回 202——run_id 仍然是
+#: 有效的地址，只是订阅方可能要重试一次才不撞 404。
+DEFAULT_READY_TIMEOUT = 5.0
+
+
+def run_id_for(tenant_id: str, idempotency_key: str) -> str:
+    """由幂等键**确定性地**推出 run_id。
+
+    这是"重试不产生重复 run"的支点：同一个键（同租户内）永远算出同一个 run_id，
+    于是"这轮是不是已经起过"不用另立一张映射表，直接查检查点就知道。租户进摘要
+    是为了**同键不跨租户串轮**——两家的同一把钥匙本来就该是两轮。
+    """
+    digest = hashlib.sha256(f"{tenant_id}\x00{idempotency_key}".encode()).hexdigest()
+    return digest[:32]
+
+
+def _accepted(tenant_id: str, run_id: str, *, deduplicated: bool) -> dict:
+    """受理回执。**不含**运行结果——终态要从 :meth:`RunControl.refresh` 取。"""
+    return {
+        "run_id": run_id,
+        "tenant_id": tenant_id,
+        "status": RUNNING,
+        "deduplicated": deduplicated,
+    }
 
 
 @dataclass
@@ -80,6 +117,9 @@ class RunControl:
         self._default_timeout = default_timeout
         self._poll_interval = poll_interval
         self._live: dict[tuple[str, str], _LiveRun] = {}
+        #: 后台任务的强引用。受理制之后"跑"在请求之外，引用丢了会被 GC 掉，
+        #: 表现为这一轮**静默**停在半路——没有任何报错。
+        self._tasks: set[asyncio.Task[None]] = set()
 
     @classmethod
     def from_env(cls, service: BrainService) -> RunControl:
@@ -90,8 +130,8 @@ class RunControl:
             default_timeout = 0.0
         return cls(service, default_timeout=max(default_timeout, 0.0))
 
-    # -- 起跑 / 续跑 --------------------------------------------------------
-    async def start(
+    # -- 受理 / 续跑 --------------------------------------------------------
+    async def submit(
         self,
         *,
         tenant_id: str,
@@ -99,17 +139,67 @@ class RunControl:
         user_token: str = "",
         max_parallel: int | None = None,
         timeout_seconds: float | None = None,
+        idempotency_key: str = "",
     ) -> dict:
-        """起一轮运行，并**在开跑之前**认领它（这样执行中的它也能被取消）。
+        """**受理**一轮运行并立刻回话（1.7 任务 1）：图在后台跑。
 
-        run_id 由控制面生成：图要能在自己开跑前就拿到"这轮会不会被取消"的
-        读取函数，而那个函数按 run_id 索引。超时值在这里定下，由服务层连同
-        绝对截止时刻一起写进状态（**随 run 走，不留在进程里**）。
+        回执只有 ``run_id`` / ``tenant_id`` / ``status`` —— 拆图与派活实测量级是
+        分钟，让 HTTP 请求等它只会换来网关 504，而这一轮其实已经建好了。
+
+        三件在受理期就要定下的事：
+
+        1. **run_id** —— 带幂等键时由 :func:`run_id_for` **确定性**推出，所以
+           "这个键已经起过没有"不用另立映射表，查检查点就知道。
+        2. **认领**（``_live``）—— 图要在自己开跑前拿到取消标志的读取函数，而
+           那个函数按 run_id 索引；执行中的它因此落在取消范围内（1.5 任务 1）。
+        3. **截止时间** —— 在这里定下，由服务层连同绝对截止时刻写进状态。
+
+        **幂等的两道**：进程内用 ``_live`` 占坑（无 await，原子）；跨进程/重启用
+        确定性 run_id 查检查点。命中的那次**不新起一轮**，原样回同一个 run_id 并
+        置 ``deduplicated``。
         """
-        run_id = uuid4().hex
+        run_id = run_id_for(tenant_id, idempotency_key) if idempotency_key else uuid4().hex
+        if (tenant_id, run_id) in self._live:
+            # 同一轮正在跑（受理回执还没摘牌）——不能再起一轮。
+            return _accepted(tenant_id, run_id, deduplicated=True)
+
         live = self._open(tenant_id=tenant_id, run_id=run_id)
+        if idempotency_key and await self._exists(tenant_id=tenant_id, run_id=run_id):
+            # 已经跑过的一轮（进程重启、或换个副本来的重复提交）。
+            self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+            return _accepted(tenant_id, run_id, deduplicated=True)
+
+        task = asyncio.create_task(
+            self._execute(
+                tenant_id=tenant_id,
+                run_id=run_id,
+                goal=goal,
+                user_token=user_token,
+                max_parallel=max_parallel,
+                timeout_seconds=timeout_seconds,
+                live=live,
+            )
+        )
+        # 留住引用：任务被 GC 掉的话这一轮会**静默**停在半路。
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+        await self._await_ready(tenant_id=tenant_id, run_id=run_id)
+        return _accepted(tenant_id, run_id, deduplicated=False)
+
+    async def _execute(
+        self,
+        *,
+        tenant_id: str,
+        run_id: str,
+        goal: str,
+        user_token: str,
+        max_parallel: int | None,
+        timeout_seconds: float | None,
+        live: _LiveRun,
+    ) -> None:
+        """后台把这一轮跑完。异常落成终态 ``failed``，绝不是"悄悄没了"。"""
         try:
-            return await self._service.start(
+            await self._service.start(
                 tenant_id=tenant_id,
                 run_id=run_id,
                 goal=goal,
@@ -118,8 +208,58 @@ class RunControl:
                 should_cancel=live.cancelled,
                 timeout_seconds=self._effective_timeout(timeout_seconds),
             )
+        except asyncio.CancelledError:
+            # 进程/事件循环被拆掉时不能再 await 任何东西，原样往上抛。
+            raise
+        except Exception as exc:
+            await self._mark_failed(tenant_id=tenant_id, run_id=run_id, error=exc)
         finally:
             self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+
+    async def _mark_failed(self, *, tenant_id: str, run_id: str, error: Exception) -> None:
+        """把后台跑挂的这一轮落成终态 ``failed``，并把错因写进状态。
+
+        受理制把"跑"挪到了请求之外，兜底就得落在这里：不落的话，任务炸了而 run
+        永远停在 ``running``，客户端会一直等下去——"终态只能从事件流/查询取"就成
+        了空话。终态本身也落不下去时**不吞**：让异常从后台任务冒出来，由事件循环
+        记一条，总好过把错误静默掉。
+        """
+        await self._service.mark_terminal(
+            tenant_id=tenant_id, run_id=run_id, status="failed", error=str(error)
+        )
+
+    async def _await_ready(
+        self, *, tenant_id: str, run_id: str, timeout: float = DEFAULT_READY_TIMEOUT
+    ) -> None:
+        """等这一轮**第一次落检查点**再回收执。
+
+        受理回执承诺"给的 run_id 立刻可查"：先落检查点再回话，订阅方拿到 run_id
+        就能直接连事件流，不会先撞一次 404（那会让人以为 run 没建起来）。等不到
+        也照样回——run_id 仍然是有效地址。
+        """
+        deadline = asyncio.get_running_loop().time() + timeout
+        while True:
+            try:
+                await self._service.get(tenant_id=tenant_id, run_id=run_id)
+                return
+            except RunNotFound:
+                pass
+            except Exception:  # 读路径出别的问题不该卡住受理
+                return
+            if asyncio.get_running_loop().time() >= deadline:
+                return
+            await asyncio.sleep(0.01)
+
+    async def _exists(self, *, tenant_id: str, run_id: str) -> bool:
+        """这一轮是不是已经起过（跨进程/重启的幂等判据）。"""
+        try:
+            await self._service.get(tenant_id=tenant_id, run_id=run_id)
+        except RunNotFound:
+            return False
+        except Exception:
+            # 查不动就别当"已存在"，否则一次读故障会让提交静默变成 no-op。
+            return False
+        return True
 
     async def resume(
         self,
@@ -221,4 +361,10 @@ class RunControl:
         yield "event: end\ndata: {}\n\n"
 
 
-__all__ = ["DEFAULT_TIMEOUT_ENV", "RunControl"]
+__all__ = [
+    "DEFAULT_POLL_INTERVAL",
+    "DEFAULT_READY_TIMEOUT",
+    "DEFAULT_TIMEOUT_ENV",
+    "RunControl",
+    "run_id_for",
+]

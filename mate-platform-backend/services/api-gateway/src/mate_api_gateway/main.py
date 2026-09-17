@@ -51,10 +51,16 @@ SERVICES: dict[str, str] = {
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 RATE_LIMIT_PER_MIN = int(os.getenv("RATE_LIMIT_PER_MIN", "600"))
 UPSTREAM_TIMEOUT_SEC = float(os.getenv("UPSTREAM_TIMEOUT_SEC", "60"))
-#: **同步长跑**的上游要单独放宽读超时。agent-team 的 ``POST /api/v1/agent-team/runs``
-#: 是同步接口：一个请求等整轮编排跑完（拆解 + 并行派活 + 汇合，实测约 60s，
-#: 员工多 / 工具多时更长），正好压在全局 60s 上，表现为间歇性 504——而且 run
-#: 其实**已经建好了**，只是调用方拿不到 run_id。
+#: **长连接 / 长跑**的上游要单独放宽读超时。
+#:
+#: 1.6 加这条是为了 ``POST /api/v1/agent-team/runs``——它当时**同步**等整轮编排
+#: 跑完（拆解 + 并行派活 + 汇合，实测约 60s），正好压在全局 60s 上，表现为间歇性
+#: 504，而且 run 其实**已经建好了**，只是调用方拿不到 run_id。
+#:
+#: 1.7 起 ``POST /runs`` 改成**受理制**（202 + run_id，见 agent-team 契约），
+#: 它不再需要这条。**但这条不能撤**：agent-team 还有两条真正长跑的路径——
+#: ``GET /runs/{id}/events`` 是 SSE 长连接（run 停在闸门时不收流，可以挂很久），
+#: ``POST /runs/{id}/approve`` 续跑同样是同步等图跑完。撤掉它们会在 60s 被切断。
 #:
 #: 按服务名单独放宽，而不是把全局读超时一起抬高：后者会让真正卡住的上游
 #: 多占几倍的连接。

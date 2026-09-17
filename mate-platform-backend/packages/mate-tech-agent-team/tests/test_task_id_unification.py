@@ -297,20 +297,36 @@ async def test_subtask_ids_carry_the_run_so_two_runs_never_collide(admin_token: 
 
 
 def test_http_run_response_exposes_the_sendable_id(auth_headers: dict[str, str]) -> None:
-    """HTTP 面必须把这个 id 交给调用方——不然它无从知道该往哪投。"""
+    """HTTP 面必须把这个 id 交给调用方——不然它无从知道该往哪投。
+
+    1.7 起 ``POST /runs`` 只回**受理回执**（202 + run_id），回执本体要再查一次：
+    这里受理后轮询 ``GET /runs/{id}``，断言 ``results`` 里带着 team_task_id。
+    """
+    import time
+
     from fastapi.testclient import TestClient
     from mate_tech_agent_team.main import create_app
 
     bus = _bus()
     service, _rt = _service(bus)
-    client = TestClient(create_app(service=service, team_bus=bus))
-    response = client.post(
-        "/api/v1/agent-team/runs",
-        json={"goal": "分析本月异常订单"},
-        headers=auth_headers,
-    )
-    assert response.status_code == 200, response.text
-    body = response.json()
+    settled = frozenset({"awaiting_approval", "completed", "failed", "cancelled", "timeout"})
+    with TestClient(create_app(service=service, team_bus=bus)) as client:
+        accepted = client.post(
+            "/api/v1/agent-team/runs",
+            json={"goal": "分析本月异常订单"},
+            headers=auth_headers,
+        )
+        assert accepted.status_code == 202, accepted.text
+        run_id = accepted.json()["run_id"]
+
+        deadline = time.monotonic() + 8.0
+        body: dict[str, Any] = {}
+        while time.monotonic() < deadline:
+            body = client.get(f"/api/v1/agent-team/runs/{run_id}", headers=auth_headers).json()
+            if body.get("status") in settled:
+                break
+            time.sleep(0.02)
+
     for task_id, result in body["results"].items():
         assert result["team_task_id"], f"{task_id} 的回执没给可投递的实例 id"
 
