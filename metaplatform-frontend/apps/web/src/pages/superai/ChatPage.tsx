@@ -1465,13 +1465,22 @@ export default function ChatPage() {
                 field="model"
                 initValue={currentModel}
               />
+              {/* **Legacy（C-3 / `MP-LEGACY-SUNSET-01`）**：这条走
+                  `POST /copilot/chat/agent/stream`，是**旧的**对话调度链路——
+                  调度状态散在 SSE 事件里，前端各自拼；而右边那个「Agent 产品层」
+                  走的是落库的 Run（可恢复、可审计、有证据与交付物）。
+                  两个都留着只是为了不打断在用的用户；**退役版本 2.2**，见
+                  `docs/active/delivery/evidence/MP-LEGACY-SUNSET-01-AGENT-LOOP.md`。
+                  标签上写明 Legacy，是因为"我们打算收敛"这件事只有写在用户看得见的
+                  地方才算数——否则就是一份没人读的文件。 */}
               <Button
                 size="small"
                 type={agentMode ? 'primary' : 'tertiary'}
                 icon={<RobotOutlined size={14} />}
                 onClick={() => setAgentMode((v) => !v)}
+                title="旧链路（Legacy）：调度状态不落库。请改用右侧「Agent 产品层」，退役版本 2.2"
               >
-                {agentMode ? 'Agent 调度中' : 'Agent 调度'}
+                {agentMode ? 'Agent 调度中 · Legacy' : 'Agent 调度 · Legacy'}
               </Button>
               {/* Agent 产品层：走 agent-team run（任务图 / 派数字员工 / 人工确认），
                   调度过程显示在上方的常驻区域。用原生 button —— dev 预览窗里
