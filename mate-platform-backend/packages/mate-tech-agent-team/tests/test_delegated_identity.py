@@ -43,6 +43,8 @@ from mate_tech_agent_team.delegated_identity import (
 )
 from mate_tech_agent_team.delegation import RunDelegation, attenuate
 
+from mate_clients.iam.token_exchange import KeycloakTokenExchangeClient
+
 TENANT = "tenant-acme"
 
 SETTLED = frozenset({"awaiting_approval", "completed", "failed", "cancelled", "timeout"})
@@ -105,14 +107,22 @@ class _FakeHttpClient:
         return _FakeResponse(self._payload)
 
 
-def _issuer(client: _FakeHttpClient, **kwargs: Any) -> KeycloakTokenExchangeIssuer:
+def _issuer(http: _FakeHttpClient, **kwargs: Any) -> KeycloakTokenExchangeIssuer:
+    """签发面 + 真 ACL 客户端（只把 HTTP 那一层换成替身）。"""
     kwargs.setdefault("ttl", 300.0)
-    return KeycloakTokenExchangeIssuer(
-        token_uri="http://keycloak.invalid/realms/probe/protocol/openid-connect/token",
+    token_uri = "http://keycloak.invalid/realms/probe/protocol/openid-connect/token"
+    client = KeycloakTokenExchangeClient(
+        token_uri=token_uri,
         client_id="probe-client",
         client_secret="probe" + "-secret",
         service_token=lambda: "service-token-probe",
-        client=client,  # type: ignore[arg-type]
+        http=http,
+    )
+    return KeycloakTokenExchangeIssuer(
+        token_uri=token_uri,
+        client_id="probe-client",
+        client_secret="probe" + "-secret",
+        client=client,
         **kwargs,
     )
 
@@ -238,7 +248,8 @@ async def test_a_failed_exchange_denies_instead_of_falling_back() -> None:
     client = _FakeHttpClient(payload={"error": "invalid_grant"})
     outcome = await _issuer(client).issue(_snapshot())
     assert not outcome.issued
-    assert "未返回可用令牌" in outcome.reason
+    assert "token exchange 失败" in outcome.reason
+    assert "invalid_grant" in outcome.reason, "IdP 的错误码要带出来——那是排障的唯一线索"
 
 
 @pytest.mark.asyncio

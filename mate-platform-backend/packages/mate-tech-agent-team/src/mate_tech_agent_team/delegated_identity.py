@@ -27,23 +27,19 @@ exchange**（RFC 8693）——平台已经跑着 Keycloak，不自造签名服�
 
 from __future__ import annotations
 
-import asyncio
 import os
 import time
-from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
-import httpx
-
-from mate_clients.security import BearerAuth
+from mate_clients.iam.token_exchange import (
+    TOKEN_EXCHANGE_GRANT,
+    HttpPoster,
+    KeycloakTokenExchangeClient,
+)
 
 from .authority import Envelope, claims_of, resolve_initiator_envelope
 from .delegation import RunDelegation, attenuate
-
-#: RFC 8693。
-TOKEN_EXCHANGE_GRANT = "urn:ietf:params:oauth:grant-type:token-exchange"
-ACCESS_TOKEN_TYPE = "urn:ietf:params:oauth:token-type:access_token"
 
 #: 委托令牌的默认寿命（秒）。**短**是 N3 的实现方式：每次要用时现签，
 #: 撤销因此在下一次签发时就生效，不需要撤销列表。
@@ -142,16 +138,17 @@ def _is_empty(envelope: Envelope) -> bool:
 
 
 class KeycloakTokenExchangeIssuer:
-    """RFC 8693 的 token exchange（走 realm 的 ``/protocol/openid-connect/token``）。
+    """RFC 8693 的 token exchange，**出站走 :mod:`mate_clients.iam.token_exchange`**。
 
-    **怎么在没有用户令牌的前提下换到用户身份**：先用**服务身份**（既有
-    ``BearerAuth`` 的 client_credentials，硬规则 #4 的 ACL 客户端）取一枚服务令牌，
-    再用它做 ``subject_token`` + ``requested_subject=<发起用户>`` 请求交换。这是
-    Keycloak 侧的授权链：服务 client 必须被授予 token-exchange 权限，否则交换被拒
-    ——**那是配置问题，不是代码问题**，所以这里如实反映成一次拒绝。
+    **怎么在没有用户令牌的前提下换到用户身份**：用**服务身份**（既有
+    ``BearerAuth`` 的 client_credentials）做 ``subject_token`` +
+    ``requested_subject=<发起用户>`` 请求交换。这是 Keycloak 侧的授权链：服务
+    client 必须被授予 token-exchange 权限，否则交换被拒——**那是配置问题，
+    不是代码问题**，所以这里如实反映成一次拒绝（带 IdP 的错误码）。
 
-    ``service_token`` / ``client`` 都可注入：前者让测试不必起 Keycloak，后者让测试
-    不必发真 HTTP。生产装配用默认值（真实 BearerAuth + 真实 httpx）。
+    **HTTP 不在这里**（硬规则 #4）：协议细节收在 ACL 客户端里，本类只做判定
+    ——换回来的令牌够不够、对不对租户、是不是超出快照。``client`` / ``http``
+    可注入，测试因此既不必起 Keycloak，也不必发真 HTTP。
     """
 
     def __init__(
@@ -163,62 +160,18 @@ class KeycloakTokenExchangeIssuer:
         audience: str = "",
         ttl: float | None = None,
         timeout: float = 10.0,
-        service_token: Callable[[], str] | None = None,
-        client: httpx.AsyncClient | None = None,
+        client: KeycloakTokenExchangeClient | None = None,
+        http: HttpPoster | None = None,
     ) -> None:
-        self._token_uri = token_uri
-        self._client_id = client_id
-        self._client_secret = client_secret
         self._audience = audience
         self._ttl = configured_ttl() if ttl is None else max(0.0, ttl)
-        self._timeout = timeout
-        self._service_token = service_token
-        self._client = client
-        if service_token is None:
-            bearer = BearerAuth(
-                token_uri=token_uri,
-                client_id=client_id,
-                client_secret=client_secret,
-                scope="openid",
-            )
-            self._service_token = bearer.token
-
-    async def _request_token(self) -> str:
-        """取服务身份令牌（``BearerAuth`` 是同步的，丢线程跑）。"""
-        return await asyncio.to_thread(self._service_token)  # type: ignore[misc]
-
-    async def _exchange(self, snapshot: RunDelegation) -> tuple[str, float] | None:
-        """发一次 exchange；成功回 ``(access_token, expires_in)``。"""
-        body: dict[str, str] = {
-            "grant_type": TOKEN_EXCHANGE_GRANT,
-            "client_id": self._client_id,
-            "client_secret": self._client_secret,
-            "subject_token": await self._request_token(),
-            "subject_token_type": ACCESS_TOKEN_TYPE,
-            "requested_subject": snapshot.subject,
-        }
-        if self._audience:
-            body["audience"] = self._audience
-        try:
-            if self._client is not None:
-                resp = await self._client.post(self._token_uri, data=body)
-            else:
-                async with httpx.AsyncClient(timeout=self._timeout) as client:
-                    resp = await client.post(self._token_uri, data=body)
-            resp.raise_for_status()
-            payload = resp.json()
-        except Exception:
-            return None
-        if not isinstance(payload, Mapping):
-            return None
-        token = str(payload.get("access_token") or "")
-        if not token:
-            return None
-        try:
-            expires_in = float(payload.get("expires_in") or 0.0)
-        except (TypeError, ValueError):
-            expires_in = 0.0
-        return token, max(0.0, expires_in)
+        self._client = client or KeycloakTokenExchangeClient(
+            token_uri=token_uri,
+            client_id=client_id,
+            client_secret=client_secret,
+            timeout=timeout,
+            http=http,
+        )
 
     async def issue(
         self, snapshot: RunDelegation, *, now: float | None = None
@@ -228,11 +181,15 @@ class KeycloakTokenExchangeIssuer:
             # 没有主体就没有"以谁的名义"——无令牌起的那一轮正是这样，与"没有授权"等价。
             return DelegationOutcome(reason="快照没有主体标识（无令牌起的那一轮）")
 
-        exchanged = await self._exchange(snapshot)
-        if exchanged is None:
-            return DelegationOutcome(reason="token exchange 未返回可用令牌")
+        try:
+            exchanged = await self._client.exchange(
+                subject=snapshot.subject, audience=self._audience
+            )
+        except Exception as exc:
+            # 如实带上 IdP 的错误（invalid_grant / access_denied …）：那是排障的唯一线索。
+            return DelegationOutcome(reason=f"token exchange 失败：{exc}")
 
-        token, expires_in = exchanged
+        token = exchanged.access_token
         granted = resolve_initiator_envelope(token)
         if not granted.is_subset_of(snapshot.envelope):
             # N2：换回来的令牌**比快照还大** = 这次交换给了超出授权的权限。
@@ -249,8 +206,8 @@ class KeycloakTokenExchangeIssuer:
             return DelegationOutcome(reason="当前权限与快照无交集（权限已被撤销）")
 
         ttl = self._ttl
-        if expires_in > 0:
-            ttl = min(ttl, expires_in) if ttl > 0 else expires_in
+        if exchanged.expires_in > 0:
+            ttl = min(ttl, exchanged.expires_in) if ttl > 0 else exchanged.expires_in
         return DelegationOutcome(
             credential=DelegatedCredential(
                 token=token,
@@ -264,7 +221,6 @@ class KeycloakTokenExchangeIssuer:
 
 
 __all__ = [
-    "ACCESS_TOKEN_TYPE",
     "AUDIENCE_ENV",
     "DEFAULT_DELEGATION_TOKEN_TTL_SECONDS",
     "ENABLE_ENV",
