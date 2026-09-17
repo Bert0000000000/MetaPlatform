@@ -131,7 +131,11 @@ def get_run_control() -> RunControl:
     """
     global _control
     if _control is None:
-        _control = RunControl.from_env(get_brain_service())
+        # 生产装配在 wiring（租约 / 心跳 / 接管要 DSN 与账本）；没配 DSN 时
+        # 它自己退回单副本形态，与本函数原来直接调 from_env 的行为一致。
+        from ..wiring import build_run_control
+
+        _control = build_run_control(get_brain_service())
     return _control
 
 

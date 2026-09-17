@@ -12,7 +12,10 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:  # 只在类型检查期引入：装配函数内部才真正 import（避免装配环）
+    from .api.run_control import RunControl
 
 from mate_clients.iam import IamServiceReadClient
 from mate_clients.llmgw import LlmgwClient
@@ -375,6 +378,36 @@ def build_tool_ledger() -> PgToolLedger:
     return PgToolLedger(required_dsn(), schema=CHECKPOINT_SCHEMA)
 
 
+def build_run_control(service: BrainService) -> RunControl:
+    """运行控制面（B-1 起，租约 / 心跳 / 接管都挂在这里）。
+
+    两件装配缺一不可，而且都**只在配了 app DSN 时才接**：
+
+    * ``step_reader`` —— 读"检查点走到哪了"。心跳用它写租约的 ``current_step``，
+      接管判定用它比"租约失效后检查点还动没动"。它读的是**该租户自己那一轮**的
+      进度，所以走 app 角色（RLS 强制），不是 ``PgRunIndex`` 那条跨租户扫描。
+    * ``tool_ledger`` —— 接管判定的第四条（有没有在途工具调用）。
+
+    没配 DSN 时不接这两样：控制面退化成单副本形态（内存租约 + 不做恢复），
+    与加租约之前**逐字一致**——本地演示与不碰 PG 的测试因此不受影响。
+    """
+    from .api.run_control import RunControl
+
+    dsn = os.getenv("MATE_AGENT_TEAM_DSN", "")
+    if not dsn:
+        return RunControl.from_env(service)
+    provider = PgCheckpointerProvider(dsn, schema=CHECKPOINT_SCHEMA)
+
+    async def _step(tenant_id: str, run_id: str) -> str:
+        return await provider.latest_step(tenant_id, run_id)
+
+    return RunControl.from_env(
+        service,
+        step_reader=_step,
+        tool_ledger=PgToolLedger(dsn, schema=CHECKPOINT_SCHEMA),
+    )
+
+
 def build_service(
     *,
     registry: ProfileRegistry | None = None,
@@ -552,6 +585,7 @@ __all__ = [
     "build_profile_store",
     "build_registry",
     "build_retry_policy",
+    "build_run_control",
     "build_runtime_router",
     "build_team_bus",
     "build_service",

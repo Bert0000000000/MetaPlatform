@@ -52,6 +52,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import os
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -76,7 +77,22 @@ from ..coordination import (
     RunClaims,
     configured_claim_ttl,
 )
+from ..run_lease import (
+    DEFAULT_HEARTBEAT_GRACE_SECONDS,
+    InMemoryRunLeases,
+    PgRunLeases,
+    RunLease,
+    RunLeases,
+    TakeoverDecision,
+    configured_heartbeat_interval,
+    configured_lease_ttl,
+    decide_takeover,
+    new_instance_id,
+)
 from ..state import BrainState
+from ..tool_ledger import ToolLedger
+
+logger = logging.getLogger("metaplatform.agent_team.run_control")
 
 #: 运行级超时的默认值（秒）。0 = 不设超时：不是所有部署都想让长跑的计划自己过期。
 DEFAULT_TIMEOUT_ENV = "MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS"
@@ -128,17 +144,22 @@ class _LiveRun:
     """一个**正在跑**的 run（有请求在等它）。
 
     这不是第二份 run 状态——run 状态仍然只在检查点里。取消标志也**不在这里**了
-    （1.9 任务 2）：它挪进了共享通道，跨副本才看得见。留在这里的只有一件**即时
+    （1.9 任务 2）：它挪进了共享通道，跨副本才看得见。留在这里的只有两件**即时
     信号**：
 
     * ``finished`` —— 图跑完时置位。取消要**等它停**再回话：``POST /cancel``
       返回时，这轮已经不再推进了，而不是"请求已受理、请稍后再查"。
+    * ``lease_epoch`` / ``heartbeat`` —— 本实例持有的租约手数，以及续租任务
+      （B-1）。epoch 让"上一任的延迟续租"被数据库直接拒掉；心跳任务在同一实例
+      内保证租约不会因为图跑得久而过期。
 
     只有**本进程起的那一轮**才在这里有记录，所以"等它停"这件事只对本进程成立的
     那部分负责——跨副本取消另有交代，见 :meth:`RunControl.cancel`。
     """
 
     finished: asyncio.Event = field(default_factory=asyncio.Event)
+    lease_epoch: int = 0
+    heartbeat: asyncio.Task[None] | None = None
 
 
 class RunIndex(Protocol):
@@ -191,6 +212,13 @@ class RunControl:
         run_index: RunIndex | None = None,
         signals: CancelSignals | None = None,
         claims: RunClaims | None = None,
+        leases: RunLeases | None = None,
+        tool_ledger: ToolLedger | None = None,
+        step_reader: Callable[[str, str], Awaitable[str]] | None = None,
+        instance_id: str = "",
+        lease_ttl: float | None = None,
+        heartbeat_interval: float | None = None,
+        heartbeat_grace: float = DEFAULT_HEARTBEAT_GRACE_SECONDS,
     ) -> None:
         self._service = service
         self._default_timeout = default_timeout
@@ -205,13 +233,45 @@ class RunControl:
         self._claims: RunClaims = (
             claims if claims is not None else InMemoryRunClaims(configured_claim_ttl())
         )
+        #: 活跃 run 租约（B-1）。不给就是进程内实现——单副本行为与之前逐字一致，
+        #: 多副本由 ``from_env`` 按 DSN 装配 PG 实现。
+        self._leases: RunLeases = (
+            leases if leases is not None else InMemoryRunLeases(configured_lease_ttl())
+        )
+        #: 工具调用账本（A-3）。**只**用于接管判定里"有没有在途调用"那一问；
+        #: 不给就当作"没有在途调用"（单进程默认，与加这个查询之前一致）。
+        self._tool_ledger = tool_ledger
+        #: 读"检查点走到哪了"的函数。心跳用它续租，接管判定用它比"有没有进展"。
+        #: 不给就留空串——那时"检查点未进展"这条判据退化成"不比"，如实记在
+        #: :func:`~mate_tech_agent_team.run_lease.decide_takeover` 的注释里。
+        self._step_reader = step_reader
+        #: 本实例标识（进租约的 ``owner_instance``：多副本下"谁在跑"就靠它）。
+        self._instance_id = instance_id or new_instance_id()
+        self._lease_ttl = lease_ttl if lease_ttl is not None else configured_lease_ttl()
+        self._heartbeat_interval = (
+            heartbeat_interval
+            if heartbeat_interval is not None
+            else configured_heartbeat_interval()
+        )
+        self._heartbeat_grace = heartbeat_grace
         self._live: dict[tuple[str, str], _LiveRun] = {}
         #: 后台任务的强引用。受理制之后"跑"在请求之外，引用丢了会被 GC 掉，
         #: 表现为这一轮**静默**停在半路——没有任何报错。
         self._tasks: set[asyncio.Task[None]] = set()
 
+    @property
+    def instance_id(self) -> str:
+        """本实例标识。多副本压测用它断言"三份租约分属三个实例"。"""
+        return self._instance_id
+
     @classmethod
-    def from_env(cls, service: BrainService) -> RunControl:
+    def from_env(
+        cls,
+        service: BrainService,
+        *,
+        step_reader: Callable[[str, str], Awaitable[str]] | None = None,
+        tool_ledger: ToolLedger | None = None,
+    ) -> RunControl:
         raw = os.getenv(DEFAULT_TIMEOUT_ENV, "0")
         try:
             default_timeout = float(raw)
@@ -224,9 +284,12 @@ class RunControl:
             service,
             default_timeout=max(default_timeout, 0.0),
             run_index=PgRunIndex(admin_dsn) if admin_dsn else None,
-            # 协作面是**按租户**读写的，走 app 角色（RLS 强制）；建表另走 admin。
+            # 协作面与租约都是**按租户**读写的，走 app 角色（RLS 强制）；建表另走 admin。
             signals=PgCancelSignals(dsn, schema=CHECKPOINT_SCHEMA) if dsn else None,
             claims=PgRunClaims(dsn, schema=CHECKPOINT_SCHEMA, ttl=ttl) if dsn else None,
+            leases=PgRunLeases(dsn, schema=CHECKPOINT_SCHEMA) if dsn else None,
+            tool_ledger=tool_ledger,
+            step_reader=step_reader,
         )
 
     def _cancel_check(self, *, tenant_id: str, run_id: str) -> Callable[[], Awaitable[bool]]:
@@ -290,13 +353,21 @@ class RunControl:
             tenant_id=tenant_id, key=idempotency_key, run_id=run_id
         ):
             # 另一个副本正占着这把钥匙（或者刚刚占过、还没跑完）。
-            self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+            await self._close(tenant_id=tenant_id, run_id=run_id, live=live)
             return _accepted(tenant_id, run_id, deduplicated=True)
         if idempotency_key and await self._exists(tenant_id=tenant_id, run_id=run_id):
             # 已经跑过的一轮（进程重启、或换个副本来的重复提交）。认领**还回去**
             # ——留着它会白占一把已经被用掉的钥匙，直到寿命到期。
             await self._claims.release(tenant_id=tenant_id, key=idempotency_key)
-            self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+            await self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+            return _accepted(tenant_id, run_id, deduplicated=True)
+        if await self._claim_lease(tenant_id=tenant_id, run_id=run_id, live=live) is None:
+            # **第四道幂等**（B-1）：另一个副本正持着这一轮的活跃租约。它可能还
+            # 没落第一个检查点（所以上面那道查不到），但"有人在跑"这件事只有
+            # 租约答得出来。起第二轮 = 同一轮双跑，正是本批要治的。
+            if idempotency_key:
+                await self._claims.release(tenant_id=tenant_id, key=idempotency_key)
+            await self._close(tenant_id=tenant_id, run_id=run_id, live=live)
             return _accepted(tenant_id, run_id, deduplicated=True)
 
         task = asyncio.create_task(
@@ -346,7 +417,7 @@ class RunControl:
         except Exception as exc:
             await self._mark_failed(tenant_id=tenant_id, run_id=run_id, error=exc)
         finally:
-            self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+            await self._close(tenant_id=tenant_id, run_id=run_id, live=live)
             if idempotency_key:
                 # 认领随执行结束归还，桌面上只留**在途**的那几把钥匙（不然这张表
                 # 会随"用过的键的个数"一直涨）。被拆掉/崩掉时这一步可能没跑成，
@@ -414,6 +485,9 @@ class RunControl:
            启动拖住；但**先占坑**（``_live``）再 ``create_task``，否则同一轮在
            本次扫描内会被认领两次。
 
+        4. **接管要过四道判据**（B-1，见 :meth:`_takeover_decision`），而不是
+           "扫到就抢"。多副本下别的副本可能正跑得好好的，抢过来就是同一轮双跑。
+
         扫描本身**不吞异常**：索引查不动就让它冒出去，由调用方（启动流程）决定
         记日志还是失败——"扫不动"与"没有要恢复的"必须能分开。
         """
@@ -426,7 +500,26 @@ class RunControl:
                 continue  # 本进程已经在跑它了
             if not await self._is_resumable(run):
                 continue
+            decision = await self._takeover_decision(run)
+            if not decision.take:
+                logger.info(
+                    "agent_team.run_lease.not_taken_over",
+                    extra={
+                        "tenant_id": run.tenant_id,
+                        "run_id": run.run_id,
+                        "reason": decision.reason,
+                    },
+                )
+                continue
             live = self._open(tenant_id=run.tenant_id, run_id=run.run_id)
+            if (
+                await self._claim_lease(tenant_id=run.tenant_id, run_id=run.run_id, live=live)
+                is None
+            ):
+                # 判定与抢租约之间被别的副本抢先了。这正是"先判后抢"必须原子化的
+                # 原因——判定只是**筛选**，真正定胜负的是那一句 SQL。
+                await self._close(tenant_id=run.tenant_id, run_id=run.run_id, live=live)
+                continue
             task = asyncio.create_task(
                 self._continue(tenant_id=run.tenant_id, run_id=run.run_id, live=live)
             )
@@ -462,7 +555,7 @@ class RunControl:
         except Exception as exc:
             await self._mark_failed(tenant_id=tenant_id, run_id=run_id, error=exc)
         finally:
-            self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+            await self._close(tenant_id=tenant_id, run_id=run_id, live=live)
 
     async def shutdown(self) -> None:
         """进程收尾：拆掉在途的后台任务（1.8 轨 1）。
@@ -493,6 +586,7 @@ class RunControl:
         """人工确认后续跑。续跑同样"有请求在等它"，因此同样可被取消。"""
         live = self._open(tenant_id=tenant_id, run_id=run_id)
         try:
+            await self._claim_lease(tenant_id=tenant_id, run_id=run_id, live=live)
             return await self._service.resume(
                 tenant_id=tenant_id,
                 run_id=run_id,
@@ -501,17 +595,124 @@ class RunControl:
                 should_cancel=self._cancel_check(tenant_id=tenant_id, run_id=run_id),
             )
         finally:
-            self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+            await self._close(tenant_id=tenant_id, run_id=run_id, live=live)
 
     def _open(self, *, tenant_id: str, run_id: str) -> _LiveRun:
         live = _LiveRun()
         self._live[(tenant_id, run_id)] = live
         return live
 
-    def _close(self, *, tenant_id: str, run_id: str, live: _LiveRun) -> None:
+    async def _claim_lease(self, *, tenant_id: str, run_id: str, live: _LiveRun) -> RunLease | None:
+        """拿这一轮的活跃租约（B-1）。拿不到 = **别的副本正持有**。
+
+        拿到之后立刻起心跳任务：图可能跑几分钟，而 TTL 只有几十秒；没有续租的话
+        每一个长跑 run 都会被自己的寿命误判成孤儿。
+        """
+        lease = await self._leases.acquire(
+            tenant_id=tenant_id,
+            run_id=run_id,
+            owner=self._instance_id,
+            ttl=self._lease_ttl,
+            current_step=await self._latest_step(tenant_id, run_id),
+        )
+        if lease is None:
+            return None
+        live.lease_epoch = lease.lease_epoch
+        live.heartbeat = asyncio.create_task(
+            self._heartbeat_loop(
+                tenant_id=tenant_id, run_id=run_id, epoch=lease.lease_epoch, live=live
+            )
+        )
+        return lease
+
+    async def _heartbeat_loop(
+        self, *, tenant_id: str, run_id: str, epoch: int, live: _LiveRun
+    ) -> None:
+        """定期续租，并把"检查点走到哪了"记进租约。
+
+        续租**失败**是有意义的信号而非噪音：它说明这轮已经被别人接管了（epoch
+        对不上）。这时我们不自杀——图已经在跑，硬停会留下半截；我们只是**不再
+        续租**，让新主人按它自己的节奏收敛。如实记一条日志，不静默。
+
+        读步骤失败不阻断续租：读不到就沿用租约上已有的 ``current_step``，
+        "续命"比"记准进度"重要——记不准只影响接管判定的严格程度，续不上命
+        会让这一轮被误接管。
+        """
+        step = ""
+        while True:
+            await asyncio.sleep(self._heartbeat_interval)
+            try:
+                step = await self._latest_step(tenant_id, run_id)
+            except Exception:  # 读不动不该把心跳打断
+                step = ""
+            try:
+                ok = await self._leases.renew(
+                    tenant_id=tenant_id,
+                    run_id=run_id,
+                    owner=self._instance_id,
+                    epoch=epoch,
+                    ttl=self._lease_ttl,
+                    current_step=step,
+                )
+            except Exception:
+                continue  # 数据库抖一下不该让租约永久失效
+            if not ok:
+                logger.warning(
+                    "agent_team.run_lease.lost",
+                    extra={
+                        "tenant_id": tenant_id,
+                        "run_id": run_id,
+                        "lease_epoch": epoch,
+                        "owner_instance": self._instance_id,
+                    },
+                )
+                return
+
+    async def _latest_step(self, tenant_id: str, run_id: str) -> str:
+        """检查点走到哪了。``step_reader`` 没配时返回空串（判据如实退化）。"""
+        if self._step_reader is None:
+            return ""
+        try:
+            return await self._step_reader(tenant_id, run_id)
+        except Exception:
+            return ""
+
+    async def _running_invocations(self, tenant_id: str, run_id: str) -> int:
+        """这一轮还有几条在途工具调用（接管判定的第四条）。没配账本就当 0。"""
+        if self._tool_ledger is None:
+            return 0
+        try:
+            return await self._tool_ledger.running_invocations(tenant_id=tenant_id, run_id=run_id)
+        except Exception:
+            # 查不动时**当作有在途调用**（保守）：宁可晚一点接管，也不要因为
+            # 一次读故障把一轮还有副作用的 run 抢过来重放。
+            return 1
+
+    async def _takeover_decision(self, run: UnfinishedRun) -> TakeoverDecision:
+        """这一轮现在该不该被接管（B-1 的四条件，见 ``decide_takeover``）。"""
+        return decide_takeover(
+            await self._leases.get(tenant_id=run.tenant_id, run_id=run.run_id),
+            now=time.time(),
+            checkpoint_step=await self._latest_step(run.tenant_id, run.run_id),
+            running_invocations=await self._running_invocations(run.tenant_id, run.run_id),
+            heartbeat_grace=self._heartbeat_grace,
+        )
+
+    async def _close(self, *, tenant_id: str, run_id: str, live: _LiveRun) -> None:
         # 先置位再摘牌：正在 await 的取消请求要能被唤醒。
         live.finished.set()
+        if live.heartbeat is not None:
+            live.heartbeat.cancel()
+            live.heartbeat = None
         self._live.pop((tenant_id, run_id), None)
+        if live.lease_epoch:
+            # 带着 epoch 释放：**换过手就什么都不做**（见 ``RunLeases.release``）。
+            await self._leases.release(
+                tenant_id=tenant_id,
+                run_id=run_id,
+                owner=self._instance_id,
+                epoch=live.lease_epoch,
+            )
 
     def _effective_timeout(self, timeout_seconds: float | None) -> float:
         """这一轮实际生效的超时值：调用方没给就用部署默认值。"""

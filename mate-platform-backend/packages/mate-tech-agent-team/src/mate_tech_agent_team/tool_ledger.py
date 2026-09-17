@@ -170,6 +170,19 @@ class ToolLedger(Protocol):
 
     async def fail(self, *, tenant_id: str, invocation: ToolInvocation, error: str) -> None: ...
 
+    async def running_invocations(self, *, tenant_id: str, run_id: str) -> int:
+        """这一轮里**还挂着**的 ``running`` 调用数（B-1 接管判定要用）。
+
+        为什么要单开一个查询而不是复用 ``rows()``：接管是**每个没跑完的 run
+        都要问一次**的判定，把整本账拉回来再在 Python 里数，代价随该 run 的
+        调用数线性涨；这里只要一个计数。
+
+        **注意 ``lease_expires_at`` 不参与这个判定。** 它不是"过期了就可以重跑"
+        ——`running` 一律不重跑是 A-3 的判据（at-most-once）。这里的用途恰恰相反：
+        有一条在途调用，**就不该接管这一轮**（见
+        :func:`mate_tech_agent_team.run_lease.decide_takeover`）。
+        """
+
 
 def _admission_for(existing: ToolInvocation) -> ToolCallAdmission:
     """已有一行时的结论：**一律不执行**（这就是 at-most-once 的落点）。"""
@@ -237,6 +250,13 @@ class InMemoryToolLedger:
             for key, row in self._rows.items()
             if key[0] == tenant_id and (not run_id or key[1] == run_id)
         ]
+
+    async def running_invocations(self, *, tenant_id: str, run_id: str) -> int:
+        return sum(
+            1
+            for (tid, rid, _, _), row in self._rows.items()
+            if tid == tenant_id and rid == run_id and row.status == RUNNING
+        )
 
 
 def _completed(invocation: ToolInvocation, result: Any) -> ToolInvocation:
@@ -308,6 +328,12 @@ UPDATE {TOOL_INVOCATIONS_TABLE}
    SET status = %s, result = %s::jsonb, result_digest = %s, error = %s, finished_at = %s
  WHERE tenant_id = %s AND run_id = %s AND task_id = %s AND tool_call_id = %s
 """
+
+#: 接管判定要的那一个数：这一轮还有几条 ``running``（B-1）。
+_RUNNING_COUNT_SQL = (
+    f"SELECT count(*) FROM {TOOL_INVOCATIONS_TABLE}"
+    " WHERE tenant_id = %s AND run_id = %s AND status = %s"
+)
 
 
 def bootstrap_tool_ledger(conn: psycopg.Connection[Any], app_role: str = "mate_app") -> None:
@@ -439,6 +465,12 @@ class PgToolLedger:
             cur = await conn.execute(sql, tuple(params))
             rows = await cur.fetchall()
         return [_row_to_invocation(row) for row in rows]
+
+    async def running_invocations(self, *, tenant_id: str, run_id: str) -> int:
+        async with self._conn(tenant_id) as conn:
+            cur = await conn.execute(_RUNNING_COUNT_SQL, (tenant_id, run_id, RUNNING))
+            row = await cur.fetchone()
+        return int(row[0]) if row else 0
 
 
 def _row_to_invocation(row: tuple[Any, ...]) -> ToolInvocation:

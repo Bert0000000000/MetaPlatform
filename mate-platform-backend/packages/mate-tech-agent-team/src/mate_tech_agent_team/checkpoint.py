@@ -30,7 +30,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
-from .tenant_db import TenantConnections, tenant_connections
+from .tenant_db import TenantConnections, checked_schema, tenant_connections
 
 SCHEMA = "agent_team"
 
@@ -65,6 +65,7 @@ def bootstrap(admin_dsn: str, app_role: str = "mate_app", schema: str = SCHEMA) 
     from .audit import bootstrap_audit
     from .coordination import bootstrap_coordination
     from .profile_store import bootstrap_profiles
+    from .run_lease import bootstrap_run_leases
     from .team_task_store import bootstrap_tasks
     from .tool_ledger import bootstrap_tool_ledger
 
@@ -90,6 +91,8 @@ def bootstrap(admin_dsn: str, app_role: str = "mate_app", schema: str = SCHEMA) 
         bootstrap_audit(conn, app_role=app_role)
         # A-3 / MP-TOOL-IDEMPOTENCY-01：工具调用级幂等账本（同库同 schema，同一套守门）。
         bootstrap_tool_ledger(conn, app_role=app_role)
+        # B-1 / MP-RUN-LEASE-01：活跃 run 租约表（多副本"谁在跑"的唯一来源）。
+        bootstrap_run_leases(conn, app_role=app_role)
 
 
 def _guc_statement(tenant_id: str) -> tuple[str, tuple[str]]:
@@ -184,7 +187,25 @@ class PgCheckpointerProvider:
     """
 
     def __init__(self, dsn: str | TenantConnections, schema: str = SCHEMA) -> None:
+        self._schema = schema
         self._conns = tenant_connections(dsn, schema=schema, autocommit=True)
+
+    async def latest_step(self, tenant_id: str, run_id: str) -> str:
+        """这一轮**最新检查点 id**（租约心跳与接管判定用）。
+
+        langgraph 的 ``checkpoint_id`` 是 UUIDv6（时间有序），所以**字符串序 =
+        时间序**：租约里记下这个值，接管方再读一次一比，就知道"租约失效之后
+        检查点还动没动"——这是"检查点未进展"那条判据的比对方式，不需要额外
+        维护时间戳列（检查点表是 langgraph 的，我们不加列）。
+        """
+        sql = (
+            f"SELECT checkpoint_id FROM {checked_schema(self._schema)}.checkpoints"
+            " WHERE thread_id = %s AND checkpoint_ns = '' ORDER BY checkpoint_id DESC LIMIT 1"
+        )
+        async with self._conns.for_tenant(tenant_id) as conn:
+            cur = await conn.execute(sql, (thread_id_for(tenant_id, run_id),))
+            row = await cur.fetchone()
+        return str(row[0]) if row else ""
 
     @asynccontextmanager
     async def for_tenant(self, tenant_id: str) -> AsyncIterator[BaseCheckpointSaver]:
