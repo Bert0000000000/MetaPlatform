@@ -298,6 +298,52 @@ jobs:
           ONT_RLS_ADMIN_DSN: postgresql://meta:meta@localhost:5432/postgres
           PG_DSN: postgresql://mate_ont_test:mate_ont_test@localhost:5432/metaplatform_ont_test
 
+  # ── 1.6 任务 3：Agent 产品层（mate-tech-agent-team）测试进 CI ──────────
+  # 此前这 246 条用例从未在任何 workflow 里跑过（CI 只跑 tests/architecture
+  # 与 packages/mate-platform）。没有门禁的测试等于没写——写在这里是因为
+  # 它和 ont-kernel / mate-platform 一样，是「包测试套件进 CI」这一类。
+  #
+  # **不设 continue-on-error**：这一条必须能真的把流水线弄红，否则等于没进。
+  agent-team-tests:
+    name: agent-team pytest (mate-tech-agent-team)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # 带 PG 是为了让**租户隔离**那批断言真跑起来：RLS 的隔离只有非超级角色
+    # （mate_app）在真库上验得了，内存替身只能证明"命名不同"。测试没有 PG 时
+    # 会 skip 而不是 fail，所以服务起不来也不会误判成"代码坏了"。
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: meta
+          POSTGRES_PASSWORD: meta
+          POSTGRES_DB: metaplatform
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meta -d metaplatform"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install uv
+        run: python -m pip install uv
+      # 依赖闭包一次从 workspace 锁文件解出来（不做手工 pip 清单：本仓已连续
+      # 6 轮被手工清单漏项咬过，见 ga-hooks-and-tests 的注释）。
+      - name: Install agent-team workspace dependencies (frozen)
+        run: uv sync --directory mate-platform-backend --package mate-tech-agent-team --dev --frozen
+      # conftest 的 PG 断言用 mate_app 连（非超级、非 BYPASSRLS）；用 meta 测
+      # 会假通过。角色不存在时夹具 skip，所以这一步用 IF NOT EXISTS 语义写。
+      - name: Create the non-superuser role the RLS assertions need
+        run: |
+          PGPASSWORD=meta psql -h 127.0.0.1 -U meta -d metaplatform -v ON_ERROR_STOP=1 \
+            -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='mate_app') THEN CREATE ROLE mate_app LOGIN PASSWORD 'mate_app'; END IF; END \$\$;"
+      - name: mate-tech-agent-team/tests
+        run: uv run --directory mate-platform-backend/packages/mate-tech-agent-team pytest -q
+
   # rule 7: 契约或集成测试跳过不标记 Accepted（forbid_skip_tests）
   ga-007-skip-tests:
     name: ga-007 forbid_skip_tests (rule 7)
