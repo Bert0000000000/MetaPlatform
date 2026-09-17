@@ -537,6 +537,32 @@ async def embeddings_endpoint(req: EmbeddingRequest, request: Request) -> Embedd
 # (no API key, timeout, HTTP error) the provider automatically falls
 # back to a deterministic stub response and emits a structlog warning.
 # ---------------------------------------------------------------------------
+#: 上游超时默认值。老的 30s 是给普通对话写的——reasoning 模型（如 glm-5.3-flash）
+#: 光思考就要几百个 token，配上工具 schema 与大段工具结果，30s 会被顶穿，
+#: 于是"看着像失败"的那次调用回落成回显。这里给到 90s，仍是有界的。
+_DEFAULT_UPSTREAM_TIMEOUT = 90.0
+
+
+def upstream_timeout() -> float:
+    """上游调用超时（秒）。``LLMGW_UPSTREAM_TIMEOUT`` 可覆盖。
+
+    配错（非数字 / 非正数）时**退回默认值**而不是把服务带崩——一个手滑的
+    环境变量不该让整个网关起不来。
+    """
+    raw = os.getenv("LLMGW_UPSTREAM_TIMEOUT", "").strip()
+    if not raw:
+        return _DEFAULT_UPSTREAM_TIMEOUT
+    try:
+        value = float(raw)
+    except ValueError:
+        logger.warning("llmgw.config.bad_upstream_timeout", raw=raw)
+        return _DEFAULT_UPSTREAM_TIMEOUT
+    if value <= 0:
+        logger.warning("llmgw.config.bad_upstream_timeout", raw=raw)
+        return _DEFAULT_UPSTREAM_TIMEOUT
+    return value
+
+
 class RealChatRequest(BaseModel):
     """``/chat/real`` 请求体 (TD-6)."""
 
@@ -556,6 +582,12 @@ class RealChatRequest(BaseModel):
     )
     tools: list[dict[str, Any]] | None = Field(
         default=None, description="function-calling tools, forwarded to OpenAI-compatible providers"
+    )
+    # 默认 True = 保持既有行为（其它调用方不受影响）。Agent 产品层传 False：
+    # 员工产出里出现"把指令抄回来"的假回执，比一次明确失败危险得多。
+    allow_stub_fallback: bool = Field(
+        default=True,
+        description="非生产 profile 下上游不可用时，是否允许返回回显输入的假答复",
     )
 
 
@@ -600,11 +632,20 @@ async def real_chat_endpoint(req: RealChatRequest, request: Request) -> RealChat
         from ..providers.real_openai_provider import RealOpenAIProvider
         from ..resilience.call import call_with_resilience, load_fallback_chain
 
+        # 回显（stub-fallback）三重闸门：
+        #   ① 生产 profile 一律不许（硬规则 #5）
+        #   ② 带 tools 的调用是 Agent 决策，不是对话 —— 假答复会被当成工具结果（1.5）
+        #   ③ 调用方显式关掉（Agent 产品层走这条：员工产出里出现"把指令抄回来"
+        #      的假回执，比一次明确失败危险得多）
+        allow_stub = not is_production_profile() and not req.tools and req.allow_stub_fallback
+        timeout = upstream_timeout()
+
         if req.provider == "anthropic":
             model = req.model or "claude-3-5-sonnet-20241022"
             provider = RealAnthropicProvider(
                 model=model,
-                allow_fallback=not is_production_profile() and not req.tools,
+                timeout=timeout,
+                allow_fallback=allow_stub,
             )
         elif req.provider in ("openai", "custom"):
             # custom = OpenAI 兼容第三方（MiniMax/DeepSeek 等），base_url/api_key 透传
@@ -613,10 +654,8 @@ async def real_chat_endpoint(req: RealChatRequest, request: Request) -> RealChat
                 model=model,
                 base_url=req.base_url,
                 api_key=req.api_key,
-                # A request carrying function tools is an Agent decision,
-                # not a conversational response.  It must never get a
-                # synthetic reply that could be mistaken for a tool result.
-                allow_fallback=not is_production_profile() and not req.tools,
+                timeout=timeout,
+                allow_fallback=allow_stub,
             )
         else:
             raise HTTPException(
@@ -638,7 +677,10 @@ async def real_chat_endpoint(req: RealChatRequest, request: Request) -> RealChat
         for fb_model in load_fallback_chain(model):
             fb_provider = RealOpenAIProvider(
                 model=fb_model,
-                allow_fallback=not is_production_profile() and not req.tools,
+                timeout=timeout,
+                # 兜底链同样不许回显：调用方要的是"别给我假答复"，
+                # 换成另一条链接着编一个，等于把闸门绕过去了。
+                allow_fallback=allow_stub,
             )
 
             def _fb_call(p=fb_provider):

@@ -7971,6 +7971,47 @@ paths:
       x-mate-requirements:
         - FR-LLMGW-LLMGWPOSTCHATMULTIMODAL
       x-mate-implementation-status: implemented
+  /api/v1/llmgw/chat/real:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 真实上游对话（openai / anthropic / custom 兼容端点）
+      tags:
+        - llmgw
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RealChatRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RealChatResponseAPI'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '503':
+          description: 上游不可用且调用方要求不回显（allow_stub_fallback=false）
+      operationId: llmgwPostLlmgwChatReal
+      description: |
+        非流式真实上游对话。调用方透传 provider / base_url / api_key
+        （后者由 IAM `ai.provider.*` 取真值），llmgw 据此真正上调。
+
+        `allow_stub_fallback`（默认 true，保持既有行为）：非生产 profile 下，
+        上游不可用时是否允许返回**回显输入的假答复**。Agent 产品层传 false ——
+        员工产出里出现"把指令抄回来"的假回执，比一次明确失败危险得多。
+        生产 profile 一律不回显（硬规则 #5），该字段不改变这一点。
+      x-mate-owner: ai-runtime
+      x-mate-permission: llmgw.post
+      x-mate-requirements:
+        - FR-LLMGW-LLMGWPOSTLLMGWCHATREAL
+      x-mate-implementation-status: implemented
   /api/v1/llmgw/chat/stream:
     post:
       security:
@@ -12412,6 +12453,78 @@ components:
             type: object
         usage:
           type: object
+    RealChatRequest:
+      type: object
+      required:
+        - provider
+        - messages
+      properties:
+        provider:
+          type: string
+          description: openai | anthropic | custom — 选择真实后端
+        model:
+          type: string
+          default: ''
+          description: 模型名（空 = 取 provider 默认）
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        temperature:
+          type: number
+          default: 1
+        max_tokens:
+          type:
+            - integer
+            - 'null'
+        tenant_id:
+          type: string
+          default: ''
+          description: 租户 ID（用于按租户解析 API key）
+        base_url:
+          type: string
+          description: OpenAI 兼容 base URL 覆盖（如 ARK Plan /api/plan/v3）
+        api_key:
+          type: string
+          description: API Key 覆盖（由调用方从 IAM ai.provider.* 取真值）
+        tools:
+          type: array
+          items:
+            type: object
+          description: function-calling tools，转发给 OpenAI 兼容后端
+        allow_stub_fallback:
+          type: boolean
+          default: true
+          description: |
+            上游不可用时是否允许返回回显输入的假答复（stub-fallback）。
+            默认 true = 保持既有行为；Agent 产品层传 false，让失败如实暴露。
+            生产 profile 一律不回显，该字段不能绕过硬规则 #5。
+    RealChatResponseAPI:
+      type: object
+      properties:
+        content:
+          type: string
+        model:
+          type: string
+        reasoning_content:
+          type:
+            - string
+            - 'null'
+        finish_reason:
+          type:
+            - string
+            - 'null'
+        usage:
+          type: object
+        provider:
+          type: string
+        fallback:
+          type: boolean
+          description: true = 这条 content 是 stub-fallback 回显，不是模型答复
+        tool_calls:
+          type: array
+          items:
+            type: object
     EmbeddingRequest:
       type: object
       required:
