@@ -1,0 +1,190 @@
+# Golden Dataset —— 真实 Provider 上的企业任务质量评测（MP-EVAL-GOLDEN-01 / C-6）
+#
+# 为什么要有它：415→500+ 个测试证明的是「框架按预期执行」，**不是**「模型能稳定
+# 完成企业任务」。这份数据集把「答得好不好」写成可机读的判据，由 run_golden 在
+# **真实 llmgw provider**（本机 = ARK Plan custom provider / glm-5.3-flash）上跑。
+#
+# 三条纪律：
+#   1. **不编造平台事实**：expected_rids / known_rids 全部取自部署态本体的真值
+#      （2026-09-18 从 PG `metaplatform` 的 ont_* 表实测导出，见 known_rids 块）。
+#   2. **不拿回显当成功**：任何 `[stub-fallback]` / 零模型调用的非空产出都会被
+#      trace.assert_real_provider 判为假回执，整轮如实失败，绝不计入好答案。
+#   3. **算不出的指标就说算不出**：见 run_golden 的报告，`not_computed` 带 reason，
+#      不拿 0 冒充。
+#
+# 数据规模刻意小：4 个任务，每个钉住一类真实本体数据 + 一组员工/工具/证据期望。
+# 质量优先于数量——任务多了只会让「跑一次多少钱」变成没人跑的借口。
+
+version: "golden/v1"
+created_at: "2026-09-18"
+tenant_id: "tenant-default"
+
+#: 本轮评测瞄准的真实 provider。run_golden 会先探活，探不到就如实失败。
+provider:
+  kind: "llmgw-real"
+  note: "ARK Plan custom provider（ai.provider.default_active=ark, glm-5.3-flash）经 mate-tech-llmgw /chat/real"
+
+#: 员工名册是内置三个（见 profiles.py）。任务期望的 profile_id 必须来自这里。
+roster: ["EMP-ANALYST", "EMP-AUDITOR", "EMP-RESEARCHER"]
+
+#: 「敏感/写」工具面——员工**不该**直接调用（本体侧 agentInvokable=False 会拒）。
+#: 凡是它出现在回执的 tool_calls 里，记一次漏审（见 sensitive_op_missed_approval_rate）。
+sensitive_tools:
+  - "ont_propose_instance"
+  - "ont_confirm_proposal"
+  - "ont_reject_proposal"
+  - "ont_execute_action"
+
+tasks:
+  - id: "G-ONT-01"
+    title: "本体对象盘点与订单字段核对"
+    goal: "盘点平台当前的本体对象类型，找出与「订单」相关的对象类型，核对订单对象的字段结构，并指出哪些字段可用于判断数据质量。"
+    max_parallel: 3
+    min_subtasks: 2
+    #: 期望被派到的员工角色（拆解完整率的分母）。名册只有 3 人，要求其中 2 人。
+    expected_roles: ["EMP-ANALYST", "EMP-AUDITOR"]
+    #: 计划/产出里**应当出现**的语义面（词法覆盖，不是语义判分——见报告口径说明）。
+    required_aspects: ["对象", "订单", "字段"]
+    expected_tools: ["ont_list_classes", "ont_inspect_class"]
+    expected_rids:
+      - "ont.tenant-default.obj.crm.order.v1"
+    min_evidence: 1
+    requires_approval: true
+
+  - id: "G-SOP-01"
+    title: "危险品对象数据核对"
+    goal: "核对危险品对象（SOP-Bench dangerous_goods）里 hazard_score 与 hazard_class 的分布，指出是否存在分值区间与分级不一致的记录。"
+    max_parallel: 3
+    min_subtasks: 2
+    expected_roles: ["EMP-ANALYST", "EMP-AUDITOR"]
+    required_aspects: ["危险品", "hazard", "分布"]
+    expected_tools: ["ont_list_classes", "ont_object_query"]
+    expected_rids:
+      - "ont.tenant-default.obj.sopbench-dangerous-goods.v1"
+    min_evidence: 1
+    requires_approval: true
+
+  - id: "G-HR-01"
+    title: "请假申请合规盘点"
+    goal: "盘点全部请假申请记录，核对每条记录的天数与状态是否符合常识（例如已批准却天数为 0），并给出存疑清单。"
+    max_parallel: 3
+    min_subtasks: 2
+    expected_roles: ["EMP-ANALYST", "EMP-AUDITOR"]
+    required_aspects: ["请假", "状态", "天数"]
+    expected_tools: ["ont_list_classes", "ont_object_query"]
+    expected_rids:
+      - "ont.tenant-default.obj.leave-request.v1"
+    min_evidence: 0
+    requires_approval: true
+
+  - id: "G-KB-01"
+    title: "数字员工能力缺口的背景研究"
+    goal: "盘点数字员工资产的能力清单，并到知识库里找出与「数字员工治理」相关的制度或流程，说明它们如何解释观察到的能力缺口。"
+    max_parallel: 3
+    min_subtasks: 2
+    expected_roles: ["EMP-RESEARCHER"]
+    required_aspects: ["数字员工", "能力"]
+    expected_tools: ["ont_list_classes", "kb_search"]
+    expected_rids:
+      - "ont.tenant-default.obj.dw-digital-employee.v1"
+    min_evidence: 0
+    requires_approval: true
+
+#: 部署态本体真值快照（2026-09-18 由 PG metaplatform 的 ont_* 表导出，去掉了
+#: CRM 自动建类产生的 customer<numeric> 噪声行）。RID 正确率以它为判据：产出里
+#: 出现不在此集合中的 ont.* RID 即记一次「疑似编造」。
+known_rids:
+  - "ont.tenant-default.act.approve-contract.v1"
+  - "ont.tenant-default.act.approve-leave.v1"
+  - "ont.tenant-default.act.close-ticket.v1"
+  - "ont.tenant-default.act.drill.drill-act05u-promote-hybrid.v1"
+  - "ont.tenant-default.act.drill.drill-act05u-set-status-declarative.v1"
+  - "ont.tenant-default.act.dw-finance-ar-execute.v1"
+  - "ont.tenant-default.act.dw-finance-expense-execute.v1"
+  - "ont.tenant-default.act.dw-hr-payroll-execute.v1"
+  - "ont.tenant-default.act.dw-hr-recruiter-execute.v1"
+  - "ont.tenant-default.act.dw-it-devops-execute.v1"
+  - "ont.tenant-default.act.dw-it-helpdesk-execute.v1"
+  - "ont.tenant-default.act.dw-sales-crm-execute.v1"
+  - "ont.tenant-default.act.order-review-confirm.v1"
+  - "ont.tenant-default.act.sopbench-aircraft-inspection.v1"
+  - "ont.tenant-default.act.sopbench-content-flagging.v1"
+  - "ont.tenant-default.act.sopbench-customer-service.v1"
+  - "ont.tenant-default.act.sopbench-dangerous-goods.v1"
+  - "ont.tenant-default.act.sopbench-email-intent.v1"
+  - "ont.tenant-default.act.sopbench-know-your-business.v1"
+  - "ont.tenant-default.act.sopbench-order-fulfillment.v1"
+  - "ont.tenant-default.act.sopbench-patient-intake.v1"
+  - "ont.tenant-default.act.sopbench-referral-abuse-detection-v1.v1"
+  - "ont.tenant-default.act.sopbench-referral-abuse-detection-v2.v1"
+  - "ont.tenant-default.act.sopbench-traffic-spoofing-detection.v1"
+  - "ont.tenant-default.act.sopbench-video-annotation.v1"
+  - "ont.tenant-default.act.sopbench-video-classification.v1"
+  - "ont.tenant-default.act.sopbench-warehouse-package-inspection.v1"
+  - "ont.tenant-default.act.superai-orchestrate.v1"
+  - "ont.tenant-default.fn.approve-contract.v1"
+  - "ont.tenant-default.fn.approve-leave.v1"
+  - "ont.tenant-default.fn.close-ticket.v1"
+  - "ont.tenant-default.fn.dw-finance-ar-execute.v1"
+  - "ont.tenant-default.fn.dw-finance-expense-execute.v1"
+  - "ont.tenant-default.fn.dw-hr-payroll-execute.v1"
+  - "ont.tenant-default.fn.dw-hr-recruiter-execute.v1"
+  - "ont.tenant-default.fn.dw-it-devops-execute.v1"
+  - "ont.tenant-default.fn.dw-it-helpdesk-execute.v1"
+  - "ont.tenant-default.fn.dw-sales-crm-execute.v1"
+  - "ont.tenant-default.fn.order-review-confirm.v1"
+  - "ont.tenant-default.fn.sopbench-aircraft-inspection.v1"
+  - "ont.tenant-default.fn.sopbench-content-flagging.v1"
+  - "ont.tenant-default.fn.sopbench-customer-service.v1"
+  - "ont.tenant-default.fn.sopbench-dangerous-goods.v1"
+  - "ont.tenant-default.fn.sopbench-email-intent.v1"
+  - "ont.tenant-default.fn.sopbench-know-your-business.v1"
+  - "ont.tenant-default.fn.sopbench-order-fulfillment.v1"
+  - "ont.tenant-default.fn.sopbench-patient-intake.v1"
+  - "ont.tenant-default.fn.sopbench-referral-abuse-detection-v1.v1"
+  - "ont.tenant-default.fn.sopbench-referral-abuse-detection-v2.v1"
+  - "ont.tenant-default.fn.sopbench-traffic-spoofing-detection.v1"
+  - "ont.tenant-default.fn.sopbench-video-annotation.v1"
+  - "ont.tenant-default.fn.sopbench-video-classification.v1"
+  - "ont.tenant-default.fn.sopbench-warehouse-package-inspection.v1"
+  - "ont.tenant-default.fn.superai-orchestrate.v1"
+  - "ont.tenant-default.if.dw-employee.v1"
+  - "ont.tenant-default.if.sopbench-patient-intake-scorable.v1"
+  - "ont.tenant-default.link.customer-order.v1"
+  - "ont.tenant-default.link.dw-employee-of.v1"
+  - "ont.tenant-default.link.dw-executes-function.v1"
+  - "ont.tenant-default.link.dw-orchestrated-by.v1"
+  - "ont.tenant-default.link.employee-leave.v1"
+  - "ont.tenant-default.link.org-person.v1"
+  - "ont.tenant-default.link.sopbench-patient-intake-insured-by.v1"
+  - "ont.tenant-default.obj.crm.contract.v1"
+  - "ont.tenant-default.obj.crm.customer.v1"
+  - "ont.tenant-default.obj.crm.order.v1"
+  - "ont.tenant-default.obj.crm.probe-customer-x.v1"
+  - "ont.tenant-default.obj.crm.product.v1"
+  - "ont.tenant-default.obj.drill.drill-act05u-employee.v1"
+  - "ont.tenant-default.obj.dw-digital-employee.v1"
+  - "ont.tenant-default.obj.employee.v1"
+  - "ont.tenant-default.obj.fin.invoice.v1"
+  - "ont.tenant-default.obj.leave-request.v1"
+  - "ont.tenant-default.obj.org.organization.v1"
+  - "ont.tenant-default.obj.org.person.v1"
+  - "ont.tenant-default.obj.scm.supplier.v1"
+  - "ont.tenant-default.obj.scm.warehouse.v1"
+  - "ont.tenant-default.obj.sopbench-aircraft-inspection.v1"
+  - "ont.tenant-default.obj.sopbench-content-flagging.v1"
+  - "ont.tenant-default.obj.sopbench-customer-service.v1"
+  - "ont.tenant-default.obj.sopbench-dangerous-goods.v1"
+  - "ont.tenant-default.obj.sopbench-email-intent.v1"
+  - "ont.tenant-default.obj.sopbench-know-your-business.v1"
+  - "ont.tenant-default.obj.sopbench-order-fulfillment.v1"
+  - "ont.tenant-default.obj.sopbench-patient-intake-provider.v1"
+  - "ont.tenant-default.obj.sopbench-patient-intake.v1"
+  - "ont.tenant-default.obj.sopbench-referral-abuse-detection-v1.v1"
+  - "ont.tenant-default.obj.sopbench-referral-abuse-detection-v2.v1"
+  - "ont.tenant-default.obj.sopbench-traffic-spoofing-detection.v1"
+  - "ont.tenant-default.obj.sopbench-video-annotation.v1"
+  - "ont.tenant-default.obj.sopbench-video-classification.v1"
+  - "ont.tenant-default.obj.sopbench-warehouse-package-inspection.v1"
+  - "ont.tenant-default.obj.superai.v1"
+  - "ont.tenant-default.obj.ticket.v1"
