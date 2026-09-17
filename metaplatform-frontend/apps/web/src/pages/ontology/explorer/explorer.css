@@ -105,3 +105,53 @@
   flex-wrap: wrap;
   gap: var(--mp-space-1);
 }
+
+/* 可点击的关联对象 chip：沿关系跳转 */
+.mp-explorer-rel-chip {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: var(--mp-space-1) var(--mp-space-3);
+  font-size: 12px;
+  color: var(--semi-color-primary);
+  background: var(--semi-color-primary-light-default);
+  border: 1px solid transparent;
+  border-radius: var(--semi-border-radius-small);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.mp-explorer-rel-chip:hover {
+  border-color: var(--semi-color-primary);
+}
+
+/* 沿关系跳转的面包屑（详情浮层标题） */
+.mp-explorer-trail {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  min-width: 0;
+  font-size: 13px;
+}
+
+.mp-explorer-trail-step {
+  color: var(--semi-color-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-explorer-trail-step::after {
+  content: '›';
+  margin-left: var(--mp-space-2);
+  color: var(--semi-color-text-3);
+}
+
+.mp-explorer-trail-current {
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

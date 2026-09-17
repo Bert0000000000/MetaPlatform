@@ -295,12 +295,14 @@ export function slugAndVersionOfObjectType(rid: string): { slug: string; version
 
 // ── MP-ONT-PROPOSAL-01: AI Assistant 提案 staging preview / confirm / execute / reject ──
 
-/** ProposalKind：4 种后端支持的提案类型。 */
+/** ProposalKind：后端支持的提案类型。 */
 export type ProposalKind =
   | 'model_type'
   | 'create_instance'
   | 'merge_suggestion'
-  | 'action';
+  | 'action'
+  /** 人工 Action 表单走 propose-edit-set 落下的即时提案（action 之外的独立 kind）。 */
+  | 'edit_set';
 
 /** 单个 Property 映射（merge_suggestion 用，source rid → target rid）。 */
 export interface PropertyMapping {
@@ -351,9 +353,28 @@ export interface ActionPreview {
   parameters: Record<string, unknown>;
 }
 
+/** edit_set 的 expected_diff：ops 是待执行操作，preview_source=function(deferred) 表示由函数在执行时决定。 */
+export interface EditSetDiff {
+  ops?: Array<Record<string, unknown>>;
+  /** Number of ops（后端字段名带波浪号）。 */
+  '~ops'?: number;
+  preview_source?: string;
+}
+
+/** edit_set 的影响摘要（后端平铺在 preview 顶层）。 */
+export interface EditSetImpact {
+  kind?: string;
+  tenant_id?: string;
+  warnings?: string[];
+  target_action_rid?: string;
+  parameters_keys?: string[];
+  affected_individuals_estimate?: number;
+}
+
 /** Proposal 预览（GET /ont/v2/proposals/{id}/preview）。 */
 export interface ProposalPreview {
-  id: string;
+  id?: string;
+  proposal_id?: string;
   kind: ProposalKind;
   status?: 'pending' | 'confirmed' | 'rejected' | 'executed' | string;
   title?: string;
@@ -365,6 +386,12 @@ export interface ProposalPreview {
   create_instance?: CreateInstancePreview;
   merge_suggestion?: MergeSuggestionPreview;
   action?: ActionPreview;
+  // edit_set（人工 Action 表单）：后端**平铺**这几个字段，不套子对象
+  action_type?: string;
+  target_rid?: string;
+  parameters?: Record<string, unknown>;
+  expected_diff?: EditSetDiff;
+  impact_summary?: EditSetImpact | string;
   // 通用影响说明（所有 kind 都可能附带）
   impact?: ImpactSummary;
 }

@@ -1673,15 +1673,19 @@ class PgOntologyRepository(OntologyRepository):
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
+                # 只列活动类型：merge / lifecycle delete 走软删（archived=TRUE），
+                # 语义是「从活动集合移除」（见 test_ont_act05_unified InMemory 口径）。
+                # 此前漏了这个过滤 → 已合并的类型仍出现在列表与层级树里。
                 if tenant:  # 深度防御：RLS 之外显式租户过滤（to_thread 下 thread-local 不可见）
                     cur.execute(
-                        "SELECT * FROM ont_object_type WHERE tenant_id = %s "
+                        "SELECT * FROM ont_object_type WHERE tenant_id = %s AND archived = FALSE "
                         "ORDER BY rid LIMIT %s OFFSET %s",
                         (tenant, limit, offset),
                     )
                 else:
                     cur.execute(
-                        "SELECT * FROM ont_object_type ORDER BY rid LIMIT %s OFFSET %s",
+                        "SELECT * FROM ont_object_type WHERE archived = FALSE "
+                        "ORDER BY rid LIMIT %s OFFSET %s",
                         (limit, offset),
                     )
                 rows = cur.fetchall()

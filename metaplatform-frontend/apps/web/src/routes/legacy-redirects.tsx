@@ -28,31 +28,9 @@ function ParamRedirect({ to, param }: { to: string; param: string }) {
 }
 
 /**
- * `/ontology?tab=*` → 新 IA 的 4 个页内 tab。
- * UI-P1a 起本体域的内容已重建，tab 语义随之收敛：
- * 旧「总览/对象数据」→ 对象浏览器；旧「数据中心/知识图谱」→ 数据中心；
- * 旧「类型管理」→ 类型建模；旧「Action 编排 / 治理 / 分析应用」→ 运维下的既有子页。
+ * 旧 `/ontology?tab=*` 的转发逻辑在 `routes/ontology.tsx`（那里独占 `/ontology` 落地页）。
+ * 本文件只保留按路径前缀的旧子路径 301。
  */
-const ONTOLOGY_TAB_TARGET: Record<string, string> = {
-  overview: '/ontology/explorer',
-  objects: '/ontology/explorer',
-  datacenter: '/ontology/datacenter',
-  data: '/ontology/datacenter',
-  graph: '/ontology/datacenter',
-  concept: '/ontology/model',
-  modeling: '/ontology/model',
-  model: '/ontology/model',
-  action: '/ontology/ops/actions',
-  governance: '/ontology/ops/governance',
-  analytics: '/ontology/ops/analytics',
-};
-
-function LegacyOntologyIndex() {
-  const [searchParams] = useSearchParams();
-  const tab = (searchParams.get('tab') ?? '').trim().toLowerCase();
-  const target = ONTOLOGY_TAB_TARGET[tab] ?? '/ontology/explorer';
-  return <Navigate to={target} replace />;
-}
 
 /** `/apps?tab=*` → `/apps/{mine,market,templates,designer}`（保留 app/tid 等上下文）。 */
 function LegacyAppsIndex() {
@@ -149,16 +127,17 @@ export const legacyRedirectRoutes: ReactElement[] = [
   r('dashboard/aiops', '/home/aiops'),
   r('dashboard/settings', '/home/me'),
 
-  /* ---------- 本体（UI-P1a：内容已重建，旧子路径全部落到新 tab） ---------- */
-  <Route key="ontology-index" path="ontology" element={<LegacyOntologyIndex />} />,
-  r('ontology/objects', '/ontology/explorer'),
+  /* ---------- 本体（2026-09-17 IA 重排：6 tab，旧子路径全部落新） ---------- */
+  r('ontology/explorer', '/ontology/objects'),
+  r('ontology/model/editor', '/ontology/model'),
   r('ontology/object-types', '/ontology/model'),
   r('ontology/object-types/:rid', '/ontology/model'),
   r('ontology/relationship-types', '/ontology/model'),
-  r('ontology/graph', '/ontology/datacenter'),
-  r('ontology/action', '/ontology/ops/actions'),
-  r('ontology/actions', '/ontology/ops/actions'),
-  r('ontology/analytics', '/ontology/ops/analytics'),
+  r('ontology/graph', '/ontology/model'),
+  r('ontology/action', '/ontology/model'),
+  r('ontology/actions', '/ontology/model'),
+  r('ontology/analytics', '/ontology/apps'),
+  r('ontology/governance', '/ontology/ops'),
 
   /* ---------- 数字员工（DW 并入） ---------- */
   r('dw/employees', '/agents/employees'),

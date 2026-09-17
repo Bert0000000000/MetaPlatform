@@ -39,6 +39,7 @@ const KIND_FALLBACK_LABEL: Record<string, string> = {
   create_instance: '创建实例',
   merge_suggestion: '合并建议',
   action: '执行 Action',
+  edit_set: '执行动作',
 };
 
 export default function ProposalConfirmDrawer({

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Card, Modal } from '@douyinfe/semi-ui';
 import { useLocation } from 'react-router-dom';
 import {
-  Hexagon, Search, Plus, Columns3,
+  Hexagon, Search, Plus, Columns3, ChevronDown, ChevronRight,
   Link as LinkIcon, ArrowRight, Zap, GitBranch, GitMerge, AlertTriangle,
 } from 'lucide-react';
 import {
@@ -11,11 +11,12 @@ import {
   createObjectType,
   getObjectType,
   precheckObjectTypes, mergeObjectTypes,
+  getTypeHierarchy,
   domainOfObjectType, slugAndVersionOfObjectType, slugAndVersionOfProperty,
   errDetailText, extractDestructiveConfirm,
   type KernelObjectType, type KernelActionType, type KernelLinkType,
   type KernelValueType, type KernelInterface, type KernelObjectTypeCreate,
-  type ObjectTypeCandidate, type DestructiveConfirmDetail,
+  type ObjectTypeCandidate, type DestructiveConfirmDetail, type TypeHierarchyNode,
 } from '@/api/ont/kernel';
 import { getTenantId } from '@/utils/auth';
 import { actionDisplayName } from './actions/ActionTypeListPage';
@@ -59,6 +60,86 @@ function conceptStatus(ot: KernelObjectType, linkTypes: KernelLinkType[], action
   return 'disconnected';
 }
 
+/** 子树节点总数（含自身），用于域/父节点的计数徽标。 */
+function countNodes(node: TypeHierarchyNode): number {
+  return 1 + (node.children ?? []).reduce((acc, c) => acc + countNodes(c), 0);
+}
+
+/** 概念层级的末级 slug（rid 形如 ont.<tenant>.obj.<domain>.<slug>.v<N>）。 */
+function slugOf(rid: string): string {
+  const parts = rid.split('.');
+  return parts.length >= 2 ? (parts[parts.length - 2] ?? rid) : rid;
+}
+
+/**
+ * 一级本体树里的一个概念节点。
+ * 有子类时带折叠箭头并可继续下钻，没有子类即为末级。
+ */
+function ConceptTreeNode({
+  node,
+  depth,
+  selectedConcept,
+  expanded,
+  onToggle,
+  onSelect,
+}: {
+  node: TypeHierarchyNode;
+  depth: number;
+  selectedConcept: string;
+  expanded: Set<string>;
+  onToggle: (key: string) => void;
+  onSelect: (rid: string) => void;
+}) {
+  const kids = node.children ?? [];
+  const hasKids = kids.length > 0;
+  const isOpen = expanded.has(node.rid);
+
+  return (
+    <li>
+      <div
+        className={`om-tree-item om-tree-node ${selectedConcept === node.rid ? 'active' : ''}`}
+        style={{ '--om-depth': depth } as React.CSSProperties}
+        title={node.rid}
+        onClick={() => onSelect(node.rid)}
+      >
+        {hasKids ? (
+          <button
+            type="button"
+            className="om-tree-caret"
+            aria-label={isOpen ? '折叠子概念' : '展开子概念'}
+            aria-expanded={isOpen}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle(node.rid);
+            }}
+          >
+            {isOpen ? <ChevronDown /> : <ChevronRight />}
+          </button>
+        ) : (
+          <span className="om-tree-caret om-tree-caret--leaf" aria-hidden="true" />
+        )}
+        <span className="om-tree-label">{node.display_name || slugOf(node.rid)}</span>
+        {hasKids ? <span className="count">{countNodes(node) - 1}</span> : null}
+      </div>
+      {hasKids && isOpen ? (
+        <ul className="om-tree-branch">
+          {kids.map((k) => (
+            <ConceptTreeNode
+              key={k.rid}
+              node={k}
+              depth={depth + 1}
+              selectedConcept={selectedConcept}
+              expanded={expanded}
+              onToggle={onToggle}
+              onSelect={onSelect}
+            />
+          ))}
+        </ul>
+      ) : null}
+    </li>
+  );
+}
+
 export default function OntologyModelingPage({
   createOpen,
   setCreateOpen,
@@ -80,6 +161,10 @@ export default function OntologyModelingPage({
   const [selectedConcept, setSelectedConcept] = useState<string>('');
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  /** 一级本体 → 概念 → 子概念 的层级树（GET /object-types/hierarchy）。 */
+  const [typeHierarchy, setTypeHierarchy] = useState<TypeHierarchyNode[]>([]);
+  /** 展开的节点 rid（含 `domain:<码>` 形式的域节点）。 */
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   // V2 类型/属性编辑器（create 由 Shell 的 createOpen 驱动；edit 由本页按钮驱动）
   const [editorOpen, setEditorOpen] = useState(false);
@@ -104,19 +189,22 @@ export default function OntologyModelingPage({
 
   // 重拉全部 kernel 数据（初始加载 / 写操作后刷新）
   const refreshAll = async () => {
-    const [ots, ats, lts, vts, ifcs] = await Promise.all([
+    const [ots, ats, lts, vts, ifcs, hierarchy] = await Promise.all([
       listObjectTypes(),
       listActionTypes(),
       listLinkTypes(),
       // value-types / interfaces 拉取失败不阻塞页面（编辑器内有兜底注册表）
       listValueTypes().catch(() => [] as KernelValueType[]),
       listInterfaces().catch(() => [] as KernelInterface[]),
+      // 层级树失败时退回「域 → 概念」两层的平铺视图
+      getTypeHierarchy().catch(() => [] as TypeHierarchyNode[]),
     ]);
     setObjectTypes(ots);
     setActionTypes(ats);
     setLinkTypes(lts);
     setValueTypes(vts);
     setOntInterfaces(ifcs);
+    setTypeHierarchy(hierarchy);
     return ots;
   };
 
@@ -140,26 +228,73 @@ export default function OntologyModelingPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshKey]);
 
-  // 一级本体列表：按 rid 域名段分组
-  const domains = useMemo(() => {
-    const map = new Map<string, KernelObjectType[]>();
-    for (const ot of objectTypes) {
-      const d = domainOfObjectType(ot.rid);
-      const list = map.get(d) ?? [];
-      list.push(ot);
-      map.set(d, list);
-    }
-    return Array.from(map.entries()).map(([domain, items]) => ({
-      domain,
-      label: DOMAIN_LABELS[domain] ?? domain,
-      items,
-    }));
-  }, [objectTypes]);
-
   const currentDomainItems = useMemo(() => {
     if (!selectedDomain) return [];
     return objectTypes.filter((ot) => domainOfObjectType(ot.rid) === selectedDomain);
   }, [objectTypes, selectedDomain]);
+
+  /**
+   * 一级本体 → 概念 → 子概念（递归）→ 末级概念。
+   * 主数据源是 GET /object-types/hierarchy —— 后端返回的就是一片森林（每个节点只出现一次，
+   * 挂在它的父节点下；没有父节点的才是顶层），所以**整棵子树跟随根节点的域**，
+   * 跨域的父子不会被拆散。
+   * 端点不可用或返回空时，降级为「域 → 概念」两层，页面不至于没得点。
+   */
+  const treeByDomain = useMemo(() => {
+    const groups = new Map<string, TypeHierarchyNode[]>();
+
+    if (typeHierarchy.length > 0) {
+      for (const root of typeHierarchy) {
+        const domain = domainOfObjectType(root.rid);
+        const list = groups.get(domain) ?? [];
+        list.push(root);
+        groups.set(domain, list);
+      }
+      if (groups.size > 0) return groups;
+    }
+
+    for (const ot of objectTypes) {
+      const domain = domainOfObjectType(ot.rid);
+      const list = groups.get(domain) ?? [];
+      list.push({
+        rid: ot.rid,
+        display_name: ot.display_name,
+        parent_class: ot.parent_class ?? '',
+        children: [],
+      });
+      groups.set(domain, list);
+    }
+    return groups;
+  }, [typeHierarchy, objectTypes]);
+
+  // 首次拿到层级树后自动展开到末级；用户手动开合过就不再覆盖
+  useEffect(() => {
+    if (treeByDomain.size === 0) return;
+    setExpanded((prev) => {
+      if (prev.size > 0) return prev;
+      const next = new Set<string>();
+      for (const domain of treeByDomain.keys()) next.add(`domain:${domain}`);
+      const walk = (nodes: TypeHierarchyNode[]) => {
+        for (const n of nodes) {
+          if (n.children?.length) {
+            next.add(n.rid);
+            walk(n.children);
+          }
+        }
+      };
+      walk(typeHierarchy);
+      return next;
+    });
+  }, [treeByDomain, typeHierarchy]);
+
+  const toggleNode = (key: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   // 过滤后的概念列表（当前一级本体下）
   const filteredConcepts = useMemo(() => {
@@ -394,6 +529,13 @@ export default function OntologyModelingPage({
         .om-tree-item.active{background:var(--semi-color-fill-0);color:var(--semi-color-text-0)}
         .om-tree-item svg{width:16px;height:16px;flex-shrink:0}
         .om-tree-item .count{margin-left:auto;font-size:11px;color:var(--semi-color-text-2);background:var(--semi-color-bg-0);padding:var(--mp-space-1) var(--mp-space-2);border-radius:var(--semi-border-radius-small)}
+        .om-tree-node{padding-left:calc(var(--mp-space-3) + var(--om-depth,0) * 14px)}
+        .om-tree-branch{list-style:none;margin:0;padding:0}
+        .om-tree-caret{display:flex;align-items:center;justify-content:center;width:16px;height:16px;flex-shrink:0;padding:0;background:none;border:none;cursor:pointer;color:var(--semi-color-text-3)}
+        .om-tree-caret:hover{color:var(--semi-color-text-0)}
+        .om-tree-caret svg{width:14px;height:14px}
+        .om-tree-caret--leaf{visibility:hidden;cursor:default}
+        .om-tree-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .om-table{width:100%;border-collapse:collapse}
         .om-table th{padding:var(--mp-space-3) var(--mp-space-4);font-size:12px;font-weight:500;color:var(--semi-color-text-2);text-align:left;border-bottom:1px solid var(--semi-color-border);white-space:nowrap}
         .om-table td{padding:var(--mp-space-3) var(--mp-space-4);font-size:13px;border-bottom:1px solid var(--semi-color-border);vertical-align:middle}
@@ -440,30 +582,66 @@ export default function OntologyModelingPage({
       {/* AIAssistantWorkspace__content 是横向 flex 容器：子行必须 flex:1 + width:100%
           才能撑满可用宽度（此前缺省导致右侧约 1/3 空白）。 */}
       <div className="mp-w-full mp-flex mp-flex-1 mp-gap-5">
-        {/* Left: 一级本体列表 */}
+        {/* Left: 一级本体 → 概念（逐级下钻到末级） */}
         <div className="mp-shrink-0 mp-w-240" >
           <Card className="mp-h-fit">
             <h3 className="mp-fw-600 mp-mb-3 mp-text-md">一级本体</h3>
             <ul className="mp-m-0 mp-p-1 mp-onto-list-plain">
               {loading ? (
                 <li className="mp-text-sm mp-text-2 mp-py-2 mp-px-3" >加载中…</li>
-              ) : domains.length === 0 ? (
+              ) : treeByDomain.size === 0 ? (
                 <li className="mp-text-sm mp-text-2 mp-py-2 mp-px-3" >暂无本体</li>
               ) : (
-                domains.map((d) => (
-                  <li
-                    key={d.domain}
-                    className={`om-tree-item ${d.domain === selectedDomain ? 'active' : ''}`}
-                    onClick={() => {
-                      setSelectedDomain(d.domain);
-                      if (d.items.length > 0) setSelectedConcept(d.items[0].rid);
-                    }}
-                  >
-                    <Hexagon />
-                    {d.label}
-                    <span className="count">{d.items.length}</span>
-                  </li>
-                ))
+                Array.from(treeByDomain.entries()).map(([domain, nodes]) => {
+                  const domainKey = `domain:${domain}`;
+                  const isOpen = expanded.has(domainKey);
+                  const total = nodes.reduce((acc, n) => acc + countNodes(n), 0);
+                  return (
+                    <li key={domain}>
+                      <div
+                        className={`om-tree-item ${domain === selectedDomain ? 'active' : ''}`}
+                        onClick={() => {
+                          setSelectedDomain(domain);
+                          if (nodes.length > 0) setSelectedConcept(nodes[0].rid);
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="om-tree-caret"
+                          aria-label={isOpen ? '折叠一级本体' : '展开一级本体'}
+                          aria-expanded={isOpen}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleNode(domainKey);
+                          }}
+                        >
+                          {isOpen ? <ChevronDown /> : <ChevronRight />}
+                        </button>
+                        <Hexagon />
+                        {DOMAIN_LABELS[domain] ?? domain}
+                        <span className="count">{total}</span>
+                      </div>
+                      {isOpen ? (
+                        <ul className="om-tree-branch">
+                          {nodes.map((n) => (
+                            <ConceptTreeNode
+                              key={n.rid}
+                              node={n}
+                              depth={0}
+                              selectedConcept={selectedConcept}
+                              expanded={expanded}
+                              onToggle={toggleNode}
+                              onSelect={(rid) => {
+                                setSelectedDomain(domain);
+                                setSelectedConcept(rid);
+                              }}
+                            />
+                          ))}
+                        </ul>
+                      ) : null}
+                    </li>
+                  );
+                })
               )}
             </ul>
           </Card>

@@ -19,6 +19,51 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 标识符（rid / 表名 / 列名）：等宽族，便于逐字符比对 */
+.mp-onto-mono {
+  font-family: var(--mp-font-mono);
+  font-size: 12px;
+  color: var(--semi-color-text-1);
+}
+
+/* 侧栏表单：字段纵向排布（抽屉体内共用） */
+.mp-onto-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
+}
+
+.mp-onto-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+}
+
+.mp-onto-field-label {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+
+.mp-onto-field-req {
+  font-size: 11px;
+  color: var(--semi-color-danger);
+}
+
+/* 动作表单的目标对象抬头 */
+.mp-onto-action-target {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+  padding: var(--mp-space-3);
+  margin-bottom: var(--mp-space-4);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-fill-0);
+}
+
 /* 小节标签（如「N 个属性」）：比正文小一档，只表层级 */
 .mp-eyebrow {
   font-size: 11px;

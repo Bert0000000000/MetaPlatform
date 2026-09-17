@@ -73,12 +73,14 @@ export const DOMAINS: DomainDef[] = [
     key: 'ontology',
     label: '本体',
     icon: <Share2 size={ICON_SIZE} strokeWidth={1.5} />,
-    path: '/ontology/explorer',
+    path: '/ontology',
     tabs: [
-      { key: 'explorer', label: '对象浏览器', path: '/ontology/explorer' },
+      { key: 'overview', label: '概览', path: '/ontology' },
+      { key: 'model', label: '概念建模', path: '/ontology/model' },
+      { key: 'objects', label: '对象浏览', path: '/ontology/objects' },
       { key: 'datacenter', label: '数据中心', path: '/ontology/datacenter' },
-      { key: 'model', label: '类型建模', path: '/ontology/model' },
-      { key: 'ops', label: '运维', path: '/ontology/ops' },
+      { key: 'apps', label: '分析应用', path: '/ontology/apps' },
+      { key: 'ops', label: '运行治理', path: '/ontology/ops' },
     ],
   },
   {
