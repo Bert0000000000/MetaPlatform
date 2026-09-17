@@ -17,7 +17,7 @@ thread_id 的调用方都能读到别人的状态；只有 GUC 而 thread_id 不
 from __future__ import annotations
 
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 from uuid import uuid4
@@ -143,7 +143,7 @@ class BrainService:
         saver: BaseCheckpointSaver,
         ctx: RunContext,
         max_parallel: int,
-        should_cancel: Callable[[], bool] | None = None,
+        should_cancel: Callable[[], Awaitable[bool]] | None = None,
     ):
         return build_brain_graph(
             planner=self._planner_for(ctx),
@@ -166,7 +166,7 @@ class BrainService:
         user_token: str = "",
         max_parallel: int | None = None,
         run_id: str | None = None,
-        should_cancel: Callable[[], bool] | None = None,
+        should_cancel: Callable[[], Awaitable[bool]] | None = None,
         timeout_seconds: float = 0.0,
     ) -> BrainState:
         """一句话 → 拆图 → 并行派活 → 停在人工确认闸门。
@@ -268,7 +268,7 @@ class BrainService:
         run_id: str,
         approved: bool = True,
         user_token: str = "",
-        should_cancel: Callable[[], bool] | None = None,
+        should_cancel: Callable[[], Awaitable[bool]] | None = None,
     ) -> BrainState:
         """人工确认后续跑。已完成的节点不会被重跑（D-6）。
 
@@ -302,7 +302,7 @@ class BrainService:
         *,
         tenant_id: str,
         run_id: str,
-        should_cancel: Callable[[], bool] | None = None,
+        should_cancel: Callable[[], Awaitable[bool]] | None = None,
     ) -> BrainState:
         """从**检查点**接着跑一轮没跑完的 run（1.8 轨 1）。
 

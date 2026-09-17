@@ -40,6 +40,12 @@ from .checkpoint import (
     bootstrap,
     thread_id_for,
 )
+from .coordination import (
+    CancelSignals,
+    InMemoryCancelSignals,
+    PgCancelSignals,
+    bootstrap_coordination,
+)
 from .delegation import DelegationState, RunDelegation
 from .employee import LlmEmployeeRuntime
 from .llm_planner import LlmPlanner
@@ -79,6 +85,7 @@ __all__ = [
     "AuditRecord",
     "AuthorityError",
     "BrainService",
+    "CancelSignals",
     "ChannelMessage",
     "CompositeToolbox",
     "DEFAULT_MAX_DEPTH",
@@ -90,12 +97,14 @@ __all__ = [
     "EmployeeProfile",
     "EmployeeRuntime",
     "InMemoryArtifacts",
+    "InMemoryCancelSignals",
     "InMemoryCheckpointerProvider",
     "InMemoryTeamTasks",
     "LlmEmployeeRuntime",
     "LlmPlanner",
     "McpToolbox",
     "PgArtifacts",
+    "PgCancelSignals",
     "PgCheckpointerProvider",
     "PgTeamTasks",
     "PlanError",
@@ -127,6 +136,7 @@ __all__ = [
     "artifact_for_task",
     "bootstrap",
     "bootstrap_artifacts",
+    "bootstrap_coordination",
     "bootstrap_tasks",
     "builtin_profiles",
     "claims_of",
