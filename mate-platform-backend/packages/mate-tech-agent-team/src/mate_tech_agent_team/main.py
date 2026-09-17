@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -18,6 +19,7 @@ from fastapi import FastAPI
 from mate_platform.auth import install_auth
 
 from .api.app import (
+    get_run_control,
     router,
     set_artifact_store,
     set_brain_service,
@@ -34,6 +36,8 @@ from .profiles import ProfileRegistry
 from .team_bus import TeamBus
 
 SERVICE_NAME = "mate-tech-agent-team"
+
+logger = logging.getLogger(__name__)
 
 
 def _healthz() -> dict[str, str]:
@@ -72,7 +76,18 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     set_run_control(None)  # 按当前服务层现建：运行控制面没有独立状态要注入
     app.state.brain_service = service
     app.state.team_bus = bus
+    # 1.8 轨 1：把上一次进程没跑完的 run 接着跑完。**不阻塞启动**（认领后交给
+    # 后台任务），且扫不动时只记一条日志——恢复是兜底能力，不该拦住服务起来。
+    try:
+        await get_run_control().recover()
+    except Exception:
+        logger.exception("启动扫描没跑成：在途 run 本次不会被自动续跑")
     yield
+    # 收尾：拆掉在途的后台任务。取消**不落终态**——它们会被下一次启动扫描认领。
+    try:
+        await get_run_control().shutdown()
+    except Exception:
+        logger.exception("收尾时拆后台任务失败")
     set_brain_service(None)
     set_profile_registry(None)
     set_skill_catalog(None)

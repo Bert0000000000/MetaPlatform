@@ -35,6 +35,13 @@
    （两边都还没查到对方），与边界 1 同源。
 4. **后台任务里的异常落成终态 ``failed``**：不然"终态只能从事件流/查询取"就成了
    空话——任务炸了而 run 永远停在 ``running``，客户端会一直等下去。
+5. **进程重启后的续跑靠"扫检查点"**（1.8 轨 1，:meth:`RunControl.recover`）：
+   受理制把执行放在本进程里，进程一没，在途的 run 就卡住了。恢复**不另建 run
+   真相**——扫的就是检查点表本身，续跑用的是 ``ainvoke(None, cfg)``（从检查点
+   的 ``next`` 接着跑，已完成的节点不重跑）。两个诚实的边界：检查点写在**超步
+   边界**上，所以进程死在某一波员工在途时，**那一波**会被重跑；发起用户的令牌
+   刻意不进状态，所以重启后续跑没有链根包络，需要授权的那一步会 fail-closed
+   转成待授权提案，而不是拿一份来路不明的授权接着跑。
 """
 
 from __future__ import annotations
@@ -46,13 +53,25 @@ import os
 import time
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
+from typing import Protocol
 from uuid import uuid4
 
-from ..brain import RUNNING, TERMINAL_STATUSES, BrainService, RunNotFound
+from ..brain import (
+    RUNNING,
+    TERMINAL_STATUSES,
+    BrainService,
+    RunNotFound,
+)
+from ..checkpoint import SCHEMA as CHECKPOINT_SCHEMA
+from ..checkpoint import UnfinishedRun, list_unfinished
 from ..state import BrainState
 
 #: 运行级超时的默认值（秒）。0 = 不设超时：不是所有部署都想让长跑的计划自己过期。
 DEFAULT_TIMEOUT_ENV = "MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS"
+
+#: 建表用的 admin DSN。启动扫描要跨租户读检查点表（见 :class:`PgRunIndex`），
+#: 而检查点表的 RLS 是 fail-closed —— 拿 app 角色读只会"一行都扫不到"。
+ADMIN_DSN_ENV = "MATE_AGENT_TEAM_ADMIN_DSN"
 
 #: 尾随事件流时两次轮询之间的间隔（秒）。
 DEFAULT_POLL_INTERVAL = 0.25
@@ -60,6 +79,11 @@ DEFAULT_POLL_INTERVAL = 0.25
 #: 受理时等"第一次落检查点"的上限（秒）。等不到也照样回 202——run_id 仍然是
 #: 有效的地址，只是订阅方可能要重试一次才不撞 404。
 DEFAULT_READY_TIMEOUT = 5.0
+
+#: 启动扫描认领的状态。"running" = 图正在推进（受理那一刻起就是它），进程没了
+#: 才会剩下；"awaiting_approval" **不在里面**——那是**等人**，不是没跑完，把它
+#: 推一遍只会把已经跑完的节点再派一次。
+RESUMABLE_STATUSES: frozenset[str] = frozenset({RUNNING})
 
 
 def run_id_for(tenant_id: str, idempotency_key: str) -> str:
@@ -103,6 +127,44 @@ class _LiveRun:
         return self.cancel_requested
 
 
+class RunIndex(Protocol):
+    """ "哪些 run 需要续跑"的索引（1.8 轨 1）。
+
+    刻意是个协议而不是直接调 PG：控制面的**决策逻辑**（认领谁、跳过谁、怎么续）
+    与"去哪儿查"是两件事。前者的用例不该被一个活着的 Postgres 卡住。
+
+    ``statuses`` 是"算需要续跑"的状态集（见 :data:`RESUMABLE_STATUSES`）。
+    不传"终态集"是因为筛的是**要什么**而不是**不要什么**：停在闸门上的 run 不是
+    终态，但它不该被捞回来（那是等人，不是没跑完）。
+    """
+
+    async def unfinished(self, *, statuses: frozenset[str]) -> list[UnfinishedRun]: ...
+
+
+class PgRunIndex:
+    """从检查点表扫出指定状态的 run（跨租户）。
+
+    用 admin DSN 的理由见 :func:`mate_tech_agent_team.checkpoint.list_unfinished`：
+    这是控制面自己的扫描，不是某租户的读；它只吐地址与状态，续跑仍走各租户自己
+    的 RLS 连接。没配 ``MATE_AGENT_TEAM_ADMIN_DSN`` 时**不建索引**（= 不做恢复），
+    而不是退回用 app DSN 扫一张永远扫不出东西的表——那会让人觉得"恢复了、只是
+    没有要恢复的"。
+    """
+
+    def __init__(self, dsn: str, *, schema: str = CHECKPOINT_SCHEMA) -> None:
+        self._dsn = dsn
+        self._schema = schema
+
+    async def unfinished(self, *, statuses: frozenset[str]) -> list[UnfinishedRun]:
+        # psycopg 是同步的；丢到线程里跑，别把事件循环占住（启动扫描也是 I/O）。
+        return await asyncio.to_thread(
+            list_unfinished,
+            self._dsn,
+            statuses=statuses,
+            schema=self._schema,
+        )
+
+
 class RunControl:
     """按租户管理 run 的取消 / 超时 / 事件。状态一律落在检查点上。"""
 
@@ -112,10 +174,14 @@ class RunControl:
         *,
         default_timeout: float = 0.0,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
+        run_index: RunIndex | None = None,
     ) -> None:
         self._service = service
         self._default_timeout = default_timeout
         self._poll_interval = poll_interval
+        #: "哪些 run 没跑完"的索引（1.8 轨 1）。**没有默认值就不恢复**——
+        #: 本地/测试形态不该被迫接一个 PG 才能构造控制面。
+        self._run_index = run_index
         self._live: dict[tuple[str, str], _LiveRun] = {}
         #: 后台任务的强引用。受理制之后"跑"在请求之外，引用丢了会被 GC 掉，
         #: 表现为这一轮**静默**停在半路——没有任何报错。
@@ -128,7 +194,12 @@ class RunControl:
             default_timeout = float(raw)
         except ValueError:
             default_timeout = 0.0
-        return cls(service, default_timeout=max(default_timeout, 0.0))
+        admin_dsn = os.getenv(ADMIN_DSN_ENV, "")
+        return cls(
+            service,
+            default_timeout=max(default_timeout, 0.0),
+            run_index=PgRunIndex(admin_dsn) if admin_dsn else None,
+        )
 
     # -- 受理 / 续跑 --------------------------------------------------------
     async def submit(
@@ -261,6 +332,88 @@ class RunControl:
             return False
         return True
 
+    # -- 启动扫描 / 续跑（1.8 轨 1）-----------------------------------------
+    async def recover(self) -> list[str]:
+        """扫出**没跑完**的 run，逐个从检查点接着跑。返回认领到的 run_id。
+
+        这是"进程重启后在途 run 不再永远卡在 ``running``"的入口。三件事按这个
+        顺序做，每一件都在兜一类坑：
+
+        1. **问索引要清单**。没配索引就直接返回空——恢复是可选能力，不是启动
+           的硬前提。
+        2. **逐个现查一次状态**。索引给的是"扫描那一刻"的结论，可能已经过时
+           （比如这一轮在别处跑完了）。续跑前按**当下状态**判，且只认
+           :data:`RESUMABLE_STATUSES`——停在闸门上的 run 是等人，不是没跑完。
+        3. **后台跑，不阻塞启动**。续跑同样是分钟级的事，`await` 它等于把服务
+           启动拖住；但**先占坑**（``_live``）再 ``create_task``，否则同一轮在
+           本次扫描内会被认领两次。
+
+        扫描本身**不吞异常**：索引查不动就让它冒出去，由调用方（启动流程）决定
+        记日志还是失败——"扫不动"与"没有要恢复的"必须能分开。
+        """
+        if self._run_index is None:
+            return []
+        found = await self._run_index.unfinished(statuses=RESUMABLE_STATUSES)
+        claimed: list[str] = []
+        for run in found:
+            if (run.tenant_id, run.run_id) in self._live:
+                continue  # 本进程已经在跑它了
+            if not await self._is_resumable(run):
+                continue
+            live = self._open(tenant_id=run.tenant_id, run_id=run.run_id)
+            task = asyncio.create_task(
+                self._continue(tenant_id=run.tenant_id, run_id=run.run_id, live=live)
+            )
+            self._tasks.add(task)
+            task.add_done_callback(self._tasks.discard)
+            claimed.append(run.run_id)
+        return claimed
+
+    async def _is_resumable(self, run: UnfinishedRun) -> bool:
+        """这一轮现在**还**值得续吗（按当下的检查点，而不是扫描时的快照）。
+
+        查不到（跨进程竞态：被别处清掉 / 从没见过）与读不动一律返回 ``False``：
+        一次读故障不该让启动扫描把整个进程带崩，更不该去续一个根本不存在的 run。
+        """
+        try:
+            state = await self._service.get(tenant_id=run.tenant_id, run_id=run.run_id)
+        except RunNotFound:
+            return False
+        except Exception:
+            return False
+        return str(state.get("status", "")) in RESUMABLE_STATUSES
+
+    async def _continue(self, *, tenant_id: str, run_id: str, live: _LiveRun) -> None:
+        """后台把续跑跑完。与 :meth:`_execute` 同形：异常落终态 ``failed``。"""
+        try:
+            await self._service.continue_run(
+                tenant_id=tenant_id, run_id=run_id, should_cancel=live.cancelled
+            )
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            await self._mark_failed(tenant_id=tenant_id, run_id=run_id, error=exc)
+        finally:
+            self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+
+    async def shutdown(self) -> None:
+        """进程收尾：拆掉在途的后台任务（1.8 轨 1）。
+
+        "重启"在这个服务里的准确含义就是**这个动作 + 换一个新实例**：检查点在
+        PG 里活着，进程里的调度没了。没有这个入口，进程退出时后台任务会以
+        "被事件循环顺手取消"的形式消失——那是运气，不是收尾。
+
+        取消**不落终态**：这一轮会在新进程启动时被扫描认领、接着跑。所以这里
+        刻意不去写 ``cancelled``——把"进程要走了"记成"运行被取消了"是两个概念，
+        后者会让重启前的每一轮都凭空消失。
+        """
+        tasks = list(self._tasks)
+        if not tasks:
+            return
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+
     async def resume(
         self,
         *,
@@ -362,9 +515,13 @@ class RunControl:
 
 
 __all__ = [
+    "ADMIN_DSN_ENV",
     "DEFAULT_POLL_INTERVAL",
     "DEFAULT_READY_TIMEOUT",
     "DEFAULT_TIMEOUT_ENV",
+    "RESUMABLE_STATUSES",
+    "PgRunIndex",
     "RunControl",
+    "RunIndex",
     "run_id_for",
 ]

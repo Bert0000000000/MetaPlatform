@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 
 import psycopg
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -84,6 +85,72 @@ def _guc_statement(tenant_id: str) -> tuple[str, tuple[str]]:
     return "select set_config('app.tenant_id', %s, false)", (tenant_id,)
 
 
+#: 扫"没跑完的 run"时，读的是**最新那条检查点**里的状态字段。
+#: 状态键在 langgraph 的 checkpoint JSONB 里，路径固定；这里只在读，不写。
+_STATUS_QUERY = """
+SELECT DISTINCT ON (thread_id) thread_id, checkpoint -> 'channel_values' ->> 'status' AS status
+FROM {schema}.checkpoints
+WHERE checkpoint_ns = ''
+ORDER BY thread_id, checkpoint_id DESC
+"""
+
+
+@dataclass(frozen=True, slots=True)
+class UnfinishedRun:
+    """一个"可能还没跑完"的 run 的地址（租户 + run_id + 最后见到的状态）。
+
+    它不是第二份 run 状态——状态仍然只在检查点里。这里只是**索引**：
+    让启动扫描知道该去哪儿续，而不必把整份状态搬出来。
+    """
+
+    tenant_id: str
+    run_id: str
+    status: str = ""
+
+
+def list_unfinished(
+    dsn: str,
+    *,
+    statuses: frozenset[str],
+    schema: str = SCHEMA,
+    connect_timeout: int = 5,
+) -> list[UnfinishedRun]:
+    """列出检查点里**状态落在 ``statuses`` 里**的 run（跨租户，供启动扫描用）。
+
+    为什么要给状态当参数、而不是"只要不是终态就都算"：停在 ``awaiting_approval``
+    的 run 也是"不是终态"，但它是在**等人**——扫描把它捞回来，控制面就得为它建
+    一次图、开一次连接去确认"哦，它不用续"，代价随堆积的 run 数线性涨。筛选条件
+    放进查询里，启动扫描的代价只跟**真的需要续跑**的 run 数有关。
+
+    两条实现上的取舍，都写在这里免得后人当成 bug：
+
+    * **读的是检查点的 JSONB，不是 langgraph 的 API**。逐条 ``get_state`` 要按
+      租户开连接、逐个把图建起来，启动扫描的代价会随 run 数线性膨胀；而
+      "最新一条检查点的 ``channel_values.status``"就是同一份事实的紧凑形态。
+      代价是耦合了 checkpoint 的序列化结构——本函数是**只读**的，坏了也只影响
+      "能不能扫到"，不影响 run 本身。
+    * **要用能看见全部租户的连接**（admin DSN）。检查点表的 RLS 是 fail-closed：
+      带着 app 角色、又没有 ``app.tenant_id`` 时一行都读不到，"扫不到"会被误当成
+      "没有没跑完的 run"。这是控制面自己的扫描，不回任何业务数据给调用方——它
+      只吐 ``(tenant_id, run_id, status)``，续跑仍走各租户自己的 RLS 连接。
+    """
+    if not statuses:
+        return []
+    with psycopg.connect(dsn, autocommit=True, connect_timeout=connect_timeout) as conn:
+        rows = conn.execute(_STATUS_QUERY.format(schema=schema)).fetchall()
+    unfinished: list[UnfinishedRun] = []
+    for thread_id, status in rows:
+        thread = str(thread_id)
+        if "|" not in thread:
+            continue  # 不是本服务的 thread 命名约定（``<租户ID>|<任务ID>``）
+        state = str(status or "")
+        if state not in statuses:
+            continue
+        tenant_id, _, run_id = thread.partition("|")
+        unfinished.append(UnfinishedRun(tenant_id=tenant_id, run_id=run_id, status=state))
+    return unfinished
+
+
 class PgCheckpointerProvider:
     """按租户开一条 async 连接、设好 GUC，产出 :class:`AsyncPostgresSaver`。
 
@@ -128,6 +195,8 @@ __all__ = [
     "SCHEMA",
     "InMemoryCheckpointerProvider",
     "PgCheckpointerProvider",
+    "UnfinishedRun",
     "bootstrap",
+    "list_unfinished",
     "thread_id_for",
 ]
