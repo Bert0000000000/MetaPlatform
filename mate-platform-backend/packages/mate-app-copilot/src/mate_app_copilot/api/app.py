@@ -173,6 +173,19 @@ def _mark_deprecated(response: Response) -> None:
     response.headers["X-Migrated-To"] = "/api/v1/orchestrator/scheduling/*"
 
 
+#: C-3 / `MP-LEGACY-SUNSET-01`：agent loop 的退役标记。用**标准头**
+#: （RFC 9745 `Deprecation` / RFC 8594 `Sunset` / RFC 8288 `Link`），另加一个
+#: 本项目自己的 `X-Sunset-Version` —— 平台的退役节奏是按**发布版本**排的
+#: （计划里 `MP-LEGACY-SUNSET-01` 落在 S6），只给日期说不清"哪个版本之后没有"。
+_LEGACY_AGENT_LOOP_HEADERS = {
+    "Deprecation": "true",
+    "Sunset": "Thu, 31 Dec 2026 23:59:59 GMT",
+    "Link": '</api/v1/agent-team/runs>; rel="successor-version"',
+    "X-Sunset-Version": "2.2",
+    "X-Migrated-To": "/api/v1/agent-team/runs",
+}
+
+
 def _uid(request: Request) -> str:
     """当前用户 ID（JWT sub）。会话/消息按 tenant + user 两级隔离。"""
     ctx = request.state.ctx
@@ -2385,10 +2398,30 @@ async def chat_agent_stream(
     request: Request,
     body: dict = Body(...),
 ) -> StreamingResponse:
-    """SuperAI agent loop: LLM decides → orchestrator dispatch → feed back.
+    """**Legacy（C-3 / `MP-LEGACY-SUNSET-01`）**：SuperAI agent loop。
 
-    Streams OpenAI-style SSE with extra typed events so the frontend can
-    render the scheduling process in real time:
+    ⚠️ **这条不是 Agent 主线了。** 2.1-C 把两条并行的 Agent 链路收敛成一条：
+
+    ```
+    旧（本端点）  chat/agent/stream  → agent loop → orchestrator dispatch 派活
+    新（主线）    POST /api/v1/agent-team/runs → Conversation → AgentRun →
+                  Runtime → Task/ToolInvocation → Evidence/Proposal/Artifact
+    ```
+
+    收敛的依据不是"新的更时髦"，而是**两套执行真相**：本端点把调度状态散在 SSE
+    事件里（前端各自拼），而 agent-team 的 Run 是落库的、可恢复、可审计、有证据与
+    交付物的一条链。同时留着两套，用户看到的"Agent 在干什么"就有两个互相矛盾的
+    来源——这正是 `MetaPlatform-调整优化方案执行计划-2026-09-17.md` §17 第 3 条
+    禁的事（"不让两个系统同时成为同一状态的权威来源"）。
+
+    **保留期**：本端点**不删**，只加弃用标记（响应头 + 契约 `deprecated`）。
+    退役版本 **2.2**；条件与迁移路径见
+    `docs/active/delivery/evidence/MP-LEGACY-SUNSET-01-AGENT-LOOP.md`。
+
+    **留下来的那条轻量问答**是 `POST /chat/completions/stream`（不派活、不调度、
+    直接问答）——它是刻意保留的，不属于本次退役对象。
+
+    Streams OpenAI-style SSE with extra typed events:
 
       {"type": "reasoning", "text": ...}            — LLM 思考
       {"type": "tool_call",  callId, tool, args}    — 正在调度数字员工
@@ -2729,4 +2762,8 @@ async def chat_agent_stream(
             except Exception:
                 pass
 
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers=dict(_LEGACY_AGENT_LOOP_HEADERS),
+    )
