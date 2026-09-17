@@ -29,86 +29,34 @@
       "reason": "",
       "detail": {
         "G-ONT-01": {
-          "roles_hit": [
-            "EMP-ANALYST",
-            "EMP-AUDITOR"
-          ],
-          "roles_expected": [
-            "EMP-ANALYST",
-            "EMP-AUDITOR"
-          ],
-          "aspects_hit": [
-            "对象",
-            "订单",
-            "字段"
-          ],
-          "aspects_expected": [
-            "对象",
-            "订单",
-            "字段"
-          ],
+          "roles_hit": ["EMP-ANALYST", "EMP-AUDITOR"],
+          "roles_expected": ["EMP-ANALYST", "EMP-AUDITOR"],
+          "aspects_hit": ["对象", "订单", "字段"],
+          "aspects_expected": ["对象", "订单", "字段"],
           "subtasks": 5,
           "min_subtasks": 2
         },
         "G-SOP-01": {
-          "roles_hit": [
-            "EMP-ANALYST",
-            "EMP-AUDITOR"
-          ],
-          "roles_expected": [
-            "EMP-ANALYST",
-            "EMP-AUDITOR"
-          ],
-          "aspects_hit": [
-            "危险品",
-            "hazard",
-            "分布"
-          ],
-          "aspects_expected": [
-            "危险品",
-            "hazard",
-            "分布"
-          ],
+          "roles_hit": ["EMP-ANALYST", "EMP-AUDITOR"],
+          "roles_expected": ["EMP-ANALYST", "EMP-AUDITOR"],
+          "aspects_hit": ["危险品", "hazard", "分布"],
+          "aspects_expected": ["危险品", "hazard", "分布"],
           "subtasks": 4,
           "min_subtasks": 2
         },
         "G-HR-01": {
-          "roles_hit": [
-            "EMP-ANALYST",
-            "EMP-AUDITOR"
-          ],
-          "roles_expected": [
-            "EMP-ANALYST",
-            "EMP-AUDITOR"
-          ],
-          "aspects_hit": [
-            "请假",
-            "状态",
-            "天数"
-          ],
-          "aspects_expected": [
-            "请假",
-            "状态",
-            "天数"
-          ],
+          "roles_hit": ["EMP-ANALYST", "EMP-AUDITOR"],
+          "roles_expected": ["EMP-ANALYST", "EMP-AUDITOR"],
+          "aspects_hit": ["请假", "状态", "天数"],
+          "aspects_expected": ["请假", "状态", "天数"],
           "subtasks": 4,
           "min_subtasks": 2
         },
         "G-KB-01": {
-          "roles_hit": [
-            "EMP-RESEARCHER"
-          ],
-          "roles_expected": [
-            "EMP-RESEARCHER"
-          ],
-          "aspects_hit": [
-            "数字员工",
-            "能力"
-          ],
-          "aspects_expected": [
-            "数字员工",
-            "能力"
-          ],
+          "roles_hit": ["EMP-RESEARCHER"],
+          "roles_expected": ["EMP-RESEARCHER"],
+          "aspects_hit": ["数字员工", "能力"],
+          "aspects_expected": ["数字员工", "能力"],
           "subtasks": 3,
           "min_subtasks": 2
         }
@@ -125,19 +73,10 @@
         "duplicate_pairs": 5,
         "subtasks": 16,
         "per_task": {
-          "G-ONT-01": [
-            "t1~t4",
-            "t3~t5"
-          ],
-          "G-SOP-01": [
-            "t1~t4"
-          ],
-          "G-HR-01": [
-            "t1~t4"
-          ],
-          "G-KB-01": [
-            "t1~t3"
-          ]
+          "G-ONT-01": ["t1~t4", "t3~t5"],
+          "G-SOP-01": ["t1~t4"],
+          "G-HR-01": ["t1~t4"],
+          "G-KB-01": ["t1~t3"]
         }
       }
     },
@@ -150,43 +89,19 @@
       "reason": "",
       "detail": {
         "G-ONT-01": {
-          "expected": [
-            "ont_inspect_class",
-            "ont_list_classes"
-          ],
-          "invoked": [
-            "kb_search",
-            "ont_inspect_class",
-            "ont_list_classes"
-          ],
-          "unexpected": [
-            "kb_search"
-          ],
+          "expected": ["ont_inspect_class", "ont_list_classes"],
+          "invoked": ["kb_search", "ont_inspect_class", "ont_list_classes"],
+          "unexpected": ["kb_search"],
           "missed": []
         },
         "G-SOP-01": {
-          "expected": [
-            "ont_list_classes",
-            "ont_object_query"
-          ],
-          "invoked": [
-            "kb_search",
-            "ont_inspect_class",
-            "ont_list_classes"
-          ],
-          "unexpected": [
-            "kb_search",
-            "ont_inspect_class"
-          ],
-          "missed": [
-            "ont_object_query"
-          ]
+          "expected": ["ont_list_classes", "ont_object_query"],
+          "invoked": ["kb_search", "ont_inspect_class", "ont_list_classes"],
+          "unexpected": ["kb_search", "ont_inspect_class"],
+          "missed": ["ont_object_query"]
         },
         "G-HR-01": {
-          "expected": [
-            "ont_list_classes",
-            "ont_object_query"
-          ],
+          "expected": ["ont_list_classes", "ont_object_query"],
           "invoked": [
             "kb_search",
             "ont_inspect_class",
@@ -200,23 +115,12 @@
             "read_skill",
             "search_skill"
           ],
-          "missed": [
-            "ont_object_query"
-          ]
+          "missed": ["ont_object_query"]
         },
         "G-KB-01": {
-          "expected": [
-            "kb_search",
-            "ont_list_classes"
-          ],
-          "invoked": [
-            "kb_search",
-            "ont_inspect_class",
-            "ont_list_classes"
-          ],
-          "unexpected": [
-            "ont_inspect_class"
-          ],
+          "expected": ["kb_search", "ont_list_classes"],
+          "invoked": ["kb_search", "ont_inspect_class", "ont_list_classes"],
+          "unexpected": ["ont_inspect_class"],
           "missed": []
         }
       }
@@ -315,9 +219,7 @@
           "evidence_count": 57,
           "min_evidence": 1,
           "met": true,
-          "expected_rids_in_evidence": [
-            "ont.tenant-default.obj.crm.order.v1"
-          ]
+          "expected_rids_in_evidence": ["ont.tenant-default.obj.crm.order.v1"]
         },
         "G-SOP-01": {
           "evidence_count": 27,
@@ -441,11 +343,7 @@
       ],
       "llm_calls": 13,
       "evidence": 57,
-      "tools": [
-        "kb_search",
-        "ont_inspect_class",
-        "ont_list_classes"
-      ],
+      "tools": ["kb_search", "ont_inspect_class", "ont_list_classes"],
       "cited_rids": [
         "ont.tenant-default.obj.crm.contract.v1",
         "ont.tenant-default.obj.crm.customer.v1",
@@ -478,11 +376,7 @@
       ],
       "llm_calls": 11,
       "evidence": 27,
-      "tools": [
-        "kb_search",
-        "ont_inspect_class",
-        "ont_list_classes"
-      ],
+      "tools": ["kb_search", "ont_inspect_class", "ont_list_classes"],
       "cited_rids": [
         "ont.tenant-default.obj.sopbench-dangerous-goods.v1",
         "ont.tenant-default.obj.crm.contract.v1",
@@ -533,18 +427,10 @@
       "run_id": "4af9ec625b42419cbdeba6be1939e9e7",
       "status": "completed",
       "subtasks": 3,
-      "profiles": [
-        "EMP-ANALYST",
-        "EMP-RESEARCHER",
-        "EMP-ANALYST"
-      ],
+      "profiles": ["EMP-ANALYST", "EMP-RESEARCHER", "EMP-ANALYST"],
       "llm_calls": 8,
       "evidence": 21,
-      "tools": [
-        "kb_search",
-        "ont_inspect_class",
-        "ont_list_classes"
-      ],
+      "tools": ["kb_search", "ont_inspect_class", "ont_list_classes"],
       "cited_rids": [
         "ont.tenant-default.obj.dw-digital-employee.v1",
         "ont.tenant-default.obj.crm.contract.v1",
