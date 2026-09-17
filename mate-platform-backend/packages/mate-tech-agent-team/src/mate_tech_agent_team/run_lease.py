@@ -56,6 +56,7 @@ HEARTBEAT_INTERVAL_ENV = "MATE_AGENT_TEAM_HEARTBEAT_SECONDS"
 #: "心跳已经停了"的判据：距上次心跳超过这么久才算停。
 #: 取 TTL 的量级——比心跳间隔宽，容得下一次抖动。
 DEFAULT_HEARTBEAT_GRACE_SECONDS = 30.0
+HEARTBEAT_GRACE_ENV = "MATE_AGENT_TEAM_HEARTBEAT_GRACE_SECONDS"
 
 
 def _env_float(name: str, default: float) -> float:
@@ -81,6 +82,22 @@ def configured_heartbeat_interval() -> float:
 def new_instance_id() -> str:
     """本进程的实例标识（进 ``owner_instance``，用于"谁在跑"与审计）。"""
     return f"{os.getpid()}-{uuid.uuid4().hex[:8]}"
+
+
+def configured_heartbeat_grace() -> float:
+    """ "心跳已停"的宽限（秒）。**默认跟着 TTL 走**，不是固定 30。
+
+    取默认值 TTL 是有算术理由的：``expires_at = heartbeat_at + TTL``，所以租约
+    刚过期的那一刻 ``now - heartbeat_at`` 恰好等于 TTL。宽限 == TTL 时，判据
+    在过期点**恰好**通过（``>=``），接管不会被多压一个窗口。
+
+    固定 30 的旧默认在 TTL=30 时看不出问题，**但把 TTL 调小就露馅**：想让接管
+    更快（TTL=15）的人会发现宽限仍是 30，接管反而被压在 30s——比不改还慢。所以
+    它必须可配，且默认与 TTL 联动。
+    """
+    ttl = configured_lease_ttl()
+    default = ttl if ttl > 0 else DEFAULT_HEARTBEAT_GRACE_SECONDS
+    return _env_float(HEARTBEAT_GRACE_ENV, default)
 
 
 @dataclass(frozen=True, slots=True)
@@ -441,6 +458,7 @@ __all__ = [
     "DEFAULT_HEARTBEAT_GRACE_SECONDS",
     "DEFAULT_HEARTBEAT_INTERVAL_SECONDS",
     "DEFAULT_LEASE_TTL_SECONDS",
+    "HEARTBEAT_GRACE_ENV",
     "HEARTBEAT_INTERVAL_ENV",
     "LEASE_TTL_ENV",
     "LEASES_TABLE",
@@ -450,6 +468,7 @@ __all__ = [
     "RunLeases",
     "TakeoverDecision",
     "bootstrap_run_leases",
+    "configured_heartbeat_grace",
     "configured_heartbeat_interval",
     "configured_lease_ttl",
     "decide_takeover",

@@ -61,6 +61,7 @@ import logging
 import os
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
+from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import Protocol
 from uuid import uuid4
@@ -102,6 +103,7 @@ from ..run_lease import (
     RunLease,
     RunLeases,
     TakeoverDecision,
+    configured_heartbeat_grace,
     configured_heartbeat_interval,
     configured_lease_ttl,
     decide_takeover,
@@ -120,6 +122,33 @@ DEFAULT_TIMEOUT_ENV = "MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS"
 #: 检查点读次数上限。取 200：会话页要显示的历史轮次远小于它，而真正的"我要
 #: 全量"应该走别的面。
 MAX_CONVERSATION_RUNS = 200
+
+#: **周期接管扫描**的间隔（秒）。0 = 关闭（单进程/测试形态的默认）。
+#:
+#: 为什么需要它：``recover()`` 以前**只在进程启动时跑一次**。多副本下这意味着
+#: 副本 A 被杀之后，幸存的 B、C **永远不会**重新扫——它们在启动那一刻扫过，
+#: 之后就再没看过。真集群实测（`scripts/ci/agent_team_pod_kill_takeover.sh`）：
+#: 杀进程后 **166 秒内零接管**，epoch 一直是 1，检查点冻住；只有人为
+#: `rollout restart`（让某个进程重新走启动扫描）才在 5.2 秒内接管成功。
+#: 也就是说"30 秒内被接管"这条判据当时**物理上不可能成立**——不是机制不对，
+#: 是没人去看。
+#:
+#: 间隔取值：要显著小于接管窗口，否则扫描本身就吃掉预算。默认 10s 时，
+#: TTL 之内死掉的 run 会在**下一个扫描点**被接管，最坏 ≈ TTL + 间隔。
+RESCAN_ENV = "MATE_AGENT_TEAM_RESCAN_SECONDS"
+DEFAULT_RESCAN_SECONDS = 10.0
+
+
+def configured_rescan_interval() -> float:
+    """周期扫描间隔（秒）。坏配置回默认，**不关掉接管**——静默关掉是最坏的方向。"""
+    raw = os.getenv(RESCAN_ENV, "")
+    if not raw:
+        return DEFAULT_RESCAN_SECONDS
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        return DEFAULT_RESCAN_SECONDS
+
 
 #: 建表用的 admin DSN。启动扫描要跨租户读检查点表（见 :class:`PgRunIndex`），
 #: 而检查点表的 RLS 是 fail-closed —— 拿 app 角色读只会"一行都扫不到"。
@@ -291,6 +320,7 @@ class RunControl:
         event_retention: float | None = None,
         event_fallback_poll: float | None = None,
         cancel_wait: float | None = None,
+        rescan_interval: float = 0.0,
     ) -> None:
         self._service = service
         self._default_timeout = default_timeout
@@ -331,6 +361,10 @@ class RunControl:
         )
         #: 取消受理后等本进程那一轮停下的上限（B-3）。0 = 立刻回 ``cancelling``。
         self._cancel_wait = cancel_wait if cancel_wait is not None else configured_cancel_wait()
+        #: 周期接管扫描的间隔（秒）。0 = 不开（默认）——**显式开**是有意的：
+        #: 单进程/测试形态下多一个后台循环只是噪音，而"接管"本来就只有多副本
+        #: 才需要。生产由 ``from_env`` 按配置打开（见 :meth:`start_rescanner`）。
+        self._rescan_interval = max(0.0, rescan_interval)
         #: 读"检查点走到哪了"的函数。心跳用它续租，接管判定用它比"有没有进展"。
         #: 不给就留空串——那时"检查点未进展"这条判据退化成"不比"，如实记在
         #: :func:`~mate_tech_agent_team.run_lease.decide_takeover` 的注释里。
@@ -348,6 +382,8 @@ class RunControl:
         #: 后台任务的强引用。受理制之后"跑"在请求之外，引用丢了会被 GC 掉，
         #: 表现为这一轮**静默**停在半路——没有任何报错。
         self._tasks: set[asyncio.Task[None]] = set()
+        #: 周期接管扫描的后台任务（见 :meth:`start_rescanner`）。None = 没开。
+        self._rescan_task: asyncio.Task[None] | None = None
 
     @property
     def instance_id(self) -> str:
@@ -386,6 +422,12 @@ class RunControl:
             conversations=PgConversationRuns(dsn, schema=CHECKPOINT_SCHEMA) if dsn else None,
             tool_ledger=tool_ledger,
             step_reader=step_reader,
+            # 心跳宽限**必须跟着 TTL 一起配**：固定 30 会把"想更快接管"的部署
+            # 反过来卡住（见 ``configured_heartbeat_grace``）。
+            heartbeat_grace=configured_heartbeat_grace(),
+            # 周期接管扫描（见 :meth:`start_rescanner`）：生产**默认开**，
+            # 因为"只有启动时扫一次"正是接管不成立的根因。
+            rescan_interval=configured_rescan_interval(),
         )
 
     def _cancel_check(self, *, tenant_id: str, run_id: str) -> Callable[[], Awaitable[bool]]:
@@ -647,6 +689,60 @@ class RunControl:
             claimed.append(run.run_id)
         return claimed
 
+    # -- 周期接管扫描 -------------------------------------------------------
+
+    def start_rescanner(self) -> bool:
+        """开一个后台循环，**周期性**跑 :meth:`recover`。返回是否真的开了。
+
+        没有它，"接管"在多副本下是一条**只跑一次**的路径：每个副本在启动时扫一遍，
+        之后再也不看。于是副本 A 被杀时，幸存的 B、C 谁都不会发现——真集群实测
+        （`scripts/ci/agent_team_pod_kill_takeover.sh`）**166 秒零接管**，只有人为
+        重启某个进程才触发接管。判据写着"30 秒内被接管"，而代码里根本没有那个
+        30 秒内的观察者。
+
+        三条刻意的取舍：
+
+        1. **不做成定时器式的"到点落终态"**——那是 :meth:`refresh` 的活，且那条
+           路刻意用惰性裁决（定时器在进程重启后消失，会制造"有时管用"的错觉）。
+           这里做的是**定时观察**：它错过一次，下一个周期还会看，不会造成语义漂移。
+        2. **扫不动不炸**：索引查不动只记一条日志，下一个周期再试。观测挂掉不该
+           让服务挂掉（与 observability 同一条失败方向）。
+        3. **只在配了 run_index 时开**：没有索引就没有"别处的 run"可接管，开了是
+           纯空转。
+        """
+        if self._rescan_interval <= 0 or self._run_index is None:
+            return False
+        if self._rescan_task is not None and not self._rescan_task.done():
+            return True
+        self._rescan_task = asyncio.create_task(self._rescan_loop())
+        return True
+
+    async def stop_rescanner(self) -> None:
+        """停掉周期扫描（幂等）。"""
+        task = self._rescan_task
+        self._rescan_task = None
+        if task is None or task.done():
+            return
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+    async def _rescan_loop(self) -> None:
+        while True:
+            await asyncio.sleep(self._rescan_interval)
+            try:
+                claimed = await self.recover()
+                if claimed:
+                    logger.info(
+                        "agent_team.rescan.claimed",
+                        extra={"count": len(claimed), "run_ids": claimed},
+                    )
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                # 一个周期扫不动不代表永远扫不动——记下来，下个周期再来。
+                logger.exception("周期接管扫描这一轮失败（下一个周期重试）")
+
     async def prune_events(self, *, tenant_id: str) -> int:
         """清掉本租户过期的 Run 事件（B-2 的保留期）。返回删掉的行数。
 
@@ -706,7 +802,11 @@ class RunControl:
         取消**不落终态**：这一轮会在新进程启动时被扫描认领、接着跑。所以这里
         刻意不去写 ``cancelled``——把"进程要走了"记成"运行被取消了"是两个概念，
         后者会让重启前的每一轮都凭空消失。
+
+        顺序有意：**先停周期扫描**，再拆在途任务。反过来的话，扫描可能在拆任务的
+        同时把刚被取消的 run 又认领回来一次。
         """
+        await self.stop_rescanner()
         tasks = list(self._tasks)
         for task in tasks:
             task.cancel()
@@ -1181,11 +1281,14 @@ __all__ = [
     "CONTROL_DSN_ENV",
     "DEFAULT_POLL_INTERVAL",
     "DEFAULT_READY_TIMEOUT",
+    "DEFAULT_RESCAN_SECONDS",
     "DEFAULT_TIMEOUT_ENV",
     "MAX_CONVERSATION_RUNS",
+    "RESCAN_ENV",
     "RESUMABLE_STATUSES",
     "PgRunIndex",
     "RunControl",
     "RunIndex",
+    "configured_rescan_interval",
     "run_id_for",
 ]

@@ -82,6 +82,10 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         await get_run_control().recover()
     except Exception:
         logger.exception("启动扫描没跑成：在途 run 本次不会被自动续跑")
+    # **接管要有观察者**：只扫一次的话，多副本下幸存的副本永远不会发现隔壁崩了
+    # （真集群实测 166 秒零接管，见 `api/run_control.py` 里 RESCAN_ENV 那段）。
+    # 这里把"只在启动时看一眼"变成"一直在看"；没配索引时它自己不开（纯空转）。
+    get_run_control().start_rescanner()
     yield
     # 收尾：拆掉在途的后台任务。取消**不落终态**——它们会被下一次启动扫描认领。
     try:
