@@ -49,6 +49,7 @@ from .schemas import (
     ProfileListModel,
     ProfileWriteRequest,
     RunAcceptedModel,
+    RunCancelAcceptedModel,
     RunStateModel,
     SendMessageRequest,
     SkillContentModel,
@@ -216,18 +217,21 @@ async def agentTeamGetRun(request: Request, run_id: str) -> RunStateModel:
     return _to_model(state)
 
 
-@router.post("/runs/{run_id}/cancel", response_model=RunStateModel)
-async def agentTeamPostRunCancel(request: Request, run_id: str) -> RunStateModel:
-    """取消一轮运行，**落终态**（幂等）。
+@router.post("/runs/{run_id}/cancel", response_model=RunCancelAcceptedModel, status_code=202)
+async def agentTeamPostRunCancel(request: Request, run_id: str) -> RunCancelAcceptedModel:
+    """**受理**取消一轮运行（B-3：202 ``cancel_requested``，幂等）。
+
+    不再承诺"回话那一刻图已经停了"——那个保证只在单副本下成立。客户端拿到
+    ``cancelling`` 就接着看 ``GET /runs/{run_id}``，直到它变成 ``cancelled``。
 
     取消后 ``approve`` 一律 409：闸门已经不在，确认一个已作废的计划不该有任何
     效果。跨租户与不存在同码 404（不泄露存在性）。
     """
     try:
-        state = await get_run_control().cancel(tenant_id=_tid(request), run_id=run_id)
+        receipt = await get_run_control().cancel(tenant_id=_tid(request), run_id=run_id)
     except RunNotFound as exc:
         raise HTTPException(status_code=404, detail="run not found") from exc
-    return _to_model(state)
+    return RunCancelAcceptedModel.model_validate(receipt)
 
 
 @router.get("/runs/{run_id}/events")

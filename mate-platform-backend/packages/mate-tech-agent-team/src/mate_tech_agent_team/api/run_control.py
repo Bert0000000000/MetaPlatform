@@ -9,11 +9,13 @@
   其实已经建好了，重试一次就多跑一轮。受理制把"提交"与"等结果"拆开：终态只能
   从 :meth:`refresh`（``GET /runs/{id}``）或 :meth:`events` 取。带
   ``Idempotency-Key`` 时同一个键（同租户内）永远映射到同一轮运行。
-* **取消** —— 把 run 写进终态 ``cancelled``。之后 ``approve`` 一律 409（闸门已
-  经不在了）。取消是幂等的：重复取消不会把更早的终态覆盖掉。
+* **取消**（B-3 起是**受理制**）—— 置取消信号后回 **202**，不承诺"回话那刻图已经
+  停了"（那个保证只在单副本下成立）。客户端拿到 ``cancelling`` 就继续观察
+  ``GET /runs/{id}``，直到 ``cancelled``。之后 ``approve`` 一律 409（闸门已经不在）。
   **执行中的 run 也能取消**（1.5 任务 1）：不靠外部杀——图在节点边界自查取消
   标志，看到就自己落终态。粒度是**波与波之间**：在途那一波允许跑完（不硬断），
-  已完成节点不重跑，下一波一个员工都不派。
+  已完成节点不重跑，下一波一个员工都不派。**"有没有人在跑"由活跃 run 注册表
+  （B-1 的租约）回答**——没人跑时才由取消方代落终态。
 * **超时** —— 运行级截止时间。到点后**第一个观察者**（GET / approve / cancel /
   events）把它落成终态 ``timeout``，而不是让它一直停在 ``awaiting_approval``。
   用惰性裁决而不是后台定时器：定时器在进程重启后消失，反而制造"有时管用"的
@@ -27,9 +29,9 @@
 1. 取消信号走**共享通道**（1.9 任务 2，:mod:`mate_tech_agent_team.coordination`）：
    单副本是进程内实现，多副本由 ``wiring`` 按 DSN 装配 PG 实现，于是"副本 A 起的
    run，副本 B 取消得到"——B 把信号放进通道，A 上正在跑的图在**下一个波边界**
-   自己看到。剩下的两条小边界：跨副本取消时 B **不保证**"回话那一刻图已经停了"
-   （它没有 A 的 live 记录，无法等），它保证的是终态与信号都已落下；取消信号是
-   **粘性**的（只置不清），留一张只增不减的小表。
+   自己看到。**B-3 起不再假装"回话那刻图已停"**（回 202 + 观察到的状态）。
+   信号仍然**只置不清**，但轮子落终态之后会被**归档**（:meth:`RunControl.refresh`
+   里顺手清）——清的时机是"这一轮已经不可能再有人问它了"，不是"多久之后"。
 2. 事件流是**按游标补发 + 尾随**（B-2 起）：连上先补（``Last-Event-ID`` 之后一条
    不少），之后新步骤即推送，直到 run 终态才关流。生产形态读**追加式事件日志**
    （被 PG ``NOTIFY`` 唤醒，代价与订阅方数量无关）；没配 PG 时退回"轮询检查点"的
@@ -126,6 +128,37 @@ DEFAULT_READY_TIMEOUT = 5.0
 #: 才会剩下；"awaiting_approval" **不在里面**——那是**等人**，不是没跑完，把它
 #: 推一遍只会把已经跑完的节点再派一次。
 RESUMABLE_STATUSES: frozenset[str] = frozenset({RUNNING})
+
+#: 取消的**中间态**（B-3）。它不是写进检查点的一个新状态，而是**推导**出来的：
+#: 收到取消信号、且这一轮还没落终态 = "正在取消"。这样就不需要第二个状态源，
+#: 也不会出现"检查点说 running、信号表说已取消"这种自相矛盾。
+CANCELLING = "cancelling"
+
+#: 取消受理后**有界**等本进程那一轮停下的上限（秒）。等不到就如实回
+#: ``cancelling``——"回话那刻图已经停了"这个强保证跨副本做不到，B-3 起不再暗示。
+CANCEL_WAIT_ENV = "MATE_AGENT_TEAM_CANCEL_WAIT_SECONDS"
+DEFAULT_CANCEL_WAIT_SECONDS = 2.0
+
+
+def configured_cancel_wait() -> float:
+    try:
+        return max(0.0, float(os.getenv(CANCEL_WAIT_ENV, str(DEFAULT_CANCEL_WAIT_SECONDS))))
+    except ValueError:
+        return DEFAULT_CANCEL_WAIT_SECONDS
+
+
+def _cancel_receipt(tenant_id: str, run_id: str, *, status: str) -> dict:
+    """取消的**受理**回执（B-3）：202 + 当前观察到的状态。
+
+    ``status`` 是 ``cancelled``（已经落终态了）或 ``cancelling``（已受理、图还没停）。
+    客户端据此知道"要不要接着等"，而不是被暗示"回话那刻就停好了"。
+    """
+    return {
+        "run_id": run_id,
+        "tenant_id": tenant_id,
+        "status": status,
+        "cancel_requested": True,
+    }
 
 
 def run_id_for(tenant_id: str, idempotency_key: str) -> str:
@@ -239,6 +272,7 @@ class RunControl:
         heartbeat_grace: float = DEFAULT_HEARTBEAT_GRACE_SECONDS,
         event_retention: float | None = None,
         event_fallback_poll: float | None = None,
+        cancel_wait: float | None = None,
     ) -> None:
         self._service = service
         self._default_timeout = default_timeout
@@ -271,6 +305,8 @@ class RunControl:
         self._event_fallback_poll = (
             event_fallback_poll if event_fallback_poll is not None else configured_fallback_poll()
         )
+        #: 取消受理后等本进程那一轮停下的上限（B-3）。0 = 立刻回 ``cancelling``。
+        self._cancel_wait = cancel_wait if cancel_wait is not None else configured_cancel_wait()
         #: 读"检查点走到哪了"的函数。心跳用它续租，接管判定用它比"有没有进展"。
         #: 不给就留空串——那时"检查点未进展"这条判据退化成"不比"，如实记在
         #: :func:`~mate_tech_agent_team.run_lease.decide_takeover` 的注释里。
@@ -850,46 +886,96 @@ class RunControl:
         return deadline_at > 0 and time.time() >= deadline_at
 
     async def refresh(self, *, tenant_id: str, run_id: str) -> dict:
-        """查状态：**到期就先落终态**，再返回。所有读路径都该走它。"""
+        """查状态：**到期就先落终态**，再返回。所有读路径都该走它。
+
+        B-3 起多两件事，都围着取消那一格信号转：
+
+        * 收到取消信号、且这一轮还没落终态 → 状态报 ``cancelling``（**推**出来的
+          中间态，不是检查点里的第二个状态）；
+        * 已经落终态 → 把那条信号**归档**掉。清的条件不是"多久之后"，而是
+          "这一轮已经不可能再有人问它了"——所以清在这里是安全的。
+        """
         state = await self._service.get(tenant_id=tenant_id, run_id=run_id)
-        if str(state.get("status", "")) in TERMINAL_STATUSES:
+        requested = await self._signals.is_requested(tenant_id=tenant_id, run_id=run_id)
+        status = str(state.get("status", ""))
+        if status in TERMINAL_STATUSES:
+            if requested:
+                await self._archive_signal(tenant_id=tenant_id, run_id=run_id)
             return state
         if self.is_due(state):
             return await self._service.mark_terminal(
                 tenant_id=tenant_id, run_id=run_id, status="timeout"
             )
+        if requested:
+            return {**state, "status": CANCELLING}
         return state
 
+    async def _archive_signal(self, *, tenant_id: str, run_id: str) -> None:
+        """归档一格取消信号（**只在终态之后调**，见 :meth:`refresh`）。"""
+        try:
+            await self._signals.clear(tenant_id=tenant_id, run_id=run_id)
+        except Exception:
+            # 归档失败不该让一次读请求失败：它只是"这张表能小一点"，不影响语义。
+            pass
+
     async def cancel(self, *, tenant_id: str, run_id: str) -> dict:
-        """取消一轮运行（幂等）。跨租户与不存在同码：:class:`RunNotFound`。
+        """**受理**取消（B-3：202 ``cancel_requested``），不再假装"回话那刻就停了"。
 
-        **执行中的 run**（有请求在等它）走的是另一条路：置信号 → 等图在节点
-        边界自己停下 → 回话。不硬断在途调用（那一波允许跑完），也不重跑
-        已完成的节点。等在闸门的 run 没有 live 记录，直接落终态即可（1.3 语义）。
+        语义变了，变的是**承诺的那部分**：
 
-        **信号总是先置、且置进共享通道**（1.9 任务 2）：跨副本取消之所以原来
-        不生效，就是因为 B 那侧只往检查点写了个终态，而在途的图攥着自己那份状态
-        继续跑、下一步把终态盖回去。现在标志放进通道，**另一个副本**上正在跑的
-        图会在下一个波边界看到它。
+        * 旧：``await live.finished.wait()`` 之后落终态、回 200 + 终态 —— 这条
+          只在**单副本**下成立。多副本时 B 没有 A 的 live 记录，它要么永远等下去，
+          要么回一个自己都不该保证的话。
+        * 新：置信号 → **有界**等本进程那一轮停下（默认 2s）→ 回**观察到的**状态。
+          客户端拿到 ``cancelling`` 就接着观察 ``GET /runs/{id}``，直到 ``cancelled``。
 
-        顺序是有讲究的：**先确认这一轮存在**（不存在/跨租户直接
-        :class:`RunNotFound`，一个字节都不写），再置信号，最后等本进程那一轮停下
-        再落终态。置信号在终态判定**之后**，所以取消一个已经结束的 run 不会留下
-        一条无人认领的信号行。
+        **"有没有人在跑"由活跃 run 注册表回答**（B-1 的租约，正是它要解决的事）：
+        没有活跃租约 = 这一轮没人执行（停在闸门等人 / 进程崩过），这时**没有第二个
+        观察者**会去落终态，所以由本请求落。有活跃租约时绝不代庖——那正是 1.5 起
+        那个"B 写了终态、在途的图下一步又盖回去"的 bug。
 
-        跨副本时 B 没有 A 的 live 记录，"等它停"这一步它做不到——它能保证的是
-        **终态与信号都已经落下**，A 上的图会在下一个波边界收敛到同一个终态。
+        幂等：已经终态的直接回当前终态（不覆盖更早的终态，1.3 语义不变）。
         """
         state = await self.refresh(tenant_id=tenant_id, run_id=run_id)
-        if str(state.get("status", "")) in TERMINAL_STATUSES:
-            return state  # 幂等：不覆盖更早的终态（1.3 语义）
+        status = str(state.get("status", ""))
+        if status in TERMINAL_STATUSES:
+            return _cancel_receipt(tenant_id, run_id, status=status)
+
         await self._signals.request(tenant_id=tenant_id, run_id=run_id)
-        live = self._live.get((tenant_id, run_id))
-        if live is not None:
-            await live.finished.wait()
-        return await self._service.mark_terminal(
+        if status == CANCELLING or await self._someone_is_running(
+            tenant_id=tenant_id, run_id=run_id
+        ):
+            await self._await_local_stop(tenant_id=tenant_id, run_id=run_id)
+            settled = await self._service.get(tenant_id=tenant_id, run_id=run_id)
+            settled_status = str(settled.get("status", ""))
+            if settled_status in TERMINAL_STATUSES:
+                return _cancel_receipt(tenant_id, run_id, status=settled_status)
+            return _cancel_receipt(tenant_id, run_id, status=CANCELLING)
+
+        # 没有活跃租约：这一轮没人执行（停在闸门等人 / 崩过），终态得由我们落
+        # ——没有第二个观察者会去做这件事。
+        settled = await self._service.mark_terminal(
             tenant_id=tenant_id, run_id=run_id, status="cancelled"
         )
+        return _cancel_receipt(tenant_id, run_id, status=str(settled.get("status", "cancelled")))
+
+    async def _someone_is_running(self, *, tenant_id: str, run_id: str) -> bool:
+        """这一轮**此刻**有没有人在执行（活跃 run 注册表 = 租约表）。"""
+        try:
+            lease = await self._leases.get(tenant_id=tenant_id, run_id=run_id)
+        except Exception:
+            return True  # 读不动就当有人在跑：代庖落终态比多等一会儿糟得多
+        return lease is not None and lease.expires_at > time.time()
+
+    async def _await_local_stop(self, *, tenant_id: str, run_id: str) -> None:
+        """有界等**本进程**那一轮停下。等不到就返回——由调用方如实回 ``cancelling``。"""
+        live = self._live.get((tenant_id, run_id))
+        if live is None or self._cancel_wait <= 0:
+            return
+        try:
+            await asyncio.wait_for(live.finished.wait(), timeout=self._cancel_wait)
+        except TimeoutError:
+            pass
 
     # -- 事件流 ------------------------------------------------------------
     async def events(

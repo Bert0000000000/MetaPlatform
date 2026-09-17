@@ -369,7 +369,8 @@ def test_the_http_cancel_surface_still_settles_the_same_way() -> None:
     assert body["status"] == "awaiting_approval", body
 
     cancelled = client.post(f"{BASE}/runs/{run_id}/cancel", headers=_headers())
-    assert cancelled.status_code == 200, cancelled.text
+    # B-3 起取消回 **202**（受理制），body 里是**观察到的**状态。
+    assert cancelled.status_code == 202, cancelled.text
     assert cancelled.json()["status"] == "cancelled"
 
 

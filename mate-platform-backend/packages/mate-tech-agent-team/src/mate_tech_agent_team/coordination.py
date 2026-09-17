@@ -126,6 +126,16 @@ class CancelSignals(Protocol):
 
     async def is_requested(self, *, tenant_id: str, run_id: str) -> bool: ...
 
+    async def clear(self, *, tenant_id: str, run_id: str) -> None:
+        """**归档**：只在该轮已落终态之后调用（B-3）。
+
+        信号"只置不清"是对的——置清之间的窗口里，另一副本的图正好走到边界就
+        看不到它。但轮子跑完之后它就没有意义了，留着会让这张表随"被取消过的
+        run 数"一直涨。清的条件因此不是"多久之后"，而是"**这一轮已经不可能
+        再有人问它了**"（终态）。
+        """
+        ...
+
 
 class InMemoryCancelSignals:
     """进程内实现：单副本部署与测试的默认。
@@ -142,6 +152,9 @@ class InMemoryCancelSignals:
 
     async def is_requested(self, *, tenant_id: str, run_id: str) -> bool:
         return (tenant_id, run_id) in self._requested
+
+    async def clear(self, *, tenant_id: str, run_id: str) -> None:
+        self._requested.discard((tenant_id, run_id))
 
 
 class PgCancelSignals:
@@ -172,6 +185,14 @@ class PgCancelSignals:
                 (tenant_id, run_id),
             )
             return await cur.fetchone() is not None
+
+    async def clear(self, *, tenant_id: str, run_id: str) -> None:
+        """归档一行的信号（**只在那一轮已落终态之后调**，见 Protocol 的说明）。"""
+        async with self._conn(tenant_id) as conn:
+            await conn.execute(
+                f"DELETE FROM {CANCEL_TABLE} WHERE tenant_id = %s AND run_id = %s",
+                (tenant_id, run_id),
+            )
 
 
 class RunClaims(Protocol):

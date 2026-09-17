@@ -101,6 +101,27 @@ class RunStateModel(BaseModel):
     deadline_at: float = 0.0
 
 
+class RunCancelAcceptedModel(BaseModel):
+    """`POST /runs/{run_id}/cancel` 的**受理回执**（B-3）。
+
+    与 `RunAcceptedModel` 同一个道理：取消**不承诺**"回话那刻图已经停了"。
+    跨副本时回话的那个副本根本没有跑这一轮，它保证的是**信号已落 + 状态如实**。
+
+    ``status`` 是**观察到的**：
+
+    * ``cancelled`` —— 已经落终态（本来就已经结束，或本请求落的）；
+    * ``cancelling`` —— 已受理，图还没停。客户端接着看
+      `GET /runs/{run_id}`，它会一直报 ``cancelling`` 直到真的 `cancelled`。
+    """
+
+    run_id: str
+    tenant_id: str
+    #: ``cancelled``（已终止）或 ``cancelling``（已受理、仍在收敛）。
+    status: str
+    #: 恒为 ``true``：这是受理回执，能回话就说明请求已经记下了。
+    cancel_requested: bool = False
+
+
 class RunAcceptedModel(BaseModel):
     """`POST /runs` 的**受理回执**（1.7 任务 1）：只回受理事实，不回运行结果。
 

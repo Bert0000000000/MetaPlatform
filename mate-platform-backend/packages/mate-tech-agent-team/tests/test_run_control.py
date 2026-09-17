@@ -369,8 +369,11 @@ def test_cancel_moves_the_run_to_a_terminal_state() -> None:
     assert run["status"] == "awaiting_approval"
 
     cancelled = client.post(f"{BASE}/runs/{run['run_id']}/cancel", headers=_headers())
-    assert cancelled.status_code == 200, cancelled.text
+    # B-3 起取消是**受理制**：202 + 观察到的状态（这里这一轮停在闸门、没有人在跑，
+    # 于是本请求就把它落了终态，回的就是 cancelled）。
+    assert cancelled.status_code == 202, cancelled.text
     assert cancelled.json()["status"] == "cancelled"
+    assert cancelled.json()["cancel_requested"] is True
 
     # 终态是**写进检查点**的：再查一次还是它，且不能再被确认续跑
     again = client.get(f"{BASE}/runs/{run['run_id']}", headers=_headers())
@@ -386,8 +389,8 @@ def test_cancel_is_idempotent() -> None:
     run = _start_run(client)
     first = client.post(f"{BASE}/runs/{run['run_id']}/cancel", headers=_headers())
     second = client.post(f"{BASE}/runs/{run['run_id']}/cancel", headers=_headers())
-    assert first.status_code == 200
-    assert second.status_code == 200
+    assert first.status_code == 202
+    assert second.status_code == 202
     assert second.json()["status"] == "cancelled"
 
 
@@ -412,7 +415,7 @@ def test_cancel_does_not_overwrite_an_earlier_terminal_state() -> None:
     assert rejected.json()["status"] == "failed"
 
     cancelled = client.post(f"{BASE}/runs/{run['run_id']}/cancel", headers=_headers())
-    assert cancelled.status_code == 200, cancelled.text
+    assert cancelled.status_code == 202, cancelled.text
     assert cancelled.json()["status"] == "failed"
 
 
@@ -459,7 +462,7 @@ async def test_cancel_stops_an_executing_run() -> None:
             f"{BASE}/runs/{run_id}/approve", json={"approved": True}, headers=_headers()
         )
 
-    assert cancelled.status_code == 200, cancelled.text
+    assert cancelled.status_code == 202, cancelled.text
     assert cancelled.json()["status"] == "cancelled"
     # 终态是**图自己写进检查点**的：换个读路径看到的也是同一份
     assert after.json()["status"] == "cancelled"

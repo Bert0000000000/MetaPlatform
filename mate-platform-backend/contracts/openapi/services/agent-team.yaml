@@ -182,16 +182,23 @@ components:
               planning,
               running,
               awaiting_approval,
+              cancelling,
               completed,
               failed,
               cancelled,
               timeout,
             ]
           description: |
+            `cancelling` = **中间态**（B-3 起）：取消信号已落、这一轮还没收敛。
+            它**不是**检查点里的一个状态，而是读路径**推**出来的（收到信号
+            且未终态），所以不会出现"检查点说 running、信号表说已取消"这种两处
+            打架。客户端看到它就继续观察，直到变成 `cancelled`。
+
             `cancelled` = 被 `POST /runs/{run_id}/cancel` 取消（正在执行的 run
             由**图自己在节点边界**落成这个状态，不是因为外部把它杀掉）；
             `timeout` = 超过本轮截止时间（`timeout_seconds` 或部署默认值）后落到
-            的终态。两者都是**终态**：之后再 `approve` 一律 409。
+            的终态。`cancelled` / `timeout` 与另外三个都是**终态**：之后再
+            `approve` 一律 409。
         subtasks:
           type: array
           items:
@@ -218,6 +225,24 @@ components:
             本轮截止的**绝对时刻**（Unix 秒；0 = 无截止）。
             `timeout_seconds` 与 `deadline_at` 都随 run 落库：服务重启后仍按
             **本轮**定下的值裁决，不会回落到重启后进程的默认值。
+    RunCancelAccepted:
+      type: object
+      required: [run_id, tenant_id, status]
+      description: |
+        `POST /runs/{run_id}/cancel` 的**受理回执**（B-3）。与 `RunAccepted` 同
+        一个道理：取消**不承诺**"回话那刻图已经停了"。`status` 是**观察到的**——
+        `cancelled`（已终止）或 `cancelling`（已受理、仍在收敛）。
+      properties:
+        run_id:
+          type: string
+        tenant_id:
+          type: string
+        status:
+          type: string
+          enum: [cancelled, cancelling]
+        cancel_requested:
+          type: boolean
+          description: 恒为 `true`：能回话就说明这次取消已经记下了。
     RunAccepted:
       type: object
       required: [run_id, tenant_id, status]
@@ -694,16 +719,25 @@ paths:
         - bearerAuth: []
           tenantHeader: []
           oidcScopes: [platform.write]
-      summary: 取消一轮运行（落终态，幂等）
+      summary: 受理一次取消（202 cancel_requested，幂等）
       description: |
-        把 run 写进终态 `cancelled`——**写进检查点**，因此 `GET /runs/{id}` 与
-        后续 `approve` 都看得到（确认一个已作废的计划一律 409）。重复取消不会
-        覆盖更早的终态。跨租户与不存在同码 404，不泄露存在性。
+        **受理制**取消（B-3 起）。回 202 + **当前观察到的**状态，**不承诺**"回话
+        那一刻图已经停了"——那个保证只在单副本下成立（跨副本时回话的副本根本没在
+        跑这一轮）。
 
-        **执行中的 run 也能取消**（1.5）：取消不靠外部杀——图在节点边界自查取消
-        标志，看到就自己落终态。粒度是**波与波之间**：在途的那一波允许跑完
-        （不硬断），已完成节点不重跑，下一波一个员工都不派。本调用**等图停下
-        再回**，所以 200 时该 run 已经不再推进。
+        `status` 是 `cancelled`（已落终态：本来就已经结束，或本请求落的）或
+        `cancelling`（已受理、图还在收敛）。客户端拿到 `cancelling` 就接着看
+        `GET /runs/{run_id}`，它会一直报 `cancelling` 直到真的 `cancelled`。
+
+        **"有没有人在跑"由活跃 Run 注册表（租约）回答**：没有活跃租约 = 这一轮
+        没人执行（停在闸门等人 / 进程崩过），终态由本请求落；有活跃租约时**绝不
+        代庖**——否则正在跑的那一侧下一步会用它自己那份状态把终态盖回去。
+
+        **执行中的 run 也能取消**：取消不靠外部杀——图在节点边界自查取消标志，
+        看到就自己落终态。粒度是**波与波之间**：在途的那一波允许跑完（不硬断），
+        已完成节点不重跑，下一波一个员工都不派。
+
+        幂等：已经终态的直接回当前终态，不覆盖更早的终态。跨租户与不存在同码 404。
       tags: [agent-team]
       operationId: agentTeamPostRunCancel
       parameters:
@@ -713,12 +747,12 @@ paths:
           schema:
             type: string
       responses:
-        "200":
-          description: 取消后的运行状态（status = cancelled）
+        "202":
+          description: 已受理（status = cancelled | cancelling）
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RunState"
+                $ref: "#/components/schemas/RunCancelAccepted"
         "404":
           description: 该租户下不存在此 run（跨租户与不存在同码）
       x-mate-owner: agent-product-layer
