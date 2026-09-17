@@ -365,18 +365,35 @@ traceability                                                pass
 
 | job | 根因 | 与本批的关系 |
 | --- | --- | --- |
-| `helm-unittest` | `helm plugin install … --version 0.7.2` → `requested version "0.7.2" does not exist`。卡在**装插件**，chart 一个都没跑 | 无关（工作流自身坏） |
-| `helm template + kubeconform` | 6 条 `could not find schema for {Dataset,DataProduct,PrometheusRule,DataJob,ServiceMonitor,SealedSecret}` —— 全是他 chart 的 CRD；汇总 `Invalid: 0` | 无关（本 chart 只出核心 kind） |
-| `Static chart checks (Python + YAML)` | `ModuleNotFoundError: No module named 'sqlalchemy'`（`infra/tests/test_data_d0_d8_d1.py`）—— workflow 头部**自己登记过**的债务，`continue-on-error: true` | 无关（预存） |
-| `kind cluster helm install + smoke` | `failed to install CRD crds/keycloak-realm-configmap.yaml: namespaces "metaplatform" not found` | 无关（装的是 keycloak CRD） |
+| `helm-unittest` | `helm plugin install … --version 0.7.2` → `requested version "0.7.2" does not exist`。卡在**装插件**，chart 一个都没跑（`continue-on-error: true`） | 无关（工作流自身坏） |
+| `helm template + kubeconform` | 6 条 `could not find schema for {Dataset,DataProduct,PrometheusRule,DataJob,ServiceMonitor,SealedSecret}` —— 全是他 chart 的 CRD；汇总 `Invalid: 0`（`continue-on-error: true`） | 无关（本 chart 只出核心 kind） |
+| `Static chart checks (Python + YAML)` | `ModuleNotFoundError: No module named 'sqlalchemy'`（`infra/tests/test_data_d0_d8_d1.py`）—— workflow 头部**自己登记过**的债务（`continue-on-error: true`） | 无关（预存） |
+| `helm-docs sync` | helm-docs 下载源失效，workflow 头部登记（`continue-on-error: true`） | 无关 |
+| `kind cluster helm install + smoke`（**两条工作流里各有一份**：`platform-k8s-ci` 与 `g4-kind-e2e`） | `failed to install CRD crds/keycloak-realm-configmap.yaml: namespaces "metaplatform" not found` —— 装的是 **keycloak 的 CRD**，而它要的命名空间还没建 | 无关 |
 | `boot ontology-loop stack` / `playwright ontology-loop e2e` | `.env.local not found`（CI 环境变量缺失） | 无关 |
 | `Architecture kernel governance` | `Pyright strict (kernel + tests)` 294 errors —— 2.1-A §4-B7 已量过（当时 295），`continue-on-error: true` | 无关（预存债） |
-| `helm-docs sync` | `continue-on-error: true`（helm-docs 下载源失效，workflow 头部登记） | 无关 |
 
-> **为什么这些"红"以前没出现过**：`platform-k8s-ci.yml` 等几条 workflow 带
+> **怎么一眼看出"这是登记债而不是新回归"**（下次照这个查，别重新推一遍）：
+>
+> 1. **看 workflow 里有没有 `continue-on-error: true`**。`platform-k8s-ci.yml` 的
+>    第 25 / 89 / 131 / 158 行各有一个，**正好就是上面那 4 条**（Static chart
+>    checks / helm-unittest / helm template + kubeconform / helm-docs sync）。
+>    带了它的 job 会**报 `failure`，但 workflow run 的结论是 `success`** ——
+>    所以 `gh pr checks` 上看是红的、`gh run view` 上看却是绿的，两者都没错。
+> 2. **看它在合并前的 `main` 上是不是也红**。例：`g4-kind-e2e` 在
+>    `44cb835b`（2026-09-16）与 `2ec65aa5`（2026-09-16）上就已经是 failure，
+>    早于本分支存在。
+> 3. **核根因与本批改动的因果关系**，而不是只看"红了"。
+>
+> **为什么这些红以前没出现过**：这几条 workflow 带
 > `paths: [infra/helm/**, …]` 过滤——**本批是近期第一个动 `infra/helm/**` 的 PR**，
 > 于是把它们唤醒了。这与 2.1-A §4-B6/B7 是同一类现象（预存红只在特定路径被触发时
-> 才显形），**不是本批引入的回归**。逐条根因见上表。
+> 才显形），**不是本批引入的回归**。
+
+**合并后 `main` 上（`cd57883a`）的 workflow 结论**：`Python Backend CI` / `OpenAPI
+Contract CI` / `Architecture Governance CI` / `ga-acceptance` / `platform-k8s-ci` /
+`ontology-loop` = **success**；`g4-d1-staging-e2e` = in_progress；`g4-kind-e2e`
+= failure（预存，见上表）。**11 条 required 全绿。**
 
 ## 6. 遗留与建议
 
