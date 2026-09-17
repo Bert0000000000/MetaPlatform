@@ -293,9 +293,11 @@ components:
             - agent_team.spawn
             - agent_team.authority_escalation
             - agent_team.approval
+            - agent_team.delegation
           description: |
             被审计的动作。**派活**（每次派活一行）、**越权转 proposal**
-            （包络超出链根 → 转人审）、**审批**（run 级闸门或任务级授权）。
+            （包络超出链根 → 转人审）、**审批**（run 级闸门或任务级授权）、
+            **委托签发**（A-2 起：续跑时那次运行期委托的签发或拒绝）。
         tenant_id:
           type: string
         actor:

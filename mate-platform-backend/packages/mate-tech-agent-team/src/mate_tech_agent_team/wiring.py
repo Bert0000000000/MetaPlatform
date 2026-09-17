@@ -27,6 +27,17 @@ from .audit import AuditSink, PgAuditLedger
 from .brain import BrainService, RunContext
 from .checkpoint import SCHEMA as CHECKPOINT_SCHEMA
 from .checkpoint import PgCheckpointerProvider, bootstrap
+from .delegated_identity import (
+    AUDIENCE_ENV as TOKEN_EXCHANGE_AUDIENCE_ENV,
+)
+from .delegated_identity import (
+    ENABLE_ENV as TOKEN_EXCHANGE_ENABLE_ENV,
+)
+from .delegated_identity import (
+    DelegationIssuer,
+    KeycloakTokenExchangeIssuer,
+    UnconfiguredIssuer,
+)
 from .employee import LlmEmployeeRuntime
 from .llm_planner import LlmPlanner
 from .profile_store import ProfileStore
@@ -48,17 +59,50 @@ DEFAULT_GATEWAY_URL = "http://localhost:8100"
 DEFAULT_MCP_PROTOCOL_PATH = "/api/v1/mcp/protocol/mcp"
 
 
-def _bearer() -> BearerAuth:
-    token_uri = (
+def _keycloak_token_uri() -> str:
+    """realm 的 token 端点。签发面与出站服务身份**共用同一处**推导——
+    两处各算一遍迟早会漂移成两个 realm。"""
+    return (
         f"{os.getenv('KEYCLOAK_URL', 'http://localhost:8080')}"
         "/realms/metaplatform/protocol/openid-connect/token"
     )
+
+
+def _bearer() -> BearerAuth:
+    token_uri = _keycloak_token_uri()
     # scope 说明：本 realm 的服务 client 只接受默认/openid（自定义 scope 未注册）。
     return BearerAuth(
         token_uri=token_uri,
         client_id=os.getenv("SERVICE_CLIENT_ID", "metaplatform-backend"),
         client_secret=os.environ["SERVICE_CLIENT_SECRET"],
         scope=os.getenv("SERVICE_CLIENT_SCOPE", "openid"),
+    )
+
+
+def build_delegation_issuer() -> DelegationIssuer:
+    """运行期委托身份的签发面（A-2 / ADR-0067）。
+
+    **默认不签发**：没配 ``MATE_AGENT_TEAM_TOKEN_EXCHANGE`` 的部署拿到的是
+    :class:`UnconfiguredIssuer`——续跑不带用户身份（与 2.0 逐字一致），
+    而不是悄悄退回服务身份（N4）。
+
+    配了开关却没有服务密钥 → **启动失败**，与 :func:`required_dsn` 同一条精神：
+    配了一半的委托身份比不配更危险（它看起来是开着的）。
+    """
+    enabled = os.getenv(TOKEN_EXCHANGE_ENABLE_ENV, "").strip().lower()
+    if enabled not in {"1", "true", "yes", "on", "keycloak"}:
+        return UnconfiguredIssuer()
+    secret = os.getenv("SERVICE_CLIENT_SECRET", "")
+    if not secret:
+        raise RuntimeError(
+            f"{TOKEN_EXCHANGE_ENABLE_ENV} 已开启但没有 SERVICE_CLIENT_SECRET："
+            "签发委托令牌要用服务身份做 token exchange，缺密钥就换不到。"
+        )
+    return KeycloakTokenExchangeIssuer(
+        token_uri=_keycloak_token_uri(),
+        client_id=os.getenv("SERVICE_CLIENT_ID", "metaplatform-backend"),
+        client_secret=secret,
+        audience=os.getenv(TOKEN_EXCHANGE_AUDIENCE_ENV, ""),
     )
 
 
@@ -464,6 +508,8 @@ def build_service(
         max_parallel=int(os.getenv("MATE_AGENT_TEAM_MAX_PARALLEL", "3")),
         # 1.5 任务 4：失败节点（运行时那一次调用）的重试策略。
         retry_policy=build_retry_policy(),
+        # A-2 / ADR-0067：续跑时的运行期委托身份（默认不签发）。
+        delegation_issuer=build_delegation_issuer(),
     )
 
 
@@ -487,6 +533,7 @@ __all__ = [
     "build_a2a_outbound_runtime",
     "build_artifact_store",
     "build_audit_ledger",
+    "build_delegation_issuer",
     "build_profile_store",
     "build_registry",
     "build_retry_policy",

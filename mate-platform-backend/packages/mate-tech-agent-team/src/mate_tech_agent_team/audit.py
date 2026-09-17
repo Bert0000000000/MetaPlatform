@@ -61,6 +61,9 @@ logger = logging.getLogger("metaplatform.audit.agent_team")
 AUDIT_SPAWN = "agent_team.spawn"
 AUDIT_ESCALATION = "agent_team.authority_escalation"
 AUDIT_APPROVAL = "agent_team.approval"
+#: 运行期委托身份的签发与拒绝（A-2 / ADR-0067）。**签发失败也要落行**：
+#: "为什么这一轮没有以用户身份跑"要答得出来。
+AUDIT_DELEGATION = "agent_team.delegation"
 
 #: 投递到 Outbox 的事件类型（``<domain>.<aggregate>.<action>``，见 ``Event.create``）。
 AUDIT_EVENT_TYPE = "agent.audit.recorded"
@@ -682,6 +685,7 @@ def actions_of(records: list[AuditRecord]) -> list[str]:
 
 __all__ = [
     "AUDIT_APPROVAL",
+    "AUDIT_DELEGATION",
     "AUDIT_ESCALATION",
     "AUDIT_EVENT_TYPE",
     "AUDIT_SPAWN",

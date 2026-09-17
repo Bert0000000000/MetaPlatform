@@ -305,7 +305,7 @@ def test_a_delegation_issued_for_one_run_never_authorizes_another(admin_token) -
         assert RunDelegation.of_state(issued).authorizes("run-b") is False
 
         # 端到端形态：把 A 轮那份授权放进 B 轮的状态里，B 轮的链根仍然是空的。
-        stolen = service._context_from_delegation(
+        stolen = await service._context_from_delegation(
             tenant_id=TENANT, state={"delegation": issued}, run_id="run-b"
         )
         assert stolen.initiator_envelope == Envelope(), "别的 run 的授权被当成本轮的链根了"
@@ -374,7 +374,7 @@ def test_an_expired_delegation_is_not_authorization(admin_token) -> None:
         assert RunDelegation.of_state(blob).authorizes("run-a", now=1_030.0) is True
         assert RunDelegation.of_state(blob).authorizes("run-a", now=1_060.0) is False
 
-        expired = service._context_from_delegation(
+        expired = await service._context_from_delegation(
             tenant_id=TENANT, state={"delegation": blob}, run_id="run-a", now=2_000.0
         )
         assert expired.initiator_envelope == Envelope(), "过期授权仍被当成了链根"
@@ -388,7 +388,9 @@ def test_a_run_with_no_delegation_at_all_is_not_authorized() -> None:
     async def _scenario() -> None:
         service, _runtime, _counts = _service()
         for state in ({}, {"delegation": None}, {"delegation": {}}, {"delegation": "garbage"}):
-            ctx = service._context_from_delegation(tenant_id=TENANT, state=state, run_id="run-a")
+            ctx = await service._context_from_delegation(
+                tenant_id=TENANT, state=state, run_id="run-a"
+            )
             assert ctx.initiator_envelope == Envelope(), state
 
     asyncio.run(_scenario())
@@ -418,10 +420,27 @@ def test_the_raw_token_is_never_written_into_any_checkpoint(admin_token) -> None
         assert admin_token not in dumped, "原始令牌被落进了检查点"
         assert "Bearer" not in dumped, "检查点里出现了 Bearer 字样"
 
-        # 落地的那一份只装"能碰什么"，一个凭据字段都没有。
+        # 落地的那一份只装"能碰什么"与归属，一个凭据字段都没有（ADR-0067 N1）。
+        # 用**精确集合**断言而不是"搜不到 token 字样"：以后加了字段要在这里被看见，
+        # 而不是靠事后 grep 猜。
         delegation = RunDelegation.of_state(body.get("delegation"))
         assert delegation is not None, "管理员令牌起的那一轮应当有派活授权"
         assert delegation.envelope.tools, "授权里应当有从令牌解析出的能力基线"
-        assert set(delegation.as_state()) == {"run_id", "granted_by", "envelope", "expires_at"}
+        assert set(delegation.as_state()) == {
+            "run_id",
+            "granted_by",
+            "envelope",
+            "expires_at",
+            "tenant_id",
+            "subject_id",
+            "policy_version",
+            "issued_at",
+            "revocation_version",
+        }
+        assert not [
+            key
+            for key in delegation.as_state()
+            if "token" in key.lower() or "bearer" in key.lower()
+        ]
 
     asyncio.run(_scenario())
