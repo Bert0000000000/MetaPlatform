@@ -116,8 +116,8 @@ def create_app(
     """
     app = FastAPI(
         title=SERVICE_NAME,
-        version="0.1.0",
-        description="Agent 产品层 1.0：超级大脑（langgraph 任务图）+ 数字员工",
+        version="2.1.0",
+        description="Agent 产品层 2.1：超级大脑（langgraph 任务图）+ 数字员工",
         lifespan=_lifespan if with_wiring else None,
     )
     install_auth(app, extra_anonymous_paths={"/healthz"})

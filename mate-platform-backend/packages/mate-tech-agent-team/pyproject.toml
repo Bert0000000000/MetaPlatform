@@ -1,7 +1,7 @@
 [project]
 name = "mate-tech-agent-team"
-version = "0.1.0"
-description = "Mate Platform - Agent 产品层 1.0: 超级大脑 (langgraph 任务图) + 数字员工运行时, 坐在 Ontology 之上, 租户隔离由 RLS 强制。"
+version = "2.1.0"
+description = "Mate Platform - Agent 产品层 2.1: 超级大脑 (langgraph 任务图) + 数字员工运行时, 坐在 Ontology 之上, 租户隔离由 RLS 强制。"
 requires-python = ">=3.12"
 readme = "README.md"
 license = { text = "Proprietary" }
