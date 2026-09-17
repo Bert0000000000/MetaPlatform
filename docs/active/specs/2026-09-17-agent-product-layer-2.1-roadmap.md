@@ -13,10 +13,8 @@
 
 ---
 
-# Agent 产品层 2.1 · 迭代规划（生产硬化）
-
-> 2026-09-17 · 上游：`docs/active/delivery/evidence/AGENT-PRODUCT-LAYER-2.0-ACCEPTANCE.md` §3 边界表
-> + 外部评审（2026-09-17，21 条差距）。评审的每一条都已**逐条核到代码/远端配置**，
+> 2026-09-17 · 上游：`docs/active/delivery/evidence/AGENT-PRODUCT-LAYER-2.0-ACCEPTANCE.md` §3 边界表，
+> 外加外部评审（2026-09-17，21 条差距）。评审的每一条都已**逐条核到代码/远端配置**，
 > 核对结论与证据见本文件 §1。
 >
 > **交付形态**：内部三个分组 **2.1-A / 2.1-B / 2.1-C**，

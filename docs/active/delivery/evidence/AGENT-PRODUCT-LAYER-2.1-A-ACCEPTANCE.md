@@ -245,7 +245,7 @@ PR：[#59](https://github.com/Bert0000000000/MetaPlatform/pull/59)。
 **④ 去探针后全绿**（head `7d3cf222` / 最终 `832c7a74`）：`ga-acceptance` 的
 **19 个 job 全 success**；**9 条 required check 全 pass**（`gh pr checks 59` 实取：
 
-```
+```text
 Architecture tests (import-linter + four-layer guardrails)  pass
 Frontend (metaplatform-frontend)                            pass
 Lint (ruff)                                                 pass
@@ -263,7 +263,7 @@ traceability                                                pass
 
 **已经生效（本批当场改，`gh api` 实取回读）** —— required check 从 **4 条 → 9 条**：
 
-```
+```text
 Lint (ruff) / Type check (pyright strict) / Architecture tests (import-linter + four-layer guardrails)
 / Validate compose + Dockerfiles
 + agent-team pytest (mate-tech-agent-team)
