@@ -347,6 +347,12 @@ def build_service(
                 tenant_id=tenant_id,
                 user_token=ctx.user_token,
                 provider_config=_provider_config(tenant_id, ctx.user_token),
+                # 员工产出**不许**是"把指令抄回来"的假回执。llmgw 在上游不可用时
+                # 默认会回显输入并让员工 status=ok —— 那正是 1.0 立项要治的东西。
+                # 这里关掉：宁可该员工如实失败，也不要一个像结论的假答复。
+                # 顺带堵住另一条路：provider 配置取数失败时 _resolved_provider()
+                # 退回空配置，过去同样落到回显。
+                allow_stub_fallback=False,
             )
 
         return _make

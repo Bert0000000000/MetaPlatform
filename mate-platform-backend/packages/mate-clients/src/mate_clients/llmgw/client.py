@@ -58,6 +58,7 @@ class LlmgwClient:
         tenant_id: str = "",
         user_token: str = "",
         provider_config: ProviderConfigResolver | None = None,
+        allow_stub_fallback: bool = True,
     ) -> None:
         self.base_url = (base_url or self.DEFAULT_URL).rstrip("/")
         # ``transport`` 是**测试注入点**：没有它，测失败分类只能去改私有属性
@@ -69,6 +70,10 @@ class LlmgwClient:
         self._user_token = user_token
         self._provider_config = provider_config
         self._provider: dict[str, str] | None = None
+        # False = 拒绝"把输入抄回来"的假答复。Agent 产品层必须传 False：
+        # 员工产出里出现假回执，比一次明确失败危险得多。默认 True 保持
+        # 其它调用方的既有行为（不改别人）。
+        self._allow_stub_fallback = allow_stub_fallback
         if auth is not None and tenant_id and not user_token:
             self._client.auth = OutgoingAuthMiddleware(auth, tenant_id=tenant_id)
 
@@ -131,6 +136,8 @@ class LlmgwClient:
             "messages": messages,
             "temperature": temperature,
             "tenant_id": self._tenant_id,
+            # 假回执闸门：False 时 llmgw 宁可报错也不返回"把输入抄回来"的答复
+            "allow_stub_fallback": self._allow_stub_fallback,
         }
         if tools:
             body["tools"] = tools
@@ -163,6 +170,8 @@ class LlmgwClient:
             "messages": messages,
             "temperature": temperature,
             "tenant_id": self._tenant_id,
+            # 假回执闸门：False 时 llmgw 宁可报错也不返回"把输入抄回来"的答复
+            "allow_stub_fallback": self._allow_stub_fallback,
         }
         if max_tokens is not None:
             body["max_tokens"] = max_tokens

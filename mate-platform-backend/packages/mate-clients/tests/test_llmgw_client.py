@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from collections.abc import Callable
 
 import httpx
@@ -67,3 +68,46 @@ def test_a_non_json_body_is_not_marked_retryable() -> None:
     with pytest.raises(LlmgwError) as excinfo:
         _call(client)
     assert excinfo.value.retryable is False
+
+
+# ---------------------------------------------------------------------------
+# 假回执闸门（批次 llmgw-fallback-hardening）
+# ---------------------------------------------------------------------------
+def _capture_bodies(seen: list[dict]) -> Handler:
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json={"content": "ok", "model": "glm-5.3-flash"})
+
+    return handler
+
+
+def test_default_still_allows_the_stub_fallback() -> None:
+    """回归：不带该开关的调用方，请求体里仍是 allow_stub_fallback=true
+    —— 其它服务还在用这条通道，本批**不**顺手关掉它们已有的降级能力。"""
+    seen: list[dict] = []
+    _call(_client(_capture_bodies(seen)))
+    assert seen[0]["allow_stub_fallback"] is True
+
+
+def test_disabling_the_stub_fallback_reaches_the_request_body() -> None:
+    """Agent 产品层：关掉之后，llmgw 才可能在字段上拒绝回显。"""
+    seen: list[dict] = []
+    client = LlmgwClient(
+        "http://mate-tech-llmgw.test:8008",
+        transport=httpx.MockTransport(_capture_bodies(seen)),
+        allow_stub_fallback=False,
+    )
+    _call(client)
+    assert seen[0]["allow_stub_fallback"] is False
+
+
+def test_the_flag_is_sent_on_the_plain_completion_path_too() -> None:
+    """不带工具的普通补全走的是另一段拼装，同样要带上开关。"""
+    seen: list[dict] = []
+    client = LlmgwClient(
+        "http://mate-tech-llmgw.test:8008",
+        transport=httpx.MockTransport(_capture_bodies(seen)),
+        allow_stub_fallback=False,
+    )
+    asyncio.run(client.chat_completion(messages=[], model="glm-5.3-flash"))
+    assert seen[0]["allow_stub_fallback"] is False
