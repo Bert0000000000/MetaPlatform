@@ -145,8 +145,13 @@ export async function get<T>(url: string, params?: Record<string, unknown>): Pro
   return payload as T;
 }
 
-export async function post<T>(url: string, body?: unknown): Promise<T> {
-  const response = await apiClient.post(url, body);
+/**
+ * `timeoutMs` 给**同步长跑**的端点用：默认 30s 对普通 CRUD 合适，但有些接口是
+ * 一个请求等整轮编排跑完（agent-team 的 `POST /runs` 要等拆解 + 并行派活），
+ * 分钟级。不改全局默认——那会把"真卡住"和"本来就要等"混成同一件事。
+ */
+export async function post<T>(url: string, body?: unknown, timeoutMs?: number): Promise<T> {
+  const response = await apiClient.post(url, body, timeoutMs ? { timeout: timeoutMs } : undefined);
   const payload = response.data as { data?: T } | T;
   if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: T }).data !== undefined) {
     return (payload as { data: T }).data;
