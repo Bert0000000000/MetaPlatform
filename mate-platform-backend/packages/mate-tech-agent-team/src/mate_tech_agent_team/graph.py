@@ -385,6 +385,9 @@ def build_brain_graph(
         # 上一轮的终态会挡住新一轮（``send`` 误判 409），并发时更糟：两轮
         # **共用同一个信箱**，A 轮的追问会被 B 轮吃掉。
         subtask["team_task_id"] = f"{run_id[:8]}-{subtask['task_id']}"
+        # A-3：工具调用级幂等键的第一段。写进子任务而不是只留在节点局部变量里
+        # ——运行时（乃至续跑后重建的那一份）要从**子任务**上读到它。
+        subtask["run_id"] = run_id
         try:
             outcome = await bus.spawn(
                 SpawnRequest(

@@ -50,6 +50,7 @@ from .profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry
 from .runtime import TaskChannel, TransientRunError
 from .skills import SkillCatalog
 from .state import SubTask, SubTaskResult
+from .tool_ledger import ToolCallAdmission, ToolLedger, call_id, new_lease_owner
 from .toolbox import Toolbox, ToolNotAllowed
 
 #: 一条工具结果最多回灌多少字符——上下文裁剪（ADR-0066 §5.4）的最小形态。
@@ -234,6 +235,7 @@ class LlmEmployeeRuntime:
         summary_prompt: str | None = None,
         context_editing: bool = True,
         channel: TaskChannel | None = None,
+        tool_ledger: ToolLedger | None = None,
     ) -> None:
         self._registry = registry
         self._llm_factory = llm_factory
@@ -247,6 +249,55 @@ class LlmEmployeeRuntime:
         self._context_editing = context_editing
         #: 实例层通道（建行 / 取信箱 / 收尾）；给了就能被 ``send`` 追问到。
         self._channel = channel
+        #: 工具调用级幂等账本（A-3 / ADR 见 :mod:`.tool_ledger`）。**默认不记账**——
+        #: 没接的部署行为与 A-3 之前逐字一致；生产由 ``wiring`` 接 PG 账本。
+        self._tool_ledger = tool_ledger
+        self._lease_owner = new_lease_owner()
+
+    async def _admit(
+        self,
+        *,
+        name: str,
+        arguments: dict[str, Any],
+        tenant_id: str,
+        run_id: str,
+        task_id: str,
+    ) -> ToolCallAdmission | None:
+        """向账本要一次准入。没接账本 / 缺 run 上下文（老调用方）→ 不记账。"""
+        if self._tool_ledger is None or not (tenant_id and run_id and task_id):
+            return None
+        return await self._tool_ledger.begin(
+            tenant_id=tenant_id,
+            run_id=run_id,
+            task_id=task_id,
+            tool_call_id=call_id(name, arguments),
+            tool_name=name,
+            arguments=arguments,
+            owner=self._lease_owner,
+        )
+
+    async def _settle(
+        self, admission: ToolCallAdmission | None, *, result: Any, error: str
+    ) -> None:
+        """落回执。**尽力而为**，且失败的方向是安全的：
+
+        写不进去 → 那一行留在 ``running`` → 恢复时**不会**重跑（上限仍是 1）。
+        反过来（写失败却当成没发生）才会导致重复副作用，那种做法这里没有。
+        """
+        if admission is None or admission.invocation is None or self._tool_ledger is None:
+            return
+        invocation = admission.invocation
+        try:
+            if error:
+                await self._tool_ledger.fail(
+                    tenant_id=invocation.tenant_id, invocation=invocation, error=error
+                )
+            else:
+                await self._tool_ledger.complete(
+                    tenant_id=invocation.tenant_id, invocation=invocation, result=result
+                )
+        except Exception:
+            return
 
     def _system_prompt(self, profile: EmployeeProfile) -> str:
         """身份提示词 + **技能清单**（只出名字与一句话描述，不出正文）。"""
@@ -274,12 +325,45 @@ class LlmEmployeeRuntime:
         toolbox: Toolbox,
         log: list[dict[str, Any]],
         evidence: _EvidenceCollector,
+        tenant_id: str = "",
+        run_id: str = "",
+        task_id: str = "",
     ) -> StructuredTool:
-        """把一个工具描述符包成 LangChain 工具，闸门仍在**派发处**。"""
+        """把一个工具描述符包成 LangChain 工具，闸门仍在**派发处**。
+
+        A-3 起，这一步还是**幂等账本**的落点：执行前先落一条 ``running`` 意图，
+        执行后落回执。于是"工具已经执行了、回执还没落"那个窗口里死掉的进程，
+        恢复后**不会**把这一次工具调用再执行一遍（:mod:`.tool_ledger`）。
+        """
         name = descriptor["name"]
 
         async def _call(**arguments: Any) -> str:
             entry: dict[str, Any] = {"name": name, "arguments": arguments}
+            admission = await self._admit(
+                name=name,
+                arguments=arguments,
+                tenant_id=tenant_id,
+                run_id=run_id,
+                task_id=task_id,
+            )
+            if admission is not None and not admission.execute:
+                # **不执行**：要么回放已记下的结果，要么这一次已经开过头（in_flight）。
+                entry["allowed"] = True
+                entry["deduplicated"] = admission.reason
+                entry["invocation_id"] = (
+                    admission.invocation.invocation_id if admission.invocation else ""
+                )
+                log.append(entry)
+                if admission.reason == "already_completed":
+                    evidence.capture(name, admission.reuse)
+                    return _clip(admission.reuse)
+                return json.dumps(
+                    {
+                        "error": f"tool '{name}' not re-executed: {admission.reason}",
+                        "hint": "这一次调用此前已经开始过，幂等账本不允许重复执行",
+                    },
+                    ensure_ascii=False,
+                )
             try:
                 result = await toolbox.invoke(name=name, arguments=arguments, allowed=allowed)
             except ToolNotAllowed as exc:
@@ -287,6 +371,7 @@ class LlmEmployeeRuntime:
                 entry["allowed"] = False
                 entry["rejected"] = exc.reason
                 log.append(entry)
+                await self._settle(admission, result=None, error=f"rejected:{exc.reason}")
                 return json.dumps(
                     {"error": f"tool '{name}' rejected: {exc.reason}"}, ensure_ascii=False
                 )
@@ -296,9 +381,12 @@ class LlmEmployeeRuntime:
                 entry["allowed"] = True
                 entry["error"] = f"{type(exc).__name__}: {exc}"
                 log.append(entry)
+                # 失败 = 这次没落地：账本记 failed，允许下一次重来。
+                await self._settle(admission, result=None, error=f"{type(exc).__name__}: {exc}")
                 return _clip({"error": f"tool '{name}' failed: {exc}", "hint": "修正参数后重试"})
             entry["allowed"] = True
             log.append(entry)
+            await self._settle(admission, result=result, error="")
             # 只有**成功**的工具结果才映射成证据：失败/被拒的结果里没有可取证的事实，
             # 对它取证就是编造。
             evidence.capture(name, result)
@@ -405,7 +493,16 @@ class LlmEmployeeRuntime:
 
             tools = [
                 self._gated_tool(
-                    d, allowed=allowed, toolbox=toolbox, log=tool_log, evidence=evidence
+                    d,
+                    allowed=allowed,
+                    toolbox=toolbox,
+                    log=tool_log,
+                    evidence=evidence,
+                    tenant_id=tenant_id,
+                    # 幂等键要的 run/任务身份（A-3）：run 从派活那一刻就写进子任务，
+                    # task_id 用计划内标签——两者都在重启后原样读得回来。
+                    run_id=str(subtask.get("run_id") or ""),
+                    task_id=str(subtask.get("task_id") or ""),
                 )
                 for d in descriptors
             ]

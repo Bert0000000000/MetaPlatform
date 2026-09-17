@@ -50,6 +50,7 @@ from .skills import SkillCatalog
 from .state import SubTask, SubTaskResult
 from .team_bus import DEFAULT_MAX_DEPTH, TeamBus
 from .team_task_store import PgTeamTasks
+from .tool_ledger import PgToolLedger
 from .toolbox import CompositeToolbox, McpToolbox
 
 DEFAULT_LLMGW_URL = "http://localhost:8008"
@@ -362,6 +363,15 @@ def build_a2a_outbound_runtime(*, registry: ProfileRegistry) -> A2AOutboundRunti
     return A2AOutboundRuntime(registry=registry, client=client)
 
 
+def build_tool_ledger() -> PgToolLedger:
+    """工具调用级幂等账本（A-3 / `MP-TOOL-IDEMPOTENCY-01`）。
+
+    与检查点 / 员工定义 / 审计**同库同 schema**：租户隔离靠同一套 RLS 强制。
+    每一次工具调用多一次往返——换来的是"工具执行到一半被杀，恢复后不会再来一次"。
+    """
+    return PgToolLedger(required_dsn(), schema=CHECKPOINT_SCHEMA)
+
+
 def build_service(
     *,
     registry: ProfileRegistry | None = None,
@@ -480,6 +490,8 @@ def build_service(
             # 1.2：实例层通道 —— 开跑前登记 team_task、每轮边界取走外部投递的
             # 消息（消费即清空）、跑完置终态。`TeamBus` 结构上就满足 TaskChannel。
             channel=team_bus,
+            # A-3：工具调用级幂等账本。工具执行到一半被杀，恢复后不会再执行一次。
+            tool_ledger=build_tool_ledger(),
         )
         # 1.8 轨 2：执行面路由（ADR-0066 §5.8）。**默认关闭** —— 没配
         # `MATE_AGENT_TEAM_RUNTIMES` 的部署拿到的还是上面那个 superai 运行时，
@@ -541,6 +553,7 @@ __all__ = [
     "build_team_bus",
     "build_service",
     "build_skill_catalog",
+    "build_tool_ledger",
     "enabled_runtime_kinds",
     "required_admin_dsn",
     "required_dsn",

@@ -35,10 +35,14 @@ class SubTask(TypedDict, total=False):
     ``granted_envelope`` 是同一份发放的**四维**形态（1.4 任务 1）：只带
     ``granted_tools`` 时，``action_rids`` / ``kb_ids`` / ``markings`` 三维在
     执行侧无人认领——判定过了就没人再看一眼，等于没拦。
+
+    ``run_id`` 是这一轮 run 的身份（A-3 起由派活节点写入）：工具调用级幂等键
+    ``run_id + task_id + tool_call_id`` 的第一段，重启后从检查点原样读得回来。
     """
 
     task_id: str
     team_task_id: str
+    run_id: str
     profile_id: str
     instruction: str
     depends_on: list[str]

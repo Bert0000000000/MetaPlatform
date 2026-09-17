@@ -64,6 +64,7 @@ def bootstrap(admin_dsn: str, app_role: str = "mate_app", schema: str = SCHEMA) 
     from .coordination import bootstrap_coordination
     from .profile_store import bootstrap_profiles
     from .team_task_store import bootstrap_tasks
+    from .tool_ledger import bootstrap_tool_ledger
 
     with psycopg.connect(admin_dsn, autocommit=True) as conn:
         conn.execute(f"CREATE SCHEMA IF NOT EXISTS {schema}")
@@ -85,6 +86,8 @@ def bootstrap(admin_dsn: str, app_role: str = "mate_app", schema: str = SCHEMA) 
         bootstrap_coordination(conn, app_role=app_role)
         # A-1 / MP-AUDIT-LEDGER-01：持久审计账本（append-only + 按租户哈希链）。
         bootstrap_audit(conn, app_role=app_role)
+        # A-3 / MP-TOOL-IDEMPOTENCY-01：工具调用级幂等账本（同库同 schema，同一套守门）。
+        bootstrap_tool_ledger(conn, app_role=app_role)
 
 
 def _guc_statement(tenant_id: str) -> tuple[str, tuple[str]]:
