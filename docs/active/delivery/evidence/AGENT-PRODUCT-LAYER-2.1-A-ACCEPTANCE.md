@@ -1,6 +1,6 @@
 # AGENT-PRODUCT-LAYER-2.1-A · 验收证据
 
-> **日期**：2026-09-17 · **分支**：`feat/agent-product-layer-2.1-a` · **基线**：`origin/main` = `24976a4c`
+> **日期**：2026-09-17 · **分支**：`feat/agent-product-layer-2.1-a` · **基线**：`origin/main` = `24976a4c` · **合并**：`4e33e304`
 > **目标**：把五条生产性质从「机制存在」变成「有判据、可复现、能拦住」。
 > **上游**：`docs/active/specs/2026-09-17-agent-product-layer-2.1-roadmap.md`（§2.1-A 七条）、
 > `MetaPlatform-调整优化方案执行计划-2026-09-17.md`（平台级量化准出，本文件只引用不重定义）、
@@ -140,7 +140,7 @@ utf-8 解码回执，不放它中文会被打碎（POSIX 上同理由 `LANG`/`LC
 | # | 边界 | 为什么留着 | 要做的条件 |
 | --- | --- | --- | --- |
 | **B1** | 「连续 10 次合并 required 全绿」**未达** | 它是**观察性判据**：需要本 PR 先合并，再看之后 10 次真实合并。本批交付的是它的**前提**（拆分 + 去 paths 过滤 + 修红 + CODEOWNERS） | 本 PR 合并后连续观察 10 次；任一次 required 红即为此判据不成立 |
-| **B2** | required check 收紧：本次只加了**已验证在 `main` 上绿**的那些 | 把一个当前红的 job 设为 required = 立刻冻结所有合并。`main` 上 `ga pre-commit + infra pytest + mate-platform pytest` 是红的（本批已拆开并修绿，但**要先合并**才生效） | 本 PR 合并后把 `ga-format` 与 `ga-tests` 加进 required（命令见 §5.5） |
+| **B2** | ~~required check 收紧：本次只加了已验证在 `main` 上绿的那些~~ **已闭合** | 合并前只加了 5 条（在 `main` 上已绿的那些）。原因是 `ga-format` / `ga-tests` 是**新拆出来的 job 名**，合并前不存在于 `main`——把不存在的 check 名设成 required 会让所有在途 PR 停在 "Expected — Waiting" | **2026-09-17 已补**：PR #59 合并（`4e33e304`）后确认 `main` 上 `ga-acceptance` 全绿（含两个新 job），随即把两条加进 required —— **现在 11 条**（`gh api` 实取回读） |
 | **B3** | CODEOWNERS 只**立归属**，没开「≥1 / ≥2 approve」规则 | 本仓只有**一个** collaborator（`Bert0000000000`）。GitHub 不允许作者批自己的 PR —— 开了 required review，**所有 PR 立刻不可合并**（包括人自己开的） | 加第二个评审人 / bot 账号后，再开规则集：普通路径 1 个、敏感路径 2 个（CODEOWNERS 已把敏感档分好） |
 | **B4** | 前端**单测**没进 required | `apps/web` 有一条**预存红**（`ProposalConfirmDrawer.test.tsx`，本批未触及）。把带预存红的套件设成 required = 冻结合并 | 修掉那条预存红（平台计划 Sprint 0 的 `MP-QA-BASELINE-01`）后把 `pnpm test:unit` 加进去 |
 | **B5** | `test_recovery.py::test_list_unfinished_reads_the_checkpoint_table_by_status` **在本批的某一次 CI 上红过一次**，本机连跑 3 次 + 后续 CI 均绿 | **判定为既有 flaky**（PG 共享 schema 的用例互相干扰：那条断言写的是"扫描结果 == `[]`"，隐含"这个 schema 里只有我这一轮"。它**不是本批引入的**——同一用例在本批早一轮 CI（head `5b7f5527`，已含 A-1/A-2/A-3/A-6 全部改动）是绿的 | 断言改成"按 `run_id` 过滤后再比"，别假设 schema 里只有自己。归 `MP-QA-BASELINE-01`（与 B4 同一处收口） |
@@ -211,7 +211,7 @@ cd mate-platform-backend && PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe cont
 | `9408d166` | 清 17 个前端文件的行尾空白（纯空白，`git diff -w` 为空） |
 | `77d40fac` → `7d3cf222` | 临时探针 → revert（§5.4 ③） |
 
-PR：[#59](https://github.com/Bert0000000000/MetaPlatform/pull/59)。
+PR：[#59](https://github.com/Bert0000000000/MetaPlatform/pull/59) —— **已合并**（`4e33e304`，2026-09-17）。
 
 ### 5.4 CI 实跑：门禁真的报了该报的东西
 
