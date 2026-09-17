@@ -53,7 +53,11 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
-CLUSTER_NAME="${CLUSTER_NAME:-mate-agent-team-ci}"
+#: **默认必须与 `agent_team_multi_replica.sh` 一致**。两边各自写死过一个名字
+#: （这里是 `mate-agent-team-ci`、那里是 `mate-agent-team-e2e`），于是文件头写的
+#: 那两步用法**照抄就报 `找不到 context kind-mate-agent-team-ci`**——脚本之间默认值
+#: 不一致比脚本本身坏掉更难发现，因为它只在"按文档老实做"的时候炸。
+CLUSTER_NAME="${CLUSTER_NAME:-mate-agent-team-e2e}"
 NAMESPACE="${NAMESPACE:-mate-agent-team}"
 RELEASE="${RELEASE:-agent-team}"
 CHART_DIR="${CHART_DIR:-infra/helm/charts/agent-team}"
@@ -183,9 +187,15 @@ note "  令牌长度 ${#TOKEN}"
 
 # ── 2. 选一台副本当"持有者"，run 直接打进它 ─────────────────────────────────
 log "2. 选受害副本（run 直接从它发起 → 租约必然是它的）"
+#: **必须限定 Running**：`component=superbrain` 这个标签也挂在 migrate / 沙箱 probe
+#: 那两个 **Job** 的 Pod 上，而它们跑完就是 `Completed`。不筛的话 `{.items[0]}` 很可能
+#: 选中一个已完成的 Job Pod，然后死在
+#: `cannot exec into a container in a completed pod`——下面 `run_status` 早就加了
+#: 这个筛选，这里漏了。
 VICTIM="$(kubectl -n "$NAMESPACE" get pods -l app.kubernetes.io/component=superbrain \
+  --field-selector=status.phase=Running \
   -o jsonpath='{.items[0].metadata.name}')"
-[[ -n "$VICTIM" ]] || die "没有 superbrain Pod"
+[[ -n "$VICTIM" ]] || die "没有 Running 的 superbrain Pod"
 note "  victim pod = ${VICTIM}"
 
 api() {  # api <pod> <method> <path> [body]

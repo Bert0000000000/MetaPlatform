@@ -113,7 +113,13 @@ if [[ "$BUILD_IMAGE" == "1" ]] || { [[ "$BUILD_IMAGE" == "auto" ]] && ! docker i
   echo "  构建 ${IMAGE}（context=${BUILD_CONTEXT}）"
   docker build -f "$DOCKERFILE" -t "$IMAGE" --build-arg "PIP_INDEX_URL=${PIP_INDEX_URL}" "$BUILD_CONTEXT"
 else
-  echo "  复用已存在的本地镜像 ${IMAGE}"
+  #: **把"复用了哪个镜像"打出来**，带上构建时刻。`auto` 的语义是"本地没有才建"，
+  #: 于是本地跑第二次时会**静默复用上一次的旧镜像**——而验证脚本最怕的就是这个：
+  #: 你以为在验当前源码，其实在验几小时前的。实测踩过一次（改完的 `start_rescanner`
+  #: 根本不在跑起来的镜像里，白白追了一轮"为什么没接管"）。
+  #: 要验当前源码就显式 `BUILD_IMAGE=1`。
+  echo "  复用已存在的本地镜像 ${IMAGE}（构建于 $(docker image inspect -f '{{.Created}}' "$IMAGE" 2>/dev/null））"
+  echo "  ⚠️  验当前源码请用 BUILD_IMAGE=1；否则你验的是这个时刻的镜像"
 fi
 if [[ "$LOAD_IMAGES" == "1" ]]; then
   load_image_into_node "$IMAGE"
