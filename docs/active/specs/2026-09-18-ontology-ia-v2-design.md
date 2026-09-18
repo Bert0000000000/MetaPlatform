@@ -227,7 +227,7 @@ Dashboard：从本体导航移除，`DashboardPage.tsx` 保留文件（最终归
 | `/ontology/ops/actions` | `/ontology/logic/designer` | 现挂 OntologyActionPage |
 | `/ontology/ops/governance` | `/ontology/governance/releases` | 现挂 GovernancePage |
 | `/ontology/ops` | `/ontology/governance/drafts` | 现为 OpsPage |
-| `/ontology/governance` | `/ontology/governance/releases` | 已 301 到 `/ontology/ops` |
+| `/ontology/governance`（裸组根） | `/ontology/governance/drafts` | 由组 index redirect 承接（不是退役路径）；旧 GovernancePage 语义经 `?tab=governance` 与 `/ontology/ops/governance` 两条退役路径保留（均指向 releases） |
 
 迁移要求：保留可安全迁移的 query（如 `?class=`、`?id=`）；旧路径至少保留一个
 发布周期，删除前记录命中次数。
