@@ -164,6 +164,70 @@ components:
             "假回执"，宁可让这一轮明确失败。
           items:
             $ref: "#/components/schemas/Artifact"
+        input_tokens:
+          type: integer
+          description: |
+            **输入** token 数（C-7 / `MP-OBSERVABILITY-DEEPEN-01`）。来自 llmgw
+            `chat/real` 回包的 `usage`，登录在 `LlmgwChatModel` 那一层。
+
+            **拿不到就是 0**，不是"没记"：外部执行面（`claude_code` /
+            `external_a2a`）的 token 若 CLI/对端不回报，这里就是 0——远端花的
+            token 本平台也拿不到，**不猜**。
+        output_tokens:
+          type: integer
+          description: "**输出** token 数（同上）。"
+        cached_tokens:
+          type: integer
+          description: |
+            **命中缓存**的 token 数（同上）。上游不报这个维度时恒为 0。
+        latency_ms:
+          type: integer
+          description: 这一件子任务的**墙钟耗时**（毫秒）。
+        llm_latency_ms:
+          type: integer
+          description: |
+            其中花在**模型调用**上的毫秒数。`superai` 是逐轮累加的真值；外部 CLI
+            只有"整段调用"一个粒度，所以整段都记在这里（`tool_latency_ms` 留 0）。
+        tool_latency_ms:
+          type: integer
+          description: |
+            其中花在**工具调用**上的毫秒数。与 `llm_latency_ms` **并列测量**，
+            **不是**"总 = 模型 + 工具"的拆解——模型轮次之间还有编排开销，硬凑成
+            加法会得到一个编出来的数。
+        runtime_kind:
+          type: string
+          enum: [superai, claude_code, external_a2a]
+          description: 跑它的执行面。**没有任何运行时跑过**的失败（如"声明的执行面都没装配"）为空串。
+        model:
+          type: string
+          description: |
+            这一件实际用的模型名。`superai` = 员工定义的模型；外部 CLI 只有在
+            配了 `--model` 时才有值，否则是 CLI 自己的默认，如实留空。
+        prompt_digest:
+          type: string
+          description: |
+            员工定义的**提示词摘要**（A-6 的 `prompt_digest_of`）。同一轮里两件
+            回执的它不同，就说明它们不是同一版员工跑的。
+        failure_category:
+          type: string
+          enum:
+            [
+              "",
+              profile_not_found,
+              depth_exceeded,
+              authority,
+              runtime_unavailable,
+              model_error,
+              tool_error,
+              invalid_output,
+              timeout,
+            ]
+          description: |
+            **低基数**的失败类别，供指标聚合；成功时为空串。
+
+            与 `error_code` 刻意分开：`error_code` 是给调用方分支用的（稳定、进
+            契约），`failure_category` 是给告警聚合用的。混成一套迟早要为一个
+            指标名去改对外契约。
     RunState:
       type: object
       required: [run_id, tenant_id, goal, status]
@@ -214,6 +278,16 @@ components:
           type: string
         error:
           type: string
+        trace_id:
+          type: string
+          description: |
+            **观测关联键**（C-7 / `MP-OBSERVABILITY-DEEPEN-01`）：开跑那一刻生成，
+            随 run 落检查点。于是跨层（`agent.run` / `plan` / `wave` / `subagent`
+            / `llm` / `tool` / `approval` / `artifact`）的观测记录靠它拼得回一次
+            交付，**重启后续跑**的那些记录也带着同一个 trace。
+
+            它是**关联键不是凭据**：拿到它只能把日志串起来，不能读任何东西。
+            老 run（C-7 之前落的检查点）读到空串。
         timeout_seconds:
           type: number
           description: |
@@ -371,6 +445,68 @@ components:
 
             生效值**随 run 落库**（见 `RunState.timeout_seconds` / `deadline_at`），
             服务重启后仍按本轮的值裁决。
+        conversation_id:
+          type: string
+          default: ""
+          description: |
+            发起这一轮的**会话 id**（C-1 / `MP-SESSION-RUN-LINK-01`）。给了就落
+            后端（`conversation_run` 表），于是换机器 / 清浏览器之后仍查得到
+            "这次对话里跑过哪几轮"（见 `GET /runs?conversation=`）。
+
+            **后端是唯一关系源**：前端那份 `localStorage` 只是缓存。省略则不起
+            这层关系——不是所有调用方都有会话（工作台直接起一轮、脚本、压测）。
+        turn_id:
+          type: string
+          default: ""
+          description: |
+            这一轮是会话里的**第几次发言**（调用方生成，用于把多轮排成时间序）。
+            仅在该轮有 `conversation_id` 时有意义。
+    ConversationRun:
+      type: object
+      required: [conversation_id, run_id]
+      properties:
+        conversation_id:
+          type: string
+        run_id:
+          type: string
+        turn_id:
+          type: string
+          default: ""
+        created_by:
+          type: string
+          default: ""
+          description: 发起者的 subject（取自令牌，不是请求体）
+        relation_type:
+          type: string
+          default: initiated
+          description: |
+            关系种类。当前只有 `initiated`（这一轮由该会话发起）；"被引用"是
+            另一种关系，出现时走契约新增。
+        created_at:
+          type: string
+          default: ""
+        status:
+          type: string
+          default: ""
+          description: |
+            该轮**此刻**的状态。它来自该轮自己的检查点（与 `GET /runs/{run_id}`
+            同一份事实），本表不复制 run 状态。读不到检查点（已受理、尚未落第一个
+            检查点）时为空串。
+        goal:
+          type: string
+          default: ""
+    RunList:
+      type: object
+      required: [conversation_id]
+      properties:
+        conversation_id:
+          type: string
+        items:
+          type: array
+          default: []
+          description: 该会话里的各轮 run，**新→旧**。
+          items:
+            $ref: "#/components/schemas/ConversationRun"
     ApproveRequest:
       type: object
       properties:
@@ -493,15 +629,20 @@ components:
         一件**产出物**的元数据（1.6 任务 2）。正文不在列表里——按
         `artifact_id` 走 `GET /artifacts/{artifact_id}` 另取。
 
-        落地存储是 **PG**（不是 MinIO）：租户隔离只有 PG 这条路是数据库强制的
-        （RLS），且"可寻址"要的主键 PG 直接给；产出物是 KB 级文本，对象存储的
-        强项用不上。理由全文见服务端 `artifact_store` 模块注释。
+        落地存储是 **PG**（不是 MinIO 作主存）：租户隔离只有 PG 这条路是数据库
+        强制的（RLS），且"可寻址"要的主键 PG 直接给；对象存储只作**大正文的外移
+        层**（见 `storage_uri`）。理由全文见服务端 `artifact_store` 模块注释。
+
+        **C-4 起它是"某一版"的元数据**：`(artifact_id, version)` 才是一个不可变
+        交付物。旧实现同地址 `ON CONFLICT DO UPDATE` 覆盖写，重跑一次就再也说
+        不出"第一次交付的是什么"。
       properties:
         artifact_id:
           type: string
           description: |
             产出物地址，形状 `{run_id 前 8 位}-{计划内标签}`。按运行唯一，所以
-            同一个员工在同一轮里的主交付物**只有一个地址**（重放不会攒出第二条）。
+            同一个员工在同一轮里的主交付物**只有一个地址**。跨轮重跑是不同地址；
+            版本化管的是**同一地址被写第二次**（图重放 / 续跑重派 / 工具重试）。
         run_id:
           type: string
         task_id:
@@ -521,7 +662,36 @@ components:
           description: 正文的媒体类型（当前恒为 `text/markdown`）
         size:
           type: integer
-          description: 正文的**字节数**
+          description: |
+            正文的**字节数**（原文的，不是 PG 里那一列的长度——正文外移后
+            `content` 为空，`size` 仍是原文大小）。
+        version:
+          type: integer
+          default: 1
+          description: |
+            这一版的版本号，首次交付 = 1。同一地址**内容变了**才 +1；内容没变的
+            重放是幂等的（不刷版本号）。
+        immutable_digest:
+          type: string
+          description: |
+            这一版正文的 sha256（十六进制）。行一旦落库不再重算——所以它既能验
+            "同一份内容"，也能检出"这行被改过正文"。
+        provenance:
+          type: string
+          description: 谁、按哪一版产出流程造的它（如 `agent-runtime/v1`）
+        security_classification:
+          type: string
+          description: |
+            密级标记。**只记录、不强制**：本服务不做访问策略判定，标记的强制由
+            后续 Marking 批次负责（见 2.1-C 边界登记）。
+        retention_policy:
+          type: string
+          description: 保留策略名（如 `7d`）。同上，只记录，不执行清理。
+        storage_uri:
+          type: string
+          description: |
+            正文外移后的对象存储地址；内联在 PG 时为空串。**没配 blob 客户端
+            时一律内联**（不会出现"地址有了、内容取不回"）。
         created_at:
           type: string
           description: 落库时刻（ISO8601）
@@ -582,6 +752,19 @@ components:
         model:
           type: string
           description: 该员工使用的模型（llmgw 侧的名字）
+        runtimes:
+          type: array
+          items:
+            type: string
+            enum: [superai, claude_code, external_a2a]
+          description: |
+            允许的**执行面**（ADR-0066 §5.8：「角色」与「运行时」是正交两轴）。
+            C-5（`MP-AGENT-PROFILE-MGMT-01`）起见得到的就是**库里那一列**的值——
+            配了 `claude_code` 的员工，重启后读回来仍是 `claude_code`。
+
+            省略 = `[superai]`（存量调用方的行为不变）。**不许静默切换 Runtime**：
+            陌生的名字是 422，不会落回默认——两个执行面的沙箱与权限假设不同
+            （外部 CLI 拿不到本仓的 `EnvelopeGate`）。
         origin:
           type: string
           description: builtin = 代码里的内置定义；instantiated = 本租户建出来的行
@@ -625,6 +808,15 @@ components:
             type: string
         model:
           type: string
+        runtimes:
+          type: array
+          items:
+            type: string
+            enum: [superai, claude_code, external_a2a]
+          description: |
+            这台员工允许跑在哪些执行面上（ADR-0066 §5.8）。省略 = `[superai]`。
+            **陌生值 422**（不静默回落默认）；**空数组同样 422**——空列表会被下游
+            当作"没声明"再回落默认，是同一种静默。
     SkillManifestEntry:
       type: object
       required: [skill_id, name]
@@ -717,6 +909,51 @@ paths:
       x-mate-owner: agent-product-layer
       x-mate-permission: agent-team.write
       x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMPOSTRUNS]
+      x-mate-implementation-status: implemented
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
+      summary: 列一个会话里的各轮 run（新→旧，后端是唯一关系源）
+      description: |
+        **C-1 / `MP-SESSION-RUN-LINK-01`**：会话与 run 的关系以前只写在浏览器
+        `localStorage`（`mp-agent-team-run:<会话id>` → run_id），换个机器就没了。
+        现在这条关系落在本服务的库里，本接口是它的唯一读法。
+
+        **为什么 `conversation` 是必填**：去掉它这个端点就变成"列出全租户的
+        run"，那既不是它的用途，也会把这个读路径的代价放大到不可控。要按租户
+        全量列 run 是另一个面（且需要分页），不在本批次。
+
+        **状态不在这里复制**：每一项的 `status` / `goal` 来自该轮自己的检查点，
+        与 `GET /runs/{run_id}` 是同一份事实、同一条读取路径（含超时裁决），
+        所以列表与详情不会各说各话。代价是 N 轮 = N 次检查点读，服务端因此有
+        条数上限。
+
+        租户取自**令牌**，不是查询参数：拿别的租户的 `conversation_id` 来查
+        只会查到空，不泄露"这个 id 存在过"。
+      tags: [agent-team]
+      operationId: agentTeamGetRuns
+      parameters:
+        - name: conversation
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: 会话 id（与 `POST /runs` 的 `conversation_id` 同一个值）
+      responses:
+        "200":
+          description: 该会话里的各轮 run，**新→旧**
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunList"
+        "422":
+          description: 缺少 `conversation` 查询参数
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements: [FR-AGENT-TEAM-AGENTTEAMGETRUNS]
       x-mate-implementation-status: implemented
   /api/v1/agent-team/runs/{run_id}:
     get:
@@ -977,9 +1214,13 @@ paths:
         - bearerAuth: []
           tenantHeader: []
           oidcScopes: [platform.read]
-      summary: 按 id 取回一件产出物的正文
+      summary: 按 id 取回一件产出物的正文（可按版本）
       description: |
         "可寻址、可取回"的取回那半边（1.6 任务 2）。
+
+        **C-4 起支持按版本取**：不带 `version` 取**最新**一版，带上就取那一版
+        ——"第一次交付的是什么"因此可以直接取回来验（`?version=1`），而不是只
+        能对着列表里的元数据相信它。
 
         跨租户与不存在同码 404：产出物的地址是**租户内**的地址，拿别人的 id 来取
         读不到，也不该读出"这个 id 存在过"。
@@ -991,6 +1232,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: version
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          description: 取哪一版。省略 = 取最新一版。
       responses:
         "200":
           description: 产出物元数据 + 正文

@@ -11,6 +11,7 @@ Write handlers emit `<domain>.<aggregate>.<verb>` outbox events via
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import time
@@ -46,6 +47,11 @@ from ..agent_loop import DISPATCH_TOOL_SCHEMA, run_agent_loop
 from ..clients import AsyncCopilotClient
 from ..clients.llmgw_stream import LlmgwStreamClient, LlmgwStreamError
 from ..clients.orchestrator_client import OrchestratorClient, OrchestratorClientError
+from ..context_envelope import (
+    envelope_summary,
+    parse_envelope,
+    render_marker,
+)
 from ..dispatcher import (
     dispatch_by_routing,
     make_embedding_match_handler,
@@ -73,7 +79,27 @@ from ..repositories import (
 )
 from ..repositories.sql_models import ConversationORM, MessageORM
 
+logger = logging.getLogger("metaplatform.copilot.api")
+
 router = APIRouter(prefix="/api/v1/copilot", tags=["copilot"])
+
+
+def _append_to_system_message(messages: list[dict[str, Any]], marker: str) -> list[dict[str, Any]]:
+    """把一段标记挂到 system 消息上（没有 system 就现造一条）。
+
+    会话上下文与交互上下文原本各写了一遍这段逻辑，逐字相同——抽出来是因为两处
+    必须**同一个形状**：谁先谁后、挂在哪条消息上，都是 prompt 的一部分，两份实现
+    漂移就会出现"会话标记挂了、上下文标记没挂"这类只在某些请求上发生的差异。
+    """
+    if not marker:
+        return messages
+    if messages and messages[0].get("role") == "system":
+        return [
+            {**messages[0], "content": messages[0].get("content", "") + marker},
+            *messages[1:],
+        ]
+    return [{"role": "system", "content": marker.strip()}, *messages]
+
 
 _COPILOT_STREAM_MAX_MESSAGE_BYTES = 1_000_000
 _PROMPT_LEAK_SAFE_MESSAGE = "抱歉，无法提供内部系统指令。"
@@ -145,6 +171,19 @@ def _mark_deprecated(response: Response) -> None:
     response.headers["Deprecation"] = "true"
     response.headers["X-Sunset"] = "2026-12-31"
     response.headers["X-Migrated-To"] = "/api/v1/orchestrator/scheduling/*"
+
+
+#: C-3 / `MP-LEGACY-SUNSET-01`：agent loop 的退役标记。用**标准头**
+#: （RFC 9745 `Deprecation` / RFC 8594 `Sunset` / RFC 8288 `Link`），另加一个
+#: 本项目自己的 `X-Sunset-Version` —— 平台的退役节奏是按**发布版本**排的
+#: （计划里 `MP-LEGACY-SUNSET-01` 落在 S6），只给日期说不清"哪个版本之后没有"。
+_LEGACY_AGENT_LOOP_HEADERS = {
+    "Deprecation": "true",
+    "Sunset": "Thu, 31 Dec 2026 23:59:59 GMT",
+    "Link": '</api/v1/agent-team/runs>; rel="successor-version"',
+    "X-Sunset-Version": "2.2",
+    "X-Migrated-To": "/api/v1/agent-team/runs",
+}
 
 
 def _uid(request: Request) -> str:
@@ -2359,10 +2398,30 @@ async def chat_agent_stream(
     request: Request,
     body: dict = Body(...),
 ) -> StreamingResponse:
-    """SuperAI agent loop: LLM decides → orchestrator dispatch → feed back.
+    """**Legacy（C-3 / `MP-LEGACY-SUNSET-01`）**：SuperAI agent loop。
 
-    Streams OpenAI-style SSE with extra typed events so the frontend can
-    render the scheduling process in real time:
+    ⚠️ **这条不是 Agent 主线了。** 2.1-C 把两条并行的 Agent 链路收敛成一条：
+
+    ```
+    旧（本端点）  chat/agent/stream  → agent loop → orchestrator dispatch 派活
+    新（主线）    POST /api/v1/agent-team/runs → Conversation → AgentRun →
+                  Runtime → Task/ToolInvocation → Evidence/Proposal/Artifact
+    ```
+
+    收敛的依据不是"新的更时髦"，而是**两套执行真相**：本端点把调度状态散在 SSE
+    事件里（前端各自拼），而 agent-team 的 Run 是落库的、可恢复、可审计、有证据与
+    交付物的一条链。同时留着两套，用户看到的"Agent 在干什么"就有两个互相矛盾的
+    来源——这正是 `MetaPlatform-调整优化方案执行计划-2026-09-17.md` §17 第 3 条
+    禁的事（"不让两个系统同时成为同一状态的权威来源"）。
+
+    **保留期**：本端点**不删**，只加弃用标记（响应头 + 契约 `deprecated`）。
+    退役版本 **2.2**；条件与迁移路径见
+    `docs/active/delivery/evidence/MP-LEGACY-SUNSET-01-AGENT-LOOP.md`。
+
+    **留下来的那条轻量问答**是 `POST /chat/completions/stream`（不派活、不调度、
+    直接问答）——它是刻意保留的，不属于本次退役对象。
+
+    Streams OpenAI-style SSE with extra typed events:
 
       {"type": "reasoning", "text": ...}            — LLM 思考
       {"type": "tool_call",  callId, tool, args}    — 正在调度数字员工
@@ -2413,39 +2472,21 @@ async def chat_agent_stream(
             f"- tenant_id: {tid}\n"
             "- 调度数字员工时，将 session_id 作为 audit / 沙箱关联键。"
         )
-        if messages and messages[0].get("role") == "system":
-            messages = [
-                {**messages[0], "content": messages[0].get("content", "") + marker},
-                *messages[1:],
-            ]
-        else:
-            messages = [{"role": "system", "content": marker.strip()}, *messages]
+        messages = _append_to_system_message(messages, marker)
 
-    # 交互上下文（本体助手等宿主页面传入）：把当前页面与主体对象告诉 LLM，
-    # 让「这个对象最近怎么样」这类指代能落到具体对象上。缺字段不编造。
-    interaction_context = body.get("context")
-    if isinstance(interaction_context, dict) and interaction_context:
-        context_lines = ["\n\n[Interaction Context]"]
-        page = interaction_context.get("interaction")
-        if isinstance(page, dict):
-            for key in ("appCode", "pageCode", "pageUrl"):
-                if page.get(key):
-                    context_lines.append(f"- {key}: {page[key]}")
-        subject = interaction_context.get("subject")
-        if isinstance(subject, dict):
-            if subject.get("conceptCode"):
-                context_lines.append(f"- subject_concept: {subject['conceptCode']}")
-            if subject.get("objectId"):
-                context_lines.append(f"- subject_object_id: {subject['objectId']}")
-        if len(context_lines) > 1:
-            marker = "\n".join(context_lines)
-            if messages and messages[0].get("role") == "system":
-                messages = [
-                    {**messages[0], "content": messages[0].get("content", "") + marker},
-                    *messages[1:],
-                ]
-            else:
-                messages = [{"role": "system", "content": marker.strip()}, *messages]
+    # 交互上下文（ADR-0065 / `MP-CONTEXT-AWARE-01` S1）：宿主页面把"现在在看什么、
+    # 选中了什么"交给 agent，让「这个对象最近怎么样」这类**指代**落到具体 RID 上。
+    #
+    # 解析与渲染在 `context_envelope`（那里有 R1/R2/R3 三条不变量的实现与理由）：
+    # 自由文本消毒截断、未知键丢弃并记审计、陈旧选中态显式标注、超长按层裁剪、
+    # 以及**只带兼容键时逐字节等价**的旧渲染。这里只负责"解析 → 挂到 system 上"。
+    envelope = parse_envelope(body.get("context"))
+    marker = render_marker(envelope)
+    if marker:
+        logger.info(
+            "copilot.context %s", json.dumps(envelope_summary(envelope), ensure_ascii=False)
+        )
+        messages = _append_to_system_message(messages, marker)
 
     llmgw_host = os.getenv("MATE_LLMGW_HOST", "mate-tech-llmgw")
     llmgw_port = int(os.getenv("MATE_LLMGW_PORT", "8008"))
@@ -2721,4 +2762,8 @@ async def chat_agent_stream(
             except Exception:
                 pass
 
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers=dict(_LEGACY_AGENT_LOOP_HEADERS),
+    )

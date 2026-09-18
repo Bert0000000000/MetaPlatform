@@ -4,12 +4,24 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/utils/auth', () => ({ getToken: () => 'test-token' }));
 
 const postMock = vi.fn();
+const getMock = vi.fn();
+const putMock = vi.fn();
 vi.mock('./client', () => ({
-  get: vi.fn(),
+  get: (...args: unknown[]) => getMock(...args),
   post: (...args: unknown[]) => postMock(...args),
+  put: (...args: unknown[]) => putMock(...args),
 }));
 
-import { newIdempotencyKey, startRun, streamRunEvents, type RunStep } from './agentTeam';
+import {
+  listConversationRuns,
+  listProfiles,
+  newIdempotencyKey,
+  startRun,
+  streamRunEvents,
+  updateProfileRuntimes,
+  type EmployeeProfile,
+  type RunStep,
+} from './agentTeam';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -196,11 +208,123 @@ describe('startRun', () => {
     const [, , , headers] = postMock.mock.calls[0] as [unknown, unknown, unknown, unknown];
     expect(headers).toBeUndefined();
   });
+
+  it('带会话 id 时把 conversation_id / turn_id 交给后端（C-1 的关系落库入口）', async () => {
+    postMock.mockResolvedValue({ run_id: 'r', tenant_id: 't', status: 'running', deduplicated: false });
+
+    await startRun('目标', 3, 'key-1', 'conv-1', 'turn-1');
+
+    const [, body] = postMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(body).toMatchObject({ conversation_id: 'conv-1', turn_id: 'turn-1' });
+  });
+
+  it('不给会话时**不**发空串字段 —— 空串会被后端当成"有会话"', async () => {
+    postMock.mockResolvedValue({ run_id: 'r', tenant_id: 't', status: 'running', deduplicated: false });
+
+    await startRun('目标');
+
+    const [, body] = postMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(body).not.toHaveProperty('conversation_id');
+    expect(body).not.toHaveProperty('turn_id');
+  });
+});
+
+describe('listConversationRuns', () => {
+  it('按 conversation 查后端，把 items 交出来（后端是唯一关系源）', async () => {
+    const items = [
+      { conversation_id: 'conv-1', run_id: 'run-2', turn_id: 't2', status: 'completed', goal: 'b' },
+      { conversation_id: 'conv-1', run_id: 'run-1', turn_id: 't1', status: 'failed', goal: 'a' },
+    ];
+    getMock.mockResolvedValue({ conversation_id: 'conv-1', items });
+
+    const out = await listConversationRuns('conv-1');
+
+    expect(getMock).toHaveBeenCalledWith('/agent-team/runs', { conversation: 'conv-1' });
+    expect(out.map((r) => r.run_id)).toEqual(['run-2', 'run-1']); // 新→旧，原样透传
+  });
+
+  it('没有会话 id 就**不问**后端 —— 那会变成"列全租户的 run"', async () => {
+    const out = await listConversationRuns('');
+
+    expect(out).toEqual([]);
+    expect(getMock).not.toHaveBeenCalled();
+  });
+
+  it('后端没给 items 时不炸，回空数组', async () => {
+    getMock.mockResolvedValue({ conversation_id: 'conv-1' });
+
+    expect(await listConversationRuns('conv-1')).toEqual([]);
+  });
 });
 
 describe('newIdempotencyKey', () => {
   it('每次都不一样 —— 不然两次提交会被当成同一轮', () => {
     const keys = new Set(Array.from({ length: 50 }, () => newIdempotencyKey()));
     expect(keys.size).toBe(50);
+  });
+});
+
+describe('listProfiles / updateProfileRuntimes', () => {
+  const base: EmployeeProfile = {
+    profile_id: 'EMP-ANALYST',
+    name: '数据分析师',
+    base_role: 'ontology',
+    system_prompt: '你是数据分析师。',
+    skills: ['sk-order-anomaly'],
+    tools: ['ont_object_query'],
+    action_rids: ['ont.acme.action.1'],
+    kb_ids: ['kb-1'],
+    markings: ['internal'],
+    model: 'glm-5.3-flash',
+    runtimes: ['superai'],
+  };
+
+  it('列员工：交回来的是那一串 profiles', async () => {
+    getMock.mockResolvedValue({ profiles: [base] });
+    expect(await listProfiles()).toEqual([base]);
+    expect(getMock).toHaveBeenCalledWith('/agent-team/profiles');
+  });
+
+  it('改执行面：**整份定义**回传，不能只发 runtimes', async () => {
+    // 这是 PUT/upsert 不是 patch——只发 runtimes 会把提示词、技能、工具白名单、
+    // 权限包络全清空。这条用例钉的就是"没漏字段"。
+    putMock.mockResolvedValue({ ...base, runtimes: ['superai', 'claude_code'] });
+
+    const saved = await updateProfileRuntimes(base, ['superai', 'claude_code']);
+
+    expect(saved.runtimes).toEqual(['superai', 'claude_code']);
+    const [url, body] = putMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(url).toBe('/agent-team/profiles/EMP-ANALYST');
+    expect(body).toMatchObject({
+      profile_id: 'EMP-ANALYST',
+      name: '数据分析师',
+      base_role: 'ontology',
+      system_prompt: '你是数据分析师。',
+      skills: ['sk-order-anomaly'],
+      tools: ['ont_object_query'],
+      action_rids: ['ont.acme.action.1'],
+      kb_ids: ['kb-1'],
+      markings: ['internal'],
+      model: 'glm-5.3-flash',
+      runtimes: ['superai', 'claude_code'],
+    });
+  });
+
+  it('老数据没有 runtimes 字段时补空数组，而不是 undefined', async () => {
+    // 后端把 undefined 当"没给"→ 回落默认值，那正是"静默切换"的一种。
+    // 明确发空数组，语义是"这个人一个执行面都没配"。
+    const legacy = { ...base } as EmployeeProfile;
+    delete legacy.runtimes;
+    putMock.mockResolvedValue(base);
+
+    await updateProfileRuntimes(legacy, []);
+
+    const [, body] = putMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(body.runtimes).toEqual([]);
+  });
+
+  it('后端的拒绝原样抛出去（不许静默回落）', async () => {
+    putMock.mockRejectedValue(new Error('E_INVALID_RUNTIME'));
+    await expect(updateProfileRuntimes(base, ['not-a-runtime'])).rejects.toThrow('E_INVALID_RUNTIME');
   });
 });

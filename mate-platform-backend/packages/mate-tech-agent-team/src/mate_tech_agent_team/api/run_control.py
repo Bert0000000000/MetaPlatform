@@ -61,6 +61,7 @@ import logging
 import os
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
+from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import Protocol
 from uuid import uuid4
@@ -73,6 +74,12 @@ from ..brain import (
 )
 from ..checkpoint import SCHEMA as CHECKPOINT_SCHEMA
 from ..checkpoint import UnfinishedRun, list_unfinished
+from ..conversation_link import (
+    RELATION_INITIATED,
+    ConversationRuns,
+    InMemoryConversationRuns,
+    PgConversationRuns,
+)
 from ..coordination import (
     CancelSignals,
     InMemoryCancelSignals,
@@ -96,6 +103,7 @@ from ..run_lease import (
     RunLease,
     RunLeases,
     TakeoverDecision,
+    configured_heartbeat_grace,
     configured_heartbeat_interval,
     configured_lease_ttl,
     decide_takeover,
@@ -108,6 +116,39 @@ logger = logging.getLogger("metaplatform.agent_team.run_control")
 
 #: 运行级超时的默认值（秒）。0 = 不设超时：不是所有部署都想让长跑的计划自己过期。
 DEFAULT_TIMEOUT_ENV = "MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS"
+
+#: ``GET /runs?conversation=`` 一次最多回多少轮。列表里每一轮都要读一次检查点
+#: （见 :meth:`RunControl.runs_in_conversation`），所以这个数同时是那次请求的
+#: 检查点读次数上限。取 200：会话页要显示的历史轮次远小于它，而真正的"我要
+#: 全量"应该走别的面。
+MAX_CONVERSATION_RUNS = 200
+
+#: **周期接管扫描**的间隔（秒）。0 = 关闭（单进程/测试形态的默认）。
+#:
+#: 为什么需要它：``recover()`` 以前**只在进程启动时跑一次**。多副本下这意味着
+#: 副本 A 被杀之后，幸存的 B、C **永远不会**重新扫——它们在启动那一刻扫过，
+#: 之后就再没看过。真集群实测（`scripts/ci/agent_team_pod_kill_takeover.sh`）：
+#: 杀进程后 **166 秒内零接管**，epoch 一直是 1，检查点冻住；只有人为
+#: `rollout restart`（让某个进程重新走启动扫描）才在 5.2 秒内接管成功。
+#: 也就是说"30 秒内被接管"这条判据当时**物理上不可能成立**——不是机制不对，
+#: 是没人去看。
+#:
+#: 间隔取值：要显著小于接管窗口，否则扫描本身就吃掉预算。默认 10s 时，
+#: TTL 之内死掉的 run 会在**下一个扫描点**被接管，最坏 ≈ TTL + 间隔。
+RESCAN_ENV = "MATE_AGENT_TEAM_RESCAN_SECONDS"
+DEFAULT_RESCAN_SECONDS = 10.0
+
+
+def configured_rescan_interval() -> float:
+    """周期扫描间隔（秒）。坏配置回默认，**不关掉接管**——静默关掉是最坏的方向。"""
+    raw = os.getenv(RESCAN_ENV, "")
+    if not raw:
+        return DEFAULT_RESCAN_SECONDS
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        return DEFAULT_RESCAN_SECONDS
+
 
 #: 建表用的 admin DSN。启动扫描要跨租户读检查点表（见 :class:`PgRunIndex`），
 #: 而检查点表的 RLS 是 fail-closed —— 拿 app 角色读只会"一行都扫不到"。
@@ -270,6 +311,7 @@ class RunControl:
         leases: RunLeases | None = None,
         tool_ledger: ToolLedger | None = None,
         run_events: RunEventStore | None = None,
+        conversations: ConversationRuns | None = None,
         step_reader: Callable[[str, str], Awaitable[str]] | None = None,
         instance_id: str = "",
         lease_ttl: float | None = None,
@@ -278,6 +320,7 @@ class RunControl:
         event_retention: float | None = None,
         event_fallback_poll: float | None = None,
         cancel_wait: float | None = None,
+        rescan_interval: float = 0.0,
     ) -> None:
         self._service = service
         self._default_timeout = default_timeout
@@ -304,6 +347,12 @@ class RunControl:
         #: 检查点"的老路径，单副本 / 不接 PG 的形态与加它之前逐字一致（唯一差别
         #: 是断线重连现在也按 ``Last-Event-ID`` 补发，那是纯改进）。
         self._run_events: RunEventStore | None = run_events
+        #: 会话 ↔ run 关系（C-1）。**后端是唯一关系源**：不给就是进程内实现，
+        #: 单副本与测试行为一致；多副本与重启下的一致性由 ``from_env`` 按 DSN
+        #: 装配 PG 实现给出。它只记"哪一轮属于哪次对话"，不记 run 状态。
+        self._conversations: ConversationRuns = (
+            conversations if conversations is not None else InMemoryConversationRuns()
+        )
         self._event_retention = (
             event_retention if event_retention is not None else configured_retention()
         )
@@ -312,6 +361,10 @@ class RunControl:
         )
         #: 取消受理后等本进程那一轮停下的上限（B-3）。0 = 立刻回 ``cancelling``。
         self._cancel_wait = cancel_wait if cancel_wait is not None else configured_cancel_wait()
+        #: 周期接管扫描的间隔（秒）。0 = 不开（默认）——**显式开**是有意的：
+        #: 单进程/测试形态下多一个后台循环只是噪音，而"接管"本来就只有多副本
+        #: 才需要。生产由 ``from_env`` 按配置打开（见 :meth:`start_rescanner`）。
+        self._rescan_interval = max(0.0, rescan_interval)
         #: 读"检查点走到哪了"的函数。心跳用它续租，接管判定用它比"有没有进展"。
         #: 不给就留空串——那时"检查点未进展"这条判据退化成"不比"，如实记在
         #: :func:`~mate_tech_agent_team.run_lease.decide_takeover` 的注释里。
@@ -329,6 +382,8 @@ class RunControl:
         #: 后台任务的强引用。受理制之后"跑"在请求之外，引用丢了会被 GC 掉，
         #: 表现为这一轮**静默**停在半路——没有任何报错。
         self._tasks: set[asyncio.Task[None]] = set()
+        #: 周期接管扫描的后台任务（见 :meth:`start_rescanner`）。None = 没开。
+        self._rescan_task: asyncio.Task[None] | None = None
 
     @property
     def instance_id(self) -> str:
@@ -364,8 +419,15 @@ class RunControl:
             claims=PgRunClaims(dsn, schema=CHECKPOINT_SCHEMA, ttl=ttl) if dsn else None,
             leases=PgRunLeases(dsn, schema=CHECKPOINT_SCHEMA) if dsn else None,
             run_events=PgRunEvents(dsn, schema=CHECKPOINT_SCHEMA) if dsn else None,
+            conversations=PgConversationRuns(dsn, schema=CHECKPOINT_SCHEMA) if dsn else None,
             tool_ledger=tool_ledger,
             step_reader=step_reader,
+            # 心跳宽限**必须跟着 TTL 一起配**：固定 30 会把"想更快接管"的部署
+            # 反过来卡住（见 ``configured_heartbeat_grace``）。
+            heartbeat_grace=configured_heartbeat_grace(),
+            # 周期接管扫描（见 :meth:`start_rescanner`）：生产**默认开**，
+            # 因为"只有启动时扫一次"正是接管不成立的根因。
+            rescan_interval=configured_rescan_interval(),
         )
 
     def _cancel_check(self, *, tenant_id: str, run_id: str) -> Callable[[], Awaitable[bool]]:
@@ -391,6 +453,9 @@ class RunControl:
         max_parallel: int | None = None,
         timeout_seconds: float | None = None,
         idempotency_key: str = "",
+        conversation_id: str = "",
+        turn_id: str = "",
+        created_by: str = "",
     ) -> dict:
         """**受理**一轮运行并立刻回话（1.7 任务 1）：图在后台跑。
 
@@ -404,6 +469,10 @@ class RunControl:
         2. **认领**（``_live``）—— 图要在自己开跑前拿到取消标志的读取函数，而
            那个函数按 run_id 索引；执行中的它因此落在取消范围内（1.5 任务 1）。
         3. **截止时间** —— 在这里定下，由服务层连同绝对截止时刻写进状态。
+
+        带 ``conversation_id`` 时**先落关系再往下走**（C-1）：下面几条去重路径
+        都会提前 return，把关联放在它们之前，才能保证"回执里那个 run_id 一定能
+        从这个会话查到"。关联本身幂等，重复提交不会攒出第二条。
 
         **幂等的三道**（1.9 任务 3 补齐第三道）：
 
@@ -420,6 +489,18 @@ class RunControl:
         ``deduplicated``。
         """
         run_id = run_id_for(tenant_id, idempotency_key) if idempotency_key else uuid4().hex
+        if conversation_id:
+            # C-1：会话 ↔ run 落后端。这一步**没有**放在图跑起来之后——图上跑着
+            # 的 run 才是最难补记的那种，而这里的失败会让整个 submit 抛出去，
+            # 是刻意的：记不下关系就不该假装受理成功。
+            await self._conversations.link(
+                tenant_id=tenant_id,
+                conversation_id=conversation_id,
+                run_id=run_id,
+                turn_id=turn_id,
+                created_by=created_by,
+                relation_type=RELATION_INITIATED,
+            )
         if (tenant_id, run_id) in self._live:
             # 同一轮正在跑（受理回执还没摘牌）——不能再起一轮。
             return _accepted(tenant_id, run_id, deduplicated=True)
@@ -608,6 +689,60 @@ class RunControl:
             claimed.append(run.run_id)
         return claimed
 
+    # -- 周期接管扫描 -------------------------------------------------------
+
+    def start_rescanner(self) -> bool:
+        """开一个后台循环，**周期性**跑 :meth:`recover`。返回是否真的开了。
+
+        没有它，"接管"在多副本下是一条**只跑一次**的路径：每个副本在启动时扫一遍，
+        之后再也不看。于是副本 A 被杀时，幸存的 B、C 谁都不会发现——真集群实测
+        （`scripts/ci/agent_team_pod_kill_takeover.sh`）**166 秒零接管**，只有人为
+        重启某个进程才触发接管。判据写着"30 秒内被接管"，而代码里根本没有那个
+        30 秒内的观察者。
+
+        三条刻意的取舍：
+
+        1. **不做成定时器式的"到点落终态"**——那是 :meth:`refresh` 的活，且那条
+           路刻意用惰性裁决（定时器在进程重启后消失，会制造"有时管用"的错觉）。
+           这里做的是**定时观察**：它错过一次，下一个周期还会看，不会造成语义漂移。
+        2. **扫不动不炸**：索引查不动只记一条日志，下一个周期再试。观测挂掉不该
+           让服务挂掉（与 observability 同一条失败方向）。
+        3. **只在配了 run_index 时开**：没有索引就没有"别处的 run"可接管，开了是
+           纯空转。
+        """
+        if self._rescan_interval <= 0 or self._run_index is None:
+            return False
+        if self._rescan_task is not None and not self._rescan_task.done():
+            return True
+        self._rescan_task = asyncio.create_task(self._rescan_loop())
+        return True
+
+    async def stop_rescanner(self) -> None:
+        """停掉周期扫描（幂等）。"""
+        task = self._rescan_task
+        self._rescan_task = None
+        if task is None or task.done():
+            return
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+    async def _rescan_loop(self) -> None:
+        while True:
+            await asyncio.sleep(self._rescan_interval)
+            try:
+                claimed = await self.recover()
+                if claimed:
+                    logger.info(
+                        "agent_team.rescan.claimed",
+                        extra={"count": len(claimed), "run_ids": claimed},
+                    )
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                # 一个周期扫不动不代表永远扫不动——记下来，下个周期再来。
+                logger.exception("周期接管扫描这一轮失败（下一个周期重试）")
+
     async def prune_events(self, *, tenant_id: str) -> int:
         """清掉本租户过期的 Run 事件（B-2 的保留期）。返回删掉的行数。
 
@@ -667,7 +802,11 @@ class RunControl:
         取消**不落终态**：这一轮会在新进程启动时被扫描认领、接着跑。所以这里
         刻意不去写 ``cancelled``——把"进程要走了"记成"运行被取消了"是两个概念，
         后者会让重启前的每一轮都凭空消失。
+
+        顺序有意：**先停周期扫描**，再拆在途任务。反过来的话，扫描可能在拆任务的
+        同时把刚被取消的 run 又认领回来一次。
         """
+        await self.stop_rescanner()
         tasks = list(self._tasks)
         for task in tasks:
             task.cancel()
@@ -923,6 +1062,47 @@ class RunControl:
             return {**state, "status": CANCELLING}
         return state
 
+    @property
+    def conversations(self) -> ConversationRuns:
+        """会话 ↔ run 关系面（``GET /runs?conversation=`` 读的就是它）。"""
+        return self._conversations
+
+    async def runs_in_conversation(
+        self, *, tenant_id: str, conversation_id: str, limit: int = MAX_CONVERSATION_RUNS
+    ) -> list[dict]:
+        """一个会话里的各轮 run（**新→旧**），每项 = 关系字段 + 该轮状态。
+
+        **状态仍走 :meth:`refresh`**，不另读一份——列表视图与单轮视图必须看到
+        同一个状态，否则"列表说 running、点进去说 timeout"就成了第二个真相。
+        代价是 N 轮 = N 次检查点读，所以有 ``limit``：会话页一次要显示的历史轮次
+        是十数量级，超过这个数说明调用方在做别的事。
+
+        关联指向的 run 在检查点里读不到时（受理了但还没落第一个检查点，或这一轮
+        从来没跑起来）**照样出这一项**，``status`` 留空——关系是真的，把它藏起来
+        反而会让"我明明发起过这一轮"变成一个无法解释的现象。
+        """
+        if not tenant_id or not conversation_id:
+            return []
+        links = await self._conversations.by_conversation(tenant_id, conversation_id)
+        if limit > 0:
+            links = links[-limit:]  # 新→旧取最近 limit 条，读检查点的次数随之封顶
+        rows: list[dict] = []
+        for link in links:
+            state: dict = {}
+            try:
+                state = await self.refresh(tenant_id=tenant_id, run_id=link.run_id)
+            except RunNotFound:
+                state = {}
+            rows.append(
+                {
+                    **link.to_dict(),
+                    "status": str(state.get("status", "")),
+                    "goal": str(state.get("goal", "")),
+                }
+            )
+        rows.reverse()  # 会话页要的次序是"最近一轮在最上面"
+        return rows
+
     async def _archive_signal(self, *, tenant_id: str, run_id: str) -> None:
         """归档一格取消信号（**只在终态之后调**，见 :meth:`refresh`）。"""
         try:
@@ -1101,10 +1281,14 @@ __all__ = [
     "CONTROL_DSN_ENV",
     "DEFAULT_POLL_INTERVAL",
     "DEFAULT_READY_TIMEOUT",
+    "DEFAULT_RESCAN_SECONDS",
     "DEFAULT_TIMEOUT_ENV",
+    "MAX_CONVERSATION_RUNS",
+    "RESCAN_ENV",
     "RESUMABLE_STATUSES",
     "PgRunIndex",
     "RunControl",
     "RunIndex",
+    "configured_rescan_interval",
     "run_id_for",
 ]

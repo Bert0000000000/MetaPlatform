@@ -76,6 +76,8 @@ helm template agent-team . | grep -A1 'kind: Deployment' -A3 | grep replicas
 | `config.gatewayUrl`                                | string | `"http://mate-api-gateway:8100"` | 网关地址                                                   |
 | `config.poolMax`                                   | string | `"8"`                  | B-5：PG 连接池上限（0 = 不池化）                                     |
 | `config.leaseTtlSeconds`                           | string | `"30"`                 | B-1：租约 TTL（秒）                                                  |
+| `config.rescanSeconds`                             | string | `"10"`                 | 2.1-C：周期接管扫描间隔（秒）；0 = 关。只扫一次多副本下没人发现孤儿 run |
+| `config.heartbeatGraceSeconds`                     | string | `""`                   | 2.1-C："心跳已停"宽限；**留空 = 跟随 TTL**（只调 TTL 不调它会被反过来压住） |
 | `config.gateRequiredRoles`                         | string | `""`                   | B-6：HITL 闸门层级（逗号分隔）；留空 = 单级任意角色                  |
 | `config.gateRequiredApprovals`                     | string | `"1"`                  | B-6：每级需要的不同审批人数（>1 = 会签）                             |
 | `secretRef.name`                                   | string | `"agent-team-secret"`  | 装着两个 DSN、控制面 DSN 与 SERVICE_CLIENT_SECRET 的 Secret          |

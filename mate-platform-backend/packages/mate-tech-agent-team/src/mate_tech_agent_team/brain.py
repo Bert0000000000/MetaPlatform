@@ -43,6 +43,7 @@ from .checkpoint import thread_id_for
 from .delegated_identity import DelegationIssuer, UnconfiguredIssuer
 from .delegation import DELEGATION_STATE_KEY, RunDelegation, configured_ttl
 from .graph import build_brain_graph
+from .observability import SPAN_APPROVAL, Correlation, SpanRecorder, emit
 from .planner import Planner
 from .retry import RetryPolicy
 from .runtime import EmployeeRuntime
@@ -141,10 +142,14 @@ class BrainService:
         audit: AuditSink | None = None,
         retry_policy: RetryPolicy | None = None,
         delegation_issuer: DelegationIssuer | None = None,
+        recorder: SpanRecorder | None = None,
     ) -> None:
         self._planner_for = planner_for
         self._runtime_for = runtime_for
         self._checkpointer = checkpointer
+        #: C-7 观测记录器。**默认 ``None`` = 不记**：既有 500+ 用例不注入它，
+        #: 行为因此与加这一批之前逐字一致（观测只加记录，不改任何判定）。
+        self._recorder = recorder
         #: 派活闸门：**派活的唯一入口**（包络衰减 + 深度闸门 + 越权转提案）。
         #: 刻意没有默认值——漏接它，闸门就退回空转，而且不会有任何报错。
         self._team_bus = team_bus
@@ -184,6 +189,7 @@ class BrainService:
             max_parallel=max_parallel,
             should_cancel=should_cancel,
             retry_policy=self._retry_policy,
+            recorder=self._recorder,
         )
 
     async def start(
@@ -239,6 +245,9 @@ class BrainService:
                     # 受理的那一刻起这一轮就已经在跑了（1.7 任务 1）：先落一个
                     # ``running``，别让"已受理"和"查不到"之间有个空窗期。
                     "status": RUNNING,
+                    # C-7：这一轮的观测关联键。**随状态落检查点**，所以续跑/多副本
+                    # 写下的 span 与最初那几波用的是同一个 trace。
+                    "trace_id": uuid4().hex,
                     "timeout_seconds": timeout,
                     "deadline_at": deadline_at,
                     DELEGATION_STATE_KEY: delegation.as_state(),
@@ -395,6 +404,22 @@ class BrainService:
                 # B-6：把闸门的结论一并记下——审批中心只看审计也能答"还差几级"。
                 "gate": outcome.to_dict() if outcome is not None else {},
                 "comment": comment,
+            },
+        )
+        # C-7：闸门的**决定**也留一条 span（``gate`` 节点那条记的是"闸门建起来了"）。
+        # 一条记录只有 tenant/run/trace 三个键——审批是 run 级的动作，没有子任务。
+        emit(
+            self._recorder,
+            SPAN_APPROVAL,
+            correlation=Correlation(
+                tenant_id=tenant_id, run_id=run_id, trace_id=str(out.get("trace_id") or "")
+            ),
+            name=gate_now.gate_type if gate_now is not None else "plan_gate",
+            status="approved" if approved else "rejected",
+            attributes={
+                "gateType": gate_now.gate_type if gate_now is not None else "plan_gate",
+                "roles": list(approver_roles),
+                "gateState": outcome.state if outcome is not None else "",
             },
         )
         return dict(out)

@@ -1,0 +1,456 @@
+{
+  "report_version": "golden-report/v1",
+  "dataset": {
+    "version": "golden/v1",
+    "created_at": "2026-09-18",
+    "tenant_id": "tenant-default"
+  },
+  "started_at": "2026-09-17T17:28:11+00:00",
+  "finished_at": "2026-09-17T17:42:14+00:00",
+  "provider_probe": {
+    "summary": "5 名员工：EMP-ANALYST、EMP-AUDITOR、EMP-RESEARCHER、EMP-E2E-PROBE、EMP-SMOKE-1",
+    "profiles": [
+      "EMP-ANALYST",
+      "EMP-AUDITOR",
+      "EMP-RESEARCHER",
+      "EMP-E2E-PROBE",
+      "EMP-SMOKE-1"
+    ]
+  },
+  "fake_receipts": [],
+  "valid": true,
+  "metrics": [
+    {
+      "name": "decomposition_completeness",
+      "label": "任务拆解完整率",
+      "value": 1.0,
+      "unit": "rate",
+      "status": "computed",
+      "reason": "",
+      "detail": {
+        "G-ONT-01": {
+          "roles_hit": ["EMP-ANALYST", "EMP-AUDITOR"],
+          "roles_expected": ["EMP-ANALYST", "EMP-AUDITOR"],
+          "aspects_hit": ["对象", "订单", "字段"],
+          "aspects_expected": ["对象", "订单", "字段"],
+          "subtasks": 5,
+          "min_subtasks": 2
+        },
+        "G-SOP-01": {
+          "roles_hit": ["EMP-ANALYST", "EMP-AUDITOR"],
+          "roles_expected": ["EMP-ANALYST", "EMP-AUDITOR"],
+          "aspects_hit": ["危险品", "hazard", "分布"],
+          "aspects_expected": ["危险品", "hazard", "分布"],
+          "subtasks": 4,
+          "min_subtasks": 2
+        },
+        "G-HR-01": {
+          "roles_hit": ["EMP-ANALYST", "EMP-AUDITOR"],
+          "roles_expected": ["EMP-ANALYST", "EMP-AUDITOR"],
+          "aspects_hit": ["请假", "状态", "天数"],
+          "aspects_expected": ["请假", "状态", "天数"],
+          "subtasks": 4,
+          "min_subtasks": 2
+        },
+        "G-KB-01": {
+          "roles_hit": ["EMP-RESEARCHER"],
+          "roles_expected": ["EMP-RESEARCHER"],
+          "aspects_hit": ["数字员工", "能力"],
+          "aspects_expected": ["数字员工", "能力"],
+          "subtasks": 3,
+          "min_subtasks": 2
+        }
+      }
+    },
+    {
+      "name": "duplication_rate",
+      "label": "任务拆解重复率",
+      "value": 0.3125,
+      "unit": "rate",
+      "status": "computed",
+      "reason": "",
+      "detail": {
+        "duplicate_pairs": 5,
+        "subtasks": 16,
+        "per_task": {
+          "G-ONT-01": ["t1~t4", "t3~t5"],
+          "G-SOP-01": ["t1~t4"],
+          "G-HR-01": ["t1~t4"],
+          "G-KB-01": ["t1~t3"]
+        }
+      }
+    },
+    {
+      "name": "tool_selection_accuracy",
+      "label": "工具选择正确率",
+      "value": 0.4375,
+      "unit": "rate",
+      "status": "computed",
+      "reason": "",
+      "detail": {
+        "G-ONT-01": {
+          "expected": ["ont_inspect_class", "ont_list_classes"],
+          "invoked": ["kb_search", "ont_inspect_class", "ont_list_classes"],
+          "unexpected": ["kb_search"],
+          "missed": []
+        },
+        "G-SOP-01": {
+          "expected": ["ont_list_classes", "ont_object_query"],
+          "invoked": ["kb_search", "ont_inspect_class", "ont_list_classes"],
+          "unexpected": ["kb_search", "ont_inspect_class"],
+          "missed": ["ont_object_query"]
+        },
+        "G-HR-01": {
+          "expected": ["ont_list_classes", "ont_object_query"],
+          "invoked": [
+            "kb_search",
+            "ont_inspect_class",
+            "ont_list_classes",
+            "read_skill",
+            "search_skill"
+          ],
+          "unexpected": [
+            "kb_search",
+            "ont_inspect_class",
+            "read_skill",
+            "search_skill"
+          ],
+          "missed": ["ont_object_query"]
+        },
+        "G-KB-01": {
+          "expected": ["kb_search", "ont_list_classes"],
+          "invoked": ["kb_search", "ont_inspect_class", "ont_list_classes"],
+          "unexpected": ["ont_inspect_class"],
+          "missed": []
+        }
+      }
+    },
+    {
+      "name": "rid_accuracy",
+      "label": "RID 正确率",
+      "value": 1.0,
+      "unit": "rate",
+      "status": "computed",
+      "reason": "",
+      "detail": {
+        "citations": 15,
+        "hallucinated": [],
+        "expected_rid_citation": {
+          "G-ONT-01": true,
+          "G-SOP-01": true,
+          "G-HR-01": true,
+          "G-KB-01": true
+        },
+        "per_task": {
+          "G-ONT-01@b1432fa09df84c4eac05fd6231f4bf98": {
+            "cited": [
+              "ont.tenant-default.obj.crm.contract.v1",
+              "ont.tenant-default.obj.crm.customer.v1",
+              "ont.tenant-default.obj.crm.order.v1",
+              "ont.tenant-default.obj.crm.product.v1",
+              "ont.tenant-default.obj.dw-digital-employee.v1",
+              "ont.tenant-default.obj.employee.v1",
+              "ont.tenant-default.obj.fin.invoice.v1",
+              "ont.tenant-default.obj.leave-request.v1",
+              "ont.tenant-default.obj.sopbench-order-fulfillment.v1",
+              "ont.tenant-default.obj.ticket.v1",
+              "ont.tenant-default.obj.sopbench-dangerous-goods.v1",
+              "ont.tenant-default.obj.sopbench-email-intent.v1",
+              "ont.tenant-default.obj.sopbench-customer-service.v1",
+              "ont.tenant-default.obj.sopbench-warehouse-package-inspection.v1",
+              "ont.tenant-default.obj.superai.v1"
+            ],
+            "hallucinated": []
+          },
+          "G-SOP-01@1da556e781194c2fbb15786049a8d7c9": {
+            "cited": [
+              "ont.tenant-default.obj.sopbench-dangerous-goods.v1",
+              "ont.tenant-default.obj.crm.contract.v1",
+              "ont.tenant-default.obj.crm.customer.v1",
+              "ont.tenant-default.obj.crm.order.v1",
+              "ont.tenant-default.obj.crm.product.v1",
+              "ont.tenant-default.obj.dw-digital-employee.v1",
+              "ont.tenant-default.obj.employee.v1",
+              "ont.tenant-default.obj.fin.invoice.v1",
+              "ont.tenant-default.obj.leave-request.v1"
+            ],
+            "hallucinated": []
+          },
+          "G-HR-01@37c0a2e61b674a138f12fbbbc1281bb4": {
+            "cited": [
+              "ont.tenant-default.obj.leave-request.v1",
+              "ont.tenant-default.obj.crm.contract.v1",
+              "ont.tenant-default.obj.crm.customer.v1",
+              "ont.tenant-default.obj.crm.order.v1",
+              "ont.tenant-default.obj.crm.product.v1",
+              "ont.tenant-default.obj.dw-digital-employee.v1",
+              "ont.tenant-default.obj.employee.v1",
+              "ont.tenant-default.obj.fin.invoice.v1"
+            ],
+            "hallucinated": []
+          },
+          "G-KB-01@4af9ec625b42419cbdeba6be1939e9e7": {
+            "cited": [
+              "ont.tenant-default.obj.dw-digital-employee.v1",
+              "ont.tenant-default.obj.crm.contract.v1",
+              "ont.tenant-default.obj.crm.customer.v1",
+              "ont.tenant-default.obj.crm.order.v1",
+              "ont.tenant-default.obj.crm.product.v1",
+              "ont.tenant-default.obj.employee.v1",
+              "ont.tenant-default.obj.fin.invoice.v1",
+              "ont.tenant-default.obj.leave-request.v1",
+              "ont.tenant-default.obj.superai.v1",
+              "ont.tenant-default.obj.ticket.v1"
+            ],
+            "hallucinated": []
+          }
+        }
+      }
+    },
+    {
+      "name": "evidence_coverage",
+      "label": "证据覆盖率",
+      "value": 1.0,
+      "unit": "rate",
+      "status": "computed",
+      "reason": "",
+      "detail": {
+        "G-ONT-01": {
+          "evidence_count": 57,
+          "min_evidence": 1,
+          "met": true,
+          "expected_rids_in_evidence": ["ont.tenant-default.obj.crm.order.v1"]
+        },
+        "G-SOP-01": {
+          "evidence_count": 27,
+          "min_evidence": 1,
+          "met": true,
+          "expected_rids_in_evidence": [
+            "ont.tenant-default.obj.sopbench-dangerous-goods.v1"
+          ]
+        },
+        "G-HR-01": {
+          "evidence_count": 27,
+          "min_evidence": 0,
+          "met": true,
+          "expected_rids_in_evidence": [
+            "ont.tenant-default.obj.leave-request.v1"
+          ]
+        },
+        "G-KB-01": {
+          "evidence_count": 21,
+          "min_evidence": 0,
+          "met": true,
+          "expected_rids_in_evidence": [
+            "ont.tenant-default.obj.dw-digital-employee.v1"
+          ]
+        }
+      }
+    },
+    {
+      "name": "unsupported_claim_rate",
+      "label": "无依据陈述率",
+      "value": 0.0,
+      "unit": "rate",
+      "status": "computed",
+      "reason": "",
+      "detail": {
+        "unsupported": [],
+        "results": 16
+      }
+    },
+    {
+      "name": "restart_consistency",
+      "label": "重启后结果一致率",
+      "value": null,
+      "unit": "rate",
+      "status": "not_computed",
+      "reason": "本轮的 --repeat < 2，没有第二遍可比（按口径不编造 1.0）",
+      "detail": {}
+    },
+    {
+      "name": "replay_side_effect_duplicates",
+      "label": "重放副作用重复数",
+      "value": 0,
+      "unit": "count",
+      "status": "computed",
+      "reason": "",
+      "detail": {
+        "distinct_side_effect_calls": 0,
+        "repeated": {}
+      }
+    },
+    {
+      "name": "token_cost",
+      "label": "Token / 成本",
+      "value": 117830,
+      "unit": "tokens",
+      "status": "computed",
+      "reason": "",
+      "detail": {
+        "total_tokens": 117830,
+        "total_cost": 0.0,
+        "by_model": {
+          "glm-5-3-flash": {
+            "tokens": 223289,
+            "cost": 0.0,
+            "calls": 122
+          }
+        },
+        "llm_calls_total": 43
+      }
+    },
+    {
+      "name": "latency",
+      "label": "首响应 / P95",
+      "value": 323.078,
+      "unit": "seconds",
+      "status": "computed",
+      "reason": "",
+      "detail": {
+        "first_response_mean_seconds": 14.41,
+        "first_response_max_seconds": 15.828,
+        "total_mean_seconds": 210.504,
+        "p95_total_seconds": 323.078,
+        "samples": 4,
+        "note": "样本 <20 时 P95 等价于最大值，只作量级参考"
+      }
+    },
+    {
+      "name": "sensitive_op_missed_approval_rate",
+      "label": "敏感操作漏审率",
+      "value": 0.0,
+      "unit": "rate",
+      "status": "computed",
+      "reason": "",
+      "detail": {
+        "violations": [],
+        "runs": 4
+      }
+    }
+  ],
+  "per_task": {
+    "G-ONT-01": {
+      "run_id": "b1432fa09df84c4eac05fd6231f4bf98",
+      "status": "completed",
+      "subtasks": 5,
+      "profiles": [
+        "EMP-ANALYST",
+        "EMP-RESEARCHER",
+        "EMP-AUDITOR",
+        "EMP-ANALYST",
+        "EMP-AUDITOR"
+      ],
+      "llm_calls": 13,
+      "evidence": 57,
+      "tools": ["kb_search", "ont_inspect_class", "ont_list_classes"],
+      "cited_rids": [
+        "ont.tenant-default.obj.crm.contract.v1",
+        "ont.tenant-default.obj.crm.customer.v1",
+        "ont.tenant-default.obj.crm.order.v1",
+        "ont.tenant-default.obj.crm.product.v1",
+        "ont.tenant-default.obj.dw-digital-employee.v1",
+        "ont.tenant-default.obj.employee.v1",
+        "ont.tenant-default.obj.fin.invoice.v1",
+        "ont.tenant-default.obj.leave-request.v1",
+        "ont.tenant-default.obj.sopbench-order-fulfillment.v1",
+        "ont.tenant-default.obj.ticket.v1",
+        "ont.tenant-default.obj.sopbench-dangerous-goods.v1",
+        "ont.tenant-default.obj.sopbench-email-intent.v1",
+        "ont.tenant-default.obj.sopbench-customer-service.v1",
+        "ont.tenant-default.obj.sopbench-warehouse-package-inspection.v1",
+        "ont.tenant-default.obj.superai.v1"
+      ],
+      "first_response_seconds": 15.828,
+      "total_seconds": 323.078
+    },
+    "G-SOP-01": {
+      "run_id": "1da556e781194c2fbb15786049a8d7c9",
+      "status": "completed",
+      "subtasks": 4,
+      "profiles": [
+        "EMP-ANALYST",
+        "EMP-AUDITOR",
+        "EMP-RESEARCHER",
+        "EMP-ANALYST"
+      ],
+      "llm_calls": 11,
+      "evidence": 27,
+      "tools": ["kb_search", "ont_inspect_class", "ont_list_classes"],
+      "cited_rids": [
+        "ont.tenant-default.obj.sopbench-dangerous-goods.v1",
+        "ont.tenant-default.obj.crm.contract.v1",
+        "ont.tenant-default.obj.crm.customer.v1",
+        "ont.tenant-default.obj.crm.order.v1",
+        "ont.tenant-default.obj.crm.product.v1",
+        "ont.tenant-default.obj.dw-digital-employee.v1",
+        "ont.tenant-default.obj.employee.v1",
+        "ont.tenant-default.obj.fin.invoice.v1",
+        "ont.tenant-default.obj.leave-request.v1"
+      ],
+      "first_response_seconds": 15.797,
+      "total_seconds": 191.984
+    },
+    "G-HR-01": {
+      "run_id": "37c0a2e61b674a138f12fbbbc1281bb4",
+      "status": "completed",
+      "subtasks": 4,
+      "profiles": [
+        "EMP-ANALYST",
+        "EMP-AUDITOR",
+        "EMP-RESEARCHER",
+        "EMP-ANALYST"
+      ],
+      "llm_calls": 11,
+      "evidence": 27,
+      "tools": [
+        "kb_search",
+        "ont_inspect_class",
+        "ont_list_classes",
+        "read_skill",
+        "search_skill"
+      ],
+      "cited_rids": [
+        "ont.tenant-default.obj.leave-request.v1",
+        "ont.tenant-default.obj.crm.contract.v1",
+        "ont.tenant-default.obj.crm.customer.v1",
+        "ont.tenant-default.obj.crm.order.v1",
+        "ont.tenant-default.obj.crm.product.v1",
+        "ont.tenant-default.obj.dw-digital-employee.v1",
+        "ont.tenant-default.obj.employee.v1",
+        "ont.tenant-default.obj.fin.invoice.v1"
+      ],
+      "first_response_seconds": 15.641,
+      "total_seconds": 168.985
+    },
+    "G-KB-01": {
+      "run_id": "4af9ec625b42419cbdeba6be1939e9e7",
+      "status": "completed",
+      "subtasks": 3,
+      "profiles": ["EMP-ANALYST", "EMP-RESEARCHER", "EMP-ANALYST"],
+      "llm_calls": 8,
+      "evidence": 21,
+      "tools": ["kb_search", "ont_inspect_class", "ont_list_classes"],
+      "cited_rids": [
+        "ont.tenant-default.obj.dw-digital-employee.v1",
+        "ont.tenant-default.obj.crm.contract.v1",
+        "ont.tenant-default.obj.crm.customer.v1",
+        "ont.tenant-default.obj.crm.order.v1",
+        "ont.tenant-default.obj.crm.product.v1",
+        "ont.tenant-default.obj.employee.v1",
+        "ont.tenant-default.obj.fin.invoice.v1",
+        "ont.tenant-default.obj.leave-request.v1",
+        "ont.tenant-default.obj.superai.v1",
+        "ont.tenant-default.obj.ticket.v1"
+      ],
+      "first_response_seconds": 10.375,
+      "total_seconds": 157.968
+    }
+  },
+  "notes": [
+    "词法覆盖（required_aspects / 角色命中）是代理量，不是语义判分——口径见 scorer 模块 docstring",
+    "成本真值只在 llmgw /usage/{tenant}；检查点里没有 token 字段",
+    "本轮未跑第二遍（--repeat 1），「重启后结果一致率」按口径记 not_computed",
+    "整轮墙钟 843s（4 任务 × 1 遍）"
+  ]
+}

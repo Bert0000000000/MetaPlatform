@@ -16,6 +16,7 @@ kb_ids, markings)``。身份低风险、包络高风险；衰减不变量「子 
 from __future__ import annotations
 
 import os
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
@@ -50,6 +51,33 @@ class ProfileNotFound(LookupError):
     """该租户下没有这个员工。"""
 
 
+#: 没声明 ``runtimes`` 时的执行面。**只有一个**而且在两处共用（员工定义默认值
+#: 与 HTTP 读模型的默认值），免得两处各写一个字面量、日后漂移成两种默认。
+DEFAULT_RUNTIMES: tuple[RuntimeKind, ...] = (RuntimeKind.SUPERAI,)
+
+
+def parse_runtime_kinds(values: Sequence[Any]) -> tuple[RuntimeKind, ...]:
+    """把库里 / 请求里的执行面名字解析成枚举。**不认识就抛，绝不静默丢弃**。
+
+    这是「**不许静默切换 Runtime**」这条锁死决策在解析层的落点：拼错的
+    ``"claude-code"``（少个下划线）如果被静默丢掉，员工会一声不响地跑回
+    ``superai``——而两个执行面的沙箱与权限假设完全不同（外部 CLI 拿不到本仓的
+    ``EnvelopeGate``）。宁可让写/读当场失败，也不换一个执行面代跑。
+
+    ``RuntimeKind`` 是 ``StrEnum``，所以库里存的是普通字符串，能直接进 JSON。
+    """
+    kinds: list[RuntimeKind] = []
+    for raw in values or ():
+        try:
+            kind = raw if isinstance(raw, RuntimeKind) else RuntimeKind(str(raw))
+        except ValueError as exc:
+            allowed = "、".join(str(k) for k in RuntimeKind)
+            raise ValueError(f"未知的执行面：{raw!r}（可选：{allowed}）") from exc
+        if kind not in kinds:
+            kinds.append(kind)
+    return tuple(kinds)
+
+
 @dataclass(frozen=True, slots=True)
 class EmployeeProfile:
     """一个数字员工的**定义**（不是一次运行）。"""
@@ -66,16 +94,18 @@ class EmployeeProfile:
     kb_ids: tuple[str, ...] = ()
     markings: tuple[str, ...] = ()
     origin: str = "builtin"
-    #: 允许的**执行面**（ADR-0066 §5.8）。默认 ``(SUPERAI,)`` 是刻意选的：
+    #: 允许的**执行面**（ADR-0066 §5.8）。默认单元素 ``(SUPERAI,)`` 是刻意选的：
     #: 存量调用方（库里的行、HTTP 建出来的员工、测试里的构造）**一个都不传**
     #: 这个字段，默认值要是空元组，"没配 runtimes 的员工"就会变成谁都跑不了。
     #:
-    #: **边界登记**（本切片没做的两件事，都会让"配了 runtimes"暂时落不到库/接口）：
-    #: ① ``profile_store`` 的建表与读写**没有这一列**（该文件不在本切片可改范围），
-    #: 所以落库的员工读回来一定是默认值；② HTTP 的 profile 读写模型同样没有这个
-    #: 字段。两处补齐前，``runtimes`` 只在**进程内构造**（测试 / 未来 import 面）时
-    #: 生效——这正是本轨的验证口径。
-    runtimes: tuple[RuntimeKind, ...] = (RuntimeKind.SUPERAI,)
+    #: **C-5 起它真的落库、也真的过 HTTP**（`MP-AGENT-PROFILE-MGMT-01`）：
+    #: ``profile_store`` 有 ``runtimes`` 列，``EmployeeProfile`` / ``ProfileWriteRequest``
+    #: 两个 HTTP 模型都暴露它。此前代码注释里登记的那条边界（"配了也只在进程内
+    #: 生效"）**已经关闭**——所以名册里改了执行面，重启后读回来的还是它。
+    #:
+    #: 解析一律走 :func:`parse_runtime_kinds`：陌生值**当场失败**，不回落默认
+    #: （"不许静默切换 Runtime"）。
+    runtimes: tuple[RuntimeKind, ...] = DEFAULT_RUNTIMES
 
     def allows(self, tool_name: str) -> bool:
         """工具白名单判定（D-8）。白名单是**闭集**：未列出即拒绝。"""
@@ -198,9 +228,11 @@ def builtin_profiles() -> list[EmployeeProfile]:
 
 __all__ = [
     "DEFAULT_MODEL",
+    "DEFAULT_RUNTIMES",
     "EmployeeProfile",
     "ProfileNotFound",
     "ProfileRegistry",
     "RuntimeKind",
     "builtin_profiles",
+    "parse_runtime_kinds",
 ]

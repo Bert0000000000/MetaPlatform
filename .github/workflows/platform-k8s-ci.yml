@@ -7,12 +7,14 @@ on:
     paths:
       - "infra/helm/**"
       - "infra/tests/**"
+      - "scripts/ci/agent_team_multi_replica.sh"
       - ".github/workflows/platform-k8s-ci.yml"
   pull_request:
     branches: [main, codex/**]
     paths:
       - "infra/helm/**"
       - "infra/tests/**"
+      - "scripts/ci/agent_team_multi_replica.sh"
       - ".github/workflows/platform-k8s-ci.yml"
 
 permissions:
@@ -175,3 +177,41 @@ jobs:
             echo "::error::README.md is out of sync with values.yaml. Run: helm-docs"
             exit 1
           )
+
+  multi-replica:
+    name: agent-team 3 replicas actually come up (kind)
+    # 2.1-B §6 建议 2：把 `MP-REPLICA-READINESS-01` 的手工 kind 验证收进 CI。
+    # 在它之前，"多副本"这条判据在这条流水线里只有静态 lint（helm template /
+    # kubeconform 都不启动任何东西）——chart 渲染得再对，也不代表真起得来。
+    #
+    # 这条是**真跑**：起 kind → 灌镜像 → 建 PG + Secret → helm install →
+    # 断言 3 个 Pod 全部 Ready 且各自 /healthz 200。逻辑在 scripts/ci 下的脚本里，
+    # 本地可复现（`KEEP_CLUSTER=1` 还能留着环境排查）。
+    #
+    # 构建镜像要装 langgraph / langchain / psycopg…（见 packages/mate-tech-agent-team/
+    # Dockerfile），所以超时给得比其它 job 宽。
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Install kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+          kind version
+
+      - name: Run the multi-replica script
+        env:
+          CLUSTER_NAME: mate-agent-team-ci
+          # Dockerfile 默认的 PIP_INDEX_URL 是 aliyun 镜像源；GitHub runner 在
+          # 海外，走 pypi.org 更稳（镜像源在不同网络下可用性不同）。
+          PIP_INDEX_URL: https://pypi.org/simple/
+        run: bash scripts/ci/agent_team_multi_replica.sh

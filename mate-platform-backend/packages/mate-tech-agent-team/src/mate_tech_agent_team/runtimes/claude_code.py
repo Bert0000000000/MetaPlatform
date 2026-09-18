@@ -43,12 +43,22 @@ import shlex
 import shutil
 import subprocess
 import tempfile
+import time
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
-from ..profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry
+from ..chat_model import usage_tokens
+from ..observability import (
+    FAILURE_INVALID_OUTPUT,
+    FAILURE_RUNTIME_UNAVAILABLE,
+    FAILURE_TIMEOUT,
+    elapsed_ms,
+)
+from ..profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry, RuntimeKind
 from ..runtime import TaskChannel
 from ..state import SubTask, SubTaskResult
+from ..versioning import prompt_digest_of
 from .projection import ClaudeCodeProjection, ProjectionAdapter, RuntimeBundle
 from .sandbox_env import build_child_env, configured_allowlist
 
@@ -225,8 +235,12 @@ class ClaudeCodeRuntime:
         )
 
     @staticmethod
-    def _parse(stdout: str) -> tuple[str, int, bool]:
-        """解析 ``--output-format json`` 的回执：``(产出, 模型轮次, 是否标错)``。"""
+    def _parse(stdout: str) -> tuple[str, int, bool, dict[str, Any]]:
+        """解析 ``--output-format json`` 的回执：``(产出, 模型轮次, 是否标错, usage)``。
+
+        第 4 项是 CLI 回执里**原始**的 ``usage``（可能是空 dict）——C-7 的 token
+        计量就从这里来。CLI 不给就留空，**不编**（回执里没有的数字，上层按 0 报）。
+        """
         lines = [line for line in (stdout or "").splitlines() if line.strip()]
         if not lines:
             raise ValueError("CLI 没有输出任何内容")
@@ -234,16 +248,22 @@ class ClaudeCodeRuntime:
         if not isinstance(data, dict):
             raise ValueError("CLI 输出的 JSON 不是对象")
         turns = data.get("num_turns")
+        raw_usage = data.get("usage")
         return (
             str(data.get("result") or ""),
             int(turns) if isinstance(turns, int) and turns >= 0 else 1,
             bool(data.get("is_error")),
+            dict(raw_usage) if isinstance(raw_usage, dict) else {},
         )
 
     # -- 运行 ---------------------------------------------------------------
 
     def _receipt(self, subtask: SubTask) -> SubTaskResult:
-        """错误回执的骨架：``source="stub"`` 表示**一次模型调用都没发生**。"""
+        """错误回执的骨架：``source="stub"`` 表示**一次模型调用都没发生**。
+
+        C-7 起带上 ``runtime_kind``：这份回执是**这个执行面**给的，不是"某个
+        运行时报的"——外部 CLI 与 superai 的沙箱/权限假设不同，计量要分得开。
+        """
         return SubTaskResult(
             task_id=subtask.get("task_id", ""),
             team_task_id=subtask.get("team_task_id", ""),
@@ -255,7 +275,16 @@ class ClaudeCodeRuntime:
             source="stub",
             error="",
             evidence=[],
+            runtime_kind=str(RuntimeKind.CLAUDE_CODE),
         )
+
+    @staticmethod
+    def _finish(result: SubTaskResult, started: float, failure_category: str = "") -> SubTaskResult:
+        """收口计量：耗时与失败类别。**每次 return 前都过一下**（含早退路径）。"""
+        result["latency_ms"] = elapsed_ms(started)
+        if failure_category:
+            result["failure_category"] = failure_category
+        return result
 
     async def _close_channel(self, task_id: str, tenant_id: str, status: str) -> None:
         """置终态（尽力而为，理由同 ``LlmEmployeeRuntime``：收尾失败不该把已跑出的
@@ -268,14 +297,19 @@ class ClaudeCodeRuntime:
             return
 
     async def run(self, *, subtask: SubTask, tenant_id: str) -> SubTaskResult:
+        started = time.perf_counter()
         result = self._receipt(subtask)
         try:
             profile: EmployeeProfile = await self._registry.get(subtask["profile_id"], tenant_id)
         except ProfileNotFound:
             result["error"] = f"员工不存在：{subtask['profile_id']}（租户 {tenant_id}）"
-            return result
+            return self._finish(result, started, FAILURE_RUNTIME_UNAVAILABLE)
 
         result["profile_id"] = profile.profile_id
+        # C-7：模型与提示词摘要。``model`` 取**真正会传给 CLI** 的那一个
+        # （``--model`` 配了才有；没配就是 CLI 自己的默认，如实留空）。
+        result["model"] = self._cli_model
+        result["prompt_digest"] = prompt_digest_of(profile)
         # 工具面取派活闸门**实际发放**的那一份；没走闸门就退回员工白名单（同 superai）。
         allowed = tuple(subtask.get("granted_tools") or profile.tools)
         team_task_id = str(subtask.get("team_task_id") or subtask.get("task_id") or "")
@@ -285,7 +319,7 @@ class ClaudeCodeRuntime:
                 "claude CLI 不可用：请装 Claude Code，或设 MATE_AGENT_TEAM_CLAUDE_BIN 指向它。"
                 "（本运行时不会退回别的实现——那样会变成一次没人察觉的假执行）"
             )
-            return result
+            return self._finish(result, started, FAILURE_RUNTIME_UNAVAILABLE)
 
         if self._channel is not None and team_task_id:
             await self._channel.start(
@@ -301,29 +335,37 @@ class ClaudeCodeRuntime:
             # 工作区段不合法 / 无法建目录：**没有**真的起过 CLI
             result["error"] = f"{type(exc).__name__}: {exc}"
             await self._close_channel(team_task_id, tenant_id, "failed")
-            return result
+            return self._finish(result, started, FAILURE_RUNTIME_UNAVAILABLE)
         except subprocess.TimeoutExpired:
             result["error"] = f"claude CLI 超时（{self._timeout:.0f}s）未返回"
             await self._close_channel(team_task_id, tenant_id, "failed")
-            return result
+            return self._finish(result, started, FAILURE_TIMEOUT)
         except FileNotFoundError as exc:
             result["error"] = f"claude CLI 起不来：{exc}"
             await self._close_channel(team_task_id, tenant_id, "failed")
-            return result
+            return self._finish(result, started, FAILURE_RUNTIME_UNAVAILABLE)
 
         try:
-            output, turns, is_error = self._parse(completed.stdout)
+            output, turns, is_error, usage = self._parse(completed.stdout)
         except (ValueError, json.JSONDecodeError) as exc:
             result["error"] = (
                 f"claude CLI 回执无法解析（退出码 {completed.returncode}）：{exc}；"
                 f"stderr={completed.stderr.strip()[:400]}"
             )
             await self._close_channel(team_task_id, tenant_id, "failed")
-            return result
+            return self._finish(result, started, FAILURE_INVALID_OUTPUT)
 
         # 到这里模型**真的**跑过了：source 与 llm_calls 如实反映它。
         result["source"] = "llm"
         result["llm_calls"] = turns
+        # **CLI 给了 usage 才记**，没给就是 0（不编）；整段 CLI 调用的耗时算在
+        # ``llm_latency_ms`` 上——外部执行面里"模型"与"工具"是 CLI 内部的事，
+        # 分不开，所以 ``tool_latency_ms`` 留 0 而不是拆一个假的比例。
+        prompt_tokens, completion_tokens, cached_tokens = usage_tokens(usage)
+        result["input_tokens"] = prompt_tokens
+        result["output_tokens"] = completion_tokens
+        result["cached_tokens"] = cached_tokens
+        result["llm_latency_ms"] = elapsed_ms(started)
 
         if completed.returncode != 0 or is_error:
             stderr = completed.stderr.strip()
@@ -332,13 +374,13 @@ class ClaudeCodeRuntime:
             )
             result["output"] = ""
             await self._close_channel(team_task_id, tenant_id, "failed")
-            return result
+            return self._finish(result, started, FAILURE_INVALID_OUTPUT)
 
         if not output.strip():
             # 跑完了却什么都没说——这本身就是另一种"假回执"，判失败而不是 ok。
             result["error"] = "claude CLI 退出码 0 但产出为空"
             await self._close_channel(team_task_id, tenant_id, "failed")
-            return result
+            return self._finish(result, started, FAILURE_INVALID_OUTPUT)
 
         await self._close_channel(team_task_id, tenant_id, "completed")
         result["status"] = "ok"
@@ -347,7 +389,7 @@ class ClaudeCodeRuntime:
         #: json` 只给最终结果），编一份出来就是编造。下放过的工具面在
         #: ``<workspace>/projection.json`` 里，那才是可查的凭据。
         result["tool_calls"] = []
-        return result
+        return self._finish(result, started)
 
 
 __all__ = [

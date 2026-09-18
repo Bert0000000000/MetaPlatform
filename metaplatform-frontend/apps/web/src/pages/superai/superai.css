@@ -524,6 +524,61 @@
   color: var(--semi-color-danger);
 }
 
+/* ---------- NavigateCard（agent 建议跳转的卡片，ADR-0065 §3.3） ---------- */
+/* 视觉沿用 proposal 卡（同边框/圆角/左色条），但左条取 info 色，与"要你确认的
+   提案"区分开：导航是只读跳转，不是会产生副作用的动作。 */
+.mp-navigate-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+  padding: var(--mp-space-3);
+  border: 1px solid var(--semi-color-border);
+  border-left: 3px solid var(--semi-color-info);
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-bg-1);
+}
+
+/* 拦截态：左条取警示色，且整块**没有任何可点击元素**。 */
+.mp-navigate-card--blocked {
+  border-left-color: var(--semi-color-warning);
+}
+
+.mp-navigate-head {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  color: var(--semi-color-text-2);
+}
+
+.mp-navigate-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mp-navigate-target {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--semi-color-text-0);
+}
+
+.mp-navigate-path {
+  font-size: 12px;
+  font-family: var(--mp-font-mono);
+  color: var(--semi-color-text-2);
+  word-break: break-all;
+}
+
+.mp-navigate-blocked-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--semi-color-warning);
+}
+
+.mp-navigate-blocked-note .mp-navigate-path {
+  display: block;
+  margin-top: var(--mp-space-1);
+}
+
 /* ---------- Agent 产品层工作台（AgentTeamRunPage） ---------- */
 .mp-team-gap {
   margin-top: var(--mp-space-4);
@@ -684,4 +739,66 @@
   gap: var(--mp-space-1);
   padding-top: var(--mp-space-2);
   border-top: 1px solid var(--semi-color-border);
+}
+
+/* ── C-5 数字员工执行面配置（EmployeeRuntimePanel）────────────────────────
+   交互控件一律原生 <button>（dev 预览窗里 Semi Button 的 onClick 是 noop），
+   所以这里给的是 .mp-runtime-chip / .mp-proposal-btn 这一套。 */
+.mp-runtime-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mp-space-3);
+  padding: var(--mp-space-3) 0;
+  border-top: 1px solid var(--semi-color-border);
+}
+
+.mp-runtime-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 180px;
+}
+
+.mp-runtime-name {
+  font-weight: 600;
+}
+
+.mp-runtime-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mp-space-2);
+}
+
+.mp-runtime-chip {
+  padding: 4px 12px;
+  border: 1px solid var(--semi-color-border);
+  border-radius: 999px;
+  background: var(--semi-color-fill-0);
+  color: var(--semi-color-text-1);
+  cursor: pointer;
+  font-size: var(--semi-font-size-small);
+}
+
+.mp-runtime-chip--on {
+  border-color: var(--semi-color-primary);
+  background: var(--semi-color-primary-light-default);
+  color: var(--semi-color-primary);
+  font-weight: 600;
+}
+
+.mp-runtime-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  margin-left: auto;
+}
+
+.mp-runtime-error {
+  margin: var(--mp-space-2) 0;
+  padding: var(--mp-space-2) var(--mp-space-3);
+  border-radius: var(--semi-border-radius-small);
+  background: var(--semi-color-danger-light-default);
+  color: var(--semi-color-danger);
+  font-size: var(--semi-font-size-small);
 }

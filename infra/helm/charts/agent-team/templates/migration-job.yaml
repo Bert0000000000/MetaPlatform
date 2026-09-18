@@ -41,7 +41,18 @@ spec:
         app.kubernetes.io/component: migration
     spec:
       restartPolicy: Never
-      serviceAccountName: {{ include "agent-team.serviceAccountName" . }}
+      #: **刻意不用 release 自己的 ServiceAccount**（哪怕它看起来更"一致"）。
+      #:
+      #: 本 Job 是 `pre-install` 钩子，而 Helm 执行钩子的时机是**创建 release 的
+      #: 常规资源之前** —— `agent-team.serviceAccountName` 此刻还不存在，Job 的 Pod
+      #: 会被 API server 拒（`FailedCreate: serviceaccount ... not found`），
+      #: `helm install --wait` 一直卡到钩子超时。这是一个**只在全新命名空间上**才
+      #: 会显形的坑（升级时 SA 已经在了，所以看不出来）。
+      #:
+      #: 这个 Job 要做的事只是「拿 admin DSN 跑一段 python」，不需要任何集群身份；
+      #: 配合 `automountServiceAccountToken: false`，用命名空间自带的 `default` SA
+      #: 是**等价且更小**的权限。
+      serviceAccountName: default
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
@@ -55,10 +66,18 @@ spec:
           image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["python", "-m", "mate_tech_agent_team.migrate"]
-          envFrom:
-            - configMapRef:
-                name: {{ include "agent-team.fullname" . }}
+          #: **不能 `envFrom` 那个 ConfigMap** —— 与上面 ServiceAccount 同一条理由：
+          #: ConfigMap 也是 release 的常规资源，`pre-install` 钩子跑的时候它还不存在，
+          #: Pod 会卡在 `CreateContainerConfigError: configmap "…" not found`。
+          #:
+          #: 迁移真正需要的只有下面这几项（角色 / 口令 / admin DSN / 日志级别），
+          #: 于是这一次性 Job 与 release 的常规资源**完全解耦**：它只依赖运维预先
+          #: 建好的 Secret。这是 `pre-install` 钩子的正确形态。
           env:
+            - name: LOG_LEVEL
+              value: {{ .Values.config.logLevel | quote }}
+            - name: TZ
+              value: {{ .Values.config.timezone | quote }}
             #: **整个 chart 里唯一出现 admin DSN 的地方。**
             - name: MATE_AGENT_TEAM_ADMIN_DSN
               valueFrom:

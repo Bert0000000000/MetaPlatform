@@ -4,6 +4,7 @@ import { Play, RefreshCw } from 'lucide-react';
 import { approveRun, cancelRun, newIdempotencyKey, startRun, type RunState } from '@/api/agentTeam';
 import { EmptyState, PageHeader } from '@/components/skeleton';
 import AgentTeamSchedule from './components/AgentTeamSchedule';
+import EmployeeRuntimePanel from './components/EmployeeRuntimePanel';
 import { useAgentTeamRun } from './useAgentTeamRun';
 import './superai.css';
 
@@ -118,6 +119,11 @@ export default function AgentTeamRunPage() {
       {!run && runId ? (
         <EmptyState title="已受理" desc={`run_id：${runId} —— 正在取回这一轮的状态…`} />
       ) : null}
+
+      {/* C-5：数字员工的**执行面**配置。放在工作台而不是另开一级菜单——
+          本轮的收敛原则是"不再新增一级菜单"，而"谁来跑"与"跑得怎么样"是
+          同一个工作面的两半。 */}
+      <EmployeeRuntimePanel />
     </>
   );
 }

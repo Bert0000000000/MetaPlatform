@@ -22,6 +22,14 @@ data:
   MATE_AGENT_TEAM_POOL_MAX: {{ .Values.config.poolMax | quote }}
   # B-1：租约 TTL（可配 + 带续租）。
   MATE_AGENT_TEAM_LEASE_TTL_SECONDS: {{ .Values.config.leaseTtlSeconds | quote }}
+  # 2.1-C：周期接管扫描的间隔（秒）。没有它，接管只在进程启动时发生一次——多副本下
+  # 幸存的副本永远不会发现隔壁崩了（真集群实测 166s 零接管）。
+  MATE_AGENT_TEAM_RESCAN_SECONDS: {{ .Values.config.rescanSeconds | quote }}
+  {{- with .Values.config.heartbeatGraceSeconds }}
+  # 留空 = 跟随 TTL（算术见 values.yaml）。**只在显式配了才注入**，免得把空串塞进去
+  # 让解析回落——"没配"与"配成空"在配置语义上必须是同一件事。
+  MATE_AGENT_TEAM_HEARTBEAT_GRACE_SECONDS: {{ . | quote }}
+  {{- end }}
   # B-6：HITL 闸门形态（留空角色 = 单级任意角色）。
   MATE_AGENT_TEAM_GATE_REQUIRED_ROLES: {{ .Values.config.gateRequiredRoles | quote }}
   MATE_AGENT_TEAM_GATE_REQUIRED_APPROVALS: {{ .Values.config.gateRequiredApprovals | quote }}

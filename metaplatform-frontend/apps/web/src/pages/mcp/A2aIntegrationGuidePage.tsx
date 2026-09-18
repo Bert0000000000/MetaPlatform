@@ -100,18 +100,32 @@ export default function A2aIntegrationGuidePage() {
 
       <Card title="3 · 委派与任务（Delegation）" className="mp-mb-4">
         <Typography.Paragraph>
-          SuperAI 对话调度走 <code>/api/v1/copilot/chat/agent/stream</code>（LLM 自主决策 → orchestrator dispatch）。
-          外部系统也可直接委派：W3C 消息异步建任务（<code>/messages</code>）或同步执行（<code>/execute</code>）。
+          SuperAI 调度数字员工走 <code>/api/v1/agent-team/runs</code>（受理一轮 Run → 任务图 →
+          并行派活 → 证据与交付物）。外部系统也可直接委派：W3C 消息异步建任务（
+          <code>/messages</code>）或同步执行（<code>/execute</code>）。
         </Typography.Paragraph>
-        <EndpointRow method="POST" path="/api/v1/copilot/chat/agent/stream" desc="SuperAI 对话调度数字员工（SSE 事件流）" />
+        <Typography.Paragraph type="tertiary" size="small">
+          注：<code>/api/v1/copilot/chat/agent/stream</code> 是**旧**的对话调度链路，
+          已在 C-3（<code>MP-LEGACY-SUNSET-01</code>）标为 Legacy，退役版本 2.2。
+          新接入请直接用下面这条 Run 链路（它有落库的执行真相、可恢复、有审计与交付物）。
+        </Typography.Paragraph>
+        <EndpointRow
+          method="POST"
+          path="/api/v1/agent-team/runs"
+          desc="受理一轮 Run（202 + run_id）—— 调度数字员工的主线入口"
+        />
         <EndpointRow method="POST" path="/api/v1/a2a/execute" desc="同步委派并返回真实结果（completed/failed/timeout + result）" />
-        <CodeBlock lang="bash" code={`curl -s -N -X POST "${GATEWAY}/api/v1/copilot/chat/agent/stream" \\
+        <CodeBlock lang="bash" code={`# 一句话 → 受理一轮 Run（202 立刻回 run_id，图在后台跑）
+curl -s -X POST "${GATEWAY}/api/v1/agent-team/runs" \\
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \\
-  -d '{"messages":[{"role":"user","content":"请调度 workflow 员工处理对账单"}]}'
-# → data: {"type":"reasoning","text":"正在分析任务并选择数字员工…"}
-# → data: {"type":"tool_call","callId":"...","tool":"dispatch_employee","args":{...}}
-# → data: {"type":"tool_result","callId":"...","status":"success","result":{"status":"completed",...}}
-# → data: {"choices":[{"delta":{"content":"已调度 workflow..."}}]}  data: [DONE]`} />
+  -d '{"goal":"请调度 workflow 员工处理对账单","max_parallel":3}'
+# → 202 {"run_id":"...","tenant_id":"...","status":"running","deduplicated":false}
+
+# 观察：轮询状态，或订阅步骤级事件流（支持 Last-Event-ID 断线续传）
+curl -s "${GATEWAY}/api/v1/agent-team/runs/$RUN_ID" -H "Authorization: Bearer $TOKEN"
+curl -s -N "${GATEWAY}/api/v1/agent-team/runs/$RUN_ID/events" -H "Authorization: Bearer $TOKEN"
+# → event: step  data: {"seq":1,"ran":[],"next":["plan"],"status":"planning",...}
+# → event: end   （这一轮落终态后收流）`} />
         <EndpointRow method="POST" path="/api/v1/a2a/messages" desc="W3C A2A 消息（异步建任务）" />
         <EndpointRow method="GET" path="/api/v1/a2a/tasks/{task_id}" desc="查询任务状态（含 result artifacts）" />
       </Card>

@@ -75,6 +75,7 @@ def bootstrap(
     """
     from .artifact_store import bootstrap_artifacts
     from .audit import bootstrap_audit
+    from .conversation_link import bootstrap_conversation_runs
     from .coordination import bootstrap_coordination
     from .profile_store import bootstrap_profiles
     from .run_events import bootstrap_run_events
@@ -108,6 +109,8 @@ def bootstrap(
         bootstrap_run_leases(conn, app_role=app_role)
         # B-2 / MP-RUN-EVENTS-01：Run 事件日志（观察模型；执行恢复仍以检查点为准）。
         bootstrap_run_events(conn, app_role=app_role)
+        # C-1 / MP-SESSION-RUN-LINK-01：会话 ↔ run 关系（后端是唯一关系源）。
+        bootstrap_conversation_runs(conn, app_role=app_role)
         # B-4：独立控制面身份（只读检查点，跨租户）。空 = 不建（测试与本地形态）。
         if control_role:
             _bootstrap_control_role(

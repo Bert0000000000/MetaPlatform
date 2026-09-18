@@ -1,6 +1,7 @@
 """agent-team HTTP surface（contracts/openapi/services/agent-team.yaml）。
 
   - POST /api/v1/agent-team/runs                      — 一句话启动
+  - GET  /api/v1/agent-team/runs?conversation=…       — 一个会话里的各轮 run（C-1）
   - GET  /api/v1/agent-team/runs/{run_id}             — 任务图/员工状态/结果
   - POST /api/v1/agent-team/runs/{run_id}/approve     — 人工确认闸门
   - POST /api/v1/agent-team/runs/{run_id}/cancel      — 取消（落终态）
@@ -19,7 +20,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
 from mate_platform.tenancy.guards import (
@@ -32,7 +33,13 @@ from ..artifact_store import ArtifactStore
 from ..authority import Envelope, resolve_initiator_envelope
 from ..brain import AWAITING, BrainService, RunNotAwaitingApproval, RunNotFound
 from ..profile_store import ProfileStore
-from ..profiles import DEFAULT_MODEL, EmployeeProfile, ProfileNotFound, ProfileRegistry
+from ..profiles import (
+    DEFAULT_MODEL,
+    EmployeeProfile,
+    ProfileNotFound,
+    ProfileRegistry,
+    parse_runtime_kinds,
+)
 from ..skills import SkillCatalog, SkillNotFound
 from ..state import BrainState
 from ..team_bus import TaskNotFound, TaskTerminal, TeamBus
@@ -45,11 +52,13 @@ from .schemas import (
     AuditListModel,
     AuditRecordModel,
     ChannelMessageModel,
+    ConversationRunModel,
     EmployeeProfileModel,
     ProfileListModel,
     ProfileWriteRequest,
     RunAcceptedModel,
     RunCancelAcceptedModel,
+    RunListModel,
     RunStateModel,
     SendMessageRequest,
     SkillContentModel,
@@ -168,6 +177,15 @@ def _tid(request: Request) -> str:
     return str(require_tenant(request.state.ctx))
 
 
+def _actor(request: Request) -> str:
+    """发起者的 **subject**（写进会话关系的 ``created_by``）。
+
+    取自**令牌解析出来的** ``RequestContext``，不是请求体里的字段——"这轮是谁
+    发起的"是可以被审计追问的事实，不接受调用方自称。
+    """
+    return str(getattr(request.state.ctx, "user_id", "") or "")
+
+
 def _user_token(request: Request) -> str:
     """发起用户的原始 Bearer。
 
@@ -205,6 +223,10 @@ async def agentTeamPostRuns(request: Request, body: StartRunRequest) -> RunAccep
 
     重复提交怎么办：带 ``Idempotency-Key`` 时同一个键（**同租户内**）永远映射到
     同一轮；重复提交原样回同一个 run_id 并置 ``deduplicated``。
+
+    带 ``conversation_id`` 时**同一件事顺带落库**（C-1）：这一轮属于哪次会话由
+    后端记，前端那份 localStorage 只是缓存。于是换机器 / 清浏览器之后，"这次
+    对话里跑过哪几轮"仍查得到（`GET /runs?conversation=`）。
     """
     tenant_id = _tid(request)
     accepted = await get_run_control().submit(
@@ -214,8 +236,33 @@ async def agentTeamPostRuns(request: Request, body: StartRunRequest) -> RunAccep
         max_parallel=body.max_parallel,
         timeout_seconds=body.timeout_seconds,
         idempotency_key=request.headers.get("idempotency-key", "").strip(),
+        conversation_id=body.conversation_id.strip(),
+        turn_id=body.turn_id.strip(),
+        created_by=_actor(request),
     )
     return RunAcceptedModel.model_validate(accepted)
+
+
+@router.get("/runs", response_model=RunListModel)
+async def agentTeamGetRuns(
+    request: Request, conversation: str = Query(min_length=1)
+) -> RunListModel:
+    """列一个会话里的各轮 run（C-1，**新→旧**）。
+
+    **后端是唯一关系源**：这份关系以前只写在浏览器 localStorage 里，换个机器
+    就没了。``conversation`` 必填——没有它就变成"列出全租户的 run"，
+    那既不是本端点的用途，也会把这个读路径的代价放大到不可控。
+
+    租户取自令牌（``_tid``），**不是查询参数**：拿别人的 conversation_id 来查
+    只会查到空（那是另一个租户的命名空间），不泄露"这个 id 存在过"。
+    """
+    rows = await get_run_control().runs_in_conversation(
+        tenant_id=_tid(request), conversation_id=conversation
+    )
+    return RunListModel(
+        conversation_id=conversation,
+        items=[ConversationRunModel.model_validate(row) for row in rows],
+    )
 
 
 @router.get("/runs/{run_id}", response_model=RunStateModel)
@@ -298,13 +345,18 @@ async def agentTeamGetRunArtifacts(request: Request, run_id: str) -> ArtifactLis
 
 
 @router.get("/artifacts/{artifact_id}", response_model=ArtifactContentModel)
-async def agentTeamGetArtifact(request: Request, artifact_id: str) -> ArtifactContentModel:
-    """按 id 取回一件产出物的**正文**（1.6 任务 2）。
+async def agentTeamGetArtifact(
+    request: Request, artifact_id: str, version: int | None = Query(default=None, ge=1)
+) -> ArtifactContentModel:
+    """按 id 取回一件产出物的**正文**（1.6 任务 2；C-4 起可按版本取）。
+
+    不带 ``version`` 取**最新**一版；带上就取那一版——于是"第一次交付的是什么"
+    可以直接取回来验（``?version=1``），而不是只能靠列表里的元数据相信它。
 
     跨租户与不存在同码 404：产出物的地址是**租户内**的地址，拿别人的 id
     来取读不到，也不该读出"这个 id 存在过"。
     """
-    artifact = await get_artifact_store().get(_tid(request), artifact_id)
+    artifact = await get_artifact_store().get(_tid(request), artifact_id, version)
     if artifact is None:
         raise HTTPException(status_code=404, detail="artifact not found")
     return ArtifactContentModel.model_validate(artifact.to_content_dict())
@@ -417,6 +469,9 @@ def _profile_model(profile: EmployeeProfile) -> EmployeeProfileModel:
         kb_ids=list(profile.kb_ids),
         markings=list(profile.markings),
         model=profile.model,
+        # C-5：执行面是**定义的一部分**，读模型必须出它——不出的话，前端与运维
+        # 看到的就是"这个员工跑在哪"这件事永远查不到。
+        runtimes=[str(kind) for kind in profile.runtimes],
         origin=profile.origin,
     )
 
@@ -430,6 +485,9 @@ def _write_request_to_profile(body: ProfileWriteRequest, profile_id: str) -> Emp
         skills=tuple(body.skills),
         tools=tuple(body.tools),
         model=body.model or DEFAULT_MODEL,
+        # 请求模型已经用 ``parse_runtime_kinds`` 拦过一遍（陌生值 422）；这里再解析
+        # 一次是把"字符串"翻成枚举本身，落库存的就是这一份。
+        runtimes=parse_runtime_kinds(body.runtimes),
         action_rids=tuple(body.action_rids),
         kb_ids=tuple(body.kb_ids),
         markings=tuple(body.markings),

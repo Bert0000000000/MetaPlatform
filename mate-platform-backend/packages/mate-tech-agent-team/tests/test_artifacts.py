@@ -34,14 +34,35 @@ from mate_tech_agent_team import (
     TeamBus,
 )
 from mate_tech_agent_team.artifact_store import (
+    INLINE_CONTENT_MAX_BYTES,
     Artifact,
     InMemoryArtifacts,
+    digest_of,
 )
 from mate_tech_agent_team.main import create_app
 
 BASE = "/api/v1/agent-team"
 TENANT = "tenant-acme"
 OTHER = "tenant-other"
+
+
+class _RecordingBlobs:
+    """测试用的最小 blob 客户端（``ArtifactBlobs`` 协议）。
+
+    刻意**不放在 src 里**：生产模块带一个"假的对象存储"会让人以为部署真的有存储
+    ——本仓的诚实口径是"没配 blob 客户端就内联"，而不是"反正有个内存实现"。
+    """
+
+    def __init__(self) -> None:
+        self.objects: dict[str, bytes] = {}
+
+    async def put(self, *, key: str, data: bytes, content_type: str) -> str:
+        uri = f"mem://{key}"
+        self.objects[uri] = data
+        return uri
+
+    async def get(self, uri: str) -> bytes:
+        return self.objects[uri]
 
 
 def _token(*, tenant_id: str = TENANT) -> str:
@@ -220,16 +241,81 @@ async def test_the_store_is_tenant_scoped() -> None:
 
 
 @pytest.mark.asyncio
-async def test_putting_the_same_id_twice_replaces_instead_of_duplicating() -> None:
-    """同一个 id 重写是**覆盖**：图重放同一份产出不该攒出两条。"""
+async def test_rewriting_the_same_address_with_new_content_appends_a_version() -> None:
+    """C-4 判据：**重跑不覆盖旧版**——两版并存，第一版仍取得到。
+
+    旧实现是 ``ON CONFLICT DO UPDATE``：第二次写把第一次**盖掉**，于是"第一次
+    交付的是什么"再也取不回来。现在每次内容变化都落一行新版本。
+    """
     store = InMemoryArtifacts()
     for content in ("第一版", "第二版"):
         await store.put(
             Artifact(artifact_id="a-1", tenant_id=TENANT, run_id="r-1", content=content)
         )
-    rows = await store.list(TENANT, "r-1")
-    assert len(rows) == 1
+
+    versions = await store.list_versions(TENANT, "a-1")
+    assert [(v.version, v.content) for v in versions] == [(1, "第一版"), (2, "第二版")]
+
+    # 最新 = 第二版；**第一版仍原样取得到**（这就是"能证明第一次交付了什么"）
     assert (await store.get(TENANT, "a-1")).content == "第二版"  # type: ignore[union-attr]
+    first = await store.get(TENANT, "a-1", 1)
+    assert first is not None and first.content == "第一版"
+    # 列表只出**最新**一版：一轮的交付物清单不该出现同一个地址两次
+    assert [a.version for a in await store.list(TENANT, "r-1")] == [2]
+
+
+@pytest.mark.asyncio
+async def test_replaying_the_same_content_does_not_churn_versions() -> None:
+    """同内容重放是**幂等**的：图重放节点 / 工具重试不该把版本号刷成一串噪声。"""
+    store = InMemoryArtifacts()
+    first = await store.put(
+        Artifact(artifact_id="a-1", tenant_id=TENANT, run_id="r-1", content="同一份产出")
+    )
+    again = await store.put(
+        Artifact(artifact_id="a-1", tenant_id=TENANT, run_id="r-1", content="同一份产出")
+    )
+    assert again.version == first.version == 1
+    assert len(await store.list_versions(TENANT, "a-1")) == 1
+
+
+@pytest.mark.asyncio
+async def test_the_digest_is_stable_and_content_addressed() -> None:
+    """摘要必须**只由正文决定**：同内容恒同摘要，改一个字就全变。"""
+    store = InMemoryArtifacts()
+    same_a = await store.put(
+        Artifact(artifact_id="a-1", tenant_id=TENANT, run_id="r-1", content="结论：3 笔")
+    )
+    same_b = Artifact(artifact_id="a-2", tenant_id=TENANT, run_id="r-1", content="结论：3 笔")
+    assert same_a.immutable_digest == same_b.immutable_digest == digest_of("结论：3 笔")
+    assert len(same_a.immutable_digest) == 64
+
+    changed = Artifact(artifact_id="a-3", tenant_id=TENANT, run_id="r-1", content="结论：4 笔")
+    assert changed.immutable_digest != same_a.immutable_digest
+
+
+@pytest.mark.asyncio
+async def test_a_large_body_is_offloaded_only_when_a_blob_client_is_configured() -> None:
+    """超阈值**且**配了 blob 客户端才外移；没配就照旧内联（不假装上传成功）。"""
+    blobs = _RecordingBlobs()
+    store = InMemoryArtifacts(blobs=blobs)
+    big = "x" * (INLINE_CONTENT_MAX_BYTES + 1)
+    stored = await store.put(
+        Artifact(artifact_id="a-1", tenant_id=TENANT, run_id="r-1", content=big)
+    )
+    assert stored.storage_uri and stored.content == ""
+    # 元数据仍是**原文**的：外移不改"这份交付物多大、摘要是什么"
+    assert stored.size == len(big.encode())
+    assert stored.immutable_digest == digest_of(big)
+    # 取回来时按 storage_uri 还原正文
+    fetched = await store.get(TENANT, "a-1")
+    assert fetched is not None and fetched.content == big
+
+    # 没配 blob 客户端：同样的正文**内联在 PG**，不产生取不回的地址
+    inline = await InMemoryArtifacts().put(
+        Artifact(artifact_id="a-1", tenant_id=TENANT, run_id="r-1", content=big)
+    )
+    assert inline.storage_uri == ""
+    assert inline.content == big
 
 
 # ── 判据：一次 run 产出 ≥1 个 artifact，且可寻址可取回 ──────────────────
@@ -305,6 +391,46 @@ def test_an_unknown_artifact_is_not_found() -> None:
     assert client.get(f"{BASE}/artifacts/does-not-exist", headers=_headers()).status_code == 404
 
 
+# ── C-4：版本化在 HTTP 面上取得到 ────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_the_first_delivery_is_retrievable_over_http() -> None:
+    """判据落地：**能证明第一次交付了什么**——`?version=1` 直接取回原文。"""
+    client, store = _app()
+    run_id = _run_to_terminal(client)
+    items = client.get(f"{BASE}/runs/{run_id}/artifacts", headers=_headers()).json()["items"]
+    first = items[0]
+    assert first["version"] == 1
+    assert len(first["immutable_digest"]) == 64
+
+    # 同一地址再交付一次（图重放 / 续跑重派会走到这条路）：内容变了就 +1 版
+    await store.put(
+        Artifact(
+            artifact_id=first["artifact_id"],
+            tenant_id=TENANT,
+            run_id=first["run_id"],
+            task_id=first["task_id"],
+            profile_id=first["profile_id"],
+            content="# 改过的第二版",
+        )
+    )
+
+    latest = client.get(f"{BASE}/artifacts/{first['artifact_id']}", headers=_headers()).json()
+    assert latest["version"] == 2 and "第二版" in latest["content"]
+
+    original = client.get(
+        f"{BASE}/artifacts/{first['artifact_id']}?version=1", headers=_headers()
+    ).json()
+    assert original["version"] == 1
+    assert "分析报告" in original["content"]
+    assert original["immutable_digest"] == first["immutable_digest"]
+
+    # 存量读取路径不受影响：列表仍只出**最新**一版，一个地址一条
+    listed = client.get(f"{BASE}/runs/{run_id}/artifacts", headers=_headers()).json()["items"]
+    assert [row["version"] for row in listed if row["artifact_id"] == first["artifact_id"]] == [2]
+
+
 # ── 落地存储：真 PG + RLS（跨租户一行都读不到）──────────────────────────
 
 
@@ -340,6 +466,123 @@ async def test_artifacts_are_isolated_by_rls_on_a_real_database(
         assert await store.list(OTHER, "r-1") == []
         # **忘了设租户**（fail-closed）：同样读不到，而不是读到全部
         assert await store.list("", "r-1") == []
+    finally:
+        with psycopg.connect(admin_dsn, autocommit=True) as conn:
+            conn.execute(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
+
+
+# ── C-4：真 PG 上的版本往返 + 老表迁移 ──────────────────────────────────
+
+_OLD_TABLE_DDL = """
+CREATE TABLE IF NOT EXISTS artifact (
+    artifact_id  TEXT NOT NULL,
+    tenant_id    TEXT NOT NULL,
+    run_id       TEXT NOT NULL DEFAULT '',
+    task_id      TEXT NOT NULL DEFAULT '',
+    profile_id   TEXT NOT NULL DEFAULT '',
+    kind         TEXT NOT NULL DEFAULT 'report',
+    title        TEXT NOT NULL DEFAULT '',
+    content_type TEXT NOT NULL DEFAULT 'text/markdown',
+    content      TEXT NOT NULL DEFAULT '',
+    size         INTEGER NOT NULL DEFAULT 0,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (tenant_id, artifact_id)
+)
+"""
+
+_OLD_ROW_INSERT = """
+INSERT INTO artifact (artifact_id, tenant_id, run_id, task_id, content, size)
+VALUES ('a-1', %s, 'r-1', 't1', '1.6 时期落的产出', 24)
+"""
+
+
+@pytest.mark.asyncio
+async def test_versions_round_trip_through_a_real_database(pg_dsns: tuple[str, str]) -> None:
+    """两版并存且第一版取得到——**这条只能在真库上验**（主键与 ORDER BY 是库里的事）。"""
+    import psycopg
+    from mate_tech_agent_team.artifact_store import PgArtifacts, bootstrap_artifacts
+
+    admin_dsn, app_dsn = pg_dsns
+    schema = "agent_team_artifact_version_test"
+    with psycopg.connect(admin_dsn, autocommit=True) as conn:
+        conn.execute(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
+        conn.execute(f"CREATE SCHEMA {schema}")
+        conn.execute(f"GRANT USAGE ON SCHEMA {schema} TO mate_app")
+        conn.execute(f"SET search_path TO {schema}")
+        bootstrap_artifacts(conn)
+    try:
+        store = PgArtifacts(app_dsn, schema=schema)
+        await store.put(
+            Artifact(artifact_id="a-1", tenant_id=TENANT, run_id="r-1", content="第一版")
+        )
+        second = await store.put(
+            Artifact(artifact_id="a-1", tenant_id=TENANT, run_id="r-1", content="第二版")
+        )
+        assert second.version == 2
+        # 同内容再写一次：**幂等**，不刷版本号（重放不该攒版本）
+        assert (
+            await store.put(
+                Artifact(artifact_id="a-1", tenant_id=TENANT, run_id="r-1", content="第二版")
+            )
+        ).version == 2
+
+        versions = await store.list_versions(TENANT, "a-1")
+        assert [(v.version, v.content) for v in versions] == [(1, "第一版"), (2, "第二版")]
+        assert [v.version for v in await store.list(TENANT, "r-1")] == [2]
+
+        first = await store.get(TENANT, "a-1", 1)
+        assert first is not None and first.content == "第一版"
+        assert first.immutable_digest == digest_of("第一版")
+        # 跨租户仍然一行都读不到（新列没有引入新的读路径）
+        assert await store.get(OTHER, "a-1", 1) is None
+        assert await store.list_versions(OTHER, "a-1") == []
+    finally:
+        with psycopg.connect(admin_dsn, autocommit=True) as conn:
+            conn.execute(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
+
+
+@pytest.mark.asyncio
+async def test_the_migration_is_idempotent_and_loses_no_rows(pg_dsns: tuple[str, str]) -> None:
+    """老表（1.6~2.1-B 的两列主键）迁移：**加列不丢行**，且可重复跑。
+
+    第一步刻意用**旧 DDL** 建表并塞一行——那是"2.1-B 之前就存在的库"的样子。
+    迁移后：那一行还在，``version`` 读到默认 1，主键换成三列；再跑一次 migration
+    仍然成功（幂等），行数与内容都不变。
+    """
+    import psycopg
+    from mate_tech_agent_team.artifact_store import PgArtifacts, bootstrap_artifacts
+
+    admin_dsn, app_dsn = pg_dsns
+    schema = "agent_team_artifact_migrate_test"
+    with psycopg.connect(admin_dsn, autocommit=True) as conn:
+        conn.execute(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
+        conn.execute(f"CREATE SCHEMA {schema}")
+        conn.execute(f"GRANT USAGE ON SCHEMA {schema} TO mate_app")
+        conn.execute(f"SET search_path TO {schema}")
+        conn.execute(_OLD_TABLE_DDL)
+        conn.execute(_OLD_ROW_INSERT, (TENANT,))
+        # 迁移（第一次）+ 再跑一次（幂等）
+        bootstrap_artifacts(conn)
+        bootstrap_artifacts(conn)
+        cur = conn.execute(
+            "SELECT column_name FROM information_schema.columns"
+            " WHERE table_schema = current_schema() AND table_name = 'artifact'"
+        )
+        columns = {row[0] for row in cur.fetchall()}
+    try:
+        assert {"version", "immutable_digest", "provenance", "storage_uri"} <= columns
+        store = PgArtifacts(app_dsn, schema=schema)
+        preserved = await store.get(TENANT, "a-1")
+        assert preserved is not None
+        assert preserved.content == "1.6 时期落的产出"
+        assert preserved.version == 1  # 老行落到第一版，而不是丢行或 NULL
+        assert len(await store.list_versions(TENANT, "a-1")) == 1
+
+        # 换键之后**同一个地址仍能追加新版本**（老行没有被主键变更挤掉）
+        appended = await store.put(
+            Artifact(artifact_id="a-1", tenant_id=TENANT, run_id="r-1", content="迁移后的第二版")
+        )
+        assert appended.version == 2
     finally:
         with psycopg.connect(admin_dsn, autocommit=True) as conn:
             conn.execute(f"DROP SCHEMA IF EXISTS {schema} CASCADE")

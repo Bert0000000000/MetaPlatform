@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
-from ..profiles import DEFAULT_MODEL
+from ..profiles import DEFAULT_MODEL, DEFAULT_RUNTIMES, parse_runtime_kinds
 
 
 class StartRunRequest(BaseModel):
@@ -15,6 +15,38 @@ class StartRunRequest(BaseModel):
     #: 运行级截止时间（秒）。省略则用部署默认值（``MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS``，
     #: 0 = 不设超时）。到点后运行落终态 ``timeout``，不会一直停在闸门上。
     timeout_seconds: float | None = Field(default=None, ge=0)
+    #: 发起这一轮的会话（C-1）。给了就**落后端**（``conversation_run``），于是换机器 /
+    #: 清浏览器之后仍查得到"这次对话里跑过哪几轮"。省略则不起这层关系——不是所有
+    #: 调用方都有会话（工作台直接起一轮、CI 压测、脚本）。
+    conversation_id: str = ""
+    #: 这一轮是会话里的**第几次发言**（前端生成，用于把多轮排成时间序）。
+    turn_id: str = ""
+
+
+class ConversationRunModel(BaseModel):
+    """一个会话里的一轮 run（C-1）。
+
+    它是**关系 + 该轮状态**的组合：关系字段来自 ``conversation_run``（本服务是
+    唯一关系源），``status`` / ``goal`` 来自该轮自己的检查点——**不在这里复制
+    一份 run 状态**，否则列表与单轮视图会各说各话。
+    """
+
+    conversation_id: str
+    run_id: str
+    turn_id: str = ""
+    created_by: str = ""
+    relation_type: str = "initiated"
+    created_at: str = ""
+    #: 该轮此刻的状态。读不到检查点（受理了但还没落第一个检查点）时留空。
+    status: str = ""
+    goal: str = ""
+
+
+class RunListModel(BaseModel):
+    """``GET /runs?conversation=`` 的回执：**新→旧**。"""
+
+    conversation_id: str
+    items: list[ConversationRunModel] = Field(default_factory=list)
 
 
 class ApproveRequest(BaseModel):
@@ -57,10 +89,40 @@ class SubTaskResultModel(BaseModel):
     #: 该员工产出的**可寻址交付物**的元数据（1.6 任务 2）；正文按 ``artifact_id``
     #: 走 ``GET /artifacts/{artifact_id}`` 另取。
     artifacts: list[dict[str, Any]] = Field(default_factory=list)
+    # ── C-7 计量（`MP-OBSERVABILITY-DEEPEN-01`）────────────────────────────
+    #
+    # **只放真的拿得到的值**：token 三类来自 llmgw 回包的 ``usage``（外部 CLI 那
+    # 条路取不到就是 0），耗时是本服务量的，执行面/模型/提示词摘要在派发那一刻就
+    # 已知。拿不到的（上游 provider 名、模型单价、重规划原因）**一个都没加**——
+    # 恒为空的字段只会让人以为它有值。
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cached_tokens: int = 0
+    #: 这一件子任务的**墙钟耗时**（毫秒）。
+    latency_ms: int = 0
+    #: 其中花在模型调用上的（外部 CLI 运行时只有"整段调用"这一个粒度，见契约）。
+    llm_latency_ms: int = 0
+    #: 其中花在工具调用上的。与上面**并列测量**，不是"总 = 模型 + 工具"的拆解。
+    tool_latency_ms: int = 0
+    #: 跑它的执行面：``superai`` / ``claude_code`` / ``external_a2a``。
+    runtime_kind: str = ""
+    #: 这一件实际用的模型名（外部运行时可能为空——那时是 CLI 自己的默认）。
+    model: str = ""
+    #: 员工定义的提示词摘要（A-6）：两件回执的它不同，就不是同一版员工跑的。
+    prompt_digest: str = ""
+    #: 低基数的失败类别（``model_error`` / ``tool_error`` / ``authority`` /
+    #: ``profile_not_found`` / ``depth_exceeded`` / ``runtime_unavailable`` /
+    #: ``invalid_output`` / ``timeout``）；成功时为空串。
+    failure_category: str = ""
 
 
 class ArtifactModel(BaseModel):
-    """一件产出物的**元数据**（不含正文）。"""
+    """一件产出物的**元数据**（不含正文）。
+
+    C-4（`MP-ARTIFACT-VERSIONING-01`）起它是**某一版**的元数据：``version`` 从 1
+    起递增，``immutable_digest`` 是那一版正文的 sha256。同一 ``artifact_id`` 的
+    历史版本按 ``version`` 取（``GET /artifacts/{artifact_id}?version=N``）。
+    """
 
     artifact_id: str
     run_id: str = ""
@@ -70,8 +132,20 @@ class ArtifactModel(BaseModel):
     kind: str = "report"
     title: str = ""
     content_type: str = "text/markdown"
-    #: 正文的**字节数**。
+    #: 正文的**字节数**（原文的，不是 PG 那一列的长度）。
     size: int = 0
+    #: 这一版的版本号（首次交付 = 1）。重放同内容**不产生**新版本。
+    version: int = 1
+    #: 这一版正文的 sha256——"第一次交付的是什么"靠它验。
+    immutable_digest: str = ""
+    #: 谁、按哪一版流程产出的它（如 ``agent-runtime/v1``）。
+    provenance: str = ""
+    #: 密级标记。**只记录、不强制**：本服务不做访问策略判定。
+    security_classification: str = ""
+    #: 保留策略名。同上，只记录。
+    retention_policy: str = ""
+    #: 正文外移后的对象存储地址；内联在 PG 时为空串。
+    storage_uri: str = ""
     created_at: str = ""
 
 
@@ -95,6 +169,9 @@ class RunStateModel(BaseModel):
     summary: str = ""
     hitl_reason: str = ""
     error: str = ""
+    #: **观测关联键**（C-7）：跨层观测记录靠它拼回一次交付；重启续跑后的记录也带
+    #: 同一个 trace。关联键不是凭据，读到它不能多读任何东西。老 run 为空串。
+    trace_id: str = ""
     #: 本轮实际生效的运行级超时（秒；0 = 不设超时）与它的绝对截止时刻（epoch 秒；
     #: 0 = 无截止）。两者都**随 run 落库**：重启后仍按本轮的值裁决（1.5 任务 2）。
     timeout_seconds: float = 0.0
@@ -157,6 +234,9 @@ class EmployeeProfileModel(BaseModel):
     kb_ids: list[str] = Field(default_factory=list)
     markings: list[str] = Field(default_factory=list)
     model: str = DEFAULT_MODEL
+    #: 允许的执行面（C-5 / `MP-AGENT-PROFILE-MGMT-01`）。读回的就是**库里那几行**
+    #: 的值——配了 ``claude_code`` 的员工，重启后读回来仍然是 ``claude_code``。
+    runtimes: list[str] = Field(default_factory=lambda: [str(k) for k in DEFAULT_RUNTIMES])
     origin: str = "builtin"
 
 
@@ -177,6 +257,22 @@ class ProfileWriteRequest(BaseModel):
     kb_ids: list[str] = Field(default_factory=list)
     markings: list[str] = Field(default_factory=list)
     model: str = DEFAULT_MODEL
+    #: 允许的执行面（ADR-0066 §5.8）。省略 = 默认 ``["superai"]``（存量调用方
+    #: 一个字段都不用动）。
+    runtimes: list[str] = Field(default_factory=lambda: [str(k) for k in DEFAULT_RUNTIMES])
+
+    @field_validator("runtimes")
+    @classmethod
+    def _known_runtimes(cls, values: list[str]) -> list[str]:
+        """**不许静默切换 Runtime**：陌生的执行面名字直接 422，不落回默认。
+
+        静默回落正是要治的病——``"claude-code"``（少个下划线）被丢掉的话，这个
+        员工会一声不响地跑在 ``superai`` 上，而两个执行面的沙箱与权限假设不同。
+        空列表同样拒绝：它会被下游当成"没声明"再回落默认，那是同一种静默。
+        """
+        if not values:
+            raise ValueError("至少要声明一个执行面（空列表会让下游回落成默认）")
+        return [str(kind) for kind in parse_runtime_kinds(values)]
 
 
 class ProfileListModel(BaseModel):
@@ -258,10 +354,12 @@ __all__ = [
     "AuditListModel",
     "AuditRecordModel",
     "ChannelMessageModel",
+    "ConversationRunModel",
     "EmployeeProfileModel",
     "ProfileListModel",
     "ProfileWriteRequest",
     "RunAcceptedModel",
+    "RunListModel",
     "RunStateModel",
     "SendMessageRequest",
     "SkillContentModel",

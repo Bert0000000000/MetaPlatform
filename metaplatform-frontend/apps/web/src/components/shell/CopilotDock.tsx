@@ -4,6 +4,12 @@ import { useLocation } from 'react-router-dom';
 import { ArrowUp, Check, Sparkles, Square, X } from 'lucide-react';
 import { streamAgentChat, type StreamMessage } from '@/api/superai/chat';
 import { detectIntent, generatePlan } from '@/api/superai/schedule';
+import {
+  buildAssistantContextEnvelope,
+  getOntologyContextSnapshot,
+  type AssistantInteractionContext,
+  type AssistantNavigationState,
+} from '@/pages/ontology/hooks/assistantContext';
 import { resolveDomain, resolveDomainTab } from './domains';
 import { useShell } from './ShellContext';
 
@@ -60,6 +66,30 @@ export default function CopilotDock() {
   const tab = domain ? resolveDomainTab(domain, location.pathname) : undefined;
   const contextLabel = domain ? `${domain.label} / ${tab?.label ?? '—'}` : '当前页面';
 
+  // ADR-0065 S2：把"已感知当前页面"这句话**真的发出去**。此前这里只把路由渲染成
+  // contextLabel 给人看，请求体里一个字段都没带——面板说感知到了，agent 其实看不到。
+  // 放进 ref：`send` 的依赖数组不该为了跟随每次路由变化而重建。
+  const interactionRef = useRef<AssistantInteractionContext>({
+    appCode: 'app-superai',
+    pageCode: 'shell',
+    pageUrl: '/',
+  });
+  const navigationRef = useRef<AssistantNavigationState | null>(null);
+  useEffect(() => {
+    interactionRef.current = {
+      appCode: 'app-superai',
+      pageCode: domain ? `${domain.key}-${tab?.key ?? 'unknown'}` : 'shell',
+      pageUrl: location.pathname,
+    };
+    navigationRef.current = domain
+      ? {
+        view: tab ? `${domain.key}-${tab.key}` : domain.key,
+        tab: tab?.key,
+        url: `${location.pathname}${location.search}`,
+      }
+      : null;
+  }, [domain, tab, location.pathname, location.search]);
+
   useEffect(() => {
     if (!copilotOpen) return;
     const el = bodyRef.current;
@@ -93,6 +123,14 @@ export default function CopilotDock() {
     const controller = new AbortController();
     abortRef.current = controller;
     const tools: ToolTrace[] = [];
+
+    // 上下文在**发送这一刻**组装：navigation 取当前路由，selection 取本体域 store
+    // 里最新的那份（只有对象浏览器在发布；其它域为空，就不落 selection 键）。
+    const context = buildAssistantContextEnvelope({
+      interaction: interactionRef.current,
+      navigation: navigationRef.current,
+      selection: getOntologyContextSnapshot().selection,
+    });
 
     try {
       await streamAgentChat(
@@ -149,6 +187,7 @@ export default function CopilotDock() {
           },
         },
         controller.signal,
+        { context },
       );
     } catch (e) {
       patch(assistantId, { error: e instanceof Error ? e.message : String(e) });

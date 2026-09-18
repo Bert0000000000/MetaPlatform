@@ -14,6 +14,7 @@
  * 后端对接：copilot stream（LLM 流式）/ conversations（会话 CRUD + 历史）/ 多模态。
  */
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AIChatDialogue,
   AIChatInput,
@@ -59,8 +60,15 @@ import {
   multimodalUploadChat,
   parseRoutingDecisionEvent,
 } from '@/api/superai/chat';
-import type { AgentProposalEvent } from '@/api/superai/chat';
-import { approveRun, cancelRun, newIdempotencyKey, startRun, type RunState } from '@/api/agentTeam';
+import type { AgentNavigateEvent, AgentProposalEvent } from '@/api/superai/chat';
+import {
+  approveRun,
+  cancelRun,
+  listConversationRuns,
+  newIdempotencyKey,
+  startRun,
+  type RunState,
+} from '@/api/agentTeam';
 import AgentTeamSchedulePanel from './components/AgentTeamSchedulePanel';
 import { useAgentTeamRun } from './useAgentTeamRun';
 import { RoutingDecisionPanel } from './components/RoutingDecisionPanel';
@@ -68,6 +76,7 @@ import { EvidenceRenderer } from './components/EvidenceRenderer';
 import { ClaimRenderer } from './components/ClaimRenderer';
 import OntologyEvidencePanel from './components/OntologyEvidencePanel';
 import ProposalActionCard from './components/ProposalActionCard';
+import NavigateCard from './components/NavigateCard';
 import ProposalConfirmDrawer from '@/pages/ontology/components/ProposalConfirmDrawer';
 import { clearRoutingDecisionForStreamError } from './routingDecisionState';
 import {
@@ -151,9 +160,14 @@ function isBackendConversation(id: string): boolean {
 /**
  * 会话 ↔ 本轮 agent-team run 的关联键。
  *
- * 后端没有「会话 ↔ run」这张表（那是新增后端功能，本批明确不做），所以关联落在
- * **浏览器本地**——刷新页面后靠它去 `GET /runs/{id}` 把调度视图恢复回来。换一台
- * 机器打开同一个会话看不到上一轮的调度，这是本地存储的固有限制，不假装没有。
+ * **这只是缓存**。真值在后端（`conversation_run` 表 + `GET /runs?conversation=`，
+ * C-1 落地）：换一台机器、清一次浏览器缓存之后，后端仍答得出来"这次对话里跑过
+ * 哪几轮"。本地这份的作用是**先画一帧**，省掉一次往返时调度面板的空白。
+ *
+ * 两处刻意的行为，别当成 bug：
+ * 1. 后端答了就以**后端**为准（本地那份可能是别的机器留下的、或早于本功能）；
+ * 2. 后端答**空**时保留本地那份——那是 C-1 之前起过的老 run，后端根本没有它的
+ *    关系记录。丢掉它等于把用户能看见的历史凭空删掉。
  */
 const RUN_STORE_PREFIX = 'mp-agent-team-run:';
 
@@ -439,6 +453,8 @@ export default function ChatPage() {
   // 本体证据 / 待确认提案：按 assistant 消息 id 归集，与 agentSteps 同构。
   const [agentEvidence, setAgentEvidence] = useState<Record<string, Evidence[]>>({});
   const [agentProposals, setAgentProposals] = useState<Record<string, AgentProposalEvent[]>>({});
+  // agent 建议跳转（ADR-0065 §3.3）：按 assistant 消息 id 归集，与 evidence/proposal 同构。
+  const [agentNavigations, setAgentNavigations] = useState<Record<string, AgentNavigateEvent[]>>({});
   // 点「同意」后打开确认抽屉的提案（抽屉负责 confirm + execute）。
   const [pendingProposal, setPendingProposal] = useState<AgentProposalEvent | null>(null);
   const [loading, setLoading] = useState(false);
@@ -462,6 +478,8 @@ export default function ChatPage() {
 
   // 对话角色名取当前登录用户（无登录态时退化为中性称呼，不写死 Admin）
   const currentUserName = useMemo(() => getUser()?.username ?? '我', []);
+  // navigate 卡片点击后真正跳转的执行者——宿主持有 router，卡片只发意图。
+  const navigate = useNavigate();
 
   // activeId 初始化（挂载后取第一个会话）
   useEffect(() => {
@@ -514,10 +532,33 @@ export default function ChatPage() {
       });
   }, [activeId]);
 
-  // --- 调度视图恢复：切会话 / 刷新页面后，从本地记的 run_id 去 GET /runs/{id} 取回 ---
+  // --- 调度视图恢复：切会话 / 刷新页面后，把这一轮的 run_id 找回来 ---
+  //
+  // 两步走，顺序是有意的：
+  // 1. **先**用本地缓存画一帧（省掉往返期间面板的空白）；
+  // 2. **再**问后端 `GET /runs?conversation=`，它答什么就以它为准（C-1：后端是
+  //    唯一关系源）。后端答空说明这一轮没有关系记录（本功能之前起的老 run），
+  //    这时**保留**缓存那一份；请求失败同理。
   useEffect(() => {
+    let cancelled = false;
     setTeamRun(null);
-    setTeamRunId(loadStoredRunId(activeId));
+    const cached = loadStoredRunId(activeId);
+    setTeamRunId(cached);
+    if (!activeId) return () => { cancelled = true; };
+
+    listConversationRuns(activeId)
+      .then((runs) => {
+        if (cancelled || runs.length === 0) return;
+        const latest = runs[0].run_id; // 后端回的是新→旧
+        setTeamRunId(latest);
+        if (latest !== cached) storeRunId(activeId, latest);
+      })
+      .catch(() => {
+        // 后端不可达时不影响这一轮：缓存那份已经在上面画出来了
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [activeId, setTeamRun]);
 
   // --- 模型列表：文本聊天走后台 AI Provider 配置（/models/chat），多模态单独加载 ---
@@ -639,7 +680,15 @@ export default function ChatPage() {
           title: s.title === '新对话' ? trimmed.slice(0, 24) || '新对话' : s.title,
         }));
         try {
-          const accepted = await startRun(trimmed, 3, newIdempotencyKey());
+          // 带 `conversation_id` 提交：关系由**后端**记（C-1）。`turn_id` 用这条
+          // 助手消息的 id——它在会话内唯一，正好表示"这一轮"。
+          const accepted = await startRun(
+            trimmed,
+            3,
+            newIdempotencyKey(),
+            sessionId,
+            assistantMessage.id,
+          );
           storeRunId(sessionId, accepted.run_id);
           setTeamRun(null);
           setTeamRunId(accepted.run_id);
@@ -828,6 +877,14 @@ export default function ChatPage() {
                 if (existing.some((p) => p.proposalId === proposal.proposalId)) return prev;
                 return { ...prev, [assistantId]: [...existing, proposal] };
               });
+            },
+            onNavigate: (event) => {
+              // 卡片由 `renderDialogueContentItem.navigate` 渲染——白名单校验在那张
+              // 卡片里做（R4），这里只归集，不做任何"看起来能点"的判断。
+              setAgentNavigations((prev) => ({
+                ...prev,
+                [assistantId]: [...(prev[assistantId] || []), event],
+              }));
             },
             onDelta: (delta) => {
               setStreamingMap((m) => ({ ...m, [assistantId]: (m[assistantId] || '') + delta }));
@@ -1138,6 +1195,10 @@ export default function ChatPage() {
         for (const proposal of agentProposals[msg.id] ?? []) {
           contentItems.push({ type: 'proposal', proposal });
         }
+        // agent 建议跳转（ADR-0065 §3.3）：可点击导航卡片，点击才跳转。
+        for (const nav of agentNavigations[msg.id] ?? []) {
+          contentItems.push({ type: 'navigate', target: nav.target });
+        }
         return {
           id: msg.id,
           role: msg.role === 'user' ? 'user' : 'assistant',
@@ -1146,7 +1207,7 @@ export default function ChatPage() {
           createdAt: msg.createdAt ? Date.parse(msg.createdAt) : Date.now(),
         };
       }),
-    [activeSession?.messages, streamingMap, agentSteps, agentEvidence, agentProposals],
+    [activeSession?.messages, streamingMap, agentSteps, agentEvidence, agentProposals, agentNavigations],
   );
 
   const filteredSessions = useMemo(() => {
@@ -1349,6 +1410,12 @@ export default function ChatPage() {
                   />
                 );
               },
+              navigate: (item: { target?: { path: string; label: string } }) => {
+                const target = item.target;
+                if (!target) return null;
+                // 白名单校验（R4）在 NavigateCard 内部做：不合规的渲染成纯文本块。
+                return <NavigateCard target={target} onNavigate={(path) => navigate(path)} />;
+              },
             }}
             chats={semiMessages}
             hints={activeSession.messages.length === 0 ? WELCOME_PROMPTS : EMPTY_HINTS}
@@ -1398,13 +1465,22 @@ export default function ChatPage() {
                 field="model"
                 initValue={currentModel}
               />
+              {/* **Legacy（C-3 / `MP-LEGACY-SUNSET-01`）**：这条走
+                  `POST /copilot/chat/agent/stream`，是**旧的**对话调度链路——
+                  调度状态散在 SSE 事件里，前端各自拼；而右边那个「Agent 产品层」
+                  走的是落库的 Run（可恢复、可审计、有证据与交付物）。
+                  两个都留着只是为了不打断在用的用户；**退役版本 2.2**，见
+                  `docs/active/delivery/evidence/MP-LEGACY-SUNSET-01-AGENT-LOOP.md`。
+                  标签上写明 Legacy，是因为"我们打算收敛"这件事只有写在用户看得见的
+                  地方才算数——否则就是一份没人读的文件。 */}
               <Button
                 size="small"
                 type={agentMode ? 'primary' : 'tertiary'}
                 icon={<RobotOutlined size={14} />}
                 onClick={() => setAgentMode((v) => !v)}
+                title="旧链路（Legacy）：调度状态不落库。请改用右侧「Agent 产品层」，退役版本 2.2"
               >
-                {agentMode ? 'Agent 调度中' : 'Agent 调度'}
+                {agentMode ? 'Agent 调度中 · Legacy' : 'Agent 调度 · Legacy'}
               </Button>
               {/* Agent 产品层：走 agent-team run（任务图 / 派数字员工 / 人工确认），
                   调度过程显示在上方的常驻区域。用原生 button —— dev 预览窗里
