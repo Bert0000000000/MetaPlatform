@@ -30,6 +30,20 @@ jobs:
             cache: npm,
             cache-dependency-path: mate-platform-backend/contracts/package-lock.json,
           }
+      # MP-CONTRACT-COVERAGE-01（closeout 批）：platform.yaml 是**生成物**
+      # （build_platform.py 按 manifest 重建）。2.1-C §3-C1 的教训：它曾经靠手工
+      # 维护，于是 manifest 里加了 agent-team / deep-research / orchestrator 之后
+      # 没人重建 platform.yaml——breaking-change job 对这三个服务**名义覆盖**了
+      # 三个月。这道门让"改 manifest / 加服务而不重建"当场红。
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install PyYAML
+      - name: Verify platform.yaml is regenerated & committed fresh
+        run: |
+          python scripts/build_platform.py
+      - name: Diff platform.yaml (manifest coverage must be committed)
+        working-directory: .
+        run: git diff --exit-code -- mate-platform-backend/contracts/openapi/platform.yaml
       - run: npm ci
       - run: npm run check
       - name: Verify generated bundle is committed

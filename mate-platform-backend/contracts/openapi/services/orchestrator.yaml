@@ -880,6 +880,8 @@ paths:
                     type: ["string", "null"]
                   results:
                     type: array
+                    items:
+                      type: object
         "404":
           description: 计划不存在
       operationId: orchestratorPostPlansPlanIdStepsStepIdReview

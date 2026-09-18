@@ -55,7 +55,10 @@ repos:
         files: \.(yml|yaml|json|md)$
         # 2026-09-15 最终批：pnpm-lock.yaml 是工具生成物（prettier 重排会与
         # pnpm 自己写出的格式打架，且每次安装都会再改）——排除，不进 lint 范围
-        exclude: ^(docs/|infra/helm/|acceptance/|\.pre-commit-config\.yaml|mate-platform-backend/contracts/openapi/generated/|metaplatform-frontend/pnpm-lock\.yaml)
+        # 2026-09-18 closeout：contracts/openapi/platform.yaml 同为生成物
+        # （build_platform.py 按 manifest 重建，CI 有 drift 门）——与 generated/
+        # 同一条理由排除
+        exclude: ^(docs/|infra/helm/|acceptance/|\.pre-commit-config\.yaml|mate-platform-backend/contracts/openapi/(generated/|platform\.yaml)|metaplatform-frontend/pnpm-lock\.yaml)
 
   - repo: https://github.com/hadolint/hadolint
     rev: v2.12.1-beta
