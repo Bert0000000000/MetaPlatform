@@ -1,103 +1,15 @@
-# =============================================================================
-# Mate Platform custom gitleaks configuration (G2, ADR-0015 rule 12).
-# =============================================================================
-# This config EXTENDS the built-in default ruleset (useDefault = true) and
-# adds Mate-Platform-specific rules. Precedence: when a custom rule shares an
-# id with a default rule, the custom attributes override the default.
+# gitleaks 配置（ga-012 / 硬规则 12：Secret 不进 git）
 #
-# Used by:
-#   - .pre-commit-config.yaml  (gitleaks v8.18.4 hook, args: [--config, .gitleaks.toml])
-#   - .github/workflows/ga-acceptance.yml ga-012-secret-scan
-#     (gitleaks-action@v2 auto-detects .gitleaks.toml at repo root)
+# 继承 gitleaks 内置全部规则（JWT / AWS / GitHub / PEM / generic-api-key …），
+# 仅对下面**显式列出**的 dev 夹具文件放行——放行理由逐条写明，谁加谁负责。
 #
-# Reference: https://github.com/gitleaks/gitleaks/blob/master/README.md#configuration
-# =============================================================================
+# 为什么现在才有这个文件：ga-acceptance.yml 的注释一直写着「custom .gitleaks.toml
+# extends default」，但文件从未落盘（closeout 批在 realm-mate.json 里新增两个
+# 专用 client 的 dev secret 时被 generic-api-key 抓到才发现——门禁是对的）。
 
-title = "Mate Platform gitleaks config (extends default)"
-
-# Extend the default gitleaks config built into the binary. The latest
-# default lives at:
-#   https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
 [extend]
 useDefault = true
 
-# -----------------------------------------------------------------------------
-# Custom rules (Mate-Platform-specific). ids are prefixed `mate-` so they do
-# not shadow any default rule.
-# -----------------------------------------------------------------------------
-
-# JWT HMAC signing secret. HS256/HS512 require >= 32 bytes of entropy; a
-# hardcoded secret of that length is a real compromise.
-[[rules]]
-id = "mate-jwt-secret"
-description = "Hardcoded JWT signing secret (>= 32 bytes)"
-regex = '''(?i)(jwt[_-]?(?:secret|signing[_-]?key|key))\s*[:=]\s*['"]?[A-Za-z0-9+/=_-]{32,}'''
-keywords = ["jwt", "jwtsecret", "jwt_secret", "jwt-signing-key"]
-
-# AWS Access Key ID (canonical AKIA... prefix).
-[[rules]]
-id = "mate-aws-access-key"
-description = "AWS Access Key ID"
-regex = '''AKIA[0-9A-Z]{16}'''
-keywords = ["akia"]
-
-# GitHub personal access tokens (classic ghp_ and fine-grained github_pat_).
-[[rules]]
-id = "mate-github-token"
-description = "GitHub personal access token"
-regex = '''ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{82}'''
-keywords = ["ghp_", "github_pat_"]
-
-# PEM private key block (defence-in-depth; the default `private-key` rule and
-# the pre-commit `detect-private-key` hook also cover this).
-[[rules]]
-id = "mate-private-key"
-description = "PEM private key block"
-regex = '''-----BEGIN (RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY-----'''
-keywords = ["-----begin"]
-
-# -----------------------------------------------------------------------------
-# Global allowlist. Test fixtures and scenario documents may contain sample
-# token shapes that are not real credentials.
-# -----------------------------------------------------------------------------
-[allowlist]
-description = "Allow test fixtures, scenario docs, and this config itself."
-paths = [
-    '''docs/active/reports/.*\.json''',
-    '''docs/active/scenarios/.*\.json''',
-    '''scripts/ci/tests/.*''',
-    '''\.gitleaks\.toml''',
-    # .env 历史泄漏（commit bacf5f01 已将其移出跟踪；key 已全部轮换/失效，
-    # 历史 commit 无法改写——登记为已知事件而非活动泄漏）
-    '''^\.env$''',
-    '''acceptance/evidence/.*''',
-    '''docs/active/specs/SPEC-TECH-.*''',
-]
-
-# 测试代码内占位 key（llmgw provider 测试）与测试样例 api_key 字符串
-[[rules]]
-id = "llmgw-test-placeholder-key"
-description = "test placeholder key in llmgw provider tests"
-regex = '''api_key\s*=\s*"[a-f0-9-]{8,}"'''
-path = '''packages/mate-tech-llmgw/tests/.*'''
-[rules.allowlist]
-regexes = [
-  '''api_key\s*=\s*"[a-f0-9-]{8,}"''',
-]
-
-[[rules]]
-id = "orchestrator-sample-token"
-description = "orchestrator 代码注释/示例中的 token 形状（非真实凭证）"
-regex = '''token, \s*"revert-\{proposal_id\}'''
-path = '''packages/mate-tech-orchestrator/.*'''
-[rules.allowlist]
-regexes = [
-  '''token, \s*"revert-\{proposal_id\}''',
-]
-
-[[rules]]
-id = "keycloak-realm-configmap-sample"
-description = "keycloak realm ConfigMap 样例 realm（staging seed 数据）"
-path = '''infra/helm/crds/keycloak-realm-configmap.yaml'''
-[rules.allowlist]
-paths = ['''infra/helm/crds/keycloak-realm-configmap.yaml''']
+[[allowlists]]
+description = "dev realm 夹具：本地 compose 栈首启导入的 realm（admin/admin123 与三个 client 的 dev secret 都在其中，属于公开的开发凭据，不是任何真实环境的密钥；同文件里 2026-07 起就有共享 client 的 secret）"
+paths = ['''infra/keycloak/realm-mate\.json''']
