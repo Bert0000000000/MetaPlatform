@@ -109,25 +109,21 @@ test.describe('UI-P1a · 本体域（IA v2 工作区）', () => {
     await expect(page.locator('.mp-tablepro, .mp-empty').first()).toBeVisible({ timeout: 20_000 });
   });
 
-  test('类型建模：子 tab 带真实计数', async ({ page }) => {
+  test('语义模型：基元独立成页，公理计数回归锁保留（IA2-2 拆分）', async ({ page }) => {
+    // 工作台在对象类型页（建模能力不退化）
     await gotoApp(page, '/ontology/model/object-types');
-    const tabs = page.locator('.mp-onto-shell .semi-tabs-tab');
-    for (const label of ['对象类型', '关系类型', '动作类型', '函数', '接口', '公理']) {
-      const tab = tabs.filter({ hasText: label });
-      await expect(tab).toBeVisible({ timeout: 20_000 });
-      // 标题形如「<名称> · <条数>」。计数初值是 0，接口回来后变正数；
-      // 用会重试的断言等它，别一次性读 innerText（会读到加载中的 0）。
-      // 这条正则正是「公理计数曾被写死为 0」那个回归的锁。
-      await expect(tab).toContainText(/·\s*[1-9]\d*/, { timeout: 20_000 });
-    }
-    // 本体图谱是第 7 个子 tab（模型层视图，09-17 由数据中心迁入；无计数）
-    await expect(tabs.filter({ hasText: '本体图谱' })).toBeVisible({ timeout: 20_000 });
-
-    // 对象类型 = 完整建模工作台（09-17 起不再只读清单）：一级本体域树在工作
     await expect(page.getByRole('heading', { name: '一级本体' })).toBeVisible({ timeout: 20_000 });
+    // 容器时代的 7-kind 横向 Tab 已消亡（详细断言在 ontology-ia-v2-model-flow）
+    await expect(page.locator('.mp-onto-shell .semi-tabs-bar-button')).toHaveCount(0);
 
-    // 公理：内核已暴露清单接口，与其它子 tab 一样出真实表格。
-    await tabs.filter({ hasText: '公理' }).click();
+    // 公理计数回归锁：曾被子 tab 写死为 0，现在锁 PageHeader 描述里的真实计数
+    await gotoApp(page, '/ontology/model/axioms');
+    await expect(page.locator('.mp-onto-shell')).toContainText(/·\s*数据取自本体内核/, {
+      timeout: 20_000,
+    });
+    await expect(page.locator('.mp-onto-shell')).toContainText(/[1-9]\d* 个公理/, {
+      timeout: 20_000,
+    });
     await expect(page.locator('.mp-tablepro .semi-table-tbody .semi-table-row').first()).toBeVisible({
       timeout: 20_000,
     });
@@ -152,9 +148,7 @@ test.describe('UI-P1a · 本体域（IA v2 工作区）', () => {
     await page.screenshot({ path: 'tests/e2e/screenshots/ui-p1a-explorer-dark.png' });
 
     await gotoApp(page, '/ontology/model/graph');
-    await expect(page.locator('.mp-onto-shell .semi-tabs-tab').filter({ hasText: '本体图谱' })).toBeVisible({
-      timeout: 20_000,
-    });
+    await expect(page.locator('.mp-onto-graph')).toBeVisible({ timeout: 20_000 });
     await page.evaluate(() => document.body.setAttribute('theme-mode', 'light'));
     await page.screenshot({ path: 'tests/e2e/screenshots/ui-p1a-graph-light.png' });
     await page.evaluate(() => document.body.setAttribute('theme-mode', 'dark'));
