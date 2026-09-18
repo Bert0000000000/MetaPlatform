@@ -120,6 +120,7 @@ P2 runtime token + X-Tenant-Id → llmgw HTTP 503（上游故意指坏；租户�
 | **C2** | **build_platform.py 与手工 platform.yaml 漂移了三个 securityScheme** | 照脚本重建会产 768 个 lint 错。这解释了为什么当初没人重建——一旦有人跑了脚本，CI 会全红，于是"手工补 path"成了阻力最小的路，漂移越来越远。drift 门（任务二③）把这条路堵死 |
 | **C3** | kind 复跑的镜像必须 `BUILD_IMAGE=1` | 沿用 §3-C8 教训，两轮复跑都显式重建（第一轮还抓到审计 bug，正是重建的价值） |
 | **C4** | P2 负例对照的 503 是**故意构造的上游故障**（base_url 指向不存在的端口 + `allow_stub_fallback=false`），用于证明"守卫放行后失败发生在别处"；不是 llmgw 故障 |
+| **C5** | **CI 实跑抓到的两条（都已处置）**：① ga-012 gitleaks 抓到 realm JSON 的新 dev secret——修法是把该 dev 夹具文件加进既有 allowlist（理由写在配置注释里）；处置过程中误覆盖了 `.gitleaks.toml` 原文（97 行 → 9 行），**靠 `git show HEAD~1:` 恢复**——在多目录会话里判根目录文件存在性前要先 `pwd`。② `agent-team 3 replicas`（kind）CI 首次带着本批的 chart 改动（Secret 口令 + runtime env）跑过（3m4s PASS），等于 D5 的 CI 侧验证 |
 
 ## 4. 提交
 
@@ -208,7 +209,7 @@ PYTHONIOENCODING=utf-8 python scripts/keycloak/apply_tenant_boundary.py --keyclo
 | ga-009 OTel | 未触及（审计走既有账本） |
 | ga-010 require_evidence | 本文件 |
 | ga-011 helm-docs | README values 表已同步 |
-| ga-012 gitleaks | realm JSON 里的 dev 值沿用既有 in-realm 先例（共享 client 的 secret 一直在那）；本地 `.env` 改动不进 git |
+| ga-012 gitleaks | **本批唯一的新红，已修**：realm JSON 两个新 dev secret 被 `generic-api-key` 抓到（门禁是对的）——按既有先例把 `infra/keycloak/realm-mate.json` 加进 `.gitleaks.toml` 的 allowlist（该文件自 2026-07 起就有共享 client 的 secret，当时未被抓到只因 gitleaks 只扫新提交）。修复过程里我还**误覆盖过这份 97 行的既有配置**（在错误目录判了"文件不存在"），已从上一提交恢复原文、以追加一行 path 的最小形态并入（`d1829a08`） |
 | ga-013 NetworkPolicy | 未动 |
 
 ## 6. 遗留与建议
