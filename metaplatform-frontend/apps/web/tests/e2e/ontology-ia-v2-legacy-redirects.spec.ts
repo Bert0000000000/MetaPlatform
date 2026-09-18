@@ -48,7 +48,10 @@ const CASES: Array<[string, string]> = [
   ['/ontology/ops/actions', '/ontology/logic/designer'],
   ['/ontology/ops/governance', '/ontology/governance/releases'],
   ['/ontology/ops', '/ontology/governance/drafts'],
-  ['/ontology/governance', '/ontology/governance/releases'],
+  // 裸组根不是退役路径：由 routes/ontology.tsx 的组 index redirect 落到组默认页
+  // （drafts）；旧 GovernancePage 语义经 ?tab=governance 与 /ontology/ops/governance
+  // 两条退役路径保留（都指向 releases）。
+  ['/ontology/governance', '/ontology/governance/drafts'],
 ];
 
 test.describe('Ontology IA v2 · 旧路径迁移矩阵', () => {

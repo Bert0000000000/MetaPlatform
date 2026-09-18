@@ -1,16 +1,17 @@
 /**
- * UI-P1a 验收用例：本体域（4 个页内 tab）改用新骨架与令牌。
+ * UI-P1a 验收用例：本体域（IA v2 工作区）在新骨架与令牌下可用。
  *
- * 覆盖 DESIGN-SPEC §5 版式 B（对象浏览器）/ F（数据中心）/ E（建模、运维）与 UI-P1 通用 DoD：
- *  - 4 个 tab 在新壳内打开，数据来自真实本体内核（不 mock）
- *  - 对象浏览器：类型树 + 实例表 + 点击行弹非模态 SheetDetail
- *  - 数据中心：力导向图谱渲染 + 节点选中详情卡 + 三视图切换
- *  - 类型建模：6 个子 tab 与真实计数
- *  - 运维：接入 / 版本 / 审计三个真实运维面
- *  - 浅 / 深双主题截图
+ * IA2-1 重写（ADR-0069）：本域改为左侧工作区导航后，原「4 个页内横向 tab」断言
+ * 已随 09-17 IA 重排过期（文案漂移红）并再度随 IA v2 作废。本文件现在覆盖：
+ *  - 工作区形态：左侧导航渲染、全局横向 PageTabs 不渲染；
+ *  - 对象浏览：类型树 + 实例表 + 点击行弹非模态 SheetDetail；
+ *  - 数据映射：接入 / 血缘 / 资产视图切换（容器内部 tab，IA2-3 拆分）；
+ *  - 类型建模：7 个子 tab 带真实计数（容器内部 tab，IA2-2 拆分）；
+ *  - 发布与治理（草稿）：OpsPage 三个真实运维面（IA2-5/2-6 拆分）；
+ *  - 浅 / 深双主题截图。
  *
  * 运行：pnpm --dir apps/web exec playwright test ui-p1a-ontology
- * 依赖：dev server 9250、gateway 8100，且租户内有已落库的对象实例。
+ * 依赖：dev server 9250（先预热）、gateway 8100，且租户内有已落库的对象实例。
  */
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
 import { fetchAccessToken, injectAuth } from './helpers/auth';
@@ -44,33 +45,31 @@ async function gotoApp(page: Page, path: string): Promise<void> {
   await expect(page.locator('#app')).toBeAttached({ timeout: 30_000 });
 }
 
-test.describe('UI-P1a · 本体域', () => {
+test.describe('UI-P1a · 本体域（IA v2 工作区）', () => {
   test.beforeEach(async ({ context, page }) => {
     await injectAuth(context, page);
   });
 
-  test('4 个页内 tab 在新壳内打开，壳不再叠加第二行 tab', async ({ page }) => {
-    const tabs: Array<[string, string]> = [
-      ['/ontology/explorer', '对象浏览器'],
-      ['/ontology/datacenter', '数据中心'],
-      ['/ontology/model', '类型建模'],
-      ['/ontology/ops', '运维'],
-    ];
-    for (const [path, label] of tabs) {
+  test('工作区形态：左侧导航渲染，全局横向 PageTabs 不渲染', async ({ page }) => {
+    for (const path of [
+      '/ontology/explore/objects',
+      '/ontology/data/mappings',
+      '/ontology/model/object-types',
+      '/ontology/governance/drafts',
+    ]) {
       await gotoApp(page, path);
-      const bar = page.locator('.mp-pagetabs .semi-tabs-tab');
-      await expect(bar.filter({ hasText: label })).toBeVisible({ timeout: 20_000 });
-      // 域内页面自己不再渲染第二行同名 tab（P1a 已摘掉 ownsTabs）
-      await expect(page.locator('.mp-page .mp-pagetabs')).toHaveCount(0);
+      await expect(page.locator('.mp-onto-sidenav')).toBeVisible({ timeout: 20_000 });
+      await expect(page.locator('.mp-onto-sidenav-link', { hasText: '对象类型' })).toBeVisible();
+      await expect(page.locator('.mp-pagetabs')).toHaveCount(0);
     }
   });
 
-  test('对象浏览器：类型树 + 实例表 + 点击行弹 SheetDetail', async ({ page, request }) => {
+  test('对象浏览：类型树 + 实例表 + 点击行弹 SheetDetail', async ({ page, request }) => {
     const token = await fetchAccessToken(request);
     const seeded = await findSeededObjectType(request, token);
     test.skip(!seeded, '租户内没有已落库的对象实例，跳过');
 
-    await gotoApp(page, `/ontology/explorer?class=${encodeURIComponent(seeded!.rid)}`);
+    await gotoApp(page, `/ontology/explore/objects?class=${encodeURIComponent(seeded!.rid)}`);
 
     // 左类型树 + 可折叠分栏
     await expect(page.locator('.mp-split')).toBeVisible({ timeout: 20_000 });
@@ -94,33 +93,25 @@ test.describe('UI-P1a · 本体域', () => {
     await expect(sheet).toBeHidden();
   });
 
-  test('数据中心：图谱渲染 + 节点详情卡 + 三视图切换', async ({ page }) => {
-    await gotoApp(page, '/ontology/datacenter');
+  test('数据映射：接入 / 血缘 / 资产视图切换', async ({ page }) => {
+    await gotoApp(page, '/ontology/data/mappings');
 
-    // 知识图谱：SVG 里真的有节点与边
-    await expect(page.locator('.mp-dc-stage svg').first()).toBeVisible({ timeout: 20_000 });
-    await expect
-      .poll(async () => page.locator('.mp-graph-node').count(), { timeout: 20_000 })
-      .toBeGreaterThan(0);
+    // 容器内部视图 tab（IA2-3 拆分为独立路由后本断言退役）
+    const tabs = page.locator('.mp-onto-shell .semi-tabs-tab');
+    await expect(tabs.filter({ hasText: '数据接入' })).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('.mp-dc-ingest-bar')).toBeVisible({ timeout: 20_000 });
 
-    // 节点可选中并弹出详情卡。
-    // 走 DOM 派发而非坐标点击：节点 <g> 自带的 click 监听直接 selectNode(sim, i)，与点击坐标无关；
-    // 力导向在类型数达到数十个时会长时间重排，坐标点击会随节点位移落空（曾稳定失败）。
-    // 同时挑「可见」节点——类型过滤下隐藏的节点是 display:none，派发也不会选中。
-    await page.locator('.mp-graph-node:visible').first().locator('circle').dispatchEvent('click');
-    await expect(page.locator('.mp-dc-card')).toBeVisible({ timeout: 10_000 });
+    // 血缘：分层 DAG（有登记数据时出节点，否则空态——二选一）
+    await tabs.filter({ hasText: '数据血缘' }).click();
+    await expect(page.locator('.mp-graph-ln-node, .mp-empty').first()).toBeVisible({ timeout: 20_000 });
 
-    // 视图切换：血缘 / 资产
-    await page.locator('.mp-dc-toolbar .semi-tabs-tab', { hasText: '数据血缘' }).click();
-    await expect(page.locator('.mp-dc-title')).toHaveText('数据血缘');
-    await page.locator('.mp-dc-toolbar .semi-tabs-tab', { hasText: '资产清单' }).click();
-    await expect(page.locator('.mp-dc-title')).toHaveText('资产清单');
-    await expect(page.locator('.mp-tablepro, .mp-empty').first()).toBeVisible();
+    await tabs.filter({ hasText: '资产清单' }).click();
+    await expect(page.locator('.mp-tablepro, .mp-empty').first()).toBeVisible({ timeout: 20_000 });
   });
 
-  test('类型建模：6 个子 tab 带真实计数', async ({ page }) => {
-    await gotoApp(page, '/ontology/model');
-    const tabs = page.locator('.mp-page .semi-tabs-tab');
+  test('类型建模：子 tab 带真实计数', async ({ page }) => {
+    await gotoApp(page, '/ontology/model/object-types');
+    const tabs = page.locator('.mp-onto-shell .semi-tabs-tab');
     for (const label of ['对象类型', '关系类型', '动作类型', '函数', '接口', '公理']) {
       const tab = tabs.filter({ hasText: label });
       await expect(tab).toBeVisible({ timeout: 20_000 });
@@ -129,48 +120,44 @@ test.describe('UI-P1a · 本体域', () => {
       // 这条正则正是「公理计数曾被写死为 0」那个回归的锁。
       await expect(tab).toContainText(/·\s*[1-9]\d*/, { timeout: 20_000 });
     }
+    // 本体图谱是第 7 个子 tab（模型层视图，09-17 由数据中心迁入；无计数）
+    await expect(tabs.filter({ hasText: '本体图谱' })).toBeVisible({ timeout: 20_000 });
 
-    // 对象类型清单非空
-    await expect(page.locator('.mp-tablepro .semi-table-tbody .semi-table-row').first()).toBeVisible({
-      timeout: 20_000,
-    });
+    // 对象类型 = 完整建模工作台（09-17 起不再只读清单）：一级本体域树在工作
+    await expect(page.getByRole('heading', { name: '一级本体' })).toBeVisible({ timeout: 20_000 });
 
     // 公理：内核已暴露清单接口，与其它子 tab 一样出真实表格。
-    // （此前的断言是「公理列表尚未开放」空状态，接口接上后该断言已过期。）
     await tabs.filter({ hasText: '公理' }).click();
     await expect(page.locator('.mp-tablepro .semi-table-tbody .semi-table-row').first()).toBeVisible({
       timeout: 20_000,
     });
   });
 
-  test('运维：三个子 tab 都在真实运维面上', async ({ page }) => {
-    await gotoApp(page, '/ontology/ops');
-    const tabs = page.locator('.mp-page .semi-tabs-tab');
-    for (const label of ['数据接入', '版本与发布', '变更审计']) {
+  test('发布与治理（草稿）：三个子 tab 都在真实运维面上', async ({ page }) => {
+    await gotoApp(page, '/ontology/governance/drafts');
+    const tabs = page.locator('.mp-onto-shell .semi-tabs-tab');
+    for (const label of ['版本与发布', '变更审计', '治理']) {
       await expect(tabs.filter({ hasText: label })).toBeVisible({ timeout: 20_000 });
     }
     // 表格壳或空状态二选一必然存在（不出现白屏）
     await expect(page.locator('.mp-tablepro, .mp-empty').first()).toBeVisible({ timeout: 20_000 });
-
-    // 过渡期入口：三个尚未重写的既有运维面仍可达
-    await page.locator('.mp-page-head-actions button', { hasText: '更多运维工具' }).click();
-    await expect(page.locator('.semi-dropdown-menu')).toContainText('Action 编排');
   });
 
   test('浅 / 深双主题截图（视觉证据）', async ({ page }) => {
-    await gotoApp(page, '/ontology/explorer');
+    await gotoApp(page, '/ontology/explore/objects');
+    await expect(page.getByRole('button', { name: '刷新类型清单' })).toBeVisible({ timeout: 20_000 });
     await page.evaluate(() => document.body.setAttribute('theme-mode', 'light'));
     await page.screenshot({ path: 'tests/e2e/screenshots/ui-p1a-explorer-light.png' });
     await page.evaluate(() => document.body.setAttribute('theme-mode', 'dark'));
     await page.screenshot({ path: 'tests/e2e/screenshots/ui-p1a-explorer-dark.png' });
 
-    await gotoApp(page, '/ontology/datacenter');
-    await expect
-      .poll(async () => page.locator('.mp-graph-node').count(), { timeout: 20_000 })
-      .toBeGreaterThan(0);
+    await gotoApp(page, '/ontology/model/graph');
+    await expect(page.locator('.mp-onto-shell .semi-tabs-tab').filter({ hasText: '本体图谱' })).toBeVisible({
+      timeout: 20_000,
+    });
     await page.evaluate(() => document.body.setAttribute('theme-mode', 'light'));
-    await page.screenshot({ path: 'tests/e2e/screenshots/ui-p1a-datacenter-light.png' });
+    await page.screenshot({ path: 'tests/e2e/screenshots/ui-p1a-graph-light.png' });
     await page.evaluate(() => document.body.setAttribute('theme-mode', 'dark'));
-    await page.screenshot({ path: 'tests/e2e/screenshots/ui-p1a-datacenter-dark.png' });
+    await page.screenshot({ path: 'tests/e2e/screenshots/ui-p1a-graph-dark.png' });
   });
 });

@@ -1,9 +1,9 @@
 /**
- * IA v2 导航模式契约（ADR-0069 / 设计规格 §2.4）—— IA2-0 失败测试。
+ * IA v2 导航模式契约（ADR-0069 / 设计规格 §2.4）—— IA2-0 失败测试，IA2-1 起转绿。
  *
- * <p>本体域将退出全局横向 PageTabs，改为工作区左侧导航（navigationMode: 'workspace'）。
- * 本文件在 IA2-1 落地前**应为红**（红因见 ONTOLOGY-IA2-0-BASELINE §5）：
- * DomainDef 已有 navigationMode 类型契约（IA2-0），但本体域尚未声明。
+ * <p>本体域已退出全局横向 PageTabs，改为工作区左侧导航（navigationMode: 'workspace'）。
+ * 本文件自此是**常驻契约**：防止后续改动悄悄把本体域改回 tabs 模式、
+ * 或误清空面包屑兼容索引。
  *
  * <p>「PageTabs 在本体路由下不渲染」的**渲染行为**不在 jsdom 里测——PageTabs 的
  * 传递依赖链会拉起 lottie-web，其在 jsdom 模块加载期取 canvas 2d 上下文即崩

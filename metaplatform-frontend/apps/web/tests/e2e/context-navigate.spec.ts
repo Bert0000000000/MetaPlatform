@@ -64,7 +64,7 @@ test.describe('ADR-0065 S3 navigate 卡片（R4 白名单）', () => {
   test('合规路径：渲染可点击卡片，点击后跳转到目标路由', async ({ context, page }) => {
     await context.clearCookies();
     await injectAuthIntoPage(page, await fetchAccessToken(page.request));
-    await stubNavigate(page, '/ontology/objects', '看客户详情');
+    await stubNavigate(page, '/ontology/explore/objects', '看客户详情');
 
     await page.goto('/superai/chat', { waitUntil: 'domcontentloaded' });
     await askInAgentMode(page, '帮我把这一轮的结论整理一下');
@@ -75,11 +75,12 @@ test.describe('ADR-0065 S3 navigate 卡片（R4 白名单）', () => {
     await expect(page.getByTestId('navigate-card-blocked')).toBeHidden();
 
     const go = page.getByTestId('navigate-card-go');
-    await expect(go).toHaveAttribute('data-navigate-path', '/ontology/objects');
+    await expect(go).toHaveAttribute('data-navigate-path', '/ontology/explore/objects');
     await go.click();
 
     // 点击才跳转（卡片不是自动跟随）——URL 真的走到目标路由。
-    await expect.poll(() => page.url(), { timeout: SLOW }).toContain('/ontology/objects');
+    // IA v2 后对象浏览的正式路径是 /ontology/explore/objects（ADR-0069）。
+    await expect.poll(() => page.url(), { timeout: SLOW }).toContain('/ontology/explore/objects');
   });
 
   test('敌意路径（javascript:）：不渲染任何可点击元素，降级为纯文本', async ({ context, page }) => {
@@ -123,7 +124,7 @@ test.describe('ADR-0065 S3 navigate 卡片（R4 白名单）', () => {
  * 请求体里一个字段都没有——面板说感知到了，agent 其实看不到。这条用例断言的就是
  * 那句承诺变成了字段：拦截 agent stream，读它实际发出的 `context`。
  *
- * <p>导航态由路由决定（`/ontology/objects` → `ontology-objects`），**不依赖任何
+ * <p>导航态由路由决定（IA v2 后 `/ontology/explore/objects` → `ontology-explore`），**不依赖任何
  * 后端数据**；选中态依赖列表里真有对象，不在本用例里断言（见交付说明的边界登记）。
  */
 test.describe('ADR-0065 S2 宿主写入', () => {
@@ -141,7 +142,7 @@ test.describe('ADR-0065 S2 宿主写入', () => {
       });
     });
 
-    await page.goto('/ontology/objects', { waitUntil: 'domcontentloaded' });
+    await page.goto('/ontology/explore/objects', { waitUntil: 'domcontentloaded' });
 
     const railToggle = page.getByRole('button', { name: 'SuperAI Copilot' });
     await expect(railToggle).toBeVisible({ timeout: SLOW });
@@ -156,12 +157,13 @@ test.describe('ADR-0065 S2 宿主写入', () => {
 
     const sent = requestBody as unknown as { context?: Record<string, any> };
     expect(sent.context, '请求体必须带 context').toBeTruthy();
-    // 分层导航态：语义视图名 + 原始 URL（可分享过滤器的唯一事实源）
-    expect(sent.context?.navigation?.view).toBe('ontology-objects');
-    expect(sent.context?.navigation?.tab).toBe('objects');
-    expect(sent.context?.navigation?.url).toContain('/ontology/objects');
+    // 分层导航态：语义视图名 + 原始 URL（可分享过滤器的唯一事实源）。
+    // IA v2（ADR-0069）后对象浏览的视图名是 ontology-explore（六大功能域粒度）。
+    expect(sent.context?.navigation?.view).toBe('ontology-explore');
+    expect(sent.context?.navigation?.tab).toBe('explore');
+    expect(sent.context?.navigation?.url).toContain('/ontology/explore/objects');
     // 兼容三键仍在（R3：旧键与新分层并存渲染）
-    expect(sent.context?.interaction?.pageCode).toBe('ontology-objects');
+    expect(sent.context?.interaction?.pageCode).toBe('ontology-explore');
     expect(sent.context?.interaction?.appCode).toBe('app-superai');
   });
 });

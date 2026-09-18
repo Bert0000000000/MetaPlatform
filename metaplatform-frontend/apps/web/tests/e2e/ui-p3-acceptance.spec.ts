@@ -11,10 +11,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { injectAuth } from './helpers/auth';
 
-/** 8 个域的代表页（每域取迁移后的入口 tab）。 */
-const DOMAINS: Array<{ key: string; label: string; path: string }> = [
+/** 8 个域的代表页（每域取迁移后的入口 tab）。workspace 域用左侧导航做就绪标记。 */
+const DOMAINS: Array<{ key: string; label: string; path: string; workspace?: boolean }> = [
   { key: '1-home', label: '工作台', path: '/home' },
-  { key: '2-ontology', label: '本体', path: '/ontology/explorer' },
+  { key: '2-ontology', label: '本体', path: '/ontology/explore/objects', workspace: true },
   { key: '3-agents', label: '数字员工', path: '/agents' },
   { key: '4-superai', label: 'SuperAI', path: '/superai/chat' },
   { key: '5-apps', label: '应用中心', path: '/apps/mine' },
@@ -38,8 +38,11 @@ test.describe('UI-P3 · 视觉基线（8 域 × 双主题）', () => {
   for (const d of DOMAINS) {
     test(`${d.label} 浅/深双主题截图`, async ({ page }) => {
       await gotoApp(page, d.path);
-      // 等壳与页内容都就位
-      await expect(page.locator('.mp-pagetabs-line .semi-tabs-tab').first()).toBeVisible({ timeout: 25_000 });
+      // 等壳与页内容都就位（IA v2 起本体域是工作区：无横向 PageTabs，改看左导航）
+      const ready = d.workspace
+        ? page.locator('.mp-onto-sidenav-link')
+        : page.locator('.mp-pagetabs-line .semi-tabs-tab');
+      await expect(ready.first()).toBeVisible({ timeout: 25_000 });
       await expect(page.locator('body')).not.toContainText('出错了');
 
       await page.evaluate(() => document.body.setAttribute('theme-mode', 'light'));
@@ -64,10 +67,10 @@ test.describe('UI-P3 · 交互验收', () => {
     const body = page.locator('.mp-cmdk-body');
     await expect(body).toBeVisible({ timeout: 15_000 });
 
-    await page.locator('.mp-cmdk-field input').fill('数据中心');
-    await expect(body.locator('.mp-cmdk-item').first()).toContainText('数据中心');
+    await page.locator('.mp-cmdk-field input').fill('对象类型');
+    await expect(body.locator('.mp-cmdk-item').first()).toContainText('对象类型');
     await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/\/ontology\/datacenter$/);
+    await expect(page).toHaveURL(/\/ontology\/model\/object-types$/);
   });
 
   test('Copilot dock 在任意页面开合', async ({ page }) => {
