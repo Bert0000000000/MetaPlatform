@@ -153,13 +153,25 @@ if [[ -f "$ENV_FILE" ]]; then
   KC_SECRET="$(grep -E '^KEYCLOAK_CLIENT_SECRET=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '\r')"
 fi
 [[ -n "$KC_SECRET" ]] || die "读不到 KEYCLOAK_CLIENT_SECRET（${ENV_FILE}）"
+
+#: ADR-0068（closeout 批）：无用户令牌路径的 runtime client 密钥——从 realm JSON
+#: 取 dev 栈那把（生产换 ExternalSecret；值不打印，硬规则 12）。
+RUNTIME_CLIENT_ID="${RUNTIME_CLIENT_ID:-agent-team-runtime}"
+RUNTIME_CLIENT_SECRET="${RUNTIME_CLIENT_SECRET:-$(
+  "$PY" -c "import json;d=json.load(open('infra/keycloak/realm-mate.json',encoding='utf-8'));print(next(c['secret'] for c in d['clients'] if c['clientId']=='$RUNTIME_CLIENT_ID'))" 2>/dev/null || true
+)}"
+[[ -n "$RUNTIME_CLIENT_SECRET" ]] || die "读不到 runtime client 密钥（realm-mate.json 里有 $RUNTIME_CLIENT_ID 吗？）"
+
 kubectl -n "$NAMESPACE" create secret generic agent-team-secret \
   --from-literal=MATE_AGENT_TEAM_ADMIN_DSN="postgresql://meta:meta@agent-team-pg:5432/metaplatform" \
   --from-literal=MATE_AGENT_TEAM_DSN="postgresql://mate_app:mate_app@agent-team-pg:5432/metaplatform" \
   --from-literal=MATE_AGENT_TEAM_CONTROL_DSN="postgresql://mate_control:mate_control_pw@agent-team-pg:5432/metaplatform" \
   --from-literal=SERVICE_CLIENT_SECRET="${KC_SECRET}" \
+  --from-literal=MATE_AGENT_TEAM_CONTROL_PASSWORD="mate_control_pw" \
+  --from-literal=MATE_AGENT_TEAM_RUNTIME_CLIENT_SECRET="${RUNTIME_CLIENT_SECRET}" \
   --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 note "  服务密钥已换成栈内那一把（长度 ${#KC_SECRET}，值不打印）"
+note "  runtime client 密钥已进 Secret（长度 ${#RUNTIME_CLIENT_SECRET}，值不打印）"
 
 # 把 ConfigMap 里的地址改到可达的那一套，然后滚一次。
 #
@@ -179,11 +191,21 @@ helm upgrade --install "$RELEASE" "$CHART_DIR" \
   --set "config.ontUrl=http://${HOST_GW}:${ONT_PORT}" \
   --set "config.gatewayUrl=http://${HOST_GW}:${GATEWAY_PORT}" \
   --set "networkPolicy.enabled=false" \
-  --set "migration.controlPassword=mate_control_pw" \
   --set "config.leaseTtlSeconds=${LEASE_TTL_HINT}" \
   --set "config.rescanSeconds=${RESCAN_HINT}" \
   --wait --timeout 6m >/dev/null
 kubectl -n "$NAMESPACE" rollout status deploy/mate-tech-agent-team --timeout=300s
+
+# ── 0c. 租户切换边界落到**运行中**的 Keycloak（ADR-0068 / closeout 主任务）────
+# 运行中的 Keycloak 不会重导 realm JSON（import 只在 realm 首建时发生），所以
+# 专用 runtime client / mcp-tenant-proxy 与"共享 client 摘 scope"要用 Admin API
+# 幂等落上去。不落这一步，接管续跑的上游调用会拿共享服务身份撞 llmgw 的租户
+# 绑定守卫——那正是 2.1-C §3-A4 的 403。
+log "0c. 租户切换边界 → 运行中 Keycloak（apply_tenant_boundary.py，幂等）"
+KEYCLOAK_ADMIN_URL="${KEYCLOAK_ADMIN_URL:-http://127.0.0.1:${KEYCLOAK_HOST_PORT}}"
+PYTHONIOENCODING=utf-8 "$PY" scripts/keycloak/apply_tenant_boundary.py \
+  --keycloak-url "${KEYCLOAK_ADMIN_URL}" | tee -a "$ARTDIR/tenant-boundary.log"
+note "  边界已应用（详见 ${ARTDIR}/tenant-boundary.log）"
 
 # ── 1. 取一枚真用户令牌 ──────────────────────────────────────────────────────
 log "1. 取用户令牌（网关登录）"

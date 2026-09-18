@@ -33,3 +33,9 @@ data:
   # B-6：HITL 闸门形态（留空角色 = 单级任意角色）。
   MATE_AGENT_TEAM_GATE_REQUIRED_ROLES: {{ .Values.config.gateRequiredRoles | quote }}
   MATE_AGENT_TEAM_GATE_REQUIRED_APPROVALS: {{ .Values.config.gateRequiredApprovals | quote }}
+  {{- with .Values.config.runtimeClientId }}
+  # ADR-0068 D3：无用户令牌路径的上游专用 runtime client（ID 非空即启用；
+  # 密钥走 secretRef.keys.runtimeClientSecret，不进 ConfigMap）。**只在显式
+  # 配了才注入**——"没配"与"配成空"在配置语义上必须是同一件事。
+  MATE_AGENT_TEAM_RUNTIME_CLIENT_ID: {{ . | quote }}
+  {{- end }}

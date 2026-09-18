@@ -873,6 +873,13 @@ services:
       # 写成 ${SERVICE_CLIENT_SECRET:-} 会解析成**空串**，而 LEGACY_LOGIN_COMPAT
       # 已是 false —— 启动期直接 RuntimeError，容器进 restart 循环（重建后暴露）。
       SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
+      # ADR-0068（closeout 批）：无用户令牌路径（接管续跑 / 无令牌起跑）的上游
+      # 专用 client。两项默认留空 = 不启用（保持 2.1-C 之前的形态）。要启用就在
+      # .env 里成对给值（dev 栈的值见 infra/keycloak/realm-mate.json 的
+      # agent-team-runtime 条目；生产走 SealedSecret/ExternalSecret）。
+      # 只配一项会让服务启动失败——半开着的 runtime 身份比不开更危险。
+      MATE_AGENT_TEAM_RUNTIME_CLIENT_ID: ${AGENT_TEAM_RUNTIME_CLIENT_ID:-}
+      MATE_AGENT_TEAM_RUNTIME_CLIENT_SECRET: ${AGENT_TEAM_RUNTIME_CLIENT_SECRET:-}
       MATE_AGENT_TEAM_ADMIN_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
       MATE_AGENT_TEAM_DSN: postgresql://mate_app:mate_app@postgres:5432/metaplatform
       MATE_AGENT_TEAM_MODEL: ${MATE_AGENT_TEAM_MODEL:-glm-5.3-flash}
@@ -1005,8 +1012,14 @@ services:
       KEYCLOAK_URL: http://keycloak:8080
       MCP_TRANSPORT: ${MCP_TRANSPORT:-http}
       MCP_SERVER_NAME: mate-tech-mcp
-      # ont 代理工具的出站服务凭证（client_credentials 换 JWT；KEYCLOAK_URL/REALM 已有）
-      TECH_ONT_TOKEN: ${KEYCLOAK_CLIENT_SECRET:-}
+      # ont 代理工具的出站服务凭证（client_credentials 换 JWT；KEYCLOAK_URL/REALM 已有）。
+      # ADR-0068（closeout 批）：sk-mcp-* 调用方没有用户 token 可透传，代它指名
+      # 租户的那一跳改用**专用** mcp-tenant-proxy client（tenant_switch_enabled
+      # 只链给它与 agent-team-runtime；共享 client 已摘除）。密钥在 .env 的
+      # MCP_TENANT_PROXY_CLIENT_SECRET（dev 栈的值见 realm-mate.json）——共享密钥
+      # 对这个 client 不再有效，**不要**拿它当默认值兜底。
+      TECH_ONT_CLIENT_ID: ${TECH_ONT_CLIENT_ID:-mcp-tenant-proxy}
+      TECH_ONT_TOKEN: ${MCP_TENANT_PROXY_CLIENT_SECRET:-}
       TECH_ONT_TENANT: tenant-default
       # 1.1 task 1c：sk-mcp 调用方没有用户 token 可透传，只能由本服务**代它
       # 指名租户**（服务身份 + X-Tenant-Id）。本体引擎只在令牌带该 scope 时才

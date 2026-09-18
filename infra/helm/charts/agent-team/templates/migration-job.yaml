@@ -86,10 +86,14 @@ spec:
                   key: {{ .Values.secretRef.keys.adminDsn }}
             - name: MATE_AGENT_TEAM_CONTROL_ROLE
               value: {{ .Values.migration.controlRole | quote }}
-            {{- if .Values.migration.controlPassword }}
+            #: D5（closeout 批）：口令**只从 Secret 来**（secretRef.keys.controlPassword）。
+            #: 过 `--set migration.controlPassword=...` 的老路会把明文落进 release
+            #: 清单——那条路已删，值进 Secret 才有（缺键时 Job 起不来，fail-fast）。
             - name: MATE_AGENT_TEAM_CONTROL_PASSWORD
-              value: {{ .Values.migration.controlPassword | quote }}
-            {{- end }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretRef.name }}
+                  key: {{ .Values.secretRef.keys.controlPassword }}
           resources:
             requests:
               cpu: 50m

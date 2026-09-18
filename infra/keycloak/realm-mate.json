@@ -112,8 +112,65 @@
             "multivalued": "false"
           }
         }
+      ]
+    },
+    {
+      "clientId": "mcp-tenant-proxy",
+      "name": "MCP Tenant Proxy",
+      "description": "MP-MCP-TENANT-SECURITY-01 / ADR-0068 D2: MCP 本体代理代调用方指名租户的专用 client。tenant_switch_enabled 是它的 defaultClientScope；密钥只进 mate-tech-mcp 的 Secret，不与其它服务共享。",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "tiy1nnhvYv2k9_KkFKwzLJWfPQt7mlARhG5ZMpntwynIY6_dSNuSlDJRH6XqEERJ",
+      "bearerOnly": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [],
+      "webOrigins": [],
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "mcp-tenant-proxy-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "metaplatform-backend",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
       ],
-      "optionalClientScopes": ["tenant_switch_enabled"]
+      "defaultClientScopes": ["tenant_switch_enabled"]
+    },
+    {
+      "clientId": "agent-team-runtime",
+      "name": "Agent Team Runtime",
+      "description": "MP-MCP-TENANT-SECURITY-01 / ADR-0068 D2: agent-team 在没有用户令牌（无令牌起跑 / 接管续跑且委托身份签不出）时的上游专用 client。优先级低于 ADR-0067 的委托身份；密钥只进 agent-team 的 Secret，不与其它服务共享。",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "cBXFK-8wU8EMRcl9lNygs4APzVv9Lch5mfu7gi8LTe679TRsgwIj0lfzrYIOi3qM",
+      "bearerOnly": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [],
+      "webOrigins": [],
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "agent-team-runtime-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "metaplatform-backend",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ],
+      "defaultClientScopes": ["tenant_switch_enabled"]
     }
   ]
 }

@@ -80,13 +80,15 @@ helm template agent-team . | grep -A1 'kind: Deployment' -A3 | grep replicas
 | `config.heartbeatGraceSeconds`                     | string | `""`                   | 2.1-C："心跳已停"宽限；**留空 = 跟随 TTL**（只调 TTL 不调它会被反过来压住） |
 | `config.gateRequiredRoles`                         | string | `""`                   | B-6：HITL 闸门层级（逗号分隔）；留空 = 单级任意角色                  |
 | `config.gateRequiredApprovals`                     | string | `"1"`                  | B-6：每级需要的不同审批人数（>1 = 会签）                             |
-| `secretRef.name`                                   | string | `"agent-team-secret"`  | 装着两个 DSN、控制面 DSN 与 SERVICE_CLIENT_SECRET 的 Secret          |
+| `config.runtimeClientId`                           | string | `""`                   | ADR-0068：无用户令牌路径的上游专用 client；留空 = 不启用              |
+| `secretRef.name`                                   | string | `"agent-team-secret"`  | 装着 DSN、控制面 DSN、口令与 SERVICE_CLIENT_SECRET 的 Secret          |
 | `secretRef.keys.appDsn`                            | string | `"MATE_AGENT_TEAM_DSN"` | 受 RLS 约束的 app 角色（上业务面）                                   |
 | `secretRef.keys.controlDsn`                        | string | `"MATE_AGENT_TEAM_CONTROL_DSN"` | 控制面身份：只读检查点，跨租户恢复扫描                        |
 | `secretRef.keys.adminDsn`                          | string | `"MATE_AGENT_TEAM_ADMIN_DSN"` | **只给迁移 Job**（B-4）；运行 Pod 里没有它                     |
+| `secretRef.keys.controlPassword`                   | string | `"MATE_AGENT_TEAM_CONTROL_PASSWORD"` | 控制面角色口令（D5：迁移 Job 建角色用，只从 Secret 来） |
+| `secretRef.keys.runtimeClientSecret`               | string | `"MATE_AGENT_TEAM_RUNTIME_CLIENT_SECRET"` | ADR-0068：runtime client 密钥（只在 runtimeClientId 非空时引用） |
 | `migration.enabled`                                | bool   | `true`                 | B-4：渲染建表/授权的一次性 Job（pre-install/pre-upgrade hook）        |
 | `migration.controlRole`                            | string | `"mate_control"`       | 控制面角色名（迁移 Job 建它并授"只读 checkpoints"）                  |
-| `migration.controlPassword`                        | string | `""`                   | 控制面角色口令（本地验证用；生产应改走 Secret 引用）                 |
 | `service.type`                                     | string | `"ClusterIP"`          | Service 类型                                                         |
 | `service.port`                                     | int    | `8013`                 | HTTP 端口                                                            |
 | `serviceAccount.create`                            | bool   | `true`                 | 建 ServiceAccount                                                    |

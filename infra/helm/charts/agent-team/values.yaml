@@ -76,14 +76,26 @@ config:
   #: HITL 闸门（B-6）。留空 = 单级、任意审批角色（与旧语义等价）。
   gateRequiredRoles: ""
   gateRequiredApprovals: "1"
+  #: 无用户令牌路径的上游**专用 runtime client**（ADR-0068 D3 的第二优先级）。
+  #:
+  #: 留空 = 不启用（无令牌路径保持既有形态：服务身份撞租户绑定守卫 403，如实
+  #: 失败）。非空 = 启用：接管续跑 / 无令牌起跑的上游调用以该 client 身份过
+  #: llmgw / MCP（`tenant_switch_enabled` 是它的 defaultClientScope）。配了它
+  #: 就**必须**同时供给 `secretRef.keys.runtimeClientSecret` 指向的键——只配
+  #: 一半会让服务启动失败（半开着的身份比不开更危险）。
+  runtimeClientId: ""
 
 #: Secret keys the operator must provision (SealedSecret / ExternalSecret):
 #:   MATE_AGENT_TEAM_ADMIN_DSN        — **只给迁移 Job**（B-4）：bootstrapping
 #:   MATE_AGENT_TEAM_DSN              — 受 RLS 约束的 app 角色（上业务面）
 #:   MATE_AGENT_TEAM_CONTROL_DSN      — 控制面身份：只读检查点，跨租户恢复扫描
 #:   SERVICE_CLIENT_SECRET            — Keycloak 服务密钥
+#:   MATE_AGENT_TEAM_CONTROL_PASSWORD — 控制面角色口令（D5：迁移 Job 建角色用）
+#:   MATE_AGENT_TEAM_RUNTIME_CLIENT_SECRET — 专用 runtime client 的密钥
+#:                                      （ADR-0068；只在 config.runtimeClientId
+#:                                      非空时被引用）
 #:
-#: 运行 Pod 的 Deployment **只注入后三个**。admin DSN 只出现在一次性迁移 Job 里
+#: 运行 Pod 的 Deployment **只注入后三/四项**。admin DSN 只出现在一次性迁移 Job 里
 #: ——它是能建表能授权的整库钥匙，留在长期进程里等于 RLS 那道墙不存在。
 secretRef:
   name: agent-team-secret
@@ -92,6 +104,8 @@ secretRef:
     appDsn: MATE_AGENT_TEAM_DSN
     controlDsn: MATE_AGENT_TEAM_CONTROL_DSN
     serviceClientSecret: SERVICE_CLIENT_SECRET
+    controlPassword: MATE_AGENT_TEAM_CONTROL_PASSWORD
+    runtimeClientSecret: MATE_AGENT_TEAM_RUNTIME_CLIENT_SECRET
 
 #: B-4：迁移 Job（建 schema / 表 / RLS 策略 / 三个角色的 GRANT）。
 #: 每次 `helm upgrade` 都会重跑一次——`bootstrap` 是幂等的，跑 N 次等于跑一次。
@@ -99,9 +113,8 @@ migration:
   enabled: true
   #: 控制面角色名（迁移 Job 建它，并授"只读 checkpoints"）。
   controlRole: mate_control
-  #: 控制面角色的口令。本地验证用 `--set migration.controlPassword=...`；
-  #: 生产请改成从 Secret 引用（见 ACCEPTANCE 的边界登记）。
-  controlPassword: ""
+  #: 控制面角色的口令**只从 Secret 来**（`secretRef.keys.controlPassword`，
+  #: D5 收口）：值过 `--set` 会落进 release 的明文清单，与硬规则 12 相抵。
 
 service:
   type: ClusterIP
