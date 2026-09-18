@@ -12,36 +12,21 @@
  * 一次 IAM 登录实测可达 15s，共用 helper 写死的 30s 在这里会假红（不改共用 helper）。
  */
 import { expect, test, type Page } from '@playwright/test';
-import { injectAuthIntoPage } from './helpers/auth';
+import { fetchAccessToken, injectAuthIntoPage } from './helpers/auth';
 
 const SLOW = 90_000;
-const IAM_LOGIN_URL =
-  process.env.E2E_IAM_LOGIN_URL ?? 'http://127.0.0.1:8100/api/v1/iam/auth/login';
+// 2.1-C 曾因共用登录 helper 写死 30s 各抄了一份放宽副本；closeout 批给 helper
+// 加了 E2E_LOGIN_TIMEOUT_MS 后副本退役——这三条 spec 默认抬到 120s（外部仍可覆盖）。
+process.env.E2E_LOGIN_TIMEOUT_MS ||= '120000';
 /** 这条改的是**真库**里的真员工，所以取一个专门的探针 id。 */
 const PROBE_ID = process.env.E2E_RUNTIME_PROBE_PROFILE ?? 'EMP-SMOKE-1';
 
 test.setTimeout(300_000);
 
-async function loginWithWideTimeout(page: Page): Promise<string> {
-  const resp = await page.request.post(IAM_LOGIN_URL, {
-    data: {
-      username: process.env.E2E_USERNAME ?? 'admin',
-      password: process.env.E2E_PASSWORD ?? 'admin123',
-    },
-    headers: { 'Content-Type': 'application/json' },
-    timeout: SLOW,
-  });
-  const body = await resp.text();
-  if (!resp.ok()) throw new Error(`IAM login HTTP ${resp.status()}: ${body.slice(0, 200)}`);
-  const parsed = JSON.parse(body) as { accessToken?: string };
-  if (!parsed.accessToken) throw new Error(`IAM login no accessToken: ${body.slice(0, 200)}`);
-  return parsed.accessToken;
-}
-
 test.describe('C-5 员工执行面：从管理界面落库', () => {
   test('在界面上勾选执行面 → 保存 → 刷新后仍是勾上的那一档', async ({ context, page }) => {
     await context.clearCookies();
-    await injectAuthIntoPage(page, await loginWithWideTimeout(page));
+    await injectAuthIntoPage(page, await fetchAccessToken(page.request));
 
     await page.goto('/superai/team', { waitUntil: 'domcontentloaded' });
 

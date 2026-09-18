@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
@@ -83,6 +84,54 @@ def _bearer() -> BearerAuth:
         client_secret=os.environ["SERVICE_CLIENT_SECRET"],
         scope=os.getenv("SERVICE_CLIENT_SCOPE", "openid"),
     )
+
+
+#: ADR-0068 D2/D3：无用户令牌时的上游**专用 runtime client**。
+#: `tenant_switch_enabled` 是它的 defaultClientScope（realm 侧只链接在这一个
+#: client 上），所以它的 token 可以过 llmgw / MCP 的租户绑定守卫；共享服务
+#: client 的 token 过不了（这正是 B-10 收口要的负例）。
+RUNTIME_CLIENT_ID_ENV = "MATE_AGENT_TEAM_RUNTIME_CLIENT_ID"
+RUNTIME_CLIENT_SECRET_ENV = "MATE_AGENT_TEAM_RUNTIME_CLIENT_SECRET"
+
+
+def _runtime_bearer() -> BearerAuth | None:
+    """无用户令牌路径的上游身份（ADR-0068 D3 的第二优先级）。
+
+    优先级序列：**用户令牌（含 ADR-0067 换来的委托令牌）→ 本 runtime client →
+    如实失败**。返回 ``None`` = 没配（部署保持既有形态：服务身份撞租户绑定守卫
+    403，如实失败）；**配了一半（只有 id 或只有 secret）→ 启动失败**——半开着的
+    runtime 身份比不开更危险，与 :func:`required_dsn` / `build_delegation_issuer`
+    同一条精神。
+    """
+    client_id = os.getenv(RUNTIME_CLIENT_ID_ENV, "").strip()
+    secret = os.getenv(RUNTIME_CLIENT_SECRET_ENV, "").strip()
+    if not client_id and not secret:
+        return None
+    if not client_id or not secret:
+        raise RuntimeError(
+            f"{RUNTIME_CLIENT_ID_ENV} / {RUNTIME_CLIENT_SECRET_ENV} 必须成对配置："
+            "只配一半的 runtime 身份比不配更危险（它看起来是开着的）。"
+        )
+    return BearerAuth(
+        token_uri=_keycloak_token_uri(),
+        client_id=client_id,
+        client_secret=secret,
+        # scope 只拿 openid；切换 scope 是该 client 的 defaultClientScope，
+        # 由 Keycloak 自动附上——这里显式申请反而要求 realm 把它链成 optional。
+        scope="openid",
+    )
+
+
+async def _resolve_outbound_token(user_token: str, runtime: BearerAuth | None) -> str:
+    """出站 Bearer 的取值序（ADR-0068 D3 / N4）。
+
+    用户令牌（含 ADR-0067 换来的委托令牌）**永远第一**；为空且配了 runtime
+    client 才用它现取一枚；没配就保持空——不假装、不换服务身份冒充用户。
+    """
+    if user_token or runtime is None:
+        return user_token
+    # BearerAuth.token() 是同步 HTTP（自带缓存），丢线程跑别堵事件循环。
+    return await asyncio.to_thread(runtime.token)
 
 
 def build_delegation_issuer() -> DelegationIssuer:
@@ -487,6 +536,8 @@ def build_service(
     """
     registry = registry or build_registry()
     bearer = _bearer()
+    # ADR-0068 D3：无用户令牌路径的上游身份。None = 未配置（保持既有形态）。
+    runtime_bearer = _runtime_bearer()
     llmgw_url = os.getenv("MATE_LLMGW_URL", DEFAULT_LLMGW_URL)
     mcp_url = os.getenv("MATE_MCP_URL", DEFAULT_MCP_URL)
     gateway_url = os.getenv("MATE_GATEWAY_URL", DEFAULT_GATEWAY_URL)
@@ -501,6 +552,12 @@ def build_service(
         bootstrap(required_admin_dsn())
     skills = build_skill_catalog()
 
+    #: 无用户令牌时的出站身份（ADR-0068 D3）。**只在 ``user_token`` 为空的路径上
+    #: 生效**——有用户令牌（含换来的委托令牌）时永远用用户那份，runtime client
+    #: 完全不参与（N4：不冒充用户）。没配 runtime client 时退回共享服务身份，
+    #: 行为与 2.1-C 之前逐字一致。
+    outbound_auth = runtime_bearer or bearer
+
     def _provider_config(tenant_id: str, user_token: str):
         """惰性取租户当前生效的上游 provider 配置。
 
@@ -510,13 +567,18 @@ def build_service(
         **认证用发起用户的令牌**：服务身份 token 的 ``iss`` 由换发它的 Keycloak
         地址决定，网关与 llmgw 校验的地址不一致时会被判 401；用户令牌本就是
         网关签发的，两端都认。服务密钥（``X-Service-Secret``）仍是取敏感值的闸门。
+
+        无用户令牌（接管续跑且委托签不出 / 无令牌起跑）时用 runtime client 的
+        token 过网关的 Bearer 校验（ADR-0068）——空着不发的结果是网关 401，
+        provider 取空、员工产出直接失败。
         """
 
         async def _resolve() -> dict[str, str]:
+            token = await _resolve_outbound_token(user_token, runtime_bearer)
             client = IamServiceReadClient(
                 gateway_url,
                 service_secret=os.getenv("SERVICE_CLIENT_SECRET", ""),
-                token=user_token,
+                token=token,
             )
             try:
                 return await client.get_provider_config(tenant_id)
@@ -529,7 +591,10 @@ def build_service(
         def _make(tenant_id: str) -> LlmgwClient:
             return LlmgwClient(
                 llmgw_url,
-                auth=bearer,
+                # ``auth`` 只在 ``user_token`` 为空时被 LlmgwClient 用上：那正是
+                # 无令牌路径——用 runtime client（带切换 scope）而不是共享服务
+                # 身份去撞租户绑定守卫（ADR-0068；2.1-C §3-A4 的 403 根因）。
+                auth=outbound_auth,
                 tenant_id=tenant_id,
                 user_token=ctx.user_token,
                 provider_config=_provider_config(tenant_id, ctx.user_token),
@@ -552,7 +617,11 @@ def build_service(
         # 跟着换会让人工闸门工具重新摆到模型面前。
         mcp = McpToolbox(
             McpToolsClient(
-                mcp_url, auth=bearer, tenant_id=ctx.tenant_id, user_token=ctx.user_token
+                # 同 _llm_for：``auth`` 只在无用户令牌的路径上生效（ADR-0068）。
+                mcp_url,
+                auth=outbound_auth,
+                tenant_id=ctx.tenant_id,
+                user_token=ctx.user_token,
             ),
             protocol=_protocol_connection(ctx),
         )

@@ -322,3 +322,34 @@ async def test_pg_rls_hides_another_tenants_rows(rls_schema: str, pg_dsns: tuple
 
     assert len(await ledger.records(tenant_id=TENANT)) == 2
     assert len(await ledger.records(tenant_id=OTHER)) == 3
+
+
+# ── 生产装配防回归（closeout 批）────────────────────────────────────────────
+# 实测踩过：`main._lifespan` 建 bus 时漏传 `audit=`，而 `build_service` 只在
+# **不传** bus 时才会自己挂 PG 账本——生产装配下审计全落进程内账本、重启即失
+# （表是迁移 Job 建的，一行都没进去）。账本本体有 16 条用例，但它们都直接构造
+# `PgAuditLedger`，测不到"装配有没有接上"。这里用源码断言钉住装配形态（与
+# test_sandbox_isolation 对 `{**os.environ}` 的 AST 断言同一手法）。
+
+
+def test_the_production_lifespan_wires_the_pg_audit_ledger() -> None:
+    import ast
+    import pathlib
+
+    from mate_tech_agent_team import main
+
+    source = pathlib.Path(main.__file__).read_text(encoding="utf-8")
+    calls = [
+        node
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "build_team_bus"
+    ]
+    assert calls, "main._lifespan 里找不到 build_team_bus(...) 调用"
+    wired = any(kw.arg == "audit" for kw in calls[0].keywords)
+    assert wired, (
+        "生产装配的 build_team_bus(...) 必须显式传 audit=（PG 账本）："
+        "漏传时 build_service 不会替你补——bus 一旦由调用方传入，它内部的"
+        "audit 默认就再也不生效（closeout 批 ⑧ 的实测教训）。"
+    )

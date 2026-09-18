@@ -78,6 +78,15 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secretRef.name }}
                   key: {{ .Values.secretRef.keys.serviceClientSecret }}
+            {{- if .Values.config.runtimeClientId }}
+            # ADR-0068：runtime client 的密钥（与 config.runtimeClientId 成对，
+            # 缺键时 Pod 起不来——半开着的身份比不开更危险，fail-fast）。
+            - name: MATE_AGENT_TEAM_RUNTIME_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretRef.name }}
+                  key: {{ .Values.secretRef.keys.runtimeClientSecret }}
+            {{- end }}
           {{- if .Values.healthcheck.enabled }}
           startupProbe:
             httpGet:

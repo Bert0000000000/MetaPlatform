@@ -50,6 +50,14 @@ tags:
     description: wfe domain operations
   - name: a2a
     description: a2a domain operations
+  - name: analytics
+    description: analytics domain operations
+  - name: deep-research
+    description: deep-research domain operations
+  - name: orchestrator
+    description: orchestrator domain operations
+  - name: agent-team
+    description: agent-team domain operations
   - name: marketplace
     description: marketplace domain operations
 paths:
@@ -90,6 +98,57 @@ paths:
       x-mate-requirements:
         - FR-A2A-A2AGETA2AAGENTCARDSSEARCH
       x-mate-implementation-status: implemented
+  /api/v1/a2a/agent/deep-research/invoke:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - deep-research
+      summary: Delegate a deep research task to DeerFlow
+      operationId: deepResearchInvokeDeepResearch
+      description: |
+        Invokes the Deep Research agent. The caller supplies a
+        capability id (currently only `web-research`) and an input
+        payload describing the query, depth, and source budget. The
+        agent delegates to DeerFlow Engine and returns a markdown
+        report plus the sources used.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeepResearchInvokeRequest'
+      responses:
+        '200':
+          description: Research completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeepResearchInvokeResponse'
+        '400':
+          description: Malformed request (unknown capability, empty query)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas-ErrorResponse'
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Tenant binding rejected
+        '503':
+          description: DeerFlow Engine unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas-ErrorResponse'
+      x-mate-owner: ai-protocols
+      x-mate-permission: deep-research.invoke
+      x-mate-requirements:
+        - FR-DEEP-RESEARCH-INVOKE
+      x-mate-implementation-status: planned
   /api/v1/a2a/delegate:
     post:
       security:
@@ -296,6 +355,142 @@ paths:
       x-mate-permission: a2a.get
       x-mate-requirements:
         - FR-A2A-A2AGETA2ATASK
+      x-mate-implementation-status: implemented
+  /api/v1/action-proposals/{proposal_id}:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 查看 Action Proposal
+      tags:
+        - order-review
+      parameters:
+        - name: proposal_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Proposal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionProposal'
+        '404':
+          description: Proposal 不存在或不属于当前租户
+      operationId: orderReviewGetActionProposal
+      x-mate-owner: orchestrator
+      x-mate-permission: order.read
+      x-mate-requirements:
+        - ORD-004
+      x-mate-implementation-status: implemented
+  /api/v1/action-proposals/{proposal_id}:confirm:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 确认 Action Proposal 并创建跟进单
+      tags:
+        - order-review
+      parameters:
+        - name: proposal_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmActionProposalRequest'
+      responses:
+        '200':
+          description: 已确认，订单、跟进单、幂等记录和 Outbox 同事务提交
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResult'
+        '409':
+          description: 版本冲突、重复处理、幂等键冲突或 evidence required
+          headers:
+            X-Error-Code:
+              description: Application error code.
+              schema:
+                type: string
+                enum:
+                  - version_conflict
+                  - idempotency_conflict
+                  - already_resolved
+                  - evidence_required
+        '503':
+          description: Evidence unavailable
+          headers:
+            X-Error-Code:
+              description: Application error code.
+              schema:
+                type: string
+                enum:
+                  - evidence_unavailable
+      operationId: orderReviewPostActionProposalConfirm
+      x-mate-owner: orchestrator
+      x-mate-permission: order.write
+      x-mate-requirements:
+        - ORD-005
+      x-mate-implementation-status: implemented
+  /api/v1/action-proposals/{proposal_id}:reject:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 拒绝 Action Proposal
+      tags:
+        - order-review
+      parameters:
+        - name: proposal_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectActionProposalRequest'
+      responses:
+        '200':
+          description: 已拒绝并写入审计 Outbox
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResult'
+        '409':
+          description: 重复处理或幂等键冲突
+      operationId: orderReviewPostActionProposalReject
+      x-mate-owner: orchestrator
+      x-mate-permission: order.write
+      x-mate-requirements:
+        - ORD-006
       x-mate-implementation-status: implemented
   /api/v1/admin/configs:
     get:
@@ -1694,6 +1889,678 @@ paths:
           required: true
           schema:
             type: string
+  /api/v1/agent-team/artifacts/{artifact_id}:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 按 id 取回一件产出物的正文（可按版本）
+      description: |
+        "可寻址、可取回"的取回那半边（1.6 任务 2）。
+
+        **C-4 起支持按版本取**：不带 `version` 取**最新**一版，带上就取那一版
+        ——"第一次交付的是什么"因此可以直接取回来验（`?version=1`），而不是只
+        能对着列表里的元数据相信它。
+
+        跨租户与不存在同码 404：产出物的地址是**租户内**的地址，拿别人的 id 来取
+        读不到，也不该读出"这个 id 存在过"。
+      tags:
+        - agent-team
+      operationId: agentTeamGetArtifact
+      parameters:
+        - name: artifact_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          description: 取哪一版。省略 = 取最新一版。
+      responses:
+        '200':
+          description: 产出物元数据 + 正文
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactContent'
+        '404':
+          description: 该租户下不存在此产出物
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMGETARTIFACT
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/profiles:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 列数字员工（身份 = 提示词 + 技能清单 + 工具白名单）
+      tags:
+        - agent-team
+      operationId: agentTeamGetProfiles
+      responses:
+        '200':
+          description: 员工清单
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profiles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EmployeeProfile'
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMGETPROFILES
+      x-mate-implementation-status: implemented
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 实例化一个数字员工（定义落库）
+      description: |
+        落库走 `profile_store.upsert`（PG + RLS 强制租户隔离），因此"建出来就
+        只属于本租户"是数据库说的，不是应用层记得过滤；重启与多副本都一致。
+
+        **不得提权**（ADR-0066 §3.7）：定义的权限包络必须 ⊆ **创建者**包络，
+        否则 403（`detail.escalations` 列出越权的维度）。
+      tags:
+        - agent-team
+      operationId: agentTeamPostProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileWriteRequest'
+      responses:
+        '201':
+          description: 建好的员工定义
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeProfile'
+        '403':
+          description: 定义的权限包络超出创建者包络（E_AUTHORITY_ESCALATION）
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.write
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMPOSTPROFILE
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/profiles/{profile_id}:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 读一个数字员工的完整定义
+      tags:
+        - agent-team
+      operationId: agentTeamGetProfile
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 员工定义
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeProfile'
+        '404':
+          description: 该租户下不存在此员工（跨租户与不存在同码）
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMGETPROFILE
+      x-mate-implementation-status: implemented
+    put:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 改一个数字员工（upsert 语义：提交即覆盖）
+      description: |
+        只能改**本租户**的员工——拿别人的 id 来改读不到就是 404，与"不存在"同码。
+        同样受 ADR-0066 §3.7 的提权检查约束。
+      tags:
+        - agent-team
+      operationId: agentTeamPutProfile
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileWriteRequest'
+      responses:
+        '200':
+          description: 改完的员工定义
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeProfile'
+        '403':
+          description: 定义的权限包络超出创建者包络
+        '404':
+          description: 该租户下不存在此员工
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.write
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMPUTPROFILE
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/profiles/{profile_id}/skills:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 技能清单（渐进加载第 1 层：只出名字与一句话描述，不含正文）
+      tags:
+        - agent-team
+      operationId: agentTeamGetProfileSkills
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 技能清单
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillManifest'
+        '404':
+          description: 员工不存在
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMGETPROFILESKILLS
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/profiles/{profile_id}/skills/{skill_id}:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 读技能正文（渐进加载第 2 层：选中后才读）
+      tags:
+        - agent-team
+      operationId: agentTeamGetProfileSkillContent
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: skill_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 技能正文
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillContent'
+        '404':
+          description: 员工或技能不存在
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMGETPROFILESKILLCONTENT
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/runs:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 提交一句话，受理后**异步**拆任务图并并行派活（返回 202 + run_id）
+      description: |
+        一句话 → 拆任务图 → 并行派给 ≥2 个数字员工 → 停在人工确认闸门。
+
+        **受理制（1.7）**：本接口**不再同步等图跑完**。拆图 + 并行派活实测量级
+        是分钟，而网关读超时是 60s——同步返回时客户端只会拿到 504，且这一轮
+        其实已经建好，重试一次就多跑一轮。现在提交**立刻**返回 `202` +
+        `run_id`；终态只能从 `GET /runs/{run_id}` 或 `GET /runs/{run_id}/events`
+        取。返回时该 `run_id` **已经可查**（首次检查点已落），所以拿到就能订阅。
+
+        **重复提交不产生重复 run**：带上 `Idempotency-Key` 时，同一个键（同租户
+        内）永远映射到同一轮运行；重复提交原样回同一个 `run_id`，并置
+        `deduplicated: true`，**不会再起一轮**。不带该头则每次都起新一轮。
+
+        **可重试的员工故障会按策略重试**（1.5）：员工运行时那一次调用遇到"可能
+        自己好"的失败（模型 5xx / 限流 / 网络抖动）时重试（次数与退避由部署
+        配置决定），重试用尽才把这一件记成 `E_RUNTIME_UNAVAILABLE`。**派活**
+        （建任务行、落审计、越权转 proposal）不重试——它是副作用。
+      tags:
+        - agent-team
+      operationId: agentTeamPostRuns
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+          description: |
+            提交幂等键。同一个键（**同一租户内**）重复提交只会有一轮运行：
+            第二次起原样回第一次的 `run_id`。省略则不受幂等保护。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartRunRequest'
+      responses:
+        '202':
+          description: |
+            已受理。`run_id` 立即可查（首次检查点已落），终态请订阅事件流或轮询。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunAccepted'
+        '422':
+          description: 目标为空或无法拆解
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.write
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMPOSTRUNS
+      x-mate-implementation-status: implemented
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 列一个会话里的各轮 run（新→旧，后端是唯一关系源）
+      description: |
+        **C-1 / `MP-SESSION-RUN-LINK-01`**：会话与 run 的关系以前只写在浏览器
+        `localStorage`（`mp-agent-team-run:<会话id>` → run_id），换个机器就没了。
+        现在这条关系落在本服务的库里，本接口是它的唯一读法。
+
+        **为什么 `conversation` 是必填**：去掉它这个端点就变成"列出全租户的
+        run"，那既不是它的用途，也会把这个读路径的代价放大到不可控。要按租户
+        全量列 run 是另一个面（且需要分页），不在本批次。
+
+        **状态不在这里复制**：每一项的 `status` / `goal` 来自该轮自己的检查点，
+        与 `GET /runs/{run_id}` 是同一份事实、同一条读取路径（含超时裁决），
+        所以列表与详情不会各说各话。代价是 N 轮 = N 次检查点读，服务端因此有
+        条数上限。
+
+        租户取自**令牌**，不是查询参数：拿别的租户的 `conversation_id` 来查
+        只会查到空，不泄露"这个 id 存在过"。
+      tags:
+        - agent-team
+      operationId: agentTeamGetRuns
+      parameters:
+        - name: conversation
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: 会话 id（与 `POST /runs` 的 `conversation_id` 同一个值）
+      responses:
+        '200':
+          description: 该会话里的各轮 run，**新→旧**
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunList'
+        '422':
+          description: 缺少 `conversation` 查询参数
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMGETRUNS
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/runs/{run_id}:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 查任务图、各员工状态与最终结果
+      tags:
+        - agent-team
+      operationId: agentTeamGetRun
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 运行状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunState'
+        '404':
+          description: 该租户下不存在此 run（跨租户与不存在同码，不泄露存在性）
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMGETRUN
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/runs/{run_id}/approve:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 人工确认闸门（批准则继续执行，拒绝则中止）
+      description: |
+        **不是任意登录用户都能确认**：approve 需要审批角色
+        （`agent_admin` / `platform_admin` / `PLATFORM_ADMIN` /
+        `PLATFORM_SUPER_ADMIN`；复用平台既有的 `require_*` 守卫做法）。
+        无审批角色 → 403 `E_NOT_APPROVER`，且**不落审计行**（没发生的动作不记账）。
+
+        审批本身落审计行（`agent_team.approval`，硬规则 #9），带 actor 与结果。
+      tags:
+        - agent-team
+      operationId: agentTeamPostRunApprove
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveRequest'
+      responses:
+        '200':
+          description: 恢复后的运行状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunState'
+        '403':
+          description: 调用方没有审批角色（E_NOT_APPROVER）
+        '404':
+          description: 该租户下不存在此 run
+        '409':
+          description: 该 run 不在待确认状态（E_RUN_NOT_AWAITING_APPROVAL）
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.write
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMPOSTRUNAPPROVE
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/runs/{run_id}/artifacts:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 列出一轮运行产出的交付物（元数据）
+      description: |
+        这一轮里各个数字员工**真正交付出来**的产出物（1.6 任务 2）。只出元数据
+        ——正文按 `artifact_id` 另取，列表不该把每份报告全文都拖过来。
+
+        先按 run 的存在性判 404（跨租户与不存在同码），再只回本租户的行：产出物
+        不能成为一条绕过 run 隔离的读路径。
+      tags:
+        - agent-team
+      operationId: agentTeamGetRunArtifacts
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 该 run 的产出物元数据（按任务标签序）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactList'
+        '404':
+          description: 该租户下不存在此 run
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMGETRUNARTIFACTS
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/runs/{run_id}/audit:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 一轮运行的审计行（派活 / 越权转 proposal / 审批）
+      description: |
+        硬规则 #9：每次**派活**、**越权转 proposal**、**审批**都落一行审计。
+        这里把该 run 的行读出来当证据——"落了吗"要能看见，否则等于没落。
+        只回本租户的行（跨租户不可见，与 run 的同一条隔离口径）。
+        A-1 起这批行来自**持久账本**：重启后同一轮仍查得到，且按租户带哈希链
+        （`sequence` / `previous_hash` / `event_hash`）——任何一行被改过都可检出。
+      tags:
+        - agent-team
+      operationId: agentTeamGetRunAudit
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 审计行（时间序）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditList'
+        '404':
+          description: 该租户下不存在此 run
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMGETRUNAUDIT
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/runs/{run_id}/cancel:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 受理一次取消（202 cancel_requested，幂等）
+      description: |
+        **受理制**取消（B-3 起）。回 202 + **当前观察到的**状态，**不承诺**"回话
+        那一刻图已经停了"——那个保证只在单副本下成立（跨副本时回话的副本根本没在
+        跑这一轮）。
+
+        `status` 是 `cancelled`（已落终态：本来就已经结束，或本请求落的）或
+        `cancelling`（已受理、图还在收敛）。客户端拿到 `cancelling` 就接着看
+        `GET /runs/{run_id}`，它会一直报 `cancelling` 直到真的 `cancelled`。
+
+        **"有没有人在跑"由活跃 Run 注册表（租约）回答**：没有活跃租约 = 这一轮
+        没人执行（停在闸门等人 / 进程崩过），终态由本请求落；有活跃租约时**绝不
+        代庖**——否则正在跑的那一侧下一步会用它自己那份状态把终态盖回去。
+
+        **执行中的 run 也能取消**：取消不靠外部杀——图在节点边界自查取消标志，
+        看到就自己落终态。粒度是**波与波之间**：在途的那一波允许跑完（不硬断），
+        已完成节点不重跑，下一波一个员工都不派。
+
+        幂等：已经终态的直接回当前终态，不覆盖更早的终态。跨租户与不存在同码 404。
+      tags:
+        - agent-team
+      operationId: agentTeamPostRunCancel
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: 已受理（status = cancelled | cancelling）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunCancelAccepted'
+        '404':
+          description: 该租户下不存在此 run（跨租户与不存在同码）
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.write
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMPOSTRUNCANCEL
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/runs/{run_id}/events:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 步骤级事件流（SSE：按 Last-Event-ID 补发 + 尾随）
+      description: |
+        `text/event-stream`。连上先**补发**（从 `Last-Event-ID` 之后一条不少），
+        再**尾随**新步骤：之后图每推进一步就往外推一条，直到 run 落终态才发
+        `event: end` 收流。每条是 `event: step` + `id: <sequence>` +
+        `data: {seq, step, ran, next, status, at, evidence}`（`ran` = 这一步真的
+        跑掉的节点）。
+
+        **断线重连不丢事件**：每条事件都带 SSE 标准的 `id:`；浏览器重连时自动
+        把它作为 `Last-Event-ID` 请求头发回来，服务端从那条之后接着补发。
+        省略该头（或值非法）则从头补发——一个坏游标不该让订阅彻底失败。
+
+        `evidence` 是**这一步新出现的**证据条目（形状见 `SubTaskResult.evidence`），
+        按 `evidenceId` 去重后顺序 append 即可。只出增量是刻意的：回执整份都在
+        检查点里，整份重发的话每来一步都要重传全部历史证据。
+
+        **推送机制（B-2 起）**：事件写进追加式的 `run_event` 表并 `NOTIFY`，
+        订阅方由通知唤醒、只读事件表。**执行恢复的真相源仍是检查点**，事件日志
+        只是产品观察模型——丢了事件不影响续跑。没配 PG 的部署退回"轮询检查点"
+        的老路径（同样按 `Last-Event-ID` 补发）。
+
+        **实现边界**：尾随在无通知时按兜底间隔（默认 2s）看一眼表。终态判定与
+        流关闭是同一个事实——停在 `awaiting_approval` 的运行**不会**自己关流，
+        它在等人确认。
+
+        **调用方必须带 `Accept: text/event-stream`**：网关按这个头决定走不走
+        "边收边发"的转发路径（它没有声明就等于不要流式，网关会把整份响应读完再
+        回话，这条流就永远到不了）。浏览器 `fetch` / `EventSource` 天然会发；
+        用 `curl` 试要写 `curl -N -H 'Accept: text/event-stream'`。
+      tags:
+        - agent-team
+      operationId: agentTeamGetRunEvents
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: Last-Event-ID
+          in: header
+          required: false
+          schema:
+            type: string
+          description: |
+            SSE 标准的断线重连游标（浏览器 `EventSource` 自动带回）。值是上一条
+            已处理事件的 `id`（= 这一轮内的 `sequence`）。省略或非法按 0 处理。
+            它**不是**审计账本里那个 `sequence`——那是跨租户哈希链的序号，
+            与"这一轮流到第几条事件"无关。
+      responses:
+        '200':
+          description: SSE 流（text/event-stream）
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '404':
+          description: 该租户下不存在此 run
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.read
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMGETRUNEVENTS
+      x-mate-implementation-status: implemented
+  /api/v1/agent-team/tasks/{task_id}/messages:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 给运行中的子 agent 投递一条消息（写入 team_task inbox）
+      description: |
+        ADR-0066 §5.5 的 send：消息写进目标任务的 inbox，子 agent 在**下一轮
+        迭代边界**自己取走（消费即清空）。投递**不做唤醒**；任务已终态时返回
+        409，**不隐式起新轮**。子 agent 回问父级走同一个接口，只是 task_id
+        换成父任务——通道同一条，方向相反。
+      tags:
+        - agent-team
+      operationId: agentTeamPostTaskMessage
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '202':
+          description: 已投递（不唤醒，等下一轮迭代边界被取走）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelMessage'
+        '404':
+          description: 该租户下不存在此任务（跨租户与不存在同码，不泄露存在性）
+        '409':
+          description: 任务已终态（E_TASK_TERMINAL），不隐式起新轮
+      x-mate-owner: agent-product-layer
+      x-mate-permission: agent-team.write
+      x-mate-requirements:
+        - FR-AGENT-TEAM-AGENTTEAMPOSTTASKMESSAGE
+      x-mate-implementation-status: implemented
   /api/v1/agent/chat:
     post:
       security:
@@ -1855,6 +2722,191 @@ paths:
           required: true
           schema:
             type: string
+  /api/v1/analytics/overview:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 平台概览 (总用户/总 App/总请求数/活跃租户数)
+      tags:
+        - analytics
+      operationId: analyticsGetOverview
+      description: Platform overview aggregated over the lookback window.
+      x-mate-owner: analytics
+      x-mate-permission: analytics.read
+      x-mate-required-tenant: true
+      x-mate-implementation-status: planned
+      parameters:
+        - in: query
+          name: days
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 30
+            default: 7
+          description: lookback window in days
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OverviewStats'
+        '400':
+          $ref: '#/components/responses/Error400'
+      x-mate-requirements:
+        - MP-CONSUMER
+  /api/v1/analytics/services:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 服务调用排行 (top N + 延迟/错误率)
+      tags:
+        - analytics
+      operationId: analyticsGetServices
+      description: Service call ranking sorted by request volume.
+      x-mate-owner: analytics
+      x-mate-permission: analytics.read
+      x-mate-required-tenant: true
+      x-mate-implementation-status: planned
+      parameters:
+        - in: query
+          name: days
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 30
+            default: 7
+          description: lookback window in days
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRankingResponse'
+        '400':
+          $ref: '#/components/responses/Error400'
+      x-mate-requirements:
+        - MP-CONSUMER
+  /api/v1/analytics/trends:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 趋势分析 (请求量/Token 消耗/存储增长 7-30 天序列)
+      tags:
+        - analytics
+      operationId: analyticsGetTrends
+      description: Trend series (requests / tokens / storage growth).
+      x-mate-owner: analytics
+      x-mate-permission: analytics.read
+      x-mate-required-tenant: true
+      x-mate-implementation-status: planned
+      parameters:
+        - in: query
+          name: days
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 30
+            default: 7
+          description: lookback window in days
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrendResponse'
+        '400':
+          $ref: '#/components/responses/Error400'
+      x-mate-requirements:
+        - MP-CONSUMER
+  /api/v1/analytics/usage:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: API 使用量 (按服务/时间窗口)
+      tags:
+        - analytics
+      operationId: analyticsGetUsage
+      description: Per-service API usage points over the lookback window.
+      x-mate-owner: analytics
+      x-mate-permission: analytics.read
+      x-mate-required-tenant: true
+      x-mate-implementation-status: planned
+      parameters:
+        - in: query
+          name: days
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 30
+            default: 7
+          description: lookback window in days
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageResponse'
+        '400':
+          $ref: '#/components/responses/Error400'
+      x-mate-requirements:
+        - MP-CONSUMER
+  /api/v1/analytics/users:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 用户活跃度 (DAU/MAU/增长趋势)
+      tags:
+        - analytics
+      operationId: analyticsGetUsers
+      description: User activity (DAU, new users, MAU, growth rate).
+      x-mate-owner: analytics
+      x-mate-permission: analytics.read
+      x-mate-required-tenant: true
+      x-mate-implementation-status: planned
+      parameters:
+        - in: query
+          name: days
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 30
+            default: 7
+          description: lookback window in days
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserActivityResponse'
+        '400':
+          $ref: '#/components/responses/Error400'
+      x-mate-requirements:
+        - MP-CONSUMER
   /api/v1/apphub/apps:
     get:
       security:
@@ -2130,7 +3182,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionResult'
+                $ref: '#/components/schemas/schemas-ActionResult'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -4079,6 +5131,41 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
         - FR-COPILOT-COPILOTPOSTCOPILOTACTIONSMATCH
+      x-mate-implementation-status: implemented
+  /api/v1/copilot/agent-tools:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - copilot
+      summary: /v1/copilot/agent-tools
+      operationId: copilotGetCopilotAgentTools
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: Live SuperAI agent-loop tool registry (dispatch + ontology tools)
+      x-mate-owner: agent-experience
+      x-mate-permission: copilot.get
+      x-mate-requirements:
+        - FR-COPILOT-COPILOTGETCOPILOTAGENTTOOLS
       x-mate-implementation-status: implemented
   /api/v1/copilot/analysis/audit-sql:
     post:
@@ -8157,7 +9244,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ArtifactList'
+                $ref: '#/components/schemas/schemas-ArtifactList'
         '401':
           $ref: '#/components/responses/responses-Unauthorized'
         '403':
@@ -8415,6 +9502,270 @@ paths:
       x-mate-permission: marketplace.write
       x-mate-requirements:
         - MP-CONS-007
+  /api/v1/marketplace/skills:
+    post:
+      x-requirement-id: MP-CONS-009
+      operationId: uploadSkill
+      summary: 上传 SKILL（SKILL HUB）
+      description: 上传一个公开或私有 SKILL 到 SkillHub。
+      tags:
+        - marketplace
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillUpload'
+      responses:
+        '201':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+        '403':
+          description: 缺 marketplace.write scope
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.write
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - MP-CONS-009
+    get:
+      x-requirement-id: MP-CONS-010
+      operationId: listSkills
+      summary: 浏览 SKILL（公开 + 自有）
+      tags:
+        - marketplace
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: visibility
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - public
+              - private
+      responses:
+        '200':
+          description: SKILL 列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Skill'
+                  total:
+                    type: integer
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.read
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - MP-CONS-010
+  /api/v1/marketplace/skills/installed:
+    get:
+      x-requirement-id: MP-CONS-011
+      operationId: listInstalledSkills
+      summary: 已安装 SKILL（当前租户）
+      tags:
+        - marketplace
+      responses:
+        '200':
+          description: 已安装 SKILL 列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Skill'
+                  total:
+                    type: integer
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.read
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - MP-CONS-011
+  /api/v1/marketplace/skills/{skill_id}:
+    get:
+      x-requirement-id: MP-CONS-012
+      operationId: getSkill
+      summary: SKILL 详情
+      tags:
+        - marketplace
+      parameters:
+        - name: skill_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+        '404':
+          description: SKILL 不存在
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.read
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - MP-CONS-012
+    put:
+      x-requirement-id: MP-CONS-013
+      operationId: updateSkill
+      summary: 更新自有 SKILL（仅作者）
+      tags:
+        - marketplace
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      parameters:
+        - name: skill_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillUpload'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+        '403':
+          description: 非作者
+        '404':
+          description: SKILL 不存在
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.write
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - MP-CONS-013
+    delete:
+      x-requirement-id: MP-CONS-014
+      operationId: deleteSkill
+      summary: 删除自有 SKILL
+      tags:
+        - marketplace
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      parameters:
+        - name: skill_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 已删除
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.write
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - MP-CONS-014
+  /api/v1/marketplace/skills/{skill_id}/download:
+    get:
+      x-requirement-id: MP-CONS-015
+      operationId: downloadSkill
+      summary: 下载 SKILL 内容
+      tags:
+        - marketplace
+      parameters:
+        - name: skill_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: SKILL 内容
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  version:
+                    type: string
+                  content:
+                    type: string
+        '404':
+          description: SKILL 不存在
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.read
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - MP-CONS-015
+  /api/v1/marketplace/skills/{skill_id}/install:
+    post:
+      x-requirement-id: MP-CONS-016
+      operationId: installSkill
+      summary: 安装 SKILL
+      tags:
+        - marketplace
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      parameters:
+        - name: skill_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 安装成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  installs:
+                    type: integer
+                  status:
+                    type: string
+        '404':
+          description: SKILL 不存在
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.write
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - MP-CONS-016
   /api/v1/marketplace/subscriptions:
     get:
       x-requirement-id: MP-CONS-008
@@ -8435,6 +9786,111 @@ paths:
       x-mate-permission: marketplace.read
       x-mate-requirements:
         - MP-CONS-008
+  /api/v1/mcp/api-keys:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 列出本租户已签发的 MCP API Key
+      tags:
+        - mcp
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/McpApiKey'
+        '401':
+          description: 缺少有效凭证
+      operationId: mcpGetMcpApiKeys
+      description: 列出当前租户的长期 MCP API Key。仅返回前缀，明文不可再获取。
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.get
+      x-mate-requirements:
+        - FR-MCP-APIKEYS-LIST
+      x-mate-implementation-status: implemented
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 签发 MCP API Key（明文仅返回一次）
+      tags:
+        - mcp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMcpApiKeyRequest'
+      responses:
+        '201':
+          description: 创建成功，响应中的 key 为唯一一次明文
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/McpApiKeyCreated'
+        '401':
+          description: 缺少有效凭证
+        '403':
+          description: 非用户身份（API Key 不能自我繁殖）或跨租户
+        '503':
+          description: 密钥存储未启用
+      operationId: mcpPostMcpApiKeys
+      description: 为当前租户签发长期 API Key，供外部 MCP 客户端替代 1 小时 JWT 使用。
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.post
+      x-mate-requirements:
+        - FR-MCP-APIKEYS-CREATE
+      x-mate-implementation-status: implemented
+  /api/v1/mcp/api-keys/{kid}:
+    parameters:
+      - name: kid
+        in: path
+        required: true
+        schema:
+          type: string
+        description: API Key 记录 id
+    delete:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 吊销 MCP API Key
+      tags:
+        - mcp
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: string
+        '401':
+          description: 缺少有效凭证
+        '403':
+          description: 非用户身份或跨租户
+        '404':
+          description: key 不存在
+        '503':
+          description: 密钥存储未启用
+      operationId: mcpDeleteMcpApiKeysKid
+      description: 吊销指定 API Key；吊销后立即失效。
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.post
+      x-mate-requirements:
+        - FR-MCP-APIKEYS-DELETE
+      x-mate-implementation-status: implemented
   /api/v1/mcp/federation/servers:
     post:
       security:
@@ -8748,6 +10204,59 @@ paths:
       x-mate-requirements:
         - FR-MCP-MCPPOSTMCPPROMPTSNAME
       x-mate-implementation-status: implemented
+  /api/v1/mcp/protocol/mcp:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: MCP streamable-http SSE 流（W4 外部 MCP 客户端）
+      description: |
+        MCP 协议标准端点 — initialize / tools/list / tools/call 经 streamable HTTP (JSON-RPC + SSE)。
+
+        租户绑定（ADR-0062 / 1.1）：每一次消息的租户取自**认证到的调用方**
+        （`sk-mcp-*` 长效密钥或用户 bearer token），写死在协议面的 `default`
+        已移除。tools/list 与 tools/call 只呈现该租户的工具面；请求进入时
+        若无法解析出租户，直接 fail-closed 拒绝，不再回落到 `default`。
+      tags:
+        - mcp
+      responses:
+        '200':
+          description: SSE 事件流
+      operationId: mcpGetMcpProtocol
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.read
+      x-mate-requirements:
+        - FR-MCP-PROTOCOL-GET
+      x-mate-implementation-status: placeholder
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      x-required-scopes:
+        - platform.write
+      summary: MCP streamable-http JSON-RPC 端点（W4）
+      description: |
+        MCP 协议标准端点 — 外部 MCP 客户端（Claude Desktop / Codex / Cursor 等）经此发现与调用服务中心工具。
+
+        租户绑定（ADR-0062 / 1.1）：租户取自认证到的调用方（`sk-mcp-*` 密钥
+        或用户 bearer token），工具面按该租户过滤；无租户上下文时拒绝调用。
+      tags:
+        - mcp
+      responses:
+        '200':
+          description: MCP JSON-RPC 响应或 SSE 流
+        '401':
+          description: 缺少或无效 JWT
+      operationId: mcpPostMcpProtocol
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.write
+      x-mate-requirements:
+        - FR-MCP-PROTOCOL-POST
+      x-mate-implementation-status: placeholder
   /api/v1/mcp/resources:
     get:
       security:
@@ -10087,6 +11596,139 @@ paths:
                 $ref: '#/components/schemas/ActionApplyResponse'
         '422':
           $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/action-types/{rid}/flow:
+    parameters:
+      - in: path
+        name: rid
+        required: true
+        schema:
+          type: string
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - ont
+      summary: Get flow orchestration definition for an ActionType (SAL-05 persist)
+      operationId: ontGetV2ActionFlow
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-SAL05-GETFLOW
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionFlowV2'
+        '404':
+          $ref: '#/components/responses/Error404'
+    put:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Persist flow orchestration definition for an ActionType (SAL-05 persist)
+      operationId: ontPutV2ActionFlow
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-SAL05-PUTFLOW
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActionFlowUpsertV2'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionFlowV2'
+  /api/v1/ont/v2/action-types/{rid}/propose:
+    parameters:
+      - in: path
+        name: rid
+        required: true
+        schema:
+          type: string
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Propose an action (SAL-04 pending proposal, not applied)
+      operationId: ontProposeV2ActionType
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-SAL04-PROPOSE
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposalCreateV2'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalV2'
+        '404':
+          $ref: '#/components/responses/Error404'
+  /api/v1/ont/v2/agent-tools:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - ont
+      summary: Virtual registry of agent tools generated from ObjectTypes (SAL-01)
+      description: Computed on demand from ont_object_types (ADR-0043 §2.5) — no push sync. Each published ObjectType yields a query_<slug> tool whose parameters are a thin veneer over the ObjectQuery IR. Optional `markings` query param filters by visibility rule (type marking ⊆ caller markings).
+      operationId: ontListV2AgentTools
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-SAL01-AGENTTOOLS
+      x-mate-implementation-status: implemented
+      parameters:
+        - in: query
+          name: markings
+          required: false
+          description: Comma-separated caller markings for visibility filtering
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AgentToolV2'
   /api/v1/ont/v2/axioms:
     get:
       security:
@@ -10144,6 +11786,77 @@ paths:
                 $ref: '#/components/schemas/AxiomV2'
         '422':
           $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/classes/{class_rid}/inspect:
+    parameters:
+      - in: path
+        name: class_rid
+        required: true
+        schema:
+          type: string
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - ont
+      summary: Inspect class metadata (properties/links/actions) for agents (SAL-01)
+      description: 'Type introspection for LLM agents (ADR-0043 §2.2): the metadata source that schema_gen consumes — properties with formats and markings, inbound/outbound link types, actions bound to the class.'
+      operationId: ontInspectV2Class
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-SAL01-INSPECTCLASS
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassInspectV2'
+        '404':
+          $ref: '#/components/responses/Error404'
+  /api/v1/ont/v2/classes/{class_rid}/propose-instance:
+    parameters:
+      - in: path
+        name: class_rid
+        required: true
+        schema:
+          type: string
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Propose a new instance from extracted fields (SAL-04b ingest)
+      operationId: ontProposeV2Instance
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-SAL04B-PROPOSEINSTANCE
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstanceProposeV2'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalV2'
+        '404':
+          $ref: '#/components/responses/Error404'
   /api/v1/ont/v2/functions:
     get:
       security:
@@ -10358,6 +12071,44 @@ paths:
                 $ref: '#/components/schemas/InterfaceV2'
         '422':
           $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/interfaces/{rid}:
+    delete:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Delete Interface (refused while implemented by any type)
+      operationId: ontDeleteV2Interface
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-C8-DELETEINTERFACE
+      x-mate-implementation-status: implemented
+      parameters:
+        - in: path
+          name: rid
+          required: true
+          schema:
+            type: string
+            pattern: ^ont\.[a-z0-9_-]{1,64}\.if\.[a-z0-9_:\-.]+$
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          description: Delete refused (interface still implemented)
   /api/v1/ont/v2/link-instances:
     get:
       security:
@@ -10505,6 +12256,108 @@ paths:
                 $ref: '#/components/schemas/LinkTypeV2'
         '404':
           $ref: '#/components/responses/Error404'
+  /api/v1/ont/v2/object-query:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      x-required-scopes:
+        - platform.read
+      tags:
+        - ont
+      summary: Execute structured ObjectSet IR query (SAL-01)
+      description: 'Structured operator-tree query (ADR-0043). Filters, aggregation (group_by + metrics), link traversal, multi-key sort and paging are expressed as structured JSON — no expression string to parse. Returns a result envelope {kind, rows, result_schema}: aggregates return rows of group keys + metric values, not individuals.'
+      operationId: ontExecuteV2ObjectQuery
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-SAL01-OBJECTQUERY
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObjectQueryV2'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectQueryResultV2'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '422':
+          $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/object-search:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      x-required-scopes:
+        - platform.read
+      tags:
+        - ont
+      summary: Semantic object search - OAG retrieval context (SAL-02)
+      description: 'Object-instance semantic retrieval (ADR per spec SAL-02): embeds the query, ranks property-level embeddings (ont_object_embedding), and returns object cards with traceable rids for agent prompt injection.'
+      operationId: ontSearchV2Objects
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-SAL02-OBJECTSEARCH
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObjectSearchV2'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectSearchResultV2'
+        '422':
+          $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/object-search/reindex:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Backfill object embeddings for the tenant (SAL-02)
+      operationId: ontReindexV2ObjectSearch
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-SAL02-REINDEX
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - indexed
+                properties:
+                  indexed:
+                    type: integer
   /api/v1/ont/v2/object-sets/query:
     post:
       security:
@@ -10615,6 +12468,36 @@ paths:
           $ref: '#/components/responses/Error409'
         '422':
           $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/object-types/propose:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Propose a new ObjectType from text (SAL-04b AI-assisted modeling)
+      operationId: ontProposeV2ObjectType
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-SAL04B-PROPOSETYPE
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TypeProposeV2'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalV2'
   /api/v1/ont/v2/object-types/{rid}:
     parameters:
       - in: path
@@ -10739,6 +12622,157 @@ paths:
           $ref: '#/components/responses/Error409'
         '422':
           $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/proposals/{proposal_id}:
+    parameters:
+      - in: path
+        name: proposal_id
+        required: true
+        schema:
+          type: string
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - ont
+      summary: Get proposal (SAL-04 state machine)
+      operationId: ontGetV2Proposal
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-SAL04-GETPROPOSAL
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalV2'
+        '404':
+          $ref: '#/components/responses/Error404'
+  /api/v1/ont/v2/proposals/{proposal_id}/confirm:
+    parameters:
+      - in: path
+        name: proposal_id
+        required: true
+        schema:
+          type: string
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Confirm proposal (user-side HITL; pending -> confirmed)
+      operationId: ontConfirmV2Proposal
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-SAL04-CONFIRM
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposalConfirmV2'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalV2'
+        '409':
+          $ref: '#/components/responses/Error409'
+  /api/v1/ont/v2/proposals/{proposal_id}/execute:
+    parameters:
+      - in: path
+        name: proposal_id
+        required: true
+        schema:
+          type: string
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Execute a confirmed proposal (create_instance / model_type; SAL-04b)
+      operationId: ontExecuteV2Proposal
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-SAL04B-EXECUTE
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - kind
+                properties:
+                  kind:
+                    type: string
+                    enum:
+                      - create_instance
+                      - model_type
+                  individual_rid:
+                    type: string
+                  type_rid:
+                    type: string
+        '409':
+          $ref: '#/components/responses/Error409'
+  /api/v1/ont/v2/proposals/{proposal_id}/reject:
+    parameters:
+      - in: path
+        name: proposal_id
+        required: true
+        schema:
+          type: string
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Reject proposal (terminal)
+      operationId: ontRejectV2Proposal
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-SAL04-REJECT
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposalConfirmV2'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalV2'
   /api/v1/ont/v2/versions/{class_rid}:
     parameters:
       - in: path
@@ -10804,6 +12838,667 @@ paths:
                 $ref: '#/components/schemas/VersionV2'
         '422':
           $ref: '#/components/responses/Error422'
+  /api/v1/orchestrator/capabilities:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 能力上线（MCP 工具注册通知，MP-COMP-01）
+      tags:
+        - orchestrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackCapabilityRequest'
+      responses:
+        '201':
+          description: 已跟踪（返回 fiber 快照）
+        '401':
+          description: 缺少或无效 JWT
+        '503':
+          description: capability runtime 未启动（lifespan 未运行）
+      operationId: orchestratorPostCapabilities
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements:
+        - ORCH-004
+      x-mate-implementation-status: implemented
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 能力/角色 fiber 状态快照
+      tags:
+        - orchestrator
+      responses:
+        '200':
+          description: 'OK — {capabilities: {key: state}, roles: {key: state}}'
+        '503':
+          description: capability runtime 未启动
+      operationId: orchestratorGetCapabilities
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.read
+      x-mate-requirements:
+        - ORCH-005
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/capabilities/{name}:
+    delete:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 能力下线（依赖角色 fiber 反应式失活，MP-COMP-01）
+      tags:
+        - orchestrator
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 已撤销（返回 fiber 快照）
+        '404':
+          description: 能力未跟踪
+        '503':
+          description: capability runtime 未启动
+      operationId: orchestratorDeleteCapabilitiesName
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements:
+        - ORCH-006
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/dispatch:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 单任务多角色派发
+      tags:
+        - orchestrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DispatchRequest'
+      responses:
+        '200':
+          description: 派发结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DispatchResponse'
+        '401':
+          description: 缺少或无效 JWT
+        '404':
+          description: 无角色可服务该任务
+        '422':
+          description: worker_kind 不支持
+      operationId: orchestratorPostDispatch
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements:
+        - ORCH-007
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/plans:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 提交计划（≥1 HITL 步，决策 B3）
+      tags:
+        - orchestrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitPlanRequest'
+      responses:
+        '201':
+          description: 已提交
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan_id:
+                    type: string
+                  status:
+                    type: string
+                  step_count:
+                    type: integer
+        '422':
+          description: 计划无 HITL 步
+      operationId: orchestratorPostPlans
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements:
+        - ORCH-008
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/plans/{plan_id}:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 计划状态
+      tags:
+        - orchestrator
+      parameters:
+        - name: plan_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanStatus'
+        '404':
+          description: 计划不存在
+      operationId: orchestratorGetPlansPlanId
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.read
+      x-mate-requirements:
+        - ORCH-009
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/plans/{plan_id}/execute:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 执行计划（HITL 步暂停）
+      tags:
+        - orchestrator
+      parameters:
+        - name: plan_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 执行结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan_id:
+                    type: string
+                  status:
+                    type: string
+                  current_step_id:
+                    type:
+                      - string
+                      - 'null'
+                  results:
+                    type: array
+                    items:
+                      type: object
+        '404':
+          description: 计划不存在
+      operationId: orchestratorPostPlansPlanIdExecute
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements:
+        - ORCH-011
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/plans/{plan_id}/graph:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 计划流程图模型（SAL-05 可视化：节点状态 + proposal 关联 + 数据流边）
+      tags:
+        - orchestrator
+      parameters:
+        - name: plan_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanGraph'
+        '404':
+          description: 计划不存在
+      operationId: orchestratorGetPlansPlanIdGraph
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.read
+      x-mate-requirements:
+        - ORCH-010
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/plans/{plan_id}/steps/{step_id}/review:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: HITL 审批（approve 继续 / reject 中止）
+      tags:
+        - orchestrator
+      parameters:
+        - name: plan_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: step_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+      responses:
+        '200':
+          description: 审批结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan_id:
+                    type: string
+                  status:
+                    type: string
+                  current_step_id:
+                    type:
+                      - string
+                      - 'null'
+                  results:
+                    type: array
+                    items:
+                      type: object
+        '404':
+          description: 计划不存在
+      operationId: orchestratorPostPlansPlanIdStepsStepIdReview
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements:
+        - ORCH-012
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/roles:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 注册数字员工角色
+      tags:
+        - orchestrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRoleRequest'
+      responses:
+        '201':
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '401':
+          description: 缺少或无效 JWT
+        '422':
+          description: 未知角色 / worker_kind / 缺 tenant
+      operationId: orchestratorPostRoles
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements:
+        - ORCH-001
+      x-mate-implementation-status: implemented
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 列出数字员工角色
+      tags:
+        - orchestrator
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Role'
+                  total:
+                    type: integer
+      operationId: orchestratorGetRoles
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.read
+      x-mate-requirements:
+        - ORCH-002
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/roles/{role}:
+    delete:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 注销数字员工角色
+      tags:
+        - orchestrator
+      parameters:
+        - name: role
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: string
+        '404':
+          description: 角色未注册
+      operationId: orchestratorDeleteRolesRole
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements:
+        - ORCH-003
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/scheduling/employees/match:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 数字员工匹配（intent → candidates）
+      tags:
+        - orchestrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                intent:
+                  type: string
+      responses:
+        '200':
+          description: 候选员工列表
+      operationId: orchestratorPostSchedulingEmployeesMatch
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements:
+        - ORCH-014
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/scheduling/execution/start:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 执行计划（plan_id → execution）
+      tags:
+        - orchestrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan_id:
+                  type: string
+      responses:
+        '200':
+          description: 执行状态
+        '404':
+          description: 计划不存在
+      operationId: orchestratorPostSchedulingExecutionStart
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements:
+        - ORCH-016
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/scheduling/execution/{execution_id}/report:
+    get:
+      summary: 执行报告
+      tags:
+        - orchestrator
+      parameters:
+        - name: execution_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 报告文本
+      operationId: orchestratorGetSchedulingExecutionReport
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.read
+      x-mate-requirements:
+        - ORCH-017
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/scheduling/intent/detect:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 意图识别（text → intent）
+      tags:
+        - orchestrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+      responses:
+        '200':
+          description: 意图
+      operationId: orchestratorPostSchedulingIntentDetect
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements:
+        - ORCH-013
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/scheduling/intents:
+    get:
+      summary: 意图历史
+      tags:
+        - orchestrator
+      responses:
+        '200':
+          description: 意图列表
+      operationId: orchestratorGetSchedulingIntents
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.read
+      x-mate-requirements:
+        - ORCH-018
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/scheduling/plan/generate:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 计划生成（intent_id → ExecutionPlan）
+      tags:
+        - orchestrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                intent_id:
+                  type: string
+      responses:
+        '200':
+          description: 执行计划
+      operationId: orchestratorPostSchedulingPlanGenerate
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements:
+        - ORCH-015
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/scheduling/templates:
+    get:
+      summary: 调度模板
+      tags:
+        - orchestrator
+      responses:
+        '200':
+          description: 模板列表
+      operationId: orchestratorGetSchedulingTemplates
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.read
+      x-mate-requirements:
+        - ORCH-019
+      x-mate-implementation-status: implemented
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 创建调度模板
+      tags:
+        - orchestrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: 模板
+      operationId: orchestratorPostSchedulingTemplates
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements:
+        - ORCH-020
+      x-mate-implementation-status: implemented
+  /api/v1/orders:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 创建参考订单（本地验收入口）
+      tags:
+        - order-review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '409':
+          description: 订单已存在
+      operationId: orderReviewPostOrders
+      x-mate-owner: orchestrator
+      x-mate-permission: order.write
+      x-mate-requirements:
+        - ORD-001
+      x-mate-implementation-status: implemented
+  /api/v1/orders/high-value-unpaid:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      summary: 查询高价值未支付订单
+      tags:
+        - order-review
+      parameters:
+        - name: min_amount_cents
+          in: query
+          required: false
+          description: 可选的更高用户筛选；省略时使用服务端 ORDER_REVIEW_THRESHOLD_CENTS 配置。
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: 订单列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HighValueUnpaidResponse'
+      operationId: orderReviewGetHighValueUnpaidOrders
+      x-mate-owner: orchestrator
+      x-mate-permission: order.read
+      x-mate-requirements:
+        - ORD-002
+      x-mate-implementation-status: implemented
   /api/v1/rag/admin/pg-stats:
     get:
       security:
@@ -11026,6 +13721,48 @@ paths:
       x-mate-requirements:
         - FR-RAG-RAGPOSTRAGUPLOAD
       x-mate-implementation-status: placeholder
+  /api/v1/review-cases:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      summary: 创建订单复核案例和 Action Proposal
+      tags:
+        - order-review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReviewCaseRequest'
+      responses:
+        '201':
+          description: Proposal 已创建，等待人工确认
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateReviewCaseResponse'
+        '404':
+          description: 订单不存在
+        '409':
+          description: 订单状态冲突
+        '503':
+          description: Evidence unavailable
+          headers:
+            X-Error-Code:
+              description: Application error code.
+              schema:
+                type: string
+                enum:
+                  - evidence_unavailable
+      operationId: orderReviewPostReviewCases
+      x-mate-owner: orchestrator
+      x-mate-permission: order.write
+      x-mate-requirements:
+        - ORD-003
+      x-mate-implementation-status: implemented
   /api/v1/scheduler/dag:
     get:
       security:
@@ -11463,6 +14200,82 @@ components:
           type: string
         traceId:
           type: string
+    DeepResearchInput:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: The research question.
+        depth:
+          type: string
+          enum:
+            - shallow
+            - medium
+            - deep
+          default: deep
+        max_sources:
+          type: integer
+          default: 10
+          minimum: 1
+        output_format:
+          type: string
+          enum:
+            - markdown
+            - json
+          default: markdown
+    DeepResearchInvokeRequest:
+      type: object
+      required:
+        - capability_id
+        - input
+      properties:
+        capability_id:
+          type: string
+          enum:
+            - web-research
+          description: The capability to invoke.
+        input:
+          $ref: '#/components/schemas/DeepResearchInput'
+    Source:
+      type: object
+      properties:
+        url:
+          type: string
+        title:
+          type: string
+        snippet:
+          type: string
+        reliability:
+          type: string
+          enum:
+            - high
+            - medium
+            - low
+        fetched_at:
+          type: string
+          format: date-time
+    DeepResearchInvokeResponse:
+      type: object
+      properties:
+        capability_id:
+          type: string
+        report:
+          type: string
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Source'
+        duration_ms:
+          type: integer
+    schemas-ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
     A2APart:
       type: object
       description: One content part of a W3C A2A message.
@@ -11561,6 +14374,344 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/A2AMessage'
+    EvidenceGraphNode:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - label
+        - type
+        - properties
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        type:
+          type: string
+          enum:
+            - transaction_anchor
+            - object_type
+            - action_type
+        properties:
+          type: object
+          additionalProperties: true
+    EvidenceGraphEdge:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - source
+        - target
+        - label
+      properties:
+        id:
+          type: string
+        source:
+          type: string
+        target:
+          type: string
+        label:
+          type: string
+    EvidenceGraph:
+      type: object
+      additionalProperties: false
+      required:
+        - nodes
+        - edges
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceGraphNode'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceGraphEdge'
+    EvidenceLegend:
+      type: object
+      additionalProperties: false
+      required:
+        - transaction_anchor
+        - object_type
+        - action_type
+      properties:
+        transaction_anchor:
+          type: string
+        object_type:
+          type: string
+        action_type:
+          type: string
+    OntologyEvidence:
+      type: object
+      additionalProperties: false
+      required:
+        - source
+        - model_rid
+        - action_rid
+        - graph
+        - legend
+      properties:
+        source:
+          type: string
+          enum:
+            - ontology_kernel
+        model_rid:
+          type: string
+        action_rid:
+          type: string
+        graph:
+          $ref: '#/components/schemas/EvidenceGraph'
+        legend:
+          $ref: '#/components/schemas/EvidenceLegend'
+    EvidenceFact:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - field
+        - label
+        - value
+        - display_value
+        - source
+      properties:
+        id:
+          type: string
+        field:
+          type: string
+        label:
+          type: string
+        value: {}
+        display_value:
+          type: string
+        source:
+          type: string
+    EvidenceData:
+      type: object
+      additionalProperties: false
+      required:
+        - source
+        - captured_at
+        - facts
+      properties:
+        source:
+          type: string
+          enum:
+            - order_review_orders
+        captured_at:
+          type: string
+          format: date-time
+        facts:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceFact'
+    EvidenceDerivation:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - label
+        - passed
+        - fact_refs
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        passed:
+          type: boolean
+        fact_refs:
+          type: array
+          items:
+            type: string
+        details:
+          anyOf:
+            - type: object
+              additionalProperties: true
+            - type: 'null'
+    EvidenceRecommendation:
+      type: object
+      additionalProperties: false
+      required:
+        - action
+        - title
+        - reason
+        - requires_confirmation
+        - derivation_refs
+        - source_refs
+      properties:
+        action:
+          type: string
+        title:
+          type: string
+        reason:
+          type: string
+        requires_confirmation:
+          type: boolean
+        derivation_refs:
+          type: array
+          items:
+            type: string
+        source_refs:
+          type: array
+          items:
+            type: string
+        confidence:
+          type:
+            - number
+            - 'null'
+    EvidenceBundle:
+      type: object
+      additionalProperties: false
+      required:
+        - schema_version
+        - status
+        - proposal_id
+        - order_id
+        - tenant_id
+        - order_version
+        - captured_at
+        - ontology
+        - data
+        - derivation
+        - recommendation
+      properties:
+        schema_version:
+          type: string
+          enum:
+            - order-review-evidence.v1
+        status:
+          type: string
+          enum:
+            - complete
+            - unavailable
+        proposal_id:
+          type: string
+        order_id:
+          type: string
+        tenant_id:
+          type: string
+        order_version:
+          type: integer
+        captured_at:
+          type: string
+          format: date-time
+        ontology:
+          $ref: '#/components/schemas/OntologyEvidence'
+        data:
+          $ref: '#/components/schemas/EvidenceData'
+        derivation:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceDerivation'
+        recommendation:
+          $ref: '#/components/schemas/EvidenceRecommendation'
+    ActionProposal:
+      type: object
+      required:
+        - tenant_id
+        - proposal_id
+        - review_case_id
+        - order_id
+        - action_type
+        - status
+        - expected_order_version
+        - suggestion
+        - source_refs
+        - parameters
+        - expires_at
+        - created_at
+      properties:
+        tenant_id:
+          type: string
+        proposal_id:
+          type: string
+        review_case_id:
+          type: string
+        order_id:
+          type: string
+        action_type:
+          type: string
+          enum:
+            - order_review_confirm
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - rejected
+            - expired
+        expected_order_version:
+          type: integer
+        suggestion:
+          type: object
+          additionalProperties: true
+        source_refs:
+          type: array
+          items:
+            type: string
+        parameters:
+          type: object
+          additionalProperties: true
+        evidence:
+          anyOf:
+            - $ref: '#/components/schemas/EvidenceBundle'
+            - type: 'null'
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        resolved_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+    ConfirmActionProposalRequest:
+      type: object
+      properties:
+        actor_id:
+          type: string
+          default: system
+    ActionResult:
+      type: object
+      required:
+        - proposal_id
+        - order_id
+        - status
+      properties:
+        proposal_id:
+          type: string
+        order_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - confirmed
+            - rejected
+        order_version:
+          anyOf:
+            - type: integer
+              minimum: 1
+            - type: 'null'
+        follow_up_task_id:
+          anyOf:
+            - type: string
+            - type: 'null'
+        reason:
+          anyOf:
+            - type: string
+            - type: 'null'
+    RejectActionProposalRequest:
+      type: object
+      properties:
+        actor_id:
+          type: string
+          default: system
+        reason:
+          type: string
+          default: ''
     ConfigCategory:
       type: string
       enum:
@@ -11570,7 +14721,7 @@ components:
         - NOTIFICATION
         - BILLING
         - AI
-    schemas-ErrorResponse:
+    components-schemas-ErrorResponse:
       type: object
       additionalProperties: false
       required:
@@ -11919,6 +15070,879 @@ components:
             - 'null'
           items:
             type: integer
+    Artifact:
+      type: object
+      required:
+        - artifact_id
+      description: |
+        一件**产出物**的元数据（1.6 任务 2）。正文不在列表里——按
+        `artifact_id` 走 `GET /artifacts/{artifact_id}` 另取。
+
+        落地存储是 **PG**（不是 MinIO 作主存）：租户隔离只有 PG 这条路是数据库
+        强制的（RLS），且"可寻址"要的主键 PG 直接给；对象存储只作**大正文的外移
+        层**（见 `storage_uri`）。理由全文见服务端 `artifact_store` 模块注释。
+
+        **C-4 起它是"某一版"的元数据**：`(artifact_id, version)` 才是一个不可变
+        交付物。旧实现同地址 `ON CONFLICT DO UPDATE` 覆盖写，重跑一次就再也说
+        不出"第一次交付的是什么"。
+      properties:
+        artifact_id:
+          type: string
+          description: |
+            产出物地址，形状 `{run_id 前 8 位}-{计划内标签}`。按运行唯一，所以
+            同一个员工在同一轮里的主交付物**只有一个地址**。跨轮重跑是不同地址；
+            版本化管的是**同一地址被写第二次**（图重放 / 续跑重派 / 工具重试）。
+        run_id:
+          type: string
+        task_id:
+          type: string
+        profile_id:
+          type: string
+          description: 产出它的数字员工
+        kind:
+          type: string
+          description: |
+            产出物种类。当前只有 `report`（员工的自由文本产出）。种类由**生产方**
+            声明，不按正文内容猜。
+        title:
+          type: string
+        content_type:
+          type: string
+          description: 正文的媒体类型（当前恒为 `text/markdown`）
+        size:
+          type: integer
+          description: |
+            正文的**字节数**（原文的，不是 PG 里那一列的长度——正文外移后
+            `content` 为空，`size` 仍是原文大小）。
+        version:
+          type: integer
+          default: 1
+          description: |
+            这一版的版本号，首次交付 = 1。同一地址**内容变了**才 +1；内容没变的
+            重放是幂等的（不刷版本号）。
+        immutable_digest:
+          type: string
+          description: |
+            这一版正文的 sha256（十六进制）。行一旦落库不再重算——所以它既能验
+            "同一份内容"，也能检出"这行被改过正文"。
+        provenance:
+          type: string
+          description: 谁、按哪一版产出流程造的它（如 `agent-runtime/v1`）
+        security_classification:
+          type: string
+          description: |
+            密级标记。**只记录、不强制**：本服务不做访问策略判定，标记的强制由
+            后续 Marking 批次负责（见 2.1-C 边界登记）。
+        retention_policy:
+          type: string
+          description: 保留策略名（如 `7d`）。同上，只记录，不执行清理。
+        storage_uri:
+          type: string
+          description: |
+            正文外移后的对象存储地址；内联在 PG 时为空串。**没配 blob 客户端
+            时一律内联**（不会出现"地址有了、内容取不回"）。
+        created_at:
+          type: string
+          description: 落库时刻（ISO8601）
+    ArtifactContent:
+      allOf:
+        - $ref: '#/components/schemas/Artifact'
+        - type: object
+          properties:
+            content:
+              type: string
+              description: 正文原文
+    EmployeeProfile:
+      type: object
+      required:
+        - profile_id
+        - name
+        - base_role
+      properties:
+        profile_id:
+          type: string
+        name:
+          type: string
+        base_role:
+          type: string
+          description: kernel AgentRole 枚举之一
+        system_prompt:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+          description: 绑定的 skillhub skill id（只出清单，正文按需读）
+        tools:
+          type: array
+          items:
+            type: string
+          description: 工具白名单（MCP 工具名）；白名单外调用被拒
+        action_rids:
+          type: array
+          items:
+            type: string
+          description: 权限包络 · 可写的 Action rid（ADR-0066 §3.3）
+        kb_ids:
+          type: array
+          items:
+            type: string
+          description: 权限包络 · 可读的知识库 id
+        markings:
+          type: array
+          items:
+            type: string
+          description: 权限包络 · 可见的数据标记
+        model:
+          type: string
+          description: 该员工使用的模型（llmgw 侧的名字）
+        runtimes:
+          type: array
+          items:
+            type: string
+            enum:
+              - superai
+              - claude_code
+              - external_a2a
+          description: |
+            允许的**执行面**（ADR-0066 §5.8：「角色」与「运行时」是正交两轴）。
+            C-5（`MP-AGENT-PROFILE-MGMT-01`）起见得到的就是**库里那一列**的值——
+            配了 `claude_code` 的员工，重启后读回来仍是 `claude_code`。
+
+            省略 = `[superai]`（存量调用方的行为不变）。**不许静默切换 Runtime**：
+            陌生的名字是 422，不会落回默认——两个执行面的沙箱与权限假设不同
+            （外部 CLI 拿不到本仓的 `EnvelopeGate`）。
+        origin:
+          type: string
+          description: builtin = 代码里的内置定义；instantiated = 本租户建出来的行
+    ProfileWriteRequest:
+      type: object
+      required:
+        - name
+      properties:
+        profile_id:
+          type: string
+          description: |
+            省略时现生成 `EMP-XXXXXXXX`；给了就是**幂等 upsert**——同一个 id
+            再提交一次即覆盖，不需要先查再建。
+        name:
+          type: string
+          minLength: 1
+        base_role:
+          type: string
+          default: ontology
+          description: kernel AgentRole 枚举之一
+        system_prompt:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        tools:
+          type: array
+          items:
+            type: string
+        action_rids:
+          type: array
+          items:
+            type: string
+        kb_ids:
+          type: array
+          items:
+            type: string
+        markings:
+          type: array
+          items:
+            type: string
+        model:
+          type: string
+        runtimes:
+          type: array
+          items:
+            type: string
+            enum:
+              - superai
+              - claude_code
+              - external_a2a
+          description: |
+            这台员工允许跑在哪些执行面上（ADR-0066 §5.8）。省略 = `[superai]`。
+            **陌生值 422**（不静默回落默认）；**空数组同样 422**——空列表会被下游
+            当作"没声明"再回落默认，是同一种静默。
+    SkillManifestEntry:
+      type: object
+      required:
+        - skill_id
+        - name
+      properties:
+        skill_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          description: 一句话描述（清单层只出这个，不出正文）
+    SkillManifest:
+      type: object
+      required:
+        - profile_id
+        - entries
+        - manifest_chars
+        - budget_chars
+      properties:
+        profile_id:
+          type: string
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillManifestEntry'
+        manifest_chars:
+          type: integer
+          description: 清单实际字符数
+        budget_chars:
+          type: integer
+          description: 预算上限（默认 8000，即上下文 2%）
+    SkillContent:
+      type: object
+      required:
+        - skill_id
+        - content
+      properties:
+        skill_id:
+          type: string
+        content:
+          type: string
+          description: skill 正文（渐进加载第 2 层，选中后才读）
+    ConversationRun:
+      type: object
+      required:
+        - conversation_id
+        - run_id
+      properties:
+        conversation_id:
+          type: string
+        run_id:
+          type: string
+        turn_id:
+          type: string
+          default: ''
+        created_by:
+          type: string
+          default: ''
+          description: 发起者的 subject（取自令牌，不是请求体）
+        relation_type:
+          type: string
+          default: initiated
+          description: |
+            关系种类。当前只有 `initiated`（这一轮由该会话发起）；"被引用"是
+            另一种关系，出现时走契约新增。
+        created_at:
+          type: string
+          default: ''
+        status:
+          type: string
+          default: ''
+          description: |
+            该轮**此刻**的状态。它来自该轮自己的检查点（与 `GET /runs/{run_id}`
+            同一份事实），本表不复制 run 状态。读不到检查点（已受理、尚未落第一个
+            检查点）时为空串。
+        goal:
+          type: string
+          default: ''
+    RunList:
+      type: object
+      required:
+        - conversation_id
+      properties:
+        conversation_id:
+          type: string
+        items:
+          type: array
+          default: []
+          description: 该会话里的各轮 run，**新→旧**。
+          items:
+            $ref: '#/components/schemas/ConversationRun'
+    StartRunRequest:
+      type: object
+      required:
+        - goal
+      properties:
+        goal:
+          type: string
+          description: 用户的一句话目标
+          minLength: 1
+        max_parallel:
+          type: integer
+          default: 3
+          description: 本轮最多并行派出的员工数（≥2）
+        timeout_seconds:
+          type: number
+          minimum: 0
+          description: |
+            本轮的运行级截止时间（秒）。省略时用部署默认值
+            （`MATE_AGENT_TEAM_RUN_TIMEOUT_SECONDS`，0 = 不设超时）。到点后运行
+            落终态 `timeout`，不会一直停在闸门上等人。
+
+            生效值**随 run 落库**（见 `RunState.timeout_seconds` / `deadline_at`），
+            服务重启后仍按本轮的值裁决。
+        conversation_id:
+          type: string
+          default: ''
+          description: |
+            发起这一轮的**会话 id**（C-1 / `MP-SESSION-RUN-LINK-01`）。给了就落
+            后端（`conversation_run` 表），于是换机器 / 清浏览器之后仍查得到
+            "这次对话里跑过哪几轮"（见 `GET /runs?conversation=`）。
+
+            **后端是唯一关系源**：前端那份 `localStorage` 只是缓存。省略则不起
+            这层关系——不是所有调用方都有会话（工作台直接起一轮、脚本、压测）。
+        turn_id:
+          type: string
+          default: ''
+          description: |
+            这一轮是会话里的**第几次发言**（调用方生成，用于把多轮排成时间序）。
+            仅在该轮有 `conversation_id` 时有意义。
+    RunAccepted:
+      type: object
+      required:
+        - run_id
+        - tenant_id
+        - status
+      description: |
+        `POST /runs` 的受理回执（1.7）：**只回受理事实，不回运行结果**。
+
+        起一轮运行要拆图 + 并行派活，实测量级是**分钟**，而网关读超时是 60s。
+        同步返回时客户端拿到的是 504，且**这一轮其实已经建好了**——重试一次
+        就多跑一轮。改成受理制之后：提交立刻拿到 `run_id`，终态**只能**从
+        `GET /runs/{run_id}` 或事件流取。
+      properties:
+        run_id:
+          type: string
+          description: 本轮运行的地址；`GET /runs/{run_id}` 与事件流都用它
+        tenant_id:
+          type: string
+        status:
+          type: string
+          description: |
+            受理那一刻的状态（通常是 `running`）。**不是终态**：终态要订阅
+            事件流或轮询 `GET /runs/{run_id}` 才拿得到。
+        deduplicated:
+          type: boolean
+          default: false
+          description: |
+            这次提交是否**没有新起一轮**：请求带了同一个 `Idempotency-Key`
+            且该键已经对应到一个 run，此时原样返回那轮的 `run_id`。
+            重试因此不会多跑一轮——这正是同步版 504 之后那个坑的根治办法。
+    SubTask:
+      type: object
+      required:
+        - task_id
+        - profile_id
+        - instruction
+      properties:
+        task_id:
+          type: string
+          description: 子任务 id（在一次 run 内唯一）
+        profile_id:
+          type: string
+          description: 承接该子任务的数字员工 id
+        instruction:
+          type: string
+          description: 下发给该员工的指令（已按 §5.4 裁剪，不是主上下文全量）
+        depends_on:
+          type: array
+          items:
+            type: string
+          default: []
+          description: |
+            本节点的前置节点（**同一计划内**的 task_id）。依赖全部产出回执后
+            本节点才会被派出去；无依赖 = 第一波。指向计划外的 id 或成环时，
+            整轮在计划期判失败（不会静默挂住）。
+    SubTaskResult:
+      type: object
+      properties:
+        task_id:
+          type: string
+        team_task_id:
+          type: string
+          description: |
+            该员工这次运行的**实例 id**（`team_task` 主键，跨运行唯一）。
+            **追问该员工就投这个 id** —— `POST /tasks/{task_id}/messages` 收的
+            是它；`task_id`（如 `t1`）只是计划内标签，两次运行会重复，投给它
+            会被拒（终态）或投错运行。
+        profile_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - ok
+            - error
+            - rejected
+        output:
+          type: string
+          description: 员工真实产出（非原话回填）
+        tool_calls:
+          type: array
+          items:
+            type: object
+          description: 该员工实际发起的工具调用记录（审计用）
+        llm_calls:
+          type: integer
+          description: |
+            **本地**模型轮次。B-7（`MP-EXTERNAL-RUNTIME-E2E-01`）起，出站到外部
+            agent 的往返**不再计入这里**——远端的 token 不是本平台花的。它单独记在
+            `external_agent_calls`。
+        external_agent_calls:
+          type: integer
+          description: |
+            出站到外部 agent 的**往返次数**（成功与失败都算：成本口径问的是
+            "打出去几次"）。当前只有 A2A 出站这一类。
+        runtime_calls:
+          type: integer
+          description: |
+            运行时**派发次数**（含重试）。与 `llm_calls` 分开：一次派发可能一次模型
+            都没调（外部 runtime），一次模型轮次也可能在多次派发里发生
+            （重试用尽后成功）。
+        source:
+          type: string
+          enum:
+            - llm
+            - external
+            - stub
+          description: |
+            llm = 本地模型产出；external = 外部 agent 产出（A2A 出站）；
+            stub = 未接线（供 D-10 "假回执" 断言）。
+        error:
+          type: string
+        error_code:
+          type: string
+          description: |
+            可判定的失败类别——`status` 里 `rejected`/`error` 分不开的几种情形
+            靠它区分：
+            - `E_AUTHORITY_ESCALATION`：派活越权，已转 proposal，**该子任务未执行**
+              （授权只限本次任务，人工同意后才跑）；
+            - `E_DEPTH_EXCEEDED`：嵌套层数超上限，硬拒，整轮判失败；
+            - `E_PROFILE_NOT_FOUND`：员工不在本租户名册（跨租户 = 不存在），同上；
+            - `E_RUNTIME_UNAVAILABLE`：**可重试**失败（模型 5xx / 网络抖动这类）
+              按策略重试后仍不成功。只是**这一件**没干成，不是整轮失败。
+        proposal:
+          type: object
+          description: |
+            越权时的人审提案（ADR-0066 §3.4）：`escalations` 是越权的维度、
+            `requested` 是各维度实际超出的能力、`scope=this_task_only` 声明
+            授权范围**只作用于本次任务**（不写回员工定义）。
+        attempts:
+          type: integer
+          default: 0
+          description: |
+            这一件**真正发起了几次**运行时调用（含重试；1 = 一次过手）。
+            没被执行的（越权转 proposal / 硬拒）为 0。重试只作用于**运行时那一次
+            调用**：派活（建任务行、落审计、转 proposal）是副作用，不会被重做。
+        evidence:
+          type: array
+          description: |
+            该员工工具调用结果映射出的**结构化证据**（1.6）。形状与 copilot 的
+            证据条目**完全一致**——同一平台里"证据"只有一种样子：
+
+            - `type`：`ONTOLOGY_OBJECT`（对象/类型级）或 `ONTOLOGY_METRIC`（聚合指标）；
+            - `ref`：可寻址引用（实例 rid / 类型 rid / 指标名）；
+            - `objectId`：**仅实例证据**有；类型级与指标级不设（拿它调实例接口会 404）；
+            - `concept`：人读的名字（可缺）；
+            - `fragment`：结果片段（可缺）；
+            - `evidenceId`：运行内唯一，供前端去重/追加；
+            - `capturedAt`：抓取时刻（UTC，`%Y-%m-%dT%H:%M:%SZ`）。
+
+            **忠实映射**：只对结果里真实存在的字段取证，取不到就**不产出条目**
+            （工具成功但无证据是正常结果，不是异常）。被闸门拒绝或执行失败的工具
+            调用**不产证据**——那种结果里没有可取证的事实。
+          items:
+            type: object
+        artifacts:
+          type: array
+          description: |
+            该员工产出的**可寻址交付物**的元数据（1.6 任务 2，形状见
+            `Artifact`）；正文按 `artifact_id` 另取。
+
+            只有 `status=ok` 且产出**非空白**才有一条——空产出不是交付物。
+            落库失败**不吞**：产出拿得到却在回执里给不出地址，等于另一种
+            "假回执"，宁可让这一轮明确失败。
+          items:
+            $ref: '#/components/schemas/Artifact'
+        input_tokens:
+          type: integer
+          description: |
+            **输入** token 数（C-7 / `MP-OBSERVABILITY-DEEPEN-01`）。来自 llmgw
+            `chat/real` 回包的 `usage`，登录在 `LlmgwChatModel` 那一层。
+
+            **拿不到就是 0**，不是"没记"：外部执行面（`claude_code` /
+            `external_a2a`）的 token 若 CLI/对端不回报，这里就是 0——远端花的
+            token 本平台也拿不到，**不猜**。
+        output_tokens:
+          type: integer
+          description: '**输出** token 数（同上）。'
+        cached_tokens:
+          type: integer
+          description: |
+            **命中缓存**的 token 数（同上）。上游不报这个维度时恒为 0。
+        latency_ms:
+          type: integer
+          description: 这一件子任务的**墙钟耗时**（毫秒）。
+        llm_latency_ms:
+          type: integer
+          description: |
+            其中花在**模型调用**上的毫秒数。`superai` 是逐轮累加的真值；外部 CLI
+            只有"整段调用"一个粒度，所以整段都记在这里（`tool_latency_ms` 留 0）。
+        tool_latency_ms:
+          type: integer
+          description: |
+            其中花在**工具调用**上的毫秒数。与 `llm_latency_ms` **并列测量**，
+            **不是**"总 = 模型 + 工具"的拆解——模型轮次之间还有编排开销，硬凑成
+            加法会得到一个编出来的数。
+        runtime_kind:
+          type: string
+          enum:
+            - superai
+            - claude_code
+            - external_a2a
+          description: 跑它的执行面。**没有任何运行时跑过**的失败（如"声明的执行面都没装配"）为空串。
+        model:
+          type: string
+          description: |
+            这一件实际用的模型名。`superai` = 员工定义的模型；外部 CLI 只有在
+            配了 `--model` 时才有值，否则是 CLI 自己的默认，如实留空。
+        prompt_digest:
+          type: string
+          description: |
+            员工定义的**提示词摘要**（A-6 的 `prompt_digest_of`）。同一轮里两件
+            回执的它不同，就说明它们不是同一版员工跑的。
+        failure_category:
+          type: string
+          enum:
+            - ''
+            - profile_not_found
+            - depth_exceeded
+            - authority
+            - runtime_unavailable
+            - model_error
+            - tool_error
+            - invalid_output
+            - timeout
+          description: |
+            **低基数**的失败类别，供指标聚合；成功时为空串。
+
+            与 `error_code` 刻意分开：`error_code` 是给调用方分支用的（稳定、进
+            契约），`failure_category` 是给告警聚合用的。混成一套迟早要为一个
+            指标名去改对外契约。
+    ApprovalGate:
+      type: object
+      description: |
+        **HITL 闸门的统一协议**（B-6 / `MP-APPROVAL-GATE-ABI-01`）。它是"图怎么
+        暂停恢复"之外的那件事——**闸门长什么样**。在它之前闸门只有一个布尔
+        `approved`，说不清"谁批的、还差几级、什么时候过期"。
+
+        统一审批中心（`MP-APPROVAL-INBOX-01`）只需要两件事就能消费它：
+        按 `state` 筛出 `pending` 的闸门列待办；按 `gate_id`（**稳定地址**：
+        同 run 同类型永远是同一个）做一次决定。
+
+        三种能力都表达在这份协议里：
+        - **多级审批** —— `required_roles` 有序，逐级判；第 N 级没凑齐仍是 `pending`；
+        - **会签** —— `required_approvals > 1`，且按 `actor` **去重**（同一个人
+          批两次不算两票）；
+        - **超时** —— 到 `expires_at` 还没凑齐 → `expired`，由读路径落终态
+          （与运行级超时是同一个事实）。
+      properties:
+        gate_id:
+          type: string
+          description: 稳定地址（`<run_id>:<gate_type>`）。审批中心拿它当主键。
+        run_id:
+          type: string
+        tenant_id:
+          type: string
+        gate_type:
+          type: string
+          enum:
+            - plan_gate
+        required_roles:
+          type: array
+          items:
+            type: string
+          description: |
+            **有序**的审批层级。空数组 = 单级、任意审批角色（缺省形态）。
+            `*` 表示"这一级不限定角色"。
+        required_approvals:
+          type: integer
+          description: 每一级需要的**不同审批人**数。1 = 单人；>1 = 会签。
+        payload:
+          type: object
+          description: 待批的内容（缺省闸门里是目标与各员工回执的摘要）。
+        editable_fields:
+          type: array
+          items:
+            type: string
+          description: 审批人在批准时可以一并修订的字段名。
+        expires_at:
+          type: number
+          description: 过期时刻（epoch 秒；0 = 不过期）。缺省取本轮的运行级截止时刻。
+        created_at:
+          type: number
+        decisions:
+          type: array
+          items:
+            type: object
+            properties:
+              actor:
+                type: string
+                description: 审批人标识（会签去重按它）。
+              role:
+                type: string
+                description: |
+                  这次决定**以哪个角色**作出——**来自令牌**，不是调用方自称的。
+                  一个都归不上时为空串（绝不冒充）。
+              decision:
+                type: string
+                enum:
+                  - approved
+                  - rejected
+              comment:
+                type: string
+              decided_at:
+                type: number
+    RunState:
+      type: object
+      required:
+        - run_id
+        - tenant_id
+        - goal
+        - status
+      properties:
+        run_id:
+          type: string
+        tenant_id:
+          type: string
+        goal:
+          type: string
+          description: 用户那句话
+        status:
+          type: string
+          enum:
+            - planning
+            - running
+            - awaiting_approval
+            - cancelling
+            - completed
+            - failed
+            - cancelled
+            - timeout
+          description: |
+            `cancelling` = **中间态**（B-3 起）：取消信号已落、这一轮还没收敛。
+            它**不是**检查点里的一个状态，而是读路径**推**出来的（收到信号
+            且未终态），所以不会出现"检查点说 running、信号表说已取消"这种两处
+            打架。客户端看到它就继续观察，直到变成 `cancelled`。
+
+            `cancelled` = 被 `POST /runs/{run_id}/cancel` 取消（正在执行的 run
+            由**图自己在节点边界**落成这个状态，不是因为外部把它杀掉）；
+            `timeout` = 超过本轮截止时间（`timeout_seconds` 或部署默认值）后落到
+            的终态。`cancelled` / `timeout` 与另外三个都是**终态**：之后再
+            `approve` 一律 409。
+        subtasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubTask'
+        results:
+          type: object
+          description: task_id → SubTaskResult
+          additionalProperties:
+            $ref: '#/components/schemas/SubTaskResult'
+        summary:
+          type: string
+        hitl_reason:
+          type: string
+        error:
+          type: string
+        trace_id:
+          type: string
+          description: |
+            **观测关联键**（C-7 / `MP-OBSERVABILITY-DEEPEN-01`）：开跑那一刻生成，
+            随 run 落检查点。于是跨层（`agent.run` / `plan` / `wave` / `subagent`
+            / `llm` / `tool` / `approval` / `artifact`）的观测记录靠它拼得回一次
+            交付，**重启后续跑**的那些记录也带着同一个 trace。
+
+            它是**关联键不是凭据**：拿到它只能把日志串起来，不能读任何东西。
+            老 run（C-7 之前落的检查点）读到空串。
+        timeout_seconds:
+          type: number
+          description: |
+            本轮**实际生效**的运行级超时（秒；0 = 不设超时）。请求省略
+            `timeout_seconds` 时这里落的是开跑那一刻的部署默认值。
+        approval_gate:
+          allOf:
+            - $ref: '#/components/schemas/ApprovalGate'
+          description: |
+            **HITL 闸门的统一协议**（B-6）。停在 `awaiting_approval` 时它描述待批
+            的是什么、还差几级几个人、什么时候过期。**老 run**（B-6 之前落的检查点）
+            没有这个键，读到的是空对象——那时按单布尔审批的旧语义处理。
+        deadline_at:
+          type: number
+          description: |
+            本轮截止的**绝对时刻**（Unix 秒；0 = 无截止）。
+            `timeout_seconds` 与 `deadline_at` 都随 run 落库：服务重启后仍按
+            **本轮**定下的值裁决，不会回落到重启后进程的默认值。
+    ApproveRequest:
+      type: object
+      properties:
+        approved:
+          type: boolean
+          default: true
+        comment:
+          type: string
+          default: ''
+    ArtifactList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Artifact'
+    AuditRecord:
+      type: object
+      required:
+        - audit_id
+        - action
+        - tenant_id
+        - task_id
+        - outcome
+        - at
+      properties:
+        audit_id:
+          type: string
+          description: 审计行 id（进程内唯一，落一行一行）
+        action:
+          type: string
+          enum:
+            - agent_team.spawn
+            - agent_team.authority_escalation
+            - agent_team.approval
+            - agent_team.delegation
+          description: |
+            被审计的动作。**派活**（每次派活一行）、**越权转 proposal**
+            （包络超出链根 → 转人审）、**审批**（run 级闸门或任务级授权）、
+            **委托签发**（A-2 起：续跑时那次运行期委托的签发或拒绝）。
+        tenant_id:
+          type: string
+        actor:
+          type: string
+          description: 发起用户（令牌 sub）；解析不出就是空串
+        task_id:
+          type: string
+        run_id:
+          type: string
+        profile_id:
+          type: string
+        outcome:
+          type: string
+          description: 该动作的结果（granted / proposal / approved / rejected …）
+        detail:
+          type: object
+          additionalProperties: true
+        at:
+          type: string
+          description: 记录时刻（ISO8601）
+        sequence:
+          type: integer
+          description: |
+            租户内单调序号（A-1 起）。链按租户成链，序号是链接起来的骨架：
+            断号 = 有行被删。
+        event_id:
+          type: string
+          description: 事件 id（投递到 Outbox 时用它做幂等键）
+        agent_profile_revision:
+          type: string
+          description: 判定发生时该员工定义的修订号（空串 = 该员工无修订号）
+        decision:
+          type: string
+          description: 判定结论（granted / escalated / approved / rejected …）
+        approver_id:
+          type: string
+          description: 审批人（令牌 sub）；非审批动作是空串
+        authority_before:
+          type: object
+          additionalProperties: true
+          description: 判定**之前**的权限包络（四维定序）
+        authority_after:
+          type: object
+          additionalProperties: true
+          description: 判定**之后**的权限包络（收窄后的那一份）
+        policy_version:
+          type: string
+          description: 依哪一版判定口径判的（改口径就加版号，历史行仍可解释）
+        trace_id:
+          type: string
+          description: OTel trace id（硬规则
+        previous_hash:
+          type: string
+          description: 该租户上一条的 event_hash（链首为 64 个 0）
+        event_hash:
+          type: string
+          description: |
+            sha256(previous_hash ‖ 规范化正文)。**改这一行就对不上**——审计员
+            可以用这一列自己重算，不必信任服务端结论。
+    AuditList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditRecord'
+    RunCancelAccepted:
+      type: object
+      required:
+        - run_id
+        - tenant_id
+        - status
+      description: |
+        `POST /runs/{run_id}/cancel` 的**受理回执**（B-3）。与 `RunAccepted` 同
+        一个道理：取消**不承诺**"回话那刻图已经停了"。`status` 是**观察到的**——
+        `cancelled`（已终止）或 `cancelling`（已受理、仍在收敛）。
+      properties:
+        run_id:
+          type: string
+        tenant_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - cancelled
+            - cancelling
+        cancel_requested:
+          type: boolean
+          description: 恒为 `true`：能回话就说明这次取消已经记下了。
+    SendMessageRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+        sender:
+          type: string
+          default: user
+          description: 投递方标识；子 agent 回问时填自己的 task_id
+    ChannelMessage:
+      type: object
+      required:
+        - sender
+        - text
+        - at
+      properties:
+        sender:
+          type: string
+        text:
+          type: string
+        at:
+          type: string
+          description: 投递时刻（ISO8601）
     ChatRequest:
       type: object
       required:
@@ -11997,6 +16021,134 @@ components:
           type:
             - string
             - 'null'
+    OverviewStats:
+      type: object
+      required:
+        - total_users
+        - total_apps
+        - total_requests
+        - active_tenants
+        - period_days
+      properties:
+        total_users:
+          type: integer
+        total_apps:
+          type: integer
+        total_requests:
+          type: integer
+        active_tenants:
+          type: integer
+        period_days:
+          type: integer
+    ServiceRanking:
+      type: object
+      required:
+        - service
+        - request_count
+        - avg_latency_ms
+        - error_rate
+      properties:
+        service:
+          type: string
+        request_count:
+          type: integer
+        avg_latency_ms:
+          type: number
+        error_rate:
+          type: number
+    ServiceRankingResponse:
+      type: object
+      required:
+        - rankings
+      properties:
+        rankings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceRanking'
+    TrendPoint:
+      type: object
+      required:
+        - date
+        - requests
+        - tokens
+        - storage_gb
+      properties:
+        date:
+          type: string
+        requests:
+          type: integer
+        tokens:
+          type: integer
+        storage_gb:
+          type: number
+    TrendResponse:
+      type: object
+      required:
+        - points
+        - period_days
+      properties:
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrendPoint'
+        period_days:
+          type: integer
+    UsagePoint:
+      type: object
+      required:
+        - date
+        - service
+        - request_count
+        - token_count
+      properties:
+        date:
+          type: string
+        service:
+          type: string
+        request_count:
+          type: integer
+        token_count:
+          type: integer
+    UsageResponse:
+      type: object
+      required:
+        - points
+        - summary
+      properties:
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsagePoint'
+        summary:
+          type: object
+    UserActivityPoint:
+      type: object
+      required:
+        - date
+        - dau
+        - new_users
+      properties:
+        date:
+          type: string
+        dau:
+          type: integer
+        new_users:
+          type: integer
+    UserActivityResponse:
+      type: object
+      required:
+        - points
+        - mau
+        - growth_rate
+      properties:
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserActivityPoint'
+        mau:
+          type: integer
+        growth_rate:
+          type: number
     RenderNode:
       type: object
       required:
@@ -12036,7 +16188,7 @@ components:
             type: string
         render_tree:
           $ref: '#/components/schemas/RenderNode'
-    ActionResult:
+    schemas-ActionResult:
       type: object
       required:
         - action_id
@@ -12730,7 +16882,7 @@ components:
             - string
             - 'null'
           format: uuid
-    ArtifactList:
+    schemas-ArtifactList:
       type: object
       required:
         - items
@@ -12892,6 +17044,58 @@ components:
             - string
             - 'null'
           format: date-time
+    Skill:
+      type: object
+      required:
+        - id
+        - name
+        - author_tenant
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        author_tenant:
+          type: string
+        visibility:
+          type: string
+          enum:
+            - public
+            - private
+        content:
+          type: string
+        installs:
+          type: integer
+        created_at:
+          type: string
+        is_owner:
+          type: boolean
+          description: 当前请求租户是否为作者
+    SkillUpload:
+      type: object
+      required:
+        - name
+        - content
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+          default: v1
+        visibility:
+          type: string
+          enum:
+            - public
+            - private
+          default: public
+        content:
+          type: string
     SubscriptionRow:
       type: object
       required:
@@ -12928,6 +17132,70 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SubscriptionRow'
+    McpApiKey:
+      type: object
+      required:
+        - id
+        - name
+        - prefix
+        - createdAt
+        - enabled
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        prefix:
+          type: string
+          description: 密钥前缀，用于在列表中辨识；完整明文不落库、不可再取
+        scopes:
+          type: array
+          items:
+            type: string
+          description: 预留字段。当前版本不对 per-key scope 做强制。
+        createdAt:
+          type: string
+        lastUsedAt:
+          type:
+            - string
+            - 'null'
+        expiresAt:
+          type:
+            - string
+            - 'null'
+          description: null 表示永不过期
+        enabled:
+          type: boolean
+    CreateMcpApiKeyRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: 人类可读备注，例如 cursor-ide
+        scopes:
+          type: array
+          items:
+            type: string
+          description: 预留字段。当前版本忽略该字段——签发即授予与 JWT 同等的权限范围（只读 + 提案），HITL 工具仍被门禁拒绝。
+        expiresAt:
+          type:
+            - string
+            - 'null'
+          description: ISO 8601；省略或缺省表示永不过期
+    McpApiKeyCreated:
+      allOf:
+        - $ref: '#/components/schemas/McpApiKey'
+        - type: object
+          required:
+            - key
+          properties:
+            key:
+              type: string
+              description: 唯一一次返回的完整明文密钥，仅存 sha256，遗失只能重新签发
     FederatedServer:
       type: object
       properties:
@@ -13559,6 +17827,115 @@ components:
           type: array
           items:
             type: string
+    ActionFlowV2:
+      type: object
+      additionalProperties: false
+      required:
+        - action_rid
+        - flow_json
+      properties:
+        action_rid:
+          type: string
+        flow_json:
+          type: object
+          additionalProperties: true
+        config:
+          type: object
+          additionalProperties: true
+        updated_at:
+          type: string
+          format: date-time
+    ActionFlowUpsertV2:
+      type: object
+      additionalProperties: false
+      required:
+        - flow_json
+      properties:
+        flow_json:
+          type: object
+          additionalProperties: true
+          description: FlowGram WorkflowJSON (nodes/edges)
+        config:
+          type: object
+          additionalProperties: true
+          description: per-node editable field config
+    ProposalCreateV2:
+      type: object
+      additionalProperties: false
+      properties:
+        parameters:
+          type: object
+          additionalProperties: true
+        target_iid:
+          type: string
+        impact_summary:
+          type: string
+        expected_diff:
+          type: object
+          additionalProperties: true
+    ProposalV2:
+      type: object
+      additionalProperties: false
+      required:
+        - proposal_id
+        - action_rid
+        - status
+      properties:
+        proposal_id:
+          type: string
+        action_rid:
+          type: string
+        target_iid:
+          type:
+            - string
+            - 'null'
+        parameters:
+          type: object
+          additionalProperties: true
+        impact_summary:
+          type: string
+        expected_diff:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - rejected
+            - applied
+        confirmed_by:
+          type:
+            - string
+            - 'null'
+        created_at:
+          type: string
+        confirmed_at:
+          type:
+            - string
+            - 'null'
+    AgentToolV2:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - description
+        - class_rid
+        - input_schema
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        class_rid:
+          $ref: '#/components/schemas/RidString'
+        input_schema:
+          type: object
+          additionalProperties: true
+        result_schema:
+          type: object
+          additionalProperties: true
     AxiomKindV2:
       type: string
       enum:
@@ -13620,6 +17997,66 @@ components:
             minItems: 2
             maxItems: 2
             items: {}
+    ClassInspectV2:
+      type: object
+      additionalProperties: false
+      required:
+        - rid
+        - properties
+      properties:
+        rid:
+          $ref: '#/components/schemas/RidString'
+        display_name:
+          type: string
+        marking:
+          type: array
+          items:
+            type: string
+        properties:
+          type: array
+          items:
+            $ref: '#/components/schemas/PropertyV2'
+        links:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - link_type
+              - direction
+              - peer_class
+            properties:
+              link_type:
+                $ref: '#/components/schemas/RidString'
+              direction:
+                type: string
+                enum:
+                  - out
+                  - in
+              peer_class:
+                $ref: '#/components/schemas/RidString'
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RidString'
+    InstanceProposeV2:
+      type: object
+      additionalProperties: false
+      properties:
+        props:
+          type: object
+          additionalProperties: true
+        impact_summary:
+          type: string
+        expected_diff:
+          type: object
+          additionalProperties: true
+        provenance:
+          type: object
+          additionalProperties: true
+          description: |
+            ONT-PROV-01 记录级溯源（source: ai|user、confidence、model、agent_id）。
+            execute 时合并 proposal_id/actor/executed_at 落到实例 provenance。
     FunctionLanguageV2:
       type: string
       enum:
@@ -13907,6 +18344,198 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PropertyV2'
+    QueryConditionV2:
+      type: object
+      additionalProperties: false
+      required:
+        - field
+        - op
+      properties:
+        field:
+          type: string
+          minLength: 1
+        op:
+          type: string
+          enum:
+            - eq
+            - ne
+            - gt
+            - gte
+            - lt
+            - lte
+            - startswith
+            - contains
+            - truthy
+        value: {}
+    QueryMetricV2:
+      type: object
+      additionalProperties: false
+      required:
+        - fn
+      properties:
+        fn:
+          type: string
+          enum:
+            - sum
+            - count
+            - avg
+            - min
+            - max
+        field:
+          type: string
+        alias:
+          type: string
+    QueryAggregationV2:
+      type: object
+      additionalProperties: false
+      required:
+        - metrics
+      properties:
+        group_by:
+          type: array
+          items:
+            type: string
+        metrics:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/QueryMetricV2'
+    QueryTraversalV2:
+      type: object
+      additionalProperties: false
+      required:
+        - link_type
+        - direction
+      properties:
+        link_type:
+          $ref: '#/components/schemas/RidString'
+        direction:
+          type: string
+          enum:
+            - out
+            - in
+    QuerySortKeyV2:
+      type: object
+      additionalProperties: false
+      required:
+        - field
+      properties:
+        field:
+          type: string
+          minLength: 1
+        desc:
+          type: boolean
+          default: false
+    ObjectQueryV2:
+      type: object
+      additionalProperties: false
+      required:
+        - source
+      properties:
+        source:
+          $ref: '#/components/schemas/RidString'
+        filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryConditionV2'
+        aggregation:
+          $ref: '#/components/schemas/QueryAggregationV2'
+        traversal:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryTraversalV2'
+        sort:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuerySortKeyV2'
+        paging_offset:
+          type: integer
+          minimum: 0
+          default: 0
+        paging_limit:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          default: 100
+    ObjectQueryResultV2:
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - rows
+      properties:
+        kind:
+          type: string
+          enum:
+            - objects
+            - aggregates
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        result_schema:
+          type: object
+          additionalProperties: true
+    ObjectSearchV2:
+      type: object
+      additionalProperties: false
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+        class_rid:
+          type: string
+        top_k:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 5
+    ObjectCardV2:
+      type: object
+      additionalProperties: false
+      required:
+        - individual_rid
+        - class_rid
+        - score
+        - matched
+      properties:
+        individual_rid:
+          type: string
+        class_rid:
+          type: string
+        score:
+          type: number
+        matched:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - property_rid
+              - value_text
+              - score
+            properties:
+              property_rid:
+                type: string
+              value_text:
+                type: string
+              score:
+                type: number
+        card_text:
+          type: string
+    ObjectSearchResultV2:
+      type: object
+      additionalProperties: false
+      required:
+        - cards
+      properties:
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/ObjectCardV2'
     ObjectSetV2:
       type: object
       additionalProperties: false
@@ -14006,6 +18635,22 @@ components:
           type: array
           items:
             type: string
+    TypeProposeV2:
+      type: object
+      additionalProperties: false
+      required:
+        - type_def
+      properties:
+        type_def:
+          $ref: '#/components/schemas/ObjectTypeCreateV2'
+        impact_summary:
+          type: string
+    ProposalConfirmV2:
+      type: object
+      additionalProperties: false
+      properties:
+        confirmed_by:
+          type: string
     VersionV2:
       type: object
       additionalProperties: false
@@ -14051,6 +18696,323 @@ components:
           type: array
           items:
             type: string
+    TrackCapabilityRequest:
+      type: object
+      required:
+        - name
+        - ref
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: 能力名（如 MCP 工具名）
+        ref:
+          type: string
+          minLength: 1
+          description: worker 引用（如 MCP 工具 ref）
+    DispatchRequest:
+      type: object
+      properties:
+        target_rid:
+          type: string
+          description: rid prefix selects the role via AgentSelector
+        capability:
+          type: string
+        action:
+          type: string
+          default: ''
+        arguments:
+          type: object
+          additionalProperties: true
+    DispatchResponse:
+      type: object
+      properties:
+        task_id:
+          type: string
+        role:
+          type: string
+        capability:
+          type: string
+        worker_kind:
+          type: string
+        result:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+    PlanStepRequest:
+      type: object
+      required:
+        - step_id
+        - target
+      properties:
+        step_id:
+          type: string
+        kind:
+          type: string
+          enum:
+            - call_agent
+          default: call_agent
+        target:
+          type: string
+          description: rid / capability for the step
+        payload:
+          type: object
+          additionalProperties: true
+        requires_hitl:
+          type: boolean
+          default: false
+    SubmitPlanRequest:
+      type: object
+      required:
+        - steps
+      properties:
+        author_user_id:
+          type: string
+          default: system
+        steps:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/PlanStepRequest'
+    PlanStatus:
+      type: object
+      properties:
+        plan_id:
+          type: string
+        author_user_id:
+          type: string
+        current_step_id:
+          type:
+            - string
+            - 'null'
+        aborted:
+          type: boolean
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              step_id:
+                type: string
+              status:
+                type: string
+              output:
+                type: object
+                additionalProperties: true
+              error:
+                type:
+                  - string
+                  - 'null'
+    PlanGraph:
+      type: object
+      additionalProperties: false
+      required:
+        - plan_id
+        - status
+        - nodes
+        - edges
+      properties:
+        plan_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - running
+            - hitl_waiting
+            - completed
+            - aborted
+            - failed
+        current_step_id:
+          type:
+            - string
+            - 'null'
+        nodes:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - id
+              - kind
+              - target
+              - hitl
+              - status
+            properties:
+              id:
+                type: string
+              kind:
+                type: string
+                enum:
+                  - call_agent
+                  - apply_action
+                  - propose
+                  - run_function
+                  - evaluate_object_set
+              target:
+                type: string
+              hitl:
+                type: boolean
+              status:
+                type: string
+                enum:
+                  - pending
+                  - running
+                  - completed
+                  - failed
+                  - hitl_waiting
+                  - skipped
+              proposal_id:
+                type:
+                  - string
+                  - 'null'
+              expected_diff:
+                type: object
+                additionalProperties: true
+              impact_summary:
+                type: string
+        edges:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - from_step
+              - to_step
+            properties:
+              from_step:
+                type: string
+              to_step:
+                type: string
+              data_refs:
+                type: array
+                items:
+                  type: string
+    ReviewRequest:
+      type: object
+      required:
+        - approved
+      properties:
+        approved:
+          type: boolean
+        feedback:
+          type: string
+          default: ''
+    CapabilityBinding:
+      type: object
+      required:
+        - name
+        - worker_kind
+      properties:
+        name:
+          type: string
+        worker_kind:
+          type: string
+          enum:
+            - mcp
+            - a2a
+            - http
+            - local
+        ref:
+          type: string
+          description: MCP tool name | A2A agent id | HTTP url
+    Role:
+      type: object
+      properties:
+        role:
+          type: string
+        name:
+          type: string
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapabilityBinding'
+        enabled:
+          type: boolean
+    RegisterRoleRequest:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          description: kernel AgentRole slug (ontology/workflow/app/data_product/obs/security/knowledge/superai)
+        name:
+          type: string
+          default: ''
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapabilityBinding'
+    CreateOrderRequest:
+      type: object
+      required:
+        - order_id
+        - amount_cents
+      properties:
+        order_id:
+          type: string
+          minLength: 1
+        amount_cents:
+          type: integer
+          minimum: 1
+        payment_status:
+          type: string
+          enum:
+            - unpaid
+            - paid
+          default: unpaid
+    Order:
+      type: object
+      required:
+        - tenant_id
+        - order_id
+        - amount_cents
+        - payment_status
+        - review_status
+        - version
+      properties:
+        tenant_id:
+          type: string
+        order_id:
+          type: string
+        amount_cents:
+          type: integer
+          minimum: 1
+        payment_status:
+          type: string
+          enum:
+            - unpaid
+            - paid
+        review_status:
+          type: string
+          enum:
+            - pending
+            - approved
+        version:
+          type: integer
+          minimum: 1
+        updated_at:
+          type: string
+          format: date-time
+    HighValueUnpaidResponse:
+      type: object
+      required:
+        - items
+        - total
+        - threshold_cents
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+        total:
+          type: integer
+          minimum: 0
+        threshold_cents:
+          type: integer
+          minimum: 1
+          description: 本次列表实际使用的服务端复核阈值，已包含可选的更高查询筛选。
     PgStatsResponse:
       type: object
       required:
@@ -14274,6 +19236,43 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IndexStatus'
+    CreateReviewCaseRequest:
+      type: object
+      required:
+        - order_id
+        - suggestion
+      properties:
+        order_id:
+          type: string
+          minLength: 1
+        suggestion:
+          type: object
+          additionalProperties: true
+        source_refs:
+          type: array
+          items:
+            type: string
+    CreateReviewCaseResponse:
+      type: object
+      required:
+        - review_case_id
+        - proposal_id
+        - status
+        - expected_order_version
+        - evidence
+      properties:
+        review_case_id:
+          type: string
+        proposal_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - pending
+        expected_order_version:
+          type: integer
+        evidence:
+          $ref: '#/components/schemas/EvidenceBundle'
   responses:
     BadRequest:
       description: 参数错误
@@ -14310,7 +19309,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/schemas-ErrorResponse'
+            $ref: '#/components/schemas/components-schemas-ErrorResponse'
     responses-NotFound:
       description: 资源不存在
       content:
@@ -14334,22 +19333,22 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/schemas-ErrorResponse'
+            $ref: '#/components/schemas/components-schemas-ErrorResponse'
     Error422:
       description: Validation failed
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/schemas-ErrorResponse'
-    Error409:
-      description: Conflict
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/schemas-ErrorResponse'
+            $ref: '#/components/schemas/components-schemas-ErrorResponse'
     Error403:
       description: Forbidden
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/schemas-ErrorResponse'
+            $ref: '#/components/schemas/components-schemas-ErrorResponse'
+    Error409:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/components-schemas-ErrorResponse'

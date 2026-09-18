@@ -61,6 +61,9 @@ config:
   #: 短 TTL 便于观察接管（判据 ⑦ 的 30s 量级）。
   leaseTtlSeconds: "30"
   poolMax: "8"
+  #: ADR-0068：本地验证也开 runtime client（密钥由两个 kind 脚本塞进
+  #: agent-team-secret 的 MATE_AGENT_TEAM_RUNTIME_CLIENT_SECRET）。
+  runtimeClientId: agent-team-runtime
 
 secretRef:
   name: agent-team-secret
@@ -69,12 +72,14 @@ secretRef:
     appDsn: MATE_AGENT_TEAM_DSN
     controlDsn: MATE_AGENT_TEAM_CONTROL_DSN
     serviceClientSecret: SERVICE_CLIENT_SECRET
+    controlPassword: MATE_AGENT_TEAM_CONTROL_PASSWORD
+    runtimeClientSecret: MATE_AGENT_TEAM_RUNTIME_CLIENT_SECRET
 
 #: B-4：本地也把建表交给迁移 Job（判据就是"运行 Pod 的 env 里没有 admin DSN"）。
+#: 控制面口令走 Secret（`MATE_AGENT_TEAM_CONTROL_PASSWORD` 键，D5 收口）。
 migration:
   enabled: true
   controlRole: mate_control
-  controlPassword: mate_control_pw
 
 #: 本地命名空间里只有我们自己，入站限制挡住的会是探针本身。
 networkPolicy:

@@ -72,6 +72,11 @@ paths = [
     '''^\.env$''',
     '''acceptance/evidence/.*''',
     '''docs/active/specs/SPEC-TECH-.*''',
+    # dev realm 夹具（closeout 批 / ADR-0068）：本地 compose 栈首启导入的开发
+    # realm——admin/admin123 与三个 client 的 dev secret 都在其中，属公开的
+    # 开发凭据；同文件自 2026-07 起就有共享 client 的 secret（当时未被抓到只
+    # 因 gitleaks 只扫新提交）。生产 realm 绝不进 git。
+    '''infra/keycloak/realm-mate\.json''',
 ]
 
 # 测试代码内占位 key（llmgw provider 测试）与测试样例 api_key 字符串

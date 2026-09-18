@@ -4,6 +4,12 @@ import yaml
 
 ROOT = Path(__file__).parents[1] / "openapi"
 
+#: 三个安全方案都来自 common/security.yaml——服务契约的 per-operation security
+#: 引用了它们（bearerAuth / tenantHeader / oidcScopes），bundle 里缺任何一个
+#: 都会被 redocly 的 security-defined 规则按操作数报错。这里**显式列全**，
+#: 与 common/security.yaml 的键一一对应；新增方案要连这里一起改。
+SECURITY_SCHEMES = ("bearerAuth", "tenantHeader", "oidcScopes")
+
 
 def build() -> None:
     manifest = yaml.safe_load((ROOT / "manifest.yaml").read_text(encoding="utf-8"))
@@ -38,9 +44,8 @@ def build() -> None:
         "paths": dict(sorted(paths.items())),
         "components": {
             "securitySchemes": {
-                "bearerAuth": {
-                    "$ref": "./common/security.yaml#/components/securitySchemes/bearerAuth"
-                }
+                name: {"$ref": f"./common/security.yaml#/components/securitySchemes/{name}"}
+                for name in SECURITY_SCHEMES
             }
         },
     }

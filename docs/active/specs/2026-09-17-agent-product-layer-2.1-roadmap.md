@@ -262,6 +262,14 @@ GA 的 `mate-platform/tests` 有**真实跑过**的 run 记录（不是 skipped�
 
 > **主题**：把「只在单进程、不重启前提下成立」的机制，在多副本下也做对。
 > 依赖 A 批：**B-1 的接管条件要用到 A-3 的幂等账本**。
+>
+> ⚠️ **前置批次 `MP-REPLICA-READINESS-01`（2026-09-17 复核后新增）**：
+> **多副本从来没有真实存在过**——compose 用固定 `container_name`（起不了第二个）、
+> `infra/helm/charts/` 下没有 agent-team chart、K8s 集群是活的但 `get all -A` 零
+> MetaPlatform workload、「跨副本」用例是**同进程两个 RunControl 实例**（真 PG 的多连接
+> 原子性验过，两个进程同时在跑这个状态没验过）。
+> **不做前置，B-1 / B-3 的判据物理上无法执行**；B-8 与它共用「服务在 K8s 上」这一步。
+> 前置内容与准出见启动提示词 `2026-09-17-ai-launch-prompt-...-2.1-b-goal-mode.md`。
 
 | # | 条目 | 要点 | 判据 |
 | --- | --- | --- | --- |
@@ -274,11 +282,48 @@ GA 的 `mate-platform/tests` 有**真实跑过**的 run 记录（不是 skipped�
 | **B-7** | A2A 长任务与计量拆分 | 补：状态轮询 / 中途取消 / trace / 外部 Artifact 映射 Evidence。计量**拆开**——现状 `outbound.py:266-268` 把一次外部往返记成 `source="llm"` / `llm_calls=1`，会让成本指标失真 | 拆为 `llm_calls / external_agent_calls / tool_calls / runtime_calls`；外部往返不再计入 `llm_calls` |
 | **B-8** | Claude Runtime → K8s Job 沙箱 | 独立 ServiceAccount / 最小环境变量白名单 / 只读根 / `emptyDir` / seccomp / 非 root / CPU-Memory-Timeout 限额 / NetworkPolicy / **每次任务独立短期凭证**。第三方 runtime 再上 gVisor 或 MicroVM | 与 A-4 同一套断言，只是换到 Job 里跑 |
 
+### 3.1 现状锚点（开工前必读——已实测，不是设想）
+
+启动提示词只给指令，**证据在这里**。
+
+| 面 | 现在的样子 |
+| --- | --- |
+| 协调 | `coordination.py` 只有两协议各两方法：`CancelSignals`(`request`/`is_requested`)、`RunClaims`(`claim`/`release`)。`run_claims` 列 = `tenant_id/idempotency_key/run_id/claimed_at`，**无** lease/owner/heartbeat。TTL 默认 `DEFAULT_CLAIM_TTL_SECONDS = 30.0`。**「谁在跑」只在进程内** `RunControl._live` |
+| 事件流 | `api/run_control.py:93` `DEFAULT_POLL_INTERVAL = 0.25`；`events()` 仍读检查点 → 切片 → `sleep`。`seq` 是**每流内存计数**（流断即归零）→ **断线重连必丢事件**。**无** `Last-Event-ID`、**无** `run_event` 表 |
+| 取消 | `POST /runs/{id}/cancel` 返回 **200 + RunStateModel**（`api/app.py:215-226`），`cancel()` 内 `await live.finished.wait()`（`run_control.py:569`）——**同步阻塞**，跨副本时 B 副本拿不到 A 的 `_live` |
+| Admin DSN | 只有两处：`bootstrap(required_admin_dsn())`（`wiring.py:397`）与 `PgRunIndex(admin_dsn)`（`run_control.py:226`）→ `list_unfinished` 走 `psycopg.connect` 跨租户扫检查点（`checkpoint.py:123-163`） |
+| 数据库 | 8 处「`AsyncConnection.connect` → 设 GUC → `close`」，**零连接池**（`psycopg_pool` 全包零命中，尽管 `pyproject.toml` 已声明 `psycopg[binary,pool]`） |
+| **租户 GUC** | **`set_config('app.tenant_id', %s, false)` 在 7 个 store 文件里 15 处，事务级（`true`）零处**。`false` = **会话级** → 现在安全**纯粹因为连接用完就关** |
+| HITL | 未变。`graph.py:29-32` 明写「不用 `interrupt()`」；`approved` 是**单布尔**，审计 detail 固定 `level: "plan_gate"`（`brain.py:337`） |
+| 外部 Runtime | `runtimes/` 四文件；2.1-A 已抽 `sandbox_env.py`（`SAFE_ENV_ALLOWLIST` / `is_sensitive_name()` / `configured_allowlist()` / `build_child_env()`），`claude_code.py:214` 已用它。**无** K8s 路径 |
+| A2A | `a2a/outbound.py` 仍同步单次往返；`llm_calls = 1`（`:268`）与 `evidence=[]`（`:227`）都在 |
+| Outbox | `audit.py:56` **已 import `OutboxWriter`**，但 `wiring.py:515` 调 `build_audit_ledger()` **未传 outbox** → 生产只落库不广播。平台实现在 `mate_app_copilot/repositories/outbox.py` 的 `SqlOutboxWriter`（**跨包**，且独立 commit → 只得 at-least-once） |
+| 工具账本 | `tool_ledger.py` 只有 `begin`/`complete`/`fail`；`rows()` 不在 Protocol 里。**无「这个 run 有没有 running 调用」的查询**（B-1 接管判定需要，要新增）。`lease_expires_at` 是**死数据**（写入无读取） |
+
+### 3.2 多副本实测（`MP-REPLICA-READINESS-01` 的依据）
+
+| 项 | 事实 |
+| --- | --- |
+| compose | `docker-compose.yml:851` 固定 `container_name: mate-tech-agent-team` → 起第二个副本必然名字冲突；全仓 49 服务都这样，`replicas`/`scale` **零命中** |
+| Helm | `infra/helm/charts/` 下**无 agent-team chart**；`values.yaml:224` 的 `- agent-team` 只是 CI rule-13 对账清单，不是 workload |
+| K8s | 集群活的（4 节点 Ready），但 `kubectl get all -A` **零 MetaPlatform workload**；CI 的 kind e2e 只装 keycloak + otel + 校验 NetworkPolicy，**从未部署 agent-team** |
+| 压测 | 唯一 k6 脚本打的是 **ONT:8201**，不是 agent-team |
+| 「跨副本」用例 | `test_cross_replica_cancel.py:164` 是**同进程两个 `RunControl` 共享内存 signals**；`test_idempotency_race.py:112` 同法 |
+| 公道话 | 这两文件各有**真 PG** 用例（8 条独立连接并发抢同一把钥匙、断言恰好一个赢）→ **DB 层原子性真验过**；缺的是「两个进程同时在跑」这个状态本身 |
+
+> **平台计划的准出与批次清单对不上**：S2 写着「3 副本并发压测无双重认领」，
+> 却**没排任何批次让这个服务能起 3 副本**。这是 `MP-REPLICA-READINESS-01` 的来源。
+
 ---
 
 ## 4. 2.1-C · 产品统一
 
 > **主题**：把两条并行的东西收敛成一条。**不阻塞 A/B 的硬化判据**，可最后做。
+>
+> **启动提示词**：`2026-09-18-ai-launch-prompt-agent-product-layer-2.1-c-goal-mode.md`（2435 字符）。
+> **与 A/B 不同**：本组是**产品统一**，会动前端与契约（A/B 是后端硬化）。
+> **两条硬前置**：**C-2 的 ADR-0065 仍是 Proposed——先走评审，不得为赶进度偷偷升格**；
+> C-1 是 C-3 的前置（会话↔run 不落后端，新旧合并就没有关系源）。
 
 | # | 条目 | 要点 |
 | --- | --- | --- |
@@ -360,42 +405,55 @@ GA 的 `mate-platform/tests` 有**真实跑过**的 run 记录（不是 skipped�
 | A-3 工具幂等账本 | **`MP-TOOL-IDEMPOTENCY-01`**（S2，无独立批次号） | S2 工作项 9「对工具和 Action 增加业务幂等键」 |
 | A-7 文档与版本口径 | **`MP-FEATURE-REGISTRY-01`**（S0） | 功能状态唯一真相源（本文件补：Sprint 1A 三处矛盾 + 版本号） |
 | B-1 Run Lease / Heartbeat | **`MP-RUN-LEASE-01`**（S2） | 租约心跳 + 活跃 Run 注册 + Cancel Signal 归档 |
-| B-2 Event Log + SSE | **`MP-RUNTIME-UNIFY-01`**（S1，工作项 5/6） | 追加式 `run_event` 真相表 + SSE 从统一 Event 投影 |
-| B-3 取消改异步 | **`MP-RUN-LEASE-01`**（S2，工作项 5/6） | 取消语义改异步受理 + 明确终态等待方式 |
-| B-6 HITL gate ABI | **`MP-RUNTIME-UNIFY-01`**（S1） | Approval 是统一 Run 契约的一部分 |
+| B-2 Event Log + SSE | **`MP-RUN-EVENTS-01`**（S1，工作项 5/6） | 追加式 `run_event` 真相表 + SSE 从统一 Event 投影 |
+| B-3 取消改异步 | **`MP-RUN-CANCEL-01`**（S2，工作项 5/6） | 取消语义改异步受理 + 明确终态等待方式 |
+| B-6 HITL gate ABI | **`MP-APPROVAL-GATE-ABI-01`**（新提，对齐 `MP-APPROVAL-INBOX-01`） | 协议可被统一审批中心消费 |
 | B-7 A2A 长任务 | **`MP-EXTERNAL-RUNTIME-E2E-01`**（S3） | Claude / A2A 真执行 |
 | C-1 会话 ↔ run 落后端 | **`MP-SESSION-RUN-LINK-01`**（S1） | 会话与 Run 持久关系 |
 | C-2 页面上下文感知 | **`MP-CONTEXT-AWARE-01`**（S3） | 页面上下文协议（依赖 ADR-0065） |
 | C-3 新旧 Agent 合并 | **`MP-LEGACY-SUNSET-01`** + `MP-RUNTIME-UNIFY-01` | 统一 Run + 双轨退役 |
 | B-10 `tenant_switch_enabled` | **`MP-MCP-TENANT-SECURITY-01`**（S2） | 专用 MCP Client 或 Token Exchange，共享 Client 不得默认代任意租户 |
 
-### 8.2 平台计划**没有**的——本文件新提 9 个批次
+### 8.2 平台计划**没有**的——本文件新提 11 个批次
 
 实测关键词命中（平台计划全文）：`os.environ` / `环境变量` / `白名单` **0**；
 `state_schema` / `版本迁移` **0**；`连接池` / `pool` **0**；`哈希` / `hash` **0**；
-`Golden` / `评测` **0**；`CODEOWNERS` / `分支保护` / `Prettier` **0**。
+`Golden` / `评测` **0**；`CODEOWNERS` / `分支保护` / `Prettier` **0**；
+`replica` / `副本` / `scale` **0**。
 
 | 新提批次 | 交付 | 本文件条目 | 为什么平台计划漏了 |
 | --- | --- | --- | --- |
+| **`MP-REPLICA-READINESS-01`** | 多副本运行态：去固定容器名 + agent-team helm chart + 部署 kind + 两进程用例 | 2.1-B 前置 | 平台计划 S2 的准出写着「**3 副本并发压测无双重认领**」，但它**没排任何批次去让这个服务能起 3 副本**（compose 固定名、无 chart）。准出与批次清单对不上 |
 | **`MP-AGENT-SANDBOX-ISOLATION-01`** | 外部 Runtime 环境变量白名单 → K8s Job 隔离 | A-4 + B-8 | `MP-EXTERNAL-RUNTIME-E2E-01` 管的是「**真执行**」，不管「**隔离**」。而 `runtimes/claude_code.py:190` 正在把宿主 DSN / Service Secret 交给子进程——**当下就在生效** |
 | **`MP-AUDIT-LEDGER-01`** | 持久、可取证、带哈希链的 Agent 审计 | A-1 | 平台计划 13 处「审计」全在 **Action 层**（S4 `MP-ACTION-GOVERNANCE-01`）与格式统一（S5）；agent-team `audit.py` 的进程内 / 1 万上限 / 重启即丢 / 跨租户默认**未被点出** |
 | **`MP-AGENT-VERSIONING-01`** | State / Graph 版本化 + 员工不可变 Revision 快照 | A-6 + C-5 | 全文 0 命中 |
 | **`MP-MAIN-GATE-01`** | required check 收口 + CODEOWNERS + 非作者审批 + 修 `CLAUDE.md` Prettier | A-5 | 全文 0 命中。现状：GA 在 main 上红着照样合，且 Prettier 一红让 `mate-platform/tests` 等 4 个 step 全 skipped |
 | **`MP-RUNTIME-DB-POOL-01`** | PG 连接池（租户安全 checkout）+ Admin DSN 移出运行 Pod | B-4 + B-5 | 全文 0 命中；`psycopg[binary,pool]` **已声明却没用** |
 | **`MP-ARTIFACT-VERSIONING-01`** | Artifact 版本化 + 对象存储 + digest | C-4 | 平台计划有 Artifact 但无版本化；现状是**覆盖写**，削弱复现 |
+| **`MP-AGENT-PROFILE-MGMT-01`** | 员工 `runtimes` 落库 + Runtime 配置管理界面 | C-5 | 平台计划的 `MP-EXTERNAL-RUNTIME-E2E-01` 管"真执行"，不管"配置从哪来、存哪、怎么改"。现状：`profiles.py` 有 `runtimes` 字段，但 `profile_store` DDL 与 HTTP 模型都没有 |
 | **`MP-EVAL-GOLDEN-01`** | 真实 Provider Golden Dataset + 10 项指标 | C-6 | 全文 0 命中。357 个测试证明的是「框架按预期执行」，不是「模型能完成企业任务」 |
 | **`MP-OBSERVABILITY-DEEPEN-01`** | agent 层 Span 分层 + token / 成本 / 延迟细分 | C-7 | 平台计划 S6 有 staging 与性能，但无 agent 层 span 细化 |
+| **`MP-APPROVAL-GATE-ABI-01`** | HITL gate 协议规范化（多级 / 会签 / 超时） | B-6 | 平台计划 S3 有 `MP-APPROVAL-INBOX-01`（**审批中心**），但那是"汇总去处"，不管"图里的 gate 协议长什么样"——两者要能对接 |
 
-> **提交给平台计划维护者的两条**：① 请把上述 9 个新批次号纳入它的 §8 批次清单
-> 与 §13 P0/P1 Backlog；② 请在它那份里加一句反向指向本文件的引用。**本文件不替它改。**
+> **采纳状态（2026-09-17 更新）**：**2.1-A 已采纳其中 7 个编号**
+> （`MP-AGENT-SANDBOX-ISOLATION-01` / `MP-AUDIT-LEDGER-01` / `MP-TOOL-IDEMPOTENCY-01` /
+> `MP-AGENT-VERSIONING-01` / `MP-MAIN-GATE-01` / `MP-FEATURE-REGISTRY-01` +
+> 平台原有的 `MP-RUN-DELEGATED-IDENTITY-01`），并已按这套编号交付
+> （见 `AGENT-PRODUCT-LAYER-2.1-A-ACCEPTANCE.md` 头部）。
+> 本批 2.1-B 沿用它那套（`MP-RUN-LEASE-01` / `MP-RUN-EVENTS-01` / `MP-RUN-CANCEL-01` /
+> `MP-EXTERNAL-RUNTIME-E2E-01` 是平台原有的，`MP-RUNTIME-DB-POOL-01` /
+> `MP-APPROVAL-GATE-ABI-01` / `MP-AGENT-SANDBOX-ISOLATION-01`(Job 部分) 是本文件新提）。
+>
+> **仍待平台计划维护者做的两条**：① 把 §8.2 的新批次号纳入它的 §8 批次清单
+> 与 §13 P0/P1 Backlog；② 在它那份里加一句反向指向本文件的引用。**本文件不替它改。**
 
 ### 8.3 分组 → 启动提示词 → 证据
 
 | 分组 | 含批次 | 启动提示词 | ACCEPTANCE | 状态 |
 | --- | --- | --- | --- | --- |
-| **2.1-A** 生产安全收口 | `MP-AGENT-SANDBOX-ISOLATION-01` / `MP-AUDIT-LEDGER-01` / `MP-RUN-DELEGATED-IDENTITY-01` / `MP-TOOL-IDEMPOTENCY-01` / `MP-AGENT-VERSIONING-01` / `MP-MAIN-GATE-01` / `MP-FEATURE-REGISTRY-01` | `2026-09-17-ai-launch-prompt-agent-product-layer-2.1-a-goal-mode.md` | `AGENT-PRODUCT-LAYER-2.1-A-ACCEPTANCE.md` | 🟡 已规划，待开工 |
-| **2.1-B** 分布式运行时收口 | `MP-RUN-LEASE-01` / `MP-RUNTIME-UNIFY-01`(事件流部分) / `MP-RUNTIME-DB-POOL-01` / `MP-EXTERNAL-RUNTIME-E2E-01` / `MP-AGENT-SANDBOX-ISOLATION-01`(Job 部分) | 待写 | 待写 | ⬜ 依赖 A |
-| **2.1-C** 产品统一 | `MP-SESSION-RUN-LINK-01` / `MP-CONTEXT-AWARE-01` / `MP-LEGACY-SUNSET-01` / `MP-ARTIFACT-VERSIONING-01` / `MP-EVAL-GOLDEN-01` / `MP-OBSERVABILITY-DEEPEN-01` | 待写 | 待写 | ⬜ 依赖 A/B |
+| **2.1-A** 生产安全收口 | `MP-AGENT-SANDBOX-ISOLATION-01` / `MP-AUDIT-LEDGER-01` / `MP-RUN-DELEGATED-IDENTITY-01` / `MP-TOOL-IDEMPOTENCY-01` / `MP-AGENT-VERSIONING-01` / `MP-MAIN-GATE-01` / `MP-FEATURE-REGISTRY-01` | `2026-09-17-ai-launch-prompt-agent-product-layer-2.1-a-goal-mode.md` | `AGENT-PRODUCT-LAYER-2.1-A-ACCEPTANCE.md` | ✅ **已交付并合并**（PR #59 → `4e33e304`）；415 passed；required 4 → **11** |
+| **2.1-B** 分布式运行时收口 | **前置** `MP-REPLICA-READINESS-01` → `MP-RUN-LEASE-01` / `MP-RUN-EVENTS-01` / `MP-RUN-CANCEL-01` / `MP-RUNTIME-DB-POOL-01` / `MP-APPROVAL-GATE-ABI-01` / `MP-EXTERNAL-RUNTIME-E2E-01`(计量部分) / `MP-AGENT-SANDBOX-ISOLATION-01`(Job 部分) | `2026-09-17-ai-launch-prompt-agent-product-layer-2.1-b-goal-mode.md` | `AGENT-PRODUCT-LAYER-2.1-B-ACCEPTANCE.md` | ✅ **已交付并合并**（PR #61 → #62）；**501 passed**；多副本真上 kind，八条全达成 |
+| **2.1-C** 产品统一 | `MP-SESSION-RUN-LINK-01` / `MP-CONTEXT-AWARE-01` / `MP-LEGACY-SUNSET-01` / `MP-ARTIFACT-VERSIONING-01` / `MP-AGENT-PROFILE-MGMT-01`(C-5) / `MP-EVAL-GOLDEN-01` / `MP-OBSERVABILITY-DEEPEN-01` | `2026-09-18-ai-launch-prompt-agent-product-layer-2.1-c-goal-mode.md` | `AGENT-PRODUCT-LAYER-2.1-C-ACCEPTANCE.md` | ✅ **已交付并合并**（PR #63 → `34e6a664`）；**593 passed**；七条全达成，ADR-0065 评审转 Accepted |
 
 > **与平台计划 Sprint 的对应**：2.1-A ≈ S0+S2 的 Agent 部分；2.1-B ≈ S2 余项 + S3 外联；
 > 2.1-C ≈ S1 + S3 + S5/S6 的 Agent 部分。**Sprint 的实际排期以平台计划为准**，

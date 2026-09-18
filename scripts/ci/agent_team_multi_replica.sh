@@ -47,6 +47,15 @@ BUILD_IMAGE="${BUILD_IMAGE:-auto}"
 LOAD_IMAGES="${LOAD_IMAGES:-1}"
 PIP_INDEX_URL="${PIP_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple/}"
 CONTROL_PASSWORD="${CONTROL_PASSWORD:-mate_control_pw}"
+#: ADR-0068：runtime client 的密钥。默认从 realm JSON 取**本机 dev realm 里那把**
+#: （与共享密钥同一条管理路径——dev 值在 git 的 realm 文件里，生产换 ExternalSecret）。
+PY_ROOT="$(cd "$REPO_ROOT/mate-platform-backend" && pwd)"
+VENV_PY="$PY_ROOT/.venv/Scripts/python.exe"
+[[ -x "$VENV_PY" ]] || VENV_PY="$(command -v python3 || command -v python)"
+RUNTIME_CLIENT_ID="${RUNTIME_CLIENT_ID:-agent-team-runtime}"
+RUNTIME_CLIENT_SECRET="${RUNTIME_CLIENT_SECRET:-$(
+  "$VENV_PY" -c "import json,sys;d=json.load(open('infra/keycloak/realm-mate.json',encoding='utf-8'));print(next(c['secret'] for c in d['clients'] if c['clientId']=='$RUNTIME_CLIENT_ID'))" 2>/dev/null || true
+)}"
 REPLICAS="${REPLICAS:-3}"
 READY_TIMEOUT="${READY_TIMEOUT:-300s}"
 HELM_TIMEOUT="${HELM_TIMEOUT:-6m}"
@@ -156,15 +165,20 @@ log "3b. 建 app 角色 (mate_app)"
 kubectl -n "$NAMESPACE" exec agent-team-pg-0 -- psql -U meta -d metaplatform -v ON_ERROR_STOP=1 -c \
   "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='mate_app') THEN CREATE ROLE mate_app LOGIN PASSWORD 'mate_app'; END IF; END \$\$; GRANT CONNECT ON DATABASE metaplatform TO mate_app;"
 
-# ── 4. Secret（三个 DSN + 服务密钥）──────────────────────────────────────────
+# ── 4. Secret（三个 DSN + 服务密钥 + 控制面口令 + runtime 密钥）──────────────
 # 硬规则 12：Secret 不进 git。这里造的是**本地开发口令**（compose 栈公开的那套），
 # 不是任何真实凭据——它们只活在这个一次性 kind 集群里。
+#
+# D5（closeout 批）：控制面口令不再走 `--set migration.controlPassword`（那会把
+# 明文落进 release 清单），改为与 DSN 同一个 Secret 的一个键。
 log "4. Secret"
 kubectl -n "$NAMESPACE" create secret generic agent-team-secret \
   --from-literal=MATE_AGENT_TEAM_ADMIN_DSN="postgresql://meta:meta@agent-team-pg:5432/metaplatform" \
   --from-literal=MATE_AGENT_TEAM_DSN="postgresql://mate_app:mate_app@agent-team-pg:5432/metaplatform" \
   --from-literal=MATE_AGENT_TEAM_CONTROL_DSN="postgresql://mate_control:${CONTROL_PASSWORD}@agent-team-pg:5432/mateplatform" \
   --from-literal=SERVICE_CLIENT_SECRET="${SERVICE_CLIENT_SECRET:-local-dev-service-secret}" \
+  --from-literal=MATE_AGENT_TEAM_CONTROL_PASSWORD="${CONTROL_PASSWORD}" \
+  --from-literal=MATE_AGENT_TEAM_RUNTIME_CLIENT_SECRET="${RUNTIME_CLIENT_SECRET}" \
   --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 
 # ── 5. helm install ──────────────────────────────────────────────────────────
@@ -172,7 +186,6 @@ log "5. helm install ${RELEASE}"
 helm upgrade --install "$RELEASE" "$CHART_DIR" \
   --namespace "$NAMESPACE" \
   --values "$CHART_DIR/values-local.yaml" \
-  --set "migration.controlPassword=${CONTROL_PASSWORD}" \
   --set "replicaCount=${REPLICAS}" \
   --wait --timeout "$HELM_TIMEOUT"
 
