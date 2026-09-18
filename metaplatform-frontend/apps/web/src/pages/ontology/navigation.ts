@@ -100,7 +100,7 @@ export const ONTOLOGY_NAV: OntologyNavItem[] = [
         key: 'validation',
         label: '模型校验',
         path: '/ontology/model/validation',
-        status: 'planned',
+        status: 'active',
         keywords: 'validation lint 校验 反模式 检查',
       },
     ],

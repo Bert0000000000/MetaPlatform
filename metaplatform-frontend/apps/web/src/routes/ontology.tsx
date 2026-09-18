@@ -5,8 +5,16 @@ import OntologyWorkspaceLayout from '@/pages/ontology/layout/OntologyWorkspaceLa
 import OverviewPage from '@/pages/ontology/overview/OverviewPage';
 import ObjectExplorerPage from '@/pages/ontology/explorer/ObjectExplorerPage';
 import DatacenterPage from '@/pages/ontology/datacenter/DatacenterPage';
-import ModelingPage from '@/pages/ontology/model/ModelingPage';
 import OpsPage from '@/pages/ontology/ops/OpsPage';
+import ObjectTypesPage from '@/pages/ontology/model/object-types/ObjectTypesPage';
+import ObjectTypeDetailPage from '@/pages/ontology/model/object-types/ObjectTypeDetailPage';
+import LinkTypesPage from '@/pages/ontology/model/link-types/LinkTypesPage';
+import InterfacesPage from '@/pages/ontology/model/interfaces/InterfacesPage';
+import AxiomsPage from '@/pages/ontology/model/axioms/AxiomsPage';
+import OntologyGraphPage from '@/pages/ontology/model/graph/OntologyGraphPage';
+import ModelValidationPage from '@/pages/ontology/model/validation/ModelValidationPage';
+import ActionTypesPage from '@/pages/ontology/logic/actions/ActionTypesPage';
+import FunctionsPage from '@/pages/ontology/logic/functions/FunctionsPage';
 
 /**
  * 本体域路由表（ADR-0069 IA v2：工作区 + 六大功能域嵌套路由）。
@@ -56,14 +64,17 @@ export const ontologyRoutes = (
   <Route path="ontology" element={<OntologyWorkspaceLayout />}>
     <Route index element={<OntologyIndexRoute />} />
 
-    {/* 语义模型：IA2-2 拆分为独立页面；当前挂 ModelingPage（initialKind 定初值） */}
+    {/* 语义模型（IA2-2 已拆分）：基元各成独立页；:rid 详情四个真 Tab 进 URL */}
     <Route path="model">
       <Route index element={<Navigate to="object-types" replace />} />
-      <Route path="object-types" element={<ModelingPage initialKind="object" />} />
-      <Route path="link-types" element={<ModelingPage initialKind="link" />} />
-      <Route path="interfaces" element={<ModelingPage initialKind="interface" />} />
-      <Route path="axioms" element={<ModelingPage initialKind="axiom" />} />
-      <Route path="graph" element={<ModelingPage initialKind="graph" />} />
+      <Route path="object-types" element={<ObjectTypesPage />} />
+      <Route path="object-types/:rid" element={<ObjectTypeDetailPage />} />
+      <Route path="object-types/:rid/:tab" element={<ObjectTypeDetailPage />} />
+      <Route path="link-types" element={<LinkTypesPage />} />
+      <Route path="interfaces" element={<InterfacesPage />} />
+      <Route path="axioms" element={<AxiomsPage />} />
+      <Route path="graph" element={<OntologyGraphPage />} />
+      <Route path="validation" element={<ModelValidationPage />} />
     </Route>
 
     {/* 数据映射：ingest=对象映射（接入+背挂数据源+同步健康）、lineage=本体血缘；
@@ -82,12 +93,13 @@ export const ontologyRoutes = (
       <Route path="map" element={<MapPage />} />
     </Route>
 
-    {/* 动作与函数：actions/functions 暂挂 ModelingPage（IA2-5 迁出）；
-        designer=原 OntologyActionPage；runs=OpsPage 的 Action 执行记录（audit） */}
+    {/* 动作与函数：IA2-2 起动作类型/函数为独立页（从语义模型迁出）；
+        designer=原 OntologyActionPage；runs=OpsPage 的 Action 执行记录（audit）。
+        actions/:rid 与 functions/:rid 详情随 IA2-5 落地 */}
     <Route path="logic">
       <Route index element={<Navigate to="actions" replace />} />
-      <Route path="actions" element={<ModelingPage initialKind="action" />} />
-      <Route path="functions" element={<ModelingPage initialKind="function" />} />
+      <Route path="actions" element={<ActionTypesPage />} />
+      <Route path="functions" element={<FunctionsPage />} />
       <Route path="designer" element={<OntologyActionPage />} />
       <Route path="runs" element={<OpsPage initialTab="audit" />} />
     </Route>
