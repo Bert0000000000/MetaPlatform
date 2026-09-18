@@ -443,7 +443,7 @@ GA 的 `mate-platform/tests` 有**真实跑过**的 run 记录（不是 skipped�
 > 本批 2.1-B 沿用它那套（`MP-RUN-LEASE-01` / `MP-RUN-EVENTS-01` / `MP-RUN-CANCEL-01` /
 > `MP-EXTERNAL-RUNTIME-E2E-01` 是平台原有的，`MP-RUNTIME-DB-POOL-01` /
 > `MP-APPROVAL-GATE-ABI-01` / `MP-AGENT-SANDBOX-ISOLATION-01`(Job 部分) 是本文件新提）。
-
+>
 > **仍待平台计划维护者做的两条**：① 把 §8.2 的新批次号纳入它的 §8 批次清单
 > 与 §13 P0/P1 Backlog；② 在它那份里加一句反向指向本文件的引用。**本文件不替它改。**
 
