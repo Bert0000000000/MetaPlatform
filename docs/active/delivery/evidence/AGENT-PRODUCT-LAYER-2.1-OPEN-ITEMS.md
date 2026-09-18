@@ -4,6 +4,10 @@
 > 性质：**不是验收证据**，是 2.1 三批交付后的**未收尾事项登记**——每条给出处。
 > 来源：`AGENT-PRODUCT-LAYER-2.0-ACCEPTANCE.md` §3、`…-2.1-A-ACCEPTANCE.md` §4/§6、
 > `…-2.1-B-ACCEPTANCE.md` §4/§6、`…-2.1-C-ACCEPTANCE.md` §3/§6，逐条核对后汇总。
+>
+> **2026-09-18 closeout 批更新**：§1（MP-MCP-TENANT-SECURITY-01）、D1（oasdiff 名义覆盖）、
+> D5（控制面口令）、D2 的登录超时子项已收口——证据见
+> `AGENT-PRODUCT-LAYER-2.1-CLOSEOUT-ACCEPTANCE.md`（决策记录 ADR-0068）；其余条目不变。
 
 ## 0. 总况
 
