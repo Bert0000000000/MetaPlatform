@@ -20,7 +20,7 @@ import OntologyGraphView from './OntologyGraphView';
 import { ridTail } from '../rid';
 import '../ontology.css';
 
-type KindKey = 'object' | 'link' | 'action' | 'function' | 'interface' | 'axiom' | 'graph';
+export type KindKey = 'object' | 'link' | 'action' | 'function' | 'interface' | 'axiom' | 'graph';
 
 const PAGE_SIZE = 20;
 
@@ -62,8 +62,16 @@ const AXIOM_KIND_LABEL: Record<string, string> = {
  *  - 新增「本体图谱」视图（节点 ObjectType / 边 LinkType），由数据中心迁入（模型层的图）；
  *  - 「新建本体」走创建向导（IA-6）。
  */
-export default function ModelingPage() {
-  const [kind, setKind] = useState<KindKey>('object');
+export interface ModelingPageProps {
+  /**
+   * 初始 kind（IA v2 过渡 Adapter：新路由 model/link-types 等挂本页时指定，
+   * IA2-2 拆分后随容器退役）。组件内部切换仍是 useState——本参数只定初值。
+   */
+  initialKind?: KindKey;
+}
+
+export default function ModelingPage({ initialKind = 'object' }: ModelingPageProps) {
+  const [kind, setKind] = useState<KindKey>(initialKind);
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);

@@ -21,7 +21,7 @@ import '../ontology.css';
  */
 const GovernancePage = lazy(() => import('../GovernancePage'));
 
-type OpsKey = 'release' | 'audit' | 'governance';
+export type OpsKey = 'release' | 'audit' | 'governance';
 
 const PAGE_SIZE = 20;
 
@@ -31,8 +31,16 @@ const OPS_LABEL: Record<OpsKey, string> = {
   governance: '治理',
 };
 
-export default function OpsPage() {
-  const [tab, setTab] = useState<OpsKey>('release');
+export interface OpsPageProps {
+  /**
+   * 初始 tab（IA v2 过渡 Adapter：governance/drafts=release（Schema WIP 草稿表）、
+   * logic/runs=audit（Action 执行记录）；IA2-5/2-6 拆分后随容器退役）。
+   */
+  initialTab?: OpsKey;
+}
+
+export default function OpsPage({ initialTab = 'release' }: OpsPageProps) {
+  const [tab, setTab] = useState<OpsKey>(initialTab);
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);

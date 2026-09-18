@@ -29,7 +29,15 @@ const VIEWS = {
   assets: { title: '资产清单', hint: '数据平台控制面登记的数据源' },
 } as const;
 
-type ViewKey = keyof typeof VIEWS;
+export type ViewKey = keyof typeof VIEWS;
+
+export interface DatacenterPageProps {
+  /**
+   * 初始视图（IA v2 过渡 Adapter：data/mappings=ingest、data/lineage=lineage，
+   * IA2-3 拆分后随容器退役）。组件内部切换仍是 useState——本参数只定初值。
+   */
+  initialView?: ViewKey;
+}
 
 const STATUS_COLOR: Record<BigDataSourceStatus, 'green' | 'red' | 'amber' | 'grey' | 'blue'> = {
   ACTIVE: 'green',
@@ -47,8 +55,8 @@ const STATUS_COLOR: Record<BigDataSourceStatus, 'green' | 'red' | 'amber' | 'gre
  *  - 原在「运维」的「数据接入」迁入本 tab —— 它是数据面的事，不是治理的事；
  *  - 本 tab 因此收敛为纯数据面：接入 / 血缘 / 资产。
  */
-export default function DatacenterPage() {
-  const [view, setView] = useState<ViewKey>('ingest');
+export default function DatacenterPage({ initialView = 'ingest' }: DatacenterPageProps) {
+  const [view, setView] = useState<ViewKey>(initialView);
 
   const [syncRows, setSyncRows] = useState<SyncStatusRow[]>([]);
   const [syncLoading, setSyncLoading] = useState(true);
