@@ -216,10 +216,11 @@
 
 | 批次 | 主题 | 状态 |
 |---|---|---|
-| **llmgw-fallback-hardening** | **员工路径禁回显 + 上游超时可配** | 🟡 **已定义待执行**：`2026-09-17-llmgw-fallback-hardening.md`（含实测事实表与三方案取舍）+ 同名 goal-mode 提示词 |
-| **2.1-A** | **生产安全收口**（进程隔离 / 持久审计 / delegation / 幂等账本 / 版本化 / 门禁 / 口径） | 🟡 **已规划，待开工**：启动提示词 `2026-09-17-ai-launch-prompt-agent-product-layer-2.1-a-goal-mode.md` |
-| **2.1-B** | **分布式运行时收口**（lease / event log / 连接池 / admin DSN / HITL ABI / A2A / K8s Job） | ⬜ 依赖 2.1-A（B-1 的接管条件要用 A-3 的幂等账本） |
-| **2.1-C** | **产品统一**（会话↔run 落库 / ADR-0065 / 新旧 Agent 合并 / Artifact 2.0 / 员工 revision / golden eval / 观测） | ⬜ 依赖 2.1-A/B |
+| **llmgw-fallback-hardening** | **员工路径禁回显 + 上游超时可配** | ✅ **已交付并合并**（PR [#57](https://github.com/Bert0000000000/MetaPlatform/pull/57) → `0610811a`） |
+| **2.1-A** | **生产安全收口**（进程隔离 / 持久审计 / delegation / 幂等账本 / 版本化 / 门禁 / 口径） | ✅ **已交付并合并**（PR [#59](https://github.com/Bert0000000000/MetaPlatform/pull/59) → `4e33e304`）：验收 `AGENT-PRODUCT-LAYER-2.1-A-ACCEPTANCE.md`；415 passed / 0 skipped；7 批全达成，required check 4 → **11** 条 |
+| **2.1-B** | **分布式运行时收口**（多副本运行态 / lease / event log / 取消异步 / 连接池 / admin DSN / HITL ABI / A2A 计量 / K8s Job 模板） | ✅ **已交付并合并**（PR [#61](https://github.com/Bert0000000000/MetaPlatform/pull/61) + [#62](https://github.com/Bert0000000000/MetaPlatform/pull/62) → `cd57883a`）：验收 `AGENT-PRODUCT-LAYER-2.1-B-ACCEPTANCE.md`；**501 passed**；多副本真上 kind |
+| **2.1-C** | **产品统一**（会话↔run 落库 / ADR-0065 / 新旧 Agent 合并 / Artifact 2.0 / 员工执行面管理 / golden eval / 观测） | ✅ **已交付并合并**（PR [#63](https://github.com/Bert0000000000/MetaPlatform/pull/63) → `34e6a664`）：验收 `AGENT-PRODUCT-LAYER-2.1-C-ACCEPTANCE.md`；**593 passed**；ADR-0065 评审转 Accepted |
+| **2.1 收口** | 2.1 整体未收尾清单（跨 A/B/C 的边界 + 环境条件 + 归属批次） | 📋 `AGENT-PRODUCT-LAYER-2.1-OPEN-ITEMS.md`（`delivery/evidence/`） |
 | 2.2 | **v6 轨道交汇**（dsh preset ×7） | 🟡 未启动；前置是"外部 runtime 能真跑" |
 | 2.x | 编排深度（复杂图 / 主图重规划已部分交付） | 🟡 取决于产品需要 |
 
