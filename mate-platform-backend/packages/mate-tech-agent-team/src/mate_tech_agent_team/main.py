@@ -48,6 +48,7 @@ def _healthz() -> dict[str, str]:
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     from .wiring import (
         build_artifact_store,
+        build_audit_ledger,
         build_profile_store,
         build_registry,
         build_service,
@@ -61,7 +62,13 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     registry = build_registry(store)
     # 1.2 任务 2：派活闸门同时是消息通道。**先建它再建服务**——HTTP 的 send 与
     # 员工侧的 drain 必须落在同一个实例上，否则等于两个信箱。
-    bus = build_team_bus(registry)
+    #
+    # 审计账本（A-1）：**必须在这里传**。`build_service` 内部那条
+    # `build_team_bus(registry, audit=build_audit_ledger())` 只在调用方**不传**
+    # bus 时才走——而这里总是传（两个面要用同一个实例），于是漏传 = 生产装配下
+    # 审计全落进程内账本、重启即失。closeout 批做 ⑧ 的"全程有审计行"时实测
+    # 发现：表建好了（迁移 Job 建）、一行都没进去（2.1-A 只验了账本本体）。
+    bus = build_team_bus(registry, audit=build_audit_ledger())
     # 1.6 任务 2：产出物落 PG。HTTP 面的取回与图里的落库必须是**同一个实例**，
     # 否则图写进一个库、接口从另一个读，两边各说各话。
     artifacts = build_artifact_store()
