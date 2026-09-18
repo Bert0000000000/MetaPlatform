@@ -15,32 +15,17 @@
  * 靠它工作），这里照 `session-run-link.spec.ts` 的先例自带一个放宽超时的登录。
  */
 import { expect, test, type Page } from '@playwright/test';
-import { injectAuthIntoPage } from './helpers/auth';
+import { fetchAccessToken, injectAuthIntoPage } from './helpers/auth';
 
 const SLOW = 90_000;
-const IAM_LOGIN_URL =
-  process.env.E2E_IAM_LOGIN_URL ?? 'http://127.0.0.1:8100/api/v1/iam/auth/login';
+// 2.1-C 曾因共用登录 helper 写死 30s 各抄了一份放宽副本；closeout 批给 helper
+// 加了 E2E_LOGIN_TIMEOUT_MS 后副本退役——这三条 spec 默认抬到 120s（外部仍可覆盖）。
+process.env.E2E_LOGIN_TIMEOUT_MS ||= '120000';
 const AGENT_STREAM = '**/api/v1/copilot/chat/agent/stream';
 
 test.setTimeout(300_000);
 
 /** 本用例专用登录：与 helpers/auth 同链路，只把超时放宽（见文件头注释）。 */
-async function loginWithWideTimeout(page: Page): Promise<string> {
-  const resp = await page.request.post(IAM_LOGIN_URL, {
-    data: {
-      username: process.env.E2E_USERNAME ?? 'admin',
-      password: process.env.E2E_PASSWORD ?? 'admin123',
-    },
-    headers: { 'Content-Type': 'application/json' },
-    timeout: SLOW,
-  });
-  const body = await resp.text();
-  if (!resp.ok()) throw new Error(`IAM login HTTP ${resp.status()}: ${body.slice(0, 200)}`);
-  const parsed = JSON.parse(body) as { accessToken?: string };
-  if (!parsed.accessToken) throw new Error(`IAM login no accessToken: ${body.slice(0, 200)}`);
-  return parsed.accessToken;
-}
-
 /** 伪造一条只有 navigate 事件的 SSE 流。 */
 async function stubNavigate(page: Page, path: string, label: string): Promise<void> {
   await page.route(AGENT_STREAM, async (route) => {
@@ -78,7 +63,7 @@ async function askInAgentMode(page: Page, text: string): Promise<void> {
 test.describe('ADR-0065 S3 navigate 卡片（R4 白名单）', () => {
   test('合规路径：渲染可点击卡片，点击后跳转到目标路由', async ({ context, page }) => {
     await context.clearCookies();
-    await injectAuthIntoPage(page, await loginWithWideTimeout(page));
+    await injectAuthIntoPage(page, await fetchAccessToken(page.request));
     await stubNavigate(page, '/ontology/objects', '看客户详情');
 
     await page.goto('/superai/chat', { waitUntil: 'domcontentloaded' });
@@ -99,7 +84,7 @@ test.describe('ADR-0065 S3 navigate 卡片（R4 白名单）', () => {
 
   test('敌意路径（javascript:）：不渲染任何可点击元素，降级为纯文本', async ({ context, page }) => {
     await context.clearCookies();
-    await injectAuthIntoPage(page, await loginWithWideTimeout(page));
+    await injectAuthIntoPage(page, await fetchAccessToken(page.request));
     await stubNavigate(page, 'javascript:alert(1)', '危险跳转');
 
     await page.goto('/superai/chat', { waitUntil: 'domcontentloaded' });
@@ -118,7 +103,7 @@ test.describe('ADR-0065 S3 navigate 卡片（R4 白名单）', () => {
 
   test('敌意路径（协议相对 //evil.com）：同样不可点击', async ({ context, page }) => {
     await context.clearCookies();
-    await injectAuthIntoPage(page, await loginWithWideTimeout(page));
+    await injectAuthIntoPage(page, await fetchAccessToken(page.request));
     await stubNavigate(page, '//evil.example.com/ontology', '外站跳转');
 
     await page.goto('/superai/chat', { waitUntil: 'domcontentloaded' });
@@ -144,7 +129,7 @@ test.describe('ADR-0065 S3 navigate 卡片（R4 白名单）', () => {
 test.describe('ADR-0065 S2 宿主写入', () => {
   test('Copilot 把本体域的 navigation 写进 agent stream 的 context', async ({ context, page }) => {
     await context.clearCookies();
-    await injectAuthIntoPage(page, await loginWithWideTimeout(page));
+    await injectAuthIntoPage(page, await fetchAccessToken(page.request));
 
     let requestBody: Record<string, any> | null = null;
     await page.route(AGENT_STREAM, async (route) => {

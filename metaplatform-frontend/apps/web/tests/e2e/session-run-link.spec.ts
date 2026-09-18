@@ -17,35 +17,15 @@
  * 被测行为的一部分**——别把调大超时读成"这条判据很勉强"。
  */
 import { expect, test, type Page } from '@playwright/test';
-import { injectAuthIntoPage } from './helpers/auth';
+import { fetchAccessToken, injectAuthIntoPage } from './helpers/auth';
 
 const RUN_CACHE_PREFIX = 'mp-agent-team-run:';
 /** 慢机器下的统一等待上限（见文件头注释）。 */
 const SLOW = 90_000;
+// 2.1-C 曾因共用登录 helper 写死 30s 各抄了一份放宽副本；closeout 批给 helper
+// 加了 E2E_LOGIN_TIMEOUT_MS 后副本退役——这三条 spec 默认抬到 120s（外部仍可覆盖）。
+process.env.E2E_LOGIN_TIMEOUT_MS ||= '120000';
 
-const IAM_LOGIN_URL =
-  process.env.E2E_IAM_LOGIN_URL ?? 'http://127.0.0.1:8100/api/v1/iam/auth/login';
-
-/**
- * 本用例专用的登录：与 `helpers/auth.fetchAccessToken` 同一条链路，**只把超时放宽**。
- *
- * <p>共用的那个 helper 把登录超时写死成 30s（空载时绰绰有余）。本机重载下实测
- * 一次 IAM 登录要 15s、尖峰超过 30s，于是那条 helper 在这里会假红。**不改共用
- * helper**——别的 spec 在正常负载下靠它工作，为了本机的一次尖峰去放宽它的语义
- * 是把自己的环境问题转嫁给所有人。
- */
-async function loginWithWideTimeout(page: Page): Promise<string> {
-  const resp = await page.request.post(IAM_LOGIN_URL, {
-    data: { username: process.env.E2E_USERNAME ?? 'admin', password: process.env.E2E_PASSWORD ?? 'admin123' },
-    headers: { 'Content-Type': 'application/json' },
-    timeout: SLOW,
-  });
-  const body = await resp.text();
-  if (!resp.ok()) throw new Error(`IAM login HTTP ${resp.status()}: ${body.slice(0, 200)}`);
-  const parsed = JSON.parse(body) as { accessToken?: string };
-  if (!parsed.accessToken) throw new Error(`IAM login no accessToken: ${body.slice(0, 200)}`);
-  return parsed.accessToken;
-}
 
 // 单条用例的整体上限：本机空载时这条链路 ~30s，重载（kind + 30 容器）下实测
 // 光一次 IAM 登录就要 15s，所以给到 5 分钟；同时把上面各 assert 的上限统一到 SLOW。
@@ -54,7 +34,7 @@ test.setTimeout(300_000);
 test.describe('C-1 会话 ↔ run：后端是唯一关系源', () => {
   test('清掉浏览器本地关系后刷新，调度视图仍从后端恢复', async ({ context, page }) => {
     await context.clearCookies();
-    await injectAuthIntoPage(page, await loginWithWideTimeout(page));
+    await injectAuthIntoPage(page, await fetchAccessToken(page.request));
     await page.goto('/superai/chat', { waitUntil: 'domcontentloaded' });
 
     // 先建一个真的后端会话——只有 `conv-*` 是落库的会话，本地草稿不在本用例范围内。

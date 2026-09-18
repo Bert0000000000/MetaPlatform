@@ -25,6 +25,21 @@ const IAM_LOGIN_URL =
 const IAM_USERNAME = process.env.E2E_USERNAME ?? 'admin';
 const IAM_PASSWORD = process.env.E2E_PASSWORD ?? 'admin123';
 
+/**
+ * 登录请求超时（毫秒）。默认 30s；本机 IAM 冷启动 / 镜像重建后的尖峰会超过它，
+ * 共用 helper 会**假红**（2.1-C §3-C5：实测一次登录 15s、尖峰过 30s，三个 spec
+ * 为此各自抄了一份放宽超时的登录）。与其人手抄，不如给一个环境变量：
+ *
+ *   E2E_LOGIN_TIMEOUT_MS=120000 npx playwright test …
+ *
+ * 解析失败 / 非正数回默认值——超时配置本身不该把套件搞红。
+ */
+const LOGIN_TIMEOUT_DEFAULT_MS = 30_000;
+function loginTimeoutMs(): number {
+  const raw = Number(process.env.E2E_LOGIN_TIMEOUT_MS ?? LOGIN_TIMEOUT_DEFAULT_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : LOGIN_TIMEOUT_DEFAULT_MS;
+}
+
 export interface LoginCredentials {
   username: string;
   password: string;
@@ -41,7 +56,7 @@ export async function fetchAccessToken(
   const resp = await request.post(IAM_LOGIN_URL, {
     data: credentials,
     headers: { 'Content-Type': 'application/json' },
-    timeout: 30_000,
+    timeout: loginTimeoutMs(),
   });
   const body = await resp.text();
   if (!resp.ok()) {
