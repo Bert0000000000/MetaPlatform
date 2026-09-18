@@ -127,6 +127,20 @@ def scope_id(api: AdminApi) -> str:
     )
 
 
+def _mapper_signature(mappers: Any) -> frozenset[tuple[str, str, tuple[tuple[str, str], ...]]]:
+    """mapper 列表的可比形态：抹平 Keycloak 的归一化噪声（自增 id / 布尔串化）。"""
+    if not isinstance(mappers, list):
+        return frozenset()
+    out = set()
+    for m in mappers:
+        if not isinstance(m, dict):
+            continue
+        config = m.get("config") or {}
+        normalized = tuple(sorted((str(k), str(v)) for k, v in config.items()))
+        out.add((str(m.get("name") or ""), str(m.get("protocolMapper") or ""), normalized))
+    return frozenset(out)
+
+
 def apply(api: AdminApi, realm_doc: dict[str, Any]) -> list[str]:
     actions: list[str] = []
     sid = scope_id(api)
@@ -145,12 +159,26 @@ def apply(api: AdminApi, realm_doc: dict[str, Any]) -> list[str]:
                 raise RuntimeError(f"client `{client_id}` 建完查不到")
             actions.append(f"+ client `{client_id}`（新建）")
         else:
-            # 幂等对齐：secret / mapper / 开关以 realm JSON 为准（PUT 整份表示，
-            # 保留 `id` 等服务端字段；scope 链接走下面的独立端点）。
-            merged = {k: v for k, v in existing.items() if k != "id"}
-            merged.update({k: v for k, v in rep.items() if k != "defaultClientScopes"})
-            api.request("PUT", f"/admin/realms/{REALM}/clients/{existing['id']}", merged)
-            actions.append(f"~ client `{client_id}`（表示已对齐 realm JSON）")
+            # 幂等对齐：只在**本脚本管的字段**真有差异时才 PUT（secret / 服务开关
+            # 直接比；mapper 要先归一化——Keycloak 返回的表示会给每个 mapper 补
+            # id、把布尔串化，逐字段直比永远"有差异"，幂等就成了空话）。
+            drift = {
+                key: value
+                for key, value in rep.items()
+                if key not in {"defaultClientScopes", "protocolMappers"}
+                and existing.get(key) != value
+            }
+            if _mapper_signature(rep.get("protocolMappers")) != _mapper_signature(
+                existing.get("protocolMappers")
+            ):
+                drift["protocolMappers"] = rep["protocolMappers"]
+            if drift:
+                merged = {k: v for k, v in existing.items() if k != "id"}
+                merged.update({k: v for k, v in rep.items() if k != "defaultClientScopes"})
+                api.request("PUT", f"/admin/realms/{REALM}/clients/{existing['id']}", merged)
+                actions.append(f"~ client `{client_id}`（对齐字段：{', '.join(sorted(drift))}）")
+            else:
+                actions.append(f"= client `{client_id}`（已与 realm JSON 一致，无需变更）")
         cid = str(existing["id"])
         linked = {
             str(row.get("id"))
