@@ -26,6 +26,8 @@ __all__ = [
 
 class Embedder(Protocol):
     def embed(self, text: str) -> list[float]: ...
+    # 批量接口 embed_many 是**可选**增强（similarity 扫描场景探测 hasattr 使用），
+    # 不进 Protocol 以免所有实现被迫实现。
 
 
 class HashEmbedder:
@@ -97,6 +99,11 @@ class LlmgwServiceEmbedder:
         self._token: str | None = None
         self._token_exp: float = 0.0
         self._dim_value: int | None = None
+        # 文本级向量缓存（embed/embed_many 共用）：precheck 的现有 ObjectType
+        # 文本稳定，命中后零网络成本。有界防泄漏。
+        self._cache: dict[str, list[float]] = {}
+        self._CACHE_MAX = 8192
+        self._BATCH = 128
 
     @property
     def dim(self) -> int:
@@ -124,19 +131,63 @@ class LlmgwServiceEmbedder:
         return self._token
 
     def embed(self, text: str) -> list[float]:
-        resp = self._client.post(
-            self._url,
-            headers={"Authorization": f"Bearer {self._bearer()}"},
-            json={"input": [text or " "], "model": self._model, "tenant_id": self._tenant},
-        )
-        resp.raise_for_status()
-        body = resp.json()
-        dims = body.get("dimensions")
-        if isinstance(dims, int):
-            self._dim_value = dims
-        vec = [float(x) for x in body["data"][0]["embedding"]]
-        self._dim_value = len(vec)
+        key = text or " "
+        cached = self._cache.get(key)
+        if cached is not None:
+            return cached
+        vec = self._embed_uncached([key])[0]
+        if len(self._cache) < self._CACHE_MAX:
+            self._cache[key] = vec
         return vec
+
+    def embed_many(self, texts: list[str]) -> list[list[float]]:
+        """批量嵌入：缓存命中的直接复用，未命中的一次网络往返。
+
+        MP-DEDUP-01 precheck 曾对全租户 ObjectType **逐个** embed（每次一程
+        llmgw HTTP），类型数累积到数百后单次 precheck = 数百次串行调用，
+        网关 proxy.timeout 直接 502/504，前端 await 永挂。TypeName+slug 稳定，
+        文本级缓存命中率极高；未命中部分合并为一次批量调用。
+        """
+        keys = [t or " " for t in texts]
+        out: list[list[float]] = [None] * len(keys)  # type: ignore[list-item]
+        misses: list[int] = []
+        miss_keys: list[str] = []
+        for i, k in enumerate(keys):
+            hit = self._cache.get(k)
+            if hit is not None:
+                out[i] = hit
+            else:
+                misses.append(i)
+                miss_keys.append(k)
+        if miss_keys:
+            vecs = self._embed_uncached(miss_keys)
+            for i, k, v in zip(misses, miss_keys, vecs, strict=True):
+                out[i] = v
+                if len(self._cache) < self._CACHE_MAX:
+                    self._cache[k] = v
+        return out
+
+    def _embed_uncached(self, texts: list[str]) -> list[list[float]]:
+        out: list[list[float]] = []
+        # 分块：llmgw / ARK 的 input 数组有长度上限（对齐 OpenAI 2048 保守取 128），
+        # 全租户扫描时一次几百条会被上游 4xx 拒。
+        for start in range(0, len(texts), self._BATCH):
+            chunk = texts[start : start + self._BATCH]
+            resp = self._client.post(
+                self._url,
+                headers={"Authorization": f"Bearer {self._bearer()}"},
+                json={"input": chunk, "model": self._model, "tenant_id": self._tenant},
+            )
+            resp.raise_for_status()
+            body = resp.json()
+            dims = body.get("dimensions")
+            if isinstance(dims, int):
+                self._dim_value = dims
+            vecs = [[float(x) for x in item["embedding"]] for item in body["data"]]
+            if vecs:
+                self._dim_value = len(vecs[0])
+            out.extend(vecs)
+        return out
 
     def close(self) -> None:
         self._client.close()
