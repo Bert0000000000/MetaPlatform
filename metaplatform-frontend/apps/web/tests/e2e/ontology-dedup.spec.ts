@@ -151,21 +151,36 @@ test.describe('本体创建去重 e2e (MP-DEDUP-01)', () => {
     await page.locator('input[placeholder="例如：customer"]').fill(`customer-ui-${seedTime}`);
 
     // 4. precheck 门禁（已知工作台交互，预存非 IA v2 引入）：概念名失焦会触发相似
-    //    候选 Modal——blur 模式下「仍要新建」只记豁免键不落库；若带着未豁免的预检
-    //    直接点保存，Modal 会打断提交（保存按钮卡「保存中…」，创建永不发生——
-    //    09-15 起该 spec 长红的根因）。正确动线：先点标题区**主动触发失焦**，
-    //    等 Modal → 点「仍要新建」（记豁免键）→ 再点一次保存，这次预检不再弹
-    //    Modal，创建真正走完。
+    //    候选 Modal——blur 模式下「仍要新建」只记豁免键不落库。正确动线：先点标题区
+    //    **主动触发失焦**，Modal 出现则点「仍要新建」（记豁免键）。
+    //    precheck 后端有 embed 预算（默认 10s）+ 归一化兜底，Modal 可能要 10s+ 才弹；
+    //    blur 这步没等到也不阻塞——保存路径会再弹一次（届时 payload 已暂存，
+    //    点「仍要新建」直接落库），由 4c 的 wait-for-either 兜住。
     await page.getByText('新建概念（ObjectType）', { exact: true }).click();
     const stillCreateBtn = page.locator('button').filter({ hasText: '仍要新建' }).first();
     try {
-      await stillCreateBtn.waitFor({ state: 'visible', timeout: 10_000 });
+      await stillCreateBtn.waitFor({ state: 'visible', timeout: 15_000 });
       await clickByText(page, 'button', '仍要新建');
     } catch {
-      // 未弹候选（无相似概念）——直接保存即可
+      // 未及时弹出（预算内没出候选或慢于窗口）——留给保存路径处理
     }
-    // 4c. 提交按钮按真实文案点（ObjectTypeEditorV2Drawer 是自定义抽屉、无 Semi 类名）
+    // 4c. 提交（ObjectTypeEditorV2Drawer 是自定义抽屉、无 Semi 类名，按真实文案点）。
+    //     保存路径若再弹候选 Modal（payload 已暂存），点「仍要新建」即真正落库；
+    //     否则直接等新概念出现在概念表。两路并行等待，先到先处理。
     await clickByText(page, 'button', '保存（整体 upsert）');
+    const newCell = page.getByRole('cell', { name: `客户_${seedTime}`, exact: true });
+    for (let round = 0; round < 6; round += 1) {
+      const modal = await stillCreateBtn.isVisible().catch(() => false);
+      if (modal) {
+        await clickByText(page, 'button', '仍要新建');
+      }
+      try {
+        await newCell.waitFor({ state: 'visible', timeout: 10_000 });
+        break;
+      } catch {
+        if (round === 5) throw new Error('创建后概念表始终未出现新概念（含 Modal 续接路径）');
+      }
+    }
     await page.waitForTimeout(2500);
     await page.screenshot({ path: `${SCREENSHOT_DIR}/ontology-dedup-02-after-create-customer.png`, fullPage: true });
 
