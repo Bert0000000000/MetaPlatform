@@ -127,17 +127,26 @@ export const legacyRedirectRoutes: ReactElement[] = [
   r('dashboard/aiops', '/home/aiops'),
   r('dashboard/settings', '/home/me'),
 
-  /* ---------- 本体（2026-09-17 IA 重排：6 tab，旧子路径全部落新） ---------- */
-  r('ontology/explorer', '/ontology/objects'),
-  r('ontology/model/editor', '/ontology/model'),
-  r('ontology/object-types', '/ontology/model'),
-  r('ontology/object-types/:rid', '/ontology/model'),
-  r('ontology/relationship-types', '/ontology/model'),
-  r('ontology/graph', '/ontology/model'),
-  r('ontology/action', '/ontology/model'),
-  r('ontology/actions', '/ontology/model'),
-  r('ontology/analytics', '/ontology/apps'),
-  r('ontology/governance', '/ontology/ops'),
+  /* ---------- 本体（ADR-0069 IA v2：旧路径 301 到新工作区路由） ---------- */
+  /* 权威矩阵：docs/active/specs/2026-09-18-ontology-ia-v2-design.md §4.2。
+     注意分工：/ontology/* 新路径与组根 index redirect 全部由 routes/ontology.tsx
+     独占注册（含 /ontology/model|data|explore|logic|governance 组根本身），
+     本文件只放**已退役**路径，两边不重复注册。 */
+  r('ontology/explorer', '/ontology/explore/objects'),
+  r('ontology/model/editor', '/ontology/model/object-types'),
+  r('ontology/object-types', '/ontology/model/object-types'),
+  r('ontology/object-types/:rid', '/ontology/model/object-types'),
+  r('ontology/relationship-types', '/ontology/model/link-types'),
+  r('ontology/graph', '/ontology/model/graph'),
+  r('ontology/action', '/ontology/logic/actions'),
+  r('ontology/actions', '/ontology/logic/actions'),
+  r('ontology/analytics', '/ontology/explore/analysis'),
+  r('ontology/objects', '/ontology/explore/objects'),
+  r('ontology/datacenter', '/ontology/data/mappings'),
+  r('ontology/apps', '/ontology/explore/analysis'),
+  r('ontology/ops/actions', '/ontology/logic/designer'),
+  r('ontology/ops/governance', '/ontology/governance/releases'),
+  r('ontology/ops', '/ontology/governance/drafts'),
 
   /* ---------- 数字员工（DW 并入） ---------- */
   r('dw/employees', '/agents/employees'),

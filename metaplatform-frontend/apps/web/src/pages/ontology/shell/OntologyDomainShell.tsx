@@ -23,26 +23,35 @@ import './shell.css';
  */
 
 /**
- * 路由 → 语义视图名。以 `/ontology` 为前缀的路由都由本壳承接；表外路径（理论上不会
- * 出现，路由表兜底）落一个通用的 `ontology`，不编造具体视图名。
+ * 路由前缀 → 语义视图名（ADR-0069 IA v2 后按**六大功能域**取视图）。
+ * 以 `/ontology` 为前缀的路由都由本壳承接；最长前缀优先（`/ontology` 兜底在最后），
+ * 表外路径落通用的 `ontology`，不编造具体视图名。子路径（如 :rid 详情）归入所属
+ * 功能域视图——源记录由 agent 按 RID 水合，视图名不需要更细。
  */
-const ROUTE_VIEWS: Record<string, { view: string; tab: string }> = {
-  '/ontology': { view: 'ontology-overview', tab: 'overview' },
-  '/ontology/model': { view: 'ontology-model', tab: 'model' },
-  '/ontology/objects': { view: 'ontology-objects', tab: 'objects' },
-  '/ontology/datacenter': { view: 'ontology-datacenter', tab: 'datacenter' },
-  '/ontology/apps': { view: 'ontology-apps', tab: 'apps' },
-  '/ontology/ops': { view: 'ontology-ops', tab: 'ops' },
-  '/ontology/ops/actions': { view: 'ontology-actions', tab: 'actions' },
-  '/ontology/ops/governance': { view: 'ontology-governance', tab: 'governance' },
-};
+const ROUTE_VIEWS: Array<{ prefix: string; view: string; tab: string }> = [
+  { prefix: '/ontology/model', view: 'ontology-model', tab: 'model' },
+  { prefix: '/ontology/data', view: 'ontology-data', tab: 'data' },
+  { prefix: '/ontology/explore', view: 'ontology-explore', tab: 'explore' },
+  { prefix: '/ontology/logic', view: 'ontology-logic', tab: 'logic' },
+  { prefix: '/ontology/governance', view: 'ontology-governance', tab: 'governance' },
+  { prefix: '/ontology', view: 'ontology-overview', tab: 'overview' },
+];
+
+function resolveRouteView(pathname: string): { view: string; tab: string } {
+  return (
+    ROUTE_VIEWS.find((r) => pathname === r.prefix || pathname.startsWith(`${r.prefix}/`)) ?? {
+      view: 'ontology',
+      tab: 'unknown',
+    }
+  );
+}
 
 export default function OntologyDomainShell({ children }: { children: ReactNode }) {
   const location = useLocation();
 
   // 路由态随 location 变化——这是"宿主页换 tab / 深入子页后上下文不失真"的落点。
   useEffect(() => {
-    const route = ROUTE_VIEWS[location.pathname] ?? { view: 'ontology', tab: 'unknown' };
+    const route = resolveRouteView(location.pathname);
     // 深链 `?id=<rid>` 是"打开中的记录"，进 openRecordIds；列表**选中**由
     // ObjectExplorerPage 单独发布（选中 ≠ 打开，两者语义不同）。
     const openRid = new URLSearchParams(location.search).get('id');

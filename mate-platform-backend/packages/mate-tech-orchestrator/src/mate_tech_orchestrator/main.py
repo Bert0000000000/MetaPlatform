@@ -11,6 +11,7 @@ absent and everything behaves as before.
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -94,7 +95,19 @@ def create_app() -> FastAPI:
     registry = get_role_registry()
     registry.restore()  # reload persisted roles (cross-restart survival)
     # Seed default skill capabilities (idempotent) so App role can search/read skills.
-    seed_default_roles()
+    # ORCHESTRATOR_DEFAULT_ALLOWED_ACTOR_ROLES（逗号分隔）此前在 compose 里声明但
+    # 无人读取——authorized-snapshot 对所有 actor 返回空集（roles 全被 fail-closed
+    # 过滤），SuperAI 语义路由拿不到候选。现在启动 seed 真正接上该 env；显式给出
+    # 默认授权时同时回填存量**空授权**角色（非空映射不动，语义仍是 deny by default）。
+    _default_allowed = tuple(
+        v.strip()
+        for v in os.environ.get("ORCHESTRATOR_DEFAULT_ALLOWED_ACTOR_ROLES", "").split(",")
+        if v.strip()
+    )
+    seed_default_roles(
+        default_allowed_actor_roles=_default_allowed,
+        backfill_empty_authorization=bool(_default_allowed),
+    )
     app.state.role_registry = registry
     app.state.dispatcher = get_dispatcher()
     # MP-SAL-05：plan runner 注入 ontology client（action 步骤执行器；

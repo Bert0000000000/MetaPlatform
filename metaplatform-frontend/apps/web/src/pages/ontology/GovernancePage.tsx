@@ -15,13 +15,13 @@
 import { useCallback, useEffect, useState, type ChangeEvent, type ReactElement } from 'react';
 import { Card, Table, Tag } from '@douyinfe/semi-ui';
 import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
-import { AlertTriangle, BarChart3, Bot, Download, GitBranch, GitCompare, History, Loader2, ShieldAlert, Undo2, Upload } from 'lucide-react';
+import { AlertTriangle, BarChart3, Bot, Download, GitBranch, GitCompare, History, Loader2, Undo2, Upload } from 'lucide-react';
 import { toast } from '@mate/shared';
 import {
   applyLifecycle, branchObjectType, diffObjectTypes, exportObjectType,
-  getUsageSummary, importObjectTypes, lintAntiPatterns, listActionAudit,
+  getUsageSummary, importObjectTypes, listActionAudit,
   listObjectTypes, rollbackObjectType, slugAndVersionOfObjectType,
-  type ActionAuditRow, type KernelObjectType, type LintFinding, type UsageRow,
+  type ActionAuditRow, type KernelObjectType, type UsageRow,
 } from '@/api/ont/kernel';
 import {
   getAgentMetricsSummary, getAgentMetricsTrend,
@@ -30,20 +30,6 @@ import {
 import SchemaWipCard from './components/SchemaWipCard';
 import SecurityPolicyCard from './components/SecurityPolicyCard';
 import './ontology.css';
-
-const PATTERN_LABEL: Record<string, string> = {
-  god_object: '上帝对象',
-  kitchen_sink: '大杂烩',
-  misnomer: '误名',
-  action_sprawl: 'Action 蔓延',
-};
-
-const PATTERN_COLOR: Record<string, 'red' | 'orange' | 'yellow'> = {
-  god_object: 'red',
-  kitchen_sink: 'orange',
-  misnomer: 'yellow',
-  action_sprawl: 'orange',
-};
 
 /** G41：diff 结果 key 中文化（原样兜底）。 */
 const DIFF_LABEL: Record<string, string> = {
@@ -173,7 +159,6 @@ function AgentTrendChart({ points }: { points: AgentMetricsTrendPoint[] }): Reac
 
 export default function GovernancePage() {
   const [usage, setUsage] = useState<UsageRow[]>([]);
-  const [lint, setLint] = useState<LintFinding[]>([]);
   const [audit, setAudit] = useState<ActionAuditRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
@@ -208,13 +193,12 @@ export default function GovernancePage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [u, l, a] = await Promise.all([
+      // 反模式 lint 已随 IA2-2 迁往 /ontology/model/validation（本页不再重复拉取）
+      const [u, a] = await Promise.all([
         getUsageSummary(30).catch(() => [] as UsageRow[]),
-        lintAntiPatterns().catch(() => [] as LintFinding[]),
         listActionAudit(50).catch(() => [] as ActionAuditRow[]),
       ]);
       setUsage(u);
-      setLint(l);
       setAudit(a);
       reloadTypes();
     } finally {
@@ -561,34 +545,8 @@ export default function GovernancePage() {
               pagination={{ pageSize: 10 }} size="small" empty="暂无使用量数据" />
           </Card>
 
-          {/* 反模式 lint */}
-          <Card bodyStyle={{ padding: 0 }}>
-            <div className="mp-gap-2 mp-flex-center mp-border mp-py-3 mp-px-5" >
-              <ShieldAlert className="mp-icon-14 mp-text-warning" />
-              <h4 className="mp-fw-600 mp-m-0 mp-text-md">反模式检查</h4>
-              <span className="mp-text-xs mp-text-2">
-                {lint.length} 项发现（god_object / kitchen_sink / misnomer / action_sprawl）
-              </span>
-            </div>
-            {lint.length === 0 ? (
-              <div className="mp-p-6 mp-text-sm mp-text-2">✓ 未发现反模式</div>
-            ) : (
-              <div className="mp-flex mp-gap-2 mp-py-2 mp-px-4 mp-flex-col" >
-                {lint.slice(0, 30).map((f, i) => (
-                  <div key={i} className="mp-flex mp-border mp-gap-2 mp-py-2 mp-px-3 mp-items-start mp-rounded" >
-                    <Tag size="small" color={PATTERN_COLOR[f.pattern] ?? 'grey'}>
-                      {PATTERN_LABEL[f.pattern] ?? f.pattern}
-                    </Tag>
-                    <div className="mp-flex-1">
-                      <div className="mp-text-sm mp-break-all mp-mono" >{f.subject}</div>
-                      <div className="mp-text-sm mp-text-2">{f.detail}</div>
-                      <div className="mp-text-xs mp-text-2 mp-mt-1" >💡 {f.hint}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
+          {/* 反模式 lint 已随 IA2-2 迁往 /ontology/model/validation，此处不重复实现
+              （治理页「模型检查」将来只留入口链接——IA2-6 拆分时处理） */}
 
           {/* 安全策略（行/列，SEC-12）—— 策略清单 + 新建 + 删除 */}
           <SecurityPolicyCard />

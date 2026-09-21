@@ -50,6 +50,12 @@ export interface DomainDef {
   /** 一级默认路由 */
   path: string;
   tabs: DomainTab[];
+  /**
+   * 域导航模式（ADR-0069 / IA v2）：缺省 'tabs' 渲染全局横向 PageTabs；
+   * 'workspace' 时域自带左侧工作区导航，PageTabs 不渲染。
+   * IA2-0 先落类型契约（无任何域声明 workspace）；IA2-1 起本体域切换。
+   */
+  navigationMode?: 'tabs' | 'workspace';
 }
 
 const ICON_SIZE = 18;
@@ -74,13 +80,17 @@ export const DOMAINS: DomainDef[] = [
     label: '本体',
     icon: <Share2 size={ICON_SIZE} strokeWidth={1.5} />,
     path: '/ontology',
+    // ADR-0069 IA v2：本体域改工作区左侧导航，不渲染全局横向 PageTabs。
+    // tabs 保留为面包屑/⌘K 的兼容粗索引（细粒度索引来自 pages/ontology/navigation.ts
+    // 的 ONTOLOGY_NAV）；六个 tab 与六大功能域默认路径一一对应。
+    navigationMode: 'workspace',
     tabs: [
-      { key: 'overview', label: '概览', path: '/ontology' },
-      { key: 'model', label: '概念建模', path: '/ontology/model' },
-      { key: 'objects', label: '对象浏览', path: '/ontology/objects' },
-      { key: 'datacenter', label: '数据中心', path: '/ontology/datacenter' },
-      { key: 'apps', label: '分析应用', path: '/ontology/apps' },
-      { key: 'ops', label: '运行治理', path: '/ontology/ops' },
+      { key: 'overview', label: '总览', path: '/ontology' },
+      { key: 'model', label: '语义模型', path: '/ontology/model/object-types' },
+      { key: 'data', label: '数据映射', path: '/ontology/data/mappings' },
+      { key: 'explore', label: '对象与查询', path: '/ontology/explore/objects' },
+      { key: 'logic', label: '动作与函数', path: '/ontology/logic/actions' },
+      { key: 'governance', label: '发布与治理', path: '/ontology/governance/drafts' },
     ],
   },
   {

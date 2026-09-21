@@ -562,3 +562,64 @@
 .mp-onto-sim-chip { background: var(--semi-color-fill-0); color: var(--semi-color-text-0); }
 .mp-onto-sim-chip--warn { background: var(--semi-color-warning); color: var(--semi-color-white); }
 .mp-onto-sim-chip--danger { background: var(--semi-color-danger); color: var(--semi-color-white); }
+
+/* ---------- 对象类型详情（IA2-2 · ObjectTypeDetailPage） ---------- */
+
+.mp-onto-detail-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
+  min-height: 0;
+}
+
+.mp-onto-detail-list {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) 1fr;
+  gap: var(--mp-space-2) var(--mp-space-5);
+  margin: 0;
+  padding: var(--mp-space-4) var(--mp-space-5);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-medium);
+  background: var(--semi-color-bg-1);
+  font-size: 13px;
+}
+
+.mp-onto-detail-list dt {
+  color: var(--semi-color-text-2);
+  white-space: nowrap;
+}
+
+.mp-onto-detail-list dd {
+  margin: 0;
+  color: var(--semi-color-text-0);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 模型校验（IA2-2 · ModelValidationPage） ---------- */
+
+.mp-onto-lint-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+}
+
+.mp-onto-lint-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mp-space-2);
+  padding: var(--mp-space-2) var(--mp-space-3);
+  border: 1px solid var(--semi-color-border);
+  border-radius: var(--semi-border-radius-small);
+  background: var(--semi-color-bg-1);
+}
+
+.mp-onto-lint-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+  font-size: 13px;
+  color: var(--semi-color-text-1);
+}

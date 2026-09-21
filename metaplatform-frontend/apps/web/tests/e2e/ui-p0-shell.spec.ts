@@ -26,12 +26,12 @@ const LEGACY_REDIRECTS: Array<{ from: string; to: string; note?: string }> = [
   { from: '/dashboard/portal', to: '/home/portal' },
   { from: '/dashboard/aiops', to: '/home/aiops' },
 
-  { from: '/ontology', to: '/ontology/explorer' },
-  { from: '/ontology?tab=datacenter', to: '/ontology/datacenter' },
-  { from: '/ontology?tab=action', to: '/ontology/ops/actions' },   // UI-P1a 起 Action 编排归运维
-  { from: '/ontology?tab=concept', to: '/ontology/model' },
-  { from: '/ontology/object-types', to: '/ontology/model' },
-  { from: '/ontology/datacenter', to: '/ontology/datacenter' },
+  { from: '/ontology', to: '/ontology' },
+  { from: '/ontology?tab=datacenter', to: '/ontology/data/mappings' },
+  { from: '/ontology?tab=action', to: '/ontology/logic/actions' },
+  { from: '/ontology?tab=concept', to: '/ontology/model/object-types' },
+  { from: '/ontology/object-types', to: '/ontology/model/object-types' },
+  { from: '/ontology/datacenter', to: '/ontology/data/mappings' },
 
   { from: '/dw/employees', to: '/agents/employees' },
   { from: '/dw/tasks', to: '/agents/dw-tasks' },
@@ -69,7 +69,7 @@ const LEGACY_REDIRECTS: Array<{ from: string; to: string; note?: string }> = [
 /** 新 IA 8 个域的代表路径。 */
 const DOMAIN_ENTRIES: Array<{ path: string; domain: string }> = [
   { path: '/home', domain: '工作台' },
-  { path: '/ontology/explorer', domain: '本体' },
+  { path: '/ontology/explore/objects', domain: '本体' },
   { path: '/agents', domain: '数字员工' },
   { path: '/superai/chat', domain: 'SuperAI' },
   { path: '/apps/mine', domain: '应用中心' },
@@ -164,16 +164,17 @@ test.describe('UI-P0 · ⌘K 命令面板', () => {
     await expect(body).toBeVisible();
     await expect(body.locator('.mp-cmdk-group').first()).toContainText('跳转');
 
-    // 过滤：只剩包含关键词的条目
-    await page.locator('.mp-cmdk-field input').fill('数据中心');
-    await expect(body.locator('.mp-cmdk-item').first()).toContainText('数据中心');
+    // 过滤：只剩包含关键词的条目（IA v2 起用 ONTOLOGY_NAV 的子页条目，
+    // 「数据中心」已更名「数据映射」，换一个稳定命中本体子页的词）
+    await page.locator('.mp-cmdk-field input').fill('对象类型');
+    await expect(body.locator('.mp-cmdk-item').first()).toContainText('对象类型');
     const count = await body.locator('.mp-cmdk-item').count();
     expect(count).toBeGreaterThan(0);
     expect(count).toBeLessThan(5);
 
-    // Enter 跳转
+    // Enter 跳转（IA v2：⌘K 细粒度条目来自 ONTOLOGY_NAV，对象类型 → 工作区路由）
     await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/\/ontology\/datacenter$/);
+    await expect(page).toHaveURL(/\/ontology\/model\/object-types$/);
 
     // Esc 关闭
     await page.keyboard.press('Control+k');

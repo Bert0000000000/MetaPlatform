@@ -55,6 +55,16 @@ export default defineConfig({
       // v3.2: all routes proxy to unified backend on BACKEND_PORT (default 8100)
       '/api/v1': { target: proxyTarget(BACKEND_PORT), changeOrigin: true, ...forwardAuth },
     },
+    // Playwright 跑 E2E 时把 HTML 报告/工件写进项目目录，Windows 下文件锁（EBUSY）
+    // 会打崩 watcher —— 这是「dev server 跑用例时自行退出」的根因
+    // （ONTOLOGY-IA2-0-BASELINE §2）。报告/截图是纯产物，不参与 HMR，直接忽略。
+    watch: {
+      ignored: [
+        '**/playwright-report/**',
+        '**/tests/e2e/.artifacts/**',
+        '**/tests/e2e/screenshots/**',
+      ],
+    },
   },
   optimizeDeps: {
     include: [

@@ -23,7 +23,7 @@ import {
   type ActionAuditRow,
   type SyncStatusRow,
 } from '@/api/ont/kernel';
-import { getAgentMetricsSummary, type AgentMetricsSummary } from '@/api/ont/agentMetrics';
+import { lintAntiPatterns, listSchemaWip } from '@/api/ont/kernel';
 import { EmptyState, PageHeader } from '@/components/skeleton';
 import { ridTail } from '../rid';
 import './overview.css';
@@ -43,6 +43,8 @@ interface PrimitiveKpi {
   icon: React.ReactNode;
   count: number | null;
   hint: string;
+  /** IA v2：KPI 卡直达所属基元页（ADR-0069 六大功能域）。 */
+  path: string;
 }
 
 const ICON = 16;
@@ -64,7 +66,9 @@ export default function OverviewPage() {
 
   const [audit, setAudit] = useState<ActionAuditRow[]>([]);
   const [sync, setSync] = useState<SyncStatusRow[]>([]);
-  const [metrics, setMetrics] = useState<AgentMetricsSummary | null>(null);
+  // IA v2（ADR-0069 §7.1）：总览不再依赖 agentMetrics —— 改用治理面真实数据
+  const [drafts, setDrafts] = useState<number | null>(null);
+  const [lintCount, setLintCount] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -96,14 +100,16 @@ export default function OverviewPage() {
     });
 
     // 三块侧栏数据各自独立降级：慢/挂不影响概览主结论。
-    const [auditRes, syncRes, metricsRes] = await Promise.allSettled([
+    const [auditRes, syncRes, wipRes, lintRes] = await Promise.allSettled([
       listActionAudit(20),
       getDatasourceSyncStatus(),
-      getAgentMetricsSummary(30),
+      listSchemaWip(),
+      lintAntiPatterns(),
     ]);
     setAudit(auditRes.status === 'fulfilled' ? auditRes.value : []);
     setSync(syncRes.status === 'fulfilled' ? syncRes.value : []);
-    setMetrics(metricsRes.status === 'fulfilled' ? metricsRes.value : null);
+    setDrafts(wipRes.status === 'fulfilled' ? wipRes.value.length : null);
+    setLintCount(lintRes.status === 'fulfilled' ? lintRes.value.length : null);
 
     setLoading(false);
   }, []);
@@ -118,6 +124,7 @@ export default function OverviewPage() {
         key: 'object',
         label: '对象类型',
         icon: <Box size={ICON} strokeWidth={1.5} />,
+        path: '/ontology/model/object-types',
         count: counts.object,
         hint: '本体的概念层',
       },
@@ -125,6 +132,7 @@ export default function OverviewPage() {
         key: 'link',
         label: '关系类型',
         icon: <Share2 size={ICON} strokeWidth={1.5} />,
+        path: '/ontology/model/link-types',
         count: counts.link,
         hint: '概念之间的联系',
       },
@@ -132,6 +140,7 @@ export default function OverviewPage() {
         key: 'action',
         label: '动作类型',
         icon: <Zap size={ICON} strokeWidth={1.5} />,
+        path: '/ontology/logic/actions',
         count: counts.action,
         hint: '可对对象执行的操作',
       },
@@ -139,6 +148,7 @@ export default function OverviewPage() {
         key: 'function',
         label: '函数',
         icon: <Code2 size={ICON} strokeWidth={1.5} />,
+        path: '/ontology/logic/functions',
         count: counts.function,
         hint: '动作背后的执行体',
       },
@@ -146,6 +156,7 @@ export default function OverviewPage() {
         key: 'interface',
         label: '接口',
         icon: <Plug size={ICON} strokeWidth={1.5} />,
+        path: '/ontology/model/interfaces',
         count: counts.interface,
         hint: '跨类型的多态约束',
       },
@@ -153,6 +164,7 @@ export default function OverviewPage() {
         key: 'axiom',
         label: '公理',
         icon: <Scale size={ICON} strokeWidth={1.5} />,
+        path: '/ontology/model/axioms',
         count: counts.axiom,
         hint: '语义约束与推理规则',
       },
@@ -208,9 +220,9 @@ export default function OverviewPage() {
             <Button
               theme="solid"
               type="primary"
-              onClick={() => navigate('/ontology/model')}
+              onClick={() => navigate('/ontology/model/object-types')}
             >
-              去概念建模
+              去语义模型
             </Button>
           </>
         }
@@ -222,7 +234,7 @@ export default function OverviewPage() {
           title="本体里还没有对象类型"
           desc="先建第一个概念：定义它有哪些属性、与谁有关联、以及对它能做什么。"
           actions={
-            <Button theme="solid" type="primary" onClick={() => navigate('/ontology/model')}>
+            <Button theme="solid" type="primary" onClick={() => navigate('/ontology/model/object-types')}>
               新建本体概念
             </Button>
           }
@@ -236,7 +248,7 @@ export default function OverviewPage() {
                 key={k.key}
                 type="button"
                 className="mp-onto-ov-kpi"
-                onClick={() => navigate('/ontology/model')}
+                onClick={() => navigate(k.path)}
               >
                 <span className="mp-onto-ov-kpi-label">
                   {k.icon}
@@ -260,9 +272,9 @@ export default function OverviewPage() {
                     theme="borderless"
                     type="primary"
                     size="small"
-                    onClick={() => navigate('/ontology/ops')}
+                    onClick={() => navigate('/ontology/logic/runs')}
                   >
-                    全部审计 <ArrowRight size={14} strokeWidth={1.5} />
+                    执行记录 <ArrowRight size={14} strokeWidth={1.5} />
                   </Button>
                 </div>
                 {audit.length === 0 ? (
@@ -286,19 +298,29 @@ export default function OverviewPage() {
                 </div>
                 <div className="mp-onto-ov-jumps">
                   <JumpCard
-                    title="概念建模"
-                    desc="定义对象类型、属性、关系与动作"
-                    onClick={() => navigate('/ontology/model')}
+                    title="语义模型"
+                    desc="对象类型、关系、接口、公理与模型图谱"
+                    onClick={() => navigate('/ontology/model/object-types')}
                   />
                   <JumpCard
-                    title="对象浏览"
+                    title="对象与查询"
                     desc="查实例、看关系、对对象执行动作"
-                    onClick={() => navigate('/ontology/objects')}
+                    onClick={() => navigate('/ontology/explore/objects')}
                   />
                   <JumpCard
-                    title="数据中心"
-                    desc="数据接入同步健康、血缘与资产"
-                    onClick={() => navigate('/ontology/datacenter')}
+                    title="数据映射"
+                    desc="对象映射、背挂数据源与本体血缘"
+                    onClick={() => navigate('/ontology/data/mappings')}
+                  />
+                  <JumpCard
+                    title="动作与函数"
+                    desc="动作类型、函数、Action 编排与执行记录"
+                    onClick={() => navigate('/ontology/logic/actions')}
+                  />
+                  <JumpCard
+                    title="发布与治理"
+                    desc="草稿、版本发布、模型校验与审计"
+                    onClick={() => navigate('/ontology/governance/drafts')}
                   />
                 </div>
               </section>
@@ -313,9 +335,9 @@ export default function OverviewPage() {
                     theme="borderless"
                     type="primary"
                     size="small"
-                    onClick={() => navigate('/ontology/datacenter')}
+                    onClick={() => navigate('/ontology/data/mappings')}
                   >
-                    数据接入 <ArrowRight size={14} strokeWidth={1.5} />
+                    对象映射 <ArrowRight size={14} strokeWidth={1.5} />
                   </Button>
                 </div>
                 {sync.length === 0 ? (
@@ -348,42 +370,30 @@ export default function OverviewPage() {
                 )}
               </section>
 
+              {/* IA v2（ADR-0069 §7.1）：原「AI 提案回归」卡已删（agentMetrics 依赖），
+                  改用治理面真实数据：草稿数 + 反模式发现数。Agent 服务关闭时本页不受影响。 */}
               <section className="mp-onto-ov-card">
                 <div className="mp-onto-ov-card-head">
-                  <h3 className="mp-onto-ov-card-title">AI 提案回归</h3>
+                  <h3 className="mp-onto-ov-card-title">治理与健康</h3>
                   <Button
                     theme="borderless"
                     type="primary"
                     size="small"
-                    onClick={() => navigate('/ontology/ops')}
+                    onClick={() => navigate('/ontology/governance/drafts')}
                   >
-                    运行治理 <ArrowRight size={14} strokeWidth={1.5} />
+                    发布与治理 <ArrowRight size={14} strokeWidth={1.5} />
                   </Button>
                 </div>
-                {metrics === null || metrics.total === 0 ? (
-                  <div className="mp-onto-ov-empty">近 30 天没有 AI 提案记录。</div>
-                ) : (
-                  <>
-                    <div className="mp-onto-ov-sync">
-                      <span className="mp-onto-ov-sync-ok">{metrics.total} 条提案</span>
-                      <span className="mp-onto-ov-sync-none">
-                        采纳率{' '}
-                        {metrics.acceptance_rate === null
-                          ? '—'
-                          : `${Math.round(metrics.acceptance_rate * 100)}%`}
-                      </span>
-                    </div>
-                    <div className="mp-onto-ov-tags">
-                      {Object.entries(metrics.by_status ?? {})
-                        .filter(([, v]) => v > 0)
-                        .map(([k, v]) => (
-                          <Tag key={k} size="small" type="light">
-                            {k} {v}
-                          </Tag>
-                        ))}
-                    </div>
-                  </>
-                )}
+                <div className="mp-onto-ov-sync">
+                  <span className="mp-onto-ov-sync-ok">{drafts ?? '—'} 条草稿待发布</span>
+                  <span className={lintCount ? 'mp-onto-ov-sync-bad' : 'mp-onto-ov-sync-none'}>
+                    {lintCount ?? '—'} 项反模式发现
+                  </span>
+                </div>
+                <div className="mp-onto-ov-tags">
+                  <Tag size="small" type="light">草稿 → /governance/drafts</Tag>
+                  <Tag size="small" type="light">模型校验 → /model/validation</Tag>
+                </div>
               </section>
             </div>
           </div>

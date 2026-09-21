@@ -1,0 +1,156 @@
+/*
+ * 本体工作区布局（ADR-0069 / 设计规格 §5.1）。
+ * 只写布局结构；颜色 / 圆角 / 字号全部取 DSM 主题包与 --mp-* 令牌，
+ * 不覆写任何 Semi 内部类名。
+ */
+
+.mp-onto-workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* ---------- 上下文条 ---------- */
+
+.mp-onto-contextbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mp-space-4);
+  height: var(--mp-subtab-h);
+  padding: 0 var(--mp-space-4) 0 var(--mp-space-5);
+  border-bottom: 1px solid var(--semi-color-border);
+  background: var(--semi-color-bg-1);
+  flex: none;
+}
+
+.mp-onto-contextbar-crumb {
+  font-size: 12px;
+  color: var(--semi-color-text-1);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mp-onto-contextbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  flex: none;
+}
+
+/* ---------- 主体：左导航 + 壳 ---------- */
+
+.mp-onto-workspace-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.mp-onto-sidenav {
+  width: 200px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
+  padding: var(--mp-space-4) var(--mp-space-2);
+  border-right: 1px solid var(--semi-color-border);
+  background: var(--semi-color-bg-1);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.mp-onto-sidenav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mp-onto-sidenav-group-label {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  padding: var(--mp-space-1) var(--mp-space-3);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--semi-color-text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.mp-onto-sidenav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  padding: var(--mp-space-1) var(--mp-space-3);
+  border-radius: var(--semi-border-radius-small);
+  font-size: 13px;
+  color: var(--semi-color-text-1);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.mp-onto-sidenav-link:hover {
+  background: var(--semi-color-fill-0);
+  color: var(--semi-color-text-0);
+}
+
+.mp-onto-sidenav-link.is-active {
+  background: var(--semi-color-primary-light-default);
+  color: var(--semi-color-primary);
+  font-weight: 600;
+}
+
+.mp-onto-sidenav-link--top {
+  font-weight: 600;
+}
+
+.mp-onto-sidenav-link-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- 资源详情布局（IA2-2 起接入） ---------- */
+
+.mp-onto-resource-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
+  min-height: 0;
+}
+
+.mp-onto-resource-detail-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- 窄视口（1024px 不遮挡主内容） ---------- */
+/* 子项链接没有图标，纯图标栏会出现空块——窄屏改为收窄保文字（152px），
+   内容区仍有 ~860px；真正的图标式折叠等交互式折叠一起做（非首批阻断）。 */
+@media (max-width: 1024px) {
+  .mp-onto-sidenav {
+    width: 152px;
+    padding: var(--mp-space-3) var(--mp-space-1);
+    gap: var(--mp-space-3);
+  }
+
+  .mp-onto-sidenav-group-label {
+    padding: var(--mp-space-1) var(--mp-space-2);
+  }
+
+  .mp-onto-sidenav-link {
+    padding: var(--mp-space-1) var(--mp-space-2);
+    font-size: 12px;
+  }
+}

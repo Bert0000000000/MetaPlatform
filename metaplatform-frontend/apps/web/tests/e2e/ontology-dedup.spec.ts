@@ -25,7 +25,9 @@ import { test, expect, type Page, type ConsoleMessage } from '@playwright/test';
 import { injectAuth, fetchAccessToken, decodeJwtPayload } from './helpers/auth';
 
 const SCREENSHOT_DIR = 'tests/e2e/screenshots';
-const GATEWAY = process.env.E2E_GATEWAY_URL ?? 'http://localhost:8100/api/v1';
+// 默认走 IPv4 环回：`localhost` 在本机会解析到 ::1，而 Docker 网关只发布在 IPv4，
+// API 请求会挂到 15s 超时（与 vite.config.ts 的 VITE_PROXY_HOST 同一个坑）。
+const GATEWAY = process.env.E2E_GATEWAY_URL ?? 'http://127.0.0.1:8100/api/v1';
 
 /**
  * 触发 React onClick 的兼容函数：dev 模式 Semi Button 的 native onclick 是 noop，
@@ -139,23 +141,45 @@ test.describe('本体创建去重 e2e (MP-DEDUP-01)', () => {
     await page.screenshot({ path: `${SCREENSHOT_DIR}/ontology-dedup-01-initial.png`, fullPage: true });
 
     // 2. 点「新建概念」（sticky header 上的 Semi Button）—— 用 React fiber onClick 绕过
-    await clickByText(page, 'button', '新建概念');
+    // 09-17 起壳按钮文案为「新建本体」（编辑抽屉标题仍是「新建概念（ObjectType）」）
+    await clickByText(page, 'button', '新建本体');
     // FormDrawer (SideSheet) 打开后标题为「新建概念（ObjectType）」
     await expect(page.getByText('新建概念（ObjectType）', { exact: true })).toBeVisible({ timeout: 10_000 });
 
     // 3. 填表：概念名称="客户", slug="customer-merge-via-ui", 领域默认 crm
     await page.locator('input[placeholder="例如：客户"]').fill(`客户_${seedTime}`);
     await page.locator('input[placeholder="例如：customer"]').fill(`customer-ui-${seedTime}`);
-    // 4. 点抽屉的提交按钮。
-    //    注意：ObjectTypeEditorV2Drawer 早已不是 Semi SideSheet（自定义抽屉、无类名），
-    //    旧选择器 '.semi-sidesheet-footer button' 永远匹配不到；这里按真实按钮文案点。
-    await clickByText(page, 'button', '保存（整体 upsert）');
 
-    // 4b. precheck 门禁：租户里已有「客户」，create 会先弹相似候选 Modal。
-    //     选「仍要新建」把这次创建走完（这正是 MP-DEDUP-01 的前半段语义）。
+    // 4. precheck 门禁（已知工作台交互，预存非 IA v2 引入）：概念名失焦会触发相似
+    //    候选 Modal——blur 模式下「仍要新建」只记豁免键不落库。正确动线：先点标题区
+    //    **主动触发失焦**，Modal 出现则点「仍要新建」（记豁免键）。
+    //    precheck 后端有 embed 预算（默认 10s）+ 归一化兜底，Modal 可能要 10s+ 才弹；
+    //    blur 这步没等到也不阻塞——保存路径会再弹一次（届时 payload 已暂存，
+    //    点「仍要新建」直接落库），由 4c 的 wait-for-either 兜住。
+    await page.getByText('新建概念（ObjectType）', { exact: true }).click();
     const stillCreateBtn = page.locator('button').filter({ hasText: '仍要新建' }).first();
-    if (await stillCreateBtn.isVisible().catch(() => false)) {
+    try {
+      await stillCreateBtn.waitFor({ state: 'visible', timeout: 15_000 });
       await clickByText(page, 'button', '仍要新建');
+    } catch {
+      // 未及时弹出（预算内没出候选或慢于窗口）——留给保存路径处理
+    }
+    // 4c. 提交（ObjectTypeEditorV2Drawer 是自定义抽屉、无 Semi 类名，按真实文案点）。
+    //     保存路径若再弹候选 Modal（payload 已暂存），点「仍要新建」即真正落库；
+    //     否则直接等新概念出现在概念表。两路并行等待，先到先处理。
+    await clickByText(page, 'button', '保存（整体 upsert）');
+    const newCell = page.getByRole('cell', { name: `客户_${seedTime}`, exact: true });
+    for (let round = 0; round < 6; round += 1) {
+      const modal = await stillCreateBtn.isVisible().catch(() => false);
+      if (modal) {
+        await clickByText(page, 'button', '仍要新建');
+      }
+      try {
+        await newCell.waitFor({ state: 'visible', timeout: 10_000 });
+        break;
+      } catch {
+        if (round === 5) throw new Error('创建后概念表始终未出现新概念（含 Modal 续接路径）');
+      }
     }
     await page.waitForTimeout(2500);
     await page.screenshot({ path: `${SCREENSHOT_DIR}/ontology-dedup-02-after-create-customer.png`, fullPage: true });
