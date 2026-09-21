@@ -26,6 +26,7 @@ __all__ = [
 
 class Embedder(Protocol):
     def embed(self, text: str) -> list[float]: ...
+
     # 批量接口 embed_many 是**可选**增强（similarity 扫描场景探测 hasattr 使用），
     # 不进 Protocol 以免所有实现被迫实现。
 
