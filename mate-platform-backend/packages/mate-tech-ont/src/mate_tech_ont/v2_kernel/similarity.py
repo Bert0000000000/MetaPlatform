@@ -151,7 +151,7 @@ def search_similar_object_types(
                     if time.monotonic() > deadline:
                         break
                     existing_vecs[i] = embedder.embed(t)
-        except Exception:  # noqa: BLE001 —— embed 任何失败都不阻塞 precheck
+        except Exception:  # embed 任何失败都不阻塞 precheck（预算尽/上游异常都走归一化兜底）
             candidate_vec = None
 
         if candidate_vec is not None:
