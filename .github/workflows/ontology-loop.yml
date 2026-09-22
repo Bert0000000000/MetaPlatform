@@ -89,7 +89,11 @@ jobs:
         run: |
           set -euo pipefail
           # 默认 profile 不含 edge/monitoring/ai/java/deprecated-iam/keycloak
-          docker compose up -d \
+          # 镜像链式依赖：多数服务 Dockerfile FROM mate-api-gateway:dev——
+          # compose 并行 build 时基础镜像尚未产出会去 registry 拉（insufficient_scope）。
+          # 先单独 build 基础镜像，再 up（2026-09-22 根因修正）。
+          docker compose build mate-api-gateway
+          docker compose up -d --build \
             postgres redis neo4j \
             mate-tech-ont mate-tech-dw mate-tech-agent \
             mate-app-copilot mate-app-a2a mate-app-hub \
@@ -140,7 +144,11 @@ jobs:
       - name: Install Playwright + Chromium
         working-directory: metaplatform-frontend
         run: |
-          pnpm install --frozen-lockfile || pnpm install
+          # 与 ci.yml Frontend job 同款：pnpm 11 拒跑未批准的 postinstall
+          # （ERR_PNPM_IGNORED_BUILDS 硬失败）—— --ignore-scripts 装依赖后
+          # 只 rebuild 真正需要 postinstall 的包。
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm rebuild puppeteer esbuild
           pnpm exec playwright install --with-deps chromium
 
       - name: Run ontology-loop e2e (4 specs)
