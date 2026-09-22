@@ -61,7 +61,7 @@ jobs:
     # 栈启动在本机/CI 资源受限（docker-compose 9 服务）。债务登记 2026-09-10
     continue-on-error: true # 债务登记：预存红，不阻塞合并
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -72,6 +72,18 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      # docker-compose.override.yml 是本地开发形态，引用两个 runner 上不存在的
+      # 输入（2026-09-22 根因修正——旧注释把红归为「资源受限」，真因是这两个）：
+      #   1) build context 被重定向到 .tmp-build-context（本地 9P ACL 规避的副本）
+      #      —— 用干净 checkout 的 mate-platform-backend 补一份等价副本；
+      #   2) mate-app-kb 的 env_file: .env.local（本地敏感配置，gitignore）
+      #      —— 置空文件，让 compose 内置默认值生效。
+      - name: Prepare local-only compose inputs
+        run: |
+          set -euo pipefail
+          cp -r mate-platform-backend .tmp-build-context
+          touch .env.local
 
       - name: Bring up ontology-loop stack
         run: |
@@ -112,14 +124,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # corepack 必须在 setup-node 之前：`cache: pnpm` 计算 cache key 时要求
+      # pnpm 已在 PATH（旧顺序 setup-node 在前 → Install Node.js 直接
+      # "Unable to locate executable file: pnpm" —— 2026-09-22 根因修正）
+      - name: Install pnpm
+        run: corepack enable && corepack prepare pnpm@9.15.0 --activate
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: pnpm
-
-      - name: Install pnpm
-        run: corepack enable && corepack prepare pnpm@9.15.0 --activate
 
       - name: Install Playwright + Chromium
         working-directory: metaplatform-frontend
