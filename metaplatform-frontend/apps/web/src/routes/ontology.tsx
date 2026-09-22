@@ -88,10 +88,11 @@ export const ontologyRoutes = (
       <Route path="lineage" element={<OntologyLineagePage />} />
     </Route>
 
-    {/* 对象与查询：对象浏览原样迁入；:rid 详情路由随 IA2-4 落地 */}
+    {/* 对象与查询（IA2-4）：/objects 列表与 /objects/:rid 详情是同一条路由
+        （可选段）——打开/关闭/关系跳转不重挂列表，URL 是详情唯一真相 */}
     <Route path="explore">
       <Route index element={<Navigate to="objects" replace />} />
-      <Route path="objects" element={<ObjectExplorerPage />} />
+      <Route path="objects/:rid?" element={<ObjectExplorerPage />} />
       <Route path="analysis" element={<AnalysisPage />} />
       <Route path="map" element={<MapPage />} />
     </Route>

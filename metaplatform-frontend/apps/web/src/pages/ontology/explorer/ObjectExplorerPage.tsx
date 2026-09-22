@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Descriptions, Input, Tag, Timeline, Toast, Tree } from '@douyinfe/semi-ui';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Copy, Download, ExternalLink, Play, RefreshCw, Search } from 'lucide-react';
 import {
   domainOfObjectType,
@@ -46,6 +46,11 @@ function propertyLabel(p: KernelProperty): string {
  */
 export default function ObjectExplorerPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  // IA2-4 路由驱动详情：URL 段 /ontology/explore/objects/:rid 是「打开中的对象」
+  // 唯一真相（旧 ?id= 深链在下方重定向到段形式）；列表 state 不因打开/关闭详情而重挂。
+  const { rid: ridParam } = useParams<{ rid?: string }>();
 
   const [types, setTypes] = useState<KernelObjectType[]>([]);
   const [typesLoading, setTypesLoading] = useState(true);
@@ -58,15 +63,18 @@ export default function ObjectExplorerPage() {
   const [indsLoading, setIndsLoading] = useState(false);
   const [indsError, setIndsError] = useState('');
   const [keyword, setKeyword] = useState(searchParams.get('q') ?? '');
-  const [page, setPage] = useState(1);
+  const [page, setPageState] = useState(() => {
+    const raw = Number(searchParams.get('page') ?? '1');
+    return Number.isFinite(raw) && raw > 0 ? raw : 1;
+  });
   const [selectedKeys, setSelectedKeys] = useState<Array<string | number>>([]);
 
   const [detail, setDetail] = useState<KernelIndividual | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [relations, setRelations] = useState<SearchAroundGroup[]>([]);
   const [audit, setAudit] = useState<ActionAuditRow[]>([]);
-  /** 沿关系跳转的返回栈（面包屑）：栈顶是来处。 */
-  const [trail, setTrail] = useState<KernelIndividual[]>([]);
+  /** 本次会话内是否发生过关系跳转（决定 Sheet 的「返回」按钮走 history.back）。 */
+  const jumpedRef = useRef(false);
   const [actionOpen, setActionOpen] = useState(false);
   const [actionProposalId, setActionProposalId] = useState<string | null>(null);
 
@@ -98,6 +106,11 @@ export default function ObjectExplorerPage() {
     if (!selectedRid && types.length > 0) setSelectedRid(types[0].rid);
   }, [selectedRid, types]);
 
+  /** 页码受控（IA2-4：进 URL，由同步 effect 写 ?page=）。 */
+  const setPage = useCallback((next: number) => {
+    setPageState(next);
+  }, []);
+
   // ── 实例清单（沿用既有做法：一次取 LOAD_LIMIT 条，客户端过滤 + 分页）──
   useEffect(() => {
     if (!selectedRid) {
@@ -127,7 +140,7 @@ export default function ObjectExplorerPage() {
     };
   }, [selectedRid]);
 
-  // 同步 URL（?class= / ?q=）便于「新标签页打开」深链
+  // 同步 URL（?class= / ?q= / ?page=）便于「新标签页打开」深链（IA2-4：页码进 URL）
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
     if (selectedRid && selectedRid !== next.get('class')) next.set('class', selectedRid);
@@ -136,30 +149,59 @@ export default function ObjectExplorerPage() {
     } else {
       next.delete('q');
     }
+    if (page > 1) next.set('page', String(page));
+    else next.delete('page');
     if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
     // searchParams 由本次写入驱动，无需作为依赖
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRid, keyword]);
+  }, [selectedRid, keyword, page]);
 
-  // 深链 ?id=<rid> → 直接打开详情
+  // 旧深链 ?id=<rid>（IA2-1 之前的形态）→ replace 到段路由 /objects/:rid
   useEffect(() => {
     const id = searchParams.get('id');
     if (!id) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete('id');
+    navigate(
+      { pathname: `/ontology/explore/objects/${encodeURIComponent(id)}`, search: next.toString() },
+      { replace: true },
+    );
+    // 仅首次挂载迁移旧深链
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── IA2-4 路由驱动详情：:rid 段是「打开中的对象」唯一真相 ──
+  useEffect(() => {
+    if (!ridParam) {
+      setDetail(null);
+      setRelations([]);
+      setAudit([]);
+      jumpedRef.current = false;
+      return;
+    }
     let active = true;
     (async () => {
       try {
-        const one = await getIndividual(id);
-        if (active) setDetail(one);
+        const one = await getIndividual(ridParam);
+        if (active) {
+          setDetail(one);
+          void reloadDetail(one);
+        }
       } catch {
-        // 深链失效（实例被删/跨租户）：静默，不打断浏览
+        // 深链失效（实例被删/跨租户）：清空详情回到列表视图，不打断浏览
+        if (active) {
+          setDetail(null);
+          setRelations([]);
+          setAudit([]);
+        }
       }
     })();
     return () => {
       active = false;
     };
-    // 仅在首次挂载时解析深链
+    // ridParam 驱动；reloadDetail 是稳定引用
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [ridParam]);
 
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
@@ -249,50 +291,44 @@ export default function ObjectExplorerPage() {
     }
   }, []);
 
-  // ── 详情浮层数据 ──
+  // ── 详情浮层数据（IA2-4：打开/跳转/返回/关闭全部走路由，浏览器历史天然可返回）──
+  /** 打开对象：URL 追加 /:rid 段（保留列表 query；详情数据由 ridParam 效应加载）。 */
   const openDetail = useCallback(
     (row: KernelIndividual) => {
-      setDetail(row);
-      setTrail([]);
-      void reloadDetail(row);
+      const next = new URLSearchParams(searchParams);
+      next.delete('page'); // 打开详情不看列表页码
+      navigate({
+        pathname: `/ontology/explore/objects/${encodeURIComponent(row.rid)}`,
+        search: next.toString(),
+      });
     },
-    [reloadDetail],
+    [navigate, searchParams],
   );
 
-  /** 沿关系跳到关联对象：把当前对象压栈，便于返回。 */
+  /** 沿关系跳到关联对象：URL 换 :rid 段（push 历史，浏览器返回即回到上一对象）。 */
   const openRelated = useCallback(
-    async (peerRid: string) => {
+    (peerRid: string) => {
       if (!detail || !peerRid) return;
-      const from = detail;
-      try {
-        const one = await getIndividual(peerRid);
-        setTrail((prev) => [...prev, from]);
-        setDetail(one);
-        void reloadDetail(one);
-      } catch (e) {
-        Toast.error(e instanceof Error ? e.message : '关联对象打开失败');
-      }
+      jumpedRef.current = true;
+      const next = new URLSearchParams(searchParams);
+      navigate({
+        pathname: `/ontology/explore/objects/${encodeURIComponent(peerRid)}`,
+        search: next.toString(),
+      });
     },
-    [detail, reloadDetail],
+    [detail, navigate, searchParams],
   );
 
-  /** 返回上一个对象（出栈）。 */
+  /** 返回上一个对象（浏览器历史；未跳转过则回列表）。 */
   const goBack = useCallback(() => {
-    setTrail((prev) => {
-      if (prev.length === 0) return prev;
-      const prevItem = prev[prev.length - 1];
-      setDetail(prevItem);
-      void reloadDetail(prevItem);
-      return prev.slice(0, -1);
-    });
-  }, [reloadDetail]);
+    navigate(-1);
+  }, [navigate]);
 
+  /** 关闭详情：去掉 /:rid 段回列表（保留 class/q）。 */
   const closeDetail = useCallback(() => {
-    setDetail(null);
-    setRelations([]);
-    setAudit([]);
-    setTrail([]);
-  }, []);
+    const next = new URLSearchParams(searchParams);
+    navigate({ pathname: '/ontology/explore/objects', search: next.toString() });
+  }, [navigate, searchParams]);
 
   const exportCsv = useCallback(() => {
     const props = selectedType?.properties ?? [];
@@ -475,25 +511,12 @@ export default function ObjectExplorerPage() {
       </SplitPane>
 
       <SheetDetail
-        title={
-          trail.length > 0 ? (
-            <span className="mp-explorer-trail">
-              {trail.map((t) => (
-                <span key={t.rid} className="mp-explorer-trail-step">
-                  {t.primary_key || t.rid}
-                </span>
-              ))}
-              <span className="mp-explorer-trail-current">{detail?.primary_key || detail?.rid}</span>
-            </span>
-          ) : (
-            '对象详情'
-          )
-        }
+        title="对象详情"
         open={detail !== null}
         onClose={closeDetail}
         footer={
           <>
-            {trail.length > 0 ? (
+            {jumpedRef.current ? (
               <Button
                 icon={<ArrowLeft size={15} strokeWidth={1.5} />}
                 onClick={goBack}
@@ -525,9 +548,13 @@ export default function ObjectExplorerPage() {
               icon={<ExternalLink size={15} strokeWidth={1.5} />}
               onClick={() => {
                 if (!detail) return;
-                const url = new URL(window.location.href);
-                url.searchParams.set('class', detail.class_rid);
-                url.searchParams.set('id', detail.rid);
+                // IA2-4：分享 URL 即段路由——刷新/直达同一 Sheet 容器
+                const next = new URLSearchParams(searchParams);
+                next.set('class', detail.class_rid);
+                const url = new URL(
+                  `/ontology/explore/objects/${encodeURIComponent(detail.rid)}?${next.toString()}`,
+                  window.location.origin,
+                );
                 window.open(url.toString(), '_blank', 'noopener');
               }}
             >

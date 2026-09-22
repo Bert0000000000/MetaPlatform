@@ -52,9 +52,13 @@ export default function OntologyDomainShell({ children }: { children: ReactNode 
   // 路由态随 location 变化——这是"宿主页换 tab / 深入子页后上下文不失真"的落点。
   useEffect(() => {
     const route = resolveRouteView(location.pathname);
-    // 深链 `?id=<rid>` 是"打开中的记录"，进 openRecordIds；列表**选中**由
-    // ObjectExplorerPage 单独发布（选中 ≠ 打开，两者语义不同）。
-    const openRid = new URLSearchParams(location.search).get('id');
+    // "打开中的记录"进 openRecordIds（ADR-0065 S2）：IA2-4 起从段路由
+    // /objects/:rid 提取（旧 `?id=` 深链在页面内已 replace 到段形式，这里兜底兼容）；
+    // 列表**选中**由 ObjectExplorerPage 单独发布（选中 ≠ 打开，两者语义不同）。
+    const segRid = location.pathname.match(/^\/ontology\/explore\/objects\/([^/]+)/)?.[1];
+    const openRid = segRid
+      ? decodeURIComponent(segRid)
+      : new URLSearchParams(location.search).get('id');
     setOntologyNavigation({
       view: route.view,
       tab: route.tab,
