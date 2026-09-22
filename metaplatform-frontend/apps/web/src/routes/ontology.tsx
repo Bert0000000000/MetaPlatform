@@ -4,7 +4,9 @@ import '@/pages/ontology/ontology.css';
 import OntologyWorkspaceLayout from '@/pages/ontology/layout/OntologyWorkspaceLayout';
 import OverviewPage from '@/pages/ontology/overview/OverviewPage';
 import ObjectExplorerPage from '@/pages/ontology/explorer/ObjectExplorerPage';
-import DatacenterPage from '@/pages/ontology/datacenter/DatacenterPage';
+import ObjectMappingsPage from '@/pages/ontology/data/mappings/ObjectMappingsPage';
+import SyncJobsPage from '@/pages/ontology/data/sync/SyncJobsPage';
+import OntologyLineagePage from '@/pages/ontology/data/lineage/OntologyLineagePage';
 import OpsPage from '@/pages/ontology/ops/OpsPage';
 import ObjectTypesPage from '@/pages/ontology/model/object-types/ObjectTypesPage';
 import ObjectTypeDetailPage from '@/pages/ontology/model/object-types/ObjectTypeDetailPage';
@@ -77,12 +79,13 @@ export const ontologyRoutes = (
       <Route path="validation" element={<ModelValidationPage />} />
     </Route>
 
-    {/* 数据映射：ingest=对象映射（接入+背挂数据源+同步健康）、lineage=本体血缘；
-        sync 独立页随 IA2-3 拆出后再注册 */}
+    {/* 数据映射（IA2-3 已拆分）：对象映射 / 同步任务 / 本体血缘独立成页；
+        全局资产清单（AssetsInventoryPage）移出本体导航，归宿数据与治理域 */}
     <Route path="data">
       <Route index element={<Navigate to="mappings" replace />} />
-      <Route path="mappings" element={<DatacenterPage initialView="ingest" />} />
-      <Route path="lineage" element={<DatacenterPage initialView="lineage" />} />
+      <Route path="mappings" element={<ObjectMappingsPage />} />
+      <Route path="sync" element={<SyncJobsPage />} />
+      <Route path="lineage" element={<OntologyLineagePage />} />
     </Route>
 
     {/* 对象与查询：对象浏览原样迁入；:rid 详情路由随 IA2-4 落地 */}

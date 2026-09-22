@@ -122,7 +122,7 @@ export const ONTOLOGY_NAV: OntologyNavItem[] = [
         key: 'sync',
         label: '同步任务',
         path: '/ontology/data/sync',
-        status: 'planned',
+        status: 'active',
         keywords: 'sync 同步任务 同步健康',
       },
       {

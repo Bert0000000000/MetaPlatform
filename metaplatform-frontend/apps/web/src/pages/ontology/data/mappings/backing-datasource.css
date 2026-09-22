@@ -1,0 +1,46 @@
+/*
+ * 背挂数据源声明表单（IA2-3 随 BackingDatasourcePanel 自 datacenter.css 拆出）。
+ */
+
+/* ---------- 数据接入工具条 ---------- */
+.mp-dc-ingest-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--mp-space-3);
+}
+
+.mp-dc-ingest-select {
+  min-width: 320px;
+}
+
+/* ---------- 声明数据源表单 ---------- */
+.mp-dc-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
+}
+
+.mp-dc-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-2);
+}
+
+.mp-dc-field-label {
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+
+.mp-dc-map-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--mp-space-2);
+}
+
+.mp-dc-map-arrow {
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+}

@@ -1,0 +1,23 @@
+/*
+ * 数据面分节样式（IA2-3 自 DatacenterPage 拆出，sync / mappings 共用）。
+ */
+
+/* ---------- 分节 ---------- */
+.mp-dc-section + .mp-dc-section {
+  margin-top: var(--mp-space-6);
+  padding-top: var(--mp-space-5);
+  border-top: 1px solid var(--semi-color-border);
+}
+
+.mp-dc-section-title {
+  margin: 0 0 var(--mp-space-1);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+}
+
+.mp-dc-section-desc {
+  margin: 0 0 var(--mp-space-3);
+  font-size: 12px;
+  color: var(--semi-color-text-3);
+}
