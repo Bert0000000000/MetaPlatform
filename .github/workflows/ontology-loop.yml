@@ -70,13 +70,15 @@ jobs:
           sudo lsof -ti:8100 | xargs -r sudo kill -9 2>/dev/null || true
           sudo lsof -ti:5432 | xargs -r sudo kill -9 2>/dev/null || true
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
+      # 不装 docker/setup-buildx-action：它创建 docker-container driver 的
+      # builder，build 产物留在 builder 内部 store **不进 daemon**——后续
+      # up --build 解析 FROM mate-api-gateway:dev 时 daemon 无此镜像 → 去
+      # registry 拉 → insufficient_scope（2026-09-22 根因修正）。用默认
+      # docker driver（产物直接落 daemon），先 build 链式基础镜像再 up。
       # docker-compose.override.yml 是本地开发形态，引用两个 runner 上不存在的
-      # 输入（2026-09-22 根因修正——旧注释把红归为「资源受限」，真因是这两个）：
-      #   1) build context 被重定向到 .tmp-build-context（本地 9P ACL 规避的副本）
-      #      —— 用干净 checkout 的 mate-platform-backend 补一份等价副本；
+      # 输入（旧注释把红归为「资源受限」，真因是这两个）：
+      #   1) build context 被重定向到 .tmp-build-context（本地 9P ACL 规避的
+      #      副本）—— 用干净 checkout 的 mate-platform-backend 补等价副本；
       #   2) mate-app-kb 的 env_file: .env.local（本地敏感配置，gitignore）
       #      —— 置空文件，让 compose 内置默认值生效。
       - name: Prepare local-only compose inputs
