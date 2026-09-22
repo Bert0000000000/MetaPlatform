@@ -86,9 +86,22 @@ jobs:
           set -euo pipefail
           cp -r mate-platform-backend .tmp-build-context
           touch .env.local
-          # CI 无 .env（KEYCLOAK_CLIENT_SECRET 等 required 变量）——空值兜底
-          # 让 compose 插值通过（对齐 python-ci「Validate compose」的做法）
-          printf '%s\n%s\n%s\n%s\n' "KEYCLOAK_CLIENT_SECRET=" "SERVICE_CLIENT_SECRET=" "POSTGRES_USER=meta" "POSTGRES_PASSWORD=meta" > .env
+          # CI 无本地 .env——KEYCLOAK_CLIENT_SECRET 从仓库内的 realm 导入文件
+          # 提取（keycloak 服务已 --import-realm 该文件，secret 与 realm 内
+          # client 定义一致，本机 .env 用的也是同一值）。没有它，全部
+          # LEGACY_LOGIN_COMPAT=false 的服务过不了启动守卫（2026-09-22 根因：
+          # 空值 = 缺失，全家 Restarting(1)）。OPENAI_API_KEY 给 placeholder
+          # （rag 等启动期需要非空，同 build-services.bat）。
+          CI_SECRET=$(python3 -c "
+          import json
+          realm = json.load(open('infra/keycloak/realm-mate.json'))
+          print(next(c['secret'] for c in realm['clients'] if c['clientId'] == 'metaplatform-backend'))")
+          printf '%s\n%s\n%s\n%s\n%s\n' \
+            "KEYCLOAK_CLIENT_SECRET=$CI_SECRET" \
+            "SERVICE_CLIENT_SECRET=" \
+            "OPENAI_API_KEY=placeholder" \
+            "POSTGRES_USER=meta" \
+            "POSTGRES_PASSWORD=meta" > .env
 
       - name: Bring up ontology-loop stack
         run: |
