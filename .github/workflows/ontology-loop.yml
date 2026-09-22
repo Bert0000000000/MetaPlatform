@@ -124,16 +124,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # corepack 必须在 setup-node 之前：`cache: pnpm` 计算 cache key 时要求
-      # pnpm 已在 PATH（旧顺序 setup-node 在前 → Install Node.js 直接
-      # "Unable to locate executable file: pnpm" —— 2026-09-22 根因修正）
+      # 与 ci.yml Frontend job 同款：Node 22 + npm 全局装 pnpm@11.15.1。
+      # （旧写法 corepack + Node 20 的坑：setup-node 的 cache: pnpm 触发 corepack
+      # 语义解析拉 pnpm@11 → Node 20 无 node:sqlite 内建模块直接崩，
+      # 2026-09-22 实测「Unable to locate executable file: pnpm」即此链。）
       - name: Install pnpm
-        run: corepack enable && corepack prepare pnpm@9.15.0 --activate
+        run: npm install -g pnpm@11.15.1
 
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: pnpm
 
       - name: Install Playwright + Chromium
