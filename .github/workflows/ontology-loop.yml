@@ -61,7 +61,7 @@ jobs:
     # 栈启动在本机/CI 资源受限（docker-compose 9 服务）。债务登记 2026-09-10
     continue-on-error: true # 债务登记：预存红，不阻塞合并
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -70,14 +70,48 @@ jobs:
           sudo lsof -ti:8100 | xargs -r sudo kill -9 2>/dev/null || true
           sudo lsof -ti:5432 | xargs -r sudo kill -9 2>/dev/null || true
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      # 不装 docker/setup-buildx-action：它创建 docker-container driver 的
+      # builder，build 产物留在 builder 内部 store **不进 daemon**——后续
+      # up --build 解析 FROM mate-api-gateway:dev 时 daemon 无此镜像 → 去
+      # registry 拉 → insufficient_scope（2026-09-22 根因修正）。用默认
+      # docker driver（产物直接落 daemon），先 build 链式基础镜像再 up。
+      # docker-compose.override.yml 是本地开发形态，引用两个 runner 上不存在的
+      # 输入（旧注释把红归为「资源受限」，真因是这两个）：
+      #   1) build context 被重定向到 .tmp-build-context（本地 9P ACL 规避的
+      #      副本）—— 用干净 checkout 的 mate-platform-backend 补等价副本；
+      #   2) mate-app-kb 的 env_file: .env.local（本地敏感配置，gitignore）
+      #      —— 置空文件，让 compose 内置默认值生效。
+      - name: Prepare local-only compose inputs
+        run: |
+          set -euo pipefail
+          cp -r mate-platform-backend .tmp-build-context
+          touch .env.local
+          # CI 无本地 .env——KEYCLOAK_CLIENT_SECRET 从仓库内的 realm 导入文件
+          # 提取（keycloak 服务已 --import-realm 该文件，secret 与 realm 内
+          # client 定义一致，本机 .env 用的也是同一值）。没有它，全部
+          # LEGACY_LOGIN_COMPAT=false 的服务过不了启动守卫（2026-09-22 根因：
+          # 空值 = 缺失，全家 Restarting(1)）。OPENAI_API_KEY 给 placeholder
+          # （rag 等启动期需要非空，同 build-services.bat）。
+          CI_SECRET=$(python3 -c "
+          import json
+          realm = json.load(open('infra/keycloak/realm-mate.json'))
+          print(next(c['secret'] for c in realm['clients'] if c['clientId'] == 'metaplatform-backend'))")
+          printf '%s\n%s\n%s\n%s\n%s\n' \
+            "KEYCLOAK_CLIENT_SECRET=$CI_SECRET" \
+            "SERVICE_CLIENT_SECRET=" \
+            "OPENAI_API_KEY=placeholder" \
+            "POSTGRES_USER=meta" \
+            "POSTGRES_PASSWORD=meta" > .env
 
       - name: Bring up ontology-loop stack
         run: |
           set -euo pipefail
           # 默认 profile 不含 edge/monitoring/ai/java/deprecated-iam/keycloak
-          docker compose up -d \
+          # 镜像链式依赖：多数服务 Dockerfile FROM mate-api-gateway:dev——
+          # compose 并行 build 时基础镜像尚未产出会去 registry 拉（insufficient_scope）。
+          # 先单独 build 基础镜像，再 up（2026-09-22 根因修正）。
+          docker compose build mate-api-gateway
+          docker compose up -d --build \
             postgres redis neo4j \
             mate-tech-ont mate-tech-dw mate-tech-agent \
             mate-app-copilot mate-app-a2a mate-app-hub \
@@ -92,9 +126,10 @@ jobs:
       - name: Dump failed-container logs on timeout
         if: failure()
         run: |
-          docker compose ps
+          docker compose ps -a || true
           for svc in postgres redis neo4j mate-tech-ont mate-tech-dw mate-tech-agent \
-                     mate-app-copilot mate-app-a2a mate-app-hub mate-api-gateway; do
+                     mate-app-copilot mate-app-a2a mate-app-hub mate-api-gateway \
+                     mate-tech-rag mate-tech-llmgw mate-tech-mcp mate-tech-msg; do
             echo "===== logs: $svc ====="
             docker compose logs --tail=200 "$svc" || true
           done
@@ -112,19 +147,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 与 ci.yml Frontend job 同款：Node 22 + npm 全局装 pnpm@11.15.1。
+      # （旧写法 corepack + Node 20 的坑：setup-node 的 cache: pnpm 触发 corepack
+      # 语义解析拉 pnpm@11 → Node 20 无 node:sqlite 内建模块直接崩，
+      # 2026-09-22 实测「Unable to locate executable file: pnpm」即此链。）
+      - name: Install pnpm
+        run: npm install -g pnpm@11.15.1
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: pnpm
-
-      - name: Install pnpm
-        run: corepack enable && corepack prepare pnpm@9.15.0 --activate
 
       - name: Install Playwright + Chromium
         working-directory: metaplatform-frontend
         run: |
-          pnpm install --frozen-lockfile || pnpm install
+          # 与 ci.yml Frontend job 同款：pnpm 11 拒跑未批准的 postinstall
+          # （ERR_PNPM_IGNORED_BUILDS 硬失败）—— --ignore-scripts 装依赖后
+          # 只 rebuild 真正需要 postinstall 的包。
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm rebuild puppeteer esbuild
           pnpm exec playwright install --with-deps chromium
 
       - name: Run ontology-loop e2e (4 specs)

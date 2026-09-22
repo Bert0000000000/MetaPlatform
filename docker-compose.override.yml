@@ -45,7 +45,7 @@ services:
   mate-tech-agent:
     build:
       context: ./.tmp-build-context
-      dockerfile: Dockerfile.agent
+      dockerfile: packages/mate-tech-agent/Dockerfile
   mate-tech-ont:
     build:
       context: ./.tmp-build-context
@@ -76,7 +76,7 @@ services:
   mate-app-kb:
     build:
       context: ./.tmp-build-context
-      dockerfile: Dockerfile.app-kb
+      dockerfile: packages/mate-app-kb/Dockerfile
     # dev-only:跨容器 kb→rag 调用的快捷身份(与 dev_server 的 dev_token 同机制;
     # 生产走 Keycloak 服务身份)。token 放 .env.local(已 gitignore)。
     env_file:
