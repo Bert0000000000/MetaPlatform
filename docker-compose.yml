@@ -453,7 +453,7 @@ services:
     <<: [*restart, *logging]
     build:
       context: ./mate-platform-backend
-      dockerfile: Dockerfile.agent
+      dockerfile: packages/mate-tech-agent/Dockerfile
     image: mate-tech-agent:dev
     container_name: mate-tech-agent
     environment:
@@ -495,7 +495,7 @@ services:
     <<: [*restart, *logging]
     build:
       context: ./mate-platform-backend
-      dockerfile: Dockerfile.app-kb
+      dockerfile: packages/mate-app-kb/Dockerfile
     image: mate-app-kb:dev
     container_name: mate-app-kb
     environment:
