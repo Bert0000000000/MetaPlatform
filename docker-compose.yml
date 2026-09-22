@@ -812,7 +812,7 @@ services:
       ONT_HTTP_BASE: http://mate-tech-ont:8007
       ORDER_REVIEW_THRESHOLD_CENTS: ${ORDER_REVIEW_THRESHOLD_CENTS:-100000}
       SERVICE_CLIENT_ID: ${SERVICE_CLIENT_ID:-metaplatform-backend}
-      SERVICE_CLIENT_SECRET: ${SERVICE_CLIENT_SECRET:-}
+      SERVICE_CLIENT_SECRET: ${SERVICE_CLIENT_SECRET:-${KEYCLOAK_CLIENT_SECRET:-}}
       MCP_URL: http://mate-tech-mcp:8081
       A2A_URL: http://mate-app-a2a:8502
       MATE_DB_URL: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_orchestrator
