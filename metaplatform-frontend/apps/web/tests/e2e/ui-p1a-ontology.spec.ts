@@ -5,7 +5,7 @@
  * 已随 09-17 IA 重排过期（文案漂移红）并再度随 IA v2 作废。本文件现在覆盖：
  *  - 工作区形态：左侧导航渲染、全局横向 PageTabs 不渲染；
  *  - 对象浏览：类型树 + 实例表 + 点击行弹非模态 SheetDetail；
- *  - 数据映射：接入 / 血缘 / 资产视图切换（容器内部 tab，IA2-3 拆分）；
+ *  - 数据映射：三子页独立成页（IA2-3 拆分）；
  *  - 类型建模：7 个子 tab 带真实计数（容器内部 tab，IA2-2 拆分）；
  *  - 发布与治理（草稿）：OpsPage 三个真实运维面（IA2-5/2-6 拆分）；
  *  - 浅 / 深双主题截图。
@@ -93,20 +93,21 @@ test.describe('UI-P1a · 本体域（IA v2 工作区）', () => {
     await expect(sheet).toBeHidden();
   });
 
-  test('数据映射：接入 / 血缘 / 资产视图切换', async ({ page }) => {
+  test('数据映射：三子页独立成页（IA2-3 拆分，容器视图 Tab 消亡）', async ({ page }) => {
+    // 对象映射：背挂数据源声明工具条在工作
     await gotoApp(page, '/ontology/data/mappings');
-
-    // 容器内部视图 tab（IA2-3 拆分为独立路由后本断言退役）
-    const tabs = page.locator('.mp-onto-shell .semi-tabs-tab');
-    await expect(tabs.filter({ hasText: '数据接入' })).toBeVisible({ timeout: 20_000 });
     await expect(page.locator('.mp-dc-ingest-bar')).toBeVisible({ timeout: 20_000 });
 
+    // 同步任务：健康快照表独立到达（原「数据接入」下半区升格）
+    await gotoApp(page, '/ontology/data/sync');
+    await expect(page.locator('.mp-tablepro, .mp-empty').first()).toBeVisible({ timeout: 20_000 });
+
     // 血缘：分层 DAG（有登记数据时出节点，否则空态——二选一）
-    await tabs.filter({ hasText: '数据血缘' }).click();
+    await gotoApp(page, '/ontology/data/lineage');
     await expect(page.locator('.mp-graph-ln-node, .mp-empty').first()).toBeVisible({ timeout: 20_000 });
 
-    await tabs.filter({ hasText: '资产清单' }).click();
-    await expect(page.locator('.mp-tablepro, .mp-empty').first()).toBeVisible({ timeout: 20_000 });
+    // 容器时代的三个内部视图 Tab 不复存在（详细断言在 ontology-ia-v2-data-flow）
+    await expect(page.locator('.mp-onto-shell .semi-tabs-bar-button')).toHaveCount(0);
   });
 
   test('语义模型：基元独立成页，公理计数回归锁保留（IA2-2 拆分）', async ({ page }) => {
