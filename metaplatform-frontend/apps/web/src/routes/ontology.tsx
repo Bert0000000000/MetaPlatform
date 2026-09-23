@@ -7,7 +7,13 @@ import ObjectExplorerPage from '@/pages/ontology/explorer/ObjectExplorerPage';
 import ObjectMappingsPage from '@/pages/ontology/data/mappings/ObjectMappingsPage';
 import SyncJobsPage from '@/pages/ontology/data/sync/SyncJobsPage';
 import OntologyLineagePage from '@/pages/ontology/data/lineage/OntologyLineagePage';
-import OpsPage from '@/pages/ontology/ops/OpsPage';
+import DraftsPage from '@/pages/ontology/governance/drafts/DraftsPage';
+import ReleasesPage from '@/pages/ontology/governance/releases/ReleasesPage';
+import UsagePage from '@/pages/ontology/governance/usage/UsagePage';
+import LintPage from '@/pages/ontology/governance/lint/LintPage';
+import SecurityPage from '@/pages/ontology/governance/security/SecurityPage';
+import ImportExportPage from '@/pages/ontology/governance/import-export/ImportExportPage';
+import AuditPage from '@/pages/ontology/governance/audit/AuditPage';
 import ObjectTypesPage from '@/pages/ontology/model/object-types/ObjectTypesPage';
 import ObjectTypeDetailPage from '@/pages/ontology/model/object-types/ObjectTypeDetailPage';
 import LinkTypesPage from '@/pages/ontology/model/link-types/LinkTypesPage';
@@ -34,7 +40,6 @@ import ActionDesignerPage from '@/pages/ontology/logic/designer/ActionDesignerPa
  * 尚未拆出的页面（model/validation、data/sync、explore/objects/:rid、
  * logic/actions/:rid 等）**不注册**——没有路由就没有空壳页（设计规格 §2.5）。
  */
-const GovernancePage = lazy(() => import('@/pages/ontology/GovernancePage'));
 const AnalysisPage = lazy(() => import('@/pages/ontology/AnalysisPage'));
 const MapPage = lazy(() => import('@/pages/ontology/MapPage'));
 
@@ -115,13 +120,17 @@ export const ontologyRoutes = (
       <Route path="runs" element={<ActionRunsPage />} />
     </Route>
 
-    {/* 发布与治理：drafts=OpsPage 的 Schema WIP 草稿面（release tab）；
-        releases 暂挂 GovernancePage（branch/diff/rollback 等，IA2-6 拆分）；
-        usage/lint/security/import-export/audit 随 IA2-6 逐个拆出后注册 */}
+    {/* 发布与治理（IA2-6 已拆分）：七子页独立成页；Action 审计明细在
+        logic/runs（唯一权威页），audit 只做平台级汇总；Agent 指标已删（§7.6） */}
     <Route path="governance">
       <Route index element={<Navigate to="drafts" replace />} />
-      <Route path="drafts" element={<OpsPage initialTab="release" />} />
-      <Route path="releases" element={<GovernancePage />} />
+      <Route path="drafts" element={<DraftsPage />} />
+      <Route path="releases" element={<ReleasesPage />} />
+      <Route path="usage" element={<UsagePage />} />
+      <Route path="lint" element={<LintPage />} />
+      <Route path="security" element={<SecurityPage />} />
+      <Route path="import-export" element={<ImportExportPage />} />
+      <Route path="audit" element={<AuditPage />} />
     </Route>
   </Route>
 );
