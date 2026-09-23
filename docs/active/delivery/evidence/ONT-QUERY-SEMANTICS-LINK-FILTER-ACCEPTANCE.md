@@ -35,7 +35,7 @@
 | `v2_kernel/pg_repo.py` | `list_link_instances` 增 `link_type_rid/src/dst/limit/offset`（SQL 下推 + 稳定 `ORDER BY rid`）；新增 `count_link_instances_by_type`（GROUP BY） |
 | `v2_kernel/api.py` | `GET /link-instances` 补 5 参数 + 跨租户 403 + limit/offset 422；新增 `GET /link-instances/stats` |
 | `contracts/openapi/services/ont.yaml` | GET 补参数；新增 stats path |
-| `contracts/openapi/platform.yaml` / `generated/bundled.yaml` | 生成物重建（`build_platform.py` + `redocly bundle`） |
+| `contracts/openapi/platform.yaml` | 生成物重建（`build_platform.py`）—— `generated/bundled.yaml` 是**构建产物**（`contracts/openapi/generated/` 已被 gitignore），不入库 |
 | 前端 `api/ont/kernel.ts` | `listLinkInstances(params)` / `LinkInstanceStats` / `getLinkInstanceStats()` |
 | 前端 `pages/ontology/model/link-types/LinkTypesPage.tsx` | 实例数改服务端聚合；抽屉改**服务端过滤 + 分页**（不再全量下载） |
 
@@ -95,3 +95,4 @@
 | ga-013-networkpolicy | 13 NetworkPolicy 缺失 = prod 不通过 | N/A 无网络策略改动 |
 
 **证据**：本文件。**命令**：见 §4 测试表。
+**commit**：`4b074e5b`（实现 + 契约 + 前端）、`5517ed2d`（测试 6 项）、`ea7e5185`（ADR + 本验收证据）——PR #90。
