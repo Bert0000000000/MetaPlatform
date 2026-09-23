@@ -74,6 +74,14 @@ _TENANT_CTX: contextvars.ContextVar[str | None] = contextvars.ContextVar(
 )
 
 
+class ModelValidationUnavailable(RuntimeError):
+    """MODEL-WRITE-ATOMICITY：模型一致性校验**所需读取失败** → fail-closed。
+
+    语义：无法确认接口/引用一致性时**不得视为通过**（与「校验没跑=通过」区分）。
+    API 层翻译为 503（依赖不可用，可重试），而不是 422（调用方错误）。
+    """
+
+
 class SlugConflictError(Exception):
     """MP-DEDUP-01：DB UNIQUE 冲突 on (tenant_id, slug) —— API 翻译为 409。
 
@@ -1410,40 +1418,42 @@ class PgOntologyRepository(OntologyRepository):
                             ),
                         ) from e
                     raise
+                # EXP-01：parent_class → subclass 公理与类型行**同一事务**写入；
+                # 任一失败 → 整体回滚（不得「先提交类型再吞掉公理异常」）。
+                self._sync_parent_axiom(cur, row)
             conn.commit()
-            # EXP-01：parent_class → subclass 公理自动同步（单一事实源）。
-            # 声明 parent 即启用公理；清空 parent 即禁用旧公理（不删记录，留审计）。
-            # 公理 rid 由类型 rid 派生（obj → ax.parent 段替换），满足 ClassRef 正则。
-            try:
-                _head, _t, _kind, _rest = row["rid"].split(".", 3)
-                ax_rid = f"{_head}.{_t}.ax.parent.{_rest}"
-                if row["parent_class"]:
-                    self.upsert_axiom_record(
-                        ax_rid,
-                        "subclass",
-                        [row["rid"], row["parent_class"]],
-                        rule_ref="parent_class",
-                        tenant_id=row["tenant_id"],
-                        enabled=True,
-                    )
-                else:
-                    # F9：无父类时**不得**写空串 operand —— 它违反 ClassRef rid
-                    # 正则，`_row_to_ax` 读回即抛 ValueError（/axioms 恒 500）。
-                    # 禁用公理只需自身 rid 即可表达"暂无父类"。
-                    self.upsert_axiom_record(
-                        ax_rid,
-                        "subclass",
-                        [row["rid"]],
-                        rule_ref="parent_class",
-                        tenant_id=row["tenant_id"],
-                        enabled=False,
-                    )
-            except Exception:
-                # 公理同步失败不阻断类型落库（G21 查询自然退化为精确匹配）
-                pass
             return ot
+        except Exception:
+            # 类型行/接口校验/公理任一失败 → 整体回滚（原子性）
+            conn.rollback()
+            raise
         finally:
             conn.close()
+
+    def _sync_parent_axiom(self, cur: Any, row: dict[str, Any]) -> None:
+        """EXP-01：parent_class → subclass 公理（与类型行**同一事务**，单一事实源）。
+
+        - 有父类 → 启用公理（operands=[self, parent]）；
+        - 无父类 → 禁用旧公理（operands=[self]；F9：不写空串 operand，否则
+          `_row_to_ax` 读回抛 ValueError、/axioms 恒 500）。
+
+        公理 rid 由类型 rid 派生（`obj` → `ax.parent`）。rid 形态不支持派生时
+        跳过（无公理可写，属结构 no-op，非吞异常）。失败由调用方回滚整个事务。
+        """
+        parts = row["rid"].split(".", 3)
+        if len(parts) != 4:
+            return
+        ax_rid = f"{parts[0]}.{parts[1]}.ax.parent.{parts[3]}"
+        parent = row["parent_class"]
+        operands = [row["rid"], parent] if parent else [row["rid"]]
+        cur.execute(
+            """INSERT INTO ont_axiom (rid, tenant_id, kind, operands, rule_ref, enabled)
+               VALUES (%s,%s,%s,%s,%s,%s)
+               ON CONFLICT (rid) DO UPDATE SET kind=EXCLUDED.kind,
+                 operands=EXCLUDED.operands, rule_ref=EXCLUDED.rule_ref,
+                 enabled=EXCLUDED.enabled""",
+            (ax_rid, row["tenant_id"], "subclass", operands, "parent_class", bool(parent)),
+        )
 
     def _validate_registered_interfaces(self, ot: ObjectType) -> None:
         """EXP-01：对已注册 Interface 做 fail-fast 约束校验（属性签名维度）。
@@ -1455,8 +1465,11 @@ class PgOntologyRepository(OntologyRepository):
 
         try:
             interfaces = self.list_interfaces()
-        except Exception:
-            return
+        except Exception as e:
+            # 读取失败**不得**视为通过（fail-closed）：无法确认接口一致性 → 拒绝落库。
+            raise ModelValidationUnavailable(
+                f"interface consistency check unavailable: {type(e).__name__}: {e}"
+            ) from e
         registered = {i.rid.rid: i for i in interfaces}
         for ref in ot.interfaces:
             ifc = registered.get(ref.rid if hasattr(ref, "rid") else str(ref))

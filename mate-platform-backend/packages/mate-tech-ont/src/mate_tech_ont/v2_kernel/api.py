@@ -63,7 +63,7 @@ from mate_kernel.tooling.schema_gen import agent_tool_schemas
 from mate_platform.runtime import is_production_profile, runtime_profile
 from mate_platform.tenancy.guards import require_tenant
 
-from .pg_repo import SlugConflictError  # MP-DEDUP-01: 409 翻译
+from .pg_repo import ModelValidationUnavailable, SlugConflictError  # MP-DEDUP-01: 409 翻译
 from .similarity import search_similar_object_types  # MP-DEDUP-01: precheck 相似扫描
 
 _logger = structlog.get_logger(__name__)
@@ -1642,6 +1642,9 @@ async def _upsert_object_type_gated(
         return await _call_scoped(request, "upsert_object_type", ot)
     except SlugConflictError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
+    except ModelValidationUnavailable as e:
+        # 一致性校验所需读取失败 → 503（依赖不可用，可重试），**不得**视为通过
+        raise HTTPException(status_code=503, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
 
@@ -1760,9 +1763,14 @@ async def upsert_object_type(
         existing = await _call_scoped(request, "get_object_type", ClassRef(payload.rid))
         destructive = detect_destructive_changes(existing, ot)
     except KeyError:
-        destructive = []
-    except Exception:
-        destructive = []
+        destructive = []  # 类型不存在 → 无破坏性变更可言
+    except HTTPException:
+        raise
+    except Exception as e:
+        # 读取失败**不得**视为「无破坏性变更」（fail-closed）
+        raise HTTPException(
+            status_code=503, detail=f"destructive-change check unavailable: {e}"
+        ) from e
     if destructive and payload.confirm_name != existing.display_name:
         raise HTTPException(
             status_code=409,
@@ -1789,6 +1797,9 @@ async def upsert_object_type(
                 "or POST /v2/object-types/merge to merge into the existing one.",
             },
         ) from e
+    except ModelValidationUnavailable as e:
+        # 一致性校验读取失败 → 503（不得视为通过）
+        raise HTTPException(status_code=503, detail=str(e)) from e
     return _ot_to_dto(saved)
 
 
