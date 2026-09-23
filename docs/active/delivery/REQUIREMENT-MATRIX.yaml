@@ -3042,6 +3042,16 @@ requirements:
       - mate-platform-backend/contracts/tests/test_runtime_comparison.py
     implementationStatus: implemented
     acceptanceStatus: notAccepted
+  FR-ONT-AXIOM-VALIDATE:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+      - ontValidateV2Axioms
+    handler: mate_tech_ont.main:app#ontValidateV2Axioms
+    tests:
+      - mate-platform-backend/packages/mate-tech-ont/tests/test_axiom_validation.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
   FR-ONT-SAL02-OBJECTSEARCH:
     prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
     service: ont

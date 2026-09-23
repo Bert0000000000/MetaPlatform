@@ -11786,6 +11786,48 @@ paths:
                 $ref: '#/components/schemas/AxiomV2'
         '422':
           $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/axioms/validate:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      x-required-scopes:
+        - platform.read
+      tags:
+        - ont
+      summary: 校验公理在当前数据上是否被违反（Core 子集）
+      description: ADR-0070：Axiom 运行时违规检查。支持 Core 三条规则——disjoint（个体同时 属于两个不相交类）/ has_key（同类实例主键重复）/ subclass（子类自环或 循环）。其余 AxiomKind 计入 skipped，不影响 conforms。axiom_rid 缺省 校验全部公理；target_class 限定实例范围。返回结构与 SHACL 报告一致： {conforms, violations, stats}。
+      operationId: ontValidateV2Axioms
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-AXIOM-VALIDATE
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                axiom_rid:
+                  type: string
+                  description: 只校验该公理；缺省校验全部公理
+                target_class:
+                  type: string
+                  description: 限定实例范围（须为本租户）
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AxiomValidationReport'
+        '403':
+          $ref: '#/components/responses/Error403'
   /api/v1/ont/v2/classes/{class_rid}/inspect:
     parameters:
       - in: path
@@ -17997,6 +18039,42 @@ components:
             minItems: 2
             maxItems: 2
             items: {}
+    AxiomValidationReport:
+      type: object
+      additionalProperties: false
+      required:
+        - conforms
+        - violations
+        - stats
+      properties:
+        conforms:
+          type: boolean
+        violations:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+            properties:
+              axiom_rid:
+                type: string
+              kind:
+                type: string
+              severity:
+                type: string
+              focus_node:
+                type: string
+              message:
+                type: string
+        stats:
+          type: object
+          additionalProperties: true
+          properties:
+            checked:
+              type: integer
+            violated:
+              type: integer
+            skipped:
+              type: integer
     ClassInspectV2:
       type: object
       additionalProperties: false
