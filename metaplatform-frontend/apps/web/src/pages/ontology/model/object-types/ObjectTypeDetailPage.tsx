@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Tag } from '@douyinfe/semi-ui';
+import { Link } from 'react-router-dom';
 import {
   getMaterialization,
   getObjectType,
+  listActionTypes,
   listLinkTypes,
   listObjectTypes,
+  type KernelActionType,
   type KernelLinkType,
   type KernelObjectType,
   type MaterializationResult,
@@ -44,6 +47,7 @@ export default function ObjectTypeDetailPage() {
   const tab = normalizeTab(rawTab);
 
   const [type, setType] = useState<KernelObjectType | null>(null);
+  const [actions, setActions] = useState<KernelActionType[] | null>(null);
   const [links, setLinks] = useState<KernelLinkType[] | null>(null);
   const [materialization, setMaterialization] = useState<MaterializationResult | null>(null);
   const [error, setError] = useState('');
@@ -62,6 +66,10 @@ export default function ObjectTypeDetailPage() {
       getMaterialization(rid)
         .then(setMaterialization)
         .catch(() => setMaterialization(null));
+      // 概念完整性 K：概览的关联 Action 直达（与概念抽屉对齐）
+      listActionTypes()
+        .then((all) => setActions(all.filter((at) => at.on.includes(rid))))
+        .catch(() => setActions([]));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -148,6 +156,26 @@ export default function ObjectTypeDetailPage() {
             <dd>{type.properties.length}</dd>
             <dt>关系数</dt>
             <dd>{links?.length ?? '…'}</dd>
+            <dt>关联 Action</dt>
+            <dd>
+              {actions === null ? (
+                '…'
+              ) : actions.length === 0 ? (
+                '—'
+              ) : (
+                <span className="mp-flex mp-wrap mp-gap-1">
+                  {actions.map((at) => (
+                    <Link
+                      key={at.rid}
+                      to={`/ontology/logic/actions/${encodeURIComponent(at.rid)}`}
+                      title={at.rid}
+                    >
+                      <Tag size="small" type="light">{at.title || ridTail(at.rid)}</Tag>
+                    </Link>
+                  ))}
+                </span>
+              )}
+            </dd>
             <dt>描述</dt>
             <dd>{type.description || '—'}</dd>
           </dl>

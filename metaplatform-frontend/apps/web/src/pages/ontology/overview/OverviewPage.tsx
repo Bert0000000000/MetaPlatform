@@ -69,6 +69,9 @@ export default function OverviewPage() {
   // IA v2（ADR-0069 §7.1）：总览不再依赖 agentMetrics —— 改用治理面真实数据
   const [drafts, setDrafts] = useState<number | null>(null);
   const [lintCount, setLintCount] = useState<number | null>(null);
+  // 概念完整性 J：治理卡补执行总量 + 最近活动（设计规格 §7.1 补齐）
+  const [runsCount, setRunsCount] = useState<number | null>(null);
+  const [lastActivity, setLastActivity] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,16 +103,21 @@ export default function OverviewPage() {
     });
 
     // 三块侧栏数据各自独立降级：慢/挂不影响概览主结论。
-    const [auditRes, syncRes, wipRes, lintRes] = await Promise.allSettled([
+    const [auditRes, syncRes, wipRes, lintRes, runsRes] = await Promise.allSettled([
       listActionAudit(20),
       getDatasourceSyncStatus(),
       listSchemaWip(),
       lintAntiPatterns(),
+      listActionAudit(200),
     ]);
     setAudit(auditRes.status === 'fulfilled' ? auditRes.value : []);
     setSync(syncRes.status === 'fulfilled' ? syncRes.value : []);
     setDrafts(wipRes.status === 'fulfilled' ? wipRes.value.length : null);
     setLintCount(lintRes.status === 'fulfilled' ? lintRes.value.length : null);
+    if (runsRes.status === 'fulfilled') {
+      setRunsCount(runsRes.value.length);
+      setLastActivity(runsRes.value[0]?.created_at ?? null);
+    }
 
     setLoading(false);
   }, []);
@@ -390,9 +398,18 @@ export default function OverviewPage() {
                     {lintCount ?? '—'} 项反模式发现
                   </span>
                 </div>
+                <div className="mp-onto-ov-sync">
+                  <span className="mp-onto-ov-sync-none">
+                    {runsCount ?? '—'} 次执行（近 200 条窗口）
+                  </span>
+                  {lastActivity && (
+                    <span className="mp-onto-ov-sync-none">最近 {lastActivity}</span>
+                  )}
+                </div>
                 <div className="mp-onto-ov-tags">
                   <Tag size="small" type="light">草稿 → /governance/drafts</Tag>
                   <Tag size="small" type="light">模型校验 → /model/validation</Tag>
+                  <Tag size="small" type="light">执行记录 → /logic/runs</Tag>
                 </div>
               </section>
             </div>
