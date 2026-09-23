@@ -201,27 +201,24 @@ class InMemoryOntologyRepository(OntologyRepository):
         return pairs
 
     def _expand_source_classes(self, source_rid: str) -> frozenset[str]:
-        """EXP-01：查询源类集合展开 —— Interface → 实现类型 + subclass 后代闭包。
+        """查询源类集合展开 —— **统一语义实现的唯一入口**。
 
-        返回完整允许集（普通 source = 自身 + 后代；Interface source = 实现
-        类型 + 各自后代）。IR 路径用它整体替换按源类精确过滤的条件。
+        规则（Interface → 实现类型 + 各自后代；ObjectType → 自身 + 后代；
+        未注册 → 精确；禁用公理 → 退回精确）定义在
+        ``mate_kernel/objectset/source_resolution.py`` —— 浏览 / ObjectSet /
+        Agent 三条查询路径共用，不再各自实现一遍。
         """
-        from mate_kernel.ontology.reasoning.engine import descendant_closure
+        from mate_kernel.objectset.source_resolution import resolve_source_classes
 
-        from .types.interface import interface_source_rids
-
-        is_interface = ClassRef(source_rid) in self._interfaces
-        if is_interface:
-            bases = interface_source_rids(source_rid, list(self._object_types.values()))
-        else:
-            bases = [source_rid]
-        closure = descendant_closure(self._subclass_pairs())
-        allowed: set[str] = set(bases)
-        if not is_interface:
-            allowed.add(source_rid)
-        for b in bases:
-            allowed |= closure.get(b, set())
-        return frozenset(allowed)
+        return frozenset(
+            resolve_source_classes(
+                source_rid,
+                object_types=list(self._object_types.values()),
+                # _interfaces 以 ClassRef 为键；ClassRef.rid 即完整 rid 字符串
+                interface_rids={k.rid for k in self._interfaces},
+                subclass_pairs=self._subclass_pairs(),
+            )
+        )
 
     def get_type_hierarchy(self) -> list[dict[str, Any]]:
         """EXP-01：InMemory 层级树（与 PgOntologyRepository.get_type_hierarchy 同语义）。"""
@@ -677,20 +674,12 @@ class InMemoryOntologyRepository(OntologyRepository):
             # F8：与 PG 侧同语义 —— 显式租户过滤（API handler 传 ctx.tenant_id）
             items = [i for i in items if i.tenant_id == tenant_id]
         if class_rid is not None:
-            allowed = self._list_source_allowed(class_rid.rid)
-            if allowed is None:
-                items = [i for i in items if i.class_rid == class_rid]
-            else:
-                # EXP-01 补全（2026-09-14）：Interface 源 → 实现类型 + 各自后代
-                # （与 ObjectSet/IR 查询路径同语义）；具体 ObjectType 保持精确匹配。
-                items = [i for i in items if i.class_rid.rid in allowed]
+            # ONT-QUERY-SEMANTICS：与 ObjectSet/IR 路径**同一**源类解析
+            # （此前浏览路径对具体类型只做精确匹配、对 Interface 还会调到
+            #  不存在的方法 —— 两条分叉都已消除）。
+            allowed = self._expand_source_classes(class_rid.rid)
+            items = [i for i in items if i.class_rid.rid in allowed]
         return list(items)
-
-    def _list_source_allowed(self, source_rid: str) -> frozenset[str] | None:
-        """浏览源的允许类集合；None = 非 Interface（保持精确匹配的既有行为）。"""
-        if ClassRef(source_rid) not in self._interfaces:
-            return None
-        return self._allowed_source_set(source_rid)
 
     def create_link_instance(self, li: LinkInstance) -> LinkInstance:
         # EXP-03：注册 LinkType 的基数约束（未注册类型 legacy 宽松）
