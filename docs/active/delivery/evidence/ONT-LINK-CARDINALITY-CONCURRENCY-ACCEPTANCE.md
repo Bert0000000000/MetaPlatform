@@ -97,3 +97,4 @@
 | ga-013-networkpolicy | 13 NetworkPolicy 缺失 = prod 不通过 | N/A 无网络策略改动 |
 
 **证据**：本文件。**命令**：见 §4 测试表。
+**commit**：`7cc1d072`（ADR-0075 + 失败用例）、`d628027f`（实现 + DB 端点锁）、`1b1930fa`（本验收证据）——PR #86。
