@@ -787,6 +787,29 @@ class InMemoryOntologyRepository(OntologyRepository):
     def list_axioms(self) -> list[Axiom]:
         return list(self._axioms.values())
 
+    def list_axiom_records(
+        self, tenant_id: str = "", *, enabled_only: bool = False
+    ) -> list[dict[str, Any]]:
+        """ONT-GATE-01 对齐：preflight 消费的 axiom 记录形态（与 PG 同形）。
+
+        InMemory 为单租户存储；给定 tenant_id 时按 rid 前缀过滤。
+        """
+        out: list[dict[str, Any]] = []
+        for ax in self._axioms.values():
+            rid = ax.rid.rid
+            if tenant_id and not rid.startswith(f"ont.{tenant_id}."):
+                continue
+            out.append(
+                {
+                    "rid": rid,
+                    "kind": str(ax.kind),
+                    "operands": [o.rid for o in ax.operands],
+                    "rule_ref": ax.rule_ref,
+                    "enabled": True,
+                }
+            )
+        return out
+
     def upsert_function(self, f: Function) -> Function:
         old = self._functions.get(f.rid)
         if old is not None:
