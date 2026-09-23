@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Card, Modal } from '@douyinfe/semi-ui';
+import { SheetDetail } from '@/components/skeleton';
 import { useLocation } from 'react-router-dom';
 import {
   Hexagon, Search, Plus, Columns3, ChevronDown, ChevronRight,
@@ -185,7 +186,6 @@ export default function OntologyModelingPage({
   const [mergeTarget, setMergeTarget] = useState<KernelObjectType | null>(null);
   const [mergeSubmitting, setMergeSubmitting] = useState(false);
 
-  const detailRef = useRef<HTMLDivElement>(null);
 
   // 重拉全部 kernel 数据（初始加载 / 写操作后刷新）
   const refreshAll = async () => {
@@ -317,20 +317,13 @@ export default function OntologyModelingPage({
     [objectTypes, selectedConcept],
   );
 
-  const selectedActions = useMemo(() => {
-    if (!selectedConceptDetail) return [];
-    return actionTypes.filter((at) => at.on.includes(selectedConceptDetail.rid));
-  }, [actionTypes, selectedConceptDetail]);
-
-  const selectedLinks = useMemo(() => {
-    if (!selectedConceptDetail) return [];
-    return linkTypes.filter((lt) => lt.src === selectedConceptDetail.rid || lt.dst === selectedConceptDetail.rid);
-  }, [linkTypes, selectedConceptDetail]);
-
-  // 点击概念 → 选中并滚动到详情面板
-  const handleSelectConcept = (rid: string) => {
+  // 2026-09-24 用户决策（第二次收敛）：「查看」→ SheetDetail 抽屉展示属性
+  //（与对象浏览的查看模式一致，非模态 456px 侧滑）。工作台不再内联下钻、
+  // 也不跳路由——属性查看就地完成，编辑仍走 V2 抽屉。
+  const [viewConceptOpen, setViewConceptOpen] = useState(false);
+  const viewConcept = (rid: string) => {
     setSelectedConcept(rid);
-    detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setViewConceptOpen(true);
   };
 
   const stats = useMemo(() => {
@@ -555,6 +548,18 @@ export default function OntologyModelingPage({
         .om-relation-target{color:var(--semi-color-primary)}
         .om-relation-icon{width:28px;height:28px;border-radius:var(--semi-border-radius-small);background:var(--semi-color-fill-0);display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .om-relation-icon svg{width:14px;height:14px;color:var(--semi-color-text-2)}
+        .om-view-head{display:flex;flex-direction:column;gap:4px;margin-bottom:16px}
+        .om-view-title{display:flex;align-items:center;gap:8px;font-size:15px}
+        .om-view-meta{display:flex;gap:8px}
+        .om-view-rid{color:var(--semi-color-text-2);word-break:break-all}
+        .om-view-section{margin-bottom:16px}
+        .om-view-section-title{font-weight:600;font-size:13px;margin-bottom:8px;color:var(--semi-color-text-1)}
+        .om-view-props{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+        .om-view-prop{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--semi-color-border);border-radius:var(--semi-border-radius-small);font-size:13px}
+        .om-view-prop>span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .om-prop-type{font-size:11px;line-height:16px;padding:0 6px;border-radius:999px;background:var(--semi-color-fill-0);color:var(--semi-color-text-2);white-space:nowrap}
+        .om-prop-mark{font-size:11px;line-height:16px;padding:0 6px;border-radius:999px;border:1px solid var(--semi-color-border);color:var(--semi-color-text-2);white-space:nowrap}
+        .om-prop-mark--req{color:var(--semi-color-success);border-color:var(--semi-color-success)}
         .om-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--mp-space-3);margin-bottom:var(--mp-space-5)}
         .om-stat-card{background:var(--semi-color-bg-1);border:1px solid var(--semi-color-border);border-radius:var(--semi-border-radius-medium);padding:var(--mp-space-4)}
         .om-stat-value{font-size:28px;font-weight:700;line-height:1;letter-spacing:-0.02em}
@@ -710,7 +715,7 @@ export default function OntologyModelingPage({
                       <tr
                         key={ot.rid}
                         className={ot.rid === selectedConcept ? 'selected' : undefined}
-                        onClick={() => handleSelectConcept(ot.rid)}
+                        onClick={() => setSelectedConcept(ot.rid)}
                       >
                         <td>
                           <span className="mp-inline-flex mp-items-center mp-gap-1" >
@@ -737,11 +742,18 @@ export default function OntologyModelingPage({
                           </span>
                         </td>
                         <td>
-                          <Button theme="light" type="secondary" className="mp-text-sm mp-onto-btn--sm"
-                            onClick={(e) => { e.stopPropagation(); handleSelectConcept(ot.rid); }}
-                          >
-                            查看
-                          </Button>
+                          <div className="mp-flex-center mp-gap-1">
+                            <Button theme="light" type="secondary" className="mp-text-sm mp-onto-btn--sm"
+                              onClick={(e) => { e.stopPropagation(); viewConcept(ot.rid); }}
+                            >
+                              查看
+                            </Button>
+                            <Button theme="light" type="tertiary" className="mp-text-sm mp-onto-btn--sm"
+                              onClick={(e) => { e.stopPropagation(); setSelectedConcept(ot.rid); openEditConcept(); }}
+                            >
+                              编辑
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -750,148 +762,121 @@ export default function OntologyModelingPage({
               </table>
             )}
           </Card>
-
-          {/* Detail Section（下钻：属性表 + V2 编辑器入口 + 关联 Action + 关系） */}
-          {selectedConceptDetail && (
-            <div ref={detailRef} className="mp-w-full mp-flex mp-mt-5 mp-gap-5 mp-onto-scroll-anchor">
-              {/* Attribute Table + V2 编辑器入口 + 关联 Action */}
-              <div className="mp-flex-1">
-                <Card className="mp-hidden" bodyStyle={{padding: 0}}>
-                  <div className="mp-justify-between mp-flex-center mp-border mp-py-3 mp-px-5" >
-                    <h4 className="mp-fw-600 mp-text-md">{selectedConceptDetail.display_name} · 属性定义</h4>
-                    <div className="mp-gap-2 mp-flex-center">
-                      <span className="mp-eyebrow">{selectedConceptDetail.properties.length} 个属性</span>
-                      {/* 原生 button（dev 模式 Semi Button onClick 被截 noop） */}
-                      <button
-                        type="button"
-                        onClick={() => openEditConcept({})}
-                        className="mp-inline-flex mp-items-center mp-clickable mp-border mp-rounded mp-gap-1 mp-text-sm mp-text-1 mp-bg-1 mp-onto-btn mp-onto-btn--sm"
-                      >
-                        编辑概念
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openEditConcept({ addNewProp: true })}
-                        className="mp-inline-flex mp-items-center mp-clickable mp-border mp-rounded mp-gap-1 mp-text-sm mp-text-1 mp-bg-1 mp-onto-btn mp-onto-btn--sm"
-                      >
-                        <Plus className="mp-icon-14" />新增属性
-                      </button>
-                    </div>
-                  </div>
-                  <table className="om-attr-table">
-                    <thead>
-                      <tr>
-                        <th>属性名</th>
-                        <th>版本</th>
-                        <th>类型</th>
-                        <th>必填</th>
-                        <th>主键</th>
-                        <th>标记</th>
-                        <th>描述</th>
-                        <th>操作</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedConceptDetail.properties.map((attr) => {
-                        const { slug, version } = slugAndVersionOfProperty(attr.rid);
-                        // 砍掉 kind 段（prop / prp）—— 后端用 'prop'，统一兼容
-                        const propSlug = slug.replace(/^(prop|prp)\./, '');
-                        const hasMarks = attr.array || attr.derived || attr.format === 'struct' || attr.shared;
-                        return (
-                          <tr key={attr.rid}>
-                            <td className="mp-fw-500" title={attr.title || undefined}>{propSlug}</td>
-                            <td className="mp-text-sm mp-text-2">{version || '—'}</td>
-                            <td><span className={typeBadgeClass(attr.type_id)} title={attr.format}>{attr.type_id}</span></td>
-                            <td><span className={`mp-text-sm ${attr.nullable ? 'mp-text-2' : 'mp-text-success'}`}>{attr.nullable ? '否' : '是'}</span></td>
-                            <td><span className={`mp-text-sm ${attr.primary_key ? 'mp-text-success' : 'mp-text-2'}`}>{attr.primary_key ? '是' : '否'}</span></td>
-                            <td>
-                              <span className="mp-inline-flex mp-gap-1 mp-wrap" >
-                                {attr.array && (
-                                  <span className="mp-attr-badge" title={`array · reducer: ${attr.reducer ?? '未设置'}`}>数组{attr.reducer ? `·${attr.reducer}` : ''}</span>
-                                )}
-                                {attr.derived && (
-                                  <span className="mp-attr-badge" title={`derived · over_link: ${attr.derived.over_link}${attr.derived.field ? ` · field: ${attr.derived.field}` : ''}`}>派生·{attr.derived.fn}</span>
-                                )}
-                                {attr.format === 'struct' && (
-                                  <span className="mp-attr-badge" title={`${attr.struct_fields?.length ?? 0} 个嵌套字段`}>struct·{attr.struct_fields?.length ?? 0}</span>
-                                )}
-                                {attr.shared && <span className="mp-attr-badge">共享</span>}
-                                {!hasMarks && <span className="mp-text-sm mp-text-2">—</span>}
-                              </span>
-                            </td>
-                            <td className="mp-hidden mp-text-sm mp-text-2 mp-nowrap mp-ellipsis-text mp-onto-cell-truncate" title={attr.description || attr.title || undefined}>
-                              {attr.description || attr.title || '—'}
-                            </td>
-                            <td>
-                              <button
-                                type="button"
-                                onClick={() => openEditConcept({ expandPropRid: attr.rid })}
-                                className="mp-clickable mp-border mp-rounded mp-text-sm mp-text-1 mp-bg-1 mp-onto-btn mp-onto-btn--xs"
-                              >
-                                编辑
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </Card>
-
-                {/* 关联 Action */}
-                {selectedActions.length > 0 && (
-                  <Card className="mp-hidden mp-mt-4" bodyStyle={{padding: 0}}>
-                    <div className="mp-justify-between mp-flex-center mp-border mp-py-3 mp-px-5" >
-                      <h4 className="mp-fw-600 mp-text-md">关联 Action</h4>
-                      <span className="mp-eyebrow">{selectedActions.length} 个</span>
-                    </div>
-                    <div className="mp-py-3 mp-px-5">
-                      {selectedActions.map((at) => (
-                        <div key={at.rid} className="om-relation-item">
-                          <div className="om-relation-icon"><Zap className="mp-icon-14" /></div>
-                          <span className="om-relation-label">{actionDisplayName(at)}</span>
-                          <ArrowRight className="mp-icon-14 mp-text-sm mp-text-2 mp-shrink-0"  />
-                          <span className="om-relation-target" title={at.description || at.rid}>
-                            {at.description ? at.description : `side_effects: ${at.side_effects.join(', ') || '—'}`}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-                )}
-              </div>
-
-              {/* Relation Panel */}
-              <div className="mp-shrink-0 mp-onto-relation-col">
-                <Card className="mp-hidden mp-h-fit"  bodyStyle={{padding: 0}}>
-                  <div className="mp-justify-between mp-flex-center mp-border mp-py-3 mp-px-5" >
-                    <h4 className="mp-fw-600 mp-text-md">{selectedConceptDetail.display_name} - 关系定义</h4>
-                    <span className="mp-eyebrow">{selectedLinks.length} 个关系</span>
-                  </div>
-                  {selectedLinks.length === 0 ? (
-                    <div className="mp-text-sm mp-text-2 mp-p-5">暂无关系定义</div>
-                  ) : (
-                    selectedLinks.map((lt) => (
-                      <div key={lt.rid} className="mp-border mp-py-4 mp-px-5" >
-                        <div className="mp-fw-500 mp-mb-3 mp-text-sm mp-text-2 mp-flex-center mp-gap-1" >
-                          <GitBranch className="mp-icon-14" />
-                          {lt.src === selectedConceptDetail.rid ? '出向关系' : '入向关系'} ({lt.cardinality})
-                        </div>
-                        <div className="om-relation-item">
-                          <div className="om-relation-icon"><LinkIcon /></div>
-                          <span className="om-relation-label">{lt.rid.split('.').pop()}</span>
-                          <ArrowRight className="mp-icon-14 mp-text-sm mp-text-2 mp-shrink-0"  />
-                          <span className="om-relation-target">{lt.src === selectedConceptDetail.rid ? lt.dst.split('.').pop() : lt.src.split('.').pop()}</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </Card>
-              </div>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* 概念查看抽屉（2026-09-24 用户决策）：非模态 456px 侧滑，
+          承载原内联下钻区的属性 / 关联 Action / 关系——就地查看不离开工作台 */}
+      <SheetDetail
+        title="概念详情"
+        open={viewConceptOpen && !!selectedConceptDetail}
+        onClose={() => setViewConceptOpen(false)}
+        footer={
+          <>
+            <Button
+              icon={<Columns3 size={15} strokeWidth={1.5} />}
+              disabled={!selectedConceptDetail}
+              onClick={() => {
+                setViewConceptOpen(false);
+                openEditConcept({});
+              }}
+            >
+              编辑概念
+            </Button>
+          </>
+        }
+      >
+        {selectedConceptDetail ? (
+          <>
+            <div className="om-view-head">
+              <div className="om-view-title">
+                <Hexagon className="mp-icon-14 mp-text-2" />
+                <span className="mp-fw-600">{selectedConceptDetail.display_name}</span>
+              </div>
+              <div className="om-view-meta">
+                <span className="mp-eyebrow">{selectedConceptDetail.properties.length} 个属性</span>
+                <span className="mp-eyebrow">
+                  {DOMAIN_LABELS[domainOfObjectType(selectedConceptDetail.rid)] ??
+                    domainOfObjectType(selectedConceptDetail.rid)}
+                </span>
+              </div>
+              <div className="om-view-rid mp-text-xs mp-mono">{selectedConceptDetail.rid}</div>
+            </div>
+
+            <div className="om-view-section">
+              <div className="om-view-section-title">属性定义</div>
+              {selectedConceptDetail.properties.length === 0 ? (
+                <div className="mp-text-sm mp-text-2">该概念没有属性。</div>
+              ) : (
+                <ul className="om-view-props">
+                  {selectedConceptDetail.properties.map((attr) => {
+                    const propSlug = slugAndVersionOfProperty(attr.rid).slug.replace(
+                      /^(prop|prp)\./,
+                      '',
+                    );
+                    return (
+                      <li key={attr.rid} className="om-view-prop" title={attr.description || attr.title || undefined}>
+                        <span className="mp-fw-500">{attr.title || propSlug}</span>
+                        <span className={`om-prop-type ${typeBadgeClass(attr.type_id)}`}>{attr.type_id}</span>
+                        {attr.primary_key && <span className="om-prop-mark">主键</span>}
+                        {attr.nullable ? null : <span className="om-prop-mark om-prop-mark--req">必填</span>}
+                        {attr.shared && <span className="om-prop-mark">共享</span>}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+
+            <div className="om-view-section">
+              {(() => {
+                const rel = actionTypes.filter((at) => at.on.includes(selectedConceptDetail.rid));
+                if (rel.length === 0) return null;
+                return (
+                  <>
+                    <div className="om-view-section-title">关联 Action（{rel.length}）</div>
+                    {rel.map((at) => (
+                      <div key={at.rid} className="om-relation-item">
+                        <div className="om-relation-icon"><Zap className="mp-icon-14" /></div>
+                        <span className="om-relation-label">{actionDisplayName(at)}</span>
+                      </div>
+                    ))}
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="om-view-section">
+              <div className="om-view-section-title">
+                关系定义（
+                {
+                  linkTypes.filter(
+                    (lt) => lt.src === selectedConceptDetail!.rid || lt.dst === selectedConceptDetail!.rid,
+                  ).length
+                }
+                ）
+              </div>
+              {linkTypes.filter((lt) => lt.src === selectedConceptDetail.rid || lt.dst === selectedConceptDetail.rid)
+                .length === 0 ? (
+                <div className="mp-text-sm mp-text-2">暂无关系定义。</div>
+              ) : (
+                linkTypes
+                  .filter((lt) => lt.src === selectedConceptDetail!.rid || lt.dst === selectedConceptDetail!.rid)
+                  .map((lt) => (
+                    <div key={lt.rid} className="om-relation-item">
+                      <div className="om-relation-icon"><LinkIcon className="mp-icon-14" /></div>
+                      <span className="om-relation-label">{lt.rid.split('.').pop()}</span>
+                      <ArrowRight className="mp-icon-14 mp-text-sm mp-text-2 mp-shrink-0" />
+                      <span className="om-relation-target">
+                        {lt.src === selectedConceptDetail!.rid ? lt.dst.split('.').pop() : lt.src.split('.').pop()}
+                      </span>
+                    </div>
+                  ))
+              )}
+            </div>
+          </>
+        ) : null}
+      </SheetDetail>
 
       {/* V2 类型/属性编辑器：create（Shell 按钮）/ edit（编辑概念 / 新增属性 / 行内编辑） */}
       <ObjectTypeEditorV2Drawer
