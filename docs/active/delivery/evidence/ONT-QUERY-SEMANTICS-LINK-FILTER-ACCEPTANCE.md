@@ -14,7 +14,7 @@
 
 - `apps/web/src/api/ont/kernel.ts` 注释自陈"全租户列表，按 link_type_rid **客户端过滤**"；
 - `LinkTypesPage.tsx`：`setInstances(await listLinkInstances())`（全量）+ `countFor`（本地计数）
-  + 抽屉里 `instances.filter(...)`（本地筛选）。
+  与抽屉里的 `instances.filter(...)`（本地筛选）。
 
 关系实例随业务线性增长 → 网关/浏览器承压，且只为看一个类型也要拉全量。
 
