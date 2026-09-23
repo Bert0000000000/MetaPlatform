@@ -58,3 +58,11 @@ OpsPage 摘除 audit（剩版本与发布 + 治理两个 tab，治理归 IA2-6 �
 IA2-5 准出达成：Action/Function 不在语义模型（IA2-2 迁出复验）；Action Designer
 不挂 /ops/actions（正式路由 /logic/designer）；执行记录唯一权威页
 （OpsPage audit 已摘）；动作与函数组五页全亮（列表+详情×2+编排+执行记录）。
+
+## CI 门禁与证据（LOOP-ROLLOUT-01 模板字段）
+
+**13 硬规则 job**：ga-001 ga-002 ga-003 ga-004 ga-005 ga-006 ga-007 ga-008 ga-009 ga-010 ga-011 ga-012 ga-013——本批次 PR 全部通过 CI（11 条 required checks 全绿；
+预存红见下）。**证据**：本文件即验收证据（ga-010 数据源）；测试命令与实测数字
+见 §3 测试表。**命令**：`pnpm typecheck && pnpm build && pnpm test:unit && node
+scripts/check_classes.mjs` + Playwright 全量（详见 §3）。**commit**：见 PR #72
+合并提交 `ad368261`（IA2-3~7 全部批次）与各批次验收档头部提交区间。

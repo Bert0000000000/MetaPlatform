@@ -16,7 +16,7 @@ Agent 服务依赖；全部既有操作能力经表单级断言验证不退化�
 
 ## 2. 最终信息架构（全部 active）
 
-```
+```text
 本体
 ├── 总览                       /ontology（零 Agent 依赖，治理与健康卡）
 ├── 语义模型
@@ -105,3 +105,11 @@ Agent 服务依赖；全部既有操作能力经表单级断言验证不退化�
 | ONTOLOGY-IA2-5 | **Accepted** | ONTOLOGY-IA2-5-ACCEPTANCE.md |
 | ONTOLOGY-IA2-6 | **Accepted** | ONTOLOGY-IA2-6-ACCEPTANCE.md |
 | ONTOLOGY-IA2-7 | **Accepted** | 本文件 |
+
+## CI 门禁与证据（LOOP-ROLLOUT-01 模板字段）
+
+**13 硬规则 job**：ga-001 ga-002 ga-003 ga-004 ga-005 ga-006 ga-007 ga-008 ga-009 ga-010 ga-011 ga-012 ga-013——本批次 PR 全部通过 CI（11 条 required checks 全绿；
+预存红见下）。**证据**：本文件即验收证据（ga-010 数据源）；测试命令与实测数字
+见 §3 测试表。**命令**：`pnpm typecheck && pnpm build && pnpm test:unit && node
+scripts/check_classes.mjs` + Playwright 全量（详见 §3）。**commit**：见 PR #72
+合并提交 `ad368261`（IA2-3~7 全部批次）与各批次验收档头部提交区间。
