@@ -7,7 +7,7 @@
 
 | 批次 | 范围 | 状态 | 证据 |
 | --- | --- | --- | --- |
-| ONTOLOGY-IA2-0~2 | ADR + 设计规格（路由矩阵）+ 工作区壳 + 六大域路由 + 语义模型拆分（PR #66 已合并 `dbbaef52`） | ✅ Accepted | `evidence/ONTOLOGY-IA2-{0,1,2}-*.md` |
+| ONTOLOGY-IA2-0~2 | ADR + 设计规格（路由矩阵）+ 工作区壳 + 六大域路由 + 语义模型拆分（PR #66 已合并 `dbbaef52`） | ✅ Accepted | `evidence/ONTOLOGY-IA2-0-BASELINE.md` + `evidence/ONTOLOGY-IA2-1-ACCEPTANCE.md` + `evidence/ONTOLOGY-IA2-2-ACCEPTANCE.md` |
 | ONTOLOGY-IA2-3~7 | 数据映射 / 对象与查询(:rid 段路由) / 动作与函数(:rid 详情) / 发布与治理（七子页 + Agent 指标删除）/ 清理与总验收（分支 `feat/ontology-ia2-3-data-mapping`，随 PR 合并） | ✅ Accepted | `evidence/ONTOLOGY-IA2-{3,4,5,6}-ACCEPTANCE.md` + `evidence/ONTOLOGY-IA2-ACCEPTANCE.md`（总验收：169 过/1 红预存） |
 
 ## v3.1 + v4 RUNTIME + BUSINESS-SLICES P0 增量收口（2026-08-06）
