@@ -70,7 +70,7 @@ null 序：`ASC → NULLS LAST` / `DESC → NULLS FIRST`（与 InMemory `_sort_r
 
 **SQL 次数与延迟**（5 实例矩阵，语句计数包裹 `_cursor`）：
 
-```
+```text
 [QSEM] browse SQL=4  ir SQL=6  合计耗时=119.3ms
 ```
 
@@ -133,3 +133,4 @@ null 序：`ASC → NULLS LAST` / `DESC → NULLS FIRST`（与 InMemory `_sort_r
 | ga-013-networkpolicy | 13 NetworkPolicy 缺失 = prod 不通过 | N/A 无网络策略改动 |
 
 **证据**：本文件。**命令**：见 §4 测试表。
+**commit**：`31e14444`（源类解析统一 + 稳定排序）、`1132cce8`（13 项对照测试）、`0dbb19e0`（ADR-0077 + 本证据）、`f8b47c52`（§6 落实状态）——PR #89。
