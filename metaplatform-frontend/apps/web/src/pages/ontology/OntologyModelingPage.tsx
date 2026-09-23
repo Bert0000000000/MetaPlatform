@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Card, Modal } from '@douyinfe/semi-ui';
 import { SheetDetail } from '@/components/skeleton';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Hexagon, Search, Plus, Columns3, ChevronDown, ChevronRight,
-  Link as LinkIcon, ArrowRight, Zap, GitBranch, GitMerge, AlertTriangle,
+  Link as LinkIcon, ArrowRight, Zap, GitBranch, GitMerge, AlertTriangle, ExternalLink,
 } from 'lucide-react';
 import {
   listObjectTypes, listActionTypes, listLinkTypes,
@@ -152,6 +152,7 @@ export default function OntologyModelingPage({
   refreshKey?: number;
 }) {
     const [objectTypes, setObjectTypes] = useState<KernelObjectType[]>([]);
+  const navigate = useNavigate();
   const [actionTypes, setActionTypes] = useState<KernelActionType[]>([]);
   const [linkTypes, setLinkTypes] = useState<KernelLinkType[]>([]);
   // EXP-02/04：值类型注册表 + Interface 清单（V2 编辑器数据源）
@@ -774,6 +775,19 @@ export default function OntologyModelingPage({
         footer={
           <>
             <Button
+              icon={<ExternalLink size={15} strokeWidth={1.5} />}
+              disabled={!selectedConceptDetail}
+              onClick={() => {
+                const target = selectedConceptDetail?.rid;
+                setViewConceptOpen(false);
+                if (target) navigate(`/ontology/model/object-types/${encodeURIComponent(target)}`);
+              }}
+            >
+              打开完整详情
+            </Button>
+            <Button
+              theme="solid"
+              type="primary"
               icon={<Columns3 size={15} strokeWidth={1.5} />}
               disabled={!selectedConceptDetail}
               onClick={() => {
@@ -836,9 +850,18 @@ export default function OntologyModelingPage({
                   <>
                     <div className="om-view-section-title">关联 Action（{rel.length}）</div>
                     {rel.map((at) => (
-                      <div key={at.rid} className="om-relation-item">
+                      <div
+                        key={at.rid}
+                        className="om-relation-item mp-clickable"
+                        title={`查看 ${at.rid} 详情`}
+                        onClick={() => {
+                          setViewConceptOpen(false);
+                          navigate(`/ontology/logic/actions/${encodeURIComponent(at.rid)}`);
+                        }}
+                      >
                         <div className="om-relation-icon"><Zap className="mp-icon-14" /></div>
                         <span className="om-relation-label">{actionDisplayName(at)}</span>
+                        <ArrowRight className="mp-icon-14 mp-text-sm mp-text-2 mp-shrink-0" />
                       </div>
                     ))}
                   </>
