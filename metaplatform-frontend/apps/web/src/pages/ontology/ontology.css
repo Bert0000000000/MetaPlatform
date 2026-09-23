@@ -661,3 +661,17 @@
     font-size: 13px;
   }
 }
+
+/* ---------- ObjectSet 构建器 / SHACL 校验（2026-09-24 12 基元补全 B/C/F） ---------- */
+
+.mp-onto-objectset-select {
+  min-width: 280px;
+}
+
+.mp-onto-objectset-limit {
+  min-width: 120px;
+}
+
+.mp-onto-shacl-select {
+  min-width: 280px;
+}

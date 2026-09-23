@@ -1022,3 +1022,64 @@ export interface SyncStatusRow {
 export async function getDatasourceSyncStatus(): Promise<SyncStatusRow[]> {
   return list<SyncStatusRow>('/datasources/sync-status');
 }
+
+// ── 12 基元补全（2026-09-24 概念完整性批次：B/C/F 三项——端点均已契约化且实现，此前前端未接） ──
+
+export interface KernelLinkInstance {
+  rid: string;
+  link_type_rid: string;
+  src: string;
+  dst: string;
+  props: Array<[string, unknown]>;
+  created_at?: string;
+  tenant_id: string;
+  marking?: string[];
+}
+
+/** LinkInstance 浏览：GET /v2/link-instances（全租户列表，按 link_type_rid 客户端过滤）。 */
+export async function listLinkInstances(): Promise<KernelLinkInstance[]> {
+  const resp = await apiClient.get(v2('/link-instances'));
+  return resp.data as KernelLinkInstance[];
+}
+
+export interface ObjectSetQuery {
+  class_rid: string;
+  filter_expr?: string;
+  sort?: string[];
+  paging_offset?: number;
+  paging_limit?: number;
+}
+
+export interface ObjectSetResult {
+  results: KernelIndividual[];
+  count: number;
+}
+
+/** ObjectSet 查询器：POST /v2/object-sets/query → bindings + count。 */
+export async function evaluateObjectSet(payload: ObjectSetQuery): Promise<ObjectSetResult> {
+  const resp = await apiClient.post(v2('/object-sets/query'), payload);
+  return resp.data as ObjectSetResult;
+}
+
+export interface ShaclViolation {
+  focus_node?: string;
+  path?: string;
+  message?: string;
+  severity?: string;
+  [key: string]: unknown;
+}
+
+export interface ShaclValidateReport {
+  conforms: boolean;
+  violations: ShaclViolation[];
+  stats?: Record<string, unknown>;
+}
+
+/** SHACL 实例合规校验：POST /v2/shacl/validate（shapes 由 ObjectType 定义合成）。 */
+export async function validateShacl(payload: {
+  target_class: string;
+  closed?: boolean;
+}): Promise<ShaclValidateReport> {
+  const resp = await apiClient.post(v2('/shacl/validate'), payload);
+  return resp.data as ShaclValidateReport;
+}
