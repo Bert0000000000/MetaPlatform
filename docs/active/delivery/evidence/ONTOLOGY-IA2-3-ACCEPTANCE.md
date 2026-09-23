@@ -69,3 +69,11 @@
 IA2-3 准出达成：本体只显示与本体映射直接相关的数据面（三子页）；不再承担全局数据资产门户
 （assets 摘出本体导航）；同步和映射功能不丢失（sync 升格独立页 + mappings 保留声明面板）；
 容器内部视图 Tab 消亡。
+
+## CI 门禁与证据（LOOP-ROLLOUT-01 模板字段）
+
+**13 硬规则 job**：ga-001 ga-002 ga-003 ga-004 ga-005 ga-006 ga-007 ga-008 ga-009 ga-010 ga-011 ga-012 ga-013——本批次 PR 全部通过 CI（11 条 required checks 全绿；
+预存红见下）。**证据**：本文件即验收证据（ga-010 数据源）；测试命令与实测数字
+见 §3 测试表。**命令**：`pnpm typecheck && pnpm build && pnpm test:unit && node
+scripts/check_classes.mjs` + Playwright 全量（详见 §3）。**commit**：见 PR #72
+合并提交 `ad368261`（IA2-3~7 全部批次）与各批次验收档头部提交区间。

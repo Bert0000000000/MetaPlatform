@@ -66,3 +66,11 @@ IA2-6 准出达成：治理每个能力有正式 URL（七子页）；Agent 服�
 Lifecycle / SecurityPolicy 现有操作全部保留（表单级断言）；两个大容器删除。
 **目标 IA 六大功能组的全部子页至此全亮**（除目标 IA 明确预留的 4 个 planned 项：
 ObjectSet 构建器 / 保存的查询 / 审批策略 / Side Effects）。
+
+## CI 门禁与证据（LOOP-ROLLOUT-01 模板字段）
+
+**13 硬规则 job**：ga-001 ga-002 ga-003 ga-004 ga-005 ga-006 ga-007 ga-008 ga-009 ga-010 ga-011 ga-012 ga-013——本批次 PR 全部通过 CI（11 条 required checks 全绿；
+预存红见下）。**证据**：本文件即验收证据（ga-010 数据源）；测试命令与实测数字
+见 §3 测试表。**命令**：`pnpm typecheck && pnpm build && pnpm test:unit && node
+scripts/check_classes.mjs` + Playwright 全量（详见 §3）。**commit**：见 PR #72
+合并提交 `ad368261`（IA2-3~7 全部批次）与各批次验收档头部提交区间。
