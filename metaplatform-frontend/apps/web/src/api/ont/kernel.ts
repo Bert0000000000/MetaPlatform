@@ -426,6 +426,11 @@ export interface ProposalRecord {
 /** ONT-GATE-01 预检报告（与后端 preflight.PreflightReport.to_dict 对齐）。 */
 export interface ProposalPreflight {
   blocked: boolean;
+  /** 报告状态：passed | violation | not_applicable | partial | unavailable
+   *  （partial/unavailable = 校验未跑全，同样禁止执行，但可提示重试）。 */
+  status?: 'passed' | 'violation' | 'not_applicable' | 'partial' | 'unavailable';
+  /** 未执行的闸门名（partial/unavailable 时非空）。 */
+  unavailable?: string[];
   schema: { checked?: boolean; errors?: string[]; warnings?: string[]; valid?: boolean };
   shacl: { checked?: boolean; conforms?: boolean; violations?: Array<Record<string, unknown>> };
   axioms: Array<{ rule: string; severity: string; message: string; subjects?: string[] }>;

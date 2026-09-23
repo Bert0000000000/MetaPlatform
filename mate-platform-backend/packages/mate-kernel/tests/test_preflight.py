@@ -159,7 +159,17 @@ class TestCreateInstanceGate:
 
     def test_to_dict_shape(self):
         d = preflight_create_instance(_ot(), {CID: "o1", CNAME: "n"}).to_dict()
-        assert set(d) == {"blocked", "schema", "shacl", "axioms", "summary"}
+        assert set(d) == {
+            "blocked",
+            "status",
+            "unavailable",
+            "schema",
+            "shacl",
+            "axioms",
+            "summary",
+        }
+        assert d["status"] == "passed"
+        assert d["unavailable"] == []
 
 
 class TestModelTypeGate:

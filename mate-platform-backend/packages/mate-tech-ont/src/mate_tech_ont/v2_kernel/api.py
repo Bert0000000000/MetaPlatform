@@ -2840,33 +2840,92 @@ async def _proposal_preflight(request: Request, prop: Any) -> dict[str, Any] | N
     - create_instance → schema + SHACL（合成候选个体）+ Axiom dry-run
     - model_type      → 静态模型验证 + 层级环/互斥推演
     - action          → ActionType 参数 schema 闸
-    - 其它（merge_suggestion 等已有 precheck 机制）→ None（不设闸）
+    - 其它（merge_suggestion 等已有 precheck 机制）→ None（**不适用**）
+
+    **逐闸门捕获异常**：取数或计算失败之门标记为不可用，**不静默放行**。
+    适用闸门全部不可用 → status ``unavailable``；部分不可用 → ``partial``；二者
+    ``blocked=True``，由 execute 端据 status 拒绝（`E409_PREFLIGHT_UNAVAILABLE`）。
+    violation 由报告层从闸门数据判定，且优先于不可用。
     """
+    from mate_kernel.ontology import preflight as pf
+
     kind = str(getattr(prop, "kind", "action") or "action")
+    if kind not in ("create_instance", "model_type", "action"):
+        return None  # 不适用：无闸门
+
+    schema_na = {"checked": False, "errors": [], "warnings": ["schema 闸未执行"]}
+    shacl_na = {"checked": False, "conforms": True, "violations": [], "reason": "闸门未执行"}
+    shacl_skip = {
+        "checked": False,
+        "conforms": True,
+        "violations": [],
+        "reason": "无实例数据，跳过",
+    }
+
+    unavailable: list[str] = []
+
+    def _gate(name: str, fn: Any, fallback: Any) -> Any:
+        try:
+            return fn()
+        except Exception as e:
+            unavailable.append(name)
+            _logger.warning("ont.preflight.gate_unavailable", kind=kind, gate=name, error=str(e))
+            return fallback
+
+    async def _fetch(method: str, *args: Any, gate: str, **kwargs: Any) -> tuple[Any, bool]:
+        """取数据；失败（非 HTTPException）→ (None, False) 并登记该闸不可用。"""
+        try:
+            return await _call_scoped(request, method, *args, **kwargs), True
+        except HTTPException:
+            raise
+        except Exception as e:
+            unavailable.append(gate)
+            _logger.warning("ont.preflight.gate_unavailable", kind=kind, gate=gate, error=str(e))
+            return None, False
+
     try:
-        from mate_kernel.ontology.preflight import (
-            preflight_action,
-            preflight_create_instance,
-            preflight_model_type,
-        )
+        from mate_kernel.ontology.identity.class_ref import ClassRef
 
         if kind == "create_instance":
-            from mate_kernel.ontology.identity.class_ref import ClassRef
+            applicable = ("schema", "shacl", "axioms")
+            ot, ok = await _fetch("get_object_type", ClassRef(str(prop.action_rid)), gate="schema")
+            if not ok:
+                # 类型取不到 → schema/shacl/axioms 三闸全不可用
+                return pf.build_gate_report(
+                    schema=schema_na,
+                    shacl=shacl_na,
+                    axioms=[],
+                    applicable=applicable,
+                    unavailable=applicable,
+                ).to_dict()
+            props = dict((prop.parameters or {}).get("props") or {})
+            schema = _gate("schema", lambda: pf.gate_schema_instance(ot, props), schema_na)
+            shacl = _gate("shacl", lambda: pf.gate_shacl_instance(ot, props), shacl_na)
 
-            ot = await _call_scoped(request, "get_object_type", ClassRef(str(prop.action_rid)))
-            axiom_records = await _call_scoped(
-                request, "list_axiom_records", _ctx(request).tenant_id, enabled_only=True
+            axiom_records, ax_ok = await _fetch(
+                "list_axiom_records", _ctx(request).tenant_id, enabled_only=True, gate="axioms"
             )
-            all_types = await _call_scoped(request, "list_object_types", 10000, 0)
-            return preflight_create_instance(
-                ot,
-                dict((prop.parameters or {}).get("props") or {}),
-                axiom_records=axiom_records,
-                all_types=all_types,
+            all_types, types_ok = await _fetch("list_object_types", 10000, 0, gate="axioms")
+            axioms: list[dict[str, Any]] = []
+            if ax_ok and types_ok:
+                axioms = _gate(
+                    "axioms",
+                    lambda: pf.gate_axioms_instance(
+                        ot, axiom_records=axiom_records, all_types=all_types
+                    ),
+                    [],
+                )
+            return pf.build_gate_report(
+                schema=schema,
+                shacl=shacl,
+                axioms=axioms,
+                applicable=applicable,
+                unavailable=tuple(unavailable),
             ).to_dict()
-        if kind == "model_type":
-            from mate_kernel.ontology.identity.class_ref import ClassRef
 
+        if kind == "model_type":
+            # SHACL 无实例数据 → 不适用（不计入 applicable）
+            applicable = ("schema", "axioms")
             type_def = dict((prop.parameters or {}).get("type_def") or {})
             if not type_def:
                 return None
@@ -2874,47 +2933,70 @@ async def _proposal_preflight(request: Request, prop: Any) -> dict[str, Any] | N
                 dto = ObjectTypeDTO(**type_def)
                 ot = _dto_to_ot(dto)
             except Exception:
-                # 类型构造即失败（PK∉properties 等）→ 以 schema 闸呈现
-                return {
-                    "blocked": True,
-                    "schema": {"checked": True, "errors": ["类型定义无法构造"], "warnings": []},
-                    "shacl": {"checked": False, "conforms": True, "violations": []},
-                    "axioms": [],
-                    "summary": "预检阻断：类型定义无法构造",
-                }
-            axiom_records = await _call_scoped(
-                request, "list_axiom_records", _ctx(request).tenant_id, enabled_only=True
+                return pf.build_gate_report(
+                    schema={"checked": True, "errors": ["类型定义无法构造"], "warnings": []},
+                    shacl=shacl_skip,
+                    axioms=[],
+                    applicable=applicable,
+                    unavailable=(),
+                ).to_dict()
+            schema = _gate("schema", lambda: pf.gate_schema_model(ot), schema_na)
+            axiom_records, ax_ok = await _fetch(
+                "list_axiom_records", _ctx(request).tenant_id, enabled_only=True, gate="axioms"
             )
-            existing = await _call_scoped(request, "list_object_types", 10000, 0)
-            return preflight_model_type(
-                ot, existing_types=existing, axiom_records=axiom_records
+            existing, types_ok = await _fetch("list_object_types", 10000, 0, gate="axioms")
+            axioms = []
+            if ax_ok and types_ok:
+                axioms = _gate(
+                    "axioms",
+                    lambda: pf.gate_axioms_model(
+                        ot, existing_types=existing, axiom_records=axiom_records
+                    ),
+                    [],
+                )
+            return pf.build_gate_report(
+                schema=schema,
+                shacl=shacl_skip,
+                axioms=axioms,
+                applicable=applicable,
+                unavailable=tuple(unavailable),
             ).to_dict()
-        if kind == "action":
-            from mate_kernel.ontology.identity.class_ref import ClassRef
 
-            at = await _call_scoped(request, "get_action_type", ClassRef(str(prop.action_rid)))
-            return preflight_action(at, dict(prop.parameters or {})).to_dict()
-        return None
-    except KeyError:
-        # subject 类型/公理数据不可得（跨租户/已删）→ 无法预检不静默放行：
-        # 以 schema 闸呈现"无法预检"，由 execute 端复核。
-        return {
-            "blocked": False,
-            "schema": {"checked": False, "errors": [], "warnings": ["预检数据不可得"]},
-            "shacl": {"checked": False, "conforms": True, "violations": []},
-            "axioms": [],
-            "summary": "预检数据不可得（subject 不存在或不可见）",
-        }
+        # kind == "action"
+        applicable = ("schema",)
+        at, ok = await _fetch("get_action_type", ClassRef(str(prop.action_rid)), gate="schema")
+        if not ok:
+            return pf.build_gate_report(
+                schema=schema_na,
+                shacl=shacl_na,
+                axioms=[],
+                applicable=applicable,
+                unavailable=applicable,
+            ).to_dict()
+        schema = _gate(
+            "schema",
+            lambda: pf.gate_schema_action(at, dict(prop.parameters or {})),
+            schema_na,
+        )
+        return pf.build_gate_report(
+            schema=schema,
+            shacl=shacl_na,
+            axioms=[],
+            applicable=applicable,
+            unavailable=tuple(unavailable),
+        ).to_dict()
     except HTTPException:
         raise
     except Exception as e:
         _logger.warning("ont.preflight.failed", error=str(e))
         return {
-            "blocked": False,
-            "schema": {"checked": False, "errors": [], "warnings": [f"预检异常: {e}"]},
-            "shacl": {"checked": False, "conforms": True, "violations": []},
+            "blocked": True,
+            "status": "unavailable",
+            "unavailable": ["preflight"],
+            "schema": schema_na,
+            "shacl": shacl_na,
             "axioms": [],
-            "summary": f"预检异常（不阻断，execute 时复核）: {e}",
+            "summary": f"预检不可用：{e}（禁止执行）",
         }
 
 
@@ -3136,16 +3218,21 @@ async def execute_proposal(
         raise HTTPException(status_code=404, detail=str(e)) from e
     preflight = await _proposal_preflight(request, prop)
     if preflight is not None and preflight.get("blocked"):
+        _status = str(preflight.get("status") or "")
+        # 违规 = 有断言；不可用/部分完成 = 校验没跑全 → 同样**禁止执行**，但错误码区分，
+        # 便于客户端分辨「改提案」还是「等依赖恢复重试」。
+        _code = "E409_PREFLIGHT_BLOCKED" if _status == "violation" else "E409_PREFLIGHT_UNAVAILABLE"
         _logger.warning(
             "ont.proposal.execute.blocked_by_preflight",
             proposal_id=proposal_id,
+            status=_status,
             summary=str(preflight.get("summary", "")),
         )
         raise HTTPException(
             status_code=409,
             detail={
-                "code": "E409_PREFLIGHT_BLOCKED",
-                "message": f"proposal 预检阻断: {preflight.get('summary', '')}",
+                "code": _code,
+                "message": f"proposal 预检未通过（{_status or 'blocked'}）: {preflight.get('summary', '')}",
                 "preflight": preflight,
             },
         )
