@@ -93,10 +93,10 @@ CI 首轮已证明**真实登录在干净 Runner 上成立**（`mate-auth-servic
 
 1. **realm 只有 `tenant-default`**（两个用户同租户）→ 跨租户用例是"异租户 rid 前缀 → 4xx"，
    不是"两个真实租户互访"；后者需改 Keycloak realm（未做）。
-2. **Required Checks 未立即打开**：`continue-on-error` 已取消，且该 check（`ontology core e2e`）
-   已在 PR #87 的干净 Runner 上**绿**；但按仓库既有铁律，加入 required 前该 job 名需**先在
-   `main` 上报到**（否则在途 PR 会停在 `Expected — Waiting`）→ 顺序 = 合并本 PR → main 出一次绿
-   → 再执行 ADR-0076 §4.3 的 `gh api` 命令。
+2. **Required Checks 已加入（第 12 条）**：按仓库铁律"job 名须先在 `main` 上报到"的顺序执行 ——
+   PR #87 干净 Runner **绿 ×2**（5m38s / 7m06s）→ 合并（`9b6e06b1`）→ `main` push run **绿**
+   （`35869694619`，`ontology core e2e` 4m57s）→ 用 `gh api …/required_status_checks` 登记。
+   **当前 required = 12 条**（原 11 条全部保留 + `ontology core e2e`），`strict=false`。
 3. `pull_request` 去掉 `paths` → 该 check 将在所有 PR 上运行（docker 栈 ~8–12 分钟）。
 4. 历史 spec（consistency/a2a/evaluation/model-edit/routing）不纳入本工作流（依赖 Agent/A2A）。
 5. 本地运行会向共享 dev 库写 `core-e2e-*` 命名空间数据（源表在套件结束删除；schema/个体保留）。

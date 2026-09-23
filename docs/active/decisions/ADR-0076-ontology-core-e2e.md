@@ -90,9 +90,13 @@ localhost 语义成立。
 `script up` + `script wait` → `script test` → 失败转储容器日志 → `if: always()` 上传
 Playwright 产物 → `if: always()` `script down`。**跨 Job 变量不再存在**。
 
-### 4.3 Required Checks（待稳定）
+### 4.3 Required Checks（已加入 · 第 12 条）
 
-取消 `continue-on-error` 后，待该 check 在 `main` 上连续若干次绿（且已上报过）再加：
+取消 `continue-on-error` 后，按"新 job 名须先在 `main` 上报到"的既有约束执行：
+
+1. PR #87 干净 Runner **绿 ×2**（`35867459870` 5m38s / `35868524707` 7m06s）；
+2. 合并（`9b6e06b1`）→ `main` push run **绿**（`35869694619`，`ontology core e2e` **4m57s**）；
+3. 登记（原 11 条全部保留）：
 
 ```bash
 gh api -X PATCH repos/Bert0000000000/MetaPlatform/branches/main/protection/required_status_checks \
