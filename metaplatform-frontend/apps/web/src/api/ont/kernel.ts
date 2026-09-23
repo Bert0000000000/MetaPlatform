@@ -691,6 +691,37 @@ export async function listAxioms(): Promise<KernelAxiom[]> {
   return list<KernelAxiom>('/axioms');
 }
 
+export interface AxiomValidationViolation {
+  axiom_rid?: string;
+  /** disjoint / has_key / subclass */
+  kind?: string;
+  severity?: string;
+  focus_node?: string;
+  message?: string;
+  [key: string]: unknown;
+}
+
+export interface AxiomValidationReport {
+  conforms: boolean;
+  violations: AxiomValidationViolation[];
+  /** checked = 有规则可跑的公理数，skipped = Core 未覆盖的 kind 数。 */
+  stats: { checked: number; violated: number; skipped: number };
+}
+
+/**
+ * Axiom 运行时违规检查：POST /v2/axioms/validate（ADR-0070）。
+ *
+ * <p>与 SHACL 校验并列但独立——SHACL 消费 ObjectType 合成 shapes，本端点消费
+ * Axiom 公理（Core 三条：disjoint / has_key / subclass）。其余 kind 计入
+ * stats.skipped。axiom_rid 缺省校验全部公理，target_class 限定实例范围。
+ */
+export async function validateAxioms(
+  payload: { axiom_rid?: string; target_class?: string } = {},
+): Promise<AxiomValidationReport> {
+  const resp = await apiClient.post(v2('/axioms/validate'), payload);
+  return resp.data as AxiomValidationReport;
+}
+
 /** GOV-19：时序窗口查询。 */
 export interface TimeseriesPoint {
   ts: string;

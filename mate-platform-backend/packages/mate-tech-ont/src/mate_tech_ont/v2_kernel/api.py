@@ -4278,6 +4278,46 @@ async def list_axioms_dto(
     return [_axiom_to_dto(i) for i in items]
 
 
+@router.post(
+    "/axioms/validate",
+    response_model=dict,
+    operation_id="ontValidateV2Axioms",
+)
+async def validate_axioms_endpoint(request: Request, payload: dict) -> dict:
+    """ADR-0070：Axiom 运行时违规检查（Core 三条规则）。
+
+    body::
+
+        {
+            "axiom_rid": "ont.<tenant>.ax.<slug>.<v>",  # 可选；缺省校验全部公理
+            "target_class": "ont.<tenant>.obj.<slug>.<v>",  # 可选；限定实例范围
+        }
+
+    与 `/shacl/validate` 并列但独立——SHACL 消费 ObjectType 合成 shapes，
+    本端点消费 Axiom 公理（disjoint / has_key / subclass）；未覆盖的
+    AxiomKind 计入 `stats.skipped`，不影响 conforms。返回结构与 SHACL
+    报告一致，前端复用同一渲染。
+    """
+    ctx = _ctx(request)
+    axiom_rid = str(payload.get("axiom_rid") or "")
+    if axiom_rid and not axiom_rid.startswith(f"ont.{ctx.tenant_id}."):
+        raise HTTPException(status_code=403, detail="cross-tenant axiom denied")
+    target_class = str(payload.get("target_class") or "")
+    if target_class and not target_class.startswith(f"ont.{ctx.tenant_id}."):
+        raise HTTPException(status_code=403, detail="cross-tenant axiom target denied")
+
+    from mate_tech_ont.v2_kernel.axiom_validation import validate_axioms
+
+    with _scoped_repo(request) as repo:
+        return await asyncio.to_thread(
+            validate_axioms,
+            repo,
+            ctx.tenant_id,
+            axiom_rid=axiom_rid or None,
+            target_class=target_class or None,
+        )
+
+
 # ─────────────────── 10) Function CRUD ───────────────────
 
 

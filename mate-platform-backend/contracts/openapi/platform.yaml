@@ -603,6 +603,8 @@ paths:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1agent-tools
   /api/v1/ont/v2/axioms:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1axioms
+  /api/v1/ont/v2/axioms/validate:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1axioms~1validate
   /api/v1/ont/v2/classes/{class_rid}/inspect:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1classes~1{class_rid}~1inspect
   /api/v1/ont/v2/classes/{class_rid}/propose-instance:
