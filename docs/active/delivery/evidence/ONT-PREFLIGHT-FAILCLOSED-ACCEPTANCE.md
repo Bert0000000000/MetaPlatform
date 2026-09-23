@@ -110,3 +110,4 @@ violation/partial/unavailable 下一律 409 且**零业务写入、提案停在 
 | ga-013-networkpolicy | 13 NetworkPolicy 缺失 = prod 不通过 | N/A 本批无网络策略改动 |
 
 **证据**：本文件。**命令**：见 §4 测试表。
+**commit**：`77376b08`（ADR-0072 + 失败测试）、`dbf4f1a4`（实现 + 前端类型）、`e47fc5d2`（本验收证据）——PR #83。
