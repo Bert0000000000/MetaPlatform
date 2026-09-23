@@ -7,7 +7,7 @@
  *  - 对象浏览：类型树 + 实例表 + 点击行弹非模态 SheetDetail；
  *  - 数据映射：三子页独立成页（IA2-3 拆分）；
  *  - 类型建模：7 个子 tab 带真实计数（容器内部 tab，IA2-2 拆分）；
- *  - 发布与治理（草稿）：OpsPage 三个真实运维面（IA2-5/2-6 拆分）；
+ *  - 发布与治理（草稿）：独立成页（IA2-6 拆分）；
  *  - 浅 / 深双主题截图。
  *
  * 运行：pnpm --dir apps/web exec playwright test ui-p1a-ontology
@@ -130,14 +130,12 @@ test.describe('UI-P1a · 本体域（IA v2 工作区）', () => {
     });
   });
 
-  test('发布与治理（草稿）：真实运维面（IA2-5 后 audit 已迁执行记录页）', async ({ page }) => {
+  test('发布与治理（草稿）：独立成页（IA2-6 拆分，容器 Tab 消亡）', async ({ page }) => {
     await gotoApp(page, '/ontology/governance/drafts');
-    const tabs = page.locator('.mp-onto-shell .semi-tabs-tab');
-    for (const label of ['版本与发布', '治理']) {
-      await expect(tabs.filter({ hasText: label })).toBeVisible({ timeout: 20_000 });
-    }
-    // 表格壳或空状态二选一必然存在（不出现白屏）
+    // 草稿清单 + 应用/丢弃操作卡（SchemaWipCard）
     await expect(page.locator('.mp-tablepro, .mp-empty').first()).toBeVisible({ timeout: 20_000 });
+    // OpsPage 容器时代的内部 Tab 不复存在（详细断言在 governance-flow）
+    await expect(page.locator('.mp-onto-shell .semi-tabs-bar-button')).toHaveCount(0);
   });
 
   test('浅 / 深双主题截图（视觉证据）', async ({ page }) => {
