@@ -621,6 +621,8 @@ paths:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1interfaces~1{rid}
   /api/v1/ont/v2/link-instances:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1link-instances
+  /api/v1/ont/v2/link-instances/stats:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1link-instances~1stats
   /api/v1/ont/v2/link-types:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1link-types
   /api/v1/ont/v2/link-types/{rid}:

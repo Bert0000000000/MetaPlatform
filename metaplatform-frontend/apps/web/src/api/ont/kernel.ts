@@ -1072,10 +1072,42 @@ export interface KernelLinkInstance {
   marking?: string[];
 }
 
-/** LinkInstance 浏览：GET /v2/link-instances（全租户列表，按 link_type_rid 客户端过滤）。 */
-export async function listLinkInstances(): Promise<KernelLinkInstance[]> {
-  const resp = await apiClient.get(v2('/link-instances'));
+/** LinkInstance 浏览参数：过滤与分页都在**服务端**完成（ONT-QUERY-SEMANTICS §3）。 */
+export interface ListLinkInstancesParams {
+  linkTypeRid?: string;
+  src?: string;
+  dst?: string;
+  limit?: number;
+  offset?: number;
+}
+
+/** LinkInstance 浏览：`GET /v2/link-instances`（服务端按类型/源/目标过滤 + 分页）。 */
+export async function listLinkInstances(
+  params?: ListLinkInstancesParams,
+): Promise<KernelLinkInstance[]> {
+  const resp = await apiClient.get(v2('/link-instances'), {
+    params: params
+      ? {
+          link_type_rid: params.linkTypeRid,
+          src: params.src,
+          dst: params.dst,
+          limit: params.limit,
+          offset: params.offset,
+        }
+      : undefined,
+  });
   return resp.data as KernelLinkInstance[];
+}
+
+/** 各关系类型的实例数：`GET /v2/link-instances/stats`（服务端 GROUP BY）。 */
+export interface LinkInstanceStats {
+  by_link_type: Record<string, number>;
+  total: number;
+}
+
+export async function getLinkInstanceStats(): Promise<LinkInstanceStats> {
+  const resp = await apiClient.get(v2('/link-instances/stats'));
+  return resp.data as LinkInstanceStats;
 }
 
 export interface ObjectSetQuery {
