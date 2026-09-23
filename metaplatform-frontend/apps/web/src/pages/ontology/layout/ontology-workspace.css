@@ -85,17 +85,19 @@
   opacity: 0.55;
 }
 
-/* 链接：舒展行高（28px）+ 相对定位挂左指示条 */
+/* 链接：视觉语言对齐全站二级导航（Semi button 胶囊，2026-09-23 探针基准：
+   14px / 未选 400 text-2 透明底 / 选中 600 主色 + 主色 13% 底 / 圆角 6px）。
+   垂直侧栏仅压缩纵向 padding（6px，探针横向为 8px）控制整栏高度。 */
 .mp-onto-sidenav-link {
-  position: relative;
   display: flex;
   align-items: center;
   gap: var(--mp-space-2);
-  min-height: 28px;
-  padding: var(--mp-space-1) var(--mp-space-3);
-  border-radius: var(--semi-border-radius-medium);
-  font-size: 13px;
-  color: var(--semi-color-text-1);
+  min-height: 32px;
+  padding: var(--mp-space-2) var(--mp-space-3);
+  border-radius: var(--semi-border-radius-small);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--semi-color-text-2);
   text-decoration: none;
   white-space: nowrap;
   transition:
@@ -103,31 +105,9 @@
     color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 左指示条：默认收缩成 0 宽的圆角短条，选中时撑开——呼吸感 */
-.mp-onto-sidenav-link::before {
-  content: '';
-  position: absolute;
-  left: 2px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  height: 14px;
-  border-radius: 2px;
-  background: var(--semi-color-primary);
-  opacity: 0;
-  transition:
-    width 0.18s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
 .mp-onto-sidenav-link:hover {
   background: var(--semi-color-fill-0);
   color: var(--semi-color-text-0);
-}
-
-.mp-onto-sidenav-link:hover::before {
-  opacity: 0.28;
-  width: 3px;
 }
 
 .mp-onto-sidenav-link.is-active {
@@ -136,13 +116,11 @@
   font-weight: 600;
 }
 
-.mp-onto-sidenav-link.is-active::before {
-  opacity: 1;
-  width: 3px;
-  height: 16px;
+.mp-onto-sidenav-link--top {
+  font-weight: 500;
 }
 
-.mp-onto-sidenav-link--top {
+.mp-onto-sidenav-link--top.is-active {
   font-weight: 600;
 }
 
@@ -157,7 +135,7 @@
 .mp-onto-sidenav-link-count {
   flex: none;
   margin-left: auto;
-  font-size: 11px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   color: var(--semi-color-text-2);
 }
@@ -199,12 +177,8 @@
   }
 
   .mp-onto-sidenav-link {
-    min-height: 26px;
-    padding: 2px var(--mp-space-2);
-    font-size: 12px;
-  }
-
-  .mp-onto-sidenav-link::before {
-    left: 1px;
+    min-height: 30px;
+    padding: var(--mp-space-2) var(--mp-space-2);
+    font-size: 13px;
   }
 }
