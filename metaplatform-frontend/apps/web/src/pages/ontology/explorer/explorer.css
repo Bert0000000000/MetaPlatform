@@ -127,31 +127,3 @@
 }
 
 /* 沿关系跳转的面包屑（详情浮层标题） */
-.mp-explorer-trail {
-  display: flex;
-  align-items: center;
-  gap: var(--mp-space-2);
-  min-width: 0;
-  font-size: 13px;
-}
-
-.mp-explorer-trail-step {
-  color: var(--semi-color-text-3);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.mp-explorer-trail-step::after {
-  content: '›';
-  margin-left: var(--mp-space-2);
-  color: var(--semi-color-text-3);
-}
-
-.mp-explorer-trail-current {
-  font-weight: 600;
-  color: var(--semi-color-text-0);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}

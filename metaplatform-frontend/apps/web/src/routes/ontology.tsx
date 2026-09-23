@@ -4,8 +4,16 @@ import '@/pages/ontology/ontology.css';
 import OntologyWorkspaceLayout from '@/pages/ontology/layout/OntologyWorkspaceLayout';
 import OverviewPage from '@/pages/ontology/overview/OverviewPage';
 import ObjectExplorerPage from '@/pages/ontology/explorer/ObjectExplorerPage';
-import DatacenterPage from '@/pages/ontology/datacenter/DatacenterPage';
-import OpsPage from '@/pages/ontology/ops/OpsPage';
+import ObjectMappingsPage from '@/pages/ontology/data/mappings/ObjectMappingsPage';
+import SyncJobsPage from '@/pages/ontology/data/sync/SyncJobsPage';
+import OntologyLineagePage from '@/pages/ontology/data/lineage/OntologyLineagePage';
+import DraftsPage from '@/pages/ontology/governance/drafts/DraftsPage';
+import ReleasesPage from '@/pages/ontology/governance/releases/ReleasesPage';
+import UsagePage from '@/pages/ontology/governance/usage/UsagePage';
+import LintPage from '@/pages/ontology/governance/lint/LintPage';
+import SecurityPage from '@/pages/ontology/governance/security/SecurityPage';
+import ImportExportPage from '@/pages/ontology/governance/import-export/ImportExportPage';
+import AuditPage from '@/pages/ontology/governance/audit/AuditPage';
 import ObjectTypesPage from '@/pages/ontology/model/object-types/ObjectTypesPage';
 import ObjectTypeDetailPage from '@/pages/ontology/model/object-types/ObjectTypeDetailPage';
 import LinkTypesPage from '@/pages/ontology/model/link-types/LinkTypesPage';
@@ -14,7 +22,11 @@ import AxiomsPage from '@/pages/ontology/model/axioms/AxiomsPage';
 import OntologyGraphPage from '@/pages/ontology/model/graph/OntologyGraphPage';
 import ModelValidationPage from '@/pages/ontology/model/validation/ModelValidationPage';
 import ActionTypesPage from '@/pages/ontology/logic/actions/ActionTypesPage';
+import ActionTypeDetailPage from '@/pages/ontology/logic/actions/ActionTypeDetailPage';
 import FunctionsPage from '@/pages/ontology/logic/functions/FunctionsPage';
+import FunctionDetailPage from '@/pages/ontology/logic/functions/FunctionDetailPage';
+import ActionRunsPage from '@/pages/ontology/logic/runs/ActionRunsPage';
+import ActionDesignerPage from '@/pages/ontology/logic/designer/ActionDesignerPage';
 
 /**
  * 本体域路由表（ADR-0069 IA v2：工作区 + 六大功能域嵌套路由）。
@@ -28,8 +40,6 @@ import FunctionsPage from '@/pages/ontology/logic/functions/FunctionsPage';
  * 尚未拆出的页面（model/validation、data/sync、explore/objects/:rid、
  * logic/actions/:rid 等）**不注册**——没有路由就没有空壳页（设计规格 §2.5）。
  */
-const OntologyActionPage = lazy(() => import('@/pages/ontology/OntologyActionPage'));
-const GovernancePage = lazy(() => import('@/pages/ontology/GovernancePage'));
 const AnalysisPage = lazy(() => import('@/pages/ontology/AnalysisPage'));
 const MapPage = lazy(() => import('@/pages/ontology/MapPage'));
 
@@ -77,40 +87,50 @@ export const ontologyRoutes = (
       <Route path="validation" element={<ModelValidationPage />} />
     </Route>
 
-    {/* 数据映射：ingest=对象映射（接入+背挂数据源+同步健康）、lineage=本体血缘；
-        sync 独立页随 IA2-3 拆出后再注册 */}
+    {/* 数据映射（IA2-3 已拆分）：对象映射 / 同步任务 / 本体血缘独立成页；
+        全局资产清单（AssetsInventoryPage）移出本体导航，归宿数据与治理域 */}
     <Route path="data">
       <Route index element={<Navigate to="mappings" replace />} />
-      <Route path="mappings" element={<DatacenterPage initialView="ingest" />} />
-      <Route path="lineage" element={<DatacenterPage initialView="lineage" />} />
+      <Route path="mappings" element={<ObjectMappingsPage />} />
+      <Route path="sync" element={<SyncJobsPage />} />
+      <Route path="lineage" element={<OntologyLineagePage />} />
     </Route>
 
-    {/* 对象与查询：对象浏览原样迁入；:rid 详情路由随 IA2-4 落地 */}
+    {/* 对象与查询（IA2-4）：/objects 列表与 /objects/:rid 详情是同一条路由
+        （可选段）——打开/关闭/关系跳转不重挂列表，URL 是详情唯一真相 */}
     <Route path="explore">
       <Route index element={<Navigate to="objects" replace />} />
-      <Route path="objects" element={<ObjectExplorerPage />} />
+      <Route path="objects/:rid?" element={<ObjectExplorerPage />} />
       <Route path="analysis" element={<AnalysisPage />} />
       <Route path="map" element={<MapPage />} />
     </Route>
 
-    {/* 动作与函数：IA2-2 起动作类型/函数为独立页（从语义模型迁出）；
-        designer=原 OntologyActionPage；runs=OpsPage 的 Action 执行记录（audit）。
-        actions/:rid 与 functions/:rid 详情随 IA2-5 落地 */}
+    {/* 动作与函数（IA2-5 已拆分）：列表 + :rid 详情（四真 Tab 进 URL）+
+        Action 编排（原 OntologyActionPage 迁移）+ 执行记录唯一权威页
+        （?action= 深链过滤）。approvals 无真实数据不注册（设计规格 §2.5） */}
     <Route path="logic">
       <Route index element={<Navigate to="actions" replace />} />
       <Route path="actions" element={<ActionTypesPage />} />
+      <Route path="actions/:rid" element={<ActionTypeDetailPage />} />
+      <Route path="actions/:rid/:tab" element={<ActionTypeDetailPage />} />
       <Route path="functions" element={<FunctionsPage />} />
-      <Route path="designer" element={<OntologyActionPage />} />
-      <Route path="runs" element={<OpsPage initialTab="audit" />} />
+      <Route path="functions/:rid" element={<FunctionDetailPage />} />
+      <Route path="functions/:rid/:tab" element={<FunctionDetailPage />} />
+      <Route path="designer" element={<ActionDesignerPage />} />
+      <Route path="runs" element={<ActionRunsPage />} />
     </Route>
 
-    {/* 发布与治理：drafts=OpsPage 的 Schema WIP 草稿面（release tab）；
-        releases 暂挂 GovernancePage（branch/diff/rollback 等，IA2-6 拆分）；
-        usage/lint/security/import-export/audit 随 IA2-6 逐个拆出后注册 */}
+    {/* 发布与治理（IA2-6 已拆分）：七子页独立成页；Action 审计明细在
+        logic/runs（唯一权威页），audit 只做平台级汇总；Agent 指标已删（§7.6） */}
     <Route path="governance">
       <Route index element={<Navigate to="drafts" replace />} />
-      <Route path="drafts" element={<OpsPage initialTab="release" />} />
-      <Route path="releases" element={<GovernancePage />} />
+      <Route path="drafts" element={<DraftsPage />} />
+      <Route path="releases" element={<ReleasesPage />} />
+      <Route path="usage" element={<UsagePage />} />
+      <Route path="lint" element={<LintPage />} />
+      <Route path="security" element={<SecurityPage />} />
+      <Route path="import-export" element={<ImportExportPage />} />
+      <Route path="audit" element={<AuditPage />} />
     </Route>
   </Route>
 );

@@ -1,0 +1,12 @@
+.governance-card-host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
+}
+
+/* 治理拆分页（IA2-6）通用容器：沿用原 GovernancePage 的块级节奏 */
+.mp-gov-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-3);
+}

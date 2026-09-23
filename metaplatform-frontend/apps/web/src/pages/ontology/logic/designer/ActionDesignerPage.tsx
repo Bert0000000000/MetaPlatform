@@ -41,7 +41,7 @@ import {
 import { defaultFixedSemiMaterials } from '@flowgram.ai/fixed-semi-materials';
 import '@flowgram.ai/free-layout-editor/index.css';
 import '@flowgram.ai/fixed-layout-editor/index.css';
-import './ontology-action.css';
+import '../../ontology-action.css';
 // 后续使用：<Field label="..."> —— 用 @mate/shared 的 FormFields.Field
 import { FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
 import {
@@ -49,7 +49,7 @@ import {
   getActionFlow, putActionFlow,
   type KernelActionType, type KernelObjectType,
 } from '@/api/ont/kernel';
-import { actionDisplayName } from './actions/ActionTypeListPage';
+import { actionDisplayName } from '../actions/displayName';
 
 // 节点属性配置
 const NODE_PROPS: Record<string, Record<string, unknown>> = {
@@ -1825,7 +1825,7 @@ function CustomBaseNode() {
   );
 }
 
-export default function OntologyActionPage() {
+export default function ActionDesignerPage() {
   const navigate = useNavigate();
     const [actionTypes, setActionTypes] = useState<KernelActionType[]>([]);
   const [objectTypes, setObjectTypes] = useState<KernelObjectType[]>([]);

@@ -10,8 +10,8 @@ import {
   type KernelObjectType,
 } from '@/api/ont/kernel';
 import { DataTablePro, EmptyState, SheetDetail } from '@/components/skeleton';
-import { ridTail } from '../rid';
-import './datacenter.css';
+import { ridTail } from '../../rid';
+import './backing-datasource.css';
 
 /**
  * 背挂数据源（DATA-14/15）。

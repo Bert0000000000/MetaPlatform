@@ -19,7 +19,7 @@ import {
   type ObjectTypeCandidate, type DestructiveConfirmDetail, type TypeHierarchyNode,
 } from '@/api/ont/kernel';
 import { getTenantId } from '@/utils/auth';
-import { actionDisplayName } from './actions/ActionTypeListPage';
+import { actionDisplayName } from './logic/actions/displayName';
 import OntologyMergeDrawer from './components/OntologyMergeDrawer';
 import ObjectTypeEditorV2Drawer, { type ObjectTypeEditorPrefill } from './components/ObjectTypeEditorV2Drawer';
 import './ontology.css';

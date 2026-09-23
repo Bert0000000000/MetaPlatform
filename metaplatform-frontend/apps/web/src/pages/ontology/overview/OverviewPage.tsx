@@ -335,9 +335,9 @@ export default function OverviewPage() {
                     theme="borderless"
                     type="primary"
                     size="small"
-                    onClick={() => navigate('/ontology/data/mappings')}
+                    onClick={() => navigate('/ontology/data/sync')}
                   >
-                    对象映射 <ArrowRight size={14} strokeWidth={1.5} />
+                    同步任务 <ArrowRight size={14} strokeWidth={1.5} />
                   </Button>
                 </div>
                 {sync.length === 0 ? (
