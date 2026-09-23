@@ -204,11 +204,18 @@ class TestInterfacePolymorphicListing:
         # 实现类型（P1/W1）+ 后代（C1）；非实现（V1）排除
         assert pks == ["C1", "P1", "W1"]
 
-    def test_object_type_listing_stays_exact_match(self, pg_repo):
-        """具体 ObjectType 保持精确匹配：PLANT 不含其子类 C1（既有行为不变）。"""
+    def test_object_type_listing_follows_subclass_closure(self, pg_repo):
+        """ONT-QUERY-SEMANTICS：具体 ObjectType 与查询路径**同规则** —— 含后代闭包。
+
+        本批把「浏览对具体类型只做精确匹配」改为与 ObjectSet / Agent 一致的闭包语义
+        （父子类规则一处定义，见 ADR-0077）：PLANT 现在包含子类 C1 的实例；
+        **叶子类型仍精确**（无后代可展开）。
+        """
         _seed(pg_repo)
         rows = pg_repo.list_individuals(ClassRef(PLANT))
-        assert [i.primary_key for i in rows] == ["P1"]
+        assert sorted(i.primary_key for i in rows) == ["C1", "P1"]
+        leaf = pg_repo.list_individuals(ClassRef(COLD_PLANT))
+        assert [i.primary_key for i in leaf] == ["C1"]
 
     def test_interface_without_implementors_returns_empty(self, pg_repo):
         _seed(pg_repo)

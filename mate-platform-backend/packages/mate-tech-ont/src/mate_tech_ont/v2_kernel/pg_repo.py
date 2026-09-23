@@ -2246,9 +2246,11 @@ class PgOntologyRepository(OntologyRepository):
         # ObjectType 保持精确匹配（既有行为不变）。
         class_filter: tuple[str, ...] | None = None
         if class_rid is not None:
-            class_filter = self._list_source_allowed(class_rid.rid)
-            if class_filter is None:
-                class_filter = (class_rid.rid,)
+            # ONT-QUERY-SEMANTICS：与 ObjectSet / Agent 路径**同一**源类解析
+            # （Interface 实现类型 + 后代；具体类型 + 后代）。
+            class_filter = self._resolve_source_classes(class_rid.rid)
+            if not class_filter:
+                return []  # Interface 无实现类型 → 空结果（不得退化成"不过滤"）
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
@@ -2259,13 +2261,10 @@ class PgOntologyRepository(OntologyRepository):
                     where.append("tenant_id = %s")
                     params.append(tenant)
                 if class_filter is not None:
-                    if len(class_filter) == 1:
-                        where.append("class_rid = %s")
-                        params.append(class_filter[0])
-                    else:
-                        where.append("class_rid = ANY(%s)")
-                        params.append(list(class_filter))
-                        order = "class_rid, rid"
+                    where.append("class_rid = ANY(%s)")
+                    params.append(list(class_filter))
+                    # 稳定排序：类 + rid（分页可复现）
+                    order = "class_rid, rid"
                 sql = "SELECT * FROM ont_individual"
                 if where:
                     sql += " WHERE " + " AND ".join(where)
@@ -2276,30 +2275,64 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
-    def _list_source_allowed(self, source_rid: str) -> tuple[str, ...] | None:
-        """Interface 源 → 展开类集合；None = 非 Interface（精确匹配）。"""
-        target = source_rid
-        try:
-            ifcs = self.list_interfaces()
-        except Exception:
-            return None
-        if not any(i.rid.rid == target for i in ifcs):
-            return None
-        from mate_kernel.ontology.reasoning.engine import descendant_closure
-        from mate_kernel.ontology.types.interface import interface_source_rids
+    def _resolve_source_classes(self, source_rid: str) -> tuple[str, ...]:
+        """**统一源类解析**（唯一语义实现：`mate_kernel.objectset.source_resolution`）。
 
-        impl = interface_source_rids(target, self.list_object_types(limit=10000, offset=0))
-        closure = descendant_closure(
-            [
-                (t.rid.rid, t.parent_class.rid)
-                for t in self.list_object_types(limit=10000, offset=0)
-                if t.parent_class is not None
-            ]
+        规则：Interface → 实现类型 + 各自后代；ObjectType → 自身 + 后代
+        （沿**启用**的 subclass 公理）；未注册 → 精确；无实现类型的 Interface → 空集。
+        类型/接口/公理**一次性批量取**（不逐条回查）；浏览 / ObjectSet / Agent
+        三条路径共用本方法，语义不再分叉。
+        """
+        from mate_kernel.objectset.source_resolution import resolve_source_classes
+
+        types = self.list_object_types(limit=10000, offset=0)
+        try:
+            interfaces = self.list_interfaces()
+        except Exception:
+            interfaces = []
+        parts = source_rid.split(".")
+        tenant = parts[1] if source_rid.startswith("ont.") and len(parts) >= 3 else ""
+        pairs: list[tuple[str, str]] = []
+        if tenant:
+            try:
+                axioms = self.list_axiom_records(tenant, enabled_only=True)
+            except Exception:
+                axioms = []
+            for a in axioms:
+                ops = a.get("operands") or []
+                if a.get("kind") == "subclass" and len(ops) >= 2:
+                    pairs.append((str(ops[0]), str(ops[1])))
+        return resolve_source_classes(
+            source_rid,
+            object_types=types,
+            interface_rids={i.rid.rid for i in interfaces},
+            subclass_pairs=pairs,
         )
-        allowed: set[str] = set(impl)
-        for b in impl:
-            allowed |= closure.get(b, set())
-        return tuple(sorted(allowed))
+
+    def _order_by_sql(
+        self,
+        keys: list[tuple[str, bool]],
+        slug_to_rid: dict[str, str],
+        rid_type: dict[str, str],
+    ) -> str:
+        """多键排序 → ORDER BY 片段，**末尾恒加 rid 稳定决胜键**（分页可复现）。
+
+        字段 slug → rid 归一；未声明字段显式报错（不静默回落）；JSONB 键走字符集
+        白名单；数值类型 `::numeric`，其余 `::text`。null 序：PG 默认
+        （ASC → NULLS LAST / DESC → NULLS FIRST）与 InMemory `_sort_rank`
+        （None 恒为最低档）一致。浏览 / ObjectSet / Agent 共用。
+        """
+        parts: list[str] = []
+        for field_name, desc in keys:
+            key = slug_to_rid.get(field_name, field_name)
+            if not _SAFE_JSON_KEY.match(key):
+                raise ValueError(f"unsafe sort field {field_name!r}")
+            _require_resolvable_field(field_name, set(slug_to_rid), kind="sort")
+            cast = "::numeric" if rid_type.get(key) in _NUMERIC_TYPE_IDS else "::text"
+            direction = "DESC" if desc else "ASC"
+            parts.append(f"(props ->> '{key}'){cast} {direction}")
+        parts.append("rid")  # 稳定决胜键：同键值集的分页顺序唯一
+        return " ORDER BY " + ", ".join(parts)
 
     def create_link_instance(self, li: LinkInstance) -> LinkInstance:
         self._ensure_schema()
@@ -2740,10 +2773,8 @@ class PgOntologyRepository(OntologyRepository):
             for p in ot.properties:
                 slug_to_rid[_prop_slug(p.rid.rid)] = p.rid.rid
                 rid_type[p.rid.rid] = p.type_id
-        # EXP-01：Interface 多态查询源 —— source 是已注册 Interface rid 时，
-        # 展开为实现类型集合（slug 归一化用 Interface 自身 properties ——
-        # 共享属性 rid 在全部实现类型上一致）。
-        interface_source: list[str] = []
+        # Interface 源：slug 归一化用接口自身的属性声明（共享属性 rid 在全部实现
+        # 类型上一致）。**源类集合解析交给统一实现**（见下方 _resolve_source_classes）。
         if ot is None:
             try:
                 ifcs = self.list_interfaces()
@@ -2755,12 +2786,6 @@ class PgOntologyRepository(OntologyRepository):
                 None,
             )
             if ifc is not None:
-                from mate_kernel.ontology.types.interface import interface_source_rids
-
-                interface_source = interface_source_rids(
-                    target,
-                    self.list_object_types(limit=10000, offset=0),
-                )
                 for p in ifc.properties:
                     slug_to_rid[_prop_slug(p.rid.rid)] = p.rid.rid
                     rid_type[p.rid.rid] = p.type_id
@@ -2771,97 +2796,18 @@ class PgOntologyRepository(OntologyRepository):
         sqlc = _RepoSQLCompiler()
         where_sql, params = sqlc.compile_where(compiled)
 
-        # sort —— 键同样做 slug→rid 归一化，cast 按 Property.type_id 分支
-        # （数值类型 ::numeric，其余 ::text；旧版一律 ::numeric 会让任何
-        # 字符串字段排序直接 DataError）。键经 _SAFE_JSON_KEY 白名单校验
-        # 后嵌入（无引号/分号字符面），防注入。
-        order_by = ""
-        if os_.sort:
-            raw = os_.sort[0]
-            reverse = raw.startswith("-")
-            field_name = raw[1:] if raw.startswith("-") else raw
-            key = slug_to_rid.get(field_name, field_name)
-            if not _SAFE_JSON_KEY.match(key):
-                raise ValueError(f"unsafe sort field {field_name!r}")
-            # 同族静默路径修复：未知字段此前静默回落 → 排序"无效果"不报错。
-            # 放在字符集校验**之后** —— 注入类字段仍报 "unsafe sort field"。
-            _require_resolvable_field(field_name, set(slug_to_rid), kind="sort")
-            cast = "::numeric" if rid_type.get(key) in _NUMERIC_TYPE_IDS else "::text"
-            direction = "DESC" if reverse else "ASC"
-            order_by = f" ORDER BY (props ->> '{key}'){cast} {direction}"
-
-        # ONT-G21: 推理层级对 ObjectSet 可见 —— 按本租户已注册 subclass
-        # 公理把「查询类」扩展为「类 + 传递后代类」。公理 operands 存
-        # [sub, sup]，可为本体完整 rid 或 slug；slug 先解析成本租户已注册
-        # 类型的完整 rid（跨写法的传递链才能连通），再求后代闭包。无公理
-        # 时行为与旧版完全一致（仅精确匹配）。
-        rid_str = os_.class_rid.rid
-        rid_parts = rid_str.split(".")
-        axiom_tenant = rid_parts[1] if rid_str.startswith("ont.") and len(rid_parts) >= 3 else ""
-        rid_by_slug: dict[str, set[str]] = {}
-        if axiom_tenant:
-            try:
-                conn_t, _c = self._connect()
-                try:
-                    with self._cursor(conn_t) as cur:
-                        cur.execute(
-                            "SELECT rid FROM ont_object_type WHERE rid LIKE %s",
-                            (f"ont.{axiom_tenant}.obj.%.%",),
-                        )
-                        for row in cur.fetchall():
-                            type_rid = row["rid"] if isinstance(row, dict) else row[0]
-                            t_parts = type_rid.split(".")
-                            # EXP-01 修复：6 段 rid（ont.t.obj.domain.slug.vN）的 slug
-                            # 在 t_parts[4]；t_parts[3] 是 domain，误注册会让 slug 公理
-                            # 解析到整个 domain。5 段 legacy rid（无 domain）slug 在 [3]。
-                            if len(t_parts) >= 6:
-                                rid_by_slug.setdefault(t_parts[4], set()).add(type_rid)
-                            elif len(t_parts) == 5:
-                                rid_by_slug.setdefault(t_parts[3], set()).add(type_rid)
-                finally:
-                    conn_t.close()
-            except Exception:
-                rid_by_slug = {}
-
-        def _canon(tok: str) -> frozenset[str]:
-            if tok.startswith("ont."):
-                return frozenset({tok})
-            return frozenset(rid_by_slug.get(tok, set()))
-
-        # EXP-01：源类集合 —— Interface 源展开为实现类型；普通源就是自身。
-        source_rids: list[str] = interface_source or [rid_str]
-        class_conds: list[str] = []
-        class_params: list[Any] = []
-        closure_map: dict[str, set[str]] = {}
-        if axiom_tenant:
-            try:
-                axiom_rows = self.list_axiom_records(axiom_tenant, enabled_only=True)
-            except Exception:
-                axiom_rows = []
-            canon_pairs: list[tuple[str, str]] = []
-            for row in axiom_rows:
-                if row.get("kind") != "subclass":
-                    continue
-                ops = row.get("operands") or []
-                if len(ops) >= 2:
-                    for sub in _canon(str(ops[0])):
-                        for sup in _canon(str(ops[1])):
-                            canon_pairs.append((sub, sup))
-            if canon_pairs:
-                from mate_kernel.ontology.reasoning.engine import descendant_closure
-
-                closure_map = descendant_closure(canon_pairs)
-        for srid in source_rids:
-            class_conds.append("class_rid = %s")
-            class_params.append(srid)
-            desc_tokens = closure_map.get(srid, set())
-            if desc_tokens:
-                class_conds.append("class_rid = ANY(%s)")
-                class_params.append(sorted(desc_tokens))
-        if not class_conds:  # interface 源无实现类型 → 恒空结果
-            return []
-        where_sql = f"({' OR '.join(class_conds)}) AND ({where_sql})"
-        params = [*class_params, *params]
+        # ONT-QUERY-SEMANTICS：排序与源类解析都走**统一实现**（多键 + rid 稳定决胜；
+        # Interface / 具体类型同一解析规则），不再各自一份。
+        order_by = self._order_by_sql(
+            [(s[1:] if s.startswith("-") else s, s.startswith("-")) for s in os_.sort],
+            slug_to_rid,
+            rid_type,
+        )
+        source_classes = self._resolve_source_classes(os_.class_rid.rid)
+        if not source_classes:
+            return []  # Interface 无实现类型 → 空结果
+        where_sql = f"(class_rid = ANY(%s)) AND ({where_sql})"
+        params = [list(source_classes), *params]
 
         # where_sql comes from SQLCompiler (not user input); order_by is a
         # controlled sort spec. Safe to compose via f-string.
@@ -2902,41 +2848,31 @@ class PgOntologyRepository(OntologyRepository):
                 slug_to_rid[_prop_slug(p.rid.rid)] = p.rid.rid
                 rid_type[p.rid.rid] = p.type_id
 
-        # EXP-01：Interface 多态查询源（IR 路径）—— source 是 Interface rid 时
-        # 展开为实现类型集合；无实现类型 → 空结果信封。
-        impl: list[str] = []
+        # ONT-QUERY-SEMANTICS：**统一源类解析**（Interface → 实现类型 + 各自后代；
+        # 具体类型 → 自身 + 后代）—— 与浏览 / evaluate_object_set 同一实现，
+        # 消除"同一语义参数在不同入口结果不同"。
+        source_classes = self._resolve_source_classes(q.source)
+        if not source_classes:
+            return QueryResult(kind="objects", rows=(), result_schema=None)
         if ot is None:
+            # Interface 源：slug 归一化用接口自身的属性声明（共享属性 rid 一致）
             try:
                 ifcs = self.list_interfaces()
             except Exception:
                 ifcs = []
             ifc = next((i for i in ifcs if i.rid.rid == q.source), None)
             if ifc is not None:
-                from mate_kernel.ontology.types.interface import interface_source_rids
-
                 for p in ifc.properties:
                     slug_to_rid[_prop_slug(p.rid.rid)] = p.rid.rid
                     rid_type[p.rid.rid] = p.type_id
-                impl = interface_source_rids(
-                    q.source,
-                    self.list_object_types(limit=10000, offset=0),
-                )
-                if not impl:
-                    return QueryResult(kind="objects", rows=(), result_schema=None)
-                params_inner: list[Any] = [impl]
-                inner = "SELECT rid FROM ont_individual WHERE class_rid = ANY(%s)"
-            else:
-                params_inner = [q.source]
-                inner = "SELECT rid FROM ont_individual WHERE class_rid = %s"
-        else:
-            params_inner = [q.source]
-            inner = "SELECT rid FROM ont_individual WHERE class_rid = %s"
+        params_inner: list[Any] = [list(source_classes)]
+        inner = "SELECT rid FROM ont_individual WHERE class_rid = ANY(%s)"
         # G13：nearestNeighbors —— inner 换成 embedding KNN 子查询
         # （先 KNN 后 filters：filters 作用于最终行集）
         if q.nearest is not None and self._embedder is not None:
             inner, params_inner = self._nearest_inner_sql(
                 q.nearest,
-                source_rids=impl if (ot is None and impl) else [q.source],
+                source_rids=list(source_classes),
                 fallback_classes=[q.source],
             )
         params: list[Any] = list(params_inner)
@@ -2970,17 +2906,9 @@ class PgOntologyRepository(OntologyRepository):
             return self._object_query_aggregate(q, inner, params, slug_to_rid, final_class)
 
         sql = f"SELECT * FROM ont_individual WHERE rid IN ({inner})"
-        order_parts: list[str] = []
-        for key in q.sort:
-            field_name = slug_to_rid.get(key.field, key.field)
-            _require_resolvable_field(key.field, set(slug_to_rid), kind="sort")
-            if not _SAFE_JSON_KEY.match(field_name):
-                raise ValueError(f"unsafe sort field {key.field!r}")
-            cast = "::numeric" if rid_type.get(field_name) in _NUMERIC_TYPE_IDS else "::text"
-            direction = "DESC" if key.desc else "ASC"
-            order_parts.append(f"(props ->> '{field_name}'){cast} {direction}")
-        if order_parts:
-            sql += " ORDER BY " + ", ".join(order_parts)
+        # ONT-QUERY-SEMANTICS：统一排序（多键 + **rid 稳定决胜键**）。
+        # 此前 q.sort 为空时不带 ORDER BY → 分页顺序不保证可比。
+        sql += self._order_by_sql([(k.field, k.desc) for k in q.sort], slug_to_rid, rid_type)
         sql += " LIMIT %s OFFSET %s"
         params.extend([q.paging_limit, q.paging_offset])
 
