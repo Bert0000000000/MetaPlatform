@@ -5,6 +5,7 @@ import {
   getMaterialization,
   getObjectType,
   listLinkTypes,
+  listObjectTypes,
   type KernelLinkType,
   type KernelObjectType,
   type MaterializationResult,
@@ -23,13 +24,14 @@ import '../../ontology.css';
  *
  * <p>:rid 由 React Router 解码；构造链接时调用方需 encodeURIComponent。
  */
-type DetailTab = 'overview' | 'properties' | 'links' | 'datasources';
+type DetailTab = 'overview' | 'properties' | 'links' | 'datasources' | 'history';
 
 const TABS: Array<{ key: DetailTab; label: string }> = [
   { key: 'overview', label: '概览' },
   { key: 'properties', label: '属性' },
   { key: 'links', label: '关系' },
   { key: 'datasources', label: '数据源' },
+  { key: 'history', label: '版本历史' },
 ];
 
 function normalizeTab(raw: string | undefined): DetailTab {
@@ -194,6 +196,8 @@ export default function ObjectTypeDetailPage() {
           loading={links === null}
           empty={<EmptyState illustration="no-content" title="没有挂在该类型上的关系" />}
         />
+      ) : tab === 'history' ? (
+        <VersionHistory rid={rid} />
       ) : materialization ? (
         <div className="mp-onto-detail-grid">
           <dl className="mp-onto-detail-list">
@@ -223,5 +227,71 @@ export default function ObjectTypeDetailPage() {
         />
       )}
     </ResourceDetailLayout>
+  );
+}
+
+/**
+ * 版本历史（概念完整性批次 · D）：Version 基元的语义层呈现。
+ * 同族版本 = listObjectTypes 里 rid 去掉末段版本号的聚合（零新契约）。
+ */
+function VersionHistory({ rid }: { rid: string }) {
+  const [rows, setRows] = useState<KernelObjectType[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const all = await listObjectTypes();
+        if (!active) return;
+        const family = rid.replace(/\.v\d+$/, '');
+        setRows(all.filter((t) => t.rid.replace(/\.v\d+$/, '') === family));
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [rid]);
+
+  return (
+    <DataTablePro
+      columns={[
+        {
+          title: '版本',
+          dataIndex: 'rid',
+          width: 140,
+          render: (v: string) => {
+            const ver = v.match(/\.v(\d+)$/)?.[1] ?? '—';
+            return <span className="mp-onto-strong">v{ver}</span>;
+          },
+        },
+        {
+          title: '显示名',
+          dataIndex: 'display_name',
+          width: 200,
+          ellipsis: true,
+        },
+        {
+          title: '属性数',
+          dataIndex: 'properties',
+          width: 90,
+          render: (v: KernelObjectType['properties']) => v.length,
+        },
+        {
+          title: '当前查看',
+          dataIndex: '__current',
+          width: 100,
+          render: (_: unknown, row: KernelObjectType) =>
+            row.rid === rid ? <Tag size="small" color="blue" type="light">当前</Tag> : null,
+        },
+        { title: 'rid', dataIndex: 'rid', ellipsis: true },
+      ]}
+      dataSource={rows}
+      rowKey="rid"
+      loading={loading}
+      empty={<EmptyState illustration="no-content" title="未找到同族版本" />}
+    />
   );
 }
