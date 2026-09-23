@@ -98,3 +98,4 @@
 | ga-013-networkpolicy | 13 NetworkPolicy 缺失 = prod 不通过 | N/A 无网络策略改动 |
 
 **证据**：本文件。**命令**：见 §4 测试表。
+**commit**：`18873049`（ADR-0074 + 失败用例）、`99c5cab3`（实现 + API 503）、`ba4714ce`（本验收证据）——PR #85。
