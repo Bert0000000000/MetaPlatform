@@ -14,7 +14,8 @@ export function pgConfigFromEnv(): PgConfig {
     host: process.env.PGHOST ?? 'localhost',
     port: Number(process.env.PGPORT ?? '5432'),
     user: process.env.PGUSER ?? 'meta',
-    password: process.env.PGPASSWORD ?? 'mate-pass',
+    // 默认对齐 docker-compose 内置默认（POSTGRES_USER/PASSWORD = meta/meta）
+    password: process.env.PGPASSWORD ?? 'meta',
     database: process.env.PGDATABASE ?? 'metaplatform_ont',
   };
 }

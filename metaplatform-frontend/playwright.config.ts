@@ -28,6 +28,14 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'], viewport: { width: 1600, height: 1000 } },
     },
     {
+      // ONTOLOGY-CORE-E2E：本体核心闭环（建模→数据映射同步→对象/关系查询→
+      // Proposal 确认执行→审计 + 违规/重复/失败恢复/跨租户）。自带真实登录，
+      // 不依赖 auth-setup 的 storageState。
+      name: 'ontology-loop-core',
+      testMatch: /ontology-loop\/ontology-core\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       name: 'ontology-loop-consistency',
       testMatch: /ontology-loop\/consistency\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], storageState: 'tests/e2e/.auth/state.json' },
