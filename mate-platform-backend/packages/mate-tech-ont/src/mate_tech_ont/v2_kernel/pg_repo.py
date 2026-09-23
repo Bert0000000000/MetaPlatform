@@ -974,6 +974,25 @@ def _li_to_row(li: LinkInstance) -> dict[str, Any]:
     }
 
 
+def _count_endpoint_edges(
+    cur: Any, link_type_rid: str, src: str, dst: str, exclude_rid: str
+) -> tuple[int, int]:
+    """既有同类型边数：(src 出边, dst 入边)，不含 ``exclude_rid``（upsert 幂等）。
+
+    在**调用方游标**上执行，便于与写入共享同一事务（并发保护见
+    ``_lock_link_endpoints``）。
+    """
+    cur.execute(
+        "SELECT"
+        " COUNT(*) FILTER (WHERE src = %s AND rid != %s) AS src_out,"
+        " COUNT(*) FILTER (WHERE dst = %s AND rid != %s) AS dst_in"
+        " FROM ont_link_instance WHERE link_type_rid = %s",
+        (src, exclude_rid, dst, exclude_rid, link_type_rid),
+    )
+    r = cur.fetchone()
+    return (int(r["src_out"]) if r else 0), (int(r["dst_in"]) if r else 0)
+
+
 def _row_to_li(row: dict[str, Any]) -> LinkInstance:
     props_dict: dict[str, Any] = row["props"] if isinstance(row["props"], dict) else {}
     return LinkInstance(
@@ -2285,16 +2304,22 @@ class PgOntologyRepository(OntologyRepository):
     def create_link_instance(self, li: LinkInstance) -> LinkInstance:
         self._ensure_schema()
         row = _li_to_row(li)
-        # EXP-03：基数校验（LinkType 已注册时强制；未注册类型保持 legacy 宽松）。
-        # F3：必须传 exclude_rid —— 下方 INSERT 是 ON CONFLICT (rid) DO UPDATE
-        # （upsert 语义），同一条链接重放不应被当成"第二条件边"。不传会导致
-        # 幂等重放误报 cardinality 违规并冒泡成 500（in_memory 路径已正确排除）。
-        self._check_link_cardinality(
-            row["link_type_rid"], row["src"], row["dst"], exclude_rid=row["rid"]
-        )
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
+                # LINK-CARDINALITY-CONCURRENCY：端点 DB 锁 → 基数校验 → 写入
+                # **同一事务**。校验绝不能另开连接（TOCTOU：两个连接各数到 0 条后
+                # 都写入成功，基数约束形同虚设）。
+                self._lock_link_endpoints(cur, row["link_type_rid"], row["src"], row["dst"])
+                # F3：必须传 exclude_rid —— 下方 INSERT 是 ON CONFLICT (rid) DO UPDATE
+                # （upsert 语义），同一条链接重放不应被当成"第二条件边"。
+                self._check_link_cardinality(
+                    row["link_type_rid"],
+                    row["src"],
+                    row["dst"],
+                    exclude_rid=row["rid"],
+                    cur=cur,
+                )
                 cur.execute(
                     """
                     INSERT INTO ont_link_instance
@@ -2321,8 +2346,21 @@ class PgOntologyRepository(OntologyRepository):
                 )
             conn.commit()
             return li
+        except Exception:
+            conn.rollback()
+            raise
         finally:
             conn.close()
+
+    def _lock_link_endpoints(self, cur: Any, link_type_rid: str, src: str, dst: str) -> None:
+        """跨进程互斥：对 (link_type, src) / (link_type, dst) 取事务级 advisory lock。
+
+        基数约束只取决于这两个端点的既有边数；对两端点加锁后，「数一遍 + 写一条」
+        在同一事务内被串行化 —— **两个进程/连接**并发写冲突关系时只有一个能通过检查。
+        按 key 排序依次加锁以避免死锁；锁随事务提交/回滚自动释放。
+        """
+        for key in sorted({f"{link_type_rid}|{src}", f"{link_type_rid}|{dst}"}):
+            cur.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))", (key,))
 
     def _flush_notify(self) -> None:
         """P1-5：事务提交后对 pending 事件发 pg_notify（即时推 WS 订阅者）。
@@ -2346,30 +2384,31 @@ class PgOntologyRepository(OntologyRepository):
         src: str,
         dst: str,
         exclude_rid: str = "",
+        *,
+        cur: Any = None,
     ) -> None:
-        """EXP-03：注册 LinkType 的基数约束（见 kernel check_cardinality）。"""
+        """EXP-03：注册 LinkType 的基数约束（见 kernel check_cardinality）。
+
+        ``cur`` 给定时在**调用方事务**内数边 —— 调用方须已取端点锁
+        （``_lock_link_endpoints``），否则仍是 TOCTOU。缺省自开连接（旧行为，供只读路径）。
+        """
         from mate_kernel.ontology.types.link_type import check_cardinality
 
         try:
             lt = self.get_link_type(ClassRef(link_type_rid))
         except KeyError:
             return
-        conn, _ = self._connect()
-        try:
-            with self._cursor(conn) as cur:
-                # 同 rid 既有行不算（upsert 语义）；rid 由调用方生成后传入
-                cur.execute(
-                    "SELECT"
-                    " COUNT(*) FILTER (WHERE src = %s AND rid != %s) AS src_out,"
-                    " COUNT(*) FILTER (WHERE dst = %s AND rid != %s) AS dst_in"
-                    " FROM ont_link_instance WHERE link_type_rid = %s",
-                    (src, exclude_rid, dst, exclude_rid, link_type_rid),
-                )
-                r = cur.fetchone()
-            src_out = int(r["src_out"]) if r else 0
-            dst_in = int(r["dst_in"]) if r else 0
-        finally:
-            conn.close()
+        if cur is not None:
+            src_out, dst_in = _count_endpoint_edges(cur, link_type_rid, src, dst, exclude_rid)
+        else:
+            conn, _ = self._connect()
+            try:
+                with self._cursor(conn) as c2:
+                    src_out, dst_in = _count_endpoint_edges(
+                        c2, link_type_rid, src, dst, exclude_rid
+                    )
+            finally:
+                conn.close()
         violation = check_cardinality(lt.cardinality, src_out, dst_in)
         if violation:
             raise ValueError(f"{violation} (link_type={link_type_rid}, src={src}, dst={dst})")
@@ -5703,6 +5742,12 @@ class PgOntologyRepository(OntologyRepository):
                         li_rid = (
                             f"ont.{e.src.split('.')[1] if '.' in e.src else tenant_id}"
                             f".lnk.{lt_slug}.{_uuid.uuid4().hex[:10]}"
+                        )
+                        # LINK-CARDINALITY-CONCURRENCY：可达写入口（Action/edit-set）
+                        # 与 create_link_instance 走**同一套**约束（端点锁 + 同事务校验）。
+                        self._lock_link_endpoints(cur, e.link_type_rid, e.src, e.dst)
+                        self._check_link_cardinality(
+                            e.link_type_rid, e.src, e.dst, exclude_rid=li_rid, cur=cur
                         )
                         cur.execute(
                             """INSERT INTO ont_link_instance
