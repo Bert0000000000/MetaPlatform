@@ -94,3 +94,4 @@ def _class_chain(repo, rid):
 | ga-013-networkpolicy | 13 NetworkPolicy 缺失 = prod 不通过 | N/A 无网络策略改动 |
 
 **证据**：本文件。**命令**：见 §4 测试表。
+**commit**：`655483c2`（实现）、`bf0a024f`（测试 4 项）、`9b4638db`（ADR + 本验收证据）——PR #91。
