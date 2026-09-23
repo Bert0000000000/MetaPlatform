@@ -130,10 +130,10 @@ test.describe('UI-P1a · 本体域（IA v2 工作区）', () => {
     });
   });
 
-  test('发布与治理（草稿）：三个子 tab 都在真实运维面上', async ({ page }) => {
+  test('发布与治理（草稿）：真实运维面（IA2-5 后 audit 已迁执行记录页）', async ({ page }) => {
     await gotoApp(page, '/ontology/governance/drafts');
     const tabs = page.locator('.mp-onto-shell .semi-tabs-tab');
-    for (const label of ['版本与发布', '变更审计', '治理']) {
+    for (const label of ['版本与发布', '治理']) {
       await expect(tabs.filter({ hasText: label })).toBeVisible({ timeout: 20_000 });
     }
     // 表格壳或空状态二选一必然存在（不出现白屏）
