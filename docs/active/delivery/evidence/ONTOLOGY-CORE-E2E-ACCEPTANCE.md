@@ -58,6 +58,23 @@
 | `tsc --noEmit`（spec 单文件） | exit 0 |
 | workflow YAML 解析：job 数 / `continue-on-error` / 触发器 | 1 / **无** / push+PR+dispatch |
 
+### 4.1 干净 Runner（GitHub Actions）实测
+
+| 项 | 值 |
+| --- | --- |
+| run | `35867459870`（PR #87） |
+| job | **`ontology core e2e` — success**（5m33s，**单 Job**） |
+| 步骤 | 建栈+健康 ✓ → 跑 E2E ✓ → 失败转储 ✓（未触发）→ 上传产物 ✓ → always 清理 ✓ |
+| artifacts | `ontology-core-e2e-artifacts` 已上传（trace / screenshot / report） |
+
+CI 首轮已证明**真实登录在干净 Runner 上成立**（`mate-auth-service POST /iam/auth/login 200`）。
+首轮暴露并修复的两处（autofix 提交）：
+
+1. 健康探针误用 `/api/v1/healthz` —— 网关健康在**根** `/healthz`（`/api/v1/healthz` 是 404）
+   → 改为根路径（`e3d8e1e5`）。
+2. Proposal 用例断言 `confirmed_by ?? confirmed_at` 非空 —— 该字段在**全新库**为空（响应形状
+   细节，非契约）→ 改为断言提案终态 `status=executed`（`b043fc1a`）。
+
 **用例覆盖**：
 
 | # | 用例 | 断言要点 |
@@ -76,8 +93,10 @@
 
 1. **realm 只有 `tenant-default`**（两个用户同租户）→ 跨租户用例是"异租户 rid 前缀 → 4xx"，
    不是"两个真实租户互访"；后者需改 Keycloak realm（未做）。
-2. **Required Checks 未立即打开**：先去掉 `continue-on-error`，待该 check 在 `main` 上
-   连续若干次绿再加（命令见 ADR-0076 §4.3）。
+2. **Required Checks 未立即打开**：`continue-on-error` 已取消，且该 check（`ontology core e2e`）
+   已在 PR #87 的干净 Runner 上**绿**；但按仓库既有铁律，加入 required 前该 job 名需**先在
+   `main` 上报到**（否则在途 PR 会停在 `Expected — Waiting`）→ 顺序 = 合并本 PR → main 出一次绿
+   → 再执行 ADR-0076 §4.3 的 `gh api` 命令。
 3. `pull_request` 去掉 `paths` → 该 check 将在所有 PR 上运行（docker 栈 ~8–12 分钟）。
 4. 历史 spec（consistency/a2a/evaluation/model-edit/routing）不纳入本工作流（依赖 Agent/A2A）。
 5. 本地运行会向共享 dev 库写 `core-e2e-*` 命名空间数据（源表在套件结束删除；schema/个体保留）。
