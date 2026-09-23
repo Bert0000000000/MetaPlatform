@@ -32,42 +32,31 @@ test.describe('Ontology IA v2 · 视觉与响应式（IA2-7）', () => {
   });
 
   for (const [width, label] of [[1024, '1024'], [1440, '1440'], [1920, '1920']] as const) {
-    test(`${label}px：六大功能组代表页不遮挡主内容（左导航 + 无横向 PageTabs）`, async ({
+    test(`${label}px：六大功能组代表页主内容正常（tab 模式）`, async ({
       page,
     }) => {
       await page.setViewportSize({ width, height: 900 });
       for (const [path] of PAGES) {
         await gotoApp(page, path);
         const ok = await page.evaluate(() => {
-          const nav = document.querySelector('.mp-onto-sidenav');
           const main = document.querySelector('.mp-onto-shell-main');
-          if (!nav || !main) return { nav: !!nav, main: !!main, clear: false };
-          const navRect = nav.getBoundingClientRect();
-          const mainRect = main.getBoundingClientRect();
-          return {
-            nav: true,
-            main: true,
-            clear: mainRect.left >= navRect.right - 1,
-            mainWidth: Math.round(mainRect.width),
-          };
+          if (!main) return false;
+          const rect = main.getBoundingClientRect();
+          return rect.width > 600 && rect.height > 300;
         });
-        expect(ok.clear, `${path} @${width}px 主内容被左导航遮挡`).toBe(true);
-        await expect(page.locator('.mp-pagetabs')).toHaveCount(0);
+        expect(ok, `${path} @${width}px 主内容区异常`).toBe(true);
+        await expect(page.locator('.mp-onto-sidenav')).toHaveCount(0);
       }
     });
   }
 
-  test('1024px 窄视口：侧栏收窄（不遮挡且仍可点）', async ({ page }) => {
+  test('1024px 窄视口：主 tab + 子 tab 仍可点', async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 900 });
     await gotoApp(page, '/ontology');
-    const nav = await page.evaluate(() => {
-      const el = document.querySelector('.mp-onto-sidenav');
-      return el ? Math.round(el.getBoundingClientRect().width) : null;
+    await expect(page.locator('.mp-pagetabs-line .semi-tabs-tab').first()).toBeVisible({
+      timeout: 20_000,
     });
-    expect(nav).not.toBeNull();
-    expect(nav!).toBeLessThanOrEqual(200);
-    // 导航链接仍可点击跳转
-    await page.locator('.mp-onto-sidenav-link', { hasText: '对象类型' }).click();
+    await page.locator('.mp-pagetabs-line .semi-tabs-tab', { hasText: '语义模型' }).click();
     await expect
       .poll(() => new URL(page.url()).pathname, { timeout: 20_000 })
       .toBe('/ontology/model/object-types');
@@ -86,12 +75,12 @@ test.describe('Ontology IA v2 · 视觉与响应式（IA2-7）', () => {
     }
   });
 
-  test('键盘可达：Tab 聚焦左导航链接后 Enter 跳转', async ({ page }) => {
+  test('键盘可达：主 tab 聚焦后 Enter 跳转', async ({ page }) => {
     await gotoApp(page, '/ontology');
-    await page.locator('.mp-onto-sidenav-link', { hasText: '模型图谱' }).focus();
+    await page.locator('.mp-pagetabs-line .semi-tabs-tab', { hasText: '语义模型' }).focus();
     await page.keyboard.press('Enter');
     await expect
       .poll(() => new URL(page.url()).pathname, { timeout: 20_000 })
-      .toBe('/ontology/model/graph');
+      .toBe('/ontology/model/object-types');
   });
 });

@@ -49,11 +49,11 @@ test.describe('Ontology IA v2 · 数据映射（IA2-3）', () => {
     }
   });
 
-  test('左侧导航「同步任务」可见且可达（planned → active）', async ({ page }) => {
+  test('数据映射组子 tab「同步任务」可达（planned → active）', async ({ page }) => {
     await gotoApp(page, '/ontology/data/mappings');
-    const link = page.locator('.mp-onto-sidenav-link', { hasText: '同步任务' });
-    await expect(link).toBeVisible({ timeout: 20_000 });
-    await link.click();
+    const tab = page.locator('.mp-subtabs .semi-tabs-tab', { hasText: '同步任务' });
+    await expect(tab).toBeVisible({ timeout: 20_000 });
+    await tab.click();
     await expect
       .poll(() => new URL(page.url()).pathname, { timeout: 20_000 })
       .toBe('/ontology/data/sync');

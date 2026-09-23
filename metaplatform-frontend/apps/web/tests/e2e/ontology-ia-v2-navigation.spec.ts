@@ -1,93 +1,97 @@
 /**
- * Ontology IA v2 · 工作区导航骨架验收（IA2-0 失败测试，IA2-1 转绿）。
+ * Ontology IA v2 · 导航骨架验收（2026-09-24 tab 模式版）。
  *
- * <p>判据来自 ADR-0069 与设计规格 §4 / §8：
- *  - 六大功能域（总览 / 语义模型 / 数据映射 / 对象与查询 / 动作与函数 / 发布与治理）
- *    的默认路径是正式 URL，域根路径 redirect 到默认子页；
- *  - 本体工作区有左侧导航（二级页面以链接可达），且**不再渲染全局横向 PageTabs**；
- *  - 刷新保持当前页面；浏览器后退 / 前进切换正确；点左侧导航项按路由跳转。
+ * <p>用户决策：本体导航回归与全站一致的横向 PageTabs（主 tab = 六大功能组 +
+ * children 胶囊行）。IA v2 的正式 URL / redirect / 深链语义全部保留。
  *
- * <p>运行前提（ONTOLOGY-IA2-0-BASELINE §2）：dev server 9250（先预热，冷启动会假红）
- * + gateway 8100。红因：新路由未注册，访问落 `*` 兜底被甩回 /home；无左侧导航；
- * PageTabs 仍在渲染。
+ * <p>判据：PageTabs 渲染且无左侧导航遗留；六大组主 tab 可点击；子页胶囊行
+ * 正确出现并高亮；域根 redirect；刷新保持；前进后退；⌘K 不变。
  */
 import { expect, test, type Page } from '@playwright/test';
 import { injectAuth } from './helpers/auth';
 
-// 2.1-C 先例：本机 IAM 登录尖峰可超 30s，共用 helper 支持环境变量放宽。
 process.env.E2E_LOGIN_TIMEOUT_MS ||= '120000';
 
-/** 六大功能域：域名（左侧导航分组文案）→ 默认正式路径。设计规格 §4.3。 */
-const WORKSPACE_DOMAINS: Array<[string, string]> = [
-  ['总览', '/ontology'],
-  ['语义模型', '/ontology/model/object-types'],
-  ['数据映射', '/ontology/data/mappings'],
-  ['对象与查询', '/ontology/explore/objects'],
-  ['动作与函数', '/ontology/logic/actions'],
-  ['发布与治理', '/ontology/governance/drafts'],
+/** 六大功能组：主 tab 文案 → 组根路径（redirect 到默认子页）。 */
+const WORKSPACE_DOMAINS: Array<[string, string, string]> = [
+  ['总览', '/ontology', '/ontology'],
+  ['语义模型', '/ontology/model', '/ontology/model/object-types'],
+  ['数据映射', '/ontology/data', '/ontology/data/mappings'],
+  ['对象与查询', '/ontology/explore', '/ontology/explore/objects'],
+  ['动作与函数', '/ontology/logic', '/ontology/logic/actions'],
+  ['发布与治理', '/ontology/governance', '/ontology/governance/drafts'],
 ];
-
-/** 域根路径 → 默认子页（redirect 契约）。 */
-const DOMAIN_ROOTS: Array<[string, string]> = [
-  ['/ontology/model', '/ontology/model/object-types'],
-  ['/ontology/data', '/ontology/data/mappings'],
-  ['/ontology/explore', '/ontology/explore/objects'],
-  ['/ontology/logic', '/ontology/logic/actions'],
-  ['/ontology/governance', '/ontology/governance/drafts'],
-];
-
-/** 对象浏览页稳定内容锚点：IA2-4 只「原样迁入」ObjectExplorerPage，锚点应保留。 */
-const EXPLORER_MARKER = '刷新类型清单';
 
 async function gotoApp(page: Page, path: string): Promise<void> {
   await page.goto(path, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#app')).toBeAttached({ timeout: 30_000 });
 }
 
-test.describe('Ontology IA v2 · 工作区导航', () => {
+test.describe('Ontology IA v2 · tab 模式导航', () => {
   test.beforeEach(async ({ context, page }) => {
     await injectAuth(context, page);
   });
 
-  test('六大功能域默认路径均为正式 URL，左侧导航可达，且无全局横向 PageTabs', async ({
-    page,
-  }) => {
-    for (const [domainLabel, path] of WORKSPACE_DOMAINS) {
-      await gotoApp(page, path);
-      // 域根 redirect 后最终 URL 就是默认子页（/ontology 总览为落地页，本身就是终态）
-      await expect
-        .poll(() => new URL(page.url()).pathname, { timeout: 20_000 })
-        .toBe(path);
-      // 左侧导航分组文案可见（工作区级导航存在）
-      await expect(page.getByText(domainLabel, { exact: true }).first()).toBeVisible({
-        timeout: 20_000,
-      });
-      // 本体域不渲染全局横向 PageTabs（ADR-0069 决策本体）
-      await expect(page.locator('.mp-pagetabs')).toHaveCount(0);
+  test('六大功能组以横向 PageTabs 呈现（无左侧导航遗留）', async ({ page }) => {
+    for (const [label, , canonical] of WORKSPACE_DOMAINS) {
+      await gotoApp(page, canonical);
+      await expect(
+        page.locator('.mp-pagetabs-line .semi-tabs-tab', { hasText: label }),
+      ).toBeVisible({ timeout: 20_000 });
+      await expect(page.locator('.mp-onto-sidenav')).toHaveCount(0);
+      await expect(page.locator('.mp-onto-contextbar')).toHaveCount(0);
     }
   });
 
-  test('域根路径 redirect 到默认子页', async ({ page }) => {
-    for (const [root, target] of DOMAIN_ROOTS) {
+  test('子页胶囊行渲染并高亮当前子页', async ({ page }) => {
+    await gotoApp(page, '/ontology/model/link-types');
+    // 主 tab 高亮：语义模型
+    await expect(
+      page.locator('.mp-pagetabs-line .semi-tabs-tab-active', { hasText: '语义模型' }),
+    ).toBeVisible({ timeout: 20_000 });
+    // 子 tab 胶囊行：六个语义模型子页都在，当前高亮关系类型
+    const sub = page.locator('.mp-subtabs .semi-tabs-tab');
+    for (const label of ['对象类型', '关系类型', '接口', '公理', '模型图谱', '模型校验']) {
+      await expect(sub.filter({ hasText: label })).toBeVisible({ timeout: 20_000 });
+    }
+    await expect(
+      page.locator('.mp-subtabs .semi-tabs-tab-active', { hasText: '关系类型' }),
+    ).toBeVisible();
+  });
+
+  test('点击主 tab 跳组根并 redirect 到默认子页', async ({ page }) => {
+    await gotoApp(page, '/ontology');
+    await page.locator('.mp-pagetabs-line .semi-tabs-tab', { hasText: '动作与函数' }).click();
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 20_000 })
+      .toBe('/ontology/logic/actions');
+  });
+
+  test('点击子 tab 即路由（对象类型 → 关系类型）', async ({ page }) => {
+    await gotoApp(page, '/ontology/model/object-types');
+    await page.locator('.mp-subtabs .semi-tabs-tab', { hasText: '公理' }).click();
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 20_000 })
+      .toBe('/ontology/model/axioms');
+  });
+
+  test('域根 redirect 到默认子页', async ({ page }) => {
+    for (const [, root, canonical] of WORKSPACE_DOMAINS.slice(1)) {
       await gotoApp(page, root);
       await expect
         .poll(() => new URL(page.url()).pathname, { timeout: 20_000 })
-        .toBe(target);
+        .toBe(canonical);
     }
   });
 
   test('刷新保持当前页面', async ({ page }) => {
     await gotoApp(page, '/ontology/explore/objects');
-    await expect(page.getByRole('button', { name: EXPLORER_MARKER })).toBeVisible({
-      timeout: 20_000,
-    });
+    await expect(page.getByRole('button', { name: '刷新类型清单' })).toBeVisible({ timeout: 20_000 });
     await page.reload({ waitUntil: 'domcontentloaded' });
     await expect
       .poll(() => new URL(page.url()).pathname, { timeout: 20_000 })
       .toBe('/ontology/explore/objects');
-    await expect(page.getByRole('button', { name: EXPLORER_MARKER })).toBeVisible({
-      timeout: 20_000,
-    });
+    await expect(page.getByRole('button', { name: '刷新类型清单' })).toBeVisible({ timeout: 20_000 });
   });
 
   test('浏览器后退 / 前进切换正确', async ({ page }) => {
@@ -101,13 +105,5 @@ test.describe('Ontology IA v2 · 工作区导航', () => {
     await expect
       .poll(() => new URL(page.url()).pathname, { timeout: 20_000 })
       .toBe('/ontology/explore/objects');
-  });
-
-  test('点击左侧导航「对象类型」按路由跳转', async ({ page }) => {
-    await gotoApp(page, '/ontology');
-    await page.getByRole('link', { name: '对象类型' }).first().click();
-    await expect
-      .poll(() => new URL(page.url()).pathname, { timeout: 20_000 })
-      .toBe('/ontology/model/object-types');
   });
 });
