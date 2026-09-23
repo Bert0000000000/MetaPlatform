@@ -623,3 +623,41 @@
   font-size: 13px;
   color: var(--semi-color-text-1);
 }
+
+/* ---------- 资源详情布局（IA2-2 起接入；2026-09-24 自 ontology-workspace.css 迁入） ---------- */
+
+.mp-onto-resource-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
+  min-height: 0;
+}
+
+.mp-onto-resource-detail-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- 窄视口（1024px 不遮挡主内容） ---------- */
+/* 子项链接没有图标，纯图标栏会出现空块——窄屏改为收窄保文字（156px），
+   内容区仍有 ~860px；真正的图标式折叠等交互式折叠一起做（非首批阻断）。 */
+@media (max-width: 1024px) {
+  .mp-onto-sidenav {
+    width: 156px;
+    padding: var(--mp-space-3) var(--mp-space-1);
+    gap: var(--mp-space-4);
+  }
+
+  .mp-onto-sidenav-group-label {
+    padding: 0 var(--mp-space-2) var(--mp-space-1);
+    font-size: 11px;
+  }
+
+  .mp-onto-sidenav-link {
+    min-height: 30px;
+    padding: var(--mp-space-2) var(--mp-space-2);
+    font-size: 13px;
+  }
+}

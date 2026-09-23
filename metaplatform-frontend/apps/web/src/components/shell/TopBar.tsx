@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Bell, Layers, LogOut, Search, Settings } from 'lucide-react';
 import { useAuth } from '@mate/shared';
 import { DOMAINS, resolveDomain, resolveDomainTab, resolveSubTab } from './domains';
-import { ontologyBreadcrumb } from '@/pages/ontology/navigation';
 import { useShell } from './ShellContext';
 
 const ENV_LABEL =
@@ -23,17 +22,10 @@ export default function TopBar() {
   const tab = domain ? resolveDomainTab(domain, location.pathname) : undefined;
   const sub = domain ? resolveSubTab(domain, location.pathname) : undefined;
 
-  // ADR-0069：workspace 域（本体）的面包屑从 ONTOLOGY_NAV 解析（功能域 / 子页两级），
-  // 其余域维持 tab/子tab 两级推导。
-  const workspaceCrumbs =
-    domain?.navigationMode === 'workspace' ? ontologyBreadcrumb(location.pathname) : null;
   const crumbs = [
     domain ? { name: domain.label, path: domain.path } : { name: 'Mate Platform' },
-    ...(workspaceCrumbs ??
-      [
-        ...(tab && tab.label !== domain?.label ? [{ name: tab.label, path: tab.path }] : []),
-        ...(sub && sub.sub.label !== tab?.label ? [{ name: sub.sub.label }] : []),
-      ]),
+    ...(tab && tab.label !== domain?.label ? [{ name: tab.label, path: tab.path }] : []),
+    ...(sub && sub.sub.label !== tab?.label ? [{ name: sub.sub.label }] : []),
   ];
 
   const displayName = user?.realName ?? user?.username ?? '当前用户';

@@ -18,8 +18,10 @@ export type OntologyNavIcon = ComponentType<{
 /**
  * 本体工作区导航的**单一事实源**（ADR-0069 §2.3 / IA v2 设计规格 §2.3）。
  *
- * <p>同一份配置驱动：左侧导航（OntologySideNav）、TopBar 面包屑、⌘K 索引、
- * 路由高亮与测试路径矩阵。禁止在 Shell / 页面里散落硬编码本体路径。
+ * <p>同一份配置驱动：⌘K 细粒度索引、planned 状态登记与测试路径矩阵
+ * （2026-09-24 起主导航呈现回归 PageTabs，其结构在 domains.tsx 的 tabs+children；
+ * 本模块继续作为子页细粒度索引与预留项登记的事实源）。
+ * 禁止在 Shell / 页面里散落硬编码本体路径。
  *
  * <p>`status` 语义（设计规格 §2.5「不展示假功能」）：
  * <ul>

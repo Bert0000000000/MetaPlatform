@@ -120,3 +120,27 @@ IA2-4 对象与查询 → IA2-5 动作/函数/执行记录 → IA2-6 发布治�
 - 实施方案输入（用户提供的 v1.0 执行版方案，2026-09-17）
 - `45466d7e feat(ontology): 本体模块 IA 重排 + 消费动线闭环`（6-tab 前置）
 - Palantir Foundry 对位差距分析 `docs/active/specs/2026-09-09-*`（UI-01 对象浏览器等）
+
+
+---
+
+## 附录：2026-09-24 导航呈现改回横向 Tab 模式（用户决策）
+
+用户使用后决策：**本体导航回归与全站一致的横向 PageTabs**（主 tab = 六大功能组，
+children 胶囊行 = 各组子页面，与 ki/gov/admin 域同构）。
+
+**保留不变的（本 ADR 的核心成果）**：
+- 全部正式 URL 与权威路由矩阵（六大功能组 23 个 active 子页）
+- 路由即状态（:rid 段路由、Tab 进 URL、query 参数、redirect 语义）
+- 旧路径 301 矩阵、⌘K 细粒度索引（ONTOLOGY_NAV）、planned 项登记
+- 全部子页拆分成果（容器消亡、职责互斥）、零 Agent 依赖
+
+**改变的（仅呈现层）**：
+- `DomainDef.navigationMode: 'workspace'` 机制移除（无使用者）；
+  domains.tsx 的 ontology tabs 扩为「主 tab + children」完整结构
+- `OntologyWorkspaceLayout / OntologySideNav / OntologyContextBar` 删除，
+  由 `OntologyTabLayout`（仅域壳 + Outlet）替代
+- 面包屑回归 PageTabs 的 tab/children 默认解析
+
+**历史注记**：左侧工作区导航为 2026-09-18 ~ 09-23 的 IA v2 交付形态；
+本附录不否定该交付（其路由/拆分成果全部延续），仅调整导航呈现以统一全站交互。
