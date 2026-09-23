@@ -52,7 +52,7 @@ POST）一致。**不要改成 `platform.read`**：`infra/tests/test_g5_security
   防线；`axiom_rid` / `target_class` 均做 `ont.<tenant>.` 前缀守门 → 跨租户 403）。
 - **测试**：`packages/mate-tech-ont/tests/test_axiom_validation.py` 16 项（10 单元 +
   6 HTTP：200 / 401 无 ctx / 403 跨租户 ×2 / axiom_rid 过滤 / 违规命中）。
-- **契约**：`contracts/openapi/services/ont.yaml` + `platform.yaml` + 
+- **契约**：`contracts/openapi/services/ont.yaml` + `platform.yaml` +
   `generated/bundled.yaml` 三处同步；`compare_runtime.py` `missingInRuntime: []`。
 - **真实链路**：容器热更后，经网关 + 真实 JWT 实测 `{}` → 200
   （`checked:82, violated:0, skipped:0`）、跨租户 → 403；浏览器点「运行时校验」
