@@ -27,6 +27,7 @@ import FunctionsPage from '@/pages/ontology/logic/functions/FunctionsPage';
 import FunctionDetailPage from '@/pages/ontology/logic/functions/FunctionDetailPage';
 import ActionRunsPage from '@/pages/ontology/logic/runs/ActionRunsPage';
 import ActionDesignerPage from '@/pages/ontology/logic/designer/ActionDesignerPage';
+import ObjectSetBuilderPage from '@/pages/ontology/explore/objectset/ObjectSetBuilderPage';
 
 /**
  * 本体域路由表（ADR-0069 IA v2：工作区 + 六大功能域嵌套路由）。
@@ -103,6 +104,7 @@ export const ontologyRoutes = (
       <Route path="objects/:rid?" element={<ObjectExplorerPage />} />
       <Route path="analysis" element={<AnalysisPage />} />
       <Route path="map" element={<MapPage />} />
+      <Route path="objectset" element={<ObjectSetBuilderPage />} />
     </Route>
 
     {/* 动作与函数（IA2-5 已拆分）：列表 + :rid 详情（四真 Tab 进 URL）+

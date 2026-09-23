@@ -167,7 +167,7 @@ export const ONTOLOGY_NAV: OntologyNavItem[] = [
         key: 'objectset',
         label: 'ObjectSet 构建器',
         path: '/ontology/explore/objectset',
-        status: 'planned',
+        status: 'active',
         keywords: 'objectset 查询构建',
       },
       {
