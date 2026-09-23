@@ -39,6 +39,12 @@ Core 第一批检查规则（AxiomKind 子集，其余 skipped）：
 
 公理页（AxiomsPage）加「运行时校验」按钮 → SheetDetail 抽屉显示 conforms/violations/stats。
 
+**安全声明**：`oidcScopes` / `x-required-scopes` 声明为 **`platform.write`**、
+`x-mate-permission: ont.write` —— 与兄弟端点 `ontValidateV2Shacl`（同为「计算报告」型
+POST）一致。**不要改成 `platform.read`**：`infra/tests/test_g5_security_coverage.py`
+的 `READ_POST_ENDPOINT_IDS` 是一份**刻意钉死**的查询型 POST 白名单（其 docstring 明确
+写明「新端点不能靠给自己加 `x-required-scopes` 来绕过这道守卫」），本端点不属于查询型。
+
 ## 5. 实施与验证
 
 - **实现**：`mate_tech_ont/v2_kernel/axiom_validation.py`（纯函数，无 IO）+

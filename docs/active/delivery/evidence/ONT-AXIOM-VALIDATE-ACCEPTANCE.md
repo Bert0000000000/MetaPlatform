@@ -52,6 +52,12 @@ AxiomKind 计入 `stats.skipped`，不影响 `conforms`。
 - **同步 repo 调用推 threadpool**：`asyncio.to_thread`，不阻塞事件循环。
 - **契约一致**：返回结构与 SHACL 报告同形（`{conforms, violations, stats}`），
   前端复用同一渲染模式。
+- **作用域声明**：`oidcScopes` / `x-required-scopes` = **`platform.write`**、
+  `x-mate-permission: ont.write`，与兄弟端点 `ontValidateV2Shacl` 一致。
+  本端点是「计算报告」型 POST 而非查询型，**不属于**
+  `infra/tests/test_g5_security_coverage.py` 里那份刻意钉死的 `READ_POST_ENDPOINT_IDS`
+  白名单——初版误抄 GET `ontListV2Axioms` 的 `platform.read`，
+  被 `test_write_endpoints_use_write_scope` 当场抓住（见 §8 修正记录）。
 - **不做的**（ADR-0070 §3）：完整 OWL 2 推理机、公理间交叉冲突检测、Axiom CRUD 契约变更。
 
 ## 4. 测试命令与真实结果（2026-09-23 实测）
@@ -127,6 +133,24 @@ runtime parity 无缺口、ont 包 510/510 全绿，且**真实网关 + 真实 J
 三处数字一致**。IA v2 审视清单的**最后一项后端依赖项关闭**。
 
 唯一自标边界：违规态的浏览器渲染未用真实数据实证（§5.4 说明了原因）。
+
+## 8. 修正记录（开 PR 后 CI 抓到的，已修）
+
+本地「会咬到自己的门禁」清单预跑 + CI 反馈，共修三类：
+
+| 来源 | 抓到的 | 修法 |
+| --- | --- | --- |
+| `ga tests` → `test_g5_security_coverage.py::test_write_endpoints_use_write_scope` | 端点声明 `oidcScopes: [platform.read]`，而 POST 必须含 `platform.write` | 改 `platform.write` + `x-required-scopes` + `x-mate-permission: ont.write`，对齐 `ontValidateV2Shacl`；两个契约产物重建 |
+| `Lint (ruff)` / `ga-006 ruff + pyright strict` / `ga format` | `ruff format --check` 判 3 文件需重排；`ruff check` 报 4 项（`Callable` 应来自 `collections.abc`） | `ruff check --fix` + `ruff format`（`api.py` 只动本批新增的 2 行，未波及既有代码） |
+| `cowork PRD skeleton check` | 变更中的 `*-ACCEPTANCE.md` 必须列全 `ga-001`~`ga-013`，原稿只写了 5 条 | 改为 13 行对位表，逐条给落点或 N/A 理由 |
+
+**未修（与本批无关，已核实）**：`github-advanced-security`（GitHub 侧 agentic 通道
+模型不可用，仓库内无配置面可改）、`Architecture kernel governance`（pyright strict
+存量债务，`continue-on-error`）、`agent-team pytest` 的
+`test_recovery.py::test_list_unfinished_reads_the_checkpoint_table_by_status`
+（RLS/权限：日志里是 `permission denied for table audit_events` +
+`new row violates row-level security policy for table "checkpoints"`，属该套件既有的
+PG 环境问题，本批只动 ont 包，不可能影响它）。
 
 ## CI 门禁与证据（LOOP-ROLLOUT-01 模板字段）
 

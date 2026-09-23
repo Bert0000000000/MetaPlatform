@@ -1105,8 +1105,8 @@ paths:
   /api/v1/ont/v2/axioms/validate:
     post:
       security:
-        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
-      x-required-scopes: [platform.read]
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
+      x-required-scopes: [platform.write]
       tags: [ont]
       summary: 校验公理在当前数据上是否被违反（Core 子集）
       description: >-
@@ -1117,7 +1117,7 @@ paths:
         {conforms, violations, stats}。
       operationId: ontValidateV2Axioms
       x-mate-owner: ontology-platform
-      x-mate-permission: ont.read
+      x-mate-permission: ont.write
       x-mate-required-tenant: true
       x-mate-requirements: [FR-ONT-AXIOM-VALIDATE]
       x-mate-implementation-status: implemented

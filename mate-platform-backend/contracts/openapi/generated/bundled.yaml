@@ -11792,16 +11792,16 @@ paths:
         - bearerAuth: []
           tenantHeader: []
           oidcScopes:
-            - platform.read
+            - platform.write
       x-required-scopes:
-        - platform.read
+        - platform.write
       tags:
         - ont
       summary: 校验公理在当前数据上是否被违反（Core 子集）
       description: ADR-0070：Axiom 运行时违规检查。支持 Core 三条规则——disjoint（个体同时 属于两个不相交类）/ has_key（同类实例主键重复）/ subclass（子类自环或 循环）。其余 AxiomKind 计入 skipped，不影响 conforms。axiom_rid 缺省 校验全部公理；target_class 限定实例范围。返回结构与 SHACL 报告一致： {conforms, violations, stats}。
       operationId: ontValidateV2Axioms
       x-mate-owner: ontology-platform
-      x-mate-permission: ont.read
+      x-mate-permission: ont.write
       x-mate-required-tenant: true
       x-mate-requirements:
         - FR-ONT-AXIOM-VALIDATE
