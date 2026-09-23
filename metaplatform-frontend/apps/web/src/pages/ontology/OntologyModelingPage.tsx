@@ -73,7 +73,7 @@ function slugOf(rid: string): string {
 }
 
 /**
- * 一级本体树里的一个概念节点。
+ * 业务域树里的一个概念节点。
  * 有子类时带折叠箭头并可继续下钻，没有子类即为末级。
  */
 function ConceptTreeNode({
@@ -163,7 +163,7 @@ export default function OntologyModelingPage({
   const [selectedConcept, setSelectedConcept] = useState<string>('');
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  /** 一级本体 → 概念 → 子概念 的层级树（GET /object-types/hierarchy）。 */
+  /** 业务域 → 概念 → 子概念 的层级树（GET /object-types/hierarchy）。 */
   const [typeHierarchy, setTypeHierarchy] = useState<TypeHierarchyNode[]>([]);
   /** 展开的节点 rid（含 `domain:<码>` 形式的域节点）。 */
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -235,7 +235,7 @@ export default function OntologyModelingPage({
   }, [objectTypes, selectedDomain]);
 
   /**
-   * 一级本体 → 概念 → 子概念（递归）→ 末级概念。
+   * 业务域 → 概念 → 子概念（递归）→ 末级概念。
    * 主数据源是 GET /object-types/hierarchy —— 后端返回的就是一片森林（每个节点只出现一次，
    * 挂在它的父节点下；没有父节点的才是顶层），所以**整棵子树跟随根节点的域**，
    * 跨域的父子不会被拆散。
@@ -297,7 +297,7 @@ export default function OntologyModelingPage({
     });
   };
 
-  // 过滤后的概念列表（当前一级本体下）
+  // 过滤后的概念列表（当前业务域下）
   const filteredConcepts = useMemo(() => {
     let items = currentDomainItems;
     if (keyword.trim()) {
@@ -588,10 +588,10 @@ export default function OntologyModelingPage({
       {/* AIAssistantWorkspace__content 是横向 flex 容器：子行必须 flex:1 + width:100%
           才能撑满可用宽度（此前缺省导致右侧约 1/3 空白）。 */}
       <div className="mp-w-full mp-flex mp-flex-1 mp-gap-5">
-        {/* Left: 一级本体 → 概念（逐级下钻到末级） */}
+        {/* Left: 业务域 → 概念（逐级下钻到末级） */}
         <div className="mp-shrink-0 mp-w-240" >
           <Card className="mp-h-fit">
-            <h3 className="mp-fw-600 mp-mb-3 mp-text-md">一级本体</h3>
+            <h3 className="mp-fw-600 mp-mb-3 mp-text-md">业务域</h3>
             <ul className="mp-m-0 mp-p-1 mp-onto-list-plain">
               {loading ? (
                 <li className="mp-text-sm mp-text-2 mp-py-2 mp-px-3" >加载中…</li>
@@ -614,7 +614,7 @@ export default function OntologyModelingPage({
                         <button
                           type="button"
                           className="om-tree-caret"
-                          aria-label={isOpen ? '折叠一级本体' : '展开一级本体'}
+                          aria-label={isOpen ? '折叠业务域' : '展开业务域'}
                           aria-expanded={isOpen}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -691,7 +691,7 @@ export default function OntologyModelingPage({
             {loading ? (
               <div className="mp-text-center mp-p-8 mp-text-body mp-text-2">加载概念中…</div>
             ) : filteredConcepts.length === 0 ? (
-              <div className="mp-text-center mp-p-8 mp-text-body mp-text-2">当前一级本体下没有匹配的概念</div>
+              <div className="mp-text-center mp-p-8 mp-text-body mp-text-2">当前业务域下没有匹配的概念</div>
             ) : (
               <table className="om-table">
                 <thead>
