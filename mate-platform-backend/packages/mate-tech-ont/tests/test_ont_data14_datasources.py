@@ -129,7 +129,8 @@ class TestDataPlaneBinding:
     def test_sync_and_mdo_field_priority(self, repo) -> None:
         with repo.tenant_scope(T):
             stats = repo.sync_backing_datasources(OBJ)
-            assert stats == {"crm": 1, "erp": 2}
+            assert stats["ok"] is True and stats["total_synced"] == 3
+            assert {k: v["synced"] for k, v in stats["sources"].items()} == {"crm": 1, "erp": 2}
             inds = {i.primary_key: i for i in repo.list_individuals(ClassRef(OBJ))}
             assert set(inds) == {"c1", "c2"}
             # MDO 字段级优先级：crm(10) 的 cname 不被 erp(20) 覆盖

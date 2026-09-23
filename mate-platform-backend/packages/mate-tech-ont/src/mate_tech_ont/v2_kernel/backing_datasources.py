@@ -9,11 +9,21 @@ Palantir 语义（调研材料 06 §5 / 00 §L0）：
 Mate v1（D1 拍板全量纳入）：
 - ``BackingDatasource``：{name, kind: pg_table, dsn_env, table, pk_column,
   field_mapping: prop_rid → 列名, priority}；
-- ``sync_backing_datasource``：批量/增量读源表 → 按 mapping upsert Individual
-  （多源按 priority 升序，先源非空值不被后源覆盖；用户编辑覆盖层不覆盖）；
-- ``apply_cdc_changes``：debezium / mate-tech-etl 变更事件 → 对象平面
-  （流式腿的集成入口）；
+- ``sync_backing_datasource``：**keyset 分页**读源表 → 按 mapping 写 Individual
+  （多源按 priority 升序，字段级：低优先级**永不**覆盖高优先级已写字段）；
+- ``apply_cdc_changes``：debezium / mate-tech-etl 变更事件 → 对象平面；
 - ``materialize_object_type``：对象当前状态导出为行集（回流读端点形态）。
+
+一致性契约（DATA-SYNC-INTEGRITY）：
+1. **不漏行**：分页读到源穷尽（keyset，按 pk 或 (ts,pk)），不是单批 LIMIT。
+2. **不丢更新**：游标只推进到**已可靠处理的源端边界**（(ts,pk)），绝不写成目标端
+   ``now()``；同时间戳靠 pk 决胜；同步期间新增（ts > 边界）下一轮自然读到。
+3. **不静默失败**：单行失败登记并**停止推进游标**（下一轮重读 = 自动重试），
+   返回结构带 ``failed``；调用方不得据此报整体成功。
+4. **字段优先级跨批次**：按 (source, priority) 记录字段归属（``props_src``），
+   低优先级增量不覆盖高优先级；同源/同级可覆盖（重跑幂等）。
+5. **字段语义**：列**缺失**（不在行内）→ 保持原值；**显式 NULL** → 清空（受优先级
+   约束）；CDC ``op=delete`` / 全量 tombstone → 删实例；用户编辑覆盖层 → 管道不写。
 
 v1 边界：定时调度挂 Scheduler；debezium engine 的事件订阅接线在
 mate-tech-etl 侧（本模块提供无状态入口）。
@@ -25,8 +35,12 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+import structlog
+
 from mate_kernel.ontology.identity.class_ref import ClassRef
 from mate_kernel.ontology.instances.individual import Individual
+
+logger = structlog.get_logger(__name__)
 
 __all__ = [
     "BackingDatasource",
@@ -68,6 +82,13 @@ def _connect_source(ds: BackingDatasource) -> Any:
     return psycopg2.connect(dsn)
 
 
+def _split_rid(ot: Any) -> tuple[str, str]:
+    rid_parts = ot.rid.rid.split(".")
+    tenant = rid_parts[1]
+    cls_slug = rid_parts[4] if len(rid_parts) >= 6 else rid_parts[3]
+    return tenant, cls_slug
+
+
 def sync_backing_datasource(
     repo: Any,
     ot: Any,
@@ -76,105 +97,290 @@ def sync_backing_datasource(
     batch_limit: int = 5000,
     incremental: bool = False,
     overlay_props: dict[str, set[str]] | None = None,
-    watermarks: dict[str, str | None] | None = None,
+    cursors: dict[str, dict[str, Any]] | None = None,
     ts_columns: dict[str, str] | None = None,
-) -> dict[str, Any]:
-    """批量/增量索引：源表 → Individual upsert（MDO 多源按 priority 合并）。
+    watermarks: dict[str, str | None] | None = None,
+    delete_missing: bool = False,
+) -> dict[str, dict[str, Any]]:
+    """批量/增量索引：源表 → Individual（MDO 字段级优先级合并）。
 
-    合并语义（字段级优先级）：按 priority 升序逐源同步；先源写入的非空
-    值不被后源覆盖（先到先得）。
+    keyset 分页（不漏行）+ 源端游标（不丢更新）+ 失败登记（不静默）：
+    见模块 docstring §1–5。
 
-    writeback 双流合并：``overlay_props`` 是用户编辑覆盖层
-    （individual_rid → {property_rid}）—— 在覆盖层中的属性**不被管道数据
-    覆盖**（用户编辑赢；Palantir「管道数据 + 用户编辑」合并语义）。
+    ``cursors``: ``{source_name: {"ts": iso|None, "pk": str|None}}`` —— 只推进到
+    已可靠处理的源端边界。``watermarks`` 为旧签名别名（等价 ``{"ts": wm}``）。
 
-    增量（CDC 流式腿的批量形态）：``incremental=True`` 时按各源
-    ``ts_columns[name] > watermarks[name]`` 过滤（watermark 缺省 = 全量首同步）。
-
-    返回 {source: synced} 统计。upsert 使用 create_individual（PG 侧
-    ON CONFLICT merge props）。
+    返回 ``{source_name: {synced, failed, deleted, failures[], cursor}}``；
+    ``cursor`` 是该源**已可靠处理**的新边界（失败则不越过失败点）。
     """
     if sources is None:
         raw = getattr(ot, "backing_datasources", None) or []
         sources = [BackingDatasource(**dict(s)) for s in raw]
     if not sources:
         raise ValueError(f"no backing datasources declared on {ot.rid.rid}")
-    rid_parts = ot.rid.rid.split(".")
-    tenant = rid_parts[1]
-    cls_slug = rid_parts[4] if len(rid_parts) >= 6 else rid_parts[3]
+    tenant, cls_slug = _split_rid(ot)
     now = datetime.now(UTC)
     overlay = overlay_props or {}
-    watermarks = watermarks or {}
     ts_columns = ts_columns or {}
+    cursors = dict(cursors or {})
+    for name, wm in (watermarks or {}).items():
+        cursors.setdefault(name, {"ts": wm, "pk": None})
 
-    def _rid_of(pk: str) -> str:
-        return f"ont.{tenant}.ind.{cls_slug}.{pk}"
+    out: dict[str, dict[str, Any]] = {}
+    ordered = sorted(sources, key=lambda s: s.priority)
+    for ds in ordered:
+        out[ds.name] = _sync_one_source(
+            repo,
+            ot,
+            ds,
+            tenant=tenant,
+            cls_slug=cls_slug,
+            batch_limit=batch_limit,
+            incremental=incremental,
+            overlay=overlay,
+            cursor=dict(cursors.get(ds.name) or {}),
+            ts_column=ts_columns.get(ds.name) or "updated_at",
+            now=now,
+            delete_missing=delete_missing and ds is ordered[0],
+        )
+    return out
 
-    stats: dict[str, int] = {}
-    # 已写入值缓存（pk → {prop_rid: value}）—— 多源合并不覆盖非空
-    written: dict[str, dict[str, Any]] = {}
-    for ds in sorted(sources, key=lambda s: s.priority):
-        conn = _connect_source(ds)
-        try:
-            import psycopg2.extras
 
+def _sync_one_source(
+    repo: Any,
+    ot: Any,
+    ds: BackingDatasource,
+    *,
+    tenant: str,
+    cls_slug: str,
+    batch_limit: int,
+    incremental: bool,
+    overlay: dict[str, set[str]],
+    cursor: dict[str, Any],
+    ts_column: str,
+    now: datetime,
+    delete_missing: bool,
+) -> dict[str, Any]:
+    import psycopg2.extras
+
+    pk_col = ds.pk_column
+    # 全量同步从头读（不受既有增量游标影响）；增量才从已处理边界续读
+    done_ts = cursor.get("ts") if incremental else None
+    done_pk = (cursor.get("pk") or "") if incremental else ""
+    synced = failed = deleted = 0
+    failures: list[dict[str, Any]] = []
+    seen_pks: set[str] = set()
+    boundary_ts = done_ts
+    boundary_pk = cursor.get("pk")
+
+    conn = _connect_source(ds)
+    try:
+        while True:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                if incremental:
-                    ts_col = ts_columns.get(ds.name, "updated_at")
-                    wm = watermarks.get(ds.name)
-                    if wm:
-                        cur.execute(
-                            f"SELECT * FROM {ds.table} "
-                            f"WHERE {ts_col} > %s ORDER BY {ts_col} LIMIT %s",
-                            (
-                                wm,
-                                batch_limit,
-                            ),
-                        )
-                    else:
-                        cur.execute(f"SELECT * FROM {ds.table} LIMIT %s", (batch_limit,))
-                else:
-                    cur.execute(f"SELECT * FROM {ds.table} LIMIT %s", (batch_limit,))
-                rows = cur.fetchall()
-        finally:
-            conn.close()
-        synced = 0
-        for row in rows:
-            pk = str(row[ds.pk_column])
-            user_edited = overlay.get(_rid_of(pk), set())
-            props: dict[str, Any] = {}
-            for prop_rid, column in ds.field_mapping.items():
-                if prop_rid in user_edited:
-                    continue  # 双流合并：用户编辑过的属性管道不覆盖
-                if column in row and row[column] is not None:
-                    props[prop_rid] = row[column]
-            merged = dict(written.get(pk, {}))
-            for k, v in props.items():
-                if k not in merged or merged[k] is None:
-                    merged[k] = v
-            written[pk] = merged
-            # 主键属性必须存在
-            pk_props = ot.primary_key[0].rid
-            if pk_props not in merged:
-                merged[pk_props] = pk
-            try:
-                repo.create_individual(
-                    Individual(
-                        rid=f"ont.{tenant}.ind.{cls_slug}.{pk}",
-                        class_rid=ot.rid,
-                        props=tuple((ClassRef(k), v) for k, v in merged.items()),
-                        primary_key=pk,
-                        created_at=now,
-                        updated_at=now,
-                        tenant_id=tenant,
+                if incremental and done_ts is not None:
+                    # keyset：(ts,pk) 严格递增 —— 同时间戳靠 pk 决胜（不漏行）
+                    cur.execute(
+                        f"SELECT * FROM {ds.table} "
+                        f"WHERE ({ts_column}, {pk_col}) > (%s, %s) "
+                        f"ORDER BY {ts_column}, {pk_col} LIMIT %s",
+                        (done_ts, done_pk, batch_limit),
                     )
+                else:
+                    # 全量 / 首次增量 / 源无 ts：按 pk keyset 分页（稳定，不漏行）
+                    cur.execute(
+                        f"SELECT * FROM {ds.table} WHERE {pk_col} > %s ORDER BY {pk_col} LIMIT %s",
+                        (done_pk, batch_limit),
+                    )
+                rows = cur.fetchall()
+            if not rows:
+                break
+            stop = False
+            for start in range(0, len(rows), _FLUSH_CHUNK):
+                chunk = rows[start : start + _FLUSH_CHUNK]
+                res = _apply_chunk(
+                    repo,
+                    ot,
+                    ds,
+                    chunk,
+                    tenant=tenant,
+                    cls_slug=cls_slug,
+                    overlay=overlay,
+                    now=now,
+                    ts_column=ts_column,
                 )
-                synced += 1
-            except Exception:
-                # 主键冲突且 repo 无 upsert 语义 → 跳过（幂等重跑安全）
-                continue
-        stats[ds.name] = synced
-    return stats
+                synced += res["synced"]
+                seen_pks.update(res["seen"])
+                if res["failures"]:
+                    failed += len(res["failures"])
+                    failures.extend(res["failures"])
+                if res["boundary"] is not None:
+                    b_ts, b_pk = res["boundary"]
+                    if b_ts is not None:
+                        boundary_ts = b_ts
+                    boundary_pk = b_pk
+                    done_ts, done_pk = boundary_ts, boundary_pk
+                if res["stopped"]:
+                    stop = True
+                    break
+            if stop or len(rows) < batch_limit:
+                break
+        if delete_missing and not failed:
+            deleted = _delete_absent(repo, ot, tenant, cls_slug, seen_pks)
+    finally:
+        conn.close()
+
+    return {
+        "synced": synced,
+        "failed": failed,
+        "deleted": deleted,
+        "failures": failures,
+        "cursor": {"ts": boundary_ts, "pk": boundary_pk},
+    }
+
+
+_FLUSH_CHUNK = 250
+
+
+def _row_values(
+    ds: BackingDatasource, row: Any, overlay: dict[str, set[str]], rid: str
+) -> dict[str, Any]:
+    """字段语义（模块 docstring §5）：覆盖层不写、列缺失保持、显式 NULL 带入。"""
+    user_edited = overlay.get(rid, set())
+    values: dict[str, Any] = {}
+    for prop_rid, column in ds.field_mapping.items():
+        if prop_rid in user_edited:
+            continue
+        if column not in row:
+            continue
+        values[prop_rid] = row[column]
+    return values
+
+
+def _apply_chunk(
+    repo: Any,
+    ot: Any,
+    ds: BackingDatasource,
+    chunk: list[Any],
+    *,
+    tenant: str,
+    cls_slug: str,
+    overlay: dict[str, set[str]],
+    now: datetime,
+    ts_column: str,
+) -> dict[str, Any]:
+    """写一批行。批量失败则降级逐行以**定位失败行**；失败即停止推进（可重试）。"""
+    items: list[dict[str, Any]] = []
+    for row in chunk:
+        pk = str(row[ds.pk_column])
+        rid = f"ont.{tenant}.ind.{cls_slug}.{pk}"
+        items.append(
+            {
+                "pk": pk,
+                "rid": rid,
+                "ts": row.get(ts_column),
+                "values": _row_values(ds, row, overlay, rid),
+            }
+        )
+
+    batch = getattr(repo, "upsert_sourced_props_batch", None)
+    if batch is not None and len(items) > 1:
+        try:
+            batch(
+                [
+                    {"rid": it["rid"], "primary_key": it["pk"], "values": it["values"]}
+                    for it in items
+                ],
+                tenant_id=tenant,
+                class_rid=ot.rid,
+                source=ds.name,
+                priority=ds.priority,
+                ts=now,
+            )
+            last = items[-1]
+            return {
+                "synced": len(items),
+                "seen": {it["pk"] for it in items},
+                "failures": [],
+                "stopped": False,
+                "boundary": (last["ts"], last["pk"]),
+            }
+        except Exception as e:
+            # 批量失败不静默：记日志后可逐行隔离（定位是哪个 pk 写失败）
+            logger.warning(
+                "sync.batch_write_failed_fallback_row",
+                source=ds.name,
+                table=ds.table,
+                rows=len(items),
+                error=str(e)[:200],
+            )
+
+    synced = 0
+    seen: set[str] = set()
+    failures: list[dict[str, Any]] = []
+    boundary: tuple[Any, str] | None = None
+    for it in items:
+        try:
+            if it["values"]:
+                _write_row(repo, ot, ds, tenant=tenant, it=it, now=now)
+        except Exception as e:
+            failures.append({"pk": it["pk"], "error": f"{type(e).__name__}: {e}"[:200]})
+            return {
+                "synced": synced,
+                "seen": seen,
+                "failures": failures,
+                "stopped": True,
+                "boundary": boundary,
+            }
+        synced += 1
+        seen.add(it["pk"])
+        boundary = (it["ts"], it["pk"])
+    return {"synced": synced, "seen": seen, "failures": [], "stopped": False, "boundary": boundary}
+
+
+def _write_row(
+    repo: Any, ot: Any, ds: BackingDatasource, *, tenant: str, it: dict[str, Any], now: datetime
+) -> None:
+    upsert = getattr(repo, "upsert_sourced_props", None)
+    if upsert is not None:
+        upsert(
+            rid=it["rid"],
+            tenant_id=tenant,
+            class_rid=ot.rid,
+            primary_key=it["pk"],
+            values=it["values"],
+            source=ds.name,
+            priority=ds.priority,
+            ts=now,
+        )
+        return
+    # 兼容 duck-typed repo（无优先级归属列）：取非空值直接 upsert
+    props = {k: v for k, v in it["values"].items() if v is not None}
+    props.setdefault(ot.primary_key[0].rid, it["pk"])
+    repo.create_individual(
+        Individual(
+            rid=it["rid"],
+            class_rid=ot.rid,
+            props=tuple((ClassRef(k), v) for k, v in props.items()),
+            primary_key=it["pk"],
+            created_at=now,
+            updated_at=now,
+            tenant_id=tenant,
+        )
+    )
+
+
+def _delete_absent(repo: Any, ot: Any, tenant: str, cls_slug: str, seen: set[str]) -> int:
+    """全量 tombstone：权威源中已不存在的实例删除（delete_missing=True 才启用）。"""
+    try:
+        current = repo.list_individuals(ot.rid, tenant_id=tenant)
+    except TypeError:
+        current = repo.list_individuals(ot.rid)
+    deleted = 0
+    for ind in current:
+        if ind.primary_key not in seen:
+            if repo.delete_individual(ind.rid):
+                deleted += 1
+    return deleted
 
 
 def apply_cdc_changes(
@@ -185,55 +391,80 @@ def apply_cdc_changes(
     pk_column: str = "id",
     field_mapping: dict[str, str] | None = None,
     overlay_props: dict[str, set[str]] | None = None,
-) -> dict[str, int]:
+    default_priority: int = 100,
+) -> dict[str, Any]:
     """CDC 流式绑定入口（debezium / mate-tech-etl 变更事件 → 对象平面）。
 
-    changes 元素：{op: "upsert"|"delete", pk: str, data?: {列: 值}}。
-    - upsert：按 field_mapping 落 props；**overlay 内属性不覆盖**（双流合并）；
-    - delete：删实例（管道删除走真删 —— 与用户编辑无冲突维度）。
-    返回 {upserted, deleted}。
+    changes 元素：``{op: "upsert"|"delete", pk: str, data?: {列: 值}}``。
+    - upsert：按 field_mapping 落 props（缺列保持 / 显式 NULL 清空 / 覆盖层不写）；
+    - delete：删实例（管道删除走真删）。
+    **失败不吞**：逐条登记到 ``failures``；返回含 ``failed``。
     """
-    rid_parts = ot.rid.rid.split(".")
-    tenant = rid_parts[1]
-    cls_slug = rid_parts[4] if len(rid_parts) >= 6 else rid_parts[3]
+    tenant, cls_slug = _split_rid(ot)
     now = datetime.now(UTC)
     overlay = overlay_props or {}
     mapping = field_mapping or {}
-    upserted = 0
-    deleted = 0
+    upserted = deleted = failed = 0
+    failures: list[dict[str, Any]] = []
     for ch in changes:
         pk = str(ch.get("pk", ""))
         if not pk:
             continue
         rid_now = f"ont.{tenant}.ind.{cls_slug}.{pk}"
-        if ch.get("op") == "delete":
-            try:
-                repo.delete_individual(rid_now)
-                deleted += 1
-            except Exception:
+        try:
+            if ch.get("op") == "delete":
+                if repo.delete_individual(rid_now):
+                    deleted += 1
                 continue
-            continue
-        data = ch.get("data") or {}
-        user_edited = overlay.get(rid_now, set())
-        props: dict[str, Any] = {ot.primary_key[0].rid: pk}
-        for prop_rid, column in mapping.items():
-            if prop_rid in user_edited:
-                continue
-            if column in data and data[column] is not None:
-                props[prop_rid] = data[column]
-        repo.create_individual(
-            Individual(
-                rid=rid_now,
-                class_rid=ot.rid,
-                props=tuple((ClassRef(k), v) for k, v in props.items()),
-                primary_key=pk,
-                created_at=now,
-                updated_at=now,
-                tenant_id=tenant,
+            data = ch.get("data") or {}
+            values: dict[str, Any] = {}
+            user_edited = overlay.get(rid_now, set())
+            for prop_rid, column in mapping.items():
+                if prop_rid in user_edited or column not in data:
+                    continue
+                values[prop_rid] = data[column]
+            upsert = getattr(repo, "upsert_sourced_props", None)
+            if upsert is not None:
+                upsert(
+                    rid=rid_now,
+                    tenant_id=tenant,
+                    class_rid=ot.rid,
+                    primary_key=pk,
+                    values=values or {ot.primary_key[0].rid: pk},
+                    source=str(ch.get("source") or "cdc"),
+                    priority=int(ch.get("priority", default_priority)),
+                    ts=now,
+                )
+            else:
+                props = {k: v for k, v in values.items() if v is not None}
+                props.setdefault(ot.primary_key[0].rid, pk)
+                repo.create_individual(
+                    Individual(
+                        rid=rid_now,
+                        class_rid=ot.rid,
+                        props=tuple((ClassRef(k), v) for k, v in props.items()),
+                        primary_key=pk,
+                        created_at=now,
+                        updated_at=now,
+                        tenant_id=tenant,
+                    )
+                )
+            upserted += 1
+        except Exception as e:
+            failed += 1
+            failures.append(
+                {
+                    "pk": pk,
+                    "op": str(ch.get("op") or "upsert"),
+                    "error": f"{type(e).__name__}: {e}"[:200],
+                }
             )
-        )
-        upserted += 1
-    return {"upserted": upserted, "deleted": deleted}
+    return {
+        "upserted": upserted,
+        "deleted": deleted,
+        "failed": failed,
+        "failures": failures,
+    }
 
 
 def materialize_object_type(repo: Any, class_rid: str, *, limit: int = 10000) -> dict[str, Any]:
