@@ -108,3 +108,4 @@ trace/截图/日志随失败留存、`continue-on-error` 全部取消。CI 与�
 | ga-013-networkpolicy | 13 NetworkPolicy 缺失 = prod 不通过 | N/A 无网络策略改动 |
 
 **证据**：本文件。**命令**：见 §4 测试表。
+**commit**：`34bb8c65`（命令集 + spec + 删除旧健康脚本）、`4ffc01ec`（工作流单 Job）、`80627207`（ADR + 本验收证据）。
