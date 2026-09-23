@@ -3,7 +3,7 @@
  *
  * IA2-1 重写（ADR-0069）：本域改为左侧工作区导航后，原「4 个页内横向 tab」断言
  * 已随 09-17 IA 重排过期（文案漂移红）并再度随 IA v2 作废。本文件现在覆盖：
- *  - 工作区形态：左侧导航渲染、全局横向 PageTabs 不渲染；
+ *  - 导航形态：与全站一致的横向 PageTabs（2026-09-24 tab 模式）；
  *  - 对象浏览：类型树 + 实例表 + 点击行弹非模态 SheetDetail；
  *  - 数据映射：三子页独立成页（IA2-3 拆分）；
  *  - 类型建模：7 个子 tab 带真实计数（容器内部 tab，IA2-2 拆分）；
@@ -50,7 +50,7 @@ test.describe('UI-P1a · 本体域（IA v2 工作区）', () => {
     await injectAuth(context, page);
   });
 
-  test('工作区形态：左侧导航渲染，全局横向 PageTabs 不渲染', async ({ page }) => {
+  test('导航形态：与全站一致的横向 PageTabs（2026-09-24 tab 模式）', async ({ page }) => {
     for (const path of [
       '/ontology/explore/objects',
       '/ontology/data/mappings',
@@ -58,9 +58,10 @@ test.describe('UI-P1a · 本体域（IA v2 工作区）', () => {
       '/ontology/governance/drafts',
     ]) {
       await gotoApp(page, path);
-      await expect(page.locator('.mp-onto-sidenav')).toBeVisible({ timeout: 20_000 });
-      await expect(page.locator('.mp-onto-sidenav-link', { hasText: '对象类型' })).toBeVisible();
-      await expect(page.locator('.mp-pagetabs')).toHaveCount(0);
+      await expect(page.locator('.mp-pagetabs-line .semi-tabs-tab').first()).toBeVisible({
+        timeout: 20_000,
+      });
+      await expect(page.locator('.mp-onto-sidenav')).toHaveCount(0);
     }
   });
 

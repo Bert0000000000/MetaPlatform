@@ -47,12 +47,11 @@ test.describe('Ontology IA v2 · 发布与治理（IA2-6）', () => {
     await expect(page.locator('.mp-onto-shell .semi-tabs-bar-button')).toHaveCount(0);
   });
 
-  test('左侧导航治理组七页全亮', async ({ page }) => {
+  test('治理组子 tab 胶囊行七页全亮', async ({ page }) => {
     await gotoApp(page, '/ontology/governance/drafts');
+    const sub = page.locator('.mp-subtabs .semi-tabs-tab');
     for (const label of ['草稿', '版本与发布', '使用量', '模型检查', '安全策略', '导入导出', '审计']) {
-      await expect(
-        page.locator('.mp-onto-sidenav-link', { hasText: label }),
-      ).toBeVisible({ timeout: 10_000 });
+      await expect(sub.filter({ hasText: label })).toBeVisible({ timeout: 10_000 });
     }
   });
 
