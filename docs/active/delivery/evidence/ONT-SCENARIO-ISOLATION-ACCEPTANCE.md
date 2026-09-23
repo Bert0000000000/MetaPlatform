@@ -107,3 +107,4 @@ G44 把 ACT-08 的 `ScenarioOverlay` HTTP 化时，会话态放在**进程内模
 | ga-013-networkpolicy | 13 NetworkPolicy 缺失 = prod 不通过 | N/A 本批无网络策略改动 |
 
 **证据**：本文件。**命令**：见 §4 测试表。
+**commit**：`f9b21c08`（ADR-0071 + 失败测试）、`8a221f43`（实现）、`d059db3f`（本验收证据）——PR #82。
