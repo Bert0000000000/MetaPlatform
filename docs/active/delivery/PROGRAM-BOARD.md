@@ -1,6 +1,6 @@
 # Mate Platform 交付项目计划板（Program Board）
 
-> 更新时间：2026-09-23（新增 ONTOLOGY-IA2 v2 页面结构重构八批收口）；上一版 2026-08-06（含 v3.1 Ontology 20/20 Batch + v4 RUNTIME-MVP-01 + RUNTIME-MVP-02 合并提速收口 + mp-ont-bugfix-01 + Dockerfile 修复 + BUSINESS-SLICES-WFE-P0 模板收口 ADR-0024 + MP-MCP-REGISTER-01；G1-G8 全 Accepted + M-v3.2-α + M-v3.2-γ + M-v3.2-δ 控制面 + 工作流 + 审计 + v3.1 子计划 + v4 RUNTIME + WFE P0 模板 + MP-MCP-REGISTER-01 内容全部闭环）
+> 更新时间：2026-09-24（新增 ONT-AXIOM-VALIDATE / ADR-0070）；上一版 2026-09-23（ONTOLOGY-IA2 v2 页面结构重构八批收口）；再上一版 2026-08-06（含 v3.1 Ontology 20/20 Batch + v4 RUNTIME-MVP-01 + RUNTIME-MVP-02 合并提速收口 + mp-ont-bugfix-01 + Dockerfile 修复 + BUSINESS-SLICES-WFE-P0 模板收口 ADR-0024 + MP-MCP-REGISTER-01；G1-G8 全 Accepted + M-v3.2-α + M-v3.2-γ + M-v3.2-δ 控制面 + 工作流 + 审计 + v3.1 子计划 + v4 RUNTIME + WFE P0 模板 + MP-MCP-REGISTER-01 内容全部闭环）
 > 本表跟踪各交付批次在契约、代码、测试、运行时和验收证据上的当前状态。
 
 ## Ontology IA v2 页面结构重构（2026-09-18 ~ 09-23，ADR-0069）
@@ -9,6 +9,7 @@
 | --- | --- | --- | --- |
 | ONTOLOGY-IA2-0~2 | ADR + 设计规格（路由矩阵）+ 工作区壳 + 六大域路由 + 语义模型拆分（PR #66 已合并 `dbbaef52`） | ✅ Accepted | `evidence/ONTOLOGY-IA2-0-BASELINE.md` + `evidence/ONTOLOGY-IA2-1-ACCEPTANCE.md` + `evidence/ONTOLOGY-IA2-2-ACCEPTANCE.md` |
 | ONTOLOGY-IA2-3~7 | 数据映射 / 对象与查询(:rid 段路由) / 动作与函数(:rid 详情) / 发布与治理（七子页 + Agent 指标删除）/ 清理与总验收（分支 `feat/ontology-ia2-3-data-mapping`，随 PR 合并） | ✅ Accepted | `evidence/ONTOLOGY-IA2-{3,4,5,6}-ACCEPTANCE.md` + `evidence/ONTOLOGY-IA2-ACCEPTANCE.md`（总验收：169 过/1 红预存） |
+| ONT-AXIOM-VALIDATE（ADR-0070） | Axiom 运行时违规检查端点 `POST /v2/axioms/validate`（`ontValidateV2Axioms`，Core 三条规则 disjoint/has_key/subclass）+ 公理页「运行时校验」抽屉。**IA v2 审视清单最后一项后端依赖项**。ont 510/510 · runtime parity 无缺口 · 真实网关+JWT+浏览器抽屉三处数字一致（checked 82）。边界：违规态的浏览器渲染未用真实数据实证（验收 §5.4） | ✅ Accepted | `evidence/ONT-AXIOM-VALIDATE-ACCEPTANCE.md` |
 
 ## v3.1 + v4 RUNTIME + BUSINESS-SLICES P0 增量收口（2026-08-06）
 
