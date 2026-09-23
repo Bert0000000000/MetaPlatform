@@ -4289,8 +4289,8 @@ async def validate_axioms_endpoint(request: Request, payload: dict) -> dict:
     body::
 
         {
-          "axiom_rid": "ont.<tenant>.ax.<slug>.<v>",    # 可选；缺省校验全部公理
-          "target_class": "ont.<tenant>.obj.<slug>.<v>" # 可选；限定实例范围
+            "axiom_rid": "ont.<tenant>.ax.<slug>.<v>",  # 可选；缺省校验全部公理
+            "target_class": "ont.<tenant>.obj.<slug>.<v>",  # 可选；限定实例范围
         }
 
     与 `/shacl/validate` 并列但独立——SHACL 消费 ObjectType 合成 shapes，

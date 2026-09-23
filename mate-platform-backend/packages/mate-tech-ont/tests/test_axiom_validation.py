@@ -15,7 +15,6 @@ from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
 from mate_kernel.ontology.instances import Individual
 from mate_kernel.ontology.reasoning.axiom import Axiom, AxiomKind
 from mate_kernel.ontology.types import ObjectType, Property, PropertyFormat
-
 from mate_tech_ont.v2_kernel.axiom_validation import validate_axioms
 
 TENANT = "tenant-a"
@@ -334,9 +333,7 @@ def test_endpoint_axiom_rid_filter(client_with_ctx) -> None:
     repo.upsert_axiom(_ax(f"ont.{tenant}.ax.crm.sub-a.v1", AxiomKind.SUBCLASS, (a, a)))
     repo.upsert_axiom(_ax(f"ont.{tenant}.ax.crm.key-a.v1", AxiomKind.HAS_KEY, (a,)))
 
-    resp = client.post(
-        AXIOMS_VALIDATE, json={"axiom_rid": f"ont.{tenant}.ax.crm.key-a.v1"}
-    )
+    resp = client.post(AXIOMS_VALIDATE, json={"axiom_rid": f"ont.{tenant}.ax.crm.key-a.v1"})
 
     assert resp.status_code == 200
     assert resp.json()["conforms"] is True  # 只校验 has_key，subclass 自环不计入
@@ -345,15 +342,11 @@ def test_endpoint_axiom_rid_filter(client_with_ctx) -> None:
 
 def test_endpoint_rejects_cross_tenant_axiom(client_with_ctx) -> None:
     client, _ = client_with_ctx
-    resp = client.post(
-        AXIOMS_VALIDATE, json={"axiom_rid": "ont.other-tenant.ax.crm.x.v1"}
-    )
+    resp = client.post(AXIOMS_VALIDATE, json={"axiom_rid": "ont.other-tenant.ax.crm.x.v1"})
     assert resp.status_code == 403
 
 
 def test_endpoint_rejects_cross_tenant_target_class(client_with_ctx) -> None:
     client, _ = client_with_ctx
-    resp = client.post(
-        AXIOMS_VALIDATE, json={"target_class": "ont.other-tenant.obj.crm.x.v1"}
-    )
+    resp = client.post(AXIOMS_VALIDATE, json={"target_class": "ont.other-tenant.obj.crm.x.v1"})
     assert resp.status_code == 403

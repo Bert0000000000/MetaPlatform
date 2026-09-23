@@ -130,7 +130,23 @@ runtime parity 无缺口、ont 包 510/510 全绿，且**真实网关 + 真实 J
 
 ## CI 门禁与证据（LOOP-ROLLOUT-01 模板字段）
 
-**13 硬规则 job**：ga-001（`ont.yaml` + bundle 已同步，`compare_runtime` 无 missingInRuntime）、
-ga-002（`FR-ONT-AXIOM-VALIDATE` 已登记 REQUIREMENT-MATRIX + requirements 注解）、
-ga-006（tsc 绿）、ga-007（0 skipped）、ga-010（本文件即数据源）。
-**证据**：本文件。**命令**：见 §4 表。**commit**：待 PR。
+**13 硬规则 job 对位**（逐条给本批的落点或说明为何不适用）：
+
+| job | 硬规则 | 本批状态 |
+| --- | --- | --- |
+| ga-001-openapi | 1 Swagger 没有接口不写 route | ✅ `ont.yaml` + `platform.yaml` + `bundled.yaml` 三产物同步；`compare_runtime` `missingInRuntime: []` |
+| ga-002-requirement-ids | 2 PRD 没有 Requirement ID | ✅ `FR-ONT-AXIOM-VALIDATE` 已登记 REQUIREMENT-MATRIX，契约 `x-mate-requirements` 注解齐全 |
+| ga-003-tenant | 3 没有 tenant 上下文不访问 repository | ✅ 新 handler 先 `_ctx(request)`；仓储调用走 `_scoped_repo`（GOVERN-06）；跨租户 403 负例 2 项 |
+| ga-004-acl-client | 4 外部系统没有 ACL Client | N/A 本批不新增外部调用 |
+| ga-005-no-fallback | 5 Production profile 禁止 fallback | ✅ 无 fallback；`violations` 为空即 `conforms:true`，不吞异常 |
+| ga-006-static | 6 静态检查失败不合并 | ✅ `ruff format --check` + `ruff check` 净；前端 `tsc -b --noEmit` 0 error |
+| ga-007-skip-tests | 7 契约或集成测试跳过不标记 Accepted | ✅ ont 包 **0 skipped**（510 passed）；本批 16 项全真跑 |
+| ga-008-helm | 8 没有 K8s readiness + 回滚 | N/A 本批无 K8s 改动；回滚见 §5.6 |
+| ga-009-otel | 9 没有审计、指标、trace | ✅ 既有 FastAPI OTel 中间件覆盖新路径，无新增埋点需求 |
+| ga-010-evidence | 10 所有状态以验收证据为准 | ✅ **本文件即数据源**，Program Board 已登记（显式文件名，非通配） |
+| ga-011-helm-docs | 11 helm-docs 同步子 chart README | N/A 本批无 chart 改动 |
+| ga-012-secret-scan | 12 Secret 不进 git | ✅ 无 secret 入 diff（gitleaks 覆盖） |
+| ga-013-networkpolicy | 13 NetworkPolicy 缺失 = prod 不通过 | N/A 本批无网络策略改动 |
+
+**证据**：本文件。**命令**：见 §4 测试表。
+**commit**：`3938f528`（ADR + 契约）、`60b16ff8`（实现 + 测试 + 前端 + 落档）——PR #81。

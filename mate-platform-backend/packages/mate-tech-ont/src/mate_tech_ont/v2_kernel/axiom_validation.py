@@ -18,7 +18,8 @@ SHACL 不消费 Axiom。
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from mate_kernel.ontology.identity import ClassRef
 from mate_kernel.ontology.reasoning.axiom import Axiom, AxiomKind
@@ -36,16 +37,14 @@ def _class_chain(repo: Any, rid: str) -> tuple[str, ...]:
         out.append(cur)
         try:
             ot = repo.get_object_type(ClassRef(cur))
-        except Exception:  # noqa: BLE001 —— 类型缺失/仓储差异都不该炸校验
+        except Exception:
             break
         parent = getattr(ot, "parent_class", None)
         cur = parent.rid if parent is not None else ""
     return tuple(out)
 
 
-def _scoped_individuals(
-    repo: Any, tenant_id: str, class_rid: str | None
-) -> list[Any]:
+def _scoped_individuals(repo: Any, tenant_id: str, class_rid: str | None) -> list[Any]:
     """租户内实例；给定 class_rid 时收窄到「该类及其子类」的实例。"""
     items = repo.list_individuals(None, tenant_id)
     if not class_rid:
@@ -69,9 +68,7 @@ def _check_disjoint(
                     "kind": ax.kind.value,
                     "severity": "Violation",
                     "focus_node": ind.rid,
-                    "message": (
-                        f"实例所属类同时落在不相交类 {left} 与 {right} 之下"
-                    ),
+                    "message": (f"实例所属类同时落在不相交类 {left} 与 {right} 之下"),
                 }
             )
     return out
