@@ -85,17 +85,30 @@ null 序：`ASC → NULLS LAST` / `DESC → NULLS FIRST`（与 InMemory `_sort_r
 > 已按统一语义更新为 `test_object_type_listing_follows_subclass_closure`
 > 并在 ADR-0077 §2.5 显式登记该**契约变更**。
 
-## 5. 已知边界
+## 5. 目标 §6（浏览 / 分析 / 地图共用 ObjectSet 输入）的落实状态
 
-1. 三入口的**共同语义面是"对象集合（rid 集合）"**；浏览入口仍无 filters/sort —
-   目标 §6 的"逐步共用 ObjectSet 输入、不重构导航"留待后续批次（本批只统一**语义**）。
+| 入口 | 数据源 | 本批后与 ObjectSet 的关系 |
+| --- | --- | --- |
+| **分析**（`AnalysisPage`） | `getObjectQueryAggregation` → `POST /v2/object-sets/query` | **已共用 ObjectSet 输入**（既有） |
+| **地图**（`MapPage`） | `getObjectQueryRows` → `POST /v2/object-sets/query` | **已共用 ObjectSet 输入**（既有） |
+| **对象浏览器**（`ObjectExplorerPage`） | `listIndividuals({classRid,limit,offset})` | 入口仍是浏览端点，但**源类解析已与 ObjectSet 同一实现**（本批核心） |
+| 导航 / 路由 | `routes/ontology.tsx`、`OntologyTabLayout` | **未改动**（目标明确要求不重构导航） |
+
+即：分析与地图本来就走 ObjectSet；本批把**浏览**的源类语义（子类/Interface 闭包）
+统一到同一实现，三者对"同一 `class_rid` 查什么"给出**一致**结果。浏览入口**参数面**
+（filters/sort 直接走 ObjectSet）属"逐步"的下一步，未在本批强行改造（避免动导航与入口形态）。
+
+## 6. 已知边界
+
+1. 三入口的**共同语义面是"对象集合（rid 集合）"**；浏览入口仍无 filters/sort
+   （参数面收敛见 §5 末行，属后续批次）。
 2. `_resolve_source_classes` 每次查询重读类型/接口/公理（批量，但**未缓存**）；
-   版本化缓存与 Axiom 校验批量加载同属下一批（目标 §5）。
+   版本化缓存与 Axiom 校验批量加载见 PR #91（目标 §5）。
 3. 遍历（traversal）后的最终类集合取 LinkType 声明，**不递归展开后代**（既有行为，未变）。
-4. 关系实例的服务端过滤/分页（目标 §3）不在本批。
+4. 关系实例的服务端过滤/分页（目标 §3）见 PR #90。
 5. **回滚**：`git revert` 本批提交即退回（纯 Python，无迁移/契约变更）。
 
-## 6. 结论
+## 7. 结论
 
 **准出达成**：源类解析、排序、null、分页规则**一处定义、三入口一致**；
 原本四处互不相同的实现收敛为一个纯函数 + 两个薄适配；
