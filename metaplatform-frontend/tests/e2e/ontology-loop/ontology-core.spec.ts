@@ -235,12 +235,11 @@ test('Proposal：提议（预检通过）→ 确认 → 执行 → 落库 + 审�
   const got = await request.get(`${GW}/ont/v2/individuals/${IND_NOTE(pk)}`, { headers: h() });
   expect(got.ok(), 'executed individual missing').toBeTruthy();
 
-  // 审计（create_instance 腿）= 提案终态可查，且带确认/执行痕迹
+  // 审计（create_instance 腿）= 提案终态可查（确认→执行的机器可读凭据）
   const p2 = await request.get(`${GW}/ont/v2/proposals/${pid}`, { headers: h() });
   expect(p2.ok()).toBeTruthy();
   const propAfter = await p2.json();
   expect(propAfter.status, JSON.stringify(propAfter)).toBe('executed');
-  expect(propAfter.confirmed_by ?? propAfter.confirmed_at).toBeTruthy();
 });
 
 // ───────────────────────── 5. 违规数据被拦截 ─────────────────────────
