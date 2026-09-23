@@ -1,12 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Tabs, Tag } from '@douyinfe/semi-ui';
 import { RefreshCw } from 'lucide-react';
-import {
-  listActionAudit,
-  listSchemaWip,
-  type ActionAuditRow,
-  type SchemaWipEntry,
-} from '@/api/ont/kernel';
+import { listSchemaWip, type SchemaWipEntry } from '@/api/ont/kernel';
 import { DataTablePro, EmptyState, FilterBar, PageHeader } from '@/components/skeleton';
 import { ridTail } from '../rid';
 import '../ontology.css';
@@ -21,13 +16,12 @@ import '../ontology.css';
  */
 const GovernancePage = lazy(() => import('../GovernancePage'));
 
-export type OpsKey = 'release' | 'audit' | 'governance';
+export type OpsKey = 'release' | 'governance';
 
 const PAGE_SIZE = 20;
 
 const OPS_LABEL: Record<OpsKey, string> = {
   release: '版本与发布',
-  audit: '变更审计',
   governance: '治理',
 };
 
@@ -46,13 +40,11 @@ export default function OpsPage({ initialTab = 'release' }: OpsPageProps) {
   const [loading, setLoading] = useState(true);
 
   const [wipRows, setWipRows] = useState<SchemaWipEntry[]>([]);
-  const [auditRows, setAuditRows] = useState<ActionAuditRow[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [wip, audit] = await Promise.allSettled([listSchemaWip(), listActionAudit(200)]);
-    setWipRows(wip.status === 'fulfilled' ? wip.value : []);
-    setAuditRows(audit.status === 'fulfilled' ? audit.value : []);
+    const wip = await Promise.allSettled([listSchemaWip()]);
+    setWipRows(wip[0].status === 'fulfilled' ? wip[0].value : []);
     setLoading(false);
   }, []);
 
@@ -72,23 +64,13 @@ export default function OpsPage({ initialTab = 'release' }: OpsPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [wipRows, kw],
   );
-  const filteredAudit = useMemo(
-    () => auditRows.filter((r) => match(`${r.action_rid} ${r.target_iid} ${r.actor_id} ${r.proposal_id}`)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [auditRows, kw],
-  );
-
   const pageOf = <T,>(rows: T[]) => rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const empty = (
     <EmptyState
       illustration="no-content"
       title={`没有${OPS_LABEL[tab]}记录`}
-      desc={
-        tab === 'release'
-          ? '当前没有待发布的 Schema WIP（草稿在类型编辑器里暂存后会出现在这里）。'
-          : '本租户还没有经 Action 落库的变更。'
-      }
+      desc="当前没有待发布的 Schema WIP（草稿在类型编辑器里暂存后会出现在这里）。"
     />
   );
 
@@ -99,9 +81,7 @@ export default function OpsPage({ initialTab = 'release' }: OpsPageProps) {
         desc={
           tab === 'release'
             ? `${wipRows.length} 条 Schema WIP · 应用后按不可变版本发布`
-            : tab === 'audit'
-              ? `${auditRows.length} 条 Action 执行记录（最近 200 条）`
-              : '类型版本、使用量、反模式检查与执行审计'
+            : '类型版本、使用量、反模式检查与执行审计'
         }
         actions={
           tab === 'governance' ? null : (
@@ -121,7 +101,6 @@ export default function OpsPage({ initialTab = 'release' }: OpsPageProps) {
         activeKey={tab}
         tabList={[
           { tab: `版本与发布 · ${wipRows.length}`, itemKey: 'release' },
-          { tab: `变更审计 · ${auditRows.length}`, itemKey: 'audit' },
           { tab: '治理', itemKey: 'governance' },
         ]}
         onChange={(key) => setTab(key as OpsKey)}
@@ -137,7 +116,7 @@ export default function OpsPage({ initialTab = 'release' }: OpsPageProps) {
             search={{ value: keyword, onChange: setKeyword, placeholder: `搜索${OPS_LABEL[tab]}` }}
           />
 
-          {tab === 'release' ? (
+          {tab === 'release' && (
             <DataTablePro<SchemaWipEntry>
               columns={[
                 {
@@ -169,59 +148,6 @@ export default function OpsPage({ initialTab = 'release' }: OpsPageProps) {
                 currentPage: page,
                 pageSize: PAGE_SIZE,
                 total: filteredWip.length,
-                onChange: setPage,
-              }}
-              empty={empty}
-            />
-          ) : (
-            <DataTablePro<ActionAuditRow>
-              columns={[
-                {
-                  title: '动作',
-                  dataIndex: 'action_rid',
-                  width: 240,
-                  ellipsis: true,
-                  render: (v: string) => <span className="mp-onto-strong">{ridTail(v)}</span>,
-                },
-                {
-                  title: '目标实例',
-                  dataIndex: 'target_iid',
-                  width: 300,
-                  ellipsis: true,
-                  render: (v: string) => <span className="mp-onto-muted">{ridTail(v)}</span>,
-                },
-                { title: '执行者', dataIndex: 'actor_id', width: 200, ellipsis: true },
-                {
-                  title: '提案',
-                  dataIndex: 'proposal_id',
-                  width: 220,
-                  ellipsis: true,
-                  render: (v: string) => <span className="mp-onto-faint">{v}</span>,
-                },
-                {
-                  title: '结果',
-                  dataIndex: 'result',
-                  width: 120,
-                  render: (v: Record<string, unknown>) => (
-                    <Tag size="small" color={Object.keys(v ?? {}).length > 0 ? 'green' : 'grey'} type="light">
-                      {Object.keys(v ?? {}).length > 0 ? '已落库' : '空'}
-                    </Tag>
-                  ),
-                },
-                {
-                  title: '时间',
-                  dataIndex: 'created_at',
-                  ellipsis: true,
-                  render: (v: string) => <span className="mp-onto-muted">{v}</span>,
-                },
-              ]}
-              dataSource={pageOf(filteredAudit)}
-              rowKey="audit_id"
-              loading={loading}
-              pagination={{
-                currentPage: page,
-                pageSize: PAGE_SIZE,
-                total: filteredAudit.length,
                 onChange: setPage,
               }}
               empty={empty}

@@ -16,7 +16,11 @@ import AxiomsPage from '@/pages/ontology/model/axioms/AxiomsPage';
 import OntologyGraphPage from '@/pages/ontology/model/graph/OntologyGraphPage';
 import ModelValidationPage from '@/pages/ontology/model/validation/ModelValidationPage';
 import ActionTypesPage from '@/pages/ontology/logic/actions/ActionTypesPage';
+import ActionTypeDetailPage from '@/pages/ontology/logic/actions/ActionTypeDetailPage';
 import FunctionsPage from '@/pages/ontology/logic/functions/FunctionsPage';
+import FunctionDetailPage from '@/pages/ontology/logic/functions/FunctionDetailPage';
+import ActionRunsPage from '@/pages/ontology/logic/runs/ActionRunsPage';
+import ActionDesignerPage from '@/pages/ontology/logic/designer/ActionDesignerPage';
 
 /**
  * 本体域路由表（ADR-0069 IA v2：工作区 + 六大功能域嵌套路由）。
@@ -30,7 +34,6 @@ import FunctionsPage from '@/pages/ontology/logic/functions/FunctionsPage';
  * 尚未拆出的页面（model/validation、data/sync、explore/objects/:rid、
  * logic/actions/:rid 等）**不注册**——没有路由就没有空壳页（设计规格 §2.5）。
  */
-const OntologyActionPage = lazy(() => import('@/pages/ontology/OntologyActionPage'));
 const GovernancePage = lazy(() => import('@/pages/ontology/GovernancePage'));
 const AnalysisPage = lazy(() => import('@/pages/ontology/AnalysisPage'));
 const MapPage = lazy(() => import('@/pages/ontology/MapPage'));
@@ -97,15 +100,19 @@ export const ontologyRoutes = (
       <Route path="map" element={<MapPage />} />
     </Route>
 
-    {/* 动作与函数：IA2-2 起动作类型/函数为独立页（从语义模型迁出）；
-        designer=原 OntologyActionPage；runs=OpsPage 的 Action 执行记录（audit）。
-        actions/:rid 与 functions/:rid 详情随 IA2-5 落地 */}
+    {/* 动作与函数（IA2-5 已拆分）：列表 + :rid 详情（四真 Tab 进 URL）+
+        Action 编排（原 OntologyActionPage 迁移）+ 执行记录唯一权威页
+        （?action= 深链过滤）。approvals 无真实数据不注册（设计规格 §2.5） */}
     <Route path="logic">
       <Route index element={<Navigate to="actions" replace />} />
       <Route path="actions" element={<ActionTypesPage />} />
+      <Route path="actions/:rid" element={<ActionTypeDetailPage />} />
+      <Route path="actions/:rid/:tab" element={<ActionTypeDetailPage />} />
       <Route path="functions" element={<FunctionsPage />} />
-      <Route path="designer" element={<OntologyActionPage />} />
-      <Route path="runs" element={<OpsPage initialTab="audit" />} />
+      <Route path="functions/:rid" element={<FunctionDetailPage />} />
+      <Route path="functions/:rid/:tab" element={<FunctionDetailPage />} />
+      <Route path="designer" element={<ActionDesignerPage />} />
+      <Route path="runs" element={<ActionRunsPage />} />
     </Route>
 
     {/* 发布与治理：drafts=OpsPage 的 Schema WIP 草稿面（release tab）；
