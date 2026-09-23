@@ -83,10 +83,11 @@ up() {
 wait_healthy() {
   log "等待健康（最多 ${HEALTH_TIMEOUT}s）"
   local deadline=$((SECONDS + HEALTH_TIMEOUT))
+  local gw_base="${GATEWAY_URL%/api/v1}"   # 网关健康在根 /healthz（不是 /api/v1/healthz）
   while (( SECONDS < deadline )); do
     local ok=1
-    # 网关 / 本体
-    curl -fsS --max-time 5 "$GATEWAY_URL/healthz" >/dev/null 2>&1 || ok=0
+    # 网关（根 /healthz） / 本体
+    curl -fsS --max-time 5 "$gw_base/healthz" >/dev/null 2>&1 || ok=0
     curl -fsS --max-time 5 "http://localhost:8007/healthz" >/dev/null 2>&1 || ok=0
     # 真实登录（Keycloak + auth-service 就绪才算）
     local code
