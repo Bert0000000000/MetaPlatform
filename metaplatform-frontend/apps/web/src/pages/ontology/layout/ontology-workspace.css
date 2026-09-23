@@ -51,11 +51,11 @@
 }
 
 .mp-onto-sidenav {
-  width: 200px;
+  width: 204px;
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: var(--mp-space-4);
+  gap: var(--mp-space-5);
   padding: var(--mp-space-4) var(--mp-space-2);
   border-right: 1px solid var(--semi-color-border);
   background: var(--semi-color-bg-1);
@@ -66,35 +66,58 @@
 .mp-onto-sidenav-group {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
+/* 分组标题：小字灰色、去大写——比链接轻一档，只做视觉分节 */
 .mp-onto-sidenav-group-label {
   display: flex;
   align-items: center;
   gap: var(--mp-space-2);
-  padding: var(--mp-space-1) var(--mp-space-3);
-  font-size: 11px;
-  font-weight: 600;
+  padding: 0 var(--mp-space-3) var(--mp-space-1);
+  font-size: 12px;
+  font-weight: 500;
   color: var(--semi-color-text-2);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   white-space: nowrap;
 }
 
+.mp-onto-sidenav-group-label svg {
+  opacity: 0.55;
+}
+
+/* 链接：舒展行高（28px）+ 相对定位挂左指示条 */
 .mp-onto-sidenav-link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--mp-space-2);
+  min-height: 28px;
   padding: var(--mp-space-1) var(--mp-space-3);
-  border-radius: var(--semi-border-radius-small);
+  border-radius: var(--semi-border-radius-medium);
   font-size: 13px;
   color: var(--semi-color-text-1);
   text-decoration: none;
   white-space: nowrap;
   transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
+    background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 左指示条：默认收缩成 0 宽的圆角短条，选中时撑开——呼吸感 */
+.mp-onto-sidenav-link::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--semi-color-primary);
+  opacity: 0;
+  transition:
+    width 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mp-onto-sidenav-link:hover {
@@ -102,10 +125,21 @@
   color: var(--semi-color-text-0);
 }
 
+.mp-onto-sidenav-link:hover::before {
+  opacity: 0.28;
+  width: 3px;
+}
+
 .mp-onto-sidenav-link.is-active {
   background: var(--semi-color-primary-light-default);
   color: var(--semi-color-primary);
   font-weight: 600;
+}
+
+.mp-onto-sidenav-link.is-active::before {
+  opacity: 1;
+  width: 3px;
+  height: 16px;
 }
 
 .mp-onto-sidenav-link--top {
@@ -117,6 +151,20 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* 计数徽标位（结构预留：后续挂对象类型数 / 草稿数等真实计数） */
+.mp-onto-sidenav-link-count {
+  flex: none;
+  margin-left: auto;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--semi-color-text-2);
+}
+
+.mp-onto-sidenav-link.is-active .mp-onto-sidenav-link-count {
+  color: var(--semi-color-primary);
+  opacity: 0.75;
 }
 
 /* ---------- 资源详情布局（IA2-2 起接入） ---------- */
@@ -136,21 +184,27 @@
 }
 
 /* ---------- 窄视口（1024px 不遮挡主内容） ---------- */
-/* 子项链接没有图标，纯图标栏会出现空块——窄屏改为收窄保文字（152px），
+/* 子项链接没有图标，纯图标栏会出现空块——窄屏改为收窄保文字（156px），
    内容区仍有 ~860px；真正的图标式折叠等交互式折叠一起做（非首批阻断）。 */
 @media (max-width: 1024px) {
   .mp-onto-sidenav {
-    width: 152px;
+    width: 156px;
     padding: var(--mp-space-3) var(--mp-space-1);
-    gap: var(--mp-space-3);
+    gap: var(--mp-space-4);
   }
 
   .mp-onto-sidenav-group-label {
-    padding: var(--mp-space-1) var(--mp-space-2);
+    padding: 0 var(--mp-space-2) var(--mp-space-1);
+    font-size: 11px;
   }
 
   .mp-onto-sidenav-link {
-    padding: var(--mp-space-1) var(--mp-space-2);
+    min-height: 26px;
+    padding: 2px var(--mp-space-2);
     font-size: 12px;
+  }
+
+  .mp-onto-sidenav-link::before {
+    left: 1px;
   }
 }
