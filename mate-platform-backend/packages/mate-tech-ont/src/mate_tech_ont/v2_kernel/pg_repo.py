@@ -177,6 +177,9 @@ DDL: tuple[str, ...] = (
     # 2026-09-15 修复：此前该 ALTER 排在建表之前，全新库（CI ga-014 的
     # metaplatform_ont_test）bootstrap 直接 UndefinedTable 炸掉整条 DDL 序列。
     "ALTER TABLE ont_individual ADD COLUMN IF NOT EXISTS provenance JSONB NULL",
+    # DATA-SYNC-INTEGRITY：字段级来源归属（prop_rid → {prio, src}）—— 多源优先级
+    # **跨批次**生效的前提：低优先级源写入时据此拒绝覆盖高优先级已写字段。
+    "ALTER TABLE ont_individual ADD COLUMN IF NOT EXISTS props_src JSONB NULL",
     """
     CREATE TABLE IF NOT EXISTS ont_action_type (
         rid                  TEXT PRIMARY KEY,
@@ -344,6 +347,11 @@ DDL: tuple[str, ...] = (
     # CDC 增量腿：水位 + 时间戳列
     "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMPTZ",
     "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS ts_column TEXT NOT NULL DEFAULT 'updated_at'",
+    # DATA-SYNC-INTEGRITY：游标 = 已可靠处理的**源端**边界 (ts, pk)（不是目标端 now()）；
+    # 失败可追踪：上一次错误 + 失败行数。
+    "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS last_synced_pk TEXT",
+    "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS last_error TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS last_failed INTEGER NOT NULL DEFAULT 0",
     # G20：webhook 订阅 + 投递审计
     """
     CREATE TABLE IF NOT EXISTS ont_webhook_subscription (
@@ -3718,7 +3726,11 @@ class PgOntologyRepository(OntologyRepository):
     # ───── DATA-14：背挂数据源声明 ─────
 
     def upsert_backing_datasource(self, decl: dict[str, Any]) -> dict[str, Any]:
-        """声明/更新一个 backing datasource（kind v1=pg_table；secret 走 dsn_env）。"""
+        """声明/更新一个 backing datasource（kind v1=pg_table；secret 走 dsn_env）。
+
+        可选 ``ts_column`` / ``last_synced_at`` / ``last_synced_pk``：增量游标
+        （源端边界）。缺省不覆盖既有游标（``COALESCE``）。
+        """
         rid = decl.get("rid") or (
             f"ont.{decl.get('tenant_id', 't')}.bds."
             f"{decl['class_rid'].split('.')[-2]}-{decl['name']}"
@@ -3729,14 +3741,20 @@ class PgOntologyRepository(OntologyRepository):
                 cur.execute(
                     """INSERT INTO ont_backing_datasource
                        (rid, tenant_id, class_rid, name, kind, dsn_env,
-                        table_name, pk_column, field_mapping, priority, updated_at)
-                       VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s,now())
+                        table_name, pk_column, field_mapping, priority, ts_column,
+                        last_synced_at, last_synced_pk, updated_at)
+                       VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s,%s,%s,%s,now())
                        ON CONFLICT (rid) DO UPDATE SET
                          name=EXCLUDED.name, kind=EXCLUDED.kind,
                          dsn_env=EXCLUDED.dsn_env, table_name=EXCLUDED.table_name,
                          pk_column=EXCLUDED.pk_column,
                          field_mapping=EXCLUDED.field_mapping,
-                         priority=EXCLUDED.priority, updated_at=now()""",
+                         priority=EXCLUDED.priority, ts_column=EXCLUDED.ts_column,
+                         last_synced_at=COALESCE(EXCLUDED.last_synced_at,
+                                                 ont_backing_datasource.last_synced_at),
+                         last_synced_pk=COALESCE(EXCLUDED.last_synced_pk,
+                                                 ont_backing_datasource.last_synced_pk),
+                         updated_at=now()""",
                     (
                         rid,
                         decl.get("tenant_id") or self._current_tenant() or "tenant-default",
@@ -3748,10 +3766,156 @@ class PgOntologyRepository(OntologyRepository):
                         decl["pk_column"],
                         json.dumps(decl.get("field_mapping") or {}),
                         int(decl.get("priority", 100)),
+                        decl.get("ts_column") or "updated_at",
+                        decl.get("last_synced_at"),
+                        decl.get("last_synced_pk"),
                     ),
                 )
             conn.commit()
             return {"rid": rid, "name": decl["name"]}
+        finally:
+            conn.close()
+
+    def upsert_sourced_props(
+        self,
+        *,
+        rid: str,
+        tenant_id: str,
+        class_rid: ClassRef,
+        primary_key: str,
+        values: dict[str, Any],
+        source: str,
+        priority: int,
+        ts: Any,
+    ) -> dict[str, Any]:
+        """DATA-SYNC-INTEGRITY：按**字段级来源优先级**写入（跨批次生效）。
+
+        规则（``props_src`` 记录每字段的 (prio, src)）：
+        - 已有字段的来源优先级 ``<=`` 本次 → 跳过（低优先级/同级不得覆盖）；
+        - 否则写入（``None`` 值 = 显式清空，同样受优先级约束）；
+        - 用户编辑覆盖层由调用方（引擎）在 ``values`` 里剔除，此处不再判。
+        返回 ``{written: n, skipped: m}``。
+        """
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT props_src FROM ont_individual WHERE rid = %s", (rid,))
+                row = cur.fetchone()
+                existing = dict(row.get("props_src") or {}) if row else {}
+                write_props: dict[str, Any] = {}
+                write_src: dict[str, Any] = {}
+                skipped = 0
+                for prop_rid, value in values.items():
+                    prev = existing.get(prop_rid)
+                    if isinstance(prev, dict) and int(prev.get("prio", 10**9)) < priority:
+                        skipped += 1
+                        continue
+                    write_props[prop_rid] = value
+                    write_src[prop_rid] = {"prio": priority, "src": source}
+                if not write_props:
+                    return {"written": 0, "skipped": skipped}
+                cur.execute(
+                    """
+                    INSERT INTO ont_individual
+                        (rid, tenant_id, class_rid, props, primary_key, marking,
+                         created_at, updated_at, props_src)
+                    VALUES (%s,%s,%s,%s::jsonb,%s,'{}',%s,%s,%s::jsonb)
+                    ON CONFLICT (rid) DO UPDATE SET
+                        props = ont_individual.props || EXCLUDED.props,
+                        props_src = COALESCE(ont_individual.props_src, '{}'::jsonb)
+                                    || EXCLUDED.props_src,
+                        updated_at = EXCLUDED.updated_at
+                    """,
+                    (
+                        rid,
+                        tenant_id,
+                        class_rid.rid,
+                        json.dumps(write_props, default=str),
+                        primary_key,
+                        ts,
+                        ts,
+                        json.dumps(write_src),
+                    ),
+                )
+            conn.commit()
+            return {"written": len(write_props), "skipped": skipped}
+        finally:
+            conn.close()
+
+    def upsert_sourced_props_batch(
+        self,
+        items: list[dict[str, Any]],
+        *,
+        tenant_id: str,
+        class_rid: ClassRef,
+        source: str,
+        priority: int,
+        ts: Any,
+    ) -> dict[str, Any]:
+        """``upsert_sourced_props`` 的批量版：一次 SELECT + 一次 execute_values + 一次提交。
+
+        ``items``: ``[{"rid", "primary_key", "values": {prop_rid: value}}]``。
+        优先级规则与单行版一致（``props_src`` 决定谁不得覆盖谁）。
+        """
+        self._ensure_schema()
+        if not items:
+            return {"written": 0, "skipped": 0}
+        from psycopg2.extras import execute_values
+
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                rids = [it["rid"] for it in items]
+                cur.execute(
+                    "SELECT rid, props_src FROM ont_individual WHERE rid = ANY(%s)", (rids,)
+                )
+                existing = {r["rid"]: dict(r["props_src"] or {}) for r in cur.fetchall()}
+                rows: list[tuple[Any, ...]] = []
+                skipped = 0
+                for it in items:
+                    prev = existing.get(it["rid"], {})
+                    props: dict[str, Any] = {}
+                    srcs: dict[str, Any] = {}
+                    for prop_rid, value in it["values"].items():
+                        p = prev.get(prop_rid)
+                        if isinstance(p, dict) and int(p.get("prio", 10**9)) < priority:
+                            skipped += 1
+                            continue
+                        props[prop_rid] = value
+                        srcs[prop_rid] = {"prio": priority, "src": source}
+                    if props:
+                        rows.append(
+                            (
+                                it["rid"],
+                                tenant_id,
+                                class_rid.rid,
+                                json.dumps(props, default=str),
+                                it["primary_key"],
+                                ts,
+                                ts,
+                                json.dumps(srcs),
+                            )
+                        )
+                if rows:
+                    execute_values(
+                        cur,
+                        """
+                        INSERT INTO ont_individual
+                            (rid, tenant_id, class_rid, props, primary_key, marking,
+                             created_at, updated_at, props_src)
+                        VALUES %s
+                        ON CONFLICT (rid) DO UPDATE SET
+                            props = ont_individual.props || EXCLUDED.props,
+                            props_src = COALESCE(ont_individual.props_src, '{}'::jsonb)
+                                        || EXCLUDED.props_src,
+                            updated_at = EXCLUDED.updated_at
+                        """,
+                        rows,
+                        template="(%s,%s,%s,%s::jsonb,%s,'{}',%s,%s,%s::jsonb)",
+                    )
+            conn.commit()
+            return {"written": len(rows), "skipped": skipped}
         finally:
             conn.close()
 
@@ -3806,11 +3970,23 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
-    def sync_backing_datasources(self, class_rid: str, incremental: bool = False) -> dict[str, Any]:
+    def sync_backing_datasources(
+        self,
+        class_rid: str,
+        incremental: bool = False,
+        *,
+        batch_limit: int = 5000,
+        delete_missing: bool = False,
+    ) -> dict[str, Any]:
         """DATA-14/CDC：批量或增量同步（声明按 priority 序）。
 
-        incremental=True：按 ts_column > last_synced_at 过滤（水位随同步推进）；
-        同步全程尊重用户编辑覆盖层（writeback 双流合并）。
+        游标语义（DATA-SYNC-INTEGRITY）：增量按 ``(ts_column, pk) > (last_synced_at,
+        last_synced_pk)`` **keyset** 过滤 —— 同时间戳靠 pk 决胜（不漏行）；同步后
+        水位**只推进到已可靠处理的源端边界**，绝不写目标端 ``now()``（不丢更新）。
+        失败行登记且**不越过**失败点 —— 下一轮重读即自动重试。
+
+        返回 ``{ok, total_synced, total_failed, total_deleted, sources:{name:{...}}}``；
+        ``ok=False`` = 存在失败行，调用方**不得**据此报整体成功。
         """
         from .backing_datasources import BackingDatasource, sync_backing_datasource
 
@@ -3834,32 +4010,53 @@ class PgOntologyRepository(OntologyRepository):
             )
             for d in decls
         ]
-        stats = sync_backing_datasource(
+
+        def _iso(v: Any) -> Any:
+            return v.isoformat() if hasattr(v, "isoformat") else v
+
+        result = sync_backing_datasource(
             self,
             ot,
             sources,
+            batch_limit=batch_limit,
             incremental=incremental,
             overlay_props=overlay,
-            watermarks={
-                d["name"]: (d["last_synced_at"].isoformat() if d.get("last_synced_at") else None)
+            cursors={
+                d["name"]: {"ts": _iso(d.get("last_synced_at")), "pk": d.get("last_synced_pk")}
                 for d in decls
             },
             ts_columns={d["name"]: d.get("ts_column") or "updated_at" for d in decls},
+            delete_missing=delete_missing,
         )
-        if incremental:
-            conn, _ = self._connect()
-            try:
-                with self._cursor(conn) as cur:
-                    for d in decls:
-                        cur.execute(
-                            "UPDATE ont_backing_datasource SET last_synced_at = now() "
-                            "WHERE class_rid = %s AND name = %s",
-                            (class_rid, d["name"]),
-                        )
-                conn.commit()
-            finally:
-                conn.close()
-        return stats
+
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                for d in decls:
+                    r = result.get(d["name"]) or {}
+                    cur_ts = (r.get("cursor") or {}).get("ts")
+                    cur_pk = (r.get("cursor") or {}).get("pk")
+                    fails = r.get("failures") or []
+                    last_err = str(fails[0].get("error", ""))[:300] if fails else ""
+                    cur.execute(
+                        "UPDATE ont_backing_datasource SET "
+                        "last_synced_at = COALESCE(%s, last_synced_at), "
+                        "last_synced_pk = COALESCE(%s, last_synced_pk), "
+                        "last_error = %s, last_failed = %s "
+                        "WHERE class_rid = %s AND name = %s",
+                        (cur_ts, cur_pk, last_err, int(r.get("failed", 0)), class_rid, d["name"]),
+                    )
+            conn.commit()
+        finally:
+            conn.close()
+
+        return {
+            "ok": sum(int(r.get("failed", 0)) for r in result.values()) == 0,
+            "total_synced": sum(int(r.get("synced", 0)) for r in result.values()),
+            "total_failed": sum(int(r.get("failed", 0)) for r in result.values()),
+            "total_deleted": sum(int(r.get("deleted", 0)) for r in result.values()),
+            "sources": result,
+        }
 
     def apply_cdc_changes(self, class_rid: str, changes: list[dict[str, Any]]) -> dict[str, int]:
         """CDC 流式绑定入口（debezium / mate-tech-etl 变更事件）。
@@ -3885,6 +4082,7 @@ class PgOntologyRepository(OntologyRepository):
             pk_column=top["pk_column"],
             field_mapping=dict((top.get("field_mapping") or {}).items()),
             overlay_props=overlay,
+            default_priority=int(top.get("priority", 100)),
         )
 
     def materialize_object_type(self, class_rid: str, limit: int = 10000) -> dict[str, Any]:

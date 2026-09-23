@@ -146,7 +146,7 @@ class TestDualStreamMerge:
         with repo.tenant_scope(T):
             # 首次全量
             stats = repo.sync_backing_datasources(OBJ)
-            assert stats == {"crm": 2}
+            assert stats["ok"] is True and stats["total_synced"] == 2
             # 用户编辑 a1 的 aname
             repo.apply_edit_set_now(
                 ACT,
@@ -188,7 +188,7 @@ class TestDualStreamMerge:
             repo.sync_backing_datasources(OBJ, incremental=True)
             # 无变化 → 第二次增量同步 0 行
             stats = repo.sync_backing_datasources(OBJ, incremental=True)
-            assert stats == {"crm": 0}
+            assert stats["ok"] is True and stats["total_synced"] == 0
             # 新增一行（fresh ts）→ 只命中它
             conn = psycopg2.connect(PG_DSN)
             with conn.cursor() as cur:
@@ -199,7 +199,7 @@ class TestDualStreamMerge:
             conn.commit()
             conn.close()
             stats2 = repo.sync_backing_datasources(OBJ, incremental=True)
-            assert stats2 == {"crm": 1}
+            assert stats2["ok"] is True and stats2["total_synced"] == 1
             assert (
                 repo.get_individual(f"ont.{T}.ind.account.a3").get(ClassRef(P_NAME))
                 == "pipeline-name-3"
@@ -218,7 +218,7 @@ class TestDualStreamMerge:
                     },
                 ],
             )
-            assert out == {"upserted": 1, "deleted": 0}
+            assert out["upserted"] == 1 and out["deleted"] == 0 and out["failed"] == 0
             assert (
                 repo.get_individual(f"ont.{T}.ind.account.a9").get(ClassRef(P_NAME)) == "cdc-name"
             )
@@ -256,6 +256,6 @@ class TestDualStreamMerge:
                     {"op": "delete", "pk": "a9"},
                 ],
             )
-            assert out2 == {"upserted": 0, "deleted": 1}
+            assert out2["upserted"] == 0 and out2["deleted"] == 1 and out2["failed"] == 0
             with pytest.raises(KeyError):
                 repo.get_individual(f"ont.{T}.ind.account.a9")

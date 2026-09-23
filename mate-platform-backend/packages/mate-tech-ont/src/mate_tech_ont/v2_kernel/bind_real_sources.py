@@ -72,7 +72,8 @@ def bind_all(repo: Any, extended: bool = False) -> dict[str, Any]:
         try:
             repo.upsert_backing_datasource({**b, "tenant_id": TENANT})
             stats = repo.sync_backing_datasources(rid, incremental=True)
-            results[rid] = {"ok": True, "stats": stats}
+            # 同步内部的失败行不得被外层报成整体成功（DATA-SYNC-INTEGRITY §3）
+            results[rid] = {"ok": bool(stats.get("ok", True)), "stats": stats}
         except Exception as e:  # 逐类型隔离——单类型失败不中断
             results[rid] = {"ok": False, "error": str(e)[:200]}
     return results

@@ -89,16 +89,32 @@ class SyncScheduler:
                     tenant_id,
                     class_rid,
                 )
+                # DATA-SYNC-INTEGRITY §3：同步内部有失败行（ok=False）不得报整体成功
+                ok = not (isinstance(result, dict) and result.get("ok") is False)
+                prev_ok = self._status.get((tenant_id, class_rid), {})
                 self._status[(tenant_id, class_rid)] = {
                     "tenant_id": tenant_id,
                     "class_rid": class_rid,
                     "last_result": result,
-                    "last_error": "",
+                    "last_error": ""
+                    if ok
+                    else "同步存在失败行（见 last_result.sources[].failures）",
                     "last_duration_ms": int((time.monotonic() - t0) * 1000),
                     "last_run_at": datetime.now(UTC).isoformat(),
-                    "consecutive_failures": 0,
+                    "consecutive_failures": 0
+                    if ok
+                    else int(prev_ok.get("consecutive_failures", 0)) + 1,
                 }
-                stats["synced"] += 1
+                if ok:
+                    stats["synced"] += 1
+                else:
+                    stats["failed"] += 1
+                    logger.warning(
+                        "sync_scheduler.sync_partial_failure",
+                        tenant_id=tenant_id,
+                        class_rid=class_rid,
+                        failed_rows=result.get("total_failed"),
+                    )
             except Exception as e:
                 prev = self._status.get((tenant_id, class_rid), {})
                 fails = int(prev.get("consecutive_failures", 0)) + 1
