@@ -2834,6 +2834,7 @@ requirements:
     service: ont
     operationIds:
       - ontListV2LinkInstances
+      - ontGetV2LinkInstanceStats
     handler: mate_tech_ont.main:app#ontListV2LinkInstances
     tests:
       - mate-platform-backend/contracts/tests/test_runtime_comparison.py

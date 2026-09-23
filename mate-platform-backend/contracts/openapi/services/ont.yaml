@@ -1028,6 +1028,32 @@ paths:
       x-mate-required-tenant: true
       x-mate-requirements: [FR-ONT-KERNEL01-LISTLINKINSTANCES]
       x-mate-implementation-status: implemented
+      parameters:
+        - name: link_type_rid
+          in: query
+          required: false
+          schema: { type: string, default: "" }
+          description: 按关系类型过滤（须为当前租户 rid）
+        - name: src
+          in: query
+          required: false
+          schema: { type: string, default: "" }
+          description: 按源实例 rid 过滤
+        - name: dst
+          in: query
+          required: false
+          schema: { type: string, default: "" }
+          description: 按目标实例 rid 过滤
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, maximum: 10000, default: 0 }
+          description: 页大小；0 = 全部（旧行为）
+        - name: offset
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, default: 0 }
+          description: 偏移；与 limit 配合分页
       responses:
         "200":
           description: OK
@@ -1059,6 +1085,30 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/LinkInstanceV2" }
         "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
+  /api/v1/ont/v2/link-instances/stats:
+    get:
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
+      tags: [ont]
+      summary: LinkInstance stats by link type
+      operationId: ontGetV2LinkInstanceStats
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-LISTLINKINSTANCES]
+      x-mate-implementation-status: implemented
+      responses:
+        "200":
+          description: 按关系类型聚合的实例数（服务端 GROUP BY）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  by_link_type:
+                    type: object
+                    additionalProperties: { type: integer }
+                  total: { type: integer }
   /api/v1/ont/v2/axioms:
     get:
       security:

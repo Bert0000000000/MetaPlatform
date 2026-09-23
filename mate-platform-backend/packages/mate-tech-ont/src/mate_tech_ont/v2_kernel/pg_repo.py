@@ -2499,22 +2499,72 @@ class PgOntologyRepository(OntologyRepository):
                 entry["peers"].append(individual_to_row(ind))
         return list(grouped.values())
 
-    def list_link_instances(self, tenant_id: str | None = None) -> list[LinkInstance]:
+    def list_link_instances(
+        self,
+        tenant_id: str | None = None,
+        *,
+        link_type_rid: str | None = None,
+        src: str | None = None,
+        dst: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[LinkInstance]:
+        """关系实例列表：**服务端**按类型/源/目标过滤 + 分页（稳定 `ORDER BY rid`）。
+
+        ONT-QUERY-SEMANTICS §3：过滤与分页都在 SQL 完成 —— 调用方（前端 / Agent）
+        不再"拉全量再本地筛选"。``limit=None`` 保留旧的全量语义；给定则须 ∈ [1, 10000]。
+        """
         self._ensure_schema()
+        if limit is not None and not 1 <= limit <= 10000:
+            raise ValueError("limit must be in [1, 10000]")
+        if offset < 0:
+            raise ValueError("offset must be >= 0")
         # F8：必须显式按租户过滤（与 list_object_types 对齐），理由同 list_individuals。
+        tenant = tenant_id or self._current_tenant()
+        where: list[str] = []
+        params: list[Any] = []
+        if tenant:
+            where.append("tenant_id = %s")
+            params.append(tenant)
+        for col, val in (("link_type_rid", link_type_rid), ("src", src), ("dst", dst)):
+            if val:
+                where.append(f"{col} = %s")
+                params.append(val)
+        sql = "SELECT * FROM ont_link_instance"
+        if where:
+            sql += " WHERE " + " AND ".join(where)
+        sql += " ORDER BY rid"
+        if limit is not None:
+            sql += " LIMIT %s OFFSET %s"
+            params.extend([limit, offset])
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(sql, tuple(params))
+                rows = cur.fetchall()
+            return [_row_to_li(r) for r in rows]
+        finally:
+            conn.close()
+
+    def count_link_instances_by_type(self, tenant_id: str | None = None) -> dict[str, int]:
+        """按关系类型聚合的**服务端**实例数（一条 GROUP BY，替代"下载全量再计数"）。"""
+        self._ensure_schema()
         tenant = tenant_id or self._current_tenant()
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
                 if tenant:
                     cur.execute(
-                        "SELECT * FROM ont_link_instance WHERE tenant_id = %s ORDER BY rid",
+                        "SELECT link_type_rid, count(*) AS n FROM ont_link_instance "
+                        "WHERE tenant_id = %s GROUP BY link_type_rid",
                         (tenant,),
                     )
                 else:
-                    cur.execute("SELECT * FROM ont_link_instance ORDER BY rid")
-                rows = cur.fetchall()
-            return [_row_to_li(r) for r in rows]
+                    cur.execute(
+                        "SELECT link_type_rid, count(*) AS n FROM ont_link_instance "
+                        "GROUP BY link_type_rid"
+                    )
+                return {str(r["link_type_rid"]): int(r["n"]) for r in cur.fetchall()}
         finally:
             conn.close()
 

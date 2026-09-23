@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Button, Tag } from '@douyinfe/semi-ui';
 import {
+  getLinkInstanceStats,
   listLinkInstances,
   listLinkTypes,
   type KernelLinkInstance,
@@ -15,25 +16,26 @@ import '../../ontology.css';
  * 关系类型（IA2-2 从 ModelingPage 抽出）：正式路由 /ontology/model/link-types。
  *
  * <p>2026-09-24（12 基元补全 · B）：加「实例」抽屉——LinkInstance 一等公民浏览。
- * `GET /v2/link-instances` 是既有契约（无过滤参数），按 link_type_rid 客户端过滤。
+ * <p>ONT-QUERY-SEMANTICS §3：实例数走服务端聚合（`/link-instances/stats`），
+ * 抽屉里的实例走**服务端过滤 + 分页**——不再"下载全量再本地筛选"。
  */
 export default function LinkTypesPage() {
-  const [instances, setInstances] = useState<KernelLinkInstance[] | null>(null);
+  const [counts, setCounts] = useState<Record<string, number> | null>(null);
   const [openType, setOpenType] = useState<KernelLinkType | null>(null);
 
-  const loadInstances = useCallback(async () => {
+  const loadStats = useCallback(async () => {
     try {
-      setInstances(await listLinkInstances());
+      setCounts((await getLinkInstanceStats()).by_link_type);
     } catch {
-      setInstances([]);
+      setCounts({});
     }
   }, []);
 
   useEffect(() => {
-    void loadInstances();
-  }, [loadInstances]);
+    void loadStats();
+  }, [loadStats]);
 
-  const countFor = (rid: string) => (instances ?? []).filter((li) => li.link_type_rid === rid).length;
+  const countFor = (rid: string) => counts?.[rid] ?? 0;
 
   return (
     <>
@@ -76,7 +78,7 @@ export default function LinkTypesPage() {
             dataIndex: '__instances',
             width: 90,
             render: (_: unknown, row: KernelLinkType) =>
-              instances === null ? '…' : <span className="mp-onto-num">{countFor(row.rid)}</span>,
+              counts === null ? '…' : <span className="mp-onto-num">{countFor(row.rid)}</span>,
           },
           {
             title: '操作',
@@ -101,22 +103,36 @@ export default function LinkTypesPage() {
         open={openType !== null}
         onClose={() => setOpenType(null)}
       >
-        {openType ? (
-          <LinkInstanceList linkType={openType} instances={instances} />
-        ) : null}
+        {openType ? <LinkInstanceList linkType={openType} /> : null}
       </SheetDetail>
     </>
   );
 }
 
-function LinkInstanceList({
-  linkType,
-  instances,
-}: {
-  linkType: KernelLinkType;
-  instances: KernelLinkInstance[] | null;
-}) {
-  const filtered = (instances ?? []).filter((li) => li.link_type_rid === linkType.rid);
+/** 抽屉内单页实例数（服务端分页；触顶提示可能被截断）。 */
+const LINK_PAGE_SIZE = 200;
+
+function LinkInstanceList({ linkType }: { linkType: KernelLinkType }) {
+  const [rows, setRows] = useState<KernelLinkInstance[] | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    setRows(null);
+    // 服务端过滤：只取该关系类型的实例（不再下载全量再本地筛选）
+    listLinkInstances({ linkTypeRid: linkType.rid, limit: LINK_PAGE_SIZE })
+      .then((r) => {
+        if (alive) setRows(r);
+      })
+      .catch(() => {
+        if (alive) setRows([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [linkType.rid]);
+
+  const shown = rows ?? [];
+  const truncated = shown.length >= LINK_PAGE_SIZE;
   return (
     <>
       <div className="mp-flex mp-gap-2 mp-mb-4 mp-wrap">
@@ -125,7 +141,9 @@ function LinkInstanceList({
           {linkType.dst_display_name || ridTail(linkType.dst)}
         </Tag>
         <Tag type="light">{linkType.cardinality}</Tag>
-        <Tag type="light">{filtered.length} 条实例</Tag>
+        <Tag type="light">
+          {rows === null ? '加载中…' : `${shown.length}${truncated ? '+' : ''} 条实例`}
+        </Tag>
       </div>
       <DataTablePro<KernelLinkInstance>
         columns={[
@@ -160,9 +178,9 @@ function LinkInstanceList({
             render: (v: string | undefined) => <span className="mp-onto-muted">{v ?? '—'}</span>,
           },
         ]}
-        dataSource={filtered}
+        dataSource={shown}
         rowKey="rid"
-        loading={instances === null}
+        loading={rows === null}
         empty={
           <EmptyState
             illustration="no-content"

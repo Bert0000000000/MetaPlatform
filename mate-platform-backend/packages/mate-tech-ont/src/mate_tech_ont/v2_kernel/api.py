@@ -4985,15 +4985,51 @@ async def create_link_instance(
 )
 async def list_link_instances(
     request: Request,
+    link_type_rid: str = "",
+    src: str = "",
+    dst: str = "",
+    limit: int = 0,
+    offset: int = 0,
 ) -> list[LinkInstanceResponse]:
+    """关系实例列表：**服务端**按类型/源/目标过滤 + 分页（ONT-QUERY-SEMANTICS §3）。
+
+    过滤 rid 必须属当前租户（跨租户 403）；``limit=0`` 保留旧的全量语义。
+    """
     ctx = _ctx(request)
-    # F8：显式传 tenant_id（理由同 list_individuals —— thread-local 不跨 to_thread）
+    tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    for field_name, val in (("link_type_rid", link_type_rid), ("src", src), ("dst", dst)):
+        if val and not val.startswith(f"ont.{tenant}."):
+            raise HTTPException(
+                status_code=403, detail=f"{field_name} must be under tenant {tenant}"
+            )
+    if limit < 0 or limit > 10000:
+        raise HTTPException(status_code=422, detail="limit must be in [0, 10000] (0 = 全部)")
+    if offset < 0:
+        raise HTTPException(status_code=422, detail="offset must be >= 0")
     items = await _call_scoped(
         request,
         "list_link_instances",
-        tenant_id=str(ctx.tenant_id),  # type: ignore[attr-defined]
+        tenant_id=tenant,
+        link_type_rid=link_type_rid or None,
+        src=src or None,
+        dst=dst or None,
+        limit=limit or None,
+        offset=offset,
     )
     return [_link_instance_to_response(i) for i in items]
+
+
+@router.get(
+    "/link-instances/stats",
+    response_model=dict,
+    operation_id="ontGetV2LinkInstanceStats",
+)
+async def link_instance_stats(request: Request) -> dict:
+    """按关系类型聚合的实例数（服务端 GROUP BY）—— 前端不再拉全量再计数。"""
+    ctx = _ctx(request)
+    tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    counts = await _call_scoped(request, "count_link_instances_by_type", tenant_id=tenant)
+    return {"by_link_type": counts, "total": sum(counts.values())}
 
 
 # ─────────────────── 13) Version snapshot ───────────────────
