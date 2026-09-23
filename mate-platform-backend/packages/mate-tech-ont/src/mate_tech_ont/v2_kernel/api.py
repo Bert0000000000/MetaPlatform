@@ -28,6 +28,7 @@ GOVERN-06 tenant 三层防线：
 from __future__ import annotations
 
 import asyncio
+import os
 from datetime import UTC, datetime
 from typing import Any
 
@@ -59,6 +60,7 @@ from mate_kernel.ontology.types.object_type import ObjectType
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 from mate_kernel.tooling import schema_gen
 from mate_kernel.tooling.schema_gen import agent_tool_schemas
+from mate_platform.runtime import is_production_profile, runtime_profile
 from mate_platform.tenancy.guards import require_tenant
 
 from .pg_repo import SlugConflictError  # MP-DEDUP-01: 409 翻译
@@ -1134,6 +1136,35 @@ import uuid as _uuid
 
 _SCENARIOS: dict[str, dict[str, Any]] = {}
 
+# 实验性边界：Scenario 目前是**进程内**会话态（不支持多副本 / 重启即失），
+# 因此生产 profile 默认禁用；需要时用 ONT_SCENARIOS_ENABLED=1 显式 opt-in。
+# 在真正持久化 + 多副本安全之前，不得把它当作正式草稿。
+_SCENARIO_PERSISTENCE = "in_memory"
+
+
+def _scenarios_enabled() -> bool:
+    raw = os.getenv("ONT_SCENARIOS_ENABLED")
+    if raw is None:
+        return not is_production_profile()
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _require_scenarios_enabled() -> None:
+    """实验特性生产禁用闸门（fail-closed）：内存态不冒充正式草稿。"""
+    if not _scenarios_enabled():
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "E503_SCENARIO_DISABLED",
+                "message": (
+                    "Scenario 为实验特性（进程内存态，不支持多副本）；"
+                    f"在 {runtime_profile()} profile 默认禁用。"
+                    "如需启用请显式设置 ONT_SCENARIOS_ENABLED=1。"
+                ),
+                "persistence": _SCENARIO_PERSISTENCE,
+            },
+        )
+
 
 class ScenarioCreateDTO(BaseModel):
     """G44：建沙盒会话（编辑留沙盒；合并走 apply-edit-set 审计管道）。"""
@@ -1186,6 +1217,25 @@ def _scenario_overlay(request: Request, sid: str) -> Any:
         return ov, repo, entry
 
 
+def _scenario_entry(request: Request, sid: str) -> dict[str, Any]:
+    """取**当前认证租户**拥有的 Scenario 条目。
+
+    缺失或归属不符 → 一律 404（不泄露存在性）；绝不信任客户端传入的 tenant_id，
+    归属以创建时由 ``ctx.tenant_id`` 落定的 ``entry["tenant_id"]`` 为准。
+    """
+    ctx = _ctx(request)
+    entry = _SCENARIOS.get(sid)
+    if entry is None or entry.get("tenant_id") != str(ctx.tenant_id):
+        _logger.warning(
+            "ont.scenario.access_denied",
+            scenario_id=sid,
+            tenant_id=str(getattr(ctx, "tenant_id", "")),
+            reason="not_found_or_cross_tenant",
+        )
+        raise HTTPException(status_code=404, detail=f"scenario not found: {sid}")
+    return entry
+
+
 @router.post(
     "/scenarios",
     response_model=dict,
@@ -1196,6 +1246,7 @@ async def create_scenario(
     request: Request,
 ) -> dict:
     ctx = _ctx(request)
+    _require_scenarios_enabled()
     sid = f"scn-{_uuid.uuid4().hex[:10]}"
     _SCENARIOS[sid] = {
         "title": payload.title,
@@ -1203,7 +1254,11 @@ async def create_scenario(
         "edits": [],
         "created_at": datetime.now(UTC).isoformat(),
     }
-    return {"scenario_id": sid, "status": "active"}
+    return {
+        "scenario_id": sid,
+        "status": "experimental",
+        "persistence": _SCENARIO_PERSISTENCE,
+    }
 
 
 @router.get(
@@ -1212,15 +1267,19 @@ async def create_scenario(
     operation_id="ontListV2Scenarios",
 )
 async def list_scenarios(request: Request) -> list[dict]:
-    _ctx(request)
+    ctx = _ctx(request)
+    _require_scenarios_enabled()
+    tenant_id = str(ctx.tenant_id)  # type: ignore[attr-defined]
     return [
         {
             "scenario_id": k,
             "title": v["title"],
             "edits": len(v["edits"]),
             "created_at": v["created_at"],
+            "persistence": _SCENARIO_PERSISTENCE,
         }
         for k, v in _SCENARIOS.items()
+        if v.get("tenant_id") == tenant_id
     ]
 
 
@@ -1234,9 +1293,8 @@ async def append_scenario_edit(
     payload: ScenarioEditDTO,
     request: Request,
 ) -> dict:
-    _ctx(request)
-    if sid not in _SCENARIOS:
-        raise HTTPException(status_code=404, detail=f"scenario not found: {sid}")
+    _require_scenarios_enabled()
+    _scenario_entry(request, sid)
     edit = payload.model_dump()
     # 结构校验（复用 EditOp 校验，不执行）
     from mate_kernel.action.edit_set import EditOp, EditSetError
@@ -1284,6 +1342,9 @@ async def append_scenario_edit(
 
     try:
         await asyncio.to_thread(_validate)
+    except KeyError as e:
+        # 会话在归属校验与回放之间被丢弃 → 同 404 语义
+        raise HTTPException(status_code=404, detail=f"scenario not found: {sid}") from e
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
     return {"scenario_id": sid, "pending": len(_SCENARIOS[sid]["edits"])}
@@ -1300,10 +1361,8 @@ async def scenario_view(
     class_rid: str = "",
 ) -> dict:
     """G44：沙盒合并视图（overlay 优先 + 墓碑隐藏；_sandbox_ 标记新建/修改）。"""
-    _ctx(request)
-    if sid not in _SCENARIOS:
-        raise HTTPException(status_code=404, detail=f"scenario not found: {sid}")
-    entry = _SCENARIOS[sid]
+    _require_scenarios_enabled()
+    entry = _scenario_entry(request, sid)
 
     def _run() -> dict:
         from mate_kernel.objectset.compiler import individual_to_row
@@ -1342,8 +1401,8 @@ async def merge_scenario(
 ) -> dict:
     """G44：沙盒合并 —— 暂存编辑经 apply_edit_set_now（审计管道）落主库。"""
     ctx = _ctx(request)
-    if sid not in _SCENARIOS:
-        raise HTTPException(status_code=404, detail=f"scenario not found: {sid}")
+    _require_scenarios_enabled()
+    _scenario_entry(request, sid)
 
     def _run() -> dict:
         ov, _repo, _e = _scenario_overlay(request, sid)
@@ -1375,9 +1434,10 @@ async def merge_scenario(
     operation_id="ontDiscardV2Scenario",
 )
 async def discard_scenario(sid: str, request: Request) -> dict:
-    _ctx(request)
-    existed = _SCENARIOS.pop(sid, None)
-    return {"scenario_id": sid, "discarded": existed is not None}
+    _require_scenarios_enabled()
+    _scenario_entry(request, sid)
+    _SCENARIOS.pop(sid, None)
+    return {"scenario_id": sid, "discarded": True}
 
 
 @router.get(
