@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Free ports
         run: |
@@ -60,7 +60,7 @@ jobs:
         run: npm install -g pnpm@11.15.1
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: pnpm
@@ -96,7 +96,7 @@ jobs:
 
       - name: Upload playwright artifacts (trace / screenshot / report)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ontology-core-e2e-artifacts
           path: |
