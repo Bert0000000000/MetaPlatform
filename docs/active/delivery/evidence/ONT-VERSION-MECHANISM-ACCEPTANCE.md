@@ -70,3 +70,34 @@
 - 并发保护是**乐观**的：库不一致时先提交者胜，后提交者 409。
 - in-memory 是轻量 fake：**不做同内容去重**，且类型不存在时 `definition` 为空
   （PG 侧为 `KeyError`）；冲突判定两边一致。
+
+## 6. 交付门禁（13 硬规则）与复现
+
+本批**不新增 contract operation**（只扩既有端点的字段与行为），13 条 GA 门禁在 PR #92 上全绿：
+
+| 门禁 | 结果 | 说明 |
+| --- | --- | --- |
+| ga-001 oasdiff（无未批准的破坏性变更） | pass | 新增响应字段属非破坏性 |
+| ga-002 requirement IDs present | pass | 未新增 operation，无需登记 |
+| ga-003 forbid_raw_sql（规则 3） | pass | 新查询走 repo 的 tenant scope |
+| ga-004 forbid_bare_httpx（规则 4） | pass | 未新增出站直连 |
+| ga-005 forbid_legacy_fallback（规则 5） | pass | 未触碰 |
+| ga-006 ruff + pyright strict | pass | 全仓 ruff check / format 干净 |
+| ga-007 forbid_skip_tests（规则 7） | pass | 新增用例无 skip / xfail |
+| ga-008 helm lint + kubeconform | pass | 未触碰 |
+| ga-009 OTel collector smoke | pass | 未触碰 |
+| ga-010 require_evidence（规则 10） | pass | 本文件即证据 |
+| ga-011 helm-docs --dry-run | pass | 未触碰 |
+| ga-012 gitleaks | pass | 无密钥材料 |
+| ga-013 NetworkPolicy service coverage | pass | 未触碰 |
+
+**commit**：`62c41e40`（本批）
+
+**命令**：
+
+```bash
+cd mate-platform-backend
+.venv/Scripts/python.exe -m pytest packages/mate-kernel/tests packages/mate-tech-ont/tests -q          # 1311 passed
+.venv/Scripts/python.exe -m pytest packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py -q   # 16 passed
+cd ../metaplatform-frontend/apps/web && node_modules/.bin/tsc -b --noEmit                             # 前端 typecheck
+```

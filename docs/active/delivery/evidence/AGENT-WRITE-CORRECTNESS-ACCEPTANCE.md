@@ -81,3 +81,34 @@ cd mate-platform-backend
 .venv/Scripts/python.exe -m pytest packages/mate-tech-agent-team/tests -q   # 617 passed / 0 failed
 .venv/Scripts/python.exe -m pytest packages/mate-tech-mcp/tests -q         # HITL 命令的幂等键
 ```
+
+## 7. 交付门禁（13 硬规则）
+
+本批**不新增 contract operation、不改本体契约**，13 条 GA 门禁在 PR #92 上全绿：
+
+| 门禁 | 结果 | 说明 |
+| --- | --- | --- |
+| ga-001 oasdiff（无未批准的破坏性变更） | pass | 未改契约 |
+| ga-002 requirement IDs present | pass | 未新增 operation |
+| ga-003 forbid_raw_sql（规则 3） | pass | 本地护栏脚本在我改动的 20 个 py 文件上全过 |
+| ga-004 forbid_bare_httpx（规则 4） | pass | 代理改动走既有 ACL 客户端 |
+| ga-005 forbid_legacy_fallback（规则 5） | pass | 未触碰 |
+| ga-006 ruff + pyright strict | pass | 全仓 ruff check / format 干净 |
+| ga-007 forbid_skip_tests（规则 7） | pass | 新增用例无 skip / xfail |
+| ga-008 helm lint + kubeconform | pass | 未触碰 |
+| ga-009 OTel collector smoke | pass | 未触碰 |
+| ga-010 require_evidence（规则 10） | pass | 本文件即证据 |
+| ga-011 helm-docs --dry-run | pass | 未触碰 |
+| ga-012 gitleaks | pass | 无密钥材料 |
+| ga-013 NetworkPolicy service coverage | pass | 未触碰 |
+
+**commit**：`b69d351c`（本批）· `f2995e3f`（证据文档 md-lint 修正）
+
+**命令**：
+
+```bash
+cd mate-platform-backend
+.venv/Scripts/python.exe -m pytest packages/mate-tech-agent-team/tests/test_agent_write_correctness.py -q   # 12 passed
+.venv/Scripts/python.exe -m pytest packages/mate-tech-agent-team/tests -q   # 617 passed / 0 failed
+.venv/Scripts/python.exe -m pytest packages/mate-tech-mcp/tests -q          # HITL 命令的幂等键
+```
