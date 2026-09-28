@@ -47,6 +47,7 @@ def _healthz() -> dict[str, str]:
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     from .wiring import (
+        WritePermitHolder,
         build_artifact_store,
         build_audit_ledger,
         build_profile_store,
@@ -72,7 +73,12 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     # 1.6 任务 2：产出物落 PG。HTTP 面的取回与图里的落库必须是**同一个实例**，
     # 否则图写进一个库、接口从另一个读，两边各说各话。
     artifacts = build_artifact_store()
-    service = build_service(registry=registry, team_bus=bus, artifacts=artifacts)
+    # B-7：写许可的迟绑定壳 —— **必须在建服务之前**建出来（运行时构造时要拿它），
+    # 控制面建好之后再 bind 真身（见下面 ``write_permit.bind(...)``）。
+    write_permit = WritePermitHolder()
+    service = build_service(
+        registry=registry, team_bus=bus, artifacts=artifacts, write_permit=write_permit
+    )
     set_brain_service(service)
     set_profile_registry(registry)
     set_skill_catalog(build_skill_catalog())
@@ -81,6 +87,9 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     set_profile_store(store)
     set_artifact_store(artifacts)
     set_run_control(None)  # 按当前服务层现建：运行控制面没有独立状态要注入
+    # B-7：把写许可的真身接上（此刻控制面已经建出来了）。**要在 recover() 之前**
+    # ——续跑本身也会跑图、也会写本体，那条路同样得受"还归我写吗"的约束。
+    write_permit.bind(get_run_control().write_permit)
     app.state.brain_service = service
     app.state.team_bus = bus
     # 1.8 轨 1：把上一次进程没跑完的 run 接着跑完。**不阻塞启动**（认领后交给

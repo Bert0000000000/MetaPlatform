@@ -60,7 +60,15 @@ from .profiles import EmployeeProfile, ProfileNotFound, ProfileRegistry, Runtime
 from .runtime import TaskChannel, TransientRunError
 from .skills import SkillCatalog
 from .state import SubTask, SubTaskResult
-from .tool_ledger import ToolCallAdmission, ToolLedger, call_id, new_lease_owner
+from .tool_ledger import (
+    INDETERMINATE,
+    ToolCallAdmission,
+    ToolLedger,
+    call_id,
+    classify_tool_error,
+    has_side_effects,
+    new_lease_owner,
+)
 from .toolbox import Toolbox, ToolNotAllowed
 from .versioning import profile_for_subtask, prompt_digest_of
 
@@ -279,6 +287,7 @@ class LlmEmployeeRuntime:
         context_editing: bool = True,
         channel: TaskChannel | None = None,
         tool_ledger: ToolLedger | None = None,
+        write_permit: Any = None,
         recorder: SpanRecorder | None = None,
     ) -> None:
         self._registry = registry
@@ -296,6 +305,10 @@ class LlmEmployeeRuntime:
         #: 工具调用级幂等账本（A-3 / ADR 见 :mod:`.tool_ledger`）。**默认不记账**——
         #: 没接的部署行为与 A-3 之前逐字一致；生产由 ``wiring`` 接 PG 账本。
         self._tool_ledger = tool_ledger
+        #: **写许可**（B-7）：失租之后拒绝发起新的写操作。默认不接 = 与加它之前
+        #: 逐字一致（单进程/测试形态）。生产由组合根把运行控制面的
+        #: ``RunWritePermit`` 迟绑定进来（服务先建、控制面后建）。
+        self._write_permit = write_permit
         #: C-7 观测记录器（``llm`` / ``tool`` 两层在这里落点）。**默认不记**。
         self._recorder = recorder
         self._lease_owner = new_lease_owner()
@@ -325,7 +338,7 @@ class LlmEmployeeRuntime:
     async def _settle(
         self, admission: ToolCallAdmission | None, *, result: Any, error: str
     ) -> None:
-        """落回执。**尽力而为**，且失败的方向是安全的：
+        """落**成功/明确失败**的回执。**尽力而为**，且失败的方向是安全的：
 
         写不进去 → 那一行留在 ``running`` → 恢复时**不会**重跑（上限仍是 1）。
         反过来（写失败却当成没发生）才会导致重复副作用，那种做法这里没有。
@@ -344,6 +357,38 @@ class LlmEmployeeRuntime:
                 )
         except Exception:
             return
+
+    async def _settle_indeterminate(
+        self, admission: ToolCallAdmission | None, *, error: str
+    ) -> None:
+        """落**结果不确定**的回执（A-4）：请求发出去了、回执没拿到。
+
+        与 :meth:`_settle` 的 ``failed`` 分开写是因为后果完全不同：``failed`` 允许
+        重试，这一条**撤销重试许可**。同样尽力而为——写不进去那一行留在 ``running``，
+        恢复时也不重跑（同一个安全方向）。
+        """
+        if admission is None or admission.invocation is None or self._tool_ledger is None:
+            return
+        invocation = admission.invocation
+        try:
+            await self._tool_ledger.indeterminate(
+                tenant_id=invocation.tenant_id, invocation=invocation, error=error
+            )
+        except Exception:
+            return
+
+    async def _ask_write_permit(self, *, tenant_id: str, run_id: str) -> tuple[bool, str]:
+        """问"这一轮此刻还归我写吗"（B-7）。**读不动就拒绝写**（fail-closed）。
+
+        读不动的代价是这一轮少写一次（会带着错误收尾、可被人接管后补上），
+        而放行的代价可能是在本体上写第二遍 —— 两个方向不对等，所以选前者。
+        """
+        permit = self._write_permit
+        try:
+            allowed, why = await permit.allowed(tenant_id=tenant_id, run_id=run_id)
+        except Exception as exc:
+            return False, f"permit_unavailable:{type(exc).__name__}"
+        return bool(allowed), str(why or "")
 
     def _system_prompt(self, profile: EmployeeProfile) -> str:
         """身份提示词 + **技能清单**（只出名字与一句话描述，不出正文）。"""
@@ -401,7 +446,7 @@ class LlmEmployeeRuntime:
                     task_id=task_id,
                 )
                 if admission is not None and not admission.execute:
-                    # **不执行**：要么回放已记下的结果，要么这一次已经开过头（in_flight）。
+                    # **不执行**：回放已记下的结果，或这一次此前已经开过头。
                     entry["allowed"] = True
                     entry["deduplicated"] = admission.reason
                     entry["invocation_id"] = (
@@ -412,6 +457,25 @@ class LlmEmployeeRuntime:
                     if admission.reason == "already_completed":
                         evidence.capture(name, admission.reuse)
                         return _clip(admission.reuse)
+                    if admission.reason == "indeterminate_result":
+                        # A-4：上一次**发出去了**但没拿到回执 —— 远端可能已经成功。
+                        # 不能用同样的参数重试（那会在本体上写第二遍），也不能
+                        # 假装它失败了。如实把不确定性交回模型，并给出可核对的标识。
+                        entry["indeterminate"] = True
+                        previous = admission.invocation.error if admission.invocation else ""
+                        return json.dumps(
+                            {
+                                "error": f"tool '{name}' result is UNKNOWN (not failed)",
+                                "previous_error": previous,
+                                "invocation_id": entry["invocation_id"],
+                                "hint": (
+                                    "上一次调用已经发出且远端可能已经成功，因此**不允许**"
+                                    "用相同参数重试。请改用不同参数（会形成新的调用标识），"
+                                    "或在结论里如实说明这一项的副作用结果不确定、待人工核对。"
+                                ),
+                            },
+                            ensure_ascii=False,
+                        )
                     return json.dumps(
                         {
                             "error": f"tool '{name}' not re-executed: {admission.reason}",
@@ -419,6 +483,32 @@ class LlmEmployeeRuntime:
                         },
                         ensure_ascii=False,
                     )
+                # B-7：**写操作前问一次"这一轮此刻还归我写吗"**。失租（被别人接管 /
+                # 执行代次被顶掉）之后，本副本只能读、不能再写 —— 那正是"旧副本
+                # 继续提交"的入口。只读工具不受影响（问都不问）。
+                if has_side_effects(name) and self._write_permit is not None:
+                    permitted, why = await self._ask_write_permit(
+                        tenant_id=tenant_id, run_id=run_id
+                    )
+                    if not permitted:
+                        entry["allowed"] = False
+                        entry["write_denied"] = why
+                        log.append(entry)
+                        tool_status = f"write_denied:{why}"
+                        # **没有发出任何请求** → 记 ``failed``（确定没落地，可重试）：
+                        # 接管方拿到这一轮时正该把这次写补上。
+                        await self._settle(admission, result=None, error=f"write_denied:{why}")
+                        return json.dumps(
+                            {
+                                "error": f"tool '{name}' write denied: {why}",
+                                "hint": (
+                                    "本执行已失去写权限（这一轮的活跃租约已被接管或"
+                                    "执行代次已被顶掉），写操作**没有**发出。"
+                                    "不要再重试同一个写：接管方会继续这一轮。"
+                                ),
+                            },
+                            ensure_ascii=False,
+                        )
                 try:
                     result = await toolbox.invoke(name=name, arguments=arguments, allowed=allowed)
                 except ToolNotAllowed as exc:
@@ -432,14 +522,38 @@ class LlmEmployeeRuntime:
                         {"error": f"tool '{name}' rejected: {exc.reason}"}, ensure_ascii=False
                     )
                 except Exception as exc:
-                    # 工具**执行**失败（多为参数不合后端 schema）——把错误原文回灌给模型，
-                    # 让它自己改参数重试，而不是把一次手滑升级成整轮失败。
+                    # 工具**执行**失败。两种后果必须分开（A-4）：
+                    #
+                    # * **明确没落地**（连不上 / 本地参数错 / 只读工具）→ 账本记
+                    #   ``failed``，允许下一次重来，把错误原文回灌给模型让它改参数；
+                    # * **结果不确定**（请求已发出，读超时 / 传输中断 / 5xx）→ 账本记
+                    #   ``indeterminate``，**撤销重试许可**。远端可能已经成功了，
+                    #   盲目重试就是在本体上写第二遍。
+                    detail = f"{type(exc).__name__}: {exc}"
+                    outcome = classify_tool_error(exc, tool_name=name)
                     entry["allowed"] = True
-                    entry["error"] = f"{type(exc).__name__}: {exc}"
+                    entry["error"] = detail
+                    entry["outcome"] = outcome
                     log.append(entry)
+                    if outcome == INDETERMINATE:
+                        tool_status = "indeterminate"
+                        await self._settle_indeterminate(admission, error=detail)
+                        return _clip(
+                            {
+                                "error": f"tool '{name}' outcome is UNKNOWN: {detail}",
+                                "invocation_id": (
+                                    admission.invocation.invocation_id
+                                    if admission and admission.invocation
+                                    else ""
+                                ),
+                                "hint": (
+                                    "请求已经发出但没拿到回执，远端可能已经成功；"
+                                    "这不是一次可以照原样重试的失败。"
+                                ),
+                            }
+                        )
                     tool_status = "error"
-                    # 失败 = 这次没落地：账本记 failed，允许下一次重来。
-                    await self._settle(admission, result=None, error=f"{type(exc).__name__}: {exc}")
+                    await self._settle(admission, result=None, error=detail)
                     return _clip(
                         {"error": f"tool '{name}' failed: {exc}", "hint": "修正参数后重试"}
                     )

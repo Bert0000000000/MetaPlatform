@@ -47,17 +47,20 @@ def make_token(
     tenant_id: str = "tenant-acme",
     roles: list[str] | None = None,
     permissions: list[str] | None = None,
+    subject: str = "u-1",
 ) -> str:
     import jwt as pyjwt
 
     realm_roles = ["PLATFORM_SUPER_ADMIN"] if roles is None else roles
     now = int(time.time())
     claims: dict[str, object] = {
-        "sub": "u-1",
+        # ``subject`` 默认 u-1（既有用例都按这个身份断言）。会签用例需要**两个不同
+        # 审批人**才凑得齐 2 票（闸门按 actor 去重），所以允许换一个身份。
+        "sub": subject,
         "iss": "http://localhost:8080/realms/metaplatform",
         "aud": "metaplatform-backend",
         "azp": "metaplatform-backend",
-        "preferred_username": "u-1",
+        "preferred_username": subject,
         "realm_access": {"roles": realm_roles},
         "scope": "platform.read platform.write",
         "attributes": {"tenant_id": [tenant_id]},

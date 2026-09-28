@@ -185,8 +185,20 @@ class OntologyProxyTool:
         resp.raise_for_status()
         return resp.json()
 
-    async def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
-        resp = await self._client.post(path, json=payload, headers=await self._outbound_headers())
+    async def _post(
+        self, path: str, payload: dict[str, Any], *, idempotency_key: str = ""
+    ) -> dict[str, Any]:
+        """POST 到本体。
+
+        ``idempotency_key``：本体侧那几个**命令**端点（``confirm`` / ``reject`` /
+        ``execute``）要求 ``Idempotency-Key`` 头，缺了就是 400。键必须是**确定性**的
+        （同一操作 + 同一目标 + 同一个人 → 同一个键），这样重试会被本体按
+        ``(tenant, operation, key)`` 认出并**回放**，而不是报错或写第二遍。
+        """
+        headers = await self._outbound_headers()
+        if idempotency_key:
+            headers["Idempotency-Key"] = idempotency_key
+        resp = await self._client.post(path, json=payload, headers=headers)
         resp.raise_for_status()
         return resp.json()
 
@@ -554,6 +566,23 @@ class _HitlProposalTool(OntologyProxyTool):
         "hitl",
     )
 
+    async def _post_command(
+        self, path: str, payload: dict[str, Any], *, operation: str, target: str, actor: str = ""
+    ) -> dict[str, Any]:
+        """HITL 命令的 POST：**必须带确定性幂等键**。
+
+        本体侧的 ``confirm`` / ``reject`` / ``execute`` 三个端点都要求
+        ``Idempotency-Key``（缺了直接 400）—— 这三个工具此前不带这个头，于是
+        **经 MCP 调用必然失败**。键 = ``mcp-<操作>:<目标>:<操作人>``：
+
+        * 同一个人的同一次操作重试 → 同一个键 → 本体回放已确认/已执行的结果；
+        * **把操作人放进键里**是刻意的：不同的人对同一个提案各敲一次不该撞成
+          "idempotency key conflicts with a different proposal command"（本体的
+          指纹含 actor），各走各的键，让状态机去回答"这个提案已经动过了"。
+        """
+        key = f"mcp-{operation}:{target}:{actor}"
+        return await self._post(path, payload, idempotency_key=key)
+
 
 class OntConfirmProposalTool(_HitlProposalTool):
     """pending → confirmed（用户确认）。
@@ -586,9 +615,12 @@ class OntConfirmProposalTool(_HitlProposalTool):
         confirmed_by: str = "",
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {"confirmed_by": confirmed_by}
-        return await self._post(
+        return await self._post_command(
             f"/api/v1/ont/v2/proposals/{proposal_id}/confirm",
             payload,
+            operation="confirm",
+            target=proposal_id,
+            actor=confirmed_by,
         )
 
 
@@ -623,9 +655,12 @@ class OntRejectProposalTool(_HitlProposalTool):
         confirmed_by: str = "",
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {"confirmed_by": confirmed_by}
-        return await self._post(
+        return await self._post_command(
             f"/api/v1/ont/v2/proposals/{proposal_id}/reject",
             payload,
+            operation="reject",
+            target=proposal_id,
+            actor=confirmed_by,
         )
 
 
@@ -651,9 +686,11 @@ class OntExecuteProposalTool(_HitlProposalTool):
     }
 
     async def __call__(self, *, proposal_id: str) -> dict[str, Any]:
-        return await self._post(
+        return await self._post_command(
             f"/api/v1/ont/v2/proposals/{proposal_id}/execute",
             {},
+            operation="execute",
+            target=proposal_id,
         )
 
 

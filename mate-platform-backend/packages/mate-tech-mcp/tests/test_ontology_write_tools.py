@@ -344,6 +344,39 @@ def test_confirm_proposal_allows_user_caller() -> None:
 
 
 @respx.mock
+def test_hitl_commands_carry_a_deterministic_idempotency_key() -> None:
+    """confirm / reject / execute **必须**带 ``Idempotency-Key``。
+
+    本体侧这三个命令端点要求这个头（缺了直接 400），而这三个 MCP 工具此前不带 ——
+    于是**经 MCP 调用必然失败**。键还必须**确定性**：同一次操作重试要算出同一个键，
+    本体才会按 ``(tenant, operation, key)`` 认出并回放，而不是报错或写第二遍。
+    键里带操作人：不同的人各敲一次不该撞成"key conflicts with a different command"。
+    """
+    proposal = "prop-9"
+    cases: list[tuple[str, type, str, dict[str, str]]] = [
+        ("confirm", OntConfirmProposalTool, "mcp-confirm:prop-9:u-7", {"confirmed_by": "u-7"}),
+        ("reject", OntRejectProposalTool, "mcp-reject:prop-9:u-7", {"confirmed_by": "u-7"}),
+        ("execute", OntExecuteProposalTool, "mcp-execute:prop-9:", {}),
+    ]
+    for endpoint, tool_cls, expected_key, kwargs in cases:
+        route = respx.post(f"{ONT_BASE}/api/v1/ont/v2/proposals/{proposal}/{endpoint}").mock(
+            return_value=httpx.Response(200, json={"ok": True})
+        )
+
+        async def run(cls=tool_cls, kw=kwargs):  # type: ignore[no-untyped-def]
+            tool = cls(base_url=ONT_BASE)
+            try:
+                await tool(proposal_id=proposal, **kw)
+                await tool(proposal_id=proposal, **kw)  # 同一次操作重试：键必须一样
+            finally:
+                await tool.aclose()
+
+        asyncio.run(run())
+        keys = [call.request.headers.get("Idempotency-Key") for call in route.calls]
+        assert keys == [expected_key, expected_key], f"{tool_cls.name} 的幂等键不对：{keys}"
+
+
+@respx.mock
 def test_reject_and_execute_also_blocked_for_agent() -> None:
     """ont_reject_proposal / ont_execute_proposal 同样走 HITL 闸门。"""
     for endpoint in ("reject", "execute"):

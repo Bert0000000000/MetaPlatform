@@ -21,15 +21,17 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+#: 侧写类工具（会改状态）。重放副作用重复数以此为口径 —— **口径只有一份**：
+#: "评测里数副作用"与"账本里锁重试"（:mod:`mate_tech_agent_team.tool_ledger`）
+#: 必须认同一个清单，否则两边的结论会对不上。
+from ..tool_ledger import SIDE_EFFECT_PREFIXES as _SIDE_EFFECT_PREFIXES
+
 #: llmgw 回显的标记（``RealOpenAIProvider`` 兜底时拼进正文的那个前缀）。
 STUB_MARKER = "[stub-fallback]"
 
 #: RID 形状：``ont.<tenant>.<kind>.<slug>.<version>``（ADR-0021）。评测只认这个
 #: 前缀，避免把 ``http://...`` 之类误当 RID。
 _RID = re.compile(r"\bont\.[a-z0-9-]+\.[a-z0-9-]+\.[a-z0-9._-]+\.v\d+\b")
-
-#: 侧写类工具（会改状态）。重放副作用重复数以此为口径。
-_SIDE_EFFECT_PREFIXES: tuple[str, ...] = ("ont_propose", "ont_confirm", "ont_reject", "ont_execute")
 
 
 class FakeReceiptError(RuntimeError):

@@ -43,7 +43,7 @@ from ..profiles import (
 from ..skills import SkillCatalog, SkillNotFound
 from ..state import BrainState
 from ..team_bus import TaskNotFound, TaskTerminal, TeamBus
-from .run_control import RunControl
+from .run_control import RunControl, RunLeaseHeld
 from .schemas import (
     ApproveRequest,
     ArtifactContentModel,
@@ -427,6 +427,18 @@ async def agentTeamPostRunApprove(
     except RunNotAwaitingApproval as exc:
         raise HTTPException(
             status_code=409, detail={"code": "E_RUN_NOT_AWAITING_APPROVAL", "runId": run_id}
+        ) from exc
+    except RunLeaseHeld as exc:
+        # 另一个执行正拿着这一轮的活跃租约（另一副本正在推进它，或本进程的那个请求
+        # 刚跑到闸门还在收尾）。**本次审批没有被记下** —— 回 409 请对方重试，
+        # 绝不假装"批完了"去动图：那正是丢决定/重复推进的入口。
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "E_RUN_LEASE_HELD",
+                "runId": run_id,
+                "message": "这一轮正被另一次执行处理（另一副本，或本进程收尾中），请稍后重试",
+            },
         ) from exc
     return _to_model(state)
 
